@@ -14,6 +14,8 @@ namespace parser {
         std::string src;
     };
 
+    struct ContextInfo {};
+
     struct Stream {
        private:
         std::list<lexer::Token> tokens;
@@ -21,6 +23,7 @@ namespace parser {
         iterator cur;
         void* seq_ptr = nullptr;
         std::uint64_t cur_file = 0;
+        ContextInfo* info = nullptr;
         std::optional<lexer::Token> (*parse)(void* seq, std::uint64_t file) = nullptr;
         std::string (*dump)(void* seq, lexer::Pos pos) = nullptr;
 
@@ -47,7 +50,23 @@ namespace parser {
 
         void report_error(lexer::Token& token) {
             auto text = dump(seq_ptr, token.loc.pos);
-            throw StreamError{.err_token = std::move(token), text};
+            throw StreamError{.err_token = std::move(token), std::move(text)};
+        }
+
+        Stream() = default;
+        friend struct Context;
+
+        void maybe_parse() {
+            if (cur == tokens.end()) {
+                auto token = call_parse();
+                if (!token) {
+                    return;
+                }
+                if (token->tag == lexer::Tag::error) {
+                    report_error(*token);
+                }
+                cur = tokens.insert(cur, std::move(*token));
+            }
         }
 
        public:
@@ -83,16 +102,92 @@ namespace parser {
             tokens.splice(cur, std::move(tmp));
         }
 
-        void consume() {
+        // end of stream
+        bool eos() {
+            maybe_parse();
+            return cur == tokens.end();
         }
 
+        void consume() {
+            if (eos()) {
+                return;
+            }
+            cur++;
+        }
+
+        bool expect_tag(lexer::Tag tag) {
+            if (eos()) {
+                return false;
+            }
+            return cur->tag == tag;
+        }
+
+        bool expect_token(std::string_view s) {
+            if (eos()) {
+                return false;
+            }
+            return cur->token == s;
+        }
+
+        std::optional<lexer::Token> consume_token(std::string_view s) {
+            if (!expect_token(s)) {
+                return std::nullopt;
+            }
+            // only copy for fallback
+            auto tok = *cur;
+            consume();
+            return tok;
+        }
+
+        std::optional<lexer::Token> consume_token(lexer::Tag t) {
+            if (!expect_tag(t)) {
+                return std::nullopt;
+            }
+            // only copy for fallback
+            auto tok = *cur;
+            consume();
+            return tok;
+        }
+
+        void skip_tag(auto... t) {
+            while (!eos()) {
+                if ((... || expect_tag(t))) {
+                    consume();
+                    continue;
+                }
+                break;
+            }
+        }
+
+        ContextInfo* context() const {
+            return info;
+        }
+
+       private:
         std::optional<StreamError> enter_stream(auto&& fn) {
             try {
+                cur = tokens.begin();
                 fn();
             } catch (StreamError& err) {
                 return err;
             }
             return std::nullopt;
+        }
+    };
+
+    struct Context {
+       private:
+        Stream stream;
+        ContextInfo info;
+
+       public:
+        template <class T>
+        std::optional<StreamError> enter_stream(utils::Sequencer<T>& seq, lexer::FileIndex file, auto&& fn) {
+            stream.info = &info;
+            return stream.enter_stream([&] {
+                const auto scope = stream.set_seq(seq, file);
+                fn(stream);
+            });
         }
     };
 }  // namespace parser
