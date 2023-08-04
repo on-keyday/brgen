@@ -7,7 +7,7 @@
 #include <helper/defer.h>
 #include <code/src_location.h>
 
-namespace parser {
+namespace ast {
 
     struct StreamError {
         lexer::Token err_token;
@@ -190,4 +190,4 @@ namespace parser {
             });
         }
     };
-}  // namespace parser
+}  // namespace ast
