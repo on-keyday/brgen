@@ -1,7 +1,8 @@
 /*license*/
 #pragma once
-
-#include "stream.h"
+#include "../lexer/token.h"
+#include <optional>
+#include <list>
 #include <number/prefix.h>
 
 namespace ast {
@@ -65,5 +66,4 @@ namespace ast {
             : Object(ObjectType::program) {}
     };
 
-    std::unique_ptr<Program> parse(Stream& ctx);
 }  // namespace ast

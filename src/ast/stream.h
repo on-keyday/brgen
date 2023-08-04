@@ -6,15 +6,16 @@
 #include <optional>
 #include <helper/defer.h>
 #include <code/src_location.h>
-
+#include <map>
+#include "ast.h"
 namespace ast {
+
+    struct ContextInfo;
 
     struct StreamError {
         lexer::Token err_token;
         std::string src;
     };
-
-    struct ContextInfo {};
 
     struct Stream {
        private:
@@ -65,7 +66,8 @@ namespace ast {
                 if (token->tag == lexer::Tag::error) {
                     report_error(*token);
                 }
-                cur = tokens.insert(cur, std::move(*token));
+                tokens.push_back(std::move(*token));
+                cur = std::prev(tokens.end());
             }
         }
 
@@ -99,7 +101,17 @@ namespace ast {
                 }
                 tmp.push_back(std::move(*input));
             }
-            tokens.splice(cur, std::move(tmp));
+            if (cur == tokens.begin()) {
+                tokens.splice(cur, std::move(tmp));
+                cur = tokens.begin();
+            }
+            else {
+                auto prev = cur;
+                prev--;
+                tokens.splice(cur,std::move(tmp));
+                prev++;
+                cur=prev;
+            }
         }
 
         // end of stream
@@ -175,6 +187,17 @@ namespace ast {
         }
     };
 
+    struct ContextInfo {
+       private:
+        Stream* s = nullptr;
+        std::map<std::string, std::shared_ptr<Type>> literal_types;
+
+       public:
+        std::shared_ptr<Type> get_literal_type(const auto& key) {
+            literal_types.find();
+        }
+    };
+
     struct Context {
        private:
         Stream stream;
@@ -190,4 +213,6 @@ namespace ast {
             });
         }
     };
+
+    std::unique_ptr<Program> parse(Stream& ctx);
 }  // namespace ast
