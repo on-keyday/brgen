@@ -1,0 +1,22 @@
+UseTab: Never
+BasedOnStyle: Google
+BreakBeforeBraces: Custom
+SortIncludes: false
+ColumnLimit: 0
+IndentWidth: 4
+NamespaceIndentation: All
+AllowShortFunctionsOnASingleLine: Empty
+BraceWrapping:
+    AfterFunction: false
+    BeforeElse:    true
+    AfterControlStatement: false
+    AfterNamespace: false
+    AfterClass: false
+    AfterStruct: false
+    AfterEnum: false
+    AfterUnion: false
+    AfterExternBlock: false
+    BeforeCatch: false
+    BeforeLambdaBody: false
+    BeforeWhile: false
+RequiresExpressionIndentationKind: OuterScope

@@ -1,0 +1,11 @@
+/tool/
+/lib/
+/CMakeFiles/
+/test/
+/ignore/
+.ninja_deps
+.ninja_log
+build.ninja
+CMakeCache.txt
+cmake_install.cmake
+
