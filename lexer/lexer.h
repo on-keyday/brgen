@@ -8,6 +8,7 @@
 #include <comb2/composite/number.h>
 #include <comb2/composite/string.h>
 #include "token.h"
+#include <optional>
 
 namespace lexer {
 
@@ -155,5 +156,23 @@ fmt Varint:
         static_assert(check_lexer());
 
     }  // namespace internal
+
+    template <class T>
+    std::optional<Token> parse_one(utils::Sequencer<T>& seq, std::uint64_t file = 0) {
+        auto ctx = utils::comb2::LexContext<Tag>{};
+        if (internal::parse_one(seq, ctx) != utils::comb2::Status::match) {
+            return std::nullopt;
+        }
+        Token tok;
+        tok.tag = ctx.str_tag;
+        tok.loc.file = file;
+        tok.loc.pos = ctx.str_pos;
+        seq.rptr = ctx.str_pos.begin;
+        tok.token.reserve(ctx.str_pos.len());
+        for (; seq.rptr < ctx.str_pos.end; seq.rptr++) {
+            tok.token.push_back(seq.current());
+        }
+        return tok;
+    }
 
 }  // namespace lexer
