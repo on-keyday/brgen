@@ -15,7 +15,7 @@ namespace lexer {
         namespace cps = utils::comb2::composite;
         using namespace utils::comb2::ops;
         constexpr auto space = cps::tab | cps::space;
-        constexpr auto spaces = str(Tag::space, *(cps::tab | cps::space));
+        constexpr auto spaces = str(Tag::space, ~(cps::tab | cps::space));
         constexpr auto line = str(Tag::line, cps::eol);
         constexpr auto indent = str(Tag::indent, bol & ~(cps::tab | cps::space) & not_(cps::eol));
         constexpr auto comment = str(Tag::comment, cps::shell_comment);
@@ -33,8 +33,7 @@ namespace lexer {
         }
 
         constexpr auto ident = str(Tag::ident, ~(not_(method_proxy(puncuts) |
-                                                      space | line |
-                                                      cps::decimal_number) &
+                                                      space | line) &
                                                  uany));
 
         constexpr auto keywords = keyword("fmt", "if", "else", "match", "fn");
@@ -52,7 +51,7 @@ namespace lexer {
             struct L {
                 decltype(puncuts) puncuts;
             } l{puncuts};
-            return [l](auto&& seq, auto&& ctx) {
+            return [l, lex](auto&& seq, auto&& ctx) {
                 return lex(seq, ctx, l);
             };
         }
@@ -105,9 +104,50 @@ fmt Varint:
         constexpr auto check_lexer() {
             auto seq = utils::make_ref_seq(test_text);
             auto ctx = utils::comb2::test::TestContext<Tag>{};
-
+            Tag m[] = {
+                Tag::line,
+                Tag::keyword,
+                Tag::space,
+                Tag::ident,
+                Tag::puncut,
+                Tag::space,
+                Tag::line,
+                Tag::indent,
+                Tag::ident,
+                Tag::space,
+                Tag::puncut,
+                Tag::ident,
+                Tag::line,
+                Tag::indent,
+                Tag::keyword,
+                Tag::space,
+                Tag::ident,
+                Tag::puncut,
+                Tag::line,
+                Tag::indent,
+                Tag::puncut,
+                Tag::ident,
+                Tag::line,
+                Tag::indent,
+                Tag::keyword,
+                Tag::puncut,
+                Tag::line,
+                Tag::indent,
+                Tag::puncut,
+                Tag::ident,
+                Tag::line,
+                Tag::space,
+                Tag::line,
+            };
+            size_t i = 0;
+            auto len = sizeof(m) / sizeof(m[0]);
             while (parse_one(seq, ctx) == utils::comb2::Status::match) {
-                auto t = ctx.str_tag;
+                if (i < len) {
+                    if (m[i] != ctx.str_tag) {
+                        utils::comb2::test::error_if_constexpr(i, m[i], ctx.str_tag);
+                    }
+                    i++;
+                }
             }
             return seq.eos();
         }

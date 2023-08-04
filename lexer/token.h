@@ -12,15 +12,15 @@ namespace lexer {
     };
 
     enum class Tag {
-        keyword,
-        puncut,
-        ident,
-        str_literal,
-        int_literal,
         indent,
-        comment,
         space,
         line,
+        puncut,
+        int_literal,
+        str_literal,
+        keyword,
+        ident,
+        comment,
         unknwon,
     };
 
