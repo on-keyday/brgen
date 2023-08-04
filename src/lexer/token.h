@@ -6,9 +6,13 @@
 namespace lexer {
     using Pos = utils::comb2::Pos;
 
+    using FileIndex = std::uint64_t;
+
+    constexpr FileIndex builtin = 0;
+
     struct Loc {
         Pos pos;
-        std::uint64_t file = 0;  // file index
+        FileIndex file = 0;  // file index
     };
 
     enum class Tag {
@@ -21,6 +25,7 @@ namespace lexer {
         keyword,
         ident,
         comment,
+        error,
         unknwon,
     };
 

@@ -116,9 +116,25 @@ namespace lexer {
     }  // namespace internal
 
     template <class T>
-    std::optional<Token> parse_one(utils::Sequencer<T>& seq, std::uint64_t file = 0) {
-        auto ctx = utils::comb2::LexContext<Tag>{};
-        if (internal::parse_one(seq, ctx) != utils::comb2::Status::match) {
+    std::optional<Token> parse_one(utils::Sequencer<T>& seq, std::uint64_t file) {
+        auto ctx = utils::comb2::LexContext<Tag, std::string>{};
+        if (auto res = internal::parse_one(seq, ctx); res != utils::comb2::Status::match) {
+            if (res == utils::comb2::Status::fatal) {
+                Token tok;
+                tok.tag = Tag::error;
+                tok.loc.file = file;
+                tok.loc.pos = {seq.rptr, seq.rptr + 1};
+                tok.token = std::move(ctx.errbuf);
+                return tok;
+            }
+            if (!seq.eos()) {
+                Token tok;
+                tok.tag = Tag::error;
+                tok.loc.file = file;
+                tok.loc.pos = {seq.rptr, seq.rptr + 1};
+                tok.token = "expect eof but not";
+                return tok;
+            }
             return std::nullopt;
         }
         Token tok;
