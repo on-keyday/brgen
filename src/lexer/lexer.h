@@ -25,21 +25,21 @@ namespace lexer {
         constexpr auto int_literal = str(Tag::int_literal, cps::hex_integer | cps::oct_integer | cps::bin_integer | cps::dec_integer);
         constexpr auto str_literal = str(Tag::str_literal, cps::c_str | cps::char_str);
 
-        constexpr auto puncut(auto&&... args) {
-            return str(Tag::puncut, (... | lit(args)));
+        constexpr auto punct(auto&&... args) {
+            return str(Tag::punct, (... | lit(args)));
         }
 
         constexpr auto keyword(auto&&... args) {
-            auto p = method_proxy(puncuts);
+            auto p = method_proxy(puncts);
             return str(Tag::keyword, (... | lit(args)) & peek(space | line | p));
         }
 
-        constexpr auto ident = str(Tag::ident, ~(not_(method_proxy(puncuts) |
+        constexpr auto ident = str(Tag::ident, ~(not_(method_proxy(puncts) |
                                                       space | line) &
                                                  uany));
 
-        constexpr auto keywords = keyword("fmt", "if", "else", "match", "fn");
-        constexpr auto puncuts = puncut(
+        constexpr auto keywords = keyword("fmt", "if", "else", "match", "fn", "for");
+        constexpr auto puncts = punct(
             "#", "\"", "\'",  // added but maybe not used
             ":", "(", ")", "[", "]",
             "=>", "=",
@@ -48,11 +48,11 @@ namespace lexer {
             "&", "|");
 
         constexpr auto one_token_lexer() {
-            auto p = method_proxy(puncuts);
+            auto p = method_proxy(puncts);
             auto lex = indent | spaces | line | comment | int_literal | str_literal | p | keywords | ident;
             struct L {
-                decltype(puncuts) puncuts;
-            } l{puncuts};
+                decltype(puncts) puncts;
+            } l{puncts};
             return [l, lex](auto&& seq, auto&& ctx) {
                 return lex(seq, ctx, l);
             };
@@ -68,31 +68,31 @@ namespace lexer {
                 Tag::keyword,
                 Tag::space,
                 Tag::ident,
-                Tag::puncut,
+                Tag::punct,
                 Tag::space,
                 Tag::line,
                 Tag::indent,
                 Tag::ident,
                 Tag::space,
-                Tag::puncut,
+                Tag::punct,
                 Tag::ident,
                 Tag::line,
                 Tag::indent,
                 Tag::keyword,
                 Tag::space,
                 Tag::ident,
-                Tag::puncut,
+                Tag::punct,
                 Tag::line,
                 Tag::indent,
-                Tag::puncut,
+                Tag::punct,
                 Tag::ident,
                 Tag::line,
                 Tag::indent,
                 Tag::keyword,
-                Tag::puncut,
+                Tag::punct,
                 Tag::line,
                 Tag::indent,
-                Tag::puncut,
+                Tag::punct,
                 Tag::ident,
                 Tag::line,
                 Tag::space,
