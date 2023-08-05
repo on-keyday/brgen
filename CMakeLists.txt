@@ -3,9 +3,16 @@ cmake_minimum_required(VERSION 3.26.4)
 project(binarugen)
 
 set(CMAKE_CXX_STANDARD 20)
-include_directories("C:/workspace/utils_backup/src/include")
-link_directories("C:/workspace/utils_backup/lib")
+include_directories("$ENV{UTILS_DIR}/src/include")
+link_directories("$ENV{UTILS_DIR}/lib")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "test")
 add_executable(lexer_test "src/lexer/test.cpp")
-add_executable(ast_test "src/ast/test.cpp")
+add_executable(ast_test "src/ast/test.cpp"
+"src/ast/ast.cpp")
+target_link_libraries(ast_test utils)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "tool")
+
+add_custom_command(
+TARGET ast_test POST_BUILD
+COMMAND ${CMAKE_COMMAND} -E copy "$ENV{UTILS_DIR}/lib/libutils.dll" "test/libutils.dll"
+)

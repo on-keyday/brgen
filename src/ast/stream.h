@@ -52,7 +52,7 @@ namespace ast {
 
         void report_error(lexer::Token& token) {
             auto text = dump(seq_ptr, token.loc.pos);
-            throw StreamError{.err_token = std::move(token), std::move(text)};
+            throw StreamError{std::move(token), std::move(text)};
         }
 
         Stream() = default;
@@ -74,7 +74,7 @@ namespace ast {
 
        public:
         template <class T>
-        [[nodsicard]] auto set_seq(utils::Sequencer<T>& seq, std::uint64_t file) {
+        [[nodiscard]] auto set_seq(utils::Sequencer<T>& seq, std::uint64_t file) {
             auto old_parse = parse;
             auto old_dump = dump;
             auto old_ptr = seq_ptr;
