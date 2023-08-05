@@ -16,8 +16,7 @@ std::optional<std::unique_ptr<ast::Program>> test_file(std::string_view name) {
         prog = ast::parse(s);
     });
     if (err != std::nullopt) {
-        utils::wrap::cerr_wrap() << "error:" << err->err_token.token << "\n"
-                                 << err->src << "\n";
+        utils::wrap::cerr_wrap() << err->to_string(name);
         return std::nullopt;
     }
     return prog;

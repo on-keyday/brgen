@@ -15,7 +15,19 @@ namespace ast {
 
     struct StreamError {
         lexer::Token err_token;
+        utils::code::SrcLoc loc;
         std::string src;
+
+        std::string to_string(std::string_view file) {
+            std::string buf;
+            auto num = [](auto v) {
+                return utils::number::to_string<std::string>(v);
+            };
+            utils::strutil::appends(buf, "error: ", err_token.token, "\n",
+                                    file, ":", num(loc.line + 1), ":", num(loc.pos + 1), ":\n",
+                                    src);
+            return buf;
+        }
     };
 
     struct Stream {
@@ -27,7 +39,7 @@ namespace ast {
         std::uint64_t cur_file = 0;
         ContextInfo* info = nullptr;
         std::optional<lexer::Token> (*parse)(void* seq, std::uint64_t file) = nullptr;
-        std::string (*dump)(void* seq, lexer::Pos pos) = nullptr;
+        std::pair<std::string, utils::code::SrcLoc> (*dump)(void* seq, lexer::Pos pos) = nullptr;
 
         template <class T>
         static std::optional<lexer::Token> do_parse(void* ptr, std::uint64_t file) {
@@ -35,12 +47,12 @@ namespace ast {
         }
 
         template <class T>
-        static std::string dump_source(void* ptr, lexer::Pos pos) {
+        static std::pair<std::string, utils::code::SrcLoc> dump_source(void* ptr, lexer::Pos pos) {
             auto& seq = *static_cast<utils::Sequencer<T>*>(ptr);
             seq.rptr = pos.begin;
             std::string out;
-            utils::code::write_src_loc(out, seq, pos.len());
-            return out;
+            auto loc = utils::code::write_src_loc(out, seq, pos.len());
+            return {out, loc};
         }
 
         std::optional<lexer::Token> call_parse() {
@@ -52,7 +64,7 @@ namespace ast {
 
         [[noreturn]] void report_error(lexer::Token& token) {
             auto text = dump(seq_ptr, token.loc.pos);
-            throw StreamError{std::move(token), std::move(text)};
+            throw StreamError{std::move(token), text.second, std::move(text.first)};
         }
 
         Stream() = default;
@@ -73,7 +85,7 @@ namespace ast {
         }
 
        public:
-        [[noreturn]] void report_error(std::string_view data) {
+        [[noreturn]] void report_error(auto&&... data) {
             lexer::Token token;
             token.tag = lexer::Tag::error;
             if (eos()) {
@@ -84,7 +96,7 @@ namespace ast {
             else {
                 token.loc = cur->loc;
             }
-            utils::strutil::appends(token.token, "parser error:", data);
+            utils::strutil::appends(token.token, "parser error:", data...);
             report_error(token);
         }
 

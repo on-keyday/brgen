@@ -4,6 +4,7 @@
 #include <optional>
 #include <list>
 #include <number/prefix.h>
+#include "expr_layer.h"
 
 namespace ast {
     enum class ObjectType {
@@ -11,6 +12,9 @@ namespace ast {
         expr = 0x010000,
         int_literal,
         binary,
+        unary,
+        cond,
+        ident,
     };
 
     struct Object {
@@ -20,6 +24,8 @@ namespace ast {
        protected:
         constexpr Object(ObjectType t)
             : type(t) {}
+
+        virtual ~Object() {}
     };
 
     struct Type : Object {
@@ -39,6 +45,21 @@ namespace ast {
             : Object(t) {}
     };
 
+    struct Ident : Expr {
+        std::string ident;
+
+        Ident()
+            : Expr(ObjectType::ident) {}
+    };
+
+    struct Unary : Expr {
+        std::unique_ptr<Expr> target;
+        UnaryOp op;
+
+        constexpr Unary()
+            : Expr(ObjectType::unary) {}
+    };
+
     struct Binary : Expr {
         std::unique_ptr<Expr> left;
         std::unique_ptr<Expr> right;
@@ -51,7 +72,11 @@ namespace ast {
     struct Cond : Expr {
         std::unique_ptr<Expr> then;
         std::unique_ptr<Expr> cond;
+        lexer::Loc els_loc;
         std::unique_ptr<Expr> els;
+
+        constexpr Cond()
+            : Expr(ObjectType::cond) {}
     };
 
     struct Literal : Expr {
