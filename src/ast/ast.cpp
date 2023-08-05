@@ -8,8 +8,15 @@ namespace ast {
 
     std::unique_ptr<Object> parse_one(Stream& s);
     std::unique_ptr<Expr> parse_expr(Stream& s);
+    // :\\r\\n
+    void must_consume_indent_sign(Stream& s) {
+        s.skip_white();
+        s.must_consume_token(":");
+        s.skip_space();
+        s.must_consume_token(lexer::Tag::line);
+    }
 
-    std::unique_ptr<Block> parse_indent_block(Stream& s) {
+    std::unique_ptr<IndentScope> parse_indent_block(Stream& s) {
         auto base = s.must_consume_token(lexer::Tag::indent);
         auto c = s.context()->new_indent(base.token.size());
         auto scope = std::make_unique<IndentScope>(base.loc);
@@ -25,15 +32,12 @@ namespace ast {
         return scope;
     }
 
-    std::unique_ptr<Expr> parse_if(Stream& s) {
+    std::unique_ptr<If> parse_if(Stream& s) {
         auto token = s.must_consume_token("if");
         s.skip_white();
         auto if_ = std::make_unique<If>(token.loc);
         if_->cond = parse_expr(s);
-        s.skip_white();
-        s.must_consume_token(":");
-        s.skip_space();
-        s.must_consume_token(lexer::Tag::line);
+        must_consume_indent_sign(s);
         if_->block = parse_indent_block(s);
         auto cur = s.context()->current_indent();
         auto detect_end = [&] {
@@ -69,10 +73,7 @@ namespace ast {
         if (!s.consume_token("else")) {
             return if_;  // nothing to do
         }
-        s.skip_white();
-        s.must_consume_token(":");
-        s.skip_space();
-        s.must_consume_token(lexer::Tag::line);
+        must_consume_indent_sign(s);
         elifs->els = parse_indent_block(s);
         if (cur && !detect_end()) {
             s.report_error("expect less indent but not");
@@ -89,6 +90,28 @@ namespace ast {
         }
         auto token = s.must_consume_token(lexer::Tag::ident);
         return std::make_unique<Ident>(token.loc, std::move(token.token));
+    }
+
+    std::unique_ptr<Call> parse_call(std::unique_ptr<Expr>& p, Stream& s) {
+        auto token = s.must_consume_token("(");
+        auto call = std::make_unique<Call>(token.loc, std::move(p));
+        s.skip_white();
+        token = s.must_consume_token(")");
+        call->end_loc = token.loc;
+        return call;
+    }
+
+    std::unique_ptr<Expr> parse_post(Stream& s) {
+        auto p = parse_prim(s);
+        for (;;) {
+            s.skip_space();
+            if (s.expect_token("(")) {
+                p = parse_call(p, s);
+                continue;
+            }
+            break;
+        }
+        return p;
     }
 
     std::optional<lexer::Token> consume_op(Stream& s, size_t& i, const char* const* const ops) {
@@ -112,9 +135,10 @@ namespace ast {
             }
             break;
         }
-        auto target = parse_prim(s);  // return non-nullptr or throw error
+        auto target = parse_post(s);  // return non-nullptr or throw error
         while (stack.size()) {
             auto ptr = std::move(stack.back());
+            stack.pop_back();
             ptr->target = std::move(target);
             target = std::move(ptr);
         }
@@ -240,10 +264,21 @@ namespace ast {
         return expr;
     }
 
+    std::unique_ptr<For> parse_for(Stream& s) {
+        auto token = s.must_consume_token("for");
+        auto for_ = std::make_unique<For>(token.loc);
+        must_consume_indent_sign(s);
+        for_->block = parse_indent_block(s);
+        return for_;
+    }
+
     std::unique_ptr<Object> parse_one(Stream& s) {
+        if (s.expect_token("for")) {
+            return parse_for(s);
+        }
         auto obj = parse_expr(s);
         s.skip_space();
-        if (!s.eos() && !s.expect_token(lexer::Tag::indent)) {
+        if (!s.eos() && s.expect_token(lexer::Tag::line)) {
             s.must_consume_token(lexer::Tag::line);
             s.skip_line();
         }

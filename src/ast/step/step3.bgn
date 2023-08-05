@@ -6,3 +6,5 @@ else:
     3
 else: 
     4
+
+value = - 10

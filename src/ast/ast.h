@@ -70,8 +70,11 @@ namespace ast {
         unary,
         cond,
         ident,
+        call,
         if_,
         indent_scope,
+        stmt = 0x020000,
+        for_,
     };
 
     struct Object {
@@ -105,16 +108,36 @@ namespace ast {
             : Object(l, t) {}
     };
 
-    struct Block : Expr {
+    struct Call : Expr {
+        std::unique_ptr<Expr> callee;
+        lexer::Loc end_loc;
+        Call(lexer::Loc l, std::unique_ptr<Expr>&& callee)
+            : Expr(l, ObjectType::call), callee(std::move(callee)) {}
+
+        void debug(Debug& buf) const override {
+            buf.object([&](auto&& field) {
+                field("callee", [&](Debug& d) { callee->debug(d); });
+                field("arguments", [&](Debug& d) { d.null(); });
+            });
+        }
+    };
+
+    struct ExprBlock : Expr {
        protected:
-        constexpr Block(lexer::Loc l, ObjectType t)
+        constexpr ExprBlock(lexer::Loc l, ObjectType t)
             : Expr(l, t) {}
     };
 
-    struct IndentScope : Block {
+    struct Stmt : Object {
+       protected:
+        constexpr Stmt(lexer::Loc l, ObjectType t)
+            : Object(l, t) {}
+    };
+
+    struct IndentScope : Stmt {
         std::vector<std::unique_ptr<Object>> elements;
         IndentScope(lexer::Loc l)
-            : Block(l, ObjectType::indent_scope) {}
+            : Stmt(l, ObjectType::indent_scope) {}
 
         void debug(Debug& buf) const override {
             buf.array([&](auto&& field) {
@@ -125,13 +148,26 @@ namespace ast {
         }
     };
 
-    struct If : Block {
+    struct For : Stmt {
+        std::unique_ptr<IndentScope> block;
+
+        For(lexer::Loc l)
+            : Stmt(l, ObjectType::for_) {}
+
+        void debug(Debug& buf) const override {
+            buf.object([&](auto&& field) {
+                field("block", [&](Debug& d) { block->debug(d); });
+            });
+        }
+    };
+
+    struct If : ExprBlock {
         std::unique_ptr<Expr> cond;
-        std::unique_ptr<Block> block;
-        std::unique_ptr<Block> els;
+        std::unique_ptr<IndentScope> block;
+        std::unique_ptr<Object> els;
 
         constexpr If(lexer::Loc l)
-            : Block(l, ObjectType::if_) {}
+            : ExprBlock(l, ObjectType::if_) {}
 
         void debug(Debug& buf) const override {
             buf.object([&](auto&& field) {
