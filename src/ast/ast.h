@@ -8,7 +8,9 @@
 namespace ast {
     enum class ObjectType {
         program,
+        expr = 0x010000,
         int_literal,
+        binary,
     };
 
     struct Object {
@@ -35,6 +37,21 @@ namespace ast {
        protected:
         constexpr Expr(ObjectType t)
             : Object(t) {}
+    };
+
+    struct Binary : Expr {
+        std::unique_ptr<Expr> left;
+        std::unique_ptr<Expr> right;
+        BinaryOp op;
+
+        constexpr Binary()
+            : Expr(ObjectType::binary) {}
+    };
+
+    struct Cond : Expr {
+        std::unique_ptr<Expr> then;
+        std::unique_ptr<Expr> cond;
+        std::unique_ptr<Expr> els;
     };
 
     struct Literal : Expr {

@@ -50,7 +50,7 @@ namespace ast {
             return std::nullopt;
         }
 
-        void report_error(lexer::Token& token) {
+        [[noreturn]] void report_error(lexer::Token& token) {
             auto text = dump(seq_ptr, token.loc.pos);
             throw StreamError{std::move(token), std::move(text)};
         }
@@ -73,6 +73,21 @@ namespace ast {
         }
 
        public:
+        [[noreturn]] void report_error(std::string_view data) {
+            lexer::Token token;
+            token.tag = lexer::Tag::error;
+            if (eos()) {
+                auto copy = cur;
+                copy--;
+                token.loc.pos = {copy->loc.pos.end, copy->loc.pos.end + 1};
+            }
+            else {
+                token.loc = cur->loc;
+            }
+            utils::strutil::appends(token.token, "parser error:", data);
+            report_error(token);
+        }
+
         template <class T>
         [[nodiscard]] auto set_seq(utils::Sequencer<T>& seq, std::uint64_t file) {
             auto old_parse = parse;
@@ -113,6 +128,29 @@ namespace ast {
                 prev++;
                 cur = prev;
             }
+        }
+
+        auto fallback() {
+            maybe_parse();
+            auto ptr = cur;
+            iterator prev;
+            bool was_begin = ptr == tokens.begin();
+            bool was_end = ptr == tokens.end();
+            if (!was_begin && was_end) {
+                prev = std::prev(ptr);
+            }
+            return utils::helper::defer([=, this] {
+                if (was_begin) {
+                    cur = tokens.begin();
+                }
+                else if (was_end) {
+                    auto cp = prev;
+                    cur = ++cp;
+                }
+                else {
+                    cur = ptr;
+                }
+            });
         }
 
         // end of stream
@@ -162,24 +200,30 @@ namespace ast {
             return tok;
         }
 
+       private:
+        [[noreturn]] void token_expect_error(auto&& expected, auto&& found) {
+            lexer::Token token;
+            token.tag = lexer::Tag::error;
+            utils::strutil::appends(token.token, "expect token ", expected, " but found ");
+            if (eos()) {
+                utils::strutil::append(token.token, "<EOF>");
+                auto copy = cur;
+                copy--;
+                token.loc.pos = {copy->loc.pos.end, copy->loc.pos.end + 1};
+                token.loc.file = cur_file;
+            }
+            else {
+                utils::strutil::append(token.token, found(cur));
+                token.loc = cur->loc;
+            }
+            report_error(token);
+        }
+
+       public:
         lexer::Token must_consume_token(std ::string_view view) {
             auto f = consume_token(view);
             if (!f) {
-                lexer::Token token;
-                token.tag = lexer::Tag::error;
-                utils::strutil::appends(token.token, "expect token ", view, " but found ");
-                if (eos()) {
-                    utils::strutil::append(token.token, "<EOF>");
-                    auto copy = cur;
-                    copy--;
-                    token.loc.pos = {copy->loc.pos.end, copy->loc.pos.end + 1};
-                    token.loc.file = cur_file;
-                }
-                else {
-                    utils::strutil::append(token.token, cur->token);
-                    token.loc = cur->loc;
-                }
-                report_error(token);
+                token_expect_error(view, [](auto& cur) { return cur->token; });
             }
             return *f;
         }
@@ -187,21 +231,7 @@ namespace ast {
         lexer::Token must_consume_token(lexer::Tag tag) {
             auto f = consume_token(tag);
             if (!f) {
-                lexer::Token token;
-                token.tag = lexer::Tag::error;
-                utils::strutil::appends(token.token, "expect token ", lexer::tag_str[int(tag)], " but found ");
-                if (eos()) {
-                    utils::strutil::append(token.token, "<EOF>");
-                    auto copy = cur;
-                    copy--;
-                    token.loc.pos = {copy->loc.pos.end, copy->loc.pos.end + 1};
-                    token.loc.file = cur_file;
-                }
-                else {
-                    utils::strutil::append(token.token, lexer::tag_str[int(cur->tag)]);
-                    token.loc = cur->loc;
-                }
-                report_error(token);
+                token_expect_error(lexer::tag_str[int(tag)], [](auto& cur) { return lexer::tag_str[int(cur->tag)]; });
             }
             return *f;
         }
