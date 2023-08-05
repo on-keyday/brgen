@@ -28,6 +28,9 @@ std::optional<std::unique_ptr<ast::Program>> test_file(std::string_view file_nam
         return std::nullopt;
     }
     d.cancel();
+    ast::Debug debug;
+    prog->debug(debug);
+    cerr << debug.buf + "\n";
     return prog;
 }
 

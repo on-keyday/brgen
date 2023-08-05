@@ -73,7 +73,7 @@ namespace ast {
         s.must_consume_token(":");
         s.skip_space();
         s.must_consume_token(lexer::Tag::line);
-        elifs->block = parse_indent_block(s);
+        elifs->els = parse_indent_block(s);
         if (cur && !detect_end()) {
             s.report_error("expect less indent but not");
         }

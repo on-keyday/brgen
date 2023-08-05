@@ -21,11 +21,11 @@ namespace ast {
         void object(auto&& fn) {
             append(buf, "{");
             bool comma = false;
-            fn([](std::string_view name, auto&& value) {
+            fn([&](std::string_view name, auto&& value) {
                 if (comma) {
                     append(buf, ",");
                 }
-                append(buf, "\"", name, "\": ");
+                appends(buf, "\"", name, "\": ");
                 value(*this);
                 comma = true;
             });
@@ -137,7 +137,7 @@ namespace ast {
             buf.object([&](auto&& field) {
                 field("cond", [&](Debug& d) { cond->debug(d); });
                 field("block", [&](Debug& d) { block->debug(d); });
-                field("else", [&](Debug& d) { els->debug(d); });
+                field("else", [&](Debug& d) { els ? els->debug(d) : d.null(); });
             });
         }
     };
@@ -164,8 +164,8 @@ namespace ast {
 
         void debug(Debug& buf) const override {
             buf.object([&](auto&& field) {
-                field("target", [&](Debug& d) { target->debug(d); });
                 field("op", [&](Debug& d) { d.string(unary_op[int(op)]); });
+                field("target", [&](Debug& d) { target->debug(d); });
             });
         }
     };
@@ -180,10 +180,10 @@ namespace ast {
 
         void debug(Debug& buf) const override {
             buf.object([&](auto&& field) {
-                field("left", [&](Debug& d) { then->debug(d); });
-                field("right", [&](Debug& d) { cond->debug(d); });
                 auto c = bin_op_str(op);
                 field("op", [&](Debug& d) { c ? d.string(*c) : d.null(); });
+                field("left", [&](Debug& d) { left->debug(d); });
+                field("right", [&](Debug& d) { right->debug(d); });
             });
         }
     };
@@ -199,9 +199,9 @@ namespace ast {
 
         void debug(Debug& buf) const override {
             buf.object([&](auto&& field) {
-                field("then", [&](Debug& d) { then->debug(d); });
                 field("cond", [&](Debug& d) { cond->debug(d); });
-                field("els", [&](Debug& d) { els->debug(d); });
+                field("then", [&](Debug& d) { then->debug(d); });
+                field("else", [&](Debug& d) { els->debug(d); });
             });
         }
     };
@@ -227,8 +227,8 @@ namespace ast {
         void debug(Debug& buf) const override {
             buf.object([&](auto&& field) {
                 auto p = parse_as<std::int64_t>();
-                field("raw", [&](Debug& d) { d.string(raw) });
-                field("num", [&](Debug& d) { p ? d.string(*p) : d.null(); });
+                field("raw", [&](Debug& d) { d.string(raw); });
+                field("num", [&](Debug& d) { p ? d.number(*p) : d.null(); });
             });
         }
 
