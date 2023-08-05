@@ -4,6 +4,7 @@
 #include <wrap/cout.h>
 #include <future>
 #include <atomic>
+#include <fstream>
 std::atomic_uint failed;
 
 auto& cerr = utils::wrap::cerr_wrap();
@@ -34,16 +35,31 @@ std::optional<std::unique_ptr<ast::Program>> test_file(std::string_view file_nam
     return prog;
 }
 
-void test() {
+std::string test() {
     std::vector<std::future<std::optional<std::unique_ptr<ast::Program>>>> f;
     f.push_back(std::async(test_file, "./src/ast/step/step1.bgn"));
     f.push_back(std::async(test_file, "./src/ast/step/step2.bgn"));
     f.push_back(std::async(test_file, "./src/ast/step/step3.bgn"));
+    ast::Debug d;
+    d.array([&](auto&& field) {
+        for (auto& out : f) {
+            auto o = out.get();
+            if (!o) {
+                break;
+            }
+            field([&](ast::Debug& d) {
+                o->get()->debug(d);
+            });
+        }
+    });
+    return d.buf;
 }
 
 int main() {
-    test();
+    auto result = test();
     if (failed == 0) {
+        std::ofstream ofs("./test/ast_test_result.json");
+        ofs << result;
         cerr << "PASS";
     }
     else {
