@@ -8,16 +8,14 @@ namespace ast {
         bit_not,
         increment,
         decrement,
-        plus_sign,
         minus_sign,
         deref,
         address,
-        size,
-        align,
         post_increment,
         post_decrement,
     };
-    constexpr const char* unary_op[] = {"!", "~", "++", "--", "+", "-", "*", "&", "sizeof", "_Alignof", nullptr};
+
+    constexpr const char* unary_op[] = {"!", "~", "++", "--", "-", "*", "&", nullptr};
     enum class BinaryOp {
         // layer 1
         mul,
@@ -80,9 +78,9 @@ namespace ast {
                                           nullptr};
     constexpr const char* bin_layer7[] = {",", nullptr};
 
-    constexpr auto bin_cond_layer = 10;
-    constexpr auto bin_assign_layer = 11;
-    constexpr auto bin_comma_layer = 12;
+    constexpr auto bin_cond_layer = 5;
+    constexpr auto bin_assign_layer = 6;
+    constexpr auto bin_comma_layer = 7;
 
     constexpr const char* const* bin_layers[] = {
         bin_layer0,
@@ -104,6 +102,21 @@ namespace ast {
             while (layer[j]) {
                 if (layer[j] == l) {
                     return BinaryOp(i);
+                }
+                j++;
+                i++;
+            }
+        }
+        return std::nullopt;
+    }
+
+    constexpr std::optional<const char*> bin_op_str(BinaryOp op) {
+        size_t i = 0;
+        for (auto& layer : bin_layers) {
+            size_t j = 0;
+            while (layer[j]) {
+                if (BinaryOp(i) == op) {
+                    return layer[j];
                 }
                 j++;
                 i++;

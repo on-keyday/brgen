@@ -24,7 +24,7 @@ std::optional<std::unique_ptr<ast::Program>> test_file(std::string_view file_nam
         prog = ast::parse(s);
     });
     if (err != std::nullopt) {
-        cerr << err->to_string(file_name);
+        cerr << err->to_string(file_name) + "\n";
         return std::nullopt;
     }
     d.cancel();
@@ -35,6 +35,7 @@ void test() {
     std::vector<std::future<std::optional<std::unique_ptr<ast::Program>>>> f;
     f.push_back(std::async(test_file, "./src/ast/step/step1.bgn"));
     f.push_back(std::async(test_file, "./src/ast/step/step2.bgn"));
+    f.push_back(std::async(test_file, "./src/ast/step/step3.bgn"));
 }
 
 int main() {

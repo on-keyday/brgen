@@ -1,0 +1,8 @@
+value = if 1 if 0 else if 1:
+    30
+else:
+    40
+:
+    3
+else: 
+    4

@@ -8,7 +8,7 @@
 #include <code/src_location.h>
 #include <map>
 #include "ast.h"
-#include <strutil/append.h>
+
 namespace ast {
 
     struct ContextInfo;
@@ -20,12 +20,10 @@ namespace ast {
 
         std::string to_string(std::string_view file) {
             std::string buf;
-            auto num = [](auto v) {
-                return utils::number::to_string<std::string>(v);
-            };
-            utils::strutil::appends(buf, "error: ", err_token.token, "\n",
-                                    file, ":", num(loc.line + 1), ":", num(loc.pos + 1), ":\n",
-                                    src);
+
+            appends(buf, "error: ", err_token.token, "\n",
+                    file, ":", nums(loc.line + 1), ":", nums(loc.pos + 1), ":\n",
+                    src);
             return buf;
         }
     };
@@ -96,7 +94,7 @@ namespace ast {
             else {
                 token.loc = cur->loc;
             }
-            utils::strutil::appends(token.token, "parser error:", data...);
+            appends(token.token, "parser error:", data...);
             report_error(token);
         }
 
@@ -178,7 +176,7 @@ namespace ast {
             cur++;
         }
 
-        bool expect_tag(lexer::Tag tag) {
+        bool expect_token(lexer::Tag tag) {
             if (eos()) {
                 return false;
             }
@@ -192,40 +190,52 @@ namespace ast {
             return cur->token == s;
         }
 
-        std::optional<lexer::Token> consume_token(std::string_view s) {
+        std::optional<lexer::Token> peek_token(std::string_view s) {
             if (!expect_token(s)) {
                 return std::nullopt;
             }
             // only copy for fallback
-            auto tok = *cur;
-            consume();
-            return tok;
+            return *cur;
         }
 
-        std::optional<lexer::Token> consume_token(lexer::Tag t) {
-            if (!expect_tag(t)) {
+        std::optional<lexer::Token> peek_token(lexer::Tag t) {
+            if (!expect_token(t)) {
                 return std::nullopt;
             }
             // only copy for fallback
-            auto tok = *cur;
-            consume();
-            return tok;
+            return *cur;
+        }
+
+        std::optional<lexer::Token> consume_token(std::string_view s) {
+            if (auto token = peek_token(s)) {
+                consume();
+                return token;
+            }
+            return std::nullopt;
+        }
+
+        std::optional<lexer::Token> consume_token(lexer::Tag t) {
+            if (auto token = peek_token(t)) {
+                consume();
+                return token;
+            }
+            return std::nullopt;
         }
 
        private:
         [[noreturn]] void token_expect_error(auto&& expected, auto&& found) {
             lexer::Token token;
             token.tag = lexer::Tag::error;
-            utils::strutil::appends(token.token, "expect token ", expected, " but found ");
+            appends(token.token, "expect token ", expected, " but found ");
             if (eos()) {
-                utils::strutil::append(token.token, "<EOF>");
+                append(token.token, "<EOF>");
                 auto copy = cur;
                 copy--;
                 token.loc.pos = {copy->loc.pos.end, copy->loc.pos.end + 1};
                 token.loc.file = cur_file;
             }
             else {
-                utils::strutil::append(token.token, found(cur));
+                append(token.token, found(cur));
                 token.loc = cur->loc;
             }
             report_error(token);
@@ -250,7 +260,7 @@ namespace ast {
 
         void skip_tag(auto... t) {
             while (!eos()) {
-                if ((... || expect_tag(t))) {
+                if ((... || expect_token(t))) {
                     consume();
                     continue;
                 }
@@ -293,6 +303,7 @@ namespace ast {
        private:
         Stream* s = nullptr;
         std::map<std::string, std::shared_ptr<Type>> literal_types;
+        size_t indent = 0;
 
        public:
         std::shared_ptr<Type> get_literal_type(const auto& key) {
@@ -301,6 +312,20 @@ namespace ast {
                 return *found;
             }
             return nullptr;
+        }
+
+        auto new_indent(size_t new_) {
+            if (indent >= new_) {
+                s->report_error("expect largeer indent but not");
+            }
+            auto old = std::exchange(indent, std::move(new_));
+            return utils::helper::defer([&, old] {
+                indent = std::move(old);
+            });
+        }
+
+        size_t current_indent() {
+            return indent;
         }
     };
 
