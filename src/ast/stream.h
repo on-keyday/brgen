@@ -8,6 +8,7 @@
 #include <code/src_location.h>
 #include <map>
 #include "ast.h"
+#include <strutil/append.h>
 namespace ast {
 
     struct ContextInfo;
@@ -108,9 +109,9 @@ namespace ast {
             else {
                 auto prev = cur;
                 prev--;
-                tokens.splice(cur,std::move(tmp));
+                tokens.splice(cur, std::move(tmp));
                 prev++;
-                cur=prev;
+                cur = prev;
             }
         }
 
@@ -161,6 +162,50 @@ namespace ast {
             return tok;
         }
 
+        lexer::Token must_consume_token(std ::string_view view) {
+            auto f = consume_token(view);
+            if (!f) {
+                lexer::Token token;
+                token.tag = lexer::Tag::error;
+                utils::strutil::appends(token.token, "expect token ", view, " but found ");
+                if (eos()) {
+                    utils::strutil::append(token.token, "<EOF>");
+                    auto copy = cur;
+                    copy--;
+                    token.loc.pos = {copy->loc.pos.end, copy->loc.pos.end + 1};
+                    token.loc.file = cur_file;
+                }
+                else {
+                    utils::strutil::append(token.token, cur->token);
+                    token.loc = cur->loc;
+                }
+                report_error(token);
+            }
+            return *f;
+        }
+
+        lexer::Token must_consume_token(lexer::Tag tag) {
+            auto f = consume_token(tag);
+            if (!f) {
+                lexer::Token token;
+                token.tag = lexer::Tag::error;
+                utils::strutil::appends(token.token, "expect token ", lexer::tag_str[int(tag)], " but found ");
+                if (eos()) {
+                    utils::strutil::append(token.token, "<EOF>");
+                    auto copy = cur;
+                    copy--;
+                    token.loc.pos = {copy->loc.pos.end, copy->loc.pos.end + 1};
+                    token.loc.file = cur_file;
+                }
+                else {
+                    utils::strutil::append(token.token, lexer::tag_str[int(cur->tag)]);
+                    token.loc = cur->loc;
+                }
+                report_error(token);
+            }
+            return *f;
+        }
+
         void skip_tag(auto... t) {
             while (!eos()) {
                 if ((... || expect_tag(t))) {
@@ -194,7 +239,11 @@ namespace ast {
 
        public:
         std::shared_ptr<Type> get_literal_type(const auto& key) {
-            literal_types.find();
+            auto found = literal_types.find(key);
+            if (found != literal_types.end()) {
+                return *found;
+            }
+            return nullptr;
         }
     };
 

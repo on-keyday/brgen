@@ -60,7 +60,7 @@ namespace ast {
     };
 
     struct Program : Object {
-        std::list<std::shared_ptr<Object>> program;
+        std::list<std::unique_ptr<Object>> program;
 
         Program()
             : Object(ObjectType::program) {}

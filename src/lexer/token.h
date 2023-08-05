@@ -29,6 +29,20 @@ namespace lexer {
         unknwon,
     };
 
+    constexpr const char* tag_str[] = {
+        "indent",
+        "space",
+        "line",
+        "puncut",
+        "int_literal",
+        "str_literal",
+        "keyword",
+        "ident",
+        "comment",
+        "error",
+        "unknown",
+    };
+
     struct Token {
         Tag tag = Tag::unknwon;
         std::string token;
