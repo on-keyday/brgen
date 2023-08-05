@@ -2,9 +2,11 @@
 #include <file/file_view.h>
 #include <wrap/cout.h>
 
-int test_file(std::string_view name) {
+void test_file(std::string_view name) {
     utils::file::View view;
     if (!view.open(name)) {
+        utils::wrap::cerr_wrap() << name << " cannot open";
+        return;
     }
 }
 
