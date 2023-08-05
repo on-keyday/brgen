@@ -20,18 +20,17 @@ namespace ast {
     struct Object {
         lexer::Loc loc;
         const ObjectType type;
+        virtual ~Object() {}
 
        protected:
-        constexpr Object(ObjectType t)
-            : type(t) {}
-
-        virtual ~Object() {}
+        constexpr Object(lexer::Loc l, ObjectType t)
+            : loc(l), type(t) {}
     };
 
     struct Type : Object {
        protected:
-        constexpr Type(ObjectType t)
-            : Object(t) {}
+        constexpr Type(lexer::Loc l, ObjectType t)
+            : Object(l, t) {}
     };
 
     struct Field : Object {
@@ -41,23 +40,23 @@ namespace ast {
         std::shared_ptr<Type> expr_type;
 
        protected:
-        constexpr Expr(ObjectType t)
-            : Object(t) {}
+        constexpr Expr(lexer::Loc l, ObjectType t)
+            : Object(l, t) {}
     };
 
     struct Ident : Expr {
         std::string ident;
 
-        Ident()
-            : Expr(ObjectType::ident) {}
+        Ident(lexer::Loc l, std::string&& i)
+            : Expr(l, ObjectType::ident), ident(std::move(i)) {}
     };
 
     struct Unary : Expr {
         std::unique_ptr<Expr> target;
         UnaryOp op;
 
-        constexpr Unary()
-            : Expr(ObjectType::unary) {}
+        constexpr Unary(lexer::Loc l, UnaryOp p)
+            : Expr(l, ObjectType::unary), op(p) {}
     };
 
     struct Binary : Expr {
@@ -65,8 +64,8 @@ namespace ast {
         std::unique_ptr<Expr> right;
         BinaryOp op;
 
-        constexpr Binary()
-            : Expr(ObjectType::binary) {}
+        Binary(lexer::Loc l, std::unique_ptr<Expr>&& left, BinaryOp op)
+            : Expr(l, ObjectType::binary), left(std::move(left)), op(op) {}
     };
 
     struct Cond : Expr {
@@ -75,14 +74,14 @@ namespace ast {
         lexer::Loc els_loc;
         std::unique_ptr<Expr> els;
 
-        constexpr Cond()
-            : Expr(ObjectType::cond) {}
+        Cond(lexer::Loc l, std::unique_ptr<Expr>&& then)
+            : Expr(l, ObjectType::cond), then(std::move(then)) {}
     };
 
     struct Literal : Expr {
        protected:
-        constexpr Literal(ObjectType t)
-            : Expr(t) {}
+        constexpr Literal(lexer::Loc l, ObjectType t)
+            : Expr(l, t) {}
     };
 
     struct IntLiteral : Literal {
@@ -97,15 +96,15 @@ namespace ast {
             return t;
         }
 
-        IntLiteral()
-            : Literal(ObjectType::int_literal) {}
+        IntLiteral(lexer::Loc l, std::string&& t)
+            : Literal(l, ObjectType::int_literal), raw(std::move(t)) {}
     };
 
     struct Program : Object {
         std::list<std::unique_ptr<Object>> program;
 
         Program()
-            : Object(ObjectType::program) {}
+            : Object(lexer::Loc{}, ObjectType::program) {}
     };
 
 }  // namespace ast

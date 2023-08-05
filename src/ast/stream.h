@@ -258,6 +258,21 @@ namespace ast {
             }
         }
 
+        // Tag::space
+        void skip_space() {
+            skip_tag(lexer::Tag::space);
+        }
+
+        // Tag::space, Tag::line
+        void skip_line() {
+            skip_tag(lexer::Tag::space, lexer::Tag::line);
+        }
+
+        // Tag::space, Tag::line, Tag::indent
+        void skip_white() {
+            skip_tag(lexer::Tag::space, lexer::Tag::line, lexer::Tag::indent);
+        }
+
         ContextInfo* context() const {
             return info;
         }

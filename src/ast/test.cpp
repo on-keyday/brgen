@@ -1,12 +1,20 @@
+/*license*/
 #include "stream.h"
 #include <file/file_view.h>
 #include <wrap/cout.h>
 #include <future>
+#include <atomic>
+std::atomic_uint failed;
 
-std::optional<std::unique_ptr<ast::Program>> test_file(std::string_view name) {
+auto& cerr = utils::wrap::cerr_wrap();
+
+std::optional<std::unique_ptr<ast::Program>> test_file(std::string_view file_name) {
+    auto d = utils::helper::defer([&] {
+        failed++;
+    });
     utils::file::View view;
-    if (!view.open(name)) {
-        utils::wrap::cerr_wrap() << name << " cannot open";
+    if (!view.open(file_name)) {
+        cerr << utils::wrap::packln(file_name, " cannot open");
         return std::nullopt;
     }
     ast::Context ctx;
@@ -16,13 +24,25 @@ std::optional<std::unique_ptr<ast::Program>> test_file(std::string_view name) {
         prog = ast::parse(s);
     });
     if (err != std::nullopt) {
-        utils::wrap::cerr_wrap() << err->to_string(name);
+        cerr << err->to_string(file_name);
         return std::nullopt;
     }
+    d.cancel();
     return prog;
 }
 
-int main() {
+void test() {
     std::vector<std::future<std::optional<std::unique_ptr<ast::Program>>>> f;
     f.push_back(std::async(test_file, "./src/ast/step/step1.bgn"));
+    f.push_back(std::async(test_file, "./src/ast/step/step2.bgn"));
+}
+
+int main() {
+    test();
+    if (failed == 0) {
+        cerr << "PASS";
+    }
+    else {
+        cerr << failed << " test failed";
+    }
 }
