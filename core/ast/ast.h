@@ -6,6 +6,7 @@
 #include <number/prefix.h>
 #include "expr_layer.h"
 #include <escape/escape.h>
+#include <map>
 
 namespace ast {
 
@@ -97,12 +98,83 @@ namespace ast {
             : loc(l), type(t) {}
     };
 
-    using objlist = std::list<std::shared_ptr<Object>>;
-
     struct Type : Object {
        protected:
         constexpr Type(lexer::Loc l, ObjectType t)
             : Object(l, t) {}
+    };
+
+    struct Expr : Object {
+        static constexpr ObjectType object_type = ObjectType::ident_type;
+        std::shared_ptr<Type> expr_type;
+
+       protected:
+        constexpr Expr(lexer::Loc l, ObjectType t)
+            : Object(l, t) {}
+    };
+
+    struct ExprBlock : Expr {
+       protected:
+        constexpr ExprBlock(lexer::Loc l, ObjectType t)
+            : Expr(l, t) {}
+    };
+
+    struct Stmt : Object {
+       protected:
+        constexpr Stmt(lexer::Loc l, ObjectType t)
+            : Object(l, t) {}
+    };
+
+    struct Literal : Expr {
+       protected:
+        constexpr Literal(lexer::Loc l, ObjectType t)
+            : Expr(l, t) {}
+    };
+
+    using objlist = std::list<std::shared_ptr<Object>>;
+
+    struct Fmt;
+
+    struct Stream;
+
+    struct Definitions {
+        objlist order;
+        std::map<std::string, std::list<std::shared_ptr<Fmt>>> fmts;
+
+        void add_fmt(std::string& name, std::shared_ptr<Fmt>& f) {
+            fmts[name].push_back(f);
+        }
+    };
+
+    struct IndentScope : Stmt {
+        static constexpr ObjectType object_type = ObjectType::indent_scope;
+        objlist elements;
+        Definitions list;
+        IndentScope(lexer::Loc l)
+            : Stmt(l, ObjectType::indent_scope) {}
+
+        void debug(Debug& buf) const override {
+            buf.array([&](auto&& field) {
+                for (auto& p : elements) {
+                    field([&](Debug& d) { p->debug(d); });
+                }
+            });
+        }
+    };
+
+    struct Fmt : Stmt {
+        static constexpr ObjectType object_type = ObjectType::fmt;
+        std::string ident;
+        std::shared_ptr<IndentScope> scope;
+        Fmt(lexer::Loc l)
+            : Stmt(l, ObjectType::fmt) {}
+
+        void debug(Debug& buf) const override {
+            buf.object([&](auto&& field) {
+                field("ident", [&](Debug& d) { d.string(ident); });
+                field("scope", [&](Debug& d) { scope->debug(d); });
+            });
+        }
     };
 
     struct IntegerType : Type {
@@ -120,17 +192,6 @@ namespace ast {
             });
         }
     };
-
-    struct Expr : Object {
-        static constexpr ObjectType object_type = ObjectType::ident_type;
-        std::shared_ptr<Type> expr_type;
-
-       protected:
-        constexpr Expr(lexer::Loc l, ObjectType t)
-            : Object(l, t) {}
-    };
-
-    struct Expr;
 
     struct IdentType : Type {
         static constexpr ObjectType object_type = ObjectType::ident_type;
@@ -180,18 +241,6 @@ namespace ast {
         }
     };
 
-    struct ExprBlock : Expr {
-       protected:
-        constexpr ExprBlock(lexer::Loc l, ObjectType t)
-            : Expr(l, t) {}
-    };
-
-    struct Stmt : Object {
-       protected:
-        constexpr Stmt(lexer::Loc l, ObjectType t)
-            : Object(l, t) {}
-    };
-
     struct Field : Stmt {
         static constexpr ObjectType object_type = ObjectType::field;
         std::optional<std::string> ident;
@@ -205,36 +254,6 @@ namespace ast {
             buf.object([&](auto&& field) {
                 field("ident", [&](Debug& d) { ident ? d.string(*ident) : d.null(); });
                 field("field_type", [&](Debug& d) { field_type->debug(d); });
-            });
-        }
-    };
-
-    struct IndentScope : Stmt {
-        static constexpr ObjectType object_type = ObjectType::indent_scope;
-        objlist elements;
-        IndentScope(lexer::Loc l)
-            : Stmt(l, ObjectType::indent_scope) {}
-
-        void debug(Debug& buf) const override {
-            buf.array([&](auto&& field) {
-                for (auto& p : elements) {
-                    field([&](Debug& d) { p->debug(d); });
-                }
-            });
-        }
-    };
-
-    struct Fmt : Stmt {
-        static constexpr ObjectType object_type = ObjectType::fmt;
-        std::string ident;
-        std::shared_ptr<IndentScope> scope;
-        Fmt(lexer::Loc l)
-            : Stmt(l, ObjectType::fmt) {}
-
-        void debug(Debug& buf) const override {
-            buf.object([&](auto&& field) {
-                field("ident", [&](Debug& d) { d.string(ident); });
-                field("scope", [&](Debug& d) { scope->debug(d); });
             });
         }
     };
@@ -352,12 +371,6 @@ namespace ast {
                 field("else", [&](Debug& d) { els->debug(d); });
             });
         }
-    };
-
-    struct Literal : Expr {
-       protected:
-        constexpr Literal(lexer::Loc l, ObjectType t)
-            : Expr(l, t) {}
     };
 
     struct IntLiteral : Literal {
