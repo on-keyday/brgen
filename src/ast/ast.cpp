@@ -37,42 +37,47 @@ namespace ast {
         auto token = s.must_consume_token("if");
         s.skip_white();
         auto if_ = std::make_unique<If>(token.loc);
+
+        // 解析して if の条件式とブロックを設定
         if_->cond = parse_expr(s);
         if_->block = parse_indent_block(s);
-        auto cur = s.context()->current_indent();
+
+        auto cur_indent = s.context()->current_indent();
+
         auto detect_end = [&] {
-            if (cur) {
-                auto indent = s.peek_token(lexer::Tag::indent);
-                if (!indent || indent->token.size() != cur) {
-                    return true;  // nothing to do
+            if (cur_indent) {
+                auto indent_token = s.peek_token(lexer::Tag::indent);
+                if (!indent_token || indent_token->token.size() != cur_indent) {
+                    return true;  // 次のインデントが現在のインデントと異なれば終了
                 }
                 s.must_consume_token(lexer::Tag::indent);
             }
             return false;
         };
-        if (detect_end()) {
-            return if_;
-        }
-        If* elifs = if_.get();
-        for (auto tok = s.consume_token("elif"); tok; tok = s.consume_token("elif")) {
+
+        // elif ブロックの解析
+        If* current_if = if_.get();
+        while (auto tok = s.consume_token("elif")) {
             auto elif = std::make_unique<If>(tok->loc);
             s.skip_white();
             elif->cond = parse_expr(s);
             elif->block = parse_indent_block(s);
-            auto new_else = elif.get();
-            elifs->els = std::move(elif);
-            elifs = new_else;
+            auto next_if = elif.get();
+            current_if->els = std::move(elif);
+            current_if = next_if;
             if (detect_end()) {
                 return if_;
             }
         }
-        if (!s.consume_token("else")) {
-            return if_;  // nothing to do
+
+        // else ブロックの解析
+        if (s.consume_token("else")) {
+            current_if->els = parse_indent_block(s);
+            if (cur_indent && !detect_end()) {
+                s.report_error("expect less indent but not");
+            }
         }
-        elifs->els = parse_indent_block(s);
-        if (cur && !detect_end()) {
-            s.report_error("expect less indent but not");
-        }
+
         return if_;
     }
 

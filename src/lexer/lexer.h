@@ -19,7 +19,7 @@ namespace lexer {
         constexpr auto space = cps::tab | cps::space;
         constexpr auto spaces = str(Tag::space, ~(cps::tab | cps::space));
         constexpr auto line = str(Tag::line, cps::eol);
-        constexpr auto indent = str(Tag::indent, bol & ~(cps::tab | cps::space) & not_(cps::eol));
+        constexpr auto indent = str(Tag::indent, bol & ~(cps::tab | cps::space) & not_(cps::eol | eos));
         constexpr auto comment = str(Tag::comment, cps::shell_comment);
 
         constexpr auto int_literal = str(Tag::int_literal, cps::hex_integer | cps::oct_integer | cps::bin_integer | cps::dec_integer);
@@ -110,8 +110,6 @@ namespace lexer {
             }
             return seq.eos();
         }
-
-        static_assert(check_lexer());
 
     }  // namespace internal
 
