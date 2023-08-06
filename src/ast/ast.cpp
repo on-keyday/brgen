@@ -270,8 +270,8 @@ namespace ast {
     }
 
     std::optional<size_t> is_int_type(std::string_view str) {
-        // Check if the string starts with 'u' and has a valid unsigned integer
-        if (str.size() > 1 && str[0] == 'u') {
+        // Check if the string starts with 'u' or 'b' and has a valid unsigned integer
+        if (str.size() > 1 && (str[0] == 'u' || str[0] == 'b')) {
             size_t value = 0;
             if (!utils::number::parse_integer(str.substr(1), value)) {
                 return std::nullopt;
@@ -338,9 +338,11 @@ namespace ast {
         auto token = s.must_consume_token("fmt");
         auto fmt = std::make_unique<Fmt>(token.loc);
         s.skip_space();
+
         auto ident = s.must_consume_token(lexer::Tag::ident);
         fmt->ident = ident.token;
         fmt->scope = parse_indent_block(s);
+
         return fmt;
     }
 
@@ -348,21 +350,27 @@ namespace ast {
         if (s.expect_token("for")) {
             return parse_for(s);
         }
+
         if (s.expect_token("fmt")) {
             return parse_fmt(s);
         }
+
         std::unique_ptr<Object> obj;
-        if (auto f = parse_field(s)) {
-            obj = std::move(*f);
+
+        if (auto field = parse_field(s)) {
+            obj = std::move(*field);
         }
-        if (!obj) {
+        else {
             obj = parse_expr(s);
         }
+
         s.skip_space();
+
         if (!s.eos() && s.expect_token(lexer::Tag::line)) {
             s.must_consume_token(lexer::Tag::line);
             s.skip_line();
         }
+
         return obj;
     }
 

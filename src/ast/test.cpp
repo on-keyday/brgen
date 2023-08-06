@@ -37,12 +37,12 @@ std::optional<std::unique_ptr<ast::Program>> test_file(std::string_view file_nam
 
 std::string test() {
     std::vector<std::future<std::optional<std::unique_ptr<ast::Program>>>> f;
-    f.push_back(std::async(test_file, "./src/ast/step/step1.bgn"));
-    f.push_back(std::async(test_file, "./src/ast/step/step2.bgn"));
-    f.push_back(std::async(test_file, "./src/ast/step/step3.bgn"));
-    f.push_back(std::async(test_file, "./src/ast/step/step4.bgn"));
-    f.push_back(std::async(test_file, "./src/ast/step/step5.bgn"));
-    f.push_back(std::async(test_file, "./src/ast/step/step6.bgn"));
+    f.push_back(std::async(std::launch::async, test_file, "./src/ast/step/step1.bgn"));
+    f.push_back(std::async(std::launch::async, test_file, "./src/ast/step/step2.bgn"));
+    f.push_back(std::async(std::launch::async, test_file, "./src/ast/step/step3.bgn"));
+    f.push_back(std::async(std::launch::async, test_file, "./src/ast/step/step4.bgn"));
+    f.push_back(std::async(std::launch::async, test_file, "./src/ast/step/step5.bgn"));
+    f.push_back(std::async(std::launch::async, test_file, "./src/ast/step/step6.bgn"));
     ast::Debug d;
     d.array([&](auto&& field) {
         for (auto& out : f) {
