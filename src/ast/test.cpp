@@ -42,6 +42,7 @@ std::string test() {
     f.push_back(std::async(test_file, "./src/ast/step/step3.bgn"));
     f.push_back(std::async(test_file, "./src/ast/step/step4.bgn"));
     f.push_back(std::async(test_file, "./src/ast/step/step5.bgn"));
+    f.push_back(std::async(test_file, "./src/ast/step/step6.bgn"));
     ast::Debug d;
     d.array([&](auto&& field) {
         for (auto& out : f) {

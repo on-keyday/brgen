@@ -334,9 +334,22 @@ namespace ast {
         return field;
     }
 
+    std::unique_ptr<Fmt> parse_fmt(Stream& s) {
+        auto token = s.must_consume_token("fmt");
+        auto fmt = std::make_unique<Fmt>(token.loc);
+        s.skip_space();
+        auto ident = s.must_consume_token(lexer::Tag::ident);
+        fmt->ident = ident.token;
+        fmt->scope = parse_indent_block(s);
+        return fmt;
+    }
+
     std::unique_ptr<Object> parse_one(Stream& s) {
         if (s.expect_token("for")) {
             return parse_for(s);
+        }
+        if (s.expect_token("fmt")) {
+            return parse_fmt(s);
         }
         std::unique_ptr<Object> obj;
         if (auto f = parse_field(s)) {

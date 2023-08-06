@@ -76,6 +76,7 @@ namespace ast {
         stmt = 0x020000,
         for_,
         field,
+        fmt,
         type = 0x040000,
         int_type,
         ident_type,
@@ -199,6 +200,20 @@ namespace ast {
                 for (auto& p : elements) {
                     field([&](Debug& d) { p->debug(d); });
                 }
+            });
+        }
+    };
+
+    struct Fmt : Stmt {
+        std::string ident;
+        std::unique_ptr<IndentScope> scope;
+        Fmt(lexer::Loc l)
+            : Stmt(l, ObjectType::fmt) {}
+
+        void debug(Debug& buf) const override {
+            buf.object([&](auto&& field) {
+                field("ident", [&](Debug& d) { d.string(ident); });
+                field("scope", [&](Debug& d) { scope->debug(d); });
             });
         }
     };
