@@ -1,6 +1,6 @@
 /*license*/
 #include "../ast/test_component.h"
-#include "vm.h"
+#include "call_extract.h"
 
 void test_vm() {
     auto c = test_ast(false);

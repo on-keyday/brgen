@@ -1,5 +1,5 @@
 # Architecture
-lexer -> parser -> vm -> langopt -> gen
-                      -> langopt -> gen
-                        ...
+lexer -> parser -> treeopt -> langopt -> gen
+                           -> langopt -> gen
+                           ...
 
