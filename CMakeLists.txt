@@ -6,13 +6,13 @@ set(CMAKE_CXX_STANDARD 20)
 include_directories("$ENV{UTILS_DIR}/src/include")
 link_directories("$ENV{UTILS_DIR}/lib")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "test")
-add_executable(lexer_test "src/lexer/test.cpp")
-add_executable(ast_test "src/ast/test.cpp"
-"src/ast/test_component.cpp"
-"src/ast/ast.cpp")
-add_executable(vm_test "src/vm/test.cpp"
-"src/ast/test_component.cpp"
-"src/ast/ast.cpp")
+add_executable(lexer_test "core/lexer/test.cpp")
+add_executable(ast_test "core/ast/test.cpp"
+"core/ast/test_component.cpp"
+"core/ast/ast.cpp")
+add_executable(vm_test "core/treeopt/test.cpp"
+"core/ast/test_component.cpp"
+"core/ast/ast.cpp")
 target_compile_options(lexer_test PRIVATE "-fconstexpr-steps=2147483647")
 target_link_libraries(ast_test utils)
 target_link_libraries(vm_test utils)

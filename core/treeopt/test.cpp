@@ -2,8 +2,7 @@
 #include "../ast/test_component.h"
 #include "call_extract.h"
 
-void test_vm() {
-    auto c = test_ast(false);
+void test_call_extract(AstList& c) {
     for (auto& f : c) {
         if (auto got = f.get()) {
             auto& f = *got;
@@ -17,5 +16,6 @@ void test_vm() {
 }
 
 int main() {
-    test_vm();
+    auto c = test_ast(false);
+    test_call_extract(c);
 }

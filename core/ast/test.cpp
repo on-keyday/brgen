@@ -9,7 +9,9 @@ int main() {
         for (auto& out : f) {
             auto o = out.get();
             if (!o) {
-                d.null();
+                field([&](ast::Debug& d) {
+                    d.null();
+                });
                 failed++;
                 continue;
             }

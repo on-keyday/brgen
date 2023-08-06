@@ -7,8 +7,10 @@
 
 auto& cerr = utils::wrap::cerr_wrap();
 
-static std::optional<std::shared_ptr<ast::Program>> test_file(std::string_view file_name, bool debug) {
+static std::optional<std::shared_ptr<ast::Program>> test_file(std::string_view name, bool debug) {
     utils::file::View view;
+    std::string file_name = "./core/step/";
+    file_name += name.data();
     if (!view.open(file_name)) {
         cerr << utils::wrap::packln(file_name, " cannot open");
         return std::nullopt;
@@ -33,12 +35,12 @@ static std::optional<std::shared_ptr<ast::Program>> test_file(std::string_view f
 
 AstList test_ast(bool debug) {
     AstList f;
-    f.push_back(std::async(std::launch::async, test_file, "./src/step/step1.bgn", debug));
-    f.push_back(std::async(std::launch::async, test_file, "./src/step/step2.bgn", debug));
-    f.push_back(std::async(std::launch::async, test_file, "./src/step/step3.bgn", debug));
-    f.push_back(std::async(std::launch::async, test_file, "./src/step/step4.bgn", debug));
-    f.push_back(std::async(std::launch::async, test_file, "./src/step/step5.bgn", debug));
-    f.push_back(std::async(std::launch::async, test_file, "./src/step/step6.bgn", debug));
-    f.push_back(std::async(std::launch::async, test_file, "./src/step/step7.bgn", debug));
+    f.push_back(std::async(std::launch::async, test_file, "step1.bgn", debug));
+    f.push_back(std::async(std::launch::async, test_file, "step2.bgn", debug));
+    f.push_back(std::async(std::launch::async, test_file, "step3.bgn", debug));
+    f.push_back(std::async(std::launch::async, test_file, "step4.bgn", debug));
+    f.push_back(std::async(std::launch::async, test_file, "step5.bgn", debug));
+    f.push_back(std::async(std::launch::async, test_file, "step6.bgn", debug));
+    f.push_back(std::async(std::launch::async, test_file, "step7.bgn", debug));
     return f;
 }
