@@ -8,6 +8,7 @@ link_directories("$ENV{UTILS_DIR}/lib")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "test")
 add_executable(lexer_test "src/lexer/test.cpp")
 add_executable(ast_test "src/ast/test.cpp"
+"src/ast/test_component.cpp"
 "src/ast/ast.cpp")
 target_compile_options(lexer_test PRIVATE "-fconstexpr-steps=2147483647")
 target_link_libraries(ast_test utils)

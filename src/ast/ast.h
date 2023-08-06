@@ -219,6 +219,7 @@ namespace ast {
     };
 
     struct Fmt : Stmt {
+        static constexpr ObjectType object_type = ObjectType::fmt;
         std::string ident;
         std::shared_ptr<IndentScope> scope;
         Fmt(lexer::Loc l)
@@ -387,12 +388,12 @@ namespace ast {
         return nullptr;
     }
 
-    constexpr void traverse(auto&& t, auto&& fn) {
-        Object* t = std::to_address(t);
+    void traverse(auto&& t, auto&& fn) {
+        Object* o = std::to_address(t);
 #define SWITCH   \
     if (false) { \
     }
-#define CASE(T) else if (T* v = as<T>(t))
+#define CASE(T) else if (T* v = as<T>(o))
         SWITCH
         CASE(IdentType) {
             fn(v->arguments);
