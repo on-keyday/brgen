@@ -1,0 +1,3 @@
+
+if input.length() < 9:
+    input.read(9)

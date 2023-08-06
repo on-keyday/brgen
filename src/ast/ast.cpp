@@ -104,12 +104,23 @@ namespace ast {
         return call;
     }
 
+    std::shared_ptr<Access> parse_access(std::shared_ptr<Expr>& p, Stream& s) {
+        auto token = s.must_consume_token(".");
+        s.skip_white();
+        auto ident = s.must_consume_token(lexer::Tag::ident);
+        return std::make_shared<Access>(token.loc, std::move(p), std::move(ident.token));
+    }
+
     std::shared_ptr<Expr> parse_post(Stream& s) {
         auto p = parse_prim(s);
         for (;;) {
             s.skip_space();
             if (s.expect_token("(")) {
                 p = parse_call(p, s);
+                continue;
+            }
+            if (s.expect_token(".")) {
+                p = parse_access(p, s);
                 continue;
             }
             break;

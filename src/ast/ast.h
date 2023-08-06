@@ -73,6 +73,7 @@ namespace ast {
         if_,
         indent_scope,
         tmp_var,
+        access,
         stmt = 0x020000,
         for_,
         field,
@@ -132,7 +133,7 @@ namespace ast {
     struct Expr;
 
     struct IdentType : Type {
-        static constexpr ObjectType object_type = ObjectType::ident;
+        static constexpr ObjectType object_type = ObjectType::ident_type;
         std::string ident;
         std::shared_ptr<Expr> arguments;
         IdentType(lexer::Loc l, std::string&& token)
@@ -164,13 +165,18 @@ namespace ast {
 
     struct TmpVar : Expr {
         static constexpr ObjectType object_type = ObjectType::tmp_var;
-        std::string ident;
+        size_t tmp_index = 0;
         std::shared_ptr<Call> call;
-        objlist inner;
 
-        TmpVar(std::shared_ptr<Call>&& c)
-            : Expr(c->loc, ObjectType::tmp_var), call(std::move(c)) {
+        TmpVar(std::shared_ptr<Call>&& c, size_t tmp)
+            : Expr(c->loc, ObjectType::tmp_var), tmp_index(tmp), call(std::move(c)) {
             expr_type = call->expr_type;
+        }
+
+        void debug(Debug& buf) const override {
+            buf.object([&](auto&& field) {
+                field("tmp_var", [&](Debug& d) { d.number(tmp_index); });
+            });
         }
     };
 
@@ -314,6 +320,21 @@ namespace ast {
         }
     };
 
+    struct Access : Expr {
+        std::shared_ptr<Expr> target;
+        std::string name;
+
+        void debug(Debug& buf) const override {
+            buf.object([&](auto&& field) {
+                field("target", [&](Debug& d) { target->debug(d); });
+                field("access_to", [&](Debug& d) { d.string(name); });
+            });
+        }
+
+        Access(lexer::Loc l, std::shared_ptr<Expr>&& t, std::string&& n)
+            : Expr(l, ObjectType::access), target(std::move(t)), name(std::move(n)) {}
+    };
+
     struct Cond : Expr {
         static constexpr ObjectType object_type = ObjectType::cond;
         std::shared_ptr<Expr> then;
@@ -369,10 +390,14 @@ namespace ast {
         objlist program;
 
         void debug(Debug& buf) const override {
-            buf.array([&](auto&& field) {
-                for (auto& p : program) {
-                    field([&](Debug& d) { p->debug(d); });
-                }
+            buf.object([&](auto&& field) {
+                field("program", [&](Debug& d) {
+                    d.array([&](auto&& field) {
+                        for (auto& p : program) {
+                            field([&](Debug& d) { p->debug(d); });
+                        }
+                    });
+                });
             });
         }
 
@@ -382,8 +407,9 @@ namespace ast {
 
     template <class T>
     constexpr T* as(auto&& t) {
-        if (t && t->type == T::object_type) {
-            return static_cast<T*>(std::to_address(t));
+        Object* v = std::to_address(t);
+        if (v && v->type == T::object_type) {
+            return static_cast<T*>(v);
         }
         return nullptr;
     }
@@ -431,7 +457,6 @@ namespace ast {
         }
         CASE(TmpVar) {
             fn(v->expr_type);
-            fn(v->call);
         }
         CASE(IndentScope) {
             for (auto& f : v->elements) {
@@ -445,6 +470,10 @@ namespace ast {
         }
         CASE(Field) {
             fn(v->field_type);
+        }
+        CASE(Access) {
+            fn(v->expr_type);
+            fn(v->target);
         }
 #undef SWITCH
 #undef CASE
