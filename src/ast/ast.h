@@ -72,6 +72,7 @@ namespace ast {
         call,
         if_,
         indent_scope,
+        tmp_var,
         stmt = 0x020000,
         for_,
         field,
@@ -94,6 +95,8 @@ namespace ast {
         constexpr Object(lexer::Loc l, ObjectType t)
             : loc(l), type(t) {}
     };
+
+    using objlist = std::list<std::shared_ptr<Object>>;
 
     struct Type : Object {
        protected:
@@ -159,6 +162,18 @@ namespace ast {
         }
     };
 
+    struct TmpVar : Expr {
+        static constexpr ObjectType object_type = ObjectType::tmp_var;
+        std::string ident;
+        std::shared_ptr<Call> call;
+        objlist inner;
+
+        TmpVar(std::shared_ptr<Call>&& c)
+            : Expr(c->loc, ObjectType::tmp_var), call(std::move(c)) {
+            expr_type = call->expr_type;
+        }
+    };
+
     struct ExprBlock : Expr {
        protected:
         constexpr ExprBlock(lexer::Loc l, ObjectType t)
@@ -190,7 +205,7 @@ namespace ast {
 
     struct IndentScope : Stmt {
         static constexpr ObjectType object_type = ObjectType::indent_scope;
-        std::list<std::shared_ptr<Object>> elements;
+        objlist elements;
         IndentScope(lexer::Loc l)
             : Stmt(l, ObjectType::indent_scope) {}
 
@@ -350,7 +365,7 @@ namespace ast {
 
     struct Program : Object {
         static constexpr ObjectType object_type = ObjectType::program;
-        std::list<std::shared_ptr<Object>> program;
+        objlist program;
 
         void debug(Debug& buf) const override {
             buf.array([&](auto&& field) {
@@ -365,11 +380,73 @@ namespace ast {
     };
 
     template <class T>
-    constexpr T* as(Object* t) {
+    constexpr T* as(auto&& t) {
         if (t && t->type == T::object_type) {
-            return static_cast<T*>(t);
+            return static_cast<T*>(std::to_address(t));
         }
         return nullptr;
+    }
+
+    constexpr void traverse(auto&& t, auto&& fn) {
+        Object* t = std::to_address(t);
+#define SWITCH   \
+    if (false) { \
+    }
+#define CASE(T) else if (T* v = as<T>(t))
+        SWITCH
+        CASE(IdentType) {
+            fn(v->arguments);
+        }
+        CASE(Call) {
+            fn(v->expr_type);
+            fn(v->callee);
+            fn(v->arguments);
+        }
+        CASE(Binary) {
+            fn(v->expr_type);
+            fn(v->left);
+            fn(v->right);
+        }
+        CASE(Unary) {
+            fn(v->expr_type);
+            fn(v->target);
+        }
+        CASE(Cond) {
+            fn(v->cond);
+            fn(v->then);
+            fn(v->els);
+        }
+        CASE(If) {
+            fn(v->expr_type);
+            fn(v->cond);
+            fn(v->block);
+            fn(v->els);
+        }
+        CASE(For) {
+            fn(v->block);
+        }
+        CASE(Fmt) {
+            fn(v->scope);
+        }
+        CASE(TmpVar) {
+            fn(v->expr_type);
+            fn(v->call);
+        }
+        CASE(IndentScope) {
+            for (auto& f : v->elements) {
+                fn(f);
+            }
+        }
+        CASE(Program) {
+            for (auto& f : v->program) {
+                fn(f);
+            }
+        }
+        CASE(Field) {
+            fn(v->field_type);
+        }
+#undef SWITCH
+#undef CASE
     }
 
 }  // namespace ast
