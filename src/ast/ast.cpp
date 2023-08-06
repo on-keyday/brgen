@@ -6,8 +6,8 @@
 
 namespace ast {
 
-    std::unique_ptr<Object> parse_one(Stream& s);
-    std::unique_ptr<Expr> parse_expr(Stream& s);
+    std::shared_ptr<Object> parse_one(Stream& s);
+    std::shared_ptr<Expr> parse_expr(Stream& s);
     // :\\r\\n
     void must_consume_indent_sign(Stream& s) {
         s.skip_white();
@@ -16,11 +16,11 @@ namespace ast {
         s.must_consume_token(lexer::Tag::line);
     }
 
-    std::unique_ptr<IndentScope> parse_indent_block(Stream& s) {
+    std::shared_ptr<IndentScope> parse_indent_block(Stream& s) {
         must_consume_indent_sign(s);
         auto base = s.must_consume_token(lexer::Tag::indent);
         auto c = s.context()->new_indent(base.token.size());
-        auto scope = std::make_unique<IndentScope>(base.loc);
+        auto scope = std::make_shared<IndentScope>(base.loc);
         scope->elements.push_back(parse_one(s));
         for (;;) {
             auto indent = s.peek_token(lexer::Tag::indent);
@@ -33,10 +33,10 @@ namespace ast {
         return scope;
     }
 
-    std::unique_ptr<If> parse_if(Stream& s) {
+    std::shared_ptr<If> parse_if(Stream& s) {
         auto token = s.must_consume_token("if");
         s.skip_white();
-        auto if_ = std::make_unique<If>(token.loc);
+        auto if_ = std::make_shared<If>(token.loc);
 
         // 解析して if の条件式とブロックを設定
         if_->cond = parse_expr(s);
@@ -58,7 +58,7 @@ namespace ast {
         // elif ブロックの解析
         If* current_if = if_.get();
         while (auto tok = s.consume_token("elif")) {
-            auto elif = std::make_unique<If>(tok->loc);
+            auto elif = std::make_shared<If>(tok->loc);
             s.skip_white();
             elif->cond = parse_expr(s);
             elif->block = parse_indent_block(s);
@@ -81,20 +81,20 @@ namespace ast {
         return if_;
     }
 
-    std::unique_ptr<Expr> parse_prim(Stream& s) {
+    std::shared_ptr<Expr> parse_prim(Stream& s) {
         if (auto token = s.consume_token(lexer::Tag::int_literal)) {
-            return std::make_unique<IntLiteral>(token->loc, std::move(token->token));
+            return std::make_shared<IntLiteral>(token->loc, std::move(token->token));
         }
         if (s.expect_token("if")) {
             return parse_if(s);
         }
         auto token = s.must_consume_token(lexer::Tag::ident);
-        return std::make_unique<Ident>(token.loc, std::move(token.token));
+        return std::make_shared<Ident>(token.loc, std::move(token.token));
     }
 
-    std::unique_ptr<Call> parse_call(std::unique_ptr<Expr>& p, Stream& s) {
+    std::shared_ptr<Call> parse_call(std::shared_ptr<Expr>& p, Stream& s) {
         auto token = s.must_consume_token("(");
-        auto call = std::make_unique<Call>(token.loc, std::move(p));
+        auto call = std::make_shared<Call>(token.loc, std::move(p));
         s.skip_white();
         if (!s.expect_token(")")) {
             call->arguments = parse_expr(s);
@@ -104,7 +104,7 @@ namespace ast {
         return call;
     }
 
-    std::unique_ptr<Expr> parse_post(Stream& s) {
+    std::shared_ptr<Expr> parse_post(Stream& s) {
         auto p = parse_prim(s);
         for (;;) {
             s.skip_space();
@@ -126,13 +126,13 @@ namespace ast {
         return std::nullopt;
     }
 
-    std::unique_ptr<Expr> parse_unary(Stream& s) {
-        std::vector<std::unique_ptr<Unary>> stack;
+    std::shared_ptr<Expr> parse_unary(Stream& s) {
+        std::vector<std::shared_ptr<Unary>> stack;
         size_t i;
         s.skip_space();
         for (;;) {
             if (auto token = consume_op(s, i, ast::unary_op)) {
-                stack.push_back(std::make_unique<Unary>(token->loc, UnaryOp(i)));
+                stack.push_back(std::make_shared<Unary>(token->loc, UnaryOp(i)));
                 s.skip_white();
                 continue;
             }
@@ -150,11 +150,11 @@ namespace ast {
 
     struct BinOpStack {
         size_t depth = 0;
-        std::unique_ptr<Expr> expr;
+        std::shared_ptr<Expr> expr;
     };
 
-    std::unique_ptr<Expr> parse_expr(Stream& s) {
-        std::unique_ptr<Expr> expr;
+    std::shared_ptr<Expr> parse_expr(Stream& s) {
+        std::shared_ptr<Expr> expr;
         size_t depth;
         std::vector<BinOpStack> stack;
         size_t i;
@@ -240,7 +240,7 @@ namespace ast {
             s.skip_space();
             if (depth == ast::bin_cond_layer) {
                 if (auto token = s.consume_token("if")) {
-                    stack.push_back(BinOpStack{.depth = depth, .expr = std::make_unique<Cond>(token->loc, std::move(expr))});
+                    stack.push_back(BinOpStack{.depth = depth, .expr = std::make_shared<Cond>(token->loc, std::move(expr))});
                     s.skip_white();
                     parse_low();
                     continue;
@@ -249,7 +249,7 @@ namespace ast {
             else {
                 if (auto token = consume_op(s, i, ast::bin_layers[depth])) {
                     s.skip_white();
-                    auto b = std::make_unique<Binary>(token->loc, std::move(expr), *ast::bin_op(ast::bin_layers[depth][i]));
+                    auto b = std::make_shared<Binary>(token->loc, std::move(expr), *ast::bin_op(ast::bin_layers[depth][i]));
                     if (depth == 0) {               // special case, needless to use stack
                         b->right = parse_unary(s);  // return non-nullptr or throw error
                         expr = std::move(b);
@@ -267,9 +267,9 @@ namespace ast {
         return expr;
     }
 
-    std::unique_ptr<For> parse_for(Stream& s) {
+    std::shared_ptr<For> parse_for(Stream& s) {
         auto token = s.must_consume_token("for");
-        auto for_ = std::make_unique<For>(token.loc);
+        auto for_ = std::make_shared<For>(token.loc);
         for_->block = parse_indent_block(s);
         return for_;
     }
@@ -289,14 +289,14 @@ namespace ast {
         return std::nullopt;
     }
 
-    std::unique_ptr<Type> parse_type(Stream& s) {
+    std::shared_ptr<Type> parse_type(Stream& s) {
         auto ident = s.must_consume_token(lexer::Tag::ident);
 
         if (auto bit_size = is_int_type(ident.token)) {
-            return std::make_unique<IntegerType>(ident.loc, std::move(ident.token), *bit_size);
+            return std::make_shared<IntegerType>(ident.loc, std::move(ident.token), *bit_size);
         }
 
-        auto type = std::make_unique<IdentType>(ident.loc, std::move(ident.token));
+        auto type = std::make_shared<IdentType>(ident.loc, std::move(ident.token));
 
         if (s.consume_token("(")) {
             s.skip_white();
@@ -312,7 +312,7 @@ namespace ast {
         return type;
     }
 
-    std::optional<std::unique_ptr<Field>> parse_field(Stream& s) {
+    std::optional<std::shared_ptr<Field>> parse_field(Stream& s) {
         auto f = s.fallback();
         auto ident = s.consume_token(lexer::Tag::ident);
 
@@ -327,7 +327,7 @@ namespace ast {
         }
         f.cancel();
 
-        auto field = std::make_unique<Field>(ident ? ident->loc : token->loc);
+        auto field = std::make_shared<Field>(ident ? ident->loc : token->loc);
         field->colon_loc = token->loc;
 
         if (ident) {
@@ -339,9 +339,9 @@ namespace ast {
         return field;
     }
 
-    std::unique_ptr<Fmt> parse_fmt(Stream& s) {
+    std::shared_ptr<Fmt> parse_fmt(Stream& s) {
         auto token = s.must_consume_token("fmt");
-        auto fmt = std::make_unique<Fmt>(token.loc);
+        auto fmt = std::make_shared<Fmt>(token.loc);
         s.skip_space();
 
         auto ident = s.must_consume_token(lexer::Tag::ident);
@@ -351,7 +351,7 @@ namespace ast {
         return fmt;
     }
 
-    std::unique_ptr<Object> parse_one(Stream& s) {
+    std::shared_ptr<Object> parse_one(Stream& s) {
         if (s.expect_token("for")) {
             return parse_for(s);
         }
@@ -360,7 +360,7 @@ namespace ast {
             return parse_fmt(s);
         }
 
-        std::unique_ptr<Object> obj;
+        std::shared_ptr<Object> obj;
 
         if (auto field = parse_field(s)) {
             obj = std::move(*field);
@@ -379,8 +379,8 @@ namespace ast {
         return obj;
     }
 
-    std::unique_ptr<Program> parse(Stream& s) {
-        auto prog = std::make_unique<Program>();
+    std::shared_ptr<Program> parse(Stream& s) {
+        auto prog = std::make_shared<Program>();
         s.skip_line();
         while (!s.eos()) {
             auto expr = parse_one(s);

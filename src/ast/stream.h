@@ -345,5 +345,5 @@ namespace ast {
         }
     };
 
-    std::unique_ptr<Program> parse(Stream& ctx);
+    std::shared_ptr<Program> parse(Stream& ctx);
 }  // namespace ast

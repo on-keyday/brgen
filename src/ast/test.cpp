@@ -9,7 +9,7 @@ std::atomic_uint failed;
 
 auto& cerr = utils::wrap::cerr_wrap();
 
-std::optional<std::unique_ptr<ast::Program>> test_file(std::string_view file_name) {
+std::optional<std::shared_ptr<ast::Program>> test_file(std::string_view file_name) {
     auto d = utils::helper::defer([&] {
         failed++;
     });
@@ -20,7 +20,7 @@ std::optional<std::unique_ptr<ast::Program>> test_file(std::string_view file_nam
     }
     ast::Context ctx;
     auto seq = utils::make_ref_seq(view);
-    std::unique_ptr<ast::Program> prog;
+    std::shared_ptr<ast::Program> prog;
     auto err = ctx.enter_stream(seq, 1, [&](ast::Stream& s) {
         prog = ast::parse(s);
     });
@@ -36,13 +36,13 @@ std::optional<std::unique_ptr<ast::Program>> test_file(std::string_view file_nam
 }
 
 std::string test() {
-    std::vector<std::future<std::optional<std::unique_ptr<ast::Program>>>> f;
-    f.push_back(std::async(std::launch::async, test_file, "./src/ast/step/step1.bgn"));
-    f.push_back(std::async(std::launch::async, test_file, "./src/ast/step/step2.bgn"));
-    f.push_back(std::async(std::launch::async, test_file, "./src/ast/step/step3.bgn"));
-    f.push_back(std::async(std::launch::async, test_file, "./src/ast/step/step4.bgn"));
-    f.push_back(std::async(std::launch::async, test_file, "./src/ast/step/step5.bgn"));
-    f.push_back(std::async(std::launch::async, test_file, "./src/ast/step/step6.bgn"));
+    std::vector<std::future<std::optional<std::shared_ptr<ast::Program>>>> f;
+    f.push_back(std::async(std::launch::async, test_file, "./src/step/step1.bgn"));
+    f.push_back(std::async(std::launch::async, test_file, "./src/step/step2.bgn"));
+    f.push_back(std::async(std::launch::async, test_file, "./src/step/step3.bgn"));
+    f.push_back(std::async(std::launch::async, test_file, "./src/step/step4.bgn"));
+    f.push_back(std::async(std::launch::async, test_file, "./src/step/step5.bgn"));
+    f.push_back(std::async(std::launch::async, test_file, "./src/step/step6.bgn"));
     ast::Debug d;
     d.array([&](auto&& field) {
         for (auto& out : f) {

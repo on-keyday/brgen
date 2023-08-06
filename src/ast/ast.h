@@ -5,7 +5,6 @@
 #include <list>
 #include <number/prefix.h>
 #include "expr_layer.h"
-#include <vector>
 #include <escape/escape.h>
 
 namespace ast {
@@ -132,7 +131,7 @@ namespace ast {
     struct IdentType : Type {
         static constexpr ObjectType object_type = ObjectType::ident;
         std::string ident;
-        std::unique_ptr<Expr> arguments;
+        std::shared_ptr<Expr> arguments;
         IdentType(lexer::Loc l, std::string&& token)
             : Type(l, ObjectType::ident_type), ident(std::move(token)) {}
 
@@ -146,10 +145,10 @@ namespace ast {
 
     struct Call : Expr {
         static constexpr ObjectType object_type = ObjectType::call;
-        std::unique_ptr<Expr> callee;
-        std::unique_ptr<Expr> arguments;
+        std::shared_ptr<Expr> callee;
+        std::shared_ptr<Expr> arguments;
         lexer::Loc end_loc;
-        Call(lexer::Loc l, std::unique_ptr<Expr>&& callee)
+        Call(lexer::Loc l, std::shared_ptr<Expr>&& callee)
             : Expr(l, ObjectType::call), callee(std::move(callee)) {}
 
         void debug(Debug& buf) const override {
@@ -176,7 +175,7 @@ namespace ast {
         static constexpr ObjectType object_type = ObjectType::field;
         std::optional<std::string> ident;
         lexer::Loc colon_loc;
-        std::unique_ptr<Type> field_type;
+        std::shared_ptr<Type> field_type;
 
         Field(lexer::Loc l)
             : Stmt(l, ObjectType::field) {}
@@ -191,7 +190,7 @@ namespace ast {
 
     struct IndentScope : Stmt {
         static constexpr ObjectType object_type = ObjectType::indent_scope;
-        std::vector<std::unique_ptr<Object>> elements;
+        std::list<std::shared_ptr<Object>> elements;
         IndentScope(lexer::Loc l)
             : Stmt(l, ObjectType::indent_scope) {}
 
@@ -206,7 +205,7 @@ namespace ast {
 
     struct Fmt : Stmt {
         std::string ident;
-        std::unique_ptr<IndentScope> scope;
+        std::shared_ptr<IndentScope> scope;
         Fmt(lexer::Loc l)
             : Stmt(l, ObjectType::fmt) {}
 
@@ -220,7 +219,7 @@ namespace ast {
 
     struct For : Stmt {
         static constexpr ObjectType object_type = ObjectType::for_;
-        std::unique_ptr<IndentScope> block;
+        std::shared_ptr<IndentScope> block;
 
         For(lexer::Loc l)
             : Stmt(l, ObjectType::for_) {}
@@ -234,9 +233,9 @@ namespace ast {
 
     struct If : ExprBlock {
         static constexpr ObjectType object_type = ObjectType::if_;
-        std::unique_ptr<Expr> cond;
-        std::unique_ptr<IndentScope> block;
-        std::unique_ptr<Object> els;
+        std::shared_ptr<Expr> cond;
+        std::shared_ptr<IndentScope> block;
+        std::shared_ptr<Object> els;
 
         constexpr If(lexer::Loc l)
             : ExprBlock(l, ObjectType::if_) {}
@@ -266,7 +265,7 @@ namespace ast {
 
     struct Unary : Expr {
         static constexpr ObjectType object_type = ObjectType::unary;
-        std::unique_ptr<Expr> target;
+        std::shared_ptr<Expr> target;
         UnaryOp op;
 
         constexpr Unary(lexer::Loc l, UnaryOp p)
@@ -282,11 +281,11 @@ namespace ast {
 
     struct Binary : Expr {
         static constexpr ObjectType object_type = ObjectType::binary;
-        std::unique_ptr<Expr> left;
-        std::unique_ptr<Expr> right;
+        std::shared_ptr<Expr> left;
+        std::shared_ptr<Expr> right;
         BinaryOp op;
 
-        Binary(lexer::Loc l, std::unique_ptr<Expr>&& left, BinaryOp op)
+        Binary(lexer::Loc l, std::shared_ptr<Expr>&& left, BinaryOp op)
             : Expr(l, ObjectType::binary), left(std::move(left)), op(op) {}
 
         void debug(Debug& buf) const override {
@@ -301,12 +300,12 @@ namespace ast {
 
     struct Cond : Expr {
         static constexpr ObjectType object_type = ObjectType::cond;
-        std::unique_ptr<Expr> then;
-        std::unique_ptr<Expr> cond;
+        std::shared_ptr<Expr> then;
+        std::shared_ptr<Expr> cond;
         lexer::Loc els_loc;
-        std::unique_ptr<Expr> els;
+        std::shared_ptr<Expr> els;
 
-        Cond(lexer::Loc l, std::unique_ptr<Expr>&& then)
+        Cond(lexer::Loc l, std::shared_ptr<Expr>&& then)
             : Expr(l, ObjectType::cond), then(std::move(then)) {}
 
         void debug(Debug& buf) const override {
@@ -351,7 +350,7 @@ namespace ast {
 
     struct Program : Object {
         static constexpr ObjectType object_type = ObjectType::program;
-        std::list<std::unique_ptr<Object>> program;
+        std::list<std::shared_ptr<Object>> program;
 
         void debug(Debug& buf) const override {
             buf.array([&](auto&& field) {
