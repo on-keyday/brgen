@@ -75,6 +75,10 @@ namespace ast {
         indent_scope,
         stmt = 0x020000,
         for_,
+        field,
+        type = 0x040000,
+        int_type,
+        ident_type,
     };
 
     struct Object {
@@ -97,10 +101,24 @@ namespace ast {
             : Object(l, t) {}
     };
 
-    struct Field : Object {
+    struct IntegerType : Type {
+        static constexpr ObjectType object_type = ObjectType::int_type;
+        std::string raw;
+        size_t bit_size = 0;
+
+        IntegerType(lexer::Loc l, std::string&& token, size_t bit_size)
+            : Type(l, ObjectType::int_type), raw(std::move(token)), bit_size(bit_size) {}
+
+        void debug(Debug& buf) const override {
+            buf.object([&](auto&& field) {
+                field("raw", [&](Debug& d) { d.string(raw); });
+                field("bit_size", [&](Debug& d) { d.number(bit_size); });
+            });
+        }
     };
 
     struct Expr : Object {
+        static constexpr ObjectType object_type = ObjectType::ident_type;
         std::shared_ptr<Type> expr_type;
 
        protected:
@@ -108,8 +126,27 @@ namespace ast {
             : Object(l, t) {}
     };
 
+    struct Expr;
+
+    struct IdentType : Type {
+        static constexpr ObjectType object_type = ObjectType::ident;
+        std::string ident;
+        std::unique_ptr<Expr> arguments;
+        IdentType(lexer::Loc l, std::string&& token)
+            : Type(l, ObjectType::ident_type), ident(std::move(token)) {}
+
+        void debug(Debug& buf) const override {
+            buf.object([&](auto&& field) {
+                field("ident", [&](Debug& d) { d.string(ident); });
+                field("arguments", [&](Debug& d) { arguments ? arguments->debug(d) : d.null(); });
+            });
+        }
+    };
+
     struct Call : Expr {
+        static constexpr ObjectType object_type = ObjectType::call;
         std::unique_ptr<Expr> callee;
+        std::unique_ptr<Expr> arguments;
         lexer::Loc end_loc;
         Call(lexer::Loc l, std::unique_ptr<Expr>&& callee)
             : Expr(l, ObjectType::call), callee(std::move(callee)) {}
@@ -117,7 +154,7 @@ namespace ast {
         void debug(Debug& buf) const override {
             buf.object([&](auto&& field) {
                 field("callee", [&](Debug& d) { callee->debug(d); });
-                field("arguments", [&](Debug& d) { d.null(); });
+                field("arguments", [&](Debug& d) { arguments ? arguments->debug(d) : d.null(); });
             });
         }
     };
@@ -134,7 +171,25 @@ namespace ast {
             : Object(l, t) {}
     };
 
+    struct Field : Stmt {
+        static constexpr ObjectType object_type = ObjectType::field;
+        std::optional<std::string> ident;
+        lexer::Loc colon_loc;
+        std::unique_ptr<Type> field_type;
+
+        Field(lexer::Loc l)
+            : Stmt(l, ObjectType::field) {}
+
+        void debug(Debug& buf) const override {
+            buf.object([&](auto&& field) {
+                field("ident", [&](Debug& d) { ident ? d.string(*ident) : d.null(); });
+                field("field_type", [&](Debug& d) { field_type->debug(d); });
+            });
+        }
+    };
+
     struct IndentScope : Stmt {
+        static constexpr ObjectType object_type = ObjectType::indent_scope;
         std::vector<std::unique_ptr<Object>> elements;
         IndentScope(lexer::Loc l)
             : Stmt(l, ObjectType::indent_scope) {}
@@ -149,6 +204,7 @@ namespace ast {
     };
 
     struct For : Stmt {
+        static constexpr ObjectType object_type = ObjectType::for_;
         std::unique_ptr<IndentScope> block;
 
         For(lexer::Loc l)
@@ -162,6 +218,7 @@ namespace ast {
     };
 
     struct If : ExprBlock {
+        static constexpr ObjectType object_type = ObjectType::if_;
         std::unique_ptr<Expr> cond;
         std::unique_ptr<IndentScope> block;
         std::unique_ptr<Object> els;
@@ -179,6 +236,7 @@ namespace ast {
     };
 
     struct Ident : Expr {
+        static constexpr ObjectType object_type = ObjectType::ident;
         std::string ident;
 
         Ident(lexer::Loc l, std::string&& i)
@@ -192,6 +250,7 @@ namespace ast {
     };
 
     struct Unary : Expr {
+        static constexpr ObjectType object_type = ObjectType::unary;
         std::unique_ptr<Expr> target;
         UnaryOp op;
 
@@ -207,6 +266,7 @@ namespace ast {
     };
 
     struct Binary : Expr {
+        static constexpr ObjectType object_type = ObjectType::binary;
         std::unique_ptr<Expr> left;
         std::unique_ptr<Expr> right;
         BinaryOp op;
@@ -225,6 +285,7 @@ namespace ast {
     };
 
     struct Cond : Expr {
+        static constexpr ObjectType object_type = ObjectType::cond;
         std::unique_ptr<Expr> then;
         std::unique_ptr<Expr> cond;
         lexer::Loc els_loc;
@@ -249,6 +310,7 @@ namespace ast {
     };
 
     struct IntLiteral : Literal {
+        static constexpr ObjectType object_type = ObjectType::int_literal;
         std::string raw;
 
         template <class T>
@@ -273,6 +335,7 @@ namespace ast {
     };
 
     struct Program : Object {
+        static constexpr ObjectType object_type = ObjectType::program;
         std::list<std::unique_ptr<Object>> program;
 
         void debug(Debug& buf) const override {
@@ -286,5 +349,13 @@ namespace ast {
         Program()
             : Object(lexer::Loc{}, ObjectType::program) {}
     };
+
+    template <class T>
+    constexpr T* as(Object* t) {
+        if (t && t->type == T::object_type) {
+            return static_cast<T*>(t);
+        }
+        return nullptr;
+    }
 
 }  // namespace ast

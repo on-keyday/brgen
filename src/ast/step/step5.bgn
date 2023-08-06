@@ -1,0 +1,6 @@
+form :u1
+if form:
+    :LongPacket
+else:
+    :ShortPacket
+

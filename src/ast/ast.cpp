@@ -17,6 +17,7 @@ namespace ast {
     }
 
     std::unique_ptr<IndentScope> parse_indent_block(Stream& s) {
+        must_consume_indent_sign(s);
         auto base = s.must_consume_token(lexer::Tag::indent);
         auto c = s.context()->new_indent(base.token.size());
         auto scope = std::make_unique<IndentScope>(base.loc);
@@ -37,7 +38,6 @@ namespace ast {
         s.skip_white();
         auto if_ = std::make_unique<If>(token.loc);
         if_->cond = parse_expr(s);
-        must_consume_indent_sign(s);
         if_->block = parse_indent_block(s);
         auto cur = s.context()->current_indent();
         auto detect_end = [&] {
@@ -58,10 +58,6 @@ namespace ast {
             auto elif = std::make_unique<If>(tok->loc);
             s.skip_white();
             elif->cond = parse_expr(s);
-            s.skip_white();
-            s.must_consume_token(":");
-            s.skip_space();
-            s.must_consume_token(lexer::Tag::line);
             elif->block = parse_indent_block(s);
             auto new_else = elif.get();
             elifs->els = std::move(elif);
@@ -73,7 +69,6 @@ namespace ast {
         if (!s.consume_token("else")) {
             return if_;  // nothing to do
         }
-        must_consume_indent_sign(s);
         elifs->els = parse_indent_block(s);
         if (cur && !detect_end()) {
             s.report_error("expect less indent but not");
@@ -96,6 +91,9 @@ namespace ast {
         auto token = s.must_consume_token("(");
         auto call = std::make_unique<Call>(token.loc, std::move(p));
         s.skip_white();
+        if (!s.expect_token(")")) {
+            call->arguments = parse_expr(s);
+        }
         token = s.must_consume_token(")");
         call->end_loc = token.loc;
         return call;
@@ -267,16 +265,86 @@ namespace ast {
     std::unique_ptr<For> parse_for(Stream& s) {
         auto token = s.must_consume_token("for");
         auto for_ = std::make_unique<For>(token.loc);
-        must_consume_indent_sign(s);
         for_->block = parse_indent_block(s);
         return for_;
+    }
+
+    std::optional<size_t> is_int_type(std::string_view str) {
+        // Check if the string starts with 'u' and has a valid unsigned integer
+        if (str.size() > 1 && str[0] == 'u') {
+            size_t value = 0;
+            if (!utils::number::parse_integer(str.substr(1), value)) {
+                return std::nullopt;
+            }
+            if (value == 0) {  // u0 is not valid
+                return std::nullopt;
+            }
+            return value;
+        }
+        return std::nullopt;
+    }
+
+    std::unique_ptr<Type> parse_type(Stream& s) {
+        auto ident = s.must_consume_token(lexer::Tag::ident);
+
+        if (auto bit_size = is_int_type(ident.token)) {
+            return std::make_unique<IntegerType>(ident.loc, std::move(ident.token), *bit_size);
+        }
+
+        auto type = std::make_unique<IdentType>(ident.loc, std::move(ident.token));
+
+        if (s.consume_token("(")) {
+            s.skip_white();
+
+            if (!s.expect_token(")")) {
+                type->arguments = parse_expr(s);
+                s.skip_white();
+            }
+
+            s.must_consume_token(")");
+        }
+
+        return type;
+    }
+
+    std::optional<std::unique_ptr<Field>> parse_field(Stream& s) {
+        auto f = s.fallback();
+        auto ident = s.consume_token(lexer::Tag::ident);
+
+        if (ident) {
+            s.skip_space();
+        }
+
+        auto token = s.consume_token(":");
+
+        if (!token) {
+            return std::nullopt;
+        }
+        f.cancel();
+
+        auto field = std::make_unique<Field>(ident ? ident->loc : token->loc);
+        field->colon_loc = token->loc;
+
+        if (ident) {
+            field->ident = ident->token;
+        }
+
+        field->field_type = parse_type(s);
+
+        return field;
     }
 
     std::unique_ptr<Object> parse_one(Stream& s) {
         if (s.expect_token("for")) {
             return parse_for(s);
         }
-        auto obj = parse_expr(s);
+        std::unique_ptr<Object> obj;
+        if (auto f = parse_field(s)) {
+            obj = std::move(*f);
+        }
+        if (!obj) {
+            obj = parse_expr(s);
+        }
         s.skip_space();
         if (!s.eos() && s.expect_token(lexer::Tag::line)) {
             s.must_consume_token(lexer::Tag::line);

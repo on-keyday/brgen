@@ -3,11 +3,7 @@ for:
         trace()
     data = readfrom()
     input = data
-    form :u1
-    if form:
-        :LongPacket
-    else:
-        :ShortPacket
 
-fmt LongPacket:
+
+
     
