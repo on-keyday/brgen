@@ -20,8 +20,7 @@ int main() {
             });
         }
     });
-    std::ofstream ofs("./test/ast_test_result.json");
-    ofs << d.buf;
+    save_result(d, "./test/ast_test_result.json");
     if (failed == 0) {
         cerr << "PASS";
     }

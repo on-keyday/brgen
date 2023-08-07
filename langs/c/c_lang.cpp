@@ -23,7 +23,7 @@ namespace c_lang {
     void entry(writer::TreeWriter& w, std::shared_ptr<ast::Program>& p) {
         w.code().write("int main() {");
         auto scope = w.code().indent_scope();
-        for (auto& p : p->program) {
+        for (auto& p : p->elements) {
             if (auto a = ast::as_Expr(p)) {
                 writer::TreeWriter child{w};
                 write_expr(child, a);

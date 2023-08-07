@@ -72,13 +72,17 @@ namespace ast {
         ident,
         call,
         if_,
-        indent_scope,
+        member_access,
+
+        // translated
         tmp_var,
-        access,
+        block_expr,
+
         stmt = 0x020000,
         for_,
         field,
         fmt,
+        indent_scope,
         type = 0x040000,
         int_type,
         ident_type,
@@ -112,12 +116,6 @@ namespace ast {
        protected:
         constexpr Expr(lexer::Loc l, ObjectType t)
             : Object(l, t) {}
-    };
-
-    struct ExprBlock : Expr {
-       protected:
-        constexpr ExprBlock(lexer::Loc l, ObjectType t)
-            : Expr(l, t) {}
     };
 
     struct Stmt : Object {
@@ -337,14 +335,14 @@ namespace ast {
         }
     };
 
-    struct If : ExprBlock {
+    struct If : Expr {
         static constexpr ObjectType object_type = ObjectType::if_;
         std::shared_ptr<Expr> cond;
         std::shared_ptr<IndentScope> block;
         std::shared_ptr<Object> els;
 
         constexpr If(lexer::Loc l)
-            : ExprBlock(l, ObjectType::if_) {}
+            : Expr(l, ObjectType::if_) {}
 
         void debug(Debug& buf) const override {
             buf.object([&](auto&& field) {
@@ -390,7 +388,7 @@ namespace ast {
         }
     };
 
-    struct Access : Expr {
+    struct MemberAccess : Expr {
         std::shared_ptr<Expr> target;
         std::string name;
 
@@ -401,8 +399,8 @@ namespace ast {
             });
         }
 
-        Access(lexer::Loc l, std::shared_ptr<Expr>&& t, std::string&& n)
-            : Expr(l, ObjectType::access), target(std::move(t)), name(std::move(n)) {}
+        MemberAccess(lexer::Loc l, std::shared_ptr<Expr>&& t, std::string&& n)
+            : Expr(l, ObjectType::member_access), target(std::move(t)), name(std::move(n)) {}
     };
 
     struct Cond : Expr {
@@ -451,14 +449,14 @@ namespace ast {
 
     struct Program : Object {
         static constexpr ObjectType object_type = ObjectType::program;
-        objlist program;
+        objlist elements;
         Definitions defs;
 
         void debug(Debug& buf) const override {
             buf.object([&](auto&& field) {
-                field("program", [&](Debug& d) {
+                field("elements", [&](Debug& d) {
                     d.array([&](auto&& field) {
-                        for (auto& p : program) {
+                        for (auto& p : elements) {
                             field([&](Debug& d) { p->debug(d); });
                         }
                     });

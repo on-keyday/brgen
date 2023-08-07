@@ -118,11 +118,11 @@ namespace ast {
         return call;
     }
 
-    std::shared_ptr<Access> parse_access(std::shared_ptr<Expr>& p, Stream& s) {
+    std::shared_ptr<MemberAccess> parse_access(std::shared_ptr<Expr>& p, Stream& s) {
         auto token = s.must_consume_token(".");
         s.skip_white();
         auto ident = s.must_consume_token(lexer::Tag::ident);
-        return std::make_shared<Access>(token.loc, std::move(p), std::move(ident.token));
+        return std::make_shared<MemberAccess>(token.loc, std::move(p), std::move(ident.token));
     }
 
     std::shared_ptr<Expr> parse_post(Stream& s) {
@@ -414,7 +414,7 @@ namespace ast {
         s.skip_line();
         while (!s.eos()) {
             auto expr = parse_one(s);
-            prog->program.push_back(std::move(expr));
+            prog->elements.push_back(std::move(expr));
             s.skip_white();
         }
         return prog;

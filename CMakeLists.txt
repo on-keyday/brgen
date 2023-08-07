@@ -10,12 +10,12 @@ add_executable(lexer_test "core/lexer/test.cpp")
 add_executable(ast_test "core/ast/test.cpp"
 "core/ast/test_component.cpp"
 "core/ast/ast.cpp")
-add_executable(vm_test "core/treeopt/test.cpp"
+add_executable(treeopt_test "core/treeopt/test.cpp"
 "core/ast/test_component.cpp"
 "core/ast/ast.cpp")
 target_compile_options(lexer_test PRIVATE "-fconstexpr-steps=2147483647")
 target_link_libraries(ast_test utils)
-target_link_libraries(vm_test utils)
+target_link_libraries(treeopt_test utils)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "tool")
 
 add_custom_command(

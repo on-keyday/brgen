@@ -11,3 +11,4 @@ using AstList = std::vector<std::future<std::optional<std::shared_ptr<ast::Progr
 extern utils::wrap::UtfOut& cerr;
 
 AstList test_ast(bool debug = true);
+void save_result(ast::Debug&, const char* file);

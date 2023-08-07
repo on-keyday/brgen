@@ -25,7 +25,7 @@ namespace treeopt {
             });
         }
 
-        std::shared_ptr<ast::TmpVar> add_call(std::shared_ptr<ast::Call>&& c) {
+        std::shared_ptr<ast::TmpVar> add_tmp_var(std::shared_ptr<ast::Expr>&& c) {
             auto t = c;
             auto tmp = std::make_shared<ast::TmpVar>(std::move(t), tmp_index);
             tmp_index++;
@@ -39,33 +39,32 @@ namespace treeopt {
 
     template <class T>
     void extract_call(CallHolder& h, std::shared_ptr<T>& c) {
-        if constexpr (std::is_same_v<T, ast::Program>) {
-            auto s = h.enter_holder(&c->program);
-            for (auto it = c->program.begin(); it != c->program.end(); it++) {
-                if (it->get()->type == ast::ObjectType::call) {
-                    // simple call, needless to extract
-                    continue;
-                }
-                if (auto bin = ast::as<ast::Binary>(*it);
-                    bin && bin->op == ast::BinaryOp::assign &&
-                    bin->right->type == ast::ObjectType::call) {
-                    // simple call with simple assignment, needless to extract
-                    continue;
-                }
-                extract_call(h, *it);
-            }
+        if (!c) {
+            return;
         }
-        else if constexpr (std::is_same_v<T, ast::IndentScope>) {
+        auto direct_call = [&](auto& c) {
+            if (auto call = ast::as<ast::Call>(c)) {
+                extract_call(h, call->expr_type);
+                extract_call(h, call->callee);
+                extract_call(h, call->arguments);
+                return true;
+            }
+            if (auto b = ast::as<ast::Binary>(c);
+                b && b->op == ast::BinaryOp::assign &&
+                b->right->type == ast::ObjectType::call) {
+                extract_call(h, b->left);
+                auto call = ast::as<ast::Call>(b->right);
+                extract_call(h, call->expr_type);
+                extract_call(h, call->callee);
+                extract_call(h, call->arguments);
+                return true;
+            }
+            return false;
+        };
+        if constexpr (std::is_same_v<T, ast::Program> || std::is_same_v<T, ast::IndentScope>) {
             auto s = h.enter_holder(&c->elements);
             for (auto it = c->elements.begin(); it != c->elements.end(); it++) {
-                if (it->get()->type == ast::ObjectType::call) {
-                    // simple call, needless to extract
-                    continue;
-                }
-                if (auto bin = ast::as<ast::Binary>(*it);
-                    bin && bin->op == ast::BinaryOp::assign &&
-                    bin->right->type == ast::ObjectType::call) {
-                    // simple call with simple assignment, needless to extract
+                if (direct_call(*it)) {
                     continue;
                 }
                 extract_call(h, *it);
@@ -79,8 +78,11 @@ namespace treeopt {
                         auto scope = h.enter_holder(&l);
                         extract_call(h, if_->cond);
                         if (l.size()) {
+                            if_->cond = std::make_shared<ast::BlockExpr>(std::move(if_->cond), std::move(l));
                         }
                     }
+                    extract_call(h, if_->block);
+                    extract_call(h, if_->els);
                 }
             }
             ast::traverse(c, [&](auto&& f) {
@@ -88,7 +90,7 @@ namespace treeopt {
             });
             if constexpr (std::is_base_of_v<T, ast::Call>) {
                 if (ast::as<ast::Call>(c)) {
-                    c = h.add_call(std::static_pointer_cast<ast::Call>(c));
+                    c = h.add_tmp_var(std::static_pointer_cast<ast::Call>(c));
                     return;
                 }
             }

@@ -29,6 +29,7 @@ namespace ast {
             fn(v->target);
         }
         CASE(Cond) {
+            fn(v->expr_type);
             fn(v->cond);
             fn(v->then);
             fn(v->els);
@@ -54,14 +55,14 @@ namespace ast {
             }
         }
         CASE(Program) {
-            for (auto& f : v->program) {
+            for (auto& f : v->elements) {
                 fn(f);
             }
         }
         CASE(Field) {
             fn(v->field_type);
         }
-        CASE(Access) {
+        CASE(MemberAccess) {
             fn(v->expr_type);
             fn(v->target);
         }

@@ -4,6 +4,7 @@
 #include <wrap/cout.h>
 #include <future>
 #include "test_component.h"
+#include <fstream>
 
 auto& cerr = utils::wrap::cerr_wrap();
 
@@ -43,4 +44,9 @@ AstList test_ast(bool debug) {
     f.push_back(std::async(std::launch::async, test_file, "step6.bgn", debug));
     f.push_back(std::async(std::launch::async, test_file, "step7.bgn", debug));
     return f;
+}
+
+void save_result(ast::Debug& d, const char* file) {
+    std::ofstream ofs(file);
+    ofs << d.buf;
 }
