@@ -1,9 +1,11 @@
 /*license*/
 #pragma once
 #include "../ast/ast.h"
+#include "../ast/translated.h"
+#include "../ast/util.h"
 #include <helper/defer.h>
 
-namespace vm {
+namespace treeopt {
     struct CallHolder {
        private:
         size_t tmp_index = 0;
@@ -70,6 +72,17 @@ namespace vm {
             }
         }
         else {
+            if constexpr (std::is_base_of_v<T, ast::If>) {
+                if (ast::If* if_ = ast::as<ast::If>(c)) {
+                    ast::objlist l;
+                    {
+                        auto scope = h.enter_holder(&l);
+                        extract_call(h, if_->cond);
+                        if (l.size()) {
+                        }
+                    }
+                }
+            }
             ast::traverse(c, [&](auto&& f) {
                 extract_call(h, f);
             });
@@ -81,4 +94,4 @@ namespace vm {
             }
         }
     }
-}  // namespace vm
+}  // namespace treeopt
