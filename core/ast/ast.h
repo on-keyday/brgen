@@ -133,31 +133,50 @@ namespace ast {
 
     using objlist = std::list<std::shared_ptr<Object>>;
 
+    // forward declaration
     struct Fmt;
-
-    struct Stream;
+    struct Ident;
+    struct Field;
 
     struct Definitions {
-        objlist order;
         std::map<std::string, std::list<std::shared_ptr<Fmt>>> fmts;
+        std::map<std::string, std::list<std::shared_ptr<Ident>>> idents;
+        std::list<std::shared_ptr<Field>> fields;
 
-        void add_fmt(std::string& name, std::shared_ptr<Fmt>& f) {
+        void add_fmt(std::string& name, const std::shared_ptr<Fmt>& f) {
             fmts[name].push_back(f);
         }
+
+        void add_ident(std::string& name, const std::shared_ptr<Ident>& f) {
+            idents[name].push_back(f);
+        }
+
+        void add_field(const std::shared_ptr<Field>& f) {
+            fields.push_back(f);
+        }
     };
+
+    void debug_defs(Debug& d, const Definitions& defs);
 
     struct IndentScope : Stmt {
         static constexpr ObjectType object_type = ObjectType::indent_scope;
         objlist elements;
-        Definitions list;
+        Definitions defs;
         IndentScope(lexer::Loc l)
             : Stmt(l, ObjectType::indent_scope) {}
 
         void debug(Debug& buf) const override {
-            buf.array([&](auto&& field) {
-                for (auto& p : elements) {
-                    field([&](Debug& d) { p->debug(d); });
-                }
+            buf.object([&](auto&& field) {
+                field("elements", [&](Debug& d) {
+                    d.array([&](auto&& field) {
+                        for (auto& p : elements) {
+                            field([&](Debug& d) { p->debug(d); });
+                        }
+                    });
+                });
+                field("defs", [&](Debug& d) {
+                    debug_defs(d, defs);
+                });
             });
         }
     };
@@ -176,6 +195,43 @@ namespace ast {
             });
         }
     };
+
+    struct Ident : Expr {
+        static constexpr ObjectType object_type = ObjectType::ident;
+        std::string ident;
+
+        Ident(lexer::Loc l, std::string&& i)
+            : Expr(l, ObjectType::ident), ident(std::move(i)) {}
+
+        void debug(Debug& buf) const override {
+            buf.object([&](auto&& field) {
+                field("ident", [&](Debug& d) { d.string(ident); });
+            });
+        }
+    };
+
+    inline void debug_defs(Debug& d, const Definitions& defs) {
+        d.object([&](auto&& field) {
+            field("fmts", [&](Debug& d) {
+                d.array([&](auto&& field) {
+                    for (auto& f : defs.fmts) {
+                        field([&](Debug& d) {
+                            d.string(f.first);
+                        });
+                    }
+                });
+            });
+            field("idents", [&](Debug& d) {
+                d.array([&](auto&& field) {
+                    for (auto& f : defs.idents) {
+                        field([&](Debug& d) {
+                            d.string(f.first);
+                        });
+                    }
+                });
+            });
+        });
+    }
 
     struct IntegerType : Type {
         static constexpr ObjectType object_type = ObjectType::int_type;
@@ -267,7 +323,7 @@ namespace ast {
 
         void debug(Debug& buf) const override {
             buf.object([&](auto&& field) {
-                field("block", [&](Debug& d) { block->debug(d); });
+                field("for_block", [&](Debug& d) { block->debug(d); });
             });
         }
     };
@@ -286,20 +342,6 @@ namespace ast {
                 field("cond", [&](Debug& d) { cond->debug(d); });
                 field("block", [&](Debug& d) { block->debug(d); });
                 field("else", [&](Debug& d) { els ? els->debug(d) : d.null(); });
-            });
-        }
-    };
-
-    struct Ident : Expr {
-        static constexpr ObjectType object_type = ObjectType::ident;
-        std::string ident;
-
-        Ident(lexer::Loc l, std::string&& i)
-            : Expr(l, ObjectType::ident), ident(std::move(i)) {}
-
-        void debug(Debug& buf) const override {
-            buf.object([&](auto&& field) {
-                field("ident", [&](Debug& d) { d.string(ident); });
             });
         }
     };
@@ -401,6 +443,7 @@ namespace ast {
     struct Program : Object {
         static constexpr ObjectType object_type = ObjectType::program;
         objlist program;
+        Definitions defs;
 
         void debug(Debug& buf) const override {
             buf.object([&](auto&& field) {
@@ -410,6 +453,9 @@ namespace ast {
                             field([&](Debug& d) { p->debug(d); });
                         }
                     });
+                });
+                field("defs", [&](Debug& d) {
+                    debug_defs(d, defs);
                 });
             });
         }
@@ -423,6 +469,14 @@ namespace ast {
         Object* v = std::to_address(t);
         if (v && v->type == T::object_type) {
             return static_cast<T*>(v);
+        }
+        return nullptr;
+    }
+
+    constexpr Expr* as_Expr(auto&& t) {
+        Object* v = std::to_address(t);
+        if (v && int(v->type) & int(ObjectType::expr)) {
+            return static_cast<Expr*>(v);
         }
         return nullptr;
     }

@@ -302,30 +302,32 @@ namespace ast {
     struct ContextInfo {
        private:
         Stream* s = nullptr;
-        std::map<std::string, std::shared_ptr<Type>> literal_types;
         size_t indent = 0;
+        Definitions* defs = nullptr;
 
        public:
-        std::shared_ptr<Type> get_literal_type(const auto& key) {
-            auto found = literal_types.find(key);
-            if (found != literal_types.end()) {
-                return *found;
-            }
-            return nullptr;
+        void set_definitions(Definitions* def) {
+            defs = def;
         }
 
-        auto new_indent(size_t new_) {
+        auto new_indent(size_t new_, Definitions* new_def) {
             if (indent >= new_) {
                 s->report_error("expect largeer indent but not");
             }
             auto old = std::exchange(indent, std::move(new_));
-            return utils::helper::defer([&, old] {
+            auto old_defs = std::exchange(defs, new_def);
+            return utils::helper::defer([=, this] {
                 indent = std::move(old);
+                defs = old_defs;
             });
         }
 
         size_t current_indent() {
             return indent;
+        }
+
+        Definitions* current_definitions() {
+            return defs;
         }
     };
 

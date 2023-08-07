@@ -16,20 +16,32 @@ namespace ast {
         s.must_consume_token(lexer::Tag::line);
     }
 
-    std::shared_ptr<IndentScope> parse_indent_block(Stream& s) {
+      std::shared_ptr<IndentScope> parse_indent_block(Stream& s) {
+        // Consume the initial indent sign
         must_consume_indent_sign(s);
+
+        // Get the base indent token
         auto base = s.must_consume_token(lexer::Tag::indent);
-        auto c = s.context()->new_indent(base.token.size());
+
+        // Create a shared pointer for the IndentScope
         auto scope = std::make_shared<IndentScope>(base.loc);
+
+        // Create a new context for the current indent level
+        auto current_indent = base.token.size();
+        auto c = s.context()->new_indent(current_indent, &scope->defs);
+
+        // Parse and add the first element
         scope->elements.push_back(parse_one(s));
-        for (;;) {
-            auto indent = s.peek_token(lexer::Tag::indent);
-            if (!indent || indent->token.size() < base.token.size()) {
+
+        // Parse and add subsequent elements with the same indent level
+        while (auto indent = s.peek_token(lexer::Tag::indent)) {
+            if (indent->token.size() < current_indent) {
                 break;
             }
             s.must_consume_token(lexer::Tag::indent);
             scope->elements.push_back(parse_one(s));
         }
+
         return scope;
     }
 
@@ -89,7 +101,9 @@ namespace ast {
             return parse_if(s);
         }
         auto token = s.must_consume_token(lexer::Tag::ident);
-        return std::make_shared<Ident>(token.loc, std::move(token.token));
+        auto ident = std::make_shared<Ident>(token.loc, std::move(token.token));
+        s.context()->current_definitions()->add_ident(ident->ident, ident);
+        return ident;
     }
 
     std::shared_ptr<Call> parse_call(std::shared_ptr<Expr>& p, Stream& s) {
@@ -359,6 +373,8 @@ namespace ast {
         fmt->ident = ident.token;
         fmt->scope = parse_indent_block(s);
 
+        s.context()->current_definitions()->add_fmt(fmt->ident, fmt);
+
         return fmt;
     }
 
@@ -392,6 +408,7 @@ namespace ast {
 
     std::shared_ptr<Program> parse(Stream& s) {
         auto prog = std::make_shared<Program>();
+        s.context()->set_definitions(&prog->defs);
         s.skip_line();
         while (!s.eos()) {
             auto expr = parse_one(s);
