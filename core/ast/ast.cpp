@@ -16,7 +16,7 @@ namespace ast {
         s.must_consume_token(lexer::Tag::line);
     }
 
-      std::shared_ptr<IndentScope> parse_indent_block(Stream& s) {
+    std::shared_ptr<IndentScope> parse_indent_block(Stream& s) {
         // Consume the initial indent sign
         must_consume_indent_sign(s);
 
@@ -360,6 +360,8 @@ namespace ast {
         }
 
         field->field_type = parse_type(s);
+
+        s.context()->current_definitions()->add_field(field);
 
         return field;
     }

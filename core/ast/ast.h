@@ -82,6 +82,7 @@ namespace ast {
         type = 0x040000,
         int_type,
         ident_type,
+        str_literal_type,
     };
 
     struct Object {
@@ -210,6 +211,23 @@ namespace ast {
         }
     };
 
+    struct Field : Stmt {
+        static constexpr ObjectType object_type = ObjectType::field;
+        std::optional<std::string> ident;
+        lexer::Loc colon_loc;
+        std::shared_ptr<Type> field_type;
+
+        Field(lexer::Loc l)
+            : Stmt(l, ObjectType::field) {}
+
+        void debug(Debug& buf) const override {
+            buf.object([&](auto&& field) {
+                field("ident", [&](Debug& d) { ident ? d.string(*ident) : d.null(); });
+                field("field_type", [&](Debug& d) { field_type->debug(d); });
+            });
+        }
+    };
+
     inline void debug_defs(Debug& d, const Definitions& defs) {
         d.object([&](auto&& field) {
             field("fmts", [&](Debug& d) {
@@ -226,6 +244,15 @@ namespace ast {
                     for (auto& f : defs.idents) {
                         field([&](Debug& d) {
                             d.string(f.first);
+                        });
+                    }
+                });
+            });
+            field("fields", [&](Debug& d) {
+                d.array([&](auto&& field) {
+                    for (auto& f : defs.fields) {
+                        field([&](Debug& d) {
+                            f->debug(d);
                         });
                     }
                 });
@@ -264,6 +291,22 @@ namespace ast {
         }
     };
 
+    std::optional<std::string> unescape(std::string_view str_lit) {
+        std::string mid;
+        if (!utils::escape::unescape_str(str_lit.substr(1, str_lit.size() - 2), mid)) {
+            return std::nullopt;
+        }
+        return mid;
+    }
+
+    struct StrLiteralType : Type {
+        std::string raw;
+        std::optional<std::string> mid;
+
+        StrLiteralType(lexer::Loc loc, std::string&& str)
+            : Type(loc, ObjectType::str_literal_type) {}
+    };
+
     struct Call : Expr {
         static constexpr ObjectType object_type = ObjectType::call;
         std::shared_ptr<Expr> callee;
@@ -276,40 +319,6 @@ namespace ast {
             buf.object([&](auto&& field) {
                 field("callee", [&](Debug& d) { callee->debug(d); });
                 field("arguments", [&](Debug& d) { arguments ? arguments->debug(d) : d.null(); });
-            });
-        }
-    };
-
-    struct TmpVar : Expr {
-        static constexpr ObjectType object_type = ObjectType::tmp_var;
-        size_t tmp_index = 0;
-        std::shared_ptr<Call> call;
-
-        TmpVar(std::shared_ptr<Call>&& c, size_t tmp)
-            : Expr(c->loc, ObjectType::tmp_var), tmp_index(tmp), call(std::move(c)) {
-            expr_type = call->expr_type;
-        }
-
-        void debug(Debug& buf) const override {
-            buf.object([&](auto&& field) {
-                field("tmp_var", [&](Debug& d) { d.number(tmp_index); });
-            });
-        }
-    };
-
-    struct Field : Stmt {
-        static constexpr ObjectType object_type = ObjectType::field;
-        std::optional<std::string> ident;
-        lexer::Loc colon_loc;
-        std::shared_ptr<Type> field_type;
-
-        Field(lexer::Loc l)
-            : Stmt(l, ObjectType::field) {}
-
-        void debug(Debug& buf) const override {
-            buf.object([&](auto&& field) {
-                field("ident", [&](Debug& d) { ident ? d.string(*ident) : d.null(); });
-                field("field_type", [&](Debug& d) { field_type->debug(d); });
             });
         }
     };

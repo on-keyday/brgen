@@ -1,0 +1,47 @@
+log :Syslog
+
+fmt Syslog:
+    header :Header
+
+fmt Prival:
+    val :u8
+    fn decode(input):
+        val = input.until(">",3).u8().in_range(1,191)
+    
+    fn encode(output):
+        val.in_range(1,191)
+        output.write(val.str())
+    
+    fn common(call):
+        :"<"
+        call()
+        :">"
+
+fn digit(n):
+    n == '0'
+
+
+fn nonzerodigit(n):
+   '1'<=n && n<='9' 
+
+fn nilvalue(n):
+    n == '-'
+
+fmt Version:
+    version :u16
+    fn decode(input):
+        assert(nonzerodigit(input[0]))
+        version = input.cond(digit,3).u16()
+    
+    fn encode(output):
+        version.in_range(1,999)
+        output.write(version.str())
+
+fmt Timestamp:
+
+
+fmt Header:
+    pri :Prival
+    version :Version
+    :" "
+
