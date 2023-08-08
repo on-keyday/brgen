@@ -30,6 +30,11 @@ namespace ast {
             }
             return std::nullopt;
         }
+
+        void walk_frames(auto&& fn) {
+            fn("branch", branch);
+            fn("next", next);
+        }
     };
 
     template <class T>

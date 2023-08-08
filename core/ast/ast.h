@@ -217,7 +217,7 @@ namespace ast {
 
     struct Field : Stmt {
         static constexpr ObjectType object_type = ObjectType::field;
-        std::optional<std::string> ident;
+        std::shared_ptr<Ident> ident;
         lexer::Loc colon_loc;
         std::shared_ptr<Type> field_type;
 
@@ -264,6 +264,19 @@ namespace ast {
         });
     }
 
+    inline void debug_def_frames(Debug& d, const defframe& f) {
+        d.object([&](auto&& field) {
+            field("current", [&](Debug& d) {
+                debug_defs(d, f);
+            });
+            f->walk_frames([&](const char* obj, const defframe& f) {
+                field(obj, [&](Debug& d) {
+                    f ? debug_def_frames(d, f) : d.null();
+                });
+            });
+        });
+    }
+
     struct IntegerType : Type {
         static constexpr ObjectType object_type = ObjectType::int_type;
         std::string raw;
@@ -284,8 +297,9 @@ namespace ast {
         static constexpr ObjectType object_type = ObjectType::ident_type;
         std::string ident;
         std::shared_ptr<Expr> arguments;
-        IdentType(lexer::Loc l, std::string&& token)
-            : Type(l, ObjectType::ident_type), ident(std::move(token)) {}
+        defframe frame;
+        IdentType(lexer::Loc l, std::string&& token, defframe&& frame)
+            : Type(l, ObjectType::ident_type), ident(std::move(token)), frame(std::move(frame)) {}
 
         void debug(Debug& buf) const override {
             buf.object([&](auto&& field) {
@@ -469,6 +483,9 @@ namespace ast {
                 });
                 field("defs", [&](Debug& d) {
                     debug_defs(d, defs);
+                });
+                field("all_defs", [&](Debug& d) {
+                    debug_def_frames(d, defs);
                 });
             });
         }

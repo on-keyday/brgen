@@ -93,6 +93,13 @@ namespace ast {
         return if_;
     }
 
+    std::shared_ptr<Ident> parse_ident(Stream& s) {
+        auto token = s.must_consume_token(lexer::Tag::ident);
+        auto ident = std::make_shared<Ident>(token.loc, std::move(token.token));
+        s.context()->current_definitions()->current.add_ident(ident->ident, ident);
+        return ident;
+    }
+
     std::shared_ptr<Expr> parse_prim(Stream& s) {
         if (auto token = s.consume_token(lexer::Tag::int_literal)) {
             return std::make_shared<IntLiteral>(token->loc, std::move(token->token));
@@ -100,10 +107,7 @@ namespace ast {
         if (s.expect_token("if")) {
             return parse_if(s);
         }
-        auto token = s.must_consume_token(lexer::Tag::ident);
-        auto ident = std::make_shared<Ident>(token.loc, std::move(token.token));
-        s.context()->current_definitions()->add_ident(ident->ident, ident);
-        return ident;
+        return parse_ident(s);
     }
 
     std::shared_ptr<Call> parse_call(std::shared_ptr<Expr>& p, Stream& s) {
@@ -171,6 +175,9 @@ namespace ast {
             target = std::move(ptr);
         }
         return target;
+    }
+
+    void check_assignment(Stream& s, ast::Binary* l) {
     }
 
     struct BinOpStack {
@@ -321,7 +328,7 @@ namespace ast {
             return std::make_shared<IntegerType>(ident.loc, std::move(ident.token), *bit_size);
         }
 
-        auto type = std::make_shared<IdentType>(ident.loc, std::move(ident.token));
+        auto type = std::make_shared<IdentType>(ident.loc, std::move(ident.token), s.context()->current_definitions());
 
         if (s.consume_token("(")) {
             s.skip_white();
@@ -339,7 +346,10 @@ namespace ast {
 
     std::optional<std::shared_ptr<Field>> parse_field(Stream& s) {
         auto f = s.fallback();
-        auto ident = s.consume_token(lexer::Tag::ident);
+        std::shared_ptr<Ident> ident;
+        if (s.expect_token(lexer::Tag::ident)) {
+            ident = parse_ident(s);
+        }
 
         if (ident) {
             s.skip_space();
@@ -355,13 +365,11 @@ namespace ast {
         auto field = std::make_shared<Field>(ident ? ident->loc : token->loc);
         field->colon_loc = token->loc;
 
-        if (ident) {
-            field->ident = ident->token;
-        }
+        field->ident = std::move(ident);
 
         field->field_type = parse_type(s);
 
-        s.context()->current_definitions()->add_field(field);
+        s.context()->current_definitions()->current.add_field(field);
 
         return field;
     }
@@ -375,7 +383,7 @@ namespace ast {
         fmt->ident = ident.token;
         fmt->scope = parse_indent_block(s);
 
-        s.context()->current_definitions()->add_fmt(fmt->ident, fmt);
+        s.context()->current_definitions()->current.add_fmt(fmt->ident, fmt);
 
         return fmt;
     }

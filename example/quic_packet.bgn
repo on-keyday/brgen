@@ -14,7 +14,8 @@ fmt LongPacket:
    reserved :b2
    packet_number_length :b2
    version :u32
-   
+   dst_conn_id :ConnectionID
+   src_conn_id :ConnectionID
 
 fmt ConnectionID:
    id :[]byte

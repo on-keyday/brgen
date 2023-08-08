@@ -332,8 +332,8 @@ namespace ast {
             return stack.current_frame();
         }
 
-        Definitions* current_definitions() {
-            return &stack.current_frame()->current;
+        defframe current_definitions() {
+            return stack.current_frame();
         }
     };
 
