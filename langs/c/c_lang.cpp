@@ -7,7 +7,7 @@ namespace c_lang {
     void write_expr(writer::TreeWriter& w, ast::Expr* expr, ast::Expr* parent);
     void write_block(writer::TreeWriter& w, ast::objlist& elements);
 
-    std::string write_temporary_func(writer::TreeWriter& parent) {
+    void write_temporary_func(writer::TreeWriter& parent) {
         writer::TreeWriter w{"tmp", parent.lookup("global_def")};
         w.code().writeln("int temporary_func", ast::nums(0), "() {");
         w.code().writeln("}");

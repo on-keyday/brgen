@@ -8,60 +8,9 @@
 #include <escape/escape.h>
 #include <map>
 #include "stack.h"
+#include "debug.h"
 
 namespace ast {
-
-    auto nums(auto v, int radix = 10) {
-        return utils::number::to_string<std::string>(v, radix);
-    }
-
-    using utils::strutil::append, utils::strutil::appends;
-
-    struct Debug {
-        std::string buf;
-        void object(auto&& fn) {
-            append(buf, "{");
-            bool comma = false;
-            fn([&](std::string_view name, auto&& value) {
-                if (comma) {
-                    append(buf, ",");
-                }
-                appends(buf, "\"", name, "\": ");
-                value(*this);
-                comma = true;
-            });
-            append(buf, "}");
-        }
-
-        void array(auto&& fn) {
-            append(buf, "[");
-            bool comma = false;
-            fn([&](auto&& value) {
-                if (comma) {
-                    append(buf, ",");
-                }
-                value(*this);
-                comma = true;
-            });
-            append(buf, "]");
-        }
-
-        void number(std::int64_t value) {
-            append(buf, nums(value));
-        }
-
-        void string(std::string_view s) {
-            appends(buf, "\"", utils::escape::escape_str<std::string>(s, utils::escape::EscapeFlag::all, utils::escape::json_set()), "\"");
-        }
-
-        void null() {
-            appends(buf, "null");
-        }
-
-        void boolean(bool v) {
-            append(buf, v ? "true" : "false");
-        }
-    };
 
     enum class ObjectType {
         program,
@@ -90,6 +39,7 @@ namespace ast {
         str_literal_type,
     };
 
+    // abstract
     struct Object {
         lexer::Loc loc;
         const ObjectType type;
@@ -133,9 +83,13 @@ namespace ast {
 
     using objlist = std::list<std::shared_ptr<Object>>;
 
-    // forward declaration
-    struct Fmt;
-    struct Field;
+    struct Definitions;
+
+    using defframe = std::shared_ptr<StackFrame<Definitions>>;
+
+    void debug_defs(Debug& d, const defframe& defs);
+
+    // ident
 
     struct Ident : Expr {
         static constexpr ObjectType object_type = ObjectType::ident;
@@ -152,10 +106,32 @@ namespace ast {
         }
     };
 
+    // field
+
+    struct Field : Stmt {
+        static constexpr ObjectType object_type = ObjectType::field;
+        std::shared_ptr<Ident> ident;
+        lexer::Loc colon_loc;
+        std::shared_ptr<Type> field_type;
+
+        Field(lexer::Loc l)
+            : Stmt(l, ObjectType::field) {}
+
+        void debug(Debug& buf) const override {
+            buf.object([&](auto&& field) {
+                field("ident", [&](Debug& d) { ident ? ident->debug(buf) : d.null(); });
+                field("field_type", [&](Debug& d) { field_type->debug(d); });
+            });
+        }
+    };
+
+    struct Fmt;
+
     struct Definitions {
         std::map<std::string, std::list<std::shared_ptr<Fmt>>> fmts;
         std::map<std::string, std::list<std::shared_ptr<Ident>>> idents;
         std::list<std::shared_ptr<Field>> fields;
+        objlist order;
 
         void add_fmt(std::string& name, const std::shared_ptr<Fmt>& f) {
             fmts[name].push_back(f);
@@ -172,9 +148,7 @@ namespace ast {
         }
     };
 
-    using defframe = std::shared_ptr<StackFrame<Definitions>>;
-
-    void debug_defs(Debug& d, const defframe& defs);
+    // statements
 
     struct IndentScope : Stmt {
         static constexpr ObjectType object_type = ObjectType::indent_scope;
@@ -215,115 +189,21 @@ namespace ast {
         }
     };
 
-    struct Field : Stmt {
-        static constexpr ObjectType object_type = ObjectType::field;
-        std::shared_ptr<Ident> ident;
-        lexer::Loc colon_loc;
-        std::shared_ptr<Type> field_type;
+    struct For : Stmt {
+        static constexpr ObjectType object_type = ObjectType::for_;
+        std::shared_ptr<IndentScope> block;
 
-        Field(lexer::Loc l)
-            : Stmt(l, ObjectType::field) {}
+        For(lexer::Loc l)
+            : Stmt(l, ObjectType::for_) {}
 
         void debug(Debug& buf) const override {
             buf.object([&](auto&& field) {
-                field("ident", [&](Debug& d) { ident ? ident->debug(buf) : d.null(); });
-                field("field_type", [&](Debug& d) { field_type->debug(d); });
+                field("for_block", [&](Debug& d) { block->debug(d); });
             });
         }
     };
 
-    inline void debug_defs(Debug& d, const defframe& defs) {
-        d.object([&](auto&& field) {
-            field("fmts", [&](Debug& d) {
-                d.array([&](auto&& field) {
-                    for (auto& f : defs->current.fmts) {
-                        field([&](Debug& d) {
-                            d.string(f.first);
-                        });
-                    }
-                });
-            });
-            field("idents", [&](Debug& d) {
-                d.array([&](auto&& field) {
-                    for (auto& f : defs->current.idents) {
-                        field([&](Debug& d) {
-                            d.string(f.first);
-                        });
-                    }
-                });
-            });
-            field("fields", [&](Debug& d) {
-                d.array([&](auto&& field) {
-                    for (auto& f : defs->current.fields) {
-                        field([&](Debug& d) {
-                            f->debug(d);
-                        });
-                    }
-                });
-            });
-        });
-    }
-
-    inline void debug_def_frames(Debug& d, const defframe& f) {
-        d.object([&](auto&& field) {
-            field("current", [&](Debug& d) {
-                debug_defs(d, f);
-            });
-            f->walk_frames([&](const char* obj, const defframe& f) {
-                field(obj, [&](Debug& d) {
-                    f ? debug_def_frames(d, f) : d.null();
-                });
-            });
-        });
-    }
-
-    struct IntegerType : Type {
-        static constexpr ObjectType object_type = ObjectType::int_type;
-        std::string raw;
-        size_t bit_size = 0;
-
-        IntegerType(lexer::Loc l, std::string&& token, size_t bit_size)
-            : Type(l, ObjectType::int_type), raw(std::move(token)), bit_size(bit_size) {}
-
-        void debug(Debug& buf) const override {
-            buf.object([&](auto&& field) {
-                field("raw", [&](Debug& d) { d.string(raw); });
-                field("bit_size", [&](Debug& d) { d.number(bit_size); });
-            });
-        }
-    };
-
-    struct IdentType : Type {
-        static constexpr ObjectType object_type = ObjectType::ident_type;
-        std::string ident;
-        std::shared_ptr<Expr> arguments;
-        defframe frame;
-        IdentType(lexer::Loc l, std::string&& token, defframe&& frame)
-            : Type(l, ObjectType::ident_type), ident(std::move(token)), frame(std::move(frame)) {}
-
-        void debug(Debug& buf) const override {
-            buf.object([&](auto&& field) {
-                field("ident", [&](Debug& d) { d.string(ident); });
-                field("arguments", [&](Debug& d) { arguments ? arguments->debug(d) : d.null(); });
-            });
-        }
-    };
-
-    inline std::optional<std::string> unescape(std::string_view str_lit) {
-        std::string mid;
-        if (!utils::escape::unescape_str(str_lit.substr(1, str_lit.size() - 2), mid)) {
-            return std::nullopt;
-        }
-        return mid;
-    }
-
-    struct StrLiteralType : Type {
-        std::string raw;
-        std::optional<std::string> mid;
-
-        StrLiteralType(lexer::Loc loc, std::string&& str)
-            : Type(loc, ObjectType::str_literal_type) {}
-    };
+    // exprs
 
     struct Call : Expr {
         static constexpr ObjectType object_type = ObjectType::call;
@@ -337,20 +217,6 @@ namespace ast {
             buf.object([&](auto&& field) {
                 field("callee", [&](Debug& d) { callee->debug(d); });
                 field("arguments", [&](Debug& d) { arguments ? arguments->debug(d) : d.null(); });
-            });
-        }
-    };
-
-    struct For : Stmt {
-        static constexpr ObjectType object_type = ObjectType::for_;
-        std::shared_ptr<IndentScope> block;
-
-        For(lexer::Loc l)
-            : Stmt(l, ObjectType::for_) {}
-
-        void debug(Debug& buf) const override {
-            buf.object([&](auto&& field) {
-                field("for_block", [&](Debug& d) { block->debug(d); });
             });
         }
     };
@@ -442,6 +308,7 @@ namespace ast {
         }
     };
 
+    // literals
     struct IntLiteral : Literal {
         static constexpr ObjectType object_type = ObjectType::int_literal;
         std::string raw;
@@ -466,6 +333,58 @@ namespace ast {
         IntLiteral(lexer::Loc l, std::string&& t)
             : Literal(l, ObjectType::int_literal), raw(std::move(t)) {}
     };
+
+    // types
+
+    struct IntegerType : Type {
+        static constexpr ObjectType object_type = ObjectType::int_type;
+        std::string raw;
+        size_t bit_size = 0;
+
+        IntegerType(lexer::Loc l, std::string&& token, size_t bit_size)
+            : Type(l, ObjectType::int_type), raw(std::move(token)), bit_size(bit_size) {}
+
+        void debug(Debug& buf) const override {
+            buf.object([&](auto&& field) {
+                field("raw", [&](Debug& d) { d.string(raw); });
+                field("bit_size", [&](Debug& d) { d.number(bit_size); });
+            });
+        }
+    };
+
+    struct IdentType : Type {
+        static constexpr ObjectType object_type = ObjectType::ident_type;
+        std::string ident;
+        std::shared_ptr<Expr> arguments;
+        defframe frame;
+        IdentType(lexer::Loc l, std::string&& token, defframe&& frame)
+            : Type(l, ObjectType::ident_type), ident(std::move(token)), frame(std::move(frame)) {}
+
+        void debug(Debug& buf) const override {
+            buf.object([&](auto&& field) {
+                field("ident", [&](Debug& d) { d.string(ident); });
+                field("arguments", [&](Debug& d) { arguments ? arguments->debug(d) : d.null(); });
+            });
+        }
+    };
+
+    inline std::optional<std::string> unescape(std::string_view str_lit) {
+        std::string mid;
+        if (!utils::escape::unescape_str(str_lit.substr(1, str_lit.size() - 2), mid)) {
+            return std::nullopt;
+        }
+        return mid;
+    }
+
+    struct StrLiteralType : Type {
+        std::string raw;
+        std::optional<std::string> mid;
+
+        StrLiteralType(lexer::Loc loc, std::string&& str)
+            : Type(loc, ObjectType::str_literal_type) {}
+    };
+
+    void debug_def_frames(Debug& d, const defframe& f);
 
     struct Program : Object {
         static constexpr ObjectType object_type = ObjectType::program;
@@ -493,6 +412,51 @@ namespace ast {
         Program()
             : Object(lexer::Loc{}, ObjectType::program) {}
     };
+
+    inline void debug_defs(Debug& d, const defframe& defs) {
+        d.object([&](auto&& field) {
+            field("fmts", [&](Debug& d) {
+                d.array([&](auto&& field) {
+                    for (auto& f : defs->current.fmts) {
+                        field([&](Debug& d) {
+                            d.string(f.first);
+                        });
+                    }
+                });
+            });
+            field("idents", [&](Debug& d) {
+                d.array([&](auto&& field) {
+                    for (auto& f : defs->current.idents) {
+                        field([&](Debug& d) {
+                            d.string(f.first);
+                        });
+                    }
+                });
+            });
+            field("fields", [&](Debug& d) {
+                d.array([&](auto&& field) {
+                    for (auto& f : defs->current.fields) {
+                        field([&](Debug& d) {
+                            f->debug(d);
+                        });
+                    }
+                });
+            });
+        });
+    }
+
+    inline void debug_def_frames(Debug& d, const defframe& f) {
+        d.object([&](auto&& field) {
+            field("current", [&](Debug& d) {
+                debug_defs(d, f);
+            });
+            f->walk_frames([&](const char* obj, const defframe& f) {
+                field(obj, [&](Debug& d) {
+                    f ? debug_def_frames(d, f) : d.null();
+                });
+            });
+        });
+    }
 
     template <class T>
     constexpr T* as(auto&& t) {
