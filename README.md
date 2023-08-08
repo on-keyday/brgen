@@ -1,4 +1,4 @@
-# brgen - binary representation interpreter generator
+# brgen - binary representation interpreter generator (仮)
 ネットワーク・プロトコルのパケット等の解析/生成のためのコードを吐くジェネレータ
 
 [x]: lexer 
