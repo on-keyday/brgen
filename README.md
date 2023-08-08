@@ -1,8 +1,6 @@
 # brgen - binary representation interpreter generator (仮)
 ネットワーク・プロトコルのパケット等の解析/生成のためのコードを吐くジェネレータ
 
-[x]: lexer 
-[x]: ast
 
 
 # 目標(Goal)
