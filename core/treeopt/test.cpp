@@ -1,14 +1,14 @@
 /*license*/
 #include "../ast/test_component.h"
-#include "call_extract.h"
+#include "extract_call.h"
 
-void test_call_extract(AstList& c) {
+void test_extract_call(AstList& c) {
     ast::Debug d;
     d.array([&](auto&& field) {
         for (auto& f : c) {
             if (auto got = f.get()) {
                 auto& f = *got;
-                treeopt::CallHolder h;
+                treeopt::ExtractContext h;
                 treeopt::extract_call(h, f);
                 field([&](ast::Debug& d) {
                     f->debug(d);
@@ -22,5 +22,5 @@ void test_call_extract(AstList& c) {
 
 int main() {
     auto c = test_ast(false);
-    test_call_extract(c);
+    test_extract_call(c);
 }

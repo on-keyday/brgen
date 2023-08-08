@@ -1,4 +1,5 @@
 /*license*/
+#define AST_TEST_COMPONENT_EXPORTS
 #include "stream.h"
 #include <file/file_view.h>
 #include <wrap/cout.h>
