@@ -8,6 +8,7 @@
 #include <code/src_location.h>
 #include <map>
 #include "ast.h"
+#include "stack.h"
 
 namespace ast {
 
@@ -300,26 +301,25 @@ namespace ast {
         }
     };
 
+    using defstack = Stack<Definitions>;
+
     struct ContextInfo {
        private:
         Stream* s = nullptr;
         size_t indent = 0;
-        Definitions* defs = nullptr;
+        defstack stack;
 
        public:
-        void set_definitions(Definitions* def) {
-            defs = def;
-        }
-
-        auto new_indent(size_t new_, Definitions* new_def) {
+        auto new_indent(size_t new_, std::shared_ptr<StackFrame<Definitions>>& frame) {
             if (indent >= new_) {
                 s->report_error("expect largeer indent but not");
             }
             auto old = std::exchange(indent, std::move(new_));
-            auto old_defs = std::exchange(defs, new_def);
+            stack.enter_branch();
+            frame = stack.current_frame();
             return utils::helper::defer([=, this] {
                 indent = std::move(old);
-                defs = old_defs;
+                stack.leave_branch();
             });
         }
 
@@ -327,8 +327,13 @@ namespace ast {
             return indent;
         }
 
+        defframe reset_stack() {
+            stack = {};
+            return stack.current_frame();
+        }
+
         Definitions* current_definitions() {
-            return defs;
+            return &stack.current_frame()->current;
         }
     };
 

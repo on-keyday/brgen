@@ -28,7 +28,7 @@ namespace ast {
 
         // Create a new context for the current indent level
         auto current_indent = base.token.size();
-        auto c = s.context()->new_indent(current_indent, &scope->defs);
+        auto c = s.context()->new_indent(current_indent, scope->defs);
 
         // Parse and add the first element
         scope->elements.push_back(parse_one(s));
@@ -410,7 +410,7 @@ namespace ast {
 
     std::shared_ptr<Program> parse(Stream& s) {
         auto prog = std::make_shared<Program>();
-        s.context()->set_definitions(&prog->defs);
+        prog->defs = s.context()->reset_stack();
         s.skip_line();
         while (!s.eos()) {
             auto expr = parse_one(s);

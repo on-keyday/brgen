@@ -64,10 +64,12 @@ namespace c_lang {
 
     void write_block(writer::TreeWriter& w, ast::objlist& elements) {
         auto scope = w.code().indent_scope();
-        if (auto a = ast::as_Expr(w)) {
-            writer::TreeWriter child{"child", &w};
-            write_expr(child, a, nullptr);
-            child.code().writeln(";");
+        for (auto& element : elements) {
+            if (auto a = ast::as_Expr(element)) {
+                writer::TreeWriter child{"child", &w};
+                write_expr(child, a, nullptr);
+                child.code().writeln(";");
+            }
         }
     }
 

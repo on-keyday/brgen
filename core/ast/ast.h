@@ -7,6 +7,7 @@
 #include "expr_layer.h"
 #include <escape/escape.h>
 #include <map>
+#include "stack.h"
 
 namespace ast {
 
@@ -171,12 +172,15 @@ namespace ast {
         }
     };
 
-    void debug_defs(Debug& d, const Definitions& defs);
+    using defframe = std::shared_ptr<StackFrame<Definitions>>;
+
+    void debug_defs(Debug& d, const defframe& defs);
 
     struct IndentScope : Stmt {
         static constexpr ObjectType object_type = ObjectType::indent_scope;
         objlist elements;
-        Definitions defs;
+        defframe defs;
+
         IndentScope(lexer::Loc l)
             : Stmt(l, ObjectType::indent_scope) {}
 
@@ -228,11 +232,11 @@ namespace ast {
         }
     };
 
-    inline void debug_defs(Debug& d, const Definitions& defs) {
+    inline void debug_defs(Debug& d, const defframe& defs) {
         d.object([&](auto&& field) {
             field("fmts", [&](Debug& d) {
                 d.array([&](auto&& field) {
-                    for (auto& f : defs.fmts) {
+                    for (auto& f : defs->current.fmts) {
                         field([&](Debug& d) {
                             d.string(f.first);
                         });
@@ -241,7 +245,7 @@ namespace ast {
             });
             field("idents", [&](Debug& d) {
                 d.array([&](auto&& field) {
-                    for (auto& f : defs.idents) {
+                    for (auto& f : defs->current.idents) {
                         field([&](Debug& d) {
                             d.string(f.first);
                         });
@@ -250,7 +254,7 @@ namespace ast {
             });
             field("fields", [&](Debug& d) {
                 d.array([&](auto&& field) {
-                    for (auto& f : defs.fields) {
+                    for (auto& f : defs->current.fields) {
                         field([&](Debug& d) {
                             f->debug(d);
                         });
@@ -452,7 +456,7 @@ namespace ast {
     struct Program : Object {
         static constexpr ObjectType object_type = ObjectType::program;
         objlist elements;
-        Definitions defs;
+        defframe defs;
 
         void debug(Debug& buf) const override {
             buf.object([&](auto&& field) {
