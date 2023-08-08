@@ -37,17 +37,20 @@ typedef struct {
 } ConnectionID;
 
 typedef struct {
+    uint8_t fixed_bit_long_packet_type_reserved_packet_number_length;
+    uint32_t version;
+    ConnectionID dst_conn_id;
+    ConnectionID src_conn_id;
 } LongPacket;
+
+typedef struct {
+    uint8_t fixed_bit_;
+} ShortPacket;
 
 typedef struct {
     uint8_t form;
     union {
-        struct {
-            uint8_t fixed_bit_long_packet_type_reserved_packet_number_length;
-            uint32_t version;
-            ConnectionID dst_conn_id;
-            ConnectionID src_conn_id;
-        };
+        LongPacket long_packet__;
         struct {
             ConnectionID dst_conn_id;
         };
@@ -67,5 +70,10 @@ int decode_QUICPacket(Input* input, QUICPacket* output) {
         return 0;
     }
     if (form != 0) {
+        if (!decode_LongPacket(input)) {
+            return form;
+        }
+    }
+    else {
     }
 }

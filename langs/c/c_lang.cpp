@@ -7,10 +7,11 @@ namespace c_lang {
     void write_expr(writer::TreeWriter& w, ast::Expr* expr, ast::Expr* parent);
     void write_block(writer::TreeWriter& w, ast::objlist& elements);
 
-    void write_temporary_func(writer::TreeWriter& parent) {
+    std::string write_temporary_func(writer::TreeWriter& parent) {
         writer::TreeWriter w{"tmp", parent.lookup("global_def")};
-        w.code().writeln("int temporary_func() {");
+        w.code().writeln("int temporary_func", ast::nums(0), "() {");
         w.code().writeln("}");
+        w.code().line();
     }
 
     void write_binary(writer::TreeWriter& w, ast::Binary* b, ast::Expr* parent) {
@@ -18,6 +19,7 @@ namespace c_lang {
             (b->left->type == ast::ObjectType::ident || b->left->type == ast::ObjectType::tmp_var) &&
             b->right->type == ast::ObjectType::if_) {
             w.code().writeln();
+            write_temporary_func(w);
         }
         auto op = b->op;
         bool paren = op == ast::BinaryOp::bit_and || op == ast::BinaryOp::left_shift || op == ast::BinaryOp::right_shift;
@@ -78,7 +80,7 @@ namespace c_lang {
         writer::TreeWriter global_def{"global_def", &global_dec};
         writer::TreeWriter main_{"main", &global_def};
         main_.code().writeln("int main() {");
-        write_block(w, p->elements);
+        write_block(main_, p->elements);
         main_.code().writeln("}");
     }
 

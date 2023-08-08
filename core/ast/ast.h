@@ -226,7 +226,7 @@ namespace ast {
 
         void debug(Debug& buf) const override {
             buf.object([&](auto&& field) {
-                field("ident", [&](Debug& d) { ident ? d.string(*ident) : d.null(); });
+                field("ident", [&](Debug& d) { ident ? ident->debug(buf) : d.null(); });
                 field("field_type", [&](Debug& d) { field_type->debug(d); });
             });
         }
