@@ -1,7 +1,7 @@
 #license
 cmake_minimum_required(VERSION 3.26.4)
 
-project(binarugen)
+project(brgen)
 
 set(CMAKE_CXX_STANDARD 20)
 include_directories("$ENV{UTILS_DIR}/src/include")

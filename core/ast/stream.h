@@ -14,14 +14,15 @@ namespace ast {
     struct ContextInfo;
 
     struct StreamError {
-        lexer::Token err_token;
+        std::string msg;
+        lexer::FileIndex file;
         utils::code::SrcLoc loc;
         std::string src;
 
         std::string to_string(std::string_view file) {
             std::string buf;
 
-            appends(buf, "error: ", err_token.token, "\n",
+            appends(buf, "error: ", msg, "\n",
                     file, ":", nums(loc.line + 1), ":", nums(loc.pos + 1), ":\n",
                     src);
             return buf;
@@ -62,7 +63,7 @@ namespace ast {
 
         [[noreturn]] void report_error(lexer::Token& token) {
             auto text = dump(seq_ptr, token.loc.pos);
-            throw StreamError{std::move(token), text.second, std::move(text.first)};
+            throw StreamError{std::move(token.token), token.loc.file, text.second, std::move(text.first)};
         }
 
         Stream() = default;

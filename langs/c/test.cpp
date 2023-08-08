@@ -7,7 +7,7 @@ int main() {
     for (auto& g : asts) {
         auto got = g.get();
         if (got) {
-            writer::TreeWriter w{nullptr};
+            writer::TreeWriter w{"global", nullptr};
             c_lang::entry(w, *got);
             cerr << w.code().out() << "\n";
         }

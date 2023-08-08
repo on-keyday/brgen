@@ -134,8 +134,22 @@ namespace ast {
 
     // forward declaration
     struct Fmt;
-    struct Ident;
     struct Field;
+
+    struct Ident : Expr {
+        static constexpr ObjectType object_type = ObjectType::ident;
+        std::string ident;
+        bool first_look = false;
+
+        Ident(lexer::Loc l, std::string&& i)
+            : Expr(l, ObjectType::ident), ident(std::move(i)) {}
+
+        void debug(Debug& buf) const override {
+            buf.object([&](auto&& field) {
+                field("ident", [&](Debug& d) { d.string(ident); });
+            });
+        }
+    };
 
     struct Definitions {
         std::map<std::string, std::list<std::shared_ptr<Fmt>>> fmts;
@@ -147,7 +161,9 @@ namespace ast {
         }
 
         void add_ident(std::string& name, const std::shared_ptr<Ident>& f) {
-            idents[name].push_back(f);
+            auto& ident = idents[name];
+            ident.push_back(f);
+            f->first_look = ident.size() == 1;
         }
 
         void add_field(const std::shared_ptr<Field>& f) {
@@ -191,20 +207,6 @@ namespace ast {
             buf.object([&](auto&& field) {
                 field("ident", [&](Debug& d) { d.string(ident); });
                 field("scope", [&](Debug& d) { scope->debug(d); });
-            });
-        }
-    };
-
-    struct Ident : Expr {
-        static constexpr ObjectType object_type = ObjectType::ident;
-        std::string ident;
-
-        Ident(lexer::Loc l, std::string&& i)
-            : Expr(l, ObjectType::ident), ident(std::move(i)) {}
-
-        void debug(Debug& buf) const override {
-            buf.object([&](auto&& field) {
-                field("ident", [&](Debug& d) { d.string(ident); });
             });
         }
     };
