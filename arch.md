@@ -1,5 +1,5 @@
 # Architecture
-lexer -> parser -> treeopt -> langopt -> gen
-                           -> langopt -> gen
+lexer -> parser -> treeopt -> c langopt -> c gen
+                           -> go langopt -> go gen
                            ...
 
