@@ -7,7 +7,15 @@ namespace typing {
 
     void typing_object(const std::shared_ptr<ast::Object>& ty);
 
-    bool equal_type() {}
+    bool equal_type(const std::shared_ptr<ast::Type>& left, const std::shared_ptr<ast::Type>& right) {
+        if (left->type != right->type) {
+            return false;
+        }
+        if (auto lty = ast::as<ast::IntegerType>(left)) {
+            auto rty = ast::as<ast::IntegerType>(right);
+            return lty->bit_size == rty->bit_size;
+        }
+    }
 
     void typing_expr(ast::Expr* expr) {
         if (auto lit = ast::as<ast::IntLiteral>(expr)) {
