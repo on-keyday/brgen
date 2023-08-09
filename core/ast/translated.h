@@ -41,8 +41,4 @@ namespace ast {
         }
     };
 
-    struct ToIntN : Expr {
-        size_t bit_size = 0;
-        std::shared_ptr<Expr> from;
-    };
 }  // namespace ast

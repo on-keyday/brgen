@@ -31,6 +31,16 @@ namespace ast {
             return std::nullopt;
         }
 
+        template <class V>
+        std::optional<V> lookup_first(auto&& fn) {
+            if (auto got = prev.lock()) {
+                if (auto found = got->template lookup_first<V>(fn)) {
+                    return found;
+                }
+            }
+            return fn(current);
+        }
+
         void walk_frames(auto&& fn) {
             fn("branch", branch);
             fn("next", next);
@@ -48,6 +58,11 @@ namespace ast {
                 root = std::make_shared<StackFrame<T>>();
                 current = root;
             }
+            if (current->branch && !current->next) {
+                current->next = std::make_shared<StackFrame<T>>();
+                current->next->prev = current;
+                current = current->next;
+            }
         }
 
        public:
@@ -55,14 +70,11 @@ namespace ast {
             maybe_init();
             current->branch = std::make_shared<StackFrame<T>>();
             current->branch->prev = current;
-            current->next = std::make_shared<StackFrame<T>>();
-            current->next->prev = current;
             current = current->branch;
         }
 
         void leave_branch() {
             current = current->prev.lock();
-            current = current->next;
         }
 
         std::shared_ptr<StackFrame<T>> current_frame() {

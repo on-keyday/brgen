@@ -94,7 +94,8 @@ namespace ast {
     struct Ident : Expr {
         static constexpr ObjectType object_type = ObjectType::ident;
         std::string ident;
-        bool first_look = false;
+        defframe frame;
+        bool first_assign = false;
 
         Ident(lexer::Loc l, std::string&& i)
             : Expr(l, ObjectType::ident), ident(std::move(i)) {}

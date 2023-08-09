@@ -40,8 +40,7 @@ namespace c_lang {
         }
         else if (auto ident = ast::as<ast::Ident>(expr)) {
             if (parent && parent->object_type == ast::ObjectType::binary &&
-                ast::as<ast::Binary>(parent)->op == ast::BinaryOp::assign &&
-                ident->first_look) {
+                ast::as<ast::Binary>(parent)->op == ast::BinaryOp::assign) {
                 w.code().write("int ", ident->ident);
             }
             else {
