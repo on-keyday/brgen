@@ -100,6 +100,14 @@ namespace ast {
             report_error(token);
         }
 
+        [[noreturn]] void report_error(lexer::Loc loc, auto&&... data) {
+            lexer::Token token;
+            token.tag = lexer::Tag::error;
+            token.loc = loc;
+            appends(token.token, "parser error:", data...);
+            report_error(token);
+        }
+
         template <class T>
         [[nodiscard]] auto set_seq(utils::Sequencer<T>& seq, std::uint64_t file) {
             auto old_parse = parse;

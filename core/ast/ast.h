@@ -133,19 +133,11 @@ namespace ast {
         std::list<std::shared_ptr<Field>> fields;
         objlist order;
 
-        void add_fmt(std::string& name, const std::shared_ptr<Fmt>& f) {
-            fmts[name].push_back(f);
-        }
+        void add_fmt(std::string& name, const std::shared_ptr<Fmt>& f);
 
-        void add_ident(std::string& name, const std::shared_ptr<Ident>& f) {
-            auto& ident = idents[name];
-            ident.push_back(f);
-            f->first_look = ident.size() == 1;
-        }
+        void add_ident(std::string& name, const std::shared_ptr<Ident>& f);
 
-        void add_field(const std::shared_ptr<Field>& f) {
-            fields.push_back(f);
-        }
+        void add_field(const std::shared_ptr<Field>& f);
     };
 
     // statements

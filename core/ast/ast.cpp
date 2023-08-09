@@ -6,6 +6,21 @@
 
 namespace ast {
 
+    void Definitions::add_fmt(std::string& name, const std::shared_ptr<Fmt>& f) {
+        fmts[name].push_back(f);
+        order.push_back(f);
+    }
+
+    void Definitions::add_ident(std::string& name, const std::shared_ptr<Ident>& f) {
+        idents[name].push_back(f);
+        order.push_back(f);
+    }
+
+    void Definitions::add_field(const std::shared_ptr<Field>& f) {
+        fields.push_back(f);
+        order.push_back(f);
+    }
+
     std::shared_ptr<Object> parse_one(Stream& s);
     std::shared_ptr<Expr> parse_expr(Stream& s);
     // :\\r\\n
@@ -178,6 +193,11 @@ namespace ast {
     }
 
     void check_assignment(Stream& s, ast::Binary* l) {
+        if (l->op == ast::BinaryOp::assign) {
+            if (l->left->type != ast::ObjectType::ident) {
+                s.report_error(l->left->loc, "left of = must be ident");
+            }
+        }
     }
 
     struct BinOpStack {
@@ -258,6 +278,7 @@ namespace ast {
                         s.report_error("expect binary with `left` but not; parser bug");
                     }
                     b->right = std::move(expr);
+                    check_assignment(s, b);
                     expr = std::move(op.expr);
                 }
             }
