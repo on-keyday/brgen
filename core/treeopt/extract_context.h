@@ -4,7 +4,7 @@
 #include "../ast/translated.h"
 #include <helper/defer.h>
 
-namespace treeopt {
+namespace brgen::treeopt {
     struct ExtractContext {
        private:
         size_t tmp_index = 0;
@@ -36,4 +36,4 @@ namespace treeopt {
         }
     };
 
-}  // namespace treeopt
+}  // namespace brgen::treeopt

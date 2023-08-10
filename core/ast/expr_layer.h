@@ -2,7 +2,7 @@
 #pragma once
 #include <optional>
 
-namespace ast {
+namespace brgen::ast {
     enum class UnaryOp {
         logical_not = 0,
         bit_not,
@@ -51,6 +51,8 @@ namespace ast {
 
         // layer 7
         assign,
+        typed_assign,
+        const_assign,
         add_assign,
         sub_assign,
         mul_assign,
@@ -72,7 +74,7 @@ namespace ast {
     constexpr const char* bin_layer3[] = {"&&", nullptr};
     constexpr const char* bin_layer4[] = {"||", nullptr};
     constexpr const char* bin_layer5[] = {"if", "else", nullptr};
-    constexpr const char* bin_layer6[] = {"=", "+=", "-=", "*=",
+    constexpr const char* bin_layer6[] = {"=", ":=", "::=", "+=", "-=", "*=",
                                           "/=", "%=", "<<=", ">>=",
                                           "&=", "|=", "^=",
                                           nullptr};
@@ -125,4 +127,4 @@ namespace ast {
         return std::nullopt;
     }
 
-}  // namespace ast
+}  // namespace brgen::ast

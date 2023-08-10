@@ -6,21 +6,22 @@
 #include <future>
 #include "test_component.h"
 #include <fstream>
-
+using namespace brgen;
 auto& cerr = utils::wrap::cerr_wrap();
 
 static std::optional<std::shared_ptr<ast::Program>> test_file(std::string_view name, bool debug) {
-    utils::file::View view;
     std::string file_name = "./core/step/";
     file_name += name.data();
-    if (!view.open(file_name)) {
-        cerr << utils::wrap::packln(file_name, " cannot open");
+    brgen::FileList files;
+    auto fd = files.add(file_name);
+    if (auto code = std::get_if<std::error_code>(&fd)) {
+        cerr << utils::wrap::packln("error:", code->message());
         return std::nullopt;
     }
     ast::Context ctx;
-    auto seq = utils::make_ref_seq(view);
+    auto input = files.get_input(std::get<brgen::lexer::FileIndex>(fd));
     std::shared_ptr<ast::Program> prog;
-    auto err = ctx.enter_stream(seq, 1, [&](ast::Stream& s) {
+    auto err = ctx.enter_stream(std::move(*input), [&](ast::Stream& s) {
         prog = ast::parse(s);
     });
     if (err != std::nullopt) {
@@ -28,7 +29,7 @@ static std::optional<std::shared_ptr<ast::Program>> test_file(std::string_view n
         return std::nullopt;
     }
     if (debug) {
-        ast::Debug debug;
+        Debug debug;
         prog->debug(debug);
         cerr << debug.buf + "\n";
     }
@@ -47,7 +48,7 @@ AstList test_ast(bool debug) {
     return f;
 }
 
-void save_result(ast::Debug& d, const char* file) {
+void save_result(Debug& d, const char* file) {
     std::ofstream ofs(file);
     ofs << d.buf;
 }

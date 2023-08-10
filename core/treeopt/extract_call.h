@@ -4,7 +4,7 @@
 #include "../ast/util.h"
 #include <helper/defer.h>
 
-namespace treeopt {
+namespace brgen::treeopt {
 
     template <class T>
     void extract_call(ExtractContext& h, std::shared_ptr<T>& c) {
@@ -83,4 +83,4 @@ namespace treeopt {
             }
         }
     }
-}  // namespace treeopt
+}  // namespace brgen::treeopt

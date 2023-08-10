@@ -4,7 +4,7 @@
 #include <vector>
 #include "expr_layer.h"
 
-namespace ast {
+namespace brgen::ast {
 
     void Definitions::add_fmt(std::string& name, const std::shared_ptr<Fmt>& f) {
         fmts[name].push_back(f);
@@ -193,9 +193,11 @@ namespace ast {
     }
 
     void check_assignment(Stream& s, ast::Binary* l) {
-        if (l->op == ast::BinaryOp::assign) {
+        if (l->op == ast::BinaryOp::assign ||
+            l->op == ast::BinaryOp::typed_assign ||
+            l->op == ast::BinaryOp::const_assign) {
             if (l->left->type != ast::ObjectType::ident) {
-                s.report_error(l->left->loc, "left of = must be ident");
+                s.report_error(l->left->loc, "left of =,:=,::= must be ident");
             }
         }
     }
@@ -449,4 +451,4 @@ namespace ast {
         return prog;
     }
 
-}  // namespace ast
+}  // namespace brgen::ast

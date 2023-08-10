@@ -1,6 +1,7 @@
 /*license*/
 #include "c_lang.h"
 #include "core/ast/test_component.h"
+using namespace brgen;
 
 int main() {
     auto asts = test_ast(false);

@@ -3,7 +3,7 @@
 #include <comb2/pos.h>
 #include <string>
 
-namespace lexer {
+namespace brgen::lexer {
     using Pos = utils::comb2::Pos;
 
     using FileIndex = std::uint64_t;
@@ -49,4 +49,4 @@ namespace lexer {
         Loc loc;
     };
 
-}  // namespace lexer
+}  // namespace brgen::lexer

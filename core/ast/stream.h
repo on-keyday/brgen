@@ -8,9 +8,10 @@
 #include <code/src_location.h>
 #include <map>
 #include "ast.h"
-#include "stack.h"
+#include "../common/stack.h"
+#include "../common/file.h"
 
-namespace ast {
+namespace brgen::ast {
 
     struct ContextInfo;
 
@@ -35,36 +36,11 @@ namespace ast {
         std::list<lexer::Token> tokens;
         using iterator = typename std::list<lexer::Token>::iterator;
         iterator cur;
-        void* seq_ptr = nullptr;
-        std::uint64_t cur_file = 0;
         ContextInfo* info = nullptr;
-        std::optional<lexer::Token> (*parse)(void* seq, std::uint64_t file) = nullptr;
-        std::pair<std::string, utils::code::SrcLoc> (*dump)(void* seq, lexer::Pos pos) = nullptr;
+        Input input;
 
-        template <class T>
-        static std::optional<lexer::Token> do_parse(void* ptr, std::uint64_t file) {
-            return lexer::parse_one(*static_cast<utils::Sequencer<T>*>(ptr), file);
-        }
-
-        template <class T>
-        static std::pair<std::string, utils::code::SrcLoc> dump_source(void* ptr, lexer::Pos pos) {
-            auto& seq = *static_cast<utils::Sequencer<T>*>(ptr);
-            seq.rptr = pos.begin;
-            std::string out;
-            auto loc = utils::code::write_src_loc(out, seq, pos.len());
-            return {out, loc};
-        }
-
-        std::optional<lexer::Token> call_parse() {
-            if (parse) {
-                return parse(seq_ptr, cur_file);
-            }
-            return std::nullopt;
-        }
-
-        [[noreturn]] void report_error(lexer::Token& token) {
-            auto text = dump(seq_ptr, token.loc.pos);
-            throw StreamError{std::move(token.token), token.loc.file, text.second, std::move(text.first)};
+        [[noreturn]] void report_error(std::string&& msg, lexer::Pos pos) {
+            throw input.error(std::move(msg), pos);
         }
 
         Stream() = default;
@@ -72,82 +48,48 @@ namespace ast {
 
         void maybe_parse() {
             if (cur == tokens.end()) {
-                auto token = call_parse();
+                auto token = input.parse();
                 if (!token) {
                     return;
                 }
                 if (token->tag == lexer::Tag::error) {
-                    report_error(*token);
+                    report_error(std::move(token->token), token->loc.pos);
                 }
                 tokens.push_back(std::move(*token));
                 cur = std::prev(tokens.end());
             }
         }
 
-       public:
-        [[noreturn]] void report_error(auto&&... data) {
-            lexer::Token token;
-            token.tag = lexer::Tag::error;
+        lexer::Pos last_pos() {
             if (eos()) {
                 auto copy = cur;
                 copy--;
-                token.loc.pos = {copy->loc.pos.end, copy->loc.pos.end + 1};
+                return {copy->loc.pos.end, copy->loc.pos.end + 1};
             }
             else {
-                token.loc = cur->loc;
+                return cur->loc.pos;
             }
-            appends(token.token, "parser error:", data...);
-            report_error(token);
+        }
+
+       public:
+        [[noreturn]] void report_error(auto&&... data) {
+            std::string buf;
+            appends(buf, "parser error:", data...);
+            report_error(std::move(buf), last_pos());
         }
 
         [[noreturn]] void report_error(lexer::Loc loc, auto&&... data) {
-            lexer::Token token;
-            token.tag = lexer::Tag::error;
-            token.loc = loc;
-            appends(token.token, "parser error:", data...);
-            report_error(token);
+            std::string buf;
+            appends(buf, "parser error:", data...);
+            report_error(std::move(buf), loc.pos);
         }
 
-        template <class T>
-        [[nodiscard]] auto set_seq(utils::Sequencer<T>& seq, std::uint64_t file) {
-            auto old_parse = parse;
-            auto old_dump = dump;
-            auto old_ptr = seq_ptr;
-            auto old_file = cur_file;
-
-            seq_ptr = std::addressof(seq);
-            parse = do_parse<T>;
-            dump = dump_source<T>;
-            cur_file = file;
+        [[nodiscard]] auto set_input(Input&& in) {
+            auto old = std::move(input);
+            input = std::move(in);
             return utils::helper::defer([=, this] {
-                cur_file = old_file;
-                seq_ptr = old_ptr;
-                parse = old_parse;
-                dump = old_dump;
+                input = std::move(old);
             });
-        }
-
-        void add_token(auto&& input, lexer::FileIndex file = lexer::builtin) {
-            auto seq = utils::make_ref_seq(input);
-            auto s = set_seq(seq, file);
-            std::list<lexer::Token> tmp;
-            for (auto input = call_parse(); input; input = call_parse()) {
-                if (input->tag == lexer::Tag::error) {
-                    report_error(*input);
-                }
-                tmp.push_back(std::move(*input));
-            }
-            if (cur == tokens.begin()) {
-                tokens.splice(cur, std::move(tmp));
-                cur = tokens.begin();
-            }
-            else {
-                auto prev = cur;
-                prev--;
-                tokens.splice(cur, std::move(tmp));
-                prev++;
-                cur = prev;
-            }
         }
 
         auto fallback() {
@@ -234,21 +176,20 @@ namespace ast {
 
        private:
         [[noreturn]] void token_expect_error(auto&& expected, auto&& found) {
-            lexer::Token token;
-            token.tag = lexer::Tag::error;
-            appends(token.token, "expect token ", expected, " but found ");
+            lexer::Pos pos;
+            std::string buf;
+            appends(buf, "expect token ", expected, " but found ");
             if (eos()) {
-                append(token.token, "<EOF>");
+                append(buf, "<EOF>");
                 auto copy = cur;
                 copy--;
-                token.loc.pos = {copy->loc.pos.end, copy->loc.pos.end + 1};
-                token.loc.file = cur_file;
+                pos = {copy->loc.pos.end, copy->loc.pos.end + 1};
             }
             else {
-                append(token.token, found(cur));
-                token.loc = cur->loc;
+                append(buf, found(cur));
+                pos = cur->loc.pos;
             }
-            report_error(token);
+            report_error(std::move(buf), pos);
         }
 
        public:
@@ -351,15 +292,14 @@ namespace ast {
         ContextInfo info;
 
        public:
-        template <class T>
-        std::optional<StreamError> enter_stream(utils::Sequencer<T>& seq, lexer::FileIndex file, auto&& fn) {
+        std::optional<StreamError> enter_stream(Input&& file, auto&& fn) {
             stream.info = &info;
             return stream.enter_stream([&] {
-                const auto scope = stream.set_seq(seq, file);
+                const auto scope = stream.set_input(std::move(file));
                 fn(stream);
             });
         }
     };
 
     std::shared_ptr<Program> parse(Stream& ctx);
-}  // namespace ast
+}  // namespace brgen::ast

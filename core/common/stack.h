@@ -4,7 +4,7 @@
 #include <helper/defer.h>
 #include <optional>
 
-namespace ast {
+namespace brgen {
 
     template <class T>
     struct StackFrame {
@@ -83,4 +83,4 @@ namespace ast {
         }
     };
 
-}  // namespace ast
+}  // namespace brgen

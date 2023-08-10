@@ -3,7 +3,7 @@
 #include "ast.h"
 #include "translated.h"
 
-namespace ast {
+namespace brgen::ast {
     void traverse(auto&& t, auto&& fn) {
         Object* o = std::to_address(t);
 #define SWITCH   \
@@ -69,4 +69,4 @@ namespace ast {
 #undef SWITCH
 #undef CASE
     }
-}  // namespace ast
+}  // namespace brgen::ast

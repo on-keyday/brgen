@@ -1,7 +1,7 @@
 /*license*/
 #pragma once
 
-namespace lexer::internal {
+namespace brgen::lexer::internal {
     constexpr auto test_text = R"a(
 fmt QUICPacket: 
    form :b1

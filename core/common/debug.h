@@ -1,15 +1,9 @@
 /*license*/
 #pragma once
+#include "util.h"
 #include <escape/escape.h>
-#include <string>
 
-namespace ast {
-    auto nums(auto v, int radix = 10) {
-        return utils::number::to_string<std::string>(v, radix);
-    }
-
-    using utils::strutil::append, utils::strutil::appends;
-
+namespace brgen {
     struct Debug {
         std::string buf;
         void object(auto&& fn) {
@@ -48,7 +42,7 @@ namespace ast {
         }
 
         void null() {
-            appends(buf, "null");
+            append(buf, "null");
         }
 
         void boolean(bool v) {
@@ -56,4 +50,4 @@ namespace ast {
         }
     };
 
-}  // namespace ast
+}  // namespace brgen

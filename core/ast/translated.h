@@ -2,7 +2,7 @@
 #pragma once
 #include "ast.h"
 
-namespace ast {
+namespace brgen::ast {
     struct TmpVar : Expr {
         static constexpr ObjectType object_type = ObjectType::tmp_var;
         size_t tmp_index = 0;
@@ -41,4 +41,4 @@ namespace ast {
         }
     };
 
-}  // namespace ast
+}  // namespace brgen::ast

@@ -6,7 +6,7 @@
 #include <string>
 #include <helper/defer.h>
 
-namespace writer {
+namespace brgen::writer {
     using Writer = utils::code::CodeWriter<std::string, std::string_view>;
 
     struct TreeWriter {
@@ -43,4 +43,4 @@ namespace writer {
             }
         }
     };
-}  // namespace writer
+}  // namespace brgen::writer

@@ -7,10 +7,11 @@
 #include "expr_layer.h"
 #include <escape/escape.h>
 #include <map>
-#include "stack.h"
-#include "debug.h"
+#include "../common/stack.h"
+#include "../common/util.h"
+#include "../common/debug.h"
 
-namespace ast {
+namespace brgen::ast {
 
     enum class ObjectType {
         program,
@@ -91,11 +92,20 @@ namespace ast {
 
     // ident
 
+    enum class IdentUsage {
+        unknown,
+        reference,
+        define_alias,
+        define_typed,
+        define_const,
+    };
+
     struct Ident : Expr {
         static constexpr ObjectType object_type = ObjectType::ident;
         std::string ident;
         defframe frame;
-        bool first_assign = false;
+        std::weak_ptr<Ident> base;
+        IdentUsage usage = IdentUsage::unknown;
 
         Ident(lexer::Loc l, std::string&& i)
             : Expr(l, ObjectType::ident), ident(std::move(i)) {}
@@ -468,4 +478,4 @@ namespace ast {
         return nullptr;
     }
 
-}  // namespace ast
+}  // namespace brgen::ast

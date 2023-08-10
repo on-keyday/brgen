@@ -7,7 +7,7 @@
 #include <vector>
 #include <wrap/cout.h>
 
-using AstList = std::vector<std::future<std::optional<std::shared_ptr<ast::Program>>>>;
+using AstList = std::vector<std::future<std::optional<std::shared_ptr<brgen::ast::Program>>>>;
 
 #ifdef _WIN32
 #ifdef AST_TEST_COMPONENT_EXPORTS
@@ -26,4 +26,4 @@ AST_TEST_COMPONENT_API extern utils::wrap::UtfOut& cerr;
 
 // Function declarations with the AST_TEST_COMPONENT_API macro
 AST_TEST_COMPONENT_API AstList test_ast(bool debug = true);
-AST_TEST_COMPONENT_API void save_result(ast::Debug&, const char* file);
+AST_TEST_COMPONENT_API void save_result(brgen::Debug&, const char* file);

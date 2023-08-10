@@ -3,13 +3,13 @@
 #include "core/ast/ast.h"
 #include "core/ast/translated.h"
 
-namespace c_lang {
+namespace brgen::c_lang {
     void write_expr(writer::TreeWriter& w, ast::Expr* expr, ast::Expr* parent);
     void write_block(writer::TreeWriter& w, ast::objlist& elements);
 
     void write_temporary_func(writer::TreeWriter& parent) {
         writer::TreeWriter w{"tmp", parent.lookup("global_def")};
-        w.code().writeln("int temporary_func", ast::nums(0), "() {");
+        w.code().writeln("int temporary_func", nums(0), "() {");
         w.code().writeln("}");
         w.code().line();
     }
@@ -48,15 +48,15 @@ namespace c_lang {
             }
         }
         else if (auto num = ast::as<ast::IntLiteral>(expr)) {
-            w.code().write("0x", ast::nums(*num->parse_as<std::uint64_t>(), 16));
+            w.code().write("0x", nums(*num->parse_as<std::uint64_t>(), 16));
         }
         else if (auto tmp = ast::as<ast::TmpVar>(expr)) {
             if (parent && parent->object_type == ast::ObjectType::binary &&
                 ast::as<ast::Binary>(parent)->op == ast::BinaryOp::assign) {
-                w.code().write("int tmp", ast::nums(tmp->tmp_index));
+                w.code().write("int tmp", nums(tmp->tmp_index));
             }
             else {
-                w.code().write("tmp", ast::nums(tmp->tmp_index));
+                w.code().write("tmp", nums(tmp->tmp_index));
             }
         }
         else if (auto call = ast::as<ast::Call>(expr)) {
@@ -83,4 +83,4 @@ namespace c_lang {
         main_.code().writeln("}");
     }
 
-}  // namespace c_lang
+}  // namespace brgen::c_lang

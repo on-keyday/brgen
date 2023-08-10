@@ -11,7 +11,7 @@
 #include <optional>
 #include "lexer_test_text.h"
 
-namespace lexer {
+namespace brgen::lexer {
 
     namespace internal {
         namespace cps = utils::comb2::composite;
@@ -41,6 +41,7 @@ namespace lexer {
         constexpr auto keywords = keyword("fmt", "if", "else", "match", "fn", "for");
         constexpr auto puncts = punct(
             "#", "\"", "\'",  // added but maybe not used
+            "::=", ":=",
             ":", "(", ")", "[", "]",
             "=>", "=",
             "..", ".",
@@ -147,4 +148,4 @@ namespace lexer {
         return tok;
     }
 
-}  // namespace lexer
+}  // namespace brgen::lexer

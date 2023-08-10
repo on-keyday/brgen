@@ -1,6 +1,6 @@
 /*license*/
 #pragma once
 
-namespace treeopt {
+namespace brgen::treeopt {
 
-}  // namespace treeopt
+}  // namespace brgen::treeopt

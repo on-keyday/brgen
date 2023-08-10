@@ -15,6 +15,30 @@ namespace typing {
             auto rty = ast::as<ast::IntegerType>(right);
             return lty->bit_size == rty->bit_size;
         }
+        if (auto lty = ast::as<ast::IdentType>(left)) {
+            auto rty = ast::as<ast::IdentType>(right);
+            return lty->ident == rty->ident;
+        }
+        return false;
+    }
+
+    void typeing_assign(ast::Binary* b) {
+        auto left = ast::as<ast::Ident>(b->left);
+        auto right = b->right;
+        if (b->op == ast::BinaryOp::assign) {
+            if (left->usage == ast::IdentUsage::unknown) {
+                left->usage = ast::IdentUsage::define_alias;
+                left->expr_type = right->expr_type;
+            }
+        }
+        if (b->op == ast::BinaryOp::typed_assign) {
+            if (left->usage == ast::IdentUsage::unknown) {
+                left->usage = ast::IdentUsage::define_typed;
+                left->expr_type = right->expr_type;
+            }
+            else {
+            }
+        }
     }
 
     void typing_expr(ast::Expr* expr) {
@@ -22,24 +46,28 @@ namespace typing {
             lit->expr_type = std::make_shared<ast::IntegerType>(lit->loc, "u32", 32);
         }
         else if (auto ident = ast::as<ast::Ident>(expr)) {
-            auto ty = ident->frame->lookup_first<std::shared_ptr<ast::Type>>([&](ast::Definitions& defs) -> std::optional<std::shared_ptr<ast::Type>> {
+            auto found = ident->frame->lookup<std::shared_ptr<ast::Ident>>([&](ast::Definitions& defs) -> std::optional<std::shared_ptr<ast::Ident>> {
                 auto found = defs.idents.find(ident->ident);
                 if (found != defs.idents.end()) {
-                    return found->second.front()->expr_type;
+                    if (found->second.front()->usage != ast::IdentUsage::unknown) {
+                        return found->second.front();
+                    }
                 }
                 return std::nullopt;
             });
-            if (ty) {
-                ident->expr_type = std::move(*ty);
+            if (found) {
+                ident->expr_type = (*found)->expr_type;
+                ident->base = *found;
+                ident->usage = ast::IdentUsage::reference;
             }
         }
         else if (auto bin = ast::as<ast::Binary>(expr)) {
             typing_expr(bin->left.get());
             typing_expr(bin->right.get());
             switch (bin->op) {
-                case ast::BinaryOp::assign: {
-                    if (bin->left->expr_type) {
-                    }
+                case ast::BinaryOp::assign:
+                case ast::BinaryOp::typed_assign:
+                case ast::BinaryOp::const_assign: {
                 }
             }
         }
