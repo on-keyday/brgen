@@ -38,6 +38,8 @@ namespace brgen::ast {
         int_type,
         ident_type,
         str_literal_type,
+        void_type,
+        bool_type,
     };
 
     // abstract
@@ -368,6 +370,28 @@ namespace brgen::ast {
                 field("ident", [&](Debug& d) { d.string(ident); });
                 field("arguments", [&](Debug& d) { arguments ? arguments->debug(d) : d.null(); });
             });
+        }
+    };
+
+    struct VoidType : Type {
+        static constexpr ObjectType object_type = ObjectType::void_type;
+
+        VoidType(lexer::Loc l)
+            : Type(l, ObjectType::void_type) {}
+
+        void debug(Debug& buf) const override {
+            buf.string("void");
+        }
+    };
+
+    struct VoidType : Type {
+        static constexpr ObjectType object_type = ObjectType::bool_type;
+
+        VoidType(lexer::Loc l)
+            : Type(l, ObjectType::bool_type) {}
+
+        void debug(Debug& buf) const override {
+            buf.string("bool");
         }
     };
 
