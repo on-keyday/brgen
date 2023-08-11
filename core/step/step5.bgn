@@ -1,6 +1,7 @@
 form :u1
-if form:
+if form == 1:
     :LongPacket
 else:
     :ShortPacket
+
 

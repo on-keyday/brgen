@@ -60,6 +60,7 @@ namespace brgen::ast {
             }
         }
         CASE(Field) {
+            fn(v->ident);
             fn(v->field_type);
         }
         CASE(MemberAccess) {

@@ -26,8 +26,8 @@ int main() {
             auto err = input.error("invalid operand types for binary operator", e.loc.pos).to_string(file) + "\n";
             cerr << err;
         } catch (const typing::NotEqualTypeError& e) {
-            auto err = input.error("type not equal", e.a.pos).to_string(file);
-            err += "\n" + input.error("type not equal", e.a.pos).to_string(file);
+            auto err = input.error("type not equal; here", e.a.pos).to_string(file);
+            err += "\n" + input.error("and here", e.b.pos).to_string(file) + "\n";
             cerr << err;
         } catch (const typing::UnsupportedError& e) {
             auto err = input.error("unsupported operation", e.l.pos).to_string(file) + "\n";

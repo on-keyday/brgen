@@ -398,12 +398,17 @@ namespace brgen::ast {
             auto frame = s.context()->current_definitions();
             frame->current.add_ident(ident->ident, ident);
             ident->frame = std::move(frame);
+
             ident->usage = IdentUsage::define_const;
         }
 
         field->ident = std::move(ident);
 
         field->field_type = parse_type(s);
+
+        if (field->ident) {
+            field->ident->expr_type = field->field_type;
+        }
 
         s.context()->current_definitions()->current.add_field(field);
 

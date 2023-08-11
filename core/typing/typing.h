@@ -39,5 +39,9 @@ namespace brgen::typing {
         lexer::Loc l;
     };
 
+    struct TooLargeError {
+        lexer::Loc l;
+    };
+
     void typing_object(const std::shared_ptr<ast::Object>& ty);
 }  // namespace brgen::typing

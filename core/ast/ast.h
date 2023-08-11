@@ -10,6 +10,7 @@
 #include "../common/stack.h"
 #include "../common/util.h"
 #include "../common/debug.h"
+#include <binary/flags.h>
 
 namespace brgen::ast {
 
@@ -37,6 +38,7 @@ namespace brgen::ast {
         type = 0x040000,
         int_type,
         ident_type,
+        int_literal_type,
         str_literal_type,
         void_type,
         bool_type,
@@ -280,6 +282,7 @@ namespace brgen::ast {
     };
 
     struct MemberAccess : Expr {
+        static constexpr ObjectType object_type = ObjectType::member_access;
         std::shared_ptr<Expr> target;
         std::string name;
 
@@ -355,6 +358,31 @@ namespace brgen::ast {
                 field("bit_size", [&](Debug& d) { d.number(bit_size); });
             });
         }
+    };
+
+    struct IntLiteralType : Type {
+        static constexpr ObjectType object_type = ObjectType::int_literal_type;
+        std::weak_ptr<IntLiteral> base;
+        std::optional<std::uint8_t> bit_size;
+
+        std::optional<std::uint8_t> get_bit_size() {
+            if (bit_size) {
+                return bit_size;
+            }
+            auto got = base.lock();
+            if (!got) {
+                return std::nullopt;
+            }
+            auto p = got->parse_as<std::uint64_t>();
+            if (!p) {
+                return std::nullopt;
+            }
+            bit_size = utils::binary::log2i(*p);
+            return bit_size;
+        }
+
+        IntLiteralType(const std::shared_ptr<IntLiteral>& ty)
+            : Type(ty->loc, ObjectType::int_literal_type), base(ty) {}
     };
 
     struct IdentType : Type {

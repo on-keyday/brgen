@@ -82,9 +82,54 @@ namespace brgen::typing {
         }
     }
 
+    [[noreturn]] static void report_not_eqaul_type(const std::shared_ptr<ast::Type>& lty, const std::shared_ptr<ast::Type>& rty) {
+        throw NotEqualTypeError{lty->loc, rty->loc};
+    }
+
+    [[noreturn]] static void unsupported_expr(auto&& expr) {
+        if (auto ident = ast::as<ast::Ident>(expr)) {
+            throw NotDefinedError{
+                ident->ident,
+                ident->loc,
+            };
+        }
+        throw UnsupportedError{expr->loc};
+    }
+
     static void check_bool(ast::Expr* expr) {
-        if (expr->type != ast::ObjectType::bool_type) {
+        if (!expr->expr_type) {
+            unsupported_expr(expr);
+        }
+        if (expr->expr_type->type != ast::ObjectType::bool_type) {
             throw NotBoolError{expr->loc};
+        }
+    }
+
+    static void int_type_fitting(std::shared_ptr<ast::Type>& left, std::shared_ptr<ast::Type>& right) {
+        auto fitting = [&](auto& a, auto& b) {
+            auto ity = ast::as<ast::IntegerType>(a);
+            auto lty = ast::as<ast::IntLiteralType>(b);
+            auto bit_size = lty->get_bit_size();
+            if (ity->bit_size < *bit_size) {
+                throw TooLargeError{lty->loc};
+            }
+            b = a;  // fitting
+        };
+        if (left->type == ast::ObjectType::int_type &&
+            right->type == ast::ObjectType::int_literal_type) {
+            fitting(left, right);
+        }
+        else if (left->type == ast::ObjectType::int_literal_type &&
+                 right->type == ast::ObjectType::int_type) {
+            fitting(right, left);
+        }
+        else if (left->type == ast::ObjectType::int_literal_type &&
+                 right->type == ast::ObjectType::int_literal_type) {
+            auto lty = ast::as<ast::IntLiteralType>(left);
+            auto rty = ast::as<ast::IntLiteralType>(right);
+            auto lsize = lty->get_bit_size();
+            auto rsize = rty->get_bit_size();
+            auto larger = *lsize < *rsize ? *rsize : *lsize;
         }
     }
 
@@ -119,6 +164,9 @@ namespace brgen::typing {
         typing_object(if_->cond);
         check_bool(if_->cond.get());
         typing_object(if_->block);
+        if (if_->els) {
+            typing_object(if_->els);
+        }
 
         auto then_ = extract_expr_type(if_->block);
         auto els_ = extract_else_type(if_->els);
@@ -129,20 +177,6 @@ namespace brgen::typing {
         }
 
         if_->expr_type = then_;
-    }
-
-    [[noreturn]] static void report_not_eqaul_type(const std::shared_ptr<ast::Type>& lty, const std::shared_ptr<ast::Type>& rty) {
-        throw NotEqualTypeError{rty->loc, lty->loc};
-    }
-
-    [[noreturn]] static void unsupported_expr(auto&& expr) {
-        if (auto ident = ast::as<ast::Ident>(expr)) {
-            throw NotDefinedError{
-                ident->ident,
-                ident->loc,
-            };
-        }
-        throw UnsupportedError{expr->loc};
     }
 
     static void typing_binary(ast::Binary* b) {
@@ -179,22 +213,34 @@ namespace brgen::typing {
                 }
                 report_binary_error();
             }
+            case ast::BinaryOp::equal: {
+                if (!equal_type(lty, rty)) {
+                    report_not_eqaul_type(lty, rty);
+                }
+                b->expr_type = std::make_shared<ast::BoolType>(b->loc);
+                return;
+            }
             default: {
                 report_binary_error();
             }
         }
     }
 
-    static void typing_expr(ast::Expr* expr) {
+    static void typing_expr(const std::shared_ptr<ast::Expr>& expr) {
         if (auto lit = ast::as<ast::IntLiteral>(expr)) {
-            lit->expr_type = std::make_shared<ast::IntegerType>(lit->loc, "u32", 32);
+            lit->expr_type = std::make_shared<ast::IntLiteralType>(std::static_pointer_cast<ast::IntLiteral>(expr));
         }
         else if (auto ident = ast::as<ast::Ident>(expr)) {
+            if (ident->usage != ast::IdentUsage::unknown) {
+                auto usage = ident->usage;
+                return;  // nothing to do
+            }
             auto found = ident->frame->lookup<std::shared_ptr<ast::Ident>>([&](ast::Definitions& defs) -> std::optional<std::shared_ptr<ast::Ident>> {
                 auto found = defs.idents.find(ident->ident);
                 if (found != defs.idents.end()) {
                     for (auto& rev : std::ranges::reverse_view(found->second)) {
-                        if (rev->usage != ast::IdentUsage::unknown) {
+                        auto usage = rev->usage;
+                        if (usage != ast::IdentUsage::unknown) {
                             return rev;
                         }
                     }
@@ -209,8 +255,8 @@ namespace brgen::typing {
         }
         else if (auto bin = ast::as<ast::Binary>(expr)) {
             auto op = bin->op;
-            typing_expr(bin->left.get());
-            typing_expr(bin->right.get());
+            typing_expr(bin->left);
+            typing_expr(bin->right);
             switch (op) {
                 case ast::BinaryOp::assign:
                 case ast::BinaryOp::typed_assign:
@@ -218,14 +264,8 @@ namespace brgen::typing {
                     typing_assign(bin);
                     break;
                 }
-                case ast::BinaryOp::left_shift:
-                case ast::BinaryOp::right_shift:
-                case ast::BinaryOp::bit_and: {
-                    typing_binary(bin);
-                    break;
-                }
                 default: {
-                    throw UnsupportedError{bin->loc};
+                    typing_binary(bin);
                 }
             }
         }
@@ -242,7 +282,7 @@ namespace brgen::typing {
         auto recursive_typing = [&](auto&& f, const std::shared_ptr<ast::Object>& ty) -> void {
             if (auto expr = ast::as_Expr(ty)) {
                 // If the object is an expression, perform expression typing
-                typing_expr(expr);
+                typing_expr(std::static_pointer_cast<ast::Expr>(ty));
                 return;
             }
             // Traverse the object's subcomponents and apply the recursive function
@@ -250,10 +290,6 @@ namespace brgen::typing {
                 f(f, sub_ty);
             });
         };
-
-        // Start the recursive traversal by invoking the lambda
-        ast::traverse(ty, [&](const std::shared_ptr<ast::Object>& sub_ty) {
-            recursive_typing(recursive_typing, sub_ty);
-        });
+        recursive_typing(recursive_typing, ty);
     }
 }  // namespace brgen::typing
