@@ -20,7 +20,7 @@ void test_extract_call(AstList& c) {
 }
 
 int main() {
-    auto c = test_ast([](auto& a, auto& in) {
+    auto c = test_ast([](auto& a, auto& in, auto) {
         treeopt::ExtractContext h;
         treeopt::extract_call(h, a);
     });

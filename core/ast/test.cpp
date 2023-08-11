@@ -3,7 +3,7 @@
 using namespace brgen;
 
 int main() {
-    auto f = test_ast([](auto prog, auto& i) {
+    auto f = test_ast([](auto prog, auto& i, auto name) {
         Debug d;
         prog->debug(d);
         cerr << (d.buf + "\n");

@@ -19,7 +19,8 @@ static std::optional<std::shared_ptr<ast::Program>> test_file(std::string_view n
         return std::nullopt;
     }
     ast::Context ctx;
-    auto input = files.get_input(std::get<brgen::lexer::FileIndex>(fd));
+    auto fp = std::get<brgen::lexer::FileIndex>(fd);
+    auto input = files.get_input(fp);
     std::shared_ptr<ast::Program> prog;
     auto copy = *input;
     auto err = ctx.enter_stream(std::move(copy), [&](ast::Stream& s) {
@@ -29,7 +30,8 @@ static std::optional<std::shared_ptr<ast::Program>> test_file(std::string_view n
         cerr << (err->to_string(file_name) + "\n");
         return std::nullopt;
     }
-    cont(prog, *input);
+    auto path = *files.get_path(fp);
+    cont(prog, *input, path.generic_string());
     return prog;
 }
 

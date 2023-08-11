@@ -139,5 +139,13 @@ namespace brgen {
             }
             return file->input;
         }
+
+        std::optional<fs::path> get_path(lexer::FileIndex fd) {
+            if (fd < index || index < fd) {
+                return std::nullopt;
+            }
+            auto& file = indexs[fd];
+            return file->path;
+        }
     };
 }  // namespace brgen

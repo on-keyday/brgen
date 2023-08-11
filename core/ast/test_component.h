@@ -25,7 +25,7 @@ using AstList = std::vector<std::future<std::optional<std::shared_ptr<brgen::ast
 
 AST_TEST_COMPONENT_API extern utils::wrap::UtfOut& cerr;
 
-using Continuation = void (*)(std::shared_ptr<brgen::ast::Program>& prog, brgen::Input& input);
+using Continuation = void (*)(std::shared_ptr<brgen::ast::Program>& prog, brgen::Input& input,std::string_view file_name);
 
 // Function declarations with the AST_TEST_COMPONENT_API macro
 AST_TEST_COMPONENT_API AstList test_ast(Continuation cont);

@@ -1,14 +1,14 @@
 /*license*/
 #include "../ast/ast.h"
 #include "../ast/util.h"
-#include "../ast/stream.h"
 #include "typing.h"
+#include <ranges>
 
 namespace brgen::typing {
 
     void typing_object(const std::shared_ptr<ast::Object>& ty);
 
-    bool equal_type(const std::shared_ptr<ast::Type>& left, const std::shared_ptr<ast::Type>& right) {
+    static bool equal_type(const std::shared_ptr<ast::Type>& left, const std::shared_ptr<ast::Type>& right) {
         if (left->type != right->type) {
             return false;
         }
@@ -23,11 +23,11 @@ namespace brgen::typing {
         return false;
     }
 
-    auto void_type(lexer::Loc loc) {
+    static auto void_type(lexer::Loc loc) {
         return std::make_shared<ast::VoidType>(loc);
     }
 
-    void typing_assign(ast::Binary* b) {
+    static void typing_assign(ast::Binary* b) {
         auto left = ast::as<ast::Ident>(b->left);
         auto right = b->right;
         b->expr_type = void_type(b->loc);
@@ -82,13 +82,13 @@ namespace brgen::typing {
         }
     }
 
-    void check_bool(ast::Expr* expr) {
+    static void check_bool(ast::Expr* expr) {
         if (expr->type != ast::ObjectType::bool_type) {
             throw NotBoolError{expr->loc};
         }
     }
 
-    std::shared_ptr<ast::Type> extract_expr_type(const std::shared_ptr<ast::IndentScope>& block) {
+    static std::shared_ptr<ast::Type> extract_expr_type(const std::shared_ptr<ast::IndentScope>& block) {
         auto last_element = block->elements.back();
         if (auto then_expr = ast::as_Expr(last_element)) {
             return then_expr->expr_type;
@@ -96,7 +96,7 @@ namespace brgen::typing {
         return nullptr;
     }
 
-    std::shared_ptr<ast::Type> extract_else_type(const std::shared_ptr<ast::Object>& els) {
+    static std::shared_ptr<ast::Type> extract_else_type(const std::shared_ptr<ast::Object>& els) {
         if (!els) {
             return nullptr;
         }
@@ -115,7 +115,7 @@ namespace brgen::typing {
         return nullptr;
     }
 
-    void typing_if(ast::If* if_) {
+    static void typing_if(ast::If* if_) {
         typing_object(if_->cond);
         check_bool(if_->cond.get());
         typing_object(if_->block);
@@ -131,11 +131,11 @@ namespace brgen::typing {
         if_->expr_type = then_;
     }
 
-    [[noreturn]] void report_not_eqaul_type(const std::shared_ptr<ast::Type>& lty, const std::shared_ptr<ast::Type>& rty) {
+    [[noreturn]] static void report_not_eqaul_type(const std::shared_ptr<ast::Type>& lty, const std::shared_ptr<ast::Type>& rty) {
         throw NotEqualTypeError{rty->loc, lty->loc};
     }
 
-    [[noreturn]] void unsupported_expr(auto&& expr) {
+    [[noreturn]] static void unsupported_expr(auto&& expr) {
         if (auto ident = ast::as<ast::Ident>(expr)) {
             throw NotDefinedError{
                 ident->ident,
@@ -145,7 +145,7 @@ namespace brgen::typing {
         throw UnsupportedError{expr->loc};
     }
 
-    void typing_binary(ast::Binary* b) {
+    static void typing_binary(ast::Binary* b) {
         auto op = b->op;
         auto& lty = b->left->expr_type;
         auto& rty = b->right->expr_type;
@@ -185,7 +185,7 @@ namespace brgen::typing {
         }
     }
 
-    void typing_expr(ast::Expr* expr) {
+    static void typing_expr(ast::Expr* expr) {
         if (auto lit = ast::as<ast::IntLiteral>(expr)) {
             lit->expr_type = std::make_shared<ast::IntegerType>(lit->loc, "u32", 32);
         }
@@ -208,9 +208,10 @@ namespace brgen::typing {
             }
         }
         else if (auto bin = ast::as<ast::Binary>(expr)) {
+            auto op = bin->op;
             typing_expr(bin->left.get());
             typing_expr(bin->right.get());
-            switch (bin->op) {
+            switch (op) {
                 case ast::BinaryOp::assign:
                 case ast::BinaryOp::typed_assign:
                 case ast::BinaryOp::const_assign: {
@@ -228,6 +229,12 @@ namespace brgen::typing {
                 }
             }
         }
+        else if (auto if_ = ast::as<ast::If>(expr)) {
+            typing_if(if_);
+        }
+        else {
+            throw UnsupportedError{expr->loc};
+        }
     }
 
     void typing_object(const std::shared_ptr<ast::Object>& ty) {
@@ -236,6 +243,7 @@ namespace brgen::typing {
             if (auto expr = ast::as_Expr(ty)) {
                 // If the object is an expression, perform expression typing
                 typing_expr(expr);
+                return;
             }
             // Traverse the object's subcomponents and apply the recursive function
             ast::traverse(ty, [&](const std::shared_ptr<ast::Object>& sub_ty) {

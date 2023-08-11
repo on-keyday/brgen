@@ -108,9 +108,13 @@ namespace brgen::ast {
         return if_;
     }
 
-    std::shared_ptr<Ident> parse_ident(Stream& s) {
+    std::shared_ptr<Ident> parse_ident_no_frame(Stream& s) {
         auto token = s.must_consume_token(lexer::Tag::ident);
-        auto ident = std::make_shared<Ident>(token.loc, std::move(token.token));
+        return std::make_shared<Ident>(token.loc, std::move(token.token));
+    }
+
+    std::shared_ptr<Ident> parse_ident(Stream& s) {
+        auto ident = parse_ident_no_frame(s);
         auto frame = s.context()->current_definitions();
         frame->current.add_ident(ident->ident, ident);
         ident->frame = std::move(frame);
@@ -373,7 +377,7 @@ namespace brgen::ast {
         auto f = s.fallback();
         std::shared_ptr<Ident> ident;
         if (s.expect_token(lexer::Tag::ident)) {
-            ident = parse_ident(s);
+            ident = parse_ident_no_frame(s);
         }
 
         if (ident) {
@@ -389,6 +393,13 @@ namespace brgen::ast {
 
         auto field = std::make_shared<Field>(ident ? ident->loc : token->loc);
         field->colon_loc = token->loc;
+
+        if (ident) {
+            auto frame = s.context()->current_definitions();
+            frame->current.add_ident(ident->ident, ident);
+            ident->frame = std::move(frame);
+            ident->usage = IdentUsage::define_const;
+        }
 
         field->ident = std::move(ident);
 

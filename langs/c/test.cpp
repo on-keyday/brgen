@@ -4,7 +4,7 @@
 using namespace brgen;
 
 int main() {
-    auto asts = test_ast([](auto& a, auto& i) {
+    auto asts = test_ast([](auto& a, auto& i, auto) {
         writer::TreeWriter w{"global", nullptr};
         c_lang::entry(w, a);
         cerr << (w.code().out() + "\n");
