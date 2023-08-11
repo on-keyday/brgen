@@ -9,8 +9,6 @@ void test_extract_call(AstList& c) {
         for (auto& f : c) {
             if (auto got = f.get()) {
                 auto& f = *got;
-                treeopt::ExtractContext h;
-                treeopt::extract_call(h, f);
                 field([&](Debug& d) {
                     f->debug(d);
                 });
@@ -22,6 +20,9 @@ void test_extract_call(AstList& c) {
 }
 
 int main() {
-    auto c = test_ast(false);
+    auto c = test_ast([](auto& a, auto& in) {
+        treeopt::ExtractContext h;
+        treeopt::extract_call(h, a);
+    });
     test_extract_call(c);
 }

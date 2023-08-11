@@ -4,13 +4,14 @@
 using namespace brgen;
 
 int main() {
-    auto asts = test_ast(false);
+    auto asts = test_ast([](auto& a, auto& i) {
+        writer::TreeWriter w{"global", nullptr};
+        c_lang::entry(w, a);
+        cerr << (w.code().out() + "\n");
+    });
     for (auto& g : asts) {
         auto got = g.get();
         if (got) {
-            writer::TreeWriter w{"global", nullptr};
-            c_lang::entry(w, *got);
-            cerr << w.code().out() << "\n";
         }
     }
 }

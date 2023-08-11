@@ -111,7 +111,9 @@ namespace brgen::ast {
     std::shared_ptr<Ident> parse_ident(Stream& s) {
         auto token = s.must_consume_token(lexer::Tag::ident);
         auto ident = std::make_shared<Ident>(token.loc, std::move(token.token));
-        s.context()->current_definitions()->current.add_ident(ident->ident, ident);
+        auto frame = s.context()->current_definitions();
+        frame->current.add_ident(ident->ident, ident);
+        ident->frame = std::move(frame);
         return ident;
     }
 

@@ -1,7 +1,7 @@
 /*license*/
-#include "ast/ast.h"
-#include "ast/util.h"
-#include "ast/stream.h"
+#include "../ast/ast.h"
+#include "../ast/util.h"
+#include "../ast/stream.h"
 #include "typing.h"
 
 namespace brgen::typing {
@@ -131,11 +131,56 @@ namespace brgen::typing {
         if_->expr_type = then_;
     }
 
+    [[noreturn]] void report_not_eqaul_type(const std::shared_ptr<ast::Type>& lty, const std::shared_ptr<ast::Type>& rty) {
+        throw NotEqualTypeError{rty->loc, lty->loc};
+    }
+
+    [[noreturn]] void unsupported_expr(auto&& expr) {
+        if (auto ident = ast::as<ast::Ident>(expr)) {
+            throw NotDefinedError{
+                ident->ident,
+                ident->loc,
+            };
+        }
+        throw UnsupportedError{expr->loc};
+    }
+
     void typing_binary(ast::Binary* b) {
-        switch (b->op) {
-            case ast::BinaryOp::left_shift: {
-                if (b->left->type == ast::ObjectType::int_type) {
+        auto op = b->op;
+        auto& lty = b->left->expr_type;
+        auto& rty = b->right->expr_type;
+        auto report_binary_error = [&] {
+            throw BinaryOpTypeError{b->op, b->loc};
+        };
+        if (!lty) {
+            unsupported_expr(b->left);
+        }
+        if (!rty) {
+            unsupported_expr(b->right);
+        }
+        switch (op) {
+            case ast::BinaryOp::left_shift:
+            case ast::BinaryOp::right_shift: {
+                if (lty->type == ast::ObjectType::int_type &&
+                    rty->type == ast::ObjectType::int_type) {
+                    b->expr_type = std::move(lty);
+                    return;
                 }
+                report_binary_error();
+            }
+            case ast::BinaryOp::bit_and: {
+                if (lty->type == ast::ObjectType::int_type &&
+                    rty->type == ast::ObjectType::int_type) {
+                    if (!equal_type(rty, lty)) {
+                        report_not_eqaul_type(rty, lty);
+                    }
+                    b->expr_type = std::move(lty);
+                    return;
+                }
+                report_binary_error();
+            }
+            default: {
+                report_binary_error();
             }
         }
     }
@@ -150,7 +195,7 @@ namespace brgen::typing {
                 if (found != defs.idents.end()) {
                     for (auto& rev : std::ranges::reverse_view(found->second)) {
                         if (rev->usage != ast::IdentUsage::unknown) {
-                            return found->second.front();
+                            return rev;
                         }
                     }
                 }
@@ -177,6 +222,9 @@ namespace brgen::typing {
                 case ast::BinaryOp::bit_and: {
                     typing_binary(bin);
                     break;
+                }
+                default: {
+                    throw UnsupportedError{bin->loc};
                 }
             }
         }

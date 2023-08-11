@@ -3,6 +3,7 @@
 #include <string>
 #include "../lexer/token.h"
 #include <code/src_location.h>
+#include "../common/util.h"
 
 namespace brgen {
     struct StreamError {

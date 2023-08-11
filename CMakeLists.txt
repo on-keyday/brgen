@@ -16,6 +16,8 @@ add_library(ast_test_component SHARED
 "core/ast/ast.cpp")
 
 add_executable(ast_test "core/ast/test.cpp")
+add_executable(typing_test "core/typing/test.cpp"
+"core/typing/typing.cpp")
 add_executable(treeopt_test "core/treeopt/test.cpp")
 
 # languages
@@ -25,6 +27,7 @@ add_executable(c_lang_test "langs/c/test.cpp"
 target_compile_options(lexer_test PRIVATE "-fconstexpr-steps=2147483647")
 target_link_libraries(ast_test_component utils)
 target_link_libraries(ast_test ast_test_component)
+target_link_libraries(typing_test ast_test_component)
 target_link_libraries(treeopt_test ast_test_component)
 target_link_libraries(c_lang_test ast_test_component)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "tool")

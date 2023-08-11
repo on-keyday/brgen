@@ -9,42 +9,39 @@
 using namespace brgen;
 auto& cerr = utils::wrap::cerr_wrap();
 
-static std::optional<std::shared_ptr<ast::Program>> test_file(std::string_view name, bool debug) {
+static std::optional<std::shared_ptr<ast::Program>> test_file(std::string_view name, Continuation cont) {
     std::string file_name = "./core/step/";
     file_name += name.data();
     brgen::FileList files;
     auto fd = files.add(file_name);
     if (auto code = std::get_if<std::error_code>(&fd)) {
-        cerr << utils::wrap::packln("error:", code->message());
+        cerr << ("error:" + code->message());
         return std::nullopt;
     }
     ast::Context ctx;
     auto input = files.get_input(std::get<brgen::lexer::FileIndex>(fd));
     std::shared_ptr<ast::Program> prog;
-    auto err = ctx.enter_stream(std::move(*input), [&](ast::Stream& s) {
+    auto copy = *input;
+    auto err = ctx.enter_stream(std::move(copy), [&](ast::Stream& s) {
         prog = ast::parse(s);
     });
     if (err != std::nullopt) {
-        cerr << err->to_string(file_name) + "\n";
+        cerr << (err->to_string(file_name) + "\n");
         return std::nullopt;
     }
-    if (debug) {
-        Debug debug;
-        prog->debug(debug);
-        cerr << debug.buf + "\n";
-    }
+    cont(prog, *input);
     return prog;
 }
 
-AstList test_ast(bool debug) {
+AstList test_ast(Continuation cont) {
     AstList f;
-    f.push_back(std::async(std::launch::async, test_file, "step1.bgn", debug));
-    f.push_back(std::async(std::launch::async, test_file, "step2.bgn", debug));
-    f.push_back(std::async(std::launch::async, test_file, "step3.bgn", debug));
-    f.push_back(std::async(std::launch::async, test_file, "step4.bgn", debug));
-    f.push_back(std::async(std::launch::async, test_file, "step5.bgn", debug));
-    f.push_back(std::async(std::launch::async, test_file, "step6.bgn", debug));
-    f.push_back(std::async(std::launch::async, test_file, "step7.bgn", debug));
+    f.push_back(std::async(std::launch::async, test_file, "step1.bgn", cont));
+    f.push_back(std::async(std::launch::async, test_file, "step2.bgn", cont));
+    f.push_back(std::async(std::launch::async, test_file, "step3.bgn", cont));
+    f.push_back(std::async(std::launch::async, test_file, "step4.bgn", cont));
+    f.push_back(std::async(std::launch::async, test_file, "step5.bgn", cont));
+    f.push_back(std::async(std::launch::async, test_file, "step6.bgn", cont));
+    f.push_back(std::async(std::launch::async, test_file, "step7.bgn", cont));
     return f;
 }
 

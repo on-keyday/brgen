@@ -3,7 +3,11 @@
 using namespace brgen;
 
 int main() {
-    auto f = test_ast();
+    auto f = test_ast([](auto prog, auto& i) {
+        Debug d;
+        prog->debug(d);
+        cerr << (d.buf + "\n");
+    });
     Debug d;
     size_t failed = 0;
     d.array([&](auto&& field) {

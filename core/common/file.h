@@ -2,6 +2,7 @@
 #pragma once
 #include <filesystem>
 #include "../lexer/token.h"
+#include "../lexer/lexer.h"
 #include <code/src_location.h>
 #include <helper/disable_self.h>
 #include "error.h"

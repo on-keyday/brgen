@@ -384,10 +384,10 @@ namespace brgen::ast {
         }
     };
 
-    struct VoidType : Type {
+    struct BoolType : Type {
         static constexpr ObjectType object_type = ObjectType::bool_type;
 
-        VoidType(lexer::Loc l)
+        BoolType(lexer::Loc l)
             : Type(l, ObjectType::bool_type) {}
 
         void debug(Debug& buf) const override {

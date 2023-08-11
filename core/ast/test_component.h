@@ -6,6 +6,7 @@
 #include <optional>
 #include <vector>
 #include <wrap/cout.h>
+#include "../common/file.h"
 
 using AstList = std::vector<std::future<std::optional<std::shared_ptr<brgen::ast::Program>>>>;
 
@@ -24,6 +25,8 @@ using AstList = std::vector<std::future<std::optional<std::shared_ptr<brgen::ast
 
 AST_TEST_COMPONENT_API extern utils::wrap::UtfOut& cerr;
 
+using Continuation = void (*)(std::shared_ptr<brgen::ast::Program>& prog, brgen::Input& input);
+
 // Function declarations with the AST_TEST_COMPONENT_API macro
-AST_TEST_COMPONENT_API AstList test_ast(bool debug = true);
+AST_TEST_COMPONENT_API AstList test_ast(Continuation cont);
 AST_TEST_COMPONENT_API void save_result(brgen::Debug&, const char* file);
