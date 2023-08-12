@@ -1,6 +1,6 @@
 /tool/
 /lib/
-/CMakeFiles/
+CMakeFiles
 /test/
 /ignore/
 .ninja_deps
@@ -10,3 +10,4 @@ CMakeCache.txt
 cmake_install.cmake
 /_deps/
 /bin/
+/build/
