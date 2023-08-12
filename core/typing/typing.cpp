@@ -27,6 +27,29 @@ namespace brgen::typing {
         return std::make_shared<ast::VoidType>(loc);
     }
 
+    [[noreturn]] static void report_not_eqaul_type(const std::shared_ptr<ast::Type>& lty, const std::shared_ptr<ast::Type>& rty) {
+        throw NotEqualTypeError{lty->loc, rty->loc};
+    }
+
+    [[noreturn]] static void unsupported_expr(auto&& expr) {
+        if (auto ident = ast::as<ast::Ident>(expr)) {
+            throw NotDefinedError{
+                ident->ident,
+                ident->loc,
+            };
+        }
+        throw UnsupportedError{expr->loc};
+    }
+
+    static void check_bool(ast::Expr* expr) {
+        if (!expr->expr_type) {
+            unsupported_expr(expr);
+        }
+        if (expr->expr_type->type != ast::ObjectType::bool_type) {
+            throw NotBoolError{expr->loc};
+        }
+    }
+
     static std::shared_ptr<ast::Type> assigning_type(const std::shared_ptr<ast::Type>& base) {
         if (auto ty = ast::as<ast::IntLiteralType>(base)) {
             auto aligned = ty->aligned_bit();
@@ -35,9 +58,45 @@ namespace brgen::typing {
         return base;
     }
 
+    static void int_type_fitting(std::shared_ptr<ast::Type>& left, std::shared_ptr<ast::Type>& right) {
+        auto fitting = [&](auto& a, auto& b) {
+            auto ity = ast::as<ast::IntegerType>(a);
+            auto lty = ast::as<ast::IntLiteralType>(b);
+            auto bit_size = lty->get_bit_size();
+            if (ity->bit_size < *bit_size) {
+                throw TooLargeError{lty->loc};
+            }
+            b = a;  // fitting
+        };
+        if (left->type == ast::ObjectType::int_type &&
+            right->type == ast::ObjectType::int_literal_type) {
+            fitting(left, right);
+        }
+        else if (left->type == ast::ObjectType::int_literal_type &&
+                 right->type == ast::ObjectType::int_type) {
+            fitting(right, left);
+        }
+        else if (left->type == ast::ObjectType::int_literal_type &&
+                 right->type == ast::ObjectType::int_literal_type) {
+            left = assigning_type(left);
+            right = assigning_type(right);
+            auto li = ast::as<ast::IntegerType>(left);
+            auto ri = ast::as<ast::IntegerType>(right);
+            if (li->bit_size > ri->bit_size) {
+                right = left;
+            }
+            else {
+                left = right;
+            }
+        }
+    }
+
     static void typing_assign(ast::Binary* b) {
         auto left = ast::as<ast::Ident>(b->left);
         auto right = b->right;
+        if (!right->expr_type) {
+            unsupported_expr(right);
+        }
         b->expr_type = void_type(b->loc);
         auto base = left->base.lock();
         auto report_assign_error = [&] {
@@ -87,49 +146,6 @@ namespace brgen::typing {
             else {
                 report_assign_error();
             }
-        }
-    }
-
-    [[noreturn]] static void report_not_eqaul_type(const std::shared_ptr<ast::Type>& lty, const std::shared_ptr<ast::Type>& rty) {
-        throw NotEqualTypeError{lty->loc, rty->loc};
-    }
-
-    [[noreturn]] static void unsupported_expr(auto&& expr) {
-        if (auto ident = ast::as<ast::Ident>(expr)) {
-            throw NotDefinedError{
-                ident->ident,
-                ident->loc,
-            };
-        }
-        throw UnsupportedError{expr->loc};
-    }
-
-    static void check_bool(ast::Expr* expr) {
-        if (!expr->expr_type) {
-            unsupported_expr(expr);
-        }
-        if (expr->expr_type->type != ast::ObjectType::bool_type) {
-            throw NotBoolError{expr->loc};
-        }
-    }
-
-    static void int_type_fitting(std::shared_ptr<ast::Type>& left, std::shared_ptr<ast::Type>& right) {
-        auto fitting = [&](auto& a, auto& b) {
-            auto ity = ast::as<ast::IntegerType>(a);
-            auto lty = ast::as<ast::IntLiteralType>(b);
-            auto bit_size = lty->get_bit_size();
-            if (ity->bit_size < *bit_size) {
-                throw TooLargeError{lty->loc};
-            }
-            b = a;  // fitting
-        };
-        if (left->type == ast::ObjectType::int_type &&
-            right->type == ast::ObjectType::int_literal_type) {
-            fitting(left, right);
-        }
-        else if (left->type == ast::ObjectType::int_literal_type &&
-                 right->type == ast::ObjectType::int_type) {
-            fitting(right, left);
         }
     }
 
@@ -214,7 +230,8 @@ namespace brgen::typing {
                 }
                 report_binary_error();
             }
-            case ast::BinaryOp::equal: {
+            case ast::BinaryOp::equal:
+            case ast::BinaryOp::not_equal: {
                 if (!equal_type(lty, rty)) {
                     report_not_eqaul_type(lty, rty);
                 }
@@ -230,6 +247,9 @@ namespace brgen::typing {
     static void typing_expr(const std::shared_ptr<ast::Expr>& expr) {
         if (auto lit = ast::as<ast::IntLiteral>(expr)) {
             lit->expr_type = std::make_shared<ast::IntLiteralType>(std::static_pointer_cast<ast::IntLiteral>(expr));
+        }
+        else if (auto lit = ast::as<ast::BoolLiteral>(expr)) {
+            lit->expr_type = std::make_shared<ast::BoolType>(lit->loc);
         }
         else if (auto ident = ast::as<ast::Ident>(expr)) {
             if (ident->usage != ast::IdentUsage::unknown) {

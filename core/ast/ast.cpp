@@ -125,6 +125,9 @@ namespace brgen::ast {
         if (auto token = s.consume_token(lexer::Tag::int_literal)) {
             return std::make_shared<IntLiteral>(token->loc, std::move(token->token));
         }
+        if (auto b = s.consume_token(lexer::Tag::bool_literal)) {
+            return std::make_shared<BoolLiteral>(b->loc, b->token == "true");
+        }
         if (s.expect_token("if")) {
             return parse_if(s);
         }

@@ -18,6 +18,7 @@ namespace brgen::ast {
         program,
         expr = 0x010000,
         int_literal,
+        bool_literal,
         binary,
         unary,
         cond,
@@ -340,6 +341,13 @@ namespace brgen::ast {
 
         IntLiteral(lexer::Loc l, std::string&& t)
             : Literal(l, ObjectType::int_literal), raw(std::move(t)) {}
+    };
+
+    struct BoolLiteral : Literal {
+        static constexpr ObjectType object_type = ObjectType::bool_literal;
+        bool value;
+        BoolLiteral(lexer::Loc l, bool t)
+            : Literal(l, ObjectType::bool_literal), value(t) {}
     };
 
     // types

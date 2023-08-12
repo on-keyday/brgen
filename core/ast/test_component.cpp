@@ -10,7 +10,7 @@ using namespace brgen;
 auto& cerr = utils::wrap::cerr_wrap();
 
 static std::optional<std::shared_ptr<ast::Program>> test_file(std::string_view name, Continuation cont) {
-    std::string file_name = "./core/step/";
+    std::string file_name = "./core/ast_step/";
     file_name += name.data();
     brgen::FileList files;
     auto fd = files.add(file_name);

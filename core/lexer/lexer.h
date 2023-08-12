@@ -24,14 +24,15 @@ namespace brgen::lexer {
 
         constexpr auto int_literal = str(Tag::int_literal, cps::hex_integer | cps::oct_integer | cps::bin_integer | cps::dec_integer);
         constexpr auto str_literal = str(Tag::str_literal, cps::c_str | cps::char_str);
+        constexpr auto filter_keyword = peek(space | line | method_proxy(puncts));
+        constexpr auto bool_literal = str(Tag::bool_literal, (lit("true") | lit("false")) & filter_keyword);
 
         constexpr auto punct(auto&&... args) {
             return str(Tag::punct, (... | lit(args)));
         }
 
         constexpr auto keyword(auto&&... args) {
-            auto p = method_proxy(puncts);
-            return str(Tag::keyword, (... | lit(args)) & peek(space | line | p));
+            return str(Tag::keyword, (... | lit(args)) & filter_keyword);
         }
 
         constexpr auto ident = str(Tag::ident, ~(not_(method_proxy(puncts) |
@@ -46,11 +47,12 @@ namespace brgen::lexer {
             "=>", "==", "=",
             "..", ".",
             ">>", "<<", "~",
-            "&", "|");
+            "&", "|",
+            "!=");
 
         constexpr auto one_token_lexer() {
             auto p = method_proxy(puncts);
-            auto lex = indent | spaces | line | comment | int_literal | str_literal | p | keywords | ident;
+            auto lex = indent | spaces | line | comment | int_literal | str_literal | p | bool_literal | keywords | ident;
             struct L {
                 decltype(puncts) puncts;
             } l{puncts};
