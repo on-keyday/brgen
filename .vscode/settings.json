@@ -134,5 +134,9 @@
     "editor.formatOnSave": true,
     "editor.formatOnType": false,
     "cmake.configureOnOpen": false,
-    "audioCues.volume": 0
+    "audioCues.volume": 0,
+    "cSpell.words": [
+        "brgen",
+        "GTEST"
+    ]
 }

@@ -1,6 +1,7 @@
 /*license*/
-#include "lexer.h"
-static_assert(brgen::lexer::internal::check_lexer());
-int main() {
-    return brgen::lexer::internal::check_lexer() ? 0 : 1;
+#include <core/lexer/lexer.h>
+#include <gtest/gtest.h>
+
+TEST(LexerTest, LexerTest) {
+    GTEST_ASSERT_TRUE(brgen::lexer::internal::check_lexer());
 }

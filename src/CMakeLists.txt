@@ -2,7 +2,8 @@
 cmake_minimum_required(VERSION 3.26.4)
 
 
-add_executable(lexer_test "core/lexer/test.cpp")
+add_executable(lexer_test "test/lexer_test.cpp")
+#[[
 add_library(ast_test_component SHARED 
 "core/ast/test_component.cpp"
 "core/ast/ast.cpp")
@@ -28,3 +29,6 @@ add_custom_command(
 TARGET ast_test POST_BUILD
 COMMAND ${CMAKE_COMMAND} -E copy "$ENV{UTILS_DIR}/lib/libutils.dll" "test/libutils.dll"
 )
+]]
+
+target_link_libraries(lexer_test gtest_main)
