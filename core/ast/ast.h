@@ -381,6 +381,25 @@ namespace brgen::ast {
             return bit_size;
         }
 
+        std::uint8_t aligned_bit() {
+            if (auto s = get_bit_size()) {
+                auto bit = *s;
+                if (bit <= 8) {
+                    return 8;
+                }
+                else if (bit <= 16) {
+                    return 16;
+                }
+                else if (bit <= 32) {
+                    return 32;
+                }
+                else if (bit <= 64) {
+                    return 64;
+                }
+            }
+            return 0;
+        }
+
         IntLiteralType(const std::shared_ptr<IntLiteral>& ty)
             : Type(ty->loc, ObjectType::int_literal_type), base(ty) {}
     };

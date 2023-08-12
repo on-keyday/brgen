@@ -27,6 +27,14 @@ namespace brgen::typing {
         return std::make_shared<ast::VoidType>(loc);
     }
 
+    static std::shared_ptr<ast::Type> assigning_type(const std::shared_ptr<ast::Type>& base) {
+        if (auto ty = ast::as<ast::IntLiteralType>(base)) {
+            auto aligned = ty->aligned_bit();
+            return std::make_shared<ast::IntegerType>(ty->loc, "", aligned);
+        }
+        return base;
+    }
+
     static void typing_assign(ast::Binary* b) {
         auto left = ast::as<ast::Ident>(b->left);
         auto right = b->right;
@@ -42,7 +50,7 @@ namespace brgen::typing {
         if (b->op == ast::BinaryOp::assign) {
             if (left->usage == ast::IdentUsage::unknown) {
                 left->usage = ast::IdentUsage::define_alias;
-                left->expr_type = right->expr_type;
+                left->expr_type = assigning_type(right->expr_type);
             }
             else {
                 if (base->usage == ast::IdentUsage::define_alias) {
@@ -65,7 +73,7 @@ namespace brgen::typing {
         else if (b->op == ast::BinaryOp::typed_assign) {
             if (left->usage == ast::IdentUsage::unknown) {
                 left->usage = ast::IdentUsage::define_typed;
-                left->expr_type = right->expr_type;
+                left->expr_type = assigning_type(right->expr_type);
             }
             else {
                 report_assign_error();
@@ -74,7 +82,7 @@ namespace brgen::typing {
         else if (b->op == ast::BinaryOp::const_assign) {
             if (left->usage == ast::IdentUsage::unknown) {
                 left->usage = ast::IdentUsage::define_const;
-                left->expr_type = right->expr_type;
+                left->expr_type = assigning_type(right->expr_type);
             }
             else {
                 report_assign_error();
@@ -122,14 +130,6 @@ namespace brgen::typing {
         else if (left->type == ast::ObjectType::int_literal_type &&
                  right->type == ast::ObjectType::int_type) {
             fitting(right, left);
-        }
-        else if (left->type == ast::ObjectType::int_literal_type &&
-                 right->type == ast::ObjectType::int_literal_type) {
-            auto lty = ast::as<ast::IntLiteralType>(left);
-            auto rty = ast::as<ast::IntLiteralType>(right);
-            auto lsize = lty->get_bit_size();
-            auto rsize = rty->get_bit_size();
-            auto larger = *lsize < *rsize ? *rsize : *lsize;
         }
     }
 
@@ -192,6 +192,7 @@ namespace brgen::typing {
         if (!rty) {
             unsupported_expr(b->right);
         }
+        int_type_fitting(lty, rty);
         switch (op) {
             case ast::BinaryOp::left_shift:
             case ast::BinaryOp::right_shift: {
@@ -271,6 +272,14 @@ namespace brgen::typing {
         }
         else if (auto if_ = ast::as<ast::If>(expr)) {
             typing_if(if_);
+        }
+        else if (auto cond = ast::as<ast::Cond>(expr)) {
+            typing_expr(cond->cond);
+            typing_expr(cond->then);
+            typing_expr(cond->els);
+            if (!equal_type(cond->then->expr_type, cond->els->expr_type)) {
+                report_not_eqaul_type(cond->then->expr_type, cond->els->expr_type);
+            }
         }
         else {
             throw UnsupportedError{expr->loc};
