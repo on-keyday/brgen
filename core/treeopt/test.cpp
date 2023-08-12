@@ -8,9 +8,8 @@ void test_extract_call(AstList& c) {
     d.array([&](auto&& field) {
         for (auto& f : c) {
             if (auto got = f.get()) {
-                auto& f = *got;
                 field([&](Debug& d) {
-                    f->debug(d);
+                    got->debug(d);
                 });
             }
         }

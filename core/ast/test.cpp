@@ -21,7 +21,7 @@ int main() {
                 continue;
             }
             field([&](Debug& d) {
-                o->get()->debug(d);
+                o->debug(d);
             });
         }
     });

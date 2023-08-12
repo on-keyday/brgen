@@ -9,14 +9,14 @@
 using namespace brgen;
 auto& cerr = utils::wrap::cerr_wrap();
 
-static std::optional<std::shared_ptr<ast::Program>> test_file(std::string_view name, Continuation cont) {
+std::shared_ptr<ast::Program> test_file(std::string_view name, Continuation cont) {
     std::string file_name = "./core/ast_step/";
     file_name += name.data();
     brgen::FileList files;
     auto fd = files.add(file_name);
     if (auto code = std::get_if<std::error_code>(&fd)) {
         cerr << ("error:" + code->message());
-        return std::nullopt;
+        return nullptr;
     }
     ast::Context ctx;
     auto fp = std::get<brgen::lexer::FileIndex>(fd);
@@ -28,7 +28,7 @@ static std::optional<std::shared_ptr<ast::Program>> test_file(std::string_view n
     });
     if (err != std::nullopt) {
         cerr << (err->to_string(file_name) + "\n");
-        return std::nullopt;
+        return nullptr;
     }
     auto path = *files.get_path(fp);
     cont(prog, *input, path.generic_string());

@@ -3,7 +3,7 @@
 #include "core/ast/test_component.h"
 using namespace brgen;
 
-int main() {
+int main(int argc, char** argv) {
     auto asts = test_ast([](auto& a, auto& i, auto) {
         writer::TreeWriter w{"global", nullptr};
         c_lang::entry(w, a);
