@@ -5,9 +5,19 @@
 #include <wrap/cout.h>
 #include <future>
 #include "ast_test_component.h"
+#include <core/ast/parse.h>
 #include <fstream>
+#include <gtest/gtest.h>
 using namespace brgen;
 auto& cerr = utils::wrap::cerr_wrap();
+namespace brgen::ast {
+    struct AstTest : ::testing::Test {
+        std::shared_ptr<ast::Program> program;
+    };
+
+    TEST_F(AstTest, ParserTest) {
+    }
+}  // namespace brgen::ast
 
 std::shared_ptr<ast::Program> test_file(std::string_view name, Continuation cont) {
     std::string file_name = "./test/ast_step/";
@@ -24,7 +34,8 @@ std::shared_ptr<ast::Program> test_file(std::string_view name, Continuation cont
     std::shared_ptr<ast::Program> prog;
     auto copy = *input;
     auto err = ctx.enter_stream(std::move(copy), [&](ast::Stream& s) {
-        prog = ast::parse(s);
+        auto p = ast::Parser{s};
+        prog = p.parse();
     });
     if (err != std::nullopt) {
         cerr << (err->to_string(file_name) + "\n");

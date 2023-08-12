@@ -3,8 +3,6 @@
 #include <gtest/gtest.h>
 using namespace brgen;
 
-TEST(AstTest, AstTest) {}
-
 int main() {
     auto f = test_ast([](auto prog, auto& i, auto name) {
         Debug d;

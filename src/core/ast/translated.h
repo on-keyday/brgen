@@ -21,10 +21,10 @@ namespace brgen::ast {
     };
 
     struct BlockExpr : Expr {
-        objlist calls;
+        node_list calls;
         std::shared_ptr<Expr> expr;
 
-        BlockExpr(std::shared_ptr<Expr>&& a, objlist&& l)
+        BlockExpr(std::shared_ptr<Expr>&& a, node_list&& l)
             : Expr(a->loc, ObjectType::block_expr), calls(std::move(l)), expr(std::move(a)) {}
 
         void debug(Debug& buf) const override {

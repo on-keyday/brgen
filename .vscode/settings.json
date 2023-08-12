@@ -137,6 +137,7 @@
     "audioCues.volume": 0,
     "cSpell.words": [
         "brgen",
-        "GTEST"
+        "GTEST",
+        "strutil"
     ]
 }

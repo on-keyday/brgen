@@ -1,6 +1,6 @@
 /*license*/
 #include "../ast/ast.h"
-#include "../ast/util.h"
+#include "../ast/traverse.h"
 #include "typing.h"
 #include <ranges>
 

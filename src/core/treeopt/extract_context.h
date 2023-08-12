@@ -8,12 +8,12 @@ namespace brgen::treeopt {
     struct ExtractContext {
        private:
         size_t tmp_index = 0;
-        ast::objlist* holder = nullptr;
-        using iterator = typename ast::objlist::iterator;
+        ast::node_list* holder = nullptr;
+        using iterator = typename ast::node_list::iterator;
         iterator cur;
 
        public:
-        auto enter_holder(ast::objlist* l) {
+        auto enter_holder(ast::node_list* l) {
             auto old_holder = holder;
             auto old_cur = std::move(cur);
             holder = l;

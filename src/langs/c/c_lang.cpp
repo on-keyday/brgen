@@ -5,7 +5,7 @@
 
 namespace brgen::c_lang {
     void write_expr(writer::TreeWriter& w, ast::Expr* expr, ast::Expr* parent);
-    void write_block(writer::TreeWriter& w, ast::objlist& elements);
+    void write_block(writer::TreeWriter& w, ast::node_list& elements);
 
     void write_temporary_func(writer::TreeWriter& parent) {
         writer::TreeWriter w{"tmp", parent.lookup("global_def")};
@@ -63,7 +63,7 @@ namespace brgen::c_lang {
         }
     }
 
-    void write_block(writer::TreeWriter& w, ast::objlist& elements) {
+    void write_block(writer::TreeWriter& w, ast::node_list& elements) {
         auto scope = w.code().indent_scope();
         for (auto& element : elements) {
             if (auto a = ast::as_Expr(element)) {

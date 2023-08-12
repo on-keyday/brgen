@@ -87,7 +87,7 @@ namespace brgen::ast {
             : Expr(l, t) {}
     };
 
-    using objlist = std::list<std::shared_ptr<Node>>;
+    using node_list = std::list<std::shared_ptr<Node>>;
 
     struct Definitions;
 
@@ -129,6 +129,7 @@ namespace brgen::ast {
         std::shared_ptr<Ident> ident;
         lexer::Loc colon_loc;
         std::shared_ptr<Type> field_type;
+        std::shared_ptr<Expr> arguments;
 
         Field(lexer::Loc l)
             : Stmt(l, ObjectType::field) {}
@@ -147,7 +148,7 @@ namespace brgen::ast {
         std::map<std::string, std::list<std::shared_ptr<Fmt>>> fmts;
         std::map<std::string, std::list<std::shared_ptr<Ident>>> idents;
         std::list<std::shared_ptr<Field>> fields;
-        objlist order;
+        node_list order;
 
         void add_fmt(std::string& name, const std::shared_ptr<Fmt>& f);
 
@@ -160,7 +161,7 @@ namespace brgen::ast {
 
     struct IndentScope : Stmt {
         static constexpr ObjectType object_type = ObjectType::indent_scope;
-        objlist elements;
+        node_list elements;
         defframe defs;
 
         IndentScope(lexer::Loc l)
@@ -415,7 +416,6 @@ namespace brgen::ast {
     struct IdentType : Type {
         static constexpr ObjectType object_type = ObjectType::ident_type;
         std::string ident;
-        std::shared_ptr<Expr> arguments;
         defframe frame;
         IdentType(lexer::Loc l, std::string&& token, defframe&& frame)
             : Type(l, ObjectType::ident_type), ident(std::move(token)), frame(std::move(frame)) {}
@@ -423,7 +423,6 @@ namespace brgen::ast {
         void debug(Debug& buf) const override {
             buf.object([&](auto&& field) {
                 field("ident", [&](Debug& d) { d.string(ident); });
-                field("arguments", [&](Debug& d) { arguments ? arguments->debug(d) : d.null(); });
             });
         }
     };
@@ -450,14 +449,6 @@ namespace brgen::ast {
         }
     };
 
-    inline std::optional<std::string> unescape(std::string_view str_lit) {
-        std::string mid;
-        if (!utils::escape::unescape_str(str_lit.substr(1, str_lit.size() - 2), mid)) {
-            return std::nullopt;
-        }
-        return mid;
-    }
-
     struct StrLiteralType : Type {
         std::string raw;
         std::optional<std::string> mid;
@@ -470,7 +461,7 @@ namespace brgen::ast {
 
     struct Program : Node {
         static constexpr ObjectType object_type = ObjectType::program;
-        objlist elements;
+        node_list elements;
         defframe defs;
 
         void debug(Debug& buf) const override {
@@ -555,6 +546,21 @@ namespace brgen::ast {
             return static_cast<Expr*>(v);
         }
         return nullptr;
+    }
+
+    inline void Definitions::add_fmt(std::string& name, const std::shared_ptr<Fmt>& f) {
+        fmts[name].push_back(f);
+        order.push_back(f);
+    }
+
+    inline void Definitions::add_ident(std::string& name, const std::shared_ptr<Ident>& f) {
+        idents[name].push_back(f);
+        order.push_back(f);
+    }
+
+    inline void Definitions::add_field(const std::shared_ptr<Field>& f) {
+        fields.push_back(f);
+        order.push_back(f);
     }
 
 }  // namespace brgen::ast

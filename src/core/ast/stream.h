@@ -285,5 +285,4 @@ namespace brgen::ast {
         }
     };
 
-    std::shared_ptr<Program> parse(Stream& ctx);
 }  // namespace brgen::ast
