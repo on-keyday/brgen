@@ -6,7 +6,7 @@
 
 namespace brgen::typing {
 
-    void typing_object(const std::shared_ptr<ast::Object>& ty);
+    void typing_object(const std::shared_ptr<ast::Node>& ty);
 
     static bool equal_type(const std::shared_ptr<ast::Type>& left, const std::shared_ptr<ast::Type>& right) {
         if (left->type != right->type) {
@@ -157,7 +157,7 @@ namespace brgen::typing {
         return nullptr;
     }
 
-    static std::shared_ptr<ast::Type> extract_else_type(const std::shared_ptr<ast::Object>& els) {
+    static std::shared_ptr<ast::Type> extract_else_type(const std::shared_ptr<ast::Node>& els) {
         if (!els) {
             return nullptr;
         }
@@ -306,16 +306,16 @@ namespace brgen::typing {
         }
     }
 
-    void typing_object(const std::shared_ptr<ast::Object>& ty) {
+    void typing_object(const std::shared_ptr<ast::Node>& ty) {
         // Define a lambda function for recursive traversal and typing
-        auto recursive_typing = [&](auto&& f, const std::shared_ptr<ast::Object>& ty) -> void {
+        auto recursive_typing = [&](auto&& f, const std::shared_ptr<ast::Node>& ty) -> void {
             if (auto expr = ast::as_Expr(ty)) {
                 // If the object is an expression, perform expression typing
                 typing_expr(std::static_pointer_cast<ast::Expr>(ty));
                 return;
             }
             // Traverse the object's subcomponents and apply the recursive function
-            ast::traverse(ty, [&](const std::shared_ptr<ast::Object>& sub_ty) {
+            ast::traverse(ty, [&](const std::shared_ptr<ast::Node>& sub_ty) {
                 f(f, sub_ty);
             });
         };

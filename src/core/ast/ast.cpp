@@ -21,7 +21,7 @@ namespace brgen::ast {
         order.push_back(f);
     }
 
-    std::shared_ptr<Object> parse_one(Stream& s);
+    std::shared_ptr<Node> parse_one(Stream& s);
     std::shared_ptr<Expr> parse_expr(Stream& s);
     // :\\r\\n
     void must_consume_indent_sign(Stream& s) {
@@ -432,7 +432,7 @@ namespace brgen::ast {
         return fmt;
     }
 
-    std::shared_ptr<Object> parse_one(Stream& s) {
+    std::shared_ptr<Node> parse_one(Stream& s) {
         if (s.expect_token("for")) {
             return parse_for(s);
         }
@@ -441,7 +441,7 @@ namespace brgen::ast {
             return parse_fmt(s);
         }
 
-        std::shared_ptr<Object> obj;
+        std::shared_ptr<Node> obj;
 
         if (auto field = parse_field(s)) {
             obj = std::move(*field);

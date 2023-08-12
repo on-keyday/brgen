@@ -1,16 +1,16 @@
 /*license*/
 #define AST_TEST_COMPONENT_EXPORTS
-#include "stream.h"
+#include <core/ast/stream.h>
 #include <file/file_view.h>
 #include <wrap/cout.h>
 #include <future>
-#include "test_component.h"
+#include "ast_test_component.h"
 #include <fstream>
 using namespace brgen;
 auto& cerr = utils::wrap::cerr_wrap();
 
 std::shared_ptr<ast::Program> test_file(std::string_view name, Continuation cont) {
-    std::string file_name = "./core/ast_step/";
+    std::string file_name = "./test/ast_step/";
     file_name += name.data();
     brgen::FileList files;
     auto fd = files.add(file_name);

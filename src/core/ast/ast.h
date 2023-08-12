@@ -46,39 +46,39 @@ namespace brgen::ast {
     };
 
     // abstract
-    struct Object {
+    struct Node {
         lexer::Loc loc;
         const ObjectType type;
-        virtual ~Object() {}
+        virtual ~Node() {}
 
         virtual void debug(Debug& buf) const {
             buf.null();
         }
 
        protected:
-        constexpr Object(lexer::Loc l, ObjectType t)
+        constexpr Node(lexer::Loc l, ObjectType t)
             : loc(l), type(t) {}
     };
 
-    struct Type : Object {
+    struct Type : Node {
        protected:
         constexpr Type(lexer::Loc l, ObjectType t)
-            : Object(l, t) {}
+            : Node(l, t) {}
     };
 
-    struct Expr : Object {
+    struct Expr : Node {
         static constexpr ObjectType object_type = ObjectType::ident_type;
         std::shared_ptr<Type> expr_type;
 
        protected:
         constexpr Expr(lexer::Loc l, ObjectType t)
-            : Object(l, t) {}
+            : Node(l, t) {}
     };
 
-    struct Stmt : Object {
+    struct Stmt : Node {
        protected:
         constexpr Stmt(lexer::Loc l, ObjectType t)
-            : Object(l, t) {}
+            : Node(l, t) {}
     };
 
     struct Literal : Expr {
@@ -87,7 +87,7 @@ namespace brgen::ast {
             : Expr(l, t) {}
     };
 
-    using objlist = std::list<std::shared_ptr<Object>>;
+    using objlist = std::list<std::shared_ptr<Node>>;
 
     struct Definitions;
 
@@ -233,7 +233,7 @@ namespace brgen::ast {
         static constexpr ObjectType object_type = ObjectType::if_;
         std::shared_ptr<Expr> cond;
         std::shared_ptr<IndentScope> block;
-        std::shared_ptr<Object> els;
+        std::shared_ptr<Node> els;
 
         constexpr If(lexer::Loc l)
             : Expr(l, ObjectType::if_) {}
@@ -468,7 +468,7 @@ namespace brgen::ast {
 
     void debug_def_frames(Debug& d, const defframe& f);
 
-    struct Program : Object {
+    struct Program : Node {
         static constexpr ObjectType object_type = ObjectType::program;
         objlist elements;
         defframe defs;
@@ -492,7 +492,7 @@ namespace brgen::ast {
         }
 
         Program()
-            : Object(lexer::Loc{}, ObjectType::program) {}
+            : Node(lexer::Loc{}, ObjectType::program) {}
     };
 
     inline void debug_defs(Debug& d, const defframe& defs) {
@@ -542,7 +542,7 @@ namespace brgen::ast {
 
     template <class T>
     constexpr T* as(auto&& t) {
-        Object* v = std::to_address(t);
+        Node* v = std::to_address(t);
         if (v && v->type == T::object_type) {
             return static_cast<T*>(v);
         }
@@ -550,7 +550,7 @@ namespace brgen::ast {
     }
 
     constexpr Expr* as_Expr(auto&& t) {
-        Object* v = std::to_address(t);
+        Node* v = std::to_address(t);
         if (v && int(v->type) & int(ObjectType::expr)) {
             return static_cast<Expr*>(v);
         }

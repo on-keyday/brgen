@@ -1,6 +1,9 @@
-#include "test_component.h"
+#include "ast_test_component.h"
 #include <fstream>
+#include <gtest/gtest.h>
 using namespace brgen;
+
+TEST(AstTest, AstTest) {}
 
 int main() {
     auto f = test_ast([](auto prog, auto& i, auto name) {

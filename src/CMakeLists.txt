@@ -3,11 +3,12 @@ cmake_minimum_required(VERSION 3.26.4)
 
 
 add_executable(lexer_test "test/lexer_test.cpp")
-#[[
+
 add_library(ast_test_component SHARED 
 "core/ast/test_component.cpp"
 "core/ast/ast.cpp")
 
+#[[
 add_executable(ast_test "core/ast/test.cpp")
 add_executable(typing_test "core/typing/test.cpp"
 "core/typing/typing.cpp")

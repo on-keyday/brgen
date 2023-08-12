@@ -43,5 +43,5 @@ namespace brgen::typing {
         lexer::Loc l;
     };
 
-    void typing_object(const std::shared_ptr<ast::Object>& ty);
+    void typing_object(const std::shared_ptr<ast::Node>& ty);
 }  // namespace brgen::typing

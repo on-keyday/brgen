@@ -5,7 +5,7 @@
 
 namespace brgen::ast {
     void traverse(auto&& t, auto&& fn) {
-        Object* o = std::to_address(t);
+        Node* o = std::to_address(t);
 #define SWITCH   \
     if (false) { \
     }

@@ -2,11 +2,11 @@
 #pragma once
 
 #include <future>
-#include "ast.h"
+#include <core/ast/ast.h>
 #include <optional>
 #include <vector>
 #include <wrap/cout.h>
-#include "../common/file.h"
+#include <core/common/file.h>
 
 using AstList = std::vector<std::future<std::shared_ptr<brgen::ast::Program>>>;
 

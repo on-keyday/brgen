@@ -4,18 +4,15 @@
 
 namespace brgen::ast {
     enum class UnaryOp {
-        logical_not = 0,
-        bit_not,
+        not_ = 0,
         increment,
         decrement,
         minus_sign,
         deref,
         address,
-        post_increment,
-        post_decrement,
     };
 
-    constexpr const char* unary_op[] = {"!", "~", "++", "--", "-", "*", "&", nullptr};
+    constexpr const char* unary_op[] = {"!", "++", "--", "-", "*", "&", nullptr};
     enum class BinaryOp {
         // layer 1
         mul,
