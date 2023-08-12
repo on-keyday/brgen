@@ -4,18 +4,6 @@ cmake_minimum_required(VERSION 3.26.4)
 project(brgen)
 
 set(CMAKE_CXX_STANDARD 20)
-include_directories("$ENV{UTILS_DIR}/src/include")
-include_directories("./src")
-link_directories("$ENV{UTILS_DIR}/lib")
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "test")
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "test")
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "test")
-add_subdirectory(src)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "tool")
-
-
-
-
 include(FetchContent)
 FetchContent_Declare(
   googletest
@@ -26,7 +14,20 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-# Now simply link against gtest or gtest_main as needed. Eg
-# add_executable(example example.cpp)
-# target_link_libraries(example gtest_main)
-add_test(NAME example_test COMMAND example)
+
+include_directories("$ENV{UTILS_DIR}/src/include")
+include_directories("./src")
+include_directories("build/_deps/googletest-src/googletest/include")
+link_directories("$ENV{UTILS_DIR}/lib")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "test")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "test")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "test")
+
+add_subdirectory(src)
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "tool")
+
+
+
+
+

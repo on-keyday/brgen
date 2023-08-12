@@ -2,5 +2,5 @@
 #include "lexer.h"
 static_assert(brgen::lexer::internal::check_lexer());
 int main() {
-    return 0;
+    return brgen::lexer::internal::check_lexer() ? 0 : 1;
 }
