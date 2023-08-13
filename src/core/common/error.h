@@ -8,13 +8,12 @@
 namespace brgen {
     struct StreamError {
         std::string msg;
-        lexer::FileIndex file;
+        std::string file;
         utils::code::SrcLoc loc;
         std::string src;
 
-        std::string to_string(std::string_view file) {
+        std::string to_string() {
             std::string buf;
-
             appends(buf, "error: ", msg, "\n",
                     file, ":", nums(loc.line + 1), ":", nums(loc.pos + 1), ":\n",
                     src);

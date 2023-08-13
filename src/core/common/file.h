@@ -31,6 +31,7 @@ namespace brgen {
             return {out, loc};
         }
         lexer::FileIndex file = lexer::builtin;
+        std::string file_name;
         std::shared_ptr<void> ptr;
         std::optional<lexer::Token> (*parse_)(void* seq, std::uint64_t file) = nullptr;
         std::pair<std::string, utils::code::SrcLoc> (*dump_)(void* seq, lexer::Pos pos) = nullptr;
@@ -38,12 +39,13 @@ namespace brgen {
        public:
         Input() = default;
         template <class T, helper_disable_self(Input, T)>
-        Input(T&& t, lexer::FileIndex fd) {
+        Input(T&& t, lexer::FileIndex fd, std::string&& name) {
             using V = std::decay_t<T>;
             ptr = std::make_unique<utils::Sequencer<V>>(std::forward<T>(t));
             parse_ = do_parse<V>;
             dump_ = dump_source<V>;
             file = fd;
+            file_name = std::move(name);
         }
 
         Input(const Input& i)
@@ -85,7 +87,7 @@ namespace brgen {
             auto [src, loc] = dump(pos);
             return StreamError{
                 std::move(msg),
-                file,
+                file_name,
                 loc,
                 std::move(src),
             };
@@ -135,7 +137,7 @@ namespace brgen {
                 if (!v.open(file->path.c_str())) {
                     return std::nullopt;
                 }
-                file->input = Input(std::move(v), file->index);
+                file->input = Input(std::move(v), file->index, file->path.generic_string());
             }
             return file->input;
         }

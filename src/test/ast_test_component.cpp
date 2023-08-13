@@ -29,8 +29,7 @@ namespace brgen::ast {
             return ::testing::AssertionSuccess();
         }
         else {
-            auto path = files.get_path(index);
-            return ::testing::AssertionFailure() << v->to_string(path->generic_string());
+            return ::testing::AssertionFailure() << v->to_string();
         }
     }
 
