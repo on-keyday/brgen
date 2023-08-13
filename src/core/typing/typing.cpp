@@ -27,7 +27,7 @@ namespace brgen::typing {
         return std::make_shared<ast::VoidType>(loc);
     }
 
-    [[noreturn]] static void report_not_eqaul_type(const std::shared_ptr<ast::Type>& lty, const std::shared_ptr<ast::Type>& rty) {
+    [[noreturn]] static void report_not_equal_type(const std::shared_ptr<ast::Type>& lty, const std::shared_ptr<ast::Type>& rty) {
         throw NotEqualTypeError{lty->loc, rty->loc};
     }
 
@@ -187,7 +187,8 @@ namespace brgen::typing {
         auto then_ = extract_expr_type(if_->block);
         auto els_ = extract_else_type(if_->els);
 
-        if (!then_ || !els_ || !equal_type(then_, els_)) {
+        if (!then_ || !els_ ||
+            (int_type_fitting(then_, els_), !equal_type(then_, els_))) {
             if_->expr_type = void_type(if_->loc);
             return;
         }
@@ -223,7 +224,7 @@ namespace brgen::typing {
                 if (lty->type == ast::ObjectType::int_type &&
                     rty->type == ast::ObjectType::int_type) {
                     if (!equal_type(rty, lty)) {
-                        report_not_eqaul_type(rty, lty);
+                        report_not_equal_type(rty, lty);
                     }
                     b->expr_type = std::move(lty);
                     return;
@@ -233,7 +234,7 @@ namespace brgen::typing {
             case ast::BinaryOp::equal:
             case ast::BinaryOp::not_equal: {
                 if (!equal_type(lty, rty)) {
-                    report_not_eqaul_type(lty, rty);
+                    report_not_equal_type(lty, rty);
                 }
                 b->expr_type = std::make_shared<ast::BoolType>(b->loc);
                 return;
@@ -297,9 +298,17 @@ namespace brgen::typing {
             typing_expr(cond->cond);
             typing_expr(cond->then);
             typing_expr(cond->els);
-            if (!equal_type(cond->then->expr_type, cond->els->expr_type)) {
-                report_not_eqaul_type(cond->then->expr_type, cond->els->expr_type);
+            auto lty = cond->then->expr_type;
+            auto rty = cond->els->expr_type;
+            int_type_fitting(lty, rty);
+            if (!equal_type(lty, rty)) {
+                report_not_equal_type(lty, rty);
             }
+            cond->expr_type = lty;
+        }
+        else if (auto paren = ast::as<ast::Paren>(expr)) {
+            typing_expr(paren->expr);
+            paren->expr_type = paren->expr->expr_type;
         }
         else {
             throw UnsupportedError{expr->loc};

@@ -11,9 +11,6 @@ namespace brgen::ast {
     }
 #define CASE(T) else if (T* v = as<T>(o))
         SWITCH
-        CASE(IdentType) {
-            fn(v->arguments);
-        }
         CASE(Call) {
             fn(v->expr_type);
             fn(v->callee);
@@ -33,6 +30,9 @@ namespace brgen::ast {
             fn(v->cond);
             fn(v->then);
             fn(v->els);
+        }
+        CASE(Paren) {
+            fn(v->expr);
         }
         CASE(If) {
             fn(v->expr_type);
@@ -62,6 +62,7 @@ namespace brgen::ast {
         CASE(Field) {
             fn(v->ident);
             fn(v->field_type);
+            fn(v->arguments);
         }
         CASE(MemberAccess) {
             fn(v->expr_type);

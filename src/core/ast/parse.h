@@ -122,12 +122,26 @@ namespace brgen::ast {
             return ident;
         }
 
+        std::shared_ptr<Paren> parse_paren() {
+            auto token = s.must_consume_token("(");
+            auto paren = std::make_shared<Paren>(token.loc);
+            s.skip_white();
+            paren->expr = parse_expr();
+            s.skip_white();
+            token = s.must_consume_token(")");
+            paren->end_loc = token.loc;
+            return paren;
+        }
+
         std::shared_ptr<Expr> parse_prim() {
             if (auto token = s.consume_token(lexer::Tag::int_literal)) {
                 return std::make_shared<IntLiteral>(token->loc, std::move(token->token));
             }
             if (auto b = s.consume_token(lexer::Tag::bool_literal)) {
                 return std::make_shared<BoolLiteral>(b->loc, b->token == "true");
+            }
+            if (s.expect_token("(")) {
+                return parse_paren();
             }
             if (s.expect_token("if")) {
                 return parse_if();

@@ -15,6 +15,16 @@ add_executable(ast_test "test/ast_test.cpp")
 target_link_libraries(ast_test ast_test_component)
 
 
+add_executable(typing_test "test/typing_test.cpp"
+"core/typing/typing.cpp")
+
+target_link_libraries(typing_test ast_test_component)
+
+add_test(NAME "lexer_test" COMMAND lexer_test)
+add_test(NAME "ast_test" COMMAND ast_test)
+add_test(NAME "typing_test" COMMAND typing_test)
+
+
 add_custom_command(
 TARGET ast_test POST_BUILD
 COMMAND ${CMAKE_COMMAND} -E copy "$ENV{UTILS_DIR}/lib/libutils.dll" "${CMAKE_BINARY_DIR}/test/libutils.dll"
@@ -22,8 +32,7 @@ COMMAND ${CMAKE_COMMAND} -E copy "$ENV{UTILS_DIR}/lib/libutils.dll" "${CMAKE_BIN
 
 #[[
 
-add_executable(typing_test "core/typing/test.cpp"
-"core/typing/typing.cpp")
+
 add_executable(treeopt_test "core/treeopt/test.cpp")
 
 # languages

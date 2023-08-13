@@ -26,6 +26,7 @@ namespace brgen::ast {
         call,
         if_,
         member_access,
+        paren,
 
         // translated
         tmp_var,
@@ -126,6 +127,7 @@ namespace brgen::ast {
 
         void debug(Debug& buf) const override {
             auto field = buf.object();
+            field(sdebugf(expr_type));
             field(sdebugf(ident));
             field("usage", ident_usage_map[int(usage)]);
         }
@@ -224,8 +226,23 @@ namespace brgen::ast {
 
         void debug(Debug& buf) const override {
             auto field = buf.object();
+            field(sdebugf(expr_type));
             field(sdebugf(callee));
             field(sdebugf(arguments));
+        }
+    };
+
+    struct Paren : Expr {
+        static constexpr ObjectType object_type = ObjectType::paren;
+        std::shared_ptr<Expr> expr;
+        lexer::Loc end_loc;
+        Paren(lexer::Loc l)
+            : Expr(l, ObjectType::paren) {}
+
+        void debug(Debug& buf) const override {
+            auto field = buf.object();
+            field(sdebugf(expr_type));
+            field(sdebugf(expr));
         }
     };
 
@@ -240,6 +257,7 @@ namespace brgen::ast {
 
         void debug(Debug& buf) const override {
             auto field = buf.object();
+            field(sdebugf(expr_type));
             field(sdebugf(cond));
             field(sdebugf(block));
             field(sdebugf(els));
@@ -256,6 +274,7 @@ namespace brgen::ast {
 
         void debug(Debug& buf) const override {
             auto field = buf.object();
+            field(sdebugf(expr_type));
             auto op = unary_op[int(this->op)];
             field(sdebugf(op));
             field(sdebugf(target));
@@ -274,6 +293,7 @@ namespace brgen::ast {
         void debug(Debug& buf) const override {
             auto field = buf.object();
             auto op = bin_op_str(this->op);
+            field(sdebugf(expr_type));
             field(sdebugf(op));
             field(sdebugf(left));
             field(sdebugf(right));
@@ -287,6 +307,7 @@ namespace brgen::ast {
 
         void debug(Debug& buf) const override {
             auto field = buf.object();
+            field(sdebugf(expr_type));
             field(sdebugf(target));
             field(sdebugf(name));
         }
@@ -307,6 +328,7 @@ namespace brgen::ast {
 
         void debug(Debug& buf) const override {
             auto field = buf.object();
+            field(sdebugf(expr_type));
             field(sdebugf(cond));
             field(sdebugf(then));
             field(sdebugf(els));
@@ -329,6 +351,7 @@ namespace brgen::ast {
 
         void debug(Debug& buf) const override {
             auto field = buf.object();
+            field(sdebugf(expr_type));
             field(sdebugf(raw));
             auto num = parse_as<std::int64_t>();
             field(sdebugf(num));
@@ -341,6 +364,13 @@ namespace brgen::ast {
     struct BoolLiteral : Literal {
         static constexpr ObjectType object_type = ObjectType::bool_literal;
         bool value;
+
+        void debug(Debug& buf) const override {
+            auto field = buf.object();
+            field(sdebugf(expr_type));
+            field(sdebugf(value));
+        }
+
         BoolLiteral(lexer::Loc l, bool t)
             : Literal(l, ObjectType::bool_literal), value(t) {}
     };
@@ -357,6 +387,7 @@ namespace brgen::ast {
 
         void debug(Debug& buf) const override {
             auto field = buf.object();
+
             field(sdebugf(raw));
             field(sdebugf(bit_size));
         }
