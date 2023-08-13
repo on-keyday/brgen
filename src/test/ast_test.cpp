@@ -2,35 +2,18 @@
 #include <fstream>
 #include <gtest/gtest.h>
 using namespace brgen;
-
-int main() {
-    auto f = test_ast([](auto prog, auto& i, auto name) {
+std::vector<Debug> debugs;
+int main(int argc, char** argv) {
+    set_handler([](auto prog, auto& i, auto name) {
         Debug d;
-        prog->debug(d);
-        cerr << (d.buf + "\n");
+        d.value(prog);
+        debugs.push_back(std::move(d));
     });
-    Debug d;
-    size_t failed = 0;
-    d.array([&](auto&& field) {
-        for (auto& out : f) {
-            auto o = out.get();
-            if (!o) {
-                field([&](Debug& d) {
-                    d.null();
-                });
-                failed++;
-                continue;
-            }
-            field([&](Debug& d) {
-                o->debug(d);
-            });
-        }
-    });
-    save_result(d, "./test/ast_test_result.json");
-    if (failed == 0) {
-        cerr << "PASS";
+    ::testing::InitGoogleTest(&argc, argv);
+    if (RUN_ALL_TESTS() == 0) {
+        Debug d;
+        d.value(debugs);
+        save_result(d, "ast_test_result.json");
     }
-    else {
-        cerr << failed << " test failed";
-    }
+    return 1;
 }

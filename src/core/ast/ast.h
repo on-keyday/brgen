@@ -47,8 +47,9 @@ namespace brgen::ast {
 
     // abstract
     struct Node {
-        lexer::Loc loc;
         const ObjectType type;
+        lexer::Loc loc;
+
         virtual ~Node() {}
 
         virtual void debug(Debug& buf) const {

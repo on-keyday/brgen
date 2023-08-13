@@ -126,7 +126,7 @@ namespace brgen {
         }
 
         std::optional<Input> get_input(lexer::FileIndex fd) {
-            if (fd < index || index < fd) {
+            if (fd < 1 || index < fd) {
                 return std::nullopt;
             }
             auto& file = indexs[fd];
@@ -141,7 +141,7 @@ namespace brgen {
         }
 
         std::optional<fs::path> get_path(lexer::FileIndex fd) {
-            if (fd < index || index < fd) {
+            if (fd < 1 || index < fd) {
                 return std::nullopt;
             }
             auto& file = indexs[fd];

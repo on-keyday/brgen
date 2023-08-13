@@ -8,11 +8,15 @@
             "name": "Debug(no copy)",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceRoot}/test/typing_test",
+            "program": "${workspaceRoot}/build/test/ast_test",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",
             "environment": [
+                {
+                    "name": "BASE_PATH",
+                    "value": "."
+                },
                 {
                     "name": "FNET_QUIC_LIBSSL",
                     "value": "C:/workspace/boringssl/build_debug/ssl/ssl.dll",
