@@ -106,6 +106,14 @@ namespace brgen::ast {
         define_const,
     };
 
+    constexpr const char* ident_usage_map[]{
+        "unknown",
+        "reference",
+        "define_alias",
+        "define_typed",
+        "define_const",
+    };
+
     struct Ident : Expr {
         static constexpr ObjectType object_type = ObjectType::ident;
         std::string ident;
@@ -117,9 +125,9 @@ namespace brgen::ast {
             : Expr(l, ObjectType::ident), ident(std::move(i)) {}
 
         void debug(Debug& buf) const override {
-            buf.object([&](auto&& field) {
-                field("ident", [&](Debug& d) { d.string(ident); });
-            });
+            auto field = buf.object();
+            field(sdebugf(ident));
+            field("usage", ident_usage_map[int(usage)]);
         }
     };
 
@@ -136,10 +144,10 @@ namespace brgen::ast {
             : Stmt(l, ObjectType::field) {}
 
         void debug(Debug& buf) const override {
-            buf.object([&](auto&& field) {
-                field("ident", [&](Debug& d) { ident ? ident->debug(buf) : d.null(); });
-                field("field_type", [&](Debug& d) { field_type->debug(d); });
-            });
+            auto field = buf.object();
+            field(sdebugf(ident));
+            field(sdebugf(field_type));
+            field(sdebugf(arguments));
         }
     };
 
@@ -169,17 +177,10 @@ namespace brgen::ast {
             : Stmt(l, ObjectType::indent_scope) {}
 
         void debug(Debug& buf) const override {
-            buf.object([&](auto&& field) {
-                field("elements", [&](Debug& d) {
-                    d.array([&](auto&& field) {
-                        for (auto& p : elements) {
-                            field([&](Debug& d) { p->debug(d); });
-                        }
-                    });
-                });
-                field("defs", [&](Debug& d) {
-                    debug_defs(d, defs);
-                });
+            auto field = buf.object();
+            field(sdebugf(elements));
+            field("defs", [&] {
+                debug_defs(buf, defs);
             });
         }
     };
@@ -192,10 +193,9 @@ namespace brgen::ast {
             : Stmt(l, ObjectType::fmt) {}
 
         void debug(Debug& buf) const override {
-            buf.object([&](auto&& field) {
-                field("ident", [&](Debug& d) { d.string(ident); });
-                field("scope", [&](Debug& d) { scope->debug(d); });
-            });
+            auto field = buf.object();
+            field(sdebugf(ident));
+            field(sdebugf(scope));
         }
     };
 
@@ -207,9 +207,8 @@ namespace brgen::ast {
             : Stmt(l, ObjectType::for_) {}
 
         void debug(Debug& buf) const override {
-            buf.object([&](auto&& field) {
-                field("for_block", [&](Debug& d) { block->debug(d); });
-            });
+            auto field = buf.object();
+            field("for_block", block);
         }
     };
 
@@ -224,10 +223,9 @@ namespace brgen::ast {
             : Expr(l, ObjectType::call), callee(std::move(callee)) {}
 
         void debug(Debug& buf) const override {
-            buf.object([&](auto&& field) {
-                field("callee", [&](Debug& d) { callee->debug(d); });
-                field("arguments", [&](Debug& d) { arguments ? arguments->debug(d) : d.null(); });
-            });
+            auto field = buf.object();
+            field(sdebugf(callee));
+            field(sdebugf(arguments));
         }
     };
 
@@ -241,11 +239,10 @@ namespace brgen::ast {
             : Expr(l, ObjectType::if_) {}
 
         void debug(Debug& buf) const override {
-            buf.object([&](auto&& field) {
-                field("cond", [&](Debug& d) { cond->debug(d); });
-                field("block", [&](Debug& d) { block->debug(d); });
-                field("else", [&](Debug& d) { els ? els->debug(d) : d.null(); });
-            });
+            auto field = buf.object();
+            field(sdebugf(cond));
+            field(sdebugf(block));
+            field(sdebugf(els));
         }
     };
 
@@ -258,10 +255,10 @@ namespace brgen::ast {
             : Expr(l, ObjectType::unary), op(p) {}
 
         void debug(Debug& buf) const override {
-            buf.object([&](auto&& field) {
-                field("op", [&](Debug& d) { d.string(unary_op[int(op)]); });
-                field("target", [&](Debug& d) { target->debug(d); });
-            });
+            auto field = buf.object();
+            auto op = unary_op[int(this->op)];
+            field(sdebugf(op));
+            field(sdebugf(target));
         }
     };
 
@@ -275,12 +272,11 @@ namespace brgen::ast {
             : Expr(l, ObjectType::binary), left(std::move(left)), op(op) {}
 
         void debug(Debug& buf) const override {
-            buf.object([&](auto&& field) {
-                auto c = bin_op_str(op);
-                field("op", [&](Debug& d) { c ? d.string(*c) : d.null(); });
-                field("left", [&](Debug& d) { left->debug(d); });
-                field("right", [&](Debug& d) { right->debug(d); });
-            });
+            auto field = buf.object();
+            auto op = bin_op_str(this->op);
+            field(sdebugf(op));
+            field(sdebugf(left));
+            field(sdebugf(right));
         }
     };
 
@@ -290,10 +286,9 @@ namespace brgen::ast {
         std::string name;
 
         void debug(Debug& buf) const override {
-            buf.object([&](auto&& field) {
-                field("target", [&](Debug& d) { target->debug(d); });
-                field("access_to", [&](Debug& d) { d.string(name); });
-            });
+            auto field = buf.object();
+            field(sdebugf(target));
+            field(sdebugf(name));
         }
 
         MemberAccess(lexer::Loc l, std::shared_ptr<Expr>&& t, std::string&& n)
@@ -311,11 +306,10 @@ namespace brgen::ast {
             : Expr(l, ObjectType::cond), then(std::move(then)) {}
 
         void debug(Debug& buf) const override {
-            buf.object([&](auto&& field) {
-                field("cond", [&](Debug& d) { cond->debug(d); });
-                field("then", [&](Debug& d) { then->debug(d); });
-                field("else", [&](Debug& d) { els->debug(d); });
-            });
+            auto field = buf.object();
+            field(sdebugf(cond));
+            field(sdebugf(then));
+            field(sdebugf(els));
         }
     };
 
@@ -334,11 +328,10 @@ namespace brgen::ast {
         }
 
         void debug(Debug& buf) const override {
-            buf.object([&](auto&& field) {
-                auto p = parse_as<std::int64_t>();
-                field("raw", [&](Debug& d) { d.string(raw); });
-                field("num", [&](Debug& d) { p ? d.number(*p) : d.null(); });
-            });
+            auto field = buf.object();
+            field(sdebugf(raw));
+            auto num = parse_as<std::int64_t>();
+            field(sdebugf(num));
         }
 
         IntLiteral(lexer::Loc l, std::string&& t)
@@ -363,10 +356,9 @@ namespace brgen::ast {
             : Type(l, ObjectType::int_type), raw(std::move(token)), bit_size(bit_size) {}
 
         void debug(Debug& buf) const override {
-            buf.object([&](auto&& field) {
-                field("raw", [&](Debug& d) { d.string(raw); });
-                field("bit_size", [&](Debug& d) { d.number(bit_size); });
-            });
+            auto field = buf.object();
+            field(sdebugf(raw));
+            field(sdebugf(bit_size));
         }
     };
 
@@ -422,9 +414,8 @@ namespace brgen::ast {
             : Type(l, ObjectType::ident_type), ident(std::move(token)), frame(std::move(frame)) {}
 
         void debug(Debug& buf) const override {
-            buf.object([&](auto&& field) {
-                field("ident", [&](Debug& d) { d.string(ident); });
-            });
+            auto field = buf.object();
+            field(sdebugf(ident));
         }
     };
 
@@ -466,21 +457,10 @@ namespace brgen::ast {
         defframe defs;
 
         void debug(Debug& buf) const override {
-            buf.object([&](auto&& field) {
-                field("elements", [&](Debug& d) {
-                    d.array([&](auto&& field) {
-                        for (auto& p : elements) {
-                            field([&](Debug& d) { p->debug(d); });
-                        }
-                    });
-                });
-                field("defs", [&](Debug& d) {
-                    debug_defs(d, defs);
-                });
-                field("all_defs", [&](Debug& d) {
-                    debug_def_frames(d, defs);
-                });
-            });
+            auto field = buf.object();
+            field(sdebugf(elements));
+            field("defs", [&] { debug_defs(buf, defs); });
+            field("all_defs", [&] { debug_def_frames(buf, defs); });
         }
 
         Program()
@@ -488,46 +468,30 @@ namespace brgen::ast {
     };
 
     inline void debug_defs(Debug& d, const defframe& defs) {
-        d.object([&](auto&& field) {
-            field("fmts", [&](Debug& d) {
-                d.array([&](auto&& field) {
-                    for (auto& f : defs->current.fmts) {
-                        field([&](Debug& d) {
-                            d.string(f.first);
-                        });
-                    }
-                });
-            });
-            field("idents", [&](Debug& d) {
-                d.array([&](auto&& field) {
-                    for (auto& f : defs->current.idents) {
-                        field([&](Debug& d) {
-                            d.string(f.first);
-                        });
-                    }
-                });
-            });
-            field("fields", [&](Debug& d) {
-                d.array([&](auto&& field) {
-                    for (auto& f : defs->current.fields) {
-                        field([&](Debug& d) {
-                            f->debug(d);
-                        });
-                    }
-                });
-            });
+        auto field = d.object();
+        field("fmts", [&] {
+            auto field = d.array();
+            for (auto& f : defs->current.fmts) {
+                field(f.first);
+            }
         });
+        field("idents", [&] {
+            auto field = d.array();
+            for (auto& f : defs->current.idents) {
+                field(f.first);
+            }
+        });
+        field("fields", defs->current.fields);
     }
 
     inline void debug_def_frames(Debug& d, const defframe& f) {
-        d.object([&](auto&& field) {
-            field("current", [&](Debug& d) {
-                debug_defs(d, f);
-            });
-            f->walk_frames([&](const char* obj, const defframe& f) {
-                field(obj, [&](Debug& d) {
-                    f ? debug_def_frames(d, f) : d.null();
-                });
+        auto field = d.object();
+        field("current", [&] {
+            debug_defs(d, f);
+        });
+        f->walk_frames([&](const char* obj, const defframe& f) {
+            field(obj, [&] {
+                f ? debug_def_frames(d, f) : d.null();
             });
         });
     }

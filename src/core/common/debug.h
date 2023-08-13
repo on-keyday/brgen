@@ -79,6 +79,8 @@ namespace brgen {
         }
     };
 
+#define sdebugf(name) #name, name
+
     struct Debug {
        private:
         template <class Debug>
@@ -98,6 +100,9 @@ namespace brgen {
             }
             else if constexpr (std::invocable<T, Debug&>) {
                 std::invoke(value, *this);
+            }
+            else if constexpr (std::invocable<T>) {
+                std::invoke(value);
             }
             else if constexpr (has_debug<T, Debug&>) {
                 value.debug(*this);
@@ -119,8 +124,8 @@ namespace brgen {
             }
             else if constexpr (is_object_like<T>) {
                 auto field = object();
-                for(auto& v:value){
-                    field(get<0>(v),get<1>(v));
+                for (auto& v : value) {
+                    field(get<0>(v), get<1>(v));
                 }
             }
             else if constexpr (std::ranges::range<T>) {
