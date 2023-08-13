@@ -6,11 +6,12 @@ import (
 	"os"
 	"os/exec"
 	"sync"
+	"sync/atomic"
 )
 
 type SrcCode []string
 
-func loadFiles(file string, do func(file string)) {
+func loadFiles(file, suffix string, do func(file string) error) {
 	buf, err := os.ReadFile(file)
 	if err != nil {
 		log.Fatal(err)
@@ -21,11 +22,16 @@ func loadFiles(file string, do func(file string)) {
 		log.Fatal(err)
 	}
 	var w sync.WaitGroup
+	var (
+		succeed_count atomic.Uint32
+		total_count   atomic.Uint32
+	)
 	for _, c := range code {
 		w.Add(1)
 		go func(code string) {
 			defer w.Done()
-			file, err := os.CreateTemp(os.TempDir(), "cpp")
+			total_count.Add(1)
+			file, err := os.CreateTemp(os.TempDir(), "cpp*.cpp")
 			if err != nil {
 				log.Print(err)
 				return
@@ -38,27 +44,38 @@ func loadFiles(file string, do func(file string)) {
 			}
 			name := file.Name()
 			file.Close()
-			do(name)
+			err = do(name)
+			if err != nil {
+				log.Print(err)
+				return
+			}
+			succeed_count.Add(1)
 		}(c)
 	}
 	w.Wait()
+	suc, total := succeed_count.Load(), total_count.Load()
+	log.Printf("%d/%d PASSED", suc, total)
+	if suc != total {
+		os.Exit(1)
+	}
 }
 
-func execCpp(name string) {
-	cmd := exec.Command("clang++", name)
+func execCpp(name string) error {
+	cmd := exec.Command("clang++", name, "-o", name[:len(name)-3]+".exe")
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 	err := cmd.Run()
 	if err != nil {
-		log.Println(err)
-		return
+		return err
 	}
+	return err
 }
 
-var langs map[string]func(string) = map[string]func(string){
+var langs map[string]func(string) error = map[string]func(string) error{
 	"cpp": execCpp,
 }
 
 func main() {
-	loadFiles(os.Args[2], langs[os.Args[1]])
+	suffix := os.Args[1]
+	loadFiles(os.Args[2], suffix, langs[suffix])
 }

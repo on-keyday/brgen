@@ -20,7 +20,7 @@ add_executable(typing_test "test/typing_test.cpp"
 
 target_link_libraries(typing_test ast_test_component)
 
-add_executable(cpp_test "test/cpp_test.cpp"
+add_executable(cpp_test "test/langs/cpp_test.cpp"
 "langs/cpp/cpp_lang.cpp")
 
 target_link_libraries(cpp_test ast_test_component)
@@ -29,6 +29,8 @@ add_test(NAME "lexer_test" COMMAND lexer_test)
 add_test(NAME "ast_test" COMMAND ast_test)
 add_test(NAME "typing_test" COMMAND typing_test)
 add_test(NAME "cpp_test" COMMAND cpp_test)
+add_test(NAME "cpp_compile" 
+COMMAND go run "${CMAKE_SOURCE_DIR}/src/test_tool" "cpp" "${CMAKE_BINARY_DIR}/test/cpp_test_result.json")
 
 
 add_custom_command(

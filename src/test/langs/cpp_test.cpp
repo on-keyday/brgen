@@ -1,6 +1,6 @@
 /*license*/
 #include "langs/cpp/cpp_lang.h"
-#include "ast_test_component.h"
+#include "../ast_test_component.h"
 #include <gtest/gtest.h>
 using namespace brgen;
 
