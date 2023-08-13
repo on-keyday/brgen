@@ -154,16 +154,6 @@ namespace brgen {
             return DebugArrayField<Debug>{*this};
         }
 
-        constexpr void object(auto&& fn) {
-            auto field = object();
-            fn(field);
-        }
-
-        constexpr void array(auto&& fn) {
-            auto field = array();
-            fn(field);
-        }
-
         constexpr void number(std::int64_t value) {
             write(nums(value));
         }

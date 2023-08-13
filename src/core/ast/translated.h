@@ -14,9 +14,8 @@ namespace brgen::ast {
         }
 
         void debug(Debug& buf) const override {
-            buf.object([&](auto&& field) {
-                field("tmp_var", [&](Debug& d) { d.number(tmp_index); });
-            });
+            auto field = buf.object();
+            field("tmp_var", tmp_index);
         }
     };
 
@@ -28,16 +27,9 @@ namespace brgen::ast {
             : Expr(a->loc, ObjectType::block_expr), calls(std::move(l)), expr(std::move(a)) {}
 
         void debug(Debug& buf) const override {
-            buf.object([&](auto&& field) {
-                field("calls", [&](Debug& d) {
-                    d.array([&](auto&& field) {
-                        for (auto& c : calls) {
-                            field([&](Debug& d) { c->debug(d); });
-                        }
-                    });
-                });
-                field("expr", [&](Debug& d) { expr->debug(d); });
-            });
+            auto field = buf.object();
+            field(sdebugf(calls));
+            field(sdebugf(expr));
         }
     };
 

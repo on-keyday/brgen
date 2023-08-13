@@ -16,4 +16,5 @@ using Continuation = void (*)(std::shared_ptr<brgen::ast::Program>& prog, brgen:
 
 // Function declarations with the AST_TEST_COMPONENT_API macro
 void set_handler(Continuation cont);
-void save_result(brgen::Debug&, const char* file);
+void add_result(brgen::Debug&& d);
+void save_result(const char* file);

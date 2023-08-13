@@ -114,9 +114,17 @@ void set_handler(Continuation cont) {
     brgen::ast::handler = cont;
 }
 
-void save_result(Debug& d, const char* file) {
+static std::vector<Debug> debug;
+
+void add_result(Debug&& d) {
+    debug.push_back(std::move(d));
+}
+
+void save_result(const char* file) {
     std::filesystem::path path = utils::wrap::get_exepath<std::u8string>();
     path = path.parent_path() / file;
     std::ofstream ofs(path.c_str());
+    Debug d;
+    d.value(debug);
     ofs << d.out();
 }
