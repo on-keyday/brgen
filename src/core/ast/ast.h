@@ -93,9 +93,9 @@ namespace brgen::ast {
 
     struct Definitions;
 
-    using defframe = std::shared_ptr<StackFrame<Definitions>>;
+    using define_frame = std::shared_ptr<StackFrame<Definitions>>;
 
-    void debug_defs(Debug& d, const defframe& defs);
+    void debug_defs(Debug& d, const define_frame& defs);
 
     // ident
 
@@ -118,7 +118,7 @@ namespace brgen::ast {
     struct Ident : Expr {
         static constexpr ObjectType object_type = ObjectType::ident;
         std::string ident;
-        defframe frame;
+        define_frame frame;
         std::weak_ptr<Ident> base;
         IdentUsage usage = IdentUsage::unknown;
 
@@ -173,7 +173,7 @@ namespace brgen::ast {
     struct IndentScope : Stmt {
         static constexpr ObjectType object_type = ObjectType::indent_scope;
         node_list elements;
-        defframe defs;
+        define_frame defs;
 
         IndentScope(lexer::Loc l)
             : Stmt(l, ObjectType::indent_scope) {}
@@ -396,9 +396,9 @@ namespace brgen::ast {
     struct IntLiteralType : Type {
         static constexpr ObjectType object_type = ObjectType::int_literal_type;
         std::weak_ptr<IntLiteral> base;
-        std::optional<std::uint8_t> bit_size;
+        mutable std::optional<std::uint8_t> bit_size;
 
-        std::optional<std::uint8_t> get_bit_size() {
+        std::optional<std::uint8_t> get_bit_size() const {
             if (bit_size) {
                 return bit_size;
             }
@@ -414,7 +414,7 @@ namespace brgen::ast {
             return bit_size;
         }
 
-        std::uint8_t aligned_bit() {
+        std::uint8_t aligned_bit() const {
             if (auto s = get_bit_size()) {
                 auto bit = *s;
                 if (bit <= 8) {
@@ -433,6 +433,14 @@ namespace brgen::ast {
             return 0;
         }
 
+        void debug(Debug& buf) const override {
+            auto field = buf.object();
+            auto bit_size = get_bit_size();
+            auto aligned = aligned_bit();
+            field(sdebugf(bit_size));
+            field(sdebugf(aligned));
+        }
+
         IntLiteralType(const std::shared_ptr<IntLiteral>& ty)
             : Type(ty->loc, ObjectType::int_literal_type), base(ty) {}
     };
@@ -440,8 +448,8 @@ namespace brgen::ast {
     struct IdentType : Type {
         static constexpr ObjectType object_type = ObjectType::ident_type;
         std::string ident;
-        defframe frame;
-        IdentType(lexer::Loc l, std::string&& token, defframe&& frame)
+        define_frame frame;
+        IdentType(lexer::Loc l, std::string&& token, define_frame&& frame)
             : Type(l, ObjectType::ident_type), ident(std::move(token)), frame(std::move(frame)) {}
 
         void debug(Debug& buf) const override {
@@ -480,12 +488,12 @@ namespace brgen::ast {
             : Type(loc, ObjectType::str_literal_type) {}
     };
 
-    void debug_def_frames(Debug& d, const defframe& f);
+    void debug_def_frames(Debug& d, const define_frame& f);
 
     struct Program : Node {
         static constexpr ObjectType object_type = ObjectType::program;
         node_list elements;
-        defframe defs;
+        define_frame defs;
 
         void debug(Debug& buf) const override {
             auto field = buf.object();
@@ -498,7 +506,7 @@ namespace brgen::ast {
             : Node(lexer::Loc{}, ObjectType::program) {}
     };
 
-    inline void debug_defs(Debug& d, const defframe& defs) {
+    inline void debug_defs(Debug& d, const define_frame& defs) {
         auto field = d.object();
         field("fmts", [&] {
             auto field = d.array();
@@ -515,16 +523,14 @@ namespace brgen::ast {
         field("fields", defs->current.fields);
     }
 
-    inline void debug_def_frames(Debug& d, const defframe& f) {
-        auto field = d.object();
-        field("current", [&] {
-            debug_defs(d, f);
-        });
-        f->walk_frames([&](const char* obj, const defframe& f) {
-            field(obj, [&] {
-                f ? debug_def_frames(d, f) : d.null();
-            });
-        });
+    inline void debug_def_frames(Debug& d, const define_frame& f) {
+        auto field = d.array();
+        for (auto frame = f; frame; frame = frame->next_frame()) {
+            field([&] { debug_defs(d, frame); });
+            if (auto branch = frame->branch_frame()) {
+                field([&] { debug_def_frames(d, branch); });
+            }
+        }
     }
 
     template <class T>

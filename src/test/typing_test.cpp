@@ -9,6 +9,9 @@ int main(int argc, char** argv) {
         ::testing::AssertionResult result = ::testing::AssertionFailure();
         try {
             typing::typing_object(a);
+            Debug d;
+            d.value(a);
+            add_result(std::move(d));
             result = ::testing::AssertionSuccess();
             // 例外がスローされる可能性のあるコード
         } catch (const typing::DefinedError& e) {
@@ -45,5 +48,7 @@ int main(int argc, char** argv) {
         ASSERT_TRUE(result);
     });
     ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+    auto res = RUN_ALL_TESTS();
+    save_result("typing_test_result.json");
+    return res;
 }

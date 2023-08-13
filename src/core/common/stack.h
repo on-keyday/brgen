@@ -41,9 +41,12 @@ namespace brgen {
             return fn(current);
         }
 
-        void walk_frames(auto&& fn) {
-            fn("branch", branch);
-            fn("next", next);
+        std::shared_ptr<StackFrame> next_frame() const {
+            return next;
+        }
+
+        std::shared_ptr<StackFrame> branch_frame() const {
+            return branch;
         }
     };
 

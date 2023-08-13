@@ -260,12 +260,12 @@ namespace brgen::ast {
             return indent;
         }
 
-        defframe reset_stack() {
+        define_frame reset_stack() {
             stack = {};
             return stack.current_frame();
         }
 
-        defframe current_definitions() {
+        define_frame current_definitions() {
             return stack.current_frame();
         }
     };

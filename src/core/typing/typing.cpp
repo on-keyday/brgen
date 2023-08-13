@@ -245,6 +245,38 @@ namespace brgen::typing {
         }
     }
 
+    static std::optional<std::shared_ptr<ast::Ident>> find_matching_ident(ast::Ident* ident) {
+        return ident->frame->lookup<std::shared_ptr<ast::Ident>>([&](ast::Definitions& defs) -> std::optional<std::shared_ptr<ast::Ident>> {
+            auto found = defs.idents.find(ident->ident);
+            if (found != defs.idents.end()) {
+                for (auto& rev : std::ranges::reverse_view(found->second)) {
+                    auto usage = rev->usage;
+                    if (usage != ast::IdentUsage::unknown) {
+                        return rev;
+                    }
+                }
+            }
+            return std::nullopt;
+        });
+    }
+
+    static void typing_expr(const std::shared_ptr<ast::Expr>& expr);
+
+    static void typing_binary_expr(ast::Binary* bin) {
+        auto op = bin->op;
+        typing_expr(bin->left);
+        typing_expr(bin->right);
+        switch (op) {
+            case ast::BinaryOp::assign:
+            case ast::BinaryOp::typed_assign:
+            case ast::BinaryOp::const_assign:
+                typing_assign(bin);
+                break;
+            default:
+                typing_binary(bin);
+        }
+    }
+
     static void typing_expr(const std::shared_ptr<ast::Expr>& expr) {
         if (auto lit = ast::as<ast::IntLiteral>(expr)) {
             lit->expr_type = std::make_shared<ast::IntLiteralType>(std::static_pointer_cast<ast::IntLiteral>(expr));
@@ -254,21 +286,9 @@ namespace brgen::typing {
         }
         else if (auto ident = ast::as<ast::Ident>(expr)) {
             if (ident->usage != ast::IdentUsage::unknown) {
-                auto usage = ident->usage;
                 return;  // nothing to do
             }
-            auto found = ident->frame->lookup<std::shared_ptr<ast::Ident>>([&](ast::Definitions& defs) -> std::optional<std::shared_ptr<ast::Ident>> {
-                auto found = defs.idents.find(ident->ident);
-                if (found != defs.idents.end()) {
-                    for (auto& rev : std::ranges::reverse_view(found->second)) {
-                        auto usage = rev->usage;
-                        if (usage != ast::IdentUsage::unknown) {
-                            return rev;
-                        }
-                    }
-                }
-                return std::nullopt;
-            });
+            auto found = find_matching_ident(ident);
             if (found) {
                 ident->expr_type = (*found)->expr_type;
                 ident->base = *found;
@@ -276,20 +296,7 @@ namespace brgen::typing {
             }
         }
         else if (auto bin = ast::as<ast::Binary>(expr)) {
-            auto op = bin->op;
-            typing_expr(bin->left);
-            typing_expr(bin->right);
-            switch (op) {
-                case ast::BinaryOp::assign:
-                case ast::BinaryOp::typed_assign:
-                case ast::BinaryOp::const_assign: {
-                    typing_assign(bin);
-                    break;
-                }
-                default: {
-                    typing_binary(bin);
-                }
-            }
+            typing_binary_expr(bin);
         }
         else if (auto if_ = ast::as<ast::If>(expr)) {
             typing_if(if_);
@@ -309,6 +316,28 @@ namespace brgen::typing {
         else if (auto paren = ast::as<ast::Paren>(expr)) {
             typing_expr(paren->expr);
             paren->expr_type = paren->expr->expr_type;
+        }
+        else if (auto unary = ast::as<ast::Unary>(expr)) {
+            typing_expr(unary->target);
+            if (!unary->target->expr_type) {
+                unsupported_expr(unary->target);
+            }
+            switch (unary->op) {
+                case ast::UnaryOp::minus_sign: {
+                    unary->expr_type = unary->target->expr_type;
+                    break;
+                }
+                default: {
+                    unsupported_expr(expr);
+                }
+            }
+        }
+        else if (auto call = ast::as<ast::Call>(expr)) {
+            typing_expr(call->callee);
+        }
+        else if (auto selector = ast::as<ast::MemberAccess>(expr)) {
+            typing_expr(selector->target);
+            selector->name;
         }
         else {
             throw UnsupportedError{expr->loc};

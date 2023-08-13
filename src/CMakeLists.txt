@@ -20,15 +20,23 @@ add_executable(typing_test "test/typing_test.cpp"
 
 target_link_libraries(typing_test ast_test_component)
 
+add_executable(cpp_test "test/cpp_test.cpp"
+"langs/cpp/cpp_lang.cpp")
+
+target_link_libraries(cpp_test ast_test_component)
+
 add_test(NAME "lexer_test" COMMAND lexer_test)
 add_test(NAME "ast_test" COMMAND ast_test)
 add_test(NAME "typing_test" COMMAND typing_test)
+add_test(NAME "cpp_test" COMMAND cpp_test)
 
 
 add_custom_command(
 TARGET ast_test POST_BUILD
 COMMAND ${CMAKE_COMMAND} -E copy "$ENV{UTILS_DIR}/lib/libutils.dll" "${CMAKE_BINARY_DIR}/test/libutils.dll"
 )
+
+
 
 #[[
 

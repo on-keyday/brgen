@@ -107,7 +107,7 @@ namespace brgen {
             else if constexpr (has_debug<T, Debug&>) {
                 value.debug(*this);
             }
-            else if constexpr (std::is_integral_v<T>) {
+            else if constexpr (std::is_integral_v<T> && !std::is_same_v<T, bool>) {
                 number(value);
             }
             else if constexpr (std::is_convertible_v<T, std::string_view>) {

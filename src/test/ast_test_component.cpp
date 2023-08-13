@@ -39,7 +39,9 @@ namespace brgen::ast {
 
         void SetUp() override {
             std::string base_path;
-            utils::env::expand(base_path, "${BASE_PATH}/src/test/ast_step/", utils::env::sys::expand_sys<std::string>());
+            std::map<std::string, std::string> p;
+            p["BASE_PATH"] = utils::env::sys::env_getter().get_or<std::string>("BASE_PATH", ".");
+            utils::env::expand(base_path, "${BASE_PATH}/src/test/ast_step/", utils::env::expand_map<std::string>(p));
             auto add_file = [&](const char* file_name, lexer::FileIndex expect) {
                 auto index = files.add(base_path + file_name);
                 ASSERT_TRUE(is_Index(index));
@@ -63,7 +65,9 @@ namespace brgen::ast {
     TEST_P(AstTest, AstParseTest) {
         ast::Context ctx;
         auto input = files.get_input(GetParam());
-        ASSERT_TRUE(input);
+        auto path = files.get_path(GetParam());
+        ASSERT_TRUE(path);
+        ASSERT_TRUE(::testing::AssertionResult(bool(input)) << *path);
         std::shared_ptr<ast::Program> prog;
         auto copy = *input;
         auto err = ctx.enter_stream(std::move(copy), [&](ast::Stream& s) {
@@ -72,7 +76,6 @@ namespace brgen::ast {
         });
         ASSERT_TRUE(isNotError(err, files, GetParam()));
         if (handler) {
-            auto path = files.get_path(GetParam());
             handler(prog, *input, path->generic_string());
         }
     }
