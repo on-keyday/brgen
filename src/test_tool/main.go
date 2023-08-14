@@ -11,6 +11,13 @@ import (
 
 type SrcCode []string
 
+func removeWithLog(name string) {
+	err := os.Remove(name)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
 func loadFiles(file, suffix string, do func(file string) error) {
 	buf, err := os.ReadFile(file)
 	if err != nil {
@@ -31,7 +38,7 @@ func loadFiles(file, suffix string, do func(file string) error) {
 		go func(code string) {
 			defer w.Done()
 			total_count.Add(1)
-			file, err := os.CreateTemp(os.TempDir(), "cpp*.cpp")
+			file, err := os.CreateTemp(os.TempDir(), suffix+"*."+suffix)
 			if err != nil {
 				log.Print(err)
 				return
@@ -45,6 +52,7 @@ func loadFiles(file, suffix string, do func(file string) error) {
 			name := file.Name()
 			file.Close()
 			err = do(name)
+			removeWithLog(name)
 			if err != nil {
 				log.Print(err)
 				return
@@ -61,13 +69,15 @@ func loadFiles(file, suffix string, do func(file string) error) {
 }
 
 func execCpp(name string) error {
-	cmd := exec.Command("clang++", name, "-o", name[:len(name)-3]+".exe")
+	exename := name[:len(name)-4] + ".exe"
+	cmd := exec.Command("clang++", name, "-o", exename)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 	err := cmd.Run()
 	if err != nil {
 		return err
 	}
+	removeWithLog(exename)
 	return err
 }
 

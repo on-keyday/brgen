@@ -106,21 +106,22 @@ namespace brgen::typing {
                 base->loc,
             };
         };
+        auto new_type = assigning_type(right->expr_type);
         if (b->op == ast::BinaryOp::assign) {
             if (left->usage == ast::IdentUsage::unknown) {
                 left->usage = ast::IdentUsage::define_alias;
-                left->expr_type = assigning_type(right->expr_type);
+                left->expr_type = std::move(new_type);
             }
             else {
                 if (base->usage == ast::IdentUsage::define_alias) {
-                    if (!equal_type(base->expr_type, right->expr_type)) {
+                    if (!equal_type(base->expr_type, new_type)) {
                         left->usage = ast::IdentUsage::define_alias;
                         left->expr_type = right->expr_type;
                         left->base.reset();
                     }
                 }
                 else if (base->usage == ast::IdentUsage::define_typed) {
-                    if (!equal_type(base->expr_type, right->expr_type)) {
+                    if (!equal_type(base->expr_type, new_type)) {
                         report_assign_error();
                     }
                 }
@@ -132,7 +133,7 @@ namespace brgen::typing {
         else if (b->op == ast::BinaryOp::typed_assign) {
             if (left->usage == ast::IdentUsage::unknown) {
                 left->usage = ast::IdentUsage::define_typed;
-                left->expr_type = assigning_type(right->expr_type);
+                left->expr_type = std::move(new_type);
             }
             else {
                 report_assign_error();
@@ -141,7 +142,7 @@ namespace brgen::typing {
         else if (b->op == ast::BinaryOp::const_assign) {
             if (left->usage == ast::IdentUsage::unknown) {
                 left->usage = ast::IdentUsage::define_const;
-                left->expr_type = assigning_type(right->expr_type);
+                left->expr_type = std::move(new_type);
             }
             else {
                 report_assign_error();

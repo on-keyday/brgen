@@ -49,15 +49,17 @@ namespace brgen {
         }
 
         Input(const Input& i)
-            : ptr(i.ptr), parse_(i.parse_), dump_(i.dump_), file(i.file) {}
+            : ptr(i.ptr), parse_(i.parse_), dump_(i.dump_), file(i.file), file_name(i.file_name) {}
 
         Input(Input&& i)
-            : ptr(std::move(i.ptr)), parse_(std::exchange(i.parse_, nullptr)), dump_(std::exchange(i.dump_, nullptr)), file(std::exchange(i.file, lexer::builtin)) {}
+            : ptr(std::move(i.ptr)), parse_(std::exchange(i.parse_, nullptr)), dump_(std::exchange(i.dump_, nullptr)), file(std::exchange(i.file, lexer::builtin)), file_name(std::exchange(i.file_name, {})) {}
+
         Input& operator=(const Input& i) {
             ptr = i.ptr;
             parse_ = i.parse_;
             dump_ = i.dump_;
             file = i.file;
+            file_name = i.file_name;
             return *this;
         }
 
@@ -66,6 +68,7 @@ namespace brgen {
             parse_ = std::exchange(i.parse_, nullptr);
             dump_ = std::exchange(i.dump_, nullptr);
             file = std::exchange(i.file, lexer::builtin);
+            file_name = std::exchange(i.file_name, {});
             return *this;
         }
 

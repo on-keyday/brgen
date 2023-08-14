@@ -21,7 +21,8 @@ add_executable(typing_test "test/typing_test.cpp"
 target_link_libraries(typing_test ast_test_component)
 
 add_executable(cpp_test "test/langs/cpp_test.cpp"
-"langs/cpp/cpp_lang.cpp")
+"langs/cpp/cpp_lang.cpp"
+"core/typing/typing.cpp")
 
 target_link_libraries(cpp_test ast_test_component)
 
