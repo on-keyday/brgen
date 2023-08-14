@@ -4,6 +4,7 @@
 #include <escape/escape.h>
 #include <concepts>
 #include <ranges>
+#include <functional>
 
 namespace brgen {
     template <class T, class V>
