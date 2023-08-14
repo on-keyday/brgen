@@ -33,12 +33,19 @@ add_test(NAME "cpp_test" COMMAND cpp_test)
 add_test(NAME "cpp_compile" 
 COMMAND go run "${CMAKE_SOURCE_DIR}/src/test_tool" "cpp" "${CMAKE_BINARY_DIR}/test/cpp_test_result.json")
 
+if(WIN32)
 
 add_custom_command(
 TARGET ast_test POST_BUILD
 COMMAND ${CMAKE_COMMAND} -E copy "$ENV{UTILS_DIR}/lib/libutils.dll" "${CMAKE_BINARY_DIR}/test/libutils.dll"
 )
+else()
 
+add_custom_command(
+TARGET ast_test POST_BUILD
+COMMAND ${CMAKE_COMMAND} -E copy "$ENV{UTILS_DIR}/lib/libutils.so" "${CMAKE_BINARY_DIR}/test/libutils.so"
+)
+endif()
 
 
 #[[
