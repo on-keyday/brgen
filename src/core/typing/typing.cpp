@@ -3,6 +3,7 @@
 #include "../ast/traverse.h"
 #include "typing.h"
 #include <ranges>
+#include <iterator>
 
 namespace brgen::typing {
 
