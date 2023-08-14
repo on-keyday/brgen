@@ -250,9 +250,8 @@ namespace brgen::typing {
         return ident->frame->lookup<std::shared_ptr<ast::Ident>>([&](ast::Definitions& defs) -> std::optional<std::shared_ptr<ast::Ident>> {
             auto found = defs.idents.find(ident->ident);
             if (found != defs.idents.end()) {
-                auto view = found->second | std::views::reverse;
-                view.begin();
-                for (auto& rev : view) {
+                for (auto it = found->second.rbegin(); it != found->second.rend(); it++) {
+                    auto& rev = *it;
                     auto usage = rev->usage;
                     if (usage != ast::IdentUsage::unknown) {
                         return rev;
