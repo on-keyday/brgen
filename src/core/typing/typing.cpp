@@ -4,6 +4,7 @@
 #include "typing.h"
 #include <ranges>
 #include <iterator>
+#include <list>
 
 namespace brgen::typing {
 
