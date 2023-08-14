@@ -5,14 +5,16 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: seanmiddleditch/gha-setup-ninja@master
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Set up Ninja
+        uses: seanmiddleditch/gha-setup-ninja@master
       - name: Set up Clang
         uses: egor-tensin/setup-clang@v1.4
         with:
           version: latest
           platform: x64
-      - name: clone dependency
+      - name: Clone and Build utils
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -20,11 +22,14 @@ jobs:
           cd utils
           cmake  -D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang -G Ninja -D CMAKE_BUILD_TYPE=Debug -S . -B .
           ninja utils
-      - name: build
+      - name: Build
         run: |
           UTILS_DIR=$(pwd)/utils cmake  -D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang -G Ninja -D CMAKE_BUILD_TYPE=Debug -S . -B ./build
           ninja -C build
-      - name: test
+      - name: Test
         run: |
           CTEST_OUTPUT_ON_FAILURE=1 BASE_PATH=../.. ninja -C build test
-          ls -R -l
+      - name: Show Directories (for Debug)
+        if: always()
+        run: |
+          ls -l -R
