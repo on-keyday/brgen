@@ -125,6 +125,9 @@ void add_result(Debug&& d) {
 void save_result(const char* file) {
     std::filesystem::path path = utils::wrap::get_exepath<std::u8string>();
     path = path.parent_path() / file;
+#ifdef __linux__
+    fprintf(stderr, "log file saved to %s", path.c_str());
+#endif
     std::ofstream ofs(path.c_str());
     Debug d;
     d.value(debug);
