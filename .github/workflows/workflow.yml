@@ -27,3 +27,4 @@ jobs:
       - name: test
         run: |
           CTEST_OUTPUT_ON_FAILURE=1 BASE_PATH=../.. ninja -C build test
+          ls -R -l
