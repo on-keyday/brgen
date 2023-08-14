@@ -3,8 +3,6 @@
 #include "../ast/traverse.h"
 #include "typing.h"
 #include <ranges>
-#include <iterator>
-#include <list>
 
 namespace brgen::typing {
 
@@ -253,6 +251,7 @@ namespace brgen::typing {
             auto found = defs.idents.find(ident->ident);
             if (found != defs.idents.end()) {
                 auto view = found->second | std::views::reverse;
+                view.begin();
                 for (auto& rev : view) {
                     auto usage = rev->usage;
                     if (usage != ast::IdentUsage::unknown) {
