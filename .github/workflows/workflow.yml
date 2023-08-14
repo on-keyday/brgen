@@ -1,0 +1,26 @@
+name: learn-github-actions
+run-name: ${{ github.actor }} is learning GitHub Actions
+on: [push]
+jobs:
+  check-bats-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: seanmiddleditch/gha-setup-ninja@master
+      - name: Set up Clang
+        uses: egor-tensin/setup-clang@v1
+        with:
+          version: latest
+          platform: x64
+      - name: clone dependency
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git clone https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/on-keyday/utils
+      - name: build
+        run: |
+          UTILS_DIR=./utils cmake  -D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang -G Ninja -D CMAKE_BUILD_TYPE=Debug -S . -B ./build
+          ninja -C build test
+      - name: test
+        run: |
+          BASE_PATH=../.. ninja -C build test
