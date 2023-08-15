@@ -9,7 +9,7 @@ void test_extract_call(AstList& c) {
         for (auto& f : c) {
             if (auto got = f.get()) {
                 field([&](Debug& d) {
-                    got->debug(d);
+                    got->as_json(d);
                 });
             }
         }

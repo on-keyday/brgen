@@ -120,6 +120,11 @@ namespace brgen::cpp_lang {
                 write_expr(child, a);
                 child.out().writeln(";");
             }
+            if (auto f = ast::as<ast::Field>(element)) {
+                if (f->ident) {
+                    w.out().writeln("int ", f->ident->ident, ";");
+                }
+            }
         }
     }
 

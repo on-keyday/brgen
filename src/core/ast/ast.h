@@ -53,7 +53,7 @@ namespace brgen::ast {
 
         virtual ~Node() {}
 
-        virtual void debug(Debug& buf) const {
+        virtual void as_json(Debug& buf) const {
             buf.null();
         }
 
@@ -125,7 +125,7 @@ namespace brgen::ast {
         Ident(lexer::Loc l, std::string&& i)
             : Expr(l, ObjectType::ident), ident(std::move(i)) {}
 
-        void debug(Debug& buf) const override {
+        void as_json(Debug& buf) const override {
             auto field = buf.object();
             field(sdebugf(expr_type));
             field(sdebugf(ident));
@@ -145,7 +145,7 @@ namespace brgen::ast {
         Field(lexer::Loc l)
             : Stmt(l, ObjectType::field) {}
 
-        void debug(Debug& buf) const override {
+        void as_json(Debug& buf) const override {
             auto field = buf.object();
             field(sdebugf(ident));
             field(sdebugf(field_type));
@@ -178,7 +178,7 @@ namespace brgen::ast {
         IndentScope(lexer::Loc l)
             : Stmt(l, ObjectType::indent_scope) {}
 
-        void debug(Debug& buf) const override {
+        void as_json(Debug& buf) const override {
             auto field = buf.object();
             field(sdebugf(elements));
             field("defs", [&] {
@@ -194,7 +194,7 @@ namespace brgen::ast {
         Fmt(lexer::Loc l)
             : Stmt(l, ObjectType::fmt) {}
 
-        void debug(Debug& buf) const override {
+        void as_json(Debug& buf) const override {
             auto field = buf.object();
             field(sdebugf(ident));
             field(sdebugf(scope));
@@ -208,7 +208,7 @@ namespace brgen::ast {
         For(lexer::Loc l)
             : Stmt(l, ObjectType::for_) {}
 
-        void debug(Debug& buf) const override {
+        void as_json(Debug& buf) const override {
             auto field = buf.object();
             field("for_block", block);
         }
@@ -224,7 +224,7 @@ namespace brgen::ast {
         Call(lexer::Loc l, std::shared_ptr<Expr>&& callee)
             : Expr(l, ObjectType::call), callee(std::move(callee)) {}
 
-        void debug(Debug& buf) const override {
+        void as_json(Debug& buf) const override {
             auto field = buf.object();
             field(sdebugf(expr_type));
             field(sdebugf(callee));
@@ -239,7 +239,7 @@ namespace brgen::ast {
         Paren(lexer::Loc l)
             : Expr(l, ObjectType::paren) {}
 
-        void debug(Debug& buf) const override {
+        void as_json(Debug& buf) const override {
             auto field = buf.object();
             field(sdebugf(expr_type));
             field(sdebugf(expr));
@@ -255,7 +255,7 @@ namespace brgen::ast {
         constexpr If(lexer::Loc l)
             : Expr(l, ObjectType::if_) {}
 
-        void debug(Debug& buf) const override {
+        void as_json(Debug& buf) const override {
             auto field = buf.object();
             field(sdebugf(expr_type));
             field(sdebugf(cond));
@@ -272,7 +272,7 @@ namespace brgen::ast {
         constexpr Unary(lexer::Loc l, UnaryOp p)
             : Expr(l, ObjectType::unary), op(p) {}
 
-        void debug(Debug& buf) const override {
+        void as_json(Debug& buf) const override {
             auto field = buf.object();
             field(sdebugf(expr_type));
             auto op = unary_op[int(this->op)];
@@ -290,7 +290,7 @@ namespace brgen::ast {
         Binary(lexer::Loc l, std::shared_ptr<Expr>&& left, BinaryOp op)
             : Expr(l, ObjectType::binary), left(std::move(left)), op(op) {}
 
-        void debug(Debug& buf) const override {
+        void as_json(Debug& buf) const override {
             auto field = buf.object();
             auto op = bin_op_str(this->op);
             field(sdebugf(expr_type));
@@ -305,7 +305,7 @@ namespace brgen::ast {
         std::shared_ptr<Expr> target;
         std::string name;
 
-        void debug(Debug& buf) const override {
+        void as_json(Debug& buf) const override {
             auto field = buf.object();
             field(sdebugf(expr_type));
             field(sdebugf(target));
@@ -326,7 +326,7 @@ namespace brgen::ast {
         Cond(lexer::Loc l, std::shared_ptr<Expr>&& then)
             : Expr(l, ObjectType::cond), then(std::move(then)) {}
 
-        void debug(Debug& buf) const override {
+        void as_json(Debug& buf) const override {
             auto field = buf.object();
             field(sdebugf(expr_type));
             field(sdebugf(cond));
@@ -349,7 +349,7 @@ namespace brgen::ast {
             return t;
         }
 
-        void debug(Debug& buf) const override {
+        void as_json(Debug& buf) const override {
             auto field = buf.object();
             field(sdebugf(expr_type));
             field(sdebugf(raw));
@@ -365,7 +365,7 @@ namespace brgen::ast {
         static constexpr ObjectType object_type = ObjectType::bool_literal;
         bool value;
 
-        void debug(Debug& buf) const override {
+        void as_json(Debug& buf) const override {
             auto field = buf.object();
             field(sdebugf(expr_type));
             field(sdebugf(value));
@@ -385,7 +385,7 @@ namespace brgen::ast {
         IntegerType(lexer::Loc l, std::string&& token, size_t bit_size)
             : Type(l, ObjectType::int_type), raw(std::move(token)), bit_size(bit_size) {}
 
-        void debug(Debug& buf) const override {
+        void as_json(Debug& buf) const override {
             auto field = buf.object();
 
             field(sdebugf(raw));
@@ -433,7 +433,7 @@ namespace brgen::ast {
             return 0;
         }
 
-        void debug(Debug& buf) const override {
+        void as_json(Debug& buf) const override {
             auto field = buf.object();
             auto bit_size = get_bit_size();
             auto aligned = aligned_bit();
@@ -452,7 +452,7 @@ namespace brgen::ast {
         IdentType(lexer::Loc l, std::string&& token, define_frame&& frame)
             : Type(l, ObjectType::ident_type), ident(std::move(token)), frame(std::move(frame)) {}
 
-        void debug(Debug& buf) const override {
+        void as_json(Debug& buf) const override {
             auto field = buf.object();
             field(sdebugf(ident));
         }
@@ -464,7 +464,7 @@ namespace brgen::ast {
         VoidType(lexer::Loc l)
             : Type(l, ObjectType::void_type) {}
 
-        void debug(Debug& buf) const override {
+        void as_json(Debug& buf) const override {
             buf.string("void");
         }
     };
@@ -475,7 +475,7 @@ namespace brgen::ast {
         BoolType(lexer::Loc l)
             : Type(l, ObjectType::bool_type) {}
 
-        void debug(Debug& buf) const override {
+        void as_json(Debug& buf) const override {
             buf.string("bool");
         }
     };
@@ -495,7 +495,7 @@ namespace brgen::ast {
         node_list elements;
         define_frame defs;
 
-        void debug(Debug& buf) const override {
+        void as_json(Debug& buf) const override {
             auto field = buf.object();
             field(sdebugf(elements));
             field("defs", [&] { debug_defs(buf, defs); });

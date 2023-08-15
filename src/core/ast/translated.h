@@ -13,7 +13,7 @@ namespace brgen::ast {
             expr_type = base->expr_type;
         }
 
-        void debug(Debug& buf) const override {
+        void as_json(Debug& buf) const override {
             auto field = buf.object();
             field("tmp_var", tmp_index);
         }
@@ -26,7 +26,7 @@ namespace brgen::ast {
         BlockExpr(std::shared_ptr<Expr>&& a, node_list&& l)
             : Expr(a->loc, ObjectType::block_expr), calls(std::move(l)), expr(std::move(a)) {}
 
-        void debug(Debug& buf) const override {
+        void as_json(Debug& buf) const override {
             auto field = buf.object();
             field(sdebugf(calls));
             field(sdebugf(expr));
