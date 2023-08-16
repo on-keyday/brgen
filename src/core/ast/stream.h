@@ -241,11 +241,12 @@ namespace brgen::ast {
         Stream* s = nullptr;
         size_t indent = 0;
         defstack stack;
+        std::shared_ptr<Fmt> current_fmt_;
 
        public:
         auto new_indent(size_t new_, std::shared_ptr<StackFrame<Definitions>>& frame) {
             if (indent >= new_) {
-                s->report_error("expect largeer indent but not");
+                s->report_error("expect larger indent but not");
             }
             auto old = std::exchange(indent, std::move(new_));
             stack.enter_branch();
@@ -254,6 +255,18 @@ namespace brgen::ast {
                 indent = std::move(old);
                 stack.leave_branch();
             });
+        }
+
+        auto enter_fmt(const std::shared_ptr<Fmt>& f) {
+            f->belong = current_fmt_;
+            current_fmt_ = f;
+            return utils::helper::defer([this] {
+                current_fmt_ = current_fmt_->belong.lock();
+            });
+        }
+
+        std::shared_ptr<Fmt> current_fmt() {
+            return current_fmt_;
         }
 
         size_t current_indent() {

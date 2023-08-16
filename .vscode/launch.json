@@ -8,7 +8,7 @@
             "name": "Debug(no copy)",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceRoot}/build/test/cpp_test",
+            "program": "${workspaceRoot}/build/test/section_writer_test",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",

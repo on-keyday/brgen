@@ -3,22 +3,9 @@
 
 typedef struct {
     const uint8_t* buffer;
-    size_t buffer_size;
-    size_t index;
-    uint8_t top;
-    uint8_t top_enable : 1;
-    uint8_t bit_index : 7;
+    size_t buffer_size;  // byte
+    size_t bit_index;    // bit
 } Input;
-
-int input_peek_top(Input* input) {
-    if (!input->top_enable) {
-        if (input->buffer_size >= input->index) {
-            return 0;
-        }
-        input->top = input->buffer[0];
-    }
-    return 1;
-}
 
 int input_seek_bit(Input* input, int bit) {
     if (!input_peek_top(input)) {
@@ -61,10 +48,7 @@ int decode_LongPacket(Input* input) {
 }
 
 int decode_QUICPacket(Input* input, QUICPacket* output) {
-    if (!input_peek_top(input)) {
-        return 0;
-    }
-    uint8_t form = (input->top & 0x80) >> 7;
+    uint8_t form = (input->buffer[input->bit_index >> 3] & (uint8_t)(0x1 << (7 - (input->bit_index & 0x7)))) >> 7;
     output->form = form;
     if (!input_seek_bit(input, 1)) {
         return 0;

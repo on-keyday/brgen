@@ -134,13 +134,14 @@ namespace brgen::ast {
     };
 
     // field
-
+    struct Fmt;
     struct Field : Stmt {
         static constexpr ObjectType object_type = ObjectType::field;
         std::shared_ptr<Ident> ident;
         lexer::Loc colon_loc;
         std::shared_ptr<Type> field_type;
         std::shared_ptr<Expr> arguments;
+        std::weak_ptr<Fmt> belong;
 
         Field(lexer::Loc l)
             : Stmt(l, ObjectType::field) {}
@@ -152,8 +153,6 @@ namespace brgen::ast {
             field(sdebugf(arguments));
         }
     };
-
-    struct Fmt;
 
     struct Definitions {
         std::map<std::string, std::list<std::shared_ptr<Fmt>>> fmts;
@@ -191,6 +190,7 @@ namespace brgen::ast {
         static constexpr ObjectType object_type = ObjectType::fmt;
         std::string ident;
         std::shared_ptr<IndentScope> scope;
+        std::weak_ptr<Fmt> belong;
         Fmt(lexer::Loc l)
             : Stmt(l, ObjectType::fmt) {}
 

@@ -440,8 +440,10 @@ namespace brgen::ast {
 
             auto ident = s.must_consume_token(lexer::Tag::ident);
             fmt->ident = ident.token;
-            fmt->scope = parse_indent_block();
-
+            {
+                auto scope = s.context()->enter_fmt(fmt);
+                fmt->scope = parse_indent_block();
+            }
             s.context()->current_definitions()->current.add_fmt(fmt->ident, fmt);
 
             return fmt;
