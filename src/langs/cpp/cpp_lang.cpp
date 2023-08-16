@@ -35,17 +35,15 @@ namespace brgen::cpp_lang {
         auto cond = if_stmt->add_section("cond");
         cond->head().write("if(");
         cond->foot().write(") ");
-        auto expr = cond->add_section("expr");
-        write_expr(expr, if_->cond.get());
+        write_expr(cond, if_->cond.get());
         write_block_scope(if_stmt, if_->block.get(), last_should_be_return);
         if (if_->els) {
-            auto els_ = w->add_section("else");
-            els_->head().write("else ");
+            w->write("else ");
             if (auto elif = ast::as<ast::If>(if_->els)) {
-                write_if_stmt(els_, elif, last_should_be_return);
+                write_if_stmt(w, elif, last_should_be_return);
             }
             else if (auto els = ast::as<ast::IndentScope>(if_->els)) {
-                write_block_scope(els_, els, last_should_be_return);
+                write_block_scope(w, els, last_should_be_return);
             }
         }
     }
