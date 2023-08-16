@@ -120,9 +120,12 @@ namespace brgen::cpp_lang {
 
     void entry(writer::TreeWriter& w, std::shared_ptr<ast::Program>& p) {
         auto root = writer::root();
+        root->head().writeln("#include<cstdint>");
+        root->head().writeln("#include<cstddef>");
         auto main_ = root->add_section("main", true);
         main_->head().writeln("int main() {");
         main_->foot().writeln("}");
+        main_->writeln("struct { std::size_t bit_index = 0; const std::uint8_t buffer[1200]; }input__{},*input=&input__;");
         write_block(main_, p->elements, false);
         root->flush(w.out());
     }
