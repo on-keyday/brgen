@@ -15,16 +15,16 @@ using namespace brgen;
 auto& cerr = utils::wrap::cerr_wrap();
 namespace brgen::ast {
 
-    ::testing::AssertionResult is_Index(std::variant<lexer::FileIndex, std::error_code>& v) {
-        if (v.index() == 0) {
+    ::testing::AssertionResult is_Index(either::expected<lexer::FileIndex, std::error_code>& v) {
+        if (v) {
             return ::testing::AssertionSuccess();
         }
         else {
-            return ::testing::AssertionFailure() << "with error " << std::get<1>(v).message();
+            return ::testing::AssertionFailure() << "with error " << v.error().message();
         }
     }
 
-    ::testing::AssertionResult isNotError(std::optional<StreamError>& v, FileList& files, lexer::FileIndex index) {
+    ::testing::AssertionResult isNotError(std::optional<StreamError>& v, FileSet& files, lexer::FileIndex index) {
         if (!v) {
             return ::testing::AssertionSuccess();
         }
@@ -34,7 +34,7 @@ namespace brgen::ast {
     }
 
     struct FileTest : ::testing::Test {
-        FileList files;
+        FileSet files;
 
         void SetUp() override {
             std::string base_path;
@@ -44,7 +44,7 @@ namespace brgen::ast {
             auto add_file = [&](const char* file_name, lexer::FileIndex expect) {
                 auto index = files.add(base_path + file_name);
                 ASSERT_TRUE(is_Index(index));
-                GTEST_ASSERT_EQ(std::get<0>(index), expect);
+                GTEST_ASSERT_EQ(*index, expect);
             };
             add_file("step1.bgn", 1);
             add_file("step2.bgn", 2);
@@ -64,18 +64,15 @@ namespace brgen::ast {
     TEST_P(AstTest, AstParseTest) {
         ast::Context ctx;
         auto input = files.get_input(GetParam());
-        auto path = files.get_path(GetParam());
-        ASSERT_TRUE(path);
-        ASSERT_TRUE(::testing::AssertionResult(bool(input)) << *path);
+        ASSERT_TRUE(::testing::AssertionResult(bool(input)) << input->path());
         std::shared_ptr<ast::Program> prog;
-        auto copy = *input;
-        auto err = ctx.enter_stream(std::move(copy), [&](ast::Stream& s) {
+        auto err = ctx.enter_stream(input, [&](ast::Stream& s) {
             auto p = ast::Parser{s};
             prog = p.parse();
         });
         ASSERT_TRUE(isNotError(err, files, GetParam()));
         if (handler) {
-            handler(prog, *input, path->generic_string());
+            handler(prog, input, files);
         }
     }
 

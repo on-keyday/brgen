@@ -3,11 +3,14 @@
 #include "core/ast/ast.h"
 #include "core/ast/translated.h"
 #include <core/writer/section.h>
+#include "cpp_lang.h"
 
 namespace brgen::cpp_lang {
     using writer::SectionPtr;
     void write_expr(const SectionPtr& w, ast::Expr* expr);
     void write_block(const SectionPtr& w, ast::node_list& elements, bool last_should_return);
+
+    void report_error() {}
 
     void write_binary(const SectionPtr& w, ast::Binary* b) {
         auto op = b->op;
@@ -114,20 +117,25 @@ namespace brgen::cpp_lang {
                 if (f->ident) {
                     stmt->writeln("int ", f->ident->ident, ";");
                 }
+                f->field_type->type;
             }
         }
     }
 
-    void entry(writer::TreeWriter& w, std::shared_ptr<ast::Program>& p) {
+    void entry(Context& w, std::shared_ptr<ast::Program>& p) {
         auto root = writer::root();
         root->head().writeln("#include<cstdint>");
         root->head().writeln("#include<cstddef>");
+        auto global = root->add_section("global");
+        auto dec = global->add_section("dec");
+        dec->writeln("struct Input {std::size_t bit_index = 0; const std::uint8_t buffer[1200];};");
+        auto def = global->add_section("def");
         auto main_ = root->add_section("main", true);
         main_->head().writeln("int main() {");
         main_->foot().writeln("}");
-        main_->writeln("struct { std::size_t bit_index = 0; const std::uint8_t buffer[1200]; }input__{},*input=&input__;");
+        main_->writeln("Input input__{},*input=&input__;");
         write_block(main_, p->elements, false);
-        root->flush(w.out());
+        w.w = root;
     }
 
 }  // namespace brgen::cpp_lang

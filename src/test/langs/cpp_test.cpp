@@ -6,15 +6,16 @@
 using namespace brgen;
 
 int main(int argc, char** argv) {
-    set_handler([](auto& a, auto& i, auto) {
-        auto err = typing::typing_with_error(a, i);
-        if (err) {
-            ASSERT_TRUE(::testing::AssertionFailure() << *err);
+    set_handler([](auto& a, auto i, auto fs) {
+        auto ok = typing::typing_with_error(a, fs);
+        if (!ok) {
+            ASSERT_TRUE(::testing::AssertionFailure() << ok.error());
         }
-        writer::TreeWriter w{"global", nullptr};
-        cpp_lang::entry(w, a);
+        cpp_lang::Context ctx;
+        cpp_lang::entry(ctx, a);
+        ASSERT_TRUE(ctx.w);
         Debug d;
-        d.string(w.out().out());
+        d.string(ctx.w->flush());
         add_result(std::move(d));
     });
     ::testing::InitGoogleTest(&argc, argv);

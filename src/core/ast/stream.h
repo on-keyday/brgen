@@ -21,10 +21,10 @@ namespace brgen::ast {
         using iterator = typename std::list<lexer::Token>::iterator;
         iterator cur;
         ContextInfo* info = nullptr;
-        Input input;
+        File* input;
 
         [[noreturn]] void report_error(std::string&& msg, lexer::Pos pos) {
-            throw input.error(std::move(msg), pos);
+            throw input->error(std::move(msg), pos);
         }
 
         Stream() = default;
@@ -32,7 +32,7 @@ namespace brgen::ast {
 
         void maybe_parse() {
             if (cur == tokens.end()) {
-                auto token = input.parse();
+                auto token = input->parse();
                 if (!token) {
                     return;
                 }
@@ -66,14 +66,6 @@ namespace brgen::ast {
             std::string buf;
             appends(buf, "parser error:", data...);
             report_error(std::move(buf), loc.pos);
-        }
-
-        [[nodiscard]] auto set_input(Input&& in) {
-            auto old = std::move(input);
-            input = std::move(in);
-            return utils::helper::defer([=, this] {
-                input = std::move(old);
-            });
         }
 
         auto fallback() {
@@ -289,10 +281,10 @@ namespace brgen::ast {
         ContextInfo info;
 
        public:
-        std::optional<StreamError> enter_stream(Input&& file, auto&& fn) {
+        std::optional<StreamError> enter_stream(File* file, auto&& fn) {
             stream.info = &info;
             return stream.enter_stream([&] {
-                const auto scope = stream.set_input(std::move(file));
+                stream.input = file;
                 fn(stream);
             });
         }

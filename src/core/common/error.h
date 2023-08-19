@@ -19,6 +19,10 @@ namespace brgen {
                     src);
             return buf;
         }
+
+        std::string what() {
+            return to_string();
+        }
     };
 
 }  // namespace brgen

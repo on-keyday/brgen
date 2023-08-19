@@ -47,40 +47,41 @@ namespace brgen::typing {
 
     void typing_object(const std::shared_ptr<ast::Node>& ty);
 
-    inline std::optional<std::string> typing_with_error(const std::shared_ptr<ast::Node>& ty, Input& input) {
+    inline either::expected<void, std::string> typing_with_error(const std::shared_ptr<ast::Node>& ty, FileSet& input) {
+        std::string err;
         try {
             typing_object(ty);
         } catch (const typing::DefinedError& e) {
-            auto err = input.error("ident `" + e.ident + "` already defined", e.duplicated_at.pos).to_string();
-            err += "\n" + input.error("defined at here", e.defined_at.pos).to_string() + "\n";
-            return err;
+            err = input.error("ident `" + e.ident + "` already defined", e.duplicated_at).to_string();
+            err += "\n" + input.error("defined at here", e.defined_at).to_string() + "\n";
         } catch (const typing::NotDefinedError& e) {
-            auto err = input.error("ident `" + e.ident + "` not defined", e.ref_at.pos).to_string() + "\n";
-            return err;
+            err = input.error("ident `" + e.ident + "` not defined", e.ref_at).to_string() + "\n";
         } catch (const typing::AssignError& e) {
-            auto err = input.error("ident `" + e.ident + "` already defined", e.duplicated_at.pos).to_string();
-            err += "\n" + input.error("defined at here", e.defined_at.pos).to_string() + "\n";
-            return err;
+            auto err = input.error("ident `" + e.ident + "` already defined", e.duplicated_at).to_string();
+            err += "\n" + input.error("defined at here", e.defined_at).to_string() + "\n";
         } catch (const typing::NotBoolError& e) {
-            auto err = input.error("expression is not a boolean", e.expr_loc.pos).to_string() + "\n";
-            return err;
+            err = input.error("expression is not a boolean", e.expr_loc).to_string() + "\n";
+
         } catch (const typing::BinaryOpTypeError& e) {
-            auto err = input.error("invalid operand types for binary operator", e.loc.pos).to_string() + "\n";
-            return err;
+            err = input.error("invalid operand types for binary operator", e.loc).to_string() + "\n";
+
         } catch (const typing::NotEqualTypeError& e) {
-            auto err = input.error("type not equal; here", e.a.pos).to_string();
-            err += "\n" + input.error("and here", e.b.pos).to_string() + "\n";
-            return err;
+            err = input.error("type not equal; here", e.a).to_string();
+            err += "\n" + input.error("and here", e.b).to_string() + "\n";
+
         } catch (const typing::UnsupportedError& e) {
-            auto err = input.error("unsupported operation", e.l.pos).to_string() + "\n";
-            return err;
+            err = input.error("unsupported operation", e.l).to_string() + "\n";
+
         } catch (const std::exception& e) {
             // 他の標準の例外をキャッチする場合の処理
             // e.what() を使用して詳細情報を取得する
-            return e.what();
+            err = e.what();
         } catch (...) {
-            return "unknown exception caught";
+            err = "unknown exception caught";
         }
-        return std::nullopt;
+        if (err.size()) {
+            return either::unexpected{err};
+        }
+        return {};
     }
 }  // namespace brgen::typing

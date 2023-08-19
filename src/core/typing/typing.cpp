@@ -339,7 +339,6 @@ namespace brgen::typing {
         }
         else if (auto selector = ast::as<ast::MemberAccess>(expr)) {
             typing_expr(selector->target);
-            selector->name;
         }
         else {
             throw UnsupportedError{expr->loc};

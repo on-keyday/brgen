@@ -5,13 +5,11 @@
 using namespace brgen;
 
 int main(int argc, char** argv) {
-    set_handler([](auto& a, Input& input, std::string_view file) {
-        ::testing::AssertionResult result = ::testing::AssertionSuccess();
-        auto err = typing::typing_with_error(a, input);
-        if (err) {
-            result = ::testing::AssertionFailure() << *err;
+    set_handler([](auto& a, File* input, FileSet& fs) {
+        auto result = typing::typing_with_error(a, fs);
+        if (!result) {
+            ASSERT_TRUE(::testing::AssertionFailure() << result.error());
         }
-        ASSERT_TRUE(result);
         Debug d;
         d.value(a);
         add_result(std::move(d));

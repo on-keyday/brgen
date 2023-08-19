@@ -15,6 +15,16 @@ namespace brgen::lexer {
         FileIndex file = 0;  // file index
     };
 
+    constexpr void as_json(Loc l, auto&& buf) {
+        auto field = buf.object();
+        field("pos", [&] {
+            auto field = buf.object();
+            field("begin", l.pos.begin);
+            field("end", l.pos.end);
+        });
+        field("file", l.file);
+    }
+
     enum class Tag {
         indent,
         space,

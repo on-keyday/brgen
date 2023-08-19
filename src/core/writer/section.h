@@ -114,7 +114,7 @@ namespace brgen {
                 return set_new_section();
             }
 
-            void flush(Writer& w) {
+            void flush(auto& w) {
                 w.write_unformatted(header.out());
                 if (indent) {
                     auto s = w.indent_scope();
@@ -140,6 +140,13 @@ namespace brgen {
                     }
                 }
                 w.write_unformatted(footer.out());
+            }
+
+            std::string flush() {
+                std::string buf;
+                utils::code::CodeWriter<std::string&, std::string_view> w{buf};
+                flush(w);
+                return std::move(buf);
             }
 
             void write(auto&&... a) {

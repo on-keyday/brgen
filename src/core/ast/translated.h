@@ -15,6 +15,7 @@ namespace brgen::ast {
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
+            basic_info(field);
             field("tmp_var", tmp_index);
         }
     };
@@ -28,6 +29,7 @@ namespace brgen::ast {
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
+            basic_info(field);
             field(sdebugf(calls));
             field(sdebugf(expr));
         }

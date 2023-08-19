@@ -46,6 +46,65 @@ namespace brgen::ast {
         bool_type,
     };
 
+    constexpr const char* object_type_to_string(ObjectType type) {
+        switch (type) {
+            case ObjectType::program:
+                return "program";
+            case ObjectType::expr:
+                return "expr";
+            case ObjectType::int_literal:
+                return "int_literal";
+            case ObjectType::bool_literal:
+                return "bool_literal";
+            case ObjectType::binary:
+                return "binary";
+            case ObjectType::unary:
+                return "unary";
+            case ObjectType::cond:
+                return "cond";
+            case ObjectType::ident:
+                return "ident";
+            case ObjectType::call:
+                return "call";
+            case ObjectType::if_:
+                return "if";
+            case ObjectType::member_access:
+                return "member_access";
+            case ObjectType::paren:
+                return "paren";
+            case ObjectType::tmp_var:
+                return "tmp_var";
+            case ObjectType::block_expr:
+                return "block_expr";
+            case ObjectType::stmt:
+                return "stmt";
+            case ObjectType::for_:
+                return "for";
+            case ObjectType::field:
+                return "field";
+            case ObjectType::fmt:
+                return "fmt";
+            case ObjectType::indent_scope:
+                return "indent_scope";
+            case ObjectType::type:
+                return "type";
+            case ObjectType::int_type:
+                return "int_type";
+            case ObjectType::ident_type:
+                return "ident_type";
+            case ObjectType::int_literal_type:
+                return "int_literal_type";
+            case ObjectType::str_literal_type:
+                return "str_literal_type";
+            case ObjectType::void_type:
+                return "void_type";
+            case ObjectType::bool_type:
+                return "bool_type";
+            default:
+                return "unknown";
+        }
+    }
+
     // abstract
     struct Node {
         const ObjectType type;
@@ -55,6 +114,11 @@ namespace brgen::ast {
 
         virtual void as_json(Debug& buf) const {
             buf.null();
+        }
+
+        void basic_info(auto&& field) const {
+            field("object_type", object_type_to_string(type));
+            field("loc", loc);
         }
 
        protected:
@@ -127,6 +191,7 @@ namespace brgen::ast {
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
+            basic_info(field);
             field(sdebugf(expr_type));
             field(sdebugf(ident));
             field("usage", ident_usage_map[int(usage)]);
@@ -148,7 +213,9 @@ namespace brgen::ast {
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
+            basic_info(field);
             field(sdebugf(ident));
+            field(sdebugf(colon_loc));
             field(sdebugf(field_type));
             field(sdebugf(arguments));
         }
@@ -179,6 +246,7 @@ namespace brgen::ast {
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
+            basic_info(field);
             field(sdebugf(elements));
             field("defs", [&] {
                 debug_defs(buf, defs);
@@ -196,6 +264,7 @@ namespace brgen::ast {
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
+            basic_info(field);
             field(sdebugf(ident));
             field(sdebugf(scope));
         }
@@ -210,6 +279,7 @@ namespace brgen::ast {
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
+            basic_info(field);
             field("for_block", block);
         }
     };
@@ -226,9 +296,11 @@ namespace brgen::ast {
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
+            basic_info(field);
             field(sdebugf(expr_type));
             field(sdebugf(callee));
             field(sdebugf(arguments));
+            field(sdebugf(end_loc));
         }
     };
 
@@ -241,8 +313,10 @@ namespace brgen::ast {
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
+            basic_info(field);
             field(sdebugf(expr_type));
             field(sdebugf(expr));
+            field(sdebugf(end_loc));
         }
     };
 
@@ -257,6 +331,7 @@ namespace brgen::ast {
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
+            basic_info(field);
             field(sdebugf(expr_type));
             field(sdebugf(cond));
             field(sdebugf(block));
@@ -274,6 +349,7 @@ namespace brgen::ast {
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
+            basic_info(field);
             field(sdebugf(expr_type));
             auto op = unary_op[int(this->op)];
             field(sdebugf(op));
@@ -293,6 +369,7 @@ namespace brgen::ast {
         void as_json(Debug& buf) const override {
             auto field = buf.object();
             auto op = bin_op_str(this->op);
+            basic_info(field);
             field(sdebugf(expr_type));
             field(sdebugf(op));
             field(sdebugf(left));
@@ -307,6 +384,7 @@ namespace brgen::ast {
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
+            basic_info(field);
             field(sdebugf(expr_type));
             field(sdebugf(target));
             field(sdebugf(name));
@@ -328,9 +406,11 @@ namespace brgen::ast {
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
+            basic_info(field);
             field(sdebugf(expr_type));
             field(sdebugf(cond));
             field(sdebugf(then));
+            field(sdebugf(els_loc));
             field(sdebugf(els));
         }
     };
@@ -351,6 +431,7 @@ namespace brgen::ast {
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
+            basic_info(field);
             field(sdebugf(expr_type));
             field(sdebugf(raw));
             auto num = parse_as<std::int64_t>();
@@ -367,6 +448,7 @@ namespace brgen::ast {
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
+            basic_info(field);
             field(sdebugf(expr_type));
             field(sdebugf(value));
         }
@@ -387,7 +469,7 @@ namespace brgen::ast {
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
-
+            basic_info(field);
             field(sdebugf(raw));
             field(sdebugf(bit_size));
         }
@@ -437,6 +519,7 @@ namespace brgen::ast {
             auto field = buf.object();
             auto bit_size = get_bit_size();
             auto aligned = aligned_bit();
+            basic_info(field);
             field(sdebugf(bit_size));
             field(sdebugf(aligned));
         }
@@ -454,6 +537,7 @@ namespace brgen::ast {
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
+            basic_info(field);
             field(sdebugf(ident));
         }
     };
@@ -465,7 +549,8 @@ namespace brgen::ast {
             : Type(l, ObjectType::void_type) {}
 
         void as_json(Debug& buf) const override {
-            buf.string("void");
+            auto field = buf.object();
+            basic_info(field);
         }
     };
 
@@ -476,7 +561,8 @@ namespace brgen::ast {
             : Type(l, ObjectType::bool_type) {}
 
         void as_json(Debug& buf) const override {
-            buf.string("bool");
+            auto field = buf.object();
+            basic_info(field);
         }
     };
 
@@ -497,6 +583,7 @@ namespace brgen::ast {
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
+            basic_info(field);
             field(sdebugf(elements));
             field("defs", [&] { debug_defs(buf, defs); });
             field("all_defs", [&] { debug_def_frames(buf, defs); });
