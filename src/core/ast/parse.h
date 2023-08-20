@@ -220,7 +220,7 @@ namespace brgen::ast {
             if (l->op == ast::BinaryOp::assign ||
                 l->op == ast::BinaryOp::typed_assign ||
                 l->op == ast::BinaryOp::const_assign) {
-                if (l->left->type != ast::ObjectType::ident) {
+                if (l->left->type != ast::NodeType::ident) {
                     s.report_error(l->left->loc, "left of =,:=,::= must be ident");
                 }
             }
@@ -254,7 +254,7 @@ namespace brgen::ast {
             auto update_stack = [&] {  // returns true if `continue` required
                 if (stack_is_on_depth()) {
                     auto op = pop_stack();
-                    if (op.expr->type == ObjectType::binary) {
+                    if (op.expr->type == NodeType::binary) {
                         if (depth == ast::bin_assign_layer) {
                             stack.push_back(std::move(op));
                         }
@@ -264,7 +264,7 @@ namespace brgen::ast {
                             expr = std::move(op.expr);
                         }
                     }
-                    else if (op.expr->type == ObjectType::cond) {
+                    else if (op.expr->type == NodeType::cond) {
                         auto cop = static_cast<Cond*>(op.expr.get());
                         if (!cop->cond) {
                             cop->cond = std::move(expr);
@@ -380,32 +380,29 @@ namespace brgen::ast {
             return type;
         }
 
-        std::optional<std::shared_ptr<Field>> parse_field(Stream& s) {
-            auto f = s.fallback();
+        // may returns expr if not field
+        std::shared_ptr<Node> parse_field(const std::shared_ptr<Expr>& expr) {
+            lexer::Token token;
             std::shared_ptr<Ident> ident;
-            if (s.expect_token(lexer::Tag::ident)) {
-                ident = parse_ident_no_frame();
-            }
-
-            if (ident) {
+            if (expr) {
+                if (expr->node_type != NodeType::ident) {
+                    return expr;
+                }
                 s.skip_space();
+                auto tmp = s.consume_token(":");
+                if (!tmp) {
+                    return expr;
+                }
+                ident = std::static_pointer_cast<Ident>(expr);
+            }
+            else {
+                token = s.must_consume_token(":");
             }
 
-            auto token = s.consume_token(":");
-
-            if (!token) {
-                return std::nullopt;
-            }
-            f.cancel();
-
-            auto field = std::make_shared<Field>(ident ? ident->loc : token->loc);
-            field->colon_loc = token->loc;
+            auto field = std::make_shared<Field>(ident ? ident->loc : token.loc);
+            field->colon_loc = token.loc;
 
             if (ident) {
-                auto frame = s.context()->current_definitions();
-                frame->current.add_ident(ident->ident, ident);
-                ident->frame = std::move(frame);
-
                 ident->usage = IdentUsage::define_const;
             }
 
@@ -458,13 +455,13 @@ namespace brgen::ast {
                 return parse_fmt();
             }
 
-            std::shared_ptr<Node> obj;
-
-            if (auto field = parse_field(s)) {
-                obj = std::move(*field);
+            std::shared_ptr<Node> node;
+            if (s.expect_token(":")) {
+                node = parse_field(nullptr);
             }
             else {
-                obj = parse_expr();
+                auto expr = parse_expr();
+                node = parse_field(expr);
             }
 
             s.skip_space();
@@ -474,7 +471,7 @@ namespace brgen::ast {
                 s.skip_line();
             }
 
-            return obj;
+            return node;
         }
     };
 }  // namespace brgen::ast

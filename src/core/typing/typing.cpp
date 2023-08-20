@@ -28,25 +28,22 @@ namespace brgen::typing {
     }
 
     [[noreturn]] static void report_not_equal_type(const std::shared_ptr<ast::Type>& lty, const std::shared_ptr<ast::Type>& rty) {
-        throw NotEqualTypeError{lty->loc, rty->loc};
+        error(lty->loc, "type not equal here").error(rty->loc, "and here").report();
     }
 
-    [[noreturn]] static void unsupported_expr(auto&& expr) {
+    [[noreturn]] static void unsupported(auto&& expr) {
         if (auto ident = ast::as<ast::Ident>(expr)) {
-            throw NotDefinedError{
-                ident->ident,
-                ident->loc,
-            };
+            error(ident->loc, "identifier ", ident->ident, " is not defined").report();
         }
-        throw UnsupportedError{expr->loc};
+        error(expr->loc, "unsupported operation").report();
     }
 
     static void check_bool(ast::Expr* expr) {
         if (!expr->expr_type) {
-            unsupported_expr(expr);
+            unsupported(expr);
         }
-        if (expr->expr_type->type != ast::ObjectType::bool_type) {
-            throw NotBoolError{expr->loc};
+        if (expr->expr_type->type != ast::NodeType::bool_type) {
+            error(expr->loc, "expect bool but not").report();
         }
     }
 
@@ -64,20 +61,22 @@ namespace brgen::typing {
             auto lty = ast::as<ast::IntLiteralType>(b);
             auto bit_size = lty->get_bit_size();
             if (ity->bit_size < *bit_size) {
-                throw TooLargeError{lty->loc};
+                error(lty->loc, "bit size ", nums(*bit_size), " is too large")
+                    .error(ity->loc, "for this")
+                    .report();
             }
             b = a;  // fitting
         };
-        if (left->type == ast::ObjectType::int_type &&
-            right->type == ast::ObjectType::int_literal_type) {
+        if (left->type == ast::NodeType::int_type &&
+            right->type == ast::NodeType::int_literal_type) {
             fitting(left, right);
         }
-        else if (left->type == ast::ObjectType::int_literal_type &&
-                 right->type == ast::ObjectType::int_type) {
+        else if (left->type == ast::NodeType::int_literal_type &&
+                 right->type == ast::NodeType::int_type) {
             fitting(right, left);
         }
-        else if (left->type == ast::ObjectType::int_literal_type &&
-                 right->type == ast::ObjectType::int_literal_type) {
+        else if (left->type == ast::NodeType::int_literal_type &&
+                 right->type == ast::NodeType::int_literal_type) {
             left = assigning_type(left);
             right = assigning_type(right);
             auto li = ast::as<ast::IntegerType>(left);
@@ -95,16 +94,12 @@ namespace brgen::typing {
         auto left = ast::as<ast::Ident>(b->left);
         auto right = b->right;
         if (!right->expr_type) {
-            unsupported_expr(right);
+            unsupported(right);
         }
         b->expr_type = void_type(b->loc);
         auto base = left->base.lock();
         auto report_assign_error = [&] {
-            throw AssignError{
-                left->ident,
-                b->loc,
-                base->loc,
-            };
+            error(b->loc, "cannot assign to ", left->ident).error(base->loc, "ident ", left->ident, " is defined here").report();
         };
         auto new_type = assigning_type(right->expr_type);
         if (b->op == ast::BinaryOp::assign) {
@@ -202,28 +197,29 @@ namespace brgen::typing {
         auto& lty = b->left->expr_type;
         auto& rty = b->right->expr_type;
         auto report_binary_error = [&] {
-            throw BinaryOpTypeError{b->op, b->loc};
+            error(b->loc, "binary op ", *ast::bin_op_str(b->op), " is not valid")
+                .report();
         };
         if (!lty) {
-            unsupported_expr(b->left);
+            unsupported(b->left);
         }
         if (!rty) {
-            unsupported_expr(b->right);
+            unsupported(b->right);
         }
         int_type_fitting(lty, rty);
         switch (op) {
             case ast::BinaryOp::left_shift:
             case ast::BinaryOp::right_shift: {
-                if (lty->type == ast::ObjectType::int_type &&
-                    rty->type == ast::ObjectType::int_type) {
+                if (lty->type == ast::NodeType::int_type &&
+                    rty->type == ast::NodeType::int_type) {
                     b->expr_type = std::move(lty);
                     return;
                 }
                 report_binary_error();
             }
             case ast::BinaryOp::bit_and: {
-                if (lty->type == ast::ObjectType::int_type &&
-                    rty->type == ast::ObjectType::int_type) {
+                if (lty->type == ast::NodeType::int_type &&
+                    rty->type == ast::NodeType::int_type) {
                     if (!equal_type(rty, lty)) {
                         report_not_equal_type(rty, lty);
                     }
@@ -322,7 +318,7 @@ namespace brgen::typing {
         else if (auto unary = ast::as<ast::Unary>(expr)) {
             typing_expr(unary->target);
             if (!unary->target->expr_type) {
-                unsupported_expr(unary->target);
+                unsupported(unary->target);
             }
             switch (unary->op) {
                 case ast::UnaryOp::minus_sign: {
@@ -330,7 +326,7 @@ namespace brgen::typing {
                     break;
                 }
                 default: {
-                    unsupported_expr(expr);
+                    unsupported(expr);
                 }
             }
         }
@@ -341,7 +337,7 @@ namespace brgen::typing {
             typing_expr(selector->target);
         }
         else {
-            throw UnsupportedError{expr->loc};
+            unsupported(expr);
         }
     }
 

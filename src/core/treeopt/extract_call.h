@@ -21,7 +21,7 @@ namespace brgen::treeopt {
             }
             if (auto b = ast::as<ast::Binary>(c);
                 b && b->op == ast::BinaryOp::assign &&
-                b->right->type == ast::ObjectType::call) {
+                b->right->type == ast::NodeType::call) {
                 extract_call(h, b->left);
                 auto call = ast::as<ast::Call>(b->right);
                 extract_call(h, call->expr_type);

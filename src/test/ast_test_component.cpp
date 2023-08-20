@@ -24,7 +24,7 @@ namespace brgen::ast {
         }
     }
 
-    ::testing::AssertionResult isNotError(std::optional<StreamError>& v, FileSet& files, lexer::FileIndex index) {
+    ::testing::AssertionResult isNotError(std::optional<SourceError>& v, FileSet& files, lexer::FileIndex index) {
         if (!v) {
             return ::testing::AssertionSuccess();
         }

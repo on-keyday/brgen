@@ -16,6 +16,10 @@ namespace brgen {
     using namespace utils::helper::either;
     namespace either = utils::helper::either;
 
+    constexpr auto unexpect(auto&&... e) {
+        return either::unexpected(e...);
+    }
+
     struct File {
        private:
         friend struct FileSet;
@@ -74,9 +78,9 @@ namespace brgen {
         }
 
        public:
-        StreamError error(std::string&& msg, lexer::Pos pos) {
+        SourceError error(std::string&& msg, lexer::Pos pos) {
             auto [src, loc] = dump(pos);
-            return StreamError{
+            return SourceError{
                 std::move(msg),
                 file_name.generic_string(),
                 loc,
@@ -101,7 +105,7 @@ namespace brgen {
             std::error_code err;
             path = fs::canonical(path, err);
             if (err) {
-                return either::unexpected(err);
+                return unexpect(err);
             }
             if (auto found = files.find(path); found != files.end()) {
                 return found->second.file;
@@ -131,10 +135,10 @@ namespace brgen {
             return file;
         }
 
-        StreamError error(std::string&& msg, lexer::Loc loc) {
+        SourceError error(std::string&& msg, lexer::Loc loc) {
             auto got = get_input(loc.file);
             if (!got) {
-                return StreamError{
+                return SourceError{
                     .msg = std::move(msg),
                     .file = "<unknown source>",
                     .loc = {0, 0},

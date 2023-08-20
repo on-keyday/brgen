@@ -14,7 +14,7 @@
 
 namespace brgen::ast {
 
-    enum class ObjectType {
+    enum class NodeType {
         program,
         expr = 0x010000,
         int_literal,
@@ -46,59 +46,59 @@ namespace brgen::ast {
         bool_type,
     };
 
-    constexpr const char* object_type_to_string(ObjectType type) {
+    constexpr const char* node_type_to_string(NodeType type) {
         switch (type) {
-            case ObjectType::program:
+            case NodeType::program:
                 return "program";
-            case ObjectType::expr:
+            case NodeType::expr:
                 return "expr";
-            case ObjectType::int_literal:
+            case NodeType::int_literal:
                 return "int_literal";
-            case ObjectType::bool_literal:
+            case NodeType::bool_literal:
                 return "bool_literal";
-            case ObjectType::binary:
+            case NodeType::binary:
                 return "binary";
-            case ObjectType::unary:
+            case NodeType::unary:
                 return "unary";
-            case ObjectType::cond:
+            case NodeType::cond:
                 return "cond";
-            case ObjectType::ident:
+            case NodeType::ident:
                 return "ident";
-            case ObjectType::call:
+            case NodeType::call:
                 return "call";
-            case ObjectType::if_:
+            case NodeType::if_:
                 return "if";
-            case ObjectType::member_access:
+            case NodeType::member_access:
                 return "member_access";
-            case ObjectType::paren:
+            case NodeType::paren:
                 return "paren";
-            case ObjectType::tmp_var:
+            case NodeType::tmp_var:
                 return "tmp_var";
-            case ObjectType::block_expr:
+            case NodeType::block_expr:
                 return "block_expr";
-            case ObjectType::stmt:
+            case NodeType::stmt:
                 return "stmt";
-            case ObjectType::for_:
+            case NodeType::for_:
                 return "for";
-            case ObjectType::field:
+            case NodeType::field:
                 return "field";
-            case ObjectType::fmt:
+            case NodeType::fmt:
                 return "fmt";
-            case ObjectType::indent_scope:
+            case NodeType::indent_scope:
                 return "indent_scope";
-            case ObjectType::type:
+            case NodeType::type:
                 return "type";
-            case ObjectType::int_type:
+            case NodeType::int_type:
                 return "int_type";
-            case ObjectType::ident_type:
+            case NodeType::ident_type:
                 return "ident_type";
-            case ObjectType::int_literal_type:
+            case NodeType::int_literal_type:
                 return "int_literal_type";
-            case ObjectType::str_literal_type:
+            case NodeType::str_literal_type:
                 return "str_literal_type";
-            case ObjectType::void_type:
+            case NodeType::void_type:
                 return "void_type";
-            case ObjectType::bool_type:
+            case NodeType::bool_type:
                 return "bool_type";
             default:
                 return "unknown";
@@ -107,7 +107,7 @@ namespace brgen::ast {
 
     // abstract
     struct Node {
-        const ObjectType type;
+        const NodeType type;
         lexer::Loc loc;
 
         virtual ~Node() {}
@@ -117,39 +117,39 @@ namespace brgen::ast {
         }
 
         void basic_info(auto&& field) const {
-            field("object_type", object_type_to_string(type));
+            field("node_type", node_type_to_string(type));
             field("loc", loc);
         }
 
        protected:
-        constexpr Node(lexer::Loc l, ObjectType t)
+        constexpr Node(lexer::Loc l, NodeType t)
             : loc(l), type(t) {}
     };
 
     struct Type : Node {
        protected:
-        constexpr Type(lexer::Loc l, ObjectType t)
+        constexpr Type(lexer::Loc l, NodeType t)
             : Node(l, t) {}
     };
 
     struct Expr : Node {
-        static constexpr ObjectType object_type = ObjectType::ident_type;
+        static constexpr NodeType node_type = NodeType::ident_type;
         std::shared_ptr<Type> expr_type;
 
        protected:
-        constexpr Expr(lexer::Loc l, ObjectType t)
+        constexpr Expr(lexer::Loc l, NodeType t)
             : Node(l, t) {}
     };
 
     struct Stmt : Node {
        protected:
-        constexpr Stmt(lexer::Loc l, ObjectType t)
+        constexpr Stmt(lexer::Loc l, NodeType t)
             : Node(l, t) {}
     };
 
     struct Literal : Expr {
        protected:
-        constexpr Literal(lexer::Loc l, ObjectType t)
+        constexpr Literal(lexer::Loc l, NodeType t)
             : Expr(l, t) {}
     };
 
@@ -180,14 +180,14 @@ namespace brgen::ast {
     };
 
     struct Ident : Expr {
-        static constexpr ObjectType object_type = ObjectType::ident;
+        static constexpr NodeType node_type = NodeType::ident;
         std::string ident;
         define_frame frame;
         std::weak_ptr<Ident> base;
         IdentUsage usage = IdentUsage::unknown;
 
         Ident(lexer::Loc l, std::string&& i)
-            : Expr(l, ObjectType::ident), ident(std::move(i)) {}
+            : Expr(l, NodeType::ident), ident(std::move(i)) {}
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
@@ -201,7 +201,7 @@ namespace brgen::ast {
     // field
     struct Fmt;
     struct Field : Stmt {
-        static constexpr ObjectType object_type = ObjectType::field;
+        static constexpr NodeType node_type = NodeType::field;
         std::shared_ptr<Ident> ident;
         lexer::Loc colon_loc;
         std::shared_ptr<Type> field_type;
@@ -209,7 +209,7 @@ namespace brgen::ast {
         std::weak_ptr<Fmt> belong;
 
         Field(lexer::Loc l)
-            : Stmt(l, ObjectType::field) {}
+            : Stmt(l, NodeType::field) {}
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
@@ -237,12 +237,12 @@ namespace brgen::ast {
     // statements
 
     struct IndentScope : Stmt {
-        static constexpr ObjectType object_type = ObjectType::indent_scope;
+        static constexpr NodeType node_type = NodeType::indent_scope;
         node_list elements;
         define_frame defs;
 
         IndentScope(lexer::Loc l)
-            : Stmt(l, ObjectType::indent_scope) {}
+            : Stmt(l, NodeType::indent_scope) {}
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
@@ -255,12 +255,12 @@ namespace brgen::ast {
     };
 
     struct Fmt : Stmt {
-        static constexpr ObjectType object_type = ObjectType::fmt;
+        static constexpr NodeType node_type = NodeType::fmt;
         std::string ident;
         std::shared_ptr<IndentScope> scope;
         std::weak_ptr<Fmt> belong;
         Fmt(lexer::Loc l)
-            : Stmt(l, ObjectType::fmt) {}
+            : Stmt(l, NodeType::fmt) {}
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
@@ -271,11 +271,11 @@ namespace brgen::ast {
     };
 
     struct For : Stmt {
-        static constexpr ObjectType object_type = ObjectType::for_;
+        static constexpr NodeType node_type = NodeType::for_;
         std::shared_ptr<IndentScope> block;
 
         For(lexer::Loc l)
-            : Stmt(l, ObjectType::for_) {}
+            : Stmt(l, NodeType::for_) {}
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
@@ -287,12 +287,12 @@ namespace brgen::ast {
     // exprs
 
     struct Call : Expr {
-        static constexpr ObjectType object_type = ObjectType::call;
+        static constexpr NodeType node_type = NodeType::call;
         std::shared_ptr<Expr> callee;
         std::shared_ptr<Expr> arguments;
         lexer::Loc end_loc;
         Call(lexer::Loc l, std::shared_ptr<Expr>&& callee)
-            : Expr(l, ObjectType::call), callee(std::move(callee)) {}
+            : Expr(l, NodeType::call), callee(std::move(callee)) {}
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
@@ -305,11 +305,11 @@ namespace brgen::ast {
     };
 
     struct Paren : Expr {
-        static constexpr ObjectType object_type = ObjectType::paren;
+        static constexpr NodeType node_type = NodeType::paren;
         std::shared_ptr<Expr> expr;
         lexer::Loc end_loc;
         Paren(lexer::Loc l)
-            : Expr(l, ObjectType::paren) {}
+            : Expr(l, NodeType::paren) {}
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
@@ -321,13 +321,13 @@ namespace brgen::ast {
     };
 
     struct If : Expr {
-        static constexpr ObjectType object_type = ObjectType::if_;
+        static constexpr NodeType node_type = NodeType::if_;
         std::shared_ptr<Expr> cond;
         std::shared_ptr<IndentScope> block;
         std::shared_ptr<Node> els;
 
         constexpr If(lexer::Loc l)
-            : Expr(l, ObjectType::if_) {}
+            : Expr(l, NodeType::if_) {}
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
@@ -340,12 +340,12 @@ namespace brgen::ast {
     };
 
     struct Unary : Expr {
-        static constexpr ObjectType object_type = ObjectType::unary;
+        static constexpr NodeType node_type = NodeType::unary;
         std::shared_ptr<Expr> target;
         UnaryOp op;
 
         constexpr Unary(lexer::Loc l, UnaryOp p)
-            : Expr(l, ObjectType::unary), op(p) {}
+            : Expr(l, NodeType::unary), op(p) {}
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
@@ -358,13 +358,13 @@ namespace brgen::ast {
     };
 
     struct Binary : Expr {
-        static constexpr ObjectType object_type = ObjectType::binary;
+        static constexpr NodeType node_type = NodeType::binary;
         std::shared_ptr<Expr> left;
         std::shared_ptr<Expr> right;
         BinaryOp op;
 
         Binary(lexer::Loc l, std::shared_ptr<Expr>&& left, BinaryOp op)
-            : Expr(l, ObjectType::binary), left(std::move(left)), op(op) {}
+            : Expr(l, NodeType::binary), left(std::move(left)), op(op) {}
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
@@ -378,7 +378,7 @@ namespace brgen::ast {
     };
 
     struct MemberAccess : Expr {
-        static constexpr ObjectType object_type = ObjectType::member_access;
+        static constexpr NodeType node_type = NodeType::member_access;
         std::shared_ptr<Expr> target;
         std::string name;
 
@@ -391,18 +391,18 @@ namespace brgen::ast {
         }
 
         MemberAccess(lexer::Loc l, std::shared_ptr<Expr>&& t, std::string&& n)
-            : Expr(l, ObjectType::member_access), target(std::move(t)), name(std::move(n)) {}
+            : Expr(l, NodeType::member_access), target(std::move(t)), name(std::move(n)) {}
     };
 
     struct Cond : Expr {
-        static constexpr ObjectType object_type = ObjectType::cond;
+        static constexpr NodeType node_type = NodeType::cond;
         std::shared_ptr<Expr> then;
         std::shared_ptr<Expr> cond;
         lexer::Loc els_loc;
         std::shared_ptr<Expr> els;
 
         Cond(lexer::Loc l, std::shared_ptr<Expr>&& then)
-            : Expr(l, ObjectType::cond), then(std::move(then)) {}
+            : Expr(l, NodeType::cond), then(std::move(then)) {}
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
@@ -417,7 +417,7 @@ namespace brgen::ast {
 
     // literals
     struct IntLiteral : Literal {
-        static constexpr ObjectType object_type = ObjectType::int_literal;
+        static constexpr NodeType node_type = NodeType::int_literal;
         std::string raw;
 
         template <class T>
@@ -439,11 +439,11 @@ namespace brgen::ast {
         }
 
         IntLiteral(lexer::Loc l, std::string&& t)
-            : Literal(l, ObjectType::int_literal), raw(std::move(t)) {}
+            : Literal(l, NodeType::int_literal), raw(std::move(t)) {}
     };
 
     struct BoolLiteral : Literal {
-        static constexpr ObjectType object_type = ObjectType::bool_literal;
+        static constexpr NodeType node_type = NodeType::bool_literal;
         bool value;
 
         void as_json(Debug& buf) const override {
@@ -454,18 +454,18 @@ namespace brgen::ast {
         }
 
         BoolLiteral(lexer::Loc l, bool t)
-            : Literal(l, ObjectType::bool_literal), value(t) {}
+            : Literal(l, NodeType::bool_literal), value(t) {}
     };
 
     // types
 
     struct IntegerType : Type {
-        static constexpr ObjectType object_type = ObjectType::int_type;
+        static constexpr NodeType node_type = NodeType::int_type;
         std::string raw;
         size_t bit_size = 0;
 
         IntegerType(lexer::Loc l, std::string&& token, size_t bit_size)
-            : Type(l, ObjectType::int_type), raw(std::move(token)), bit_size(bit_size) {}
+            : Type(l, NodeType::int_type), raw(std::move(token)), bit_size(bit_size) {}
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
@@ -476,7 +476,7 @@ namespace brgen::ast {
     };
 
     struct IntLiteralType : Type {
-        static constexpr ObjectType object_type = ObjectType::int_literal_type;
+        static constexpr NodeType node_type = NodeType::int_literal_type;
         std::weak_ptr<IntLiteral> base;
         mutable std::optional<std::uint8_t> bit_size;
 
@@ -525,15 +525,15 @@ namespace brgen::ast {
         }
 
         IntLiteralType(const std::shared_ptr<IntLiteral>& ty)
-            : Type(ty->loc, ObjectType::int_literal_type), base(ty) {}
+            : Type(ty->loc, NodeType::int_literal_type), base(ty) {}
     };
 
     struct IdentType : Type {
-        static constexpr ObjectType object_type = ObjectType::ident_type;
+        static constexpr NodeType node_type = NodeType::ident_type;
         std::string ident;
         define_frame frame;
         IdentType(lexer::Loc l, std::string&& token, define_frame&& frame)
-            : Type(l, ObjectType::ident_type), ident(std::move(token)), frame(std::move(frame)) {}
+            : Type(l, NodeType::ident_type), ident(std::move(token)), frame(std::move(frame)) {}
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
@@ -543,10 +543,10 @@ namespace brgen::ast {
     };
 
     struct VoidType : Type {
-        static constexpr ObjectType object_type = ObjectType::void_type;
+        static constexpr NodeType node_type = NodeType::void_type;
 
         VoidType(lexer::Loc l)
-            : Type(l, ObjectType::void_type) {}
+            : Type(l, NodeType::void_type) {}
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
@@ -555,10 +555,10 @@ namespace brgen::ast {
     };
 
     struct BoolType : Type {
-        static constexpr ObjectType object_type = ObjectType::bool_type;
+        static constexpr NodeType node_type = NodeType::bool_type;
 
         BoolType(lexer::Loc l)
-            : Type(l, ObjectType::bool_type) {}
+            : Type(l, NodeType::bool_type) {}
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
@@ -571,13 +571,13 @@ namespace brgen::ast {
         std::optional<std::string> mid;
 
         StrLiteralType(lexer::Loc loc, std::string&& str)
-            : Type(loc, ObjectType::str_literal_type) {}
+            : Type(loc, NodeType::str_literal_type) {}
     };
 
     void debug_def_frames(Debug& d, const define_frame& f);
 
     struct Program : Node {
-        static constexpr ObjectType object_type = ObjectType::program;
+        static constexpr NodeType node_type = NodeType::program;
         node_list elements;
         define_frame defs;
 
@@ -590,7 +590,7 @@ namespace brgen::ast {
         }
 
         Program()
-            : Node(lexer::Loc{}, ObjectType::program) {}
+            : Node(lexer::Loc{}, NodeType::program) {}
     };
 
     inline void debug_defs(Debug& d, const define_frame& defs) {
@@ -623,7 +623,7 @@ namespace brgen::ast {
     template <class T>
     constexpr T* as(auto&& t) {
         Node* v = std::to_address(t);
-        if (v && v->type == T::object_type) {
+        if (v && v->type == T::node_type) {
             return static_cast<T*>(v);
         }
         return nullptr;
@@ -631,7 +631,7 @@ namespace brgen::ast {
 
     constexpr Expr* as_Expr(auto&& t) {
         Node* v = std::to_address(t);
-        if (v && int(v->type) & int(ObjectType::expr)) {
+        if (v && int(v->type) & int(NodeType::expr)) {
             return static_cast<Expr*>(v);
         }
         return nullptr;

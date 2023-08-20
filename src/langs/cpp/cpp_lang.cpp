@@ -77,7 +77,7 @@ namespace brgen::cpp_lang {
             w->write(")");
         }
         else if (auto if_ = ast::as<ast::If>(expr)) {
-            if (if_->expr_type->type == ast::ObjectType::void_type) {
+            if (if_->expr_type->type == ast::NodeType::void_type) {
                 write_if_stmt(w, if_, false);
             }
             else {
@@ -102,10 +102,10 @@ namespace brgen::cpp_lang {
         }
     }
 
-    void write_block(Context& w, ast::node_list& elements, bool last_should_be_return) {
+    void write_block(const SectionPtr& w, ast::node_list& elements, bool last_should_be_return) {
         for (auto it = elements.begin(); it != elements.end(); it++) {
             auto& element = *it;
-            auto stmt = w.w->add_section(".");
+            auto stmt = w->add_section(".");
             if (last_should_be_return && it == --elements.end()) {
                 stmt->write("return ");
             }
@@ -117,7 +117,7 @@ namespace brgen::cpp_lang {
                 if (f->ident) {
                     stmt->writeln("int ", f->ident->ident, ";");
                 }
-                if (f->field_type->type != ast::ObjectType::int_type) {
+                if (f->field_type->type != ast::NodeType::int_type) {
                 }
             }
         }

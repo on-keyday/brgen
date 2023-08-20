@@ -6,7 +6,7 @@
 #include "../common/util.h"
 
 namespace brgen {
-    struct StreamError {
+    struct SourceError {
         std::string msg;
         std::string file;
         utils::code::SrcLoc loc;
@@ -19,10 +19,29 @@ namespace brgen {
                     src);
             return buf;
         }
+    };
 
-        std::string what() {
-            return to_string();
+    struct LocationEntry {
+        std::string msg;
+        lexer::Loc loc;
+    };
+
+    struct LocationError {
+        std::vector<LocationEntry> locations;
+        [[noreturn]] void report() {
+            throw *this;
+        }
+
+        [[nodiscard]] LocationError& error(lexer::Loc loc, auto&&... msg) {
+            std::string buf;
+            appends(buf, msg...);
+            locations.push_back(LocationEntry{std::move(buf), loc});
+            return *this;
         }
     };
+
+    [[nodiscard]] inline LocationError error(lexer::Loc loc, auto&&... msg) {
+        return LocationError{}.error(loc, msg...);
+    }
 
 }  // namespace brgen

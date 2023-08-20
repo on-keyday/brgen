@@ -68,29 +68,6 @@ namespace brgen::ast {
             report_error(std::move(buf), loc.pos);
         }
 
-        auto fallback() {
-            maybe_parse();
-            auto ptr = cur;
-            iterator prev;
-            bool was_begin = ptr == tokens.begin();
-            bool was_end = ptr == tokens.end();
-            if (!was_begin && was_end) {
-                prev = std::prev(ptr);
-            }
-            return utils::helper::defer([=, this] {
-                if (was_begin) {
-                    cur = tokens.begin();
-                }
-                else if (was_end) {
-                    auto cp = prev;
-                    cur = ++cp;
-                }
-                else {
-                    cur = ptr;
-                }
-            });
-        }
-
         // end of stream
         bool eos() {
             maybe_parse();
@@ -215,11 +192,11 @@ namespace brgen::ast {
         }
 
        private:
-        std::optional<StreamError> enter_stream(auto&& fn) {
+        std::optional<SourceError> enter_stream(auto&& fn) {
             try {
                 cur = tokens.begin();
                 fn();
-            } catch (StreamError& err) {
+            } catch (SourceError& err) {
                 return err;
             }
             return std::nullopt;
@@ -281,7 +258,7 @@ namespace brgen::ast {
         ContextInfo info;
 
        public:
-        std::optional<StreamError> enter_stream(File* file, auto&& fn) {
+        std::optional<SourceError> enter_stream(File* file, auto&& fn) {
             stream.info = &info;
             return stream.enter_stream([&] {
                 stream.input = file;
