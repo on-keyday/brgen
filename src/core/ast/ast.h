@@ -262,6 +262,13 @@ namespace brgen::ast {
         Fmt(lexer::Loc l)
             : Stmt(l, NodeType::fmt) {}
 
+        std::string ident_path() {
+            if (auto parent = belong.lock()) {
+                return parent->ident_path() + "/" + ident;
+            }
+            return ident;
+        }
+
         void as_json(Debug& buf) const override {
             auto field = buf.object();
             basic_info(field);

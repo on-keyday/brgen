@@ -4,6 +4,7 @@
 #include "core/ast/translated.h"
 #include <core/writer/section.h>
 #include "cpp_lang.h"
+#include <core/common/error.h>
 
 namespace brgen::cpp_lang {
     using writer::SectionPtr;
@@ -113,12 +114,22 @@ namespace brgen::cpp_lang {
                 write_expr(stmt, a);
                 stmt->writeln(";");
             }
-            if (auto f = ast::as<ast::Field>(element)) {
+            else if (auto f = ast::as<ast::Field>(element)) {
                 if (f->ident) {
                     stmt->writeln("int ", f->ident->ident, ";");
                 }
                 if (f->field_type->type != ast::NodeType::int_type) {
+                    error(f->field_type->loc, "currently int type is only supported").report();
                 }
+                if (auto b = f->belong.lock()) {
+                    auto d = w->lookup("/global/def/" + b->ident_path());
+                    d->writeln("int ", f->ident->ident, ";");
+                }
+            }
+            else if (auto n = ast::as<ast::Fmt>(element)) {
+                auto def = w->add_section("/global/def/" + n->ident_path(), true);
+                def->head().writeln("struct ", n->ident, " {");
+                def->foot().writeln("};");
             }
         }
     }

@@ -385,7 +385,7 @@ namespace brgen::ast {
             lexer::Token token;
             std::shared_ptr<Ident> ident;
             if (expr) {
-                if (expr->node_type != NodeType::ident) {
+                if (expr->type != NodeType::ident) {
                     return expr;
                 }
                 s.skip_space();

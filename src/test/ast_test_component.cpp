@@ -53,6 +53,7 @@ namespace brgen::ast {
             add_file("step5.bgn", 5);
             add_file("step6.bgn", 6);
             add_file("step7.bgn", 7);
+            add_file("step8.bgn", 8);
         }
     };
 
@@ -78,7 +79,7 @@ namespace brgen::ast {
 
     INSTANTIATE_TEST_SUITE_P(AstTests,
                              AstTest,
-                             testing::Values(1, 2, 3, 4, 5, 6, 7));
+                             testing::Values(1, 2, 3, 4, 5, 6, 7, 8));
 }  // namespace brgen::ast
 
 /*

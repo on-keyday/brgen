@@ -1,0 +1,4 @@
+
+fmt Data:
+    data1 :u32
+    data2 :u32
