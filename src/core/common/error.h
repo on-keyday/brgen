@@ -28,6 +28,8 @@ namespace brgen {
     };
 
     struct SourceError {
+        using error_buffer_type = std::string;
+
         std::vector<SourceEntry> errs;
         std::string to_string() {
             std::string buf;
@@ -42,6 +44,8 @@ namespace brgen {
             }
         }
     };
+
+    static_assert(either::internal::has_error_buffer_type<SourceError>);
 
     struct LocationEntry {
         std::string msg;
@@ -68,5 +72,9 @@ namespace brgen {
 
     template <class T>
     using result = expected<T, LocationError>;
+
+    inline std::string src_error_to_string(SourceError&& err) {
+        return err.to_string();
+    }
 
 }  // namespace brgen

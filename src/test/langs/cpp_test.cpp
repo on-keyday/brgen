@@ -7,10 +7,7 @@ using namespace brgen;
 
 int main(int argc, char** argv) {
     set_handler([](auto& a, auto i, auto fs) {
-        auto ok = typing::typing_with_error(a);
-        if (!ok) {
-            ASSERT_TRUE(::testing::AssertionFailure() << ok.error());
-        }
+        typing::typing_with_error(a).transform_error(to_source_error(fs)).value();
         cpp_lang::Context ctx;
         cpp_lang::entry(ctx, a);
         ASSERT_TRUE(ctx.w);

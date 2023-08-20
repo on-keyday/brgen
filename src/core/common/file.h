@@ -143,7 +143,7 @@ namespace brgen {
         }
     };
 
-    auto to_source_error(FileSet& fs) {
+    inline auto to_source_error(FileSet& fs) {
         return [&](LocationError&& err) {
             SourceError src;
             for (auto& loc : err.locations) {

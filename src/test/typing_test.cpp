@@ -6,10 +6,7 @@ using namespace brgen;
 
 int main(int argc, char** argv) {
     set_handler([](auto& a, File* input, FileSet& fs) {
-        auto result = typing::typing_with_error(a);
-        if (!result) {
-            ASSERT_TRUE(::testing::AssertionFailure() << result.error());
-        }
+        typing::typing_with_error(a).transform_error(to_source_error(fs)).value();
         Debug d;
         d.value(a);
         add_result(std::move(d));

@@ -66,17 +66,15 @@ namespace brgen::ast {
         ast::Context ctx;
         auto input = files.get_input(GetParam());
         ASSERT_TRUE(::testing::AssertionResult(bool(input)) << input->path());
-        std::shared_ptr<ast::Program> prog;
-        auto err = ctx.enter_stream(input, [&](ast::Stream& s) {
-                          auto p = ast::Parser{s};
-                          prog = p.parse();
-                      })
-                       .transform_error([&](LocationError&& err) {
-                           return files.error();
-                       });
-        ASSERT_TRUE(isNotError(err, files, GetParam()));
+        auto prog = ctx.enter_stream(input, [&](ast::Stream& s) {
+                           auto p = ast::Parser{s};
+                           return p.parse();
+                       })
+                        .transform_error(to_source_error(files))
+                        .transform_error(src_error_to_string);
+        ASSERT_TRUE(::testing::AssertionResult(prog) << prog.error_or(""));
         if (handler) {
-            handler(prog, input, files);
+            ASSERT_NO_THROW((handler(*prog, input, files)));
         }
     }
 
