@@ -4,6 +4,7 @@
 #include <string>
 #include <number/to_string.h>
 #include <escape/escape.h>
+#include <optional>
 
 namespace brgen {
     auto nums(auto v, int radix = 10) {
