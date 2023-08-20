@@ -4,9 +4,11 @@
 #include "../lexer/token.h"
 #include <code/src_location.h>
 #include "../common/util.h"
+#include "expected.h"
 
 namespace brgen {
-    struct SourceError {
+    struct SourceEntry {
+        using error_buffer_type = std::string;
         std::string msg;
         std::string file;
         utils::code::SrcLoc loc;
@@ -14,10 +16,30 @@ namespace brgen {
 
         std::string to_string() {
             std::string buf;
+            error(buf);
+            return buf;
+        }
+
+        void error(auto&& buf) {
             appends(buf, "error: ", msg, "\n",
                     file, ":", nums(loc.line + 1), ":", nums(loc.pos + 1), ":\n",
                     src);
+        }
+    };
+
+    struct SourceError {
+        std::vector<SourceEntry> errs;
+        std::string to_string() {
+            std::string buf;
+            error(buf);
             return buf;
+        }
+
+        void error(auto&& buf) {
+            for (auto& err : errs) {
+                err.error(buf);
+                buf.push_back('\n');
+            }
         }
     };
 
@@ -43,5 +65,8 @@ namespace brgen {
     [[nodiscard]] inline LocationError error(lexer::Loc loc, auto&&... msg) {
         return LocationError{}.error(loc, msg...);
     }
+
+    template <class T>
+    using result = expected<T, LocationError>;
 
 }  // namespace brgen

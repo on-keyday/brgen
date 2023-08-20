@@ -2,6 +2,8 @@
 #pragma once
 #include "core/ast/ast.h"
 #include "core/writer/section.h"
+#include "core/common/error.h"
+#include "core/common/expected.h"
 
 namespace brgen::cpp_lang {
 
@@ -9,5 +11,5 @@ namespace brgen::cpp_lang {
         writer::SectionPtr w;
     };
 
-    void entry(Context& w, std::shared_ptr<ast::Program>& p);
+    result<void> entry(Context& w, std::shared_ptr<ast::Program>& p);
 }  // namespace brgen::cpp_lang

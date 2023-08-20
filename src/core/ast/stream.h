@@ -23,8 +23,8 @@ namespace brgen::ast {
         ContextInfo* info = nullptr;
         File* input;
 
-        [[noreturn]] void report_error(std::string&& msg, lexer::Pos pos) {
-            throw input->error(std::move(msg), pos);
+        [[noreturn]] void report_error(std::string&& msg, lexer::Loc pos) {
+            error(pos, msg).report();
         }
 
         Stream() = default;
@@ -37,35 +37,31 @@ namespace brgen::ast {
                     return;
                 }
                 if (token->tag == lexer::Tag::error) {
-                    report_error(std::move(token->token), token->loc.pos);
+                    report_error(std::move(token->token), token->loc);
                 }
                 tokens.push_back(std::move(*token));
                 cur = std::prev(tokens.end());
             }
         }
 
-        lexer::Pos last_pos() {
+        lexer::Loc last_loc() {
             if (eos()) {
                 auto copy = cur;
                 copy--;
-                return {copy->loc.pos.end, copy->loc.pos.end + 1};
+                return {lexer::Pos{copy->loc.pos.end, copy->loc.pos.end + 1}, copy->loc.file};
             }
             else {
-                return cur->loc.pos;
+                return cur->loc;
             }
         }
 
        public:
         [[noreturn]] void report_error(auto&&... data) {
-            std::string buf;
-            appends(buf, "parser error:", data...);
-            report_error(std::move(buf), last_pos());
+            error(last_loc(), "parser error: ", data...).report();
         }
 
         [[noreturn]] void report_error(lexer::Loc loc, auto&&... data) {
-            std::string buf;
-            appends(buf, "parser error:", data...);
-            report_error(std::move(buf), loc.pos);
+            error(loc, "parser error: ", data...).report();
         }
 
         // end of stream
@@ -142,7 +138,7 @@ namespace brgen::ast {
                 append(buf, found(cur));
                 pos = cur->loc.pos;
             }
-            report_error(std::move(buf), pos);
+            report_error(std::move(buf), last_loc());
         }
 
        public:
@@ -192,14 +188,13 @@ namespace brgen::ast {
         }
 
        private:
-        std::optional<SourceError> enter_stream(auto&& fn) {
+        auto enter_stream(auto&& fn) -> result<std::invoke_result_t<decltype(fn)>> {
             try {
                 cur = tokens.begin();
-                fn();
-            } catch (SourceError& err) {
-                return err;
+                return fn();
+            } catch (LocationError& err) {
+                return unexpect(std::move(err));
             }
-            return std::nullopt;
         }
     };
 
@@ -258,11 +253,11 @@ namespace brgen::ast {
         ContextInfo info;
 
        public:
-        std::optional<SourceError> enter_stream(File* file, auto&& fn) {
+        auto enter_stream(File* file, auto&& fn) {
             stream.info = &info;
             return stream.enter_stream([&] {
                 stream.input = file;
-                fn(stream);
+                return fn(stream);
             });
         }
     };

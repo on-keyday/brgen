@@ -115,39 +115,70 @@ namespace brgen::cpp_lang {
                 stmt->writeln(";");
             }
             else if (auto f = ast::as<ast::Field>(element)) {
-                if (f->ident) {
-                    stmt->writeln("int ", f->ident->ident, ";");
-                }
                 if (f->field_type->type != ast::NodeType::int_type) {
                     error(f->field_type->loc, "currently int type is only supported").report();
                 }
-                if (auto b = f->belong.lock()) {
-                    auto d = w->lookup("/global/def/" + b->ident_path());
-                    d->writeln("int ", f->ident->ident, ";");
+                if (f->ident) {
+                    stmt->writeln("int ", f->ident->ident, ";");
+                    if (auto b = f->belong.lock()) {
+                        auto path = "/global/struct/def/" + b->ident_path() + "/" + f->ident->ident;
+                        auto found = w->lookup(path);
+                        if (!found) {
+                            auto d = w->add_section(path);
+                            d->writeln("int ", f->ident->ident, ";");
+                        }
+                    }
                 }
             }
             else if (auto n = ast::as<ast::Fmt>(element)) {
-                auto def = w->add_section("/global/def/" + n->ident_path(), true);
-                def->head().writeln("struct ", n->ident, " {");
-                def->foot().writeln("};");
+                auto path = n->ident_path();
+                // add structs
+                {
+                    auto dec = w->add_section("/global/struct/dec/" + path, true);
+                    auto def = w->add_section("/global/struct/def/" + path, true);
+                    def->head().writeln("struct ", n->ident, " {");
+                    def->foot().writeln("};");
+                }
+                // add functions
+                {
+                    auto fn_dec = w->add_section("/global/func/dec/" + path);
+                    auto fn_def = w->add_section("/global/func/def/" + path);
+                    fn_dec->write("int ", path, "_encode();");
+                    fn_dec->write("int ", path, "_decode();");
+                    auto enc = fn_def->add_section("encode", true);
+                    auto dec = fn_def->add_section("decode");
+                    enc->head().write("int ", path, "_encode() ");
+                    dec->head().write("int ", path, "_decode() ");
+                    write_block_scope(enc, n->scope.get(), false);
+                    write_block_scope(dec, n->scope.get(), false);
+                }
             }
         }
     }
 
-    void entry(Context& w, std::shared_ptr<ast::Program>& p) {
-        auto root = writer::root();
-        root->head().writeln("#include<cstdint>");
-        root->head().writeln("#include<cstddef>");
-        auto global = root->add_section("global");
-        auto dec = global->add_section("dec");
-        dec->writeln("struct Input {std::size_t bit_index = 0; const std::uint8_t buffer[1200];};");
-        auto def = global->add_section("def");
-        auto main_ = root->add_section("main", true);
-        main_->head().writeln("int main() {");
-        main_->foot().writeln("}");
-        main_->writeln("Input input__{},*input=&input__;");
-        write_block(main_, p->elements, false);
-        w.w = root;
+    result<void> entry(Context& w, std::shared_ptr<ast::Program>& p) {
+        try {
+            auto root = writer::root();
+            root->head().writeln("#include<cstdint>");
+            root->head().writeln("#include<cstddef>");
+            auto global = root->add_section("global");
+            auto struct_ = global->add_section("struct");
+            auto struct_dec = struct_->add_section("dec");
+            struct_dec->writeln("struct Input {std::size_t bit_index = 0; const std::uint8_t buffer[1200];};");
+            auto struct_def = struct_->add_section("def");
+            auto fn = global->add_section("func");
+            auto fn_dec = fn->add_section("dec");
+            auto fn_def = fn->add_section("def");
+            auto main_ = root->add_section("main", true);
+            main_->head().writeln("int main() {");
+            main_->foot().writeln("}");
+            main_->writeln("Input input__{},*input=&input__;");
+            write_block(main_, p->elements, false);
+            w.w = root;
+        } catch (LocationError& e) {
+            return unexpect(e);
+        }
+        return {};
     }
 
 }  // namespace brgen::cpp_lang

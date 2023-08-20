@@ -412,6 +412,7 @@ namespace brgen::ast {
 
             if (field->ident) {
                 field->ident->expr_type = field->field_type;
+                field->belong = s.context()->current_fmt();
             }
 
             if (s.consume_token("(")) {

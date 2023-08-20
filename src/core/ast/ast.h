@@ -262,9 +262,9 @@ namespace brgen::ast {
         Fmt(lexer::Loc l)
             : Stmt(l, NodeType::fmt) {}
 
-        std::string ident_path() {
+        std::string ident_path(const char* sep = "_") {
             if (auto parent = belong.lock()) {
-                return parent->ident_path() + "/" + ident;
+                return parent->ident_path() + sep + ident;
             }
             return ident;
         }

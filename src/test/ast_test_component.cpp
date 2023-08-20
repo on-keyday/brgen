@@ -24,7 +24,7 @@ namespace brgen::ast {
         }
     }
 
-    ::testing::AssertionResult isNotError(std::optional<SourceError>& v, FileSet& files, lexer::FileIndex index) {
+    ::testing::AssertionResult isNotError(std::optional<SourceEntry>& v, FileSet& files, lexer::FileIndex index) {
         if (!v) {
             return ::testing::AssertionSuccess();
         }
@@ -68,9 +68,12 @@ namespace brgen::ast {
         ASSERT_TRUE(::testing::AssertionResult(bool(input)) << input->path());
         std::shared_ptr<ast::Program> prog;
         auto err = ctx.enter_stream(input, [&](ast::Stream& s) {
-            auto p = ast::Parser{s};
-            prog = p.parse();
-        });
+                          auto p = ast::Parser{s};
+                          prog = p.parse();
+                      })
+                       .transform_error([&](LocationError&& err) {
+                           return files.error();
+                       });
         ASSERT_TRUE(isNotError(err, files, GetParam()));
         if (handler) {
             handler(prog, input, files);

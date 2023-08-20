@@ -9,16 +9,10 @@
 #include <map>
 #include <variant>
 #include <file/file_view.h>
-#include <helper/expected.h>
+#include "expected.h"
 
 namespace brgen {
     namespace fs = std::filesystem;
-    using namespace utils::helper::either;
-    namespace either = utils::helper::either;
-
-    constexpr auto unexpect(auto&&... e) {
-        return either::unexpected(e...);
-    }
 
     struct File {
        private:
@@ -78,9 +72,9 @@ namespace brgen {
         }
 
        public:
-        SourceError error(std::string&& msg, lexer::Pos pos) {
+        SourceEntry error(std::string&& msg, lexer::Pos pos) {
             auto [src, loc] = dump(pos);
-            return SourceError{
+            return SourceEntry{
                 std::move(msg),
                 file_name.generic_string(),
                 loc,
@@ -135,10 +129,10 @@ namespace brgen {
             return file;
         }
 
-        SourceError error(std::string&& msg, lexer::Loc loc) {
+        SourceEntry error(std::string&& msg, lexer::Loc loc) {
             auto got = get_input(loc.file);
             if (!got) {
-                return SourceError{
+                return SourceEntry{
                     .msg = std::move(msg),
                     .file = "<unknown source>",
                     .loc = {0, 0},
@@ -148,4 +142,17 @@ namespace brgen {
             return got->error(std::move(msg), loc.pos);
         }
     };
+
+    auto to_source_error(FileSet& fs) {
+        return [&](LocationError&& err) {
+            SourceError src;
+            for (auto& loc : err.locations) {
+                src.errs.push_back(fs.error(std::move(loc.msg), loc.loc));
+            }
+            if (err.locations.size() == 0) {
+                src.errs.push_back(fs.error("unexpected errors", {}));
+            }
+            return src;
+        };
+    }
 }  // namespace brgen
