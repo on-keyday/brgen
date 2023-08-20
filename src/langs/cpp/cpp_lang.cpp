@@ -133,22 +133,23 @@ namespace brgen::cpp_lang {
             else if (auto n = ast::as<ast::Fmt>(element)) {
                 auto path = n->ident_path();
                 // add structs
+                auto dec = w->add_section("/global/struct/dec/" + path, true);
+                auto def = w->add_section("/global/struct/def/" + path, true);
                 {
-                    auto dec = w->add_section("/global/struct/dec/" + path, true);
-                    auto def = w->add_section("/global/struct/def/" + path, true);
                     def->head().writeln("struct ", n->ident, " {");
                     def->foot().writeln("};");
                 }
                 // add functions
                 {
-                    auto fn_dec = w->add_section("/global/func/dec/" + path);
+                    auto fn_dec = w->add_section("/global/def/" + path + "/member/");
                     auto fn_def = w->add_section("/global/func/def/" + path);
-                    fn_dec->write("int ", path, "_encode();");
-                    fn_dec->write("int ", path, "_decode();");
-                    auto enc = fn_def->add_section("encode", true);
+                    fn_dec->write("int encode();");
+                    fn_dec->write("int decode();");
+                    def->add_section("member");
+                    auto enc = fn_def->add_section("encode");
                     auto dec = fn_def->add_section("decode");
-                    enc->head().write("int ", path, "_encode() ");
-                    dec->head().write("int ", path, "_decode() ");
+                    enc->head().write("int ", path, "::encode() ");
+                    dec->head().write("int ", path, "::decode() ");
                     write_block_scope(enc, n->scope.get(), false);
                     write_block_scope(dec, n->scope.get(), false);
                 }

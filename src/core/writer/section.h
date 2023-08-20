@@ -66,22 +66,23 @@ namespace brgen {
                 return nullptr;
             }
 
-            std::shared_ptr<Section> add_section(std::string_view path, bool indent = false) {
+            expected<std::shared_ptr<Section>, std::string> add_section(std::string_view path, bool indent = false) {
                 auto pos = path.find_last_of("/");
                 std::shared_ptr<Section> section;
+                auto target = path;
                 if (pos != std::string_view::npos) {
                     auto contains = path.substr(0, pos);
                     section = lookup(contains);
                     if (!section) {
-                        return nullptr;
+                        return unexpect(concat("lookup of ", contains, " failed"));
                     }
-                    path = path.substr(pos + 1);
+                    target = path.substr(pos + 1);
                 }
                 else {
                     section = shared_from_this();
                 }
-                if (path == "") {  // no name not allowed
-                    return nullptr;
+                if (target == "") {  // no name not allowed
+                    return unexpect("empty path in unexpected");
                 }
                 auto set_new_section = [&] {
                     auto new_section = std::make_shared<Section>();
@@ -99,7 +100,7 @@ namespace brgen {
                 if (path == "..") {  // anonymous to parent
                     section = section->parent.lock();
                     if (!section) {
-                        return nullptr;
+                        return unexpect();
                     }
                     return set_new_section();
                 }

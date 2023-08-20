@@ -21,4 +21,10 @@ namespace brgen {
         return mid;
     }
 
+    inline std::string concat(auto&&... msg) {
+        std::string buf;
+        appends(buf, msg...);
+        return buf;
+    }
+
 }  // namespace brgen
