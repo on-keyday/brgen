@@ -103,90 +103,81 @@ namespace brgen::cpp_lang {
         }
     }
 
+    void append_bits_to_target(writer::Writer& eb, std::string_view target, std::string_view expression) {
+        eb.writeln(target, "|=", expression, ";");
+    }
+
+    void write_decode_section(writer::Writer& eb, std::string_view target, std::string_view expression) {
+        eb.writeln("{");
+        {
+            auto sc = eb.indent_scope();
+            append_bits_to_target(eb, target, expression);
+        }
+        eb.writeln("}");
+    }
+
     void write_decode(Context& c, const SectionPtr& w, std::shared_ptr<ast::Type>& ty, std::string_view target) {
         if (ty->type != ast::NodeType::int_type) {
             error(ty->loc, "currently int type is only supported").report();
         }
         auto t = ast::as<ast::IntegerType>(ty);
-        auto write_bit = [&] {
-            auto index = [](size_t i) {
-                std::string idx = i ? concat("(input->bit_index+", nums(i), ")") : "input->bit_index";
-                return concat("std::uint32_t(", "input->buffer[(", idx, " >>3)]&",
-                              "(",
-                              "std::uint8_t(0xFF)>>(7-(", idx, " &0x7))",
-                              ")",
-                              ")");
-            };
-            if (target.size()) {
-                w->writeln(target, "= 0;");
-                w->write(target, " =");
-                for (size_t i = 0; i < t->bit_size; i++) {
-                    if (i != 0) {
-                        w->write("|");
-                    }
-                    w->write(" (", index(i), "<< ", nums(t->bit_size - 1 - i), ")");
-                }
-                w->writeln(";");
-            }
-        };
         auto s = w->add_section(".", true).value();
         auto& eb = s->head();
-        {
-            eb.writeln("{");
-            auto sc0 = eb.indent_scope();
+        auto write_decoder = [&] {
             eb.writeln(target, " = 0;");
-            eb.writeln("std::uint8_t begin_bits = (8 - (input->bit_index&0x7))&0x7;");
+            eb.writeln("std::uint8_t begin_bits = (8 - (input->bit_index & 0x7)) & 0x7;");
             auto b = t->bit_size >= 7
                          ? concat("(", nums(t->bit_size), " - begin_bits", ")")
                          : concat("(", nums(t->bit_size), " < begin_bits ? 0 :", nums(t->bit_size), "- begin_bits)");
-            eb.writeln("size_t bytes = ", b, ">>3;");
+            eb.writeln("size_t bytes = ", b, " >> 3;");
             eb.writeln("std::uint8_t end_bits = ", b, " & 0x7;");
             eb.writeln("[[assume(begin_bits < 8 && end_bits < 8)]];");
-            eb.writeln("if(begin_bits) {");
-            {
-                auto sc = eb.indent_scope();
-                eb.writeln(target, "|=",
-                           "(",
-                           "input->buffer[input->bit_index>>3]",
-                           "&",
-                           "(",
-                           "std::uint8_t(0xff)>>((input->bit_index&0x7))",
-                           ")",
-                           ")",
-                           " << (", nums(t->bit_size), " - begin_bits);");
-            }
-            eb.writeln("}");
+
+            eb.write("if(begin_bits!=0) ");
+            write_decode_section(eb, target,
+                                 concat("(", "input->buffer[input->bit_index >> 3]",
+                                        "&",
+                                        "(",
+                                        "std::uint8_t(0xff) >> (input->bit_index & 0x7)",
+                                        ")",
+                                        ")",
+                                        " << (", nums(t->bit_size), " - begin_bits);"));
+
             if (t->bit_size >= 8) {
-                eb.writeln("auto base = (input->bit_index + begin_bits)>>3;");
-                eb.writeln("for(auto i = 0;i<bytes;i++) {");
+                eb.writeln("auto base = (input->bit_index + begin_bits) >> 3;");
+                eb.writeln("[[assume(bytes == ", nums(t->bit_size / 8), " || bytes == ", nums(t->bit_size / 8 - 1), ")]];");
+                eb.writeln("for(auto i = 0; i < bytes; i++) {");
                 {
                     auto sc2 = eb.indent_scope();
-                    eb.writeln(target, "|=",
-                               "std::uint32_t(",
-                               "input->buffer[base+i]",
-                               ")",
-                               "<<",
-                               " (",
-                               nums(t->bit_size), " - ((i + 1) *8) - begin_bits",
-                               ")",
-                               ";");
+                    write_decode_section(eb, target,
+                                         concat("std::uint32_t(input->buffer[base + i])"
+                                                "<<"
+                                                " (",
+                                                nums(t->bit_size),
+                                                " - ((i + 1) * 8) - begin_bits"
+                                                ");"));
                 }
-                eb.write("}");
+                eb.writeln("}");
             }
-            eb.writeln("if(end_bits) {");
+
+            eb.write("if(end_bits!=0) ");
+            write_decode_section(eb, target,
+                                 concat("(", "input->buffer[(input->bit_index + begin_bits + (bytes << 3)) >> 3]",
+                                        ">>",
+                                        "(",
+                                        "7 - end_bits",
+                                        ")",
+                                        ");"));
+        };
+        if (target.size()) {
+            eb.write("{");
             {
-                auto sc = eb.indent_scope();
-                eb.writeln(target, "|=",
-                           "(",
-                           "input->buffer[(input->bit_index+begin_bits+(bytes<<3))>>3]",
-                           ">>",
-                           "(", "7 - end_bits", ")",
-                           ");");
+                auto sp = eb.indent_scope();
+                write_decoder();
             }
-            eb.writeln("}");
+            eb.write("}");
         }
-        eb.writeln("}");
-        w->writeln("input->bit_index+=", nums(t->bit_size), ";");
+        w->writeln("input->bit_index +=", nums(t->bit_size), ";");
     }
 
     void write_block(Context& c, const SectionPtr& w, ast::node_list& elements) {
