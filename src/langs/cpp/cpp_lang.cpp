@@ -145,8 +145,14 @@ namespace brgen::cpp_lang {
             eb.writeln("if(begin_bits) {");
             {
                 auto sc = eb.indent_scope();
-                eb.writeln(target, "|=", "input->buffer[input->bit_index>>3]&",
-                           "(std::uint8_t(0xff)>>(1+(input->bit_index&0x7)))",
+                eb.writeln(target, "|=",
+                           "(",
+                           "input->buffer[input->bit_index>>3]",
+                           "&",
+                           "(",
+                           "std::uint8_t(0xff)>>((input->bit_index&0x7))",
+                           ")",
+                           ")",
                            " << (", nums(t->bit_size), " - begin_bits);");
             }
             eb.writeln("}");
@@ -161,7 +167,7 @@ namespace brgen::cpp_lang {
                                ")",
                                "<<",
                                " (",
-                               nums(t->bit_size), " - ((i + int(bool(begin_bits!=0))) *8) - begin_bits",
+                               nums(t->bit_size), " - ((i + 1) *8) - begin_bits",
                                ")",
                                ";");
                 }
