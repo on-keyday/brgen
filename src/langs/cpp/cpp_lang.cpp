@@ -141,23 +141,19 @@ namespace brgen::cpp_lang {
                                         "std::uint8_t(0xff) >> (input->bit_index & 0x7)",
                                         ")",
                                         ")",
-                                        " << (", nums(t->bit_size), " - begin_bits);"));
+                                        " << (", nums(t->bit_size), " - begin_bits)"));
 
             if (t->bit_size >= 8) {
                 eb.writeln("auto base = (input->bit_index + begin_bits) >> 3;");
                 eb.writeln("[[assume(bytes == ", nums(t->bit_size / 8), " || bytes == ", nums(t->bit_size / 8 - 1), ")]];");
-                eb.writeln("for(auto i = 0; i < bytes; i++) {");
-                {
-                    auto sc2 = eb.indent_scope();
-                    write_decode_section(eb, target,
-                                         concat("std::uint32_t(input->buffer[base + i])"
-                                                "<<"
-                                                " (",
-                                                nums(t->bit_size),
-                                                " - ((i + 1) * 8) - begin_bits"
-                                                ");"));
-                }
-                eb.writeln("}");
+                eb.write("for(auto i = 0; i < bytes; i++) ");
+                write_decode_section(eb, target,
+                                     concat("std::uint32_t(input->buffer[base + i])"
+                                            "<<"
+                                            " (",
+                                            nums(t->bit_size),
+                                            " - ((i + 1) << 3) - begin_bits"
+                                            ")"));
             }
 
             eb.write("if(end_bits!=0) ");
@@ -167,15 +163,15 @@ namespace brgen::cpp_lang {
                                         "(",
                                         "7 - end_bits",
                                         ")",
-                                        ");"));
+                                        ")"));
         };
         if (target.size()) {
-            eb.write("{");
+            eb.writeln("{");
             {
                 auto sp = eb.indent_scope();
                 write_decoder();
             }
-            eb.write("}");
+            eb.writeln("}");
         }
         w->writeln("input->bit_index +=", nums(t->bit_size), ";");
     }

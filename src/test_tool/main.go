@@ -2,9 +2,12 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
+	"io/fs"
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sync"
 	"sync/atomic"
 )
@@ -30,16 +33,25 @@ func loadFiles(file, suffix string, do func(file string) error) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	code_dir := filepath.Join(filepath.Dir(file), "/cpp_test_code/")
 	var w sync.WaitGroup
 	var (
 		succeed_count atomic.Uint32
 		total_count   atomic.Uint32
 	)
-	for _, c := range code {
+	for i, c := range code {
 		w.Add(1)
-		go func(code string) {
+		go func(i int, code string) {
 			defer w.Done()
 			total_count.Add(1)
+			err = os.MkdirAll(code_dir, fs.ModePerm)
+			if err != nil {
+				log.Print(err)
+			}
+			err = os.WriteFile(filepath.Join(code_dir, fmt.Sprintf("%s_code%d.%[1]s", suffix, i)), []byte(code), fs.ModePerm)
+			if err != nil {
+				log.Print(err)
+			}
 			file, err := os.CreateTemp(os.TempDir(), suffix+"*."+suffix)
 			if err != nil {
 				log.Print(err)
@@ -60,7 +72,7 @@ func loadFiles(file, suffix string, do func(file string) error) {
 				return
 			}
 			succeed_count.Add(1)
-		}(c.Code)
+		}(i, c.Code)
 	}
 	w.Wait()
 	suc, total := succeed_count.Load(), total_count.Load()
