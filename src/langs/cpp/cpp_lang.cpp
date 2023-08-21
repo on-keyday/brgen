@@ -103,6 +103,86 @@ namespace brgen::cpp_lang {
         }
     }
 
+    void write_decode(Context& c, const SectionPtr& w, std::shared_ptr<ast::Type>& ty, std::string_view target) {
+        if (ty->type != ast::NodeType::int_type) {
+            error(ty->loc, "currently int type is only supported").report();
+        }
+        auto t = ast::as<ast::IntegerType>(ty);
+        auto write_bit = [&] {
+            auto index = [](size_t i) {
+                std::string idx = i ? concat("(input->bit_index+", nums(i), ")") : "input->bit_index";
+                return concat("std::uint32_t(", "input->buffer[(", idx, " >>3)]&",
+                              "(",
+                              "std::uint8_t(0xFF)>>(7-(", idx, " &0x7))",
+                              ")",
+                              ")");
+            };
+            if (target.size()) {
+                w->writeln(target, "= 0;");
+                w->write(target, " =");
+                for (size_t i = 0; i < t->bit_size; i++) {
+                    if (i != 0) {
+                        w->write("|");
+                    }
+                    w->write(" (", index(i), "<< ", nums(t->bit_size - 1 - i), ")");
+                }
+                w->writeln(";");
+            }
+        };
+        auto s = w->add_section(".", true).value();
+        auto& eb = s->head();
+        {
+            eb.writeln("{");
+            auto sc0 = eb.indent_scope();
+            eb.writeln(target, " = 0;");
+            eb.writeln("std::uint8_t begin_bits = (8 - (input->bit_index&0x7))&0x7;");
+            auto b = t->bit_size >= 7
+                         ? concat("(", nums(t->bit_size), " - begin_bits", ")")
+                         : concat("(", nums(t->bit_size), " < begin_bits ? 0 :", nums(t->bit_size), "- begin_bits)");
+            eb.writeln("size_t bytes = ", b, ">>3;");
+            eb.writeln("std::uint8_t end_bits = ", b, " & 0x7;");
+            eb.writeln("[[assume(begin_bits < 8 && end_bits < 8)]];");
+            eb.writeln("if(begin_bits) {");
+            {
+                auto sc = eb.indent_scope();
+                eb.writeln(target, "|=", "input->buffer[input->bit_index>>3]&",
+                           "(std::uint8_t(0xff)>>(1+(input->bit_index&0x7)))",
+                           " << (", nums(t->bit_size), " - begin_bits);");
+            }
+            eb.writeln("}");
+            if (t->bit_size >= 8) {
+                eb.writeln("auto base = (input->bit_index + begin_bits)>>3;");
+                eb.writeln("for(auto i = 0;i<bytes;i++) {");
+                {
+                    auto sc2 = eb.indent_scope();
+                    eb.writeln(target, "|=",
+                               "std::uint32_t(",
+                               "input->buffer[base+i]",
+                               ")",
+                               "<<",
+                               " (",
+                               nums(t->bit_size), " - ((i + int(bool(begin_bits!=0))) *8) - begin_bits",
+                               ")",
+                               ";");
+                }
+                eb.write("}");
+            }
+            eb.writeln("if(end_bits) {");
+            {
+                auto sc = eb.indent_scope();
+                eb.writeln(target, "|=",
+                           "(",
+                           "input->buffer[(input->bit_index+begin_bits+(bytes<<3))>>3]",
+                           ">>",
+                           "(", "7 - end_bits", ")",
+                           ");");
+            }
+            eb.writeln("}");
+        }
+        eb.writeln("}");
+        w->writeln("input->bit_index+=", nums(t->bit_size), ";");
+    }
+
     void write_block(Context& c, const SectionPtr& w, ast::node_list& elements) {
         for (auto it = elements.begin(); it != elements.end(); it++) {
             auto& element = *it;
@@ -115,11 +195,7 @@ namespace brgen::cpp_lang {
                 stmt->writeln(";");
             }
             else if (auto f = ast::as<ast::Field>(element)) {
-                if (f->field_type->type != ast::NodeType::int_type) {
-                    error(f->field_type->loc, "currently int type is only supported").report();
-                }
                 if (f->ident) {
-                    stmt->writeln("int ", f->ident->ident, ";");
                     if (auto b = f->belong.lock()) {
                         auto path = "/global/struct/def/" + b->ident_path() + "/member/" + f->ident->ident;
                         auto found = w->lookup(path);
@@ -128,6 +204,14 @@ namespace brgen::cpp_lang {
                             d->writeln("int ", f->ident->ident, ";");
                         }
                     }
+                    else {
+                        stmt->writeln("int ", f->ident->ident, ";");
+                    }
+                }
+                if (c.mode == WriteMode::encode) {
+                }
+                else if (c.mode == WriteMode::decode) {
+                    write_decode(c, w, f->field_type, f->ident ? f->ident->ident : "");
                 }
             }
             else if (auto n = ast::as<ast::Fmt>(element)) {
