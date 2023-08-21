@@ -9,10 +9,18 @@ int main(int argc, char** argv) {
     set_handler([](auto& a, auto i, auto fs) {
         typing::typing_with_error(a).transform_error(to_source_error(fs)).value();
         cpp_lang::Context ctx;
-        cpp_lang::entry(ctx, a);
-        ASSERT_TRUE(ctx.w);
+        auto w = cpp_lang::entry(ctx, a).transform_error(to_source_error(fs)).value();
         Debug d;
-        d.string(ctx.w->flush());
+        {
+            auto field = d.object();
+            field("sections", [&] {
+                auto field = d.array();
+                w->dump_section([&](std::string_view path) {
+                    field(path);
+                });
+            });
+            field("code", w->flush());
+        }
         add_result(std::move(d));
     });
     ::testing::InitGoogleTest(&argc, argv);

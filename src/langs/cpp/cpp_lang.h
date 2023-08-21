@@ -8,8 +8,7 @@
 namespace brgen::cpp_lang {
 
     struct Context {
-        writer::SectionPtr w;
     };
 
-    result<void> entry(Context& w, std::shared_ptr<ast::Program>& p);
+    result<writer::SectionPtr> entry(Context& w, std::shared_ptr<ast::Program>& p);
 }  // namespace brgen::cpp_lang

@@ -9,7 +9,9 @@ import (
 	"sync/atomic"
 )
 
-type SrcCode []string
+type SrcCode []struct {
+	Code string `json:"code"`
+}
 
 func removeWithLog(name string) {
 	err := os.Remove(name)
@@ -58,7 +60,7 @@ func loadFiles(file, suffix string, do func(file string) error) {
 				return
 			}
 			succeed_count.Add(1)
-		}(c)
+		}(c.Code)
 	}
 	w.Wait()
 	suc, total := succeed_count.Load(), total_count.Load()

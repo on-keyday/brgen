@@ -14,11 +14,11 @@ TEST(SectionWriter, RootWriter) {
 
 TEST(SectionWriter, ParentWriter) {
     auto root = writer::root();
-    auto ch1 = root->add_section("child1");
-    auto ch2 = root->add_section(".");  // anonymous
+    auto ch1 = root->add_section("child1").value();
+    auto ch2 = root->add_section(".").value();  // anonymous
     auto ch1_parent = ch1->lookup("..");
     auto ch1_root = ch1->lookup("/");
-    auto anonymous = ch1->add_section("..");
+    auto anonymous = ch1->add_section("..").value();
     auto anonymous_parent = anonymous->lookup("..");
     ASSERT_EQ(ch1_parent, root);
     ASSERT_EQ(ch1_root, root);
@@ -29,19 +29,19 @@ TEST(SectionWriter, ParentWriter) {
 TEST(SectionWriter, Writing) {
     writer::Writer w;
     auto root = writer::root();
-    auto global = root->add_section("global");
-    auto decl = global->add_section("decl");
+    auto global = root->add_section("global").value();
+    auto decl = global->add_section("decl").value();
     decl->foot().line();
-    auto def = global->add_section("def");
+    auto def = global->add_section("def").value();
     def->foot().line();
 
-    auto m = root->add_section("main", true);
+    auto m = root->add_section("main", true).value();
     m->head().writeln("int main() {");
     m->foot().writeln("}");
 
-    auto statement = m->add_section(".");
+    auto statement = m->add_section(".").value();
     statement->head().writeln(R"(printf("hello world");)");
-    statement->lookup("/global/def")->add_section(".")->head().writeln("extern int printf(const char*,...);");
+    statement->lookup("/global/def")->add_section(".").value()->head().writeln("extern int printf(const char*,...);");
 
     root->flush(w);
 

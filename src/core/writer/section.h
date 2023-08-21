@@ -4,6 +4,8 @@
 #include <vector>
 #include <optional>
 #include <variant>
+#include "core/common/util.h"
+#include "core/common/error.h"
 
 namespace brgen {
     namespace writer {
@@ -89,26 +91,26 @@ namespace brgen {
                     section->body.push_back(new_section);
                     new_section->parent = section;
                     new_section->indent = indent;
-                    if (path != "." && path != "..") {
-                        new_section->key = path;
+                    if (target != "." && target != "..") {
+                        new_section->key = target;
                     }
                     return new_section;
                 };
-                if (path == ".") {  // anonymous
+                if (target == ".") {  // anonymous
                     return set_new_section();
                 }
-                if (path == "..") {  // anonymous to parent
+                if (target == "..") {  // anonymous to parent
                     section = section->parent.lock();
                     if (!section) {
-                        return unexpect();
+                        return unexpect(concat(path, " has no parent"));
                     }
                     return set_new_section();
                 }
                 for (auto& b : body) {
                     if (std::holds_alternative<std::shared_ptr<Section>>(b)) {
                         auto& f = std::get<std::shared_ptr<Section>>(b);
-                        if (f->key && *f->key == path) {
-                            return nullptr;
+                        if (f->key && *f->key == target) {
+                            return unexpect(concat(path, " already exists"));
                         }
                     }
                 }
@@ -160,6 +162,23 @@ namespace brgen {
                 std::string buf;
                 utils::strutil::appends(buf, a..., "\n");
                 body.push_back(std::move(buf));
+            }
+
+           private:
+            void dump_section_impl(auto&& visit, std::string_view parent_path) {
+                bool has_parent = !parent.expired();
+                auto cur = has_parent ? concat(parent_path, "/", key ? *key : "(anonymous)") : "/";
+                visit(cur);
+                for (auto& b : body) {
+                    if (auto g = std::get_if<std::shared_ptr<Section>>(&b)) {
+                        (*g)->dump_section_impl(visit, has_parent ? cur : "");
+                    }
+                }
+            }
+
+           public:
+            void dump_section(auto&& visit) {
+                dump_section_impl(visit, "");
             }
         };
 
