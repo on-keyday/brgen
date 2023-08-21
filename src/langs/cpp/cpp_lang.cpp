@@ -103,11 +103,11 @@ namespace brgen::cpp_lang {
         }
     }
 
-    void write_block(Context& c, const SectionPtr& w, ast::node_list& elements, bool last_should_be_return) {
+    void write_block(Context& c, const SectionPtr& w, ast::node_list& elements) {
         for (auto it = elements.begin(); it != elements.end(); it++) {
             auto& element = *it;
             auto stmt = w->add_section(".").value();
-            if (last_should_be_return && it == --elements.end()) {
+            if (c.last_should_be_return && it == --elements.end()) {
                 stmt->write("return ");
             }
             if (auto a = ast::as_Expr(element)) {
