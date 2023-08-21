@@ -131,31 +131,39 @@ namespace brgen::cpp_lang {
                 }
             }
             else if (auto n = ast::as<ast::Fmt>(element)) {
-                auto path = n->ident_path();
-                // add structs
-                auto dec = w->add_section("/global/struct/dec/" + path, true).value();
-                auto def = w->add_section("/global/struct/def/" + path, true).value();
-                {
-                    def->head().writeln("struct ", n->ident, " {");
-                    def->foot().writeln("};");
-                }
-                // add functions
-                {
-                    auto fn_dec = w->add_section("/global/struct/def/" + path + "/member").value();
-                    auto fn_def = w->add_section("/global/func/def/" + path).value();
+                if (!c.def_done) {
+                    auto path = n->ident_path();
+                    // add structs
+                    auto dec = w->add_section("/global/struct/dec/" + path, true).value();
+                    auto def = w->add_section("/global/struct/def/" + path, true).value();
                     {
-                        auto enc = fn_dec->add_section("encode").value();
-                        auto dec = fn_dec->add_section("decode").value();
-                        enc->writeln("int encode();");
-                        dec->writeln("int decode();");
+                        def->head().writeln("struct ", n->ident, " {");
+                        def->foot().writeln("};");
                     }
-                    auto enc = fn_def->add_section("encode").value();
-                    auto dec = fn_def->add_section("decode").value();
-                    enc->head().write("int ", path, "::encode() ");
-                    dec->head().write("int ", path, "::decode() ");
-                    auto old = c.set_last_should_be_return(false);
-                    write_block_scope(c, enc, n->scope.get());
-                    write_block_scope(c, dec, n->scope.get());
+                    // add functions
+                    {
+                        auto fn_dec = w->add_section("/global/struct/def/" + path + "/member").value();
+                        auto fn_def = w->add_section("/global/func/def/" + path).value();
+                        {
+                            auto enc = fn_dec->add_section("encode").value();
+                            auto dec = fn_dec->add_section("decode").value();
+                            enc->writeln("void encode(Output*);");
+                            dec->writeln("void decode(Input*);");
+                        }
+                        auto enc = fn_def->add_section("encode").value();
+                        auto dec = fn_def->add_section("decode").value();
+                        enc->head().write("void ", path, "::encode(Output* output) ");
+                        dec->head().write("void ", path, "::decode(Input* input) ");
+                        auto old = c.set_last_should_be_return(false);
+                        {
+                            auto m = c.set_write_mode(WriteMode::encode);
+                            write_block_scope(c, enc, n->scope.get());
+                        }
+                        {
+                            auto m = c.set_write_mode(WriteMode::decode);
+                            write_block_scope(c, dec, n->scope.get());
+                        }
+                    }
                 }
             }
         }
@@ -170,16 +178,27 @@ namespace brgen::cpp_lang {
             auto struct_ = global->add_section("struct").value();
             auto struct_dec = struct_->add_section("dec").value();
             struct_dec->writeln("struct Input {std::size_t bit_index = 0; const std::uint8_t buffer[1200];};");
+            struct_dec->writeln("struct Output { std::size_t bit_index = 0; std::uint8_t buffer[1200]; };");
             auto struct_def = struct_->add_section("def");
             auto fn = global->add_section("func").value();
             auto fn_dec = fn->add_section("dec").value();
             auto fn_def = fn->add_section("def").value();
-            auto main_ = root->add_section("main", true).value();
-            main_->head().writeln("int main() {");
-            main_->foot().writeln("}");
-            main_->writeln("Input input__{},*input=&input__;");
+            auto main_ = root->add_section("main").value();
             auto old = c.set_last_should_be_return(false);
-            write_block(c, main_, p->elements);
+            {
+                auto enc = main_->add_section("encode").value();
+                enc->head().writeln("void main_encode(Output* output) {");
+                enc->foot().writeln("}");
+                write_block(c, enc, p->elements);
+            }
+            c.def_done = true;
+            {
+                auto dec = main_->add_section("decode").value();
+                dec->head().writeln("void main_decode(Input* input) {");
+                dec->foot().writeln("}");
+                write_block(c, dec, p->elements);
+            }
+            main_->writeln("int main(){}");
             return root;
         } catch (LocationError& e) {
             return unexpect(e);
