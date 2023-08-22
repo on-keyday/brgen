@@ -103,17 +103,90 @@ namespace brgen::cpp_lang {
         }
     }
 
-    void append_bits_to_target(writer::Writer& eb, std::string_view target, std::string_view expression) {
-        eb.writeln(target, "|=", expression, ";");
+    void append_bits_to_target(writer::Writer& eb, std::string_view target, std::string_view expression, bool assign = false) {
+        if (assign) {
+            eb.writeln(target, "=", expression, ";");
+        }
+        else {
+            eb.writeln(target, "|=", expression, ";");
+        }
     }
 
-    void write_decode_section(writer::Writer& eb, std::string_view target, std::string_view expression) {
+    void write_encode_section(writer::Writer& eb, std::string_view target, std::string_view expression, bool assign = false) {
         eb.writeln("{");
         {
             auto sc = eb.indent_scope();
-            append_bits_to_target(eb, target, expression);
+            append_bits_to_target(eb, target, expression, assign);
         }
         eb.writeln("}");
+    }
+
+    void write_encode(Context& c, const SectionPtr& w, std::shared_ptr<ast::Type>& ty, std::string_view target) {
+        if (ty->type != ast::NodeType::int_type) {
+            error(ty->loc, "currently int type is only supported").report();
+        }
+        auto t = ast::as<ast::IntegerType>(ty);
+        auto base_ty = concat("std::uint", nums(ast::aligned_bit(t->bit_size)), "_t");
+        auto s = w->add_section(".", true).value();
+        auto& eb = s->head();
+        auto write_encoder = [&] {
+            eb.writeln("std::uint8_t begin_bits = (8 - (output->bit_index & 0x7)) & 0x7;");
+            auto b = t->bit_size >= 7
+                         ? concat("(", nums(t->bit_size), " - begin_bits", ")")
+                         : concat("(", nums(t->bit_size), " < begin_bits ? 0 :", nums(t->bit_size), "- begin_bits)");
+            eb.writeln("size_t bytes = ", b, " >> 3;");
+            eb.writeln("std::uint8_t end_bits = ", b, " & 0x7;");
+            eb.writeln("[[assume(begin_bits < 8 && end_bits < 8)]];");
+
+            eb.write("if(begin_bits!=0) ");
+            write_encode_section(eb, "output->buffer[output->bit_index >> 3]",
+                                 concat("std::uint8_t",
+                                        "(",
+                                        base_ty,
+                                        "(", target, ")",
+                                        ">>",
+                                        "(",
+                                        nums(t->bit_size),
+                                        " - begin_bits",
+                                        ")"
+                                        ")"));
+
+            if (t->bit_size >= 8) {
+                eb.writeln("auto base = (output->bit_index + begin_bits) >> 3;");
+                eb.writeln("[[assume(bytes == ", nums(t->bit_size / 8), " || bytes == ", nums(t->bit_size / 8 - 1), ")]];");
+                eb.write("for(auto i = 0; i < bytes; i++) ");
+                write_encode_section(eb, "output->buffer[base + i]",
+                                     concat("std::uint8_t(",
+                                            base_ty, "(", target, ")",
+                                            ">>"
+                                            " (",
+                                            nums(t->bit_size),
+                                            " - ((i + 1) << 3) - begin_bits"
+                                            ")",
+                                            ")"),
+                                     true);
+            }
+
+            eb.write("if(end_bits!=0) ");
+            write_encode_section(eb, "output->buffer[(output->bit_index + begin_bits + (bytes << 3)) >> 3]",
+                                 concat("std::uint8_t", "(",
+                                        base_ty, "(", target, ")",
+                                        "<<",
+                                        "(",
+                                        "7 - end_bits",
+                                        ")",
+                                        ")"),
+                                 true);
+        };
+        if (target.size()) {
+            eb.writeln("{");
+            {
+                auto sp = eb.indent_scope();
+                write_encoder();
+            }
+            eb.writeln("}");
+        }
+        w->writeln("output->bit_index +=", nums(t->bit_size), ";");
     }
 
     void write_decode(Context& c, const SectionPtr& w, std::shared_ptr<ast::Type>& ty, std::string_view target) {
@@ -121,6 +194,7 @@ namespace brgen::cpp_lang {
             error(ty->loc, "currently int type is only supported").report();
         }
         auto t = ast::as<ast::IntegerType>(ty);
+        auto base_ty = concat("std::uint", nums(ast::aligned_bit(t->bit_size)), "_t");
         auto s = w->add_section(".", true).value();
         auto& eb = s->head();
         auto write_decoder = [&] {
@@ -134,21 +208,26 @@ namespace brgen::cpp_lang {
             eb.writeln("[[assume(begin_bits < 8 && end_bits < 8)]];");
 
             eb.write("if(begin_bits!=0) ");
-            write_decode_section(eb, target,
-                                 concat("(", "input->buffer[input->bit_index >> 3]",
+            write_encode_section(eb, target,
+                                 concat(base_ty, "(", "input->buffer[input->bit_index >> 3]",
                                         "&",
                                         "(",
                                         "std::uint8_t(0xff) >> (input->bit_index & 0x7)",
                                         ")",
                                         ")",
-                                        " << (", nums(t->bit_size), " - begin_bits)"));
+                                        "<<"
+                                        "(",
+                                        nums(t->bit_size),
+                                        " - begin_bits",
+                                        ")"));
 
             if (t->bit_size >= 8) {
                 eb.writeln("auto base = (input->bit_index + begin_bits) >> 3;");
                 eb.writeln("[[assume(bytes == ", nums(t->bit_size / 8), " || bytes == ", nums(t->bit_size / 8 - 1), ")]];");
                 eb.write("for(auto i = 0; i < bytes; i++) ");
-                write_decode_section(eb, target,
-                                     concat("std::uint32_t(input->buffer[base + i])"
+                write_encode_section(eb, target,
+                                     concat(base_ty,
+                                            "(input->buffer[base + i])"
                                             "<<"
                                             " (",
                                             nums(t->bit_size),
@@ -157,8 +236,8 @@ namespace brgen::cpp_lang {
             }
 
             eb.write("if(end_bits!=0) ");
-            write_decode_section(eb, target,
-                                 concat("(", "input->buffer[(input->bit_index + begin_bits + (bytes << 3)) >> 3]",
+            write_encode_section(eb, target,
+                                 concat(base_ty, "(", "input->buffer[(input->bit_index + begin_bits + (bytes << 3)) >> 3]",
                                         ">>",
                                         "(",
                                         "7 - end_bits",
@@ -194,14 +273,15 @@ namespace brgen::cpp_lang {
                         auto found = w->lookup(path);
                         if (!found) {
                             auto d = w->add_section(path).value();
-                            d->writeln("int ", f->ident->ident, ";");
+                            d->writeln("std::uint64_t ", f->ident->ident, ";");
                         }
                     }
                     else {
-                        stmt->writeln("int ", f->ident->ident, ";");
+                        stmt->writeln("std::uint64_t ", f->ident->ident, ";");
                     }
                 }
                 if (c.mode == WriteMode::encode) {
+                    write_encode(c, w, f->field_type, f->ident ? f->ident->ident : "");
                 }
                 else if (c.mode == WriteMode::decode) {
                     write_decode(c, w, f->field_type, f->ident ? f->ident->ident : "");
@@ -224,12 +304,12 @@ namespace brgen::cpp_lang {
                         {
                             auto enc = fn_dec->add_section("encode").value();
                             auto dec = fn_dec->add_section("decode").value();
-                            enc->writeln("void encode(Output*);");
+                            enc->writeln("void encode(Output*) const;");
                             dec->writeln("void decode(Input*);");
                         }
                         auto enc = fn_def->add_section("encode").value();
                         auto dec = fn_def->add_section("decode").value();
-                        enc->head().write("void ", path, "::encode(Output* output) ");
+                        enc->head().write("void ", path, "::encode(Output* output) const ");
                         dec->head().write("void ", path, "::decode(Input* input) ");
                         auto old = c.set_last_should_be_return(false);
                         {
@@ -254,8 +334,8 @@ namespace brgen::cpp_lang {
             auto global = root->add_section("global").value();
             auto struct_ = global->add_section("struct").value();
             auto struct_dec = struct_->add_section("dec").value();
-            struct_dec->writeln("struct Input {std::size_t bit_index = 0; const std::uint8_t buffer[1200];};");
-            struct_dec->writeln("struct Output { std::size_t bit_index = 0; std::uint8_t buffer[1200]; };");
+            struct_dec->writeln("struct Input {std::size_t bit_index = 0; const std::uint8_t* buffer=nullptr;};");
+            struct_dec->writeln("struct Output { std::size_t bit_index = 0; std::uint8_t* buffer=nullptr; };");
             auto struct_def = struct_->add_section("def");
             auto fn = global->add_section("func").value();
             auto fn_dec = fn->add_section("dec").value();

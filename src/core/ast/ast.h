@@ -466,6 +466,22 @@ namespace brgen::ast {
 
     // types
 
+    constexpr std::uint8_t aligned_bit(size_t bit) {
+        if (bit <= 8) {
+            return 8;
+        }
+        else if (bit <= 16) {
+            return 16;
+        }
+        else if (bit <= 32) {
+            return 32;
+        }
+        else if (bit <= 64) {
+            return 64;
+        }
+        return 0;
+    }
+
     struct IntegerType : Type {
         static constexpr NodeType node_type = NodeType::int_type;
         std::string raw;
@@ -503,21 +519,9 @@ namespace brgen::ast {
             return bit_size;
         }
 
-        std::uint8_t aligned_bit() const {
+        std::uint8_t get_aligned_bit() const {
             if (auto s = get_bit_size()) {
-                auto bit = *s;
-                if (bit <= 8) {
-                    return 8;
-                }
-                else if (bit <= 16) {
-                    return 16;
-                }
-                else if (bit <= 32) {
-                    return 32;
-                }
-                else if (bit <= 64) {
-                    return 64;
-                }
+                return aligned_bit(*s);
             }
             return 0;
         }
@@ -525,7 +529,7 @@ namespace brgen::ast {
         void as_json(Debug& buf) const override {
             auto field = buf.object();
             auto bit_size = get_bit_size();
-            auto aligned = aligned_bit();
+            auto aligned = get_aligned_bit();
             basic_info(field);
             field(sdebugf(bit_size));
             field(sdebugf(aligned));
