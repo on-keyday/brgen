@@ -10,3 +10,11 @@ fmt Data2:
 fmt Data3:
     data1 :u15
     data2 :u49
+
+fmt QUICLongPacket:
+    form :u1
+    fixed :u1
+    packet_type :u2
+    reserved :u2
+    packet_number_len:u2
+    version :u32
