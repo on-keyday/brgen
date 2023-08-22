@@ -9,6 +9,7 @@ int main(int argc, char** argv) {
     set_handler([](auto& a, auto i, auto fs) {
         typing::typing_with_error(a).transform_error(to_source_error(fs)).value();
         cpp_lang::Context ctx;
+        ctx.config.test_main = true;
         auto w = cpp_lang::entry(ctx, a).transform_error(to_source_error(fs)).value();
         Debug d;
         {

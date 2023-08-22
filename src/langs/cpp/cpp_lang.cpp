@@ -438,7 +438,9 @@ namespace brgen::cpp_lang {
                 dec->foot().writeln("}");
                 write_block(c, dec, p->elements);
             }
-            main_->writeln("int main(){}");
+            if (c.config.test_main) {
+                main_->writeln("int main(){}");
+            }
             return root;
         } catch (LocationError& e) {
             return unexpect(e);

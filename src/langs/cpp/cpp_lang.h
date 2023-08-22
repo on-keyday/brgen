@@ -14,10 +14,15 @@ namespace brgen::cpp_lang {
         decode,
     };
 
+    struct Config {
+        bool test_main = false;
+    };
+
     struct Context {
         bool last_should_be_return = false;
         WriteMode mode = WriteMode::unspec;
         bool def_done = false;
+        Config config;
 
        private:
         auto do_exchange(auto& m, auto v) {
