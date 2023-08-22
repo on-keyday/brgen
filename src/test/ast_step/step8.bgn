@@ -4,3 +4,9 @@ fmt Data:
     data2 :u32
     data3 :u64
     
+fmt Data2:
+    data1 :u64
+
+fmt Data3:
+    data1 :u15
+    data2 :u49

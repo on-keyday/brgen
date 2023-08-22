@@ -173,7 +173,7 @@ namespace brgen::cpp_lang {
                                         base_ty, "(", target, ")",
                                         "<<",
                                         "(",
-                                        "7 - end_bits",
+                                        "8 - end_bits",
                                         ")",
                                         ")"),
                                  true);
@@ -240,7 +240,7 @@ namespace brgen::cpp_lang {
                                  concat(base_ty, "(", "input->buffer[(input->bit_index + begin_bits + (bytes << 3)) >> 3]",
                                         ">>",
                                         "(",
-                                        "7 - end_bits",
+                                        "8 - end_bits",
                                         ")",
                                         ")"));
         };

@@ -1,5 +1,0 @@
-fmt Step1:
-    hello :u8
-    world :u16
-    is    :u32
-    cheap :u64
