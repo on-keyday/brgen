@@ -5,6 +5,17 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Launch file",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceRoot}/src/test_tool/",
+            "args": [
+                "go",
+                "${workspaceRoot}/build/test/go_test_result.json"
+            ]
+        },
+        {
             "name": "Debug(no copy)",
             "type": "cppvsdbg",
             "request": "launch",

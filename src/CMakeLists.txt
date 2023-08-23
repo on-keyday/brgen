@@ -32,13 +32,23 @@ add_executable(cpp_test "test/langs/cpp_test.cpp"
 
 target_link_libraries(cpp_test ast_test_component)
 
+add_executable(go_test "test/langs/go_test.cpp"
+"langs/go/go_lang.cpp"
+"core/typing/typing.cpp")
+
+target_link_libraries(go_test ast_test_component)
+
 add_test(NAME "lexer_test" COMMAND lexer_test)
 add_test(NAME "ast_test" COMMAND ast_test)
 add_test(NAME "typing_test" COMMAND typing_test)
 add_test(NAME "section_writer_test" COMMAND section_writer_test)
 add_test(NAME "cpp_test" COMMAND cpp_test)
+add_test(NAME "go_test" COMMAND go_test)
 add_test(NAME "cpp_compile" 
 COMMAND go run "${CMAKE_SOURCE_DIR}/src/test_tool" "cpp" "${CMAKE_BINARY_DIR}/test/cpp_test_result.json")
+add_test(NAME "go_compile" 
+COMMAND go run "${CMAKE_SOURCE_DIR}/src/test_tool" "go" "${CMAKE_BINARY_DIR}/test/go_test_result.json")
+
 
 if(WIN32)
 

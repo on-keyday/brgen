@@ -95,8 +95,22 @@ func execCpp(name string) error {
 	return err
 }
 
+func execGo(name string) error {
+	exename := name[:len(name)-3] + ".exe"
+	cmd := exec.Command("go", "build", name)
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+	err := cmd.Run()
+	if err != nil {
+		return err
+	}
+	removeWithLog(exename)
+	return err
+}
+
 var langs map[string]func(string) error = map[string]func(string) error{
 	"cpp": execCpp,
+	"go":  execGo,
 }
 
 func main() {
