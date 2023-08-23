@@ -16,6 +16,7 @@ namespace brgen::cpp_lang {
 
     struct Config {
         bool test_main = false;
+        bool insert_bit_pos_debug_code = false;
     };
 
     struct Context {

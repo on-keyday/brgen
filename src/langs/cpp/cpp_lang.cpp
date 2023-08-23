@@ -130,89 +130,85 @@ namespace brgen::cpp_lang {
         auto s = w->add_section(".", true).value();
         auto& eb = s->head();
         size_t bit_size = t->bit_size;
+
+        writer::BitIOCodeGenerator io;
+        io.io_object = "output";
+        io.accessor = "->";
+        io.buffer = "buffer";
+        io.index = "bit_index";
+        io.byte_type = "std::uint8_t";
+        io.base_type = base_ty;
+        io.bit_size = t->bit_size;
         auto write_encoder = [&] {
             decltype(eb.indent_scope_ex()) dec_scope;
-            auto non_aligned_bits = "(8 - (output->bit_index & 0x7)) & 0x7";
-            eb.writeln("std::uint8_t non_aligned_bits = ", non_aligned_bits, ";");
-            eb.writeln("[[assume(non_aligned_bits < 8)]];");
+
+            eb.writeln("auto begin_bits = ", io.non_aligned_bit_size(), ";");
+            eb.writeln("[[assume(begin_bits < 8)]];");
+            io.non_aligned_bit_size_v = "begin_bits";
 
             auto write_end_section = [&](auto&& begin_bits_bytes_add, auto&& shift) {
-                write_encode_section(eb, concat("output->buffer[(output->bit_index ", begin_bits_bytes_add, ") >> 3]"),
-                                     concat("std::uint8_t", "(",
-                                            base_ty, "(", target, ")",
-                                            "<<",
-                                            "(",
-                                            shift,
-                                            ")",
-                                            ")"),
-                                     true);
+                eb.indent_writeln(
+                    io.assign(io.byte_at(io.bit_to_byte(concat(io.bit_index(), begin_bits_bytes_add))),
+                              io.shift_left_to_encode(target, shift)),
+                    ";");
             };
 
-            if (t->bit_size <= 7) {
+            if (io.bit_size <= 7) {
                 // if remaining bits are enough to make value
-                eb.writeln("if(", nums(bit_size), "<=", "non_aligned_bits", ")", " {");
-                auto scope = eb.indent_scope();
-                // bit mask
-                auto base = concat(base_ty, "(", target, ")");
-                auto bit_mask = concat("(", "0xff", ">>", "(", "8", "-", nums(bit_size), ")", ")");
-                // decide shift after masked
-                auto shift = concat("(", "non_aligned_bits", "-", nums(bit_size), ")");
-                auto extract_bits = concat("(",
-                                           base,
-                                           "&",
-                                           bit_mask,
-                                           ")", "<<", shift);
-                eb.writeln("output->buffer[output->bit_index>>3]", " |= ", "std::uint8_t", "(", extract_bits, ")", ";");
-                scope.execute();
+                eb.writeln("if(", io.enough_bits_for_bit_size_value(), ")", " {");
+                eb.indent_writeln(io.or_assign(io.current_byte(),
+                                               io.shift_left_to_encode(
+                                                   target,
+                                                   io.shift_count_small(
+                                                       nums(bit_size), io.non_aligned_bit_size()))),
+                                  ";");
                 eb.writeln("}");
                 // in this case, bytes are not available and begin_bits == 0 so shortcut
                 if (bit_size == 1) {
-                    eb.write("else ");
+                    eb.writeln("else {");
                     write_end_section("", "7");
+                    eb.writeln("}");
                     return;
                 }
                 eb.write("else {");
                 dec_scope = eb.indent_scope_ex();
             }
-            eb.writeln("std::uint8_t begin_bits = non_aligned_bits;");
-            auto remain_bits = concat("(", nums(t->bit_size), " - begin_bits", ")");
-            eb.writeln("size_t remain_bits = ", remain_bits, ";");
-            eb.writeln("size_t bytes = ", "remain_bits", " >> 3;");
-            eb.writeln("std::uint8_t end_bits = ", "remain_bits", " & 0x7;");
-            eb.writeln("[[assume(begin_bits < 8 && end_bits < 8)]];");
+            eb.writeln("auto remain_bits = ", io.remain_bits_large(nums(bit_size)), ";");
+            eb.writeln("auto bytes = ", io.bit_to_byte("remain_bits"), ";");
+            eb.writeln("auto end_bits = ", io.lsb3("remain_bits"), ";");
+            eb.writeln("[[assume(end_bits < 8)]];");
+            io.bytes_v = "bytes";
+            io.tail_bits_v = "end_bits";
 
-            eb.write("if(begin_bits!=0) ");
-            write_encode_section(eb, "output->buffer[output->bit_index >> 3]",
-                                 concat("std::uint8_t",
-                                        "(",
-                                        base_ty,
-                                        "(", target, ")",
-                                        ">>",
-                                        "(",
-                                        nums(t->bit_size),
-                                        " - non_aligned_bits",
-                                        ")"
-                                        ")"));
+            eb.writeln("if(", io.non_aligned_bits_exists(), ") {");
+            eb.indent_writeln(io.or_assign(io.current_byte(),
+                                           io.shift_right_to_encode(
+                                               target,
+                                               io.shift_count_large(nums(bit_size), io.non_aligned_bit_size()))),
+                              ";");
+            eb.writeln("}");
 
-            if (t->bit_size >= 8) {  // less than 8 bit type has no bytes so skip
-                eb.writeln("auto base = (output->bit_index + non_aligned_bits) >> 3;");
-                eb.writeln("[[assume(bytes == ", nums(t->bit_size / 8), " || bytes == ", nums(t->bit_size / 8 - 1), ")]];");
-                eb.write("for(auto i = 0; i < bytes; i++) ");
-                write_encode_section(eb, "output->buffer[base + i]",
-                                     concat("std::uint8_t(",
-                                            base_ty, "(", target, ")",
-                                            ">>"
-                                            " (",
-                                            nums(t->bit_size),
-                                            " - ((i + 1) << 3) - non_aligned_bits"
-                                            ")",
-                                            ")"),
-                                     true);
+            if (bit_size >= 8) {  // less than 8 bit type has no bytes so skip
+                eb.writeln("auto base = ", io.bytes_base(), ";");
+                io.bytes_base_v = "base";
+                eb.writeln("[[assume(", io.bytes_v, " == ", nums(bit_size / 8),
+                           " || ", io.bytes_v, " == ", nums(bit_size / 8 - 1), ")]];");
+                eb.writeln("for(auto i = 0; i < ", io.bytes_v, "; i++) {");
+                eb.indent_writeln(
+                    io.assign(io.byte_at(concat(io.bytes_base(), " + i")),
+                              io.shift_right_to_encode(
+                                  target,
+                                  io.shift_count_large(
+                                      nums(bit_size),
+                                      concat(io.byte_to_bit("i+1"), "+", io.non_aligned_bit_size())))),
+                    ";");
+                eb.writeln("}");
             }
 
-            eb.write("if(end_bits!=0) ");
-            write_end_section("+ begin_bits + (bytes<<3)", "8 - end_bits");
-
+            eb.writeln("if(", io.tail_bits_exists(), ") {");
+            write_end_section(concat("+", io.non_aligned_bit_size(), "+", io.byte_to_bit(io.bytes_v)),
+                              io.tail_bits_shift());
+            eb.writeln("}");
             if (dec_scope) {
                 dec_scope->execute();
                 eb.writeln("}");
@@ -226,7 +222,7 @@ namespace brgen::cpp_lang {
             }
             eb.writeln("}");
         }
-        w->writeln("output->bit_index +=", nums(t->bit_size), ";");
+        w->writeln(io.bit_index(), "+=", nums(bit_size), ";");
     }
 
     void write_decode(Context& c, const SectionPtr& w, std::shared_ptr<ast::Type>& ty, std::string_view target) {
@@ -239,89 +235,95 @@ namespace brgen::cpp_lang {
         auto& eb = s->head();
         auto bit_size = t->bit_size;
 
+        writer::BitIOCodeGenerator io;
+        io.io_object = "input";
+        io.accessor = "->";
+        io.buffer = "buffer";
+        io.index = "bit_index";
+        io.byte_type = "std::uint8_t";
+        io.base_type = base_ty;
         auto write_decoder = [&] {
-            decltype(eb.indent_scope_ex()) dec_scope;
             eb.writeln(target, " = 0;");
-            // (8 - (input->bit_index%8))%8 = [0-7]
-            // 0~7 bit from msb for non-aligned bits
-            auto non_aligned_bits = "((8 - (input->bit_index & 0x7)) & 0x7)";
-            eb.writeln("std::uint8_t non_aligned_bits = ", non_aligned_bits, ";");
-            eb.writeln("[[assume(non_aligned_bits < 8)]];");
-
-            auto write_end_section = [&](auto&& begin_bits_bytes_add, auto&& shift) {
-                write_encode_section(eb, target,
-                                     concat(base_ty, "(", "input->buffer[(input->bit_index ", begin_bits_bytes_add, ") >> 3]",
-                                            ">>",
-                                            "(",
-                                            shift,
-                                            ")",
-                                            ")"));
+            decltype(eb.indent_scope_ex()) dec_scope;
+            auto add_field_debug = [&](auto&& var) {
+                if (c.config.insert_bit_pos_debug_code) {
+                    eb.writeln("std::cout << \"", var, ": \" << ", var, "<<", "\" \"", ";");
+                }
             };
 
-            if (bit_size <= 7) {  // if bit size is 1-7 then
-                // if remaining bits are enough to make value
-                eb.writeln("if(", nums(bit_size), "<=", "non_aligned_bits", ")", " {");
-                auto scope = eb.indent_scope();
-                // bit mask
-                auto bit_mask = concat("(", "0xff", ">>", "(", "8", "-", "non_aligned_bits", ")", ")");
-                // decide shift after masked
-                auto shift = concat("(", "non_aligned_bits", "-", nums(bit_size), ")");
-                auto extract_bits = concat("(",
-                                           "input->buffer[input->bit_index>>3]",
-                                           "&",
-                                           bit_mask,
-                                           ")", ">>", shift);
-                eb.write(target, " = ", base_ty, "(", extract_bits, ")", ";");
+            eb.writeln("auto begin_bits = ", io.non_aligned_bit_size(), ";");
+            eb.writeln("[[assume(begin_bits < 8)]];");
+            io.non_aligned_bit_size_v = "begin_bits";
+            add_field_debug(io.non_aligned_bit_size_v);
 
-                scope.execute();
+            auto write_end_section = [&](auto&& begin_bits_bytes_add, auto&& shift) {
+                eb.indent_writeln(
+                    io.or_assign(target,
+                                 io.shift_right_to_decode(
+                                     io.byte_at(io.bit_to_byte(concat(io.bit_index(), begin_bits_bytes_add))), shift)),
+                    ";");
+            };
+
+            if (io.bit_size <= 7) {
+                // if remaining bits are enough to make value
+                eb.writeln("if(", io.enough_bits_for_bit_size_value(), ")", " {");
+                eb.indent_writeln(io.or_assign(
+                                      target,
+                                      io.shift_right_to_decode(
+                                          io.byte_remaining_bit_masked(),
+                                          io.shift_count_small(
+                                              nums(bit_size), io.non_aligned_bit_size()))),
+                                  ";");
                 eb.writeln("}");
                 // in this case, bytes are not available and begin_bits == 0 so shortcut
                 if (bit_size == 1) {
-                    eb.write("else ");
+                    eb.writeln("else {");
                     write_end_section("", "7");
+                    eb.writeln("}");
                     return;
                 }
-                eb.writeln("else {");
+                eb.write("else {");
                 dec_scope = eb.indent_scope_ex();
             }
-            eb.writeln("std::uint8_t begin_bits = ", "non_aligned_bits", ";");
-            auto remain_bits = concat("(", nums(bit_size), " - begin_bits", ")");
-            eb.writeln("size_t remain_bits = ", remain_bits, ";");
-            eb.writeln("size_t bytes = ", "remain_bits", " >> 3;");
-            eb.writeln("std::uint8_t end_bits = ", "remain_bits", " & 0x7;");
-            eb.writeln("[[assume(begin_bits < 8 && end_bits < 8)]];");
+            eb.writeln("auto remain_bits = ", io.remain_bits_large(nums(bit_size)), ";");
+            eb.writeln("auto bytes = ", io.bit_to_byte("remain_bits"), ";");
+            eb.writeln("auto end_bits = ", io.lsb3("remain_bits"), ";");
+            eb.writeln("[[assume(end_bits < 8)]];");
+            io.bytes_v = "bytes";
+            io.tail_bits_v = "end_bits";
 
-            eb.write("if(begin_bits!=0) ");
-            write_encode_section(eb, target,
-                                 concat(base_ty, "(",
-                                        "input->buffer[input->bit_index >> 3]",
-                                        "&",
-                                        "(",
-                                        "std::uint8_t(0xff) >> (input->bit_index & 0x7)",
-                                        ")",
-                                        ")",
-                                        "<<"
-                                        "(",
-                                        "remain_bits",
-                                        ")"));
+            add_field_debug(io.bytes_v);
+            add_field_debug(io.tail_bits_v);
+
+            eb.writeln("if(", io.non_aligned_bits_exists(), ") {");
+            eb.indent_writeln(io.or_assign(target,
+                                           io.shift_left_to_decode(
+                                               io.byte_remaining_bit_masked(),
+                                               io.shift_count_large(nums(bit_size), io.non_aligned_bit_size()))),
+                              ";");
+            eb.writeln("}");
 
             if (bit_size >= 8) {  // less than 8 bit type has no bytes so skip
-                eb.writeln("auto base = (input->bit_index + begin_bits) >> 3;");
-                eb.writeln("[[assume(bytes == ", nums(bit_size / 8), " || bytes == ", nums(bit_size / 8 - 1), ")]];");
-                eb.write("for(auto i = 0; i < bytes; i++) ");
-                write_encode_section(eb, target,
-                                     concat(base_ty,
-                                            "(input->buffer[base + i])"
-                                            "<<"
-                                            " (",
-                                            nums(bit_size),
-                                            " - ((i + 1) << 3) - begin_bits"
-                                            ")"));
+                eb.writeln("auto base = ", io.bytes_base(), ";");
+                io.bytes_base_v = "base";
+                eb.writeln("[[assume(", io.bytes_v, " == ", nums(bit_size / 8),
+                           " || ", io.bytes_v, " == ", nums(bit_size / 8 - 1), ")]];");
+                eb.writeln("for(auto i = 0; i < ", io.bytes_v, "; i++) {");
+                eb.indent_writeln(
+                    io.or_assign(target,
+                                 io.shift_left_to_decode(
+                                     io.byte_at(concat(io.bytes_base(), " + i")),
+                                     io.shift_count_large(
+                                         nums(bit_size),
+                                         concat(io.byte_to_bit("i+1"), "+", io.non_aligned_bit_size())))),
+                    ";");
+                eb.writeln("}");
             }
 
-            eb.write("if(end_bits!=0) ");
-            write_end_section("+ (bytes << 3)+ begin_bits", "8 - end_bits");
-
+            eb.writeln("if(", io.tail_bits_exists(), ") {");
+            write_end_section(concat("+", io.non_aligned_bit_size(), "+", io.byte_to_bit(io.bytes_v)),
+                              io.tail_bits_shift());
+            eb.writeln("}");
             if (dec_scope) {
                 dec_scope->execute();
                 eb.writeln("}");
@@ -332,10 +334,13 @@ namespace brgen::cpp_lang {
             {
                 auto sp = eb.indent_scope();
                 write_decoder();
+                if (c.config.insert_bit_pos_debug_code) {
+                    eb.writeln(R"(std::cout << "\n";)");
+                }
             }
             eb.writeln("}");
         }
-        w->writeln("input->bit_index +=", nums(bit_size), ";");
+        w->writeln(io.bit_index(), "+=", nums(bit_size), ";");
     }
 
     void write_block(Context& c, const SectionPtr& w, ast::node_list& elements) {
@@ -412,8 +417,12 @@ namespace brgen::cpp_lang {
     result<SectionPtr> entry(Context& c, std::shared_ptr<ast::Program>& p) {
         try {
             auto root = writer::root();
-            root->head().writeln("#include<cstdint>");
-            root->head().writeln("#include<cstddef>");
+            auto hdr = root->add_section("header").value();
+            hdr->writeln("#include<cstdint>");
+            hdr->writeln("#include<cstddef>");
+            if (c.config.insert_bit_pos_debug_code) {
+                hdr->writeln("#include<iostream>");
+            }
             auto global = root->add_section("global").value();
             auto struct_ = global->add_section("struct").value();
             auto struct_dec = struct_->add_section("dec").value();
