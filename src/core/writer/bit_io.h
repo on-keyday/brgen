@@ -27,11 +27,17 @@ namespace brgen::writer {
         std::string_view bytes_v;
         std::string_view tail_bits_v;
 
+        std::string_view define_symbol;
+
         std::string add_offset() {
             return concat(bit_index(), "+=", bit_size());
         }
 
        private:
+        std::string define(std::string_view target, std::string_view value) {
+            return concat(target, define_symbol, value);
+        }
+
         std::string bit_index() {
             return concat(io_object, accessor, index);
         }
@@ -173,31 +179,31 @@ namespace brgen::writer {
         }
 
         std::string define_begin_bits(std::string_view varname) {
-            auto res = concat(varname, " = ", first_non_aligned_bit_size());
+            auto res = define(varname, first_non_aligned_bit_size());
             non_aligned_bit_size_v = varname;
             return res;
         }
 
         std::string define_remain_bits(std::string_view varname) {
-            auto res = concat(varname, " = ", remain_bits());
+            auto res = define(varname, remain_bits());
             remain_bits_v = varname;
             return res;
         }
 
         std::string define_bytes_base(std::string_view varname) {
-            auto res = concat(varname, " = ", bytes_base());
+            auto res = define(varname, bytes_base());
             bytes_base_v = varname;
             return res;
         }
 
         std::string define_bytes(std::string_view varname) {
-            auto res = concat(varname, " = ", bit_to_byte(remain_bits()));
+            auto res = define(varname, bit_to_byte(remain_bits()));
             bytes_v = varname;
             return res;
         }
 
         std::string define_end_bits(std::string_view varname) {
-            auto res = concat(varname, " = ", lsb3(remain_bits()));
+            auto res = define(varname, lsb3(remain_bits()));
             tail_bits_v = varname;
             return res;
         }

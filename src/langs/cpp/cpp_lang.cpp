@@ -215,6 +215,7 @@ namespace brgen::cpp_lang {
         io.bit_size_v = t->bit_size;
         io.target = target;
         io.is_encode = true;
+        io.define_symbol = "=";
 
         write_bit_io_code(c, w, io);
     }
@@ -236,6 +237,7 @@ namespace brgen::cpp_lang {
         io.bit_size_v = t->bit_size;
         io.target = target;
         io.is_encode = false;
+        io.define_symbol = "=";
 
         write_bit_io_code(c, w, io);
     }

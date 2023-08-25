@@ -4,7 +4,8 @@
 #include "core/writer/section.h"
 #include "core/common/error.h"
 #include "core/common/expected.h"
-#include "core/writer/bit_manager.h"
+#include "core/writer/bit_io.h"
+#include "core/writer/config.h"
 
 namespace brgen::go_lang {
 
@@ -14,15 +15,11 @@ namespace brgen::go_lang {
         decode,
     };
 
-    struct Config {
-        bool test_main = false;
-    };
-
     struct Context {
         bool last_should_be_return = false;
         WriteMode mode = WriteMode::unspec;
         bool def_done = false;
-        Config config;
+        writer::Config config;
 
        private:
         auto do_exchange(auto& m, auto v) {

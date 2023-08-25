@@ -23,7 +23,9 @@ namespace brgen::go_lang {
             id->usage != ast::IdentUsage::reference) {
             w->write(" :", *ast::bin_op_str(op), " ");
         }
-        w->write(" ", *ast::bin_op_str(op), " ");
+        else {
+            w->write(" ", *ast::bin_op_str(op), " ");
+        }
         write_expr(c, w, b->right.get());
         if (paren) {
             w->write(")");
@@ -130,6 +132,82 @@ namespace brgen::go_lang {
         eb.writeln("}");
     }
 
+    void write_bit_io_code(Context& c, const SectionPtr& w, writer::BitIOCodeGenerator& io) {
+        auto write_code = [&](writer::Writer& eb) {
+            if (!io.is_encode) {  // decode
+                eb.writeln(io.target, " = 0;");
+            }
+            decltype(eb.indent_scope_ex()) dec_scope;
+            auto add_field_debug = [&](auto&& var) {
+                if (c.config.insert_bit_pos_debug_code) {
+                    eb.writeln(R"a(fmt.Printf("%s: %d",")a", var, R"a(",)a", var, ")");
+                }
+            };
+
+            eb.writeln(io.define_begin_bits("begin_bits"));
+            add_field_debug(io.non_aligned_bit_size_v);
+
+            if (io.bit_size_v <= 7) {
+                // if remaining bits are enough to make value
+                eb.writeln("if ", io.enough_bits_for_bit_size_value(), " {");
+                eb.indent_writeln(io.code_less_than_8_bit(), ";");
+                eb.write("}");
+                // in this case, bytes are not available and begin_bits == 0 so shortcut
+                if (io.bit_size_v == 1) {
+                    eb.writeln("else {");
+                    eb.indent_writeln(io.code_end_1_bit());
+                    eb.writeln("}");
+                    return;
+                }
+                eb.write("else {");
+                dec_scope = eb.indent_scope_ex();
+            }
+            eb.writeln(io.define_remain_bits("remain_bits"));
+            eb.writeln(io.define_bytes("bytes"));
+            eb.writeln(io.define_end_bits("end_bits"));
+
+            add_field_debug(io.bytes_v);
+            add_field_debug(io.tail_bits_v);
+
+            eb.writeln("if ", io.non_aligned_bits_exists(), " {");
+            eb.indent_writeln(io.code_begin_bits(), ";");
+            eb.writeln("}");
+
+            if (io.bit_size_v >= 8) {  // less than 8 bit type has no bytes so skip
+                eb.writeln(io.define_bytes_base("base"));
+                /*
+                eb.writeln("[[assume(", io.bytes_v, " == ", nums(io.bit_size_v / 8),
+                           " || ", io.bytes_v, " == ", nums(io.bit_size_v / 8 - 1), ")]];");
+                */
+                eb.writeln("for i := 0; i < ", io.bytes_v, "; i++ {");
+                eb.indent_writeln(io.code_bytes("i"), ";");
+                eb.writeln("}");
+            }
+
+            eb.writeln("if ", io.tail_bits_exists(), " {");
+            eb.indent_writeln(io.code_end_bits(), ";");
+            eb.writeln("}");
+            if (dec_scope) {
+                dec_scope->execute();
+                eb.writeln("}");
+            }
+        };
+        if (io.target.size()) {
+            auto s = w->add_section(".", true).value();
+            auto& eb = s->head();
+            eb.writeln("{");
+            {
+                auto sp = eb.indent_scope();
+                write_code(eb);
+                if (c.config.insert_bit_pos_debug_code) {
+                    eb.writeln(R"(fmt.Println())");
+                }
+            }
+            eb.writeln("}");
+        }
+        w->writeln(io.add_offset(), ";");
+    }
+
     void write_encode(Context& c, const SectionPtr& w, std::shared_ptr<ast::Type>& ty, std::string_view target) {
         if (ty->type != ast::NodeType::int_type) {
             error(ty->loc, "currently int type is only supported").report();
@@ -138,104 +216,20 @@ namespace brgen::go_lang {
         auto base_ty = concat("uint", nums(ast::aligned_bit(t->bit_size)));
         auto s = w->add_section(".", true).value();
         auto& eb = s->head();
-        size_t bit_size = t->bit_size;
-        auto write_encoder = [&] {
-            decltype(eb.indent_scope_ex()) dec_scope;
-            auto non_aligned_bits = "(8 - (output.bit_index & 0x7)) & 0x7";
-            eb.writeln("uint8 non_aligned_bits = ", non_aligned_bits, ";");
-            eb.writeln("[[assume(non_aligned_bits < 8)]];");
 
-            auto write_end_section = [&](auto&& begin_bits_bytes_add, auto&& shift) {
-                write_encode_section(eb, concat("output.buffer[(output.bit_index ", begin_bits_bytes_add, ") >> 3]"),
-                                     concat("uint8", "(",
-                                            base_ty, "(", target, ")",
-                                            "<<",
-                                            "(",
-                                            shift,
-                                            ")",
-                                            ")"),
-                                     true);
-            };
+        writer::BitIOCodeGenerator io;
+        io.io_object = "output";
+        io.accessor = ".";
+        io.buffer = "buffer";
+        io.index = "bitIndex";
+        io.byte_type = "uint8";
+        io.base_type = base_ty;
+        io.bit_size_v = t->bit_size;
+        io.target = target;
+        io.is_encode = true;
+        io.define_symbol = ":=";
 
-            if (t->bit_size <= 7) {
-                // if remaining bits are enough to make value
-                eb.writeln("if(", nums(bit_size), "<=", "non_aligned_bits", ")", " {");
-                auto scope = eb.indent_scope();
-                // bit mask
-                auto base = concat(base_ty, "(", target, ")");
-                auto bit_mask = concat("(", "0xff", ">>", "(", "8", "-", nums(bit_size), ")", ")");
-                // decide shift after masked
-                auto shift = concat("(", "non_aligned_bits", "-", nums(bit_size), ")");
-                auto extract_bits = concat("(",
-                                           base,
-                                           "&",
-                                           bit_mask,
-                                           ")", "<<", shift);
-                eb.writeln("output.buffer[output.bit_index>>3]", " |= ", "uint8", "(", extract_bits, ")", ";");
-                scope.execute();
-                eb.writeln("}");
-                // in this case, bytes are not available and begin_bits == 0 so shortcut
-                if (bit_size == 1) {
-                    eb.write("else ");
-                    write_end_section("", "7");
-                    return;
-                }
-                eb.write("else {");
-                dec_scope = eb.indent_scope_ex();
-            }
-            eb.writeln("uint8 begin_bits = non_aligned_bits;");
-            auto remain_bits = concat("(", nums(t->bit_size), " - begin_bits", ")");
-            eb.writeln("uint remain_bits = ", remain_bits, ";");
-            eb.writeln("uint bytes = ", "remain_bits", " >> 3;");
-            eb.writeln("uint8 end_bits = ", "remain_bits", " & 0x7;");
-            eb.writeln("[[assume(begin_bits < 8 && end_bits < 8)]];");
-
-            eb.write("if(begin_bits!=0) ");
-            write_encode_section(eb, "output->buffer[output->bit_index >> 3]",
-                                 concat("uint8",
-                                        "(",
-                                        base_ty,
-                                        "(", target, ")",
-                                        ">>",
-                                        "(",
-                                        nums(t->bit_size),
-                                        " - non_aligned_bits",
-                                        ")"
-                                        ")"));
-
-            if (t->bit_size >= 8) {  // less than 8 bit type has no bytes so skip
-                eb.writeln("auto base = (output->bit_index + non_aligned_bits) >> 3;");
-                eb.writeln("[[assume(bytes == ", nums(t->bit_size / 8), " || bytes == ", nums(t->bit_size / 8 - 1), ")]];");
-                eb.write("for(auto i = 0; i < bytes; i++) ");
-                write_encode_section(eb, "output.buffer[base + i]",
-                                     concat("uint8(",
-                                            base_ty, "(", target, ")",
-                                            ">>"
-                                            " (",
-                                            nums(t->bit_size),
-                                            " - ((i + 1) << 3) - non_aligned_bits"
-                                            ")",
-                                            ")"),
-                                     true);
-            }
-
-            eb.write("if(end_bits!=0) ");
-            write_end_section("+ begin_bits + (bytes<<3)", "8 - end_bits");
-
-            if (dec_scope) {
-                dec_scope->execute();
-                eb.writeln("}");
-            }
-        };
-        if (target.size()) {
-            eb.writeln("{");
-            {
-                auto sp = eb.indent_scope();
-                write_encoder();
-            }
-            eb.writeln("}");
-        }
-        w->writeln("output.bit_index +=", nums(t->bit_size), ";");
+        write_bit_io_code(c, w, io);
     }
 
     void write_decode(Context& c, const SectionPtr& w, std::shared_ptr<ast::Type>& ty, std::string_view target) {
@@ -243,108 +237,21 @@ namespace brgen::go_lang {
             error(ty->loc, "currently int type is only supported").report();
         }
         auto t = ast::as<ast::IntegerType>(ty);
-        auto base_ty = concat("std::uint", nums(ast::aligned_bit(t->bit_size)), "_t");
-        auto s = w->add_section(".", true).value();
-        auto& eb = s->head();
-        auto bit_size = t->bit_size;
+        auto base_ty = concat("uint", nums(ast::aligned_bit(t->bit_size)));
 
-        auto write_decoder = [&] {
-            decltype(eb.indent_scope_ex()) dec_scope;
-            eb.writeln(target, " = 0;");
-            // (8 - (input->bit_index%8))%8 = [0-7]
-            // 0~7 bit from msb for non-aligned bits
-            auto non_aligned_bits = "((8 - (input->bit_index & 0x7)) & 0x7)";
-            eb.writeln("std::uint8_t non_aligned_bits = ", non_aligned_bits, ";");
-            eb.writeln("[[assume(non_aligned_bits < 8)]];");
+        writer::BitIOCodeGenerator io;
+        io.io_object = "input";
+        io.accessor = ".";
+        io.buffer = "buffer";
+        io.index = "bitIndex";
+        io.byte_type = "uint8";
+        io.base_type = base_ty;
+        io.bit_size_v = t->bit_size;
+        io.target = target;
+        io.is_encode = false;
+        io.define_symbol = ":=";
 
-            auto write_end_section = [&](auto&& begin_bits_bytes_add, auto&& shift) {
-                write_encode_section(eb, target,
-                                     concat(base_ty, "(", "input->buffer[(input->bit_index ", begin_bits_bytes_add, ") >> 3]",
-                                            ">>",
-                                            "(",
-                                            shift,
-                                            ")",
-                                            ")"));
-            };
-
-            if (bit_size <= 7) {  // if bit size is 1-7 then
-                // if remaining bits are enough to make value
-                eb.writeln("if(", nums(bit_size), "<=", "non_aligned_bits", ")", " {");
-                auto scope = eb.indent_scope();
-                // bit mask
-                auto bit_mask = concat("(", "0xff", ">>", "(", "8", "-", "non_aligned_bits", ")", ")");
-                // decide shift after masked
-                auto shift = concat("(", "non_aligned_bits", "-", nums(bit_size), ")");
-                auto extract_bits = concat("(",
-                                           "input->buffer[input->bit_index>>3]",
-                                           "&",
-                                           bit_mask,
-                                           ")", ">>", shift);
-                eb.write(target, " = ", base_ty, "(", extract_bits, ")", ";");
-
-                scope.execute();
-                eb.writeln("}");
-                // in this case, bytes are not available and begin_bits == 0 so shortcut
-                if (bit_size == 1) {
-                    eb.write("else ");
-                    write_end_section("", "7");
-                    return;
-                }
-                eb.writeln("else {");
-                dec_scope = eb.indent_scope_ex();
-            }
-            eb.writeln("std::uint8_t begin_bits = ", "non_aligned_bits", ";");
-            auto remain_bits = concat("(", nums(bit_size), " - begin_bits", ")");
-            eb.writeln("size_t remain_bits = ", remain_bits, ";");
-            eb.writeln("size_t bytes = ", "remain_bits", " >> 3;");
-            eb.writeln("std::uint8_t end_bits = ", "remain_bits", " & 0x7;");
-            eb.writeln("[[assume(begin_bits < 8 && end_bits < 8)]];");
-
-            eb.write("if(begin_bits!=0) ");
-            write_encode_section(eb, target,
-                                 concat(base_ty, "(",
-                                        "input->buffer[input->bit_index >> 3]",
-                                        "&",
-                                        "(",
-                                        "std::uint8_t(0xff) >> (input->bit_index & 0x7)",
-                                        ")",
-                                        ")",
-                                        "<<"
-                                        "(",
-                                        "remain_bits",
-                                        ")"));
-
-            if (bit_size >= 8) {  // less than 8 bit type has no bytes so skip
-                eb.writeln("auto base = (input->bit_index + begin_bits) >> 3;");
-                eb.writeln("[[assume(bytes == ", nums(bit_size / 8), " || bytes == ", nums(bit_size / 8 - 1), ")]];");
-                eb.write("for(auto i = 0; i < bytes; i++) ");
-                write_encode_section(eb, target,
-                                     concat(base_ty,
-                                            "(input->buffer[base + i])"
-                                            "<<"
-                                            " (",
-                                            nums(bit_size),
-                                            " - ((i + 1) << 3) - begin_bits"
-                                            ")"));
-            }
-
-            eb.write("if(end_bits!=0) ");
-            write_end_section("+ (bytes << 3)+ begin_bits", "8 - end_bits");
-
-            if (dec_scope) {
-                dec_scope->execute();
-                eb.writeln("}");
-            }
-        };
-        if (target.size()) {
-            eb.writeln("{");
-            {
-                auto sp = eb.indent_scope();
-                write_decoder();
-            }
-            eb.writeln("}");
-        }
-        w->writeln("input->bit_index +=", nums(bit_size), ";");
+        write_bit_io_code(c, w, io);
     }
 
     void write_block(Context& c, const SectionPtr& w, ast::node_list& elements) {
@@ -365,18 +272,18 @@ namespace brgen::go_lang {
                         auto found = w->lookup(path);
                         if (!found) {
                             auto d = w->add_section(path).value();
-                            d->writeln("std::uint64_t ", f->ident->ident, ";");
+                            d->writeln(f->ident->ident, " int");
                         }
                     }
                     else {
-                        stmt->writeln("std::uint64_t ", f->ident->ident, ";");
+                        stmt->writeln(f->ident->ident, " int");
                     }
                 }
                 if (c.mode == WriteMode::encode) {
-                    write_encode(c, w, f->field_type, f->ident ? f->ident->ident : "");
+                    write_encode(c, w, f->field_type, f->ident ? "self." + f->ident->ident : "");
                 }
                 else if (c.mode == WriteMode::decode) {
-                    write_decode(c, w, f->field_type, f->ident ? f->ident->ident : "");
+                    write_decode(c, w, f->field_type, f->ident ? "self." + f->ident->ident : "");
                 }
             }
             else if (auto n = ast::as<ast::Fmt>(element)) {
@@ -386,23 +293,18 @@ namespace brgen::go_lang {
                     auto dec = w->add_section("/global/struct/dec/" + path, true).value();
                     auto def = w->add_section("/global/struct/def/" + path, true).value();
                     {
-                        def->head().writeln("struct ", n->ident, " {");
+                        def->head().writeln("type ", n->ident, " struct {");
                         def->foot().writeln("};");
                     }
                     // add functions
                     {
                         auto fn_dec = w->add_section("/global/struct/def/" + path + "/member").value();
                         auto fn_def = w->add_section("/global/func/def/" + path).value();
-                        {
-                            auto enc = fn_dec->add_section("encode").value();
-                            auto dec = fn_dec->add_section("decode").value();
-                            enc->writeln("void encode(Output*) const;");
-                            dec->writeln("void decode(Input*);");
-                        }
+
                         auto enc = fn_def->add_section("encode").value();
                         auto dec = fn_def->add_section("decode").value();
-                        enc->head().write("void ", path, "::encode(Output* output) const ");
-                        dec->head().write("void ", path, "::decode(Input* input) ");
+                        enc->head().write("func (self *", path, ") encode(Output* output) ");
+                        dec->head().write("func (self *", path, ") decode(Input* input) ");
                         auto old = c.set_last_should_be_return(false);
                         {
                             auto m = c.set_write_mode(WriteMode::encode);
@@ -421,13 +323,20 @@ namespace brgen::go_lang {
     result<SectionPtr> entry(Context& c, std::shared_ptr<ast::Program>& p) {
         try {
             auto root = writer::root();
-            root->head().writeln("#include<cstdint>");
-            root->head().writeln("#include<cstddef>");
+            root->writeln("// Code generated by brgen (https://github.com/on-keyday/brgen). DO NOT EDIT.");
+            root->writeln("package main");
+            auto hdr = root->add_section("import", true).value();
+            hdr->head().writeln("import (");
+            hdr->foot().writeln(")");
+            hdr->writeln(R"(_ "encoding/binary")");
+            if (c.config.insert_bit_pos_debug_code) {
+                hdr->writeln(R"("fmt")");
+            }
             auto global = root->add_section("global").value();
             auto struct_ = global->add_section("struct").value();
             auto struct_dec = struct_->add_section("dec").value();
-            struct_dec->writeln("struct Input {std::size_t bit_index = 0; const std::uint8_t* buffer=nullptr;};");
-            struct_dec->writeln("struct Output { std::size_t bit_index = 0; std::uint8_t* buffer=nullptr; };");
+            struct_dec->writeln("type Input struct { bitIndex int; buffer []byte }");
+            struct_dec->writeln("type Output struct { bitIndex int; buffer []byte };");
             auto struct_def = struct_->add_section("def");
             auto fn = global->add_section("func").value();
             auto fn_dec = fn->add_section("dec").value();
@@ -436,19 +345,19 @@ namespace brgen::go_lang {
             auto old = c.set_last_should_be_return(false);
             {
                 auto enc = main_->add_section("encode").value();
-                enc->head().writeln("void main_encode(Output* output) {");
+                enc->head().writeln("func main_encode(output *Output) {");
                 enc->foot().writeln("}");
                 write_block(c, enc, p->elements);
             }
             c.def_done = true;
             {
                 auto dec = main_->add_section("decode").value();
-                dec->head().writeln("void main_decode(Input* input) {");
+                dec->head().writeln("func main_decode(input *Input) {");
                 dec->foot().writeln("}");
                 write_block(c, dec, p->elements);
             }
             if (c.config.test_main) {
-                main_->writeln("int main(){}");
+                main_->writeln("func main(){}");
             }
             return root;
         } catch (LocationError& e) {
