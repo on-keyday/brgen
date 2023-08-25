@@ -327,6 +327,12 @@ namespace brgen::ast {
                 }
                 else {
                     if (auto token = consume_op(i, ast::bin_layers[depth])) {
+                        if (depth == ast::bin_compare_layer) {
+                            if (auto bin = as<Binary>(expr); bin && is_compare_op(bin->op)) {
+                                // this is like `a == b == c` but this language not support it
+                                s.report_error(token->loc, "unexpected `", token->token, "`");
+                            }
+                        }
                         s.skip_white();
                         auto b = std::make_shared<Binary>(token->loc, std::move(expr), *ast::bin_op(ast::bin_layers[depth][i]));
                         if (depth == 0) {              // special case, needless to use stack

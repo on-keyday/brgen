@@ -196,23 +196,24 @@ namespace brgen::cpp_lang {
         w->writeln(io.add_offset(), ";");
     }
 
-    void write_encode(Context& c, const SectionPtr& w, std::shared_ptr<ast::Type>& ty, std::string_view target) {
+    std::string get_type_text(Context& c, const SectionPtr& w, std::shared_ptr<ast::Type>& ty) {
         if (ty->type != ast::NodeType::int_type) {
             error(ty->loc, "currently int type is only supported").report();
         }
         auto t = ast::as<ast::IntegerType>(ty);
-        auto base_ty = concat("std::uint", nums(ast::aligned_bit(t->bit_size)), "_t");
-        auto s = w->add_section(".", true).value();
-        auto& eb = s->head();
+        return concat("std::uint", nums(ast::aligned_bit(t->bit_size)), "_t");
+    }
 
+    void write_encode(Context& c, const SectionPtr& w, std::shared_ptr<ast::Type>& ty, std::string_view target) {
         writer::BitIOCodeGenerator io;
         io.io_object = "output";
         io.accessor = "->";
         io.buffer = "buffer";
         io.index = "bit_index";
         io.byte_type = "std::uint8_t";
+        auto base_ty = get_type_text(c, w, ty);
         io.base_type = base_ty;
-        io.bit_size_v = t->bit_size;
+        io.bit_size_v = ast::as<ast::IntegerType>(ty)->bit_size;
         io.target = target;
         io.is_encode = true;
         io.define_symbol = "=";
@@ -221,20 +222,15 @@ namespace brgen::cpp_lang {
     }
 
     void write_decode(Context& c, const SectionPtr& w, std::shared_ptr<ast::Type>& ty, std::string_view target) {
-        if (ty->type != ast::NodeType::int_type) {
-            error(ty->loc, "currently int type is only supported").report();
-        }
-        auto t = ast::as<ast::IntegerType>(ty);
-        auto base_ty = concat("std::uint", nums(ast::aligned_bit(t->bit_size)), "_t");
-
         writer::BitIOCodeGenerator io;
         io.io_object = "input";
         io.accessor = "->";
         io.buffer = "buffer";
         io.index = "bit_index";
         io.byte_type = "std::uint8_t";
+        auto base_ty = get_type_text(c, w, ty);
         io.base_type = base_ty;
-        io.bit_size_v = t->bit_size;
+        io.bit_size_v = ast::as<ast::IntegerType>(ty)->bit_size;
         io.target = target;
         io.is_encode = false;
         io.define_symbol = "=";
@@ -260,17 +256,17 @@ namespace brgen::cpp_lang {
                         auto found = w->lookup(path);
                         if (!found) {
                             auto d = w->add_section(path).value();
-                            d->writeln("std::uint64_t ", f->ident->ident, ";");
+                            d->writeln(get_type_text(c, w, f->field_type), " ", f->ident->ident, ";");
                         }
                     }
                     else {
-                        stmt->writeln("std::uint64_t ", f->ident->ident, ";");
+                        stmt->writeln(get_type_text(c, w, f->field_type), " ", f->ident->ident, ";");
                     }
                 }
-                if (c.mode == WriteMode::encode) {
+                if (c.mode == writer::WriteMode::encode) {
                     write_encode(c, w, f->field_type, f->ident ? f->ident->ident : "");
                 }
-                else if (c.mode == WriteMode::decode) {
+                else if (c.mode == writer::WriteMode::decode) {
                     write_decode(c, w, f->field_type, f->ident ? f->ident->ident : "");
                 }
             }
@@ -300,11 +296,11 @@ namespace brgen::cpp_lang {
                         dec->head().write("void ", path, "::decode(Input* input) ");
                         auto old = c.set_last_should_be_return(false);
                         {
-                            auto m = c.set_write_mode(WriteMode::encode);
+                            auto m = c.set_write_mode(writer::WriteMode::encode);
                             write_block_scope(c, enc, n->scope.get());
                         }
                         {
-                            auto m = c.set_write_mode(WriteMode::decode);
+                            auto m = c.set_write_mode(writer::WriteMode::decode);
                             write_block_scope(c, dec, n->scope.get());
                         }
                     }

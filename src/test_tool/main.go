@@ -33,7 +33,7 @@ func loadFiles(file, suffix string, do func(file string) error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	code_dir := filepath.Join(filepath.Dir(file), "/cpp_test_code/")
+	code_dir := filepath.Join(filepath.Dir(file), "/lang_test_code/")
 	var w sync.WaitGroup
 	var (
 		succeed_count atomic.Uint32

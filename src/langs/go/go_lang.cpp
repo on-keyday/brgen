@@ -11,6 +11,14 @@ namespace brgen::go_lang {
     void write_expr(Context& c, const SectionPtr& w, ast::Expr* expr);
     void write_block(Context& c, const SectionPtr& w, ast::node_list& elements);
 
+    std::string get_type_text(Context& c, const SectionPtr& w, std::shared_ptr<ast::Type>& ty) {
+        if (ty->type != ast::NodeType::int_type) {
+            error(ty->loc, "currently int type is only supported").report();
+        }
+        auto t = ast::as<ast::IntegerType>(ty);
+        return concat("uint", nums(ast::aligned_bit(t->bit_size)));
+    }
+
     void write_binary(Context& c, const SectionPtr& w, ast::Binary* b) {
         auto op = b->op;
         bool paren = op == ast::BinaryOp::bit_and || op == ast::BinaryOp::left_shift || op == ast::BinaryOp::right_shift;
@@ -32,10 +40,15 @@ namespace brgen::go_lang {
         }
     }
 
-    void write_block_scope(Context& c, const SectionPtr& w, ast::IndentScope* block) {
+    void write_block_scope(Context& c, const SectionPtr& w, ast::IndentScope* block, bool need_ln) {
         auto b = w->add_section("block", true).value();
         b->head().writeln("{");
-        b->foot().writeln("}");
+        if (need_ln) {
+            b->foot().writeln("}");
+        }
+        else {
+            b->foot().write("}");
+        }
         write_block(c, b, block->elements);
     }
 
@@ -45,15 +58,18 @@ namespace brgen::go_lang {
         cond->head().write("if(");
         cond->foot().write(") ");
         write_expr(c, cond, if_->cond.get());
-        write_block_scope(c, if_stmt, if_->block.get());
+        write_block_scope(c, if_stmt, if_->block.get(), false);
         if (if_->els) {
             w->write("else ");
             if (auto elif = ast::as<ast::If>(if_->els)) {
                 write_if_stmt(c, w, elif);
             }
             else if (auto els = ast::as<ast::IndentScope>(if_->els)) {
-                write_block_scope(c, w, els);
+                write_block_scope(c, w, els, true);
             }
+        }
+        else {
+            w->writeln("");
         }
     }
 
@@ -89,14 +105,14 @@ namespace brgen::go_lang {
             }
             else {
                 auto lambda = w->add_section(".", true).value();
-                lambda->head().writeln("func(){");
+                lambda->head().writeln("func() ", get_type_text(c, w, if_->expr_type), " {");
                 lambda->foot().write("}()");
                 auto ol = c.set_last_should_be_return(true);
                 write_if_stmt(c, lambda, if_);
             }
         }
         else if (auto cond = ast::as<ast::Cond>(expr)) {
-            w->writeln("func() {");
+            w->writeln("func() ", get_type_text(c, w, if_->expr_type), " {");
             w->write("if ");
             write_expr(c, w, cond->cond.get());
             w->writeln("{");
@@ -106,6 +122,7 @@ namespace brgen::go_lang {
             w->writeln("} else {");
             w->write("return ");
             write_expr(c, w, cond->els.get());
+            w->writeln("}");
             w->writeln("}()");
         }
         else if (auto unary = ast::as<ast::Unary>(expr)) {
@@ -209,22 +226,15 @@ namespace brgen::go_lang {
     }
 
     void write_encode(Context& c, const SectionPtr& w, std::shared_ptr<ast::Type>& ty, std::string_view target) {
-        if (ty->type != ast::NodeType::int_type) {
-            error(ty->loc, "currently int type is only supported").report();
-        }
-        auto t = ast::as<ast::IntegerType>(ty);
-        auto base_ty = concat("uint", nums(ast::aligned_bit(t->bit_size)));
-        auto s = w->add_section(".", true).value();
-        auto& eb = s->head();
-
         writer::BitIOCodeGenerator io;
         io.io_object = "output";
         io.accessor = ".";
         io.buffer = "buffer";
         io.index = "bitIndex";
         io.byte_type = "uint8";
+        auto base_ty = get_type_text(c, w, ty);
         io.base_type = base_ty;
-        io.bit_size_v = t->bit_size;
+        io.bit_size_v = ast::as<ast::IntegerType>(ty)->bit_size;
         io.target = target;
         io.is_encode = true;
         io.define_symbol = ":=";
@@ -233,20 +243,15 @@ namespace brgen::go_lang {
     }
 
     void write_decode(Context& c, const SectionPtr& w, std::shared_ptr<ast::Type>& ty, std::string_view target) {
-        if (ty->type != ast::NodeType::int_type) {
-            error(ty->loc, "currently int type is only supported").report();
-        }
-        auto t = ast::as<ast::IntegerType>(ty);
-        auto base_ty = concat("uint", nums(ast::aligned_bit(t->bit_size)));
-
         writer::BitIOCodeGenerator io;
         io.io_object = "input";
         io.accessor = ".";
         io.buffer = "buffer";
         io.index = "bitIndex";
         io.byte_type = "uint8";
+        auto base_ty = get_type_text(c, w, ty);
         io.base_type = base_ty;
-        io.bit_size_v = t->bit_size;
+        io.bit_size_v = ast::as<ast::IntegerType>(ty)->bit_size;
         io.target = target;
         io.is_encode = false;
         io.define_symbol = ":=";
@@ -272,17 +277,17 @@ namespace brgen::go_lang {
                         auto found = w->lookup(path);
                         if (!found) {
                             auto d = w->add_section(path).value();
-                            d->writeln(f->ident->ident, " int");
+                            d->writeln(f->ident->ident, " ", get_type_text(c, w, f->field_type));
                         }
                     }
                     else {
-                        stmt->writeln(f->ident->ident, " int");
+                        stmt->writeln("var ", f->ident->ident, " ", get_type_text(c, w, f->field_type));
                     }
                 }
-                if (c.mode == WriteMode::encode) {
+                if (c.mode == writer::WriteMode::encode) {
                     write_encode(c, w, f->field_type, f->ident ? "self." + f->ident->ident : "");
                 }
-                else if (c.mode == WriteMode::decode) {
+                else if (c.mode == writer::WriteMode::decode) {
                     write_decode(c, w, f->field_type, f->ident ? "self." + f->ident->ident : "");
                 }
             }
@@ -303,16 +308,16 @@ namespace brgen::go_lang {
 
                         auto enc = fn_def->add_section("encode").value();
                         auto dec = fn_def->add_section("decode").value();
-                        enc->head().write("func (self *", path, ") encode(Output* output) ");
-                        dec->head().write("func (self *", path, ") decode(Input* input) ");
+                        enc->head().write("func (self *", path, ") encode(output *Output) ");
+                        dec->head().write("func (self *", path, ") decode(input *Input) ");
                         auto old = c.set_last_should_be_return(false);
                         {
-                            auto m = c.set_write_mode(WriteMode::encode);
-                            write_block_scope(c, enc, n->scope.get());
+                            auto m = c.set_write_mode(writer::WriteMode::encode);
+                            write_block_scope(c, enc, n->scope.get(), true);
                         }
                         {
-                            auto m = c.set_write_mode(WriteMode::decode);
-                            write_block_scope(c, dec, n->scope.get());
+                            auto m = c.set_write_mode(writer::WriteMode::decode);
+                            write_block_scope(c, dec, n->scope.get(), true);
                         }
                     }
                 }

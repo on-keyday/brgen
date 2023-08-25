@@ -14,7 +14,7 @@ namespace brgen::ast {
 
     constexpr const char* unary_op[] = {"!", "++", "--", "-", "*", "&", nullptr};
     enum class BinaryOp {
-        // layer 1
+        // layer 0
         mul,
         div,
         mod,
@@ -22,13 +22,13 @@ namespace brgen::ast {
         right_shift,
         bit_and,
 
-        // layer 2
+        // layer 1
         add,
         sub,
         bit_or,
         bit_xor,
 
-        // layer 3
+        // layer 2
         equal,
         not_equal,
         less,
@@ -36,17 +36,17 @@ namespace brgen::ast {
         grater,
         grater_or_eq,
 
-        // layer 4
+        // layer 3
         logical_and,
 
-        // layer 5
+        // layer 4
         logical_or,
 
-        // layer 6
+        // layer 5
         cond_op1,
         cond_op2,
 
-        // layer 7
+        // layer 6
         assign,
         typed_assign,
         const_assign,
@@ -61,7 +61,7 @@ namespace brgen::ast {
         bit_or_assign,
         bit_xor_assign,
 
-        // layer 8
+        // layer 7
         comma,
     };
 
@@ -80,6 +80,13 @@ namespace brgen::ast {
     constexpr auto bin_cond_layer = 5;
     constexpr auto bin_assign_layer = 6;
     constexpr auto bin_comma_layer = 7;
+    constexpr auto bin_compare_layer = 2;
+
+    constexpr bool is_compare_op(BinaryOp op) {
+        constexpr auto begin = int(BinaryOp::equal);
+        constexpr auto end = int(BinaryOp::grater_or_eq);
+        return begin <= int(op) && int(op) <= end;
+    }
 
     constexpr const char* const* bin_layers[] = {
         bin_layer0,

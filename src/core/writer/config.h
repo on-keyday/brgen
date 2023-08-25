@@ -1,4 +1,5 @@
-
+/*license*/
+#pragma once
 
 namespace brgen::writer {
     struct Config {

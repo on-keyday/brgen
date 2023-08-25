@@ -21,6 +21,7 @@ int main(int argc, char** argv) {
                     field(path);
                 });
             });
+            d.set_utf_escape(true);
             field("code", w->flush());
         }
         add_result(std::move(d));
