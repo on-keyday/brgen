@@ -1,6 +1,7 @@
 name: brgen-test
 run-name: brgen test
-on: [push]
+on: 
+  - push
 jobs:
   test:
     runs-on: ubuntu-latest
