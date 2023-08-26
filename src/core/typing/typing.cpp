@@ -190,6 +190,15 @@ namespace brgen::typing {
         }
 
         if_->expr_type = then_;
+
+        auto& then_ref = if_->block->elements.back();
+
+        then_ref = std::make_shared<ast::ImplicitReturn>(std::static_pointer_cast<ast::Expr>(then_ref));
+        if (auto block = ast::as<ast::IndentScope>(if_->els)) {
+            auto& else_ref = block->elements.back();
+
+            else_ref = std::make_shared<ast::ImplicitReturn>(std::static_pointer_cast<ast::Expr>(else_ref));
+        }
     }
 
     static void typing_binary(ast::Binary* b) {

@@ -16,10 +16,48 @@
             ]
         },
         {
-            "name": "Debug(no copy)",
+            "name": "Debug go_test",
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceRoot}/build/test/go_test",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceRoot}",
+            "environment": [
+                {
+                    "name": "BASE_PATH",
+                    "value": "."
+                },
+                {
+                    "name": "FNET_QUIC_LIBSSL",
+                    "value": "C:/workspace/boringssl/build_debug/ssl/ssl.dll",
+                },
+                {
+                    "name": "FNET_QUIC_LIBCRYPTO",
+                    "value": "C:/workspace/boringssl/build_debug/crypto/crypto.dll"
+                },
+                {
+                    "name": "FNET_QUIC_LOCAL_CERT",
+                    "value": "C:/workspace/quic-go-test-server/keys/quic_mock_server.crt"
+                },
+                {
+                    "name": "FNET_QUIC_NET_CERT",
+                    "value": "${workspaceRoot}/src/test/fnet_util/cacert.pem"
+                },
+                {
+                    "name": "FNET_QUIC_LOCAL_PRIVATE_KEY",
+                    "value": "C:/workspace/quic-go-test-server/keys/quic_mock_server.key"
+                }
+            ],
+            "console": "integratedTerminal",
+            "preLaunchTask": "build",
+            "symbolSearchPath": "lib\\"
+        },
+        {
+            "name": "Debug cpp_test",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/build/test/cpp_test",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",

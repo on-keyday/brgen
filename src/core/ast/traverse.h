@@ -68,6 +68,9 @@ namespace brgen::ast {
             fn(v->expr_type);
             fn(v->target);
         }
+        CASE(Assert) {
+            fn(v->cond);
+        }
 #undef SWITCH
 #undef CASE
     }

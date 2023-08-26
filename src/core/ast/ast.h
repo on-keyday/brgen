@@ -40,6 +40,7 @@ namespace brgen::ast {
 
         // translated
         assert,
+        implicit_return,
 
         type = 0x040000,
         int_type,

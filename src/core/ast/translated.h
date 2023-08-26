@@ -21,6 +21,7 @@ namespace brgen::ast {
     };
 
     struct BlockExpr : Expr {
+        static constexpr NodeType node_type = NodeType::block_expr;
         node_list calls;
         std::shared_ptr<Expr> expr;
 
@@ -46,6 +47,20 @@ namespace brgen::ast {
             auto field = buf.object();
             basic_info(field);
             field(sdebugf(cond));
+        }
+    };
+
+    struct ImplicitReturn : Stmt {
+        static constexpr NodeType node_type = NodeType::implicit_return;
+        std::shared_ptr<Expr> expr;
+
+        ImplicitReturn(std::shared_ptr<Expr>&& a)
+            : Stmt(a->loc, NodeType::implicit_return), expr(std::move(a)) {}
+
+        void as_json(Debug& buf) const override {
+            auto field = buf.object();
+            basic_info(field);
+            field(sdebugf(expr));
         }
     };
 

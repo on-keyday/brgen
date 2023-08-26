@@ -68,8 +68,6 @@ namespace brgen::cpp_lang {
         else if (auto num = ast::as<ast::IntLiteral>(expr)) {
             w->write("0x", nums(*num->parse_as<std::uint64_t>(), 16));
         }
-        else if (auto call = ast::as<ast::Call>(expr)) {
-        }
         else if (auto paren = ast::as<ast::Paren>(expr)) {
             w->write("(");
             write_expr(c, w, paren->expr.get());
@@ -100,6 +98,9 @@ namespace brgen::cpp_lang {
         else if (auto unary = ast::as<ast::Unary>(expr)) {
             w->write(ast::unary_op[int(unary->op)], " ");
             write_expr(c, w, unary->target.get());
+        }
+        else if (auto tmp = ast::as<ast::TmpVar>(expr)) {
+            error(expr->loc, "unknown temp var").report();
         }
         else {
             error(expr->loc, "unsupported operation").report();
