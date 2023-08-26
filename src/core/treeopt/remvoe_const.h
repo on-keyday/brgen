@@ -20,6 +20,9 @@ namespace brgen::treeopt {
         if (auto i = ast::as<ast::IntLiteral>(expr)) {
             return true;
         }
+        if (auto ident = ast::as<ast::Ident>(expr)) {
+            return true;
+        }
         return false;
     }
 
@@ -30,9 +33,9 @@ namespace brgen::treeopt {
         auto each_element = [&](ast::node_list& list) {
             for (auto it = list.begin(); it != list.end();) {
                 remove_const(warn, *it);
-                if (ast::as_Expr(node)) {
-                    if (is_const(std::static_pointer_cast<ast::Expr>(node))) {
-                        warn.warning(node->loc, "removing unused constant value; use ==,!=,<,<=,>,>=,&& or || for assertion");
+                if (ast::as_Expr(*it)) {
+                    if (is_const(std::static_pointer_cast<ast::Expr>(*it))) {
+                        warn.warning((*it)->loc, "removing unused constant value; use ==,!=,<,<=,>,>=,&& or || for assertion");
                         it = list.erase(it);
                         continue;
                     }
