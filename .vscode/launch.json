@@ -19,7 +19,7 @@
             "name": "Debug(no copy)",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceRoot}/build/test/cpp_test",
+            "program": "${workspaceRoot}/build/test/go_test",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",

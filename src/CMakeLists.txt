@@ -6,6 +6,7 @@ add_executable(lexer_test "test/lexer_test.cpp")
 
 add_library(ast_test_component STATIC
 "test/ast_test_component.cpp"
+"core/typing/typing.cpp"
 )
 
 target_link_libraries(lexer_test gtest_main)
@@ -16,7 +17,7 @@ target_link_libraries(ast_test ast_test_component)
 
 
 add_executable(typing_test "test/typing_test.cpp"
-"core/typing/typing.cpp")
+)
 
 target_link_libraries(typing_test ast_test_component)
 
@@ -25,16 +26,14 @@ add_executable(section_writer_test "test/section_writer_test.cpp")
 target_link_libraries(section_writer_test gtest_main)
 
 add_executable(cpp_test "test/langs/cpp_test.cpp"
-"langs/cpp/cpp_lang.cpp"
-"core/typing/typing.cpp")
+"langs/cpp/cpp_lang.cpp")
 
 
 
 target_link_libraries(cpp_test ast_test_component)
 
 add_executable(go_test "test/langs/go_test.cpp"
-"langs/go/go_lang.cpp"
-"core/typing/typing.cpp")
+"langs/go/go_lang.cpp")
 
 target_link_libraries(go_test ast_test_component)
 

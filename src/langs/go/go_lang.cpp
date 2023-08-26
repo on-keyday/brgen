@@ -112,7 +112,7 @@ namespace brgen::go_lang {
             }
         }
         else if (auto cond = ast::as<ast::Cond>(expr)) {
-            w->writeln("func() ", get_type_text(c, w, if_->expr_type), " {");
+            w->writeln("func() ", get_type_text(c, w, cond->expr_type), " {");
             w->write("if ");
             write_expr(c, w, cond->cond.get());
             w->writeln("{");

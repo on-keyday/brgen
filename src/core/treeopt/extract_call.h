@@ -30,7 +30,7 @@ namespace brgen::treeopt {
                 return true;
             }
             if (auto if_ = ast::as<ast::If>(c)) {
-                ast::objlist l;
+                ast::node_list l;
                 {
                     auto scope = h.enter_holder(&l);
                     extract_call(h, if_->cond);
@@ -56,7 +56,7 @@ namespace brgen::treeopt {
         else {
             if constexpr (std::is_base_of_v<T, ast::If>) {
                 if (ast::If* if_ = ast::as<ast::If>(c)) {
-                    ast::objlist l;
+                    ast::node_list l;
                     {
                         auto scope = h.enter_holder(&l);
                         extract_call(h, if_->cond);

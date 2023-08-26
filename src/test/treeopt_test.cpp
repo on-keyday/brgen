@@ -1,27 +1,19 @@
 /*license*/
-#include "../ast/test_component.h"
+#include "ast_test_component.h"
 #include "extract_call.h"
+#include <gtest/gtest.h>
 using namespace brgen;
 
-void test_extract_call(AstList& c) {
-    Debug d;
-    d.array([&](auto&& field) {
-        for (auto& f : c) {
-            if (auto got = f.get()) {
-                field([&](Debug& d) {
-                    got->as_json(d);
-                });
-            }
-        }
-    });
-    cerr << d.buf << "\n";
-    save_result(d, "./test/treeopt_test_result.json");
-}
-
-int main() {
-    auto c = test_ast([](auto& a, auto& in, auto) {
+int main(int argc, char** argv) {
+    set_handler([](auto a, auto in, auto) {
         treeopt::ExtractContext h;
         treeopt::extract_call(h, a);
+        Debug d;
+        d.value(a);
+        add_result(std::move(d));
     });
-    test_extract_call(c);
+    ::testing::InitGoogleTest(&argc, argv);
+    auto res = RUN_ALL_TESTS();
+    save_result("ast_test_result.json");
+    return res;
 }
