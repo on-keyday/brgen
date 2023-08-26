@@ -1,0 +1,3 @@
+fmt Data:
+    len :u8
+    payload :[len]u8

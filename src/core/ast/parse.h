@@ -375,6 +375,16 @@ namespace brgen::ast {
         }
 
         std::shared_ptr<Type> parse_type() {
+            if (auto arr_begin = s.consume_token("[")) {
+                s.skip_white();
+                auto expr = parse_expr();
+                s.skip_white();
+                auto end_tok = s.must_consume_token("]");
+                s.skip_space();
+                auto base_type = parse_type();
+                return std::make_shared<ArrayType>(arr_begin->loc, std::move(expr), end_tok.loc, std::move(base_type));
+            }
+
             auto ident = s.must_consume_token(lexer::Tag::ident);
 
             if (auto bit_size = is_int_type(ident.token)) {
@@ -413,6 +423,7 @@ namespace brgen::ast {
             }
 
             field->ident = std::move(ident);
+            s.skip_space();
 
             field->field_type = parse_type();
 

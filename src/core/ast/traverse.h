@@ -71,6 +71,10 @@ namespace brgen::ast {
         CASE(Assert) {
             fn(v->cond);
         }
+        CASE(ArrayType) {
+            fn(v->base_type);
+            fn(v->length);
+        }
 #undef SWITCH
 #undef CASE
     }

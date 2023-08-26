@@ -49,6 +49,7 @@ namespace brgen::ast {
         str_literal_type,
         void_type,
         bool_type,
+        array_type,
     };
 
     constexpr const char* node_type_to_string(NodeType type) {
@@ -91,6 +92,10 @@ namespace brgen::ast {
                 return "fmt";
             case NodeType::indent_scope:
                 return "indent_scope";
+            case NodeType::assert:
+                return "assert";
+            case NodeType::implicit_return:
+                return "implicit_return";
             case NodeType::type:
                 return "type";
             case NodeType::int_type:
@@ -105,6 +110,8 @@ namespace brgen::ast {
                 return "void_type";
             case NodeType::bool_type:
                 return "bool_type";
+            case NodeType::array_type:
+                return "array_type";
             default:
                 return "unknown";
         }
@@ -580,6 +587,23 @@ namespace brgen::ast {
         void as_json(Debug& buf) const override {
             auto field = buf.object();
             basic_info(field);
+        }
+    };
+
+    struct ArrayType : Type {
+        static constexpr NodeType node_type = NodeType::array_type;
+        std::shared_ptr<ast::Expr> length;
+        lexer::Loc end_loc;
+        std::shared_ptr<ast::Type> base_type;
+
+        ArrayType(lexer::Loc l, std::shared_ptr<ast::Expr>&& len, lexer::Loc end, std::shared_ptr<ast::Type>&& base)
+            : Type(l, NodeType::array_type), length(std::move(len)), end_loc(end), base_type(std::move(base)) {}
+
+        void as_json(Debug& buf) const override {
+            auto field = buf.object();
+            basic_info(field);
+            field(sdebugf(base_type));
+            field(sdebugf(length));
         }
     };
 
