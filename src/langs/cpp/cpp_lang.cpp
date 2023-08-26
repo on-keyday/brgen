@@ -181,14 +181,20 @@ namespace brgen::cpp_lang {
     }
 
     std::string get_type_text(Context& c, const SectionPtr& w, std::shared_ptr<ast::Type>& ty) {
+        if (auto arr = ast::as<ast::ArrayType>(ty)) {
+            return concat("std::vector<", get_type_text(c, w, arr->base_type), ">");
+        }
         if (ty->type != ast::NodeType::int_type) {
-            error(ty->loc, "currently int type is only supported").report();
+            error(ty->loc, "currently int or array type are only supported").report();
         }
         auto t = ast::as<ast::IntegerType>(ty);
         return concat("std::uint", nums(ast::aligned_bit(t->bit_size)), "_t");
     }
 
     void write_encode(Context& c, const SectionPtr& w, std::shared_ptr<ast::Type>& ty, std::string_view target) {
+        if (auto a = ast::as<ast::ArrayType>(ty)) {
+            return;  // currently ignore
+        }
         writer::BitIOCodeGenerator io;
         io.io_object = "output";
         io.accessor = "->";
@@ -206,6 +212,29 @@ namespace brgen::cpp_lang {
     }
 
     void write_decode(Context& c, const SectionPtr& w, std::shared_ptr<ast::Type>& ty, std::string_view target) {
+        if (auto arr = ast::as<ast::ArrayType>(ty)) {
+            auto hdr = w->lookup("/header");
+            if (!hdr->lookup("vector")) {
+                auto sec = hdr->add_section("vector").value();
+                sec->writeln("#include<vector>");
+            }
+            auto scope = w->add_section(".", true).value();
+            scope->head().writeln("{");
+            scope->foot().writeln("}");
+            auto ident = concat(target, "_arr_tmp");
+            scope->writeln(get_type_text(c, scope, arr->base_type), " ", ident, ";");
+            auto for_ = scope->add_section(".").value();
+            for_->write("for(size_t ", ident, "_i = 0;", ident, "_i < (");
+            write_expr(c, for_, arr->length.get());
+            for_->write("); ", ident, "_i++", ") ");
+            auto inner = for_->add_section(".", true).value();
+            inner->head().writeln("{");
+            inner->foot().writeln("}");
+            write_decode(c, inner, arr->base_type, ident);
+            inner->writeln(target, ".push_back(", ident, ");");
+            return;
+        }
+
         writer::BitIOCodeGenerator io;
         io.io_object = "input";
         io.accessor = "->";
