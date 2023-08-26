@@ -35,4 +35,18 @@ namespace brgen::ast {
         }
     };
 
+    struct Assert : Stmt {
+        static constexpr NodeType node_type = NodeType::assert;
+        std::shared_ptr<Binary> cond;
+
+        Assert(std::shared_ptr<Binary>&& a)
+            : Stmt(a->loc, NodeType::assert), cond(std::move(a)) {}
+
+        void as_json(Debug& buf) const override {
+            auto field = buf.object();
+            basic_info(field);
+            field(sdebugf(cond));
+        }
+    };
+
 }  // namespace brgen::ast

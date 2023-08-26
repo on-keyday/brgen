@@ -1,13 +1,15 @@
 /*license*/
 #include "langs/go/go_lang.h"
 #include "../ast_test_component.h"
-#include "core/typing/typing.h"
+#include "core/middle/middle.h"
 #include <gtest/gtest.h>
 using namespace brgen;
 
 int main(int argc, char** argv) {
     set_handler([](auto& a, auto i, auto fs) {
-        typing::typing_with_error(a).transform_error(to_source_error(fs)).value();
+        middle::apply_middle(a)
+            .transform_error(to_source_error(fs))
+            .value();
         go_lang::Context ctx;
         ctx.config.test_main = true;
         auto w = go_lang::entry(ctx, a).transform_error(to_source_error(fs)).value();

@@ -1,13 +1,15 @@
 /*license*/
 #include "langs/cpp/cpp_lang.h"
 #include "../ast_test_component.h"
-#include "core/typing/typing.h"
+#include "core/middle/middle.h"
 #include <gtest/gtest.h>
 using namespace brgen;
 
 int main(int argc, char** argv) {
     set_handler([](auto& a, auto i, auto fs) {
-        typing::typing_with_error(a).transform_error(to_source_error(fs)).value();
+        middle::apply_middle(a)
+            .transform_error(to_source_error(fs))
+            .value();
         cpp_lang::Context ctx;
         ctx.config.test_main = true;
         // ctx.config.insert_bit_pos_debug_code = true;

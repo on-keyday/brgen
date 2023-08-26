@@ -37,6 +37,10 @@ namespace brgen::ast {
         field,
         fmt,
         indent_scope,
+
+        // translated
+        assert,
+
         type = 0x040000,
         int_type,
         ident_type,
@@ -113,7 +117,8 @@ namespace brgen::ast {
         virtual ~Node() {}
 
         virtual void as_json(Debug& buf) const {
-            buf.null();
+            auto field = buf.object();
+            basic_info(field);
         }
 
         void basic_info(auto&& field) const {
@@ -583,6 +588,13 @@ namespace brgen::ast {
 
         StrLiteralType(lexer::Loc loc, std::string&& str)
             : Type(loc, NodeType::str_literal_type) {}
+
+        void as_json(Debug& buf) const override {
+            auto field = buf.object();
+            basic_info(field);
+            field(sdebugf(raw));
+            field(sdebugf(mid));
+        }
     };
 
     void debug_def_frames(Debug& d, const define_frame& f);
