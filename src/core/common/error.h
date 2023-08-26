@@ -67,7 +67,7 @@ namespace brgen {
             return *this;
         }
 
-        [[nodiscard]] LocationError& warning(lexer::Loc loc, auto&&... msg) {
+        LocationError& warning(lexer::Loc loc, auto&&... msg) {
             std::string buf;
             appends(buf, msg...);
             locations.push_back(LocationEntry{std::move(buf), loc, true});

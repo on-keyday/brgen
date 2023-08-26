@@ -100,14 +100,12 @@ namespace brgen::go_lang {
         }
         else if (auto if_ = ast::as<ast::If>(expr)) {
             if (if_->expr_type->type == ast::NodeType::void_type) {
-                auto old = c.set_last_should_be_return(false);
                 write_if_stmt(c, w, if_);
             }
             else {
                 auto lambda = w->add_section(".", true).value();
                 lambda->head().writeln("func() ", get_type_text(c, w, if_->expr_type), " {");
                 lambda->foot().write("}()");
-                auto ol = c.set_last_should_be_return(true);
                 write_if_stmt(c, lambda, if_);
             }
         }
@@ -248,10 +246,12 @@ namespace brgen::go_lang {
         for (auto it = elements.begin(); it != elements.end(); it++) {
             auto& element = *it;
             auto stmt = w->add_section(".").value();
-            if (c.last_should_be_return && it == --elements.end()) {
+            if (auto a = ast::as<ast::ImplicitReturn>(element)) {
                 stmt->write("return ");
+                write_expr(c, stmt, a->expr.get());
+                stmt->writeln(";");
             }
-            if (auto a = ast::as_Expr(element)) {
+            else if (auto a = ast::as_Expr(element)) {
                 write_expr(c, stmt, a);
                 stmt->writeln(";");
             }
@@ -295,7 +295,6 @@ namespace brgen::go_lang {
                         auto dec = fn_def->add_section("decode").value();
                         enc->head().write("func (self *", path, ") encode(output *Output) ");
                         dec->head().write("func (self *", path, ") decode(input *Input) ");
-                        auto old = c.set_last_should_be_return(false);
                         {
                             auto m = c.set_write_mode(writer::WriteMode::encode);
                             write_block_scope(c, enc, n->scope.get(), true);
@@ -332,7 +331,6 @@ namespace brgen::go_lang {
             auto fn_dec = fn->add_section("dec").value();
             auto fn_def = fn->add_section("def").value();
             auto main_ = root->add_section("main").value();
-            auto old = c.set_last_should_be_return(false);
             {
                 auto enc = main_->add_section("encode").value();
                 enc->head().writeln("func main_encode(output *Output) {");

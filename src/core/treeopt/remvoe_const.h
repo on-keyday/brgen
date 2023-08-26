@@ -3,20 +3,41 @@
 #include "core/ast/ast.h"
 #include "core/ast/translated.h"
 #include "core/ast/traverse.h"
+#include "core/common/error.h"
 
 namespace brgen::treeopt {
-    inline bool is_const(const std::shared_ptr<ast::Expr>& expr) {}
+    inline bool is_const(const std::shared_ptr<ast::Expr>& expr) {
+        if (auto bin = ast::as<ast::Binary>(expr)) {
+            return is_const(bin->left) &&
+                   is_const(bin->right);
+        }
+        if (auto u = ast::as<ast::Unary>(expr)) {
+            return is_const(u->target);
+        }
+        if (auto p = ast::as<ast::Paren>(expr)) {
+            return is_const(p->expr);
+        }
+        if (auto i = ast::as<ast::IntLiteral>(expr)) {
+            return true;
+        }
+        return false;
+    }
 
-    inline void remove_const(const std::shared_ptr<ast::Node>& node) {
+    inline void remove_const(LocationError& warn, const std::shared_ptr<ast::Node>& node) {
         if (!node) {
             return;
         }
         auto each_element = [&](ast::node_list& list) {
-            for (auto it = list.begin(); it != list.end(); it++) {
-                remove_const(*it);
-                if (auto bin = ast::as<ast::Binary>(*it); bin && ast::is_boolean_op(bin->op)) {
-                    *it = std::make_shared<ast::Assert>(std::static_pointer_cast<ast::Binary>(*it));
+            for (auto it = list.begin(); it != list.end();) {
+                remove_const(warn, *it);
+                if (ast::as_Expr(node)) {
+                    if (is_const(std::static_pointer_cast<ast::Expr>(node))) {
+                        warn.warning(node->loc, "removing unused constant value; use ==,!=,<,<=,>,>=,&& or || for assertion");
+                        it = list.erase(it);
+                        continue;
+                    }
                 }
+                it++;
             }
         };
         if (auto a = ast::as<ast::Program>(node)) {

@@ -10,7 +10,6 @@ namespace brgen::writer {
         decode,
     };
     struct Context {
-        bool last_should_be_return = false;
         WriteMode mode = WriteMode::unspec;
         bool def_done = false;
         Config config;
@@ -25,10 +24,6 @@ namespace brgen::writer {
         }
 
        public:
-        auto set_last_should_be_return(bool b) {
-            return do_exchange(last_should_be_return, b);
-        }
-
         auto set_write_mode(WriteMode m) {
             return do_exchange(mode, m);
         }

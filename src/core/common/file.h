@@ -72,13 +72,14 @@ namespace brgen {
         }
 
        public:
-        SourceEntry error(std::string&& msg, lexer::Pos pos) {
+        SourceEntry error(std::string&& msg, lexer::Pos pos, bool warn = false) {
             auto [src, loc] = dump(pos);
             return SourceEntry{
                 std::move(msg),
                 file_name.generic_string(),
                 loc,
                 std::move(src),
+                warn,
             };
         }
 
@@ -129,7 +130,7 @@ namespace brgen {
             return file;
         }
 
-        SourceEntry error(std::string&& msg, lexer::Loc loc) {
+        SourceEntry error(std::string&& msg, lexer::Loc loc, bool warn = false) {
             auto got = get_input(loc.file);
             if (!got) {
                 return SourceEntry{
@@ -137,6 +138,7 @@ namespace brgen {
                     .file = "<unknown source>",
                     .loc = {0, 0},
                     .src = "<unknown source>",
+                    .warn = warn,
                 };
             }
             return got->error(std::move(msg), loc.pos);
@@ -147,7 +149,7 @@ namespace brgen {
         return [&](LocationError&& err) {
             SourceError src;
             for (auto& loc : err.locations) {
-                src.errs.push_back(fs.error(std::move(loc.msg), loc.loc));
+                src.errs.push_back(fs.error(std::move(loc.msg), loc.loc, loc.warn));
             }
             if (err.locations.size() == 0) {
                 src.errs.push_back(fs.error("unexpected errors", {}));
