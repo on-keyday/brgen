@@ -101,24 +101,9 @@ namespace brgen::cpp_lang {
             w->write(ast::unary_op[int(unary->op)], " ");
             write_expr(c, w, unary->target.get());
         }
-    }
-
-    void append_bits_to_target(writer::Writer& eb, std::string_view target, std::string_view expression, bool assign = false) {
-        if (assign) {
-            eb.writeln(target, "=", expression, ";");
-        }
         else {
-            eb.writeln(target, "|=", expression, ";");
+            error(expr->loc, "unsupported operation").report();
         }
-    }
-
-    void write_encode_section(writer::Writer& eb, std::string_view target, std::string_view expression, bool assign = false) {
-        eb.writeln("{");
-        {
-            auto sc = eb.indent_scope();
-            append_bits_to_target(eb, target, expression, assign);
-        }
-        eb.writeln("}");
     }
 
     void write_bit_io_code(Context& c, const SectionPtr& w, writer::BitIOCodeGenerator& io) {

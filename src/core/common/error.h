@@ -13,6 +13,7 @@ namespace brgen {
         std::string file;
         utils::code::SrcLoc loc;
         std::string src;
+        bool warn = false;
 
         std::string to_string() {
             std::string buf;
@@ -21,7 +22,7 @@ namespace brgen {
         }
 
         void error(auto&& buf) {
-            appends(buf, "error: ", msg, "\n",
+            appends(buf, warn ? "warning: " : "error: ", msg, "\n",
                     file, ":", nums(loc.line + 1), ":", nums(loc.pos + 1), ":\n",
                     src);
         }
@@ -50,6 +51,7 @@ namespace brgen {
     struct LocationEntry {
         std::string msg;
         lexer::Loc loc;
+        bool warn = false;
     };
 
     struct LocationError {
@@ -64,10 +66,21 @@ namespace brgen {
             locations.push_back(LocationEntry{std::move(buf), loc});
             return *this;
         }
+
+        [[nodiscard]] LocationError& warning(lexer::Loc loc, auto&&... msg) {
+            std::string buf;
+            appends(buf, msg...);
+            locations.push_back(LocationEntry{std::move(buf), loc, true});
+            return *this;
+        }
     };
 
     [[nodiscard]] inline LocationError error(lexer::Loc loc, auto&&... msg) {
         return LocationError{}.error(loc, msg...);
+    }
+
+    [[nodiscard]] inline LocationError warning(lexer::Loc loc, auto&&... msg) {
+        return LocationError{}.warning(loc, msg...);
     }
 
     template <class T>
