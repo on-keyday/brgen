@@ -75,6 +75,9 @@ namespace brgen::ast {
             fn(v->base_type);
             fn(v->length);
         }
+        CASE(ImplicitReturn) {
+            fn(v->expr);
+        }
 #undef SWITCH
 #undef CASE
     }
