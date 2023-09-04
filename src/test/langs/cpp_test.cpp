@@ -6,7 +6,7 @@
 using namespace brgen;
 
 int main(int argc, char** argv) {
-    set_handler([](auto& a, auto i, auto fs) {
+    set_test_handler([](auto& a, auto i, auto fs) {
         LocationError warns;
         middle::apply_middle(warns, a)
             .transform_error(to_source_error(fs))

@@ -112,7 +112,7 @@ std::shared_ptr<ast::Program> test_file(std::string_view name, Continuation cont
     return prog;
 }*/
 
-void set_handler(Continuation cont) {
+void set_test_handler(Continuation cont) {
     brgen::ast::handler = cont;
 }
 

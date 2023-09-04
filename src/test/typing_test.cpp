@@ -5,7 +5,7 @@
 using namespace brgen;
 
 int main(int argc, char** argv) {
-    set_handler([](auto& a, File* input, FileSet& fs) {
+    set_test_handler([](auto& a, File* input, FileSet& fs) {
         typing::Typing{}.typing(a).transform_error(to_source_error(fs)).value();
         Debug d;
         d.value(a);
