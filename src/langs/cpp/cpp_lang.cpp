@@ -223,6 +223,10 @@ namespace brgen::cpp_lang {
             scope->foot().writeln("}");
             auto ident = concat(target, "_arr_tmp");
             scope->writeln(get_type_text(c, scope, arr->base_type), " ", ident, ";");
+            scope->write(target, ".", "reserve(");
+            write_expr(c, scope, arr->length.get());
+            scope->writeln(");");
+            scope->writeln(target, ".resize(0);");
             auto for_ = scope->add_section(".").value();
             for_->write("for(size_t ", ident, "_i = 0;", ident, "_i < (");
             write_expr(c, for_, arr->length.get());
@@ -231,7 +235,7 @@ namespace brgen::cpp_lang {
             inner->head().writeln("{");
             inner->foot().writeln("}");
             write_decode(c, inner, arr->base_type, ident);
-            inner->writeln(target, ".push_back(", ident, ");");
+            inner->writeln(target, ".push_back(std::move(", ident, "));");
             return;
         }
 

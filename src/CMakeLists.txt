@@ -6,7 +6,6 @@ add_executable(lexer_test "test/lexer_test.cpp")
 
 add_library(ast_test_component STATIC
 "test/ast_test_component.cpp"
-"core/typing/typing.cpp"
 )
 
 target_link_libraries(lexer_test gtest_main)

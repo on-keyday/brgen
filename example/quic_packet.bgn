@@ -1,21 +1,29 @@
 
 
 fmt QUICPacket: 
-   form :b1
-   if form:
+   form :u1
+   fixed :u1
+   if form == 1:
       :LongPacket
    else:
       :OneRTTPacket
    
 
 fmt LongPacket:
-   fixed :b1
-   long_packet_type :b2
-   reserved :b2
-   packet_number_length :b2
+   long_packet_type :u2
+   reserved :u2
+   packet_number_length :u2
    version :u32
    dst_conn_id :ConnectionID
    src_conn_id :ConnectionID
+
+fmt OneRTTPacket:
+   spin :u1
+   reserved :u2
+   key_phase :u2
+   packet_number_length :u2
+   dst_conn_id :ConnectionID
+
 
 fmt ConnectionID:
    id :[]byte

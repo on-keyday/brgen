@@ -24,40 +24,43 @@ typedef struct {
 } ConnectionID;
 
 typedef struct {
-    uint8_t fixed_bit_long_packet_type_reserved_packet_number_length;
+    uint8_t long_packet_type : 2;
+    uint8_t reserved : 2;
+    uint8_t packet_number_length : 2;
     uint32_t version;
     ConnectionID dst_conn_id;
     ConnectionID src_conn_id;
 } LongPacket;
 
 typedef struct {
-    uint8_t fixed_bit_;
-} ShortPacket;
+    uint8_t spin : 1;
+    uint8_t reserved : 2;
+    uint8_t key_phase : 1;
+    uint8_t packet_number_length : 2;
+    ConnectionID dst_conn_id;
+} OneRTTPacket;
 
 typedef struct {
-    uint8_t form;
+    uint8_t form : 1;
+    uint8_t fixed : 1;
     union {
         LongPacket long_packet__;
-        struct {
-            ConnectionID dst_conn_id;
-        };
+        OneRTTPacket one_rtt_packet__;
     };
 } QUICPacket;
 
-int decode_LongPacket(Input* input) {
-}
-
 int decode_QUICPacket(Input* input, QUICPacket* output) {
-    uint8_t form = (input->buffer[input->bit_index >> 3] & (uint8_t)(0x1 << (7 - (input->bit_index & 0x7)))) >> 7;
-    output->form = form;
-    if (!input_seek_bit(input, 1)) {
-        return 0;
-    }
-    if (form != 0) {
-        if (!decode_LongPacket(input)) {
-            return form;
+    output->form = (input->buffer[input->bit_index >> 3] & 0x80);
+    output->fixed = (input->buffer[input->bit_index >> 3] & 0x40);
+    input->bit_index += 2;
+    if (output->form == 1) {
+        if (!decode_LongPacket(input, &output->long_packet__)) {
+            return 0;
         }
     }
     else {
+        if (!decode_OneRTTPacket(input, &output->one_rtt_packet__)) {
+            return 0;
+        }
     }
 }

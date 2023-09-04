@@ -11,6 +11,7 @@
 #include "../common/util.h"
 #include "../common/debug.h"
 #include <binary/flags.h>
+#include <binary/log2i.h>
 
 namespace brgen::ast {
 
@@ -19,6 +20,10 @@ namespace brgen::ast {
         expr = 0x010000,
         int_literal,
         bool_literal,
+
+        input,
+        output,
+
         binary,
         unary,
         cond,
@@ -234,10 +239,13 @@ namespace brgen::ast {
         }
     };
 
+    struct Function;
+
     struct Definitions {
         std::map<std::string, std::list<std::shared_ptr<Fmt>>> fmts;
         std::map<std::string, std::list<std::shared_ptr<Ident>>> idents;
         std::list<std::shared_ptr<Field>> fields;
+        std::map<std::string, std::shared_ptr<Function>> funcs;
         node_list order;
 
         void add_fmt(std::string& name, const std::shared_ptr<Fmt>& f);
@@ -477,6 +485,24 @@ namespace brgen::ast {
             : Literal(l, NodeType::bool_literal), value(t) {}
     };
 
+    struct Input : Literal {
+        static constexpr NodeType node_type = NodeType::input;
+
+        Input(lexer::Loc l, const std::shared_ptr<Type>& d)
+            : Literal(l, NodeType::input) {
+            expr_type = d;
+        }
+    };
+
+    struct Output : Literal {
+        static constexpr NodeType node_type = NodeType::output;
+
+        Output(lexer::Loc l, const std::shared_ptr<Type>& d)
+            : Literal(l, NodeType::output) {
+            expr_type = d;
+        }
+    };
+
     // types
 
     constexpr std::uint8_t aligned_bit(size_t bit) {
@@ -556,6 +582,7 @@ namespace brgen::ast {
         static constexpr NodeType node_type = NodeType::ident_type;
         std::string ident;
         define_frame frame;
+        std::weak_ptr<Fmt> link_to;
         IdentType(lexer::Loc l, std::string&& token, define_frame&& frame)
             : Type(l, NodeType::ident_type), ident(std::move(token)), frame(std::move(frame)) {}
 
@@ -563,6 +590,8 @@ namespace brgen::ast {
             auto field = buf.object();
             basic_info(field);
             field(sdebugf(ident));
+            auto link = link_to.lock();
+            field(sdebugf(link));
         }
     };
 
