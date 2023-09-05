@@ -631,6 +631,7 @@ namespace brgen::ast {
         void as_json(Debug& buf) const override {
             auto field = buf.object();
             basic_info(field);
+            field(sdebugf(end_loc));
             field(sdebugf(base_type));
             field(sdebugf(length));
         }

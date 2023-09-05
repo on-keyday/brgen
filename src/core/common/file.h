@@ -137,7 +137,7 @@ namespace brgen {
                     .msg = std::move(msg),
                     .file = "<unknown source>",
                     .loc = {0, 0},
-                    .src = "<unknown source>",
+                    .src = "",
                     .warn = warn,
                 };
             }
