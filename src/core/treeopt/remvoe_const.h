@@ -33,7 +33,7 @@ namespace brgen::treeopt {
         auto each_element = [&](ast::node_list& list) {
             for (auto it = list.begin(); it != list.end();) {
                 remove_const(warn, *it);
-                if (ast::as_Expr(*it)) {
+                if (ast::as<ast::Expr>(*it)) {
                     if (is_const(std::static_pointer_cast<ast::Expr>(*it))) {
                         warn.warning((*it)->loc, "removing unused constant value; use ==,!=,<,<=,>,>=,&& or || for assertion");
                         it = list.erase(it);

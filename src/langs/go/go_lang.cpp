@@ -251,7 +251,7 @@ namespace brgen::go_lang {
                 write_expr(c, stmt, a->expr.get());
                 stmt->writeln(";");
             }
-            else if (auto a = ast::as_Expr(element)) {
+            else if (auto a = ast::as<ast::Expr>(element)) {
                 write_expr(c, stmt, a);
                 stmt->writeln(";");
             }

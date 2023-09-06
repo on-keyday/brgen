@@ -12,6 +12,7 @@
 #include "../common/debug.h"
 #include <binary/flags.h>
 #include <binary/log2i.h>
+#include "../common/expected.h"
 
 namespace brgen::ast {
 
@@ -55,71 +56,198 @@ namespace brgen::ast {
         void_type,
         bool_type,
         array_type,
+
+        node_type_max = array_type,
     };
 
-    constexpr const char* node_type_to_string(NodeType type) {
+    constexpr const char* node_type_str[]{
+        "program",
+        "expr",
+        "int_literal",
+        "bool_literal",
+        "input",
+        "output",
+        "binary",
+        "unary",
+        "cond",
+        "ident",
+        "call",
+        "if_",
+        "member_access",
+        "paren",
+        "tmp_var",
+        "block_expr",
+        "stmt",
+        "for_",
+        "field",
+        "fmt",
+        "indent_scope",
+        "assert",
+        "implicit_return",
+        "type",
+        "int_type",
+        "ident_type",
+        "int_literal_type",
+        "str_literal_type",
+        "void_type",
+        "bool_type",
+        "array_type",
+    };
+
+    constexpr int mapNodeTypeToValue(NodeType type) {
         switch (type) {
             case NodeType::program:
-                return "program";
+                return 0;
             case NodeType::expr:
-                return "expr";
+                return 1;
             case NodeType::int_literal:
-                return "int_literal";
+                return 2;
             case NodeType::bool_literal:
-                return "bool_literal";
+                return 3;
+            case NodeType::input:
+                return 4;
+            case NodeType::output:
+                return 5;
             case NodeType::binary:
-                return "binary";
+                return 6;
             case NodeType::unary:
-                return "unary";
+                return 7;
             case NodeType::cond:
-                return "cond";
+                return 8;
             case NodeType::ident:
-                return "ident";
+                return 9;
             case NodeType::call:
-                return "call";
+                return 10;
             case NodeType::if_:
-                return "if";
+                return 11;
             case NodeType::member_access:
-                return "member_access";
+                return 12;
             case NodeType::paren:
-                return "paren";
+                return 13;
             case NodeType::tmp_var:
-                return "tmp_var";
+                return 14;
             case NodeType::block_expr:
-                return "block_expr";
+                return 15;
             case NodeType::stmt:
-                return "stmt";
+                return 16;
             case NodeType::for_:
-                return "for";
+                return 17;
             case NodeType::field:
-                return "field";
+                return 18;
             case NodeType::fmt:
-                return "fmt";
+                return 19;
             case NodeType::indent_scope:
-                return "indent_scope";
+                return 20;
             case NodeType::assert:
-                return "assert";
+                return 21;
             case NodeType::implicit_return:
-                return "implicit_return";
+                return 22;
             case NodeType::type:
-                return "type";
+                return 23;
             case NodeType::int_type:
-                return "int_type";
+                return 24;
             case NodeType::ident_type:
-                return "ident_type";
+                return 25;
             case NodeType::int_literal_type:
-                return "int_literal_type";
+                return 26;
             case NodeType::str_literal_type:
-                return "str_literal_type";
+                return 27;
             case NodeType::void_type:
-                return "void_type";
+                return 28;
             case NodeType::bool_type:
-                return "bool_type";
+                return 29;
             case NodeType::array_type:
-                return "array_type";
+                return 30;
             default:
-                return "unknown";
+                return -1;
         }
+    }
+
+    constexpr either::expected<NodeType, const char*> mapValueToNodeType(int value) {
+        switch (value) {
+            case 0:
+                return NodeType::program;
+            case 1:
+                return NodeType::expr;
+            case 2:
+                return NodeType::int_literal;
+            case 3:
+                return NodeType::bool_literal;
+            case 4:
+                return NodeType::input;
+            case 5:
+                return NodeType::output;
+            case 6:
+                return NodeType::binary;
+            case 7:
+                return NodeType::unary;
+            case 8:
+                return NodeType::cond;
+            case 9:
+                return NodeType::ident;
+            case 10:
+                return NodeType::call;
+            case 11:
+                return NodeType::if_;
+            case 12:
+                return NodeType::member_access;
+            case 13:
+                return NodeType::paren;
+            case 14:
+                return NodeType::tmp_var;
+            case 15:
+                return NodeType::block_expr;
+            case 16:
+                return NodeType::stmt;
+            case 17:
+                return NodeType::for_;
+            case 18:
+                return NodeType::field;
+            case 19:
+                return NodeType::fmt;
+            case 20:
+                return NodeType::indent_scope;
+            case 21:
+                return NodeType::assert;
+            case 22:
+                return NodeType::implicit_return;
+            case 23:
+                return NodeType::type;
+            case 24:
+                return NodeType::int_type;
+            case 25:
+                return NodeType::ident_type;
+            case 26:
+                return NodeType::int_literal_type;
+            case 27:
+                return NodeType::str_literal_type;
+            case 28:
+                return NodeType::void_type;
+            case 29:
+                return NodeType::bool_type;
+            case 30:
+                return NodeType::array_type;
+            default:
+                return either::unexpected{"invalid value"};
+        }
+    }
+
+    constexpr const char* node_type_to_string(NodeType type) {
+        auto key = mapNodeTypeToValue(type);
+        if (key == -1) {
+            return "unknown";
+        }
+        return node_type_str[key];
+    }
+
+    constexpr either::expected<NodeType, const char*> string_to_node_type(std::string_view key) {
+        constexpr auto max_value = mapNodeTypeToValue(NodeType::node_type_max);
+        for (int i = 0; i < max_value; i++) {
+            if (key == node_type_str[i]) {
+                return mapValueToNodeType(i);
+            }
+        }
+        return either::unexpected{"not a node type"};
     }
 
     // abstract
@@ -145,13 +273,15 @@ namespace brgen::ast {
     };
 
     struct Type : Node {
+        static constexpr NodeType node_type = NodeType::type;
+
        protected:
         constexpr Type(lexer::Loc l, NodeType t)
             : Node(l, t) {}
     };
 
     struct Expr : Node {
-        static constexpr NodeType node_type = NodeType::ident_type;
+        static constexpr NodeType node_type = NodeType::expr;
         std::shared_ptr<Type> expr_type;
 
        protected:
@@ -160,6 +290,8 @@ namespace brgen::ast {
     };
 
     struct Stmt : Node {
+        static constexpr NodeType node_type = NodeType::stmt;
+
        protected:
         constexpr Stmt(lexer::Loc l, NodeType t)
             : Node(l, t) {}
@@ -701,16 +833,16 @@ namespace brgen::ast {
     template <class T>
     constexpr T* as(auto&& t) {
         Node* v = std::to_address(t);
-        if (v && v->type == T::node_type) {
-            return static_cast<T*>(v);
+        if constexpr (std::is_same_v<T, Expr> || std::is_same_v<T, Type> ||
+                      std::is_same_v<T, Stmt>) {
+            if (v && (int(v->type) & int(T::node_type))) {
+                return static_cast<T*>(v);
+            }
         }
-        return nullptr;
-    }
-
-    constexpr Expr* as_Expr(auto&& t) {
-        Node* v = std::to_address(t);
-        if (v && int(v->type) & int(NodeType::expr)) {
-            return static_cast<Expr*>(v);
+        else {
+            if (v && v->type == T::node_type) {
+                return static_cast<T*>(v);
+            }
         }
         return nullptr;
     }

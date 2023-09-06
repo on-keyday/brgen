@@ -149,7 +149,7 @@ namespace brgen::typing {
 
         std::shared_ptr<ast::Type> extract_expr_type(const std::shared_ptr<ast::IndentScope>& block) {
             auto last_element = block->elements.back();
-            if (auto then_expr = ast::as_Expr(last_element)) {
+            if (auto then_expr = ast::as<ast::Expr>(last_element)) {
                 return then_expr->expr_type;
             }
             return nullptr;
@@ -160,12 +160,12 @@ namespace brgen::typing {
                 return nullptr;
             }
 
-            if (auto expr = ast::as_Expr(els)) {
+            if (auto expr = ast::as<ast::Expr>(els)) {
                 return expr->expr_type;
             }
 
             if (auto block = ast::as<ast::IndentScope>(els)) {
-                auto expr = ast::as_Expr(block->elements.back());
+                auto expr = ast::as<ast::Expr>(block->elements.back());
                 if (expr) {
                     return expr->expr_type;
                 }
@@ -366,7 +366,7 @@ namespace brgen::typing {
         void typing_object(const std::shared_ptr<ast::Node>& ty) {
             // Define a lambda function for recursive traversal and typing
             auto recursive_typing = [&](auto&& f, const std::shared_ptr<ast::Node>& ty) -> void {
-                if (auto expr = ast::as_Expr(ty)) {
+                if (auto expr = ast::as<ast::Expr>(ty)) {
                     // If the object is an expression, perform expression typing
                     typing_expr(std::static_pointer_cast<ast::Expr>(ty));
                     return;
