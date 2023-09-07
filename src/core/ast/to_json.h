@@ -8,8 +8,12 @@ namespace brgen::ast {
     struct SymbolMap {
         std::map<std::shared_ptr<Node>, size_t> index;
         std::vector<std::shared_ptr<Node>> node;
+        Debug obj;
 
-        void collect(std::shared_ptr<Node>& node) {
+        void encode(std::shared_ptr<Node>& node) {
+            visit(node, [](auto&& f) {
+
+            });
         }
     };
 

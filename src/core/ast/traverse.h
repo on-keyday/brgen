@@ -77,11 +77,12 @@ namespace brgen::ast {
     }
 #define CASE(T) else if (T* v = as<T>(o))
         SWITCH
-        CASE(Call) {
-            fn(v->expr_type);
-            fn(v->callee);
-            fn(v->arguments);
+        CASE(Program) {
+            for (auto& f : v->elements) {
+                fn(f);
+            }
         }
+
         CASE(Binary) {
             fn(v->expr_type);
             fn(v->left);
@@ -96,6 +97,11 @@ namespace brgen::ast {
             fn(v->cond);
             fn(v->then);
             fn(v->els);
+        }
+        CASE(Call) {
+            fn(v->expr_type);
+            fn(v->callee);
+            fn(v->arguments);
         }
         CASE(Paren) {
             fn(v->expr);
@@ -115,16 +121,13 @@ namespace brgen::ast {
         CASE(TmpVar) {
             fn(v->expr_type);
         }
+
         CASE(IndentScope) {
             for (auto& f : v->elements) {
                 fn(f);
             }
         }
-        CASE(Program) {
-            for (auto& f : v->elements) {
-                fn(f);
-            }
-        }
+
         CASE(Field) {
             fn(v->ident);
             fn(v->field_type);
