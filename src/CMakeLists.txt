@@ -24,6 +24,10 @@ add_executable(middle_test "test/middle_test.cpp")
 
 target_link_libraries(middle_test ast_test_component)
 
+add_executable(from_json_test "test/from_json_test.cpp")
+
+target_link_libraries(from_json_test ast_test_component)
+
 add_executable(section_writer_test "test/section_writer_test.cpp")
 
 target_link_libraries(section_writer_test gtest_main)
@@ -44,6 +48,7 @@ add_test(NAME "lexer_test" COMMAND lexer_test)
 add_test(NAME "ast_test" COMMAND ast_test)
 add_test(NAME "typing_test" COMMAND typing_test)
 add_test(NAME "middle_test" COMMAND middle_test)
+add_test(NAME "from_json_test" COMMAND from_json_test)
 add_test(NAME "section_writer_test" COMMAND section_writer_test)
 add_test(NAME "cpp_test" COMMAND cpp_test)
 add_test(NAME "go_test" COMMAND go_test)

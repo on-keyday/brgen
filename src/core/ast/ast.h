@@ -21,6 +21,7 @@ namespace brgen::ast {
         expr = 0x010000,
         int_literal,
         bool_literal,
+        str_literal,
 
         input,
         output,
@@ -57,7 +58,6 @@ namespace brgen::ast {
         bool_type,
         array_type,
 
-        node_type_max = array_type,
     };
 
     constexpr const char* node_type_str[]{
@@ -92,6 +92,7 @@ namespace brgen::ast {
         "void_type",
         "bool_type",
         "array_type",
+        "str_literal",
     };
 
     constexpr int mapNodeTypeToValue(NodeType type) {
@@ -158,6 +159,8 @@ namespace brgen::ast {
                 return 29;
             case NodeType::array_type:
                 return 30;
+            case NodeType::str_literal:
+                return 31;
             default:
                 return -1;
         }
@@ -227,6 +230,8 @@ namespace brgen::ast {
                 return NodeType::bool_type;
             case 30:
                 return NodeType::array_type;
+            case 31:
+                return NodeType::str_literal;
             default:
                 return either::unexpected{"invalid value"};
         }
@@ -241,7 +246,7 @@ namespace brgen::ast {
     }
 
     constexpr either::expected<NodeType, const char*> string_to_node_type(std::string_view key) {
-        constexpr auto max_value = mapNodeTypeToValue(NodeType::node_type_max);
+        constexpr auto max_value = std::size(node_type_str);
         for (int i = 0; i < max_value; i++) {
             if (key == node_type_str[i]) {
                 return mapValueToNodeType(i);
@@ -249,6 +254,24 @@ namespace brgen::ast {
         }
         return either::unexpected{"not a node type"};
     }
+
+    namespace internal {
+        constexpr auto check_func() {
+            constexpr auto max_value = std::size(node_type_str);
+            for (int i = 0; i < max_value; i++) {
+                auto v = mapNodeTypeToValue(mapValueToNodeType(i).value());
+                if (v != i) {
+                    [](auto... a) { throw "not matched"; }(v, i);
+                }
+                v = mapNodeTypeToValue(string_to_node_type(node_type_str[i]).value());
+                if (v != i) {
+                    [](auto... a) { throw "not matched"; }(v, i);
+                }
+            }
+            return true;
+        }
+        static_assert(check_func());
+    }  // namespace internal
 
     // abstract
     struct Node {
@@ -339,6 +362,10 @@ namespace brgen::ast {
         Ident(lexer::Loc l, std::string&& i)
             : Expr(l, NodeType::ident), ident(std::move(i)) {}
 
+        // for decode
+        Ident()
+            : Expr({}, NodeType::ident) {}
+
         void as_json(Debug& buf) const override {
             auto field = buf.object();
             basic_info(field);
@@ -360,6 +387,10 @@ namespace brgen::ast {
 
         Field(lexer::Loc l)
             : Stmt(l, NodeType::field) {}
+
+        // for decode
+        Field()
+            : Stmt({}, NodeType::field) {}
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
@@ -397,6 +428,10 @@ namespace brgen::ast {
         IndentScope(lexer::Loc l)
             : Stmt(l, NodeType::indent_scope) {}
 
+        // for decode
+        IndentScope()
+            : Stmt({}, NodeType::indent_scope) {}
+
         void as_json(Debug& buf) const override {
             auto field = buf.object();
             basic_info(field);
@@ -414,6 +449,10 @@ namespace brgen::ast {
         std::weak_ptr<Fmt> belong;
         Fmt(lexer::Loc l)
             : Stmt(l, NodeType::fmt) {}
+
+        // for decode
+        Fmt()
+            : Stmt({}, NodeType::fmt) {}
 
         std::string ident_path(const char* sep = "_") {
             if (auto parent = belong.lock()) {
@@ -437,6 +476,9 @@ namespace brgen::ast {
         For(lexer::Loc l)
             : Stmt(l, NodeType::for_) {}
 
+        For()
+            : Stmt({}, NodeType::for_) {}
+
         void as_json(Debug& buf) const override {
             auto field = buf.object();
             basic_info(field);
@@ -453,6 +495,8 @@ namespace brgen::ast {
         lexer::Loc end_loc;
         Call(lexer::Loc l, std::shared_ptr<Expr>&& callee)
             : Expr(l, NodeType::call), callee(std::move(callee)) {}
+        Call()
+            : Expr({}, NodeType::call) {}
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
@@ -470,6 +514,10 @@ namespace brgen::ast {
         lexer::Loc end_loc;
         Paren(lexer::Loc l)
             : Expr(l, NodeType::paren) {}
+
+        // for decode
+        Paren()
+            : Expr({}, NodeType::paren) {}
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
@@ -489,6 +537,10 @@ namespace brgen::ast {
         constexpr If(lexer::Loc l)
             : Expr(l, NodeType::if_) {}
 
+        // for decode
+        constexpr If()
+            : Expr({}, NodeType::if_) {}
+
         void as_json(Debug& buf) const override {
             auto field = buf.object();
             basic_info(field);
@@ -506,6 +558,10 @@ namespace brgen::ast {
 
         constexpr Unary(lexer::Loc l, UnaryOp p)
             : Expr(l, NodeType::unary), op(p) {}
+
+        // for decode
+        constexpr Unary()
+            : Expr({}, NodeType::unary) {}
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
@@ -525,6 +581,10 @@ namespace brgen::ast {
 
         Binary(lexer::Loc l, std::shared_ptr<Expr>&& left, BinaryOp op)
             : Expr(l, NodeType::binary), left(std::move(left)), op(op) {}
+
+        // for decode
+        constexpr Binary()
+            : Expr({}, NodeType::binary) {}
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
@@ -552,6 +612,10 @@ namespace brgen::ast {
 
         MemberAccess(lexer::Loc l, std::shared_ptr<Expr>&& t, std::string&& n)
             : Expr(l, NodeType::member_access), target(std::move(t)), name(std::move(n)) {}
+
+        // for decode
+        constexpr MemberAccess()
+            : Expr({}, NodeType::member_access) {}
     };
 
     struct Cond : Expr {
@@ -563,6 +627,10 @@ namespace brgen::ast {
 
         Cond(lexer::Loc l, std::shared_ptr<Expr>&& then)
             : Expr(l, NodeType::cond), then(std::move(then)) {}
+
+        // for decode
+        constexpr Cond()
+            : Expr({}, NodeType::cond) {}
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
@@ -600,6 +668,22 @@ namespace brgen::ast {
 
         IntLiteral(lexer::Loc l, std::string&& t)
             : Literal(l, NodeType::int_literal), raw(std::move(t)) {}
+
+        // for decode
+        constexpr IntLiteral()
+            : Literal({}, NodeType::int_literal) {}
+    };
+
+    struct StrLiteral : Literal {
+        static constexpr NodeType node_type = NodeType::str_literal;
+        std::string raw;
+
+        StrLiteral(lexer::Loc l, std::string&& t)
+            : Literal(l, NodeType::str_literal), raw(std::move(t)) {}
+
+        // for decode
+        constexpr StrLiteral()
+            : Literal({}, NodeType::str_literal) {}
     };
 
     struct BoolLiteral : Literal {
@@ -615,6 +699,10 @@ namespace brgen::ast {
 
         BoolLiteral(lexer::Loc l, bool t)
             : Literal(l, NodeType::bool_literal), value(t) {}
+
+        // for decode
+        constexpr BoolLiteral()
+            : Literal({}, NodeType::bool_literal) {}
     };
 
     struct Input : Literal {
@@ -624,6 +712,10 @@ namespace brgen::ast {
             : Literal(l, NodeType::input) {
             expr_type = d;
         }
+
+        // for decode
+        constexpr Input()
+            : Literal({}, NodeType::input) {}
     };
 
     struct Output : Literal {
@@ -633,6 +725,10 @@ namespace brgen::ast {
             : Literal(l, NodeType::output) {
             expr_type = d;
         }
+
+        // for decode
+        constexpr Output()
+            : Literal({}, NodeType::output) {}
     };
 
     // types
@@ -660,6 +756,10 @@ namespace brgen::ast {
 
         IntegerType(lexer::Loc l, std::string&& token, size_t bit_size)
             : Type(l, NodeType::int_type), raw(std::move(token)), bit_size(bit_size) {}
+
+        // for decode
+        constexpr IntegerType()
+            : Type({}, NodeType::int_type) {}
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
@@ -708,6 +808,10 @@ namespace brgen::ast {
 
         IntLiteralType(const std::shared_ptr<IntLiteral>& ty)
             : Type(ty->loc, NodeType::int_literal_type), base(ty) {}
+
+        // for decode
+        constexpr IntLiteralType()
+            : Type({}, NodeType::int_literal_type) {}
     };
 
     struct IdentType : Type {
@@ -725,6 +829,10 @@ namespace brgen::ast {
             auto link = link_to.lock();
             field(sdebugf(link));
         }
+
+        // for decode
+        constexpr IdentType()
+            : Type({}, NodeType::ident_type) {}
     };
 
     struct VoidType : Type {
@@ -732,6 +840,10 @@ namespace brgen::ast {
 
         VoidType(lexer::Loc l)
             : Type(l, NodeType::void_type) {}
+
+        // for decode
+        constexpr VoidType()
+            : Type({}, NodeType::void_type) {}
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
@@ -744,6 +856,10 @@ namespace brgen::ast {
 
         BoolType(lexer::Loc l)
             : Type(l, NodeType::bool_type) {}
+
+        // for decode
+        constexpr BoolType()
+            : Type({}, NodeType::bool_type) {}
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
@@ -760,6 +876,10 @@ namespace brgen::ast {
         ArrayType(lexer::Loc l, std::shared_ptr<ast::Expr>&& len, lexer::Loc end, std::shared_ptr<ast::Type>&& base)
             : Type(l, NodeType::array_type), length(std::move(len)), end_loc(end), base_type(std::move(base)) {}
 
+        // for decode
+        constexpr ArrayType()
+            : Type({}, NodeType::array_type) {}
+
         void as_json(Debug& buf) const override {
             auto field = buf.object();
             basic_info(field);
@@ -770,17 +890,18 @@ namespace brgen::ast {
     };
 
     struct StrLiteralType : Type {
-        std::string raw;
-        std::optional<std::string> mid;
+        std::weak_ptr<StrLiteral> lit;
 
-        StrLiteralType(lexer::Loc loc, std::string&& str)
-            : Type(loc, NodeType::str_literal_type) {}
+        StrLiteralType(std::shared_ptr<StrLiteral>&& str)
+            : Type(str->loc, NodeType::str_literal_type), lit(std::move(str)) {}
+
+        // for decode
+        constexpr StrLiteralType()
+            : Type({}, NodeType::str_literal_type) {}
 
         void as_json(Debug& buf) const override {
             auto field = buf.object();
             basic_info(field);
-            field(sdebugf(raw));
-            field(sdebugf(mid));
         }
     };
 
@@ -833,8 +954,11 @@ namespace brgen::ast {
     template <class T>
     constexpr T* as(auto&& t) {
         Node* v = std::to_address(t);
-        if constexpr (std::is_same_v<T, Expr> || std::is_same_v<T, Type> ||
-                      std::is_same_v<T, Stmt>) {
+        if constexpr (std::is_same_v<T, Node>) {
+            return v;
+        }
+        else if constexpr (std::is_same_v<T, Expr> || std::is_same_v<T, Type> ||
+                           std::is_same_v<T, Stmt>) {
             if (v && (int(v->type) & int(T::node_type))) {
                 return static_cast<T*>(v);
             }

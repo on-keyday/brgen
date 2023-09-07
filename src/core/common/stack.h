@@ -3,6 +3,7 @@
 #include <memory>
 #include <helper/defer.h>
 #include <optional>
+#include "debug.h"
 
 namespace brgen {
 
@@ -48,6 +49,8 @@ namespace brgen {
         std::shared_ptr<StackFrame> branch_frame() const {
             return branch;
         }
+
+        void as_json(Debug& debug) {}
     };
 
     template <class T>
