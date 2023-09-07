@@ -7,7 +7,7 @@
 #include <helper/defer.h>
 #include <code/src_location.h>
 #include <map>
-#include "ast.h"
+#include "node/ast.h"
 #include "../common/stack.h"
 #include "../common/file.h"
 

@@ -1,6 +1,7 @@
 /*license*/
 #pragma once
-#include "../common/expected.h"
+#include <core/common/expected.h>
+#include <string_view>
 
 namespace brgen::ast {
     enum class NodeType {

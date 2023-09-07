@@ -1,8 +1,6 @@
 /*license*/
 #pragma once
-#include "core/ast/ast.h"
-#include "core/ast/translated.h"
-#include "core/ast/traverse.h"
+#include <core/ast/node/traverse.h>
 
 namespace brgen::treeopt {
 

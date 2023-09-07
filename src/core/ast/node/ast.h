@@ -1,73 +1,20 @@
 /*license*/
 #pragma once
-#include "../lexer/token.h"
+#include <core/lexer/token.h>
 #include <optional>
 #include <list>
 #include <number/prefix.h>
-#include "expr_layer.h"
+#include "../expr_layer.h"
 #include <escape/escape.h>
 #include <map>
-#include "../common/stack.h"
-#include "../common/util.h"
-#include "../common/debug.h"
+#include <core/common/stack.h>
+#include <core/common/util.h>
+#include <core/common/debug.h>
 #include <binary/flags.h>
 #include <binary/log2i.h>
-#include "node_type.h"
+#include "base.h"
 
 namespace brgen::ast {
-
-    // abstract
-    struct Node {
-        const NodeType type;
-        lexer::Loc loc;
-
-        virtual ~Node() {}
-
-        virtual void as_json(Debug& buf) const {
-            auto field = buf.object();
-            basic_info(field);
-        }
-
-        void basic_info(auto&& field) const {
-            field("node_type", node_type_to_string(type));
-            field("loc", loc);
-        }
-
-       protected:
-        constexpr Node(lexer::Loc l, NodeType t)
-            : loc(l), type(t) {}
-    };
-
-    struct Type : Node {
-        static constexpr NodeType node_type = NodeType::type;
-
-       protected:
-        constexpr Type(lexer::Loc l, NodeType t)
-            : Node(l, t) {}
-    };
-
-    struct Expr : Node {
-        static constexpr NodeType node_type = NodeType::expr;
-        std::shared_ptr<Type> expr_type;
-
-       protected:
-        constexpr Expr(lexer::Loc l, NodeType t)
-            : Node(l, t) {}
-    };
-
-    struct Stmt : Node {
-        static constexpr NodeType node_type = NodeType::stmt;
-
-       protected:
-        constexpr Stmt(lexer::Loc l, NodeType t)
-            : Node(l, t) {}
-    };
-
-    struct Literal : Expr {
-       protected:
-        constexpr Literal(lexer::Loc l, NodeType t)
-            : Expr(l, t) {}
-    };
 
     using node_list = std::list<std::shared_ptr<Node>>;
 
@@ -712,6 +659,18 @@ namespace brgen::ast {
             }
         }
         return nullptr;
+    }
+
+    template <class U>
+    constexpr auto cast_to(auto&& t) {
+        using T = std::decay_t<decltype(t)>;
+        if constexpr (utils::helper::is_template_instance_of<T, std::shared_ptr>) {
+            using V = typename utils::helper::template_instance_of_t<T, std::shared_ptr>::template param_at<0>;
+            return std::static_pointer_cast<V>(std::forward<decltype(t)>(t));
+        }
+        else {
+            return static_cast<T*>(t);
+        }
     }
 
     inline void Definitions::add_fmt(std::string& name, const std::shared_ptr<Fmt>& f) {

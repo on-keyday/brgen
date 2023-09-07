@@ -1,8 +1,8 @@
 /*license*/
 #pragma once
-#include "ast.h"
-#include "translated.h"
-#include "traverse.h"
+#include "node/ast.h"
+#include "node/translated.h"
+#include "node/traverse.h"
 
 namespace brgen::ast {
     struct SymbolMap {

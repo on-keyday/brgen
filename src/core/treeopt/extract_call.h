@@ -1,7 +1,7 @@
 /*license*/
 #pragma once
 #include "extract_context.h"
-#include "../ast/traverse.h"
+#include <core/ast/node/traverse.h>
 #include <helper/defer.h>
 
 namespace brgen::treeopt {

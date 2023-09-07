@@ -2,9 +2,7 @@
 #pragma once
 #include "../lexer/token.h"
 #include "../common/file.h"
-#include "../ast/ast.h"
-#include "../ast/translated.h"
-#include "../ast/traverse.h"
+#include <core/ast/node/traverse.h>
 
 namespace brgen::typing {
 

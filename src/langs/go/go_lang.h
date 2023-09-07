@@ -1,6 +1,6 @@
 /*license*/
 #pragma once
-#include "core/ast/ast.h"
+#include "core/ast/node/ast.h"
 #include "core/writer/section.h"
 #include "core/common/error.h"
 #include "core/common/expected.h"

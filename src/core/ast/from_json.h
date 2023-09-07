@@ -3,8 +3,8 @@
 
 #include <json/json_export.h>
 
-#include "ast.h"
-#include "translated.h"
+#include "node/ast.h"
+#include "node/translated.h"
 #include "../common/error.h"
 #include <helper/transform.h>
 #include <optional>
