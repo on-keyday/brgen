@@ -15,7 +15,7 @@ namespace brgen::go_lang {
         if (ty->type != ast::NodeType::int_type) {
             error(ty->loc, "currently int type is only supported").report();
         }
-        auto t = ast::as<ast::IntegerType>(ty);
+        auto t = ast::as<ast::IntType>(ty);
         return concat("uint", nums(ast::aligned_bit(t->bit_size)));
     }
 
@@ -217,7 +217,7 @@ namespace brgen::go_lang {
         io.byte_type = "uint8";
         auto base_ty = get_type_text(c, w, ty);
         io.base_type = base_ty;
-        io.bit_size_v = ast::as<ast::IntegerType>(ty)->bit_size;
+        io.bit_size_v = ast::as<ast::IntType>(ty)->bit_size;
         io.target = target;
         io.is_encode = true;
         io.define_symbol = ":=";
@@ -234,7 +234,7 @@ namespace brgen::go_lang {
         io.byte_type = "uint8";
         auto base_ty = get_type_text(c, w, ty);
         io.base_type = base_ty;
-        io.bit_size_v = ast::as<ast::IntegerType>(ty)->bit_size;
+        io.bit_size_v = ast::as<ast::IntType>(ty)->bit_size;
         io.target = target;
         io.is_encode = false;
         io.define_symbol = ":=";

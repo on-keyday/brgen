@@ -13,8 +13,8 @@ namespace brgen::typing {
             if (left->type != right->type) {
                 return false;
             }
-            if (auto lty = ast::as<ast::IntegerType>(left)) {
-                auto rty = ast::as<ast::IntegerType>(right);
+            if (auto lty = ast::as<ast::IntType>(left)) {
+                auto rty = ast::as<ast::IntType>(right);
                 return lty->bit_size == rty->bit_size;
             }
             if (auto lty = ast::as<ast::IdentType>(left)) {
@@ -52,14 +52,14 @@ namespace brgen::typing {
         std::shared_ptr<ast::Type> assigning_type(const std::shared_ptr<ast::Type>& base) {
             if (auto ty = ast::as<ast::IntLiteralType>(base)) {
                 auto aligned = ty->get_aligned_bit();
-                return std::make_shared<ast::IntegerType>(ty->loc, "", aligned);
+                return std::make_shared<ast::IntType>(ty->loc, "", aligned);
             }
             return base;
         }
 
         void int_type_fitting(std::shared_ptr<ast::Type>& left, std::shared_ptr<ast::Type>& right) {
             auto fitting = [&](auto& a, auto& b) {
-                auto ity = ast::as<ast::IntegerType>(a);
+                auto ity = ast::as<ast::IntType>(a);
                 auto lty = ast::as<ast::IntLiteralType>(b);
                 auto bit_size = lty->get_bit_size();
                 if (ity->bit_size < *bit_size) {
@@ -81,8 +81,8 @@ namespace brgen::typing {
                      right->type == ast::NodeType::int_literal_type) {
                 left = assigning_type(left);
                 right = assigning_type(right);
-                auto li = ast::as<ast::IntegerType>(left);
-                auto ri = ast::as<ast::IntegerType>(right);
+                auto li = ast::as<ast::IntType>(left);
+                auto ri = ast::as<ast::IntType>(right);
                 if (li->bit_size > ri->bit_size) {
                     right = left;
                 }

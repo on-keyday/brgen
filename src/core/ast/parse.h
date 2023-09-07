@@ -388,7 +388,7 @@ namespace brgen::ast {
             auto ident = s.must_consume_token(lexer::Tag::ident);
 
             if (auto bit_size = is_int_type(ident.token)) {
-                return std::make_shared<IntegerType>(ident.loc, std::move(ident.token), *bit_size);
+                return std::make_shared<IntType>(ident.loc, std::move(ident.token), *bit_size);
             }
 
             auto type = std::make_shared<IdentType>(ident.loc, std::move(ident.token), s.context()->current_definitions());

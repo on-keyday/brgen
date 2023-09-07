@@ -2,8 +2,74 @@
 #pragma once
 #include "ast.h"
 #include "translated.h"
+#include <helper/template_instance.h>
 
 namespace brgen::ast {
+    template <class U>
+    constexpr auto cast_to(auto&& t) {
+        using T = std::decay_t<decltype(t)>;
+        if constexpr (utils::helper::is_template_instance_of<T, std::shared_ptr>) {
+            using V = typename utils::helper::template_instance_of_t<T, std::shared_ptr>::template param_at<0>;
+            return std::static_pointer_cast<V>(std::forward<decltype(t)>(t));
+        }
+        else {
+            return static_cast<T*>(t);
+        }
+    }
+
+    void visit(auto&& t, auto&& fn) {
+        Node* o = std::to_address(t);
+#define SWITCH   \
+    if (false) { \
+    }
+#define CASE(T)                                       \
+    else if (as<T>(o)) {                              \
+        fn(cast_to<T>(std::forward<decltype(t)>(t))); \
+    }
+        SWITCH
+        CASE(Program)
+
+        CASE(IntLiteral)
+        CASE(BoolLiteral)
+        CASE(StrLiteral)
+
+        CASE(Input)
+        CASE(Output)
+
+        CASE(Binary)
+        CASE(Unary)
+        CASE(Cond)
+        CASE(Ident)
+        CASE(Call)
+        CASE(If)
+        CASE(MemberAccess)
+        CASE(Paren)
+
+        CASE(TmpVar)
+        CASE(BlockExpr)
+
+        CASE(Stmt)
+
+        CASE(For)
+        CASE(Field)
+        CASE(Fmt)
+        CASE(IndentScope)
+
+        CASE(Assert)
+        CASE(ImplicitReturn)
+
+        CASE(IntType)
+        CASE(IdentType)
+        CASE(IntLiteralType)
+        CASE(StrLiteralType)
+        CASE(VoidType)
+        CASE(BoolType)
+        CASE(ArrayType)
+
+#undef SWITCH
+#undef CASE
+    }
+
     void traverse(auto&& t, auto&& fn) {
         Node* o = std::to_address(t);
 #define SWITCH   \

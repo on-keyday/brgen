@@ -749,16 +749,16 @@ namespace brgen::ast {
         return 0;
     }
 
-    struct IntegerType : Type {
+    struct IntType : Type {
         static constexpr NodeType node_type = NodeType::int_type;
         std::string raw;
         size_t bit_size = 0;
 
-        IntegerType(lexer::Loc l, std::string&& token, size_t bit_size)
+        IntType(lexer::Loc l, std::string&& token, size_t bit_size)
             : Type(l, NodeType::int_type), raw(std::move(token)), bit_size(bit_size) {}
 
         // for decode
-        constexpr IntegerType()
+        constexpr IntType()
             : Type({}, NodeType::int_type) {}
 
         void as_json(Debug& buf) const override {

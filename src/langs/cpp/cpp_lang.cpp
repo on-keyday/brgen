@@ -187,7 +187,7 @@ namespace brgen::cpp_lang {
         if (ty->type != ast::NodeType::int_type) {
             error(ty->loc, "currently int or array type are only supported").report();
         }
-        auto t = ast::as<ast::IntegerType>(ty);
+        auto t = ast::as<ast::IntType>(ty);
         return concat("std::uint", nums(ast::aligned_bit(t->bit_size)), "_t");
     }
 
@@ -203,7 +203,7 @@ namespace brgen::cpp_lang {
         io.byte_type = "std::uint8_t";
         auto base_ty = get_type_text(c, w, ty);
         io.base_type = base_ty;
-        io.bit_size_v = ast::as<ast::IntegerType>(ty)->bit_size;
+        io.bit_size_v = ast::as<ast::IntType>(ty)->bit_size;
         io.target = target;
         io.is_encode = true;
         io.define_symbol = "=";
@@ -247,7 +247,7 @@ namespace brgen::cpp_lang {
         io.byte_type = "std::uint8_t";
         auto base_ty = get_type_text(c, w, ty);
         io.base_type = base_ty;
-        io.bit_size_v = ast::as<ast::IntegerType>(ty)->bit_size;
+        io.bit_size_v = ast::as<ast::IntType>(ty)->bit_size;
         io.target = target;
         io.is_encode = false;
         io.define_symbol = "=";
