@@ -1,7 +1,7 @@
 
-// brgen language specialization
+// brgen language specialization (draft)
 
-// Introduction
+// 1. Introduction
 // goal of this language is simple/powerful/portable DSL for binary encoder/decoder/validator/logger/document etc... generator
 // simple - easy to write and read
 // powerful - enough to represent network protocol/file format
@@ -15,11 +15,11 @@
    can be multiline
 */
 
-// Word Definition
+// 2. Word Definition
 // GID - generator implementation defined - decided by generator implementer
 // MUST - generator implementer must implement that
 
-// Scope and Syntax
+// 3. Scope and Syntax
 // in global scope, there are format,enum,and import
 // in local scope, there are format,enum,import,field definition statement,loop statement,expressions (including if,match and assertion)
 // field definition statement and assignment expression makes identifier definition in it scope
@@ -29,26 +29,114 @@
 // in AST level, any of above can be written in anywhere but exclude above can be omitted by generator
 // usage of optional statements and expressions are GID but some attribute explained after are recommended to implement
 
+// 4. Literal
+// boolean literal
+true || false
+// integer literal
+1 == 3
+// floating point literal if GID
+1.0 - 1.0
+// string literal
+"Hello World"
+// are supported
 
-// Input and Output, Environment
-// there are three special keywords; input, output, and env
+// 4.1. Input and Output, Environment
+// there are three special literal; input, output, and env
 // input means decoder input
 // output means encoder output
+// env means environment and configuration of generator
 // you can access these objects anywhere
 // some situation, access to these object makes separation of encoding and decoding
 // these keywords are represented as ident
+// these have some method or property, explained in 
 input
 output
+env
 
-// Expressions
+// 5. Expressions
 // expressions are used for several purpose, assignment,assertion, condition of if expr, length of VLA
 // expressions are finally evaluated as bool,int,float,string, custom enum type,or custom format type.
 // it is GID that evaluation of format type and float; if not supported, it should be evaluated as void
 
+// 5.1 Binary Operator
+// +  addition
+1 + 2
+"a"+"b" // strings are allowed
+// -  subtraction
+1 - 2
+// * multiplication
+1 * 2
+// / division
+1 / 2
+// % modulo
+1 % 2
+// & bit and
+1 & 0x7 // hexadecimal support
+// | bit or
+1 | 2
+// ^ bit xor
+1 ^ 2
+// >> bit right shift
+2 >> 1
+// << bit left shift
+1 << 2
+// logical operator finally evaluated as bool
+// == equal
+1 == 2
+// != not equal
+1 != 2
+// < less
+1 < 2
+// > greater
+1 > 2
+// >= greater or equal
+1 >= 2
+// <= less or equal
+1 <= 2
 
-// Format
+// 5.2 Unary Operator
+// - minus sign
+-1
+// logical/bit not
+!1 // this is bit not
+!true // this is logical not
+// increment and decrement are not supported
+
+// 5.3 Other
+// () brackets 
+// (1 + 2)* 3
+// a.b member access
+a.b
+// this syntax is allowed if a is enum name, imported name, or format instance
+// call(arg1,arg2) call
+a(b)
+// in this language function call is specially treated explained below
+// arr_or_map[1] index
+a[1]
+// user only can define array
+// if GID, builtin function can return map like object
+
+// 5.3 Assignment Statement
+// assignment makes temporary identifier 
+// 3 types of assignment are defined
+// := define variable
+// define variable identifier
+x := 10
+// = assign
+// rewrite variable
+x = 2 
+// ::= define constant
+// define constant value
+X ::= 30
+// assignment to constant are invalid
+// define constant should be implemented even if global scope
+
+// 6. Format
 // format is a unit of data structure that is converted to struct and encoder/decoder/logger/validator etc.. functions 
-format Example:
+// 6.1. As-is Format
+// As-is format is represent encoding/decoding format as is
+// field is interpreted in order
+format ExampleFormat:
     // fundamental types
     // integer number
     // support for integer number
@@ -106,7 +194,7 @@ format Example:
     // generator should use len to decide value's length when decoding and should use length of value if encoding
     // if value length is like `value :[len+1]type` use it directly when decoding
     // and when encoding, len should be calculated from `len = value.length - 1` with solving linear equation
-    // when value length is like `value :[len1+len2]`, decoding is easy but decision of `len1` and `len2` are too difficult to solve
+    // when value length is like `value :[len1+len2]`, decoding is easy but decision of `len1` and `len2` are too difficult to solve when encoding
     // generator implementer can provide other mechanism to decide len1 or len2, or make it an error; that is GID
     fixed :[16]u8
     len :u8
@@ -118,7 +206,56 @@ format Example:
     // error or waring selection are GID
     sample1 == 2 || sample2 > 2
 
-// AST
+    // yes we can define format inner format
+    format Embed:
+        data :u8
+
+    // this is embed representation of type 
+    // how to represent this (expand in the class?using class inner class?or using embed representation in Go?) is GID
+    :Embed
+
+
+// 7. Enum
+// enum are enumeration of numbers or strings or one type selection
+enum ExampleEnum:
+    :u8  // this prefer base type definition
+    A :0 // here define A and it's number as 0
+    B
+    C    // B and C are interpreted as 1 and 3 like C enum or Go iota
+    D :0xFF // yes this is 0xFF
+    E:"hello" // here string are also allowed (but in this situation,maybe error)
+    F         // E is also be "hello"
+    G :"foo" 
+
+// 8. Special Literals
+// 8.1 Input
+// TODO(on-keyday): write this
+
+// 8.3 Output
+// TODO(on-keyday): write this
+
+// 8.3 Environment
+// TODO(on-keyday): write this
+
+// 9. Builtin
+// generator implementer MUST provide allowed name (builtin) list of input,output,and env methods and property 
+// and global name definition 
+// below are implemented by parser that is resolved at meta level 
+// exists(name) - name is exists in current scope
+// is_builtin(name) - name is exists as builtin symbol
+// has_method(name,method) - name has method
+// has_property(name,property) - name has property
+
+// 10. Error Handling
+// in this language, error handling should be implicit
+// that is generator should insert appropriate error handling method for each field/Format, encoding/decoding
+// when encoding, validation should appear in first step of encoding
+// when decoding, validation should appear in each step of decoding
+// 10.1 Assertion
+// floating boolean expression is interpreted as assertion
+// assertion with error should be treated with same error handling mechanism of normal encode/decode error
+
+// Appendix A. AST representation
 // representation of ast
 /*
     node_type: AST node type
@@ -128,4 +265,22 @@ format Example:
           end: end position of source code
        file: file index
     
+    
 */
+
+// Appendix B. Operator Precedence and Associative Order
+// high
+// postfix        () []
+// (here ident and literal, inner brackets expression)
+// unary          - !
+// multiplicative *  /  %  <<  >>  &  left to right
+// additive       +  -  |  ^          left to right
+// compare        == != < > <= >=     unbounded (appear in same level is an error)
+// logical and    &&                  left to right
+// logical or     ||                  left to right
+// low
+
+
+// C. Generator Implementer Guide
+// this is guide for code generator implementation 
+// TODO(on-keyday): write this
