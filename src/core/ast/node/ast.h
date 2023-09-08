@@ -72,14 +72,14 @@ namespace brgen::ast {
     };
 
     // field
-    struct Fmt;
+    struct Format;
     struct Field : Stmt {
         define_node_type(NodeType::field);
         std::shared_ptr<Ident> ident;
         lexer::Loc colon_loc;
         std::shared_ptr<Type> field_type;
         std::shared_ptr<Expr> arguments;
-        std::weak_ptr<Fmt> belong;
+        std::weak_ptr<Format> belong;
 
         Field(lexer::Loc l)
             : Stmt(l, NodeType::field) {}
@@ -104,13 +104,13 @@ namespace brgen::ast {
     struct Function;
 
     struct Definitions {
-        std::map<std::string, std::list<std::shared_ptr<Fmt>>> fmts;
+        std::map<std::string, std::list<std::shared_ptr<Format>>> fmts;
         std::map<std::string, std::list<std::shared_ptr<Ident>>> idents;
         std::list<std::shared_ptr<Field>> fields;
         std::map<std::string, std::shared_ptr<Function>> funcs;
         node_list order;
 
-        void add_fmt(std::string& name, const std::shared_ptr<Fmt>& f);
+        void add_fmt(std::string& name, const std::shared_ptr<Format>& f);
 
         void add_ident(std::string& name, const std::shared_ptr<Ident>& f);
 
@@ -140,16 +140,16 @@ namespace brgen::ast {
         }
     };
 
-    struct Fmt : Stmt {
+    struct Format : Stmt {
         define_node_type(NodeType::fmt);
         std::string ident;
         std::shared_ptr<IndentScope> scope;
-        std::weak_ptr<Fmt> belong;
-        Fmt(lexer::Loc l)
+        std::weak_ptr<Format> belong;
+        Format(lexer::Loc l)
             : Stmt(l, NodeType::fmt) {}
 
         // for decode
-        Fmt()
+        Format()
             : Stmt({}, NodeType::fmt) {}
 
         std::string ident_path(const char* sep = "_") {
@@ -503,7 +503,7 @@ namespace brgen::ast {
         define_node_type(NodeType::ident_type);
         std::string ident;
         define_frame frame;
-        std::weak_ptr<Fmt> link_to;
+        std::weak_ptr<Format> link_to;
         IdentType(lexer::Loc l, std::string&& token, define_frame&& frame)
             : Type(l, NodeType::ident_type), ident(std::move(token)), frame(std::move(frame)) {}
 
@@ -630,6 +630,18 @@ namespace brgen::ast {
         }
     }
 
+    template <class U>
+    constexpr auto cast_to(auto&& t) {
+        using T = std::decay_t<decltype(t)>;
+        if constexpr (utils::helper::is_template_instance_of<T, std::shared_ptr>) {
+            using V = typename utils::helper::template_instance_of_t<T, std::shared_ptr>::template param_at<0>;
+            return std::static_pointer_cast<U>(std::forward<decltype(t)>(t));
+        }
+        else {
+            return static_cast<U*>(t);
+        }
+    }
+
     template <class T>
     constexpr T* as(auto&& t) {
         Node* v = std::to_address(t);
@@ -650,19 +662,7 @@ namespace brgen::ast {
         return nullptr;
     }
 
-    template <class U>
-    constexpr auto cast_to(auto&& t) {
-        using T = std::decay_t<decltype(t)>;
-        if constexpr (utils::helper::is_template_instance_of<T, std::shared_ptr>) {
-            using V = typename utils::helper::template_instance_of_t<T, std::shared_ptr>::template param_at<0>;
-            return std::static_pointer_cast<V>(std::forward<decltype(t)>(t));
-        }
-        else {
-            return static_cast<T*>(t);
-        }
-    }
-
-    inline void Definitions::add_fmt(std::string& name, const std::shared_ptr<Fmt>& f) {
+    inline void Definitions::add_fmt(std::string& name, const std::shared_ptr<Format>& f) {
         fmts[name].push_back(f);
         order.push_back(f);
     }

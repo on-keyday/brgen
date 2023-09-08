@@ -360,18 +360,25 @@ namespace brgen::ast {
         }
 
         std::optional<size_t> is_int_type(std::string_view str) {
-            // Check if the string starts with 'u' or 'b' and has a valid unsigned integer
-            if (str.size() > 1 && (str[0] == 'u' || str[0] == 'b')) {
-                size_t value = 0;
-                if (!utils::number::parse_integer(str.substr(1), value)) {
-                    return std::nullopt;
-                }
-                if (value == 0) {  // u0 is not valid
-                    return std::nullopt;
-                }
-                return value;
+            if (str.starts_with("ub") || str.starts_with("ul") ||
+                str.starts_with("sb") || str.starts_with("sl")) {
+                str = str.substr(2);
             }
-            return std::nullopt;
+            else if (str.starts_with("u") || str.starts_with("s")) {
+                str = str.substr(1);
+            }
+            else {
+                return std::nullopt;
+            }
+            // Check if the string starts with 'u' or 'b' and has a valid unsigned integer
+            size_t value = 0;
+            if (!utils::number::parse_integer(str.substr(1), value)) {
+                return std::nullopt;
+            }
+            if (value == 0) {  // u0 is not valid
+                return std::nullopt;
+            }
+            return value;
         }
 
         std::shared_ptr<Type> parse_type() {
@@ -409,7 +416,7 @@ namespace brgen::ast {
                 if (!tmp) {
                     return expr;
                 }
-                ident = std::static_pointer_cast<Ident>(expr);
+                ident = cast_to<Ident>(expr);
             }
             else {
                 token = s.must_consume_token(":");
@@ -448,9 +455,9 @@ namespace brgen::ast {
             return field;
         }
 
-        std::shared_ptr<Fmt> parse_fmt() {
-            auto token = s.must_consume_token("fmt");
-            auto fmt = std::make_shared<Fmt>(token.loc);
+        std::shared_ptr<Format> parse_format() {
+            auto token = s.must_consume_token("format");
+            auto fmt = std::make_shared<Format>(token.loc);
             s.skip_space();
 
             auto ident = s.must_consume_token(lexer::Tag::ident);
@@ -469,8 +476,8 @@ namespace brgen::ast {
                 return parse_for();
             }
 
-            if (s.expect_token("fmt")) {
-                return parse_fmt();
+            if (s.expect_token("format")) {
+                return parse_format();
             }
 
             std::shared_ptr<Node> node;

@@ -41,7 +41,7 @@ namespace brgen::ast {
 
         CASE(For)
         CASE(Field)
-        CASE(Fmt)
+        CASE(Format)
         CASE(IndentScope)
 
         CASE(Assert)
@@ -104,7 +104,7 @@ namespace brgen::ast {
         CASE(For) {
             fn(v->block);
         }
-        CASE(Fmt) {
+        CASE(Format) {
             fn(v->scope);
         }
         CASE(TmpVar) {

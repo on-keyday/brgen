@@ -282,8 +282,8 @@ namespace brgen::typing {
             }
         }
 
-        std::optional<std::shared_ptr<ast::Fmt>> find_matching_fmt(ast::IdentType* ident) {
-            return ident->frame->lookup<std::shared_ptr<ast::Fmt>>([&](ast::Definitions& defs) -> std::optional<std::shared_ptr<ast::Fmt>> {
+        std::optional<std::shared_ptr<ast::Format>> find_matching_fmt(ast::IdentType* ident) {
+            return ident->frame->lookup<std::shared_ptr<ast::Format>>([&](ast::Definitions& defs) -> std::optional<std::shared_ptr<ast::Format>> {
                 auto found = defs.fmts.find(ident->ident);
                 if (found != defs.fmts.end()) {
                     for (auto it = found->second.rbegin(); it != found->second.rend(); it++) {

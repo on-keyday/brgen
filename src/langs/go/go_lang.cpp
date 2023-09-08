@@ -276,7 +276,7 @@ namespace brgen::go_lang {
                     write_decode(c, w, f->field_type, f->ident ? "self." + f->ident->ident : "");
                 }
             }
-            else if (auto n = ast::as<ast::Fmt>(element)) {
+            else if (auto n = ast::as<ast::Format>(element)) {
                 if (!c.def_done) {
                     auto path = n->ident_path();
                     // add structs

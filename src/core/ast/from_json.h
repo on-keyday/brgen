@@ -46,7 +46,7 @@ namespace brgen::ast {
                 return nullptr;
             }
             if (as<NodeT>(p)) {
-                return std::static_pointer_cast<NodeT>(p);
+                return cast_to<NodeT>(p);
             }
             return either::unexpected{error(loc, "expect ", node_type_to_string(NodeT::node_type), " but found ", node_type_to_string(p->type))};
         };

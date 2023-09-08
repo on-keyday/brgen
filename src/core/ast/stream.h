@@ -205,7 +205,7 @@ namespace brgen::ast {
         Stream* s = nullptr;
         size_t indent = 0;
         defstack stack;
-        std::shared_ptr<Fmt> current_fmt_;
+        std::shared_ptr<Format> current_fmt_;
 
        public:
         auto new_indent(size_t new_, std::shared_ptr<StackFrame<Definitions>>& frame) {
@@ -221,7 +221,7 @@ namespace brgen::ast {
             });
         }
 
-        auto enter_fmt(const std::shared_ptr<Fmt>& f) {
+        auto enter_fmt(const std::shared_ptr<Format>& f) {
             f->belong = current_fmt_;
             current_fmt_ = f;
             return utils::helper::defer([this] {
@@ -229,7 +229,7 @@ namespace brgen::ast {
             });
         }
 
-        std::shared_ptr<Fmt> current_fmt() {
+        std::shared_ptr<Format> current_fmt() {
             return current_fmt_;
         }
 
