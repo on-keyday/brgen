@@ -1,5 +1,8 @@
 
-// brgen language specialization (draft)
+// brgen language specialization
+// draft version 1
+// author: on-keyday (https://github.com/on-keyday)
+// note: this is implementation guidelines for my first language parser and generator
 
 // 1. Introduction
 // goal of this language is simple/powerful/portable DSL for binary encoder/decoder/validator/logger/document etc... generator
@@ -102,7 +105,31 @@ env
 !true // this is logical not
 // increment and decrement are not supported
 
-// 5.3 Other
+// 5.3 If and Match
+// in this language if and match are expression
+// if expression 
+if true: // this evaluated as void
+    env.warning("warning")
+
+value := if true: // this evaluated as int 
+   0 // if matching this
+else:
+   1 // and this type
+
+value = if true:
+    0 
+elif false:
+    1 // else if is supported by elif
+else:
+    2
+
+// match expression
+value = match 1:
+    1 => 2
+    3 => value
+    ... => 0
+
+// 5.4 Other
 // () brackets 
 // (1 + 2)* 3
 // a.b member access
@@ -136,7 +163,7 @@ X ::= 30
 // 6.1. As-is Format
 // As-is format is represent encoding/decoding format as is
 // field is interpreted in order
-format ExampleFormat:
+format ExampleAsIsFormat:
     // fundamental types
     // integer number
     // support for integer number
@@ -214,7 +241,39 @@ format ExampleFormat:
     // how to represent this (expand in the class?using class inner class?or using embed representation in Go?) is GID
     :Embed
 
+// 6.2 Custom Format
+// Custom format is defined using encode() and decode() function
+// fields are only a reference of how struct holds value
+// in decode function, fields are variables.
+// in encode function, fields are constant
+format ExampleCustomFormat:
+    /*
+        actually below's As-Is format is almost same as this ExampleCustomFormat format
+        so use below instead of this if you want to use like this
+        format ExampleCustomFormat:
+            prefix :u1
+            if prefix == 1:
+                field :u63
+            else:
+                field :u31
+    */
+    fn encode():
+        top = input.peek.u8()
+        if top&0x80 != 0:
+            field = input.u64()
+            field = field & env.u63.max
+        else:
+            field = input.u32()
+            field = field & env.u63.max
 
+    fn decode():
+        if field < env.u31.max:
+            output.u32(field)
+        elif field < env.u63.max:
+            output.u64(field)
+        else:
+            env.error("too large number")
+        
 // 7. Enum
 // enum are enumeration of numbers or strings or one type selection
 enum ExampleEnum:
@@ -229,13 +288,25 @@ enum ExampleEnum:
 
 // 8. Special Literals
 // 8.1 Input
-// TODO(on-keyday): write this
+// input.peek - this is peek proxy object. peek should implement same methods and properties of input
+// input.uN() - read N bit and parse into uN.  N is greater than 0 value 
+// TODO(on-keyday): write more
 
 // 8.3 Output
-// TODO(on-keyday): write this
+// output.uN(x) - write x as N bit integer into . if type of x is larger than N bit, generator implementor must insert size check
+// TODO(on-keyday): write more
 
 // 8.3 Environment
-// TODO(on-keyday): write this
+// belows 4 method are for custom error handling and should be implemented
+// env.error(message) - report error and abort operation
+// env.warning(message) - report warning not abort
+// env.assert(c,message) - report error and abort operation if c is false
+// env.expect(c,message) - report warning not abort if c is false
+// below properties are useful for parsing
+// env.uN - property set for N bit integer
+// env.uN.max - maximum value of N bit integer
+// env.uN.min - minimum value of N bit integer 
+// TODO(on-keyday): write more
 
 // 9. Builtin
 // generator implementer MUST provide allowed name (builtin) list of input,output,and env methods and property 
@@ -255,17 +326,27 @@ enum ExampleEnum:
 // floating boolean expression is interpreted as assertion
 // assertion with error should be treated with same error handling mechanism of normal encode/decode error
 
+
+// 11. Security Considerations
+// security of this product is almost depends on generator implementation.
+// most common problem in this field are Buffer Overflow Prevention (BOP)
+// generator should follow below guidelines
+// 1. secure is more valuable than fast
+//  even if generated code are very fast like thunderbolt, no secure product has no meaning.
+// TODO(on-keyday): write more
+
 // Appendix A. AST representation
 // representation of ast
 /*
-    node_type: AST node type
-    loc: location in source code and source file
-       pos: position in source code
-          begin: start position of source code
-          end: end position of source code
-       file: file index
-    
-    
+    every node contains {
+        node_type: AST node type
+        loc: location in source code and source file
+        pos: position in source code
+            begin: start position of source code
+            end: end position of source code
+        file: file index
+        comment: comment value related with this node
+    }
 */
 
 // Appendix B. Operator Precedence and Associative Order
@@ -284,3 +365,6 @@ enum ExampleEnum:
 // C. Generator Implementer Guide
 // this is guide for code generator implementation 
 // TODO(on-keyday): write this
+
+History:
+2023/09/08: write first version draft
