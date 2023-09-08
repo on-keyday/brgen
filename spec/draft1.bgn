@@ -27,12 +27,21 @@
 // in local scope, there are format,enum,import,field definition statement,loop statement,expressions (including if,match and assertion)
 // field definition statement and assignment expression makes identifier definition in it scope
 // format and enum makes type definition in it scope
-// identifier definition lookup rule are 
 
 // in AST level, any of above can be written in anywhere but exclude above can be omitted by generator
 // usage of optional statements and expressions are GID but some attribute explained after are recommended to implement
 
-// 4. Literal
+// 3.1 Identifier(variable) lookup rule
+// identifier definition lookup rule are:
+// 1. if in local scope, search variable defined before in same scope, 
+// 2.a if found, link variable with definition location
+// 2.b if not found then up the scope then 
+// 3. if in global scope, then look up from first of definition to end 
+// 3.2 Type lookup rule
+// 1. look up from first of definition to end in scope (no difference between local and global)
+// 2. if not found, then 
+
+// 4. Literal and Keywords
 // boolean literal
 true || false
 // integer literal
@@ -55,6 +64,23 @@ true || false
 input
 output
 env
+
+// 4.2 Keywords
+// keywords are:
+// true
+// false
+// input
+// output
+// env
+// format
+// enum
+// fn
+// if
+// elif
+// else
+// match
+// loop
+// uN,sN,ubN,sbN,ulN,slN // N MUST be grater than 0 integer
 
 // 5. Expressions
 // expressions are used for several purpose, assignment,assertion, condition of if expr, length of VLA
@@ -125,23 +151,9 @@ else:
 
 // match expression
 value = match 1:
-    1 => 2
+    1 => 2 // each statement should have
     3 => value
     ... => 0
-
-// 5.4 Other
-// () brackets 
-// (1 + 2)* 3
-// a.b member access
-a.b
-// this syntax is allowed if a is enum name, imported name, or format instance
-// call(arg1,arg2) call
-a(b)
-// in this language function call is specially treated explained below
-// arr_or_map[1] index
-a[1]
-// user only can define array
-// if GID, builtin function can return map like object
 
 // 5.3 Assignment Statement
 // assignment makes temporary identifier 
@@ -157,6 +169,21 @@ x = 2
 X ::= 30
 // assignment to constant are invalid
 // define constant should be implemented even if global scope
+
+// 5.4 Other
+// () brackets 
+// (1 + 2)* 3
+// a.b member access
+a.b
+// this syntax is allowed if a is enum name, imported name, or format instance
+// call(arg1,arg2) call
+a(b)
+// in this language function call is specially treated explained below
+// arr_or_map[1] index
+a[1]
+// user only can define array
+// if GID, builtin function can return map like object
+
 
 // 6. Format
 // format is a unit of data structure that is converted to struct and encoder/decoder/logger/validator etc.. functions 
@@ -318,7 +345,7 @@ enum ExampleEnum:
 // has_property(name,property) - name has property
 
 // 10. Error Handling
-// in this language, error handling should be implicit
+// in this language, error handling about IO should be implicit
 // that is generator should insert appropriate error handling method for each field/Format, encoding/decoding
 // when encoding, validation should appear in first step of encoding
 // when decoding, validation should appear in each step of decoding
@@ -366,5 +393,5 @@ enum ExampleEnum:
 // this is guide for code generator implementation 
 // TODO(on-keyday): write this
 
-History:
-2023/09/08: write first version draft
+// History:
+// 2023/09/08: write first version draft
