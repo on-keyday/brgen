@@ -184,6 +184,8 @@ a[1]
 // user only can define array
 // if GID, builtin function can return map like object
 
+// 5.4.1 Function
+// TODO(on-keyday): write about treatment of function and function arguments
 
 // 6. Format
 // format is a unit of data structure that is converted to struct and encoder/decoder/logger/validator etc.. functions 
