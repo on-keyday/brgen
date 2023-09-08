@@ -1,8 +1,9 @@
 
 // brgen language specialization
 // draft version 1
+// lang-version: 0.0.0.d1 // draft 1
 // author: on-keyday (https://github.com/on-keyday)
-// note: this is implementation guidelines for my first language parser and generator
+// note: this is implementation guidelines for my first parser and generator
 
 // 1. Introduction
 // goal of this language is simple/powerful/portable DSL for binary encoder/decoder/validator/logger/document etc... generator
