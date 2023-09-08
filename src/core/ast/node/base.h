@@ -12,12 +12,12 @@ namespace brgen::ast {
 
         virtual ~Node() {}
 
-        virtual void as_json(Debug& buf) const {
+        virtual void as_json(Debug& buf) {
             auto field = buf.object();
-            basic_info(field);
+            dump(field);
         }
 
-        void basic_info(auto&& field) const {
+        void dump(auto&& field) {
             field("node_type", node_type_to_string(type));
             field(sdebugf(loc));
         }
@@ -27,8 +27,15 @@ namespace brgen::ast {
             : loc(l), type(t) {}
     };
 
+#define define_node_type(type)                  \
+    virtual void as_json(Debug& buf) override { \
+        auto field = buf.object();              \
+        dump(field);                            \
+    }                                           \
+    static constexpr NodeType node_type = type
+
     struct Type : Node {
-        static constexpr NodeType node_type = NodeType::type;
+        define_node_type(NodeType::type);
 
        protected:
         constexpr Type(lexer::Loc l, NodeType t)
@@ -36,16 +43,21 @@ namespace brgen::ast {
     };
 
     struct Expr : Node {
-        static constexpr NodeType node_type = NodeType::expr;
+        define_node_type(NodeType::expr);
         std::shared_ptr<Type> expr_type;
 
        protected:
         constexpr Expr(lexer::Loc l, NodeType t)
             : Node(l, t) {}
+
+        void dump(auto&& field) {
+            Node::dump(field);
+            field(sdebugf(expr_type));
+        }
     };
 
     struct Stmt : Node {
-        static constexpr NodeType node_type = NodeType::stmt;
+        define_node_type(NodeType::stmt);
 
        protected:
         constexpr Stmt(lexer::Loc l, NodeType t)

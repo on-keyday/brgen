@@ -5,7 +5,7 @@
 
 namespace brgen::ast {
     struct TmpVar : Expr {
-        static constexpr NodeType node_type = NodeType::tmp_var;
+        define_node_type(NodeType::tmp_var);
         size_t tmp_index = 0;
         std::shared_ptr<Expr> base;
 
@@ -14,53 +14,49 @@ namespace brgen::ast {
             expr_type = base->expr_type;
         }
 
-        void as_json(Debug& buf) const override {
-            auto field = buf.object();
-            basic_info(field);
+        void dump(auto&& field) {
+            Expr::dump(field);
             field("tmp_var", tmp_index);
         }
     };
 
     struct BlockExpr : Expr {
-        static constexpr NodeType node_type = NodeType::block_expr;
+        define_node_type(NodeType::block_expr);
         node_list calls;
         std::shared_ptr<Expr> expr;
 
         BlockExpr(std::shared_ptr<Expr>&& a, node_list&& l)
             : Expr(a->loc, NodeType::block_expr), calls(std::move(l)), expr(std::move(a)) {}
 
-        void as_json(Debug& buf) const override {
-            auto field = buf.object();
-            basic_info(field);
+        void dump(auto&& field) {
+            Expr::dump(field);
             field(sdebugf(calls));
             field(sdebugf(expr));
         }
     };
 
     struct Assert : Stmt {
-        static constexpr NodeType node_type = NodeType::assert;
+        define_node_type(NodeType::assert);
         std::shared_ptr<Binary> cond;
 
         Assert(std::shared_ptr<Binary>&& a)
             : Stmt(a->loc, NodeType::assert), cond(std::move(a)) {}
 
-        void as_json(Debug& buf) const override {
-            auto field = buf.object();
-            basic_info(field);
+        void dump(auto&& field) {
+            Stmt::dump(field);
             field(sdebugf(cond));
         }
     };
 
     struct ImplicitReturn : Stmt {
-        static constexpr NodeType node_type = NodeType::implicit_return;
+        define_node_type(NodeType::implicit_return);
         std::shared_ptr<Expr> expr;
 
         ImplicitReturn(std::shared_ptr<Expr>&& a)
             : Stmt(a->loc, NodeType::implicit_return), expr(std::move(a)) {}
 
-        void as_json(Debug& buf) const override {
-            auto field = buf.object();
-            basic_info(field);
+        void dump(auto&& field) {
+            Stmt::dump(field);
             field(sdebugf(expr));
         }
     };

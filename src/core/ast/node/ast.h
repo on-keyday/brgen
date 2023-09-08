@@ -42,8 +42,12 @@ namespace brgen::ast {
         "define_const",
     };
 
+    constexpr void as_json(IdentUsage usage, auto&& buf) {
+        buf.string(ident_usage_map[int(usage)]);
+    }
+
     struct Ident : Expr {
-        static constexpr NodeType node_type = NodeType::ident;
+        define_node_type(NodeType::ident);
         std::string ident;
         define_frame frame;
         std::weak_ptr<Ident> base;
@@ -56,19 +60,21 @@ namespace brgen::ast {
         Ident()
             : Expr({}, NodeType::ident) {}
 
-        void as_json(Debug& buf) const override {
-            auto field = buf.object();
-            basic_info(field);
-            field(sdebugf(expr_type));
+        void dump(auto&& field) {
+            dump(field);
+        }
+
+        void dump(auto&& field) const {
+            Expr::dump(field);
             field(sdebugf(ident));
-            field("usage", ident_usage_map[int(usage)]);
+            field(sdebugf(usage));
         }
     };
 
     // field
     struct Fmt;
     struct Field : Stmt {
-        static constexpr NodeType node_type = NodeType::field;
+        define_node_type(NodeType::field);
         std::shared_ptr<Ident> ident;
         lexer::Loc colon_loc;
         std::shared_ptr<Type> field_type;
@@ -82,9 +88,12 @@ namespace brgen::ast {
         Field()
             : Stmt({}, NodeType::field) {}
 
-        void as_json(Debug& buf) const override {
-            auto field = buf.object();
-            basic_info(field);
+        void dump(auto&& field) {
+            dump(field);
+        }
+
+        void dump(auto&& field) const {
+            Stmt::dump(field);
             field(sdebugf(ident));
             field(sdebugf(colon_loc));
             field(sdebugf(field_type));
@@ -111,7 +120,7 @@ namespace brgen::ast {
     // statements
 
     struct IndentScope : Stmt {
-        static constexpr NodeType node_type = NodeType::indent_scope;
+        define_node_type(NodeType::indent_scope);
         node_list elements;
         define_frame defs;
 
@@ -122,18 +131,17 @@ namespace brgen::ast {
         IndentScope()
             : Stmt({}, NodeType::indent_scope) {}
 
-        void as_json(Debug& buf) const override {
-            auto field = buf.object();
-            basic_info(field);
+        void dump(auto&& field) {
+            Stmt::dump(field);
             field(sdebugf(elements));
-            field("defs", [&] {
+            field("defs", [&](Debug& buf) {
                 debug_defs(buf, defs);
             });
         }
     };
 
     struct Fmt : Stmt {
-        static constexpr NodeType node_type = NodeType::fmt;
+        define_node_type(NodeType::fmt);
         std::string ident;
         std::shared_ptr<IndentScope> scope;
         std::weak_ptr<Fmt> belong;
@@ -151,16 +159,15 @@ namespace brgen::ast {
             return ident;
         }
 
-        void as_json(Debug& buf) const override {
-            auto field = buf.object();
-            basic_info(field);
+        void dump(auto&& field) {
+            Stmt::dump(field);
             field(sdebugf(ident));
             field(sdebugf(scope));
         }
     };
 
     struct For : Stmt {
-        static constexpr NodeType node_type = NodeType::for_;
+        define_node_type(NodeType::for_);
         std::shared_ptr<IndentScope> block;
 
         For(lexer::Loc l)
@@ -169,9 +176,8 @@ namespace brgen::ast {
         For()
             : Stmt({}, NodeType::for_) {}
 
-        void as_json(Debug& buf) const override {
-            auto field = buf.object();
-            basic_info(field);
+        void dump(auto&& field) {
+            Stmt::dump(field);
             field("for_block", block);
         }
     };
@@ -179,7 +185,7 @@ namespace brgen::ast {
     // exprs
 
     struct Call : Expr {
-        static constexpr NodeType node_type = NodeType::call;
+        define_node_type(NodeType::call);
         std::shared_ptr<Expr> callee;
         std::shared_ptr<Expr> arguments;
         lexer::Loc end_loc;
@@ -188,9 +194,8 @@ namespace brgen::ast {
         Call()
             : Expr({}, NodeType::call) {}
 
-        void as_json(Debug& buf) const override {
-            auto field = buf.object();
-            basic_info(field);
+        void dump(auto&& field) {
+            Expr::dump(field);
             field(sdebugf(expr_type));
             field(sdebugf(callee));
             field(sdebugf(arguments));
@@ -199,7 +204,7 @@ namespace brgen::ast {
     };
 
     struct Paren : Expr {
-        static constexpr NodeType node_type = NodeType::paren;
+        define_node_type(NodeType::paren);
         std::shared_ptr<Expr> expr;
         lexer::Loc end_loc;
         Paren(lexer::Loc l)
@@ -209,9 +214,8 @@ namespace brgen::ast {
         Paren()
             : Expr({}, NodeType::paren) {}
 
-        void as_json(Debug& buf) const override {
-            auto field = buf.object();
-            basic_info(field);
+        void dump(auto&& field) {
+            Expr::dump(field);
             field(sdebugf(expr_type));
             field(sdebugf(expr));
             field(sdebugf(end_loc));
@@ -219,7 +223,7 @@ namespace brgen::ast {
     };
 
     struct If : Expr {
-        static constexpr NodeType node_type = NodeType::if_;
+        define_node_type(NodeType::if_);
         std::shared_ptr<Expr> cond;
         std::shared_ptr<IndentScope> block;
         std::shared_ptr<Node> els;
@@ -231,9 +235,8 @@ namespace brgen::ast {
         constexpr If()
             : Expr({}, NodeType::if_) {}
 
-        void as_json(Debug& buf) const override {
-            auto field = buf.object();
-            basic_info(field);
+        void dump(auto&& field) {
+            Expr::dump(field);
             field(sdebugf(expr_type));
             field(sdebugf(cond));
             field(sdebugf(block));
@@ -242,7 +245,7 @@ namespace brgen::ast {
     };
 
     struct Unary : Expr {
-        static constexpr NodeType node_type = NodeType::unary;
+        define_node_type(NodeType::unary);
         std::shared_ptr<Expr> target;
         UnaryOp op;
 
@@ -253,9 +256,8 @@ namespace brgen::ast {
         constexpr Unary()
             : Expr({}, NodeType::unary) {}
 
-        void as_json(Debug& buf) const override {
-            auto field = buf.object();
-            basic_info(field);
+        void dump(auto&& field) {
+            Expr::dump(field);
             field(sdebugf(expr_type));
             auto op = unary_op[int(this->op)];
             field(sdebugf(op));
@@ -264,7 +266,7 @@ namespace brgen::ast {
     };
 
     struct Binary : Expr {
-        static constexpr NodeType node_type = NodeType::binary;
+        define_node_type(NodeType::binary);
         std::shared_ptr<Expr> left;
         std::shared_ptr<Expr> right;
         BinaryOp op;
@@ -276,10 +278,9 @@ namespace brgen::ast {
         constexpr Binary()
             : Expr({}, NodeType::binary) {}
 
-        void as_json(Debug& buf) const override {
-            auto field = buf.object();
+        void dump(auto&& field) {
             auto op = bin_op_str(this->op);
-            basic_info(field);
+            Expr::dump(field);
             field(sdebugf(expr_type));
             field(sdebugf(op));
             field(sdebugf(left));
@@ -288,13 +289,12 @@ namespace brgen::ast {
     };
 
     struct MemberAccess : Expr {
-        static constexpr NodeType node_type = NodeType::member_access;
+        define_node_type(NodeType::member_access);
         std::shared_ptr<Expr> target;
         std::string name;
 
-        void as_json(Debug& buf) const override {
-            auto field = buf.object();
-            basic_info(field);
+        void dump(auto&& field) {
+            Expr::dump(field);
             field(sdebugf(expr_type));
             field(sdebugf(target));
             field(sdebugf(name));
@@ -309,7 +309,7 @@ namespace brgen::ast {
     };
 
     struct Cond : Expr {
-        static constexpr NodeType node_type = NodeType::cond;
+        define_node_type(NodeType::cond);
         std::shared_ptr<Expr> then;
         std::shared_ptr<Expr> cond;
         lexer::Loc els_loc;
@@ -322,9 +322,8 @@ namespace brgen::ast {
         constexpr Cond()
             : Expr({}, NodeType::cond) {}
 
-        void as_json(Debug& buf) const override {
-            auto field = buf.object();
-            basic_info(field);
+        void dump(auto&& field) {
+            Expr::dump(field);
             field(sdebugf(expr_type));
             field(sdebugf(cond));
             field(sdebugf(then));
@@ -335,7 +334,7 @@ namespace brgen::ast {
 
     // literals
     struct IntLiteral : Literal {
-        static constexpr NodeType node_type = NodeType::int_literal;
+        define_node_type(NodeType::int_literal);
         std::string raw;
 
         template <class T>
@@ -347,9 +346,8 @@ namespace brgen::ast {
             return t;
         }
 
-        void as_json(Debug& buf) const override {
-            auto field = buf.object();
-            basic_info(field);
+        void dump(auto&& field) {
+            Literal::dump(field);
             field(sdebugf(expr_type));
             field(sdebugf(raw));
             auto num = parse_as<std::int64_t>();
@@ -365,7 +363,7 @@ namespace brgen::ast {
     };
 
     struct StrLiteral : Literal {
-        static constexpr NodeType node_type = NodeType::str_literal;
+        define_node_type(NodeType::str_literal);
         std::string raw;
 
         StrLiteral(lexer::Loc l, std::string&& t)
@@ -377,12 +375,11 @@ namespace brgen::ast {
     };
 
     struct BoolLiteral : Literal {
-        static constexpr NodeType node_type = NodeType::bool_literal;
+        define_node_type(NodeType::bool_literal);
         bool value;
 
-        void as_json(Debug& buf) const override {
-            auto field = buf.object();
-            basic_info(field);
+        void dump(auto&& field) {
+            Literal::dump(field);
             field(sdebugf(expr_type));
             field(sdebugf(value));
         }
@@ -396,7 +393,7 @@ namespace brgen::ast {
     };
 
     struct Input : Literal {
-        static constexpr NodeType node_type = NodeType::input;
+        define_node_type(NodeType::input);
 
         Input(lexer::Loc l, const std::shared_ptr<Type>& d)
             : Literal(l, NodeType::input) {
@@ -409,7 +406,7 @@ namespace brgen::ast {
     };
 
     struct Output : Literal {
-        static constexpr NodeType node_type = NodeType::output;
+        define_node_type(NodeType::output);
 
         Output(lexer::Loc l, const std::shared_ptr<Type>& d)
             : Literal(l, NodeType::output) {
@@ -440,7 +437,7 @@ namespace brgen::ast {
     }
 
     struct IntType : Type {
-        static constexpr NodeType node_type = NodeType::int_type;
+        define_node_type(NodeType::int_type);
         std::string raw;
         size_t bit_size = 0;
 
@@ -451,16 +448,15 @@ namespace brgen::ast {
         constexpr IntType()
             : Type({}, NodeType::int_type) {}
 
-        void as_json(Debug& buf) const override {
-            auto field = buf.object();
-            basic_info(field);
+        void dump(auto&& field) {
+            Type::dump(field);
             field(sdebugf(raw));
             field(sdebugf(bit_size));
         }
     };
 
     struct IntLiteralType : Type {
-        static constexpr NodeType node_type = NodeType::int_literal_type;
+        define_node_type(NodeType::int_literal_type);
         std::weak_ptr<IntLiteral> base;
         mutable std::optional<std::uint8_t> bit_size;
 
@@ -487,11 +483,10 @@ namespace brgen::ast {
             return 0;
         }
 
-        void as_json(Debug& buf) const override {
-            auto field = buf.object();
+        void dump(auto&& field) {
             auto bit_size = get_bit_size();
             auto aligned = get_aligned_bit();
-            basic_info(field);
+            Type::dump(field);
             field(sdebugf(bit_size));
             field(sdebugf(aligned));
         }
@@ -505,16 +500,15 @@ namespace brgen::ast {
     };
 
     struct IdentType : Type {
-        static constexpr NodeType node_type = NodeType::ident_type;
+        define_node_type(NodeType::ident_type);
         std::string ident;
         define_frame frame;
         std::weak_ptr<Fmt> link_to;
         IdentType(lexer::Loc l, std::string&& token, define_frame&& frame)
             : Type(l, NodeType::ident_type), ident(std::move(token)), frame(std::move(frame)) {}
 
-        void as_json(Debug& buf) const override {
-            auto field = buf.object();
-            basic_info(field);
+        void dump(auto&& field) {
+            Type::dump(field);
             field(sdebugf(ident));
             auto link = link_to.lock();
             field(sdebugf(link));
@@ -526,7 +520,7 @@ namespace brgen::ast {
     };
 
     struct VoidType : Type {
-        static constexpr NodeType node_type = NodeType::void_type;
+        define_node_type(NodeType::void_type);
 
         VoidType(lexer::Loc l)
             : Type(l, NodeType::void_type) {}
@@ -535,14 +529,13 @@ namespace brgen::ast {
         constexpr VoidType()
             : Type({}, NodeType::void_type) {}
 
-        void as_json(Debug& buf) const override {
-            auto field = buf.object();
-            basic_info(field);
+        void dump(auto&& field) {
+            Type::dump(field);
         }
     };
 
     struct BoolType : Type {
-        static constexpr NodeType node_type = NodeType::bool_type;
+        define_node_type(NodeType::bool_type);
 
         BoolType(lexer::Loc l)
             : Type(l, NodeType::bool_type) {}
@@ -551,14 +544,13 @@ namespace brgen::ast {
         constexpr BoolType()
             : Type({}, NodeType::bool_type) {}
 
-        void as_json(Debug& buf) const override {
-            auto field = buf.object();
-            basic_info(field);
+        void dump(auto&& field) {
+            Type::dump(field);
         }
     };
 
     struct ArrayType : Type {
-        static constexpr NodeType node_type = NodeType::array_type;
+        define_node_type(NodeType::array_type);
         std::shared_ptr<ast::Expr> length;
         lexer::Loc end_loc;
         std::shared_ptr<ast::Type> base_type;
@@ -570,9 +562,8 @@ namespace brgen::ast {
         constexpr ArrayType()
             : Type({}, NodeType::array_type) {}
 
-        void as_json(Debug& buf) const override {
-            auto field = buf.object();
-            basic_info(field);
+        void dump(auto&& field) {
+            Type::dump(field);
             field(sdebugf(end_loc));
             field(sdebugf(base_type));
             field(sdebugf(length));
@@ -589,25 +580,23 @@ namespace brgen::ast {
         constexpr StrLiteralType()
             : Type({}, NodeType::str_literal_type) {}
 
-        void as_json(Debug& buf) const override {
-            auto field = buf.object();
-            basic_info(field);
+        void dump(auto&& field) {
+            Type::dump(field);
         }
     };
 
     void debug_def_frames(Debug& d, const define_frame& f);
 
     struct Program : Node {
-        static constexpr NodeType node_type = NodeType::program;
+        define_node_type(NodeType::program);
         node_list elements;
         define_frame defs;
 
-        void as_json(Debug& buf) const override {
-            auto field = buf.object();
-            basic_info(field);
+        void dump(auto&& field) {
+            Node::dump(field);
             field(sdebugf(elements));
-            field("defs", [&] { debug_defs(buf, defs); });
-            field("all_defs", [&] { debug_def_frames(buf, defs); });
+            field("defs", [&](auto& buf) { debug_defs(buf, defs); });
+            field("all_defs", [&](auto& buf) { debug_def_frames(buf, defs); });
         }
 
         Program()
