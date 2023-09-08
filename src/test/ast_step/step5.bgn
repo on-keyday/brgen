@@ -1,7 +1,0 @@
-form :u1
-if form == 1:
-    :LongPacket
-else:
-    :ShortPacket
-
-

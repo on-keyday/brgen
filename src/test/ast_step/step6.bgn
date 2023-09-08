@@ -1,9 +1,0 @@
-fmt LongPacket:
-    fixed :b1
-    long_packet_type :b2
-    reserved :b2
-    packet_number_length :b2
-    version :u32
-    dst_conn_id :ConnectionID(null)
-    src_conn_id :ConnectionID(null)
-

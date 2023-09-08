@@ -1,0 +1,131 @@
+
+// brgen language specialization
+
+// Introduction
+// goal of this language is simple/powerful/portable DSL for binary encoder/decoder/validator/logger/document etc... generator
+// simple - easy to write and read
+// powerful - enough to represent network protocol/file format
+// portable - write once, generate in any language
+
+// this document are example of usage and it's parsable by brgen 
+
+// this is comment
+/* 
+   this is also comment
+   can be multiline
+*/
+
+// Word Definition
+// GID - generator implementation defined - decided by generator implementer
+// MUST - generator implementer must implement that
+
+// Scope and Syntax
+// in global scope, there are format,enum,and import
+// in local scope, there are format,enum,import,field definition statement,loop statement,expressions (including if,match and assertion)
+// field definition statement and assignment expression makes identifier definition in it scope
+// format and enum makes type definition in it scope
+// identifier definition lookup rule are 
+
+// in AST level, any of above can be written in anywhere but exclude above can be omitted by generator
+// usage of optional statements and expressions are GID but some attribute explained after are recommended to implement
+
+
+// Input and Output, Environment
+// there are three special keywords; input, output, and env
+// input means decoder input
+// output means encoder output
+// you can access these objects anywhere
+// some situation, access to these object makes separation of encoding and decoding
+// these keywords are represented as ident
+input
+output
+
+// Expressions
+// expressions are used for several purpose, assignment,assertion, condition of if expr, length of VLA
+// expressions are finally evaluated as bool,int,float,string, custom enum type,or custom format type.
+// it is GID that evaluation of format type and float; if not supported, it should be evaluated as void
+
+
+// Format
+// format is a unit of data structure that is converted to struct and encoder/decoder/logger/validator etc.. functions 
+format Example:
+    // fundamental types
+    // integer number
+    // support for integer number
+    // belows are endian unspecified (endian will decided by environment)
+    // uN -> N bit unsigned integer
+    // sN -> N bit signed integer
+    // belows are endian specified
+    // ubN -> N bit big endian unsigned integer
+    // usN -> N bit big endian signed integer
+    // ulN -> N bit little endian unsigned integer
+    // slN -> N bit little endian signed integer
+    // N is larger than 0 (not 0 and smaller)
+    // maximum limits and valid ranges are GID
+    // but MUST support u8,s8,u16,s16,u32,s32,u64,s64
+    sample1 :u8
+    sample2 :u16
+    sample3 :u32
+    sample4 :u64
+    sample5 :s8
+    sample6 :s16
+    sample7 :s32
+    sample8 :s64
+
+    // support for floating point number are GID
+    // representation are fN and 
+   
+
+    // less than 8 bit also allowed if generator allowed
+    // representation in program (packed in one byte? or using bit field?), 
+    // and byte alignment requirement (allow non-byte aligned format or disallow) are GID
+    prefix :u1
+    data1 :u7
+
+    // conditional format support are GID but implementing is recommended
+    // for example, when decoding format, read prefix prior then judge and read data2 as u8 if prefix == 1 else read data2 as u16
+    //              when encoding format, write data2 as u8 if prefix == 1 else write data2 as u16
+    //              when logging format, if text format, write as text, else if binary format then write like encoding format
+    // detail of how to hold data(union in C?std::variant in C++?enum in Rust?interface in Go?interface and derivative in C#/Java?) is GID
+    if prefix == 1:
+        data2 :u8
+    else:
+        data2 :u16
+
+    // array types are supported if GID
+    // generator implementation should support 2 type array
+    // first is fixed length array that inner brackets value are constant
+    // second is variable length array(VLA) decided by other field 
+    // VLA length decision field MUST be prior to VLA field
+    // to explain define:
+    // len   :u8
+    // value :[len]type
+    // if generated format is symmetric (len is only represented by field to define length in this format; such as C's set of char* and int)
+    // encoding and decoding are simply defined (encode/decode as is)
+    // if generated format is asymmetric (representation of value also holds length field; such as C++'s std::vector)
+    // generator should use len to decide value's length when decoding and should use length of value if encoding
+    // if value length is like `value :[len+1]type` use it directly when decoding
+    // and when encoding, len should be calculated from `len = value.length - 1` with solving linear equation
+    // when value length is like `value :[len1+len2]`, decoding is easy but decision of `len1` and `len2` are too difficult to solve
+    // generator implementer can provide other mechanism to decide len1 or len2, or make it an error; that is GID
+    fixed :[16]u8
+    len :u8
+    data3 :[len]u8
+
+    // boolean expression that is unused for any other purpose is
+    // represented as assertion
+    // assertion failure makes error or warning.
+    // error or waring selection are GID
+    sample1 == 2 || sample2 > 2
+
+// AST
+// representation of ast
+/*
+    node_type: AST node type
+    loc: location in source code and source file
+       pos: position in source code
+          begin: start position of source code
+          end: end position of source code
+       file: file index
+    
+*/

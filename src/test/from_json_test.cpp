@@ -16,7 +16,7 @@ int main(int argc, char** argv) {
         Debug d;
         d.value(a);
         auto parsed = utils::json::parse<ast::JSON>(d.out());
-        ast::from_json(parsed).value();
+        ast::from_json(parsed).transform_error(to_source_error(fs)).value();
     });
     ::testing::InitGoogleTest(&argc, argv);
     auto res = RUN_ALL_TESTS();
