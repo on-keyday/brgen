@@ -4,6 +4,7 @@
 #include <core/middle/middle.h>
 #include <gtest/gtest.h>
 #include <core/ast/from_json.h>
+#include <core/ast/to_json.h>
 #include <json/parse.h>
 using namespace brgen;
 
@@ -15,6 +16,8 @@ int main(int argc, char** argv) {
             .value();
         Debug d;
         d.value(a);
+        ast::SymbolMap m;
+        m.encode(a);
         auto parsed = utils::json::parse<ast::JSON>(d.out());
         ast::from_json(parsed).transform_error(to_source_error(fs)).value();
     });

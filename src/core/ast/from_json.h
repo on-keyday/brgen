@@ -47,7 +47,7 @@ namespace brgen::ast {
             if (as<NodeT>(p)) {
                 return cast_to<NodeT>(p);
             }
-            return either::unexpected{error(loc, "expect ", node_type_to_string(NodeT::node_type), " but found ", node_type_to_string(p->type))};
+            return either::unexpected{error(loc, "expect ", node_type_to_string(NodeT::node_type_tag), " but found ", node_type_to_string(p->node_type))};
         };
     }
 

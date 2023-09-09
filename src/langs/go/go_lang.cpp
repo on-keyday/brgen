@@ -12,7 +12,7 @@ namespace brgen::go_lang {
     void write_block(Context& c, const SectionPtr& w, ast::node_list& elements);
 
     std::string get_type_text(Context& c, const SectionPtr& w, std::shared_ptr<ast::Type>& ty) {
-        if (ty->type != ast::NodeType::int_type) {
+        if (ty->node_type != ast::NodeType::int_type) {
             error(ty->loc, "currently int type is only supported").report();
         }
         auto t = ast::as<ast::IntType>(ty);
@@ -99,7 +99,7 @@ namespace brgen::go_lang {
             w->write(")");
         }
         else if (auto if_ = ast::as<ast::If>(expr)) {
-            if (if_->expr_type->type == ast::NodeType::void_type) {
+            if (if_->expr_type->node_type == ast::NodeType::void_type) {
                 write_if_stmt(c, w, if_);
             }
             else {

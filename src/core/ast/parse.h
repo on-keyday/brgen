@@ -302,7 +302,7 @@ namespace brgen::ast {
             if (l->op == ast::BinaryOp::assign ||
                 l->op == ast::BinaryOp::typed_assign ||
                 l->op == ast::BinaryOp::const_assign) {
-                if (l->left->type != ast::NodeType::ident) {
+                if (l->left->node_type != ast::NodeType::ident) {
                     s.report_error(l->left->loc, "left of =,:=,::= must be ident");
                 }
             }
@@ -336,7 +336,7 @@ namespace brgen::ast {
             auto update_stack = [&] {  // returns true if `continue` required
                 if (stack_is_on_depth()) {
                     auto op = pop_stack();
-                    if (op.expr->type == NodeType::binary) {
+                    if (op.expr->node_type == NodeType::binary) {
                         if (depth == ast::bin_assign_layer) {
                             stack.push_back(std::move(op));
                         }
@@ -346,7 +346,7 @@ namespace brgen::ast {
                             expr = std::move(op.expr);
                         }
                     }
-                    else if (op.expr->type == NodeType::cond) {
+                    else if (op.expr->node_type == NodeType::cond) {
                         auto cop = static_cast<Cond*>(op.expr.get());
                         if (!cop->cond) {
                             cop->cond = std::move(expr);
@@ -490,7 +490,7 @@ namespace brgen::ast {
             lexer::Token token;
             std::shared_ptr<Ident> ident;
             if (expr) {
-                if (expr->type != NodeType::ident) {
+                if (expr->node_type != NodeType::ident) {
                     return expr;
                 }
                 s.skip_space();

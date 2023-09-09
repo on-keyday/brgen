@@ -74,7 +74,7 @@ namespace brgen::cpp_lang {
             w->write(")");
         }
         else if (auto if_ = ast::as<ast::If>(expr)) {
-            if (if_->expr_type->type == ast::NodeType::void_type) {
+            if (if_->expr_type->node_type == ast::NodeType::void_type) {
                 write_if_stmt(c, w, if_);
             }
             else {
@@ -184,7 +184,7 @@ namespace brgen::cpp_lang {
         if (auto arr = ast::as<ast::ArrayType>(ty)) {
             return concat("std::vector<", get_type_text(c, w, arr->base_type), ">");
         }
-        if (ty->type != ast::NodeType::int_type) {
+        if (ty->node_type != ast::NodeType::int_type) {
             error(ty->loc, "currently int or array type are only supported").report();
         }
         auto t = ast::as<ast::IntType>(ty);

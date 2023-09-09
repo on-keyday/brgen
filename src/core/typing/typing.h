@@ -8,7 +8,7 @@ namespace brgen::typing {
 
     struct Typing {
         bool equal_type(const std::shared_ptr<ast::Type>& left, const std::shared_ptr<ast::Type>& right) {
-            if (left->type != right->type) {
+            if (left->node_type != right->node_type) {
                 return false;
             }
             if (auto lty = ast::as<ast::IntType>(left)) {
@@ -42,7 +42,7 @@ namespace brgen::typing {
             if (!expr->expr_type) {
                 unsupported(expr);
             }
-            if (expr->expr_type->type != ast::NodeType::bool_type) {
+            if (expr->expr_type->node_type != ast::NodeType::bool_type) {
                 error(expr->loc, "expect bool but not").report();
             }
         }
@@ -67,16 +67,16 @@ namespace brgen::typing {
                 }
                 b = a;  // fitting
             };
-            if (left->type == ast::NodeType::int_type &&
-                right->type == ast::NodeType::int_literal_type) {
+            if (left->node_type == ast::NodeType::int_type &&
+                right->node_type == ast::NodeType::int_literal_type) {
                 fitting(left, right);
             }
-            else if (left->type == ast::NodeType::int_literal_type &&
-                     right->type == ast::NodeType::int_type) {
+            else if (left->node_type == ast::NodeType::int_literal_type &&
+                     right->node_type == ast::NodeType::int_type) {
                 fitting(right, left);
             }
-            else if (left->type == ast::NodeType::int_literal_type &&
-                     right->type == ast::NodeType::int_literal_type) {
+            else if (left->node_type == ast::NodeType::int_literal_type &&
+                     right->node_type == ast::NodeType::int_literal_type) {
                 left = assigning_type(left);
                 right = assigning_type(right);
                 auto li = ast::as<ast::IntType>(left);
@@ -219,16 +219,16 @@ namespace brgen::typing {
             switch (op) {
                 case ast::BinaryOp::left_shift:
                 case ast::BinaryOp::right_shift: {
-                    if (lty->type == ast::NodeType::int_type &&
-                        rty->type == ast::NodeType::int_type) {
+                    if (lty->node_type == ast::NodeType::int_type &&
+                        rty->node_type == ast::NodeType::int_type) {
                         b->expr_type = std::move(lty);
                         return;
                     }
                     report_binary_error();
                 }
                 case ast::BinaryOp::bit_and: {
-                    if (lty->type == ast::NodeType::int_type &&
-                        rty->type == ast::NodeType::int_type) {
+                    if (lty->node_type == ast::NodeType::int_type &&
+                        rty->node_type == ast::NodeType::int_type) {
                         if (!equal_type(rty, lty)) {
                             report_not_equal_type(rty, lty);
                         }

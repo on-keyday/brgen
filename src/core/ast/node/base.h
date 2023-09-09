@@ -6,9 +6,13 @@
 #include <list>
 
 namespace brgen::ast {
+    constexpr void as_json(NodeType type, auto&& buf) {
+        buf.value(node_type_to_string(type));
+    }
+
     // abstract
     struct Node {
-        const NodeType type;
+        const NodeType node_type;
         lexer::Loc loc;
 
         virtual ~Node() {}
@@ -19,13 +23,13 @@ namespace brgen::ast {
         }
 
         void dump(auto&& field) {
-            field("node_type", node_type_to_string(type));
+            field(sdebugf(node_type));
             field(sdebugf(loc));
         }
 
        protected:
         constexpr Node(lexer::Loc l, NodeType t)
-            : loc(l), type(t) {}
+            : loc(l), node_type(t) {}
     };
 
     template <class B>
@@ -48,7 +52,7 @@ namespace brgen::ast {
         auto wrapper = FieldWrapper<decltype(field)>{field}; \
         dump(wrapper);                                       \
     }                                                        \
-    static constexpr NodeType node_type = type
+    static constexpr NodeType node_type_tag = type
 
     struct Type : Node {
         define_node_type(NodeType::type);
@@ -62,14 +66,14 @@ namespace brgen::ast {
         define_node_type(NodeType::expr);
         std::shared_ptr<Type> expr_type;
 
-       protected:
-        constexpr Expr(lexer::Loc l, NodeType t)
-            : Node(l, t) {}
-
         void dump(auto&& field) {
             Node::dump(field);
             field(sdebugf(expr_type));
         }
+
+       protected:
+        constexpr Expr(lexer::Loc l, NodeType t)
+            : Node(l, t) {}
     };
 
     struct Stmt : Node {

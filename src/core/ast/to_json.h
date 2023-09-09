@@ -10,9 +10,9 @@ namespace brgen::ast {
         std::vector<std::shared_ptr<Node>> node;
         Debug obj;
 
-        void encode(std::shared_ptr<Node>& node) {
+        void encode(const std::shared_ptr<Node>& node) {
             visit(node, [](auto&& f) {
-                f->dump([](std::string_view key, auto&& value) {
+                f->dump([](std::string_view key, auto& value) {
 
                 });
             });
