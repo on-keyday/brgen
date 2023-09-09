@@ -1,7 +1,6 @@
 /*license*/
 #pragma once
 #include <cstdint>
-#include <core/common/stack.h>
 #include <vector>
 #include <core/common/util.h>
 

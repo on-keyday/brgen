@@ -8,7 +8,6 @@
 #include <code/src_location.h>
 #include <map>
 #include "ast.h"
-#include "../common/stack.h"
 #include "../common/file.h"
 
 namespace brgen::ast {

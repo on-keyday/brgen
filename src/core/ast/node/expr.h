@@ -42,10 +42,6 @@ namespace brgen::ast {
             : Expr({}, NodeType::ident) {}
 
         void dump(auto&& field) {
-            dump(field);
-        }
-
-        void dump(auto&& field) const {
             Expr::dump(field);
             field(sdebugf(ident));
             field(sdebugf(usage));
@@ -111,6 +107,10 @@ namespace brgen::ast {
         }
     };
 
+    constexpr void as_json(UnaryOp op, auto&& buf) {
+        buf.value(unary_op[int(op)]);
+    }
+
     struct Unary : Expr {
         define_node_type(NodeType::unary);
         std::shared_ptr<Expr> target;
@@ -125,13 +125,12 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Expr::dump(field);
-            auto op = unary_op[int(this->op)];
             field(sdebugf(op));
             field(sdebugf(target));
         }
     };
 
-    void as_json(BinaryOp op, auto&& buf) {
+    constexpr void as_json(BinaryOp op, auto&& buf) {
         buf.value(bin_op_str(op));
     }
 
