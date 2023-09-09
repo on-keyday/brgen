@@ -58,7 +58,7 @@ namespace brgen::ast {
         }
 
         void push(auto&& obj) {
-            objects.push_back({std::move(obj)});
+            objects.push_back({std::forward<decltype(obj)>(obj)});
         }
 
         void as_json(Debug&) {}

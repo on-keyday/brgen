@@ -14,11 +14,9 @@ int main(int argc, char** argv) {
         middle::apply_middle(warns, a)
             .transform_error(to_source_error(fs))
             .value();
-        Debug d;
-        d.value(a);
         ast::SymbolMap m;
         m.encode(a);
-        auto parsed = utils::json::parse<ast::JSON>(d.out());
+        auto parsed = utils::json::parse<ast::JSON>(m.obj.out());
         ast::from_json(parsed).transform_error(to_source_error(fs)).value();
     });
     ::testing::InitGoogleTest(&argc, argv);

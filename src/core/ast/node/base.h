@@ -11,6 +11,9 @@ namespace brgen::ast {
     }
 
     // abstract
+
+    struct Scope;
+    using scope_ptr = std::shared_ptr<Scope>;
     struct Node {
         const NodeType node_type;
         lexer::Loc loc;
@@ -39,6 +42,11 @@ namespace brgen::ast {
         constexpr auto operator()(std::string_view key, auto&& value) const {
             if constexpr (utils::helper::is_template_instance_of<std::decay_t<decltype(value)>, std::weak_ptr>) {
                 // ignore at here
+            }
+            else if constexpr (std::is_same_v<decltype(value), scope_ptr&>) {
+                if (key == "global_scope") {
+                    base(key, value);
+                }
             }
             else {
                 base(key, value);
@@ -91,8 +99,6 @@ namespace brgen::ast {
     };
 
     using node_list = std::list<std::shared_ptr<Node>>;
-    struct Scope;
-    using scope_ptr = std::shared_ptr<Scope>;
 
     struct IndentScope : Stmt {
         define_node_type(NodeType::indent_scope);

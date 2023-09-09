@@ -19,7 +19,7 @@
             "name": "Debug go_test",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceRoot}/build/test/go_test",
+            "program": "${workspaceRoot}/build/test/from_json_test",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",

@@ -16,7 +16,7 @@ namespace brgen::ast {
     }
         SWITCH
         CASE(Program)
-
+        // literal
         CASE(IntLiteral)
         CASE(BoolLiteral)
         CASE(StrLiteral)
@@ -24,6 +24,7 @@ namespace brgen::ast {
         CASE(Input)
         CASE(Output)
 
+        // expr
         CASE(Binary)
         CASE(Unary)
         CASE(Cond)
@@ -36,7 +37,7 @@ namespace brgen::ast {
         CASE(TmpVar)
         CASE(BlockExpr)
 
-        CASE(Stmt)
+        // stmt
 
         CASE(For)
         CASE(Field)
@@ -46,6 +47,7 @@ namespace brgen::ast {
         CASE(Assert)
         CASE(ImplicitReturn)
 
+        // type
         CASE(IntType)
         CASE(IdentType)
         CASE(IntLiteralType)

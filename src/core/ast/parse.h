@@ -454,7 +454,7 @@ namespace brgen::ast {
             }
             // Check if the string starts with 'u' or 'b' and has a valid unsigned integer
             size_t value = 0;
-            if (!utils::number::parse_integer(str.substr(1), value)) {
+            if (!utils::number::parse_integer(str, value)) {
                 return std::nullopt;
             }
             if (value == 0) {  // u0 is not valid

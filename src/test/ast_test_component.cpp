@@ -40,7 +40,7 @@ namespace brgen::ast {
             std::string base_path;
             std::map<std::string, std::string> p;
             p["BASE_PATH"] = utils::env::sys::env_getter().get_or<std::string>("BASE_PATH", ".");
-            utils::env::expand(base_path, "${BASE_PATH}/src/test/ast_step/", utils::env::expand_map<std::string>(p));
+            utils::env::expand(base_path, "${BASE_PATH}/ignore/ast_step/", utils::env::expand_map<std::string>(p));
             auto add_file = [&](const char* file_name, lexer::FileIndex expect) {
                 auto index = files.add(base_path + file_name);
                 ASSERT_TRUE(is_Index(index));

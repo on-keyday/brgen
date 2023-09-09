@@ -1,6 +1,6 @@
 
 
-fmt QUICPacket: 
+format QUICPacket: 
    form :u1
    fixed :u1
    if form == 1:
@@ -9,7 +9,7 @@ fmt QUICPacket:
       :OneRTTPacket
    
 
-fmt LongPacket:
+format LongPacket:
    long_packet_type :u2
    reserved :u2
    packet_number_length :u2
@@ -17,7 +17,7 @@ fmt LongPacket:
    dst_conn_id :ConnectionID
    src_conn_id :ConnectionID
 
-fmt OneRTTPacket:
+format OneRTTPacket:
    spin :u1
    reserved :u2
    key_phase :u2
@@ -25,13 +25,13 @@ fmt OneRTTPacket:
    dst_conn_id :ConnectionID
 
 
-fmt ConnectionID:
+format ConnectionID:
    id :[]byte
    fn encode():
       
 
 
-fmt Varint:
+format Varint:
    value :u64
    fn decode(input):
       p = input[0]
