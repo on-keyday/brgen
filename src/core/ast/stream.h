@@ -7,20 +7,17 @@
 #include <helper/defer.h>
 #include <code/src_location.h>
 #include <map>
-#include "node/ast.h"
+#include "ast.h"
 #include "../common/stack.h"
 #include "../common/file.h"
 
 namespace brgen::ast {
-
-    struct ContextInfo;
 
     struct Stream {
        private:
         std::list<lexer::Token> tokens;
         using iterator = typename std::list<lexer::Token>::iterator;
         iterator cur;
-        ContextInfo* info = nullptr;
         File* input;
 
         [[noreturn]] void report_error(std::string&& msg, lexer::Loc pos) {
@@ -183,10 +180,6 @@ namespace brgen::ast {
             skip_tag(lexer::Tag::space, lexer::Tag::line, lexer::Tag::indent);
         }
 
-        ContextInfo* context() const {
-            return info;
-        }
-
        private:
         auto enter_stream(auto&& fn) -> result<std::invoke_result_t<decltype(fn)>> {
             try {
@@ -195,70 +188,6 @@ namespace brgen::ast {
             } catch (LocationError& err) {
                 return unexpect(std::move(err));
             }
-        }
-    };
-
-    using defstack = Stack<Definitions>;
-
-    struct ContextInfo {
-       private:
-        Stream* s = nullptr;
-        size_t indent = 0;
-        defstack stack;
-        std::shared_ptr<Format> current_fmt_;
-
-       public:
-        auto new_indent(size_t new_, std::shared_ptr<StackFrame<Definitions>>& frame) {
-            if (indent >= new_) {
-                s->report_error("expect larger indent but not");
-            }
-            auto old = std::exchange(indent, std::move(new_));
-            stack.enter_branch();
-            frame = stack.current_frame();
-            return utils::helper::defer([=, this] {
-                indent = std::move(old);
-                stack.leave_branch();
-            });
-        }
-
-        auto enter_fmt(const std::shared_ptr<Format>& f) {
-            f->belong = current_fmt_;
-            current_fmt_ = f;
-            return utils::helper::defer([this] {
-                current_fmt_ = current_fmt_->belong.lock();
-            });
-        }
-
-        std::shared_ptr<Format> current_fmt() {
-            return current_fmt_;
-        }
-
-        size_t current_indent() {
-            return indent;
-        }
-
-        define_frame reset_stack() {
-            stack = {};
-            return stack.current_frame();
-        }
-
-        define_frame current_definitions() {
-            return stack.current_frame();
-        }
-    };
-
-    struct Context {
-       private:
-        Stream stream;
-        ContextInfo info;
-
-       public:
-        auto enter_stream(File* file, auto&& fn) {
-            stream.info = &info;
-            return stream.enter_stream([&] {
-                stream.input = file;
-                return fn(stream);
-            });
         }
     };
 

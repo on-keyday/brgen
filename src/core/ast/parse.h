@@ -4,17 +4,63 @@
 
 namespace brgen::ast {
 
-    struct ParserTest;
+    struct ParserState {
+       private:
+        Stream* s = nullptr;
+        size_t indent = 0;
+        defstack stack;
+        std::shared_ptr<Format> current_fmt_;
+
+       public:
+        auto new_indent(size_t new_, std::shared_ptr<StackFrame<Definitions>>& frame) {
+            if (indent >= new_) {
+                s->report_error("expect larger indent but not");
+            }
+            auto old = std::exchange(indent, std::move(new_));
+            stack.enter_branch();
+            frame = stack.current_frame();
+            return utils::helper::defer([=, this] {
+                indent = std::move(old);
+                stack.leave_branch();
+            });
+        }
+
+        auto enter_format(const std::shared_ptr<Format>& f) {
+            f->belong = current_fmt_;
+            current_fmt_ = f;
+            return utils::helper::defer([this] {
+                current_fmt_ = current_fmt_->belong.lock();
+            });
+        }
+
+        std::shared_ptr<Format> current_fmt() {
+            return current_fmt_;
+        }
+
+        size_t current_indent() {
+            return indent;
+        }
+
+        scope_ptr reset_stack() {
+            stack = {};
+            return stack.current_frame();
+        }
+
+        scope_ptr current_scope() {
+            return stack.current_frame();
+        }
+    };
 
     struct Parser {
         Stream& s;
+        ParserState state;
 
         std::shared_ptr<Program> parse() {
             auto prog = std::make_shared<Program>();
-            prog->defs = s.context()->reset_stack();
+            prog->global_scope = state.reset_stack();
             s.skip_line();
             while (!s.eos()) {
-                auto expr = parse_one();
+                auto expr = parse_statement();
                 prog->elements.push_back(std::move(expr));
                 s.skip_white();
             }
@@ -47,7 +93,7 @@ namespace brgen::ast {
             auto c = s.context()->new_indent(current_indent, scope->defs);
 
             // Parse and add the first element
-            scope->elements.push_back(parse_one());
+            scope->elements.push_back(parse_statement());
 
             // Parse and add subsequent elements with the same indent level
             while (auto indent = s.peek_token(lexer::Tag::indent)) {
@@ -55,7 +101,7 @@ namespace brgen::ast {
                     break;
                 }
                 s.must_consume_token(lexer::Tag::indent);
-                scope->elements.push_back(parse_one());
+                scope->elements.push_back(parse_statement());
             }
 
             return scope;
@@ -118,7 +164,7 @@ namespace brgen::ast {
             auto ident = parse_ident_no_frame();
             auto frame = s.context()->current_definitions();
             frame->current.add_ident(ident->ident, ident);
-            ident->frame = std::move(frame);
+            ident->scope = std::move(frame);
             return ident;
         }
 
@@ -463,7 +509,7 @@ namespace brgen::ast {
             auto ident = s.must_consume_token(lexer::Tag::ident);
             fmt->ident = ident.token;
             {
-                auto scope = s.context()->enter_fmt(fmt);
+                auto scope = state.enter_fmt(fmt);
                 fmt->scope = parse_indent_block();
             }
             s.context()->current_definitions()->current.add_fmt(fmt->ident, fmt);
@@ -471,7 +517,7 @@ namespace brgen::ast {
             return fmt;
         }
 
-        std::shared_ptr<Node> parse_one() {
+        std::shared_ptr<Node> parse_statement() {
             if (s.expect_token("for")) {
                 return parse_for();
             }

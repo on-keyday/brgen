@@ -4,6 +4,7 @@
 #include <helper/defer.h>
 #include <optional>
 #include "debug.h"
+#include <vector>
 
 namespace brgen {
 
@@ -14,17 +15,16 @@ namespace brgen {
 
        private:
         std::weak_ptr<StackFrame> prev;
+        std::vector<T> values;
         std::shared_ptr<StackFrame> branch;
         std::shared_ptr<StackFrame> next;
 
        public:
-        T current;
-
-        template <class V>
-        std::optional<V> lookup(auto&& fn) {
-            std::optional<V> f = fn(current);
-            if (f) {
-                return f;
+        std::optional<T> lookup(auto&& fn) {
+            for (auto& val : std::views::reverse(values)) {
+                if (fn(val)) {
+                    return val;
+                }
             }
             if (auto got = prev.lock()) {
                 return got->template lookup<V>(fn);
@@ -39,7 +39,12 @@ namespace brgen {
                     return found;
                 }
             }
-            return fn(current);
+            for (auto& val : values) {
+                if (fn(val)) {
+                    return val;
+                }
+            }
+            return std::nullopt;
         }
 
         std::shared_ptr<StackFrame> next_frame() const {

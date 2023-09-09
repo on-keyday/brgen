@@ -1,7 +1,6 @@
 /*license*/
 #pragma once
 #include "base.h"
-#include "ast.h"
 
 namespace brgen::ast {
     struct TmpVar : Expr {

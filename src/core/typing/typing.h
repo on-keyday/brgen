@@ -252,7 +252,7 @@ namespace brgen::typing {
         }
 
         std::optional<std::shared_ptr<ast::Ident>> find_matching_ident(ast::Ident* ident) {
-            return ident->frame->lookup<std::shared_ptr<ast::Ident>>([&](ast::Definitions& defs) -> std::optional<std::shared_ptr<ast::Ident>> {
+            return ident->scope->lookup<std::shared_ptr<ast::Ident>>([&](ast::Definitions& defs) -> std::optional<std::shared_ptr<ast::Ident>> {
                 auto found = defs.idents.find(ident->ident);
                 if (found != defs.idents.end()) {
                     for (auto it = found->second.rbegin(); it != found->second.rend(); it++) {

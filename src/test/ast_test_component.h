@@ -1,7 +1,7 @@
 /*license*/
 #pragma once
 
-#include <core/ast/node/ast.h>
+#include <core/ast/ast.h>
 #include <optional>
 #include <vector>
 #include <wrap/cout.h>

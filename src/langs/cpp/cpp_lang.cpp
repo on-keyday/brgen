@@ -1,6 +1,6 @@
 /*license*/
 #include "core/writer/writer.h"
-#include "core/ast/node/ast.h"
+#include "core/ast/ast.h"
 #include "core/ast/node/translated.h"
 #include <core/writer/section.h>
 #include "cpp_lang.h"
