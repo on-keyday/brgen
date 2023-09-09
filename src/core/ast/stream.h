@@ -181,13 +181,24 @@ namespace brgen::ast {
         }
 
        private:
-        auto enter_stream(auto&& fn) -> result<std::invoke_result_t<decltype(fn)>> {
+        auto enter_stream(auto&& fn) -> result<std::invoke_result_t<decltype(fn), Stream&>> {
             try {
                 cur = tokens.begin();
-                return fn();
+                return fn(*this);
             } catch (LocationError& err) {
                 return unexpect(std::move(err));
             }
+        }
+    };
+
+    struct Context {
+       private:
+        Stream s;
+
+       public:
+        auto enter_stream(File* file, auto&& parser) {
+            s.input = file;
+            return s.enter_stream(parser);
         }
     };
 

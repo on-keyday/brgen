@@ -252,18 +252,11 @@ namespace brgen::typing {
         }
 
         std::optional<std::shared_ptr<ast::Ident>> find_matching_ident(ast::Ident* ident) {
-            return ident->scope->lookup<std::shared_ptr<ast::Ident>>([&](ast::Definitions& defs) -> std::optional<std::shared_ptr<ast::Ident>> {
-                auto found = defs.idents.find(ident->ident);
-                if (found != defs.idents.end()) {
-                    for (auto it = found->second.rbegin(); it != found->second.rend(); it++) {
-                        auto& rev = *it;
-                        auto usage = rev->usage;
-                        if (usage != ast::IdentUsage::unknown) {
-                            return rev;
-                        }
-                    }
+            return ident->scope->lookup_backward<std::shared_ptr<ast::Ident>>([&](std::shared_ptr<ast::Ident>& def) {
+                if (ident->ident == def->ident && def->usage != ast::IdentUsage::unknown) {
+                    return true;
                 }
-                return std::nullopt;
+                return false;
             });
         }
 
@@ -283,14 +276,11 @@ namespace brgen::typing {
         }
 
         std::optional<std::shared_ptr<ast::Format>> find_matching_fmt(ast::IdentType* ident) {
-            return ident->scope->lookup<std::shared_ptr<ast::Format>>([&](ast::Definitions& defs) -> std::optional<std::shared_ptr<ast::Format>> {
-                auto found = defs.fmts.find(ident->ident);
-                if (found != defs.fmts.end()) {
-                    for (auto it = found->second.rbegin(); it != found->second.rend(); it++) {
-                        return found->second.back();
-                    }
+            return ident->scope->lookup_forward<std::shared_ptr<ast::Format>>([&](std::shared_ptr<ast::Format>& def) {
+                if (def->ident == ident->ident) {
+                    return true;
                 }
-                return std::nullopt;
+                return false;
             });
         }
 

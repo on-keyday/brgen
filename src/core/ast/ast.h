@@ -5,6 +5,7 @@
 #include "node/statement.h"
 #include "node/type.h"
 #include "node/translated.h"
+#include "node/scope.h"
 
 namespace brgen::ast {
 

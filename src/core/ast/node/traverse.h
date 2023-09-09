@@ -1,7 +1,6 @@
 /*license*/
 #pragma once
-#include "ast.h"
-#include "translated.h"
+#include "../ast.h"
 #include <helper/template_instance.h>
 
 namespace brgen::ast {

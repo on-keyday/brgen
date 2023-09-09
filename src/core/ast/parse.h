@@ -1,24 +1,60 @@
 /*license*/
 #pragma once
 #include "stream.h"
+#include "node/scope.h"
 
 namespace brgen::ast {
+
+    struct ScopeStack {
+       private:
+        std::shared_ptr<Scope> root;
+        std::shared_ptr<Scope> current;
+
+        void maybe_init() {
+            if (!root) {
+                root = std::make_shared<Scope>();
+                current = root;
+            }
+            if (current->branch && !current->next) {
+                current->next = std::make_shared<Scope>();
+                current->next->prev = current;
+                current = current->next;
+            }
+        }
+
+       public:
+        void enter_branch() {
+            maybe_init();
+            current->branch = std::make_shared<Scope>();
+            current->branch->prev = current;
+            current = current->branch;
+        }
+
+        void leave_branch() {
+            current = current->prev.lock();
+        }
+
+        std::shared_ptr<Scope> current_scope() {
+            maybe_init();
+            return current;
+        }
+    };
 
     struct ParserState {
        private:
         Stream* s = nullptr;
         size_t indent = 0;
-        defstack stack;
+        ScopeStack stack;
         std::shared_ptr<Format> current_fmt_;
 
        public:
-        auto new_indent(size_t new_, std::shared_ptr<StackFrame<Definitions>>& frame) {
+        auto new_indent(size_t new_, std::shared_ptr<Scope>* frame) {
             if (indent >= new_) {
                 s->report_error("expect larger indent but not");
             }
             auto old = std::exchange(indent, std::move(new_));
             stack.enter_branch();
-            frame = stack.current_frame();
+            *frame = stack.current_scope();
             return utils::helper::defer([=, this] {
                 indent = std::move(old);
                 stack.leave_branch();
@@ -33,7 +69,7 @@ namespace brgen::ast {
             });
         }
 
-        std::shared_ptr<Format> current_fmt() {
+        std::shared_ptr<Format> current_format() {
             return current_fmt_;
         }
 
@@ -43,11 +79,11 @@ namespace brgen::ast {
 
         scope_ptr reset_stack() {
             stack = {};
-            return stack.current_frame();
+            return stack.current_scope();
         }
 
         scope_ptr current_scope() {
-            return stack.current_frame();
+            return stack.current_scope();
         }
     };
 
@@ -90,7 +126,7 @@ namespace brgen::ast {
 
             // Create a new context for the current indent level
             auto current_indent = base.token.size();
-            auto c = s.context()->new_indent(current_indent, scope->defs);
+            auto c = state.new_indent(current_indent, &scope->scope);
 
             // Parse and add the first element
             scope->elements.push_back(parse_statement());
@@ -116,7 +152,7 @@ namespace brgen::ast {
             if_->cond = parse_expr();
             if_->block = parse_indent_block();
 
-            auto cur_indent = s.context()->current_indent();
+            auto cur_indent = state.current_indent();
 
             auto detect_end = [&] {
                 if (cur_indent) {
@@ -162,8 +198,8 @@ namespace brgen::ast {
 
         std::shared_ptr<Ident> parse_ident() {
             auto ident = parse_ident_no_frame();
-            auto frame = s.context()->current_definitions();
-            frame->current.add_ident(ident->ident, ident);
+            auto frame = state.current_scope();
+            frame->push(ident);
             ident->scope = std::move(frame);
             return ident;
         }
@@ -444,7 +480,7 @@ namespace brgen::ast {
                 return std::make_shared<IntType>(ident.loc, std::move(ident.token), *bit_size);
             }
 
-            auto type = std::make_shared<IdentType>(ident.loc, std::move(ident.token), s.context()->current_definitions());
+            auto type = std::make_shared<IdentType>(ident.loc, std::move(ident.token), state.current_scope());
 
             return type;
         }
@@ -482,7 +518,7 @@ namespace brgen::ast {
 
             if (field->ident) {
                 field->ident->expr_type = field->field_type;
-                field->belong = s.context()->current_fmt();
+                field->belong = state.current_format();
             }
 
             if (s.consume_token("(")) {
@@ -496,7 +532,7 @@ namespace brgen::ast {
                 s.must_consume_token(")");
             }
 
-            s.context()->current_definitions()->current.add_field(field);
+            state.current_scope()->push(field);
 
             return field;
         }
@@ -509,10 +545,11 @@ namespace brgen::ast {
             auto ident = s.must_consume_token(lexer::Tag::ident);
             fmt->ident = ident.token;
             {
-                auto scope = state.enter_fmt(fmt);
+                auto scope = state.enter_format(fmt);
                 fmt->scope = parse_indent_block();
             }
-            s.context()->current_definitions()->current.add_fmt(fmt->ident, fmt);
+
+            state.current_scope()->push(fmt);
 
             return fmt;
         }
