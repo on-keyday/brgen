@@ -69,7 +69,7 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Stmt::dump(field);
-            field("block", block);
+            field(sdebugf(block));
         }
     };
 

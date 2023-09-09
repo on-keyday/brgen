@@ -12,7 +12,9 @@ namespace brgen::ast {
 
         void encode(std::shared_ptr<Node>& node) {
             visit(node, [](auto&& f) {
+                f->dump([](std::string_view key, auto&& value) {
 
+                });
             });
         }
     };

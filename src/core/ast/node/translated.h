@@ -5,17 +5,17 @@
 namespace brgen::ast {
     struct TmpVar : Expr {
         define_node_type(NodeType::tmp_var);
-        size_t tmp_index = 0;
+        size_t tmp_var = 0;
         std::shared_ptr<Expr> base;
 
         TmpVar(std::shared_ptr<Expr>&& c, size_t tmp)
-            : Expr(c->loc, NodeType::tmp_var), tmp_index(tmp), base(std::move(c)) {
+            : Expr(c->loc, NodeType::tmp_var), tmp_var(tmp), base(std::move(c)) {
             expr_type = base->expr_type;
         }
 
         void dump(auto&& field) {
             Expr::dump(field);
-            field("tmp_var", tmp_index);
+            field(sdebugf(tmp_var));
         }
     };
 
