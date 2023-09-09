@@ -89,10 +89,6 @@ namespace brgen::ast {
             : Stmt({}, NodeType::field) {}
 
         void dump(auto&& field) {
-            dump(field);
-        }
-
-        void dump(auto&& field) const {
             Stmt::dump(field);
             field(sdebugf(ident));
             field(sdebugf(colon_loc));
@@ -134,9 +130,7 @@ namespace brgen::ast {
         void dump(auto&& field) {
             Stmt::dump(field);
             field(sdebugf(elements));
-            field("defs", [&](Debug& buf) {
-                debug_defs(buf, defs);
-            });
+            field(sdebugf(defs));
         }
     };
 
@@ -178,7 +172,7 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Stmt::dump(field);
-            field("for_block", block);
+            field("block", block);
         }
     };
 
@@ -196,7 +190,6 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Expr::dump(field);
-            field(sdebugf(expr_type));
             field(sdebugf(callee));
             field(sdebugf(arguments));
             field(sdebugf(end_loc));
@@ -216,7 +209,6 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Expr::dump(field);
-            field(sdebugf(expr_type));
             field(sdebugf(expr));
             field(sdebugf(end_loc));
         }
@@ -237,7 +229,6 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Expr::dump(field);
-            field(sdebugf(expr_type));
             field(sdebugf(cond));
             field(sdebugf(block));
             field(sdebugf(els));
@@ -258,12 +249,15 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Expr::dump(field);
-            field(sdebugf(expr_type));
             auto op = unary_op[int(this->op)];
             field(sdebugf(op));
             field(sdebugf(target));
         }
     };
+
+    void as_json(BinaryOp op, auto&& buf) {
+        buf.value(bin_op_str(op));
+    }
 
     struct Binary : Expr {
         define_node_type(NodeType::binary);
@@ -279,9 +273,7 @@ namespace brgen::ast {
             : Expr({}, NodeType::binary) {}
 
         void dump(auto&& field) {
-            auto op = bin_op_str(this->op);
             Expr::dump(field);
-            field(sdebugf(expr_type));
             field(sdebugf(op));
             field(sdebugf(left));
             field(sdebugf(right));
@@ -295,7 +287,6 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Expr::dump(field);
-            field(sdebugf(expr_type));
             field(sdebugf(target));
             field(sdebugf(name));
         }
@@ -324,7 +315,6 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Expr::dump(field);
-            field(sdebugf(expr_type));
             field(sdebugf(cond));
             field(sdebugf(then));
             field(sdebugf(els_loc));
@@ -348,10 +338,7 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Literal::dump(field);
-            field(sdebugf(expr_type));
             field(sdebugf(raw));
-            auto num = parse_as<std::int64_t>();
-            field(sdebugf(num));
         }
 
         IntLiteral(lexer::Loc l, std::string&& t)
@@ -372,15 +359,19 @@ namespace brgen::ast {
         // for decode
         constexpr StrLiteral()
             : Literal({}, NodeType::str_literal) {}
+
+        void dump(auto&& field) {
+            Literal::dump(field);
+            field(sdebugf(raw));
+        }
     };
 
     struct BoolLiteral : Literal {
         define_node_type(NodeType::bool_literal);
-        bool value;
+        bool value = false;
 
         void dump(auto&& field) {
             Literal::dump(field);
-            field(sdebugf(expr_type));
             field(sdebugf(value));
         }
 
@@ -458,7 +449,7 @@ namespace brgen::ast {
     struct IntLiteralType : Type {
         define_node_type(NodeType::int_literal_type);
         std::weak_ptr<IntLiteral> base;
-        mutable std::optional<std::uint8_t> bit_size;
+        std::optional<std::uint8_t> bit_size;
 
         std::optional<std::uint8_t> get_bit_size() const {
             if (bit_size) {
@@ -484,11 +475,8 @@ namespace brgen::ast {
         }
 
         void dump(auto&& field) {
-            auto bit_size = get_bit_size();
-            auto aligned = get_aligned_bit();
             Type::dump(field);
-            field(sdebugf(bit_size));
-            field(sdebugf(aligned));
+            field(sdebugf(base));
         }
 
         IntLiteralType(const std::shared_ptr<IntLiteral>& ty)
@@ -502,16 +490,16 @@ namespace brgen::ast {
     struct IdentType : Type {
         define_node_type(NodeType::ident_type);
         std::string ident;
-        define_frame frame;
+        define_frame scope;
         std::weak_ptr<Format> link_to;
         IdentType(lexer::Loc l, std::string&& token, define_frame&& frame)
-            : Type(l, NodeType::ident_type), ident(std::move(token)), frame(std::move(frame)) {}
+            : Type(l, NodeType::ident_type), ident(std::move(token)), scope(std::move(frame)) {}
 
         void dump(auto&& field) {
             Type::dump(field);
             field(sdebugf(ident));
-            auto link = link_to.lock();
-            field(sdebugf(link));
+            field(sdebugf(scope));
+            field(sdebugf(link_to));
         }
 
         // for decode
@@ -571,10 +559,10 @@ namespace brgen::ast {
     };
 
     struct StrLiteralType : Type {
-        std::weak_ptr<StrLiteral> lit;
+        std::weak_ptr<StrLiteral> base;
 
         StrLiteralType(std::shared_ptr<StrLiteral>&& str)
-            : Type(str->loc, NodeType::str_literal_type), lit(std::move(str)) {}
+            : Type(str->loc, NodeType::str_literal_type), base(std::move(str)) {}
 
         // for decode
         constexpr StrLiteralType()
@@ -582,6 +570,7 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Type::dump(field);
+            field(sdebugf(base));
         }
     };
 
@@ -595,8 +584,7 @@ namespace brgen::ast {
         void dump(auto&& field) {
             Node::dump(field);
             field(sdebugf(elements));
-            field("defs", [&](auto& buf) { debug_defs(buf, defs); });
-            field("all_defs", [&](auto& buf) { debug_def_frames(buf, defs); });
+            field(sdebugf(defs));
         }
 
         Program()
