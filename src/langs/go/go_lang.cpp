@@ -283,7 +283,7 @@ namespace brgen::go_lang {
                     auto dec = w->add_section("/global/struct/dec/" + path, true).value();
                     auto def = w->add_section("/global/struct/def/" + path, true).value();
                     {
-                        def->head().writeln("type ", n->ident, " struct {");
+                        def->head().writeln("type ", n->ident->ident, " struct {");
                         def->foot().writeln("};");
                     }
                     // add functions

@@ -16,10 +16,12 @@ int main(int argc, char** argv) {
             .value();
         ast::SymbolMap m;
         m.encode(a);
+        add_result(std::move(m.obj));
         auto parsed = utils::json::parse<ast::JSON>(m.obj.out());
         ast::from_json(parsed).transform_error(to_source_error(fs)).value();
     });
     ::testing::InitGoogleTest(&argc, argv);
     auto res = RUN_ALL_TESTS();
+    save_result("from_json_test_result.json");
     return res;
 }

@@ -103,7 +103,7 @@ namespace brgen::ast {
         define_node_type(NodeType::ident_type);
         std::string ident;
         scope_ptr scope;
-        std::weak_ptr<Format> link_to;
+        std::weak_ptr<Format> base;
         IdentType(lexer::Loc l, std::string&& token, scope_ptr&& frame)
             : Type(l, NodeType::ident_type), ident(std::move(token)), scope(std::move(frame)) {}
 
@@ -111,7 +111,7 @@ namespace brgen::ast {
             Type::dump(field);
             field(sdebugf(ident));
             field(sdebugf(scope));
-            field(sdebugf(link_to));
+            field(sdebugf(base));
         }
 
         // for decode

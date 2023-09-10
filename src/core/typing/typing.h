@@ -104,18 +104,10 @@ namespace brgen::typing {
             auto new_type = assigning_type(right->expr_type);
             if (b->op == ast::BinaryOp::assign) {
                 if (left->usage == ast::IdentUsage::unknown) {
-                    left->usage = ast::IdentUsage::define_alias;
-                    left->expr_type = std::move(new_type);
+                    error(left->loc, "identifier ", left->ident, " not found").report();
                 }
                 else {
-                    if (base->usage == ast::IdentUsage::define_alias) {
-                        if (!equal_type(base->expr_type, new_type)) {
-                            left->usage = ast::IdentUsage::define_alias;
-                            left->expr_type = right->expr_type;
-                            left->base.reset();
-                        }
-                    }
-                    else if (base->usage == ast::IdentUsage::define_typed) {
+                    if (base->usage == ast::IdentUsage::define_variable) {
                         if (!equal_type(base->expr_type, new_type)) {
                             report_assign_error();
                         }
@@ -127,7 +119,7 @@ namespace brgen::typing {
             }
             else if (b->op == ast::BinaryOp::typed_assign) {
                 if (left->usage == ast::IdentUsage::unknown) {
-                    left->usage = ast::IdentUsage::define_typed;
+                    left->usage = ast::IdentUsage::define_variable;
                     left->expr_type = std::move(new_type);
                 }
                 else {
@@ -252,7 +244,7 @@ namespace brgen::typing {
         }
 
         std::optional<std::shared_ptr<ast::Ident>> find_matching_ident(ast::Ident* ident) {
-            return ident->scope->lookup_backward<std::shared_ptr<ast::Ident>>([&](std::shared_ptr<ast::Ident>& def) {
+            return ident->scope->lookup_backward<ast::Ident>([&](std::shared_ptr<ast::Ident>& def) {
                 if (ident->ident == def->ident && def->usage != ast::IdentUsage::unknown) {
                     return true;
                 }
@@ -276,8 +268,8 @@ namespace brgen::typing {
         }
 
         std::optional<std::shared_ptr<ast::Format>> find_matching_fmt(ast::IdentType* ident) {
-            return ident->scope->lookup_forward<std::shared_ptr<ast::Format>>([&](std::shared_ptr<ast::Format>& def) {
-                if (def->ident == ident->ident) {
+            return ident->scope->lookup_forward<ast::Format>([&](std::shared_ptr<ast::Format>& def) {
+                if (def->ident->ident == ident->ident) {
                     return true;
                 }
                 return false;

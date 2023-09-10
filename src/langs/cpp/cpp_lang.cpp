@@ -296,7 +296,7 @@ namespace brgen::cpp_lang {
                     auto dec = w->add_section("/global/struct/dec/" + path, true).value();
                     auto def = w->add_section("/global/struct/def/" + path, true).value();
                     {
-                        def->head().writeln("struct ", n->ident, " {");
+                        def->head().writeln("struct ", n->ident->ident, " {");
                         def->foot().writeln("};");
                     }
                     // add functions

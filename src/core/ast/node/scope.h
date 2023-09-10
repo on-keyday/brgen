@@ -6,7 +6,46 @@
 
 namespace brgen::ast {
     struct Object {
-        std::variant<std::shared_ptr<Ident>, std::shared_ptr<Field>, std::shared_ptr<Format>> object;
+        std::variant<std::weak_ptr<Ident>, std::weak_ptr<Field>, std::weak_ptr<Format>> object;
+
+        std::optional<std::string> ident() {
+            switch (object.index()) {
+                case 0: {
+                    auto g = std::get<std::weak_ptr<Ident>>(object).lock();
+                    if (!g) {
+                        return std::nullopt;
+                    }
+                    return g->ident;
+                }
+                case 1: {
+                    auto g = std::get<std::weak_ptr<Field>>(object).lock();
+                    if (!g || !g->ident) {
+                        return std::nullopt;
+                    }
+                    return g->ident->ident;
+                }
+                case 2: {
+                    auto g = std::get<std::weak_ptr<Format>>(object).lock();
+                    if (!g || !g->ident) {
+                        return std::nullopt;
+                    }
+                    return g->ident->ident;
+                }
+            }
+            return std::nullopt;
+        }
+
+        NodeType node_type() {
+            switch (object.index()) {
+                case 0:
+                    return NodeType::ident;
+                case 1:
+                    return NodeType::field;
+                case 2:
+                    return NodeType::format;
+            }
+            return NodeType::program;
+        }
     };
 
     struct Scope {
@@ -16,10 +55,10 @@ namespace brgen::ast {
         std::shared_ptr<Scope> next;
 
         template <class V>
-        std::optional<V> lookup_backward(auto&& fn) {
+        std::optional<std::shared_ptr<V>> lookup_backward(auto&& fn) {
             for (auto& val : std::views::reverse(objects)) {
-                if (std::holds_alternative<V>(val.object)) {
-                    auto obj = std::get<V>(val.object);
+                if (std::holds_alternative<std::weak_ptr<V>>(val.object)) {
+                    auto obj = std::get<std::weak_ptr<V>>(val.object).lock();
                     if (fn(obj)) {
                         return obj;
                     }
@@ -32,15 +71,15 @@ namespace brgen::ast {
         }
 
         template <class V>
-        std::optional<V> lookup_forward(auto&& fn) {
+        std::optional<std::shared_ptr<V>> lookup_forward(auto&& fn) {
             if (auto got = prev.lock()) {
                 if (auto found = got->template lookup_forward<V>(fn)) {
                     return found;
                 }
             }
             for (auto& val : objects) {
-                if (std::holds_alternative<V>(val.object)) {
-                    auto obj = std::get<V>(val.object);
+                if (std::holds_alternative<std::weak_ptr<V>>(val.object)) {
+                    auto obj = std::get<std::weak_ptr<V>>(val.object).lock();
                     if (fn(obj)) {
                         return obj;
                     }
@@ -61,6 +100,28 @@ namespace brgen::ast {
             objects.push_back({std::forward<decltype(obj)>(obj)});
         }
 
-        void as_json(Debug&) {}
+        void as_json(Debug& d) {
+            auto field = d.array();
+            auto add_field = [&](auto& self) {
+                for (auto& object : self.objects) {
+                    field([&] {
+                        auto field = d.object();
+                        auto ident = object.ident();
+                        const auto node_type = object.node_type();
+                        field(sdebugf(node_type));
+                        field(sdebugf(ident));
+                    });
+                }
+                if (self.branch) {
+                    field([&] {
+                        self.branch->as_json(d);
+                    });
+                }
+            };
+            add_field(*this);
+            for (auto p = next; p; p = p->next) {
+                add_field(*p);
+            }
+        }
     };
 }  // namespace brgen::ast

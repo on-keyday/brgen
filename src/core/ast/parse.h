@@ -143,8 +143,7 @@ namespace brgen::ast {
             return scope;
         }
 
-        std::shared_ptr<If> parse_if() {
-            auto token = s.must_consume_token("if");
+        std::shared_ptr<If> parse_if(lexer::Token&& token) {
             s.skip_white();
             auto if_ = std::make_shared<If>(token.loc);
 
@@ -191,21 +190,20 @@ namespace brgen::ast {
             return if_;
         }
 
-        std::shared_ptr<Ident> parse_ident_no_frame() {
+        std::shared_ptr<Ident> parse_ident_no_scope() {
             auto token = s.must_consume_token(lexer::Tag::ident);
             return std::make_shared<Ident>(token.loc, std::move(token.token));
         }
 
         std::shared_ptr<Ident> parse_ident() {
-            auto ident = parse_ident_no_frame();
+            auto ident = parse_ident_no_scope();
             auto frame = state.current_scope();
             frame->push(ident);
             ident->scope = std::move(frame);
             return ident;
         }
 
-        std::shared_ptr<Paren> parse_paren() {
-            auto token = s.must_consume_token("(");
+        std::shared_ptr<Paren> parse_paren(lexer::Token&& token) {
             auto paren = std::make_shared<Paren>(token.loc);
             s.skip_white();
             paren->expr = parse_expr();
@@ -222,11 +220,11 @@ namespace brgen::ast {
             if (auto b = s.consume_token(lexer::Tag::bool_literal)) {
                 return std::make_shared<BoolLiteral>(b->loc, b->token == "true");
             }
-            if (s.expect_token("(")) {
-                return parse_paren();
+            if (auto paren = s.consume_token("(")) {
+                return parse_paren(std::move(*paren));
             }
-            if (s.expect_token("if")) {
-                return parse_if();
+            if (auto if_ = s.consume_token("if")) {
+                return parse_if(std::move(*if_));
             }
             return parse_ident();
         }
@@ -434,9 +432,8 @@ namespace brgen::ast {
             return expr;
         }
 
-        std::shared_ptr<For> parse_for() {
-            auto token = s.must_consume_token("for");
-            auto for_ = std::make_shared<For>(token.loc);
+        std::shared_ptr<Loop> parse_for(lexer::Token&& token) {
+            auto for_ = std::make_shared<Loop>(token.loc);
             for_->block = parse_indent_block();
             return for_;
         }
@@ -537,13 +534,11 @@ namespace brgen::ast {
             return field;
         }
 
-        std::shared_ptr<Format> parse_format() {
-            auto token = s.must_consume_token("format");
+        std::shared_ptr<Format> parse_format(lexer::Token&& token) {
             auto fmt = std::make_shared<Format>(token.loc);
             s.skip_space();
 
-            auto ident = s.must_consume_token(lexer::Tag::ident);
-            fmt->ident = ident.token;
+            fmt->ident = parse_ident_no_scope();
             {
                 auto scope = state.enter_format(fmt);
                 fmt->scope = parse_indent_block();
@@ -555,12 +550,12 @@ namespace brgen::ast {
         }
 
         std::shared_ptr<Node> parse_statement() {
-            if (s.expect_token("for")) {
-                return parse_for();
+            if (auto loop = s.consume_token("loop")) {
+                return parse_for(std::move(*loop));
             }
 
-            if (s.expect_token("format")) {
-                return parse_format();
+            if (auto format = s.consume_token("format")) {
+                return parse_format(std::move(*format));
             }
 
             std::shared_ptr<Node> node;

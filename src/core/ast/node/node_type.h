@@ -28,10 +28,11 @@ namespace brgen::ast {
         block_expr,
 
         stmt = 0x020000,
-        for_,
+        loop,
         field,
-        fmt,
+        format,
         indent_scope,
+        function,
 
         // translated
         assert,
@@ -68,7 +69,7 @@ namespace brgen::ast {
         "stmt",
         "for_",
         "field",
-        "fmt",
+        "format",
         "indent_scope",
         "assert",
         "implicit_return",
@@ -81,6 +82,7 @@ namespace brgen::ast {
         "bool_type",
         "array_type",
         "str_literal",
+        "function",
     };
 
     constexpr int mapNodeTypeToValue(NodeType type) {
@@ -119,11 +121,11 @@ namespace brgen::ast {
                 return 15;
             case NodeType::stmt:
                 return 16;
-            case NodeType::for_:
+            case NodeType::loop:
                 return 17;
             case NodeType::field:
                 return 18;
-            case NodeType::fmt:
+            case NodeType::format:
                 return 19;
             case NodeType::indent_scope:
                 return 20;
@@ -149,6 +151,8 @@ namespace brgen::ast {
                 return 30;
             case NodeType::str_literal:
                 return 31;
+            case NodeType::function:
+                return 32;
             default:
                 return -1;
         }
@@ -191,11 +195,11 @@ namespace brgen::ast {
             case 16:
                 return NodeType::stmt;
             case 17:
-                return NodeType::for_;
+                return NodeType::loop;
             case 18:
                 return NodeType::field;
             case 19:
-                return NodeType::fmt;
+                return NodeType::format;
             case 20:
                 return NodeType::indent_scope;
             case 21:
@@ -220,6 +224,8 @@ namespace brgen::ast {
                 return NodeType::array_type;
             case 31:
                 return NodeType::str_literal;
+            case 32:
+                return NodeType::function;
             default:
                 return either::unexpected{"invalid value"};
         }

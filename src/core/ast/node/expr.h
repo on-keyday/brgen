@@ -10,17 +10,17 @@ namespace brgen::ast {
     enum class IdentUsage {
         unknown,
         reference,
-        define_alias,
-        define_typed,
+        define_variable,
         define_const,
+        define_field,
     };
 
     constexpr const char* ident_usage_map[]{
         "unknown",
         "reference",
-        "define_alias",
-        "define_typed",
+        "define_variable",
         "define_const",
+        "define_field",
     };
 
     constexpr void as_json(IdentUsage usage, auto&& buf) {

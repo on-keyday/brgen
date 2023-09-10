@@ -39,7 +39,7 @@ namespace brgen::ast {
 
         // stmt
 
-        CASE(For)
+        CASE(Loop)
         CASE(Field)
         CASE(Format)
         CASE(IndentScope)
@@ -102,7 +102,7 @@ namespace brgen::ast {
             fn(v->block);
             fn(v->els);
         }
-        CASE(For) {
+        CASE(Loop) {
             fn(v->block);
         }
         CASE(Format) {
