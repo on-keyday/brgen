@@ -16,6 +16,15 @@ namespace brgen::ast {
 
     using JSON = utils::json::JSON;
 
+    constexpr auto bool_to_error(const char* err) {
+        return [=](bool res) -> either::expected<void, const char*> {
+            if (!res) {
+                return either::unexpected{err};
+            }
+            return {};
+        };
+    }
+
     struct Encoder {
         Debug obj;
 
@@ -223,15 +232,6 @@ namespace brgen::ast {
             };
         }
 
-        constexpr auto bool_to_error(const char* err) {
-            return [=](bool res) -> either::expected<void, const char*> {
-                if (!res) {
-                    return either::unexpected{err};
-                }
-                return {};
-            };
-        }
-
         auto parse_loc(lexer::Loc& loc) {
             return [&](auto js) {
                 json_at(*js, "pos").transform([&](auto js) {
@@ -243,14 +243,14 @@ namespace brgen::ast {
         }
 
         auto get_string(lexer::Loc loc, auto key) {
-            return [&, key](auto js) {
+            return [=](auto js) {
                 std::string tmp;
                 return bool_to_error("as_string returned false")(js->as_string(tmp)) & [&] { return tmp; } | json_to_loc_error(loc, key);
             };
         }
 
         auto get_number(lexer::Loc loc, auto key) {
-            return [&, key](auto js) {
+            return [=](auto js) {
                 size_t tmp = 0;
                 return bool_to_error("as_number returned false")(js->as_number(tmp)) & [&] { return tmp; } | json_to_loc_error(loc, key);
             };
@@ -359,14 +359,16 @@ namespace brgen::ast {
             return node;
         }
 
+        static constexpr auto must_be_array = [](auto js) {
+            constexpr auto f = bool_to_error("must be array");
+            return f(js->is_array()) & [&] { return js; };
+        };
+
         inline result<std::shared_ptr<Node>> decode(const JSON& js) {
             clear();
             if (js.is_null()) {
                 return nullptr;
             }
-            auto must_be_array = [&](auto js) {
-                return bool_to_error("must be array")(js->is_array()) & [&] { return js; };
-            };
             auto node_s = json_at(js, "node") & must_be_array;
             if (!node_s) {
                 return (node_s & empty_node) | json_to_loc_error({}, "node");
@@ -385,6 +387,7 @@ namespace brgen::ast {
             for (auto& scope : utils::json::as_array(**scope_list)) {
                 scopes.push_back(std::make_shared<Scope>());  // currently only add scope; no link collect
             }
+
             for (size_t i = 0; i < nodes.size(); i++) {
                 result<std::shared_ptr<Node>> res;
                 visit(nodes[i], [&](auto&& f) {
@@ -398,7 +401,7 @@ namespace brgen::ast {
                         auto& val = (**node_s)[i];
                         auto check_index = [&](auto&& index) {
                             if (!index) {
-                                res = index | empty_node;
+                                res = index & empty_node;
                                 return false;
                             }
                             if constexpr (std::is_same_v<T, std::shared_ptr<Scope>>) {
@@ -422,27 +425,30 @@ namespace brgen::ast {
                             }
                             return true;
                         };
+                        auto get_value = [&] {
+                            return (json_at(val, key) | json_to_loc_error(f->loc, key));
+                        };
                         if constexpr (std::is_same_v<T, std::shared_ptr<Scope>>) {
-                            auto index = json_at(val, key).and_then(get_number(f->loc, key));
+                            auto index = get_value().and_then(get_number(f->loc, key));
                             if (!check_index(index)) {
                                 return;
                             }
                             value = scopes[*index];
                         }
                         else if constexpr (is_shared_or_weak) {
-                            auto index = json_at(val, key).and_then(get_number(f->loc, key));
+                            auto index = get_value().and_then(get_number(f->loc, key));
                             if (!check_index(index)) {
                                 return;
                             }
                             value = cast_to<T>(nodes[*index]);
                         }
                         else if constexpr (std::is_same_v<T, node_list>) {
-                            auto arr = json_at(val, key) & must_be_array;
+                            auto arr = get_value() & must_be_array;
                             if (!arr) {
-                                res = arr | empty_node;
+                                res = arr & empty_node;
                                 return;
                             }
-                            for (auto& js : utils::json::as_array(arr)) {
+                            for (auto& js : utils::json::as_array(**arr)) {
                                 auto index = get_number(f->loc, key)(&js);
                                 if (!check_index(index)) {
                                     return;
@@ -455,6 +461,8 @@ namespace brgen::ast {
                 if (!res) {
                     return res;
                 }
+            }
+            for (size_t i = 0; i < scopes.size(); i++) {
             }
         }
     };
