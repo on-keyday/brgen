@@ -3,8 +3,7 @@
 #include "ast_test_component.h"
 #include <core/middle/middle.h>
 #include <gtest/gtest.h>
-#include <core/ast/from_json.h>
-#include <core/ast/to_json.h>
+#include <core/ast/json.h>
 #include <json/parse.h>
 using namespace brgen;
 
@@ -18,7 +17,9 @@ int main(int argc, char** argv) {
         m.encode(a);
         add_result(std::move(m.obj));
         auto parsed = utils::json::parse<ast::JSON>(m.obj.out());
-        ast::from_json(parsed).transform_error(to_source_error(fs)).value();
+        m.from_json(parsed)
+            .transform_error(to_source_error(fs))
+            .value();
     });
     ::testing::InitGoogleTest(&argc, argv);
     auto res = RUN_ALL_TESTS();

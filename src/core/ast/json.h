@@ -1,0 +1,365 @@
+/*license*/
+#pragma once
+#include "ast.h"
+#include "node/traverse.h"
+#include <map>
+#include <json/json_export.h>
+#include <json/iterator.h>
+
+#include "ast.h"
+#include "../common/error.h"
+#include <helper/transform.h>
+#include <optional>
+#include <helper/expected_op.h>
+
+namespace brgen::ast {
+
+    using JSON = utils::json::JSON;
+
+    struct SymbolMap {
+        Debug obj;
+
+       private:
+        std::map<std::shared_ptr<Node>, size_t> node_index;
+        std::map<std::shared_ptr<Scope>, size_t> scope_index;
+        std::vector<std::shared_ptr<Node>> nodes;
+        std::vector<std::shared_ptr<Scope>> scopes;
+
+        void collect(const std::shared_ptr<Scope>& scope) {
+            auto found = scope_index.find(scope);
+            if (found != scope_index.end()) {
+                return;  // skip; already visited
+            }
+            scopes.push_back(scope);
+            scope_index[scope] = scopes.size() - 1;
+            if (scope->branch) {
+                collect(scope->branch);
+            }
+            if (scope->next) {
+                collect(scope->next);
+            }
+        }
+
+        void collect(const std::shared_ptr<Node>& node) {
+            if (!node) {
+                return;  // skip null node
+            }
+            auto found = node_index.find(node);
+            if (found != node_index.end()) {
+                return;  // skip; already visited
+            }
+            nodes.push_back(node);
+            node_index[node] = nodes.size() - 1;
+            visit(node, [&](auto&& f) {
+                f->dump([&]<class T>(std::string_view key, T& value) {
+                    if (key == "base") {
+                        ;
+                    }
+                    if constexpr (utils::helper::is_template_instance_of<T, std::shared_ptr>) {
+                        using type = typename utils::helper::template_instance_of_t<T, std::shared_ptr>::template param_at<0>;
+                        if constexpr (std::is_base_of_v<Node, type>) {
+                            collect(value);
+                        }
+                        else {
+                            if (key == "global_scope") {
+                                collect(value);
+                            }
+                        }
+                    }
+                    else if constexpr (std::is_same_v<T, node_list>) {
+                        for (auto& element : value) {
+                            collect(element);
+                        }
+                    }
+                });
+            });
+        }
+
+       public:
+        void clear() {
+            node_index.clear();
+            nodes.clear();
+            obj.out().clear();
+        }
+
+        void encode(const std::shared_ptr<Node>& root_node) {
+            clear();
+            collect(root_node);
+            auto field = obj.object();
+            auto find_and_replace_node = [this](auto&& node, auto&& field) {
+                auto it = node_index.find(node);
+                if (it == node_index.end()) {
+                    field(nullptr);
+                }
+                else {
+                    field(it->second);
+                }
+            };
+            auto find_and_replace_scope = [this](auto&& node, auto&& field) {
+                auto it = scope_index.find(node);
+                if (it == scope_index.end()) {
+                    field(nullptr);
+                }
+                else {
+                    field(it->second);
+                }
+            };
+            auto encode_node = [&] {
+                auto field = obj.array();
+                for (auto node : nodes) {
+                    visit(node, [&](auto&& f) {
+                        field([&] {
+                            auto field = obj.object();
+                            f->dump([&]<class T>(std::string_view key, T& value) {
+                                if constexpr (utils::helper::is_template_instance_of<T, std::shared_ptr>) {
+                                    using type = typename utils::helper::template_instance_of_t<T, std::shared_ptr>::template param_at<0>;
+                                    if constexpr (std::is_base_of_v<Node, type>) {
+                                        find_and_replace_node(value, [&](auto&& val) {
+                                            field(key, val);
+                                        });
+                                    }
+                                    else if constexpr (std::is_same_v<Scope, type>) {
+                                        find_and_replace_scope(value, [&](auto&& val) {
+                                            field(key, val);
+                                        });
+                                    }
+                                }
+                                else if constexpr (utils::helper::is_template_instance_of<T, std::weak_ptr>) {
+                                    using type = typename utils::helper::template_instance_of_t<T, std::weak_ptr>::template param_at<0>;
+                                    if constexpr (std::is_base_of_v<Node, type>) {
+                                        find_and_replace_node(value.lock(), [&](auto&& val) {
+                                            field(key, val);
+                                        });
+                                    }
+                                }
+                                else if constexpr (std::is_same_v<T, node_list>) {
+                                    field(key, [&] {
+                                        auto field = obj.array();
+                                        for (auto& element : value) {
+                                            find_and_replace_node(element, field);
+                                        }
+                                    });
+                                }
+                                else {
+                                    field(key, value);
+                                }
+                            });
+                        });
+                    });
+                }
+            };
+            auto encode_scope = [&] {
+                auto field = obj.array();
+                for (auto& scope : scopes) {
+                    field([&] {
+                        auto field = obj.object();
+                        field("ident", [&] {
+                            auto field = obj.array();
+                            for (auto& object : scope->objects) {
+                                object.visit([&](auto&& node) {
+                                    find_and_replace_node(node, field);
+                                });
+                            }
+                        });
+                        find_and_replace_scope(scope->branch, [&](auto val) {
+                            field("branch", val);
+                        });
+                        find_and_replace_scope(scope->next, [&](auto val) {
+                            field("next", val);
+                        });
+                    });
+                }
+            };
+            field("node", encode_node);
+            field("scope", encode_scope);
+        }
+
+        inline either::expected<const JSON*, const char*> json_at(const JSON& js, auto&& key) {
+            const char* err = nullptr;
+            auto res = js.at(key, &err);
+            if (!res) {
+                return either::unexpected{err};
+            }
+            return res;
+        }
+
+        static constexpr auto empty_node = either::empty_value<std::shared_ptr<Node>>();
+
+        constexpr auto json_to_loc_error(lexer::Loc loc, const char* key, std::optional<NodeType> type = std::nullopt) {
+            return [=](const char* m) {
+                if (type) {
+                    return error(loc, m, " at ", key, " of ", node_type_to_string(*type));
+                }
+                else {
+                    return error(loc, m, " at ", key);
+                }
+            };
+        }
+
+        constexpr auto js_as_number(auto& n) {
+            return [&](auto js) {
+                js->force_as_number(n);
+            };
+        }
+
+        template <class NodeT>
+        constexpr auto to_node(lexer::Loc loc) {
+            return [=](auto&& p) -> either::expected<std::shared_ptr<NodeT>, LocationError> {
+                if (!p) {
+                    return nullptr;
+                }
+                if (as<NodeT>(p)) {
+                    return cast_to<NodeT>(p);
+                }
+                return either::unexpected{error(loc, "expect ", node_type_to_string(NodeT::node_type_tag), " but found ", node_type_to_string(p->node_type))};
+            };
+        }
+
+        constexpr auto bool_to_error(const char* err) {
+            return [=](bool res) -> either::expected<void, const char*> {
+                if (!res) {
+                    return either::unexpected{err};
+                }
+                return {};
+            };
+        }
+
+        auto parse_loc(lexer::Loc& loc) {
+            return [&](auto js) {
+                json_at(*js, "pos").transform([&](auto js) {
+                    json_at(*js, "begin").transform(js_as_number(loc.pos.begin));
+                    json_at(*js, "end").transform(js_as_number(loc.pos.end));
+                });
+                json_at(*js, "file").transform(js_as_number(loc.file));
+            };
+        }
+
+        inline result<std::shared_ptr<Node>> parse_single_node(const JSON& js) {
+            lexer::Loc loc;
+            json_at(js, "loc") & parse_loc(loc);
+            auto type = (json_at(js, "node_type") | json_to_loc_error(loc, "node_type")) &
+                        [](const JSON* js) {
+                            return js->force_as_string<std::string>();
+                        } &
+                        [=](const std::string& str) {
+                            return string_to_node_type(str) | json_to_loc_error(loc, "node_type");
+                        };
+            if (!type) {
+                return type & empty_node;
+            }
+            NodeType node_type = *type;
+
+            auto loc_error = [&](const char* key) {
+                return json_to_loc_error(loc, key, node_type);
+            };
+            auto get_key = [&](const char* key) {
+                return json_at(js, key) | loc_error(key);
+            };
+            auto get_string = [&](const char* key) {
+                return [&, key](auto js) {
+                    std::string tmp;
+                    return bool_to_error("as_string returned false")(js->as_string(tmp)) & [&] { return tmp; } | loc_error(key);
+                };
+            };
+            auto parse_node = [&](const char* key, auto& target) -> result<void> {
+                using T = std::remove_reference_t<decltype(target)>;
+                auto res = get_key(key);
+                if constexpr (std::is_same_v<T, std::string>) {
+                    return (res & [&](auto js) { return js->as_string(target); })
+                        .and_then([&](bool ok) {
+                            return bool_to_error("as_string returned false")(ok) | loc_error(key);
+                        });
+                }
+                else if constexpr (std::is_same_v<T, bool>) {
+                    return (res & [&](auto js) { return js->as_bool(target); })
+                        .and_then([&](bool ok) {
+                            return bool_to_error("as_bool returned false")(ok) | loc_error(key);
+                        });
+                }
+                else if constexpr (std::is_same_v<T, size_t>) {
+                    return (res & [&](auto js) { return js->as_number(target); })
+                        .and_then([&](bool ok) {
+                            return bool_to_error("as_number returned false")(ok) | loc_error(key);
+                        });
+                }
+                else if constexpr (std::is_same_v<T, lexer::Loc>) {
+                    return res & parse_loc(target);
+                }
+                else if constexpr (std::is_same_v<T, BinaryOp>) {
+                    return (res & get_string(key))
+                        .and_then([&](std::string&& s) -> result<void> {
+                            if (!bin_op(s.c_str()).transform([&](BinaryOp op) { target = op;return true; })) {
+                                return unexpect(error(loc, s, " cannot convert to binary operator"));
+                            }
+                            return {};
+                        });
+                }
+                else if constexpr (std::is_same_v<T, UnaryOp>) {
+                    return (res & get_string(key))
+                        .and_then([&](std::string&& s) -> result<void> {
+                            if (!unary_op(s.c_str()).transform([&](UnaryOp op) { target = op;return true; })) {
+                                return unexpect(error(loc, s, " cannot convert to unary operator"));
+                            }
+                            return {};
+                        });
+                }
+                else if constexpr (std::is_same_v<T, IdentUsage>) {
+                    return (res & get_string(key))
+                        .and_then([&](std::string&& s) -> result<void> {
+                            if (!ident_usage(s.c_str()).transform([&](IdentUsage op) { target = op;return true; })) {
+                                return unexpect(error(loc, s, " cannot convert to unary operator"));
+                            }
+                            return {};
+                        });
+                }
+                else if constexpr (utils::helper::is_template_instance_of<T, std::shared_ptr> ||
+                                   utils::helper::is_template_instance_of<T, std::weak_ptr> ||
+                                   std::is_same_v<T, node_list> ||
+                                   std::is_same_v<T, const NodeType>) {
+                    // nothing to do
+                    return {};
+                }
+                else {
+                    static_assert(std::is_same_v<T, std::string>);
+                    return {};
+                }
+            };
+            std::shared_ptr<Node> node;
+            result<void> err;
+            get_node(node_type, [&](auto n) {
+                using NodeT = typename decltype(n)::node;
+                if constexpr (!decltype(n)::is_abs) {
+                    auto rep = std::make_shared<NodeT>();
+                    rep->dump([&](auto key, auto& target) {
+                        err = err & [&] { return parse_node(key, target); };
+                    });
+                    if (!err) {
+                        return;
+                    }
+                    node = std::move(rep);
+                }
+            });
+            if (!err) {
+                return err & empty_node;
+            }
+            return node;
+        }
+
+        inline result<std::shared_ptr<Node>> from_json(const JSON& js) {
+            clear();
+            if (js.is_null()) {
+                return nullptr;
+            }
+            auto must_be_array = [&](auto js) {
+                return bool_to_error("must be array")(js->is_array()) & [&] { return js; };
+            };
+            auto node_list = json_at(js, "node") & must_be_array;
+            if (!node_list) {
+                return (node_list & empty_node) | json_to_loc_error({}, "node");
+            }
+            for (auto& node : utils::json::as_array(**node_list)) {
+            }
+        }
+    };
+
+}  // namespace brgen::ast

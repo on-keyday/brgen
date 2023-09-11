@@ -8,9 +8,11 @@ namespace brgen::ast {
     template <class NodeT>
     struct node_embed {
         using node = NodeT;
+
+        static constexpr auto is_abs = !std::is_default_constructible_v<NodeT>;
     };
 
-    void get_node(NodeType type, auto&& fn) {
+    constexpr void get_node(NodeType type, auto&& fn) {
 #define SWITCH \
     switch (type) {
 #define END_SWITCH() }

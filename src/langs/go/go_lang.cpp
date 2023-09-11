@@ -124,7 +124,7 @@ namespace brgen::go_lang {
             w->writeln("}()");
         }
         else if (auto unary = ast::as<ast::Unary>(expr)) {
-            w->write(ast::unary_op[int(unary->op)], " ");
+            w->write(ast::unary_op_str[int(unary->op)], " ");
             write_expr(c, w, unary->target.get());
         }
         else {

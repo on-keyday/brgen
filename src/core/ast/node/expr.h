@@ -16,17 +16,27 @@ namespace brgen::ast {
         define_format,
     };
 
-    constexpr const char* ident_usage_map[]{
+    constexpr const char* ident_usage_str[]{
         "unknown",
         "reference",
         "define_variable",
         "define_const",
         "define_field",
         "define_format",
+        nullptr,
     };
 
+    constexpr std::optional<IdentUsage> ident_usage(std::string_view view) {
+        for (auto i = 0; ident_usage_str[i]; i++) {
+            if (ident_usage_str[i] == view) {
+                return IdentUsage(i);
+            }
+        }
+        return std::nullopt;
+    }
+
     constexpr void as_json(IdentUsage usage, auto&& buf) {
-        buf.string(ident_usage_map[int(usage)]);
+        buf.string(ident_usage_str[int(usage)]);
     }
 
     struct Ident : Expr {
@@ -110,7 +120,7 @@ namespace brgen::ast {
     };
 
     constexpr void as_json(UnaryOp op, auto&& buf) {
-        buf.value(unary_op[int(op)]);
+        buf.value(unary_op_str[int(op)]);
     }
 
     struct Unary : Expr {

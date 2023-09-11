@@ -1,6 +1,7 @@
 /*license*/
 #pragma once
 #include <optional>
+#include <string_view>
 
 namespace brgen::ast {
     enum class UnaryOp {
@@ -12,7 +13,19 @@ namespace brgen::ast {
         address,
     };
 
-    constexpr const char* unary_op[] = {"!", "++", "--", "-", "*", "&", nullptr};
+    constexpr const char* unary_op_str[] = {"!", "++", "--", "-", "*", "&", nullptr};
+
+    constexpr std::optional<UnaryOp> unary_op(std::string_view l) {
+        size_t i = 0;
+        while (unary_op_str[i]) {
+            if (l == unary_op_str[i]) {
+                return UnaryOp(i);
+            }
+            i++;
+        }
+        return std::nullopt;
+    }
+
     enum class BinaryOp {
         // layer 0
         mul,
@@ -107,7 +120,7 @@ namespace brgen::ast {
 
     constexpr size_t bin_layer_len = sizeof(bin_layers) / sizeof(bin_layers[0]);
 
-    constexpr std::optional<BinaryOp> bin_op(const char* l) {
+    constexpr std::optional<BinaryOp> bin_op(std::string_view l) {
         size_t i = 0;
         for (auto& layer : bin_layers) {
             size_t j = 0;

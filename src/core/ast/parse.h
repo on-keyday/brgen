@@ -279,7 +279,7 @@ namespace brgen::ast {
             size_t i;
             s.skip_space();
             for (;;) {
-                if (auto token = consume_op(i, ast::unary_op)) {
+                if (auto token = consume_op(i, ast::unary_op_str)) {
                     stack.push_back(std::make_shared<Unary>(token->loc, UnaryOp(i)));
                     s.skip_white();
                     continue;
