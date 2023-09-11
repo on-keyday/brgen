@@ -75,7 +75,7 @@ namespace brgen::ast {
 
     struct Function : Stmt {
         define_node_type(NodeType::function);
-        std::shared_ptr<std::shared_ptr<Ident>> ident;
+        std::shared_ptr<Ident> ident;
         std::vector<std::shared_ptr<Field>> arguments;
         std::weak_ptr<Format> belong;
 

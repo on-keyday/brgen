@@ -84,6 +84,7 @@ namespace brgen::ast {
     };
 
     struct StrLiteralType : Type {
+        define_node_type(NodeType::str_literal_type);
         std::weak_ptr<StrLiteral> base;
 
         StrLiteralType(std::shared_ptr<StrLiteral>&& str)

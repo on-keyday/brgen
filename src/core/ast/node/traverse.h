@@ -5,14 +5,19 @@
 
 namespace brgen::ast {
 
-    void visit(auto&& t, auto&& fn) {
-        Node* o = std::to_address(t);
-#define SWITCH   \
-    if (false) { \
-    }
-#define CASE(T)                                       \
-    else if (as<T>(o)) {                              \
-        fn(cast_to<T>(std::forward<decltype(t)>(t))); \
+    template <class NodeT>
+    struct node_embed {
+        using node = NodeT;
+    };
+
+    void get_node(NodeType type, auto&& fn) {
+#define SWITCH \
+    switch (type) {
+#define END_SWITCH() }
+#define CASE(T)              \
+    case T::node_type_tag: { \
+        fn(node_embed<T>{}); \
+        return;              \
     }
         SWITCH
         CASE(Program)
@@ -25,6 +30,8 @@ namespace brgen::ast {
         CASE(Output)
 
         // expr
+        CASE(Expr)
+
         CASE(Binary)
         CASE(Unary)
         CASE(Cond)
@@ -38,16 +45,20 @@ namespace brgen::ast {
         CASE(BlockExpr)
 
         // stmt
+        CASE(Stmt)
 
         CASE(Loop)
         CASE(Field)
         CASE(Format)
         CASE(IndentScope)
+        CASE(Function)
 
         CASE(Assert)
         CASE(ImplicitReturn)
 
         // type
+        CASE(Type)
+
         CASE(IntType)
         CASE(IdentType)
         CASE(IntLiteralType)
@@ -56,8 +67,21 @@ namespace brgen::ast {
         CASE(BoolType)
         CASE(ArrayType)
 
+        END_SWITCH()
 #undef SWITCH
 #undef CASE
+#undef END_SWITCH
+    }
+
+    void visit(auto&& t, auto&& fn) {
+        Node* o = std::to_address(t);
+        if (!o) {
+            fn(cast_to<Node>(std::forward<decltype(t)>(t)));
+            return;
+        }
+        get_node(o->node_type, [&](auto node) {
+            fn(cast_to<typename decltype(node)::node>(std::forward<decltype(t)>(t)));
+        });
     }
 
     void traverse(auto&& t, auto&& fn) {
@@ -66,78 +90,23 @@ namespace brgen::ast {
     if (false) { \
     }
 #define CASE(T) else if (T* v = as<T>(o))
-        SWITCH
-        CASE(Program) {
-            for (auto& f : v->elements) {
-                fn(f);
-            }
+        if (!o) {
+            return;  // no traverse
         }
-
-        CASE(Binary) {
-            fn(v->expr_type);
-            fn(v->left);
-            fn(v->right);
-        }
-        CASE(Unary) {
-            fn(v->expr_type);
-            fn(v->target);
-        }
-        CASE(Cond) {
-            fn(v->expr_type);
-            fn(v->cond);
-            fn(v->then);
-            fn(v->els);
-        }
-        CASE(Call) {
-            fn(v->expr_type);
-            fn(v->callee);
-            fn(v->arguments);
-        }
-        CASE(Paren) {
-            fn(v->expr);
-        }
-        CASE(If) {
-            fn(v->expr_type);
-            fn(v->cond);
-            fn(v->block);
-            fn(v->els);
-        }
-        CASE(Loop) {
-            fn(v->block);
-        }
-        CASE(Format) {
-            fn(v->scope);
-        }
-        CASE(TmpVar) {
-            fn(v->expr_type);
-        }
-
-        CASE(IndentScope) {
-            for (auto& f : v->elements) {
-                fn(f);
-            }
-        }
-
-        CASE(Field) {
-            fn(v->ident);
-            fn(v->field_type);
-            fn(v->arguments);
-        }
-        CASE(MemberAccess) {
-            fn(v->expr_type);
-            fn(v->target);
-        }
-        CASE(Assert) {
-            fn(v->cond);
-        }
-        CASE(ArrayType) {
-            fn(v->base_type);
-            fn(v->length);
-        }
-        CASE(ImplicitReturn) {
-            fn(v->expr);
-        }
-#undef SWITCH
-#undef CASE
+        visit(o, [&](auto f) {
+            f->dump([&](auto key, auto& value) {
+                if constexpr (utils::helper::is_template_instance_of<std::decay_t<decltype(value)>, std::shared_ptr>) {
+                    using T = utils::helper::template_instance_of_t<std::decay_t<decltype(value)>, std::shared_ptr>::template param_at<0>;
+                    if constexpr (std::is_base_of_v<Node, T>) {
+                        fn(value);
+                    }
+                }
+                else if constexpr (std::is_same_v<decltype(value), node_list&>) {
+                    for (auto& v : value) {
+                        fn(v);
+                    }
+                }
+            });
+        });
     }
 }  // namespace brgen::ast

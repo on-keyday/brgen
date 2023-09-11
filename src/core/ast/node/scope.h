@@ -46,6 +46,14 @@ namespace brgen::ast {
             }
             return NodeType::program;
         }
+
+        void visit(auto&& fn) {
+            std::visit(
+                [&](auto& o) {
+                    fn(o.lock());
+                },
+                object);
+        }
     };
 
     struct Scope {
