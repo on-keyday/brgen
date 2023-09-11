@@ -505,7 +505,7 @@ namespace brgen::ast {
             field->colon_loc = token.loc;
 
             if (ident) {
-                ident->usage = IdentUsage::define_const;
+                ident->usage = IdentUsage::define_field;
             }
 
             field->ident = std::move(ident);
@@ -539,6 +539,7 @@ namespace brgen::ast {
             s.skip_space();
 
             fmt->ident = parse_ident_no_scope();
+            fmt->ident->usage = IdentUsage::define_format;
             {
                 auto scope = state.enter_format(fmt);
                 fmt->scope = parse_indent_block();

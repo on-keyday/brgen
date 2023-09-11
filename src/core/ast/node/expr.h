@@ -13,6 +13,7 @@ namespace brgen::ast {
         define_variable,
         define_const,
         define_field,
+        define_format,
     };
 
     constexpr const char* ident_usage_map[]{
@@ -21,6 +22,7 @@ namespace brgen::ast {
         "define_variable",
         "define_const",
         "define_field",
+        "define_format",
     };
 
     constexpr void as_json(IdentUsage usage, auto&& buf) {
