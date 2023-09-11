@@ -13,11 +13,11 @@ int main(int argc, char** argv) {
         middle::apply_middle(warns, a)
             .transform_error(to_source_error(fs))
             .value();
-        ast::SymbolMap m;
+        ast::Encoder m;
         m.encode(a);
         add_result(std::move(m.obj));
         auto parsed = utils::json::parse<ast::JSON>(m.obj.out());
-        m.from_json(parsed)
+        m.decode(parsed)
             .transform_error(to_source_error(fs))
             .value();
     });

@@ -16,7 +16,7 @@ namespace brgen::ast {
 
     using JSON = utils::json::JSON;
 
-    struct SymbolMap {
+    struct Encoder {
         Debug obj;
 
        private:
@@ -185,13 +185,21 @@ namespace brgen::ast {
 
         static constexpr auto empty_node = either::empty_value<std::shared_ptr<Node>>();
 
-        constexpr auto json_to_loc_error(lexer::Loc loc, const char* key, std::optional<NodeType> type = std::nullopt) {
+        constexpr auto json_to_loc_error(lexer::Loc loc, auto key, std::optional<NodeType> type = std::nullopt) {
             return [=](const char* m) {
+                auto k = [&] {
+                    if constexpr (std::is_integral_v<decltype(key)>) {
+                        return nums(key);
+                    }
+                    else {
+                        return key;
+                    }
+                };
                 if (type) {
-                    return error(loc, m, " at ", key, " of ", node_type_to_string(*type));
+                    return error(loc, m, " at ", k(), " of ", node_type_to_string(*type));
                 }
                 else {
-                    return error(loc, m, " at ", key);
+                    return error(loc, m, " at ", k());
                 }
             };
         }
@@ -234,6 +242,20 @@ namespace brgen::ast {
             };
         }
 
+        auto get_string(lexer::Loc loc, auto key) {
+            return [&, key](auto js) {
+                std::string tmp;
+                return bool_to_error("as_string returned false")(js->as_string(tmp)) & [&] { return tmp; } | json_to_loc_error(loc, key);
+            };
+        }
+
+        auto get_number(lexer::Loc loc, auto key) {
+            return [&, key](auto js) {
+                size_t tmp = 0;
+                return bool_to_error("as_number returned false")(js->as_number(tmp)) & [&] { return tmp; } | json_to_loc_error(loc, key);
+            };
+        }
+
         inline result<std::shared_ptr<Node>> parse_single_node(const JSON& js) {
             lexer::Loc loc;
             json_at(js, "loc") & parse_loc(loc);
@@ -255,12 +277,7 @@ namespace brgen::ast {
             auto get_key = [&](const char* key) {
                 return json_at(js, key) | loc_error(key);
             };
-            auto get_string = [&](const char* key) {
-                return [&, key](auto js) {
-                    std::string tmp;
-                    return bool_to_error("as_string returned false")(js->as_string(tmp)) & [&] { return tmp; } | loc_error(key);
-                };
-            };
+
             auto parse_node = [&](const char* key, auto& target) -> result<void> {
                 using T = std::remove_reference_t<decltype(target)>;
                 auto res = get_key(key);
@@ -277,16 +294,13 @@ namespace brgen::ast {
                         });
                 }
                 else if constexpr (std::is_same_v<T, size_t>) {
-                    return (res & [&](auto js) { return js->as_number(target); })
-                        .and_then([&](bool ok) {
-                            return bool_to_error("as_number returned false")(ok) | loc_error(key);
-                        });
+                    return res.and_then(get_number(loc, key)).transform(either::assign_to(target));
                 }
                 else if constexpr (std::is_same_v<T, lexer::Loc>) {
                     return res & parse_loc(target);
                 }
                 else if constexpr (std::is_same_v<T, BinaryOp>) {
-                    return (res & get_string(key))
+                    return (res & get_string(loc, key))
                         .and_then([&](std::string&& s) -> result<void> {
                             if (!bin_op(s.c_str()).transform([&](BinaryOp op) { target = op;return true; })) {
                                 return unexpect(error(loc, s, " cannot convert to binary operator"));
@@ -295,7 +309,7 @@ namespace brgen::ast {
                         });
                 }
                 else if constexpr (std::is_same_v<T, UnaryOp>) {
-                    return (res & get_string(key))
+                    return (res & get_string(loc, key))
                         .and_then([&](std::string&& s) -> result<void> {
                             if (!unary_op(s.c_str()).transform([&](UnaryOp op) { target = op;return true; })) {
                                 return unexpect(error(loc, s, " cannot convert to unary operator"));
@@ -304,7 +318,7 @@ namespace brgen::ast {
                         });
                 }
                 else if constexpr (std::is_same_v<T, IdentUsage>) {
-                    return (res & get_string(key))
+                    return (res & get_string(loc, key))
                         .and_then([&](std::string&& s) -> result<void> {
                             if (!ident_usage(s.c_str()).transform([&](IdentUsage op) { target = op;return true; })) {
                                 return unexpect(error(loc, s, " cannot convert to unary operator"));
@@ -345,7 +359,7 @@ namespace brgen::ast {
             return node;
         }
 
-        inline result<std::shared_ptr<Node>> from_json(const JSON& js) {
+        inline result<std::shared_ptr<Node>> decode(const JSON& js) {
             clear();
             if (js.is_null()) {
                 return nullptr;
@@ -353,11 +367,94 @@ namespace brgen::ast {
             auto must_be_array = [&](auto js) {
                 return bool_to_error("must be array")(js->is_array()) & [&] { return js; };
             };
-            auto node_list = json_at(js, "node") & must_be_array;
-            if (!node_list) {
-                return (node_list & empty_node) | json_to_loc_error({}, "node");
+            auto node_s = json_at(js, "node") & must_be_array;
+            if (!node_s) {
+                return (node_s & empty_node) | json_to_loc_error({}, "node");
             }
-            for (auto& node : utils::json::as_array(**node_list)) {
+            auto scope_list = json_at(js, "scope") & must_be_array;
+            if (!scope_list) {
+                return (scope_list & empty_node) | json_to_loc_error({}, "scope");
+            }
+            for (auto& node : utils::json::as_array(**node_s)) {
+                auto result = parse_single_node(node);
+                if (!result) {
+                    return result;
+                }
+                nodes.push_back(std::move(*result));
+            }
+            for (auto& scope : utils::json::as_array(**scope_list)) {
+                scopes.push_back(std::make_shared<Scope>());  // currently only add scope; no link collect
+            }
+            for (size_t i = 0; i < nodes.size(); i++) {
+                result<std::shared_ptr<Node>> res;
+                visit(nodes[i], [&](auto&& f) {
+                    f->dump([&](auto key, auto& value) {
+                        if (!res) {
+                            return;  // already error
+                        }
+                        using T = std::decay_t<decltype(value)>;
+                        constexpr auto is_shared_or_weak = utils::helper::is_template_instance_of<T, std::shared_ptr> ||
+                                                           utils::helper::is_template_instance_of<T, std::weak_ptr>;
+                        auto& val = (**node_s)[i];
+                        auto check_index = [&](auto&& index) {
+                            if (!index) {
+                                res = index | empty_node;
+                                return false;
+                            }
+                            if constexpr (std::is_same_v<T, std::shared_ptr<Scope>>) {
+                                if (*index >= scopes.size()) {
+                                    res = unexpect(error(f->loc, "missing reference; index out of range, index", nums(*index), "but range are 0-", nodes.size() - 1));
+                                    return false;
+                                }
+                            }
+                            else {
+                                if (*index >= nodes.size()) {
+                                    res = unexpect(error(f->loc, "missing reference; index out of range, index", nums(*index), "but range are 0-", nodes.size() - 1));
+                                    return false;
+                                }
+                                if constexpr (is_shared_or_weak) {
+                                    using P = typename utils::helper::template_of_t<T>::template param_at<0>;
+                                    if (!ast::as<P>(nodes[*index])) {
+                                        res = unexpect(error(f->loc, "missing reference: expect node ", node_type_to_string(T::node_type_tag), " but found ", node_type_to_string(nodes[*index]->node_type)));
+                                        return false;
+                                    }
+                                }
+                            }
+                            return true;
+                        };
+                        if constexpr (std::is_same_v<T, std::shared_ptr<Scope>>) {
+                            auto index = json_at(val, key).and_then(get_number(f->loc, key));
+                            if (!check_index(index)) {
+                                return;
+                            }
+                            value = scopes[*index];
+                        }
+                        else if constexpr (is_shared_or_weak) {
+                            auto index = json_at(val, key).and_then(get_number(f->loc, key));
+                            if (!check_index(index)) {
+                                return;
+                            }
+                            value = cast_to<T>(nodes[*index]);
+                        }
+                        else if constexpr (std::is_same_v<T, node_list>) {
+                            auto arr = json_at(val, key) & must_be_array;
+                            if (!arr) {
+                                res = arr | empty_node;
+                                return;
+                            }
+                            for (auto& js : utils::json::as_array(arr)) {
+                                auto index = get_number(f->loc, key)(&js);
+                                if (!check_index(index)) {
+                                    return;
+                                }
+                                value.push_back(nodes[*index]);
+                            }
+                        }
+                    });
+                });
+                if (!res) {
+                    return res;
+                }
             }
         }
     };
