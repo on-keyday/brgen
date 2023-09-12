@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
         middle::apply_middle(warns, a)
             .transform_error(to_source_error(fs))
             .value();
-        ast::Encoder m;
+        ast::JSONConverter m;
         m.encode(a);
         add_result(std::move(m.obj));
         auto parsed = utils::json::parse<ast::JSON>(m.obj.out());

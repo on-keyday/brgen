@@ -25,7 +25,7 @@ namespace brgen::ast {
         };
     }
 
-    struct Encoder {
+    struct JSONConverter {
         Debug obj;
 
        private:
@@ -219,19 +219,6 @@ namespace brgen::ast {
             };
         }
 
-        template <class NodeT>
-        constexpr auto to_node(lexer::Loc loc) {
-            return [=](auto&& p) -> either::expected<std::shared_ptr<NodeT>, LocationError> {
-                if (!p) {
-                    return nullptr;
-                }
-                if (as<NodeT>(p)) {
-                    return cast_to<NodeT>(p);
-                }
-                return either::unexpected{error(loc, "expect ", node_type_to_string(NodeT::node_type_tag), " but found ", node_type_to_string(p->node_type))};
-            };
-        }
-
         auto parse_loc(lexer::Loc& loc) {
             return [&](auto js) {
                 json_at(*js, "pos").transform([&](auto js) {
@@ -364,6 +351,93 @@ namespace brgen::ast {
             return f(js->is_array()) & [&] { return js; };
         };
 
+        inline result<void> link_nodes(const JSON& node_s) {
+            for (size_t i = 0; i < nodes.size(); i++) {
+                result<void> res;
+                visit(nodes[i], [&](auto&& f) {
+                    f->dump([&](auto key, auto& value) {
+                        if (!res) {
+                            return;  // already error
+                        }
+                        using T = std::decay_t<decltype(value)>;
+                        constexpr auto is_shared_or_weak = utils::helper::is_template_instance_of<T, std::shared_ptr> ||
+                                                           utils::helper::is_template_instance_of<T, std::weak_ptr>;
+                        auto& val = node_s[i];
+                        auto check_index = [&](auto&& index) {
+                            if (!index) {
+                                res = index & empty_value<void>();
+                                return false;
+                            }
+                            if constexpr (std::is_same_v<T, std::shared_ptr<Scope>>) {
+                                if (*index >= scopes.size()) {
+                                    res = unexpect(error(f->loc, "missing reference; index out of range, index", nums(*index), "but range are 0-", nums(scopes.size() - 1)));
+                                    return false;
+                                }
+                            }
+                            else {
+                                if (*index >= nodes.size()) {
+                                    res = unexpect(error(f->loc, "missing reference; index out of range, index", nums(*index), "but range are 0-", nums(nodes.size() - 1)));
+                                    return false;
+                                }
+                                if constexpr (is_shared_or_weak) {
+                                    using P = typename utils::helper::template_of_t<T>::template param_at<0>;
+                                    if constexpr (!std::is_same_v<Node, P>) {
+                                        if (!ast::as<P>(nodes[*index])) {
+                                            res = unexpect(error(f->loc, "missing reference: expect node ", node_type_to_string(P::node_type_tag), " but found ", node_type_to_string(nodes[*index]->node_type)));
+                                            return false;
+                                        }
+                                    }
+                                }
+                            }
+                            return true;
+                        };
+                        auto data = json_at(val, key);
+                        if (!data) {
+                            res = (data | json_to_loc_error(f->loc, key)) & empty_value<void>();
+                            return;
+                        }
+                        if ((*data)->is_null()) {
+                            return;  // skip
+                        }
+                        auto obj = data | empty_value<LocationError>();
+                        if constexpr (std::is_same_v<T, std::shared_ptr<Scope>>) {
+                            auto index = obj.and_then(get_number(f->loc, key));
+                            if (!check_index(index)) {
+                                return;
+                            }
+                            value = scopes[*index];
+                        }
+                        else if constexpr (is_shared_or_weak) {
+                            auto index = obj.and_then(get_number(f->loc, key));
+                            if (!check_index(index)) {
+                                return;
+                            }
+                            using P = typename utils::helper::template_of_t<T>::template param_at<0>;
+                            value = cast_to<P>(nodes[*index]);
+                        }
+                        else if constexpr (std::is_same_v<T, node_list>) {
+                            auto arr = std::move(obj);
+                            if (!(*arr)->is_array()) {
+                                res = unexpect(json_to_loc_error(f->loc, key)("must be array"));
+                                return;
+                            }
+                            for (auto& js : utils::json::as_array(**arr)) {
+                                auto index = get_number(f->loc, key)(&js);
+                                if (!check_index(index)) {
+                                    return;
+                                }
+                                value.push_back(nodes[*index]);
+                            }
+                        }
+                    });
+                });
+                if (!res) {
+                    return res;
+                }
+            }
+            return {};
+        }
+
         inline result<std::shared_ptr<Node>> decode(const JSON& js) {
             clear();
             if (js.is_null()) {
@@ -388,82 +462,57 @@ namespace brgen::ast {
                 scopes.push_back(std::make_shared<Scope>());  // currently only add scope; no link collect
             }
 
-            for (size_t i = 0; i < nodes.size(); i++) {
-                result<std::shared_ptr<Node>> res;
-                visit(nodes[i], [&](auto&& f) {
-                    f->dump([&](auto key, auto& value) {
-                        if (!res) {
-                            return;  // already error
+            auto res = link_nodes(**node_s);
+            if (!res) {
+                return res & empty_node;
+            }
+
+            for (size_t i = 0; i < scopes.size(); i++) {
+                auto& val = (**scope_list)[i];
+                auto get_scope = [&](const char* key) {
+                    return (json_at(val, key) | json_to_loc_error({}, key)) & get_number({}, key) &
+                               [&](size_t i) -> result<std::shared_ptr<Scope>> {
+                        if (i >= scopes.size()) {
+                            return unexpect(error({}, "index out of range"));
                         }
-                        using T = std::decay_t<decltype(value)>;
-                        constexpr auto is_shared_or_weak = utils::helper::is_template_instance_of<T, std::shared_ptr> ||
-                                                           utils::helper::is_template_instance_of<T, std::weak_ptr>;
-                        auto& val = (**node_s)[i];
-                        auto check_index = [&](auto&& index) {
-                            if (!index) {
-                                res = index & empty_node;
-                                return false;
-                            }
-                            if constexpr (std::is_same_v<T, std::shared_ptr<Scope>>) {
-                                if (*index >= scopes.size()) {
-                                    res = unexpect(error(f->loc, "missing reference; index out of range, index", nums(*index), "but range are 0-", nodes.size() - 1));
-                                    return false;
-                                }
-                            }
-                            else {
-                                if (*index >= nodes.size()) {
-                                    res = unexpect(error(f->loc, "missing reference; index out of range, index", nums(*index), "but range are 0-", nodes.size() - 1));
-                                    return false;
-                                }
-                                if constexpr (is_shared_or_weak) {
-                                    using P = typename utils::helper::template_of_t<T>::template param_at<0>;
-                                    if (!ast::as<P>(nodes[*index])) {
-                                        res = unexpect(error(f->loc, "missing reference: expect node ", node_type_to_string(T::node_type_tag), " but found ", node_type_to_string(nodes[*index]->node_type)));
-                                        return false;
-                                    }
-                                }
-                            }
-                            return true;
-                        };
-                        auto get_value = [&] {
-                            return (json_at(val, key) | json_to_loc_error(f->loc, key));
-                        };
-                        if constexpr (std::is_same_v<T, std::shared_ptr<Scope>>) {
-                            auto index = get_value().and_then(get_number(f->loc, key));
-                            if (!check_index(index)) {
-                                return;
-                            }
-                            value = scopes[*index];
-                        }
-                        else if constexpr (is_shared_or_weak) {
-                            auto index = get_value().and_then(get_number(f->loc, key));
-                            if (!check_index(index)) {
-                                return;
-                            }
-                            value = cast_to<T>(nodes[*index]);
-                        }
-                        else if constexpr (std::is_same_v<T, node_list>) {
-                            auto arr = get_value() & must_be_array;
-                            if (!arr) {
-                                res = arr & empty_node;
-                                return;
-                            }
-                            for (auto& js : utils::json::as_array(**arr)) {
-                                auto index = get_number(f->loc, key)(&js);
-                                if (!check_index(index)) {
-                                    return;
-                                }
-                                value.push_back(nodes[*index]);
-                            }
-                        }
-                    });
-                });
-                if (!res) {
-                    return res;
+                        return scopes[i];
+                    };
+                };
+                auto b = get_scope("branch");
+                if (!b) {
+                    return b & empty_node;
+                }
+                scopes[i]->branch = std::move(*b);
+                auto n = get_scope("next");
+                if (!n) {
+                    return n & empty_node;
+                }
+                scopes[i]->next = std::move(*n);
+                auto ident = (json_at(val, "ident") & must_be_array) | json_to_loc_error({}, "ident");
+                if (!ident) {
+                    return ident & empty_node;
+                }
+                for (auto& id : utils::json::as_array(**ident)) {
+                    auto index = get_number({}, "ident")(&id);
+                    if (*index >= nodes.size()) {
+                        return unexpect(error({}, "index out of range"));
+                    }
+                    auto val = nodes[*index];
+                    if (as<Field>(val)) {
+                        scopes[i]->push(cast_to<Field>(val));
+                    }
+                    else if (as<Format>(val)) {
+                        scopes[i]->push(cast_to<Format>(val));
+                    }
+                    else if (as<Ident>(val)) {
+                        scopes[i]->push(cast_to<Ident>(val));
+                    }
+                    else {
+                        return unexpect(error({}, "expect field,format,ident but found ", node_type_to_string(val->node_type)));
+                    }
                 }
             }
-            for (size_t i = 0; i < scopes.size(); i++) {
-            }
+            return nodes[0];
         }
     };
 

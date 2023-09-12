@@ -126,7 +126,8 @@
         "*.def": "cpp",
         "*.inc": "cpp",
         "stdarg.h": "c",
-        "expected": "cpp"
+        "expected": "cpp",
+        "stacktrace": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabledIfIncludesResolve",
     "C_Cpp.clang_format_style": "file",
