@@ -88,6 +88,8 @@ namespace brgen::ast {
         void clear() {
             node_index.clear();
             nodes.clear();
+            scope_index.clear();
+            scopes.clear();
             obj.out().clear();
         }
 
@@ -166,6 +168,9 @@ namespace brgen::ast {
                             auto field = obj.array();
                             for (auto& object : scope->objects) {
                                 object.visit([&](auto&& node) {
+                                    if (!node) {
+                                        return;
+                                    }
                                     find_and_replace_node(node, field);
                                 });
                             }
@@ -472,8 +477,15 @@ namespace brgen::ast {
 
             for (size_t i = 0; i < scopes.size(); i++) {
                 auto& val = (**scope_list)[i];
-                auto get_scope = [&](const char* key) {
-                    return (json_at(val, key) | json_to_loc_error({}, key)) & get_number({}, key) &
+                auto get_scope = [&](const char* key) -> result<std::shared_ptr<Scope>> {
+                    auto res = json_at(val, key);
+                    if (!res) {
+                        return res & empty_value<std::shared_ptr<Scope>>() | json_to_loc_error({}, key);
+                    }
+                    if ((*res)->is_null()) {
+                        return nullptr;
+                    }
+                    return (res | empty_value<LocationError>()) & get_number({}, key) &
                                [&](size_t i) -> result<std::shared_ptr<Scope>> {
                         if (i >= scopes.size()) {
                             return unexpect(error({}, "index out of range"));
@@ -497,6 +509,9 @@ namespace brgen::ast {
                 }
                 for (auto& id : utils::json::as_array(**ident)) {
                     auto index = get_number({}, "ident")(&id);
+                    if (!index) {
+                        return index & empty_node;
+                    }
                     if (*index >= nodes.size()) {
                         return unexpect(error({}, "index out of range"));
                     }

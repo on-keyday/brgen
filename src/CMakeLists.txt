@@ -64,6 +64,10 @@ add_custom_command(
 TARGET ast_test POST_BUILD
 COMMAND ${CMAKE_COMMAND} -E copy "$ENV{UTILS_DIR}/lib/libutils.dll" "${CMAKE_BINARY_DIR}/test/libutils.dll"
 )
+add_custom_command(
+TARGET ast_test POST_BUILD
+COMMAND ${CMAKE_COMMAND} -E copy "$ENV{UTILS_DIR}/lib/libutils.pdb" "${CMAKE_BINARY_DIR}/test/libutils.pdb"
+)
 else()
 
 add_custom_command(
