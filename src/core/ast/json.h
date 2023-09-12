@@ -458,6 +458,9 @@ namespace brgen::ast {
                 }
                 nodes.push_back(std::move(*result));
             }
+            if (nodes.size() == 0) {
+                return unexpect(error({}, "least 1 element required for node"));
+            }
             for (auto& scope : utils::json::as_array(**scope_list)) {
                 scopes.push_back(std::make_shared<Scope>());  // currently only add scope; no link collect
             }
