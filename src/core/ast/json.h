@@ -188,6 +188,7 @@ namespace brgen::ast {
             field("scope", encode_scope);
         }
 
+       private:
         inline either::expected<const JSON*, const char*> json_at(const JSON& js, auto&& key) {
             const char* err = nullptr;
             auto res = js.at(key, &err);
@@ -443,7 +444,8 @@ namespace brgen::ast {
             return {};
         }
 
-        inline result<std::shared_ptr<Node>> decode(const JSON& js) {
+       public:
+        result<std::shared_ptr<Node>> decode(const JSON& js) {
             clear();
             if (js.is_null()) {
                 return nullptr;
