@@ -4,7 +4,7 @@
 #include "../common/file.h"
 #include <core/ast/node/traverse.h>
 
-namespace brgen::typing {
+namespace brgen::middle {
 
     struct Typing {
         bool equal_type(const std::shared_ptr<ast::Type>& left, const std::shared_ptr<ast::Type>& right) {
@@ -369,4 +369,4 @@ namespace brgen::typing {
         }
     };
 
-}  // namespace brgen::typing
+}  // namespace brgen::middle

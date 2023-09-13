@@ -3,7 +3,7 @@
 #include <core/ast/node/traverse.h>
 #include <helper/defer.h>
 
-namespace brgen::treeopt {
+namespace brgen::middle {
     struct ExtractContext {
        private:
         size_t tmp_index = 0;
@@ -35,4 +35,4 @@ namespace brgen::treeopt {
         }
     };
 
-}  // namespace brgen::treeopt
+}  // namespace brgen::middle

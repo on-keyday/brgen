@@ -2,7 +2,7 @@
 #pragma once
 #include <core/ast/node/traverse.h>
 
-namespace brgen::treeopt {
+namespace brgen::middle {
 
     inline void replace_assert(const std::shared_ptr<ast::Node>& node) {
         if (!node) {
@@ -28,4 +28,4 @@ namespace brgen::treeopt {
             replace_assert(f);
         });
     }
-}  // namespace brgen::treeopt
+}  // namespace brgen::middle

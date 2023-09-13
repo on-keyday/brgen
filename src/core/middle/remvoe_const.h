@@ -3,7 +3,7 @@
 #include <core/ast/node/traverse.h>
 #include "core/common/error.h"
 
-namespace brgen::treeopt {
+namespace brgen::middle {
     inline bool is_const(const std::shared_ptr<ast::Expr>& expr) {
         if (auto bin = ast::as<ast::Binary>(expr)) {
             return is_const(bin->left) &&
@@ -53,4 +53,4 @@ namespace brgen::treeopt {
             replace_assert(f);
         });
     }
-}  // namespace brgen::treeopt
+}  // namespace brgen::middle

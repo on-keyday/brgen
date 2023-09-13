@@ -4,7 +4,7 @@
 #include <core/ast/node/traverse.h>
 #include <helper/defer.h>
 
-namespace brgen::treeopt {
+namespace brgen::middle {
 
     template <class T>
     void extract_call(ExtractContext& h, std::shared_ptr<T>& c) {
@@ -83,4 +83,4 @@ namespace brgen::treeopt {
             }
         }
     }
-}  // namespace brgen::treeopt
+}  // namespace brgen::middle
