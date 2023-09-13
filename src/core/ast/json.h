@@ -189,7 +189,7 @@ namespace brgen::ast {
         }
 
        private:
-        inline either::expected<const JSON*, const char*> json_at(const JSON& js, auto&& key) {
+        static either::expected<const JSON*, const char*> json_at(const JSON& js, auto&& key) {
             const char* err = nullptr;
             auto res = js.at(key, &err);
             if (!res) {
@@ -200,8 +200,8 @@ namespace brgen::ast {
 
         static constexpr auto empty_node = either::empty_value<std::shared_ptr<Node>>();
 
-        constexpr auto json_to_loc_error(lexer::Loc loc, auto key, std::optional<NodeType> type = std::nullopt) {
-            return [=](const char* m) {
+        static constexpr auto json_to_loc_error(lexer::Loc loc, auto key, std::optional<NodeType> type = std::nullopt) {
+            return [=](const char* message) {
                 auto k = [&] {
                     if constexpr (std::is_integral_v<decltype(key)>) {
                         return nums(key);
@@ -210,136 +210,131 @@ namespace brgen::ast {
                         return key;
                     }
                 };
-                if (type) {
-                    return error(loc, m, " at ", k(), " of ", node_type_to_string(*type));
-                }
-                else {
-                    return error(loc, m, " at ", k());
-                }
+                return (type) ? error(loc, message, " at ", k(), " of ", node_type_to_string(*type))
+                              : error(loc, message, " at ", k());
             };
         }
 
-        constexpr auto js_as_number(auto& n) {
-            return [&](auto js) {
-                js->force_as_number(n);
-            };
-        }
-
-        auto parse_loc(lexer::Loc& loc) {
+        static auto parse_loc(lexer::Loc& loc) {
             return [&](auto js) {
                 json_at(*js, "pos").transform([&](auto js) {
-                    json_at(*js, "begin").transform(js_as_number(loc.pos.begin));
-                    json_at(*js, "end").transform(js_as_number(loc.pos.end));
+                    json_at(*js, "begin").transform([&](auto js) { js->force_as_number(loc.pos.begin); });
+                    json_at(*js, "end").transform([&](auto js) { js->force_as_number(loc.pos.end); });
                 });
-                json_at(*js, "file").transform(js_as_number(loc.file));
+                json_at(*js, "file").transform([&](auto js) { js->force_as_number(loc.file); });
             };
         }
 
-        auto get_string(lexer::Loc loc, auto key) {
+        static auto get_string(lexer::Loc loc, auto key) {
             return [=](auto js) {
                 std::string tmp;
                 return bool_to_error("as_string returned false")(js->as_string(tmp)) & [&] { return tmp; } | json_to_loc_error(loc, key);
             };
         }
 
-        auto get_number(lexer::Loc loc, auto key) {
+        static auto get_number(lexer::Loc loc, auto key) {
             return [=](auto js) {
                 size_t tmp = 0;
                 return bool_to_error("as_number returned false")(js->as_number(tmp)) & [&] { return tmp; } | json_to_loc_error(loc, key);
             };
         }
 
-        inline result<std::shared_ptr<Node>> parse_single_node(const JSON& js) {
+        static result<NodeType> get_node_type(const JSON& js, lexer::Loc loc) {
+            return (json_at(js, "node_type") | json_to_loc_error(loc, "node_type")) &
+                   [](const JSON* js) {
+                       return js->force_as_string<std::string>();
+                   } &
+                   [=](const std::string& str) {
+                       return string_to_node_type(str) | json_to_loc_error(loc, "node_type");
+                   };
+        }
+
+        static result<void> parse_non_node_field(const JSON& js, NodeType node_type, lexer::Loc loc,
+                                                 const char* key, auto& target) {
+            auto loc_error = [&]() {
+                return json_to_loc_error(loc, key, node_type);
+            };
+            auto get_key = [&]() {
+                return json_at(js, key) | loc_error();
+            };
+
+            using T = std::remove_reference_t<decltype(target)>;
+            auto res = get_key();
+            if constexpr (std::is_same_v<T, std::string>) {
+                return (res & [&](auto js) { return js->as_string(target); })
+                    .and_then([&](bool ok) {
+                        return bool_to_error("as_string returned false")(ok) | loc_error();
+                    });
+            }
+            else if constexpr (std::is_same_v<T, bool>) {
+                return (res & [&](auto js) { return js->as_bool(target); })
+                    .and_then([&](bool ok) {
+                        return bool_to_error("as_bool returned false")(ok) | loc_error();
+                    });
+            }
+            else if constexpr (std::is_same_v<T, size_t>) {
+                return res.and_then(get_number(loc, key)).transform(either::assign_to(target));
+            }
+            else if constexpr (std::is_same_v<T, lexer::Loc>) {
+                return res & parse_loc(target);
+            }
+            else if constexpr (std::is_same_v<T, BinaryOp>) {
+                return (res & get_string(loc, key))
+                    .and_then([&](std::string&& s) -> result<void> {
+                        if (auto res = bin_op(s.c_str()); !res) {
+                            return unexpect(error(loc, s, " cannot convert to binary operator"));
+                        }
+                        else {
+                            target = *res;
+                        }
+                        return {};
+                    });
+            }
+            else if constexpr (std::is_same_v<T, UnaryOp>) {
+                return (res & get_string(loc, key))
+                    .and_then([&](std::string&& s) -> result<void> {
+                        if (auto res = unary_op(s.c_str()); !res) {
+                            return unexpect(error(loc, s, " cannot convert to unary operator"));
+                        }
+                        else {
+                            target = *res;
+                        }
+                        return {};
+                    });
+            }
+            else if constexpr (std::is_same_v<T, IdentUsage>) {
+                return (res & get_string(loc, key))
+                    .and_then([&](std::string&& s) -> result<void> {
+                        if (auto res = ident_usage(s.c_str()); !res) {
+                            return unexpect(error(loc, s, " cannot convert to unary operator"));
+                        }
+                        else {
+                            target = *res;
+                        }
+                        return {};
+                    });
+            }
+            else if constexpr (utils::helper::is_template_instance_of<T, std::shared_ptr> ||
+                               utils::helper::is_template_instance_of<T, std::weak_ptr> ||
+                               std::is_same_v<T, node_list> ||
+                               std::is_same_v<T, const NodeType>) {
+                // nothing to do
+                return {};
+            }
+            else {
+                static_assert(std::is_same_v<T, std::string>);
+                return {};
+            }
+        }
+
+        static result<std::shared_ptr<Node>> parse_single_node(const JSON& js) {
             lexer::Loc loc;
             json_at(js, "loc") & parse_loc(loc);
-            auto type = (json_at(js, "node_type") | json_to_loc_error(loc, "node_type")) &
-                        [](const JSON* js) {
-                            return js->force_as_string<std::string>();
-                        } &
-                        [=](const std::string& str) {
-                            return string_to_node_type(str) | json_to_loc_error(loc, "node_type");
-                        };
+            auto type = get_node_type(js, loc);
             if (!type) {
                 return type & empty_node;
             }
             NodeType node_type = *type;
-
-            auto loc_error = [&](const char* key) {
-                return json_to_loc_error(loc, key, node_type);
-            };
-            auto get_key = [&](const char* key) {
-                return json_at(js, key) | loc_error(key);
-            };
-
-            auto parse_node = [&](const char* key, auto& target) -> result<void> {
-                using T = std::remove_reference_t<decltype(target)>;
-                auto res = get_key(key);
-                if constexpr (std::is_same_v<T, std::string>) {
-                    return (res & [&](auto js) { return js->as_string(target); })
-                        .and_then([&](bool ok) {
-                            return bool_to_error("as_string returned false")(ok) | loc_error(key);
-                        });
-                }
-                else if constexpr (std::is_same_v<T, bool>) {
-                    return (res & [&](auto js) { return js->as_bool(target); })
-                        .and_then([&](bool ok) {
-                            return bool_to_error("as_bool returned false")(ok) | loc_error(key);
-                        });
-                }
-                else if constexpr (std::is_same_v<T, size_t>) {
-                    return res.and_then(get_number(loc, key)).transform(either::assign_to(target));
-                }
-                else if constexpr (std::is_same_v<T, lexer::Loc>) {
-                    return res & parse_loc(target);
-                }
-                else if constexpr (std::is_same_v<T, BinaryOp>) {
-                    return (res & get_string(loc, key))
-                        .and_then([&](std::string&& s) -> result<void> {
-                            if (auto res = bin_op(s.c_str()); !res) {
-                                return unexpect(error(loc, s, " cannot convert to binary operator"));
-                            }
-                            else {
-                                target = *res;
-                            }
-                            return {};
-                        });
-                }
-                else if constexpr (std::is_same_v<T, UnaryOp>) {
-                    return (res & get_string(loc, key))
-                        .and_then([&](std::string&& s) -> result<void> {
-                            if (auto res = unary_op(s.c_str()); !res) {
-                                return unexpect(error(loc, s, " cannot convert to unary operator"));
-                            }
-                            else {
-                                target = *res;
-                            }
-                            return {};
-                        });
-                }
-                else if constexpr (std::is_same_v<T, IdentUsage>) {
-                    return (res & get_string(loc, key))
-                        .and_then([&](std::string&& s) -> result<void> {
-                            if (auto res = ident_usage(s.c_str()); !res) {
-                                return unexpect(error(loc, s, " cannot convert to unary operator"));
-                            }
-                            else {
-                                target = *res;
-                            }
-                            return {};
-                        });
-                }
-                else if constexpr (utils::helper::is_template_instance_of<T, std::shared_ptr> ||
-                                   utils::helper::is_template_instance_of<T, std::weak_ptr> ||
-                                   std::is_same_v<T, node_list> ||
-                                   std::is_same_v<T, const NodeType>) {
-                    // nothing to do
-                    return {};
-                }
-                else {
-                    static_assert(std::is_same_v<T, std::string>);
-                    return {};
-                }
-            };
             std::shared_ptr<Node> node;
             result<void> err;
             get_node(node_type, [&](auto n) {
@@ -347,12 +342,15 @@ namespace brgen::ast {
                 if constexpr (!decltype(n)::is_abs) {
                     auto rep = std::make_shared<NodeT>();
                     rep->dump([&](auto key, auto& target) {
-                        err = err & [&] { return parse_node(key, target); };
+                        err = err & [&] { return parse_non_node_field(js, node_type, loc, key, target); };
                     });
                     if (!err) {
                         return;
                     }
                     node = std::move(rep);
+                }
+                else {
+                    err = unexpect(error(loc, "abstract node_type is not allowed"));
                 }
             });
             if (!err) {
@@ -366,7 +364,7 @@ namespace brgen::ast {
             return f(js->is_array()) & [&] { return js; };
         };
 
-        inline result<void> link_nodes(const JSON& node_s) {
+        result<void> link_nodes(const JSON& node_s) {
             for (size_t i = 0; i < nodes.size(); i++) {
                 result<void> res;
                 visit(nodes[i], [&](auto&& f) {
@@ -453,6 +451,65 @@ namespace brgen::ast {
             return {};
         }
 
+        result<void> link_scopes(const JSON& scope_list) {
+            for (size_t i = 0; i < scopes.size(); i++) {
+                auto& val = scope_list[i];
+                auto get_scope = [&](const char* key) -> result<std::shared_ptr<Scope>> {
+                    auto res = json_at(val, key);
+                    if (!res) {
+                        return res & empty_value<std::shared_ptr<Scope>>() | json_to_loc_error({}, key);
+                    }
+                    if ((*res)->is_null()) {
+                        return nullptr;
+                    }
+                    return (res | empty_value<LocationError>()) & get_number({}, key) &
+                               [&](size_t i) -> result<std::shared_ptr<Scope>> {
+                        if (i >= scopes.size()) {
+                            return unexpect(error({}, "index out of range"));
+                        }
+                        return scopes[i];
+                    };
+                };
+                auto b = get_scope("branch");
+                if (!b) {
+                    return b & empty_value<void>();
+                }
+                scopes[i]->branch = std::move(*b);
+                auto n = get_scope("next");
+                if (!n) {
+                    return n & empty_value<void>();
+                }
+                scopes[i]->next = std::move(*n);
+                auto ident = (json_at(val, "ident") & must_be_array) | json_to_loc_error({}, "ident");
+                if (!ident) {
+                    return ident & empty_value<void>();
+                }
+                for (auto& id : utils::json::as_array(**ident)) {
+                    auto index = get_number({}, "ident")(&id);
+                    if (!index) {
+                        return index & empty_value<void>();
+                    }
+                    if (*index >= nodes.size()) {
+                        return unexpect(error({}, "index out of range"));
+                    }
+                    auto val = nodes[*index];
+                    if (as<Field>(val)) {
+                        scopes[i]->push(cast_to<Field>(val));
+                    }
+                    else if (as<Format>(val)) {
+                        scopes[i]->push(cast_to<Format>(val));
+                    }
+                    else if (as<Ident>(val)) {
+                        scopes[i]->push(cast_to<Ident>(val));
+                    }
+                    else {
+                        return unexpect(error({}, "expect field,format,ident but found ", node_type_to_string(val->node_type)));
+                    }
+                }
+            }
+            return {};
+        }
+
        public:
         result<std::shared_ptr<Node>> decode(const JSON& js) {
             clear();
@@ -486,61 +543,11 @@ namespace brgen::ast {
                 return res & empty_node;
             }
 
-            for (size_t i = 0; i < scopes.size(); i++) {
-                auto& val = (**scope_list)[i];
-                auto get_scope = [&](const char* key) -> result<std::shared_ptr<Scope>> {
-                    auto res = json_at(val, key);
-                    if (!res) {
-                        return res & empty_value<std::shared_ptr<Scope>>() | json_to_loc_error({}, key);
-                    }
-                    if ((*res)->is_null()) {
-                        return nullptr;
-                    }
-                    return (res | empty_value<LocationError>()) & get_number({}, key) &
-                               [&](size_t i) -> result<std::shared_ptr<Scope>> {
-                        if (i >= scopes.size()) {
-                            return unexpect(error({}, "index out of range"));
-                        }
-                        return scopes[i];
-                    };
-                };
-                auto b = get_scope("branch");
-                if (!b) {
-                    return b & empty_node;
-                }
-                scopes[i]->branch = std::move(*b);
-                auto n = get_scope("next");
-                if (!n) {
-                    return n & empty_node;
-                }
-                scopes[i]->next = std::move(*n);
-                auto ident = (json_at(val, "ident") & must_be_array) | json_to_loc_error({}, "ident");
-                if (!ident) {
-                    return ident & empty_node;
-                }
-                for (auto& id : utils::json::as_array(**ident)) {
-                    auto index = get_number({}, "ident")(&id);
-                    if (!index) {
-                        return index & empty_node;
-                    }
-                    if (*index >= nodes.size()) {
-                        return unexpect(error({}, "index out of range"));
-                    }
-                    auto val = nodes[*index];
-                    if (as<Field>(val)) {
-                        scopes[i]->push(cast_to<Field>(val));
-                    }
-                    else if (as<Format>(val)) {
-                        scopes[i]->push(cast_to<Format>(val));
-                    }
-                    else if (as<Ident>(val)) {
-                        scopes[i]->push(cast_to<Ident>(val));
-                    }
-                    else {
-                        return unexpect(error({}, "expect field,format,ident but found ", node_type_to_string(val->node_type)));
-                    }
-                }
+            res = link_scopes(**scope_list);
+            if (!res) {
+                return res & empty_node;
             }
+
             return nodes[0];
         }
     };
