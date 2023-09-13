@@ -1,5 +1,7 @@
 # Architecture
-lexer -> parser -> treeopt -> c langopt -> c gen
-                           -> go langopt -> go gen
-                           ...
+
+tool/brgen - compiler driver
+|
+|--tool/src2json - parse source code then convert to json ast
+|
 

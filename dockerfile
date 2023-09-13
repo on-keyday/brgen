@@ -1,9 +1,9 @@
 #license
 FROM ubuntu:latest
 
-RUN mkdir -p /usr/utilsdev/workspace
+RUN mkdir -p /workspace
 
-WORKDIR /usr/utilsdev/workspace
+WORKDIR /workspace
 
 # if you are not in Japan region, you should comment out this line, or change `ftp.jaist.ac.jp/pub/Linux` to your region millor server address.
 RUN sed -i 's@archive.ubuntu.com@ftp.jaist.ac.jp/pub/Linux@g' /etc/apt/sources.list
@@ -50,14 +50,14 @@ RUN unlink /usr/bin/ld
 RUN ln -s /lib/llvm-14/bin/lld /usr/bin/ld
 
 RUN curl https://github.com/lldb-tools/lldb-mi/archive/refs/heads/main.zip \
-    -o /usr/utilsdev/lldb-mi.zip -L
+    -o /workspace/lldb-mi.zip -L
 
-RUN unzip /usr/utilsdev/lldb-mi.zip -d /usr/utilsdev
-RUN rm /usr/utilsdev/lldb-mi.zip
+RUN unzip /workspace/lldb-mi.zip -d /workspace
+RUN rm /workspace/lldb-mi.zip
 
-RUN (cd /usr/utilsdev/lldb-mi-main;cmake -G Ninja .)
-RUN (cd /usr/utilsdev/lldb-mi-main;cmake --build .)
-RUN cp /usr/utilsdev/lldb-mi-main/src/lldb-mi /bin/lldb-mi
+RUN (cd /workspace/lldb-mi-main;cmake -G Ninja .)
+RUN (cd /workspace/lldb-mi-main;cmake --build .)
+RUN cp /workspace/lldb-mi-main/src/lldb-mi /bin/lldb-mi
 
 
 

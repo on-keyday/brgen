@@ -1,7 +1,7 @@
 #license
 version: "3"
 services:
-  linux_test:
+  brgen_linux:
     build: .
     container_name: brgen
     tty: true
