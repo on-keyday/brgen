@@ -1,5 +1,7 @@
 #license
-cmake_minimum_required(VERSION 3.26.4)
+cmake_minimum_required(VERSION 3.22.1)
+
+
 
 
 add_executable(lexer_test "test/lexer_test.cpp")
@@ -26,7 +28,7 @@ target_link_libraries(middle_test ast_test_component)
 
 add_executable(from_json_test "test/from_json_test.cpp")
 
-target_link_libraries(from_json_test ast_test_component)
+target_link_libraries(from_json_test ast_test_component utils)
 
 add_executable(section_writer_test "test/section_writer_test.cpp")
 

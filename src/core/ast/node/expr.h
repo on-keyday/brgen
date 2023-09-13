@@ -182,7 +182,7 @@ namespace brgen::ast {
             : Expr(l, NodeType::member_access), target(std::move(t)), name(std::move(n)) {}
 
         // for decode
-        constexpr MemberAccess()
+        MemberAccess()
             : Expr({}, NodeType::member_access) {}
     };
 

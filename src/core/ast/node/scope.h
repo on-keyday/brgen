@@ -64,7 +64,8 @@ namespace brgen::ast {
 
         template <class V>
         std::optional<std::shared_ptr<V>> lookup_backward(auto&& fn) {
-            for (auto& val : std::views::reverse(objects)) {
+            for (auto it = objects.rbegin(); it != objects.rend(); it++) {
+                auto& val = *it;
                 if (std::holds_alternative<std::weak_ptr<V>>(val.object)) {
                     auto obj = std::get<std::weak_ptr<V>>(val.object).lock();
                     if (fn(obj)) {

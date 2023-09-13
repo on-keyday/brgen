@@ -38,7 +38,8 @@ RUN apt-get install -y \
     iputils-ping
 RUN apt-get update && \
     apt-get install -y\
-    zlib1g
+    zlib1g\
+    git
 
 RUN ln -s /lib/llvm-15/bin/clang++ /bin/clang++
 RUN ln -s /lib/llvm-15/bin/clang /bin/clang

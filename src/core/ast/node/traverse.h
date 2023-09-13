@@ -98,7 +98,7 @@ namespace brgen::ast {
         visit(o, [&](auto f) {
             f->dump([&](auto key, auto& value) {
                 if constexpr (utils::helper::is_template_instance_of<std::decay_t<decltype(value)>, std::shared_ptr>) {
-                    using T = utils::helper::template_instance_of_t<std::decay_t<decltype(value)>, std::shared_ptr>::template param_at<0>;
+                    using T = typename utils::helper::template_of_t<std::decay_t<decltype(value)>>::template param_at<0>;
                     if constexpr (std::is_base_of_v<Node, T>) {
                         fn(value);
                     }

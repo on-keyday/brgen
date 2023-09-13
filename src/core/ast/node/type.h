@@ -32,7 +32,7 @@ namespace brgen::ast {
             : Type(l, NodeType::int_type), raw(std::move(token)), bit_size(bit_size) {}
 
         // for decode
-        constexpr IntType()
+        IntType()
             : Type({}, NodeType::int_type) {}
 
         void dump(auto&& field) {
@@ -79,7 +79,7 @@ namespace brgen::ast {
             : Type(ty->loc, NodeType::int_literal_type), base(ty) {}
 
         // for decode
-        constexpr IntLiteralType()
+        IntLiteralType()
             : Type({}, NodeType::int_literal_type) {}
     };
 
@@ -91,7 +91,7 @@ namespace brgen::ast {
             : Type(str->loc, NodeType::str_literal_type), base(std::move(str)) {}
 
         // for decode
-        constexpr StrLiteralType()
+        StrLiteralType()
             : Type({}, NodeType::str_literal_type) {}
 
         void dump(auto&& field) {
@@ -116,14 +116,14 @@ namespace brgen::ast {
         }
 
         // for decode
-        constexpr IdentType()
+        IdentType()
             : Type({}, NodeType::ident_type) {}
     };
 
     struct VoidType : Type {
         define_node_type(NodeType::void_type);
 
-        VoidType(lexer::Loc l)
+        constexpr VoidType(lexer::Loc l)
             : Type(l, NodeType::void_type) {}
 
         // for decode
@@ -138,7 +138,7 @@ namespace brgen::ast {
     struct BoolType : Type {
         define_node_type(NodeType::bool_type);
 
-        BoolType(lexer::Loc l)
+        constexpr BoolType(lexer::Loc l)
             : Type(l, NodeType::bool_type) {}
 
         // for decode
@@ -160,7 +160,7 @@ namespace brgen::ast {
             : Type(l, NodeType::array_type), length(std::move(len)), end_loc(end), base_type(std::move(base)) {}
 
         // for decode
-        constexpr ArrayType()
+        ArrayType()
             : Type({}, NodeType::array_type) {}
 
         void dump(auto&& field) {

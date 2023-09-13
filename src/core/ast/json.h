@@ -295,8 +295,11 @@ namespace brgen::ast {
                 else if constexpr (std::is_same_v<T, BinaryOp>) {
                     return (res & get_string(loc, key))
                         .and_then([&](std::string&& s) -> result<void> {
-                            if (!bin_op(s.c_str()).transform([&](BinaryOp op) { target = op;return true; })) {
+                            if (auto res = bin_op(s.c_str()); !res) {
                                 return unexpect(error(loc, s, " cannot convert to binary operator"));
+                            }
+                            else {
+                                target = *res;
                             }
                             return {};
                         });
@@ -304,8 +307,11 @@ namespace brgen::ast {
                 else if constexpr (std::is_same_v<T, UnaryOp>) {
                     return (res & get_string(loc, key))
                         .and_then([&](std::string&& s) -> result<void> {
-                            if (!unary_op(s.c_str()).transform([&](UnaryOp op) { target = op;return true; })) {
+                            if (auto res = unary_op(s.c_str()); !res) {
                                 return unexpect(error(loc, s, " cannot convert to unary operator"));
+                            }
+                            else {
+                                target = *res;
                             }
                             return {};
                         });
@@ -313,8 +319,11 @@ namespace brgen::ast {
                 else if constexpr (std::is_same_v<T, IdentUsage>) {
                     return (res & get_string(loc, key))
                         .and_then([&](std::string&& s) -> result<void> {
-                            if (!ident_usage(s.c_str()).transform([&](IdentUsage op) { target = op;return true; })) {
+                            if (auto res = ident_usage(s.c_str()); !res) {
                                 return unexpect(error(loc, s, " cannot convert to unary operator"));
+                            }
+                            else {
+                                target = *res;
                             }
                             return {};
                         });

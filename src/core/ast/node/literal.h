@@ -28,7 +28,7 @@ namespace brgen::ast {
             : Literal(l, NodeType::int_literal), raw(std::move(t)) {}
 
         // for decode
-        constexpr IntLiteral()
+        IntLiteral()
             : Literal({}, NodeType::int_literal) {}
     };
 
@@ -40,7 +40,7 @@ namespace brgen::ast {
             : Literal(l, NodeType::str_literal), raw(std::move(t)) {}
 
         // for decode
-        constexpr StrLiteral()
+        StrLiteral()
             : Literal({}, NodeType::str_literal) {}
 
         void dump(auto&& field) {
