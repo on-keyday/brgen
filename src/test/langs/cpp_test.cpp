@@ -1,7 +1,7 @@
 /*license*/
-#include "langs/cpp/cpp_lang.h"
-#include "../ast_test_component.h"
-#include "core/middle/middle.h"
+#include <langs/cpp/cpp_lang.h>
+#include "../core/ast_test_component.h"
+#include <core/middle/middle.h>
 #include <gtest/gtest.h>
 using namespace brgen;
 
