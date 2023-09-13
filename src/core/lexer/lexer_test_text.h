@@ -3,7 +3,7 @@
 
 namespace brgen::lexer::internal {
     constexpr auto test_text = R"a(
-fmt QUICPacket: 
+format QUICPacket: 
    form :b1
    if form:
       :LongPacket
@@ -11,7 +11,7 @@ fmt QUICPacket:
       :OneRTTPacket
    
 
-fmt LongPacket:
+format LongPacket:
    fixed :b1
    long_packet_type :b2
    reserved :b2
@@ -19,13 +19,13 @@ fmt LongPacket:
    version :u32
    
 
-fmt ConnectionID:
+format ConnectionID:
    id :[]byte
    fn encode():
         pass      
 
 
-fmt Varint:
+format Varint:
    value :u64
    fn decode(input):
       p = input[0]
