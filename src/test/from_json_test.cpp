@@ -15,11 +15,14 @@ int main(int argc, char** argv) {
             .value();
         ast::JSONConverter m;
         m.encode(a);
-        auto parsed = utils::json::parse<ast::JSON>(m.obj.out());
+        auto base = m.obj.out();
+        auto parsed = utils::json::parse<ast::JSON>(base);
+        auto d = m.decode(parsed)
+                     .transform_error(to_source_error(fs))
+                     .value();
+        m.encode(d);
+        ASSERT_EQ(base, m.obj.out());
         add_result(std::move(m.obj));
-        m.decode(parsed)
-            .transform_error(to_source_error(fs))
-            .value();
     });
     ::testing::InitGoogleTest(&argc, argv);
     auto res = RUN_ALL_TESTS();
