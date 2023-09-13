@@ -94,7 +94,7 @@ namespace brgen::ast {
         }
 
         void encode(const std::shared_ptr<Node>& root_node) {
-            clear();
+            clear();  // clear internal
             collect(root_node);
             auto field = obj.object();
             auto find_and_replace_node = [this](auto&& node, auto&& field) {
@@ -510,9 +510,24 @@ namespace brgen::ast {
             return {};
         }
 
+        result<void> parse_nodes(const JSON& node_s) {
+            for (auto& node : utils::json::as_array(node_s)) {
+                auto result = parse_single_node(node);
+                if (!result) {
+                    return result & empty_value<void>();
+                }
+                nodes.push_back(std::move(*result));
+            }
+            if (nodes.size() == 0) {
+                return unexpect(error({}, "least 1 element required for node"));
+            }
+            return {};
+        }
+
        public:
         result<std::shared_ptr<Node>> decode(const JSON& js) {
-            clear();
+            clear();  // clear internal cache
+
             if (js.is_null()) {
                 return nullptr;
             }
@@ -524,21 +539,19 @@ namespace brgen::ast {
             if (!scope_list) {
                 return (scope_list & empty_node) | json_to_loc_error({}, "scope");
             }
-            for (auto& node : utils::json::as_array(**node_s)) {
-                auto result = parse_single_node(node);
-                if (!result) {
-                    return result;
-                }
-                nodes.push_back(std::move(*result));
-            }
-            if (nodes.size() == 0) {
-                return unexpect(error({}, "least 1 element required for node"));
-            }
-            for (auto& scope : utils::json::as_array(**scope_list)) {
-                scopes.push_back(std::make_shared<Scope>());  // currently only add scope; no link collect
+
+            auto res = parse_nodes(**node_s);
+
+            if (!res) {
+                return res & empty_node;
             }
 
-            auto res = link_nodes(**node_s);
+            for (auto& scope : utils::json::as_array(**scope_list)) {
+                // currently only add scope; no link branch and next
+                scopes.push_back(std::make_shared<Scope>());
+            }
+
+            res = link_nodes(**node_s);
             if (!res) {
                 return res & empty_node;
             }
