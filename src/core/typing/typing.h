@@ -104,7 +104,7 @@ namespace brgen::typing {
             auto new_type = assigning_type(right->expr_type);
             if (b->op == ast::BinaryOp::assign) {
                 if (left->usage == ast::IdentUsage::unknown) {
-                    error(left->loc, "identifier ", left->ident, " not found").report();
+                    error(left->loc, "identifier ", left->ident, " is not defined before; use := to define identifier").report();
                 }
                 else {
                     if (base->usage == ast::IdentUsage::define_variable) {
@@ -285,8 +285,7 @@ namespace brgen::typing {
             }
             else if (auto ident = ast::as<ast::Ident>(expr)) {
                 if (ident->usage != ast::IdentUsage::unknown) {
-                    if (auto ident_ty = ast::as<ast::IdentType>(ident->expr_type)) {
-                    }
+                    return;  // skip
                 }
                 auto found = find_matching_ident(ident);
                 if (found) {

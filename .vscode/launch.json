@@ -16,7 +16,7 @@
             ]
         },
         {
-            "name": "Debug go_test",
+            "name": "Debug json_test",
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceRoot}/build/test/from_json_test",
