@@ -5,6 +5,7 @@
 #include <code/src_location.h>
 #include "../common/util.h"
 #include "expected.h"
+#include <vector>
 
 namespace brgen {
     struct SourceEntry {
