@@ -1,0 +1,20 @@
+
+format Data:
+    data1 :u32
+    data2 :u32
+    data3 :u64
+    
+format Data2:
+    data1 :u64
+
+format Data3:
+    data1 :u15
+    data2 :u49
+
+format QUICLongPacket:
+    form :u1
+    fixed :u1
+    packet_type :u2
+    reserved :u2
+    packet_number_len:u2
+    version :u32

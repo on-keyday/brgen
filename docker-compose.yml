@@ -1,0 +1,22 @@
+#license
+version: "3"
+services:
+  linux_test:
+    build: .
+    container_name: brgen
+    tty: true
+    stdin_open: true
+    volumes:
+      - ./src:/workspace/src:cached
+      - ./build.sh:/workspace/build:cached
+      - ./CMakeLists.txt:/workspace/CMakeLists.txt:cached
+      - ./docker_vscode:/workspace/.vscode:cached
+      - ./script:/workspace/script:cached
+      - ./example:/workspace/example:cached
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp:unconfined
+
+volumes:
+  src:

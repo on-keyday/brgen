@@ -1,0 +1,10 @@
+debug = true
+loop:
+    if debug:
+        trace()
+    data = readfrom()
+    input = data
+
+
+
+    

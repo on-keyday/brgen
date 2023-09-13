@@ -1,0 +1,9 @@
+format LongPacket:
+    fixed :u1
+    long_packet_type :u2
+    reserved :u2
+    packet_number_length :u2
+    version :u32
+    dst_conn_id :ConnectionID(null)
+    src_conn_id :ConnectionID(null)
+
