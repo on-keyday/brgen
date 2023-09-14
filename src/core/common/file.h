@@ -102,8 +102,16 @@ namespace brgen {
             if (err) {
                 return unexpect(err);
             }
-            if (auto found = files.find(path); found != files.end()) {
-                return unexpect(std::error_code(int(std::errc::file_exists), std::generic_category()));
+            if (!fs::is_regular_file(path, err)) {
+                return unexpect(err);
+            }
+            for (auto it = files.begin(); it != files.end(); it++) {
+                if (fs::equivalent(it->second.file_name, path, err)) {
+                    return unexpect(std::error_code(int(std::errc::file_exists), std::generic_category()));
+                }
+                else if (err) {
+                    return unexpect(err);
+                }
             }
             File file;
             file.file_name = std::move(path);

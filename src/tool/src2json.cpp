@@ -66,7 +66,12 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     for (auto& name : flags.args) {
         auto ok = files.add(name);
         if (!ok) {
-            print_warning("cannot open file ", name, " code=", ok.error());
+            if (ok.error().category() == std::generic_category()) {
+                print_warning("cannot open duplicated file ", name, " at one parser");
+            }
+            else {
+                print_warning("cannot open file ", name, " code=", ok.error());
+            }
             continue;
         }
         auto input = files.get_input(*ok);
