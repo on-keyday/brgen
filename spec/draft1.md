@@ -422,7 +422,6 @@ representation of ast
 ```
 high
 postfix        () []
-(here ident and literal, inner brackets expression)
 unary          - !
 multiplicative *  /  %  <<  >>  &  left to right
 additive       +  -  |  ^          left to right
@@ -443,3 +442,4 @@ TODO(on-keyday): write this
   + change keyword env -> config
   + change comment style // and  /**/ to #
   + add range(.. and ..=) expression
+  + remove needless comment
