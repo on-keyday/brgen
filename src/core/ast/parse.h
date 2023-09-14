@@ -224,6 +224,12 @@ namespace brgen::ast {
             if (auto b = s.consume_token(lexer::Tag::bool_literal)) {
                 return std::make_shared<BoolLiteral>(b->loc, b->token == "true");
             }
+            if (auto i = s.consume_token("input")) {
+                return std::make_shared<Input>(i->loc, nullptr);
+            }
+            if (auto o = s.consume_token("output")) {
+                return std::make_shared<Output>(o->loc, nullptr);
+            }
             if (auto paren = s.consume_token("(")) {
                 return parse_paren(std::move(*paren));
             }
@@ -233,8 +239,7 @@ namespace brgen::ast {
             return parse_ident();
         }
 
-        std::shared_ptr<Call> parse_call(std::shared_ptr<Expr>& p) {
-            auto token = s.must_consume_token("(");
+        std::shared_ptr<Call> parse_call(lexer::Token token, std::shared_ptr<Expr>& p) {
             auto call = std::make_shared<Call>(token.loc, std::move(p));
             s.skip_white();
             if (!s.expect_token(")")) {
@@ -245,8 +250,16 @@ namespace brgen::ast {
             return call;
         }
 
-        std::shared_ptr<MemberAccess> parse_access(std::shared_ptr<Expr>& p) {
-            auto token = s.must_consume_token(".");
+        std::shared_ptr<Index> parse_index(lexer::Token token, std::shared_ptr<Expr>& p) {
+            auto call = std::make_shared<Index>(token.loc, std::move(p));
+            s.skip_white();
+            call->expr = parse_expr();
+            token = s.must_consume_token("]");
+            call->end_loc = token.loc;
+            return call;
+        }
+
+        std::shared_ptr<MemberAccess> parse_access(lexer::Token token, std::shared_ptr<Expr>& p) {
             s.skip_white();
             auto ident = s.must_consume_token(lexer::Tag::ident);
             return std::make_shared<MemberAccess>(token.loc, std::move(p), std::move(ident.token));
@@ -256,15 +269,18 @@ namespace brgen::ast {
             auto p = parse_prim();
             for (;;) {
                 s.skip_space();
-                if (s.expect_token("(")) {
-                    p = parse_call(p);
-                    continue;
+                if (auto c = s.consume_token("(")) {
+                    p = parse_call(*c, p);
                 }
-                if (s.expect_token(".")) {
-                    p = parse_access(p);
-                    continue;
+                else if (auto c = s.consume_token(".")) {
+                    p = parse_access(*c, p);
                 }
-                break;
+                else if (auto c = s.consume_token("[")) {
+                    p = parse_index(*c, p);
+                }
+                else {
+                    break;
+                }
             }
             return p;
         }
@@ -559,6 +575,24 @@ namespace brgen::ast {
             s.skip_white();
             fn->ident = parse_ident_no_scope();
             fn->ident->usage = IdentUsage::define_fn;
+            fn->belong = state.current_format();
+            s.skip_white();
+            auto b = s.must_consume_token("(");
+            for (;;) {
+                s.skip_white();
+                if (auto t = s.consume_token(")")) {
+                    break;
+                }
+                auto field = parse_field(nullptr);
+                fn->parameter.push_back(cast_to<Field>(field));
+                if (s.expect_token(")") || s.consume_token(",")) {
+                    continue;
+                }
+                s.must_consume_token(",");  // this must be error
+            }
+
+            fn->block = parse_indent_block();
+
             return fn;
         }
 
@@ -571,11 +605,9 @@ namespace brgen::ast {
                 return parse_format(std::move(*format));
             }
 
-            /* ignore now
             if (auto fn = s.consume_token("fn")) {
                 return parse_fn(std::move(*fn));
             }
-            */
 
             std::shared_ptr<Node> node;
             if (s.expect_token(":")) {

@@ -22,6 +22,7 @@ namespace brgen::ast {
         if_,
         member_access,
         paren,
+        index,
 
         // translated
         tmp_var,
@@ -83,6 +84,7 @@ namespace brgen::ast {
         "array_type",
         "str_literal",
         "function",
+        "index",
     };
 
     constexpr int mapNodeTypeToValue(NodeType type) {
@@ -153,6 +155,8 @@ namespace brgen::ast {
                 return 31;
             case NodeType::function:
                 return 32;
+            case NodeType::index:
+                return 33;
             default:
                 return -1;
         }
@@ -226,6 +230,8 @@ namespace brgen::ast {
                 return NodeType::str_literal;
             case 32:
                 return NodeType::function;
+            case 33:
+                return NodeType::index;
             default:
                 return either::unexpected{"invalid value"};
         }

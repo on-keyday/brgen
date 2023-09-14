@@ -121,40 +121,53 @@ namespace brgen::ast {
                     visit(node, [&](auto&& f) {
                         field([&] {
                             auto field = obj.object();
-                            f->dump([&]<class T>(std::string_view key, T& value) {
-                                if constexpr (utils::helper::is_template_instance_of<T, std::shared_ptr>) {
-                                    using type = typename utils::helper::template_instance_of_t<T, std::shared_ptr>::template param_at<0>;
-                                    if constexpr (std::is_base_of_v<Node, type>) {
-                                        find_and_replace_node(value, [&](auto&& val) {
-                                            field(key, val);
-                                        });
-                                    }
-                                    else if constexpr (std::is_same_v<Scope, type>) {
-                                        find_and_replace_scope(value, [&](auto&& val) {
-                                            field(key, val);
-                                        });
-                                    }
-                                }
-                                else if constexpr (utils::helper::is_template_instance_of<T, std::weak_ptr>) {
-                                    using type = typename utils::helper::template_instance_of_t<T, std::weak_ptr>::template param_at<0>;
-                                    if constexpr (std::is_base_of_v<Node, type>) {
-                                        find_and_replace_node(value.lock(), [&](auto&& val) {
-                                            field(key, val);
-                                        });
-                                    }
-                                }
-                                else if constexpr (std::is_same_v<T, node_list>) {
-                                    field(key, [&] {
-                                        auto field = obj.array();
-                                        for (auto& element : value) {
-                                            find_and_replace_node(element, field);
+                            node->dump(field);
+                            auto dump_f = [&] {
+                                auto field = obj.object();
+                                f->dump([&]<class T>(std::string_view key, T& value) {
+                                    if constexpr (utils::helper::is_template_instance_of<T, std::shared_ptr>) {
+                                        using type = typename utils::helper::template_instance_of_t<T, std::shared_ptr>::template param_at<0>;
+                                        if constexpr (std::is_base_of_v<Node, type>) {
+                                            find_and_replace_node(value, [&](auto&& val) {
+                                                field(key, val);
+                                            });
                                         }
-                                    });
-                                }
-                                else {
-                                    field(key, value);
-                                }
-                            });
+                                        else if constexpr (std::is_same_v<Scope, type>) {
+                                            find_and_replace_scope(value, [&](auto&& val) {
+                                                field(key, val);
+                                            });
+                                        }
+                                    }
+                                    else if constexpr (utils::helper::is_template_instance_of<T, std::weak_ptr>) {
+                                        using type = typename utils::helper::template_instance_of_t<T, std::weak_ptr>::template param_at<0>;
+                                        if constexpr (std::is_base_of_v<Node, type>) {
+                                            find_and_replace_node(value.lock(), [&](auto&& val) {
+                                                field(key, val);
+                                            });
+                                        }
+                                    }
+                                    else if constexpr (std::is_same_v<T, node_list>) {
+                                        field(key, [&] {
+                                            auto field = obj.array();
+                                            for (auto& element : value) {
+                                                find_and_replace_node(element, field);
+                                            }
+                                        });
+                                    }
+                                    else if constexpr (std::is_same_v<T, const NodeType>) {
+                                        // nothing to do
+                                    }
+                                    else if constexpr (std::is_same_v<T, lexer::Loc>) {
+                                        if (key != "loc") {
+                                            field(key, value);
+                                        }
+                                    }
+                                    else {
+                                        field(key, value);
+                                    }
+                                });
+                            };
+                            field("body", dump_f);
                         });
                     });
                 }
@@ -276,6 +289,9 @@ namespace brgen::ast {
                 return res.and_then(get_number(loc, key)).transform(either::assign_to(target));
             }
             else if constexpr (std::is_same_v<T, lexer::Loc>) {
+                if (std::string_view(key) == "loc") {
+                    return {};  // skip
+                }
                 return res & parse_loc(target);
             }
             else if constexpr (std::is_same_v<T, BinaryOp>) {
@@ -337,12 +353,17 @@ namespace brgen::ast {
             NodeType node_type = *type;
             std::shared_ptr<Node> node;
             result<void> err;
+            auto body = json_at(js, "body") | json_to_loc_error(loc, "body", node_type);
+            if (!body) {
+                return body & empty_node;
+            }
             get_node(node_type, [&](auto n) {
                 using NodeT = typename decltype(n)::node;
                 if constexpr (!decltype(n)::is_abs) {
                     auto rep = std::make_shared<NodeT>();
+                    rep->loc = loc;
                     rep->dump([&](auto key, auto& target) {
-                        err = err & [&] { return parse_non_node_field(js, node_type, loc, key, target); };
+                        err = err & [&] { return parse_non_node_field(**body, node_type, loc, key, target); };
                     });
                     if (!err) {
                         return;
@@ -372,11 +393,15 @@ namespace brgen::ast {
                         if (!res) {
                             return;  // already error
                         }
+                        if (std::string_view(key) == "node_type" ||
+                            std::string_view(key) == "loc") {
+                            return;  // skip
+                        }
                         using T = std::decay_t<decltype(value)>;
                         constexpr auto is_shared_or_weak = utils::helper::is_template_instance_of<T, std::shared_ptr> ||
                                                            utils::helper::is_template_instance_of<T, std::weak_ptr>;
                         constexpr auto is_list = utils::helper::is_template_instance_of<T, std::list>;
-                        auto& val = node_s[i];
+                        auto& val = node_s[i]["body"];
                         auto check_index = [&](auto&& index) {
                             if (!index) {
                                 res = index & empty_value<void>();

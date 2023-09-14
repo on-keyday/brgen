@@ -42,6 +42,7 @@ namespace brgen::ast {
         CASE(If)
         CASE(MemberAccess)
         CASE(Paren)
+        CASE(Index)
 
         CASE(TmpVar)
         CASE(BlockExpr)

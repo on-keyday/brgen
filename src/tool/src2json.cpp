@@ -83,6 +83,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
         result.push_back(std::async(do_parse, input));
     }
     brgen::Debug d;
+    bool has_error = false;
     {
         auto field = d.array();
         for (auto& r : result) {
@@ -94,11 +95,12 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
                     field("file", g.error().errs[0].file);
                     field("ast", nullptr);
                     field("error", g.error().to_string());
-                    g.error().for_each_error([](std::string_view msg, bool warn) {
+                    g.error().for_each_error([&](std::string_view msg, bool warn) {
                         if (warn) {
                             print_warning(msg);
                         }
                         else {
+                            has_error = true;
                             print_error(msg);
                         }
                     });
@@ -112,7 +114,9 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
             });
         }
     }
-    cout << d.out();
+    if (!cout.is_tty() || !has_error) {
+        cout << d.out();
+    }
     return 0;
 }
 

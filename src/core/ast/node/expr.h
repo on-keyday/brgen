@@ -211,4 +211,23 @@ namespace brgen::ast {
         }
     };
 
+    struct Index : Expr {
+        define_node_type(NodeType::index);
+        std::shared_ptr<Expr> expr;
+        lexer::Loc end_loc;
+
+        // for decode
+        Index(lexer::Loc l, std::shared_ptr<Expr>&& e)
+            : Expr(l, NodeType::index), expr(std::move(e)) {}
+        // for decode
+        constexpr Index()
+            : Expr({}, NodeType::index) {}
+
+        void dump(auto&& field) {
+            Expr::dump(field);
+            field(sdebugf(expr));
+            field(sdebugf(end_loc));
+        }
+    };
+
 }  // namespace brgen::ast

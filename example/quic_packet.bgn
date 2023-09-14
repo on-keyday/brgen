@@ -33,7 +33,7 @@ format ConnectionID:
 
 format Varint:
    value :u64
-   fn decode(input):
+   fn decode():
       p = input[0]
       value = match p&0xC0 >> 6:
          0 => input.u8() ~ msb(2)
@@ -41,7 +41,7 @@ format Varint:
          2 => input.u32() ~ msb(2)
          3 => input.u64() ~ msb(2)
 
-   fn encode(output):
+   fn encode():
       match value:
          ..0x40 => output.u8(value.u8())
          ..0x4000 => output.u16(value.u16() | msb(2,1))
