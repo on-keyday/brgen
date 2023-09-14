@@ -23,6 +23,7 @@ namespace brgen::ast {
         member_access,
         paren,
         index,
+        match,
 
         // translated
         tmp_var,
@@ -34,6 +35,7 @@ namespace brgen::ast {
         format,
         indent_scope,
         function,
+        match_branch,
 
         // translated
         assert,
@@ -85,6 +87,8 @@ namespace brgen::ast {
         "str_literal",
         "function",
         "index",
+        "match",
+        "match_branch",
     };
 
     constexpr int mapNodeTypeToValue(NodeType type) {
@@ -157,6 +161,10 @@ namespace brgen::ast {
                 return 32;
             case NodeType::index:
                 return 33;
+            case NodeType::match:
+                return 34;
+            case NodeType::match_branch:
+                return 35;
             default:
                 return -1;
         }
@@ -232,6 +240,10 @@ namespace brgen::ast {
                 return NodeType::function;
             case 33:
                 return NodeType::index;
+            case 34:
+                return NodeType::match;
+            case 35:
+                return NodeType::match_branch;
             default:
                 return either::unexpected{"invalid value"};
         }

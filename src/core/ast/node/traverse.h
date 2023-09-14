@@ -43,6 +43,7 @@ namespace brgen::ast {
         CASE(MemberAccess)
         CASE(Paren)
         CASE(Index)
+        CASE(Match)
 
         CASE(TmpVar)
         CASE(BlockExpr)
@@ -55,6 +56,7 @@ namespace brgen::ast {
         CASE(Format)
         CASE(IndentScope)
         CASE(Function)
+        CASE(MatchBranch)
 
         CASE(Assert)
         CASE(ImplicitReturn)

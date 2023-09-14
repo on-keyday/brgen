@@ -230,4 +230,40 @@ namespace brgen::ast {
         }
     };
 
+    struct MatchBranch : Stmt {
+        define_node_type(NodeType::match_branch);
+        std::shared_ptr<Expr> cond;
+        lexer::Loc sym_loc;
+        std::shared_ptr<Node> then;
+
+        MatchBranch(lexer::Loc l)
+            : Stmt(l, NodeType::match_branch) {}
+        // for decode
+        constexpr MatchBranch()
+            : Stmt({}, NodeType::match_branch) {}
+
+        void dump(auto&& field) {
+            Stmt::dump(field);
+            field(sdebugf(cond));
+            field(sdebugf(sym_loc));
+            field(sdebugf(then));
+        }
+    };
+
+    struct Match : Expr {
+        define_node_type(NodeType::match);
+        std::vector<std::shared_ptr<MatchBranch>> branch;
+
+        Match(lexer::Loc l)
+            : Expr(l, NodeType::match) {}
+        // for decode
+        Match()
+            : Expr({}, NodeType::match) {}
+
+        void dump(auto&& field) {
+            Expr::dump(field);
+            field(sdebugf(branch));
+        }
+    };
+
 }  // namespace brgen::ast
