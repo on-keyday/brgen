@@ -169,6 +169,27 @@ namespace brgen::ast {
         }
     };
 
+    struct Range : Expr {
+        define_node_type(NodeType::range);
+        std::shared_ptr<Expr> start;
+        std::shared_ptr<Expr> end;
+        BinaryOp op;
+
+        Range(lexer::Loc l, std::shared_ptr<Expr>&& left, BinaryOp op)
+            : Expr(l, NodeType::range), start(std::move(left)), op(op) {}
+
+        // for decode
+        constexpr Range()
+            : Expr({}, NodeType::range) {}
+
+        void dump(auto&& field) {
+            Expr::dump(field);
+            field(sdebugf(op));
+            field(sdebugf(start));
+            field(sdebugf(end));
+        }
+    };
+
     struct MemberAccess : Expr {
         define_node_type(NodeType::member_access);
         std::shared_ptr<Expr> target;
@@ -252,7 +273,9 @@ namespace brgen::ast {
 
     struct Match : Expr {
         define_node_type(NodeType::match);
-        std::vector<std::shared_ptr<MatchBranch>> branch;
+        std::shared_ptr<Expr> cond;
+        std::list<std::shared_ptr<MatchBranch>> branch;
+        scope_ptr scope;
 
         Match(lexer::Loc l)
             : Expr(l, NodeType::match) {}
@@ -262,7 +285,9 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Expr::dump(field);
+            field(sdebugf(cond));
             field(sdebugf(branch));
+            field(sdebugf(scope));
         }
     };
 

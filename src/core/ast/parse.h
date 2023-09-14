@@ -54,7 +54,9 @@ namespace brgen::ast {
             }
             auto old = std::exchange(indent, std::move(new_));
             stack.enter_branch();
-            *frame = stack.current_scope();
+            if (frame) {
+                *frame = stack.current_scope();
+            }
             return utils::helper::defer([=, this] {
                 indent = std::move(old);
                 stack.leave_branch();
@@ -143,6 +145,47 @@ namespace brgen::ast {
             return scope;
         }
 
+        std::shared_ptr<Match> parse_match(lexer::Token&& token) {
+            // Create a shared pointer for the Match
+            auto match = std::make_shared<Match>(token.loc);
+
+            match->cond = parse_expr();
+
+            // Consume the initial indent sign
+            must_consume_indent_sign();
+
+            auto parse_match_branch = [&]() -> std::shared_ptr<MatchBranch> {
+                auto br = std::make_shared<MatchBranch>();
+                br->cond = parse_expr();
+                s.skip_white();
+                s.must_consume_token("=>");
+                s.skip_white();
+                br->then = parse_statement();
+                return br;
+            };
+
+            // Get the base indent token
+            auto base = s.must_consume_token(lexer::Tag::indent);
+
+            // Create a new context for the current indent level
+            auto current_indent = base.token.size();
+            auto c = state.new_indent(current_indent, &match->scope);
+
+            // Parse and add the first element
+            match->branch.push_back(parse_match_branch());
+
+            // Parse and add subsequent elements with the same indent level
+            while (auto indent = s.peek_token(lexer::Tag::indent)) {
+                if (indent->token.size() < current_indent) {
+                    break;
+                }
+                s.must_consume_token(lexer::Tag::indent);
+                match->branch.push_back(parse_match_branch());
+            }
+
+            return match;
+        }
+
         std::shared_ptr<If> parse_if(lexer::Token&& token) {
             s.skip_white();
             auto if_ = std::make_shared<If>(token.loc);
@@ -224,6 +267,9 @@ namespace brgen::ast {
             if (auto b = s.consume_token(lexer::Tag::bool_literal)) {
                 return std::make_shared<BoolLiteral>(b->loc, b->token == "true");
             }
+            if (auto t = s.consume_token(lexer::Tag::str_literal)) {
+                return std::make_shared<StrLiteral>(t->loc, std::move(t->token));
+            }
             if (auto i = s.consume_token("input")) {
                 return std::make_shared<Input>(i->loc, nullptr);
             }
@@ -235,6 +281,9 @@ namespace brgen::ast {
             }
             if (auto if_ = s.consume_token("if")) {
                 return parse_if(std::move(*if_));
+            }
+            if (auto match = s.consume_token("match")) {
+                return parse_match(std::move(*match));
             }
             return parse_ident();
         }
@@ -331,6 +380,27 @@ namespace brgen::ast {
             std::shared_ptr<Expr> expr;
         };
 
+        bool appear_valid_range_end() {
+            for (auto u : unary_op_str) {
+                if (!u) {
+                    break;
+                }
+                if (s.expect_token(u)) {
+                    return true;
+                }
+            }
+            if (s.expect_token(lexer::Tag::ident) ||
+                s.expect_token(lexer::Tag::bool_literal) ||
+                s.expect_token(lexer::Tag::ident) ||
+                s.expect_token(lexer::Tag::int_literal) ||
+                s.expect_token(lexer::Tag::str_literal) ||
+                s.expect_token("input") || s.expect_token("output") ||
+                s.expect_token("if") || s.expect_token("match")) {
+                return true;
+            }
+            return false;
+        }
+
         std::shared_ptr<Expr> parse_expr() {
             std::shared_ptr<Expr> expr;
             size_t depth;
@@ -363,6 +433,11 @@ namespace brgen::ast {
                             b->right = std::move(expr);
                             expr = std::move(op.expr);
                         }
+                    }
+                    else if (op.expr->node_type == NodeType::range) {
+                        auto b = static_cast<Range*>(op.expr.get());
+                        b->end = std::move(expr);
+                        expr = std::move(op.expr);
                     }
                     else if (op.expr->node_type == NodeType::cond) {
                         auto cop = static_cast<Cond*>(op.expr.get());
@@ -410,7 +485,13 @@ namespace brgen::ast {
                 }
             };
 
-            parse_low();  // first time
+            // treat range expression specially
+            if (!s.expect_token("..") && !s.expect_token("..=")) {
+                parse_low();  // first time
+            }
+            else {
+                depth = 0;
+            }
 
             while (depth < ast::bin_layer_len) {
                 if (update_stack()) {
@@ -432,6 +513,22 @@ namespace brgen::ast {
                                 // this is like `a == b == c` but this language not support it
                                 s.report_error(token->loc, "unexpected `", token->token, "`");
                             }
+                        }
+                        if (depth == ast::bin_range_layer) {
+                            if (auto bin = as<Range>(expr); bin && is_range_op(bin->op)) {
+                                // this is like `a .. b .. c` but this language not support it
+                                s.report_error(token->loc, "unexpected `", token->token, "`");
+                            }
+                            s.skip_space();  // for safety, skip only space, not line
+                            auto r = std::make_shared<Range>(token->loc, std::move(expr), *ast::bin_op(ast::bin_layers[depth][i]));
+                            if (appear_valid_range_end()) {
+                                s.skip_white();
+                                stack.push_back(BinOpStack{.depth = depth, .expr = std::move(r)});
+                                parse_low();
+                                continue;
+                            }
+                            expr = std::move(r);
+                            continue;
                         }
                         s.skip_white();
                         auto b = std::make_shared<Binary>(token->loc, std::move(expr), *ast::bin_op(ast::bin_layers[depth][i]));

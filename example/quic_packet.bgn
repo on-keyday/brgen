@@ -36,10 +36,10 @@ format Varint:
    fn decode():
       p = input[0]
       value = match p&0xC0 >> 6:
-         0 => input.u8() ~ msb(2)
-         1 => input.u16() ~ msb(2)
-         2 => input.u32() ~ msb(2)
-         3 => input.u64() ~ msb(2)
+         0 => input.u8() & !msb(2)
+         1 => input.u16() & !msb(2)
+         2 => input.u32() & !msb(2)
+         3 => input.u64() & !msb(2)
 
    fn encode():
       match value:

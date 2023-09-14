@@ -75,7 +75,8 @@ namespace brgen::ast {
                             }
                         }
                     }
-                    else if constexpr (std::is_same_v<T, node_list>) {
+                    else if constexpr (utils::helper::is_template_instance_of<T, std::list> ||
+                                       utils::helper::is_template_instance_of<T, std::vector>) {
                         for (auto& element : value) {
                             collect(element);
                         }
@@ -146,7 +147,8 @@ namespace brgen::ast {
                                             });
                                         }
                                     }
-                                    else if constexpr (std::is_same_v<T, node_list>) {
+                                    else if constexpr (utils::helper::is_template_instance_of<T, std::list> ||
+                                                       utils::helper::is_template_instance_of<T, std::vector>) {
                                         field(key, [&] {
                                             auto field = obj.array();
                                             for (auto& element : value) {
@@ -333,6 +335,7 @@ namespace brgen::ast {
             else if constexpr (utils::helper::is_template_instance_of<T, std::shared_ptr> ||
                                utils::helper::is_template_instance_of<T, std::weak_ptr> ||
                                utils::helper::is_template_instance_of<T, std::list> ||
+                               utils::helper::is_template_instance_of<T, std::vector> ||
                                std::is_same_v<T, const NodeType>) {
                 // nothing to do
                 return {};
@@ -400,7 +403,8 @@ namespace brgen::ast {
                         using T = std::decay_t<decltype(value)>;
                         constexpr auto is_shared_or_weak = utils::helper::is_template_instance_of<T, std::shared_ptr> ||
                                                            utils::helper::is_template_instance_of<T, std::weak_ptr>;
-                        constexpr auto is_list = utils::helper::is_template_instance_of<T, std::list>;
+                        constexpr auto is_list = utils::helper::is_template_instance_of<T, std::list> ||
+                                                 utils::helper::is_template_instance_of<T, std::vector>;
                         auto& val = node_s[i]["body"];
                         auto check_index = [&](auto&& index) {
                             if (!index) {

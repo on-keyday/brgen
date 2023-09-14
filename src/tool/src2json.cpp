@@ -107,7 +107,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
                     return;
                 }
                 auto path = g->second->path().generic_u8string();
-                field("file", path);
+                field("file", (const char*)path.c_str());
                 c.encode(g->first);
                 field("ast", c.obj);
                 field("error", nullptr);

@@ -6,14 +6,10 @@
 namespace brgen::ast {
     enum class UnaryOp {
         not_ = 0,
-        increment,
-        decrement,
         minus_sign,
-        deref,
-        address,
     };
 
-    constexpr const char* unary_op_str[] = {"!", "++", "--", "-", "*", "&", nullptr};
+    constexpr const char* unary_op_str[] = {"!", "-", nullptr};
 
     constexpr std::optional<UnaryOp> unary_op(std::string_view l) {
         size_t i = 0;
@@ -60,6 +56,10 @@ namespace brgen::ast {
         cond_op2,
 
         // layer 6
+        range_exclusive,
+        range_inclusive,
+
+        // layer 7
         assign,
         typed_assign,
         const_assign,
@@ -74,7 +74,7 @@ namespace brgen::ast {
         bit_or_assign,
         bit_xor_assign,
 
-        // layer 7
+        // layer 8
         comma,
     };
 
@@ -84,20 +84,28 @@ namespace brgen::ast {
     constexpr const char* bin_layer3[] = {"&&", nullptr};
     constexpr const char* bin_layer4[] = {"||", nullptr};
     constexpr const char* bin_layer5[] = {"if", "else", nullptr};
-    constexpr const char* bin_layer6[] = {"=", ":=", "::=", "+=", "-=", "*=",
+    constexpr const char* bin_layer6[] = {"..", "..=", nullptr};
+    constexpr const char* bin_layer7[] = {"=", ":=", "::=", "+=", "-=", "*=",
                                           "/=", "%=", "<<=", ">>=",
                                           "&=", "|=", "^=",
                                           nullptr};
-    constexpr const char* bin_layer7[] = {",", nullptr};
+    constexpr const char* bin_layer8[] = {",", nullptr};
 
     constexpr auto bin_cond_layer = 5;
-    constexpr auto bin_assign_layer = 6;
-    constexpr auto bin_comma_layer = 7;
+    constexpr auto bin_assign_layer = 7;
+    constexpr auto bin_comma_layer = 8;
     constexpr auto bin_compare_layer = 2;
+    constexpr auto bin_range_layer = 6;
 
     constexpr bool is_compare_op(BinaryOp op) {
         constexpr auto begin = int(BinaryOp::equal);
         constexpr auto end = int(BinaryOp::grater_or_eq);
+        return begin <= int(op) && int(op) <= end;
+    }
+
+    constexpr bool is_range_op(BinaryOp op) {
+        constexpr auto begin = int(BinaryOp::range_inclusive);
+        constexpr auto end = int(BinaryOp::range_exclusive);
         return begin <= int(op) && int(op) <= end;
     }
 
@@ -116,6 +124,7 @@ namespace brgen::ast {
         bin_layer5,
         bin_layer6,
         bin_layer7,
+        bin_layer8,
     };
 
     constexpr size_t bin_layer_len = sizeof(bin_layers) / sizeof(bin_layers[0]);

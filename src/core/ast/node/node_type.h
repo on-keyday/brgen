@@ -24,6 +24,7 @@ namespace brgen::ast {
         paren,
         index,
         match,
+        range,
 
         // translated
         tmp_var,

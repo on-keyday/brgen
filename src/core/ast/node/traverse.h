@@ -44,6 +44,7 @@ namespace brgen::ast {
         CASE(Paren)
         CASE(Index)
         CASE(Match)
+        CASE(Range)
 
         CASE(TmpVar)
         CASE(BlockExpr)
