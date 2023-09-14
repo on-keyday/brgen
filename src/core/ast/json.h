@@ -479,7 +479,7 @@ namespace brgen::ast {
                                 if (!check_index(index)) {
                                     return;
                                 }
-                                using P = utils::helper::template_of_t<std::decay_t<decltype(value.front())>>::template param_at<0>;
+                                using P = typename utils::helper::template_of_t<std::decay_t<decltype(value.front())>>::template param_at<0>;
                                 value.push_back(cast_to<P>(nodes[*index]));
                             }
                         }

@@ -27,8 +27,6 @@ namespace brgen::lexer {
         constexpr auto filter_keyword = peek(space | line | method_proxy(puncts));
         constexpr auto bool_literal = str(Tag::bool_literal, (lit("true") | lit("false")) & filter_keyword);
 
-        constexpr auto float_literal = cps::not_dec_float;
-
         constexpr auto punct(auto&&... args) {
             return str(Tag::punct, (... | lit(args)));
         }

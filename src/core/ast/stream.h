@@ -164,19 +164,19 @@ namespace brgen::ast {
             }
         }
 
-        // Tag::space
+        // Tag::space, Tag::comment
         void skip_space() {
-            skip_tag(lexer::Tag::space);
+            skip_tag(lexer::Tag::space, lexer::Tag::comment);
         }
 
-        // Tag::space, Tag::line
+        // Tag::space, Tag::line, Tag::comment
         void skip_line() {
-            skip_tag(lexer::Tag::space, lexer::Tag::line);
+            skip_tag(lexer::Tag::space, lexer::Tag::line, lexer::Tag::comment);
         }
 
-        // Tag::space, Tag::line, Tag::indent
+        // Tag::space, Tag::line, Tag::indent, Tag::comment
         void skip_white() {
-            skip_tag(lexer::Tag::space, lexer::Tag::line, lexer::Tag::indent);
+            skip_tag(lexer::Tag::space, lexer::Tag::line, lexer::Tag::indent, lexer::Tag::comment);
         }
 
        private:

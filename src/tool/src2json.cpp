@@ -23,9 +23,10 @@ void print_error(auto&&... msg) {
     if (cerr.is_tty()) {
         cerr << cse::letter_color<cse::ColorPalette::white>;
     }
-    (cerr << ... << msg) << "\n";
+    (cerr << ... << msg);
     if (cerr.is_tty()) {
-        cerr << cse::color_reset;
+        cerr << "\n"
+             << cse::color_reset;
     }
 }
 
@@ -38,9 +39,10 @@ void print_warning(auto&&... msg) {
     if (cerr.is_tty()) {
         cerr << cse::letter_color<cse::ColorPalette::white>;
     }
-    (cerr << ... << msg) << "\n";
+    (cerr << ... << msg);
     if (cerr.is_tty()) {
-        cerr << cse::color_reset;
+        cerr << "\n"
+             << cse::color_reset;
     }
 }
 
@@ -116,6 +118,9 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     }
     if (!cout.is_tty() || !has_error) {
         cout << d.out();
+        if (cout.is_tty()) {
+            cout << "\n";
+        }
     }
     return 0;
 }
