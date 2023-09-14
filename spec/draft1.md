@@ -78,7 +78,7 @@ false
 input
 output
 config
-above are treated as 
+# above are treated as constant value
 format
 enum
 fn
@@ -131,6 +131,10 @@ it is GID that evaluation of format type and float; if not supported, it should 
 1 >= 2
 # <= less or equal
 1 <= 2
+# range exclusive
+1..2
+# range inclusive
+1..=2
 ```
 
 ### 5.2 Unary Operator
@@ -436,3 +440,6 @@ TODO(on-keyday): write this
 ## History:
 + 2023/09/08: write first version draft version: 0.0.0.d1
 + 2023/09/14: rewrite this as markdown text version: 0.0.0.d1.a
+  + change keyword env -> config
+  + change comment style // and  /**/ to #
+  + add range(.. and ..=) expression
