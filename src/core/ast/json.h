@@ -316,7 +316,7 @@ namespace brgen::ast {
             }
             else if constexpr (utils::helper::is_template_instance_of<T, std::shared_ptr> ||
                                utils::helper::is_template_instance_of<T, std::weak_ptr> ||
-                               std::is_same_v<T, node_list> ||
+                               utils::helper::is_template_instance_of<T, std::list> ||
                                std::is_same_v<T, const NodeType>) {
                 // nothing to do
                 return {};
@@ -375,6 +375,7 @@ namespace brgen::ast {
                         using T = std::decay_t<decltype(value)>;
                         constexpr auto is_shared_or_weak = utils::helper::is_template_instance_of<T, std::shared_ptr> ||
                                                            utils::helper::is_template_instance_of<T, std::weak_ptr>;
+                        constexpr auto is_list = utils::helper::is_template_instance_of<T, std::list>;
                         auto& val = node_s[i];
                         auto check_index = [&](auto&& index) {
                             if (!index) {
@@ -397,6 +398,16 @@ namespace brgen::ast {
                                     if constexpr (!std::is_same_v<Node, P>) {
                                         if (!ast::as<P>(nodes[*index])) {
                                             res = unexpect(error(f->loc, "missing reference: expect node ", node_type_to_string(P::node_type_tag), " but found ", node_type_to_string(nodes[*index]->node_type)));
+                                            return false;
+                                        }
+                                    }
+                                }
+                                else if constexpr (is_list) {
+                                    using P1 = typename utils::helper::template_of_t<T>::template param_at<0>;
+                                    using P2 = typename utils::helper::template_of_t<P1>::template param_at<0>;
+                                    if constexpr (!std::is_same_v<Node, P2>) {
+                                        if (!ast::as<P2>(nodes[*index])) {
+                                            res = unexpect(error(f->loc, "missing reference: expect node ", node_type_to_string(P2::node_type_tag), " but found ", node_type_to_string(nodes[*index]->node_type)));
                                             return false;
                                         }
                                     }
@@ -428,7 +439,7 @@ namespace brgen::ast {
                             using P = typename utils::helper::template_of_t<T>::template param_at<0>;
                             value = cast_to<P>(nodes[*index]);
                         }
-                        else if constexpr (std::is_same_v<T, node_list>) {
+                        else if constexpr (is_list) {
                             auto arr = std::move(obj);
                             if (!(*arr)->is_array()) {
                                 res = unexpect(json_to_loc_error(f->loc, key)("must be array"));
@@ -439,7 +450,8 @@ namespace brgen::ast {
                                 if (!check_index(index)) {
                                     return;
                                 }
-                                value.push_back(nodes[*index]);
+                                using P = utils::helper::template_of_t<std::decay_t<decltype(value.front())>>::template param_at<0>;
+                                value.push_back(cast_to<P>(nodes[*index]));
                             }
                         }
                     });

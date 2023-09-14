@@ -19,8 +19,10 @@
             "name": "Debug json_test",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceRoot}/build/test/from_json_test",
-            "args": [],
+            "program": "${workspaceRoot}/build/test/src2json",
+            "args": [
+                "example/quic_packet.bgn"
+            ],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",
             "environment": [

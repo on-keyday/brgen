@@ -103,7 +103,7 @@ namespace brgen {
                 return unexpect(err);
             }
             if (auto found = files.find(path); found != files.end()) {
-                return found->second.file;
+                return unexpect(std::error_code(int(std::errc::file_exists), std::generic_category()));
             }
             File file;
             file.file_name = std::move(path);

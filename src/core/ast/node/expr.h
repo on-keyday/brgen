@@ -14,6 +14,7 @@ namespace brgen::ast {
         define_const,
         define_field,
         define_format,
+        define_fn,
     };
 
     constexpr const char* ident_usage_str[]{
@@ -23,6 +24,7 @@ namespace brgen::ast {
         "define_const",
         "define_field",
         "define_format",
+        "define_fn",
         nullptr,
     };
 

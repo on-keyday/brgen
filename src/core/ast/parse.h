@@ -164,6 +164,10 @@ namespace brgen::ast {
                 return false;
             };
 
+            if (detect_end()) {
+                return if_;
+            }
+
             // elif ブロックの解析
             If* current_if = if_.get();
             while (auto tok = s.consume_token("elif")) {
@@ -550,6 +554,14 @@ namespace brgen::ast {
             return fmt;
         }
 
+        std::shared_ptr<Function> parse_fn(lexer::Token&& token) {
+            auto fn = std::make_shared<Function>(token.loc);
+            s.skip_white();
+            fn->ident = parse_ident_no_scope();
+            fn->ident->usage = IdentUsage::define_fn;
+            return fn;
+        }
+
         std::shared_ptr<Node> parse_statement() {
             if (auto loop = s.consume_token("loop")) {
                 return parse_for(std::move(*loop));
@@ -558,6 +570,12 @@ namespace brgen::ast {
             if (auto format = s.consume_token("format")) {
                 return parse_format(std::move(*format));
             }
+
+            /* ignore now
+            if (auto fn = s.consume_token("fn")) {
+                return parse_fn(std::move(*fn));
+            }
+            */
 
             std::shared_ptr<Node> node;
             if (s.expect_token(":")) {

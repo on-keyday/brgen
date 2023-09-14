@@ -26,7 +26,7 @@ format OneRTTPacket:
 
 
 format ConnectionID:
-   id :[]byte
+   id :[10]byte
    fn encode():
       
 

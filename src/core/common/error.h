@@ -23,7 +23,12 @@ namespace brgen {
         }
 
         void error(auto&& buf) {
-            appends(buf, warn ? "warning: " : "error: ", msg, "\n",
+            appends(buf, warn ? "warning: " : "error: ");
+            omit_error(buf);
+        }
+
+        void omit_error(auto&& buf) {
+            appends(buf, msg, "\n",
                     file, ":", nums(loc.line + 1), ":", nums(loc.pos + 1), ":\n",
                     src);
         }
@@ -43,6 +48,15 @@ namespace brgen {
             for (auto& err : errs) {
                 err.error(buf);
                 buf.push_back('\n');
+            }
+        }
+
+        void for_each_error(auto&& cb) {
+            std::string b;
+            for (auto& err : errs) {
+                b.clear();
+                err.omit_error(b);
+                cb(b, err.warn);
             }
         }
     };
