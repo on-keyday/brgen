@@ -15,6 +15,7 @@ import (
 type Generator struct {
 	w        sync.WaitGroup
 	src2json string
+	ctx      context.Context
 }
 
 func (g *Generator) Init() error {
@@ -26,12 +27,12 @@ func (g *Generator) Init() error {
 	if runtime.GOOS == "windows" {
 		g.src2json += ".exe"
 	}
+	g.ctx = context.TODO()
 	return nil
 }
 
 func (g *Generator) loadAst(path string) error {
-	ctx := context.TODO()
-	cmd := exec.CommandContext(ctx, g.src2json, path)
+	cmd := exec.CommandContext(g.ctx, g.src2json, "-s", path)
 	cmd.Stderr = os.Stderr
 	buf := bytes.NewBuffer(nil)
 	cmd.Stdout = buf

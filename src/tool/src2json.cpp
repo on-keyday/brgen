@@ -10,6 +10,12 @@
 
 struct Flags : utils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
+    bool file_not_found_as_error = false;
+
+    void bind(utils::cmdline::option::Context& ctx) {
+        bind_help(ctx);
+        ctx.VarBool(&file_not_found_as_error, "s", "file not found as error");
+    }
 };
 auto& cout = utils::wrap::cout_wrap();
 auto& cerr = utils::wrap::cerr_wrap();
@@ -76,13 +82,25 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
                 print_warning("cannot open duplicated file ", name, " at one parser");
             }
             else {
-                print_warning("cannot open file ", name, " code=", ok.error());
+                if (!flags.file_not_found_as_error) {
+                    print_warning("cannot open file  ", name, " code=", ok.error());
+                }
+                else {
+                    print_error("cannot open file  ", name, " code=", ok.error());
+                    return -1;
+                }
             }
             continue;
         }
         auto input = files.get_input(*ok);
         if (!input) {
-            print_warning("cannot open file  ", name);
+            if (!flags.file_not_found_as_error) {
+                print_warning("cannot open file  ", name);
+            }
+            else {
+                print_error("cannot open file  ", name);
+                return -1;
+            }
             continue;
         }
 
