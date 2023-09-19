@@ -79,10 +79,10 @@ namespace brgen::ast {
     struct Function : Stmt {
         define_node_type(NodeType::function);
         std::shared_ptr<Ident> ident;
-        std::list<std::shared_ptr<Field>> parameter;
+        std::list<std::shared_ptr<Field>> parameters;
         std::shared_ptr<Type> return_type;
         std::weak_ptr<Format> belong;
-        std::shared_ptr<IndentScope> block;
+        std::shared_ptr<IndentScope> body;
 
         Function(lexer::Loc l)
             : Stmt(l, NodeType::function) {}
@@ -93,10 +93,10 @@ namespace brgen::ast {
         void dump(auto&& field) {
             Stmt::dump(field);
             field(sdebugf(ident));
-            field(sdebugf(parameter));
+            field(sdebugf(parameters));
             field(sdebugf(return_type));
             field(sdebugf(belong));
-            field(sdebugf(block));
+            field(sdebugf(body));
         }
     };
 

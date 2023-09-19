@@ -288,13 +288,13 @@ namespace brgen::ast {
             return parse_ident();
         }
 
-        void collect_args(std::shared_ptr<Expr>& args, auto& res) {
+        void collect_args(const std::shared_ptr<Expr>& args, auto& res) {
             if (auto a = ast::as<Binary>(args); a && a->op == ast::BinaryOp::comma) {
                 collect_args(a->left, res);
                 collect_args(a->right, res);
             }
             else {
-                res.push_back(std::move(args));
+                res.push_back(args);
             }
         }
 
@@ -313,7 +313,7 @@ namespace brgen::ast {
         std::shared_ptr<Index> parse_index(lexer::Token token, std::shared_ptr<Expr>& p) {
             auto call = std::make_shared<Index>(token.loc, std::move(p));
             s.skip_white();
-            call->expr = parse_expr();
+            call->index = parse_expr();
             token = s.must_consume_token("]");
             call->end_loc = token.loc;
             return call;
@@ -699,7 +699,7 @@ namespace brgen::ast {
                     break;
                 }
                 auto field = parse_field(nullptr);
-                fn->parameter.push_back(cast_to<Field>(field));
+                fn->parameters.push_back(cast_to<Field>(field));
                 if (s.expect_token(")") || s.consume_token(",")) {
                     continue;
                 }
@@ -714,7 +714,7 @@ namespace brgen::ast {
                 fn->return_type = std::make_shared<VoidType>(end_loc);
             }
 
-            fn->block = parse_indent_block();
+            fn->body = parse_indent_block();
 
             return fn;
         }

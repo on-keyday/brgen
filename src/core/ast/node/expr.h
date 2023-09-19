@@ -239,6 +239,7 @@ namespace brgen::ast {
     struct Index : Expr {
         define_node_type(NodeType::index);
         std::shared_ptr<Expr> expr;
+        std::shared_ptr<Expr> index;
         lexer::Loc end_loc;
 
         // for decode
@@ -251,6 +252,7 @@ namespace brgen::ast {
         void dump(auto&& field) {
             Expr::dump(field);
             field(sdebugf(expr));
+            field(sdebugf(index));
             field(sdebugf(end_loc));
         }
     };

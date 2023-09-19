@@ -50,12 +50,6 @@ func (g *Generator) loadAst(path string) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-type File struct {
-	File  string     `json:"file"`
-	Ast   ast2go.AST `json:"ast"`
-	Error string     `json:"error"`
-}
-
 func (g *Generator) generate(path string) {
 	defer log.Printf("done: %s\n", path)
 	buf, err := g.loadAst(path)
@@ -63,7 +57,7 @@ func (g *Generator) generate(path string) {
 		log.Printf("loadAst: %s: %s\n", path, err)
 		return
 	}
-	var f []File
+	var f []*ast2go.File
 	if err := json.Unmarshal(buf, &f); err != nil {
 		log.Printf("unmarshal: %s: %s\n", path, err)
 		return

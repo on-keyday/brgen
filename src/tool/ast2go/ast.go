@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 )
 
 type Node interface {
@@ -31,7 +32,7 @@ type RawNode struct {
 }
 
 type Object interface {
-	Ident() string
+	Identifier() string
 }
 
 type Scope struct {
@@ -55,26 +56,23 @@ type AST struct {
 		std::vector<std::shared_ptr<Node>> nodes;
 		std::vector<std::shared_ptr<Scope>> scopes;
 	*/
-	NodeIndex  map[Node]uint64
-	ScopeIndex map[*Scope]uint64
-	Nodes      []Node
-	Scopes     []*Scope
+	nodes  []Node
+	scopes []*Scope
+
+	Program *Program
 }
 
 type jsonScope struct {
-	Prev    uint64 `json:"prev"`
-	Next    uint64 `json:"next"`
+	Prev    *uint64 `json:"prev"`
+	Next    *uint64 `json:"next"`
 	Objects []uint64
-	Branch  uint64 `json:"branch"`
+	Branch  *uint64 `json:"branch"`
 }
 
 type jsonAST struct {
 	RawNodes  []RawNode   `json:"node"`
 	RawScopes []jsonScope `json:"scope"`
 }
-
-// NodeBody represents the body of a node.
-// body is a union in C++ code core/ast/node/*.h which derived from brgen::ast::Node
 
 type ExprNode interface {
 	Node
@@ -202,7 +200,7 @@ type CondNode struct {
 
 type IndexNode struct {
 	Loc    Loc
-	Target ExprNode
+	Expr   ExprNode
 	Index  ExprNode
 	EndLoc Loc
 }
@@ -215,7 +213,7 @@ type MatchBranchNode struct {
 
 type MatchNode struct {
 	Loc    Loc
-	Target ExprNode
+	Cond   ExprNode
 	Branch []*MatchBranchNode
 }
 
@@ -270,7 +268,7 @@ type LoopNode struct {
 
 type FunctionNode struct {
 	Loc    Loc
-	Name   string
+	Ident  *IdentNode
 	Args   []*FieldNode
 	Return TypeNode
 	Body   *IndentScopeNode
@@ -321,6 +319,9 @@ type Program struct {
 
 func (i *IdentNode) node()     {}
 func (i *IdentNode) exprNode() {}
+func (i *IdentNode) Identifier() string {
+	return i.Name
+}
 
 func (i *CallNode) node()     {}
 func (i *CallNode) exprNode() {}
@@ -381,15 +382,24 @@ func (i *ConfigNode) literalNode() {}
 
 func (i *FormatNode) node()     {}
 func (i *FormatNode) stmtNode() {}
+func (i *FormatNode) Identifier() string {
+	return i.Ident.Name
+}
 
 func (i *FieldNode) node()     {}
 func (i *FieldNode) stmtNode() {}
+func (i *FieldNode) Identifier() string {
+	return i.Ident.Name
+}
 
 func (i *LoopNode) node()     {}
 func (i *LoopNode) stmtNode() {}
 
 func (i *FunctionNode) node()     {}
 func (i *FunctionNode) stmtNode() {}
+func (i *FunctionNode) Identifier() string {
+	return i.Ident.Name
+}
 
 func (i *IntType) node()     {}
 func (i *IntType) typeNode() {}
@@ -486,21 +496,21 @@ func (a *AST) collectNodeLink(rawNodes []RawNode) error {
 		default:
 			return errors.New("unknown node type: " + rawNode.NodeType)
 		}
-		a.Nodes[i] = node
+		a.nodes[i] = node
 	}
 	return nil
 }
 
 func (a *AST) collectScopeLink(scope []jsonScope) {
-	for i := range a.Scopes {
-		a.Scopes[i] = &Scope{}
+	for i := range a.scopes {
+		a.scopes[i] = &Scope{}
 	}
 }
 
 func (a *AST) linkNode(rawNodes []RawNode) error {
 	for i, rawNode := range rawNodes {
 		body := rawNode.Body
-		switch v := a.Nodes[i].(type) {
+		switch v := a.nodes[i].(type) {
 		case *IdentNode:
 			var identTmp struct {
 				Name  string  `json:"ident"`
@@ -513,10 +523,10 @@ func (a *AST) linkNode(rawNodes []RawNode) error {
 			}
 			v.Name = identTmp.Name
 			if identTmp.Base != nil {
-				v.Base = a.Nodes[*identTmp.Base].(*IdentNode)
+				v.Base = a.nodes[*identTmp.Base].(*IdentNode)
 			}
 			if identTmp.Scope != nil {
-				v.Scope = a.Scopes[*identTmp.Scope]
+				v.Scope = a.scopes[*identTmp.Scope]
 			}
 			switch identTmp.Usage {
 			case "unknown":
@@ -546,11 +556,11 @@ func (a *AST) linkNode(rawNodes []RawNode) error {
 			if err := json.Unmarshal(body, &callTmp); err != nil {
 				return err
 			}
-			v.Callee = a.Nodes[callTmp.Callee].(ExprNode)
+			v.Callee = a.nodes[callTmp.Callee].(ExprNode)
 			if callTmp.Args != nil {
 				v.Args = make([]ExprNode, len(callTmp.Args))
 				for i, arg := range callTmp.Args {
-					v.Args[i] = a.Nodes[arg].(ExprNode)
+					v.Args[i] = a.nodes[arg].(ExprNode)
 				}
 			}
 		case *Program:
@@ -563,9 +573,9 @@ func (a *AST) linkNode(rawNodes []RawNode) error {
 			}
 			v.Elements = make([]Node, len(programTmp.Elements))
 			for i, element := range programTmp.Elements {
-				v.Elements[i] = a.Nodes[element]
+				v.Elements[i] = a.nodes[element]
 			}
-			v.GlobalScope = a.Scopes[programTmp.Scope]
+			v.GlobalScope = a.scopes[programTmp.Scope]
 		case *ParenNode:
 			var parenTmp struct {
 				Expr uint64 `json:"expr"`
@@ -573,7 +583,7 @@ func (a *AST) linkNode(rawNodes []RawNode) error {
 			if err := json.Unmarshal(body, &parenTmp); err != nil {
 				return err
 			}
-			v.Expr = a.Nodes[parenTmp.Expr].(ExprNode)
+			v.Expr = a.nodes[parenTmp.Expr].(ExprNode)
 		case *IfNode:
 			var ifTmp struct {
 				Cond uint64  `json:"cond"`
@@ -583,10 +593,10 @@ func (a *AST) linkNode(rawNodes []RawNode) error {
 			if err := json.Unmarshal(body, &ifTmp); err != nil {
 				return err
 			}
-			v.Cond = a.Nodes[ifTmp.Cond].(ExprNode)
-			v.Then = a.Nodes[ifTmp.Then].(*IndentScopeNode)
+			v.Cond = a.nodes[ifTmp.Cond].(ExprNode)
+			v.Then = a.nodes[ifTmp.Then].(*IndentScopeNode)
 			if ifTmp.Else != nil {
-				v.Else = a.Nodes[*ifTmp.Else]
+				v.Else = a.nodes[*ifTmp.Else]
 			}
 		case *UnaryNode:
 			var unaryTmp struct {
@@ -597,7 +607,7 @@ func (a *AST) linkNode(rawNodes []RawNode) error {
 				return err
 			}
 			v.Op = unaryTmp.Op
-			v.Expr = a.Nodes[unaryTmp.Expr].(ExprNode)
+			v.Expr = a.nodes[unaryTmp.Expr].(ExprNode)
 		case *BinaryNode:
 			var binaryTmp struct {
 				Op    string `json:"op"`
@@ -608,8 +618,8 @@ func (a *AST) linkNode(rawNodes []RawNode) error {
 				return err
 			}
 			v.Op = binaryTmp.Op
-			v.Left = a.Nodes[binaryTmp.Left].(ExprNode)
-			v.Right = a.Nodes[binaryTmp.Right].(ExprNode)
+			v.Left = a.nodes[binaryTmp.Left].(ExprNode)
+			v.Right = a.nodes[binaryTmp.Right].(ExprNode)
 		case *RangeNode:
 			var rangeTmp struct {
 				Op    string  `json:"op"`
@@ -621,10 +631,10 @@ func (a *AST) linkNode(rawNodes []RawNode) error {
 			}
 			v.Op = rangeTmp.Op
 			if rangeTmp.Begin != nil {
-				v.Begin = a.Nodes[*rangeTmp.Begin].(ExprNode)
+				v.Begin = a.nodes[*rangeTmp.Begin].(ExprNode)
 			}
 			if rangeTmp.End != nil {
-				v.End = a.Nodes[*rangeTmp.End].(ExprNode)
+				v.End = a.nodes[*rangeTmp.End].(ExprNode)
 			}
 		case *MemberAccessNode:
 			var memberAccessTmp struct {
@@ -634,7 +644,7 @@ func (a *AST) linkNode(rawNodes []RawNode) error {
 			if err := json.Unmarshal(body, &memberAccessTmp); err != nil {
 				return err
 			}
-			v.Target = a.Nodes[memberAccessTmp.Target].(ExprNode)
+			v.Target = a.nodes[memberAccessTmp.Target].(ExprNode)
 			v.Member = memberAccessTmp.Member
 		case *CondNode:
 			var condTmp struct {
@@ -645,41 +655,41 @@ func (a *AST) linkNode(rawNodes []RawNode) error {
 			if err := json.Unmarshal(body, &condTmp); err != nil {
 				return err
 			}
-			v.Cond = a.Nodes[condTmp.Cond].(ExprNode)
-			v.Then = a.Nodes[condTmp.Then].(ExprNode)
-			v.Else = a.Nodes[condTmp.Else].(ExprNode)
+			v.Cond = a.nodes[condTmp.Cond].(ExprNode)
+			v.Then = a.nodes[condTmp.Then].(ExprNode)
+			v.Else = a.nodes[condTmp.Else].(ExprNode)
 		case *IndexNode:
 			var indexTmp struct {
-				Target uint64 `json:"target"`
-				Index  uint64 `json:"index"`
+				Expr  uint64 `json:"expr"`
+				Index uint64 `json:"index"`
 			}
 			if err := json.Unmarshal(body, &indexTmp); err != nil {
 				return err
 			}
-			v.Target = a.Nodes[indexTmp.Target].(ExprNode)
-			v.Index = a.Nodes[indexTmp.Index].(ExprNode)
+			v.Expr = a.nodes[indexTmp.Expr].(ExprNode)
+			v.Index = a.nodes[indexTmp.Index].(ExprNode)
 		case *MatchBranchNode:
 			var matchBranchTmp struct {
-				Target uint64 `json:"target"`
-				Then   uint64 `json:"then"`
+				Cond uint64 `json:"cond"`
+				Then uint64 `json:"then"`
 			}
 			if err := json.Unmarshal(body, &matchBranchTmp); err != nil {
 				return err
 			}
-			v.Cond = a.Nodes[matchBranchTmp.Target].(ExprNode)
-			v.Then = a.Nodes[matchBranchTmp.Then]
+			v.Cond = a.nodes[matchBranchTmp.Cond].(ExprNode)
+			v.Then = a.nodes[matchBranchTmp.Then]
 		case *MatchNode:
 			var matchTmp struct {
-				Target uint64   `json:"target"`
+				Cond   uint64   `json:"cond"`
 				Branch []uint64 `json:"branch"`
 			}
 			if err := json.Unmarshal(body, &matchTmp); err != nil {
 				return err
 			}
-			v.Target = a.Nodes[matchTmp.Target].(ExprNode)
+			v.Cond = a.nodes[matchTmp.Cond].(ExprNode)
 			v.Branch = make([]*MatchBranchNode, len(matchTmp.Branch))
 			for i, branch := range matchTmp.Branch {
-				v.Branch[i] = a.Nodes[branch].(*MatchBranchNode)
+				v.Branch[i] = a.nodes[branch].(*MatchBranchNode)
 			}
 		case *IntLiteralNode:
 			var intLiteralTmp struct {
@@ -720,32 +730,34 @@ func (a *AST) linkNode(rawNodes []RawNode) error {
 			if err := json.Unmarshal(body, &formatTmp); err != nil {
 				return err
 			}
-			v.Ident = a.Nodes[formatTmp.Ident].(*IdentNode)
-			v.Body = a.Nodes[formatTmp.Body].(*IndentScopeNode)
-			v.Scope = a.Scopes[formatTmp.Scope]
+			v.Ident = a.nodes[formatTmp.Ident].(*IdentNode)
+			v.Body = a.nodes[formatTmp.Body].(*IndentScopeNode)
+			v.Scope = a.scopes[formatTmp.Scope]
 			if formatTmp.Belong != nil {
-				v.Belong = a.Nodes[*formatTmp.Belong].(*FormatNode)
+				v.Belong = a.nodes[*formatTmp.Belong].(*FormatNode)
 			}
 		case *FieldNode:
 			var fieldTmp struct {
-				Ident  uint64   `json:"ident"`
-				Type   uint64   `json:"type"`
-				Args   []uint64 `json:"args"`
+				Ident  *uint64  `json:"ident"`
+				Type   uint64   `json:"field_type"`
+				Args   []uint64 `json:"arguments"`
 				Scope  uint64   `json:"scope"`
 				Belong *uint64  `json:"belong"`
 			}
 			if err := json.Unmarshal(body, &fieldTmp); err != nil {
 				return err
 			}
-			v.Ident = a.Nodes[fieldTmp.Ident].(*IdentNode)
-			v.Type = a.Nodes[fieldTmp.Type].(TypeNode)
+			if fieldTmp.Ident != nil {
+				v.Ident = a.nodes[*fieldTmp.Ident].(*IdentNode)
+			}
+			v.Type = a.nodes[fieldTmp.Type].(TypeNode)
 			v.Args = make([]ExprNode, len(fieldTmp.Args))
 			for i, arg := range fieldTmp.Args {
-				v.Args[i] = a.Nodes[arg].(ExprNode)
+				v.Args[i] = a.nodes[arg].(ExprNode)
 			}
-			v.Scope = a.Scopes[fieldTmp.Scope]
+			v.Scope = a.scopes[fieldTmp.Scope]
 			if fieldTmp.Belong != nil {
-				v.Belong = a.Nodes[*fieldTmp.Belong].(*FormatNode)
+				v.Belong = a.nodes[*fieldTmp.Belong].(*FormatNode)
 			}
 		case *LoopNode:
 			var loopTmp struct {
@@ -754,26 +766,26 @@ func (a *AST) linkNode(rawNodes []RawNode) error {
 			if err := json.Unmarshal(body, &loopTmp); err != nil {
 				return err
 			}
-			v.Body = a.Nodes[loopTmp.Body].(*IndentScopeNode)
+			v.Body = a.nodes[loopTmp.Body].(*IndentScopeNode)
 		case *FunctionNode:
 			var functionTmp struct {
-				Name   string   `json:"name"`
-				Args   []uint64 `json:"args"`
-				Return uint64   `json:"return"`
+				Ident  uint64   `json:"ident"`
+				Args   []uint64 `json:"parameters"`
+				Return uint64   `json:"return_type"`
 				Body   uint64   `json:"body"`
 				Scope  uint64   `json:"scope"`
 			}
 			if err := json.Unmarshal(body, &functionTmp); err != nil {
 				return err
 			}
-			v.Name = functionTmp.Name
+			v.Ident = a.nodes[functionTmp.Ident].(*IdentNode)
 			v.Args = make([]*FieldNode, len(functionTmp.Args))
 			for i, arg := range functionTmp.Args {
-				v.Args[i] = a.Nodes[arg].(*FieldNode)
+				v.Args[i] = a.nodes[arg].(*FieldNode)
 			}
-			v.Return = a.Nodes[functionTmp.Return].(TypeNode)
-			v.Body = a.Nodes[functionTmp.Body].(*IndentScopeNode)
-			v.Scope = a.Scopes[functionTmp.Scope]
+			v.Return = a.nodes[functionTmp.Return].(TypeNode)
+			v.Body = a.nodes[functionTmp.Body].(*IndentScopeNode)
+			v.Scope = a.scopes[functionTmp.Scope]
 		case *IntType:
 			var intTypeTmp struct {
 				BitSize int    `json:"bit_size"`
@@ -791,7 +803,7 @@ func (a *AST) linkNode(rawNodes []RawNode) error {
 			if err := json.Unmarshal(body, &intLiteralTypeTmp); err != nil {
 				return err
 			}
-			v.Base = a.Nodes[intLiteralTypeTmp.Base].(*IntLiteralNode)
+			v.Base = a.nodes[intLiteralTypeTmp.Base].(*IntLiteralNode)
 		case *StringLiteralType:
 			var stringLiteralTypeTmp struct {
 				Base uint64 `json:"base"`
@@ -799,29 +811,31 @@ func (a *AST) linkNode(rawNodes []RawNode) error {
 			if err := json.Unmarshal(body, &stringLiteralTypeTmp); err != nil {
 				return err
 			}
-			v.Base = a.Nodes[stringLiteralTypeTmp.Base].(*StringLiteralNode)
+			v.Base = a.nodes[stringLiteralTypeTmp.Base].(*StringLiteralNode)
 		case *BoolType:
 		case *IdentType:
 			var identTypeTmp struct {
-				Ident uint64 `json:"ident"`
-				Base  uint64 `json:"base"`
+				Ident uint64  `json:"ident"`
+				Base  *uint64 `json:"base"`
 			}
 			if err := json.Unmarshal(body, &identTypeTmp); err != nil {
 				return err
 			}
-			v.Ident = a.Nodes[identTypeTmp.Ident].(*IdentNode)
-			v.Base = a.Nodes[identTypeTmp.Base].(*FormatNode)
+			v.Ident = a.nodes[identTypeTmp.Ident].(*IdentNode)
+			if identTypeTmp.Base != nil {
+				v.Base = a.nodes[*identTypeTmp.Base].(*FormatNode)
+			}
 		case *VoidType:
 		case *ArrayType:
 			var arrayTypeTmp struct {
-				Base   uint64 `json:"base"`
-				Length uint64 `json:"length"`
+				BaseType uint64 `json:"base_type"`
+				Length   uint64 `json:"length"`
 			}
 			if err := json.Unmarshal(body, &arrayTypeTmp); err != nil {
 				return err
 			}
-			v.Base = a.Nodes[arrayTypeTmp.Base].(TypeNode)
-			v.Length = a.Nodes[arrayTypeTmp.Length].(ExprNode)
+			v.Base = a.nodes[arrayTypeTmp.BaseType].(TypeNode)
+			v.Length = a.nodes[arrayTypeTmp.Length].(ExprNode)
 		case *IndentScopeNode:
 			var indentScopeTmp struct {
 				Elements []uint64 `json:"elements"`
@@ -832,15 +846,32 @@ func (a *AST) linkNode(rawNodes []RawNode) error {
 			}
 			v.Elements = make([]Node, len(indentScopeTmp.Elements))
 			for i, element := range indentScopeTmp.Elements {
-				v.Elements[i] = a.Nodes[element]
+				v.Elements[i] = a.nodes[element]
 			}
-			v.Scope = a.Scopes[indentScopeTmp.Scope]
+			v.Scope = a.scopes[indentScopeTmp.Scope]
 		default:
 			return errors.New("unknown node type: " + rawNode.NodeType)
-
 		}
 	}
 	return nil
+}
+
+func (a *AST) linkScope(s []jsonScope) {
+	for i, scope := range s {
+		if scope.Prev != nil {
+			a.scopes[i].Prev = a.scopes[*scope.Prev]
+		}
+		if scope.Next != nil {
+			a.scopes[i].Next = a.scopes[*scope.Next]
+		}
+		if scope.Branch != nil {
+			a.scopes[i].Branch = a.scopes[*scope.Branch]
+		}
+		a.scopes[i].Objects = make([]Object, len(scope.Objects))
+		for j, object := range scope.Objects {
+			a.scopes[i].Objects[j] = a.nodes[object].(Object)
+		}
+	}
 }
 
 func (a *AST) UnmarshalJSON(s []byte) (err error) {
@@ -853,10 +884,8 @@ func (a *AST) UnmarshalJSON(s []byte) (err error) {
 	if err := json.Unmarshal(s, &jsonAST); err != nil {
 		return err
 	}
-	a.NodeIndex = make(map[Node]uint64)
-	a.ScopeIndex = make(map[*Scope]uint64)
-	a.Nodes = make([]Node, len(jsonAST.RawNodes))
-	a.Scopes = make([]*Scope, len(jsonAST.RawScopes))
+	a.nodes = make([]Node, len(jsonAST.RawNodes))
+	a.scopes = make([]*Scope, len(jsonAST.RawScopes))
 	err = a.collectNodeLink(jsonAST.RawNodes)
 	if err != nil {
 		return err
@@ -864,6 +893,209 @@ func (a *AST) UnmarshalJSON(s []byte) (err error) {
 	a.collectScopeLink(jsonAST.RawScopes)
 	if err = a.linkNode(jsonAST.RawNodes); err != nil {
 		return err
+	}
+	a.linkScope(jsonAST.RawScopes)
+	a.Program = a.nodes[0].(*Program)
+	return nil
+}
+
+type File struct {
+	File  string `json:"file"`
+	Ast   AST    `json:"ast"`
+	Error string `json:"error"`
+}
+
+func Walk(node Node, f func(child Node) error) error {
+	switch v := node.(type) {
+	case *IdentNode:
+		if v.Base != nil {
+			if err := f(v.Base); err != nil {
+				return err
+			}
+		}
+	case *CallNode:
+		if err := f(v.Callee); err != nil {
+			return err
+		}
+		for _, arg := range v.Args {
+			if err := f(arg); err != nil {
+				return err
+			}
+		}
+	case *ParenNode:
+		if err := f(v.Expr); err != nil {
+			return err
+		}
+	case *IfNode:
+		if err := f(v.Cond); err != nil {
+			return err
+		}
+		if err := f(v.Then); err != nil {
+			return err
+		}
+		if v.Else != nil {
+			if err := f(v.Else); err != nil {
+				return err
+			}
+		}
+	case *UnaryNode:
+		if err := f(v.Expr); err != nil {
+			return err
+		}
+	case *BinaryNode:
+		if err := f(v.Left); err != nil {
+			return err
+		}
+		if err := f(v.Right); err != nil {
+			return err
+		}
+	case *RangeNode:
+		if v.Begin != nil {
+			if err := f(v.Begin); err != nil {
+				return err
+			}
+		}
+		if v.End != nil {
+			if err := f(v.End); err != nil {
+				return err
+			}
+		}
+	case *MemberAccessNode:
+		if err := f(v.Target); err != nil {
+			return err
+		}
+	case *CondNode:
+		if err := f(v.Cond); err != nil {
+			return err
+		}
+		if err := f(v.Then); err != nil {
+			return err
+		}
+		if err := f(v.Else); err != nil {
+			return err
+		}
+	case *IndexNode:
+		if err := f(v.Expr); err != nil {
+			return err
+		}
+		if err := f(v.Index); err != nil {
+			return err
+		}
+
+	case *MatchBranchNode:
+		if err := f(v.Cond); err != nil {
+			return err
+		}
+		if err := f(v.Then); err != nil {
+			return err
+		}
+	case *MatchNode:
+		if err := f(v.Cond); err != nil {
+			return err
+		}
+		for _, branch := range v.Branch {
+			if err := f(branch); err != nil {
+				return err
+			}
+		}
+	case *IntLiteralNode:
+	case *StringLiteralNode:
+	case *BoolLiteralNode:
+	case *InputNode:
+	case *OutputNode:
+	case *ConfigNode:
+	case *FormatNode:
+		if err := f(v.Ident); err != nil {
+			return err
+		}
+		if err := f(v.Body); err != nil {
+			return err
+		}
+		if v.Belong != nil {
+			if err := f(v.Belong); err != nil {
+				return err
+			}
+		}
+	case *FieldNode:
+		if v.Ident != nil {
+			if err := f(v.Ident); err != nil {
+				return err
+			}
+		}
+		if err := f(v.Type); err != nil {
+			return err
+		}
+		for _, arg := range v.Args {
+			if err := f(arg); err != nil {
+				return err
+			}
+		}
+		if v.Belong != nil {
+			if err := f(v.Belong); err != nil {
+				return err
+			}
+		}
+	case *LoopNode:
+		if err := f(v.Body); err != nil {
+			return err
+		}
+	case *FunctionNode:
+		if err := f(v.Ident); err != nil {
+			return err
+		}
+		for _, arg := range v.Args {
+			if err := f(arg); err != nil {
+				return err
+			}
+		}
+		if err := f(v.Return); err != nil {
+			return err
+		}
+		if err := f(v.Body); err != nil {
+			return err
+		}
+	case *IntType:
+	case *IntLiteralType:
+		if err := f(v.Base); err != nil {
+			return err
+		}
+	case *StringLiteralType:
+		if err := f(v.Base); err != nil {
+			return err
+		}
+	case *BoolType:
+	case *IdentType:
+		if err := f(v.Ident); err != nil {
+			return err
+		}
+		if v.Base != nil {
+			if err := f(v.Base); err != nil {
+				return err
+			}
+		}
+	case *VoidType:
+	case *ArrayType:
+		if err := f(v.Base); err != nil {
+			return err
+		}
+		if err := f(v.Length); err != nil {
+			return err
+		}
+	case *IndentScopeNode:
+		for _, element := range v.Elements {
+			if err := f(element); err != nil {
+				return err
+			}
+		}
+	case *Program:
+		for _, element := range v.Elements {
+			if err := f(element); err != nil {
+				return err
+			}
+		}
+	default:
+		return errors.New("unknown node type: " + reflect.TypeOf(node).String())
+
 	}
 	return nil
 }

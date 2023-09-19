@@ -6,7 +6,7 @@
 
 namespace brgen::ast {
     struct Object {
-        std::variant<std::weak_ptr<Ident>, std::weak_ptr<Field>, std::weak_ptr<Format>> object;
+        std::variant<std::weak_ptr<Ident>, std::weak_ptr<Field>, std::weak_ptr<Format>, std::weak_ptr<Function>> object;
 
         std::optional<std::string> ident() {
             switch (object.index()) {
@@ -31,6 +31,13 @@ namespace brgen::ast {
                     }
                     return g->ident->ident;
                 }
+                case 3: {
+                    auto g = std::get<std::weak_ptr<Function>>(object).lock();
+                    if (!g || !g->ident) {
+                        return std::nullopt;
+                    }
+                    return g->ident->ident;
+                }
             }
             return std::nullopt;
         }
@@ -43,6 +50,8 @@ namespace brgen::ast {
                     return NodeType::field;
                 case 2:
                     return NodeType::format;
+                case 3:
+                    return NodeType::function;
             }
             return NodeType::program;
         }
