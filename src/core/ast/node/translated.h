@@ -72,4 +72,7 @@ namespace brgen::ast {
         }
     };
 
+    struct Import : Expr {
+    };
+
 }  // namespace brgen::ast

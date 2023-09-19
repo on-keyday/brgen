@@ -276,6 +276,9 @@ namespace brgen::ast {
             if (auto o = s.consume_token("output")) {
                 return std::make_shared<Output>(o->loc, nullptr);
             }
+            if (auto c = s.consume_token("config")) {
+                return std::make_shared<Config>(c->loc, nullptr);
+            }
             if (auto paren = s.consume_token("(")) {
                 return parse_paren(std::move(*paren));
             }
@@ -376,11 +379,28 @@ namespace brgen::ast {
             return target;
         }
 
+        bool is_finally_ident(ast::Expr* expr, bool from_access = false) {
+            if (expr->node_type == ast::NodeType::ident) {
+                return true;
+            }
+            if (expr->node_type == ast::NodeType::member_access) {
+                return is_finally_ident(static_cast<ast::MemberAccess*>(expr)->target.get(), true);
+            }
+            if (from_access) {
+                if (expr->node_type == ast::NodeType::input ||
+                    expr->node_type == ast::NodeType::output ||
+                    expr->node_type == ast::NodeType::config) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         void check_assignment(ast::Binary* l) {
             if (l->op == ast::BinaryOp::assign ||
                 l->op == ast::BinaryOp::typed_assign ||
                 l->op == ast::BinaryOp::const_assign) {
-                if (l->left->node_type != ast::NodeType::ident) {
+                if (!is_finally_ident(l->left.get())) {
                     s.report_error(l->left->loc, "left of =,:=,::= must be ident");
                 }
             }

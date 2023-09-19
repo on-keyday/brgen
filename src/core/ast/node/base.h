@@ -119,4 +119,19 @@ namespace brgen::ast {
         }
     };
 
+    struct Program : Node {
+        define_node_type(NodeType::program);
+        node_list elements;
+        scope_ptr global_scope;
+
+        void dump(auto&& field) {
+            Node::dump(field);
+            field(sdebugf(elements));
+            field(sdebugf(global_scope));
+        }
+
+        Program()
+            : Node(lexer::Loc{}, NodeType::program) {}
+    };
+
 }  // namespace brgen::ast

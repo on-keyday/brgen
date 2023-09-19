@@ -1,6 +1,6 @@
 /*license*/
 #pragma once
-#include <core/ast/node/traverse.h>
+#include <core/ast/traverse.h>
 #include "core/common/error.h"
 
 namespace brgen::middle {

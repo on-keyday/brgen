@@ -1,6 +1,6 @@
 /*license*/
 #pragma once
-#include "../ast.h"
+#include "ast.h"
 #include <helper/template_instance.h>
 
 namespace brgen::ast {
@@ -108,7 +108,8 @@ namespace brgen::ast {
                         fn(value);
                     }
                 }
-                else if constexpr (std::is_same_v<decltype(value), node_list&>) {
+                else if constexpr (utils::helper::is_template_instance_of<std::decay_t<decltype(value)>, std::list> ||
+                                   utils::helper::is_template_instance_of<std::decay_t<decltype(value)>, std::vector>) {
                     for (auto& v : value) {
                         fn(v);
                     }

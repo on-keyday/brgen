@@ -1,6 +1,6 @@
 /*license*/
 #pragma once
-#include <core/ast/node/traverse.h>
+#include <core/ast/traverse.h>
 #include <helper/defer.h>
 
 namespace brgen::middle {

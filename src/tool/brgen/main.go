@@ -71,7 +71,7 @@ func (g *Generator) loadAst(path string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	files = append(files, "-s")
+	files = append(files, "--file-not-found-as-error")
 	cmd := exec.CommandContext(g.ctx, g.src2json, files...)
 	cmd.Stderr = os.Stderr
 	buf := bytes.NewBuffer(nil)
@@ -124,7 +124,7 @@ func (g *Generator) Wait() {
 
 var src2json = flag.String("src2json", "", "path to src2json")
 var json2code = flag.String("G", "", "alias of json2code")
-var suffix = flag.String("suffix", ".bgn", "suffix of file to generate")
+var suffix = flag.String("suffix", ".bgn", "suffix of file to generate from")
 
 func init() {
 	flag.StringVar(json2code, "json2code", "", "path to json2code")

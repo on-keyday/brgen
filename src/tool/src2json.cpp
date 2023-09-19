@@ -7,6 +7,7 @@
 #include <wrap/iocommon.h>
 #include <console/ansiesc.h>
 #include <future>
+#include <wrap/cin.h>
 
 struct Flags : utils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
@@ -14,7 +15,7 @@ struct Flags : utils::cmdline::templ::HelpOption {
 
     void bind(utils::cmdline::option::Context& ctx) {
         bind_help(ctx);
-        ctx.VarBool(&file_not_found_as_error, "s", "file not found as error");
+        ctx.VarBool(&file_not_found_as_error, "file-not-found-as-error", "file not found as error");
     }
 };
 auto& cout = utils::wrap::cout_wrap();
@@ -154,4 +155,5 @@ int main(int argc, char** argv) {
         [](Flags& flags, utils::cmdline::option::Context& ctx) {
             return Main(flags, ctx);
         });
+    utils::wrap::cin_wrap().has_input();
 }

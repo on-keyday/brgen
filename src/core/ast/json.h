@@ -1,7 +1,7 @@
 /*license*/
 #pragma once
 #include "ast.h"
-#include "node/traverse.h"
+#include "traverse.h"
 #include <map>
 #include <json/json_export.h>
 #include <json/iterator.h>
