@@ -95,6 +95,7 @@ namespace brgen::ast {
 
         std::shared_ptr<Program> parse() {
             auto prog = std::make_shared<Program>();
+            prog->loc = s.loc();
             prog->global_scope = state.reset_stack();
             s.skip_line();
             while (!s.eos()) {

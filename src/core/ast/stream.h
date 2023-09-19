@@ -73,6 +73,14 @@ namespace brgen::ast {
             cur++;
         }
 
+        lexer::Loc loc() {
+            maybe_parse();
+            if (eos()) {
+                return last_loc();
+            }
+            return cur->loc;
+        }
+
         bool expect_token(lexer::Tag tag) {
             if (eos()) {
                 return false;

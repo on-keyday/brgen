@@ -100,7 +100,6 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
             field("ast", nullptr);
             field("error", res.error().to_string());
         }
-        print_error(res.error().to_string());
         res.error().for_each_error([&](std::string_view msg, bool warn) {
             if (warn) {
                 print_warning(msg);

@@ -71,7 +71,7 @@ func (g *Generator) loadAst(path string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	files = append(files, "--file-not-found-as-error")
+	files = append(files)
 	cmd := exec.CommandContext(g.ctx, g.src2json, files...)
 	cmd.Stderr = os.Stderr
 	buf := bytes.NewBuffer(nil)
