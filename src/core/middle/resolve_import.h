@@ -45,7 +45,7 @@ namespace brgen::middle {
         }
     };
 
-    result<void> resolve_import(std::shared_ptr<ast::Program>& n, FileSet& fs) {
+    inline result<void> resolve_import(std::shared_ptr<ast::Program>& n, FileSet& fs) {
         PathStack stack;
         auto l = fs.get_input(n->loc.file);
         if (!l) {

@@ -95,6 +95,15 @@ namespace brgen {
         lexer::FileIndex index = lexer::builtin;
 
        public:
+        std::vector<std::string> file_list() {
+            std::vector<std::string> ret;
+            for (auto& [_, f] : files) {
+                auto u8 = f.file_name.generic_u8string();
+                ret.push_back(std::string(reinterpret_cast<const char*>(u8.c_str()), u8.size()));
+            }
+            return ret;
+        }
+
         expected<lexer::FileIndex, std::error_code> add(const auto& name) {
             fs::path path = utils::utf::convert<std::u8string>(name);
             std::error_code err;
