@@ -48,3 +48,4 @@ format Varint:
          ..0x40000000 => output.u32(value.u32() | msb(2,2))
          ..0x4000000000000000 => output.u64(value | msb(2,3))
          _ => error("too large number")
+   

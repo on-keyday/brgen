@@ -15,35 +15,39 @@ auto& cout = utils::wrap::cout_wrap();
 auto& cerr = utils::wrap::cerr_wrap();
 namespace cse = utils::console::escape;
 void print_error(auto&&... msg) {
-    cerr << "src2json: ";
+    auto p = utils::wrap::pack();
+    p << "src2json: ";
     if (cerr.is_tty()) {
-        cerr << cse::letter_color_code<9>;
+        p << cse::letter_color_code<9>;
     }
-    cerr << "error: ";
+    p << "error: ";
     if (cerr.is_tty()) {
-        cerr << cse::letter_color<cse::ColorPalette::white>;
+        p << cse::letter_color<cse::ColorPalette::white>;
     }
-    (cerr << ... << msg);
+    (p << ... << msg);
     if (cerr.is_tty()) {
-        cerr << "\n"
-             << cse::color_reset;
+        p << "\n"
+          << cse::color_reset;
     }
+    cerr << p.pack();
 }
 
 void print_warning(auto&&... msg) {
-    cerr << "src2json: ";
+    auto p = utils::wrap::pack();
+    p << "src2json: ";
     if (cerr.is_tty()) {
-        cerr << cse::letter_color<cse::ColorPalette::yellow>;
+        p << cse::letter_color<cse::ColorPalette::yellow>;
     }
-    cerr << "warning: ";
+    p << "warning: ";
     if (cerr.is_tty()) {
-        cerr << cse::letter_color<cse::ColorPalette::white>;
+        p << cse::letter_color<cse::ColorPalette::white>;
     }
-    (cerr << ... << msg);
+    (p << ... << msg);
     if (cerr.is_tty()) {
-        cerr << "\n"
-             << cse::color_reset;
+        p << "\n"
+          << cse::color_reset;
     }
+    cerr << p.pack();
 }
 
 auto do_parse(brgen::File* file) {
@@ -122,7 +126,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
             cout << "\n";
         }
     }
-    return 0;
+    return has_error ? -1 : 0;
 }
 
 int main(int argc, char** argv) {
