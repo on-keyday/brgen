@@ -594,7 +594,11 @@ namespace brgen::ast {
                 return std::make_shared<IntType>(ident.loc, std::move(ident.token), *bit_size);
             }
 
-            auto type = std::make_shared<IdentType>(ident.loc, std::move(ident.token), state.current_scope());
+            auto base = std::make_shared<Ident>(ident.loc, std::move(ident.token));
+            base->usage = IdentUsage::reference_type;
+            base->scope = state.current_scope();
+
+            auto type = std::make_shared<IdentType>(ident.loc, std::move(base));
 
             return type;
         }

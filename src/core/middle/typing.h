@@ -268,8 +268,8 @@ namespace brgen::middle {
         }
 
         std::optional<std::shared_ptr<ast::Format>> find_matching_fmt(ast::IdentType* ident) {
-            return ident->scope->lookup_forward<ast::Format>([&](std::shared_ptr<ast::Format>& def) {
-                if (def->ident->ident == ident->ident) {
+            return ident->ident->scope->lookup_forward<ast::Format>([&](std::shared_ptr<ast::Format>& def) {
+                if (def->ident->ident == ident->ident->ident) {
                     return true;
                 }
                 return false;

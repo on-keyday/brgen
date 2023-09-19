@@ -100,18 +100,19 @@ namespace brgen::ast {
         }
     };
 
+    struct Format;
+    struct Ident;
+
     struct IdentType : Type {
         define_node_type(NodeType::ident_type);
-        std::string ident;
-        scope_ptr scope;
+        std::shared_ptr<Ident> ident;
         std::weak_ptr<Format> base;
-        IdentType(lexer::Loc l, std::string&& token, scope_ptr&& frame)
-            : Type(l, NodeType::ident_type), ident(std::move(token)), scope(std::move(frame)) {}
+        IdentType(lexer::Loc l, std::shared_ptr<Ident>&& token)
+            : Type(l, NodeType::ident_type), ident(std::move(token)) {}
 
         void dump(auto&& field) {
             Type::dump(field);
             field(sdebugf(ident));
-            field(sdebugf(scope));
             field(sdebugf(base));
         }
 
