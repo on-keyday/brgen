@@ -91,4 +91,17 @@ namespace brgen::ast {
         constexpr Output()
             : Literal({}, NodeType::output) {}
     };
+
+    struct Config : Literal {
+        define_node_type(NodeType::config);
+
+        Config(lexer::Loc l, const std::shared_ptr<Type>& d)
+            : Literal(l, NodeType::config) {
+            expr_type = d;
+        }
+
+        constexpr Config()
+            : Literal({}, NodeType::config) {}
+    };
+
 }  // namespace brgen::ast

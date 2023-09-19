@@ -30,6 +30,7 @@ namespace brgen::ast {
 
         CASE(Input)
         CASE(Output)
+        CASE(Config)
 
         // expr
         CASE(Expr)

@@ -13,6 +13,7 @@ namespace brgen::ast {
 
         input,
         output,
+        config,
 
         binary,
         unary,
@@ -90,6 +91,7 @@ namespace brgen::ast {
         "index",
         "match",
         "match_branch",
+        "config",
     };
 
     constexpr int mapNodeTypeToValue(NodeType type) {
@@ -166,6 +168,8 @@ namespace brgen::ast {
                 return 34;
             case NodeType::match_branch:
                 return 35;
+            case NodeType::config:
+                return 36;
             default:
                 return -1;
         }
@@ -245,6 +249,8 @@ namespace brgen::ast {
                 return NodeType::match;
             case 35:
                 return NodeType::match_branch;
+            case 36:
+                return NodeType::config;
             default:
                 return either::unexpected{"invalid value"};
         }
