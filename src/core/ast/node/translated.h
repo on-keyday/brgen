@@ -73,6 +73,21 @@ namespace brgen::ast {
     };
 
     struct Import : Expr {
+        define_node_type(NodeType::import_);
+        std::shared_ptr<Call> base;
+        std::shared_ptr<Program> import_desc;
+
+        Import(std::shared_ptr<Call>&& c, std::shared_ptr<Program>&& a)
+            : Expr(a->loc, NodeType::import_), base(std::move(c)), import_desc(std::move(a)) {}
+
+        Import()
+            : Expr({}, NodeType::import_) {}
+
+        void dump(auto&& field) {
+            Expr::dump(field);
+            field(sdebugf(base));
+            field(sdebugf(import_desc));
+        }
     };
 
 }  // namespace brgen::ast

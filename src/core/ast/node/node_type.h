@@ -30,6 +30,7 @@ namespace brgen::ast {
         // translated
         tmp_var,
         block_expr,
+        import_,
 
         stmt = 0x020000,
         loop,
@@ -93,6 +94,7 @@ namespace brgen::ast {
         "match_branch",
         "config",
         "range",
+        "import",
     };
 
     constexpr int mapNodeTypeToValue(NodeType type) {
@@ -173,6 +175,8 @@ namespace brgen::ast {
                 return 36;
             case NodeType::range:
                 return 37;
+            case NodeType::import_:
+                return 38;
             default:
                 return -1;
         }
@@ -256,6 +260,8 @@ namespace brgen::ast {
                 return NodeType::config;
             case 37:
                 return NodeType::range;
+            case 38:
+                return NodeType::import_;
             default:
                 return either::unexpected{"invalid value"};
         }

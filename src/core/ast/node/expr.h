@@ -70,7 +70,7 @@ namespace brgen::ast {
         define_node_type(NodeType::call);
         std::shared_ptr<Expr> callee;
         std::shared_ptr<Expr> raw_arguments;
-        std::list<std::shared_ptr<Expr>> arguments;
+        std::vector<std::shared_ptr<Expr>> arguments;
         lexer::Loc end_loc;
         Call(lexer::Loc l, std::shared_ptr<Expr>&& callee)
             : Expr(l, NodeType::call), callee(std::move(callee)) {}

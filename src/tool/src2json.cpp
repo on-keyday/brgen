@@ -8,6 +8,7 @@
 #include <console/ansiesc.h>
 #include <future>
 #include <wrap/cin.h>
+#include <core/middle/resolve_import.h>
 
 struct Flags : utils::cmdline::templ::HelpOption {
     std::vector<std::string> args;

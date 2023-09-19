@@ -107,7 +107,7 @@ namespace brgen {
             }
             for (auto it = files.begin(); it != files.end(); it++) {
                 if (fs::equivalent(it->second.file_name, path, err)) {
-                    return unexpect(std::error_code(int(std::errc::file_exists), std::generic_category()));
+                    return unexpect(std::error_code(it->second.file, std::generic_category()));
                 }
                 else if (err) {
                     return unexpect(err);
