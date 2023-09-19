@@ -3,6 +3,7 @@ package ast2go
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 )
 
 type Node interface {
@@ -147,7 +148,7 @@ type IdentNode struct {
 
 type CallNode struct {
 	Loc    Loc
-	Target ExprNode
+	Callee ExprNode
 	Args   []ExprNode
 	EndLoc Loc
 }
@@ -159,11 +160,11 @@ type ParenNode struct {
 }
 
 type IfNode struct {
-	Loc      Loc
-	Cond     ExprNode
-	ThenBody *IndentScopeNode
-	ElseBody Node
-	EndLoc   Loc
+	Loc    Loc
+	Cond   ExprNode
+	Then   *IndentScopeNode
+	Else   Node
+	EndLoc Loc
 }
 
 type UnaryNode struct {
@@ -207,9 +208,9 @@ type IndexNode struct {
 }
 
 type MatchBranchNode struct {
-	Loc    Loc
-	Target ExprNode
-	Body   Node
+	Loc  Loc
+	Cond ExprNode
+	Then Node
 }
 
 type MatchNode struct {
@@ -247,7 +248,7 @@ type ConfigNode struct {
 
 type FormatNode struct {
 	Loc    Loc
-	Name   string
+	Ident  *IdentNode
 	Body   *IndentScopeNode
 	Scope  *Scope
 	Belong *FormatNode
@@ -255,7 +256,7 @@ type FormatNode struct {
 
 type FieldNode struct {
 	Loc    Loc
-	Name   string
+	Ident  *IdentNode
 	Type   TypeNode
 	Args   []ExprNode
 	Scope  *Scope
@@ -270,7 +271,7 @@ type LoopNode struct {
 type FunctionNode struct {
 	Loc    Loc
 	Name   string
-	Args   []FieldNode
+	Args   []*FieldNode
 	Return TypeNode
 	Body   *IndentScopeNode
 	Scope  *Scope
@@ -279,6 +280,7 @@ type FunctionNode struct {
 type IntType struct {
 	Loc     Loc
 	BitSize int
+	Raw     string
 }
 
 type IntLiteralType struct {
@@ -297,8 +299,7 @@ type BoolType struct {
 
 type IdentType struct {
 	Loc   Loc
-	Name  string
-	Scope *Scope
+	Ident *IdentNode
 	Base  *FormatNode
 }
 
@@ -310,6 +311,12 @@ type ArrayType struct {
 	Loc    Loc
 	Base   TypeNode
 	Length ExprNode
+}
+
+type Program struct {
+	Loc         Loc
+	Elements    []Node
+	GlobalScope *Scope
 }
 
 func (i *IdentNode) node()     {}
@@ -405,20 +412,13 @@ func (i *VoidType) typeNode() {}
 func (i *ArrayType) node()     {}
 func (i *ArrayType) typeNode() {}
 
-func (a *AST) collectLink() {
+func (i *IndentScopeNode) node()     {}
+func (i *IndentScopeNode) stmtNode() {}
 
-}
+func (i *Program) node() {}
 
-func (a *AST) UnmarshalJSON(s []byte) error {
-	jsonAST := jsonAST{}
-	if err := json.Unmarshal(s, &jsonAST); err != nil {
-		return err
-	}
-	a.NodeIndex = make(map[Node]uint64)
-	a.ScopeIndex = make(map[*Scope]uint64)
-	a.Nodes = make([]Node, len(jsonAST.RawNodes))
-	a.Scopes = make([]*Scope, len(jsonAST.RawScopes))
-	for i, rawNode := range jsonAST.RawNodes {
+func (a *AST) collectNodeLink(rawNodes []RawNode) error {
+	for i, rawNode := range rawNodes {
 		var node Node
 		switch rawNode.NodeType {
 		case "ident":
@@ -479,11 +479,391 @@ func (a *AST) UnmarshalJSON(s []byte) error {
 			node = &VoidType{}
 		case "array_type":
 			node = &ArrayType{}
+		case "indent_scope":
+			node = &IndentScopeNode{}
+		case "program":
+			node = &Program{}
 		default:
 			return errors.New("unknown node type: " + rawNode.NodeType)
 		}
-		a.NodeIndex[node] = uint64(i)
 		a.Nodes[i] = node
+	}
+	return nil
+}
+
+func (a *AST) collectScopeLink(scope []jsonScope) {
+	for i := range a.Scopes {
+		a.Scopes[i] = &Scope{}
+	}
+}
+
+func (a *AST) linkNode(rawNodes []RawNode) error {
+	for i, rawNode := range rawNodes {
+		body := rawNode.Body
+		switch v := a.Nodes[i].(type) {
+		case *IdentNode:
+			var identTmp struct {
+				Name  string  `json:"ident"`
+				Base  *uint64 `json:"base"`
+				Scope *uint64 `json:"scope"`
+				Usage string  `json:"usage"`
+			}
+			if err := json.Unmarshal(body, &identTmp); err != nil {
+				return err
+			}
+			v.Name = identTmp.Name
+			if identTmp.Base != nil {
+				v.Base = a.Nodes[*identTmp.Base].(*IdentNode)
+			}
+			if identTmp.Scope != nil {
+				v.Scope = a.Scopes[*identTmp.Scope]
+			}
+			switch identTmp.Usage {
+			case "unknown":
+				v.Usage = IdentUsageUnknown
+			case "reference":
+				v.Usage = IdentUsageReference
+			case "define_variable":
+				v.Usage = IdentUsageDefineVariable
+			case "define_const":
+				v.Usage = IdentUsageDefineConst
+			case "define_field":
+				v.Usage = IdentUsageDefineField
+			case "define_format":
+				v.Usage = IdentUsageDefineFormat
+			case "define_fn":
+				v.Usage = IdentUsageDefineFn
+			case "reference_type":
+				v.Usage = IdentUsageReferenceType
+			default:
+				return errors.New("unknown ident usage: " + identTmp.Usage)
+			}
+		case *CallNode:
+			var callTmp struct {
+				Callee uint64   `json:"callee"`
+				Args   []uint64 `json:"arguments"`
+			}
+			if err := json.Unmarshal(body, &callTmp); err != nil {
+				return err
+			}
+			v.Callee = a.Nodes[callTmp.Callee].(ExprNode)
+			if callTmp.Args != nil {
+				v.Args = make([]ExprNode, len(callTmp.Args))
+				for i, arg := range callTmp.Args {
+					v.Args[i] = a.Nodes[arg].(ExprNode)
+				}
+			}
+		case *Program:
+			var programTmp struct {
+				Elements []uint64 `json:"elements"`
+				Scope    uint64   `json:"global_scope"`
+			}
+			if err := json.Unmarshal(body, &programTmp); err != nil {
+				return err
+			}
+			v.Elements = make([]Node, len(programTmp.Elements))
+			for i, element := range programTmp.Elements {
+				v.Elements[i] = a.Nodes[element]
+			}
+			v.GlobalScope = a.Scopes[programTmp.Scope]
+		case *ParenNode:
+			var parenTmp struct {
+				Expr uint64 `json:"expr"`
+			}
+			if err := json.Unmarshal(body, &parenTmp); err != nil {
+				return err
+			}
+			v.Expr = a.Nodes[parenTmp.Expr].(ExprNode)
+		case *IfNode:
+			var ifTmp struct {
+				Cond uint64  `json:"cond"`
+				Then uint64  `json:"then"`
+				Else *uint64 `json:"els"`
+			}
+			if err := json.Unmarshal(body, &ifTmp); err != nil {
+				return err
+			}
+			v.Cond = a.Nodes[ifTmp.Cond].(ExprNode)
+			v.Then = a.Nodes[ifTmp.Then].(*IndentScopeNode)
+			if ifTmp.Else != nil {
+				v.Else = a.Nodes[*ifTmp.Else]
+			}
+		case *UnaryNode:
+			var unaryTmp struct {
+				Op   string `json:"op"`
+				Expr uint64 `json:"expr"`
+			}
+			if err := json.Unmarshal(body, &unaryTmp); err != nil {
+				return err
+			}
+			v.Op = unaryTmp.Op
+			v.Expr = a.Nodes[unaryTmp.Expr].(ExprNode)
+		case *BinaryNode:
+			var binaryTmp struct {
+				Op    string `json:"op"`
+				Left  uint64 `json:"left"`
+				Right uint64 `json:"right"`
+			}
+			if err := json.Unmarshal(body, &binaryTmp); err != nil {
+				return err
+			}
+			v.Op = binaryTmp.Op
+			v.Left = a.Nodes[binaryTmp.Left].(ExprNode)
+			v.Right = a.Nodes[binaryTmp.Right].(ExprNode)
+		case *RangeNode:
+			var rangeTmp struct {
+				Op    string  `json:"op"`
+				Begin *uint64 `json:"begin"`
+				End   *uint64 `json:"end"`
+			}
+			if err := json.Unmarshal(body, &rangeTmp); err != nil {
+				return err
+			}
+			v.Op = rangeTmp.Op
+			if rangeTmp.Begin != nil {
+				v.Begin = a.Nodes[*rangeTmp.Begin].(ExprNode)
+			}
+			if rangeTmp.End != nil {
+				v.End = a.Nodes[*rangeTmp.End].(ExprNode)
+			}
+		case *MemberAccessNode:
+			var memberAccessTmp struct {
+				Target uint64 `json:"target"`
+				Member string `json:"member"`
+			}
+			if err := json.Unmarshal(body, &memberAccessTmp); err != nil {
+				return err
+			}
+			v.Target = a.Nodes[memberAccessTmp.Target].(ExprNode)
+			v.Member = memberAccessTmp.Member
+		case *CondNode:
+			var condTmp struct {
+				Cond uint64 `json:"cond"`
+				Then uint64 `json:"then"`
+				Else uint64 `json:"els"`
+			}
+			if err := json.Unmarshal(body, &condTmp); err != nil {
+				return err
+			}
+			v.Cond = a.Nodes[condTmp.Cond].(ExprNode)
+			v.Then = a.Nodes[condTmp.Then].(ExprNode)
+			v.Else = a.Nodes[condTmp.Else].(ExprNode)
+		case *IndexNode:
+			var indexTmp struct {
+				Target uint64 `json:"target"`
+				Index  uint64 `json:"index"`
+			}
+			if err := json.Unmarshal(body, &indexTmp); err != nil {
+				return err
+			}
+			v.Target = a.Nodes[indexTmp.Target].(ExprNode)
+			v.Index = a.Nodes[indexTmp.Index].(ExprNode)
+		case *MatchBranchNode:
+			var matchBranchTmp struct {
+				Target uint64 `json:"target"`
+				Then   uint64 `json:"then"`
+			}
+			if err := json.Unmarshal(body, &matchBranchTmp); err != nil {
+				return err
+			}
+			v.Cond = a.Nodes[matchBranchTmp.Target].(ExprNode)
+			v.Then = a.Nodes[matchBranchTmp.Then]
+		case *MatchNode:
+			var matchTmp struct {
+				Target uint64   `json:"target"`
+				Branch []uint64 `json:"branch"`
+			}
+			if err := json.Unmarshal(body, &matchTmp); err != nil {
+				return err
+			}
+			v.Target = a.Nodes[matchTmp.Target].(ExprNode)
+			v.Branch = make([]*MatchBranchNode, len(matchTmp.Branch))
+			for i, branch := range matchTmp.Branch {
+				v.Branch[i] = a.Nodes[branch].(*MatchBranchNode)
+			}
+		case *IntLiteralNode:
+			var intLiteralTmp struct {
+				Value string `json:"value"`
+			}
+			if err := json.Unmarshal(body, &intLiteralTmp); err != nil {
+				return err
+			}
+			v.Value = intLiteralTmp.Value
+		case *StringLiteralNode:
+			var stringLiteralTmp struct {
+				Value string `json:"value"`
+			}
+
+			if err := json.Unmarshal(body, &stringLiteralTmp); err != nil {
+				return err
+			}
+			v.Value = stringLiteralTmp.Value
+
+		case *BoolLiteralNode:
+			var boolLiteralTmp struct {
+				Value bool `json:"value"`
+			}
+			if err := json.Unmarshal(body, &boolLiteralTmp); err != nil {
+				return err
+			}
+			v.Value = boolLiteralTmp.Value
+		case *InputNode:
+		case *OutputNode:
+		case *ConfigNode:
+		case *FormatNode:
+			var formatTmp struct {
+				Ident  uint64  `json:"ident"`
+				Body   uint64  `json:"body"`
+				Scope  uint64  `json:"scope"`
+				Belong *uint64 `json:"belong"`
+			}
+			if err := json.Unmarshal(body, &formatTmp); err != nil {
+				return err
+			}
+			v.Ident = a.Nodes[formatTmp.Ident].(*IdentNode)
+			v.Body = a.Nodes[formatTmp.Body].(*IndentScopeNode)
+			v.Scope = a.Scopes[formatTmp.Scope]
+			if formatTmp.Belong != nil {
+				v.Belong = a.Nodes[*formatTmp.Belong].(*FormatNode)
+			}
+		case *FieldNode:
+			var fieldTmp struct {
+				Ident  uint64   `json:"ident"`
+				Type   uint64   `json:"type"`
+				Args   []uint64 `json:"args"`
+				Scope  uint64   `json:"scope"`
+				Belong *uint64  `json:"belong"`
+			}
+			if err := json.Unmarshal(body, &fieldTmp); err != nil {
+				return err
+			}
+			v.Ident = a.Nodes[fieldTmp.Ident].(*IdentNode)
+			v.Type = a.Nodes[fieldTmp.Type].(TypeNode)
+			v.Args = make([]ExprNode, len(fieldTmp.Args))
+			for i, arg := range fieldTmp.Args {
+				v.Args[i] = a.Nodes[arg].(ExprNode)
+			}
+			v.Scope = a.Scopes[fieldTmp.Scope]
+			if fieldTmp.Belong != nil {
+				v.Belong = a.Nodes[*fieldTmp.Belong].(*FormatNode)
+			}
+		case *LoopNode:
+			var loopTmp struct {
+				Body uint64 `json:"body"`
+			}
+			if err := json.Unmarshal(body, &loopTmp); err != nil {
+				return err
+			}
+			v.Body = a.Nodes[loopTmp.Body].(*IndentScopeNode)
+		case *FunctionNode:
+			var functionTmp struct {
+				Name   string   `json:"name"`
+				Args   []uint64 `json:"args"`
+				Return uint64   `json:"return"`
+				Body   uint64   `json:"body"`
+				Scope  uint64   `json:"scope"`
+			}
+			if err := json.Unmarshal(body, &functionTmp); err != nil {
+				return err
+			}
+			v.Name = functionTmp.Name
+			v.Args = make([]*FieldNode, len(functionTmp.Args))
+			for i, arg := range functionTmp.Args {
+				v.Args[i] = a.Nodes[arg].(*FieldNode)
+			}
+			v.Return = a.Nodes[functionTmp.Return].(TypeNode)
+			v.Body = a.Nodes[functionTmp.Body].(*IndentScopeNode)
+			v.Scope = a.Scopes[functionTmp.Scope]
+		case *IntType:
+			var intTypeTmp struct {
+				BitSize int    `json:"bit_size"`
+				Raw     string `json:"raw"`
+			}
+			if err := json.Unmarshal(body, &intTypeTmp); err != nil {
+				return err
+			}
+			v.BitSize = intTypeTmp.BitSize
+			v.Raw = intTypeTmp.Raw
+		case *IntLiteralType:
+			var intLiteralTypeTmp struct {
+				Base uint64 `json:"base"`
+			}
+			if err := json.Unmarshal(body, &intLiteralTypeTmp); err != nil {
+				return err
+			}
+			v.Base = a.Nodes[intLiteralTypeTmp.Base].(*IntLiteralNode)
+		case *StringLiteralType:
+			var stringLiteralTypeTmp struct {
+				Base uint64 `json:"base"`
+			}
+			if err := json.Unmarshal(body, &stringLiteralTypeTmp); err != nil {
+				return err
+			}
+			v.Base = a.Nodes[stringLiteralTypeTmp.Base].(*StringLiteralNode)
+		case *BoolType:
+		case *IdentType:
+			var identTypeTmp struct {
+				Ident uint64 `json:"ident"`
+				Base  uint64 `json:"base"`
+			}
+			if err := json.Unmarshal(body, &identTypeTmp); err != nil {
+				return err
+			}
+			v.Ident = a.Nodes[identTypeTmp.Ident].(*IdentNode)
+			v.Base = a.Nodes[identTypeTmp.Base].(*FormatNode)
+		case *VoidType:
+		case *ArrayType:
+			var arrayTypeTmp struct {
+				Base   uint64 `json:"base"`
+				Length uint64 `json:"length"`
+			}
+			if err := json.Unmarshal(body, &arrayTypeTmp); err != nil {
+				return err
+			}
+			v.Base = a.Nodes[arrayTypeTmp.Base].(TypeNode)
+			v.Length = a.Nodes[arrayTypeTmp.Length].(ExprNode)
+		case *IndentScopeNode:
+			var indentScopeTmp struct {
+				Elements []uint64 `json:"elements"`
+				Scope    uint64   `json:"scope"`
+			}
+			if err := json.Unmarshal(body, &indentScopeTmp); err != nil {
+				return err
+			}
+			v.Elements = make([]Node, len(indentScopeTmp.Elements))
+			for i, element := range indentScopeTmp.Elements {
+				v.Elements[i] = a.Nodes[element]
+			}
+			v.Scope = a.Scopes[indentScopeTmp.Scope]
+		default:
+			return errors.New("unknown node type: " + rawNode.NodeType)
+
+		}
+	}
+	return nil
+}
+
+func (a *AST) UnmarshalJSON(s []byte) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("type error: %v", r)
+		}
+	}()
+	jsonAST := jsonAST{}
+	if err := json.Unmarshal(s, &jsonAST); err != nil {
+		return err
+	}
+	a.NodeIndex = make(map[Node]uint64)
+	a.ScopeIndex = make(map[*Scope]uint64)
+	a.Nodes = make([]Node, len(jsonAST.RawNodes))
+	a.Scopes = make([]*Scope, len(jsonAST.RawScopes))
+	err = a.collectNodeLink(jsonAST.RawNodes)
+	if err != nil {
+		return err
+	}
+	a.collectScopeLink(jsonAST.RawScopes)
+	if err = a.linkNode(jsonAST.RawNodes); err != nil {
+		return err
 	}
 	return nil
 }

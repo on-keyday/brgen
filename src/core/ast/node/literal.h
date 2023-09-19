@@ -8,12 +8,12 @@ namespace brgen::ast {
     // literals
     struct IntLiteral : Literal {
         define_node_type(NodeType::int_literal);
-        std::string raw;
+        std::string value;
 
         template <class T>
         std::optional<T> parse_as() const {
             T t = 0;
-            if (!utils::number::prefix_integer(raw, t)) {
+            if (!utils::number::prefix_integer(value, t)) {
                 return std::nullopt;
             }
             return t;
@@ -21,11 +21,11 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Literal::dump(field);
-            field(sdebugf(raw));
+            field(sdebugf(value));
         }
 
         IntLiteral(lexer::Loc l, std::string&& t)
-            : Literal(l, NodeType::int_literal), raw(std::move(t)) {}
+            : Literal(l, NodeType::int_literal), value(std::move(t)) {}
 
         // for decode
         IntLiteral()
@@ -34,10 +34,10 @@ namespace brgen::ast {
 
     struct StrLiteral : Literal {
         define_node_type(NodeType::str_literal);
-        std::string raw;
+        std::string value;
 
         StrLiteral(lexer::Loc l, std::string&& t)
-            : Literal(l, NodeType::str_literal), raw(std::move(t)) {}
+            : Literal(l, NodeType::str_literal), value(std::move(t)) {}
 
         // for decode
         StrLiteral()
@@ -45,7 +45,7 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Literal::dump(field);
-            field(sdebugf(raw));
+            field(sdebugf(value));
         }
     };
 

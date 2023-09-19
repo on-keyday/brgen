@@ -38,7 +38,7 @@ namespace brgen::cpp_lang {
         cond->head().write("if(");
         cond->foot().write(") ");
         write_expr(c, cond, if_->cond.get());
-        write_block_scope(c, if_stmt, if_->block.get());
+        write_block_scope(c, if_stmt, if_->then.get());
         if (if_->els) {
             w->write("else ");
             if (auto elif = ast::as<ast::If>(if_->els)) {
@@ -95,7 +95,7 @@ namespace brgen::cpp_lang {
         }
         else if (auto unary = ast::as<ast::Unary>(expr)) {
             w->write(ast::unary_op_str[int(unary->op)], " ");
-            write_expr(c, w, unary->target.get());
+            write_expr(c, w, unary->expr.get());
         }
         else if (auto tmp = ast::as<ast::TmpVar>(expr)) {
             error(expr->loc, "unknown temp var").report();
@@ -316,11 +316,11 @@ namespace brgen::cpp_lang {
 
                         {
                             auto m = c.set_write_mode(writer::WriteMode::encode);
-                            write_block_scope(c, enc, n->scope.get());
+                            write_block_scope(c, enc, n->body.get());
                         }
                         {
                             auto m = c.set_write_mode(writer::WriteMode::decode);
-                            write_block_scope(c, dec, n->scope.get());
+                            write_block_scope(c, dec, n->body.get());
                         }
                     }
                 }

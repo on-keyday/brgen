@@ -192,7 +192,7 @@ namespace brgen::ast {
 
             // 解析して if の条件式とブロックを設定
             if_->cond = parse_expr();
-            if_->block = parse_indent_block();
+            if_->then = parse_indent_block();
 
             auto cur_indent = state.current_indent();
 
@@ -217,7 +217,7 @@ namespace brgen::ast {
                 auto elif = std::make_shared<If>(tok->loc);
                 s.skip_white();
                 elif->cond = parse_expr();
-                elif->block = parse_indent_block();
+                elif->then = parse_indent_block();
                 auto next_if = elif.get();
                 current_if->els = std::move(elif);
                 current_if = next_if;
@@ -288,11 +288,22 @@ namespace brgen::ast {
             return parse_ident();
         }
 
+        void collect_args(std::shared_ptr<Expr>& args, auto& res) {
+            if (auto a = ast::as<Binary>(args); a && a->op == ast::BinaryOp::comma) {
+                collect_args(a->left, res);
+                collect_args(a->right, res);
+            }
+            else {
+                res.push_back(std::move(args));
+            }
+        }
+
         std::shared_ptr<Call> parse_call(lexer::Token token, std::shared_ptr<Expr>& p) {
             auto call = std::make_shared<Call>(token.loc, std::move(p));
             s.skip_white();
             if (!s.expect_token(")")) {
-                call->arguments = parse_expr();
+                call->raw_arguments = parse_expr();
+                collect_args(call->raw_arguments, call->arguments);
             }
             token = s.must_consume_token(")");
             call->end_loc = token.loc;
@@ -359,7 +370,7 @@ namespace brgen::ast {
             while (stack.size()) {
                 auto ptr = std::move(stack.back());
                 stack.pop_back();
-                ptr->target = std::move(target);
+                ptr->expr = std::move(target);
                 target = std::move(ptr);
             }
             return target;
@@ -551,7 +562,7 @@ namespace brgen::ast {
 
         std::shared_ptr<Loop> parse_for(lexer::Token&& token) {
             auto for_ = std::make_shared<Loop>(token.loc);
-            for_->block = parse_indent_block();
+            for_->body = parse_indent_block();
             return for_;
         }
 
@@ -643,7 +654,8 @@ namespace brgen::ast {
                 s.skip_white();
 
                 if (!s.expect_token(")")) {
-                    field->arguments = parse_expr();
+                    field->raw_arguments = parse_expr();
+                    collect_args(field->raw_arguments, field->arguments);
                     s.skip_white();
                 }
 
@@ -663,7 +675,7 @@ namespace brgen::ast {
             fmt->ident->usage = IdentUsage::define_format;
             {
                 auto scope = state.enter_format(fmt);
-                fmt->scope = parse_indent_block();
+                fmt->body = parse_indent_block();
             }
 
             state.current_scope()->push(fmt);
@@ -678,10 +690,12 @@ namespace brgen::ast {
             fn->ident->usage = IdentUsage::define_fn;
             fn->belong = state.current_format();
             s.skip_white();
+            lexer::Loc end_loc;
             auto b = s.must_consume_token("(");
             for (;;) {
                 s.skip_white();
                 if (auto t = s.consume_token(")")) {
+                    end_loc = t->loc;
                     break;
                 }
                 auto field = parse_field(nullptr);
@@ -690,6 +704,14 @@ namespace brgen::ast {
                     continue;
                 }
                 s.must_consume_token(",");  // this must be error
+            }
+            s.skip_white();
+            if (auto r = s.consume_token("->")) {
+                s.skip_white();
+                fn->return_type = parse_type();
+            }
+            else {
+                fn->return_type = std::make_shared<VoidType>(end_loc);
             }
 
             fn->block = parse_indent_block();

@@ -10,7 +10,7 @@ namespace brgen::middle {
                    is_const(bin->right);
         }
         if (auto u = ast::as<ast::Unary>(expr)) {
-            return is_const(u->target);
+            return is_const(u->expr);
         }
         if (auto p = ast::as<ast::Paren>(expr)) {
             return is_const(p->expr);

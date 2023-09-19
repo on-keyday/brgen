@@ -5,21 +5,22 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch file",
+            "name": "Debug brgen",
             "type": "go",
             "request": "launch",
             "mode": "debug",
-            "program": "${workspaceRoot}/src/test_tool/",
+            "program": "${workspaceRoot}/src/tool/brgen",
             "args": [
-                "go",
-                "${workspaceRoot}/build/test/go_test_result.json"
-            ]
+                "-src2json",
+                "${workspaceRoot}/build/tool/src2json.exe",
+                "${workspaceRoot}/example/quic_packet.bgn",
+            ],
         },
         {
             "name": "Debug json_test",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceRoot}/build/test/src2json",
+            "program": "${workspaceRoot}/build/tool/brgen",
             "args": [
                 "example/quic_packet.bgn"
             ],

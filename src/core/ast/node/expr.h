@@ -69,7 +69,8 @@ namespace brgen::ast {
     struct Call : Expr {
         define_node_type(NodeType::call);
         std::shared_ptr<Expr> callee;
-        std::shared_ptr<Expr> arguments;
+        std::shared_ptr<Expr> raw_arguments;
+        std::list<std::shared_ptr<Expr>> arguments;
         lexer::Loc end_loc;
         Call(lexer::Loc l, std::shared_ptr<Expr>&& callee)
             : Expr(l, NodeType::call), callee(std::move(callee)) {}
@@ -79,6 +80,7 @@ namespace brgen::ast {
         void dump(auto&& field) {
             Expr::dump(field);
             field(sdebugf(callee));
+            field(sdebugf(raw_arguments));
             field(sdebugf(arguments));
             field(sdebugf(end_loc));
         }
@@ -105,7 +107,7 @@ namespace brgen::ast {
     struct If : Expr {
         define_node_type(NodeType::if_);
         std::shared_ptr<Expr> cond;
-        std::shared_ptr<IndentScope> block;
+        std::shared_ptr<IndentScope> then;
         std::shared_ptr<Node> els;
 
         constexpr If(lexer::Loc l)
@@ -118,7 +120,7 @@ namespace brgen::ast {
         void dump(auto&& field) {
             Expr::dump(field);
             field(sdebugf(cond));
-            field(sdebugf(block));
+            field(sdebugf(then));
             field(sdebugf(els));
         }
     };
@@ -129,7 +131,7 @@ namespace brgen::ast {
 
     struct Unary : Expr {
         define_node_type(NodeType::unary);
-        std::shared_ptr<Expr> target;
+        std::shared_ptr<Expr> expr;
         UnaryOp op;
 
         constexpr Unary(lexer::Loc l, UnaryOp p)
@@ -142,7 +144,7 @@ namespace brgen::ast {
         void dump(auto&& field) {
             Expr::dump(field);
             field(sdebugf(op));
-            field(sdebugf(target));
+            field(sdebugf(expr));
         }
     };
 
@@ -195,16 +197,16 @@ namespace brgen::ast {
     struct MemberAccess : Expr {
         define_node_type(NodeType::member_access);
         std::shared_ptr<Expr> target;
-        std::string name;
+        std::string member;
 
         void dump(auto&& field) {
             Expr::dump(field);
             field(sdebugf(target));
-            field(sdebugf(name));
+            field(sdebugf(member));
         }
 
         MemberAccess(lexer::Loc l, std::shared_ptr<Expr>&& t, std::string&& n)
-            : Expr(l, NodeType::member_access), target(std::move(t)), name(std::move(n)) {}
+            : Expr(l, NodeType::member_access), target(std::move(t)), member(std::move(n)) {}
 
         // for decode
         MemberAccess()

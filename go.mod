@@ -1,3 +1,3 @@
-module github.com/on-keyday/brgen/test_tool
+module github.com/on-keyday/brgen
 
 go 1.20

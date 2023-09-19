@@ -58,7 +58,7 @@ namespace brgen::go_lang {
         cond->head().write("if(");
         cond->foot().write(") ");
         write_expr(c, cond, if_->cond.get());
-        write_block_scope(c, if_stmt, if_->block.get(), false);
+        write_block_scope(c, if_stmt, if_->then.get(), false);
         if (if_->els) {
             w->write("else ");
             if (auto elif = ast::as<ast::If>(if_->els)) {
@@ -125,7 +125,7 @@ namespace brgen::go_lang {
         }
         else if (auto unary = ast::as<ast::Unary>(expr)) {
             w->write(ast::unary_op_str[int(unary->op)], " ");
-            write_expr(c, w, unary->target.get());
+            write_expr(c, w, unary->expr.get());
         }
         else {
             error(expr->loc, "unsupported operation").report();
@@ -297,11 +297,11 @@ namespace brgen::go_lang {
                         dec->head().write("func (self *", path, ") decode(input *Input) ");
                         {
                             auto m = c.set_write_mode(writer::WriteMode::encode);
-                            write_block_scope(c, enc, n->scope.get(), true);
+                            write_block_scope(c, enc, n->body.get(), true);
                         }
                         {
                             auto m = c.set_write_mode(writer::WriteMode::decode);
-                            write_block_scope(c, dec, n->scope.get(), true);
+                            write_block_scope(c, dec, n->body.get(), true);
                         }
                     }
                 }

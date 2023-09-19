@@ -9,7 +9,7 @@ namespace brgen::ast {
     struct Format : Stmt {
         define_node_type(NodeType::format);
         std::shared_ptr<Ident> ident;
-        std::shared_ptr<IndentScope> scope;
+        std::shared_ptr<IndentScope> body;
         std::weak_ptr<Format> belong;
         Format(lexer::Loc l)
             : Stmt(l, NodeType::format) {}
@@ -28,7 +28,7 @@ namespace brgen::ast {
         void dump(auto&& field) {
             Stmt::dump(field);
             field(sdebugf(ident));
-            field(sdebugf(scope));
+            field(sdebugf(body));
             field(sdebugf(belong));
         }
     };
@@ -38,7 +38,8 @@ namespace brgen::ast {
         std::shared_ptr<Ident> ident;
         lexer::Loc colon_loc;
         std::shared_ptr<Type> field_type;
-        std::shared_ptr<Expr> arguments;
+        std::shared_ptr<Expr> raw_arguments;
+        std::list<std::shared_ptr<Expr>> arguments;
         std::weak_ptr<Format> belong;
 
         Field(lexer::Loc l)
@@ -53,6 +54,7 @@ namespace brgen::ast {
             field(sdebugf(ident));
             field(sdebugf(colon_loc));
             field(sdebugf(field_type));
+            field(sdebugf(raw_arguments));
             field(sdebugf(arguments));
             field(sdebugf(belong));
         }
@@ -60,7 +62,7 @@ namespace brgen::ast {
 
     struct Loop : Stmt {
         define_node_type(NodeType::loop);
-        std::shared_ptr<IndentScope> block;
+        std::shared_ptr<IndentScope> body;
 
         Loop(lexer::Loc l)
             : Stmt(l, NodeType::loop) {}
@@ -70,7 +72,7 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Stmt::dump(field);
-            field(sdebugf(block));
+            field(sdebugf(body));
         }
     };
 
@@ -78,6 +80,7 @@ namespace brgen::ast {
         define_node_type(NodeType::function);
         std::shared_ptr<Ident> ident;
         std::list<std::shared_ptr<Field>> parameter;
+        std::shared_ptr<Type> return_type;
         std::weak_ptr<Format> belong;
         std::shared_ptr<IndentScope> block;
 
@@ -91,6 +94,7 @@ namespace brgen::ast {
             Stmt::dump(field);
             field(sdebugf(ident));
             field(sdebugf(parameter));
+            field(sdebugf(return_type));
             field(sdebugf(belong));
             field(sdebugf(block));
         }

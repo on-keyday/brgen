@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"flag"
 	"log"
 	"os"
@@ -10,6 +11,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"sync"
+
+	"github.com/on-keyday/brgen/src/tool/ast2go"
 )
 
 type Generator struct {
@@ -18,37 +21,53 @@ type Generator struct {
 	ctx      context.Context
 }
 
-func (g *Generator) Init() error {
-	res, err := os.Executable()
-	if err != nil {
-		return err
-	}
-	g.src2json = filepath.Join(filepath.Dir(res), "src2json")
-	if runtime.GOOS == "windows" {
-		g.src2json += ".exe"
+func (g *Generator) Init(src2json string) error {
+	if src2json != "" {
+		g.src2json = src2json
+	} else {
+		res, err := os.Executable()
+		if err != nil {
+			return err
+		}
+		g.src2json = filepath.Join(filepath.Dir(res), "src2json")
+		if runtime.GOOS == "windows" {
+			g.src2json += ".exe"
+		}
 	}
 	g.ctx = context.TODO()
 	return nil
 }
 
-func (g *Generator) loadAst(path string) error {
+func (g *Generator) loadAst(path string) ([]byte, error) {
 	cmd := exec.CommandContext(g.ctx, g.src2json, "-s", path)
 	cmd.Stderr = os.Stderr
 	buf := bytes.NewBuffer(nil)
 	cmd.Stdout = buf
 	err := cmd.Run()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return buf.Bytes(), nil
+}
+
+type File struct {
+	File  string     `json:"file"`
+	Ast   ast2go.AST `json:"ast"`
+	Error string     `json:"error"`
 }
 
 func (g *Generator) generate(path string) {
 	defer log.Printf("done: %s\n", path)
-	if err := g.loadAst(path); err != nil {
+	buf, err := g.loadAst(path)
+	if err != nil {
 		log.Printf("loadAst: %s: %s\n", path, err)
+		return
 	}
-
+	var f []File
+	if err := json.Unmarshal(buf, &f); err != nil {
+		log.Printf("unmarshal: %s: %s\n", path, err)
+		return
+	}
 }
 
 func (g *Generator) Generate(path string) {
@@ -63,6 +82,8 @@ func (g *Generator) Wait() {
 	g.w.Wait()
 }
 
+var src2json = flag.String("src2json", "", "path to src2json")
+
 func main() {
 	flag.Parse()
 	args := flag.Args()
@@ -71,7 +92,7 @@ func main() {
 		return
 	}
 	g := &Generator{}
-	if err := g.Init(); err != nil {
+	if err := g.Init(*src2json); err != nil {
 		log.Fatal(err)
 	}
 	for _, arg := range args {

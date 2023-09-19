@@ -167,12 +167,12 @@ namespace brgen::middle {
         void typing_if(ast::If* if_) {
             typing_object(if_->cond);
             check_bool(if_->cond.get());
-            typing_object(if_->block);
+            typing_object(if_->then);
             if (if_->els) {
                 typing_object(if_->els);
             }
 
-            auto then_ = extract_expr_type(if_->block);
+            auto then_ = extract_expr_type(if_->then);
             auto els_ = extract_else_type(if_->els);
 
             if (!then_ || !els_ ||
@@ -183,7 +183,7 @@ namespace brgen::middle {
 
             if_->expr_type = then_;
 
-            auto& then_ref = if_->block->elements.back();
+            auto& then_ref = if_->then->elements.back();
 
             then_ref = std::make_shared<ast::ImplicitReturn>(std::static_pointer_cast<ast::Expr>(then_ref));
             if (auto block = ast::as<ast::IndentScope>(if_->els)) {
@@ -317,13 +317,13 @@ namespace brgen::middle {
                 paren->expr_type = paren->expr->expr_type;
             }
             else if (auto unary = ast::as<ast::Unary>(expr)) {
-                typing_expr(unary->target);
-                if (!unary->target->expr_type) {
-                    unsupported(unary->target);
+                typing_expr(unary->expr);
+                if (!unary->expr->expr_type) {
+                    unsupported(unary->expr);
                 }
                 switch (unary->op) {
                     case ast::UnaryOp::minus_sign: {
-                        unary->expr_type = unary->target->expr_type;
+                        unary->expr_type = unary->expr->expr_type;
                         break;
                     }
                     default: {
