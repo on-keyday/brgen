@@ -13,10 +13,12 @@
 struct Flags : utils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
     bool not_resolve_import = false;
+    bool check_ast = false;
 
     void bind(utils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&not_resolve_import, "not-resolve-import", "not resolve import");
+        ctx.VarBool(&check_ast, "check-ast", "check ast mode");
     }
 };
 auto& cout = utils::wrap::cout_wrap();
@@ -65,6 +67,32 @@ auto do_parse(brgen::File* file) {
     });
 }
 
+int check_ast(std::string_view name) {
+    utils::file::View view;
+    if (!view.open(name)) {
+        print_error("cannot open file ", name);
+        return -1;
+    }
+    auto js = utils::json::parse<utils::json::JSON>(view);
+    if (js.is_undef()) {
+        print_error("cannot parse json file ", name);
+        return -1;
+    }
+    auto f = js.at("ast");
+    if (!f) {
+        print_error("cannot find ast field ", name);
+        return -1;
+    }
+    brgen::ast::JSONConverter c;
+    auto res = c.decode(*f);
+    if (!res) {
+        print_error("cannot decode json file: ", res.error().locations[0].msg);
+        return -1;
+    }
+    cout << "ok\n";
+    return 0;
+}
+
 int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     utils::wrap::out_virtual_terminal = true;
 
@@ -78,6 +106,10 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
         return -1;
     }
     auto name = flags.args[0];
+
+    if (flags.check_ast) {
+        return check_ast(name);
+    }
 
     brgen::FileSet files;
 
