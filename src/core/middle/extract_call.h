@@ -38,7 +38,7 @@ namespace brgen::middle {
                         if_->cond = std::make_shared<ast::BlockExpr>(std::move(if_->cond), std::move(l));
                     }
                 }
-                extract_call(h, if_->block);
+                extract_call(h, if_->then);
                 extract_call(h, if_->els);
                 return true;
             }
@@ -64,7 +64,7 @@ namespace brgen::middle {
                             if_->cond = std::make_shared<ast::BlockExpr>(std::move(if_->cond), std::move(l));
                         }
                     }
-                    extract_call(h, if_->block);
+                    extract_call(h, if_->then);
                     extract_call(h, if_->els);
                     c = h.add_tmp_var(std::static_pointer_cast<ast::If>(c));
                     return;

@@ -2,6 +2,7 @@
 #pragma once
 #include "base.h"
 #include "../expr_layer.h"
+#include <vector>
 
 namespace brgen::ast {
 

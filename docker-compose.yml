@@ -13,6 +13,8 @@ services:
       - ./docker_vscode:/workspace/.vscode:cached
       - ./script:/workspace/script:cached
       - ./example:/workspace/example:cached
+      - ./go.mod:/workspace/go.mod:cached
+      - ./ast2go:/workspace/ast2go:cached
     cap_add:
       - SYS_PTRACE
     security_opt:
