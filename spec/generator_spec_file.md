@@ -23,5 +23,5 @@ pass_by: |
     default is stdin.
 langs: |
     language is programming language to generate by generator
-    this MUST be array
+    this MUST be array of string
 ```
