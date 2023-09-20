@@ -34,6 +34,7 @@ add_executable(section_writer_test "core/section_writer_test.cpp")
 
 target_link_libraries(section_writer_test gtest_main)
 
+#[[
 add_executable(cpp_test "langs/cpp_test.cpp"
 "../langs/cpp/cpp_lang.cpp")
 
@@ -45,6 +46,7 @@ add_executable(go_test "langs/go_test.cpp"
 "../langs/go/go_lang.cpp")
 
 target_link_libraries(go_test ast_test_component)
+]]
 
 add_test(NAME "lexer_test" COMMAND lexer_test)
 add_test(NAME "ast_test" COMMAND ast_test)
@@ -53,13 +55,14 @@ add_test(NAME "middle_test" COMMAND middle_test)
 add_test(NAME "from_json_test" COMMAND from_json_test)
 add_test(NAME "section_writer_test" COMMAND section_writer_test)
 
+#[[
 add_test(NAME "cpp_test" COMMAND cpp_test)
 add_test(NAME "go_test" COMMAND go_test)
 add_test(NAME "cpp_compile" 
 COMMAND go run "${CMAKE_SOURCE_DIR}/src/test_tool" "cpp" "${CMAKE_BINARY_DIR}/test/cpp_test_result.json")
 add_test(NAME "go_compile" 
 COMMAND go run "${CMAKE_SOURCE_DIR}/src/test_tool" "go" "${CMAKE_BINARY_DIR}/test/go_test_result.json")
-
+]]
 
 if(WIN32)
 

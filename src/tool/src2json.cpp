@@ -7,8 +7,8 @@
 #include <wrap/iocommon.h>
 #include <console/ansiesc.h>
 #include <future>
-#include <wrap/cin.h>
 #include <core/middle/resolve_import.h>
+#include "common/print.h"
 
 struct Flags : utils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
@@ -22,43 +22,6 @@ struct Flags : utils::cmdline::templ::HelpOption {
     }
 };
 auto& cout = utils::wrap::cout_wrap();
-auto& cerr = utils::wrap::cerr_wrap();
-namespace cse = utils::console::escape;
-void print_error(auto&&... msg) {
-    auto p = utils::wrap::pack();
-    p << "src2json: ";
-    if (cerr.is_tty()) {
-        p << cse::letter_color_code<9>;
-    }
-    p << "error: ";
-    if (cerr.is_tty()) {
-        p << cse::letter_color<cse::ColorPalette::white>;
-    }
-    (p << ... << msg);
-    if (cerr.is_tty()) {
-        p << "\n"
-          << cse::color_reset;
-    }
-    cerr << p.pack();
-}
-
-void print_warning(auto&&... msg) {
-    auto p = utils::wrap::pack();
-    p << "src2json: ";
-    if (cerr.is_tty()) {
-        p << cse::letter_color<cse::ColorPalette::yellow>;
-    }
-    p << "warning: ";
-    if (cerr.is_tty()) {
-        p << cse::letter_color<cse::ColorPalette::white>;
-    }
-    (p << ... << msg);
-    if (cerr.is_tty()) {
-        p << "\n"
-          << cse::color_reset;
-    }
-    cerr << p.pack();
-}
 
 auto do_parse(brgen::File* file) {
     brgen::ast::Context c;
@@ -176,5 +139,4 @@ int main(int argc, char** argv) {
         [](Flags& flags, utils::cmdline::option::Context& ctx) {
             return Main(flags, ctx);
         });
-    utils::wrap::cin_wrap().has_input();
 }
