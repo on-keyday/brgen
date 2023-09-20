@@ -97,8 +97,9 @@ namespace brgen {
        public:
         std::vector<std::string> file_list() {
             std::vector<std::string> ret;
-            for (auto& [_, f] : files) {
-                auto u8 = f.file_name.generic_u8string();
+            ret.reserve(files.size());
+            for (size_t i = 1; i <= index; i++) {
+                auto u8 = indexes[i]->file_name.generic_u8string();
                 ret.push_back(std::string(reinterpret_cast<const char*>(u8.c_str()), u8.size()));
             }
             return ret;

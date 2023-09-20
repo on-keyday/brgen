@@ -21,13 +21,13 @@ type Loc struct {
 	File int `json:"file"`
 }
 
-type NodeHdr struct {
+type nodeHdr struct {
 	NodeType string `json:"node_type"`
 	Loc      Loc    `json:"loc"`
 }
 
-type RawNode struct {
-	NodeHdr
+type rawNode struct {
+	nodeHdr
 	Body json.RawMessage `json:"body"`
 }
 
@@ -70,7 +70,7 @@ type jsonScope struct {
 }
 
 type jsonAST struct {
-	RawNodes  []RawNode   `json:"node"`
+	RawNodes  []rawNode   `json:"node"`
 	RawScopes []jsonScope `json:"scope"`
 }
 
@@ -427,7 +427,7 @@ func (i *IndentScopeNode) stmtNode() {}
 
 func (i *Program) node() {}
 
-func (a *AST) collectNodeLink(rawNodes []RawNode) error {
+func (a *AST) collectNodeLink(rawNodes []rawNode) error {
 	for i, rawNode := range rawNodes {
 		var node Node
 		switch rawNode.NodeType {
@@ -507,7 +507,7 @@ func (a *AST) collectScopeLink(scope []jsonScope) {
 	}
 }
 
-func (a *AST) linkNode(rawNodes []RawNode) error {
+func (a *AST) linkNode(rawNodes []rawNode) error {
 	for i, rawNode := range rawNodes {
 		body := rawNode.Body
 		switch v := a.nodes[i].(type) {
