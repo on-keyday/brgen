@@ -2,21 +2,48 @@
     // See https://go.microsoft.com/fwlink/?LinkId=733558
     // for the documentation about the tasks.json format
     "version": "2.0.0",
-    "command": "cmd",
-    "args": [
-        "/C"
-    ],
     "tasks": [
         {
-            "label": "copy_and_build",
+            "label": "build",
+            "command": "cmd",
             "args": [
-                "copylib&build"
+                "/C",
+                "build.bat"
             ]
         },
         {
-            "label": "build",
-            "args": [
-                "build"
+            "label": "npm_compile",
+            "type": "npm",
+            "script": "compile",
+            "group": "build",
+            "path": "lsp/server",
+            "presentation": {
+                "panel": "dedicated",
+                "reveal": "never"
+            },
+            "problemMatcher": [
+                "$tsc"
+            ]
+        },
+        {
+            "label": "npm_watch",
+            "type": "npm",
+            "script": "watch",
+            "path": "lsp/client",
+            "isBackground": true,
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "panel": "dedicated",
+                "reveal": "never"
+            },
+            "problemMatcher": [
+                "$tsc-watch"
+            ],
+            "dependsOn": [
+                "npm_compile"
             ]
         }
     ]

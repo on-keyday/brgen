@@ -20,7 +20,7 @@ export function activate(context: ExtensionContext) {
     // If the extension is launched in debug mode then the debug server options are used
     // Otherwise the run options are used
     let serverOptions: ServerOptions = {
-        run: { module: serverModule, transport: TransportKind.stdio },
+        run: { module: serverModule, transport: TransportKind.ipc },
         debug: {
             module: serverModule,
             transport: TransportKind.stdio,
@@ -31,7 +31,7 @@ export function activate(context: ExtensionContext) {
     // Options to control the language client
     let clientOptions: LanguageClientOptions = {
         // Register the server for plain text documents
-        documentSelector: [{ scheme: 'file', language: 'brgen' }],
+        documentSelector: [{ scheme: 'file', language: 'plaintext' }],
         synchronize: {
             // Notify the server about file changes to '.clientrc files contained in the workspace
             fileEvents: workspace.createFileSystemWatcher('**/.clientrc')
@@ -40,8 +40,8 @@ export function activate(context: ExtensionContext) {
 
     // Create the language client and start the client.
     client = new LanguageClient(
-        'languageServerExample',
-        'Language Server Example',
+        'brgen-lsp',
+        'brgen-lsp',
         serverOptions,
         clientOptions
     );

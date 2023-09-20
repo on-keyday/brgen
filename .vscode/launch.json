@@ -17,51 +17,13 @@
             ],
         },
         {
-            "name": "Debug json_test",
+            "name": "Debug src2json",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceRoot}/build/tool/brgen",
+            "program": "${workspaceRoot}/build/tool/src2json",
             "args": [
                 "example/quic_packet.bgn"
             ],
-            "stopAtEntry": false,
-            "cwd": "${workspaceRoot}",
-            "environment": [
-                {
-                    "name": "BASE_PATH",
-                    "value": "."
-                },
-                {
-                    "name": "FNET_QUIC_LIBSSL",
-                    "value": "C:/workspace/boringssl/build_debug/ssl/ssl.dll",
-                },
-                {
-                    "name": "FNET_QUIC_LIBCRYPTO",
-                    "value": "C:/workspace/boringssl/build_debug/crypto/crypto.dll"
-                },
-                {
-                    "name": "FNET_QUIC_LOCAL_CERT",
-                    "value": "C:/workspace/quic-go-test-server/keys/quic_mock_server.crt"
-                },
-                {
-                    "name": "FNET_QUIC_NET_CERT",
-                    "value": "${workspaceRoot}/src/test/fnet_util/cacert.pem"
-                },
-                {
-                    "name": "FNET_QUIC_LOCAL_PRIVATE_KEY",
-                    "value": "C:/workspace/quic-go-test-server/keys/quic_mock_server.key"
-                }
-            ],
-            "console": "integratedTerminal",
-            "preLaunchTask": "build",
-            "symbolSearchPath": "lib\\"
-        },
-        {
-            "name": "Debug cpp_test",
-            "type": "cppvsdbg",
-            "request": "launch",
-            "program": "${workspaceRoot}/build/test/cpp_test",
-            "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",
             "environment": [
@@ -99,6 +61,29 @@
             "type": "cppvsdbg",
             "request": "attach",
             "processId": "${command:pickProcess}"
-        }
+        },
+        {
+            "type": "extensionHost",
+            "request": "launch",
+            "name": "Launch LSP Client",
+            "runtimeExecutable": "${execPath}",
+            "args": [
+                "--extensionDevelopmentPath=${workspaceRoot}/lsp"
+            ],
+            "outFiles": [
+                "${workspaceRoot}/lsp/client/out/**/*.js"
+            ],
+            "preLaunchTask": "npm_watch"
+        },
+        {
+            "type": "node",
+            "request": "attach",
+            "name": "Attach to LSP Server",
+            "port": 6009,
+            "restart": true,
+            "outFiles": [
+                "${workspaceRoot}/lsp/server/out/**/*.js"
+            ]
+        },
     ]
 }

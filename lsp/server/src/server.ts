@@ -181,6 +181,8 @@ connection.onDidChangeWatchedFiles(_change => {
     connection.console.log('We received a file change event');
 });
 
+documents.onDidChangeContent(change => { validateTextDocument(change.document); })
+
 // This handler provides the initial list of the completion items.
 connection.onCompletion(
     (_textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {

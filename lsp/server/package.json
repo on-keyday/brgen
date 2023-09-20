@@ -4,7 +4,9 @@
   "description": "brgen language server",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "watch": "tsc -b -w",
+    "compile": "tsc -b"
   },
   "author": "",
   "license": "MIT",
