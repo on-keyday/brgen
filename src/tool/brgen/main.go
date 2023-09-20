@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
+	"fmt"
 	"io/fs"
 	"log"
 	"os"
@@ -172,6 +173,7 @@ func (g *Generator) generate(path string) {
 		log.Printf("passAst: %s: %s\n", path, err)
 		return
 	}
+	fmt.Printf("%s\n", buf)
 }
 
 func (g *Generator) Generate(path string) {

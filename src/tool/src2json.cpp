@@ -154,7 +154,6 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
         }
     }
     brgen::Debug d;
-    bool has_error = false;
     {
         auto field = d.object();
         brgen::ast::JSONConverter c;
@@ -163,13 +162,11 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
         field("ast", c.obj);
         field("error", nullptr);
     }
-    if (!cout.is_tty() || !has_error) {
-        cout << d.out();
-        if (cout.is_tty()) {
-            cout << "\n";
-        }
+    cout << d.out();
+    if (cout.is_tty()) {
+        cout << "\n";
     }
-    return has_error ? -1 : 0;
+    return 0;
 }
 
 int main(int argc, char** argv) {

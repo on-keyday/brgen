@@ -7,6 +7,9 @@ config.go.package = "github.com/on-keyday/quic_packet"
 config.go.import("go/ast")
 
 
+config.export(QUICPacket,ConnectionID,Varint)
+
+
 format QUICPacket: 
    form :u1
    fixed :u1
