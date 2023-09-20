@@ -25,3 +25,7 @@ langs: |
     language is programming language to generate by generator
     this MUST be array of string
 ```
+
+## 4. Interface
+brgen asks spec of generator with `<command name> -s`
+generator should write spec to stdout

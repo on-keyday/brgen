@@ -12,9 +12,9 @@ if(WIN32)
 set(SUFFIX ".exe")
 endif()
 
-add_custom_target(brgen ALL COMMAND "go" "build" "-o" "${CMAKE_BINARY_DIR}/tool/brgen${SUFFIX}" "${CMAKE_SOURCE_DIR}/src/tool/brgen")
+add_custom_target(brgen ALL COMMAND "go" "build" "-o" "${CMAKE_BINARY_DIR}/tool/brgen${SUFFIX}" "${CMAKE_SOURCE_DIR}/src/tool/brgen" DEPENDS "${CMAKE_SOURCE_DIR}/src/tool/brgen")
 
-add_custom_target(json2go ALL COMMAND "go" "build" "-o" "${CMAKE_BINARY_DIR}/tool/brgen${SUFFIX}" "${CMAKE_SOURCE_DIR}/src/tool/brgen")
+add_custom_target(json2go ALL COMMAND "go" "build" "-o" "${CMAKE_BINARY_DIR}/tool/json2go${SUFFIX}" "${CMAKE_SOURCE_DIR}/src/tool/json2go" DEPENDS "${CMAKE_SOURCE_DIR}/src/tool/json2go")
 
 
 if(WIN32)

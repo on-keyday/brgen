@@ -3,23 +3,32 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"io/fs"
 	"log"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
 )
 
+type Spec struct {
+	Langs  []string `json:"langs"`
+	PassBy string   `json:"pass_by"`
+}
+
 type Generator struct {
 	w         sync.WaitGroup
 	src2json  string
 	json2code string
 	ctx       context.Context
+	cancel    context.CancelFunc
+	spec      Spec
 }
 
 func (g *Generator) Init(src2json string, json2code string) error {
@@ -38,7 +47,36 @@ func (g *Generator) Init(src2json string, json2code string) error {
 			g.src2json += ".exe"
 		}
 	}
-	g.ctx = context.TODO()
+	g.ctx, g.cancel = signal.NotifyContext(context.Background(), os.Interrupt)
+	if err := g.askSpec(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (g *Generator) askSpec() error {
+	cmd := exec.CommandContext(g.ctx, g.json2code, "-s")
+	cmd.Stderr = os.Stderr
+	buf := bytes.NewBuffer(nil)
+	cmd.Stdout = buf
+	err := cmd.Run()
+	if err != nil {
+		return err
+	}
+
+	err = json.NewDecoder(buf).Decode(&g.spec)
+	if err != nil {
+		return err
+	}
+	if len(g.spec.Langs) == 0 {
+		return errors.New("langs is empty")
+	}
+	if g.spec.PassBy == "" {
+		return errors.New("pass_by is empty")
+	}
+	if g.spec.PassBy != "stdin" && g.spec.PassBy != "file" {
+		return errors.New("pass_by must be stdin or file")
+	}
 	return nil
 }
 
@@ -71,7 +109,6 @@ func (g *Generator) loadAst(path string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	files = append(files)
 	cmd := exec.CommandContext(g.ctx, g.src2json, files...)
 	cmd.Stderr = os.Stderr
 	buf := bytes.NewBuffer(nil)
@@ -83,10 +120,21 @@ func (g *Generator) loadAst(path string) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (g *Generator) passAst(buffer []byte) ([]byte, error) {
-	cmd := exec.CommandContext(g.ctx, g.json2code)
+func makeTmpFile(data []byte) (path string, err error) {
+	fp, err := os.CreateTemp(os.TempDir(), "brgen*.json")
+	if err != nil {
+		return
+	}
+	defer fp.Close()
+	_, err = fp.Write(data)
+	if err != nil {
+		return
+	}
+	return fp.Name(), nil
+}
+
+func (g *Generator) execGenerator(cmd *exec.Cmd) ([]byte, error) {
 	cmd.Stderr = os.Stderr
-	cmd.Stdin = bytes.NewReader(buffer)
 	buf := bytes.NewBuffer(nil)
 	cmd.Stdout = buf
 	err := cmd.Run()
@@ -94,6 +142,21 @@ func (g *Generator) passAst(buffer []byte) ([]byte, error) {
 		return nil, err
 	}
 	return buf.Bytes(), nil
+}
+
+func (g *Generator) passAst(buffer []byte) ([]byte, error) {
+	if g.spec.PassBy == "stdin" {
+		cmd := exec.CommandContext(g.ctx, g.json2code)
+		cmd.Stdin = bytes.NewReader(buffer)
+		return g.execGenerator(cmd)
+	}
+	path, err := makeTmpFile(buffer)
+	if err != nil {
+		return nil, err
+	}
+	defer os.Remove(path)
+	cmd := exec.CommandContext(g.ctx, g.json2code, path)
+	return g.execGenerator(cmd)
 }
 
 func (g *Generator) generate(path string) {
