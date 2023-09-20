@@ -104,7 +104,9 @@ namespace brgen::middle {
                         }
                         auto found = stack.get(new_path);
                         if (found) {
-                            n = std::make_shared<ast::Import>(ast::cast_to<ast::Call>(n), std::move(found));
+                            auto u8 = new_path.generic_u8string();
+                            auto as_str = std::string(reinterpret_cast<const char*>(u8.c_str()), u8.size());
+                            n = std::make_shared<ast::Import>(ast::cast_to<ast::Call>(n), std::move(found), std::move(as_str));
                         }
                         else {
                             ast::Context c;
@@ -122,7 +124,9 @@ namespace brgen::middle {
                             stack.programs[new_path] = *p;
                             f(f, *p);
                             stack.pop();
-                            n = std::make_shared<ast::Import>(ast::cast_to<ast::Call>(n), std::move(*p));
+                            auto u8 = new_path.generic_u8string();
+                            auto as_str = std::string(reinterpret_cast<const char*>(u8.c_str()), u8.size());
+                            n = std::make_shared<ast::Import>(ast::cast_to<ast::Call>(n), std::move(*p), std::move(as_str));
                         }
                     }
                 }

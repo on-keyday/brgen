@@ -36,12 +36,6 @@ type Object interface {
 }
 
 type Scope struct {
-	/* in C++ code core/ast/node/scope.h
-			std::weak_ptr<Scope> prev;
-	        std::list<Object> objects;
-	        std::shared_ptr<Scope> branch;
-	        std::shared_ptr<Scope> next;
-	*/
 	Prev    *Scope
 	Next    *Scope
 	Objects []Object
@@ -77,6 +71,7 @@ type jsonAST struct {
 type ExprNode interface {
 	Node
 	exprNode()
+	Type() TypeNode
 }
 
 type LiteralNode interface {
@@ -137,72 +132,82 @@ func (i IdentUsage) String() string {
 }
 
 type IdentNode struct {
-	Loc   Loc
-	Name  string
-	Base  *IdentNode
-	Scope *Scope
-	Usage IdentUsage
+	Loc      Loc
+	ExprType TypeNode
+	Name     string
+	Base     *IdentNode
+	Scope    *Scope
+	Usage    IdentUsage
 }
 
 type CallNode struct {
-	Loc    Loc
-	Callee ExprNode
-	Args   []ExprNode
-	EndLoc Loc
+	Loc      Loc
+	ExprType TypeNode
+	Callee   ExprNode
+	Args     []ExprNode
+	EndLoc   Loc
 }
 
 type ParenNode struct {
-	Loc    Loc
-	Expr   ExprNode
-	EndLoc Loc
+	Loc      Loc
+	ExprType TypeNode
+	Expr     ExprNode
+	EndLoc   Loc
 }
 
 type IfNode struct {
-	Loc    Loc
-	Cond   ExprNode
-	Then   *IndentScopeNode
-	Else   Node
-	EndLoc Loc
+	Loc      Loc
+	ExprType TypeNode
+	Cond     ExprNode
+	Then     *IndentScopeNode
+	Else     Node
+	EndLoc   Loc
 }
 
 type UnaryNode struct {
-	Loc  Loc
-	Op   string
-	Expr ExprNode
+	Loc      Loc
+	ExprType TypeNode
+	Op       string
+	Expr     ExprNode
 }
 
 type BinaryNode struct {
-	Loc   Loc
-	Op    string
-	Left  ExprNode
-	Right ExprNode
+	Loc      Loc
+	ExprType TypeNode
+	Op       string
+	Left     ExprNode
+	Right    ExprNode
 }
 
 type RangeNode struct {
-	Loc   Loc
-	Op    string
-	Begin ExprNode
-	End   ExprNode
+	Loc      Loc
+	ExprType TypeNode
+	Op       string
+	Begin    ExprNode
+	End      ExprNode
 }
 
 type MemberAccessNode struct {
-	Loc    Loc
-	Target ExprNode
-	Member string
+	Loc      Loc
+	ExprType TypeNode
+	Target   ExprNode
+	Member   string
 }
 
 type CondNode struct {
-	Loc  Loc
-	Cond ExprNode
-	Then ExprNode
-	Else ExprNode
+	Loc      Loc
+	ExprType TypeNode
+	Cond     ExprNode
+	Then     ExprNode
+	Else     ExprNode
 }
 
 type IndexNode struct {
-	Loc    Loc
-	Expr   ExprNode
-	Index  ExprNode
-	EndLoc Loc
+	Loc      Loc
+	ExprType TypeNode
+	Expr     ExprNode
+	Index    ExprNode
+	EndLoc   Loc
 }
 
 type MatchBranchNode struct {
@@ -212,36 +217,43 @@ type MatchBranchNode struct {
 }
 
 type MatchNode struct {
-	Loc    Loc
-	Cond   ExprNode
-	Branch []*MatchBranchNode
+	Loc      Loc
+	ExprType TypeNode
+	Cond     ExprNode
+	Branch   []*MatchBranchNode
 }
 
 type IntLiteralNode struct {
-	Loc   Loc
-	Value string
+	Loc      Loc
+	ExprType TypeNode
+	Value    string
 }
 
 type StringLiteralNode struct {
-	Loc   Loc
-	Value string
+	Loc      Loc
+	ExprType TypeNode
+	Value    string
 }
 
 type BoolLiteralNode struct {
-	Loc   Loc
-	Value bool
+	Loc      Loc
+	ExprType TypeNode
+	Value    bool
 }
 
 type InputNode struct {
-	Loc Loc
+	Loc      Loc
+	ExprType TypeNode
 }
 
 type OutputNode struct {
-	Loc Loc
+	Loc      Loc
+	ExprType TypeNode
 }
 
 type ConfigNode struct {
-	Loc Loc
+	Loc      Loc
+	ExprType TypeNode
 }
 
 type FormatNode struct {
@@ -317,68 +329,127 @@ type Program struct {
 	GlobalScope *Scope
 }
 
+type Import struct {
+	Loc        Loc
+	ExprType   TypeNode
+	Path       string
+	Base       *CallNode
+	ImportDesc *Program
+}
+
 func (i *IdentNode) node()     {}
 func (i *IdentNode) exprNode() {}
 func (i *IdentNode) Identifier() string {
 	return i.Name
 }
+func (i *IdentNode) Type() TypeNode {
+	return i.ExprType
+}
 
 func (i *CallNode) node()     {}
 func (i *CallNode) exprNode() {}
+func (i *CallNode) Type() TypeNode {
+	return i.ExprType
+}
 
 func (i *ParenNode) node()     {}
 func (i *ParenNode) exprNode() {}
+func (i *ParenNode) Type() TypeNode {
+	return i.ExprType
+}
 
 func (i *IfNode) node()     {}
 func (i *IfNode) exprNode() {}
+func (i *IfNode) Type() TypeNode {
+	return i.ExprType
+}
 
 func (i *UnaryNode) node()     {}
 func (i *UnaryNode) exprNode() {}
+func (i *UnaryNode) Type() TypeNode {
+	return i.ExprType
+}
 
 func (i *BinaryNode) node()     {}
 func (i *BinaryNode) exprNode() {}
+func (i *BinaryNode) Type() TypeNode {
+	return i.ExprType
+}
 
 func (i *RangeNode) node()     {}
 func (i *RangeNode) exprNode() {}
+func (i *RangeNode) Type() TypeNode {
+	return i.ExprType
+}
 
 func (i *MemberAccessNode) node()     {}
 func (i *MemberAccessNode) exprNode() {}
+func (i *MemberAccessNode) Type() TypeNode {
+	return i.ExprType
+}
 
 func (i *CondNode) node()     {}
 func (i *CondNode) exprNode() {}
+func (i *CondNode) Type() TypeNode {
+	return i.ExprType
+}
 
 func (i *IndexNode) node()     {}
 func (i *IndexNode) exprNode() {}
+func (i *IndexNode) Type() TypeNode {
+	return i.ExprType
+}
 
 func (i *MatchBranchNode) node()     {}
 func (i *MatchBranchNode) stmtNode() {}
 
 func (i *MatchNode) node()     {}
 func (i *MatchNode) exprNode() {}
+func (i *MatchNode) Type() TypeNode {
+	return i.ExprType
+}
 
 func (i *IntLiteralNode) node()        {}
 func (i *IntLiteralNode) exprNode()    {}
 func (i *IntLiteralNode) literalNode() {}
+func (i *IntLiteralNode) Type() TypeNode {
+	return i.ExprType
+}
 
 func (i *StringLiteralNode) node()        {}
 func (i *StringLiteralNode) exprNode()    {}
 func (i *StringLiteralNode) literalNode() {}
+func (i *StringLiteralNode) Type() TypeNode {
+	return i.ExprType
+}
 
 func (i *BoolLiteralNode) node()        {}
 func (i *BoolLiteralNode) exprNode()    {}
 func (i *BoolLiteralNode) literalNode() {}
+func (i *BoolLiteralNode) Type() TypeNode {
+	return i.ExprType
+}
 
 func (i *InputNode) node()        {}
 func (i *InputNode) exprNode()    {}
 func (i *InputNode) literalNode() {}
+func (i *InputNode) Type() TypeNode {
+	return i.ExprType
+}
 
 func (i *OutputNode) node()        {}
 func (i *OutputNode) exprNode()    {}
 func (i *OutputNode) literalNode() {}
+func (i *OutputNode) Type() TypeNode {
+	return i.ExprType
+}
 
 func (i *ConfigNode) node()        {}
 func (i *ConfigNode) exprNode()    {}
 func (i *ConfigNode) literalNode() {}
+func (i *ConfigNode) Type() TypeNode {
+	return i.ExprType
+}
 
 func (i *FormatNode) node()     {}
 func (i *FormatNode) stmtNode() {}
@@ -426,6 +497,12 @@ func (i *IndentScopeNode) node()     {}
 func (i *IndentScopeNode) stmtNode() {}
 
 func (i *Program) node() {}
+
+func (i *Import) node()     {}
+func (i *Import) exprNode() {}
+func (i *Import) Type() TypeNode {
+	return i.ExprType
+}
 
 func (a *AST) collectNodeLink(rawNodes []rawNode) error {
 	for i, rawNode := range rawNodes {
@@ -493,6 +570,8 @@ func (a *AST) collectNodeLink(rawNodes []rawNode) error {
 			node = &IndentScopeNode{}
 		case "program":
 			node = &Program{}
+		case "import":
+			node = &Import{}
 		default:
 			return errors.New("unknown node type: " + rawNode.NodeType)
 		}
@@ -513,15 +592,19 @@ func (a *AST) linkNode(rawNodes []rawNode) error {
 		switch v := a.nodes[i].(type) {
 		case *IdentNode:
 			var identTmp struct {
-				Name  string  `json:"ident"`
-				Base  *uint64 `json:"base"`
-				Scope *uint64 `json:"scope"`
-				Usage string  `json:"usage"`
+				Name     string  `json:"ident"`
+				ExprType *uint64 `json:"expr_type"`
+				Base     *uint64 `json:"base"`
+				Scope    *uint64 `json:"scope"`
+				Usage    string  `json:"usage"`
 			}
 			if err := json.Unmarshal(body, &identTmp); err != nil {
 				return err
 			}
 			v.Name = identTmp.Name
+			if identTmp.ExprType != nil {
+				v.ExprType = a.nodes[*identTmp.ExprType].(TypeNode)
+			}
 			if identTmp.Base != nil {
 				v.Base = a.nodes[*identTmp.Base].(*IdentNode)
 			}
@@ -550,11 +633,15 @@ func (a *AST) linkNode(rawNodes []rawNode) error {
 			}
 		case *CallNode:
 			var callTmp struct {
-				Callee uint64   `json:"callee"`
-				Args   []uint64 `json:"arguments"`
+				ExprType *uint64  `json:"expr_type"`
+				Callee   uint64   `json:"callee"`
+				Args     []uint64 `json:"arguments"`
 			}
 			if err := json.Unmarshal(body, &callTmp); err != nil {
 				return err
+			}
+			if callTmp.ExprType != nil {
+				v.ExprType = a.nodes[*callTmp.ExprType].(TypeNode)
 			}
 			v.Callee = a.nodes[callTmp.Callee].(ExprNode)
 			if callTmp.Args != nil {
@@ -578,20 +665,28 @@ func (a *AST) linkNode(rawNodes []rawNode) error {
 			v.GlobalScope = a.scopes[programTmp.Scope]
 		case *ParenNode:
 			var parenTmp struct {
-				Expr uint64 `json:"expr"`
+				ExprType *uint64 `json:"expr_type"`
+				Expr     uint64  `json:"expr"`
 			}
 			if err := json.Unmarshal(body, &parenTmp); err != nil {
 				return err
 			}
+			if parenTmp.ExprType != nil {
+				v.ExprType = a.nodes[*parenTmp.ExprType].(TypeNode)
+			}
 			v.Expr = a.nodes[parenTmp.Expr].(ExprNode)
 		case *IfNode:
 			var ifTmp struct {
-				Cond uint64  `json:"cond"`
-				Then uint64  `json:"then"`
-				Else *uint64 `json:"els"`
+				ExprType *uint64 `json:"expr_type"`
+				Cond     uint64  `json:"cond"`
+				Then     uint64  `json:"then"`
+				Else     *uint64 `json:"els"`
 			}
 			if err := json.Unmarshal(body, &ifTmp); err != nil {
 				return err
+			}
+			if ifTmp.ExprType != nil {
+				v.ExprType = a.nodes[*ifTmp.ExprType].(TypeNode)
 			}
 			v.Cond = a.nodes[ifTmp.Cond].(ExprNode)
 			v.Then = a.nodes[ifTmp.Then].(*IndentScopeNode)
@@ -600,34 +695,46 @@ func (a *AST) linkNode(rawNodes []rawNode) error {
 			}
 		case *UnaryNode:
 			var unaryTmp struct {
-				Op   string `json:"op"`
-				Expr uint64 `json:"expr"`
+				ExprType *uint64 `json:"expr_type"`
+				Op       string  `json:"op"`
+				Expr     uint64  `json:"expr"`
 			}
 			if err := json.Unmarshal(body, &unaryTmp); err != nil {
 				return err
+			}
+			if unaryTmp.ExprType != nil {
+				v.ExprType = a.nodes[*unaryTmp.ExprType].(TypeNode)
 			}
 			v.Op = unaryTmp.Op
 			v.Expr = a.nodes[unaryTmp.Expr].(ExprNode)
 		case *BinaryNode:
 			var binaryTmp struct {
-				Op    string `json:"op"`
-				Left  uint64 `json:"left"`
-				Right uint64 `json:"right"`
+				ExprType *uint64 `json:"expr_type"`
+				Op       string  `json:"op"`
+				Left     uint64  `json:"left"`
+				Right    uint64  `json:"right"`
 			}
 			if err := json.Unmarshal(body, &binaryTmp); err != nil {
 				return err
+			}
+			if binaryTmp.ExprType != nil {
+				v.ExprType = a.nodes[*binaryTmp.ExprType].(TypeNode)
 			}
 			v.Op = binaryTmp.Op
 			v.Left = a.nodes[binaryTmp.Left].(ExprNode)
 			v.Right = a.nodes[binaryTmp.Right].(ExprNode)
 		case *RangeNode:
 			var rangeTmp struct {
-				Op    string  `json:"op"`
-				Begin *uint64 `json:"begin"`
-				End   *uint64 `json:"end"`
+				ExprType *uint64 `json:"expr_type"`
+				Op       string  `json:"op"`
+				Begin    *uint64 `json:"begin"`
+				End      *uint64 `json:"end"`
 			}
 			if err := json.Unmarshal(body, &rangeTmp); err != nil {
 				return err
+			}
+			if rangeTmp.ExprType != nil {
+				v.ExprType = a.nodes[*rangeTmp.ExprType].(TypeNode)
 			}
 			v.Op = rangeTmp.Op
 			if rangeTmp.Begin != nil {
@@ -638,33 +745,45 @@ func (a *AST) linkNode(rawNodes []rawNode) error {
 			}
 		case *MemberAccessNode:
 			var memberAccessTmp struct {
-				Target uint64 `json:"target"`
-				Member string `json:"member"`
+				ExprType *uint64 `json:"expr_type"`
+				Target   uint64  `json:"target"`
+				Member   string  `json:"member"`
 			}
 			if err := json.Unmarshal(body, &memberAccessTmp); err != nil {
 				return err
+			}
+			if memberAccessTmp.ExprType != nil {
+				v.ExprType = a.nodes[*memberAccessTmp.ExprType].(TypeNode)
 			}
 			v.Target = a.nodes[memberAccessTmp.Target].(ExprNode)
 			v.Member = memberAccessTmp.Member
 		case *CondNode:
 			var condTmp struct {
-				Cond uint64 `json:"cond"`
-				Then uint64 `json:"then"`
-				Else uint64 `json:"els"`
+				ExprType *uint64 `json:"expr_type"`
+				Cond     uint64  `json:"cond"`
+				Then     uint64  `json:"then"`
+				Else     uint64  `json:"els"`
 			}
 			if err := json.Unmarshal(body, &condTmp); err != nil {
 				return err
+			}
+			if condTmp.ExprType != nil {
+				v.ExprType = a.nodes[*condTmp.ExprType].(TypeNode)
 			}
 			v.Cond = a.nodes[condTmp.Cond].(ExprNode)
 			v.Then = a.nodes[condTmp.Then].(ExprNode)
 			v.Else = a.nodes[condTmp.Else].(ExprNode)
 		case *IndexNode:
 			var indexTmp struct {
-				Expr  uint64 `json:"expr"`
-				Index uint64 `json:"index"`
+				ExprType *uint64 `json:"expr_type"`
+				Expr     uint64  `json:"expr"`
+				Index    uint64  `json:"index"`
 			}
 			if err := json.Unmarshal(body, &indexTmp); err != nil {
 				return err
+			}
+			if indexTmp.ExprType != nil {
+				v.ExprType = a.nodes[*indexTmp.ExprType].(TypeNode)
 			}
 			v.Expr = a.nodes[indexTmp.Expr].(ExprNode)
 			v.Index = a.nodes[indexTmp.Index].(ExprNode)
@@ -680,11 +799,15 @@ func (a *AST) linkNode(rawNodes []rawNode) error {
 			v.Then = a.nodes[matchBranchTmp.Then]
 		case *MatchNode:
 			var matchTmp struct {
-				Cond   uint64   `json:"cond"`
-				Branch []uint64 `json:"branch"`
+				ExprType *uint64  `json:"expr_type"`
+				Cond     uint64   `json:"cond"`
+				Branch   []uint64 `json:"branch"`
 			}
 			if err := json.Unmarshal(body, &matchTmp); err != nil {
 				return err
+			}
+			if matchTmp.ExprType != nil {
+				v.ExprType = a.nodes[*matchTmp.ExprType].(TypeNode)
 			}
 			v.Cond = a.nodes[matchTmp.Cond].(ExprNode)
 			v.Branch = make([]*MatchBranchNode, len(matchTmp.Branch))
@@ -693,33 +816,72 @@ func (a *AST) linkNode(rawNodes []rawNode) error {
 			}
 		case *IntLiteralNode:
 			var intLiteralTmp struct {
-				Value string `json:"value"`
+				ExprType *uint64 `json:"expr_type"`
+				Value    string  `json:"value"`
 			}
 			if err := json.Unmarshal(body, &intLiteralTmp); err != nil {
 				return err
 			}
+			if intLiteralTmp.ExprType != nil {
+				v.ExprType = a.nodes[*intLiteralTmp.ExprType].(TypeNode)
+			}
 			v.Value = intLiteralTmp.Value
 		case *StringLiteralNode:
 			var stringLiteralTmp struct {
-				Value string `json:"value"`
+				ExprType *uint64 `json:"expr_type"`
+				Value    string  `json:"value"`
 			}
 
 			if err := json.Unmarshal(body, &stringLiteralTmp); err != nil {
 				return err
 			}
+			if stringLiteralTmp.ExprType != nil {
+				v.ExprType = a.nodes[*stringLiteralTmp.ExprType].(TypeNode)
+			}
 			v.Value = stringLiteralTmp.Value
 
 		case *BoolLiteralNode:
 			var boolLiteralTmp struct {
-				Value bool `json:"value"`
+				ExprType *uint64 `json:"expr_type"`
+				Value    bool    `json:"value"`
 			}
 			if err := json.Unmarshal(body, &boolLiteralTmp); err != nil {
 				return err
 			}
+			if boolLiteralTmp.ExprType != nil {
+				v.ExprType = a.nodes[*boolLiteralTmp.ExprType].(TypeNode)
+			}
 			v.Value = boolLiteralTmp.Value
 		case *InputNode:
+			var inputTmp struct {
+				ExprType *uint64 `json:"expr_type"`
+			}
+			if err := json.Unmarshal(body, &inputTmp); err != nil {
+				return err
+			}
+			if inputTmp.ExprType != nil {
+				v.ExprType = a.nodes[*inputTmp.ExprType].(TypeNode)
+			}
 		case *OutputNode:
+			var outputTmp struct {
+				ExprType *uint64 `json:"expr_type"`
+			}
+			if err := json.Unmarshal(body, &outputTmp); err != nil {
+				return err
+			}
+			if outputTmp.ExprType != nil {
+				v.ExprType = a.nodes[*outputTmp.ExprType].(TypeNode)
+			}
 		case *ConfigNode:
+			var configTmp struct {
+				ExprType *uint64 `json:"expr_type"`
+			}
+			if err := json.Unmarshal(body, &configTmp); err != nil {
+				return err
+			}
+			if configTmp.ExprType != nil {
+				v.ExprType = a.nodes[*configTmp.ExprType].(TypeNode)
+			}
 		case *FormatNode:
 			var formatTmp struct {
 				Ident  uint64  `json:"ident"`
@@ -849,6 +1011,22 @@ func (a *AST) linkNode(rawNodes []rawNode) error {
 				v.Elements[i] = a.nodes[element]
 			}
 			v.Scope = a.scopes[indentScopeTmp.Scope]
+		case *Import:
+			var importTmp struct {
+				ExprType   *uint64 `json:"expr_type"`
+				Path       string  `json:"path"`
+				Base       uint64  `json:"base"`
+				ImportDesc uint64  `json:"import_desc"`
+			}
+			if err := json.Unmarshal(body, &importTmp); err != nil {
+				return err
+			}
+			if importTmp.ExprType != nil {
+				v.ExprType = a.nodes[*importTmp.ExprType].(TypeNode)
+			}
+			v.Path = importTmp.Path
+			v.Base = a.nodes[importTmp.Base].(*CallNode)
+			v.ImportDesc = a.nodes[importTmp.ImportDesc].(*Program)
 		default:
 			return errors.New("unknown node type: " + rawNode.NodeType)
 		}
