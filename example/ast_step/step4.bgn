@@ -1,6 +1,6 @@
-debug = true
+config.debug = true
 loop:
-    if debug:
+    if config.debug:
         trace()
     data = readfrom()
     input.buffer = data
