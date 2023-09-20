@@ -32,10 +32,11 @@ RUN apt-get update && \
     libpthread-stubs0-dev\
     libssl-dev
 
-RUN apt-get install -y \
-    seq-gen\
-    net-tools\
-    iputils-ping
+#RUN apt-get install -y \
+#    seq-gen\
+#    net-tools\
+#    iputils-ping
+
 RUN apt-get update && \
     apt-get install -y\
     zlib1g\
