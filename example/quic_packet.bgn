@@ -2,6 +2,11 @@ config.go.import("bytes")
 
 path ::= config.import("./example/ast_step/step1.bgn")
 
+config.go.file.name = "packet.go"
+config.go.package = "github.com/on-keyday/quic_packet"
+config.go.import("go/ast")
+
+
 format QUICPacket: 
    form :u1
    fixed :u1

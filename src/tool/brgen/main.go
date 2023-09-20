@@ -35,6 +35,7 @@ func (g *Generator) Init(src2json string, json2code string) error {
 	if json2code == "" {
 		return errors.New("json2code is required")
 	}
+	g.json2code = json2code
 	if src2json != "" {
 		g.src2json = src2json
 	} else {

@@ -158,8 +158,10 @@ namespace brgen::ast {
             auto parse_match_branch = [&]() -> std::shared_ptr<MatchBranch> {
                 auto br = std::make_shared<MatchBranch>();
                 br->cond = parse_expr();
+                br->loc = br->cond->loc;
                 s.skip_white();
-                s.must_consume_token("=>");
+                auto sym = s.must_consume_token("=>");
+                br->sym_loc = sym.loc;
                 s.skip_white();
                 br->then = parse_statement();
                 return br;
@@ -649,6 +651,7 @@ namespace brgen::ast {
                     return expr;
                 }
                 ident = cast_to<Ident>(expr);
+                token = std::move(*tmp);
             }
             else {
                 token = s.must_consume_token(":");

@@ -20,11 +20,20 @@ func main() {
 		}`)
 		return
 	}
-	files := ast2go.File{}
-	err := json.NewDecoder(os.Stdin).Decode(&files)
+	file := ast2go.File{}
+	err := json.NewDecoder(os.Stdin).Decode(&file)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 		return
 	}
+	g := ast2go.NewGenerator(os.Stdout)
+
+	err = g.Generate(&file)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+		return
+	}
+
 }

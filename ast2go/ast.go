@@ -42,18 +42,13 @@ type Scope struct {
 	Branch  *Scope
 }
 
-type AST struct {
-	/*
-		in C++ code core/ast/json.h
-		std::map<std::shared_ptr<Node>, size_t> node_index;
-		std::map<std::shared_ptr<Scope>, size_t> scope_index;
-		std::vector<std::shared_ptr<Node>> nodes;
-		std::vector<std::shared_ptr<Scope>> scopes;
-	*/
+type astConstructor struct {
 	nodes  []Node
 	scopes []*Scope
+}
 
-	Program *Program
+type AST struct {
+	*Program
 }
 
 type jsonScope struct {
@@ -329,7 +324,7 @@ type Program struct {
 	GlobalScope *Scope
 }
 
-type Import struct {
+type ImportNode struct {
 	Loc        Loc
 	ExprType   TypeNode
 	Path       string
@@ -498,13 +493,13 @@ func (i *IndentScopeNode) stmtNode() {}
 
 func (i *Program) node() {}
 
-func (i *Import) node()     {}
-func (i *Import) exprNode() {}
-func (i *Import) Type() TypeNode {
+func (i *ImportNode) node()     {}
+func (i *ImportNode) exprNode() {}
+func (i *ImportNode) Type() TypeNode {
 	return i.ExprType
 }
 
-func (a *AST) collectNodeLink(rawNodes []rawNode) error {
+func (a *astConstructor) collectNodeLink(rawNodes []rawNode) error {
 	for i, rawNode := range rawNodes {
 		var node Node
 		switch rawNode.NodeType {
@@ -571,7 +566,7 @@ func (a *AST) collectNodeLink(rawNodes []rawNode) error {
 		case "program":
 			node = &Program{}
 		case "import":
-			node = &Import{}
+			node = &ImportNode{}
 		default:
 			return errors.New("unknown node type: " + rawNode.NodeType)
 		}
@@ -580,13 +575,13 @@ func (a *AST) collectNodeLink(rawNodes []rawNode) error {
 	return nil
 }
 
-func (a *AST) collectScopeLink(scope []jsonScope) {
+func (a *astConstructor) collectScopeLink(scope []jsonScope) {
 	for i := range a.scopes {
 		a.scopes[i] = &Scope{}
 	}
 }
 
-func (a *AST) linkNode(rawNodes []rawNode) error {
+func (a *astConstructor) linkNode(rawNodes []rawNode) error {
 	for i, rawNode := range rawNodes {
 		body := rawNode.Body
 		switch v := a.nodes[i].(type) {
@@ -1011,7 +1006,7 @@ func (a *AST) linkNode(rawNodes []rawNode) error {
 				v.Elements[i] = a.nodes[element]
 			}
 			v.Scope = a.scopes[indentScopeTmp.Scope]
-		case *Import:
+		case *ImportNode:
 			var importTmp struct {
 				ExprType   *uint64 `json:"expr_type"`
 				Path       string  `json:"path"`
@@ -1034,7 +1029,7 @@ func (a *AST) linkNode(rawNodes []rawNode) error {
 	return nil
 }
 
-func (a *AST) linkScope(s []jsonScope) {
+func (a *astConstructor) linkScope(s []jsonScope) {
 	for i, scope := range s {
 		if scope.Prev != nil {
 			a.scopes[i].Prev = a.scopes[*scope.Prev]
@@ -1052,7 +1047,7 @@ func (a *AST) linkScope(s []jsonScope) {
 	}
 }
 
-func (a *AST) UnmarshalJSON(s []byte) (err error) {
+func (a *astConstructor) unmarshal(s []byte) (p *Program, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("type error: %v", r)
@@ -1060,27 +1055,32 @@ func (a *AST) UnmarshalJSON(s []byte) (err error) {
 	}()
 	jsonAST := jsonAST{}
 	if err := json.Unmarshal(s, &jsonAST); err != nil {
-		return err
+		return nil, err
 	}
 	a.nodes = make([]Node, len(jsonAST.RawNodes))
 	a.scopes = make([]*Scope, len(jsonAST.RawScopes))
 	err = a.collectNodeLink(jsonAST.RawNodes)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	a.collectScopeLink(jsonAST.RawScopes)
 	if err = a.linkNode(jsonAST.RawNodes); err != nil {
-		return err
+		return nil, err
 	}
 	a.linkScope(jsonAST.RawScopes)
-	a.Program = a.nodes[0].(*Program)
-	return nil
+	return a.nodes[0].(*Program), nil
+}
+
+func (a *AST) UnmarshalJSON(s []byte) (err error) {
+	c := astConstructor{}
+	a.Program, err = c.unmarshal(s)
+	return err
 }
 
 type File struct {
-	File  string `json:"file"`
-	Ast   AST    `json:"ast"`
-	Error string `json:"error"`
+	File  []string `json:"file"`
+	Ast   AST      `json:"ast"`
+	Error string   `json:"error"`
 }
 
 func Walk(node Node, f func(child Node) error) error {
