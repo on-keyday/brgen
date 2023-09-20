@@ -9,6 +9,7 @@
 #include <future>
 #include <core/middle/resolve_import.h>
 #include "common/print.h"
+#include <wrap/argv.h>
 
 struct Flags : utils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
@@ -78,12 +79,12 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
 
     auto ok = files.add(name);
     if (!ok) {
-        print_error("cannot open file  ", name, " code=", ok.error());
+        print_error("cannot open file ", name, " code=", ok.error());
         return -1;
     }
     auto input = files.get_input(*ok);
     if (!input) {
-        print_error("cannot open file  ", name);
+        print_error("cannot open file ", name);
         return -1;
     }
 
@@ -133,6 +134,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
 }
 
 int main(int argc, char** argv) {
+    utils::wrap::U8Arg _(argc, argv);
     Flags flags;
     return utils::cmdline::templ::parse_or_err<std::string>(
         argc, argv, flags, [](auto&& str, bool err) { cout << str; },
