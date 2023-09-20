@@ -13,4 +13,4 @@ cmake_install.cmake
 /build/
 node_modules/
 out/
-lsp/
+
