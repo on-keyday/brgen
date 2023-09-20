@@ -3,7 +3,7 @@ loop:
     if debug:
         trace()
     data = readfrom()
-    input = data
+    input.buffer = data
 
 
 
