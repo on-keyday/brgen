@@ -199,15 +199,17 @@ namespace brgen::ast {
         define_node_type(NodeType::member_access);
         std::shared_ptr<Expr> target;
         std::string member;
+        lexer::Loc member_loc;
 
         void dump(auto&& field) {
             Expr::dump(field);
             field(sdebugf(target));
             field(sdebugf(member));
+            field(sdebugf(member_loc));
         }
 
-        MemberAccess(lexer::Loc l, std::shared_ptr<Expr>&& t, std::string&& n)
-            : Expr(l, NodeType::member_access), target(std::move(t)), member(std::move(n)) {}
+        MemberAccess(lexer::Loc l, std::shared_ptr<Expr>&& t, std::string&& n, lexer::Loc ml)
+            : Expr(l, NodeType::member_access), target(std::move(t)), member(std::move(n)), member_loc(ml) {}
 
         // for decode
         MemberAccess()

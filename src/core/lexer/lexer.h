@@ -41,7 +41,7 @@ namespace brgen::lexer {
 
         constexpr auto keywords = keyword(
             "format", "if", "elif", "else", "match", "fn", "loop", "enum",
-            "input", "output", "env", "true", "false");
+            "input", "output", "config", "true", "false");
         constexpr auto puncts = punct(
             "#", "\"", "\'", "$",  // added but maybe not used
             "::=", ":=",

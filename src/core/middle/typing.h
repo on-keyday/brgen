@@ -6,6 +6,14 @@
 
 namespace brgen::middle {
 
+    enum class TypeRelation {
+        equal,
+        each_convertible,
+        left_convertible,
+        right_convertible,
+        not_equal,
+    };
+
     struct Typing {
         bool equal_type(const std::shared_ptr<ast::Type>& left, const std::shared_ptr<ast::Type>& right) {
             if (left->node_type != right->node_type) {
@@ -185,11 +193,32 @@ namespace brgen::middle {
 
             auto& then_ref = if_->then->elements.back();
 
-            then_ref = std::make_shared<ast::ImplicitReturn>(std::static_pointer_cast<ast::Expr>(then_ref));
+            then_ref = std::make_shared<ast::ImplicitReturn>(ast::cast_to<ast::Expr>(then_ref));
             if (auto block = ast::as<ast::IndentScope>(if_->els)) {
                 auto& else_ref = block->elements.back();
 
-                else_ref = std::make_shared<ast::ImplicitReturn>(std::static_pointer_cast<ast::Expr>(else_ref));
+                else_ref = std::make_shared<ast::ImplicitReturn>(ast::cast_to<ast::Expr>(else_ref));
+            }
+        }
+
+        // match has 2 pattern
+        // 1. match expr:
+        //       cond1 => stmt1
+        //       cond2 => stmt2
+        // then type of expr and cond should match
+        // if stmt is expr statement then type of match is type of stmt
+        // otherwise type of match is void
+        // 2. match:
+        //       cond1 => stmt1
+        //       cond2 => stmt2
+        // then type of cond should be bool
+        // if stmt is expr statement then type of match is type of stmt
+        // otherwise type of match is void
+        void typing_match(ast::Match* m) {
+            if (m->cond) {
+                typing_expr(m->cond);
+            }
+            else {
             }
         }
 
@@ -299,6 +328,9 @@ namespace brgen::middle {
             }
             else if (auto if_ = ast::as<ast::If>(expr)) {
                 typing_if(if_);
+            }
+            else if (auto match = ast::as<ast::Match>(expr)) {
+                typing_match(match);
             }
             else if (auto cond = ast::as<ast::Cond>(expr)) {
                 typing_expr(cond->cond);

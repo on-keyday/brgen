@@ -332,7 +332,7 @@ namespace brgen::ast {
         std::shared_ptr<MemberAccess> parse_access(lexer::Token token, std::shared_ptr<Expr>& p) {
             s.skip_white();
             auto ident = s.must_consume_token(lexer::Tag::ident);
-            return std::make_shared<MemberAccess>(token.loc, std::move(p), std::move(ident.token));
+            return std::make_shared<MemberAccess>(token.loc, std::move(p), std::move(ident.token), ident.loc);
         }
 
         std::shared_ptr<Expr> parse_post(Stream& s) {
@@ -726,7 +726,7 @@ namespace brgen::ast {
         }
 
         std::shared_ptr<Format> parse_format(lexer::Token&& token) {
-            auto fmt = std::make_shared<Format>(token.loc);
+            auto fmt = std::make_shared<Format>(token.loc, token.token == "enum");
             s.skip_space();
 
             fmt->ident = parse_ident_no_scope();
@@ -784,6 +784,10 @@ namespace brgen::ast {
 
             if (auto format = s.consume_token("format")) {
                 return parse_format(std::move(*format));
+            }
+
+            if (auto enum_ = s.consume_token("enum")) {
+                return parse_format(std::move(*enum_));
             }
 
             if (auto fn = s.consume_token("fn")) {
