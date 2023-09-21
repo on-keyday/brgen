@@ -4,6 +4,7 @@
 #include "literal.h"
 #include <binary/log2i.h>
 #include <vector>
+#include <map>
 
 namespace brgen::ast {
     // types
@@ -189,6 +190,19 @@ namespace brgen::ast {
             Type::dump(field);
             field(sdebugf(return_type));
             field(sdebugf(parameters));
+        }
+    };
+
+    struct MapType : Type {
+        define_node_type(NodeType::map_type);
+        std::map<std::string, std::shared_ptr<Node>> fields;
+
+        MapType(lexer::Loc l, std::map<std::string, std::shared_ptr<Node>>&& fields)
+            : Type(l, NodeType::map_type), fields(std::move(fields)) {}
+
+        void dump(auto&& field) {
+            Type::dump(field);
+            field(sdebugf(fields));
         }
     };
 

@@ -61,7 +61,7 @@ namespace brgen::ast {
 
         // layer 7
         assign,
-        typed_assign,
+        define_assign,
         const_assign,
         add_assign,
         sub_assign,

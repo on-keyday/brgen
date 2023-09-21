@@ -127,7 +127,7 @@ namespace brgen::middle {
                     }
                 }
             }
-            else if (b->op == ast::BinaryOp::typed_assign) {
+            else if (b->op == ast::BinaryOp::define_assign) {
                 if (left->usage == ast::IdentUsage::unknown) {
                     left->usage = ast::IdentUsage::define_variable;
                     left->expr_type = std::move(new_type);
@@ -280,7 +280,7 @@ namespace brgen::middle {
             typing_expr(bin->right);
             switch (op) {
                 case ast::BinaryOp::assign:
-                case ast::BinaryOp::typed_assign:
+                case ast::BinaryOp::define_assign:
                 case ast::BinaryOp::const_assign:
                     typing_assign(bin);
                     break;

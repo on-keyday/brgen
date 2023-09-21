@@ -370,7 +370,7 @@ namespace brgen::ast {
 
         void check_assignment(ast::Binary* l) {
             if (l->op == ast::BinaryOp::assign ||
-                l->op == ast::BinaryOp::typed_assign ||
+                l->op == ast::BinaryOp::define_assign ||
                 l->op == ast::BinaryOp::const_assign) {
                 if (!is_finally_ident(l->left.get())) {
                     s.report_error(l->left->loc, "left of =,:=,::= must be ident");
