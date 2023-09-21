@@ -156,6 +156,16 @@ namespace brgen::ast {
                                             }
                                         });
                                     }
+                                    else if constexpr (utils::helper::is_template_instance_of<T, std::map>) {
+                                        field(key, [&] {
+                                            auto field = obj.object();
+                                            for (auto& [k, v] : value) {
+                                                find_and_replace_node(v, [&](auto&& val) {
+                                                    field(k, val);
+                                                });
+                                            }
+                                        });
+                                    }
                                     else if constexpr (std::is_same_v<T, const NodeType>) {
                                         // nothing to do
                                     }
@@ -336,6 +346,7 @@ namespace brgen::ast {
                                utils::helper::is_template_instance_of<T, std::weak_ptr> ||
                                utils::helper::is_template_instance_of<T, std::list> ||
                                utils::helper::is_template_instance_of<T, std::vector> ||
+                               utils::helper::is_template_instance_of<T, std::map> ||
                                std::is_same_v<T, const NodeType>) {
                 // nothing to do
                 return {};
@@ -405,6 +416,7 @@ namespace brgen::ast {
                                                            utils::helper::is_template_instance_of<T, std::weak_ptr>;
                         constexpr auto is_list = utils::helper::is_template_instance_of<T, std::list> ||
                                                  utils::helper::is_template_instance_of<T, std::vector>;
+                        constexpr auto is_map = utils::helper::is_template_instance_of<T, std::map>;
                         auto& val = node_s[i]["body"];
                         auto check_index = [&](auto&& index) {
                             if (!index) {
@@ -481,6 +493,20 @@ namespace brgen::ast {
                                 }
                                 using P = typename utils::helper::template_of_t<std::decay_t<decltype(value.front())>>::template param_at<0>;
                                 value.push_back(cast_to<P>(nodes[*index]));
+                            }
+                        }
+                        else if constexpr (is_map) {
+                            if (!(*obj)->is_object()) {
+                                res = unexpect(json_to_loc_error(f->loc, key)("must be object"));
+                                return;
+                            }
+                            for (auto& [k, v] : utils::json::as_object(**obj)) {
+                                auto index = get_number(f->loc, key)(&v);
+                                if (!check_index(index)) {
+                                    return;
+                                }
+                                using P = typename utils::helper::template_of_t<std::decay_t<decltype(value.begin()->second)>>::template param_at<0>;
+                                value[k] = cast_to<P>(nodes[*index]);
                             }
                         }
                     });
