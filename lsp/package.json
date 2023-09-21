@@ -54,7 +54,6 @@
     "private": true,
     "main": "./client/out/extension.js",
     "dependencies": {
-        "@types/mocha": "^10.0.1",
         "@types/node": "^20.6.3",
         "typescript": "^5.2.2"
     }
