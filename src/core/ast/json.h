@@ -384,7 +384,7 @@ namespace brgen::ast {
         }
 
         static constexpr auto must_be_array = [](auto js) {
-            constexpr auto f = bool_to_error("must be array");
+            auto f = bool_to_error("must be array");
             return f(js->is_array()) & [&] { return js; };
         };
 

@@ -150,7 +150,11 @@ namespace brgen::ast {
             // Create a shared pointer for the Match
             auto match = std::make_shared<Match>(token.loc);
 
-            match->cond = parse_expr();
+            s.skip_white();
+
+            if (!s.expect_token(":")) {
+                match->cond = parse_expr();
+            }
 
             // Consume the initial indent sign
             must_consume_indent_sign();
@@ -585,6 +589,36 @@ namespace brgen::ast {
 
         std::shared_ptr<Loop> parse_for(lexer::Token&& token) {
             auto for_ = std::make_shared<Loop>(token.loc);
+            s.skip_white();
+            if (s.expect_token(":")) {
+                for_->body = parse_indent_block();
+                return for_;
+            }
+            if (!s.expect_token(";")) {
+                for_->init = parse_expr();
+                s.skip_white();
+            }
+            if (s.expect_token(":")) {
+                for_->cond = std::move(for_->init);
+                for_->body = parse_indent_block();
+                return for_;
+            }
+            s.must_consume_token(";");
+            s.skip_white();
+            if (!s.expect_token(";")) {
+                for_->cond = parse_expr();
+                s.skip_white();
+            }
+            if (s.expect_token(":")) {
+                for_->body = parse_indent_block();
+                return for_;
+            }
+            s.must_consume_token(";");
+            s.skip_white();
+            if (!s.expect_token(":")) {
+                for_->step = parse_expr();
+                s.skip_white();
+            }
             for_->body = parse_indent_block();
             return for_;
         }
