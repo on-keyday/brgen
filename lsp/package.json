@@ -60,6 +60,7 @@
     "private": true,
     "main": "./client/out/extension.js",
     "dependencies": {
+        "minimatch": "^9.0.3",
         "minimist": "^1.2.8",
         "semver": "^7.5.4"
     }
