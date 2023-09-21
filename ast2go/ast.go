@@ -253,6 +253,7 @@ type ConfigNode struct {
 
 type FormatNode struct {
 	Loc    Loc
+	IsEnum bool
 	Ident  *IdentNode
 	Body   *IndentScopeNode
 	Scope  *Scope
@@ -270,6 +271,9 @@ type FieldNode struct {
 
 type LoopNode struct {
 	Loc  Loc
+	Init ExprNode
+	Cond ExprNode
+	Step ExprNode
 	Body *IndentScopeNode
 }
 
@@ -795,7 +799,7 @@ func (a *astConstructor) linkNode(rawNodes []rawNode) error {
 		case *MatchNode:
 			var matchTmp struct {
 				ExprType *uint64  `json:"expr_type"`
-				Cond     uint64   `json:"cond"`
+				Cond     *uint64  `json:"cond"`
 				Branch   []uint64 `json:"branch"`
 			}
 			if err := json.Unmarshal(body, &matchTmp); err != nil {
@@ -804,7 +808,9 @@ func (a *astConstructor) linkNode(rawNodes []rawNode) error {
 			if matchTmp.ExprType != nil {
 				v.ExprType = a.nodes[*matchTmp.ExprType].(TypeNode)
 			}
-			v.Cond = a.nodes[matchTmp.Cond].(ExprNode)
+			if matchTmp.Cond != nil {
+				v.Cond = a.nodes[*matchTmp.Cond].(ExprNode)
+			}
 			v.Branch = make([]*MatchBranchNode, len(matchTmp.Branch))
 			for i, branch := range matchTmp.Branch {
 				v.Branch[i] = a.nodes[branch].(*MatchBranchNode)
@@ -879,6 +885,7 @@ func (a *astConstructor) linkNode(rawNodes []rawNode) error {
 			}
 		case *FormatNode:
 			var formatTmp struct {
+				IsEnum bool    `json:"is_enum"`
 				Ident  uint64  `json:"ident"`
 				Body   uint64  `json:"body"`
 				Scope  uint64  `json:"scope"`
@@ -887,6 +894,7 @@ func (a *astConstructor) linkNode(rawNodes []rawNode) error {
 			if err := json.Unmarshal(body, &formatTmp); err != nil {
 				return err
 			}
+			v.IsEnum = formatTmp.IsEnum
 			v.Ident = a.nodes[formatTmp.Ident].(*IdentNode)
 			v.Body = a.nodes[formatTmp.Body].(*IndentScopeNode)
 			v.Scope = a.scopes[formatTmp.Scope]
@@ -918,10 +926,22 @@ func (a *astConstructor) linkNode(rawNodes []rawNode) error {
 			}
 		case *LoopNode:
 			var loopTmp struct {
-				Body uint64 `json:"body"`
+				Init *uint64 `json:"init"`
+				Cond *uint64 `json:"cond"`
+				Step *uint64 `json:"step"`
+				Body uint64  `json:"body"`
 			}
 			if err := json.Unmarshal(body, &loopTmp); err != nil {
 				return err
+			}
+			if loopTmp.Init != nil {
+				v.Init = a.nodes[*loopTmp.Init].(ExprNode)
+			}
+			if loopTmp.Cond != nil {
+				v.Cond = a.nodes[*loopTmp.Cond].(ExprNode)
+			}
+			if loopTmp.Step != nil {
+				v.Step = a.nodes[*loopTmp.Step].(ExprNode)
 			}
 			v.Body = a.nodes[loopTmp.Body].(*IndentScopeNode)
 		case *FunctionNode:
