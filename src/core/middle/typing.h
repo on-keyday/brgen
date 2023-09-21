@@ -3,6 +3,7 @@
 #include "../lexer/token.h"
 #include "../common/file.h"
 #include <core/ast/traverse.h>
+#include <helper/defer.h>
 
 namespace brgen::middle {
 
@@ -15,6 +16,7 @@ namespace brgen::middle {
     };
 
     struct Typing {
+        std::shared_ptr<ast::Scope> current_global;
         bool equal_type(const std::shared_ptr<ast::Type>& left, const std::shared_ptr<ast::Type>& right) {
             if (left->node_type != right->node_type) {
                 return false;
@@ -272,15 +274,6 @@ namespace brgen::middle {
             }
         }
 
-        std::optional<std::shared_ptr<ast::Ident>> find_matching_ident(ast::Ident* ident) {
-            return ident->scope->lookup_backward<ast::Ident>([&](std::shared_ptr<ast::Ident>& def) {
-                if (ident->ident == def->ident && def->usage != ast::IdentUsage::unknown) {
-                    return true;
-                }
-                return false;
-            });
-        }
-
         void typing_binary_expr(ast::Binary* bin) {
             auto op = bin->op;
             typing_expr(bin->left);
@@ -296,13 +289,32 @@ namespace brgen::middle {
             }
         }
 
+        std::optional<std::shared_ptr<ast::Ident>> find_matching_ident(ast::Ident* ident) {
+            auto search = [&](std::shared_ptr<ast::Ident>& def) {
+                if (ident->ident == def->ident && def->usage != ast::IdentUsage::unknown) {
+                    return true;
+                }
+                return false;
+            };
+            auto found = ident->scope->lookup_local<ast::Ident>(search);
+            if (found) {
+                return found;
+            }
+            return current_global->lookup_global<ast::Ident>(search);
+        }
+
         std::optional<std::shared_ptr<ast::Format>> find_matching_fmt(ast::IdentType* ident) {
-            return ident->ident->scope->lookup_forward<ast::Format>([&](std::shared_ptr<ast::Format>& def) {
+            auto search = [&](std::shared_ptr<ast::Format>& def) {
                 if (def->ident->ident == ident->ident->ident) {
                     return true;
                 }
                 return false;
-            });
+            };
+            auto found = ident->ident->scope->lookup_local<ast::Format>(search);
+            if (found) {
+                return found;
+            }
+            return current_global->lookup_global<ast::Format>(search);
         }
 
         void typing_expr(const std::shared_ptr<ast::Expr>& expr) {
@@ -377,15 +389,27 @@ namespace brgen::middle {
         void typing_object(const std::shared_ptr<ast::Node>& ty) {
             // Define a lambda function for recursive traversal and typing
             auto recursive_typing = [&](auto&& f, const std::shared_ptr<ast::Node>& ty) -> void {
+                auto do_traverse = [&] {
+                    // Traverse the object's subcomponents and apply the recursive function
+                    ast::traverse(ty, [&](const std::shared_ptr<ast::Node>& sub_ty) {
+                        f(f, sub_ty);
+                    });
+                };
                 if (auto expr = ast::as<ast::Expr>(ty)) {
                     // If the object is an expression, perform expression typing
-                    typing_expr(std::static_pointer_cast<ast::Expr>(ty));
+                    typing_expr(ast::cast_to<ast::Expr>(ty));
                     return;
                 }
-                // Traverse the object's subcomponents and apply the recursive function
-                ast::traverse(ty, [&](const std::shared_ptr<ast::Node>& sub_ty) {
-                    f(f, sub_ty);
-                });
+                if (auto p = ast::as<ast::Program>(ty)) {
+                    auto tmp = current_global;
+                    current_global = p->global_scope;
+                    const auto d = utils::helper::defer([&] {
+                        current_global = std::move(tmp);
+                    });
+                    do_traverse();
+                    return;
+                }
+                do_traverse();
             };
             recursive_typing(recursive_typing, ty);
         }

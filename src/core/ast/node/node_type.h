@@ -52,6 +52,7 @@ namespace brgen::ast {
         void_type,
         bool_type,
         array_type,
+        function_type,
 
     };
 
@@ -95,6 +96,7 @@ namespace brgen::ast {
         "config",
         "range",
         "import",
+        "function_type",
     };
 
     constexpr int mapNodeTypeToValue(NodeType type) {
@@ -177,6 +179,8 @@ namespace brgen::ast {
                 return 37;
             case NodeType::import_:
                 return 38;
+            case NodeType::function_type:
+                return 39;
             default:
                 return -1;
         }
@@ -262,6 +266,8 @@ namespace brgen::ast {
                 return NodeType::range;
             case 38:
                 return NodeType::import_;
+            case 39:
+                return NodeType::function_type;
             default:
                 return either::unexpected{"invalid value"};
         }

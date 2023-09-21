@@ -74,6 +74,7 @@ namespace brgen::ast {
         CASE(VoidType)
         CASE(BoolType)
         CASE(ArrayType)
+        CASE(FunctionType)
 
         END_SWITCH()
 #undef SWITCH

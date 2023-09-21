@@ -3,6 +3,7 @@
 #include "base.h"
 #include "literal.h"
 #include <binary/log2i.h>
+#include <vector>
 
 namespace brgen::ast {
     // types
@@ -169,6 +170,25 @@ namespace brgen::ast {
             field(sdebugf(end_loc));
             field(sdebugf(base_type));
             field(sdebugf(length));
+        }
+    };
+
+    struct FunctionType : Type {
+        define_node_type(NodeType::function_type);
+        std::shared_ptr<Type> return_type;
+        std::vector<std::shared_ptr<Type>> parameters;
+
+        FunctionType(lexer::Loc l, std::shared_ptr<Type>&& ret, std::vector<std::shared_ptr<Type>>&& params)
+            : Type(l, NodeType::function_type), return_type(std::move(ret)), parameters(std::move(params)) {}
+
+        // for decode
+        FunctionType()
+            : Type({}, NodeType::function_type) {}
+
+        void dump(auto&& field) {
+            Type::dump(field);
+            field(sdebugf(return_type));
+            field(sdebugf(parameters));
         }
     };
 

@@ -5,41 +5,6 @@
 
 namespace brgen::ast {
 
-    struct ScopeStack {
-       private:
-        std::shared_ptr<Scope> root;
-        std::shared_ptr<Scope> current;
-
-        void maybe_init() {
-            if (!root) {
-                root = std::make_shared<Scope>();
-                current = root;
-            }
-            if (current->branch && !current->next) {
-                current->next = std::make_shared<Scope>();
-                current->next->prev = current;
-                current = current->next;
-            }
-        }
-
-       public:
-        void enter_branch() {
-            maybe_init();
-            current->branch = std::make_shared<Scope>();
-            current->branch->prev = current;
-            current = current->branch;
-        }
-
-        void leave_branch() {
-            current = current->prev.lock();
-        }
-
-        std::shared_ptr<Scope> current_scope() {
-            maybe_init();
-            return current;
-        }
-    };
-
     struct ParserState {
        private:
         Stream* s = nullptr;

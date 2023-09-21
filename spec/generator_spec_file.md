@@ -24,8 +24,15 @@ pass_by: |
 langs: |
     language is programming language to generate by generator
     this MUST be array of string
+types: |
+    type configuration of brgen
+    this is passed to src2json for typing rule 
 ```
 
 ## 4. Interface
 brgen asks spec of generator with `<command name> -s`
 generator should write spec to stdout
+
+# History
+2023/09/20: first version
+2023/09/21: add types for Elements

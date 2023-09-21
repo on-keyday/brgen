@@ -70,9 +70,13 @@ namespace brgen::ast {
         std::list<Object> objects;
         std::shared_ptr<Scope> branch;
         std::shared_ptr<Scope> next;
+        bool is_global = false;
 
         template <class V>
-        std::optional<std::shared_ptr<V>> lookup_backward(auto&& fn) {
+        std::optional<std::shared_ptr<V>> lookup_local(auto&& fn) {
+            if (is_global) {
+                return std::nullopt;
+            }
             for (auto it = objects.rbegin(); it != objects.rend(); it++) {
                 auto& val = *it;
                 if (std::holds_alternative<std::weak_ptr<V>>(val.object)) {
@@ -83,18 +87,13 @@ namespace brgen::ast {
                 }
             }
             if (auto got = prev.lock()) {
-                return got->template lookup_backward<V>(fn);
+                return got->template lookup_local<V>(fn);
             }
             return std::nullopt;
         }
 
         template <class V>
-        std::optional<std::shared_ptr<V>> lookup_forward(auto&& fn) {
-            if (auto got = prev.lock()) {
-                if (auto found = got->template lookup_forward<V>(fn)) {
-                    return found;
-                }
-            }
+        std::optional<std::shared_ptr<V>> lookup_global(auto&& fn) {
             for (auto& val : objects) {
                 if (std::holds_alternative<std::weak_ptr<V>>(val.object)) {
                     auto obj = std::get<std::weak_ptr<V>>(val.object).lock();
@@ -102,6 +101,9 @@ namespace brgen::ast {
                         return obj;
                     }
                 }
+            }
+            if (next) {
+                return next->template lookup_global<V>(fn);
             }
             return std::nullopt;
         }
@@ -140,6 +142,44 @@ namespace brgen::ast {
             for (auto p = next; p; p = p->next) {
                 add_field(*p);
             }
+        }
+    };
+
+    struct ScopeStack {
+       private:
+        std::shared_ptr<Scope> root;
+        std::shared_ptr<Scope> current;
+
+        void maybe_init() {
+            if (!root) {
+                root = std::make_shared<Scope>();
+                current = root;
+                current->is_global = true;
+            }
+            if (current->branch && !current->next) {
+                current->next = std::make_shared<Scope>();
+                current->next->prev = current;
+                current->next->is_global = current->is_global;
+                current = current->next;
+            }
+        }
+
+       public:
+        void enter_branch() {
+            maybe_init();
+            current->branch = std::make_shared<Scope>();
+            current->branch->prev = current;
+            current->branch->is_global = false;
+            current = current->branch;
+        }
+
+        void leave_branch() {
+            current = current->prev.lock();
+        }
+
+        std::shared_ptr<Scope> current_scope() {
+            maybe_init();
+            return current;
         }
     };
 }  // namespace brgen::ast
