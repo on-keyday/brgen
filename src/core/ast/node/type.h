@@ -179,8 +179,8 @@ namespace brgen::ast {
         std::shared_ptr<Type> return_type;
         std::vector<std::shared_ptr<Type>> parameters;
 
-        FunctionType(lexer::Loc l, std::shared_ptr<Type>&& ret, std::vector<std::shared_ptr<Type>>&& params)
-            : Type(l, NodeType::function_type), return_type(std::move(ret)), parameters(std::move(params)) {}
+        FunctionType(lexer::Loc l)
+            : Type(l, NodeType::function_type) {}
 
         // for decode
         FunctionType()
@@ -213,12 +213,15 @@ namespace brgen::ast {
         std::shared_ptr<Stmt> lookup(std::string_view key) {
             for (auto& f : fields) {
                 if (auto got = f.lock()) {
-                    if (auto field = ast::as<Field>(got)) {
+                    // here cannot use as<ast::Field>(got) because of circular dependency
+                    if (got->node_type == NodeType::field) {
+                        auto field = static_cast<ast::Field*>(got.get());
                         if (field->ident && field->ident->ident == key) {
                             return got;
                         }
                     }
-                    else if (auto fn = ast::as<Function>(got)) {
+                    else if (got->node_type == NodeType::function) {
+                        auto fn = static_cast<ast::Function*>(got.get());
                         if (fn->ident && fn->ident->ident == key) {
                             return got;
                         }

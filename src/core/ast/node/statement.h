@@ -88,6 +88,8 @@ namespace brgen::ast {
         }
     };
 
+    struct FunctionType;
+
     struct Function : Stmt {
         define_node_type(NodeType::function);
         std::shared_ptr<Ident> ident;
