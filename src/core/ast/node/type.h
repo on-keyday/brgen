@@ -193,9 +193,11 @@ namespace brgen::ast {
         }
     };
 
+    struct Stmt;
+
     struct StructType : Type {
         define_node_type(NodeType::struct_type);
-        std::vector<std::shared_ptr<Field>> fields;
+        std::vector<std::weak_ptr<Stmt>> fields;
 
         StructType(lexer::Loc l)
             : Type(l, NodeType::struct_type) {}
@@ -211,7 +213,7 @@ namespace brgen::ast {
 
     struct UnionType : Type {
         define_node_type(NodeType::union_type);
-        std::vector<std::shared_ptr<Field>> fields;
+        std::vector<std::shared_ptr<StructType>> fields;
 
         UnionType(lexer::Loc l)
             : Type(l, NodeType::union_type) {}

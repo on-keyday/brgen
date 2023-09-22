@@ -40,12 +40,26 @@ namespace brgen::ast {
         B& base;
 
         constexpr auto operator()(std::string_view key, auto&& value) const {
-            if constexpr (utils::helper::is_template_instance_of<std::decay_t<decltype(value)>, std::weak_ptr>) {
-                // ignore at here
-            }
-            else if constexpr (std::is_same_v<decltype(value), scope_ptr&>) {
+            using P = utils::helper::template_of_t<std::decay_t<decltype(value)>>;
+            if constexpr (std::is_same_v<decltype(value), scope_ptr&>) {
                 if (key == "global_scope") {
                     base(key, value);
+                }
+            }
+            else if constexpr (P::value) {
+                if constexpr (utils::helper::is_template_instance_of<std::decay_t<decltype(value)>, std::weak_ptr>) {
+                    // ignore at here
+                }
+                else {
+                    using P2 = utils::helper::template_of_t<typename P::template param_at<0>>;
+                    if constexpr (P2::value) {
+                        if constexpr (utils::helper::is_template_instance_of<typename P2::instance, std::weak_ptr>) {
+                            // ignore at here
+                        }
+                        else {
+                            base(key, value);
+                        }
+                    }
                 }
             }
             else {

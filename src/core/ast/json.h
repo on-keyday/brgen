@@ -77,8 +77,11 @@ namespace brgen::ast {
                     }
                     else if constexpr (utils::helper::is_template_instance_of<T, std::list> ||
                                        utils::helper::is_template_instance_of<T, std::vector>) {
-                        for (auto& element : value) {
-                            collect(element);
+                        using type = typename  utils::helper::template_of_t<T>::template param_at<0>;
+                        if constexpr(utils::helper::is_template_instance_of<type,std::shared_ptr>){
+                            for (auto& element : value) {
+                                collect(element);
+                            }
                         }
                     }
                 });
@@ -152,7 +155,12 @@ namespace brgen::ast {
                                         field(key, [&] {
                                             auto field = obj.array();
                                             for (auto& element : value) {
-                                                find_and_replace_node(element, field);
+                                                if constexpr (utils::helper::is_template_instance_of<std::decay_t<decltype(element)>,std::weak_ptr>){
+                                                    find_and_replace_node(element.lock(), field);
+                                                }
+                                                else {
+                                                    find_and_replace_node(element, field);
+                                                }
                                             }
                                         });
                                     }

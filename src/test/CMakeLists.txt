@@ -48,7 +48,7 @@ add_executable(go_test "langs/go_test.cpp"
 target_link_libraries(go_test ast_test_component)
 ]]
 
-add_test(NAM4E "lexer_test" COMMAND lexer_test)
+add_test(NAME "lexer_test" COMMAND lexer_test)
 add_test(NAME "ast_test" COMMAND ast_test)
 add_test(NAME "typing_test" COMMAND typing_test)
 add_test(NAME "middle_test" COMMAND middle_test)

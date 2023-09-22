@@ -138,9 +138,7 @@ namespace brgen::ast {
                 std::shared_ptr<StructType> struct_ = std::make_shared<StructType>(loc);
                 auto c = state.enter_struct(struct_);
                 block = parse_statement();
-                auto f = std::make_shared<Field>(loc);
-                f->field_type = struct_;
-                union_->fields.push_back(std::move(f));
+                union_->fields.push_back(std::move(struct_));
             };
 
             s.skip_white();
@@ -185,6 +183,7 @@ namespace brgen::ast {
 
             auto f = std::make_shared<Field>(match->loc);
             f->field_type = std::move(union_);
+            f->belong = state.current_format();
             state.current_struct()->fields.push_back(std::move(f));
 
             return match;
@@ -202,14 +201,13 @@ namespace brgen::ast {
                 std::shared_ptr<StructType> struct_ = std::make_shared<StructType>(loc);
                 auto c = state.enter_struct(struct_);
                 block = parse_indent_block();
-                auto f = std::make_shared<Field>(loc);
-                f->field_type = struct_;
-                union_->fields.push_back(std::move(f));
+                union_->fields.push_back(std::move(struct_));
             };
 
             auto push_union_to_current_struct = [&] {
                 auto f = std::make_shared<Field>(if_->loc);
                 f->field_type = std::move(union_);
+                f->belong = state.current_format();
                 state.current_struct()->fields.push_back(std::move(f));
             };
 
@@ -719,8 +717,8 @@ namespace brgen::ast {
 
             if (field->ident) {
                 field->ident->expr_type = field->field_type;
-                field->belong = state.current_format();
             }
+            field->belong = state.current_format();
 
             if (s.consume_token("(")) {
                 s.skip_white();
@@ -788,6 +786,8 @@ namespace brgen::ast {
             else {
                 fn->return_type = std::make_shared<VoidType>(end_loc);
             }
+
+            state.current_struct()->fields.push_back(fn);
 
             fn->body = parse_indent_block();
 

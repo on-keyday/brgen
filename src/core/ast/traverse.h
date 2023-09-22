@@ -114,8 +114,13 @@ namespace brgen::ast {
                 }
                 else if constexpr (utils::helper::is_template_instance_of<std::decay_t<decltype(value)>, std::list> ||
                                    utils::helper::is_template_instance_of<std::decay_t<decltype(value)>, std::vector>) {
-                    for (auto& v : value) {
-                        fn(v);
+                    using T = typename utils::helper::template_instance_of_t<std::decay_t<decltype(*value.begin())>, std::shared_ptr>;
+                    if constexpr (T::value) {
+                        if constexpr (std::is_base_of_v<Node, typename T::template param_at<0>>) {
+                            for (auto& v : value) {
+                                fn(v);
+                            }
+                        }
                     }
                 }
             });
