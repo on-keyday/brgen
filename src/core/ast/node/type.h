@@ -209,6 +209,24 @@ namespace brgen::ast {
             Type::dump(field);
             field(sdebugf(fields));
         }
+
+        std::shared_ptr<Stmt> lookup(std::string_view key) {
+            for (auto& f : fields) {
+                if (auto got = f.lock()) {
+                    if (auto field = ast::as<Field>(got)) {
+                        if (field->ident && field->ident->ident == key) {
+                            return got;
+                        }
+                    }
+                    else if (auto fn = ast::as<Function>(got)) {
+                        if (fn->ident && fn->ident->ident == key) {
+                            return got;
+                        }
+                    }
+                }
+            }
+            return nullptr;
+        }
     };
 
     struct UnionType : Type {

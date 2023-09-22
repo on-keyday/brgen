@@ -762,6 +762,7 @@ namespace brgen::ast {
             fn->ident = parse_ident_no_scope();
             fn->ident->usage = IdentUsage::define_fn;
             fn->belong = state.current_format();
+            fn->func_type = std::make_shared<FunctionType>(fn->loc);
             s.skip_white();
             lexer::Loc end_loc;
             auto b = s.must_consume_token("(");
@@ -771,8 +772,21 @@ namespace brgen::ast {
                     end_loc = t->loc;
                     break;
                 }
-                auto field = parse_field(nullptr);
-                fn->parameters.push_back(cast_to<Field>(field));
+                std::shared_ptr<Ident> ident;
+                if (!s.expect_token(":")) {
+                    ident = parse_ident_no_scope();
+                    ident->usage = IdentUsage::define_field;
+                    ident->scope = state.current_scope();
+                    s.skip_white();
+                }
+                if (!s.expect_token(":")) {
+                    s.must_consume_token(":");
+                }
+
+                auto f = parse_field(std::move(ident));
+                auto field = cast_to<Field>(f);
+                fn->parameters.push_back(field);
+                fn->func_type->parameters.push_back(field->field_type);
                 if (s.expect_token(")") || s.consume_token(",")) {
                     continue;
                 }
@@ -786,6 +800,8 @@ namespace brgen::ast {
             else {
                 fn->return_type = std::make_shared<VoidType>(end_loc);
             }
+
+            fn->func_type->return_type = fn->return_type;
 
             state.current_struct()->fields.push_back(fn);
 

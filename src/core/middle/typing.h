@@ -221,7 +221,18 @@ namespace brgen::middle {
             if (m->cond) {
                 typing_expr(m->cond);
             }
-            else {
+            for (auto& c : m->branch) {
+                typing_expr(c->cond);
+                if (m->cond) {
+                    int_type_fitting(m->cond->expr_type, c->cond->expr_type);
+                    if (!equal_type(m->cond->expr_type, c->cond->expr_type)) {
+                        report_not_equal_type(m->cond->expr_type, c->cond->expr_type);
+                    }
+                }
+                else {
+                    check_bool(c->cond.get());
+                }
+                typing_object(c->then);
             }
         }
 
@@ -402,6 +413,23 @@ namespace brgen::middle {
                 typing_expr(selector->target);
                 if (!selector->target->expr_type) {
                     return;
+                }
+                auto type = ast::as<ast::StructType>(selector->target->expr_type);
+                if (!type) {
+                    error(selector->target->loc, "expect struct type but not").report();
+                }
+                auto stmt = type->lookup(selector->member);
+                if (!stmt) {
+                    error(selector->loc, "member ", selector->member, " is not defined").report();
+                }
+                if (auto field = ast::as<ast::Field>(stmt)) {
+                    selector->expr_type = field->field_type;
+                }
+                else if (auto fn = ast::as<ast::Function>(stmt)) {
+                    selector->expr_type = fn->func_type;
+                }
+                else {
+                    error(selector->loc, "member ", selector->member, " is not a field or function").report();
                 }
             }
             else {

@@ -95,6 +95,7 @@ namespace brgen::ast {
         std::shared_ptr<Type> return_type;
         std::weak_ptr<Format> belong;
         std::shared_ptr<IndentScope> body;
+        std::shared_ptr<FunctionType> func_type;
 
         Function(lexer::Loc l)
             : Stmt(l, NodeType::function) {}
@@ -109,6 +110,7 @@ namespace brgen::ast {
             field(sdebugf(return_type));
             field(sdebugf(belong));
             field(sdebugf(body));
+            field(sdebugf(func_type));
         }
     };
 
