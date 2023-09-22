@@ -89,12 +89,15 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     }
 
     auto report_error = [&](auto& res) {
-        brgen::Debug d;
-        {
-            auto field = d.object();
-            field("file", files.file_list());
-            field("ast", nullptr);
-            field("error", res.error().to_string());
+        if (!cout.is_tty()) {
+            brgen::Debug d;
+            {
+                auto field = d.object();
+                field("file", files.file_list());
+                field("ast", nullptr);
+                field("error", res.error().to_string());
+            }
+            cout << d.out();
         }
         res.error().for_each_error([&](std::string_view msg, bool warn) {
             if (warn) {
