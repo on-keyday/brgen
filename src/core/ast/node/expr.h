@@ -48,7 +48,7 @@ namespace brgen::ast {
         define_node_type(NodeType::ident);
         std::string ident;
         scope_ptr scope;
-        std::weak_ptr<Ident> base;
+        std::weak_ptr<Node> base;
         IdentUsage usage = IdentUsage::unknown;
 
         Ident(lexer::Loc l, std::string&& i)

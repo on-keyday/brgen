@@ -6,11 +6,16 @@
 namespace brgen::ast {
 
     struct ParserState {
+        std::shared_ptr<Type> input_type;
+        std::shared_ptr<Type> output_type;
+        std::shared_ptr<Type> config_type;
+
        private:
         Stream* s = nullptr;
         size_t indent = 0;
         ScopeStack stack;
         std::shared_ptr<Format> current_fmt_;
+        std::shared_ptr<StructType> current_struct_;
 
        public:
         auto new_indent(size_t new_, std::shared_ptr<Scope>* frame) {
@@ -36,8 +41,20 @@ namespace brgen::ast {
             });
         }
 
+        auto enter_struct(const std::shared_ptr<StructType>& type) {
+            auto tmp = current_struct_;
+            current_struct_ = type;
+            return utils::helper::defer([this, tmp] {
+                current_struct_ = std::move(tmp);
+            });
+        }
+
         std::shared_ptr<Format> current_format() {
             return current_fmt_;
+        }
+
+        std::shared_ptr<StructType> current_struct() {
+            return current_struct_;
         }
 
         size_t current_indent() {
@@ -115,6 +132,17 @@ namespace brgen::ast {
             // Create a shared pointer for the Match
             auto match = std::make_shared<Match>(token.loc);
 
+            std::shared_ptr<UnionType> union_ = std::make_shared<UnionType>(match->loc);
+
+            auto stmt_with_struct = [&](lexer::Loc loc, auto& block) {
+                std::shared_ptr<StructType> struct_ = std::make_shared<StructType>(loc);
+                auto c = state.enter_struct(struct_);
+                block = parse_statement();
+                auto f = std::make_shared<Field>(loc);
+                f->field_type = struct_;
+                union_->fields.push_back(std::move(f));
+            };
+
             s.skip_white();
 
             if (!s.expect_token(":")) {
@@ -132,7 +160,7 @@ namespace brgen::ast {
                 auto sym = s.must_consume_token("=>");
                 br->sym_loc = sym.loc;
                 s.skip_white();
-                br->then = parse_statement();
+                stmt_with_struct(sym.loc, br->then);
                 return br;
             };
 
@@ -155,6 +183,10 @@ namespace brgen::ast {
                 match->branch.push_back(parse_match_branch());
             }
 
+            auto f = std::make_shared<Field>(match->loc);
+            f->field_type = std::move(union_);
+            state.current_struct()->fields.push_back(std::move(f));
+
             return match;
         }
 
@@ -164,7 +196,24 @@ namespace brgen::ast {
 
             // 解析して if の条件式とブロックを設定
             if_->cond = parse_expr();
-            if_->then = parse_indent_block();
+            std::shared_ptr<UnionType> union_ = std::make_shared<UnionType>(if_->loc);
+
+            auto body_with_struct = [&](lexer::Loc loc, auto& block) {
+                std::shared_ptr<StructType> struct_ = std::make_shared<StructType>(loc);
+                auto c = state.enter_struct(struct_);
+                block = parse_indent_block();
+                auto f = std::make_shared<Field>(loc);
+                f->field_type = struct_;
+                union_->fields.push_back(std::move(f));
+            };
+
+            auto push_union_to_current_struct = [&] {
+                auto f = std::make_shared<Field>(if_->loc);
+                f->field_type = std::move(union_);
+                state.current_struct()->fields.push_back(std::move(f));
+            };
+
+            body_with_struct(if_->loc, if_->then);
 
             auto cur_indent = state.current_indent();
 
@@ -189,7 +238,7 @@ namespace brgen::ast {
                 auto elif = std::make_shared<If>(tok->loc);
                 s.skip_white();
                 elif->cond = parse_expr();
-                elif->then = parse_indent_block();
+                body_with_struct(tok->loc, elif->then);
                 auto next_if = elif.get();
                 current_if->els = std::move(elif);
                 current_if = next_if;
@@ -200,7 +249,7 @@ namespace brgen::ast {
 
             // else ブロックの解析
             if (s.consume_token("else")) {
-                current_if->els = parse_indent_block();
+                body_with_struct(if_->loc, current_if->els);
                 if (cur_indent && !detect_end()) {
                     s.report_error("expect less indent but not");
                 }
@@ -243,13 +292,13 @@ namespace brgen::ast {
                 return std::make_shared<StrLiteral>(t->loc, std::move(t->token));
             }
             if (auto i = s.consume_token("input")) {
-                return std::make_shared<Input>(i->loc, nullptr);
+                return std::make_shared<Input>(i->loc, state.input_type);
             }
             if (auto o = s.consume_token("output")) {
-                return std::make_shared<Output>(o->loc, nullptr);
+                return std::make_shared<Output>(o->loc, state.output_type);
             }
             if (auto c = s.consume_token("config")) {
-                return std::make_shared<Config>(c->loc, nullptr);
+                return std::make_shared<Config>(c->loc, state.config_type);
             }
             if (auto paren = s.consume_token("(")) {
                 return parse_paren(std::move(*paren));
@@ -685,6 +734,7 @@ namespace brgen::ast {
                 s.must_consume_token(")");
             }
 
+            state.current_struct()->fields.push_back(field);
             state.current_scope()->push(field);
 
             return field;
@@ -693,11 +743,13 @@ namespace brgen::ast {
         std::shared_ptr<Format> parse_format(lexer::Token&& token) {
             auto fmt = std::make_shared<Format>(token.loc, token.token == "enum");
             s.skip_space();
+            fmt->struct_type = std::make_shared<StructType>(token.loc);
 
             fmt->ident = parse_ident_no_scope();
             fmt->ident->usage = IdentUsage::define_format;
             {
                 auto scope = state.enter_format(fmt);
+                auto typ = state.enter_struct(fmt->struct_type);
                 fmt->body = parse_indent_block();
             }
 

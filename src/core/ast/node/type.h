@@ -193,12 +193,31 @@ namespace brgen::ast {
         }
     };
 
-    struct MapType : Type {
-        define_node_type(NodeType::map_type);
-        std::map<std::string, std::shared_ptr<Node>> fields;
+    struct StructType : Type {
+        define_node_type(NodeType::struct_type);
+        std::vector<std::shared_ptr<Field>> fields;
 
-        MapType(lexer::Loc l, std::map<std::string, std::shared_ptr<Node>>&& fields)
-            : Type(l, NodeType::map_type), fields(std::move(fields)) {}
+        StructType(lexer::Loc l)
+            : Type(l, NodeType::struct_type) {}
+
+        StructType()
+            : Type({}, NodeType::struct_type) {}
+
+        void dump(auto&& field) {
+            Type::dump(field);
+            field(sdebugf(fields));
+        }
+    };
+
+    struct UnionType : Type {
+        define_node_type(NodeType::union_type);
+        std::vector<std::shared_ptr<Field>> fields;
+
+        UnionType(lexer::Loc l)
+            : Type(l, NodeType::union_type) {}
+
+        UnionType()
+            : Type({}, NodeType::union_type) {}
 
         void dump(auto&& field) {
             Type::dump(field);

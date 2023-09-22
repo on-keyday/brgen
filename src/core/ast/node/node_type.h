@@ -53,7 +53,8 @@ namespace brgen::ast {
         bool_type,
         array_type,
         function_type,
-        map_type,
+        struct_type,
+        union_type,
 
     };
 
@@ -98,7 +99,8 @@ namespace brgen::ast {
         "range",
         "import",
         "function_type",
-        "map_type",
+        "struct_type",
+        "union_type",
     };
 
     constexpr int mapNodeTypeToValue(NodeType type) {
@@ -183,8 +185,10 @@ namespace brgen::ast {
                 return 38;
             case NodeType::function_type:
                 return 39;
-            case NodeType::map_type:
+            case NodeType::struct_type:
                 return 40;
+            case NodeType::union_type:
+                return 41;
             default:
                 return -1;
         }
@@ -273,7 +277,9 @@ namespace brgen::ast {
             case 39:
                 return NodeType::function_type;
             case 40:
-                return NodeType::map_type;
+                return NodeType::struct_type;
+            case 41:
+                return NodeType::union_type;
             default:
                 return either::unexpected{"invalid value"};
         }

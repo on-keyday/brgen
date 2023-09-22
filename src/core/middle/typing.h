@@ -108,6 +108,7 @@ namespace brgen::middle {
             }
             b->expr_type = void_type(b->loc);
             auto base = left->base.lock();
+            auto base_ident = ast::as<ast::Ident>(base);
             auto report_assign_error = [&] {
                 error(b->loc, "cannot assign to ", left->ident).error(base->loc, "ident ", left->ident, " is defined here").report();
             };
@@ -117,12 +118,12 @@ namespace brgen::middle {
                     error(left->loc, "identifier ", left->ident, " is not defined before; use := to define identifier").report();
                 }
                 else {
-                    if (base->usage == ast::IdentUsage::define_variable) {
-                        if (!equal_type(base->expr_type, new_type)) {
+                    if (base_ident->usage == ast::IdentUsage::define_variable) {
+                        if (!equal_type(base_ident->expr_type, new_type)) {
                             report_assign_error();
                         }
                     }
-                    else if (base->usage == ast::IdentUsage::define_const) {
+                    else if (base_ident->usage == ast::IdentUsage::define_const) {
                         report_assign_error();
                     }
                 }
@@ -317,6 +318,20 @@ namespace brgen::middle {
             return current_global->lookup_global<ast::Format>(search);
         }
 
+        std::optional<std::shared_ptr<ast::Format>> find_matching_enum(ast::Ident* ident) {
+            auto search = [&](std::shared_ptr<ast::Format>& def) {
+                if (def->is_enum && def->ident->ident == ident->ident) {
+                    return true;
+                }
+                return false;
+            };
+            auto found = ident->scope->lookup_local<ast::Format>(search);
+            if (found) {
+                return found;
+            }
+            return current_global->lookup_global<ast::Format>(search);
+        }
+
         void typing_expr(const std::shared_ptr<ast::Expr>& expr) {
             if (auto lit = ast::as<ast::IntLiteral>(expr)) {
                 lit->expr_type = std::make_shared<ast::IntLiteralType>(std::static_pointer_cast<ast::IntLiteral>(expr));
@@ -328,11 +343,15 @@ namespace brgen::middle {
                 if (ident->usage != ast::IdentUsage::unknown) {
                     return;  // skip
                 }
-                auto found = find_matching_ident(ident);
-                if (found) {
+                if (auto found = find_matching_ident(ident)) {
                     ident->expr_type = (*found)->expr_type;
                     ident->base = *found;
                     ident->usage = ast::IdentUsage::reference;
+                }
+                else if (auto found = find_matching_enum(ident)) {
+                    ident->expr_type = (*found)->struct_type;
+                    ident->base = *found;
+                    ident->usage = ast::IdentUsage::reference_type;
                 }
             }
             else if (auto bin = ast::as<ast::Binary>(expr)) {
@@ -366,7 +385,8 @@ namespace brgen::middle {
                     unsupported(unary->expr);
                 }
                 switch (unary->op) {
-                    case ast::UnaryOp::minus_sign: {
+                    case ast::UnaryOp::minus_sign:
+                    case ast::UnaryOp::not_: {
                         unary->expr_type = unary->expr->expr_type;
                         break;
                     }
@@ -380,6 +400,9 @@ namespace brgen::middle {
             }
             else if (auto selector = ast::as<ast::MemberAccess>(expr)) {
                 typing_expr(selector->target);
+                if (!selector->target->expr_type) {
+                    return;
+                }
             }
             else {
                 unsupported(expr);

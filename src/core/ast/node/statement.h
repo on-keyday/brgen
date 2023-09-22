@@ -6,12 +6,15 @@
 
 namespace brgen::ast {
 
+    struct StructType;
+
     struct Format : Stmt {
         define_node_type(NodeType::format);
         bool is_enum = false;
         std::shared_ptr<Ident> ident;
         std::shared_ptr<IndentScope> body;
         std::weak_ptr<Format> belong;
+        std::shared_ptr<StructType> struct_type;
         Format(lexer::Loc l, bool is_enum)
             : Stmt(l, NodeType::format), is_enum(is_enum) {}
 
@@ -32,6 +35,7 @@ namespace brgen::ast {
             field(sdebugf(ident));
             field(sdebugf(body));
             field(sdebugf(belong));
+            field(sdebugf(struct_type));
         }
     };
 
