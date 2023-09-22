@@ -7,13 +7,6 @@ namespace brgen::ast {
     enum class NodeType {
         program,
         expr = 0x010000,
-        int_literal,
-        bool_literal,
-        str_literal,
-
-        input,
-        output,
-        config,
 
         binary,
         unary,
@@ -31,6 +24,15 @@ namespace brgen::ast {
         tmp_var,
         block_expr,
         import_,
+
+        literal = 0x090000,
+        int_literal,
+        bool_literal,
+        str_literal,
+
+        input,
+        output,
+        config,
 
         stmt = 0x020000,
         loop,

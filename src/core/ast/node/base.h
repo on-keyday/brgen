@@ -107,6 +107,8 @@ namespace brgen::ast {
     };
 
     struct Literal : Expr {
+        define_node_type(NodeType::literal);
+
        protected:
         constexpr Literal(lexer::Loc l, NodeType t)
             : Expr(l, t) {}

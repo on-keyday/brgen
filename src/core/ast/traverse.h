@@ -24,6 +24,7 @@ namespace brgen::ast {
         SWITCH
         CASE(Program)
         // literal
+        CASE(Literal)
         CASE(IntLiteral)
         CASE(BoolLiteral)
         CASE(StrLiteral)
