@@ -103,6 +103,7 @@ namespace brgen::ast {
         "function_type",
         "struct_type",
         "union_type",
+        "literal",
     };
 
     constexpr int mapNodeTypeToValue(NodeType type) {
@@ -191,6 +192,8 @@ namespace brgen::ast {
                 return 40;
             case NodeType::union_type:
                 return 41;
+            case NodeType::literal:
+                return 42;
             default:
                 return -1;
         }
@@ -282,6 +285,8 @@ namespace brgen::ast {
                 return NodeType::struct_type;
             case 41:
                 return NodeType::union_type;
+            case 42:
+                return NodeType::literal;
             default:
                 return either::unexpected{"invalid value"};
         }
