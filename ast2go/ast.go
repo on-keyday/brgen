@@ -84,6 +84,11 @@ type StmtNode interface {
 	stmtNode()
 }
 
+type MemberNode interface {
+	StmtNode
+	memberNode()
+}
+
 type IndentScopeNode struct {
 	Loc      Loc
 	Elements []Node
@@ -322,6 +327,16 @@ type ArrayType struct {
 	Length ExprNode
 }
 
+type StructType struct {
+	Loc    Loc
+	Fields []MemberNode
+}
+
+type UnionType struct {
+	Loc    Loc
+	Fields []*StructType
+}
+
 type Program struct {
 	Loc         Loc
 	Elements    []Node
@@ -461,6 +476,7 @@ func (i *FieldNode) stmtNode() {}
 func (i *FieldNode) Identifier() string {
 	return i.Ident.Name
 }
+func (i *FieldNode) memberNode() {}
 
 func (i *LoopNode) node()     {}
 func (i *LoopNode) stmtNode() {}
@@ -470,6 +486,7 @@ func (i *FunctionNode) stmtNode() {}
 func (i *FunctionNode) Identifier() string {
 	return i.Ident.Name
 }
+func (i *FunctionNode) memberNode() {}
 
 func (i *IntType) node()     {}
 func (i *IntType) typeNode() {}
@@ -491,6 +508,12 @@ func (i *VoidType) typeNode() {}
 
 func (i *ArrayType) node()     {}
 func (i *ArrayType) typeNode() {}
+
+func (i *StructType) node()     {}
+func (i *StructType) typeNode() {}
+
+func (i *UnionType) node()     {}
+func (i *UnionType) typeNode() {}
 
 func (i *IndentScopeNode) node()     {}
 func (i *IndentScopeNode) stmtNode() {}
@@ -565,6 +588,10 @@ func (a *astConstructor) collectNodeLink(rawNodes []rawNode) error {
 			node = &VoidType{}
 		case "array_type":
 			node = &ArrayType{}
+		case "struct_type":
+			node = &StructType{}
+		case "union_type":
+			node = &UnionType{}
 		case "indent_scope":
 			node = &IndentScopeNode{}
 		case "program":
@@ -1013,6 +1040,28 @@ func (a *astConstructor) linkNode(rawNodes []rawNode) error {
 			}
 			v.Base = a.nodes[arrayTypeTmp.BaseType].(TypeNode)
 			v.Length = a.nodes[arrayTypeTmp.Length].(ExprNode)
+		case *StructType:
+			var structTypeTmp struct {
+				Fields []uint64 `json:"fields"`
+			}
+			if err := json.Unmarshal(body, &structTypeTmp); err != nil {
+				return err
+			}
+			v.Fields = make([]MemberNode, len(structTypeTmp.Fields))
+			for i, field := range structTypeTmp.Fields {
+				v.Fields[i] = a.nodes[field].(MemberNode)
+			}
+		case *UnionType:
+			var unionTypeTmp struct {
+				Fields []uint64 `json:"fields"`
+			}
+			if err := json.Unmarshal(body, &unionTypeTmp); err != nil {
+				return err
+			}
+			v.Fields = make([]*StructType, len(unionTypeTmp.Fields))
+			for i, field := range unionTypeTmp.Fields {
+				v.Fields[i] = a.nodes[field].(*StructType)
+			}
 		case *IndentScopeNode:
 			var indentScopeTmp struct {
 				Elements []uint64 `json:"elements"`
