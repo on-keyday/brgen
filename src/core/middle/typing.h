@@ -221,19 +221,36 @@ namespace brgen::middle {
             if (m->cond) {
                 typing_expr(m->cond);
             }
+            std::shared_ptr<ast::Type> candidate;
             for (auto& c : m->branch) {
                 typing_expr(c->cond);
-                if (m->cond) {
-                    int_type_fitting(m->cond->expr_type, c->cond->expr_type);
-                    if (!equal_type(m->cond->expr_type, c->cond->expr_type)) {
-                        report_not_equal_type(m->cond->expr_type, c->cond->expr_type);
+                if (c->cond) {
+                    if (m->cond && m->cond->expr_type) {
+                        int_type_fitting(m->cond->expr_type, c->cond->expr_type);
+                        if (!equal_type(m->cond->expr_type, c->cond->expr_type)) {
+                            report_not_equal_type(m->cond->expr_type, c->cond->expr_type);
+                        }
+                    }
+                    else {
+                        check_bool(c->cond.get());
                     }
                 }
-                else {
-                    check_bool(c->cond.get());
-                }
                 typing_object(c->then);
+                if (auto exp = ast::as<ast::Expr>(c->then)) {
+                    if (!candidate) {
+                        candidate = exp->expr_type;
+                    }
+                    else {
+                        if (candidate->node_type != ast::NodeType::void_type) {
+                            int_type_fitting(candidate, exp->expr_type);
+                            if (!equal_type(candidate, exp->expr_type)) {
+                                candidate = void_type(m->loc);
+                            }
+                        }
+                    }
+                }
             }
+            m->expr_type = candidate ? candidate : void_type(m->loc);
         }
 
         void typing_binary(ast::Binary* b) {
@@ -378,6 +395,13 @@ namespace brgen::middle {
                 typing_expr(cond->cond);
                 typing_expr(cond->then);
                 typing_expr(cond->els);
+                if (!cond->cond->expr_type) {
+                    return;  // not typed yet
+                }
+                check_bool(cond->cond.get());
+                if (!cond->then->expr_type || !cond->els->expr_type) {
+                    return;  // not typed yet
+                }
                 auto lty = cond->then->expr_type;
                 auto rty = cond->els->expr_type;
                 int_type_fitting(lty, rty);
@@ -408,6 +432,9 @@ namespace brgen::middle {
             }
             else if (auto call = ast::as<ast::Call>(expr)) {
                 typing_expr(call->callee);
+                if (!call->callee->expr_type) {
+                    return;  // not typed yet
+                }
             }
             else if (auto selector = ast::as<ast::MemberAccess>(expr)) {
                 typing_expr(selector->target);

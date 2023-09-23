@@ -688,9 +688,7 @@ namespace brgen::ast {
             base->usage = IdentUsage::reference_type;
             base->scope = state.current_scope();
 
-            auto type = std::make_shared<IdentType>(ident.loc, std::move(base));
-
-            return type;
+            return std::make_shared<IdentType>(ident.loc, std::move(base));
         }
 
         // may returns expr if not field
