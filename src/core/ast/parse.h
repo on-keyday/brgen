@@ -825,6 +825,15 @@ namespace brgen::ast {
         }
 
         std::shared_ptr<Node> parse_statement() {
+            auto skip_last = [&] {
+                s.skip_space();
+
+                if (!s.eos() && s.expect_token(lexer::Tag::line)) {
+                    s.must_consume_token(lexer::Tag::line);
+                    s.skip_line();
+                }
+            };
+
             if (auto loop = s.consume_token("loop")) {
                 return parse_for(std::move(*loop));
             }
@@ -841,6 +850,26 @@ namespace brgen::ast {
                 return parse_fn(std::move(*fn));
             }
 
+            if (auto ret = s.consume_token("return")) {
+                auto ret_ = std::make_shared<Return>(ret->loc);
+                s.skip_space();
+                if (!s.eos() && !s.consume_token(lexer::Tag::line)) {
+                    ret_->expr = parse_expr();
+                    skip_last();
+                }
+                return ret_;
+            }
+
+            if (auto br = s.consume_token("break")) {
+                skip_last();
+                return std::make_shared<Break>(br->loc);
+            }
+
+            if (auto cont = s.consume_token("continue")) {
+                skip_last();
+                return std::make_shared<Continue>(cont->loc);
+            }
+
             std::shared_ptr<Node> node;
             if (s.expect_token(":")) {
                 node = parse_field(nullptr);
@@ -850,12 +879,7 @@ namespace brgen::ast {
                 node = parse_field(expr);
             }
 
-            s.skip_space();
-
-            if (!s.eos() && s.expect_token(lexer::Tag::line)) {
-                s.must_consume_token(lexer::Tag::line);
-                s.skip_line();
-            }
+            skip_last();
 
             return node;
         }

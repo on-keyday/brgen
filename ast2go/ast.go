@@ -337,6 +337,12 @@ type UnionType struct {
 	Fields []*StructType
 }
 
+type FunctionTypeNode struct {
+	Loc    Loc
+	Args   []TypeNode
+	Return TypeNode
+}
+
 type Program struct {
 	Loc         Loc
 	Elements    []Node
@@ -515,6 +521,9 @@ func (i *StructType) typeNode() {}
 func (i *UnionType) node()     {}
 func (i *UnionType) typeNode() {}
 
+func (i *FunctionTypeNode) node()     {}
+func (i *FunctionTypeNode) typeNode() {}
+
 func (i *IndentScopeNode) node()     {}
 func (i *IndentScopeNode) stmtNode() {}
 
@@ -592,6 +601,8 @@ func (a *astConstructor) collectNodeLink(rawNodes []rawNode) error {
 			node = &StructType{}
 		case "union_type":
 			node = &UnionType{}
+		case "function_type":
+			node = &FunctionTypeNode{}
 		case "indent_scope":
 			node = &IndentScopeNode{}
 		case "program":
@@ -1061,6 +1072,18 @@ func (a *astConstructor) linkNode(rawNodes []rawNode) error {
 			v.Fields = make([]*StructType, len(unionTypeTmp.Fields))
 			for i, field := range unionTypeTmp.Fields {
 				v.Fields[i] = a.nodes[field].(*StructType)
+			}
+		case *FunctionTypeNode:
+			var functionTypeTmp struct {
+				Args   []uint64 `json:"parameters"`
+				Return uint64   `json:"return_type"`
+			}
+			if err := json.Unmarshal(body, &functionTypeTmp); err != nil {
+				return err
+			}
+			v.Args = make([]TypeNode, len(functionTypeTmp.Args))
+			for i, arg := range functionTypeTmp.Args {
+				v.Args[i] = a.nodes[arg].(TypeNode)
 			}
 		case *IndentScopeNode:
 			var indentScopeTmp struct {

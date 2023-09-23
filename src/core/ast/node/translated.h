@@ -56,15 +56,15 @@ namespace brgen::ast {
         }
     };
 
-    struct ImplicitReturn : Stmt {
-        define_node_type(NodeType::implicit_return);
+    struct ImplicitYield : Stmt {
+        define_node_type(NodeType::implicit_yield);
         std::shared_ptr<Expr> expr;
 
-        ImplicitReturn(std::shared_ptr<Expr>&& a)
-            : Stmt(a->loc, NodeType::implicit_return), expr(std::move(a)) {}
+        ImplicitYield(std::shared_ptr<Expr>&& a)
+            : Stmt(a->loc, NodeType::implicit_yield), expr(std::move(a)) {}
 
-        ImplicitReturn()
-            : Stmt({}, NodeType::implicit_return) {}
+        ImplicitYield()
+            : Stmt({}, NodeType::implicit_yield) {}
 
         void dump(auto&& field) {
             Stmt::dump(field);

@@ -116,4 +116,38 @@ namespace brgen::ast {
         }
     };
 
+    struct Return : Stmt {
+        define_node_type(NodeType::return_);
+        std::shared_ptr<Expr> expr;
+
+        Return(lexer::Loc l)
+            : Stmt(l, NodeType::return_) {}
+
+        Return()
+            : Stmt({}, NodeType::return_) {}
+
+        void dump(auto&& field) {
+            Stmt::dump(field);
+            field(sdebugf(expr));
+        }
+    };
+
+    struct Break : Stmt {
+        define_node_type(NodeType::break_);
+        Break(lexer::Loc l)
+            : Stmt(l, NodeType::break_) {}
+
+        Break()
+            : Stmt({}, NodeType::break_) {}
+    };
+
+    struct Continue : Stmt {
+        define_node_type(NodeType::continue_);
+        Continue(lexer::Loc l)
+            : Stmt(l, NodeType::continue_) {}
+
+        Continue()
+            : Stmt({}, NodeType::continue_) {}
+    };
+
 }  // namespace brgen::ast

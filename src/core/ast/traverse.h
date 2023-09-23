@@ -57,9 +57,12 @@ namespace brgen::ast {
         CASE(Loop)
         CASE(IndentScope)
         CASE(MatchBranch)
+        CASE(Return)
+        CASE(Break)
+        CASE(Continue)
 
         CASE(Assert)
-        CASE(ImplicitReturn)
+        CASE(ImplicitYield)
 
         // member
         CASE(Member)

@@ -38,10 +38,13 @@ namespace brgen::ast {
         loop,
         indent_scope,
         match_branch,
+        return_,
+        break_,
+        continue_,
 
         // translated
         assert,
-        implicit_return,
+        implicit_yield,
 
         member = 0x220000,
 
@@ -86,7 +89,7 @@ namespace brgen::ast {
         "format",
         "indent_scope",
         "assert",
-        "implicit_return",
+        "implicit_yield",
         "type",
         "int_type",
         "ident_type",
@@ -156,7 +159,7 @@ namespace brgen::ast {
                 return 20;
             case NodeType::assert:
                 return 21;
-            case NodeType::implicit_return:
+            case NodeType::implicit_yield:
                 return 22;
             case NodeType::type:
                 return 23;
@@ -252,7 +255,7 @@ namespace brgen::ast {
             case 21:
                 return NodeType::assert;
             case 22:
-                return NodeType::implicit_return;
+                return NodeType::implicit_yield;
             case 23:
                 return NodeType::type;
             case 24:

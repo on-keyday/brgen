@@ -17,11 +17,14 @@ struct Flags : utils::cmdline::templ::HelpOption {
     bool not_resolve_import = false;
     bool check_ast = false;
     bool not_resolve_type = false;
+    bool disable_untyped_warning = false;
 
     void bind(utils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&not_resolve_import, "not-resolve-import", "not resolve import");
         ctx.VarBool(&check_ast, "check-ast", "check ast mode");
+        ctx.VarBool(&not_resolve_type, "not-resolve-type", "not resolve type");
+        ctx.VarBool(&disable_untyped_warning, "disable-untyped", "disable untyped warning");
     }
 };
 auto& cout = utils::wrap::cout_wrap();
@@ -129,7 +132,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
             report_error(res3.error());
             return -1;
         }
-        if (ty.warnings.locations.size() > 0) {
+        if (!flags.disable_untyped_warning && ty.warnings.locations.size() > 0) {
             report_error(brgen::to_source_error(files)(std::move(ty.warnings)), true);
         }
     }
