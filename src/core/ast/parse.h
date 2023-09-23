@@ -668,6 +668,16 @@ namespace brgen::ast {
                 return std::make_shared<ArrayType>(arr_begin->loc, std::move(expr), end_tok.loc, std::move(base_type));
             }
 
+            if (auto lit = s.consume_token(lexer::Tag::int_literal)) {
+                auto literal = std::make_shared<IntLiteral>(lit->loc, std::move(lit->token));
+                return std::make_shared<IntLiteralType>(std::move(literal));
+            }
+
+            if (auto lit = s.consume_token(lexer::Tag::str_literal)) {
+                auto literal = std::make_shared<StrLiteral>(lit->loc, std::move(lit->token));
+                return std::make_shared<StrLiteralType>(std::move(literal));
+            }
+
             auto ident = s.must_consume_token(lexer::Tag::ident);
 
             if (auto bit_size = is_int_type(ident.token)) {
