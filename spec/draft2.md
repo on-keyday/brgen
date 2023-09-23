@@ -175,11 +175,21 @@ elif false:
 else:
     2
 
+
 # match expression
 value = match 1:
     1 => 2 # each statement should have
     3 => value
     _ => 0
+```
+because of current parser implementation limitation,
+syntax like below may cause an error
+```py
+p :=
+    if value == 1:
+        32
+    else:
+        64
 ```
 
 ### 5.3 Assignment Statement

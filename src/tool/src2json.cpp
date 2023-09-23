@@ -18,13 +18,15 @@ struct Flags : utils::cmdline::templ::HelpOption {
     bool check_ast = false;
     bool not_resolve_type = false;
     bool disable_untyped_warning = false;
+    bool print_ast = false;
 
     void bind(utils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&not_resolve_import, "not-resolve-import", "not resolve import");
-        ctx.VarBool(&check_ast, "check-ast", "check ast mode");
+        ctx.VarBool(&check_ast, "c,check-ast", "check ast mode");
         ctx.VarBool(&not_resolve_type, "not-resolve-type", "not resolve type");
         ctx.VarBool(&disable_untyped_warning, "disable-untyped", "disable untyped warning");
+        ctx.VarBool(&print_ast, "p,print-ast", "print ast to stdout if succeeded (if stdout is tty. if not tty, usually print json ast)");
     }
 };
 auto& cout = utils::wrap::cout_wrap();
@@ -147,7 +149,12 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
         field("ast", c.obj);
         field("error", nullptr);
     }
-    cout << d.out();
+    if (!cout.is_tty() || flags.print_ast) {
+        cout << d.out();
+    }
+    else if (cout.is_tty()) {
+        cout << "ok";
+    }
     if (cout.is_tty()) {
         cout << "\n";
     }
