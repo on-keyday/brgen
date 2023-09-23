@@ -159,7 +159,7 @@ namespace brgen {
                     .warn = warn,
                 };
             }
-            return got->error(std::move(msg), loc.pos);
+            return got->error(std::move(msg), loc.pos, warn);
         }
     };
 

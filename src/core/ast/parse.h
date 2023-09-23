@@ -79,6 +79,8 @@ namespace brgen::ast {
             auto prog = std::make_shared<Program>();
             prog->loc = s.loc();
             prog->global_scope = state.reset_stack();
+            prog->struct_type = std::make_shared<StructType>(prog->loc);
+            auto st = state.enter_struct(prog->struct_type);
             s.skip_line();
             while (!s.eos()) {
                 auto expr = parse_statement();
@@ -759,6 +761,7 @@ namespace brgen::ast {
                 fmt->body = parse_indent_block();
             }
 
+            state.current_struct()->fields.push_back(fmt);
             state.current_scope()->push(fmt);
 
             return fmt;

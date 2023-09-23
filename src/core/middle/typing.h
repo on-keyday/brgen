@@ -16,6 +16,8 @@ namespace brgen::middle {
     };
 
     struct Typing {
+        LocationError warnings;
+
         std::shared_ptr<ast::Scope> current_global;
         bool equal_type(const std::shared_ptr<ast::Type>& left, const std::shared_ptr<ast::Type>& right) {
             if (left->node_type != right->node_type) {
@@ -46,6 +48,10 @@ namespace brgen::middle {
                 error(ident->loc, "identifier ", ident->ident, " is not defined").report();
             }
             error(expr->loc, "unsupported operation").report();
+        }
+
+        void warn_not_typed(auto&& expr) {
+            warnings.warning(expr->loc, "expression is not typed yet");
         }
 
         void check_bool(ast::Expr* expr) {
@@ -101,11 +107,22 @@ namespace brgen::middle {
         }
 
         void typing_assign(ast::Binary* b) {
-            auto left = ast::as<ast::Ident>(b->left);
             auto right = b->right;
             if (!right->expr_type) {
-                unsupported(right);
+                warn_not_typed(right);
+                return;  // not typed yet
             }
+            if (auto m = ast::as<ast::MemberAccess>(b->left)) {
+                if (!m->expr_type) {
+                    warn_not_typed(m);
+                    return;  // not typed yet
+                }
+                if (!equal_type(m->expr_type, right->expr_type)) {
+                    report_not_equal_type(m->expr_type, right->expr_type);
+                }
+                return;
+            }
+            auto left = ast::as<ast::Ident>(b->left);
             b->expr_type = void_type(b->loc);
             auto base = left->base.lock();
             auto base_ident = ast::as<ast::Ident>(base);
@@ -148,7 +165,7 @@ namespace brgen::middle {
             }
         }
 
-        std::shared_ptr<ast::Type> extract_expr_type(const std::shared_ptr<ast::IndentScope>& block) {
+        std::shared_ptr<ast::Type> extract_then_type(const std::shared_ptr<ast::IndentScope>& block) {
             auto last_element = block->elements.back();
             if (auto then_expr = ast::as<ast::Expr>(last_element)) {
                 return then_expr->expr_type;
@@ -177,13 +194,15 @@ namespace brgen::middle {
 
         void typing_if(ast::If* if_) {
             typing_object(if_->cond);
-            check_bool(if_->cond.get());
+            if (if_->cond->expr_type) {
+                check_bool(if_->cond.get());
+            }
             typing_object(if_->then);
             if (if_->els) {
                 typing_object(if_->els);
             }
 
-            auto then_ = extract_expr_type(if_->then);
+            auto then_ = extract_then_type(if_->then);
             auto els_ = extract_else_type(if_->els);
 
             if (!then_ || !els_ ||
@@ -224,11 +243,13 @@ namespace brgen::middle {
             std::shared_ptr<ast::Type> candidate;
             for (auto& c : m->branch) {
                 typing_expr(c->cond);
-                if (c->cond) {
-                    if (m->cond && m->cond->expr_type) {
-                        int_type_fitting(m->cond->expr_type, c->cond->expr_type);
-                        if (!equal_type(m->cond->expr_type, c->cond->expr_type)) {
-                            report_not_equal_type(m->cond->expr_type, c->cond->expr_type);
+                if (c->cond->expr_type) {
+                    if (m->cond) {
+                        if (m->cond->expr_type) {
+                            int_type_fitting(m->cond->expr_type, c->cond->expr_type);
+                            if (!equal_type(m->cond->expr_type, c->cond->expr_type)) {
+                                report_not_equal_type(m->cond->expr_type, c->cond->expr_type);
+                            }
                         }
                     }
                     else {
@@ -261,16 +282,19 @@ namespace brgen::middle {
                 error(b->loc, "binary op ", *ast::bin_op_str(b->op), " is not valid")
                     .report();
             };
-            if (!lty) {
-                unsupported(b->left);
-            }
-            if (!rty) {
-                unsupported(b->right);
+            if (!lty || !rty) {
+                warn_not_typed(b);
+                return;  // not typed yet
             }
             int_type_fitting(lty, rty);
             switch (op) {
                 case ast::BinaryOp::left_shift:
-                case ast::BinaryOp::right_shift: {
+                case ast::BinaryOp::right_shift:
+                case ast::BinaryOp::add:
+                case ast::BinaryOp::sub:
+                case ast::BinaryOp::mul:
+                case ast::BinaryOp::div:
+                case ast::BinaryOp::mod: {
                     if (lty->node_type == ast::NodeType::int_type &&
                         rty->node_type == ast::NodeType::int_type) {
                         b->expr_type = std::move(lty);
@@ -278,7 +302,9 @@ namespace brgen::middle {
                     }
                     report_binary_error();
                 }
-                case ast::BinaryOp::bit_and: {
+                case ast::BinaryOp::bit_and:
+                case ast::BinaryOp::bit_or:
+                case ast::BinaryOp::bit_xor: {
                     if (lty->node_type == ast::NodeType::int_type &&
                         rty->node_type == ast::NodeType::int_type) {
                         if (!equal_type(rty, lty)) {
@@ -290,7 +316,13 @@ namespace brgen::middle {
                     report_binary_error();
                 }
                 case ast::BinaryOp::equal:
-                case ast::BinaryOp::not_equal: {
+                case ast::BinaryOp::not_equal:
+                case ast::BinaryOp::less:
+                case ast::BinaryOp::less_or_eq:
+                case ast::BinaryOp::grater:
+                case ast::BinaryOp::grater_or_eq:
+                case ast::BinaryOp::logical_and:
+                case ast::BinaryOp::logical_or: {
                     if (!equal_type(lty, rty)) {
                         report_not_equal_type(lty, rty);
                     }
@@ -360,12 +392,15 @@ namespace brgen::middle {
             return current_global->lookup_global<ast::Format>(search);
         }
 
-        void typing_expr(const std::shared_ptr<ast::Expr>& expr) {
+        void typing_expr(const std::shared_ptr<ast::Expr>& expr, bool on_define = false) {
             if (auto lit = ast::as<ast::IntLiteral>(expr)) {
-                lit->expr_type = std::make_shared<ast::IntLiteralType>(std::static_pointer_cast<ast::IntLiteral>(expr));
+                lit->expr_type = std::make_shared<ast::IntLiteralType>(ast::cast_to<ast::IntLiteral>(expr));
             }
             else if (auto lit = ast::as<ast::BoolLiteral>(expr)) {
                 lit->expr_type = std::make_shared<ast::BoolType>(lit->loc);
+            }
+            else if (auto lit = ast::as<ast::StrLiteral>(expr)) {
+                lit->expr_type = std::make_shared<ast::StrLiteralType>(ast::cast_to<ast::StrLiteral>(expr));
             }
             else if (auto ident = ast::as<ast::Ident>(expr)) {
                 if (ident->usage != ast::IdentUsage::unknown) {
@@ -381,6 +416,9 @@ namespace brgen::middle {
                     ident->base = *found;
                     ident->usage = ast::IdentUsage::reference_type;
                 }
+                else if (!on_define) {
+                    warn_not_typed(ident);
+                }
             }
             else if (auto bin = ast::as<ast::Binary>(expr)) {
                 typing_binary_expr(bin);
@@ -395,11 +433,12 @@ namespace brgen::middle {
                 typing_expr(cond->cond);
                 typing_expr(cond->then);
                 typing_expr(cond->els);
-                if (!cond->cond->expr_type) {
-                    return;  // not typed yet
+                if (cond->cond->expr_type) {
+                    check_bool(cond->cond.get());
                 }
-                check_bool(cond->cond.get());
+                // even if cond->cond is not typed, we still need to type then and else
                 if (!cond->then->expr_type || !cond->els->expr_type) {
+                    warn_not_typed(cond);
                     return;  // not typed yet
                 }
                 auto lty = cond->then->expr_type;
@@ -416,9 +455,6 @@ namespace brgen::middle {
             }
             else if (auto unary = ast::as<ast::Unary>(expr)) {
                 typing_expr(unary->expr);
-                if (!unary->expr->expr_type) {
-                    unsupported(unary->expr);
-                }
                 switch (unary->op) {
                     case ast::UnaryOp::minus_sign:
                     case ast::UnaryOp::not_: {
@@ -433,12 +469,34 @@ namespace brgen::middle {
             else if (auto call = ast::as<ast::Call>(expr)) {
                 typing_expr(call->callee);
                 if (!call->callee->expr_type) {
+                    warn_not_typed(call);
                     return;  // not typed yet
+                }
+                auto type = ast::as<ast::FunctionType>(call->callee->expr_type);
+                if (!type) {
+                    error(call->callee->loc, "expect function type but not").report();
+                }
+                if (call->arguments.size() != type->parameters.size()) {
+                    error(call->loc, "expect ", nums(type->parameters.size()), " arguments but got ", nums(call->arguments.size()))
+                        .error(type->loc, "function is defined here")
+                        .report();
+                }
+                for (size_t i = 0; i < call->arguments.size(); i++) {
+                    typing_expr(call->arguments[i]);
+                    if (!call->arguments[i]->expr_type) {
+                        warn_not_typed(call);
+                        continue;  // not typed yet
+                    }
+                    int_type_fitting(call->arguments[i]->expr_type, type->parameters[i]);
+                    if (!equal_type(call->arguments[i]->expr_type, type->parameters[i])) {
+                        report_not_equal_type(call->arguments[i]->expr_type, type->parameters[i]);
+                    }
                 }
             }
             else if (auto selector = ast::as<ast::MemberAccess>(expr)) {
                 typing_expr(selector->target);
                 if (!selector->target->expr_type) {
+                    warn_not_typed(selector);
                     return;
                 }
                 auto type = ast::as<ast::StructType>(selector->target->expr_type);
@@ -458,6 +516,25 @@ namespace brgen::middle {
                 else {
                     error(selector->loc, "member ", selector->member, " is not a field or function").report();
                 }
+            }
+            else if (auto idx = ast::as<ast::Index>(expr)) {
+                typing_expr(idx->expr);
+                typing_expr(idx->index);
+                if (!idx->expr->expr_type || !idx->index->expr_type) {
+                    warn_not_typed(idx);
+                    return;
+                }
+                unsupported(expr);
+            }
+            else if (ast::as<ast::Input>(expr) ||
+                     ast::as<ast::Output>(expr) ||
+                     ast::as<ast::Config>(expr)) {
+                // typing already done
+            }
+            else if (auto r = ast::as<ast::Range>(expr)) {
+                warn_not_typed(r);
+            }
+            else if (auto i = ast::as<ast::Import>(expr)) {
             }
             else {
                 unsupported(expr);

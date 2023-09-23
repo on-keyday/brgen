@@ -8,6 +8,7 @@
 #include <console/ansiesc.h>
 #include <future>
 #include <core/middle/resolve_import.h>
+#include <core/middle/typing.h>
 #include "common/print.h"
 #include <wrap/argv.h>
 
@@ -15,6 +16,7 @@ struct Flags : utils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
     bool not_resolve_import = false;
     bool check_ast = false;
+    bool not_resolve_type = false;
 
     void bind(utils::cmdline::option::Context& ctx) {
         bind_help(ctx);
@@ -88,18 +90,18 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
         return -1;
     }
 
-    auto report_error = [&](auto& res) {
+    auto report_error = [&](auto&& res) {
         if (!cout.is_tty()) {
             brgen::Debug d;
             {
                 auto field = d.object();
                 field("file", files.file_list());
                 field("ast", nullptr);
-                field("error", res.error().to_string());
+                field("error", res.to_string());
             }
             cout << d.out();
         }
-        res.error().for_each_error([&](std::string_view msg, bool warn) {
+        res.for_each_error([&](std::string_view msg, bool warn) {
             if (warn) {
                 print_warning(msg);
             }
@@ -110,20 +112,33 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     };
     auto res = do_parse(input).transform_error(brgen::to_source_error(files));
     if (!res) {
-        report_error(res);
+        report_error(res.error());
         return -1;
     }
     if (!flags.not_resolve_import) {
         auto res2 = brgen::middle::resolve_import(*res, files).transform_error(brgen::to_source_error(files));
         if (!res2) {
-            report_error(res2);
+            report_error(res2.error());
             return -1;
+        }
+    }
+    if (!flags.not_resolve_type) {
+        auto ty = brgen::middle::Typing{};
+        auto res3 = ty.typing(*res).transform_error(brgen::to_source_error(files));
+        if (!res3) {
+            report_error(res3.error());
+            return -1;
+        }
+        if (ty.warnings.locations.size() > 0) {
+            report_error(brgen::to_source_error(files)(std::move(ty.warnings)));
         }
     }
     brgen::Debug d;
     {
         auto field = d.object();
+        d.set_no_colon_space(true);
         brgen::ast::JSONConverter c;
+        c.obj.set_no_colon_space(true);
         field("file", files.file_list());
         c.encode(*res);
         field("ast", c.obj);

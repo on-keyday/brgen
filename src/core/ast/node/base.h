@@ -135,13 +135,17 @@ namespace brgen::ast {
         }
     };
 
+    struct StructType;
+
     struct Program : Node {
         define_node_type(NodeType::program);
+        std::shared_ptr<StructType> struct_type;
         node_list elements;
         scope_ptr global_scope;
 
         void dump(auto&& field) {
             Node::dump(field);
+            field(sdebugf(struct_type));
             field(sdebugf(elements));
             field(sdebugf(global_scope));
         }

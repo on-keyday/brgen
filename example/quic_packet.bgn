@@ -42,13 +42,13 @@ format OneRTTPacket:
 format ConnectionID:
    id :[10]byte
    fn encode():
-      d
+      pass
 
 
 format Varint:
    value :u64
    fn decode():
-      p = input[0]
+      p := input[0]
       value = match p&0xC0 >> 6:
          0 => input.u8() & !msb(2)
          1 => input.u16() & !msb(2)
