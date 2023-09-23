@@ -320,14 +320,21 @@ namespace brgen::middle {
                 case ast::BinaryOp::less:
                 case ast::BinaryOp::less_or_eq:
                 case ast::BinaryOp::grater:
-                case ast::BinaryOp::grater_or_eq:
-                case ast::BinaryOp::logical_and:
-                case ast::BinaryOp::logical_or: {
+                case ast::BinaryOp::grater_or_eq: {
                     if (!equal_type(lty, rty)) {
                         report_not_equal_type(lty, rty);
                     }
                     b->expr_type = std::make_shared<ast::BoolType>(b->loc);
                     return;
+                }
+                case ast::BinaryOp::logical_and:
+                case ast::BinaryOp::logical_or: {
+                    if (lty->node_type == ast::NodeType::bool_type &&
+                        rty->node_type == ast::NodeType::bool_type) {
+                        b->expr_type = std::make_shared<ast::BoolType>(b->loc);
+                        return;
+                    }
+                    report_binary_error();
                 }
                 default: {
                     report_binary_error();

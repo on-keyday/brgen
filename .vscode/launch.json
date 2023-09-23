@@ -22,8 +22,7 @@
             "request": "launch",
             "program": "${workspaceRoot}/build/tool/src2json",
             "args": [
-                "--check-ast",
-                "ignore/sample.json"
+                "example/quic_packet.bgn"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",

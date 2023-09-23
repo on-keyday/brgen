@@ -45,14 +45,15 @@ namespace brgen::lexer {
         constexpr auto puncts = punct(
             "#", "\"", "\'", "$",  // added but maybe not used
             "::=", ":=",
-            ":", "(", ")", "[", "]",
+            ":", ";", "(", ")", "[", "]",
             "=>", "==", "=",
             "..", ".",
             ">>", "<<", "~",
-            "&", "|", "&&", "||",
+            "&&", "||", "&", "|",
             "!=", "!",
             "+", "-", "*", "/", "%",
-            ",");
+            ",",
+            "<=", ">=", "<", ">");
 
         constexpr auto one_token_lexer() {
             auto p = method_proxy(puncts);
