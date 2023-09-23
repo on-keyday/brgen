@@ -25,7 +25,7 @@ struct Flags : utils::cmdline::templ::HelpOption {
         ctx.VarBool(&not_resolve_import, "not-resolve-import", "not resolve import");
         ctx.VarBool(&check_ast, "c,check-ast", "check ast mode");
         ctx.VarBool(&not_resolve_type, "not-resolve-type", "not resolve type");
-        ctx.VarBool(&disable_untyped_warning, "disable-untyped", "disable untyped warning");
+        ctx.VarBool(&disable_untyped_warning, "u,disable-untyped", "disable untyped warning");
         ctx.VarBool(&print_ast, "p,print-ast", "print ast to stdout if succeeded (if stdout is tty. if not tty, usually print json ast)");
     }
 };
