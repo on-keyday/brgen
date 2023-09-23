@@ -28,7 +28,8 @@ namespace brgen::ast {
             return v;
         }
         else if constexpr (std::is_same_v<T, Expr> || std::is_same_v<T, Type> ||
-                           std::is_same_v<T, Stmt> || std::is_same_v<T, Literal>) {
+                           std::is_same_v<T, Stmt> || std::is_same_v<T, Literal> ||
+                           std::is_same_v<T, Member>) {
             if (v && (int(v->node_type) & int(T::node_type_tag))) {
                 return static_cast<T*>(v);
             }

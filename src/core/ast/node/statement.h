@@ -8,7 +8,7 @@ namespace brgen::ast {
 
     struct StructType;
 
-    struct Format : Stmt {
+    struct Format : Member {
         define_node_type(NodeType::format);
         bool is_enum = false;
         std::shared_ptr<Ident> ident;
@@ -16,11 +16,11 @@ namespace brgen::ast {
         std::weak_ptr<Format> belong;
         std::shared_ptr<StructType> struct_type;
         Format(lexer::Loc l, bool is_enum)
-            : Stmt(l, NodeType::format), is_enum(is_enum) {}
+            : Member(l, NodeType::format), is_enum(is_enum) {}
 
         // for decode
         Format()
-            : Stmt({}, NodeType::format) {}
+            : Member({}, NodeType::format) {}
 
         std::string ident_path(const char* sep = "_") {
             if (auto parent = belong.lock()) {
@@ -30,7 +30,7 @@ namespace brgen::ast {
         }
 
         void dump(auto&& field) {
-            Stmt::dump(field);
+            Member::dump(field);
             field(sdebugf(is_enum));
             field(sdebugf(ident));
             field(sdebugf(body));
@@ -39,7 +39,7 @@ namespace brgen::ast {
         }
     };
 
-    struct Field : Stmt {
+    struct Field : Member {
         define_node_type(NodeType::field);
         std::shared_ptr<Ident> ident;
         lexer::Loc colon_loc;
@@ -49,14 +49,14 @@ namespace brgen::ast {
         std::weak_ptr<Format> belong;
 
         Field(lexer::Loc l)
-            : Stmt(l, NodeType::field) {}
+            : Member(l, NodeType::field) {}
 
         // for decode
         Field()
-            : Stmt({}, NodeType::field) {}
+            : Member({}, NodeType::field) {}
 
         void dump(auto&& field) {
-            Stmt::dump(field);
+            Member::dump(field);
             field(sdebugf(ident));
             field(sdebugf(colon_loc));
             field(sdebugf(field_type));
@@ -90,7 +90,7 @@ namespace brgen::ast {
 
     struct FunctionType;
 
-    struct Function : Stmt {
+    struct Function : Member {
         define_node_type(NodeType::function);
         std::shared_ptr<Ident> ident;
         std::list<std::shared_ptr<Field>> parameters;
@@ -100,10 +100,10 @@ namespace brgen::ast {
         std::shared_ptr<FunctionType> func_type;
 
         Function(lexer::Loc l)
-            : Stmt(l, NodeType::function) {}
+            : Member(l, NodeType::function) {}
 
         Function()
-            : Stmt({}, NodeType::function) {}
+            : Member({}, NodeType::function) {}
 
         void dump(auto&& field) {
             Stmt::dump(field);

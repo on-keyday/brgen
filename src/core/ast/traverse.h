@@ -54,16 +54,19 @@ namespace brgen::ast {
 
         // stmt
         CASE(Stmt)
-
         CASE(Loop)
-        CASE(Field)
-        CASE(Format)
         CASE(IndentScope)
-        CASE(Function)
         CASE(MatchBranch)
 
         CASE(Assert)
         CASE(ImplicitReturn)
+
+        // member
+        CASE(Member)
+
+        CASE(Field)
+        CASE(Format)
+        CASE(Function)
 
         // type
         CASE(Type)

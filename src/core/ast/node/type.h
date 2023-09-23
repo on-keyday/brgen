@@ -193,11 +193,9 @@ namespace brgen::ast {
         }
     };
 
-    struct Stmt;
-
     struct StructType : Type {
         define_node_type(NodeType::struct_type);
-        std::vector<std::shared_ptr<Stmt>> fields;
+        std::vector<std::shared_ptr<Member>> fields;
 
         StructType(lexer::Loc l)
             : Type(l, NodeType::struct_type) {}
@@ -210,9 +208,9 @@ namespace brgen::ast {
             field(sdebugf(fields));
         }
 
-        std::shared_ptr<Stmt> lookup(std::string_view key) {
+        std::shared_ptr<Member> lookup(std::string_view key) {
             for (auto& f : fields) {
-                // here cannot use as<ast::Field>(got) because of circular dependency
+                // here cannot use such as ast::as<ast::Field>(got) because of circular dependency
                 if (f->node_type == NodeType::field) {
                     auto field = static_cast<ast::Field*>(f.get());
                     if (field->ident && field->ident->ident == key) {

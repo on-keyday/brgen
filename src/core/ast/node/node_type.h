@@ -25,7 +25,7 @@ namespace brgen::ast {
         block_expr,
         import_,
 
-        literal = 0x090000,
+        literal = 0x110000,
         int_literal,
         bool_literal,
         str_literal,
@@ -36,15 +36,18 @@ namespace brgen::ast {
 
         stmt = 0x020000,
         loop,
-        field,
-        format,
         indent_scope,
-        function,
         match_branch,
 
         // translated
         assert,
         implicit_return,
+
+        member = 0x220000,
+
+        field,
+        format,
+        function,
 
         type = 0x040000,
         int_type,
@@ -104,6 +107,7 @@ namespace brgen::ast {
         "struct_type",
         "union_type",
         "literal",
+        "member",
     };
 
     constexpr int mapNodeTypeToValue(NodeType type) {
@@ -194,6 +198,8 @@ namespace brgen::ast {
                 return 41;
             case NodeType::literal:
                 return 42;
+            case NodeType::member:
+                return 43;
             default:
                 return -1;
         }
@@ -287,6 +293,8 @@ namespace brgen::ast {
                 return NodeType::union_type;
             case 42:
                 return NodeType::literal;
+            case 43:
+                return NodeType::member;
             default:
                 return either::unexpected{"invalid value"};
         }

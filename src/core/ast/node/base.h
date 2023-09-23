@@ -106,6 +106,14 @@ namespace brgen::ast {
             : Node(l, t) {}
     };
 
+    struct Member : Stmt {
+        define_node_type(NodeType::member);
+
+       protected:
+        constexpr Member(lexer::Loc l, NodeType t)
+            : Stmt(l, t) {}
+    };
+
     struct Literal : Expr {
         define_node_type(NodeType::literal);
 
