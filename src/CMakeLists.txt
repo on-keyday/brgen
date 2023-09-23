@@ -8,7 +8,7 @@ add_executable(src2json "tool/src2json.cpp")
 
 target_link_libraries(src2json utils)
 
-add_executable(json2cpp "tool/src2json.cpp")
+add_executable(json2cpp "tool/json2cpp/main.cpp")
 
 target_link_libraries(json2cpp utils)
 
