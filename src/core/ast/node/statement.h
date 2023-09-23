@@ -66,28 +66,6 @@ namespace brgen::ast {
         }
     };
 
-    struct Loop : Stmt {
-        define_node_type(NodeType::loop);
-        std::shared_ptr<Expr> init;
-        std::shared_ptr<Expr> cond;
-        std::shared_ptr<Expr> step;
-        std::shared_ptr<IndentScope> body;
-
-        Loop(lexer::Loc l)
-            : Stmt(l, NodeType::loop) {}
-
-        Loop()
-            : Stmt({}, NodeType::loop) {}
-
-        void dump(auto&& field) {
-            Stmt::dump(field);
-            field(sdebugf(init));
-            field(sdebugf(cond));
-            field(sdebugf(step));
-            field(sdebugf(body));
-        }
-    };
-
     struct FunctionType;
 
     struct Function : Member {
@@ -113,6 +91,28 @@ namespace brgen::ast {
             field(sdebugf(belong));
             field(sdebugf(body));
             field(sdebugf(func_type));
+        }
+    };
+
+    struct Loop : Stmt {
+        define_node_type(NodeType::loop);
+        std::shared_ptr<Expr> init;
+        std::shared_ptr<Expr> cond;
+        std::shared_ptr<Expr> step;
+        std::shared_ptr<IndentScope> body;
+
+        Loop(lexer::Loc l)
+            : Stmt(l, NodeType::loop) {}
+
+        Loop()
+            : Stmt({}, NodeType::loop) {}
+
+        void dump(auto&& field) {
+            Stmt::dump(field);
+            field(sdebugf(init));
+            field(sdebugf(cond));
+            field(sdebugf(step));
+            field(sdebugf(body));
         }
     };
 
