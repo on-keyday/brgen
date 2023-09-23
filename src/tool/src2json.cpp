@@ -19,6 +19,7 @@ struct Flags : utils::cmdline::templ::HelpOption {
     bool not_resolve_type = false;
     bool disable_untyped_warning = false;
     bool print_ast = false;
+    bool debug_json = false;
 
     void bind(utils::cmdline::option::Context& ctx) {
         bind_help(ctx);
@@ -27,6 +28,7 @@ struct Flags : utils::cmdline::templ::HelpOption {
         ctx.VarBool(&not_resolve_type, "not-resolve-type", "not resolve type");
         ctx.VarBool(&disable_untyped_warning, "u,disable-untyped", "disable untyped warning");
         ctx.VarBool(&print_ast, "p,print-ast", "print ast to stdout if succeeded (if stdout is tty. if not tty, usually print json ast)");
+        ctx.VarBool(&debug_json, "d,debug-json", "debug mode json output (not parsable ast, only for debug. use with --print-ast)");
     }
 };
 auto& cout = utils::wrap::cout_wrap();
@@ -138,8 +140,15 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
             report_error(brgen::to_source_error(files)(std::move(ty.warnings)), true);
         }
     }
+
     brgen::Debug d;
-    {
+    if (flags.debug_json) {
+        auto field = d.object();
+        field("file", files.file_list());
+        field("ast", res.value());
+        field("error", nullptr);
+    }
+    else {
         auto field = d.object();
         d.set_no_colon_space(true);
         brgen::ast::JSONConverter c;
