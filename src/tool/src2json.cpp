@@ -39,7 +39,7 @@ int check_ast(std::string_view name) {
         print_error("cannot open file ", name);
         return -1;
     }
-    auto js = utils::json::parse<utils::json::JSON>(view);
+    auto js = utils::json::parse<utils::json::JSON>(view, true);
     if (js.is_undef()) {
         print_error("cannot parse json file ", name);
         return -1;
@@ -90,8 +90,8 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
         return -1;
     }
 
-    auto report_error = [&](auto&& res) {
-        if (!cout.is_tty()) {
+    auto report_error = [&](auto&& res, bool warn = false) {
+        if (!warn && !cout.is_tty()) {
             brgen::Debug d;
             {
                 auto field = d.object();
@@ -130,7 +130,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
             return -1;
         }
         if (ty.warnings.locations.size() > 0) {
-            report_error(brgen::to_source_error(files)(std::move(ty.warnings)));
+            report_error(brgen::to_source_error(files)(std::move(ty.warnings)), true);
         }
     }
     brgen::Debug d;

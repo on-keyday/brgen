@@ -337,7 +337,9 @@ namespace brgen::middle {
 
         void typing_binary_expr(ast::Binary* bin) {
             auto op = bin->op;
-            typing_expr(bin->left);
+            typing_expr(
+                bin->left,
+                op == ast::BinaryOp::define_assign || op == ast::BinaryOp::const_assign);
             typing_expr(bin->right);
             switch (op) {
                 case ast::BinaryOp::assign:
@@ -470,6 +472,10 @@ namespace brgen::middle {
                 typing_expr(call->callee);
                 if (!call->callee->expr_type) {
                     warn_not_typed(call);
+                    // anyway, we need to type arguments
+                    for (auto& arg : call->arguments) {
+                        typing_expr(arg);
+                    }
                     return;  // not typed yet
                 }
                 auto type = ast::as<ast::FunctionType>(call->callee->expr_type);

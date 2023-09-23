@@ -662,8 +662,11 @@ namespace brgen::ast {
         std::shared_ptr<Type> parse_type() {
             if (auto arr_begin = s.consume_token("[")) {
                 s.skip_white();
-                auto expr = parse_expr();
-                s.skip_white();
+                std::shared_ptr<Expr> expr;
+                if (!s.expect_token("]")) {
+                    expr = parse_expr();
+                    s.skip_white();
+                }
                 auto end_tok = s.must_consume_token("]");
                 s.skip_space();
                 auto base_type = parse_type();
