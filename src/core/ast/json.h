@@ -167,9 +167,9 @@ namespace brgen::ast {
                                     else if constexpr (utils::helper::is_template_instance_of<T, std::map>) {
                                         field(key, [&] {
                                             auto field = obj.object();
-                                            for (auto& [k, v] : value) {
-                                                find_and_replace_node(v, [&](auto&& val) {
-                                                    field(k, val);
+                                            for (auto& f : value) {
+                                                find_and_replace_node(f.second, [&](auto&& val) {
+                                                    field(f.first, val);
                                                 });
                                             }
                                         });
