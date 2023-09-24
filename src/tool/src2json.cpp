@@ -21,6 +21,7 @@ struct Flags : utils::cmdline::templ::HelpOption {
     bool disable_untyped_warning = false;
     bool print_ast = false;
     bool debug_json = false;
+    bool dump_ast_schema = false;
 
     void bind(utils::cmdline::option::Context& ctx) {
         bind_help(ctx);
@@ -30,7 +31,8 @@ struct Flags : utils::cmdline::templ::HelpOption {
         ctx.VarBool(&disable_untyped_warning, "u,disable-untyped", "disable untyped warning");
         ctx.VarBool(&print_ast, "p,print-ast", "print ast to stdout if succeeded (if stdout is tty. if not tty, usually print json ast)");
         ctx.VarBool(&debug_json, "d,debug-json", "debug mode json output (not parsable ast, only for debug. use with --print-ast)");
-        ctx.VarBool(&dump_types, "dump-types", "dump node types schema");
+        ctx.VarBool(&dump_types, "dump-types", "dump node types schema mode");
+        ctx.VarBool(&dump_ast_schema, "dump-ast-schema", "dump ast schema (use with --dump-types)");
     }
 };
 auto& cout = utils::wrap::cout_wrap();
@@ -68,20 +70,26 @@ int check_ast(std::string_view name) {
     return 0;
 }
 
-int node_list() {
+int node_list(bool dump_ast_schema) {
     brgen::Debug d;
     {
         auto field = d.object();
         field("node", [&] {
             auto field = d.array();
-            brgen::ast::node_type_list([&](auto&& objdump) {
+            auto list = [&](auto&& objdump) {
                 field([&] {
                     auto field = d.object();
                     objdump([&](const char* key, auto value) {
                         field(key, value);
                     });
                 });
-            });
+            };
+            if (dump_ast_schema) {
+                brgen::ast::node_type_list<true>(list);
+            }
+            else {
+                brgen::ast::node_type_list(list);
+            }
         });
         field("scope", utils::json::RawJSON<const char*>{brgen::ast::scope_type_list});
         field("loc", utils::json::RawJSON<const char*>{brgen::ast::loc_type});
@@ -97,7 +105,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     utils::wrap::out_virtual_terminal = true;
 
     if (flags.dump_types) {
-        return node_list();
+        return node_list(flags.dump_ast_schema);
     }
 
     if (flags.args.size() == 0) {
