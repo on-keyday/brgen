@@ -111,6 +111,9 @@ namespace brgen::ast {
         "union_type",
         "literal",
         "member",
+        "return",
+        "break",
+        "continue",
     };
 
     constexpr int mapNodeTypeToValue(NodeType type) {
@@ -203,6 +206,12 @@ namespace brgen::ast {
                 return 42;
             case NodeType::member:
                 return 43;
+            case NodeType::return_:
+                return 44;
+            case NodeType::break_:
+                return 45;
+            case NodeType::continue_:
+                return 46;
             default:
                 return -1;
         }
@@ -298,11 +307,16 @@ namespace brgen::ast {
                 return NodeType::literal;
             case 43:
                 return NodeType::member;
+            case 44:
+                return NodeType::return_;
+            case 45:
+                return NodeType::break_;
+            case 46:
+                return NodeType::continue_;
             default:
                 return either::unexpected{"invalid value"};
         }
     }
-
     constexpr const char* node_type_to_string(NodeType type) {
         auto key = mapNodeTypeToValue(type);
         if (key == -1) {
@@ -318,7 +332,7 @@ namespace brgen::ast {
                 return mapValueToNodeType(i);
             }
         }
-        return either::unexpected{"not a node type"};
+        return either::unexpected{key.data()};
     }
 
     namespace internal {
