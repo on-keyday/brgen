@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"runtime/debug"
 )
 
 type Node interface {
@@ -263,6 +264,7 @@ type FormatNode struct {
 	Body   *IndentScopeNode
 	Scope  *Scope
 	Belong *FormatNode
+	Struct *StructType
 }
 
 type FieldNode struct {
@@ -283,12 +285,13 @@ type LoopNode struct {
 }
 
 type FunctionNode struct {
-	Loc    Loc
-	Ident  *IdentNode
-	Args   []*FieldNode
-	Return TypeNode
-	Body   *IndentScopeNode
-	Scope  *Scope
+	Loc      Loc
+	Ident    *IdentNode
+	Args     []*FieldNode
+	Return   TypeNode
+	Body     *IndentScopeNode
+	Scope    *Scope
+	FuncType *FunctionType
 }
 
 type IntType struct {
@@ -337,7 +340,7 @@ type UnionType struct {
 	Fields []*StructType
 }
 
-type FunctionTypeNode struct {
+type FunctionType struct {
 	Loc    Loc
 	Args   []TypeNode
 	Return TypeNode
@@ -347,6 +350,7 @@ type Program struct {
 	Loc         Loc
 	Elements    []Node
 	GlobalScope *Scope
+	Struct      *StructType
 }
 
 type ImportNode struct {
@@ -355,6 +359,11 @@ type ImportNode struct {
 	Path       string
 	Base       *CallNode
 	ImportDesc *Program
+}
+
+type ImplicitYieldNode struct {
+	Loc  Loc
+	Expr ExprNode
 }
 
 func (i *IdentNode) node()     {}
@@ -476,6 +485,7 @@ func (i *FormatNode) stmtNode() {}
 func (i *FormatNode) Identifier() string {
 	return i.Ident.Name
 }
+func (i *FormatNode) memberNode() {}
 
 func (i *FieldNode) node()     {}
 func (i *FieldNode) stmtNode() {}
@@ -521,8 +531,8 @@ func (i *StructType) typeNode() {}
 func (i *UnionType) node()     {}
 func (i *UnionType) typeNode() {}
 
-func (i *FunctionTypeNode) node()     {}
-func (i *FunctionTypeNode) typeNode() {}
+func (i *FunctionType) node()     {}
+func (i *FunctionType) typeNode() {}
 
 func (i *IndentScopeNode) node()     {}
 func (i *IndentScopeNode) stmtNode() {}
@@ -534,6 +544,9 @@ func (i *ImportNode) exprNode() {}
 func (i *ImportNode) Type() TypeNode {
 	return i.ExprType
 }
+
+func (i *ImplicitYieldNode) node()     {}
+func (i *ImplicitYieldNode) stmtNode() {}
 
 func (a *astConstructor) collectNodeLink(rawNodes []rawNode) error {
 	for i, rawNode := range rawNodes {
@@ -602,13 +615,15 @@ func (a *astConstructor) collectNodeLink(rawNodes []rawNode) error {
 		case "union_type":
 			node = &UnionType{}
 		case "function_type":
-			node = &FunctionTypeNode{}
+			node = &FunctionType{}
 		case "indent_scope":
 			node = &IndentScopeNode{}
 		case "program":
 			node = &Program{}
 		case "import":
 			node = &ImportNode{}
+		case "implicit_yield":
+			node = &ImplicitYieldNode{}
 		default:
 			return errors.New("unknown node type: " + rawNode.NodeType)
 		}
@@ -691,6 +706,7 @@ func (a *astConstructor) linkNode(rawNodes []rawNode) error {
 			var programTmp struct {
 				Elements []uint64 `json:"elements"`
 				Scope    uint64   `json:"global_scope"`
+				Struct   *uint64  `json:"struct_type"`
 			}
 			if err := json.Unmarshal(body, &programTmp); err != nil {
 				return err
@@ -700,6 +716,9 @@ func (a *astConstructor) linkNode(rawNodes []rawNode) error {
 				v.Elements[i] = a.nodes[element]
 			}
 			v.GlobalScope = a.scopes[programTmp.Scope]
+			if programTmp.Struct != nil {
+				v.Struct = a.nodes[*programTmp.Struct].(*StructType)
+			}
 		case *ParenNode:
 			var parenTmp struct {
 				ExprType *uint64 `json:"expr_type"`
@@ -928,6 +947,7 @@ func (a *astConstructor) linkNode(rawNodes []rawNode) error {
 				Body   uint64  `json:"body"`
 				Scope  uint64  `json:"scope"`
 				Belong *uint64 `json:"belong"`
+				Struct *uint64 `json:"struct_type"`
 			}
 			if err := json.Unmarshal(body, &formatTmp); err != nil {
 				return err
@@ -938,6 +958,9 @@ func (a *astConstructor) linkNode(rawNodes []rawNode) error {
 			v.Scope = a.scopes[formatTmp.Scope]
 			if formatTmp.Belong != nil {
 				v.Belong = a.nodes[*formatTmp.Belong].(*FormatNode)
+			}
+			if formatTmp.Struct != nil {
+				v.Struct = a.nodes[*formatTmp.Struct].(*StructType)
 			}
 		case *FieldNode:
 			var fieldTmp struct {
@@ -984,11 +1007,12 @@ func (a *astConstructor) linkNode(rawNodes []rawNode) error {
 			v.Body = a.nodes[loopTmp.Body].(*IndentScopeNode)
 		case *FunctionNode:
 			var functionTmp struct {
-				Ident  uint64   `json:"ident"`
-				Args   []uint64 `json:"parameters"`
-				Return uint64   `json:"return_type"`
-				Body   uint64   `json:"body"`
-				Scope  uint64   `json:"scope"`
+				Ident    uint64   `json:"ident"`
+				Args     []uint64 `json:"parameters"`
+				Return   uint64   `json:"return_type"`
+				Body     uint64   `json:"body"`
+				Scope    uint64   `json:"scope"`
+				FuncType *uint64  `json:"func_type"`
 			}
 			if err := json.Unmarshal(body, &functionTmp); err != nil {
 				return err
@@ -1001,6 +1025,9 @@ func (a *astConstructor) linkNode(rawNodes []rawNode) error {
 			v.Return = a.nodes[functionTmp.Return].(TypeNode)
 			v.Body = a.nodes[functionTmp.Body].(*IndentScopeNode)
 			v.Scope = a.scopes[functionTmp.Scope]
+			if functionTmp.FuncType != nil {
+				v.FuncType = a.nodes[*functionTmp.FuncType].(*FunctionType)
+			}
 		case *IntType:
 			var intTypeTmp struct {
 				BitSize int    `json:"bit_size"`
@@ -1043,14 +1070,16 @@ func (a *astConstructor) linkNode(rawNodes []rawNode) error {
 		case *VoidType:
 		case *ArrayType:
 			var arrayTypeTmp struct {
-				BaseType uint64 `json:"base_type"`
-				Length   uint64 `json:"length"`
+				BaseType uint64  `json:"base_type"`
+				Length   *uint64 `json:"length"`
 			}
 			if err := json.Unmarshal(body, &arrayTypeTmp); err != nil {
 				return err
 			}
 			v.Base = a.nodes[arrayTypeTmp.BaseType].(TypeNode)
-			v.Length = a.nodes[arrayTypeTmp.Length].(ExprNode)
+			if arrayTypeTmp.Length != nil {
+				v.Length = a.nodes[*arrayTypeTmp.Length].(ExprNode)
+			}
 		case *StructType:
 			var structTypeTmp struct {
 				Fields []uint64 `json:"fields"`
@@ -1073,7 +1102,7 @@ func (a *astConstructor) linkNode(rawNodes []rawNode) error {
 			for i, field := range unionTypeTmp.Fields {
 				v.Fields[i] = a.nodes[field].(*StructType)
 			}
-		case *FunctionTypeNode:
+		case *FunctionType:
 			var functionTypeTmp struct {
 				Args   []uint64 `json:"parameters"`
 				Return uint64   `json:"return_type"`
@@ -1114,6 +1143,14 @@ func (a *astConstructor) linkNode(rawNodes []rawNode) error {
 			v.Path = importTmp.Path
 			v.Base = a.nodes[importTmp.Base].(*CallNode)
 			v.ImportDesc = a.nodes[importTmp.ImportDesc].(*Program)
+		case *ImplicitYieldNode:
+			var implicitYieldTmp struct {
+				Expr uint64 `json:"expr"`
+			}
+			if err := json.Unmarshal(body, &implicitYieldTmp); err != nil {
+				return err
+			}
+			v.Expr = a.nodes[implicitYieldTmp.Expr].(ExprNode)
 		default:
 			return errors.New("unknown node type: " + rawNode.NodeType)
 		}
@@ -1142,7 +1179,7 @@ func (a *astConstructor) linkScope(s []jsonScope) {
 func (a *astConstructor) unmarshal(s []byte) (p *Program, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("type error: %v", r)
+			err = fmt.Errorf("%v: %v", r, string(debug.Stack()))
 		}
 	}()
 	jsonAST := jsonAST{}

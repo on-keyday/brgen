@@ -60,6 +60,9 @@ namespace brgen::ast {
                             base(key, value);
                         }
                     }
+                    else {
+                        base(key, value);
+                    }
                 }
             }
             else {

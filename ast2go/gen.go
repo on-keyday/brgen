@@ -6,6 +6,7 @@ import (
 	"go/constant"
 	"go/token"
 	"io"
+	"runtime/debug"
 	"strings"
 )
 
@@ -153,7 +154,7 @@ func NewGenerator(w io.Writer) *Generator {
 func (g *Generator) Generate(file *File) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("%v", r)
+			err = fmt.Errorf("%v: %v", r, string(debug.Stack()))
 		}
 	}()
 

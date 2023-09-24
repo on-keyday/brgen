@@ -142,6 +142,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     }
 
     brgen::Debug d;
+    d.set_no_colon_space(true);
     if (flags.debug_json) {
         auto field = d.object();
         field("file", files.file_list());
@@ -150,7 +151,6 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     }
     else {
         auto field = d.object();
-        d.set_no_colon_space(true);
         brgen::ast::JSONConverter c;
         c.obj.set_no_colon_space(true);
         field("file", files.file_list());
