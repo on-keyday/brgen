@@ -31,6 +31,8 @@ namespace brgen::ast {
         nullptr,
     };
 
+    constexpr auto ident_usage_count = 8;
+
     constexpr std::optional<IdentUsage> ident_usage(std::string_view view) {
         for (auto i = 0; ident_usage_str[i]; i++) {
             if (ident_usage_str[i] == view) {

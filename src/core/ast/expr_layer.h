@@ -11,6 +11,8 @@ namespace brgen::ast {
 
     constexpr const char* unary_op_str[] = {"!", "-", nullptr};
 
+    constexpr auto unary_op_count = 2;
+
     constexpr std::optional<UnaryOp> unary_op(std::string_view l) {
         size_t i = 0;
         while (unary_op_str[i]) {
@@ -90,6 +92,23 @@ namespace brgen::ast {
                                           "&=", "|=", "^=",
                                           nullptr};
     constexpr const char* bin_layer8[] = {",", nullptr};
+
+    // clang-format off
+    constexpr const char* bin_op_list[] = {
+        "*", "/", "%", "<<", ">>", "&",
+        "+", "-", "|", "^",
+        "==", "!=", "<", "<=", ">", ">=",
+        "&&",
+        "||",
+        "if", "else",
+        "..", "..=",
+        "=", ":=", "::=", "+=", "-=", "*=", "/=", "%=", "<<=", ">>=", "&=", "|=", "^=",
+        ",",
+        nullptr,
+    };
+    // clang-format on
+
+    constexpr auto bin_op_count = std::size(bin_op_list) - 1;
 
     constexpr auto bin_cond_layer = 5;
     constexpr auto bin_assign_layer = 7;

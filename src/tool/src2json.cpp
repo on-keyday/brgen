@@ -6,11 +6,11 @@
 #include <core/ast/json.h>
 #include <wrap/iocommon.h>
 #include <console/ansiesc.h>
-#include <future>
 #include <core/middle/resolve_import.h>
 #include <core/middle/typing.h>
 #include "common/print.h"
 #include <wrap/argv.h>
+#include <core/ast/node_type_list.h>
 
 struct Flags : utils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
@@ -63,6 +63,15 @@ int check_ast(std::string_view name) {
         return -1;
     }
     cout << "ok\n";
+    return 0;
+}
+
+int node_list() {
+    brgen::ast::type_list([](auto&& objdump) {
+        objdump([](const char* key, auto value) {
+
+        });
+    });
     return 0;
 }
 
