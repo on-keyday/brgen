@@ -16,6 +16,7 @@ struct Flags : utils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
     bool not_resolve_import = false;
     bool check_ast = false;
+    bool dump_types = false;
     bool not_resolve_type = false;
     bool disable_untyped_warning = false;
     bool print_ast = false;
@@ -29,6 +30,7 @@ struct Flags : utils::cmdline::templ::HelpOption {
         ctx.VarBool(&disable_untyped_warning, "u,disable-untyped", "disable untyped warning");
         ctx.VarBool(&print_ast, "p,print-ast", "print ast to stdout if succeeded (if stdout is tty. if not tty, usually print json ast)");
         ctx.VarBool(&debug_json, "d,debug-json", "debug mode json output (not parsable ast, only for debug. use with --print-ast)");
+        ctx.VarBool(&dump_types, "dump-types", "dump node types schema");
     }
 };
 auto& cout = utils::wrap::cout_wrap();
@@ -67,16 +69,31 @@ int check_ast(std::string_view name) {
 }
 
 int node_list() {
-    brgen::ast::type_list([](auto&& objdump) {
-        objdump([](const char* key, auto value) {
-
+    brgen::Debug d;
+    {
+        auto field = d.array();
+        brgen::ast::type_list([&](auto&& objdump) {
+            field([&] {
+                auto field = d.object();
+                objdump([&](const char* key, auto value) {
+                    field(key, value);
+                });
+            });
         });
-    });
+    }
+    cout << d.out();
+    if (cout.is_tty()) {
+        cout << "\n";
+    }
     return 0;
 }
 
 int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     utils::wrap::out_virtual_terminal = true;
+
+    if (flags.dump_types) {
+        return node_list();
+    }
 
     if (flags.args.size() == 0) {
         print_error("no input file");
