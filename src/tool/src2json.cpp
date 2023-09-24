@@ -71,15 +71,19 @@ int check_ast(std::string_view name) {
 int node_list() {
     brgen::Debug d;
     {
-        auto field = d.array();
-        brgen::ast::type_list([&](auto&& objdump) {
-            field([&] {
-                auto field = d.object();
-                objdump([&](const char* key, auto value) {
-                    field(key, value);
+        auto field = d.object();
+        field("node", [&] {
+            auto field = d.array();
+            brgen::ast::node_type_list([&](auto&& objdump) {
+                field([&] {
+                    auto field = d.object();
+                    objdump([&](const char* key, auto value) {
+                        field(key, value);
+                    });
                 });
             });
         });
+        field("scope", utils::json::RawJSON<const char*>{brgen::ast::scope_type_list});
     }
     cout << d.out();
     if (cout.is_tty()) {

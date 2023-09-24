@@ -197,6 +197,7 @@ namespace brgen::ast {
                 for (auto& scope : scopes) {
                     field([&] {
                         auto field = obj.object();
+                        field("is_global", scope->is_global);
                         field("ident", [&] {
                             auto field = obj.array();
                             for (auto& object : scope->objects) {
@@ -545,6 +546,16 @@ namespace brgen::ast {
                         return scopes[i];
                     };
                 };
+                auto is_global= json_at(val,"is_global") ;
+                if(!is_global){
+                    return is_global & empty_value<void>()|json_to_loc_error({},"is_global");
+                }
+                if(bool b; (*is_global)->as_bool(b)){
+                    scopes[i]->is_global = b;
+                }
+                else{
+                    return unexpect(error({},"is_global must be bool"));
+                }
                 auto b = get_scope("branch");
                 if (!b) {
                     return b & empty_value<void>();

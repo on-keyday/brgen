@@ -22,7 +22,9 @@ namespace brgen::ast {
                 return buf;
             }
             else if constexpr (std::is_same_v<Scope, P1>) {
-                return "shared_ptr<scope>";
+                utils::number::Array<char, 50, true> buf{};
+                utils::strutil::appends(buf, prefix, "<", "scope", ">", suffix);
+                return buf;
             }
         }
 
@@ -91,7 +93,9 @@ namespace brgen::ast {
         }
     }  // namespace internal
 
-    void type_list(auto&& objdump) {
+    constexpr auto scope_type_list = R"({"prev": "weak_ptr<scope>","next": "shared_ptr<scope>","branch": "shared_ptr<scope>","ident": "array<std::weak_ptr<node>>"})";
+
+    void node_type_list(auto&& objdump) {
         for (size_t i = 0; i < node_type_count; i++) {
             get_node(*mapValueToNodeType(i), [&](auto node) {
                 using T = typename decltype(node)::node;
