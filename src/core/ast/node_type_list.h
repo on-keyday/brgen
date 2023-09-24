@@ -7,9 +7,12 @@
 
 namespace brgen::ast {
     namespace internal {
-        template <class P1>
+        template <bool ast_mode, class P1>
         auto print_ptr(const char* prefix, const char* suffix = "") {
-            if constexpr (std::is_base_of_v<Node, P1>) {
+            if constexpr (ast_mode) {
+                return "uintptr";
+            }
+            else if constexpr (std::is_base_of_v<Node, P1>) {
                 utils::number::Array<char, 50, true> buf{};
                 utils::strutil::appends(buf, prefix, "<");
                 if constexpr (std::is_same_v<Node, P1>) {
@@ -28,16 +31,16 @@ namespace brgen::ast {
             }
         }
 
-        template <class P1>
+        template <bool ast_mode, class P1>
         auto print_array() {
             if constexpr (utils::helper::is_template<P1>) {
                 using P2 = typename utils::helper::template_of_t<P1>::template param_at<0>;
                 if constexpr (utils::helper::is_template_instance_of<P1, std::shared_ptr>) {
-                    auto p = print_ptr<P2>("array<shared_ptr", ">");
+                    auto p = print_ptr<ast_mode, P2>("array<shared_ptr", ">");
                     return p;
                 }
                 else if constexpr (utils::helper::is_template_instance_of<P1, std::weak_ptr>) {
-                    auto p = print_ptr<P2>("array<weak_ptr", ">");
+                    auto p = print_ptr<ast_mode, P2>("array<weak_ptr", ">");
                     return p;
                 }
             }
@@ -91,11 +94,47 @@ namespace brgen::ast {
                 field("base_node_type", p);
             }
         }
+
+        template <class T>
+        void list_base_type(auto&& field) {
+            const char* vec[node_type_count]{};
+            size_t i = 0;
+            for (size_t j = 0; j < node_type_count; j++) {
+                get_node(*mapValueToNodeType(j), [&](auto node) {
+                    using P = typename decltype(node)::node;
+                    if constexpr (std::is_base_of_v<T, P> && !std::is_same_v<T, P>) {
+                        vec[i++] = node_type_to_string(P::node_type_tag);
+                    }
+                });
+            }
+            if (i != 0) {
+                struct {
+                    const char* const* start;
+                    const char* const* finish;
+
+                    const char* const* begin() const {
+                        return start;
+                    }
+
+                    const char* const* end() const {
+                        return finish;
+                    }
+                } p{vec, vec + i};
+                field("one_of", p);
+            }
+        }
     }  // namespace internal
 
     constexpr auto scope_type_list = R"({"prev": "weak_ptr<scope>","next": "shared_ptr<scope>","branch": "shared_ptr<scope>","ident": "array<std::weak_ptr<node>>"})";
 
+    constexpr auto loc_type = R"({"pos": {"begin": "uint","end": "uint"},"file": "uint"})";
+
+    template <bool ast_mode = false>
     void node_type_list(auto&& objdump) {
+        objdump([&](auto&& field) {
+            field("node_type", "node");
+            internal::list_base_type<Node>(field);
+        });
         for (size_t i = 0; i < node_type_count; i++) {
             get_node(*mapValueToNodeType(i), [&](auto node) {
                 using T = typename decltype(node)::node;
@@ -167,16 +206,16 @@ namespace brgen::ast {
                             else if constexpr (utils::helper::is_template<P>) {
                                 using P1 = typename utils::helper::template_of_t<P>::template param_at<0>;
                                 if constexpr (utils::helper::is_template_instance_of<P, std::shared_ptr>) {
-                                    auto p = internal::print_ptr<P1>("shared_ptr");
+                                    auto p = internal::print_ptr<ast_mode, P1>("shared_ptr");
                                     field(key, internal::unwrap(p));
                                 }
                                 else if constexpr (utils::helper::is_template_instance_of<P, std::weak_ptr>) {
-                                    auto p = internal::print_ptr<P1>("weak_ptr");
+                                    auto p = internal::print_ptr<ast_mode, P1>("weak_ptr");
                                     field(key, internal::unwrap(p));
                                 }
                                 else if constexpr (utils::helper::is_template_instance_of<P, std::list> ||
                                                    utils::helper::is_template_instance_of<P, std::vector>) {
-                                    auto p = internal::print_array<P1>();
+                                    auto p = internal::print_array<ast_mode, P1>();
                                     field(key, internal::unwrap(p));
                                 }
                                 else {
@@ -187,6 +226,12 @@ namespace brgen::ast {
                                 static_assert(std::is_same_v<P, NodeType>);
                             }
                         });
+                    });
+                }
+                else {
+                    objdump([&](auto&& field) {
+                        field("node_type", node_type_to_string(T::node_type_tag));
+                        internal::list_base_type<T>(field);
                     });
                 }
             });

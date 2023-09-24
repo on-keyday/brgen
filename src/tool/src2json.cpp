@@ -84,6 +84,7 @@ int node_list() {
             });
         });
         field("scope", utils::json::RawJSON<const char*>{brgen::ast::scope_type_list});
+        field("loc", utils::json::RawJSON<const char*>{brgen::ast::loc_type});
     }
     cout << d.out();
     if (cout.is_tty()) {
