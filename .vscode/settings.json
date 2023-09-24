@@ -142,5 +142,6 @@
         "GTEST",
         "sdebugf",
         "strutil"
-    ]
+    ],
+    "rust-analyzer.cargo.sysroot": "discover"
 }
