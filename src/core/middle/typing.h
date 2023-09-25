@@ -288,8 +288,8 @@ namespace brgen::middle {
             }
             int_type_fitting(lty, rty);
             switch (op) {
-                case ast::BinaryOp::left_shift:
-                case ast::BinaryOp::right_shift:
+                case ast::BinaryOp::left_logical_shift:
+                case ast::BinaryOp::right_logical_shift:
                 case ast::BinaryOp::add:
                 case ast::BinaryOp::sub:
                 case ast::BinaryOp::mul:

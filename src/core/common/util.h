@@ -21,6 +21,10 @@ namespace brgen {
         return mid;
     }
 
+    inline std::string escape(std::string_view str_lit) {
+        return utils::escape::escape_str<std::string>(str_lit, utils::escape::EscapeFlag::utf16 | utils::escape::EscapeFlag::hex);
+    }
+
     inline std::string concat(auto&&... msg) {
         std::string buf;
         appends(buf, msg...);

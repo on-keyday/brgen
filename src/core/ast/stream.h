@@ -18,8 +18,8 @@ namespace brgen::ast {
         using iterator = typename std::list<lexer::Token>::iterator;
         iterator cur;
         File* input;
-        size_t line = 0;
-        size_t col = 0;
+        size_t line = 1;
+        size_t col = 1;
 
         [[noreturn]] void report_error(std::string&& msg, lexer::Loc pos) {
             error(pos, msg).report();
@@ -42,7 +42,7 @@ namespace brgen::ast {
                 col += token->token.size();
                 if (token->tag == lexer::Tag::line) {
                     line++;
-                    col = 0;
+                    col = 1;
                 }
                 tokens.push_back(std::move(*token));
                 cur = std::prev(tokens.end());

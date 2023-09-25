@@ -29,8 +29,10 @@ namespace brgen::ast {
         mul,
         div,
         mod,
-        left_shift,
-        right_shift,
+        left_arithmetic_shift,
+        right_arithmetic_shift,
+        left_logical_shift,
+        right_logical_shift,
         bit_and,
 
         // layer 1
@@ -80,7 +82,7 @@ namespace brgen::ast {
         comma,
     };
 
-    constexpr const char* bin_layer0[] = {"*", "/", "%", "<<", ">>", "&", nullptr};
+    constexpr const char* bin_layer0[] = {"*", "/", "%", "<<<", ">>>", "<<", ">>", "&", nullptr};
     constexpr const char* bin_layer1[] = {"+", "-", "|", "^", nullptr};
     constexpr const char* bin_layer2[] = {"==", "!=", "<", "<=", ">", ">=", nullptr};
     constexpr const char* bin_layer3[] = {"&&", nullptr};
@@ -95,7 +97,7 @@ namespace brgen::ast {
 
     // clang-format off
     constexpr const char* bin_op_list[] = {
-        "*", "/", "%", "<<", ">>", "&",
+        "*", "/", "%","<<<",">>>", "<<", ">>", "&",
         "+", "-", "|", "^",
         "==", "!=", "<", "<=", ">", ">=",
         "&&",
