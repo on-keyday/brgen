@@ -8,13 +8,15 @@
 namespace brgen::ast {
     namespace internal {
         template <bool ast_mode, class P1>
-        auto print_ptr(const char* prefix, const char* suffix = "") {
+        auto print_ptr(const char* ptr_annot, const char* prefix = "", const char* suffix = "") {
             if constexpr (ast_mode) {
-                return "uintptr";
+                utils::number::Array<char, 50, true> buf{};
+                utils::strutil::appends(buf, prefix, "uintptr", suffix);
+                return buf;
             }
             else if constexpr (std::is_base_of_v<Node, P1>) {
                 utils::number::Array<char, 50, true> buf{};
-                utils::strutil::appends(buf, prefix, "<");
+                utils::strutil::appends(buf, prefix, ptr_annot, "<");
                 if constexpr (std::is_same_v<Node, P1>) {
                     utils::strutil::append(buf, "node");
                 }
@@ -26,7 +28,7 @@ namespace brgen::ast {
             }
             else if constexpr (std::is_same_v<Scope, P1>) {
                 utils::number::Array<char, 50, true> buf{};
-                utils::strutil::appends(buf, prefix, "<", "scope", ">", suffix);
+                utils::strutil::appends(buf, prefix, ptr_annot, "<scope>", suffix);
                 return buf;
             }
         }
@@ -36,11 +38,11 @@ namespace brgen::ast {
             if constexpr (utils::helper::is_template<P1>) {
                 using P2 = typename utils::helper::template_of_t<P1>::template param_at<0>;
                 if constexpr (utils::helper::is_template_instance_of<P1, std::shared_ptr>) {
-                    auto p = print_ptr<ast_mode, P2>("array<shared_ptr", ">");
+                    auto p = print_ptr<ast_mode, P2>("shared_ptr", "array<", ">");
                     return p;
                 }
                 else if constexpr (utils::helper::is_template_instance_of<P1, std::weak_ptr>) {
-                    auto p = print_ptr<ast_mode, P2>("array<weak_ptr", ">");
+                    auto p = print_ptr<ast_mode, P2>("weak_ptr", "array<", ">");
                     return p;
                 }
             }

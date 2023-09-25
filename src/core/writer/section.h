@@ -9,7 +9,7 @@
 
 namespace brgen {
     namespace writer {
-        using Writer = utils::code::CodeWriter<std::string, std::string_view>;
+        using Writer = utils::code::CodeWriter<std::string>;
 
         struct Section : std::enable_shared_from_this<Section> {
            private:
@@ -147,7 +147,7 @@ namespace brgen {
 
             std::string flush() {
                 std::string buf;
-                utils::code::CodeWriter<std::string&, std::string_view> w{buf};
+                utils::code::CodeWriter<std::string&> w{buf};
                 flush(w);
                 return std::move(buf);
             }
