@@ -117,10 +117,14 @@ it is GID that evaluation of format type and float; if not supported, it should 
 1 | 2
 # ^ bit xor
 1 ^ 2
-# >> bit right shift
+# >> logical right bit shift
 2 >> 1
-# << bit left shift
+# << logical left bit shift
 1 << 2
+# >>> arithmetic right bit shift
+2 >>> 1
+# <<< arithmetic left bit shift
+1 <<< 2
 # logical operator finally evaluated as bool
 # == equal
 1 == 2
@@ -145,6 +149,11 @@ it is GID that evaluation of format type and float; if not supported, it should 
 # range unlimited
 ..
 ```
+note that in Java language, arithmetic shift are `<<` and `>>` and logical shift are `<<<` and `>>>` 
+ut this language uses `<<` and `>>` for logical shift and uses `<<<` and `>>>` for arithmetic shift.
+in bit operation, logical shift is usually used and sometimes arithmetic shift is.
+so logical shift operator is shorter in this language.
+
 
 ### 5.2 Unary Operator
 ```py

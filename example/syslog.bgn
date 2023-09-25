@@ -5,40 +5,40 @@ format Syslog:
 
 format Prival:
     val :u8
-    fn decode(input):
+    fn decode():
         val = input.until(">",3).u8().in_range(1,191)
     
-    fn encode(output):
-        val.in_range(1,191)
-        output.write(val.str())
+    fn encode():
+        config.in_range(version,1,191)
+        output.as_string(val)
     
-    fn common(call):
+    fn common():
         :"<"
-        call()
+        config.operation(input,output)
         :">"
 
-fn digit(n):
-    n == '0'
+fn digit(n :u8):
+    n == "0"
 
 
-fn nonzerodigit(n):
+fn nonzerodigit(n :char):
    '1'<=n && n<='9' 
 
-fn nilvalue(n):
+fn nilvalue(n :char):
     n == '-'
 
 format Version:
     version :u16
-    fn decode(input):
+    fn decode():
         assert(nonzerodigit(input[0]))
         version = input.cond(digit,3).u16()
     
-    fn encode(output):
-        version.in_range(1,999)
-        output.write(version.str())
+    fn encode():
+        config.in_range(version,1,999)
+        output.as_string(version)
 
 format Timestamp:
-
+    pass
 
 format Header:
     pri :Prival
