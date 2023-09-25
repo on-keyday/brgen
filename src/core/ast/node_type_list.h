@@ -129,7 +129,7 @@ namespace brgen::ast {
 
     constexpr auto scope_type_list = R"({"prev": "weak_ptr<scope>","next": "shared_ptr<scope>","branch": "shared_ptr<scope>","ident": "array<std::weak_ptr<node>>"})";
 
-    constexpr auto loc_type = R"({"pos": {"begin": "uint","end": "uint"},"file": "uint"})";
+    constexpr auto loc_type = R"({"pos": {"begin": "uint","end": "uint"},"file": "uint","line": "uint","col": "uint"})";
 
     template <bool ast_mode = false>
     void node_type_list(auto&& objdump) {
