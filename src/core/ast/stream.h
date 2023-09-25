@@ -18,6 +18,8 @@ namespace brgen::ast {
         using iterator = typename std::list<lexer::Token>::iterator;
         iterator cur;
         File* input;
+        size_t line = 0;
+        size_t col = 0;
 
         [[noreturn]] void report_error(std::string&& msg, lexer::Loc pos) {
             error(pos, msg).report();
@@ -35,6 +37,13 @@ namespace brgen::ast {
                 if (token->tag == lexer::Tag::error) {
                     report_error(std::move(token->token), token->loc);
                 }
+                token->loc.line = line;
+                token->loc.col = col;
+                col += token->token.size();
+                if (token->tag == lexer::Tag::line) {
+                    line++;
+                    col = 0;
+                }
                 tokens.push_back(std::move(*token));
                 cur = std::prev(tokens.end());
             }
@@ -44,7 +53,7 @@ namespace brgen::ast {
             if (eos()) {
                 auto copy = cur;
                 copy--;
-                return {lexer::Pos{copy->loc.pos.end, copy->loc.pos.end + 1}, copy->loc.file};
+                return {lexer::Pos{copy->loc.pos.end, copy->loc.pos.end + 1}, copy->loc.file, copy->loc.line, copy->loc.col};
             }
             else {
                 return cur->loc;

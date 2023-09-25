@@ -256,6 +256,8 @@ namespace brgen::ast {
                     json_at(*js, "end").transform([&](auto js) { js->force_as_number(loc.pos.end); });
                 });
                 json_at(*js, "file").transform([&](auto js) { js->force_as_number(loc.file); });
+                json_at(*js, "line").transform([&](auto js) { js->force_as_number(loc.line); });
+                json_at(*js, "col").transform([&](auto js) { js->force_as_number(loc.col); });
             };
         }
 

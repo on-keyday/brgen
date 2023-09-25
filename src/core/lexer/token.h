@@ -13,6 +13,8 @@ namespace brgen::lexer {
     struct Loc {
         Pos pos;
         FileIndex file = 0;  // file index
+        size_t line = 0;
+        size_t col = 0;
     };
 
     constexpr void as_json(Loc l, auto&& buf) {
@@ -23,6 +25,8 @@ namespace brgen::lexer {
             field("end", l.pos.end);
         });
         field("file", l.file);
+        field("line", l.line);
+        field("col", l.col);
     }
 
     enum class Tag {
