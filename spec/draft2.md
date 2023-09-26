@@ -1131,3 +1131,4 @@ TODO(on-keyday): write this
 + 2023/09/23: write draft version 2: 0.0.0.d2
 + 2023/09/24: add <<< and >>>. add note for Java user
 + 2023/09/26: add ast representation json: 0.0.0.d2.b
++ 2023/09/25: add code limitation note of `if`
