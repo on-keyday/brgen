@@ -4,37 +4,48 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/test")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/test")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/test")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
 
-add_executable(lexer_test "core/lexer_test.cpp")
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcoverage-mapping")
 
 add_library(ast_test_component STATIC
 "core/ast_test_component.cpp"
 )
+
+target_compile_options(ast_test_component PRIVATE "-fprofile-instr-generate=ast_test_component.profraw")
+
+add_executable(lexer_test "core/lexer_test.cpp")
+
+target_compile_options(lexer_test PRIVATE "-fprofile-instr-generate=lexer_test.profraw")
+
 
 target_link_libraries(lexer_test gtest_main)
 target_link_libraries(ast_test_component utils gtest)
 
 add_executable(ast_test "core/ast_test.cpp")
 target_link_libraries(ast_test ast_test_component)
+target_compile_options(ast_test PRIVATE "-fprofile-instr-generate=ast_test.profraw")
 
 
-add_executable(typing_test "core/typing_test.cpp"
-)
+add_executable(typing_test "core/typing_test.cpp")
 
 target_link_libraries(typing_test ast_test_component)
+target_compile_options(typing_test PRIVATE "-fprofile-instr-generate=typing_test.profraw")
 
 add_executable(middle_test "core/middle_test.cpp")
 
 target_link_libraries(middle_test ast_test_component)
+target_compile_options(middle_test PRIVATE "-fprofile-instr-generate=middle_test.profraw")
 
 add_executable(from_json_test "core/from_json_test.cpp")
 
 target_link_libraries(from_json_test ast_test_component utils)
+target_compile_options(from_json_test PRIVATE "-fprofile-instr-generate=from_json_test.profraw")
 
 add_executable(section_writer_test "core/section_writer_test.cpp")
 
 target_link_libraries(section_writer_test gtest_main)
+target_compile_options(section_writer_test PRIVATE "-fprofile-instr-generate=section_writer_test.profraw")
 
 #[[
 add_executable(cpp_test "langs/cpp_test.cpp"
