@@ -23,4 +23,26 @@ namespace brgen::ast::tool {
         }
         return std::nullopt;
     }
+
+    enum class Endian {
+        big,
+        little,
+        unspec,
+    };
+
+    struct IntDesc {
+        size_t bit_size = 0;
+        bool is_signed = false;
+    };
+
+    inline std::optional<IntDesc> is_int_type(auto&& typ) {
+        if (auto i = ast::as<IntType>(typ)) {
+            IntDesc desc;
+            desc.bit_size = i->bit_size;
+            if (i->raw.size() == 2) {
+            }
+            return desc;
+        }
+        return std::nullopt;
+    }
 }  // namespace brgen::ast::tool
