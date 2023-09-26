@@ -361,10 +361,7 @@ namespace brgen::middle {
 
         std::optional<std::shared_ptr<ast::Ident>> find_matching_ident(ast::Ident* ident) {
             auto search = [&](std::shared_ptr<ast::Ident>& def) {
-                if (ident->ident == def->ident && def->usage != ast::IdentUsage::unknown) {
-                    return true;
-                }
-                return false;
+                return ident->ident == def->ident && def->usage != ast::IdentUsage::unknown;
             };
             auto found = ident->scope->lookup_local<ast::Ident>(search);
             if (found) {
@@ -375,10 +372,7 @@ namespace brgen::middle {
 
         std::optional<std::shared_ptr<ast::Format>> find_matching_fmt(ast::IdentType* ident) {
             auto search = [&](std::shared_ptr<ast::Format>& def) {
-                if (def->ident->ident == ident->ident->ident) {
-                    return true;
-                }
-                return false;
+                return def->ident->ident == ident->ident->ident;
             };
             auto found = ident->ident->scope->lookup_local<ast::Format>(search);
             if (found) {
@@ -402,6 +396,10 @@ namespace brgen::middle {
         }
 
         void typing_expr(const std::shared_ptr<ast::Expr>& expr, bool on_define = false) {
+            if (expr->expr_type) {
+                typing_object(expr->expr_type);
+                return;
+            }
             if (auto lit = ast::as<ast::IntLiteral>(expr)) {
                 lit->expr_type = std::make_shared<ast::IntLiteralType>(ast::cast_to<ast::IntLiteral>(expr));
             }
@@ -567,6 +565,12 @@ namespace brgen::middle {
                     // If the object is an expression, perform expression typing
                     typing_expr(ast::cast_to<ast::Expr>(ty));
                     return;
+                }
+                if (auto t = ast::as<ast::IdentType>(ty)) {
+                    auto found = find_matching_fmt(t);
+                    if (found) {
+                        t->base = *found;
+                    }
                 }
                 if (auto p = ast::as<ast::Program>(ty)) {
                     auto tmp = current_global;

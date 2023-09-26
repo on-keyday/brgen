@@ -24,37 +24,26 @@
             "request": "launch",
             "program": "${workspaceRoot}/build/tool/src2json",
             "args": [
-                "--check-ast",
+                "example/syslog.bgn"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceRoot}",
+            "environment": [],
+            "console": "integratedTerminal",
+            "preLaunchTask": "build",
+            "symbolSearchPath": "lib\\"
+        },
+        {
+            "name": "Debug json2cpp",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/build/tool/json2cpp",
+            "args": [
                 "ignore/sample.json"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",
-            "environment": [
-                {
-                    "name": "BASE_PATH",
-                    "value": "."
-                },
-                {
-                    "name": "FNET_QUIC_LIBSSL",
-                    "value": "C:/workspace/boringssl/build_debug/ssl/ssl.dll",
-                },
-                {
-                    "name": "FNET_QUIC_LIBCRYPTO",
-                    "value": "C:/workspace/boringssl/build_debug/crypto/crypto.dll"
-                },
-                {
-                    "name": "FNET_QUIC_LOCAL_CERT",
-                    "value": "C:/workspace/quic-go-test-server/keys/quic_mock_server.crt"
-                },
-                {
-                    "name": "FNET_QUIC_NET_CERT",
-                    "value": "${workspaceRoot}/src/test/fnet_util/cacert.pem"
-                },
-                {
-                    "name": "FNET_QUIC_LOCAL_PRIVATE_KEY",
-                    "value": "C:/workspace/quic-go-test-server/keys/quic_mock_server.key"
-                }
-            ],
+            "environment": [],
             "console": "integratedTerminal",
             "preLaunchTask": "build",
             "symbolSearchPath": "lib\\"

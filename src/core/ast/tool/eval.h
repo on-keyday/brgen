@@ -79,8 +79,14 @@ namespace brgen::ast::tool {
         return make_result<EResultType::boolean>(compare(*left, *right));
     }
 
+    enum class EvalIdentMode {
+        resolve_ident,
+        raw_ident,
+        no_ident,
+    };
+
     struct Evaluator {
-        bool resolve_ident = false;
+        EvalIdentMode ident_mode = EvalIdentMode::raw_ident;
         std::map<std::string, EResult> ident_map;
 
        private:
@@ -315,12 +321,15 @@ namespace brgen::ast::tool {
                 return eval_expr(p->expr.get());
             }
             if (auto i = ast::as<ast::Ident>(expr)) {
-                if (resolve_ident) {
+                if (ident_mode == EvalIdentMode::resolve_ident) {
                     auto it = ident_map.find(i->ident);
                     if (it == ident_map.end()) {
                         return unexpect(EvalError{i->loc, "cannot resolve ident"});
                     }
                     return it->second;
+                }
+                if (ident_mode == EvalIdentMode::no_ident) {
+                    return unexpect(EvalError{i->loc, "cannot use ident"});
                 }
                 return make_result<EResultType::ident>(i->ident);
             }
@@ -344,7 +353,28 @@ namespace brgen::ast::tool {
             if (auto expr = ast::as<Expr>(n)) {
                 return eval_expr(expr);
             }
-            return unexpect(EvalError{n->loc, "not an expression"});
+            return unexpect(EvalError{n ? n->loc : lexer::Loc{}, "not an expression"});
+        }
+
+        template <EResultType t, bool unescape_str = true>
+        EResult eval_as(const std::shared_ptr<Node>& n) {
+            auto r = eval(n);
+            if (!r) {
+                return r;
+            }
+            if (r->type() != t) {
+                return unexpect(EvalError{n->loc, std::string("must be ") + eresult_type_str[int(t)]});
+            }
+            if constexpr (t == EResultType::string && unescape_str) {
+                auto unesc = unescape(r->get<EResultType::string>());
+                if (!unesc) {
+                    return unexpect(EvalError{n->loc, "must be string"});
+                }
+                return make_result<EResultType::string>(std::move(*unesc));
+            }
+            else {
+                return r;
+            }
         }
     };
 

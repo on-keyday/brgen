@@ -30,22 +30,10 @@ namespace brgen::ast::tool {
         if (conf.arguments.size() <= index) {
             return brgen::unexpect(brgen::error(conf.loc, conf.name, " must have at least ", nums(index + 1), " arguments"));
         }
-        auto r = eval.eval(conf.arguments[index]);
+        auto r = eval.template eval_as<t, unescape_str>(conf.arguments[index]);
         if (!r) {
             return r.transform([](auto&&) { return std::decay_t<decltype(EvalResult{}.get<t>())>{}; }).transform_error(ast::tool::to_loc_error());
         }
-        if (r->type() != t) {
-            return brgen::unexpect(brgen::error(conf.loc, conf.name, " must be ", eresult_type_str[int(t)]));
-        }
-        if constexpr (t == EResultType::string && unescape_str) {
-            auto unesc = brgen::unescape(r->get<ast::tool::EResultType::string>());
-            if (!unesc) {
-                return brgen::unexpect(brgen::error(conf.loc, conf.name, " must be string"));
-            }
-            return unesc.value();
-        }
-        else {
-            return r->get<t>();
-        }
+        return r->template get<t>();
     }
 }  // namespace brgen::ast::tool

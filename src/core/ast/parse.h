@@ -23,13 +23,12 @@ namespace brgen::ast {
                 s->report_error("expect larger indent but not");
             }
             auto old = std::exchange(indent, std::move(new_));
-            stack.enter_branch();
+            auto br = stack.enter_branch();
             if (frame) {
                 *frame = stack.current_scope();
             }
-            return utils::helper::defer([=, this] {
+            return utils::helper::defer([=, this, br = std::move(br)] {
                 indent = std::move(old);
-                stack.leave_branch();
             });
         }
 

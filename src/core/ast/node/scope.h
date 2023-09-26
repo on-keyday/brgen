@@ -3,6 +3,7 @@
 #include "expr.h"
 #include "statement.h"
 #include <variant>
+#include <helper/defer.h>
 
 namespace brgen::ast {
     struct Object {
@@ -165,16 +166,16 @@ namespace brgen::ast {
         }
 
        public:
-        void enter_branch() {
+        auto enter_branch() {
             maybe_init();
             current->branch = std::make_shared<Scope>();
             current->branch->prev = current;
             current->branch->is_global = false;
+            auto d = current;
             current = current->branch;
-        }
-
-        void leave_branch() {
-            current = current->prev.lock();
+            return utils::helper::defer([this, d] {
+                current = d;
+            });
         }
 
         std::shared_ptr<Scope> current_scope() {

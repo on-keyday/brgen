@@ -54,8 +54,12 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
         print_error("cannot decode json file: ", res.error().locations[0].msg);
         return 1;
     }
-    auto file = brgen::ast::cast_to<brgen::ast::Program>(res.value());
-    json2cpp::Generator g(file);
+    json2cpp::Generator g(brgen::ast::cast_to<brgen::ast::Program>(*res));
+    auto res2 = g.generate();
+    if (!res2) {
+        print_error("cannot generate code: ", res.error().locations[0].msg);
+        return 1;
+    }
     return 0;
 }
 
