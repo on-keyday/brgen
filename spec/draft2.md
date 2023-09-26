@@ -192,13 +192,19 @@ value = match 1:
     _ => 0
 ```
 because of current parser implementation limitation,
-syntax like below may cause an error
+code like below may cause an error
 ```py
 p :=
     if value == 1:
         32
     else:
         64
+```
+```
+src2json: error: expect token ident but found keyword
+/usr/brgen/sample.bgn:4:5:
+   4|    else:
+         ^^^^
 ```
 
 ### 5.3 Assignment Statement
