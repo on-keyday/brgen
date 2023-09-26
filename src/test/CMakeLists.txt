@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.22.1)
 
 
-
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
 
 add_executable(lexer_test "core/lexer_test.cpp")
 
