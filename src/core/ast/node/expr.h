@@ -3,6 +3,7 @@
 #include "base.h"
 #include "../expr_layer.h"
 #include <vector>
+#include <string_view>
 
 namespace brgen::ast {
 

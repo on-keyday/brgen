@@ -25,14 +25,14 @@ namespace brgen::ast::tool {
             }
         }
         if (conf.arguments.size() != size_require) {
-            return brgen::unexpect(brgen::error(conf.loc, conf.name, " must have ", size_require, " arguments"));
+            return brgen::unexpect(brgen::error(conf.loc, conf.name, " must have ", nums(size_require), " arguments"));
         }
         if (conf.arguments.size() <= index) {
-            return brgen::unexpect(brgen::error(conf.loc, conf.name, " must have at least ", index + 1, " arguments"));
+            return brgen::unexpect(brgen::error(conf.loc, conf.name, " must have at least ", nums(index + 1), " arguments"));
         }
         auto r = eval.eval(conf.arguments[index]);
         if (!r) {
-            return r.transform([](auto&&) { return std::string{}; }).transform_error(ast::tool::to_loc_error());
+            return r.transform([](auto&&) { return std::decay_t<decltype(EvalResult{}.get<t>())>{}; }).transform_error(ast::tool::to_loc_error());
         }
         if (r->type() != t) {
             return brgen::unexpect(brgen::error(conf.loc, conf.name, " must be ", eresult_type_str[int(t)]));

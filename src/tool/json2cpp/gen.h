@@ -77,6 +77,7 @@ namespace json2cpp {
                     }
                 }
             }
+            return {};
         }
     };
 }  // namespace json2cpp

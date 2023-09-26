@@ -18,7 +18,7 @@ namespace brgen::ast::tool {
             return "output";
         }
         if (auto d = ast::as<MemberAccess>(maybe_config)) {
-            auto conf = extract_config(d->target);
+            auto conf = extract_config_name(d->target);
             if (conf.size() == 0) {
                 return "";
             }
@@ -36,7 +36,7 @@ namespace brgen::ast::tool {
 
     std::optional<ConfigDesc> extract_config(auto&& node) {
         if (auto b = ast::as<Binary>(node); b && b->op == ast::BinaryOp::assign) {
-            auto conf = extract_config(b->left);
+            auto conf = extract_config_name(b->left);
             if (conf.size() == 0) {
                 return std::nullopt;
             }
@@ -48,7 +48,7 @@ namespace brgen::ast::tool {
             return desc;
         }
         if (auto c = ast::as<Call>(node)) {
-            auto conf = extract_config(c->target);
+            auto conf = extract_config_name(c->callee);
             if (conf.size() == 0) {
                 return std::nullopt;
             }
@@ -58,5 +58,6 @@ namespace brgen::ast::tool {
             desc.loc = c->loc;
             return desc;
         }
+        return std::nullopt;
     }
 }  // namespace brgen::ast::tool
