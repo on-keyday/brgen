@@ -1,5 +1,7 @@
 log :Syslog
 
+config.cpp.include("string",true)
+
 format Syslog:
     header :Header
 

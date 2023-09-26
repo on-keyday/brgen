@@ -4,6 +4,8 @@
 #include "../common/print.h"
 #include <core/ast/json.h>
 #include <file/file_view.h>
+#include "gen.h"
+
 struct Flags : utils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
     bool spec = false;
@@ -52,7 +54,8 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
         print_error("cannot decode json file: ", res.error().locations[0].msg);
         return 1;
     }
-    auto file = res.value();
+    auto file = brgen::ast::cast_to<brgen::ast::Program>(res.value());
+    json2cpp::Generator g(file);
     return 0;
 }
 

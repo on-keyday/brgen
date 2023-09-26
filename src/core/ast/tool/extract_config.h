@@ -31,6 +31,7 @@ namespace brgen::ast::tool {
         std::string name;
         std::vector<std::shared_ptr<Expr>> arguments;
         bool assign_style = false;
+        lexer::Loc loc;
     };
 
     std::optional<ConfigDesc> extract_config(auto&& node) {
@@ -43,6 +44,7 @@ namespace brgen::ast::tool {
             desc.name = conf;
             desc.assign_style = true;
             desc.arguments.push_back(b->right);
+            desc.loc = b->loc;
             return desc;
         }
         if (auto c = ast::as<Call>(node)) {
@@ -53,6 +55,7 @@ namespace brgen::ast::tool {
             ConfigDesc desc;
             desc.name = conf;
             desc.arguments = c->arguments;
+            desc.loc = c->loc;
             return desc;
         }
     }

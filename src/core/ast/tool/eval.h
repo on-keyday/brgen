@@ -2,6 +2,7 @@
 #pragma once
 #include <variant>
 #include "../ast.h"
+#include "../../common/error.h"
 
 namespace brgen::ast::tool {
 
@@ -10,6 +11,14 @@ namespace brgen::ast::tool {
         integer,
         string,
         ident,
+    };
+
+    constexpr const char* eresult_type_str[]{
+        "boolean",
+        "integer",
+        "string",
+        "ident",
+        nullptr,
     };
 
     struct EvalResult {
@@ -72,7 +81,7 @@ namespace brgen::ast::tool {
 
     struct Evaluator {
         bool resolve_ident = false;
-        std::map<std::string, EResult> idents;
+        std::map<std::string, EResult> ident_map;
 
        private:
         EResult eval_binary(ast::Binary* bin) {
@@ -306,8 +315,28 @@ namespace brgen::ast::tool {
                 return eval_expr(p->expr.get());
             }
             if (auto i = ast::as<ast::Ident>(expr)) {
+                if (resolve_ident) {
+                    auto it = ident_map.find(i->ident);
+                    if (it == ident_map.end()) {
+                        return unexpect(EvalError{i->loc, "cannot resolve ident"});
+                    }
+                    return it->second;
+                }
                 return make_result<EResultType::ident>(i->ident);
             }
+            if (auto i = ast::as<ast::IntLiteral>(expr)) {
+                auto val = i->parse_as<std::uint64_t>();
+                if (!val) {
+                    return unexpect(EvalError{i->loc, "cannot parse integer in 64 bit"});
+                }
+            }
+            if (auto i = ast::as<ast::StrLiteral>(expr)) {
+                return make_result<EResultType::string>(i->value);
+            }
+            if (auto i = ast::as<ast::BoolLiteral>(expr)) {
+                return make_result<EResultType::boolean>(i->value);
+            }
+            return unexpect(EvalError{expr->loc, "not supported"});
         }
 
        public:
@@ -319,4 +348,9 @@ namespace brgen::ast::tool {
         }
     };
 
+    constexpr auto to_loc_error() {
+        return [](auto&& err) {
+            return error(err.loc, err.msg);
+        };
+    }
 }  // namespace brgen::ast::tool
