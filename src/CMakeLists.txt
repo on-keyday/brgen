@@ -1,7 +1,7 @@
 #license
 cmake_minimum_required(VERSION 3.22.1)
 
-add_subdirectory(test)
+
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tool")
 add_executable(src2json "tool/src2json.cpp")
@@ -38,3 +38,5 @@ TARGET src2json POST_BUILD
 COMMAND ${CMAKE_COMMAND} -E copy "$ENV{UTILS_DIR}/lib/libutils.so" "${CMAKE_BINARY_DIR}/tool/libutils.so"
 )
 endif()
+
+add_subdirectory(test)

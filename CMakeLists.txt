@@ -25,9 +25,7 @@ include_directories("$ENV{UTILS_DIR}/src/include")
 include_directories("./src")
 include_directories("./build/_deps/googletest-src/googletest/include")
 link_directories("$ENV{UTILS_DIR}/lib")
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/test")
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/test")
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/test")
+
 
 add_subdirectory(src)
 
