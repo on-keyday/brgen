@@ -729,10 +729,6 @@ namespace brgen::ast {
             auto field = std::make_shared<Field>(ident ? ident->loc : token.loc);
             field->colon_loc = token.loc;
 
-            if (ident) {
-                ident->usage = IdentUsage::define_field;
-            }
-
             field->ident = std::move(ident);
             s.skip_space();
 
@@ -740,6 +736,8 @@ namespace brgen::ast {
 
             if (field->ident) {
                 field->ident->expr_type = field->field_type;
+                field->ident->base = field;
+                ident->usage = IdentUsage::define_field;
             }
             field->belong = state.current_format();
 
