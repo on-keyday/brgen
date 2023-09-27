@@ -737,7 +737,7 @@ namespace brgen::ast {
             if (field->ident) {
                 field->ident->expr_type = field->field_type;
                 field->ident->base = field;
-                ident->usage = IdentUsage::define_field;
+                field->ident->usage = IdentUsage::define_field;
             }
             field->belong = state.current_format();
 

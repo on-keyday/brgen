@@ -39,6 +39,11 @@ namespace brgen::ast::tool {
         auto& get() {
             return std::get<int(t)>(value);
         }
+
+        template <EResultType t>
+        const auto& get() const {
+            return std::get<int(t)>(value);
+        }
     };
 
     template <EResultType t>

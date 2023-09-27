@@ -22,7 +22,7 @@ namespace json2cpp {
     struct Field {
         std::shared_ptr<ast::Field> base;
         std::optional<tool::ArrayDesc> a_desc;
-        std::optional<tool::IntDesc> i_desc;
+        tool::IntDesc i_desc;
     };
 
     struct BulkFields {
@@ -37,7 +37,35 @@ namespace json2cpp {
     struct Fields {
         std::vector<MergedField> merged_fields;
         std::vector<Field> cur_fields;
-        size_t fixed_size = 0;
+        size_t cur_fixed_size = 0;
+
+        void merge() {
+            if (cur_fields.size()) {
+                if (cur_fields.size() == 1) {
+                    merged_fields.push_back({.field = std::move(cur_fields[0])});
+                }
+                else {
+                    merged_fields.push_back({.field = BulkFields{std::move(cur_fields), cur_fixed_size}});
+                }
+                cur_fields.clear();
+                cur_fixed_size = 0;
+            }
+        }
+
+        void push(Field&& f) {
+            if (f.a_desc && !f.a_desc->length_eval) {
+                merge();
+                merged_fields.push_back({.field = std::move(f)});
+                return;
+            }
+            else if (f.a_desc && f.a_desc->length_eval) {
+                cur_fixed_size += f.a_desc->length_eval->get<tool::EResultType::integer>() * f.i_desc.bit_size / 8;
+            }
+            else if (f.i_desc.bit_size % 8 == 0) {
+                cur_fixed_size += f.i_desc.bit_size / 8;
+            }
+            cur_fields.push_back(std::move(f));
+        }
     };
 
     struct Generator {
@@ -126,12 +154,10 @@ namespace json2cpp {
             }
         }
 
-        // generate field
-        brgen::result<void> generate_field(Fields& f, std::shared_ptr<ast::Field>&& field) {
+        brgen::result<void> collect_field(Fields& f, std::shared_ptr<ast::Field>&& field) {
             auto& fname = field->ident->ident;
-
-            if (auto i = tool::is_array_type(field->field_type, eval)) {
-                auto b = tool::is_int_type(i->base_type);
+            if (auto a = tool::is_array_type(field->field_type, eval)) {
+                auto b = tool::is_int_type(a->base_type);
                 if (!b) {
                     return brgen::unexpect(brgen::error(field->loc, "unsupported type"));
                 }
@@ -139,30 +165,53 @@ namespace json2cpp {
                 if (type.empty()) {
                     return brgen::unexpect(brgen::error(field->loc, "unsupported type"));
                 }
-                if (i->length_eval) {
-                    w.writeln(type, " ", fname, "[", brgen::nums(i->length_eval->get<tool::EResultType::integer>()), "];");
-                    f.fixed_size += i->length_eval->get<tool::EResultType::integer>() * b->bit_size / 8;
-                }
-                else {
-                    if (f.cur_fields.size()) {
-                        f.merged_fields.push_back({.field = BulkFields{std::move(f.cur_fields)}});
-                        f.cur_fields.clear();
-                    }
-                    w.writeln("std::vector<", type, "> ", fname, ";");
-                }
-                f.cur_fields.push_back({field, i, b});
+                f.push({field, a, *b});
             }
             else if (auto i = tool::is_int_type(field->field_type)) {
                 auto type = get_primitive_type(i->bit_size);
                 if (type.empty()) {
                     return brgen::unexpect(brgen::error(field->loc, "unsupported type"));
                 }
-                w.writeln(type, " ", fname, ";");
-                f.fixed_size += i->bit_size / 8;
-                f.cur_fields.push_back({field, std::nullopt, i});
+                f.push({field, std::nullopt, *i});
             }
             else {
                 return brgen::unexpect(brgen::error(field->loc, "unsupported type"));
+            }
+            return {};
+        }
+
+        // generate field
+        brgen::result<void> generate_fields(const Fields& f) {
+            for (auto& field : f.merged_fields) {
+                if (auto f = std::get_if<BulkFields>(&field.field)) {
+                    for (auto& field : f->fields) {
+                        auto type = get_primitive_type(field.i_desc.bit_size);
+                        if (field.a_desc) {
+                            if (field.a_desc->length_eval) {
+                                auto len = field.a_desc->length_eval->get<tool::EResultType::integer>();
+                                w.writeln(type, " ", field.base->ident->ident, "[", brgen::nums(len), "];");
+                            }
+                        }
+                        else {
+                            w.writeln(type, " ", field.base->ident->ident, ";");
+                        }
+                    }
+                }
+                else if (auto f = std::get_if<Field>(&field.field)) {
+                    auto type = get_primitive_type(f->i_desc.bit_size);
+                    if (f->a_desc) {
+                        if (f->a_desc->length_eval) {
+                            auto len = f->a_desc->length_eval->get<tool::EResultType::integer>();
+                            w.writeln(type, " ", f->base->ident->ident, "[", brgen::nums(len), "]", ";");
+                        }
+                        else {
+                            w.writeln("std::vector<", type, "> ", f->base->ident->ident, ";");
+                        }
+                    }
+                    else {
+                        w.writeln(type, " ", f->base->ident->ident, ";");
+                    }
+                }
             }
             return {};
         }
@@ -171,47 +220,93 @@ namespace json2cpp {
             w.writeln("constexpr bool render(::utils::binary::writer& w) const {");
             {
                 auto sc = w.indent_scope();
-                w.write("return");
-                w.write("::utils::binary::write_num_bulk(w,", "true");
-                for (auto& field : f.fields) {
-                    if (field.a_desc) {
-                        if (field.a_desc->length_eval) {
-                            auto len = field.a_desc->length_eval->get<tool::EResultType::integer>();
-                            for (size_t i = 0; i < len; i++) {
-                                w.write(",", field.base->ident->ident, "[", brgen::nums(i), "]");
+                for (auto& field : f.merged_fields) {
+                    if (BulkFields* f = std::get_if<BulkFields>(&field.field)) {
+                        w.write("::utils::binary::write_num_bulk(w,", "true");
+                        for (auto& field : f->fields) {
+                            if (field.a_desc) {
+                                if (field.a_desc->length_eval) {
+                                    auto len = field.a_desc->length_eval->get<tool::EResultType::integer>();
+                                    for (size_t i = 0; i < len; i++) {
+                                        w.write(",", field.base->ident->ident, "[", brgen::nums(i), "]");
+                                    }
+                                }
+                            }
+                            else {
+                                w.write(",", field.base->ident->ident);
                             }
                         }
+                        w.writeln(");");
                     }
-                    else {
-                        w.write(",", field.base->ident->ident);
+                    else if (auto f = std::get_if<Field>(&field.field)) {
+                        if (f->a_desc) {
+                            if (f->a_desc->length_eval) {
+                                auto len = f->a_desc->length_eval->get<tool::EResultType::integer>();
+                                w.write("::utils::binary::write_num_bulk(w,", "true");
+                                for (size_t i = 0; i < len; i++) {
+                                    w.write(",", f->base->ident->ident, "[", brgen::nums(i), "]");
+                                }
+                                w.writeln(");");
+                            }
+                            else {
+                                w.writeln("::utils::binary::write_num_bulk(w,", "true", ",", f->base->ident->ident, ");");
+                            }
+                        }
+                        else {
+                            w.writeln("::utils::binary::write_num(w,", f->base->ident->ident, ",", "true", ");");
+                        }
                     }
                 }
-                w.writeln(");");
             }
             w.writeln("}");
+            return {};
         }
 
         brgen::result<void> generate_decoder(Fields& f) {
             w.writeln("constexpr bool parse(::utils::binary::reader& r) {");
             {
                 auto sc = w.indent_scope();
-                w.write("return ::utils::binary::read_num_bulk(r,", "true");
-                for (auto& f : f.fields) {
-                    if (auto field = ast::as<ast::Field>(f)) {
-                        if (auto arr = tool::is_array_type(field->field_type, eval)) {
-                            auto len = arr->length_eval->get<tool::EResultType::integer>();
-                            for (size_t i = 0; i < len; i++) {
-                                w.write(",", field->ident->ident, "[", brgen::nums(i), "]");
+
+                for (auto& field : f.merged_fields) {
+                    if (BulkFields* f = std::get_if<BulkFields>(&field.field)) {
+                        w.write("::utils::binary::read_num_bulk(r,", "true");
+                        for (auto& field : f->fields) {
+                            if (field.a_desc) {
+                                if (field.a_desc->length_eval) {
+                                    auto len = field.a_desc->length_eval->get<tool::EResultType::integer>();
+                                    for (size_t i = 0; i < len; i++) {
+                                        w.write(",", field.base->ident->ident, "[", brgen::nums(i), "]");
+                                    }
+                                }
+                            }
+                            else {
+                                w.write(",", field.base->ident->ident);
+                            }
+                        }
+                        w.writeln(");");
+                    }
+                    else if (auto f = std::get_if<Field>(&field.field)) {
+                        if (f->a_desc) {
+                            if (f->a_desc->length_eval) {
+                                auto len = f->a_desc->length_eval->get<tool::EResultType::integer>();
+                                w.write("::utils::binary::read_num_bulk(r,", "true");
+                                for (size_t i = 0; i < len; i++) {
+                                    w.write(",", f->base->ident->ident, "[", brgen::nums(i), "]");
+                                }
+                                w.writeln(");");
+                            }
+                            else {
+                                w.writeln("::utils::binary::read_num_bulk(r,", "true", ",", f->base->ident->ident, ");");
                             }
                         }
                         else {
-                            w.write(",", field->ident->ident);
+                            w.writeln("::utils::binary::read_num(r,", f->base->ident->ident, ",", "true", ");");
                         }
                     }
                 }
-                w.writeln(");");
             }
             w.writeln("}");
+            return {};
         }
 
         brgen::result<void> generate_format(const std::shared_ptr<ast::Format>& fmt) {
@@ -224,15 +319,29 @@ namespace json2cpp {
 
                 for (auto& f : fields) {
                     if (ast::as<ast::Field>(f)) {
-                        if (auto r = generate_field(fs, ast::cast_to<ast::Field>(f)); !r) {
+                        if (auto r = collect_field(fs, ast::cast_to<ast::Field>(f)); !r) {
                             return r.transform(empty_void);
                         }
                     }
                 }
+                fs.merge();
+
+                if (auto r = generate_fields(fs); !r) {
+                    return r.transform(empty_void);
+                }
 
                 w.writeln("constexpr std::size_t size() const {");
-                w.indent_writeln("return ", brgen::nums(fs.fixed_size), ";");
+                w.indent_writeln("return ", brgen::nums(fs.cur_fixed_size), ";");
                 w.writeln("}");
+
+                if (fs.merged_fields.size()) {
+                    if (auto r = generate_encoder(fs); !r) {
+                        return r.transform(empty_void);
+                    }
+                    if (auto r = generate_decoder(fs); !r) {
+                        return r.transform(empty_void);
+                    }
+                }
             }
             w.writeln("};");
             return {};
