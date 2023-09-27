@@ -17,6 +17,7 @@ struct Flags : utils::cmdline::templ::HelpOption {
 auto& cout = utils::wrap::cout_wrap();
 
 int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
+    prefix_loc() = "json2cpp: ";
     if (flags.spec) {
         cout << R"({
             "pass_by": "file",
@@ -60,6 +61,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
         print_error("cannot generate code: ", res.error().locations[0].msg);
         return 1;
     }
+    cout << g.w.out();
     return 0;
 }
 

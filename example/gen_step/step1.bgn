@@ -1,0 +1,6 @@
+# step 1 - can generate set of fundamental types
+format Step1:
+    hello :u8
+    world :u16
+    is    :u32
+    cheap :u16
