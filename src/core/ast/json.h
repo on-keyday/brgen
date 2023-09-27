@@ -353,6 +353,18 @@ namespace brgen::ast {
                         return {};
                     });
             }
+            else if constexpr (std::is_same_v<T, Endian>) {
+                return (res & get_string(loc, key))
+                    .and_then([&](std::string&& s) -> result<void> {
+                        if (auto res = endian_from_str(s.c_str()); !res) {
+                            return unexpect(error(loc, s, " cannot convert to endian"));
+                        }
+                        else {
+                            target = *res;
+                        }
+                        return {};
+                    });
+            }
             else if constexpr (utils::helper::is_template_instance_of<T, std::shared_ptr> ||
                                utils::helper::is_template_instance_of<T, std::weak_ptr> ||
                                utils::helper::is_template_instance_of<T, std::list> ||

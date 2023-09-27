@@ -66,7 +66,7 @@ namespace brgen::middle {
         std::shared_ptr<ast::Type> assigning_type(const std::shared_ptr<ast::Type>& base) {
             if (auto ty = ast::as<ast::IntLiteralType>(base)) {
                 auto aligned = ty->get_aligned_bit();
-                return std::make_shared<ast::IntType>(ty->loc, "", aligned);
+                return std::make_shared<ast::IntType>(ty->loc, aligned, ast::Endian::unspec, false);
             }
             return base;
         }

@@ -162,48 +162,16 @@ namespace brgen::ast {
                                 field(key, "loc");
                             }
                             else if constexpr (std::is_same_v<P, UnaryOp>) {
-                                struct {
-                                    const char* const* start;
-                                    const char* const* finish;
-
-                                    const char* const* begin() const {
-                                        return start;
-                                    }
-
-                                    const char* const* end() const {
-                                        return finish;
-                                    }
-                                } p{unary_op_str, unary_op_str + unary_op_count};
-                                field(key, p);
+                                field(key, "unary_op");
                             }
                             else if constexpr (std::is_same_v<P, BinaryOp>) {
-                                struct {
-                                    const char* const* start;
-                                    const char* const* finish;
-
-                                    const char* const* begin() const {
-                                        return start;
-                                    }
-
-                                    const char* const* end() const {
-                                        return finish;
-                                    }
-                                } p{bin_op_list, bin_op_list + bin_op_count};
-                                field(key, p);
+                                field(key, "binary_op");
                             }
                             else if constexpr (std::is_same_v<P, IdentUsage>) {
-                                struct {
-                                    const char* const* start;
-                                    const char* const* finish;
-                                    const char* const* begin() const {
-                                        return start;
-                                    }
-
-                                    const char* const* end() const {
-                                        return finish;
-                                    }
-                                } p{ident_usage_str, ident_usage_str + ident_usage_count};
-                                field(key, p);
+                                field(key, "ident_usage");
+                            }
+                            else if constexpr (std::is_same_v<P, Endian>) {
+                                field(key, "endian");
                             }
                             else if constexpr (utils::helper::is_template<P>) {
                                 using P1 = typename utils::helper::template_of_t<P>::template param_at<0>;
@@ -238,5 +206,38 @@ namespace brgen::ast {
                 }
             });
         }
+    }
+
+    void custom_type_mapping(auto&& field) {
+        struct R {
+            const char* const* start;
+            const char* const* finish;
+
+            const char* const* begin() const {
+                return start;
+            }
+
+            const char* const* end() const {
+                return finish;
+            }
+        };
+        {
+            R p{unary_op_str, unary_op_str + unary_op_count};
+            field("unary_op", p);
+        }
+        {
+            R p{bin_op_list, bin_op_list + bin_op_count};
+            field("binary_op", p);
+        }
+        {
+            R p{ident_usage_str, ident_usage_str + ident_usage_count};
+            field("ident_usage", p);
+        }
+        {
+            R p{endian_str, endian_str + endian_count};
+            field("endian", p);
+        }
+        field("scope", utils::json::RawJSON<const char*>{brgen::ast::scope_type_list});
+        field("loc", utils::json::RawJSON<const char*>{brgen::ast::loc_type});
     }
 }  // namespace brgen::ast

@@ -91,8 +91,7 @@ int node_list(bool dump_ast_schema) {
                 brgen::ast::node_type_list(list);
             }
         });
-        field("scope", utils::json::RawJSON<const char*>{brgen::ast::scope_type_list});
-        field("loc", utils::json::RawJSON<const char*>{brgen::ast::loc_type});
+        brgen::ast::custom_type_mapping(field);
     }
     cout << d.out();
     if (cout.is_tty()) {

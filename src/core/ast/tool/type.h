@@ -39,8 +39,6 @@ namespace brgen::ast::tool {
         if (auto i = ast::as<IntType>(typ)) {
             IntDesc desc;
             desc.bit_size = i->bit_size;
-            if (i->raw.size() == 2) {
-            }
             return desc;
         }
         return std::nullopt;

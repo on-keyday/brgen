@@ -25,13 +25,47 @@ namespace brgen::ast {
         return 0;
     }
 
+    enum class Endian {
+        unspec,
+        big,
+        little,
+
+    };
+
+    constexpr const char* endian_str[] = {
+        "unspec",
+        "big",
+        "little",
+        nullptr,
+    };
+
+    constexpr auto endian_count = 3;
+
+    constexpr expected<Endian, const char*> endian_from_str(std::string_view str) {
+        if (str == "big") {
+            return Endian::big;
+        }
+        else if (str == "little") {
+            return Endian::little;
+        }
+        else if (str == "unspec") {
+            return Endian::unspec;
+        }
+        return unexpect("invalid endian");
+    }
+
+    constexpr void as_json(Endian e, auto&& j) {
+        j.string(endian_str[static_cast<std::uint8_t>(e)]);
+    }
+
     struct IntType : Type {
         define_node_type(NodeType::int_type);
-        std::string raw;
         size_t bit_size = 0;
+        Endian endian = Endian::unspec;
+        bool is_signed = false;
 
-        IntType(lexer::Loc l, std::string&& token, size_t bit_size)
-            : Type(l, NodeType::int_type), raw(std::move(token)), bit_size(bit_size) {}
+        IntType(lexer::Loc l, size_t bit_size, Endian endian, bool is_signed)
+            : Type(l, NodeType::int_type), bit_size(bit_size), endian(endian), is_signed(is_signed) {}
 
         // for decode
         IntType()
@@ -39,8 +73,9 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Type::dump(field);
-            field(sdebugf(raw));
             field(sdebugf(bit_size));
+            field(sdebugf(endian));
+            field(sdebugf(is_signed));
         }
     };
 

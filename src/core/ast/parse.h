@@ -636,12 +636,22 @@ namespace brgen::ast {
             return for_;
         }
 
-        std::optional<size_t> is_int_type(std::string_view str) {
+        struct IntTypeDesc {
+            size_t bit_size = 0;
+            Endian endian = Endian::unspec;
+            bool is_signed = false;
+        };
+
+        std::optional<IntTypeDesc> is_int_type(std::string_view str) {
+            IntTypeDesc desc;
             if (str.starts_with("ub") || str.starts_with("ul") ||
                 str.starts_with("sb") || str.starts_with("sl")) {
+                desc.endian = str[1] == 'b' ? Endian::big : Endian::little;
+                desc.is_signed = str[0] == 's';
                 str = str.substr(2);
             }
             else if (str.starts_with("u") || str.starts_with("s")) {
+                desc.is_signed = str[0] == 's';
                 str = str.substr(1);
             }
             else {
@@ -655,7 +665,8 @@ namespace brgen::ast {
             if (value == 0) {  // u0 is not valid
                 return std::nullopt;
             }
-            return value;
+            desc.bit_size = value;
+            return desc;
         }
 
         std::shared_ptr<Type> parse_type() {
@@ -684,8 +695,8 @@ namespace brgen::ast {
 
             auto ident = s.must_consume_token(lexer::Tag::ident);
 
-            if (auto bit_size = is_int_type(ident.token)) {
-                return std::make_shared<IntType>(ident.loc, std::move(ident.token), *bit_size);
+            if (auto desc = is_int_type(ident.token)) {
+                return std::make_shared<IntType>(ident.loc, desc->bit_size, desc->endian, desc->is_signed);
             }
 
             auto base = std::make_shared<Ident>(ident.loc, std::move(ident.token));
