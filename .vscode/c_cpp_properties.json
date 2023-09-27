@@ -5,7 +5,8 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "C:/workspace/utils_backup/src/include",
-                "C:/workspace/shbrgen/brgen/build/_deps/googletest-src/googletest/include"
+                "C:/workspace/shbrgen/brgen/build/_deps/googletest-src/googletest/include",
+                "C:/workspace/llvm-project/clang/include"
             ],
             "defines": [
                 "_DEBUG",

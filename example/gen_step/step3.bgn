@@ -1,0 +1,4 @@
+# step3 - dynamic length byte array
+format Step3:
+    len :u8
+    data :[len]u8

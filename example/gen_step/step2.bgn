@@ -1,0 +1,6 @@
+# step2 - fixed array of fundamental types
+format Step2:
+    hello :[16]u8
+    world :[8]u16
+    is    :[4]u32
+    cheap :[2]u64

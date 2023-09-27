@@ -58,7 +58,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     json2cpp::Generator g(brgen::ast::cast_to<brgen::ast::Program>(*res));
     auto res2 = g.generate();
     if (!res2) {
-        print_error("cannot generate code: ", res.error().locations[0].msg);
+        print_error("cannot generate code: ", res2.error().locations[0].msg);
         return 1;
     }
     cout << g.w.out();

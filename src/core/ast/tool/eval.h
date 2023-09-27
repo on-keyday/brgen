@@ -338,6 +338,7 @@ namespace brgen::ast::tool {
                 if (!val) {
                     return unexpect(EvalError{i->loc, "cannot parse integer in 64 bit"});
                 }
+                return make_result<EResultType::integer>(*val);
             }
             if (auto i = ast::as<ast::StrLiteral>(expr)) {
                 return make_result<EResultType::string>(i->value);

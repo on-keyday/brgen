@@ -1,7 +1,7 @@
 #license
 cmake_minimum_required(VERSION 3.22.1)
 
-
+find_package(Clang)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tool")
 add_executable(src2json "tool/src2json.cpp")

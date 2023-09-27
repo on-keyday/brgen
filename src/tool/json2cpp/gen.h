@@ -90,7 +90,55 @@ namespace json2cpp {
             return {};
         }
 
-        brgen::result<void> generate_format(const std::shared_ptr<ast::Format>& fmt) {
+        // generate field
+        brgen::result<void> generate_field(size_t& fixed_size, ast::Field* field) {
+            auto fname = field->ident->ident;
+            auto get_primitive_type = [](size_t bit_size) -> std::string_view {
+                switch (bit_size) {
+                    case 8:
+                        return "std::int8_t";
+                    case 16:
+                        return "std::int16_t";
+                    case 32:
+                        return "std::int32_t";
+                    case 64:
+                        return "std::int64_t";
+                    default:
+                        return {};
+                }
+            };
+
+            if (auto i = tool::is_array_type(field->field_type, eval)) {
+                auto b = tool::is_int_type(i->base_type);
+                if (!b) {
+                    return brgen::unexpect(brgen::error(field->loc, "unsupported type"));
+                }
+                auto type = get_primitive_type(b->bit_size);
+                if (type.empty()) {
+                    return brgen::unexpect(brgen::error(field->loc, "unsupported type"));
+                }
+                if (!i->length_eval) {
+                    return brgen::unexpect(brgen::error(field->loc, "unsupported type"));
+                }
+                w.writeln(type, " ", fname, "[", brgen::nums(i->length_eval->get<tool::EResultType::integer>()), "];");
+                fixed_size += i->length_eval->get<tool::EResultType::integer>() * b->bit_size / 8;
+            }
+            else if (auto i = tool::is_int_type(field->field_type)) {
+                auto type = get_primitive_type(i->bit_size);
+                if (type.empty()) {
+                    return brgen::unexpect(brgen::error(field->loc, "unsupported type"));
+                }
+                w.writeln(type, " ", fname, ";");
+                fixed_size += i->bit_size / 8;
+            }
+            else {
+                return brgen::unexpect(brgen::error(field->loc, "unsupported type"));
+            }
+            return {};
+        }
+
+        brgen::result<void>
+        generate_format(const std::shared_ptr<ast::Format>& fmt) {
             auto name = fmt->ident->ident;
             auto& fields = fmt->struct_type->fields;
             w.writeln("struct ", name, " {");
@@ -99,28 +147,8 @@ namespace json2cpp {
                 size_t fixed_size = 0;
                 for (auto& f : fields) {
                     if (auto field = ast::as<ast::Field>(f)) {
-                        auto fname = field->ident->ident;
-                        if (auto i = tool::is_int_type(field->field_type)) {
-                            switch (i->bit_size) {
-                                case 8:
-                                    w.writeln("std::int8_t ", fname, ";");
-                                    break;
-                                case 16:
-                                    w.writeln("std::int16_t ", fname, ";");
-                                    break;
-                                case 32:
-                                    w.writeln("std::int32_t ", fname, ";");
-                                    break;
-                                case 64:
-                                    w.writeln("std::int64_t ", fname, ";");
-                                    break;
-                                default:
-                                    return brgen::unexpect(brgen::error(field->loc, "unsupported bit size"));
-                            }
-                            fixed_size += i->bit_size / 8;
-                        }
-                        else {
-                            return brgen::unexpect(brgen::error(field->loc, "unsupported type"));
+                        if (auto r = generate_field(fixed_size, field); !r) {
+                            return r.transform(empty_void);
                         }
                     }
                 }
@@ -129,26 +157,42 @@ namespace json2cpp {
                 w.indent_writeln("return ", brgen::nums(fixed_size), ";");
                 w.writeln("}");
 
-                w.writeln("constexpr bool render(binary::writer& w) const {");
+                w.writeln("constexpr bool render(::utils::binary::writer& w) const {");
                 {
                     auto sc = w.indent_scope();
-                    w.write("return binary::write_num_bulk(w,", "true");
+                    w.write("return ::utils::binary::write_num_bulk(w,", "true");
                     for (auto& f : fields) {
                         if (auto field = ast::as<ast::Field>(f)) {
-                            w.write(",", field->ident->ident);
+                            if (auto arr = tool::is_array_type(field->field_type, eval)) {
+                                auto len = arr->length_eval->get<tool::EResultType::integer>();
+                                for (size_t i = 0; i < len; i++) {
+                                    w.write(",", field->ident->ident, "[", brgen::nums(i), "]");
+                                }
+                            }
+                            else {
+                                w.write(",", field->ident->ident);
+                            }
                         }
                     }
                     w.writeln(");");
                 }
                 w.writeln("}");
 
-                w.writeln("constexpr bool parse(binary::reader& r) {");
+                w.writeln("constexpr bool parse(::utils::binary::reader& r) {");
                 {
                     auto sc = w.indent_scope();
-                    w.write("return binary::read_num_bulk(r,", "true");
+                    w.write("return ::utils::binary::read_num_bulk(r,", "true");
                     for (auto& f : fields) {
                         if (auto field = ast::as<ast::Field>(f)) {
-                            w.write(",", field->ident->ident);
+                            if (auto arr = tool::is_array_type(field->field_type, eval)) {
+                                auto len = arr->length_eval->get<tool::EResultType::integer>();
+                                for (size_t i = 0; i < len; i++) {
+                                    w.write(",", field->ident->ident, "[", brgen::nums(i), "]");
+                                }
+                            }
+                            else {
+                                w.write(",", field->ident->ident);
+                            }
                         }
                     }
                     w.writeln(");");
