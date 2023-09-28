@@ -18,6 +18,9 @@ namespace brgen {
        private:
         friend struct FileSet;
         template <class T>
+        friend bool make_file_from_text(File& file, T&& t);
+
+        template <class T>
         static std::optional<lexer::Token> do_parse(void* ptr, std::uint64_t file) {
             return lexer::parse_one(*static_cast<utils::Sequencer<T>*>(ptr), file);
         }
@@ -87,6 +90,12 @@ namespace brgen {
             return file_name;
         }
     };
+
+    template <class T>
+    bool make_file_from_text(File& file, T&& t) {
+        file.set_input(std::forward<T>(t));
+        return true;
+    }
 
     struct FileSet {
        private:

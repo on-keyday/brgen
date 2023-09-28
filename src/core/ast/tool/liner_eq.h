@@ -53,19 +53,109 @@ namespace brgen::ast::tool {
                 bool left_has_ident = false, right_has_ident = false;
                 auto l = resolve_liner_equation(e->left, left_has_ident);
                 auto r = resolve_liner_equation(e->right, right_has_ident);
+                if (!l || !r) {
+                    return nullptr;
+                }
+                if (left_has_ident && right_has_ident) {
+                    return nullptr;  // not support yet
+                }
                 switch (e->op) {
                     case BinaryOp::add: {
-                                        }
+                        if (left_has_ident) {
+                            has_ident = true;
+                            auto b = std::make_shared<Binary>(e->loc, std::move(l), BinaryOp::sub);
+                            b->right = std::move(r);
+                            return b;
+                        }
+                        else if (right_has_ident) {
+                            has_ident = true;
+                            auto b = std::make_shared<Binary>(e->loc, std::move(r), BinaryOp::sub);
+                            b->right = std::move(l);
+                            return b;
+                        }
+                        else {
+                            auto b = std::make_shared<Binary>(e->loc, std::move(l), BinaryOp::add);
+                            b->right = std::move(r);
+                            return b;
+                        }
+                    }
+                    case BinaryOp::sub: {
+                        if (left_has_ident) {
+                            has_ident = true;
+                            auto b = std::make_shared<Binary>(e->loc, std::move(l), BinaryOp::add);
+                            b->right = std::move(r);
+                            return b;
+                        }
+                        else if (right_has_ident) {
+                            has_ident = true;
+                            auto b = std::make_shared<Binary>(e->loc, std::move(r), BinaryOp::add);
+                            b->right = std::move(l);
+                            return b;
+                        }
+                        else {
+                            auto b = std::make_shared<Binary>(e->loc, std::move(l), BinaryOp::sub);
+                            b->right = std::move(r);
+                            return b;
+                        }
+                    }
+                    case BinaryOp::mul: {
+                        if (left_has_ident) {
+                            has_ident = true;
+                            auto b = std::make_shared<Binary>(e->loc, std::move(l), BinaryOp::div);
+                            b->right = std::move(r);
+                            return b;
+                        }
+                        else if (right_has_ident) {
+                            has_ident = true;
+                            auto b = std::make_shared<Binary>(e->loc, std::move(r), BinaryOp::div);
+                            b->right = std::move(l);
+                            return b;
+                        }
+                        else {
+                            auto b = std::make_shared<Binary>(e->loc, std::move(l), BinaryOp::mul);
+                            b->right = std::move(r);
+                            return b;
+                        }
+                    }
+                    case BinaryOp::div: {
+                        if (left_has_ident) {
+                            has_ident = true;
+                            auto b = std::make_shared<Binary>(e->loc, std::move(l), BinaryOp::mul);
+                            b->right = std::move(r);
+                            return b;
+                        }
+                        else if (right_has_ident) {
+                            has_ident = true;
+                            auto b = std::make_shared<Binary>(e->loc, std::move(r), BinaryOp::mul);
+                            b->right = std::move(l);
+                            return b;
+                        }
+                        else {
+                            auto b = std::make_shared<Binary>(e->loc, std::move(l), BinaryOp::div);
+                            b->right = std::move(r);
+                            return b;
+                        }
+                    }
+                    default: {
+                        return nullptr;
+                    }
                 }
             }
             else if (auto e = as<Ident>(expr)) {
                 has_ident = true;
                 return expr;
             }
-            else if (auto lit = as<IntLiteral>(expr)) {
+            else if (as<IntLiteral>(expr)) {
+                return expr;
             }
             else if (auto e = as<Unary>(expr)) {
-                return resolve_liner_equation(e->expr, has_ident);
+                auto t = resolve_liner_equation(e->expr, has_ident);
+                if (!t) {
+                    return nullptr;
+                }
+                auto u = std::make_shared<Unary>(e->loc, e->op);
+                u->expr = std::move(t);
+                return u;
             }
             else if (auto p = as<Paren>(expr)) {
                 return resolve_liner_equation(p->expr, has_ident);
@@ -80,9 +170,13 @@ namespace brgen::ast::tool {
             if (!unique_ident(expr, ident)) {
                 return false;
             }
-            resolved = *ident;
             bool has_ident = false;
-            resolve_liner_equation(expr, has_ident);
+            auto r = resolve_liner_equation(expr, has_ident);
+            if (!r) {
+                return false;
+            }
+            resolved = std::move(r);
+            return true;
         }
     };
 

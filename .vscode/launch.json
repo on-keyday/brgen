@@ -24,7 +24,7 @@
             "request": "launch",
             "program": "${workspaceRoot}/build/tool/src2json",
             "args": [
-                "example/syslog.bgn"
+                "example/large_sample.bgn"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",

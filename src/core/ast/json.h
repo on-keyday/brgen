@@ -2,7 +2,7 @@
 #pragma once
 #include "ast.h"
 #include "traverse.h"
-#include <map>
+#include <unordered_map>
 #include <json/json_export.h>
 #include <json/iterator.h>
 
@@ -29,23 +29,32 @@ namespace brgen::ast {
         Debug obj;
 
        private:
-        std::map<std::shared_ptr<Node>, size_t> node_index;
-        std::map<std::shared_ptr<Scope>, size_t> scope_index;
+        std::unordered_map<std::shared_ptr<Node>, size_t> node_index;
+        std::unordered_map<std::shared_ptr<Scope>, size_t> scope_index;
         std::vector<std::shared_ptr<Node>> nodes;
         std::vector<std::shared_ptr<Scope>> scopes;
 
         void collect(const std::shared_ptr<Scope>& scope) {
-            auto found = scope_index.find(scope);
-            if (found != scope_index.end()) {
-                return;  // skip; already visited
-            }
-            scopes.push_back(scope);
-            scope_index[scope] = scopes.size() - 1;
-            if (scope->branch) {
-                collect(scope->branch);
-            }
-            if (scope->next) {
-                collect(scope->next);
+            auto collect_scope=[&](const std::shared_ptr<Scope>& scope){
+                auto found = scope_index.find(scope);
+                if (found != scope_index.end()) {
+                    return;  // skip; already visited
+                }
+                scopes.push_back(scope);
+                scope_index[scope] = scopes.size() - 1;
+            };
+            std::vector<std::shared_ptr<Scope>> stack;
+            stack.push_back(std::move(scope));
+            while(!stack.empty()){
+                auto v = stack.back();
+                stack.pop_back();
+                collect_scope(v);    
+                if(v->next){
+                    stack.push_back(v->next);
+                }
+                if(v->branch){
+                    stack.push_back(v->branch);
+                }
             }
         }
 
