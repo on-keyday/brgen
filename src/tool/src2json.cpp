@@ -11,6 +11,7 @@
 #include "common/print.h"
 #include <wrap/argv.h>
 #include <core/ast/node_type_list.h>
+#include <core/ast/kill_node.h>
 
 struct Flags : utils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
@@ -205,6 +206,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     if (cout.is_tty()) {
         cout << "\n";
     }
+    brgen::ast::kill_node(*res);
     return 0;
 }
 
