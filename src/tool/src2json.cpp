@@ -92,7 +92,7 @@ int node_list(bool dump_ast_schema) {
                 brgen::ast::node_type_list(list);
             }
         });
-        brgen::ast::custom_type_mapping(field);
+        brgen::ast::custom_type_mapping(field, dump_ast_schema);
     }
     cout << d.out();
     if (cout.is_tty()) {

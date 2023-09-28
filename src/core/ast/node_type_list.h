@@ -128,6 +128,7 @@ namespace brgen::ast {
     }  // namespace internal
 
     constexpr auto scope_type_list = R"({"prev": "weak_ptr<scope>","next": "shared_ptr<scope>","branch": "shared_ptr<scope>","ident": "array<std::weak_ptr<node>>"})";
+    constexpr auto scope_type_ast_mode_list = R"({"prev": "uintptr","next": "uintptr","branch": "uintptr","ident": "array<uintptr>"})";
 
     constexpr auto loc_type = R"({"pos": {"begin": "uint","end": "uint"},"file": "uint","line": "uint","col": "uint"})";
 
@@ -208,7 +209,7 @@ namespace brgen::ast {
         }
     }
 
-    void custom_type_mapping(auto&& field) {
+    void custom_type_mapping(auto&& field, bool ast_mode = false) {
         struct R {
             const char* const* start;
             const char* const* finish;
@@ -237,7 +238,12 @@ namespace brgen::ast {
             R p{endian_str, endian_str + endian_count};
             field("endian", p);
         }
-        field("scope", utils::json::RawJSON<const char*>{brgen::ast::scope_type_list});
+        if (ast_mode) {
+            field("scope", utils::json::RawJSON<const char*>{scope_type_ast_mode_list});
+        }
+        else {
+            field("scope", utils::json::RawJSON<const char*>{scope_type_list});
+        }
         field("loc", utils::json::RawJSON<const char*>{brgen::ast::loc_type});
     }
 }  // namespace brgen::ast
