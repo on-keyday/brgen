@@ -18,13 +18,6 @@ namespace brgen::ast {
         const NodeType node_type;
         lexer::Loc loc;
 
-        virtual ~Node() {}
-
-        virtual void as_json(Debug& buf) {
-            auto field = buf.object();
-            dump(field);
-        }
-
         void dump(auto&& field) {
             field(sdebugf(node_type));
             field(sdebugf(loc));
@@ -35,48 +28,7 @@ namespace brgen::ast {
             : loc(l), node_type(t) {}
     };
 
-    template <class B>
-    struct FieldWrapper {
-        B& base;
-
-        constexpr auto operator()(std::string_view key, auto&& value) const {
-            using P = utils::helper::template_of_t<std::decay_t<decltype(value)>>;
-            if constexpr (std::is_same_v<decltype(value), scope_ptr&>) {
-                if (key == "global_scope") {
-                    base(key, value);
-                }
-            }
-            else if constexpr (P::value) {
-                if constexpr (utils::helper::is_template_instance_of<std::decay_t<decltype(value)>, std::weak_ptr>) {
-                    // ignore at here
-                }
-                else {
-                    using P2 = utils::helper::template_of_t<typename P::template param_at<0>>;
-                    if constexpr (P2::value) {
-                        if constexpr (utils::helper::is_template_instance_of<typename P2::instance, std::weak_ptr>) {
-                            // ignore at here
-                        }
-                        else {
-                            base(key, value);
-                        }
-                    }
-                    else {
-                        base(key, value);
-                    }
-                }
-            }
-            else {
-                base(key, value);
-            }
-        }
-    };
-
-#define define_node_type(type)                               \
-    virtual void as_json(Debug& buf) override {              \
-        auto field = buf.object();                           \
-        auto wrapper = FieldWrapper<decltype(field)>{field}; \
-        dump(wrapper);                                       \
-    }                                                        \
+#define define_node_type(type) \
     static constexpr NodeType node_type_tag = type
 
     struct Type : Node {

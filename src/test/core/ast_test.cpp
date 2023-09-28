@@ -1,6 +1,7 @@
 #include "ast_test_component.h"
 #include <fstream>
 #include <gtest/gtest.h>
+#include <core/ast/traverse.h>
 using namespace brgen;
 
 int main(int argc, char** argv) {

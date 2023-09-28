@@ -19,6 +19,22 @@ namespace json2cpp {
         std::set<std::string> internals;
     };
 
+    enum class DescType {
+        array,
+        int_,
+    };
+
+    struct Desc {
+        const DescType type;
+        constexpr Desc(DescType type)
+            : type(type) {}
+    };
+
+    struct ArrayDesc : Desc {
+        tool::ArrayDesc desc;
+        std::shared_ptr<Desc> base_type;
+    };
+
     struct Field {
         std::shared_ptr<ast::Field> base;
         std::optional<tool::ArrayDesc> a_desc;
@@ -164,6 +180,8 @@ namespace json2cpp {
                 auto type = get_primitive_type(b->bit_size);
                 if (type.empty()) {
                     return brgen::unexpect(brgen::error(field->loc, "unsupported type"));
+                }
+                if (!a->length_eval) {
                 }
                 f.push({field, a, *b});
             }
