@@ -43,9 +43,12 @@ namespace json2cpp {
             : Desc(DescType::array), desc(desc), base_type(std::move(base_type)) {}
     };
 
+    struct Field;
+
     struct VectorDesc : Desc {
         tool::ArrayDesc desc;
         std::shared_ptr<Desc> base_type;
+        std::shared_ptr<ast::Expr> resolved_expr;
         VectorDesc(tool::ArrayDesc desc, std::shared_ptr<Desc> base_type)
             : Desc(DescType::vector), desc(desc), base_type(std::move(base_type)) {}
     };
@@ -53,6 +56,7 @@ namespace json2cpp {
     struct Field {
         std::shared_ptr<ast::Field> base;
         std::shared_ptr<Desc> desc;
+        std::weak_ptr<Field> length_related;
 
         Field(std::shared_ptr<ast::Field> base, std::shared_ptr<Desc> desc)
             : base(std::move(base)), desc(std::move(desc)) {}
@@ -180,7 +184,8 @@ namespace json2cpp {
                 }
                 else {
                     config.includes.emplace("<vector>");
-                    f.push(std::make_shared<Field>(field, std::make_shared<VectorDesc>(std::move(*a), std::make_shared<IntDesc>(std::move(*b)))));
+                    auto vec = std::make_shared<VectorDesc>(std::move(*a), std::make_shared<IntDesc>(std::move(*b)));
+                    f.push(std::make_shared<Field>(field, std::move(vec)));
                 }
             }
             else if (auto i = tool::is_int_type(field->field_type)) {
@@ -202,8 +207,8 @@ namespace json2cpp {
                     m.fields.push_back({std::move(f.fields[i])});
                     continue;
                 }
+                BulkFields b;
                 for (; i < f.fields.size(); i++) {
-                    BulkFields b;
                     if (f.fields[i]->desc->type == DescType::array) {
                         b.fields.push_back({std::move(f.fields[i])});
                     }
@@ -235,10 +240,10 @@ namespace json2cpp {
                 auto size = static_cast<IntDesc*>(desc->base_type.get())->desc.bit_size;
                 auto& len = desc->desc.length_eval;
                 if (len) {
-                    w.writeln("std::vector<", get_primitive_type(size), "> ", f.base->ident->ident, ";");
+                    w.writeln("std::array<", get_primitive_type(size), ",", brgen::nums(len->get<tool::EResultType::integer>()), "> ", f.base->ident->ident, ";");
                 }
                 else {
-                    w.writeln("std::array<", get_primitive_type(size), ",", len, "> ", f.base->ident->ident, ";");
+                    w.writeln("std::vector<", get_primitive_type(size), "> ", f.base->ident->ident, ";");
                 }
             }
             return {};
@@ -254,8 +259,8 @@ namespace json2cpp {
                         }
                     }
                 }
-                else if (auto f = std::get_if<Field>(&field)) {
-                    if (auto res = generate_field(*f); !res) {
+                else if (auto f = std::get_if<std::shared_ptr<Field>>(&field)) {
+                    if (auto res = generate_field(**f); !res) {
                         return res.transform(empty_void);
                     }
                 }
@@ -264,7 +269,6 @@ namespace json2cpp {
         }
 
         brgen::result<void> generate_encoder(MergedFields& f, bool decoder, std::string_view num_method) {
-            constexpr auto num_method = "::utils::binary::write_num";
             constexpr auto is_be = "true";
             w.writeln("constexpr bool render(::utils::binary::writer& w) const {");
             {
@@ -291,29 +295,30 @@ namespace json2cpp {
                         auto& f = *fp;
                         if (f->desc->type == DescType::array) {
                             auto desc = static_cast<ArrayDesc*>(f->desc.get());
-                            if (desc->desc.length_eval) {
-                                auto len = desc->desc.length_eval->get<tool::EResultType::integer>();
-                                w.write("if(!", num_method, "_bulk", "(w,", is_be);
-                                for (size_t i = 0; i < len; i++) {
-                                    w.write(",", f->base->ident->ident, "[", brgen::nums(i), "]");
-                                }
-                                w.writeln(");");
+
+                            auto len = desc->desc.length_eval->get<tool::EResultType::integer>();
+                            w.writeln("if(!", num_method, "_bulk", "(w,", is_be);
+                            for (size_t i = 0; i < len; i++) {
+                                w.write(",", f->base->ident->ident, "[", brgen::nums(i), "]");
                             }
-                            else {
-                                if (decoder) {
-                                    tool::Stringer s;
-                                    s.to_string(desc->desc.length);
-                                    w.writeln(f->base->ident->ident, ".resize(", s.buffer, ");");
-                                }
-                                auto i = "i_" + f->base->ident->ident;
-                                w.writeln("for(size_t ", i, " = 0;", i, " < ", f->base->ident->ident, ".size();", i, "++) {");
-                                {
-                                    auto sc = w.indent_scope();
-                                    w.write("if(!", num_method, "(w,", f->base->ident->ident, "[", i, "]", ",", is_be, ")) {");
-                                    w.indent_writeln("return false;");
-                                    w.writeln("}");
-                                }
+                            w.writeln(");");
+                        }
+                        else if (f->desc->type == DescType::vector) {
+                            auto desc = static_cast<VectorDesc*>(f->desc.get());
+                            if (decoder) {
+                                tool::Stringer s;
+                                s.to_string(desc->desc.length);
+                                w.writeln(f->base->ident->ident, ".resize(", s.buffer, ");");
                             }
+                            auto i = "i_" + f->base->ident->ident;
+                            w.writeln("for(size_t ", i, " = 0;", i, " < ", f->base->ident->ident, ".size();", i, "++) {");
+                            {
+                                auto sc = w.indent_scope();
+                                w.writeln("if(!", num_method, "(w,", f->base->ident->ident, "[", i, "]", ",", is_be, ")) {");
+                                w.indent_writeln("return false;");
+                                w.writeln("}");
+                            }
+                            w.writeln("}");
                         }
                         else {
                             w.writeln("if(!", num_method, "(w,", f->base->ident->ident, ",", is_be, ")) {");
@@ -356,6 +361,7 @@ namespace json2cpp {
                     if (auto r = generate_encoder(mfs, false, "::utils::binary::write_num"); !r) {
                         return r.transform(empty_void);
                     }
+                    w.writeln();
                     if (auto r = generate_encoder(mfs, true, "::utils::binary::read_num"); !r) {
                         return r.transform(empty_void);
                     }

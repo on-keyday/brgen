@@ -188,7 +188,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
 
     if (cout.is_tty() && !flags.print_ast) {
         cout << cse::letter_color<cse::ColorPalette::green> << "ok" << cse::color_reset << "\n";
-        return;
+        return 0;
     }
 
     brgen::JSONWriter d;
