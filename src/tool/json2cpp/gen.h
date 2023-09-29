@@ -53,25 +53,28 @@ namespace json2cpp {
     struct Field {
         std::shared_ptr<ast::Field> base;
         std::shared_ptr<Desc> desc;
+
+        Field(std::shared_ptr<ast::Field> base, std::shared_ptr<Desc> desc)
+            : base(std::move(base)), desc(std::move(desc)) {}
     };
 
     // read/write by binary::[write/read]_num_bulk
     // only contains integer or array of integer
     struct BulkFields {
-        std::vector<Field> fields;
+        std::vector<std::shared_ptr<Field>> fields;
         size_t fixed_size = 0;
     };
 
     struct Fields {
-        std::vector<Field> fields;
+        std::vector<std::shared_ptr<Field>> fields;
 
-        void push(Field&& f) {
+        void push(std::shared_ptr<Field>&& f) {
             fields.push_back(std::move(f));
         }
     };
 
     struct MergedFields {
-        std::vector<std::variant<Field, BulkFields>> fields;
+        std::vector<std::variant<std::shared_ptr<Field>, BulkFields>> fields;
     };
 
     struct Generator {
@@ -173,11 +176,11 @@ namespace json2cpp {
                 }
                 if (a->length_eval) {
                     config.includes.emplace("<array>");
-                    f.push({field, std::make_shared<ArrayDesc>(std::move(*a), std::make_shared<IntDesc>(std::move(*b)))});
+                    f.push(std::make_shared<Field>(field, std::make_shared<ArrayDesc>(std::move(*a), std::make_shared<IntDesc>(std::move(*b)))));
                 }
                 else {
                     config.includes.emplace("<vector>");
-                    f.push({field, std::make_shared<VectorDesc>(std::move(*a), std::make_shared<IntDesc>(std::move(*b)))});
+                    f.push(std::make_shared<Field>(field, std::make_shared<VectorDesc>(std::move(*a), std::make_shared<IntDesc>(std::move(*b)))));
                 }
             }
             else if (auto i = tool::is_int_type(field->field_type)) {
@@ -185,7 +188,7 @@ namespace json2cpp {
                 if (type.empty()) {
                     return brgen::unexpect(brgen::error(field->loc, "unsupported type"));
                 }
-                f.push({field, std::make_shared<IntDesc>(std::move(*i))});
+                f.push(std::make_shared<Field>(field, std::make_shared<IntDesc>(std::move(*i))));
             }
             else {
                 return brgen::unexpect(brgen::error(field->loc, "unsupported type"));
@@ -195,16 +198,16 @@ namespace json2cpp {
 
         brgen::result<void> merge_fields(MergedFields& m, Fields& f) {
             for (size_t i = 0; i < f.fields.size(); i++) {
-                if (f.fields[i].desc->type == DescType::vector) {
+                if (f.fields[i]->desc->type == DescType::vector) {
                     m.fields.push_back({std::move(f.fields[i])});
                     continue;
                 }
                 for (; i < f.fields.size(); i++) {
                     BulkFields b;
-                    if (f.fields[i].desc->type == DescType::array) {
+                    if (f.fields[i]->desc->type == DescType::array) {
                         b.fields.push_back({std::move(f.fields[i])});
                     }
-                    else if (f.fields[i].desc->type == DescType::int_) {
+                    else if (f.fields[i]->desc->type == DescType::int_) {
                         b.fields.push_back({std::move(f.fields[i])});
                     }
                     else {
@@ -246,7 +249,7 @@ namespace json2cpp {
             for (auto& field : f.fields) {
                 if (auto f = std::get_if<BulkFields>(&field)) {
                     for (auto& field : f->fields) {
-                        if (auto res = generate_field(field); !res) {
+                        if (auto res = generate_field(*field); !res) {
                             return res.transform(empty_void);
                         }
                     }
@@ -270,21 +273,22 @@ namespace json2cpp {
                     if (BulkFields* f = std::get_if<BulkFields>(&field)) {
                         w.write("if(!", num_method, "_bulk(w,", is_be);
                         for (auto& field : f->fields) {
-                            if (field.desc->type == DescType::array) {
-                                auto len = static_cast<ArrayDesc*>(field.desc.get())->desc.length_eval->get<tool::EResultType::integer>();
+                            if (field->desc->type == DescType::array) {
+                                auto len = static_cast<ArrayDesc*>(field->desc.get())->desc.length_eval->get<tool::EResultType::integer>();
                                 for (size_t i = 0; i < len; i++) {
-                                    w.write(",", field.base->ident->ident, "[", brgen::nums(i), "]");
+                                    w.write(",", field->base->ident->ident, "[", brgen::nums(i), "]");
                                 }
                             }
                             else {
-                                w.write(",", field.base->ident->ident);
+                                w.write(",", field->base->ident->ident);
                             }
                         }
                         w.writeln(")) {");
                         w.indent_writeln("return false;");
                         w.writeln("}");
                     }
-                    else if (auto f = std::get_if<Field>(&field)) {
+                    else if (auto fp = std::get_if<std::shared_ptr<Field>>(&field)) {
+                        auto& f = *fp;
                         if (f->desc->type == DescType::array) {
                             auto desc = static_cast<ArrayDesc*>(f->desc.get());
                             if (desc->desc.length_eval) {
@@ -297,7 +301,9 @@ namespace json2cpp {
                             }
                             else {
                                 if (decoder) {
-                                    w.writeln(f->base->ident->ident, ".resize();");
+                                    tool::Stringer s;
+                                    s.to_string(desc->desc.length);
+                                    w.writeln(f->base->ident->ident, ".resize(", s.buffer, ");");
                                 }
                                 auto i = "i_" + f->base->ident->ident;
                                 w.writeln("for(size_t ", i, " = 0;", i, " < ", f->base->ident->ident, ".size();", i, "++) {");
@@ -346,11 +352,11 @@ namespace json2cpp {
                     return r.transform(empty_void);
                 }
 
-                if (fs.merged_fields.size()) {
-                    if (auto r = generate_encoder(fs); !r) {
+                if (mfs.fields.size() > 0) {
+                    if (auto r = generate_encoder(mfs, false, "::utils::binary::write_num"); !r) {
                         return r.transform(empty_void);
                     }
-                    if (auto r = generate_decoder(fs); !r) {
+                    if (auto r = generate_encoder(mfs, true, "::utils::binary::read_num"); !r) {
                         return r.transform(empty_void);
                     }
                 }

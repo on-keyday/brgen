@@ -5,3 +5,4 @@
 #include "extract.h"
 #include "type.h"
 #include "liner_eq.h"
+#include "stringer.h"
