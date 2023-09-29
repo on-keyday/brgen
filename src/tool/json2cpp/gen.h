@@ -6,7 +6,6 @@
 #include <core/common/expected.h>
 #include <helper/transform.h>
 #include <set>
-#include <bitset>
 #include <binary/writer.h>
 
 namespace json2cpp {
@@ -21,6 +20,7 @@ namespace json2cpp {
 
     enum class DescType {
         array,
+        vector,
         int_,
     };
 
@@ -30,58 +30,48 @@ namespace json2cpp {
             : type(type) {}
     };
 
+    struct IntDesc : Desc {
+        tool::IntDesc desc;
+        constexpr IntDesc(tool::IntDesc desc)
+            : Desc(DescType::int_), desc(desc) {}
+    };
+
     struct ArrayDesc : Desc {
         tool::ArrayDesc desc;
         std::shared_ptr<Desc> base_type;
+        ArrayDesc(tool::ArrayDesc desc, std::shared_ptr<Desc> base_type)
+            : Desc(DescType::array), desc(desc), base_type(std::move(base_type)) {}
+    };
+
+    struct VectorDesc : Desc {
+        tool::ArrayDesc desc;
+        std::shared_ptr<Desc> base_type;
+        VectorDesc(tool::ArrayDesc desc, std::shared_ptr<Desc> base_type)
+            : Desc(DescType::vector), desc(desc), base_type(std::move(base_type)) {}
     };
 
     struct Field {
         std::shared_ptr<ast::Field> base;
-        std::optional<tool::ArrayDesc> a_desc;
-        tool::IntDesc i_desc;
+        std::shared_ptr<Desc> desc;
     };
 
+    // read/write by binary::[write/read]_num_bulk
+    // only contains integer or array of integer
     struct BulkFields {
         std::vector<Field> fields;
         size_t fixed_size = 0;
     };
 
-    struct MergedField {
-        std::variant<Field, BulkFields> field;
-    };
-
     struct Fields {
-        std::vector<MergedField> merged_fields;
-        std::vector<Field> cur_fields;
-        size_t cur_fixed_size = 0;
-
-        void merge() {
-            if (cur_fields.size()) {
-                if (cur_fields.size() == 1) {
-                    merged_fields.push_back({.field = std::move(cur_fields[0])});
-                }
-                else {
-                    merged_fields.push_back({.field = BulkFields{std::move(cur_fields), cur_fixed_size}});
-                }
-                cur_fields.clear();
-                cur_fixed_size = 0;
-            }
-        }
+        std::vector<Field> fields;
 
         void push(Field&& f) {
-            if (f.a_desc && !f.a_desc->length_eval) {
-                merge();
-                merged_fields.push_back({.field = std::move(f)});
-                return;
-            }
-            else if (f.a_desc && f.a_desc->length_eval) {
-                cur_fixed_size += f.a_desc->length_eval->get<tool::EResultType::integer>() * f.i_desc.bit_size / 8;
-            }
-            else if (f.i_desc.bit_size % 8 == 0) {
-                cur_fixed_size += f.i_desc.bit_size / 8;
-            }
-            cur_fields.push_back(std::move(f));
+            fields.push_back(std::move(f));
         }
+    };
+
+    struct MergedFields {
+        std::vector<std::variant<Field, BulkFields>> fields;
     };
 
     struct Generator {
@@ -181,16 +171,21 @@ namespace json2cpp {
                 if (type.empty()) {
                     return brgen::unexpect(brgen::error(field->loc, "unsupported type"));
                 }
-                if (!a->length_eval) {
+                if (a->length_eval) {
+                    config.includes.emplace("<array>");
+                    f.push({field, std::make_shared<ArrayDesc>(std::move(*a), std::make_shared<IntDesc>(std::move(*b)))});
                 }
-                f.push({field, a, *b});
+                else {
+                    config.includes.emplace("<vector>");
+                    f.push({field, std::make_shared<VectorDesc>(std::move(*a), std::make_shared<IntDesc>(std::move(*b)))});
+                }
             }
             else if (auto i = tool::is_int_type(field->field_type)) {
                 auto type = get_primitive_type(i->bit_size);
                 if (type.empty()) {
                     return brgen::unexpect(brgen::error(field->loc, "unsupported type"));
                 }
-                f.push({field, std::nullopt, *i});
+                f.push({field, std::make_shared<IntDesc>(std::move(*i))});
             }
             else {
                 return brgen::unexpect(brgen::error(field->loc, "unsupported type"));
@@ -198,127 +193,126 @@ namespace json2cpp {
             return {};
         }
 
-        // generate field
-        brgen::result<void> generate_fields(const Fields& f) {
-            for (auto& field : f.merged_fields) {
-                if (auto f = std::get_if<BulkFields>(&field.field)) {
-                    for (auto& field : f->fields) {
-                        auto type = get_primitive_type(field.i_desc.bit_size);
-                        if (field.a_desc) {
-                            if (field.a_desc->length_eval) {
-                                auto len = field.a_desc->length_eval->get<tool::EResultType::integer>();
-                                w.writeln(type, " ", field.base->ident->ident, "[", brgen::nums(len), "];");
-                            }
-                        }
-                        else {
-                            w.writeln(type, " ", field.base->ident->ident, ";");
-                        }
-                    }
+        brgen::result<void> merge_fields(MergedFields& m, Fields& f) {
+            for (size_t i = 0; i < f.fields.size(); i++) {
+                if (f.fields[i].desc->type == DescType::vector) {
+                    m.fields.push_back({std::move(f.fields[i])});
+                    continue;
                 }
-                else if (auto f = std::get_if<Field>(&field.field)) {
-                    auto type = get_primitive_type(f->i_desc.bit_size);
-                    if (f->a_desc) {
-                        if (f->a_desc->length_eval) {
-                            auto len = f->a_desc->length_eval->get<tool::EResultType::integer>();
-                            w.writeln(type, " ", f->base->ident->ident, "[", brgen::nums(len), "]", ";");
-                        }
-                        else {
-                            w.writeln("std::vector<", type, "> ", f->base->ident->ident, ";");
-                        }
+                for (; i < f.fields.size(); i++) {
+                    BulkFields b;
+                    if (f.fields[i].desc->type == DescType::array) {
+                        b.fields.push_back({std::move(f.fields[i])});
+                    }
+                    else if (f.fields[i].desc->type == DescType::int_) {
+                        b.fields.push_back({std::move(f.fields[i])});
                     }
                     else {
-                        w.writeln(type, " ", f->base->ident->ident, ";");
+                        if (b.fields.size() == 1) {
+                            m.fields.push_back({std::move(b.fields[0])});
+                        }
+                        else {
+                            m.fields.push_back({std::move(b)});
+                        }
+                        i--;
+                        break;
                     }
                 }
             }
             return {};
         }
 
-        brgen::result<void> generate_encoder(Fields& f) {
+        brgen::result<void> generate_field(const Field& f) {
+            if (f.desc->type == DescType::int_) {
+                auto size = static_cast<IntDesc*>(f.desc.get())->desc.bit_size;
+                w.writeln(get_primitive_type(size), " ", f.base->ident->ident, ";");
+            }
+            else {
+                auto desc = static_cast<ArrayDesc*>(f.desc.get());
+                auto size = static_cast<IntDesc*>(desc->base_type.get())->desc.bit_size;
+                auto& len = desc->desc.length_eval;
+                if (len) {
+                    w.writeln("std::vector<", get_primitive_type(size), "> ", f.base->ident->ident, ";");
+                }
+                else {
+                    w.writeln("std::array<", get_primitive_type(size), ",", len, "> ", f.base->ident->ident, ";");
+                }
+            }
+            return {};
+        }
+
+        // generate field
+        brgen::result<void> generate_fields(const MergedFields& f) {
+            for (auto& field : f.fields) {
+                if (auto f = std::get_if<BulkFields>(&field)) {
+                    for (auto& field : f->fields) {
+                        if (auto res = generate_field(field); !res) {
+                            return res.transform(empty_void);
+                        }
+                    }
+                }
+                else if (auto f = std::get_if<Field>(&field)) {
+                    if (auto res = generate_field(*f); !res) {
+                        return res.transform(empty_void);
+                    }
+                }
+            }
+            return {};
+        }
+
+        brgen::result<void> generate_encoder(MergedFields& f, bool decoder, std::string_view num_method) {
+            constexpr auto num_method = "::utils::binary::write_num";
+            constexpr auto is_be = "true";
             w.writeln("constexpr bool render(::utils::binary::writer& w) const {");
             {
                 auto sc = w.indent_scope();
-                for (auto& field : f.merged_fields) {
-                    if (BulkFields* f = std::get_if<BulkFields>(&field.field)) {
-                        w.write("::utils::binary::write_num_bulk(w,", "true");
+                for (auto& field : f.fields) {
+                    if (BulkFields* f = std::get_if<BulkFields>(&field)) {
+                        w.write("if(!", num_method, "_bulk(w,", is_be);
                         for (auto& field : f->fields) {
-                            if (field.a_desc) {
-                                if (field.a_desc->length_eval) {
-                                    auto len = field.a_desc->length_eval->get<tool::EResultType::integer>();
-                                    for (size_t i = 0; i < len; i++) {
-                                        w.write(",", field.base->ident->ident, "[", brgen::nums(i), "]");
-                                    }
+                            if (field.desc->type == DescType::array) {
+                                auto len = static_cast<ArrayDesc*>(field.desc.get())->desc.length_eval->get<tool::EResultType::integer>();
+                                for (size_t i = 0; i < len; i++) {
+                                    w.write(",", field.base->ident->ident, "[", brgen::nums(i), "]");
                                 }
                             }
                             else {
                                 w.write(",", field.base->ident->ident);
                             }
                         }
-                        w.writeln(");");
+                        w.writeln(")) {");
+                        w.indent_writeln("return false;");
+                        w.writeln("}");
                     }
-                    else if (auto f = std::get_if<Field>(&field.field)) {
-                        if (f->a_desc) {
-                            if (f->a_desc->length_eval) {
-                                auto len = f->a_desc->length_eval->get<tool::EResultType::integer>();
-                                w.write("::utils::binary::write_num_bulk(w,", "true");
+                    else if (auto f = std::get_if<Field>(&field)) {
+                        if (f->desc->type == DescType::array) {
+                            auto desc = static_cast<ArrayDesc*>(f->desc.get());
+                            if (desc->desc.length_eval) {
+                                auto len = desc->desc.length_eval->get<tool::EResultType::integer>();
+                                w.write("if(!", num_method, "_bulk", "(w,", is_be);
                                 for (size_t i = 0; i < len; i++) {
                                     w.write(",", f->base->ident->ident, "[", brgen::nums(i), "]");
                                 }
                                 w.writeln(");");
                             }
                             else {
-                                w.writeln("::utils::binary::write_num_bulk(w,", "true", ",", f->base->ident->ident, ");");
+                                if (decoder) {
+                                    w.writeln(f->base->ident->ident, ".resize();");
+                                }
+                                auto i = "i_" + f->base->ident->ident;
+                                w.writeln("for(size_t ", i, " = 0;", i, " < ", f->base->ident->ident, ".size();", i, "++) {");
+                                {
+                                    auto sc = w.indent_scope();
+                                    w.write("if(!", num_method, "(w,", f->base->ident->ident, "[", i, "]", ",", is_be, ")) {");
+                                    w.indent_writeln("return false;");
+                                    w.writeln("}");
+                                }
                             }
                         }
                         else {
-                            w.writeln("::utils::binary::write_num(w,", f->base->ident->ident, ",", "true", ");");
-                        }
-                    }
-                }
-            }
-            w.writeln("}");
-            return {};
-        }
-
-        brgen::result<void> generate_decoder(Fields& f) {
-            w.writeln("constexpr bool parse(::utils::binary::reader& r) {");
-            {
-                auto sc = w.indent_scope();
-
-                for (auto& field : f.merged_fields) {
-                    if (BulkFields* f = std::get_if<BulkFields>(&field.field)) {
-                        w.write("::utils::binary::read_num_bulk(r,", "true");
-                        for (auto& field : f->fields) {
-                            if (field.a_desc) {
-                                if (field.a_desc->length_eval) {
-                                    auto len = field.a_desc->length_eval->get<tool::EResultType::integer>();
-                                    for (size_t i = 0; i < len; i++) {
-                                        w.write(",", field.base->ident->ident, "[", brgen::nums(i), "]");
-                                    }
-                                }
-                            }
-                            else {
-                                w.write(",", field.base->ident->ident);
-                            }
-                        }
-                        w.writeln(");");
-                    }
-                    else if (auto f = std::get_if<Field>(&field.field)) {
-                        if (f->a_desc) {
-                            if (f->a_desc->length_eval) {
-                                auto len = f->a_desc->length_eval->get<tool::EResultType::integer>();
-                                w.write("::utils::binary::read_num_bulk(r,", "true");
-                                for (size_t i = 0; i < len; i++) {
-                                    w.write(",", f->base->ident->ident, "[", brgen::nums(i), "]");
-                                }
-                                w.writeln(");");
-                            }
-                            else {
-                                w.writeln("::utils::binary::read_num_bulk(r,", "true", ",", f->base->ident->ident, ");");
-                            }
-                        }
-                        else {
-                            w.writeln("::utils::binary::read_num(r,", f->base->ident->ident, ",", "true", ");");
+                            w.writeln("if(!", num_method, "(w,", f->base->ident->ident, ",", is_be, ")) {");
+                            w.indent_writeln("return false;");
+                            w.writeln("}");
                         }
                     }
                 }
@@ -342,15 +336,15 @@ namespace json2cpp {
                         }
                     }
                 }
-                fs.merge();
 
-                if (auto r = generate_fields(fs); !r) {
+                MergedFields mfs;
+                if (auto r = merge_fields(mfs, fs); !r) {
                     return r.transform(empty_void);
                 }
 
-                w.writeln("constexpr std::size_t size() const {");
-                w.indent_writeln("return ", brgen::nums(fs.cur_fixed_size), ";");
-                w.writeln("}");
+                if (auto r = generate_fields(mfs); !r) {
+                    return r.transform(empty_void);
+                }
 
                 if (fs.merged_fields.size()) {
                     if (auto r = generate_encoder(fs); !r) {

@@ -121,7 +121,7 @@ namespace brgen::ast {
             objects.push_back({std::forward<decltype(obj)>(obj)});
         }
 
-        void as_json(Debug& d) {
+        void as_json(JSONWriter& d) {
             auto field = d.array();
             auto add_field = [&](auto& self) {
                 for (auto& object : self.objects) {

@@ -6,7 +6,7 @@ using namespace brgen;
 
 int main(int argc, char** argv) {
     set_test_handler([](auto& prog, auto i, auto& fs) {
-        Debug d;
+        JSONWriter d;
         d.value(prog);
         add_result(std::move(d));
     });

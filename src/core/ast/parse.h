@@ -669,6 +669,35 @@ namespace brgen::ast {
             return desc;
         }
 
+        // fn (a :int,b :int) -> int
+        std::shared_ptr<FunctionType> parse_func_type(lexer::Token&& tok) {
+            auto func_type = std::make_shared<FunctionType>(tok.loc);
+            s.skip_white();
+            s.must_consume_token("(");
+            s.skip_white();
+            bool second = false;
+            if (!s.expect_token(")")) {
+                if (second) {
+                    s.must_consume_token(",");
+                }
+                if (s.consume_token(lexer::Tag::ident)) {
+                    s.skip_white();
+                }
+                s.must_consume_token(":");
+                s.skip_white();
+                func_type->parameters.push_back(parse_type());
+                s.skip_white();
+                second = true;
+            }
+            s.must_consume_token(")");
+            s.skip_space();  // for safety, skip only space, not line
+            if (s.consume_token("->")) {
+                s.skip_white();
+                func_type->return_type = parse_type();
+            }
+            return func_type;
+        }
+
         std::shared_ptr<Type> parse_type() {
             if (auto arr_begin = s.consume_token("[")) {
                 s.skip_white();
@@ -691,6 +720,10 @@ namespace brgen::ast {
             if (auto lit = s.consume_token(lexer::Tag::str_literal)) {
                 auto literal = std::make_shared<StrLiteral>(lit->loc, std::move(lit->token));
                 return std::make_shared<StrLiteralType>(std::move(literal));
+            }
+
+            if (auto fn = s.consume_token("fn")) {
+                return parse_func_type(std::move(*fn));
             }
 
             auto ident = s.must_consume_token(lexer::Tag::ident);

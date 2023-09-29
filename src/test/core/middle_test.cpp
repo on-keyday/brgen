@@ -10,7 +10,7 @@ int main(int argc, char** argv) {
         middle::apply_middle(warns, a)
             .transform_error(to_source_error(fs))
             .value();
-        Debug d;
+        JSONWriter d;
         d.value(a);
         add_result(std::move(d));
     });

@@ -26,7 +26,7 @@ namespace brgen::ast {
     }
 
     struct JSONConverter {
-        Debug obj;
+        JSONWriter obj;
 
        private:
         std::unordered_map<std::shared_ptr<Node>, size_t> node_index;

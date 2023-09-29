@@ -116,9 +116,9 @@ void set_test_handler(Continuation cont) {
     brgen::ast::handler = cont;
 }
 
-static std::vector<Debug> debug;
+static std::vector<JSONWriter> debug;
 
-void add_result(Debug&& d) {
+void add_result(JSONWriter&& d) {
     debug.push_back(std::move(d));
 }
 
@@ -129,7 +129,7 @@ void save_result(const char* file) {
     fprintf(stderr, "log file saved to %s", path.c_str());
 #endif
     std::ofstream ofs(path.c_str());
-    Debug d;
+    JSONWriter d;
     d.value(debug);
     ofs << d.out();
 }

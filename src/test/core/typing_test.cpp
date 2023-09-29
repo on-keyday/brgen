@@ -7,7 +7,7 @@ using namespace brgen;
 int main(int argc, char** argv) {
     set_test_handler([](auto& a, File* input, FileSet& fs) {
         middle::Typing{}.typing(a).transform_error(to_source_error(fs)).value();
-        Debug d;
+        JSONWriter d;
         d.value(a);
         add_result(std::move(d));
     });

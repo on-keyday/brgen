@@ -172,7 +172,7 @@ namespace brgen::ast {
 
     template <class T>
         requires std::is_base_of_v<Node, T>
-    void as_json(T& t, Debug& buf) {
+    void as_json(T& t, JSONWriter& buf) {
         auto field = buf.object();
         if constexpr (std::is_default_constructible_v<T>) {
             t.dump(FieldWrapper<decltype(field)>{field});

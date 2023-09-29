@@ -11,5 +11,5 @@ namespace brgen {
 
 #define sdebugf(name) #name, name
 
-    using Debug = utils::json::Stringer<>;
+    using JSONWriter = utils::json::Stringer<>;
 }  // namespace brgen

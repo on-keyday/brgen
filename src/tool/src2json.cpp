@@ -72,7 +72,7 @@ int check_ast(std::string_view name) {
 }
 
 int node_list(bool dump_ast_schema) {
-    brgen::Debug d;
+    brgen::JSONWriter d;
     {
         auto field = d.object();
         field("node", [&] {
@@ -138,7 +138,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
 
     auto report_error = [&](auto&& res, bool warn = false) {
         if (!warn && !cout.is_tty()) {
-            brgen::Debug d;
+            brgen::JSONWriter d;
             {
                 auto field = d.object();
                 field("file", files.file_list());
@@ -157,10 +157,16 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
         });
     };
     auto res = do_parse(input).transform_error(brgen::to_source_error(files));
+
     if (!res) {
         report_error(res.error());
         return -1;
     }
+
+    const auto kill = [&] {
+        brgen::ast::kill_node(*res);
+    };
+
     if (!flags.not_resolve_import) {
         auto res2 = brgen::middle::resolve_import(*res, files).transform_error(brgen::to_source_error(files));
         if (!res2) {
@@ -180,7 +186,12 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
         }
     }
 
-    brgen::Debug d;
+    if (cout.is_tty() && !flags.print_ast) {
+        cout << cse::letter_color<cse::ColorPalette::green> << "ok" << cse::color_reset << "\n";
+        return;
+    }
+
+    brgen::JSONWriter d;
     d.set_no_colon_space(true);
     if (flags.debug_json) {
         auto field = d.object();
@@ -197,16 +208,11 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
         field("ast", c.obj);
         field("error", nullptr);
     }
-    if (!cout.is_tty() || flags.print_ast) {
-        cout << d.out();
-    }
-    else if (cout.is_tty()) {
-        cout << "ok";
-    }
+    cout << d.out();
     if (cout.is_tty()) {
         cout << "\n";
     }
-    brgen::ast::kill_node(*res);
+
     return 0;
 }
 

@@ -13,5 +13,5 @@ using Continuation = void (*)(std::shared_ptr<brgen::ast::Program>& prog, brgen:
 
 // Function declarations with the AST_TEST_COMPONENT_API macro
 void set_test_handler(Continuation cont);
-void add_result(brgen::Debug&& d);
+void add_result(brgen::JSONWriter&& d);
 void save_result(const char* file);
