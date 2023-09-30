@@ -291,17 +291,90 @@ namespace json2cpp {
             return {};
         }
 
-        brgen::result<void> generate_encoder(MergedFields& f, bool decoder, std::string_view num_method) {
+        void method_with_error_fn(std::string_view method, std::string_view io_object, auto&& fn) {
+            code.write("if(!", method, "(", io_object, ",");
+            fn();
+            code.writeln(")) {");
+            code.indent_writeln("return false;");
+            code.writeln("}");
+        }
+
+        void method_with_error(std::string_view method, std::string_view io_object, auto&&... args) {
+            method_with_error_fn(method, io_object, [&] {
+                code.write(args...);
+            });
+        }
+
+        brgen::result<void> generate_decoder(MergedFields& f) {
+            code.writeln("constexpr bool ", "parse", "(::utils::binary::reader& r) {");
             constexpr auto is_be = "true";
-            const char* io_object;
-            if (decoder) {
-                code.writeln("constexpr bool ", "parse", "(::utils::binary::reader& r) {");
-                io_object = "r";
+            constexpr auto io_object = "r";
+            constexpr auto num_method = "::utils::binary::read_num";
+            constexpr auto bulk_method = "::utils::binary::read_num_bulk";
+            {
+                auto sc = code.indent_scope();
+                for (auto& field : f.fields) {
+                    if (BulkFields* f = std::get_if<BulkFields>(&field)) {
+                        method_with_error_fn(bulk_method, io_object, [&](auto&&... args) {
+                            code.write(is_be);
+                            for (auto& field : f->fields) {
+                                if (field->desc->type == DescType::array) {
+                                    auto len = static_cast<ArrayDesc*>(field->desc.get())->desc.length_eval->get<tool::EResultType::integer>();
+                                    for (size_t i = 0; i < len; i++) {
+                                        code.write(",", field->base->ident->ident, "[", brgen::nums(i), "]");
+                                    }
+                                }
+                                else {
+                                    code.write(",", field->base->ident->ident);
+                                }
+                            }
+                        });
+                    }
+                    else if (auto fp = std::get_if<std::shared_ptr<Field>>(&field)) {
+                        auto& f = *fp;
+                        if (f->desc->type == DescType::array) {
+                            auto desc = static_cast<ArrayDesc*>(f->desc.get());
+                            auto len = desc->desc.length_eval->get<tool::EResultType::integer>();
+                            method_with_error_fn(num_method, io_object, [&] {
+                                code.write(is_be);
+                                for (size_t i = 0; i < len; i++) {
+                                    code.write(",", f->base->ident->ident, "[", brgen::nums(i), "]");
+                                }
+                            });
+                        }
+                        else if (f->desc->type == DescType::vector) {
+                            auto desc = static_cast<VectorDesc*>(f->desc.get());
+                            tool::Stringer s;
+                            s.to_string(desc->desc.length);
+                            code.writeln("if(", s.buffer, " > ", f->base->ident->ident, ".max_size()) {");
+                            code.indent_writeln("return false;");
+                            code.writeln("}");
+                            code.writeln(f->base->ident->ident, ".resize(", s.buffer, ");");
+                            auto i = "i_" + f->base->ident->ident;
+                            code.writeln("for(size_t ", i, " = 0;", i, " < ", f->base->ident->ident, ".size();", i, "++) {");
+                            {
+                                auto sc = code.indent_scope();
+                                method_with_error(num_method, io_object, f->base->ident->ident, "[", i, "]", ",", is_be);
+                            }
+                            code.writeln("}");
+                        }
+                        else {
+                            method_with_error(num_method, io_object, f->base->ident->ident, ",", is_be);
+                        }
+                    }
+                }
+                code.writeln("return true;");
             }
-            else {
-                code.writeln("constexpr bool ", "render", "(::utils::binary::writer& w) const {");
-                io_object = "w";
-            }
+            code.writeln("}");
+            return {};
+        }
+
+        brgen::result<void> generate_encoder(MergedFields& f) {
+            constexpr auto is_be = "true";
+            constexpr auto io_object = "w";
+            constexpr auto num_method = "::utils::binary::write_num";
+            constexpr auto bulk_method = "::utils::binary::write_num_bulk";
+            code.writeln("constexpr bool ", "render", "(::utils::binary::writer& w) const {");
             auto write_vec_length_check = [&](auto&& f, auto&& vec) {
                 auto vec_desc = static_cast<VectorDesc*>(vec->desc.get());
                 tool::Stringer s;
@@ -324,80 +397,63 @@ namespace json2cpp {
                 auto sc = code.indent_scope();
                 for (auto& field : f.fields) {
                     if (BulkFields* f = std::get_if<BulkFields>(&field)) {
-                        if (!decoder) {
-                            for (auto& field : f->fields) {
-                                if (auto vec = field->length_related.lock()) {
-                                    write_vec_length_check(field, vec);
-                                }
+                        for (auto& field : f->fields) {
+                            if (auto vec = field->length_related.lock()) {
+                                write_vec_length_check(field, vec);
                             }
                         }
-                        code.write("if(!", num_method, "_bulk(", io_object, ",", is_be);
-                        for (auto& field : f->fields) {
-                            if (field->desc->type == DescType::array) {
-                                auto len = static_cast<ArrayDesc*>(field->desc.get())->desc.length_eval->get<tool::EResultType::integer>();
-                                for (size_t i = 0; i < len; i++) {
-                                    code.write(",", field->base->ident->ident, "[", brgen::nums(i), "]");
-                                }
-                            }
-                            else {
-                                if (!decoder && !field->length_related.expired()) {
-                                    auto tmp = "tmp_len_" + field->base->ident->ident;
-                                    auto int_desc = static_cast<IntDesc*>(field->desc.get());
-                                    code.write(",", get_primitive_type(int_desc->desc.bit_size), "(", tmp, ")");
+                        method_with_error_fn(bulk_method, io_object, [&] {
+                            for (auto& field : f->fields) {
+                                if (field->desc->type == DescType::array) {
+                                    auto len = static_cast<ArrayDesc*>(field->desc.get())->desc.length_eval->get<tool::EResultType::integer>();
+                                    for (size_t i = 0; i < len; i++) {
+                                        code.write(",", field->base->ident->ident, "[", brgen::nums(i), "]");
+                                    }
                                 }
                                 else {
-                                    code.write(",", field->base->ident->ident);
+                                    if (!field->length_related.expired()) {
+                                        auto tmp = "tmp_len_" + field->base->ident->ident;
+                                        auto int_desc = static_cast<IntDesc*>(field->desc.get());
+                                        code.write(",", get_primitive_type(int_desc->desc.bit_size), "(", tmp, ")");
+                                    }
+                                    else {
+                                        code.write(",", field->base->ident->ident);
+                                    }
                                 }
                             }
-                        }
-                        code.writeln(")) {");
-                        code.indent_writeln("return false;");
-                        code.writeln("}");
+                        });
                     }
                     else if (auto fp = std::get_if<std::shared_ptr<Field>>(&field)) {
                         auto& f = *fp;
                         if (f->desc->type == DescType::array) {
                             auto desc = static_cast<ArrayDesc*>(f->desc.get());
                             auto len = desc->desc.length_eval->get<tool::EResultType::integer>();
-                            code.writeln("if(!", num_method, "_bulk", "(", io_object, ",", is_be);
-                            for (size_t i = 0; i < len; i++) {
-                                code.write(",", f->base->ident->ident, "[", brgen::nums(i), "]");
-                            }
-                            code.writeln(");");
+                            method_with_error_fn(bulk_method, io_object, [&] {
+                                code.write(is_be);
+                                for (size_t i = 0; i < len; i++) {
+                                    code.write(",", f->base->ident->ident, "[", brgen::nums(i), "]");
+                                }
+                            });
                         }
                         else if (f->desc->type == DescType::vector) {
                             auto desc = static_cast<VectorDesc*>(f->desc.get());
-                            if (decoder) {
-                                tool::Stringer s;
-                                s.to_string(desc->desc.length);
-                                code.writeln("if(", s.buffer, " > ", f->base->ident->ident, ".max_size()) {");
-                                code.indent_writeln("return false;");
-                                code.writeln("}");
-                                code.writeln(f->base->ident->ident, ".resize(", s.buffer, ");");
-                            }
                             auto i = "i_" + f->base->ident->ident;
                             code.writeln("for(size_t ", i, " = 0;", i, " < ", f->base->ident->ident, ".size();", i, "++) {");
                             {
                                 auto sc = code.indent_scope();
-                                code.writeln("if(!", num_method, "(", io_object, ",", f->base->ident->ident, "[", i, "]", ",", is_be, ")) {");
-                                code.indent_writeln("return false;");
-                                code.writeln("}");
+                                method_with_error(num_method, io_object, f->base->ident->ident, "[", i, "]", ",", is_be);
                             }
                             code.writeln("}");
                         }
                         else {
-                            if (auto vec = f->length_related.lock(); !decoder && vec) {
+                            if (auto vec = f->length_related.lock()) {
                                 write_vec_length_check(f, vec);
                                 auto tmp = "tmp_len_" + f->base->ident->ident;
                                 auto int_desc = static_cast<IntDesc*>(f->desc.get());
-                                code.writeln("if(!", num_method, "(", io_object, ",", get_primitive_type(int_desc->desc.bit_size), "(", tmp, "),", is_be, ")) {");
-                                code.indent_writeln("return false;");
-                                code.writeln("}");
+                                method_with_error(num_method, io_object, get_primitive_type(int_desc->desc.bit_size), "(", tmp, ")", ",", is_be);
                             }
                             else {
-                                code.writeln("if(!", num_method, "(", io_object, ",", f->base->ident->ident, ",", is_be, ")) {");
-                                code.indent_writeln("return false;");
-                                code.writeln("}");
+                                method_with_error(num_method, io_object, f->base->ident->ident, ",", is_be);
                             }
                         }
                     }
@@ -433,12 +489,14 @@ namespace json2cpp {
                     return r.transform(empty_void);
                 }
 
+                code.writeln();
+
                 if (mfs.fields.size() > 0) {
-                    if (auto r = generate_encoder(mfs, false, "::utils::binary::write_num"); !r) {
+                    if (auto r = generate_encoder(mfs); !r) {
                         return r.transform(empty_void);
                     }
                     code.writeln();
-                    if (auto r = generate_encoder(mfs, true, "::utils::binary::read_num"); !r) {
+                    if (auto r = generate_decoder(mfs); !r) {
                         return r.transform(empty_void);
                     }
                 }
