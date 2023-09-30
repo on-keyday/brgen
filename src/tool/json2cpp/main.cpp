@@ -61,7 +61,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
         print_error("cannot generate code: ", res2.error().locations[0].msg);
         return 1;
     }
-    cout << g.w.out();
+    cout << g.code.out();
     return 0;
 }
 

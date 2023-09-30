@@ -12,6 +12,8 @@ namespace brgen::ast::tool {
 
     struct LinerResolver {
         std::shared_ptr<Expr> resolved;
+        std::shared_ptr<Ident> about;
+        std::shared_ptr<TmpVar> x;
 
        private:
         bool unique_ident(const std::shared_ptr<Expr>& expr, std::optional<std::shared_ptr<Ident>>& ident) {
@@ -21,7 +23,7 @@ namespace brgen::ast::tool {
             else if (auto e = as<Ident>(expr)) {
                 if (ident) {
                     return e->ident == (*ident)->ident &&
-                           is_field_of(e) == is_field_of(*ident);
+                           belong_to(e) == belong_to(*ident);
                 }
                 else {
                     ident = cast_to<Ident>(expr);
@@ -40,7 +42,7 @@ namespace brgen::ast::tool {
             else if (auto i = as<MemberAccess>(expr)) {
                 return false;  // not supported yet
             }
-            return false;
+            return true;
         }
 
         // y = 2x + (x<<2)
@@ -142,8 +144,13 @@ namespace brgen::ast::tool {
                 }
             }
             else if (auto e = as<Ident>(expr)) {
+                if (expr != about) {
+                    return nullptr;
+                }
                 has_ident = true;
-                return expr;
+                auto rep = expr;
+                x = std::make_shared<TmpVar>(std::move(rep), 0);
+                return x;
             }
             else if (as<IntLiteral>(expr)) {
                 return expr;
@@ -170,6 +177,7 @@ namespace brgen::ast::tool {
             if (!unique_ident(expr, ident)) {
                 return false;
             }
+            about = std::move(*ident);
             bool has_ident = false;
             auto r = resolve_liner_equation(expr, has_ident);
             if (!r) {

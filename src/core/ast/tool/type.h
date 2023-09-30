@@ -42,12 +42,12 @@ namespace brgen::ast::tool {
         return std::nullopt;
     }
 
-    inline std::shared_ptr<Format> is_field_of(auto&& typ) {
+    inline std::shared_ptr<Format> belong_to(auto&& typ) {
         if (Field* f = ast::as<Field>(typ)) {
             return f->belong.lock();
         }
         if (Ident* ident = ast::as<Ident>(typ)) {
-            return is_field_of(ident->base.lock());
+            return belong_to(ident->base.lock());
         }
         return nullptr;
     }
