@@ -25,7 +25,7 @@ namespace json2cpp {
     };
 
     enum class DescType {
-        array,
+        array_int,
         vector,
         int_,
     };
@@ -43,11 +43,11 @@ namespace json2cpp {
             : Desc(DescType::int_), desc(desc) {}
     };
 
-    struct ArrayDesc : Desc {
+    struct IntArrayDesc : Desc {
         tool::ArrayDesc desc;
         std::shared_ptr<Desc> base_type;
-        ArrayDesc(tool::ArrayDesc desc, std::shared_ptr<Desc> base_type)
-            : Desc(DescType::array), desc(desc), base_type(std::move(base_type)) {}
+        IntArrayDesc(tool::ArrayDesc desc, std::shared_ptr<Desc> base_type)
+            : Desc(DescType::array_int), desc(desc), base_type(std::move(base_type)) {}
     };
 
     struct Field;
@@ -224,10 +224,12 @@ namespace json2cpp {
                 }
                 if (a->length_eval) {
                     config.includes.emplace("<array>");
-                    f.push(std::make_shared<Field>(field, std::make_shared<ArrayDesc>(std::move(*a), std::make_shared<IntDesc>(std::move(*b)))));
+                    f.push(std::make_shared<Field>(field, std::make_shared<IntArrayDesc>(std::move(*a), std::make_shared<IntDesc>(std::move(*b)))));
                 }
                 else {
-                    config.includes.emplace("<vector>");
+                    if (config.vector_mode == VectorMode::std_vector) {
+                        config.includes.emplace("<vector>");
+                    }
                     auto vec = std::make_shared<VectorDesc>(std::move(*a), std::make_shared<IntDesc>(std::move(*b)));
                     tool::LinerResolver resolver;
                     if (!resolver.resolve(vec->desc.length)) {
@@ -276,7 +278,7 @@ namespace json2cpp {
                 }
                 BulkFields b;
                 for (; i < f.fields.size(); i++) {
-                    if (f.fields[i]->desc->type == DescType::array) {
+                    if (f.fields[i]->desc->type == DescType::array_int) {
                         b.fields.push_back({std::move(f.fields[i])});
                     }
                     else if (f.fields[i]->desc->type == DescType::int_) {
@@ -303,7 +305,7 @@ namespace json2cpp {
                 code.writeln(get_primitive_type(desc.bit_size, desc.is_signed), " ", f.base->ident->ident, ";");
             }
             else {
-                auto arr_desc = static_cast<ArrayDesc*>(f.desc.get());
+                auto arr_desc = static_cast<IntArrayDesc*>(f.desc.get());
                 auto& i_desc = static_cast<IntDesc*>(arr_desc->base_type.get())->desc;
                 auto& len = arr_desc->desc.length_eval;
                 if (len) {
@@ -362,8 +364,8 @@ namespace json2cpp {
                         method_with_error_fn(bulk_method, io_object, [&](auto&&... args) {
                             code.write(is_be);
                             for (auto& field : f->fields) {
-                                if (field->desc->type == DescType::array) {
-                                    auto len = static_cast<ArrayDesc*>(field->desc.get())->desc.length_eval->get<tool::EResultType::integer>();
+                                if (field->desc->type == DescType::array_int) {
+                                    auto len = static_cast<IntArrayDesc*>(field->desc.get())->desc.length_eval->get<tool::EResultType::integer>();
                                     for (size_t i = 0; i < len; i++) {
                                         code.write(",", field->base->ident->ident, "[", brgen::nums(i), "]");
                                     }
@@ -376,8 +378,8 @@ namespace json2cpp {
                     }
                     else if (auto fp = std::get_if<std::shared_ptr<Field>>(&field)) {
                         auto& f = *fp;
-                        if (f->desc->type == DescType::array) {
-                            auto desc = static_cast<ArrayDesc*>(f->desc.get());
+                        if (f->desc->type == DescType::array_int) {
+                            auto desc = static_cast<IntArrayDesc*>(f->desc.get());
                             auto len = desc->desc.length_eval->get<tool::EResultType::integer>();
                             method_with_error_fn(num_method, io_object, [&] {
                                 code.write(is_be);
@@ -422,7 +424,8 @@ namespace json2cpp {
             auto write_vec_length_check = [&](auto&& f, auto&& vec) {
                 auto vec_desc = static_cast<VectorDesc*>(vec->desc.get());
                 tool::Stringer s;
-                s.tmp_var_map[0] = vec->base->ident->ident + ".size()";
+                auto field_name = vec->base->ident->ident + ".size()";
+                s.tmp_var_map[0] = field_name;
                 s.to_string(vec_desc->resolved_expr);
                 auto tmp = "tmp_len_" + f->base->ident->ident;
                 code.writeln("auto ", tmp, " = ", s.buffer, ";");
@@ -431,12 +434,14 @@ namespace json2cpp {
                 code.writeln("if(", tmp, " > (std::numeric_limits<", get_primitive_type(int_desc->desc.bit_size, int_desc->desc.is_signed), ">::max)()", ") {");
                 code.indent_writeln("return false;");
                 code.writeln("}");
-                s.ident_map[f->base->ident->ident] = tmp;
-                s.buffer.clear();
-                s.to_string(vec_desc->desc.length);
-                code.writeln("if(", vec->base->ident->ident, ".size()", " != ", s.buffer, ") {");
-                code.indent_writeln("return false;");
-                code.writeln("}");
+                if (field_name != s.buffer) {
+                    s.ident_map[f->base->ident->ident] = tmp;
+                    s.buffer.clear();
+                    s.to_string(vec_desc->desc.length);
+                    code.writeln("if(", vec->base->ident->ident, ".size()", " != ", s.buffer, ") {");
+                    code.indent_writeln("return false;");
+                    code.writeln("}");
+                }
             };
             {
                 auto sc = code.indent_scope();
@@ -449,8 +454,8 @@ namespace json2cpp {
                         }
                         method_with_error_fn(bulk_method, io_object, [&] {
                             for (auto& field : f->fields) {
-                                if (field->desc->type == DescType::array) {
-                                    auto len = static_cast<ArrayDesc*>(field->desc.get())->desc.length_eval->get<tool::EResultType::integer>();
+                                if (field->desc->type == DescType::array_int) {
+                                    auto len = static_cast<IntArrayDesc*>(field->desc.get())->desc.length_eval->get<tool::EResultType::integer>();
                                     for (size_t i = 0; i < len; i++) {
                                         code.write(",", field->base->ident->ident, "[", brgen::nums(i), "]");
                                     }
@@ -470,8 +475,8 @@ namespace json2cpp {
                     }
                     else if (auto fp = std::get_if<std::shared_ptr<Field>>(&field)) {
                         auto& f = *fp;
-                        if (f->desc->type == DescType::array) {
-                            auto desc = static_cast<ArrayDesc*>(f->desc.get());
+                        if (f->desc->type == DescType::array_int) {
+                            auto desc = static_cast<IntArrayDesc*>(f->desc.get());
                             auto len = desc->desc.length_eval->get<tool::EResultType::integer>();
                             method_with_error_fn(bulk_method, io_object, [&] {
                                 code.write(is_be);

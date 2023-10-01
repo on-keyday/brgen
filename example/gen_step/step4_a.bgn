@@ -1,4 +1,4 @@
-# step4 - dynamic length byte array (length is used with operator)
+# step4.a - dynamic length byte array (length is used with operator)
 config.cpp.vector_mode = "pointer"
 format Step4:
     len1 :u8

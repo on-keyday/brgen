@@ -138,6 +138,22 @@ namespace brgen::ast::tool {
                             return b;
                         }
                     }
+                    case BinaryOp::left_logical_shift: {
+                        if (left_has_ident) {
+                            has_ident = true;
+                            auto b = std::make_shared<Binary>(e->loc, std::move(l), BinaryOp::right_logical_shift);
+                            b->right = std::move(r);
+                            return b;
+                        }
+                        else if (right_has_ident) {
+                            return nullptr;
+                        }
+                        else {
+                            auto b = std::make_shared<Binary>(e->loc, std::move(l), BinaryOp::left_logical_shift);
+                            b->right = std::move(r);
+                            return b;
+                        }
+                    }
                     default: {
                         return nullptr;
                     }
