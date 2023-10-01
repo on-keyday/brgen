@@ -11,11 +11,17 @@
 namespace json2cpp {
     namespace ast = brgen::ast;
     namespace tool = ast::tool;
+    enum class VectorMode {
+        std_vector,
+        pointer,
+    };
+
     struct Config {
         std::string namespace_;
         std::set<std::string> includes;
         std::set<std::string> exports;
         std::set<std::string> internals;
+        VectorMode vector_mode = VectorMode::std_vector;
     };
 
     enum class DescType {
@@ -152,19 +158,54 @@ namespace json2cpp {
                     config.includes.emplace(std::move(*r));
                 }
             }
+            else if (conf.name == "config.cpp.vector_mode") {
+                auto r = tool::get_config_value<tool::EResultType::string>(eval, conf);
+                if (!r) {
+                    return r.transform(empty_void);
+                }
+                if (*r == "std_vector") {
+                    config.vector_mode = VectorMode::std_vector;
+                }
+                else if (*r == "pointer") {
+                    config.vector_mode = VectorMode::pointer;
+                }
+                else {
+                    return brgen::unexpect(brgen::error(conf.loc, "invalid vector mode"));
+                }
+            }
             return {};
         }
 
-        auto get_primitive_type(size_t bit_size) -> std::string_view {
+        auto get_primitive_type(size_t bit_size, bool is_signed) -> std::string_view {
             switch (bit_size) {
                 case 8:
-                    return "std::uint8_t";
+                    if (is_signed) {
+                        return "std::int8_t";
+                    }
+                    else {
+                        return "std::uint8_t";
+                    }
                 case 16:
-                    return "std::uint16_t";
+                    if (is_signed) {
+                        return "std::int16_t";
+                    }
+                    else {
+                        return "std::uint16_t";
+                    }
                 case 32:
-                    return "std::uint32_t";
+                    if (is_signed) {
+                        return "std::int32_t";
+                    }
+                    else {
+                        return "std::uint32_t";
+                    }
                 case 64:
-                    return "std::uint64_t";
+                    if (is_signed) {
+                        return "std::int64_t";
+                    }
+                    else {
+                        return "std::uint64_t";
+                    }
                 default:
                     return {};
             }
@@ -177,7 +218,7 @@ namespace json2cpp {
                 if (!b) {
                     return brgen::unexpect(brgen::error(field->loc, "unsupported type"));
                 }
-                auto type = get_primitive_type(b->bit_size);
+                auto type = get_primitive_type(b->bit_size, b->is_signed);
                 if (type.empty()) {
                     return brgen::unexpect(brgen::error(field->loc, "unsupported type"));
                 }
@@ -200,6 +241,9 @@ namespace json2cpp {
                     bool ok = false;
                     for (auto& f : f.fields) {
                         if (f->base->ident->ident == resolver.about->ident) {
+                            if (f->length_related.lock()) {
+                                return brgen::unexpect(brgen::error(field->loc, "cannot resolve vector length"));
+                            }
                             f->length_related = vec_field;
                             ok = true;
                             break;
@@ -212,7 +256,7 @@ namespace json2cpp {
                 }
             }
             else if (auto i = tool::is_int_type(field->field_type)) {
-                auto type = get_primitive_type(i->bit_size);
+                auto type = get_primitive_type(i->bit_size, i->is_signed);
                 if (type.empty()) {
                     return brgen::unexpect(brgen::error(field->loc, "unsupported type"));
                 }
@@ -255,18 +299,18 @@ namespace json2cpp {
 
         brgen::result<void> generate_field(const Field& f) {
             if (f.desc->type == DescType::int_) {
-                auto size = static_cast<IntDesc*>(f.desc.get())->desc.bit_size;
-                code.writeln(get_primitive_type(size), " ", f.base->ident->ident, ";");
+                auto& desc = static_cast<IntDesc*>(f.desc.get())->desc;
+                code.writeln(get_primitive_type(desc.bit_size, desc.is_signed), " ", f.base->ident->ident, ";");
             }
             else {
-                auto desc = static_cast<ArrayDesc*>(f.desc.get());
-                auto size = static_cast<IntDesc*>(desc->base_type.get())->desc.bit_size;
-                auto& len = desc->desc.length_eval;
+                auto arr_desc = static_cast<ArrayDesc*>(f.desc.get());
+                auto& i_desc = static_cast<IntDesc*>(arr_desc->base_type.get())->desc;
+                auto& len = arr_desc->desc.length_eval;
                 if (len) {
-                    code.writeln("std::array<", get_primitive_type(size), ",", brgen::nums(len->get<tool::EResultType::integer>()), "> ", f.base->ident->ident, ";");
+                    code.writeln("std::array<", get_primitive_type(i_desc.bit_size, i_desc.is_signed), ",", brgen::nums(len->get<tool::EResultType::integer>()), "> ", f.base->ident->ident, ";");
                 }
                 else {
-                    code.writeln("std::vector<", get_primitive_type(size), "> ", f.base->ident->ident, ";");
+                    code.writeln("std::vector<", get_primitive_type(i_desc.bit_size, i_desc.is_signed), "> ", f.base->ident->ident, ";");
                 }
             }
             return {};
@@ -383,7 +427,8 @@ namespace json2cpp {
                 auto tmp = "tmp_len_" + f->base->ident->ident;
                 code.writeln("auto ", tmp, " = ", s.buffer, ";");
                 auto int_desc = static_cast<IntDesc*>(f->desc.get());
-                code.writeln("if(", tmp, " > ~", get_primitive_type(int_desc->desc.bit_size), "(0)) {");
+                config.includes.emplace("<limits>");
+                code.writeln("if(", tmp, " > (std::numeric_limits<", get_primitive_type(int_desc->desc.bit_size, int_desc->desc.is_signed), ">::max)()", ") {");
                 code.indent_writeln("return false;");
                 code.writeln("}");
                 s.ident_map[f->base->ident->ident] = tmp;
@@ -414,7 +459,7 @@ namespace json2cpp {
                                     if (!field->length_related.expired()) {
                                         auto tmp = "tmp_len_" + field->base->ident->ident;
                                         auto int_desc = static_cast<IntDesc*>(field->desc.get());
-                                        code.write(",", get_primitive_type(int_desc->desc.bit_size), "(", tmp, ")");
+                                        code.write(",", get_primitive_type(int_desc->desc.bit_size, int_desc->desc.is_signed), "(", tmp, ")");
                                     }
                                     else {
                                         code.write(",", field->base->ident->ident);
@@ -450,7 +495,7 @@ namespace json2cpp {
                                 write_vec_length_check(f, vec);
                                 auto tmp = "tmp_len_" + f->base->ident->ident;
                                 auto int_desc = static_cast<IntDesc*>(f->desc.get());
-                                method_with_error(num_method, io_object, get_primitive_type(int_desc->desc.bit_size), "(", tmp, ")", ",", is_be);
+                                method_with_error(num_method, io_object, get_primitive_type(int_desc->desc.bit_size, int_desc->desc.is_signed), "(", tmp, ")", ",", is_be);
                             }
                             else {
                                 method_with_error(num_method, io_object, f->base->ident->ident, ",", is_be);
