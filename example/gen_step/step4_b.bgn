@@ -1,0 +1,11 @@
+# step4.a - dynamic length byte array (length is used with operator)
+config.cpp.vector_mode = "pointer"
+# asymmetric length treatment
+# when decode, decode length as is
+# when encode, length is actual buffer length 
+config.cpp.vector_pointer.asymmetric = true
+format Step4:
+    len1 :u8
+    data1 :[len1*2]u8
+    len2 :u8
+    data2 :[len2/2]u8
