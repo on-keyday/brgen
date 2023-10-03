@@ -22,7 +22,8 @@ struct Flags : utils::cmdline::templ::HelpOption {
     bool disable_untyped_warning = false;
     bool print_ast = false;
     bool debug_json = false;
-    bool dump_ast_schema = false;
+    bool dump_ptr_as_uintptr = false;
+    bool flat = false;
 
     void bind(utils::cmdline::option::Context& ctx) {
         bind_help(ctx);
@@ -32,8 +33,9 @@ struct Flags : utils::cmdline::templ::HelpOption {
         ctx.VarBool(&disable_untyped_warning, "u,disable-untyped", "disable untyped warning");
         ctx.VarBool(&print_ast, "p,print-ast", "print ast to stdout if succeeded (if stdout is tty. if not tty, usually print json ast)");
         ctx.VarBool(&debug_json, "d,debug-json", "debug mode json output (not parsable ast, only for debug. use with --print-ast)");
-        ctx.VarBool(&dump_types, "dump-types", "dump node types schema mode");
-        ctx.VarBool(&dump_ast_schema, "dump-ast-schema", "dump ast schema (use with --dump-types)");
+        ctx.VarBool(&dump_types, "dump-ast", "dump ast types schema mode");
+        ctx.VarBool(&dump_ptr_as_uintptr, "dump-uintptr", "make pointer type of ast field uintptr (use with --dump-ast)");
+        ctx.VarBool(&flat, "dump-flat", "dump ast schema with flat body (use with --dump-ast)");
     }
 };
 auto& cout = utils::wrap::cout_wrap();
@@ -71,7 +73,7 @@ int check_ast(std::string_view name) {
     return 0;
 }
 
-int node_list(bool dump_ast_schema) {
+int node_list(bool dump_uintptr, bool flat) {
     brgen::JSONWriter d;
     {
         auto field = d.object();
@@ -80,19 +82,19 @@ int node_list(bool dump_ast_schema) {
             auto list = [&](auto&& objdump) {
                 field([&] {
                     auto field = d.object();
-                    objdump([&](const char* key, auto value) {
+                    objdump([&](auto key, auto value) {
                         field(key, value);
                     });
                 });
             };
-            if (dump_ast_schema) {
-                brgen::ast::node_type_list<true>(list);
+            if (dump_uintptr) {
+                brgen::ast::node_type_list<true>(list, !flat);
             }
             else {
-                brgen::ast::node_type_list(list);
+                brgen::ast::node_type_list(list, !flat);
             }
         });
-        brgen::ast::custom_type_mapping(field, dump_ast_schema);
+        brgen::ast::custom_type_mapping(field, dump_uintptr);
     }
     cout << d.out();
     if (cout.is_tty()) {
@@ -105,7 +107,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     utils::wrap::out_virtual_terminal = true;
 
     if (flags.dump_types) {
-        return node_list(flags.dump_ast_schema);
+        return node_list(flags.dump_types, flags.flat);
     }
 
     if (flags.args.size() == 0) {

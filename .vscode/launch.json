@@ -16,6 +16,7 @@
                 "-json2code",
                 "${workspaceRoot}/build/tool/json2go.exe",
                 "${workspaceRoot}/example/quic_packet.bgn",
+            
             ],
         },
         {
@@ -24,7 +25,8 @@
             "request": "launch",
             "program": "${workspaceRoot}/build/tool/src2json",
             "args": [
-                "example/large_sample.bgn"
+                "example/large_sample.bgn",
+                "--dump-ast",
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",

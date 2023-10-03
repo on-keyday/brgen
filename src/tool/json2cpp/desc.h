@@ -91,6 +91,10 @@ namespace json2cpp {
     // only contains integer or array of integer
     struct BulkFields {
         std::vector<std::shared_ptr<Field>> fields;
+    };
+
+    struct BitFields {
+        std::vector<std::shared_ptr<Field>> fields;
         size_t fixed_size = 0;
     };
 

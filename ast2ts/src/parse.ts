@@ -44,7 +44,7 @@ interface astConstructor {
     scope: Array<ast.Scope>,
 }
 
-const convertToparsedAST = (past: parsedAST): astConstructor => {
+const convertToAstConstructor = (past: parsedAST): astConstructor => {
     const node = past.ast.node;
     const scope = past.ast.scope;
     const c: astConstructor = {
@@ -68,4 +68,22 @@ const convertToparsedAST = (past: parsedAST): astConstructor => {
         c.scope[i] = obj;
     }
     return c
+}
+
+const convertToAST = (past: parsedAST): ast.Program | null => {
+    const c = convertToAstConstructor(past);
+    const node = past.ast.node;
+    let p : ast.Program | null = null;
+    for(let i=0;i<node.length;i++){
+        const obj =node[i];
+        if(ast.isProgram(obj)){
+            obj.global_scope = c.scope[past.ast.node[i].body.global_scope];
+            obj.elements = [];
+            if(p!==null){
+                p = obj;
+            }
+        }
+        else if(ast.is)
+    }
+    return p;
 }

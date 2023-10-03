@@ -133,7 +133,7 @@ namespace brgen::ast {
     constexpr auto loc_type = R"({"pos": {"begin": "uint","end": "uint"},"file": "uint","line": "uint","col": "uint"})";
 
     template <bool ast_mode = false>
-    void node_type_list(auto&& objdump) {
+    void node_type_list(auto&& objdump, bool wrap_body = false) {
         objdump([&](auto&& field) {
             field("node_type", "node");
             internal::list_base_type<Node>(field);
@@ -144,59 +144,86 @@ namespace brgen::ast {
                 if constexpr (std::is_default_constructible_v<T>) {
                     objdump([&](auto&& field) {
                         T t;
-                        t.dump([&](const char* key, auto& v) {
-                            using P = std::decay_t<decltype(v)>;
-                            if constexpr (std::is_same_v<P, NodeType>) {
-                                field(key, node_type_to_string(T::node_type_tag));
-                                internal::dump_base_type(field, T::node_type_tag);
-                            }
-                            else if constexpr (std::is_same_v<P, bool>) {
-                                field(key, "bool");
-                            }
-                            else if constexpr (std::is_same_v<P, size_t>) {
-                                field(key, "uint");
-                            }
-                            else if constexpr (std::is_same_v<P, std::string>) {
-                                field(key, "string");
-                            }
-                            else if constexpr (std::is_same_v<P, lexer::Loc>) {
-                                field(key, "loc");
-                            }
-                            else if constexpr (std::is_same_v<P, UnaryOp>) {
-                                field(key, "unary_op");
-                            }
-                            else if constexpr (std::is_same_v<P, BinaryOp>) {
-                                field(key, "binary_op");
-                            }
-                            else if constexpr (std::is_same_v<P, IdentUsage>) {
-                                field(key, "ident_usage");
-                            }
-                            else if constexpr (std::is_same_v<P, Endian>) {
-                                field(key, "endian");
-                            }
-                            else if constexpr (utils::helper::is_template<P>) {
-                                using P1 = typename utils::helper::template_of_t<P>::template param_at<0>;
-                                if constexpr (utils::helper::is_template_instance_of<P, std::shared_ptr>) {
-                                    auto p = internal::print_ptr<ast_mode, P1>("shared_ptr");
-                                    field(key, internal::unwrap(p));
+                        auto do_dump = [&](auto&& field) {
+                            t.dump([&](std::string_view key, auto& v) {
+                                using P = std::decay_t<decltype(v)>;
+                                if constexpr (std::is_same_v<P, NodeType>) {
+                                    if (!wrap_body) {
+                                        field(key, node_type_to_string(T::node_type_tag));
+                                        internal::dump_base_type(field, T::node_type_tag);
+                                    }
                                 }
-                                else if constexpr (utils::helper::is_template_instance_of<P, std::weak_ptr>) {
-                                    auto p = internal::print_ptr<ast_mode, P1>("weak_ptr");
-                                    field(key, internal::unwrap(p));
+                                else if constexpr (std::is_same_v<P, bool>) {
+                                    field(key, "bool");
                                 }
-                                else if constexpr (utils::helper::is_template_instance_of<P, std::list> ||
-                                                   utils::helper::is_template_instance_of<P, std::vector>) {
-                                    auto p = internal::print_array<ast_mode, P1>();
-                                    field(key, internal::unwrap(p));
+                                else if constexpr (std::is_same_v<P, size_t>) {
+                                    field(key, "uint");
+                                }
+                                else if constexpr (std::is_same_v<P, std::string>) {
+                                    field(key, "string");
+                                }
+                                else if constexpr (std::is_same_v<P, lexer::Loc>) {
+                                    if (!wrap_body || key != "loc") {
+                                        field(key, "loc");
+                                    }
+                                }
+                                else if constexpr (std::is_same_v<P, UnaryOp>) {
+                                    field(key, "unary_op");
+                                }
+                                else if constexpr (std::is_same_v<P, BinaryOp>) {
+                                    field(key, "binary_op");
+                                }
+                                else if constexpr (std::is_same_v<P, IdentUsage>) {
+                                    field(key, "ident_usage");
+                                }
+                                else if constexpr (std::is_same_v<P, Endian>) {
+                                    field(key, "endian");
+                                }
+                                else if constexpr (utils::helper::is_template<P>) {
+                                    using P1 = typename utils::helper::template_of_t<P>::template param_at<0>;
+                                    if constexpr (utils::helper::is_template_instance_of<P, std::shared_ptr>) {
+                                        auto p = internal::print_ptr<ast_mode, P1>("shared_ptr");
+                                        field(key, internal::unwrap(p));
+                                    }
+                                    else if constexpr (utils::helper::is_template_instance_of<P, std::weak_ptr>) {
+                                        auto p = internal::print_ptr<ast_mode, P1>("weak_ptr");
+                                        field(key, internal::unwrap(p));
+                                    }
+                                    else if constexpr (utils::helper::is_template_instance_of<P, std::list> ||
+                                                       utils::helper::is_template_instance_of<P, std::vector>) {
+                                        auto p = internal::print_array<ast_mode, P1>();
+                                        field(key, internal::unwrap(p));
+                                    }
+                                    else {
+                                        static_assert(std::is_same_v<P, NodeType>);
+                                    }
                                 }
                                 else {
                                     static_assert(std::is_same_v<P, NodeType>);
                                 }
-                            }
-                            else {
-                                static_assert(std::is_same_v<P, NodeType>);
-                            }
-                        });
+                            });
+                        };
+                        if (wrap_body) {
+                            t.dump([&](std::string_view key, auto& v) {
+                                using P = std::decay_t<decltype(v)>;
+                                if constexpr (std::is_same_v<P, NodeType>) {
+                                    field(key, node_type_to_string(T::node_type_tag));
+                                    internal::dump_base_type(field, T::node_type_tag);
+                                }
+                                else if constexpr (std::is_same_v<P, lexer::Loc>) {
+                                    if (key == "loc") {
+                                        field(key, "loc");
+                                    }
+                                }
+                            });
+                            field("body", [&](auto&& f) {
+                                auto field = f.object();
+                                do_dump(field);
+                            });
+                        }
+                        else {
+                            do_dump(field);
+                        }
                     });
                 }
                 else {
