@@ -2,156 +2,13 @@
 #pragma once
 #include <core/ast/ast.h>
 #include <core/writer/section.h>
-#include <core/ast/tool/tool.h>
 #include <core/common/expected.h>
 #include <helper/transform.h>
 #include <set>
 #include <binary/writer.h>
+#include "desc.h"
 
 namespace json2cpp {
-    namespace ast = brgen::ast;
-    namespace tool = ast::tool;
-    enum class VectorMode {
-        std_vector,
-        pointer,
-    };
-
-    static constexpr auto empty_void = utils::helper::either::empty_value<void>();
-    struct Config {
-        std::string namespace_;
-        std::set<std::string> includes;
-        std::set<std::string> exports;
-        VectorMode vector_mode = VectorMode::std_vector;
-
-        brgen::result<void> handle_config(tool::Evaluator& eval, ast::tool::ConfigDesc& conf) {
-            if (conf.name == "config.export") {
-                auto count = conf.arguments.size();
-                for (size_t i = 0; i < count; i++) {
-                    auto ident = tool::get_config_value<tool::EResultType::ident>(eval, conf, ast::tool::ValueStyle::call, i, count);
-                    if (!ident) {
-                        return ident.transform(empty_void);
-                    }
-                    exports.emplace(ident.value());
-                }
-            }
-            else if (conf.name == "config.cpp.namespace") {
-                auto r = tool::get_config_value<tool::EResultType::string>(eval, conf);
-                if (!r) {
-                    return r.transform(empty_void);
-                }
-                namespace_ = r.value();
-            }
-            else if (conf.name == "config.cpp.include") {
-                if (conf.arguments.size() == 2) {
-                    auto r = tool::get_config_value<tool::EResultType::boolean>(eval, conf, ast::tool::ValueStyle::call, 1, 2);
-                    if (!r) {
-                        return r.transform(empty_void);
-                    }
-                    if (*r) {
-                        auto r = tool::get_config_value<tool::EResultType::string>(eval, conf, ast::tool::ValueStyle::call, 0, 2);
-                        if (!r) {
-                            return r.transform(empty_void);
-                        }
-                        includes.emplace("<" + brgen::escape(*r) + ">");
-                    }
-                    else {
-                        auto r = tool::get_config_value<tool::EResultType::string, false>(eval, conf, ast::tool::ValueStyle::call, 0, 2);
-                        if (!r) {
-                            return r.transform(empty_void);
-                        }
-                        includes.emplace(std::move(*r));
-                    }
-                }
-                else {
-                    auto r = tool::get_config_value<tool::EResultType::string, false>(eval, conf, ast::tool::ValueStyle::call);
-                    if (!r) {
-                        return r.transform(empty_void);
-                    }
-                    includes.emplace(std::move(*r));
-                }
-            }
-            else if (conf.name == "config.cpp.vector_mode") {
-                auto r = tool::get_config_value<tool::EResultType::string>(eval, conf);
-                if (!r) {
-                    return r.transform(empty_void);
-                }
-                if (*r == "std_vector") {
-                    vector_mode = VectorMode::std_vector;
-                }
-                else if (*r == "pointer") {
-                    vector_mode = VectorMode::pointer;
-                }
-                else {
-                    return brgen::unexpect(brgen::error(conf.loc, "invalid vector mode"));
-                }
-            }
-            return {};
-        }
-    };
-
-    enum class DescType {
-        array_int,
-        vector,
-        int_,
-    };
-
-    struct Desc {
-        const DescType type;
-        constexpr Desc(DescType type)
-            : type(type) {}
-    };
-
-    struct IntDesc : Desc {
-        tool::IntDesc desc;
-
-        constexpr IntDesc(tool::IntDesc desc)
-            : Desc(DescType::int_), desc(desc) {}
-    };
-
-    struct IntArrayDesc : Desc {
-        tool::ArrayDesc desc;
-        std::shared_ptr<Desc> base_type;
-        IntArrayDesc(tool::ArrayDesc desc, std::shared_ptr<Desc> base_type)
-            : Desc(DescType::array_int), desc(desc), base_type(std::move(base_type)) {}
-    };
-
-    struct Field;
-
-    struct VectorDesc : Desc {
-        tool::ArrayDesc desc;
-        std::shared_ptr<Desc> base_type;
-        std::shared_ptr<ast::Expr> resolved_expr;
-        VectorDesc(tool::ArrayDesc desc, std::shared_ptr<Desc> base_type)
-            : Desc(DescType::vector), desc(desc), base_type(std::move(base_type)) {}
-    };
-
-    struct Field {
-        std::shared_ptr<ast::Field> base;
-        std::shared_ptr<Desc> desc;
-        std::weak_ptr<Field> length_related;
-
-        Field(std::shared_ptr<ast::Field> base, std::shared_ptr<Desc> desc)
-            : base(std::move(base)), desc(std::move(desc)) {}
-    };
-
-    // read/write by binary::[write/read]_num_bulk
-    // only contains integer or array of integer
-    struct BulkFields {
-        std::vector<std::shared_ptr<Field>> fields;
-        size_t fixed_size = 0;
-    };
-
-    struct Fields {
-        std::vector<std::shared_ptr<Field>> fields;
-
-        void push(std::shared_ptr<Field>&& f) {
-            fields.push_back(std::move(f));
-        }
-    };
-
-    struct MergedFields {
-        std::vector<std::variant<std::shared_ptr<Field>, BulkFields>> fields;
-    };
 
     struct DefineLength {
         std::string field_name;
@@ -172,11 +29,17 @@ namespace json2cpp {
         std::string length_var;
     };
 
+    struct AllocateVector {
+        std::string field_name;
+        std::string element_type;
+        std::string length_var;
+    };
+
     struct ApplyInt {
         std::string field_name;
     };
 
-    using Event = std::variant<ApplyInt, DefineLength, AssertFalse, ApplyBulk, ApplyVector>;
+    using Event = std::variant<ApplyInt, DefineLength, AssertFalse, ApplyBulk, AllocateVector, ApplyVector>;
 
     enum class Method {
         encode,
@@ -193,42 +56,7 @@ namespace json2cpp {
         Generator(std::shared_ptr<ast::Program> root)
             : root(std::move(root)) {}
 
-        auto get_primitive_type(size_t bit_size, bool is_signed) -> std::string_view {
-            switch (bit_size) {
-                case 8:
-                    if (is_signed) {
-                        return "std::int8_t";
-                    }
-                    else {
-                        return "std::uint8_t";
-                    }
-                case 16:
-                    if (is_signed) {
-                        return "std::int16_t";
-                    }
-                    else {
-                        return "std::uint16_t";
-                    }
-                case 32:
-                    if (is_signed) {
-                        return "std::int32_t";
-                    }
-                    else {
-                        return "std::uint32_t";
-                    }
-                case 64:
-                    if (is_signed) {
-                        return "std::int64_t";
-                    }
-                    else {
-                        return "std::uint64_t";
-                    }
-                default:
-                    return {};
-            }
-        }
-
-        brgen::result<void> collect_vector_field(Fields& f, tool::IntDesc& b, tool::ArrayDesc& a, const std::shared_ptr<ast::Format>& fmt, std::shared_ptr<ast::Field>&& field) {
+        brgen::result<void> collect_vector_field(Fields& fields, tool::IntDesc& b, tool::ArrayDesc& a, const std::shared_ptr<ast::Format>& fmt, std::shared_ptr<ast::Field>&& field) {
             if (config.vector_mode == VectorMode::std_vector) {
                 config.includes.emplace("<vector>");
             }
@@ -243,7 +71,7 @@ namespace json2cpp {
             vec->resolved_expr = std::move(resolver.resolved);
             auto vec_field = std::make_shared<Field>(field, std::move(vec));
             bool ok = false;
-            for (auto& f : f.fields) {
+            for (auto& f : fields) {
                 if (f->base->ident->ident == resolver.about->ident) {
                     if (f->length_related.lock()) {
                         return brgen::unexpect(brgen::error(field->loc, "cannot resolve vector length"));
@@ -257,11 +85,11 @@ namespace json2cpp {
             if (!ok) {
                 return brgen::unexpect(brgen::error(field->loc, "cannot resolve vector length"));
             }
-            f.push(std::move(vec_field));
+            fields.push_back(std::move(vec_field));
             return {};
         }
 
-        brgen::result<void> collect_field(Fields& f, const std::shared_ptr<ast::Format>& fmt, std::shared_ptr<ast::Field>&& field) {
+        brgen::result<void> collect_field(Fields& fields, const std::shared_ptr<ast::Format>& fmt, std::shared_ptr<ast::Field>&& field) {
             auto& fname = field->ident->ident;
             if (auto a = tool::is_array_type(field->field_type, eval)) {
                 auto b = tool::is_int_type(a->base_type);
@@ -274,10 +102,10 @@ namespace json2cpp {
                 }
                 if (a->length_eval) {
                     config.includes.emplace("<array>");
-                    f.push(std::make_shared<Field>(field, std::make_shared<IntArrayDesc>(std::move(*a), std::make_shared<IntDesc>(std::move(*b)))));
+                    fields.push_back(std::make_shared<Field>(field, std::make_shared<IntArrayDesc>(std::move(*a), std::make_shared<IntDesc>(std::move(*b)))));
                 }
                 else {
-                    if (auto res = collect_vector_field(f, *b, *a, fmt, std::move(field)); !res) {
+                    if (auto res = collect_vector_field(fields, *b, *a, fmt, std::move(field)); !res) {
                         return res.transform(empty_void);
                     }
                 }
@@ -287,7 +115,7 @@ namespace json2cpp {
                 if (type.empty()) {
                     return brgen::unexpect(brgen::error(field->loc, "unsupported type"));
                 }
-                f.push(std::make_shared<Field>(field, std::make_shared<IntDesc>(std::move(*i))));
+                fields.push_back(std::make_shared<Field>(field, std::make_shared<IntDesc>(std::move(*i))));
             }
             else {
                 return brgen::unexpect(brgen::error(field->loc, "unsupported type"));
@@ -295,19 +123,19 @@ namespace json2cpp {
             return {};
         }
 
-        brgen::result<void> merge_fields(MergedFields& m, Fields& f) {
-            for (size_t i = 0; i < f.fields.size(); i++) {
-                if (f.fields[i]->desc->type == DescType::vector) {
-                    m.fields.push_back({std::move(f.fields[i])});
+        brgen::result<void> merge_fields(MergedFields& m, Fields& fields) {
+            for (size_t i = 0; i < fields.size(); i++) {
+                if (fields[i]->desc->type == DescType::vector) {
+                    m.fields.push_back({std::move(fields[i])});
                     continue;
                 }
                 BulkFields b;
-                for (; i < f.fields.size(); i++) {
-                    if (f.fields[i]->desc->type == DescType::array_int) {
-                        b.fields.push_back({std::move(f.fields[i])});
+                for (; i < fields.size(); i++) {
+                    if (fields[i]->desc->type == DescType::array_int) {
+                        b.fields.push_back({std::move(fields[i])});
                     }
-                    else if (f.fields[i]->desc->type == DescType::int_) {
-                        b.fields.push_back({std::move(f.fields[i])});
+                    else if (fields[i]->desc->type == DescType::int_) {
+                        b.fields.push_back({std::move(fields[i])});
                     }
                     else {
                         if (b.fields.size() == 1) {
@@ -414,10 +242,32 @@ namespace json2cpp {
                     .cond = brgen::concat(len_field->base->ident->ident, "!=", s.buffer),
                 });
             }
+            event.push_back(AllocateVector{
+                .field_name = vec->base->ident->ident,
+                .element_type = std::string(get_primitive_type(int_desc->desc.bit_size, int_desc->desc.is_signed)),
+                .length_var = tmp,
+            });
             event.push_back(ApplyVector{
                 .field_name = vec->base->ident->ident,
                 .length_var = tmp,
             });
+            return {};
+        }
+
+        brgen::result<void> convert_vec_encode(std::vector<Event>& event, const std::shared_ptr<Field>& vec) {
+            if (config.vector_mode == VectorMode::pointer) {
+                event.push_back(AssertFalse{
+                    .comment = "check null pointer",
+                    .cond = brgen::concat(vec->base->ident->ident, " == nullptr"),
+                });
+            }
+            else {
+                assert(config.vector_mode == VectorMode::std_vector);
+                event.push_back(ApplyVector{
+                    .field_name = vec->base->ident->ident,
+                    .length_var = vec->base->ident->ident + ".size()",
+                });
+            }
             return {};
         }
 
@@ -481,11 +331,10 @@ namespace json2cpp {
                         event.push_back(std::move(bulk));
                     }
                     else {
-                        auto tmp = "tmp_len_" + f->base->ident->ident;
-                        event.push_back(ApplyVector{
-                            .field_name = f->base->ident->ident,
-                            .length_var = tmp,
-                        });
+                        assert(f->desc->type == DescType::vector);
+                        if (auto res = convert_vec_encode(event, f); !res) {
+                            return res.transform(empty_void);
+                        }
                     }
                 }
             }
@@ -591,6 +440,9 @@ namespace json2cpp {
                     code.indent_writeln("return false;");
                     code.writeln("}");
                 }
+                else {
+                    return brgen::unexpect(brgen::error({}, "unknown event"));
+                }
             }
 
             code.writeln("return true;");
@@ -623,6 +475,15 @@ namespace json2cpp {
                         }
                     });
                 }
+                else if (auto vec = std::get_if<AllocateVector>(&event)) {
+                    if (config.vector_mode == VectorMode::std_vector) {
+                        code.writeln(vec->field_name, ".resize(", vec->length_var, ");");
+                    }
+                    else {
+                        assert(config.vector_mode == VectorMode::pointer);
+                        code.writeln(vec->field_name, " = new ", vec->element_type, "[", vec->length_var, "];");
+                    }
+                }
                 else if (auto vec = std::get_if<ApplyVector>(&event)) {
                     auto i = "i_" + vec->field_name;
                     code.writeln("for(size_t ", i, " = 0;", i, "<", vec->length_var, ";", i, "++) {");
@@ -643,6 +504,9 @@ namespace json2cpp {
                     code.writeln("if(", cond->cond, ") {");
                     code.indent_writeln("return false;");
                     code.writeln("}");
+                }
+                else {
+                    return brgen::unexpect(brgen::error({}, "unknown event"));
                 }
             }
             code.writeln("return true;");
