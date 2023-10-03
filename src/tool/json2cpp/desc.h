@@ -99,13 +99,30 @@ namespace json2cpp {
     using MergedFields = std::vector<MergedField>;
 
     struct FieldCollector {
+        Config& config;
+        tool::Evaluator& eval;
+
+        FieldCollector(Config& c, tool::Evaluator& e)
+            : config(c), eval(e) {}
+
         MergedFields m;
+
+        brgen::result<void> collect(const std::shared_ptr<ast::Format>& fmt) {
+            auto& ast_fields = fmt->struct_type->fields;
+            for (auto& f : ast_fields) {
+                if (ast::as<ast::Field>(f)) {
+                    if (auto r = collect_field(fmt, ast::cast_to<ast::Field>(f)); !r) {
+                        return r.transform(empty_void);
+                    }
+                }
+            }
+            return merge_fields();
+        }
 
        private:
         Fields fields;
-        tool::Evaluator eval;
 
-        brgen::result<void> collect_vector_field(Config& config, tool::IntDesc& b, tool::ArrayDesc& a, const std::shared_ptr<ast::Format>& fmt, std::shared_ptr<ast::Field>&& field) {
+        brgen::result<void> collect_vector_field(tool::IntDesc& b, tool::ArrayDesc& a, const std::shared_ptr<ast::Format>& fmt, std::shared_ptr<ast::Field>&& field) {
             if (config.vector_mode == VectorMode::std_vector) {
                 config.includes.emplace("<vector>");
             }
@@ -138,7 +155,7 @@ namespace json2cpp {
             return {};
         }
 
-        brgen::result<void> collect_field(Config& config, const std::shared_ptr<ast::Format>& fmt, std::shared_ptr<ast::Field>&& field) {
+        brgen::result<void> collect_field(const std::shared_ptr<ast::Format>& fmt, std::shared_ptr<ast::Field>&& field) {
             auto& fname = field->ident->ident;
             if (auto a = tool::is_array_type(field->field_type, eval)) {
                 auto b = tool::is_int_type(a->base_type);
@@ -154,7 +171,7 @@ namespace json2cpp {
                     fields.push_back(std::make_shared<Field>(field, std::make_shared<IntArrayDesc>(std::move(*a), std::make_shared<IntDesc>(std::move(*b)))));
                 }
                 else {
-                    if (auto res = collect_vector_field(config, *b, *a, fmt, std::move(field)); !res) {
+                    if (auto res = collect_vector_field(*b, *a, fmt, std::move(field)); !res) {
                         return res.transform(empty_void);
                     }
                 }
@@ -199,18 +216,6 @@ namespace json2cpp {
                 }
             }
             return {};
-        }
-
-        brgen::result<void> collect_fields(Config& config, const std::shared_ptr<ast::Format>& fmt) {
-            auto& ast_fields = fmt->struct_type->fields;
-            for (auto& f : ast_fields) {
-                if (ast::as<ast::Field>(f)) {
-                    if (auto r = collect_field(config, fmt, ast::cast_to<ast::Field>(f)); !r) {
-                        return r.transform(empty_void);
-                    }
-                }
-            }
-            return merge_fields();
         }
     };
 
