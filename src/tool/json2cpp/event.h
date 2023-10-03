@@ -13,7 +13,7 @@ namespace json2cpp {
         std::string cond;
     };
 
-    struct ApplyBulk {
+    struct ApplyBulkInt {
         std::vector<std::string> field_names;
     };
 
@@ -32,13 +32,14 @@ namespace json2cpp {
         std::string field_name;
     };
 
-    using Event = std::variant<ApplyInt, DefineLength, AssertFalse, ApplyBulk, AllocateVector, ApplyVector>;
+    using Event = std::variant<ApplyInt, DefineLength, AssertFalse, ApplyBulkInt, AllocateVector, ApplyVector>;
 
     using Events = std::vector<Event>;
 
     enum class Method {
         encode,
         decode,
+        move,
     };
 
     struct EventConverter {
@@ -46,7 +47,11 @@ namespace json2cpp {
         Events events;
 
        private:
-        brgen::result<void> add_bulk_array(ApplyBulk& bulk, const std::shared_ptr<Field>& field) {
+        std::string tmp_len_of(const std::string& name) {
+            return "tmp_len_of_" + name;
+        }
+
+        brgen::result<void> add_bulk_array(ApplyBulkInt& bulk, const std::shared_ptr<Field>& field) {
             auto len = static_cast<IntArrayDesc*>(field->desc.get())->desc.length_eval->get<tool::EResultType::integer>();
             for (auto i = 0; i < len; i++) {
                 bulk.field_names.push_back(field->base->ident->ident + "[" + brgen::nums(i) + "]");
@@ -57,7 +62,7 @@ namespace json2cpp {
         brgen::result<std::string> handle_encoder_int_length_related_std_vector(const std::shared_ptr<Field>& field, const std::shared_ptr<Field>& vec) {
             auto desc = static_cast<VectorDesc*>(vec->desc.get());
             tool::Stringer s;
-            auto tmp = "tmp_len_" + vec->base->ident->ident;
+            auto tmp = tmp_len_of(vec->base->ident->ident);
             auto base = vec->base->ident->ident + ".size()";
             s.tmp_var_map[0] = base;
             s.to_string(desc->resolved_expr);
@@ -80,16 +85,29 @@ namespace json2cpp {
                     .cond = brgen::concat(base, " != ", s.buffer),
                 });
             }
-            return tmp;
+            auto type = get_primitive_type(int_desc->desc.bit_size, int_desc->desc.is_signed);
+            return brgen::concat(type, "(", tmp, ")");
         }
 
-        brgen::result<std::string> handle_encoder_int_length_related_std_vector(const std::shared_ptr<Field>& field, const std::shared_ptr<Field>& vec) {
+        brgen::result<std::string> handle_encoder_int_length_related_pointer(const std::shared_ptr<Field>& field, const std::shared_ptr<Field>& vec) {
             auto desc = static_cast<VectorDesc*>(vec->desc.get());
             tool::Stringer s;
-            auto tmp = "tmp_len_" + vec->base->ident->ident;
-            auto base = vec->base->ident->ident + ".size()";
-            s.tmp_var_map[0] = base;
-            s.to_string(desc->resolved_expr);
+            auto tmp = tmp_len_of(vec->base->ident->ident);
+            auto base = brgen::concat("size_t(", field->base->ident->ident, ")");
+            std::shared_ptr<ast::Expr> length, check_length;
+            if (config.asymmetric) {
+                s.ident_map[field->base->ident->ident] = tmp;
+                s.tmp_var_map[0] = base;
+                length = desc->resolved_expr;
+                check_length = desc->desc.length;
+            }
+            else {
+                s.tmp_var_map[0] = tmp;
+                s.ident_map[field->base->ident->ident] = base;
+                length = desc->desc.length;
+                check_length = desc->resolved_expr;
+            }
+            s.to_string(length);
             events.push_back(DefineLength{
                 .field_name = tmp,
                 .length = std::move(s.buffer),
@@ -102,14 +120,19 @@ namespace json2cpp {
             });
             if (s.buffer != base) {
                 s.buffer.clear();
-                s.ident_map[field->base->ident->ident] = tmp;
-                s.to_string(desc->desc.length);
+                s.to_string(check_length);
                 events.push_back(AssertFalse{
                     .comment = "check truncated",
                     .cond = brgen::concat(base, " != ", s.buffer),
                 });
             }
-            return tmp;
+            auto type = get_primitive_type(int_desc->desc.bit_size, int_desc->desc.is_signed);
+            if (config.asymmetric) {
+                return brgen::concat(type, "(", tmp, ")");
+            }
+            else {
+                return field->base->ident->ident;
+            }
         }
 
         brgen::result<std::string> handle_encoder_int_length_related(const std::shared_ptr<Field>& field) {
@@ -117,12 +140,16 @@ namespace json2cpp {
                 if (config.vector_mode == VectorMode::std_vector) {
                     return handle_encoder_int_length_related_std_vector(field, vec);
                 }
+                else {
+                    assert(config.vector_mode == VectorMode::pointer);
+                    return handle_encoder_int_length_related_pointer(field, vec);
+                }
             }
             return field->base->ident->ident;
         }
 
         brgen::result<void> convert_bulk(BulkFields* b, Method method) {
-            ApplyBulk bulk;
+            ApplyBulkInt bulk;
             for (auto& field : b->fields) {
                 if (field->desc->type == DescType::array_int) {
                     if (auto res = add_bulk_array(bulk, field); !res) {
@@ -139,6 +166,7 @@ namespace json2cpp {
                         bulk.field_names.push_back(std::move(*name));
                     }
                     else {
+                        assert(method == Method::decode || method == Method::move);
                         bulk.field_names.push_back(field->base->ident->ident);
                     }
                 }
@@ -152,16 +180,18 @@ namespace json2cpp {
             auto int_desc = static_cast<IntDesc*>(vec_desc->base_type.get());
             auto len_field = vec->length_related.lock();
             tool::Stringer s;
-            auto tmp = "tmp_len_" + vec->base->ident->ident;
+            auto tmp = tmp_len_of(vec->base->ident->ident);
             s.to_string(vec_desc->desc.length);
             events.push_back(DefineLength{
                 .field_name = tmp,
                 .length = s.buffer,
             });
-            events.push_back(AssertFalse{
-                .comment = "check size for buffer limit",
-                .cond = brgen::concat(tmp, " > ", vec->base->ident->ident, ".max_size()"),
-            });
+            if (config.vector_mode == VectorMode::std_vector) {
+                events.push_back(AssertFalse{
+                    .comment = "check size for buffer limit",
+                    .cond = brgen::concat(tmp, " > ", vec->base->ident->ident, ".max_size()"),
+                });
+            }
             if (tmp != s.buffer) {
                 s.buffer.clear();
                 s.tmp_var_map[0] = tmp;
@@ -189,6 +219,18 @@ namespace json2cpp {
                     .comment = "check null pointer",
                     .cond = brgen::concat(vec->base->ident->ident, " == nullptr"),
                 });
+                if (config.asymmetric) {
+                    events.push_back(ApplyVector{
+                        .field_name = vec->base->ident->ident,
+                        .length_var = vec->length_related.lock()->base->ident->ident,
+                    });
+                }
+                else {
+                    events.push_back(ApplyVector{
+                        .field_name = vec->base->ident->ident,
+                        .length_var = tmp_len_of(vec->base->ident->ident),
+                    });
+                }
             }
             else {
                 assert(config.vector_mode == VectorMode::std_vector);
@@ -217,7 +259,7 @@ namespace json2cpp {
                         });
                     }
                     else if (f->desc->type == DescType::array_int) {
-                        ApplyBulk bulk;
+                        ApplyBulkInt bulk;
                         if (auto res = add_bulk_array(bulk, f); !res) {
                             return res.transform(empty_void);
                         }
@@ -254,7 +296,7 @@ namespace json2cpp {
                         });
                     }
                     else if (f->desc->type == DescType::array_int) {
-                        ApplyBulk bulk;
+                        ApplyBulkInt bulk;
                         if (auto res = add_bulk_array(bulk, f); !res) {
                             return res.transform(empty_void);
                         }
@@ -265,6 +307,52 @@ namespace json2cpp {
                         if (auto res = convert_vec_encode(f); !res) {
                             return res.transform(empty_void);
                         }
+                    }
+                }
+            }
+            return {};
+        }
+
+        brgen::result<void> convert_to_deallocate_event(MergedFields& fields) {
+            for (auto& field : fields) {
+                if (auto fp = std::get_if<std::shared_ptr<Field>>(&field)) {
+                    auto& f = *fp;
+                    if (f->desc->type == DescType::vector) {
+                        events.push_back(ApplyVector{
+                            .field_name = f->base->ident->ident,
+                        });
+                    }
+                }
+            }
+            return {};
+        }
+
+        brgen::result<void> convert_to_move_event(MergedFields& fields) {
+            for (auto& field : fields) {
+                if (auto fp = std::get_if<std::shared_ptr<Field>>(&field)) {
+                    auto& f = *fp;
+                    if (f->desc->type == DescType::vector) {
+                        events.push_back(ApplyVector{
+                            .field_name = f->base->ident->ident,
+                        });
+                    }
+                    else if (f->desc->type == DescType::array_int) {
+                        ApplyBulkInt bulk;
+                        if (auto res = add_bulk_array(bulk, f); !res) {
+                            return res.transform(empty_void);
+                        }
+                        events.push_back(std::move(bulk));
+                    }
+                    else {
+                        assert(f->desc->type == DescType::int_);
+                        events.push_back(ApplyInt{
+                            .field_name = f->base->ident->ident,
+                        });
+                    }
+                }
+                else if (auto bulk = std::get_if<BulkFields>(&field)) {
+                    if (auto res = convert_bulk(bulk, Method::move); !res) {
+                        return res.transform(empty_void);
                     }
                 }
             }

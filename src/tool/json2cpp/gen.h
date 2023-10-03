@@ -90,7 +90,7 @@ namespace json2cpp {
             constexpr auto bulk_method = "::utils::binary::write_num_bulk";
             auto scope = code.indent_scope();
             for (auto& event : e.events) {
-                if (auto bulk = std::get_if<ApplyBulk>(&event)) {
+                if (auto bulk = std::get_if<ApplyBulkInt>(&event)) {
                     method_with_error_fn(bulk_method, io_object, [&] {
                         code.write(is_be);
                         for (auto& field : bulk->field_names) {
@@ -143,7 +143,7 @@ namespace json2cpp {
             code.writeln("constexpr bool ", "parse", "(::utils::binary::reader& r) {");
             auto scope = code.indent_scope();  // enter scope
             for (auto& event : e.events) {
-                if (auto bulk = std::get_if<ApplyBulk>(&event)) {
+                if (auto bulk = std::get_if<ApplyBulkInt>(&event)) {
                     if (config.vector_mode == VectorMode::std_vector) {
                         code.writeln();
                     }
@@ -194,6 +194,77 @@ namespace json2cpp {
             return {};
         }
 
+        brgen::result<void> generate_constructor_and_assign(const std::shared_ptr<ast::Format>& fmt, MergedFields& m) {
+            // write default constructor, move constructor, move assign
+            // to move, we need to set the pointer of source to nullptr
+
+            EventConverter e{config};
+            if (auto res = e.convert_to_move_event(m); !res) {
+                return res.transform(empty_void);
+            }
+            code.writeln("constexpr ", fmt->ident->ident, "() noexcept = default;");
+
+            auto write_move = [&] {
+                for (auto& field : e.events) {
+                    if (auto vec = std::get_if<ApplyVector>(&field)) {
+                        code.writeln(vec->field_name, " = other____.", vec->field_name, ";");
+                        code.writeln("other____.", vec->field_name, " = nullptr;");
+                    }
+                    else if (auto bulk = std::get_if<ApplyBulkInt>(&field)) {
+                        for (auto& field : bulk->field_names) {
+                            code.writeln(field, " = other____.", field, ";");
+                        }
+                    }
+                    else if (auto int_ = std::get_if<ApplyInt>(&field)) {
+                        code.writeln(int_->field_name, " = other____.", int_->field_name, ";");
+                    }
+                }
+            };
+
+            code.writeln("constexpr ", fmt->ident->ident, "(", fmt->ident->ident, "&& other____) noexcept {");
+            {
+                auto s = code.indent_scope();
+                write_move();
+            }
+            code.writeln("}");
+            code.writeln();
+
+            code.writeln("constexpr ", fmt->ident->ident, "& operator=(", fmt->ident->ident, "&& other____) noexcept {");
+            {
+                auto s = code.indent_scope();
+                code.writeln("if(this == &other____) {");
+                code.indent_writeln("return *this;");
+                code.writeln("}");
+                code.writeln("free();");
+                write_move();
+                code.writeln("return *this;");
+            }
+            code.writeln("}");
+            code.writeln();
+
+            return {};
+        }
+
+        brgen::result<void> generate_deallocate(const std::shared_ptr<ast::Format>& fmt, MergedFields& m) {
+            EventConverter e{config};
+            if (auto res = e.convert_to_deallocate_event(m); !res) {
+                return res.transform(empty_void);
+            }
+            code.writeln("constexpr void free() {");
+            {
+                auto s = code.indent_scope();
+                for (auto& field : e.events) {
+                    if (auto vec = std::get_if<ApplyVector>(&field)) {
+                        code.writeln("delete[] ", vec->field_name, ";");
+                        code.writeln(vec->field_name, " = nullptr;");
+                    }
+                }
+            }
+            code.writeln("}");
+            code.writeln();
+            return {};
+        }
+
         brgen::result<void> generate_format(const std::shared_ptr<ast::Format>& fmt) {
             FieldCollector c{config, eval};
             code.writeln("struct ", fmt->ident->ident, " {");
@@ -216,6 +287,18 @@ namespace json2cpp {
                 code.writeln();
                 if (auto r = generate_decoder(c.m); !r) {
                     return r.transform(empty_void);
+                }
+
+                code.writeln();
+
+                if (config.vector_mode == VectorMode::pointer) {
+                    if (auto r = generate_deallocate(fmt, c.m); !r) {
+                        return r.transform(empty_void);
+                    }
+
+                    if (auto r = generate_constructor_and_assign(fmt, c.m); !r) {
+                        return r.transform(empty_void);
+                    }
                 }
             }
             code.writeln("};");

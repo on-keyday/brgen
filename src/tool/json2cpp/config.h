@@ -19,6 +19,7 @@ namespace json2cpp {
         std::set<std::string> includes;
         std::set<std::string> exports;
         VectorMode vector_mode = VectorMode::std_vector;
+        bool asymmetric = false;
 
         brgen::result<void> handle_config(tool::Evaluator& eval, ast::tool::ConfigDesc& conf) {
             if (conf.name == "config.export") {
@@ -81,6 +82,13 @@ namespace json2cpp {
                 else {
                     return brgen::unexpect(brgen::error(conf.loc, "invalid vector mode"));
                 }
+            }
+            else if (conf.name == "config.cpp.vector_pointer.asymmetric") {
+                auto r = tool::get_config_value<tool::EResultType::boolean>(eval, conf);
+                if (!r) {
+                    return r.transform(empty_void);
+                }
+                asymmetric = *r;
             }
             return {};
         }
