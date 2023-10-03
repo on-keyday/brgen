@@ -16,11 +16,77 @@ namespace json2cpp {
         pointer,
     };
 
+    static constexpr auto empty_void = utils::helper::either::empty_value<void>();
     struct Config {
         std::string namespace_;
         std::set<std::string> includes;
         std::set<std::string> exports;
         VectorMode vector_mode = VectorMode::std_vector;
+
+        brgen::result<void> handle_config(tool::Evaluator& eval, ast::tool::ConfigDesc& conf) {
+            if (conf.name == "config.export") {
+                auto count = conf.arguments.size();
+                for (size_t i = 0; i < count; i++) {
+                    auto ident = tool::get_config_value<tool::EResultType::ident>(eval, conf, ast::tool::ValueStyle::call, i, count);
+                    if (!ident) {
+                        return ident.transform(empty_void);
+                    }
+                    exports.emplace(ident.value());
+                }
+            }
+            else if (conf.name == "config.cpp.namespace") {
+                auto r = tool::get_config_value<tool::EResultType::string>(eval, conf);
+                if (!r) {
+                    return r.transform(empty_void);
+                }
+                namespace_ = r.value();
+            }
+            else if (conf.name == "config.cpp.include") {
+                if (conf.arguments.size() == 2) {
+                    auto r = tool::get_config_value<tool::EResultType::boolean>(eval, conf, ast::tool::ValueStyle::call, 1, 2);
+                    if (!r) {
+                        return r.transform(empty_void);
+                    }
+                    if (*r) {
+                        auto r = tool::get_config_value<tool::EResultType::string>(eval, conf, ast::tool::ValueStyle::call, 0, 2);
+                        if (!r) {
+                            return r.transform(empty_void);
+                        }
+                        includes.emplace("<" + brgen::escape(*r) + ">");
+                    }
+                    else {
+                        auto r = tool::get_config_value<tool::EResultType::string, false>(eval, conf, ast::tool::ValueStyle::call, 0, 2);
+                        if (!r) {
+                            return r.transform(empty_void);
+                        }
+                        includes.emplace(std::move(*r));
+                    }
+                }
+                else {
+                    auto r = tool::get_config_value<tool::EResultType::string, false>(eval, conf, ast::tool::ValueStyle::call);
+                    if (!r) {
+                        return r.transform(empty_void);
+                    }
+                    includes.emplace(std::move(*r));
+                }
+            }
+            else if (conf.name == "config.cpp.vector_mode") {
+                auto r = tool::get_config_value<tool::EResultType::string>(eval, conf);
+                if (!r) {
+                    return r.transform(empty_void);
+                }
+                if (*r == "std_vector") {
+                    vector_mode = VectorMode::std_vector;
+                }
+                else if (*r == "pointer") {
+                    vector_mode = VectorMode::pointer;
+                }
+                else {
+                    return brgen::unexpect(brgen::error(conf.loc, "invalid vector mode"));
+                }
+            }
+            return {};
+        }
     };
 
     enum class DescType {
@@ -92,6 +158,11 @@ namespace json2cpp {
         std::string length;
     };
 
+    struct AssertFalse {
+        std::string comment;
+        std::string cond;
+    };
+
     struct ApplyBulk {
         std::vector<std::string> field_names;
     };
@@ -105,7 +176,7 @@ namespace json2cpp {
         std::string field_name;
     };
 
-    using Event = std::variant<ApplyInt, DefineLength, ApplyBulk, ApplyVector>;
+    using Event = std::variant<ApplyInt, DefineLength, AssertFalse, ApplyBulk, ApplyVector>;
 
     enum class Method {
         encode,
@@ -119,76 +190,8 @@ namespace json2cpp {
 
         brgen::writer::Writer code;
 
-        static constexpr auto empty_void = utils::helper::either::empty_value<void>();
-
         Generator(std::shared_ptr<ast::Program> root)
             : root(std::move(root)) {}
-
-        brgen::result<void> handle_config(ast::tool::ConfigDesc& conf) {
-            if (conf.name == "config.export") {
-                auto count = conf.arguments.size();
-                for (size_t i = 0; i < count; i++) {
-                    auto ident = tool::get_config_value<tool::EResultType::ident>(eval, conf, ast::tool::ValueStyle::call, i, count);
-                    if (!ident) {
-                        return ident.transform(empty_void);
-                    }
-                    config.exports.emplace(ident.value());
-                }
-            }
-            else if (conf.name == "config.cpp.namespace") {
-                auto r = tool::get_config_value<tool::EResultType::string>(eval, conf);
-                if (!r) {
-                    return r.transform(empty_void);
-                }
-                config.namespace_ = r.value();
-            }
-            else if (conf.name == "config.cpp.include") {
-                if (conf.arguments.size() == 2) {
-                    auto r = tool::get_config_value<tool::EResultType::boolean>(eval, conf, ast::tool::ValueStyle::call, 1, 2);
-                    if (!r) {
-                        return r.transform(empty_void);
-                    }
-                    if (*r) {
-                        auto r = tool::get_config_value<tool::EResultType::string>(eval, conf, ast::tool::ValueStyle::call, 0, 2);
-                        if (!r) {
-                            return r.transform(empty_void);
-                        }
-
-                        config.includes.emplace("<" + brgen::escape(*r) + ">");
-                    }
-                    else {
-                        auto r = tool::get_config_value<tool::EResultType::string, false>(eval, conf, ast::tool::ValueStyle::call, 0, 2);
-                        if (!r) {
-                            return r.transform(empty_void);
-                        }
-                        config.includes.emplace(std::move(*r));
-                    }
-                }
-                else {
-                    auto r = tool::get_config_value<tool::EResultType::string, false>(eval, conf, ast::tool::ValueStyle::call);
-                    if (!r) {
-                        return r.transform(empty_void);
-                    }
-                    config.includes.emplace(std::move(*r));
-                }
-            }
-            else if (conf.name == "config.cpp.vector_mode") {
-                auto r = tool::get_config_value<tool::EResultType::string>(eval, conf);
-                if (!r) {
-                    return r.transform(empty_void);
-                }
-                if (*r == "std_vector") {
-                    config.vector_mode = VectorMode::std_vector;
-                }
-                else if (*r == "pointer") {
-                    config.vector_mode = VectorMode::pointer;
-                }
-                else {
-                    return brgen::unexpect(brgen::error(conf.loc, "invalid vector mode"));
-                }
-            }
-            return {};
-        }
 
         auto get_primitive_type(size_t bit_size, bool is_signed) -> std::string_view {
             switch (bit_size) {
@@ -329,9 +332,36 @@ namespace json2cpp {
             return {};
         }
 
-        brgen::result<void> handle_encoder_int_length_related(const std::shared_ptr<Field>& field) {
-            if (auto len = field->length_related.lock()) {
+        brgen::result<std::string> handle_encoder_int_length_related(std::vector<Event>& event, const std::shared_ptr<Field>& field) {
+            if (auto vec = field->length_related.lock()) {
+                auto desc = static_cast<VectorDesc*>(vec->desc.get());
+                tool::Stringer s;
+                auto tmp = "tmp_len_" + vec->base->ident->ident;
+                auto base = vec->base->ident->ident + ".size()";
+                s.tmp_var_map[0] = base;
+                s.to_string(desc->resolved_expr);
+                event.push_back(DefineLength{
+                    .field_name = tmp,
+                    .length = std::move(s.buffer),
+                });
+                auto int_desc = static_cast<IntDesc*>(field->desc.get());
+                config.includes.emplace("<limits>");
+                event.push_back(AssertFalse{
+                    .comment = "check overflow",
+                    .cond = brgen::concat(tmp, " > ", "(std::numeric_limits<", std::string(get_primitive_type(int_desc->desc.bit_size, int_desc->desc.is_signed)), ">::max)()"),
+                });
+                if (s.buffer != base) {
+                    s.buffer.clear();
+                    s.ident_map[field->base->ident->ident] = tmp;
+                    s.to_string(desc->desc.length);
+                    event.push_back(AssertFalse{
+                        .comment = "check truncated",
+                        .cond = brgen::concat(base, " != ", s.buffer),
+                    });
+                }
+                return tmp;
             }
+            return field->base->ident->ident;
         }
 
         brgen::result<void> convert_bulk(std::vector<Event>& event, BulkFields* b, Method method) {
@@ -345,51 +375,56 @@ namespace json2cpp {
                 else {
                     assert(field->desc->type == DescType::int_);
                     if (method == Method::encode) {
-                        if (auto res = handle_encoder_int_length_related(field); !res) {
-                            return res.transform(empty_void);
+                        auto name = handle_encoder_int_length_related(event, field);
+                        if (!name) {
+                            return name.transform(empty_void);
                         }
+                        bulk.field_names.push_back(std::move(*name));
                     }
-                    bulk.field_names.push_back(field->base->ident->ident);
+                    else {
+                        bulk.field_names.push_back(field->base->ident->ident);
+                    }
                 }
             }
             event.push_back(std::move(bulk));
             return {};
         }
 
-        brgen::result<void> convert_vec_decode(std::vector<Event>& event, const std::shared_ptr<Field>& field) {
-            auto vec_desc = static_cast<VectorDesc*>(field->desc.get());
+        brgen::result<void> convert_vec_decode(std::vector<Event>& event, const std::shared_ptr<Field>& vec) {
+            auto vec_desc = static_cast<VectorDesc*>(vec->desc.get());
             auto int_desc = static_cast<IntDesc*>(vec_desc->base_type.get());
+            auto len_field = vec->length_related.lock();
             tool::Stringer s;
-            auto tmp = "tmp_len_" + field->base->ident->ident;
-            s.tmp_var_map[0] = tmp;
+            auto tmp = "tmp_len_" + vec->base->ident->ident;
             s.to_string(vec_desc->desc.length);
-            auto length = std::move(s.buffer);
             event.push_back(DefineLength{
                 .field_name = tmp,
-                .length = std::move(length),
+                .length = s.buffer,
             });
+            event.push_back(AssertFalse{
+                .comment = "check size for buffer limit",
+                .cond = brgen::concat(tmp, " > ", vec->base->ident->ident, ".max_size()"),
+            });
+            if (tmp != s.buffer) {
+                s.buffer.clear();
+                s.tmp_var_map[0] = tmp;
+                s.to_string(vec_desc->resolved_expr);
+                event.push_back(AssertFalse{
+                    .comment = "check overflow",
+                    .cond = brgen::concat(len_field->base->ident->ident, "!=", s.buffer),
+                });
+            }
             event.push_back(ApplyVector{
-                .field_name = field->base->ident->ident,
+                .field_name = vec->base->ident->ident,
                 .length_var = tmp,
             });
             return {};
         }
 
-        brgen::result<void> convert_vec_encode(std::vector<Event>& event, const std::shared_ptr<Field>& field) {
-            auto tmp = "tmp_len_" + field->base->ident->ident;
-            event.push_back(ApplyVector{
-                .field_name = field->base->ident->ident,
-                .length_var = tmp,
-            });
-            return {};
-        }
-
-        brgen::result<void>
-        convert_to_decoder_events(std::vector<Event>& event, MergedFields& f) {
-            size_t tmp_ = 0;
+        brgen::result<void> convert_to_decoder_events(std::vector<Event>& event, MergedFields& f) {
             for (auto& field : f.fields) {
                 if (auto f = std::get_if<BulkFields>(&field)) {
-                    if (auto res = convert_bulk(event, f, Method::encode); !res) {
+                    if (auto res = convert_bulk(event, f, Method::decode); !res) {
                         return res.transform(empty_void);
                     }
                 }
@@ -409,10 +444,52 @@ namespace json2cpp {
                         event.push_back(std::move(bulk));
                     }
                     else {
-                        auto vec_desc = static_cast<VectorDesc*>(f->desc.get());
+                        if (auto res = convert_vec_decode(event, f); !res) {
+                            return res.transform(empty_void);
+                        }
                     }
                 }
             }
+            return {};
+        }
+
+        brgen::result<void> convert_to_encoder_events(std::vector<Event>& event, MergedFields& f) {
+            size_t tmp_ = 0;
+            for (auto& field : f.fields) {
+                if (auto f = std::get_if<BulkFields>(&field)) {
+                    if (auto res = convert_bulk(event, f, Method::encode); !res) {
+                        return res.transform(empty_void);
+                    }
+                }
+                else if (auto fp = std::get_if<std::shared_ptr<Field>>(&field)) {
+                    auto& f = *fp;
+                    if (f->desc->type == DescType::int_) {
+                        auto name = handle_encoder_int_length_related(event, f);
+                        if (!name) {
+                            return name.transform(empty_void);
+                        }
+                        auto int_desc = static_cast<IntDesc*>(f->desc.get());
+                        event.push_back(ApplyInt{
+                            .field_name = std::move(*name),
+                        });
+                    }
+                    else if (f->desc->type == DescType::array_int) {
+                        ApplyBulk bulk;
+                        if (auto res = add_bulk_array(bulk, f); !res) {
+                            return res.transform(empty_void);
+                        }
+                        event.push_back(std::move(bulk));
+                    }
+                    else {
+                        auto tmp = "tmp_len_" + f->base->ident->ident;
+                        event.push_back(ApplyVector{
+                            .field_name = f->base->ident->ident,
+                            .length_var = tmp,
+                        });
+                    }
+                }
+            }
+            return {};
         }
 
         brgen::result<void> generate_field(const Field& f) {
@@ -474,196 +551,102 @@ namespace json2cpp {
         }
 
         brgen::result<void> generate_encoder(MergedFields& f) {
+            std::vector<Event> events;
+            if (auto res = convert_to_encoder_events(events, f); !res) {
+                return res.transform(empty_void);
+            }
+            code.writeln("constexpr bool ", "render", "(::utils::binary::writer& w) const {");
             constexpr auto is_be = "true";
             constexpr auto io_object = "w";
             constexpr auto num_method = "::utils::binary::write_num";
             constexpr auto bulk_method = "::utils::binary::write_num_bulk";
-            code.writeln("constexpr bool ", "render", "(::utils::binary::writer& w) const {");
-            auto write_vec_length_check = [&](auto&& f, auto&& vec) {
-                auto vec_desc = static_cast<VectorDesc*>(vec->desc.get());
-                auto int_desc = static_cast<IntDesc*>(f->desc.get());
-                tool::Stringer s;
-                auto tmp = "tmp_len_" + f->base->ident->ident;
-                if (config.vector_mode == VectorMode::std_vector) {
-                    std::string vector_len = vec->base->ident->ident + ".size()";
-                    s.tmp_var_map[0] = vector_len;
-                    s.to_string(vec_desc->resolved_expr);
-                    code.writeln("size_t ", tmp, " = ", s.buffer, ";");
-                    config.includes.emplace("<limits>");
-                    code.writeln("if(", tmp, " > (std::numeric_limits<", get_primitive_type(int_desc->desc.bit_size, int_desc->desc.is_signed), ">::max)()", ") {");
+            auto scope = code.indent_scope();
+            for (auto& event : events) {
+                if (auto bulk = std::get_if<ApplyBulk>(&event)) {
+                    method_with_error_fn(bulk_method, io_object, [&] {
+                        code.write(is_be);
+                        for (auto& field : bulk->field_names) {
+                            code.write(",", field);
+                        }
+                    });
+                }
+                else if (auto vec = std::get_if<ApplyVector>(&event)) {
+                    auto i = "i_" + vec->field_name;
+                    code.writeln("for(size_t ", i, " = 0;", i, "<", vec->length_var, ";", i, "++) {");
+                    {
+                        auto s = code.indent_scope();
+                        method_with_error(num_method, io_object, vec->field_name, "[", i, "]", ",", is_be);
+                    }
+                    code.writeln("}");
+                }
+                else if (auto int_ = std::get_if<ApplyInt>(&event)) {
+                    method_with_error(num_method, io_object, int_->field_name, ",", is_be);
+                }
+                else if (auto len = std::get_if<DefineLength>(&event)) {
+                    code.writeln("size_t ", len->field_name, " = ", len->length, ";");
+                }
+                else if (auto cond = std::get_if<AssertFalse>(&event)) {
+                    code.writeln("// ", cond->comment);
+                    code.writeln("if(", cond->cond, ") {");
                     code.indent_writeln("return false;");
                     code.writeln("}");
-                    if (vector_len != s.buffer) {
-                        s.ident_map[f->base->ident->ident] = tmp;
-                        s.buffer.clear();
-                        s.to_string(vec_desc->desc.length);
-                        code.writeln("if(", vector_len, " != ", s.buffer, ") {");
-                        code.indent_writeln("return false;");
-                        code.writeln("}");
-                    }
-                    return tmp;
                 }
-                else {  // pointer
-                    assert(config.vector_mode == VectorMode::pointer);
-                    s.to_string(vec_desc->desc.length);
-                    code.writeln("size_t ", tmp, " = ", s.buffer, ";");
-                    code.writeln("if(", tmp, " > (std::numeric_limits<", get_primitive_type(int_desc->desc.bit_size, int_desc->desc.is_signed), ">::max)()", ") {");
-                    code.indent_writeln("return false;");
-                    code.writeln("}");
-                    if (f->base->ident->ident != s.buffer) {
-                        s.tmp_var_map[0] = tmp;
-                        s.buffer.clear();
-                        s.to_string(vec_desc->resolved_expr);
-                        code.writeln("if(", f->base->ident->ident, " != ", s.buffer, ") {");
-                        code.indent_writeln("return false;");
-                        code.writeln("}");
-                    }
-                    return f->base->ident->ident;
-                }
-            };
-            {
-                auto sc = code.indent_scope();
-                for (auto& field : f.fields) {
-                    if (BulkFields* f = std::get_if<BulkFields>(&field)) {
-                        for (auto& field : f->fields) {
-                            if (auto vec = field->length_related.lock()) {
-                                write_vec_length_check(field, vec);
-                            }
-                        }
-                        method_with_error_fn(bulk_method, io_object, [&] {
-                            for (auto& field : f->fields) {
-                                if (field->desc->type == DescType::array_int) {
-                                    auto len = static_cast<IntArrayDesc*>(field->desc.get())->desc.length_eval->get<tool::EResultType::integer>();
-                                    for (size_t i = 0; i < len; i++) {
-                                        code.write(",", field->base->ident->ident, "[", brgen::nums(i), "]");
-                                    }
-                                }
-                                else {
-                                    if (config.vector_mode == VectorMode::std_vector && !field->length_related.expired()) {
-                                        auto tmp = "tmp_len_" + field->base->ident->ident;
-                                        auto int_desc = static_cast<IntDesc*>(field->desc.get());
-                                        code.write(",", get_primitive_type(int_desc->desc.bit_size, int_desc->desc.is_signed), "(", tmp, ")");
-                                    }
-                                    else {
-                                        code.write(",", field->base->ident->ident);
-                                    }
-                                }
-                            }
-                        });
-                    }
-                    else if (auto fp = std::get_if<std::shared_ptr<Field>>(&field)) {
-                        auto& f = *fp;
-                        if (f->desc->type == DescType::array_int) {
-                            auto desc = static_cast<IntArrayDesc*>(f->desc.get());
-                            auto len = desc->desc.length_eval->get<tool::EResultType::integer>();
-                            method_with_error_fn(bulk_method, io_object, [&] {
-                                code.write(is_be);
-                                for (size_t i = 0; i < len; i++) {
-                                    code.write(",", f->base->ident->ident, "[", brgen::nums(i), "]");
-                                }
-                            });
-                        }
-                        else if (f->desc->type == DescType::vector) {
-                            auto desc = static_cast<VectorDesc*>(f->desc.get());
-                            auto i = "i_" + f->base->ident->ident;
-                            std::string len;
-                            tool::Stringer s;
-                            len = f->length_related.lock()->base->ident->ident;
-                            code.writeln("for(size_t ", i, " = 0;", i, " < ", f->base->ident->ident, ".size();", i, "++) {");
-                            {
-                                auto sc = code.indent_scope();
-                                method_with_error(num_method, io_object, f->base->ident->ident, "[", i, "]", ",", is_be);
-                            }
-                            code.writeln("}");
-                        }
-                        else {
-                            if (auto vec = f->length_related.lock(); vec) {
-                                write_vec_length_check(f, vec);
-                                auto tmp = "tmp_len_" + f->base->ident->ident;
-                                auto int_desc = static_cast<IntDesc*>(f->desc.get());
-                                method_with_error(num_method, io_object, get_primitive_type(int_desc->desc.bit_size, int_desc->desc.is_signed), "(", tmp, ")", ",", is_be);
-                            }
-                            else {
-                                method_with_error(num_method, io_object, f->base->ident->ident, ",", is_be);
-                            }
-                        }
-                    }
-                }
-                code.writeln("return true;");
             }
+
+            code.writeln("return true;");
+            scope.execute();
             code.writeln("}");
+            code.writeln();
             return {};
         }
 
         brgen::result<void> generate_decoder(MergedFields& f) {
-            code.writeln("constexpr bool ", "parse", "(::utils::binary::reader& r) {");
+            std::vector<Event> events;
+            if (auto res = convert_to_decoder_events(events, f); !res) {
+                return res.transform(empty_void);
+            }
             constexpr auto is_be = "true";
             constexpr auto io_object = "r";
             constexpr auto num_method = "::utils::binary::read_num";
             constexpr auto bulk_method = "::utils::binary::read_num_bulk";
-            {
-                auto sc = code.indent_scope();
-                for (auto& field : f.fields) {
-                    if (BulkFields* f = std::get_if<BulkFields>(&field)) {
-                        method_with_error_fn(bulk_method, io_object, [&](auto&&... args) {
-                            code.write(is_be);
-                            for (auto& field : f->fields) {
-                                if (field->desc->type == DescType::array_int) {
-                                    auto len = static_cast<IntArrayDesc*>(field->desc.get())->desc.length_eval->get<tool::EResultType::integer>();
-                                    for (size_t i = 0; i < len; i++) {
-                                        code.write(",", field->base->ident->ident, "[", brgen::nums(i), "]");
-                                    }
-                                }
-                                else {
-                                    code.write(",", field->base->ident->ident);
-                                }
-                            }
-                        });
+            code.writeln("constexpr bool ", "parse", "(::utils::binary::reader& r) {");
+            auto scope = code.indent_scope();  // enter scope
+            for (auto& event : events) {
+                if (auto bulk = std::get_if<ApplyBulk>(&event)) {
+                    if (config.vector_mode == VectorMode::std_vector) {
+                        code.writeln();
                     }
-                    else if (auto fp = std::get_if<std::shared_ptr<Field>>(&field)) {
-                        auto& f = *fp;
-                        if (f->desc->type == DescType::array_int) {
-                            auto desc = static_cast<IntArrayDesc*>(f->desc.get());
-                            auto len = desc->desc.length_eval->get<tool::EResultType::integer>();
-                            method_with_error_fn(num_method, io_object, [&] {
-                                code.write(is_be);
-                                for (size_t i = 0; i < len; i++) {
-                                    code.write(",", f->base->ident->ident, "[", brgen::nums(i), "]");
-                                }
-                            });
+                    method_with_error_fn(bulk_method, io_object, [&] {
+                        code.write(is_be);
+                        for (auto& field : bulk->field_names) {
+                            code.write(",", field);
                         }
-                        else if (f->desc->type == DescType::vector) {
-                            auto desc = static_cast<VectorDesc*>(f->desc.get());
-                            tool::Stringer s;
-                            s.to_string(desc->desc.length);
-                            std::string len;
-                            if (config.vector_mode == VectorMode::std_vector) {
-                                code.writeln("if(", s.buffer, " > ", f->base->ident->ident, ".max_size()) {");
-                                code.indent_writeln("return false;");
-                                code.writeln("}");
-                                len = f->base->ident->ident + ".size()";
-                                code.writeln(f->base->ident->ident, ".resize(", s.buffer, ");");
-                            }
-                            else {  // pointer
-                                assert(config.vector_mode == VectorMode::pointer);
-                                len = s.buffer;
-                                code.writeln(f->base->ident->ident, " = new ", get_primitive_type(static_cast<IntDesc*>(desc->base_type.get())->desc.bit_size, static_cast<IntDesc*>(desc->base_type.get())->desc.is_signed), "[", s.buffer, "];");
-                            }
-                            auto i = "i_" + f->base->ident->ident;
-                            code.writeln("for(size_t ", i, " = 0;", i, " < ", len, ";", i, "++) {");
-                            {
-                                auto sc = code.indent_scope();
-                                method_with_error(num_method, io_object, f->base->ident->ident, "[", i, "]", ",", is_be);
-                            }
-                            code.writeln("}");
-                        }
-                        else {
-                            method_with_error(num_method, io_object, f->base->ident->ident, ",", is_be);
-                        }
-                    }
+                    });
                 }
-                code.writeln("return true;");
+                else if (auto vec = std::get_if<ApplyVector>(&event)) {
+                    auto i = "i_" + vec->field_name;
+                    code.writeln("for(size_t ", i, " = 0;", i, "<", vec->length_var, ";", i, "++) {");
+                    {
+                        auto s = code.indent_scope();
+                        method_with_error(num_method, io_object, vec->field_name, "[", i, "]", ",", is_be);
+                    }
+                    code.writeln("}");
+                }
+                else if (auto int_ = std::get_if<ApplyInt>(&event)) {
+                    method_with_error(num_method, io_object, int_->field_name, ",", is_be);
+                }
+                else if (auto len = std::get_if<DefineLength>(&event)) {
+                    code.writeln("size_t ", len->field_name, " = ", len->length, ";");
+                }
+                else if (auto cond = std::get_if<AssertFalse>(&event)) {
+                    code.writeln("// ", cond->comment);
+                    code.writeln("if(", cond->cond, ") {");
+                    code.indent_writeln("return false;");
+                    code.writeln("}");
+                }
             }
+            code.writeln("return true;");
+            scope.execute();  // leave scope
             code.writeln("}");
             return {};
         }
@@ -716,7 +699,7 @@ namespace json2cpp {
                     formats.push_back(std::static_pointer_cast<ast::Format>(l));
                 }
                 else if (auto conf = tool::extract_config(l)) {
-                    auto r = handle_config(conf.value());
+                    auto r = config.handle_config(eval, conf.value());
                     if (!r) {
                         return r.transform(empty_void);
                     }
