@@ -1,28 +1,35 @@
-
 # brgen language specialization
+
 #####
+
 ##### draft version 1
+
 ##### lang-version: 0.0.0.d1.a # draft 1
+
 ##### author: on-keyday (https://github.com/on-keyday)
+
 ##### note: this is implementation guidelines for my first parser and generator
 
 ## 1. Introduction
+
 goal of this language is simple/powerful/portable DSL for binary encoder/decoder/validator/logger/document etc... generator
 simple - easy to write and read
 powerful - enough to represent network protocol/file format
 portable - write once, generate in any language
 
-this document are example of usage and it's parsable by brgen 
+this document are example of usage and it's parsable by brgen
 
 ```py
 # this is comment
 ```
 
 ## 2. Word Definition
+
 GID - generator implementation defined - decided by generator implementer
 MUST - generator implementer must implement that
 
 ## 3. Scope and Syntax
+
 in global scope, there are format,enum,and import
 in local scope, there are format,enum,import,field definition statement,loop statement,expressions (including if,match and assertion)
 field definition statement and assignment expression makes identifier definition in it scope
@@ -32,17 +39,21 @@ in AST level, any of above can be written in anywhere but exclude above can be o
 usage of optional statements and expressions are GID but some attribute explained after are recommended to implement
 
 ### 3.1 Identifier(variable) lookup rule
+
 identifier definition lookup rule are:
- 1. if in local scope, search variable defined before in same scope, 
- 1.a if found, link variable with definition location
- 1.b if not found then up the scope then start lookup from 1. 
- 2. if in global scope, then look up from first of definition to end 
+
+1.  if in local scope, search variable defined before in same scope,
+    1.a if found, link variable with definition location
+    1.b if not found then up the scope then start lookup from 1.
+2.  if in global scope, then look up from first of definition to end
 
 ### 3.2 Type lookup rule
- 1. look up from first of definition to end in scope (no difference between local and global)
- 2. if not found, then up the 
+
+1.  look up from first of definition to end in scope (no difference between local and global)
+2.  if not found, then up the
 
 ## 4. Literal and Keywords
+
 ```py
 # boolean literal
 true || false
@@ -53,25 +64,31 @@ true || false
 # string literal
 "Hello World"
 ```
+
 are supported
 
 ### 4.1. Input and Output, Config
-there are three special literal; input, output, and env
+
+there are three special literal; input, output, and config
+
 ```py
 input # means decoder input
 output # means encoder output
 config # means environment and configuration of generator
 ```
+
 you can access these objects anywhere
 some situation, access to these object makes separation of encoding and decoding
 these keywords are represented as ident
-these have some method or property, explained in 
+these have some method or property, explained in
 input
 output
 config
 
 ### 4.2 Keywords
+
 keywords are:
+
 ```py
 true
 false
@@ -91,11 +108,13 @@ uN,sN,ubN,sbN,ulN,slN # N MUST be grater than 0 integer
 ```
 
 ## 5. Expressions
+
 expressions are used for several purpose, assignment,assertion, condition of if expr, length of VLA
 expressions are finally evaluated as bool,int,float,string, custom enum type,or custom format type.
 it is GID that evaluation of format type and float; if not supported, it should be evaluated as void
 
 ### 5.1 Binary Operator
+
 ```py
 # +  addition
 1 + 2
@@ -138,6 +157,7 @@ it is GID that evaluation of format type and float; if not supported, it should 
 ```
 
 ### 5.2 Unary Operator
+
 ```py
 # - minus sign
 -1
@@ -145,22 +165,25 @@ it is GID that evaluation of format type and float; if not supported, it should 
 !1 # this is bit not
 !true # this is logical not
 ```
+
 increment and decrement are not supported
 
 ### 5.3 If and Match
+
 in this language if and match are expression
+
 ```py
-# if expression 
+# if expression
 if true: # this evaluated as void
     env.warning("warning")
 
-value := if true: # this evaluated as int 
+value := if true: # this evaluated as int
    0 # if matching this
 else:
    1 # and this type
 
 value = if true:
-    0 
+    0
 elif false:
     1 # else if is supported by elif
 else:
@@ -174,26 +197,30 @@ value = match 1:
 ```
 
 ### 5.3 Assignment Statement
-assignment makes temporary identifier 
+
+assignment makes temporary identifier
 3 types of assignment are defined
+
 ```py
 # := define variable
 # define variable identifier
 x := 10
 # = assign
 # rewrite variable
-x = 2 
+x = 2
 # ::= define constant
 # define constant value
 X ::= 30
 ```
+
 assignment to constant are invalid.
 
 define constant should be implemented even **if global scope**
 
 ### 5.4 Other
+
 ```py
-# () brackets 
+# () brackets
 (1 + 2)* 3
 # a.b member access
 a.b #this syntax is allowed if a is enum name, imported name, or format instance
@@ -202,16 +229,22 @@ a(b) # in this language function call is specially treated explained below
 # arr_or_map[1] index
 a[1] # user only can define array
 ```
+
 if GID, builtin function can return map like object
 
 ### 5.4.1 Function
+
 TODO(on-keyday): write about treatment of function and function arguments
 
 ## 6. Format
-format is a unit of data structure that is converted to struct and encoder/decoder/logger/validator etc.. functions 
+
+format is a unit of data structure that is converted to struct and encoder/decoder/logger/validator etc.. functions
+
 ### 6.1. As-is Format
+
 As-is format is represent encoding/decoding format as is
 field is interpreted in order
+
 ```py
 format ExampleAsIsFormat:
     # fundamental types
@@ -238,11 +271,11 @@ format ExampleAsIsFormat:
     sample8 :s64
 
     # support for floating point number are GID
-    # representation are fN and 
-   
+    # representation are fN and
+
 
     # less than 8 bit also allowed if generator allowed
-    # representation in program (packed in one byte? or using bit field?), 
+    # representation in program (packed in one byte? or using bit field?),
     # and byte alignment requirement (allow non-byte aligned format or disallow) are GID
     prefix :u1
     data1 :u7
@@ -260,7 +293,7 @@ format ExampleAsIsFormat:
     # array types are supported if GID
     # generator implementation should support 2 type array
     # first is fixed length array that inner brackets value are constant
-    # second is variable length array(VLA) decided by other field 
+    # second is variable length array(VLA) decided by other field
     # VLA length decision field MUST be prior to VLA field
     # to explain define:
     # len   :u8
@@ -287,21 +320,22 @@ format ExampleAsIsFormat:
     format Embed:
         data :u8
 
-    # this is embed representation of type 
+    # this is embed representation of type
     # how to represent this (expand in the class?using class inner class?or using embed representation in Go?) is GID
     :Embed
 
 ```
+
 ### 6.2 Custom Format
+
 Custom format is defined using encode() and decode() function
 fields are only a reference of how struct holds value
 in decode function, fields are variables.
 in encode function, fields are constant
 
-
-
 actually below's As-Is format is almost same as this ExampleCustomFormat format
 so use below instead of this if you want to use like this
+
 ```py
 format ExampleCustomFormat:
     prefix :u1
@@ -310,9 +344,10 @@ format ExampleCustomFormat:
     else:
         field :u31
 ```
+
 ```py
 format ExampleCustomFormat:
- 
+
     fn encode():
         top = input.peek.u8()
         if top&0x80 != 0:
@@ -332,7 +367,9 @@ format ExampleCustomFormat:
 ```
 
 ## 7. Enum
+
 enum are enumeration of numbers or strings or one type selection
+
 ```py
 enum ExampleEnum:
     :u8  # this prefer base type definition
@@ -342,70 +379,89 @@ enum ExampleEnum:
     D :0xFF # yes this is 0xFF
     E:"hello" # here string are also allowed (but in this situation,maybe error)
     F         # E is also be "hello"
-    G :"foo" 
+    G :"foo"
 ```
 
 ## 8. Special Literals
+
 ### 8.1. Input
+
 ```py
 input.peek # this is peek proxy object. peek should implement same methods and properties of input
-input.uN() # read N bit and parse into uN.  N is greater than 0 value 
+input.uN() # read N bit and parse into uN.  N is greater than 0 value
 ```
+
 TODO(on-keyday): write more
 
 ### 8.2 Output
+
 ```py
 output.uN(x) # write x as N bit integer into . if type of x is larger than N bit, generator implementor must insert size check
 ```
+
 TODO(on-keyday): write more
 
-### 8.3 Environment
+### 8.3 Config
+
 belows 4 method are for custom error handling and should be implemented
+
 ```py
 env.error(message) # report error and abort operation
 env.warning(message) # report warning not abort
 env.assert(c,message) # report error and abort operation if c is false
 env.expect(c,message) # report warning not abort if c is false
 ```
+
 below properties are useful for parsing
+
 ```py
-env.uN # property set for N bit integer
-env.uN.max # maximum value of N bit integer
-env.uN.min # minimum value of N bit integer 
+config.uN # property set for N bit integer
+config.uN.max # maximum value of N bit integer
+config.uN.min # minimum value of N bit integer
 ```
+
 TODO(on-keyday): write more
 
 ## 9. Builtin
-generator implementer MUST provide allowed name (builtin) list of input,output,and env methods and property 
-and global name definition 
 
-below are implemented by parser that is resolved at meta level 
+generator implementer MUST provide allowed name (builtin) list of input,output,and env methods and property
+and global name definition
+
+below are implemented by parser that is resolved at meta level
+
 ```py
 exists(name) # name is exists in current scope
 is_builtin(name) # name is exists as builtin symbol
 has_method(name,method) # name has method
 has_property(name,property) # name has property
 ```
+
 ## 10. Error Handling
+
 in this language, error handling about IO should be implicit
 that is generator should insert appropriate error handling method for each field/Format, encoding/decoding
 when encoding, validation should appear in first step of encoding
 when decoding, validation should appear in each step of decoding
+
 ### 10.1 Assertion
+
 floating boolean expression is interpreted as assertion
 assertion with error should be treated with same error handling mechanism of normal encode/decode error
 
-
 ## 11. Security Considerations
+
 security of this product is almost depends on generator implementation.
 most common problem in this field are Buffer Overflow Prevention (BOP)
 generator should follow below guidelines
-  1. secure is more valuable than fast
+
+1. secure is more valuable than fast
    even if generated code are very fast like thunderbolt, no secure product has no meaning.
- TODO(on-keyday): write more
+   TODO(on-keyday): write more
 
 ## Appendix A. AST representation
+
 representation of ast
+
 ```
     every node contains {
         node_type: AST node type
@@ -419,6 +475,7 @@ representation of ast
 ```
 
 ## Appendix B. Operator Precedence and Associative Order
+
 ```
 high
 postfix        () []
@@ -433,13 +490,15 @@ low
 ```
 
 ## C. Generator Implementer Guide
-this is guide for code generator implementation 
+
+this is guide for code generator implementation
 TODO(on-keyday): write this
 
 ## History:
-+ 2023/09/08: write first version draft version: 0.0.0.d1
-+ 2023/09/14: rewrite this as markdown text version: 0.0.0.d1.a
-  + change keyword env -> config
-  + change comment style // and  /**/ to #
-  + add range(.. and ..=) expression
-  + remove needless comment
+
+- 2023/09/08: write first version draft version: 0.0.0.d1
+- 2023/09/14: rewrite this as markdown text version: 0.0.0.d1.a
+  - change keyword env -> config
+  - change comment style // and /\*\*/ to #
+  - add range(.. and ..=) expression
+  - remove needless comment

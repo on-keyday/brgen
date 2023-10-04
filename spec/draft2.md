@@ -460,6 +460,25 @@ config.uN.max # maximum value of N bit integer
 config.uN.min # minimum value of N bit integer
 ```
 
+below are handled by AST parser
+
+```py
+config.import("file name") # import file and replace ast
+```
+
+below are marker for generator
+
+```py
+config.export(Ident1,Ident2) # make Ident instantiate in public (public means accessible from other code than generated code)
+# in default, all format are public
+# if use config.export, then other format are private
+# this is used when non-byte aligned format are there and
+config.internal(Ident1,Ident2) # make Ident instantiate in private (private means not accessible from other code than generated code)
+
+# both config.export and config.internal cannot be used in same file
+# you should choose which one to use
+```
+
 TODO(on-keyday): write more
 
 ## 9. Builtin
