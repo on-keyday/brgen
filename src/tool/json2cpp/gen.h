@@ -142,6 +142,9 @@ namespace json2cpp {
                     code.indent_writeln("return false;");
                     code.writeln("}");
                 }
+                else if (auto bits = std::get_if<ApplyBits>(&event)) {
+                    method_with_error(num_method, io_object, bits->base_name, ".as_value()");
+                }
                 else {
                     return brgen::unexpect(brgen::error({}, "unknown event"));
                 }
@@ -206,6 +209,9 @@ namespace json2cpp {
                     code.writeln("if(", cond->cond, ") {");
                     code.indent_writeln("return false;");
                     code.writeln("}");
+                }
+                else if (auto bits = std::get_if<ApplyBits>(&event)) {
+                    method_with_error(num_method, io_object, bits->base_name, ".as_value()");
                 }
                 else {
                     return brgen::unexpect(brgen::error({}, "unknown event"));

@@ -189,9 +189,6 @@ namespace json2cpp {
         brgen::result<void> convert_bits(BitFields* f) {
             ApplyBits bits;
             auto primitive = get_primitive_type(ast::aligned_bit(f->fixed_size), false);
-            if (primitive.empty()) {
-                return brgen::unexpect(brgen::error(f->fields[0]->base->loc, "unsupported type"));
-            }
             bits.base_type = primitive;
             bits.base_name = "flags";
             for (auto& field : f->fields) {
@@ -203,6 +200,7 @@ namespace json2cpp {
                 });
                 bits.base_name += "_" + field->base->ident->ident;
             }
+            events.push_back(std::move(bits));
             return {};
         }
 
@@ -316,6 +314,11 @@ namespace json2cpp {
             for (auto& field : fields) {
                 if (auto f = std::get_if<BulkFields>(&field)) {
                     if (auto res = convert_bulk(f, Method::encode); !res) {
+                        return res.transform(empty_void);
+                    }
+                }
+                else if (auto f = std::get_if<BitFields>(&field)) {
+                    if (auto res = convert_bits(f); !res) {
                         return res.transform(empty_void);
                     }
                 }

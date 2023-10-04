@@ -1,0 +1,8 @@
+
+# step6 - bit field (with length)
+format Step6:
+    reserved: u1
+    code :u2
+    offset :u1
+    len :u4
+    data :[len]u8
