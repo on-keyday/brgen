@@ -1115,3 +1115,4 @@ TODO(on-keyday): write this
 - 2023/09/26: add ast representation json: 0.0.0.d2.b
 - 2023/09/25: add code limitation note of `if`
 - 2023/10/04: fix env to config: 0.0.0.d2.c
+- 2023/10/04: add config.import and config.export
