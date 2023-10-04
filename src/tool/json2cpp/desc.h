@@ -98,7 +98,7 @@ namespace json2cpp {
         size_t fixed_size = 0;
     };
 
-    using MergedField = std::variant<std::shared_ptr<Field>, BulkFields>;
+    using MergedField = std::variant<std::shared_ptr<Field>, BulkFields, BitFields>;
 
     using MergedFields = std::vector<MergedField>;
 
@@ -181,10 +181,7 @@ namespace json2cpp {
                 }
             }
             else if (auto i = tool::is_int_type(field->field_type)) {
-                auto type = get_primitive_type(i->bit_size, i->is_signed);
-                if (type.empty()) {
-                    return brgen::unexpect(brgen::error(field->loc, "unsupported type"));
-                }
+                // both 8-byte aligned (8*2^n (0<=n<=3)) and non-aligned int are supported
                 fields.push_back(std::make_shared<Field>(field, std::make_shared<IntDesc>(std::move(*i))));
             }
             else {
@@ -199,6 +196,32 @@ namespace json2cpp {
                     m.push_back({std::move(fields[i])});
                     continue;
                 }
+                BitFields bit;
+                for (; i < fields.size(); i++) {
+                    if (fields[i]->desc->type == DescType::int_) {
+                        auto i_desc = static_cast<IntDesc*>(fields[i]->desc.get());
+                        auto primitive = get_primitive_type(i_desc->desc.bit_size, i_desc->desc.is_signed);
+                        if (primitive.empty()) {
+                            bit.fields.push_back({std::move(fields[i])});
+                            bit.fixed_size += i_desc->desc.bit_size;
+                            continue;
+                        }
+                        else if (bit.fixed_size % 8 != 0) {
+                            bit.fields.push_back({std::move(fields[i])});
+                            bit.fixed_size += i_desc->desc.bit_size;
+                            continue;
+                        }
+                    }
+                    break;
+                }
+                if (bit.fields.size()) {
+                    if (bit.fixed_size % 8 != 0) {
+                        return brgen::unexpect(brgen::error(bit.fields[0]->base->loc, "bit field is not byte aligned"));
+                    }
+                    m.push_back({std::move(bit)});
+                    continue;
+                }
+
                 BulkFields b;
                 for (; i < fields.size(); i++) {
                     if (fields[i]->desc->type == DescType::array_int) {
