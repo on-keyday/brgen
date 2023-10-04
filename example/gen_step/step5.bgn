@@ -1,4 +1,4 @@
-
+# step5 - bit field
 format Step5:
     reserved: u1
     code :u2

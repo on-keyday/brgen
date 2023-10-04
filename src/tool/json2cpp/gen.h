@@ -45,6 +45,24 @@ namespace json2cpp {
             return {};
         }
 
+        brgen::result<void> generate_bit_field(const BitFields& f) {
+            config.includes.emplace("<binary/flags.h>");
+            auto prim = get_primitive_type(ast::aligned_bit(f.fixed_size), false);
+            assert(prim.size());
+            code.write("::utils::binary::flags_t<", prim);
+            std::string base_name = "flags";
+            for (auto& field : f.fields) {
+                auto i_desc = static_cast<IntDesc*>(field->desc.get());
+                code.write(",", brgen::nums(i_desc->desc.bit_size));
+                base_name += "_" + field->base->ident->ident;
+            }
+            code.writeln("> ", base_name, ";");
+            for (size_t i = 0; i < f.fields.size(); i++) {
+                code.writeln("bits_flag_alias_method(", base_name, ",", brgen::nums(i), ",", f.fields[i]->base->ident->ident, ");");
+            }
+            return {};
+        }
+
         // generate field
         brgen::result<void> generate_fields(const MergedFields& fields) {
             for (auto& field : fields) {
@@ -53,6 +71,11 @@ namespace json2cpp {
                         if (auto res = generate_field(*field); !res) {
                             return res.transform(empty_void);
                         }
+                    }
+                }
+                else if (auto f = std::get_if<BitFields>(&field)) {
+                    if (auto res = generate_bit_field(*f); !res) {
+                        return res.transform(empty_void);
                     }
                 }
                 else if (auto f = std::get_if<std::shared_ptr<Field>>(&field)) {

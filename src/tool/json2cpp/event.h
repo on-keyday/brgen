@@ -32,7 +32,18 @@ namespace json2cpp {
         std::string field_name;
     };
 
-    using Event = std::variant<ApplyInt, DefineLength, AssertFalse, ApplyBulkInt, AllocateVector, ApplyVector>;
+    struct BitField {
+        std::string bit_size;
+        std::string field_name;
+    };
+
+    struct ApplyBits {
+        std::string base_name;
+        std::string base_type;
+        std::vector<BitField> field_names;
+    };
+
+    using Event = std::variant<ApplyInt, DefineLength, AssertFalse, ApplyBits, ApplyBulkInt, AllocateVector, ApplyVector>;
 
     using Events = std::vector<Event>;
 
@@ -175,6 +186,26 @@ namespace json2cpp {
             return {};
         }
 
+        brgen::result<void> convert_bits(BitFields* f) {
+            ApplyBits bits;
+            auto primitive = get_primitive_type(ast::aligned_bit(f->fixed_size), false);
+            if (primitive.empty()) {
+                return brgen::unexpect(brgen::error(f->fields[0]->base->loc, "unsupported type"));
+            }
+            bits.base_type = primitive;
+            bits.base_name = "flags";
+            for (auto& field : f->fields) {
+                assert(field->desc->type == DescType::int_);
+                auto int_desc = static_cast<IntDesc*>(field->desc.get());
+                bits.field_names.push_back(BitField{
+                    .bit_size = brgen::nums(int_desc->desc.bit_size),
+                    .field_name = field->base->ident->ident,
+                });
+                bits.base_name += "_" + field->base->ident->ident;
+            }
+            return {};
+        }
+
         brgen::result<void> convert_vec_decode(const std::shared_ptr<Field>& vec) {
             auto vec_desc = static_cast<VectorDesc*>(vec->desc.get());
             auto int_desc = static_cast<IntDesc*>(vec_desc->base_type.get());
@@ -247,6 +278,11 @@ namespace json2cpp {
             for (auto& field : fields) {
                 if (auto f = std::get_if<BulkFields>(&field)) {
                     if (auto res = convert_bulk(f, Method::decode); !res) {
+                        return res.transform(empty_void);
+                    }
+                }
+                else if (auto f = std::get_if<BitFields>(&field)) {
+                    if (auto res = convert_bits(f); !res) {
                         return res.transform(empty_void);
                     }
                 }

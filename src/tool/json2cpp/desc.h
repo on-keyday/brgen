@@ -96,6 +96,7 @@ namespace json2cpp {
     struct BitFields {
         std::vector<std::shared_ptr<Field>> fields;
         size_t fixed_size = 0;
+        size_t primitive_type = 0;
     };
 
     using MergedField = std::variant<std::shared_ptr<Field>, BulkFields, BitFields>;
@@ -217,6 +218,9 @@ namespace json2cpp {
                 if (bit.fields.size()) {
                     if (bit.fixed_size % 8 != 0) {
                         return brgen::unexpect(brgen::error(bit.fields[0]->base->loc, "bit field is not byte aligned"));
+                    }
+                    if (bit.fixed_size > 64) {
+                        return brgen::unexpect(brgen::error(bit.fields[0]->base->loc, "bit field is too large"));
                     }
                     m.push_back({std::move(bit)});
                     continue;
