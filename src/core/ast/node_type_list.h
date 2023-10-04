@@ -133,7 +133,7 @@ namespace brgen::ast {
     constexpr auto loc_type = R"({"pos": {"begin": "uint","end": "uint"},"file": "uint","line": "uint","col": "uint"})";
 
     template <bool ast_mode = false>
-    void node_type_list(auto&& objdump, bool wrap_body = false) {
+    void node_type_list(auto&& objdump, bool flat = false, bool dump_base = true) {
         objdump([&](auto&& field) {
             field("node_type", "node");
             internal::list_base_type<Node>(field);
@@ -148,9 +148,11 @@ namespace brgen::ast {
                             t.dump([&](std::string_view key, auto& v) {
                                 using P = std::decay_t<decltype(v)>;
                                 if constexpr (std::is_same_v<P, NodeType>) {
-                                    if (!wrap_body) {
+                                    if (!flat) {
                                         field(key, node_type_to_string(T::node_type_tag));
-                                        internal::dump_base_type(field, T::node_type_tag);
+                                        if (dump_base) {
+                                            internal::dump_base_type(field, T::node_type_tag);
+                                        }
                                     }
                                 }
                                 else if constexpr (std::is_same_v<P, bool>) {
@@ -163,7 +165,7 @@ namespace brgen::ast {
                                     field(key, "string");
                                 }
                                 else if constexpr (std::is_same_v<P, lexer::Loc>) {
-                                    if (!wrap_body || key != "loc") {
+                                    if (!flat || key != "loc") {
                                         field(key, "loc");
                                     }
                                 }
@@ -203,12 +205,14 @@ namespace brgen::ast {
                                 }
                             });
                         };
-                        if (wrap_body) {
+                        if (!flat) {
                             t.dump([&](std::string_view key, auto& v) {
                                 using P = std::decay_t<decltype(v)>;
                                 if constexpr (std::is_same_v<P, NodeType>) {
                                     field(key, node_type_to_string(T::node_type_tag));
-                                    internal::dump_base_type(field, T::node_type_tag);
+                                    if (dump_base) {
+                                        internal::dump_base_type(field, T::node_type_tag);
+                                    }
                                 }
                                 else if constexpr (std::is_same_v<P, lexer::Loc>) {
                                     if (key == "loc") {

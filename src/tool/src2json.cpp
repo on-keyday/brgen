@@ -24,6 +24,7 @@ struct Flags : utils::cmdline::templ::HelpOption {
     bool debug_json = false;
     bool dump_ptr_as_uintptr = false;
     bool flat = false;
+    bool not_dump_base = false;
 
     void bind(utils::cmdline::option::Context& ctx) {
         bind_help(ctx);
@@ -36,6 +37,7 @@ struct Flags : utils::cmdline::templ::HelpOption {
         ctx.VarBool(&dump_types, "dump-ast", "dump ast types schema mode");
         ctx.VarBool(&dump_ptr_as_uintptr, "dump-uintptr", "make pointer type of ast field uintptr (use with --dump-ast)");
         ctx.VarBool(&flat, "dump-flat", "dump ast schema with flat body (use with --dump-ast)");
+        ctx.VarBool(&not_dump_base, "not-dump-base", "not dump ast schema with base type (use with --dump-ast)");
     }
 };
 auto& cout = utils::wrap::cout_wrap();
@@ -73,7 +75,7 @@ int check_ast(std::string_view name) {
     return 0;
 }
 
-int node_list(bool dump_uintptr, bool flat) {
+int node_list(bool dump_uintptr, bool flat, bool not_dump_base) {
     brgen::JSONWriter d;
     {
         auto field = d.object();
@@ -88,10 +90,10 @@ int node_list(bool dump_uintptr, bool flat) {
                 });
             };
             if (dump_uintptr) {
-                brgen::ast::node_type_list<true>(list, !flat);
+                brgen::ast::node_type_list<true>(list, flat, !not_dump_base);
             }
             else {
-                brgen::ast::node_type_list(list, !flat);
+                brgen::ast::node_type_list(list, flat, !not_dump_base);
             }
         });
         brgen::ast::custom_type_mapping(field, dump_uintptr);
@@ -107,7 +109,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     utils::wrap::out_virtual_terminal = true;
 
     if (flags.dump_types) {
-        return node_list(flags.dump_types, flags.flat);
+        return node_list(flags.dump_types, flags.flat, flags.not_dump_base);
     }
 
     if (flags.args.size() == 0) {
