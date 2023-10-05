@@ -10,6 +10,7 @@
 namespace brgen {
 
 #define sdebugf(name) #name, name
+#define sdebugf_omit(name) #name, name
 
     using JSONWriter = utils::json::Stringer<>;
 }  // namespace brgen

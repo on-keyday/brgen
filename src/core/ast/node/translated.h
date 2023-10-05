@@ -89,8 +89,28 @@ namespace brgen::ast {
         void dump(auto&& field) {
             Expr::dump(field);
             field(sdebugf(path));
-            field(sdebugf(base));
+            field(sdebugf_omit(base));
             field(sdebugf(import_desc));
+        }
+    };
+
+    struct Cast : Expr {
+        define_node_type(NodeType::cast);
+        std::shared_ptr<Call> base;
+        std::shared_ptr<Expr> expr;
+
+        Cast(std::shared_ptr<Call>&& c, std::shared_ptr<Type>&& type, std::shared_ptr<Expr>&& a)
+            : Expr(a->loc, NodeType::cast), base(std::move(c)), expr(std::move(a)) {
+            expr_type = std::move(type);
+        }
+
+        Cast()
+            : Expr({}, NodeType::cast) {}
+
+        void dump(auto&& field) {
+            Expr::dump(field);
+            field(sdebugf_omit(base));
+            field(sdebugf(expr));
         }
     };
 

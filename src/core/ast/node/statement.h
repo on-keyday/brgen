@@ -60,7 +60,7 @@ namespace brgen::ast {
             field(sdebugf(ident));
             field(sdebugf(colon_loc));
             field(sdebugf(field_type));
-            field(sdebugf(raw_arguments));
+            field(sdebugf_omit(raw_arguments));
             field(sdebugf(arguments));
             field(sdebugf(belong));
         }

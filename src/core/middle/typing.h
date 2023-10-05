@@ -7,14 +7,6 @@
 
 namespace brgen::middle {
 
-    enum class TypeRelation {
-        equal,
-        each_convertible,
-        left_convertible,
-        right_convertible,
-        not_equal,
-    };
-
     struct Typing {
         LocationError warnings;
 
@@ -546,6 +538,7 @@ namespace brgen::middle {
                 warn_not_typed(r);
             }
             else if (auto i = ast::as<ast::Import>(expr)) {
+                expr->expr_type = i->import_desc->struct_type;
             }
             else {
                 unsupported(expr);
@@ -556,7 +549,7 @@ namespace brgen::middle {
             // Define a lambda function for recursive traversal and typing
             auto recursive_typing = [&](auto&& f, const std::shared_ptr<ast::Node>& ty) -> void {
                 auto do_traverse = [&] {
-                    // Traverse the object's subcomponents and apply the recursive function
+                    // Traverse the object's sub components and apply the recursive function
                     ast::traverse(ty, [&](const std::shared_ptr<ast::Node>& sub_ty) {
                         f(f, sub_ty);
                     });

@@ -70,9 +70,6 @@ namespace brgen::ast {
             node_index[node] = nodes.size() - 1;
             visit(node, [&](auto&& f) {
                 f->dump([&]<class T>(std::string_view key, T& value) {
-                    if (key == "base") {
-                        ;
-                    }
                     if constexpr (utils::helper::is_template_instance_of<T, std::shared_ptr>) {
                         using type = typename utils::helper::template_instance_of_t<T, std::shared_ptr>::template param_at<0>;
                         if constexpr (std::is_base_of_v<Node, type>) {

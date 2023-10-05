@@ -84,7 +84,7 @@ namespace brgen::ast {
         void dump(auto&& field) {
             Expr::dump(field);
             field(sdebugf(callee));
-            field(sdebugf(raw_arguments));
+            field(sdebugf_omit(raw_arguments));
             field(sdebugf(arguments));
             field(sdebugf(end_loc));
         }

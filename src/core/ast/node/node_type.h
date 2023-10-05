@@ -24,6 +24,7 @@ namespace brgen::ast {
         tmp_var,
         block_expr,
         import_,
+        cast,
 
         literal = 0x110000,
         int_literal,
@@ -367,6 +368,7 @@ namespace brgen::ast {
         "function_type",
         "struct_type",
         "union_type",
+        "cast",
     };
 
     constexpr int mapNodeTypeToValue(NodeType type) {
@@ -465,6 +467,8 @@ namespace brgen::ast {
                 return 45;
             case NodeType::union_type:
                 return 46;
+            case NodeType::cast:
+                return 47;
             default:
                 return -1;
         }
@@ -566,6 +570,8 @@ namespace brgen::ast {
                 return NodeType::struct_type;
             case 46:
                 return NodeType::union_type;
+            case 47:
+                return NodeType::cast;
             default:
                 return either::unexpected{"invalid value"};
         }
