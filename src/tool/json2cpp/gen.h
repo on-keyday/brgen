@@ -73,8 +73,8 @@ namespace json2cpp {
                         }
                     }
                 }
-                else if (auto f = std::get_if<BitFields>(&field)) {
-                    if (auto res = generate_bit_field(*f); !res) {
+                else if (auto f = std::get_if<std::shared_ptr<BitFields>>(&field)) {
+                    if (auto res = generate_bit_field(*f->get()); !res) {
                         return res.transform(empty_void);
                     }
                 }

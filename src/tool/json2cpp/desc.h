@@ -17,8 +17,11 @@ namespace json2cpp {
             : type(type) {}
     };
 
+    struct BitFields;
+
     struct IntDesc : Desc {
         tool::IntDesc desc;
+        std::weak_ptr<BitFields> bit_field;
 
         constexpr IntDesc(tool::IntDesc desc)
             : Desc(DescType::int_), desc(desc) {}
@@ -97,9 +100,10 @@ namespace json2cpp {
         std::vector<std::shared_ptr<Field>> fields;
         size_t fixed_size = 0;
         size_t primitive_type = 0;
+        std::string base_name;
     };
 
-    using MergedField = std::variant<std::shared_ptr<Field>, BulkFields, BitFields>;
+    using MergedField = std::variant<std::shared_ptr<Field>, BulkFields, std::shared_ptr<BitFields>>;
 
     using MergedFields = std::vector<MergedField>;
 
@@ -197,32 +201,41 @@ namespace json2cpp {
                     m.push_back({std::move(fields[i])});
                     continue;
                 }
-                BitFields bit;
+                std::shared_ptr<BitFields> bit;
                 for (; i < fields.size(); i++) {
                     if (fields[i]->desc->type == DescType::int_) {
                         auto i_desc = static_cast<IntDesc*>(fields[i]->desc.get());
                         auto primitive = get_primitive_type(i_desc->desc.bit_size, i_desc->desc.is_signed);
                         if (primitive.empty()) {
-                            bit.fields.push_back({std::move(fields[i])});
-                            bit.fixed_size += i_desc->desc.bit_size;
+                            if (!bit) {
+                                bit = std::make_shared<BitFields>();
+                                bit->base_name = "flags";
+                            }
+                            i_desc->bit_field = bit;
+                            bit->base_name += "_" + fields[i]->base->ident->ident;
+                            bit->fields.push_back({std::move(fields[i])});
+                            bit->fixed_size += i_desc->desc.bit_size;
                             continue;
                         }
-                        else if (bit.fixed_size % 8 != 0) {
-                            bit.fields.push_back({std::move(fields[i])});
-                            bit.fixed_size += i_desc->desc.bit_size;
+                        else if (bit && bit->fixed_size % 8 != 0) {
+                            i_desc->bit_field = bit;
+                            bit->base_name += "_" + fields[i]->base->ident->ident;
+                            bit->fields.push_back({std::move(fields[i])});
+                            bit->fixed_size += i_desc->desc.bit_size;
                             continue;
                         }
                     }
                     break;
                 }
-                if (bit.fields.size()) {
-                    if (bit.fixed_size % 8 != 0) {
-                        return brgen::unexpect(brgen::error(bit.fields[0]->base->loc, "bit field is not byte aligned"));
+                if (bit) {
+                    if (bit->fixed_size % 8 != 0) {
+                        return brgen::unexpect(brgen::error(bit->fields[0]->base->loc, "bit field is not byte aligned"));
                     }
-                    if (bit.fixed_size > 64) {
-                        return brgen::unexpect(brgen::error(bit.fields[0]->base->loc, "bit field is too large"));
+                    if (bit->fixed_size > 64) {
+                        return brgen::unexpect(brgen::error(bit->fields[0]->base->loc, "bit field is too large"));
                     }
                     m.push_back({std::move(bit)});
+                    i--;
                     continue;
                 }
 

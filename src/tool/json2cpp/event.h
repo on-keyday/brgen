@@ -70,7 +70,7 @@ namespace json2cpp {
             return {};
         }
 
-        brgen::result<std::string> handle_encoder_int_length_related_std_vector(const std::shared_ptr<Field>& field, const std::shared_ptr<Field>& vec) {
+        brgen::result<std::string> handle_encoder_int_length_related_std_vector(const std::shared_ptr<Field>& len_field, const std::shared_ptr<Field>& vec) {
             auto desc = static_cast<VectorDesc*>(vec->desc.get());
             tool::Stringer s;
             auto tmp = tmp_len_of(vec->base->ident->ident);
@@ -81,7 +81,7 @@ namespace json2cpp {
                 .field_name = tmp,
                 .length = std::move(s.buffer),
             });
-            auto int_desc = static_cast<IntDesc*>(field->desc.get());
+            auto int_desc = static_cast<IntDesc*>(len_field->desc.get());
             config.includes.emplace("<limits>");
             events.push_back(AssertFalse{
                 .comment = "check overflow",
@@ -89,7 +89,7 @@ namespace json2cpp {
             });
             if (s.buffer != base) {
                 s.buffer.clear();
-                s.ident_map[field->base->ident->ident] = tmp;
+                s.ident_map[len_field->base->ident->ident] = tmp;
                 s.to_string(desc->desc.length);
                 events.push_back(AssertFalse{
                     .comment = "check truncated",
@@ -100,21 +100,21 @@ namespace json2cpp {
             return brgen::concat(type, "(", tmp, ")");
         }
 
-        brgen::result<std::string> handle_encoder_int_length_related_pointer(const std::shared_ptr<Field>& field, const std::shared_ptr<Field>& vec) {
+        brgen::result<std::string> handle_encoder_int_length_related_pointer(const std::shared_ptr<Field>& len_field, const std::shared_ptr<Field>& vec) {
             auto desc = static_cast<VectorDesc*>(vec->desc.get());
             tool::Stringer s;
             auto tmp = tmp_len_of(vec->base->ident->ident);
-            auto base = brgen::concat("size_t(", field->base->ident->ident, ")");
+            auto base = brgen::concat("size_t(", len_field->base->ident->ident, ")");
             std::shared_ptr<ast::Expr> length, check_length;
             if (config.asymmetric) {
-                s.ident_map[field->base->ident->ident] = tmp;
+                s.ident_map[len_field->base->ident->ident] = tmp;
                 s.tmp_var_map[0] = base;
                 length = desc->resolved_expr;
                 check_length = desc->desc.length;
             }
             else {
                 s.tmp_var_map[0] = tmp;
-                s.ident_map[field->base->ident->ident] = base;
+                s.ident_map[len_field->base->ident->ident] = base;
                 length = desc->desc.length;
                 check_length = desc->resolved_expr;
             }
@@ -123,7 +123,7 @@ namespace json2cpp {
                 .field_name = tmp,
                 .length = std::move(s.buffer),
             });
-            auto int_desc = static_cast<IntDesc*>(field->desc.get());
+            auto int_desc = static_cast<IntDesc*>(len_field->desc.get());
             config.includes.emplace("<limits>");
             events.push_back(AssertFalse{
                 .comment = "check overflow",
@@ -142,7 +142,7 @@ namespace json2cpp {
                 return brgen::concat(type, "(", tmp, ")");
             }
             else {
-                return field->base->ident->ident;
+                return len_field->base->ident->ident;
             }
         }
 
@@ -186,7 +186,7 @@ namespace json2cpp {
             return {};
         }
 
-        brgen::result<void> convert_bits(BitFields* f) {
+        brgen::result<void> convert_bits(const std::shared_ptr<BitFields>& f) {
             ApplyBits bits;
             auto primitive = get_primitive_type(ast::aligned_bit(f->fixed_size), false);
             bits.base_type = primitive;
@@ -208,8 +208,15 @@ namespace json2cpp {
             auto vec_desc = static_cast<VectorDesc*>(vec->desc.get());
             auto int_desc = static_cast<IntDesc*>(vec_desc->base_type.get());
             auto len_field = vec->length_related.lock();
+            auto len_desc = static_cast<IntDesc*>(len_field->desc.get());
             tool::Stringer s;
             auto tmp = tmp_len_of(vec->base->ident->ident);
+            if (auto bit = len_desc->bit_field.lock()) {
+                s.ident_map[len_field->base->ident->ident] = "this->" + len_field->base->ident->ident + "()";
+            }
+            else {
+                s.ident_map[len_field->base->ident->ident] = "this->" + len_field->base->ident->ident;
+            }
             s.to_string(vec_desc->desc.length);
             events.push_back(DefineLength{
                 .field_name = tmp,
@@ -279,8 +286,8 @@ namespace json2cpp {
                         return res.transform(empty_void);
                     }
                 }
-                else if (auto f = std::get_if<BitFields>(&field)) {
-                    if (auto res = convert_bits(f); !res) {
+                else if (auto f = std::get_if<std::shared_ptr<BitFields>>(&field)) {
+                    if (auto res = convert_bits(*f); !res) {
                         return res.transform(empty_void);
                     }
                 }
@@ -317,8 +324,8 @@ namespace json2cpp {
                         return res.transform(empty_void);
                     }
                 }
-                else if (auto f = std::get_if<BitFields>(&field)) {
-                    if (auto res = convert_bits(f); !res) {
+                else if (auto f = std::get_if<std::shared_ptr<BitFields>>(&field)) {
+                    if (auto res = convert_bits(*f); !res) {
                         return res.transform(empty_void);
                     }
                 }
