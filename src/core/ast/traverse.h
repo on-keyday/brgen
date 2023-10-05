@@ -51,6 +51,7 @@ namespace brgen::ast {
         CASE(TmpVar)
         CASE(BlockExpr)
         CASE(Import)
+        CASE(Cast)
 
         // stmt
         CASE(Stmt)
@@ -104,10 +105,6 @@ namespace brgen::ast {
 
     void traverse(auto&& t, auto&& fn) {
         Node* o = std::to_address(t);
-#define SWITCH   \
-    if (false) { \
-    }
-#define CASE(T) else if (T* v = as<T>(o))
         if (!o) {
             return;  // no traverse
         }

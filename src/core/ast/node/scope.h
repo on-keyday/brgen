@@ -129,8 +129,8 @@ namespace brgen::ast {
                         auto field = d.object();
                         auto ident = object.ident();
                         const auto node_type = object.node_type();
-                        field(sdebugf(node_type));
-                        field(sdebugf(ident));
+                        sdebugf(node_type);
+                        sdebugf(ident);
                     });
                 }
                 if (self.branch) {

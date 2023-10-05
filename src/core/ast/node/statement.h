@@ -31,11 +31,11 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Member::dump(field);
-            field(sdebugf(is_enum));
-            field(sdebugf(ident));
-            field(sdebugf(body));
-            field(sdebugf(belong));
-            field(sdebugf(struct_type));
+            sdebugf(is_enum);
+            sdebugf(ident);
+            sdebugf(body);
+            sdebugf(belong);
+            sdebugf(struct_type);
         }
     };
 
@@ -57,12 +57,12 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Member::dump(field);
-            field(sdebugf(ident));
-            field(sdebugf(colon_loc));
-            field(sdebugf(field_type));
-            field(sdebugf_omit(raw_arguments));
-            field(sdebugf(arguments));
-            field(sdebugf(belong));
+            sdebugf(ident);
+            sdebugf(colon_loc);
+            sdebugf(field_type);
+            sdebugf_omit(raw_arguments);
+            sdebugf(arguments);
+            sdebugf(belong);
         }
     };
 
@@ -85,12 +85,12 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Stmt::dump(field);
-            field(sdebugf(ident));
-            field(sdebugf(parameters));
-            field(sdebugf(return_type));
-            field(sdebugf(belong));
-            field(sdebugf(body));
-            field(sdebugf(func_type));
+            sdebugf(ident);
+            sdebugf(parameters);
+            sdebugf(return_type);
+            sdebugf(belong);
+            sdebugf(body);
+            sdebugf(func_type);
         }
     };
 
@@ -109,10 +109,10 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Stmt::dump(field);
-            field(sdebugf(init));
-            field(sdebugf(cond));
-            field(sdebugf(step));
-            field(sdebugf(body));
+            sdebugf(init);
+            sdebugf(cond);
+            sdebugf(step);
+            sdebugf(body);
         }
     };
 
@@ -128,7 +128,7 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Stmt::dump(field);
-            field(sdebugf(expr));
+            sdebugf(expr);
         }
     };
 

@@ -18,7 +18,7 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Expr::dump(field);
-            field(sdebugf(tmp_var));
+            sdebugf(tmp_var);
         }
     };
 
@@ -35,8 +35,8 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Expr::dump(field);
-            field(sdebugf(calls));
-            field(sdebugf(expr));
+            sdebugf(calls);
+            sdebugf(expr);
         }
     };
 
@@ -52,7 +52,7 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Stmt::dump(field);
-            field(sdebugf(cond));
+            sdebugf(cond);
         }
     };
 
@@ -68,7 +68,7 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Stmt::dump(field);
-            field(sdebugf(expr));
+            sdebugf(expr);
         }
     };
 
@@ -88,9 +88,9 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Expr::dump(field);
-            field(sdebugf(path));
-            field(sdebugf_omit(base));
-            field(sdebugf(import_desc));
+            sdebugf(path);
+            sdebugf_omit(base);
+            sdebugf(import_desc);
         }
     };
 
@@ -109,8 +109,8 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Expr::dump(field);
-            field(sdebugf_omit(base));
-            field(sdebugf(expr));
+            sdebugf_omit(base);
+            sdebugf(expr);
         }
     };
 

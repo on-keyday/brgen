@@ -73,9 +73,9 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Type::dump(field);
-            field(sdebugf(bit_size));
-            field(sdebugf(endian));
-            field(sdebugf(is_signed));
+            sdebugf(bit_size);
+            sdebugf(endian);
+            sdebugf(is_signed);
         }
     };
 
@@ -109,7 +109,7 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Type::dump(field);
-            field(sdebugf(base));
+            sdebugf(base);
         }
 
         IntLiteralType(const std::shared_ptr<IntLiteral>& ty)
@@ -133,7 +133,7 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Type::dump(field);
-            field(sdebugf(base));
+            sdebugf(base);
         }
     };
 
@@ -149,8 +149,8 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Type::dump(field);
-            field(sdebugf(ident));
-            field(sdebugf(base));
+            sdebugf(ident);
+            sdebugf(base);
         }
 
         // for decode
@@ -203,9 +203,9 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Type::dump(field);
-            field(sdebugf(end_loc));
-            field(sdebugf(base_type));
-            field(sdebugf(length));
+            sdebugf(end_loc);
+            sdebugf(base_type);
+            sdebugf(length);
         }
     };
 
@@ -223,8 +223,8 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Type::dump(field);
-            field(sdebugf(return_type));
-            field(sdebugf(parameters));
+            sdebugf(return_type);
+            sdebugf(parameters);
         }
     };
 
@@ -240,7 +240,7 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Type::dump(field);
-            field(sdebugf(fields));
+            sdebugf(fields);
         }
 
         std::shared_ptr<Member> lookup(std::string_view key) {
@@ -275,7 +275,7 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Type::dump(field);
-            field(sdebugf(fields));
+            sdebugf(fields);
         }
     };
 

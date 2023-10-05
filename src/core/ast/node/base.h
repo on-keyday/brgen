@@ -19,8 +19,8 @@ namespace brgen::ast {
         lexer::Loc loc;
 
         void dump(auto&& field) {
-            field(sdebugf(node_type));
-            field(sdebugf(loc));
+            sdebugf(node_type);
+            sdebugf(loc);
         }
 
        protected:
@@ -45,7 +45,7 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Node::dump(field);
-            field(sdebugf(expr_type));
+            sdebugf(expr_type);
         }
 
        protected:
@@ -93,8 +93,8 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Stmt::dump(field);
-            field(sdebugf(elements));
-            field(sdebugf(scope));
+            sdebugf(elements);
+            sdebugf(scope);
         }
     };
 
@@ -108,9 +108,9 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Node::dump(field);
-            field(sdebugf(struct_type));
-            field(sdebugf(elements));
-            field(sdebugf(global_scope));
+            sdebugf(struct_type);
+            sdebugf(elements);
+            sdebugf(global_scope);
         }
 
         Program()

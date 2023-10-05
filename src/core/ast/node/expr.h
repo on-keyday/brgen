@@ -63,10 +63,10 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Expr::dump(field);
-            field(sdebugf(ident));
-            field(sdebugf(usage));
-            field(sdebugf(base));
-            field(sdebugf(scope));
+            sdebugf(ident);
+            sdebugf(usage);
+            sdebugf(base);
+            sdebugf(scope);
         }
     };
 
@@ -83,10 +83,10 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Expr::dump(field);
-            field(sdebugf(callee));
-            field(sdebugf_omit(raw_arguments));
-            field(sdebugf(arguments));
-            field(sdebugf(end_loc));
+            sdebugf(callee);
+            sdebugf_omit(raw_arguments);
+            sdebugf(arguments);
+            sdebugf(end_loc);
         }
     };
 
@@ -103,8 +103,8 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Expr::dump(field);
-            field(sdebugf(expr));
-            field(sdebugf(end_loc));
+            sdebugf(expr);
+            sdebugf(end_loc);
         }
     };
 
@@ -123,9 +123,9 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Expr::dump(field);
-            field(sdebugf(cond));
-            field(sdebugf(then));
-            field(sdebugf(els));
+            sdebugf(cond);
+            sdebugf(then);
+            sdebugf(els);
         }
     };
 
@@ -147,8 +147,8 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Expr::dump(field);
-            field(sdebugf(op));
-            field(sdebugf(expr));
+            sdebugf(op);
+            sdebugf(expr);
         }
     };
 
@@ -171,9 +171,9 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Expr::dump(field);
-            field(sdebugf(op));
-            field(sdebugf(left));
-            field(sdebugf(right));
+            sdebugf(op);
+            sdebugf(left);
+            sdebugf(right);
         }
     };
 
@@ -192,9 +192,9 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Expr::dump(field);
-            field(sdebugf(op));
-            field(sdebugf(start));
-            field(sdebugf(end));
+            sdebugf(op);
+            sdebugf(start);
+            sdebugf(end);
         }
     };
 
@@ -206,9 +206,9 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Expr::dump(field);
-            field(sdebugf(target));
-            field(sdebugf(member));
-            field(sdebugf(member_loc));
+            sdebugf(target);
+            sdebugf(member);
+            sdebugf(member_loc);
         }
 
         MemberAccess(lexer::Loc l, std::shared_ptr<Expr>&& t, std::string&& n, lexer::Loc ml)
@@ -235,10 +235,10 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Expr::dump(field);
-            field(sdebugf(cond));
-            field(sdebugf(then));
-            field(sdebugf(els_loc));
-            field(sdebugf(els));
+            sdebugf(cond);
+            sdebugf(then);
+            sdebugf(els_loc);
+            sdebugf(els);
         }
     };
 
@@ -257,9 +257,9 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Expr::dump(field);
-            field(sdebugf(expr));
-            field(sdebugf(index));
-            field(sdebugf(end_loc));
+            sdebugf(expr);
+            sdebugf(index);
+            sdebugf(end_loc);
         }
     };
 
@@ -277,9 +277,9 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Stmt::dump(field);
-            field(sdebugf(cond));
-            field(sdebugf(sym_loc));
-            field(sdebugf(then));
+            sdebugf(cond);
+            sdebugf(sym_loc);
+            sdebugf(then);
         }
     };
 
@@ -297,9 +297,9 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Expr::dump(field);
-            field(sdebugf(cond));
-            field(sdebugf(branch));
-            field(sdebugf(scope));
+            sdebugf(cond);
+            sdebugf(branch);
+            sdebugf(scope);
         }
     };
 

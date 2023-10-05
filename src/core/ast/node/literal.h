@@ -21,7 +21,7 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Literal::dump(field);
-            field(sdebugf(value));
+            sdebugf(value);
         }
 
         IntLiteral(lexer::Loc l, std::string&& t)
@@ -45,7 +45,7 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Literal::dump(field);
-            field(sdebugf(value));
+            sdebugf(value);
         }
     };
 
@@ -55,7 +55,7 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Literal::dump(field);
-            field(sdebugf(value));
+            sdebugf(value);
         }
 
         BoolLiteral(lexer::Loc l, bool t)
