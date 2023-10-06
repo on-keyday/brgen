@@ -12,8 +12,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
-
-	"github.com/iancoleman/strcase"
 )
 
 type OrderedKey[T any] struct {
@@ -88,8 +86,8 @@ type Def interface {
 
 type Interface struct {
 	Name   string
-	Method string
 	Embed  string
+	Fields []*Field // common fields
 }
 
 func (d *Interface) def() {}
@@ -158,7 +156,13 @@ var (
 	array     = regexp.MustCompile("array<(.*)>")
 )
 
-func convertType(typ string, interfacesMap map[string]*Interface) *Type {
+type collector struct {
+	fieldCaseFn   func(string) string
+	typeCaseFn    func(string) string
+	interfacesMap map[string]*Interface
+}
+
+func (c *collector) convertType(typ string) *Type {
 	arrayMatch := array.FindStringSubmatch(typ)
 	isPtr := false
 	isArray := false
@@ -170,7 +174,7 @@ func convertType(typ string, interfacesMap map[string]*Interface) *Type {
 	sharedPtrMatch := sharedPtr.FindStringSubmatch(typ)
 	if len(sharedPtrMatch) > 0 {
 		typ = sharedPtrMatch[1]
-		if _, ok := interfacesMap[typ]; ok {
+		if _, ok := c.interfacesMap[typ]; ok {
 			isInterface = true
 		} else {
 			isPtr = true
@@ -179,14 +183,14 @@ func convertType(typ string, interfacesMap map[string]*Interface) *Type {
 	weakPtrMatch := weakPtr.FindStringSubmatch(typ)
 	if len(weakPtrMatch) > 0 {
 		typ = weakPtrMatch[1]
-		if _, ok := interfacesMap[typ]; ok {
+		if _, ok := c.interfacesMap[typ]; ok {
 			isInterface = true
 		} else {
 			isPtr = true
 		}
 	}
 	if typ != "string" && typ != "uint" && typ != "bool" && typ != "uintptr" {
-		typ = strcase.ToCamel(typ)
+		typ = c.typeCaseFn(typ)
 	}
 	if typ == "uint" {
 		typ = "uint64"
@@ -199,130 +203,170 @@ func convertType(typ string, interfacesMap map[string]*Interface) *Type {
 	}
 }
 
-func mapToStructFields(m OrderedKeyList[string], interfacesMap map[string]*Interface) (fields []*Field) {
+func (c *collector) mapToStructFields(m OrderedKeyList[string]) (fields []*Field) {
 	for _, kv := range m {
 		name := kv.Key
 		typ := kv.Value
 		field := Field{}
 		field.Tag = name
-		field.Name = strcase.ToCamel(name)
-		field.Type = convertType(typ, interfacesMap)
+		field.Name = c.fieldCaseFn(name)
+		field.Type = c.convertType(typ)
 		fields = append(fields, &field)
 	}
 	return
 }
 
-func mapOpsToEnumValues(ops []Op) (values []*EnumValue) {
+func (c *collector) mapOpsToEnumValues(ops []Op) (values []*EnumValue) {
 	for _, op := range ops {
 		value := EnumValue{}
-		value.Name = strcase.ToCamel(op.Name)
+		value.Name = c.fieldCaseFn(op.Name)
 		value.Str = op.Op
 		values = append(values, &value)
 	}
 	return
 }
 
-func mapStringsToEnumValues(strings []string) (values []*EnumValue) {
+func (c *collector) mapStringsToEnumValues(strings []string) (values []*EnumValue) {
 	for _, str := range strings {
 		value := EnumValue{}
-		value.Name = strcase.ToCamel(str)
+		value.Name = c.fieldCaseFn(str)
 		value.Str = str
 		values = append(values, &value)
 	}
 	return
 }
 
-func CollectDefinition(list *List) (defs []Def, err error) {
-	defs = make([]Def, 0)
-	var interfacesMap map[string]*Interface
+type Defs struct {
+	Defs       []Def
+	Interfaces map[string]*Interface
+	Structs    map[string]*Struct
+	Enums      map[string]*Enum
+}
 
-	interfacesMap = make(map[string]*Interface)
+func (d *Defs) push(def Def) {
+	d.Defs = append(d.Defs, def)
+	switch def := def.(type) {
+	case *Interface:
+		d.Interfaces[def.Name] = def
+	case *Struct:
+		d.Structs[def.Name] = def
+	case *Enum:
+		d.Enums[def.Name] = def
+	}
+}
+
+func CollectDefinition(list *List, fieldCaseFn func(string) string, typeCaseFn func(string) string) (defs *Defs, err error) {
+	defs = &Defs{
+		Interfaces: make(map[string]*Interface),
+		Structs:    make(map[string]*Struct),
+		Enums:      make(map[string]*Enum),
+	}
+	defs.Defs = make([]Def, 0)
+	c := collector{
+		fieldCaseFn:   fieldCaseFn,
+		typeCaseFn:    typeCaseFn,
+		interfacesMap: make(map[string]*Interface),
+	}
 
 	// collect interface
 	for _, node := range list.Node {
 		if len(node.OneOf) > 0 {
-			name := strcase.ToCamel(node.NodeType)
+			name := c.typeCaseFn(node.NodeType)
 			iface := &Interface{
-				Name:   name,
-				Method: "is" + name,
+				Name: name,
 			}
 			if len(node.BaseNodeType) > 0 {
-				iface.Embed = strcase.ToCamel(node.BaseNodeType[0])
+				iface.Embed = c.typeCaseFn(node.BaseNodeType[0])
 			}
-			defs = append(defs, iface)
-			interfacesMap[node.NodeType] = iface
+			for _, field := range node.Body {
+				iface.Fields = append(iface.Fields, &Field{
+					Name: c.fieldCaseFn(field.Key),
+					Type: c.convertType(field.Value),
+					Tag:  field.Key,
+				})
+			}
+			defs.push(iface)
+			c.interfacesMap[node.NodeType] = iface
 		}
 	}
 
 	// collect struct
 	for _, node := range list.Node {
 		if len(node.OneOf) > 0 {
+			iface := c.interfacesMap[node.NodeType]
+			for _, field := range node.Body {
+				iface.Fields = append(iface.Fields, &Field{
+					Name: c.fieldCaseFn(field.Key),
+					Type: c.convertType(field.Value),
+					Tag:  field.Key,
+				})
+			}
 			continue
 		}
 		var body Struct
 		body.NodeType = node.NodeType
-		body.Name = strcase.ToCamel(node.NodeType)
+		body.Name = c.typeCaseFn(node.NodeType)
 		if len(node.BaseNodeType) > 0 {
 			body.Implements = make([]string, len(node.BaseNodeType))
 			for i, base := range node.BaseNodeType {
-				body.Implements[i] = "is" + strcase.ToCamel(base)
+				body.Implements[i] = c.typeCaseFn(base)
 			}
 		}
 
 		body.Fields = make([]*Field, 0, len(node.Body)+1)
 
-		body.Fields = mapToStructFields(node.Body, interfacesMap)
+		body.Fields = c.mapToStructFields(node.Body)
 
 		// add loc field
 		loc := Field{}
 		loc.Name = "Loc"
 		loc.Type = &Type{Name: "Loc"}
-		loc.Tag = "`json:\"loc\"`"
+		loc.Tag = "loc"
 		body.Fields = append(body.Fields, &loc)
 
-		defs = append(defs, &body)
+		defs.push(&body)
 	}
 
 	//generate enum mapping of unary_op, binary_op, ident_usage, endian
 	enum := &Enum{}
 	enum.Name = "UnaryOp"
-	enum.Values = mapOpsToEnumValues(list.UnaryOp)
-	defs = append(defs, enum)
+	enum.Values = c.mapOpsToEnumValues(list.UnaryOp)
+	defs.push(enum)
 
 	enum = &Enum{}
 	enum.Name = "BinaryOp"
-	enum.Values = mapOpsToEnumValues(list.BinaryOp)
-	defs = append(defs, enum)
+	enum.Values = c.mapOpsToEnumValues(list.BinaryOp)
+	defs.push(enum)
 
 	enum = &Enum{}
 	enum.Name = "IdentUsage"
-	enum.Values = mapStringsToEnumValues(list.IdentUsage)
-	defs = append(defs, enum)
+	enum.Values = c.mapStringsToEnumValues(list.IdentUsage)
+	defs.push(enum)
 
 	enum = &Enum{}
 	enum.Name = "Endian"
-	enum.Values = mapStringsToEnumValues(list.Endian)
-	defs = append(defs, enum)
+	enum.Values = c.mapStringsToEnumValues(list.Endian)
+	defs.push(enum)
 
 	// scope definition
 	scope := Struct{}
 	scope.Name = "Scope"
-	scope.Fields = mapToStructFields(list.Scope, interfacesMap)
-	defs = append(defs, &scope)
+	scope.Fields = c.mapToStructFields(list.Scope)
+	defs.push(&scope)
 
 	// loc definition
 	loc := Struct{}
 	loc.Name = "Loc"
 	loc.Fields = make([]*Field, 0, len(list.Loc))
-	loc.Fields = mapToStructFields(list.Loc, interfacesMap)
-	defs = append(defs, &loc)
+	loc.Fields = c.mapToStructFields(list.Loc)
+	defs.push(&loc)
 
 	// pos definition
 	pos := Struct{}
 	pos.Name = "Pos"
 	pos.Fields = make([]*Field, 0, len(list.Pos))
-	pos.Fields = mapToStructFields(list.Pos, interfacesMap)
-	defs = append(defs, &pos)
+	pos.Fields = c.mapToStructFields(list.Pos)
+	defs.push(&pos)
 
 	return
 }
