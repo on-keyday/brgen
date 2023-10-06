@@ -61,10 +61,11 @@ namespace brgen::ast {
         }
 
         void dump_base_type(auto&& field, NodeType type) {
-            const char* vec[5]{};
+            const char* vec[6]{};
             size_t i = 0;
             auto t = int(type);
             auto is = [&](auto v) { return (t & int(v)) == int(v); };
+
             if (is(NodeType::literal)) {
                 vec[i++] = "literal";
             }
@@ -80,21 +81,21 @@ namespace brgen::ast {
             if (is(NodeType::type)) {
                 vec[i++] = "type";
             }
-            if (i != 0) {
-                struct {
-                    const char* const* start;
-                    const char* const* finish;
+            vec[i++] = "node";
 
-                    const char* const* begin() const {
-                        return start;
-                    }
+            struct {
+                const char* const* start;
+                const char* const* finish;
 
-                    const char* const* end() const {
-                        return finish;
-                    }
-                } p{vec, vec + i};
-                field("base_node_type", p);
-            }
+                const char* const* begin() const {
+                    return start;
+                }
+
+                const char* const* end() const {
+                    return finish;
+                }
+            } p{vec, vec + i};
+            field("base_node_type", p);
         }
 
         template <class T>
