@@ -5,12 +5,21 @@
 namespace brgen::middle {
 
     void resolve_cast(const std::shared_ptr<ast::Node>& node) {
-        traverse(node, [](auto&& node) {
-            if (auto cast = std::dynamic_pointer_cast<ast::Cast>(node)) {
-                if (cast->expr->expr_type->node_type_tag == ast::NodeType::type) {
-                    cast->expr->expr_type = cast->type;
+        auto f = [](auto&& f, auto& node) -> void {
+            ast::traverse(node, [&](auto& n) {
+                f(f, n);
+            });
+            using T = std::decay_t<decltype(node)>;
+            using P = typename utils::helper::template_of_t<T>::template param_at<0>;
+            if constexpr (std::is_base_of<P, ast::Call>) {
+                if (ast::Call* p = ast::as<ast::Call>(node)) {
+                    if (p->callee->expr_type != ast::NodeType::ident) {
+                    }
                 }
             }
+        };
+        traverse(node, [&](auto& n) {
+            f(f, n);
         });
     }
 }  // namespace brgen::middle
