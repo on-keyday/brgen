@@ -85,9 +85,10 @@ type Def interface {
 }
 
 type Interface struct {
-	Name   string
-	Embed  string
-	Fields []*Field // common fields
+	Name    string
+	Embed   string
+	Fields  []*Field // common fields
+	Derived []string
 }
 
 func (d *Interface) def() {}
@@ -108,6 +109,14 @@ func (d *Type) String() string {
 		prefix += "*"
 	}
 	return prefix + d.Name
+}
+
+func (d *Type) TsString() string {
+	postfix := ""
+	if d.IsArray {
+		postfix += "[]"
+	}
+	return d.Name + postfix
 }
 
 func (d *Type) UintptrString() string {
@@ -159,6 +168,7 @@ var (
 type collector struct {
 	fieldCaseFn   func(string) string
 	typeCaseFn    func(string) string
+	primitiveMap  map[string]string
 	interfacesMap map[string]*Interface
 }
 
@@ -191,9 +201,10 @@ func (c *collector) convertType(typ string) *Type {
 	}
 	if typ != "string" && typ != "uint" && typ != "bool" && typ != "uintptr" {
 		typ = c.typeCaseFn(typ)
-	}
-	if typ == "uint" {
-		typ = "uint64"
+	} else {
+		if prim, ok := c.primitiveMap[typ]; ok {
+			typ = prim
+		}
 	}
 	return &Type{
 		Name:        typ,
@@ -237,6 +248,7 @@ func (c *collector) mapStringsToEnumValues(strings []string) (values []*EnumValu
 }
 
 type Defs struct {
+	NodeTypes  []string
 	Defs       []Def
 	Interfaces map[string]*Interface
 	Structs    map[string]*Struct
@@ -255,8 +267,9 @@ func (d *Defs) push(def Def) {
 	}
 }
 
-func CollectDefinition(list *List, fieldCaseFn func(string) string, typeCaseFn func(string) string) (defs *Defs, err error) {
+func CollectDefinition(list *List, fieldCaseFn func(string) string, typeCaseFn func(string) string, primitiveMap map[string]string) (defs *Defs, err error) {
 	defs = &Defs{
+		NodeTypes:  make([]string, 0, len(list.Node)),
 		Interfaces: make(map[string]*Interface),
 		Structs:    make(map[string]*Struct),
 		Enums:      make(map[string]*Enum),
@@ -266,10 +279,12 @@ func CollectDefinition(list *List, fieldCaseFn func(string) string, typeCaseFn f
 		fieldCaseFn:   fieldCaseFn,
 		typeCaseFn:    typeCaseFn,
 		interfacesMap: make(map[string]*Interface),
+		primitiveMap:  primitiveMap,
 	}
 
 	// collect interface
 	for _, node := range list.Node {
+		defs.NodeTypes = append(defs.NodeTypes, node.NodeType)
 		if len(node.OneOf) > 0 {
 			name := c.typeCaseFn(node.NodeType)
 			iface := &Interface{
@@ -278,12 +293,8 @@ func CollectDefinition(list *List, fieldCaseFn func(string) string, typeCaseFn f
 			if len(node.BaseNodeType) > 0 {
 				iface.Embed = c.typeCaseFn(node.BaseNodeType[0])
 			}
-			for _, field := range node.Body {
-				iface.Fields = append(iface.Fields, &Field{
-					Name: c.fieldCaseFn(field.Key),
-					Type: c.convertType(field.Value),
-					Tag:  field.Key,
-				})
+			for _, oneof := range node.OneOf {
+				iface.Derived = append(iface.Derived, c.typeCaseFn(oneof))
 			}
 			defs.push(iface)
 			c.interfacesMap[node.NodeType] = iface
@@ -301,6 +312,11 @@ func CollectDefinition(list *List, fieldCaseFn func(string) string, typeCaseFn f
 					Tag:  field.Key,
 				})
 			}
+			iface.Fields = append(iface.Fields, &Field{
+				Name: c.fieldCaseFn("Loc"),
+				Type: &Type{Name: c.typeCaseFn("Loc")},
+				Tag:  "loc",
+			})
 			continue
 		}
 		var body Struct
@@ -319,8 +335,8 @@ func CollectDefinition(list *List, fieldCaseFn func(string) string, typeCaseFn f
 
 		// add loc field
 		loc := Field{}
-		loc.Name = "Loc"
-		loc.Type = &Type{Name: "Loc"}
+		loc.Name = c.fieldCaseFn("Loc")
+		loc.Type = &Type{Name: c.typeCaseFn("Loc")}
 		loc.Tag = "loc"
 		body.Fields = append(body.Fields, &loc)
 

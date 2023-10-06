@@ -276,6 +276,7 @@ func generate(w io.Writer, list *gen.Defs) {
 	}
 	writer.Printf("	}\n")
 	writer.Printf("}\n\n")
+
 }
 
 func main() {
@@ -295,7 +296,9 @@ func main() {
 		return
 	}
 
-	defs, err := gen.CollectDefinition(list, strcase.ToCamel, strcase.ToCamel)
+	defs, err := gen.CollectDefinition(list, strcase.ToCamel, strcase.ToCamel, map[string]string{
+		"uint": "uint64",
+	})
 	if err != nil {
 		log.Println(err)
 		return
