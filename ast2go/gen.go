@@ -11,11 +11,11 @@ import (
 )
 
 type Generator struct {
-	Config
+	Config GenConfig
 	Output io.Writer
 }
 
-type Config struct {
+type GenConfig struct {
 	PackageName string
 	ImportPath  []string
 }
@@ -29,10 +29,10 @@ func (c *ConfigDesc) String() string {
 }
 
 func GetConfig(m Node) string {
-	if _, ok := m.(*ConfigNode); ok {
+	if _, ok := m.(*Config); ok {
 		return "config"
 	}
-	member, ok := m.(*MemberAccessNode)
+	member, ok := m.(*MemberAccess)
 	if !ok {
 		return ""
 	}
@@ -67,13 +67,13 @@ func ConvertAst(n Node) ast.Node {
 	}
 
 	switch n := n.(type) {
-	case *BinaryNode:
+	case *Binary:
 		return &ast.BinaryExpr{
 			X:  ConvertAst(n.Left).(ast.Expr),
-			Op: mapToken(n.Op),
+			Op: mapToken(n.Op.String()),
 			Y:  ConvertAst(n.Right).(ast.Expr),
 		}
-	case *BoolLiteralNode:
+	case *BoolLiteral:
 		if n.Value {
 			return &ast.Ident{
 				Name: "true",
@@ -83,11 +83,11 @@ func ConvertAst(n Node) ast.Node {
 				Name: "false",
 			}
 		}
-	case *IdentNode:
+	case *Ident:
 		return &ast.Ident{
-			Name: n.Name,
+			Name: n.Ident,
 		}
-	case *StringLiteralNode:
+	case *StrLiteral:
 		return &ast.BasicLit{
 			Kind:  token.STRING,
 			Value: n.Value,
@@ -110,19 +110,19 @@ func evalConstant(e ast.Expr) constant.Value {
 
 func (g *Generator) lookupGoConfig(prog *Program) {
 	for _, element := range prog.Elements {
-		if c, ok := element.(*CallNode); ok {
+		if c, ok := element.(*Call); ok {
 			config := GetConfig(c.Callee)
 			if config == "" {
 				continue
 			}
 			if config == "config.go.import" {
-				expr := ConvertAst(c.Args[0]).(ast.Expr)
+				expr := ConvertAst(c.Arguments[0]).(ast.Expr)
 				path := evalConstant(expr)
 				g.Config.ImportPath = append(g.Config.ImportPath, path.String())
 			}
 		}
-		if b, ok := element.(*BinaryNode); ok {
-			if b.Op != "=" {
+		if b, ok := element.(*Binary); ok {
+			if b.Op != BinaryOpEqual {
 				continue
 			}
 			config := GetConfig(b.Left)
@@ -135,7 +135,7 @@ func (g *Generator) lookupGoConfig(prog *Program) {
 				g.Config.PackageName = pkgName.String()
 			}
 		}
-		if i, ok := element.(*ImportNode); ok {
+		if i, ok := element.(*Import); ok {
 			g.lookupGoConfig(i.ImportDesc)
 		}
 	}

@@ -64,7 +64,7 @@ namespace brgen::ast {
             const char* vec[6]{};
             size_t i = 0;
             auto t = int(type);
-            auto is = [&](auto v) { return (t & int(v)) == int(v); };
+            auto is = [&](auto v) { return t != int(v) && (t & int(v)) == int(v); };
 
             if (is(NodeType::literal)) {
                 vec[i++] = "literal";
@@ -99,7 +99,7 @@ namespace brgen::ast {
         }
 
         template <class T>
-        void list_base_type(auto&& field) {
+        void list_derive_type(auto&& field) {
             const char* vec[node_type_count]{};
             size_t i = 0;
             for (size_t j = 0; j < node_type_count; j++) {
@@ -138,7 +138,7 @@ namespace brgen::ast {
     void node_type_list(auto&& objdump, bool flat = false, bool dump_base = true) {
         objdump([&](auto&& field) {
             field("node_type", "node");
-            internal::list_base_type<Node>(field);
+            internal::list_derive_type<Node>(field);
         });
         for (size_t i = 0; i < node_type_count; i++) {
             get_node(*mapValueToNodeType(i), [&](auto node) {
@@ -235,7 +235,10 @@ namespace brgen::ast {
                 else {
                     objdump([&](auto&& field) {
                         field("node_type", node_type_to_string(T::node_type_tag));
-                        internal::list_base_type<T>(field);
+                        if (dump_base) {
+                            internal::dump_base_type(field, T::node_type_tag);
+                        }
+                        internal::list_derive_type<T>(field);
                     });
                 }
             });
