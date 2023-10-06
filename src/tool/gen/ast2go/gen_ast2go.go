@@ -316,5 +316,10 @@ func main() {
 	}
 	defer f.Close()
 
+	if file == "/dev/stdout" {
+		generate(os.Stdout, defs)
+		return
+	}
+
 	generate(f, defs)
 }
