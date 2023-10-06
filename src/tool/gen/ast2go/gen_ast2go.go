@@ -1,13 +1,10 @@
 package main
 
 import (
-	"encoding/json"
 	"io"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"runtime"
 
 	"github.com/on-keyday/brgen/src/tool/gen"
 )
@@ -292,38 +289,9 @@ func main() {
 	file := os.Args[1]
 
 	log.SetFlags(log.Flags() | log.Lshortfile)
-	// execute command in executable directory (not current directory)
-	//get executable directory
-	path, err := os.Executable()
-	if err != nil {
-		log.Println(err)
-		return
-	}
 
-	// exec "{path}/src2json --dump-ast" with exec package
-	path = filepath.Join(filepath.Dir(path), "src2json")
+	list, err := gen.LoadFromDefaultSrc2JSON()
 
-	if runtime.GOOS == "windows" {
-		path += ".exe"
-	}
-
-	cmd := exec.Command(path, "--dump-ast", "--dump-enum-name")
-
-	// get stdout
-	stdout, err := cmd.StdoutPipe()
-	err = cmd.Start()
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	list := &gen.List{}
-	err = json.NewDecoder(stdout).Decode(list)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	err = cmd.Wait()
 	if err != nil {
 		log.Println(err)
 		return

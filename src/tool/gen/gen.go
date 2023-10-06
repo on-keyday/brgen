@@ -3,9 +3,15 @@ package gen
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"log"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"regexp"
+	"runtime"
 
 	"github.com/iancoleman/strcase"
 )
@@ -335,4 +341,56 @@ func (w *Writer) Printf(format string, args ...interface{}) {
 
 func NewWriter(w io.Writer) *Writer {
 	return &Writer{w: w}
+}
+
+func LoadFromJSON(r io.Reader) (list *List, err error) {
+	list = &List{}
+	err = json.NewDecoder(r).Decode(list)
+	return
+}
+
+func LoadFromSrc2JSON(src2json string) (list *List, err error) {
+	cmd := exec.Command(src2json, "--dump-ast", "--dump-enum-name")
+	// get stdout
+	stdout, err := cmd.StdoutPipe()
+	err = cmd.Start()
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if e := cmd.Wait(); e != nil {
+			err = errors.Join(err, e)
+		}
+	}()
+	list, err = LoadFromJSON(stdout)
+	if err != nil {
+		return nil, err
+	}
+	return
+}
+
+func DefaultSrc2JSONLocation() (path string, err error) {
+	// execute command in executable directory (not current directory)
+	//get executable directory
+	path, err = os.Executable()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	// exec "{path}/src2json --dump-ast" with exec package
+	path = filepath.Join(filepath.Dir(path), "src2json")
+
+	if runtime.GOOS == "windows" {
+		path += ".exe"
+	}
+	return
+}
+
+func LoadFromDefaultSrc2JSON() (list *List, err error) {
+	path, err := DefaultSrc2JSONLocation()
+	if err != nil {
+		return nil, err
+	}
+	return LoadFromSrc2JSON(path)
 }
