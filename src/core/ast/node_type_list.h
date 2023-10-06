@@ -130,7 +130,8 @@ namespace brgen::ast {
     constexpr auto scope_type_list = R"({"prev": "weak_ptr<scope>","next": "shared_ptr<scope>","branch": "shared_ptr<scope>","ident": "array<std::weak_ptr<node>>"})";
     constexpr auto scope_type_ast_mode_list = R"({"prev": "uintptr","next": "uintptr","branch": "uintptr","ident": "array<uintptr>"})";
 
-    constexpr auto loc_type = R"({"pos": {"begin": "uint","end": "uint"},"file": "uint","line": "uint","col": "uint"})";
+    constexpr auto loc_type = R"({"pos": "pos","file": "uint","line": "uint","col": "uint"})";
+    constexpr auto pos_type = R"({"begin": "uint","end": "uint"})";
 
     template <bool ast_mode = false>
     void node_type_list(auto&& objdump, bool flat = false, bool dump_base = true) {
@@ -148,7 +149,7 @@ namespace brgen::ast {
                             t.dump([&](std::string_view key, auto& v) {
                                 using P = std::decay_t<decltype(v)>;
                                 if constexpr (std::is_same_v<P, NodeType>) {
-                                    if (!flat) {
+                                    if (flat) {
                                         field(key, node_type_to_string(T::node_type_tag));
                                         if (dump_base) {
                                             internal::dump_base_type(field, T::node_type_tag);
@@ -165,7 +166,7 @@ namespace brgen::ast {
                                     field(key, "string");
                                 }
                                 else if constexpr (std::is_same_v<P, lexer::Loc>) {
-                                    if (!flat || key != "loc") {
+                                    if (flat || key != "loc") {
                                         field(key, "loc");
                                     }
                                 }
@@ -240,7 +241,7 @@ namespace brgen::ast {
         }
     }
 
-    void custom_type_mapping(auto&& field, bool ast_mode = false) {
+    void custom_type_mapping(auto&& field, bool ast_mode = false, bool enum_name = false) {
         struct R {
             const char* const* start;
             const char* const* finish;
@@ -255,11 +256,39 @@ namespace brgen::ast {
         };
         {
             R p{unary_op_str, unary_op_str + unary_op_count};
-            field("unary_op", p);
+            if (enum_name) {
+                field("unary_op", [&](auto&& d) {
+                    auto field = d.array();
+                    for (size_t i = 0; i < unary_op_count; i++) {
+                        field([&](auto&& d) {
+                            auto field = d.object();
+                            field("op", unary_op_str[i]);
+                            field("name", unary_op_name[i]);
+                        });
+                    }
+                });
+            }
+            else {
+                field("unary_op", p);
+            }
         }
         {
             R p{bin_op_list, bin_op_list + bin_op_count};
-            field("binary_op", p);
+            if (enum_name) {
+                field("binary_op", [&](auto&& d) {
+                    auto field = d.array();
+                    for (size_t i = 0; i < bin_op_count; i++) {
+                        field([&](auto&& d) {
+                            auto field = d.object();
+                            field("op", bin_op_list[i]);
+                            field("name", bin_op_name[i]);
+                        });
+                    }
+                });
+            }
+            else {
+                field("binary_op", p);
+            }
         }
         {
             R p{ident_usage_str, ident_usage_str + ident_usage_count};
@@ -276,5 +305,6 @@ namespace brgen::ast {
             field("scope", utils::json::RawJSON<const char*>{scope_type_list});
         }
         field("loc", utils::json::RawJSON<const char*>{brgen::ast::loc_type});
+        field("pos", utils::json::RawJSON<const char*>{brgen::ast::pos_type});
     }
 }  // namespace brgen::ast

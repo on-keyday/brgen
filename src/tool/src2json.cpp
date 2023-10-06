@@ -18,7 +18,7 @@ struct Flags : utils::cmdline::templ::HelpOption {
     bool lexer = false;
     bool not_resolve_import = false;
     bool check_ast = false;
-    bool dump_types = false;
+    bool dump_ast = false;
     bool not_resolve_type = false;
     bool disable_untyped_warning = false;
     bool print_json = false;
@@ -26,6 +26,7 @@ struct Flags : utils::cmdline::templ::HelpOption {
     bool dump_ptr_as_uintptr = false;
     bool flat = false;
     bool not_dump_base = false;
+    bool dump_enum_name = false;
 
     void bind(utils::cmdline::option::Context& ctx) {
         bind_help(ctx);
@@ -36,10 +37,11 @@ struct Flags : utils::cmdline::templ::HelpOption {
         ctx.VarBool(&disable_untyped_warning, "u,disable-untyped", "disable untyped warning");
         ctx.VarBool(&print_json, "p,print-json", "print json of ast/tokens to stdout if succeeded (if stdout is tty. if not tty, usually print json ast)");
         ctx.VarBool(&debug_json, "d,debug-json", "debug mode json output (not parsable ast, only for debug. use with --print-ast)");
-        ctx.VarBool(&dump_types, "dump-ast", "dump ast types schema mode");
+        ctx.VarBool(&dump_ast, "dump-ast", "dump ast types schema mode");
         ctx.VarBool(&dump_ptr_as_uintptr, "dump-uintptr", "make pointer type of ast field uintptr (use with --dump-ast)");
         ctx.VarBool(&flat, "dump-flat", "dump ast schema with flat body (use with --dump-ast)");
         ctx.VarBool(&not_dump_base, "not-dump-base", "not dump ast schema with base type (use with --dump-ast)");
+        ctx.VarBool(&dump_enum_name, "dump-enum-name", "dump enum name of operator (use with --dump-ast)");
     }
 };
 auto& cout = utils::wrap::cout_wrap();
@@ -91,7 +93,7 @@ int check_ast(std::string_view name) {
     return 0;
 }
 
-int node_list(bool dump_uintptr, bool flat, bool not_dump_base) {
+int node_list(bool dump_uintptr, bool flat, bool not_dump_base, bool dump_enum_name) {
     brgen::JSONWriter d;
     {
         auto field = d.object();
@@ -112,7 +114,7 @@ int node_list(bool dump_uintptr, bool flat, bool not_dump_base) {
                 brgen::ast::node_type_list(list, flat, !not_dump_base);
             }
         });
-        brgen::ast::custom_type_mapping(field, dump_uintptr);
+        brgen::ast::custom_type_mapping(field, dump_uintptr, dump_enum_name);
     }
     cout << d.out();
     if (cout.is_tty()) {
@@ -124,8 +126,8 @@ int node_list(bool dump_uintptr, bool flat, bool not_dump_base) {
 int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     utils::wrap::out_virtual_terminal = true;
 
-    if (flags.dump_types) {
-        return node_list(flags.dump_types, flags.flat, flags.not_dump_base);
+    if (flags.dump_ast) {
+        return node_list(flags.dump_ptr_as_uintptr, flags.flat, flags.not_dump_base, flags.dump_enum_name);
     }
 
     if (flags.args.size() == 0) {

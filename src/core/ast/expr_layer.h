@@ -10,6 +10,7 @@ namespace brgen::ast {
     };
 
     constexpr const char* unary_op_str[] = {"!", "-", nullptr};
+    constexpr const char* unary_op_name[] = {"not", "minus_sign", nullptr};
 
     constexpr auto unary_op_count = 2;
 
@@ -106,6 +107,19 @@ namespace brgen::ast {
         "..", "..=",
         "=", ":=", "::=", "+=", "-=", "*=", "/=", "%=", "<<=", ">>=", "&=", "|=", "^=",
         ",",
+        nullptr,
+    };
+
+    constexpr const char* bin_op_name[]={
+        "mul", "div", "mod", "left_arithmetic_shift", "right_arithmetic_shift", "left_logical_shift", "right_logical_shift","bit_and",
+        "add", "sub", "bit_or", "bit_xor",
+        "equal", "not_equal", "less", "less_or_eq", "grater", "grater_or_eq",
+        "logical_and",
+        "logical_or",
+        "cond_op1", "cond_op2",
+        "range_exclusive", "range_inclusive",
+        "assign", "define_assign", "const_assign", "add_assign", "sub_assign", "mul_assign", "div_assign", "mod_assign", "left_shift_assign", "right_shift_assign", "bit_and_assign", "bit_or_assign", "bit_xor_assign",
+        "comma",
         nullptr,
     };
     // clang-format on
