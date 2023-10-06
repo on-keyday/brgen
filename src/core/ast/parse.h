@@ -84,6 +84,7 @@ namespace brgen::ast {
             while (!s.eos()) {
                 auto expr = parse_statement();
                 prog->elements.push_back(std::move(expr));
+                s.shrink();
                 s.skip_white();
             }
             return prog;
@@ -634,39 +635,6 @@ namespace brgen::ast {
             }
             for_->body = parse_indent_block();
             return for_;
-        }
-
-        struct IntTypeDesc {
-            size_t bit_size = 0;
-            Endian endian = Endian::unspec;
-            bool is_signed = false;
-        };
-
-        std::optional<IntTypeDesc> is_int_type(std::string_view str) {
-            IntTypeDesc desc;
-            if (str.starts_with("ub") || str.starts_with("ul") ||
-                str.starts_with("sb") || str.starts_with("sl")) {
-                desc.endian = str[1] == 'b' ? Endian::big : Endian::little;
-                desc.is_signed = str[0] == 's';
-                str = str.substr(2);
-            }
-            else if (str.starts_with("u") || str.starts_with("s")) {
-                desc.is_signed = str[0] == 's';
-                str = str.substr(1);
-            }
-            else {
-                return std::nullopt;
-            }
-            // Check if the string starts with 'u' or 'b' and has a valid unsigned integer
-            size_t value = 0;
-            if (!utils::number::parse_integer(str, value)) {
-                return std::nullopt;
-            }
-            if (value == 0) {  // u0 is not valid
-                return std::nullopt;
-            }
-            desc.bit_size = value;
-            return desc;
         }
 
         // fn (a :int,b :int) -> int

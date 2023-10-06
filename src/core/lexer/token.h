@@ -65,4 +65,15 @@ namespace brgen::lexer {
         Loc loc;
     };
 
+    constexpr void as_json(Tag tag, auto&& buf) {
+        buf.string(tag_str[int(tag)]);
+    }
+
+    constexpr void as_json(const Token& token, auto&& buf) {
+        auto field = buf.object();
+        field("tag", token.tag);
+        field("token", token.token);
+        field("loc", token.loc);
+    }
+
 }  // namespace brgen::lexer

@@ -25,11 +25,7 @@ namespace brgen::ast::tool {
         return std::nullopt;
     }
 
-    struct IntDesc {
-        size_t bit_size = 0;
-        bool is_signed = false;
-        Endian endian = Endian::unspec;
-    };
+    using IntDesc = ast::IntTypeDesc;
 
     inline std::optional<IntDesc> is_int_type(auto&& typ) {
         if (auto i = ast::as<IntType>(typ)) {

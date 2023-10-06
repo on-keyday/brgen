@@ -15,12 +15,13 @@
 
 struct Flags : utils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
+    bool lexer = false;
     bool not_resolve_import = false;
     bool check_ast = false;
     bool dump_types = false;
     bool not_resolve_type = false;
     bool disable_untyped_warning = false;
-    bool print_ast = false;
+    bool print_json = false;
     bool debug_json = false;
     bool dump_ptr_as_uintptr = false;
     bool flat = false;
@@ -28,11 +29,12 @@ struct Flags : utils::cmdline::templ::HelpOption {
 
     void bind(utils::cmdline::option::Context& ctx) {
         bind_help(ctx);
+        ctx.VarBool(&lexer, "l,lexer", "lexer mode");
         ctx.VarBool(&not_resolve_import, "not-resolve-import", "not resolve import");
         ctx.VarBool(&check_ast, "c,check-ast", "check ast mode");
         ctx.VarBool(&not_resolve_type, "not-resolve-type", "not resolve type");
         ctx.VarBool(&disable_untyped_warning, "u,disable-untyped", "disable untyped warning");
-        ctx.VarBool(&print_ast, "p,print-ast", "print ast to stdout if succeeded (if stdout is tty. if not tty, usually print json ast)");
+        ctx.VarBool(&print_json, "p,print-json", "print json of ast/tokens to stdout if succeeded (if stdout is tty. if not tty, usually print json ast)");
         ctx.VarBool(&debug_json, "d,debug-json", "debug mode json output (not parsable ast, only for debug. use with --print-ast)");
         ctx.VarBool(&dump_types, "dump-ast", "dump ast types schema mode");
         ctx.VarBool(&dump_ptr_as_uintptr, "dump-uintptr", "make pointer type of ast field uintptr (use with --dump-ast)");
@@ -42,10 +44,24 @@ struct Flags : utils::cmdline::templ::HelpOption {
 };
 auto& cout = utils::wrap::cout_wrap();
 
+auto print_ok() {
+    cout << utils::wrap::packln("src2json: ", cse::letter_color<cse::ColorPalette::green>, "ok", cse::color_reset);
+}
+
 auto do_parse(brgen::File* file) {
     brgen::ast::Context c;
     return c.enter_stream(file, [&](brgen::ast::Stream& s) {
         return brgen::ast::Parser{s}.parse();
+    });
+}
+
+auto do_lex(brgen::File* file) {
+    brgen::ast::Context c;
+    return c.enter_stream(file, [&](brgen::ast::Stream& s) {
+        while (!s.eos()) {
+            s.consume();
+        }
+        return s.take();
     });
 }
 
@@ -71,7 +87,7 @@ int check_ast(std::string_view name) {
         print_error("cannot decode json file: ", res.error().locations[0].msg);
         return -1;
     }
-    cout << "ok\n";
+    print_ok();
     return 0;
 }
 
@@ -140,13 +156,13 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
         return -1;
     }
 
-    auto report_error = [&](auto&& res, bool warn = false) {
+    auto report_error = [&](auto&& res, bool warn = false, const char* key = "ast") {
         if (!warn && !cout.is_tty()) {
             brgen::JSONWriter d;
             {
                 auto field = d.object();
                 field("file", files.file_list());
-                field("ast", nullptr);
+                field(key, nullptr);
                 field("error", res.to_string());
             }
             cout << d.out();
@@ -160,6 +176,32 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
             }
         });
     };
+
+    if (flags.lexer) {
+        auto res = do_lex(input).transform_error(brgen::to_source_error(files));
+        if (!res) {
+            report_error(res.error(), false, "tokens");
+            return -1;
+        }
+        if (flags.print_json) {
+            brgen::JSONWriter d;
+            {
+                auto field = d.object();
+                field("file", files.file_list());
+                field("tokens", res.value());
+                field("error", nullptr);
+            }
+            cout << d.out();
+            if (cout.is_tty()) {
+                cout << "\n";
+            }
+        }
+        else {
+            print_ok();
+        }
+        return 0;
+    }
+
     auto res = do_parse(input).transform_error(brgen::to_source_error(files));
 
     if (!res) {
@@ -190,8 +232,8 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
         }
     }
 
-    if (cout.is_tty() && !flags.print_ast) {
-        cout << cse::letter_color<cse::ColorPalette::green> << "ok" << cse::color_reset << "\n";
+    if (cout.is_tty() && !flags.print_json) {
+        print_ok();
         return 0;
     }
 

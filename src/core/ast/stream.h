@@ -61,6 +61,19 @@ namespace brgen::ast {
         }
 
        public:
+        // discard tokens before cur
+        void shrink() {
+            tokens.erase(tokens.begin(), cur);
+            cur = tokens.begin();
+        }
+
+        std::list<lexer::Token> take() {
+            auto copy = std::move(tokens);
+            tokens.clear();
+            cur = tokens.begin();
+            return copy;
+        }
+
         [[noreturn]] void report_error(auto&&... data) {
             error(last_loc(), "parser error: ", data...).report();
         }
