@@ -272,24 +272,24 @@ func generate(rw io.Writer, defs *gen.Defs) {
 					w.Printf("					Some(v)=>v,\n")
 					w.Printf("					None=>return Err(Error::MismatchJSONType(%s_body.into(),JSONType::Array)),\n", field.Name)
 					w.Printf("				};\n")
-					w.Printf("				for (i,link) in %s_body.iter().enumerate(){\n", field.Name)
+					w.Printf("				for (i,link) in %s_body {\n", field.Name)
 					w.Printf("					let link = match link.as_u64() {\n")
 					w.Printf("						Some(v)=>v,\n")
 					w.Printf("						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),\n")
 					w.Printf("					};\n")
-					indexNodeFn("					", "body", "nodes", "link")
+					indexNodeFn("					", field.Name+"_body", "nodes", "link")
 					if field.Type.IsInterface {
 						if field.Type.Name == "Node" {
-							w.Printf("					node.borrow_mut().%s.push(body.clone());\n", field.Name)
+							w.Printf("					node.borrow_mut().%s.push(%s_body.clone());\n", field.Name, field.Name)
 						} else {
-							w.Printf("					node.borrow_mut().%s.push(body.try_into()?);\n", field.Name)
+							w.Printf("					node.borrow_mut().%s.push(%s_body.try_into()?);\n", field.Name, field.Name)
 						}
 					} else {
-						w.Printf("					let body = match body {\n")
+						w.Printf("					let %s_body = match %s_body {\n", field.Name, field.Name)
 						w.Printf("						Node::%s(body)=>body,\n", field.Type.Name)
-						w.Printf("						x =>return Err(Error::MismatchNodeType(x.into(),body.into())),\n")
+						w.Printf("						x =>return Err(Error::MismatchNodeType(x.into(),%s_body.into())),\n", field.Name)
 						w.Printf("					};\n")
-						w.Printf("					node.borrow_mut().%s.push(body.clone());\n", field.Name)
+						w.Printf("					node.borrow_mut().%s.push(%s_body.clone());\n", field.Name, field.Name)
 					}
 					w.Printf("				}\n")
 				} else if field.Type.IsPtr || field.Type.IsInterface {
@@ -298,31 +298,33 @@ func generate(rw io.Writer, defs *gen.Defs) {
 					w.Printf("					None=>return Err(Error::MismatchJSONType(%s_body.into(),JSONType::Number)),\n", field.Name)
 					w.Printf("				};\n")
 					if field.Type.Name == "Scope" {
-						indexNodeFn("				", "body", "scopes", field.Name+"_body")
-						w.Printf("				node.borrow_mut().%s = Some(body.clone());\n", field.Name)
+						indexNodeFn("				", field.Name+"_body", "scopes", field.Name+"_body")
+						w.Printf("				node.borrow_mut().%s = Some(%s_body.clone());\n", field.Name, field.Name)
 					} else {
-						indexNodeFn("				", "body", "nodes", field.Name+"_body")
+						indexNodeFn("				", field.Name+"_body", "nodes", field.Name+"_body")
 						if field.Type.IsInterface {
 							if field.Type.Name == "Node" {
-								w.Printf("				node.borrow_mut().%s = Some(body.clone());\n", field.Name)
+								w.Printf("				node.borrow_mut().%s = Some(%s_body.clone());\n", field.Name, field.Name)
 							} else {
-								w.Printf("				node.borrow_mut().%s = Some(body.try_into()?);\n", field.Name)
+								w.Printf("				node.borrow_mut().%s = Some(%s_body.try_into()?);\n", field.Name, field.Name)
 							}
 						} else {
-							w.Printf("				let body = match body {\n")
+							w.Printf("				let %s_body = match %s_body {\n", field.Name, field.Name)
 							w.Printf("					Node::%s(node)=>node,\n", field.Type.Name)
-							w.Printf("					x =>return Err(Error::MismatchNodeType(x.into(),body.into())),\n")
+							w.Printf("					x =>return Err(Error::MismatchNodeType(x.into(),%s_body.into())),\n", field.Name)
 							w.Printf("				};\n")
 							if field.Type.IsWeak {
-								w.Printf("				node.borrow_mut().%s = Some(Rc::downgrade(&body));\n", field.Name)
+								w.Printf("				node.borrow_mut().%s = Some(Rc::downgrade(&%s_body));\n", field.Name, field.Name)
 							} else {
-								w.Printf("				node.borrow_mut().%s = Some(body.clone());\n", field.Name)
+								w.Printf("				node.borrow_mut().%s = Some(%s_body.clone());\n", field.Name, field.Name)
 							}
 						}
 					}
 				} else if field.Type.Name == "u64" {
-					continue
-					w.Printf("				node.%s = raw_node.body.%s;\n", field.Name, field.Name)
+					w.Printf("				node.borrow_mut().%s = match %s_body.as_u64() {\n", field.Name, field.Name)
+					w.Printf("					Some(v)=>v,\n")
+					w.Printf("					None=>return Err(Error::MismatchJSONType(%s_body.into(),JSONType::Number)),\n", field.Name)
+					w.Printf("				};\n")
 				} else if field.Type.Name == "String" {
 					continue
 					w.Printf("				node.%s = raw_node.body.%s.clone();\n", field.Name, field.Name)
