@@ -26,6 +26,17 @@ func generate(rw io.Writer, defs *gen.Defs) {
 		w.Printf("%q", typ)
 	}
 	w.Printf(";\n\n")
+	w.Printf("export function isNodeType(obj: any): obj is NodeType {\n")
+	w.Printf("	return obj && typeof obj === 'string' && (")
+	for i, typ := range defs.NodeTypes {
+		if i != 0 {
+			w.Printf(" || ")
+		}
+		w.Printf("obj === %q", typ)
+	}
+	w.Printf(")\n")
+	w.Printf("}\n\n")
+
 	for _, def := range defs.Defs {
 		switch d := def.(type) {
 		case *gen.Interface:
@@ -91,13 +102,16 @@ func generate(rw io.Writer, defs *gen.Defs) {
 				w.Printf("export function is%s(obj: any): obj is %s {\n", d.Name, d.Name)
 				w.Printf("	return obj && typeof obj === 'object' && ")
 				for i, field := range d.Fields {
-					if field.Type.IsArray {
-						continue // omit check
-					}
 					if i != 0 {
 						w.Printf(" && ")
 					}
-					if field.Type.Name == "number" || field.Type.Name == "string" || field.Type.Name == "boolean" {
+					if field.Type.IsArray {
+						w.Printf("Array.isArray(obj?.%s)", field.Name)
+					} else if field.Type.Name == "Scope" {
+						// omit depth check
+						w.Printf("typeof obj?.%s === 'object'", field.Name)
+
+					} else if field.Type.Name == "number" || field.Type.Name == "string" || field.Type.Name == "boolean" {
 						w.Printf("typeof obj?.%s === 'number'", field.Name)
 					} else if field.Type.IsPtr {
 						w.Printf("(obj?.%s === null || is%s(obj?.%s))", field.Name, field.Type.Name, field.Name)
@@ -108,6 +122,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 				w.Printf("\n")
 				w.Printf("}\n\n")
 			}
+
 		case *gen.Enum:
 			w.Printf("export type %s = ", d.Name)
 			for i, val := range d.Values {
@@ -131,6 +146,203 @@ func generate(rw io.Writer, defs *gen.Defs) {
 		}
 	}
 
+	w.Printf("interface rawNode {\n")
+	w.Printf("	node_type: NodeType;\n")
+	w.Printf("	loc :Loc;\n")
+	w.Printf("	body :any;\n")
+	w.Printf("}\n\n")
+
+	w.Printf("function isRawNode(obj: any): obj is rawNode {\n")
+	w.Printf("	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && isLoc(obj?.loc) && typeof obj?.body === 'object'\n")
+	w.Printf("}\n\n")
+
+	w.Printf("interface rawScope {\n")
+	w.Printf("	prev: number | null;\n")
+	w.Printf("	next : number | null;\n")
+	w.Printf("	branch : number | null;\n")
+	w.Printf(" 	ident: number[];\n")
+	w.Printf("}\n\n")
+
+	w.Printf("function isRawScope(obj: any): obj is rawScope {\n")
+	w.Printf("  return obj && typeof obj === 'object' && (obj?.prev === null || typeof obj?.prev == 'number') && (obj?.next === null || typeof obj?.next == 'number') && (obj?.branch === null || typeof obj?.branch == 'number') && Array.isArray(obj?.ident)\n")
+	w.Printf("}\n\n")
+
+	w.Printf("interface objHolder {\n")
+	w.Printf("	node: rawNode[];\n")
+	w.Printf("	scope :rawScope[];\n")
+	w.Printf("}\n")
+
+	w.Printf("interface astConstructor {\n")
+	w.Printf("	node : Node[];\n")
+	w.Printf("	scope : Scope[];\n")
+	w.Printf("}\n\n")
+
+	w.Printf("export function parseAST(obj: any): Program {\n")
+	w.Printf("	if (obj === undefined || obj === null) {\n")
+	w.Printf("		throw new Error('invalid node list');\n")
+	w.Printf("	}\n")
+	w.Printf("	if (!Array.isArray(obj?.node)) {\n")
+	w.Printf("		throw new Error('invalid node list');\n")
+	w.Printf("	}\n")
+	w.Printf("	if (!Array.isArray(obj?.scope)) {\n")
+	w.Printf("		throw new Error('invalid scope list');\n")
+	w.Printf("	}\n")
+	w.Printf("	const o :objHolder = {\n")
+	w.Printf("		node: obj.node.map((n: any) => {\n")
+	w.Printf("			if (!isRawNode(n)) {\n")
+	w.Printf("				throw new Error('invalid node');\n")
+	w.Printf("			}\n")
+	w.Printf("			return n;\n")
+	w.Printf("		}),\n")
+	w.Printf("		scope: obj.scope.map((s: any) => {\n")
+	w.Printf("			if (!isRawScope(s)) {\n")
+	w.Printf("				throw new Error('invalid scope');\n")
+	w.Printf("			}\n")
+	w.Printf("			return s;\n")
+	w.Printf("		})\n")
+	w.Printf("	}\n")
+	w.Printf("	const c :astConstructor = {\n")
+	w.Printf("		node: [],\n")
+	w.Printf("		scope: []\n")
+	w.Printf("	}\n")
+	w.Printf("	for (const on of o.node) {\n")
+	w.Printf("		switch (on.node_type) {\n")
+	for _, def := range defs.Defs {
+		switch d := def.(type) {
+		case *gen.Struct:
+			if len(d.Implements) == 0 {
+				continue
+			}
+			w.Printf("		case %q: {\n", d.NodeType)
+			w.Printf("			const n :%s = {\n", d.Name)
+			w.Printf("				node_type: %q,\n", d.NodeType)
+			for _, field := range d.Fields {
+				if field.Type.IsArray {
+					w.Printf("				%s: [],\n", field.Name)
+				} else if field.Type.IsPtr || field.Type.IsInterface {
+					w.Printf("				%s: null,\n", field.Name)
+				} else if field.Type.Name == "number" {
+					w.Printf("				%s: 0,\n", field.Name)
+				} else if field.Type.Name == "string" {
+					w.Printf("				%s: '',\n", field.Name)
+				} else if field.Type.Name == "boolean" {
+					w.Printf("				%s: false,\n", field.Name)
+				} else if field.Type.Name == "Loc" {
+					w.Printf("				%s: on.loc,\n", field.Name)
+				} else {
+					found, ok := defs.Enums[field.Type.Name]
+					if !ok {
+						continue
+					}
+					w.Printf("				%s: %q,\n", field.Name, found.Values[0].Str)
+				}
+			}
+			w.Printf("			}\n")
+			w.Printf("			c.node.push(n);\n")
+			w.Printf("			break;\n")
+			w.Printf("		}\n")
+		}
+	}
+	w.Printf("		default:\n")
+	w.Printf("			throw new Error('invalid node type');\n")
+	w.Printf("		}\n")
+	w.Printf("	}\n")
+	w.Printf("	for (const _ of o.scope) {\n")
+	w.Printf("		const n :Scope = {\n")
+	w.Printf("			prev: null,\n")
+	w.Printf("			next: null,\n")
+	w.Printf("			branch: null,\n")
+	w.Printf("			ident: [],\n")
+	w.Printf("		}\n")
+	w.Printf("		c.scope.push(n);\n")
+	w.Printf("	}\n")
+	w.Printf("	for (let i = 0; i < o.node.length; i++) {\n")
+	w.Printf("		const on = o.node[i];\n")
+	w.Printf("		const cnode = c.node[i];\n")
+	w.Printf("		switch (cnode.node_type) {\n")
+	for _, def := range defs.Defs {
+		switch d := def.(type) {
+		case *gen.Struct:
+			if len(d.Implements) == 0 {
+				continue
+			}
+			w.Printf("		case %q: {\n", d.NodeType)
+			w.Printf("			const n :%s = cnode as %s;\n", d.Name, d.Name)
+			for _, field := range d.Fields {
+				if field.Name == "loc" {
+					continue
+				}
+				if field.Type.IsArray {
+					w.Printf("			for (const o of on.body.%s) {\n", field.Name)
+					w.Printf("				if (typeof o !== 'number') {\n")
+					w.Printf("					throw new Error('invalid node list');\n")
+					w.Printf("				}\n")
+					w.Printf("				const tmp%s = c.node[o];\n", field.Name)
+					if field.Type.Name != "Node" {
+						w.Printf("				if (!is%s(tmp%s)) {\n", field.Type.Name, field.Name)
+						w.Printf("					throw new Error('invalid node list');\n")
+						w.Printf("				}\n")
+					}
+					w.Printf("				n.%s.push(tmp%s);\n", field.Name, field.Name)
+					w.Printf("			}\n")
+
+				} else if field.Type.Name == "Scope" {
+					w.Printf("			if (on.body?.%s !== null && typeof on.body?.%s !== 'number') {\n", field.Name, field.Name)
+					w.Printf("				throw new Error('invalid node list');\n")
+					w.Printf("			}\n")
+					w.Printf("			const tmp%s = on.body.%s === null ? null : c.scope[on.body.%s];\n", field.Name, field.Name, field.Name)
+					w.Printf("			if (tmp%s !== null && !isScope(tmp%s)) {\n", field.Name, field.Name)
+					w.Printf("				throw new Error('invalid node list');\n")
+					w.Printf("			}\n")
+					w.Printf("			n.%s = tmp%s;\n", field.Name, field.Name)
+				} else if field.Type.IsPtr || field.Type.IsInterface {
+					w.Printf("			if (on.body?.%s !== null && typeof on.body?.%s !== 'number') {\n", field.Name, field.Name)
+					w.Printf("				throw new Error('invalid node list');\n")
+					w.Printf("			}\n")
+					w.Printf("			const tmp%s = on.body.%s === null ? null : c.node[on.body.%s];\n", field.Name, field.Name, field.Name)
+					w.Printf("			if (tmp%s !== null && !is%s(tmp%s)) {\n", field.Name, field.Type.Name, field.Name)
+					w.Printf("				throw new Error('invalid node list');\n")
+					w.Printf("			}\n")
+					w.Printf("			n.%s = tmp%s;\n", field.Name, field.Name)
+				} else if field.Type.Name == "number" || field.Type.Name == "string" || field.Type.Name == "boolean" {
+					w.Printf("			const tmp%s = on.body?.%s;\n", field.Name, field.Name)
+					w.Printf("			if (typeof on.body?.%s !== %q) {\n", field.Name, field.Type.Name)
+					w.Printf("				throw new Error('invalid node list');\n")
+					w.Printf("			}\n")
+					w.Printf("			n.%s = on.body.%s;\n", field.Name, field.Name)
+				} else {
+					w.Printf("			const tmp%s = on.body?.%s;\n", field.Name, field.Name)
+					w.Printf("			if (!is%s(tmp%s)) {\n", field.Type.Name, field.Name)
+					w.Printf("				throw new Error('invalid node list');\n")
+					w.Printf("			}\n")
+					w.Printf("			n.%s = tmp%s;\n", field.Name, field.Name)
+				}
+			}
+			w.Printf("			break;\n")
+			w.Printf("		}\n")
+		}
+	}
+	w.Printf("		}\n")
+	w.Printf("	}\n")
+	w.Printf("	for (let i = 0; i < o.scope.length; i++) {\n")
+	w.Printf("		const os = o.scope[i];\n")
+	w.Printf("		const cscope = c.scope[i];\n")
+	w.Printf("		cscope.prev = os.prev === null ? null : c.scope[os.prev];\n")
+	w.Printf("		cscope.next = os.next === null ? null : c.scope[os.next];\n")
+	w.Printf("		cscope.branch = os.branch === null ? null : c.scope[os.branch];\n")
+	w.Printf("		cscope.ident = os.ident.map((o: any) => {\n")
+	w.Printf("			if (typeof o !== 'number') {\n")
+	w.Printf("				throw new Error('invalid node list');\n")
+	w.Printf("			}\n")
+	w.Printf("			return c.node[o];\n")
+	w.Printf("		})\n")
+	w.Printf("	}\n")
+	w.Printf("	const root = c.node[0];\n")
+	w.Printf("	if (!isProgram(root)) {\n")
+	w.Printf("		throw new Error('invalid node list');\n")
+	w.Printf("	}\n")
+	w.Printf("	return root;\n")
+	w.Printf("}\n\n")
 }
 
 func main() {
