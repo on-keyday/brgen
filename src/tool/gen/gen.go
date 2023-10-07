@@ -98,9 +98,10 @@ type Type struct {
 	IsInterface bool
 	IsPtr       bool
 	IsArray     bool
+	IsWeak      bool
 }
 
-func (d *Type) String() string {
+func (d *Type) GoString() string {
 	prefix := ""
 	if d.IsArray {
 		prefix += "[]"
@@ -109,6 +110,28 @@ func (d *Type) String() string {
 		prefix += "*"
 	}
 	return prefix + d.Name
+}
+
+func (d *Type) RustString() string {
+	prefix := ""
+	postfix := ""
+	if d.IsArray {
+		prefix += "Vec<"
+		postfix += ">"
+	}
+	if d.IsPtr {
+		ptr := "Rc<"
+		if d.IsWeak {
+			ptr = "Weak<"
+		}
+		prefix += "Option<" + ptr + "RefCell<"
+		postfix += ">" + ">" + ">"
+	}
+	if d.IsInterface {
+		prefix += "Option<"
+		postfix += ">"
+	}
+	return prefix + d.Name + postfix
 }
 
 func (d *Type) TsString() string {
@@ -179,6 +202,7 @@ func (c *collector) convertType(typ string) *Type {
 	isPtr := false
 	isArray := false
 	isInterface := false
+	isWeak := false
 	if len(arrayMatch) > 0 {
 		typ = arrayMatch[1]
 		isArray = true
@@ -195,6 +219,7 @@ func (c *collector) convertType(typ string) *Type {
 	weakPtrMatch := weakPtr.FindStringSubmatch(typ)
 	if len(weakPtrMatch) > 0 {
 		typ = weakPtrMatch[1]
+		isWeak = true
 		if _, ok := c.interfacesMap[typ]; ok {
 			isInterface = true
 		} else {
@@ -213,6 +238,7 @@ func (c *collector) convertType(typ string) *Type {
 		IsInterface: isInterface,
 		IsPtr:       isPtr,
 		IsArray:     isArray,
+		IsWeak:      isWeak,
 	}
 }
 

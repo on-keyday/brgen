@@ -43,10 +43,10 @@ func generate(w io.Writer, list *gen.Defs) {
 			isJSON := len(d.Implements) == 0 && d.Name != "Scope"
 			for _, field := range d.Fields {
 				if isJSON {
-					writer.Printf("	%s %s `json:%q`\n", field.Name, field.Type, field.Tag)
+					writer.Printf("	%s %s `json:%q`\n", field.Name, field.Type.GoString(), field.Tag)
 
 				} else {
-					writer.Printf("	%s %s\n", field.Name, field.Type)
+					writer.Printf("	%s %s\n", field.Name, field.Type.GoString())
 				}
 			}
 			writer.Printf("}\n\n")
@@ -198,9 +198,9 @@ func generate(w io.Writer, list *gen.Defs) {
 				if field.Type.IsArray {
 					typ := *field.Type
 					typ.IsArray = false
-					writer.Printf("			v.%s = make([]%s, len(tmp.%s))\n", field.Name, &typ, field.Name)
+					writer.Printf("			v.%s = make([]%s, len(tmp.%s))\n", field.Name, typ.GoString(), field.Name)
 					writer.Printf("			for j, k := range tmp.%s {\n", field.Name)
-					writer.Printf("				v.%s[j] = n.node[k].(%s)\n", field.Name, &typ)
+					writer.Printf("				v.%s[j] = n.node[k].(%s)\n", field.Name, typ.GoString())
 					writer.Printf("			}\n")
 				} else if field.Type.Name == "Scope" {
 					writer.Printf("			if tmp.%s != nil {\n", field.Name)
@@ -208,7 +208,7 @@ func generate(w io.Writer, list *gen.Defs) {
 					writer.Printf("			}\n")
 				} else if field.Type.IsPtr || field.Type.IsInterface {
 					writer.Printf("			if tmp.%s != nil {\n", field.Name)
-					writer.Printf("				v.%s = n.node[*tmp.%s].(%s)\n", field.Name, field.Name, field.Type)
+					writer.Printf("				v.%s = n.node[*tmp.%s].(%s)\n", field.Name, field.Name, field.Type.GoString())
 					writer.Printf("			}\n")
 				} else {
 					writer.Printf("			v.%s = tmp.%s\n", field.Name, field.Name)
@@ -229,9 +229,9 @@ func generate(w io.Writer, list *gen.Defs) {
 		} else if field.Type.IsArray {
 			typ := *field.Type
 			typ.IsArray = false
-			writer.Printf("		n.scope[i].%s = make([]%s, len(raw.%s))\n", field.Name, &typ, field.Name)
+			writer.Printf("		n.scope[i].%s = make([]%s, len(raw.%s))\n", field.Name, typ.GoString(), field.Name)
 			writer.Printf("		for j, k := range raw.%s {\n", field.Name)
-			writer.Printf("			n.scope[i].%s[j] = n.node[k].(%s)\n", field.Name, &typ)
+			writer.Printf("			n.scope[i].%s[j] = n.node[k].(%s)\n", field.Name, typ.GoString())
 			writer.Printf("		}\n")
 		}
 	}
