@@ -1653,7 +1653,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"els_loc")),
 				};
-				node.borrow_mut().els_loc = match serde_json::from_value(els_loc_body) {
+				node.borrow_mut().els_loc = match serde_json::from_value(els_loc_body.clone()) {
 					Ok(v)=>v,
 					Err(e)=>return Err(Error::JSONError(e)),
 				};
@@ -1804,7 +1804,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"end_loc")),
 				};
-				node.borrow_mut().end_loc = match serde_json::from_value(end_loc_body) {
+				node.borrow_mut().end_loc = match serde_json::from_value(end_loc_body.clone()) {
 					Ok(v)=>v,
 					Err(e)=>return Err(Error::JSONError(e)),
 				};
@@ -1916,7 +1916,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"member_loc")),
 				};
-				node.borrow_mut().member_loc = match serde_json::from_value(member_loc_body) {
+				node.borrow_mut().member_loc = match serde_json::from_value(member_loc_body.clone()) {
 					Ok(v)=>v,
 					Err(e)=>return Err(Error::JSONError(e)),
 				};
@@ -1957,7 +1957,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"end_loc")),
 				};
-				node.borrow_mut().end_loc = match serde_json::from_value(end_loc_body) {
+				node.borrow_mut().end_loc = match serde_json::from_value(end_loc_body.clone()) {
 					Ok(v)=>v,
 					Err(e)=>return Err(Error::JSONError(e)),
 				};
@@ -2011,7 +2011,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"end_loc")),
 				};
-				node.borrow_mut().end_loc = match serde_json::from_value(end_loc_body) {
+				node.borrow_mut().end_loc = match serde_json::from_value(end_loc_body.clone()) {
 					Ok(v)=>v,
 					Err(e)=>return Err(Error::JSONError(e)),
 				};
@@ -2553,7 +2553,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"sym_loc")),
 				};
-				node.borrow_mut().sym_loc = match serde_json::from_value(sym_loc_body) {
+				node.borrow_mut().sym_loc = match serde_json::from_value(sym_loc_body.clone()) {
 					Ok(v)=>v,
 					Err(e)=>return Err(Error::JSONError(e)),
 				};
@@ -2593,14 +2593,14 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 			},
 			NodeType::Break => {
 				let node = nodes[i].clone();
-				let node = match node {
+				let _ = match node {
 					Node::Break(node)=>node,
 					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
 				};
 			},
 			NodeType::Continue => {
 				let node = nodes[i].clone();
-				let node = match node {
+				let _ = match node {
 					Node::Continue(node)=>node,
 					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
 				};
@@ -2676,7 +2676,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"colon_loc")),
 				};
-				node.borrow_mut().colon_loc = match serde_json::from_value(colon_loc_body) {
+				node.borrow_mut().colon_loc = match serde_json::from_value(colon_loc_body.clone()) {
 					Ok(v)=>v,
 					Err(e)=>return Err(Error::JSONError(e)),
 				};
@@ -3062,14 +3062,14 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 			},
 			NodeType::VoidType => {
 				let node = nodes[i].clone();
-				let node = match node {
+				let _ = match node {
 					Node::VoidType(node)=>node,
 					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
 				};
 			},
 			NodeType::BoolType => {
 				let node = nodes[i].clone();
-				let node = match node {
+				let _ = match node {
 					Node::BoolType(node)=>node,
 					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
 				};
@@ -3084,7 +3084,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"end_loc")),
 				};
-				node.borrow_mut().end_loc = match serde_json::from_value(end_loc_body) {
+				node.borrow_mut().end_loc = match serde_json::from_value(end_loc_body.clone()) {
 					Ok(v)=>v,
 					Err(e)=>return Err(Error::JSONError(e)),
 				};
@@ -3264,7 +3264,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 		};
 	}
 	for (i,raw_scope) in ast.scope.into_iter().enumerate(){
-		let mut scope = scopes[i].clone();
+		let scope = scopes[i].clone();
 		if let Some(prev) = raw_scope.prev{
 			let prev = match scopes.get(prev as usize) {
 				Some(v)=>v,

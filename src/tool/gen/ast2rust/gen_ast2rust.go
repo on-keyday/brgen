@@ -271,7 +271,11 @@ func generate(rw io.Writer, defs *gen.Defs) {
 			}
 			w.Printf("			NodeType::%s => {\n", d.Name)
 			w.Printf("				let node = nodes[i].clone();\n")
-			w.Printf("				let node = match node {\n")
+			if len(d.Fields) > 1 {
+				w.Printf("				let node = match node {\n")
+			} else {
+				w.Printf("				let _ = match node {\n")
+			}
 			w.Printf("					Node::%s(node)=>node,\n", d.Name)
 			w.Printf("					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),\n")
 			w.Printf("				};\n")
@@ -358,7 +362,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 					w.Printf("					None=>return Err(Error::MismatchJSONType(%s_body.into(),JSONType::Bool)),\n", field.Name)
 					w.Printf("				};\n")
 				} else if field.Type.Name == "Loc" {
-					w.Printf("				node.borrow_mut().%s = match serde_json::from_value(%s_body) {\n", field.Name, field.Name)
+					w.Printf("				node.borrow_mut().%s = match serde_json::from_value(%s_body.clone()) {\n", field.Name, field.Name)
 					w.Printf("					Ok(v)=>v,\n")
 					w.Printf("					Err(e)=>return Err(Error::JSONError(e)),\n")
 					w.Printf("				};\n")
@@ -384,7 +388,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("	}\n")
 
 	w.Printf("	for (i,raw_scope) in ast.scope.into_iter().enumerate(){\n")
-	w.Printf("		let mut scope = scopes[i].clone();\n")
+	w.Printf("		let scope = scopes[i].clone();\n")
 	w.Printf("		if let Some(prev) = raw_scope.prev{\n")
 	w.Printf("			let prev = match scopes.get(prev as usize) {\n")
 	w.Printf("				Some(v)=>v,\n")
