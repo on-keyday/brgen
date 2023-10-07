@@ -49,6 +49,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("	MismatchJSONType(JSONType,JSONType),\n")
 	w.Printf("	InvalidNodeType(NodeType),\n")
 	w.Printf("	IndexOutOfBounds(usize),\n")
+	w.Printf("	InvalidEnumValue(String),\n")
 	w.Printf("}\n\n")
 
 	w.Printf("#[derive(Debug,Clone,Copy,Serialize,Deserialize)]\n")
@@ -326,23 +327,31 @@ func generate(rw io.Writer, defs *gen.Defs) {
 					w.Printf("					None=>return Err(Error::MismatchJSONType(%s_body.into(),JSONType::Number)),\n", field.Name)
 					w.Printf("				};\n")
 				} else if field.Type.Name == "String" {
-					continue
-					w.Printf("				node.%s = raw_node.body.%s.clone();\n", field.Name, field.Name)
+					w.Printf("				node.borrow_mut().%s = match %s_body.as_str() {\n", field.Name, field.Name)
+					w.Printf("					Some(v)=>v.to_string(),\n")
+					w.Printf("					None=>return Err(Error::MismatchJSONType(%s_body.into(),JSONType::String)),\n", field.Name)
+					w.Printf("				};\n")
 				} else if field.Type.Name == "bool" {
-					continue
-					w.Printf("				node.%s = raw_node.body.%s;\n", field.Name, field.Name)
+					w.Printf("				node.borrow_mut().%s = match %s_body.as_bool() {\n", field.Name, field.Name)
+					w.Printf("					Some(v)=>v,\n")
+					w.Printf("					None=>return Err(Error::MismatchJSONType(%s_body.into(),JSONType::Bool)),\n", field.Name)
+					w.Printf("				};\n")
 				} else if field.Type.Name == "Loc" {
-					continue
-					w.Printf("				node.%s = raw_node.loc.clone();\n", field.Name)
+					w.Printf("				node.borrow_mut().%s = match serde_json::from_value(%s_body) {\n", field.Name, field.Name)
+					w.Printf("					Ok(v)=>v,\n")
+					w.Printf("					Err(e)=>return Err(Error::JSONError(e)),\n")
+					w.Printf("				};\n")
 				} else {
-					continue
 					_, ok := defs.Enums[field.Type.Name]
 					if !ok {
 						continue
 					}
-					w.Printf("				node.%s = match %s::try_from(&raw_node.body.%s){\n", field.Name, field.Type.Name, field.Name)
-					w.Printf("					Ok(v)=>v,\n")
-					w.Printf("					Err(_)=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),\n")
+					w.Printf("				node.borrow_mut().%s = match %s_body.as_str() {\n", field.Name, field.Name)
+					w.Printf("					Some(v)=>match %s::try_from(v) {\n", field.Type.Name)
+					w.Printf("						Ok(v)=>v,\n")
+					w.Printf("						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),\n")
+					w.Printf("					},\n")
+					w.Printf("					None=>return Err(Error::MismatchJSONType(%s_body.into(),JSONType::String)),\n", field.Name)
 					w.Printf("				};\n")
 				}
 			}

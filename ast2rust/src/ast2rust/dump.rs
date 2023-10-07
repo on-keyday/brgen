@@ -36,6 +36,7 @@ pub enum Error {
 	MismatchJSONType(JSONType,JSONType),
 	InvalidNodeType(NodeType),
 	IndexOutOfBounds(usize),
+	InvalidEnumValue(String),
 }
 
 #[derive(Debug,Clone,Copy,Serialize,Deserialize)]
@@ -1409,6 +1410,13 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"op")),
 				};
+				node.borrow_mut().op = match op_body.as_str() {
+					Some(v)=>match BinaryOp::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(op_body.into(),JSONType::String)),
+				};
 				let left_body = match raw_node.body.get("left") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"left")),
@@ -1458,6 +1466,13 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				let op_body = match raw_node.body.get("op") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"op")),
+				};
+				node.borrow_mut().op = match op_body.as_str() {
+					Some(v)=>match UnaryOp::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(op_body.into(),JSONType::String)),
 				};
 				let expr_body = match raw_node.body.get("expr") {
 					Some(v)=>v,
@@ -1522,6 +1537,10 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"els_loc")),
 				};
+				node.borrow_mut().els_loc = match serde_json::from_value(els_loc_body) {
+					Ok(v)=>v,
+					Err(e)=>return Err(Error::JSONError(e)),
+				};
 				let els_body = match raw_node.body.get("els") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"els")),
@@ -1559,9 +1578,20 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"ident")),
 				};
+				node.borrow_mut().ident = match ident_body.as_str() {
+					Some(v)=>v.to_string(),
+					None=>return Err(Error::MismatchJSONType(ident_body.into(),JSONType::String)),
+				};
 				let usage_body = match raw_node.body.get("usage") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"usage")),
+				};
+				node.borrow_mut().usage = match usage_body.as_str() {
+					Some(v)=>match IdentUsage::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(usage_body.into(),JSONType::String)),
 				};
 				let base_body = match raw_node.body.get("base") {
 					Some(v)=>v,
@@ -1657,6 +1687,10 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				let end_loc_body = match raw_node.body.get("end_loc") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"end_loc")),
+				};
+				node.borrow_mut().end_loc = match serde_json::from_value(end_loc_body) {
+					Ok(v)=>v,
+					Err(e)=>return Err(Error::JSONError(e)),
 				};
 			},
 			NodeType::If => {
@@ -1758,9 +1792,17 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"member")),
 				};
+				node.borrow_mut().member = match member_body.as_str() {
+					Some(v)=>v.to_string(),
+					None=>return Err(Error::MismatchJSONType(member_body.into(),JSONType::String)),
+				};
 				let member_loc_body = match raw_node.body.get("member_loc") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"member_loc")),
+				};
+				node.borrow_mut().member_loc = match serde_json::from_value(member_loc_body) {
+					Ok(v)=>v,
+					Err(e)=>return Err(Error::JSONError(e)),
 				};
 			},
 			NodeType::Paren => {
@@ -1798,6 +1840,10 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				let end_loc_body = match raw_node.body.get("end_loc") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"end_loc")),
+				};
+				node.borrow_mut().end_loc = match serde_json::from_value(end_loc_body) {
+					Ok(v)=>v,
+					Err(e)=>return Err(Error::JSONError(e)),
 				};
 			},
 			NodeType::Index => {
@@ -1848,6 +1894,10 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				let end_loc_body = match raw_node.body.get("end_loc") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"end_loc")),
+				};
+				node.borrow_mut().end_loc = match serde_json::from_value(end_loc_body) {
+					Ok(v)=>v,
+					Err(e)=>return Err(Error::JSONError(e)),
 				};
 			},
 			NodeType::Match => {
@@ -1941,6 +1991,13 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				let op_body = match raw_node.body.get("op") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"op")),
+				};
+				node.borrow_mut().op = match op_body.as_str() {
+					Some(v)=>match BinaryOp::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(op_body.into(),JSONType::String)),
 				};
 				let start_body = match raw_node.body.get("start") {
 					Some(v)=>v,
@@ -2072,6 +2129,10 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"path")),
 				};
+				node.borrow_mut().path = match path_body.as_str() {
+					Some(v)=>v.to_string(),
+					None=>return Err(Error::MismatchJSONType(path_body.into(),JSONType::String)),
+				};
 				let base_body = match raw_node.body.get("base") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"base")),
@@ -2130,6 +2191,10 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"value")),
 				};
+				node.borrow_mut().value = match value_body.as_str() {
+					Some(v)=>v.to_string(),
+					None=>return Err(Error::MismatchJSONType(value_body.into(),JSONType::String)),
+				};
 			},
 			NodeType::BoolLiteral => {
 				let node = nodes[i].clone();
@@ -2154,6 +2219,10 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"value")),
 				};
+				node.borrow_mut().value = match value_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(value_body.into(),JSONType::Bool)),
+				};
 			},
 			NodeType::StrLiteral => {
 				let node = nodes[i].clone();
@@ -2177,6 +2246,10 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				let value_body = match raw_node.body.get("value") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"value")),
+				};
+				node.borrow_mut().value = match value_body.as_str() {
+					Some(v)=>v.to_string(),
+					None=>return Err(Error::MismatchJSONType(value_body.into(),JSONType::String)),
 				};
 			},
 			NodeType::Input => {
@@ -2364,6 +2437,10 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"sym_loc")),
 				};
+				node.borrow_mut().sym_loc = match serde_json::from_value(sym_loc_body) {
+					Ok(v)=>v,
+					Err(e)=>return Err(Error::JSONError(e)),
+				};
 				let then_body = match raw_node.body.get("then") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"then")),
@@ -2483,6 +2560,10 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"colon_loc")),
 				};
+				node.borrow_mut().colon_loc = match serde_json::from_value(colon_loc_body) {
+					Ok(v)=>v,
+					Err(e)=>return Err(Error::JSONError(e)),
+				};
 				let field_type_body = match raw_node.body.get("field_type") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"field_type")),
@@ -2555,6 +2636,10 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				let is_enum_body = match raw_node.body.get("is_enum") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"is_enum")),
+				};
+				node.borrow_mut().is_enum = match is_enum_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(is_enum_body.into(),JSONType::Bool)),
 				};
 				let ident_body = match raw_node.body.get("ident") {
 					Some(v)=>v,
@@ -2754,9 +2839,20 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"endian")),
 				};
+				node.borrow_mut().endian = match endian_body.as_str() {
+					Some(v)=>match Endian::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(endian_body.into(),JSONType::String)),
+				};
 				let is_signed_body = match raw_node.body.get("is_signed") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"is_signed")),
+				};
+				node.borrow_mut().is_signed = match is_signed_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(is_signed_body.into(),JSONType::Bool)),
 				};
 			},
 			NodeType::IdentType => {
@@ -2871,6 +2967,10 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				let end_loc_body = match raw_node.body.get("end_loc") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"end_loc")),
+				};
+				node.borrow_mut().end_loc = match serde_json::from_value(end_loc_body) {
+					Ok(v)=>v,
+					Err(e)=>return Err(Error::JSONError(e)),
 				};
 				let base_type_body = match raw_node.body.get("base_type") {
 					Some(v)=>v,
