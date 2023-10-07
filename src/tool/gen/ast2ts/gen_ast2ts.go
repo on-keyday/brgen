@@ -298,7 +298,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 					w.Printf("				throw new Error('invalid node list');\n")
 					w.Printf("			}\n")
 					w.Printf("			const tmp%s = on.body.%s === null ? null : c.node[on.body.%s];\n", field.Name, field.Name, field.Name)
-					w.Printf("			if (tmp%s !== null && !is%s(tmp%s)) {\n", field.Name, field.Type.Name, field.Name)
+					w.Printf("			if (!(tmp%s === null || is%s(tmp%s))) {\n", field.Name, field.Type.Name, field.Name)
 					w.Printf("				throw new Error('invalid node list');\n")
 					w.Printf("			}\n")
 					w.Printf("			n.%s = tmp%s;\n", field.Name, field.Name)
