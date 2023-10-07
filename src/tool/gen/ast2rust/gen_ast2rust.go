@@ -294,7 +294,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 					w.Printf("					Some(v)=>v,\n")
 					w.Printf("					None=>return Err(Error::MismatchJSONType(%s_body.into(),JSONType::Array)),\n", field.Name)
 					w.Printf("				};\n")
-					w.Printf("				for (i,link) in %s_body {\n", field.Name)
+					w.Printf("				for link in %s_body {\n", field.Name)
 					w.Printf("					let link = match link.as_u64() {\n")
 					w.Printf("						Some(v)=>v,\n")
 					w.Printf("						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),\n")

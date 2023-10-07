@@ -1478,7 +1478,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(elements_body.into(),JSONType::Array)),
 				};
-				for (i,link) in elements_body {
+				for link in elements_body {
 					let link = match link.as_u64() {
 						Some(v)=>v,
 						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
@@ -1789,7 +1789,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(arguments_body.into(),JSONType::Array)),
 				};
-				for (i,link) in arguments_body {
+				for link in arguments_body {
 					let link = match link.as_u64() {
 						Some(v)=>v,
 						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
@@ -2056,7 +2056,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(branch_body.into(),JSONType::Array)),
 				};
-				for (i,link) in branch_body {
+				for link in branch_body {
 					let link = match link.as_u64() {
 						Some(v)=>v,
 						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
@@ -2197,7 +2197,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(calls_body.into(),JSONType::Array)),
 				};
-				for (i,link) in calls_body {
+				for link in calls_body {
 					let link = match link.as_u64() {
 						Some(v)=>v,
 						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
@@ -2505,7 +2505,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(elements_body.into(),JSONType::Array)),
 				};
-				for (i,link) in elements_body {
+				for link in elements_body {
 					let link = match link.as_u64() {
 						Some(v)=>v,
 						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
@@ -2714,7 +2714,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(arguments_body.into(),JSONType::Array)),
 				};
-				for (i,link) in arguments_body {
+				for link in arguments_body {
 					let link = match link.as_u64() {
 						Some(v)=>v,
 						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
@@ -2857,7 +2857,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(parameters_body.into(),JSONType::Array)),
 				};
-				for (i,link) in parameters_body {
+				for link in parameters_body {
 					let link = match link.as_u64() {
 						Some(v)=>v,
 						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
@@ -3142,7 +3142,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(parameters_body.into(),JSONType::Array)),
 				};
-				for (i,link) in parameters_body {
+				for link in parameters_body {
 					let link = match link.as_u64() {
 						Some(v)=>v,
 						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
@@ -3168,7 +3168,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(fields_body.into(),JSONType::Array)),
 				};
-				for (i,link) in fields_body {
+				for link in fields_body {
 					let link = match link.as_u64() {
 						Some(v)=>v,
 						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
@@ -3194,7 +3194,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(fields_body.into(),JSONType::Array)),
 				};
-				for (i,link) in fields_body {
+				for link in fields_body {
 					let link = match link.as_u64() {
 						Some(v)=>v,
 						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
