@@ -109,6 +109,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 			if d.Name == "Node" {
 				continue
 			}
+
 			w.Printf("impl TryFrom<&Node> for %s {\n", d.Name)
 			w.Printf("	type Error = Error;\n")
 			w.Printf("	fn try_from(node:&Node)->Result<Self,Self::Error>{\n")
@@ -129,6 +130,26 @@ func generate(rw io.Writer, defs *gen.Defs) {
 			w.Printf("	type Error = Error;\n")
 			w.Printf("	fn try_from(node:Node)->Result<Self,Self::Error>{\n")
 			w.Printf("		Self::try_from(&node)\n")
+			w.Printf("	}\n")
+			w.Printf("}\n\n")
+
+			w.Printf("impl From<&%s> for Node {\n", d.Name)
+			w.Printf("	fn from(node:&%s)-> Self{\n", d.Name)
+			w.Printf("		match node {\n")
+			for _, field := range d.Derived {
+				found, ok := defs.Structs[field]
+				if !ok {
+					continue
+				}
+				w.Printf("			%s::%s(node)=>Self::%s(node.clone()),\n", d.Name, field, found.Name)
+			}
+			w.Printf("		}\n")
+			w.Printf("	}\n")
+			w.Printf("}\n\n")
+
+			w.Printf("impl From<%s> for Node {\n", d.Name)
+			w.Printf("	fn from(node:%s)-> Self{\n", d.Name)
+			w.Printf("		Self::from(&node)\n")
 			w.Printf("	}\n")
 			w.Printf("}\n\n")
 

@@ -316,6 +316,40 @@ impl TryFrom<Node> for Expr {
 	}
 }
 
+impl From<&Expr> for Node {
+	fn from(node:&Expr)-> Self{
+		match node {
+			Expr::Binary(node)=>Self::Binary(node.clone()),
+			Expr::Unary(node)=>Self::Unary(node.clone()),
+			Expr::Cond(node)=>Self::Cond(node.clone()),
+			Expr::Ident(node)=>Self::Ident(node.clone()),
+			Expr::Call(node)=>Self::Call(node.clone()),
+			Expr::If(node)=>Self::If(node.clone()),
+			Expr::MemberAccess(node)=>Self::MemberAccess(node.clone()),
+			Expr::Paren(node)=>Self::Paren(node.clone()),
+			Expr::Index(node)=>Self::Index(node.clone()),
+			Expr::Match(node)=>Self::Match(node.clone()),
+			Expr::Range(node)=>Self::Range(node.clone()),
+			Expr::TmpVar(node)=>Self::TmpVar(node.clone()),
+			Expr::BlockExpr(node)=>Self::BlockExpr(node.clone()),
+			Expr::Import(node)=>Self::Import(node.clone()),
+			Expr::IntLiteral(node)=>Self::IntLiteral(node.clone()),
+			Expr::BoolLiteral(node)=>Self::BoolLiteral(node.clone()),
+			Expr::StrLiteral(node)=>Self::StrLiteral(node.clone()),
+			Expr::Input(node)=>Self::Input(node.clone()),
+			Expr::Output(node)=>Self::Output(node.clone()),
+			Expr::Config(node)=>Self::Config(node.clone()),
+			Expr::Cast(node)=>Self::Cast(node.clone()),
+		}
+	}
+}
+
+impl From<Expr> for Node {
+	fn from(node:Expr)-> Self{
+		Self::from(&node)
+	}
+}
+
 #[derive(Debug,Clone)]
 pub enum Literal {
 	IntLiteral(Rc<RefCell<IntLiteral>>),
@@ -345,6 +379,25 @@ impl TryFrom<Node> for Literal {
 	type Error = Error;
 	fn try_from(node:Node)->Result<Self,Self::Error>{
 		Self::try_from(&node)
+	}
+}
+
+impl From<&Literal> for Node {
+	fn from(node:&Literal)-> Self{
+		match node {
+			Literal::IntLiteral(node)=>Self::IntLiteral(node.clone()),
+			Literal::BoolLiteral(node)=>Self::BoolLiteral(node.clone()),
+			Literal::StrLiteral(node)=>Self::StrLiteral(node.clone()),
+			Literal::Input(node)=>Self::Input(node.clone()),
+			Literal::Output(node)=>Self::Output(node.clone()),
+			Literal::Config(node)=>Self::Config(node.clone()),
+		}
+	}
+}
+
+impl From<Literal> for Node {
+	fn from(node:Literal)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -390,6 +443,30 @@ impl TryFrom<Node> for Stmt {
 	}
 }
 
+impl From<&Stmt> for Node {
+	fn from(node:&Stmt)-> Self{
+		match node {
+			Stmt::Loop(node)=>Self::Loop(node.clone()),
+			Stmt::IndentScope(node)=>Self::IndentScope(node.clone()),
+			Stmt::MatchBranch(node)=>Self::MatchBranch(node.clone()),
+			Stmt::Return(node)=>Self::Return(node.clone()),
+			Stmt::Break(node)=>Self::Break(node.clone()),
+			Stmt::Continue(node)=>Self::Continue(node.clone()),
+			Stmt::Assert(node)=>Self::Assert(node.clone()),
+			Stmt::ImplicitYield(node)=>Self::ImplicitYield(node.clone()),
+			Stmt::Field(node)=>Self::Field(node.clone()),
+			Stmt::Format(node)=>Self::Format(node.clone()),
+			Stmt::Function(node)=>Self::Function(node.clone()),
+		}
+	}
+}
+
+impl From<Stmt> for Node {
+	fn from(node:Stmt)-> Self{
+		Self::from(&node)
+	}
+}
+
 #[derive(Debug,Clone)]
 pub enum Member {
 	Field(Rc<RefCell<Field>>),
@@ -413,6 +490,22 @@ impl TryFrom<Node> for Member {
 	type Error = Error;
 	fn try_from(node:Node)->Result<Self,Self::Error>{
 		Self::try_from(&node)
+	}
+}
+
+impl From<&Member> for Node {
+	fn from(node:&Member)-> Self{
+		match node {
+			Member::Field(node)=>Self::Field(node.clone()),
+			Member::Format(node)=>Self::Format(node.clone()),
+			Member::Function(node)=>Self::Function(node.clone()),
+		}
+	}
+}
+
+impl From<Member> for Node {
+	fn from(node:Member)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -453,6 +546,29 @@ impl TryFrom<Node> for Type {
 	type Error = Error;
 	fn try_from(node:Node)->Result<Self,Self::Error>{
 		Self::try_from(&node)
+	}
+}
+
+impl From<&Type> for Node {
+	fn from(node:&Type)-> Self{
+		match node {
+			Type::IntType(node)=>Self::IntType(node.clone()),
+			Type::IdentType(node)=>Self::IdentType(node.clone()),
+			Type::IntLiteralType(node)=>Self::IntLiteralType(node.clone()),
+			Type::StrLiteralType(node)=>Self::StrLiteralType(node.clone()),
+			Type::VoidType(node)=>Self::VoidType(node.clone()),
+			Type::BoolType(node)=>Self::BoolType(node.clone()),
+			Type::ArrayType(node)=>Self::ArrayType(node.clone()),
+			Type::FunctionType(node)=>Self::FunctionType(node.clone()),
+			Type::StructType(node)=>Self::StructType(node.clone()),
+			Type::UnionType(node)=>Self::UnionType(node.clone()),
+		}
+	}
+}
+
+impl From<Type> for Node {
+	fn from(node:Type)-> Self{
+		Self::from(&node)
 	}
 }
 
