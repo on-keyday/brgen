@@ -16,14 +16,14 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("\n")
 	w.Printf("export namespace ast2ts {\n")
 	w.Printf("\n")
+	defer w.Printf("}\n")
 
 	w.Printf("export type NodeType = ")
-	for i, types := range defs.NodeTypes {
+	for i, typ := range defs.NodeTypes {
 		if i != 0 {
 			w.Printf(" | ")
 		}
-		w.Printf("%q", types)
-
+		w.Printf("%q", typ)
 	}
 	w.Printf(";\n\n")
 	for _, def := range defs.Defs {
@@ -44,7 +44,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 			}
 			w.Printf(" {\n")
 			if d.Name == "Node" {
-				w.Printf("	node_type: NodeType;\n")
+				w.Printf("	readonly node_type: NodeType;\n")
 			}
 			for _, field := range d.Fields {
 				if _, ok := commonFields[field.Name]; ok {
@@ -52,6 +52,17 @@ func generate(rw io.Writer, defs *gen.Defs) {
 				}
 				w.Printf("	%s: %s;\n", field.Name, field.Type.TsString())
 			}
+			w.Printf("}\n\n")
+
+			w.Printf("export function is%s(obj: any): obj is %s {\n", d.Name, d.Name)
+			for _, types := range d.Derived {
+				found, ok := defs.Structs[types]
+				if !ok {
+					continue
+				}
+				w.Printf("	if (is%s(obj)) return true;\n", found.Name)
+			}
+			w.Printf("	return false;\n")
 			w.Printf("}\n\n")
 		case *gen.Struct:
 			w.Printf("export interface %s ", d.Name)
@@ -72,6 +83,31 @@ func generate(rw io.Writer, defs *gen.Defs) {
 				w.Printf("	%s: %s;\n", field.Name, field.Type.TsString())
 			}
 			w.Printf("}\n\n")
+			if len(d.Implements) > 0 {
+				w.Printf("export function is%s(obj: any): obj is %s {\n", d.Name, d.Name)
+				w.Printf("	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === %q\n", d.NodeType)
+				w.Printf("}\n\n")
+			} else {
+				w.Printf("export function is%s(obj: any): obj is %s {\n", d.Name, d.Name)
+				w.Printf("	return obj && typeof obj === 'object' && ")
+				for i, field := range d.Fields {
+					if field.Type.IsArray {
+						continue // omit check
+					}
+					if i != 0 {
+						w.Printf(" && ")
+					}
+					if field.Type.Name == "number" || field.Type.Name == "string" || field.Type.Name == "boolean" {
+						w.Printf("typeof obj?.%s === 'number'", field.Name)
+					} else if field.Type.IsPtr {
+						w.Printf("(obj?.%s === null || is%s(obj?.%s))", field.Name, field.Type.Name, field.Name)
+					} else {
+						w.Printf("is%s(obj?.%s)", field.Type.Name, field.Name)
+					}
+				}
+				w.Printf("\n")
+				w.Printf("}\n\n")
+			}
 		case *gen.Enum:
 			w.Printf("export type %s = ", d.Name)
 			for i, val := range d.Values {
@@ -81,9 +117,19 @@ func generate(rw io.Writer, defs *gen.Defs) {
 				w.Printf("%q", val.Str)
 			}
 			w.Printf(";\n\n")
+			w.Printf("export function is%s(obj: any): obj is %s {\n", d.Name, d.Name)
+			w.Printf("	return obj && typeof obj === 'string' && (")
+			for i, val := range d.Values {
+				if i != 0 {
+					w.Printf(" || ")
+				}
+				w.Printf("obj === %q", val.Str)
+			}
+			w.Printf(")\n")
+			w.Printf("}\n\n")
+
 		}
 	}
-	w.Printf("}\n")
 
 }
 

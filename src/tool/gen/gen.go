@@ -115,6 +115,8 @@ func (d *Type) TsString() string {
 	postfix := ""
 	if d.IsArray {
 		postfix += "[]"
+	} else if d.IsPtr || d.IsInterface {
+		postfix += "|null"
 	}
 	return d.Name + postfix
 }
