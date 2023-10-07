@@ -146,31 +146,35 @@ func generate(rw io.Writer, defs *gen.Defs) {
 		}
 	}
 
-	w.Printf("interface rawNode {\n")
+	w.Printf("export interface RawNode {\n")
 	w.Printf("	node_type: NodeType;\n")
 	w.Printf("	loc :Loc;\n")
 	w.Printf("	body :any;\n")
 	w.Printf("}\n\n")
 
-	w.Printf("function isRawNode(obj: any): obj is rawNode {\n")
+	w.Printf("export function isRawNode(obj: any): obj is RawNode {\n")
 	w.Printf("	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && isLoc(obj?.loc) && typeof obj?.body === 'object'\n")
 	w.Printf("}\n\n")
 
-	w.Printf("interface rawScope {\n")
+	w.Printf("export interface RawScope {\n")
 	w.Printf("	prev: number | null;\n")
 	w.Printf("	next : number | null;\n")
 	w.Printf("	branch : number | null;\n")
 	w.Printf(" 	ident: number[];\n")
 	w.Printf("}\n\n")
 
-	w.Printf("function isRawScope(obj: any): obj is rawScope {\n")
+	w.Printf("export function isRawScope(obj: any): obj is RawScope {\n")
 	w.Printf("  return obj && typeof obj === 'object' && (obj?.prev === null || typeof obj?.prev == 'number') && (obj?.next === null || typeof obj?.next == 'number') && (obj?.branch === null || typeof obj?.branch == 'number') && Array.isArray(obj?.ident)\n")
 	w.Printf("}\n\n")
 
-	w.Printf("interface objHolder {\n")
-	w.Printf("	node: rawNode[];\n")
-	w.Printf("	scope :rawScope[];\n")
+	w.Printf("export interface Ast {\n")
+	w.Printf("	node: RawNode[];\n")
+	w.Printf("	scope :RawScope[];\n")
 	w.Printf("}\n")
+
+	w.Printf("export function isAst(obj: any): obj is Ast {\n")
+	w.Printf("	return obj && typeof obj === 'object' && Array.isArray(obj?.node) && Array.isArray(obj?.scope)\n")
+	w.Printf("}\n\n")
 
 	w.Printf("interface astConstructor {\n")
 	w.Printf("	node : Node[];\n")
@@ -178,16 +182,10 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("}\n\n")
 
 	w.Printf("export function parseAST(obj: any): Program {\n")
-	w.Printf("	if (obj === undefined || obj === null) {\n")
-	w.Printf("		throw new Error('invalid node list');\n")
+	w.Printf("	if (!isAst(obj)) {\n")
+	w.Printf("		throw new Error('invalid ast');\n")
 	w.Printf("	}\n")
-	w.Printf("	if (!Array.isArray(obj?.node)) {\n")
-	w.Printf("		throw new Error('invalid node list');\n")
-	w.Printf("	}\n")
-	w.Printf("	if (!Array.isArray(obj?.scope)) {\n")
-	w.Printf("		throw new Error('invalid scope list');\n")
-	w.Printf("	}\n")
-	w.Printf("	const o :objHolder = {\n")
+	w.Printf("	const o :Ast = {\n")
 	w.Printf("		node: obj.node.map((n: any) => {\n")
 	w.Printf("			if (!isRawNode(n)) {\n")
 	w.Printf("				throw new Error('invalid node');\n")
@@ -342,6 +340,16 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("		throw new Error('invalid node list');\n")
 	w.Printf("	}\n")
 	w.Printf("	return root;\n")
+	w.Printf("}\n\n")
+
+	w.Printf("export interface File {\n")
+	w.Printf("	files :string[];\n")
+	w.Printf("	ast :Ast;\n")
+	w.Printf("	error :string\n")
+	w.Printf("}\n\n")
+
+	w.Printf("export function isFile(obj: any): obj is File {\n")
+	w.Printf("	return obj && typeof obj === 'object' && Array.isArray(obj?.files) && isAst(obj?.ast) && typeof obj?.error === 'string'\n")
 	w.Printf("}\n\n")
 }
 
