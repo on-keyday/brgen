@@ -19,11 +19,36 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("use serde_derive::{Serialize,Deserialize};\n\n")
 	w.Printf("use std::collections::HashMap;\n\n")
 
+	w.Printf("pub enum JSONType {\n")
+	w.Printf("	Null,\n")
+	w.Printf("	Bool,\n")
+	w.Printf("	Number,\n")
+	w.Printf("	String,\n")
+	w.Printf("	Array,\n")
+	w.Printf("	Object,\n")
+	w.Printf("}\n\n")
+
+	w.Printf("impl From<&serde_json::Value> for JSONType {\n")
+	w.Printf("	fn from(v:&serde_json::Value)->Self{\n")
+	w.Printf("		match v{\n")
+	w.Printf("			serde_json::Value::Null=>Self::Null,\n")
+	w.Printf("			serde_json::Value::Bool(_)=>Self::Bool,\n")
+	w.Printf("			serde_json::Value::Number(_)=>Self::Number,\n")
+	w.Printf("			serde_json::Value::String(_)=>Self::String,\n")
+	w.Printf("			serde_json::Value::Array(_)=>Self::Array,\n")
+	w.Printf("			serde_json::Value::Object(_)=>Self::Object,\n")
+	w.Printf("		}\n")
+	w.Printf("	}\n")
+	w.Printf("}\n\n")
+
 	w.Printf("pub enum Error {\n")
 	w.Printf("	UnknownNodeType(NodeType),\n")
 	w.Printf("	MismatchNodeType(NodeType,NodeType),\n")
 	w.Printf("	JSONError(serde_json::Error),\n")
 	w.Printf("	MissingField(NodeType,&'static str),\n")
+	w.Printf("	MismatchJSONType(JSONType,JSONType),\n")
+	w.Printf("	InvalidNodeType(NodeType),\n")
+	w.Printf("	IndexOutOfBounds(usize),\n")
 	w.Printf("}\n\n")
 
 	w.Printf("#[derive(Debug,Clone,Copy,Serialize,Deserialize)]\n")
@@ -46,15 +71,24 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("	}\n")
 	w.Printf("}\n\n")
 
-	w.Printf("impl TryFrom<&Node> for NodeType {\n")
-	w.Printf("	type Error = ();\n")
-	w.Printf("	fn try_from(node:&Node)->Result<Self,Self::Error>{\n")
+	w.Printf("impl From<&Node> for NodeType {\n")
+	w.Printf("	fn from(node:&Node)-> Self{\n")
 	w.Printf("		match node {\n")
 	for _, nodeType := range defs.NodeTypes {
-		w.Printf("			Node::%s(_) =>Ok(Self::%s),\n", strcase.ToCamel(nodeType), strcase.ToCamel(nodeType))
+		typ := strcase.ToCamel(nodeType)
+		_, ok := defs.Structs[typ]
+		if !ok {
+			continue
+		}
+		w.Printf("			Node::%s(_) => Self::%s,\n", typ, typ)
 	}
-	w.Printf("			_=> Err(()),\n")
 	w.Printf("		}\n")
+	w.Printf("	}\n")
+	w.Printf("}\n\n")
+
+	w.Printf("impl From<Node> for NodeType {\n")
+	w.Printf("	fn from(node:Node)-> Self{\n")
+	w.Printf("		Self::from(&node)\n")
 	w.Printf("	}\n")
 	w.Printf("}\n\n")
 
@@ -71,6 +105,32 @@ func generate(rw io.Writer, defs *gen.Defs) {
 				w.Printf("	%s(Rc<RefCell<%s>>),\n", field, found.Name)
 			}
 			w.Printf("}\n\n")
+			if d.Name == "Node" {
+				continue
+			}
+			w.Printf("impl TryFrom<&Node> for %s {\n", d.Name)
+			w.Printf("	type Error = Error;\n")
+			w.Printf("	fn try_from(node:&Node)->Result<Self,Self::Error>{\n")
+			w.Printf("		match node {\n")
+			for _, field := range d.Derived {
+				found, ok := defs.Structs[field]
+				if !ok {
+					continue
+				}
+				w.Printf("			Node::%s(node)=>Ok(Self::%s(node.clone())),\n", found.Name, field)
+			}
+			w.Printf("			_=> Err(Error::InvalidNodeType(node.into())),\n")
+			w.Printf("		}\n")
+			w.Printf("	}\n")
+			w.Printf("}\n\n")
+
+			w.Printf("impl TryFrom<Node> for %s {\n", d.Name)
+			w.Printf("	type Error = Error;\n")
+			w.Printf("	fn try_from(node:Node)->Result<Self,Self::Error>{\n")
+			w.Printf("		Self::try_from(&node)\n")
+			w.Printf("	}\n")
+			w.Printf("}\n\n")
+
 		case *gen.Struct:
 			if len(d.Implements) == 0 && d.Name != "Scope" {
 				w.Printf("#[derive(Debug,Clone,Copy,Serialize,Deserialize)]\n")
@@ -169,13 +229,13 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("		};\n")
 	w.Printf("		nodes.push(node);\n")
 	w.Printf("	}\n")
-	w.Printf("	for raw_scope in &ast.scope{\n")
-	w.Printf("		let scope = Scope{\n")
+	w.Printf("	for _ in &ast.scope{\n")
+	w.Printf("		let scope = Rc::new(RefCell::new(Scope{\n")
 	w.Printf("			prev: None,\n")
 	w.Printf("			next: None,\n")
 	w.Printf("			branch: None,\n")
 	w.Printf("			ident: Vec::new(),\n")
-	w.Printf("		};\n")
+	w.Printf("		}));\n")
 	w.Printf("		scopes.push(scope);\n")
 	w.Printf("	}\n")
 
@@ -193,7 +253,16 @@ func generate(rw io.Writer, defs *gen.Defs) {
 			w.Printf("					Node::%s(node)=>node,\n", d.Name)
 			w.Printf("					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),\n")
 			w.Printf("				};\n")
+			indexNodeFn := func(indent, val, bulk, name string) {
+				w.Printf(indent+"let %s = match %s.get(%s as usize) {\n", val, bulk, name)
+				w.Printf(indent + "	Some(v)=>v,\n")
+				w.Printf(indent+"	None => return Err(Error::IndexOutOfBounds(%s as usize)),\n", name)
+				w.Printf(indent + "};\n")
+			}
 			for _, field := range d.Fields {
+				if field.Name == "loc" {
+					continue
+				}
 				w.Printf("				let %s_body = match raw_node.body.get(%q) {\n", field.Name, field.Tag)
 				w.Printf("					Some(v)=>v,\n")
 				w.Printf("					None=>return Err(Error::MissingField(raw_node.node_type,%q)),\n", field.Tag)
@@ -201,34 +270,70 @@ func generate(rw io.Writer, defs *gen.Defs) {
 				if field.Type.IsArray {
 					w.Printf("				let %s_body = match %s_body.as_array(){\n", field.Name, field.Name)
 					w.Printf("					Some(v)=>v,\n")
-					w.Printf("					None=>return Err(Error::JSONError(serde_json::Error::custom(\"%s is not array\"))),\n", field.Name)
+					w.Printf("					None=>return Err(Error::MismatchJSONType(%s_body.into(),JSONType::Array)),\n", field.Name)
 					w.Printf("				};\n")
-					w.Printf("				for (i,raw_node) in raw_node.body.%s.iter().enumerate(){\n", field.Name)
-					w.Printf("					let node = nodes[*raw_node as usize].clone();\n")
-					w.Printf("					let node = match node {\n")
-					w.Printf("						Node::%s(node)=>node,\n", field.Type.Name)
-					w.Printf("						_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),\n")
+					w.Printf("				for (i,link) in %s_body.iter().enumerate(){\n", field.Name)
+					w.Printf("					let link = match link.as_u64() {\n")
+					w.Printf("						Some(v)=>v,\n")
+					w.Printf("						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),\n")
 					w.Printf("					};\n")
-					w.Printf("					node.%s.push(node);\n", field.Name)
+					indexNodeFn("					", "body", "nodes", "link")
+					if field.Type.IsInterface {
+						if field.Type.Name == "Node" {
+							w.Printf("					node.borrow_mut().%s.push(body.clone());\n", field.Name)
+						} else {
+							w.Printf("					node.borrow_mut().%s.push(body.try_into()?);\n", field.Name)
+						}
+					} else {
+						w.Printf("					let body = match body {\n")
+						w.Printf("						Node::%s(body)=>body,\n", field.Type.Name)
+						w.Printf("						x =>return Err(Error::MismatchNodeType(x.into(),body.into())),\n")
+						w.Printf("					};\n")
+						w.Printf("					node.borrow_mut().%s.push(body.clone());\n", field.Name)
+					}
 					w.Printf("				}\n")
 				} else if field.Type.IsPtr || field.Type.IsInterface {
-					w.Printf("				if let Some(raw_node) = raw_node.body.%s{\n", field.Name)
-					w.Printf("					let node = nodes[raw_node as usize].clone();\n")
-					w.Printf("					let node = match node {\n")
-					w.Printf("						Node::%s(node)=>node,\n", field.Type.Name)
-					w.Printf("						_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),\n")
-					w.Printf("					};\n")
-					w.Printf("					node.%s = Some(node);\n", field.Name)
-					w.Printf("				}\n")
+					w.Printf("				let %s_body = match %s_body.as_u64() {\n", field.Name, field.Name)
+					w.Printf("					Some(v)=>v,\n")
+					w.Printf("					None=>return Err(Error::MismatchJSONType(%s_body.into(),JSONType::Number)),\n", field.Name)
+					w.Printf("				};\n")
+					if field.Type.Name == "Scope" {
+						indexNodeFn("				", "body", "scopes", field.Name+"_body")
+						w.Printf("				node.borrow_mut().%s = Some(body.clone());\n", field.Name)
+					} else {
+						indexNodeFn("				", "body", "nodes", field.Name+"_body")
+						if field.Type.IsInterface {
+							if field.Type.Name == "Node" {
+								w.Printf("				node.borrow_mut().%s = Some(body.clone());\n", field.Name)
+							} else {
+								w.Printf("				node.borrow_mut().%s = Some(body.try_into()?);\n", field.Name)
+							}
+						} else {
+							w.Printf("				let body = match body {\n")
+							w.Printf("					Node::%s(node)=>node,\n", field.Type.Name)
+							w.Printf("					x =>return Err(Error::MismatchNodeType(x.into(),body.into())),\n")
+							w.Printf("				};\n")
+							if field.Type.IsWeak {
+								w.Printf("				node.borrow_mut().%s = Some(Rc::downgrade(&body));\n", field.Name)
+							} else {
+								w.Printf("				node.borrow_mut().%s = Some(body.clone());\n", field.Name)
+							}
+						}
+					}
 				} else if field.Type.Name == "u64" {
+					continue
 					w.Printf("				node.%s = raw_node.body.%s;\n", field.Name, field.Name)
 				} else if field.Type.Name == "String" {
+					continue
 					w.Printf("				node.%s = raw_node.body.%s.clone();\n", field.Name, field.Name)
 				} else if field.Type.Name == "bool" {
+					continue
 					w.Printf("				node.%s = raw_node.body.%s;\n", field.Name, field.Name)
 				} else if field.Type.Name == "Loc" {
+					continue
 					w.Printf("				node.%s = raw_node.loc.clone();\n", field.Name)
 				} else {
+					continue
 					_, ok := defs.Enums[field.Type.Name]
 					if !ok {
 						continue
@@ -244,6 +349,46 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	}
 	w.Printf("			_=>return Err(Error::UnknownNodeType(raw_node.node_type)),\n")
 	w.Printf("		};\n")
+	w.Printf("	}\n")
+
+	w.Printf("	for (i,raw_scope) in ast.scope.into_iter().enumerate(){\n")
+	w.Printf("		let mut scope = scopes[i].clone();\n")
+	w.Printf("		if let Some(prev) = raw_scope.prev{\n")
+	w.Printf("			let prev = match scopes.get(prev as usize) {\n")
+	w.Printf("				Some(v)=>v,\n")
+	w.Printf("				None =>return Err(Error::IndexOutOfBounds(prev as usize)),\n")
+	w.Printf("			};\n")
+	w.Printf("			scope.borrow_mut().prev = Some(Rc::downgrade(&prev));\n")
+	w.Printf("		}\n")
+	w.Printf("		if let Some(next) = raw_scope.next{\n")
+	w.Printf("			let next = match scopes.get(next as usize) {\n")
+	w.Printf("				Some(v)=>v,\n")
+	w.Printf("				None =>return Err(Error::IndexOutOfBounds(next as usize)),\n")
+	w.Printf("			};\n")
+	w.Printf("			scope.borrow_mut().next = Some(next.clone());\n")
+	w.Printf("		}\n")
+	w.Printf("		if let Some(branch) = raw_scope.branch{\n")
+	w.Printf("			let branch = match scopes.get(branch as usize) {\n")
+	w.Printf("				Some(v)=>v,\n")
+	w.Printf("				None =>return Err(Error::IndexOutOfBounds(branch as usize)),\n")
+	w.Printf("			};\n")
+	w.Printf("			scope.borrow_mut().branch = Some(branch.clone());\n")
+	w.Printf("		}\n")
+	w.Printf("		for ident in &raw_scope.ident{\n")
+	w.Printf("			let ident = match nodes.get(*ident as usize) {\n")
+	w.Printf("				Some(v)=>v,\n")
+	w.Printf("				None =>return Err(Error::IndexOutOfBounds(*ident as usize)),\n")
+	w.Printf("			};\n")
+	w.Printf("			scope.borrow_mut().ident.push(ident.clone());\n")
+	w.Printf("		}\n")
+	w.Printf("	}\n\n")
+
+	w.Printf("	match nodes.get(0){\n")
+	w.Printf("		Some(v)=> match v {\n")
+	w.Printf("			Node::Program(v)=>Ok(v.clone()),\n")
+	w.Printf("			_=> Err(Error::MismatchNodeType(NodeType::Program,v.into())),\n")
+	w.Printf("		},\n")
+	w.Printf("		None=>Err(Error::IndexOutOfBounds(0)),\n")
 	w.Printf("	}\n")
 }
 

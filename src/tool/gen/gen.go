@@ -124,10 +124,14 @@ func (d *Type) RustString() string {
 		if d.IsWeak {
 			ptr = "Weak<"
 		}
-		prefix += "Option<" + ptr + "RefCell<"
-		postfix += ">" + ">" + ">"
+		prefix += ptr + "RefCell<"
+		postfix += ">" + ">"
+		if !d.IsArray {
+			prefix = "Option<" + prefix
+			postfix = postfix + ">"
+		}
 	}
-	if d.IsInterface {
+	if d.IsInterface && !d.IsArray {
 		prefix += "Option<"
 		postfix += ">"
 	}
