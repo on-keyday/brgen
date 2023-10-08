@@ -563,6 +563,12 @@ export function isEndian(obj: any): obj is Endian {
 	return obj && typeof obj === 'string' && (obj === "unspec" || obj === "big" || obj === "little")
 }
 
+export type TokenTag = "indent" | "space" | "line" | "punct" | "int_literal" | "bool_literal" | "str_literal" | "keyword" | "ident" | "comment" | "error" | "unknown";
+
+export function isTokenTag(obj: any): obj is TokenTag {
+	return obj && typeof obj === 'string' && (obj === "indent" || obj === "space" || obj === "line" || obj === "punct" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "keyword" || obj === "ident" || obj === "comment" || obj === "error" || obj === "unknown")
+}
+
 export interface Scope {
 	prev: Scope|null;
 	next: Scope|null;
@@ -592,6 +598,16 @@ export interface Pos {
 
 export function isPos(obj: any): obj is Pos {
 	return obj && typeof obj === 'object' && typeof obj?.begin === 'number' && typeof obj?.end === 'number'
+}
+
+export interface Token {
+	tag: TokenTag;
+	token: string;
+	loc: Loc;
+}
+
+export function isToken(obj: any): obj is Token {
+	return obj && typeof obj === 'object' && isTokenTag(obj?.tag) && typeof obj?.token === 'string' && isLoc(obj?.loc)
 }
 
 export interface RawNode {
@@ -2243,9 +2259,6 @@ export function walk(node: Node, fn: (node: Node) => boolean) {
 			if (n.expr_type !== null && !walk(n.expr_type, fn)) {
 				return false;
 			}
-			if (n.base !== null && !walk(n.base, fn)) {
-				return false;
-			}
 			break;
 		}
 		case "call": {
@@ -2575,9 +2588,6 @@ export function walk(node: Node, fn: (node: Node) => boolean) {
 					return false;
 				}
 			}
-			if (n.belong !== null && !walk(n.belong, fn)) {
-				return false;
-			}
 			break;
 		}
 		case "format": {
@@ -2589,9 +2599,6 @@ export function walk(node: Node, fn: (node: Node) => boolean) {
 				return false;
 			}
 			if (n.body !== null && !walk(n.body, fn)) {
-				return false;
-			}
-			if (n.belong !== null && !walk(n.belong, fn)) {
 				return false;
 			}
 			if (n.struct_type !== null && !walk(n.struct_type, fn)) {
@@ -2613,9 +2620,6 @@ export function walk(node: Node, fn: (node: Node) => boolean) {
 				}
 			}
 			if (n.return_type !== null && !walk(n.return_type, fn)) {
-				return false;
-			}
-			if (n.belong !== null && !walk(n.belong, fn)) {
 				return false;
 			}
 			if (n.body !== null && !walk(n.body, fn)) {
@@ -2641,9 +2645,6 @@ export function walk(node: Node, fn: (node: Node) => boolean) {
 			if (n.ident !== null && !walk(n.ident, fn)) {
 				return false;
 			}
-			if (n.base !== null && !walk(n.base, fn)) {
-				return false;
-			}
 			break;
 		}
 		case "int_literal_type": {
@@ -2651,9 +2652,6 @@ export function walk(node: Node, fn: (node: Node) => boolean) {
 				break;
 			}
 			const n :IntLiteralType = node as IntLiteralType;
-			if (n.base !== null && !walk(n.base, fn)) {
-				return false;
-			}
 			break;
 		}
 		case "str_literal_type": {
@@ -2661,9 +2659,6 @@ export function walk(node: Node, fn: (node: Node) => boolean) {
 				break;
 			}
 			const n :StrLiteralType = node as StrLiteralType;
-			if (n.base !== null && !walk(n.base, fn)) {
-				return false;
-			}
 			break;
 		}
 		case "void_type": {

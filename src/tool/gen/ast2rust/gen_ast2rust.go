@@ -154,7 +154,9 @@ func generate(rw io.Writer, defs *gen.Defs) {
 			w.Printf("}\n\n")
 
 		case *gen.Struct:
-			if len(d.Implements) == 0 && d.Name != "Scope" {
+			if d.Name == "Token" {
+				w.Printf("#[derive(Debug,Clone,Serialize,Deserialize)]\n")
+			} else if len(d.Implements) == 0 && d.Name != "Scope" {
 				w.Printf("#[derive(Debug,Clone,Copy,Serialize,Deserialize)]\n")
 			} else {
 				w.Printf("#[derive(Debug,Clone)]\n")
@@ -198,7 +200,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 			w.Printf("}\n\n")
 			w.Printf("impl TryFrom<&str> for %s {\n", d.Name)
 			w.Printf("	type Error = ();\n")
-			w.Printf("	fn try_from(s:&str)->Result<Self,Self::Error>{\n")
+			w.Printf("	fn try_from(s:&str)->Result<Self,()>{\n")
 			w.Printf("		match s{\n")
 			for _, field := range d.Values {
 				w.Printf("			%q =>Ok(Self::%s),\n", field.Str, field.Name)
@@ -232,7 +234,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("}\n\n")
 
 	w.Printf("pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{\n")
-	defer w.Printf("}\n\n")
+
 	w.Printf("	let mut nodes = Vec::new();\n")
 	w.Printf("	let mut scopes = Vec::new();\n")
 	w.Printf("	for raw_node in &ast.node{\n")
@@ -449,6 +451,51 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("		},\n")
 	w.Printf("		None=>Err(Error::IndexOutOfBounds(0)),\n")
 	w.Printf("	}\n")
+	w.Printf("}\n\n")
+
+	w.Printf("pub fn walk_node<F:FnMut(&Node)->bool>(node:&Node,f:&mut F){\n")
+	w.Printf("	if !f(node){\n")
+	w.Printf("		return;\n")
+	w.Printf("	}\n")
+	w.Printf("	match node {\n")
+	for _, nodeType := range defs.Defs {
+		switch d := nodeType.(type) {
+		case *gen.Struct:
+			if len(d.Implements) == 0 {
+				continue
+			}
+			w.Printf("		Node::%s(node)=>{\n", d.Name)
+			for _, field := range d.Fields {
+				if field.Type.Name == "Scope" {
+					continue
+				}
+				if field.Type.IsWeak {
+					continue
+				}
+				if field.Type.IsArray {
+					w.Printf("			for node in &node.borrow().%s{\n", field.Name)
+					if field.Type.Name == "Node" {
+						w.Printf("				walk_node(node,f);\n")
+					} else {
+						w.Printf("				walk_node(&node.into(),f);\n")
+					}
+					w.Printf("			}\n")
+				} else if field.Type.IsPtr || field.Type.IsInterface {
+					w.Printf("			if let Some(node) = &node.borrow().%s{\n", field.Name)
+					if field.Type.Name == "Node" {
+						w.Printf("				walk_node(node,f);\n")
+					} else {
+						w.Printf("				walk_node(&node.into(),f);\n")
+					}
+					w.Printf("			}\n")
+				}
+			}
+			w.Printf("		},\n")
+		}
+	}
+	w.Printf("	}\n")
+	w.Printf("}\n\n")
+
 }
 
 func main() {

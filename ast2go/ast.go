@@ -859,6 +859,90 @@ func (n Endian) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+type TokenTag int
+
+const (
+	TokenTagIndent      TokenTag = 0
+	TokenTagSpace       TokenTag = 1
+	TokenTagLine        TokenTag = 2
+	TokenTagPunct       TokenTag = 3
+	TokenTagIntLiteral  TokenTag = 4
+	TokenTagBoolLiteral TokenTag = 5
+	TokenTagStrLiteral  TokenTag = 6
+	TokenTagKeyword     TokenTag = 7
+	TokenTagIdent       TokenTag = 8
+	TokenTagComment     TokenTag = 9
+	TokenTagError       TokenTag = 10
+	TokenTagUnknown     TokenTag = 11
+)
+
+func (n TokenTag) String() string {
+	switch n {
+	case TokenTagIndent:
+		return "indent"
+	case TokenTagSpace:
+		return "space"
+	case TokenTagLine:
+		return "line"
+	case TokenTagPunct:
+		return "punct"
+	case TokenTagIntLiteral:
+		return "int_literal"
+	case TokenTagBoolLiteral:
+		return "bool_literal"
+	case TokenTagStrLiteral:
+		return "str_literal"
+	case TokenTagKeyword:
+		return "keyword"
+	case TokenTagIdent:
+		return "ident"
+	case TokenTagComment:
+		return "comment"
+	case TokenTagError:
+		return "error"
+	case TokenTagUnknown:
+		return "unknown"
+	default:
+		return fmt.Sprintf("TokenTag(%d)", n)
+	}
+}
+
+func (n TokenTag) UnmarshalJSON(data []byte) error {
+	var tmp string
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+	switch tmp {
+	case "indent":
+		n = TokenTagIndent
+	case "space":
+		n = TokenTagSpace
+	case "line":
+		n = TokenTagLine
+	case "punct":
+		n = TokenTagPunct
+	case "int_literal":
+		n = TokenTagIntLiteral
+	case "bool_literal":
+		n = TokenTagBoolLiteral
+	case "str_literal":
+		n = TokenTagStrLiteral
+	case "keyword":
+		n = TokenTagKeyword
+	case "ident":
+		n = TokenTagIdent
+	case "comment":
+		n = TokenTagComment
+	case "error":
+		n = TokenTagError
+	case "unknown":
+		n = TokenTagUnknown
+	default:
+		return fmt.Errorf("unknown TokenTag: %q", tmp)
+	}
+	return nil
+}
+
 type Scope struct {
 	Prev   *Scope
 	Next   *Scope
@@ -876,6 +960,12 @@ type Loc struct {
 type Pos struct {
 	Begin uint64 `json:"begin"`
 	End   uint64 `json:"end"`
+}
+
+type Token struct {
+	Tag   TokenTag `json:"tag"`
+	Token string   `json:"token"`
+	Loc   Loc      `json:"loc"`
 }
 
 type astConstructor struct {
@@ -1761,6 +1851,9 @@ func Walk(n Node, f func(Node) (cont bool)) {
 	}
 	switch v := n.(type) {
 	case *Program:
+		if v.StructType != nil {
+			Walk(v.StructType, f)
+		}
 		for _, w := range v.Elements {
 			Walk(w, f)
 		}
@@ -1798,9 +1891,6 @@ func Walk(n Node, f func(Node) (cont bool)) {
 		if v.ExprType != nil {
 			Walk(v.ExprType, f)
 		}
-		if v.Base != nil {
-			Walk(v.Base, f)
-		}
 	case *Call:
 		if v.ExprType != nil {
 			Walk(v.ExprType, f)
@@ -1820,6 +1910,9 @@ func Walk(n Node, f func(Node) (cont bool)) {
 		}
 		if v.Cond != nil {
 			Walk(v.Cond, f)
+		}
+		if v.Then != nil {
+			Walk(v.Then, f)
 		}
 		if v.Els != nil {
 			Walk(v.Els, f)
@@ -1855,6 +1948,9 @@ func Walk(n Node, f func(Node) (cont bool)) {
 		if v.Cond != nil {
 			Walk(v.Cond, f)
 		}
+		for _, w := range v.Branch {
+			Walk(w, f)
+		}
 	case *Range:
 		if v.ExprType != nil {
 			Walk(v.ExprType, f)
@@ -1882,6 +1978,12 @@ func Walk(n Node, f func(Node) (cont bool)) {
 	case *Import:
 		if v.ExprType != nil {
 			Walk(v.ExprType, f)
+		}
+		if v.Base != nil {
+			Walk(v.Base, f)
+		}
+		if v.ImportDesc != nil {
+			Walk(v.ImportDesc, f)
 		}
 	case *IntLiteral:
 		if v.ExprType != nil {
@@ -1917,6 +2019,9 @@ func Walk(n Node, f func(Node) (cont bool)) {
 		if v.Step != nil {
 			Walk(v.Step, f)
 		}
+		if v.Body != nil {
+			Walk(v.Body, f)
+		}
 	case *IndentScope:
 		for _, w := range v.Elements {
 			Walk(w, f)
@@ -1935,11 +2040,17 @@ func Walk(n Node, f func(Node) (cont bool)) {
 	case *Break:
 	case *Continue:
 	case *Assert:
+		if v.Cond != nil {
+			Walk(v.Cond, f)
+		}
 	case *ImplicitYield:
 		if v.Expr != nil {
 			Walk(v.Expr, f)
 		}
 	case *Field:
+		if v.Ident != nil {
+			Walk(v.Ident, f)
+		}
 		if v.FieldType != nil {
 			Walk(v.FieldType, f)
 		}
@@ -1950,12 +2061,36 @@ func Walk(n Node, f func(Node) (cont bool)) {
 			Walk(w, f)
 		}
 	case *Format:
+		if v.Ident != nil {
+			Walk(v.Ident, f)
+		}
+		if v.Body != nil {
+			Walk(v.Body, f)
+		}
+		if v.StructType != nil {
+			Walk(v.StructType, f)
+		}
 	case *Function:
+		if v.Ident != nil {
+			Walk(v.Ident, f)
+		}
+		for _, w := range v.Parameters {
+			Walk(w, f)
+		}
 		if v.ReturnType != nil {
 			Walk(v.ReturnType, f)
 		}
+		if v.Body != nil {
+			Walk(v.Body, f)
+		}
+		if v.FuncType != nil {
+			Walk(v.FuncType, f)
+		}
 	case *IntType:
 	case *IdentType:
+		if v.Ident != nil {
+			Walk(v.Ident, f)
+		}
 	case *IntLiteralType:
 	case *StrLiteralType:
 	case *VoidType:
@@ -1979,9 +2114,15 @@ func Walk(n Node, f func(Node) (cont bool)) {
 			Walk(w, f)
 		}
 	case *UnionType:
+		for _, w := range v.Fields {
+			Walk(w, f)
+		}
 	case *Cast:
 		if v.ExprType != nil {
 			Walk(v.ExprType, f)
+		}
+		if v.Base != nil {
+			Walk(v.Base, f)
 		}
 		if v.Expr != nil {
 			Walk(v.Expr, f)

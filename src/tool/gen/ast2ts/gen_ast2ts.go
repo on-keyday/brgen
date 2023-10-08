@@ -112,7 +112,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 						w.Printf("typeof obj?.%s === 'object'", field.Name)
 
 					} else if field.Type.Name == "number" || field.Type.Name == "string" || field.Type.Name == "boolean" {
-						w.Printf("typeof obj?.%s === 'number'", field.Name)
+						w.Printf("typeof obj?.%s === '%s'", field.Name, field.Type.Name)
 					} else if field.Type.IsPtr {
 						w.Printf("(obj?.%s === null || is%s(obj?.%s))", field.Name, field.Type.Name, field.Name)
 					} else {
@@ -371,6 +371,9 @@ func generate(rw io.Writer, defs *gen.Defs) {
 			for _, field := range d.Fields {
 				if field.Type.Name == "Scope" {
 					continue
+				}
+				if field.Type.IsWeak {
+					continue // avoid infinite loop
 				}
 				if field.Type.IsArray {
 					w.Printf("			for (const e of n.%s) {\n", field.Name)

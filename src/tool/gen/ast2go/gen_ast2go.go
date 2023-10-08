@@ -252,13 +252,11 @@ func generate(w io.Writer, list *gen.Defs) {
 			}
 			writer.Printf("	case *%s:\n", structDef.Name)
 			for _, field := range structDef.Fields {
-				if field.Name == "Loc" {
+				if field.Type.Name == "Scope" {
 					continue
 				}
-				_, node_struct := nodeStructMap[field.Type.Name]
-				_, node_interface := list.Interfaces[field.Type.Name]
-				if !node_struct && !node_interface {
-					continue
+				if field.Type.IsWeak {
+					continue // avoid infinite loop
 				}
 				if field.Type.IsArray {
 					writer.Printf("		for _, w := range v.%s {\n", field.Name)
@@ -268,8 +266,6 @@ func generate(w io.Writer, list *gen.Defs) {
 					writer.Printf("		if v.%s != nil {\n", field.Name)
 					writer.Printf("			Walk(v.%s, f)\n", field.Name)
 					writer.Printf("		}\n")
-				} else {
-					writer.Printf("		Walk(v.%s, f)\n", field.Name)
 				}
 			}
 		}

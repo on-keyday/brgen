@@ -2412,7 +2412,7 @@ pub enum UnaryOp {
 
 impl TryFrom<&str> for UnaryOp {
 	type Error = ();
-	fn try_from(s:&str)->Result<Self,Self::Error>{
+	fn try_from(s:&str)->Result<Self,()>{
 		match s{
 			"!" =>Ok(Self::Not),
 			"-" =>Ok(Self::MinusSign),
@@ -2466,7 +2466,7 @@ pub enum BinaryOp {
 
 impl TryFrom<&str> for BinaryOp {
 	type Error = ();
-	fn try_from(s:&str)->Result<Self,Self::Error>{
+	fn try_from(s:&str)->Result<Self,()>{
 		match s{
 			"*" =>Ok(Self::Mul),
 			"/" =>Ok(Self::Div),
@@ -2526,7 +2526,7 @@ pub enum IdentUsage {
 
 impl TryFrom<&str> for IdentUsage {
 	type Error = ();
-	fn try_from(s:&str)->Result<Self,Self::Error>{
+	fn try_from(s:&str)->Result<Self,()>{
 		match s{
 			"unknown" =>Ok(Self::Unknown),
 			"reference" =>Ok(Self::Reference),
@@ -2551,11 +2551,49 @@ pub enum Endian {
 
 impl TryFrom<&str> for Endian {
 	type Error = ();
-	fn try_from(s:&str)->Result<Self,Self::Error>{
+	fn try_from(s:&str)->Result<Self,()>{
 		match s{
 			"unspec" =>Ok(Self::Unspec),
 			"big" =>Ok(Self::Big),
 			"little" =>Ok(Self::Little),
+			_=> Err(()),
+		}
+	}
+}
+
+#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+#[serde(rename_all = "snake_case",untagged)]
+pub enum TokenTag {
+	Indent,
+	Space,
+	Line,
+	Punct,
+	IntLiteral,
+	BoolLiteral,
+	StrLiteral,
+	Keyword,
+	Ident,
+	Comment,
+	Error,
+	Unknown,
+}
+
+impl TryFrom<&str> for TokenTag {
+	type Error = ();
+	fn try_from(s:&str)->Result<Self,()>{
+		match s{
+			"indent" =>Ok(Self::Indent),
+			"space" =>Ok(Self::Space),
+			"line" =>Ok(Self::Line),
+			"punct" =>Ok(Self::Punct),
+			"int_literal" =>Ok(Self::IntLiteral),
+			"bool_literal" =>Ok(Self::BoolLiteral),
+			"str_literal" =>Ok(Self::StrLiteral),
+			"keyword" =>Ok(Self::Keyword),
+			"ident" =>Ok(Self::Ident),
+			"comment" =>Ok(Self::Comment),
+			"error" =>Ok(Self::Error),
+			"unknown" =>Ok(Self::Unknown),
 			_=> Err(()),
 		}
 	}
@@ -2581,6 +2619,13 @@ pub struct Loc {
 pub struct Pos {
 	pub begin: u64,
 	pub end: u64,
+}
+
+#[derive(Debug,Clone,Serialize,Deserialize)]
+pub struct Token {
+	pub tag: TokenTag,
+	pub token: String,
+	pub loc: Loc,
 }
 
 #[derive(Debug,Clone,Serialize,Deserialize)]
@@ -4805,6 +4850,334 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 			_=> Err(Error::MismatchNodeType(NodeType::Program,v.into())),
 		},
 		None=>Err(Error::IndexOutOfBounds(0)),
+	}
+}
+
+pub fn walk_node<F:FnMut(&Node)->bool>(node:&Node,f:&mut F){
+	if !f(node){
+		return;
+	}
+	match node {
+		Node::Program(node)=>{
+			if let Some(node) = &node.borrow().struct_type{
+				walk_node(&node.into(),f);
+			}
+			for node in &node.borrow().elements{
+				walk_node(node,f);
+			}
+		},
+		Node::Binary(node)=>{
+			if let Some(node) = &node.borrow().expr_type{
+				walk_node(&node.into(),f);
+			}
+			if let Some(node) = &node.borrow().left{
+				walk_node(&node.into(),f);
+			}
+			if let Some(node) = &node.borrow().right{
+				walk_node(&node.into(),f);
+			}
+		},
+		Node::Unary(node)=>{
+			if let Some(node) = &node.borrow().expr_type{
+				walk_node(&node.into(),f);
+			}
+			if let Some(node) = &node.borrow().expr{
+				walk_node(&node.into(),f);
+			}
+		},
+		Node::Cond(node)=>{
+			if let Some(node) = &node.borrow().expr_type{
+				walk_node(&node.into(),f);
+			}
+			if let Some(node) = &node.borrow().cond{
+				walk_node(&node.into(),f);
+			}
+			if let Some(node) = &node.borrow().then{
+				walk_node(&node.into(),f);
+			}
+			if let Some(node) = &node.borrow().els{
+				walk_node(&node.into(),f);
+			}
+		},
+		Node::Ident(node)=>{
+			if let Some(node) = &node.borrow().expr_type{
+				walk_node(&node.into(),f);
+			}
+		},
+		Node::Call(node)=>{
+			if let Some(node) = &node.borrow().expr_type{
+				walk_node(&node.into(),f);
+			}
+			if let Some(node) = &node.borrow().callee{
+				walk_node(&node.into(),f);
+			}
+			if let Some(node) = &node.borrow().raw_arguments{
+				walk_node(&node.into(),f);
+			}
+			for node in &node.borrow().arguments{
+				walk_node(&node.into(),f);
+			}
+		},
+		Node::If(node)=>{
+			if let Some(node) = &node.borrow().expr_type{
+				walk_node(&node.into(),f);
+			}
+			if let Some(node) = &node.borrow().cond{
+				walk_node(&node.into(),f);
+			}
+			if let Some(node) = &node.borrow().then{
+				walk_node(&node.into(),f);
+			}
+			if let Some(node) = &node.borrow().els{
+				walk_node(node,f);
+			}
+		},
+		Node::MemberAccess(node)=>{
+			if let Some(node) = &node.borrow().expr_type{
+				walk_node(&node.into(),f);
+			}
+			if let Some(node) = &node.borrow().target{
+				walk_node(&node.into(),f);
+			}
+		},
+		Node::Paren(node)=>{
+			if let Some(node) = &node.borrow().expr_type{
+				walk_node(&node.into(),f);
+			}
+			if let Some(node) = &node.borrow().expr{
+				walk_node(&node.into(),f);
+			}
+		},
+		Node::Index(node)=>{
+			if let Some(node) = &node.borrow().expr_type{
+				walk_node(&node.into(),f);
+			}
+			if let Some(node) = &node.borrow().expr{
+				walk_node(&node.into(),f);
+			}
+			if let Some(node) = &node.borrow().index{
+				walk_node(&node.into(),f);
+			}
+		},
+		Node::Match(node)=>{
+			if let Some(node) = &node.borrow().expr_type{
+				walk_node(&node.into(),f);
+			}
+			if let Some(node) = &node.borrow().cond{
+				walk_node(&node.into(),f);
+			}
+			for node in &node.borrow().branch{
+				walk_node(&node.into(),f);
+			}
+		},
+		Node::Range(node)=>{
+			if let Some(node) = &node.borrow().expr_type{
+				walk_node(&node.into(),f);
+			}
+			if let Some(node) = &node.borrow().start{
+				walk_node(&node.into(),f);
+			}
+			if let Some(node) = &node.borrow().end{
+				walk_node(&node.into(),f);
+			}
+		},
+		Node::TmpVar(node)=>{
+			if let Some(node) = &node.borrow().expr_type{
+				walk_node(&node.into(),f);
+			}
+		},
+		Node::BlockExpr(node)=>{
+			if let Some(node) = &node.borrow().expr_type{
+				walk_node(&node.into(),f);
+			}
+			for node in &node.borrow().calls{
+				walk_node(node,f);
+			}
+			if let Some(node) = &node.borrow().expr{
+				walk_node(&node.into(),f);
+			}
+		},
+		Node::Import(node)=>{
+			if let Some(node) = &node.borrow().expr_type{
+				walk_node(&node.into(),f);
+			}
+			if let Some(node) = &node.borrow().base{
+				walk_node(&node.into(),f);
+			}
+			if let Some(node) = &node.borrow().import_desc{
+				walk_node(&node.into(),f);
+			}
+		},
+		Node::IntLiteral(node)=>{
+			if let Some(node) = &node.borrow().expr_type{
+				walk_node(&node.into(),f);
+			}
+		},
+		Node::BoolLiteral(node)=>{
+			if let Some(node) = &node.borrow().expr_type{
+				walk_node(&node.into(),f);
+			}
+		},
+		Node::StrLiteral(node)=>{
+			if let Some(node) = &node.borrow().expr_type{
+				walk_node(&node.into(),f);
+			}
+		},
+		Node::Input(node)=>{
+			if let Some(node) = &node.borrow().expr_type{
+				walk_node(&node.into(),f);
+			}
+		},
+		Node::Output(node)=>{
+			if let Some(node) = &node.borrow().expr_type{
+				walk_node(&node.into(),f);
+			}
+		},
+		Node::Config(node)=>{
+			if let Some(node) = &node.borrow().expr_type{
+				walk_node(&node.into(),f);
+			}
+		},
+		Node::Loop(node)=>{
+			if let Some(node) = &node.borrow().init{
+				walk_node(&node.into(),f);
+			}
+			if let Some(node) = &node.borrow().cond{
+				walk_node(&node.into(),f);
+			}
+			if let Some(node) = &node.borrow().step{
+				walk_node(&node.into(),f);
+			}
+			if let Some(node) = &node.borrow().body{
+				walk_node(&node.into(),f);
+			}
+		},
+		Node::IndentScope(node)=>{
+			for node in &node.borrow().elements{
+				walk_node(node,f);
+			}
+		},
+		Node::MatchBranch(node)=>{
+			if let Some(node) = &node.borrow().cond{
+				walk_node(&node.into(),f);
+			}
+			if let Some(node) = &node.borrow().then{
+				walk_node(node,f);
+			}
+		},
+		Node::Return(node)=>{
+			if let Some(node) = &node.borrow().expr{
+				walk_node(&node.into(),f);
+			}
+		},
+		Node::Break(node)=>{
+		},
+		Node::Continue(node)=>{
+		},
+		Node::Assert(node)=>{
+			if let Some(node) = &node.borrow().cond{
+				walk_node(&node.into(),f);
+			}
+		},
+		Node::ImplicitYield(node)=>{
+			if let Some(node) = &node.borrow().expr{
+				walk_node(&node.into(),f);
+			}
+		},
+		Node::Field(node)=>{
+			if let Some(node) = &node.borrow().ident{
+				walk_node(&node.into(),f);
+			}
+			if let Some(node) = &node.borrow().field_type{
+				walk_node(&node.into(),f);
+			}
+			if let Some(node) = &node.borrow().raw_arguments{
+				walk_node(&node.into(),f);
+			}
+			for node in &node.borrow().arguments{
+				walk_node(&node.into(),f);
+			}
+		},
+		Node::Format(node)=>{
+			if let Some(node) = &node.borrow().ident{
+				walk_node(&node.into(),f);
+			}
+			if let Some(node) = &node.borrow().body{
+				walk_node(&node.into(),f);
+			}
+			if let Some(node) = &node.borrow().struct_type{
+				walk_node(&node.into(),f);
+			}
+		},
+		Node::Function(node)=>{
+			if let Some(node) = &node.borrow().ident{
+				walk_node(&node.into(),f);
+			}
+			for node in &node.borrow().parameters{
+				walk_node(&node.into(),f);
+			}
+			if let Some(node) = &node.borrow().return_type{
+				walk_node(&node.into(),f);
+			}
+			if let Some(node) = &node.borrow().body{
+				walk_node(&node.into(),f);
+			}
+			if let Some(node) = &node.borrow().func_type{
+				walk_node(&node.into(),f);
+			}
+		},
+		Node::IntType(node)=>{
+		},
+		Node::IdentType(node)=>{
+			if let Some(node) = &node.borrow().ident{
+				walk_node(&node.into(),f);
+			}
+		},
+		Node::IntLiteralType(node)=>{
+		},
+		Node::StrLiteralType(node)=>{
+		},
+		Node::VoidType(node)=>{
+		},
+		Node::BoolType(node)=>{
+		},
+		Node::ArrayType(node)=>{
+			if let Some(node) = &node.borrow().base_type{
+				walk_node(&node.into(),f);
+			}
+			if let Some(node) = &node.borrow().length{
+				walk_node(&node.into(),f);
+			}
+		},
+		Node::FunctionType(node)=>{
+			if let Some(node) = &node.borrow().return_type{
+				walk_node(&node.into(),f);
+			}
+			for node in &node.borrow().parameters{
+				walk_node(&node.into(),f);
+			}
+		},
+		Node::StructType(node)=>{
+			for node in &node.borrow().fields{
+				walk_node(&node.into(),f);
+			}
+		},
+		Node::UnionType(node)=>{
+			for node in &node.borrow().fields{
+				walk_node(&node.into(),f);
+			}
+		},
+		Node::Cast(node)=>{
+			if let Some(node) = &node.borrow().expr_type{
+				walk_node(&node.into(),f);
+			}
+			if let Some(node) = &node.borrow().base{
+				walk_node(&node.into(),f);
+			}
+			if let Some(node) = &node.borrow().expr{
+				walk_node(&node.into(),f);
+			}
+		},
 	}
 }
 
