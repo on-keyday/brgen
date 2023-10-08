@@ -453,6 +453,20 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("	}\n")
 	w.Printf("}\n\n")
 
+	w.Printf("#[derive(Debug,Clone,Serialize,Deserialize)]\n")
+	w.Printf("pub struct AstFile {\n")
+	w.Printf("	pub files :Vec<String>,\n")
+	w.Printf("	pub ast: Option<AST>,\n")
+	w.Printf("	pub error :Option<String>,\n")
+	w.Printf("}\n\n")
+
+	w.Printf("#[derive(Debug,Clone,Serialize,Deserialize)]\n")
+	w.Printf("pub struct TokenFile {\n")
+	w.Printf("	pub files :Vec<String>,\n")
+	w.Printf("	pub tokens: Option<Vec<Token>>, \n")
+	w.Printf("	pub error :Option<String>,\n")
+	w.Printf("}\n\n")
+
 	w.Printf("pub fn walk_node<F:FnMut(&Node)->bool>(node:&Node,f:&mut F){\n")
 	w.Printf("	if !f(node){\n")
 	w.Printf("		return;\n")

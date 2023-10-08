@@ -2173,14 +2173,24 @@ export function parseAST(obj: any): Program {
 	return root;
 }
 
-export interface File {
+export interface AstFile {
 	files :string[];
-	ast :Ast;
-	error :string
+	ast :Ast | null;
+	error :string | null
 }
 
-export function isFile(obj: any): obj is File {
-	return obj && typeof obj === 'object' && Array.isArray(obj?.files) && isAst(obj?.ast) && typeof obj?.error === 'string'
+export function isAstFile(obj: any): obj is File {
+	return obj && typeof obj === 'object' && Array.isArray(obj?.files) && (obj?.ast === null || isAst(obj?.ast)) && (obj?.error === null || typeof obj?.error === 'string');
+}
+
+export interface TokenFile {
+	files :string[];
+	tokens :Token[] | null;
+	error :string | null
+}
+
+export function isTokenFile(obj: any): obj is File {
+	return obj && typeof obj === 'object' && Array.isArray(obj?.files) && (obj?.tokens === null || Array.isArray(obj?.tokens)) && (obj?.error === null || typeof obj?.error === 'string');
 }
 
 export function walk(node: Node, fn: (node: Node) => boolean) {

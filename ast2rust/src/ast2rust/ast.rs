@@ -4853,6 +4853,20 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 	}
 }
 
+#[derive(Debug,Clone,Serialize,Deserialize)]
+pub struct AstFile {
+	pub files :Vec<String>,
+	pub ast: Option<AST>,
+	pub error :Option<String>,
+}
+
+#[derive(Debug,Clone,Serialize,Deserialize)]
+pub struct TokenFile {
+	pub files :Vec<String>,
+	pub tokens: Option<Vec<Token>>, 
+	pub error :Option<String>,
+}
+
 pub fn walk_node<F:FnMut(&Node)->bool>(node:&Node,f:&mut F){
 	if !f(node){
 		return;

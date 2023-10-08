@@ -118,12 +118,6 @@ func generate(w io.Writer, list *gen.Defs) {
 	writer.Printf("	*Program\n")
 	writer.Printf("}\n\n")
 
-	writer.Printf("type File struct {\n")
-	writer.Printf("	Files []string `json:\"files\"`\n")
-	writer.Printf("	Ast *AST `json:\"ast\"`\n")
-	writer.Printf("	Error string `json:\"error\"`\n")
-	writer.Printf("}\n\n")
-
 	writer.Printf("func (n *AST) UnmarshalJSON(data []byte) error {\n")
 	writer.Printf("	var tmp astConstructor\n")
 	writer.Printf("	prog, err := tmp.unmarshal(data);")
@@ -238,6 +232,18 @@ func generate(w io.Writer, list *gen.Defs) {
 	writer.Printf("	}\n")
 
 	writer.Printf("	return n.node[0].(*Program), nil\n")
+	writer.Printf("}\n\n")
+
+	writer.Printf("type AstFile struct {\n")
+	writer.Printf("	Files []string `json:\"files\"`\n")
+	writer.Printf("	Ast *AST `json:\"ast\"`\n")
+	writer.Printf("	Error string `json:\"error\"`\n")
+	writer.Printf("}\n\n")
+
+	writer.Printf("type TokenFile struct {\n")
+	writer.Printf("	Files []string `json:\"files\"`\n")
+	writer.Printf("	Tokens []*Token `json:\"tokens\"`\n")
+	writer.Printf("	Error string `json:\"error\"`\n")
 	writer.Printf("}\n\n")
 
 	writer.Printf("func Walk(n Node, f func(Node) (cont bool)) {\n")

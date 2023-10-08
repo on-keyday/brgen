@@ -987,12 +987,6 @@ type AST struct {
 	*Program
 }
 
-type File struct {
-	Files []string `json:"files"`
-	Ast   *AST     `json:"ast"`
-	Error string   `json:"error"`
-}
-
 func (n *AST) UnmarshalJSON(data []byte) error {
 	var tmp astConstructor
 	prog, err := tmp.unmarshal(data)
@@ -1843,6 +1837,18 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 		}
 	}
 	return n.node[0].(*Program), nil
+}
+
+type AstFile struct {
+	Files []string `json:"files"`
+	Ast   *AST     `json:"ast"`
+	Error string   `json:"error"`
+}
+
+type TokenFile struct {
+	Files  []string `json:"files"`
+	Tokens []*Token `json:"tokens"`
+	Error  string   `json:"error"`
 }
 
 func Walk(n Node, f func(Node) (cont bool)) {

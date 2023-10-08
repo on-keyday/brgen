@@ -342,14 +342,24 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("	return root;\n")
 	w.Printf("}\n\n")
 
-	w.Printf("export interface File {\n")
+	w.Printf("export interface AstFile {\n")
 	w.Printf("	files :string[];\n")
-	w.Printf("	ast :Ast;\n")
-	w.Printf("	error :string\n")
+	w.Printf("	ast :Ast | null;\n")
+	w.Printf("	error :string | null\n")
 	w.Printf("}\n\n")
 
-	w.Printf("export function isFile(obj: any): obj is File {\n")
-	w.Printf("	return obj && typeof obj === 'object' && Array.isArray(obj?.files) && isAst(obj?.ast) && typeof obj?.error === 'string'\n")
+	w.Printf("export function isAstFile(obj: any): obj is File {\n")
+	w.Printf("	return obj && typeof obj === 'object' && Array.isArray(obj?.files) && (obj?.ast === null || isAst(obj?.ast)) && (obj?.error === null || typeof obj?.error === 'string');\n")
+	w.Printf("}\n\n")
+
+	w.Printf("export interface TokenFile {\n")
+	w.Printf("	files :string[];\n")
+	w.Printf("	tokens :Token[] | null;\n")
+	w.Printf("	error :string | null\n")
+	w.Printf("}\n\n")
+
+	w.Printf("export function isTokenFile(obj: any): obj is File {\n")
+	w.Printf("	return obj && typeof obj === 'object' && Array.isArray(obj?.files) && (obj?.tokens === null || Array.isArray(obj?.tokens)) && (obj?.error === null || typeof obj?.error === 'string');\n")
 	w.Printf("}\n\n")
 
 	w.Printf("export function walk(node: Node, fn: (node: Node) => boolean) {\n")

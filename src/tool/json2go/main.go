@@ -20,7 +20,7 @@ func main() {
 		}`)
 		return
 	}
-	file := ast2go.File{}
+	file := ast2go.AstFile{}
 	err := json.NewDecoder(os.Stdin).Decode(&file)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
