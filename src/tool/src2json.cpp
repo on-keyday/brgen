@@ -7,6 +7,8 @@
 #include <wrap/iocommon.h>
 #include <console/ansiesc.h>
 #include <core/middle/resolve_import.h>
+#include <core/middle/resolve_cast.h>
+#include <core/middle/replace_assert.h>
 #include <core/middle/typing.h>
 #include "common/print.h"
 #include <wrap/argv.h>
@@ -17,9 +19,11 @@ struct Flags : utils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
     bool lexer = false;
     bool not_resolve_import = false;
-    bool check_ast = false;
-    bool dump_ast = false;
+    bool not_resolve_cast = false;
     bool not_resolve_type = false;
+    bool not_resolve_assert = false;
+    bool check_ast = false;
+    bool dump_types = false;
     bool disable_untyped_warning = false;
     bool print_json = false;
     bool debug_json = false;
@@ -31,16 +35,22 @@ struct Flags : utils::cmdline::templ::HelpOption {
     void bind(utils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&lexer, "l,lexer", "lexer mode");
-        ctx.VarBool(&not_resolve_import, "not-resolve-import", "not resolve import");
+        ctx.VarBool(&dump_types, "dump-types", "dump types schema mode");
         ctx.VarBool(&check_ast, "c,check-ast", "check ast mode");
+
+        ctx.VarBool(&not_resolve_import, "not-resolve-import", "not resolve import");
         ctx.VarBool(&not_resolve_type, "not-resolve-type", "not resolve type");
+        ctx.VarBool(&not_resolve_cast, "not-resolve-cast", "not resolve cast");
+        ctx.VarBool(&not_resolve_assert, "not-resolve-assert", "not-resolve assert");
+
         ctx.VarBool(&disable_untyped_warning, "u,disable-untyped", "disable untyped warning");
+
         ctx.VarBool(&print_json, "p,print-json", "print json of ast/tokens to stdout if succeeded (if stdout is tty. if not tty, usually print json ast)");
         ctx.VarBool(&debug_json, "d,debug-json", "debug mode json output (not parsable ast, only for debug. use with --print-ast)");
-        ctx.VarBool(&dump_ast, "dump-ast", "dump ast types schema mode");
+
         ctx.VarBool(&dump_ptr_as_uintptr, "dump-uintptr", "make pointer type of ast field uintptr (use with --dump-ast)");
-        ctx.VarBool(&flat, "dump-flat", "dump ast schema with flat body (use with --dump-ast)");
-        ctx.VarBool(&not_dump_base, "not-dump-base", "not dump ast schema with base type (use with --dump-ast)");
+        ctx.VarBool(&flat, "dump-flat", "dump types schema with flat body (use with --dump-ast)");
+        ctx.VarBool(&not_dump_base, "not-dump-base", "not dump types schema with base type (use with --dump-ast)");
         ctx.VarBool(&dump_enum_name, "dump-enum-name", "dump enum name of operator (use with --dump-ast)");
     }
 };
@@ -126,7 +136,7 @@ int node_list(bool dump_uintptr, bool flat, bool not_dump_base, bool dump_enum_n
 int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     utils::wrap::out_virtual_terminal = true;
 
-    if (flags.dump_ast) {
+    if (flags.dump_types) {
         return node_list(flags.dump_ptr_as_uintptr, flags.flat, flags.not_dump_base, flags.dump_enum_name);
     }
 
@@ -222,6 +232,9 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
             return -1;
         }
     }
+    if (!flags.not_resolve_cast) {
+        brgen::middle::resolve_cast(*res);
+    }
     if (!flags.not_resolve_type) {
         auto ty = brgen::middle::Typing{};
         auto res3 = ty.typing(*res).transform_error(brgen::to_source_error(files));
@@ -232,6 +245,9 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
         if (!flags.disable_untyped_warning && ty.warnings.locations.size() > 0) {
             report_error(brgen::to_source_error(files)(std::move(ty.warnings)), true);
         }
+    }
+    if (!flags.not_resolve_assert) {
+        brgen::middle::replace_assert(*res);
     }
 
     if (cout.is_tty() && !flags.print_json) {

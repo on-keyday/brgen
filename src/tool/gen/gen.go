@@ -442,7 +442,7 @@ func LoadFromJSON(r io.Reader) (list *List, err error) {
 }
 
 func LoadFromSrc2JSON(src2json string) (list *List, err error) {
-	cmd := exec.Command(src2json, "--dump-ast", "--dump-enum-name")
+	cmd := exec.Command(src2json, "--dump-types", "--dump-enum-name")
 	// get stdout
 	stdout, err := cmd.StdoutPipe()
 	err = cmd.Start()

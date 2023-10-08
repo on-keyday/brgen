@@ -540,6 +540,9 @@ namespace brgen::middle {
             else if (auto i = ast::as<ast::Import>(expr)) {
                 expr->expr_type = i->import_desc->struct_type;
             }
+            else if (auto c = ast::as<ast::Cast>(expr)) {
+                typing_expr(c->expr);
+            }
             else {
                 unsupported(expr);
             }
