@@ -580,6 +580,22 @@ pub struct Program {
 	pub loc: Loc,
 }
 
+impl TryFrom<&Node> for Rc<RefCell<Program>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::Program(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Program>>> for Node {
+	fn from(node:&Rc<RefCell<Program>>)-> Self{
+		Node::Program(node.clone())
+	}
+}
+
 #[derive(Debug,Clone)]
 pub struct Binary {
 	pub expr_type: Option<Type>,
@@ -589,12 +605,76 @@ pub struct Binary {
 	pub loc: Loc,
 }
 
+impl TryFrom<&Expr> for Rc<RefCell<Binary>> {
+	type Error = Error;
+	fn try_from(node:&Expr)->Result<Self,Self::Error>{
+		match node {
+			Expr::Binary(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Binary>>> for Expr {
+	fn from(node:&Rc<RefCell<Binary>>)-> Self{
+		Expr::Binary(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<Binary>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::Binary(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Binary>>> for Node {
+	fn from(node:&Rc<RefCell<Binary>>)-> Self{
+		Node::Binary(node.clone())
+	}
+}
+
 #[derive(Debug,Clone)]
 pub struct Unary {
 	pub expr_type: Option<Type>,
 	pub op: UnaryOp,
 	pub expr: Option<Expr>,
 	pub loc: Loc,
+}
+
+impl TryFrom<&Expr> for Rc<RefCell<Unary>> {
+	type Error = Error;
+	fn try_from(node:&Expr)->Result<Self,Self::Error>{
+		match node {
+			Expr::Unary(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Unary>>> for Expr {
+	fn from(node:&Rc<RefCell<Unary>>)-> Self{
+		Expr::Unary(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<Unary>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::Unary(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Unary>>> for Node {
+	fn from(node:&Rc<RefCell<Unary>>)-> Self{
+		Node::Unary(node.clone())
+	}
 }
 
 #[derive(Debug,Clone)]
@@ -607,6 +687,38 @@ pub struct Cond {
 	pub loc: Loc,
 }
 
+impl TryFrom<&Expr> for Rc<RefCell<Cond>> {
+	type Error = Error;
+	fn try_from(node:&Expr)->Result<Self,Self::Error>{
+		match node {
+			Expr::Cond(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Cond>>> for Expr {
+	fn from(node:&Rc<RefCell<Cond>>)-> Self{
+		Expr::Cond(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<Cond>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::Cond(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Cond>>> for Node {
+	fn from(node:&Rc<RefCell<Cond>>)-> Self{
+		Node::Cond(node.clone())
+	}
+}
+
 #[derive(Debug,Clone)]
 pub struct Ident {
 	pub expr_type: Option<Type>,
@@ -615,6 +727,38 @@ pub struct Ident {
 	pub base: Option<Node>,
 	pub scope: Option<Rc<RefCell<Scope>>>,
 	pub loc: Loc,
+}
+
+impl TryFrom<&Expr> for Rc<RefCell<Ident>> {
+	type Error = Error;
+	fn try_from(node:&Expr)->Result<Self,Self::Error>{
+		match node {
+			Expr::Ident(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Ident>>> for Expr {
+	fn from(node:&Rc<RefCell<Ident>>)-> Self{
+		Expr::Ident(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<Ident>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::Ident(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Ident>>> for Node {
+	fn from(node:&Rc<RefCell<Ident>>)-> Self{
+		Node::Ident(node.clone())
+	}
 }
 
 #[derive(Debug,Clone)]
@@ -627,6 +771,38 @@ pub struct Call {
 	pub loc: Loc,
 }
 
+impl TryFrom<&Expr> for Rc<RefCell<Call>> {
+	type Error = Error;
+	fn try_from(node:&Expr)->Result<Self,Self::Error>{
+		match node {
+			Expr::Call(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Call>>> for Expr {
+	fn from(node:&Rc<RefCell<Call>>)-> Self{
+		Expr::Call(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<Call>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::Call(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Call>>> for Node {
+	fn from(node:&Rc<RefCell<Call>>)-> Self{
+		Node::Call(node.clone())
+	}
+}
+
 #[derive(Debug,Clone)]
 pub struct If {
 	pub expr_type: Option<Type>,
@@ -634,6 +810,38 @@ pub struct If {
 	pub then: Option<Rc<RefCell<IndentScope>>>,
 	pub els: Option<Node>,
 	pub loc: Loc,
+}
+
+impl TryFrom<&Expr> for Rc<RefCell<If>> {
+	type Error = Error;
+	fn try_from(node:&Expr)->Result<Self,Self::Error>{
+		match node {
+			Expr::If(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<If>>> for Expr {
+	fn from(node:&Rc<RefCell<If>>)-> Self{
+		Expr::If(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<If>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::If(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<If>>> for Node {
+	fn from(node:&Rc<RefCell<If>>)-> Self{
+		Node::If(node.clone())
+	}
 }
 
 #[derive(Debug,Clone)]
@@ -645,12 +853,76 @@ pub struct MemberAccess {
 	pub loc: Loc,
 }
 
+impl TryFrom<&Expr> for Rc<RefCell<MemberAccess>> {
+	type Error = Error;
+	fn try_from(node:&Expr)->Result<Self,Self::Error>{
+		match node {
+			Expr::MemberAccess(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<MemberAccess>>> for Expr {
+	fn from(node:&Rc<RefCell<MemberAccess>>)-> Self{
+		Expr::MemberAccess(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<MemberAccess>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::MemberAccess(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<MemberAccess>>> for Node {
+	fn from(node:&Rc<RefCell<MemberAccess>>)-> Self{
+		Node::MemberAccess(node.clone())
+	}
+}
+
 #[derive(Debug,Clone)]
 pub struct Paren {
 	pub expr_type: Option<Type>,
 	pub expr: Option<Expr>,
 	pub end_loc: Loc,
 	pub loc: Loc,
+}
+
+impl TryFrom<&Expr> for Rc<RefCell<Paren>> {
+	type Error = Error;
+	fn try_from(node:&Expr)->Result<Self,Self::Error>{
+		match node {
+			Expr::Paren(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Paren>>> for Expr {
+	fn from(node:&Rc<RefCell<Paren>>)-> Self{
+		Expr::Paren(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<Paren>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::Paren(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Paren>>> for Node {
+	fn from(node:&Rc<RefCell<Paren>>)-> Self{
+		Node::Paren(node.clone())
+	}
 }
 
 #[derive(Debug,Clone)]
@@ -662,6 +934,38 @@ pub struct Index {
 	pub loc: Loc,
 }
 
+impl TryFrom<&Expr> for Rc<RefCell<Index>> {
+	type Error = Error;
+	fn try_from(node:&Expr)->Result<Self,Self::Error>{
+		match node {
+			Expr::Index(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Index>>> for Expr {
+	fn from(node:&Rc<RefCell<Index>>)-> Self{
+		Expr::Index(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<Index>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::Index(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Index>>> for Node {
+	fn from(node:&Rc<RefCell<Index>>)-> Self{
+		Node::Index(node.clone())
+	}
+}
+
 #[derive(Debug,Clone)]
 pub struct Match {
 	pub expr_type: Option<Type>,
@@ -669,6 +973,38 @@ pub struct Match {
 	pub branch: Vec<Rc<RefCell<MatchBranch>>>,
 	pub scope: Option<Rc<RefCell<Scope>>>,
 	pub loc: Loc,
+}
+
+impl TryFrom<&Expr> for Rc<RefCell<Match>> {
+	type Error = Error;
+	fn try_from(node:&Expr)->Result<Self,Self::Error>{
+		match node {
+			Expr::Match(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Match>>> for Expr {
+	fn from(node:&Rc<RefCell<Match>>)-> Self{
+		Expr::Match(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<Match>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::Match(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Match>>> for Node {
+	fn from(node:&Rc<RefCell<Match>>)-> Self{
+		Node::Match(node.clone())
+	}
 }
 
 #[derive(Debug,Clone)]
@@ -680,11 +1016,75 @@ pub struct Range {
 	pub loc: Loc,
 }
 
+impl TryFrom<&Expr> for Rc<RefCell<Range>> {
+	type Error = Error;
+	fn try_from(node:&Expr)->Result<Self,Self::Error>{
+		match node {
+			Expr::Range(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Range>>> for Expr {
+	fn from(node:&Rc<RefCell<Range>>)-> Self{
+		Expr::Range(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<Range>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::Range(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Range>>> for Node {
+	fn from(node:&Rc<RefCell<Range>>)-> Self{
+		Node::Range(node.clone())
+	}
+}
+
 #[derive(Debug,Clone)]
 pub struct TmpVar {
 	pub expr_type: Option<Type>,
 	pub tmp_var: u64,
 	pub loc: Loc,
+}
+
+impl TryFrom<&Expr> for Rc<RefCell<TmpVar>> {
+	type Error = Error;
+	fn try_from(node:&Expr)->Result<Self,Self::Error>{
+		match node {
+			Expr::TmpVar(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<TmpVar>>> for Expr {
+	fn from(node:&Rc<RefCell<TmpVar>>)-> Self{
+		Expr::TmpVar(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<TmpVar>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::TmpVar(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<TmpVar>>> for Node {
+	fn from(node:&Rc<RefCell<TmpVar>>)-> Self{
+		Node::TmpVar(node.clone())
+	}
 }
 
 #[derive(Debug,Clone)]
@@ -693,6 +1093,38 @@ pub struct BlockExpr {
 	pub calls: Vec<Node>,
 	pub expr: Option<Expr>,
 	pub loc: Loc,
+}
+
+impl TryFrom<&Expr> for Rc<RefCell<BlockExpr>> {
+	type Error = Error;
+	fn try_from(node:&Expr)->Result<Self,Self::Error>{
+		match node {
+			Expr::BlockExpr(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<BlockExpr>>> for Expr {
+	fn from(node:&Rc<RefCell<BlockExpr>>)-> Self{
+		Expr::BlockExpr(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<BlockExpr>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::BlockExpr(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<BlockExpr>>> for Node {
+	fn from(node:&Rc<RefCell<BlockExpr>>)-> Self{
+		Node::BlockExpr(node.clone())
+	}
 }
 
 #[derive(Debug,Clone)]
@@ -704,11 +1136,91 @@ pub struct Import {
 	pub loc: Loc,
 }
 
+impl TryFrom<&Expr> for Rc<RefCell<Import>> {
+	type Error = Error;
+	fn try_from(node:&Expr)->Result<Self,Self::Error>{
+		match node {
+			Expr::Import(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Import>>> for Expr {
+	fn from(node:&Rc<RefCell<Import>>)-> Self{
+		Expr::Import(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<Import>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::Import(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Import>>> for Node {
+	fn from(node:&Rc<RefCell<Import>>)-> Self{
+		Node::Import(node.clone())
+	}
+}
+
 #[derive(Debug,Clone)]
 pub struct IntLiteral {
 	pub expr_type: Option<Type>,
 	pub value: String,
 	pub loc: Loc,
+}
+
+impl TryFrom<&Literal> for Rc<RefCell<IntLiteral>> {
+	type Error = Error;
+	fn try_from(node:&Literal)->Result<Self,Self::Error>{
+		match node {
+			Literal::IntLiteral(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<IntLiteral>>> for Literal {
+	fn from(node:&Rc<RefCell<IntLiteral>>)-> Self{
+		Literal::IntLiteral(node.clone())
+	}
+}
+
+impl TryFrom<&Expr> for Rc<RefCell<IntLiteral>> {
+	type Error = Error;
+	fn try_from(node:&Expr)->Result<Self,Self::Error>{
+		match node {
+			Expr::IntLiteral(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<IntLiteral>>> for Expr {
+	fn from(node:&Rc<RefCell<IntLiteral>>)-> Self{
+		Expr::IntLiteral(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<IntLiteral>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::IntLiteral(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<IntLiteral>>> for Node {
+	fn from(node:&Rc<RefCell<IntLiteral>>)-> Self{
+		Node::IntLiteral(node.clone())
+	}
 }
 
 #[derive(Debug,Clone)]
@@ -718,11 +1230,107 @@ pub struct BoolLiteral {
 	pub loc: Loc,
 }
 
+impl TryFrom<&Literal> for Rc<RefCell<BoolLiteral>> {
+	type Error = Error;
+	fn try_from(node:&Literal)->Result<Self,Self::Error>{
+		match node {
+			Literal::BoolLiteral(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<BoolLiteral>>> for Literal {
+	fn from(node:&Rc<RefCell<BoolLiteral>>)-> Self{
+		Literal::BoolLiteral(node.clone())
+	}
+}
+
+impl TryFrom<&Expr> for Rc<RefCell<BoolLiteral>> {
+	type Error = Error;
+	fn try_from(node:&Expr)->Result<Self,Self::Error>{
+		match node {
+			Expr::BoolLiteral(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<BoolLiteral>>> for Expr {
+	fn from(node:&Rc<RefCell<BoolLiteral>>)-> Self{
+		Expr::BoolLiteral(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<BoolLiteral>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::BoolLiteral(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<BoolLiteral>>> for Node {
+	fn from(node:&Rc<RefCell<BoolLiteral>>)-> Self{
+		Node::BoolLiteral(node.clone())
+	}
+}
+
 #[derive(Debug,Clone)]
 pub struct StrLiteral {
 	pub expr_type: Option<Type>,
 	pub value: String,
 	pub loc: Loc,
+}
+
+impl TryFrom<&Literal> for Rc<RefCell<StrLiteral>> {
+	type Error = Error;
+	fn try_from(node:&Literal)->Result<Self,Self::Error>{
+		match node {
+			Literal::StrLiteral(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<StrLiteral>>> for Literal {
+	fn from(node:&Rc<RefCell<StrLiteral>>)-> Self{
+		Literal::StrLiteral(node.clone())
+	}
+}
+
+impl TryFrom<&Expr> for Rc<RefCell<StrLiteral>> {
+	type Error = Error;
+	fn try_from(node:&Expr)->Result<Self,Self::Error>{
+		match node {
+			Expr::StrLiteral(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<StrLiteral>>> for Expr {
+	fn from(node:&Rc<RefCell<StrLiteral>>)-> Self{
+		Expr::StrLiteral(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<StrLiteral>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::StrLiteral(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<StrLiteral>>> for Node {
+	fn from(node:&Rc<RefCell<StrLiteral>>)-> Self{
+		Node::StrLiteral(node.clone())
+	}
 }
 
 #[derive(Debug,Clone)]
@@ -731,16 +1339,160 @@ pub struct Input {
 	pub loc: Loc,
 }
 
+impl TryFrom<&Literal> for Rc<RefCell<Input>> {
+	type Error = Error;
+	fn try_from(node:&Literal)->Result<Self,Self::Error>{
+		match node {
+			Literal::Input(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Input>>> for Literal {
+	fn from(node:&Rc<RefCell<Input>>)-> Self{
+		Literal::Input(node.clone())
+	}
+}
+
+impl TryFrom<&Expr> for Rc<RefCell<Input>> {
+	type Error = Error;
+	fn try_from(node:&Expr)->Result<Self,Self::Error>{
+		match node {
+			Expr::Input(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Input>>> for Expr {
+	fn from(node:&Rc<RefCell<Input>>)-> Self{
+		Expr::Input(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<Input>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::Input(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Input>>> for Node {
+	fn from(node:&Rc<RefCell<Input>>)-> Self{
+		Node::Input(node.clone())
+	}
+}
+
 #[derive(Debug,Clone)]
 pub struct Output {
 	pub expr_type: Option<Type>,
 	pub loc: Loc,
 }
 
+impl TryFrom<&Literal> for Rc<RefCell<Output>> {
+	type Error = Error;
+	fn try_from(node:&Literal)->Result<Self,Self::Error>{
+		match node {
+			Literal::Output(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Output>>> for Literal {
+	fn from(node:&Rc<RefCell<Output>>)-> Self{
+		Literal::Output(node.clone())
+	}
+}
+
+impl TryFrom<&Expr> for Rc<RefCell<Output>> {
+	type Error = Error;
+	fn try_from(node:&Expr)->Result<Self,Self::Error>{
+		match node {
+			Expr::Output(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Output>>> for Expr {
+	fn from(node:&Rc<RefCell<Output>>)-> Self{
+		Expr::Output(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<Output>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::Output(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Output>>> for Node {
+	fn from(node:&Rc<RefCell<Output>>)-> Self{
+		Node::Output(node.clone())
+	}
+}
+
 #[derive(Debug,Clone)]
 pub struct Config {
 	pub expr_type: Option<Type>,
 	pub loc: Loc,
+}
+
+impl TryFrom<&Literal> for Rc<RefCell<Config>> {
+	type Error = Error;
+	fn try_from(node:&Literal)->Result<Self,Self::Error>{
+		match node {
+			Literal::Config(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Config>>> for Literal {
+	fn from(node:&Rc<RefCell<Config>>)-> Self{
+		Literal::Config(node.clone())
+	}
+}
+
+impl TryFrom<&Expr> for Rc<RefCell<Config>> {
+	type Error = Error;
+	fn try_from(node:&Expr)->Result<Self,Self::Error>{
+		match node {
+			Expr::Config(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Config>>> for Expr {
+	fn from(node:&Rc<RefCell<Config>>)-> Self{
+		Expr::Config(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<Config>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::Config(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Config>>> for Node {
+	fn from(node:&Rc<RefCell<Config>>)-> Self{
+		Node::Config(node.clone())
+	}
 }
 
 #[derive(Debug,Clone)]
@@ -752,11 +1504,75 @@ pub struct Loop {
 	pub loc: Loc,
 }
 
+impl TryFrom<&Stmt> for Rc<RefCell<Loop>> {
+	type Error = Error;
+	fn try_from(node:&Stmt)->Result<Self,Self::Error>{
+		match node {
+			Stmt::Loop(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Loop>>> for Stmt {
+	fn from(node:&Rc<RefCell<Loop>>)-> Self{
+		Stmt::Loop(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<Loop>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::Loop(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Loop>>> for Node {
+	fn from(node:&Rc<RefCell<Loop>>)-> Self{
+		Node::Loop(node.clone())
+	}
+}
+
 #[derive(Debug,Clone)]
 pub struct IndentScope {
 	pub elements: Vec<Node>,
 	pub scope: Option<Rc<RefCell<Scope>>>,
 	pub loc: Loc,
+}
+
+impl TryFrom<&Stmt> for Rc<RefCell<IndentScope>> {
+	type Error = Error;
+	fn try_from(node:&Stmt)->Result<Self,Self::Error>{
+		match node {
+			Stmt::IndentScope(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<IndentScope>>> for Stmt {
+	fn from(node:&Rc<RefCell<IndentScope>>)-> Self{
+		Stmt::IndentScope(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<IndentScope>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::IndentScope(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<IndentScope>>> for Node {
+	fn from(node:&Rc<RefCell<IndentScope>>)-> Self{
+		Node::IndentScope(node.clone())
+	}
 }
 
 #[derive(Debug,Clone)]
@@ -767,10 +1583,74 @@ pub struct MatchBranch {
 	pub loc: Loc,
 }
 
+impl TryFrom<&Stmt> for Rc<RefCell<MatchBranch>> {
+	type Error = Error;
+	fn try_from(node:&Stmt)->Result<Self,Self::Error>{
+		match node {
+			Stmt::MatchBranch(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<MatchBranch>>> for Stmt {
+	fn from(node:&Rc<RefCell<MatchBranch>>)-> Self{
+		Stmt::MatchBranch(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<MatchBranch>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::MatchBranch(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<MatchBranch>>> for Node {
+	fn from(node:&Rc<RefCell<MatchBranch>>)-> Self{
+		Node::MatchBranch(node.clone())
+	}
+}
+
 #[derive(Debug,Clone)]
 pub struct Return {
 	pub expr: Option<Expr>,
 	pub loc: Loc,
+}
+
+impl TryFrom<&Stmt> for Rc<RefCell<Return>> {
+	type Error = Error;
+	fn try_from(node:&Stmt)->Result<Self,Self::Error>{
+		match node {
+			Stmt::Return(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Return>>> for Stmt {
+	fn from(node:&Rc<RefCell<Return>>)-> Self{
+		Stmt::Return(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<Return>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::Return(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Return>>> for Node {
+	fn from(node:&Rc<RefCell<Return>>)-> Self{
+		Node::Return(node.clone())
+	}
 }
 
 #[derive(Debug,Clone)]
@@ -778,9 +1658,73 @@ pub struct Break {
 	pub loc: Loc,
 }
 
+impl TryFrom<&Stmt> for Rc<RefCell<Break>> {
+	type Error = Error;
+	fn try_from(node:&Stmt)->Result<Self,Self::Error>{
+		match node {
+			Stmt::Break(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Break>>> for Stmt {
+	fn from(node:&Rc<RefCell<Break>>)-> Self{
+		Stmt::Break(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<Break>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::Break(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Break>>> for Node {
+	fn from(node:&Rc<RefCell<Break>>)-> Self{
+		Node::Break(node.clone())
+	}
+}
+
 #[derive(Debug,Clone)]
 pub struct Continue {
 	pub loc: Loc,
+}
+
+impl TryFrom<&Stmt> for Rc<RefCell<Continue>> {
+	type Error = Error;
+	fn try_from(node:&Stmt)->Result<Self,Self::Error>{
+		match node {
+			Stmt::Continue(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Continue>>> for Stmt {
+	fn from(node:&Rc<RefCell<Continue>>)-> Self{
+		Stmt::Continue(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<Continue>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::Continue(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Continue>>> for Node {
+	fn from(node:&Rc<RefCell<Continue>>)-> Self{
+		Node::Continue(node.clone())
+	}
 }
 
 #[derive(Debug,Clone)]
@@ -789,10 +1733,74 @@ pub struct Assert {
 	pub loc: Loc,
 }
 
+impl TryFrom<&Stmt> for Rc<RefCell<Assert>> {
+	type Error = Error;
+	fn try_from(node:&Stmt)->Result<Self,Self::Error>{
+		match node {
+			Stmt::Assert(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Assert>>> for Stmt {
+	fn from(node:&Rc<RefCell<Assert>>)-> Self{
+		Stmt::Assert(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<Assert>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::Assert(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Assert>>> for Node {
+	fn from(node:&Rc<RefCell<Assert>>)-> Self{
+		Node::Assert(node.clone())
+	}
+}
+
 #[derive(Debug,Clone)]
 pub struct ImplicitYield {
 	pub expr: Option<Expr>,
 	pub loc: Loc,
+}
+
+impl TryFrom<&Stmt> for Rc<RefCell<ImplicitYield>> {
+	type Error = Error;
+	fn try_from(node:&Stmt)->Result<Self,Self::Error>{
+		match node {
+			Stmt::ImplicitYield(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<ImplicitYield>>> for Stmt {
+	fn from(node:&Rc<RefCell<ImplicitYield>>)-> Self{
+		Stmt::ImplicitYield(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<ImplicitYield>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::ImplicitYield(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<ImplicitYield>>> for Node {
+	fn from(node:&Rc<RefCell<ImplicitYield>>)-> Self{
+		Node::ImplicitYield(node.clone())
+	}
 }
 
 #[derive(Debug,Clone)]
@@ -806,6 +1814,54 @@ pub struct Field {
 	pub loc: Loc,
 }
 
+impl TryFrom<&Member> for Rc<RefCell<Field>> {
+	type Error = Error;
+	fn try_from(node:&Member)->Result<Self,Self::Error>{
+		match node {
+			Member::Field(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Field>>> for Member {
+	fn from(node:&Rc<RefCell<Field>>)-> Self{
+		Member::Field(node.clone())
+	}
+}
+
+impl TryFrom<&Stmt> for Rc<RefCell<Field>> {
+	type Error = Error;
+	fn try_from(node:&Stmt)->Result<Self,Self::Error>{
+		match node {
+			Stmt::Field(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Field>>> for Stmt {
+	fn from(node:&Rc<RefCell<Field>>)-> Self{
+		Stmt::Field(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<Field>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::Field(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Field>>> for Node {
+	fn from(node:&Rc<RefCell<Field>>)-> Self{
+		Node::Field(node.clone())
+	}
+}
+
 #[derive(Debug,Clone)]
 pub struct Format {
 	pub is_enum: bool,
@@ -814,6 +1870,54 @@ pub struct Format {
 	pub belong: Option<Weak<RefCell<Format>>>,
 	pub struct_type: Option<Rc<RefCell<StructType>>>,
 	pub loc: Loc,
+}
+
+impl TryFrom<&Member> for Rc<RefCell<Format>> {
+	type Error = Error;
+	fn try_from(node:&Member)->Result<Self,Self::Error>{
+		match node {
+			Member::Format(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Format>>> for Member {
+	fn from(node:&Rc<RefCell<Format>>)-> Self{
+		Member::Format(node.clone())
+	}
+}
+
+impl TryFrom<&Stmt> for Rc<RefCell<Format>> {
+	type Error = Error;
+	fn try_from(node:&Stmt)->Result<Self,Self::Error>{
+		match node {
+			Stmt::Format(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Format>>> for Stmt {
+	fn from(node:&Rc<RefCell<Format>>)-> Self{
+		Stmt::Format(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<Format>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::Format(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Format>>> for Node {
+	fn from(node:&Rc<RefCell<Format>>)-> Self{
+		Node::Format(node.clone())
+	}
 }
 
 #[derive(Debug,Clone)]
@@ -827,12 +1931,92 @@ pub struct Function {
 	pub loc: Loc,
 }
 
+impl TryFrom<&Member> for Rc<RefCell<Function>> {
+	type Error = Error;
+	fn try_from(node:&Member)->Result<Self,Self::Error>{
+		match node {
+			Member::Function(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Function>>> for Member {
+	fn from(node:&Rc<RefCell<Function>>)-> Self{
+		Member::Function(node.clone())
+	}
+}
+
+impl TryFrom<&Stmt> for Rc<RefCell<Function>> {
+	type Error = Error;
+	fn try_from(node:&Stmt)->Result<Self,Self::Error>{
+		match node {
+			Stmt::Function(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Function>>> for Stmt {
+	fn from(node:&Rc<RefCell<Function>>)-> Self{
+		Stmt::Function(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<Function>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::Function(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Function>>> for Node {
+	fn from(node:&Rc<RefCell<Function>>)-> Self{
+		Node::Function(node.clone())
+	}
+}
+
 #[derive(Debug,Clone)]
 pub struct IntType {
 	pub bit_size: u64,
 	pub endian: Endian,
 	pub is_signed: bool,
 	pub loc: Loc,
+}
+
+impl TryFrom<&Type> for Rc<RefCell<IntType>> {
+	type Error = Error;
+	fn try_from(node:&Type)->Result<Self,Self::Error>{
+		match node {
+			Type::IntType(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<IntType>>> for Type {
+	fn from(node:&Rc<RefCell<IntType>>)-> Self{
+		Type::IntType(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<IntType>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::IntType(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<IntType>>> for Node {
+	fn from(node:&Rc<RefCell<IntType>>)-> Self{
+		Node::IntType(node.clone())
+	}
 }
 
 #[derive(Debug,Clone)]
@@ -842,10 +2026,74 @@ pub struct IdentType {
 	pub loc: Loc,
 }
 
+impl TryFrom<&Type> for Rc<RefCell<IdentType>> {
+	type Error = Error;
+	fn try_from(node:&Type)->Result<Self,Self::Error>{
+		match node {
+			Type::IdentType(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<IdentType>>> for Type {
+	fn from(node:&Rc<RefCell<IdentType>>)-> Self{
+		Type::IdentType(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<IdentType>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::IdentType(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<IdentType>>> for Node {
+	fn from(node:&Rc<RefCell<IdentType>>)-> Self{
+		Node::IdentType(node.clone())
+	}
+}
+
 #[derive(Debug,Clone)]
 pub struct IntLiteralType {
 	pub base: Option<Weak<RefCell<IntLiteral>>>,
 	pub loc: Loc,
+}
+
+impl TryFrom<&Type> for Rc<RefCell<IntLiteralType>> {
+	type Error = Error;
+	fn try_from(node:&Type)->Result<Self,Self::Error>{
+		match node {
+			Type::IntLiteralType(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<IntLiteralType>>> for Type {
+	fn from(node:&Rc<RefCell<IntLiteralType>>)-> Self{
+		Type::IntLiteralType(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<IntLiteralType>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::IntLiteralType(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<IntLiteralType>>> for Node {
+	fn from(node:&Rc<RefCell<IntLiteralType>>)-> Self{
+		Node::IntLiteralType(node.clone())
+	}
 }
 
 #[derive(Debug,Clone)]
@@ -854,14 +2102,110 @@ pub struct StrLiteralType {
 	pub loc: Loc,
 }
 
+impl TryFrom<&Type> for Rc<RefCell<StrLiteralType>> {
+	type Error = Error;
+	fn try_from(node:&Type)->Result<Self,Self::Error>{
+		match node {
+			Type::StrLiteralType(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<StrLiteralType>>> for Type {
+	fn from(node:&Rc<RefCell<StrLiteralType>>)-> Self{
+		Type::StrLiteralType(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<StrLiteralType>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::StrLiteralType(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<StrLiteralType>>> for Node {
+	fn from(node:&Rc<RefCell<StrLiteralType>>)-> Self{
+		Node::StrLiteralType(node.clone())
+	}
+}
+
 #[derive(Debug,Clone)]
 pub struct VoidType {
 	pub loc: Loc,
 }
 
+impl TryFrom<&Type> for Rc<RefCell<VoidType>> {
+	type Error = Error;
+	fn try_from(node:&Type)->Result<Self,Self::Error>{
+		match node {
+			Type::VoidType(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<VoidType>>> for Type {
+	fn from(node:&Rc<RefCell<VoidType>>)-> Self{
+		Type::VoidType(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<VoidType>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::VoidType(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<VoidType>>> for Node {
+	fn from(node:&Rc<RefCell<VoidType>>)-> Self{
+		Node::VoidType(node.clone())
+	}
+}
+
 #[derive(Debug,Clone)]
 pub struct BoolType {
 	pub loc: Loc,
+}
+
+impl TryFrom<&Type> for Rc<RefCell<BoolType>> {
+	type Error = Error;
+	fn try_from(node:&Type)->Result<Self,Self::Error>{
+		match node {
+			Type::BoolType(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<BoolType>>> for Type {
+	fn from(node:&Rc<RefCell<BoolType>>)-> Self{
+		Type::BoolType(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<BoolType>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::BoolType(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<BoolType>>> for Node {
+	fn from(node:&Rc<RefCell<BoolType>>)-> Self{
+		Node::BoolType(node.clone())
+	}
 }
 
 #[derive(Debug,Clone)]
@@ -872,11 +2216,75 @@ pub struct ArrayType {
 	pub loc: Loc,
 }
 
+impl TryFrom<&Type> for Rc<RefCell<ArrayType>> {
+	type Error = Error;
+	fn try_from(node:&Type)->Result<Self,Self::Error>{
+		match node {
+			Type::ArrayType(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<ArrayType>>> for Type {
+	fn from(node:&Rc<RefCell<ArrayType>>)-> Self{
+		Type::ArrayType(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<ArrayType>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::ArrayType(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<ArrayType>>> for Node {
+	fn from(node:&Rc<RefCell<ArrayType>>)-> Self{
+		Node::ArrayType(node.clone())
+	}
+}
+
 #[derive(Debug,Clone)]
 pub struct FunctionType {
 	pub return_type: Option<Type>,
 	pub parameters: Vec<Type>,
 	pub loc: Loc,
+}
+
+impl TryFrom<&Type> for Rc<RefCell<FunctionType>> {
+	type Error = Error;
+	fn try_from(node:&Type)->Result<Self,Self::Error>{
+		match node {
+			Type::FunctionType(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<FunctionType>>> for Type {
+	fn from(node:&Rc<RefCell<FunctionType>>)-> Self{
+		Type::FunctionType(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<FunctionType>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::FunctionType(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<FunctionType>>> for Node {
+	fn from(node:&Rc<RefCell<FunctionType>>)-> Self{
+		Node::FunctionType(node.clone())
+	}
 }
 
 #[derive(Debug,Clone)]
@@ -885,10 +2293,74 @@ pub struct StructType {
 	pub loc: Loc,
 }
 
+impl TryFrom<&Type> for Rc<RefCell<StructType>> {
+	type Error = Error;
+	fn try_from(node:&Type)->Result<Self,Self::Error>{
+		match node {
+			Type::StructType(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<StructType>>> for Type {
+	fn from(node:&Rc<RefCell<StructType>>)-> Self{
+		Type::StructType(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<StructType>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::StructType(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<StructType>>> for Node {
+	fn from(node:&Rc<RefCell<StructType>>)-> Self{
+		Node::StructType(node.clone())
+	}
+}
+
 #[derive(Debug,Clone)]
 pub struct UnionType {
 	pub fields: Vec<Rc<RefCell<StructType>>>,
 	pub loc: Loc,
+}
+
+impl TryFrom<&Type> for Rc<RefCell<UnionType>> {
+	type Error = Error;
+	fn try_from(node:&Type)->Result<Self,Self::Error>{
+		match node {
+			Type::UnionType(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<UnionType>>> for Type {
+	fn from(node:&Rc<RefCell<UnionType>>)-> Self{
+		Type::UnionType(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<UnionType>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::UnionType(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<UnionType>>> for Node {
+	fn from(node:&Rc<RefCell<UnionType>>)-> Self{
+		Node::UnionType(node.clone())
+	}
 }
 
 #[derive(Debug,Clone)]
@@ -897,6 +2369,38 @@ pub struct Cast {
 	pub base: Option<Rc<RefCell<Call>>>,
 	pub expr: Option<Expr>,
 	pub loc: Loc,
+}
+
+impl TryFrom<&Expr> for Rc<RefCell<Cast>> {
+	type Error = Error;
+	fn try_from(node:&Expr)->Result<Self,Self::Error>{
+		match node {
+			Expr::Cast(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Cast>>> for Expr {
+	fn from(node:&Rc<RefCell<Cast>>)-> Self{
+		Expr::Cast(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<Cast>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::Cast(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Cast>>> for Node {
+	fn from(node:&Rc<RefCell<Cast>>)-> Self{
+		Node::Cast(node.clone())
+	}
 }
 
 #[derive(Debug,Clone,Copy,Serialize,Deserialize)]

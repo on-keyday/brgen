@@ -164,6 +164,29 @@ func generate(rw io.Writer, defs *gen.Defs) {
 				w.Printf("	pub %s: %s,\n", field.Name, field.Type.RustString())
 			}
 			w.Printf("}\n\n")
+
+			for _, impl := range d.Implements {
+				w.Printf("impl TryFrom<&%s> for Rc<RefCell<%s>> {\n", impl, d.Name)
+				w.Printf("	type Error = Error;\n")
+				w.Printf("	fn try_from(node:&%s)->Result<Self,Self::Error>{\n", impl)
+				w.Printf("		match node {\n")
+				w.Printf("			%s::%s(node)=>Ok(node.clone()),\n", impl, d.Name)
+				if impl == "Node" {
+					w.Printf("			_=> Err(Error::InvalidNodeType(node.into())),\n")
+				} else {
+					w.Printf("			_=> Err(Error::InvalidNodeType(Node::from(node).into())),\n")
+				}
+				w.Printf("		}\n")
+				w.Printf("	}\n")
+				w.Printf("}\n\n")
+
+				w.Printf("impl From<&Rc<RefCell<%s>>> for %s {\n", d.Name, impl)
+				w.Printf("	fn from(node:&Rc<RefCell<%s>>)-> Self{\n", d.Name)
+				w.Printf("		%s::%s(node.clone())\n", impl, d.Name)
+				w.Printf("	}\n")
+				w.Printf("}\n\n")
+			}
+
 		case *gen.Enum:
 			w.Printf("#[derive(Debug,Clone,Copy,Serialize,Deserialize)]\n")
 			w.Printf("#[serde(rename_all = \"snake_case\",untagged)]\n")
