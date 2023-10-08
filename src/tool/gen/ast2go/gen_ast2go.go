@@ -304,6 +304,11 @@ func main() {
 		return
 	}
 
+	if file == "/dev/stdout" {
+		generate(os.Stdout, defs)
+		return
+	}
+
 	file, err = filepath.Abs(file)
 	if err != nil {
 		log.Println(err)
@@ -316,11 +321,6 @@ func main() {
 		return
 	}
 	defer f.Close()
-
-	if file == "/dev/stdout" {
-		generate(os.Stdout, defs)
-		return
-	}
 
 	generate(f, defs)
 }

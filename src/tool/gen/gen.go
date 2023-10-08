@@ -78,6 +78,8 @@ type List struct {
 	Scope      OrderedKeyList[string] `json:"scope"`
 	Loc        OrderedKeyList[string] `json:"loc"`
 	Pos        OrderedKeyList[string] `json:"pos"`
+	TokenTag   []string               `json:"token_tag"`
+	Token      OrderedKeyList[string] `json:"token"`
 }
 
 type Def interface {
@@ -396,6 +398,11 @@ func CollectDefinition(list *List, fieldCaseFn func(string) string, typeCaseFn f
 	enum.Values = c.mapStringsToEnumValues(list.Endian)
 	defs.push(enum)
 
+	enum = &Enum{}
+	enum.Name = "TokenTag"
+	enum.Values = c.mapStringsToEnumValues(list.TokenTag)
+	defs.push(enum)
+
 	// scope definition
 	scope := Struct{}
 	scope.Name = "Scope"
@@ -415,6 +422,13 @@ func CollectDefinition(list *List, fieldCaseFn func(string) string, typeCaseFn f
 	pos.Fields = make([]*Field, 0, len(list.Pos))
 	pos.Fields = c.mapToStructFields(list.Pos)
 	defs.push(&pos)
+
+	// token definition
+	token := Struct{}
+	token.Name = "Token"
+	token.Fields = make([]*Field, 0, len(list.Token))
+	token.Fields = c.mapToStructFields(list.Token)
+	defs.push(&token)
 
 	return
 }
@@ -442,7 +456,7 @@ func LoadFromJSON(r io.Reader) (list *List, err error) {
 }
 
 func LoadFromSrc2JSON(src2json string) (list *List, err error) {
-	cmd := exec.Command(src2json, "--dump-types", "--dump-enum-name")
+	cmd := exec.Command(src2json, "--dump-types", "--dump-enum-name", "--lexer")
 	// get stdout
 	stdout, err := cmd.StdoutPipe()
 	err = cmd.Start()

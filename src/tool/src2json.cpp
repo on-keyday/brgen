@@ -103,7 +103,7 @@ int check_ast(std::string_view name) {
     return 0;
 }
 
-int node_list(bool dump_uintptr, bool flat, bool not_dump_base, bool dump_enum_name) {
+int node_list(bool dump_uintptr, bool flat, bool not_dump_base, bool dump_enum_name, bool lexer_mode) {
     brgen::JSONWriter d;
     {
         auto field = d.object();
@@ -124,7 +124,7 @@ int node_list(bool dump_uintptr, bool flat, bool not_dump_base, bool dump_enum_n
                 brgen::ast::node_type_list(list, flat, !not_dump_base);
             }
         });
-        brgen::ast::custom_type_mapping(field, dump_uintptr, dump_enum_name);
+        brgen::ast::custom_type_mapping(field, dump_uintptr, dump_enum_name, lexer_mode);
     }
     cout << d.out();
     if (cout.is_tty()) {
@@ -137,7 +137,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     utils::wrap::out_virtual_terminal = true;
 
     if (flags.dump_types) {
-        return node_list(flags.dump_ptr_as_uintptr, flags.flat, flags.not_dump_base, flags.dump_enum_name);
+        return node_list(flags.dump_ptr_as_uintptr, flags.flat, flags.not_dump_base, flags.dump_enum_name, flags.lexer);
     }
 
     if (flags.args.size() == 0) {

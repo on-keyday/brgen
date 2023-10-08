@@ -59,6 +59,8 @@ namespace brgen::lexer {
         "unknown",
     };
 
+    constexpr auto tag_count = sizeof(tag_str) / sizeof(tag_str[0]);
+
     struct Token {
         Tag tag = Tag::unknwon;
         std::string token;

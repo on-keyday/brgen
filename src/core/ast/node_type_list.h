@@ -228,6 +228,8 @@ namespace brgen::ast {
     constexpr auto loc_type = R"({"pos": "pos","file": "uint","line": "uint","col": "uint"})";
     constexpr auto pos_type = R"({"begin": "uint","end": "uint"})";
 
+    constexpr auto token_type = R"({"tag": "token_tag","token": "string","loc": "loc"})";
+
     template <bool ast_mode = false>
     void node_type_list(auto&& objdump, bool flat = false, bool dump_base = true) {
         objdump([&](auto&& field) {
@@ -342,7 +344,7 @@ namespace brgen::ast {
         }
     }
 
-    void custom_type_mapping(auto&& field, bool ast_mode = false, bool enum_name = false) {
+    void custom_type_mapping(auto&& field, bool ast_mode = false, bool enum_name = false, bool dump_lex = false) {
         struct R {
             const char* const* start;
             const char* const* finish;
@@ -407,5 +409,12 @@ namespace brgen::ast {
         }
         field("loc", utils::json::RawJSON<const char*>{brgen::ast::loc_type});
         field("pos", utils::json::RawJSON<const char*>{brgen::ast::pos_type});
+        if (dump_lex) {
+            {
+                R p{lexer::tag_str, lexer::tag_str + lexer::tag_count};
+                field("token_tag", p);
+            }
+            field("token", utils::json::RawJSON<const char*>{brgen::ast::token_type});
+        }
     }
 }  // namespace brgen::ast
