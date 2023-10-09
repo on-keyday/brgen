@@ -143,5 +143,5 @@
         "sdebugf",
         "strutil"
     ],
-    "rust-analyzer.cargo.sysroot": "discover"
+    "rust-analyzer.cargo.sysroot": "discover",
 }

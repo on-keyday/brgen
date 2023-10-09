@@ -36,6 +36,7 @@ namespace brgen {
             return {out, loc};
         }
         lexer::FileIndex file = lexer::builtin;
+        bool special = false;
         fs::path file_name;
         std::shared_ptr<void> ptr;
         std::optional<lexer::Token> (*parse_)(void* seq, std::uint64_t file) = nullptr;
@@ -114,7 +115,24 @@ namespace brgen {
             return ret;
         }
 
-        expected<lexer::FileIndex, std::error_code> add(const auto& name) {
+        expected<lexer::FileIndex, std::error_code> add_special(const auto& name, auto&& buffer) {
+            fs::path path = utils::utf::convert<std::u8string>(name);
+            if (files.find(path) != files.end()) {
+                return unexpect(std::make_error_code(std::errc::file_exists));
+            }
+            File file;
+            file.file_name = std::move(path);
+            file.file = index + 1;
+            file.special = true;
+            index++;
+            auto& f = files[file.file_name];
+            f = std::move(file);
+            indexes[index] = &f;
+            make_file_from_text(f, std::forward<decltype(buffer)>(buffer));
+            return files.size();
+        }
+
+        expected<lexer::FileIndex, std::error_code> add_file(const auto& name) {
             fs::path path = utils::utf::convert<std::u8string>(name);
             std::error_code err;
             path = fs::canonical(path, err);

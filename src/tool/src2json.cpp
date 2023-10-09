@@ -35,6 +35,9 @@ struct Flags : utils::cmdline::templ::HelpOption {
     bool dump_error = false;
     bool no_color = false;
 
+    bool stdin_mode = false;
+    std::string stdin_name = "<stdin>";
+
     void bind(utils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&lexer, "l,lexer", "lexer mode");
@@ -60,6 +63,9 @@ struct Flags : utils::cmdline::templ::HelpOption {
         ctx.VarBool(&dump_error, "dump-error", "dump error type (use with --dump-ast)");
 
         ctx.VarBool(&no_color, "no-color", "disable color output");
+
+        ctx.VarBool(&stdin_mode, "stdin", "read input from stdin");
+        ctx.VarString(&stdin_name, "stdin-name", "set name of stdin (as a filename)", "<name>");
     }
 };
 auto& cout = utils::wrap::cout_wrap();
@@ -178,8 +184,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     }
 
     brgen::FileSet files;
-
-    auto ok = files.add(name);
+    auto ok = files.add_file(name);
     if (!ok) {
         print_error("cannot open file ", name, " code=", ok.error());
         return -1;

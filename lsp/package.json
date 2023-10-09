@@ -17,7 +17,7 @@
     "vscode": "^1.52.0"
   },
   "activationEvents": [
-    "onLanguage:plaintext"
+    "onLanguage:brgen"
   ],
   "contributes": {
     "configuration": {
@@ -42,7 +42,15 @@
           "description": "Traces the communication between VS Code and the language server."
         }
       }
-    }
+    },
+    "languages": [
+      {
+        "id": "brgen",
+        "extensions": [
+          ".bgn"
+        ]
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "cd client && npm run update-vscode && cd .. && npm run compile",

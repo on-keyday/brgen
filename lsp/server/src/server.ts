@@ -18,13 +18,15 @@ import {
     SemanticTokensLegend,
     SemanticTokensBuilder,
     SemanticTokenTypes,
-    SemanticTokenModifiers
+    SemanticTokenModifiers,
+    SemanticTokens,
+    SemanticTokensOptions
 } from 'vscode-languageserver/node';
 
 import { TextDocument } from 'vscode-languageserver-textdocument';
 
 import * as fs from "fs";
-import {exec} from "child_process";
+import {exec, execFile} from "child_process";
 import * as url from "url";
 import { ast2ts } from "ast2ts";
 import assert from 'node:assert/strict';
@@ -49,6 +51,20 @@ let hasConfigurationCapability: boolean = false;
 let hasWorkspaceFolderCapability: boolean = false;
 let hasDiagnosticRelatedInformationCapability: boolean = false;
 
+const legend:SemanticTokensLegend = {
+    tokenTypes: [
+        'comment',
+        'keyword',
+        'number',
+        'operator',
+        'string',
+        'variable',
+    ],
+    tokenModifiers: [
+        "declaration",
+    ],
+};
+
 connection.onInitialize((params: InitializeParams) => {
     let capabilities = params.capabilities;
 
@@ -72,6 +88,11 @@ connection.onInitialize((params: InitializeParams) => {
             // Tell the client that this server supports code completion.
             completionProvider: {
                 resolveProvider: true
+            },
+            semanticTokensProvider: {
+                legend: legend,
+                range: false,
+                full: true,
             }
         }
     };
@@ -99,78 +120,71 @@ connection.onInitialized(() => {
 
 const tokenizeSource  = (doc :TextDocument) =>{
     const path = url.fileURLToPath(doc.uri)
-    exec(`${PATH_TO_SRC2JSON} ${path} --lexer --no-color --print-on-error --print-json`,(err,stdout,stderr)=>{
-        if(err){
-            console.log(`err: ${err}`);
-            return;
-        }
-        const tokens=JSON.parse(stdout);
-        console.log(`stdout: ${stdout}`);
-        console.log(`json: ${tokens}`);
-        console.log(`URI: ${doc.uri}`);
-        if(!ast2ts.isTokenFile(tokens)){
-            console.log(`not token file`);
-            return;
-        }
-        if(tokens.error) {
-            console.log(`token error: ${tokens.error}`);
-            return;
-        }
-        assert(tokens.tokens);
-        const builder = new SemanticTokensBuilder();
-        const mapForTokenTypes = new Map<ast2ts.TokenTag,SemanticTokenTypes>([
-            [ast2ts.TokenTag.comment,SemanticTokenTypes.comment],
-            [ast2ts.TokenTag.keyword,SemanticTokenTypes.keyword],
-            [ast2ts.TokenTag.bool_literal,SemanticTokenTypes.keyword],
-            [ast2ts.TokenTag.int_literal,SemanticTokenTypes.number],
-            [ast2ts.TokenTag.str_literal,SemanticTokenTypes.string],
-            [ast2ts.TokenTag.ident,SemanticTokenTypes.variable],
-            [ast2ts.TokenTag.punct,SemanticTokenTypes.operator],
-        ]);
-        const mapTokenTypesIndex = new Map<SemanticTokenTypes,number>([
-            [SemanticTokenTypes.comment,0],
-            [SemanticTokenTypes.keyword,1],
-            [SemanticTokenTypes.number,2],
-            [SemanticTokenTypes.operator,3],
-            [SemanticTokenTypes.string,4], 
-            [SemanticTokenTypes.variable,5],
-        ]); 
-        tokens.tokens.forEach((token:ast2ts.Token)=>{
-            const type = mapForTokenTypes.get(token.tag);
-            if(type===undefined){
+    return new Promise<SemanticTokens>((resolve,reject)=>{
+        const ch = execFile(`${PATH_TO_SRC2JSON}`, [`${path}`, "--lexer", "--no-color", "--print-on-error","--print-json"],(err,stdout,_)=>{
+            if(err){
+                reject(err)
                 return;
             }
-            const index = mapTokenTypesIndex.get(type);
-            if(index===undefined){
+            const tokens=JSON.parse(stdout);
+            console.log(`json: ${JSON.stringify(tokens)}`);
+            console.log(`URI: ${doc.uri}`);
+            if(!ast2ts.isTokenFile(tokens)){
+                reject(new TypeError("not token file"))
                 return;
             }
-            builder.push(token.loc.line,token.loc.col,token.token.length,index,1);
-        });
-        const legend:SemanticTokensLegend = {
-            tokenTypes: [
-                'comment',
-                'keyword',
-                'number',
-                'operator',
-                'string',
-                'variable',
-            ],
-            tokenModifiers: [
-                "declaration",
-            ],
-        };
-        const semanticTokens = builder.build();
-        console.log(`semanticTokens: ${JSON.stringify(semanticTokens)}`);
-        connection.sendNotification('brgen-lsp/tokenized', {
-            textDocument: {
-                uri: doc.uri,
-            },
-            legend: legend,
-            data: semanticTokens.data,
+            if(tokens.error) {
+                reject(tokens.error);
+                return;
+            }
+            assert(tokens.tokens);
+            const builder = new SemanticTokensBuilder();
+            const mapForTokenTypes = new Map<ast2ts.TokenTag,SemanticTokenTypes>([
+                [ast2ts.TokenTag.comment,SemanticTokenTypes.comment],
+                [ast2ts.TokenTag.keyword,SemanticTokenTypes.keyword],
+                [ast2ts.TokenTag.bool_literal,SemanticTokenTypes.keyword],
+                [ast2ts.TokenTag.int_literal,SemanticTokenTypes.number],
+                [ast2ts.TokenTag.str_literal,SemanticTokenTypes.string],
+                [ast2ts.TokenTag.ident,SemanticTokenTypes.variable],
+                [ast2ts.TokenTag.punct,SemanticTokenTypes.operator],
+            ]);
+            const mapTokenTypesIndex = new Map<SemanticTokenTypes,number>([
+                [SemanticTokenTypes.comment,0],
+                [SemanticTokenTypes.keyword,1],
+                [SemanticTokenTypes.number,2],
+                [SemanticTokenTypes.operator,3],
+                [SemanticTokenTypes.string,4], 
+                [SemanticTokenTypes.variable,5],
+            ]); 
+            tokens.tokens.forEach((token:ast2ts.Token)=>{
+                const type = mapForTokenTypes.get(token.tag);
+                if(type===undefined){
+                    return;
+                }
+                const index = mapTokenTypesIndex.get(type);
+                if(index===undefined){
+                    return;
+                }
+                builder.push(token.loc.line,token.loc.col,token.token.length,index,1);
+                console.log(`token: ${token.token} ${token.tag} ${token.loc.line} ${token.loc.col}`)
+            });
+           
+            const semanticTokens = builder.build();
+            console.log(`semanticTokens: ${JSON.stringify(semanticTokens)}`);
+            resolve(semanticTokens);
         });
     });
 };
 
+connection.onRequest("textDocument/semanticTokens/full",async (params)=>{
+    console.log(`textDocument/semanticTokens/full: ${JSON.stringify(params)}`);
+    const doc = documents.get(params?.textDocument?.uri);
+    if(doc===undefined){
+        console.log(`document ${params?.textDocument?.uri} is not found`);
+        return null; 
+    }
+    return await tokenizeSource(doc);
+});
 
 // The example settings
 interface ExampleSettings {
@@ -227,12 +241,8 @@ documents.onDidClose(e => {
     documentSettings.delete(e.document.uri);
 });
 
-// The content of a text document has changed. This event is emitted
-// when the text document first opened or when its content has changed.
-documents.onDidChangeContent(change => {
-    // validateTextDocument(change.document);
-    tokenizeSource(change.document);
-});
+
+
 
 
 connection.onDidChangeWatchedFiles(_change => {
@@ -281,22 +291,7 @@ connection.onCompletionResolve(
 // for open, change and close text document events
 documents.listen(connection);
 
-const REGISTER_ID= randomUUID()
-
-connection.sendNotification('client/registerCapability', {
-    registrations: [
-        {
-            id: REGISTER_ID,
-            method: 'textDocument/didChange',
-            registerOptions: {
-                documentSelector: [
-                    { scheme: 'file', language: 'brgen', pattern: '*.bgn' },
-                ],
-            },
-        },
-    ],
-});
-
-
 // Listen on the connection
 connection.listen();
+
+

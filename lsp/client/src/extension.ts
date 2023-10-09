@@ -3,8 +3,9 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
+import assert from 'assert';
 import * as path from 'path';
-import { workspace, ExtensionContext } from 'vscode';
+import * as vscode from 'vscode';
 
 import {
     LanguageClient,
@@ -15,7 +16,8 @@ import {
 
 let client: LanguageClient;
 
-export function activate(context: ExtensionContext) {
+
+export function activate(context: vscode.ExtensionContext) {
     // The server is implemented in node
     let serverModule = context.asAbsolutePath(path.join('server', 'out', 'server.js'));
     // The debug options for the server
@@ -35,14 +37,10 @@ export function activate(context: ExtensionContext) {
 
     // Options to control the language client
     let clientOptions: LanguageClientOptions = {
-        // Register the server for plain text documents
-        documentSelector: [{ scheme: 'file', language: 'plaintext' }],
-        synchronize: {
-            // Notify the server about file changes to '.clientrc files contained in the workspace
-            fileEvents: workspace.createFileSystemWatcher('**/.clientrc')
-        }
+        documentSelector: [{language: "brgen",scheme:"file"}],
+        synchronize: {},
     };
-
+ 
     // Create the language client and start the client.
     client = new LanguageClient(
         'brgen-lsp',
@@ -51,12 +49,11 @@ export function activate(context: ExtensionContext) {
         clientOptions
     );
 
+
     // Start the client. This will also launch the server
     client.start();
+    
 
-    client.onNotification('brgen-lsp/tokenized', (data) => {
-        
-    });
 }
 
 export function deactivate(): Thenable<void> | undefined {

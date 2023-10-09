@@ -84,7 +84,7 @@ namespace brgen::middle {
                         if (!path) {
                             error(m->loc, "invalid path: cannot unescape ", raw_path->value).report();
                         }
-                        auto res = fs.add(*path);
+                        auto res = fs.add_file(*path);
                         if (!res) {
                             if (res.error().category() == std::generic_category()) {
                                 // skip error, allow duplication
