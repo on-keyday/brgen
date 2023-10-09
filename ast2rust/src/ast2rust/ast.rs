@@ -2629,6 +2629,20 @@ pub struct Token {
 }
 
 #[derive(Debug,Clone,Serialize,Deserialize)]
+pub struct SrcErrorEntry {
+	pub msg: String,
+	pub file: String,
+	pub loc: Loc,
+	pub src: String,
+	pub warn: bool,
+}
+
+#[derive(Debug,Clone,Serialize,Deserialize)]
+pub struct SrcError {
+	pub errs: Vec<SrcErrorEntry>,
+}
+
+#[derive(Debug,Clone,Serialize,Deserialize)]
 pub struct RawNode {
 	pub node_type: NodeType,
 	pub loc :Loc,

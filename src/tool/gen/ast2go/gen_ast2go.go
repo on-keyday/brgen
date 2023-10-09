@@ -237,13 +237,13 @@ func generate(w io.Writer, list *gen.Defs) {
 	writer.Printf("type AstFile struct {\n")
 	writer.Printf("	Files []string `json:\"files\"`\n")
 	writer.Printf("	Ast *AST `json:\"ast\"`\n")
-	writer.Printf("	Error string `json:\"error\"`\n")
+	writer.Printf("	Error *SrcError `json:\"error\"`\n")
 	writer.Printf("}\n\n")
 
 	writer.Printf("type TokenFile struct {\n")
 	writer.Printf("	Files []string `json:\"files\"`\n")
 	writer.Printf("	Tokens []*Token `json:\"tokens\"`\n")
-	writer.Printf("	Error string `json:\"error\"`\n")
+	writer.Printf("	Error *SrcError `json:\"error\"`\n")
 	writer.Printf("}\n\n")
 
 	writer.Printf("func Walk(n Node, f func(Node) (cont bool)) {\n")

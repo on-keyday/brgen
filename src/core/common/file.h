@@ -75,8 +75,8 @@ namespace brgen {
         }
 
        public:
-        SourceEntry error(std::string&& msg, lexer::Pos pos, bool warn = false) {
-            auto [src, loc] = dump(pos);
+        SourceEntry error(std::string&& msg, lexer::Loc loc, bool warn = false) {
+            auto [src, _] = dump(loc.pos);
             return SourceEntry{
                 std::move(msg),
                 file_name.generic_string(),
@@ -168,7 +168,7 @@ namespace brgen {
                     .warn = warn,
                 };
             }
-            return got->error(std::move(msg), loc.pos, warn);
+            return got->error(std::move(msg), loc, warn);
         }
     };
 

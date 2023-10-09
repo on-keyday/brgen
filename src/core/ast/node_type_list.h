@@ -229,6 +229,8 @@ namespace brgen::ast {
     constexpr auto pos_type = R"({"begin": "uint","end": "uint"})";
 
     constexpr auto token_type = R"({"tag": "token_tag","token": "string","loc": "loc"})";
+    constexpr auto src_error_entry_type = R"({"msg": "string","file": "string","loc": "loc","src": "string","warn": "bool"})";
+    constexpr auto src_error_type = R"({"errs": "array<src_error_entry>"})";
 
     template <bool ast_mode = false>
     void node_type_list(auto&& objdump, bool flat = false, bool dump_base = true) {
@@ -344,7 +346,14 @@ namespace brgen::ast {
         }
     }
 
-    void custom_type_mapping(auto&& field, bool ast_mode = false, bool enum_name = false, bool dump_lex = false) {
+    struct CustomOption {
+        bool dump_uintptr = false;
+        bool enum_name = false;
+        bool dump_lex = false;
+        bool dump_error = false;
+    };
+
+    void custom_type_mapping(auto&& field, CustomOption opt = {}) {
         struct R {
             const char* const* start;
             const char* const* finish;
@@ -359,7 +368,7 @@ namespace brgen::ast {
         };
         {
             R p{unary_op_str, unary_op_str + unary_op_count};
-            if (enum_name) {
+            if (opt.enum_name) {
                 field("unary_op", [&](auto&& d) {
                     auto field = d.array();
                     for (size_t i = 0; i < unary_op_count; i++) {
@@ -377,7 +386,7 @@ namespace brgen::ast {
         }
         {
             R p{bin_op_list, bin_op_list + bin_op_count};
-            if (enum_name) {
+            if (opt.enum_name) {
                 field("binary_op", [&](auto&& d) {
                     auto field = d.array();
                     for (size_t i = 0; i < bin_op_count; i++) {
@@ -401,7 +410,7 @@ namespace brgen::ast {
             R p{endian_str, endian_str + endian_count};
             field("endian", p);
         }
-        if (ast_mode) {
+        if (opt.dump_uintptr) {
             field("scope", utils::json::RawJSON<const char*>{scope_type_ast_mode_list});
         }
         else {
@@ -409,12 +418,16 @@ namespace brgen::ast {
         }
         field("loc", utils::json::RawJSON<const char*>{brgen::ast::loc_type});
         field("pos", utils::json::RawJSON<const char*>{brgen::ast::pos_type});
-        if (dump_lex) {
+        if (opt.dump_lex) {
             {
                 R p{lexer::tag_str, lexer::tag_str + lexer::tag_count};
                 field("token_tag", p);
             }
             field("token", utils::json::RawJSON<const char*>{brgen::ast::token_type});
+        }
+        if (opt.dump_error) {
+            field("src_error_entry", utils::json::RawJSON<const char*>{brgen::ast::src_error_entry_type});
+            field("src_error", utils::json::RawJSON<const char*>{brgen::ast::src_error_type});
         }
     }
 }  // namespace brgen::ast

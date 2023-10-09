@@ -12,7 +12,7 @@ namespace brgen {
         using error_buffer_type = std::string;
         std::string msg;
         std::string file;
-        utils::code::SrcLoc loc;
+        lexer::Loc loc;
         std::string src;
         bool warn = false;
 
@@ -29,8 +29,17 @@ namespace brgen {
 
         void omit_error(auto&& buf) {
             appends(buf, msg, "\n",
-                    file, ":", nums(loc.line + 1), ":", nums(loc.pos + 1), ":\n",
+                    file, ":", nums(loc.line), ":", nums(loc.col), ":\n",
                     src);
+        }
+
+        void as_json(auto&& buf) {
+            auto field = buf.object();
+            field("msg", msg);
+            field("file", file);
+            field("loc", loc);
+            field("src", src);
+            field("warn", warn);
         }
     };
 
@@ -58,6 +67,11 @@ namespace brgen {
                 err.omit_error(b);
                 cb(b, err.warn);
             }
+        }
+
+        void as_json(auto&& buf) {
+            auto field = buf.object();
+            field("errs", errs);
         }
     };
 

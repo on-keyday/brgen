@@ -345,7 +345,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("export interface AstFile {\n")
 	w.Printf("	files :string[];\n")
 	w.Printf("	ast :Ast | null;\n")
-	w.Printf("	error :string | null\n")
+	w.Printf("	error :SrcError | null\n")
 	w.Printf("}\n\n")
 
 	w.Printf("export function isAstFile(obj: any): obj is AstFile {\n")
@@ -355,7 +355,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("export interface TokenFile {\n")
 	w.Printf("	files :string[];\n")
 	w.Printf("	tokens :Token[] | null;\n")
-	w.Printf("	error :string | null\n")
+	w.Printf("	error :SrcError | null\n")
 	w.Printf("}\n\n")
 
 	w.Printf("export function isTokenFile(obj: any): obj is TokenFile {\n")

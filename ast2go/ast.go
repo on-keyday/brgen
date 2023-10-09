@@ -968,6 +968,18 @@ type Token struct {
 	Loc   Loc      `json:"loc"`
 }
 
+type SrcErrorEntry struct {
+	Msg  string `json:"msg"`
+	File string `json:"file"`
+	Loc  Loc    `json:"loc"`
+	Src  string `json:"src"`
+	Warn bool   `json:"warn"`
+}
+
+type SrcError struct {
+	Errs []SrcErrorEntry `json:"errs"`
+}
+
 type astConstructor struct {
 	node  []Node
 	scope []*Scope

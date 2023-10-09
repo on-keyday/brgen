@@ -154,7 +154,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 			w.Printf("}\n\n")
 
 		case *gen.Struct:
-			if d.Name == "Token" {
+			if d.Name == "Token" || d.Name == "SrcError" || d.Name == "SrcErrorEntry" {
 				w.Printf("#[derive(Debug,Clone,Serialize,Deserialize)]\n")
 			} else if len(d.Implements) == 0 && d.Name != "Scope" {
 				w.Printf("#[derive(Debug,Clone,Copy,Serialize,Deserialize)]\n")
@@ -457,14 +457,14 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("pub struct AstFile {\n")
 	w.Printf("	pub files :Vec<String>,\n")
 	w.Printf("	pub ast: Option<AST>,\n")
-	w.Printf("	pub error :Option<String>,\n")
+	w.Printf("	pub error :Option<SrcError>,\n")
 	w.Printf("}\n\n")
 
 	w.Printf("#[derive(Debug,Clone,Serialize,Deserialize)]\n")
 	w.Printf("pub struct TokenFile {\n")
 	w.Printf("	pub files :Vec<String>,\n")
 	w.Printf("	pub tokens: Option<Vec<Token>>, \n")
-	w.Printf("	pub error :Option<String>,\n")
+	w.Printf("	pub error :Option<SrcError>,\n")
 	w.Printf("}\n\n")
 
 	w.Printf("pub fn walk_node<F:FnMut(&Node)->bool>(node:&Node,f:&mut F){\n")

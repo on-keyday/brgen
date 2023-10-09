@@ -31,6 +31,7 @@ struct Flags : utils::cmdline::templ::HelpOption {
     bool flat = false;
     bool not_dump_base = false;
     bool dump_enum_name = false;
+    bool dump_error = false;
     bool no_color = false;
 
     void bind(utils::cmdline::option::Context& ctx) {
@@ -53,6 +54,7 @@ struct Flags : utils::cmdline::templ::HelpOption {
         ctx.VarBool(&flat, "dump-flat", "dump types schema with flat body (use with --dump-ast)");
         ctx.VarBool(&not_dump_base, "not-dump-base", "not dump types schema with base type (use with --dump-ast)");
         ctx.VarBool(&dump_enum_name, "dump-enum-name", "dump enum name of operator (use with --dump-ast)");
+        ctx.VarBool(&dump_error, "dump-error", "dump error type (use with --dump-ast)");
 
         ctx.VarBool(&no_color, "no-color", "disable color output");
     }
@@ -114,7 +116,7 @@ int check_ast(std::string_view name) {
     return 0;
 }
 
-int node_list(bool dump_uintptr, bool flat, bool not_dump_base, bool dump_enum_name, bool lexer_mode) {
+int node_list(bool dump_uintptr, bool flat, bool not_dump_base, bool dump_enum_name, bool lexer_mode, bool dump_error) {
     brgen::JSONWriter d;
     {
         auto field = d.object();
@@ -135,7 +137,12 @@ int node_list(bool dump_uintptr, bool flat, bool not_dump_base, bool dump_enum_n
                 brgen::ast::node_type_list(list, flat, !not_dump_base);
             }
         });
-        brgen::ast::custom_type_mapping(field, dump_uintptr, dump_enum_name, lexer_mode);
+        brgen::ast::CustomOption opt;
+        opt.dump_lex = lexer_mode;
+        opt.enum_name = dump_enum_name;
+        opt.dump_uintptr = dump_uintptr;
+        opt.dump_error = dump_error;
+        brgen::ast::custom_type_mapping(field, opt);
     }
     cout << d.out();
     if (cout.is_tty()) {
@@ -149,7 +156,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     no_color = flags.no_color;
 
     if (flags.dump_types) {
-        return node_list(flags.dump_ptr_as_uintptr, flags.flat, flags.not_dump_base, flags.dump_enum_name, flags.lexer);
+        return node_list(flags.dump_ptr_as_uintptr, flags.flat, flags.not_dump_base, flags.dump_enum_name, flags.lexer, flags.dump_error);
     }
 
     if (flags.args.size() == 0) {
@@ -187,7 +194,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
                 auto field = d.object();
                 field("file", files.file_list());
                 field(key, nullptr);
-                field("error", res.to_string());
+                field("error", res);
             }
             cout << d.out();
         }

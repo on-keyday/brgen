@@ -610,6 +610,26 @@ export function isToken(obj: any): obj is Token {
 	return obj && typeof obj === 'object' && isTokenTag(obj?.tag) && typeof obj?.token === 'string' && isLoc(obj?.loc)
 }
 
+export interface SrcErrorEntry {
+	msg: string;
+	file: string;
+	loc: Loc;
+	src: string;
+	warn: boolean;
+}
+
+export function isSrcErrorEntry(obj: any): obj is SrcErrorEntry {
+	return obj && typeof obj === 'object' && typeof obj?.msg === 'string' && typeof obj?.file === 'string' && isLoc(obj?.loc) && typeof obj?.src === 'string' && typeof obj?.warn === 'boolean'
+}
+
+export interface SrcError {
+	errs: SrcErrorEntry[];
+}
+
+export function isSrcError(obj: any): obj is SrcError {
+	return obj && typeof obj === 'object' && Array.isArray(obj?.errs)
+}
+
 export interface RawNode {
 	node_type: NodeType;
 	loc :Loc;

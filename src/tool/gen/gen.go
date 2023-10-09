@@ -80,6 +80,8 @@ type List struct {
 	Pos        OrderedKeyList[string] `json:"pos"`
 	TokenTag   []string               `json:"token_tag"`
 	Token      OrderedKeyList[string] `json:"token"`
+	ErrorEntry OrderedKeyList[string] `json:"src_error_entry"`
+	Error      OrderedKeyList[string] `json:"src_error"`
 }
 
 type Def interface {
@@ -430,6 +432,20 @@ func CollectDefinition(list *List, fieldCaseFn func(string) string, typeCaseFn f
 	token.Fields = c.mapToStructFields(list.Token)
 	defs.push(&token)
 
+	// error_entry definition
+	errorEntry := Struct{}
+	errorEntry.Name = "SrcErrorEntry"
+	errorEntry.Fields = make([]*Field, 0, len(list.ErrorEntry))
+	errorEntry.Fields = c.mapToStructFields(list.ErrorEntry)
+	defs.push(&errorEntry)
+
+	// error definition
+	error := Struct{}
+	error.Name = "SrcError"
+	error.Fields = make([]*Field, 0, len(list.Error))
+	error.Fields = c.mapToStructFields(list.Error)
+	defs.push(&error)
+
 	return
 }
 
@@ -456,7 +472,7 @@ func LoadFromJSON(r io.Reader) (list *List, err error) {
 }
 
 func LoadFromSrc2JSON(src2json string) (list *List, err error) {
-	cmd := exec.Command(src2json, "--dump-types", "--dump-enum-name", "--lexer")
+	cmd := exec.Command(src2json, "--dump-types", "--dump-enum-name", "--dump-error", "--lexer")
 	// get stdout
 	stdout, err := cmd.StdoutPipe()
 	err = cmd.Start()
