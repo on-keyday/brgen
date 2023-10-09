@@ -53,6 +53,10 @@ export function activate(context: ExtensionContext) {
 
     // Start the client. This will also launch the server
     client.start();
+
+    client.onNotification('brgen-lsp/tokenized', (data) => {
+        
+    });
 }
 
 export function deactivate(): Thenable<void> | undefined {

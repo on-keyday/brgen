@@ -15,8 +15,10 @@ import {
     TextDocumentPositionParams,
     TextDocumentSyncKind,
     InitializeResult,
-    Range,
-    TextEdit,
+    SemanticTokensLegend,
+    SemanticTokensBuilder,
+    SemanticTokenTypes,
+    SemanticTokenModifiers
 } from 'vscode-languageserver/node';
 
 import { TextDocument } from 'vscode-languageserver-textdocument';
@@ -26,7 +28,8 @@ import {exec} from "child_process";
 import * as url from "url";
 import { ast2ts } from "ast2ts";
 import assert from 'node:assert/strict';
-import { DecorationRangeBehavior } from 'vscode';
+import { randomUUID } from 'crypto';
+
 
 
 
@@ -96,13 +99,9 @@ connection.onInitialized(() => {
 
 const tokenizeSource  = (doc :TextDocument) =>{
     const path = url.fileURLToPath(doc.uri)
-    exec(`${PATH_TO_SRC2JSON} ${path} --lexer --no-color --print-json`,(err,stdout,stderr)=>{
+    exec(`${PATH_TO_SRC2JSON} ${path} --lexer --no-color --print-on-error --print-json`,(err,stdout,stderr)=>{
         if(err){
             console.log(`err: ${err}`);
-            return;
-        }
-        if(stderr){ 
-            console.log(`stderr: ${stderr}`);
             return;
         }
         const tokens=JSON.parse(stdout);
@@ -118,15 +117,57 @@ const tokenizeSource  = (doc :TextDocument) =>{
             return;
         }
         assert(tokens.tokens);
-        const edits : TextEdit[] = [];
+        const builder = new SemanticTokensBuilder();
+        const mapForTokenTypes = new Map<ast2ts.TokenTag,SemanticTokenTypes>([
+            [ast2ts.TokenTag.comment,SemanticTokenTypes.comment],
+            [ast2ts.TokenTag.keyword,SemanticTokenTypes.keyword],
+            [ast2ts.TokenTag.bool_literal,SemanticTokenTypes.keyword],
+            [ast2ts.TokenTag.int_literal,SemanticTokenTypes.number],
+            [ast2ts.TokenTag.str_literal,SemanticTokenTypes.string],
+            [ast2ts.TokenTag.ident,SemanticTokenTypes.variable],
+            [ast2ts.TokenTag.punct,SemanticTokenTypes.operator],
+        ]);
+        const mapTokenTypesIndex = new Map<SemanticTokenTypes,number>([
+            [SemanticTokenTypes.comment,0],
+            [SemanticTokenTypes.keyword,1],
+            [SemanticTokenTypes.number,2],
+            [SemanticTokenTypes.operator,3],
+            [SemanticTokenTypes.string,4], 
+            [SemanticTokenTypes.variable,5],
+        ]); 
         tokens.tokens.forEach((token:ast2ts.Token)=>{
-            const start=doc.positionAt(token.loc.pos.begin);
-            const end=doc.positionAt(token.loc.pos.end);
-            const range = Range.create(start,end);
-            const edit = TextEdit.replace(range,token.token);
-            edits.push(edit);
+            const type = mapForTokenTypes.get(token.tag);
+            if(type===undefined){
+                return;
+            }
+            const index = mapTokenTypesIndex.get(type);
+            if(index===undefined){
+                return;
+            }
+            builder.push(token.loc.line,token.loc.col,token.token.length,index,1);
         });
-        connection.workspace.applyEdit({changes:{[doc.uri]:edits}});
+        const legend:SemanticTokensLegend = {
+            tokenTypes: [
+                'comment',
+                'keyword',
+                'number',
+                'operator',
+                'string',
+                'variable',
+            ],
+            tokenModifiers: [
+                "declaration",
+            ],
+        };
+        const semanticTokens = builder.build();
+        console.log(`semanticTokens: ${JSON.stringify(semanticTokens)}`);
+        connection.sendNotification('brgen-lsp/tokenized', {
+            textDocument: {
+                uri: doc.uri,
+            },
+            legend: legend,
+            data: semanticTokens.data,
+        });
     });
 };
 
@@ -156,7 +197,7 @@ connection.onDidChangeConfiguration(change => {
     }
 
     // Revalidate all open text documents
-    documents.all().forEach(validateTextDocument);
+    // documents.all().forEach(validateTextDocument);
 });
 
 const  getDocumentSettings = async(resource: string) => {
@@ -193,62 +234,12 @@ documents.onDidChangeContent(change => {
     tokenizeSource(change.document);
 });
 
-async function validateTextDocument(textDocument: TextDocument): Promise<void> {
-    // In this simple example we get the settings for every validate run.
-    let settings = await getDocumentSettings(textDocument.uri);
-
-    const URI = textDocument.uri
-
-    // The validator creates diagnostics for all uppercase words length 2 and more
-    let text = textDocument.getText();
-    let pattern = /\b[A-Z]{2,}\b/g;
-    let m: RegExpExecArray | null;
-
-    let problems = 0;
-    let diagnostics: Diagnostic[] = [];
-    while ((m = pattern.exec(text)) && problems < settings.maxNumberOfProblems) {
-        problems++;
-        let diagnostic: Diagnostic = {
-            severity: DiagnosticSeverity.Warning,
-            range: {
-                start: textDocument.positionAt(m.index),
-                end: textDocument.positionAt(m.index + m[0].length)
-            },
-            message: `${m[0]} is all uppercase.`,
-            source: 'ex'
-        };
-        if (hasDiagnosticRelatedInformationCapability) {
-            diagnostic.relatedInformation = [
-                {
-                    location: {
-                        uri: textDocument.uri,
-                        range: Object.assign({}, diagnostic.range)
-                    },
-                    message: 'Spelling matters'
-                },
-                {
-                    location: {
-                        uri: textDocument.uri,
-                        range: Object.assign({}, diagnostic.range)
-                    },
-                    message: 'Particularly for names'
-                }
-            ];
-        }
-        diagnostics.push(diagnostic);
-    }
-
-
-    // Send the computed diagnostics to VS Code.
-    connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
-}
 
 connection.onDidChangeWatchedFiles(_change => {
     // Monitored files have change in VS Code
     connection.console.log('We received a file change event');
 });
 
-documents.onDidChangeContent(change => { validateTextDocument(change.document); })
 
 // This handler provides the initial list of the completion items.
 connection.onCompletion(
@@ -289,6 +280,23 @@ connection.onCompletionResolve(
 // Make the text document manager listen on the connection
 // for open, change and close text document events
 documents.listen(connection);
+
+const REGISTER_ID= randomUUID()
+
+connection.sendNotification('client/registerCapability', {
+    registrations: [
+        {
+            id: REGISTER_ID,
+            method: 'textDocument/didChange',
+            registerOptions: {
+                documentSelector: [
+                    { scheme: 'file', language: 'brgen', pattern: '*.bgn' },
+                ],
+            },
+        },
+    ],
+});
+
 
 // Listen on the connection
 connection.listen();

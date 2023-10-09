@@ -26,6 +26,7 @@ struct Flags : utils::cmdline::templ::HelpOption {
     bool dump_types = false;
     bool disable_untyped_warning = false;
     bool print_json = false;
+    bool print_on_error = false;
     bool debug_json = false;
     bool dump_ptr_as_uintptr = false;
     bool flat = false;
@@ -48,6 +49,8 @@ struct Flags : utils::cmdline::templ::HelpOption {
         ctx.VarBool(&disable_untyped_warning, "u,disable-untyped", "disable untyped warning");
 
         ctx.VarBool(&print_json, "p,print-json", "print json of ast/tokens to stdout if succeeded (if stdout is tty. if not tty, usually print json ast)");
+        ctx.VarBool(&print_on_error, "print-on-error", "print json of ast/tokens to stdout if failed (if stdout is tty. if not tty, usually print json ast)");
+
         ctx.VarBool(&debug_json, "d,debug-json", "debug mode json output (not parsable ast, only for debug. use with --print-ast)");
 
         ctx.VarBool(&dump_ptr_as_uintptr, "dump-uintptr", "make pointer type of ast field uintptr (use with --dump-ast)");
@@ -188,11 +191,11 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     }
 
     auto report_error = [&](auto&& res, bool warn = false, const char* key = "ast") {
-        if (!warn && !cout.is_tty()) {
+        if (!warn && (!cout.is_tty() || flags.print_on_error)) {
             brgen::JSONWriter d;
             {
                 auto field = d.object();
-                field("file", files.file_list());
+                field("files", files.file_list());
                 field(key, nullptr);
                 field("error", res);
             }
@@ -218,7 +221,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
             brgen::JSONWriter d;
             {
                 auto field = d.object();
-                field("file", files.file_list());
+                field("files", files.file_list());
                 field("tokens", res.value());
                 field("error", nullptr);
             }
@@ -278,7 +281,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     d.set_no_colon_space(true);
     if (flags.debug_json) {
         auto field = d.object();
-        field("file", files.file_list());
+        field("files", files.file_list());
         field("ast", res.value());
         field("error", nullptr);
     }
@@ -286,7 +289,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
         auto field = d.object();
         brgen::ast::JSONConverter c;
         c.obj.set_no_colon_space(true);
-        field("file", files.file_list());
+        field("files", files.file_list());
         c.encode(*res);
         field("ast", c.obj);
         field("error", nullptr);

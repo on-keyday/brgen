@@ -539,31 +539,94 @@ export function isCast(obj: any): obj is Cast {
 	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "cast"
 }
 
-export type UnaryOp = "!" | "-";
+export enum UnaryOp {	not = "!",
+	minus_sign = "-",
+};
 
 export function isUnaryOp(obj: any): obj is UnaryOp {
 	return obj && typeof obj === 'string' && (obj === "!" || obj === "-")
 }
 
-export type BinaryOp = "*" | "/" | "%" | "<<<" | ">>>" | "<<" | ">>" | "&" | "+" | "-" | "|" | "^" | "==" | "!=" | "<" | "<=" | ">" | ">=" | "&&" | "||" | "if" | "else" | ".." | "..=" | "=" | ":=" | "::=" | "+=" | "-=" | "*=" | "/=" | "%=" | "<<=" | ">>=" | "&=" | "|=" | "^=" | ",";
+export enum BinaryOp {	mul = "*",
+	div = "/",
+	mod = "%",
+	left_arithmetic_shift = "<<<",
+	right_arithmetic_shift = ">>>",
+	left_logical_shift = "<<",
+	right_logical_shift = ">>",
+	bit_and = "&",
+	add = "+",
+	sub = "-",
+	bit_or = "|",
+	bit_xor = "^",
+	equal = "==",
+	not_equal = "!=",
+	less = "<",
+	less_or_eq = "<=",
+	grater = ">",
+	grater_or_eq = ">=",
+	logical_and = "&&",
+	logical_or = "||",
+	cond_op_1 = "if",
+	cond_op_2 = "else",
+	range_exclusive = "..",
+	range_inclusive = "..=",
+	assign = "=",
+	define_assign = ":=",
+	const_assign = "::=",
+	add_assign = "+=",
+	sub_assign = "-=",
+	mul_assign = "*=",
+	div_assign = "/=",
+	mod_assign = "%=",
+	left_shift_assign = "<<=",
+	right_shift_assign = ">>=",
+	bit_and_assign = "&=",
+	bit_or_assign = "|=",
+	bit_xor_assign = "^=",
+	comma = ",",
+};
 
 export function isBinaryOp(obj: any): obj is BinaryOp {
 	return obj && typeof obj === 'string' && (obj === "*" || obj === "/" || obj === "%" || obj === "<<<" || obj === ">>>" || obj === "<<" || obj === ">>" || obj === "&" || obj === "+" || obj === "-" || obj === "|" || obj === "^" || obj === "==" || obj === "!=" || obj === "<" || obj === "<=" || obj === ">" || obj === ">=" || obj === "&&" || obj === "||" || obj === "if" || obj === "else" || obj === ".." || obj === "..=" || obj === "=" || obj === ":=" || obj === "::=" || obj === "+=" || obj === "-=" || obj === "*=" || obj === "/=" || obj === "%=" || obj === "<<=" || obj === ">>=" || obj === "&=" || obj === "|=" || obj === "^=" || obj === ",")
 }
 
-export type IdentUsage = "unknown" | "reference" | "define_variable" | "define_const" | "define_field" | "define_format" | "define_fn" | "reference_type";
+export enum IdentUsage {	unknown = "unknown",
+	reference = "reference",
+	define_variable = "define_variable",
+	define_const = "define_const",
+	define_field = "define_field",
+	define_format = "define_format",
+	define_fn = "define_fn",
+	reference_type = "reference_type",
+};
 
 export function isIdentUsage(obj: any): obj is IdentUsage {
 	return obj && typeof obj === 'string' && (obj === "unknown" || obj === "reference" || obj === "define_variable" || obj === "define_const" || obj === "define_field" || obj === "define_format" || obj === "define_fn" || obj === "reference_type")
 }
 
-export type Endian = "unspec" | "big" | "little";
+export enum Endian {	unspec = "unspec",
+	big = "big",
+	little = "little",
+};
 
 export function isEndian(obj: any): obj is Endian {
 	return obj && typeof obj === 'string' && (obj === "unspec" || obj === "big" || obj === "little")
 }
 
-export type TokenTag = "indent" | "space" | "line" | "punct" | "int_literal" | "bool_literal" | "str_literal" | "keyword" | "ident" | "comment" | "error" | "unknown";
+export enum TokenTag {	indent = "indent",
+	space = "space",
+	line = "line",
+	punct = "punct",
+	int_literal = "int_literal",
+	bool_literal = "bool_literal",
+	str_literal = "str_literal",
+	keyword = "keyword",
+	ident = "ident",
+	comment = "comment",
+	error = "error",
+	unknown = "unknown",
+};
 
 export function isTokenTag(obj: any): obj is TokenTag {
 	return obj && typeof obj === 'string' && (obj === "indent" || obj === "space" || obj === "line" || obj === "punct" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "keyword" || obj === "ident" || obj === "comment" || obj === "error" || obj === "unknown")
@@ -703,7 +766,7 @@ export function parseAST(obj: any): Program {
 			const n :Binary = {
 				node_type: "binary",
 				expr_type: null,
-				op: "*",
+				op: BinaryOp.mul,
 				left: null,
 				right: null,
 				loc: on.loc,
@@ -715,7 +778,7 @@ export function parseAST(obj: any): Program {
 			const n :Unary = {
 				node_type: "unary",
 				expr_type: null,
-				op: "!",
+				op: UnaryOp.not,
 				expr: null,
 				loc: on.loc,
 			}
@@ -740,7 +803,7 @@ export function parseAST(obj: any): Program {
 				node_type: "ident",
 				expr_type: null,
 				ident: '',
-				usage: "unknown",
+				usage: IdentUsage.unknown,
 				base: null,
 				scope: null,
 				loc: on.loc,
@@ -824,7 +887,7 @@ export function parseAST(obj: any): Program {
 			const n :Range = {
 				node_type: "range",
 				expr_type: null,
-				op: "*",
+				op: BinaryOp.mul,
 				start: null,
 				end: null,
 				loc: on.loc,
@@ -1043,7 +1106,7 @@ export function parseAST(obj: any): Program {
 			const n :IntType = {
 				node_type: "int_type",
 				bit_size: 0,
-				endian: "unspec",
+				endian: Endian.unspec,
 				is_signed: false,
 				loc: on.loc,
 			}
@@ -2196,21 +2259,21 @@ export function parseAST(obj: any): Program {
 export interface AstFile {
 	files :string[];
 	ast :Ast | null;
-	error :string | null
+	error :SrcError | null
 }
 
 export function isAstFile(obj: any): obj is AstFile {
-	return obj && typeof obj === 'object' && Array.isArray(obj?.files) && (obj?.ast === null || isAst(obj?.ast)) && (obj?.error === null || typeof obj?.error === 'string');
+	return obj && typeof obj === 'object' && Array.isArray(obj?.files) && (obj?.ast === null || isAst(obj?.ast)) && (obj?.error === null || isSrcError(obj?.error));
 }
 
 export interface TokenFile {
 	files :string[];
 	tokens :Token[] | null;
-	error :string | null
+	error :SrcError | null
 }
 
 export function isTokenFile(obj: any): obj is TokenFile {
-	return obj && typeof obj === 'object' && Array.isArray(obj?.files) && (obj?.tokens === null || Array.isArray(obj?.tokens)) && (obj?.error === null || typeof obj?.error === 'string');
+	return obj && typeof obj === 'object' && Array.isArray(obj?.files) && (obj?.tokens === null || Array.isArray(obj?.tokens)) && (obj?.error === null || isSrcError(obj?.error));
 }
 
 export function walk(node: Node, fn: (node: Node) => boolean) {

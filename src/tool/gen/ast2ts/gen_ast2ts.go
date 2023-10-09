@@ -124,14 +124,11 @@ func generate(rw io.Writer, defs *gen.Defs) {
 			}
 
 		case *gen.Enum:
-			w.Printf("export type %s = ", d.Name)
-			for i, val := range d.Values {
-				if i != 0 {
-					w.Printf(" | ")
-				}
-				w.Printf("%q", val.Str)
+			w.Printf("export enum %s {\n", d.Name)
+			for _, val := range d.Values {
+				w.Printf("	%s = %q,\n", val.Name, val.Str)
 			}
-			w.Printf(";\n\n")
+			w.Printf("};\n\n")
 			w.Printf("export function is%s(obj: any): obj is %s {\n", d.Name, d.Name)
 			w.Printf("	return obj && typeof obj === 'string' && (")
 			for i, val := range d.Values {
@@ -232,7 +229,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 					if !ok {
 						continue
 					}
-					w.Printf("				%s: %q,\n", field.Name, found.Values[0].Str)
+					w.Printf("				%s: %s.%s,\n", field.Name, found.Name, found.Values[0].Name)
 				}
 			}
 			w.Printf("			}\n")
@@ -349,7 +346,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("}\n\n")
 
 	w.Printf("export function isAstFile(obj: any): obj is AstFile {\n")
-	w.Printf("	return obj && typeof obj === 'object' && Array.isArray(obj?.files) && (obj?.ast === null || isAst(obj?.ast)) && (obj?.error === null || typeof obj?.error === 'string');\n")
+	w.Printf("	return obj && typeof obj === 'object' && Array.isArray(obj?.files) && (obj?.ast === null || isAst(obj?.ast)) && (obj?.error === null || isSrcError(obj?.error));\n")
 	w.Printf("}\n\n")
 
 	w.Printf("export interface TokenFile {\n")
@@ -359,7 +356,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("}\n\n")
 
 	w.Printf("export function isTokenFile(obj: any): obj is TokenFile {\n")
-	w.Printf("	return obj && typeof obj === 'object' && Array.isArray(obj?.files) && (obj?.tokens === null || Array.isArray(obj?.tokens)) && (obj?.error === null || typeof obj?.error === 'string');\n")
+	w.Printf("	return obj && typeof obj === 'object' && Array.isArray(obj?.files) && (obj?.tokens === null || Array.isArray(obj?.tokens)) && (obj?.error === null || isSrcError(obj?.error));\n")
 	w.Printf("}\n\n")
 
 	w.Printf("export function walk(node: Node, fn: (node: Node) => boolean) {\n")

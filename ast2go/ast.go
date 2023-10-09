@@ -1852,15 +1852,15 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 }
 
 type AstFile struct {
-	Files []string `json:"files"`
-	Ast   *AST     `json:"ast"`
-	Error string   `json:"error"`
+	Files []string  `json:"files"`
+	Ast   *AST      `json:"ast"`
+	Error *SrcError `json:"error"`
 }
 
 type TokenFile struct {
-	Files  []string `json:"files"`
-	Tokens []*Token `json:"tokens"`
-	Error  string   `json:"error"`
+	Files  []string  `json:"files"`
+	Tokens []*Token  `json:"tokens"`
+	Error  *SrcError `json:"error"`
 }
 
 func Walk(n Node, f func(Node) (cont bool)) {
