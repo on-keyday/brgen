@@ -348,7 +348,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("	error :string | null\n")
 	w.Printf("}\n\n")
 
-	w.Printf("export function isAstFile(obj: any): obj is File {\n")
+	w.Printf("export function isAstFile(obj: any): obj is AstFile {\n")
 	w.Printf("	return obj && typeof obj === 'object' && Array.isArray(obj?.files) && (obj?.ast === null || isAst(obj?.ast)) && (obj?.error === null || typeof obj?.error === 'string');\n")
 	w.Printf("}\n\n")
 
@@ -358,7 +358,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("	error :string | null\n")
 	w.Printf("}\n\n")
 
-	w.Printf("export function isTokenFile(obj: any): obj is File {\n")
+	w.Printf("export function isTokenFile(obj: any): obj is TokenFile {\n")
 	w.Printf("	return obj && typeof obj === 'object' && Array.isArray(obj?.files) && (obj?.tokens === null || Array.isArray(obj?.tokens)) && (obj?.error === null || typeof obj?.error === 'string');\n")
 	w.Printf("}\n\n")
 

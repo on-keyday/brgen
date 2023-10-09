@@ -12,7 +12,7 @@
             ]
         },
         {
-            "label": "npm_compile",
+            "label": "npm_compile_server",
             "type": "npm",
             "script": "compile",
             "group": "build",
@@ -26,7 +26,21 @@
             ]
         },
         {
-            "label": "npm_watch",
+            "label": "npm_compile_client",
+            "type": "npm",
+            "script": "compile",
+            "group": "build",
+            "path": "lsp/client",
+            "presentation": {
+                "panel": "dedicated",
+                "reveal": "never"
+            },
+            "problemMatcher": [
+                "$tsc"
+            ]
+        },
+        {
+            "label": "npm_watch_client",
             "type": "npm",
             "script": "watch",
             "path": "lsp/client",
@@ -43,8 +57,36 @@
                 "$tsc-watch"
             ],
             "dependsOn": [
-                "npm_compile"
+                "npm_compile_client"
             ]
-        }
+        },
+        {
+            "label": "npm_watch_server",
+            "type": "npm",
+            "script": "watch",
+            "path": "lsp/server",
+            "isBackground": true,
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "panel": "dedicated",
+                "reveal": "never"
+            },
+            "problemMatcher": [
+                "$tsc-watch"
+            ],
+            "dependsOn": [
+                "npm_compile_server"
+            ]
+        },
+        {
+            "label": "npm_build_and_watch",
+            "dependsOn": [
+                "npm_watch_client",
+                "npm_watch_server"
+            ]
+        },
     ]
 }

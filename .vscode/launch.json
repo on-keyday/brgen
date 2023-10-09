@@ -67,7 +67,7 @@
             "outFiles": [
                 "${workspaceRoot}/lsp/client/out/**/*.js"
             ],
-            "preLaunchTask": "npm_watch"
+            "preLaunchTask": "npm_build_and_watch"
         },
         {
             "type": "node",

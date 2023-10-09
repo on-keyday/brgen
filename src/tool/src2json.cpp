@@ -31,6 +31,7 @@ struct Flags : utils::cmdline::templ::HelpOption {
     bool flat = false;
     bool not_dump_base = false;
     bool dump_enum_name = false;
+    bool no_color = false;
 
     void bind(utils::cmdline::option::Context& ctx) {
         bind_help(ctx);
@@ -52,12 +53,22 @@ struct Flags : utils::cmdline::templ::HelpOption {
         ctx.VarBool(&flat, "dump-flat", "dump types schema with flat body (use with --dump-ast)");
         ctx.VarBool(&not_dump_base, "not-dump-base", "not dump types schema with base type (use with --dump-ast)");
         ctx.VarBool(&dump_enum_name, "dump-enum-name", "dump enum name of operator (use with --dump-ast)");
+
+        ctx.VarBool(&no_color, "no-color", "disable color output");
     }
 };
 auto& cout = utils::wrap::cout_wrap();
 
 auto print_ok() {
-    cout << utils::wrap::packln("src2json: ", cse::letter_color<cse::ColorPalette::green>, "ok", cse::color_reset);
+    if (!cout.is_tty()) {
+        return;
+    }
+    if (no_color) {
+        cout << "src2json: ok\n";
+    }
+    else {
+        cout << utils::wrap::packln("src2json: ", cse::letter_color<cse::ColorPalette::green>, "ok", cse::color_reset);
+    }
 }
 
 auto do_parse(brgen::File* file) {
@@ -135,6 +146,7 @@ int node_list(bool dump_uintptr, bool flat, bool not_dump_base, bool dump_enum_n
 
 int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     utils::wrap::out_virtual_terminal = true;
+    no_color = flags.no_color;
 
     if (flags.dump_types) {
         return node_list(flags.dump_ptr_as_uintptr, flags.flat, flags.not_dump_base, flags.dump_enum_name, flags.lexer);

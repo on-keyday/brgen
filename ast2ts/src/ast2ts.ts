@@ -2179,7 +2179,7 @@ export interface AstFile {
 	error :string | null
 }
 
-export function isAstFile(obj: any): obj is File {
+export function isAstFile(obj: any): obj is AstFile {
 	return obj && typeof obj === 'object' && Array.isArray(obj?.files) && (obj?.ast === null || isAst(obj?.ast)) && (obj?.error === null || typeof obj?.error === 'string');
 }
 
@@ -2189,7 +2189,7 @@ export interface TokenFile {
 	error :string | null
 }
 
-export function isTokenFile(obj: any): obj is File {
+export function isTokenFile(obj: any): obj is TokenFile {
 	return obj && typeof obj === 'object' && Array.isArray(obj?.files) && (obj?.tokens === null || Array.isArray(obj?.tokens)) && (obj?.error === null || typeof obj?.error === 'string');
 }
 

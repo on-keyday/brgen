@@ -14,10 +14,26 @@ import {
     CompletionItemKind,
     TextDocumentPositionParams,
     TextDocumentSyncKind,
-    InitializeResult
+    InitializeResult,
+    Range,
+    TextEdit,
 } from 'vscode-languageserver/node';
 
 import { TextDocument } from 'vscode-languageserver-textdocument';
+
+import * as fs from "fs";
+import {exec} from "child_process";
+import * as url from "url";
+import { ast2ts } from "ast2ts";
+import assert from 'node:assert/strict';
+import { DecorationRangeBehavior } from 'vscode';
+
+
+
+
+const CWD=process.cwd();
+//TODO(on-keyday): replace path to src2json
+const PATH_TO_SRC2JSON =`C:/workspace/shbrgen/brgen/build/tool/src2json${(process.platform === "win32" ? ".exe" : "")}`
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -78,6 +94,43 @@ connection.onInitialized(() => {
     }
 });
 
+const tokenizeSource  = (doc :TextDocument) =>{
+    const path = url.fileURLToPath(doc.uri)
+    exec(`${PATH_TO_SRC2JSON} ${path} --lexer --no-color --print-json`,(err,stdout,stderr)=>{
+        if(err){
+            console.log(`err: ${err}`);
+            return;
+        }
+        if(stderr){ 
+            console.log(`stderr: ${stderr}`);
+            return;
+        }
+        const tokens=JSON.parse(stdout);
+        console.log(`stdout: ${stdout}`);
+        console.log(`json: ${tokens}`);
+        console.log(`URI: ${doc.uri}`);
+        if(!ast2ts.isTokenFile(tokens)){
+            console.log(`not token file`);
+            return;
+        }
+        if(tokens.error) {
+            console.log(`token error: ${tokens.error}`);
+            return;
+        }
+        assert(tokens.tokens);
+        const edits : TextEdit[] = [];
+        tokens.tokens.forEach((token:ast2ts.Token)=>{
+            const start=doc.positionAt(token.loc.pos.begin);
+            const end=doc.positionAt(token.loc.pos.end);
+            const range = Range.create(start,end);
+            const edit = TextEdit.replace(range,token.token);
+            edits.push(edit);
+        });
+        connection.workspace.applyEdit({changes:{[doc.uri]:edits}});
+    });
+};
+
+
 // The example settings
 interface ExampleSettings {
     maxNumberOfProblems: number;
@@ -106,19 +159,26 @@ connection.onDidChangeConfiguration(change => {
     documents.all().forEach(validateTextDocument);
 });
 
-function getDocumentSettings(resource: string): Thenable<ExampleSettings> {
+const  getDocumentSettings = async(resource: string) => {
     if (!hasConfigurationCapability) {
         return Promise.resolve(globalSettings);
     }
     let result = documentSettings.get(resource);
-    if (!result) {
+    if (result===undefined) {
         result = connection.workspace.getConfiguration({
             scopeUri: resource,
             section: 'languageServerExample'
         });
         documentSettings.set(resource, result);
     }
-    return result;
+    return result.then((x)=>{
+        if(x===null){
+            return defaultSettings;
+        }
+        return x;
+    },(_)=>{
+        return defaultSettings;
+    });
 }
 
 // Only keep settings for open documents
@@ -129,12 +189,15 @@ documents.onDidClose(e => {
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
 documents.onDidChangeContent(change => {
-    validateTextDocument(change.document);
+    // validateTextDocument(change.document);
+    tokenizeSource(change.document);
 });
 
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
     // In this simple example we get the settings for every validate run.
     let settings = await getDocumentSettings(textDocument.uri);
+
+    const URI = textDocument.uri
 
     // The validator creates diagnostics for all uppercase words length 2 and more
     let text = textDocument.getText();
