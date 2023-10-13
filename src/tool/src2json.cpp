@@ -14,6 +14,7 @@
 #include <wrap/argv.h>
 #include <core/ast/node_type_list.h>
 #include <core/ast/kill_node.h>
+#include <wrap/cin.h>
 
 struct Flags : utils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
@@ -161,14 +162,15 @@ int node_list(bool dump_uintptr, bool flat, bool not_dump_base, bool dump_enum_n
 }
 
 int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
-    utils::wrap::out_virtual_terminal = true;
+    cerr.set_virtual_terminal(true);  // ignore error
+    cout.set_virtual_terminal(true);  // ignore error
     no_color = flags.no_color;
 
     if (flags.dump_types) {
         return node_list(flags.dump_ptr_as_uintptr, flags.flat, flags.not_dump_base, flags.dump_enum_name, flags.lexer, flags.dump_error);
     }
 
-    if (flags.args.size() == 0) {
+    if (!flags.stdin_mode && flags.args.size() == 0) {
         print_error("no input file");
         return -1;
     }
@@ -177,22 +179,66 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
         print_error("only one file is supported now");
         return -1;
     }
-    auto name = flags.args[0];
 
     if (flags.check_ast) {
-        return check_ast(name);
+        if (flags.stdin_mode) {
+            print_error("stdin mode is not supported with --check-ast");
+            return -1;
+        }
+        return check_ast(flags.args[0]);
+    }
+
+    std::string name;
+    if (flags.stdin_mode) {
+        name = flags.stdin_name;
+    }
+    else {
+        name = flags.args[0];
     }
 
     brgen::FileSet files;
-    auto ok = files.add_file(name);
-    if (!ok) {
-        print_error("cannot open file ", name, " code=", ok.error());
-        return -1;
+    brgen::File* input = nullptr;
+    if (flags.stdin_mode) {
+        auto& cin = utils::wrap::cin_wrap();
+        if (cin.is_tty()) {
+            print_error("not support repl mode");
+            return -1;
+        }
+        auto& file = cin.get_file();
+        std::string file_buf;
+        for (;;) {
+            utils::byte buffer[1024];
+            auto res = file.read_file(buffer);
+            if (!res) {
+                break;
+            }
+            file_buf.append(res->as_char(), res->size());
+            if (res->size() < 1024) {
+                break;
+            }
+        }
+        auto ok = files.add_special(name, std::move(file_buf));
+        if (!ok) {
+            print_error("cannot input ", name, " code=", ok.error());
+            return -1;
+        }
+        input = files.get_input(*ok);
+        if (!input) {
+            print_error("cannot input ", name);
+            return -1;
+        }
     }
-    auto input = files.get_input(*ok);
-    if (!input) {
-        print_error("cannot open file ", name);
-        return -1;
+    else {
+        auto ok = files.add_file(name);
+        if (!ok) {
+            print_error("cannot open file ", name, " code=", ok.error());
+            return -1;
+        }
+        auto input = files.get_input(*ok);
+        if (!input) {
+            print_error("cannot open file ", name);
+            return -1;
+        }
     }
 
     auto report_error = [&](auto&& res, bool warn = false, const char* key = "ast") {
