@@ -120,21 +120,36 @@ connection.onInitialized(() => {
 
 const tokenizeSource  = (doc :TextDocument) =>{
     const path = url.fileURLToPath(doc.uri)
+    const text = doc.getText();
     return new Promise<SemanticTokens>((resolve,reject)=>{
-        const ch = execFile(`${PATH_TO_SRC2JSON}`, [`${path}`, "--lexer", "--no-color", "--print-on-error","--print-json"],(err,stdout,_)=>{
-            if(err){
-                reject(err)
+        const ch = execFile(`${PATH_TO_SRC2JSON}`, ["--stdin","--stdin-name",`${path}`, "--lexer", "--no-color", "--print-on-error","--print-json"],(err,stdout,stderr)=>{
+            if(err&&stdout.length===0){
+                reject(err);
                 return;
             }
-            const tokens=JSON.parse(stdout);
+            let tokens;
+            try {
+                tokens=JSON.parse(stdout);   
+            } catch (error) {
+                if(err){
+                    reject(err);
+                    return;
+                }
+                reject(error);
+                return;
+            }
             console.log(`json: ${JSON.stringify(tokens)}`);
             console.log(`URI: ${doc.uri}`);
             if(!ast2ts.isTokenFile(tokens)){
+                if(err){
+                    reject(err);
+                    return;
+                }
                 reject(new TypeError("not token file"))
                 return;
             }
             if(tokens.error) {
-                reject(tokens.error);
+                reject(err);
                 return;
             }
             assert(tokens.tokens);
@@ -165,7 +180,7 @@ const tokenizeSource  = (doc :TextDocument) =>{
                 if(index===undefined){
                     return;
                 }
-                builder.push(token.loc.line,token.loc.col,token.token.length,index,1);
+                builder.push(token.loc.line-1,token.loc.col-1,token.token.length,index,1);
                 console.log(`token: ${token.token} ${token.tag} ${token.loc.line} ${token.loc.col}`)
             });
            
@@ -173,6 +188,12 @@ const tokenizeSource  = (doc :TextDocument) =>{
             console.log(`semanticTokens: ${JSON.stringify(semanticTokens)}`);
             resolve(semanticTokens);
         });
+        ch.stdin?.write(text);
+        ch.stdin?.end();
+        setTimeout(()=>{
+            ch.kill();
+            reject(new Error("timeout"));
+        },1000*10);
     });
 };
 

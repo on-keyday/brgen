@@ -35,6 +35,8 @@ namespace brgen::ast {
                     return;
                 }
                 if (token->tag == lexer::Tag::error) {
+                    token->loc.line = line;
+                    token->loc.col = col;
                     report_error(std::move(token->token), token->loc);
                 }
                 token->loc.line = line;

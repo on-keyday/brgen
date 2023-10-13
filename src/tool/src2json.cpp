@@ -65,7 +65,7 @@ struct Flags : utils::cmdline::templ::HelpOption {
 
         ctx.VarBool(&no_color, "no-color", "disable color output");
 
-        ctx.VarBool(&stdin_mode, "stdin", "read input from stdin");
+        ctx.VarBool(&stdin_mode, "stdin", "read input from stdin (must not be tty)");
         ctx.VarString(&stdin_name, "stdin-name", "set name of stdin (as a filename)", "<name>");
     }
 };
