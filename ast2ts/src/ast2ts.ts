@@ -539,7 +539,8 @@ export function isCast(obj: any): obj is Cast {
 	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "cast"
 }
 
-export enum UnaryOp {	not = "!",
+export enum UnaryOp {
+	not = "!",
 	minus_sign = "-",
 };
 
@@ -547,7 +548,8 @@ export function isUnaryOp(obj: any): obj is UnaryOp {
 	return obj && typeof obj === 'string' && (obj === "!" || obj === "-")
 }
 
-export enum BinaryOp {	mul = "*",
+export enum BinaryOp {
+	mul = "*",
 	div = "/",
 	mod = "%",
 	left_arithmetic_shift = "<<<",
@@ -591,7 +593,8 @@ export function isBinaryOp(obj: any): obj is BinaryOp {
 	return obj && typeof obj === 'string' && (obj === "*" || obj === "/" || obj === "%" || obj === "<<<" || obj === ">>>" || obj === "<<" || obj === ">>" || obj === "&" || obj === "+" || obj === "-" || obj === "|" || obj === "^" || obj === "==" || obj === "!=" || obj === "<" || obj === "<=" || obj === ">" || obj === ">=" || obj === "&&" || obj === "||" || obj === "if" || obj === "else" || obj === ".." || obj === "..=" || obj === "=" || obj === ":=" || obj === "::=" || obj === "+=" || obj === "-=" || obj === "*=" || obj === "/=" || obj === "%=" || obj === "<<=" || obj === ">>=" || obj === "&=" || obj === "|=" || obj === "^=" || obj === ",")
 }
 
-export enum IdentUsage {	unknown = "unknown",
+export enum IdentUsage {
+	unknown = "unknown",
 	reference = "reference",
 	define_variable = "define_variable",
 	define_const = "define_const",
@@ -605,7 +608,8 @@ export function isIdentUsage(obj: any): obj is IdentUsage {
 	return obj && typeof obj === 'string' && (obj === "unknown" || obj === "reference" || obj === "define_variable" || obj === "define_const" || obj === "define_field" || obj === "define_format" || obj === "define_fn" || obj === "reference_type")
 }
 
-export enum Endian {	unspec = "unspec",
+export enum Endian {
+	unspec = "unspec",
 	big = "big",
 	little = "little",
 };
@@ -614,7 +618,8 @@ export function isEndian(obj: any): obj is Endian {
 	return obj && typeof obj === 'string' && (obj === "unspec" || obj === "big" || obj === "little")
 }
 
-export enum TokenTag {	indent = "indent",
+export enum TokenTag {
+	indent = "indent",
 	space = "space",
 	line = "line",
 	punct = "punct",
@@ -711,7 +716,7 @@ export interface RawScope {
 }
 
 export function isRawScope(obj: any): obj is RawScope {
-  return obj && typeof obj === 'object' && (obj?.prev === null || typeof obj?.prev == 'number') && (obj?.next === null || typeof obj?.next == 'number') && (obj?.branch === null || typeof obj?.branch == 'number') && Array.isArray(obj?.ident)
+  return obj && typeof obj === 'object' && (typeof obj?.is_global === 'boolean') && (obj?.prev === null || typeof obj?.prev == 'number') && (obj?.next === null || typeof obj?.next == 'number') && (obj?.branch === null || typeof obj?.branch == 'number') && Array.isArray(obj?.ident)
 }
 
 export interface Ast {

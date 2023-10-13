@@ -221,6 +221,9 @@ namespace brgen::ast {
                         find_and_replace_scope(scope->next, [&](auto val) {
                             field("next", val);
                         });
+                        find_and_replace_scope(scope->prev.lock(), [&](auto val) {
+                            field("prev", val);
+                        });
                     });
                 }
             };
@@ -586,6 +589,11 @@ namespace brgen::ast {
                     return n & empty_value<void>();
                 }
                 scopes[i]->next = std::move(*n);
+                auto p=get_scope("prev");
+                if(!p){
+                    return p & empty_value<void>();
+                }
+                scopes[i]->prev = std::move(*p);
                 auto ident = (json_at(val, "ident") & must_be_array) | json_to_loc_error({}, "ident");
                 if (!ident) {
                     return ident & empty_value<void>();

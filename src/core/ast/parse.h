@@ -213,17 +213,21 @@ namespace brgen::ast {
                 state.current_struct()->fields.push_back(std::move(f));
             };
 
+            const auto d = utils::helper::defer([&] {
+                push_union_to_current_struct();
+            });
+
             body_with_struct(if_->loc, if_->then);
 
             auto cur_indent = state.current_indent();
 
             auto detect_end = [&] {
-                if (cur_indent) {
+                if (cur_indent != 0) {
                     auto indent_token = s.peek_token(lexer::Tag::indent);
                     if (!indent_token || indent_token->token.size() != cur_indent) {
                         return true;  // 次のインデントが現在のインデントと異なれば終了
                     }
-                    s.must_consume_token(lexer::Tag::indent);
+                    s.must_consume_token(lexer::Tag::indent);  // 同じなら進める
                 }
                 return false;
             };
@@ -250,9 +254,6 @@ namespace brgen::ast {
             // else ブロックの解析
             if (s.consume_token("else")) {
                 body_with_struct(if_->loc, current_if->els);
-                if (cur_indent && !detect_end()) {
-                    s.report_error("expect less indent but not");
-                }
             }
 
             return if_;

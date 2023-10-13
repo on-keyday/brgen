@@ -21,10 +21,9 @@ void print_error(auto&&... msg) {
     if (!no_color && cerr.is_tty()) {
         p << cse::letter_color<cse::ColorPalette::white>;
     }
-    (p << ... << msg);
+    (p << ... << msg) << "\n";
     if (!no_color && cerr.is_tty()) {
-        p << "\n"
-          << cse::color_reset;
+        p << cse::color_reset;
     }
     cerr << p.pack();
 }
@@ -39,10 +38,9 @@ void print_warning(auto&&... msg) {
     if (!no_color && cerr.is_tty()) {
         p << cse::letter_color<cse::ColorPalette::white>;
     }
-    (p << ... << msg);
+    (p << ... << msg) << "\n";
     if (!no_color && cerr.is_tty()) {
-        p << "\n"
-          << cse::color_reset;
+        p << cse::color_reset;
     }
     cerr << p.pack();
 }

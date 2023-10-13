@@ -161,7 +161,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("}\n\n")
 
 	w.Printf("export function isRawScope(obj: any): obj is RawScope {\n")
-	w.Printf("  return obj && typeof obj === 'object' && (obj?.prev === null || typeof obj?.prev == 'number') && (obj?.next === null || typeof obj?.next == 'number') && (obj?.branch === null || typeof obj?.branch == 'number') && Array.isArray(obj?.ident)\n")
+	w.Printf("  return obj && typeof obj === 'object' && (typeof obj?.is_global === 'boolean') && (obj?.prev === null || typeof obj?.prev == 'number') && (obj?.next === null || typeof obj?.next == 'number') && (obj?.branch === null || typeof obj?.branch == 'number') && Array.isArray(obj?.ident)\n")
 	w.Printf("}\n\n")
 
 	w.Printf("export interface Ast {\n")

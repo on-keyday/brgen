@@ -289,6 +289,7 @@ type Defs struct {
 	Interfaces map[string]*Interface
 	Structs    map[string]*Struct
 	Enums      map[string]*Enum
+	ScopeDef   *Struct
 }
 
 func (d *Defs) push(def Def) {
@@ -410,6 +411,7 @@ func CollectDefinition(list *List, fieldCaseFn func(string) string, typeCaseFn f
 	scope.Name = "Scope"
 	scope.Fields = c.mapToStructFields(list.Scope)
 	defs.push(&scope)
+	defs.ScopeDef = &scope
 
 	// loc definition
 	loc := Struct{}

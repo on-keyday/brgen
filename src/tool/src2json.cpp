@@ -234,7 +234,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
             print_error("cannot open file ", name, " code=", ok.error());
             return -1;
         }
-        auto input = files.get_input(*ok);
+        input = files.get_input(*ok);
         if (!input) {
             print_error("cannot open file ", name);
             return -1;
