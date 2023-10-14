@@ -5,15 +5,52 @@
 
 namespace brgen::ast::tool {
 
-    //  x = a * y + b
-    //  x - b = a * y
-    //  (x - b) / a = y
-    //  y = (x - b) / a
-
+    /// @brief resolve liner equation (limited)
+    /// @details
+    ///     y = 2 * x - 4 + 1 << 2 * 3
+    ///     x = (y - 1 << 2 + 4) / 2
+    ///     y = x << 2 + 4
+    ///     x = (y - 2) >> 2
+    ///     try to resolve the expression x * 2 - 4 about x
+    ///     now tree is like this:
+    ///            +
+    ///          /   \
+    ///         -     <<
+    ///        / \    / \
+    ///       *   4  1   2
+    ///      / \
+    ///     x   2
+    ///     first replace x with y
+    ///           +
+    ///          / \
+    ///         -   2
+    ///        / \
+    ///       *   4
+    ///      / \
+    ///     y   2
+    ///     then replace +,-,* -> -,+,/
+    ///           -
+    ///          / \
+    ///         +   1
+    ///        / \
+    ///       /   4
+    ///      / \
+    ///     y   2
+    ///    finally replace right hands of tree
+    ///           /
+    ///          / \
+    ///         +   2
+    ///        / \
+    ///       -   4
+    ///      / \
+    ///     y   1
+    /// @param resolved is the resolved expr
+    /// @param x is the ident to be resolved (auto detected)
+    /// @param y is the tmp var to be replaced that is used to represent the resolved ident
     struct LinerResolver {
         std::shared_ptr<Expr> resolved;
-        std::shared_ptr<Ident> about;
-        std::shared_ptr<TmpVar> x;
+        std::shared_ptr<Ident> x;
+        std::shared_ptr<TmpVar> y;
 
        private:
         bool unique_ident(const std::shared_ptr<Expr>& expr, std::optional<std::shared_ptr<Ident>>& ident) {
@@ -45,16 +82,11 @@ namespace brgen::ast::tool {
             return true;
         }
 
-        // y = 2x + (x<<2)
-        // y = 2x + (x * 4)
-        // y = 2x + 4x
-        // y = 6x
-        // x = y / 6
-        std::shared_ptr<Expr> resolve_liner_equation(const std::shared_ptr<Expr>& expr, bool& has_ident) {
+        std::shared_ptr<Expr> replace_operator(const std::shared_ptr<Expr>& expr, bool& has_ident) {
             if (auto e = as<Binary>(expr)) {
                 bool left_has_ident = false, right_has_ident = false;
-                auto l = resolve_liner_equation(e->left, left_has_ident);
-                auto r = resolve_liner_equation(e->right, right_has_ident);
+                auto l = replace_operator(e->left, left_has_ident);
+                auto r = replace_operator(e->right, right_has_ident);
                 if (!l || !r) {
                     return nullptr;
                 }
@@ -176,19 +208,19 @@ namespace brgen::ast::tool {
                 }
             }
             else if (auto e = as<Ident>(expr)) {
-                if (expr != about) {
+                if (expr != x) {
                     return nullptr;
                 }
                 has_ident = true;
                 auto rep = expr;
-                x = std::make_shared<TmpVar>(std::move(rep), 0);
-                return x;
+                y = std::make_shared<TmpVar>(std::move(rep), 0);
+                return y;
             }
             else if (as<IntLiteral>(expr)) {
                 return expr;
             }
             else if (auto e = as<Unary>(expr)) {
-                auto t = resolve_liner_equation(e->expr, has_ident);
+                auto t = replace_operator(e->expr, has_ident);
                 if (!t) {
                     return nullptr;
                 }
@@ -197,7 +229,7 @@ namespace brgen::ast::tool {
                 return u;
             }
             else if (auto p = as<Paren>(expr)) {
-                return resolve_liner_equation(p->expr, has_ident);
+                return replace_operator(p->expr, has_ident);
             }
             // do nothing
             return nullptr;
@@ -209,9 +241,9 @@ namespace brgen::ast::tool {
             if (!unique_ident(expr, ident)) {
                 return false;
             }
-            about = std::move(*ident);
+            x = std::move(*ident);
             bool has_ident = false;
-            auto r = resolve_liner_equation(expr, has_ident);
+            auto r = replace_operator(expr, has_ident);
             if (!r) {
                 return false;
             }

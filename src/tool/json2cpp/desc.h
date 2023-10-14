@@ -130,7 +130,9 @@ namespace json2cpp {
 
        private:
         Fields fields;
-
+        // 可変長配列の長さを解決する
+        // 可変長配列の長さが１次方程式で解ける場合のみ解決できる
+        // それ以外の場合はエラー
         result<void> collect_vector_field(tool::IntDesc& b, tool::ArrayDesc& a, const std::shared_ptr<ast::Format>& fmt, std::shared_ptr<ast::Field>&& field) {
             if (config.vector_mode == VectorMode::std_vector) {
                 config.includes.emplace("<vector>");
@@ -140,14 +142,14 @@ namespace json2cpp {
             if (!resolver.resolve(vec->desc.length)) {
                 return error(field->loc, "cannot resolve vector length");
             }
-            if (tool::belong_format(resolver.about) != fmt) {
+            if (tool::belong_format(resolver.x) != fmt) {
                 return error(field->loc, "cannot resolve vector length");
             }
             vec->resolved_expr = std::move(resolver.resolved);
             auto vec_field = std::make_shared<Field>(field, std::move(vec));
             bool ok = false;
             for (auto& f : fields) {
-                if (f->base->ident->ident == resolver.about->ident) {
+                if (f->base->ident->ident == resolver.x->ident) {
                     if (f->length_related.lock()) {
                         return error(field->loc, "cannot resolve vector length");
                     }
@@ -176,6 +178,7 @@ namespace json2cpp {
                     return error(field->loc, "unsupported type");
                 }
                 if (a->length_eval) {
+                    // 固定長配列
                     config.includes.emplace("<array>");
                     fields.push_back(std::make_shared<Field>(field, std::make_shared<IntArrayDesc>(std::move(*a), std::make_shared<IntDesc>(std::move(*b)))));
                 }
