@@ -600,12 +600,14 @@ export enum IdentUsage {
 	define_const = "define_const",
 	define_field = "define_field",
 	define_format = "define_format",
+	define_enum = "define_enum",
 	define_fn = "define_fn",
+	define_arg = "define_arg",
 	reference_type = "reference_type",
 };
 
 export function isIdentUsage(obj: any): obj is IdentUsage {
-	return obj && typeof obj === 'string' && (obj === "unknown" || obj === "reference" || obj === "define_variable" || obj === "define_const" || obj === "define_field" || obj === "define_format" || obj === "define_fn" || obj === "reference_type")
+	return obj && typeof obj === 'string' && (obj === "unknown" || obj === "reference" || obj === "define_variable" || obj === "define_const" || obj === "define_field" || obj === "define_format" || obj === "define_enum" || obj === "define_fn" || obj === "define_arg" || obj === "reference_type")
 }
 
 export enum Endian {
@@ -641,7 +643,7 @@ export interface Scope {
 	prev: Scope|null;
 	next: Scope|null;
 	branch: Scope|null;
-	ident: Node[];
+	ident: Ident[];
 }
 
 export function isScope(obj: any): obj is Scope {
@@ -2251,7 +2253,11 @@ export function parseAST(obj: any): Program {
 			if (typeof o !== 'number') {
 				throw new Error('invalid node list');
 			}
-			return c.node[o];
+			const c_node = c.node[o];
+			if(!isIdent(c_node)) {
+				throw new Error('invalid node list');
+			}
+			return c_node;
 		})
 	}
 	const root = c.node[0];

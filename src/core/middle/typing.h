@@ -100,14 +100,20 @@ namespace brgen::middle {
 
         void typing_assign(ast::Binary* b) {
             auto right = b->right;
-            if (!right->expr_type) {
-                warn_not_typed(right);
-                return;  // not typed yet
-            }
+            auto check_right_typed = [&] {
+                if (!right->expr_type) {
+                    warn_not_typed(right);
+                    return false;
+                }
+                return true;
+            };
             if (auto m = ast::as<ast::MemberAccess>(b->left)) {
                 if (!m->expr_type) {
                     warn_not_typed(m);
                     return;  // not typed yet
+                }
+                if (!check_right_typed()) {
+                    return;
                 }
                 if (!equal_type(m->expr_type, right->expr_type)) {
                     report_not_equal_type(m->expr_type, right->expr_type);
@@ -121,6 +127,9 @@ namespace brgen::middle {
             auto report_assign_error = [&] {
                 error(b->loc, "cannot assign to ", left->ident).error(base->loc, "ident ", left->ident, " is defined here").report();
             };
+            if (!check_right_typed()) {
+                return;
+            }
             auto new_type = assigning_type(right->expr_type);
             if (b->op == ast::BinaryOp::assign) {
                 if (left->usage == ast::IdentUsage::unknown) {
@@ -355,36 +364,37 @@ namespace brgen::middle {
             auto search = [&](std::shared_ptr<ast::Ident>& def) {
                 return ident->ident == def->ident && def->usage != ast::IdentUsage::unknown;
             };
-            auto found = ident->scope->lookup_local<ast::Ident>(search);
+            auto found = ident->scope->lookup_local(search);
             if (found) {
                 return found;
             }
-            return current_global->lookup_global<ast::Ident>(search);
+            return current_global->lookup_global(search);
         }
 
-        std::optional<std::shared_ptr<ast::Format>> find_matching_fmt(ast::IdentType* ident) {
-            auto search = [&](std::shared_ptr<ast::Format>& def) {
-                return def->ident->ident == ident->ident->ident;
+        std::optional<std::shared_ptr<ast::Format>> find_matching_fmt(ast::Ident* ident, ast::IdentUsage usage = ast::IdentUsage::define_format) {
+            auto search = [&](std::shared_ptr<ast::Ident>& def) {
+                return (def->usage == ast::IdentUsage::define_format || def->usage == usage) &&
+                       def->ident == ident->ident;
             };
-            auto found = ident->ident->scope->lookup_local<ast::Format>(search);
-            if (found) {
-                return found;
-            }
-            return current_global->lookup_global<ast::Format>(search);
-        }
-
-        std::optional<std::shared_ptr<ast::Format>> find_matching_enum(ast::Ident* ident) {
-            auto search = [&](std::shared_ptr<ast::Format>& def) {
-                if (def->is_enum && def->ident->ident == ident->ident) {
-                    return true;
+            auto make_format = [&](const std::shared_ptr<ast::Ident>& i) -> std::shared_ptr<ast::Format> {
+                if (!i) {
+                    return nullptr;
                 }
-                return false;
+                auto base = i->base.lock();
+                if (!ast::as<ast::Format>(base)) {
+                    return nullptr;
+                }
+                return ast::cast_to<ast::Format>(base);
             };
-            auto found = ident->scope->lookup_local<ast::Format>(search);
+            auto found = ident->scope->lookup_local(search);
             if (found) {
-                return found;
+                return make_format(*found);
             }
-            return current_global->lookup_global<ast::Format>(search);
+            found = current_global->lookup_global(search);
+            if (found) {
+                return make_format(*found);
+            }
+            return std::nullopt;
         }
 
         void typing_expr(const std::shared_ptr<ast::Expr>& expr, bool on_define = false) {
@@ -406,17 +416,21 @@ namespace brgen::middle {
                     return;  // skip
                 }
                 if (auto found = find_matching_ident(ident)) {
-                    ident->expr_type = (*found)->expr_type;
+                    auto& base = (*found);
+                    ident->expr_type = base->expr_type;
                     ident->base = *found;
-                    ident->usage = ast::IdentUsage::reference;
+                    if (base->usage == ast::IdentUsage::define_enum ||
+                        base->usage == ast::IdentUsage::define_format) {
+                        ident->usage = ast::IdentUsage::reference_type;
+                    }
+                    else {
+                        ident->usage = ast::IdentUsage::reference;
+                    }
                 }
-                else if (auto found = find_matching_enum(ident)) {
-                    ident->expr_type = (*found)->struct_type;
-                    ident->base = *found;
-                    ident->usage = ast::IdentUsage::reference_type;
-                }
-                else if (!on_define) {
-                    warn_not_typed(ident);
+                else {
+                    if (!on_define) {
+                        warn_not_typed(ident);
+                    }
                 }
             }
             else if (auto bin = ast::as<ast::Binary>(expr)) {
@@ -563,7 +577,7 @@ namespace brgen::middle {
                     return;
                 }
                 if (auto t = ast::as<ast::IdentType>(ty)) {
-                    auto found = find_matching_fmt(t);
+                    auto found = find_matching_fmt(t->ident.get());
                     if (found) {
                         t->base = *found;
                     }

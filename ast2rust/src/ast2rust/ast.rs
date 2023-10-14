@@ -2520,7 +2520,9 @@ pub enum IdentUsage {
 	DefineConst,
 	DefineField,
 	DefineFormat,
+	DefineEnum,
 	DefineFn,
+	DefineArg,
 	ReferenceType,
 }
 
@@ -2534,7 +2536,9 @@ impl TryFrom<&str> for IdentUsage {
 			"define_const" =>Ok(Self::DefineConst),
 			"define_field" =>Ok(Self::DefineField),
 			"define_format" =>Ok(Self::DefineFormat),
+			"define_enum" =>Ok(Self::DefineEnum),
 			"define_fn" =>Ok(Self::DefineFn),
+			"define_arg" =>Ok(Self::DefineArg),
 			"reference_type" =>Ok(Self::ReferenceType),
 			_=> Err(()),
 		}
@@ -2604,7 +2608,7 @@ pub struct Scope {
 	pub prev: Option<Weak<RefCell<Scope>>>,
 	pub next: Option<Rc<RefCell<Scope>>>,
 	pub branch: Option<Rc<RefCell<Scope>>>,
-	pub ident: Vec<Node>,
+	pub ident: Vec<Weak<RefCell<Ident>>>,
 }
 
 #[derive(Debug,Clone,Copy,Serialize,Deserialize)]
@@ -4854,7 +4858,11 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				Some(v)=>v,
 				None =>return Err(Error::IndexOutOfBounds(*ident as usize)),
 			};
-			scope.borrow_mut().ident.push(ident.clone());
+ 			let ident = match ident {
+				Node::Ident(v)=> v,
+				_=>return Err(Error::MismatchNodeType(NodeType::Ident,ident.into())),
+			};
+			scope.borrow_mut().ident.push(Rc::downgrade(ident));
 		}
 	}
 

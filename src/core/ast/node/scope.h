@@ -68,43 +68,37 @@ namespace brgen::ast {
 
     struct Scope {
         std::weak_ptr<Scope> prev;
-        std::list<Object> objects;
+        std::list<std::weak_ptr<Ident>> objects;
         std::shared_ptr<Scope> branch;
         std::shared_ptr<Scope> next;
         bool is_global = false;
 
-        template <class V>
-        std::optional<std::shared_ptr<V>> lookup_local(auto&& fn) {
+        std::optional<std::shared_ptr<Ident>> lookup_local(auto&& fn) {
             if (is_global) {
                 return std::nullopt;
             }
             for (auto it = objects.rbegin(); it != objects.rend(); it++) {
                 auto& val = *it;
-                if (std::holds_alternative<std::weak_ptr<V>>(val.object)) {
-                    auto obj = std::get<std::weak_ptr<V>>(val.object).lock();
-                    if (fn(obj)) {
-                        return obj;
-                    }
+                auto obj = val.lock();
+                if (fn(obj)) {
+                    return obj;
                 }
             }
             if (auto got = prev.lock()) {
-                return got->template lookup_local<V>(fn);
+                return got->template lookup_local(fn);
             }
             return std::nullopt;
         }
 
-        template <class V>
-        std::optional<std::shared_ptr<V>> lookup_global(auto&& fn) {
+        std::optional<std::shared_ptr<Ident>> lookup_global(auto&& fn) {
             for (auto& val : objects) {
-                if (std::holds_alternative<std::weak_ptr<V>>(val.object)) {
-                    auto obj = std::get<std::weak_ptr<V>>(val.object).lock();
-                    if (fn(obj)) {
-                        return obj;
-                    }
+                auto obj = val.lock();
+                if (fn(obj)) {
+                    return obj;
                 }
             }
             if (next) {
-                return next->template lookup_global<V>(fn);
+                return next->template lookup_global(fn);
             }
             return std::nullopt;
         }
@@ -117,19 +111,23 @@ namespace brgen::ast {
             return branch;
         }
 
-        void push(auto&& obj) {
+        void push(const std::shared_ptr<Ident>& obj) {
             objects.push_back({std::forward<decltype(obj)>(obj)});
         }
 
         void as_json(JSONWriter& d) {
             auto field = d.array();
             auto add_field = [&](auto& self) {
-                for (auto& object : self.objects) {
+                for (auto& object_w : self.objects) {
+                    auto object = object_w.lock();
+                    if (!object) {
+                        continue;
+                    }
                     field([&] {
                         auto field = d.object();
-                        auto ident = object.ident();
-                        const auto node_type = object.node_type();
-                        sdebugf(node_type);
+                        auto usage = object->usage;
+                        auto ident = object->ident;
+                        sdebugf(usage);
                         sdebugf(ident);
                     });
                 }

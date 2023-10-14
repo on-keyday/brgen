@@ -25,12 +25,10 @@ import {
 
 import { TextDocument } from 'vscode-languageserver-textdocument';
 
-import * as fs from "fs";
-import {exec, execFile} from "child_process";
+import {execFile} from "child_process";
 import * as url from "url";
 import { ast2ts } from "ast2ts";
 import assert from 'node:assert/strict';
-import { randomUUID } from 'crypto';
 
 
 
@@ -161,7 +159,18 @@ const tokenizeSourceImpl  = async (doc :TextDocument) =>{
     const path = url.fileURLToPath(doc.uri)
     const text = doc.getText();
     console.log(`URI: ${doc.uri}`);
-    const tokens =  await execSrc2JSON(doc.uri,lexerCommand(path),text,ast2ts.isTokenFile);
+    console.time("semanticColoring")
+    console.time("tokenize")
+    let tokens_ :ast2ts.TokenFile;
+    try {
+        tokens_ =  await execSrc2JSON(doc.uri,lexerCommand(path),text,ast2ts.isTokenFile);
+    } catch(e :any) {
+        console.timeEnd("tokenize")
+        console.timeEnd("semanticColoring")
+        throw e;
+    }
+    const tokens = tokens_;
+    console.timeEnd("tokenize")
     const mapForTokenTypes = new Map<ast2ts.TokenTag,SemanticTokenTypes>([
         [ast2ts.TokenTag.comment,SemanticTokenTypes.comment],
         [ast2ts.TokenTag.keyword,SemanticTokenTypes.keyword],
@@ -243,15 +252,19 @@ const tokenizeSourceImpl  = async (doc :TextDocument) =>{
         });
         const semanticTokens = builder.build();
         console.log(`semanticTokens (parsed): ${JSON.stringify(semanticTokens)}`);
+        console.timeEnd("semanticColoring")
         return semanticTokens;
     };
     let ast_ :ast2ts.AstFile;
     try {
+        console.time("parse")
         ast_ = await execSrc2JSON(doc.uri,parserCommand(path),text,ast2ts.isAstFile);
     } catch(e :any) {
+        console.timeEnd("parse")
         console.log(`error: ${e}`);
         return generateSemanticTokens();
     }
+    console.timeEnd("parse")
     const ast = ast_;
     assert(ast.ast)
     const prog = ast2ts.parseAST(ast.ast);
@@ -281,7 +294,7 @@ const tokenizeSourceImpl  = async (doc :TextDocument) =>{
             }
         }
         else if(ast2ts.isIntType(node)){
-            locList.push({loc: node.loc,length: node.loc.pos.end = node.loc.pos.begin,index:7});
+            locList.push({loc: node.loc,length: node.loc.pos.end - node.loc.pos.begin,index:7});
         }
         return true
     });

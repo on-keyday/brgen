@@ -765,8 +765,10 @@ const (
 	IdentUsageDefineConst    IdentUsage = 3
 	IdentUsageDefineField    IdentUsage = 4
 	IdentUsageDefineFormat   IdentUsage = 5
-	IdentUsageDefineFn       IdentUsage = 6
-	IdentUsageReferenceType  IdentUsage = 7
+	IdentUsageDefineEnum     IdentUsage = 6
+	IdentUsageDefineFn       IdentUsage = 7
+	IdentUsageDefineArg      IdentUsage = 8
+	IdentUsageReferenceType  IdentUsage = 9
 )
 
 func (n IdentUsage) String() string {
@@ -783,8 +785,12 @@ func (n IdentUsage) String() string {
 		return "define_field"
 	case IdentUsageDefineFormat:
 		return "define_format"
+	case IdentUsageDefineEnum:
+		return "define_enum"
 	case IdentUsageDefineFn:
 		return "define_fn"
+	case IdentUsageDefineArg:
+		return "define_arg"
 	case IdentUsageReferenceType:
 		return "reference_type"
 	default:
@@ -810,8 +816,12 @@ func (n IdentUsage) UnmarshalJSON(data []byte) error {
 		n = IdentUsageDefineField
 	case "define_format":
 		n = IdentUsageDefineFormat
+	case "define_enum":
+		n = IdentUsageDefineEnum
 	case "define_fn":
 		n = IdentUsageDefineFn
+	case "define_arg":
+		n = IdentUsageDefineArg
 	case "reference_type":
 		n = IdentUsageReferenceType
 	default:
@@ -947,7 +957,7 @@ type Scope struct {
 	Prev   *Scope
 	Next   *Scope
 	Branch *Scope
-	Ident  []Node
+	Ident  []*Ident
 }
 
 type Loc struct {
@@ -1843,9 +1853,9 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 		if raw.Branch != nil {
 			n.scope[i].Branch = n.scope[*raw.Branch]
 		}
-		n.scope[i].Ident = make([]Node, len(raw.Ident))
+		n.scope[i].Ident = make([]*Ident, len(raw.Ident))
 		for j, k := range raw.Ident {
-			n.scope[i].Ident[j] = n.node[k].(Node)
+			n.scope[i].Ident[j] = n.node[k].(*Ident)
 		}
 	}
 	return n.node[0].(*Program), nil

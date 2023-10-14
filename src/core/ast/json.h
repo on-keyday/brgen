@@ -207,12 +207,7 @@ namespace brgen::ast {
                         field("ident", [&] {
                             auto field = obj.array();
                             for (auto& object : scope->objects) {
-                                object.visit([&](auto&& node) {
-                                    if (!node) {
-                                        return;
-                                    }
-                                    find_and_replace_node(node, field);
-                                });
+                                find_and_replace_node(object.lock(), field);
                             }
                         });
                         find_and_replace_scope(scope->branch, [&](auto val) {
@@ -607,17 +602,11 @@ namespace brgen::ast {
                         return unexpect(error({}, "index out of range"));
                     }
                     auto val = nodes[*index];
-                    if (as<Field>(val)) {
-                        scopes[i]->push(cast_to<Field>(val));
-                    }
-                    else if (as<Format>(val)) {
-                        scopes[i]->push(cast_to<Format>(val));
-                    }
-                    else if (as<Ident>(val)) {
+                    if (as<Ident>(val)) {
                         scopes[i]->push(cast_to<Ident>(val));
                     }
                     else {
-                        return unexpect(error({}, "expect field,format,ident but found ", node_type_to_string(val->node_type)));
+                        return unexpect(error({}, "expect ident but found ", node_type_to_string(val->node_type)));
                     }
                 }
             }

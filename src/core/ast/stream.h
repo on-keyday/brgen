@@ -211,6 +211,13 @@ namespace brgen::ast {
             skip_tag(lexer::Tag::space, lexer::Tag::line, lexer::Tag::indent, lexer::Tag::comment);
         }
 
+        void backward() {
+            if (cur == tokens.begin()) {
+                return;
+            }
+            cur--;
+        }
+
        private:
         auto enter_stream(auto&& fn) -> result<std::invoke_result_t<decltype(fn), Stream&>> {
             try {

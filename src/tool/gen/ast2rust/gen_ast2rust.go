@@ -440,7 +440,11 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("				Some(v)=>v,\n")
 	w.Printf("				None =>return Err(Error::IndexOutOfBounds(*ident as usize)),\n")
 	w.Printf("			};\n")
-	w.Printf("			scope.borrow_mut().ident.push(ident.clone());\n")
+	w.Printf(" 			let ident = match ident {\n")
+	w.Printf("				Node::Ident(v)=> v,\n")
+	w.Printf("				_=>return Err(Error::MismatchNodeType(NodeType::Ident,ident.into())),\n")
+	w.Printf("			};\n")
+	w.Printf("			scope.borrow_mut().ident.push(Rc::downgrade(ident));\n")
 	w.Printf("		}\n")
 	w.Printf("	}\n\n")
 

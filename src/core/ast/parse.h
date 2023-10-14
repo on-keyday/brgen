@@ -99,9 +99,10 @@ namespace brgen::ast {
             s.must_consume_token(":");
             s.skip_space();
             s.must_consume_token(lexer::Tag::line);
+            s.skip_line();
         }
 
-        std::shared_ptr<IndentScope> parse_indent_block() {
+        std::shared_ptr<IndentScope> parse_indent_block(std::vector<std::shared_ptr<Ident>>* ident = nullptr) {
             // Consume the initial indent sign
             must_consume_indent_sign();
 
@@ -115,12 +116,18 @@ namespace brgen::ast {
             auto current_indent = base.token.size();
             auto c = state.new_indent(current_indent, &scope->scope);
 
+            if (ident) {
+                for (auto& i : *ident) {
+                    scope->scope->push(std::move(i));
+                }
+            }
+
             // Parse and add the first element
             scope->elements.push_back(parse_statement());
 
             // Parse and add subsequent elements with the same indent level
             while (auto indent = s.peek_token(lexer::Tag::indent)) {
-                if (indent->token.size() < current_indent) {
+                if (indent->token.size() != current_indent) {
                     break;
                 }
                 s.must_consume_token(lexer::Tag::indent);
@@ -227,14 +234,21 @@ namespace brgen::ast {
                     if (!indent_token || indent_token->token.size() != cur_indent) {
                         return true;  // 次のインデントが現在のインデントと異なれば終了
                     }
-                    s.must_consume_token(lexer::Tag::indent);  // 同じなら進める
                 }
                 return false;
+            };
+
+            auto consume_indent = [&] {
+                if (cur_indent != 0) {
+                    s.must_consume_token(lexer::Tag::indent);
+                }
             };
 
             if (detect_end()) {
                 return if_;
             }
+
+            consume_indent();  // elif or else のため次のインデントを消費
 
             // elif ブロックの解析
             If* current_if = if_.get();
@@ -249,11 +263,18 @@ namespace brgen::ast {
                 if (detect_end()) {
                     return if_;
                 }
+                consume_indent();  // else or elif のため次のインデントを消費
             }
 
             // else ブロックの解析
             if (s.consume_token("else")) {
                 body_with_struct(if_->loc, current_if->els);
+            }
+            else {
+                if (cur_indent != 0) {
+                    // 同じインデントだが elifでもelseでもなかったので読んだインデントを戻しておく
+                    s.backward();
+                }
             }
 
             return if_;
@@ -756,18 +777,18 @@ namespace brgen::ast {
             }
 
             state.current_struct()->fields.push_back(field);
-            state.current_scope()->push(field);
 
             return field;
         }
 
         std::shared_ptr<Format> parse_format(lexer::Token&& token) {
-            auto fmt = std::make_shared<Format>(token.loc, token.token == "enum");
+            bool is_enum = token.token == "enum";
+            auto fmt = std::make_shared<Format>(token.loc, is_enum);
             s.skip_space();
             fmt->struct_type = std::make_shared<StructType>(token.loc);
 
-            fmt->ident = parse_ident_no_scope();
-            fmt->ident->usage = IdentUsage::define_format;
+            fmt->ident = parse_ident();
+            fmt->ident->usage = is_enum ? IdentUsage::define_enum : IdentUsage ::define_format;
             {
                 auto scope = state.enter_format(fmt);
                 auto typ = state.enter_struct(fmt->struct_type);
@@ -775,7 +796,6 @@ namespace brgen::ast {
             }
 
             state.current_struct()->fields.push_back(fmt);
-            state.current_scope()->push(fmt);
 
             return fmt;
         }
@@ -783,12 +803,13 @@ namespace brgen::ast {
         std::shared_ptr<Function> parse_fn(lexer::Token&& token) {
             auto fn = std::make_shared<Function>(token.loc);
             s.skip_white();
-            fn->ident = parse_ident_no_scope();
+            fn->ident = parse_ident();
             fn->ident->usage = IdentUsage::define_fn;
             fn->belong = state.current_format();
             fn->func_type = std::make_shared<FunctionType>(fn->loc);
             s.skip_white();
             lexer::Loc end_loc;
+            std::vector<std::shared_ptr<Ident>> ident_param;
             auto b = s.must_consume_token("(");
             for (;;) {
                 s.skip_white();
@@ -799,8 +820,9 @@ namespace brgen::ast {
                 std::shared_ptr<Ident> ident;
                 if (!s.expect_token(":")) {
                     ident = parse_ident_no_scope();
-                    ident->usage = IdentUsage::define_field;
+                    ident->usage = IdentUsage::define_arg;
                     ident->scope = state.current_scope();
+                    ident_param.push_back(ident);
                     s.skip_white();
                 }
                 if (!s.expect_token(":")) {
@@ -829,7 +851,7 @@ namespace brgen::ast {
 
             state.current_struct()->fields.push_back(fn);
 
-            fn->body = parse_indent_block();
+            fn->body = parse_indent_block(&ident_param);
 
             return fn;
         }

@@ -25,6 +25,7 @@ namespace brgen::middle {
                     if (p->arguments.size() != 1) {
                         return;
                     }
+                    ident->usage = ast::IdentUsage::reference_type;
                     auto int_type = std::make_shared<ast::IntType>(ident->loc, i_desc->bit_size, i_desc->endian, i_desc->is_signed);
                     auto arg = p->arguments[0];
                     node = std::make_shared<ast::Cast>(ast::cast_to<ast::Call>(std::move(node)), std::move(int_type), std::move(arg));
