@@ -13,6 +13,12 @@ namespace json2cpp {
     };
 
     static constexpr auto empty_void = utils::helper::either::empty_value<void>();
+    template <class T>
+    using result = tool::result<T>;
+
+    auto error(brgen::lexer::Loc loc, std::string msg) {
+        return utils::helper::either::unexpected{tool::LocError{loc, std::move(msg)}};
+    }
 
     struct Config {
         std::string namespace_;
@@ -21,7 +27,7 @@ namespace json2cpp {
         VectorMode vector_mode = VectorMode::std_vector;
         bool asymmetric = false;
 
-        brgen::result<void> handle_config(tool::Evaluator& eval, ast::tool::ConfigDesc& conf) {
+        result<void> handle_config(tool::Evaluator& eval, ast::tool::ConfigDesc& conf) {
             if (conf.name == "config.export") {
                 auto count = conf.arguments.size();
                 for (size_t i = 0; i < count; i++) {
@@ -80,7 +86,7 @@ namespace json2cpp {
                     vector_mode = VectorMode::pointer;
                 }
                 else {
-                    return brgen::unexpect(brgen::error(conf.loc, "invalid vector mode"));
+                    return error(conf.loc, "invalid vector mode");
                 }
             }
             else if (conf.name == "config.cpp.vector_pointer.asymmetric") {

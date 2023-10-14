@@ -55,7 +55,7 @@ namespace json2cpp {
 
     using Fields = std::vector<std::shared_ptr<Field>>;
 
-    auto get_primitive_type(size_t bit_size, bool is_signed) -> std::string_view {
+    std::string_view get_primitive_type(size_t bit_size, bool is_signed) {
         switch (bit_size) {
             case 8:
                 if (is_signed) {
@@ -116,7 +116,7 @@ namespace json2cpp {
 
         MergedFields m;
 
-        brgen::result<void> collect(const std::shared_ptr<ast::Format>& fmt) {
+        result<void> collect(const std::shared_ptr<ast::Format>& fmt) {
             auto& ast_fields = fmt->struct_type->fields;
             for (auto& f : ast_fields) {
                 if (ast::as<ast::Field>(f)) {
@@ -131,17 +131,17 @@ namespace json2cpp {
        private:
         Fields fields;
 
-        brgen::result<void> collect_vector_field(tool::IntDesc& b, tool::ArrayDesc& a, const std::shared_ptr<ast::Format>& fmt, std::shared_ptr<ast::Field>&& field) {
+        result<void> collect_vector_field(tool::IntDesc& b, tool::ArrayDesc& a, const std::shared_ptr<ast::Format>& fmt, std::shared_ptr<ast::Field>&& field) {
             if (config.vector_mode == VectorMode::std_vector) {
                 config.includes.emplace("<vector>");
             }
             auto vec = std::make_shared<VectorDesc>(std::move(a), std::make_shared<IntDesc>(std::move(b)));
             tool::LinerResolver resolver;
             if (!resolver.resolve(vec->desc.length)) {
-                return brgen::unexpect(brgen::error(field->loc, "cannot resolve vector length"));
+                return error(field->loc, "cannot resolve vector length");
             }
-            if (tool::belong_to(resolver.about) != fmt) {
-                return brgen::unexpect(brgen::error(field->loc, "cannot resolve vector length"));
+            if (tool::belong_format(resolver.about) != fmt) {
+                return error(field->loc, "cannot resolve vector length");
             }
             vec->resolved_expr = std::move(resolver.resolved);
             auto vec_field = std::make_shared<Field>(field, std::move(vec));
@@ -149,7 +149,7 @@ namespace json2cpp {
             for (auto& f : fields) {
                 if (f->base->ident->ident == resolver.about->ident) {
                     if (f->length_related.lock()) {
-                        return brgen::unexpect(brgen::error(field->loc, "cannot resolve vector length"));
+                        return error(field->loc, "cannot resolve vector length");
                     }
                     f->length_related = vec_field;
                     vec_field->length_related = f;
@@ -158,22 +158,22 @@ namespace json2cpp {
                 }
             }
             if (!ok) {
-                return brgen::unexpect(brgen::error(field->loc, "cannot resolve vector length"));
+                return error(field->loc, "cannot resolve vector length");
             }
             fields.push_back(std::move(vec_field));
             return {};
         }
 
-        brgen::result<void> collect_field(const std::shared_ptr<ast::Format>& fmt, std::shared_ptr<ast::Field>&& field) {
+        result<void> collect_field(const std::shared_ptr<ast::Format>& fmt, std::shared_ptr<ast::Field>&& field) {
             auto& fname = field->ident->ident;
             if (auto a = tool::is_array_type(field->field_type, eval)) {
                 auto b = tool::is_int_type(a->base_type);
                 if (!b) {
-                    return brgen::unexpect(brgen::error(field->loc, "unsupported type"));
+                    return error(field->loc, "unsupported type");
                 }
                 auto type = get_primitive_type(b->bit_size, b->is_signed);
                 if (type.empty()) {
-                    return brgen::unexpect(brgen::error(field->loc, "unsupported type"));
+                    return error(field->loc, "unsupported type");
                 }
                 if (a->length_eval) {
                     config.includes.emplace("<array>");
@@ -190,12 +190,12 @@ namespace json2cpp {
                 fields.push_back(std::make_shared<Field>(field, std::make_shared<IntDesc>(std::move(*i))));
             }
             else {
-                return brgen::unexpect(brgen::error(field->loc, "unsupported type"));
+                return error(field->loc, "unsupported type");
             }
             return {};
         }
 
-        brgen::result<void> merge_fields() {
+        result<void> merge_fields() {
             for (size_t i = 0; i < fields.size(); i++) {
                 if (fields[i]->desc->type == DescType::vector) {
                     m.push_back({std::move(fields[i])});
@@ -229,10 +229,10 @@ namespace json2cpp {
                 }
                 if (bit) {
                     if (bit->fixed_size % 8 != 0) {
-                        return brgen::unexpect(brgen::error(bit->fields[0]->base->loc, "bit field is not byte aligned"));
+                        return error(bit->fields[0]->base->loc, "bit field is not byte aligned");
                     }
                     if (bit->fixed_size > 64) {
-                        return brgen::unexpect(brgen::error(bit->fields[0]->base->loc, "bit field is too large"));
+                        return error(bit->fields[0]->base->loc, "bit field is too large");
                     }
                     m.push_back({std::move(bit)});
                     i--;

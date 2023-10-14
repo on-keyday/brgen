@@ -20,7 +20,7 @@ namespace json2cpp {
         Generator(std::shared_ptr<ast::Program> root)
             : root(std::move(root)) {}
 
-        brgen::result<void> generate_field(const Field& f) {
+        result<void> generate_field(const Field& f) {
             if (f.desc->type == DescType::int_) {
                 auto& desc = static_cast<IntDesc*>(f.desc.get())->desc;
                 code.writeln(get_primitive_type(desc.bit_size, desc.is_signed), " ", f.base->ident->ident, ";");
@@ -45,7 +45,7 @@ namespace json2cpp {
             return {};
         }
 
-        brgen::result<void> generate_bit_field(const BitFields& f) {
+        result<void> generate_bit_field(const BitFields& f) {
             config.includes.emplace("<binary/flags.h>");
             auto prim = get_primitive_type(ast::aligned_bit(f.fixed_size), false);
             assert(prim.size());
@@ -64,7 +64,7 @@ namespace json2cpp {
         }
 
         // generate field
-        brgen::result<void> generate_fields(const MergedFields& fields) {
+        result<void> generate_fields(const MergedFields& fields) {
             for (auto& field : fields) {
                 if (auto f = std::get_if<BulkFields>(&field)) {
                     for (auto& field : f->fields) {
@@ -101,7 +101,7 @@ namespace json2cpp {
             });
         }
 
-        brgen::result<void> generate_encoder(MergedFields& f) {
+        result<void> generate_encoder(MergedFields& f) {
             EventConverter e{config};
             if (auto res = e.convert_to_encoder_event(f); !res) {
                 return res.transform(empty_void);
@@ -146,7 +146,7 @@ namespace json2cpp {
                     method_with_error(num_method, io_object, bits->base_name, ".as_value()");
                 }
                 else {
-                    return brgen::unexpect(brgen::error({}, "unknown event"));
+                    return error({}, "unknown event");
                 }
             }
 
@@ -157,7 +157,7 @@ namespace json2cpp {
             return {};
         }
 
-        brgen::result<void> generate_decoder(MergedFields& f) {
+        result<void> generate_decoder(MergedFields& f) {
             EventConverter e{config};
             if (auto res = e.convert_to_decoder_event(f); !res) {
                 return res.transform(empty_void);
@@ -214,7 +214,7 @@ namespace json2cpp {
                     method_with_error(num_method, io_object, bits->base_name, ".as_value()");
                 }
                 else {
-                    return brgen::unexpect(brgen::error({}, "unknown event"));
+                    return error({}, "unknown event");
                 }
             }
             code.writeln("return true;");
@@ -223,7 +223,7 @@ namespace json2cpp {
             return {};
         }
 
-        brgen::result<void> generate_constructor_and_assign(const std::shared_ptr<ast::Format>& fmt, MergedFields& m) {
+        result<void> generate_constructor_and_assign(const std::shared_ptr<ast::Format>& fmt, MergedFields& m) {
             // write default constructor, move constructor, move assign
             // to move, we need to set the pointer of source to nullptr
 
@@ -274,7 +274,7 @@ namespace json2cpp {
             return {};
         }
 
-        brgen::result<void> generate_deallocate(const std::shared_ptr<ast::Format>& fmt, MergedFields& m) {
+        result<void> generate_deallocate(const std::shared_ptr<ast::Format>& fmt, MergedFields& m) {
             EventConverter e{config};
             if (auto res = e.convert_to_deallocate_event(m); !res) {
                 return res.transform(empty_void);
@@ -294,7 +294,7 @@ namespace json2cpp {
             return {};
         }
 
-        brgen::result<void> generate_format(const std::shared_ptr<ast::Format>& fmt) {
+        result<void> generate_format(const std::shared_ptr<ast::Format>& fmt) {
             FieldCollector c{config, eval};
             code.writeln("struct ", fmt->ident->ident, " {");
             {
@@ -334,7 +334,7 @@ namespace json2cpp {
             return {};
         }
 
-        brgen::result<void> generate() {
+        result<void> generate() {
             std::vector<std::shared_ptr<ast::Format>> formats;
             for (auto& l : root->elements) {
                 if (l->node_type == ast::NodeType::format) {

@@ -38,12 +38,22 @@ namespace brgen::ast::tool {
         return std::nullopt;
     }
 
-    inline std::shared_ptr<Format> belong_to(auto&& typ) {
+    inline std::shared_ptr<Format> belong_format(auto&& typ) {
         if (Field* f = ast::as<Field>(typ)) {
             return f->belong.lock();
         }
         if (Ident* ident = ast::as<Ident>(typ)) {
-            return belong_to(ident->base.lock());
+            return belong_format(ident->base.lock());
+        }
+        return nullptr;
+    }
+
+    inline std::shared_ptr<Field> linked_field(auto&& typ) {
+        if (Field* f = ast::as<Field>(typ)) {
+            return ast::cast_to<Field>(typ);
+        }
+        if (Ident* ident = ast::as<Ident>(typ)) {
+            return linked_field(ident->base.lock());
         }
         return nullptr;
     }

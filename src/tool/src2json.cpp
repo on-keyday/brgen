@@ -23,6 +23,8 @@ struct Flags : utils::cmdline::templ::HelpOption {
     bool not_resolve_cast = false;
     bool not_resolve_type = false;
     bool not_resolve_assert = false;
+    bool unresolved_type_as_error = false;
+
     bool check_ast = false;
     bool dump_types = false;
     bool disable_untyped_warning = false;
@@ -49,6 +51,7 @@ struct Flags : utils::cmdline::templ::HelpOption {
         ctx.VarBool(&not_resolve_type, "not-resolve-type", "not resolve type");
         ctx.VarBool(&not_resolve_cast, "not-resolve-cast", "not resolve cast");
         ctx.VarBool(&not_resolve_assert, "not-resolve-assert", "not-resolve assert");
+        ctx.VarBool(&unresolved_type_as_error, "unresolved-type-as-error", "unresolved type as error");
 
         ctx.VarBool(&disable_untyped_warning, "u,disable-untyped", "disable untyped warning");
 
@@ -252,8 +255,8 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
             }
             cout << d.out();
         }
-        res.for_each_error([&](std::string_view msg, bool warn) {
-            if (warn) {
+        res.for_each_error([&](std::string_view msg, bool w) {
+            if (w && !flags.unresolved_type_as_error) {
                 print_warning(msg);
             }
             else {
@@ -315,10 +318,15 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
             report_error(res3.error());
             return -1;
         }
+        if (flags.unresolved_type_as_error && ty.warnings.locations.size() > 0) {
+            report_error(brgen::to_source_error(files)(std::move(ty.warnings)));
+            return -1;
+        }
         if (!flags.disable_untyped_warning && ty.warnings.locations.size() > 0) {
             report_error(brgen::to_source_error(files)(std::move(ty.warnings)), true);
         }
     }
+
     if (!flags.not_resolve_assert) {
         brgen::middle::replace_assert(*res);
     }

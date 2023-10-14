@@ -53,21 +53,26 @@ namespace brgen::ast::tool {
         return r;
     }
 
-    struct EvalError {
+    struct LocError {
         lexer::Loc loc;
         std::string msg;
     };
+    
+    template<class T>
+    using result = expected<T, LocError>;
 
-    using EResult = expected<EvalResult, EvalError>;
+    using EResult = expected<EvalResult, LocError>;
+
+
 
     EResult add_string(const std::string& a, const std::string& b, lexer::Loc a_loc = {}, lexer::Loc b_loc = {}) {
         auto left = unescape(a);
         if (!left) {
-            return unexpect(EvalError{a_loc, "cannot unescape left string"});
+            return unexpect(LocError{a_loc, "cannot unescape left string"});
         }
         auto right = unescape(b);
         if (!right) {
-            return unexpect(EvalError{b_loc, "cannot unescape right string"});
+            return unexpect(LocError{b_loc, "cannot unescape right string"});
         }
         return make_result<EResultType::string>("\"" + escape(*left + *right) + "\"");
     }
@@ -75,11 +80,11 @@ namespace brgen::ast::tool {
     EResult compare_string(const std::string& a, const std::string& b, lexer::Loc a_loc, lexer::Loc b_loc, auto&& compare) {
         auto left = unescape(a);
         if (!left) {
-            return unexpect(EvalError{a_loc, "cannot unescape left string"});
+            return unexpect(LocError{a_loc, "cannot unescape left string"});
         }
         auto right = unescape(b);
         if (!right) {
-            return unexpect(EvalError{b_loc, "cannot unescape right string"});
+            return unexpect(LocError{b_loc, "cannot unescape right string"});
         }
         return make_result<EResultType::boolean>(compare(*left, *right));
     }
@@ -138,81 +143,81 @@ namespace brgen::ast::tool {
                     if (left->type() == EResultType::integer && right->type() == EResultType::integer) {
                         return make_result<EResultType::integer>(left->get<EResultType::integer>() + right->get<EResultType::integer>());
                     }
-                    return unexpect(EvalError{bin->loc, "cannot add"});
+                    return unexpect(LocError{bin->loc, "cannot add"});
                 }
                 case ast::BinaryOp::sub: {
                     if (left->type() == EResultType::integer && right->type() == EResultType::integer) {
                         return make_result<EResultType::integer>(left->get<EResultType::integer>() - right->get<EResultType::integer>());
                     }
-                    return unexpect(EvalError{bin->loc, "cannot sub"});
+                    return unexpect(LocError{bin->loc, "cannot sub"});
                 }
                 case ast::BinaryOp::mul: {
                     if (left->type() == EResultType::integer && right->type() == EResultType::integer) {
                         return make_result<EResultType::integer>(left->get<EResultType::integer>() * right->get<EResultType::integer>());
                     }
-                    return unexpect(EvalError{bin->loc, "cannot mul"});
+                    return unexpect(LocError{bin->loc, "cannot mul"});
                 }
                 case ast::BinaryOp::div: {
                     if (left->type() == EResultType::integer && right->type() == EResultType::integer) {
                         auto r = right->get<EResultType::integer>();
                         if (r == 0) {
-                            return unexpect(EvalError{bin->loc, "div by zero"});
+                            return unexpect(LocError{bin->loc, "div by zero"});
                         }
                         return make_result<EResultType::integer>(left->get<EResultType::integer>() / r);
                     }
-                    return unexpect(EvalError{bin->loc, "cannot mul"});
+                    return unexpect(LocError{bin->loc, "cannot mul"});
                 }
                 case ast::BinaryOp::mod: {
                     if (left->type() == EResultType::integer && right->type() == EResultType::integer) {
                         auto r = right->get<EResultType::integer>();
                         if (r == 0) {
-                            return unexpect(EvalError{bin->loc, "mod by zero"});
+                            return unexpect(LocError{bin->loc, "mod by zero"});
                         }
                         return make_result<EResultType::integer>(left->get<EResultType::integer>() % r);
                     }
-                    return unexpect(EvalError{bin->loc, "cannot mul"});
+                    return unexpect(LocError{bin->loc, "cannot mul"});
                 }
                 case ast::BinaryOp::bit_and: {
                     if (left->type() == EResultType::integer && right->type() == EResultType::integer) {
                         return make_result<EResultType::integer>(left->get<EResultType::integer>() & right->get<EResultType::integer>());
                     }
-                    return unexpect(EvalError{bin->loc, "cannot bit_and"});
+                    return unexpect(LocError{bin->loc, "cannot bit_and"});
                 }
                 case ast::BinaryOp::bit_or: {
                     if (left->type() == EResultType::integer && right->type() == EResultType::integer) {
                         return make_result<EResultType::integer>(left->get<EResultType::integer>() | right->get<EResultType::integer>());
                     }
-                    return unexpect(EvalError{bin->loc, "cannot bit_or"});
+                    return unexpect(LocError{bin->loc, "cannot bit_or"});
                 }
                 case ast::BinaryOp::bit_xor: {
                     if (left->type() == EResultType::integer && right->type() == EResultType::integer) {
                         return make_result<EResultType::integer>(left->get<EResultType::integer>() ^ right->get<EResultType::integer>());
                     }
-                    return unexpect(EvalError{bin->loc, "cannot bit_xor"});
+                    return unexpect(LocError{bin->loc, "cannot bit_xor"});
                 }
                 case ast::BinaryOp::left_logical_shift: {
                     if (left->type() == EResultType::integer && right->type() == EResultType::integer) {
                         return make_result<EResultType::integer>(std::uint64_t(left->get<EResultType::integer>()) << right->get<EResultType::integer>());
                     }
-                    return unexpect(EvalError{bin->loc, "cannot left_logical_shift"});
+                    return unexpect(LocError{bin->loc, "cannot left_logical_shift"});
                 }
                 case ast::BinaryOp::right_logical_shift: {
                     if (left->type() == EResultType::integer && right->type() == EResultType::integer) {
                         return make_result<EResultType::integer>(std::uint64_t(left->get<EResultType::integer>()) >> right->get<EResultType::integer>());
                     }
-                    return unexpect(EvalError{bin->loc, "cannot right_logical_shift"});
+                    return unexpect(LocError{bin->loc, "cannot right_logical_shift"});
                 }
                 case ast::BinaryOp::left_arithmetic_shift: {
                     if (left->type() == EResultType::integer && right->type() == EResultType::integer) {
                         return make_result<EResultType::integer>(left->get<EResultType::integer>() << right->get<EResultType::integer>());
                     }
-                    return unexpect(EvalError{bin->loc, "cannot left_arithmetic_shift"});
+                    return unexpect(LocError{bin->loc, "cannot left_arithmetic_shift"});
                 }
                 case ast::BinaryOp::right_arithmetic_shift: {
                     if (left->type() == EResultType::integer && right->type() == EResultType::integer) {
                         return make_result<EResultType::integer>(left->get<EResultType::integer>() << right->get<EResultType::integer>());
                     }
-                    return unexpect(EvalError{bin->loc, "cannot left_arithmetic_shift"});
+                    return unexpect(LocError{bin->loc, "cannot left_arithmetic_shift"});
                 }
                 case ast::BinaryOp::equal: {
                     if (left->type() == EResultType::string && right->type() == EResultType::string) {
@@ -226,7 +231,7 @@ namespace brgen::ast::tool {
                     if (left->type() == EResultType::boolean && right->type() == EResultType::boolean) {
                         return make_result<EResultType::boolean>(left->get<EResultType::boolean>() == right->get<EResultType::boolean>());
                     }
-                    return unexpect(EvalError{bin->loc, "cannot equal"});
+                    return unexpect(LocError{bin->loc, "cannot equal"});
                 }
                 case ast::BinaryOp::not_equal: {
                     if (left->type() == EResultType::string && right->type() == EResultType::string) {
@@ -240,7 +245,7 @@ namespace brgen::ast::tool {
                     if (left->type() == EResultType::boolean && right->type() == EResultType::boolean) {
                         return make_result<EResultType::boolean>(left->get<EResultType::boolean>() != right->get<EResultType::boolean>());
                     }
-                    return unexpect(EvalError{bin->loc, "cannot not_equal"});
+                    return unexpect(LocError{bin->loc, "cannot not_equal"});
                 }
                 case ast::BinaryOp::less: {
                     if (left->type() == EResultType::string && right->type() == EResultType::string) {
@@ -251,7 +256,7 @@ namespace brgen::ast::tool {
                     if (left->type() == EResultType::integer && right->type() == EResultType::integer) {
                         return make_result<EResultType::boolean>(left->get<EResultType::integer>() < right->get<EResultType::integer>());
                     }
-                    return unexpect(EvalError{bin->loc, "cannot less"});
+                    return unexpect(LocError{bin->loc, "cannot less"});
                 }
                 case ast::BinaryOp::less_or_eq: {
                     if (left->type() == EResultType::string && right->type() == EResultType::string) {
@@ -262,7 +267,7 @@ namespace brgen::ast::tool {
                     if (left->type() == EResultType::integer && right->type() == EResultType::integer) {
                         return make_result<EResultType::boolean>(left->get<EResultType::integer>() <= right->get<EResultType::integer>());
                     }
-                    return unexpect(EvalError{bin->loc, "cannot grater"});
+                    return unexpect(LocError{bin->loc, "cannot grater"});
                 }
                 case ast::BinaryOp::grater: {
                     if (left->type() == EResultType::string && right->type() == EResultType::string) {
@@ -273,7 +278,7 @@ namespace brgen::ast::tool {
                     if (left->type() == EResultType::integer && right->type() == EResultType::integer) {
                         return make_result<EResultType::boolean>(left->get<EResultType::integer>() > right->get<EResultType::integer>());
                     }
-                    return unexpect(EvalError{bin->loc, "cannot grater"});
+                    return unexpect(LocError{bin->loc, "cannot grater"});
                 }
                 case ast::BinaryOp::grater_or_eq: {
                     if (left->type() == EResultType::string && right->type() == EResultType::string) {
@@ -284,10 +289,10 @@ namespace brgen::ast::tool {
                     if (left->type() == EResultType::integer && right->type() == EResultType::integer) {
                         return make_result<EResultType::boolean>(left->get<EResultType::integer>() >= right->get<EResultType::integer>());
                     }
-                    return unexpect(EvalError{bin->loc, "cannot grater"});
+                    return unexpect(LocError{bin->loc, "cannot grater"});
                 }
                 default: {
-                    return unexpect(EvalError{bin->loc, "not supported"});
+                    return unexpect(LocError{bin->loc, "not supported"});
                 }
             }
         }
@@ -306,7 +311,7 @@ namespace brgen::ast::tool {
                         if (res->type() == EResultType::integer) {
                             return make_result<EResultType::integer>(-res->get<EResultType::integer>());
                         }
-                        return unexpect(EvalError{c->loc, "cannot minus"});
+                        return unexpect(LocError{c->loc, "cannot minus"});
                     }
                     case ast::UnaryOp::not_: {
                         if (res->type() == EResultType::integer) {
@@ -315,10 +320,10 @@ namespace brgen::ast::tool {
                         if (res->type() == EResultType::boolean) {
                             return make_result<EResultType::boolean>(!res->get<EResultType::boolean>());
                         }
-                        return unexpect(EvalError{c->loc, "cannot not"});
+                        return unexpect(LocError{c->loc, "cannot not"});
                     }
                     default: {
-                        return unexpect(EvalError{c->loc, "not supported"});
+                        return unexpect(LocError{c->loc, "not supported"});
                     }
                 }
             }
@@ -329,19 +334,19 @@ namespace brgen::ast::tool {
                 if (ident_mode == EvalIdentMode::resolve_ident) {
                     auto it = ident_map.find(i->ident);
                     if (it == ident_map.end()) {
-                        return unexpect(EvalError{i->loc, "cannot resolve ident"});
+                        return unexpect(LocError{i->loc, "cannot resolve ident"});
                     }
                     return it->second;
                 }
                 if (ident_mode == EvalIdentMode::no_ident) {
-                    return unexpect(EvalError{i->loc, "cannot use ident"});
+                    return unexpect(LocError{i->loc, "cannot use ident"});
                 }
                 return make_result<EResultType::ident>(i->ident);
             }
             if (auto i = ast::as<ast::IntLiteral>(expr)) {
                 auto val = i->parse_as<std::uint64_t>();
                 if (!val) {
-                    return unexpect(EvalError{i->loc, "cannot parse integer in 64 bit"});
+                    return unexpect(LocError{i->loc, "cannot parse integer in 64 bit"});
                 }
                 return make_result<EResultType::integer>(*val);
             }
@@ -351,7 +356,7 @@ namespace brgen::ast::tool {
             if (auto i = ast::as<ast::BoolLiteral>(expr)) {
                 return make_result<EResultType::boolean>(i->value);
             }
-            return unexpect(EvalError{expr->loc, "not supported"});
+            return unexpect(LocError{expr->loc, "not supported"});
         }
 
        public:
@@ -359,7 +364,7 @@ namespace brgen::ast::tool {
             if (auto expr = ast::as<Expr>(n)) {
                 return eval_expr(expr);
             }
-            return unexpect(EvalError{n ? n->loc : lexer::Loc{}, "not an expression"});
+            return unexpect(LocError{n ? n->loc : lexer::Loc{}, "not an expression"});
         }
 
         template <EResultType t, bool unescape_str = true>
@@ -369,12 +374,12 @@ namespace brgen::ast::tool {
                 return r;
             }
             if (r->type() != t) {
-                return unexpect(EvalError{n->loc, std::string("must be ") + eresult_type_str[int(t)]});
+                return unexpect(LocError{n->loc, std::string("must be ") + eresult_type_str[int(t)]});
             }
             if constexpr (t == EResultType::string && unescape_str) {
                 auto unesc = unescape(r->get<EResultType::string>());
                 if (!unesc) {
-                    return unexpect(EvalError{n->loc, "must be string"});
+                    return unexpect(LocError{n->loc, "must be string"});
                 }
                 return make_result<EResultType::string>(std::move(*unesc));
             }
@@ -384,9 +389,4 @@ namespace brgen::ast::tool {
         }
     };
 
-    constexpr auto to_loc_error() {
-        return [](auto&& err) {
-            return error(err.loc, err.msg);
-        };
-    }
 }  // namespace brgen::ast::tool

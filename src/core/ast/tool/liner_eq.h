@@ -23,7 +23,7 @@ namespace brgen::ast::tool {
             else if (auto e = as<Ident>(expr)) {
                 if (ident) {
                     return e->ident == (*ident)->ident &&
-                           belong_to(e) == belong_to(*ident);
+                           belong_format(e) == belong_format(*ident);
                 }
                 else {
                     ident = cast_to<Ident>(expr);
@@ -150,6 +150,22 @@ namespace brgen::ast::tool {
                         }
                         else {
                             auto b = std::make_shared<Binary>(e->loc, std::move(l), BinaryOp::left_logical_shift);
+                            b->right = std::move(r);
+                            return b;
+                        }
+                    }
+                    case BinaryOp::right_logical_shift: {
+                        if (left_has_ident) {
+                            has_ident = true;
+                            auto b = std::make_shared<Binary>(e->loc, std::move(l), BinaryOp::left_logical_shift);
+                            b->right = std::move(r);
+                            return b;
+                        }
+                        else if (right_has_ident) {
+                            return nullptr;
+                        }
+                        else {
+                            auto b = std::make_shared<Binary>(e->loc, std::move(l), BinaryOp::right_logical_shift);
                             b->right = std::move(r);
                             return b;
                         }

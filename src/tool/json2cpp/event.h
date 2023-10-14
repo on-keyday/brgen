@@ -62,7 +62,7 @@ namespace json2cpp {
             return "tmp_len_of_" + name;
         }
 
-        brgen::result<void> add_bulk_array(ApplyBulkInt& bulk, const std::shared_ptr<Field>& field) {
+        result<void> add_bulk_array(ApplyBulkInt& bulk, const std::shared_ptr<Field>& field) {
             auto len = static_cast<IntArrayDesc*>(field->desc.get())->desc.length_eval->get<tool::EResultType::integer>();
             for (auto i = 0; i < len; i++) {
                 bulk.field_names.push_back(field->base->ident->ident + "[" + brgen::nums(i) + "]");
@@ -70,7 +70,7 @@ namespace json2cpp {
             return {};
         }
 
-        brgen::result<std::string> handle_encoder_int_length_related_std_vector(const std::shared_ptr<Field>& len_field, const std::shared_ptr<Field>& vec) {
+        result<std::string> handle_encoder_int_length_related_std_vector(const std::shared_ptr<Field>& len_field, const std::shared_ptr<Field>& vec) {
             auto desc = static_cast<VectorDesc*>(vec->desc.get());
             tool::Stringer s;
             auto length = tmp_len_of(vec->base->ident->ident);
@@ -100,7 +100,7 @@ namespace json2cpp {
             return brgen::concat(type, "(", length, ")");
         }
 
-        brgen::result<std::string> handle_encoder_int_length_related_pointer(const std::shared_ptr<Field>& len_field, const std::shared_ptr<Field>& vec) {
+        result<std::string> handle_encoder_int_length_related_pointer(const std::shared_ptr<Field>& len_field, const std::shared_ptr<Field>& vec) {
             auto desc = static_cast<VectorDesc*>(vec->desc.get());
             tool::Stringer s;
             auto tmp = tmp_len_of(vec->base->ident->ident);
@@ -164,7 +164,7 @@ namespace json2cpp {
             }
         }
 
-        brgen::result<std::string> handle_encoder_int_length_related(const std::shared_ptr<Field>& field) {
+        result<std::string> handle_encoder_int_length_related(const std::shared_ptr<Field>& field) {
             if (auto vec = field->length_related.lock()) {
                 if (config.vector_mode == VectorMode::std_vector) {
                     return handle_encoder_int_length_related_std_vector(field, vec);
@@ -177,7 +177,7 @@ namespace json2cpp {
             return field->base->ident->ident;
         }
 
-        brgen::result<void> convert_bulk(BulkFields* b, Method method) {
+        result<void> convert_bulk(BulkFields* b, Method method) {
             ApplyBulkInt bulk;
             for (auto& field : b->fields) {
                 if (field->desc->type == DescType::array_int) {
@@ -204,7 +204,7 @@ namespace json2cpp {
             return {};
         }
 
-        brgen::result<void> convert_bits(const std::shared_ptr<BitFields>& f, Method m) {
+        result<void> convert_bits(const std::shared_ptr<BitFields>& f, Method m) {
             ApplyBits bits;
             auto primitive = get_primitive_type(ast::aligned_bit(f->fixed_size), false);
             bits.base_type = primitive;
@@ -224,7 +224,7 @@ namespace json2cpp {
             return {};
         }
 
-        brgen::result<void> convert_vec_decode(const std::shared_ptr<Field>& vec) {
+        result<void> convert_vec_decode(const std::shared_ptr<Field>& vec) {
             auto vec_desc = static_cast<VectorDesc*>(vec->desc.get());
             auto int_desc = static_cast<IntDesc*>(vec_desc->base_type.get());
             auto len_field = vec->length_related.lock();
@@ -269,7 +269,7 @@ namespace json2cpp {
             return {};
         }
 
-        brgen::result<void> convert_vec_encode(const std::shared_ptr<Field>& vec) {
+        result<void> convert_vec_encode(const std::shared_ptr<Field>& vec) {
             if (config.vector_mode == VectorMode::pointer) {
                 events.push_back(AssertFalse{
                     .comment = "check null pointer",
@@ -299,7 +299,7 @@ namespace json2cpp {
         }
 
        public:
-        brgen::result<void> convert_to_decoder_event(MergedFields& fields) {
+        result<void> convert_to_decoder_event(MergedFields& fields) {
             for (auto& field : fields) {
                 if (auto f = std::get_if<BulkFields>(&field)) {
                     if (auto res = convert_bulk(f, Method::decode); !res) {
@@ -336,7 +336,7 @@ namespace json2cpp {
             return {};
         }
 
-        brgen::result<void> convert_to_encoder_event(MergedFields& fields) {
+        result<void> convert_to_encoder_event(MergedFields& fields) {
             size_t tmp_ = 0;
             for (auto& field : fields) {
                 if (auto f = std::get_if<BulkFields>(&field)) {
@@ -379,7 +379,7 @@ namespace json2cpp {
             return {};
         }
 
-        brgen::result<void> convert_to_deallocate_event(MergedFields& fields) {
+        result<void> convert_to_deallocate_event(MergedFields& fields) {
             for (auto& field : fields) {
                 if (auto fp = std::get_if<std::shared_ptr<Field>>(&field)) {
                     auto& f = *fp;
@@ -393,7 +393,7 @@ namespace json2cpp {
             return {};
         }
 
-        brgen::result<void> convert_to_move_event(MergedFields& fields) {
+        result<void> convert_to_move_event(MergedFields& fields) {
             for (auto& field : fields) {
                 if (auto fp = std::get_if<std::shared_ptr<Field>>(&field)) {
                     auto& f = *fp;
