@@ -398,9 +398,15 @@ namespace brgen::middle {
         }
 
         void typing_expr(const std::shared_ptr<ast::Expr>& expr, bool on_define = false) {
+            // treat cast as a special case
+            // Cast has already been typed in the previous pass
+            // but inner expression may not be typed
+            if (auto c = ast::as<ast::Cast>(expr)) {
+                typing_expr(c->expr);
+            }
             if (expr->expr_type) {
                 typing_object(expr->expr_type);
-                return;
+                return;  // already typed
             }
             if (auto lit = ast::as<ast::IntLiteral>(expr)) {
                 lit->expr_type = std::make_shared<ast::IntLiteralType>(ast::cast_to<ast::IntLiteral>(expr));
@@ -553,9 +559,6 @@ namespace brgen::middle {
             }
             else if (auto i = ast::as<ast::Import>(expr)) {
                 expr->expr_type = i->import_desc->struct_type;
-            }
-            else if (auto c = ast::as<ast::Cast>(expr)) {
-                typing_expr(c->expr);
             }
             else {
                 unsupported(expr);
