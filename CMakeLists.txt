@@ -8,6 +8,17 @@ set(CMAKE_EXE_LINKER_FLAGS "-lc++abi")
 endif()
 
 set(CMAKE_CXX_STANDARD 23)
+
+if("$ENV{BUILD_MODE}" STREQUAL "native")
+link_directories("$ENV{UTILS_DIR}/built/shared/${CMAKE_BUILD_TYPE}/lib")
+set(UTILS_LIB_DIR "$ENV{UTILS_DIR}/built/shared/${CMAKE_BUILD_TYPE}/lib")
+elseif("$ENV{BUILD_MODE}" STREQUAL "wasm-em")
+link_directories("$ENV{UTILS_DIR}/built/wasm-em/${CMAKE_BUILD_TYPE}/lib")
+set(UTILS_LIB_DIR "$ENV{UTILS_DIR}/built/wasm-em/${CMAKE_BUILD_TYPE}/lib")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions")
+endif()
+
+if("$ENV{BUILD_MODE}" STREQUAL "native")
 set(INSTALL_GTEST OFF)
 include(FetchContent)
 FetchContent_Declare(
@@ -19,21 +30,13 @@ FetchContent_Declare(
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
-
+endif()
 
 
 include_directories("$ENV{UTILS_DIR}/src/include")
 include_directories("./src")
 include_directories("./build/_deps/googletest-src/googletest/include")
 
-if("$ENV{BUILD_MODE}" STREQUAL "native")
-link_directories("$ENV{UTILS_DIR}/built/shared/${CMAKE_BUILD_TYPE}/lib")
-set(UTILS_LIB_DIR "$ENV{UTILS_DIR}/built/shared/${CMAKE_BUILD_TYPE}/lib")
-elseif("$ENV{BUILD_MODE}" STREQUAL "wasm-em")
-link_directories("$ENV{UTILS_DIR}/built/wasm-em/${CMAKE_BUILD_TYPE}/lib")
-set(UTILS_LIB_DIR "$ENV{UTILS_DIR}/built/wasm-em/${CMAKE_BUILD_TYPE}/lib")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions")
-endif()
 
 
 add_subdirectory(src)
