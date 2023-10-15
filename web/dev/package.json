@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@types/emscripten": "^1.39.8",
     "monaco-editor": "^0.44.0"
   }
 }
