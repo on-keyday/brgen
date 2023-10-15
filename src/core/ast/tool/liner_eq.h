@@ -7,19 +7,19 @@ namespace brgen::ast::tool {
 
     /// @brief resolve liner equation (limited)
     /// @details
-    ///     y = 2 * x - 4 + 1 << 2 * 3
-    ///     x = (y - 1 << 2 + 4) / 2
+    ///     y = 2 * x - 4 + 1
+    ///     x = (y - 1 + 4) / 2
     ///     y = x << 2 + 4
-    ///     x = (y - 2) >> 2
-    ///     try to resolve the expression x * 2 - 4 about x
+    ///     x = (y - 4) >> 2
+    ///     try to resolve the expression 2 * x - 4 about x
     ///     now tree is like this:
     ///            +
-    ///          /   \
-    ///         -     <<
-    ///        / \    / \
-    ///       *   4  1   2
+    ///          /  \
+    ///         -    1
+    ///        / \
+    ///       *   4
     ///      / \
-    ///     x   2
+    ///     2   x
     ///     first replace x with y
     ///           +
     ///          / \
@@ -27,8 +27,8 @@ namespace brgen::ast::tool {
     ///        / \
     ///       *   4
     ///      / \
-    ///     y   2
-    ///     then replace +,-,* -> -,+,/
+    ///     2   y
+    ///     then replace +,-,* -> -,+,/ and make y left hand
     ///           -
     ///          / \
     ///         +   1
@@ -44,6 +44,7 @@ namespace brgen::ast::tool {
     ///       -   4
     ///      / \
     ///     y   1
+    /// NOTE: this is a limited version, it can only resolve the equation that has only one ident
     /// @param resolved is the resolved expr
     /// @param x is the ident to be resolved (auto detected)
     /// @param y is the tmp var to be replaced that is used to represent the resolved ident
@@ -235,11 +236,33 @@ namespace brgen::ast::tool {
             return nullptr;
         }
 
+        std::shared_ptr<Expr> reorder_tree(std::shared_ptr<Expr>& expr) {
+            std::vector<std::shared_ptr<Binary>> bin_ops;
+            for (;;) {
+                if (auto bin = ast::as<Binary>(expr)) {
+                    auto left = std::move(bin->left);
+                    bin_ops.push_back(ast::cast_to<Binary>(expr));
+                    expr = std::move(left);
+                    continue;
+                }
+                break;
+            }
+            for (auto& op : bin_ops) {
+                op->left = std::move(expr);
+                expr = std::move(op);
+            }
+            return expr;
+        }
+
        public:
         bool resolve(const std::shared_ptr<Expr>& expr) {
             std::optional<std::shared_ptr<Ident>> ident;
             if (!unique_ident(expr, ident)) {
                 return false;
+            }
+            if (!ident) {
+                resolved = expr;
+                return true;
             }
             x = std::move(*ident);
             bool has_ident = false;
@@ -247,7 +270,7 @@ namespace brgen::ast::tool {
             if (!r) {
                 return false;
             }
-            resolved = std::move(r);
+            resolved = reorder_tree(r);
             return true;
         }
     };

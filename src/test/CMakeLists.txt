@@ -47,6 +47,9 @@ add_executable(section_writer_test "core/section_writer_test.cpp")
 target_link_libraries(section_writer_test gtest_main)
 target_compile_options(section_writer_test PRIVATE "-fprofile-instr-generate=section_writer_test.profraw")
 
+add_executable(liner_eq_test "core/liner_eq_test.cpp")
+target_link_libraries(liner_eq_test gtest_main)
+target_compile_options(liner_eq_test PRIVATE "-fprofile-instr-generate=liner_eq_test.profraw")
 
 add_test(NAME "lexer_test" COMMAND lexer_test)
 add_test(NAME "ast_test" COMMAND ast_test)
@@ -54,7 +57,7 @@ add_test(NAME "typing_test" COMMAND typing_test)
 add_test(NAME "middle_test" COMMAND middle_test)
 add_test(NAME "from_json_test" COMMAND from_json_test)
 add_test(NAME "section_writer_test" COMMAND section_writer_test)
-
+add_test(NAME "liner_eq_test" COMMAND liner_eq_test)
 
 if(WIN32)
 

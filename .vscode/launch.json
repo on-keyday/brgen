@@ -36,6 +36,19 @@
             "symbolSearchPath": "lib\\"
         },
         {
+            "name": "Debug test",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/build/test/from_json_test",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceRoot}",
+            "environment": [],
+            "console": "integratedTerminal",
+            "preLaunchTask": "build",
+            "symbolSearchPath": "lib\\"
+        },
+        {
             "name": "Debug json2cpp",
             "type": "cppvsdbg",
             "request": "launch",

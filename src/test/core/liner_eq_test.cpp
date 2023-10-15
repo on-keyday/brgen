@@ -1,5 +1,4 @@
 /*license*/
-#pragma once
 
 #include <core/ast/tool/tool.h>
 #include <gtest/gtest.h>
@@ -17,11 +16,31 @@ TEST(Tool, LinerEquation) {
             return p.parse();
         });
         auto program = e.value();
-        ASSERT_TRUE(program->elements.front() && ast::as<ast::Expr>(program->elements.front()));
+        auto element = program->elements.front();
+        auto expr = ast::as<ast::Expr>(element);
+        [&] {
+            ASSERT_TRUE(element && expr);
+        }();
         return program;
     };
-    auto e = parse_expr("x * (2 + 3)");
-    auto expr = ast::cast_to<ast::Expr>(e->elements.front());
-    auto r1 = r.resolve(expr);
-    ASSERT_TRUE(r1);
+    auto do_test = [&](auto input, auto expect) {
+        auto e = parse_expr(input);
+        auto expr = ast::cast_to<ast::Expr>(e->elements.front());
+        auto r1 = r.resolve(expr);
+        ASSERT_TRUE(r1);
+        ast::tool::Stringer s;
+        s.to_string(r.resolved);
+        ASSERT_EQ(s.buffer, expect);
+    };
+    do_test("1", "1");
+    do_test("1 + 2", "(1 + 2)");
+    do_test("x", "tmp0");
+    do_test("x + 1", "(tmp0 - 1)");
+    do_test("x + 1 + 2", "((tmp0 - 2) - 1)");
+    do_test("x + 2 * 3", "(tmp0 - (2 * 3))");
+    do_test("2 * x + 3 + 4", "(((tmp0 - 4) - 3) / 2)");
+    do_test("2 * 3 + x + 4 + 5", "(((tmp0 - 5) - 4) - (2 * 3))");
+    do_test("2 * 3 + 4 + 5 + x", "(tmp0 - (((2 * 3) + 4) + 5))");
+    do_test("x << 2 + 1", "((tmp0 - 1) >> 2)");
+    do_test("(x << 2) * 1 + 2", "(((tmp0 - 2) / 1) >> 2)");
 }
