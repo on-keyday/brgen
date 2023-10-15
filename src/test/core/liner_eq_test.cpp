@@ -29,8 +29,7 @@ TEST(Tool, LinerEquation) {
         auto r1 = r.resolve(expr);
         ASSERT_TRUE(r1);
         ast::tool::Stringer s;
-        s.to_string(r.resolved);
-        ASSERT_EQ(s.buffer, expect);
+        ASSERT_EQ(s.to_string(r.resolved), expect);
     };
     do_test("1", "1");
     do_test("1 + 2", "(1 + 2)");

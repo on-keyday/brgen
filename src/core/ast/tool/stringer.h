@@ -3,60 +3,54 @@
 #include <string>
 #include "../ast.h"
 #include "../traverse.h"
+#include <functional>
 
 namespace brgen::ast::tool {
 
     struct Stringer {
-        std::string buffer;
-        std::unordered_map<BinaryOp, std::string> bin_op_map;
+        std::unordered_map<BinaryOp, std::function<std::string(std::string, std::string)>> bin_op_map;
         std::unordered_map<size_t, std::string> tmp_var_map;
         std::unordered_map<std::string, std::string> ident_map;
 
-        void write(auto&&... args) {
-            utils::strutil::appends(buffer, args...);
-        }
-
-        void write_bin_op(BinaryOp op) {
+       private:
+        std::string handle_bin_op(BinaryOp op, std::string& left, std::string& right) {
             if (auto it = bin_op_map.find(op); it != bin_op_map.end()) {
-                write(it->second);
+                return it->second(std::move(left), std::move(right));
             }
             else {
-                write(*bin_op_str(op));
+                return concat("(", left, " ", *bin_op_str(op), " ", right, ")");
             }
         }
 
-        void to_string(const std::shared_ptr<Expr>& expr) {
+       public:
+        std::string to_string(const std::shared_ptr<Expr>& expr) {
             if (!expr) {
-                return;
+                return "";
             }
             if (auto e = ast::as<ast::Binary>(expr)) {
-                write("(");
-                to_string(e->left);
-                write(" ");
-                write_bin_op(e->op);
-                write(" ");
-                to_string(e->right);
-                write(")");
+                auto left = to_string(e->left);
+                auto right = to_string(e->right);
             }
             if (auto lit = ast::as<ast::IntLiteral>(expr)) {
-                write(lit->value);
+                return lit->value;
             }
             if (auto id = ast::as<ast::Ident>(expr)) {
                 if (auto found = ident_map.find(id->ident); found != ident_map.end()) {
-                    write(found->second);
+                    return found->second;
                 }
                 else {
-                    write(id->ident);
+                    return id->ident;
                 }
             }
             if (auto tmp = ast::as<ast::TmpVar>(expr)) {
                 if (auto found = tmp_var_map.find(tmp->tmp_var); found != tmp_var_map.end()) {
-                    write(found->second);
+                    return found->second;
                 }
                 else {
-                    write("tmp", nums(tmp->tmp_var));
+                    return concat("tmp", nums(tmp->tmp_var));
                 }
             }
+            return "";
         }
     };
 }  // namespace brgen::ast::tool

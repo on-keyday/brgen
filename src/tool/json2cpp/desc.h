@@ -46,11 +46,14 @@ namespace json2cpp {
 
     struct Field {
         std::shared_ptr<ast::Field> base;
+        std::string name;
         std::shared_ptr<Desc> desc;
         std::weak_ptr<Field> length_related;
 
         Field(std::shared_ptr<ast::Field> base, std::shared_ptr<Desc> desc)
-            : base(std::move(base)), desc(std::move(desc)) {}
+            : base(std::move(base)), desc(std::move(desc)) {
+            name = this->base->ident->ident;
+        }
     };
 
     using Fields = std::vector<std::shared_ptr<Field>>;
@@ -149,7 +152,7 @@ namespace json2cpp {
             auto vec_field = std::make_shared<Field>(field, std::move(vec));
             bool ok = false;
             for (auto& f : fields) {
-                if (f->base->ident->ident == resolver.x->ident) {
+                if (f->name == resolver.x->ident) {
                     if (f->length_related.lock()) {
                         return error(field->loc, "cannot resolve vector length");
                     }
@@ -215,14 +218,14 @@ namespace json2cpp {
                                 bit->base_name = "flags";
                             }
                             i_desc->bit_field = bit;
-                            bit->base_name += "_" + fields[i]->base->ident->ident;
+                            bit->base_name += "_" + fields[i]->name;
                             bit->fields.push_back({std::move(fields[i])});
                             bit->fixed_size += i_desc->desc.bit_size;
                             continue;
                         }
                         else if (bit && bit->fixed_size % 8 != 0) {
                             i_desc->bit_field = bit;
-                            bit->base_name += "_" + fields[i]->base->ident->ident;
+                            bit->base_name += "_" + fields[i]->name;
                             bit->fields.push_back({std::move(fields[i])});
                             bit->fixed_size += i_desc->desc.bit_size;
                             continue;

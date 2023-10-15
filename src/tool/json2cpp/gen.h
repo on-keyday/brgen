@@ -23,22 +23,22 @@ namespace json2cpp {
         result<void> generate_field(const Field& f) {
             if (f.desc->type == DescType::int_) {
                 auto& desc = static_cast<IntDesc*>(f.desc.get())->desc;
-                code.writeln(get_primitive_type(desc.bit_size, desc.is_signed), " ", f.base->ident->ident, ";");
+                code.writeln(get_primitive_type(desc.bit_size, desc.is_signed), " ", f.name, ";");
             }
             else {
                 auto arr_desc = static_cast<IntArrayDesc*>(f.desc.get());
                 auto& i_desc = static_cast<IntDesc*>(arr_desc->base_type.get())->desc;
                 auto& len = arr_desc->desc.length_eval;
                 if (len) {
-                    code.writeln("std::array<", get_primitive_type(i_desc.bit_size, i_desc.is_signed), ",", brgen::nums(len->get<tool::EResultType::integer>()), "> ", f.base->ident->ident, ";");
+                    code.writeln("std::array<", get_primitive_type(i_desc.bit_size, i_desc.is_signed), ",", brgen::nums(len->get<tool::EResultType::integer>()), "> ", f.name, ";");
                 }
                 else {
                     if (config.vector_mode == VectorMode::std_vector) {
-                        code.writeln("std::vector<", get_primitive_type(i_desc.bit_size, i_desc.is_signed), "> ", f.base->ident->ident, ";");
+                        code.writeln("std::vector<", get_primitive_type(i_desc.bit_size, i_desc.is_signed), "> ", f.name, ";");
                     }
                     else {  // pointer
                         assert(config.vector_mode == VectorMode::pointer);
-                        code.writeln(get_primitive_type(i_desc.bit_size, i_desc.is_signed), "* ", f.base->ident->ident, ";");
+                        code.writeln(get_primitive_type(i_desc.bit_size, i_desc.is_signed), "* ", f.name, ";");
                     }
                 }
             }
@@ -54,11 +54,10 @@ namespace json2cpp {
             for (auto& field : f.fields) {
                 auto i_desc = static_cast<IntDesc*>(field->desc.get());
                 code.write(",", brgen::nums(i_desc->desc.bit_size));
-                base_name += "_" + field->base->ident->ident;
             }
-            code.writeln("> ", base_name, ";");
+            code.writeln("> ", f.base_name, ";");
             for (size_t i = 0; i < f.fields.size(); i++) {
-                code.writeln("bits_flag_alias_method(", base_name, ",", brgen::nums(i), ",", f.fields[i]->base->ident->ident, ");");
+                code.writeln("bits_flag_alias_method(", f.base_name, ",", brgen::nums(i), ",", f.fields[i]->name, ");");
             }
             return {};
         }
