@@ -1,6 +1,6 @@
 name: brgen-test
 run-name: brgen test
-on: 
+on:
   - push
 jobs:
   test:

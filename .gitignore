@@ -10,7 +10,7 @@ CMakeCache.txt
 cmake_install.cmake
 /_deps/
 /bin/
-/build/
+/built/
 node_modules/
 out/
 target/

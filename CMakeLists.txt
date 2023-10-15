@@ -24,7 +24,14 @@ FetchContent_MakeAvailable(googletest)
 include_directories("$ENV{UTILS_DIR}/src/include")
 include_directories("./src")
 include_directories("./build/_deps/googletest-src/googletest/include")
-link_directories("$ENV{UTILS_DIR}/lib")
+
+if("$ENV{BUILD_MODE}" STREQUAL "native")
+link_directories("$ENV{UTILS_DIR}/built/shared/${CMAKE_BUILD_TYPE}/lib")
+set(UTILS_LIB_DIR "$ENV{UTILS_DIR}/built/shared/${CMAKE_BUILD_TYPE}/lib")
+elseif("$ENV{BUILD_MODE}" STREQUAL "wasm-em")
+link_directories("$ENV{UTILS_DIR}/built/wasm-em/${CMAKE_BUILD_TYPE}/lib")
+set(UTILS_LIB_DIR "$ENV{UTILS_DIR}/built/wasm-em/${CMAKE_BUILD_TYPE}/lib")
+endif()
 
 
 add_subdirectory(src)
