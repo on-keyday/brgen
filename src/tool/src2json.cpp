@@ -16,6 +16,12 @@
 #include <core/ast/kill_node.h>
 #include <wrap/cin.h>
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten/emscripten.h>
+#else
+#define EMSCRIPTEN_KEEPALIVE
+#endif
+
 struct Flags : utils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
     bool lexer = false;
@@ -361,7 +367,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     return 0;
 }
 
-int main(int argc, char** argv) {
+extern "C" int EMSCRIPTEN_KEEPALIVE src2json_main(int argc, char** argv) {
     utils::wrap::U8Arg _(argc, argv);
     Flags flags;
     return utils::cmdline::templ::parse_or_err<std::string>(
@@ -370,3 +376,9 @@ int main(int argc, char** argv) {
             return Main(flags, ctx);
         });
 }
+
+#ifndef __EMSCRIPTEN__
+int main(int argc, char** argv) {
+    return src2json_main(argc, argv);
+}
+#endif
