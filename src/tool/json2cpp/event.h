@@ -70,6 +70,24 @@ namespace json2cpp {
             return {};
         }
 
+        void add_type_overflow_assert(const std::string& target, const std::shared_ptr<Field>& len_field) {
+            assert(len_field->desc->type == DescType::int_);
+            auto int_desc = static_cast<IntDesc*>(len_field->desc.get());
+            if (auto bit = int_desc->bit_field.lock()) {
+                events.push_back(AssertFalse{
+                    .comment = "check overflow",
+                    .cond = brgen::concat(target, " > ", bit->base_name, ".", len_field->name, "_max"),
+                });
+            }
+            else {
+                config.includes.emplace("<limits>");
+                events.push_back(AssertFalse{
+                    .comment = "check overflow",
+                    .cond = brgen::concat(target, " > ", "(std::numeric_limits<", std::string(get_primitive_type(int_desc->desc.bit_size, int_desc->desc.is_signed)), ">::max)()"),
+                });
+            }
+        }
+
         result<std::string> handle_encoder_int_length_related_std_vector(
             const std::shared_ptr<Field>& len_field, const std::shared_ptr<Field>& vec_field) {
             auto desc = static_cast<VectorDesc*>(vec_field->desc.get());
@@ -82,12 +100,7 @@ namespace json2cpp {
                 .field_name = length,
                 .length = resolved,
             });
-            auto int_desc = static_cast<IntDesc*>(len_field->desc.get());
-            config.includes.emplace("<limits>");
-            events.push_back(AssertFalse{
-                .comment = "check overflow",
-                .cond = brgen::concat(length, " > ", "(std::numeric_limits<", std::string(get_primitive_type(int_desc->desc.bit_size, int_desc->desc.is_signed)), ">::max)()"),
-            });
+            add_type_overflow_assert(length, len_field);
             if (resolved != base) {
                 s.ident_map[len_field->name] = length;
                 resolved = s.to_string(desc->desc.length);
@@ -96,6 +109,7 @@ namespace json2cpp {
                     .cond = brgen::concat(base, " != ", resolved),
                 });
             }
+            auto int_desc = static_cast<IntDesc*>(len_field->desc.get());
             auto type = get_primitive_type(int_desc->desc.bit_size, int_desc->desc.is_signed);
             return brgen::concat(type, "(", length, ")");
         }
@@ -141,12 +155,7 @@ namespace json2cpp {
                 .field_name = tmp,
                 .length = length,
             });
-            auto int_desc = static_cast<IntDesc*>(len_field->desc.get());
-            config.includes.emplace("<limits>");
-            events.push_back(AssertFalse{
-                .comment = "check overflow",
-                .cond = brgen::concat(tmp, " > ", "(std::numeric_limits<", std::string(get_primitive_type(int_desc->desc.bit_size, int_desc->desc.is_signed)), ">::max)()"),
-            });
+            add_type_overflow_assert(tmp, len_field);
             if (length != base) {
                 length = s.to_string(check_length);
                 events.push_back(AssertFalse{
@@ -154,8 +163,9 @@ namespace json2cpp {
                     .cond = brgen::concat(base, " != ", length),
                 });
             }
-            auto type = get_primitive_type(int_desc->desc.bit_size, int_desc->desc.is_signed);
             if (config.asymmetric) {
+                auto int_desc = static_cast<IntDesc*>(len_field->desc.get());
+                auto type = get_primitive_type(int_desc->desc.bit_size, int_desc->desc.is_signed);
                 return brgen::concat(type, "(", tmp, ")");
             }
             else {
@@ -230,13 +240,12 @@ namespace json2cpp {
             auto len_desc = static_cast<IntDesc*>(len_field->desc.get());
             tool::Stringer s;
             auto tmp = tmp_len_of(vec->name);
+            std::string replaced = "this->" + len_field->name;
             if (auto bit = len_desc->bit_field.lock()) {
-                s.ident_map[len_field->name] = "this->" + len_field->name + "()";
+                replaced += "()";
             }
-            else {
-                s.ident_map[len_field->name] = "this->" + len_field->name;
-            }
-            auto length = s.to_string(vec_desc->resolved_expr);
+            s.ident_map[len_field->name] = replaced;
+            auto length = s.to_string(vec_desc->desc.length);
             events.push_back(DefineLength{
                 .field_name = tmp,
                 .length = length,
@@ -247,7 +256,7 @@ namespace json2cpp {
                     .cond = brgen::concat(tmp, " > ", vec->name, ".max_size()"),
                 });
             }
-            if (tmp != length) {
+            if (replaced != length) {
                 s.tmp_var_map[0] = tmp;
                 length = s.to_string(vec_desc->resolved_expr);
                 events.push_back(AssertFalse{

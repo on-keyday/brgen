@@ -789,6 +789,7 @@ namespace brgen::ast {
 
             fmt->ident = parse_ident();
             fmt->ident->usage = is_enum ? IdentUsage::define_enum : IdentUsage ::define_format;
+            fmt->ident->base = fmt;
             {
                 auto scope = state.enter_format(fmt);
                 auto typ = state.enter_struct(fmt->struct_type);

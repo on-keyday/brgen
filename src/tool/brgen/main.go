@@ -107,15 +107,11 @@ func (g *Generator) lookupPath(name string) ([]string, error) {
 }
 
 func (g *Generator) loadAst(path string) ([]byte, error) {
-	files, err := g.lookupPath(path)
-	if err != nil {
-		return nil, err
-	}
-	cmd := exec.CommandContext(g.ctx, g.src2json, files...)
+	cmd := exec.CommandContext(g.ctx, g.src2json, path)
 	cmd.Stderr = os.Stderr
 	buf := bytes.NewBuffer(nil)
 	cmd.Stdout = buf
-	err = cmd.Run()
+	err := cmd.Run()
 	if err != nil {
 		return nil, err
 	}
@@ -162,18 +158,32 @@ func (g *Generator) passAst(buffer []byte) ([]byte, error) {
 }
 
 func (g *Generator) generate(path string) {
-	defer log.Printf("done: %s\n", path)
-	buf, err := g.loadAst(path)
+	files, err := g.lookupPath(path)
 	if err != nil {
-		log.Printf("loadAst: %s: %s\n", path, err)
+		log.Printf("lookupPath: %s: %s\n", path, err)
 		return
 	}
-	buf, err = g.passAst(buf)
-	if err != nil {
-		log.Printf("passAst: %s: %s\n", path, err)
-		return
+	var wg sync.WaitGroup
+	for _, file := range files {
+		wg.Add(1)
+		go func(file string) {
+			defer wg.Done()
+			log.Printf("start: %s\n", file)
+			defer log.Printf("done: %s\n", file)
+			buf, err := g.loadAst(file)
+			if err != nil {
+				log.Printf("loadAst: %s: %s\n", file, err)
+				return
+			}
+			buf, err = g.passAst(buf)
+			if err != nil {
+				log.Printf("passAst: %s: %s\n", file, err)
+				return
+			}
+			fmt.Printf("%s\n", buf)
+		}(file)
 	}
-	fmt.Printf("%s\n", buf)
+	wg.Wait()
 }
 
 func (g *Generator) Generate(path string) {
@@ -192,12 +202,52 @@ var src2json = flag.String("src2json", "", "path to src2json")
 var json2code = flag.String("G", "", "alias of json2code")
 var suffix = flag.String("suffix", ".bgn", "suffix of file to generate from")
 
+type Config struct {
+	Source2Json *string `json:"src2json"`
+	Json2Code   *string `json:"json2code"`
+	Suffix      *string `json:"suffix"`
+}
+
+func loadConfig() (*Config, error) {
+	fp, err := os.Open("brgen.json")
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil // ignore error
+		}
+		return nil, err
+	}
+	defer fp.Close()
+	var c Config
+	err = json.NewDecoder(fp).Decode(&c)
+	if err != nil {
+		return nil, err
+	}
+	return &c, nil
+}
+
 func init() {
 	flag.StringVar(json2code, "json2code", "", "path to json2code")
+	config, err := loadConfig()
+	defer flag.Parse()
+	if err != nil {
+		log.Print(err)
+		return
+	}
+	if config == nil {
+		return
+	}
+	if config.Source2Json != nil {
+		*src2json = *config.Source2Json
+	}
+	if config.Json2Code != nil {
+		*json2code = *config.Json2Code
+	}
+	if config.Suffix != nil {
+		*suffix = *config.Suffix
+	}
 }
 
 func main() {
-	flag.Parse()
 	args := flag.Args()
 	if len(args) == 0 {
 		flag.Usage()

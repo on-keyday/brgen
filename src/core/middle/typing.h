@@ -397,6 +397,18 @@ namespace brgen::middle {
             return std::nullopt;
         }
 
+        std::shared_ptr<ast::StructType> lookup_struct(const std::shared_ptr<ast::Type>& typ) {
+            if (auto ident = ast::as<ast::IdentType>(typ)) {
+                if (auto fmt = ident->base.lock()) {
+                    return fmt->struct_type;
+                }
+            }
+            else if (ast::as<ast::StructType>(typ)) {
+                return ast::cast_to<ast::StructType>(typ);
+            }
+            return nullptr;
+        }
+
         void typing_expr(const std::shared_ptr<ast::Expr>& expr, bool on_define = false) {
             // treat cast as a special case
             // Cast has already been typed in the previous pass
@@ -522,13 +534,13 @@ namespace brgen::middle {
                     warn_not_typed(selector);
                     return;
                 }
-                auto type = ast::as<ast::StructType>(selector->target->expr_type);
+                auto type = lookup_struct(selector->target->expr_type);
                 if (!type) {
                     error(selector->target->loc, "expect struct type but not").report();
                 }
                 auto stmt = type->lookup(selector->member);
                 if (!stmt) {
-                    error(selector->loc, "member ", selector->member, " is not defined").report();
+                    error(selector->member_loc, "member ", selector->member, " is not defined").report();
                 }
                 if (auto field = ast::as<ast::Field>(stmt)) {
                     selector->expr_type = field->field_type;
@@ -537,7 +549,7 @@ namespace brgen::middle {
                     selector->expr_type = fn->func_type;
                 }
                 else {
-                    error(selector->loc, "member ", selector->member, " is not a field or function").report();
+                    error(selector->member_loc, "member ", selector->member, " is not a field or function").report();
                 }
             }
             else if (auto idx = ast::as<ast::Index>(expr)) {
@@ -579,12 +591,6 @@ namespace brgen::middle {
                     typing_expr(ast::cast_to<ast::Expr>(ty));
                     return;
                 }
-                if (auto t = ast::as<ast::IdentType>(ty)) {
-                    auto found = find_matching_fmt(t->ident.get());
-                    if (found) {
-                        t->base = *found;
-                    }
-                }
                 if (auto p = ast::as<ast::Program>(ty)) {
                     auto tmp = current_global;
                     current_global = p->global_scope;
@@ -595,6 +601,12 @@ namespace brgen::middle {
                     return;
                 }
                 do_traverse();
+                if (auto t = ast::as<ast::IdentType>(ty)) {
+                    auto found = find_matching_fmt(t->ident.get());
+                    if (found) {
+                        t->base = *found;
+                    }
+                }
             };
             recursive_typing(recursive_typing, ty);
         }
