@@ -9,6 +9,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tool")
 add_executable(src2json "tool/src2json.cpp")
 target_link_libraries(src2json utils)
 
+
 if("$ENV{BUILD_MODE}" STREQUAL "wasm-em")
 return()
 endif()
@@ -50,3 +51,11 @@ endif()
 
 
 add_subdirectory(test)
+
+install(TARGETS src2json json2cpp DESTINATION tool OPTIONAL)
+
+install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/brgen${SUFFIX}" DESTINATION tool OPTIONAL)
+install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/json2go${SUFFIX}" DESTINATION tool OPTIONAL)
+install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/gen_ast2go${SUFFIX}" DESTINATION tool OPTIONAL)
+install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/gen_ast2ts${SUFFIX}" DESTINATION tool OPTIONAL)
+install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/gen_ast2rust${SUFFIX}" DESTINATION tool OPTIONAL)
