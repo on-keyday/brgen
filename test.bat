@@ -3,4 +3,4 @@ setlocal
 set BASE_PATH=%CD%
 set CTEST_OUTPUT_ON_FAILURE=1
 call build.bat
-ninja -C build test
+ninja -C built test
