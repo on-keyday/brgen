@@ -14,6 +14,7 @@ services:
       - ./script:/workspace/script:cached
       - ./example:/workspace/example:cached
       - ./go.mod:/workspace/go.mod:cached
+      - ./go.sum:/workspace/go.sum:cached
       - ./ast2go:/workspace/ast2go:cached
     cap_add:
       - SYS_PTRACE

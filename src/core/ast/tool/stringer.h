@@ -4,6 +4,7 @@
 #include "../ast.h"
 #include "../traverse.h"
 #include <functional>
+#include <unordered_map>
 
 namespace brgen::ast::tool {
 
