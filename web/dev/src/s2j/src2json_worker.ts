@@ -37,9 +37,24 @@ const msgQueue: JobRequest[] = [];
             return emscripten_main(arg);
         };
 
+        const requireSourceCode = (msg :RequestMessage,jobID :number, code :string|undefined): code is string => {
+            if(code===undefined){
+                const res: JobResult = {
+                    msg: msg,
+                    jobID: jobID,
+                    err: new Error("sourceCode is undefined"),
+                    code: -1,
+                }
+                postMessage(res);
+                return false;
+            }
+            return true;
+        };
+
         const handleMessage = (data: JobRequest) => {
             const e = data ;
-            if (e.msg === RequestMessage.MSG_SOURCE_CODE) {
+            if (e.msg === RequestMessage.MSG_REQUIRE_AST) {
+                if(!requireSourceCode(e.msg,e.jobID,e.sourceCode)) return;
                 const id = e.jobID;
                 textCapture.stdout = "";
                 textCapture.stderr = "";
@@ -52,12 +67,45 @@ const msgQueue: JobRequest[] = [];
                     "--print-on-error",
                 ]);
                 const result: JobResult = {
+                    msg :e.msg,
                     stdout: textCapture.stdout,
                     stderr: textCapture.stderr,
                     code,
                     jobID: id,
                 };
                 postMessage(result);
+            }
+            else if(e.msg===RequestMessage.MSG_REQUIRE_TOKENS) {
+                if(!requireSourceCode(e.msg,e.jobID,e.sourceCode)) return;
+                const id = e.jobID;
+                textCapture.stdout = "";
+                textCapture.stderr = "";
+                const code = callSrc2JSON([
+                    "src2json",
+                    "--argv",
+                    e.sourceCode,
+                    "--no-color",
+                    "--print-tokens",
+                    "--print-on-error",
+                    "--lexer",
+                ]);
+                const result: JobResult = {
+                    msg: e.msg,
+                    stdout: textCapture.stdout,
+                    stderr: textCapture.stderr,
+                    code,
+                    jobID: id,
+                };
+                postMessage(result);
+            }
+            else{
+                const errRes :JobResult = {
+                    msg:e.msg,
+                    jobID :e.jobID,
+                    err :new Error("unknown message type"),
+                    code :-1
+                };
+                postMessage(errRes);
             }
         };
         const handlingWithTimer = (job :JobRequest) => {

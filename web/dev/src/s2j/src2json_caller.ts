@@ -22,12 +22,12 @@ work.onerror = (e) => {
     console.error(e);
 }
 
-export const runSrc2JSON = (sourceCode :string) => {
+export const getAST = (sourceCode :string) => {
     return new Promise<JobResult>((resolve,reject) => {
         const id = jobID;
         jobID++;
         const req :JobRequest = {
-            msg :RequestMessage.MSG_SOURCE_CODE,
+            msg :RequestMessage.MSG_REQUIRE_AST,
             jobID :id,
             sourceCode
         };
@@ -35,3 +35,18 @@ export const runSrc2JSON = (sourceCode :string) => {
         work.postMessage(req);
     });
 }
+
+export const getTokens = (sourceCode :string) => {
+    return new Promise<JobResult>((resolve,reject) => {
+        const id = jobID;
+        jobID++;
+        const req :JobRequest = {
+            msg :RequestMessage.MSG_REQUIRE_TOKENS,
+            jobID :id,
+            sourceCode
+        };
+        resolverMap.set(id,{resolve,reject});
+        work.postMessage(req);
+    });
+}
+

@@ -5,7 +5,9 @@
         "sourceMap": true,
         "outDir": "./out",
         "rootDir": "./src",
-        "allowJs": true,       
+        "allowJs": true,    
+        "strict": true,   
+        "lib": ["ES2022","DOM"]
     },
     "include": ["**/*.ts"],
 }
