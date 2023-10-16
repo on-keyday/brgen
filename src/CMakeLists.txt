@@ -11,8 +11,8 @@ target_link_libraries(src2json utils)
 
 
 if("$ENV{BUILD_MODE}" STREQUAL "wasm-em")
-install(TARGETS src2json DESTINATION lib OPTIONAL)
-install(FILES "${CMAKE_BINARY_DIR}/tool/src2json.wasm" DESTINATION lib OPTIONAL)
+install(TARGETS src2json DESTINATION "dev/src/lib" OPTIONAL)
+install(FILES "${CMAKE_BINARY_DIR}/tool/src2json.wasm" DESTINATION "script/lib" OPTIONAL)
 return()
 endif()
 

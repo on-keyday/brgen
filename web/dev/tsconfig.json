@@ -3,9 +3,11 @@
         "target": "es2022",
         "module": "ES2022",
         "sourceMap": true,
-        "outDir": "../lib",
+        "outDir": "../script",
         "rootDir": "./src",
         "allowJs": true,
+        
     },
     "include": ["**/*.ts"],
+
 }

@@ -1,5 +1,5 @@
 
-const work = new Worker("./lib/invoke_src2json.js");
+const work = new Worker("./script/invoke_src2json.js",{type:"module"});
 
 let jobID = 0;
 
