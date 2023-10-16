@@ -1,4 +1,4 @@
-
+import {RequestMessage,JobRequest,JobResult }  from "./msg.js";
 const work = new Worker("./script/invoke_src2json.js",{type:"module"});
 
 let jobID = 0;
@@ -18,12 +18,16 @@ work.onmessage = (e) => {
     }
 };
 
+work.onerror = (e) => {
+    console.error(e);
+}
+
 export const runSrc2JSON = (sourceCode :string) => {
     return new Promise<JobResult>((resolve,reject) => {
         const id = jobID;
         jobID++;
         const req :JobRequest = {
-            msg :ReqestMessage.MSG_SOURCE_CODE,
+            msg :RequestMessage.MSG_SOURCE_CODE,
             jobID :id,
             sourceCode
         };

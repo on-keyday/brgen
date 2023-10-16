@@ -1,17 +1,12 @@
 
-interface MyEmscriptenModule extends EmscriptenModule {
-    ccall :typeof ccall
-    cwrap :typeof cwrap
-}
-
-declare enum ReqestMessage {
+enum RequestMessage {
     MSG_SOURCE_CODE = "MSG_SOURCE_CODE",
     MSG_RUN = "MSG_RUN"
 }
 
 interface JobRequest {
-    msg :ReqestMessage
-    jobID :number
+    msg :RequestMessage
+    readonly jobID :number
     sourceCode? :string
 }
 
@@ -21,3 +16,5 @@ interface JobResult {
     code :number
     jobID :number
 }
+
+export {RequestMessage,JobRequest,JobResult};

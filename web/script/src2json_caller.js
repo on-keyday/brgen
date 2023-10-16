@@ -1,3 +1,4 @@
+import { RequestMessage } from "./msg.js";
 const work = new Worker("./script/invoke_src2json.js", { type: "module" });
 let jobID = 0;
 var resolverMap = new Map();
@@ -14,12 +15,15 @@ work.onmessage = (e) => {
         resolverMap.delete(msg.jobID);
     }
 };
+work.onerror = (e) => {
+    console.error(e);
+};
 export const runSrc2JSON = (sourceCode) => {
     return new Promise((resolve, reject) => {
         const id = jobID;
         jobID++;
         const req = {
-            msg: ReqestMessage.MSG_SOURCE_CODE,
+            msg: RequestMessage.MSG_SOURCE_CODE,
             jobID: id,
             sourceCode
         };
