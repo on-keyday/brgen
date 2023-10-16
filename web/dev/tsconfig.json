@@ -3,8 +3,9 @@
         "target": "es2022",
         "module": "ES2022",
         "sourceMap": true,
-        "outDir": "../app",
-        "rootDir": ".",
+        "outDir": "../lib",
+        "rootDir": "./src",
+        "allowJs": true,
     },
     "include": ["**/*.ts"],
 }

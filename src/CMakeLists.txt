@@ -42,13 +42,15 @@ if(WIN32)
     TARGET src2json POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy "${UTILS_LIB_DIR}/libutils.pdb" "${CMAKE_BINARY_DIR}/tool/libutils.pdb"
     )
-
+    install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/libutils.dll" DESTINATION tool OPTIONAL)
+    install(FILES "${CMAKE_BINARY_DIR}/tool/libutils.pdb" DESTINATION tool OPTIONAL)
 else()
 
     add_custom_command(
     TARGET src2json POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy "${UTILS_LIB_DIR}/libutils.so" "${CMAKE_BINARY_DIR}/tool/libutils.so"
     )
+    install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/libutils.so" DESTINATION tool OPTIONAL)
 endif()
 
 
