@@ -18,6 +18,8 @@
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
+#include <fnet/util/urlencode.h>
+#include <view/slice.h>
 #else
 #define EMSCRIPTEN_KEEPALIVE
 #endif
@@ -45,7 +47,10 @@ struct Flags : utils::cmdline::templ::HelpOption {
     bool no_color = false;
 
     bool stdin_mode = false;
-    std::string stdin_name = "<stdin>";
+    std::string as_file_name = "<stdin>";
+
+    std::string argv_input;
+    bool argv_mode;
 
     void bind(utils::cmdline::option::Context& ctx) {
         bind_help(ctx);
@@ -75,7 +80,8 @@ struct Flags : utils::cmdline::templ::HelpOption {
         ctx.VarBool(&no_color, "no-color", "disable color output");
 
         ctx.VarBool(&stdin_mode, "stdin", "read input from stdin (must not be tty)");
-        ctx.VarString(&stdin_name, "stdin-name", "set name of stdin (as a filename)", "<name>");
+        ctx.VarString(&as_file_name, "stdin-name", "set name of stdin/argv (as a filename)", "<name>");
+        ctx.VarString(&argv_input, "argv", "treat cmdline arg as input (this is not designed for human. this is used from other process or emscripten call)", "<source code>");
     }
 };
 auto& cout = utils::wrap::cout_wrap();
@@ -174,12 +180,18 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     cerr.set_virtual_terminal(true);  // ignore error
     cout.set_virtual_terminal(true);  // ignore error
     no_color = flags.no_color;
+    flags.argv_mode = flags.argv_input.size() > 0;
 
     if (flags.dump_types) {
         return node_list(flags.dump_ptr_as_uintptr, flags.flat, flags.not_dump_base, flags.dump_enum_name, flags.lexer, flags.dump_error);
     }
 
-    if (!flags.stdin_mode && flags.args.size() == 0) {
+    if (flags.stdin_mode && flags.argv_mode) {
+        print_error("cannot use --stdin and --argv at the same time");
+        return -1;
+    }
+
+    if (!flags.stdin_mode && !flags.argv_mode && flags.args.size() == 0) {
         print_error("no input file");
         return -1;
     }
@@ -190,16 +202,16 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     }
 
     if (flags.check_ast) {
-        if (flags.stdin_mode) {
-            print_error("stdin mode is not supported with --check-ast");
+        if (flags.stdin_mode || flags.argv_mode) {
+            print_error("stdin mode or argv mode is not supported with --check-ast");
             return -1;
         }
         return check_ast(flags.args[0]);
     }
 
     std::string name;
-    if (flags.stdin_mode) {
-        name = flags.stdin_name;
+    if (flags.stdin_mode || flags.argv_mode) {
+        name = flags.as_file_name;
     }
     else {
         name = flags.args[0];
@@ -207,7 +219,19 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
 
     brgen::FileSet files;
     brgen::File* input = nullptr;
-    if (flags.stdin_mode) {
+    if (flags.argv_mode) {
+        auto ok = files.add_special(name, flags.argv_input);
+        if (!ok) {
+            print_error("cannot input ", name, " code=", ok.error());
+            return -1;
+        }
+        input = files.get_input(*ok);
+        if (!input) {
+            print_error("cannot input ", name);
+            return -1;
+        }
+    }
+    else if (flags.stdin_mode) {
         auto& cin = utils::wrap::cin_wrap();
         if (cin.is_tty()) {
             print_error("not support repl mode");
@@ -367,7 +391,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     return 0;
 }
 
-extern "C" int EMSCRIPTEN_KEEPALIVE src2json_main(int argc, char** argv) {
+int src2json_main(int argc, char** argv) {
     utils::wrap::U8Arg _(argc, argv);
     Flags flags;
     return utils::cmdline::templ::parse_or_err<std::string>(
@@ -377,7 +401,23 @@ extern "C" int EMSCRIPTEN_KEEPALIVE src2json_main(int argc, char** argv) {
         });
 }
 
-#ifndef __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
+extern "C" int EMSCRIPTEN_KEEPALIVE emscripten_main(const char* cmdline) {
+    auto args = utils::view::make_cpy_splitview(cmdline, " ");
+    utils::wrap::ArgvVector vec;
+    for (size_t i = 0; i < args.size(); ++i) {
+        std::string out;
+        if (!utils::urlenc::decode(args[i], out)) {
+            return 2;
+        }
+        vec.push_back(std::move(out));
+    }
+    int argc;
+    char** argv;
+    vec.arg(argc, argv);
+    return src2json_main(argc, argv);
+}
+#else
 int main(int argc, char** argv) {
     return src2json_main(argc, argv);
 }

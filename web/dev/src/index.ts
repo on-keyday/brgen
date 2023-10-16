@@ -28,4 +28,3 @@ let mod = await Module({
 })
 
 
-mod.arguments = [""]

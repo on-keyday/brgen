@@ -15,7 +15,7 @@ set(UTILS_LIB_DIR "$ENV{UTILS_DIR}/built/shared/${CMAKE_BUILD_TYPE}/lib")
 elseif("$ENV{BUILD_MODE}" STREQUAL "wasm-em")
 link_directories("$ENV{UTILS_DIR}/built/wasm-em/${CMAKE_BUILD_TYPE}/lib")
 set(UTILS_LIB_DIR "$ENV{UTILS_DIR}/built/wasm-em/${CMAKE_BUILD_TYPE}/lib")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions -sINVOKE_RUN=0 -sMODULARIZE=1 -sEXPORT_ES6=1")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions -sINVOKE_RUN=0 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXIT_RUNTIME=0 -sEXPORTED_RUNTIME_METHODS=[ccall,cwrap]")
 endif()
 
 if("$ENV{BUILD_MODE}" STREQUAL "native")
