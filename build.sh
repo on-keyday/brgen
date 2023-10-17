@@ -11,10 +11,16 @@ fi
 
 BUILD_TYPE=Debug
 
+export UTILS_DIR=$(pwd)/utils
+export BUILD_MODE=$BUILD_MODE
+
 if [ $BUILD_MODE = "wasm-em" ];then
-   UTILS_DIR=$(pwd)/utils emcmake cmake -G Ninja -D CMAKE_BUILD_TYPE=$BUILD_TYPE -S . -B ./built/$BUILD_MODE/$BUILD_TYPE
+   emcmake cmake -G Ninja -D CMAKE_BUILD_TYPE=$BUILD_TYPE -S . -B ./built/$BUILD_MODE/$BUILD_TYPE
 else
-   UTILS_DIR=$(pwd)/utils cmake  -D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang -G Ninja -D CMAKE_BUILD_TYPE=$BUILD_TYPE -S . -B ./built/$BUILD_MODE/$BUILD_TYPE
+   cmake  -D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang -G Ninja -D CMAKE_BUILD_TYPE=$BUILD_TYPE -S . -B ./built/$BUILD_MODE/$BUILD_TYPE
 fi
 ninja -C ./built/$BUILD_MODE/$BUILD_TYPE
 ninja -C ./built/$BUILD_MODE/$BUILD_TYPE install
+
+unset UTILS_DIR
+unset BUILD_MODE

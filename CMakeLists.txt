@@ -35,7 +35,7 @@ endif()
 
 include_directories("$ENV{UTILS_DIR}/src/include")
 include_directories("./src")
-include_directories("./build/_deps/googletest-src/googletest/include")
+include_directories("./built/$ENV{BUILD_MODE}/${CMAKE_BUILD_TYPE}/_deps/googletest-src/googletest/include")
 
 
 
