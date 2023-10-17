@@ -5,7 +5,7 @@ go mod download
 fi
 BUILD_MODE=$1
 
-if [ ! BUILD_MODE ]; then
+if [ ! $BUILD_MODE ]; then
     BUILD_MODE=native
 fi
 
