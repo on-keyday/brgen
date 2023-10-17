@@ -11,7 +11,7 @@ jobs:
         with:
           # e.g.: ${{ secrets.MY_PAT }}
           # Default: ${{ github.token }}
-          github-token: ""
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
         uses: actions/checkout@v3
       - name: Set up Ninja
@@ -26,4 +26,4 @@ jobs:
           . build.sh
       - name: Test
         run: |
-          CTEST_OUTPUT_ON_FAILURE=1 BASE_PATH=${{ github.workspace }} ninja -C build test
+          CTEST_OUTPUT_ON_FAILURE=1 BASE_PATH=${{ github.workspace }} ninja -C built/native/Debug test
