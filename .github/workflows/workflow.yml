@@ -6,6 +6,12 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
+      - name: Timeline
+        uses: Kesin11/actions-timeline@v1
+        with:
+          # e.g.: ${{ secrets.MY_PAT }}
+          # Default: ${{ github.token }}
+          github-token: ""
       - name: Checkout repository
         uses: actions/checkout@v3
       - name: Set up Ninja

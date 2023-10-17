@@ -92,26 +92,26 @@ namespace json2cpp {
             const std::shared_ptr<Field>& len_field, const std::shared_ptr<Field>& vec_field) {
             auto desc = static_cast<VectorDesc*>(vec_field->desc.get());
             tool::Stringer s;
-            auto length = tmp_len_of(vec_field->name);
-            auto base = vec_field->name + ".size()";
-            s.tmp_var_map[0] = base;
-            auto resolved = s.to_string(desc->resolved_expr);
+            auto tmp_var = tmp_len_of(vec_field->name);
+            auto length = vec_field->name + ".size()";
+            s.tmp_var_map[0] = length;
+            auto value_to_be_length_field = s.to_string(desc->resolved_expr);
             events.push_back(DefineLength{
-                .field_name = length,
-                .length = resolved,
+                .field_name = tmp_var,
+                .length = value_to_be_length_field,
             });
-            add_type_overflow_assert(length, len_field);
-            if (resolved != base) {
-                s.ident_map[len_field->name] = length;
-                resolved = s.to_string(desc->desc.length);
+            add_type_overflow_assert(tmp_var, len_field);
+            if (length != value_to_be_length_field) {
+                s.ident_map[len_field->name] = tmp_var;
+                value_to_be_length_field = s.to_string(desc->desc.length);
                 events.push_back(AssertFalse{
                     .comment = "check truncated",
-                    .cond = brgen::concat(base, " != ", resolved),
+                    .cond = brgen::concat(length, " != ", value_to_be_length_field),
                 });
             }
             auto int_desc = static_cast<IntDesc*>(len_field->desc.get());
             auto type = get_primitive_type(int_desc->desc.bit_size, int_desc->desc.is_signed);
-            return brgen::concat(type, "(", length, ")");
+            return brgen::concat(type, "(", tmp_var, ")");
         }
 
         result<std::string> handle_encoder_int_length_related_pointer(const std::shared_ptr<Field>& len_field, const std::shared_ptr<Field>& vec_field) {

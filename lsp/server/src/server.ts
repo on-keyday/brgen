@@ -36,7 +36,7 @@ import assert from 'node:assert/strict';
 
 const CWD=process.cwd();
 //TODO(on-keyday): replace path to src2json
-const PATH_TO_SRC2JSON =`C:/workspace/shbrgen/brgen/build/tool/src2json${(process.platform === "win32" ? ".exe" : "")}`
+const PATH_TO_SRC2JSON =`C:/workspace/shbrgen/brgen/tool/src2json${(process.platform === "win32" ? ".exe" : "")}`
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
