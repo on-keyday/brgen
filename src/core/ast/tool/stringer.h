@@ -31,6 +31,7 @@ namespace brgen::ast::tool {
             if (auto e = ast::as<ast::Binary>(expr)) {
                 auto left = to_string(e->left);
                 auto right = to_string(e->right);
+                return handle_bin_op(e->op, left, right);
             }
             if (auto lit = ast::as<ast::IntLiteral>(expr)) {
                 return lit->value;
