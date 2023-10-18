@@ -105,9 +105,9 @@ connection.onInitialized(() => {
     }
 });
 
-function execSrc2JSON<T>(uri :string,command :Array<string>,text :string,isT: (x :any) => x is T) {
+function execSrc2JSON<T>(exe_path :string,command :Array<string>,text :string,isT: (x :any) => x is T) {
     return new Promise<T>((resolve,reject)=>{
-        const ch = execFile(PATH_TO_SRC2JSON,command ,(err,stdout,stderr)=>{
+        const ch = execFile(exe_path,command ,(err,stdout,stderr)=>{
             if(err){
                 reject(err);
                 return;
@@ -149,10 +149,13 @@ const tokenizeSourceImpl  = async (doc :TextDocument) =>{
     const text = doc.getText();
     console.log(`URI: ${doc.uri}`);
     console.time("semanticColoring")
+    console.time("load settings")
+    const settings = await getDocumentSettings(doc.uri);
+    console.timeEnd("load settings")
     console.time("tokenize")
     let tokens_ :ast2ts.TokenFile;
     try {
-        tokens_ =  await execSrc2JSON(doc.uri,lexerCommand(path),text,ast2ts.isTokenFile);
+        tokens_ =  await execSrc2JSON(settings.src2json,lexerCommand(path),text,ast2ts.isTokenFile);
     } catch(e :any) {
         console.timeEnd("tokenize")
         console.timeEnd("semanticColoring")
@@ -247,7 +250,7 @@ const tokenizeSourceImpl  = async (doc :TextDocument) =>{
     let ast_ :ast2ts.AstFile;
     try {
         console.time("parse")
-        ast_ = await execSrc2JSON(doc.uri,parserCommand(path),text,ast2ts.isAstFile);
+        ast_ = await execSrc2JSON(settings.src2json,parserCommand(path),text,ast2ts.isAstFile);
     } catch(e :any) {
         console.timeEnd("parse")
         console.log(`error: ${e}`);
@@ -312,6 +315,7 @@ connection.onRequest("textDocument/semanticTokens/full",async (params)=>{
         console.log(`document ${params?.textDocument?.uri} is not found`);
         return null; 
     }
+    getDocumentSettings(doc.uri);
     return await tokenizeSource(doc);
 });
 
@@ -335,7 +339,7 @@ connection.onDidChangeConfiguration(change => {
         documentSettings.clear();
     } else {
         globalSettings = <BrgenLSPSettings>(
-            (change.settings.languageServerExample || defaultSettings)
+            (change.settings.brgenLsp || defaultSettings)
         );
     }
 
@@ -351,7 +355,7 @@ const  getDocumentSettings = async(resource: string) => {
     if (result===undefined) {
         result = connection.workspace.getConfiguration({
             scopeUri: resource,
-            section: 'brgen-lsp'
+            section: 'brgenLsp'
         });
         documentSettings.set(resource, result);
     }
