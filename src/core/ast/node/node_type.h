@@ -371,6 +371,8 @@ namespace brgen::ast {
         "struct_type",
         "union_type",
         "cast",
+        "comment",
+        "comment_group",
     };
 
     constexpr int mapNodeTypeToValue(NodeType type) {
@@ -471,6 +473,10 @@ namespace brgen::ast {
                 return 46;
             case NodeType::cast:
                 return 47;
+            case NodeType::comment:
+                return 48;
+            case NodeType::comment_group:
+                return 49;
             default:
                 return -1;
         }
@@ -574,6 +580,10 @@ namespace brgen::ast {
                 return NodeType::union_type;
             case 47:
                 return NodeType::cast;
+            case 48:
+                return NodeType::comment;
+            case 49:
+                return NodeType::comment_group;
             default:
                 return either::unexpected{"invalid value"};
         }

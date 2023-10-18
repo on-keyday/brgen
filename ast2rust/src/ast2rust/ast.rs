@@ -91,6 +91,8 @@ pub enum NodeType {
 	StructType,
 	UnionType,
 	Cast,
+	Comment,
+	CommentGroup,
 }
 
 impl TryFrom<&str> for NodeType {
@@ -146,6 +148,8 @@ impl TryFrom<&str> for NodeType {
 			"struct_type" =>Ok(Self::StructType),
 			"union_type" =>Ok(Self::UnionType),
 			"cast" =>Ok(Self::Cast),
+			"comment" =>Ok(Self::Comment),
+			"comment_group" =>Ok(Self::CommentGroup),
 			_=> Err(()),
 		}
 	}
@@ -197,6 +201,8 @@ impl From<&Node> for NodeType {
 			Node::StructType(_) => Self::StructType,
 			Node::UnionType(_) => Self::UnionType,
 			Node::Cast(_) => Self::Cast,
+			Node::Comment(_) => Self::Comment,
+			Node::CommentGroup(_) => Self::CommentGroup,
 		}
 	}
 }
@@ -252,6 +258,8 @@ pub enum Node {
 	StructType(Rc<RefCell<StructType>>),
 	UnionType(Rc<RefCell<UnionType>>),
 	Cast(Rc<RefCell<Cast>>),
+	Comment(Rc<RefCell<Comment>>),
+	CommentGroup(Rc<RefCell<CommentGroup>>),
 }
 
 #[derive(Debug,Clone)]
@@ -970,7 +978,7 @@ impl From<&Rc<RefCell<Index>>> for Node {
 pub struct Match {
 	pub expr_type: Option<Type>,
 	pub cond: Option<Expr>,
-	pub branch: Vec<Rc<RefCell<MatchBranch>>>,
+	pub branch: Vec<Node>,
 	pub scope: Option<Rc<RefCell<Scope>>>,
 	pub loc: Loc,
 }
@@ -2403,6 +2411,50 @@ impl From<&Rc<RefCell<Cast>>> for Node {
 	}
 }
 
+#[derive(Debug,Clone)]
+pub struct Comment {
+	pub comment: String,
+	pub loc: Loc,
+}
+
+impl TryFrom<&Node> for Rc<RefCell<Comment>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::Comment(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<Comment>>> for Node {
+	fn from(node:&Rc<RefCell<Comment>>)-> Self{
+		Node::Comment(node.clone())
+	}
+}
+
+#[derive(Debug,Clone)]
+pub struct CommentGroup {
+	pub comments: Vec<Rc<RefCell<Comment>>>,
+	pub loc: Loc,
+}
+
+impl TryFrom<&Node> for Rc<RefCell<CommentGroup>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::CommentGroup(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<CommentGroup>>> for Node {
+	fn from(node:&Rc<RefCell<CommentGroup>>)-> Self{
+		Node::CommentGroup(node.clone())
+	}
+}
+
 #[derive(Debug,Clone,Copy,Serialize,Deserialize)]
 #[serde(rename_all = "snake_case",untagged)]
 pub enum UnaryOp {
@@ -2996,6 +3048,18 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				expr_type: None,
 				base: None,
 				expr: None,
+				loc: raw_node.loc.clone(),
+				})))
+			},
+			NodeType::Comment => {
+				Node::Comment(Rc::new(RefCell::new(Comment {
+				comment: String::new(),
+				loc: raw_node.loc.clone(),
+				})))
+			},
+			NodeType::CommentGroup => {
+				Node::CommentGroup(Rc::new(RefCell::new(CommentGroup {
+				comments: Vec::new(),
 				loc: raw_node.loc.clone(),
 				})))
 			},
@@ -3631,10 +3695,6 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					let branch_body = match nodes.get(link as usize) {
 						Some(v)=>v,
 						None => return Err(Error::IndexOutOfBounds(link as usize)),
-					};
-					let branch_body = match branch_body {
-						Node::MatchBranch(body)=>body,
-						x =>return Err(Error::MismatchNodeType(x.into(),branch_body.into())),
 					};
 					node.borrow_mut().branch.push(branch_body.clone());
 				}
@@ -4827,6 +4887,51 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				};
 				node.borrow_mut().expr = Some(expr_body.try_into()?);
 			},
+			NodeType::Comment => {
+				let node = nodes[i].clone();
+				let node = match node {
+					Node::Comment(node)=>node,
+					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+				};
+				let comment_body = match raw_node.body.get("comment") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(raw_node.node_type,"comment")),
+				};
+				node.borrow_mut().comment = match comment_body.as_str() {
+					Some(v)=>v.to_string(),
+					None=>return Err(Error::MismatchJSONType(comment_body.into(),JSONType::String)),
+				};
+			},
+			NodeType::CommentGroup => {
+				let node = nodes[i].clone();
+				let node = match node {
+					Node::CommentGroup(node)=>node,
+					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+				};
+				let comments_body = match raw_node.body.get("comments") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(raw_node.node_type,"comments")),
+				};
+				let comments_body = match comments_body.as_array(){
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(comments_body.into(),JSONType::Array)),
+				};
+				for link in comments_body {
+					let link = match link.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
+					};
+					let comments_body = match nodes.get(link as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(link as usize)),
+					};
+					let comments_body = match comments_body {
+						Node::Comment(body)=>body,
+						x =>return Err(Error::MismatchNodeType(x.into(),comments_body.into())),
+					};
+					node.borrow_mut().comments.push(comments_body.clone());
+				}
+			},
 			_=>return Err(Error::UnknownNodeType(raw_node.node_type)),
 		};
 	}
@@ -5003,7 +5108,7 @@ pub fn walk_node<F:FnMut(&Node)->bool>(node:&Node,f:&mut F){
 				walk_node(&node.into(),f);
 			}
 			for node in &node.borrow().branch{
-				walk_node(&node.into(),f);
+				walk_node(node,f);
 			}
 		},
 		Node::Range(node)=>{
@@ -5211,6 +5316,13 @@ pub fn walk_node<F:FnMut(&Node)->bool>(node:&Node,f:&mut F){
 				walk_node(&node.into(),f);
 			}
 			if let Some(node) = &node.borrow().expr{
+				walk_node(&node.into(),f);
+			}
+		},
+		Node::Comment(node)=>{
+		},
+		Node::CommentGroup(node)=>{
+			for node in &node.borrow().comments{
 				walk_node(&node.into(),f);
 			}
 		},

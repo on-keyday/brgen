@@ -157,7 +157,7 @@ func (n *Index) isNode() {}
 type Match struct {
 	ExprType Type
 	Cond     Expr
-	Branch   []*MatchBranch
+	Branch   []Node
 	Scope    *Scope
 	Loc      Loc
 }
@@ -507,6 +507,20 @@ type Cast struct {
 func (n *Cast) isExpr() {}
 
 func (n *Cast) isNode() {}
+
+type Comment struct {
+	Comment string
+	Loc     Loc
+}
+
+func (n *Comment) isNode() {}
+
+type CommentGroup struct {
+	Comments []*Comment
+	Loc      Loc
+}
+
+func (n *CommentGroup) isNode() {}
 
 type UnaryOp int
 
@@ -1120,6 +1134,10 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			n.node = append(n.node, &UnionType{Loc: raw.Loc})
 		case "cast":
 			n.node = append(n.node, &Cast{Loc: raw.Loc})
+		case "comment":
+			n.node = append(n.node, &Comment{Loc: raw.Loc})
+		case "comment_group":
+			n.node = append(n.node, &CommentGroup{Loc: raw.Loc})
 		default:
 			return nil, fmt.Errorf("unknown node type: %q", raw.NodeType)
 		}
@@ -1359,9 +1377,9 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.Cond != nil {
 				v.Cond = n.node[*tmp.Cond].(Expr)
 			}
-			v.Branch = make([]*MatchBranch, len(tmp.Branch))
+			v.Branch = make([]Node, len(tmp.Branch))
 			for j, k := range tmp.Branch {
-				v.Branch[j] = n.node[k].(*MatchBranch)
+				v.Branch[j] = n.node[k].(Node)
 			}
 			if tmp.Scope != nil {
 				v.Scope = n.scope[*tmp.Scope]
@@ -1839,6 +1857,27 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.Expr != nil {
 				v.Expr = n.node[*tmp.Expr].(Expr)
 			}
+		case "comment":
+			v := n.node[i].(*Comment)
+			var tmp struct {
+				Comment string `json:"comment"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			v.Comment = tmp.Comment
+		case "comment_group":
+			v := n.node[i].(*CommentGroup)
+			var tmp struct {
+				Comments []uintptr `json:"comments"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			v.Comments = make([]*Comment, len(tmp.Comments))
+			for j, k := range tmp.Comments {
+				v.Comments[j] = n.node[k].(*Comment)
+			}
 		default:
 			return nil, fmt.Errorf("unknown node type: %q", raw.NodeType)
 		}
@@ -2154,6 +2193,11 @@ func Walk(n Node, f func(Node) (cont bool)) {
 		}
 		if v.Expr != nil {
 			Walk(v.Expr, f)
+		}
+	case *Comment:
+	case *CommentGroup:
+		for _, w := range v.Comments {
+			Walk(w, f)
 		}
 	}
 }
