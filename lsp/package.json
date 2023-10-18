@@ -22,13 +22,13 @@
   "contributes": {
     "configuration": {
       "type": "object",
-      "title": "Example configuration",
+      "title": "brgen-lsp",
       "properties": {
-        "brgen-lsp.maxNumberOfProblems": {
+        "brgen-lsp.src2json": {
           "scope": "resource",
-          "type": "number",
-          "default": 100,
-          "description": "Controls the maximum number of problems produced by the server."
+          "type": "string",
+          "default": "",
+          "description": "Path to src2json"
         },
         "brgen-lsp.trace.server": {
           "scope": "window",

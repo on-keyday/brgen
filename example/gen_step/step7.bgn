@@ -1,7 +1,8 @@
 format Step7:
     len :u8
     match len:
-        0 => :u8
-        1 => :u16
-        2 => :u32
-        3 => :u64
+        0 => value :u8
+        1 => value :u16
+        2 => value :u32
+        3 => value :u64
+        _ => error("invalid length")

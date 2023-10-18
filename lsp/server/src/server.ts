@@ -300,6 +300,7 @@ const tokenizeSource = async (doc :TextDocument) =>{
         semanticTokenCache.set(doc.uri,s);
         return s;
     }catch(e :any) {
+        console.log(`error: ${e}`);
         const found = semanticTokenCache.get(doc.uri);
         if(found===undefined){
             return null;
@@ -355,7 +356,7 @@ const  getDocumentSettings = async(resource: string) => {
     if (result===undefined) {
         result = connection.workspace.getConfiguration({
             scopeUri: resource,
-            section: 'brgenLsp'
+            section: 'brgen-lsp'
         });
         documentSettings.set(resource, result);
     }
@@ -374,7 +375,9 @@ documents.onDidClose(e => {
     documentSettings.delete(e.document.uri);
 });
 
-
+connection.onCompletion(async (textDocumentPosition) => {
+    return null;
+});
 
 
 // Make the text document manager listen on the connection
