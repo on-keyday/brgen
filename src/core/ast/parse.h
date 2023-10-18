@@ -9,6 +9,7 @@ namespace brgen::ast {
         std::shared_ptr<Type> input_type;
         std::shared_ptr<Type> output_type;
         std::shared_ptr<Type> config_type;
+        bool collect_comment = false;
 
        private:
         Stream* s = nullptr;
@@ -81,7 +82,15 @@ namespace brgen::ast {
             prog->struct_type = std::make_shared<StructType>(prog->loc);
             auto st = state.enter_struct(prog->struct_type);
             s.skip_line();
+            auto collect_comments = [&] {
+                // get comments and add to scope
+                auto comment = s.get_comments();
+                if (comment) {
+                    prog->elements.push_back(std::move(comment));
+                }
+            };
             while (!s.eos()) {
+                collect_comments();
                 auto expr = parse_statement();
                 prog->elements.push_back(std::move(expr));
                 s.shrink();
@@ -122,6 +131,16 @@ namespace brgen::ast {
                 }
             }
 
+            auto collect_comments = [&] {
+                // get comments and add to scope
+                auto comment = s.get_comments();
+                if (comment) {
+                    scope->elements.push_back(std::move(comment));
+                }
+            };
+
+            collect_comments();
+
             // Parse and add the first element
             scope->elements.push_back(parse_statement());
 
@@ -131,6 +150,7 @@ namespace brgen::ast {
                     break;
                 }
                 s.must_consume_token(lexer::Tag::indent);
+                collect_comments();
                 scope->elements.push_back(parse_statement());
             }
 
@@ -177,6 +197,16 @@ namespace brgen::ast {
             // Create a new context for the current indent level
             auto current_indent = base.token.size();
             auto c = state.new_indent(current_indent, &match->scope);
+
+            auto collect_comments = [&] {
+                // get comments and add to scope
+                auto comment = s.get_comments();
+                if (comment) {
+                    match->branch.push_back(std::move(comment));
+                }
+            };
+
+            collect_comments();
 
             // Parse and add the first element
             match->branch.push_back(parse_match_branch());

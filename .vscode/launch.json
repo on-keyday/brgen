@@ -10,14 +10,8 @@
             "request": "launch",
             "mode": "debug",
             "program": "${workspaceRoot}/src/tool/brgen",
-            "args": [
-                "-src2json",
-                "${workspaceRoot}/build/tool/src2json.exe",
-                "-json2code",
-                "${workspaceRoot}/build/tool/json2go.exe",
-                "${workspaceRoot}/example/quic_packet.bgn",
-            
-            ],
+            "args": [],
+            "cwd": "${workspaceRoot}",
         },
         {
             "name": "Debug src2json",

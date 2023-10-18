@@ -144,6 +144,14 @@ namespace json2cpp {
                 else if (auto bits = std::get_if<ApplyBits>(&event)) {
                     method_with_error(num_method, io_object, bits->base_name, ".as_value()");
                 }
+                else if (auto bits = std::get_if<DefineBits>(&event)) {
+                    code.writeln("auto ", bits->var_name, " = ", bits->from, ";");
+                }
+                else if (auto set_bit = std::get_if<SetBits>(&event)) {
+                    code.writeln("if(!", set_bit->base_field, ".set<", set_bit->bit_field_index, ">(", set_bit->value, ")) {");
+                    code.indent_writeln("return false;");
+                    code.writeln("}");
+                }
                 else {
                     return error({}, "unknown event");
                 }

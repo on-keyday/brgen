@@ -38,6 +38,20 @@ namespace brgen::ast::tool {
         return std::nullopt;
     }
 
+    struct IntUnionTypeDesc {
+    };
+
+    inline std::optional<IntUnionTypeDesc> is_int_union_type(auto&& typ) {
+        if (ast::UnionType* e = ast::as<ast::UnionType>(typ)) {
+            for (auto& s : e->fields) {
+                if (s->fields.size() != 1) {
+                    return std::nullopt;
+                }
+            }
+        }
+        return std::nullopt;
+    }
+
     inline std::shared_ptr<Format> belong_format(auto&& typ) {
         if (Field* f = ast::as<Field>(typ)) {
             return f->belong.lock();

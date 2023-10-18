@@ -23,6 +23,8 @@ namespace brgen::ast {
     }
         SWITCH
         CASE(Program)
+        CASE(Comment)
+        CASE(CommentGroup)
         // literal
         CASE(Literal)
         CASE(IntLiteral)

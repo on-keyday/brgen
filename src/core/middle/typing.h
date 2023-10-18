@@ -242,7 +242,12 @@ namespace brgen::middle {
                 typing_expr(m->cond);
             }
             std::shared_ptr<ast::Type> candidate;
-            for (auto& c : m->branch) {
+            for (auto& bc : m->branch) {
+                auto c = ast::as<ast::MatchBranch>(bc);
+                if (!c) {
+                    // maybe comments
+                    continue;
+                }
                 typing_expr(c->cond);
                 if (c->cond->expr_type) {
                     if (m->cond) {

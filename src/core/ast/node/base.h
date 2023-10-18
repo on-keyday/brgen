@@ -77,6 +77,37 @@ namespace brgen::ast {
             : Expr(l, t) {}
     };
 
+    struct Comment : Node {
+        define_node_type(NodeType::comment);
+        std::string comment;
+
+        void dump(auto&& field) {
+            Node::dump(field);
+            sdebugf(comment);
+        }
+
+        Comment(lexer::Loc l, const std::string& c)
+            : Node(l, NodeType::comment), comment(std::move(c)) {}
+
+        Comment()
+            : Node({}, NodeType::comment) {}
+    };
+
+    struct CommentGroup : Node {
+        define_node_type(NodeType::comment_group);
+        std::vector<std::shared_ptr<Comment>> comments;
+
+        void dump(auto&& field) {
+            Node::dump(field);
+            sdebugf(comments);
+        }
+
+        CommentGroup(lexer::Loc l, std::vector<std::shared_ptr<Comment>>&& c)
+            : Node(l, NodeType::comment_group), comments(std::move(c)) {}
+        CommentGroup()
+            : Node({}, NodeType::comment_group) {}
+    };
+
     using node_list = std::list<std::shared_ptr<Node>>;
 
     struct IndentScope : Stmt {

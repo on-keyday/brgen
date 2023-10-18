@@ -395,10 +395,20 @@ int src2json_main(int argc, char** argv) {
     utils::wrap::U8Arg _(argc, argv);
     Flags flags;
     return utils::cmdline::templ::parse_or_err<std::string>(
-        argc, argv, flags, [](auto&& str, bool err) { cerr << str; },
+        argc, argv, flags,
+        [&](auto&& str, bool err) {
+            if (err) {
+                no_color = flags.no_color;
+                print_error(str);
+            }
+            else {
+                cerr << str;
+            }
+        },
         [](Flags& flags, utils::cmdline::option::Context& ctx) {
             return Main(flags, ctx);
-        });
+        },
+        true);
 }
 
 #ifdef __EMSCRIPTEN__

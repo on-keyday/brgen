@@ -21,7 +21,8 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     if (flags.spec) {
         cout << R"({
             "pass_by": "file",
-            "langs": ["cpp"] 
+            "langs": ["cpp"],
+            "suffix": ".hpp"
         })";
         return 0;
     }

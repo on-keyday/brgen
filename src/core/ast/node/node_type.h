@@ -6,6 +6,8 @@
 namespace brgen::ast {
     enum class NodeType {
         program,
+        comment,
+        comment_group,
         expr = 0x010000,
 
         binary,

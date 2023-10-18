@@ -20,6 +20,8 @@ namespace brgen::ast {
         File* input;
         size_t line = 1;
         size_t col = 1;
+        std::vector<std::shared_ptr<Comment>> comments;
+        bool collect_comments = false;
 
         [[noreturn]] void report_error(std::string&& msg, lexer::Loc pos) {
             error(pos, msg).report();
@@ -45,6 +47,9 @@ namespace brgen::ast {
                 if (token->tag == lexer::Tag::line) {
                     line++;
                     col = 1;
+                }
+                if (collect_comments && token->tag == lexer::Tag::comment) {
+                    comments.push_back(std::make_shared<Comment>(token->loc, token->token));
                 }
                 tokens.push_back(std::move(*token));
                 cur = std::prev(tokens.end());
@@ -186,6 +191,7 @@ namespace brgen::ast {
             return *f;
         }
 
+       private:
         void skip_tag(auto... t) {
             while (!eos()) {
                 if ((... || expect_token(t))) {
@@ -196,6 +202,7 @@ namespace brgen::ast {
             }
         }
 
+       public:
         // Tag::space, Tag::comment
         void skip_space() {
             skip_tag(lexer::Tag::space, lexer::Tag::comment);
@@ -209,6 +216,20 @@ namespace brgen::ast {
         // Tag::space, Tag::line, Tag::indent, Tag::comment
         void skip_white() {
             skip_tag(lexer::Tag::space, lexer::Tag::line, lexer::Tag::indent, lexer::Tag::comment);
+        }
+
+        std::shared_ptr<Node> get_comments() {
+            if (comments.size() == 0) {
+                return nullptr;
+            }
+            if (comments.size() == 1) {
+                auto c = std::move(comments[0]);
+                comments.clear();
+                return c;
+            }
+            auto c = std::make_shared<CommentGroup>(comments[0]->loc, std::move(comments));
+            comments.clear();
+            return c;
         }
 
         void backward() {
@@ -237,6 +258,10 @@ namespace brgen::ast {
         auto enter_stream(File* file, auto&& parser) {
             s.input = file;
             return s.enter_stream(parser);
+        }
+
+        void set_collect_comments(bool b) {
+            s.collect_comments = b;
         }
     };
 

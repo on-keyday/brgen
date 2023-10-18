@@ -43,7 +43,21 @@ namespace json2cpp {
         std::vector<BitField> field_names;
     };
 
-    using Event = std::variant<ApplyInt, DefineLength, AssertFalse, ApplyBits, ApplyBulkInt, AllocateVector, ApplyVector>;
+    struct DefineBits {
+        std::string var_name;
+        std::string from;
+    };
+
+    struct SetBits {
+        std::string base_field;
+        std::string bit_field_index;
+        std::string value;
+    };
+
+    using Event = std::variant<
+        ApplyInt, DefineLength, AssertFalse,
+        ApplyBits, DefineBits, SetBits, ApplyBulkInt,
+        AllocateVector, ApplyVector>;
 
     using Events = std::vector<Event>;
 
@@ -76,7 +90,7 @@ namespace json2cpp {
             if (auto bit = int_desc->bit_field.lock()) {
                 events.push_back(AssertFalse{
                     .comment = "check overflow",
-                    .cond = brgen::concat(target, " > ", bit->base_name, ".", len_field->name, "_max"),
+                    .cond = brgen::concat(target, " > ", len_field->name, "_max"),
                 });
             }
             else {
@@ -218,16 +232,38 @@ namespace json2cpp {
             auto primitive = get_primitive_type(ast::aligned_bit(f->fixed_size), false);
             bits.base_type = primitive;
             bits.base_name = f->base_name;
+            std::optional<std::string> tmp_copy;
+            size_t i = 0;
             for (auto& field : f->fields) {
                 assert(field->desc->type == DescType::int_);
                 if (m == Method::encode) {
-                    handle_encoder_int_length_related(field);
+                    auto res = handle_encoder_int_length_related(field);
+                    if (!res) {
+                        return res.transform(empty_void);
+                    }
+                    if (*res != field->name) {
+                        if (!tmp_copy) {
+                            auto tmp = tmp_len_of(bits.base_name);
+                            events.push_back(DefineBits{
+                                .var_name = tmp,
+                                .from = bits.base_name,
+                            });
+                            bits.base_name = tmp;
+                            tmp_copy = tmp;
+                        }
+                        events.push_back(SetBits{
+                            .base_field = *tmp_copy,
+                            .bit_field_index = brgen::nums(i),
+                            .value = *res,
+                        });
+                    }
                 }
                 auto int_desc = static_cast<IntDesc*>(field->desc.get());
                 bits.field_names.push_back(BitField{
                     .bit_size = brgen::nums(int_desc->desc.bit_size),
                     .field_name = field->name,
                 });
+                i++;
             }
             events.push_back(std::move(bits));
             return {};

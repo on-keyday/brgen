@@ -290,7 +290,8 @@ namespace brgen::ast {
     struct Match : Expr {
         define_node_type(NodeType::match);
         std::shared_ptr<Expr> cond;
-        std::list<std::shared_ptr<MatchBranch>> branch;
+        // MatchBranch or Comment or CommentGroup
+        std::list<std::shared_ptr<Node>> branch;
         scope_ptr scope;
 
         Match(lexer::Loc l)

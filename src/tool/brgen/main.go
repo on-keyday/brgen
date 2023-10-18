@@ -21,18 +21,27 @@ import (
 type Spec struct {
 	Langs  []string `json:"langs"`
 	PassBy string   `json:"pass_by"`
+	Suffix string   `json:"suffix"`
 }
 
-type Generator struct {
-	w         sync.WaitGroup
-	src2json  string
-	json2code string
-	ctx       context.Context
-	cancel    context.CancelFunc
-	spec      Spec
+type Result struct {
+	Path string
+	Data []byte
 }
 
-func (g *Generator) Init(src2json string, json2code string) error {
+type GeneratorHandler struct {
+	w             sync.WaitGroup
+	src2json      string
+	json2code     string
+	ctx           context.Context
+	cancel        context.CancelFunc
+	spec          Spec
+	tmpQueue      chan *Result
+	queue         chan *Result
+	suffixPattern string
+}
+
+func (g *GeneratorHandler) Init(src2json string, json2code string, suffix string) error {
 	if json2code == "" {
 		return errors.New("json2code is required")
 	}
@@ -42,7 +51,7 @@ func (g *Generator) Init(src2json string, json2code string) error {
 	} else {
 		res, err := os.Executable()
 		if err != nil {
-			return err
+			return fmt.Errorf("os.Executable: %w", err)
 		}
 		g.src2json = filepath.Join(filepath.Dir(res), "src2json")
 		if runtime.GOOS == "windows" {
@@ -51,12 +60,13 @@ func (g *Generator) Init(src2json string, json2code string) error {
 	}
 	g.ctx, g.cancel = signal.NotifyContext(context.Background(), os.Interrupt)
 	if err := g.askSpec(); err != nil {
-		return err
+		return fmt.Errorf("askSpec: %w", err)
 	}
+	g.suffixPattern = suffix
 	return nil
 }
 
-func (g *Generator) askSpec() error {
+func (g *GeneratorHandler) askSpec() error {
 	cmd := exec.CommandContext(g.ctx, g.json2code, "-s")
 	cmd.Stderr = os.Stderr
 	buf := bytes.NewBuffer(nil)
@@ -82,31 +92,34 @@ func (g *Generator) askSpec() error {
 	return nil
 }
 
-func (g *Generator) lookupPath(name string) ([]string, error) {
+func (g *GeneratorHandler) lookupPath(name string) ([]string, error) {
 	s, err := os.Stat(name)
 	if err != nil {
 		return nil, err
 	}
 	if s.IsDir() {
-		if *suffix == "" {
+		if g.suffixPattern == "" {
 			return nil, errors.New("suffix is required")
 		}
-		if strings.Contains(*suffix, "*") {
+		if strings.Contains(g.suffixPattern, "*") {
 			return nil, errors.New("suffix must not contain *")
 		}
-		files, err := fs.Glob(os.DirFS(name), "./*"+*suffix)
+		files, err := fs.Glob(os.DirFS(name), "./*"+g.suffixPattern)
 		if err != nil {
 			return nil, err
 		}
 		if len(files) == 0 {
-			return nil, errors.New("no .bgn files found")
+			return nil, fmt.Errorf("no %s files found", g.suffixPattern)
+		}
+		for i, file := range files {
+			files[i] = filepath.Join(name, file)
 		}
 		return files, err
 	}
 	return []string{name}, nil
 }
 
-func (g *Generator) loadAst(path string) ([]byte, error) {
+func (g *GeneratorHandler) loadAst(path string) ([]byte, error) {
 	cmd := exec.CommandContext(g.ctx, g.src2json, path)
 	cmd.Stderr = os.Stderr
 	buf := bytes.NewBuffer(nil)
@@ -131,7 +144,7 @@ func makeTmpFile(data []byte) (path string, err error) {
 	return fp.Name(), nil
 }
 
-func (g *Generator) execGenerator(cmd *exec.Cmd) ([]byte, error) {
+func (g *GeneratorHandler) execGenerator(cmd *exec.Cmd) ([]byte, error) {
 	cmd.Stderr = os.Stderr
 	buf := bytes.NewBuffer(nil)
 	cmd.Stdout = buf
@@ -142,7 +155,7 @@ func (g *Generator) execGenerator(cmd *exec.Cmd) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (g *Generator) passAst(buffer []byte) ([]byte, error) {
+func (g *GeneratorHandler) passAst(buffer []byte) ([]byte, error) {
 	if g.spec.PassBy == "stdin" {
 		cmd := exec.CommandContext(g.ctx, g.json2code)
 		cmd.Stdin = bytes.NewReader(buffer)
@@ -157,7 +170,7 @@ func (g *Generator) passAst(buffer []byte) ([]byte, error) {
 	return g.execGenerator(cmd)
 }
 
-func (g *Generator) generate(path string) {
+func (g *GeneratorHandler) generate(path string) {
 	files, err := g.lookupPath(path)
 	if err != nil {
 		log.Printf("lookupPath: %s: %s\n", path, err)
@@ -180,13 +193,16 @@ func (g *Generator) generate(path string) {
 				log.Printf("passAst: %s: %s\n", file, err)
 				return
 			}
-			fmt.Printf("%s\n", buf)
+			g.tmpQueue <- &Result{
+				Path: file,
+				Data: buf,
+			}
 		}(file)
 	}
 	wg.Wait()
 }
 
-func (g *Generator) Generate(path string) {
+func (g *GeneratorHandler) dispatchGenerator(path string) {
 	g.w.Add(1)
 	go func() {
 		defer g.w.Done()
@@ -194,40 +210,102 @@ func (g *Generator) Generate(path string) {
 	}()
 }
 
-func (g *Generator) Wait() {
-	g.w.Wait()
+func (g *GeneratorHandler) StartGenerator(path ...string) {
+	g.tmpQueue = make(chan *Result, 1)
+	for i, p := range path {
+		if i == len(path)-1 {
+			g.dispatchGenerator(p)
+			continue
+		}
+		g.dispatchGenerator(p)
+	}
+	go func() {
+		g.w.Wait()
+		close(g.tmpQueue)
+	}()
+	go func() {
+		que := []*Result{}
+	lab:
+		for {
+			select {
+			case <-g.ctx.Done():
+				close(g.queue)
+				return
+			case res, ok := <-g.tmpQueue:
+				if !ok {
+					break lab
+				}
+				que = append(que, res)
+			default:
+			}
+		}
+		for _, v := range que {
+			g.queue <- v
+		}
+		close(g.queue)
+	}()
 }
 
-var src2json = flag.String("src2json", "", "path to src2json")
-var json2code = flag.String("G", "", "alias of json2code")
-var suffix = flag.String("suffix", ".bgn", "suffix of file to generate from")
+func (g *GeneratorHandler) Recv() <-chan *Result {
+	if g.queue == nil {
+		g.queue = make(chan *Result, 1)
+	}
+	return g.queue
+}
 
 type Config struct {
-	Source2Json *string `json:"src2json"`
-	Json2Code   *string `json:"json2code"`
-	Suffix      *string `json:"suffix"`
+	Source2Json   *string  `json:"src2json"`
+	Json2Code     *string  `json:"json2code"`
+	SuffixPattern *string  `json:"suffix_pattern"`
+	Targets       []string `json:"targets"`
+	OutputDir     *string  `json:"output_dir"`
 }
 
 func loadConfig() (*Config, error) {
 	fp, err := os.Open("brgen.json")
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, nil // ignore error
+			return &Config{}, nil // ignore error
 		}
-		return nil, err
+		return &Config{}, err
 	}
 	defer fp.Close()
 	var c Config
 	err = json.NewDecoder(fp).Decode(&c)
 	if err != nil {
-		return nil, err
+		return &Config{}, err
 	}
 	return &c, nil
 }
 
+func fillStringPtr(c *Config) {
+	if c.Json2Code == nil {
+		c.Json2Code = new(string)
+	}
+	if c.Source2Json == nil {
+		c.Source2Json = new(string)
+	}
+	if c.SuffixPattern == nil {
+		c.SuffixPattern = new(string)
+		*c.SuffixPattern = ".bgn"
+	}
+	if c.OutputDir == nil {
+		c.OutputDir = new(string)
+	}
+}
+
+var config *Config
+
 func init() {
-	flag.StringVar(json2code, "json2code", "", "path to json2code")
-	config, err := loadConfig()
+	var err error
+	config, err = loadConfig()
+	fillStringPtr(config)
+	flag.StringVar(config.Json2Code, "json2code", *config.Json2Code, "path to json2code")
+	flag.StringVar(config.Source2Json, "src2json", *config.Source2Json, "path to src2json")
+	flag.StringVar(config.Json2Code, "G", *config.Json2Code, "alias of json2code")
+	flag.StringVar(config.SuffixPattern, "suffix", *config.SuffixPattern, "suffix of file to generate from")
+	flag.StringVar(config.OutputDir, "o", *config.OutputDir, "output directory")
+
 	defer flag.Parse()
 	if err != nil {
 		log.Print(err)
@@ -236,29 +314,47 @@ func init() {
 	if config == nil {
 		return
 	}
-	if config.Source2Json != nil {
-		*src2json = *config.Source2Json
-	}
-	if config.Json2Code != nil {
-		*json2code = *config.Json2Code
-	}
-	if config.Suffix != nil {
-		*suffix = *config.Suffix
-	}
 }
 
 func main() {
 	args := flag.Args()
+	if len(config.Targets) > 0 {
+		args = append(args, config.Targets...)
+	}
 	if len(args) == 0 {
 		flag.Usage()
 		return
 	}
-	g := &Generator{}
-	if err := g.Init(*src2json, *json2code); err != nil {
+	g := &GeneratorHandler{}
+	if err := g.Init(*config.Source2Json, *config.Json2Code, *config.SuffixPattern); err != nil {
 		log.Fatal(err)
 	}
-	for _, arg := range args {
-		g.Generate(arg)
+	g.StartGenerator(args...)
+	first := true
+	for res := range g.Recv() {
+		if *config.OutputDir == "" {
+			fmt.Printf("%s:\n", res.Path)
+			fmt.Println(string(res.Data))
+			continue
+		}
+		path := strings.TrimSuffix(filepath.Base(res.Path), *config.SuffixPattern)
+		path = filepath.Join(*config.OutputDir, path+g.spec.Suffix)
+		if first {
+			if err := os.MkdirAll(*config.OutputDir, 0755); err != nil {
+				log.Fatal(err)
+			}
+			first = false
+		}
+		fp, err := os.Create(path)
+		if err != nil {
+			log.Printf("create %s: %s\n", path, err)
+			continue
+		}
+		defer fp.Close()
+		_, err = fp.Write(res.Data)
+		if err != nil {
+			log.Printf("write %s: %s\n", path, err)
+			continue
+		}
 	}
-	g.Wait()
 }
