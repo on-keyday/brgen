@@ -1,0 +1,7 @@
+format Step7:
+    len :u8
+    match len:
+        0 => :u8
+        1 => :u16
+        2 => :u32
+        3 => :u64

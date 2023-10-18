@@ -39,6 +39,7 @@ namespace brgen::ast::tool {
     }
 
     struct IntUnionTypeDesc {
+        std::vector<std::shared_ptr<std::shared_ptr<Field>>> fields;
     };
 
     inline std::optional<IntUnionTypeDesc> is_int_union_type(auto&& typ) {

@@ -45,6 +45,15 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
         print_error("cannot parse json file ", name);
         return 1;
     }
+    auto files = js.at("files");
+    if (!files) {
+        print_error("cannot find files field ", name);
+        return 1;
+    }
+    if (!files->is_array()) {
+        print_error("files field is not array ", name);
+        return 1;
+    }
     auto f = js.at("ast");
     if (!f) {
         print_error("cannot find ast field ", name);
@@ -59,7 +68,22 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     json2cpp::Generator g(brgen::ast::cast_to<brgen::ast::Program>(*res));
     auto res2 = g.generate();
     if (!res2) {
-        print_error("cannot generate code: ", res2.error().msg);
+        auto& err = res2.error();
+        auto loc = err.loc;
+        std::string name;
+        if (loc.file == 0) {
+            name = "<unknown file>";
+        }
+        else {
+            auto l = files->at(loc.file - 1);
+            if (!l || !l->is_string()) {
+                name = "<unknown file>";
+            }
+            else {
+                l->as_string(name);
+            }
+        }
+        print_error("cannot generate code: ", err.msg, " at ", name, ":", loc.line, ":", loc.col);
         return 1;
     }
     cout << g.code.out();

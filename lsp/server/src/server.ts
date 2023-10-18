@@ -155,6 +155,10 @@ const parserCommand = (path :string) => ["--stdin","--stdin-name",path, "--no-co
 
 let semanticTokenCache = new Map<string,SemanticTokens>();
 
+const stringEscape = (s :string) => {
+    return s.replace(/\\/g,"\\\\").replace(/"/g,"\\\"").replace(/\n/g,"\\n").replace(/\r/g,"\\r");
+}
+
 const tokenizeSourceImpl  = async (doc :TextDocument) =>{
     const path = url.fileURLToPath(doc.uri)
     const text = doc.getText();
@@ -196,6 +200,7 @@ const tokenizeSourceImpl  = async (doc :TextDocument) =>{
     type L = { readonly loc :ast2ts.Loc, readonly length :number, readonly index :number}
     const locList = new Array<L>();
     tokens.tokens.forEach((token:ast2ts.Token)=>{
+        console.log(`token: ${stringEscape(token.token)} ${token.tag} ${token.loc.line} ${token.loc.col}`)
         if(token.tag===ast2ts.TokenTag.keyword){
             if(token.token==="input"||token.token==="output"||token.token=="config"||
                token.token=="fn"||token.token=="format"||token.token=="enum"){
@@ -211,7 +216,6 @@ const tokenizeSourceImpl  = async (doc :TextDocument) =>{
         if(index===undefined){
             return;
         }
-        console.log(`token: ${token.token} ${token.tag} ${token.loc.line} ${token.loc.col}`)
         locList.push({loc:token.loc,length: token.token.length,index:index});
     });
     const generateSemanticTokens = () => {

@@ -111,6 +111,9 @@ namespace brgen::ast {
             s.skip_line();
         }
 
+        /*
+            <indent scope> ::= ":" <line> (<indent> <statement>)+
+        */
         std::shared_ptr<IndentScope> parse_indent_block(std::vector<std::shared_ptr<Ident>>* ident = nullptr) {
             // Consume the initial indent sign
             must_consume_indent_sign();
@@ -157,6 +160,10 @@ namespace brgen::ast {
             return scope;
         }
 
+        /*
+            <match> ::= "match" <expr>? <match branch>*
+            <match branch> ::= <expr> "=>" <statement>
+        */
         std::shared_ptr<Match> parse_match(lexer::Token&& token) {
             // Create a shared pointer for the Match
             auto match = std::make_shared<Match>(token.loc);
@@ -228,6 +235,9 @@ namespace brgen::ast {
             return match;
         }
 
+        /*
+            <if> ::= "if" <expr> <indent scope> ("elif" <expr> <block>)* ("else" <indent scope>)?
+        */
         std::shared_ptr<If> parse_if(lexer::Token&& token) {
             s.skip_white();
             auto if_ = std::make_shared<If>(token.loc);
@@ -333,6 +343,9 @@ namespace brgen::ast {
             return paren;
         }
 
+        /*
+            <prim> ::= <int-literal> | <bool-literal> | <str-literal> | <ident> | "(" <expr> ")" | <if>
+        */
         std::shared_ptr<Expr> parse_prim() {
             if (auto token = s.consume_token(lexer::Tag::int_literal)) {
                 return std::make_shared<IntLiteral>(token->loc, std::move(token->token));
@@ -401,6 +414,9 @@ namespace brgen::ast {
             return std::make_shared<MemberAccess>(token.loc, std::move(p), std::move(ident.token), ident.loc);
         }
 
+        /*
+            <post> ::= <prim>  ("(" <expr> ")" | <post> "." <ident> | <post> "[" <expr> "]")*
+        */
         std::shared_ptr<Expr> parse_post(Stream& s) {
             auto p = parse_prim();
             for (;;) {
@@ -430,6 +446,10 @@ namespace brgen::ast {
             return std::nullopt;
         }
 
+        /*
+            <unary> ::= <post> | <unary-op> <unary>
+            <unary-op> ::= <unary-op> | <unary-op> <unary-op> <unary>
+        */
         std::shared_ptr<Expr> parse_unary() {
             std::vector<std::shared_ptr<Unary>> stack;
             size_t i;
@@ -505,6 +525,10 @@ namespace brgen::ast {
             return false;
         }
 
+        /*
+            <expr> ::= <unary> | <unary> <bin-op> <expr>
+            <bin-op> ::= <bin-op> | <bin-op> <bin-op> <expr>
+        */
         std::shared_ptr<Expr> parse_expr() {
             std::shared_ptr<Expr> expr;
             size_t depth;
@@ -653,6 +677,9 @@ namespace brgen::ast {
             return expr;
         }
 
+        /*
+            <loop> ::= "loop" <expr>? (";" <expr>?)? (";" <expr>?)? <indent block>
+        */
         std::shared_ptr<Loop> parse_for(lexer::Token&& token) {
             auto for_ = std::make_shared<Loop>(token.loc);
             s.skip_white();
@@ -689,6 +716,9 @@ namespace brgen::ast {
             return for_;
         }
 
+        /*
+            <func type> ::= "fn" "(" (<type> ("," <type>)*)? ")" ("->" <type>)?
+        */
         // fn (a :int,b :int) -> int
         std::shared_ptr<FunctionType> parse_func_type(lexer::Token&& tok) {
             auto func_type = std::make_shared<FunctionType>(tok.loc);
@@ -718,6 +748,13 @@ namespace brgen::ast {
             return func_type;
         }
 
+        /*
+            <type> ::= <array type> | <int type> | <str type> | <func type> | <ident type>
+            <array type> ::= "[" <expr>? "]" <type>
+            <int literal type> ::= <int literal>
+            <str literal type> ::= <str literal>
+            <ident type> ::= <ident>
+        */
         std::shared_ptr<Type> parse_type() {
             if (auto arr_begin = s.consume_token("[")) {
                 s.skip_white();
@@ -759,6 +796,9 @@ namespace brgen::ast {
             return std::make_shared<IdentType>(ident.loc, std::move(base));
         }
 
+        /*
+            <field type> ::= ":" <type> ("(" <expr> ")")?
+        */
         // may returns expr if not field
         std::shared_ptr<Node> parse_field(const std::shared_ptr<Expr>& expr) {
             lexer::Token token;
@@ -811,6 +851,9 @@ namespace brgen::ast {
             return field;
         }
 
+        /*
+            <format> ::= format <ident> <indent block>
+        */
         std::shared_ptr<Format> parse_format(lexer::Token&& token) {
             bool is_enum = token.token == "enum";
             auto fmt = std::make_shared<Format>(token.loc, is_enum);
@@ -831,6 +874,9 @@ namespace brgen::ast {
             return fmt;
         }
 
+        /*
+            <fn> ::= fn <ident> "(" (<ident> : <type> ("," <ident > <type>)*)? ")" ("->" <type>)? <indent block>
+        */
         std::shared_ptr<Function> parse_fn(lexer::Token&& token) {
             auto fn = std::make_shared<Function>(token.loc);
             s.skip_white();
@@ -887,6 +933,10 @@ namespace brgen::ast {
             return fn;
         }
 
+        /*
+            <statement> ::= <for> | <if> | <format> | <fn> | <return> | <break> | <continue> | <expr or field>
+            <expr or field> ::= <expr>? <field type>
+        */
         std::shared_ptr<Node> parse_statement() {
             auto skip_last = [&] {
                 s.skip_space();
