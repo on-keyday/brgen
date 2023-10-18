@@ -152,6 +152,19 @@ func (d *Type) TsString() string {
 	return d.Name + postfix
 }
 
+func (d *Type) PyString() string {
+	prefix := ""
+	postfix := ""
+	if d.IsArray {
+		prefix += "List["
+		postfix += "]"
+	} else if d.IsPtr || d.IsInterface {
+		prefix += "Optional["
+		postfix += "]"
+	}
+	return prefix + d.Name + postfix
+}
+
 func (d *Type) UintptrString() string {
 	prefix := ""
 	if d.IsArray {
@@ -382,68 +395,68 @@ func CollectDefinition(list *List, fieldCaseFn func(string) string, typeCaseFn f
 
 	//generate enum mapping of unary_op, binary_op, ident_usage, endian
 	enum := &Enum{}
-	enum.Name = "UnaryOp"
+	enum.Name = c.typeCaseFn("UnaryOp")
 	enum.Values = c.mapOpsToEnumValues(list.UnaryOp)
 	defs.push(enum)
 
 	enum = &Enum{}
-	enum.Name = "BinaryOp"
+	enum.Name = c.typeCaseFn("BinaryOp")
 	enum.Values = c.mapOpsToEnumValues(list.BinaryOp)
 	defs.push(enum)
 
 	enum = &Enum{}
-	enum.Name = "IdentUsage"
+	enum.Name = c.typeCaseFn("IdentUsage")
 	enum.Values = c.mapStringsToEnumValues(list.IdentUsage)
 	defs.push(enum)
 
 	enum = &Enum{}
-	enum.Name = "Endian"
+	enum.Name = c.typeCaseFn("Endian")
 	enum.Values = c.mapStringsToEnumValues(list.Endian)
 	defs.push(enum)
 
 	enum = &Enum{}
-	enum.Name = "TokenTag"
+	enum.Name = c.typeCaseFn("TokenTag")
 	enum.Values = c.mapStringsToEnumValues(list.TokenTag)
 	defs.push(enum)
 
 	// scope definition
 	scope := Struct{}
-	scope.Name = "Scope"
+	scope.Name = c.typeCaseFn("Scope")
 	scope.Fields = c.mapToStructFields(list.Scope)
 	defs.push(&scope)
 	defs.ScopeDef = &scope
 
 	// loc definition
 	loc := Struct{}
-	loc.Name = "Loc"
+	loc.Name = c.typeCaseFn("Loc")
 	loc.Fields = make([]*Field, 0, len(list.Loc))
 	loc.Fields = c.mapToStructFields(list.Loc)
 	defs.push(&loc)
 
 	// pos definition
 	pos := Struct{}
-	pos.Name = "Pos"
+	pos.Name = c.typeCaseFn("Pos")
 	pos.Fields = make([]*Field, 0, len(list.Pos))
 	pos.Fields = c.mapToStructFields(list.Pos)
 	defs.push(&pos)
 
 	// token definition
 	token := Struct{}
-	token.Name = "Token"
+	token.Name = c.typeCaseFn("Token")
 	token.Fields = make([]*Field, 0, len(list.Token))
 	token.Fields = c.mapToStructFields(list.Token)
 	defs.push(&token)
 
 	// error_entry definition
 	errorEntry := Struct{}
-	errorEntry.Name = "SrcErrorEntry"
+	errorEntry.Name = c.typeCaseFn("SrcErrorEntry")
 	errorEntry.Fields = make([]*Field, 0, len(list.ErrorEntry))
 	errorEntry.Fields = c.mapToStructFields(list.ErrorEntry)
 	defs.push(&errorEntry)
 
 	// error definition
 	error := Struct{}
-	error.Name = "SrcError"
+	error.Name = c.typeCaseFn("SrcError")
 	error.Fields = make([]*Field, 0, len(list.Error))
 	error.Fields = c.mapToStructFields(list.Error)
 	defs.push(&error)
