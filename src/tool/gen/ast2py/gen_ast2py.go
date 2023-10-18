@@ -14,7 +14,7 @@ import (
 func generate(rw io.Writer, defs *gen.Defs) {
 	w := gen.NewWriter(rw)
 	w.Printf("from __future__ import annotations\n\n")
-	w.Printf("from typing import Optional,List,Dict,Any\n\n")
+	w.Printf("from typing import Optional,List,Dict,Any,Callable\n\n")
 	w.Printf("from enum import Enum\n\n")
 
 	w.Printf("class NodeType(Enum):\n")
@@ -250,6 +250,44 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("            scope[i].prev = scope[ast.scope[i].prev]\n")
 	w.Printf("        scope[i].ident = [node[x] for x in ast.scope[i].ident]\n")
 	w.Printf("    return Program(node[0])\n\n")
+
+	w.Printf("def walk(node: Node, f: Callable[[Node],bool]) -> None:\n")
+	w.Printf("    if not f(node):\n")
+	w.Printf("        return\n")
+	w.Printf("    match node:\n")
+	for _, def := range defs.Defs {
+		switch d := def.(type) {
+		case *gen.Struct:
+			if len(d.Implements) == 0 {
+				continue
+			}
+			w.Printf("        case x if isinstance(x,%s):\n", d.Name)
+			count := 0
+			for _, field := range d.Fields {
+				if field.Type.Name == "Scope" {
+					continue
+				}
+				if field.Type.IsWeak {
+					continue // avoid infinite loop
+				}
+				if field.Type.IsArray {
+					w.Printf("          for i in range(len(x.%s)):\n", field.Name)
+					w.Printf("              if not walk(x.%s[i],f):\n", field.Name)
+					w.Printf("                  return False\n")
+				} else if field.Type.IsPtr || field.Type.IsInterface {
+					w.Printf("          if x.%s is not None:\n", field.Name)
+					w.Printf("              if not walk(x.%s,f):\n", field.Name)
+					w.Printf("                  return False\n")
+				} else {
+					continue
+				}
+				count++
+			}
+			if count == 0 {
+				w.Printf("            pass\n")
+			}
+		}
+	}
 }
 
 func main() {

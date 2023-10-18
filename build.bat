@@ -20,6 +20,6 @@ call emcmake cmake -G Ninja -D CMAKE_BUILD_TYPE=%BUILD_TYPE% -DCMAKE_INSTALL_PRE
     echo "Invalid build mode: %BUILD_MODE%"
     exit 1
 )
-ninja -C ./built/%BUILD_MODE%/%BUILD_TYPE%
+rem ninja -C ./built/%BUILD_MODE%/%BUILD_TYPE%
 ninja -C ./built/%BUILD_MODE%/%BUILD_TYPE% install
 
