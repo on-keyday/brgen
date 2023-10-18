@@ -52,6 +52,8 @@ struct Flags : utils::cmdline::templ::HelpOption {
     std::string argv_input;
     bool argv_mode;
 
+    size_t tokenization_limit = 0;
+
     void bind(utils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&lexer, "l,lexer", "lexer mode");
@@ -82,6 +84,7 @@ struct Flags : utils::cmdline::templ::HelpOption {
         ctx.VarBool(&stdin_mode, "stdin", "read input from stdin (must not be tty)");
         ctx.VarString(&as_file_name, "stdin-name", "set name of stdin/argv (as a filename)", "<name>");
         ctx.VarString(&argv_input, "argv", "treat cmdline arg as input (this is not designed for human. this is used from other process or emscripten call)", "<source code>");
+        ctx.VarInt(&tokenization_limit, "tokenization-limit", "set tokenization limit (use with --lexer) (0=unlimited)", "<size>");
     }
 };
 auto& cout = utils::wrap::cout_wrap();
@@ -105,11 +108,17 @@ auto do_parse(brgen::File* file) {
     });
 }
 
-auto do_lex(brgen::File* file) {
+auto do_lex(brgen::File* file, size_t limit) {
     brgen::ast::Context c;
     return c.enter_stream(file, [&](brgen::ast::Stream& s) {
+        size_t count = 0;
         while (!s.eos()) {
             s.consume();
+            ++count;
+            if (limit > 0 && count >= limit) {
+                print_warning("tokenization limit reached at file ", file->path().generic_u8string());
+                break;
+            }
         }
         return s.take();
     });
@@ -296,7 +305,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     };
 
     if (flags.lexer) {
-        auto res = do_lex(input).transform_error(brgen::to_source_error(files));
+        auto res = do_lex(input, flags.tokenization_limit).transform_error(brgen::to_source_error(files));
         if (!res) {
             report_error(res.error(), false, "tokens");
             return -1;

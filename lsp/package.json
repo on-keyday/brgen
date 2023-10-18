@@ -53,11 +53,10 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "cd client && npm run update-vscode && cd .. && npm run compile",
+    "vscode:prepublish": "cd client && npm run vscode:prepublish && cd ../server && npm run vscode:prepublish && cd ..",
     "compile": "tsc -b",
     "watch": "tsc -b -w",
-    "postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
-    "test": "sh ./scripts/e2e.sh"
+    "postinstall": "cd client && npm install && cd ../server && npm install && cd .."
   },
   "private": true,
   "main": "./client/out/extension.js",
