@@ -490,6 +490,7 @@ func (n *StructType) isNode() {}
 
 type UnionType struct {
 	Fields []*StructType
+	Base   Expr
 	Loc    Loc
 }
 
@@ -1830,6 +1831,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			v := n.node[i].(*UnionType)
 			var tmp struct {
 				Fields []uintptr `json:"fields"`
+				Base   *uintptr  `json:"base"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -1837,6 +1839,9 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			v.Fields = make([]*StructType, len(tmp.Fields))
 			for j, k := range tmp.Fields {
 				v.Fields[j] = n.node[k].(*StructType)
+			}
+			if tmp.Base != nil {
+				v.Base = n.node[*tmp.Base].(Expr)
 			}
 		case "cast":
 			v := n.node[i].(*Cast)

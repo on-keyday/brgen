@@ -526,6 +526,7 @@ export function isStructType(obj: any): obj is StructType {
 
 export interface UnionType extends Type {
 	fields: StructType[];
+	base: Expr|null;
 }
 
 export function isUnionType(obj: any): obj is UnionType {
@@ -1216,6 +1217,7 @@ export function parseAST(obj: any): Program {
 			const n :UnionType = {
 				node_type: "union_type",
 				fields: [],
+				base: null,
 				loc: on.loc,
 			}
 			c.node.push(n);
@@ -2244,6 +2246,14 @@ export function parseAST(obj: any): Program {
 				}
 				n.fields.push(tmpfields);
 			}
+			if (on.body?.base !== null && typeof on.body?.base !== 'number') {
+				throw new Error('invalid node list');
+			}
+			const tmpbase = on.body.base === null ? null : c.node[on.body.base];
+			if (!(tmpbase === null || isExpr(tmpbase))) {
+				throw new Error('invalid node list');
+			}
+			n.base = tmpbase;
 			break;
 		}
 		case "cast": {

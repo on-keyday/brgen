@@ -2336,6 +2336,7 @@ impl From<&Rc<RefCell<StructType>>> for Node {
 #[derive(Debug,Clone)]
 pub struct UnionType {
 	pub fields: Vec<Rc<RefCell<StructType>>>,
+	pub base: Option<Expr>,
 	pub loc: Loc,
 }
 
@@ -3040,6 +3041,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 			NodeType::UnionType => {
 				Node::UnionType(Rc::new(RefCell::new(UnionType {
 				fields: Vec::new(),
+				base: None,
 				loc: raw_node.loc.clone(),
 				})))
 			},
@@ -4836,6 +4838,19 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().fields.push(fields_body.clone());
 				}
+				let base_body = match raw_node.body.get("base") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(raw_node.node_type,"base")),
+				};
+				let base_body = match base_body.as_u64() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(base_body.into(),JSONType::Number)),
+				};
+				let base_body = match nodes.get(base_body as usize) {
+					Some(v)=>v,
+					None => return Err(Error::IndexOutOfBounds(base_body as usize)),
+				};
+				node.borrow_mut().base = Some(base_body.try_into()?);
 			},
 			NodeType::Cast => {
 				let node = nodes[i].clone();
