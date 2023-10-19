@@ -23,3 +23,8 @@ call emcmake cmake -G Ninja -D CMAKE_BUILD_TYPE=%BUILD_TYPE% -DCMAKE_INSTALL_PRE
 rem ninja -C ./built/%BUILD_MODE%/%BUILD_TYPE%
 ninja -C ./built/%BUILD_MODE%/%BUILD_TYPE% install
 
+if "%BUILD_MODE%" == "wasm-em" (
+    cd ./web/dev
+    call webpack
+    cd ../../
+)

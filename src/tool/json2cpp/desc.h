@@ -9,6 +9,7 @@ namespace json2cpp {
         array_int,
         vector,
         int_,
+        union_int,
     };
 
     struct Desc {
@@ -46,6 +47,8 @@ namespace json2cpp {
 
     struct IntUnionDesc : Desc {
         std::vector<std::shared_ptr<IntDesc>> int_fields;
+        IntUnionDesc()
+            : Desc(DescType::union_int) {}
     };
 
     struct Field {
