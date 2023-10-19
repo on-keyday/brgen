@@ -54,6 +54,8 @@ struct Flags : utils::cmdline::templ::HelpOption {
 
     size_t tokenization_limit = 0;
 
+    bool collect_comments = false;
+
     void bind(utils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&lexer, "l,lexer", "lexer mode");
@@ -85,6 +87,8 @@ struct Flags : utils::cmdline::templ::HelpOption {
         ctx.VarString(&as_file_name, "stdin-name", "set name of stdin/argv (as a filename)", "<name>");
         ctx.VarString(&argv_input, "argv", "treat cmdline arg as input (this is not designed for human. this is used from other process or emscripten call)", "<source code>");
         ctx.VarInt(&tokenization_limit, "tokenization-limit", "set tokenization limit (use with --lexer) (0=unlimited)", "<size>");
+
+        ctx.VarBool(&collect_comments, "collect-comments", "collect comments");
     }
 };
 auto& cout = utils::wrap::cout_wrap();
@@ -101,8 +105,9 @@ auto print_ok() {
     }
 }
 
-auto do_parse(brgen::File* file) {
+auto do_parse(brgen::File* file, bool collect_comments) {
     brgen::ast::Context c;
+    c.set_collect_comments(collect_comments);
     return c.enter_stream(file, [&](brgen::ast::Stream& s) {
         return brgen::ast::Parser{s}.parse();
     });
@@ -329,7 +334,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
         return 0;
     }
 
-    auto res = do_parse(input).transform_error(brgen::to_source_error(files));
+    auto res = do_parse(input, flags.collect_comments).transform_error(brgen::to_source_error(files));
 
     if (!res) {
         report_error(res.error());

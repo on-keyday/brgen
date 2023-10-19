@@ -356,5 +356,6 @@ func main() {
 			log.Printf("write %s: %s\n", path, err)
 			continue
 		}
+		log.Printf("generated: %s\n", path)
 	}
 }

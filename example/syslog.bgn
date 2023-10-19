@@ -20,7 +20,7 @@ format Prival:
         :">"
 
 fn digit(n :u8):
-    n == "0"
+    n == 32
 
 
 fn nonzerodigit(n :char):

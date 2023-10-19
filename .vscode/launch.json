@@ -17,9 +17,9 @@
             "name": "Debug src2json",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceRoot}/build/tool/src2json",
+            "program": "${workspaceRoot}/tool/src2json",
             "args": [
-                "c:/workspace/sechack365/vscode_ext.bgn",
+                "c:/workspace/shbrgen/brgen/example/syslog.bgn",
                 "--print-json",
             ],
             "stopAtEntry": false,
@@ -46,7 +46,7 @@
             "name": "Debug json2cpp",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceRoot}/build/tool/json2cpp",
+            "program": "${workspaceRoot}/tool/json2cpp",
             "args": [
                 "ignore/sample.json"
             ],

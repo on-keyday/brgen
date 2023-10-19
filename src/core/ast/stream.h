@@ -58,6 +58,9 @@ namespace brgen::ast {
 
         lexer::Loc last_loc() {
             if (eos()) {
+                if (cur == tokens.begin()) {
+                    return lexer::Loc{lexer::Pos{0, 0}, input->index(), 1, 1};
+                }
                 auto copy = cur;
                 copy--;
                 return {lexer::Pos{copy->loc.pos.end, copy->loc.pos.end + 1}, copy->loc.file, copy->loc.line, copy->loc.col};

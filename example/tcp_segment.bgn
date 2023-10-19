@@ -1,0 +1,40 @@
+
+format TCPSegment:
+    srcPort :u16
+    dstPort :u16
+    seqNum :u32
+    ackNum :u32
+    dataOffset :u4
+    reserved :u4
+    CWE :u1 ECE :u1 URG :u1 ACK :u1 PSH :u1 RST :u1 SYN :u1 FIN :u1
+    windowSize :u16
+    checksum :u16
+    urgentPointer :u16
+    options :[u8(dataOffset*2)-20]u8
+
+format IPv4Header:
+    version :u4 ihl :u8 dscp :u6 ecn :u2
+
+format IPv6Header:
+    version :u4 trafficClass :u8 flowLabel :u20
+    payloadLen :u16
+    nextHeader :u8
+    hopLimit :u8
+    srcAddr :[16]u8
+    dstAddr :[16]u8
+
+
+config.aligned_bit(8) # here input/output must be aligned to 8 bits
+ip_version :u4
+config.peek(ip_version) # marker for peeking
+
+if ip_version == 4:
+    hdr :IPv4Header
+elif ip_version == 6:
+    hdr :IPv6Header
+else:
+    errorf("invalid ip_version: %d", ip_version)
+
+tcp: TCPSegment
+
+

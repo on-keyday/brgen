@@ -12,16 +12,15 @@ namespace brgen::ast {
         bool collect_comment = false;
 
        private:
-        Stream* s = nullptr;
         size_t indent = 0;
         ScopeStack stack;
         std::shared_ptr<Format> current_fmt_;
         std::shared_ptr<StructType> current_struct_;
 
        public:
-        auto new_indent(size_t new_, std::shared_ptr<Scope>* frame) {
+        auto new_indent(Stream& s, size_t new_, std::shared_ptr<Scope>* frame) {
             if (indent >= new_) {
-                s->report_error("expect larger indent but not");
+                s.report_error("expect larger indent but not");
             }
             auto old = std::exchange(indent, std::move(new_));
             auto br = stack.enter_branch();
@@ -126,7 +125,7 @@ namespace brgen::ast {
 
             // Create a new context for the current indent level
             auto current_indent = base.token.size();
-            auto c = state.new_indent(current_indent, &scope->scope);
+            auto c = state.new_indent(s, current_indent, &scope->scope);
 
             if (ident) {
                 for (auto& i : *ident) {
@@ -154,7 +153,13 @@ namespace brgen::ast {
                 }
                 s.must_consume_token(lexer::Tag::indent);
                 collect_comments();
-                scope->elements.push_back(parse_statement());
+                bool line_skipped = false;
+                while (!line_skipped) {
+                    scope->elements.push_back(parse_statement(&line_skipped));
+                    if (s.peek_token(lexer::Tag::indent) || s.eos()) {
+                        break;
+                    }
+                }
             }
 
             return scope;
@@ -169,6 +174,7 @@ namespace brgen::ast {
             auto match = std::make_shared<Match>(token.loc);
 
             std::shared_ptr<UnionType> union_ = std::make_shared<UnionType>(match->loc);
+            union_->base = match;
 
             auto stmt_with_struct = [&](lexer::Loc loc, auto& block) {
                 std::shared_ptr<StructType> struct_ = std::make_shared<StructType>(loc);
@@ -203,7 +209,7 @@ namespace brgen::ast {
 
             // Create a new context for the current indent level
             auto current_indent = base.token.size();
-            auto c = state.new_indent(current_indent, &match->scope);
+            auto c = state.new_indent(s, current_indent, &match->scope);
 
             auto collect_comments = [&] {
                 // get comments and add to scope
@@ -245,6 +251,7 @@ namespace brgen::ast {
             // 解析して if の条件式とブロックを設定
             if_->cond = parse_expr();
             std::shared_ptr<UnionType> union_ = std::make_shared<UnionType>(if_->loc);
+            union_->base = if_;
 
             auto body_with_struct = [&](lexer::Loc loc, auto& block) {
                 std::shared_ptr<StructType> struct_ = std::make_shared<StructType>(loc);
@@ -937,29 +944,39 @@ namespace brgen::ast {
             <statement> ::= <for> | <if> | <format> | <fn> | <return> | <break> | <continue> | <expr or field>
             <expr or field> ::= <expr>? <field type>
         */
-        std::shared_ptr<Node> parse_statement() {
+        std::shared_ptr<Node> parse_statement(bool* prev_skip_line = nullptr) {
+            auto set_skip = [&] {
+                if (prev_skip_line) {
+                    *prev_skip_line = true;
+                }
+            };
             auto skip_last = [&] {
                 s.skip_space();
 
                 if (!s.eos() && s.expect_token(lexer::Tag::line)) {
                     s.must_consume_token(lexer::Tag::line);
                     s.skip_line();
+                    set_skip();
                 }
             };
 
             if (auto loop = s.consume_token("loop")) {
+                set_skip();
                 return parse_for(std::move(*loop));
             }
 
             if (auto format = s.consume_token("format")) {
+                set_skip();
                 return parse_format(std::move(*format));
             }
 
             if (auto enum_ = s.consume_token("enum")) {
+                set_skip();
                 return parse_format(std::move(*enum_));
             }
 
             if (auto fn = s.consume_token("fn")) {
+                set_skip();
                 return parse_fn(std::move(*fn));
             }
 

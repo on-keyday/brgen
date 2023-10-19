@@ -44,6 +44,10 @@ namespace json2cpp {
             : Desc(DescType::vector), desc(desc), base_type(std::move(base_type)) {}
     };
 
+    struct IntUnionDesc : Desc {
+        std::vector<std::shared_ptr<IntDesc>> int_fields;
+    };
+
     struct Field {
         std::shared_ptr<ast::Field> base;
         std::string name;
@@ -134,7 +138,7 @@ namespace json2cpp {
        private:
         Fields fields;
         // 可変長配列の長さを解決する
-        // 可変長配列の長さが１次方程式で解ける場合のみ解決できる
+        // 可変長配列の長さが１次方程式(かつ変数が1回のみ(現状x+xなどは無理))で解ける場合のみ解決できる
         // それ以外の場合はエラー
         result<void> collect_vector_field(tool::IntDesc& b, tool::ArrayDesc& a, const std::shared_ptr<ast::Format>& fmt, std::shared_ptr<ast::Field>&& field) {
             if (config.vector_mode == VectorMode::std_vector) {
@@ -195,6 +199,30 @@ namespace json2cpp {
                 // both 8-byte aligned (8*2^n (0<=n<=3)) and non-aligned int are supported
                 fields.push_back(std::make_shared<Field>(field, std::make_shared<IntDesc>(std::move(*i))));
             }
+            else if (auto i = tool::is_int_union_type(field->field_type)) {
+                auto u = std::make_shared<IntUnionDesc>();
+                std::string name;
+                for (auto& f : i->fields) {
+                    if (name.empty()) {
+                        name = f->ident->ident;
+                    }
+                    else {
+                        if (name != f->ident->ident) {
+                            return error(field->loc, "unsupported type");
+                        }
+                    }
+                    auto b = tool::is_int_type(f->field_type);
+                    if (!b) {
+                        return error(field->loc, "unsupported type");
+                    }
+                    auto type = get_primitive_type(b->bit_size, b->is_signed);
+                    if (type.empty()) {
+                        return error(field->loc, "unsupported type");
+                    }
+                    u->int_fields.push_back(std::make_shared<IntDesc>(std::move(*b)));
+                }
+                fields.push_back(std::make_shared<Field>(field, std::move(u)));
+            }
             else {
                 return error(field->loc, "unsupported type");
             }
@@ -254,16 +282,16 @@ namespace json2cpp {
                         b.fields.push_back({std::move(fields[i])});
                     }
                     else {
-                        if (b.fields.size() == 1) {
-                            m.push_back({std::move(b.fields[0])});
-                        }
-                        else {
-                            m.push_back({std::move(b)});
-                        }
-                        i--;
                         break;
                     }
                 }
+                if (b.fields.size() == 1) {
+                    m.push_back({std::move(b.fields[0])});
+                }
+                else {
+                    m.push_back({std::move(b)});
+                }
+                i--;
             }
             return {};
         }

@@ -5,4 +5,3 @@ format Step7:
         1 => value :u16
         2 => value :u32
         3 => value :u64
-        _ => error("invalid length")

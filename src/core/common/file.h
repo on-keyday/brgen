@@ -90,6 +90,10 @@ namespace brgen {
         const fs::path& path() const {
             return file_name;
         }
+
+        size_t index() const {
+            return file;
+        }
     };
 
     template <class T>

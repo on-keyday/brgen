@@ -5,3 +5,4 @@ format Step4:
     data1 :[len1*2]u8
     len2 :u8
     data2 :[len2/2]u8
+    true || false
