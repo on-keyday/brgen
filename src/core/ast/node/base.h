@@ -4,6 +4,7 @@
 #include <core/common/debug.h>
 #include <core/lexer/token.h>
 #include <list>
+#include <vector>
 
 namespace brgen::ast {
     constexpr void as_json(NodeType type, auto&& buf) {
