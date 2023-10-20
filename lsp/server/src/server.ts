@@ -260,7 +260,8 @@ const tokenizeSourceImpl  = async (doc :TextDocument) =>{
     const ast = ast_;
     assert(ast.ast)
     const prog = ast2ts.parseAST(ast.ast);
-    ast2ts.walk(prog,(node)=>{
+    ast2ts.walk(prog,(f,node)=>{
+        ast2ts.walk(node,f);
         if(ast2ts.isIdent(node)){
             const line = node.loc.line-1;
             const col = node.loc.col-1;

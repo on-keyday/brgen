@@ -363,7 +363,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("	return obj && typeof obj === 'object' && Array.isArray(obj?.files) && (obj?.tokens === null || Array.isArray(obj?.tokens)) && (obj?.error === null || isSrcError(obj?.error));\n")
 	w.Printf("}\n\n")
 
-	w.Printf("export type VisitFn<T> = (f: VisitFn<T>, arg: T) => void;")
+	w.Printf("export type VisitFn<T> = (f: VisitFn<T>, arg: T) => void;\n\n")
 
 	w.Printf("export function walk(node: Node, fn: VisitFn<Node>) {\n")
 	w.Printf("	switch (node.node_type) {\n")
@@ -400,7 +400,6 @@ func generate(rw io.Writer, defs *gen.Defs) {
 		}
 	}
 	w.Printf("	}\n")
-	w.Printf("	return true;\n")
 	w.Printf("}\n\n")
 }
 

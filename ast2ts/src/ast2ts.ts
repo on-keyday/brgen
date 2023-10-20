@@ -2353,7 +2353,9 @@ export function isTokenFile(obj: any): obj is TokenFile {
 	return obj && typeof obj === 'object' && Array.isArray(obj?.files) && (obj?.tokens === null || Array.isArray(obj?.tokens)) && (obj?.error === null || isSrcError(obj?.error));
 }
 
-export type VisitFn<T> = (f: VisitFn<T>, arg: T) => void;export function walk(node: Node, fn: VisitFn<Node>) {
+export type VisitFn<T> = (f: VisitFn<T>, arg: T) => void;
+
+export function walk(node: Node, fn: VisitFn<Node>) {
 	switch (node.node_type) {
 		case "program": {
 			if (!isProgram(node)) {
@@ -2908,7 +2910,6 @@ export type VisitFn<T> = (f: VisitFn<T>, arg: T) => void;export function walk(no
 			break;
 		}
 	}
-	return true;
 }
 
 }
