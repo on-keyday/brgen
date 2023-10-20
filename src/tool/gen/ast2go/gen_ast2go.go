@@ -227,6 +227,8 @@ func generate(w io.Writer, list *gen.Defs) {
 			writer.Printf("		for j, k := range raw.%s {\n", field.Name)
 			writer.Printf("			n.scope[i].%s[j] = n.node[k].(%s)\n", field.Name, typ.GoString())
 			writer.Printf("		}\n")
+		} else {
+			writer.Printf("		n.scope[i].%s = raw.%s\n", field.Name, field.Name)
 		}
 	}
 	writer.Printf("	}\n")

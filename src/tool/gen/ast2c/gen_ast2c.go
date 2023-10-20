@@ -65,6 +65,9 @@ func generateHeader(rw io.Writer, defs *gen.Defs, single bool) {
 				w.Printf("struct %s {\n", d.Name)
 				for _, field := range d.Fields {
 					w.Printf("\t%s %s;\n", field.Type.CString(), field.Name)
+					if field.Type.IsArray {
+						w.Printf("\tsize_t %s_size;\n", field.Name)
+					}
 				}
 				w.Printf("};\n\n")
 			}
@@ -74,7 +77,8 @@ func generateHeader(rw io.Writer, defs *gen.Defs, single bool) {
 				w.Printf("\t%s,\n", strings.ToUpper(field.Name))
 			}
 			w.Printf("};\n\n")
-
+			w.Printf("const char* %s_to_string(%s);\n", d.Name, d.Name)
+			w.Printf("%s %s_from_string(const char*);\n", d.Name, d.Name)
 		}
 	}
 	// next pointer types
@@ -95,10 +99,36 @@ func generateHeader(rw io.Writer, defs *gen.Defs, single bool) {
 			w.Printf("\tconst NodeType node_type;\n")
 			for _, field := range d.Fields {
 				w.Printf("\t%s %s;\n", field.Type.CString(), field.Name)
+				if field.Type.IsArray {
+					w.Printf("\tsize_t %s_size;\n", field.Name)
+				}
 			}
 			w.Printf("};\n\n")
 		}
 	}
+
+	w.Printf("typedef struct RawNode {\n")
+	w.Printf("\tconst NodeType node_type;\n")
+	w.Printf("\tLoc loc;\n")
+	w.Printf("\tvoid* body;\n")
+	w.Printf("} RawNode;\n\n")
+
+	w.Printf("typedef struct RawScope {\n")
+	w.Printf("\tuint64_t prev;\n")
+	w.Printf("\tuint64_t next;\n")
+	w.Printf("\tuint64_t branch;\n")
+	w.Printf("\tuint64_t* ident;\n")
+	w.Printf("\tsize_t ident_size;\n")
+	w.Printf("\tint is_global;\n")
+	w.Printf("} RawScope;\n\n")
+
+	w.Printf("typedef struct Ast {\n")
+	w.Printf("\tRawNode** node;\n")
+	w.Printf("\tsize_t node_size;\n")
+	w.Printf("\tRawScope** scope;\n")
+	w.Printf("\tsize_t scope_size;\n")
+	w.Printf("} Ast;\n\n")
+
 	if !single {
 		w.Printf("#endif\n")
 	}

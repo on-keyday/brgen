@@ -158,6 +158,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("	next : number | null;\n")
 	w.Printf("	branch : number | null;\n")
 	w.Printf(" 	ident: number[];\n")
+	w.Printf("  is_global : boolean;\n")
 	w.Printf("}\n\n")
 
 	w.Printf("export function isRawScope(obj: any): obj is RawScope {\n")
@@ -248,6 +249,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("			next: null,\n")
 	w.Printf("			branch: null,\n")
 	w.Printf("			ident: [],\n")
+	w.Printf("			is_global: false,\n")
 	w.Printf("		}\n")
 	w.Printf("		c.scope.push(n);\n")
 	w.Printf("	}\n")
@@ -322,6 +324,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("	for (let i = 0; i < o.scope.length; i++) {\n")
 	w.Printf("		const os = o.scope[i];\n")
 	w.Printf("		const cscope = c.scope[i];\n")
+	w.Printf("		cscope.is_global = os.is_global;\n")
 	w.Printf("		cscope.prev = os.prev === null ? null : c.scope[os.prev];\n")
 	w.Printf("		cscope.next = os.next === null ? null : c.scope[os.next];\n")
 	w.Printf("		cscope.branch = os.branch === null ? null : c.scope[os.branch];\n")

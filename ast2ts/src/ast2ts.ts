@@ -663,10 +663,11 @@ export interface Scope {
 	next: Scope|null;
 	branch: Scope|null;
 	ident: Ident[];
+	is_global: boolean;
 }
 
 export function isScope(obj: any): obj is Scope {
-	return obj && typeof obj === 'object' && typeof obj?.prev === 'object' && typeof obj?.next === 'object' && typeof obj?.branch === 'object' && Array.isArray(obj?.ident)
+	return obj && typeof obj === 'object' && typeof obj?.prev === 'object' && typeof obj?.next === 'object' && typeof obj?.branch === 'object' && Array.isArray(obj?.ident) && typeof obj?.is_global === 'boolean'
 }
 
 export interface Pos {
@@ -734,6 +735,7 @@ export interface RawScope {
 	next : number | null;
 	branch : number | null;
  	ident: number[];
+  is_global : boolean;
 }
 
 export function isRawScope(obj: any): obj is RawScope {
@@ -1262,6 +1264,7 @@ export function parseAST(obj: any): Program {
 			next: null,
 			branch: null,
 			ident: [],
+			is_global: false,
 		}
 		c.scope.push(n);
 	}
@@ -2312,6 +2315,7 @@ export function parseAST(obj: any): Program {
 	for (let i = 0; i < o.scope.length; i++) {
 		const os = o.scope[i];
 		const cscope = c.scope[i];
+		cscope.is_global = os.is_global;
 		cscope.prev = os.prev === null ? null : c.scope[os.prev];
 		cscope.next = os.next === null ? null : c.scope[os.next];
 		cscope.branch = os.branch === null ? null : c.scope[os.branch];

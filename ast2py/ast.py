@@ -403,6 +403,7 @@ class Scope:
     next: Optional[Scope]
     branch: Optional[Scope]
     ident: List[Ident]
+    is_global: bool
 
 
 class Pos:
@@ -492,6 +493,7 @@ class RawScope:
     next: Optional[int]
     branch: Optional[int]
     ident: List[int]
+    is_global: bool
 
 def parse_RawScope(json: dict) -> RawScope:
     ret = RawScope()
@@ -499,6 +501,7 @@ def parse_RawScope(json: dict) -> RawScope:
     ret.next = json['next']
     ret.branch = json['branch']
     ret.ident = json['ident']
+    ret.is_global = json['is_global']
     return ret
 
 class Ast:
@@ -906,6 +909,7 @@ def ast2node(ast :Ast) -> Program:
             case _:
                 raise TypeError('unknown node type')
     for i in range(len(ast.scope)):
+        scope[i].is_global = ast.scope[i].is_global
         if ast.scope[i].next is not None:
             scope[i].next = scope[ast.scope[i].next]
         if ast.scope[i].branch is not None:

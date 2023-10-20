@@ -969,10 +969,11 @@ func (n TokenTag) UnmarshalJSON(data []byte) error {
 }
 
 type Scope struct {
-	Prev   *Scope
-	Next   *Scope
-	Branch *Scope
-	Ident  []*Ident
+	Prev     *Scope
+	Next     *Scope
+	Branch   *Scope
+	Ident    []*Ident
+	IsGlobal bool
 }
 
 type Pos struct {
@@ -1015,10 +1016,11 @@ type rawNode struct {
 	Body     json.RawMessage
 }
 type rawScope struct {
-	Prev   *uintptr  `json:"prev"`
-	Next   *uintptr  `json:"next"`
-	Branch *uintptr  `json:"branch"`
-	Ident  []uintptr `json:"ident"`
+	Prev     *uintptr  `json:"prev"`
+	Next     *uintptr  `json:"next"`
+	Branch   *uintptr  `json:"branch"`
+	Ident    []uintptr `json:"ident"`
+	IsGlobal bool      `json:"is_global"`
 }
 type AST struct {
 	*Program
@@ -1901,6 +1903,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 		for j, k := range raw.Ident {
 			n.scope[i].Ident[j] = n.node[k].(*Ident)
 		}
+		n.scope[i].IsGlobal = raw.IsGlobal
 	}
 	return n.node[0].(*Program), nil
 }

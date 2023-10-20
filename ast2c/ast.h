@@ -126,6 +126,8 @@ enum UnaryOp {
 	MINUS_SIGN,
 };
 
+const char* UnaryOp_to_string(UnaryOp);
+UnaryOp UnaryOp_from_string(const char*);
 enum BinaryOp {
 	MUL,
 	DIV,
@@ -167,6 +169,8 @@ enum BinaryOp {
 	COMMA,
 };
 
+const char* BinaryOp_to_string(BinaryOp);
+BinaryOp BinaryOp_from_string(const char*);
 enum IdentUsage {
 	UNKNOWN,
 	REFERENCE,
@@ -180,12 +184,16 @@ enum IdentUsage {
 	REFERENCE_TYPE,
 };
 
+const char* IdentUsage_to_string(IdentUsage);
+IdentUsage IdentUsage_from_string(const char*);
 enum Endian {
 	UNSPEC,
 	BIG,
 	LITTLE,
 };
 
+const char* Endian_to_string(Endian);
+Endian Endian_from_string(const char*);
 enum TokenTag {
 	INDENT,
 	SPACE,
@@ -201,6 +209,8 @@ enum TokenTag {
 	UNKNOWN,
 };
 
+const char* TokenTag_to_string(TokenTag);
+TokenTag TokenTag_from_string(const char*);
 struct Pos {
 	uint64_t begin;
 	uint64_t end;
@@ -229,6 +239,7 @@ struct SrcErrorEntry {
 
 struct SrcError {
 	SrcErrorEntry* errs;
+	size_t errs_size;
 };
 
 struct Node {
@@ -268,6 +279,7 @@ struct Program {
 	Loc loc;
 	StructType* struct_type;
 	Node** elements;
+	size_t elements_size;
 	Scope* global_scope;
 };
 
@@ -315,6 +327,7 @@ struct Call {
 	Expr* callee;
 	Expr* raw_arguments;
 	Expr** arguments;
+	size_t arguments_size;
 	Loc end_loc;
 };
 
@@ -359,6 +372,7 @@ struct Match {
 	Type* expr_type;
 	Expr* cond;
 	Node** branch;
+	size_t branch_size;
 	Scope* scope;
 };
 
@@ -383,6 +397,7 @@ struct BlockExpr {
 	Loc loc;
 	Type* expr_type;
 	Node** calls;
+	size_t calls_size;
 	Expr* expr;
 };
 
@@ -447,6 +462,7 @@ struct IndentScope {
 	const NodeType node_type;
 	Loc loc;
 	Node** elements;
+	size_t elements_size;
 	Scope* scope;
 };
 
@@ -494,6 +510,7 @@ struct Field {
 	Type* field_type;
 	Expr* raw_arguments;
 	Expr** arguments;
+	size_t arguments_size;
 	Format* belong;
 };
 
@@ -512,6 +529,7 @@ struct Function {
 	Loc loc;
 	Ident* ident;
 	Field** parameters;
+	size_t parameters_size;
 	Type* return_type;
 	Format* belong;
 	IndentScope* body;
@@ -568,18 +586,21 @@ struct FunctionType {
 	Loc loc;
 	Type* return_type;
 	Type** parameters;
+	size_t parameters_size;
 };
 
 struct StructType {
 	const NodeType node_type;
 	Loc loc;
 	Member** fields;
+	size_t fields_size;
 };
 
 struct UnionType {
 	const NodeType node_type;
 	Loc loc;
 	StructType** fields;
+	size_t fields_size;
 	Expr* base;
 };
 
@@ -601,6 +622,7 @@ struct CommentGroup {
 	const NodeType node_type;
 	Loc loc;
 	Comment** comments;
+	size_t comments_size;
 };
 
 struct Scope {
@@ -609,6 +631,30 @@ struct Scope {
 	Scope* next;
 	Scope* branch;
 	Ident** ident;
+	size_t ident_size;
+	int is_global;
 };
+
+typedef struct RawNode {
+	const NodeType node_type;
+	Loc loc;
+	void* body;
+} RawNode;
+
+typedef struct RawScope {
+	uint64_t prev;
+	uint64_t next;
+	uint64_t branch;
+	uint64_t* ident;
+	size_t ident_size;
+	int is_global;
+} RawScope;
+
+typedef struct Ast {
+	RawNode** node;
+	size_t node_size;
+	RawScope** scope;
+	size_t scope_size;
+} Ast;
 
 #endif

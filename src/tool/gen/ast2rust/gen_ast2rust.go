@@ -225,6 +225,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("	pub next :Option<u64>,\n")
 	w.Printf("	pub branch :Option<u64>,\n")
 	w.Printf("	pub ident :Vec<u64>,\n")
+	w.Printf("  pub is_global: bool,\n")
 	w.Printf("}\n\n")
 
 	w.Printf("#[derive(Debug,Clone,Serialize,Deserialize)]\n")
@@ -282,6 +283,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("			next: None,\n")
 	w.Printf("			branch: None,\n")
 	w.Printf("			ident: Vec::new(),\n")
+	w.Printf("			is_global: false,\n")
 	w.Printf("		}));\n")
 	w.Printf("		scopes.push(scope);\n")
 	w.Printf("	}\n")
@@ -414,6 +416,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 
 	w.Printf("	for (i,raw_scope) in ast.scope.into_iter().enumerate(){\n")
 	w.Printf("		let scope = scopes[i].clone();\n")
+	w.Printf("      scope.borrow_mut().is_global = raw_scope.is_global;\n")
 	w.Printf("		if let Some(prev) = raw_scope.prev{\n")
 	w.Printf("			let prev = match scopes.get(prev as usize) {\n")
 	w.Printf("				Some(v)=>v,\n")
@@ -473,7 +476,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 
 	w.Printf("pub fn walk_node<F>(node:&Node,f:&mut F)\n")
 	w.Printf("where\n")
-	w.Printf("	F: FnMut(&F,&Node)\n")
+	w.Printf("	F: FnMut(&mut F,&Node)\n")
 	w.Printf("{\n")
 	w.Printf("	match node {\n")
 	for _, nodeType := range defs.Defs {
@@ -493,17 +496,17 @@ func generate(rw io.Writer, defs *gen.Defs) {
 				if field.Type.IsArray {
 					w.Printf("			for node in &node.borrow().%s{\n", field.Name)
 					if field.Type.Name == "Node" {
-						w.Printf("				f(&f,node);\n")
+						w.Printf("				f(f,node);\n")
 					} else {
-						w.Printf("				f(&f,&node.into());\n")
+						w.Printf("				f(f,&node.into());\n")
 					}
 					w.Printf("			}\n")
 				} else if field.Type.IsPtr || field.Type.IsInterface {
 					w.Printf("			if let Some(node) = &node.borrow().%s{\n", field.Name)
 					if field.Type.Name == "Node" {
-						w.Printf("				f(&f,node);\n")
+						w.Printf("				f(f,node);\n")
 					} else {
-						w.Printf("				f(&f,&node.into());\n")
+						w.Printf("				f(f,&node.into());\n")
 					}
 					w.Printf("			}\n")
 				}
