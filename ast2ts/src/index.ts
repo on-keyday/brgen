@@ -1,3 +1,3 @@
 
 
-export {ast2ts} from "./ast2ts";
+export {ast2ts} from "./ast";

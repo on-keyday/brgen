@@ -46,7 +46,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _lib
   \*******************************/
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-eval("module.exports = __webpack_require__.p + \"cf7e95cb07b3ba39ae3e.wasm\";\n\n//# sourceURL=webpack:///./out/lib/src2json.wasm?");
+eval("module.exports = __webpack_require__.p + \"26bce3d1c55028831c69.wasm\";\n\n//# sourceURL=webpack:///./out/lib/src2json.wasm?");
 
 /***/ })
 
