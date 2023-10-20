@@ -73,6 +73,8 @@ const msgQueue: JobRequest[] = [];
                     code,
                     jobID: id,
                 };
+                textCapture.stdout = "";
+                textCapture.stderr = "";
                 postMessage(result);
             }
             else if(e.msg===RequestMessage.MSG_REQUIRE_TOKENS) {
@@ -96,6 +98,8 @@ const msgQueue: JobRequest[] = [];
                     code,
                     jobID: id,
                 };
+                textCapture.stdout = "";
+                textCapture.stderr = "";
                 postMessage(result);
             }
             else{
