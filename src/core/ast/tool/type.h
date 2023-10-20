@@ -67,7 +67,11 @@ namespace brgen::ast::tool {
 
     inline std::shared_ptr<Format> belong_format(auto&& typ) {
         if (Field* f = ast::as<Field>(typ)) {
-            return f->belong.lock();
+            auto fmt = f->belong.lock();
+            if (!ast::as<Format>(fmt)) {
+                return nullptr;
+            }
+            return ast::cast_to<Format>(fmt);
         }
         if (Ident* ident = ast::as<Ident>(typ)) {
             return belong_format(ident->base.lock());

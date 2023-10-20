@@ -13,7 +13,7 @@ namespace brgen::ast {
         bool is_enum = false;
         std::shared_ptr<Ident> ident;
         std::shared_ptr<IndentScope> body;
-        std::weak_ptr<Format> belong;
+        // std::weak_ptr<Format> belong;
         std::shared_ptr<StructType> struct_type;
         Format(lexer::Loc l, bool is_enum)
             : Member(l, NodeType::format), is_enum(is_enum) {}
@@ -22,19 +22,12 @@ namespace brgen::ast {
         Format()
             : Member({}, NodeType::format) {}
 
-        std::string ident_path(const char* sep = "_") {
-            if (auto parent = belong.lock()) {
-                return parent->ident_path() + sep + ident->ident;
-            }
-            return ident->ident;
-        }
-
         void dump(auto&& field) {
             Member::dump(field);
             sdebugf(is_enum);
             sdebugf(ident);
             sdebugf(body);
-            sdebugf(belong);
+            // sdebugf(belong);
             sdebugf(struct_type);
         }
     };
@@ -46,7 +39,7 @@ namespace brgen::ast {
         std::shared_ptr<Type> field_type;
         std::shared_ptr<Expr> raw_arguments;
         std::list<std::shared_ptr<Expr>> arguments;
-        std::weak_ptr<Format> belong;
+        // std::weak_ptr<Format> belong;
 
         Field(lexer::Loc l)
             : Member(l, NodeType::field) {}
@@ -62,7 +55,7 @@ namespace brgen::ast {
             sdebugf(field_type);
             sdebugf_omit(raw_arguments);
             sdebugf(arguments);
-            sdebugf(belong);
+            // sdebugf(belong);
         }
     };
 
@@ -73,7 +66,7 @@ namespace brgen::ast {
         std::shared_ptr<Ident> ident;
         std::list<std::shared_ptr<Field>> parameters;
         std::shared_ptr<Type> return_type;
-        std::weak_ptr<Format> belong;
+        // std::weak_ptr<Format> belong;
         std::shared_ptr<IndentScope> body;
         std::shared_ptr<FunctionType> func_type;
 
@@ -84,11 +77,11 @@ namespace brgen::ast {
             : Member({}, NodeType::function) {}
 
         void dump(auto&& field) {
-            Stmt::dump(field);
+            Member::dump(field);
             sdebugf(ident);
             sdebugf(parameters);
             sdebugf(return_type);
-            sdebugf(belong);
+            // sdebugf(belong);
             sdebugf(body);
             sdebugf(func_type);
         }

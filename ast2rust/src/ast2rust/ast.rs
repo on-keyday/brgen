@@ -1814,12 +1814,12 @@ impl From<&Rc<RefCell<ImplicitYield>>> for Node {
 #[derive(Debug,Clone)]
 pub struct Field {
 	pub loc: Loc,
+	pub belong: Option<Member>,
 	pub ident: Option<Rc<RefCell<Ident>>>,
 	pub colon_loc: Loc,
 	pub field_type: Option<Type>,
 	pub raw_arguments: Option<Expr>,
 	pub arguments: Vec<Expr>,
-	pub belong: Option<Weak<RefCell<Format>>>,
 }
 
 impl TryFrom<&Member> for Rc<RefCell<Field>> {
@@ -1873,10 +1873,10 @@ impl From<&Rc<RefCell<Field>>> for Node {
 #[derive(Debug,Clone)]
 pub struct Format {
 	pub loc: Loc,
+	pub belong: Option<Member>,
 	pub is_enum: bool,
 	pub ident: Option<Rc<RefCell<Ident>>>,
 	pub body: Option<Rc<RefCell<IndentScope>>>,
-	pub belong: Option<Weak<RefCell<Format>>>,
 	pub struct_type: Option<Rc<RefCell<StructType>>>,
 }
 
@@ -1931,10 +1931,10 @@ impl From<&Rc<RefCell<Format>>> for Node {
 #[derive(Debug,Clone)]
 pub struct Function {
 	pub loc: Loc,
+	pub belong: Option<Member>,
 	pub ident: Option<Rc<RefCell<Ident>>>,
 	pub parameters: Vec<Rc<RefCell<Field>>>,
 	pub return_type: Option<Type>,
-	pub belong: Option<Weak<RefCell<Format>>>,
 	pub body: Option<Rc<RefCell<IndentScope>>>,
 	pub func_type: Option<Rc<RefCell<FunctionType>>>,
 }
@@ -2953,31 +2953,31 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 			NodeType::Field => {
 				Node::Field(Rc::new(RefCell::new(Field {
 				loc: raw_node.loc.clone(),
+				belong: None,
 				ident: None,
 				colon_loc: raw_node.loc.clone(),
 				field_type: None,
 				raw_arguments: None,
 				arguments: Vec::new(),
-				belong: None,
 				})))
 			},
 			NodeType::Format => {
 				Node::Format(Rc::new(RefCell::new(Format {
 				loc: raw_node.loc.clone(),
+				belong: None,
 				is_enum: false,
 				ident: None,
 				body: None,
-				belong: None,
 				struct_type: None,
 				})))
 			},
 			NodeType::Function => {
 				Node::Function(Rc::new(RefCell::new(Function {
 				loc: raw_node.loc.clone(),
+				belong: None,
 				ident: None,
 				parameters: Vec::new(),
 				return_type: None,
-				belong: None,
 				body: None,
 				func_type: None,
 				})))
@@ -4287,6 +4287,19 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Node::Field(node)=>node,
 					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
 				};
+				let belong_body = match raw_node.body.get("belong") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(raw_node.node_type,"belong")),
+				};
+				let belong_body = match belong_body.as_u64() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(belong_body.into(),JSONType::Number)),
+				};
+				let belong_body = match nodes.get(belong_body as usize) {
+					Some(v)=>v,
+					None => return Err(Error::IndexOutOfBounds(belong_body as usize)),
+				};
+				node.borrow_mut().belong = Some(belong_body.try_into()?);
 				let ident_body = match raw_node.body.get("ident") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"ident")),
@@ -4357,6 +4370,13 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().arguments.push(arguments_body.try_into()?);
 				}
+			},
+			NodeType::Format => {
+				let node = nodes[i].clone();
+				let node = match node {
+					Node::Format(node)=>node,
+					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+				};
 				let belong_body = match raw_node.body.get("belong") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"belong")),
@@ -4369,18 +4389,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None => return Err(Error::IndexOutOfBounds(belong_body as usize)),
 				};
-				let belong_body = match belong_body {
-					Node::Format(node)=>node,
-					x =>return Err(Error::MismatchNodeType(x.into(),belong_body.into())),
-				};
-				node.borrow_mut().belong = Some(Rc::downgrade(&belong_body));
-			},
-			NodeType::Format => {
-				let node = nodes[i].clone();
-				let node = match node {
-					Node::Format(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
-				};
+				node.borrow_mut().belong = Some(belong_body.try_into()?);
 				let is_enum_body = match raw_node.body.get("is_enum") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"is_enum")),
@@ -4423,23 +4432,6 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					x =>return Err(Error::MismatchNodeType(x.into(),body_body.into())),
 				};
 				node.borrow_mut().body = Some(body_body.clone());
-				let belong_body = match raw_node.body.get("belong") {
-					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"belong")),
-				};
-				let belong_body = match belong_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(belong_body.into(),JSONType::Number)),
-				};
-				let belong_body = match nodes.get(belong_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(belong_body as usize)),
-				};
-				let belong_body = match belong_body {
-					Node::Format(node)=>node,
-					x =>return Err(Error::MismatchNodeType(x.into(),belong_body.into())),
-				};
-				node.borrow_mut().belong = Some(Rc::downgrade(&belong_body));
 				let struct_type_body = match raw_node.body.get("struct_type") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"struct_type")),
@@ -4464,6 +4456,19 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Node::Function(node)=>node,
 					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
 				};
+				let belong_body = match raw_node.body.get("belong") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(raw_node.node_type,"belong")),
+				};
+				let belong_body = match belong_body.as_u64() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(belong_body.into(),JSONType::Number)),
+				};
+				let belong_body = match nodes.get(belong_body as usize) {
+					Some(v)=>v,
+					None => return Err(Error::IndexOutOfBounds(belong_body as usize)),
+				};
+				node.borrow_mut().belong = Some(belong_body.try_into()?);
 				let ident_body = match raw_node.body.get("ident") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"ident")),
@@ -4517,23 +4522,6 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					None => return Err(Error::IndexOutOfBounds(return_type_body as usize)),
 				};
 				node.borrow_mut().return_type = Some(return_type_body.try_into()?);
-				let belong_body = match raw_node.body.get("belong") {
-					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"belong")),
-				};
-				let belong_body = match belong_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(belong_body.into(),JSONType::Number)),
-				};
-				let belong_body = match nodes.get(belong_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(belong_body as usize)),
-				};
-				let belong_body = match belong_body {
-					Node::Format(node)=>node,
-					x =>return Err(Error::MismatchNodeType(x.into(),belong_body.into())),
-				};
-				node.borrow_mut().belong = Some(Rc::downgrade(&belong_body));
 				let body_body = match raw_node.body.get("body") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"body")),

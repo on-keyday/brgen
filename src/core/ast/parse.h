@@ -14,7 +14,7 @@ namespace brgen::ast {
        private:
         size_t indent = 0;
         ScopeStack stack;
-        std::shared_ptr<Format> current_fmt_;
+        std::shared_ptr<Member> current_fmt_;
         std::shared_ptr<StructType> current_struct_;
 
        public:
@@ -32,7 +32,7 @@ namespace brgen::ast {
             });
         }
 
-        auto enter_format(const std::shared_ptr<Format>& f) {
+        auto enter_member(const std::shared_ptr<Member>& f) {
             f->belong = current_fmt_;
             current_fmt_ = f;
             return utils::helper::defer([this] {
@@ -48,12 +48,18 @@ namespace brgen::ast {
             });
         }
 
-        std::shared_ptr<Format> current_format() {
+        std::shared_ptr<Member> current_member() {
             return current_fmt_;
         }
 
+        /*
         std::shared_ptr<StructType> current_struct() {
             return current_struct_;
+        }
+        */
+
+        void add_to_struct(const std::shared_ptr<Member>& f) {
+            current_struct_->fields.push_back(f);
         }
 
         size_t current_indent() {
@@ -235,8 +241,8 @@ namespace brgen::ast {
 
             auto f = std::make_shared<Field>(match->loc);
             f->field_type = std::move(union_);
-            f->belong = state.current_format();
-            state.current_struct()->fields.push_back(std::move(f));
+            f->belong = state.current_member();
+            state.add_to_struct(std::move(f));
 
             return match;
         }
@@ -263,8 +269,8 @@ namespace brgen::ast {
             auto push_union_to_current_struct = [&] {
                 auto f = std::make_shared<Field>(if_->loc);
                 f->field_type = std::move(union_);
-                f->belong = state.current_format();
-                state.current_struct()->fields.push_back(std::move(f));
+                f->belong = state.current_member();
+                state.add_to_struct(std::move(f));
             };
 
             const auto d = utils::helper::defer([&] {
@@ -845,7 +851,7 @@ namespace brgen::ast {
                 field->ident->base = field;
                 field->ident->usage = IdentUsage::define_field;
             }
-            field->belong = state.current_format();
+            field->belong = state.current_member();
 
             if (s.consume_token("(")) {
                 s.skip_white();
@@ -859,7 +865,7 @@ namespace brgen::ast {
                 s.must_consume_token(")");
             }
 
-            state.current_struct()->fields.push_back(field);
+            state.add_to_struct(field);
 
             return field;
         }
@@ -877,12 +883,12 @@ namespace brgen::ast {
             fmt->ident->usage = is_enum ? IdentUsage::define_enum : IdentUsage ::define_format;
             fmt->ident->base = fmt;
             {
-                auto scope = state.enter_format(fmt);
+                auto scope = state.enter_member(fmt);
                 auto typ = state.enter_struct(fmt->struct_type);
                 fmt->body = parse_indent_block();
             }
 
-            state.current_struct()->fields.push_back(fmt);
+            state.add_to_struct(fmt);
 
             return fmt;
         }
@@ -895,7 +901,7 @@ namespace brgen::ast {
             s.skip_white();
             fn->ident = parse_ident();
             fn->ident->usage = IdentUsage::define_fn;
-            fn->belong = state.current_format();
+            fn->belong = state.current_member();
             fn->func_type = std::make_shared<FunctionType>(fn->loc);
             s.skip_white();
             lexer::Loc end_loc;
@@ -939,9 +945,12 @@ namespace brgen::ast {
 
             fn->func_type->return_type = fn->return_type;
 
-            state.current_struct()->fields.push_back(fn);
+            state.add_to_struct(fn);
 
-            fn->body = parse_indent_block(&ident_param);
+            {
+                auto scope = state.enter_member(fn);
+                fn->body = parse_indent_block(&ident_param);
+            }
 
             return fn;
         }

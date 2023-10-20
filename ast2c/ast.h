@@ -267,6 +267,7 @@ struct Stmt {
 struct Member {
 	const NodeType node_type;
 	Loc loc;
+	Member* belong;
 };
 
 struct Type {
@@ -505,33 +506,33 @@ struct ImplicitYield {
 struct Field {
 	const NodeType node_type;
 	Loc loc;
+	Member* belong;
 	Ident* ident;
 	Loc colon_loc;
 	Type* field_type;
 	Expr* raw_arguments;
 	Expr** arguments;
 	size_t arguments_size;
-	Format* belong;
 };
 
 struct Format {
 	const NodeType node_type;
 	Loc loc;
+	Member* belong;
 	int is_enum;
 	Ident* ident;
 	IndentScope* body;
-	Format* belong;
 	StructType* struct_type;
 };
 
 struct Function {
 	const NodeType node_type;
 	Loc loc;
+	Member* belong;
 	Ident* ident;
 	Field** parameters;
 	size_t parameters_size;
 	Type* return_type;
-	Format* belong;
 	IndentScope* body;
 	FunctionType* func_type;
 };

@@ -358,12 +358,12 @@ func (n *ImplicitYield) isNode() {}
 
 type Field struct {
 	Loc          Loc
+	Belong       Member
 	Ident        *Ident
 	ColonLoc     Loc
 	FieldType    Type
 	RawArguments Expr
 	Arguments    []Expr
-	Belong       *Format
 }
 
 func (n *Field) isMember() {}
@@ -374,10 +374,10 @@ func (n *Field) isNode() {}
 
 type Format struct {
 	Loc        Loc
+	Belong     Member
 	IsEnum     bool
 	Ident      *Ident
 	Body       *IndentScope
-	Belong     *Format
 	StructType *StructType
 }
 
@@ -389,10 +389,10 @@ func (n *Format) isNode() {}
 
 type Function struct {
 	Loc        Loc
+	Belong     Member
 	Ident      *Ident
 	Parameters []*Field
 	ReturnType Type
-	Belong     *Format
 	Body       *IndentScope
 	FuncType   *FunctionType
 }
@@ -1638,15 +1638,18 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 		case "field":
 			v := n.node[i].(*Field)
 			var tmp struct {
+				Belong       *uintptr  `json:"belong"`
 				Ident        *uintptr  `json:"ident"`
 				ColonLoc     Loc       `json:"colon_loc"`
 				FieldType    *uintptr  `json:"field_type"`
 				RawArguments *uintptr  `json:"raw_arguments"`
 				Arguments    []uintptr `json:"arguments"`
-				Belong       *uintptr  `json:"belong"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
+			}
+			if tmp.Belong != nil {
+				v.Belong = n.node[*tmp.Belong].(Member)
 			}
 			if tmp.Ident != nil {
 				v.Ident = n.node[*tmp.Ident].(*Ident)
@@ -1662,20 +1665,20 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			for j, k := range tmp.Arguments {
 				v.Arguments[j] = n.node[k].(Expr)
 			}
-			if tmp.Belong != nil {
-				v.Belong = n.node[*tmp.Belong].(*Format)
-			}
 		case "format":
 			v := n.node[i].(*Format)
 			var tmp struct {
+				Belong     *uintptr `json:"belong"`
 				IsEnum     bool     `json:"is_enum"`
 				Ident      *uintptr `json:"ident"`
 				Body       *uintptr `json:"body"`
-				Belong     *uintptr `json:"belong"`
 				StructType *uintptr `json:"struct_type"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
+			}
+			if tmp.Belong != nil {
+				v.Belong = n.node[*tmp.Belong].(Member)
 			}
 			v.IsEnum = tmp.IsEnum
 			if tmp.Ident != nil {
@@ -1684,24 +1687,24 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.Body != nil {
 				v.Body = n.node[*tmp.Body].(*IndentScope)
 			}
-			if tmp.Belong != nil {
-				v.Belong = n.node[*tmp.Belong].(*Format)
-			}
 			if tmp.StructType != nil {
 				v.StructType = n.node[*tmp.StructType].(*StructType)
 			}
 		case "function":
 			v := n.node[i].(*Function)
 			var tmp struct {
+				Belong     *uintptr  `json:"belong"`
 				Ident      *uintptr  `json:"ident"`
 				Parameters []uintptr `json:"parameters"`
 				ReturnType *uintptr  `json:"return_type"`
-				Belong     *uintptr  `json:"belong"`
 				Body       *uintptr  `json:"body"`
 				FuncType   *uintptr  `json:"func_type"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
+			}
+			if tmp.Belong != nil {
+				v.Belong = n.node[*tmp.Belong].(Member)
 			}
 			if tmp.Ident != nil {
 				v.Ident = n.node[*tmp.Ident].(*Ident)
@@ -1712,9 +1715,6 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			}
 			if tmp.ReturnType != nil {
 				v.ReturnType = n.node[*tmp.ReturnType].(Type)
-			}
-			if tmp.Belong != nil {
-				v.Belong = n.node[*tmp.Belong].(*Format)
 			}
 			if tmp.Body != nil {
 				v.Body = n.node[*tmp.Body].(*IndentScope)

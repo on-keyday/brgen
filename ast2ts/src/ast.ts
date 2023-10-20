@@ -123,6 +123,7 @@ export function isStmt(obj: any): obj is Stmt {
 }
 
 export interface Member extends Stmt {
+	belong: Member|null;
 }
 
 export function isMember(obj: any): obj is Member {
@@ -416,7 +417,6 @@ export interface Field extends Member {
 	field_type: Type|null;
 	raw_arguments: Expr|null;
 	arguments: Expr[];
-	belong: Format|null;
 }
 
 export function isField(obj: any): obj is Field {
@@ -427,7 +427,6 @@ export interface Format extends Member {
 	is_enum: boolean;
 	ident: Ident|null;
 	body: IndentScope|null;
-	belong: Format|null;
 	struct_type: StructType|null;
 }
 
@@ -439,7 +438,6 @@ export interface Function extends Member {
 	ident: Ident|null;
 	parameters: Field[];
 	return_type: Type|null;
-	belong: Format|null;
 	body: IndentScope|null;
 	func_type: FunctionType|null;
 }
@@ -1093,12 +1091,12 @@ export function parseAST(obj: any): Program {
 			const n :Field = {
 				node_type: "field",
 				loc: on.loc,
+				belong: null,
 				ident: null,
 				colon_loc: on.loc,
 				field_type: null,
 				raw_arguments: null,
 				arguments: [],
-				belong: null,
 			}
 			c.node.push(n);
 			break;
@@ -1107,10 +1105,10 @@ export function parseAST(obj: any): Program {
 			const n :Format = {
 				node_type: "format",
 				loc: on.loc,
+				belong: null,
 				is_enum: false,
 				ident: null,
 				body: null,
-				belong: null,
 				struct_type: null,
 			}
 			c.node.push(n);
@@ -1120,10 +1118,10 @@ export function parseAST(obj: any): Program {
 			const n :Function = {
 				node_type: "function",
 				loc: on.loc,
+				belong: null,
 				ident: null,
 				parameters: [],
 				return_type: null,
-				belong: null,
 				body: null,
 				func_type: null,
 			}
@@ -1961,6 +1959,14 @@ export function parseAST(obj: any): Program {
 		}
 		case "field": {
 			const n :Field = cnode as Field;
+			if (on.body?.belong !== null && typeof on.body?.belong !== 'number') {
+				throw new Error('invalid node list');
+			}
+			const tmpbelong = on.body.belong === null ? null : c.node[on.body.belong];
+			if (!(tmpbelong === null || isMember(tmpbelong))) {
+				throw new Error('invalid node list');
+			}
+			n.belong = tmpbelong;
 			if (on.body?.ident !== null && typeof on.body?.ident !== 'number') {
 				throw new Error('invalid node list');
 			}
@@ -2000,18 +2006,18 @@ export function parseAST(obj: any): Program {
 				}
 				n.arguments.push(tmparguments);
 			}
-			if (on.body?.belong !== null && typeof on.body?.belong !== 'number') {
-				throw new Error('invalid node list');
-			}
-			const tmpbelong = on.body.belong === null ? null : c.node[on.body.belong];
-			if (!(tmpbelong === null || isFormat(tmpbelong))) {
-				throw new Error('invalid node list');
-			}
-			n.belong = tmpbelong;
 			break;
 		}
 		case "format": {
 			const n :Format = cnode as Format;
+			if (on.body?.belong !== null && typeof on.body?.belong !== 'number') {
+				throw new Error('invalid node list');
+			}
+			const tmpbelong = on.body.belong === null ? null : c.node[on.body.belong];
+			if (!(tmpbelong === null || isMember(tmpbelong))) {
+				throw new Error('invalid node list');
+			}
+			n.belong = tmpbelong;
 			const tmpis_enum = on.body?.is_enum;
 			if (typeof on.body?.is_enum !== "boolean") {
 				throw new Error('invalid node list');
@@ -2033,14 +2039,6 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list');
 			}
 			n.body = tmpbody;
-			if (on.body?.belong !== null && typeof on.body?.belong !== 'number') {
-				throw new Error('invalid node list');
-			}
-			const tmpbelong = on.body.belong === null ? null : c.node[on.body.belong];
-			if (!(tmpbelong === null || isFormat(tmpbelong))) {
-				throw new Error('invalid node list');
-			}
-			n.belong = tmpbelong;
 			if (on.body?.struct_type !== null && typeof on.body?.struct_type !== 'number') {
 				throw new Error('invalid node list');
 			}
@@ -2053,6 +2051,14 @@ export function parseAST(obj: any): Program {
 		}
 		case "function": {
 			const n :Function = cnode as Function;
+			if (on.body?.belong !== null && typeof on.body?.belong !== 'number') {
+				throw new Error('invalid node list');
+			}
+			const tmpbelong = on.body.belong === null ? null : c.node[on.body.belong];
+			if (!(tmpbelong === null || isMember(tmpbelong))) {
+				throw new Error('invalid node list');
+			}
+			n.belong = tmpbelong;
 			if (on.body?.ident !== null && typeof on.body?.ident !== 'number') {
 				throw new Error('invalid node list');
 			}
@@ -2079,14 +2085,6 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list');
 			}
 			n.return_type = tmpreturn_type;
-			if (on.body?.belong !== null && typeof on.body?.belong !== 'number') {
-				throw new Error('invalid node list');
-			}
-			const tmpbelong = on.body.belong === null ? null : c.node[on.body.belong];
-			if (!(tmpbelong === null || isFormat(tmpbelong))) {
-				throw new Error('invalid node list');
-			}
-			n.belong = tmpbelong;
 			if (on.body?.body !== null && typeof on.body?.body !== 'number') {
 				throw new Error('invalid node list');
 			}

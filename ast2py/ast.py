@@ -75,7 +75,7 @@ class Stmt(Node):
 
 
 class Member(Stmt):
-    pass
+    belong: Optional[Member]
 
 
 class Type(Node):
@@ -238,14 +238,12 @@ class Field(Member):
     field_type: Optional[Type]
     raw_arguments: Optional[Expr]
     arguments: List[Expr]
-    belong: Optional[Format]
 
 
 class Format(Member):
     is_enum: bool
     ident: Optional[Ident]
     body: Optional[IndentScope]
-    belong: Optional[Format]
     struct_type: Optional[StructType]
 
 
@@ -253,7 +251,6 @@ class Function(Member):
     ident: Optional[Ident]
     parameters: List[Field]
     return_type: Optional[Type]
-    belong: Optional[Format]
     body: Optional[IndentScope]
     func_type: Optional[FunctionType]
 
@@ -824,6 +821,8 @@ def ast2node(ast :Ast) -> Program:
                 x = node[ast.node[i].body["expr"]]
                 node[i].expr = x if isinstance(x,Expr) or x is None else raiseError(TypeError('type mismatch'))
             case NodeType.FIELD:
+                x = node[ast.node[i].body["belong"]]
+                node[i].belong = x if isinstance(x,Member) or x is None else raiseError(TypeError('type mismatch'))
                 x = node[ast.node[i].body["ident"]]
                 node[i].ident = x if isinstance(x,Ident) or x is None else raiseError(TypeError('type mismatch'))
                 node[i].colon_loc = parse_Loc(ast.node[i].body["colon_loc"])
@@ -832,27 +831,25 @@ def ast2node(ast :Ast) -> Program:
                 x = node[ast.node[i].body["raw_arguments"]]
                 node[i].raw_arguments = x if isinstance(x,Expr) or x is None else raiseError(TypeError('type mismatch'))
                 node[i].arguments = [(node[x] if isinstance(node[x],Expr) else raiseError(TypeError('type mismatch'))) for x in ast.node[i].body["arguments"]]
-                x = node[ast.node[i].body["belong"]]
-                node[i].belong = x if isinstance(x,Format) or x is None else raiseError(TypeError('type mismatch'))
             case NodeType.FORMAT:
+                x = node[ast.node[i].body["belong"]]
+                node[i].belong = x if isinstance(x,Member) or x is None else raiseError(TypeError('type mismatch'))
                 x = ast.node[i].body["is_enum"]
                 node[i].is_enum = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch'))
                 x = node[ast.node[i].body["ident"]]
                 node[i].ident = x if isinstance(x,Ident) or x is None else raiseError(TypeError('type mismatch'))
                 x = node[ast.node[i].body["body"]]
                 node[i].body = x if isinstance(x,IndentScope) or x is None else raiseError(TypeError('type mismatch'))
-                x = node[ast.node[i].body["belong"]]
-                node[i].belong = x if isinstance(x,Format) or x is None else raiseError(TypeError('type mismatch'))
                 x = node[ast.node[i].body["struct_type"]]
                 node[i].struct_type = x if isinstance(x,StructType) or x is None else raiseError(TypeError('type mismatch'))
             case NodeType.FUNCTION:
+                x = node[ast.node[i].body["belong"]]
+                node[i].belong = x if isinstance(x,Member) or x is None else raiseError(TypeError('type mismatch'))
                 x = node[ast.node[i].body["ident"]]
                 node[i].ident = x if isinstance(x,Ident) or x is None else raiseError(TypeError('type mismatch'))
                 node[i].parameters = [(node[x] if isinstance(node[x],Field) else raiseError(TypeError('type mismatch'))) for x in ast.node[i].body["parameters"]]
                 x = node[ast.node[i].body["return_type"]]
                 node[i].return_type = x if isinstance(x,Type) or x is None else raiseError(TypeError('type mismatch'))
-                x = node[ast.node[i].body["belong"]]
-                node[i].belong = x if isinstance(x,Format) or x is None else raiseError(TypeError('type mismatch'))
                 x = node[ast.node[i].body["body"]]
                 node[i].body = x if isinstance(x,IndentScope) or x is None else raiseError(TypeError('type mismatch'))
                 x = node[ast.node[i].body["func_type"]]

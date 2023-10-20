@@ -64,6 +64,12 @@ namespace brgen::ast {
 
     struct Member : Stmt {
         define_node_type(NodeType::member);
+        std::weak_ptr<Member> belong;
+
+        void dump(auto&& field) {
+            Stmt::dump(field);
+            sdebugf(belong);
+        }
 
        protected:
         constexpr Member(lexer::Loc l, NodeType t)
