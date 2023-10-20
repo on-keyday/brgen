@@ -535,6 +535,7 @@ struct Function {
 	Type* return_type;
 	IndentScope* body;
 	FunctionType* func_type;
+	StructType* struct_type;
 };
 
 struct IntType {

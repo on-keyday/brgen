@@ -203,6 +203,7 @@ namespace json2cpp {
                 fields.push_back(std::make_shared<Field>(field, std::make_shared<IntDesc>(std::move(*i))));
             }
             else if (auto i = tool::is_int_union_type(field->field_type)) {
+                /*
                 auto u = std::make_shared<IntUnionDesc>();
                 std::string name;
                 for (auto& f : i->fields) {
@@ -225,6 +226,7 @@ namespace json2cpp {
                     u->int_fields.push_back(std::make_shared<IntDesc>(std::move(*b)));
                 }
                 fields.push_back(std::make_shared<Field>(field, std::move(u)));
+                */
             }
             else {
                 return error(field->loc, "unsupported type");

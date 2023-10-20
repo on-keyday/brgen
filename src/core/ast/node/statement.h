@@ -13,7 +13,6 @@ namespace brgen::ast {
         bool is_enum = false;
         std::shared_ptr<Ident> ident;
         std::shared_ptr<IndentScope> body;
-        // std::weak_ptr<Format> belong;
         std::shared_ptr<StructType> struct_type;
         Format(lexer::Loc l, bool is_enum)
             : Member(l, NodeType::format), is_enum(is_enum) {}
@@ -27,7 +26,6 @@ namespace brgen::ast {
             sdebugf(is_enum);
             sdebugf(ident);
             sdebugf(body);
-            // sdebugf(belong);
             sdebugf(struct_type);
         }
     };
@@ -39,7 +37,6 @@ namespace brgen::ast {
         std::shared_ptr<Type> field_type;
         std::shared_ptr<Expr> raw_arguments;
         std::list<std::shared_ptr<Expr>> arguments;
-        // std::weak_ptr<Format> belong;
 
         Field(lexer::Loc l)
             : Member(l, NodeType::field) {}
@@ -55,20 +52,20 @@ namespace brgen::ast {
             sdebugf(field_type);
             sdebugf_omit(raw_arguments);
             sdebugf(arguments);
-            // sdebugf(belong);
         }
     };
 
     struct FunctionType;
+    struct StructType;
 
     struct Function : Member {
         define_node_type(NodeType::function);
         std::shared_ptr<Ident> ident;
         std::list<std::shared_ptr<Field>> parameters;
         std::shared_ptr<Type> return_type;
-        // std::weak_ptr<Format> belong;
         std::shared_ptr<IndentScope> body;
         std::shared_ptr<FunctionType> func_type;
+        std::shared_ptr<StructType> struct_type;
 
         Function(lexer::Loc l)
             : Member(l, NodeType::function) {}
@@ -81,9 +78,9 @@ namespace brgen::ast {
             sdebugf(ident);
             sdebugf(parameters);
             sdebugf(return_type);
-            // sdebugf(belong);
             sdebugf(body);
             sdebugf(func_type);
+            sdebugf(struct_type);
         }
     };
 

@@ -395,6 +395,7 @@ type Function struct {
 	ReturnType Type
 	Body       *IndentScope
 	FuncType   *FunctionType
+	StructType *StructType
 }
 
 func (n *Function) isMember() {}
@@ -1699,6 +1700,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 				ReturnType *uintptr  `json:"return_type"`
 				Body       *uintptr  `json:"body"`
 				FuncType   *uintptr  `json:"func_type"`
+				StructType *uintptr  `json:"struct_type"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -1721,6 +1723,9 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			}
 			if tmp.FuncType != nil {
 				v.FuncType = n.node[*tmp.FuncType].(*FunctionType)
+			}
+			if tmp.StructType != nil {
+				v.StructType = n.node[*tmp.StructType].(*StructType)
 			}
 		case "int_type":
 			v := n.node[i].(*IntType)
@@ -2163,6 +2168,9 @@ func Walk(n Node, f Visitor) {
 		}
 		if v.FuncType != nil {
 			f.Visit(f, v.FuncType)
+		}
+		if v.StructType != nil {
+			f.Visit(f, v.StructType)
 		}
 	case *IntType:
 	case *IdentType:

@@ -1937,6 +1937,7 @@ pub struct Function {
 	pub return_type: Option<Type>,
 	pub body: Option<Rc<RefCell<IndentScope>>>,
 	pub func_type: Option<Rc<RefCell<FunctionType>>>,
+	pub struct_type: Option<Rc<RefCell<StructType>>>,
 }
 
 impl TryFrom<&Member> for Rc<RefCell<Function>> {
@@ -2980,6 +2981,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				return_type: None,
 				body: None,
 				func_type: None,
+				struct_type: None,
 				})))
 			},
 			NodeType::IntType => {
@@ -4556,6 +4558,23 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					x =>return Err(Error::MismatchNodeType(x.into(),func_type_body.into())),
 				};
 				node.borrow_mut().func_type = Some(func_type_body.clone());
+				let struct_type_body = match raw_node.body.get("struct_type") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(raw_node.node_type,"struct_type")),
+				};
+				let struct_type_body = match struct_type_body.as_u64() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(struct_type_body.into(),JSONType::Number)),
+				};
+				let struct_type_body = match nodes.get(struct_type_body as usize) {
+					Some(v)=>v,
+					None => return Err(Error::IndexOutOfBounds(struct_type_body as usize)),
+				};
+				let struct_type_body = match struct_type_body {
+					Node::StructType(node)=>node,
+					x =>return Err(Error::MismatchNodeType(x.into(),struct_type_body.into())),
+				};
+				node.borrow_mut().struct_type = Some(struct_type_body.clone());
 			},
 			NodeType::IntType => {
 				let node = nodes[i].clone();
@@ -5271,6 +5290,9 @@ where
 				f(f,&node.into());
 			}
 			if let Some(node) = &node.borrow().func_type{
+				f(f,&node.into());
+			}
+			if let Some(node) = &node.borrow().struct_type{
 				f(f,&node.into());
 			}
 		},

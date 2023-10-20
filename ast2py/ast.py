@@ -253,6 +253,7 @@ class Function(Member):
     return_type: Optional[Type]
     body: Optional[IndentScope]
     func_type: Optional[FunctionType]
+    struct_type: Optional[StructType]
 
 
 class IntType(Type):
@@ -854,6 +855,8 @@ def ast2node(ast :Ast) -> Program:
                 node[i].body = x if isinstance(x,IndentScope) or x is None else raiseError(TypeError('type mismatch'))
                 x = node[ast.node[i].body["func_type"]]
                 node[i].func_type = x if isinstance(x,FunctionType) or x is None else raiseError(TypeError('type mismatch'))
+                x = node[ast.node[i].body["struct_type"]]
+                node[i].struct_type = x if isinstance(x,StructType) or x is None else raiseError(TypeError('type mismatch'))
             case NodeType.INT_TYPE:
                 x = ast.node[i].body["bit_size"]
                 node[i].bit_size = x if isinstance(x,int)  else raiseError(TypeError('type mismatch'))
@@ -1088,6 +1091,8 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
               f(f,x.body)
           if x.func_type is not None:
               f(f,x.func_type)
+          if x.struct_type is not None:
+              f(f,x.struct_type)
         case x if isinstance(x,IntType):
             pass
         case x if isinstance(x,IdentType):

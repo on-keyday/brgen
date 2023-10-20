@@ -947,8 +947,11 @@ namespace brgen::ast {
 
             state.add_to_struct(fn);
 
+            fn->struct_type = std::make_shared<StructType>(fn->loc);  // for function body nested
+
             {
                 auto scope = state.enter_member(fn);
+                auto typ = state.enter_struct(fn->struct_type);
                 fn->body = parse_indent_block(&ident_param);
             }
 

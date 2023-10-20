@@ -38,16 +38,36 @@ namespace brgen::ast::tool {
         return std::nullopt;
     }
 
+    struct UnionField {
+        std::shared_ptr<Expr> cond;
+        std::shared_ptr<Field> field;
+    };
+
     struct IntUnionTypeDesc {
-        std::shared_ptr<Expr> base_expr;
-        std::vector<std::shared_ptr<Field>> fields;
+        std::shared_ptr<Match> match;
+        std::vector<UnionField> fields;
     };
 
     inline std::optional<IntUnionTypeDesc> is_int_union_type(auto&& typ) {
         if (ast::UnionType* e = ast::as<ast::UnionType>(typ)) {
             IntUnionTypeDesc desc;
-            desc.base_expr = e->base.lock();
+            auto loc = e->base.lock();
+            auto m = ast::as<ast::Match>(loc);
+            if (!m) {
+                return std::nullopt;
+            }
+            desc.match = ast::cast_to<ast::Match>(loc);
+            std::vector<std::shared_ptr<ast::MatchBranch>> branch;
+            for (auto& br : desc.match->branch) {
+                if (ast::as<ast::MatchBranch>(br)) {
+                    branch.push_back(ast::cast_to<ast::MatchBranch>(br));
+                }
+            }
+            if (branch.size() != e->fields.size()) {
+                return std::nullopt;
+            }
             for (auto& s : e->fields) {
+                /**
                 if (s->fields.size() != 1) {
                     return std::nullopt;
                 }
@@ -59,6 +79,7 @@ namespace brgen::ast::tool {
                     return std::nullopt;
                 }
                 desc.fields.push_back(ast::cast_to<Field>(s->fields[0]));
+                */
             }
             return desc;
         }
