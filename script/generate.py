@@ -19,3 +19,10 @@ ret = sp.call(
     executable="./tool/gen_ast2py.exe",
 )
 print(ret)
+
+ret = sp.call(
+    ["./tool/gen_ast2c", "./ast2c/ast.h", "./ast2c/ast.c"],
+    executable="./tool/gen_ast2c.exe",
+)
+
+print(ret)

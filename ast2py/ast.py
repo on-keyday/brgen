@@ -405,6 +405,18 @@ class Scope:
     ident: List[Ident]
 
 
+class Pos:
+    begin: int
+    end: int
+
+def parse_Pos(json: dict) -> Pos:
+    ret = Pos()
+    ret.begin = int(json["begin"])
+    ret.end = int(json["end"])
+    return ret
+
+
+
 class Loc:
     pos: Pos
     file: int
@@ -417,18 +429,6 @@ def parse_Loc(json: dict) -> Loc:
     ret.file = int(json["file"])
     ret.line = int(json["line"])
     ret.col = int(json["col"])
-    return ret
-
-
-
-class Pos:
-    begin: int
-    end: int
-
-def parse_Pos(json: dict) -> Pos:
-    ret = Pos()
-    ret.begin = int(json["begin"])
-    ret.end = int(json["end"])
     return ret
 
 
@@ -915,254 +915,183 @@ def ast2node(ast :Ast) -> Program:
         scope[i].ident = [node[x] for x in ast.scope[i].ident]
     return Program(node[0])
 
-def walk(node: Node, f: Callable[[Node],bool]) -> None:
-    if not f(node):
-        return
+def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
     match node:
         case x if isinstance(x,Program):
           if x.struct_type is not None:
-              if not walk(x.struct_type,f):
-                  return False
+              f(f,x.struct_type)
           for i in range(len(x.elements)):
-              if not walk(x.elements[i],f):
-                  return False
+              f(f,x.elements[i])
         case x if isinstance(x,Binary):
           if x.expr_type is not None:
-              if not walk(x.expr_type,f):
-                  return False
+              f(f,x.expr_type)
           if x.left is not None:
-              if not walk(x.left,f):
-                  return False
+              f(f,x.left)
           if x.right is not None:
-              if not walk(x.right,f):
-                  return False
+              f(f,x.right)
         case x if isinstance(x,Unary):
           if x.expr_type is not None:
-              if not walk(x.expr_type,f):
-                  return False
+              f(f,x.expr_type)
           if x.expr is not None:
-              if not walk(x.expr,f):
-                  return False
+              f(f,x.expr)
         case x if isinstance(x,Cond):
           if x.expr_type is not None:
-              if not walk(x.expr_type,f):
-                  return False
+              f(f,x.expr_type)
           if x.cond is not None:
-              if not walk(x.cond,f):
-                  return False
+              f(f,x.cond)
           if x.then is not None:
-              if not walk(x.then,f):
-                  return False
+              f(f,x.then)
           if x.els is not None:
-              if not walk(x.els,f):
-                  return False
+              f(f,x.els)
         case x if isinstance(x,Ident):
           if x.expr_type is not None:
-              if not walk(x.expr_type,f):
-                  return False
+              f(f,x.expr_type)
         case x if isinstance(x,Call):
           if x.expr_type is not None:
-              if not walk(x.expr_type,f):
-                  return False
+              f(f,x.expr_type)
           if x.callee is not None:
-              if not walk(x.callee,f):
-                  return False
+              f(f,x.callee)
           if x.raw_arguments is not None:
-              if not walk(x.raw_arguments,f):
-                  return False
+              f(f,x.raw_arguments)
           for i in range(len(x.arguments)):
-              if not walk(x.arguments[i],f):
-                  return False
+              f(f,x.arguments[i])
         case x if isinstance(x,If):
           if x.expr_type is not None:
-              if not walk(x.expr_type,f):
-                  return False
+              f(f,x.expr_type)
           if x.cond is not None:
-              if not walk(x.cond,f):
-                  return False
+              f(f,x.cond)
           if x.then is not None:
-              if not walk(x.then,f):
-                  return False
+              f(f,x.then)
           if x.els is not None:
-              if not walk(x.els,f):
-                  return False
+              f(f,x.els)
         case x if isinstance(x,MemberAccess):
           if x.expr_type is not None:
-              if not walk(x.expr_type,f):
-                  return False
+              f(f,x.expr_type)
           if x.target is not None:
-              if not walk(x.target,f):
-                  return False
+              f(f,x.target)
         case x if isinstance(x,Paren):
           if x.expr_type is not None:
-              if not walk(x.expr_type,f):
-                  return False
+              f(f,x.expr_type)
           if x.expr is not None:
-              if not walk(x.expr,f):
-                  return False
+              f(f,x.expr)
         case x if isinstance(x,Index):
           if x.expr_type is not None:
-              if not walk(x.expr_type,f):
-                  return False
+              f(f,x.expr_type)
           if x.expr is not None:
-              if not walk(x.expr,f):
-                  return False
+              f(f,x.expr)
           if x.index is not None:
-              if not walk(x.index,f):
-                  return False
+              f(f,x.index)
         case x if isinstance(x,Match):
           if x.expr_type is not None:
-              if not walk(x.expr_type,f):
-                  return False
+              f(f,x.expr_type)
           if x.cond is not None:
-              if not walk(x.cond,f):
-                  return False
+              f(f,x.cond)
           for i in range(len(x.branch)):
-              if not walk(x.branch[i],f):
-                  return False
+              f(f,x.branch[i])
         case x if isinstance(x,Range):
           if x.expr_type is not None:
-              if not walk(x.expr_type,f):
-                  return False
+              f(f,x.expr_type)
           if x.start is not None:
-              if not walk(x.start,f):
-                  return False
+              f(f,x.start)
           if x.end is not None:
-              if not walk(x.end,f):
-                  return False
+              f(f,x.end)
         case x if isinstance(x,TmpVar):
           if x.expr_type is not None:
-              if not walk(x.expr_type,f):
-                  return False
+              f(f,x.expr_type)
         case x if isinstance(x,BlockExpr):
           if x.expr_type is not None:
-              if not walk(x.expr_type,f):
-                  return False
+              f(f,x.expr_type)
           for i in range(len(x.calls)):
-              if not walk(x.calls[i],f):
-                  return False
+              f(f,x.calls[i])
           if x.expr is not None:
-              if not walk(x.expr,f):
-                  return False
+              f(f,x.expr)
         case x if isinstance(x,Import):
           if x.expr_type is not None:
-              if not walk(x.expr_type,f):
-                  return False
+              f(f,x.expr_type)
           if x.base is not None:
-              if not walk(x.base,f):
-                  return False
+              f(f,x.base)
           if x.import_desc is not None:
-              if not walk(x.import_desc,f):
-                  return False
+              f(f,x.import_desc)
         case x if isinstance(x,IntLiteral):
           if x.expr_type is not None:
-              if not walk(x.expr_type,f):
-                  return False
+              f(f,x.expr_type)
         case x if isinstance(x,BoolLiteral):
           if x.expr_type is not None:
-              if not walk(x.expr_type,f):
-                  return False
+              f(f,x.expr_type)
         case x if isinstance(x,StrLiteral):
           if x.expr_type is not None:
-              if not walk(x.expr_type,f):
-                  return False
+              f(f,x.expr_type)
         case x if isinstance(x,Input):
           if x.expr_type is not None:
-              if not walk(x.expr_type,f):
-                  return False
+              f(f,x.expr_type)
         case x if isinstance(x,Output):
           if x.expr_type is not None:
-              if not walk(x.expr_type,f):
-                  return False
+              f(f,x.expr_type)
         case x if isinstance(x,Config):
           if x.expr_type is not None:
-              if not walk(x.expr_type,f):
-                  return False
+              f(f,x.expr_type)
         case x if isinstance(x,Loop):
           if x.init is not None:
-              if not walk(x.init,f):
-                  return False
+              f(f,x.init)
           if x.cond is not None:
-              if not walk(x.cond,f):
-                  return False
+              f(f,x.cond)
           if x.step is not None:
-              if not walk(x.step,f):
-                  return False
+              f(f,x.step)
           if x.body is not None:
-              if not walk(x.body,f):
-                  return False
+              f(f,x.body)
         case x if isinstance(x,IndentScope):
           for i in range(len(x.elements)):
-              if not walk(x.elements[i],f):
-                  return False
+              f(f,x.elements[i])
         case x if isinstance(x,MatchBranch):
           if x.cond is not None:
-              if not walk(x.cond,f):
-                  return False
+              f(f,x.cond)
           if x.then is not None:
-              if not walk(x.then,f):
-                  return False
+              f(f,x.then)
         case x if isinstance(x,Return):
           if x.expr is not None:
-              if not walk(x.expr,f):
-                  return False
+              f(f,x.expr)
         case x if isinstance(x,Break):
             pass
         case x if isinstance(x,Continue):
             pass
         case x if isinstance(x,Assert):
           if x.cond is not None:
-              if not walk(x.cond,f):
-                  return False
+              f(f,x.cond)
         case x if isinstance(x,ImplicitYield):
           if x.expr is not None:
-              if not walk(x.expr,f):
-                  return False
+              f(f,x.expr)
         case x if isinstance(x,Field):
           if x.ident is not None:
-              if not walk(x.ident,f):
-                  return False
+              f(f,x.ident)
           if x.field_type is not None:
-              if not walk(x.field_type,f):
-                  return False
+              f(f,x.field_type)
           if x.raw_arguments is not None:
-              if not walk(x.raw_arguments,f):
-                  return False
+              f(f,x.raw_arguments)
           for i in range(len(x.arguments)):
-              if not walk(x.arguments[i],f):
-                  return False
+              f(f,x.arguments[i])
         case x if isinstance(x,Format):
           if x.ident is not None:
-              if not walk(x.ident,f):
-                  return False
+              f(f,x.ident)
           if x.body is not None:
-              if not walk(x.body,f):
-                  return False
+              f(f,x.body)
           if x.struct_type is not None:
-              if not walk(x.struct_type,f):
-                  return False
+              f(f,x.struct_type)
         case x if isinstance(x,Function):
           if x.ident is not None:
-              if not walk(x.ident,f):
-                  return False
+              f(f,x.ident)
           for i in range(len(x.parameters)):
-              if not walk(x.parameters[i],f):
-                  return False
+              f(f,x.parameters[i])
           if x.return_type is not None:
-              if not walk(x.return_type,f):
-                  return False
+              f(f,x.return_type)
           if x.body is not None:
-              if not walk(x.body,f):
-                  return False
+              f(f,x.body)
           if x.func_type is not None:
-              if not walk(x.func_type,f):
-                  return False
+              f(f,x.func_type)
         case x if isinstance(x,IntType):
             pass
         case x if isinstance(x,IdentType):
           if x.ident is not None:
-              if not walk(x.ident,f):
-                  return False
+              f(f,x.ident)
         case x if isinstance(x,IntLiteralType):
             pass
         case x if isinstance(x,StrLiteralType):
@@ -1173,39 +1102,29 @@ def walk(node: Node, f: Callable[[Node],bool]) -> None:
             pass
         case x if isinstance(x,ArrayType):
           if x.base_type is not None:
-              if not walk(x.base_type,f):
-                  return False
+              f(f,x.base_type)
           if x.length is not None:
-              if not walk(x.length,f):
-                  return False
+              f(f,x.length)
         case x if isinstance(x,FunctionType):
           if x.return_type is not None:
-              if not walk(x.return_type,f):
-                  return False
+              f(f,x.return_type)
           for i in range(len(x.parameters)):
-              if not walk(x.parameters[i],f):
-                  return False
+              f(f,x.parameters[i])
         case x if isinstance(x,StructType):
           for i in range(len(x.fields)):
-              if not walk(x.fields[i],f):
-                  return False
+              f(f,x.fields[i])
         case x if isinstance(x,UnionType):
           for i in range(len(x.fields)):
-              if not walk(x.fields[i],f):
-                  return False
+              f(f,x.fields[i])
         case x if isinstance(x,Cast):
           if x.expr_type is not None:
-              if not walk(x.expr_type,f):
-                  return False
+              f(f,x.expr_type)
           if x.base is not None:
-              if not walk(x.base,f):
-                  return False
+              f(f,x.base)
           if x.expr is not None:
-              if not walk(x.expr,f):
-                  return False
+              f(f,x.expr)
         case x if isinstance(x,Comment):
             pass
         case x if isinstance(x,CommentGroup):
           for i in range(len(x.comments)):
-              if not walk(x.comments[i],f):
-                  return False
+              f(f,x.comments[i])

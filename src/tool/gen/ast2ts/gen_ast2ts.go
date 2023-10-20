@@ -363,10 +363,9 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("	return obj && typeof obj === 'object' && Array.isArray(obj?.files) && (obj?.tokens === null || Array.isArray(obj?.tokens)) && (obj?.error === null || isSrcError(obj?.error));\n")
 	w.Printf("}\n\n")
 
-	w.Printf("export function walk(node: Node, fn: (node: Node) => boolean) {\n")
-	w.Printf("	if (!fn(node)) {\n")
-	w.Printf("		return;\n")
-	w.Printf("	}\n")
+	w.Printf("export type VisitFn<T> = (f: VisitFn<T>, arg: T) => void;")
+
+	w.Printf("export function walk(node: Node, fn: VisitFn<Node>) {\n")
 	w.Printf("	switch (node.node_type) {\n")
 	for _, def := range defs.Defs {
 		switch d := def.(type) {
@@ -388,13 +387,11 @@ func generate(rw io.Writer, defs *gen.Defs) {
 				}
 				if field.Type.IsArray {
 					w.Printf("			for (const e of n.%s) {\n", field.Name)
-					w.Printf("				if (!walk(e, fn)) {\n")
-					w.Printf("					return false;\n")
-					w.Printf("				}\n")
+					w.Printf("				fn(fn,e);\n")
 					w.Printf("			}\n")
 				} else if field.Type.IsPtr || field.Type.IsInterface {
-					w.Printf("			if (n.%s !== null && !walk(n.%s, fn)) {\n", field.Name, field.Name)
-					w.Printf("				return false;\n")
+					w.Printf("			if (n.%s !== null) {\n", field.Name)
+					w.Printf("				fn(fn,n.%s);\n", field.Name)
 					w.Printf("			}\n")
 				}
 			}

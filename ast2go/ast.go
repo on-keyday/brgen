@@ -975,16 +975,16 @@ type Scope struct {
 	Ident  []*Ident
 }
 
+type Pos struct {
+	Begin uint64 `json:"begin"`
+	End   uint64 `json:"end"`
+}
+
 type Loc struct {
 	Pos  Pos    `json:"pos"`
 	File uint64 `json:"file"`
 	Line uint64 `json:"line"`
 	Col  uint64 `json:"col"`
-}
-
-type Pos struct {
-	Begin uint64 `json:"begin"`
-	End   uint64 `json:"end"`
 }
 
 type Token struct {
@@ -1917,251 +1917,254 @@ type TokenFile struct {
 	Error  *SrcError `json:"error"`
 }
 
-func Walk(n Node, f func(Node) (cont bool)) {
-	if !f(n) {
-		return
-	}
+type Visitor interface {
+	Visit(v Visitor, n Node)
+}
+
+type VisitFn func(v Visitor, n Node)
+
+func Walk(n Node, f Visitor) {
 	switch v := n.(type) {
 	case *Program:
 		if v.StructType != nil {
-			Walk(v.StructType, f)
+			f.Visit(f, v.StructType)
 		}
 		for _, w := range v.Elements {
-			Walk(w, f)
+			f.Visit(f, w)
 		}
 	case *Binary:
 		if v.ExprType != nil {
-			Walk(v.ExprType, f)
+			f.Visit(f, v.ExprType)
 		}
 		if v.Left != nil {
-			Walk(v.Left, f)
+			f.Visit(f, v.Left)
 		}
 		if v.Right != nil {
-			Walk(v.Right, f)
+			f.Visit(f, v.Right)
 		}
 	case *Unary:
 		if v.ExprType != nil {
-			Walk(v.ExprType, f)
+			f.Visit(f, v.ExprType)
 		}
 		if v.Expr != nil {
-			Walk(v.Expr, f)
+			f.Visit(f, v.Expr)
 		}
 	case *Cond:
 		if v.ExprType != nil {
-			Walk(v.ExprType, f)
+			f.Visit(f, v.ExprType)
 		}
 		if v.Cond != nil {
-			Walk(v.Cond, f)
+			f.Visit(f, v.Cond)
 		}
 		if v.Then != nil {
-			Walk(v.Then, f)
+			f.Visit(f, v.Then)
 		}
 		if v.Els != nil {
-			Walk(v.Els, f)
+			f.Visit(f, v.Els)
 		}
 	case *Ident:
 		if v.ExprType != nil {
-			Walk(v.ExprType, f)
+			f.Visit(f, v.ExprType)
 		}
 	case *Call:
 		if v.ExprType != nil {
-			Walk(v.ExprType, f)
+			f.Visit(f, v.ExprType)
 		}
 		if v.Callee != nil {
-			Walk(v.Callee, f)
+			f.Visit(f, v.Callee)
 		}
 		if v.RawArguments != nil {
-			Walk(v.RawArguments, f)
+			f.Visit(f, v.RawArguments)
 		}
 		for _, w := range v.Arguments {
-			Walk(w, f)
+			f.Visit(f, w)
 		}
 	case *If:
 		if v.ExprType != nil {
-			Walk(v.ExprType, f)
+			f.Visit(f, v.ExprType)
 		}
 		if v.Cond != nil {
-			Walk(v.Cond, f)
+			f.Visit(f, v.Cond)
 		}
 		if v.Then != nil {
-			Walk(v.Then, f)
+			f.Visit(f, v.Then)
 		}
 		if v.Els != nil {
-			Walk(v.Els, f)
+			f.Visit(f, v.Els)
 		}
 	case *MemberAccess:
 		if v.ExprType != nil {
-			Walk(v.ExprType, f)
+			f.Visit(f, v.ExprType)
 		}
 		if v.Target != nil {
-			Walk(v.Target, f)
+			f.Visit(f, v.Target)
 		}
 	case *Paren:
 		if v.ExprType != nil {
-			Walk(v.ExprType, f)
+			f.Visit(f, v.ExprType)
 		}
 		if v.Expr != nil {
-			Walk(v.Expr, f)
+			f.Visit(f, v.Expr)
 		}
 	case *Index:
 		if v.ExprType != nil {
-			Walk(v.ExprType, f)
+			f.Visit(f, v.ExprType)
 		}
 		if v.Expr != nil {
-			Walk(v.Expr, f)
+			f.Visit(f, v.Expr)
 		}
 		if v.Index != nil {
-			Walk(v.Index, f)
+			f.Visit(f, v.Index)
 		}
 	case *Match:
 		if v.ExprType != nil {
-			Walk(v.ExprType, f)
+			f.Visit(f, v.ExprType)
 		}
 		if v.Cond != nil {
-			Walk(v.Cond, f)
+			f.Visit(f, v.Cond)
 		}
 		for _, w := range v.Branch {
-			Walk(w, f)
+			f.Visit(f, w)
 		}
 	case *Range:
 		if v.ExprType != nil {
-			Walk(v.ExprType, f)
+			f.Visit(f, v.ExprType)
 		}
 		if v.Start != nil {
-			Walk(v.Start, f)
+			f.Visit(f, v.Start)
 		}
 		if v.End != nil {
-			Walk(v.End, f)
+			f.Visit(f, v.End)
 		}
 	case *TmpVar:
 		if v.ExprType != nil {
-			Walk(v.ExprType, f)
+			f.Visit(f, v.ExprType)
 		}
 	case *BlockExpr:
 		if v.ExprType != nil {
-			Walk(v.ExprType, f)
+			f.Visit(f, v.ExprType)
 		}
 		for _, w := range v.Calls {
-			Walk(w, f)
+			f.Visit(f, w)
 		}
 		if v.Expr != nil {
-			Walk(v.Expr, f)
+			f.Visit(f, v.Expr)
 		}
 	case *Import:
 		if v.ExprType != nil {
-			Walk(v.ExprType, f)
+			f.Visit(f, v.ExprType)
 		}
 		if v.Base != nil {
-			Walk(v.Base, f)
+			f.Visit(f, v.Base)
 		}
 		if v.ImportDesc != nil {
-			Walk(v.ImportDesc, f)
+			f.Visit(f, v.ImportDesc)
 		}
 	case *IntLiteral:
 		if v.ExprType != nil {
-			Walk(v.ExprType, f)
+			f.Visit(f, v.ExprType)
 		}
 	case *BoolLiteral:
 		if v.ExprType != nil {
-			Walk(v.ExprType, f)
+			f.Visit(f, v.ExprType)
 		}
 	case *StrLiteral:
 		if v.ExprType != nil {
-			Walk(v.ExprType, f)
+			f.Visit(f, v.ExprType)
 		}
 	case *Input:
 		if v.ExprType != nil {
-			Walk(v.ExprType, f)
+			f.Visit(f, v.ExprType)
 		}
 	case *Output:
 		if v.ExprType != nil {
-			Walk(v.ExprType, f)
+			f.Visit(f, v.ExprType)
 		}
 	case *Config:
 		if v.ExprType != nil {
-			Walk(v.ExprType, f)
+			f.Visit(f, v.ExprType)
 		}
 	case *Loop:
 		if v.Init != nil {
-			Walk(v.Init, f)
+			f.Visit(f, v.Init)
 		}
 		if v.Cond != nil {
-			Walk(v.Cond, f)
+			f.Visit(f, v.Cond)
 		}
 		if v.Step != nil {
-			Walk(v.Step, f)
+			f.Visit(f, v.Step)
 		}
 		if v.Body != nil {
-			Walk(v.Body, f)
+			f.Visit(f, v.Body)
 		}
 	case *IndentScope:
 		for _, w := range v.Elements {
-			Walk(w, f)
+			f.Visit(f, w)
 		}
 	case *MatchBranch:
 		if v.Cond != nil {
-			Walk(v.Cond, f)
+			f.Visit(f, v.Cond)
 		}
 		if v.Then != nil {
-			Walk(v.Then, f)
+			f.Visit(f, v.Then)
 		}
 	case *Return:
 		if v.Expr != nil {
-			Walk(v.Expr, f)
+			f.Visit(f, v.Expr)
 		}
 	case *Break:
 	case *Continue:
 	case *Assert:
 		if v.Cond != nil {
-			Walk(v.Cond, f)
+			f.Visit(f, v.Cond)
 		}
 	case *ImplicitYield:
 		if v.Expr != nil {
-			Walk(v.Expr, f)
+			f.Visit(f, v.Expr)
 		}
 	case *Field:
 		if v.Ident != nil {
-			Walk(v.Ident, f)
+			f.Visit(f, v.Ident)
 		}
 		if v.FieldType != nil {
-			Walk(v.FieldType, f)
+			f.Visit(f, v.FieldType)
 		}
 		if v.RawArguments != nil {
-			Walk(v.RawArguments, f)
+			f.Visit(f, v.RawArguments)
 		}
 		for _, w := range v.Arguments {
-			Walk(w, f)
+			f.Visit(f, w)
 		}
 	case *Format:
 		if v.Ident != nil {
-			Walk(v.Ident, f)
+			f.Visit(f, v.Ident)
 		}
 		if v.Body != nil {
-			Walk(v.Body, f)
+			f.Visit(f, v.Body)
 		}
 		if v.StructType != nil {
-			Walk(v.StructType, f)
+			f.Visit(f, v.StructType)
 		}
 	case *Function:
 		if v.Ident != nil {
-			Walk(v.Ident, f)
+			f.Visit(f, v.Ident)
 		}
 		for _, w := range v.Parameters {
-			Walk(w, f)
+			f.Visit(f, w)
 		}
 		if v.ReturnType != nil {
-			Walk(v.ReturnType, f)
+			f.Visit(f, v.ReturnType)
 		}
 		if v.Body != nil {
-			Walk(v.Body, f)
+			f.Visit(f, v.Body)
 		}
 		if v.FuncType != nil {
-			Walk(v.FuncType, f)
+			f.Visit(f, v.FuncType)
 		}
 	case *IntType:
 	case *IdentType:
 		if v.Ident != nil {
-			Walk(v.Ident, f)
+			f.Visit(f, v.Ident)
 		}
 	case *IntLiteralType:
 	case *StrLiteralType:
@@ -2169,40 +2172,40 @@ func Walk(n Node, f func(Node) (cont bool)) {
 	case *BoolType:
 	case *ArrayType:
 		if v.BaseType != nil {
-			Walk(v.BaseType, f)
+			f.Visit(f, v.BaseType)
 		}
 		if v.Length != nil {
-			Walk(v.Length, f)
+			f.Visit(f, v.Length)
 		}
 	case *FunctionType:
 		if v.ReturnType != nil {
-			Walk(v.ReturnType, f)
+			f.Visit(f, v.ReturnType)
 		}
 		for _, w := range v.Parameters {
-			Walk(w, f)
+			f.Visit(f, w)
 		}
 	case *StructType:
 		for _, w := range v.Fields {
-			Walk(w, f)
+			f.Visit(f, w)
 		}
 	case *UnionType:
 		for _, w := range v.Fields {
-			Walk(w, f)
+			f.Visit(f, w)
 		}
 	case *Cast:
 		if v.ExprType != nil {
-			Walk(v.ExprType, f)
+			f.Visit(f, v.ExprType)
 		}
 		if v.Base != nil {
-			Walk(v.Base, f)
+			f.Visit(f, v.Base)
 		}
 		if v.Expr != nil {
-			Walk(v.Expr, f)
+			f.Visit(f, v.Expr)
 		}
 	case *Comment:
 	case *CommentGroup:
 		for _, w := range v.Comments {
-			Walk(w, f)
+			f.Visit(f, w)
 		}
 	}
 }

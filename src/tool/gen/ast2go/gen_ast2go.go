@@ -246,10 +246,13 @@ func generate(w io.Writer, list *gen.Defs) {
 	writer.Printf("	Error *SrcError `json:\"error\"`\n")
 	writer.Printf("}\n\n")
 
-	writer.Printf("func Walk(n Node, f func(Node) (cont bool)) {\n")
-	writer.Printf("	if !f(n) {\n")
-	writer.Printf("		return\n")
-	writer.Printf("	}\n")
+	writer.Printf("type Visitor interface {\n")
+	writer.Printf("	Visit(v Visitor,n Node)\n")
+	writer.Printf("}\n\n")
+
+	writer.Printf("type VisitFn func(v Visitor,n Node)\n\n")
+
+	writer.Printf("func Walk(n Node, f Visitor) {\n")
 	writer.Printf("	switch v := n.(type) {\n")
 	for _, def := range list.Defs {
 		if structDef, ok := def.(*gen.Struct); ok {
@@ -266,11 +269,11 @@ func generate(w io.Writer, list *gen.Defs) {
 				}
 				if field.Type.IsArray {
 					writer.Printf("		for _, w := range v.%s {\n", field.Name)
-					writer.Printf("			Walk(w, f)\n")
+					writer.Printf("			f.Visit(f,w)\n")
 					writer.Printf("		}\n")
 				} else if field.Type.IsPtr || field.Type.IsInterface {
 					writer.Printf("		if v.%s != nil {\n", field.Name)
-					writer.Printf("			Walk(v.%s, f)\n", field.Name)
+					writer.Printf("			f.Visit(f,v.%s)\n", field.Name)
 					writer.Printf("		}\n")
 				}
 			}

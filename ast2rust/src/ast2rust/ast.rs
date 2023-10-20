@@ -2665,17 +2665,17 @@ pub struct Scope {
 }
 
 #[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+pub struct Pos {
+	pub begin: u64,
+	pub end: u64,
+}
+
+#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
 pub struct Loc {
 	pub pos: Pos,
 	pub file: u64,
 	pub line: u64,
 	pub col: u64,
-}
-
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
-pub struct Pos {
-	pub begin: u64,
-	pub end: u64,
 }
 
 #[derive(Debug,Clone,Serialize,Deserialize)]
@@ -5009,221 +5009,221 @@ pub struct TokenFile {
 	pub error :Option<SrcError>,
 }
 
-pub fn walk_node<F:FnMut(&Node)->bool>(node:&Node,f:&mut F){
-	if !f(node){
-		return;
-	}
+pub fn walk_node<F>(node:&Node,f:&mut F)
+where
+	F: FnMut(&F,&Node)
+{
 	match node {
 		Node::Program(node)=>{
 			if let Some(node) = &node.borrow().struct_type{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			for node in &node.borrow().elements{
-				walk_node(node,f);
+				f(&f,node);
 			}
 		},
 		Node::Binary(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			if let Some(node) = &node.borrow().left{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			if let Some(node) = &node.borrow().right{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 		},
 		Node::Unary(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			if let Some(node) = &node.borrow().expr{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 		},
 		Node::Cond(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			if let Some(node) = &node.borrow().cond{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			if let Some(node) = &node.borrow().then{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			if let Some(node) = &node.borrow().els{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 		},
 		Node::Ident(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 		},
 		Node::Call(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			if let Some(node) = &node.borrow().callee{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			if let Some(node) = &node.borrow().raw_arguments{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			for node in &node.borrow().arguments{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 		},
 		Node::If(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			if let Some(node) = &node.borrow().cond{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			if let Some(node) = &node.borrow().then{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			if let Some(node) = &node.borrow().els{
-				walk_node(node,f);
+				f(&f,node);
 			}
 		},
 		Node::MemberAccess(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			if let Some(node) = &node.borrow().target{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 		},
 		Node::Paren(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			if let Some(node) = &node.borrow().expr{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 		},
 		Node::Index(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			if let Some(node) = &node.borrow().expr{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			if let Some(node) = &node.borrow().index{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 		},
 		Node::Match(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			if let Some(node) = &node.borrow().cond{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			for node in &node.borrow().branch{
-				walk_node(node,f);
+				f(&f,node);
 			}
 		},
 		Node::Range(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			if let Some(node) = &node.borrow().start{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			if let Some(node) = &node.borrow().end{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 		},
 		Node::TmpVar(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 		},
 		Node::BlockExpr(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			for node in &node.borrow().calls{
-				walk_node(node,f);
+				f(&f,node);
 			}
 			if let Some(node) = &node.borrow().expr{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 		},
 		Node::Import(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			if let Some(node) = &node.borrow().base{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			if let Some(node) = &node.borrow().import_desc{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 		},
 		Node::IntLiteral(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 		},
 		Node::BoolLiteral(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 		},
 		Node::StrLiteral(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 		},
 		Node::Input(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 		},
 		Node::Output(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 		},
 		Node::Config(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 		},
 		Node::Loop(node)=>{
 			if let Some(node) = &node.borrow().init{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			if let Some(node) = &node.borrow().cond{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			if let Some(node) = &node.borrow().step{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			if let Some(node) = &node.borrow().body{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 		},
 		Node::IndentScope(node)=>{
 			for node in &node.borrow().elements{
-				walk_node(node,f);
+				f(&f,node);
 			}
 		},
 		Node::MatchBranch(node)=>{
 			if let Some(node) = &node.borrow().cond{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			if let Some(node) = &node.borrow().then{
-				walk_node(node,f);
+				f(&f,node);
 			}
 		},
 		Node::Return(node)=>{
 			if let Some(node) = &node.borrow().expr{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 		},
 		Node::Break(node)=>{
@@ -5232,61 +5232,61 @@ pub fn walk_node<F:FnMut(&Node)->bool>(node:&Node,f:&mut F){
 		},
 		Node::Assert(node)=>{
 			if let Some(node) = &node.borrow().cond{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 		},
 		Node::ImplicitYield(node)=>{
 			if let Some(node) = &node.borrow().expr{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 		},
 		Node::Field(node)=>{
 			if let Some(node) = &node.borrow().ident{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			if let Some(node) = &node.borrow().field_type{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			if let Some(node) = &node.borrow().raw_arguments{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			for node in &node.borrow().arguments{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 		},
 		Node::Format(node)=>{
 			if let Some(node) = &node.borrow().ident{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			if let Some(node) = &node.borrow().body{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			if let Some(node) = &node.borrow().struct_type{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 		},
 		Node::Function(node)=>{
 			if let Some(node) = &node.borrow().ident{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			for node in &node.borrow().parameters{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			if let Some(node) = &node.borrow().return_type{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			if let Some(node) = &node.borrow().body{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			if let Some(node) = &node.borrow().func_type{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 		},
 		Node::IntType(node)=>{
 		},
 		Node::IdentType(node)=>{
 			if let Some(node) = &node.borrow().ident{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 		},
 		Node::IntLiteralType(node)=>{
@@ -5299,46 +5299,46 @@ pub fn walk_node<F:FnMut(&Node)->bool>(node:&Node,f:&mut F){
 		},
 		Node::ArrayType(node)=>{
 			if let Some(node) = &node.borrow().base_type{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			if let Some(node) = &node.borrow().length{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 		},
 		Node::FunctionType(node)=>{
 			if let Some(node) = &node.borrow().return_type{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			for node in &node.borrow().parameters{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 		},
 		Node::StructType(node)=>{
 			for node in &node.borrow().fields{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 		},
 		Node::UnionType(node)=>{
 			for node in &node.borrow().fields{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 		},
 		Node::Cast(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			if let Some(node) = &node.borrow().base{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 			if let Some(node) = &node.borrow().expr{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 		},
 		Node::Comment(node)=>{
 		},
 		Node::CommentGroup(node)=>{
 			for node in &node.borrow().comments{
-				walk_node(&node.into(),f);
+				f(&f,&node.into());
 			}
 		},
 	}

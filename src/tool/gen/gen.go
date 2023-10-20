@@ -165,6 +165,17 @@ func (d *Type) PyString() string {
 	return prefix + d.Name + postfix
 }
 
+func (d *Type) CString() string {
+	postfix := ""
+	if d.IsInterface || d.IsPtr {
+		postfix += "*"
+	}
+	if d.IsArray {
+		postfix += "*"
+	}
+	return d.Name + postfix
+}
+
 func (d *Type) UintptrString() string {
 	prefix := ""
 	if d.IsArray {
@@ -355,6 +366,11 @@ func CollectDefinition(list *List, fieldCaseFn func(string) string, typeCaseFn f
 	for _, node := range list.Node {
 		if len(node.OneOf) > 0 {
 			iface := c.interfacesMap[node.NodeType]
+			iface.Fields = append(iface.Fields, &Field{
+				Name: c.fieldCaseFn("Loc"),
+				Type: &Type{Name: c.typeCaseFn("Loc")},
+				Tag:  "loc",
+			})
 			for _, field := range node.Body {
 				iface.Fields = append(iface.Fields, &Field{
 					Name: c.fieldCaseFn(field.Key),
@@ -362,11 +378,6 @@ func CollectDefinition(list *List, fieldCaseFn func(string) string, typeCaseFn f
 					Tag:  field.Key,
 				})
 			}
-			iface.Fields = append(iface.Fields, &Field{
-				Name: c.fieldCaseFn("Loc"),
-				Type: &Type{Name: c.typeCaseFn("Loc")},
-				Tag:  "loc",
-			})
 			continue
 		}
 		var body Struct
@@ -426,19 +437,19 @@ func CollectDefinition(list *List, fieldCaseFn func(string) string, typeCaseFn f
 	defs.push(&scope)
 	defs.ScopeDef = &scope
 
-	// loc definition
-	loc := Struct{}
-	loc.Name = c.typeCaseFn("Loc")
-	loc.Fields = make([]*Field, 0, len(list.Loc))
-	loc.Fields = c.mapToStructFields(list.Loc)
-	defs.push(&loc)
-
 	// pos definition
 	pos := Struct{}
 	pos.Name = c.typeCaseFn("Pos")
 	pos.Fields = make([]*Field, 0, len(list.Pos))
 	pos.Fields = c.mapToStructFields(list.Pos)
 	defs.push(&pos)
+
+	// loc definition
+	loc := Struct{}
+	loc.Name = c.typeCaseFn("Loc")
+	loc.Fields = make([]*Field, 0, len(list.Loc))
+	loc.Fields = c.mapToStructFields(list.Loc)
+	defs.push(&loc)
 
 	// token definition
 	token := Struct{}

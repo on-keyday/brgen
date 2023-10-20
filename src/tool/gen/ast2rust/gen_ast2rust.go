@@ -471,10 +471,10 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("	pub error :Option<SrcError>,\n")
 	w.Printf("}\n\n")
 
-	w.Printf("pub fn walk_node<F:FnMut(&Node)->bool>(node:&Node,f:&mut F){\n")
-	w.Printf("	if !f(node){\n")
-	w.Printf("		return;\n")
-	w.Printf("	}\n")
+	w.Printf("pub fn walk_node<F>(node:&Node,f:&mut F)\n")
+	w.Printf("where\n")
+	w.Printf("	F: FnMut(&F,&Node)\n")
+	w.Printf("{\n")
 	w.Printf("	match node {\n")
 	for _, nodeType := range defs.Defs {
 		switch d := nodeType.(type) {
@@ -493,17 +493,17 @@ func generate(rw io.Writer, defs *gen.Defs) {
 				if field.Type.IsArray {
 					w.Printf("			for node in &node.borrow().%s{\n", field.Name)
 					if field.Type.Name == "Node" {
-						w.Printf("				walk_node(node,f);\n")
+						w.Printf("				f(&f,node);\n")
 					} else {
-						w.Printf("				walk_node(&node.into(),f);\n")
+						w.Printf("				f(&f,&node.into());\n")
 					}
 					w.Printf("			}\n")
 				} else if field.Type.IsPtr || field.Type.IsInterface {
 					w.Printf("			if let Some(node) = &node.borrow().%s{\n", field.Name)
 					if field.Type.Name == "Node" {
-						w.Printf("				walk_node(node,f);\n")
+						w.Printf("				f(&f,node);\n")
 					} else {
-						w.Printf("				walk_node(&node.into(),f);\n")
+						w.Printf("				f(&f,&node.into());\n")
 					}
 					w.Printf("			}\n")
 				}

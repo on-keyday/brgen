@@ -328,8 +328,8 @@ namespace brgen::ast {
         else {
             field("scope", utils::json::RawJSON<const char*>{scope_type_list});
         }
-        field("loc", utils::json::RawJSON<const char*>{brgen::ast::loc_type});
         field("pos", utils::json::RawJSON<const char*>{brgen::ast::pos_type});
+        field("loc", utils::json::RawJSON<const char*>{brgen::ast::loc_type});
         if (opt.dump_lex) {
             {
                 R p{lexer::tag_str, lexer::tag_str + lexer::tag_count};
