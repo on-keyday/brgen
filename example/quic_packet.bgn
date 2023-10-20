@@ -21,7 +21,6 @@ format QUICPacket:
       :LongPacket
    else:
       :OneRTTPacket
-   
 
 format LongPacket:
    long_packet_type :u2

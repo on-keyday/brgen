@@ -1,5 +1,5 @@
 1 + 1
-err = if true:
+err := if true:
         2
-    else:
+else:
         3

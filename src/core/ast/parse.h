@@ -353,7 +353,7 @@ namespace brgen::ast {
         /*
             <prim> ::= <int-literal> | <bool-literal> | <str-literal> | <ident> | "(" <expr> ")" | <if>
         */
-        std::shared_ptr<Expr> parse_prim() {
+        std::shared_ptr<Expr> parse_prim(bool* line_skipped) {
             if (auto token = s.consume_token(lexer::Tag::int_literal)) {
                 return std::make_shared<IntLiteral>(token->loc, std::move(token->token));
             }
@@ -376,9 +376,15 @@ namespace brgen::ast {
                 return parse_paren(std::move(*paren));
             }
             if (auto if_ = s.consume_token("if")) {
+                if (line_skipped) {
+                    *line_skipped = true;
+                }
                 return parse_if(std::move(*if_));
             }
             if (auto match = s.consume_token("match")) {
+                if (line_skipped) {
+                    *line_skipped = true;
+                }
                 return parse_match(std::move(*match));
             }
             return parse_ident();
@@ -424,8 +430,8 @@ namespace brgen::ast {
         /*
             <post> ::= <prim>  ("(" <expr> ")" | <post> "." <ident> | <post> "[" <expr> "]")*
         */
-        std::shared_ptr<Expr> parse_post(Stream& s) {
-            auto p = parse_prim();
+        std::shared_ptr<Expr> parse_post(bool* line_skipped) {
+            auto p = parse_prim(line_skipped);
             for (;;) {
                 s.skip_space();
                 if (auto c = s.consume_token("(")) {
@@ -457,7 +463,7 @@ namespace brgen::ast {
             <unary> ::= <post> | <unary-op> <unary>
             <unary-op> ::= <unary-op> | <unary-op> <unary-op> <unary>
         */
-        std::shared_ptr<Expr> parse_unary() {
+        std::shared_ptr<Expr> parse_unary(bool* line_skipped) {
             std::vector<std::shared_ptr<Unary>> stack;
             size_t i;
             s.skip_space();
@@ -469,7 +475,7 @@ namespace brgen::ast {
                 }
                 break;
             }
-            auto target = parse_post(s);  // return non-nullptr or throw error
+            auto target = parse_post(line_skipped);  // return non-nullptr or throw error
             while (stack.size()) {
                 auto ptr = std::move(stack.back());
                 stack.pop_back();
@@ -536,13 +542,13 @@ namespace brgen::ast {
             <expr> ::= <unary> | <unary> <bin-op> <expr>
             <bin-op> ::= <bin-op> | <bin-op> <bin-op> <expr>
         */
-        std::shared_ptr<Expr> parse_expr() {
+        std::shared_ptr<Expr> parse_expr(bool* line_skipped = nullptr) {
             std::shared_ptr<Expr> expr;
             size_t depth;
             std::vector<BinOpStack> stack;
             size_t i;
             auto parse_low = [&] {
-                expr = parse_unary();  // return non-nullptr or throw error
+                expr = parse_unary(line_skipped);  // return non-nullptr or throw error
                 depth = 0;
             };
 
@@ -667,8 +673,8 @@ namespace brgen::ast {
                         }
                         s.skip_white();
                         auto b = std::make_shared<Binary>(token->loc, std::move(expr), *ast::bin_op(ast::bin_layers[depth][i]));
-                        if (depth == 0) {              // special case, needless to use stack
-                            b->right = parse_unary();  // return non-nullptr or throw error
+                        if (depth == 0) {                          // special case, needless to use stack
+                            b->right = parse_unary(line_skipped);  // return non-nullptr or throw error
                             expr = std::move(b);
                         }
                         else {
@@ -984,7 +990,7 @@ namespace brgen::ast {
                 auto ret_ = std::make_shared<Return>(ret->loc);
                 s.skip_space();
                 if (!s.eos() && !s.consume_token(lexer::Tag::line)) {
-                    ret_->expr = parse_expr();
+                    ret_->expr = parse_expr(prev_skip_line);
                     skip_last();
                 }
                 return ret_;
@@ -1005,7 +1011,7 @@ namespace brgen::ast {
                 node = parse_field(nullptr);
             }
             else {
-                auto expr = parse_expr();
+                auto expr = parse_expr(prev_skip_line);
                 node = parse_field(expr);
             }
 
