@@ -37,20 +37,20 @@ type Type interface {
 }
 
 type Program struct {
+	Loc         Loc
 	StructType  *StructType
 	Elements    []Node
 	GlobalScope *Scope
-	Loc         Loc
 }
 
 func (n *Program) isNode() {}
 
 type Binary struct {
+	Loc      Loc
 	ExprType Type
 	Op       BinaryOp
 	Left     Expr
 	Right    Expr
-	Loc      Loc
 }
 
 func (n *Binary) isExpr() {}
@@ -58,10 +58,10 @@ func (n *Binary) isExpr() {}
 func (n *Binary) isNode() {}
 
 type Unary struct {
+	Loc      Loc
 	ExprType Type
 	Op       UnaryOp
 	Expr     Expr
-	Loc      Loc
 }
 
 func (n *Unary) isExpr() {}
@@ -69,12 +69,12 @@ func (n *Unary) isExpr() {}
 func (n *Unary) isNode() {}
 
 type Cond struct {
+	Loc      Loc
 	ExprType Type
 	Cond     Expr
 	Then     Expr
 	ElsLoc   Loc
 	Els      Expr
-	Loc      Loc
 }
 
 func (n *Cond) isExpr() {}
@@ -82,12 +82,12 @@ func (n *Cond) isExpr() {}
 func (n *Cond) isNode() {}
 
 type Ident struct {
+	Loc      Loc
 	ExprType Type
 	Ident    string
 	Usage    IdentUsage
 	Base     Node
 	Scope    *Scope
-	Loc      Loc
 }
 
 func (n *Ident) isExpr() {}
@@ -95,12 +95,12 @@ func (n *Ident) isExpr() {}
 func (n *Ident) isNode() {}
 
 type Call struct {
+	Loc          Loc
 	ExprType     Type
 	Callee       Expr
 	RawArguments Expr
 	Arguments    []Expr
 	EndLoc       Loc
-	Loc          Loc
 }
 
 func (n *Call) isExpr() {}
@@ -108,11 +108,11 @@ func (n *Call) isExpr() {}
 func (n *Call) isNode() {}
 
 type If struct {
+	Loc      Loc
 	ExprType Type
 	Cond     Expr
 	Then     *IndentScope
 	Els      Node
-	Loc      Loc
 }
 
 func (n *If) isExpr() {}
@@ -120,11 +120,11 @@ func (n *If) isExpr() {}
 func (n *If) isNode() {}
 
 type MemberAccess struct {
+	Loc       Loc
 	ExprType  Type
 	Target    Expr
 	Member    string
 	MemberLoc Loc
-	Loc       Loc
 }
 
 func (n *MemberAccess) isExpr() {}
@@ -132,10 +132,10 @@ func (n *MemberAccess) isExpr() {}
 func (n *MemberAccess) isNode() {}
 
 type Paren struct {
+	Loc      Loc
 	ExprType Type
 	Expr     Expr
 	EndLoc   Loc
-	Loc      Loc
 }
 
 func (n *Paren) isExpr() {}
@@ -143,11 +143,11 @@ func (n *Paren) isExpr() {}
 func (n *Paren) isNode() {}
 
 type Index struct {
+	Loc      Loc
 	ExprType Type
 	Expr     Expr
 	Index    Expr
 	EndLoc   Loc
-	Loc      Loc
 }
 
 func (n *Index) isExpr() {}
@@ -155,11 +155,11 @@ func (n *Index) isExpr() {}
 func (n *Index) isNode() {}
 
 type Match struct {
+	Loc      Loc
 	ExprType Type
 	Cond     Expr
 	Branch   []Node
 	Scope    *Scope
-	Loc      Loc
 }
 
 func (n *Match) isExpr() {}
@@ -167,11 +167,11 @@ func (n *Match) isExpr() {}
 func (n *Match) isNode() {}
 
 type Range struct {
+	Loc      Loc
 	ExprType Type
 	Op       BinaryOp
 	Start    Expr
 	End      Expr
-	Loc      Loc
 }
 
 func (n *Range) isExpr() {}
@@ -179,9 +179,9 @@ func (n *Range) isExpr() {}
 func (n *Range) isNode() {}
 
 type TmpVar struct {
+	Loc      Loc
 	ExprType Type
 	TmpVar   uint64
-	Loc      Loc
 }
 
 func (n *TmpVar) isExpr() {}
@@ -189,10 +189,10 @@ func (n *TmpVar) isExpr() {}
 func (n *TmpVar) isNode() {}
 
 type BlockExpr struct {
+	Loc      Loc
 	ExprType Type
 	Calls    []Node
 	Expr     Expr
-	Loc      Loc
 }
 
 func (n *BlockExpr) isExpr() {}
@@ -200,11 +200,11 @@ func (n *BlockExpr) isExpr() {}
 func (n *BlockExpr) isNode() {}
 
 type Import struct {
+	Loc        Loc
 	ExprType   Type
 	Path       string
 	Base       *Call
 	ImportDesc *Program
-	Loc        Loc
 }
 
 func (n *Import) isExpr() {}
@@ -212,9 +212,9 @@ func (n *Import) isExpr() {}
 func (n *Import) isNode() {}
 
 type IntLiteral struct {
+	Loc      Loc
 	ExprType Type
 	Value    string
-	Loc      Loc
 }
 
 func (n *IntLiteral) isLiteral() {}
@@ -224,9 +224,9 @@ func (n *IntLiteral) isExpr() {}
 func (n *IntLiteral) isNode() {}
 
 type BoolLiteral struct {
+	Loc      Loc
 	ExprType Type
 	Value    bool
-	Loc      Loc
 }
 
 func (n *BoolLiteral) isLiteral() {}
@@ -236,9 +236,9 @@ func (n *BoolLiteral) isExpr() {}
 func (n *BoolLiteral) isNode() {}
 
 type StrLiteral struct {
+	Loc      Loc
 	ExprType Type
 	Value    string
-	Loc      Loc
 }
 
 func (n *StrLiteral) isLiteral() {}
@@ -248,8 +248,8 @@ func (n *StrLiteral) isExpr() {}
 func (n *StrLiteral) isNode() {}
 
 type Input struct {
-	ExprType Type
 	Loc      Loc
+	ExprType Type
 }
 
 func (n *Input) isLiteral() {}
@@ -259,8 +259,8 @@ func (n *Input) isExpr() {}
 func (n *Input) isNode() {}
 
 type Output struct {
-	ExprType Type
 	Loc      Loc
+	ExprType Type
 }
 
 func (n *Output) isLiteral() {}
@@ -270,8 +270,8 @@ func (n *Output) isExpr() {}
 func (n *Output) isNode() {}
 
 type Config struct {
-	ExprType Type
 	Loc      Loc
+	ExprType Type
 }
 
 func (n *Config) isLiteral() {}
@@ -281,11 +281,11 @@ func (n *Config) isExpr() {}
 func (n *Config) isNode() {}
 
 type Loop struct {
+	Loc  Loc
 	Init Expr
 	Cond Expr
 	Step Expr
 	Body *IndentScope
-	Loc  Loc
 }
 
 func (n *Loop) isStmt() {}
@@ -293,9 +293,9 @@ func (n *Loop) isStmt() {}
 func (n *Loop) isNode() {}
 
 type IndentScope struct {
+	Loc      Loc
 	Elements []Node
 	Scope    *Scope
-	Loc      Loc
 }
 
 func (n *IndentScope) isStmt() {}
@@ -303,10 +303,10 @@ func (n *IndentScope) isStmt() {}
 func (n *IndentScope) isNode() {}
 
 type MatchBranch struct {
+	Loc    Loc
 	Cond   Expr
 	SymLoc Loc
 	Then   Node
-	Loc    Loc
 }
 
 func (n *MatchBranch) isStmt() {}
@@ -314,8 +314,8 @@ func (n *MatchBranch) isStmt() {}
 func (n *MatchBranch) isNode() {}
 
 type Return struct {
-	Expr Expr
 	Loc  Loc
+	Expr Expr
 }
 
 func (n *Return) isStmt() {}
@@ -339,8 +339,8 @@ func (n *Continue) isStmt() {}
 func (n *Continue) isNode() {}
 
 type Assert struct {
-	Cond *Binary
 	Loc  Loc
+	Cond *Binary
 }
 
 func (n *Assert) isStmt() {}
@@ -348,8 +348,8 @@ func (n *Assert) isStmt() {}
 func (n *Assert) isNode() {}
 
 type ImplicitYield struct {
-	Expr Expr
 	Loc  Loc
+	Expr Expr
 }
 
 func (n *ImplicitYield) isStmt() {}
@@ -357,13 +357,13 @@ func (n *ImplicitYield) isStmt() {}
 func (n *ImplicitYield) isNode() {}
 
 type Field struct {
+	Loc          Loc
 	Ident        *Ident
 	ColonLoc     Loc
 	FieldType    Type
 	RawArguments Expr
 	Arguments    []Expr
 	Belong       *Format
-	Loc          Loc
 }
 
 func (n *Field) isMember() {}
@@ -373,12 +373,12 @@ func (n *Field) isStmt() {}
 func (n *Field) isNode() {}
 
 type Format struct {
+	Loc        Loc
 	IsEnum     bool
 	Ident      *Ident
 	Body       *IndentScope
 	Belong     *Format
 	StructType *StructType
-	Loc        Loc
 }
 
 func (n *Format) isMember() {}
@@ -388,13 +388,13 @@ func (n *Format) isStmt() {}
 func (n *Format) isNode() {}
 
 type Function struct {
+	Loc        Loc
 	Ident      *Ident
 	Parameters []*Field
 	ReturnType Type
 	Belong     *Format
 	Body       *IndentScope
 	FuncType   *FunctionType
-	Loc        Loc
 }
 
 func (n *Function) isMember() {}
@@ -404,10 +404,10 @@ func (n *Function) isStmt() {}
 func (n *Function) isNode() {}
 
 type IntType struct {
+	Loc      Loc
 	BitSize  uint64
 	Endian   Endian
 	IsSigned bool
-	Loc      Loc
 }
 
 func (n *IntType) isType() {}
@@ -415,9 +415,9 @@ func (n *IntType) isType() {}
 func (n *IntType) isNode() {}
 
 type IdentType struct {
+	Loc   Loc
 	Ident *Ident
 	Base  *Format
-	Loc   Loc
 }
 
 func (n *IdentType) isType() {}
@@ -425,8 +425,8 @@ func (n *IdentType) isType() {}
 func (n *IdentType) isNode() {}
 
 type IntLiteralType struct {
-	Base *IntLiteral
 	Loc  Loc
+	Base *IntLiteral
 }
 
 func (n *IntLiteralType) isType() {}
@@ -434,8 +434,8 @@ func (n *IntLiteralType) isType() {}
 func (n *IntLiteralType) isNode() {}
 
 type StrLiteralType struct {
-	Base *StrLiteral
 	Loc  Loc
+	Base *StrLiteral
 }
 
 func (n *StrLiteralType) isType() {}
@@ -459,10 +459,10 @@ func (n *BoolType) isType() {}
 func (n *BoolType) isNode() {}
 
 type ArrayType struct {
+	Loc      Loc
 	EndLoc   Loc
 	BaseType Type
 	Length   Expr
-	Loc      Loc
 }
 
 func (n *ArrayType) isType() {}
@@ -470,9 +470,9 @@ func (n *ArrayType) isType() {}
 func (n *ArrayType) isNode() {}
 
 type FunctionType struct {
+	Loc        Loc
 	ReturnType Type
 	Parameters []Type
-	Loc        Loc
 }
 
 func (n *FunctionType) isType() {}
@@ -480,8 +480,8 @@ func (n *FunctionType) isType() {}
 func (n *FunctionType) isNode() {}
 
 type StructType struct {
-	Fields []Member
 	Loc    Loc
+	Fields []Member
 }
 
 func (n *StructType) isType() {}
@@ -489,9 +489,9 @@ func (n *StructType) isType() {}
 func (n *StructType) isNode() {}
 
 type UnionType struct {
+	Loc    Loc
 	Fields []*StructType
 	Base   Expr
-	Loc    Loc
 }
 
 func (n *UnionType) isType() {}
@@ -499,10 +499,10 @@ func (n *UnionType) isType() {}
 func (n *UnionType) isNode() {}
 
 type Cast struct {
+	Loc      Loc
 	ExprType Type
 	Base     *Call
 	Expr     Expr
-	Loc      Loc
 }
 
 func (n *Cast) isExpr() {}
@@ -510,15 +510,15 @@ func (n *Cast) isExpr() {}
 func (n *Cast) isNode() {}
 
 type Comment struct {
-	Comment string
 	Loc     Loc
+	Comment string
 }
 
 func (n *Comment) isNode() {}
 
 type CommentGroup struct {
-	Comments []*Comment
 	Loc      Loc
+	Comments []*Comment
 }
 
 func (n *CommentGroup) isNode() {}

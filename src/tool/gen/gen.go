@@ -274,7 +274,8 @@ func (c *collector) convertType(typ string) *Type {
 	}
 }
 
-func (c *collector) mapToStructFields(m OrderedKeyList[string]) (fields []*Field) {
+func (c *collector) mapToStructFields(m OrderedKeyList[string], field ...*Field) (fields []*Field) {
+	fields = field
 	for _, kv := range m {
 		name := kv.Key
 		typ := kv.Value
@@ -392,14 +393,13 @@ func CollectDefinition(list *List, fieldCaseFn func(string) string, typeCaseFn f
 
 		body.Fields = make([]*Field, 0, len(node.Body)+1)
 
-		body.Fields = c.mapToStructFields(node.Body)
-
 		// add loc field
 		loc := Field{}
 		loc.Name = c.fieldCaseFn("Loc")
 		loc.Type = &Type{Name: c.typeCaseFn("Loc")}
 		loc.Tag = "loc"
-		body.Fields = append(body.Fields, &loc)
+
+		body.Fields = c.mapToStructFields(node.Body, &loc)
 
 		defs.push(&body)
 	}

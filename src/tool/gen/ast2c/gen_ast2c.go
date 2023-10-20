@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/iancoleman/strcase"
 	"github.com/on-keyday/brgen/src/tool/gen"
@@ -15,7 +16,34 @@ func generateHeader(rw io.Writer, defs *gen.Defs, single bool) {
 	if !single {
 		w.Printf("#pragma once\n#ifndef __AST_H__\n#define __AST_H__\n\n")
 	}
-	w.Printf("#include <stdint.h>\n\n")
+	w.Printf("#include <stdint.h>\n")
+	/*
+		this include imports definition below
+		// sync with json_stub.h
+
+		typedef struct json_handlers json_handlers;
+		struct json_handlers {
+		    void* ctx;
+		    void* (*object_get)(json_handlers*, void*, const char* name);
+		    void* (*array_get)(json_handlers*, void*, size_t i);
+		    size_t (*array_size)(json_handlers*, void*);
+		    char* (*string_get_alloc)(json_handlers*, void*);
+		    // returns non-zero for success, 0 for error
+		    int (*number_get)(json_handlers*, void*, uint64_t* n);
+		    // returns 0 or 1. -1 for error
+		    int (*boolean_get)(json_handlers*, void*);
+
+		    void* (*alloc)(json_handlers*, size_t size, size_t align);
+		};
+
+	*/
+	w.Printf("#include %q\n\n", "json_stub.h")
+	// define node types
+	w.Printf("typedef enum NodeType {\n")
+	for _, typ := range defs.NodeTypes {
+		w.Printf("\t%s,\n", strings.ToUpper(typ))
+	}
+	w.Printf("} NodeType;\n\n")
 	// declare all struct types
 	for _, def := range defs.Defs {
 		switch d := def.(type) {
@@ -43,7 +71,7 @@ func generateHeader(rw io.Writer, defs *gen.Defs, single bool) {
 		case *gen.Enum:
 			w.Printf("enum %s {\n", d.Name)
 			for _, field := range d.Values {
-				w.Printf("\t%s,\n", field.Name)
+				w.Printf("\t%s,\n", strings.ToUpper(field.Name))
 			}
 			w.Printf("};\n\n")
 
@@ -54,6 +82,7 @@ func generateHeader(rw io.Writer, defs *gen.Defs, single bool) {
 		switch d := def.(type) {
 		case *gen.Interface:
 			w.Printf("struct %s {\n", d.Name)
+			w.Printf("\tconst NodeType node_type;\n")
 			for _, field := range d.Fields {
 				w.Printf("\t%s %s;\n", field.Type.CString(), field.Name)
 			}
@@ -63,18 +92,24 @@ func generateHeader(rw io.Writer, defs *gen.Defs, single bool) {
 				continue
 			}
 			w.Printf("struct %s {\n", d.Name)
+			w.Printf("\tconst NodeType node_type;\n")
 			for _, field := range d.Fields {
 				w.Printf("\t%s %s;\n", field.Type.CString(), field.Name)
 			}
 			w.Printf("};\n\n")
 		}
 	}
-	w.Printf("#endif\n")
+	if !single {
+		w.Printf("#endif\n")
+	}
 }
 
-func generateSource(rw io.Writer, defs *gen.Defs) {
+func generateSource(rw io.Writer, defs *gen.Defs, single bool) {
 	w := gen.NewWriter(rw)
-	w.Printf("#include \"ast.h\"\n\n")
+	if !single {
+		w.Printf("#include \"ast.h\"\n\n")
+	}
+
 }
 
 func main() {
@@ -102,7 +137,7 @@ func main() {
 
 	defs, err := gen.CollectDefinition(list, strcase.ToSnake, strcase.ToCamel, map[string]string{
 		"uint":    "uint64_t",
-		"uintptr": "uintptr_t",
+		"uintptr": "uint64_t",
 		"bool":    "int",
 		"string":  "char*",
 	})
@@ -114,7 +149,7 @@ func main() {
 
 	if hdr == "/dev/stdout" {
 		generateHeader(os.Stdout, defs, false)
-		generateSource(os.Stdout, defs)
+		generateSource(os.Stdout, defs, false)
 		return
 	}
 
@@ -141,7 +176,7 @@ func main() {
 
 	if hdr == src {
 		generateHeader(f, defs, true)
-		generateSource(f, defs)
+		generateSource(f, defs, true)
 		return
 	}
 
@@ -153,6 +188,6 @@ func main() {
 	defer f2.Close()
 
 	generateHeader(f, defs, false)
-	generateSource(f2, defs)
+	generateSource(f2, defs, false)
 
 }

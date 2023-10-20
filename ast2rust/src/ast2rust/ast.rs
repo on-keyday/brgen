@@ -582,10 +582,10 @@ impl From<Type> for Node {
 
 #[derive(Debug,Clone)]
 pub struct Program {
+	pub loc: Loc,
 	pub struct_type: Option<Rc<RefCell<StructType>>>,
 	pub elements: Vec<Node>,
 	pub global_scope: Option<Rc<RefCell<Scope>>>,
-	pub loc: Loc,
 }
 
 impl TryFrom<&Node> for Rc<RefCell<Program>> {
@@ -606,11 +606,11 @@ impl From<&Rc<RefCell<Program>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct Binary {
+	pub loc: Loc,
 	pub expr_type: Option<Type>,
 	pub op: BinaryOp,
 	pub left: Option<Expr>,
 	pub right: Option<Expr>,
-	pub loc: Loc,
 }
 
 impl TryFrom<&Expr> for Rc<RefCell<Binary>> {
@@ -647,10 +647,10 @@ impl From<&Rc<RefCell<Binary>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct Unary {
+	pub loc: Loc,
 	pub expr_type: Option<Type>,
 	pub op: UnaryOp,
 	pub expr: Option<Expr>,
-	pub loc: Loc,
 }
 
 impl TryFrom<&Expr> for Rc<RefCell<Unary>> {
@@ -687,12 +687,12 @@ impl From<&Rc<RefCell<Unary>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct Cond {
+	pub loc: Loc,
 	pub expr_type: Option<Type>,
 	pub cond: Option<Expr>,
 	pub then: Option<Expr>,
 	pub els_loc: Loc,
 	pub els: Option<Expr>,
-	pub loc: Loc,
 }
 
 impl TryFrom<&Expr> for Rc<RefCell<Cond>> {
@@ -729,12 +729,12 @@ impl From<&Rc<RefCell<Cond>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct Ident {
+	pub loc: Loc,
 	pub expr_type: Option<Type>,
 	pub ident: String,
 	pub usage: IdentUsage,
 	pub base: Option<Node>,
 	pub scope: Option<Rc<RefCell<Scope>>>,
-	pub loc: Loc,
 }
 
 impl TryFrom<&Expr> for Rc<RefCell<Ident>> {
@@ -771,12 +771,12 @@ impl From<&Rc<RefCell<Ident>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct Call {
+	pub loc: Loc,
 	pub expr_type: Option<Type>,
 	pub callee: Option<Expr>,
 	pub raw_arguments: Option<Expr>,
 	pub arguments: Vec<Expr>,
 	pub end_loc: Loc,
-	pub loc: Loc,
 }
 
 impl TryFrom<&Expr> for Rc<RefCell<Call>> {
@@ -813,11 +813,11 @@ impl From<&Rc<RefCell<Call>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct If {
+	pub loc: Loc,
 	pub expr_type: Option<Type>,
 	pub cond: Option<Expr>,
 	pub then: Option<Rc<RefCell<IndentScope>>>,
 	pub els: Option<Node>,
-	pub loc: Loc,
 }
 
 impl TryFrom<&Expr> for Rc<RefCell<If>> {
@@ -854,11 +854,11 @@ impl From<&Rc<RefCell<If>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct MemberAccess {
+	pub loc: Loc,
 	pub expr_type: Option<Type>,
 	pub target: Option<Expr>,
 	pub member: String,
 	pub member_loc: Loc,
-	pub loc: Loc,
 }
 
 impl TryFrom<&Expr> for Rc<RefCell<MemberAccess>> {
@@ -895,10 +895,10 @@ impl From<&Rc<RefCell<MemberAccess>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct Paren {
+	pub loc: Loc,
 	pub expr_type: Option<Type>,
 	pub expr: Option<Expr>,
 	pub end_loc: Loc,
-	pub loc: Loc,
 }
 
 impl TryFrom<&Expr> for Rc<RefCell<Paren>> {
@@ -935,11 +935,11 @@ impl From<&Rc<RefCell<Paren>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct Index {
+	pub loc: Loc,
 	pub expr_type: Option<Type>,
 	pub expr: Option<Expr>,
 	pub index: Option<Expr>,
 	pub end_loc: Loc,
-	pub loc: Loc,
 }
 
 impl TryFrom<&Expr> for Rc<RefCell<Index>> {
@@ -976,11 +976,11 @@ impl From<&Rc<RefCell<Index>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct Match {
+	pub loc: Loc,
 	pub expr_type: Option<Type>,
 	pub cond: Option<Expr>,
 	pub branch: Vec<Node>,
 	pub scope: Option<Rc<RefCell<Scope>>>,
-	pub loc: Loc,
 }
 
 impl TryFrom<&Expr> for Rc<RefCell<Match>> {
@@ -1017,11 +1017,11 @@ impl From<&Rc<RefCell<Match>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct Range {
+	pub loc: Loc,
 	pub expr_type: Option<Type>,
 	pub op: BinaryOp,
 	pub start: Option<Expr>,
 	pub end: Option<Expr>,
-	pub loc: Loc,
 }
 
 impl TryFrom<&Expr> for Rc<RefCell<Range>> {
@@ -1058,9 +1058,9 @@ impl From<&Rc<RefCell<Range>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct TmpVar {
+	pub loc: Loc,
 	pub expr_type: Option<Type>,
 	pub tmp_var: u64,
-	pub loc: Loc,
 }
 
 impl TryFrom<&Expr> for Rc<RefCell<TmpVar>> {
@@ -1097,10 +1097,10 @@ impl From<&Rc<RefCell<TmpVar>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct BlockExpr {
+	pub loc: Loc,
 	pub expr_type: Option<Type>,
 	pub calls: Vec<Node>,
 	pub expr: Option<Expr>,
-	pub loc: Loc,
 }
 
 impl TryFrom<&Expr> for Rc<RefCell<BlockExpr>> {
@@ -1137,11 +1137,11 @@ impl From<&Rc<RefCell<BlockExpr>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct Import {
+	pub loc: Loc,
 	pub expr_type: Option<Type>,
 	pub path: String,
 	pub base: Option<Rc<RefCell<Call>>>,
 	pub import_desc: Option<Rc<RefCell<Program>>>,
-	pub loc: Loc,
 }
 
 impl TryFrom<&Expr> for Rc<RefCell<Import>> {
@@ -1178,9 +1178,9 @@ impl From<&Rc<RefCell<Import>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct IntLiteral {
+	pub loc: Loc,
 	pub expr_type: Option<Type>,
 	pub value: String,
-	pub loc: Loc,
 }
 
 impl TryFrom<&Literal> for Rc<RefCell<IntLiteral>> {
@@ -1233,9 +1233,9 @@ impl From<&Rc<RefCell<IntLiteral>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct BoolLiteral {
+	pub loc: Loc,
 	pub expr_type: Option<Type>,
 	pub value: bool,
-	pub loc: Loc,
 }
 
 impl TryFrom<&Literal> for Rc<RefCell<BoolLiteral>> {
@@ -1288,9 +1288,9 @@ impl From<&Rc<RefCell<BoolLiteral>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct StrLiteral {
+	pub loc: Loc,
 	pub expr_type: Option<Type>,
 	pub value: String,
-	pub loc: Loc,
 }
 
 impl TryFrom<&Literal> for Rc<RefCell<StrLiteral>> {
@@ -1343,8 +1343,8 @@ impl From<&Rc<RefCell<StrLiteral>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct Input {
-	pub expr_type: Option<Type>,
 	pub loc: Loc,
+	pub expr_type: Option<Type>,
 }
 
 impl TryFrom<&Literal> for Rc<RefCell<Input>> {
@@ -1397,8 +1397,8 @@ impl From<&Rc<RefCell<Input>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct Output {
-	pub expr_type: Option<Type>,
 	pub loc: Loc,
+	pub expr_type: Option<Type>,
 }
 
 impl TryFrom<&Literal> for Rc<RefCell<Output>> {
@@ -1451,8 +1451,8 @@ impl From<&Rc<RefCell<Output>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct Config {
-	pub expr_type: Option<Type>,
 	pub loc: Loc,
+	pub expr_type: Option<Type>,
 }
 
 impl TryFrom<&Literal> for Rc<RefCell<Config>> {
@@ -1505,11 +1505,11 @@ impl From<&Rc<RefCell<Config>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct Loop {
+	pub loc: Loc,
 	pub init: Option<Expr>,
 	pub cond: Option<Expr>,
 	pub step: Option<Expr>,
 	pub body: Option<Rc<RefCell<IndentScope>>>,
-	pub loc: Loc,
 }
 
 impl TryFrom<&Stmt> for Rc<RefCell<Loop>> {
@@ -1546,9 +1546,9 @@ impl From<&Rc<RefCell<Loop>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct IndentScope {
+	pub loc: Loc,
 	pub elements: Vec<Node>,
 	pub scope: Option<Rc<RefCell<Scope>>>,
-	pub loc: Loc,
 }
 
 impl TryFrom<&Stmt> for Rc<RefCell<IndentScope>> {
@@ -1585,10 +1585,10 @@ impl From<&Rc<RefCell<IndentScope>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct MatchBranch {
+	pub loc: Loc,
 	pub cond: Option<Expr>,
 	pub sym_loc: Loc,
 	pub then: Option<Node>,
-	pub loc: Loc,
 }
 
 impl TryFrom<&Stmt> for Rc<RefCell<MatchBranch>> {
@@ -1625,8 +1625,8 @@ impl From<&Rc<RefCell<MatchBranch>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct Return {
-	pub expr: Option<Expr>,
 	pub loc: Loc,
+	pub expr: Option<Expr>,
 }
 
 impl TryFrom<&Stmt> for Rc<RefCell<Return>> {
@@ -1737,8 +1737,8 @@ impl From<&Rc<RefCell<Continue>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct Assert {
-	pub cond: Option<Rc<RefCell<Binary>>>,
 	pub loc: Loc,
+	pub cond: Option<Rc<RefCell<Binary>>>,
 }
 
 impl TryFrom<&Stmt> for Rc<RefCell<Assert>> {
@@ -1775,8 +1775,8 @@ impl From<&Rc<RefCell<Assert>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct ImplicitYield {
-	pub expr: Option<Expr>,
 	pub loc: Loc,
+	pub expr: Option<Expr>,
 }
 
 impl TryFrom<&Stmt> for Rc<RefCell<ImplicitYield>> {
@@ -1813,13 +1813,13 @@ impl From<&Rc<RefCell<ImplicitYield>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct Field {
+	pub loc: Loc,
 	pub ident: Option<Rc<RefCell<Ident>>>,
 	pub colon_loc: Loc,
 	pub field_type: Option<Type>,
 	pub raw_arguments: Option<Expr>,
 	pub arguments: Vec<Expr>,
 	pub belong: Option<Weak<RefCell<Format>>>,
-	pub loc: Loc,
 }
 
 impl TryFrom<&Member> for Rc<RefCell<Field>> {
@@ -1872,12 +1872,12 @@ impl From<&Rc<RefCell<Field>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct Format {
+	pub loc: Loc,
 	pub is_enum: bool,
 	pub ident: Option<Rc<RefCell<Ident>>>,
 	pub body: Option<Rc<RefCell<IndentScope>>>,
 	pub belong: Option<Weak<RefCell<Format>>>,
 	pub struct_type: Option<Rc<RefCell<StructType>>>,
-	pub loc: Loc,
 }
 
 impl TryFrom<&Member> for Rc<RefCell<Format>> {
@@ -1930,13 +1930,13 @@ impl From<&Rc<RefCell<Format>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct Function {
+	pub loc: Loc,
 	pub ident: Option<Rc<RefCell<Ident>>>,
 	pub parameters: Vec<Rc<RefCell<Field>>>,
 	pub return_type: Option<Type>,
 	pub belong: Option<Weak<RefCell<Format>>>,
 	pub body: Option<Rc<RefCell<IndentScope>>>,
 	pub func_type: Option<Rc<RefCell<FunctionType>>>,
-	pub loc: Loc,
 }
 
 impl TryFrom<&Member> for Rc<RefCell<Function>> {
@@ -1989,10 +1989,10 @@ impl From<&Rc<RefCell<Function>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct IntType {
+	pub loc: Loc,
 	pub bit_size: u64,
 	pub endian: Endian,
 	pub is_signed: bool,
-	pub loc: Loc,
 }
 
 impl TryFrom<&Type> for Rc<RefCell<IntType>> {
@@ -2029,9 +2029,9 @@ impl From<&Rc<RefCell<IntType>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct IdentType {
+	pub loc: Loc,
 	pub ident: Option<Rc<RefCell<Ident>>>,
 	pub base: Option<Weak<RefCell<Format>>>,
-	pub loc: Loc,
 }
 
 impl TryFrom<&Type> for Rc<RefCell<IdentType>> {
@@ -2068,8 +2068,8 @@ impl From<&Rc<RefCell<IdentType>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct IntLiteralType {
-	pub base: Option<Weak<RefCell<IntLiteral>>>,
 	pub loc: Loc,
+	pub base: Option<Weak<RefCell<IntLiteral>>>,
 }
 
 impl TryFrom<&Type> for Rc<RefCell<IntLiteralType>> {
@@ -2106,8 +2106,8 @@ impl From<&Rc<RefCell<IntLiteralType>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct StrLiteralType {
-	pub base: Option<Weak<RefCell<StrLiteral>>>,
 	pub loc: Loc,
+	pub base: Option<Weak<RefCell<StrLiteral>>>,
 }
 
 impl TryFrom<&Type> for Rc<RefCell<StrLiteralType>> {
@@ -2218,10 +2218,10 @@ impl From<&Rc<RefCell<BoolType>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct ArrayType {
+	pub loc: Loc,
 	pub end_loc: Loc,
 	pub base_type: Option<Type>,
 	pub length: Option<Expr>,
-	pub loc: Loc,
 }
 
 impl TryFrom<&Type> for Rc<RefCell<ArrayType>> {
@@ -2258,9 +2258,9 @@ impl From<&Rc<RefCell<ArrayType>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct FunctionType {
+	pub loc: Loc,
 	pub return_type: Option<Type>,
 	pub parameters: Vec<Type>,
-	pub loc: Loc,
 }
 
 impl TryFrom<&Type> for Rc<RefCell<FunctionType>> {
@@ -2297,8 +2297,8 @@ impl From<&Rc<RefCell<FunctionType>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct StructType {
-	pub fields: Vec<Member>,
 	pub loc: Loc,
+	pub fields: Vec<Member>,
 }
 
 impl TryFrom<&Type> for Rc<RefCell<StructType>> {
@@ -2335,9 +2335,9 @@ impl From<&Rc<RefCell<StructType>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct UnionType {
+	pub loc: Loc,
 	pub fields: Vec<Rc<RefCell<StructType>>>,
 	pub base: Option<Expr>,
-	pub loc: Loc,
 }
 
 impl TryFrom<&Type> for Rc<RefCell<UnionType>> {
@@ -2374,10 +2374,10 @@ impl From<&Rc<RefCell<UnionType>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct Cast {
+	pub loc: Loc,
 	pub expr_type: Option<Type>,
 	pub base: Option<Rc<RefCell<Call>>>,
 	pub expr: Option<Expr>,
-	pub loc: Loc,
 }
 
 impl TryFrom<&Expr> for Rc<RefCell<Cast>> {
@@ -2414,8 +2414,8 @@ impl From<&Rc<RefCell<Cast>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct Comment {
-	pub comment: String,
 	pub loc: Loc,
+	pub comment: String,
 }
 
 impl TryFrom<&Node> for Rc<RefCell<Comment>> {
@@ -2436,8 +2436,8 @@ impl From<&Rc<RefCell<Comment>>> for Node {
 
 #[derive(Debug,Clone)]
 pub struct CommentGroup {
-	pub comments: Vec<Rc<RefCell<Comment>>>,
 	pub loc: Loc,
+	pub comments: Vec<Rc<RefCell<Comment>>>,
 }
 
 impl TryFrom<&Node> for Rc<RefCell<CommentGroup>> {
@@ -2727,203 +2727,203 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 		let node = match raw_node.node_type {
 			NodeType::Program => {
 				Node::Program(Rc::new(RefCell::new(Program {
+				loc: raw_node.loc.clone(),
 				struct_type: None,
 				elements: Vec::new(),
 				global_scope: None,
-				loc: raw_node.loc.clone(),
 				})))
 			},
 			NodeType::Binary => {
 				Node::Binary(Rc::new(RefCell::new(Binary {
+				loc: raw_node.loc.clone(),
 				expr_type: None,
 				op: BinaryOp::Mul,
 				left: None,
 				right: None,
-				loc: raw_node.loc.clone(),
 				})))
 			},
 			NodeType::Unary => {
 				Node::Unary(Rc::new(RefCell::new(Unary {
+				loc: raw_node.loc.clone(),
 				expr_type: None,
 				op: UnaryOp::Not,
 				expr: None,
-				loc: raw_node.loc.clone(),
 				})))
 			},
 			NodeType::Cond => {
 				Node::Cond(Rc::new(RefCell::new(Cond {
+				loc: raw_node.loc.clone(),
 				expr_type: None,
 				cond: None,
 				then: None,
 				els_loc: raw_node.loc.clone(),
 				els: None,
-				loc: raw_node.loc.clone(),
 				})))
 			},
 			NodeType::Ident => {
 				Node::Ident(Rc::new(RefCell::new(Ident {
+				loc: raw_node.loc.clone(),
 				expr_type: None,
 				ident: String::new(),
 				usage: IdentUsage::Unknown,
 				base: None,
 				scope: None,
-				loc: raw_node.loc.clone(),
 				})))
 			},
 			NodeType::Call => {
 				Node::Call(Rc::new(RefCell::new(Call {
+				loc: raw_node.loc.clone(),
 				expr_type: None,
 				callee: None,
 				raw_arguments: None,
 				arguments: Vec::new(),
 				end_loc: raw_node.loc.clone(),
-				loc: raw_node.loc.clone(),
 				})))
 			},
 			NodeType::If => {
 				Node::If(Rc::new(RefCell::new(If {
+				loc: raw_node.loc.clone(),
 				expr_type: None,
 				cond: None,
 				then: None,
 				els: None,
-				loc: raw_node.loc.clone(),
 				})))
 			},
 			NodeType::MemberAccess => {
 				Node::MemberAccess(Rc::new(RefCell::new(MemberAccess {
+				loc: raw_node.loc.clone(),
 				expr_type: None,
 				target: None,
 				member: String::new(),
 				member_loc: raw_node.loc.clone(),
-				loc: raw_node.loc.clone(),
 				})))
 			},
 			NodeType::Paren => {
 				Node::Paren(Rc::new(RefCell::new(Paren {
+				loc: raw_node.loc.clone(),
 				expr_type: None,
 				expr: None,
 				end_loc: raw_node.loc.clone(),
-				loc: raw_node.loc.clone(),
 				})))
 			},
 			NodeType::Index => {
 				Node::Index(Rc::new(RefCell::new(Index {
+				loc: raw_node.loc.clone(),
 				expr_type: None,
 				expr: None,
 				index: None,
 				end_loc: raw_node.loc.clone(),
-				loc: raw_node.loc.clone(),
 				})))
 			},
 			NodeType::Match => {
 				Node::Match(Rc::new(RefCell::new(Match {
+				loc: raw_node.loc.clone(),
 				expr_type: None,
 				cond: None,
 				branch: Vec::new(),
 				scope: None,
-				loc: raw_node.loc.clone(),
 				})))
 			},
 			NodeType::Range => {
 				Node::Range(Rc::new(RefCell::new(Range {
+				loc: raw_node.loc.clone(),
 				expr_type: None,
 				op: BinaryOp::Mul,
 				start: None,
 				end: None,
-				loc: raw_node.loc.clone(),
 				})))
 			},
 			NodeType::TmpVar => {
 				Node::TmpVar(Rc::new(RefCell::new(TmpVar {
+				loc: raw_node.loc.clone(),
 				expr_type: None,
 				tmp_var: 0,
-				loc: raw_node.loc.clone(),
 				})))
 			},
 			NodeType::BlockExpr => {
 				Node::BlockExpr(Rc::new(RefCell::new(BlockExpr {
+				loc: raw_node.loc.clone(),
 				expr_type: None,
 				calls: Vec::new(),
 				expr: None,
-				loc: raw_node.loc.clone(),
 				})))
 			},
 			NodeType::Import => {
 				Node::Import(Rc::new(RefCell::new(Import {
+				loc: raw_node.loc.clone(),
 				expr_type: None,
 				path: String::new(),
 				base: None,
 				import_desc: None,
-				loc: raw_node.loc.clone(),
 				})))
 			},
 			NodeType::IntLiteral => {
 				Node::IntLiteral(Rc::new(RefCell::new(IntLiteral {
+				loc: raw_node.loc.clone(),
 				expr_type: None,
 				value: String::new(),
-				loc: raw_node.loc.clone(),
 				})))
 			},
 			NodeType::BoolLiteral => {
 				Node::BoolLiteral(Rc::new(RefCell::new(BoolLiteral {
+				loc: raw_node.loc.clone(),
 				expr_type: None,
 				value: false,
-				loc: raw_node.loc.clone(),
 				})))
 			},
 			NodeType::StrLiteral => {
 				Node::StrLiteral(Rc::new(RefCell::new(StrLiteral {
+				loc: raw_node.loc.clone(),
 				expr_type: None,
 				value: String::new(),
-				loc: raw_node.loc.clone(),
 				})))
 			},
 			NodeType::Input => {
 				Node::Input(Rc::new(RefCell::new(Input {
-				expr_type: None,
 				loc: raw_node.loc.clone(),
+				expr_type: None,
 				})))
 			},
 			NodeType::Output => {
 				Node::Output(Rc::new(RefCell::new(Output {
-				expr_type: None,
 				loc: raw_node.loc.clone(),
+				expr_type: None,
 				})))
 			},
 			NodeType::Config => {
 				Node::Config(Rc::new(RefCell::new(Config {
-				expr_type: None,
 				loc: raw_node.loc.clone(),
+				expr_type: None,
 				})))
 			},
 			NodeType::Loop => {
 				Node::Loop(Rc::new(RefCell::new(Loop {
+				loc: raw_node.loc.clone(),
 				init: None,
 				cond: None,
 				step: None,
 				body: None,
-				loc: raw_node.loc.clone(),
 				})))
 			},
 			NodeType::IndentScope => {
 				Node::IndentScope(Rc::new(RefCell::new(IndentScope {
+				loc: raw_node.loc.clone(),
 				elements: Vec::new(),
 				scope: None,
-				loc: raw_node.loc.clone(),
 				})))
 			},
 			NodeType::MatchBranch => {
 				Node::MatchBranch(Rc::new(RefCell::new(MatchBranch {
+				loc: raw_node.loc.clone(),
 				cond: None,
 				sym_loc: raw_node.loc.clone(),
 				then: None,
-				loc: raw_node.loc.clone(),
 				})))
 			},
 			NodeType::Return => {
 				Node::Return(Rc::new(RefCell::new(Return {
-				expr: None,
 				loc: raw_node.loc.clone(),
+				expr: None,
 				})))
 			},
 			NodeType::Break => {
@@ -2938,73 +2938,73 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 			},
 			NodeType::Assert => {
 				Node::Assert(Rc::new(RefCell::new(Assert {
-				cond: None,
 				loc: raw_node.loc.clone(),
+				cond: None,
 				})))
 			},
 			NodeType::ImplicitYield => {
 				Node::ImplicitYield(Rc::new(RefCell::new(ImplicitYield {
-				expr: None,
 				loc: raw_node.loc.clone(),
+				expr: None,
 				})))
 			},
 			NodeType::Field => {
 				Node::Field(Rc::new(RefCell::new(Field {
+				loc: raw_node.loc.clone(),
 				ident: None,
 				colon_loc: raw_node.loc.clone(),
 				field_type: None,
 				raw_arguments: None,
 				arguments: Vec::new(),
 				belong: None,
-				loc: raw_node.loc.clone(),
 				})))
 			},
 			NodeType::Format => {
 				Node::Format(Rc::new(RefCell::new(Format {
+				loc: raw_node.loc.clone(),
 				is_enum: false,
 				ident: None,
 				body: None,
 				belong: None,
 				struct_type: None,
-				loc: raw_node.loc.clone(),
 				})))
 			},
 			NodeType::Function => {
 				Node::Function(Rc::new(RefCell::new(Function {
+				loc: raw_node.loc.clone(),
 				ident: None,
 				parameters: Vec::new(),
 				return_type: None,
 				belong: None,
 				body: None,
 				func_type: None,
-				loc: raw_node.loc.clone(),
 				})))
 			},
 			NodeType::IntType => {
 				Node::IntType(Rc::new(RefCell::new(IntType {
+				loc: raw_node.loc.clone(),
 				bit_size: 0,
 				endian: Endian::Unspec,
 				is_signed: false,
-				loc: raw_node.loc.clone(),
 				})))
 			},
 			NodeType::IdentType => {
 				Node::IdentType(Rc::new(RefCell::new(IdentType {
+				loc: raw_node.loc.clone(),
 				ident: None,
 				base: None,
-				loc: raw_node.loc.clone(),
 				})))
 			},
 			NodeType::IntLiteralType => {
 				Node::IntLiteralType(Rc::new(RefCell::new(IntLiteralType {
-				base: None,
 				loc: raw_node.loc.clone(),
+				base: None,
 				})))
 			},
 			NodeType::StrLiteralType => {
 				Node::StrLiteralType(Rc::new(RefCell::new(StrLiteralType {
-				base: None,
 				loc: raw_node.loc.clone(),
+				base: None,
 				})))
 			},
 			NodeType::VoidType => {
@@ -3019,50 +3019,50 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 			},
 			NodeType::ArrayType => {
 				Node::ArrayType(Rc::new(RefCell::new(ArrayType {
+				loc: raw_node.loc.clone(),
 				end_loc: raw_node.loc.clone(),
 				base_type: None,
 				length: None,
-				loc: raw_node.loc.clone(),
 				})))
 			},
 			NodeType::FunctionType => {
 				Node::FunctionType(Rc::new(RefCell::new(FunctionType {
+				loc: raw_node.loc.clone(),
 				return_type: None,
 				parameters: Vec::new(),
-				loc: raw_node.loc.clone(),
 				})))
 			},
 			NodeType::StructType => {
 				Node::StructType(Rc::new(RefCell::new(StructType {
-				fields: Vec::new(),
 				loc: raw_node.loc.clone(),
+				fields: Vec::new(),
 				})))
 			},
 			NodeType::UnionType => {
 				Node::UnionType(Rc::new(RefCell::new(UnionType {
+				loc: raw_node.loc.clone(),
 				fields: Vec::new(),
 				base: None,
-				loc: raw_node.loc.clone(),
 				})))
 			},
 			NodeType::Cast => {
 				Node::Cast(Rc::new(RefCell::new(Cast {
+				loc: raw_node.loc.clone(),
 				expr_type: None,
 				base: None,
 				expr: None,
-				loc: raw_node.loc.clone(),
 				})))
 			},
 			NodeType::Comment => {
 				Node::Comment(Rc::new(RefCell::new(Comment {
-				comment: String::new(),
 				loc: raw_node.loc.clone(),
+				comment: String::new(),
 				})))
 			},
 			NodeType::CommentGroup => {
 				Node::CommentGroup(Rc::new(RefCell::new(CommentGroup {
-				comments: Vec::new(),
 				loc: raw_node.loc.clone(),
+				comments: Vec::new(),
 				})))
 			},
 			_=>return Err(Error::UnknownNodeType(raw_node.node_type)),

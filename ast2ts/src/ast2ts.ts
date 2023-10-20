@@ -780,10 +780,10 @@ export function parseAST(obj: any): Program {
 		case "program": {
 			const n :Program = {
 				node_type: "program",
+				loc: on.loc,
 				struct_type: null,
 				elements: [],
 				global_scope: null,
-				loc: on.loc,
 			}
 			c.node.push(n);
 			break;
@@ -791,11 +791,11 @@ export function parseAST(obj: any): Program {
 		case "binary": {
 			const n :Binary = {
 				node_type: "binary",
+				loc: on.loc,
 				expr_type: null,
 				op: BinaryOp.mul,
 				left: null,
 				right: null,
-				loc: on.loc,
 			}
 			c.node.push(n);
 			break;
@@ -803,10 +803,10 @@ export function parseAST(obj: any): Program {
 		case "unary": {
 			const n :Unary = {
 				node_type: "unary",
+				loc: on.loc,
 				expr_type: null,
 				op: UnaryOp.not,
 				expr: null,
-				loc: on.loc,
 			}
 			c.node.push(n);
 			break;
@@ -814,12 +814,12 @@ export function parseAST(obj: any): Program {
 		case "cond": {
 			const n :Cond = {
 				node_type: "cond",
+				loc: on.loc,
 				expr_type: null,
 				cond: null,
 				then: null,
 				els_loc: on.loc,
 				els: null,
-				loc: on.loc,
 			}
 			c.node.push(n);
 			break;
@@ -827,12 +827,12 @@ export function parseAST(obj: any): Program {
 		case "ident": {
 			const n :Ident = {
 				node_type: "ident",
+				loc: on.loc,
 				expr_type: null,
 				ident: '',
 				usage: IdentUsage.unknown,
 				base: null,
 				scope: null,
-				loc: on.loc,
 			}
 			c.node.push(n);
 			break;
@@ -840,12 +840,12 @@ export function parseAST(obj: any): Program {
 		case "call": {
 			const n :Call = {
 				node_type: "call",
+				loc: on.loc,
 				expr_type: null,
 				callee: null,
 				raw_arguments: null,
 				arguments: [],
 				end_loc: on.loc,
-				loc: on.loc,
 			}
 			c.node.push(n);
 			break;
@@ -853,11 +853,11 @@ export function parseAST(obj: any): Program {
 		case "if": {
 			const n :If = {
 				node_type: "if",
+				loc: on.loc,
 				expr_type: null,
 				cond: null,
 				then: null,
 				els: null,
-				loc: on.loc,
 			}
 			c.node.push(n);
 			break;
@@ -865,11 +865,11 @@ export function parseAST(obj: any): Program {
 		case "member_access": {
 			const n :MemberAccess = {
 				node_type: "member_access",
+				loc: on.loc,
 				expr_type: null,
 				target: null,
 				member: '',
 				member_loc: on.loc,
-				loc: on.loc,
 			}
 			c.node.push(n);
 			break;
@@ -877,10 +877,10 @@ export function parseAST(obj: any): Program {
 		case "paren": {
 			const n :Paren = {
 				node_type: "paren",
+				loc: on.loc,
 				expr_type: null,
 				expr: null,
 				end_loc: on.loc,
-				loc: on.loc,
 			}
 			c.node.push(n);
 			break;
@@ -888,11 +888,11 @@ export function parseAST(obj: any): Program {
 		case "index": {
 			const n :Index = {
 				node_type: "index",
+				loc: on.loc,
 				expr_type: null,
 				expr: null,
 				index: null,
 				end_loc: on.loc,
-				loc: on.loc,
 			}
 			c.node.push(n);
 			break;
@@ -900,11 +900,11 @@ export function parseAST(obj: any): Program {
 		case "match": {
 			const n :Match = {
 				node_type: "match",
+				loc: on.loc,
 				expr_type: null,
 				cond: null,
 				branch: [],
 				scope: null,
-				loc: on.loc,
 			}
 			c.node.push(n);
 			break;
@@ -912,11 +912,11 @@ export function parseAST(obj: any): Program {
 		case "range": {
 			const n :Range = {
 				node_type: "range",
+				loc: on.loc,
 				expr_type: null,
 				op: BinaryOp.mul,
 				start: null,
 				end: null,
-				loc: on.loc,
 			}
 			c.node.push(n);
 			break;
@@ -924,9 +924,9 @@ export function parseAST(obj: any): Program {
 		case "tmp_var": {
 			const n :TmpVar = {
 				node_type: "tmp_var",
+				loc: on.loc,
 				expr_type: null,
 				tmp_var: 0,
-				loc: on.loc,
 			}
 			c.node.push(n);
 			break;
@@ -934,10 +934,10 @@ export function parseAST(obj: any): Program {
 		case "block_expr": {
 			const n :BlockExpr = {
 				node_type: "block_expr",
+				loc: on.loc,
 				expr_type: null,
 				calls: [],
 				expr: null,
-				loc: on.loc,
 			}
 			c.node.push(n);
 			break;
@@ -945,11 +945,11 @@ export function parseAST(obj: any): Program {
 		case "import": {
 			const n :Import = {
 				node_type: "import",
+				loc: on.loc,
 				expr_type: null,
 				path: '',
 				base: null,
 				import_desc: null,
-				loc: on.loc,
 			}
 			c.node.push(n);
 			break;
@@ -957,9 +957,9 @@ export function parseAST(obj: any): Program {
 		case "int_literal": {
 			const n :IntLiteral = {
 				node_type: "int_literal",
+				loc: on.loc,
 				expr_type: null,
 				value: '',
-				loc: on.loc,
 			}
 			c.node.push(n);
 			break;
@@ -967,9 +967,9 @@ export function parseAST(obj: any): Program {
 		case "bool_literal": {
 			const n :BoolLiteral = {
 				node_type: "bool_literal",
+				loc: on.loc,
 				expr_type: null,
 				value: false,
-				loc: on.loc,
 			}
 			c.node.push(n);
 			break;
@@ -977,9 +977,9 @@ export function parseAST(obj: any): Program {
 		case "str_literal": {
 			const n :StrLiteral = {
 				node_type: "str_literal",
+				loc: on.loc,
 				expr_type: null,
 				value: '',
-				loc: on.loc,
 			}
 			c.node.push(n);
 			break;
@@ -987,8 +987,8 @@ export function parseAST(obj: any): Program {
 		case "input": {
 			const n :Input = {
 				node_type: "input",
-				expr_type: null,
 				loc: on.loc,
+				expr_type: null,
 			}
 			c.node.push(n);
 			break;
@@ -996,8 +996,8 @@ export function parseAST(obj: any): Program {
 		case "output": {
 			const n :Output = {
 				node_type: "output",
-				expr_type: null,
 				loc: on.loc,
+				expr_type: null,
 			}
 			c.node.push(n);
 			break;
@@ -1005,8 +1005,8 @@ export function parseAST(obj: any): Program {
 		case "config": {
 			const n :Config = {
 				node_type: "config",
-				expr_type: null,
 				loc: on.loc,
+				expr_type: null,
 			}
 			c.node.push(n);
 			break;
@@ -1014,11 +1014,11 @@ export function parseAST(obj: any): Program {
 		case "loop": {
 			const n :Loop = {
 				node_type: "loop",
+				loc: on.loc,
 				init: null,
 				cond: null,
 				step: null,
 				body: null,
-				loc: on.loc,
 			}
 			c.node.push(n);
 			break;
@@ -1026,9 +1026,9 @@ export function parseAST(obj: any): Program {
 		case "indent_scope": {
 			const n :IndentScope = {
 				node_type: "indent_scope",
+				loc: on.loc,
 				elements: [],
 				scope: null,
-				loc: on.loc,
 			}
 			c.node.push(n);
 			break;
@@ -1036,10 +1036,10 @@ export function parseAST(obj: any): Program {
 		case "match_branch": {
 			const n :MatchBranch = {
 				node_type: "match_branch",
+				loc: on.loc,
 				cond: null,
 				sym_loc: on.loc,
 				then: null,
-				loc: on.loc,
 			}
 			c.node.push(n);
 			break;
@@ -1047,8 +1047,8 @@ export function parseAST(obj: any): Program {
 		case "return": {
 			const n :Return = {
 				node_type: "return",
-				expr: null,
 				loc: on.loc,
+				expr: null,
 			}
 			c.node.push(n);
 			break;
@@ -1072,8 +1072,8 @@ export function parseAST(obj: any): Program {
 		case "assert": {
 			const n :Assert = {
 				node_type: "assert",
-				cond: null,
 				loc: on.loc,
+				cond: null,
 			}
 			c.node.push(n);
 			break;
@@ -1081,8 +1081,8 @@ export function parseAST(obj: any): Program {
 		case "implicit_yield": {
 			const n :ImplicitYield = {
 				node_type: "implicit_yield",
-				expr: null,
 				loc: on.loc,
+				expr: null,
 			}
 			c.node.push(n);
 			break;
@@ -1090,13 +1090,13 @@ export function parseAST(obj: any): Program {
 		case "field": {
 			const n :Field = {
 				node_type: "field",
+				loc: on.loc,
 				ident: null,
 				colon_loc: on.loc,
 				field_type: null,
 				raw_arguments: null,
 				arguments: [],
 				belong: null,
-				loc: on.loc,
 			}
 			c.node.push(n);
 			break;
@@ -1104,12 +1104,12 @@ export function parseAST(obj: any): Program {
 		case "format": {
 			const n :Format = {
 				node_type: "format",
+				loc: on.loc,
 				is_enum: false,
 				ident: null,
 				body: null,
 				belong: null,
 				struct_type: null,
-				loc: on.loc,
 			}
 			c.node.push(n);
 			break;
@@ -1117,13 +1117,13 @@ export function parseAST(obj: any): Program {
 		case "function": {
 			const n :Function = {
 				node_type: "function",
+				loc: on.loc,
 				ident: null,
 				parameters: [],
 				return_type: null,
 				belong: null,
 				body: null,
 				func_type: null,
-				loc: on.loc,
 			}
 			c.node.push(n);
 			break;
@@ -1131,10 +1131,10 @@ export function parseAST(obj: any): Program {
 		case "int_type": {
 			const n :IntType = {
 				node_type: "int_type",
+				loc: on.loc,
 				bit_size: 0,
 				endian: Endian.unspec,
 				is_signed: false,
-				loc: on.loc,
 			}
 			c.node.push(n);
 			break;
@@ -1142,9 +1142,9 @@ export function parseAST(obj: any): Program {
 		case "ident_type": {
 			const n :IdentType = {
 				node_type: "ident_type",
+				loc: on.loc,
 				ident: null,
 				base: null,
-				loc: on.loc,
 			}
 			c.node.push(n);
 			break;
@@ -1152,8 +1152,8 @@ export function parseAST(obj: any): Program {
 		case "int_literal_type": {
 			const n :IntLiteralType = {
 				node_type: "int_literal_type",
-				base: null,
 				loc: on.loc,
+				base: null,
 			}
 			c.node.push(n);
 			break;
@@ -1161,8 +1161,8 @@ export function parseAST(obj: any): Program {
 		case "str_literal_type": {
 			const n :StrLiteralType = {
 				node_type: "str_literal_type",
-				base: null,
 				loc: on.loc,
+				base: null,
 			}
 			c.node.push(n);
 			break;
@@ -1186,10 +1186,10 @@ export function parseAST(obj: any): Program {
 		case "array_type": {
 			const n :ArrayType = {
 				node_type: "array_type",
+				loc: on.loc,
 				end_loc: on.loc,
 				base_type: null,
 				length: null,
-				loc: on.loc,
 			}
 			c.node.push(n);
 			break;
@@ -1197,9 +1197,9 @@ export function parseAST(obj: any): Program {
 		case "function_type": {
 			const n :FunctionType = {
 				node_type: "function_type",
+				loc: on.loc,
 				return_type: null,
 				parameters: [],
-				loc: on.loc,
 			}
 			c.node.push(n);
 			break;
@@ -1207,8 +1207,8 @@ export function parseAST(obj: any): Program {
 		case "struct_type": {
 			const n :StructType = {
 				node_type: "struct_type",
-				fields: [],
 				loc: on.loc,
+				fields: [],
 			}
 			c.node.push(n);
 			break;
@@ -1216,9 +1216,9 @@ export function parseAST(obj: any): Program {
 		case "union_type": {
 			const n :UnionType = {
 				node_type: "union_type",
+				loc: on.loc,
 				fields: [],
 				base: null,
-				loc: on.loc,
 			}
 			c.node.push(n);
 			break;
@@ -1226,10 +1226,10 @@ export function parseAST(obj: any): Program {
 		case "cast": {
 			const n :Cast = {
 				node_type: "cast",
+				loc: on.loc,
 				expr_type: null,
 				base: null,
 				expr: null,
-				loc: on.loc,
 			}
 			c.node.push(n);
 			break;
@@ -1237,8 +1237,8 @@ export function parseAST(obj: any): Program {
 		case "comment": {
 			const n :Comment = {
 				node_type: "comment",
-				comment: '',
 				loc: on.loc,
+				comment: '',
 			}
 			c.node.push(n);
 			break;
@@ -1246,8 +1246,8 @@ export function parseAST(obj: any): Program {
 		case "comment_group": {
 			const n :CommentGroup = {
 				node_type: "comment_group",
-				comments: [],
 				loc: on.loc,
+				comments: [],
 			}
 			c.node.push(n);
 			break;

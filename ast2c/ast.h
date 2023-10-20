@@ -3,6 +3,61 @@
 #define __AST_H__
 
 #include <stdint.h>
+#include "json_stub.h"
+
+typedef enum NodeType {
+	NODE,
+	PROGRAM,
+	EXPR,
+	BINARY,
+	UNARY,
+	COND,
+	IDENT,
+	CALL,
+	IF,
+	MEMBER_ACCESS,
+	PAREN,
+	INDEX,
+	MATCH,
+	RANGE,
+	TMP_VAR,
+	BLOCK_EXPR,
+	IMPORT,
+	LITERAL,
+	INT_LITERAL,
+	BOOL_LITERAL,
+	STR_LITERAL,
+	INPUT,
+	OUTPUT,
+	CONFIG,
+	STMT,
+	LOOP,
+	INDENT_SCOPE,
+	MATCH_BRANCH,
+	RETURN,
+	BREAK,
+	CONTINUE,
+	ASSERT,
+	IMPLICIT_YIELD,
+	MEMBER,
+	FIELD,
+	FORMAT,
+	FUNCTION,
+	TYPE,
+	INT_TYPE,
+	IDENT_TYPE,
+	INT_LITERAL_TYPE,
+	STR_LITERAL_TYPE,
+	VOID_TYPE,
+	BOOL_TYPE,
+	ARRAY_TYPE,
+	FUNCTION_TYPE,
+	STRUCT_TYPE,
+	UNION_TYPE,
+	CAST,
+	COMMENT,
+	COMMENT_GROUP,
+} NodeType;
 
 typedef struct Node Node;
 typedef struct Expr Expr;
@@ -67,83 +122,83 @@ typedef struct Token Token;
 typedef struct SrcErrorEntry SrcErrorEntry;
 typedef struct SrcError SrcError;
 enum UnaryOp {
-	not,
-	minus_sign,
+	NOT,
+	MINUS_SIGN,
 };
 
 enum BinaryOp {
-	mul,
-	div,
-	mod,
-	left_arithmetic_shift,
-	right_arithmetic_shift,
-	left_logical_shift,
-	right_logical_shift,
-	bit_and,
-	add,
-	sub,
-	bit_or,
-	bit_xor,
-	equal,
-	not_equal,
-	less,
-	less_or_eq,
-	grater,
-	grater_or_eq,
-	logical_and,
-	logical_or,
-	cond_op_1,
-	cond_op_2,
-	range_exclusive,
-	range_inclusive,
-	assign,
-	define_assign,
-	const_assign,
-	add_assign,
-	sub_assign,
-	mul_assign,
-	div_assign,
-	mod_assign,
-	left_shift_assign,
-	right_shift_assign,
-	bit_and_assign,
-	bit_or_assign,
-	bit_xor_assign,
-	comma,
+	MUL,
+	DIV,
+	MOD,
+	LEFT_ARITHMETIC_SHIFT,
+	RIGHT_ARITHMETIC_SHIFT,
+	LEFT_LOGICAL_SHIFT,
+	RIGHT_LOGICAL_SHIFT,
+	BIT_AND,
+	ADD,
+	SUB,
+	BIT_OR,
+	BIT_XOR,
+	EQUAL,
+	NOT_EQUAL,
+	LESS,
+	LESS_OR_EQ,
+	GRATER,
+	GRATER_OR_EQ,
+	LOGICAL_AND,
+	LOGICAL_OR,
+	COND_OP_1,
+	COND_OP_2,
+	RANGE_EXCLUSIVE,
+	RANGE_INCLUSIVE,
+	ASSIGN,
+	DEFINE_ASSIGN,
+	CONST_ASSIGN,
+	ADD_ASSIGN,
+	SUB_ASSIGN,
+	MUL_ASSIGN,
+	DIV_ASSIGN,
+	MOD_ASSIGN,
+	LEFT_SHIFT_ASSIGN,
+	RIGHT_SHIFT_ASSIGN,
+	BIT_AND_ASSIGN,
+	BIT_OR_ASSIGN,
+	BIT_XOR_ASSIGN,
+	COMMA,
 };
 
 enum IdentUsage {
-	unknown,
-	reference,
-	define_variable,
-	define_const,
-	define_field,
-	define_format,
-	define_enum,
-	define_fn,
-	define_arg,
-	reference_type,
+	UNKNOWN,
+	REFERENCE,
+	DEFINE_VARIABLE,
+	DEFINE_CONST,
+	DEFINE_FIELD,
+	DEFINE_FORMAT,
+	DEFINE_ENUM,
+	DEFINE_FN,
+	DEFINE_ARG,
+	REFERENCE_TYPE,
 };
 
 enum Endian {
-	unspec,
-	big,
-	little,
+	UNSPEC,
+	BIG,
+	LITTLE,
 };
 
 enum TokenTag {
-	indent,
-	space,
-	line,
-	punct,
-	int_literal,
-	bool_literal,
-	str_literal,
-	keyword,
-	ident,
-	comment,
-	error,
-	unknown,
+	INDENT,
+	SPACE,
+	LINE,
+	PUNCT,
+	INT_LITERAL,
+	BOOL_LITERAL,
+	STR_LITERAL,
+	KEYWORD,
+	IDENT,
+	COMMENT,
+	ERROR,
+	UNKNOWN,
 };
 
 struct Pos {
@@ -177,327 +232,379 @@ struct SrcError {
 };
 
 struct Node {
+	const NodeType node_type;
 	Loc loc;
 };
 
 struct Expr {
+	const NodeType node_type;
 	Loc loc;
 	Type* expr_type;
 };
 
 struct Literal {
+	const NodeType node_type;
 	Loc loc;
 	Type* expr_type;
 };
 
 struct Stmt {
+	const NodeType node_type;
 	Loc loc;
 };
 
 struct Member {
+	const NodeType node_type;
 	Loc loc;
 };
 
 struct Type {
+	const NodeType node_type;
 	Loc loc;
 };
 
 struct Program {
+	const NodeType node_type;
+	Loc loc;
 	StructType* struct_type;
 	Node** elements;
 	Scope* global_scope;
-	Loc loc;
 };
 
 struct Binary {
+	const NodeType node_type;
+	Loc loc;
 	Type* expr_type;
 	BinaryOp op;
 	Expr* left;
 	Expr* right;
-	Loc loc;
 };
 
 struct Unary {
+	const NodeType node_type;
+	Loc loc;
 	Type* expr_type;
 	UnaryOp op;
 	Expr* expr;
-	Loc loc;
 };
 
 struct Cond {
+	const NodeType node_type;
+	Loc loc;
 	Type* expr_type;
 	Expr* cond;
 	Expr* then;
 	Loc els_loc;
 	Expr* els;
-	Loc loc;
 };
 
 struct Ident {
+	const NodeType node_type;
+	Loc loc;
 	Type* expr_type;
 	char* ident;
 	IdentUsage usage;
 	Node* base;
 	Scope* scope;
-	Loc loc;
 };
 
 struct Call {
+	const NodeType node_type;
+	Loc loc;
 	Type* expr_type;
 	Expr* callee;
 	Expr* raw_arguments;
 	Expr** arguments;
 	Loc end_loc;
-	Loc loc;
 };
 
 struct If {
+	const NodeType node_type;
+	Loc loc;
 	Type* expr_type;
 	Expr* cond;
 	IndentScope* then;
 	Node* els;
-	Loc loc;
 };
 
 struct MemberAccess {
+	const NodeType node_type;
+	Loc loc;
 	Type* expr_type;
 	Expr* target;
 	char* member;
 	Loc member_loc;
-	Loc loc;
 };
 
 struct Paren {
+	const NodeType node_type;
+	Loc loc;
 	Type* expr_type;
 	Expr* expr;
 	Loc end_loc;
-	Loc loc;
 };
 
 struct Index {
+	const NodeType node_type;
+	Loc loc;
 	Type* expr_type;
 	Expr* expr;
 	Expr* index;
 	Loc end_loc;
-	Loc loc;
 };
 
 struct Match {
+	const NodeType node_type;
+	Loc loc;
 	Type* expr_type;
 	Expr* cond;
 	Node** branch;
 	Scope* scope;
-	Loc loc;
 };
 
 struct Range {
+	const NodeType node_type;
+	Loc loc;
 	Type* expr_type;
 	BinaryOp op;
 	Expr* start;
 	Expr* end;
-	Loc loc;
 };
 
 struct TmpVar {
+	const NodeType node_type;
+	Loc loc;
 	Type* expr_type;
 	uint64_t tmp_var;
-	Loc loc;
 };
 
 struct BlockExpr {
+	const NodeType node_type;
+	Loc loc;
 	Type* expr_type;
 	Node** calls;
 	Expr* expr;
-	Loc loc;
 };
 
 struct Import {
+	const NodeType node_type;
+	Loc loc;
 	Type* expr_type;
 	char* path;
 	Call* base;
 	Program* import_desc;
-	Loc loc;
 };
 
 struct IntLiteral {
+	const NodeType node_type;
+	Loc loc;
 	Type* expr_type;
 	char* value;
-	Loc loc;
 };
 
 struct BoolLiteral {
+	const NodeType node_type;
+	Loc loc;
 	Type* expr_type;
 	int value;
-	Loc loc;
 };
 
 struct StrLiteral {
+	const NodeType node_type;
+	Loc loc;
 	Type* expr_type;
 	char* value;
-	Loc loc;
 };
 
 struct Input {
-	Type* expr_type;
+	const NodeType node_type;
 	Loc loc;
+	Type* expr_type;
 };
 
 struct Output {
-	Type* expr_type;
+	const NodeType node_type;
 	Loc loc;
+	Type* expr_type;
 };
 
 struct Config {
-	Type* expr_type;
+	const NodeType node_type;
 	Loc loc;
+	Type* expr_type;
 };
 
 struct Loop {
+	const NodeType node_type;
+	Loc loc;
 	Expr* init;
 	Expr* cond;
 	Expr* step;
 	IndentScope* body;
-	Loc loc;
 };
 
 struct IndentScope {
+	const NodeType node_type;
+	Loc loc;
 	Node** elements;
 	Scope* scope;
-	Loc loc;
 };
 
 struct MatchBranch {
+	const NodeType node_type;
+	Loc loc;
 	Expr* cond;
 	Loc sym_loc;
 	Node* then;
-	Loc loc;
 };
 
 struct Return {
-	Expr* expr;
+	const NodeType node_type;
 	Loc loc;
+	Expr* expr;
 };
 
 struct Break {
+	const NodeType node_type;
 	Loc loc;
 };
 
 struct Continue {
+	const NodeType node_type;
 	Loc loc;
 };
 
 struct Assert {
-	Binary* cond;
+	const NodeType node_type;
 	Loc loc;
+	Binary* cond;
 };
 
 struct ImplicitYield {
-	Expr* expr;
+	const NodeType node_type;
 	Loc loc;
+	Expr* expr;
 };
 
 struct Field {
+	const NodeType node_type;
+	Loc loc;
 	Ident* ident;
 	Loc colon_loc;
 	Type* field_type;
 	Expr* raw_arguments;
 	Expr** arguments;
 	Format* belong;
-	Loc loc;
 };
 
 struct Format {
+	const NodeType node_type;
+	Loc loc;
 	int is_enum;
 	Ident* ident;
 	IndentScope* body;
 	Format* belong;
 	StructType* struct_type;
-	Loc loc;
 };
 
 struct Function {
+	const NodeType node_type;
+	Loc loc;
 	Ident* ident;
 	Field** parameters;
 	Type* return_type;
 	Format* belong;
 	IndentScope* body;
 	FunctionType* func_type;
-	Loc loc;
 };
 
 struct IntType {
+	const NodeType node_type;
+	Loc loc;
 	uint64_t bit_size;
 	Endian endian;
 	int is_signed;
-	Loc loc;
 };
 
 struct IdentType {
+	const NodeType node_type;
+	Loc loc;
 	Ident* ident;
 	Format* base;
-	Loc loc;
 };
 
 struct IntLiteralType {
-	IntLiteral* base;
+	const NodeType node_type;
 	Loc loc;
+	IntLiteral* base;
 };
 
 struct StrLiteralType {
-	StrLiteral* base;
+	const NodeType node_type;
 	Loc loc;
+	StrLiteral* base;
 };
 
 struct VoidType {
+	const NodeType node_type;
 	Loc loc;
 };
 
 struct BoolType {
+	const NodeType node_type;
 	Loc loc;
 };
 
 struct ArrayType {
+	const NodeType node_type;
+	Loc loc;
 	Loc end_loc;
 	Type* base_type;
 	Expr* length;
-	Loc loc;
 };
 
 struct FunctionType {
+	const NodeType node_type;
+	Loc loc;
 	Type* return_type;
 	Type** parameters;
-	Loc loc;
 };
 
 struct StructType {
-	Member** fields;
+	const NodeType node_type;
 	Loc loc;
+	Member** fields;
 };
 
 struct UnionType {
+	const NodeType node_type;
+	Loc loc;
 	StructType** fields;
 	Expr* base;
-	Loc loc;
 };
 
 struct Cast {
+	const NodeType node_type;
+	Loc loc;
 	Type* expr_type;
 	Call* base;
 	Expr* expr;
-	Loc loc;
 };
 
 struct Comment {
-	char* comment;
+	const NodeType node_type;
 	Loc loc;
+	char* comment;
 };
 
 struct CommentGroup {
-	Comment** comments;
+	const NodeType node_type;
 	Loc loc;
+	Comment** comments;
 };
 
 struct Scope {
+	const NodeType node_type;
 	Scope* prev;
 	Scope* next;
 	Scope* branch;
