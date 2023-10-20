@@ -25,6 +25,7 @@ ninja -C ./built/%BUILD_MODE%/%BUILD_TYPE% install
 
 if "%BUILD_MODE%" == "wasm-em" (
     cd ./web/dev
+    call tsc
     call webpack
     cd ../../
 )
