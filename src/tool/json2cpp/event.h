@@ -363,10 +363,13 @@ namespace json2cpp {
 
         result<void> convert_union_int(const std::shared_ptr<Field>& f, Method m) {
             auto union_int = static_cast<IntUnionDesc*>(f->desc.get());
-            auto cond = union_int->desc.match->cond;
+            auto cond = union_int->desc.cond;
+            std::vector<std::shared_ptr<ast::Ident>> ident;
+            tool::Stringer s;
             bool second = false;
+            bool has_else = false;
             for (auto& field : union_int->desc.fields) {
-                tool::Stringer s;
+                tool::extract_ident(field.cond, ident);
                 if (cond) {
                     auto cmp = s.to_string(cond);
                     auto target = s.to_string(field.cond);
@@ -375,11 +378,16 @@ namespace json2cpp {
                         .elif = second,
                     });
                 }
-                else {
+                else if (field.cond) {
                     events.push_back(IfBegin{
                         .cond = s.to_string(field.cond),
                         .elif = second,
                     });
+                }
+                else {
+                    assert(!has_else);
+                    has_else = true;
+                    events.push_back(ElseBegin{});
                 }
                 auto tmp_var = tmp_len_of(f->name);
                 auto val = get_primitive_type(field.desc.bit_size, field.desc.is_signed);
@@ -413,11 +421,13 @@ namespace json2cpp {
                 events.push_back(BlockEnd{});
                 second = true;
             }
-            events.push_back(ElseBegin{});
-            events.push_back(ReturnError{
-                .comment = "invalid value",
-            });
-            events.push_back(BlockEnd{});
+            if (!has_else && !union_int->desc.ignore_if_not_match) {
+                events.push_back(ElseBegin{});
+                events.push_back(ReturnError{
+                    .comment = "invalid value",
+                });
+                events.push_back(BlockEnd{});
+            }
             return {};
         }
 

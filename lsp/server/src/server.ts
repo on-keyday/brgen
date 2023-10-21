@@ -287,7 +287,10 @@ const tokenizeSourceImpl  = async (doc :TextDocument) =>{
                     break;
             }
         }
-        else if(ast2ts.isIntType(node)){
+        else if(ast2ts.isIntType(node)&&node.is_explicit){
+            locList.push({loc: node.loc,length: node.loc.pos.end - node.loc.pos.begin,index:7});
+        }
+        else if(ast2ts.isVoidType(node)&&node.is_explicit){
             locList.push({loc: node.loc,length: node.loc.pos.end - node.loc.pos.begin,index:7});
         }
         return true
