@@ -41,16 +41,18 @@ namespace brgen::ast::tool {
     struct UnionField {
         std::shared_ptr<Expr> cond;
         std::shared_ptr<Field> field;
+        IntDesc desc;
     };
 
-    struct IntUnionTypeDesc {
+    struct IntUnionDesc {
+        size_t largest_bit_size = 0;
         std::shared_ptr<Match> match;
         std::vector<UnionField> fields;
     };
 
-    inline std::optional<IntUnionTypeDesc> is_int_union_type(auto&& typ) {
+    inline std::optional<IntUnionDesc> is_int_union_type(auto&& typ) {
         if (ast::UnionType* e = ast::as<ast::UnionType>(typ)) {
-            IntUnionTypeDesc desc;
+            IntUnionDesc desc;
             auto loc = e->base.lock();
             auto m = ast::as<ast::Match>(loc);
             if (!m) {
@@ -66,8 +68,8 @@ namespace brgen::ast::tool {
             if (branch.size() != e->fields.size()) {
                 return std::nullopt;
             }
-            for (auto& s : e->fields) {
-                /**
+            for (size_t i = 0; i < branch.size(); i++) {
+                auto s = e->fields[i];
                 if (s->fields.size() != 1) {
                     return std::nullopt;
                 }
@@ -75,11 +77,16 @@ namespace brgen::ast::tool {
                 if (!f) {
                     return std::nullopt;
                 }
-                if (!is_int_type(f->field_type)) {
+                auto i_desc = is_int_type(f->field_type);
+                if (!i_desc) {
                     return std::nullopt;
                 }
-                desc.fields.push_back(ast::cast_to<Field>(s->fields[0]));
-                */
+                UnionField uf;
+                uf.cond = branch[i]->cond;
+                uf.field = ast::cast_to<Field>(s->fields[0]);
+                uf.desc = *i_desc;
+                desc.largest_bit_size = std::max(desc.largest_bit_size, i_desc->bit_size);
+                desc.fields.push_back(uf);
             }
             return desc;
         }

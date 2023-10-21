@@ -369,7 +369,7 @@ namespace brgen::middle {
             auto search = [&](std::shared_ptr<ast::Ident>& def) {
                 return ident->ident == def->ident && def->usage != ast::IdentUsage::unknown;
             };
-            auto found = ident->scope->lookup_local(search);
+            auto found = ident->scope->lookup_local(search, ident);
             if (found) {
                 return found;
             }
@@ -377,6 +377,7 @@ namespace brgen::middle {
         }
 
         std::optional<std::shared_ptr<ast::Format>> find_matching_fmt(ast::Ident* ident, ast::IdentUsage usage = ast::IdentUsage::define_format) {
+            bool myself_appear = false;
             auto search = [&](std::shared_ptr<ast::Ident>& def) {
                 return (def->usage == ast::IdentUsage::define_format || def->usage == usage) &&
                        def->ident == ident->ident;
@@ -391,7 +392,7 @@ namespace brgen::middle {
                 }
                 return ast::cast_to<ast::Format>(base);
             };
-            auto found = ident->scope->lookup_local(search);
+            auto found = ident->scope->lookup_local(search, ident);
             if (found) {
                 return make_format(*found);
             }

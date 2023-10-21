@@ -13,6 +13,10 @@ namespace json2cpp {
         std::string cond;
     };
 
+    struct ReturnError {
+        std::string comment;
+    };
+
     struct ApplyBulkInt {
         std::vector<std::string> field_names;
     };
@@ -54,10 +58,26 @@ namespace json2cpp {
         std::string value;
     };
 
+    struct IfBegin {
+        std::string cond;
+        bool elif = false;
+    };
+
+    struct ElseBegin {};
+
+    struct BlockEnd {};
+
+    struct Assign {
+        std::string to;
+        std::string from;
+    };
+
     using Event = std::variant<
         ApplyInt, DefineLength, AssertFalse,
         ApplyBits, DefineBits, SetBits, ApplyBulkInt,
-        AllocateVector, ApplyVector>;
+        AllocateVector, ApplyVector,
+        IfBegin, ElseBegin, BlockEnd,
+        Assign, ReturnError>;
 
     using Events = std::vector<Event>;
 
@@ -341,6 +361,66 @@ namespace json2cpp {
             return {};
         }
 
+        result<void> convert_union_int(const std::shared_ptr<Field>& f, Method m) {
+            auto union_int = static_cast<IntUnionDesc*>(f->desc.get());
+            auto cond = union_int->desc.match->cond;
+            bool second = false;
+            for (auto& field : union_int->desc.fields) {
+                tool::Stringer s;
+                if (cond) {
+                    auto cmp = s.to_string(cond);
+                    auto target = s.to_string(field.cond);
+                    events.push_back(IfBegin{
+                        .cond = brgen::concat(cmp, " == ", target),
+                        .elif = second,
+                    });
+                }
+                else {
+                    events.push_back(IfBegin{
+                        .cond = s.to_string(field.cond),
+                        .elif = second,
+                    });
+                }
+                auto tmp_var = tmp_len_of(f->name);
+                auto val = get_primitive_type(field.desc.bit_size, field.desc.is_signed);
+                if (m == Method::encode) {
+                    config.includes.emplace("<limits>");
+                    events.push_back(AssertFalse{
+                        .comment = "check overflow",
+                        .cond = brgen::concat(f->name, " > ", "(std::numeric_limits<", val, ">::max)()"),
+                    });
+                    events.push_back(DefineLength{
+                        .field_name = tmp_var,
+                        .length = brgen::concat(val, "(", f->name, ")"),
+                    });
+                    events.push_back(ApplyInt{
+                        .field_name = tmp_var,
+                    });
+                }
+                else if (m == Method::decode) {
+                    events.push_back(DefineLength{
+                        .field_name = tmp_var,
+                        .length = brgen::concat(val, "(", "0", ")"),
+                    });
+                    events.push_back(ApplyInt{
+                        .field_name = tmp_var,
+                    });
+                    events.push_back(Assign{
+                        .to = f->name,
+                        .from = tmp_var,
+                    });
+                }
+                events.push_back(BlockEnd{});
+                second = true;
+            }
+            events.push_back(ElseBegin{});
+            events.push_back(ReturnError{
+                .comment = "invalid value",
+            });
+            events.push_back(BlockEnd{});
+            return {};
+        }
+
        public:
         result<void> convert_to_decoder_event(MergedFields& fields) {
             for (auto& field : fields) {
@@ -369,8 +449,13 @@ namespace json2cpp {
                         }
                         events.push_back(std::move(bulk));
                     }
-                    else {
+                    else if (f->desc->type == DescType::vector) {
                         if (auto res = convert_vec_decode(f); !res) {
+                            return res.transform(empty_void);
+                        }
+                    }
+                    else if (f->desc->type == DescType::union_int) {
+                        if (auto res = convert_union_int(f, Method::decode); !res) {
                             return res.transform(empty_void);
                         }
                     }
@@ -411,9 +496,13 @@ namespace json2cpp {
                         }
                         events.push_back(std::move(bulk));
                     }
-                    else {
-                        assert(f->desc->type == DescType::vector);
+                    else if (f->desc->type == DescType::vector) {
                         if (auto res = convert_vec_encode(f); !res) {
+                            return res.transform(empty_void);
+                        }
+                    }
+                    else if (f->desc->type == DescType::union_int) {
+                        if (auto res = convert_union_int(f, Method::encode); !res) {
                             return res.transform(empty_void);
                         }
                     }

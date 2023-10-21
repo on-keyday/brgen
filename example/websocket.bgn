@@ -1,0 +1,18 @@
+
+format Frame:
+    FIN :u1
+    RSV1 :u1
+    RSV2 :u1
+    RSV3 :u1
+    Opcode :u4
+    Mask :u1
+    PayloadLength :u7
+    match PayloadLength:
+        126 => ExtendedPayloadLength :u16
+        127 => ExtendedPayloadLength :u64
+        .. => _ :void
+    
+    if Mask == 1:
+        MaskingKey :u32
+    
+    Payload :[PayloadLength if PayloadLength < 126 else ExtendedPayloadLength]u8

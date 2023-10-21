@@ -73,13 +73,20 @@ namespace brgen::ast {
         std::shared_ptr<Scope> next;
         bool is_global = false;
 
-        std::optional<std::shared_ptr<Ident>> lookup_local(auto&& fn) {
+        std::optional<std::shared_ptr<Ident>> lookup_local(auto&& fn, ast::Ident* self = nullptr) {
             if (is_global) {
                 return std::nullopt;
             }
+            bool myself_appear = !self;
             for (auto it = objects.rbegin(); it != objects.rend(); it++) {
                 auto& val = *it;
                 auto obj = val.lock();
+                if (!myself_appear) {
+                    if (obj.get() == self) {
+                        myself_appear = true;
+                    }
+                    continue;
+                }
                 if (fn(obj)) {
                     return obj;
                 }

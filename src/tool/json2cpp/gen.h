@@ -25,6 +25,10 @@ namespace json2cpp {
                 auto& desc = static_cast<IntDesc*>(f.desc.get())->desc;
                 code.writeln(get_primitive_type(desc.bit_size, desc.is_signed), " ", f.name, ";");
             }
+            else if (f.desc->type == DescType::union_int) {
+                auto& desc = static_cast<IntUnionDesc*>(f.desc.get())->desc;
+                code.writeln(get_primitive_type(desc.largest_bit_size, false), " ", f.name, ";");
+            }
             else {
                 auto arr_desc = static_cast<IntArrayDesc*>(f.desc.get());
                 auto& i_desc = static_cast<IntDesc*>(arr_desc->base_type.get())->desc;
@@ -111,6 +115,8 @@ namespace json2cpp {
             constexpr auto num_method = "::utils::binary::write_num";
             constexpr auto bulk_method = "::utils::binary::write_num_bulk";
             auto scope = code.indent_scope();
+            std::vector<decltype(code.indent_scope_ex())> scopes;
+
             for (auto& event : e.events) {
                 if (auto bulk = std::get_if<ApplyBulkInt>(&event)) {
                     method_with_error_fn(bulk_method, io_object, [&] {
@@ -152,6 +158,28 @@ namespace json2cpp {
                     code.indent_writeln("return false;");
                     code.writeln("}");
                 }
+                else if (auto assign = std::get_if<Assign>(&event)) {
+                    code.writeln(assign->to, " = ", assign->from, ";");
+                }
+                else if (auto ret = std::get_if<ReturnError>(&event)) {
+                    code.writeln("//", ret->comment);
+                    code.writeln("return false;");
+                }
+                else if (auto ret = std::get_if<ElseBegin>(&event)) {
+                    code.writeln("else {");
+                    scopes.push_back(code.indent_scope_ex());
+                }
+                else if (auto ret = std::get_if<IfBegin>(&event)) {
+                    if (ret->elif) {
+                        code.write("else ");
+                    }
+                    code.writeln("if(", ret->cond, ") {");
+                    scopes.push_back(code.indent_scope_ex());
+                }
+                else if (auto ret = std::get_if<BlockEnd>(&event)) {
+                    scopes.pop_back();
+                    code.writeln("}");
+                }
                 else {
                     return error({}, "unknown event");
                 }
@@ -175,6 +203,7 @@ namespace json2cpp {
             constexpr auto bulk_method = "::utils::binary::read_num_bulk";
             code.writeln("constexpr bool ", "parse", "(::utils::binary::reader& r) {");
             auto scope = code.indent_scope();  // enter scope
+            std::vector<decltype(code.indent_scope_ex())> scopes;
             for (auto& event : e.events) {
                 if (auto bulk = std::get_if<ApplyBulkInt>(&event)) {
                     if (config.vector_mode == VectorMode::std_vector) {
@@ -219,6 +248,28 @@ namespace json2cpp {
                 }
                 else if (auto bits = std::get_if<ApplyBits>(&event)) {
                     method_with_error(num_method, io_object, bits->base_name, ".as_value()");
+                }
+                else if (auto assign = std::get_if<Assign>(&event)) {
+                    code.writeln(assign->to, " = ", assign->from, ";");
+                }
+                else if (auto ret = std::get_if<ReturnError>(&event)) {
+                    code.writeln("//", ret->comment);
+                    code.writeln("return false;");
+                }
+                else if (auto ret = std::get_if<ElseBegin>(&event)) {
+                    code.writeln("else {");
+                    scopes.push_back(code.indent_scope_ex());
+                }
+                else if (auto ret = std::get_if<IfBegin>(&event)) {
+                    if (ret->elif) {
+                        code.write("else ");
+                    }
+                    code.writeln("if(", ret->cond, ") {");
+                    scopes.push_back(code.indent_scope_ex());
+                }
+                else if (auto ret = std::get_if<BlockEnd>(&event)) {
+                    scopes.pop_back();
+                    code.writeln("}");
                 }
                 else {
                     return error({}, "unknown event");

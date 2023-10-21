@@ -46,9 +46,9 @@ namespace json2cpp {
     };
 
     struct IntUnionDesc : Desc {
-        std::vector<std::shared_ptr<IntDesc>> int_fields;
-        IntUnionDesc()
-            : Desc(DescType::union_int) {}
+        tool::IntUnionDesc desc;
+        IntUnionDesc(tool::IntUnionDesc desc)
+            : Desc(DescType::union_int), desc(std::move(desc)) {}
     };
 
     struct Field {
@@ -59,7 +59,9 @@ namespace json2cpp {
 
         Field(std::shared_ptr<ast::Field> base, std::shared_ptr<Desc> desc)
             : base(std::move(base)), desc(std::move(desc)) {
-            name = this->base->ident->ident;
+            if (this->base->ident) {
+                name = this->base->ident->ident;
+            }
         }
     };
 
@@ -203,30 +205,19 @@ namespace json2cpp {
                 fields.push_back(std::make_shared<Field>(field, std::make_shared<IntDesc>(std::move(*i))));
             }
             else if (auto i = tool::is_int_union_type(field->field_type)) {
-                /*
-                auto u = std::make_shared<IntUnionDesc>();
+                auto u = std::make_shared<IntUnionDesc>(std::move(*i));
                 std::string name;
-                for (auto& f : i->fields) {
+                for (auto& f : u->desc.fields) {
                     if (name.empty()) {
-                        name = f->ident->ident;
+                        name = f.field->ident->ident;
                     }
-                    else {
-                        if (name != f->ident->ident) {
-                            return error(field->loc, "unsupported type");
-                        }
-                    }
-                    auto b = tool::is_int_type(f->field_type);
-                    if (!b) {
+                    if (f.field->ident->ident != name) {
                         return error(field->loc, "unsupported type");
                     }
-                    auto type = get_primitive_type(b->bit_size, b->is_signed);
-                    if (type.empty()) {
-                        return error(field->loc, "unsupported type");
-                    }
-                    u->int_fields.push_back(std::make_shared<IntDesc>(std::move(*b)));
                 }
-                fields.push_back(std::make_shared<Field>(field, std::move(u)));
-                */
+                auto f = std::make_shared<Field>(field, std::move(u));
+                f->name = std::move(name);
+                fields.push_back(std::move(f));
             }
             else {
                 return error(field->loc, "unsupported type");
@@ -236,7 +227,8 @@ namespace json2cpp {
 
         result<void> merge_fields() {
             for (size_t i = 0; i < fields.size(); i++) {
-                if (fields[i]->desc->type == DescType::vector) {
+                if (fields[i]->desc->type == DescType::vector ||
+                    fields[i]->desc->type == DescType::union_int) {
                     m.push_back({std::move(fields[i])});
                     continue;
                 }
