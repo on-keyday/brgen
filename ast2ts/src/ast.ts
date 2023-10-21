@@ -134,6 +134,7 @@ export function isMember(obj: any): obj is Member {
 }
 
 export interface Type extends Node {
+	is_explicit: boolean;
 }
 
 export function isType(obj: any): obj is Type {
@@ -1134,6 +1135,7 @@ export function parseAST(obj: any): Program {
 			const n :IntType = {
 				node_type: "int_type",
 				loc: on.loc,
+				is_explicit: false,
 				bit_size: 0,
 				endian: Endian.unspec,
 				is_signed: false,
@@ -1145,6 +1147,7 @@ export function parseAST(obj: any): Program {
 			const n :IdentType = {
 				node_type: "ident_type",
 				loc: on.loc,
+				is_explicit: false,
 				ident: null,
 				base: null,
 			}
@@ -1155,6 +1158,7 @@ export function parseAST(obj: any): Program {
 			const n :IntLiteralType = {
 				node_type: "int_literal_type",
 				loc: on.loc,
+				is_explicit: false,
 				base: null,
 			}
 			c.node.push(n);
@@ -1164,6 +1168,7 @@ export function parseAST(obj: any): Program {
 			const n :StrLiteralType = {
 				node_type: "str_literal_type",
 				loc: on.loc,
+				is_explicit: false,
 				base: null,
 			}
 			c.node.push(n);
@@ -1173,6 +1178,7 @@ export function parseAST(obj: any): Program {
 			const n :VoidType = {
 				node_type: "void_type",
 				loc: on.loc,
+				is_explicit: false,
 			}
 			c.node.push(n);
 			break;
@@ -1181,6 +1187,7 @@ export function parseAST(obj: any): Program {
 			const n :BoolType = {
 				node_type: "bool_type",
 				loc: on.loc,
+				is_explicit: false,
 			}
 			c.node.push(n);
 			break;
@@ -1189,6 +1196,7 @@ export function parseAST(obj: any): Program {
 			const n :ArrayType = {
 				node_type: "array_type",
 				loc: on.loc,
+				is_explicit: false,
 				end_loc: on.loc,
 				base_type: null,
 				length: null,
@@ -1200,6 +1208,7 @@ export function parseAST(obj: any): Program {
 			const n :FunctionType = {
 				node_type: "function_type",
 				loc: on.loc,
+				is_explicit: false,
 				return_type: null,
 				parameters: [],
 			}
@@ -1210,6 +1219,7 @@ export function parseAST(obj: any): Program {
 			const n :StructType = {
 				node_type: "struct_type",
 				loc: on.loc,
+				is_explicit: false,
 				fields: [],
 			}
 			c.node.push(n);
@@ -1219,6 +1229,7 @@ export function parseAST(obj: any): Program {
 			const n :UnionType = {
 				node_type: "union_type",
 				loc: on.loc,
+				is_explicit: false,
 				fields: [],
 				base: null,
 			}
@@ -2115,6 +2126,11 @@ export function parseAST(obj: any): Program {
 		}
 		case "int_type": {
 			const n :IntType = cnode as IntType;
+			const tmpis_explicit = on.body?.is_explicit;
+			if (typeof on.body?.is_explicit !== "boolean") {
+				throw new Error('invalid node list');
+			}
+			n.is_explicit = on.body.is_explicit;
 			const tmpbit_size = on.body?.bit_size;
 			if (typeof on.body?.bit_size !== "number") {
 				throw new Error('invalid node list');
@@ -2134,6 +2150,11 @@ export function parseAST(obj: any): Program {
 		}
 		case "ident_type": {
 			const n :IdentType = cnode as IdentType;
+			const tmpis_explicit = on.body?.is_explicit;
+			if (typeof on.body?.is_explicit !== "boolean") {
+				throw new Error('invalid node list');
+			}
+			n.is_explicit = on.body.is_explicit;
 			if (on.body?.ident !== null && typeof on.body?.ident !== 'number') {
 				throw new Error('invalid node list');
 			}
@@ -2154,6 +2175,11 @@ export function parseAST(obj: any): Program {
 		}
 		case "int_literal_type": {
 			const n :IntLiteralType = cnode as IntLiteralType;
+			const tmpis_explicit = on.body?.is_explicit;
+			if (typeof on.body?.is_explicit !== "boolean") {
+				throw new Error('invalid node list');
+			}
+			n.is_explicit = on.body.is_explicit;
 			if (on.body?.base !== null && typeof on.body?.base !== 'number') {
 				throw new Error('invalid node list');
 			}
@@ -2166,6 +2192,11 @@ export function parseAST(obj: any): Program {
 		}
 		case "str_literal_type": {
 			const n :StrLiteralType = cnode as StrLiteralType;
+			const tmpis_explicit = on.body?.is_explicit;
+			if (typeof on.body?.is_explicit !== "boolean") {
+				throw new Error('invalid node list');
+			}
+			n.is_explicit = on.body.is_explicit;
 			if (on.body?.base !== null && typeof on.body?.base !== 'number') {
 				throw new Error('invalid node list');
 			}
@@ -2178,14 +2209,29 @@ export function parseAST(obj: any): Program {
 		}
 		case "void_type": {
 			const n :VoidType = cnode as VoidType;
+			const tmpis_explicit = on.body?.is_explicit;
+			if (typeof on.body?.is_explicit !== "boolean") {
+				throw new Error('invalid node list');
+			}
+			n.is_explicit = on.body.is_explicit;
 			break;
 		}
 		case "bool_type": {
 			const n :BoolType = cnode as BoolType;
+			const tmpis_explicit = on.body?.is_explicit;
+			if (typeof on.body?.is_explicit !== "boolean") {
+				throw new Error('invalid node list');
+			}
+			n.is_explicit = on.body.is_explicit;
 			break;
 		}
 		case "array_type": {
 			const n :ArrayType = cnode as ArrayType;
+			const tmpis_explicit = on.body?.is_explicit;
+			if (typeof on.body?.is_explicit !== "boolean") {
+				throw new Error('invalid node list');
+			}
+			n.is_explicit = on.body.is_explicit;
 			const tmpend_loc = on.body?.end_loc;
 			if (!isLoc(tmpend_loc)) {
 				throw new Error('invalid node list');
@@ -2211,6 +2257,11 @@ export function parseAST(obj: any): Program {
 		}
 		case "function_type": {
 			const n :FunctionType = cnode as FunctionType;
+			const tmpis_explicit = on.body?.is_explicit;
+			if (typeof on.body?.is_explicit !== "boolean") {
+				throw new Error('invalid node list');
+			}
+			n.is_explicit = on.body.is_explicit;
 			if (on.body?.return_type !== null && typeof on.body?.return_type !== 'number') {
 				throw new Error('invalid node list');
 			}
@@ -2233,6 +2284,11 @@ export function parseAST(obj: any): Program {
 		}
 		case "struct_type": {
 			const n :StructType = cnode as StructType;
+			const tmpis_explicit = on.body?.is_explicit;
+			if (typeof on.body?.is_explicit !== "boolean") {
+				throw new Error('invalid node list');
+			}
+			n.is_explicit = on.body.is_explicit;
 			for (const o of on.body.fields) {
 				if (typeof o !== 'number') {
 					throw new Error('invalid node list');
@@ -2247,6 +2303,11 @@ export function parseAST(obj: any): Program {
 		}
 		case "union_type": {
 			const n :UnionType = cnode as UnionType;
+			const tmpis_explicit = on.body?.is_explicit;
+			if (typeof on.body?.is_explicit !== "boolean") {
+				throw new Error('invalid node list');
+			}
+			n.is_explicit = on.body.is_explicit;
 			for (const o of on.body.fields) {
 				if (typeof o !== 'number') {
 					throw new Error('invalid node list');

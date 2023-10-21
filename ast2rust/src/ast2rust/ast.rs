@@ -1991,6 +1991,7 @@ impl From<&Rc<RefCell<Function>>> for Node {
 #[derive(Debug,Clone)]
 pub struct IntType {
 	pub loc: Loc,
+	pub is_explicit: bool,
 	pub bit_size: u64,
 	pub endian: Endian,
 	pub is_signed: bool,
@@ -2031,6 +2032,7 @@ impl From<&Rc<RefCell<IntType>>> for Node {
 #[derive(Debug,Clone)]
 pub struct IdentType {
 	pub loc: Loc,
+	pub is_explicit: bool,
 	pub ident: Option<Rc<RefCell<Ident>>>,
 	pub base: Option<Weak<RefCell<Format>>>,
 }
@@ -2070,6 +2072,7 @@ impl From<&Rc<RefCell<IdentType>>> for Node {
 #[derive(Debug,Clone)]
 pub struct IntLiteralType {
 	pub loc: Loc,
+	pub is_explicit: bool,
 	pub base: Option<Weak<RefCell<IntLiteral>>>,
 }
 
@@ -2108,6 +2111,7 @@ impl From<&Rc<RefCell<IntLiteralType>>> for Node {
 #[derive(Debug,Clone)]
 pub struct StrLiteralType {
 	pub loc: Loc,
+	pub is_explicit: bool,
 	pub base: Option<Weak<RefCell<StrLiteral>>>,
 }
 
@@ -2146,6 +2150,7 @@ impl From<&Rc<RefCell<StrLiteralType>>> for Node {
 #[derive(Debug,Clone)]
 pub struct VoidType {
 	pub loc: Loc,
+	pub is_explicit: bool,
 }
 
 impl TryFrom<&Type> for Rc<RefCell<VoidType>> {
@@ -2183,6 +2188,7 @@ impl From<&Rc<RefCell<VoidType>>> for Node {
 #[derive(Debug,Clone)]
 pub struct BoolType {
 	pub loc: Loc,
+	pub is_explicit: bool,
 }
 
 impl TryFrom<&Type> for Rc<RefCell<BoolType>> {
@@ -2220,6 +2226,7 @@ impl From<&Rc<RefCell<BoolType>>> for Node {
 #[derive(Debug,Clone)]
 pub struct ArrayType {
 	pub loc: Loc,
+	pub is_explicit: bool,
 	pub end_loc: Loc,
 	pub base_type: Option<Type>,
 	pub length: Option<Expr>,
@@ -2260,6 +2267,7 @@ impl From<&Rc<RefCell<ArrayType>>> for Node {
 #[derive(Debug,Clone)]
 pub struct FunctionType {
 	pub loc: Loc,
+	pub is_explicit: bool,
 	pub return_type: Option<Type>,
 	pub parameters: Vec<Type>,
 }
@@ -2299,6 +2307,7 @@ impl From<&Rc<RefCell<FunctionType>>> for Node {
 #[derive(Debug,Clone)]
 pub struct StructType {
 	pub loc: Loc,
+	pub is_explicit: bool,
 	pub fields: Vec<Member>,
 }
 
@@ -2337,6 +2346,7 @@ impl From<&Rc<RefCell<StructType>>> for Node {
 #[derive(Debug,Clone)]
 pub struct UnionType {
 	pub loc: Loc,
+	pub is_explicit: bool,
 	pub fields: Vec<Rc<RefCell<StructType>>>,
 	pub base: Option<Expr>,
 }
@@ -2987,6 +2997,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 			NodeType::IntType => {
 				Node::IntType(Rc::new(RefCell::new(IntType {
 				loc: raw_node.loc.clone(),
+				is_explicit: false,
 				bit_size: 0,
 				endian: Endian::Unspec,
 				is_signed: false,
@@ -2995,6 +3006,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 			NodeType::IdentType => {
 				Node::IdentType(Rc::new(RefCell::new(IdentType {
 				loc: raw_node.loc.clone(),
+				is_explicit: false,
 				ident: None,
 				base: None,
 				})))
@@ -3002,28 +3014,33 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 			NodeType::IntLiteralType => {
 				Node::IntLiteralType(Rc::new(RefCell::new(IntLiteralType {
 				loc: raw_node.loc.clone(),
+				is_explicit: false,
 				base: None,
 				})))
 			},
 			NodeType::StrLiteralType => {
 				Node::StrLiteralType(Rc::new(RefCell::new(StrLiteralType {
 				loc: raw_node.loc.clone(),
+				is_explicit: false,
 				base: None,
 				})))
 			},
 			NodeType::VoidType => {
 				Node::VoidType(Rc::new(RefCell::new(VoidType {
 				loc: raw_node.loc.clone(),
+				is_explicit: false,
 				})))
 			},
 			NodeType::BoolType => {
 				Node::BoolType(Rc::new(RefCell::new(BoolType {
 				loc: raw_node.loc.clone(),
+				is_explicit: false,
 				})))
 			},
 			NodeType::ArrayType => {
 				Node::ArrayType(Rc::new(RefCell::new(ArrayType {
 				loc: raw_node.loc.clone(),
+				is_explicit: false,
 				end_loc: raw_node.loc.clone(),
 				base_type: None,
 				length: None,
@@ -3032,6 +3049,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 			NodeType::FunctionType => {
 				Node::FunctionType(Rc::new(RefCell::new(FunctionType {
 				loc: raw_node.loc.clone(),
+				is_explicit: false,
 				return_type: None,
 				parameters: Vec::new(),
 				})))
@@ -3039,12 +3057,14 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 			NodeType::StructType => {
 				Node::StructType(Rc::new(RefCell::new(StructType {
 				loc: raw_node.loc.clone(),
+				is_explicit: false,
 				fields: Vec::new(),
 				})))
 			},
 			NodeType::UnionType => {
 				Node::UnionType(Rc::new(RefCell::new(UnionType {
 				loc: raw_node.loc.clone(),
+				is_explicit: false,
 				fields: Vec::new(),
 				base: None,
 				})))
@@ -4582,6 +4602,14 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Node::IntType(node)=>node,
 					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
 				};
+				let is_explicit_body = match raw_node.body.get("is_explicit") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(raw_node.node_type,"is_explicit")),
+				};
+				node.borrow_mut().is_explicit = match is_explicit_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
+				};
 				let bit_size_body = match raw_node.body.get("bit_size") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"bit_size")),
@@ -4615,6 +4643,14 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				let node = match node {
 					Node::IdentType(node)=>node,
 					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+				};
+				let is_explicit_body = match raw_node.body.get("is_explicit") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(raw_node.node_type,"is_explicit")),
+				};
+				node.borrow_mut().is_explicit = match is_explicit_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
 				};
 				let ident_body = match raw_node.body.get("ident") {
 					Some(v)=>v,
@@ -4657,6 +4693,14 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Node::IntLiteralType(node)=>node,
 					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
 				};
+				let is_explicit_body = match raw_node.body.get("is_explicit") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(raw_node.node_type,"is_explicit")),
+				};
+				node.borrow_mut().is_explicit = match is_explicit_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
+				};
 				let base_body = match raw_node.body.get("base") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"base")),
@@ -4681,6 +4725,14 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Node::StrLiteralType(node)=>node,
 					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
 				};
+				let is_explicit_body = match raw_node.body.get("is_explicit") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(raw_node.node_type,"is_explicit")),
+				};
+				node.borrow_mut().is_explicit = match is_explicit_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
+				};
 				let base_body = match raw_node.body.get("base") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"base")),
@@ -4701,16 +4753,32 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 			},
 			NodeType::VoidType => {
 				let node = nodes[i].clone();
-				let _ = match node {
+				let node = match node {
 					Node::VoidType(node)=>node,
 					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+				};
+				let is_explicit_body = match raw_node.body.get("is_explicit") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(raw_node.node_type,"is_explicit")),
+				};
+				node.borrow_mut().is_explicit = match is_explicit_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
 				};
 			},
 			NodeType::BoolType => {
 				let node = nodes[i].clone();
-				let _ = match node {
+				let node = match node {
 					Node::BoolType(node)=>node,
 					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+				};
+				let is_explicit_body = match raw_node.body.get("is_explicit") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(raw_node.node_type,"is_explicit")),
+				};
+				node.borrow_mut().is_explicit = match is_explicit_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
 				};
 			},
 			NodeType::ArrayType => {
@@ -4718,6 +4786,14 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				let node = match node {
 					Node::ArrayType(node)=>node,
 					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+				};
+				let is_explicit_body = match raw_node.body.get("is_explicit") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(raw_node.node_type,"is_explicit")),
+				};
+				node.borrow_mut().is_explicit = match is_explicit_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
 				};
 				let end_loc_body = match raw_node.body.get("end_loc") {
 					Some(v)=>v,
@@ -4760,6 +4836,14 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Node::FunctionType(node)=>node,
 					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
 				};
+				let is_explicit_body = match raw_node.body.get("is_explicit") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(raw_node.node_type,"is_explicit")),
+				};
+				node.borrow_mut().is_explicit = match is_explicit_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
+				};
 				let return_type_body = match raw_node.body.get("return_type") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"return_type")),
@@ -4799,6 +4883,14 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Node::StructType(node)=>node,
 					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
 				};
+				let is_explicit_body = match raw_node.body.get("is_explicit") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(raw_node.node_type,"is_explicit")),
+				};
+				node.borrow_mut().is_explicit = match is_explicit_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
+				};
 				let fields_body = match raw_node.body.get("fields") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"fields")),
@@ -4824,6 +4916,14 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				let node = match node {
 					Node::UnionType(node)=>node,
 					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+				};
+				let is_explicit_body = match raw_node.body.get("is_explicit") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(raw_node.node_type,"is_explicit")),
+				};
+				node.borrow_mut().is_explicit = match is_explicit_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
 				};
 				let fields_body = match raw_node.body.get("fields") {
 					Some(v)=>v,

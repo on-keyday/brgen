@@ -273,6 +273,7 @@ struct Member {
 struct Type {
 	const NodeType node_type;
 	Loc loc;
+	int is_explicit;
 };
 
 struct Program {
@@ -541,6 +542,7 @@ struct Function {
 struct IntType {
 	const NodeType node_type;
 	Loc loc;
+	int is_explicit;
 	uint64_t bit_size;
 	Endian endian;
 	int is_signed;
@@ -549,6 +551,7 @@ struct IntType {
 struct IdentType {
 	const NodeType node_type;
 	Loc loc;
+	int is_explicit;
 	Ident* ident;
 	Format* base;
 };
@@ -556,28 +559,33 @@ struct IdentType {
 struct IntLiteralType {
 	const NodeType node_type;
 	Loc loc;
+	int is_explicit;
 	IntLiteral* base;
 };
 
 struct StrLiteralType {
 	const NodeType node_type;
 	Loc loc;
+	int is_explicit;
 	StrLiteral* base;
 };
 
 struct VoidType {
 	const NodeType node_type;
 	Loc loc;
+	int is_explicit;
 };
 
 struct BoolType {
 	const NodeType node_type;
 	Loc loc;
+	int is_explicit;
 };
 
 struct ArrayType {
 	const NodeType node_type;
 	Loc loc;
+	int is_explicit;
 	Loc end_loc;
 	Type* base_type;
 	Expr* length;
@@ -586,6 +594,7 @@ struct ArrayType {
 struct FunctionType {
 	const NodeType node_type;
 	Loc loc;
+	int is_explicit;
 	Type* return_type;
 	Type** parameters;
 	size_t parameters_size;
@@ -594,6 +603,7 @@ struct FunctionType {
 struct StructType {
 	const NodeType node_type;
 	Loc loc;
+	int is_explicit;
 	Member** fields;
 	size_t fields_size;
 };
@@ -601,6 +611,7 @@ struct StructType {
 struct UnionType {
 	const NodeType node_type;
 	Loc loc;
+	int is_explicit;
 	StructType** fields;
 	size_t fields_size;
 	Expr* base;

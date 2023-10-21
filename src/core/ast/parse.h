@@ -740,7 +740,7 @@ namespace brgen::ast {
         */
         // fn (a :int,b :int) -> int
         std::shared_ptr<FunctionType> parse_func_type(lexer::Token&& tok) {
-            auto func_type = std::make_shared<FunctionType>(tok.loc);
+            auto func_type = std::make_shared<FunctionType>(tok.loc, true);
             s.skip_white();
             s.must_consume_token("(");
             s.skip_white();
@@ -785,27 +785,35 @@ namespace brgen::ast {
                 auto end_tok = s.must_consume_token("]");
                 s.skip_space();
                 auto base_type = parse_type();
-                return std::make_shared<ArrayType>(arr_begin->loc, std::move(expr), end_tok.loc, std::move(base_type));
+                return std::make_shared<ArrayType>(arr_begin->loc, std::move(expr), end_tok.loc, std::move(base_type), true);
             }
 
             if (auto lit = s.consume_token(lexer::Tag::int_literal)) {
                 auto literal = std::make_shared<IntLiteral>(lit->loc, std::move(lit->token));
-                return std::make_shared<IntLiteralType>(std::move(literal));
+                return std::make_shared<IntLiteralType>(std::move(literal), true);
             }
 
             if (auto lit = s.consume_token(lexer::Tag::str_literal)) {
                 auto literal = std::make_shared<StrLiteral>(lit->loc, std::move(lit->token));
-                return std::make_shared<StrLiteralType>(std::move(literal));
+                return std::make_shared<StrLiteralType>(std::move(literal), true);
             }
 
             if (auto fn = s.consume_token("fn")) {
                 return parse_func_type(std::move(*fn));
             }
 
+            if (auto void_ = s.consume_token("void")) {
+                return std::make_shared<VoidType>(void_->loc, true);
+            }
+
+            if (auto bool_ = s.consume_token("bool")) {
+                return std::make_shared<BoolType>(bool_->loc, true);
+            }
+
             auto ident = s.must_consume_token(lexer::Tag::ident);
 
             if (auto desc = is_int_type(ident.token)) {
-                return std::make_shared<IntType>(ident.loc, desc->bit_size, desc->endian, desc->is_signed);
+                return std::make_shared<IntType>(ident.loc, desc->bit_size, desc->endian, desc->is_signed, true);
             }
 
             auto base = std::make_shared<Ident>(ident.loc, std::move(ident.token));

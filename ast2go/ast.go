@@ -405,10 +405,11 @@ func (n *Function) isStmt() {}
 func (n *Function) isNode() {}
 
 type IntType struct {
-	Loc      Loc
-	BitSize  uint64
-	Endian   Endian
-	IsSigned bool
+	Loc        Loc
+	IsExplicit bool
+	BitSize    uint64
+	Endian     Endian
+	IsSigned   bool
 }
 
 func (n *IntType) isType() {}
@@ -416,9 +417,10 @@ func (n *IntType) isType() {}
 func (n *IntType) isNode() {}
 
 type IdentType struct {
-	Loc   Loc
-	Ident *Ident
-	Base  *Format
+	Loc        Loc
+	IsExplicit bool
+	Ident      *Ident
+	Base       *Format
 }
 
 func (n *IdentType) isType() {}
@@ -426,8 +428,9 @@ func (n *IdentType) isType() {}
 func (n *IdentType) isNode() {}
 
 type IntLiteralType struct {
-	Loc  Loc
-	Base *IntLiteral
+	Loc        Loc
+	IsExplicit bool
+	Base       *IntLiteral
 }
 
 func (n *IntLiteralType) isType() {}
@@ -435,8 +438,9 @@ func (n *IntLiteralType) isType() {}
 func (n *IntLiteralType) isNode() {}
 
 type StrLiteralType struct {
-	Loc  Loc
-	Base *StrLiteral
+	Loc        Loc
+	IsExplicit bool
+	Base       *StrLiteral
 }
 
 func (n *StrLiteralType) isType() {}
@@ -444,7 +448,8 @@ func (n *StrLiteralType) isType() {}
 func (n *StrLiteralType) isNode() {}
 
 type VoidType struct {
-	Loc Loc
+	Loc        Loc
+	IsExplicit bool
 }
 
 func (n *VoidType) isType() {}
@@ -452,7 +457,8 @@ func (n *VoidType) isType() {}
 func (n *VoidType) isNode() {}
 
 type BoolType struct {
-	Loc Loc
+	Loc        Loc
+	IsExplicit bool
 }
 
 func (n *BoolType) isType() {}
@@ -460,10 +466,11 @@ func (n *BoolType) isType() {}
 func (n *BoolType) isNode() {}
 
 type ArrayType struct {
-	Loc      Loc
-	EndLoc   Loc
-	BaseType Type
-	Length   Expr
+	Loc        Loc
+	IsExplicit bool
+	EndLoc     Loc
+	BaseType   Type
+	Length     Expr
 }
 
 func (n *ArrayType) isType() {}
@@ -472,6 +479,7 @@ func (n *ArrayType) isNode() {}
 
 type FunctionType struct {
 	Loc        Loc
+	IsExplicit bool
 	ReturnType Type
 	Parameters []Type
 }
@@ -481,8 +489,9 @@ func (n *FunctionType) isType() {}
 func (n *FunctionType) isNode() {}
 
 type StructType struct {
-	Loc    Loc
-	Fields []Member
+	Loc        Loc
+	IsExplicit bool
+	Fields     []Member
 }
 
 func (n *StructType) isType() {}
@@ -490,9 +499,10 @@ func (n *StructType) isType() {}
 func (n *StructType) isNode() {}
 
 type UnionType struct {
-	Loc    Loc
-	Fields []*StructType
-	Base   Expr
+	Loc        Loc
+	IsExplicit bool
+	Fields     []*StructType
+	Base       Expr
 }
 
 func (n *UnionType) isType() {}
@@ -1730,25 +1740,29 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 		case "int_type":
 			v := n.node[i].(*IntType)
 			var tmp struct {
-				BitSize  uint64 `json:"bit_size"`
-				Endian   Endian `json:"endian"`
-				IsSigned bool   `json:"is_signed"`
+				IsExplicit bool   `json:"is_explicit"`
+				BitSize    uint64 `json:"bit_size"`
+				Endian     Endian `json:"endian"`
+				IsSigned   bool   `json:"is_signed"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
 			}
+			v.IsExplicit = tmp.IsExplicit
 			v.BitSize = tmp.BitSize
 			v.Endian = tmp.Endian
 			v.IsSigned = tmp.IsSigned
 		case "ident_type":
 			v := n.node[i].(*IdentType)
 			var tmp struct {
-				Ident *uintptr `json:"ident"`
-				Base  *uintptr `json:"base"`
+				IsExplicit bool     `json:"is_explicit"`
+				Ident      *uintptr `json:"ident"`
+				Base       *uintptr `json:"base"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
 			}
+			v.IsExplicit = tmp.IsExplicit
 			if tmp.Ident != nil {
 				v.Ident = n.node[*tmp.Ident].(*Ident)
 			}
@@ -1758,47 +1772,59 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 		case "int_literal_type":
 			v := n.node[i].(*IntLiteralType)
 			var tmp struct {
-				Base *uintptr `json:"base"`
+				IsExplicit bool     `json:"is_explicit"`
+				Base       *uintptr `json:"base"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
 			}
+			v.IsExplicit = tmp.IsExplicit
 			if tmp.Base != nil {
 				v.Base = n.node[*tmp.Base].(*IntLiteral)
 			}
 		case "str_literal_type":
 			v := n.node[i].(*StrLiteralType)
 			var tmp struct {
-				Base *uintptr `json:"base"`
+				IsExplicit bool     `json:"is_explicit"`
+				Base       *uintptr `json:"base"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
 			}
+			v.IsExplicit = tmp.IsExplicit
 			if tmp.Base != nil {
 				v.Base = n.node[*tmp.Base].(*StrLiteral)
 			}
 		case "void_type":
+			v := n.node[i].(*VoidType)
 			var tmp struct {
+				IsExplicit bool `json:"is_explicit"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
 			}
+			v.IsExplicit = tmp.IsExplicit
 		case "bool_type":
+			v := n.node[i].(*BoolType)
 			var tmp struct {
+				IsExplicit bool `json:"is_explicit"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
 			}
+			v.IsExplicit = tmp.IsExplicit
 		case "array_type":
 			v := n.node[i].(*ArrayType)
 			var tmp struct {
-				EndLoc   Loc      `json:"end_loc"`
-				BaseType *uintptr `json:"base_type"`
-				Length   *uintptr `json:"length"`
+				IsExplicit bool     `json:"is_explicit"`
+				EndLoc     Loc      `json:"end_loc"`
+				BaseType   *uintptr `json:"base_type"`
+				Length     *uintptr `json:"length"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
 			}
+			v.IsExplicit = tmp.IsExplicit
 			v.EndLoc = tmp.EndLoc
 			if tmp.BaseType != nil {
 				v.BaseType = n.node[*tmp.BaseType].(Type)
@@ -1809,12 +1835,14 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 		case "function_type":
 			v := n.node[i].(*FunctionType)
 			var tmp struct {
+				IsExplicit bool      `json:"is_explicit"`
 				ReturnType *uintptr  `json:"return_type"`
 				Parameters []uintptr `json:"parameters"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
 			}
+			v.IsExplicit = tmp.IsExplicit
 			if tmp.ReturnType != nil {
 				v.ReturnType = n.node[*tmp.ReturnType].(Type)
 			}
@@ -1825,11 +1853,13 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 		case "struct_type":
 			v := n.node[i].(*StructType)
 			var tmp struct {
-				Fields []uintptr `json:"fields"`
+				IsExplicit bool      `json:"is_explicit"`
+				Fields     []uintptr `json:"fields"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
 			}
+			v.IsExplicit = tmp.IsExplicit
 			v.Fields = make([]Member, len(tmp.Fields))
 			for j, k := range tmp.Fields {
 				v.Fields[j] = n.node[k].(Member)
@@ -1837,12 +1867,14 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 		case "union_type":
 			v := n.node[i].(*UnionType)
 			var tmp struct {
-				Fields []uintptr `json:"fields"`
-				Base   *uintptr  `json:"base"`
+				IsExplicit bool      `json:"is_explicit"`
+				Fields     []uintptr `json:"fields"`
+				Base       *uintptr  `json:"base"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
 			}
+			v.IsExplicit = tmp.IsExplicit
 			v.Fields = make([]*StructType, len(tmp.Fields))
 			for j, k := range tmp.Fields {
 				v.Fields[j] = n.node[k].(*StructType)

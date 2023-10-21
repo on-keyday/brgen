@@ -34,6 +34,12 @@ namespace brgen::ast {
 
     struct Type : Node {
         define_node_type(NodeType::type);
+        bool is_explicit = false;  // for language server annotation
+
+        void dump(auto&& field) {
+            Node::dump(field);
+            sdebugf(is_explicit);
+        }
 
        protected:
         constexpr Type(lexer::Loc l, NodeType t)

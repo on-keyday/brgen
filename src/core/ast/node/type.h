@@ -5,6 +5,7 @@
 #include <binary/log2i.h>
 #include <vector>
 #include <map>
+#include "statement.h"
 
 namespace brgen::ast {
     // types
@@ -64,8 +65,10 @@ namespace brgen::ast {
         Endian endian = Endian::unspec;
         bool is_signed = false;
 
-        IntType(lexer::Loc l, size_t bit_size, Endian endian, bool is_signed)
-            : Type(l, NodeType::int_type), bit_size(bit_size), endian(endian), is_signed(is_signed) {}
+        IntType(lexer::Loc l, size_t bit_size, Endian endian, bool is_signed, bool is_explicit = false)
+            : Type(l, NodeType::int_type), bit_size(bit_size), endian(endian), is_signed(is_signed) {
+            this->is_explicit = is_explicit;
+        }
 
         // for decode
         IntType()
@@ -145,8 +148,10 @@ namespace brgen::ast {
             sdebugf(base);
         }
 
-        IntLiteralType(const std::shared_ptr<IntLiteral>& ty)
-            : Type(ty->loc, NodeType::int_literal_type), base(ty) {}
+        IntLiteralType(const std::shared_ptr<IntLiteral>& ty, bool is_explicit = false)
+            : Type(ty->loc, NodeType::int_literal_type), base(ty) {
+            this->is_explicit = is_explicit;
+        }
 
         // for decode
         IntLiteralType()
@@ -157,8 +162,10 @@ namespace brgen::ast {
         define_node_type(NodeType::str_literal_type);
         std::weak_ptr<StrLiteral> base;
 
-        StrLiteralType(std::shared_ptr<StrLiteral>&& str)
-            : Type(str->loc, NodeType::str_literal_type), base(std::move(str)) {}
+        StrLiteralType(std::shared_ptr<StrLiteral>&& str, bool is_explicit = false)
+            : Type(str->loc, NodeType::str_literal_type), base(std::move(str)) {
+            this->is_explicit = is_explicit;
+        }
 
         // for decode
         StrLiteralType()
@@ -194,8 +201,10 @@ namespace brgen::ast {
     struct VoidType : Type {
         define_node_type(NodeType::void_type);
 
-        constexpr VoidType(lexer::Loc l)
-            : Type(l, NodeType::void_type) {}
+        constexpr VoidType(lexer::Loc l, bool is_explicit = false)
+            : Type(l, NodeType::void_type) {
+            this->is_explicit = is_explicit;
+        }
 
         // for decode
         constexpr VoidType()
@@ -208,9 +217,10 @@ namespace brgen::ast {
 
     struct BoolType : Type {
         define_node_type(NodeType::bool_type);
-
-        constexpr BoolType(lexer::Loc l)
-            : Type(l, NodeType::bool_type) {}
+        constexpr BoolType(lexer::Loc l, bool is_explicit = false)
+            : Type(l, NodeType::bool_type) {
+            this->is_explicit = is_explicit;
+        }
 
         // for decode
         constexpr BoolType()
@@ -227,8 +237,10 @@ namespace brgen::ast {
         lexer::Loc end_loc;
         std::shared_ptr<ast::Type> base_type;
 
-        ArrayType(lexer::Loc l, std::shared_ptr<ast::Expr>&& len, lexer::Loc end, std::shared_ptr<ast::Type>&& base)
-            : Type(l, NodeType::array_type), length(std::move(len)), end_loc(end), base_type(std::move(base)) {}
+        ArrayType(lexer::Loc l, std::shared_ptr<ast::Expr>&& len, lexer::Loc end, std::shared_ptr<ast::Type>&& base, bool is_explicit = false)
+            : Type(l, NodeType::array_type), length(std::move(len)), end_loc(end), base_type(std::move(base)) {
+            this->is_explicit = is_explicit;
+        }
 
         // for decode
         ArrayType()
@@ -247,8 +259,10 @@ namespace brgen::ast {
         std::shared_ptr<Type> return_type;
         std::vector<std::shared_ptr<Type>> parameters;
 
-        FunctionType(lexer::Loc l)
-            : Type(l, NodeType::function_type) {}
+        FunctionType(lexer::Loc l, bool is_explicit = false)
+            : Type(l, NodeType::function_type) {
+            this->is_explicit = is_explicit;
+        }
 
         // for decode
         FunctionType()

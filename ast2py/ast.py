@@ -79,7 +79,7 @@ class Member(Stmt):
 
 
 class Type(Node):
-    pass
+    is_explicit: bool
 
 
 class Program(Node):
@@ -858,39 +858,57 @@ def ast2node(ast :Ast) -> Program:
                 x = node[ast.node[i].body["struct_type"]]
                 node[i].struct_type = x if isinstance(x,StructType) or x is None else raiseError(TypeError('type mismatch'))
             case NodeType.INT_TYPE:
+                x = ast.node[i].body["is_explicit"]
+                node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch'))
                 x = ast.node[i].body["bit_size"]
                 node[i].bit_size = x if isinstance(x,int)  else raiseError(TypeError('type mismatch'))
                 node[i].endian = Endian(ast.node[i].body["endian"])
                 x = ast.node[i].body["is_signed"]
                 node[i].is_signed = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch'))
             case NodeType.IDENT_TYPE:
+                x = ast.node[i].body["is_explicit"]
+                node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch'))
                 x = node[ast.node[i].body["ident"]]
                 node[i].ident = x if isinstance(x,Ident) or x is None else raiseError(TypeError('type mismatch'))
                 x = node[ast.node[i].body["base"]]
                 node[i].base = x if isinstance(x,Format) or x is None else raiseError(TypeError('type mismatch'))
             case NodeType.INT_LITERAL_TYPE:
+                x = ast.node[i].body["is_explicit"]
+                node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch'))
                 x = node[ast.node[i].body["base"]]
                 node[i].base = x if isinstance(x,IntLiteral) or x is None else raiseError(TypeError('type mismatch'))
             case NodeType.STR_LITERAL_TYPE:
+                x = ast.node[i].body["is_explicit"]
+                node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch'))
                 x = node[ast.node[i].body["base"]]
                 node[i].base = x if isinstance(x,StrLiteral) or x is None else raiseError(TypeError('type mismatch'))
             case NodeType.VOID_TYPE:
-                pass
+                x = ast.node[i].body["is_explicit"]
+                node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch'))
             case NodeType.BOOL_TYPE:
-                pass
+                x = ast.node[i].body["is_explicit"]
+                node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch'))
             case NodeType.ARRAY_TYPE:
+                x = ast.node[i].body["is_explicit"]
+                node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch'))
                 node[i].end_loc = parse_Loc(ast.node[i].body["end_loc"])
                 x = node[ast.node[i].body["base_type"]]
                 node[i].base_type = x if isinstance(x,Type) or x is None else raiseError(TypeError('type mismatch'))
                 x = node[ast.node[i].body["length"]]
                 node[i].length = x if isinstance(x,Expr) or x is None else raiseError(TypeError('type mismatch'))
             case NodeType.FUNCTION_TYPE:
+                x = ast.node[i].body["is_explicit"]
+                node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch'))
                 x = node[ast.node[i].body["return_type"]]
                 node[i].return_type = x if isinstance(x,Type) or x is None else raiseError(TypeError('type mismatch'))
                 node[i].parameters = [(node[x] if isinstance(node[x],Type) else raiseError(TypeError('type mismatch'))) for x in ast.node[i].body["parameters"]]
             case NodeType.STRUCT_TYPE:
+                x = ast.node[i].body["is_explicit"]
+                node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch'))
                 node[i].fields = [(node[x] if isinstance(node[x],Member) else raiseError(TypeError('type mismatch'))) for x in ast.node[i].body["fields"]]
             case NodeType.UNION_TYPE:
+                x = ast.node[i].body["is_explicit"]
+                node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch'))
                 node[i].fields = [(node[x] if isinstance(node[x],StructType) else raiseError(TypeError('type mismatch'))) for x in ast.node[i].body["fields"]]
                 x = node[ast.node[i].body["base"]]
                 node[i].base = x if isinstance(x,Expr) or x is None else raiseError(TypeError('type mismatch'))
