@@ -9,12 +9,12 @@ work.onmessage = (e) => {
     const msg = e.data as JobResult;
     const resolver = resolverMap.get(msg.jobID);
     if(resolver){
+        resolverMap.delete(msg.jobID);
         if(msg.code===0){
             resolver.resolve(msg);
         }else{
             resolver.reject(msg);
         }
-        resolverMap.delete(msg.jobID);
     }
 };
 

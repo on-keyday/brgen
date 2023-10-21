@@ -298,6 +298,9 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
                 field("error", res);
             }
             cout << d.out();
+            if (cout.is_tty()) {
+                cout << "\n";
+            }
         }
         res.for_each_error([&](std::string_view msg, bool w) {
             if (w && !flags.unresolved_type_as_error) {
