@@ -68,7 +68,7 @@ namespace json2cpp {
 
         // generate field
         result<void> generate_fields(const MergedFields& fields) {
-            for (auto& field : fields) {
+            for (auto& field : fields.fields) {
                 if (auto f = std::get_if<BulkFields>(&field)) {
                     for (auto& field : f->fields) {
                         if (auto res = generate_field(*field); !res) {

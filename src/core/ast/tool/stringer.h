@@ -8,18 +8,26 @@
 
 namespace brgen::ast::tool {
 
-    void extract_ident(const std::shared_ptr<Expr>& expr, std::vector<std::shared_ptr<Ident>>& ident) {
+    void extract_ident(const std::shared_ptr<Expr>& expr, auto&& add_ident) {
+        if (auto ident = ast::as<ast::Ident>(expr)) {
+            add_ident(ast::cast_to<ast::Ident>(expr));
+            return;
+        }
         auto lookup = [&](auto&& f, const std::shared_ptr<Node>& v) -> void {
             if (ast::as<ast::Type>(v)) {
                 return;
             }
             if (ast::as<ast::Ident>(v)) {
-                ident.push_back(ast::cast_to<ast::Ident>(v));
+                add_ident(ast::cast_to<ast::Ident>(v));
                 return;
             }
-            lookup(f, v);
+            traverse(v, [&](auto&& v) {
+                f(f, v);
+            });
         };
-        traverse(expr, lookup);
+        traverse(expr, [&](auto&& v) -> void {
+            lookup(lookup, v);
+        });
     }
 
     struct Stringer {

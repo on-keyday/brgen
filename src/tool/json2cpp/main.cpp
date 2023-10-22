@@ -5,6 +5,8 @@
 #include <core/ast/json.h>
 #include <file/file_view.h>
 #include "gen.h"
+#include <binary/float.h>
+#include <cfenv>
 
 struct Flags : utils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
@@ -88,6 +90,43 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     }
     cout << g.code.out();
     return 0;
+}
+
+void nan() {
+    constexpr utils::binary::SingleFloat f1 = 2143289344u;               // qNAN
+    constexpr utils::binary::SingleFloat f2 = 0x80000000 | 2143289344u;  // -qNAN
+    constexpr auto mask = f1.exponent_mask;
+    constexpr bool is_nan = f1.is_nan();
+    constexpr bool is_quiet_nan = f1.is_quiet_nan();
+    constexpr bool is_nan2 = f2.is_nan();
+    constexpr bool sign = f1.sign();
+    constexpr bool sign2 = f2.sign();
+    constexpr bool test1 = f2.exponent() == f2.exponent_max;
+    constexpr auto frac_value = f1.fraction();
+    constexpr auto cmp = f1 == f2;
+    constexpr auto cmp2 = f1.to_float() == f2.to_float();
+    constexpr auto cmp3 = f1.to_float() == f1.to_float();
+    constexpr auto cmp4 = f1.to_int() == f1.to_int();
+    constexpr utils::binary::DoubleFloat dl = 9221120237041090560;
+    constexpr auto v = dl.biased_exponent();
+    constexpr auto v2 = utils::binary::DoubleFloat{0}.biased_exponent();
+    constexpr auto v3 = f1.is_canonical_nan();
+    constexpr auto v4 = f1.is_arithmetic_nan();
+    constexpr auto v5 = f2.is_denormalized();
+    constexpr auto v6 = f2.is_normalized();
+    constexpr auto f3 = [&] {
+        auto copy = f1;
+        copy.make_quiet_signaling();
+        return copy;
+    }();
+    fexcept_t pre, post1, post2;
+    std::fegetexceptflag(&pre, FE_ALL_EXCEPT);
+    constexpr auto sNAN = f3.to_float() + f3.to_float();
+    std::fegetexceptflag(&post1, FE_ALL_EXCEPT);
+    std::fesetexceptflag(&pre, FE_ALL_EXCEPT);
+    auto qNAN = f1.to_float() + f1.to_float();
+    std::fegetexceptflag(&post2, FE_ALL_EXCEPT);
+    utils::binary::SingleFloat fsNAN = sNAN, fqNAN = qNAN;
 }
 
 int main(int argc, char** argv) {

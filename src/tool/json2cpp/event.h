@@ -361,15 +361,34 @@ namespace json2cpp {
             return {};
         }
 
-        result<void> convert_union_int(const std::shared_ptr<Field>& f, Method m) {
+        result<void> convert_union_int(MergedFields& mf, const std::shared_ptr<Field>& f, Method m) {
             auto union_int = static_cast<IntUnionDesc*>(f->desc.get());
             auto cond = union_int->desc.cond;
             std::vector<std::shared_ptr<ast::Ident>> ident;
             tool::Stringer s;
             bool second = false;
             bool has_else = false;
+            // collect ident
+            tool::extract_ident(cond, [&](auto&& i) {
+                ident.push_back(std::move(i));
+            });
             for (auto& field : union_int->desc.fields) {
-                tool::extract_ident(field.cond, ident);
+                tool::extract_ident(field.cond, [&](auto&& i) {
+                    ident.push_back(std::move(i));
+                });
+            }
+            for (auto& i : ident) {
+                if (auto found = mf.field_map.find(i->ident); found != mf.field_map.end()) {
+                    if (found->second->desc->type == DescType::int_) {
+                        auto int_desc = static_cast<IntDesc*>(found->second->desc.get());
+                        if (int_desc->bit_field.lock()) {
+                            s.ident_map[i->ident] = found->second->name + "()";
+                        }
+                    }
+                }
+            }
+
+            for (auto& field : union_int->desc.fields) {
                 if (cond) {
                     auto cmp = s.to_string(cond);
                     auto target = s.to_string(field.cond);
@@ -433,7 +452,7 @@ namespace json2cpp {
 
        public:
         result<void> convert_to_decoder_event(MergedFields& fields) {
-            for (auto& field : fields) {
+            for (auto& field : fields.fields) {
                 if (auto f = std::get_if<BulkFields>(&field)) {
                     if (auto res = convert_bulk(f, Method::decode); !res) {
                         return res.transform(empty_void);
@@ -465,7 +484,7 @@ namespace json2cpp {
                         }
                     }
                     else if (f->desc->type == DescType::union_int) {
-                        if (auto res = convert_union_int(f, Method::decode); !res) {
+                        if (auto res = convert_union_int(fields, f, Method::decode); !res) {
                             return res.transform(empty_void);
                         }
                     }
@@ -476,7 +495,7 @@ namespace json2cpp {
 
         result<void> convert_to_encoder_event(MergedFields& fields) {
             size_t tmp_ = 0;
-            for (auto& field : fields) {
+            for (auto& field : fields.fields) {
                 if (auto f = std::get_if<BulkFields>(&field)) {
                     if (auto res = convert_bulk(f, Method::encode); !res) {
                         return res.transform(empty_void);
@@ -512,7 +531,7 @@ namespace json2cpp {
                         }
                     }
                     else if (f->desc->type == DescType::union_int) {
-                        if (auto res = convert_union_int(f, Method::encode); !res) {
+                        if (auto res = convert_union_int(fields, f, Method::encode); !res) {
                             return res.transform(empty_void);
                         }
                     }
@@ -522,7 +541,7 @@ namespace json2cpp {
         }
 
         result<void> convert_to_deallocate_event(MergedFields& fields) {
-            for (auto& field : fields) {
+            for (auto& field : fields.fields) {
                 if (auto fp = std::get_if<std::shared_ptr<Field>>(&field)) {
                     auto& f = *fp;
                     if (f->desc->type == DescType::vector) {
@@ -536,7 +555,7 @@ namespace json2cpp {
         }
 
         result<void> convert_to_move_event(MergedFields& fields) {
-            for (auto& field : fields) {
+            for (auto& field : fields.fields) {
                 if (auto fp = std::get_if<std::shared_ptr<Field>>(&field)) {
                     auto& f = *fp;
                     if (f->desc->type == DescType::vector) {

@@ -117,7 +117,27 @@ namespace json2cpp {
 
     using MergedField = std::variant<std::shared_ptr<Field>, BulkFields, std::shared_ptr<BitFields>>;
 
-    using MergedFields = std::vector<MergedField>;
+    struct MergedFields {
+        std::vector<MergedField> fields;
+        std::map<std::string, std::shared_ptr<Field>> field_map;
+
+        void push_back(MergedField&& field) {
+            fields.push_back(std::move(field));
+            if (auto f = std::get_if<std::shared_ptr<Field>>(&fields.back()); f) {
+                field_map[f->get()->name] = *f;
+            }
+            else if (auto bulk = std::get_if<BulkFields>(&fields.back()); bulk) {
+                for (auto& f : bulk->fields) {
+                    field_map[f->name] = f;
+                }
+            }
+            else if (auto bit = std::get_if<std::shared_ptr<BitFields>>(&fields.back()); bit) {
+                for (auto& f : bit->get()->fields) {
+                    field_map[f->name] = f;
+                }
+            }
+        }
+    };
 
     struct FieldCollector {
         Config& config;
