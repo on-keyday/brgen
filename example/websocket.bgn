@@ -15,4 +15,4 @@ format Frame:
     if Mask == 1:
         MaskingKey :u32
     
-    Payload :[PayloadLength if PayloadLength < 126 else ExtendedPayloadLength]u8
+    Payload :[PayloadLength if available(PayloadLength) else ExtendedPayloadLength]u8
