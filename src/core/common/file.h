@@ -42,12 +42,21 @@ namespace brgen {
         std::optional<lexer::Token> (*parse_)(void* seq, std::uint64_t file) = nullptr;
         std::pair<std::string, utils::code::SrcLoc> (*dump_)(void* seq, lexer::Pos pos) = nullptr;
 
+        utils::view::rvec (*direct)(void* seq) = nullptr;
+
+        template <class T>
+        static utils::view::rvec direct_source(void* p) {
+            auto& seq = *static_cast<utils::Sequencer<T>*>(p);
+            return seq.buf.buffer;
+        }
+
         template <class T>
         void set_input(T&& t) {
             using U = std::decay_t<T>;
             ptr = std::make_unique<utils::Sequencer<U>>(std::forward<T>(t));
             parse_ = do_parse<U>;
             dump_ = dump_source<U>;
+            direct = direct_source<U>;
         }
 
        public:
@@ -93,6 +102,13 @@ namespace brgen {
 
         size_t index() const {
             return file;
+        }
+
+        utils::view::rvec source() const {
+            if (direct) {
+                return direct(ptr.get());
+            }
+            return {};
         }
     };
 

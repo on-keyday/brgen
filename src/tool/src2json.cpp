@@ -56,6 +56,8 @@ struct Flags : utils::cmdline::templ::HelpOption {
 
     bool collect_comments = false;
 
+    bool report_error = false;
+
     void bind(utils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&lexer, "l,lexer", "lexer mode");
@@ -129,12 +131,7 @@ auto do_lex(brgen::File* file, size_t limit) {
     });
 }
 
-int check_ast(std::string_view name) {
-    utils::file::View view;
-    if (!view.open(name)) {
-        print_error("cannot open file ", name);
-        return -1;
-    }
+int check_ast(std::string_view name, utils::view::rvec view) {
     auto js = utils::json::parse<utils::json::JSON>(view, true);
     if (js.is_undef()) {
         print_error("cannot parse json file ", name);
@@ -215,14 +212,6 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
         return -1;
     }
 
-    if (flags.check_ast) {
-        if (flags.stdin_mode || flags.argv_mode) {
-            print_error("stdin mode or argv mode is not supported with --check-ast");
-            return -1;
-        }
-        return check_ast(flags.args[0]);
-    }
-
     std::string name;
     if (flags.stdin_mode || flags.argv_mode) {
         name = flags.as_file_name;
@@ -286,6 +275,10 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
             print_error("cannot open file ", name);
             return -1;
         }
+    }
+
+    if (flags.check_ast) {
+        return check_ast(name, input->source());
     }
 
     auto report_error = [&](auto&& res, bool warn = false, const char* key = "ast") {
