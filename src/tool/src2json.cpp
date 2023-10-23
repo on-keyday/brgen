@@ -412,7 +412,7 @@ int src2json_main(int argc, char** argv) {
                 print_error(str);
             }
             else {
-                cerr << str;
+                cout << str;
             }
         },
         [](Flags& flags, utils::cmdline::option::Context& ctx) {

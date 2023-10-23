@@ -57,13 +57,11 @@ namespace brgen::ast::tool {
         lexer::Loc loc;
         std::string msg;
     };
-    
-    template<class T>
+
+    template <class T>
     using result = expected<T, LocError>;
 
     using EResult = expected<EvalResult, LocError>;
-
-
 
     EResult add_string(const std::string& a, const std::string& b, lexer::Loc a_loc = {}, lexer::Loc b_loc = {}) {
         auto left = unescape(a);
@@ -355,6 +353,21 @@ namespace brgen::ast::tool {
             }
             if (auto i = ast::as<ast::BoolLiteral>(expr)) {
                 return make_result<EResultType::boolean>(i->value);
+            }
+            if (auto cond = ast::as<ast::Cond>(expr)) {
+                auto c = eval_expr(cond->cond.get());
+                if (!c) {
+                    return c;
+                }
+                if (c->type() != EResultType::boolean) {
+                    return unexpect(LocError{cond->loc, "cond must be boolean"});
+                }
+                if (c->get<EResultType::boolean>()) {
+                    return eval_expr(cond->then.get());
+                }
+                else {
+                    return eval_expr(cond->els.get());
+                }
             }
             return unexpect(LocError{expr->loc, "not supported"});
         }

@@ -163,7 +163,7 @@ namespace json2cpp {
        private:
         Fields fields;
         // 可変長配列の長さを解決する
-        // 可変長配列の長さが１次方程式(かつ変数が1回のみ(現状x+xなどは無理))で解ける場合のみ解決できる
+        // 可変長配列の長さが１次方程式(かつ変数が1つのみ(現状x+xなどは無理))で解ける場合のみ解決できる
         // それ以外の場合はエラー
         result<void> collect_vector_field(tool::IntDesc& b, tool::ArrayDesc& a, const std::shared_ptr<ast::Format>& fmt, std::shared_ptr<ast::Field>&& field) {
             if (config.vector_mode == VectorMode::std_vector) {
