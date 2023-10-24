@@ -185,13 +185,6 @@ namespace brgen::ast {
             std::shared_ptr<UnionType> union_ = std::make_shared<UnionType>(match->loc);
             union_->base = match;
 
-            auto stmt_with_struct = [&](lexer::Loc loc, auto& block) {
-                std::shared_ptr<StructType> struct_ = std::make_shared<StructType>(loc);
-                auto c = state.enter_struct(struct_);
-                block = parse_statement();
-                union_->fields.push_back(std::move(struct_));
-            };
-
             s.skip_white();
 
             if (!s.expect_token(":")) {
@@ -201,15 +194,28 @@ namespace brgen::ast {
             // Consume the initial indent sign
             must_consume_indent_sign();
 
+            auto stmt_with_struct = [&](lexer::Loc loc, auto& block) {
+                std::shared_ptr<StructType> struct_ = std::make_shared<StructType>(loc);
+                auto c = state.enter_struct(struct_);
+                block = parse_statement();
+                union_->fields.push_back(std::move(struct_));
+            };
+
             auto parse_match_branch = [&]() -> std::shared_ptr<MatchBranch> {
                 auto br = std::make_shared<MatchBranch>();
                 br->cond = parse_expr();
                 br->loc = br->cond->loc;
                 s.skip_white();
-                auto sym = s.must_consume_token("=>");
-                br->sym_loc = sym.loc;
+                auto sym = s.consume_token("=>");
+                if (!sym) {
+                    auto tok = s.peek_token(":");
+                    br->then = parse_indent_block();
+                    br->sym_loc = tok->loc;
+                    return br;
+                }
+                br->sym_loc = sym->loc;
                 s.skip_white();
-                stmt_with_struct(sym.loc, br->then);
+                stmt_with_struct(sym->loc, br->then);
                 return br;
             };
 
