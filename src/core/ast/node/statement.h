@@ -37,7 +37,6 @@ namespace brgen::ast {
         std::shared_ptr<Type> field_type;
         std::shared_ptr<Expr> raw_arguments;
         std::list<std::shared_ptr<Expr>> arguments;
-        // std::weak_ptr<StructType> belong_struct;
 
         Field(lexer::Loc l)
             : Member(l, NodeType::field) {}
@@ -56,12 +55,27 @@ namespace brgen::ast {
         }
     };
 
-    /*
+    struct UnionType;
+
     struct UnionField : Member {
         define_node_type(NodeType::union_field);
+        std::shared_ptr<Ident> ident;
         std::vector<std::shared_ptr<Field>> candidate;
+        std::shared_ptr<UnionType> base_union;
+
+        void dump(auto&& field) {
+            Member::dump(field);
+            sdebugf(ident);
+            sdebugf(candidate);
+            sdebugf(base_union);
+        }
+
+        UnionField(lexer::Loc loc)
+            : Member(loc, NodeType::union_field) {}
+
+        UnionField()
+            : Member({}, NodeType::union_field) {}
     };
-    */
 
     struct FunctionType;
     struct StructType;

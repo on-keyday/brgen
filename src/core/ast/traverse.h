@@ -71,6 +71,7 @@ namespace brgen::ast {
         CASE(Member)
 
         CASE(Field)
+        CASE(UnionField)
         CASE(Format)
         CASE(Function)
 
