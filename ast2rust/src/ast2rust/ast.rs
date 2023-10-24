@@ -68,7 +68,7 @@ pub enum NodeType {
 	Config,
 	Stmt,
 	Loop,
-	IndentScope,
+	IndentBlock,
 	MatchBranch,
 	Return,
 	Break,
@@ -125,7 +125,7 @@ impl TryFrom<&str> for NodeType {
 			"config" =>Ok(Self::Config),
 			"stmt" =>Ok(Self::Stmt),
 			"loop" =>Ok(Self::Loop),
-			"indent_scope" =>Ok(Self::IndentScope),
+			"indent_block" =>Ok(Self::IndentBlock),
 			"match_branch" =>Ok(Self::MatchBranch),
 			"return" =>Ok(Self::Return),
 			"break" =>Ok(Self::Break),
@@ -180,7 +180,7 @@ impl From<&Node> for NodeType {
 			Node::Output(_) => Self::Output,
 			Node::Config(_) => Self::Config,
 			Node::Loop(_) => Self::Loop,
-			Node::IndentScope(_) => Self::IndentScope,
+			Node::IndentBlock(_) => Self::IndentBlock,
 			Node::MatchBranch(_) => Self::MatchBranch,
 			Node::Return(_) => Self::Return,
 			Node::Break(_) => Self::Break,
@@ -237,7 +237,7 @@ pub enum Node {
 	Output(Rc<RefCell<Output>>),
 	Config(Rc<RefCell<Config>>),
 	Loop(Rc<RefCell<Loop>>),
-	IndentScope(Rc<RefCell<IndentScope>>),
+	IndentBlock(Rc<RefCell<IndentBlock>>),
 	MatchBranch(Rc<RefCell<MatchBranch>>),
 	Return(Rc<RefCell<Return>>),
 	Break(Rc<RefCell<Break>>),
@@ -412,7 +412,7 @@ impl From<Literal> for Node {
 #[derive(Debug,Clone)]
 pub enum Stmt {
 	Loop(Rc<RefCell<Loop>>),
-	IndentScope(Rc<RefCell<IndentScope>>),
+	IndentBlock(Rc<RefCell<IndentBlock>>),
 	MatchBranch(Rc<RefCell<MatchBranch>>),
 	Return(Rc<RefCell<Return>>),
 	Break(Rc<RefCell<Break>>),
@@ -429,7 +429,7 @@ impl TryFrom<&Node> for Stmt {
 	fn try_from(node:&Node)->Result<Self,Self::Error>{
 		match node {
 			Node::Loop(node)=>Ok(Self::Loop(node.clone())),
-			Node::IndentScope(node)=>Ok(Self::IndentScope(node.clone())),
+			Node::IndentBlock(node)=>Ok(Self::IndentBlock(node.clone())),
 			Node::MatchBranch(node)=>Ok(Self::MatchBranch(node.clone())),
 			Node::Return(node)=>Ok(Self::Return(node.clone())),
 			Node::Break(node)=>Ok(Self::Break(node.clone())),
@@ -455,7 +455,7 @@ impl From<&Stmt> for Node {
 	fn from(node:&Stmt)-> Self{
 		match node {
 			Stmt::Loop(node)=>Self::Loop(node.clone()),
-			Stmt::IndentScope(node)=>Self::IndentScope(node.clone()),
+			Stmt::IndentBlock(node)=>Self::IndentBlock(node.clone()),
 			Stmt::MatchBranch(node)=>Self::MatchBranch(node.clone()),
 			Stmt::Return(node)=>Self::Return(node.clone()),
 			Stmt::Break(node)=>Self::Break(node.clone()),
@@ -816,7 +816,7 @@ pub struct If {
 	pub loc: Loc,
 	pub expr_type: Option<Type>,
 	pub cond: Option<Expr>,
-	pub then: Option<Rc<RefCell<IndentScope>>>,
+	pub then: Option<Rc<RefCell<IndentBlock>>>,
 	pub els: Option<Node>,
 }
 
@@ -1509,7 +1509,7 @@ pub struct Loop {
 	pub init: Option<Expr>,
 	pub cond: Option<Expr>,
 	pub step: Option<Expr>,
-	pub body: Option<Rc<RefCell<IndentScope>>>,
+	pub body: Option<Rc<RefCell<IndentBlock>>>,
 }
 
 impl TryFrom<&Stmt> for Rc<RefCell<Loop>> {
@@ -1545,41 +1545,41 @@ impl From<&Rc<RefCell<Loop>>> for Node {
 }
 
 #[derive(Debug,Clone)]
-pub struct IndentScope {
+pub struct IndentBlock {
 	pub loc: Loc,
 	pub elements: Vec<Node>,
 	pub scope: Option<Rc<RefCell<Scope>>>,
 }
 
-impl TryFrom<&Stmt> for Rc<RefCell<IndentScope>> {
+impl TryFrom<&Stmt> for Rc<RefCell<IndentBlock>> {
 	type Error = Error;
 	fn try_from(node:&Stmt)->Result<Self,Self::Error>{
 		match node {
-			Stmt::IndentScope(node)=>Ok(node.clone()),
+			Stmt::IndentBlock(node)=>Ok(node.clone()),
 			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
 		}
 	}
 }
 
-impl From<&Rc<RefCell<IndentScope>>> for Stmt {
-	fn from(node:&Rc<RefCell<IndentScope>>)-> Self{
-		Stmt::IndentScope(node.clone())
+impl From<&Rc<RefCell<IndentBlock>>> for Stmt {
+	fn from(node:&Rc<RefCell<IndentBlock>>)-> Self{
+		Stmt::IndentBlock(node.clone())
 	}
 }
 
-impl TryFrom<&Node> for Rc<RefCell<IndentScope>> {
+impl TryFrom<&Node> for Rc<RefCell<IndentBlock>> {
 	type Error = Error;
 	fn try_from(node:&Node)->Result<Self,Self::Error>{
 		match node {
-			Node::IndentScope(node)=>Ok(node.clone()),
+			Node::IndentBlock(node)=>Ok(node.clone()),
 			_=> Err(Error::InvalidNodeType(node.into())),
 		}
 	}
 }
 
-impl From<&Rc<RefCell<IndentScope>>> for Node {
-	fn from(node:&Rc<RefCell<IndentScope>>)-> Self{
-		Node::IndentScope(node.clone())
+impl From<&Rc<RefCell<IndentBlock>>> for Node {
+	fn from(node:&Rc<RefCell<IndentBlock>>)-> Self{
+		Node::IndentBlock(node.clone())
 	}
 }
 
@@ -1876,7 +1876,7 @@ pub struct Format {
 	pub belong: Option<Member>,
 	pub is_enum: bool,
 	pub ident: Option<Rc<RefCell<Ident>>>,
-	pub body: Option<Rc<RefCell<IndentScope>>>,
+	pub body: Option<Rc<RefCell<IndentBlock>>>,
 	pub struct_type: Option<Rc<RefCell<StructType>>>,
 }
 
@@ -1935,7 +1935,7 @@ pub struct Function {
 	pub ident: Option<Rc<RefCell<Ident>>>,
 	pub parameters: Vec<Rc<RefCell<Field>>>,
 	pub return_type: Option<Type>,
-	pub body: Option<Rc<RefCell<IndentScope>>>,
+	pub body: Option<Rc<RefCell<IndentBlock>>>,
 	pub func_type: Option<Rc<RefCell<FunctionType>>>,
 	pub struct_type: Option<Rc<RefCell<StructType>>>,
 }
@@ -2918,8 +2918,8 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				body: None,
 				})))
 			},
-			NodeType::IndentScope => {
-				Node::IndentScope(Rc::new(RefCell::new(IndentScope {
+			NodeType::IndentBlock => {
+				Node::IndentBlock(Rc::new(RefCell::new(IndentBlock {
 				loc: raw_node.loc.clone(),
 				elements: Vec::new(),
 				scope: None,
@@ -3512,7 +3512,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					None => return Err(Error::IndexOutOfBounds(then_body as usize)),
 				};
 				let then_body = match then_body {
-					Node::IndentScope(node)=>node,
+					Node::IndentBlock(node)=>node,
 					x =>return Err(Error::MismatchNodeType(x.into(),then_body.into())),
 				};
 				node.borrow_mut().then = Some(then_body.clone());
@@ -4140,15 +4140,15 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					None => return Err(Error::IndexOutOfBounds(body_body as usize)),
 				};
 				let body_body = match body_body {
-					Node::IndentScope(node)=>node,
+					Node::IndentBlock(node)=>node,
 					x =>return Err(Error::MismatchNodeType(x.into(),body_body.into())),
 				};
 				node.borrow_mut().body = Some(body_body.clone());
 			},
-			NodeType::IndentScope => {
+			NodeType::IndentBlock => {
 				let node = nodes[i].clone();
 				let node = match node {
-					Node::IndentScope(node)=>node,
+					Node::IndentBlock(node)=>node,
 					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
 				};
 				let elements_body = match raw_node.body.get("elements") {
@@ -4450,7 +4450,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					None => return Err(Error::IndexOutOfBounds(body_body as usize)),
 				};
 				let body_body = match body_body {
-					Node::IndentScope(node)=>node,
+					Node::IndentBlock(node)=>node,
 					x =>return Err(Error::MismatchNodeType(x.into(),body_body.into())),
 				};
 				node.borrow_mut().body = Some(body_body.clone());
@@ -4557,7 +4557,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					None => return Err(Error::IndexOutOfBounds(body_body as usize)),
 				};
 				let body_body = match body_body {
-					Node::IndentScope(node)=>node,
+					Node::IndentBlock(node)=>node,
 					x =>return Err(Error::MismatchNodeType(x.into(),body_body.into())),
 				};
 				node.borrow_mut().body = Some(body_body.clone());
@@ -5319,7 +5319,7 @@ where
 				f(f,&node.into());
 			}
 		},
-		Node::IndentScope(node)=>{
+		Node::IndentBlock(node)=>{
 			for node in &node.borrow().elements{
 				f(f,node);
 			}

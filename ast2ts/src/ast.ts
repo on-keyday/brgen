@@ -2,10 +2,10 @@
 
 export namespace ast2ts {
 
-export type NodeType = "node" | "program" | "expr" | "binary" | "unary" | "cond" | "ident" | "call" | "if" | "member_access" | "paren" | "index" | "match" | "range" | "tmp_var" | "block_expr" | "import" | "literal" | "int_literal" | "bool_literal" | "str_literal" | "input" | "output" | "config" | "stmt" | "loop" | "indent_scope" | "match_branch" | "return" | "break" | "continue" | "assert" | "implicit_yield" | "member" | "field" | "format" | "function" | "type" | "int_type" | "ident_type" | "int_literal_type" | "str_literal_type" | "void_type" | "bool_type" | "array_type" | "function_type" | "struct_type" | "union_type" | "cast" | "comment" | "comment_group";
+export type NodeType = "node" | "program" | "expr" | "binary" | "unary" | "cond" | "ident" | "call" | "if" | "member_access" | "paren" | "index" | "match" | "range" | "tmp_var" | "block_expr" | "import" | "literal" | "int_literal" | "bool_literal" | "str_literal" | "input" | "output" | "config" | "stmt" | "loop" | "indent_block" | "match_branch" | "return" | "break" | "continue" | "assert" | "implicit_yield" | "member" | "field" | "format" | "function" | "type" | "int_type" | "ident_type" | "int_literal_type" | "str_literal_type" | "void_type" | "bool_type" | "array_type" | "function_type" | "struct_type" | "union_type" | "cast" | "comment" | "comment_group";
 
 export function isNodeType(obj: any): obj is NodeType {
-	return obj && typeof obj === 'string' && (obj === "node" || obj === "program" || obj === "expr" || obj === "binary" || obj === "unary" || obj === "cond" || obj === "ident" || obj === "call" || obj === "if" || obj === "member_access" || obj === "paren" || obj === "index" || obj === "match" || obj === "range" || obj === "tmp_var" || obj === "block_expr" || obj === "import" || obj === "literal" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "input" || obj === "output" || obj === "config" || obj === "stmt" || obj === "loop" || obj === "indent_scope" || obj === "match_branch" || obj === "return" || obj === "break" || obj === "continue" || obj === "assert" || obj === "implicit_yield" || obj === "member" || obj === "field" || obj === "format" || obj === "function" || obj === "type" || obj === "int_type" || obj === "ident_type" || obj === "int_literal_type" || obj === "str_literal_type" || obj === "void_type" || obj === "bool_type" || obj === "array_type" || obj === "function_type" || obj === "struct_type" || obj === "union_type" || obj === "cast" || obj === "comment" || obj === "comment_group")
+	return obj && typeof obj === 'string' && (obj === "node" || obj === "program" || obj === "expr" || obj === "binary" || obj === "unary" || obj === "cond" || obj === "ident" || obj === "call" || obj === "if" || obj === "member_access" || obj === "paren" || obj === "index" || obj === "match" || obj === "range" || obj === "tmp_var" || obj === "block_expr" || obj === "import" || obj === "literal" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "input" || obj === "output" || obj === "config" || obj === "stmt" || obj === "loop" || obj === "indent_block" || obj === "match_branch" || obj === "return" || obj === "break" || obj === "continue" || obj === "assert" || obj === "implicit_yield" || obj === "member" || obj === "field" || obj === "format" || obj === "function" || obj === "type" || obj === "int_type" || obj === "ident_type" || obj === "int_literal_type" || obj === "str_literal_type" || obj === "void_type" || obj === "bool_type" || obj === "array_type" || obj === "function_type" || obj === "struct_type" || obj === "union_type" || obj === "cast" || obj === "comment" || obj === "comment_group")
 }
 
 export interface Node {
@@ -36,7 +36,7 @@ export function isNode(obj: any): obj is Node {
 	if (isOutput(obj)) return true;
 	if (isConfig(obj)) return true;
 	if (isLoop(obj)) return true;
-	if (isIndentScope(obj)) return true;
+	if (isIndentBlock(obj)) return true;
 	if (isMatchBranch(obj)) return true;
 	if (isReturn(obj)) return true;
 	if (isBreak(obj)) return true;
@@ -109,7 +109,7 @@ export interface Stmt extends Node {
 
 export function isStmt(obj: any): obj is Stmt {
 	if (isLoop(obj)) return true;
-	if (isIndentScope(obj)) return true;
+	if (isIndentBlock(obj)) return true;
 	if (isMatchBranch(obj)) return true;
 	if (isReturn(obj)) return true;
 	if (isBreak(obj)) return true;
@@ -215,7 +215,7 @@ export function isCall(obj: any): obj is Call {
 
 export interface If extends Expr {
 	cond: Expr|null;
-	then: IndentScope|null;
+	then: IndentBlock|null;
 	els: Node|null;
 }
 
@@ -348,20 +348,20 @@ export interface Loop extends Stmt {
 	init: Expr|null;
 	cond: Expr|null;
 	step: Expr|null;
-	body: IndentScope|null;
+	body: IndentBlock|null;
 }
 
 export function isLoop(obj: any): obj is Loop {
 	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "loop"
 }
 
-export interface IndentScope extends Stmt {
+export interface IndentBlock extends Stmt {
 	elements: Node[];
 	scope: Scope|null;
 }
 
-export function isIndentScope(obj: any): obj is IndentScope {
-	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "indent_scope"
+export function isIndentBlock(obj: any): obj is IndentBlock {
+	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "indent_block"
 }
 
 export interface MatchBranch extends Stmt {
@@ -427,7 +427,7 @@ export function isField(obj: any): obj is Field {
 export interface Format extends Member {
 	is_enum: boolean;
 	ident: Ident|null;
-	body: IndentScope|null;
+	body: IndentBlock|null;
 	struct_type: StructType|null;
 }
 
@@ -439,7 +439,7 @@ export interface Function extends Member {
 	ident: Ident|null;
 	parameters: Field[];
 	return_type: Type|null;
-	body: IndentScope|null;
+	body: IndentBlock|null;
 	func_type: FunctionType|null;
 	struct_type: StructType|null;
 }
@@ -1025,9 +1025,9 @@ export function parseAST(obj: any): Program {
 			c.node.push(n);
 			break;
 		}
-		case "indent_scope": {
-			const n :IndentScope = {
-				node_type: "indent_scope",
+		case "indent_block": {
+			const n :IndentBlock = {
+				node_type: "indent_block",
 				loc: on.loc,
 				elements: [],
 				scope: null,
@@ -1512,7 +1512,7 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list');
 			}
 			const tmpthen = on.body.then === null ? null : c.node[on.body.then];
-			if (!(tmpthen === null || isIndentScope(tmpthen))) {
+			if (!(tmpthen === null || isIndentBlock(tmpthen))) {
 				throw new Error('invalid node list');
 			}
 			n.then = tmpthen;
@@ -1876,14 +1876,14 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list');
 			}
 			const tmpbody = on.body.body === null ? null : c.node[on.body.body];
-			if (!(tmpbody === null || isIndentScope(tmpbody))) {
+			if (!(tmpbody === null || isIndentBlock(tmpbody))) {
 				throw new Error('invalid node list');
 			}
 			n.body = tmpbody;
 			break;
 		}
-		case "indent_scope": {
-			const n :IndentScope = cnode as IndentScope;
+		case "indent_block": {
+			const n :IndentBlock = cnode as IndentBlock;
 			for (const o of on.body.elements) {
 				if (typeof o !== 'number') {
 					throw new Error('invalid node list');
@@ -2048,7 +2048,7 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list');
 			}
 			const tmpbody = on.body.body === null ? null : c.node[on.body.body];
-			if (!(tmpbody === null || isIndentScope(tmpbody))) {
+			if (!(tmpbody === null || isIndentBlock(tmpbody))) {
 				throw new Error('invalid node list');
 			}
 			n.body = tmpbody;
@@ -2102,7 +2102,7 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list');
 			}
 			const tmpbody = on.body.body === null ? null : c.node[on.body.body];
-			if (!(tmpbody === null || isIndentScope(tmpbody))) {
+			if (!(tmpbody === null || isIndentBlock(tmpbody))) {
 				throw new Error('invalid node list');
 			}
 			n.body = tmpbody;
@@ -2734,11 +2734,11 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			break;
 		}
-		case "indent_scope": {
-			if (!isIndentScope(node)) {
+		case "indent_block": {
+			if (!isIndentBlock(node)) {
 				break;
 			}
-			const n :IndentScope = node as IndentScope;
+			const n :IndentBlock = node as IndentBlock;
 			for (const e of n.elements) {
 				fn(fn,e);
 			}

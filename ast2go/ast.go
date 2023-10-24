@@ -111,7 +111,7 @@ type If struct {
 	Loc      Loc
 	ExprType Type
 	Cond     Expr
-	Then     *IndentScope
+	Then     *IndentBlock
 	Els      Node
 }
 
@@ -285,22 +285,22 @@ type Loop struct {
 	Init Expr
 	Cond Expr
 	Step Expr
-	Body *IndentScope
+	Body *IndentBlock
 }
 
 func (n *Loop) isStmt() {}
 
 func (n *Loop) isNode() {}
 
-type IndentScope struct {
+type IndentBlock struct {
 	Loc      Loc
 	Elements []Node
 	Scope    *Scope
 }
 
-func (n *IndentScope) isStmt() {}
+func (n *IndentBlock) isStmt() {}
 
-func (n *IndentScope) isNode() {}
+func (n *IndentBlock) isNode() {}
 
 type MatchBranch struct {
 	Loc    Loc
@@ -377,7 +377,7 @@ type Format struct {
 	Belong     Member
 	IsEnum     bool
 	Ident      *Ident
-	Body       *IndentScope
+	Body       *IndentBlock
 	StructType *StructType
 }
 
@@ -393,7 +393,7 @@ type Function struct {
 	Ident      *Ident
 	Parameters []*Field
 	ReturnType Type
-	Body       *IndentScope
+	Body       *IndentBlock
 	FuncType   *FunctionType
 	StructType *StructType
 }
@@ -1106,8 +1106,8 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			n.node = append(n.node, &Config{Loc: raw.Loc})
 		case "loop":
 			n.node = append(n.node, &Loop{Loc: raw.Loc})
-		case "indent_scope":
-			n.node = append(n.node, &IndentScope{Loc: raw.Loc})
+		case "indent_block":
+			n.node = append(n.node, &IndentBlock{Loc: raw.Loc})
 		case "match_branch":
 			n.node = append(n.node, &MatchBranch{Loc: raw.Loc})
 		case "return":
@@ -1312,7 +1312,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 				v.Cond = n.node[*tmp.Cond].(Expr)
 			}
 			if tmp.Then != nil {
-				v.Then = n.node[*tmp.Then].(*IndentScope)
+				v.Then = n.node[*tmp.Then].(*IndentBlock)
 			}
 			if tmp.Els != nil {
 				v.Els = n.node[*tmp.Els].(Node)
@@ -1566,10 +1566,10 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 				v.Step = n.node[*tmp.Step].(Expr)
 			}
 			if tmp.Body != nil {
-				v.Body = n.node[*tmp.Body].(*IndentScope)
+				v.Body = n.node[*tmp.Body].(*IndentBlock)
 			}
-		case "indent_scope":
-			v := n.node[i].(*IndentScope)
+		case "indent_block":
+			v := n.node[i].(*IndentBlock)
 			var tmp struct {
 				Elements []uintptr `json:"elements"`
 				Scope    *uintptr  `json:"scope"`
@@ -1696,7 +1696,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 				v.Ident = n.node[*tmp.Ident].(*Ident)
 			}
 			if tmp.Body != nil {
-				v.Body = n.node[*tmp.Body].(*IndentScope)
+				v.Body = n.node[*tmp.Body].(*IndentBlock)
 			}
 			if tmp.StructType != nil {
 				v.StructType = n.node[*tmp.StructType].(*StructType)
@@ -1729,7 +1729,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 				v.ReturnType = n.node[*tmp.ReturnType].(Type)
 			}
 			if tmp.Body != nil {
-				v.Body = n.node[*tmp.Body].(*IndentScope)
+				v.Body = n.node[*tmp.Body].(*IndentBlock)
 			}
 			if tmp.FuncType != nil {
 				v.FuncType = n.node[*tmp.FuncType].(*FunctionType)
@@ -2137,7 +2137,7 @@ func Walk(n Node, f Visitor) {
 		if v.Body != nil {
 			f.Visit(f, v.Body)
 		}
-	case *IndentScope:
+	case *IndentBlock:
 		for _, w := range v.Elements {
 			f.Visit(f, w)
 		}

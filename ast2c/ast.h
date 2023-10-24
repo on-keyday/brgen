@@ -32,7 +32,7 @@ typedef enum NodeType {
 	CONFIG,
 	STMT,
 	LOOP,
-	INDENT_SCOPE,
+	INDENT_BLOCK,
 	MATCH_BRANCH,
 	RETURN,
 	BREAK,
@@ -87,7 +87,7 @@ typedef struct Input Input;
 typedef struct Output Output;
 typedef struct Config Config;
 typedef struct Loop Loop;
-typedef struct IndentScope IndentScope;
+typedef struct IndentBlock IndentBlock;
 typedef struct MatchBranch MatchBranch;
 typedef struct Return Return;
 typedef struct Break Break;
@@ -338,7 +338,7 @@ struct If {
 	Loc loc;
 	Type* expr_type;
 	Expr* cond;
-	IndentScope* then;
+	IndentBlock* then;
 	Node* els;
 };
 
@@ -457,10 +457,10 @@ struct Loop {
 	Expr* init;
 	Expr* cond;
 	Expr* step;
-	IndentScope* body;
+	IndentBlock* body;
 };
 
-struct IndentScope {
+struct IndentBlock {
 	const NodeType node_type;
 	Loc loc;
 	Node** elements;
@@ -522,7 +522,7 @@ struct Format {
 	Member* belong;
 	int is_enum;
 	Ident* ident;
-	IndentScope* body;
+	IndentBlock* body;
 	StructType* struct_type;
 };
 
@@ -534,7 +534,7 @@ struct Function {
 	Field** parameters;
 	size_t parameters_size;
 	Type* return_type;
-	IndentScope* body;
+	IndentBlock* body;
 	FunctionType* func_type;
 	StructType* struct_type;
 };
