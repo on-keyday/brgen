@@ -11,7 +11,6 @@ format Frame:
         126 => ExtendedPayloadLength :u16
         127 => ExtendedPayloadLength :u64
         .. => :void
-        .. => n
     
     if Mask == 1:
         MaskingKey :u32
