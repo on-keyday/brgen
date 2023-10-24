@@ -15,3 +15,5 @@ node_modules/
 out/
 target/
 /web/dev/src/lib/
+*.wasm
+
