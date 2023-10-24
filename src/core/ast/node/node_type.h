@@ -39,7 +39,7 @@ namespace brgen::ast {
 
         stmt = 0x020000,
         loop,
-        indent_scope,
+        indent_block,
         match_branch,
         return_,
         break_,
@@ -348,7 +348,7 @@ namespace brgen::ast {
         "config",
         "stmt",
         "loop",
-        "indent_scope",
+        "indent_block",
         "match_branch",
         "return",
         "break",
@@ -427,7 +427,7 @@ namespace brgen::ast {
                 return 23;
             case NodeType::loop:
                 return 24;
-            case NodeType::indent_scope:
+            case NodeType::indent_block:
                 return 25;
             case NodeType::match_branch:
                 return 26;
@@ -535,7 +535,7 @@ namespace brgen::ast {
             case 24:
                 return NodeType::loop;
             case 25:
-                return NodeType::indent_scope;
+                return NodeType::indent_block;
             case 26:
                 return NodeType::match_branch;
             case 27:

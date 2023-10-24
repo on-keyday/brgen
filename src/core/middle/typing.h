@@ -166,7 +166,7 @@ namespace brgen::middle {
             }
         }
 
-        std::shared_ptr<ast::Type> extract_then_type(const std::shared_ptr<ast::IndentScope>& block) {
+        std::shared_ptr<ast::Type> extract_then_type(const std::shared_ptr<ast::IndentBlock>& block) {
             auto last_element = block->elements.back();
             if (auto then_expr = ast::as<ast::Expr>(last_element)) {
                 return then_expr->expr_type;
@@ -183,7 +183,7 @@ namespace brgen::middle {
                 return expr->expr_type;
             }
 
-            if (auto block = ast::as<ast::IndentScope>(els)) {
+            if (auto block = ast::as<ast::IndentBlock>(els)) {
                 auto expr = ast::as<ast::Expr>(block->elements.back());
                 if (expr) {
                     return expr->expr_type;
@@ -217,7 +217,7 @@ namespace brgen::middle {
             auto& then_ref = if_->then->elements.back();
 
             then_ref = std::make_shared<ast::ImplicitYield>(ast::cast_to<ast::Expr>(then_ref));
-            if (auto block = ast::as<ast::IndentScope>(if_->els)) {
+            if (auto block = ast::as<ast::IndentBlock>(if_->els)) {
                 auto& else_ref = block->elements.back();
 
                 else_ref = std::make_shared<ast::ImplicitYield>(ast::cast_to<ast::Expr>(else_ref));

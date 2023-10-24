@@ -12,7 +12,7 @@ namespace brgen::ast {
         define_node_type(NodeType::format);
         bool is_enum = false;
         std::shared_ptr<Ident> ident;
-        std::shared_ptr<IndentScope> body;
+        std::shared_ptr<IndentBlock> body;
         std::shared_ptr<StructType> struct_type;
         Format(lexer::Loc l, bool is_enum)
             : Member(l, NodeType::format), is_enum(is_enum) {}
@@ -63,7 +63,7 @@ namespace brgen::ast {
         std::shared_ptr<Ident> ident;
         std::list<std::shared_ptr<Field>> parameters;
         std::shared_ptr<Type> return_type;
-        std::shared_ptr<IndentScope> body;
+        std::shared_ptr<IndentBlock> body;
         std::shared_ptr<FunctionType> func_type;
         std::shared_ptr<StructType> struct_type;
 
@@ -89,7 +89,7 @@ namespace brgen::ast {
         std::shared_ptr<Expr> init;
         std::shared_ptr<Expr> cond;
         std::shared_ptr<Expr> step;
-        std::shared_ptr<IndentScope> body;
+        std::shared_ptr<IndentBlock> body;
 
         Loop(lexer::Loc l)
             : Stmt(l, NodeType::loop) {}

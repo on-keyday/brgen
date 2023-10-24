@@ -58,7 +58,7 @@ namespace brgen::ast {
         // stmt
         CASE(Stmt)
         CASE(Loop)
-        CASE(IndentScope)
+        CASE(IndentBlock)
         CASE(MatchBranch)
         CASE(Return)
         CASE(Break)

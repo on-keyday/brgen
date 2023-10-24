@@ -119,15 +119,15 @@ namespace brgen::ast {
         /*
             <indent scope> ::= ":" <line> (<indent> <statement>)+
         */
-        std::shared_ptr<IndentScope> parse_indent_block(std::vector<std::shared_ptr<Ident>>* ident = nullptr) {
+        std::shared_ptr<IndentBlock> parse_indent_block(std::vector<std::shared_ptr<Ident>>* ident = nullptr) {
             // Consume the initial indent sign
             must_consume_indent_sign();
 
             // Get the base indent token
             auto base = s.must_consume_token(lexer::Tag::indent);
 
-            // Create a shared pointer for the IndentScope
-            auto scope = std::make_shared<IndentScope>(base.loc);
+            // Create a shared pointer for the IndentBlock
+            auto scope = std::make_shared<IndentBlock>(base.loc);
 
             // Create a new context for the current indent level
             auto current_indent = base.token.size();

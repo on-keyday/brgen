@@ -115,7 +115,7 @@ namespace brgen::ast {
     struct If : Expr {
         define_node_type(NodeType::if_);
         std::shared_ptr<Expr> cond;
-        std::shared_ptr<IndentScope> then;
+        std::shared_ptr<IndentBlock> then;
         std::shared_ptr<Node> els;
 
         constexpr If(lexer::Loc l)

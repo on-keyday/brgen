@@ -123,17 +123,17 @@ namespace brgen::ast {
 
     using node_list = std::list<std::shared_ptr<Node>>;
 
-    struct IndentScope : Stmt {
-        define_node_type(NodeType::indent_scope);
+    struct IndentBlock : Stmt {
+        define_node_type(NodeType::indent_block);
         node_list elements;
         scope_ptr scope;
 
-        IndentScope(lexer::Loc l)
-            : Stmt(l, NodeType::indent_scope) {}
+        IndentBlock(lexer::Loc l)
+            : Stmt(l, NodeType::indent_block) {}
 
         // for decode
-        IndentScope()
-            : Stmt({}, NodeType::indent_scope) {}
+        IndentBlock()
+            : Stmt({}, NodeType::indent_block) {}
 
         void dump(auto&& field) {
             Stmt::dump(field);

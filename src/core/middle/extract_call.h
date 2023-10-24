@@ -45,7 +45,7 @@ namespace brgen::middle {
             return false;
         };
 
-        if constexpr (std::is_same_v<T, ast::Program> || std::is_same_v<T, ast::IndentScope>) {
+        if constexpr (std::is_same_v<T, ast::Program> || std::is_same_v<T, ast::IndentBlock>) {
             auto s = h.enter_holder(&c->elements);
             for (auto it = c->elements.begin(); it != c->elements.end(); it++) {
                 if (!direct_call(*it)) {

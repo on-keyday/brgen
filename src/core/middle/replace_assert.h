@@ -20,7 +20,7 @@ namespace brgen::middle {
             each_element(a->elements);
             return;
         }
-        if (auto b = ast::as<ast::IndentScope>(node)) {
+        if (auto b = ast::as<ast::IndentBlock>(node)) {
             each_element(b->elements);
             return;
         }
