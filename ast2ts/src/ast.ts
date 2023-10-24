@@ -358,6 +358,7 @@ export function isLoop(obj: any): obj is Loop {
 export interface IndentBlock extends Stmt {
 	elements: Node[];
 	scope: Scope|null;
+	struct_type: StructType|null;
 }
 
 export function isIndentBlock(obj: any): obj is IndentBlock {
@@ -428,7 +429,6 @@ export interface Format extends Member {
 	is_enum: boolean;
 	ident: Ident|null;
 	body: IndentBlock|null;
-	struct_type: StructType|null;
 }
 
 export function isFormat(obj: any): obj is Format {
@@ -441,7 +441,6 @@ export interface Function extends Member {
 	return_type: Type|null;
 	body: IndentBlock|null;
 	func_type: FunctionType|null;
-	struct_type: StructType|null;
 }
 
 export function isFunction(obj: any): obj is Function {
@@ -1031,6 +1030,7 @@ export function parseAST(obj: any): Program {
 				loc: on.loc,
 				elements: [],
 				scope: null,
+				struct_type: null,
 			}
 			c.node.push(n);
 			break;
@@ -1111,7 +1111,6 @@ export function parseAST(obj: any): Program {
 				is_enum: false,
 				ident: null,
 				body: null,
-				struct_type: null,
 			}
 			c.node.push(n);
 			break;
@@ -1126,7 +1125,6 @@ export function parseAST(obj: any): Program {
 				return_type: null,
 				body: null,
 				func_type: null,
-				struct_type: null,
 			}
 			c.node.push(n);
 			break;
@@ -1899,6 +1897,14 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list');
 			}
 			n.scope = tmpscope;
+			if (on.body?.struct_type !== null && typeof on.body?.struct_type !== 'number') {
+				throw new Error('invalid node list');
+			}
+			const tmpstruct_type = on.body.struct_type === null ? null : c.node[on.body.struct_type];
+			if (!(tmpstruct_type === null || isStructType(tmpstruct_type))) {
+				throw new Error('invalid node list');
+			}
+			n.struct_type = tmpstruct_type;
 			break;
 		}
 		case "match_branch": {
@@ -2052,14 +2058,6 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list');
 			}
 			n.body = tmpbody;
-			if (on.body?.struct_type !== null && typeof on.body?.struct_type !== 'number') {
-				throw new Error('invalid node list');
-			}
-			const tmpstruct_type = on.body.struct_type === null ? null : c.node[on.body.struct_type];
-			if (!(tmpstruct_type === null || isStructType(tmpstruct_type))) {
-				throw new Error('invalid node list');
-			}
-			n.struct_type = tmpstruct_type;
 			break;
 		}
 		case "function": {
@@ -2114,14 +2112,6 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list');
 			}
 			n.func_type = tmpfunc_type;
-			if (on.body?.struct_type !== null && typeof on.body?.struct_type !== 'number') {
-				throw new Error('invalid node list');
-			}
-			const tmpstruct_type = on.body.struct_type === null ? null : c.node[on.body.struct_type];
-			if (!(tmpstruct_type === null || isStructType(tmpstruct_type))) {
-				throw new Error('invalid node list');
-			}
-			n.struct_type = tmpstruct_type;
 			break;
 		}
 		case "int_type": {
@@ -2742,6 +2732,9 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			for (const e of n.elements) {
 				fn(fn,e);
 			}
+			if (n.struct_type !== null) {
+				fn(fn,n.struct_type);
+			}
 			break;
 		}
 		case "match_branch": {
@@ -2831,9 +2824,6 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			if (n.body !== null) {
 				fn(fn,n.body);
 			}
-			if (n.struct_type !== null) {
-				fn(fn,n.struct_type);
-			}
 			break;
 		}
 		case "function": {
@@ -2855,9 +2845,6 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			if (n.func_type !== null) {
 				fn(fn,n.func_type);
-			}
-			if (n.struct_type !== null) {
-				fn(fn,n.struct_type);
 			}
 			break;
 		}

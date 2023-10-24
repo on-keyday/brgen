@@ -204,6 +204,7 @@ class Loop(Stmt):
 class IndentBlock(Stmt):
     elements: List[Node]
     scope: Optional[Scope]
+    struct_type: Optional[StructType]
 
 
 class MatchBranch(Stmt):
@@ -244,7 +245,6 @@ class Format(Member):
     is_enum: bool
     ident: Optional[Ident]
     body: Optional[IndentBlock]
-    struct_type: Optional[StructType]
 
 
 class Function(Member):
@@ -253,7 +253,6 @@ class Function(Member):
     return_type: Optional[Type]
     body: Optional[IndentBlock]
     func_type: Optional[FunctionType]
-    struct_type: Optional[StructType]
 
 
 class IntType(Type):
@@ -802,6 +801,8 @@ def ast2node(ast :Ast) -> Program:
             case NodeType.INDENT_BLOCK:
                 node[i].elements = [(node[x] if isinstance(node[x],Node) else raiseError(TypeError('type mismatch'))) for x in ast.node[i].body["elements"]]
                 node[i].scope = scope[ast.node[i].body["scope"]]
+                x = node[ast.node[i].body["struct_type"]]
+                node[i].struct_type = x if isinstance(x,StructType) or x is None else raiseError(TypeError('type mismatch'))
             case NodeType.MATCH_BRANCH:
                 x = node[ast.node[i].body["cond"]]
                 node[i].cond = x if isinstance(x,Expr) or x is None else raiseError(TypeError('type mismatch'))
@@ -841,8 +842,6 @@ def ast2node(ast :Ast) -> Program:
                 node[i].ident = x if isinstance(x,Ident) or x is None else raiseError(TypeError('type mismatch'))
                 x = node[ast.node[i].body["body"]]
                 node[i].body = x if isinstance(x,IndentBlock) or x is None else raiseError(TypeError('type mismatch'))
-                x = node[ast.node[i].body["struct_type"]]
-                node[i].struct_type = x if isinstance(x,StructType) or x is None else raiseError(TypeError('type mismatch'))
             case NodeType.FUNCTION:
                 x = node[ast.node[i].body["belong"]]
                 node[i].belong = x if isinstance(x,Member) or x is None else raiseError(TypeError('type mismatch'))
@@ -855,8 +854,6 @@ def ast2node(ast :Ast) -> Program:
                 node[i].body = x if isinstance(x,IndentBlock) or x is None else raiseError(TypeError('type mismatch'))
                 x = node[ast.node[i].body["func_type"]]
                 node[i].func_type = x if isinstance(x,FunctionType) or x is None else raiseError(TypeError('type mismatch'))
-                x = node[ast.node[i].body["struct_type"]]
-                node[i].struct_type = x if isinstance(x,StructType) or x is None else raiseError(TypeError('type mismatch'))
             case NodeType.INT_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch'))
@@ -1064,6 +1061,8 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
         case x if isinstance(x,IndentBlock):
           for i in range(len(x.elements)):
               f(f,x.elements[i])
+          if x.struct_type is not None:
+              f(f,x.struct_type)
         case x if isinstance(x,MatchBranch):
           if x.cond is not None:
               f(f,x.cond)
@@ -1096,8 +1095,6 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
               f(f,x.ident)
           if x.body is not None:
               f(f,x.body)
-          if x.struct_type is not None:
-              f(f,x.struct_type)
         case x if isinstance(x,Function):
           if x.ident is not None:
               f(f,x.ident)
@@ -1109,8 +1106,6 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
               f(f,x.body)
           if x.func_type is not None:
               f(f,x.func_type)
-          if x.struct_type is not None:
-              f(f,x.struct_type)
         case x if isinstance(x,IntType):
             pass
         case x if isinstance(x,IdentType):

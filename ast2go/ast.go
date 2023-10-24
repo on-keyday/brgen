@@ -293,9 +293,10 @@ func (n *Loop) isStmt() {}
 func (n *Loop) isNode() {}
 
 type IndentBlock struct {
-	Loc      Loc
-	Elements []Node
-	Scope    *Scope
+	Loc        Loc
+	Elements   []Node
+	Scope      *Scope
+	StructType *StructType
 }
 
 func (n *IndentBlock) isStmt() {}
@@ -373,12 +374,11 @@ func (n *Field) isStmt() {}
 func (n *Field) isNode() {}
 
 type Format struct {
-	Loc        Loc
-	Belong     Member
-	IsEnum     bool
-	Ident      *Ident
-	Body       *IndentBlock
-	StructType *StructType
+	Loc    Loc
+	Belong Member
+	IsEnum bool
+	Ident  *Ident
+	Body   *IndentBlock
 }
 
 func (n *Format) isMember() {}
@@ -395,7 +395,6 @@ type Function struct {
 	ReturnType Type
 	Body       *IndentBlock
 	FuncType   *FunctionType
-	StructType *StructType
 }
 
 func (n *Function) isMember() {}
@@ -1571,8 +1570,9 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 		case "indent_block":
 			v := n.node[i].(*IndentBlock)
 			var tmp struct {
-				Elements []uintptr `json:"elements"`
-				Scope    *uintptr  `json:"scope"`
+				Elements   []uintptr `json:"elements"`
+				Scope      *uintptr  `json:"scope"`
+				StructType *uintptr  `json:"struct_type"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -1583,6 +1583,9 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			}
 			if tmp.Scope != nil {
 				v.Scope = n.scope[*tmp.Scope]
+			}
+			if tmp.StructType != nil {
+				v.StructType = n.node[*tmp.StructType].(*StructType)
 			}
 		case "match_branch":
 			v := n.node[i].(*MatchBranch)
@@ -1679,11 +1682,10 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 		case "format":
 			v := n.node[i].(*Format)
 			var tmp struct {
-				Belong     *uintptr `json:"belong"`
-				IsEnum     bool     `json:"is_enum"`
-				Ident      *uintptr `json:"ident"`
-				Body       *uintptr `json:"body"`
-				StructType *uintptr `json:"struct_type"`
+				Belong *uintptr `json:"belong"`
+				IsEnum bool     `json:"is_enum"`
+				Ident  *uintptr `json:"ident"`
+				Body   *uintptr `json:"body"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -1698,9 +1700,6 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.Body != nil {
 				v.Body = n.node[*tmp.Body].(*IndentBlock)
 			}
-			if tmp.StructType != nil {
-				v.StructType = n.node[*tmp.StructType].(*StructType)
-			}
 		case "function":
 			v := n.node[i].(*Function)
 			var tmp struct {
@@ -1710,7 +1709,6 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 				ReturnType *uintptr  `json:"return_type"`
 				Body       *uintptr  `json:"body"`
 				FuncType   *uintptr  `json:"func_type"`
-				StructType *uintptr  `json:"struct_type"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -1733,9 +1731,6 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			}
 			if tmp.FuncType != nil {
 				v.FuncType = n.node[*tmp.FuncType].(*FunctionType)
-			}
-			if tmp.StructType != nil {
-				v.StructType = n.node[*tmp.StructType].(*StructType)
 			}
 		case "int_type":
 			v := n.node[i].(*IntType)
@@ -2141,6 +2136,9 @@ func Walk(n Node, f Visitor) {
 		for _, w := range v.Elements {
 			f.Visit(f, w)
 		}
+		if v.StructType != nil {
+			f.Visit(f, v.StructType)
+		}
 	case *MatchBranch:
 		if v.Cond != nil {
 			f.Visit(f, v.Cond)
@@ -2182,9 +2180,6 @@ func Walk(n Node, f Visitor) {
 		if v.Body != nil {
 			f.Visit(f, v.Body)
 		}
-		if v.StructType != nil {
-			f.Visit(f, v.StructType)
-		}
 	case *Function:
 		if v.Ident != nil {
 			f.Visit(f, v.Ident)
@@ -2200,9 +2195,6 @@ func Walk(n Node, f Visitor) {
 		}
 		if v.FuncType != nil {
 			f.Visit(f, v.FuncType)
-		}
-		if v.StructType != nil {
-			f.Visit(f, v.StructType)
 		}
 	case *IntType:
 	case *IdentType:

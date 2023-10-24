@@ -466,6 +466,7 @@ struct IndentBlock {
 	Node** elements;
 	size_t elements_size;
 	Scope* scope;
+	StructType* struct_type;
 };
 
 struct MatchBranch {
@@ -523,7 +524,6 @@ struct Format {
 	int is_enum;
 	Ident* ident;
 	IndentBlock* body;
-	StructType* struct_type;
 };
 
 struct Function {
@@ -536,7 +536,6 @@ struct Function {
 	Type* return_type;
 	IndentBlock* body;
 	FunctionType* func_type;
-	StructType* struct_type;
 };
 
 struct IntType {

@@ -52,6 +52,7 @@ namespace brgen::ast {
         member = 0x220000,
 
         field,
+        // union_field,
         format,
         function,
 
