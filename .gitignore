@@ -14,3 +14,4 @@ cmake_install.cmake
 node_modules/
 out/
 target/
+/web/dev/src/lib/
