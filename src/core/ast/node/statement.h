@@ -24,7 +24,7 @@ namespace brgen::ast {
         void dump(auto&& field) {
             Member::dump(field);
             sdebugf(is_enum);
-            sdebugf(ident);
+            // sdebugf(ident);
             sdebugf(body);
             // sdebugf(struct_type);
         }
@@ -47,7 +47,7 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Member::dump(field);
-            sdebugf(ident);
+            // sdebugf(ident);
             sdebugf(colon_loc);
             sdebugf(field_type);
             sdebugf_omit(raw_arguments);
@@ -97,7 +97,7 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Member::dump(field);
-            sdebugf(ident);
+            // sdebugf(ident);
             sdebugf(parameters);
             sdebugf(return_type);
             sdebugf(body);

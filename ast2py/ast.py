@@ -56,6 +56,7 @@ class NodeType(Enum):
     CAST = "cast"
     COMMENT = "comment"
     COMMENT_GROUP = "comment_group"
+    UNION_FIELD = "union_field"
 
 
 class Node:
@@ -76,6 +77,7 @@ class Stmt(Node):
 
 class Member(Stmt):
     belong: Optional[Member]
+    ident: Optional[Ident]
 
 
 class Type(Node):
@@ -234,7 +236,6 @@ class ImplicitYield(Stmt):
 
 
 class Field(Member):
-    ident: Optional[Ident]
     colon_loc: Loc
     field_type: Optional[Type]
     raw_arguments: Optional[Expr]
@@ -243,12 +244,10 @@ class Field(Member):
 
 class Format(Member):
     is_enum: bool
-    ident: Optional[Ident]
     body: Optional[IndentBlock]
 
 
 class Function(Member):
-    ident: Optional[Ident]
     parameters: List[Field]
     return_type: Optional[Type]
     body: Optional[IndentBlock]
@@ -313,6 +312,11 @@ class Comment(Node):
 
 class CommentGroup(Node):
     comments: List[Comment]
+
+
+class UnionField(Member):
+    candidate: List[Member]
+    base_union: Optional[UnionType]
 
 
 class UnaryOp(Enum):
@@ -646,6 +650,8 @@ def ast2node(ast :Ast) -> Program:
                 node.append(Comment())
             case NodeType.COMMENT_GROUP:
                 node.append(CommentGroup())
+            case NodeType.UNION_FIELD:
+                node.append(UnionField())
             case _:
                 raise TypeError('unknown node type')
     scope = [Scope() for _ in range(len(ast.scope))]
@@ -836,10 +842,10 @@ def ast2node(ast :Ast) -> Program:
             case NodeType.FORMAT:
                 x = node[ast.node[i].body["belong"]]
                 node[i].belong = x if isinstance(x,Member) or x is None else raiseError(TypeError('type mismatch'))
-                x = ast.node[i].body["is_enum"]
-                node[i].is_enum = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch'))
                 x = node[ast.node[i].body["ident"]]
                 node[i].ident = x if isinstance(x,Ident) or x is None else raiseError(TypeError('type mismatch'))
+                x = ast.node[i].body["is_enum"]
+                node[i].is_enum = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch'))
                 x = node[ast.node[i].body["body"]]
                 node[i].body = x if isinstance(x,IndentBlock) or x is None else raiseError(TypeError('type mismatch'))
             case NodeType.FUNCTION:
@@ -921,6 +927,14 @@ def ast2node(ast :Ast) -> Program:
                 node[i].comment = x if isinstance(x,str)  else raiseError(TypeError('type mismatch'))
             case NodeType.COMMENT_GROUP:
                 node[i].comments = [(node[x] if isinstance(node[x],Comment) else raiseError(TypeError('type mismatch'))) for x in ast.node[i].body["comments"]]
+            case NodeType.UNION_FIELD:
+                x = node[ast.node[i].body["belong"]]
+                node[i].belong = x if isinstance(x,Member) or x is None else raiseError(TypeError('type mismatch'))
+                x = node[ast.node[i].body["ident"]]
+                node[i].ident = x if isinstance(x,Ident) or x is None else raiseError(TypeError('type mismatch'))
+                node[i].candidate = [(node[x] if isinstance(node[x],Member) else raiseError(TypeError('type mismatch'))) for x in ast.node[i].body["candidate"]]
+                x = node[ast.node[i].body["base_union"]]
+                node[i].base_union = x if isinstance(x,UnionType) or x is None else raiseError(TypeError('type mismatch'))
             case _:
                 raise TypeError('unknown node type')
     for i in range(len(ast.scope)):
@@ -1147,3 +1161,10 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
         case x if isinstance(x,CommentGroup):
           for i in range(len(x.comments)):
               f(f,x.comments[i])
+        case x if isinstance(x,UnionField):
+          if x.ident is not None:
+              f(f,x.ident)
+          for i in range(len(x.candidate)):
+              f(f,x.candidate[i])
+          if x.base_union is not None:
+              f(f,x.base_union)

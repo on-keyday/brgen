@@ -93,6 +93,7 @@ pub enum NodeType {
 	Cast,
 	Comment,
 	CommentGroup,
+	UnionField,
 }
 
 impl TryFrom<&str> for NodeType {
@@ -150,6 +151,7 @@ impl TryFrom<&str> for NodeType {
 			"cast" =>Ok(Self::Cast),
 			"comment" =>Ok(Self::Comment),
 			"comment_group" =>Ok(Self::CommentGroup),
+			"union_field" =>Ok(Self::UnionField),
 			_=> Err(()),
 		}
 	}
@@ -203,6 +205,7 @@ impl From<&Node> for NodeType {
 			Node::Cast(_) => Self::Cast,
 			Node::Comment(_) => Self::Comment,
 			Node::CommentGroup(_) => Self::CommentGroup,
+			Node::UnionField(_) => Self::UnionField,
 		}
 	}
 }
@@ -260,6 +263,7 @@ pub enum Node {
 	Cast(Rc<RefCell<Cast>>),
 	Comment(Rc<RefCell<Comment>>),
 	CommentGroup(Rc<RefCell<CommentGroup>>),
+	UnionField(Rc<RefCell<UnionField>>),
 }
 
 #[derive(Debug,Clone)]
@@ -422,6 +426,7 @@ pub enum Stmt {
 	Field(Rc<RefCell<Field>>),
 	Format(Rc<RefCell<Format>>),
 	Function(Rc<RefCell<Function>>),
+	UnionField(Rc<RefCell<UnionField>>),
 }
 
 impl TryFrom<&Node> for Stmt {
@@ -439,6 +444,7 @@ impl TryFrom<&Node> for Stmt {
 			Node::Field(node)=>Ok(Self::Field(node.clone())),
 			Node::Format(node)=>Ok(Self::Format(node.clone())),
 			Node::Function(node)=>Ok(Self::Function(node.clone())),
+			Node::UnionField(node)=>Ok(Self::UnionField(node.clone())),
 			_=> Err(Error::InvalidNodeType(node.into())),
 		}
 	}
@@ -465,6 +471,7 @@ impl From<&Stmt> for Node {
 			Stmt::Field(node)=>Self::Field(node.clone()),
 			Stmt::Format(node)=>Self::Format(node.clone()),
 			Stmt::Function(node)=>Self::Function(node.clone()),
+			Stmt::UnionField(node)=>Self::UnionField(node.clone()),
 		}
 	}
 }
@@ -480,6 +487,7 @@ pub enum Member {
 	Field(Rc<RefCell<Field>>),
 	Format(Rc<RefCell<Format>>),
 	Function(Rc<RefCell<Function>>),
+	UnionField(Rc<RefCell<UnionField>>),
 }
 
 impl TryFrom<&Node> for Member {
@@ -489,6 +497,7 @@ impl TryFrom<&Node> for Member {
 			Node::Field(node)=>Ok(Self::Field(node.clone())),
 			Node::Format(node)=>Ok(Self::Format(node.clone())),
 			Node::Function(node)=>Ok(Self::Function(node.clone())),
+			Node::UnionField(node)=>Ok(Self::UnionField(node.clone())),
 			_=> Err(Error::InvalidNodeType(node.into())),
 		}
 	}
@@ -507,6 +516,7 @@ impl From<&Member> for Node {
 			Member::Field(node)=>Self::Field(node.clone()),
 			Member::Format(node)=>Self::Format(node.clone()),
 			Member::Function(node)=>Self::Function(node.clone()),
+			Member::UnionField(node)=>Self::UnionField(node.clone()),
 		}
 	}
 }
@@ -1875,8 +1885,8 @@ impl From<&Rc<RefCell<Field>>> for Node {
 pub struct Format {
 	pub loc: Loc,
 	pub belong: Option<Member>,
-	pub is_enum: bool,
 	pub ident: Option<Rc<RefCell<Ident>>>,
+	pub is_enum: bool,
 	pub body: Option<Rc<RefCell<IndentBlock>>>,
 }
 
@@ -2466,6 +2476,63 @@ impl From<&Rc<RefCell<CommentGroup>>> for Node {
 	}
 }
 
+#[derive(Debug,Clone)]
+pub struct UnionField {
+	pub loc: Loc,
+	pub belong: Option<Member>,
+	pub ident: Option<Rc<RefCell<Ident>>>,
+	pub candidate: Vec<Member>,
+	pub base_union: Option<Rc<RefCell<UnionType>>>,
+}
+
+impl TryFrom<&Member> for Rc<RefCell<UnionField>> {
+	type Error = Error;
+	fn try_from(node:&Member)->Result<Self,Self::Error>{
+		match node {
+			Member::UnionField(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<UnionField>>> for Member {
+	fn from(node:&Rc<RefCell<UnionField>>)-> Self{
+		Member::UnionField(node.clone())
+	}
+}
+
+impl TryFrom<&Stmt> for Rc<RefCell<UnionField>> {
+	type Error = Error;
+	fn try_from(node:&Stmt)->Result<Self,Self::Error>{
+		match node {
+			Stmt::UnionField(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<UnionField>>> for Stmt {
+	fn from(node:&Rc<RefCell<UnionField>>)-> Self{
+		Stmt::UnionField(node.clone())
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<UnionField>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::UnionField(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl From<&Rc<RefCell<UnionField>>> for Node {
+	fn from(node:&Rc<RefCell<UnionField>>)-> Self{
+		Node::UnionField(node.clone())
+	}
+}
+
 #[derive(Debug,Clone,Copy,Serialize,Deserialize)]
 #[serde(rename_all = "snake_case",untagged)]
 pub enum UnaryOp {
@@ -2976,8 +3043,8 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::Format(Rc::new(RefCell::new(Format {
 				loc: raw_node.loc.clone(),
 				belong: None,
-				is_enum: false,
 				ident: None,
+				is_enum: false,
 				body: None,
 				})))
 			},
@@ -3085,6 +3152,15 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::CommentGroup(Rc::new(RefCell::new(CommentGroup {
 				loc: raw_node.loc.clone(),
 				comments: Vec::new(),
+				})))
+			},
+			NodeType::UnionField => {
+				Node::UnionField(Rc::new(RefCell::new(UnionField {
+				loc: raw_node.loc.clone(),
+				belong: None,
+				ident: None,
+				candidate: Vec::new(),
+				base_union: None,
 				})))
 			},
 			_=>return Err(Error::UnknownNodeType(raw_node.node_type)),
@@ -4427,14 +4503,6 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					None => return Err(Error::IndexOutOfBounds(belong_body as usize)),
 				};
 				node.borrow_mut().belong = Some(belong_body.try_into()?);
-				let is_enum_body = match raw_node.body.get("is_enum") {
-					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"is_enum")),
-				};
-				node.borrow_mut().is_enum = match is_enum_body.as_bool() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(is_enum_body.into(),JSONType::Bool)),
-				};
 				let ident_body = match raw_node.body.get("ident") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"ident")),
@@ -4452,6 +4520,14 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					x =>return Err(Error::MismatchNodeType(x.into(),ident_body.into())),
 				};
 				node.borrow_mut().ident = Some(ident_body.clone());
+				let is_enum_body = match raw_node.body.get("is_enum") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(raw_node.node_type,"is_enum")),
+				};
+				node.borrow_mut().is_enum = match is_enum_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(is_enum_body.into(),JSONType::Bool)),
+				};
 				let body_body = match raw_node.body.get("body") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(raw_node.node_type,"body")),
@@ -5038,6 +5114,79 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					node.borrow_mut().comments.push(comments_body.clone());
 				}
 			},
+			NodeType::UnionField => {
+				let node = nodes[i].clone();
+				let node = match node {
+					Node::UnionField(node)=>node,
+					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+				};
+				let belong_body = match raw_node.body.get("belong") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(raw_node.node_type,"belong")),
+				};
+				let belong_body = match belong_body.as_u64() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(belong_body.into(),JSONType::Number)),
+				};
+				let belong_body = match nodes.get(belong_body as usize) {
+					Some(v)=>v,
+					None => return Err(Error::IndexOutOfBounds(belong_body as usize)),
+				};
+				node.borrow_mut().belong = Some(belong_body.try_into()?);
+				let ident_body = match raw_node.body.get("ident") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(raw_node.node_type,"ident")),
+				};
+				let ident_body = match ident_body.as_u64() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(ident_body.into(),JSONType::Number)),
+				};
+				let ident_body = match nodes.get(ident_body as usize) {
+					Some(v)=>v,
+					None => return Err(Error::IndexOutOfBounds(ident_body as usize)),
+				};
+				let ident_body = match ident_body {
+					Node::Ident(node)=>node,
+					x =>return Err(Error::MismatchNodeType(x.into(),ident_body.into())),
+				};
+				node.borrow_mut().ident = Some(ident_body.clone());
+				let candidate_body = match raw_node.body.get("candidate") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(raw_node.node_type,"candidate")),
+				};
+				let candidate_body = match candidate_body.as_array(){
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(candidate_body.into(),JSONType::Array)),
+				};
+				for link in candidate_body {
+					let link = match link.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
+					};
+					let candidate_body = match nodes.get(link as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(link as usize)),
+					};
+					node.borrow_mut().candidate.push(candidate_body.try_into()?);
+				}
+				let base_union_body = match raw_node.body.get("base_union") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(raw_node.node_type,"base_union")),
+				};
+				let base_union_body = match base_union_body.as_u64() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(base_union_body.into(),JSONType::Number)),
+				};
+				let base_union_body = match nodes.get(base_union_body as usize) {
+					Some(v)=>v,
+					None => return Err(Error::IndexOutOfBounds(base_union_body as usize)),
+				};
+				let base_union_body = match base_union_body {
+					Node::UnionType(node)=>node,
+					x =>return Err(Error::MismatchNodeType(x.into(),base_union_body.into())),
+				};
+				node.borrow_mut().base_union = Some(base_union_body.clone());
+			},
 			_=>return Err(Error::UnknownNodeType(raw_node.node_type)),
 		};
 	}
@@ -5430,6 +5579,17 @@ where
 		},
 		Node::CommentGroup(node)=>{
 			for node in &node.borrow().comments{
+				f(f,&node.into());
+			}
+		},
+		Node::UnionField(node)=>{
+			if let Some(node) = &node.borrow().ident{
+				f(f,&node.into());
+			}
+			for node in &node.borrow().candidate{
+				f(f,&node.into());
+			}
+			if let Some(node) = &node.borrow().base_union{
 				f(f,&node.into());
 			}
 		},

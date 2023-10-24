@@ -376,8 +376,8 @@ func (n *Field) isNode() {}
 type Format struct {
 	Loc    Loc
 	Belong Member
-	IsEnum bool
 	Ident  *Ident
+	IsEnum bool
 	Body   *IndentBlock
 }
 
@@ -532,6 +532,20 @@ type CommentGroup struct {
 }
 
 func (n *CommentGroup) isNode() {}
+
+type UnionField struct {
+	Loc       Loc
+	Belong    Member
+	Ident     *Ident
+	Candidate []Member
+	BaseUnion *UnionType
+}
+
+func (n *UnionField) isMember() {}
+
+func (n *UnionField) isStmt() {}
+
+func (n *UnionField) isNode() {}
 
 type UnaryOp int
 
@@ -1151,6 +1165,8 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			n.node = append(n.node, &Comment{Loc: raw.Loc})
 		case "comment_group":
 			n.node = append(n.node, &CommentGroup{Loc: raw.Loc})
+		case "union_field":
+			n.node = append(n.node, &UnionField{Loc: raw.Loc})
 		default:
 			return nil, fmt.Errorf("unknown node type: %q", raw.NodeType)
 		}
@@ -1683,8 +1699,8 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			v := n.node[i].(*Format)
 			var tmp struct {
 				Belong *uintptr `json:"belong"`
-				IsEnum bool     `json:"is_enum"`
 				Ident  *uintptr `json:"ident"`
+				IsEnum bool     `json:"is_enum"`
 				Body   *uintptr `json:"body"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
@@ -1693,10 +1709,10 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.Belong != nil {
 				v.Belong = n.node[*tmp.Belong].(Member)
 			}
-			v.IsEnum = tmp.IsEnum
 			if tmp.Ident != nil {
 				v.Ident = n.node[*tmp.Ident].(*Ident)
 			}
+			v.IsEnum = tmp.IsEnum
 			if tmp.Body != nil {
 				v.Body = n.node[*tmp.Body].(*IndentBlock)
 			}
@@ -1916,6 +1932,30 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			v.Comments = make([]*Comment, len(tmp.Comments))
 			for j, k := range tmp.Comments {
 				v.Comments[j] = n.node[k].(*Comment)
+			}
+		case "union_field":
+			v := n.node[i].(*UnionField)
+			var tmp struct {
+				Belong    *uintptr  `json:"belong"`
+				Ident     *uintptr  `json:"ident"`
+				Candidate []uintptr `json:"candidate"`
+				BaseUnion *uintptr  `json:"base_union"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			if tmp.Belong != nil {
+				v.Belong = n.node[*tmp.Belong].(Member)
+			}
+			if tmp.Ident != nil {
+				v.Ident = n.node[*tmp.Ident].(*Ident)
+			}
+			v.Candidate = make([]Member, len(tmp.Candidate))
+			for j, k := range tmp.Candidate {
+				v.Candidate[j] = n.node[k].(Member)
+			}
+			if tmp.BaseUnion != nil {
+				v.BaseUnion = n.node[*tmp.BaseUnion].(*UnionType)
 			}
 		default:
 			return nil, fmt.Errorf("unknown node type: %q", raw.NodeType)
@@ -2241,6 +2281,16 @@ func Walk(n Node, f Visitor) {
 	case *CommentGroup:
 		for _, w := range v.Comments {
 			f.Visit(f, w)
+		}
+	case *UnionField:
+		if v.Ident != nil {
+			f.Visit(f, v.Ident)
+		}
+		for _, w := range v.Candidate {
+			f.Visit(f, w)
+		}
+		if v.BaseUnion != nil {
+			f.Visit(f, v.BaseUnion)
 		}
 	}
 }

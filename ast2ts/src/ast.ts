@@ -2,10 +2,10 @@
 
 export namespace ast2ts {
 
-export type NodeType = "node" | "program" | "expr" | "binary" | "unary" | "cond" | "ident" | "call" | "if" | "member_access" | "paren" | "index" | "match" | "range" | "tmp_var" | "block_expr" | "import" | "literal" | "int_literal" | "bool_literal" | "str_literal" | "input" | "output" | "config" | "stmt" | "loop" | "indent_block" | "match_branch" | "return" | "break" | "continue" | "assert" | "implicit_yield" | "member" | "field" | "format" | "function" | "type" | "int_type" | "ident_type" | "int_literal_type" | "str_literal_type" | "void_type" | "bool_type" | "array_type" | "function_type" | "struct_type" | "union_type" | "cast" | "comment" | "comment_group";
+export type NodeType = "node" | "program" | "expr" | "binary" | "unary" | "cond" | "ident" | "call" | "if" | "member_access" | "paren" | "index" | "match" | "range" | "tmp_var" | "block_expr" | "import" | "literal" | "int_literal" | "bool_literal" | "str_literal" | "input" | "output" | "config" | "stmt" | "loop" | "indent_block" | "match_branch" | "return" | "break" | "continue" | "assert" | "implicit_yield" | "member" | "field" | "format" | "function" | "type" | "int_type" | "ident_type" | "int_literal_type" | "str_literal_type" | "void_type" | "bool_type" | "array_type" | "function_type" | "struct_type" | "union_type" | "cast" | "comment" | "comment_group" | "union_field";
 
 export function isNodeType(obj: any): obj is NodeType {
-	return obj && typeof obj === 'string' && (obj === "node" || obj === "program" || obj === "expr" || obj === "binary" || obj === "unary" || obj === "cond" || obj === "ident" || obj === "call" || obj === "if" || obj === "member_access" || obj === "paren" || obj === "index" || obj === "match" || obj === "range" || obj === "tmp_var" || obj === "block_expr" || obj === "import" || obj === "literal" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "input" || obj === "output" || obj === "config" || obj === "stmt" || obj === "loop" || obj === "indent_block" || obj === "match_branch" || obj === "return" || obj === "break" || obj === "continue" || obj === "assert" || obj === "implicit_yield" || obj === "member" || obj === "field" || obj === "format" || obj === "function" || obj === "type" || obj === "int_type" || obj === "ident_type" || obj === "int_literal_type" || obj === "str_literal_type" || obj === "void_type" || obj === "bool_type" || obj === "array_type" || obj === "function_type" || obj === "struct_type" || obj === "union_type" || obj === "cast" || obj === "comment" || obj === "comment_group")
+	return obj && typeof obj === 'string' && (obj === "node" || obj === "program" || obj === "expr" || obj === "binary" || obj === "unary" || obj === "cond" || obj === "ident" || obj === "call" || obj === "if" || obj === "member_access" || obj === "paren" || obj === "index" || obj === "match" || obj === "range" || obj === "tmp_var" || obj === "block_expr" || obj === "import" || obj === "literal" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "input" || obj === "output" || obj === "config" || obj === "stmt" || obj === "loop" || obj === "indent_block" || obj === "match_branch" || obj === "return" || obj === "break" || obj === "continue" || obj === "assert" || obj === "implicit_yield" || obj === "member" || obj === "field" || obj === "format" || obj === "function" || obj === "type" || obj === "int_type" || obj === "ident_type" || obj === "int_literal_type" || obj === "str_literal_type" || obj === "void_type" || obj === "bool_type" || obj === "array_type" || obj === "function_type" || obj === "struct_type" || obj === "union_type" || obj === "cast" || obj === "comment" || obj === "comment_group" || obj === "union_field")
 }
 
 export interface Node {
@@ -59,6 +59,7 @@ export function isNode(obj: any): obj is Node {
 	if (isCast(obj)) return true;
 	if (isComment(obj)) return true;
 	if (isCommentGroup(obj)) return true;
+	if (isUnionField(obj)) return true;
 	return false;
 }
 
@@ -119,17 +120,20 @@ export function isStmt(obj: any): obj is Stmt {
 	if (isField(obj)) return true;
 	if (isFormat(obj)) return true;
 	if (isFunction(obj)) return true;
+	if (isUnionField(obj)) return true;
 	return false;
 }
 
 export interface Member extends Stmt {
 	belong: Member|null;
+	ident: Ident|null;
 }
 
 export function isMember(obj: any): obj is Member {
 	if (isField(obj)) return true;
 	if (isFormat(obj)) return true;
 	if (isFunction(obj)) return true;
+	if (isUnionField(obj)) return true;
 	return false;
 }
 
@@ -414,7 +418,6 @@ export function isImplicitYield(obj: any): obj is ImplicitYield {
 }
 
 export interface Field extends Member {
-	ident: Ident|null;
 	colon_loc: Loc;
 	field_type: Type|null;
 	raw_arguments: Expr|null;
@@ -427,7 +430,6 @@ export function isField(obj: any): obj is Field {
 
 export interface Format extends Member {
 	is_enum: boolean;
-	ident: Ident|null;
 	body: IndentBlock|null;
 }
 
@@ -436,7 +438,6 @@ export function isFormat(obj: any): obj is Format {
 }
 
 export interface Function extends Member {
-	ident: Ident|null;
 	parameters: Field[];
 	return_type: Type|null;
 	body: IndentBlock|null;
@@ -555,6 +556,15 @@ export interface CommentGroup extends Node {
 
 export function isCommentGroup(obj: any): obj is CommentGroup {
 	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "comment_group"
+}
+
+export interface UnionField extends Member {
+	candidate: Member[];
+	base_union: UnionType|null;
+}
+
+export function isUnionField(obj: any): obj is UnionField {
+	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "union_field"
 }
 
 export enum UnaryOp {
@@ -1108,8 +1118,8 @@ export function parseAST(obj: any): Program {
 				node_type: "format",
 				loc: on.loc,
 				belong: null,
-				is_enum: false,
 				ident: null,
+				is_enum: false,
 				body: null,
 			}
 			c.node.push(n);
@@ -1259,6 +1269,18 @@ export function parseAST(obj: any): Program {
 				node_type: "comment_group",
 				loc: on.loc,
 				comments: [],
+			}
+			c.node.push(n);
+			break;
+		}
+		case "union_field": {
+			const n :UnionField = {
+				node_type: "union_field",
+				loc: on.loc,
+				belong: null,
+				ident: null,
+				candidate: [],
+				base_union: null,
 			}
 			c.node.push(n);
 			break;
@@ -2037,11 +2059,6 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list');
 			}
 			n.belong = tmpbelong;
-			const tmpis_enum = on.body?.is_enum;
-			if (typeof on.body?.is_enum !== "boolean") {
-				throw new Error('invalid node list');
-			}
-			n.is_enum = on.body.is_enum;
 			if (on.body?.ident !== null && typeof on.body?.ident !== 'number') {
 				throw new Error('invalid node list');
 			}
@@ -2050,6 +2067,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list');
 			}
 			n.ident = tmpident;
+			const tmpis_enum = on.body?.is_enum;
+			if (typeof on.body?.is_enum !== "boolean") {
+				throw new Error('invalid node list');
+			}
+			n.is_enum = on.body.is_enum;
 			if (on.body?.body !== null && typeof on.body?.body !== 'number') {
 				throw new Error('invalid node list');
 			}
@@ -2367,6 +2389,44 @@ export function parseAST(obj: any): Program {
 				}
 				n.comments.push(tmpcomments);
 			}
+			break;
+		}
+		case "union_field": {
+			const n :UnionField = cnode as UnionField;
+			if (on.body?.belong !== null && typeof on.body?.belong !== 'number') {
+				throw new Error('invalid node list');
+			}
+			const tmpbelong = on.body.belong === null ? null : c.node[on.body.belong];
+			if (!(tmpbelong === null || isMember(tmpbelong))) {
+				throw new Error('invalid node list');
+			}
+			n.belong = tmpbelong;
+			if (on.body?.ident !== null && typeof on.body?.ident !== 'number') {
+				throw new Error('invalid node list');
+			}
+			const tmpident = on.body.ident === null ? null : c.node[on.body.ident];
+			if (!(tmpident === null || isIdent(tmpident))) {
+				throw new Error('invalid node list');
+			}
+			n.ident = tmpident;
+			for (const o of on.body.candidate) {
+				if (typeof o !== 'number') {
+					throw new Error('invalid node list');
+				}
+				const tmpcandidate = c.node[o];
+				if (!isMember(tmpcandidate)) {
+					throw new Error('invalid node list');
+				}
+				n.candidate.push(tmpcandidate);
+			}
+			if (on.body?.base_union !== null && typeof on.body?.base_union !== 'number') {
+				throw new Error('invalid node list');
+			}
+			const tmpbase_union = on.body.base_union === null ? null : c.node[on.body.base_union];
+			if (!(tmpbase_union === null || isUnionType(tmpbase_union))) {
+				throw new Error('invalid node list');
+			}
+			n.base_union = tmpbase_union;
 			break;
 		}
 		}
@@ -2969,6 +3029,22 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			const n :CommentGroup = node as CommentGroup;
 			for (const e of n.comments) {
 				fn(fn,e);
+			}
+			break;
+		}
+		case "union_field": {
+			if (!isUnionField(node)) {
+				break;
+			}
+			const n :UnionField = node as UnionField;
+			if (n.ident !== null) {
+				fn(fn,n.ident);
+			}
+			for (const e of n.candidate) {
+				fn(fn,e);
+			}
+			if (n.base_union !== null) {
+				fn(fn,n.base_union);
 			}
 			break;
 		}
