@@ -122,7 +122,7 @@ namespace brgen::ast {
     };
 
     using node_list = std::list<std::shared_ptr<Node>>;
-
+    struct StructType;
     struct IndentBlock : Stmt {
         define_node_type(NodeType::indent_block);
         node_list elements;
@@ -141,8 +141,6 @@ namespace brgen::ast {
             sdebugf(scope);
         }
     };
-
-    struct StructType;
 
     struct Program : Node {
         define_node_type(NodeType::program);
