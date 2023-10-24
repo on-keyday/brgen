@@ -68,13 +68,17 @@ namespace brgen::ast {
             : Node(l, t) {}
     };
 
+    struct Ident;
+
     struct Member : Stmt {
         define_node_type(NodeType::member);
         std::weak_ptr<Member> belong;
+        std::shared_ptr<Ident> ident;
 
         void dump(auto&& field) {
             Stmt::dump(field);
             sdebugf(belong);
+            sdebugf(ident);
         }
 
        protected:

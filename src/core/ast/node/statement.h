@@ -11,7 +11,7 @@ namespace brgen::ast {
     struct Format : Member {
         define_node_type(NodeType::format);
         bool is_enum = false;
-        std::shared_ptr<Ident> ident;
+        // std::shared_ptr<Ident> ident;
         std::shared_ptr<IndentBlock> body;
         // std::shared_ptr<StructType> struct_type;
         Format(lexer::Loc l, bool is_enum)
@@ -32,7 +32,7 @@ namespace brgen::ast {
 
     struct Field : Member {
         define_node_type(NodeType::field);
-        std::shared_ptr<Ident> ident;
+        // std::shared_ptr<Ident> ident;
         lexer::Loc colon_loc;
         std::shared_ptr<Type> field_type;
         std::shared_ptr<Expr> raw_arguments;
@@ -59,13 +59,13 @@ namespace brgen::ast {
 
     struct UnionField : Member {
         define_node_type(NodeType::union_field);
-        std::shared_ptr<Ident> ident;
-        std::vector<std::shared_ptr<Field>> candidate;
+        // std::shared_ptr<Ident> ident;
+        std::vector<std::shared_ptr<Member>> candidate;
         std::shared_ptr<UnionType> base_union;
 
         void dump(auto&& field) {
             Member::dump(field);
-            sdebugf(ident);
+            // sdebugf(ident);
             sdebugf(candidate);
             sdebugf(base_union);
         }
@@ -82,7 +82,7 @@ namespace brgen::ast {
 
     struct Function : Member {
         define_node_type(NodeType::function);
-        std::shared_ptr<Ident> ident;
+        // std::shared_ptr<Ident> ident;
         std::list<std::shared_ptr<Field>> parameters;
         std::shared_ptr<Type> return_type;
         std::shared_ptr<IndentBlock> body;
