@@ -129,9 +129,12 @@ namespace brgen::ast {
             // Create a shared pointer for the IndentBlock
             auto scope = std::make_shared<IndentBlock>(base.loc);
 
+            scope->struct_type = std::make_shared<StructType>(base.loc);
+
             // Create a new context for the current indent level
             auto current_indent = base.token.size();
             auto c = state.new_indent(s, current_indent, &scope->scope);
+            auto ss = state.enter_struct(scope->struct_type);
 
             if (ident) {
                 for (auto& i : *ident) {
@@ -260,10 +263,9 @@ namespace brgen::ast {
             union_->base = if_;
 
             auto body_with_struct = [&](lexer::Loc loc, auto& block) {
-                std::shared_ptr<StructType> struct_ = std::make_shared<StructType>(loc);
-                auto c = state.enter_struct(struct_);
-                block = parse_indent_block();
-                union_->fields.push_back(std::move(struct_));
+                auto tmp = parse_indent_block();
+                union_->fields.push_back(tmp->struct_type);
+                block = std::move(tmp);
             };
 
             auto push_union_to_current_struct = [&] {
@@ -885,14 +887,14 @@ namespace brgen::ast {
             bool is_enum = token.token == "enum";
             auto fmt = std::make_shared<Format>(token.loc, is_enum);
             s.skip_space();
-            fmt->struct_type = std::make_shared<StructType>(token.loc);
+            // fmt->struct_type = std::make_shared<StructType>(token.loc);
 
             fmt->ident = parse_ident();
             fmt->ident->usage = is_enum ? IdentUsage::define_enum : IdentUsage ::define_format;
             fmt->ident->base = fmt;
             {
                 auto scope = state.enter_member(fmt);
-                auto typ = state.enter_struct(fmt->struct_type);
+                // auto typ = state.enter_struct(fmt->struct_type);
                 fmt->body = parse_indent_block();
             }
 
@@ -955,11 +957,11 @@ namespace brgen::ast {
 
             state.add_to_struct(fn);
 
-            fn->struct_type = std::make_shared<StructType>(fn->loc);  // for function body nested
+            // fn->struct_type = std::make_shared<StructType>(fn->loc);  // for function body nested
 
             {
                 auto scope = state.enter_member(fn);
-                auto typ = state.enter_struct(fn->struct_type);
+                // auto typ = state.enter_struct(fn->struct_type);
                 fn->body = parse_indent_block(&ident_param);
             }
 

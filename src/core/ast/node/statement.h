@@ -13,7 +13,7 @@ namespace brgen::ast {
         bool is_enum = false;
         std::shared_ptr<Ident> ident;
         std::shared_ptr<IndentBlock> body;
-        std::shared_ptr<StructType> struct_type;
+        // std::shared_ptr<StructType> struct_type;
         Format(lexer::Loc l, bool is_enum)
             : Member(l, NodeType::format), is_enum(is_enum) {}
 
@@ -26,7 +26,7 @@ namespace brgen::ast {
             sdebugf(is_enum);
             sdebugf(ident);
             sdebugf(body);
-            sdebugf(struct_type);
+            // sdebugf(struct_type);
         }
     };
 
@@ -65,7 +65,7 @@ namespace brgen::ast {
         std::shared_ptr<Type> return_type;
         std::shared_ptr<IndentBlock> body;
         std::shared_ptr<FunctionType> func_type;
-        std::shared_ptr<StructType> struct_type;
+        // std::shared_ptr<StructType> struct_type;
 
         Function(lexer::Loc l)
             : Member(l, NodeType::function) {}
@@ -80,7 +80,7 @@ namespace brgen::ast {
             sdebugf(return_type);
             sdebugf(body);
             sdebugf(func_type);
-            sdebugf(struct_type);
+            // sdebugf(struct_type);
         }
     };
 

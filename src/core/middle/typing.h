@@ -406,7 +406,7 @@ namespace brgen::middle {
         std::shared_ptr<ast::StructType> lookup_struct(const std::shared_ptr<ast::Type>& typ) {
             if (auto ident = ast::as<ast::IdentType>(typ)) {
                 if (auto fmt = ident->base.lock()) {
-                    return fmt->struct_type;
+                    return fmt->body->struct_type;
                 }
             }
             else if (ast::as<ast::StructType>(typ)) {

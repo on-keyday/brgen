@@ -149,7 +149,7 @@ namespace json2cpp {
         MergedFields m;
 
         result<void> collect(const std::shared_ptr<ast::Format>& fmt) {
-            auto& ast_fields = fmt->struct_type->fields;
+            auto& ast_fields = fmt->body->struct_type->fields;
             for (auto& f : ast_fields) {
                 if (ast::as<ast::Field>(f)) {
                     if (auto r = collect_field(fmt, ast::cast_to<ast::Field>(f)); !r) {

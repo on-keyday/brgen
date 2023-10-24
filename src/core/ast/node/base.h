@@ -127,6 +127,7 @@ namespace brgen::ast {
         define_node_type(NodeType::indent_block);
         node_list elements;
         scope_ptr scope;
+        std::shared_ptr<StructType> struct_type;
 
         IndentBlock(lexer::Loc l)
             : Stmt(l, NodeType::indent_block) {}
@@ -139,6 +140,7 @@ namespace brgen::ast {
             Stmt::dump(field);
             sdebugf(elements);
             sdebugf(scope);
+            sdebugf(struct_type);
         }
     };
 
