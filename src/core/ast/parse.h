@@ -256,6 +256,10 @@ namespace brgen::ast {
             return match;
         }
 
+        void export_union_field(std::vector<std::shared_ptr<Expr>>& cond, const std::shared_ptr<UnionType>& type) {
+            assert(cond.size() == type->fields.size());
+        }
+
         /*
             <if> ::= "if" <expr> <indent scope> ("elif" <expr> <block>)* ("else" <indent scope>)?
         */

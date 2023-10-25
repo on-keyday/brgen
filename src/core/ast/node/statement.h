@@ -57,15 +57,31 @@ namespace brgen::ast {
 
     struct UnionType;
 
+    struct UnionCandidate : Stmt {
+        define_node_type(NodeType::union_candidate);
+        std::shared_ptr<Expr> cond;
+        std::shared_ptr<Field> field;
+
+        UnionCandidate(lexer::Loc loc)
+            : Stmt(loc, NodeType::union_candidate) {}
+
+        UnionCandidate()
+            : Stmt({}, NodeType::union_candidate) {}
+
+        void dump(auto&& field) {
+            Node::dump(field);
+            sdebugf(cond);
+            sdebugf(field);
+        }
+    };
+
     struct UnionField : Member {
         define_node_type(NodeType::union_field);
-        // std::shared_ptr<Ident> ident;
-        std::vector<std::shared_ptr<Member>> candidate;
+        std::vector<std::shared_ptr<UnionCandidate>> candidate;
         std::shared_ptr<UnionType> base_union;
 
         void dump(auto&& field) {
             Member::dump(field);
-            // sdebugf(ident);
             sdebugf(candidate);
             sdebugf(base_union);
         }
@@ -82,12 +98,10 @@ namespace brgen::ast {
 
     struct Function : Member {
         define_node_type(NodeType::function);
-        // std::shared_ptr<Ident> ident;
         std::list<std::shared_ptr<Field>> parameters;
         std::shared_ptr<Type> return_type;
         std::shared_ptr<IndentBlock> body;
         std::shared_ptr<FunctionType> func_type;
-        // std::shared_ptr<StructType> struct_type;
 
         Function(lexer::Loc l)
             : Member(l, NodeType::function) {}

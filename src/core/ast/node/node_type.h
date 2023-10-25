@@ -8,6 +8,7 @@ namespace brgen::ast {
         program,
         comment,
         comment_group,
+
         expr = 0x010000,
 
         binary,
@@ -41,6 +42,7 @@ namespace brgen::ast {
         loop,
         indent_block,
         match_branch,
+        union_candidate,
         return_,
         break_,
         continue_,
