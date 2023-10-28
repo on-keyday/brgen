@@ -19,7 +19,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("use serde_derive::{Serialize,Deserialize};\n\n")
 	w.Printf("use std::collections::HashMap;\n\n")
 
-	w.Printf("#[derive(Debug,Clone,Serialize,Deserialize)]\n")
+	w.Printf("#[derive(Debug)]\n")
 	w.Printf("pub enum JSONType {\n")
 	w.Printf("	Null,\n")
 	w.Printf("	Bool,\n")
@@ -42,7 +42,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("	}\n")
 	w.Printf("}\n\n")
 
-	w.Printf("#[derive(Debug,Clone,Serialize,Deserialize)]\n")
+	w.Printf("#[derive(Debug)]\n")
 	w.Printf("pub enum Error {\n")
 	w.Printf("	UnknownNodeType(NodeType),\n")
 	w.Printf("	MismatchNodeType(NodeType,NodeType),\n")
@@ -50,12 +50,12 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("	MissingField(NodeType,&'static str),\n")
 	w.Printf("	MismatchJSONType(JSONType,JSONType),\n")
 	w.Printf("	InvalidNodeType(NodeType),\n")
+	w.Printf(" 	InvalidRawNodeType(String),\n")
 	w.Printf("	IndexOutOfBounds(usize),\n")
 	w.Printf("	InvalidEnumValue(String),\n")
 	w.Printf("}\n\n")
 
-	w.Printf("#[derive(Debug,Clone,Copy,Serialize,Deserialize)]\n")
-	w.Printf("#[serde(rename_all = \"snake_case\",untagged)]\n")
+	w.Printf("#[derive(Debug,Clone,Copy)]\n")
 	w.Printf("pub enum NodeType {\n")
 	for _, nodeType := range defs.NodeTypes {
 		w.Printf("	%s,\n", strcase.ToCamel(nodeType))
@@ -184,16 +184,29 @@ func generate(rw io.Writer, defs *gen.Defs) {
 				w.Printf("	}\n")
 				w.Printf("}\n\n")
 
+				w.Printf("impl TryFrom<%s> for Rc<RefCell<%s>> {\n", impl, d.Name)
+				w.Printf("	type Error = Error;\n")
+				w.Printf("	fn try_from(node:%s)->Result<Self,Self::Error>{\n", impl)
+				w.Printf("		Self::try_from(&node)\n")
+				w.Printf("	}\n")
+				w.Printf("}\n\n")
+
 				w.Printf("impl From<&Rc<RefCell<%s>>> for %s {\n", d.Name, impl)
 				w.Printf("	fn from(node:&Rc<RefCell<%s>>)-> Self{\n", d.Name)
 				w.Printf("		%s::%s(node.clone())\n", impl, d.Name)
+				w.Printf("	}\n")
+				w.Printf("}\n\n")
+
+				w.Printf("impl From<Rc<RefCell<%s>>> for %s {\n", d.Name, impl)
+				w.Printf("	fn from(node:Rc<RefCell<%s>>)-> Self{\n", d.Name)
+				w.Printf("		Self::from(&node)\n")
 				w.Printf("	}\n")
 				w.Printf("}\n\n")
 			}
 
 		case *gen.Enum:
 			w.Printf("#[derive(Debug,Clone,Copy,Serialize,Deserialize)]\n")
-			w.Printf("#[serde(rename_all = \"snake_case\",untagged)]\n")
+			w.Printf("#[serde(rename_all = \"snake_case\")]")
 			w.Printf("pub enum %s {\n", d.Name)
 			for _, field := range d.Values {
 				field.Name = strcase.ToCamel(field.Name)
@@ -216,7 +229,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 
 	w.Printf("#[derive(Debug,Clone,Serialize,Deserialize)]\n")
 	w.Printf("pub struct RawNode {\n")
-	w.Printf("	pub node_type: NodeType,\n")
+	w.Printf("	pub node_type: String,\n")
 	w.Printf("	pub loc :Loc,\n")
 	w.Printf("	pub body: HashMap<String,serde_json::Value>,\n")
 	w.Printf("}\n\n")
@@ -227,7 +240,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("	pub next :Option<u64>,\n")
 	w.Printf("	pub branch :Option<u64>,\n")
 	w.Printf("	pub ident :Vec<u64>,\n")
-	w.Printf("  pub is_global: bool,\n")
+	w.Printf("	pub is_global: bool,\n")
 	w.Printf("}\n\n")
 
 	w.Printf("#[derive(Debug,Clone,Serialize,Deserialize)]\n")
@@ -241,7 +254,11 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("	let mut nodes = Vec::new();\n")
 	w.Printf("	let mut scopes = Vec::new();\n")
 	w.Printf("	for raw_node in &ast.node{\n")
-	w.Printf("		let node = match raw_node.node_type {\n")
+	w.Printf("		let node_type :NodeType = match raw_node.node_type.as_str().try_into() {\n")
+	w.Printf("			Ok(v)=>v,\n")
+	w.Printf("			Err(_) =>return Err(Error::InvalidRawNodeType(raw_node.node_type.clone())),\n")
+	w.Printf("		};\n")
+	w.Printf("		let node = match node_type {\n")
 	for _, nodeType := range defs.Defs {
 		switch d := nodeType.(type) {
 		case *gen.Struct:
@@ -275,7 +292,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 			w.Printf("			},\n")
 		}
 	}
-	w.Printf("			_=>return Err(Error::UnknownNodeType(raw_node.node_type)),\n")
+	w.Printf("			_=>return Err(Error::UnknownNodeType(node_type)),\n")
 	w.Printf("		};\n")
 	w.Printf("		nodes.push(node);\n")
 	w.Printf("	}\n")
@@ -291,7 +308,11 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("	}\n")
 
 	w.Printf("	for (i,raw_node) in ast.node.into_iter().enumerate(){\n")
-	w.Printf("		match raw_node.node_type {\n")
+	w.Printf("		let node_type :NodeType = match raw_node.node_type.as_str().try_into() {\n")
+	w.Printf("			Ok(v)=>v,\n")
+	w.Printf("			Err(_) =>return Err(Error::InvalidRawNodeType(raw_node.node_type.clone())),\n")
+	w.Printf("		};\n")
+	w.Printf("		match node_type {\n")
 	for _, nodeType := range defs.Defs {
 		switch d := nodeType.(type) {
 		case *gen.Struct:
@@ -306,7 +327,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 				w.Printf("				let _ = match node {\n")
 			}
 			w.Printf("					Node::%s(node)=>node,\n", d.Name)
-			w.Printf("					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),\n")
+			w.Printf("					_=>return Err(Error::MismatchNodeType(node_type,node.into())),\n")
 			w.Printf("				};\n")
 			indexNodeFn := func(indent, val, bulk, name string) {
 				w.Printf(indent+"let %s = match %s.get(%s as usize) {\n", val, bulk, name)
@@ -320,7 +341,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 				}
 				w.Printf("				let %s_body = match raw_node.body.get(%q) {\n", field.Name, field.Tag)
 				w.Printf("					Some(v)=>v,\n")
-				w.Printf("					None=>return Err(Error::MissingField(raw_node.node_type,%q)),\n", field.Tag)
+				w.Printf("					None=>return Err(Error::MissingField(node_type,%q)),\n", field.Tag)
 				w.Printf("				};\n")
 				if field.Type.IsArray {
 					w.Printf("				let %s_body = match %s_body.as_array(){\n", field.Name, field.Name)
@@ -348,33 +369,35 @@ func generate(rw io.Writer, defs *gen.Defs) {
 					}
 					w.Printf("				}\n")
 				} else if field.Type.IsPtr || field.Type.IsInterface {
-					w.Printf("				let %s_body = match %s_body.as_u64() {\n", field.Name, field.Name)
-					w.Printf("					Some(v)=>v,\n")
-					w.Printf("					None=>return Err(Error::MismatchJSONType(%s_body.into(),JSONType::Number)),\n", field.Name)
-					w.Printf("				};\n")
+					w.Printf(" 				if !%s_body.is_null() {\n", field.Name)
+					w.Printf("					let %s_body = match %s_body.as_u64() {\n", field.Name, field.Name)
+					w.Printf("						Some(v)=>v,\n")
+					w.Printf("						None=>return Err(Error::MismatchJSONType(%s_body.into(),JSONType::Number)),\n", field.Name)
+					w.Printf("					};\n")
 					if field.Type.Name == "Scope" {
-						indexNodeFn("				", field.Name+"_body", "scopes", field.Name+"_body")
-						w.Printf("				node.borrow_mut().%s = Some(%s_body.clone());\n", field.Name, field.Name)
+						indexNodeFn("					", field.Name+"_body", "scopes", field.Name+"_body")
+						w.Printf("					node.borrow_mut().%s = Some(%s_body.clone());\n", field.Name, field.Name)
 					} else {
-						indexNodeFn("				", field.Name+"_body", "nodes", field.Name+"_body")
+						indexNodeFn("					", field.Name+"_body", "nodes", field.Name+"_body")
 						if field.Type.IsInterface {
 							if field.Type.Name == "Node" {
-								w.Printf("				node.borrow_mut().%s = Some(%s_body.clone());\n", field.Name, field.Name)
+								w.Printf("					node.borrow_mut().%s = Some(%s_body.clone());\n", field.Name, field.Name)
 							} else {
-								w.Printf("				node.borrow_mut().%s = Some(%s_body.try_into()?);\n", field.Name, field.Name)
+								w.Printf("					node.borrow_mut().%s = Some(%s_body.try_into()?);\n", field.Name, field.Name)
 							}
 						} else {
-							w.Printf("				let %s_body = match %s_body {\n", field.Name, field.Name)
-							w.Printf("					Node::%s(node)=>node,\n", field.Type.Name)
-							w.Printf("					x =>return Err(Error::MismatchNodeType(x.into(),%s_body.into())),\n", field.Name)
-							w.Printf("				};\n")
+							w.Printf("					let %s_body = match %s_body {\n", field.Name, field.Name)
+							w.Printf("						Node::%s(node)=>node,\n", field.Type.Name)
+							w.Printf("						x =>return Err(Error::MismatchNodeType(x.into(),%s_body.into())),\n", field.Name)
+							w.Printf("					};\n")
 							if field.Type.IsWeak {
-								w.Printf("				node.borrow_mut().%s = Some(Rc::downgrade(&%s_body));\n", field.Name, field.Name)
+								w.Printf("					node.borrow_mut().%s = Some(Rc::downgrade(&%s_body));\n", field.Name, field.Name)
 							} else {
-								w.Printf("				node.borrow_mut().%s = Some(%s_body.clone());\n", field.Name, field.Name)
+								w.Printf("					node.borrow_mut().%s = Some(%s_body.clone());\n", field.Name, field.Name)
 							}
 						}
 					}
+					w.Printf("				}\n")
 				} else if field.Type.Name == "u64" {
 					w.Printf("				node.borrow_mut().%s = match %s_body.as_u64() {\n", field.Name, field.Name)
 					w.Printf("					Some(v)=>v,\n")
@@ -412,7 +435,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 			w.Printf("			},\n")
 		}
 	}
-	w.Printf("			_=>return Err(Error::UnknownNodeType(raw_node.node_type)),\n")
+	w.Printf("			_=>return Err(Error::UnknownNodeType(node_type)),\n")
 	w.Printf("		};\n")
 	w.Printf("	}\n")
 

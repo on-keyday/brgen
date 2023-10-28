@@ -6,6 +6,7 @@ use serde_derive::{Serialize,Deserialize};
 
 use std::collections::HashMap;
 
+#[derive(Debug)]
 pub enum JSONType {
 	Null,
 	Bool,
@@ -28,6 +29,7 @@ impl From<&serde_json::Value> for JSONType {
 	}
 }
 
+#[derive(Debug)]
 pub enum Error {
 	UnknownNodeType(NodeType),
 	MismatchNodeType(NodeType,NodeType),
@@ -35,12 +37,12 @@ pub enum Error {
 	MissingField(NodeType,&'static str),
 	MismatchJSONType(JSONType,JSONType),
 	InvalidNodeType(NodeType),
+ 	InvalidRawNodeType(String),
 	IndexOutOfBounds(usize),
 	InvalidEnumValue(String),
 }
 
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
-#[serde(rename_all = "snake_case",untagged)]
+#[derive(Debug,Clone,Copy)]
 pub enum NodeType {
 	Node,
 	Program,
@@ -615,9 +617,22 @@ impl TryFrom<&Node> for Rc<RefCell<Program>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<Program>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Program>>> for Node {
 	fn from(node:&Rc<RefCell<Program>>)-> Self{
 		Node::Program(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Program>>> for Node {
+	fn from(node:Rc<RefCell<Program>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -640,9 +655,22 @@ impl TryFrom<&Expr> for Rc<RefCell<Binary>> {
 	}
 }
 
+impl TryFrom<Expr> for Rc<RefCell<Binary>> {
+	type Error = Error;
+	fn try_from(node:Expr)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Binary>>> for Expr {
 	fn from(node:&Rc<RefCell<Binary>>)-> Self{
 		Expr::Binary(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Binary>>> for Expr {
+	fn from(node:Rc<RefCell<Binary>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -656,9 +684,22 @@ impl TryFrom<&Node> for Rc<RefCell<Binary>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<Binary>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Binary>>> for Node {
 	fn from(node:&Rc<RefCell<Binary>>)-> Self{
 		Node::Binary(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Binary>>> for Node {
+	fn from(node:Rc<RefCell<Binary>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -680,9 +721,22 @@ impl TryFrom<&Expr> for Rc<RefCell<Unary>> {
 	}
 }
 
+impl TryFrom<Expr> for Rc<RefCell<Unary>> {
+	type Error = Error;
+	fn try_from(node:Expr)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Unary>>> for Expr {
 	fn from(node:&Rc<RefCell<Unary>>)-> Self{
 		Expr::Unary(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Unary>>> for Expr {
+	fn from(node:Rc<RefCell<Unary>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -696,9 +750,22 @@ impl TryFrom<&Node> for Rc<RefCell<Unary>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<Unary>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Unary>>> for Node {
 	fn from(node:&Rc<RefCell<Unary>>)-> Self{
 		Node::Unary(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Unary>>> for Node {
+	fn from(node:Rc<RefCell<Unary>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -722,9 +789,22 @@ impl TryFrom<&Expr> for Rc<RefCell<Cond>> {
 	}
 }
 
+impl TryFrom<Expr> for Rc<RefCell<Cond>> {
+	type Error = Error;
+	fn try_from(node:Expr)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Cond>>> for Expr {
 	fn from(node:&Rc<RefCell<Cond>>)-> Self{
 		Expr::Cond(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Cond>>> for Expr {
+	fn from(node:Rc<RefCell<Cond>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -738,9 +818,22 @@ impl TryFrom<&Node> for Rc<RefCell<Cond>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<Cond>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Cond>>> for Node {
 	fn from(node:&Rc<RefCell<Cond>>)-> Self{
 		Node::Cond(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Cond>>> for Node {
+	fn from(node:Rc<RefCell<Cond>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -764,9 +857,22 @@ impl TryFrom<&Expr> for Rc<RefCell<Ident>> {
 	}
 }
 
+impl TryFrom<Expr> for Rc<RefCell<Ident>> {
+	type Error = Error;
+	fn try_from(node:Expr)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Ident>>> for Expr {
 	fn from(node:&Rc<RefCell<Ident>>)-> Self{
 		Expr::Ident(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Ident>>> for Expr {
+	fn from(node:Rc<RefCell<Ident>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -780,9 +886,22 @@ impl TryFrom<&Node> for Rc<RefCell<Ident>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<Ident>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Ident>>> for Node {
 	fn from(node:&Rc<RefCell<Ident>>)-> Self{
 		Node::Ident(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Ident>>> for Node {
+	fn from(node:Rc<RefCell<Ident>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -806,9 +925,22 @@ impl TryFrom<&Expr> for Rc<RefCell<Call>> {
 	}
 }
 
+impl TryFrom<Expr> for Rc<RefCell<Call>> {
+	type Error = Error;
+	fn try_from(node:Expr)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Call>>> for Expr {
 	fn from(node:&Rc<RefCell<Call>>)-> Self{
 		Expr::Call(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Call>>> for Expr {
+	fn from(node:Rc<RefCell<Call>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -822,9 +954,22 @@ impl TryFrom<&Node> for Rc<RefCell<Call>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<Call>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Call>>> for Node {
 	fn from(node:&Rc<RefCell<Call>>)-> Self{
 		Node::Call(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Call>>> for Node {
+	fn from(node:Rc<RefCell<Call>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -847,9 +992,22 @@ impl TryFrom<&Expr> for Rc<RefCell<If>> {
 	}
 }
 
+impl TryFrom<Expr> for Rc<RefCell<If>> {
+	type Error = Error;
+	fn try_from(node:Expr)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<If>>> for Expr {
 	fn from(node:&Rc<RefCell<If>>)-> Self{
 		Expr::If(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<If>>> for Expr {
+	fn from(node:Rc<RefCell<If>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -863,9 +1021,22 @@ impl TryFrom<&Node> for Rc<RefCell<If>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<If>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<If>>> for Node {
 	fn from(node:&Rc<RefCell<If>>)-> Self{
 		Node::If(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<If>>> for Node {
+	fn from(node:Rc<RefCell<If>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -888,9 +1059,22 @@ impl TryFrom<&Expr> for Rc<RefCell<MemberAccess>> {
 	}
 }
 
+impl TryFrom<Expr> for Rc<RefCell<MemberAccess>> {
+	type Error = Error;
+	fn try_from(node:Expr)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<MemberAccess>>> for Expr {
 	fn from(node:&Rc<RefCell<MemberAccess>>)-> Self{
 		Expr::MemberAccess(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<MemberAccess>>> for Expr {
+	fn from(node:Rc<RefCell<MemberAccess>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -904,9 +1088,22 @@ impl TryFrom<&Node> for Rc<RefCell<MemberAccess>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<MemberAccess>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<MemberAccess>>> for Node {
 	fn from(node:&Rc<RefCell<MemberAccess>>)-> Self{
 		Node::MemberAccess(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<MemberAccess>>> for Node {
+	fn from(node:Rc<RefCell<MemberAccess>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -928,9 +1125,22 @@ impl TryFrom<&Expr> for Rc<RefCell<Paren>> {
 	}
 }
 
+impl TryFrom<Expr> for Rc<RefCell<Paren>> {
+	type Error = Error;
+	fn try_from(node:Expr)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Paren>>> for Expr {
 	fn from(node:&Rc<RefCell<Paren>>)-> Self{
 		Expr::Paren(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Paren>>> for Expr {
+	fn from(node:Rc<RefCell<Paren>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -944,9 +1154,22 @@ impl TryFrom<&Node> for Rc<RefCell<Paren>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<Paren>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Paren>>> for Node {
 	fn from(node:&Rc<RefCell<Paren>>)-> Self{
 		Node::Paren(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Paren>>> for Node {
+	fn from(node:Rc<RefCell<Paren>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -969,9 +1192,22 @@ impl TryFrom<&Expr> for Rc<RefCell<Index>> {
 	}
 }
 
+impl TryFrom<Expr> for Rc<RefCell<Index>> {
+	type Error = Error;
+	fn try_from(node:Expr)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Index>>> for Expr {
 	fn from(node:&Rc<RefCell<Index>>)-> Self{
 		Expr::Index(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Index>>> for Expr {
+	fn from(node:Rc<RefCell<Index>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -985,9 +1221,22 @@ impl TryFrom<&Node> for Rc<RefCell<Index>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<Index>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Index>>> for Node {
 	fn from(node:&Rc<RefCell<Index>>)-> Self{
 		Node::Index(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Index>>> for Node {
+	fn from(node:Rc<RefCell<Index>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1009,9 +1258,22 @@ impl TryFrom<&Expr> for Rc<RefCell<Match>> {
 	}
 }
 
+impl TryFrom<Expr> for Rc<RefCell<Match>> {
+	type Error = Error;
+	fn try_from(node:Expr)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Match>>> for Expr {
 	fn from(node:&Rc<RefCell<Match>>)-> Self{
 		Expr::Match(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Match>>> for Expr {
+	fn from(node:Rc<RefCell<Match>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1025,9 +1287,22 @@ impl TryFrom<&Node> for Rc<RefCell<Match>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<Match>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Match>>> for Node {
 	fn from(node:&Rc<RefCell<Match>>)-> Self{
 		Node::Match(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Match>>> for Node {
+	fn from(node:Rc<RefCell<Match>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1050,9 +1325,22 @@ impl TryFrom<&Expr> for Rc<RefCell<Range>> {
 	}
 }
 
+impl TryFrom<Expr> for Rc<RefCell<Range>> {
+	type Error = Error;
+	fn try_from(node:Expr)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Range>>> for Expr {
 	fn from(node:&Rc<RefCell<Range>>)-> Self{
 		Expr::Range(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Range>>> for Expr {
+	fn from(node:Rc<RefCell<Range>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1066,9 +1354,22 @@ impl TryFrom<&Node> for Rc<RefCell<Range>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<Range>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Range>>> for Node {
 	fn from(node:&Rc<RefCell<Range>>)-> Self{
 		Node::Range(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Range>>> for Node {
+	fn from(node:Rc<RefCell<Range>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1089,9 +1390,22 @@ impl TryFrom<&Expr> for Rc<RefCell<TmpVar>> {
 	}
 }
 
+impl TryFrom<Expr> for Rc<RefCell<TmpVar>> {
+	type Error = Error;
+	fn try_from(node:Expr)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<TmpVar>>> for Expr {
 	fn from(node:&Rc<RefCell<TmpVar>>)-> Self{
 		Expr::TmpVar(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<TmpVar>>> for Expr {
+	fn from(node:Rc<RefCell<TmpVar>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1105,9 +1419,22 @@ impl TryFrom<&Node> for Rc<RefCell<TmpVar>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<TmpVar>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<TmpVar>>> for Node {
 	fn from(node:&Rc<RefCell<TmpVar>>)-> Self{
 		Node::TmpVar(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<TmpVar>>> for Node {
+	fn from(node:Rc<RefCell<TmpVar>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1129,9 +1456,22 @@ impl TryFrom<&Expr> for Rc<RefCell<BlockExpr>> {
 	}
 }
 
+impl TryFrom<Expr> for Rc<RefCell<BlockExpr>> {
+	type Error = Error;
+	fn try_from(node:Expr)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<BlockExpr>>> for Expr {
 	fn from(node:&Rc<RefCell<BlockExpr>>)-> Self{
 		Expr::BlockExpr(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<BlockExpr>>> for Expr {
+	fn from(node:Rc<RefCell<BlockExpr>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1145,9 +1485,22 @@ impl TryFrom<&Node> for Rc<RefCell<BlockExpr>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<BlockExpr>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<BlockExpr>>> for Node {
 	fn from(node:&Rc<RefCell<BlockExpr>>)-> Self{
 		Node::BlockExpr(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<BlockExpr>>> for Node {
+	fn from(node:Rc<RefCell<BlockExpr>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1170,9 +1523,22 @@ impl TryFrom<&Expr> for Rc<RefCell<Import>> {
 	}
 }
 
+impl TryFrom<Expr> for Rc<RefCell<Import>> {
+	type Error = Error;
+	fn try_from(node:Expr)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Import>>> for Expr {
 	fn from(node:&Rc<RefCell<Import>>)-> Self{
 		Expr::Import(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Import>>> for Expr {
+	fn from(node:Rc<RefCell<Import>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1186,9 +1552,22 @@ impl TryFrom<&Node> for Rc<RefCell<Import>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<Import>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Import>>> for Node {
 	fn from(node:&Rc<RefCell<Import>>)-> Self{
 		Node::Import(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Import>>> for Node {
+	fn from(node:Rc<RefCell<Import>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1209,9 +1588,22 @@ impl TryFrom<&Literal> for Rc<RefCell<IntLiteral>> {
 	}
 }
 
+impl TryFrom<Literal> for Rc<RefCell<IntLiteral>> {
+	type Error = Error;
+	fn try_from(node:Literal)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<IntLiteral>>> for Literal {
 	fn from(node:&Rc<RefCell<IntLiteral>>)-> Self{
 		Literal::IntLiteral(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<IntLiteral>>> for Literal {
+	fn from(node:Rc<RefCell<IntLiteral>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1225,9 +1617,22 @@ impl TryFrom<&Expr> for Rc<RefCell<IntLiteral>> {
 	}
 }
 
+impl TryFrom<Expr> for Rc<RefCell<IntLiteral>> {
+	type Error = Error;
+	fn try_from(node:Expr)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<IntLiteral>>> for Expr {
 	fn from(node:&Rc<RefCell<IntLiteral>>)-> Self{
 		Expr::IntLiteral(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<IntLiteral>>> for Expr {
+	fn from(node:Rc<RefCell<IntLiteral>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1241,9 +1646,22 @@ impl TryFrom<&Node> for Rc<RefCell<IntLiteral>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<IntLiteral>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<IntLiteral>>> for Node {
 	fn from(node:&Rc<RefCell<IntLiteral>>)-> Self{
 		Node::IntLiteral(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<IntLiteral>>> for Node {
+	fn from(node:Rc<RefCell<IntLiteral>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1264,9 +1682,22 @@ impl TryFrom<&Literal> for Rc<RefCell<BoolLiteral>> {
 	}
 }
 
+impl TryFrom<Literal> for Rc<RefCell<BoolLiteral>> {
+	type Error = Error;
+	fn try_from(node:Literal)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<BoolLiteral>>> for Literal {
 	fn from(node:&Rc<RefCell<BoolLiteral>>)-> Self{
 		Literal::BoolLiteral(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<BoolLiteral>>> for Literal {
+	fn from(node:Rc<RefCell<BoolLiteral>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1280,9 +1711,22 @@ impl TryFrom<&Expr> for Rc<RefCell<BoolLiteral>> {
 	}
 }
 
+impl TryFrom<Expr> for Rc<RefCell<BoolLiteral>> {
+	type Error = Error;
+	fn try_from(node:Expr)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<BoolLiteral>>> for Expr {
 	fn from(node:&Rc<RefCell<BoolLiteral>>)-> Self{
 		Expr::BoolLiteral(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<BoolLiteral>>> for Expr {
+	fn from(node:Rc<RefCell<BoolLiteral>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1296,9 +1740,22 @@ impl TryFrom<&Node> for Rc<RefCell<BoolLiteral>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<BoolLiteral>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<BoolLiteral>>> for Node {
 	fn from(node:&Rc<RefCell<BoolLiteral>>)-> Self{
 		Node::BoolLiteral(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<BoolLiteral>>> for Node {
+	fn from(node:Rc<RefCell<BoolLiteral>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1319,9 +1776,22 @@ impl TryFrom<&Literal> for Rc<RefCell<StrLiteral>> {
 	}
 }
 
+impl TryFrom<Literal> for Rc<RefCell<StrLiteral>> {
+	type Error = Error;
+	fn try_from(node:Literal)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<StrLiteral>>> for Literal {
 	fn from(node:&Rc<RefCell<StrLiteral>>)-> Self{
 		Literal::StrLiteral(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<StrLiteral>>> for Literal {
+	fn from(node:Rc<RefCell<StrLiteral>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1335,9 +1805,22 @@ impl TryFrom<&Expr> for Rc<RefCell<StrLiteral>> {
 	}
 }
 
+impl TryFrom<Expr> for Rc<RefCell<StrLiteral>> {
+	type Error = Error;
+	fn try_from(node:Expr)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<StrLiteral>>> for Expr {
 	fn from(node:&Rc<RefCell<StrLiteral>>)-> Self{
 		Expr::StrLiteral(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<StrLiteral>>> for Expr {
+	fn from(node:Rc<RefCell<StrLiteral>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1351,9 +1834,22 @@ impl TryFrom<&Node> for Rc<RefCell<StrLiteral>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<StrLiteral>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<StrLiteral>>> for Node {
 	fn from(node:&Rc<RefCell<StrLiteral>>)-> Self{
 		Node::StrLiteral(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<StrLiteral>>> for Node {
+	fn from(node:Rc<RefCell<StrLiteral>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1373,9 +1869,22 @@ impl TryFrom<&Literal> for Rc<RefCell<Input>> {
 	}
 }
 
+impl TryFrom<Literal> for Rc<RefCell<Input>> {
+	type Error = Error;
+	fn try_from(node:Literal)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Input>>> for Literal {
 	fn from(node:&Rc<RefCell<Input>>)-> Self{
 		Literal::Input(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Input>>> for Literal {
+	fn from(node:Rc<RefCell<Input>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1389,9 +1898,22 @@ impl TryFrom<&Expr> for Rc<RefCell<Input>> {
 	}
 }
 
+impl TryFrom<Expr> for Rc<RefCell<Input>> {
+	type Error = Error;
+	fn try_from(node:Expr)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Input>>> for Expr {
 	fn from(node:&Rc<RefCell<Input>>)-> Self{
 		Expr::Input(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Input>>> for Expr {
+	fn from(node:Rc<RefCell<Input>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1405,9 +1927,22 @@ impl TryFrom<&Node> for Rc<RefCell<Input>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<Input>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Input>>> for Node {
 	fn from(node:&Rc<RefCell<Input>>)-> Self{
 		Node::Input(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Input>>> for Node {
+	fn from(node:Rc<RefCell<Input>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1427,9 +1962,22 @@ impl TryFrom<&Literal> for Rc<RefCell<Output>> {
 	}
 }
 
+impl TryFrom<Literal> for Rc<RefCell<Output>> {
+	type Error = Error;
+	fn try_from(node:Literal)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Output>>> for Literal {
 	fn from(node:&Rc<RefCell<Output>>)-> Self{
 		Literal::Output(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Output>>> for Literal {
+	fn from(node:Rc<RefCell<Output>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1443,9 +1991,22 @@ impl TryFrom<&Expr> for Rc<RefCell<Output>> {
 	}
 }
 
+impl TryFrom<Expr> for Rc<RefCell<Output>> {
+	type Error = Error;
+	fn try_from(node:Expr)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Output>>> for Expr {
 	fn from(node:&Rc<RefCell<Output>>)-> Self{
 		Expr::Output(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Output>>> for Expr {
+	fn from(node:Rc<RefCell<Output>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1459,9 +2020,22 @@ impl TryFrom<&Node> for Rc<RefCell<Output>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<Output>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Output>>> for Node {
 	fn from(node:&Rc<RefCell<Output>>)-> Self{
 		Node::Output(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Output>>> for Node {
+	fn from(node:Rc<RefCell<Output>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1481,9 +2055,22 @@ impl TryFrom<&Literal> for Rc<RefCell<Config>> {
 	}
 }
 
+impl TryFrom<Literal> for Rc<RefCell<Config>> {
+	type Error = Error;
+	fn try_from(node:Literal)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Config>>> for Literal {
 	fn from(node:&Rc<RefCell<Config>>)-> Self{
 		Literal::Config(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Config>>> for Literal {
+	fn from(node:Rc<RefCell<Config>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1497,9 +2084,22 @@ impl TryFrom<&Expr> for Rc<RefCell<Config>> {
 	}
 }
 
+impl TryFrom<Expr> for Rc<RefCell<Config>> {
+	type Error = Error;
+	fn try_from(node:Expr)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Config>>> for Expr {
 	fn from(node:&Rc<RefCell<Config>>)-> Self{
 		Expr::Config(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Config>>> for Expr {
+	fn from(node:Rc<RefCell<Config>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1513,9 +2113,22 @@ impl TryFrom<&Node> for Rc<RefCell<Config>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<Config>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Config>>> for Node {
 	fn from(node:&Rc<RefCell<Config>>)-> Self{
 		Node::Config(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Config>>> for Node {
+	fn from(node:Rc<RefCell<Config>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1538,9 +2151,22 @@ impl TryFrom<&Stmt> for Rc<RefCell<Loop>> {
 	}
 }
 
+impl TryFrom<Stmt> for Rc<RefCell<Loop>> {
+	type Error = Error;
+	fn try_from(node:Stmt)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Loop>>> for Stmt {
 	fn from(node:&Rc<RefCell<Loop>>)-> Self{
 		Stmt::Loop(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Loop>>> for Stmt {
+	fn from(node:Rc<RefCell<Loop>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1554,9 +2180,22 @@ impl TryFrom<&Node> for Rc<RefCell<Loop>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<Loop>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Loop>>> for Node {
 	fn from(node:&Rc<RefCell<Loop>>)-> Self{
 		Node::Loop(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Loop>>> for Node {
+	fn from(node:Rc<RefCell<Loop>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1578,9 +2217,22 @@ impl TryFrom<&Stmt> for Rc<RefCell<IndentBlock>> {
 	}
 }
 
+impl TryFrom<Stmt> for Rc<RefCell<IndentBlock>> {
+	type Error = Error;
+	fn try_from(node:Stmt)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<IndentBlock>>> for Stmt {
 	fn from(node:&Rc<RefCell<IndentBlock>>)-> Self{
 		Stmt::IndentBlock(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<IndentBlock>>> for Stmt {
+	fn from(node:Rc<RefCell<IndentBlock>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1594,9 +2246,22 @@ impl TryFrom<&Node> for Rc<RefCell<IndentBlock>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<IndentBlock>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<IndentBlock>>> for Node {
 	fn from(node:&Rc<RefCell<IndentBlock>>)-> Self{
 		Node::IndentBlock(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<IndentBlock>>> for Node {
+	fn from(node:Rc<RefCell<IndentBlock>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1618,9 +2283,22 @@ impl TryFrom<&Stmt> for Rc<RefCell<MatchBranch>> {
 	}
 }
 
+impl TryFrom<Stmt> for Rc<RefCell<MatchBranch>> {
+	type Error = Error;
+	fn try_from(node:Stmt)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<MatchBranch>>> for Stmt {
 	fn from(node:&Rc<RefCell<MatchBranch>>)-> Self{
 		Stmt::MatchBranch(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<MatchBranch>>> for Stmt {
+	fn from(node:Rc<RefCell<MatchBranch>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1634,9 +2312,22 @@ impl TryFrom<&Node> for Rc<RefCell<MatchBranch>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<MatchBranch>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<MatchBranch>>> for Node {
 	fn from(node:&Rc<RefCell<MatchBranch>>)-> Self{
 		Node::MatchBranch(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<MatchBranch>>> for Node {
+	fn from(node:Rc<RefCell<MatchBranch>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1656,9 +2347,22 @@ impl TryFrom<&Stmt> for Rc<RefCell<Return>> {
 	}
 }
 
+impl TryFrom<Stmt> for Rc<RefCell<Return>> {
+	type Error = Error;
+	fn try_from(node:Stmt)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Return>>> for Stmt {
 	fn from(node:&Rc<RefCell<Return>>)-> Self{
 		Stmt::Return(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Return>>> for Stmt {
+	fn from(node:Rc<RefCell<Return>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1672,9 +2376,22 @@ impl TryFrom<&Node> for Rc<RefCell<Return>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<Return>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Return>>> for Node {
 	fn from(node:&Rc<RefCell<Return>>)-> Self{
 		Node::Return(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Return>>> for Node {
+	fn from(node:Rc<RefCell<Return>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1693,9 +2410,22 @@ impl TryFrom<&Stmt> for Rc<RefCell<Break>> {
 	}
 }
 
+impl TryFrom<Stmt> for Rc<RefCell<Break>> {
+	type Error = Error;
+	fn try_from(node:Stmt)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Break>>> for Stmt {
 	fn from(node:&Rc<RefCell<Break>>)-> Self{
 		Stmt::Break(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Break>>> for Stmt {
+	fn from(node:Rc<RefCell<Break>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1709,9 +2439,22 @@ impl TryFrom<&Node> for Rc<RefCell<Break>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<Break>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Break>>> for Node {
 	fn from(node:&Rc<RefCell<Break>>)-> Self{
 		Node::Break(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Break>>> for Node {
+	fn from(node:Rc<RefCell<Break>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1730,9 +2473,22 @@ impl TryFrom<&Stmt> for Rc<RefCell<Continue>> {
 	}
 }
 
+impl TryFrom<Stmt> for Rc<RefCell<Continue>> {
+	type Error = Error;
+	fn try_from(node:Stmt)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Continue>>> for Stmt {
 	fn from(node:&Rc<RefCell<Continue>>)-> Self{
 		Stmt::Continue(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Continue>>> for Stmt {
+	fn from(node:Rc<RefCell<Continue>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1746,9 +2502,22 @@ impl TryFrom<&Node> for Rc<RefCell<Continue>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<Continue>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Continue>>> for Node {
 	fn from(node:&Rc<RefCell<Continue>>)-> Self{
 		Node::Continue(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Continue>>> for Node {
+	fn from(node:Rc<RefCell<Continue>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1768,9 +2537,22 @@ impl TryFrom<&Stmt> for Rc<RefCell<Assert>> {
 	}
 }
 
+impl TryFrom<Stmt> for Rc<RefCell<Assert>> {
+	type Error = Error;
+	fn try_from(node:Stmt)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Assert>>> for Stmt {
 	fn from(node:&Rc<RefCell<Assert>>)-> Self{
 		Stmt::Assert(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Assert>>> for Stmt {
+	fn from(node:Rc<RefCell<Assert>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1784,9 +2566,22 @@ impl TryFrom<&Node> for Rc<RefCell<Assert>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<Assert>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Assert>>> for Node {
 	fn from(node:&Rc<RefCell<Assert>>)-> Self{
 		Node::Assert(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Assert>>> for Node {
+	fn from(node:Rc<RefCell<Assert>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1806,9 +2601,22 @@ impl TryFrom<&Stmt> for Rc<RefCell<ImplicitYield>> {
 	}
 }
 
+impl TryFrom<Stmt> for Rc<RefCell<ImplicitYield>> {
+	type Error = Error;
+	fn try_from(node:Stmt)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<ImplicitYield>>> for Stmt {
 	fn from(node:&Rc<RefCell<ImplicitYield>>)-> Self{
 		Stmt::ImplicitYield(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<ImplicitYield>>> for Stmt {
+	fn from(node:Rc<RefCell<ImplicitYield>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1822,9 +2630,22 @@ impl TryFrom<&Node> for Rc<RefCell<ImplicitYield>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<ImplicitYield>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<ImplicitYield>>> for Node {
 	fn from(node:&Rc<RefCell<ImplicitYield>>)-> Self{
 		Node::ImplicitYield(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<ImplicitYield>>> for Node {
+	fn from(node:Rc<RefCell<ImplicitYield>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1849,9 +2670,22 @@ impl TryFrom<&Member> for Rc<RefCell<Field>> {
 	}
 }
 
+impl TryFrom<Member> for Rc<RefCell<Field>> {
+	type Error = Error;
+	fn try_from(node:Member)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Field>>> for Member {
 	fn from(node:&Rc<RefCell<Field>>)-> Self{
 		Member::Field(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Field>>> for Member {
+	fn from(node:Rc<RefCell<Field>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1865,9 +2699,22 @@ impl TryFrom<&Stmt> for Rc<RefCell<Field>> {
 	}
 }
 
+impl TryFrom<Stmt> for Rc<RefCell<Field>> {
+	type Error = Error;
+	fn try_from(node:Stmt)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Field>>> for Stmt {
 	fn from(node:&Rc<RefCell<Field>>)-> Self{
 		Stmt::Field(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Field>>> for Stmt {
+	fn from(node:Rc<RefCell<Field>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1881,9 +2728,22 @@ impl TryFrom<&Node> for Rc<RefCell<Field>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<Field>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Field>>> for Node {
 	fn from(node:&Rc<RefCell<Field>>)-> Self{
 		Node::Field(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Field>>> for Node {
+	fn from(node:Rc<RefCell<Field>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1906,9 +2766,22 @@ impl TryFrom<&Member> for Rc<RefCell<Format>> {
 	}
 }
 
+impl TryFrom<Member> for Rc<RefCell<Format>> {
+	type Error = Error;
+	fn try_from(node:Member)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Format>>> for Member {
 	fn from(node:&Rc<RefCell<Format>>)-> Self{
 		Member::Format(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Format>>> for Member {
+	fn from(node:Rc<RefCell<Format>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1922,9 +2795,22 @@ impl TryFrom<&Stmt> for Rc<RefCell<Format>> {
 	}
 }
 
+impl TryFrom<Stmt> for Rc<RefCell<Format>> {
+	type Error = Error;
+	fn try_from(node:Stmt)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Format>>> for Stmt {
 	fn from(node:&Rc<RefCell<Format>>)-> Self{
 		Stmt::Format(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Format>>> for Stmt {
+	fn from(node:Rc<RefCell<Format>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1938,9 +2824,22 @@ impl TryFrom<&Node> for Rc<RefCell<Format>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<Format>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Format>>> for Node {
 	fn from(node:&Rc<RefCell<Format>>)-> Self{
 		Node::Format(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Format>>> for Node {
+	fn from(node:Rc<RefCell<Format>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1965,9 +2864,22 @@ impl TryFrom<&Member> for Rc<RefCell<Function>> {
 	}
 }
 
+impl TryFrom<Member> for Rc<RefCell<Function>> {
+	type Error = Error;
+	fn try_from(node:Member)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Function>>> for Member {
 	fn from(node:&Rc<RefCell<Function>>)-> Self{
 		Member::Function(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Function>>> for Member {
+	fn from(node:Rc<RefCell<Function>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1981,9 +2893,22 @@ impl TryFrom<&Stmt> for Rc<RefCell<Function>> {
 	}
 }
 
+impl TryFrom<Stmt> for Rc<RefCell<Function>> {
+	type Error = Error;
+	fn try_from(node:Stmt)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Function>>> for Stmt {
 	fn from(node:&Rc<RefCell<Function>>)-> Self{
 		Stmt::Function(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Function>>> for Stmt {
+	fn from(node:Rc<RefCell<Function>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -1997,9 +2922,22 @@ impl TryFrom<&Node> for Rc<RefCell<Function>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<Function>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Function>>> for Node {
 	fn from(node:&Rc<RefCell<Function>>)-> Self{
 		Node::Function(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Function>>> for Node {
+	fn from(node:Rc<RefCell<Function>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -2022,9 +2960,22 @@ impl TryFrom<&Type> for Rc<RefCell<IntType>> {
 	}
 }
 
+impl TryFrom<Type> for Rc<RefCell<IntType>> {
+	type Error = Error;
+	fn try_from(node:Type)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<IntType>>> for Type {
 	fn from(node:&Rc<RefCell<IntType>>)-> Self{
 		Type::IntType(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<IntType>>> for Type {
+	fn from(node:Rc<RefCell<IntType>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -2038,9 +2989,22 @@ impl TryFrom<&Node> for Rc<RefCell<IntType>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<IntType>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<IntType>>> for Node {
 	fn from(node:&Rc<RefCell<IntType>>)-> Self{
 		Node::IntType(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<IntType>>> for Node {
+	fn from(node:Rc<RefCell<IntType>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -2062,9 +3026,22 @@ impl TryFrom<&Type> for Rc<RefCell<IdentType>> {
 	}
 }
 
+impl TryFrom<Type> for Rc<RefCell<IdentType>> {
+	type Error = Error;
+	fn try_from(node:Type)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<IdentType>>> for Type {
 	fn from(node:&Rc<RefCell<IdentType>>)-> Self{
 		Type::IdentType(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<IdentType>>> for Type {
+	fn from(node:Rc<RefCell<IdentType>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -2078,9 +3055,22 @@ impl TryFrom<&Node> for Rc<RefCell<IdentType>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<IdentType>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<IdentType>>> for Node {
 	fn from(node:&Rc<RefCell<IdentType>>)-> Self{
 		Node::IdentType(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<IdentType>>> for Node {
+	fn from(node:Rc<RefCell<IdentType>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -2101,9 +3091,22 @@ impl TryFrom<&Type> for Rc<RefCell<IntLiteralType>> {
 	}
 }
 
+impl TryFrom<Type> for Rc<RefCell<IntLiteralType>> {
+	type Error = Error;
+	fn try_from(node:Type)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<IntLiteralType>>> for Type {
 	fn from(node:&Rc<RefCell<IntLiteralType>>)-> Self{
 		Type::IntLiteralType(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<IntLiteralType>>> for Type {
+	fn from(node:Rc<RefCell<IntLiteralType>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -2117,9 +3120,22 @@ impl TryFrom<&Node> for Rc<RefCell<IntLiteralType>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<IntLiteralType>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<IntLiteralType>>> for Node {
 	fn from(node:&Rc<RefCell<IntLiteralType>>)-> Self{
 		Node::IntLiteralType(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<IntLiteralType>>> for Node {
+	fn from(node:Rc<RefCell<IntLiteralType>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -2140,9 +3156,22 @@ impl TryFrom<&Type> for Rc<RefCell<StrLiteralType>> {
 	}
 }
 
+impl TryFrom<Type> for Rc<RefCell<StrLiteralType>> {
+	type Error = Error;
+	fn try_from(node:Type)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<StrLiteralType>>> for Type {
 	fn from(node:&Rc<RefCell<StrLiteralType>>)-> Self{
 		Type::StrLiteralType(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<StrLiteralType>>> for Type {
+	fn from(node:Rc<RefCell<StrLiteralType>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -2156,9 +3185,22 @@ impl TryFrom<&Node> for Rc<RefCell<StrLiteralType>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<StrLiteralType>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<StrLiteralType>>> for Node {
 	fn from(node:&Rc<RefCell<StrLiteralType>>)-> Self{
 		Node::StrLiteralType(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<StrLiteralType>>> for Node {
+	fn from(node:Rc<RefCell<StrLiteralType>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -2178,9 +3220,22 @@ impl TryFrom<&Type> for Rc<RefCell<VoidType>> {
 	}
 }
 
+impl TryFrom<Type> for Rc<RefCell<VoidType>> {
+	type Error = Error;
+	fn try_from(node:Type)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<VoidType>>> for Type {
 	fn from(node:&Rc<RefCell<VoidType>>)-> Self{
 		Type::VoidType(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<VoidType>>> for Type {
+	fn from(node:Rc<RefCell<VoidType>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -2194,9 +3249,22 @@ impl TryFrom<&Node> for Rc<RefCell<VoidType>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<VoidType>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<VoidType>>> for Node {
 	fn from(node:&Rc<RefCell<VoidType>>)-> Self{
 		Node::VoidType(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<VoidType>>> for Node {
+	fn from(node:Rc<RefCell<VoidType>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -2216,9 +3284,22 @@ impl TryFrom<&Type> for Rc<RefCell<BoolType>> {
 	}
 }
 
+impl TryFrom<Type> for Rc<RefCell<BoolType>> {
+	type Error = Error;
+	fn try_from(node:Type)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<BoolType>>> for Type {
 	fn from(node:&Rc<RefCell<BoolType>>)-> Self{
 		Type::BoolType(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<BoolType>>> for Type {
+	fn from(node:Rc<RefCell<BoolType>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -2232,9 +3313,22 @@ impl TryFrom<&Node> for Rc<RefCell<BoolType>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<BoolType>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<BoolType>>> for Node {
 	fn from(node:&Rc<RefCell<BoolType>>)-> Self{
 		Node::BoolType(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<BoolType>>> for Node {
+	fn from(node:Rc<RefCell<BoolType>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -2257,9 +3351,22 @@ impl TryFrom<&Type> for Rc<RefCell<ArrayType>> {
 	}
 }
 
+impl TryFrom<Type> for Rc<RefCell<ArrayType>> {
+	type Error = Error;
+	fn try_from(node:Type)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<ArrayType>>> for Type {
 	fn from(node:&Rc<RefCell<ArrayType>>)-> Self{
 		Type::ArrayType(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<ArrayType>>> for Type {
+	fn from(node:Rc<RefCell<ArrayType>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -2273,9 +3380,22 @@ impl TryFrom<&Node> for Rc<RefCell<ArrayType>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<ArrayType>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<ArrayType>>> for Node {
 	fn from(node:&Rc<RefCell<ArrayType>>)-> Self{
 		Node::ArrayType(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<ArrayType>>> for Node {
+	fn from(node:Rc<RefCell<ArrayType>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -2297,9 +3417,22 @@ impl TryFrom<&Type> for Rc<RefCell<FunctionType>> {
 	}
 }
 
+impl TryFrom<Type> for Rc<RefCell<FunctionType>> {
+	type Error = Error;
+	fn try_from(node:Type)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<FunctionType>>> for Type {
 	fn from(node:&Rc<RefCell<FunctionType>>)-> Self{
 		Type::FunctionType(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<FunctionType>>> for Type {
+	fn from(node:Rc<RefCell<FunctionType>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -2313,9 +3446,22 @@ impl TryFrom<&Node> for Rc<RefCell<FunctionType>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<FunctionType>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<FunctionType>>> for Node {
 	fn from(node:&Rc<RefCell<FunctionType>>)-> Self{
 		Node::FunctionType(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<FunctionType>>> for Node {
+	fn from(node:Rc<RefCell<FunctionType>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -2336,9 +3482,22 @@ impl TryFrom<&Type> for Rc<RefCell<StructType>> {
 	}
 }
 
+impl TryFrom<Type> for Rc<RefCell<StructType>> {
+	type Error = Error;
+	fn try_from(node:Type)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<StructType>>> for Type {
 	fn from(node:&Rc<RefCell<StructType>>)-> Self{
 		Type::StructType(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<StructType>>> for Type {
+	fn from(node:Rc<RefCell<StructType>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -2352,9 +3511,22 @@ impl TryFrom<&Node> for Rc<RefCell<StructType>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<StructType>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<StructType>>> for Node {
 	fn from(node:&Rc<RefCell<StructType>>)-> Self{
 		Node::StructType(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<StructType>>> for Node {
+	fn from(node:Rc<RefCell<StructType>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -2376,9 +3548,22 @@ impl TryFrom<&Type> for Rc<RefCell<UnionType>> {
 	}
 }
 
+impl TryFrom<Type> for Rc<RefCell<UnionType>> {
+	type Error = Error;
+	fn try_from(node:Type)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<UnionType>>> for Type {
 	fn from(node:&Rc<RefCell<UnionType>>)-> Self{
 		Type::UnionType(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<UnionType>>> for Type {
+	fn from(node:Rc<RefCell<UnionType>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -2392,9 +3577,22 @@ impl TryFrom<&Node> for Rc<RefCell<UnionType>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<UnionType>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<UnionType>>> for Node {
 	fn from(node:&Rc<RefCell<UnionType>>)-> Self{
 		Node::UnionType(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<UnionType>>> for Node {
+	fn from(node:Rc<RefCell<UnionType>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -2416,9 +3614,22 @@ impl TryFrom<&Expr> for Rc<RefCell<Cast>> {
 	}
 }
 
+impl TryFrom<Expr> for Rc<RefCell<Cast>> {
+	type Error = Error;
+	fn try_from(node:Expr)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Cast>>> for Expr {
 	fn from(node:&Rc<RefCell<Cast>>)-> Self{
 		Expr::Cast(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Cast>>> for Expr {
+	fn from(node:Rc<RefCell<Cast>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -2432,9 +3643,22 @@ impl TryFrom<&Node> for Rc<RefCell<Cast>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<Cast>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Cast>>> for Node {
 	fn from(node:&Rc<RefCell<Cast>>)-> Self{
 		Node::Cast(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Cast>>> for Node {
+	fn from(node:Rc<RefCell<Cast>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -2454,9 +3678,22 @@ impl TryFrom<&Node> for Rc<RefCell<Comment>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<Comment>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<Comment>>> for Node {
 	fn from(node:&Rc<RefCell<Comment>>)-> Self{
 		Node::Comment(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Comment>>> for Node {
+	fn from(node:Rc<RefCell<Comment>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -2476,9 +3713,22 @@ impl TryFrom<&Node> for Rc<RefCell<CommentGroup>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<CommentGroup>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<CommentGroup>>> for Node {
 	fn from(node:&Rc<RefCell<CommentGroup>>)-> Self{
 		Node::CommentGroup(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<CommentGroup>>> for Node {
+	fn from(node:Rc<RefCell<CommentGroup>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -2501,9 +3751,22 @@ impl TryFrom<&Member> for Rc<RefCell<UnionField>> {
 	}
 }
 
+impl TryFrom<Member> for Rc<RefCell<UnionField>> {
+	type Error = Error;
+	fn try_from(node:Member)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<UnionField>>> for Member {
 	fn from(node:&Rc<RefCell<UnionField>>)-> Self{
 		Member::UnionField(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<UnionField>>> for Member {
+	fn from(node:Rc<RefCell<UnionField>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -2517,9 +3780,22 @@ impl TryFrom<&Stmt> for Rc<RefCell<UnionField>> {
 	}
 }
 
+impl TryFrom<Stmt> for Rc<RefCell<UnionField>> {
+	type Error = Error;
+	fn try_from(node:Stmt)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<UnionField>>> for Stmt {
 	fn from(node:&Rc<RefCell<UnionField>>)-> Self{
 		Stmt::UnionField(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<UnionField>>> for Stmt {
+	fn from(node:Rc<RefCell<UnionField>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -2533,9 +3809,22 @@ impl TryFrom<&Node> for Rc<RefCell<UnionField>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<UnionField>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<UnionField>>> for Node {
 	fn from(node:&Rc<RefCell<UnionField>>)-> Self{
 		Node::UnionField(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<UnionField>>> for Node {
+	fn from(node:Rc<RefCell<UnionField>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -2556,9 +3845,22 @@ impl TryFrom<&Stmt> for Rc<RefCell<UnionCandidate>> {
 	}
 }
 
+impl TryFrom<Stmt> for Rc<RefCell<UnionCandidate>> {
+	type Error = Error;
+	fn try_from(node:Stmt)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<UnionCandidate>>> for Stmt {
 	fn from(node:&Rc<RefCell<UnionCandidate>>)-> Self{
 		Stmt::UnionCandidate(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<UnionCandidate>>> for Stmt {
+	fn from(node:Rc<RefCell<UnionCandidate>>)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -2572,15 +3874,27 @@ impl TryFrom<&Node> for Rc<RefCell<UnionCandidate>> {
 	}
 }
 
+impl TryFrom<Node> for Rc<RefCell<UnionCandidate>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
 impl From<&Rc<RefCell<UnionCandidate>>> for Node {
 	fn from(node:&Rc<RefCell<UnionCandidate>>)-> Self{
 		Node::UnionCandidate(node.clone())
 	}
 }
 
+impl From<Rc<RefCell<UnionCandidate>>> for Node {
+	fn from(node:Rc<RefCell<UnionCandidate>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 #[derive(Debug,Clone,Copy,Serialize,Deserialize)]
-#[serde(rename_all = "snake_case",untagged)]
-pub enum UnaryOp {
+#[serde(rename_all = "snake_case")]pub enum UnaryOp {
 	Not,
 	MinusSign,
 }
@@ -2597,8 +3911,7 @@ impl TryFrom<&str> for UnaryOp {
 }
 
 #[derive(Debug,Clone,Copy,Serialize,Deserialize)]
-#[serde(rename_all = "snake_case",untagged)]
-pub enum BinaryOp {
+#[serde(rename_all = "snake_case")]pub enum BinaryOp {
 	Mul,
 	Div,
 	Mod,
@@ -2687,8 +4000,7 @@ impl TryFrom<&str> for BinaryOp {
 }
 
 #[derive(Debug,Clone,Copy,Serialize,Deserialize)]
-#[serde(rename_all = "snake_case",untagged)]
-pub enum IdentUsage {
+#[serde(rename_all = "snake_case")]pub enum IdentUsage {
 	Unknown,
 	Reference,
 	DefineVariable,
@@ -2721,8 +4033,7 @@ impl TryFrom<&str> for IdentUsage {
 }
 
 #[derive(Debug,Clone,Copy,Serialize,Deserialize)]
-#[serde(rename_all = "snake_case",untagged)]
-pub enum Endian {
+#[serde(rename_all = "snake_case")]pub enum Endian {
 	Unspec,
 	Big,
 	Little,
@@ -2741,8 +4052,7 @@ impl TryFrom<&str> for Endian {
 }
 
 #[derive(Debug,Clone,Copy,Serialize,Deserialize)]
-#[serde(rename_all = "snake_case",untagged)]
-pub enum TokenTag {
+#[serde(rename_all = "snake_case")]pub enum TokenTag {
 	Indent,
 	Space,
 	Line,
@@ -2824,7 +4134,7 @@ pub struct SrcError {
 
 #[derive(Debug,Clone,Serialize,Deserialize)]
 pub struct RawNode {
-	pub node_type: NodeType,
+	pub node_type: String,
 	pub loc :Loc,
 	pub body: HashMap<String,serde_json::Value>,
 }
@@ -2835,7 +4145,7 @@ pub struct RawScope {
 	pub next :Option<u64>,
 	pub branch :Option<u64>,
 	pub ident :Vec<u64>,
-  pub is_global: bool,
+	pub is_global: bool,
 }
 
 #[derive(Debug,Clone,Serialize,Deserialize)]
@@ -2848,7 +4158,11 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 	let mut nodes = Vec::new();
 	let mut scopes = Vec::new();
 	for raw_node in &ast.node{
-		let node = match raw_node.node_type {
+		let node_type :NodeType = match raw_node.node_type.as_str().try_into() {
+			Ok(v)=>v,
+			Err(_) =>return Err(Error::InvalidRawNodeType(raw_node.node_type.clone())),
+		};
+		let node = match node_type {
 			NodeType::Program => {
 				Node::Program(Rc::new(RefCell::new(Program {
 				loc: raw_node.loc.clone(),
@@ -3214,7 +4528,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				field: None,
 				})))
 			},
-			_=>return Err(Error::UnknownNodeType(raw_node.node_type)),
+			_=>return Err(Error::UnknownNodeType(node_type)),
 		};
 		nodes.push(node);
 	}
@@ -3229,33 +4543,39 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 		scopes.push(scope);
 	}
 	for (i,raw_node) in ast.node.into_iter().enumerate(){
-		match raw_node.node_type {
+		let node_type :NodeType = match raw_node.node_type.as_str().try_into() {
+			Ok(v)=>v,
+			Err(_) =>return Err(Error::InvalidRawNodeType(raw_node.node_type.clone())),
+		};
+		match node_type {
 			NodeType::Program => {
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::Program(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let struct_type_body = match raw_node.body.get("struct_type") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"struct_type")),
+					None=>return Err(Error::MissingField(node_type,"struct_type")),
 				};
-				let struct_type_body = match struct_type_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(struct_type_body.into(),JSONType::Number)),
-				};
-				let struct_type_body = match nodes.get(struct_type_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(struct_type_body as usize)),
-				};
-				let struct_type_body = match struct_type_body {
-					Node::StructType(node)=>node,
-					x =>return Err(Error::MismatchNodeType(x.into(),struct_type_body.into())),
-				};
-				node.borrow_mut().struct_type = Some(struct_type_body.clone());
+ 				if !struct_type_body.is_null() {
+					let struct_type_body = match struct_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(struct_type_body.into(),JSONType::Number)),
+					};
+					let struct_type_body = match nodes.get(struct_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(struct_type_body as usize)),
+					};
+					let struct_type_body = match struct_type_body {
+						Node::StructType(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),struct_type_body.into())),
+					};
+					node.borrow_mut().struct_type = Some(struct_type_body.clone());
+				}
 				let elements_body = match raw_node.body.get("elements") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"elements")),
+					None=>return Err(Error::MissingField(node_type,"elements")),
 				};
 				let elements_body = match elements_body.as_array(){
 					Some(v)=>v,
@@ -3274,40 +4594,44 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				}
 				let global_scope_body = match raw_node.body.get("global_scope") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"global_scope")),
+					None=>return Err(Error::MissingField(node_type,"global_scope")),
 				};
-				let global_scope_body = match global_scope_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(global_scope_body.into(),JSONType::Number)),
-				};
-				let global_scope_body = match scopes.get(global_scope_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(global_scope_body as usize)),
-				};
-				node.borrow_mut().global_scope = Some(global_scope_body.clone());
+ 				if !global_scope_body.is_null() {
+					let global_scope_body = match global_scope_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(global_scope_body.into(),JSONType::Number)),
+					};
+					let global_scope_body = match scopes.get(global_scope_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(global_scope_body as usize)),
+					};
+					node.borrow_mut().global_scope = Some(global_scope_body.clone());
+				}
 			},
 			NodeType::Binary => {
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::Binary(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let expr_type_body = match raw_node.body.get("expr_type") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"expr_type")),
+					None=>return Err(Error::MissingField(node_type,"expr_type")),
 				};
-				let expr_type_body = match expr_type_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
-				};
-				let expr_type_body = match nodes.get(expr_type_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
-				};
-				node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+ 				if !expr_type_body.is_null() {
+					let expr_type_body = match expr_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
+					};
+					let expr_type_body = match nodes.get(expr_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
+					};
+					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+				}
 				let op_body = match raw_node.body.get("op") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"op")),
+					None=>return Err(Error::MissingField(node_type,"op")),
 				};
 				node.borrow_mut().op = match op_body.as_str() {
 					Some(v)=>match BinaryOp::try_from(v) {
@@ -3318,53 +4642,59 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				};
 				let left_body = match raw_node.body.get("left") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"left")),
+					None=>return Err(Error::MissingField(node_type,"left")),
 				};
-				let left_body = match left_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(left_body.into(),JSONType::Number)),
-				};
-				let left_body = match nodes.get(left_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(left_body as usize)),
-				};
-				node.borrow_mut().left = Some(left_body.try_into()?);
+ 				if !left_body.is_null() {
+					let left_body = match left_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(left_body.into(),JSONType::Number)),
+					};
+					let left_body = match nodes.get(left_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(left_body as usize)),
+					};
+					node.borrow_mut().left = Some(left_body.try_into()?);
+				}
 				let right_body = match raw_node.body.get("right") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"right")),
+					None=>return Err(Error::MissingField(node_type,"right")),
 				};
-				let right_body = match right_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(right_body.into(),JSONType::Number)),
-				};
-				let right_body = match nodes.get(right_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(right_body as usize)),
-				};
-				node.borrow_mut().right = Some(right_body.try_into()?);
+ 				if !right_body.is_null() {
+					let right_body = match right_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(right_body.into(),JSONType::Number)),
+					};
+					let right_body = match nodes.get(right_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(right_body as usize)),
+					};
+					node.borrow_mut().right = Some(right_body.try_into()?);
+				}
 			},
 			NodeType::Unary => {
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::Unary(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let expr_type_body = match raw_node.body.get("expr_type") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"expr_type")),
+					None=>return Err(Error::MissingField(node_type,"expr_type")),
 				};
-				let expr_type_body = match expr_type_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
-				};
-				let expr_type_body = match nodes.get(expr_type_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
-				};
-				node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+ 				if !expr_type_body.is_null() {
+					let expr_type_body = match expr_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
+					};
+					let expr_type_body = match nodes.get(expr_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
+					};
+					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+				}
 				let op_body = match raw_node.body.get("op") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"op")),
+					None=>return Err(Error::MissingField(node_type,"op")),
 				};
 				node.borrow_mut().op = match op_body.as_str() {
 					Some(v)=>match UnaryOp::try_from(v) {
@@ -3375,66 +4705,74 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				};
 				let expr_body = match raw_node.body.get("expr") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"expr")),
+					None=>return Err(Error::MissingField(node_type,"expr")),
 				};
-				let expr_body = match expr_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(expr_body.into(),JSONType::Number)),
-				};
-				let expr_body = match nodes.get(expr_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(expr_body as usize)),
-				};
-				node.borrow_mut().expr = Some(expr_body.try_into()?);
+ 				if !expr_body.is_null() {
+					let expr_body = match expr_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(expr_body.into(),JSONType::Number)),
+					};
+					let expr_body = match nodes.get(expr_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(expr_body as usize)),
+					};
+					node.borrow_mut().expr = Some(expr_body.try_into()?);
+				}
 			},
 			NodeType::Cond => {
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::Cond(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let expr_type_body = match raw_node.body.get("expr_type") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"expr_type")),
+					None=>return Err(Error::MissingField(node_type,"expr_type")),
 				};
-				let expr_type_body = match expr_type_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
-				};
-				let expr_type_body = match nodes.get(expr_type_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
-				};
-				node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+ 				if !expr_type_body.is_null() {
+					let expr_type_body = match expr_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
+					};
+					let expr_type_body = match nodes.get(expr_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
+					};
+					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+				}
 				let cond_body = match raw_node.body.get("cond") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"cond")),
+					None=>return Err(Error::MissingField(node_type,"cond")),
 				};
-				let cond_body = match cond_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(cond_body.into(),JSONType::Number)),
-				};
-				let cond_body = match nodes.get(cond_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(cond_body as usize)),
-				};
-				node.borrow_mut().cond = Some(cond_body.try_into()?);
+ 				if !cond_body.is_null() {
+					let cond_body = match cond_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(cond_body.into(),JSONType::Number)),
+					};
+					let cond_body = match nodes.get(cond_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(cond_body as usize)),
+					};
+					node.borrow_mut().cond = Some(cond_body.try_into()?);
+				}
 				let then_body = match raw_node.body.get("then") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"then")),
+					None=>return Err(Error::MissingField(node_type,"then")),
 				};
-				let then_body = match then_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(then_body.into(),JSONType::Number)),
-				};
-				let then_body = match nodes.get(then_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(then_body as usize)),
-				};
-				node.borrow_mut().then = Some(then_body.try_into()?);
+ 				if !then_body.is_null() {
+					let then_body = match then_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(then_body.into(),JSONType::Number)),
+					};
+					let then_body = match nodes.get(then_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(then_body as usize)),
+					};
+					node.borrow_mut().then = Some(then_body.try_into()?);
+				}
 				let els_loc_body = match raw_node.body.get("els_loc") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"els_loc")),
+					None=>return Err(Error::MissingField(node_type,"els_loc")),
 				};
 				node.borrow_mut().els_loc = match serde_json::from_value(els_loc_body.clone()) {
 					Ok(v)=>v,
@@ -3442,40 +4780,44 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				};
 				let els_body = match raw_node.body.get("els") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"els")),
+					None=>return Err(Error::MissingField(node_type,"els")),
 				};
-				let els_body = match els_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(els_body.into(),JSONType::Number)),
-				};
-				let els_body = match nodes.get(els_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(els_body as usize)),
-				};
-				node.borrow_mut().els = Some(els_body.try_into()?);
+ 				if !els_body.is_null() {
+					let els_body = match els_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(els_body.into(),JSONType::Number)),
+					};
+					let els_body = match nodes.get(els_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(els_body as usize)),
+					};
+					node.borrow_mut().els = Some(els_body.try_into()?);
+				}
 			},
 			NodeType::Ident => {
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::Ident(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let expr_type_body = match raw_node.body.get("expr_type") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"expr_type")),
+					None=>return Err(Error::MissingField(node_type,"expr_type")),
 				};
-				let expr_type_body = match expr_type_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
-				};
-				let expr_type_body = match nodes.get(expr_type_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
-				};
-				node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+ 				if !expr_type_body.is_null() {
+					let expr_type_body = match expr_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
+					};
+					let expr_type_body = match nodes.get(expr_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
+					};
+					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+				}
 				let ident_body = match raw_node.body.get("ident") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"ident")),
+					None=>return Err(Error::MissingField(node_type,"ident")),
 				};
 				node.borrow_mut().ident = match ident_body.as_str() {
 					Some(v)=>v.to_string(),
@@ -3483,7 +4825,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				};
 				let usage_body = match raw_node.body.get("usage") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"usage")),
+					None=>return Err(Error::MissingField(node_type,"usage")),
 				};
 				node.borrow_mut().usage = match usage_body.as_str() {
 					Some(v)=>match IdentUsage::try_from(v) {
@@ -3494,79 +4836,89 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				};
 				let base_body = match raw_node.body.get("base") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"base")),
+					None=>return Err(Error::MissingField(node_type,"base")),
 				};
-				let base_body = match base_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(base_body.into(),JSONType::Number)),
-				};
-				let base_body = match nodes.get(base_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(base_body as usize)),
-				};
-				node.borrow_mut().base = Some(base_body.clone());
+ 				if !base_body.is_null() {
+					let base_body = match base_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(base_body.into(),JSONType::Number)),
+					};
+					let base_body = match nodes.get(base_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(base_body as usize)),
+					};
+					node.borrow_mut().base = Some(base_body.clone());
+				}
 				let scope_body = match raw_node.body.get("scope") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"scope")),
+					None=>return Err(Error::MissingField(node_type,"scope")),
 				};
-				let scope_body = match scope_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(scope_body.into(),JSONType::Number)),
-				};
-				let scope_body = match scopes.get(scope_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(scope_body as usize)),
-				};
-				node.borrow_mut().scope = Some(scope_body.clone());
+ 				if !scope_body.is_null() {
+					let scope_body = match scope_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(scope_body.into(),JSONType::Number)),
+					};
+					let scope_body = match scopes.get(scope_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(scope_body as usize)),
+					};
+					node.borrow_mut().scope = Some(scope_body.clone());
+				}
 			},
 			NodeType::Call => {
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::Call(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let expr_type_body = match raw_node.body.get("expr_type") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"expr_type")),
+					None=>return Err(Error::MissingField(node_type,"expr_type")),
 				};
-				let expr_type_body = match expr_type_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
-				};
-				let expr_type_body = match nodes.get(expr_type_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
-				};
-				node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+ 				if !expr_type_body.is_null() {
+					let expr_type_body = match expr_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
+					};
+					let expr_type_body = match nodes.get(expr_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
+					};
+					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+				}
 				let callee_body = match raw_node.body.get("callee") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"callee")),
+					None=>return Err(Error::MissingField(node_type,"callee")),
 				};
-				let callee_body = match callee_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(callee_body.into(),JSONType::Number)),
-				};
-				let callee_body = match nodes.get(callee_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(callee_body as usize)),
-				};
-				node.borrow_mut().callee = Some(callee_body.try_into()?);
+ 				if !callee_body.is_null() {
+					let callee_body = match callee_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(callee_body.into(),JSONType::Number)),
+					};
+					let callee_body = match nodes.get(callee_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(callee_body as usize)),
+					};
+					node.borrow_mut().callee = Some(callee_body.try_into()?);
+				}
 				let raw_arguments_body = match raw_node.body.get("raw_arguments") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"raw_arguments")),
+					None=>return Err(Error::MissingField(node_type,"raw_arguments")),
 				};
-				let raw_arguments_body = match raw_arguments_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(raw_arguments_body.into(),JSONType::Number)),
-				};
-				let raw_arguments_body = match nodes.get(raw_arguments_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(raw_arguments_body as usize)),
-				};
-				node.borrow_mut().raw_arguments = Some(raw_arguments_body.try_into()?);
+ 				if !raw_arguments_body.is_null() {
+					let raw_arguments_body = match raw_arguments_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(raw_arguments_body.into(),JSONType::Number)),
+					};
+					let raw_arguments_body = match nodes.get(raw_arguments_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(raw_arguments_body as usize)),
+					};
+					node.borrow_mut().raw_arguments = Some(raw_arguments_body.try_into()?);
+				}
 				let arguments_body = match raw_node.body.get("arguments") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"arguments")),
+					None=>return Err(Error::MissingField(node_type,"arguments")),
 				};
 				let arguments_body = match arguments_body.as_array(){
 					Some(v)=>v,
@@ -3585,7 +4937,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				}
 				let end_loc_body = match raw_node.body.get("end_loc") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"end_loc")),
+					None=>return Err(Error::MissingField(node_type,"end_loc")),
 				};
 				node.borrow_mut().end_loc = match serde_json::from_value(end_loc_body.clone()) {
 					Ok(v)=>v,
@@ -3596,100 +4948,112 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::If(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let expr_type_body = match raw_node.body.get("expr_type") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"expr_type")),
+					None=>return Err(Error::MissingField(node_type,"expr_type")),
 				};
-				let expr_type_body = match expr_type_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
-				};
-				let expr_type_body = match nodes.get(expr_type_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
-				};
-				node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+ 				if !expr_type_body.is_null() {
+					let expr_type_body = match expr_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
+					};
+					let expr_type_body = match nodes.get(expr_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
+					};
+					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+				}
 				let cond_body = match raw_node.body.get("cond") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"cond")),
+					None=>return Err(Error::MissingField(node_type,"cond")),
 				};
-				let cond_body = match cond_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(cond_body.into(),JSONType::Number)),
-				};
-				let cond_body = match nodes.get(cond_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(cond_body as usize)),
-				};
-				node.borrow_mut().cond = Some(cond_body.try_into()?);
+ 				if !cond_body.is_null() {
+					let cond_body = match cond_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(cond_body.into(),JSONType::Number)),
+					};
+					let cond_body = match nodes.get(cond_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(cond_body as usize)),
+					};
+					node.borrow_mut().cond = Some(cond_body.try_into()?);
+				}
 				let then_body = match raw_node.body.get("then") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"then")),
+					None=>return Err(Error::MissingField(node_type,"then")),
 				};
-				let then_body = match then_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(then_body.into(),JSONType::Number)),
-				};
-				let then_body = match nodes.get(then_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(then_body as usize)),
-				};
-				let then_body = match then_body {
-					Node::IndentBlock(node)=>node,
-					x =>return Err(Error::MismatchNodeType(x.into(),then_body.into())),
-				};
-				node.borrow_mut().then = Some(then_body.clone());
+ 				if !then_body.is_null() {
+					let then_body = match then_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(then_body.into(),JSONType::Number)),
+					};
+					let then_body = match nodes.get(then_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(then_body as usize)),
+					};
+					let then_body = match then_body {
+						Node::IndentBlock(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),then_body.into())),
+					};
+					node.borrow_mut().then = Some(then_body.clone());
+				}
 				let els_body = match raw_node.body.get("els") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"els")),
+					None=>return Err(Error::MissingField(node_type,"els")),
 				};
-				let els_body = match els_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(els_body.into(),JSONType::Number)),
-				};
-				let els_body = match nodes.get(els_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(els_body as usize)),
-				};
-				node.borrow_mut().els = Some(els_body.clone());
+ 				if !els_body.is_null() {
+					let els_body = match els_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(els_body.into(),JSONType::Number)),
+					};
+					let els_body = match nodes.get(els_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(els_body as usize)),
+					};
+					node.borrow_mut().els = Some(els_body.clone());
+				}
 			},
 			NodeType::MemberAccess => {
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::MemberAccess(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let expr_type_body = match raw_node.body.get("expr_type") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"expr_type")),
+					None=>return Err(Error::MissingField(node_type,"expr_type")),
 				};
-				let expr_type_body = match expr_type_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
-				};
-				let expr_type_body = match nodes.get(expr_type_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
-				};
-				node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+ 				if !expr_type_body.is_null() {
+					let expr_type_body = match expr_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
+					};
+					let expr_type_body = match nodes.get(expr_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
+					};
+					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+				}
 				let target_body = match raw_node.body.get("target") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"target")),
+					None=>return Err(Error::MissingField(node_type,"target")),
 				};
-				let target_body = match target_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(target_body.into(),JSONType::Number)),
-				};
-				let target_body = match nodes.get(target_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(target_body as usize)),
-				};
-				node.borrow_mut().target = Some(target_body.try_into()?);
+ 				if !target_body.is_null() {
+					let target_body = match target_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(target_body.into(),JSONType::Number)),
+					};
+					let target_body = match nodes.get(target_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(target_body as usize)),
+					};
+					node.borrow_mut().target = Some(target_body.try_into()?);
+				}
 				let member_body = match raw_node.body.get("member") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"member")),
+					None=>return Err(Error::MissingField(node_type,"member")),
 				};
 				node.borrow_mut().member = match member_body.as_str() {
 					Some(v)=>v.to_string(),
@@ -3697,7 +5061,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				};
 				let member_loc_body = match raw_node.body.get("member_loc") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"member_loc")),
+					None=>return Err(Error::MissingField(node_type,"member_loc")),
 				};
 				node.borrow_mut().member_loc = match serde_json::from_value(member_loc_body.clone()) {
 					Ok(v)=>v,
@@ -3708,37 +5072,41 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::Paren(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let expr_type_body = match raw_node.body.get("expr_type") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"expr_type")),
+					None=>return Err(Error::MissingField(node_type,"expr_type")),
 				};
-				let expr_type_body = match expr_type_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
-				};
-				let expr_type_body = match nodes.get(expr_type_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
-				};
-				node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+ 				if !expr_type_body.is_null() {
+					let expr_type_body = match expr_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
+					};
+					let expr_type_body = match nodes.get(expr_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
+					};
+					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+				}
 				let expr_body = match raw_node.body.get("expr") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"expr")),
+					None=>return Err(Error::MissingField(node_type,"expr")),
 				};
-				let expr_body = match expr_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(expr_body.into(),JSONType::Number)),
-				};
-				let expr_body = match nodes.get(expr_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(expr_body as usize)),
-				};
-				node.borrow_mut().expr = Some(expr_body.try_into()?);
+ 				if !expr_body.is_null() {
+					let expr_body = match expr_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(expr_body.into(),JSONType::Number)),
+					};
+					let expr_body = match nodes.get(expr_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(expr_body as usize)),
+					};
+					node.borrow_mut().expr = Some(expr_body.try_into()?);
+				}
 				let end_loc_body = match raw_node.body.get("end_loc") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"end_loc")),
+					None=>return Err(Error::MissingField(node_type,"end_loc")),
 				};
 				node.borrow_mut().end_loc = match serde_json::from_value(end_loc_body.clone()) {
 					Ok(v)=>v,
@@ -3749,50 +5117,56 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::Index(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let expr_type_body = match raw_node.body.get("expr_type") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"expr_type")),
+					None=>return Err(Error::MissingField(node_type,"expr_type")),
 				};
-				let expr_type_body = match expr_type_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
-				};
-				let expr_type_body = match nodes.get(expr_type_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
-				};
-				node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+ 				if !expr_type_body.is_null() {
+					let expr_type_body = match expr_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
+					};
+					let expr_type_body = match nodes.get(expr_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
+					};
+					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+				}
 				let expr_body = match raw_node.body.get("expr") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"expr")),
+					None=>return Err(Error::MissingField(node_type,"expr")),
 				};
-				let expr_body = match expr_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(expr_body.into(),JSONType::Number)),
-				};
-				let expr_body = match nodes.get(expr_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(expr_body as usize)),
-				};
-				node.borrow_mut().expr = Some(expr_body.try_into()?);
+ 				if !expr_body.is_null() {
+					let expr_body = match expr_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(expr_body.into(),JSONType::Number)),
+					};
+					let expr_body = match nodes.get(expr_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(expr_body as usize)),
+					};
+					node.borrow_mut().expr = Some(expr_body.try_into()?);
+				}
 				let index_body = match raw_node.body.get("index") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"index")),
+					None=>return Err(Error::MissingField(node_type,"index")),
 				};
-				let index_body = match index_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(index_body.into(),JSONType::Number)),
-				};
-				let index_body = match nodes.get(index_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(index_body as usize)),
-				};
-				node.borrow_mut().index = Some(index_body.try_into()?);
+ 				if !index_body.is_null() {
+					let index_body = match index_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(index_body.into(),JSONType::Number)),
+					};
+					let index_body = match nodes.get(index_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(index_body as usize)),
+					};
+					node.borrow_mut().index = Some(index_body.try_into()?);
+				}
 				let end_loc_body = match raw_node.body.get("end_loc") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"end_loc")),
+					None=>return Err(Error::MissingField(node_type,"end_loc")),
 				};
 				node.borrow_mut().end_loc = match serde_json::from_value(end_loc_body.clone()) {
 					Ok(v)=>v,
@@ -3803,37 +5177,41 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::Match(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let expr_type_body = match raw_node.body.get("expr_type") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"expr_type")),
+					None=>return Err(Error::MissingField(node_type,"expr_type")),
 				};
-				let expr_type_body = match expr_type_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
-				};
-				let expr_type_body = match nodes.get(expr_type_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
-				};
-				node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+ 				if !expr_type_body.is_null() {
+					let expr_type_body = match expr_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
+					};
+					let expr_type_body = match nodes.get(expr_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
+					};
+					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+				}
 				let cond_body = match raw_node.body.get("cond") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"cond")),
+					None=>return Err(Error::MissingField(node_type,"cond")),
 				};
-				let cond_body = match cond_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(cond_body.into(),JSONType::Number)),
-				};
-				let cond_body = match nodes.get(cond_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(cond_body as usize)),
-				};
-				node.borrow_mut().cond = Some(cond_body.try_into()?);
+ 				if !cond_body.is_null() {
+					let cond_body = match cond_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(cond_body.into(),JSONType::Number)),
+					};
+					let cond_body = match nodes.get(cond_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(cond_body as usize)),
+					};
+					node.borrow_mut().cond = Some(cond_body.try_into()?);
+				}
 				let branch_body = match raw_node.body.get("branch") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"branch")),
+					None=>return Err(Error::MissingField(node_type,"branch")),
 				};
 				let branch_body = match branch_body.as_array(){
 					Some(v)=>v,
@@ -3855,24 +5233,26 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::Range(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let expr_type_body = match raw_node.body.get("expr_type") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"expr_type")),
+					None=>return Err(Error::MissingField(node_type,"expr_type")),
 				};
-				let expr_type_body = match expr_type_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
-				};
-				let expr_type_body = match nodes.get(expr_type_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
-				};
-				node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+ 				if !expr_type_body.is_null() {
+					let expr_type_body = match expr_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
+					};
+					let expr_type_body = match nodes.get(expr_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
+					};
+					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+				}
 				let op_body = match raw_node.body.get("op") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"op")),
+					None=>return Err(Error::MissingField(node_type,"op")),
 				};
 				node.borrow_mut().op = match op_body.as_str() {
 					Some(v)=>match BinaryOp::try_from(v) {
@@ -3883,53 +5263,59 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				};
 				let start_body = match raw_node.body.get("start") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"start")),
+					None=>return Err(Error::MissingField(node_type,"start")),
 				};
-				let start_body = match start_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(start_body.into(),JSONType::Number)),
-				};
-				let start_body = match nodes.get(start_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(start_body as usize)),
-				};
-				node.borrow_mut().start = Some(start_body.try_into()?);
+ 				if !start_body.is_null() {
+					let start_body = match start_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(start_body.into(),JSONType::Number)),
+					};
+					let start_body = match nodes.get(start_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(start_body as usize)),
+					};
+					node.borrow_mut().start = Some(start_body.try_into()?);
+				}
 				let end_body = match raw_node.body.get("end") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"end")),
+					None=>return Err(Error::MissingField(node_type,"end")),
 				};
-				let end_body = match end_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(end_body.into(),JSONType::Number)),
-				};
-				let end_body = match nodes.get(end_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(end_body as usize)),
-				};
-				node.borrow_mut().end = Some(end_body.try_into()?);
+ 				if !end_body.is_null() {
+					let end_body = match end_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(end_body.into(),JSONType::Number)),
+					};
+					let end_body = match nodes.get(end_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(end_body as usize)),
+					};
+					node.borrow_mut().end = Some(end_body.try_into()?);
+				}
 			},
 			NodeType::TmpVar => {
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::TmpVar(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let expr_type_body = match raw_node.body.get("expr_type") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"expr_type")),
+					None=>return Err(Error::MissingField(node_type,"expr_type")),
 				};
-				let expr_type_body = match expr_type_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
-				};
-				let expr_type_body = match nodes.get(expr_type_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
-				};
-				node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+ 				if !expr_type_body.is_null() {
+					let expr_type_body = match expr_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
+					};
+					let expr_type_body = match nodes.get(expr_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
+					};
+					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+				}
 				let tmp_var_body = match raw_node.body.get("tmp_var") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"tmp_var")),
+					None=>return Err(Error::MissingField(node_type,"tmp_var")),
 				};
 				node.borrow_mut().tmp_var = match tmp_var_body.as_u64() {
 					Some(v)=>v,
@@ -3940,24 +5326,26 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::BlockExpr(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let expr_type_body = match raw_node.body.get("expr_type") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"expr_type")),
+					None=>return Err(Error::MissingField(node_type,"expr_type")),
 				};
-				let expr_type_body = match expr_type_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
-				};
-				let expr_type_body = match nodes.get(expr_type_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
-				};
-				node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+ 				if !expr_type_body.is_null() {
+					let expr_type_body = match expr_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
+					};
+					let expr_type_body = match nodes.get(expr_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
+					};
+					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+				}
 				let calls_body = match raw_node.body.get("calls") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"calls")),
+					None=>return Err(Error::MissingField(node_type,"calls")),
 				};
 				let calls_body = match calls_body.as_array(){
 					Some(v)=>v,
@@ -3976,40 +5364,44 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				}
 				let expr_body = match raw_node.body.get("expr") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"expr")),
+					None=>return Err(Error::MissingField(node_type,"expr")),
 				};
-				let expr_body = match expr_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(expr_body.into(),JSONType::Number)),
-				};
-				let expr_body = match nodes.get(expr_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(expr_body as usize)),
-				};
-				node.borrow_mut().expr = Some(expr_body.try_into()?);
+ 				if !expr_body.is_null() {
+					let expr_body = match expr_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(expr_body.into(),JSONType::Number)),
+					};
+					let expr_body = match nodes.get(expr_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(expr_body as usize)),
+					};
+					node.borrow_mut().expr = Some(expr_body.try_into()?);
+				}
 			},
 			NodeType::Import => {
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::Import(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let expr_type_body = match raw_node.body.get("expr_type") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"expr_type")),
+					None=>return Err(Error::MissingField(node_type,"expr_type")),
 				};
-				let expr_type_body = match expr_type_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
-				};
-				let expr_type_body = match nodes.get(expr_type_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
-				};
-				node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+ 				if !expr_type_body.is_null() {
+					let expr_type_body = match expr_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
+					};
+					let expr_type_body = match nodes.get(expr_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
+					};
+					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+				}
 				let path_body = match raw_node.body.get("path") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"path")),
+					None=>return Err(Error::MissingField(node_type,"path")),
 				};
 				node.borrow_mut().path = match path_body.as_str() {
 					Some(v)=>v.to_string(),
@@ -4017,61 +5409,67 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				};
 				let base_body = match raw_node.body.get("base") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"base")),
+					None=>return Err(Error::MissingField(node_type,"base")),
 				};
-				let base_body = match base_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(base_body.into(),JSONType::Number)),
-				};
-				let base_body = match nodes.get(base_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(base_body as usize)),
-				};
-				let base_body = match base_body {
-					Node::Call(node)=>node,
-					x =>return Err(Error::MismatchNodeType(x.into(),base_body.into())),
-				};
-				node.borrow_mut().base = Some(base_body.clone());
+ 				if !base_body.is_null() {
+					let base_body = match base_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(base_body.into(),JSONType::Number)),
+					};
+					let base_body = match nodes.get(base_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(base_body as usize)),
+					};
+					let base_body = match base_body {
+						Node::Call(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),base_body.into())),
+					};
+					node.borrow_mut().base = Some(base_body.clone());
+				}
 				let import_desc_body = match raw_node.body.get("import_desc") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"import_desc")),
+					None=>return Err(Error::MissingField(node_type,"import_desc")),
 				};
-				let import_desc_body = match import_desc_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(import_desc_body.into(),JSONType::Number)),
-				};
-				let import_desc_body = match nodes.get(import_desc_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(import_desc_body as usize)),
-				};
-				let import_desc_body = match import_desc_body {
-					Node::Program(node)=>node,
-					x =>return Err(Error::MismatchNodeType(x.into(),import_desc_body.into())),
-				};
-				node.borrow_mut().import_desc = Some(import_desc_body.clone());
+ 				if !import_desc_body.is_null() {
+					let import_desc_body = match import_desc_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(import_desc_body.into(),JSONType::Number)),
+					};
+					let import_desc_body = match nodes.get(import_desc_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(import_desc_body as usize)),
+					};
+					let import_desc_body = match import_desc_body {
+						Node::Program(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),import_desc_body.into())),
+					};
+					node.borrow_mut().import_desc = Some(import_desc_body.clone());
+				}
 			},
 			NodeType::IntLiteral => {
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::IntLiteral(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let expr_type_body = match raw_node.body.get("expr_type") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"expr_type")),
+					None=>return Err(Error::MissingField(node_type,"expr_type")),
 				};
-				let expr_type_body = match expr_type_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
-				};
-				let expr_type_body = match nodes.get(expr_type_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
-				};
-				node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+ 				if !expr_type_body.is_null() {
+					let expr_type_body = match expr_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
+					};
+					let expr_type_body = match nodes.get(expr_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
+					};
+					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+				}
 				let value_body = match raw_node.body.get("value") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"value")),
+					None=>return Err(Error::MissingField(node_type,"value")),
 				};
 				node.borrow_mut().value = match value_body.as_str() {
 					Some(v)=>v.to_string(),
@@ -4082,24 +5480,26 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::BoolLiteral(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let expr_type_body = match raw_node.body.get("expr_type") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"expr_type")),
+					None=>return Err(Error::MissingField(node_type,"expr_type")),
 				};
-				let expr_type_body = match expr_type_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
-				};
-				let expr_type_body = match nodes.get(expr_type_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
-				};
-				node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+ 				if !expr_type_body.is_null() {
+					let expr_type_body = match expr_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
+					};
+					let expr_type_body = match nodes.get(expr_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
+					};
+					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+				}
 				let value_body = match raw_node.body.get("value") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"value")),
+					None=>return Err(Error::MissingField(node_type,"value")),
 				};
 				node.borrow_mut().value = match value_body.as_bool() {
 					Some(v)=>v,
@@ -4110,24 +5510,26 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::StrLiteral(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let expr_type_body = match raw_node.body.get("expr_type") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"expr_type")),
+					None=>return Err(Error::MissingField(node_type,"expr_type")),
 				};
-				let expr_type_body = match expr_type_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
-				};
-				let expr_type_body = match nodes.get(expr_type_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
-				};
-				node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+ 				if !expr_type_body.is_null() {
+					let expr_type_body = match expr_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
+					};
+					let expr_type_body = match nodes.get(expr_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
+					};
+					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+				}
 				let value_body = match raw_node.body.get("value") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"value")),
+					None=>return Err(Error::MissingField(node_type,"value")),
 				};
 				node.borrow_mut().value = match value_body.as_str() {
 					Some(v)=>v.to_string(),
@@ -4138,134 +5540,148 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::Input(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let expr_type_body = match raw_node.body.get("expr_type") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"expr_type")),
+					None=>return Err(Error::MissingField(node_type,"expr_type")),
 				};
-				let expr_type_body = match expr_type_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
-				};
-				let expr_type_body = match nodes.get(expr_type_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
-				};
-				node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+ 				if !expr_type_body.is_null() {
+					let expr_type_body = match expr_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
+					};
+					let expr_type_body = match nodes.get(expr_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
+					};
+					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+				}
 			},
 			NodeType::Output => {
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::Output(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let expr_type_body = match raw_node.body.get("expr_type") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"expr_type")),
+					None=>return Err(Error::MissingField(node_type,"expr_type")),
 				};
-				let expr_type_body = match expr_type_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
-				};
-				let expr_type_body = match nodes.get(expr_type_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
-				};
-				node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+ 				if !expr_type_body.is_null() {
+					let expr_type_body = match expr_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
+					};
+					let expr_type_body = match nodes.get(expr_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
+					};
+					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+				}
 			},
 			NodeType::Config => {
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::Config(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let expr_type_body = match raw_node.body.get("expr_type") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"expr_type")),
+					None=>return Err(Error::MissingField(node_type,"expr_type")),
 				};
-				let expr_type_body = match expr_type_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
-				};
-				let expr_type_body = match nodes.get(expr_type_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
-				};
-				node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+ 				if !expr_type_body.is_null() {
+					let expr_type_body = match expr_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
+					};
+					let expr_type_body = match nodes.get(expr_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
+					};
+					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+				}
 			},
 			NodeType::Loop => {
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::Loop(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let init_body = match raw_node.body.get("init") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"init")),
+					None=>return Err(Error::MissingField(node_type,"init")),
 				};
-				let init_body = match init_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(init_body.into(),JSONType::Number)),
-				};
-				let init_body = match nodes.get(init_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(init_body as usize)),
-				};
-				node.borrow_mut().init = Some(init_body.try_into()?);
+ 				if !init_body.is_null() {
+					let init_body = match init_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(init_body.into(),JSONType::Number)),
+					};
+					let init_body = match nodes.get(init_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(init_body as usize)),
+					};
+					node.borrow_mut().init = Some(init_body.try_into()?);
+				}
 				let cond_body = match raw_node.body.get("cond") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"cond")),
+					None=>return Err(Error::MissingField(node_type,"cond")),
 				};
-				let cond_body = match cond_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(cond_body.into(),JSONType::Number)),
-				};
-				let cond_body = match nodes.get(cond_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(cond_body as usize)),
-				};
-				node.borrow_mut().cond = Some(cond_body.try_into()?);
+ 				if !cond_body.is_null() {
+					let cond_body = match cond_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(cond_body.into(),JSONType::Number)),
+					};
+					let cond_body = match nodes.get(cond_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(cond_body as usize)),
+					};
+					node.borrow_mut().cond = Some(cond_body.try_into()?);
+				}
 				let step_body = match raw_node.body.get("step") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"step")),
+					None=>return Err(Error::MissingField(node_type,"step")),
 				};
-				let step_body = match step_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(step_body.into(),JSONType::Number)),
-				};
-				let step_body = match nodes.get(step_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(step_body as usize)),
-				};
-				node.borrow_mut().step = Some(step_body.try_into()?);
+ 				if !step_body.is_null() {
+					let step_body = match step_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(step_body.into(),JSONType::Number)),
+					};
+					let step_body = match nodes.get(step_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(step_body as usize)),
+					};
+					node.borrow_mut().step = Some(step_body.try_into()?);
+				}
 				let body_body = match raw_node.body.get("body") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"body")),
+					None=>return Err(Error::MissingField(node_type,"body")),
 				};
-				let body_body = match body_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(body_body.into(),JSONType::Number)),
-				};
-				let body_body = match nodes.get(body_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(body_body as usize)),
-				};
-				let body_body = match body_body {
-					Node::IndentBlock(node)=>node,
-					x =>return Err(Error::MismatchNodeType(x.into(),body_body.into())),
-				};
-				node.borrow_mut().body = Some(body_body.clone());
+ 				if !body_body.is_null() {
+					let body_body = match body_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(body_body.into(),JSONType::Number)),
+					};
+					let body_body = match nodes.get(body_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(body_body as usize)),
+					};
+					let body_body = match body_body {
+						Node::IndentBlock(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),body_body.into())),
+					};
+					node.borrow_mut().body = Some(body_body.clone());
+				}
 			},
 			NodeType::IndentBlock => {
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::IndentBlock(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let elements_body = match raw_node.body.get("elements") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"elements")),
+					None=>return Err(Error::MissingField(node_type,"elements")),
 				};
 				let elements_body = match elements_body.as_array(){
 					Some(v)=>v,
@@ -4284,57 +5700,63 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				}
 				let scope_body = match raw_node.body.get("scope") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"scope")),
+					None=>return Err(Error::MissingField(node_type,"scope")),
 				};
-				let scope_body = match scope_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(scope_body.into(),JSONType::Number)),
-				};
-				let scope_body = match scopes.get(scope_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(scope_body as usize)),
-				};
-				node.borrow_mut().scope = Some(scope_body.clone());
+ 				if !scope_body.is_null() {
+					let scope_body = match scope_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(scope_body.into(),JSONType::Number)),
+					};
+					let scope_body = match scopes.get(scope_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(scope_body as usize)),
+					};
+					node.borrow_mut().scope = Some(scope_body.clone());
+				}
 				let struct_type_body = match raw_node.body.get("struct_type") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"struct_type")),
+					None=>return Err(Error::MissingField(node_type,"struct_type")),
 				};
-				let struct_type_body = match struct_type_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(struct_type_body.into(),JSONType::Number)),
-				};
-				let struct_type_body = match nodes.get(struct_type_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(struct_type_body as usize)),
-				};
-				let struct_type_body = match struct_type_body {
-					Node::StructType(node)=>node,
-					x =>return Err(Error::MismatchNodeType(x.into(),struct_type_body.into())),
-				};
-				node.borrow_mut().struct_type = Some(struct_type_body.clone());
+ 				if !struct_type_body.is_null() {
+					let struct_type_body = match struct_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(struct_type_body.into(),JSONType::Number)),
+					};
+					let struct_type_body = match nodes.get(struct_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(struct_type_body as usize)),
+					};
+					let struct_type_body = match struct_type_body {
+						Node::StructType(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),struct_type_body.into())),
+					};
+					node.borrow_mut().struct_type = Some(struct_type_body.clone());
+				}
 			},
 			NodeType::MatchBranch => {
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::MatchBranch(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let cond_body = match raw_node.body.get("cond") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"cond")),
+					None=>return Err(Error::MissingField(node_type,"cond")),
 				};
-				let cond_body = match cond_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(cond_body.into(),JSONType::Number)),
-				};
-				let cond_body = match nodes.get(cond_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(cond_body as usize)),
-				};
-				node.borrow_mut().cond = Some(cond_body.try_into()?);
+ 				if !cond_body.is_null() {
+					let cond_body = match cond_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(cond_body.into(),JSONType::Number)),
+					};
+					let cond_body = match nodes.get(cond_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(cond_body as usize)),
+					};
+					node.borrow_mut().cond = Some(cond_body.try_into()?);
+				}
 				let sym_loc_body = match raw_node.body.get("sym_loc") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"sym_loc")),
+					None=>return Err(Error::MissingField(node_type,"sym_loc")),
 				};
 				node.borrow_mut().sym_loc = match serde_json::from_value(sym_loc_body.clone()) {
 					Ok(v)=>v,
@@ -4342,135 +5764,147 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				};
 				let then_body = match raw_node.body.get("then") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"then")),
+					None=>return Err(Error::MissingField(node_type,"then")),
 				};
-				let then_body = match then_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(then_body.into(),JSONType::Number)),
-				};
-				let then_body = match nodes.get(then_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(then_body as usize)),
-				};
-				node.borrow_mut().then = Some(then_body.clone());
+ 				if !then_body.is_null() {
+					let then_body = match then_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(then_body.into(),JSONType::Number)),
+					};
+					let then_body = match nodes.get(then_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(then_body as usize)),
+					};
+					node.borrow_mut().then = Some(then_body.clone());
+				}
 			},
 			NodeType::Return => {
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::Return(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let expr_body = match raw_node.body.get("expr") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"expr")),
+					None=>return Err(Error::MissingField(node_type,"expr")),
 				};
-				let expr_body = match expr_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(expr_body.into(),JSONType::Number)),
-				};
-				let expr_body = match nodes.get(expr_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(expr_body as usize)),
-				};
-				node.borrow_mut().expr = Some(expr_body.try_into()?);
+ 				if !expr_body.is_null() {
+					let expr_body = match expr_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(expr_body.into(),JSONType::Number)),
+					};
+					let expr_body = match nodes.get(expr_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(expr_body as usize)),
+					};
+					node.borrow_mut().expr = Some(expr_body.try_into()?);
+				}
 			},
 			NodeType::Break => {
 				let node = nodes[i].clone();
 				let _ = match node {
 					Node::Break(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 			},
 			NodeType::Continue => {
 				let node = nodes[i].clone();
 				let _ = match node {
 					Node::Continue(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 			},
 			NodeType::Assert => {
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::Assert(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let cond_body = match raw_node.body.get("cond") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"cond")),
+					None=>return Err(Error::MissingField(node_type,"cond")),
 				};
-				let cond_body = match cond_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(cond_body.into(),JSONType::Number)),
-				};
-				let cond_body = match nodes.get(cond_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(cond_body as usize)),
-				};
-				let cond_body = match cond_body {
-					Node::Binary(node)=>node,
-					x =>return Err(Error::MismatchNodeType(x.into(),cond_body.into())),
-				};
-				node.borrow_mut().cond = Some(cond_body.clone());
+ 				if !cond_body.is_null() {
+					let cond_body = match cond_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(cond_body.into(),JSONType::Number)),
+					};
+					let cond_body = match nodes.get(cond_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(cond_body as usize)),
+					};
+					let cond_body = match cond_body {
+						Node::Binary(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),cond_body.into())),
+					};
+					node.borrow_mut().cond = Some(cond_body.clone());
+				}
 			},
 			NodeType::ImplicitYield => {
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::ImplicitYield(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let expr_body = match raw_node.body.get("expr") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"expr")),
+					None=>return Err(Error::MissingField(node_type,"expr")),
 				};
-				let expr_body = match expr_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(expr_body.into(),JSONType::Number)),
-				};
-				let expr_body = match nodes.get(expr_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(expr_body as usize)),
-				};
-				node.borrow_mut().expr = Some(expr_body.try_into()?);
+ 				if !expr_body.is_null() {
+					let expr_body = match expr_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(expr_body.into(),JSONType::Number)),
+					};
+					let expr_body = match nodes.get(expr_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(expr_body as usize)),
+					};
+					node.borrow_mut().expr = Some(expr_body.try_into()?);
+				}
 			},
 			NodeType::Field => {
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::Field(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let belong_body = match raw_node.body.get("belong") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"belong")),
+					None=>return Err(Error::MissingField(node_type,"belong")),
 				};
-				let belong_body = match belong_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(belong_body.into(),JSONType::Number)),
-				};
-				let belong_body = match nodes.get(belong_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(belong_body as usize)),
-				};
-				node.borrow_mut().belong = Some(belong_body.try_into()?);
+ 				if !belong_body.is_null() {
+					let belong_body = match belong_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(belong_body.into(),JSONType::Number)),
+					};
+					let belong_body = match nodes.get(belong_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(belong_body as usize)),
+					};
+					node.borrow_mut().belong = Some(belong_body.try_into()?);
+				}
 				let ident_body = match raw_node.body.get("ident") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"ident")),
+					None=>return Err(Error::MissingField(node_type,"ident")),
 				};
-				let ident_body = match ident_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(ident_body.into(),JSONType::Number)),
-				};
-				let ident_body = match nodes.get(ident_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(ident_body as usize)),
-				};
-				let ident_body = match ident_body {
-					Node::Ident(node)=>node,
-					x =>return Err(Error::MismatchNodeType(x.into(),ident_body.into())),
-				};
-				node.borrow_mut().ident = Some(ident_body.clone());
+ 				if !ident_body.is_null() {
+					let ident_body = match ident_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(ident_body.into(),JSONType::Number)),
+					};
+					let ident_body = match nodes.get(ident_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(ident_body as usize)),
+					};
+					let ident_body = match ident_body {
+						Node::Ident(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),ident_body.into())),
+					};
+					node.borrow_mut().ident = Some(ident_body.clone());
+				}
 				let colon_loc_body = match raw_node.body.get("colon_loc") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"colon_loc")),
+					None=>return Err(Error::MissingField(node_type,"colon_loc")),
 				};
 				node.borrow_mut().colon_loc = match serde_json::from_value(colon_loc_body.clone()) {
 					Ok(v)=>v,
@@ -4478,33 +5912,37 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				};
 				let field_type_body = match raw_node.body.get("field_type") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"field_type")),
+					None=>return Err(Error::MissingField(node_type,"field_type")),
 				};
-				let field_type_body = match field_type_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(field_type_body.into(),JSONType::Number)),
-				};
-				let field_type_body = match nodes.get(field_type_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(field_type_body as usize)),
-				};
-				node.borrow_mut().field_type = Some(field_type_body.try_into()?);
+ 				if !field_type_body.is_null() {
+					let field_type_body = match field_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(field_type_body.into(),JSONType::Number)),
+					};
+					let field_type_body = match nodes.get(field_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(field_type_body as usize)),
+					};
+					node.borrow_mut().field_type = Some(field_type_body.try_into()?);
+				}
 				let raw_arguments_body = match raw_node.body.get("raw_arguments") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"raw_arguments")),
+					None=>return Err(Error::MissingField(node_type,"raw_arguments")),
 				};
-				let raw_arguments_body = match raw_arguments_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(raw_arguments_body.into(),JSONType::Number)),
-				};
-				let raw_arguments_body = match nodes.get(raw_arguments_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(raw_arguments_body as usize)),
-				};
-				node.borrow_mut().raw_arguments = Some(raw_arguments_body.try_into()?);
+ 				if !raw_arguments_body.is_null() {
+					let raw_arguments_body = match raw_arguments_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(raw_arguments_body.into(),JSONType::Number)),
+					};
+					let raw_arguments_body = match nodes.get(raw_arguments_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(raw_arguments_body as usize)),
+					};
+					node.borrow_mut().raw_arguments = Some(raw_arguments_body.try_into()?);
+				}
 				let arguments_body = match raw_node.body.get("arguments") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"arguments")),
+					None=>return Err(Error::MissingField(node_type,"arguments")),
 				};
 				let arguments_body = match arguments_body.as_array(){
 					Some(v)=>v,
@@ -4526,41 +5964,45 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::Format(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let belong_body = match raw_node.body.get("belong") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"belong")),
+					None=>return Err(Error::MissingField(node_type,"belong")),
 				};
-				let belong_body = match belong_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(belong_body.into(),JSONType::Number)),
-				};
-				let belong_body = match nodes.get(belong_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(belong_body as usize)),
-				};
-				node.borrow_mut().belong = Some(belong_body.try_into()?);
+ 				if !belong_body.is_null() {
+					let belong_body = match belong_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(belong_body.into(),JSONType::Number)),
+					};
+					let belong_body = match nodes.get(belong_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(belong_body as usize)),
+					};
+					node.borrow_mut().belong = Some(belong_body.try_into()?);
+				}
 				let ident_body = match raw_node.body.get("ident") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"ident")),
+					None=>return Err(Error::MissingField(node_type,"ident")),
 				};
-				let ident_body = match ident_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(ident_body.into(),JSONType::Number)),
-				};
-				let ident_body = match nodes.get(ident_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(ident_body as usize)),
-				};
-				let ident_body = match ident_body {
-					Node::Ident(node)=>node,
-					x =>return Err(Error::MismatchNodeType(x.into(),ident_body.into())),
-				};
-				node.borrow_mut().ident = Some(ident_body.clone());
+ 				if !ident_body.is_null() {
+					let ident_body = match ident_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(ident_body.into(),JSONType::Number)),
+					};
+					let ident_body = match nodes.get(ident_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(ident_body as usize)),
+					};
+					let ident_body = match ident_body {
+						Node::Ident(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),ident_body.into())),
+					};
+					node.borrow_mut().ident = Some(ident_body.clone());
+				}
 				let is_enum_body = match raw_node.body.get("is_enum") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"is_enum")),
+					None=>return Err(Error::MissingField(node_type,"is_enum")),
 				};
 				node.borrow_mut().is_enum = match is_enum_body.as_bool() {
 					Some(v)=>v,
@@ -4568,61 +6010,67 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				};
 				let body_body = match raw_node.body.get("body") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"body")),
+					None=>return Err(Error::MissingField(node_type,"body")),
 				};
-				let body_body = match body_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(body_body.into(),JSONType::Number)),
-				};
-				let body_body = match nodes.get(body_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(body_body as usize)),
-				};
-				let body_body = match body_body {
-					Node::IndentBlock(node)=>node,
-					x =>return Err(Error::MismatchNodeType(x.into(),body_body.into())),
-				};
-				node.borrow_mut().body = Some(body_body.clone());
+ 				if !body_body.is_null() {
+					let body_body = match body_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(body_body.into(),JSONType::Number)),
+					};
+					let body_body = match nodes.get(body_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(body_body as usize)),
+					};
+					let body_body = match body_body {
+						Node::IndentBlock(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),body_body.into())),
+					};
+					node.borrow_mut().body = Some(body_body.clone());
+				}
 			},
 			NodeType::Function => {
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::Function(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let belong_body = match raw_node.body.get("belong") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"belong")),
+					None=>return Err(Error::MissingField(node_type,"belong")),
 				};
-				let belong_body = match belong_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(belong_body.into(),JSONType::Number)),
-				};
-				let belong_body = match nodes.get(belong_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(belong_body as usize)),
-				};
-				node.borrow_mut().belong = Some(belong_body.try_into()?);
+ 				if !belong_body.is_null() {
+					let belong_body = match belong_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(belong_body.into(),JSONType::Number)),
+					};
+					let belong_body = match nodes.get(belong_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(belong_body as usize)),
+					};
+					node.borrow_mut().belong = Some(belong_body.try_into()?);
+				}
 				let ident_body = match raw_node.body.get("ident") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"ident")),
+					None=>return Err(Error::MissingField(node_type,"ident")),
 				};
-				let ident_body = match ident_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(ident_body.into(),JSONType::Number)),
-				};
-				let ident_body = match nodes.get(ident_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(ident_body as usize)),
-				};
-				let ident_body = match ident_body {
-					Node::Ident(node)=>node,
-					x =>return Err(Error::MismatchNodeType(x.into(),ident_body.into())),
-				};
-				node.borrow_mut().ident = Some(ident_body.clone());
+ 				if !ident_body.is_null() {
+					let ident_body = match ident_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(ident_body.into(),JSONType::Number)),
+					};
+					let ident_body = match nodes.get(ident_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(ident_body as usize)),
+					};
+					let ident_body = match ident_body {
+						Node::Ident(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),ident_body.into())),
+					};
+					node.borrow_mut().ident = Some(ident_body.clone());
+				}
 				let parameters_body = match raw_node.body.get("parameters") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"parameters")),
+					None=>return Err(Error::MissingField(node_type,"parameters")),
 				};
 				let parameters_body = match parameters_body.as_array(){
 					Some(v)=>v,
@@ -4645,61 +6093,67 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				}
 				let return_type_body = match raw_node.body.get("return_type") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"return_type")),
+					None=>return Err(Error::MissingField(node_type,"return_type")),
 				};
-				let return_type_body = match return_type_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(return_type_body.into(),JSONType::Number)),
-				};
-				let return_type_body = match nodes.get(return_type_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(return_type_body as usize)),
-				};
-				node.borrow_mut().return_type = Some(return_type_body.try_into()?);
+ 				if !return_type_body.is_null() {
+					let return_type_body = match return_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(return_type_body.into(),JSONType::Number)),
+					};
+					let return_type_body = match nodes.get(return_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(return_type_body as usize)),
+					};
+					node.borrow_mut().return_type = Some(return_type_body.try_into()?);
+				}
 				let body_body = match raw_node.body.get("body") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"body")),
+					None=>return Err(Error::MissingField(node_type,"body")),
 				};
-				let body_body = match body_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(body_body.into(),JSONType::Number)),
-				};
-				let body_body = match nodes.get(body_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(body_body as usize)),
-				};
-				let body_body = match body_body {
-					Node::IndentBlock(node)=>node,
-					x =>return Err(Error::MismatchNodeType(x.into(),body_body.into())),
-				};
-				node.borrow_mut().body = Some(body_body.clone());
+ 				if !body_body.is_null() {
+					let body_body = match body_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(body_body.into(),JSONType::Number)),
+					};
+					let body_body = match nodes.get(body_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(body_body as usize)),
+					};
+					let body_body = match body_body {
+						Node::IndentBlock(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),body_body.into())),
+					};
+					node.borrow_mut().body = Some(body_body.clone());
+				}
 				let func_type_body = match raw_node.body.get("func_type") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"func_type")),
+					None=>return Err(Error::MissingField(node_type,"func_type")),
 				};
-				let func_type_body = match func_type_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(func_type_body.into(),JSONType::Number)),
-				};
-				let func_type_body = match nodes.get(func_type_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(func_type_body as usize)),
-				};
-				let func_type_body = match func_type_body {
-					Node::FunctionType(node)=>node,
-					x =>return Err(Error::MismatchNodeType(x.into(),func_type_body.into())),
-				};
-				node.borrow_mut().func_type = Some(func_type_body.clone());
+ 				if !func_type_body.is_null() {
+					let func_type_body = match func_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(func_type_body.into(),JSONType::Number)),
+					};
+					let func_type_body = match nodes.get(func_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(func_type_body as usize)),
+					};
+					let func_type_body = match func_type_body {
+						Node::FunctionType(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),func_type_body.into())),
+					};
+					node.borrow_mut().func_type = Some(func_type_body.clone());
+				}
 			},
 			NodeType::IntType => {
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::IntType(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let is_explicit_body = match raw_node.body.get("is_explicit") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"is_explicit")),
+					None=>return Err(Error::MissingField(node_type,"is_explicit")),
 				};
 				node.borrow_mut().is_explicit = match is_explicit_body.as_bool() {
 					Some(v)=>v,
@@ -4707,7 +6161,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				};
 				let bit_size_body = match raw_node.body.get("bit_size") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"bit_size")),
+					None=>return Err(Error::MissingField(node_type,"bit_size")),
 				};
 				node.borrow_mut().bit_size = match bit_size_body.as_u64() {
 					Some(v)=>v,
@@ -4715,7 +6169,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				};
 				let endian_body = match raw_node.body.get("endian") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"endian")),
+					None=>return Err(Error::MissingField(node_type,"endian")),
 				};
 				node.borrow_mut().endian = match endian_body.as_str() {
 					Some(v)=>match Endian::try_from(v) {
@@ -4726,7 +6180,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				};
 				let is_signed_body = match raw_node.body.get("is_signed") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"is_signed")),
+					None=>return Err(Error::MissingField(node_type,"is_signed")),
 				};
 				node.borrow_mut().is_signed = match is_signed_body.as_bool() {
 					Some(v)=>v,
@@ -4737,11 +6191,11 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::IdentType(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let is_explicit_body = match raw_node.body.get("is_explicit") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"is_explicit")),
+					None=>return Err(Error::MissingField(node_type,"is_explicit")),
 				};
 				node.borrow_mut().is_explicit = match is_explicit_body.as_bool() {
 					Some(v)=>v,
@@ -4749,48 +6203,52 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				};
 				let ident_body = match raw_node.body.get("ident") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"ident")),
+					None=>return Err(Error::MissingField(node_type,"ident")),
 				};
-				let ident_body = match ident_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(ident_body.into(),JSONType::Number)),
-				};
-				let ident_body = match nodes.get(ident_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(ident_body as usize)),
-				};
-				let ident_body = match ident_body {
-					Node::Ident(node)=>node,
-					x =>return Err(Error::MismatchNodeType(x.into(),ident_body.into())),
-				};
-				node.borrow_mut().ident = Some(ident_body.clone());
+ 				if !ident_body.is_null() {
+					let ident_body = match ident_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(ident_body.into(),JSONType::Number)),
+					};
+					let ident_body = match nodes.get(ident_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(ident_body as usize)),
+					};
+					let ident_body = match ident_body {
+						Node::Ident(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),ident_body.into())),
+					};
+					node.borrow_mut().ident = Some(ident_body.clone());
+				}
 				let base_body = match raw_node.body.get("base") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"base")),
+					None=>return Err(Error::MissingField(node_type,"base")),
 				};
-				let base_body = match base_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(base_body.into(),JSONType::Number)),
-				};
-				let base_body = match nodes.get(base_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(base_body as usize)),
-				};
-				let base_body = match base_body {
-					Node::Format(node)=>node,
-					x =>return Err(Error::MismatchNodeType(x.into(),base_body.into())),
-				};
-				node.borrow_mut().base = Some(Rc::downgrade(&base_body));
+ 				if !base_body.is_null() {
+					let base_body = match base_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(base_body.into(),JSONType::Number)),
+					};
+					let base_body = match nodes.get(base_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(base_body as usize)),
+					};
+					let base_body = match base_body {
+						Node::Format(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),base_body.into())),
+					};
+					node.borrow_mut().base = Some(Rc::downgrade(&base_body));
+				}
 			},
 			NodeType::IntLiteralType => {
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::IntLiteralType(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let is_explicit_body = match raw_node.body.get("is_explicit") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"is_explicit")),
+					None=>return Err(Error::MissingField(node_type,"is_explicit")),
 				};
 				node.borrow_mut().is_explicit = match is_explicit_body.as_bool() {
 					Some(v)=>v,
@@ -4798,31 +6256,33 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				};
 				let base_body = match raw_node.body.get("base") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"base")),
+					None=>return Err(Error::MissingField(node_type,"base")),
 				};
-				let base_body = match base_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(base_body.into(),JSONType::Number)),
-				};
-				let base_body = match nodes.get(base_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(base_body as usize)),
-				};
-				let base_body = match base_body {
-					Node::IntLiteral(node)=>node,
-					x =>return Err(Error::MismatchNodeType(x.into(),base_body.into())),
-				};
-				node.borrow_mut().base = Some(Rc::downgrade(&base_body));
+ 				if !base_body.is_null() {
+					let base_body = match base_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(base_body.into(),JSONType::Number)),
+					};
+					let base_body = match nodes.get(base_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(base_body as usize)),
+					};
+					let base_body = match base_body {
+						Node::IntLiteral(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),base_body.into())),
+					};
+					node.borrow_mut().base = Some(Rc::downgrade(&base_body));
+				}
 			},
 			NodeType::StrLiteralType => {
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::StrLiteralType(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let is_explicit_body = match raw_node.body.get("is_explicit") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"is_explicit")),
+					None=>return Err(Error::MissingField(node_type,"is_explicit")),
 				};
 				node.borrow_mut().is_explicit = match is_explicit_body.as_bool() {
 					Some(v)=>v,
@@ -4830,31 +6290,33 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				};
 				let base_body = match raw_node.body.get("base") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"base")),
+					None=>return Err(Error::MissingField(node_type,"base")),
 				};
-				let base_body = match base_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(base_body.into(),JSONType::Number)),
-				};
-				let base_body = match nodes.get(base_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(base_body as usize)),
-				};
-				let base_body = match base_body {
-					Node::StrLiteral(node)=>node,
-					x =>return Err(Error::MismatchNodeType(x.into(),base_body.into())),
-				};
-				node.borrow_mut().base = Some(Rc::downgrade(&base_body));
+ 				if !base_body.is_null() {
+					let base_body = match base_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(base_body.into(),JSONType::Number)),
+					};
+					let base_body = match nodes.get(base_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(base_body as usize)),
+					};
+					let base_body = match base_body {
+						Node::StrLiteral(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),base_body.into())),
+					};
+					node.borrow_mut().base = Some(Rc::downgrade(&base_body));
+				}
 			},
 			NodeType::VoidType => {
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::VoidType(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let is_explicit_body = match raw_node.body.get("is_explicit") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"is_explicit")),
+					None=>return Err(Error::MissingField(node_type,"is_explicit")),
 				};
 				node.borrow_mut().is_explicit = match is_explicit_body.as_bool() {
 					Some(v)=>v,
@@ -4865,11 +6327,11 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::BoolType(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let is_explicit_body = match raw_node.body.get("is_explicit") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"is_explicit")),
+					None=>return Err(Error::MissingField(node_type,"is_explicit")),
 				};
 				node.borrow_mut().is_explicit = match is_explicit_body.as_bool() {
 					Some(v)=>v,
@@ -4880,11 +6342,11 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::ArrayType(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let is_explicit_body = match raw_node.body.get("is_explicit") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"is_explicit")),
+					None=>return Err(Error::MissingField(node_type,"is_explicit")),
 				};
 				node.borrow_mut().is_explicit = match is_explicit_body.as_bool() {
 					Some(v)=>v,
@@ -4892,7 +6354,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				};
 				let end_loc_body = match raw_node.body.get("end_loc") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"end_loc")),
+					None=>return Err(Error::MissingField(node_type,"end_loc")),
 				};
 				node.borrow_mut().end_loc = match serde_json::from_value(end_loc_body.clone()) {
 					Ok(v)=>v,
@@ -4900,40 +6362,44 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				};
 				let base_type_body = match raw_node.body.get("base_type") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"base_type")),
+					None=>return Err(Error::MissingField(node_type,"base_type")),
 				};
-				let base_type_body = match base_type_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(base_type_body.into(),JSONType::Number)),
-				};
-				let base_type_body = match nodes.get(base_type_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(base_type_body as usize)),
-				};
-				node.borrow_mut().base_type = Some(base_type_body.try_into()?);
+ 				if !base_type_body.is_null() {
+					let base_type_body = match base_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(base_type_body.into(),JSONType::Number)),
+					};
+					let base_type_body = match nodes.get(base_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(base_type_body as usize)),
+					};
+					node.borrow_mut().base_type = Some(base_type_body.try_into()?);
+				}
 				let length_body = match raw_node.body.get("length") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"length")),
+					None=>return Err(Error::MissingField(node_type,"length")),
 				};
-				let length_body = match length_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(length_body.into(),JSONType::Number)),
-				};
-				let length_body = match nodes.get(length_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(length_body as usize)),
-				};
-				node.borrow_mut().length = Some(length_body.try_into()?);
+ 				if !length_body.is_null() {
+					let length_body = match length_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(length_body.into(),JSONType::Number)),
+					};
+					let length_body = match nodes.get(length_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(length_body as usize)),
+					};
+					node.borrow_mut().length = Some(length_body.try_into()?);
+				}
 			},
 			NodeType::FunctionType => {
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::FunctionType(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let is_explicit_body = match raw_node.body.get("is_explicit") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"is_explicit")),
+					None=>return Err(Error::MissingField(node_type,"is_explicit")),
 				};
 				node.borrow_mut().is_explicit = match is_explicit_body.as_bool() {
 					Some(v)=>v,
@@ -4941,20 +6407,22 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				};
 				let return_type_body = match raw_node.body.get("return_type") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"return_type")),
+					None=>return Err(Error::MissingField(node_type,"return_type")),
 				};
-				let return_type_body = match return_type_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(return_type_body.into(),JSONType::Number)),
-				};
-				let return_type_body = match nodes.get(return_type_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(return_type_body as usize)),
-				};
-				node.borrow_mut().return_type = Some(return_type_body.try_into()?);
+ 				if !return_type_body.is_null() {
+					let return_type_body = match return_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(return_type_body.into(),JSONType::Number)),
+					};
+					let return_type_body = match nodes.get(return_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(return_type_body as usize)),
+					};
+					node.borrow_mut().return_type = Some(return_type_body.try_into()?);
+				}
 				let parameters_body = match raw_node.body.get("parameters") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"parameters")),
+					None=>return Err(Error::MissingField(node_type,"parameters")),
 				};
 				let parameters_body = match parameters_body.as_array(){
 					Some(v)=>v,
@@ -4976,11 +6444,11 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::StructType(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let is_explicit_body = match raw_node.body.get("is_explicit") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"is_explicit")),
+					None=>return Err(Error::MissingField(node_type,"is_explicit")),
 				};
 				node.borrow_mut().is_explicit = match is_explicit_body.as_bool() {
 					Some(v)=>v,
@@ -4988,7 +6456,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				};
 				let fields_body = match raw_node.body.get("fields") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"fields")),
+					None=>return Err(Error::MissingField(node_type,"fields")),
 				};
 				let fields_body = match fields_body.as_array(){
 					Some(v)=>v,
@@ -5010,11 +6478,11 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::UnionType(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let is_explicit_body = match raw_node.body.get("is_explicit") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"is_explicit")),
+					None=>return Err(Error::MissingField(node_type,"is_explicit")),
 				};
 				node.borrow_mut().is_explicit = match is_explicit_body.as_bool() {
 					Some(v)=>v,
@@ -5022,7 +6490,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				};
 				let fields_body = match raw_node.body.get("fields") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"fields")),
+					None=>return Err(Error::MissingField(node_type,"fields")),
 				};
 				let fields_body = match fields_body.as_array(){
 					Some(v)=>v,
@@ -5045,77 +6513,85 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				}
 				let base_body = match raw_node.body.get("base") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"base")),
+					None=>return Err(Error::MissingField(node_type,"base")),
 				};
-				let base_body = match base_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(base_body.into(),JSONType::Number)),
-				};
-				let base_body = match nodes.get(base_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(base_body as usize)),
-				};
-				node.borrow_mut().base = Some(base_body.try_into()?);
+ 				if !base_body.is_null() {
+					let base_body = match base_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(base_body.into(),JSONType::Number)),
+					};
+					let base_body = match nodes.get(base_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(base_body as usize)),
+					};
+					node.borrow_mut().base = Some(base_body.try_into()?);
+				}
 			},
 			NodeType::Cast => {
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::Cast(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let expr_type_body = match raw_node.body.get("expr_type") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"expr_type")),
+					None=>return Err(Error::MissingField(node_type,"expr_type")),
 				};
-				let expr_type_body = match expr_type_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
-				};
-				let expr_type_body = match nodes.get(expr_type_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
-				};
-				node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+ 				if !expr_type_body.is_null() {
+					let expr_type_body = match expr_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
+					};
+					let expr_type_body = match nodes.get(expr_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
+					};
+					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+				}
 				let base_body = match raw_node.body.get("base") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"base")),
+					None=>return Err(Error::MissingField(node_type,"base")),
 				};
-				let base_body = match base_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(base_body.into(),JSONType::Number)),
-				};
-				let base_body = match nodes.get(base_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(base_body as usize)),
-				};
-				let base_body = match base_body {
-					Node::Call(node)=>node,
-					x =>return Err(Error::MismatchNodeType(x.into(),base_body.into())),
-				};
-				node.borrow_mut().base = Some(base_body.clone());
+ 				if !base_body.is_null() {
+					let base_body = match base_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(base_body.into(),JSONType::Number)),
+					};
+					let base_body = match nodes.get(base_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(base_body as usize)),
+					};
+					let base_body = match base_body {
+						Node::Call(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),base_body.into())),
+					};
+					node.borrow_mut().base = Some(base_body.clone());
+				}
 				let expr_body = match raw_node.body.get("expr") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"expr")),
+					None=>return Err(Error::MissingField(node_type,"expr")),
 				};
-				let expr_body = match expr_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(expr_body.into(),JSONType::Number)),
-				};
-				let expr_body = match nodes.get(expr_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(expr_body as usize)),
-				};
-				node.borrow_mut().expr = Some(expr_body.try_into()?);
+ 				if !expr_body.is_null() {
+					let expr_body = match expr_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(expr_body.into(),JSONType::Number)),
+					};
+					let expr_body = match nodes.get(expr_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(expr_body as usize)),
+					};
+					node.borrow_mut().expr = Some(expr_body.try_into()?);
+				}
 			},
 			NodeType::Comment => {
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::Comment(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let comment_body = match raw_node.body.get("comment") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"comment")),
+					None=>return Err(Error::MissingField(node_type,"comment")),
 				};
 				node.borrow_mut().comment = match comment_body.as_str() {
 					Some(v)=>v.to_string(),
@@ -5126,11 +6602,11 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::CommentGroup(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let comments_body = match raw_node.body.get("comments") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"comments")),
+					None=>return Err(Error::MissingField(node_type,"comments")),
 				};
 				let comments_body = match comments_body.as_array(){
 					Some(v)=>v,
@@ -5156,41 +6632,45 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::UnionField(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let belong_body = match raw_node.body.get("belong") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"belong")),
+					None=>return Err(Error::MissingField(node_type,"belong")),
 				};
-				let belong_body = match belong_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(belong_body.into(),JSONType::Number)),
-				};
-				let belong_body = match nodes.get(belong_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(belong_body as usize)),
-				};
-				node.borrow_mut().belong = Some(belong_body.try_into()?);
+ 				if !belong_body.is_null() {
+					let belong_body = match belong_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(belong_body.into(),JSONType::Number)),
+					};
+					let belong_body = match nodes.get(belong_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(belong_body as usize)),
+					};
+					node.borrow_mut().belong = Some(belong_body.try_into()?);
+				}
 				let ident_body = match raw_node.body.get("ident") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"ident")),
+					None=>return Err(Error::MissingField(node_type,"ident")),
 				};
-				let ident_body = match ident_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(ident_body.into(),JSONType::Number)),
-				};
-				let ident_body = match nodes.get(ident_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(ident_body as usize)),
-				};
-				let ident_body = match ident_body {
-					Node::Ident(node)=>node,
-					x =>return Err(Error::MismatchNodeType(x.into(),ident_body.into())),
-				};
-				node.borrow_mut().ident = Some(ident_body.clone());
+ 				if !ident_body.is_null() {
+					let ident_body = match ident_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(ident_body.into(),JSONType::Number)),
+					};
+					let ident_body = match nodes.get(ident_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(ident_body as usize)),
+					};
+					let ident_body = match ident_body {
+						Node::Ident(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),ident_body.into())),
+					};
+					node.borrow_mut().ident = Some(ident_body.clone());
+				}
 				let candidate_body = match raw_node.body.get("candidate") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"candidate")),
+					None=>return Err(Error::MissingField(node_type,"candidate")),
 				};
 				let candidate_body = match candidate_body.as_array(){
 					Some(v)=>v,
@@ -5213,56 +6693,62 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				}
 				let union_type_body = match raw_node.body.get("union_type") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"union_type")),
+					None=>return Err(Error::MissingField(node_type,"union_type")),
 				};
-				let union_type_body = match union_type_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(union_type_body.into(),JSONType::Number)),
-				};
-				let union_type_body = match nodes.get(union_type_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(union_type_body as usize)),
-				};
-				let union_type_body = match union_type_body {
-					Node::UnionType(node)=>node,
-					x =>return Err(Error::MismatchNodeType(x.into(),union_type_body.into())),
-				};
-				node.borrow_mut().union_type = Some(union_type_body.clone());
+ 				if !union_type_body.is_null() {
+					let union_type_body = match union_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(union_type_body.into(),JSONType::Number)),
+					};
+					let union_type_body = match nodes.get(union_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(union_type_body as usize)),
+					};
+					let union_type_body = match union_type_body {
+						Node::UnionType(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),union_type_body.into())),
+					};
+					node.borrow_mut().union_type = Some(union_type_body.clone());
+				}
 			},
 			NodeType::UnionCandidate => {
 				let node = nodes[i].clone();
 				let node = match node {
 					Node::UnionCandidate(node)=>node,
-					_=>return Err(Error::MismatchNodeType(raw_node.node_type,node.into())),
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let cond_body = match raw_node.body.get("cond") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"cond")),
+					None=>return Err(Error::MissingField(node_type,"cond")),
 				};
-				let cond_body = match cond_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(cond_body.into(),JSONType::Number)),
-				};
-				let cond_body = match nodes.get(cond_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(cond_body as usize)),
-				};
-				node.borrow_mut().cond = Some(cond_body.try_into()?);
+ 				if !cond_body.is_null() {
+					let cond_body = match cond_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(cond_body.into(),JSONType::Number)),
+					};
+					let cond_body = match nodes.get(cond_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(cond_body as usize)),
+					};
+					node.borrow_mut().cond = Some(cond_body.try_into()?);
+				}
 				let field_body = match raw_node.body.get("field") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"field")),
+					None=>return Err(Error::MissingField(node_type,"field")),
 				};
-				let field_body = match field_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(field_body.into(),JSONType::Number)),
-				};
-				let field_body = match nodes.get(field_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(field_body as usize)),
-				};
-				node.borrow_mut().field = Some(field_body.try_into()?);
+ 				if !field_body.is_null() {
+					let field_body = match field_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(field_body.into(),JSONType::Number)),
+					};
+					let field_body = match nodes.get(field_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(field_body as usize)),
+					};
+					node.borrow_mut().field = Some(field_body.try_into()?);
+				}
 			},
-			_=>return Err(Error::UnknownNodeType(raw_node.node_type)),
+			_=>return Err(Error::UnknownNodeType(node_type)),
 		};
 	}
 	for (i,raw_scope) in ast.scope.into_iter().enumerate(){
@@ -5325,281 +6811,291 @@ pub struct TokenFile {
 	pub error :Option<SrcError>,
 }
 
-pub fn walk_node<F>(node:&Node,f:&F)
+pub trait Visitor {
+	fn visit(&self,node:&Node);
+}
+
+impl<F :Fn(&dyn Visitor,&Node)> Visitor for F {
+	fn visit(&self,node:&Node){
+		self(self,node);
+	}
+}
+
+pub fn walk_node<'a,F>(node:&Node,f:&'a F)
 where
-	F: Fn(&F,&Node)
+	F: Visitor+?Sized+'a
 {
 	match node {
 		Node::Program(node)=>{
 			if let Some(node) = &node.borrow().struct_type{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			for node in &node.borrow().elements{
-				f(f,node);
+				f.visit(node);
 			}
 		},
 		Node::Binary(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			if let Some(node) = &node.borrow().left{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			if let Some(node) = &node.borrow().right{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 		},
 		Node::Unary(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			if let Some(node) = &node.borrow().expr{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 		},
 		Node::Cond(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			if let Some(node) = &node.borrow().cond{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			if let Some(node) = &node.borrow().then{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			if let Some(node) = &node.borrow().els{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 		},
 		Node::Ident(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 		},
 		Node::Call(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			if let Some(node) = &node.borrow().callee{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			if let Some(node) = &node.borrow().raw_arguments{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			for node in &node.borrow().arguments{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 		},
 		Node::If(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			if let Some(node) = &node.borrow().cond{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			if let Some(node) = &node.borrow().then{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			if let Some(node) = &node.borrow().els{
-				f(f,node);
+				f.visit(node);
 			}
 		},
 		Node::MemberAccess(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			if let Some(node) = &node.borrow().target{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 		},
 		Node::Paren(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			if let Some(node) = &node.borrow().expr{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 		},
 		Node::Index(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			if let Some(node) = &node.borrow().expr{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			if let Some(node) = &node.borrow().index{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 		},
 		Node::Match(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			if let Some(node) = &node.borrow().cond{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			for node in &node.borrow().branch{
-				f(f,node);
+				f.visit(node);
 			}
 		},
 		Node::Range(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			if let Some(node) = &node.borrow().start{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			if let Some(node) = &node.borrow().end{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 		},
 		Node::TmpVar(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 		},
 		Node::BlockExpr(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			for node in &node.borrow().calls{
-				f(f,node);
+				f.visit(node);
 			}
 			if let Some(node) = &node.borrow().expr{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 		},
 		Node::Import(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			if let Some(node) = &node.borrow().base{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			if let Some(node) = &node.borrow().import_desc{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 		},
 		Node::IntLiteral(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 		},
 		Node::BoolLiteral(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 		},
 		Node::StrLiteral(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 		},
 		Node::Input(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 		},
 		Node::Output(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 		},
 		Node::Config(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 		},
 		Node::Loop(node)=>{
 			if let Some(node) = &node.borrow().init{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			if let Some(node) = &node.borrow().cond{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			if let Some(node) = &node.borrow().step{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			if let Some(node) = &node.borrow().body{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 		},
 		Node::IndentBlock(node)=>{
 			for node in &node.borrow().elements{
-				f(f,node);
+				f.visit(node);
 			}
 			if let Some(node) = &node.borrow().struct_type{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 		},
 		Node::MatchBranch(node)=>{
 			if let Some(node) = &node.borrow().cond{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			if let Some(node) = &node.borrow().then{
-				f(f,node);
+				f.visit(node);
 			}
 		},
 		Node::Return(node)=>{
 			if let Some(node) = &node.borrow().expr{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 		},
 		Node::Break(_)=>{},
 		Node::Continue(_)=>{},
 		Node::Assert(node)=>{
 			if let Some(node) = &node.borrow().cond{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 		},
 		Node::ImplicitYield(node)=>{
 			if let Some(node) = &node.borrow().expr{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 		},
 		Node::Field(node)=>{
 			if let Some(node) = &node.borrow().ident{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			if let Some(node) = &node.borrow().field_type{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			if let Some(node) = &node.borrow().raw_arguments{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			for node in &node.borrow().arguments{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 		},
 		Node::Format(node)=>{
 			if let Some(node) = &node.borrow().ident{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			if let Some(node) = &node.borrow().body{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 		},
 		Node::Function(node)=>{
 			if let Some(node) = &node.borrow().ident{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			for node in &node.borrow().parameters{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			if let Some(node) = &node.borrow().return_type{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			if let Some(node) = &node.borrow().body{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			if let Some(node) = &node.borrow().func_type{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 		},
 		Node::IntType(_)=>{},
 		Node::IdentType(node)=>{
 			if let Some(node) = &node.borrow().ident{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 		},
 		Node::IntLiteralType(_)=>{},
@@ -5608,64 +7104,64 @@ where
 		Node::BoolType(_)=>{},
 		Node::ArrayType(node)=>{
 			if let Some(node) = &node.borrow().base_type{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			if let Some(node) = &node.borrow().length{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 		},
 		Node::FunctionType(node)=>{
 			if let Some(node) = &node.borrow().return_type{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			for node in &node.borrow().parameters{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 		},
 		Node::StructType(node)=>{
 			for node in &node.borrow().fields{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 		},
 		Node::UnionType(node)=>{
 			for node in &node.borrow().fields{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 		},
 		Node::Cast(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			if let Some(node) = &node.borrow().base{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			if let Some(node) = &node.borrow().expr{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 		},
 		Node::Comment(_)=>{},
 		Node::CommentGroup(node)=>{
 			for node in &node.borrow().comments{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 		},
 		Node::UnionField(node)=>{
 			if let Some(node) = &node.borrow().ident{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			for node in &node.borrow().candidate{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			if let Some(node) = &node.borrow().union_type{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 		},
 		Node::UnionCandidate(node)=>{
 			if let Some(node) = &node.borrow().cond{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 			if let Some(node) = &node.borrow().field{
-				f(f,&node.into());
+				f.visit(&node.into());
 			}
 		},
 	}
