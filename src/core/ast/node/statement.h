@@ -79,7 +79,7 @@ namespace brgen::ast {
         define_node_type(NodeType::union_field);
         std::shared_ptr<Expr> cond;
         std::vector<std::shared_ptr<UnionCandidate>> candidate;
-        std::shared_ptr<UnionType> union_type;
+        std::weak_ptr<UnionType> union_type;
 
         void dump(auto&& field_) {
             Member::dump(field_);

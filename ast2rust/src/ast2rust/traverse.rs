@@ -44,7 +44,8 @@ mod tests {
         let prog = ast::parse_ast(file.ast.unwrap()).unwrap();
         let prog = prog.into();
         traverse(&prog, &|n: &ast::Node| {
-            println!("node: {:?}", n);
+            let t: ast::NodeType = n.into();
+            println!("node: {:?}", t);
         });
     }
 }

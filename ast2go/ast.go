@@ -2311,9 +2311,6 @@ func Walk(n Node, f Visitor) {
 		for _, w := range v.Candidate {
 			f.Visit(f, w)
 		}
-		if v.UnionType != nil {
-			f.Visit(f, v.UnionType)
-		}
 	case *UnionCandidate:
 		if v.Cond != nil {
 			f.Visit(f, v.Cond)

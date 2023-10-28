@@ -3074,9 +3074,6 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			for (const e of n.candidate) {
 				fn(fn,e);
 			}
-			if (n.union_type !== null) {
-				fn(fn,n.union_type);
-			}
 			break;
 		}
 		case "union_candidate": {

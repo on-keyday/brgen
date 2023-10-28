@@ -3738,7 +3738,7 @@ pub struct UnionField {
 	pub belong: Option<Member>,
 	pub ident: Option<Rc<RefCell<Ident>>>,
 	pub candidate: Vec<Rc<RefCell<UnionCandidate>>>,
-	pub union_type: Option<Rc<RefCell<UnionType>>>,
+	pub union_type: Option<Weak<RefCell<UnionType>>>,
 }
 
 impl TryFrom<&Member> for Rc<RefCell<UnionField>> {
@@ -6708,7 +6708,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 						Node::UnionType(node)=>node,
 						x =>return Err(Error::MismatchNodeType(x.into(),union_type_body.into())),
 					};
-					node.borrow_mut().union_type = Some(union_type_body.clone());
+					node.borrow_mut().union_type = Some(Rc::downgrade(&union_type_body));
 				}
 			},
 			NodeType::UnionCandidate => {
@@ -7150,9 +7150,6 @@ where
 				f.visit(&node.into());
 			}
 			for node in &node.borrow().candidate{
-				f.visit(&node.into());
-			}
-			if let Some(node) = &node.borrow().union_type{
 				f.visit(&node.into());
 			}
 		},

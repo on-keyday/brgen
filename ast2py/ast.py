@@ -1177,8 +1177,6 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
               f(f,x.ident)
           for i in range(len(x.candidate)):
               f(f,x.candidate[i])
-          if x.union_type is not None:
-              f(f,x.union_type)
         case x if isinstance(x,UnionCandidate):
           if x.cond is not None:
               f(f,x.cond)
