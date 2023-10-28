@@ -16,8 +16,8 @@ namespace brgen::ast {
         TmpVar()
             : Expr({}, NodeType::tmp_var) {}
 
-        void dump(auto&& field) {
-            Expr::dump(field);
+        void dump(auto&& field_) {
+            Expr::dump(field_);
             sdebugf(tmp_var);
         }
     };
@@ -33,8 +33,8 @@ namespace brgen::ast {
         BlockExpr()
             : Expr({}, NodeType::block_expr) {}
 
-        void dump(auto&& field) {
-            Expr::dump(field);
+        void dump(auto&& field_) {
+            Expr::dump(field_);
             sdebugf(calls);
             sdebugf(expr);
         }
@@ -50,8 +50,8 @@ namespace brgen::ast {
         Assert()
             : Stmt({}, NodeType::assert) {}
 
-        void dump(auto&& field) {
-            Stmt::dump(field);
+        void dump(auto&& field_) {
+            Stmt::dump(field_);
             sdebugf(cond);
         }
     };
@@ -66,8 +66,8 @@ namespace brgen::ast {
         ImplicitYield()
             : Stmt({}, NodeType::implicit_yield) {}
 
-        void dump(auto&& field) {
-            Stmt::dump(field);
+        void dump(auto&& field_) {
+            Stmt::dump(field_);
             sdebugf(expr);
         }
     };
@@ -86,8 +86,8 @@ namespace brgen::ast {
         Import()
             : Expr({}, NodeType::import_) {}
 
-        void dump(auto&& field) {
-            Expr::dump(field);
+        void dump(auto&& field_) {
+            Expr::dump(field_);
             sdebugf(path);
             sdebugf_omit(base);
             sdebugf(import_desc);
@@ -107,8 +107,8 @@ namespace brgen::ast {
         Cast()
             : Expr({}, NodeType::cast) {}
 
-        void dump(auto&& field) {
-            Expr::dump(field);
+        void dump(auto&& field_) {
+            Expr::dump(field_);
             sdebugf_omit(base);
             sdebugf(expr);
         }

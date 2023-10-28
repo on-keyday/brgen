@@ -19,8 +19,8 @@ namespace brgen::ast {
             return t;
         }
 
-        void dump(auto&& field) {
-            Literal::dump(field);
+        void dump(auto&& field_) {
+            Literal::dump(field_);
             sdebugf(value);
         }
 
@@ -43,8 +43,8 @@ namespace brgen::ast {
         StrLiteral()
             : Literal({}, NodeType::str_literal) {}
 
-        void dump(auto&& field) {
-            Literal::dump(field);
+        void dump(auto&& field_) {
+            Literal::dump(field_);
             sdebugf(value);
         }
     };
@@ -53,8 +53,8 @@ namespace brgen::ast {
         define_node_type(NodeType::bool_literal);
         bool value = false;
 
-        void dump(auto&& field) {
-            Literal::dump(field);
+        void dump(auto&& field_) {
+            Literal::dump(field_);
             sdebugf(value);
         }
 

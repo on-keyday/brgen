@@ -168,9 +168,45 @@ namespace brgen::ast {
             return scope;
         }
 
+        void export_union_field(const std::shared_ptr<Expr>& cond0, std::vector<std::shared_ptr<Expr>>& cond, const std::shared_ptr<UnionType>& type) {
+            assert(cond.size() == type->fields.size());
+            std::map<std::string, std::vector<std::shared_ptr<UnionCandidate>>> m;
+            for (size_t i = 0; i < cond.size(); i++) {
+                auto& c = cond[i];
+                auto& f = type->fields[i];
+                for (auto& d : f->fields) {
+                    if (!d->ident) {
+                        continue;
+                    }
+                    if (!ast::as<Field>(d) && !ast::as<UnionField>(d)) {
+                        continue;
+                    }
+                    auto cand = std::make_shared<UnionCandidate>(d->loc);
+                    cand->cond = c;
+                    cand->field = d;
+                    m[d->ident->ident].push_back(std::move(cand));
+                }
+            }
+            for (auto& [k, v] : m) {
+                auto f = std::make_shared<UnionField>();
+                f->cond = cond0;
+                f->loc = v[0]->loc;
+                f->ident = std::make_shared<Ident>(f->loc, k);
+                f->ident->usage = IdentUsage::define_field;
+                f->ident->scope = state.current_scope();
+                f->ident->scope->push(f->ident);
+                f->ident->base = f;
+                f->union_type = type;
+                for (auto& c : v) {
+                    f->candidate.push_back(c);
+                }
+                state.add_to_struct(std::move(f));
+            }
+        }
+
         /*
             <match> ::= "match" <expr>? <match branch>*
-            <match branch> ::= <expr> "=>" <statement>
+            <match branch> ::= <expr> [":" <indent block> | "=>" <statement>]
         */
         std::shared_ptr<Match> parse_match(lexer::Token&& token) {
             // Create a shared pointer for the Match
@@ -178,6 +214,20 @@ namespace brgen::ast {
 
             std::shared_ptr<UnionType> union_ = std::make_shared<UnionType>(match->loc);
             union_->base = match;
+
+            std::vector<std::shared_ptr<Expr>> cond;
+
+            auto push_union_to_current_struct = [&] {
+                auto f = std::make_shared<Field>(match->loc);
+                f->field_type = std::move(union_);
+                f->belong = state.current_member();
+                state.add_to_struct(std::move(f));
+                export_union_field(match->cond, cond, union_);
+            };
+
+            const auto d = utils::helper::defer([&] {
+                push_union_to_current_struct();
+            });
 
             s.skip_white();
 
@@ -198,6 +248,7 @@ namespace brgen::ast {
             auto parse_match_branch = [&]() -> std::shared_ptr<MatchBranch> {
                 auto br = std::make_shared<MatchBranch>();
                 br->cond = parse_expr();
+                cond.push_back(br->cond);
                 br->loc = br->cond->loc;
                 s.skip_white();
                 auto sym = s.consume_token("=>");
@@ -242,16 +293,7 @@ namespace brgen::ast {
                 match->branch.push_back(parse_match_branch());
             }
 
-            auto f = std::make_shared<Field>(match->loc);
-            f->field_type = std::move(union_);
-            f->belong = state.current_member();
-            state.add_to_struct(std::move(f));
-
             return match;
-        }
-
-        void export_union_field(const std::shared_ptr<Expr>& cond0, std::vector<std::shared_ptr<Expr>>& cond, const std::shared_ptr<UnionType>& type) {
-            assert(cond.size() == type->fields.size());
         }
 
         /*

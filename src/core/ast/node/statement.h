@@ -21,8 +21,8 @@ namespace brgen::ast {
         Format()
             : Member({}, NodeType::format) {}
 
-        void dump(auto&& field) {
-            Member::dump(field);
+        void dump(auto&& field_) {
+            Member::dump(field_);
             sdebugf(is_enum);
             // sdebugf(ident);
             sdebugf(body);
@@ -45,8 +45,8 @@ namespace brgen::ast {
         Field()
             : Member({}, NodeType::field) {}
 
-        void dump(auto&& field) {
-            Member::dump(field);
+        void dump(auto&& field_) {
+            Member::dump(field_);
             // sdebugf(ident);
             sdebugf(colon_loc);
             sdebugf(field_type);
@@ -60,7 +60,7 @@ namespace brgen::ast {
     struct UnionCandidate : Stmt {
         define_node_type(NodeType::union_candidate);
         std::shared_ptr<Expr> cond;
-        std::shared_ptr<Field> base;
+        std::shared_ptr<Member> field;
 
         UnionCandidate(lexer::Loc loc)
             : Stmt(loc, NodeType::union_candidate) {}
@@ -68,10 +68,10 @@ namespace brgen::ast {
         UnionCandidate()
             : Stmt({}, NodeType::union_candidate) {}
 
-        void dump(auto&& field) {
-            Node::dump(field);
+        void dump(auto&& field_) {
+            Node::dump(field_);
             sdebugf(cond);
-            sdebugf(base);
+            sdebugf(field);
         }
     };
 
@@ -79,12 +79,12 @@ namespace brgen::ast {
         define_node_type(NodeType::union_field);
         std::shared_ptr<Expr> cond;
         std::vector<std::shared_ptr<UnionCandidate>> candidate;
-        std::shared_ptr<UnionType> base_union;
+        std::shared_ptr<UnionType> union_type;
 
-        void dump(auto&& field) {
-            Member::dump(field);
+        void dump(auto&& field_) {
+            Member::dump(field_);
             sdebugf(candidate);
-            sdebugf(base_union);
+            sdebugf(union_type);
         }
 
         UnionField(lexer::Loc loc)
@@ -110,8 +110,8 @@ namespace brgen::ast {
         Function()
             : Member({}, NodeType::function) {}
 
-        void dump(auto&& field) {
-            Member::dump(field);
+        void dump(auto&& field_) {
+            Member::dump(field_);
             sdebugf(parameters);
             sdebugf(return_type);
             sdebugf(body);
@@ -132,8 +132,8 @@ namespace brgen::ast {
         Loop()
             : Stmt({}, NodeType::loop) {}
 
-        void dump(auto&& field) {
-            Stmt::dump(field);
+        void dump(auto&& field_) {
+            Stmt::dump(field_);
             sdebugf(init);
             sdebugf(cond);
             sdebugf(step);
@@ -151,8 +151,8 @@ namespace brgen::ast {
         Return()
             : Stmt({}, NodeType::return_) {}
 
-        void dump(auto&& field) {
-            Stmt::dump(field);
+        void dump(auto&& field_) {
+            Stmt::dump(field_);
             sdebugf(expr);
         }
     };

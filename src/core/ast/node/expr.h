@@ -61,12 +61,15 @@ namespace brgen::ast {
         Ident(lexer::Loc l, std::string&& i)
             : Expr(l, NodeType::ident), ident(std::move(i)) {}
 
+        Ident(lexer::Loc l, const std::string& i)
+            : Expr(l, NodeType::ident), ident(i) {}
+
         // for decode
         Ident()
             : Expr({}, NodeType::ident) {}
 
-        void dump(auto&& field) {
-            Expr::dump(field);
+        void dump(auto&& field_) {
+            Expr::dump(field_);
             sdebugf(ident);
             sdebugf(usage);
             sdebugf(base);
@@ -85,8 +88,8 @@ namespace brgen::ast {
         Call()
             : Expr({}, NodeType::call) {}
 
-        void dump(auto&& field) {
-            Expr::dump(field);
+        void dump(auto&& field_) {
+            Expr::dump(field_);
             sdebugf(callee);
             sdebugf_omit(raw_arguments);
             sdebugf(arguments);
@@ -105,8 +108,8 @@ namespace brgen::ast {
         Paren()
             : Expr({}, NodeType::paren) {}
 
-        void dump(auto&& field) {
-            Expr::dump(field);
+        void dump(auto&& field_) {
+            Expr::dump(field_);
             sdebugf(expr);
             sdebugf(end_loc);
         }
@@ -125,8 +128,8 @@ namespace brgen::ast {
         constexpr If()
             : Expr({}, NodeType::if_) {}
 
-        void dump(auto&& field) {
-            Expr::dump(field);
+        void dump(auto&& field_) {
+            Expr::dump(field_);
             sdebugf(cond);
             sdebugf(then);
             sdebugf(els);
@@ -149,8 +152,8 @@ namespace brgen::ast {
         constexpr Unary()
             : Expr({}, NodeType::unary) {}
 
-        void dump(auto&& field) {
-            Expr::dump(field);
+        void dump(auto&& field_) {
+            Expr::dump(field_);
             sdebugf(op);
             sdebugf(expr);
         }
@@ -173,8 +176,8 @@ namespace brgen::ast {
         constexpr Binary()
             : Expr({}, NodeType::binary) {}
 
-        void dump(auto&& field) {
-            Expr::dump(field);
+        void dump(auto&& field_) {
+            Expr::dump(field_);
             sdebugf(op);
             sdebugf(left);
             sdebugf(right);
@@ -194,8 +197,8 @@ namespace brgen::ast {
         constexpr Range()
             : Expr({}, NodeType::range) {}
 
-        void dump(auto&& field) {
-            Expr::dump(field);
+        void dump(auto&& field_) {
+            Expr::dump(field_);
             sdebugf(op);
             sdebugf(start);
             sdebugf(end);
@@ -208,8 +211,8 @@ namespace brgen::ast {
         std::string member;
         lexer::Loc member_loc;
 
-        void dump(auto&& field) {
-            Expr::dump(field);
+        void dump(auto&& field_) {
+            Expr::dump(field_);
             sdebugf(target);
             sdebugf(member);
             sdebugf(member_loc);
@@ -237,8 +240,8 @@ namespace brgen::ast {
         constexpr Cond()
             : Expr({}, NodeType::cond) {}
 
-        void dump(auto&& field) {
-            Expr::dump(field);
+        void dump(auto&& field_) {
+            Expr::dump(field_);
             sdebugf(cond);
             sdebugf(then);
             sdebugf(els_loc);
@@ -259,8 +262,8 @@ namespace brgen::ast {
         constexpr Index()
             : Expr({}, NodeType::index) {}
 
-        void dump(auto&& field) {
-            Expr::dump(field);
+        void dump(auto&& field_) {
+            Expr::dump(field_);
             sdebugf(expr);
             sdebugf(index);
             sdebugf(end_loc);
@@ -279,8 +282,8 @@ namespace brgen::ast {
         constexpr MatchBranch()
             : Stmt({}, NodeType::match_branch) {}
 
-        void dump(auto&& field) {
-            Stmt::dump(field);
+        void dump(auto&& field_) {
+            Stmt::dump(field_);
             sdebugf(cond);
             sdebugf(sym_loc);
             sdebugf(then);
@@ -300,8 +303,8 @@ namespace brgen::ast {
         Match()
             : Expr({}, NodeType::match) {}
 
-        void dump(auto&& field) {
-            Expr::dump(field);
+        void dump(auto&& field_) {
+            Expr::dump(field_);
             sdebugf(cond);
             sdebugf(branch);
             sdebugf(scope);

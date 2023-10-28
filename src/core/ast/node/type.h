@@ -74,8 +74,8 @@ namespace brgen::ast {
         IntType()
             : Type({}, NodeType::int_type) {}
 
-        void dump(auto&& field) {
-            Type::dump(field);
+        void dump(auto&& field_) {
+            Type::dump(field_);
             sdebugf(bit_size);
             sdebugf(endian);
             sdebugf(is_signed);
@@ -143,8 +143,8 @@ namespace brgen::ast {
             return 0;
         }
 
-        void dump(auto&& field) {
-            Type::dump(field);
+        void dump(auto&& field_) {
+            Type::dump(field_);
             sdebugf(base);
         }
 
@@ -171,8 +171,8 @@ namespace brgen::ast {
         StrLiteralType()
             : Type({}, NodeType::str_literal_type) {}
 
-        void dump(auto&& field) {
-            Type::dump(field);
+        void dump(auto&& field_) {
+            Type::dump(field_);
             sdebugf(base);
         }
     };
@@ -187,8 +187,8 @@ namespace brgen::ast {
         IdentType(lexer::Loc l, std::shared_ptr<Ident>&& token)
             : Type(l, NodeType::ident_type), ident(std::move(token)) {}
 
-        void dump(auto&& field) {
-            Type::dump(field);
+        void dump(auto&& field_) {
+            Type::dump(field_);
             sdebugf(ident);
             sdebugf(base);
         }
@@ -210,8 +210,8 @@ namespace brgen::ast {
         constexpr VoidType()
             : Type({}, NodeType::void_type) {}
 
-        void dump(auto&& field) {
-            Type::dump(field);
+        void dump(auto&& field_) {
+            Type::dump(field_);
         }
     };
 
@@ -226,8 +226,8 @@ namespace brgen::ast {
         constexpr BoolType()
             : Type({}, NodeType::bool_type) {}
 
-        void dump(auto&& field) {
-            Type::dump(field);
+        void dump(auto&& field_) {
+            Type::dump(field_);
         }
     };
 
@@ -246,8 +246,8 @@ namespace brgen::ast {
         ArrayType()
             : Type({}, NodeType::array_type) {}
 
-        void dump(auto&& field) {
-            Type::dump(field);
+        void dump(auto&& field_) {
+            Type::dump(field_);
             sdebugf(end_loc);
             sdebugf(base_type);
             sdebugf(length);
@@ -268,8 +268,8 @@ namespace brgen::ast {
         FunctionType()
             : Type({}, NodeType::function_type) {}
 
-        void dump(auto&& field) {
-            Type::dump(field);
+        void dump(auto&& field_) {
+            Type::dump(field_);
             sdebugf(return_type);
             sdebugf(parameters);
         }
@@ -285,8 +285,8 @@ namespace brgen::ast {
         StructType()
             : Type({}, NodeType::struct_type) {}
 
-        void dump(auto&& field) {
-            Type::dump(field);
+        void dump(auto&& field_) {
+            Type::dump(field_);
             sdebugf(fields);
         }
 
@@ -321,8 +321,8 @@ namespace brgen::ast {
         UnionType()
             : Type({}, NodeType::union_type) {}
 
-        void dump(auto&& field) {
-            Type::dump(field);
+        void dump(auto&& field_) {
+            Type::dump(field_);
             sdebugf(fields);
             sdebugf(base);
         }

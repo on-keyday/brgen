@@ -19,7 +19,7 @@ namespace brgen::ast {
         const NodeType node_type;
         lexer::Loc loc;
 
-        void dump(auto&& field) {
+        void dump(auto&& field_) {
             sdebugf(node_type);
             sdebugf(loc);
         }
@@ -36,8 +36,8 @@ namespace brgen::ast {
         define_node_type(NodeType::type);
         bool is_explicit = false;  // for language server annotation
 
-        void dump(auto&& field) {
-            Node::dump(field);
+        void dump(auto&& field_) {
+            Node::dump(field_);
             sdebugf(is_explicit);
         }
 
@@ -50,8 +50,8 @@ namespace brgen::ast {
         define_node_type(NodeType::expr);
         std::shared_ptr<Type> expr_type;
 
-        void dump(auto&& field) {
-            Node::dump(field);
+        void dump(auto&& field_) {
+            Node::dump(field_);
             sdebugf(expr_type);
         }
 
@@ -75,8 +75,8 @@ namespace brgen::ast {
         std::weak_ptr<Member> belong;
         std::shared_ptr<Ident> ident;
 
-        void dump(auto&& field) {
-            Stmt::dump(field);
+        void dump(auto&& field_) {
+            Stmt::dump(field_);
             sdebugf(belong);
             sdebugf(ident);
         }
@@ -98,8 +98,8 @@ namespace brgen::ast {
         define_node_type(NodeType::comment);
         std::string comment;
 
-        void dump(auto&& field) {
-            Node::dump(field);
+        void dump(auto&& field_) {
+            Node::dump(field_);
             sdebugf(comment);
         }
 
@@ -114,8 +114,8 @@ namespace brgen::ast {
         define_node_type(NodeType::comment_group);
         std::vector<std::shared_ptr<Comment>> comments;
 
-        void dump(auto&& field) {
-            Node::dump(field);
+        void dump(auto&& field_) {
+            Node::dump(field_);
             sdebugf(comments);
         }
 
@@ -140,8 +140,8 @@ namespace brgen::ast {
         IndentBlock()
             : Stmt({}, NodeType::indent_block) {}
 
-        void dump(auto&& field) {
-            Stmt::dump(field);
+        void dump(auto&& field_) {
+            Stmt::dump(field_);
             sdebugf(elements);
             sdebugf(scope);
             sdebugf(struct_type);
@@ -154,8 +154,8 @@ namespace brgen::ast {
         node_list elements;
         scope_ptr global_scope;
 
-        void dump(auto&& field) {
-            Node::dump(field);
+        void dump(auto&& field_) {
+            Node::dump(field_);
             sdebugf(struct_type);
             sdebugf(elements);
             sdebugf(global_scope);

@@ -131,7 +131,7 @@ namespace brgen::ast {
                         continue;
                     }
                     field([&] {
-                        auto field = d.object();
+                        auto field_ = d.object();
                         auto usage = object->usage;
                         auto ident = object->ident;
                         sdebugf(usage);
