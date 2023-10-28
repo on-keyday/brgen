@@ -537,8 +537,8 @@ type UnionField struct {
 	Loc       Loc
 	Belong    Member
 	Ident     *Ident
-	Candidate []Member
-	BaseUnion *UnionType
+	Candidate []*UnionCandidate
+	UnionType *UnionType
 }
 
 func (n *UnionField) isMember() {}
@@ -546,6 +546,16 @@ func (n *UnionField) isMember() {}
 func (n *UnionField) isStmt() {}
 
 func (n *UnionField) isNode() {}
+
+type UnionCandidate struct {
+	Loc   Loc
+	Cond  Expr
+	Field Member
+}
+
+func (n *UnionCandidate) isStmt() {}
+
+func (n *UnionCandidate) isNode() {}
 
 type UnaryOp int
 
@@ -1167,6 +1177,8 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			n.node = append(n.node, &CommentGroup{Loc: raw.Loc})
 		case "union_field":
 			n.node = append(n.node, &UnionField{Loc: raw.Loc})
+		case "union_candidate":
+			n.node = append(n.node, &UnionCandidate{Loc: raw.Loc})
 		default:
 			return nil, fmt.Errorf("unknown node type: %q", raw.NodeType)
 		}
@@ -1939,7 +1951,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 				Belong    *uintptr  `json:"belong"`
 				Ident     *uintptr  `json:"ident"`
 				Candidate []uintptr `json:"candidate"`
-				BaseUnion *uintptr  `json:"base_union"`
+				UnionType *uintptr  `json:"union_type"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -1950,12 +1962,27 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.Ident != nil {
 				v.Ident = n.node[*tmp.Ident].(*Ident)
 			}
-			v.Candidate = make([]Member, len(tmp.Candidate))
+			v.Candidate = make([]*UnionCandidate, len(tmp.Candidate))
 			for j, k := range tmp.Candidate {
-				v.Candidate[j] = n.node[k].(Member)
+				v.Candidate[j] = n.node[k].(*UnionCandidate)
 			}
-			if tmp.BaseUnion != nil {
-				v.BaseUnion = n.node[*tmp.BaseUnion].(*UnionType)
+			if tmp.UnionType != nil {
+				v.UnionType = n.node[*tmp.UnionType].(*UnionType)
+			}
+		case "union_candidate":
+			v := n.node[i].(*UnionCandidate)
+			var tmp struct {
+				Cond  *uintptr `json:"cond"`
+				Field *uintptr `json:"field"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			if tmp.Cond != nil {
+				v.Cond = n.node[*tmp.Cond].(Expr)
+			}
+			if tmp.Field != nil {
+				v.Field = n.node[*tmp.Field].(Member)
 			}
 		default:
 			return nil, fmt.Errorf("unknown node type: %q", raw.NodeType)
@@ -2289,8 +2316,15 @@ func Walk(n Node, f Visitor) {
 		for _, w := range v.Candidate {
 			f.Visit(f, w)
 		}
-		if v.BaseUnion != nil {
-			f.Visit(f, v.BaseUnion)
+		if v.UnionType != nil {
+			f.Visit(f, v.UnionType)
+		}
+	case *UnionCandidate:
+		if v.Cond != nil {
+			f.Visit(f, v.Cond)
+		}
+		if v.Field != nil {
+			f.Visit(f, v.Field)
 		}
 	}
 }

@@ -57,6 +57,7 @@ class NodeType(Enum):
     COMMENT = "comment"
     COMMENT_GROUP = "comment_group"
     UNION_FIELD = "union_field"
+    UNION_CANDIDATE = "union_candidate"
 
 
 class Node:
@@ -315,8 +316,13 @@ class CommentGroup(Node):
 
 
 class UnionField(Member):
-    candidate: List[Member]
-    base_union: Optional[UnionType]
+    candidate: List[UnionCandidate]
+    union_type: Optional[UnionType]
+
+
+class UnionCandidate(Stmt):
+    cond: Optional[Expr]
+    field: Optional[Member]
 
 
 class UnaryOp(Enum):
@@ -652,6 +658,8 @@ def ast2node(ast :Ast) -> Program:
                 node.append(CommentGroup())
             case NodeType.UNION_FIELD:
                 node.append(UnionField())
+            case NodeType.UNION_CANDIDATE:
+                node.append(UnionCandidate())
             case _:
                 raise TypeError('unknown node type')
     scope = [Scope() for _ in range(len(ast.scope))]
@@ -932,9 +940,14 @@ def ast2node(ast :Ast) -> Program:
                 node[i].belong = x if isinstance(x,Member) or x is None else raiseError(TypeError('type mismatch'))
                 x = node[ast.node[i].body["ident"]]
                 node[i].ident = x if isinstance(x,Ident) or x is None else raiseError(TypeError('type mismatch'))
-                node[i].candidate = [(node[x] if isinstance(node[x],Member) else raiseError(TypeError('type mismatch'))) for x in ast.node[i].body["candidate"]]
-                x = node[ast.node[i].body["base_union"]]
-                node[i].base_union = x if isinstance(x,UnionType) or x is None else raiseError(TypeError('type mismatch'))
+                node[i].candidate = [(node[x] if isinstance(node[x],UnionCandidate) else raiseError(TypeError('type mismatch'))) for x in ast.node[i].body["candidate"]]
+                x = node[ast.node[i].body["union_type"]]
+                node[i].union_type = x if isinstance(x,UnionType) or x is None else raiseError(TypeError('type mismatch'))
+            case NodeType.UNION_CANDIDATE:
+                x = node[ast.node[i].body["cond"]]
+                node[i].cond = x if isinstance(x,Expr) or x is None else raiseError(TypeError('type mismatch'))
+                x = node[ast.node[i].body["field"]]
+                node[i].field = x if isinstance(x,Member) or x is None else raiseError(TypeError('type mismatch'))
             case _:
                 raise TypeError('unknown node type')
     for i in range(len(ast.scope)):
@@ -1166,5 +1179,10 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
               f(f,x.ident)
           for i in range(len(x.candidate)):
               f(f,x.candidate[i])
-          if x.base_union is not None:
-              f(f,x.base_union)
+          if x.union_type is not None:
+              f(f,x.union_type)
+        case x if isinstance(x,UnionCandidate):
+          if x.cond is not None:
+              f(f,x.cond)
+          if x.field is not None:
+              f(f,x.field)

@@ -58,6 +58,7 @@ typedef enum NodeType {
 	COMMENT,
 	COMMENT_GROUP,
 	UNION_FIELD,
+	UNION_CANDIDATE,
 } NodeType;
 
 typedef struct Node Node;
@@ -112,6 +113,7 @@ typedef struct Cast Cast;
 typedef struct Comment Comment;
 typedef struct CommentGroup CommentGroup;
 typedef struct UnionField UnionField;
+typedef struct UnionCandidate UnionCandidate;
 typedef enum UnaryOp UnaryOp;
 typedef enum BinaryOp BinaryOp;
 typedef enum IdentUsage IdentUsage;
@@ -645,9 +647,16 @@ struct UnionField {
 	Loc loc;
 	Member* belong;
 	Ident* ident;
-	Member** candidate;
+	UnionCandidate** candidate;
 	size_t candidate_size;
-	UnionType* base_union;
+	UnionType* union_type;
+};
+
+struct UnionCandidate {
+	const NodeType node_type;
+	Loc loc;
+	Expr* cond;
+	Member* field;
 };
 
 struct Scope {
