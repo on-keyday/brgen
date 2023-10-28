@@ -60,6 +60,7 @@ namespace brgen::ast {
         CASE(Loop)
         CASE(IndentBlock)
         CASE(MatchBranch)
+        CASE(UnionCandidate)
         CASE(Return)
         CASE(Break)
         CASE(Continue)

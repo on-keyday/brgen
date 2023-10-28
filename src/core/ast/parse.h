@@ -52,12 +52,6 @@ namespace brgen::ast {
             return current_fmt_;
         }
 
-        /*
-        std::shared_ptr<StructType> current_struct() {
-            return current_struct_;
-        }
-        */
-
         void add_to_struct(const std::shared_ptr<Member>& f) {
             current_struct_->fields.push_back(f);
         }
@@ -256,7 +250,7 @@ namespace brgen::ast {
             return match;
         }
 
-        void export_union_field(std::vector<std::shared_ptr<Expr>>& cond, const std::shared_ptr<UnionType>& type) {
+        void export_union_field(const std::shared_ptr<Expr>& cond0, std::vector<std::shared_ptr<Expr>>& cond, const std::shared_ptr<UnionType>& type) {
             assert(cond.size() == type->fields.size());
         }
 
@@ -272,22 +266,26 @@ namespace brgen::ast {
             std::shared_ptr<UnionType> union_ = std::make_shared<UnionType>(if_->loc);
             union_->base = if_;
 
-            auto body_with_struct = [&](lexer::Loc loc, auto& block) {
-                auto tmp = parse_indent_block();
-                union_->fields.push_back(tmp->struct_type);
-                block = std::move(tmp);
-            };
+            std::vector<std::shared_ptr<Expr>> cond;
+            cond.push_back(if_->cond);
 
             auto push_union_to_current_struct = [&] {
                 auto f = std::make_shared<Field>(if_->loc);
-                f->field_type = std::move(union_);
+                f->field_type = union_;
                 f->belong = state.current_member();
                 state.add_to_struct(std::move(f));
+                export_union_field(nullptr, cond, union_);
             };
 
             const auto d = utils::helper::defer([&] {
                 push_union_to_current_struct();
             });
+
+            auto body_with_struct = [&](lexer::Loc loc, auto& block) {
+                auto tmp = parse_indent_block();
+                union_->fields.push_back(tmp->struct_type);
+                block = std::move(tmp);
+            };
 
             body_with_struct(if_->loc, if_->then);
 
@@ -321,6 +319,7 @@ namespace brgen::ast {
                 auto elif = std::make_shared<If>(tok->loc);
                 s.skip_white();
                 elif->cond = parse_expr();
+                cond.push_back(elif->cond);
                 body_with_struct(tok->loc, elif->then);
                 auto next_if = elif.get();
                 current_if->els = std::move(elif);
@@ -333,6 +332,7 @@ namespace brgen::ast {
 
             // else ブロックの解析
             if (s.consume_token("else")) {
+                cond.push_back(nullptr);
                 body_with_struct(if_->loc, current_if->els);
             }
             else {
@@ -546,7 +546,6 @@ namespace brgen::ast {
             }
             if (s.expect_token(lexer::Tag::ident) ||
                 s.expect_token(lexer::Tag::bool_literal) ||
-                s.expect_token(lexer::Tag::ident) ||
                 s.expect_token(lexer::Tag::int_literal) ||
                 s.expect_token(lexer::Tag::str_literal) ||
                 s.expect_token("input") || s.expect_token("output") ||

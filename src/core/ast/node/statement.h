@@ -60,7 +60,7 @@ namespace brgen::ast {
     struct UnionCandidate : Stmt {
         define_node_type(NodeType::union_candidate);
         std::shared_ptr<Expr> cond;
-        std::shared_ptr<Field> field;
+        std::shared_ptr<Field> base;
 
         UnionCandidate(lexer::Loc loc)
             : Stmt(loc, NodeType::union_candidate) {}
@@ -71,12 +71,13 @@ namespace brgen::ast {
         void dump(auto&& field) {
             Node::dump(field);
             sdebugf(cond);
-            sdebugf(field);
+            sdebugf(base);
         }
     };
 
     struct UnionField : Member {
         define_node_type(NodeType::union_field);
+        std::shared_ptr<Expr> cond;
         std::vector<std::shared_ptr<UnionCandidate>> candidate;
         std::shared_ptr<UnionType> base_union;
 
@@ -111,12 +112,10 @@ namespace brgen::ast {
 
         void dump(auto&& field) {
             Member::dump(field);
-            // sdebugf(ident);
             sdebugf(parameters);
             sdebugf(return_type);
             sdebugf(body);
             sdebugf(func_type);
-            // sdebugf(struct_type);
         }
     };
 
