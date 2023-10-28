@@ -1,0 +1,110 @@
+path ::= config.import("./test_import.bgn")
+
+
+
+a := 1
+b := 2
+
+c := a + b
+c = a - b
+c = a * b
+c = a / b
+c = a % b
+c = a ^ b
+c = a & b
+c = a | b
+c = a << b
+c = a >> b
+d := a == b
+d = a != b
+d = a < b
+d = a <= b
+d = a > b
+d = a >= b
+d = a == 2 && b == 1
+d = a ==2 || b == 3
+
+e::=30
+
+if c == 2:
+    c = 3
+elif c == 3:
+    c = 4
+else:
+    c = 5
+
+match c:
+    1 => c = 2
+    2 :
+        c = 3
+        c = 4
+    .. => c = 5
+    ..= => c = 6
+    7.. => c = 7
+    8..= => c = 8
+    10..11 => c = 9
+    12..=13 => c = 10
+
+loop:
+    c = 1
+    break
+    c = 2
+    continue
+    c = 3   
+
+loop i:=0; i<10; i = i + 1:
+    c = 1
+    break
+    c = 2
+    continue
+    c = 3
+
+loop c == 1:
+    return
+    return 0
+
+fn test(a :u8, b :u8):
+    return a + b
+
+fn test(a :u8, b :u8) -> u8:
+    return a + b
+
+format TCP:
+    ip :u32
+    port :u16
+
+enum E:
+    :u8
+    A
+    B
+    C
+    D
+    F
+    F
+    G
+    H
+    I
+    J
+    K
+    L
+    M
+    N
+    O
+    P
+    Q
+    R
+    S
+    T
+    U
+    V
+    W
+    X
+    Y
+    Z
+
+a == b
+x :void
+
+true || false
+true && false
+!true == false
