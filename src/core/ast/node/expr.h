@@ -295,7 +295,6 @@ namespace brgen::ast {
         std::shared_ptr<Expr> cond;
         // MatchBranch or Comment or CommentGroup
         std::list<std::shared_ptr<Node>> branch;
-        scope_ptr scope;
 
         Match(lexer::Loc l)
             : Expr(l, NodeType::match) {}
@@ -307,7 +306,6 @@ namespace brgen::ast {
             Expr::dump(field_);
             sdebugf(cond);
             sdebugf(branch);
-            sdebugf(scope);
         }
     };
 

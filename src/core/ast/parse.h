@@ -32,6 +32,16 @@ namespace brgen::ast {
             });
         }
 
+        auto new_indent_no_scope(Stream& s, size_t new_) {
+            if (indent >= new_) {
+                s.report_error("expect larger indent but not");
+            }
+            auto old = std::exchange(indent, std::move(new_));
+            return utils::helper::defer([=, this] {
+                indent = std::move(old);
+            });
+        }
+
         auto enter_member(const std::shared_ptr<Member>& f) {
             f->belong = current_fmt_;
             current_fmt_ = f;
@@ -121,18 +131,18 @@ namespace brgen::ast {
             auto base = s.must_consume_token(lexer::Tag::indent);
 
             // Create a shared pointer for the IndentBlock
-            auto scope = std::make_shared<IndentBlock>(base.loc);
+            auto block = std::make_shared<IndentBlock>(base.loc);
 
-            scope->struct_type = std::make_shared<StructType>(base.loc);
+            block->struct_type = std::make_shared<StructType>(base.loc);
 
             // Create a new context for the current indent level
             auto current_indent = base.token.size();
-            auto c = state.new_indent(s, current_indent, &scope->scope);
-            auto ss = state.enter_struct(scope->struct_type);
+            auto c = state.new_indent(s, current_indent, &block->scope);
+            auto ss = state.enter_struct(block->struct_type);
 
             if (ident) {
                 for (auto& i : *ident) {
-                    scope->scope->push(std::move(i));
+                    block->scope->push(std::move(i));
                 }
             }
 
@@ -140,14 +150,14 @@ namespace brgen::ast {
                 // get comments and add to scope
                 auto comment = s.get_comments();
                 if (comment) {
-                    scope->elements.push_back(std::move(comment));
+                    block->elements.push_back(std::move(comment));
                 }
             };
 
             collect_comments();
 
             // Parse and add the first element
-            scope->elements.push_back(parse_statement());
+            block->elements.push_back(parse_statement());
 
             // Parse and add subsequent elements with the same indent level
             while (auto indent = s.peek_token(lexer::Tag::indent)) {
@@ -158,14 +168,14 @@ namespace brgen::ast {
                 collect_comments();
                 bool line_skipped = false;
                 while (!line_skipped) {
-                    scope->elements.push_back(parse_statement(&line_skipped));
+                    block->elements.push_back(parse_statement(&line_skipped));
                     if (s.peek_token(lexer::Tag::indent) || s.eos()) {
                         break;
                     }
                 }
             }
 
-            return scope;
+            return block;
         }
 
         void export_union_field(const std::shared_ptr<Expr>& cond0, std::vector<std::shared_ptr<Expr>>& cond, const std::shared_ptr<UnionType>& type) {
@@ -219,15 +229,11 @@ namespace brgen::ast {
 
             auto push_union_to_current_struct = [&] {
                 auto f = std::make_shared<Field>(match->loc);
-                f->field_type = std::move(union_);
+                f->field_type = union_;
                 f->belong = state.current_member();
                 state.add_to_struct(std::move(f));
                 export_union_field(match->cond, cond, union_);
             };
-
-            const auto d = utils::helper::defer([&] {
-                push_union_to_current_struct();
-            });
 
             s.skip_white();
 
@@ -269,7 +275,7 @@ namespace brgen::ast {
 
             // Create a new context for the current indent level
             auto current_indent = base.token.size();
-            auto c = state.new_indent(s, current_indent, &match->scope);
+            auto c = state.new_indent_no_scope(s, current_indent);
 
             auto collect_comments = [&] {
                 // get comments and add to scope
@@ -292,6 +298,8 @@ namespace brgen::ast {
                 s.must_consume_token(lexer::Tag::indent);
                 match->branch.push_back(parse_match_branch());
             }
+
+            push_union_to_current_struct();
 
             return match;
         }
@@ -318,10 +326,6 @@ namespace brgen::ast {
                 state.add_to_struct(std::move(f));
                 export_union_field(nullptr, cond, union_);
             };
-
-            const auto d = utils::helper::defer([&] {
-                push_union_to_current_struct();
-            });
 
             auto body_with_struct = [&](lexer::Loc loc, auto& block) {
                 auto tmp = parse_indent_block();
@@ -350,6 +354,7 @@ namespace brgen::ast {
             };
 
             if (detect_end()) {
+                push_union_to_current_struct();
                 return if_;
             }
 
@@ -367,6 +372,7 @@ namespace brgen::ast {
                 current_if->els = std::move(elif);
                 current_if = next_if;
                 if (detect_end()) {
+                    push_union_to_current_struct();
                     return if_;
                 }
                 consume_indent();  // else or elif のため次のインデントを消費
@@ -383,6 +389,8 @@ namespace brgen::ast {
                     s.backward();
                 }
             }
+
+            push_union_to_current_struct();
 
             return if_;
         }
