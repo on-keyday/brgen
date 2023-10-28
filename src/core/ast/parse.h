@@ -260,7 +260,9 @@ namespace brgen::ast {
                 auto sym = s.consume_token("=>");
                 if (!sym) {
                     auto tok = s.peek_token(":");
-                    br->then = parse_indent_block();
+                    auto block = parse_indent_block();
+                    union_->fields.push_back(block->struct_type);
+                    br->then = std::move(block);
                     br->sym_loc = tok->loc;
                     return br;
                 }

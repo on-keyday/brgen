@@ -152,8 +152,11 @@ namespace brgen {
             return files.size();
         }
 
-        expected<lexer::FileIndex, std::error_code> add_file(const auto& name) {
+        expected<lexer::FileIndex, std::error_code> add_file(const auto& name, bool allow_duplicate = false, fs::path base_path = {}) {
             fs::path path = utils::utf::convert<std::u8string>(name);
+            if (!base_path.empty() && path.is_relative()) {
+                path = base_path / path;
+            }
             std::error_code err;
             path = fs::canonical(path, err);
             if (err) {
@@ -164,7 +167,10 @@ namespace brgen {
             }
             for (auto it = files.begin(); it != files.end(); it++) {
                 if (fs::equivalent(it->second.file_name, path, err)) {
-                    return unexpect(std::error_code(it->second.file, std::generic_category()));
+                    if (allow_duplicate) {
+                        return it->second.file;
+                    }
+                    return unexpect(std::error_code(int(std::errc::file_exists), std::generic_category()));
                 }
                 else if (err) {
                     return unexpect(err);
@@ -178,6 +184,13 @@ namespace brgen {
             f = std::move(file);
             indexes[index] = &f;
             return files.size();
+        }
+
+        fs::path get_path(lexer::FileIndex fd) {
+            if (fd < 1 || index < fd) {
+                return {};
+            }
+            return indexes[fd]->file_name;
         }
 
         File* get_input(lexer::FileIndex fd) {

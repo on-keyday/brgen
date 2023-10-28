@@ -19,6 +19,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("use serde_derive::{Serialize,Deserialize};\n\n")
 	w.Printf("use std::collections::HashMap;\n\n")
 
+	w.Printf("#[derive(Debug,Clone,Serialize,Deserialize)]\n")
 	w.Printf("pub enum JSONType {\n")
 	w.Printf("	Null,\n")
 	w.Printf("	Bool,\n")
@@ -41,6 +42,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("	}\n")
 	w.Printf("}\n\n")
 
+	w.Printf("#[derive(Debug,Clone,Serialize,Deserialize)]\n")
 	w.Printf("pub enum Error {\n")
 	w.Printf("	UnknownNodeType(NodeType),\n")
 	w.Printf("	MismatchNodeType(NodeType,NodeType),\n")
@@ -474,9 +476,19 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("	pub error :Option<SrcError>,\n")
 	w.Printf("}\n\n")
 
-	w.Printf("pub fn walk_node<F>(node:&Node,f:&F)\n")
+	w.Printf("pub trait Visitor {\n")
+	w.Printf("	fn visit(&self,node:&Node);\n")
+	w.Printf("}\n\n")
+
+	w.Printf("impl<F :Fn(&dyn Visitor,&Node)> Visitor for F {\n")
+	w.Printf("	fn visit(&self,node:&Node){\n")
+	w.Printf("		self(self,node);\n")
+	w.Printf("	}\n")
+	w.Printf("}\n\n")
+
+	w.Printf("pub fn walk_node<'a,F>(node:&Node,f:&'a F)\n")
 	w.Printf("where\n")
-	w.Printf("	F: Fn(&F,&Node)\n")
+	w.Printf("	F: Visitor+?Sized+'a\n")
 	w.Printf("{\n")
 	w.Printf("	match node {\n")
 	for _, nodeType := range defs.Defs {
@@ -503,18 +515,18 @@ func generate(rw io.Writer, defs *gen.Defs) {
 					writeOnce()
 					w.Printf("			for node in &node.borrow().%s{\n", field.Name)
 					if field.Type.Name == "Node" {
-						w.Printf("				f(f,node);\n")
+						w.Printf("				f.visit(node);\n")
 					} else {
-						w.Printf("				f(f,&node.into());\n")
+						w.Printf("				f.visit(&node.into());\n")
 					}
 					w.Printf("			}\n")
 				} else if field.Type.IsPtr || field.Type.IsInterface {
 					writeOnce()
 					w.Printf("			if let Some(node) = &node.borrow().%s{\n", field.Name)
 					if field.Type.Name == "Node" {
-						w.Printf("				f(f,node);\n")
+						w.Printf("				f.visit(node);\n")
 					} else {
-						w.Printf("				f(f,&node.into());\n")
+						w.Printf("				f.visit(&node.into());\n")
 					}
 					w.Printf("			}\n")
 				}

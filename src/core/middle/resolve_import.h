@@ -10,6 +10,10 @@ namespace brgen::middle {
         std::vector<fs::path> path_stack;
         std::map<fs::path, std::shared_ptr<ast::Program>> programs;
 
+        fs::path current() {
+            return path_stack.back();
+        }
+
         void push(fs::path path) {
             path_stack.push_back(std::move(path));
         }
@@ -84,19 +88,15 @@ namespace brgen::middle {
                         if (!path) {
                             error(m->loc, "invalid path: cannot unescape ", raw_path->value).report();
                         }
-                        auto res = fs.add_file(*path);
+                        auto res = fs.add_file(*path, true, stack.current().parent_path());
                         if (!res) {
-                            if (res.error().category() == std::generic_category()) {
-                                // skip error, allow duplication
-                                res = res.error().value();  // as file index
-                            }
-                            else {
-                                error(m->loc, "cannot open file  ", *path, " code=", res.error().category().name(), ":", nums(res.error().value())).report();
-                            }
+                            auto fullpath = stack.current().parent_path() / *path;
+                            error(m->loc, "cannot open file  ", fullpath.generic_u8string(), " code=", res.error().category().name(), ":", nums(res.error().value())).report();
                         }
                         auto new_input = fs.get_input(*res);
                         if (!new_input) {
-                            error(m->loc, "cannot open file  ", *path).report();
+                            auto fullpath = fs.get_path(*res);
+                            error(m->loc, "cannot open file  ", fullpath.generic_u8string()).report();
                         }
                         auto new_path = new_input->path();
                         if (stack.is_already_registered(new_path)) {

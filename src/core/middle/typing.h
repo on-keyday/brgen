@@ -23,6 +23,9 @@ namespace brgen::middle {
                 auto rty = ast::as<ast::IdentType>(right);
                 return lty->ident == rty->ident;
             }
+            if (ast::as<ast::BoolType>(left)) {
+                return true;
+            }
             return false;
         }
 
