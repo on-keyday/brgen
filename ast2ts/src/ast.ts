@@ -261,7 +261,6 @@ export function isIndex(obj: any): obj is Index {
 export interface Match extends Expr {
 	cond: Expr|null;
 	branch: Node[];
-	scope: Scope|null;
 }
 
 export function isMatch(obj: any): obj is Match {
@@ -926,7 +925,6 @@ export function parseAST(obj: any): Program {
 				expr_type: null,
 				cond: null,
 				branch: [],
-				scope: null,
 			}
 			c.node.push(n);
 			break;
@@ -1680,14 +1678,6 @@ export function parseAST(obj: any): Program {
 				const tmpbranch = c.node[o];
 				n.branch.push(tmpbranch);
 			}
-			if (on.body?.scope !== null && typeof on.body?.scope !== 'number') {
-				throw new Error('invalid node list');
-			}
-			const tmpscope = on.body.scope === null ? null : c.scope[on.body.scope];
-			if (tmpscope !== null && !isScope(tmpscope)) {
-				throw new Error('invalid node list');
-			}
-			n.scope = tmpscope;
 			break;
 		}
 		case "range": {

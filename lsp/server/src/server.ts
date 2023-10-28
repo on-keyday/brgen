@@ -26,8 +26,6 @@ import assert from 'node:assert/strict';
 
 
 
-//TODO(on-keyday): replace path to src2json
-const PATH_TO_SRC2JSON =`C:/workspace/shbrgen/brgen/tool/src2json${(process.platform === "win32" ? ".exe" : "")}`
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -152,6 +150,7 @@ const tokenizeSourceImpl  = async (doc :TextDocument) =>{
     console.time("load settings")
     const settings = await getDocumentSettings(doc.uri);
     console.timeEnd("load settings")
+    console.log(`settings: ${JSON.stringify(settings)}`);
     console.time("tokenize")
     let tokens_ :ast2ts.TokenFile;
     try {
@@ -268,23 +267,36 @@ const tokenizeSourceImpl  = async (doc :TextDocument) =>{
             assert(line>=0,`line: ${line}`);
             assert(col>=0,`col: ${col}`);
             assert(node.ident.length>0,`ident: ${node.ident}`)
-            switch(node.usage) {
-                case ast2ts.IdentUsage.unknown:
-                case ast2ts.IdentUsage.reference:
-                case ast2ts.IdentUsage.define_variable:
-                    break;
-                case ast2ts.IdentUsage.define_field:   
-                case ast2ts.IdentUsage.define_const:
-                    locList.push({loc: node.loc,length: node.ident.length,index:6});
-                    break;   
-                case ast2ts.IdentUsage.define_format:
-                case ast2ts.IdentUsage.define_enum:
-                case ast2ts.IdentUsage.reference_type:
-                    locList.push({loc: node.loc,length: node.ident.length,index:7});
-                    break;
-                case ast2ts.IdentUsage.define_fn:
-                    locList.push({loc: node.loc,length: node.ident.length,index:8});
-                    break;
+            let n = node;
+            console.log(`ident: ${n.ident} ${n.usage}`)
+            for(;;){
+                switch(n.usage) {
+                    case ast2ts.IdentUsage.unknown:
+                        break;
+                    case ast2ts.IdentUsage.reference:
+                        
+                        if(ast2ts.isIdent(n.base)){
+                            console.log("base -> "+n.base.usage);
+                            n = n.base;
+                            continue;
+                        }
+                        break;
+                    case ast2ts.IdentUsage.define_variable:
+                        break;
+                    case ast2ts.IdentUsage.define_field:   
+                    case ast2ts.IdentUsage.define_const:
+                        locList.push({loc: node.loc,length: node.ident.length,index:6});
+                        break;   
+                    case ast2ts.IdentUsage.define_format:
+                    case ast2ts.IdentUsage.define_enum:
+                    case ast2ts.IdentUsage.reference_type:
+                        locList.push({loc: node.loc,length: node.ident.length,index:7});
+                        break;
+                    case ast2ts.IdentUsage.define_fn:
+                        locList.push({loc: node.loc,length: node.ident.length,index:8});
+                        break;
+                }
+                break;
             }
         }
         else if(ast2ts.isIntType(node)&&node.is_explicit){
@@ -320,7 +332,6 @@ connection.onRequest("textDocument/semanticTokens/full",async (params)=>{
         console.log(`document ${params?.textDocument?.uri} is not found`);
         return null; 
     }
-    getDocumentSettings(doc.uri);
     return await tokenizeSource(doc);
 });
 
@@ -332,7 +343,7 @@ interface BrgenLSPSettings {
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
 // Please note that this is not the case when using this server with the client provided in this example
 // but could happen with other clients.
-const defaultSettings: BrgenLSPSettings = { src2json: "" };
+const defaultSettings: BrgenLSPSettings = { src2json: `./tool/src2json${(process.platform === "win32" ? ".exe" : "")}` };
 let globalSettings: BrgenLSPSettings = defaultSettings;
 
 // Cache the settings of all open documents
@@ -366,10 +377,16 @@ const  getDocumentSettings = async(resource: string) => {
     }
     return result.then((x)=>{
         if(x===null){
+            console.log("using default settings")
+            return defaultSettings;
+        }
+        if(x.src2json === undefined || x.src2json === null || x.src2json === ""){
+            console.log("using default settings")
             return defaultSettings;
         }
         return x;
     },(_)=>{
+        console.log("use default settings")
         return defaultSettings;
     });
 }

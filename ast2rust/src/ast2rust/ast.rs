@@ -997,7 +997,6 @@ pub struct Match {
 	pub expr_type: Option<Type>,
 	pub cond: Option<Expr>,
 	pub branch: Vec<Node>,
-	pub scope: Option<Rc<RefCell<Scope>>>,
 }
 
 impl TryFrom<&Expr> for Rc<RefCell<Match>> {
@@ -2946,7 +2945,6 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				expr_type: None,
 				cond: None,
 				branch: Vec::new(),
-				scope: None,
 				})))
 			},
 			NodeType::Range => {
@@ -3852,19 +3850,6 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().branch.push(branch_body.clone());
 				}
-				let scope_body = match raw_node.body.get("scope") {
-					Some(v)=>v,
-					None=>return Err(Error::MissingField(raw_node.node_type,"scope")),
-				};
-				let scope_body = match scope_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(scope_body.into(),JSONType::Number)),
-				};
-				let scope_body = match scopes.get(scope_body as usize) {
-					Some(v)=>v,
-					None => return Err(Error::IndexOutOfBounds(scope_body as usize)),
-				};
-				node.borrow_mut().scope = Some(scope_body.clone());
 			},
 			NodeType::Range => {
 				let node = nodes[i].clone();
@@ -5340,9 +5325,9 @@ pub struct TokenFile {
 	pub error :Option<SrcError>,
 }
 
-pub fn walk_node<F>(node:&Node,f:&mut F)
+pub fn walk_node<F>(node:&Node,f:&F)
 where
-	F: FnMut(&mut F,&Node)
+	F: Fn(&F,&Node)
 {
 	match node {
 		Node::Program(node)=>{
@@ -5560,10 +5545,8 @@ where
 				f(f,&node.into());
 			}
 		},
-		Node::Break(node)=>{
-		},
-		Node::Continue(node)=>{
-		},
+		Node::Break(_)=>{},
+		Node::Continue(_)=>{},
 		Node::Assert(node)=>{
 			if let Some(node) = &node.borrow().cond{
 				f(f,&node.into());
@@ -5613,21 +5596,16 @@ where
 				f(f,&node.into());
 			}
 		},
-		Node::IntType(node)=>{
-		},
+		Node::IntType(_)=>{},
 		Node::IdentType(node)=>{
 			if let Some(node) = &node.borrow().ident{
 				f(f,&node.into());
 			}
 		},
-		Node::IntLiteralType(node)=>{
-		},
-		Node::StrLiteralType(node)=>{
-		},
-		Node::VoidType(node)=>{
-		},
-		Node::BoolType(node)=>{
-		},
+		Node::IntLiteralType(_)=>{},
+		Node::StrLiteralType(_)=>{},
+		Node::VoidType(_)=>{},
+		Node::BoolType(_)=>{},
 		Node::ArrayType(node)=>{
 			if let Some(node) = &node.borrow().base_type{
 				f(f,&node.into());
@@ -5665,8 +5643,7 @@ where
 				f(f,&node.into());
 			}
 		},
-		Node::Comment(node)=>{
-		},
+		Node::Comment(_)=>{},
 		Node::CommentGroup(node)=>{
 			for node in &node.borrow().comments{
 				f(f,&node.into());

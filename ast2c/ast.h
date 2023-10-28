@@ -380,7 +380,6 @@ struct Match {
 	Expr* cond;
 	Node** branch;
 	size_t branch_size;
-	Scope* scope;
 };
 
 struct Range {

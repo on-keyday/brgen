@@ -149,7 +149,6 @@ class Index(Expr):
 class Match(Expr):
     cond: Optional[Expr]
     branch: List[Node]
-    scope: Optional[Scope]
 
 
 class Range(Expr):
@@ -750,7 +749,6 @@ def ast2node(ast :Ast) -> Program:
                 x = node[ast.node[i].body["cond"]]
                 node[i].cond = x if isinstance(x,Expr) or x is None else raiseError(TypeError('type mismatch'))
                 node[i].branch = [(node[x] if isinstance(node[x],Node) else raiseError(TypeError('type mismatch'))) for x in ast.node[i].body["branch"]]
-                node[i].scope = scope[ast.node[i].body["scope"]]
             case NodeType.RANGE:
                 x = node[ast.node[i].body["expr_type"]]
                 node[i].expr_type = x if isinstance(x,Type) or x is None else raiseError(TypeError('type mismatch'))

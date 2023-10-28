@@ -159,7 +159,6 @@ type Match struct {
 	ExprType Type
 	Cond     Expr
 	Branch   []Node
-	Scope    *Scope
 }
 
 func (n *Match) isExpr() {}
@@ -1407,7 +1406,6 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 				ExprType *uintptr  `json:"expr_type"`
 				Cond     *uintptr  `json:"cond"`
 				Branch   []uintptr `json:"branch"`
-				Scope    *uintptr  `json:"scope"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -1421,9 +1419,6 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			v.Branch = make([]Node, len(tmp.Branch))
 			for j, k := range tmp.Branch {
 				v.Branch[j] = n.node[k].(Node)
-			}
-			if tmp.Scope != nil {
-				v.Scope = n.scope[*tmp.Scope]
 			}
 		case "range":
 			v := n.node[i].(*Range)
