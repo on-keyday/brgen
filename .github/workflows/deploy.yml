@@ -35,6 +35,12 @@ jobs:
         uses: mymindstorm/setup-emsdk@v12
       - name: Set up Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
+      - name: Set up ast2ts
+        run: |
+          cd ast2ts
+          npm install
+          tsc
+          cd ..
       - name: Build Wasm
         run: |
           . build.sh wasm-em
