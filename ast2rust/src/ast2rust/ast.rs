@@ -3539,6 +3539,7 @@ pub struct UnionType {
 	pub is_explicit: bool,
 	pub fields: Vec<Rc<RefCell<StructType>>>,
 	pub base: Option<Expr>,
+	pub union_fields: Vec<Weak<RefCell<UnionField>>>,
 }
 
 impl TryFrom<&Type> for Rc<RefCell<UnionType>> {
@@ -4496,6 +4497,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				is_explicit: false,
 				fields: Vec::new(),
 				base: None,
+				union_fields: Vec::new(),
 				})))
 			},
 			NodeType::Cast => {
@@ -6576,6 +6578,29 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 						None => return Err(Error::IndexOutOfBounds(base_body as usize)),
 					};
 					node.borrow_mut().base = Some(base_body.try_into()?);
+				}
+				let union_fields_body = match raw_node.body.get("union_fields") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"union_fields")),
+				};
+				let union_fields_body = match union_fields_body.as_array(){
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(union_fields_body.into(),JSONType::Array)),
+				};
+				for link in union_fields_body {
+					let link = match link.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
+					};
+					let union_fields_body = match nodes.get(link as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(link as usize)),
+					};
+					let union_fields_body = match union_fields_body {
+						Node::UnionField(body)=>body,
+						x =>return Err(Error::MismatchNodeType(x.into(),union_fields_body.into())),
+					};
+					node.borrow_mut().union_fields.push(Rc::downgrade(&union_fields_body));
 				}
 			},
 			NodeType::Cast => {

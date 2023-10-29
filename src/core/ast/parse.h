@@ -218,6 +218,7 @@ namespace brgen::ast {
                 for (auto& c : v) {
                     f->candidate.push_back(c);
                 }
+                type->union_fields.push_back(f);
                 state.add_to_struct(std::move(f));
             }
         }

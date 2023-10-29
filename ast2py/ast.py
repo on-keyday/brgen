@@ -302,6 +302,7 @@ class StructType(Type):
 class UnionType(Type):
     fields: List[StructType]
     base: Optional[Expr]
+    union_fields: List[UnionField]
 
 
 class Cast(Expr):
@@ -927,6 +928,7 @@ def ast2node(ast :Ast) -> Program:
                 node[i].fields = [(node[x] if isinstance(node[x],StructType) else raiseError(TypeError('type mismatch'))) for x in ast.node[i].body["fields"]]
                 x = node[ast.node[i].body["base"]]
                 node[i].base = x if isinstance(x,Expr) or x is None else raiseError(TypeError('type mismatch'))
+                node[i].union_fields = [(node[x] if isinstance(node[x],UnionField) else raiseError(TypeError('type mismatch'))) for x in ast.node[i].body["union_fields"]]
             case NodeType.CAST:
                 x = node[ast.node[i].body["expr_type"]]
                 node[i].expr_type = x if isinstance(x,Type) or x is None else raiseError(TypeError('type mismatch'))

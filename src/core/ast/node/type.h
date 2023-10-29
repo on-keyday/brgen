@@ -310,10 +310,13 @@ namespace brgen::ast {
         }
     };
 
+    struct UnionField;
+
     struct UnionType : Type {
         define_node_type(NodeType::union_type);
         std::weak_ptr<Expr> base;
         std::vector<std::shared_ptr<StructType>> fields;
+        std::vector<std::weak_ptr<UnionField>> union_fields;
 
         UnionType(lexer::Loc l)
             : Type(l, NodeType::union_type) {}
@@ -325,6 +328,7 @@ namespace brgen::ast {
             Type::dump(field_);
             sdebugf(fields);
             sdebugf(base);
+            sdebugf(union_fields);
         }
     };
 

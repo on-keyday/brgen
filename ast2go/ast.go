@@ -500,10 +500,11 @@ func (n *StructType) isType() {}
 func (n *StructType) isNode() {}
 
 type UnionType struct {
-	Loc        Loc
-	IsExplicit bool
-	Fields     []*StructType
-	Base       Expr
+	Loc         Loc
+	IsExplicit  bool
+	Fields      []*StructType
+	Base        Expr
+	UnionFields []*UnionField
 }
 
 func (n *UnionType) isType() {}
@@ -1900,9 +1901,10 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 		case "union_type":
 			v := n.node[i].(*UnionType)
 			var tmp struct {
-				IsExplicit bool      `json:"is_explicit"`
-				Fields     []uintptr `json:"fields"`
-				Base       *uintptr  `json:"base"`
+				IsExplicit  bool      `json:"is_explicit"`
+				Fields      []uintptr `json:"fields"`
+				Base        *uintptr  `json:"base"`
+				UnionFields []uintptr `json:"union_fields"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -1914,6 +1916,10 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			}
 			if tmp.Base != nil {
 				v.Base = n.node[*tmp.Base].(Expr)
+			}
+			v.UnionFields = make([]*UnionField, len(tmp.UnionFields))
+			for j, k := range tmp.UnionFields {
+				v.UnionFields[j] = n.node[k].(*UnionField)
 			}
 		case "cast":
 			v := n.node[i].(*Cast)

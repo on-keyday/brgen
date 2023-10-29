@@ -365,7 +365,11 @@ func generate(rw io.Writer, defs *gen.Defs) {
 						w.Printf("						Node::%s(body)=>body,\n", field.Type.Name)
 						w.Printf("						x =>return Err(Error::MismatchNodeType(x.into(),%s_body.into())),\n", field.Name)
 						w.Printf("					};\n")
-						w.Printf("					node.borrow_mut().%s.push(%s_body.clone());\n", field.Name, field.Name)
+						if field.Type.IsWeak {
+							w.Printf("					node.borrow_mut().%s.push(Rc::downgrade(&%s_body));\n", field.Name, field.Name)
+						} else {
+							w.Printf("					node.borrow_mut().%s.push(%s_body.clone());\n", field.Name, field.Name)
+						}
 					}
 					w.Printf("				}\n")
 				} else if field.Type.IsPtr || field.Type.IsInterface {

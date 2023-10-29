@@ -630,6 +630,8 @@ struct UnionType {
 	StructType** fields;
 	size_t fields_size;
 	Expr* base;
+	UnionField** union_fields;
+	size_t union_fields_size;
 };
 
 struct Cast {

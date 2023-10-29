@@ -156,6 +156,8 @@ namespace json2cpp {
                         return r.transform(empty_void);
                     }
                 }
+                if (ast::as<ast::UnionField>(f)) {
+                }
             }
             return merge_fields();
         }
@@ -197,6 +199,8 @@ namespace json2cpp {
             fields.push_back(std::move(vec_field));
             return {};
         }
+
+        result<void> collect_union_field() {}
 
         result<void> collect_field(const std::shared_ptr<ast::Format>& fmt, std::shared_ptr<ast::Field>&& field) {
             auto& fname = field->ident->ident;
