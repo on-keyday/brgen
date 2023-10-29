@@ -977,6 +977,7 @@ impl From<Rc<RefCell<Call>>> for Node {
 pub struct If {
 	pub loc: Loc,
 	pub expr_type: Option<Type>,
+	pub cond_scope: Option<Rc<RefCell<Scope>>>,
 	pub cond: Option<Expr>,
 	pub then: Option<Rc<RefCell<IndentBlock>>>,
 	pub els: Option<Node>,
@@ -1244,6 +1245,7 @@ impl From<Rc<RefCell<Index>>> for Node {
 pub struct Match {
 	pub loc: Loc,
 	pub expr_type: Option<Type>,
+	pub cond_scope: Option<Rc<RefCell<Scope>>>,
 	pub cond: Option<Expr>,
 	pub branch: Vec<Node>,
 }
@@ -2135,6 +2137,7 @@ impl From<Rc<RefCell<Config>>> for Node {
 #[derive(Debug,Clone)]
 pub struct Loop {
 	pub loc: Loc,
+	pub cond_scope: Option<Rc<RefCell<Scope>>>,
 	pub init: Option<Expr>,
 	pub cond: Option<Expr>,
 	pub step: Option<Expr>,
@@ -3976,8 +3979,8 @@ impl TryFrom<&str> for BinaryOp {
 			">=" =>Ok(Self::GraterOrEq),
 			"&&" =>Ok(Self::LogicalAnd),
 			"||" =>Ok(Self::LogicalOr),
-			"if" =>Ok(Self::CondOp1),
-			"else" =>Ok(Self::CondOp2),
+			"?" =>Ok(Self::CondOp1),
+			":" =>Ok(Self::CondOp2),
 			".." =>Ok(Self::RangeExclusive),
 			"..=" =>Ok(Self::RangeInclusive),
 			"=" =>Ok(Self::Assign),
@@ -4222,6 +4225,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::If(Rc::new(RefCell::new(If {
 				loc: raw_node.loc.clone(),
 				expr_type: None,
+				cond_scope: None,
 				cond: None,
 				then: None,
 				els: None,
@@ -4257,6 +4261,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::Match(Rc::new(RefCell::new(Match {
 				loc: raw_node.loc.clone(),
 				expr_type: None,
+				cond_scope: None,
 				cond: None,
 				branch: Vec::new(),
 				})))
@@ -4336,6 +4341,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 			NodeType::Loop => {
 				Node::Loop(Rc::new(RefCell::new(Loop {
 				loc: raw_node.loc.clone(),
+				cond_scope: None,
 				init: None,
 				cond: None,
 				step: None,
@@ -4965,6 +4971,21 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
 				}
+				let cond_scope_body = match raw_node.body.get("cond_scope") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"cond_scope")),
+				};
+ 				if !cond_scope_body.is_null() {
+					let cond_scope_body = match cond_scope_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(cond_scope_body.into(),JSONType::Number)),
+					};
+					let cond_scope_body = match scopes.get(cond_scope_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(cond_scope_body as usize)),
+					};
+					node.borrow_mut().cond_scope = Some(cond_scope_body.clone());
+				}
 				let cond_body = match raw_node.body.get("cond") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"cond")),
@@ -5193,6 +5214,21 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 						None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
 					};
 					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+				}
+				let cond_scope_body = match raw_node.body.get("cond_scope") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"cond_scope")),
+				};
+ 				if !cond_scope_body.is_null() {
+					let cond_scope_body = match cond_scope_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(cond_scope_body.into(),JSONType::Number)),
+					};
+					let cond_scope_body = match scopes.get(cond_scope_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(cond_scope_body as usize)),
+					};
+					node.borrow_mut().cond_scope = Some(cond_scope_body.clone());
 				}
 				let cond_body = match raw_node.body.get("cond") {
 					Some(v)=>v,
@@ -5608,6 +5644,21 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Node::Loop(node)=>node,
 					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
+				let cond_scope_body = match raw_node.body.get("cond_scope") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"cond_scope")),
+				};
+ 				if !cond_scope_body.is_null() {
+					let cond_scope_body = match cond_scope_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(cond_scope_body.into(),JSONType::Number)),
+					};
+					let cond_scope_body = match scopes.get(cond_scope_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(cond_scope_body as usize)),
+					};
+					node.borrow_mut().cond_scope = Some(cond_scope_body.clone());
+				}
 				let init_body = match raw_node.body.get("init") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"init")),

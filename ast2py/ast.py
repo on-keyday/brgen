@@ -124,6 +124,7 @@ class Call(Expr):
 
 
 class If(Expr):
+    cond_scope: Optional[Scope]
     cond: Optional[Expr]
     then: Optional[IndentBlock]
     els: Optional[Node]
@@ -147,6 +148,7 @@ class Index(Expr):
 
 
 class Match(Expr):
+    cond_scope: Optional[Scope]
     cond: Optional[Expr]
     branch: List[Node]
 
@@ -197,6 +199,7 @@ class Config(Literal):
 
 
 class Loop(Stmt):
+    cond_scope: Optional[Scope]
     init: Optional[Expr]
     cond: Optional[Expr]
     step: Optional[Expr]
@@ -350,8 +353,8 @@ class BinaryOp(Enum):
     GRATER_OR_EQ = ">="
     LOGICAL_AND = "&&"
     LOGICAL_OR = "||"
-    COND_OP_1 = "if"
-    COND_OP_2 = "else"
+    COND_OP_1 = "?"
+    COND_OP_2 = ":"
     RANGE_EXCLUSIVE = ".."
     RANGE_INCLUSIVE = "..="
     ASSIGN = "="
@@ -715,6 +718,7 @@ def ast2node(ast :Ast) -> Program:
             case NodeType.IF:
                 x = node[ast.node[i].body["expr_type"]]
                 node[i].expr_type = x if isinstance(x,Type) or x is None else raiseError(TypeError('type mismatch'))
+                node[i].cond_scope = scope[ast.node[i].body["cond_scope"]]
                 x = node[ast.node[i].body["cond"]]
                 node[i].cond = x if isinstance(x,Expr) or x is None else raiseError(TypeError('type mismatch'))
                 x = node[ast.node[i].body["then"]]
@@ -746,6 +750,7 @@ def ast2node(ast :Ast) -> Program:
             case NodeType.MATCH:
                 x = node[ast.node[i].body["expr_type"]]
                 node[i].expr_type = x if isinstance(x,Type) or x is None else raiseError(TypeError('type mismatch'))
+                node[i].cond_scope = scope[ast.node[i].body["cond_scope"]]
                 x = node[ast.node[i].body["cond"]]
                 node[i].cond = x if isinstance(x,Expr) or x is None else raiseError(TypeError('type mismatch'))
                 node[i].branch = [(node[x] if isinstance(node[x],Node) else raiseError(TypeError('type mismatch'))) for x in ast.node[i].body["branch"]]
@@ -802,6 +807,7 @@ def ast2node(ast :Ast) -> Program:
                 x = node[ast.node[i].body["expr_type"]]
                 node[i].expr_type = x if isinstance(x,Type) or x is None else raiseError(TypeError('type mismatch'))
             case NodeType.LOOP:
+                node[i].cond_scope = scope[ast.node[i].body["cond_scope"]]
                 x = node[ast.node[i].body["init"]]
                 node[i].init = x if isinstance(x,Expr) or x is None else raiseError(TypeError('type mismatch'))
                 x = node[ast.node[i].body["cond"]]

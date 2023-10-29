@@ -220,6 +220,7 @@ export function isCall(obj: any): obj is Call {
 }
 
 export interface If extends Expr {
+	cond_scope: Scope|null;
 	cond: Expr|null;
 	then: IndentBlock|null;
 	els: Node|null;
@@ -259,6 +260,7 @@ export function isIndex(obj: any): obj is Index {
 }
 
 export interface Match extends Expr {
+	cond_scope: Scope|null;
 	cond: Expr|null;
 	branch: Node[];
 }
@@ -350,6 +352,7 @@ export function isConfig(obj: any): obj is Config {
 }
 
 export interface Loop extends Stmt {
+	cond_scope: Scope|null;
 	init: Expr|null;
 	cond: Expr|null;
 	step: Expr|null;
@@ -607,8 +610,8 @@ export enum BinaryOp {
 	grater_or_eq = ">=",
 	logical_and = "&&",
 	logical_or = "||",
-	cond_op_1 = "if",
-	cond_op_2 = "else",
+	cond_op_1 = "?",
+	cond_op_2 = ":",
 	range_exclusive = "..",
 	range_inclusive = "..=",
 	assign = "=",
@@ -628,7 +631,7 @@ export enum BinaryOp {
 };
 
 export function isBinaryOp(obj: any): obj is BinaryOp {
-	return obj && typeof obj === 'string' && (obj === "*" || obj === "/" || obj === "%" || obj === "<<<" || obj === ">>>" || obj === "<<" || obj === ">>" || obj === "&" || obj === "+" || obj === "-" || obj === "|" || obj === "^" || obj === "==" || obj === "!=" || obj === "<" || obj === "<=" || obj === ">" || obj === ">=" || obj === "&&" || obj === "||" || obj === "if" || obj === "else" || obj === ".." || obj === "..=" || obj === "=" || obj === ":=" || obj === "::=" || obj === "+=" || obj === "-=" || obj === "*=" || obj === "/=" || obj === "%=" || obj === "<<=" || obj === ">>=" || obj === "&=" || obj === "|=" || obj === "^=" || obj === ",")
+	return obj && typeof obj === 'string' && (obj === "*" || obj === "/" || obj === "%" || obj === "<<<" || obj === ">>>" || obj === "<<" || obj === ">>" || obj === "&" || obj === "+" || obj === "-" || obj === "|" || obj === "^" || obj === "==" || obj === "!=" || obj === "<" || obj === "<=" || obj === ">" || obj === ">=" || obj === "&&" || obj === "||" || obj === "?" || obj === ":" || obj === ".." || obj === "..=" || obj === "=" || obj === ":=" || obj === "::=" || obj === "+=" || obj === "-=" || obj === "*=" || obj === "/=" || obj === "%=" || obj === "<<=" || obj === ">>=" || obj === "&=" || obj === "|=" || obj === "^=" || obj === ",")
 }
 
 export enum IdentUsage {
@@ -876,6 +879,7 @@ export function parseAST(obj: any): Program {
 				node_type: "if",
 				loc: on.loc,
 				expr_type: null,
+				cond_scope: null,
 				cond: null,
 				then: null,
 				els: null,
@@ -923,6 +927,7 @@ export function parseAST(obj: any): Program {
 				node_type: "match",
 				loc: on.loc,
 				expr_type: null,
+				cond_scope: null,
 				cond: null,
 				branch: [],
 			}
@@ -1035,6 +1040,7 @@ export function parseAST(obj: any): Program {
 			const n :Loop = {
 				node_type: "loop",
 				loc: on.loc,
+				cond_scope: null,
 				init: null,
 				cond: null,
 				step: null,
@@ -1539,6 +1545,14 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list');
 			}
 			n.expr_type = tmpexpr_type;
+			if (on.body?.cond_scope !== null && typeof on.body?.cond_scope !== 'number') {
+				throw new Error('invalid node list');
+			}
+			const tmpcond_scope = on.body.cond_scope === null ? null : c.scope[on.body.cond_scope];
+			if (tmpcond_scope !== null && !isScope(tmpcond_scope)) {
+				throw new Error('invalid node list');
+			}
+			n.cond_scope = tmpcond_scope;
 			if (on.body?.cond !== null && typeof on.body?.cond !== 'number') {
 				throw new Error('invalid node list');
 			}
@@ -1663,6 +1677,14 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list');
 			}
 			n.expr_type = tmpexpr_type;
+			if (on.body?.cond_scope !== null && typeof on.body?.cond_scope !== 'number') {
+				throw new Error('invalid node list');
+			}
+			const tmpcond_scope = on.body.cond_scope === null ? null : c.scope[on.body.cond_scope];
+			if (tmpcond_scope !== null && !isScope(tmpcond_scope)) {
+				throw new Error('invalid node list');
+			}
+			n.cond_scope = tmpcond_scope;
 			if (on.body?.cond !== null && typeof on.body?.cond !== 'number') {
 				throw new Error('invalid node list');
 			}
@@ -1879,6 +1901,14 @@ export function parseAST(obj: any): Program {
 		}
 		case "loop": {
 			const n :Loop = cnode as Loop;
+			if (on.body?.cond_scope !== null && typeof on.body?.cond_scope !== 'number') {
+				throw new Error('invalid node list');
+			}
+			const tmpcond_scope = on.body.cond_scope === null ? null : c.scope[on.body.cond_scope];
+			if (tmpcond_scope !== null && !isScope(tmpcond_scope)) {
+				throw new Error('invalid node list');
+			}
+			n.cond_scope = tmpcond_scope;
 			if (on.body?.init !== null && typeof on.body?.init !== 'number') {
 				throw new Error('invalid node list');
 			}

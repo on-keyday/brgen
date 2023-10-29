@@ -342,6 +342,7 @@ struct If {
 	const NodeType node_type;
 	Loc loc;
 	Type* expr_type;
+	Scope* cond_scope;
 	Expr* cond;
 	IndentBlock* then;
 	Node* els;
@@ -377,6 +378,7 @@ struct Match {
 	const NodeType node_type;
 	Loc loc;
 	Type* expr_type;
+	Scope* cond_scope;
 	Expr* cond;
 	Node** branch;
 	size_t branch_size;
@@ -458,6 +460,7 @@ struct Config {
 struct Loop {
 	const NodeType node_type;
 	Loc loc;
+	Scope* cond_scope;
 	Expr* init;
 	Expr* cond;
 	Expr* step;

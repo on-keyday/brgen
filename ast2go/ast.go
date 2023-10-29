@@ -108,11 +108,12 @@ func (n *Call) isExpr() {}
 func (n *Call) isNode() {}
 
 type If struct {
-	Loc      Loc
-	ExprType Type
-	Cond     Expr
-	Then     *IndentBlock
-	Els      Node
+	Loc       Loc
+	ExprType  Type
+	CondScope *Scope
+	Cond      Expr
+	Then      *IndentBlock
+	Els       Node
 }
 
 func (n *If) isExpr() {}
@@ -155,10 +156,11 @@ func (n *Index) isExpr() {}
 func (n *Index) isNode() {}
 
 type Match struct {
-	Loc      Loc
-	ExprType Type
-	Cond     Expr
-	Branch   []Node
+	Loc       Loc
+	ExprType  Type
+	CondScope *Scope
+	Cond      Expr
+	Branch    []Node
 }
 
 func (n *Match) isExpr() {}
@@ -280,11 +282,12 @@ func (n *Config) isExpr() {}
 func (n *Config) isNode() {}
 
 type Loop struct {
-	Loc  Loc
-	Init Expr
-	Cond Expr
-	Step Expr
-	Body *IndentBlock
+	Loc       Loc
+	CondScope *Scope
+	Init      Expr
+	Cond      Expr
+	Step      Expr
+	Body      *IndentBlock
 }
 
 func (n *Loop) isStmt() {}
@@ -676,9 +679,9 @@ func (n BinaryOp) String() string {
 	case BinaryOpLogicalOr:
 		return "||"
 	case BinaryOpCondOp1:
-		return "if"
+		return "?"
 	case BinaryOpCondOp2:
-		return "else"
+		return ":"
 	case BinaryOpRangeExclusive:
 		return ".."
 	case BinaryOpRangeInclusive:
@@ -762,9 +765,9 @@ func (n BinaryOp) UnmarshalJSON(data []byte) error {
 		n = BinaryOpLogicalAnd
 	case "||":
 		n = BinaryOpLogicalOr
-	case "if":
+	case "?":
 		n = BinaryOpCondOp1
-	case "else":
+	case ":":
 		n = BinaryOpCondOp2
 	case "..":
 		n = BinaryOpRangeExclusive
@@ -1323,16 +1326,20 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 		case "if":
 			v := n.node[i].(*If)
 			var tmp struct {
-				ExprType *uintptr `json:"expr_type"`
-				Cond     *uintptr `json:"cond"`
-				Then     *uintptr `json:"then"`
-				Els      *uintptr `json:"els"`
+				ExprType  *uintptr `json:"expr_type"`
+				CondScope *uintptr `json:"cond_scope"`
+				Cond      *uintptr `json:"cond"`
+				Then      *uintptr `json:"then"`
+				Els       *uintptr `json:"els"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
 			}
 			if tmp.ExprType != nil {
 				v.ExprType = n.node[*tmp.ExprType].(Type)
+			}
+			if tmp.CondScope != nil {
+				v.CondScope = n.scope[*tmp.CondScope]
 			}
 			if tmp.Cond != nil {
 				v.Cond = n.node[*tmp.Cond].(Expr)
@@ -1403,15 +1410,19 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 		case "match":
 			v := n.node[i].(*Match)
 			var tmp struct {
-				ExprType *uintptr  `json:"expr_type"`
-				Cond     *uintptr  `json:"cond"`
-				Branch   []uintptr `json:"branch"`
+				ExprType  *uintptr  `json:"expr_type"`
+				CondScope *uintptr  `json:"cond_scope"`
+				Cond      *uintptr  `json:"cond"`
+				Branch    []uintptr `json:"branch"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
 			}
 			if tmp.ExprType != nil {
 				v.ExprType = n.node[*tmp.ExprType].(Type)
+			}
+			if tmp.CondScope != nil {
+				v.CondScope = n.scope[*tmp.CondScope]
 			}
 			if tmp.Cond != nil {
 				v.Cond = n.node[*tmp.Cond].(Expr)
@@ -1570,13 +1581,17 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 		case "loop":
 			v := n.node[i].(*Loop)
 			var tmp struct {
-				Init *uintptr `json:"init"`
-				Cond *uintptr `json:"cond"`
-				Step *uintptr `json:"step"`
-				Body *uintptr `json:"body"`
+				CondScope *uintptr `json:"cond_scope"`
+				Init      *uintptr `json:"init"`
+				Cond      *uintptr `json:"cond"`
+				Step      *uintptr `json:"step"`
+				Body      *uintptr `json:"body"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
+			}
+			if tmp.CondScope != nil {
+				v.CondScope = n.scope[*tmp.CondScope]
 			}
 			if tmp.Init != nil {
 				v.Init = n.node[*tmp.Init].(Expr)
