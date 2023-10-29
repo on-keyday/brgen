@@ -7,7 +7,11 @@
         "rootDir": "./src",
         "allowJs": true,    
         "strict": true,   
-        "lib": ["ES2022","DOM"]
+        "lib": ["ES2022","DOM"],
+        "paths": {
+            "undici-types": ["./node_modules/@type/node/node_modules/undici-types"]
+        },
+        "moduleResolution": "Node"
     },
     "include": ["**/*.ts"],
 }
