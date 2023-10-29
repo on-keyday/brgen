@@ -63,6 +63,12 @@ model.onDidChangeContent(async (e)=>{
     }
 })
 
+monaco.languages.registerDocumentHighlightProvider("brgen",{
+    provideDocumentHighlights(model,position,token){
+        console.log(model,position,token);
+        return [];
+    }
+})
 
 monaco.languages.register({ id: 'brgen' });
 

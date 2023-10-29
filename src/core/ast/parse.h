@@ -235,17 +235,18 @@ namespace brgen::ast {
 
             std::vector<std::shared_ptr<Expr>> cond;
 
+            auto cs = state.cond_scope(&match->cond_scope);
+
             auto push_union_to_current_struct = [&] {
                 auto f = std::make_shared<Field>(match->loc);
                 f->field_type = union_;
                 f->belong = state.current_member();
                 state.add_to_struct(std::move(f));
+                cs.execute();
                 export_union_field(match->cond, cond, union_);
             };
 
             s.skip_white();
-
-            auto cs = state.cond_scope(&match->cond_scope);
 
             if (!s.expect_token(":")) {
                 match->cond = parse_expr();
@@ -338,6 +339,7 @@ namespace brgen::ast {
                 f->field_type = union_;
                 f->belong = state.current_member();
                 state.add_to_struct(std::move(f));
+                cs.execute();
                 export_union_field(nullptr, cond, union_);
             };
 
