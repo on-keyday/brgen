@@ -8,6 +8,11 @@ fi
 if [ ! -d utils ]; then
 . ./script/clone_utils.sh $BUILD_MODE
 go mod download
+if [ $BUILD_MODE = "wasm-em" ]; then
+   cd web/dev
+   npm install
+   cd ../..
+fi
 fi
 
 
