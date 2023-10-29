@@ -108,3 +108,15 @@ x :void
 true || false
 true && false
 !true == false
+
+y:=10
+if y == 20:
+    return 0
+
+if y == 0:
+    return 0
+
+loop i:=0;i<10;i = i+1:
+    break
+
+z ::= y == 10 ? 1 : 0

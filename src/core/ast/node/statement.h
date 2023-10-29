@@ -121,6 +121,7 @@ namespace brgen::ast {
 
     struct Loop : Stmt {
         define_node_type(NodeType::loop);
+        scope_ptr cond_scope;
         std::shared_ptr<Expr> init;
         std::shared_ptr<Expr> cond;
         std::shared_ptr<Expr> step;
@@ -134,6 +135,7 @@ namespace brgen::ast {
 
         void dump(auto&& field_) {
             Stmt::dump(field_);
+            sdebugf(cond_scope);
             sdebugf(init);
             sdebugf(cond);
             sdebugf(step);

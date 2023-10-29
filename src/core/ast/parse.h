@@ -42,6 +42,14 @@ namespace brgen::ast {
             });
         }
 
+        auto cond_scope(scope_ptr* frame) {
+            auto br = stack.enter_branch();
+            if (frame) {
+                *frame = stack.current_scope();
+            }
+            return br;
+        }
+
         auto enter_member(const std::shared_ptr<Member>& f) {
             f->belong = current_fmt_;
             current_fmt_ = f;
@@ -237,6 +245,8 @@ namespace brgen::ast {
 
             s.skip_white();
 
+            auto cs = state.cond_scope(&match->cond_scope);
+
             if (!s.expect_token(":")) {
                 match->cond = parse_expr();
             }
@@ -312,6 +322,8 @@ namespace brgen::ast {
         std::shared_ptr<If> parse_if(lexer::Token&& token) {
             s.skip_white();
             auto if_ = std::make_shared<If>(token.loc);
+
+            auto cs = state.cond_scope(&if_->cond_scope);
 
             // 解析して if の条件式とブロックを設定
             if_->cond = parse_expr();
@@ -404,9 +416,9 @@ namespace brgen::ast {
 
         std::shared_ptr<Ident> parse_ident() {
             auto ident = parse_ident_no_scope();
-            auto frame = state.current_scope();
-            frame->push(ident);
-            ident->scope = std::move(frame);
+            auto scope = state.current_scope();
+            scope->push(ident);
+            ident->scope = std::move(scope);
             return ident;
         }
 
@@ -651,10 +663,10 @@ namespace brgen::ast {
                     }
                     else if (op.expr->node_type == NodeType::cond) {
                         auto cop = static_cast<Cond*>(op.expr.get());
-                        if (!cop->cond) {
-                            cop->cond = std::move(expr);
+                        if (!cop->then) {
+                            cop->then = std::move(expr);
                             s.skip_white();
-                            auto token = s.must_consume_token("else");
+                            auto token = s.must_consume_token(":");
                             cop->els_loc = token.loc;
                             stack.push_back(std::move(op));
                             s.skip_white();
@@ -709,7 +721,7 @@ namespace brgen::ast {
                 }
                 s.skip_space();
                 if (depth == ast::bin_cond_layer) {
-                    if (auto token = s.consume_token("if")) {
+                    if (auto token = s.consume_token("?")) {
                         stack.push_back(BinOpStack{.depth = depth, .expr = std::make_shared<Cond>(token->loc, std::move(expr))});
                         s.skip_white();
                         parse_low();
@@ -764,6 +776,7 @@ namespace brgen::ast {
         */
         std::shared_ptr<Loop> parse_for(lexer::Token&& token) {
             auto for_ = std::make_shared<Loop>(token.loc);
+            auto cs = state.cond_scope(&for_->cond_scope);
             s.skip_white();
             if (s.expect_token(":")) {
                 for_->body = parse_indent_block();

@@ -117,6 +117,7 @@ namespace brgen::ast {
 
     struct If : Expr {
         define_node_type(NodeType::if_);
+        scope_ptr cond_scope;
         std::shared_ptr<Expr> cond;
         std::shared_ptr<IndentBlock> then;
         std::shared_ptr<Node> els;
@@ -130,6 +131,7 @@ namespace brgen::ast {
 
         void dump(auto&& field_) {
             Expr::dump(field_);
+            sdebugf(cond_scope);
             sdebugf(cond);
             sdebugf(then);
             sdebugf(els);
@@ -228,13 +230,13 @@ namespace brgen::ast {
 
     struct Cond : Expr {
         define_node_type(NodeType::cond);
-        std::shared_ptr<Expr> then;
         std::shared_ptr<Expr> cond;
+        std::shared_ptr<Expr> then;
         lexer::Loc els_loc;
         std::shared_ptr<Expr> els;
 
-        Cond(lexer::Loc l, std::shared_ptr<Expr>&& then)
-            : Expr(l, NodeType::cond), then(std::move(then)) {}
+        Cond(lexer::Loc l, std::shared_ptr<Expr>&& cond)
+            : Expr(l, NodeType::cond), cond(std::move(cond)) {}
 
         // for decode
         constexpr Cond()
@@ -292,6 +294,7 @@ namespace brgen::ast {
 
     struct Match : Expr {
         define_node_type(NodeType::match);
+        scope_ptr cond_scope;
         std::shared_ptr<Expr> cond;
         // MatchBranch or Comment or CommentGroup
         std::list<std::shared_ptr<Node>> branch;
@@ -304,6 +307,7 @@ namespace brgen::ast {
 
         void dump(auto&& field_) {
             Expr::dump(field_);
+            sdebugf(cond_scope);
             sdebugf(cond);
             sdebugf(branch);
         }

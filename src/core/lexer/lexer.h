@@ -53,7 +53,7 @@ namespace brgen::lexer {
             "!=", "!",
             "+", "-", "*", "/", "%",
             ",", "^",
-            "<=", ">=", "<", ">");
+            "<=", ">=", "<", ">", "?");
 
         constexpr auto one_token_lexer() {
             auto p = method_proxy(puncts);

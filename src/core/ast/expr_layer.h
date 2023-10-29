@@ -88,7 +88,7 @@ namespace brgen::ast {
     constexpr const char* bin_layer2[] = {"==", "!=", "<", "<=", ">", ">=", nullptr};
     constexpr const char* bin_layer3[] = {"&&", nullptr};
     constexpr const char* bin_layer4[] = {"||", nullptr};
-    constexpr const char* bin_layer5[] = {"if", "else", nullptr};
+    constexpr const char* bin_layer5[] = {"?", ":", nullptr};
     constexpr const char* bin_layer6[] = {"..", "..=", nullptr};
     constexpr const char* bin_layer7[] = {"=", ":=", "::=", "+=", "-=", "*=",
                                           "/=", "%=", "<<=", ">>=",
@@ -103,7 +103,7 @@ namespace brgen::ast {
         "==", "!=", "<", "<=", ">", ">=",
         "&&",
         "||",
-        "if", "else",
+        "?", ":",
         "..", "..=",
         "=", ":=", "::=", "+=", "-=", "*=", "/=", "%=", "<<=", ">>=", "&=", "|=", "^=",
         ",",
