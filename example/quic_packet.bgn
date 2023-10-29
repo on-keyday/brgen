@@ -1,6 +1,6 @@
 config.go.import("bytes")
 
-path ::= config.import("./example/ast_step/step1.bgn")
+path ::= config.import("./ast_step/step1.bgn")
 
 config.go.file.name = "packet.go"
 config.go.package = "github.com/on-keyday/quic_packet"
@@ -11,26 +11,77 @@ config.cpp.file.source.name= "packet.cpp"
 config.cpp.namespace = ""
 
 
-config.export(QUICPacket,ConnectionID,VarInt)
+config.export(QUICPacketHeader,ConnectionID,VarInt)
 
 
-format QUICPacket: 
+format QUICPacketHeader: 
    form :u1
    fixed :u1
    if form == 1:
-      :LongPacket
+      hdr :LongPacketHeader
    else:
-      :OneRTTPacket
+      hdr :OneRTTPacketHeader
 
-format LongPacket:
+format LongPacketHeader:
    long_packet_type :u2
    reserved :u2
    packet_number_length :u2
    version :u32
    dst_conn_id :ConnectionID
    src_conn_id :ConnectionID
+   match version:
+      0 => hdr :VersionNegotiationPacket
+      # version 1
+      1 => match long_packet_type:
+         0 => hdr :InitialPacketHeader
+         1 => hdr :ZeroRTTPacketHeader
+         2 => hdr :HandshakePacketHeader
+         3 => hdr :RetryPacket
+         .. => error("invalid long packet type")
+      # version 2
+      0x6b3343cf => match long_packet_type: 
+         1 => hdr: InitialPacketHeader
+         2 => hdr: ZeroRTTPacketHeader
+         3 => hdr: HandshakePacketHeader
+         0 => hdr: RetryPacket
+         .. => error("invalid long packet type")
+      .. => error("invalid version")
 
-format OneRTTPacket:
+
+format VersionNegotiationPacket:
+   versions :[..]u32
+
+format InitialPacketHeader:
+   token_length :VarInt
+   token :[token_length]u8
+   length :VarInt
+   packet_number :[config.parent.packet_number_length]u8
+
+format RetryPacket:
+   retry_token :[..]u8
+   retry_integrity_tag :[16]u8
+
+format HandshakePacketHeader:
+   length :VarInt
+   enc := config.arg("encrypted",bool)
+   if enc:
+      encrypted_payload :[length]u8
+   else:
+      packet_number :[config.parent.packet_number_length]u8
+      payload :[length-config.parent.packet_number_length]u8
+
+format ZeroRTTPacketHeader:
+   length :VarInt
+   enc := config.arg("encrypted",bool)
+   if enc:
+      encrypted_payload :[length]u8
+   else:
+      packet_number :[config.parent.packet_number_length]u8
+      payload :[length-config.parent.packet_number_length]u8
+
+
+
+format OneRTTPacketHeader:
    spin :u1
    reserved :u2
    key_phase :u2
