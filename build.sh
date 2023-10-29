@@ -1,13 +1,15 @@
 #!/bin/bash
-if [ ! -d utils ]; then
-. ./script/clone_utils.sh
-go mod download
-fi
 BUILD_MODE=$1
 
 if [ ! $BUILD_MODE ]; then
     BUILD_MODE=native
 fi
+
+if [ ! -d utils ]; then
+. ./script/clone_utils.sh $BUILD_MODE
+go mod download
+fi
+
 
 BUILD_TYPE=Debug
 
