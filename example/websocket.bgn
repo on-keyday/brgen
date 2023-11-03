@@ -10,9 +10,9 @@ format Frame:
     match PayloadLength:
         126 => ExtendedPayloadLength :u16
         127 => ExtendedPayloadLength :u64
-        ..= => :void
+        .. => ExtendedPayloadLength :void
     
     if Mask == 1:
         MaskingKey :u32
 
-    Payload :[available(PayloadLength) ? PayloadLength : ExtendedPayloadLength]u8
+    Payload :[available(ExtendedPayloadLength) ? ExtendedPayloadLength : PayloadLength]u8

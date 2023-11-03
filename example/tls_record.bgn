@@ -1,0 +1,13 @@
+
+enum ContentType:
+    invalid := 0
+
+enum TLSVersion:
+    invalid := 0
+
+format TLSRecord:
+    type :ContentType
+    version :TLSVersion
+    length :u16
+    fragment :[length]u8
+

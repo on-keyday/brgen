@@ -8,19 +8,38 @@ config.go.import("go/ast")
 
 config.cpp.file.header.name= "packet.h"
 config.cpp.file.source.name= "packet.cpp"
-config.cpp.namespace = ""
+config.cpp.namespace = "quic::packet"
 
 
-config.export(QUICPacketHeader,ConnectionID,VarInt)
+config.export(QUICPackets,ConnectionID,VarInt)
+
+format QUICFrame:
+   type :VarInt
+
+format QUICPackets:
+   packets :[..]QUICPacket
+   
+   fn decode():
+      enc := config.arg("encrypted",bool)
+      loop input.remain > 0:
+         pkt :QUICPacket
+         input.proxy = pkt
+         frames :[..]QUICFrame
+         packets push(pkt)
+   
+   fn encode():
+      loop pkt:=range(packets):
+         pkt.encode()
 
 
-format QUICPacketHeader: 
+format QUICPacket: 
    form :u1
    fixed :u1
    if form == 1:
       hdr :LongPacketHeader
    else:
       hdr :OneRTTPacketHeader
+
 
 format LongPacketHeader:
    long_packet_type :u2
@@ -50,6 +69,8 @@ format LongPacketHeader:
 
 format VersionNegotiationPacket:
    versions :[..]u32
+   input.remain == 0
+   output.final = true
 
 format InitialPacketHeader:
    token_length :VarInt
@@ -86,15 +107,24 @@ format OneRTTPacketHeader:
    reserved :u2
    key_phase :u2
    packet_number_length :u2
-   dst_conn_id :ConnectionID
+   dst_conn_id :ConnectionID(length=config.arg("length",u8))
+   enc:= config.arg("encrypted",bool)
+   if enc:
+      encrypted_payload :[..]u8
+   else:
+      packet_number :[packet_number_length]u8
+      payload :[..]u8
+   input.remain == 0
+   output.final = true
 
 
 format ConnectionID:
-   id :[]byte
-   fn encode():
-      config.pass
-   fn decode():
-      config.pass
+   if config.arg.exists("length"):
+      length := config.arg("length",u8)
+      id :[length]u8
+   else:
+      length :u8
+      id :[length]u8
 
 
 format VarInt:
@@ -115,11 +145,6 @@ format VarInt:
          ..0x4000000000000000 => output.u64(value | msb(2,3))
          _ => error("too large number")
    
-n ::= 20
-V ::= if n < 10 && n > -10: 
-   10 * n
-else: 
-   n / 2
+   fn u64():
+      return value
 
-loop i:=0; i<10; i=i+1 :
-   print(i)
