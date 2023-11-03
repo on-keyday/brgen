@@ -565,7 +565,7 @@ export function isCommentGroup(obj: any): obj is CommentGroup {
 }
 
 export interface UnionType extends Type {
-	cond_0: Expr|null;
+	cond: Expr|null;
 	candidate: UnionCandidate[];
 	base_type: StructUnionType|null;
 }
@@ -1306,7 +1306,7 @@ export function parseAST(obj: any): Program {
 				node_type: "union_type",
 				loc: on.loc,
 				is_explicit: false,
-				cond_0: null,
+				cond: null,
 				candidate: [],
 				base_type: null,
 			}
@@ -1355,26 +1355,26 @@ export function parseAST(obj: any): Program {
 		case "program": {
 			const n :Program = cnode as Program;
 			if (on.body?.struct_type !== null && typeof on.body?.struct_type !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Program::struct_type');
 			}
 			const tmpstruct_type = on.body.struct_type === null ? null : c.node[on.body.struct_type];
 			if (!(tmpstruct_type === null || isStructType(tmpstruct_type))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Program::struct_type');
 			}
 			n.struct_type = tmpstruct_type;
 			for (const o of on.body.elements) {
 				if (typeof o !== 'number') {
-					throw new Error('invalid node list');
+					throw new Error('invalid node list at Program::elements');
 				}
 				const tmpelements = c.node[o];
 				n.elements.push(tmpelements);
 			}
 			if (on.body?.global_scope !== null && typeof on.body?.global_scope !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Program::global_scope');
 			}
 			const tmpglobal_scope = on.body.global_scope === null ? null : c.scope[on.body.global_scope];
 			if (tmpglobal_scope !== null && !isScope(tmpglobal_scope)) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Program::global_scope');
 			}
 			n.global_scope = tmpglobal_scope;
 			break;
@@ -1382,32 +1382,32 @@ export function parseAST(obj: any): Program {
 		case "binary": {
 			const n :Binary = cnode as Binary;
 			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Binary::expr_type');
 			}
 			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
 			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Binary::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
 			const tmpop = on.body?.op;
 			if (!isBinaryOp(tmpop)) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Binary::op');
 			}
 			n.op = tmpop;
 			if (on.body?.left !== null && typeof on.body?.left !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Binary::left');
 			}
 			const tmpleft = on.body.left === null ? null : c.node[on.body.left];
 			if (!(tmpleft === null || isExpr(tmpleft))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Binary::left');
 			}
 			n.left = tmpleft;
 			if (on.body?.right !== null && typeof on.body?.right !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Binary::right');
 			}
 			const tmpright = on.body.right === null ? null : c.node[on.body.right];
 			if (!(tmpright === null || isExpr(tmpright))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Binary::right');
 			}
 			n.right = tmpright;
 			break;
@@ -1415,24 +1415,24 @@ export function parseAST(obj: any): Program {
 		case "unary": {
 			const n :Unary = cnode as Unary;
 			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Unary::expr_type');
 			}
 			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
 			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Unary::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
 			const tmpop = on.body?.op;
 			if (!isUnaryOp(tmpop)) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Unary::op');
 			}
 			n.op = tmpop;
 			if (on.body?.expr !== null && typeof on.body?.expr !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Unary::expr');
 			}
 			const tmpexpr = on.body.expr === null ? null : c.node[on.body.expr];
 			if (!(tmpexpr === null || isExpr(tmpexpr))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Unary::expr');
 			}
 			n.expr = tmpexpr;
 			break;
@@ -1440,40 +1440,40 @@ export function parseAST(obj: any): Program {
 		case "cond": {
 			const n :Cond = cnode as Cond;
 			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Cond::expr_type');
 			}
 			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
 			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Cond::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
 			if (on.body?.cond !== null && typeof on.body?.cond !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Cond::cond');
 			}
 			const tmpcond = on.body.cond === null ? null : c.node[on.body.cond];
 			if (!(tmpcond === null || isExpr(tmpcond))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Cond::cond');
 			}
 			n.cond = tmpcond;
 			if (on.body?.then !== null && typeof on.body?.then !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Cond::then');
 			}
 			const tmpthen = on.body.then === null ? null : c.node[on.body.then];
 			if (!(tmpthen === null || isExpr(tmpthen))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Cond::then');
 			}
 			n.then = tmpthen;
 			const tmpels_loc = on.body?.els_loc;
 			if (!isLoc(tmpels_loc)) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Cond::els_loc');
 			}
 			n.els_loc = tmpels_loc;
 			if (on.body?.els !== null && typeof on.body?.els !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Cond::els');
 			}
 			const tmpels = on.body.els === null ? null : c.node[on.body.els];
 			if (!(tmpels === null || isExpr(tmpels))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Cond::els');
 			}
 			n.els = tmpels;
 			break;
@@ -1481,37 +1481,37 @@ export function parseAST(obj: any): Program {
 		case "ident": {
 			const n :Ident = cnode as Ident;
 			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Ident::expr_type');
 			}
 			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
 			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Ident::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
 			const tmpident = on.body?.ident;
 			if (typeof on.body?.ident !== "string") {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Ident::ident');
 			}
 			n.ident = on.body.ident;
 			const tmpusage = on.body?.usage;
 			if (!isIdentUsage(tmpusage)) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Ident::usage');
 			}
 			n.usage = tmpusage;
 			if (on.body?.base !== null && typeof on.body?.base !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Ident::base');
 			}
 			const tmpbase = on.body.base === null ? null : c.node[on.body.base];
 			if (!(tmpbase === null || isNode(tmpbase))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Ident::base');
 			}
 			n.base = tmpbase;
 			if (on.body?.scope !== null && typeof on.body?.scope !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Ident::scope');
 			}
 			const tmpscope = on.body.scope === null ? null : c.scope[on.body.scope];
 			if (tmpscope !== null && !isScope(tmpscope)) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Ident::scope');
 			}
 			n.scope = tmpscope;
 			break;
@@ -1519,42 +1519,42 @@ export function parseAST(obj: any): Program {
 		case "call": {
 			const n :Call = cnode as Call;
 			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Call::expr_type');
 			}
 			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
 			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Call::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
 			if (on.body?.callee !== null && typeof on.body?.callee !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Call::callee');
 			}
 			const tmpcallee = on.body.callee === null ? null : c.node[on.body.callee];
 			if (!(tmpcallee === null || isExpr(tmpcallee))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Call::callee');
 			}
 			n.callee = tmpcallee;
 			if (on.body?.raw_arguments !== null && typeof on.body?.raw_arguments !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Call::raw_arguments');
 			}
 			const tmpraw_arguments = on.body.raw_arguments === null ? null : c.node[on.body.raw_arguments];
 			if (!(tmpraw_arguments === null || isExpr(tmpraw_arguments))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Call::raw_arguments');
 			}
 			n.raw_arguments = tmpraw_arguments;
 			for (const o of on.body.arguments) {
 				if (typeof o !== 'number') {
-					throw new Error('invalid node list');
+					throw new Error('invalid node list at Call::arguments');
 				}
 				const tmparguments = c.node[o];
 				if (!isExpr(tmparguments)) {
-					throw new Error('invalid node list');
+					throw new Error('invalid node list at Call::arguments');
 				}
 				n.arguments.push(tmparguments);
 			}
 			const tmpend_loc = on.body?.end_loc;
 			if (!isLoc(tmpend_loc)) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Call::end_loc');
 			}
 			n.end_loc = tmpend_loc;
 			break;
@@ -1562,43 +1562,43 @@ export function parseAST(obj: any): Program {
 		case "if": {
 			const n :If = cnode as If;
 			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at If::expr_type');
 			}
 			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
 			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at If::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
 			if (on.body?.cond_scope !== null && typeof on.body?.cond_scope !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at If::cond_scope');
 			}
 			const tmpcond_scope = on.body.cond_scope === null ? null : c.scope[on.body.cond_scope];
 			if (tmpcond_scope !== null && !isScope(tmpcond_scope)) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at If::cond_scope');
 			}
 			n.cond_scope = tmpcond_scope;
 			if (on.body?.cond !== null && typeof on.body?.cond !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at If::cond');
 			}
 			const tmpcond = on.body.cond === null ? null : c.node[on.body.cond];
 			if (!(tmpcond === null || isExpr(tmpcond))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at If::cond');
 			}
 			n.cond = tmpcond;
 			if (on.body?.then !== null && typeof on.body?.then !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at If::then');
 			}
 			const tmpthen = on.body.then === null ? null : c.node[on.body.then];
 			if (!(tmpthen === null || isIndentBlock(tmpthen))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at If::then');
 			}
 			n.then = tmpthen;
 			if (on.body?.els !== null && typeof on.body?.els !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at If::els');
 			}
 			const tmpels = on.body.els === null ? null : c.node[on.body.els];
 			if (!(tmpels === null || isNode(tmpels))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at If::els');
 			}
 			n.els = tmpels;
 			break;
@@ -1606,29 +1606,29 @@ export function parseAST(obj: any): Program {
 		case "member_access": {
 			const n :MemberAccess = cnode as MemberAccess;
 			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at MemberAccess::expr_type');
 			}
 			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
 			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at MemberAccess::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
 			if (on.body?.target !== null && typeof on.body?.target !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at MemberAccess::target');
 			}
 			const tmptarget = on.body.target === null ? null : c.node[on.body.target];
 			if (!(tmptarget === null || isExpr(tmptarget))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at MemberAccess::target');
 			}
 			n.target = tmptarget;
 			const tmpmember = on.body?.member;
 			if (typeof on.body?.member !== "string") {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at MemberAccess::member');
 			}
 			n.member = on.body.member;
 			const tmpmember_loc = on.body?.member_loc;
 			if (!isLoc(tmpmember_loc)) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at MemberAccess::member_loc');
 			}
 			n.member_loc = tmpmember_loc;
 			break;
@@ -1636,24 +1636,24 @@ export function parseAST(obj: any): Program {
 		case "paren": {
 			const n :Paren = cnode as Paren;
 			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Paren::expr_type');
 			}
 			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
 			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Paren::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
 			if (on.body?.expr !== null && typeof on.body?.expr !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Paren::expr');
 			}
 			const tmpexpr = on.body.expr === null ? null : c.node[on.body.expr];
 			if (!(tmpexpr === null || isExpr(tmpexpr))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Paren::expr');
 			}
 			n.expr = tmpexpr;
 			const tmpend_loc = on.body?.end_loc;
 			if (!isLoc(tmpend_loc)) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Paren::end_loc');
 			}
 			n.end_loc = tmpend_loc;
 			break;
@@ -1661,32 +1661,32 @@ export function parseAST(obj: any): Program {
 		case "index": {
 			const n :Index = cnode as Index;
 			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Index::expr_type');
 			}
 			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
 			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Index::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
 			if (on.body?.expr !== null && typeof on.body?.expr !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Index::expr');
 			}
 			const tmpexpr = on.body.expr === null ? null : c.node[on.body.expr];
 			if (!(tmpexpr === null || isExpr(tmpexpr))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Index::expr');
 			}
 			n.expr = tmpexpr;
 			if (on.body?.index !== null && typeof on.body?.index !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Index::index');
 			}
 			const tmpindex = on.body.index === null ? null : c.node[on.body.index];
 			if (!(tmpindex === null || isExpr(tmpindex))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Index::index');
 			}
 			n.index = tmpindex;
 			const tmpend_loc = on.body?.end_loc;
 			if (!isLoc(tmpend_loc)) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Index::end_loc');
 			}
 			n.end_loc = tmpend_loc;
 			break;
@@ -1694,32 +1694,32 @@ export function parseAST(obj: any): Program {
 		case "match": {
 			const n :Match = cnode as Match;
 			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Match::expr_type');
 			}
 			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
 			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Match::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
 			if (on.body?.cond_scope !== null && typeof on.body?.cond_scope !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Match::cond_scope');
 			}
 			const tmpcond_scope = on.body.cond_scope === null ? null : c.scope[on.body.cond_scope];
 			if (tmpcond_scope !== null && !isScope(tmpcond_scope)) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Match::cond_scope');
 			}
 			n.cond_scope = tmpcond_scope;
 			if (on.body?.cond !== null && typeof on.body?.cond !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Match::cond');
 			}
 			const tmpcond = on.body.cond === null ? null : c.node[on.body.cond];
 			if (!(tmpcond === null || isExpr(tmpcond))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Match::cond');
 			}
 			n.cond = tmpcond;
 			for (const o of on.body.branch) {
 				if (typeof o !== 'number') {
-					throw new Error('invalid node list');
+					throw new Error('invalid node list at Match::branch');
 				}
 				const tmpbranch = c.node[o];
 				n.branch.push(tmpbranch);
@@ -1729,32 +1729,32 @@ export function parseAST(obj: any): Program {
 		case "range": {
 			const n :Range = cnode as Range;
 			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Range::expr_type');
 			}
 			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
 			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Range::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
 			const tmpop = on.body?.op;
 			if (!isBinaryOp(tmpop)) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Range::op');
 			}
 			n.op = tmpop;
 			if (on.body?.start !== null && typeof on.body?.start !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Range::start');
 			}
 			const tmpstart = on.body.start === null ? null : c.node[on.body.start];
 			if (!(tmpstart === null || isExpr(tmpstart))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Range::start');
 			}
 			n.start = tmpstart;
 			if (on.body?.end !== null && typeof on.body?.end !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Range::end');
 			}
 			const tmpend = on.body.end === null ? null : c.node[on.body.end];
 			if (!(tmpend === null || isExpr(tmpend))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Range::end');
 			}
 			n.end = tmpend;
 			break;
@@ -1762,16 +1762,16 @@ export function parseAST(obj: any): Program {
 		case "tmp_var": {
 			const n :TmpVar = cnode as TmpVar;
 			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at TmpVar::expr_type');
 			}
 			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
 			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at TmpVar::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
 			const tmptmp_var = on.body?.tmp_var;
 			if (typeof on.body?.tmp_var !== "number") {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at TmpVar::tmp_var');
 			}
 			n.tmp_var = on.body.tmp_var;
 			break;
@@ -1779,26 +1779,26 @@ export function parseAST(obj: any): Program {
 		case "block_expr": {
 			const n :BlockExpr = cnode as BlockExpr;
 			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at BlockExpr::expr_type');
 			}
 			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
 			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at BlockExpr::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
 			for (const o of on.body.calls) {
 				if (typeof o !== 'number') {
-					throw new Error('invalid node list');
+					throw new Error('invalid node list at BlockExpr::calls');
 				}
 				const tmpcalls = c.node[o];
 				n.calls.push(tmpcalls);
 			}
 			if (on.body?.expr !== null && typeof on.body?.expr !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at BlockExpr::expr');
 			}
 			const tmpexpr = on.body.expr === null ? null : c.node[on.body.expr];
 			if (!(tmpexpr === null || isExpr(tmpexpr))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at BlockExpr::expr');
 			}
 			n.expr = tmpexpr;
 			break;
@@ -1806,32 +1806,32 @@ export function parseAST(obj: any): Program {
 		case "import": {
 			const n :Import = cnode as Import;
 			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Import::expr_type');
 			}
 			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
 			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Import::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
 			const tmppath = on.body?.path;
 			if (typeof on.body?.path !== "string") {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Import::path');
 			}
 			n.path = on.body.path;
 			if (on.body?.base !== null && typeof on.body?.base !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Import::base');
 			}
 			const tmpbase = on.body.base === null ? null : c.node[on.body.base];
 			if (!(tmpbase === null || isCall(tmpbase))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Import::base');
 			}
 			n.base = tmpbase;
 			if (on.body?.import_desc !== null && typeof on.body?.import_desc !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Import::import_desc');
 			}
 			const tmpimport_desc = on.body.import_desc === null ? null : c.node[on.body.import_desc];
 			if (!(tmpimport_desc === null || isProgram(tmpimport_desc))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Import::import_desc');
 			}
 			n.import_desc = tmpimport_desc;
 			break;
@@ -1839,16 +1839,16 @@ export function parseAST(obj: any): Program {
 		case "int_literal": {
 			const n :IntLiteral = cnode as IntLiteral;
 			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at IntLiteral::expr_type');
 			}
 			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
 			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at IntLiteral::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
 			const tmpvalue = on.body?.value;
 			if (typeof on.body?.value !== "string") {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at IntLiteral::value');
 			}
 			n.value = on.body.value;
 			break;
@@ -1856,16 +1856,16 @@ export function parseAST(obj: any): Program {
 		case "bool_literal": {
 			const n :BoolLiteral = cnode as BoolLiteral;
 			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at BoolLiteral::expr_type');
 			}
 			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
 			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at BoolLiteral::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
 			const tmpvalue = on.body?.value;
 			if (typeof on.body?.value !== "boolean") {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at BoolLiteral::value');
 			}
 			n.value = on.body.value;
 			break;
@@ -1873,16 +1873,16 @@ export function parseAST(obj: any): Program {
 		case "str_literal": {
 			const n :StrLiteral = cnode as StrLiteral;
 			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at StrLiteral::expr_type');
 			}
 			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
 			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at StrLiteral::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
 			const tmpvalue = on.body?.value;
 			if (typeof on.body?.value !== "string") {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at StrLiteral::value');
 			}
 			n.value = on.body.value;
 			break;
@@ -1890,11 +1890,11 @@ export function parseAST(obj: any): Program {
 		case "input": {
 			const n :Input = cnode as Input;
 			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Input::expr_type');
 			}
 			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
 			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Input::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
 			break;
@@ -1902,11 +1902,11 @@ export function parseAST(obj: any): Program {
 		case "output": {
 			const n :Output = cnode as Output;
 			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Output::expr_type');
 			}
 			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
 			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Output::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
 			break;
@@ -1914,11 +1914,11 @@ export function parseAST(obj: any): Program {
 		case "config": {
 			const n :Config = cnode as Config;
 			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Config::expr_type');
 			}
 			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
 			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Config::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
 			break;
@@ -1926,43 +1926,43 @@ export function parseAST(obj: any): Program {
 		case "loop": {
 			const n :Loop = cnode as Loop;
 			if (on.body?.cond_scope !== null && typeof on.body?.cond_scope !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Loop::cond_scope');
 			}
 			const tmpcond_scope = on.body.cond_scope === null ? null : c.scope[on.body.cond_scope];
 			if (tmpcond_scope !== null && !isScope(tmpcond_scope)) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Loop::cond_scope');
 			}
 			n.cond_scope = tmpcond_scope;
 			if (on.body?.init !== null && typeof on.body?.init !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Loop::init');
 			}
 			const tmpinit = on.body.init === null ? null : c.node[on.body.init];
 			if (!(tmpinit === null || isExpr(tmpinit))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Loop::init');
 			}
 			n.init = tmpinit;
 			if (on.body?.cond !== null && typeof on.body?.cond !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Loop::cond');
 			}
 			const tmpcond = on.body.cond === null ? null : c.node[on.body.cond];
 			if (!(tmpcond === null || isExpr(tmpcond))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Loop::cond');
 			}
 			n.cond = tmpcond;
 			if (on.body?.step !== null && typeof on.body?.step !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Loop::step');
 			}
 			const tmpstep = on.body.step === null ? null : c.node[on.body.step];
 			if (!(tmpstep === null || isExpr(tmpstep))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Loop::step');
 			}
 			n.step = tmpstep;
 			if (on.body?.body !== null && typeof on.body?.body !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Loop::body');
 			}
 			const tmpbody = on.body.body === null ? null : c.node[on.body.body];
 			if (!(tmpbody === null || isIndentBlock(tmpbody))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Loop::body');
 			}
 			n.body = tmpbody;
 			break;
@@ -1971,25 +1971,25 @@ export function parseAST(obj: any): Program {
 			const n :IndentBlock = cnode as IndentBlock;
 			for (const o of on.body.elements) {
 				if (typeof o !== 'number') {
-					throw new Error('invalid node list');
+					throw new Error('invalid node list at IndentBlock::elements');
 				}
 				const tmpelements = c.node[o];
 				n.elements.push(tmpelements);
 			}
 			if (on.body?.scope !== null && typeof on.body?.scope !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at IndentBlock::scope');
 			}
 			const tmpscope = on.body.scope === null ? null : c.scope[on.body.scope];
 			if (tmpscope !== null && !isScope(tmpscope)) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at IndentBlock::scope');
 			}
 			n.scope = tmpscope;
 			if (on.body?.struct_type !== null && typeof on.body?.struct_type !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at IndentBlock::struct_type');
 			}
 			const tmpstruct_type = on.body.struct_type === null ? null : c.node[on.body.struct_type];
 			if (!(tmpstruct_type === null || isStructType(tmpstruct_type))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at IndentBlock::struct_type');
 			}
 			n.struct_type = tmpstruct_type;
 			break;
@@ -1997,24 +1997,24 @@ export function parseAST(obj: any): Program {
 		case "match_branch": {
 			const n :MatchBranch = cnode as MatchBranch;
 			if (on.body?.cond !== null && typeof on.body?.cond !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at MatchBranch::cond');
 			}
 			const tmpcond = on.body.cond === null ? null : c.node[on.body.cond];
 			if (!(tmpcond === null || isExpr(tmpcond))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at MatchBranch::cond');
 			}
 			n.cond = tmpcond;
 			const tmpsym_loc = on.body?.sym_loc;
 			if (!isLoc(tmpsym_loc)) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at MatchBranch::sym_loc');
 			}
 			n.sym_loc = tmpsym_loc;
 			if (on.body?.then !== null && typeof on.body?.then !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at MatchBranch::then');
 			}
 			const tmpthen = on.body.then === null ? null : c.node[on.body.then];
 			if (!(tmpthen === null || isNode(tmpthen))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at MatchBranch::then');
 			}
 			n.then = tmpthen;
 			break;
@@ -2022,11 +2022,11 @@ export function parseAST(obj: any): Program {
 		case "return": {
 			const n :Return = cnode as Return;
 			if (on.body?.expr !== null && typeof on.body?.expr !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Return::expr');
 			}
 			const tmpexpr = on.body.expr === null ? null : c.node[on.body.expr];
 			if (!(tmpexpr === null || isExpr(tmpexpr))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Return::expr');
 			}
 			n.expr = tmpexpr;
 			break;
@@ -2042,11 +2042,11 @@ export function parseAST(obj: any): Program {
 		case "assert": {
 			const n :Assert = cnode as Assert;
 			if (on.body?.cond !== null && typeof on.body?.cond !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Assert::cond');
 			}
 			const tmpcond = on.body.cond === null ? null : c.node[on.body.cond];
 			if (!(tmpcond === null || isBinary(tmpcond))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Assert::cond');
 			}
 			n.cond = tmpcond;
 			break;
@@ -2054,11 +2054,11 @@ export function parseAST(obj: any): Program {
 		case "implicit_yield": {
 			const n :ImplicitYield = cnode as ImplicitYield;
 			if (on.body?.expr !== null && typeof on.body?.expr !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at ImplicitYield::expr');
 			}
 			const tmpexpr = on.body.expr === null ? null : c.node[on.body.expr];
 			if (!(tmpexpr === null || isExpr(tmpexpr))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at ImplicitYield::expr');
 			}
 			n.expr = tmpexpr;
 			break;
@@ -2066,49 +2066,49 @@ export function parseAST(obj: any): Program {
 		case "field": {
 			const n :Field = cnode as Field;
 			if (on.body?.belong !== null && typeof on.body?.belong !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Field::belong');
 			}
 			const tmpbelong = on.body.belong === null ? null : c.node[on.body.belong];
 			if (!(tmpbelong === null || isMember(tmpbelong))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Field::belong');
 			}
 			n.belong = tmpbelong;
 			if (on.body?.ident !== null && typeof on.body?.ident !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Field::ident');
 			}
 			const tmpident = on.body.ident === null ? null : c.node[on.body.ident];
 			if (!(tmpident === null || isIdent(tmpident))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Field::ident');
 			}
 			n.ident = tmpident;
 			const tmpcolon_loc = on.body?.colon_loc;
 			if (!isLoc(tmpcolon_loc)) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Field::colon_loc');
 			}
 			n.colon_loc = tmpcolon_loc;
 			if (on.body?.field_type !== null && typeof on.body?.field_type !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Field::field_type');
 			}
 			const tmpfield_type = on.body.field_type === null ? null : c.node[on.body.field_type];
 			if (!(tmpfield_type === null || isType(tmpfield_type))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Field::field_type');
 			}
 			n.field_type = tmpfield_type;
 			if (on.body?.raw_arguments !== null && typeof on.body?.raw_arguments !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Field::raw_arguments');
 			}
 			const tmpraw_arguments = on.body.raw_arguments === null ? null : c.node[on.body.raw_arguments];
 			if (!(tmpraw_arguments === null || isExpr(tmpraw_arguments))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Field::raw_arguments');
 			}
 			n.raw_arguments = tmpraw_arguments;
 			for (const o of on.body.arguments) {
 				if (typeof o !== 'number') {
-					throw new Error('invalid node list');
+					throw new Error('invalid node list at Field::arguments');
 				}
 				const tmparguments = c.node[o];
 				if (!isExpr(tmparguments)) {
-					throw new Error('invalid node list');
+					throw new Error('invalid node list at Field::arguments');
 				}
 				n.arguments.push(tmparguments);
 			}
@@ -2117,32 +2117,32 @@ export function parseAST(obj: any): Program {
 		case "format": {
 			const n :Format = cnode as Format;
 			if (on.body?.belong !== null && typeof on.body?.belong !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Format::belong');
 			}
 			const tmpbelong = on.body.belong === null ? null : c.node[on.body.belong];
 			if (!(tmpbelong === null || isMember(tmpbelong))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Format::belong');
 			}
 			n.belong = tmpbelong;
 			if (on.body?.ident !== null && typeof on.body?.ident !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Format::ident');
 			}
 			const tmpident = on.body.ident === null ? null : c.node[on.body.ident];
 			if (!(tmpident === null || isIdent(tmpident))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Format::ident');
 			}
 			n.ident = tmpident;
 			const tmpis_enum = on.body?.is_enum;
 			if (typeof on.body?.is_enum !== "boolean") {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Format::is_enum');
 			}
 			n.is_enum = on.body.is_enum;
 			if (on.body?.body !== null && typeof on.body?.body !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Format::body');
 			}
 			const tmpbody = on.body.body === null ? null : c.node[on.body.body];
 			if (!(tmpbody === null || isIndentBlock(tmpbody))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Format::body');
 			}
 			n.body = tmpbody;
 			break;
@@ -2150,53 +2150,53 @@ export function parseAST(obj: any): Program {
 		case "function": {
 			const n :Function = cnode as Function;
 			if (on.body?.belong !== null && typeof on.body?.belong !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Function::belong');
 			}
 			const tmpbelong = on.body.belong === null ? null : c.node[on.body.belong];
 			if (!(tmpbelong === null || isMember(tmpbelong))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Function::belong');
 			}
 			n.belong = tmpbelong;
 			if (on.body?.ident !== null && typeof on.body?.ident !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Function::ident');
 			}
 			const tmpident = on.body.ident === null ? null : c.node[on.body.ident];
 			if (!(tmpident === null || isIdent(tmpident))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Function::ident');
 			}
 			n.ident = tmpident;
 			for (const o of on.body.parameters) {
 				if (typeof o !== 'number') {
-					throw new Error('invalid node list');
+					throw new Error('invalid node list at Function::parameters');
 				}
 				const tmpparameters = c.node[o];
 				if (!isField(tmpparameters)) {
-					throw new Error('invalid node list');
+					throw new Error('invalid node list at Function::parameters');
 				}
 				n.parameters.push(tmpparameters);
 			}
 			if (on.body?.return_type !== null && typeof on.body?.return_type !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Function::return_type');
 			}
 			const tmpreturn_type = on.body.return_type === null ? null : c.node[on.body.return_type];
 			if (!(tmpreturn_type === null || isType(tmpreturn_type))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Function::return_type');
 			}
 			n.return_type = tmpreturn_type;
 			if (on.body?.body !== null && typeof on.body?.body !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Function::body');
 			}
 			const tmpbody = on.body.body === null ? null : c.node[on.body.body];
 			if (!(tmpbody === null || isIndentBlock(tmpbody))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Function::body');
 			}
 			n.body = tmpbody;
 			if (on.body?.func_type !== null && typeof on.body?.func_type !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Function::func_type');
 			}
 			const tmpfunc_type = on.body.func_type === null ? null : c.node[on.body.func_type];
 			if (!(tmpfunc_type === null || isFunctionType(tmpfunc_type))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Function::func_type');
 			}
 			n.func_type = tmpfunc_type;
 			break;
@@ -2205,22 +2205,22 @@ export function parseAST(obj: any): Program {
 			const n :IntType = cnode as IntType;
 			const tmpis_explicit = on.body?.is_explicit;
 			if (typeof on.body?.is_explicit !== "boolean") {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at IntType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
 			const tmpbit_size = on.body?.bit_size;
 			if (typeof on.body?.bit_size !== "number") {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at IntType::bit_size');
 			}
 			n.bit_size = on.body.bit_size;
 			const tmpendian = on.body?.endian;
 			if (!isEndian(tmpendian)) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at IntType::endian');
 			}
 			n.endian = tmpendian;
 			const tmpis_signed = on.body?.is_signed;
 			if (typeof on.body?.is_signed !== "boolean") {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at IntType::is_signed');
 			}
 			n.is_signed = on.body.is_signed;
 			break;
@@ -2229,23 +2229,23 @@ export function parseAST(obj: any): Program {
 			const n :IdentType = cnode as IdentType;
 			const tmpis_explicit = on.body?.is_explicit;
 			if (typeof on.body?.is_explicit !== "boolean") {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at IdentType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
 			if (on.body?.ident !== null && typeof on.body?.ident !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at IdentType::ident');
 			}
 			const tmpident = on.body.ident === null ? null : c.node[on.body.ident];
 			if (!(tmpident === null || isIdent(tmpident))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at IdentType::ident');
 			}
 			n.ident = tmpident;
 			if (on.body?.base !== null && typeof on.body?.base !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at IdentType::base');
 			}
 			const tmpbase = on.body.base === null ? null : c.node[on.body.base];
 			if (!(tmpbase === null || isFormat(tmpbase))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at IdentType::base');
 			}
 			n.base = tmpbase;
 			break;
@@ -2254,15 +2254,15 @@ export function parseAST(obj: any): Program {
 			const n :IntLiteralType = cnode as IntLiteralType;
 			const tmpis_explicit = on.body?.is_explicit;
 			if (typeof on.body?.is_explicit !== "boolean") {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at IntLiteralType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
 			if (on.body?.base !== null && typeof on.body?.base !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at IntLiteralType::base');
 			}
 			const tmpbase = on.body.base === null ? null : c.node[on.body.base];
 			if (!(tmpbase === null || isIntLiteral(tmpbase))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at IntLiteralType::base');
 			}
 			n.base = tmpbase;
 			break;
@@ -2271,15 +2271,15 @@ export function parseAST(obj: any): Program {
 			const n :StrLiteralType = cnode as StrLiteralType;
 			const tmpis_explicit = on.body?.is_explicit;
 			if (typeof on.body?.is_explicit !== "boolean") {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at StrLiteralType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
 			if (on.body?.base !== null && typeof on.body?.base !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at StrLiteralType::base');
 			}
 			const tmpbase = on.body.base === null ? null : c.node[on.body.base];
 			if (!(tmpbase === null || isStrLiteral(tmpbase))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at StrLiteralType::base');
 			}
 			n.base = tmpbase;
 			break;
@@ -2288,7 +2288,7 @@ export function parseAST(obj: any): Program {
 			const n :VoidType = cnode as VoidType;
 			const tmpis_explicit = on.body?.is_explicit;
 			if (typeof on.body?.is_explicit !== "boolean") {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at VoidType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
 			break;
@@ -2297,7 +2297,7 @@ export function parseAST(obj: any): Program {
 			const n :BoolType = cnode as BoolType;
 			const tmpis_explicit = on.body?.is_explicit;
 			if (typeof on.body?.is_explicit !== "boolean") {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at BoolType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
 			break;
@@ -2306,28 +2306,28 @@ export function parseAST(obj: any): Program {
 			const n :ArrayType = cnode as ArrayType;
 			const tmpis_explicit = on.body?.is_explicit;
 			if (typeof on.body?.is_explicit !== "boolean") {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at ArrayType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
 			const tmpend_loc = on.body?.end_loc;
 			if (!isLoc(tmpend_loc)) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at ArrayType::end_loc');
 			}
 			n.end_loc = tmpend_loc;
 			if (on.body?.base_type !== null && typeof on.body?.base_type !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at ArrayType::base_type');
 			}
 			const tmpbase_type = on.body.base_type === null ? null : c.node[on.body.base_type];
 			if (!(tmpbase_type === null || isType(tmpbase_type))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at ArrayType::base_type');
 			}
 			n.base_type = tmpbase_type;
 			if (on.body?.length !== null && typeof on.body?.length !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at ArrayType::length');
 			}
 			const tmplength = on.body.length === null ? null : c.node[on.body.length];
 			if (!(tmplength === null || isExpr(tmplength))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at ArrayType::length');
 			}
 			n.length = tmplength;
 			break;
@@ -2336,24 +2336,24 @@ export function parseAST(obj: any): Program {
 			const n :FunctionType = cnode as FunctionType;
 			const tmpis_explicit = on.body?.is_explicit;
 			if (typeof on.body?.is_explicit !== "boolean") {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at FunctionType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
 			if (on.body?.return_type !== null && typeof on.body?.return_type !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at FunctionType::return_type');
 			}
 			const tmpreturn_type = on.body.return_type === null ? null : c.node[on.body.return_type];
 			if (!(tmpreturn_type === null || isType(tmpreturn_type))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at FunctionType::return_type');
 			}
 			n.return_type = tmpreturn_type;
 			for (const o of on.body.parameters) {
 				if (typeof o !== 'number') {
-					throw new Error('invalid node list');
+					throw new Error('invalid node list at FunctionType::parameters');
 				}
 				const tmpparameters = c.node[o];
 				if (!isType(tmpparameters)) {
-					throw new Error('invalid node list');
+					throw new Error('invalid node list at FunctionType::parameters');
 				}
 				n.parameters.push(tmpparameters);
 			}
@@ -2363,16 +2363,16 @@ export function parseAST(obj: any): Program {
 			const n :StructType = cnode as StructType;
 			const tmpis_explicit = on.body?.is_explicit;
 			if (typeof on.body?.is_explicit !== "boolean") {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at StructType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
 			for (const o of on.body.fields) {
 				if (typeof o !== 'number') {
-					throw new Error('invalid node list');
+					throw new Error('invalid node list at StructType::fields');
 				}
 				const tmpfields = c.node[o];
 				if (!isMember(tmpfields)) {
-					throw new Error('invalid node list');
+					throw new Error('invalid node list at StructType::fields');
 				}
 				n.fields.push(tmpfields);
 			}
@@ -2382,34 +2382,34 @@ export function parseAST(obj: any): Program {
 			const n :StructUnionType = cnode as StructUnionType;
 			const tmpis_explicit = on.body?.is_explicit;
 			if (typeof on.body?.is_explicit !== "boolean") {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at StructUnionType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
 			for (const o of on.body.fields) {
 				if (typeof o !== 'number') {
-					throw new Error('invalid node list');
+					throw new Error('invalid node list at StructUnionType::fields');
 				}
 				const tmpfields = c.node[o];
 				if (!isStructType(tmpfields)) {
-					throw new Error('invalid node list');
+					throw new Error('invalid node list at StructUnionType::fields');
 				}
 				n.fields.push(tmpfields);
 			}
 			if (on.body?.base !== null && typeof on.body?.base !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at StructUnionType::base');
 			}
 			const tmpbase = on.body.base === null ? null : c.node[on.body.base];
 			if (!(tmpbase === null || isExpr(tmpbase))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at StructUnionType::base');
 			}
 			n.base = tmpbase;
 			for (const o of on.body.union_fields) {
 				if (typeof o !== 'number') {
-					throw new Error('invalid node list');
+					throw new Error('invalid node list at StructUnionType::union_fields');
 				}
 				const tmpunion_fields = c.node[o];
 				if (!isField(tmpunion_fields)) {
-					throw new Error('invalid node list');
+					throw new Error('invalid node list at StructUnionType::union_fields');
 				}
 				n.union_fields.push(tmpunion_fields);
 			}
@@ -2418,27 +2418,27 @@ export function parseAST(obj: any): Program {
 		case "cast": {
 			const n :Cast = cnode as Cast;
 			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Cast::expr_type');
 			}
 			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
 			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Cast::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
 			if (on.body?.base !== null && typeof on.body?.base !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Cast::base');
 			}
 			const tmpbase = on.body.base === null ? null : c.node[on.body.base];
 			if (!(tmpbase === null || isCall(tmpbase))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Cast::base');
 			}
 			n.base = tmpbase;
 			if (on.body?.expr !== null && typeof on.body?.expr !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Cast::expr');
 			}
 			const tmpexpr = on.body.expr === null ? null : c.node[on.body.expr];
 			if (!(tmpexpr === null || isExpr(tmpexpr))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Cast::expr');
 			}
 			n.expr = tmpexpr;
 			break;
@@ -2447,7 +2447,7 @@ export function parseAST(obj: any): Program {
 			const n :Comment = cnode as Comment;
 			const tmpcomment = on.body?.comment;
 			if (typeof on.body?.comment !== "string") {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Comment::comment');
 			}
 			n.comment = on.body.comment;
 			break;
@@ -2456,11 +2456,11 @@ export function parseAST(obj: any): Program {
 			const n :CommentGroup = cnode as CommentGroup;
 			for (const o of on.body.comments) {
 				if (typeof o !== 'number') {
-					throw new Error('invalid node list');
+					throw new Error('invalid node list at CommentGroup::comments');
 				}
 				const tmpcomments = c.node[o];
 				if (!isComment(tmpcomments)) {
-					throw new Error('invalid node list');
+					throw new Error('invalid node list at CommentGroup::comments');
 				}
 				n.comments.push(tmpcomments);
 			}
@@ -2470,33 +2470,33 @@ export function parseAST(obj: any): Program {
 			const n :UnionType = cnode as UnionType;
 			const tmpis_explicit = on.body?.is_explicit;
 			if (typeof on.body?.is_explicit !== "boolean") {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at UnionType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
-			if (on.body?.cond_0 !== null && typeof on.body?.cond_0 !== 'number') {
-				throw new Error('invalid node list');
+			if (on.body?.cond !== null && typeof on.body?.cond !== 'number') {
+				throw new Error('invalid node list at UnionType::cond');
 			}
-			const tmpcond_0 = on.body.cond_0 === null ? null : c.node[on.body.cond_0];
-			if (!(tmpcond_0 === null || isExpr(tmpcond_0))) {
-				throw new Error('invalid node list');
+			const tmpcond = on.body.cond === null ? null : c.node[on.body.cond];
+			if (!(tmpcond === null || isExpr(tmpcond))) {
+				throw new Error('invalid node list at UnionType::cond');
 			}
-			n.cond_0 = tmpcond_0;
+			n.cond = tmpcond;
 			for (const o of on.body.candidate) {
 				if (typeof o !== 'number') {
-					throw new Error('invalid node list');
+					throw new Error('invalid node list at UnionType::candidate');
 				}
 				const tmpcandidate = c.node[o];
 				if (!isUnionCandidate(tmpcandidate)) {
-					throw new Error('invalid node list');
+					throw new Error('invalid node list at UnionType::candidate');
 				}
 				n.candidate.push(tmpcandidate);
 			}
 			if (on.body?.base_type !== null && typeof on.body?.base_type !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at UnionType::base_type');
 			}
 			const tmpbase_type = on.body.base_type === null ? null : c.node[on.body.base_type];
 			if (!(tmpbase_type === null || isStructUnionType(tmpbase_type))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at UnionType::base_type');
 			}
 			n.base_type = tmpbase_type;
 			break;
@@ -2504,19 +2504,19 @@ export function parseAST(obj: any): Program {
 		case "union_candidate": {
 			const n :UnionCandidate = cnode as UnionCandidate;
 			if (on.body?.cond !== null && typeof on.body?.cond !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at UnionCandidate::cond');
 			}
 			const tmpcond = on.body.cond === null ? null : c.node[on.body.cond];
 			if (!(tmpcond === null || isExpr(tmpcond))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at UnionCandidate::cond');
 			}
 			n.cond = tmpcond;
 			if (on.body?.field !== null && typeof on.body?.field !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at UnionCandidate::field');
 			}
 			const tmpfield = on.body.field === null ? null : c.node[on.body.field];
 			if (!(tmpfield === null || isMember(tmpfield))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at UnionCandidate::field');
 			}
 			n.field = tmpfield;
 			break;
@@ -2525,23 +2525,23 @@ export function parseAST(obj: any): Program {
 			const n :RangeType = cnode as RangeType;
 			const tmpis_explicit = on.body?.is_explicit;
 			if (typeof on.body?.is_explicit !== "boolean") {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at RangeType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
 			if (on.body?.base_type !== null && typeof on.body?.base_type !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at RangeType::base_type');
 			}
 			const tmpbase_type = on.body.base_type === null ? null : c.node[on.body.base_type];
 			if (!(tmpbase_type === null || isType(tmpbase_type))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at RangeType::base_type');
 			}
 			n.base_type = tmpbase_type;
 			if (on.body?.range !== null && typeof on.body?.range !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at RangeType::range');
 			}
 			const tmprange = on.body.range === null ? null : c.node[on.body.range];
 			if (!(tmprange === null || isRange(tmprange))) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at RangeType::range');
 			}
 			n.range = tmprange;
 			break;
@@ -2557,18 +2557,18 @@ export function parseAST(obj: any): Program {
 		cscope.branch = os.branch === null ? null : c.scope[os.branch];
 		cscope.ident = os.ident.map((o: any) => {
 			if (typeof o !== 'number') {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Scope::ident');
 			}
 			const c_node = c.node[o];
 			if(!isIdent(c_node)) {
-				throw new Error('invalid node list');
+				throw new Error('invalid node list at Scope::ident');
 			}
 			return c_node;
 		})
 	}
 	const root = c.node[0];
 	if (!isProgram(root)) {
-		throw new Error('invalid node list');
+		throw new Error('invalid node list at node[0]');
 	}
 	return root;
 }

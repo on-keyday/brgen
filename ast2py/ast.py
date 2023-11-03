@@ -320,7 +320,7 @@ class CommentGroup(Node):
 
 
 class UnionType(Type):
-    cond_0: Optional[Expr]
+    cond: Optional[Expr]
     candidate: List[UnionCandidate]
     base_type: Optional[StructUnionType]
 
@@ -953,8 +953,8 @@ def ast2node(ast :Ast) -> Program:
             case NodeType.UNION_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch'))
-                x = node[ast.node[i].body["cond_0"]]
-                node[i].cond_0 = x if isinstance(x,Expr) or x is None else raiseError(TypeError('type mismatch'))
+                x = node[ast.node[i].body["cond"]]
+                node[i].cond = x if isinstance(x,Expr) or x is None else raiseError(TypeError('type mismatch'))
                 node[i].candidate = [(node[x] if isinstance(node[x],UnionCandidate) else raiseError(TypeError('type mismatch'))) for x in ast.node[i].body["candidate"]]
                 x = node[ast.node[i].body["base_type"]]
                 node[i].base_type = x if isinstance(x,StructUnionType) or x is None else raiseError(TypeError('type mismatch'))

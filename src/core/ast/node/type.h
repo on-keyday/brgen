@@ -340,13 +340,13 @@ namespace brgen::ast {
 
     struct UnionType : Type {
         define_node_type(NodeType::union_type);
-        std::weak_ptr<Expr> cond0;
+        std::weak_ptr<Expr> cond;
         std::vector<std::shared_ptr<UnionCandidate>> candidate;
         std::weak_ptr<StructUnionType> base_type;
 
         void dump(auto&& field_) {
             Type::dump(field_);
-            sdebugf(cond0);
+            sdebugf(cond);
             sdebugf(candidate);
             sdebugf(base_type);
         }

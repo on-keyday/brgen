@@ -539,7 +539,7 @@ func (n *CommentGroup) isNode() {}
 type UnionType struct {
 	Loc        Loc
 	IsExplicit bool
-	Cond0      Expr
+	Cond       Expr
 	Candidate  []*UnionCandidate
 	BaseType   *StructUnionType
 }
@@ -1976,7 +1976,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			v := n.node[i].(*UnionType)
 			var tmp struct {
 				IsExplicit bool      `json:"is_explicit"`
-				Cond0      *uintptr  `json:"cond0"`
+				Cond       *uintptr  `json:"cond"`
 				Candidate  []uintptr `json:"candidate"`
 				BaseType   *uintptr  `json:"base_type"`
 			}
@@ -1984,8 +1984,8 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 				return nil, err
 			}
 			v.IsExplicit = tmp.IsExplicit
-			if tmp.Cond0 != nil {
-				v.Cond0 = n.node[*tmp.Cond0].(Expr)
+			if tmp.Cond != nil {
+				v.Cond = n.node[*tmp.Cond].(Expr)
 			}
 			v.Candidate = make([]*UnionCandidate, len(tmp.Candidate))
 			for j, k := range tmp.Candidate {

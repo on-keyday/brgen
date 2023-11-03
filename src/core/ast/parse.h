@@ -214,7 +214,7 @@ namespace brgen::ast {
             }
             for (auto& [k, v] : m) {
                 auto f = std::make_shared<UnionType>();
-                f->cond0 = cond0;
+                f->cond = cond0;
                 f->loc = v[0]->loc;
                 auto ident = std::make_shared<Ident>(f->loc, k);
                 ident->usage = IdentUsage::define_field;

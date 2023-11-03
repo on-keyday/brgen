@@ -3744,7 +3744,7 @@ impl From<Rc<RefCell<CommentGroup>>> for Node {
 pub struct UnionType {
 	pub loc: Loc,
 	pub is_explicit: bool,
-	pub cond_0: Option<Expr>,
+	pub cond: Option<Expr>,
 	pub candidate: Vec<Rc<RefCell<UnionCandidate>>>,
 	pub base_type: Option<Weak<RefCell<StructUnionType>>>,
 }
@@ -4565,7 +4565,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::UnionType(Rc::new(RefCell::new(UnionType {
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
-				cond_0: None,
+				cond: None,
 				candidate: Vec::new(),
 				base_type: None,
 				})))
@@ -6767,20 +6767,20 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
 				};
-				let cond_0_body = match raw_node.body.get("cond0") {
+				let cond_body = match raw_node.body.get("cond") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"cond0")),
+					None=>return Err(Error::MissingField(node_type,"cond")),
 				};
- 				if !cond_0_body.is_null() {
-					let cond_0_body = match cond_0_body.as_u64() {
+ 				if !cond_body.is_null() {
+					let cond_body = match cond_body.as_u64() {
 						Some(v)=>v,
-						None=>return Err(Error::MismatchJSONType(cond_0_body.into(),JSONType::Number)),
+						None=>return Err(Error::MismatchJSONType(cond_body.into(),JSONType::Number)),
 					};
-					let cond_0_body = match nodes.get(cond_0_body as usize) {
+					let cond_body = match nodes.get(cond_body as usize) {
 						Some(v)=>v,
-						None => return Err(Error::IndexOutOfBounds(cond_0_body as usize)),
+						None => return Err(Error::IndexOutOfBounds(cond_body as usize)),
 					};
-					node.borrow_mut().cond_0 = Some(cond_0_body.try_into()?);
+					node.borrow_mut().cond = Some(cond_body.try_into()?);
 				}
 				let candidate_body = match raw_node.body.get("candidate") {
 					Some(v)=>v,

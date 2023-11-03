@@ -661,7 +661,7 @@ struct UnionType {
 	const NodeType node_type;
 	Loc loc;
 	int is_explicit;
-	Expr* cond_0;
+	Expr* cond;
 	UnionCandidate** candidate;
 	size_t candidate_size;
 	StructUnionType* base_type;
