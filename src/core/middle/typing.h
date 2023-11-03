@@ -29,6 +29,27 @@ namespace brgen::middle {
             return false;
         }
 
+        bool comparable_type(const std::shared_ptr<ast::Type>& left, const std::shared_ptr<ast::Type>& right) {
+            if (equal_type(left, right)) {
+                return true;
+            }
+            if (left->node_type == ast::NodeType::range_type) {
+                auto rty = ast::as<ast::RangeType>(left);
+                if (!rty->base_type) {
+                    return true;  // range .. or ..= is always comparable to any type
+                }
+                return equal_type(rty->base_type, right);
+            }
+            if (right->node_type == ast::NodeType::range_type) {
+                auto rty = ast::as<ast::RangeType>(right);
+                if (!rty->base_type) {
+                    return true;  // range .. or ..= is always comparable to any type
+                }
+                return equal_type(rty->base_type, left);
+            }
+            return false;
+        }
+
        private:
         auto void_type(lexer::Loc loc) {
             return std::make_shared<ast::VoidType>(loc);
@@ -36,6 +57,10 @@ namespace brgen::middle {
 
         [[noreturn]] void report_not_equal_type(const std::shared_ptr<ast::Type>& lty, const std::shared_ptr<ast::Type>& rty) {
             error(lty->loc, "type not equal here").error(rty->loc, "and here").report();
+        }
+
+        [[noreturn]] void report_not_comparable_type(const std::shared_ptr<ast::Type>& lty, const std::shared_ptr<ast::Type>& rty) {
+            error(lty->loc, "type not comparable here").error(rty->loc, "and here").report();
         }
 
         [[noreturn]] void unsupported(auto&& expr) {
@@ -256,8 +281,8 @@ namespace brgen::middle {
                     if (m->cond) {
                         if (m->cond->expr_type) {
                             int_type_fitting(m->cond->expr_type, c->cond->expr_type);
-                            if (!equal_type(m->cond->expr_type, c->cond->expr_type)) {
-                                report_not_equal_type(m->cond->expr_type, c->cond->expr_type);
+                            if (!comparable_type(m->cond->expr_type, c->cond->expr_type)) {
+                                report_not_comparable_type(m->cond->expr_type, c->cond->expr_type);
                             }
                         }
                     }
@@ -330,8 +355,8 @@ namespace brgen::middle {
                 case ast::BinaryOp::less_or_eq:
                 case ast::BinaryOp::grater:
                 case ast::BinaryOp::grater_or_eq: {
-                    if (!equal_type(lty, rty)) {
-                        report_not_equal_type(lty, rty);
+                    if (!comparable_type(lty, rty)) {
+                        report_not_comparable_type(lty, rty);
                     }
                     b->expr_type = std::make_shared<ast::BoolType>(b->loc);
                     return;
@@ -576,7 +601,31 @@ namespace brgen::middle {
                 // typing already done
             }
             else if (auto r = ast::as<ast::Range>(expr)) {
-                warn_not_typed(r);
+                if (r->start) {
+                    typing_expr(r->start);
+                }
+                if (r->end) {
+                    typing_expr(r->end);
+                }
+                if (r->start && r->end) {
+                    if (!r->start->expr_type || !r->end->expr_type) {
+                        warn_not_typed(r);
+                        return;
+                    }
+                    int_type_fitting(r->start->expr_type, r->end->expr_type);
+                    if (!equal_type(r->start->expr_type, r->end->expr_type)) {
+                        report_not_equal_type(r->start->expr_type, r->end->expr_type);
+                    }
+                }
+                auto range_type = std::make_shared<ast::RangeType>(r->loc);
+                if (r->start) {
+                    range_type->base_type = r->start->expr_type;
+                }
+                else if (r->end) {
+                    range_type->base_type = r->end->expr_type;
+                }
+                range_type->range = ast::cast_to<ast::Range>(expr);
+                r->expr_type = range_type;
             }
             else if (auto i = ast::as<ast::Import>(expr)) {
                 expr->expr_type = i->import_desc->struct_type;

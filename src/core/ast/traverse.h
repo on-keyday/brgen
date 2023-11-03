@@ -89,6 +89,7 @@ namespace brgen::ast {
         CASE(FunctionType)
         CASE(StructType)
         CASE(UnionType)
+        CASE(RangeType)
 
         END_SWITCH()
 #undef SWITCH

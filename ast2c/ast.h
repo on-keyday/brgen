@@ -65,6 +65,7 @@ typedef enum NodeType {
 	COMMENT_GROUP,
 	UNION_FIELD,
 	UNION_CANDIDATE,
+	RANGE_TYPE,
 } NodeType;
 
 int NodeType_from_string(const char*, NodeType*);
@@ -123,6 +124,7 @@ typedef struct Comment Comment;
 typedef struct CommentGroup CommentGroup;
 typedef struct UnionField UnionField;
 typedef struct UnionCandidate UnionCandidate;
+typedef struct RangeType RangeType;
 typedef enum UnaryOp UnaryOp;
 typedef enum BinaryOp BinaryOp;
 typedef enum IdentUsage IdentUsage;
@@ -670,6 +672,14 @@ struct UnionCandidate {
 	Loc loc;
 	Expr* cond;
 	Member* field;
+};
+
+struct RangeType {
+	const NodeType node_type;
+	Loc loc;
+	int is_explicit;
+	Type* base_type;
+	Range* range;
 };
 
 struct Scope {

@@ -560,6 +560,17 @@ func (n *UnionCandidate) isStmt() {}
 
 func (n *UnionCandidate) isNode() {}
 
+type RangeType struct {
+	Loc        Loc
+	IsExplicit bool
+	BaseType   Type
+	Range      *Range
+}
+
+func (n *RangeType) isType() {}
+
+func (n *RangeType) isNode() {}
+
 type UnaryOp int
 
 const (
@@ -1182,6 +1193,8 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			n.node = append(n.node, &UnionField{Loc: raw.Loc})
 		case "union_candidate":
 			n.node = append(n.node, &UnionCandidate{Loc: raw.Loc})
+		case "range_type":
+			n.node = append(n.node, &RangeType{Loc: raw.Loc})
 		default:
 			return nil, fmt.Errorf("unknown node type: %q", raw.NodeType)
 		}
@@ -2000,6 +2013,23 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.Field != nil {
 				v.Field = n.node[*tmp.Field].(Member)
 			}
+		case "range_type":
+			v := n.node[i].(*RangeType)
+			var tmp struct {
+				IsExplicit bool     `json:"is_explicit"`
+				BaseType   *uintptr `json:"base_type"`
+				Range      *uintptr `json:"range"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			v.IsExplicit = tmp.IsExplicit
+			if tmp.BaseType != nil {
+				v.BaseType = n.node[*tmp.BaseType].(Type)
+			}
+			if tmp.Range != nil {
+				v.Range = n.node[*tmp.Range].(*Range)
+			}
 		default:
 			return nil, fmt.Errorf("unknown node type: %q", raw.NodeType)
 		}
@@ -2338,6 +2368,10 @@ func Walk(n Node, f Visitor) {
 		}
 		if v.Field != nil {
 			f.Visit(f, v.Field)
+		}
+	case *RangeType:
+		if v.BaseType != nil {
+			f.Visit(f, v.BaseType)
 		}
 	}
 }

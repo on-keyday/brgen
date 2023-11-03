@@ -322,4 +322,25 @@ namespace brgen::ast {
         }
     };
 
+    struct RangeType : Type {
+        define_node_type(NodeType::range_type);
+        std::shared_ptr<Type> base_type;
+        std::weak_ptr<Range> range;
+
+        RangeType(lexer::Loc l, bool is_explicit = false)
+            : Type(l, NodeType::range_type) {
+            this->is_explicit = is_explicit;
+        }
+
+        // for decode
+        RangeType()
+            : Type({}, NodeType::range_type) {}
+
+        void dump(auto&& field_) {
+            Type::dump(field_);
+            sdebugf(base_type);
+            sdebugf(range);
+        }
+    };
+
 }  // namespace brgen::ast

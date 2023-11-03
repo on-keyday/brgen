@@ -222,6 +222,10 @@ int NodeType_from_string(const char* str, NodeType* out) {
 		*out = UNION_CANDIDATE;
 		return 1;
 	}
+	if (strcmp("range_type", str) == 0) {
+		*out = RANGE_TYPE;
+		return 1;
+	}
 	return 0;
 }
 
@@ -384,6 +388,9 @@ const char* NodeType_to_string(NodeType typ) {
 	}
 	if (typ == UNION_CANDIDATE) {
 		return "union_candidate";
+	}
+	if (typ == RANGE_TYPE) {
+		return "range_type";
 	}
 	return NULL;
 }

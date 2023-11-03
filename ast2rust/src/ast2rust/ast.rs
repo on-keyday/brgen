@@ -97,6 +97,7 @@ pub enum NodeType {
 	CommentGroup,
 	UnionField,
 	UnionCandidate,
+	RangeType,
 }
 
 impl TryFrom<&str> for NodeType {
@@ -156,6 +157,7 @@ impl TryFrom<&str> for NodeType {
 			"comment_group" =>Ok(Self::CommentGroup),
 			"union_field" =>Ok(Self::UnionField),
 			"union_candidate" =>Ok(Self::UnionCandidate),
+			"range_type" =>Ok(Self::RangeType),
 			_=> Err(()),
 		}
 	}
@@ -211,6 +213,7 @@ impl From<&Node> for NodeType {
 			Node::CommentGroup(_) => Self::CommentGroup,
 			Node::UnionField(_) => Self::UnionField,
 			Node::UnionCandidate(_) => Self::UnionCandidate,
+			Node::RangeType(_) => Self::RangeType,
 		}
 	}
 }
@@ -270,6 +273,7 @@ pub enum Node {
 	CommentGroup(Rc<RefCell<CommentGroup>>),
 	UnionField(Rc<RefCell<UnionField>>),
 	UnionCandidate(Rc<RefCell<UnionCandidate>>),
+	RangeType(Rc<RefCell<RangeType>>),
 }
 
 #[derive(Debug,Clone)]
@@ -548,6 +552,7 @@ pub enum Type {
 	FunctionType(Rc<RefCell<FunctionType>>),
 	StructType(Rc<RefCell<StructType>>),
 	UnionType(Rc<RefCell<UnionType>>),
+	RangeType(Rc<RefCell<RangeType>>),
 }
 
 impl TryFrom<&Node> for Type {
@@ -564,6 +569,7 @@ impl TryFrom<&Node> for Type {
 			Node::FunctionType(node)=>Ok(Self::FunctionType(node.clone())),
 			Node::StructType(node)=>Ok(Self::StructType(node.clone())),
 			Node::UnionType(node)=>Ok(Self::UnionType(node.clone())),
+			Node::RangeType(node)=>Ok(Self::RangeType(node.clone())),
 			_=> Err(Error::InvalidNodeType(node.into())),
 		}
 	}
@@ -589,6 +595,7 @@ impl From<&Type> for Node {
 			Type::FunctionType(node)=>Self::FunctionType(node.clone()),
 			Type::StructType(node)=>Self::StructType(node.clone()),
 			Type::UnionType(node)=>Self::UnionType(node.clone()),
+			Type::RangeType(node)=>Self::RangeType(node.clone()),
 		}
 	}
 }
@@ -3897,6 +3904,72 @@ impl From<Rc<RefCell<UnionCandidate>>> for Node {
 	}
 }
 
+#[derive(Debug,Clone)]
+pub struct RangeType {
+	pub loc: Loc,
+	pub is_explicit: bool,
+	pub base_type: Option<Type>,
+	pub range: Option<Weak<RefCell<Range>>>,
+}
+
+impl TryFrom<&Type> for Rc<RefCell<RangeType>> {
+	type Error = Error;
+	fn try_from(node:&Type)->Result<Self,Self::Error>{
+		match node {
+			Type::RangeType(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl TryFrom<Type> for Rc<RefCell<RangeType>> {
+	type Error = Error;
+	fn try_from(node:Type)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
+impl From<&Rc<RefCell<RangeType>>> for Type {
+	fn from(node:&Rc<RefCell<RangeType>>)-> Self{
+		Type::RangeType(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<RangeType>>> for Type {
+	fn from(node:Rc<RefCell<RangeType>>)-> Self{
+		Self::from(&node)
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<RangeType>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::RangeType(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl TryFrom<Node> for Rc<RefCell<RangeType>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
+impl From<&Rc<RefCell<RangeType>>> for Node {
+	fn from(node:&Rc<RefCell<RangeType>>)-> Self{
+		Node::RangeType(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<RangeType>>> for Node {
+	fn from(node:Rc<RefCell<RangeType>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 #[derive(Debug,Clone,Copy,Serialize,Deserialize)]
 #[serde(rename_all = "snake_case")]pub enum UnaryOp {
 	Not,
@@ -4534,6 +4607,14 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				loc: raw_node.loc.clone(),
 				cond: None,
 				field: None,
+				})))
+			},
+			NodeType::RangeType => {
+				Node::RangeType(Rc::new(RefCell::new(RangeType {
+				loc: raw_node.loc.clone(),
+				is_explicit: false,
+				base_type: None,
+				range: None,
 				})))
 			},
 			_=>return Err(Error::UnknownNodeType(node_type)),
@@ -6824,6 +6905,55 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					node.borrow_mut().field = Some(field_body.try_into()?);
 				}
 			},
+			NodeType::RangeType => {
+				let node = nodes[i].clone();
+				let node = match node {
+					Node::RangeType(node)=>node,
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
+				};
+				let is_explicit_body = match raw_node.body.get("is_explicit") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"is_explicit")),
+				};
+				node.borrow_mut().is_explicit = match is_explicit_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
+				};
+				let base_type_body = match raw_node.body.get("base_type") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"base_type")),
+				};
+ 				if !base_type_body.is_null() {
+					let base_type_body = match base_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(base_type_body.into(),JSONType::Number)),
+					};
+					let base_type_body = match nodes.get(base_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(base_type_body as usize)),
+					};
+					node.borrow_mut().base_type = Some(base_type_body.try_into()?);
+				}
+				let range_body = match raw_node.body.get("range") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"range")),
+				};
+ 				if !range_body.is_null() {
+					let range_body = match range_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(range_body.into(),JSONType::Number)),
+					};
+					let range_body = match nodes.get(range_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(range_body as usize)),
+					};
+					let range_body = match range_body {
+						Node::Range(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),range_body.into())),
+					};
+					node.borrow_mut().range = Some(Rc::downgrade(&range_body));
+				}
+			},
 			_=>return Err(Error::UnknownNodeType(node_type)),
 		};
 	}
@@ -7234,6 +7364,11 @@ where
 				f.visit(&node.into());
 			}
 			if let Some(node) = &node.borrow().field{
+				f.visit(&node.into());
+			}
+		},
+		Node::RangeType(node)=>{
+			if let Some(node) = &node.borrow().base_type{
 				f.visit(&node.into());
 			}
 		},

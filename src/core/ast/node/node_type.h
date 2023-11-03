@@ -69,7 +69,7 @@ namespace brgen::ast {
         function_type,
         struct_type,
         union_type,
-
+        range_type,
     };
 
     constexpr const char* node_type_str[]{
@@ -125,6 +125,7 @@ namespace brgen::ast {
         "comment_group",
         "union_field",
         "union_candidate",
+        "range_type",
     };
 
     constexpr int mapNodeTypeToValue(NodeType type) {
@@ -233,6 +234,8 @@ namespace brgen::ast {
                 return 50;
             case NodeType::union_candidate:
                 return 51;
+            case NodeType::range_type:
+                return 52;
             default:
                 return -1;
         }
@@ -344,6 +347,8 @@ namespace brgen::ast {
                 return NodeType::union_field;
             case 51:
                 return NodeType::union_candidate;
+            case 52:
+                return NodeType::range_type;
             default:
                 return either::unexpected{"invalid value"};
         }

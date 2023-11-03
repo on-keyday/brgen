@@ -2,10 +2,10 @@
 
 export namespace ast2ts {
 
-export type NodeType = "node" | "program" | "expr" | "binary" | "unary" | "cond" | "ident" | "call" | "if" | "member_access" | "paren" | "index" | "match" | "range" | "tmp_var" | "block_expr" | "import" | "literal" | "int_literal" | "bool_literal" | "str_literal" | "input" | "output" | "config" | "stmt" | "loop" | "indent_block" | "match_branch" | "return" | "break" | "continue" | "assert" | "implicit_yield" | "member" | "field" | "format" | "function" | "type" | "int_type" | "ident_type" | "int_literal_type" | "str_literal_type" | "void_type" | "bool_type" | "array_type" | "function_type" | "struct_type" | "union_type" | "cast" | "comment" | "comment_group" | "union_field" | "union_candidate";
+export type NodeType = "node" | "program" | "expr" | "binary" | "unary" | "cond" | "ident" | "call" | "if" | "member_access" | "paren" | "index" | "match" | "range" | "tmp_var" | "block_expr" | "import" | "literal" | "int_literal" | "bool_literal" | "str_literal" | "input" | "output" | "config" | "stmt" | "loop" | "indent_block" | "match_branch" | "return" | "break" | "continue" | "assert" | "implicit_yield" | "member" | "field" | "format" | "function" | "type" | "int_type" | "ident_type" | "int_literal_type" | "str_literal_type" | "void_type" | "bool_type" | "array_type" | "function_type" | "struct_type" | "union_type" | "cast" | "comment" | "comment_group" | "union_field" | "union_candidate" | "range_type";
 
 export function isNodeType(obj: any): obj is NodeType {
-	return obj && typeof obj === 'string' && (obj === "node" || obj === "program" || obj === "expr" || obj === "binary" || obj === "unary" || obj === "cond" || obj === "ident" || obj === "call" || obj === "if" || obj === "member_access" || obj === "paren" || obj === "index" || obj === "match" || obj === "range" || obj === "tmp_var" || obj === "block_expr" || obj === "import" || obj === "literal" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "input" || obj === "output" || obj === "config" || obj === "stmt" || obj === "loop" || obj === "indent_block" || obj === "match_branch" || obj === "return" || obj === "break" || obj === "continue" || obj === "assert" || obj === "implicit_yield" || obj === "member" || obj === "field" || obj === "format" || obj === "function" || obj === "type" || obj === "int_type" || obj === "ident_type" || obj === "int_literal_type" || obj === "str_literal_type" || obj === "void_type" || obj === "bool_type" || obj === "array_type" || obj === "function_type" || obj === "struct_type" || obj === "union_type" || obj === "cast" || obj === "comment" || obj === "comment_group" || obj === "union_field" || obj === "union_candidate")
+	return obj && typeof obj === 'string' && (obj === "node" || obj === "program" || obj === "expr" || obj === "binary" || obj === "unary" || obj === "cond" || obj === "ident" || obj === "call" || obj === "if" || obj === "member_access" || obj === "paren" || obj === "index" || obj === "match" || obj === "range" || obj === "tmp_var" || obj === "block_expr" || obj === "import" || obj === "literal" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "input" || obj === "output" || obj === "config" || obj === "stmt" || obj === "loop" || obj === "indent_block" || obj === "match_branch" || obj === "return" || obj === "break" || obj === "continue" || obj === "assert" || obj === "implicit_yield" || obj === "member" || obj === "field" || obj === "format" || obj === "function" || obj === "type" || obj === "int_type" || obj === "ident_type" || obj === "int_literal_type" || obj === "str_literal_type" || obj === "void_type" || obj === "bool_type" || obj === "array_type" || obj === "function_type" || obj === "struct_type" || obj === "union_type" || obj === "cast" || obj === "comment" || obj === "comment_group" || obj === "union_field" || obj === "union_candidate" || obj === "range_type")
 }
 
 export interface Node {
@@ -61,6 +61,7 @@ export function isNode(obj: any): obj is Node {
 	if (isCommentGroup(obj)) return true;
 	if (isUnionField(obj)) return true;
 	if (isUnionCandidate(obj)) return true;
+	if (isRangeType(obj)) return true;
 	return false;
 }
 
@@ -154,6 +155,7 @@ export function isType(obj: any): obj is Type {
 	if (isFunctionType(obj)) return true;
 	if (isStructType(obj)) return true;
 	if (isUnionType(obj)) return true;
+	if (isRangeType(obj)) return true;
 	return false;
 }
 
@@ -579,6 +581,15 @@ export interface UnionCandidate extends Stmt {
 
 export function isUnionCandidate(obj: any): obj is UnionCandidate {
 	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "union_candidate"
+}
+
+export interface RangeType extends Type {
+	base_type: Type|null;
+	range: Range|null;
+}
+
+export function isRangeType(obj: any): obj is RangeType {
+	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "range_type"
 }
 
 export enum UnaryOp {
@@ -1308,6 +1319,17 @@ export function parseAST(obj: any): Program {
 				loc: on.loc,
 				cond: null,
 				field: null,
+			}
+			c.node.push(n);
+			break;
+		}
+		case "range_type": {
+			const n :RangeType = {
+				node_type: "range_type",
+				loc: on.loc,
+				is_explicit: false,
+				base_type: null,
+				range: null,
 			}
 			c.node.push(n);
 			break;
@@ -2502,6 +2524,31 @@ export function parseAST(obj: any): Program {
 			n.field = tmpfield;
 			break;
 		}
+		case "range_type": {
+			const n :RangeType = cnode as RangeType;
+			const tmpis_explicit = on.body?.is_explicit;
+			if (typeof on.body?.is_explicit !== "boolean") {
+				throw new Error('invalid node list');
+			}
+			n.is_explicit = on.body.is_explicit;
+			if (on.body?.base_type !== null && typeof on.body?.base_type !== 'number') {
+				throw new Error('invalid node list');
+			}
+			const tmpbase_type = on.body.base_type === null ? null : c.node[on.body.base_type];
+			if (!(tmpbase_type === null || isType(tmpbase_type))) {
+				throw new Error('invalid node list');
+			}
+			n.base_type = tmpbase_type;
+			if (on.body?.range !== null && typeof on.body?.range !== 'number') {
+				throw new Error('invalid node list');
+			}
+			const tmprange = on.body.range === null ? null : c.node[on.body.range];
+			if (!(tmprange === null || isRange(tmprange))) {
+				throw new Error('invalid node list');
+			}
+			n.range = tmprange;
+			break;
+		}
 		}
 	}
 	for (let i = 0; i < o.scope.length; i++) {
@@ -3128,6 +3175,16 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			if (n.field !== null) {
 				fn(fn,n.field);
+			}
+			break;
+		}
+		case "range_type": {
+			if (!isRangeType(node)) {
+				break;
+			}
+			const n :RangeType = node as RangeType;
+			if (n.base_type !== null) {
+				fn(fn,n.base_type);
 			}
 			break;
 		}

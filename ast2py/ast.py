@@ -58,6 +58,7 @@ class NodeType(Enum):
     COMMENT_GROUP = "comment_group"
     UNION_FIELD = "union_field"
     UNION_CANDIDATE = "union_candidate"
+    RANGE_TYPE = "range_type"
 
 
 class Node:
@@ -326,6 +327,11 @@ class UnionField(Member):
 class UnionCandidate(Stmt):
     cond: Optional[Expr]
     field: Optional[Member]
+
+
+class RangeType(Type):
+    base_type: Optional[Type]
+    range: Optional[Range]
 
 
 class UnaryOp(Enum):
@@ -663,6 +669,8 @@ def ast2node(ast :Ast) -> Program:
                 node.append(UnionField())
             case NodeType.UNION_CANDIDATE:
                 node.append(UnionCandidate())
+            case NodeType.RANGE_TYPE:
+                node.append(RangeType())
             case _:
                 raise TypeError('unknown node type')
     scope = [Scope() for _ in range(len(ast.scope))]
@@ -954,6 +962,13 @@ def ast2node(ast :Ast) -> Program:
                 node[i].cond = x if isinstance(x,Expr) or x is None else raiseError(TypeError('type mismatch'))
                 x = node[ast.node[i].body["field"]]
                 node[i].field = x if isinstance(x,Member) or x is None else raiseError(TypeError('type mismatch'))
+            case NodeType.RANGE_TYPE:
+                x = ast.node[i].body["is_explicit"]
+                node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch'))
+                x = node[ast.node[i].body["base_type"]]
+                node[i].base_type = x if isinstance(x,Type) or x is None else raiseError(TypeError('type mismatch'))
+                x = node[ast.node[i].body["range"]]
+                node[i].range = x if isinstance(x,Range) or x is None else raiseError(TypeError('type mismatch'))
             case _:
                 raise TypeError('unknown node type')
     for i in range(len(ast.scope)):
@@ -1190,3 +1205,6 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
               f(f,x.cond)
           if x.field is not None:
               f(f,x.field)
+        case x if isinstance(x,RangeType):
+          if x.base_type is not None:
+              f(f,x.base_type)
