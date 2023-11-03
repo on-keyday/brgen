@@ -156,8 +156,7 @@ namespace json2cpp {
                         return r.transform(empty_void);
                     }
                 }
-                if (ast::as<ast::UnionField>(f)) {
-                }
+          
             }
             return merge_fields();
         }

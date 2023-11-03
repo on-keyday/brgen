@@ -55,44 +55,7 @@ namespace brgen::ast {
         }
     };
 
-    struct UnionType;
-
-    struct UnionCandidate : Stmt {
-        define_node_type(NodeType::union_candidate);
-        std::shared_ptr<Expr> cond;
-        std::shared_ptr<Member> field;
-
-        UnionCandidate(lexer::Loc loc)
-            : Stmt(loc, NodeType::union_candidate) {}
-
-        UnionCandidate()
-            : Stmt({}, NodeType::union_candidate) {}
-
-        void dump(auto&& field_) {
-            Node::dump(field_);
-            sdebugf(cond);
-            sdebugf(field);
-        }
-    };
-
-    struct UnionField : Member {
-        define_node_type(NodeType::union_field);
-        std::shared_ptr<Expr> cond;
-        std::vector<std::shared_ptr<UnionCandidate>> candidate;
-        std::weak_ptr<UnionType> union_type;
-
-        void dump(auto&& field_) {
-            Member::dump(field_);
-            sdebugf(candidate);
-            sdebugf(union_type);
-        }
-
-        UnionField(lexer::Loc loc)
-            : Member(loc, NodeType::union_field) {}
-
-        UnionField()
-            : Member({}, NodeType::union_field) {}
-    };
+    struct StructUnionType;
 
     struct FunctionType;
     struct StructType;

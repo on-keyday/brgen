@@ -1,8 +1,12 @@
-
-format U:
-  match 0:
+# this type is union of a,b,c and x
+format UnionSample:
+  tag :u8
+  match tag:
     1 => a :u8
     2 :
-        a: u16
-    3 => a :u32
+        b :u16
+    3 => c :u32
     .. => x :u64
+
+# but actually, this type is become like this
+# struct { uint8_t tag; union { uint8_t a; uint16_t b; uint32_t c; uint64_t x; };

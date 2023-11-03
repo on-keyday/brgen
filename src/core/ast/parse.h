@@ -186,7 +186,7 @@ namespace brgen::ast {
             return block;
         }
 
-        void export_union_field(const std::shared_ptr<Expr>& cond0, std::vector<std::shared_ptr<Expr>>& cond, const std::shared_ptr<UnionType>& type) {
+        void export_union_field(const std::shared_ptr<Expr>& cond0, std::vector<std::shared_ptr<Expr>>& cond, const std::shared_ptr<StructUnionType>& type) {
             assert(cond.size() == type->fields.size());
             std::map<std::string, std::vector<std::shared_ptr<UnionCandidate>>> m;
             for (size_t i = 0; i < cond.size(); i++) {
@@ -196,8 +196,15 @@ namespace brgen::ast {
                     if (!d->ident) {
                         continue;
                     }
-                    if (!ast::as<Field>(d) && !ast::as<UnionField>(d)) {
+                    if (!ast::as<Field>(d)) {
                         continue;
+                    }
+                    if (auto found = m.find(d->ident->ident); found != m.end()) {
+                        for (auto& c1 : found->second) {
+                            if (c1->cond.lock() == c) {
+                                error(d->loc, "duplicate field name: ", d->ident->ident).error(c->loc, "previous definition is here").report();
+                            }
+                        }
                     }
                     auto cand = std::make_shared<UnionCandidate>(d->loc);
                     cand->cond = c;
@@ -206,20 +213,23 @@ namespace brgen::ast {
                 }
             }
             for (auto& [k, v] : m) {
-                auto f = std::make_shared<UnionField>();
-                f->cond = cond0;
+                auto f = std::make_shared<UnionType>();
+                f->cond0 = cond0;
                 f->loc = v[0]->loc;
-                f->ident = std::make_shared<Ident>(f->loc, k);
-                f->ident->usage = IdentUsage::define_field;
-                f->ident->scope = state.current_scope();
-                f->ident->scope->push(f->ident);
-                f->ident->base = f;
-                f->union_type = type;
+                auto ident = std::make_shared<Ident>(f->loc, k);
+                ident->usage = IdentUsage::define_field;
+                ident->scope = state.current_scope();
+                ident->scope->push(ident);
+                auto field = std::make_shared<Field>(f->loc);
+                field->ident = ident;
+                ident->base = field;
+                field->field_type = f;
+                f->base_type = type;
                 for (auto& c : v) {
                     f->candidate.push_back(c);
                 }
-                type->union_fields.push_back(f);
-                state.add_to_struct(std::move(f));
+                type->union_fields.push_back(field);
+                state.add_to_struct(std::move(field));
             }
         }
 
@@ -231,7 +241,7 @@ namespace brgen::ast {
             // Create a shared pointer for the Match
             auto match = std::make_shared<Match>(token.loc);
 
-            std::shared_ptr<UnionType> union_ = std::make_shared<UnionType>(match->loc);
+            std::shared_ptr<StructUnionType> union_ = std::make_shared<StructUnionType>(match->loc);
             union_->base = match;
 
             std::vector<std::shared_ptr<Expr>> cond;
@@ -329,7 +339,7 @@ namespace brgen::ast {
 
             // 解析して if の条件式とブロックを設定
             if_->cond = parse_expr();
-            std::shared_ptr<UnionType> union_ = std::make_shared<UnionType>(if_->loc);
+            std::shared_ptr<StructUnionType> union_ = std::make_shared<StructUnionType>(if_->loc);
             union_->base = if_;
 
             std::vector<std::shared_ptr<Expr>> cond;

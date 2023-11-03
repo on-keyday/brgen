@@ -300,19 +300,17 @@ namespace brgen::ast {
         }
     };
 
-    struct UnionField;
-
-    struct UnionType : Type {
-        define_node_type(NodeType::union_type);
+    struct StructUnionType : Type {
+        define_node_type(NodeType::struct_union_type);
         std::weak_ptr<Expr> base;
         std::vector<std::shared_ptr<StructType>> fields;
-        std::vector<std::weak_ptr<UnionField>> union_fields;
+        std::vector<std::weak_ptr<Field>> union_fields;
 
-        UnionType(lexer::Loc l)
-            : Type(l, NodeType::union_type) {}
+        StructUnionType(lexer::Loc l)
+            : Type(l, NodeType::struct_union_type) {}
 
-        UnionType()
-            : Type({}, NodeType::union_type) {}
+        StructUnionType()
+            : Type({}, NodeType::struct_union_type) {}
 
         void dump(auto&& field_) {
             Type::dump(field_);
@@ -320,6 +318,44 @@ namespace brgen::ast {
             sdebugf(base);
             sdebugf(union_fields);
         }
+    };
+
+    struct UnionCandidate : Stmt {
+        define_node_type(NodeType::union_candidate);
+        std::weak_ptr<Expr> cond;
+        std::weak_ptr<Member> field;
+
+        UnionCandidate(lexer::Loc loc)
+            : Stmt(loc, NodeType::union_candidate) {}
+
+        UnionCandidate()
+            : Stmt({}, NodeType::union_candidate) {}
+
+        void dump(auto&& field_) {
+            Node::dump(field_);
+            sdebugf(cond);
+            sdebugf(field);
+        }
+    };
+
+    struct UnionType : Type {
+        define_node_type(NodeType::union_type);
+        std::weak_ptr<Expr> cond0;
+        std::vector<std::shared_ptr<UnionCandidate>> candidate;
+        std::weak_ptr<StructUnionType> base_type;
+
+        void dump(auto&& field_) {
+            Type::dump(field_);
+            sdebugf(cond0);
+            sdebugf(candidate);
+            sdebugf(base_type);
+        }
+
+        UnionType(lexer::Loc loc)
+            : Type(loc, NodeType::union_type) {}
+
+        UnionType()
+            : Type({}, NodeType::union_type) {}
     };
 
     struct RangeType : Type {

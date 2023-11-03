@@ -54,7 +54,7 @@ namespace brgen::ast {
         member = 0x220000,
 
         field,
-        union_field,
+
         format,
         function,
 
@@ -68,6 +68,7 @@ namespace brgen::ast {
         array_type,
         function_type,
         struct_type,
+        struct_union_type,
         union_type,
         range_type,
     };
@@ -119,11 +120,11 @@ namespace brgen::ast {
         "array_type",
         "function_type",
         "struct_type",
-        "union_type",
+        "struct_union_type",
         "cast",
         "comment",
         "comment_group",
-        "union_field",
+        "union_type",
         "union_candidate",
         "range_type",
     };
@@ -222,7 +223,7 @@ namespace brgen::ast {
                 return 44;
             case NodeType::struct_type:
                 return 45;
-            case NodeType::union_type:
+            case NodeType::struct_union_type:
                 return 46;
             case NodeType::cast:
                 return 47;
@@ -230,7 +231,7 @@ namespace brgen::ast {
                 return 48;
             case NodeType::comment_group:
                 return 49;
-            case NodeType::union_field:
+            case NodeType::union_type:
                 return 50;
             case NodeType::union_candidate:
                 return 51;
@@ -336,7 +337,7 @@ namespace brgen::ast {
             case 45:
                 return NodeType::struct_type;
             case 46:
-                return NodeType::union_type;
+                return NodeType::struct_union_type;
             case 47:
                 return NodeType::cast;
             case 48:
@@ -344,7 +345,7 @@ namespace brgen::ast {
             case 49:
                 return NodeType::comment_group;
             case 50:
-                return NodeType::union_field;
+                return NodeType::union_type;
             case 51:
                 return NodeType::union_candidate;
             case 52:
