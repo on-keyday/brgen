@@ -54,6 +54,13 @@ namespace brgen::ast::tool {
 
     inline std::optional<IntUnionDesc> is_int_union_type(auto&& typ) {
         if (ast::UnionType* e = ast::as<ast::UnionType>(typ)) {
+            if (e->union_fields.size() != 1) {
+                return std::nullopt;
+            }
+            auto f = e->union_fields.front().lock();
+            if (!f) {
+                return std::nullopt;
+            }
             IntUnionDesc desc;
             auto loc = e->base.lock();
             if (auto m = ast::as<ast::Match>(loc)) {

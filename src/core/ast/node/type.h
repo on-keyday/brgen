@@ -292,18 +292,8 @@ namespace brgen::ast {
 
         std::shared_ptr<Member> lookup(std::string_view key) {
             for (auto& f : fields) {
-                // here cannot use such as ast::as<ast::Field>(got) because of circular dependency
-                if (f->node_type == NodeType::field) {
-                    auto field = static_cast<ast::Field*>(f.get());
-                    if (field->ident && field->ident->ident == key) {
-                        return f;
-                    }
-                }
-                else if (f->node_type == NodeType::function) {
-                    auto fn = static_cast<ast::Function*>(f.get());
-                    if (fn->ident && fn->ident->ident == key) {
-                        return f;
-                    }
+                if (f->ident && f->ident->ident == key) {
+                    return f;
                 }
             }
             return nullptr;
