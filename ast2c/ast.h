@@ -59,11 +59,11 @@ typedef enum NodeType {
 	ARRAY_TYPE,
 	FUNCTION_TYPE,
 	STRUCT_TYPE,
-	UNION_TYPE,
+	STRUCT_UNION_TYPE,
 	CAST,
 	COMMENT,
 	COMMENT_GROUP,
-	UNION_FIELD,
+	UNION_TYPE,
 	UNION_CANDIDATE,
 	RANGE_TYPE,
 } NodeType;
@@ -118,11 +118,11 @@ typedef struct BoolType BoolType;
 typedef struct ArrayType ArrayType;
 typedef struct FunctionType FunctionType;
 typedef struct StructType StructType;
-typedef struct UnionType UnionType;
+typedef struct StructUnionType StructUnionType;
 typedef struct Cast Cast;
 typedef struct Comment Comment;
 typedef struct CommentGroup CommentGroup;
-typedef struct UnionField UnionField;
+typedef struct UnionType UnionType;
 typedef struct UnionCandidate UnionCandidate;
 typedef struct RangeType RangeType;
 typedef enum UnaryOp UnaryOp;
@@ -625,14 +625,14 @@ struct StructType {
 	size_t fields_size;
 };
 
-struct UnionType {
+struct StructUnionType {
 	const NodeType node_type;
 	Loc loc;
 	int is_explicit;
 	StructType** fields;
 	size_t fields_size;
 	Expr* base;
-	UnionField** union_fields;
+	Field** union_fields;
 	size_t union_fields_size;
 };
 
@@ -657,14 +657,14 @@ struct CommentGroup {
 	size_t comments_size;
 };
 
-struct UnionField {
+struct UnionType {
 	const NodeType node_type;
 	Loc loc;
-	Member* belong;
-	Ident* ident;
+	int is_explicit;
+	Expr* cond_0;
 	UnionCandidate** candidate;
 	size_t candidate_size;
-	UnionType* union_type;
+	StructUnionType* base_type;
 };
 
 struct UnionCandidate {

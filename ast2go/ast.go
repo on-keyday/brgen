@@ -499,17 +499,17 @@ func (n *StructType) isType() {}
 
 func (n *StructType) isNode() {}
 
-type UnionType struct {
+type StructUnionType struct {
 	Loc         Loc
 	IsExplicit  bool
 	Fields      []*StructType
 	Base        Expr
-	UnionFields []*UnionField
+	UnionFields []*Field
 }
 
-func (n *UnionType) isType() {}
+func (n *StructUnionType) isType() {}
 
-func (n *UnionType) isNode() {}
+func (n *StructUnionType) isNode() {}
 
 type Cast struct {
 	Loc      Loc
@@ -536,19 +536,17 @@ type CommentGroup struct {
 
 func (n *CommentGroup) isNode() {}
 
-type UnionField struct {
-	Loc       Loc
-	Belong    Member
-	Ident     *Ident
-	Candidate []*UnionCandidate
-	UnionType *UnionType
+type UnionType struct {
+	Loc        Loc
+	IsExplicit bool
+	Cond0      Expr
+	Candidate  []*UnionCandidate
+	BaseType   *StructUnionType
 }
 
-func (n *UnionField) isMember() {}
+func (n *UnionType) isType() {}
 
-func (n *UnionField) isStmt() {}
-
-func (n *UnionField) isNode() {}
+func (n *UnionType) isNode() {}
 
 type UnionCandidate struct {
 	Loc   Loc
@@ -1181,16 +1179,16 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			n.node = append(n.node, &FunctionType{Loc: raw.Loc})
 		case "struct_type":
 			n.node = append(n.node, &StructType{Loc: raw.Loc})
-		case "union_type":
-			n.node = append(n.node, &UnionType{Loc: raw.Loc})
+		case "struct_union_type":
+			n.node = append(n.node, &StructUnionType{Loc: raw.Loc})
 		case "cast":
 			n.node = append(n.node, &Cast{Loc: raw.Loc})
 		case "comment":
 			n.node = append(n.node, &Comment{Loc: raw.Loc})
 		case "comment_group":
 			n.node = append(n.node, &CommentGroup{Loc: raw.Loc})
-		case "union_field":
-			n.node = append(n.node, &UnionField{Loc: raw.Loc})
+		case "union_type":
+			n.node = append(n.node, &UnionType{Loc: raw.Loc})
 		case "union_candidate":
 			n.node = append(n.node, &UnionCandidate{Loc: raw.Loc})
 		case "range_type":
@@ -1911,8 +1909,8 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			for j, k := range tmp.Fields {
 				v.Fields[j] = n.node[k].(Member)
 			}
-		case "union_type":
-			v := n.node[i].(*UnionType)
+		case "struct_union_type":
+			v := n.node[i].(*StructUnionType)
 			var tmp struct {
 				IsExplicit  bool      `json:"is_explicit"`
 				Fields      []uintptr `json:"fields"`
@@ -1930,9 +1928,9 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.Base != nil {
 				v.Base = n.node[*tmp.Base].(Expr)
 			}
-			v.UnionFields = make([]*UnionField, len(tmp.UnionFields))
+			v.UnionFields = make([]*Field, len(tmp.UnionFields))
 			for j, k := range tmp.UnionFields {
-				v.UnionFields[j] = n.node[k].(*UnionField)
+				v.UnionFields[j] = n.node[k].(*Field)
 			}
 		case "cast":
 			v := n.node[i].(*Cast)
@@ -1974,29 +1972,27 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			for j, k := range tmp.Comments {
 				v.Comments[j] = n.node[k].(*Comment)
 			}
-		case "union_field":
-			v := n.node[i].(*UnionField)
+		case "union_type":
+			v := n.node[i].(*UnionType)
 			var tmp struct {
-				Belong    *uintptr  `json:"belong"`
-				Ident     *uintptr  `json:"ident"`
-				Candidate []uintptr `json:"candidate"`
-				UnionType *uintptr  `json:"union_type"`
+				IsExplicit bool      `json:"is_explicit"`
+				Cond0      *uintptr  `json:"cond0"`
+				Candidate  []uintptr `json:"candidate"`
+				BaseType   *uintptr  `json:"base_type"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
 			}
-			if tmp.Belong != nil {
-				v.Belong = n.node[*tmp.Belong].(Member)
-			}
-			if tmp.Ident != nil {
-				v.Ident = n.node[*tmp.Ident].(*Ident)
+			v.IsExplicit = tmp.IsExplicit
+			if tmp.Cond0 != nil {
+				v.Cond0 = n.node[*tmp.Cond0].(Expr)
 			}
 			v.Candidate = make([]*UnionCandidate, len(tmp.Candidate))
 			for j, k := range tmp.Candidate {
 				v.Candidate[j] = n.node[k].(*UnionCandidate)
 			}
-			if tmp.UnionType != nil {
-				v.UnionType = n.node[*tmp.UnionType].(*UnionType)
+			if tmp.BaseType != nil {
+				v.BaseType = n.node[*tmp.BaseType].(*StructUnionType)
 			}
 		case "union_candidate":
 			v := n.node[i].(*UnionCandidate)
@@ -2336,7 +2332,7 @@ func Walk(n Node, f Visitor) {
 		for _, w := range v.Fields {
 			f.Visit(f, w)
 		}
-	case *UnionType:
+	case *StructUnionType:
 		for _, w := range v.Fields {
 			f.Visit(f, w)
 		}
@@ -2355,20 +2351,11 @@ func Walk(n Node, f Visitor) {
 		for _, w := range v.Comments {
 			f.Visit(f, w)
 		}
-	case *UnionField:
-		if v.Ident != nil {
-			f.Visit(f, v.Ident)
-		}
+	case *UnionType:
 		for _, w := range v.Candidate {
 			f.Visit(f, w)
 		}
 	case *UnionCandidate:
-		if v.Cond != nil {
-			f.Visit(f, v.Cond)
-		}
-		if v.Field != nil {
-			f.Visit(f, v.Field)
-		}
 	case *RangeType:
 		if v.BaseType != nil {
 			f.Visit(f, v.BaseType)

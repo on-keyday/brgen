@@ -52,11 +52,11 @@ class NodeType(Enum):
     ARRAY_TYPE = "array_type"
     FUNCTION_TYPE = "function_type"
     STRUCT_TYPE = "struct_type"
-    UNION_TYPE = "union_type"
+    STRUCT_UNION_TYPE = "struct_union_type"
     CAST = "cast"
     COMMENT = "comment"
     COMMENT_GROUP = "comment_group"
-    UNION_FIELD = "union_field"
+    UNION_TYPE = "union_type"
     UNION_CANDIDATE = "union_candidate"
     RANGE_TYPE = "range_type"
 
@@ -300,10 +300,10 @@ class StructType(Type):
     fields: List[Member]
 
 
-class UnionType(Type):
+class StructUnionType(Type):
     fields: List[StructType]
     base: Optional[Expr]
-    union_fields: List[UnionField]
+    union_fields: List[Field]
 
 
 class Cast(Expr):
@@ -319,9 +319,10 @@ class CommentGroup(Node):
     comments: List[Comment]
 
 
-class UnionField(Member):
+class UnionType(Type):
+    cond_0: Optional[Expr]
     candidate: List[UnionCandidate]
-    union_type: Optional[UnionType]
+    base_type: Optional[StructUnionType]
 
 
 class UnionCandidate(Stmt):
@@ -657,16 +658,16 @@ def ast2node(ast :Ast) -> Program:
                 node.append(FunctionType())
             case NodeType.STRUCT_TYPE:
                 node.append(StructType())
-            case NodeType.UNION_TYPE:
-                node.append(UnionType())
+            case NodeType.STRUCT_UNION_TYPE:
+                node.append(StructUnionType())
             case NodeType.CAST:
                 node.append(Cast())
             case NodeType.COMMENT:
                 node.append(Comment())
             case NodeType.COMMENT_GROUP:
                 node.append(CommentGroup())
-            case NodeType.UNION_FIELD:
-                node.append(UnionField())
+            case NodeType.UNION_TYPE:
+                node.append(UnionType())
             case NodeType.UNION_CANDIDATE:
                 node.append(UnionCandidate())
             case NodeType.RANGE_TYPE:
@@ -930,13 +931,13 @@ def ast2node(ast :Ast) -> Program:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch'))
                 node[i].fields = [(node[x] if isinstance(node[x],Member) else raiseError(TypeError('type mismatch'))) for x in ast.node[i].body["fields"]]
-            case NodeType.UNION_TYPE:
+            case NodeType.STRUCT_UNION_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch'))
                 node[i].fields = [(node[x] if isinstance(node[x],StructType) else raiseError(TypeError('type mismatch'))) for x in ast.node[i].body["fields"]]
                 x = node[ast.node[i].body["base"]]
                 node[i].base = x if isinstance(x,Expr) or x is None else raiseError(TypeError('type mismatch'))
-                node[i].union_fields = [(node[x] if isinstance(node[x],UnionField) else raiseError(TypeError('type mismatch'))) for x in ast.node[i].body["union_fields"]]
+                node[i].union_fields = [(node[x] if isinstance(node[x],Field) else raiseError(TypeError('type mismatch'))) for x in ast.node[i].body["union_fields"]]
             case NodeType.CAST:
                 x = node[ast.node[i].body["expr_type"]]
                 node[i].expr_type = x if isinstance(x,Type) or x is None else raiseError(TypeError('type mismatch'))
@@ -949,14 +950,14 @@ def ast2node(ast :Ast) -> Program:
                 node[i].comment = x if isinstance(x,str)  else raiseError(TypeError('type mismatch'))
             case NodeType.COMMENT_GROUP:
                 node[i].comments = [(node[x] if isinstance(node[x],Comment) else raiseError(TypeError('type mismatch'))) for x in ast.node[i].body["comments"]]
-            case NodeType.UNION_FIELD:
-                x = node[ast.node[i].body["belong"]]
-                node[i].belong = x if isinstance(x,Member) or x is None else raiseError(TypeError('type mismatch'))
-                x = node[ast.node[i].body["ident"]]
-                node[i].ident = x if isinstance(x,Ident) or x is None else raiseError(TypeError('type mismatch'))
+            case NodeType.UNION_TYPE:
+                x = ast.node[i].body["is_explicit"]
+                node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch'))
+                x = node[ast.node[i].body["cond_0"]]
+                node[i].cond_0 = x if isinstance(x,Expr) or x is None else raiseError(TypeError('type mismatch'))
                 node[i].candidate = [(node[x] if isinstance(node[x],UnionCandidate) else raiseError(TypeError('type mismatch'))) for x in ast.node[i].body["candidate"]]
-                x = node[ast.node[i].body["union_type"]]
-                node[i].union_type = x if isinstance(x,UnionType) or x is None else raiseError(TypeError('type mismatch'))
+                x = node[ast.node[i].body["base_type"]]
+                node[i].base_type = x if isinstance(x,StructUnionType) or x is None else raiseError(TypeError('type mismatch'))
             case NodeType.UNION_CANDIDATE:
                 x = node[ast.node[i].body["cond"]]
                 node[i].cond = x if isinstance(x,Expr) or x is None else raiseError(TypeError('type mismatch'))
@@ -1180,7 +1181,7 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
         case x if isinstance(x,StructType):
           for i in range(len(x.fields)):
               f(f,x.fields[i])
-        case x if isinstance(x,UnionType):
+        case x if isinstance(x,StructUnionType):
           for i in range(len(x.fields)):
               f(f,x.fields[i])
         case x if isinstance(x,Cast):
@@ -1195,16 +1196,11 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
         case x if isinstance(x,CommentGroup):
           for i in range(len(x.comments)):
               f(f,x.comments[i])
-        case x if isinstance(x,UnionField):
-          if x.ident is not None:
-              f(f,x.ident)
+        case x if isinstance(x,UnionType):
           for i in range(len(x.candidate)):
               f(f,x.candidate[i])
         case x if isinstance(x,UnionCandidate):
-          if x.cond is not None:
-              f(f,x.cond)
-          if x.field is not None:
-              f(f,x.field)
+            pass
         case x if isinstance(x,RangeType):
           if x.base_type is not None:
               f(f,x.base_type)

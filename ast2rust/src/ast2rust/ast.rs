@@ -91,11 +91,11 @@ pub enum NodeType {
 	ArrayType,
 	FunctionType,
 	StructType,
-	UnionType,
+	StructUnionType,
 	Cast,
 	Comment,
 	CommentGroup,
-	UnionField,
+	UnionType,
 	UnionCandidate,
 	RangeType,
 }
@@ -151,11 +151,11 @@ impl TryFrom<&str> for NodeType {
 			"array_type" =>Ok(Self::ArrayType),
 			"function_type" =>Ok(Self::FunctionType),
 			"struct_type" =>Ok(Self::StructType),
-			"union_type" =>Ok(Self::UnionType),
+			"struct_union_type" =>Ok(Self::StructUnionType),
 			"cast" =>Ok(Self::Cast),
 			"comment" =>Ok(Self::Comment),
 			"comment_group" =>Ok(Self::CommentGroup),
-			"union_field" =>Ok(Self::UnionField),
+			"union_type" =>Ok(Self::UnionType),
 			"union_candidate" =>Ok(Self::UnionCandidate),
 			"range_type" =>Ok(Self::RangeType),
 			_=> Err(()),
@@ -207,11 +207,11 @@ impl From<&Node> for NodeType {
 			Node::ArrayType(_) => Self::ArrayType,
 			Node::FunctionType(_) => Self::FunctionType,
 			Node::StructType(_) => Self::StructType,
-			Node::UnionType(_) => Self::UnionType,
+			Node::StructUnionType(_) => Self::StructUnionType,
 			Node::Cast(_) => Self::Cast,
 			Node::Comment(_) => Self::Comment,
 			Node::CommentGroup(_) => Self::CommentGroup,
-			Node::UnionField(_) => Self::UnionField,
+			Node::UnionType(_) => Self::UnionType,
 			Node::UnionCandidate(_) => Self::UnionCandidate,
 			Node::RangeType(_) => Self::RangeType,
 		}
@@ -267,11 +267,11 @@ pub enum Node {
 	ArrayType(Rc<RefCell<ArrayType>>),
 	FunctionType(Rc<RefCell<FunctionType>>),
 	StructType(Rc<RefCell<StructType>>),
-	UnionType(Rc<RefCell<UnionType>>),
+	StructUnionType(Rc<RefCell<StructUnionType>>),
 	Cast(Rc<RefCell<Cast>>),
 	Comment(Rc<RefCell<Comment>>),
 	CommentGroup(Rc<RefCell<CommentGroup>>),
-	UnionField(Rc<RefCell<UnionField>>),
+	UnionType(Rc<RefCell<UnionType>>),
 	UnionCandidate(Rc<RefCell<UnionCandidate>>),
 	RangeType(Rc<RefCell<RangeType>>),
 }
@@ -436,7 +436,6 @@ pub enum Stmt {
 	Field(Rc<RefCell<Field>>),
 	Format(Rc<RefCell<Format>>),
 	Function(Rc<RefCell<Function>>),
-	UnionField(Rc<RefCell<UnionField>>),
 	UnionCandidate(Rc<RefCell<UnionCandidate>>),
 }
 
@@ -455,7 +454,6 @@ impl TryFrom<&Node> for Stmt {
 			Node::Field(node)=>Ok(Self::Field(node.clone())),
 			Node::Format(node)=>Ok(Self::Format(node.clone())),
 			Node::Function(node)=>Ok(Self::Function(node.clone())),
-			Node::UnionField(node)=>Ok(Self::UnionField(node.clone())),
 			Node::UnionCandidate(node)=>Ok(Self::UnionCandidate(node.clone())),
 			_=> Err(Error::InvalidNodeType(node.into())),
 		}
@@ -483,7 +481,6 @@ impl From<&Stmt> for Node {
 			Stmt::Field(node)=>Self::Field(node.clone()),
 			Stmt::Format(node)=>Self::Format(node.clone()),
 			Stmt::Function(node)=>Self::Function(node.clone()),
-			Stmt::UnionField(node)=>Self::UnionField(node.clone()),
 			Stmt::UnionCandidate(node)=>Self::UnionCandidate(node.clone()),
 		}
 	}
@@ -500,7 +497,6 @@ pub enum Member {
 	Field(Rc<RefCell<Field>>),
 	Format(Rc<RefCell<Format>>),
 	Function(Rc<RefCell<Function>>),
-	UnionField(Rc<RefCell<UnionField>>),
 }
 
 impl TryFrom<&Node> for Member {
@@ -510,7 +506,6 @@ impl TryFrom<&Node> for Member {
 			Node::Field(node)=>Ok(Self::Field(node.clone())),
 			Node::Format(node)=>Ok(Self::Format(node.clone())),
 			Node::Function(node)=>Ok(Self::Function(node.clone())),
-			Node::UnionField(node)=>Ok(Self::UnionField(node.clone())),
 			_=> Err(Error::InvalidNodeType(node.into())),
 		}
 	}
@@ -529,7 +524,6 @@ impl From<&Member> for Node {
 			Member::Field(node)=>Self::Field(node.clone()),
 			Member::Format(node)=>Self::Format(node.clone()),
 			Member::Function(node)=>Self::Function(node.clone()),
-			Member::UnionField(node)=>Self::UnionField(node.clone()),
 		}
 	}
 }
@@ -551,6 +545,7 @@ pub enum Type {
 	ArrayType(Rc<RefCell<ArrayType>>),
 	FunctionType(Rc<RefCell<FunctionType>>),
 	StructType(Rc<RefCell<StructType>>),
+	StructUnionType(Rc<RefCell<StructUnionType>>),
 	UnionType(Rc<RefCell<UnionType>>),
 	RangeType(Rc<RefCell<RangeType>>),
 }
@@ -568,6 +563,7 @@ impl TryFrom<&Node> for Type {
 			Node::ArrayType(node)=>Ok(Self::ArrayType(node.clone())),
 			Node::FunctionType(node)=>Ok(Self::FunctionType(node.clone())),
 			Node::StructType(node)=>Ok(Self::StructType(node.clone())),
+			Node::StructUnionType(node)=>Ok(Self::StructUnionType(node.clone())),
 			Node::UnionType(node)=>Ok(Self::UnionType(node.clone())),
 			Node::RangeType(node)=>Ok(Self::RangeType(node.clone())),
 			_=> Err(Error::InvalidNodeType(node.into())),
@@ -594,6 +590,7 @@ impl From<&Type> for Node {
 			Type::ArrayType(node)=>Self::ArrayType(node.clone()),
 			Type::FunctionType(node)=>Self::FunctionType(node.clone()),
 			Type::StructType(node)=>Self::StructType(node.clone()),
+			Type::StructUnionType(node)=>Self::StructUnionType(node.clone()),
 			Type::UnionType(node)=>Self::UnionType(node.clone()),
 			Type::RangeType(node)=>Self::RangeType(node.clone()),
 		}
@@ -3541,68 +3538,68 @@ impl From<Rc<RefCell<StructType>>> for Node {
 }
 
 #[derive(Debug,Clone)]
-pub struct UnionType {
+pub struct StructUnionType {
 	pub loc: Loc,
 	pub is_explicit: bool,
 	pub fields: Vec<Rc<RefCell<StructType>>>,
 	pub base: Option<Expr>,
-	pub union_fields: Vec<Weak<RefCell<UnionField>>>,
+	pub union_fields: Vec<Weak<RefCell<Field>>>,
 }
 
-impl TryFrom<&Type> for Rc<RefCell<UnionType>> {
+impl TryFrom<&Type> for Rc<RefCell<StructUnionType>> {
 	type Error = Error;
 	fn try_from(node:&Type)->Result<Self,Self::Error>{
 		match node {
-			Type::UnionType(node)=>Ok(node.clone()),
+			Type::StructUnionType(node)=>Ok(node.clone()),
 			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
 		}
 	}
 }
 
-impl TryFrom<Type> for Rc<RefCell<UnionType>> {
+impl TryFrom<Type> for Rc<RefCell<StructUnionType>> {
 	type Error = Error;
 	fn try_from(node:Type)->Result<Self,Self::Error>{
 		Self::try_from(&node)
 	}
 }
 
-impl From<&Rc<RefCell<UnionType>>> for Type {
-	fn from(node:&Rc<RefCell<UnionType>>)-> Self{
-		Type::UnionType(node.clone())
+impl From<&Rc<RefCell<StructUnionType>>> for Type {
+	fn from(node:&Rc<RefCell<StructUnionType>>)-> Self{
+		Type::StructUnionType(node.clone())
 	}
 }
 
-impl From<Rc<RefCell<UnionType>>> for Type {
-	fn from(node:Rc<RefCell<UnionType>>)-> Self{
+impl From<Rc<RefCell<StructUnionType>>> for Type {
+	fn from(node:Rc<RefCell<StructUnionType>>)-> Self{
 		Self::from(&node)
 	}
 }
 
-impl TryFrom<&Node> for Rc<RefCell<UnionType>> {
+impl TryFrom<&Node> for Rc<RefCell<StructUnionType>> {
 	type Error = Error;
 	fn try_from(node:&Node)->Result<Self,Self::Error>{
 		match node {
-			Node::UnionType(node)=>Ok(node.clone()),
+			Node::StructUnionType(node)=>Ok(node.clone()),
 			_=> Err(Error::InvalidNodeType(node.into())),
 		}
 	}
 }
 
-impl TryFrom<Node> for Rc<RefCell<UnionType>> {
+impl TryFrom<Node> for Rc<RefCell<StructUnionType>> {
 	type Error = Error;
 	fn try_from(node:Node)->Result<Self,Self::Error>{
 		Self::try_from(&node)
 	}
 }
 
-impl From<&Rc<RefCell<UnionType>>> for Node {
-	fn from(node:&Rc<RefCell<UnionType>>)-> Self{
-		Node::UnionType(node.clone())
+impl From<&Rc<RefCell<StructUnionType>>> for Node {
+	fn from(node:&Rc<RefCell<StructUnionType>>)-> Self{
+		Node::StructUnionType(node.clone())
 	}
 }
 
-impl From<Rc<RefCell<UnionType>>> for Node {
-	fn from(node:Rc<RefCell<UnionType>>)-> Self{
+impl From<Rc<RefCell<StructUnionType>>> for Node {
+	fn from(node:Rc<RefCell<StructUnionType>>)-> Self{
 		Self::from(&node)
 	}
 }
@@ -3744,97 +3741,68 @@ impl From<Rc<RefCell<CommentGroup>>> for Node {
 }
 
 #[derive(Debug,Clone)]
-pub struct UnionField {
+pub struct UnionType {
 	pub loc: Loc,
-	pub belong: Option<Member>,
-	pub ident: Option<Rc<RefCell<Ident>>>,
+	pub is_explicit: bool,
+	pub cond_0: Option<Expr>,
 	pub candidate: Vec<Rc<RefCell<UnionCandidate>>>,
-	pub union_type: Option<Weak<RefCell<UnionType>>>,
+	pub base_type: Option<Weak<RefCell<StructUnionType>>>,
 }
 
-impl TryFrom<&Member> for Rc<RefCell<UnionField>> {
+impl TryFrom<&Type> for Rc<RefCell<UnionType>> {
 	type Error = Error;
-	fn try_from(node:&Member)->Result<Self,Self::Error>{
+	fn try_from(node:&Type)->Result<Self,Self::Error>{
 		match node {
-			Member::UnionField(node)=>Ok(node.clone()),
+			Type::UnionType(node)=>Ok(node.clone()),
 			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
 		}
 	}
 }
 
-impl TryFrom<Member> for Rc<RefCell<UnionField>> {
+impl TryFrom<Type> for Rc<RefCell<UnionType>> {
 	type Error = Error;
-	fn try_from(node:Member)->Result<Self,Self::Error>{
+	fn try_from(node:Type)->Result<Self,Self::Error>{
 		Self::try_from(&node)
 	}
 }
 
-impl From<&Rc<RefCell<UnionField>>> for Member {
-	fn from(node:&Rc<RefCell<UnionField>>)-> Self{
-		Member::UnionField(node.clone())
+impl From<&Rc<RefCell<UnionType>>> for Type {
+	fn from(node:&Rc<RefCell<UnionType>>)-> Self{
+		Type::UnionType(node.clone())
 	}
 }
 
-impl From<Rc<RefCell<UnionField>>> for Member {
-	fn from(node:Rc<RefCell<UnionField>>)-> Self{
+impl From<Rc<RefCell<UnionType>>> for Type {
+	fn from(node:Rc<RefCell<UnionType>>)-> Self{
 		Self::from(&node)
 	}
 }
 
-impl TryFrom<&Stmt> for Rc<RefCell<UnionField>> {
-	type Error = Error;
-	fn try_from(node:&Stmt)->Result<Self,Self::Error>{
-		match node {
-			Stmt::UnionField(node)=>Ok(node.clone()),
-			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
-		}
-	}
-}
-
-impl TryFrom<Stmt> for Rc<RefCell<UnionField>> {
-	type Error = Error;
-	fn try_from(node:Stmt)->Result<Self,Self::Error>{
-		Self::try_from(&node)
-	}
-}
-
-impl From<&Rc<RefCell<UnionField>>> for Stmt {
-	fn from(node:&Rc<RefCell<UnionField>>)-> Self{
-		Stmt::UnionField(node.clone())
-	}
-}
-
-impl From<Rc<RefCell<UnionField>>> for Stmt {
-	fn from(node:Rc<RefCell<UnionField>>)-> Self{
-		Self::from(&node)
-	}
-}
-
-impl TryFrom<&Node> for Rc<RefCell<UnionField>> {
+impl TryFrom<&Node> for Rc<RefCell<UnionType>> {
 	type Error = Error;
 	fn try_from(node:&Node)->Result<Self,Self::Error>{
 		match node {
-			Node::UnionField(node)=>Ok(node.clone()),
+			Node::UnionType(node)=>Ok(node.clone()),
 			_=> Err(Error::InvalidNodeType(node.into())),
 		}
 	}
 }
 
-impl TryFrom<Node> for Rc<RefCell<UnionField>> {
+impl TryFrom<Node> for Rc<RefCell<UnionType>> {
 	type Error = Error;
 	fn try_from(node:Node)->Result<Self,Self::Error>{
 		Self::try_from(&node)
 	}
 }
 
-impl From<&Rc<RefCell<UnionField>>> for Node {
-	fn from(node:&Rc<RefCell<UnionField>>)-> Self{
-		Node::UnionField(node.clone())
+impl From<&Rc<RefCell<UnionType>>> for Node {
+	fn from(node:&Rc<RefCell<UnionType>>)-> Self{
+		Node::UnionType(node.clone())
 	}
 }
 
-impl From<Rc<RefCell<UnionField>>> for Node {
-	fn from(node:Rc<RefCell<UnionField>>)-> Self{
+impl From<Rc<RefCell<UnionType>>> for Node {
+	fn from(node:Rc<RefCell<UnionType>>)-> Self{
 		Self::from(&node)
 	}
 }
@@ -4564,8 +4532,8 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				fields: Vec::new(),
 				})))
 			},
-			NodeType::UnionType => {
-				Node::UnionType(Rc::new(RefCell::new(UnionType {
+			NodeType::StructUnionType => {
+				Node::StructUnionType(Rc::new(RefCell::new(StructUnionType {
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
 				fields: Vec::new(),
@@ -4593,13 +4561,13 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				comments: Vec::new(),
 				})))
 			},
-			NodeType::UnionField => {
-				Node::UnionField(Rc::new(RefCell::new(UnionField {
+			NodeType::UnionType => {
+				Node::UnionType(Rc::new(RefCell::new(UnionType {
 				loc: raw_node.loc.clone(),
-				belong: None,
-				ident: None,
+				is_explicit: false,
+				cond_0: None,
 				candidate: Vec::new(),
-				union_type: None,
+				base_type: None,
 				})))
 			},
 			NodeType::UnionCandidate => {
@@ -6608,10 +6576,10 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					node.borrow_mut().fields.push(fields_body.try_into()?);
 				}
 			},
-			NodeType::UnionType => {
+			NodeType::StructUnionType => {
 				let node = nodes[i].clone();
 				let node = match node {
-					Node::UnionType(node)=>node,
+					Node::StructUnionType(node)=>node,
 					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let is_explicit_body = match raw_node.body.get("is_explicit") {
@@ -6678,7 +6646,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 						None => return Err(Error::IndexOutOfBounds(link as usize)),
 					};
 					let union_fields_body = match union_fields_body {
-						Node::UnionField(body)=>body,
+						Node::Field(body)=>body,
 						x =>return Err(Error::MismatchNodeType(x.into(),union_fields_body.into())),
 					};
 					node.borrow_mut().union_fields.push(Rc::downgrade(&union_fields_body));
@@ -6785,45 +6753,34 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					node.borrow_mut().comments.push(comments_body.clone());
 				}
 			},
-			NodeType::UnionField => {
+			NodeType::UnionType => {
 				let node = nodes[i].clone();
 				let node = match node {
-					Node::UnionField(node)=>node,
+					Node::UnionType(node)=>node,
 					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
-				let belong_body = match raw_node.body.get("belong") {
+				let is_explicit_body = match raw_node.body.get("is_explicit") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"belong")),
+					None=>return Err(Error::MissingField(node_type,"is_explicit")),
 				};
- 				if !belong_body.is_null() {
-					let belong_body = match belong_body.as_u64() {
-						Some(v)=>v,
-						None=>return Err(Error::MismatchJSONType(belong_body.into(),JSONType::Number)),
-					};
-					let belong_body = match nodes.get(belong_body as usize) {
-						Some(v)=>v,
-						None => return Err(Error::IndexOutOfBounds(belong_body as usize)),
-					};
-					node.borrow_mut().belong = Some(belong_body.try_into()?);
-				}
-				let ident_body = match raw_node.body.get("ident") {
+				node.borrow_mut().is_explicit = match is_explicit_body.as_bool() {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"ident")),
+					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
 				};
- 				if !ident_body.is_null() {
-					let ident_body = match ident_body.as_u64() {
+				let cond_0_body = match raw_node.body.get("cond0") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"cond0")),
+				};
+ 				if !cond_0_body.is_null() {
+					let cond_0_body = match cond_0_body.as_u64() {
 						Some(v)=>v,
-						None=>return Err(Error::MismatchJSONType(ident_body.into(),JSONType::Number)),
+						None=>return Err(Error::MismatchJSONType(cond_0_body.into(),JSONType::Number)),
 					};
-					let ident_body = match nodes.get(ident_body as usize) {
+					let cond_0_body = match nodes.get(cond_0_body as usize) {
 						Some(v)=>v,
-						None => return Err(Error::IndexOutOfBounds(ident_body as usize)),
+						None => return Err(Error::IndexOutOfBounds(cond_0_body as usize)),
 					};
-					let ident_body = match ident_body {
-						Node::Ident(node)=>node,
-						x =>return Err(Error::MismatchNodeType(x.into(),ident_body.into())),
-					};
-					node.borrow_mut().ident = Some(ident_body.clone());
+					node.borrow_mut().cond_0 = Some(cond_0_body.try_into()?);
 				}
 				let candidate_body = match raw_node.body.get("candidate") {
 					Some(v)=>v,
@@ -6848,24 +6805,24 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().candidate.push(candidate_body.clone());
 				}
-				let union_type_body = match raw_node.body.get("union_type") {
+				let base_type_body = match raw_node.body.get("base_type") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"union_type")),
+					None=>return Err(Error::MissingField(node_type,"base_type")),
 				};
- 				if !union_type_body.is_null() {
-					let union_type_body = match union_type_body.as_u64() {
+ 				if !base_type_body.is_null() {
+					let base_type_body = match base_type_body.as_u64() {
 						Some(v)=>v,
-						None=>return Err(Error::MismatchJSONType(union_type_body.into(),JSONType::Number)),
+						None=>return Err(Error::MismatchJSONType(base_type_body.into(),JSONType::Number)),
 					};
-					let union_type_body = match nodes.get(union_type_body as usize) {
+					let base_type_body = match nodes.get(base_type_body as usize) {
 						Some(v)=>v,
-						None => return Err(Error::IndexOutOfBounds(union_type_body as usize)),
+						None => return Err(Error::IndexOutOfBounds(base_type_body as usize)),
 					};
-					let union_type_body = match union_type_body {
-						Node::UnionType(node)=>node,
-						x =>return Err(Error::MismatchNodeType(x.into(),union_type_body.into())),
+					let base_type_body = match base_type_body {
+						Node::StructUnionType(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),base_type_body.into())),
 					};
-					node.borrow_mut().union_type = Some(Rc::downgrade(&union_type_body));
+					node.borrow_mut().base_type = Some(Rc::downgrade(&base_type_body));
 				}
 			},
 			NodeType::UnionCandidate => {
@@ -7329,7 +7286,7 @@ where
 				f.visit(&node.into());
 			}
 		},
-		Node::UnionType(node)=>{
+		Node::StructUnionType(node)=>{
 			for node in &node.borrow().fields{
 				f.visit(&node.into());
 			}
@@ -7351,22 +7308,12 @@ where
 				f.visit(&node.into());
 			}
 		},
-		Node::UnionField(node)=>{
-			if let Some(node) = &node.borrow().ident{
-				f.visit(&node.into());
-			}
+		Node::UnionType(node)=>{
 			for node in &node.borrow().candidate{
 				f.visit(&node.into());
 			}
 		},
-		Node::UnionCandidate(node)=>{
-			if let Some(node) = &node.borrow().cond{
-				f.visit(&node.into());
-			}
-			if let Some(node) = &node.borrow().field{
-				f.visit(&node.into());
-			}
-		},
+		Node::UnionCandidate(_)=>{},
 		Node::RangeType(node)=>{
 			if let Some(node) = &node.borrow().base_type{
 				f.visit(&node.into());

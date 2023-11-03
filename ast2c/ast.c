@@ -198,8 +198,8 @@ int NodeType_from_string(const char* str, NodeType* out) {
 		*out = STRUCT_TYPE;
 		return 1;
 	}
-	if (strcmp("union_type", str) == 0) {
-		*out = UNION_TYPE;
+	if (strcmp("struct_union_type", str) == 0) {
+		*out = STRUCT_UNION_TYPE;
 		return 1;
 	}
 	if (strcmp("cast", str) == 0) {
@@ -214,8 +214,8 @@ int NodeType_from_string(const char* str, NodeType* out) {
 		*out = COMMENT_GROUP;
 		return 1;
 	}
-	if (strcmp("union_field", str) == 0) {
-		*out = UNION_FIELD;
+	if (strcmp("union_type", str) == 0) {
+		*out = UNION_TYPE;
 		return 1;
 	}
 	if (strcmp("union_candidate", str) == 0) {
@@ -371,8 +371,8 @@ const char* NodeType_to_string(NodeType typ) {
 	if (typ == STRUCT_TYPE) {
 		return "struct_type";
 	}
-	if (typ == UNION_TYPE) {
-		return "union_type";
+	if (typ == STRUCT_UNION_TYPE) {
+		return "struct_union_type";
 	}
 	if (typ == CAST) {
 		return "cast";
@@ -383,8 +383,8 @@ const char* NodeType_to_string(NodeType typ) {
 	if (typ == COMMENT_GROUP) {
 		return "comment_group";
 	}
-	if (typ == UNION_FIELD) {
-		return "union_field";
+	if (typ == UNION_TYPE) {
+		return "union_type";
 	}
 	if (typ == UNION_CANDIDATE) {
 		return "union_candidate";
