@@ -17,3 +17,4 @@ target/
 /web/dev/src/lib/
 *.wasm
 /web/public/script
+__pycache__/

@@ -185,7 +185,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("def ast2node(ast :Ast) -> Program:\n")
 	w.Printf("    if not isinstance(ast,Ast):\n")
 	w.Printf("        raise TypeError('ast must be Ast')\n")
-	w.Printf("    node = List[Node]()\n")
+	w.Printf("    node = list()\n")
 	w.Printf("    for raw in ast.node:\n")
 	w.Printf("        match raw.node_type:\n")
 	for _, def := range defs.Defs {
@@ -217,7 +217,10 @@ func generate(rw io.Writer, defs *gen.Defs) {
 					continue
 				}
 				if field.Type.Name == "Scope" {
-					w.Printf("                node[i].%s = scope[ast.node[i].body[%q]]\n", field.Name, field.Name)
+					w.Printf("                if ast.node[i].body[%q] is not None:\n", field.Name)
+					w.Printf("                    node[i].%s = scope[ast.node[i].body[%q]]\n", field.Name, field.Name)
+					w.Printf("                else:\n")
+					w.Printf("                    node[i].%s = None\n", field.Name)
 				} else if field.Type.Name == "Loc" {
 					w.Printf("                node[i].%s = parse_Loc(ast.node[i].body[%q])\n", field.Name, field.Name)
 				} else if field.Type.Name == "bool" || field.Type.Name == "int" || field.Type.Name == "str" {
@@ -226,8 +229,11 @@ func generate(rw io.Writer, defs *gen.Defs) {
 				} else if field.Type.IsArray {
 					w.Printf("                node[i].%s = [(node[x] if isinstance(node[x],%s) else raiseError(TypeError('type mismatch'))) for x in ast.node[i].body[%q]]\n", field.Name, field.Type.Name, field.Name)
 				} else if field.Type.IsPtr || field.Type.IsInterface {
-					w.Printf("                x = node[ast.node[i].body[%q]]\n", field.Name)
-					w.Printf("                node[i].%s = x if isinstance(x,%s) or x is None else raiseError(TypeError('type mismatch'))\n", field.Name, field.Type.Name)
+					w.Printf("                if ast.node[i].body[%q] is not None:\n", field.Name)
+					w.Printf("                    x = node[ast.node[i].body[%q]]\n", field.Name)
+					w.Printf("                    node[i].%s = x if isinstance(x,%s) else raiseError(TypeError('type mismatch'))\n", field.Name, field.Type.Name)
+					w.Printf("                else:\n")
+					w.Printf("                    node[i].%s = None\n", field.Name)
 				} else {
 					_, found := defs.Enums[field.Type.Name]
 					if found {
@@ -252,7 +258,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("        if ast.scope[i].prev is not None:\n")
 	w.Printf("            scope[i].prev = scope[ast.scope[i].prev]\n")
 	w.Printf("        scope[i].ident = [node[x] for x in ast.scope[i].ident]\n")
-	w.Printf("    return Program(node[0])\n\n")
+	w.Printf("    return node[0]\n\n")
 
 	w.Printf("def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:\n")
 	w.Printf("    match node:\n")
