@@ -5,9 +5,11 @@
 #include <core/ast/json.h>
 #include <file/file_view.h>
 #include "gen.h"
-#include <binary/float.h>
-#include <cfenv>
-
+#include <wrap/argv.h>
+#ifdef __EMSCRIPTEN__
+#include <emscripten/emscripten.h>
+#include "../common/em_main.h"
+#endif
 struct Flags : utils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
     bool spec = false;
@@ -92,7 +94,8 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     return 0;
 }
 
-int main(int argc, char** argv) {
+int json2cpp_main(int argc, char** argv) {
+    utils::wrap::U8Arg _(argc, argv);
     Flags flags;
     return utils::cmdline::templ::parse_or_err<std::string>(
         argc, argv, flags, [](auto&& str, bool err) { cerr << str; },
@@ -100,3 +103,13 @@ int main(int argc, char** argv) {
             return Main(flags, ctx);
         });
 }
+
+#ifdef __EMSCRIPTEN__
+extern "C" int EMSCRIPTEN_KEEPALIVE emscripten_main(const char* cmdline) {
+    return em_main(cmdline, json2cpp_main);
+}
+#else
+int main(int argc, char** argv) {
+    return json2cpp_main(argc, argv);
+}
+#endif

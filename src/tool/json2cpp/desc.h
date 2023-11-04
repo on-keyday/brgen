@@ -198,8 +198,6 @@ namespace json2cpp {
             return {};
         }
 
-        result<void> collect_union_field() {}
-
         result<void> collect_field(const std::shared_ptr<ast::Format>& fmt, std::shared_ptr<ast::Field>&& field) {
             auto& fname = field->ident->ident;
             if (auto a = tool::is_array_type(field->field_type, eval)) {

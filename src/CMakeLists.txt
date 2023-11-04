@@ -9,15 +9,18 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tool")
 add_executable(src2json "tool/src2json.cpp")
 target_link_libraries(src2json utils)
 
+add_executable(json2cpp "tool/json2cpp/main.cpp")
+target_link_libraries(json2cpp utils)
 
 if("$ENV{BUILD_MODE}" STREQUAL "wasm-em")
 install(TARGETS src2json DESTINATION "lib" OPTIONAL)
 install(FILES "${CMAKE_BINARY_DIR}/tool/src2json.wasm" DESTINATION "lib" OPTIONAL)
+install(TARGETS json2cpp DESTINATION "lib" OPTIONAL)
+install(FILES "${CMAKE_BINARY_DIR}/tool/json2cpp.wasm" DESTINATION "lib" OPTIONAL)
 return()
 endif()
 
-add_executable(json2cpp "tool/json2cpp/main.cpp")
-target_link_libraries(json2cpp utils)
+
 
 if(WIN32)
 set(SUFFIX ".exe")

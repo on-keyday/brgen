@@ -15,5 +15,5 @@ node_modules/
 out/
 target/
 /web/dev/src/lib/
-src2json.wasm
-
+*.wasm
+/web/public/script

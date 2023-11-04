@@ -18,8 +18,7 @@
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
-#include <fnet/util/urlencode.h>
-#include <view/slice.h>
+#include "common/em_main.h"
 #else
 #define EMSCRIPTEN_KEEPALIVE
 #endif
@@ -423,19 +422,7 @@ int src2json_main(int argc, char** argv) {
 
 #ifdef __EMSCRIPTEN__
 extern "C" int EMSCRIPTEN_KEEPALIVE emscripten_main(const char* cmdline) {
-    auto args = utils::view::make_cpy_splitview(cmdline, " ");
-    utils::wrap::ArgvVector vec;
-    for (size_t i = 0; i < args.size(); ++i) {
-        std::string out;
-        if (!utils::urlenc::decode(args[i], out)) {
-            return 2;
-        }
-        vec.push_back(std::move(out));
-    }
-    int argc;
-    char** argv;
-    vec.arg(argc, argv);
-    return src2json_main(argc, argv);
+    return em_main(cmdline, src2json_main);
 }
 #else
 int main(int argc, char** argv) {
