@@ -240,10 +240,10 @@ namespace brgen::ast {
                 size_t cand_i = 0;
                 for (auto& c : v) {
                     while (c->cond.lock() != cond[cand_i]) {
-                        f->candidate.push_back(get_null_cache(cand_i));
+                        f->candidates.push_back(get_null_cache(cand_i));
                         cand_i++;
                     }
-                    f->candidate.push_back(c);
+                    f->candidates.push_back(c);
                     cand_i++;
                 }
                 type->union_fields.push_back(field);

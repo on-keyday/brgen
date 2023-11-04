@@ -662,8 +662,8 @@ struct UnionType {
 	Loc loc;
 	int is_explicit;
 	Expr* cond;
-	UnionCandidate** candidate;
-	size_t candidate_size;
+	UnionCandidate** candidates;
+	size_t candidates_size;
 	StructUnionType* base_type;
 };
 

@@ -35,6 +35,15 @@ namespace brgen::ast::tool {
         std::unordered_map<size_t, std::string> tmp_var_map;
         std::unordered_map<std::string, std::string> ident_map;
         std::function<std::string(std::string cond, std::string then, std::string els)> cond_op;
+        std::unordered_map<std::string, std::function<std::string(Stringer& s, const std::string& name, const std::vector<std::shared_ptr<ast::Expr>>&)>> call_handler;
+
+        void clear() {
+            bin_op_map.clear();
+            tmp_var_map.clear();
+            ident_map.clear();
+            cond_op = nullptr;
+            call_handler.clear();
+        }
 
        private:
         std::string handle_bin_op(BinaryOp op, std::string& left, std::string& right) {
@@ -43,6 +52,23 @@ namespace brgen::ast::tool {
             }
             else {
                 return concat("(", left, " ", *bin_op_str(op), " ", right, ")");
+            }
+        }
+
+        std::string handle_call_op(const std::shared_ptr<Call>& c) {
+            auto callee = to_string(c->callee);
+            if (auto found = call_handler.find(callee); found != call_handler.end()) {
+                return found->second(*this, callee, c->arguments);
+            }
+            else {
+                std::string args;
+                for (auto&& arg : c->arguments) {
+                    if (!args.empty()) {
+                        args += ", ";
+                    }
+                    args += to_string(arg);
+                }
+                return concat(callee, "(", args, ")");
             }
         }
 
@@ -82,6 +108,9 @@ namespace brgen::ast::tool {
                 else {
                     return concat("(", to_string(c->cond), " ? ", to_string(c->then), " : ", to_string(c->els), ")");
                 }
+            }
+            if (auto c = ast::as<ast::Call>(expr)) {
+                return handle_call_op(ast::cast_to<ast::Call>(expr));
             }
             return "";
         }

@@ -87,11 +87,72 @@ namespace json2cpp {
         move,
     };
 
+    std::string available(tool::Stringer& s, const std::string& name, const std::vector<std::shared_ptr<ast::Expr>>& args) {
+        if (args.size() != 1) {
+            return "false";
+        }
+        auto arg = args[0];
+        auto ident = ast::as<ast::Ident>(arg);
+        if (!ident) {
+            return "false";
+        }
+        auto base = ident->base.lock();
+        if (!base) {
+            return "false";
+        }
+        auto field = ast::as<ast::Field>(base);
+        if (!field) {
+            return "false";
+        }
+        auto union_type = ast::as<ast::UnionType>(field->field_type);
+        if (!union_type) {
+            return "true";  // always available
+        }
+        auto cond0 = union_type->cond.lock();
+        assert(cond0);
+        std::string cond = "(";
+        for (auto& cand : union_type->candidates) {
+            auto cond1 = cand->cond.lock();
+            if (!cond1) {
+                if (cand->field.lock()) {
+                    cond += "true";
+                }
+                else {
+                    cond += "false";
+                }
+                continue;
+            }
+            if (cond0) {
+                cond += "(" + s.to_string(cond0) + " == " + s.to_string(cond1) + ")";
+            }
+            else {
+                cond += s.to_string(cond1);
+            }
+            cond += "? ";
+            if (cand->field.lock()) {
+                cond += "true";
+            }
+            else {
+                cond += "false";
+            }
+            cond += ": ";
+        }
+        cond += ")";
+        return cond;
+    }
+
     struct EventConverter {
         Config& config;
         Events events;
+        tool::Stringer s_;
 
        private:
+        tool::Stringer& get_stringer() {
+            s_.clear();
+            s_.call_handler["available"] = available;
+            return s_;
+        }
+
         std::string tmp_len_of(const std::string& name) {
             return "tmp_len_of_" + name;
         }
@@ -125,7 +186,7 @@ namespace json2cpp {
         result<std::string> handle_encoder_int_length_related_std_vector(
             const std::shared_ptr<Field>& len_field, const std::shared_ptr<Field>& vec_field) {
             auto desc = static_cast<VectorDesc*>(vec_field->desc.get());
-            tool::Stringer s;
+            auto& s = get_stringer();
             auto tmp_var = tmp_len_of(vec_field->name);
             auto length = vec_field->name + ".size()";
             s.tmp_var_map[0] = length;
@@ -150,7 +211,7 @@ namespace json2cpp {
 
         result<std::string> handle_encoder_int_length_related_pointer(const std::shared_ptr<Field>& len_field, const std::shared_ptr<Field>& vec_field) {
             auto desc = static_cast<VectorDesc*>(vec_field->desc.get());
-            tool::Stringer s;
+            auto& s = get_stringer();
             auto tmp = tmp_len_of(vec_field->name);
             auto base = brgen::concat("size_t(", len_field->name, ")");
             std::shared_ptr<ast::Expr> length_expr, check_length;
@@ -294,7 +355,7 @@ namespace json2cpp {
             auto int_desc = static_cast<IntDesc*>(vec_desc->base_type.get());
             auto len_field = vec->length_related.lock();
             auto len_desc = static_cast<IntDesc*>(len_field->desc.get());
-            tool::Stringer s;
+            auto& s = get_stringer();
             auto tmp = tmp_len_of(vec->name);
             std::string replaced = "this->" + len_field->name;
             if (auto bit = len_desc->bit_field.lock()) {
@@ -365,7 +426,7 @@ namespace json2cpp {
             auto union_int = static_cast<IntUnionDesc*>(f->desc.get());
             auto cond = union_int->desc.cond;
             std::vector<std::shared_ptr<ast::Ident>> ident;
-            tool::Stringer s;
+            auto& s = get_stringer();
             bool second = false;
             bool has_else = false;
             // collect ident

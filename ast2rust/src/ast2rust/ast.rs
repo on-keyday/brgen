@@ -3745,7 +3745,7 @@ pub struct UnionType {
 	pub loc: Loc,
 	pub is_explicit: bool,
 	pub cond: Option<Expr>,
-	pub candidate: Vec<Rc<RefCell<UnionCandidate>>>,
+	pub candidates: Vec<Rc<RefCell<UnionCandidate>>>,
 	pub base_type: Option<Weak<RefCell<StructUnionType>>>,
 }
 
@@ -4566,7 +4566,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
 				cond: None,
-				candidate: Vec::new(),
+				candidates: Vec::new(),
 				base_type: None,
 				})))
 			},
@@ -6782,28 +6782,28 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().cond = Some(cond_body.try_into()?);
 				}
-				let candidate_body = match raw_node.body.get("candidate") {
+				let candidates_body = match raw_node.body.get("candidates") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"candidate")),
+					None=>return Err(Error::MissingField(node_type,"candidates")),
 				};
-				let candidate_body = match candidate_body.as_array(){
+				let candidates_body = match candidates_body.as_array(){
 					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(candidate_body.into(),JSONType::Array)),
+					None=>return Err(Error::MismatchJSONType(candidates_body.into(),JSONType::Array)),
 				};
-				for link in candidate_body {
+				for link in candidates_body {
 					let link = match link.as_u64() {
 						Some(v)=>v,
 						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
 					};
-					let candidate_body = match nodes.get(link as usize) {
+					let candidates_body = match nodes.get(link as usize) {
 						Some(v)=>v,
 						None => return Err(Error::IndexOutOfBounds(link as usize)),
 					};
-					let candidate_body = match candidate_body {
+					let candidates_body = match candidates_body {
 						Node::UnionCandidate(body)=>body,
-						x =>return Err(Error::MismatchNodeType(x.into(),candidate_body.into())),
+						x =>return Err(Error::MismatchNodeType(x.into(),candidates_body.into())),
 					};
-					node.borrow_mut().candidate.push(candidate_body.clone());
+					node.borrow_mut().candidates.push(candidates_body.clone());
 				}
 				let base_type_body = match raw_node.body.get("base_type") {
 					Some(v)=>v,
@@ -7309,7 +7309,7 @@ where
 			}
 		},
 		Node::UnionType(node)=>{
-			for node in &node.borrow().candidate{
+			for node in &node.borrow().candidates{
 				f.visit(&node.into());
 			}
 		},

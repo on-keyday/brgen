@@ -566,7 +566,7 @@ export function isCommentGroup(obj: any): obj is CommentGroup {
 
 export interface UnionType extends Type {
 	cond: Expr|null;
-	candidate: UnionCandidate[];
+	candidates: UnionCandidate[];
 	base_type: StructUnionType|null;
 }
 
@@ -1307,7 +1307,7 @@ export function parseAST(obj: any): Program {
 				loc: on.loc,
 				is_explicit: false,
 				cond: null,
-				candidate: [],
+				candidates: [],
 				base_type: null,
 			}
 			c.node.push(n);
@@ -2481,15 +2481,15 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at UnionType::cond');
 			}
 			n.cond = tmpcond;
-			for (const o of on.body.candidate) {
+			for (const o of on.body.candidates) {
 				if (typeof o !== 'number') {
-					throw new Error('invalid node list at UnionType::candidate');
+					throw new Error('invalid node list at UnionType::candidates');
 				}
-				const tmpcandidate = c.node[o];
-				if (!isUnionCandidate(tmpcandidate)) {
-					throw new Error('invalid node list at UnionType::candidate');
+				const tmpcandidates = c.node[o];
+				if (!isUnionCandidate(tmpcandidates)) {
+					throw new Error('invalid node list at UnionType::candidates');
 				}
-				n.candidate.push(tmpcandidate);
+				n.candidates.push(tmpcandidates);
 			}
 			if (on.body?.base_type !== null && typeof on.body?.base_type !== 'number') {
 				throw new Error('invalid node list at UnionType::base_type');
@@ -3154,7 +3154,7 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 				break;
 			}
 			const n :UnionType = node as UnionType;
-			for (const e of n.candidate) {
+			for (const e of n.candidates) {
 				fn(fn,e);
 			}
 			break;

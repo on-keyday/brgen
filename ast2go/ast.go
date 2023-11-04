@@ -540,7 +540,7 @@ type UnionType struct {
 	Loc        Loc
 	IsExplicit bool
 	Cond       Expr
-	Candidate  []*UnionCandidate
+	Candidates []*UnionCandidate
 	BaseType   *StructUnionType
 }
 
@@ -1977,7 +1977,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			var tmp struct {
 				IsExplicit bool      `json:"is_explicit"`
 				Cond       *uintptr  `json:"cond"`
-				Candidate  []uintptr `json:"candidate"`
+				Candidates []uintptr `json:"candidates"`
 				BaseType   *uintptr  `json:"base_type"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
@@ -1987,9 +1987,9 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.Cond != nil {
 				v.Cond = n.node[*tmp.Cond].(Expr)
 			}
-			v.Candidate = make([]*UnionCandidate, len(tmp.Candidate))
-			for j, k := range tmp.Candidate {
-				v.Candidate[j] = n.node[k].(*UnionCandidate)
+			v.Candidates = make([]*UnionCandidate, len(tmp.Candidates))
+			for j, k := range tmp.Candidates {
+				v.Candidates[j] = n.node[k].(*UnionCandidate)
 			}
 			if tmp.BaseType != nil {
 				v.BaseType = n.node[*tmp.BaseType].(*StructUnionType)
@@ -2352,7 +2352,7 @@ func Walk(n Node, f Visitor) {
 			f.Visit(f, w)
 		}
 	case *UnionType:
-		for _, w := range v.Candidate {
+		for _, w := range v.Candidates {
 			f.Visit(f, w)
 		}
 	case *UnionCandidate:
