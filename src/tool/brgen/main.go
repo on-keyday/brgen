@@ -7,6 +7,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"io/fs"
 	"log"
 	"os"
@@ -39,6 +40,7 @@ type GeneratorHandler struct {
 	tmpQueue      chan *Result
 	queue         chan *Result
 	suffixPattern string
+	stderr        io.Writer
 }
 
 func (g *GeneratorHandler) Init(src2json string, json2code string, suffix string) error {
@@ -68,7 +70,7 @@ func (g *GeneratorHandler) Init(src2json string, json2code string, suffix string
 
 func (g *GeneratorHandler) askSpec() error {
 	cmd := exec.CommandContext(g.ctx, g.json2code, "-s")
-	cmd.Stderr = os.Stderr
+	cmd.Stderr = g.stderr
 	buf := bytes.NewBuffer(nil)
 	cmd.Stdout = buf
 	err := cmd.Run()
@@ -121,7 +123,10 @@ func (g *GeneratorHandler) lookupPath(name string) ([]string, error) {
 
 func (g *GeneratorHandler) loadAst(path string) ([]byte, error) {
 	cmd := exec.CommandContext(g.ctx, g.src2json, path)
-	cmd.Stderr = os.Stderr
+	if *config.DisableUntypedWarning {
+		cmd.Args = append(cmd.Args, "--disable-untyped")
+	}
+	cmd.Stderr = g.stderr
 	buf := bytes.NewBuffer(nil)
 	cmd.Stdout = buf
 	err := cmd.Run()
@@ -145,7 +150,7 @@ func makeTmpFile(data []byte) (path string, err error) {
 }
 
 func (g *GeneratorHandler) execGenerator(cmd *exec.Cmd) ([]byte, error) {
-	cmd.Stderr = os.Stderr
+	cmd.Stderr = g.stderr
 	buf := bytes.NewBuffer(nil)
 	cmd.Stdout = buf
 	err := cmd.Run()
@@ -254,11 +259,12 @@ func (g *GeneratorHandler) Recv() <-chan *Result {
 }
 
 type Config struct {
-	Source2Json   *string  `json:"src2json"`
-	Json2Code     *string  `json:"json2code"`
-	SuffixPattern *string  `json:"suffix_pattern"`
-	Targets       []string `json:"targets"`
-	OutputDir     *string  `json:"output_dir"`
+	Source2Json           *string  `json:"src2json"`
+	Json2Code             *string  `json:"json2code"`
+	SuffixPattern         *string  `json:"suffix_pattern"`
+	Targets               []string `json:"targets"`
+	OutputDir             *string  `json:"output_dir"`
+	DisableUntypedWarning *bool    `json:"disable_untyped_warning"`
 }
 
 func loadConfig() (*Config, error) {
@@ -292,6 +298,9 @@ func fillStringPtr(c *Config) {
 	if c.OutputDir == nil {
 		c.OutputDir = new(string)
 	}
+	if c.DisableUntypedWarning == nil {
+		c.DisableUntypedWarning = new(bool)
+	}
 }
 
 var config *Config
@@ -305,6 +314,7 @@ func init() {
 	flag.StringVar(config.Json2Code, "G", *config.Json2Code, "alias of json2code")
 	flag.StringVar(config.SuffixPattern, "suffix", *config.SuffixPattern, "suffix of file to generate from")
 	flag.StringVar(config.OutputDir, "o", *config.OutputDir, "output directory")
+	flag.BoolVar(config.DisableUntypedWarning, "disable-untyped", *config.DisableUntypedWarning, "disable untyped warning")
 
 	defer flag.Parse()
 	if err != nil {
@@ -326,6 +336,7 @@ func main() {
 		return
 	}
 	g := &GeneratorHandler{}
+	g.stderr = os.Stdout
 	if err := g.Init(*config.Source2Json, *config.Json2Code, *config.SuffixPattern); err != nil {
 		log.Fatal(err)
 	}

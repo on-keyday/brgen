@@ -29,7 +29,7 @@ namespace brgen::middle {
             return false;
         }
 
-        bool comparable_type(const std::shared_ptr<ast::Type>& left, const std::shared_ptr<ast::Type>& right) {
+        bool comparable_type(std::shared_ptr<ast::Type>& left, std::shared_ptr<ast::Type>& right) {
             if (equal_type(left, right)) {
                 return true;
             }
@@ -38,6 +38,7 @@ namespace brgen::middle {
                 if (!rty->base_type) {
                     return true;  // range .. or ..= is always comparable to any type
                 }
+                int_type_fitting(rty->base_type, right);
                 return equal_type(rty->base_type, right);
             }
             if (right->node_type == ast::NodeType::range_type) {
@@ -45,6 +46,7 @@ namespace brgen::middle {
                 if (!rty->base_type) {
                     return true;  // range .. or ..= is always comparable to any type
                 }
+                int_type_fitting(rty->base_type, left);
                 return equal_type(rty->base_type, left);
             }
             return false;

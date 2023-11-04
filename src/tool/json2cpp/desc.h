@@ -156,7 +156,6 @@ namespace json2cpp {
                         return r.transform(empty_void);
                     }
                 }
-          
             }
             return merge_fields();
         }
@@ -241,6 +240,9 @@ namespace json2cpp {
                 auto f = std::make_shared<Field>(field, std::move(u));
                 f->name = std::move(name);
                 fields.push_back(std::move(f));
+            }
+            else if (field->field_type->node_type == ast::NodeType::union_type) {
+                return {};  // ignore
             }
             else {
                 return error(field->loc, "unsupported type");

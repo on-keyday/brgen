@@ -212,6 +212,18 @@ namespace brgen::ast {
                     m[d->ident->ident].push_back(std::move(cand));
                 }
             }
+            std::vector<std::shared_ptr<UnionCandidate>> null_cache;
+            auto get_null_cache = [&](size_t i) {
+                assert(i < cond.size());
+                if (null_cache.size() <= i) {
+                    null_cache.resize(i + 1);
+                }
+                if (!null_cache[i]) {
+                    null_cache[i] = std::make_shared<UnionCandidate>(type->loc);
+                    null_cache[i]->cond = cond[i];
+                }
+                return null_cache[i];
+            };
             for (auto& [k, v] : m) {
                 auto f = std::make_shared<UnionType>();
                 f->cond = cond0;
@@ -225,8 +237,14 @@ namespace brgen::ast {
                 ident->base = field;
                 field->field_type = f;
                 f->base_type = type;
+                size_t cand_i = 0;
                 for (auto& c : v) {
+                    while (c->cond.lock() != cond[cand_i]) {
+                        f->candidate.push_back(get_null_cache(cand_i));
+                        cand_i++;
+                    }
                     f->candidate.push_back(c);
+                    cand_i++;
                 }
                 type->union_fields.push_back(field);
                 state.add_to_struct(std::move(field));
