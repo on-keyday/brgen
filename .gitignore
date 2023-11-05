@@ -18,3 +18,4 @@ target/
 *.wasm
 /web/public/script
 __pycache__/
+*.vsix
