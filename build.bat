@@ -5,10 +5,12 @@ set BUILD_MODE=%1
 if "%BUILD_MODE%" == "" (
     set BUILD_MODE=native
 )
-
+set UTILS_DIR=C:/workspace/utils_backup
+if not exist %UTILS_DIR% (
+    call script\clone_utils.bat
+)
 
 set BUILD_TYPE=Debug
-set UTILS_DIR=C:/workspace/utils_backup
 set LLVM_DIR=C:/workspace/llvm-project/llvm/build/lib/cmake/llvm
 set Clang_DIR=C:/workspace/llvm-project/clang/build/cmake/modules/CMakeFiles
 set INSTALL_PREFIX=.
