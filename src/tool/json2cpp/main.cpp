@@ -13,15 +13,18 @@
 struct Flags : utils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
     bool spec = false;
+    bool no_color = false;
     void bind(utils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&spec, "s", "spec mode");
+        ctx.VarBool(&no_color, "no-color", "disable color output");
     }
 };
 auto& cout = utils::wrap::cout_wrap();
 
 int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     prefix_loc() = "json2cpp: ";
+    no_color = flags.no_color;
     if (flags.spec) {
         cout << R"({
             "pass_by": "file",

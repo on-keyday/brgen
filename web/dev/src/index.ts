@@ -13,8 +13,37 @@ enum Language {
     CPP = "cpp",
 }
 
+const storage  = window.localStorage;
+const getLangMode = () => {
+    const mode = storage.getItem("lang_mode");
+    if(mode === null) return Language.JSON_AST;
+    switch(mode){
+        case Language.JSON_AST:
+            return Language.JSON_AST;
+        case Language.CPP:
+            return Language.CPP;
+        default:
+            return Language.JSON_AST;
+    }
+}
+
+const getSourceCode = () => {
+    const code = storage.getItem("source_code");
+    if(code === null) return "";
+    return code;
+};
+
 let options = {
-    language_mode: Language.JSON_AST,
+    language_mode: getLangMode(),
+
+    setLanguageMode: (mode :Language) => {
+        options.language_mode = mode;
+        storage.setItem("lang_mode",mode);
+    },
+
+    setSourceCode: (code :string) => {
+        storage.setItem("source_code",code);
+    }
 }
 
 const getElement = (id :string) => {
@@ -190,7 +219,8 @@ editor_model.onDidChangeContent(async (e)=>{
     e.changes.forEach((change)=>{
         console.log(change);
     });
-    updateGenerated();
+    options.setSourceCode(editor_model.getValue());
+    await updateGenerated();
 })
 
 editor.setModel(editor_model);
@@ -209,7 +239,7 @@ const makeListBox = (id :string,items :string[]) => {
 }
 
 const select = makeListBox("language-select",[Language.JSON_AST,Language.CPP]);
-select.selectedIndex = 0;
+select.value = options.language_mode;
 select.style.top = "50%";
 select.style.left ="80%";
 
@@ -219,13 +249,15 @@ select.onchange = async (e) => {
     const value = select.value;
     switch(value){
         case Language.JSON_AST:
-            options.language_mode = Language.JSON_AST;
+            options.setLanguageMode(Language.JSON_AST);
             break;
         case Language.CPP:
-            options.language_mode = Language.CPP;
+            options.setLanguageMode(Language.CPP);
             break;
         default:
             throw new Error(`unknown language ${value}`);
     }
     await updateGenerated();
 };
+
+editor_model.setValue(getSourceCode());

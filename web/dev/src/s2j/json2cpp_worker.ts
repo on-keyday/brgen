@@ -20,7 +20,7 @@ setInterval(()=>{
             case RequestMessage.MSG_REQUIRE_GENERATED_CODE:
                 if(e.sourceCode === undefined) return new Error("sourceCode is undefined");
                 m.FS.writeFile("/editor.json",e.sourceCode);
-                return ["json2cpp","/editor.json"];
+                return ["json2cpp","/editor.json","--no-color"];
             default:
                 return new Error("unknown message type");
         }
