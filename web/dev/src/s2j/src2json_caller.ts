@@ -1,52 +1,29 @@
 import {RequestMessage,JobRequest,JobResult }  from "./msg.js";
+import {JobManager} from "./job_mgr.js";
+
 const work = new Worker(new URL("./src2json_worker.js",import.meta.url),{type:"module"});
 
-let jobID = 0;
+const mgr = new JobManager(work);
 
-var resolverMap = new Map<number, {resolve : (value :JobResult) => void, reject : (reason :any) => void}>();
+interface CallOption {
+    filename? :string
+}
 
-work.onmessage = (e) => {
-    const msg = e.data as JobResult;
-    const resolver = resolverMap.get(msg.jobID);
-    if(resolver){
-        resolverMap.delete(msg.jobID);
-        if(msg.code===0){
-            resolver.resolve(msg);
-        }else{
-            resolver.reject(msg);
+const getRequest = (msg :RequestMessage,sourceCode :string,options? :CallOption) :JobRequest => {
+    const req = mgr.getRequest(msg,sourceCode);
+    if(options){
+        if(options.filename){
+            req.options = ["--stdin-name",options.filename];
         }
     }
-};
-
-work.onerror = (e) => {
-    console.error(e);
+    return req;
 }
 
-export const getAST = (sourceCode :string) => {
-    return new Promise<JobResult>((resolve,reject) => {
-        const id = jobID;
-        jobID++;
-        const req :JobRequest = {
-            msg :RequestMessage.MSG_REQUIRE_AST,
-            jobID :id,
-            sourceCode
-        };
-        resolverMap.set(id,{resolve,reject});
-        work.postMessage(req);
-    });
+export const getAST = (sourceCode :string,options? :CallOption) => {
+    return mgr.doRequest(getRequest(RequestMessage.MSG_REQUIRE_AST,sourceCode,options));
 }
 
-export const getTokens = (sourceCode :string) => {
-    return new Promise<JobResult>((resolve,reject) => {
-        const id = jobID;
-        jobID++;
-        const req :JobRequest = {
-            msg :RequestMessage.MSG_REQUIRE_TOKENS,
-            jobID :id,
-            sourceCode
-        };
-        resolverMap.set(id,{resolve,reject});
-        work.postMessage(req);
-    });
+export const getTokens = (sourceCode :string,options? :CallOption) => {
+    return mgr.doRequest(getRequest(RequestMessage.MSG_REQUIRE_TOKENS,sourceCode,options));
 }
 

@@ -6,6 +6,7 @@ import * as caller from "./s2j/src2json_caller.js";
 import * as monaco from "../node_modules/monaco-editor/esm/vs/editor/editor.api.js";
 
 import {ast2ts} from "../node_modules/ast2ts/index.js";
+import { JobResult } from "./s2j/msg.js";
 
 const container1=  document.getElementById("container1");
 
@@ -21,14 +22,12 @@ if(!title_bar) throw new Error("title_bar is null");
 const editor = monaco.editor.create(container1,{
     lineHeight: 20,
     automaticLayout: true,
-    theme: "vs-dark",
     colorDecorators: true,
 });
 
 const generated = monaco.editor.create(container2,{
     automaticLayout: true,
     readOnly: true,
-    theme: "vs-dark",
     colorDecorators: true,
 })
 
@@ -100,35 +99,43 @@ const createGenerated =async (json :string) => {
     generated.setModel(brgen);
 }
 
+const updateGenerated = async () => {
+    const s = await caller.getAST(editor.getValue(),
+    {filename: "editor.bgn"}).catch((e) => {
+        return e as JobResult;
+    });
+    if(s.stdout===undefined) throw new Error("stdout is undefined");
+    console.log(s.stdout);
+    console.log(s.stderr);
+    if(s.stdout === ""){
+        setDefault();
+        return;
+    }
+    const js = JSON.parse(s.stdout);
+    if(ast2ts.isAstFile(js)&&js.ast){
+        const ts = ast2ts.parseAST(js.ast);
+        console.log(ts);
+    }
+    createGenerated(JSON.stringify(js,null,4));
+}
 
 window.addEventListener("keydown",async (e) => {
     if(e.ctrlKey&&e.key==="s"){
         e.preventDefault();
-        const text = editor.getValue();
-        const s =await caller.getAST(text);
-        console.log(s);
-        if(s.stdout===undefined) throw new Error("stdout is undefined");
-        const js = JSON.parse(s.stdout);
-        console.log(js);
-        createGenerated(JSON.stringify(js,null,4));
+        updateGenerated();
     }
 });
 
 monaco.languages.register({ id: 'brgen' });
-const model =  monaco.editor.createModel("", "brgen");
+const editor_model =  monaco.editor.createModel("", "brgen");
 
-model.onDidChangeContent(async (e)=>{
+
+
+editor_model.onDidChangeContent(async (e)=>{
     e.changes.forEach((change)=>{
         console.log(change);
     });
-    const s = await caller.getAST(model.getValue());
-    if(s.stdout===undefined) throw new Error("stdout is undefined");
-    console.log(s.stdout);
-    const js = JSON.parse(s.stdout);
-    if(ast2ts.isAstFile(js)){
-        const ts = ast2ts.parseAST(js.ast);
-        console.log(ts);
-    }
+    updateGenerated();
 })
 
-editor.setModel(model);
+editor.setModel(editor_model);
