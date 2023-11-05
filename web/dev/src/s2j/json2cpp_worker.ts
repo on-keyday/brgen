@@ -5,12 +5,12 @@ export { };
 
 import * as json2cpp from "../lib/json2cpp.js";
 import { RequestMessage, JobRequest } from "./msg.js";
-import { WorkContext, MyEmscriptenModule} from "./work_ctx.js";
+import { EmWorkContext, MyEmscriptenModule} from "./work_ctx.js";
 
 
 
 const json2cppModule = json2cpp.default as EmscriptenModuleFactory<MyEmscriptenModule>;
-const ctx = new WorkContext(json2cppModule,() => {
+const ctx = new EmWorkContext(json2cppModule,() => {
     console.log("json2cpp worker is ready")
 });
 

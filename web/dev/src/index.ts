@@ -1,5 +1,5 @@
 
-import * as caller from "./s2j/src2json_caller.js";
+import * as caller from "./s2j/caller.js";
 
 /// <reference path="../node_modules/monaco-editor/dev/vs/loader.js" />
 
@@ -8,16 +8,26 @@ import * as monaco from "../node_modules/monaco-editor/esm/vs/editor/editor.api.
 import {ast2ts} from "../node_modules/ast2ts/index.js";
 import { JobResult } from "./s2j/msg.js";
 
-const container1=  document.getElementById("container1");
+enum Language {
+    JSON_AST = "json ast",
+    CPP = "cpp",
+}
 
-if(!container1) throw new Error("container is null");
+let options = {
+    language_mode: Language.JSON_AST,
+}
 
-const container2=  document.getElementById("container2");
+const getElement = (id :string) => {
+    const e = document.getElementById(id);
+    if(!e) throw new Error(`${id} is null`);
+    return e;
+}
 
-if(!container2) throw new Error("container is null");
+const container1 = getElement("container1");
 
-const title_bar = document.getElementById("title_bar");
-if(!title_bar) throw new Error("title_bar is null");
+const container2= getElement("container2");
+
+const title_bar = getElement("title_bar");
 
 const editor = monaco.editor.create(container1,{
     lineHeight: 20,
@@ -26,10 +36,11 @@ const editor = monaco.editor.create(container1,{
 });
 
 const generated = monaco.editor.create(container2,{
+    lineHeight: 20,
     automaticLayout: true,
     readOnly: true,
     colorDecorators: true,
-})
+});
 
 const generated_str = "(generated code)";
 const generated_model = monaco.editor.createModel(generated_str,"text/plain");
@@ -39,12 +50,14 @@ const setDefault = () => {
 setDefault();
 
 // set style
-container1.style.position = "absolute";
-container1.style.display = "block";
-container2.style.position = "absolute";
-container2.style.display = "block";
-title_bar.style.position = "absolute";
-title_bar.style.display = "block";
+const setStyle = (e :HTMLElement) => {
+    e.style.position = "absolute";
+    e.style.display = "block";
+}
+
+setStyle(container1);
+setStyle(container2);
+setStyle(title_bar);
 title_bar.innerText = "Brgen Web Playground";
 title_bar.style.textAlign = "center";
 
@@ -94,9 +107,28 @@ setWindowSize();
 
 window.onresize = setWindowSize;
 
-const createGenerated =async (json :string) => {
-    const brgen = monaco.editor.createModel(json,"javascript");
-    generated.setModel(brgen);
+const createGenerated =async (code :string,lang: string) => {
+    const model = monaco.editor.createModel(code,lang);
+    generated.setModel(model);
+}
+
+const handleCpp = async (s :JobResult) => {
+    if(s.stdout===undefined) throw new Error("stdout is undefined");
+    const cpp = await caller.getCppCode(s.stdout).catch((e) => {
+        return e as JobResult;
+    });
+    console.log(cpp);
+    if(cpp.stdout === undefined || cpp.stdout === "") {
+        if(cpp.stderr!==undefined){
+            createGenerated(cpp.stderr,"text/plain");
+        }
+        else{
+            createGenerated("(no output. maybe error)","text/plain");
+        }
+    }
+    else{
+        createGenerated(cpp.stdout,"cpp");
+    }
 }
 
 const updateGenerated = async () => {
@@ -116,7 +148,15 @@ const updateGenerated = async () => {
         const ts = ast2ts.parseAST(js.ast);
         console.log(ts);
     }
-    createGenerated(JSON.stringify(js,null,4));
+    switch(options.language_mode){
+        case Language.JSON_AST:
+            createGenerated(JSON.stringify(js,null,4),"json");
+            break;
+        case Language.CPP: {
+            await handleCpp(s);
+            break;
+        }
+    }
 }
 
 window.addEventListener("keydown",async (e) => {
@@ -139,3 +179,38 @@ editor_model.onDidChangeContent(async (e)=>{
 })
 
 editor.setModel(editor_model);
+
+const makeListBox = (id :string,items :string[]) => {
+    const select = document.createElement("select");
+    select.id = id;
+    items.forEach((item) => {
+        const option = document.createElement("option");
+        option.value = item;
+        option.innerText = item;
+        select.appendChild(option);
+    });
+    setStyle(select);
+    return select;
+}
+
+const select = makeListBox("language-select",[Language.JSON_AST,Language.CPP]);
+select.selectedIndex = 0;
+select.style.top = "50%";
+select.style.left ="80%";
+
+title_bar.appendChild(select);
+
+select.onchange = async (e) => {
+    const value = select.value;
+    switch(value){
+        case Language.JSON_AST:
+            options.language_mode = Language.JSON_AST;
+            break;
+        case Language.CPP:
+            options.language_mode = Language.CPP;
+            break;
+        default:
+            throw new Error(`unknown language ${value}`);
+    }
+    await updateGenerated();
+};

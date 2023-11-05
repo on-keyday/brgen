@@ -9,13 +9,14 @@ interface JobRequest {
     readonly msg :RequestMessage
     readonly jobID :number
     sourceCode? :string
-    options? :string[]
+    arguments? :string[]
 }
 
 interface JobResult {
     readonly msg :RequestMessage
     stdout? :string
     stderr? :string
+    originalSourceCode? :string
     err? :Error
     code :number
     jobID :number

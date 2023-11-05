@@ -6,7 +6,7 @@ export interface MyEmscriptenModule extends EmscriptenModule {
 
 import { JobRequest, JobResult } from "./msg.js";
 
-export class WorkContext  {
+export class EmWorkContext  {
     readonly #msgQueue: JobRequest[] = [];
     readonly #postQueue: JobResult[] = [];
     readonly #textCapture = {
@@ -28,12 +28,12 @@ export class WorkContext  {
         this.#promise =  mod({
             print: (text) => {
                 if (this.#textCapture.jobId !== -1) {
-                    this.#textCapture.stdout += text;
+                    this.#textCapture.stdout += text+"\n";
                 }
             },
             printErr: (text) => {
                 if (this.#textCapture.jobId !== -1) {
-                    this.#textCapture.stderr += text;
+                    this.#textCapture.stderr += text+"\n";
                 }
             },
         }).then((m) => {
@@ -112,7 +112,7 @@ export class WorkContext  {
             this.#postResult(res);
             return;
         }
-        e.options?.forEach((v) => {
+        e.arguments?.forEach((v) => {
             args.push(v);
         });
         this.#setCapture(id);
@@ -121,6 +121,7 @@ export class WorkContext  {
             msg: e.msg,
             stdout: this.#textCapture.stdout,
             stderr: this.#textCapture.stderr,
+            originalSourceCode: e.sourceCode,
             code,
             jobID: id,
         };

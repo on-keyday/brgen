@@ -4,12 +4,12 @@ export { };
 
 import * as src2json from "../lib/src2json.js";
 import { RequestMessage, JobRequest } from "./msg.js";
-import { WorkContext, MyEmscriptenModule} from "./work_ctx.js";
+import { EmWorkContext, MyEmscriptenModule} from "./work_ctx.js";
 
 
 
 const src2jsonModule = src2json.default as EmscriptenModuleFactory<MyEmscriptenModule>;
-const ctx = new WorkContext(src2jsonModule,() => {
+const ctx = new EmWorkContext(src2jsonModule,() => {
     console.log("src2json worker is ready")
 });
 
