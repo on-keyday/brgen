@@ -261,3 +261,4 @@ select.onchange = async (e) => {
 };
 
 editor_model.setValue(getSourceCode());
+caller.loadWorkers();

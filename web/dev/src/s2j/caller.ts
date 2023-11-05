@@ -26,6 +26,11 @@ interface CallOption {
     filename? :string
 }
 
+export const loadWorkers = () => {
+    factory.getSrc2JSONWorker();
+    factory.getJSON2CppWorker();
+}
+
 const getRequest = (msg :RequestMessage,sourceCode :string,options? :CallOption) :JobRequest => {
     const mgr = factory.getSrc2JSONWorker();
     const req = mgr.getRequest(msg,sourceCode);
