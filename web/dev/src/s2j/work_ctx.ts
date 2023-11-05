@@ -14,8 +14,10 @@ export class EmWorkContext  {
         stdout: "",
         stderr: "",
     };
-    #promise :Promise<MyEmscriptenModule> ;
+    #promise :Promise<MyEmscriptenModule> | undefined;
     #mod? :MyEmscriptenModule = undefined;
+    #factory :EmscriptenModuleFactory<MyEmscriptenModule>;
+    #onload? :() => void;
 
     constructor(mod :EmscriptenModuleFactory<MyEmscriptenModule>,onload? :() => void) {
         this.#msgQueue = [];
@@ -25,7 +27,14 @@ export class EmWorkContext  {
             stdout: "",
             stderr: "",
         };
-        this.#promise =  mod({
+        this.#factory = mod;
+        this.#onload = onload;
+        this.#initModule();
+    }
+
+    #initModule() { 
+        this.#mod = undefined;
+        this.#promise = this.#factory({
             print: (text) => {
                 if (this.#textCapture.jobId !== -1) {
                     this.#textCapture.stdout += text+"\n";
@@ -37,7 +46,7 @@ export class EmWorkContext  {
                 }
             },
         }).then((m) => {
-            onload?.();
+            if(this.#onload !== undefined) this.#onload();
             return m;
         });
     }
@@ -84,20 +93,29 @@ export class EmWorkContext  {
         this.#textCapture.stderr = "";
     }
 
-    async waitForPromise() {
+    async #waitForPromise() {
         if(!this.#mod){
             this.#mod = await this.#promise;
         }
     }
 
     async callEmscriptenMain(args: string[]): Promise<number> {
-        await this.waitForPromise();
+        await this.#waitForPromise();
         let arg: string = "";
         for (let i = 0; i < args.length; i++) {
             if (i !== 0) arg += " ";
             arg += encodeURIComponent(args[i]);
         }
-        return this.#mod!.ccall("emscripten_main", "number", ["string"], [arg]);
+        try {
+            return this.#mod!.ccall("emscripten_main", "number", ["string"], [arg]);
+        }catch(e) {
+            console.log(e);
+            if(e instanceof WebAssembly.RuntimeError) {
+                console.log("reloading webassembly module")
+                this.#initModule();// reload module
+            }
+            return -1;
+        }
     }
 
     async #exec(e :JobRequest, args :string[]) {
@@ -133,7 +151,7 @@ export class EmWorkContext  {
         while(true){
             const p = this.#popRequest();
             if(p === undefined) break;
-            await this.waitForPromise();
+            await this.#waitForPromise();
             const args = makeArgs(p,this.#mod!);
             if(args instanceof Error) {
                 const res: JobResult = {

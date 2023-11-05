@@ -112,18 +112,29 @@ const createGenerated =async (code :string,lang: string) => {
     generated.setModel(model);
 }
 
+const alreadyUpdated = (s :JobResult) => {
+    if(s?.originalSourceCode !== editor.getValue()){
+        console.log(`already updated jobID: ${s.jobID}`);
+        return true;
+    }
+    return false;
+}
+
 const handleCpp = async (s :JobResult) => {
     if(s.stdout===undefined) throw new Error("stdout is undefined");
     const cpp = await caller.getCppCode(s.stdout).catch((e) => {
         return e as JobResult;
     });
+    if(alreadyUpdated(s)) {
+        return;
+    }
     console.log(cpp);
     if(cpp.stdout === undefined || cpp.stdout === "") {
-        if(cpp.stderr!==undefined){
+        if(cpp.stderr!==undefined&&cpp.stderr!==""){
             createGenerated(cpp.stderr,"text/plain");
         }
         else{
-            createGenerated("(no output. maybe error)","text/plain");
+            createGenerated("(no output. maybe generator is crashed)","text/plain");
         }
     }
     else{
@@ -132,17 +143,21 @@ const handleCpp = async (s :JobResult) => {
 }
 
 const updateGenerated = async () => {
-    const s = await caller.getAST(editor.getValue(),
-    {filename: "editor.bgn"}).catch((e) => {
-        return e as JobResult;
-    });
-    if(s.stdout===undefined) throw new Error("stdout is undefined");
-    console.log(s.stdout);
-    console.log(s.stderr);
-    if(s.stdout === ""){
+    const value = editor_model.getValue();
+    if(value === ""){
         setDefault();
         return;
     }
+    const s = await caller.getAST(value,
+    {filename: "editor.bgn"}).catch((e) => {
+        return e as JobResult;
+    });
+    if(alreadyUpdated(s)) {
+        return;
+    }
+    if(s.stdout===undefined) throw new Error("stdout is undefined");
+    console.log(s.stdout);
+    console.log(s.stderr);
     const js = JSON.parse(s.stdout);
     if(ast2ts.isAstFile(js)&&js.ast){
         const ts = ast2ts.parseAST(js.ast);
