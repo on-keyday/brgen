@@ -19,7 +19,7 @@
             "request": "launch",
             "program": "${workspaceRoot}/tool/src2json",
             "args": [
-                "c:/workspace/shbrgen/brgen/example/ast_step/step3.bgn",
+                "c:/workspace/shbrgen/brgen/example/edge_case1.bgn",
                 "--print-json",
             ],
             "stopAtEntry": false,

@@ -162,17 +162,7 @@ namespace brgen::ast {
                 }
             };
 
-            collect_comments();
-
-            // Parse and add the first element
-            block->elements.push_back(parse_statement());
-
-            // Parse and add subsequent elements with the same indent level
-            while (auto indent = s.peek_token(lexer::Tag::indent)) {
-                if (indent->token.size() != current_indent) {
-                    break;
-                }
-                s.must_consume_token(lexer::Tag::indent);
+            auto parse_a_line = [&] {
                 collect_comments();
                 bool line_skipped = false;
                 while (!line_skipped) {
@@ -181,6 +171,18 @@ namespace brgen::ast {
                         break;
                     }
                 }
+            };
+
+            // Parse and add the first element
+            parse_a_line();
+
+            // Parse and add subsequent elements with the same indent level
+            while (auto indent = s.peek_token(lexer::Tag::indent)) {
+                if (indent->token.size() != current_indent) {
+                    break;
+                }
+                s.must_consume_token(lexer::Tag::indent);
+                parse_a_line();
             }
 
             return block;

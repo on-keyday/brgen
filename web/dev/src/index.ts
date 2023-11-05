@@ -1,4 +1,10 @@
 
+
+import "../node_modules/destyle.css/destyle.min.css";
+
+
+
+
 import * as caller from "./s2j/caller.js";
 
 /// <reference path="../node_modules/monaco-editor/dev/vs/loader.js" />
@@ -7,6 +13,8 @@ import * as monaco from "../node_modules/monaco-editor/esm/vs/editor/editor.api.
 
 import {ast2ts} from "../node_modules/ast2ts/index.js";
 import { JobResult } from "./s2j/msg.js";
+
+
 
 enum Language {
     JSON_AST = "json ast",
@@ -71,6 +79,15 @@ const generated = monaco.editor.create(container2,{
     colorDecorators: true,
 });
 
+generated.onDidChangeModel(async (e) => {
+    const area = container2.getElementsByTagName("textarea");
+    for(let i = 0;i<area.length;i++){
+        area[i].style.display = "none";
+        area[i].hidden = true;
+    }
+});
+
+
 const generated_str = "(generated code)";
 const generated_model = monaco.editor.createModel(generated_str,"text/plain");
 const setDefault = () => {
@@ -130,6 +147,12 @@ const setWindowSize = () => {
         width: editor_width,
         height: editor_height,
     });
+
+    console.log(`h: ${h}, w: ${w}`);
+    console.log(`title_bar_height: ${title_bar_height}`);
+    console.log(`title_bar_font_size: ${title_bar_font_size}`);
+    console.log(`editor_height: ${editor_height}`);
+    console.log(`editor_width: ${editor_width}`);
 };
 
 setWindowSize();
@@ -238,12 +261,45 @@ const makeListBox = (id :string,items :string[]) => {
     return select;
 }
 
+const makeButton = (id :string,text :string) => {
+    const button = document.createElement("button");
+    button.id = id;
+    button.innerText = text;
+    setStyle(button);
+    return button;
+}
+
 const select = makeListBox("language-select",[Language.JSON_AST,Language.CPP]);
 select.value = options.language_mode;
-select.style.top = "40%";
+select.style.top = "50%";
 select.style.left ="80%";
+select.style.fontSize = "60%";
+select.style.border = "solid 1px black";
+
+const button = makeButton("copy-button","copy code");
+button.style.top = "50%";
+button.style.left = "65%";
+button.style.fontSize = "60%";
+button.style.border = "solid 1px black";
+button.onclick =async () => {
+    const code = generated.getValue();
+    if(navigator.clipboard===undefined){
+        button.innerText = "not supported";
+        setTimeout(() => {
+            button.innerText = "copy code";
+        },1000);
+        return;
+    }
+    button.innerText = "copied!";
+    setTimeout(() => {
+        button.innerText = "copy code";
+    },1000);
+    await navigator.clipboard.writeText(code);
+};
+
 
 title_bar.appendChild(select);
+title_bar.appendChild(button);
 
 select.onchange = async (e) => {
     const value = select.value;

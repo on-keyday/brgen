@@ -1,0 +1,6 @@
+
+format A:
+    a :u8 b :u8
+    b
+    a
+b
