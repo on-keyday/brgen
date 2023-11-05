@@ -240,7 +240,7 @@ const makeListBox = (id :string,items :string[]) => {
 
 const select = makeListBox("language-select",[Language.JSON_AST,Language.CPP]);
 select.value = options.language_mode;
-select.style.top = "50%";
+select.style.top = "40%";
 select.style.left ="80%";
 
 title_bar.appendChild(select);
