@@ -19,3 +19,4 @@ target/
 /web/public/script
 __pycache__/
 *.vsix
+/utils/
