@@ -30,6 +30,15 @@
             "symbolSearchPath": "lib\\"
         },
         {
+            "name": "Debug json2go",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceRoot}/src/tool/json2go",
+            "args": ["-f","ignore/sample.json"],
+            "cwd": "${workspaceRoot}",
+        },
+        {
             "name": "Debug test",
             "type": "cppvsdbg",
             "request": "launch",

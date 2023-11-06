@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/on-keyday/brgen/ast2go"
+	ast2go "github.com/on-keyday/brgen/ast2go/ast"
+	"github.com/on-keyday/brgen/ast2go/gen"
 )
 
 var f = flag.Bool("s", false, "tell spec of json2go")
+var filename = flag.String("f", "", "file to parse")
 
 func main() {
 	flag.Parse()
@@ -21,15 +23,31 @@ func main() {
 		return
 	}
 	file := ast2go.AstFile{}
-	err := json.NewDecoder(os.Stdin).Decode(&file)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-		return
+	if *filename != "" {
+		f, err := os.Open(*filename)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+			return
+		}
+		defer f.Close()
+		err = json.NewDecoder(f).Decode(&file)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+			return
+		}
+	} else {
+		err := json.NewDecoder(os.Stdin).Decode(&file)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+			return
+		}
 	}
-	g := ast2go.NewGenerator(os.Stdout)
+	g := gen.NewGenerator(os.Stdout)
 
-	err = g.Generate(&file)
+	err := g.Generate(&file)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

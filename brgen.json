@@ -1,8 +1,8 @@
 {
-  "json2code": "./tool/json2cpp.exe",
+  "json2code": "./tool/json2go.exe",
   "src2json": "./tool/src2json.exe",
   "targets": ["./example/", "./example/gen_step/"],
   "suffix_pattern": ".bgn",
-  "output_dir": "./ignore/examples/",
+  "output_dir": "./ignore/examples/go/",
   "disable_untyped_warning": true
 }

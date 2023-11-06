@@ -72,6 +72,10 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
         print_error("cannot decode json file: ", res.error().locations[0].msg);
         return 1;
     }
+    if (!*res) {
+        print_error("cannot decode json file: ast is null");
+        return 1;
+    }
     json2cpp::Generator g(brgen::ast::cast_to<brgen::ast::Program>(*res));
     auto res2 = g.generate();
     if (!res2) {

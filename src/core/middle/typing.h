@@ -128,7 +128,7 @@ namespace brgen::middle {
             }
         }
 
-        void typing_assign(ast::Binary* b) {
+        void typing_assign(const std::shared_ptr<ast::Binary>& b) {
             auto right = b->right;
             auto check_right_typed = [&] {
                 if (!right->expr_type) {
@@ -180,6 +180,7 @@ namespace brgen::middle {
                 if (left->usage == ast::IdentUsage::unknown) {
                     left->usage = ast::IdentUsage::define_variable;
                     left->expr_type = std::move(new_type);
+                    left->base = b;
                 }
                 else {
                     report_assign_error();
@@ -189,6 +190,7 @@ namespace brgen::middle {
                 if (left->usage == ast::IdentUsage::unknown) {
                     left->usage = ast::IdentUsage::define_const;
                     left->expr_type = std::move(new_type);
+                    left->base = b;
                 }
                 else {
                     report_assign_error();
@@ -310,7 +312,7 @@ namespace brgen::middle {
             m->expr_type = candidate ? candidate : void_type(m->loc);
         }
 
-        void typing_binary(ast::Binary* b) {
+        void typing_binary(const std::shared_ptr<ast::Binary>& b) {
             auto op = b->op;
             auto& lty = b->left->expr_type;
             auto& rty = b->right->expr_type;
@@ -378,7 +380,7 @@ namespace brgen::middle {
             }
         }
 
-        void typing_binary_expr(ast::Binary* bin) {
+        void typing_binary_expr(const std::shared_ptr<ast::Binary>& bin) {
             auto op = bin->op;
             typing_expr(
                 bin->left,
@@ -488,7 +490,7 @@ namespace brgen::middle {
                 }
             }
             else if (auto bin = ast::as<ast::Binary>(expr)) {
-                typing_binary_expr(bin);
+                typing_binary_expr(ast::cast_to<ast::Binary>(expr));
             }
             else if (auto if_ = ast::as<ast::If>(expr)) {
                 typing_if(if_);
