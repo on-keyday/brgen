@@ -31,8 +31,7 @@ export const loadWorkers = () => {
     factory.getJSON2CppWorker();
 }
 
-const getRequest = (msg :RequestMessage,sourceCode :string,options? :CallOption) :JobRequest => {
-    const mgr = factory.getSrc2JSONWorker();
+const getRequest = (mgr :JobManager , msg :RequestMessage,sourceCode :string,options? :CallOption) :JobRequest => {
     const req = mgr.getRequest(msg,sourceCode);
     if(options){
         if(options.filename){
@@ -44,15 +43,15 @@ const getRequest = (msg :RequestMessage,sourceCode :string,options? :CallOption)
 
 export const getAST = (sourceCode :string,options? :CallOption) => {
     const mgr = factory.getSrc2JSONWorker();
-    return mgr.doRequest(getRequest(RequestMessage.MSG_REQUIRE_AST,sourceCode,options));
+    return mgr.doRequest(getRequest(mgr,RequestMessage.MSG_REQUIRE_AST,sourceCode,options));
 }
 
 export const getTokens = (sourceCode :string,options? :CallOption) => {
     const mgr = factory.getSrc2JSONWorker();
-    return mgr.doRequest(getRequest(RequestMessage.MSG_REQUIRE_TOKENS,sourceCode,options));
+    return mgr.doRequest(getRequest(mgr,RequestMessage.MSG_REQUIRE_TOKENS,sourceCode,options));
 }
 
 export const getCppCode = (sourceCode :string,options? :CallOption) => {
     const mgr = factory.getJSON2CppWorker();
-    return mgr.doRequest(getRequest(RequestMessage.MSG_REQUIRE_GENERATED_CODE,sourceCode,{}));
+    return mgr.doRequest(getRequest(mgr,RequestMessage.MSG_REQUIRE_GENERATED_CODE,sourceCode,{}));
 }
