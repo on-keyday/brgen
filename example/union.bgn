@@ -7,6 +7,50 @@ format UnionSample:
         b :u16
     3 => c :u32
     .. => x :u64
+  
+format UnionExample:
+  size :u8
+  match size:
+    1 => len :u8
+    2 => len :u16
+    4 => len :u32
+    8 => len :u64  
+    .. => error("invalid size")  
+  data :[len]u8
 
 # but actually, this type is become like this
 # struct { uint8_t tag; union { uint8_t a; uint16_t b; uint32_t c; uint64_t x; };
+
+enum EnumExample:
+  A
+  B
+  C
+  D
+
+format LEB128:
+  value :u64
+  fn encode():
+    data := value
+    # encode value to LEB128
+    loop data > 0:
+      output.put(0x80 | (data & 0x7f))
+      data = data >> 7
+
+  fn decode():
+    # decode LEB128 to value
+    i := 0
+    loop value < 0x80:
+      byte := input.get()
+      value = value | (byte & 0x7f) << (i * 7)
+      i = i + 1
+
+  fn u64():
+    return value
+
+
+format Magic:
+  magic :"\xab\xcd\xef\x00"
+
+format FixedValue:
+  fixed :u8(0x12)
+  

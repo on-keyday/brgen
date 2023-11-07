@@ -56,6 +56,7 @@ namespace brgen::ast {
         field,
 
         format,
+        enum_,
         function,
 
         type = 0x040000,
@@ -127,6 +128,7 @@ namespace brgen::ast {
         "union_type",
         "union_candidate",
         "range_type",
+        "enum",
     };
 
     constexpr int mapNodeTypeToValue(NodeType type) {
@@ -237,6 +239,8 @@ namespace brgen::ast {
                 return 51;
             case NodeType::range_type:
                 return 52;
+            case NodeType::enum_:
+                return 53;
             default:
                 return -1;
         }
@@ -350,6 +354,8 @@ namespace brgen::ast {
                 return NodeType::union_candidate;
             case 52:
                 return NodeType::range_type;
+            case 53:
+                return NodeType::enum_;
             default:
                 return either::unexpected{"invalid value"};
         }

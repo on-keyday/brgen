@@ -1,0 +1,19 @@
+
+format NtpPacket:
+    leap :u2
+    version :u3
+    mode :u3
+    stratum :u8
+    poll :u8
+    precision :u8
+    root_delay :u32
+    root_dispersion :u32
+    reference_id :u32
+    reference_timestamp :u64
+    origin_timestamp :u64
+    receive_timestamp :u64
+    transmit_timestamp :u64
+    extensions :[..]u8
+    key_identifier :u32
+    message_digenst :[16]u8
+

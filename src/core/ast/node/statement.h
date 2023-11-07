@@ -30,6 +30,13 @@ namespace brgen::ast {
         }
     };
 
+    struct Enum : Member {
+        define_node_type(NodeType::enum_);
+
+        Enum(lexer::Loc l)
+            : Member(l, NodeType::enum_) {}
+    };
+
     struct Field : Member {
         define_node_type(NodeType::field);
         // std::shared_ptr<Ident> ident;
