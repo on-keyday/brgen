@@ -87,6 +87,10 @@ generated.onDidChangeModel(async (e) => {
     }
 });
 
+generated.onDidChangeModelContent(async (e) => {
+    
+});
+
 
 const generated_str = "(generated code)";
 const generated_model = monaco.editor.createModel(generated_str,"text/plain");
@@ -301,9 +305,9 @@ button.onclick =async () => {
 title_bar.appendChild(select);
 title_bar.appendChild(button);
 
-select.onchange = async (e) => {
-    const value = select.value;
-    switch(value){
+const changeLanguage = async (mode :string) => {
+    select.value = mode;
+    switch(mode){
         case Language.JSON_AST:
             options.setLanguageMode(Language.JSON_AST);
             break;
@@ -311,20 +315,25 @@ select.onchange = async (e) => {
             options.setLanguageMode(Language.CPP);
             break;
         default:
-            throw new Error(`unknown language ${value}`);
+            throw new Error(`unknown language ${mode}`);
     }
     await updateGenerated();
+}
+
+select.onchange = async (e) => {
+    const value = select.value;
+    await changeLanguage(value);
 };
 
 const src = getSourceCode()
 
 if(src !== null) {
-    editor_model.setValue(src);
+    editor.setValue(src);
 }
 else {
     // イベント用
 const sample =`
-format Frame:
+format WebSocketFrame:
     FIN :u1
     RSV1 :u1
     RSV2 :u1
@@ -343,8 +352,8 @@ format Frame:
     # Payload :[available(ExtendedPayloadLength) ? ExtendedPayloadLength : PayloadLength]u8
     Payload :[PayloadLength]u8
 `
-    editor_model.setValue(sample);
-    select.value = Language.CPP;
+    editor.setValue(sample);
+    changeLanguage(Language.CPP);
 }
 
 caller.loadWorkers();
