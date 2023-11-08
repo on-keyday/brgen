@@ -61,6 +61,7 @@ class NodeType(Enum):
     RANGE_TYPE = "range_type"
     ENUM = "enum"
     ENUM_MEMBER = "enum_member"
+    ENUM_TYPE = "enum_type"
 
 
 class Node:
@@ -249,7 +250,6 @@ class Field(Member):
 
 
 class Format(Member):
-    is_enum: bool
     body: Optional[IndentBlock]
 
 
@@ -340,13 +340,19 @@ class RangeType(Type):
 
 
 class Enum(Member):
+    scope: Optional[Scope]
     colon_loc: Loc
     base_type: Optional[Type]
     members: List[EnumMember]
+    enum_type: Optional[EnumType]
 
 
 class EnumMember(Member):
     expr: Optional[Expr]
+
+
+class EnumType(Type):
+    base: Optional[Enum]
 
 
 class UnaryOp(Enum):
@@ -403,6 +409,7 @@ class IdentUsage(Enum):
     DEFINE_FIELD = "define_field"
     DEFINE_FORMAT = "define_format"
     DEFINE_ENUM = "define_enum"
+    DEFINE_ENUM_MEMBER = "define_enum_member"
     DEFINE_FN = "define_fn"
     DEFINE_CAST_FN = "define_cast_fn"
     DEFINE_ARG = "define_arg"
@@ -691,6 +698,8 @@ def ast2node(ast :Ast) -> Program:
                 node.append(Enum())
             case NodeType.ENUM_MEMBER:
                 node.append(EnumMember())
+            case NodeType.ENUM_TYPE:
+                node.append(EnumType())
             case _:
                 raise TypeError('unknown node type')
     scope = [Scope() for _ in range(len(ast.scope))]
@@ -1080,8 +1089,6 @@ def ast2node(ast :Ast) -> Program:
                     node[i].ident = x if isinstance(x,Ident) else raiseError(TypeError('type mismatch'))
                 else:
                     node[i].ident = None
-                x = ast.node[i].body["is_enum"]
-                node[i].is_enum = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch'))
                 if ast.node[i].body["body"] is not None:
                     x = node[ast.node[i].body["body"]]
                     node[i].body = x if isinstance(x,IndentBlock) else raiseError(TypeError('type mismatch'))
@@ -1267,6 +1274,10 @@ def ast2node(ast :Ast) -> Program:
                     node[i].ident = x if isinstance(x,Ident) else raiseError(TypeError('type mismatch'))
                 else:
                     node[i].ident = None
+                if ast.node[i].body["scope"] is not None:
+                    node[i].scope = scope[ast.node[i].body["scope"]]
+                else:
+                    node[i].scope = None
                 node[i].colon_loc = parse_Loc(ast.node[i].body["colon_loc"])
                 if ast.node[i].body["base_type"] is not None:
                     x = node[ast.node[i].body["base_type"]]
@@ -1274,6 +1285,11 @@ def ast2node(ast :Ast) -> Program:
                 else:
                     node[i].base_type = None
                 node[i].members = [(node[x] if isinstance(node[x],EnumMember) else raiseError(TypeError('type mismatch'))) for x in ast.node[i].body["members"]]
+                if ast.node[i].body["enum_type"] is not None:
+                    x = node[ast.node[i].body["enum_type"]]
+                    node[i].enum_type = x if isinstance(x,EnumType) else raiseError(TypeError('type mismatch'))
+                else:
+                    node[i].enum_type = None
             case NodeType.ENUM_MEMBER:
                 if ast.node[i].body["belong"] is not None:
                     x = node[ast.node[i].body["belong"]]
@@ -1290,6 +1306,14 @@ def ast2node(ast :Ast) -> Program:
                     node[i].expr = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch'))
                 else:
                     node[i].expr = None
+            case NodeType.ENUM_TYPE:
+                x = ast.node[i].body["is_explicit"]
+                node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch'))
+                if ast.node[i].body["base"] is not None:
+                    x = node[ast.node[i].body["base"]]
+                    node[i].base = x if isinstance(x,Enum) else raiseError(TypeError('type mismatch'))
+                else:
+                    node[i].base = None
             case _:
                 raise TypeError('unknown node type')
     for i in range(len(ast.scope)):
@@ -1531,8 +1555,12 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
               f(f,x.base_type)
           for i in range(len(x.members)):
               f(f,x.members[i])
+          if x.enum_type is not None:
+              f(f,x.enum_type)
         case x if isinstance(x,EnumMember):
           if x.ident is not None:
               f(f,x.ident)
           if x.expr is not None:
               f(f,x.expr)
+        case x if isinstance(x,EnumType):
+            pass

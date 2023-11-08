@@ -379,4 +379,23 @@ namespace brgen::ast {
         }
     };
 
+    struct EnumType : Type {
+        define_node_type(NodeType::enum_type);
+        std::weak_ptr<Enum> base;
+
+        EnumType(lexer::Loc l, bool is_explicit = false)
+            : Type(l, NodeType::enum_type) {
+            this->is_explicit = is_explicit;
+        }
+
+        // for decode
+        EnumType()
+            : Type({}, NodeType::enum_type) {}
+
+        void dump(auto&& field_) {
+            Type::dump(field_);
+            sdebugf(base);
+        }
+    };
+
 }  // namespace brgen::ast

@@ -379,7 +379,6 @@ type Format struct {
 	Loc    Loc
 	Belong Member
 	Ident  *Ident
-	IsEnum bool
 	Body   *IndentBlock
 }
 
@@ -575,9 +574,11 @@ type Enum struct {
 	Loc      Loc
 	Belong   Member
 	Ident    *Ident
+	Scope    *Scope
 	ColonLoc Loc
 	BaseType Type
 	Members  []*EnumMember
+	EnumType *EnumType
 }
 
 func (n *Enum) isMember() {}
@@ -598,6 +599,16 @@ func (n *EnumMember) isMember() {}
 func (n *EnumMember) isStmt() {}
 
 func (n *EnumMember) isNode() {}
+
+type EnumType struct {
+	Loc        Loc
+	IsExplicit bool
+	Base       *Enum
+}
+
+func (n *EnumType) isType() {}
+
+func (n *EnumType) isNode() {}
 
 type UnaryOp int
 
@@ -850,17 +861,18 @@ func (n BinaryOp) UnmarshalJSON(data []byte) error {
 type IdentUsage int
 
 const (
-	IdentUsageUnknown        IdentUsage = 0
-	IdentUsageReference      IdentUsage = 1
-	IdentUsageDefineVariable IdentUsage = 2
-	IdentUsageDefineConst    IdentUsage = 3
-	IdentUsageDefineField    IdentUsage = 4
-	IdentUsageDefineFormat   IdentUsage = 5
-	IdentUsageDefineEnum     IdentUsage = 6
-	IdentUsageDefineFn       IdentUsage = 7
-	IdentUsageDefineCastFn   IdentUsage = 8
-	IdentUsageDefineArg      IdentUsage = 9
-	IdentUsageReferenceType  IdentUsage = 10
+	IdentUsageUnknown          IdentUsage = 0
+	IdentUsageReference        IdentUsage = 1
+	IdentUsageDefineVariable   IdentUsage = 2
+	IdentUsageDefineConst      IdentUsage = 3
+	IdentUsageDefineField      IdentUsage = 4
+	IdentUsageDefineFormat     IdentUsage = 5
+	IdentUsageDefineEnum       IdentUsage = 6
+	IdentUsageDefineEnumMember IdentUsage = 7
+	IdentUsageDefineFn         IdentUsage = 8
+	IdentUsageDefineCastFn     IdentUsage = 9
+	IdentUsageDefineArg        IdentUsage = 10
+	IdentUsageReferenceType    IdentUsage = 11
 )
 
 func (n IdentUsage) String() string {
@@ -879,6 +891,8 @@ func (n IdentUsage) String() string {
 		return "define_format"
 	case IdentUsageDefineEnum:
 		return "define_enum"
+	case IdentUsageDefineEnumMember:
+		return "define_enum_member"
 	case IdentUsageDefineFn:
 		return "define_fn"
 	case IdentUsageDefineCastFn:
@@ -912,6 +926,8 @@ func (n IdentUsage) UnmarshalJSON(data []byte) error {
 		n = IdentUsageDefineFormat
 	case "define_enum":
 		n = IdentUsageDefineEnum
+	case "define_enum_member":
+		n = IdentUsageDefineEnumMember
 	case "define_fn":
 		n = IdentUsageDefineFn
 	case "define_cast_fn":
@@ -1232,6 +1248,8 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			n.node[i] = &Enum{Loc: raw.Loc}
 		case "enum_member":
 			n.node[i] = &EnumMember{Loc: raw.Loc}
+		case "enum_type":
+			n.node[i] = &EnumType{Loc: raw.Loc}
 		default:
 			return nil, fmt.Errorf("unknown node type: %q", raw.NodeType)
 		}
@@ -1773,7 +1791,6 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			var tmp struct {
 				Belong *uintptr `json:"belong"`
 				Ident  *uintptr `json:"ident"`
-				IsEnum bool     `json:"is_enum"`
 				Body   *uintptr `json:"body"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
@@ -1785,7 +1802,6 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.Ident != nil {
 				v.Ident = n.node[*tmp.Ident].(*Ident)
 			}
-			v.IsEnum = tmp.IsEnum
 			if tmp.Body != nil {
 				v.Body = n.node[*tmp.Body].(*IndentBlock)
 			}
@@ -2074,9 +2090,11 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			var tmp struct {
 				Belong   *uintptr  `json:"belong"`
 				Ident    *uintptr  `json:"ident"`
+				Scope    *uintptr  `json:"scope"`
 				ColonLoc Loc       `json:"colon_loc"`
 				BaseType *uintptr  `json:"base_type"`
 				Members  []uintptr `json:"members"`
+				EnumType *uintptr  `json:"enum_type"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -2087,6 +2105,9 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.Ident != nil {
 				v.Ident = n.node[*tmp.Ident].(*Ident)
 			}
+			if tmp.Scope != nil {
+				v.Scope = n.scope[*tmp.Scope]
+			}
 			v.ColonLoc = tmp.ColonLoc
 			if tmp.BaseType != nil {
 				v.BaseType = n.node[*tmp.BaseType].(Type)
@@ -2094,6 +2115,9 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			v.Members = make([]*EnumMember, len(tmp.Members))
 			for j, k := range tmp.Members {
 				v.Members[j] = n.node[k].(*EnumMember)
+			}
+			if tmp.EnumType != nil {
+				v.EnumType = n.node[*tmp.EnumType].(*EnumType)
 			}
 		case "enum_member":
 			v := n.node[i].(*EnumMember)
@@ -2113,6 +2137,19 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			}
 			if tmp.Expr != nil {
 				v.Expr = n.node[*tmp.Expr].(Expr)
+			}
+		case "enum_type":
+			v := n.node[i].(*EnumType)
+			var tmp struct {
+				IsExplicit bool     `json:"is_explicit"`
+				Base       *uintptr `json:"base"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			v.IsExplicit = tmp.IsExplicit
+			if tmp.Base != nil {
+				v.Base = n.node[*tmp.Base].(*Enum)
 			}
 		default:
 			return nil, fmt.Errorf("unknown node type: %q", raw.NodeType)
@@ -2458,6 +2495,9 @@ func Walk(n Node, f Visitor) {
 		for _, w := range v.Members {
 			f.Visit(f, w)
 		}
+		if v.EnumType != nil {
+			f.Visit(f, v.EnumType)
+		}
 	case *EnumMember:
 		if v.Ident != nil {
 			f.Visit(f, v.Ident)
@@ -2465,5 +2505,6 @@ func Walk(n Node, f Visitor) {
 		if v.Expr != nil {
 			f.Visit(f, v.Expr)
 		}
+	case *EnumType:
 	}
 }

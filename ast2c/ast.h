@@ -68,6 +68,7 @@ typedef enum NodeType {
 	RANGE_TYPE,
 	ENUM,
 	ENUM_MEMBER,
+	ENUM_TYPE,
 } NodeType;
 
 int NodeType_from_string(const char*, NodeType*);
@@ -129,6 +130,7 @@ typedef struct UnionCandidate UnionCandidate;
 typedef struct RangeType RangeType;
 typedef struct Enum Enum;
 typedef struct EnumMember EnumMember;
+typedef struct EnumType EnumType;
 typedef enum UnaryOp UnaryOp;
 typedef enum BinaryOp BinaryOp;
 typedef enum IdentUsage IdentUsage;
@@ -198,6 +200,7 @@ enum IdentUsage {
 	DEFINE_FIELD,
 	DEFINE_FORMAT,
 	DEFINE_ENUM,
+	DEFINE_ENUM_MEMBER,
 	DEFINE_FN,
 	DEFINE_CAST_FN,
 	DEFINE_ARG,
@@ -545,7 +548,6 @@ struct Format {
 	Loc loc;
 	Member* belong;
 	Ident* ident;
-	int is_enum;
 	IndentBlock* body;
 };
 
@@ -694,10 +696,12 @@ struct Enum {
 	Loc loc;
 	Member* belong;
 	Ident* ident;
+	Scope* scope;
 	Loc colon_loc;
 	Type* base_type;
 	EnumMember** members;
 	size_t members_size;
+	EnumType* enum_type;
 };
 
 struct EnumMember {
@@ -706,6 +710,13 @@ struct EnumMember {
 	Member* belong;
 	Ident* ident;
 	Expr* expr;
+};
+
+struct EnumType {
+	const NodeType node_type;
+	Loc loc;
+	int is_explicit;
+	Enum* base;
 };
 
 struct Scope {

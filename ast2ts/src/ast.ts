@@ -2,10 +2,10 @@
 
 export namespace ast2ts {
 
-export type NodeType = "node" | "program" | "expr" | "binary" | "unary" | "cond" | "ident" | "call" | "if" | "member_access" | "paren" | "index" | "match" | "range" | "tmp_var" | "block_expr" | "import" | "literal" | "int_literal" | "bool_literal" | "str_literal" | "input" | "output" | "config" | "stmt" | "loop" | "indent_block" | "match_branch" | "return" | "break" | "continue" | "assert" | "implicit_yield" | "member" | "field" | "format" | "function" | "type" | "int_type" | "ident_type" | "int_literal_type" | "str_literal_type" | "void_type" | "bool_type" | "array_type" | "function_type" | "struct_type" | "struct_union_type" | "cast" | "comment" | "comment_group" | "union_type" | "union_candidate" | "range_type" | "enum" | "enum_member";
+export type NodeType = "node" | "program" | "expr" | "binary" | "unary" | "cond" | "ident" | "call" | "if" | "member_access" | "paren" | "index" | "match" | "range" | "tmp_var" | "block_expr" | "import" | "literal" | "int_literal" | "bool_literal" | "str_literal" | "input" | "output" | "config" | "stmt" | "loop" | "indent_block" | "match_branch" | "return" | "break" | "continue" | "assert" | "implicit_yield" | "member" | "field" | "format" | "function" | "type" | "int_type" | "ident_type" | "int_literal_type" | "str_literal_type" | "void_type" | "bool_type" | "array_type" | "function_type" | "struct_type" | "struct_union_type" | "cast" | "comment" | "comment_group" | "union_type" | "union_candidate" | "range_type" | "enum" | "enum_member" | "enum_type";
 
 export function isNodeType(obj: any): obj is NodeType {
-	return obj && typeof obj === 'string' && (obj === "node" || obj === "program" || obj === "expr" || obj === "binary" || obj === "unary" || obj === "cond" || obj === "ident" || obj === "call" || obj === "if" || obj === "member_access" || obj === "paren" || obj === "index" || obj === "match" || obj === "range" || obj === "tmp_var" || obj === "block_expr" || obj === "import" || obj === "literal" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "input" || obj === "output" || obj === "config" || obj === "stmt" || obj === "loop" || obj === "indent_block" || obj === "match_branch" || obj === "return" || obj === "break" || obj === "continue" || obj === "assert" || obj === "implicit_yield" || obj === "member" || obj === "field" || obj === "format" || obj === "function" || obj === "type" || obj === "int_type" || obj === "ident_type" || obj === "int_literal_type" || obj === "str_literal_type" || obj === "void_type" || obj === "bool_type" || obj === "array_type" || obj === "function_type" || obj === "struct_type" || obj === "struct_union_type" || obj === "cast" || obj === "comment" || obj === "comment_group" || obj === "union_type" || obj === "union_candidate" || obj === "range_type" || obj === "enum" || obj === "enum_member")
+	return obj && typeof obj === 'string' && (obj === "node" || obj === "program" || obj === "expr" || obj === "binary" || obj === "unary" || obj === "cond" || obj === "ident" || obj === "call" || obj === "if" || obj === "member_access" || obj === "paren" || obj === "index" || obj === "match" || obj === "range" || obj === "tmp_var" || obj === "block_expr" || obj === "import" || obj === "literal" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "input" || obj === "output" || obj === "config" || obj === "stmt" || obj === "loop" || obj === "indent_block" || obj === "match_branch" || obj === "return" || obj === "break" || obj === "continue" || obj === "assert" || obj === "implicit_yield" || obj === "member" || obj === "field" || obj === "format" || obj === "function" || obj === "type" || obj === "int_type" || obj === "ident_type" || obj === "int_literal_type" || obj === "str_literal_type" || obj === "void_type" || obj === "bool_type" || obj === "array_type" || obj === "function_type" || obj === "struct_type" || obj === "struct_union_type" || obj === "cast" || obj === "comment" || obj === "comment_group" || obj === "union_type" || obj === "union_candidate" || obj === "range_type" || obj === "enum" || obj === "enum_member" || obj === "enum_type")
 }
 
 export interface Node {
@@ -64,6 +64,7 @@ export function isNode(obj: any): obj is Node {
 	if (isRangeType(obj)) return true;
 	if (isEnum(obj)) return true;
 	if (isEnumMember(obj)) return true;
+	if (isEnumType(obj)) return true;
 	return false;
 }
 
@@ -161,6 +162,7 @@ export function isType(obj: any): obj is Type {
 	if (isStructUnionType(obj)) return true;
 	if (isUnionType(obj)) return true;
 	if (isRangeType(obj)) return true;
+	if (isEnumType(obj)) return true;
 	return false;
 }
 
@@ -440,7 +442,6 @@ export function isField(obj: any): obj is Field {
 }
 
 export interface Format extends Member {
-	is_enum: boolean;
 	body: IndentBlock|null;
 }
 
@@ -601,9 +602,11 @@ export function isRangeType(obj: any): obj is RangeType {
 }
 
 export interface Enum extends Member {
+	scope: Scope|null;
 	colon_loc: Loc;
 	base_type: Type|null;
 	members: EnumMember[];
+	enum_type: EnumType|null;
 }
 
 export function isEnum(obj: any): obj is Enum {
@@ -616,6 +619,14 @@ export interface EnumMember extends Member {
 
 export function isEnumMember(obj: any): obj is EnumMember {
 	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "enum_member"
+}
+
+export interface EnumType extends Type {
+	base: Enum|null;
+}
+
+export function isEnumType(obj: any): obj is EnumType {
+	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "enum_type"
 }
 
 export enum UnaryOp {
@@ -680,6 +691,7 @@ export enum IdentUsage {
 	define_field = "define_field",
 	define_format = "define_format",
 	define_enum = "define_enum",
+	define_enum_member = "define_enum_member",
 	define_fn = "define_fn",
 	define_cast_fn = "define_cast_fn",
 	define_arg = "define_arg",
@@ -687,7 +699,7 @@ export enum IdentUsage {
 };
 
 export function isIdentUsage(obj: any): obj is IdentUsage {
-	return obj && typeof obj === 'string' && (obj === "unknown" || obj === "reference" || obj === "define_variable" || obj === "define_const" || obj === "define_field" || obj === "define_format" || obj === "define_enum" || obj === "define_fn" || obj === "define_cast_fn" || obj === "define_arg" || obj === "reference_type")
+	return obj && typeof obj === 'string' && (obj === "unknown" || obj === "reference" || obj === "define_variable" || obj === "define_const" || obj === "define_field" || obj === "define_format" || obj === "define_enum" || obj === "define_enum_member" || obj === "define_fn" || obj === "define_cast_fn" || obj === "define_arg" || obj === "reference_type")
 }
 
 export enum Endian {
@@ -1173,7 +1185,6 @@ export function parseAST(obj: any): Program {
 				loc: on.loc,
 				belong: null,
 				ident: null,
-				is_enum: false,
 				body: null,
 			}
 			c.node.push(n);
@@ -1369,9 +1380,11 @@ export function parseAST(obj: any): Program {
 				loc: on.loc,
 				belong: null,
 				ident: null,
+				scope: null,
 				colon_loc: on.loc,
 				base_type: null,
 				members: [],
+				enum_type: null,
 			}
 			c.node.push(n);
 			break;
@@ -1383,6 +1396,16 @@ export function parseAST(obj: any): Program {
 				belong: null,
 				ident: null,
 				expr: null,
+			}
+			c.node.push(n);
+			break;
+		}
+		case "enum_type": {
+			const n :EnumType = {
+				node_type: "enum_type",
+				loc: on.loc,
+				is_explicit: false,
+				base: null,
 			}
 			c.node.push(n);
 			break;
@@ -2185,11 +2208,6 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at Format::ident');
 			}
 			n.ident = tmpident;
-			const tmpis_enum = on.body?.is_enum;
-			if (typeof on.body?.is_enum !== "boolean") {
-				throw new Error('invalid node list at Format::is_enum');
-			}
-			n.is_enum = on.body.is_enum;
 			if (on.body?.body !== null && typeof on.body?.body !== 'number') {
 				throw new Error('invalid node list at Format::body');
 			}
@@ -2627,6 +2645,14 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at Enum::ident');
 			}
 			n.ident = tmpident;
+			if (on.body?.scope !== null && typeof on.body?.scope !== 'number') {
+				throw new Error('invalid node list at Enum::scope');
+			}
+			const tmpscope = on.body.scope === null ? null : c.scope[on.body.scope];
+			if (tmpscope !== null && !isScope(tmpscope)) {
+				throw new Error('invalid node list at Enum::scope');
+			}
+			n.scope = tmpscope;
 			const tmpcolon_loc = on.body?.colon_loc;
 			if (!isLoc(tmpcolon_loc)) {
 				throw new Error('invalid node list at Enum::colon_loc');
@@ -2650,6 +2676,14 @@ export function parseAST(obj: any): Program {
 				}
 				n.members.push(tmpmembers);
 			}
+			if (on.body?.enum_type !== null && typeof on.body?.enum_type !== 'number') {
+				throw new Error('invalid node list at Enum::enum_type');
+			}
+			const tmpenum_type = on.body.enum_type === null ? null : c.node[on.body.enum_type];
+			if (!(tmpenum_type === null || isEnumType(tmpenum_type))) {
+				throw new Error('invalid node list at Enum::enum_type');
+			}
+			n.enum_type = tmpenum_type;
 			break;
 		}
 		case "enum_member": {
@@ -2678,6 +2712,23 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at EnumMember::expr');
 			}
 			n.expr = tmpexpr;
+			break;
+		}
+		case "enum_type": {
+			const n :EnumType = cnode as EnumType;
+			const tmpis_explicit = on.body?.is_explicit;
+			if (typeof on.body?.is_explicit !== "boolean") {
+				throw new Error('invalid node list at EnumType::is_explicit');
+			}
+			n.is_explicit = on.body.is_explicit;
+			if (on.body?.base !== null && typeof on.body?.base !== 'number') {
+				throw new Error('invalid node list at EnumType::base');
+			}
+			const tmpbase = on.body.base === null ? null : c.node[on.body.base];
+			if (!(tmpbase === null || isEnum(tmpbase))) {
+				throw new Error('invalid node list at EnumType::base');
+			}
+			n.base = tmpbase;
 			break;
 		}
 		}
@@ -3324,6 +3375,9 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			for (const e of n.members) {
 				fn(fn,e);
 			}
+			if (n.enum_type !== null) {
+				fn(fn,n.enum_type);
+			}
 			break;
 		}
 		case "enum_member": {
@@ -3337,6 +3391,13 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			if (n.expr !== null) {
 				fn(fn,n.expr);
 			}
+			break;
+		}
+		case "enum_type": {
+			if (!isEnumType(node)) {
+				break;
+			}
+			const n :EnumType = node as EnumType;
 			break;
 		}
 	}

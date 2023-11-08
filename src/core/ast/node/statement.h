@@ -10,12 +10,12 @@ namespace brgen::ast {
 
     struct Format : Member {
         define_node_type(NodeType::format);
-        bool is_enum = false;
-        // std::shared_ptr<Ident> ident;
+        // bool is_enum = false;
+        //  std::shared_ptr<Ident> ident;
         std::shared_ptr<IndentBlock> body;
         // std::shared_ptr<StructType> struct_type;
-        Format(lexer::Loc l, bool is_enum)
-            : Member(l, NodeType::format), is_enum(is_enum) {}
+        Format(lexer::Loc l)
+            : Member(l, NodeType::format) {}
 
         // for decode
         Format()
@@ -23,7 +23,7 @@ namespace brgen::ast {
 
         void dump(auto&& field_) {
             Member::dump(field_);
-            sdebugf(is_enum);
+            // sdebugf(is_enum);
             // sdebugf(ident);
             sdebugf(body);
             // sdebugf(struct_type);
@@ -32,6 +32,7 @@ namespace brgen::ast {
 
     struct EnumMember : Member {
         define_node_type(NodeType::enum_member);
+        std::shared_ptr<Node> comment;
         std::shared_ptr<Expr> expr;
 
         EnumMember(lexer::Loc l)
@@ -46,11 +47,15 @@ namespace brgen::ast {
         }
     };
 
+    struct EnumType;
+
     struct Enum : Member {
         define_node_type(NodeType::enum_);
         lexer::Loc colon_loc;
+        scope_ptr scope;
         std::shared_ptr<Type> base_type;
         std::vector<std::shared_ptr<EnumMember>> members;
+        std::shared_ptr<EnumType> enum_type;
 
         Enum(lexer::Loc l)
             : Member(l, NodeType::enum_) {}
@@ -60,9 +65,11 @@ namespace brgen::ast {
 
         void dump(auto&& field_) {
             Member::dump(field_);
+            sdebugf(scope);
             sdebugf(colon_loc);
             sdebugf(base_type);
             sdebugf(members);
+            sdebugf(enum_type);
         }
     };
 

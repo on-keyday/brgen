@@ -988,16 +988,70 @@ namespace brgen::ast {
         }
 
         /*
-            <format> ::= format <ident> <indent block>
+            <enum> ::= "enum" <ident> ":\r\n" (":"<type>)? <enum member>+
+            <enum member> ::= <indent> <ident> ("=" <expr>)?
+         */
+        std::shared_ptr<Enum> parse_enum(lexer::Token&& token) {
+            auto enum_ = std::make_shared<Enum>(token.loc);
+            s.skip_white();
+            enum_->ident = parse_ident();
+            enum_->ident->usage = IdentUsage::define_enum;
+            enum_->ident->base = enum_;
+            enum_->enum_type = std::make_shared<EnumType>(enum_->loc);
+            enum_->enum_type->base = enum_;
+            must_consume_indent_sign();
+            auto base = s.must_consume_token(lexer::Tag::indent);
+            auto m_scope = state.enter_member(enum_);
+            auto s_scope = state.new_indent(s, base.token.size(), &enum_->scope);
+            if (auto tok = s.consume_token(":")) {
+                s.skip_white();
+                enum_->base_type = parse_type();
+                s.skip_space();
+                s.must_consume_token(lexer::Tag::line);
+                s.skip_line();
+                auto indent = s.must_consume_token(lexer::Tag::indent);
+                if (indent.token.size() != base.token.size()) {
+                    s.report_error(indent.loc, "indent size must be same as enum base");
+                }
+            }
+            auto parse_enum_member = [&] {
+                auto ident = parse_ident();
+                ident->usage = IdentUsage::define_enum_member;
+                ident->base = enum_;
+                ident->expr_type = enum_->enum_type;
+                auto member = std::make_shared<EnumMember>(ident->loc);
+                member->ident = ident;
+                member->belong = enum_;
+                s.skip_space();
+                if (s.consume_token("=")) {
+                    s.skip_white();
+                    member->expr = parse_expr();
+                }
+                member->comment = s.get_comments();
+                enum_->members.push_back(member);
+                s.skip_line();
+            };
+            parse_enum_member();
+            while (auto indent = s.peek_token(lexer::Tag::indent)) {
+                if (indent->token.size() != base.token.size()) {
+                    break;
+                }
+                s.must_consume_token(lexer::Tag::indent);
+                parse_enum_member();
+            }
+            return enum_;
+        }
+
+        /*
+            <format> ::= "format" <ident> <indent block>
         */
         std::shared_ptr<Format> parse_format(lexer::Token&& token) {
-            bool is_enum = token.token == "enum";
-            auto fmt = std::make_shared<Format>(token.loc, is_enum);
-            s.skip_space();
+            auto fmt = std::make_shared<Format>(token.loc);
+            s.skip_white();
             // fmt->struct_type = std::make_shared<StructType>(token.loc);
 
             fmt->ident = parse_ident();
-            fmt->ident->usage = is_enum ? IdentUsage::define_enum : IdentUsage ::define_format;
+            fmt->ident->usage = IdentUsage ::define_format;
             fmt->ident->base = fmt;
             {
                 auto scope = state.enter_member(fmt);
@@ -1011,7 +1065,7 @@ namespace brgen::ast {
         }
 
         /*
-            <fn> ::= fn <ident> "(" (<ident> : <type> ("," <ident > <type>)*)? ")" ("->" <type>)? <indent block>
+            <fn> ::= fn "cast"? <ident> "(" (<ident> : <type> ("," <ident > <type>)*)? ")" ("->" <type>)? <indent block>
         */
         std::shared_ptr<Function> parse_fn(lexer::Token&& token) {
             auto fn = std::make_shared<Function>(token.loc);
@@ -1112,7 +1166,7 @@ namespace brgen::ast {
 
             if (auto enum_ = s.consume_token("enum")) {
                 set_skip();
-                return parse_format(std::move(*enum_));
+                return parse_enum(std::move(*enum_));
             }
 
             if (auto fn = s.consume_token("fn")) {

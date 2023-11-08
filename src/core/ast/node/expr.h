@@ -17,6 +17,7 @@ namespace brgen::ast {
         define_field,
         define_format,
         define_enum,
+        define_enum_member,
         define_fn,
         define_cast_fn,
         define_arg,
@@ -31,6 +32,7 @@ namespace brgen::ast {
         "define_field",
         "define_format",
         "define_enum",
+        "define_enum_member",
         "define_fn",
         "define_cast_fn",
         "define_arg",
@@ -38,7 +40,7 @@ namespace brgen::ast {
         nullptr,
     };
 
-    constexpr auto ident_usage_count = 11;
+    constexpr auto ident_usage_count = 12;
 
     constexpr std::optional<IdentUsage> ident_usage(std::string_view view) {
         for (auto i = 0; ident_usage_str[i]; i++) {
