@@ -1016,8 +1016,13 @@ namespace brgen::ast {
         std::shared_ptr<Function> parse_fn(lexer::Token&& token) {
             auto fn = std::make_shared<Function>(token.loc);
             s.skip_white();
+            if (auto cast = s.consume_token("cast")) {
+                fn->is_cast = true;
+                fn->cast_loc = cast->loc;
+                s.skip_white();
+            }
             fn->ident = parse_ident();
-            fn->ident->usage = IdentUsage::define_fn;
+            fn->ident->usage = fn->is_cast ? IdentUsage::define_cast_fn : IdentUsage::define_fn;
             fn->belong = state.current_member();
             fn->func_type = std::make_shared<FunctionType>(fn->loc);
             s.skip_white();

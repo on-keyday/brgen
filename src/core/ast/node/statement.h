@@ -30,8 +30,27 @@ namespace brgen::ast {
         }
     };
 
+    struct EnumMember : Member {
+        define_node_type(NodeType::enum_member);
+        std::shared_ptr<Expr> expr;
+
+        EnumMember(lexer::Loc l)
+            : Member(l, NodeType::enum_member) {}
+
+        EnumMember()
+            : Member({}, NodeType::enum_member) {}
+
+        void dump(auto&& field_) {
+            Member::dump(field_);
+            sdebugf(expr);
+        }
+    };
+
     struct Enum : Member {
         define_node_type(NodeType::enum_);
+        lexer::Loc colon_loc;
+        std::shared_ptr<Type> base_type;
+        std::vector<std::shared_ptr<EnumMember>> members;
 
         Enum(lexer::Loc l)
             : Member(l, NodeType::enum_) {}
@@ -41,6 +60,9 @@ namespace brgen::ast {
 
         void dump(auto&& field_) {
             Member::dump(field_);
+            sdebugf(colon_loc);
+            sdebugf(base_type);
+            sdebugf(members);
         }
     };
 
@@ -80,6 +102,8 @@ namespace brgen::ast {
         std::shared_ptr<Type> return_type;
         std::shared_ptr<IndentBlock> body;
         std::shared_ptr<FunctionType> func_type;
+        bool is_cast = false;
+        lexer::Loc cast_loc;
 
         Function(lexer::Loc l)
             : Member(l, NodeType::function) {}
@@ -93,6 +117,8 @@ namespace brgen::ast {
             sdebugf(return_type);
             sdebugf(body);
             sdebugf(func_type);
+            sdebugf(is_cast);
+            sdebugf(cast_loc);
         }
     };
 

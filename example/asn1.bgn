@@ -1,0 +1,59 @@
+enum TagKind:
+    :u8
+    RESERVED
+    BOOLEAN
+    INTEGER
+    BIT_STRING
+    OCTET_STRING
+    NULL
+    OBJECT_IDENTIFIER
+
+
+format Tag:
+    tag: u8
+
+    fn cast TagKind():
+        return tag
+
+    fn cast u8(): # cast operator
+        return tag
+
+format Len:
+    len :u64
+
+    fn size():
+        if len < 0x80:
+            return 1
+        else:
+            len_of_len := 0
+            val := len
+            loop val > 0:
+                len_of_len = len_of_len + 1
+                val = val >> 8
+            return len_of_len + 1
+
+    fn encode():
+        if len < 0x80:
+            return output.put(u8(len))
+        else:
+            len_of_len := size() - 1
+            output.put(u8(0x80 | len_of_len))
+            loop len_of_len > 0:
+                output.put(u8(len >> (len_of_len - 1) * 8))
+                len_of_len = len_of_len - 1
+
+    fn decode():
+        val := input.get()
+        if val < 0x80:
+            len = val
+        else:
+            len_of_len := val & 0x7f
+            len = 0
+            loop len_of_len > 0:
+                len = len << 8
+                len = len | input.get()
+                len_of_len = len_of_len - 1            
+
+format TLV:
+    tag: Tag
+

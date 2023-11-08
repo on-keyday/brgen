@@ -41,19 +41,19 @@ namespace brgen::lexer {
         constexpr auto keywords = keyword(
             "format", "if", "elif", "else", "match", "fn", "loop", "enum",
             "input", "output", "config", "true", "false",
-            "return", "break", "continue");
+            "return", "break", "continue", "cast");
         constexpr auto puncts = punct(
             "#", "\"", "\'", "$",  // added but maybe not used
             "::=", ":=",
             ":", ";", "(", ")", "[", "]",
             "=>", "==", "=",
             "..=", "..", ".", "->",
+            "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "<<=", ">>=",">>>=","<<<=",
             ">>>", "<<<", ">>", "<<", "~",
             "&&", "||", "&", "|",
             "!=", "!",
-            "+", "-", "*", "/", "%",
-            ",", "^",
-            "<=", ">=", "<", ">", "?");
+            "+", "-", "*", "/", "%", "^",
+            "<=", ">=", "<", ">", "?", ",");
 
         constexpr auto one_token_lexer() {
             auto p = method_proxy(puncts);

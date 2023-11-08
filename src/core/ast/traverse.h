@@ -74,6 +74,7 @@ namespace brgen::ast {
         CASE(Field)
         CASE(Format)
         CASE(Enum)
+        CASE(EnumMember)
         CASE(Function)
 
         // type
