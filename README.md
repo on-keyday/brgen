@@ -39,10 +39,10 @@ https://on-keyday.github.io/brgen
 ## wasm(web)
 
 - linux 環境の場合
-  1. `emsdk_env.bat`を呼び出す
+  1. `emsdk_env`を呼び出す
   1. `. build.sh wasm-em`を実行
 - windows 環境の場合
-  1.  `emsdk_env`を呼び出す
+  1.  `emsdk_env.bat`を呼び出す
   1.  build.bat を開き、UTILS_DIR 環境変数を`.\utils`に設定する
   1.  `build.bat wasm-em`を実行
 
@@ -50,4 +50,5 @@ https://on-keyday.github.io/brgen
 
 - windows 環境のみ
   1. `EMSDK_PATH`を`emsdk_env.bat`のパスに設定する
-  2. `build_all.bat`を実行
+  1. build.bat を開き、UTILS_DIR 環境変数を`.\utils`に設定する
+  1. `build_all.bat`を実行
