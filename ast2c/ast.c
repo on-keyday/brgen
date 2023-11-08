@@ -230,6 +230,10 @@ int NodeType_from_string(const char* str, NodeType* out) {
 		*out = ENUM;
 		return 1;
 	}
+	if (strcmp("enum_member", str) == 0) {
+		*out = ENUM_MEMBER;
+		return 1;
+	}
 	return 0;
 }
 
@@ -398,6 +402,9 @@ const char* NodeType_to_string(NodeType typ) {
 	}
 	if (typ == ENUM) {
 		return "enum";
+	}
+	if (typ == ENUM_MEMBER) {
+		return "enum_member";
 	}
 	return NULL;
 }

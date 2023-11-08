@@ -2,10 +2,10 @@
 
 export namespace ast2ts {
 
-export type NodeType = "node" | "program" | "expr" | "binary" | "unary" | "cond" | "ident" | "call" | "if" | "member_access" | "paren" | "index" | "match" | "range" | "tmp_var" | "block_expr" | "import" | "literal" | "int_literal" | "bool_literal" | "str_literal" | "input" | "output" | "config" | "stmt" | "loop" | "indent_block" | "match_branch" | "return" | "break" | "continue" | "assert" | "implicit_yield" | "member" | "field" | "format" | "function" | "type" | "int_type" | "ident_type" | "int_literal_type" | "str_literal_type" | "void_type" | "bool_type" | "array_type" | "function_type" | "struct_type" | "struct_union_type" | "cast" | "comment" | "comment_group" | "union_type" | "union_candidate" | "range_type" | "enum";
+export type NodeType = "node" | "program" | "expr" | "binary" | "unary" | "cond" | "ident" | "call" | "if" | "member_access" | "paren" | "index" | "match" | "range" | "tmp_var" | "block_expr" | "import" | "literal" | "int_literal" | "bool_literal" | "str_literal" | "input" | "output" | "config" | "stmt" | "loop" | "indent_block" | "match_branch" | "return" | "break" | "continue" | "assert" | "implicit_yield" | "member" | "field" | "format" | "function" | "type" | "int_type" | "ident_type" | "int_literal_type" | "str_literal_type" | "void_type" | "bool_type" | "array_type" | "function_type" | "struct_type" | "struct_union_type" | "cast" | "comment" | "comment_group" | "union_type" | "union_candidate" | "range_type" | "enum" | "enum_member";
 
 export function isNodeType(obj: any): obj is NodeType {
-	return obj && typeof obj === 'string' && (obj === "node" || obj === "program" || obj === "expr" || obj === "binary" || obj === "unary" || obj === "cond" || obj === "ident" || obj === "call" || obj === "if" || obj === "member_access" || obj === "paren" || obj === "index" || obj === "match" || obj === "range" || obj === "tmp_var" || obj === "block_expr" || obj === "import" || obj === "literal" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "input" || obj === "output" || obj === "config" || obj === "stmt" || obj === "loop" || obj === "indent_block" || obj === "match_branch" || obj === "return" || obj === "break" || obj === "continue" || obj === "assert" || obj === "implicit_yield" || obj === "member" || obj === "field" || obj === "format" || obj === "function" || obj === "type" || obj === "int_type" || obj === "ident_type" || obj === "int_literal_type" || obj === "str_literal_type" || obj === "void_type" || obj === "bool_type" || obj === "array_type" || obj === "function_type" || obj === "struct_type" || obj === "struct_union_type" || obj === "cast" || obj === "comment" || obj === "comment_group" || obj === "union_type" || obj === "union_candidate" || obj === "range_type" || obj === "enum")
+	return obj && typeof obj === 'string' && (obj === "node" || obj === "program" || obj === "expr" || obj === "binary" || obj === "unary" || obj === "cond" || obj === "ident" || obj === "call" || obj === "if" || obj === "member_access" || obj === "paren" || obj === "index" || obj === "match" || obj === "range" || obj === "tmp_var" || obj === "block_expr" || obj === "import" || obj === "literal" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "input" || obj === "output" || obj === "config" || obj === "stmt" || obj === "loop" || obj === "indent_block" || obj === "match_branch" || obj === "return" || obj === "break" || obj === "continue" || obj === "assert" || obj === "implicit_yield" || obj === "member" || obj === "field" || obj === "format" || obj === "function" || obj === "type" || obj === "int_type" || obj === "ident_type" || obj === "int_literal_type" || obj === "str_literal_type" || obj === "void_type" || obj === "bool_type" || obj === "array_type" || obj === "function_type" || obj === "struct_type" || obj === "struct_union_type" || obj === "cast" || obj === "comment" || obj === "comment_group" || obj === "union_type" || obj === "union_candidate" || obj === "range_type" || obj === "enum" || obj === "enum_member")
 }
 
 export interface Node {
@@ -63,6 +63,7 @@ export function isNode(obj: any): obj is Node {
 	if (isUnionCandidate(obj)) return true;
 	if (isRangeType(obj)) return true;
 	if (isEnum(obj)) return true;
+	if (isEnumMember(obj)) return true;
 	return false;
 }
 
@@ -125,6 +126,7 @@ export function isStmt(obj: any): obj is Stmt {
 	if (isFunction(obj)) return true;
 	if (isUnionCandidate(obj)) return true;
 	if (isEnum(obj)) return true;
+	if (isEnumMember(obj)) return true;
 	return false;
 }
 
@@ -138,6 +140,7 @@ export function isMember(obj: any): obj is Member {
 	if (isFormat(obj)) return true;
 	if (isFunction(obj)) return true;
 	if (isEnum(obj)) return true;
+	if (isEnumMember(obj)) return true;
 	return false;
 }
 
@@ -450,6 +453,8 @@ export interface Function extends Member {
 	return_type: Type|null;
 	body: IndentBlock|null;
 	func_type: FunctionType|null;
+	is_cast: boolean;
+	cast_loc: Loc;
 }
 
 export function isFunction(obj: any): obj is Function {
@@ -596,10 +601,21 @@ export function isRangeType(obj: any): obj is RangeType {
 }
 
 export interface Enum extends Member {
+	colon_loc: Loc;
+	base_type: Type|null;
+	members: EnumMember[];
 }
 
 export function isEnum(obj: any): obj is Enum {
 	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "enum"
+}
+
+export interface EnumMember extends Member {
+	expr: Expr|null;
+}
+
+export function isEnumMember(obj: any): obj is EnumMember {
+	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "enum_member"
 }
 
 export enum UnaryOp {
@@ -665,12 +681,13 @@ export enum IdentUsage {
 	define_format = "define_format",
 	define_enum = "define_enum",
 	define_fn = "define_fn",
+	define_cast_fn = "define_cast_fn",
 	define_arg = "define_arg",
 	reference_type = "reference_type",
 };
 
 export function isIdentUsage(obj: any): obj is IdentUsage {
-	return obj && typeof obj === 'string' && (obj === "unknown" || obj === "reference" || obj === "define_variable" || obj === "define_const" || obj === "define_field" || obj === "define_format" || obj === "define_enum" || obj === "define_fn" || obj === "define_arg" || obj === "reference_type")
+	return obj && typeof obj === 'string' && (obj === "unknown" || obj === "reference" || obj === "define_variable" || obj === "define_const" || obj === "define_field" || obj === "define_format" || obj === "define_enum" || obj === "define_fn" || obj === "define_cast_fn" || obj === "define_arg" || obj === "reference_type")
 }
 
 export enum Endian {
@@ -1172,6 +1189,8 @@ export function parseAST(obj: any): Program {
 				return_type: null,
 				body: null,
 				func_type: null,
+				is_cast: false,
+				cast_loc: on.loc,
 			}
 			c.node.push(n);
 			break;
@@ -1350,6 +1369,20 @@ export function parseAST(obj: any): Program {
 				loc: on.loc,
 				belong: null,
 				ident: null,
+				colon_loc: on.loc,
+				base_type: null,
+				members: [],
+			}
+			c.node.push(n);
+			break;
+		}
+		case "enum_member": {
+			const n :EnumMember = {
+				node_type: "enum_member",
+				loc: on.loc,
+				belong: null,
+				ident: null,
+				expr: null,
 			}
 			c.node.push(n);
 			break;
@@ -2219,6 +2252,16 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at Function::func_type');
 			}
 			n.func_type = tmpfunc_type;
+			const tmpis_cast = on.body?.is_cast;
+			if (typeof on.body?.is_cast !== "boolean") {
+				throw new Error('invalid node list at Function::is_cast');
+			}
+			n.is_cast = on.body.is_cast;
+			const tmpcast_loc = on.body?.cast_loc;
+			if (!isLoc(tmpcast_loc)) {
+				throw new Error('invalid node list at Function::cast_loc');
+			}
+			n.cast_loc = tmpcast_loc;
 			break;
 		}
 		case "int_type": {
@@ -2584,6 +2627,57 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at Enum::ident');
 			}
 			n.ident = tmpident;
+			const tmpcolon_loc = on.body?.colon_loc;
+			if (!isLoc(tmpcolon_loc)) {
+				throw new Error('invalid node list at Enum::colon_loc');
+			}
+			n.colon_loc = tmpcolon_loc;
+			if (on.body?.base_type !== null && typeof on.body?.base_type !== 'number') {
+				throw new Error('invalid node list at Enum::base_type');
+			}
+			const tmpbase_type = on.body.base_type === null ? null : c.node[on.body.base_type];
+			if (!(tmpbase_type === null || isType(tmpbase_type))) {
+				throw new Error('invalid node list at Enum::base_type');
+			}
+			n.base_type = tmpbase_type;
+			for (const o of on.body.members) {
+				if (typeof o !== 'number') {
+					throw new Error('invalid node list at Enum::members');
+				}
+				const tmpmembers = c.node[o];
+				if (!isEnumMember(tmpmembers)) {
+					throw new Error('invalid node list at Enum::members');
+				}
+				n.members.push(tmpmembers);
+			}
+			break;
+		}
+		case "enum_member": {
+			const n :EnumMember = cnode as EnumMember;
+			if (on.body?.belong !== null && typeof on.body?.belong !== 'number') {
+				throw new Error('invalid node list at EnumMember::belong');
+			}
+			const tmpbelong = on.body.belong === null ? null : c.node[on.body.belong];
+			if (!(tmpbelong === null || isMember(tmpbelong))) {
+				throw new Error('invalid node list at EnumMember::belong');
+			}
+			n.belong = tmpbelong;
+			if (on.body?.ident !== null && typeof on.body?.ident !== 'number') {
+				throw new Error('invalid node list at EnumMember::ident');
+			}
+			const tmpident = on.body.ident === null ? null : c.node[on.body.ident];
+			if (!(tmpident === null || isIdent(tmpident))) {
+				throw new Error('invalid node list at EnumMember::ident');
+			}
+			n.ident = tmpident;
+			if (on.body?.expr !== null && typeof on.body?.expr !== 'number') {
+				throw new Error('invalid node list at EnumMember::expr');
+			}
+			const tmpexpr = on.body.expr === null ? null : c.node[on.body.expr];
+			if (!(tmpexpr === null || isExpr(tmpexpr))) {
+				throw new Error('invalid node list at EnumMember::expr');
+			}
+			n.expr = tmpexpr;
 			break;
 		}
 		}
@@ -3223,6 +3317,25 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			const n :Enum = node as Enum;
 			if (n.ident !== null) {
 				fn(fn,n.ident);
+			}
+			if (n.base_type !== null) {
+				fn(fn,n.base_type);
+			}
+			for (const e of n.members) {
+				fn(fn,e);
+			}
+			break;
+		}
+		case "enum_member": {
+			if (!isEnumMember(node)) {
+				break;
+			}
+			const n :EnumMember = node as EnumMember;
+			if (n.ident !== null) {
+				fn(fn,n.ident);
+			}
+			if (n.expr !== null) {
+				fn(fn,n.expr);
 			}
 			break;
 		}

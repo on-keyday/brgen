@@ -21,6 +21,7 @@
             "args": [
                 "c:/workspace/shbrgen/brgen/example/edge_case1.bgn",
                 "--print-json",
+                "--dump-types",
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",

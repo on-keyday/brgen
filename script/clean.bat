@@ -1,3 +1,3 @@
 @echo off
 setlocal
-rmdir /Q /S %CD%\build
+rmdir /Q /S %CD%\built
