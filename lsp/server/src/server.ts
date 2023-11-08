@@ -190,7 +190,8 @@ const tokenizeSourceImpl  = async (doc :TextDocument) =>{
         console.log(`token: ${stringEscape(token.token)} ${token.tag} ${token.loc.line} ${token.loc.col}`)
         if(token.tag===ast2ts.TokenTag.keyword){
             if(token.token==="input"||token.token==="output"||token.token=="config"||
-               token.token=="fn"||token.token=="format"||token.token=="enum"){
+               token.token=="fn"||token.token=="format"||token.token=="enum"||
+               token.token=="cast"){
                 locList.push({loc:token.loc,length: token.token.length,index:9});
                 return;
             }
@@ -285,11 +286,13 @@ const tokenizeSourceImpl  = async (doc :TextDocument) =>{
                         break;
                     case ast2ts.IdentUsage.define_field:   
                     case ast2ts.IdentUsage.define_const:
+                    case ast2ts.IdentUsage.define_enum_member:
                         locList.push({loc: node.loc,length: node.ident.length,index:6});
                         break;   
                     case ast2ts.IdentUsage.define_format:
                     case ast2ts.IdentUsage.define_enum:
                     case ast2ts.IdentUsage.reference_type:
+                    case ast2ts.IdentUsage.define_cast_fn:
                         locList.push({loc: node.loc,length: node.ident.length,index:7});
                         break;
                     case ast2ts.IdentUsage.define_fn:

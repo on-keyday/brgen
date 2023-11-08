@@ -1,7 +1,7 @@
 enum TagKind:
     :u8
-    RESERVED
-    BOOLEAN
+    RESERVED = 0
+    BOOLEAN = 1 - 2
     INTEGER
     BIT_STRING
     OCTET_STRING
