@@ -199,7 +199,7 @@ const handleCpp = async (s :JobResult) => {
 }
 
 const updateGenerated = async () => {
-    const value = editor_model.getValue();
+    const value = editor.getValue();
     if(value === ""){
         setDefault();
         return;

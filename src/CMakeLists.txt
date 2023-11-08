@@ -60,7 +60,10 @@ endif()
 
 
 add_subdirectory(test)
-
+if(UNIX)
+set_target_properties(src2json PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/tool")
+set_target_properties(json2cpp PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/tool")
+endif()
 install(TARGETS src2json json2cpp DESTINATION tool OPTIONAL)
 
 install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/brgen${SUFFIX}" DESTINATION tool OPTIONAL)

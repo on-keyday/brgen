@@ -310,7 +310,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
             report_error(res.error(), false, "tokens");
             return -1;
         }
-        if (flags.print_json) {
+        if (!cout.is_tty() || flags.print_json) {
             brgen::JSONWriter d;
             {
                 auto field = d.object();
