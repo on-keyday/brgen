@@ -226,6 +226,10 @@ int NodeType_from_string(const char* str, NodeType* out) {
 		*out = RANGE_TYPE;
 		return 1;
 	}
+	if (strcmp("enum", str) == 0) {
+		*out = ENUM;
+		return 1;
+	}
 	return 0;
 }
 
@@ -391,6 +395,9 @@ const char* NodeType_to_string(NodeType typ) {
 	}
 	if (typ == RANGE_TYPE) {
 		return "range_type";
+	}
+	if (typ == ENUM) {
+		return "enum";
 	}
 	return NULL;
 }

@@ -569,6 +569,18 @@ func (n *RangeType) isType() {}
 
 func (n *RangeType) isNode() {}
 
+type Enum struct {
+	Loc    Loc
+	Belong Member
+	Ident  *Ident
+}
+
+func (n *Enum) isMember() {}
+
+func (n *Enum) isStmt() {}
+
+func (n *Enum) isNode() {}
+
 type UnaryOp int
 
 const (
@@ -1193,6 +1205,8 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			n.node[i] = &UnionCandidate{Loc: raw.Loc}
 		case "range_type":
 			n.node[i] = &RangeType{Loc: raw.Loc}
+		case "enum":
+			n.node[i] = &Enum{Loc: raw.Loc}
 		default:
 			return nil, fmt.Errorf("unknown node type: %q", raw.NodeType)
 		}
@@ -2026,6 +2040,21 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.Range != nil {
 				v.Range = n.node[*tmp.Range].(*Range)
 			}
+		case "enum":
+			v := n.node[i].(*Enum)
+			var tmp struct {
+				Belong *uintptr `json:"belong"`
+				Ident  *uintptr `json:"ident"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			if tmp.Belong != nil {
+				v.Belong = n.node[*tmp.Belong].(Member)
+			}
+			if tmp.Ident != nil {
+				v.Ident = n.node[*tmp.Ident].(*Ident)
+			}
 		default:
 			return nil, fmt.Errorf("unknown node type: %q", raw.NodeType)
 		}
@@ -2359,6 +2388,10 @@ func Walk(n Node, f Visitor) {
 	case *RangeType:
 		if v.BaseType != nil {
 			f.Visit(f, v.BaseType)
+		}
+	case *Enum:
+		if v.Ident != nil {
+			f.Visit(f, v.Ident)
 		}
 	}
 }

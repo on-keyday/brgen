@@ -35,6 +35,13 @@ namespace brgen::ast {
 
         Enum(lexer::Loc l)
             : Member(l, NodeType::enum_) {}
+
+        Enum()
+            : Member({}, NodeType::enum_) {}
+
+        void dump(auto&& field_) {
+            Member::dump(field_);
+        }
     };
 
     struct Field : Member {

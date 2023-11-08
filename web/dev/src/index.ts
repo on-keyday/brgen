@@ -37,7 +37,7 @@ const getLangMode = () => {
 
 const getSourceCode = () => {
     const code = storage.getItem("source_code");
-    if(code === null) return "";
+    if(code === null) return null;
     return code;
 };
 
@@ -316,5 +316,35 @@ select.onchange = async (e) => {
     await updateGenerated();
 };
 
-editor_model.setValue(getSourceCode());
+const src = getSourceCode()
+
+if(src !== null) {
+    editor_model.setValue(src);
+}
+else {
+    // イベント用
+const sample =`
+format Frame:
+    FIN :u1
+    RSV1 :u1
+    RSV2 :u1
+    RSV3 :u1
+    Opcode :u4
+    Mask :u1
+    PayloadLength :u7
+    match PayloadLength:
+        126 => ExtendedPayloadLength :u16
+        127 => ExtendedPayloadLength :u64
+    
+    if Mask == 1:
+        MaskingKey :u32
+    
+    # 本当はこっちが正しいのですが、現状のジェネレータの限界で、下を使っています
+    # Payload :[available(ExtendedPayloadLength) ? ExtendedPayloadLength : PayloadLength]u8
+    Payload :[PayloadLength]u8
+`
+    editor_model.setValue(sample);
+    select.value = Language.CPP;
+}
+
 caller.loadWorkers();

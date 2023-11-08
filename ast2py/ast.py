@@ -59,6 +59,7 @@ class NodeType(Enum):
     UNION_TYPE = "union_type"
     UNION_CANDIDATE = "union_candidate"
     RANGE_TYPE = "range_type"
+    ENUM = "enum"
 
 
 class Node:
@@ -333,6 +334,10 @@ class UnionCandidate(Stmt):
 class RangeType(Type):
     base_type: Optional[Type]
     range: Optional[Range]
+
+
+class Enum(Member):
+    pass
 
 
 class UnaryOp(Enum):
@@ -672,6 +677,8 @@ def ast2node(ast :Ast) -> Program:
                 node.append(UnionCandidate())
             case NodeType.RANGE_TYPE:
                 node.append(RangeType())
+            case NodeType.ENUM:
+                node.append(Enum())
             case _:
                 raise TypeError('unknown node type')
     scope = [Scope() for _ in range(len(ast.scope))]
@@ -1234,6 +1241,17 @@ def ast2node(ast :Ast) -> Program:
                     node[i].range = x if isinstance(x,Range) else raiseError(TypeError('type mismatch'))
                 else:
                     node[i].range = None
+            case NodeType.ENUM:
+                if ast.node[i].body["belong"] is not None:
+                    x = node[ast.node[i].body["belong"]]
+                    node[i].belong = x if isinstance(x,Member) else raiseError(TypeError('type mismatch'))
+                else:
+                    node[i].belong = None
+                if ast.node[i].body["ident"] is not None:
+                    x = node[ast.node[i].body["ident"]]
+                    node[i].ident = x if isinstance(x,Ident) else raiseError(TypeError('type mismatch'))
+                else:
+                    node[i].ident = None
             case _:
                 raise TypeError('unknown node type')
     for i in range(len(ast.scope)):
@@ -1468,3 +1486,6 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
         case x if isinstance(x,RangeType):
           if x.base_type is not None:
               f(f,x.base_type)
+        case x if isinstance(x,Enum):
+          if x.ident is not None:
+              f(f,x.ident)

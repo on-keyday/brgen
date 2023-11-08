@@ -66,6 +66,7 @@ typedef enum NodeType {
 	UNION_TYPE,
 	UNION_CANDIDATE,
 	RANGE_TYPE,
+	ENUM,
 } NodeType;
 
 int NodeType_from_string(const char*, NodeType*);
@@ -125,6 +126,7 @@ typedef struct CommentGroup CommentGroup;
 typedef struct UnionType UnionType;
 typedef struct UnionCandidate UnionCandidate;
 typedef struct RangeType RangeType;
+typedef struct Enum Enum;
 typedef enum UnaryOp UnaryOp;
 typedef enum BinaryOp BinaryOp;
 typedef enum IdentUsage IdentUsage;
@@ -680,6 +682,13 @@ struct RangeType {
 	int is_explicit;
 	Type* base_type;
 	Range* range;
+};
+
+struct Enum {
+	const NodeType node_type;
+	Loc loc;
+	Member* belong;
+	Ident* ident;
 };
 
 struct Scope {
