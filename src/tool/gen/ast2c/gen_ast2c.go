@@ -138,23 +138,6 @@ func generateSource(rw io.Writer, defs *gen.Defs, single bool) {
 		w.Printf("#endif\n\n")
 
 	}
-	w.Printf("int NodeType_from_string(const char* str, NodeType* out) {\n")
-	for _, def := range defs.NodeTypes {
-		w.Printf("\tif (strcmp(%q, str) == 0) {\n", strings.ToLower(def))
-		w.Printf("\t\t*out = %s;\n", strings.ToUpper(def))
-		w.Printf("\t\treturn 1;\n")
-		w.Printf("\t}\n")
-	}
-	w.Printf("\treturn 0;\n")
-	w.Printf("}\n\n")
-	w.Printf("const char* NodeType_to_string(NodeType typ) {\n")
-	for _, def := range defs.NodeTypes {
-		w.Printf("\tif (typ == %s) {\n", strings.ToUpper(def))
-		w.Printf("\t\treturn %q;\n", strings.ToLower(def))
-		w.Printf("\t}\n")
-	}
-	w.Printf("\treturn NULL;\n")
-	w.Printf("}\n\n")
 
 	for _, def := range defs.Defs {
 		switch v := def.(type) {
@@ -200,6 +183,16 @@ func generateSource(rw io.Writer, defs *gen.Defs, single bool) {
 	_ = checkObj
 	_ = initObj
 	_ = getAlloc
+
+	for _, def := range defs.Defs {
+		switch v := def.(type) {
+		case *gen.Struct:
+			if len(v.Implements) == 0 && v.Name != "Scope" {
+				continue
+			}
+			w.Printf("%s* %s_parse(json_handlers* h, void* obj) {\n", v.Name, v.Name)
+			w.Printf("}\n\n")
+	}
 
 	w.Printf("#ifdef __cplusplus\n")
 	w.Printf("}\n")
