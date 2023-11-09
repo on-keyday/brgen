@@ -108,6 +108,9 @@ func (d *Type) GoString() string {
 	if d.IsPtr {
 		prefix += "*"
 	}
+	if !d.IsArray && !d.IsPtr && d.IsOptional {
+		prefix += "*"
+	}
 	return prefix + d.Name
 }
 

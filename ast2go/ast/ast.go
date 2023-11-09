@@ -1397,17 +1397,17 @@ type Token struct {
 }
 
 type RawScope struct {
-	Prev   uintptr   `json:"prev"`
-	Next   uintptr   `json:"next"`
-	Branch uintptr   `json:"branch"`
+	Prev   *uintptr  `json:"prev"`
+	Next   *uintptr  `json:"next"`
+	Branch *uintptr  `json:"branch"`
 	Ident  []uintptr `json:"ident"`
-	Owner  uintptr   `json:"owner"`
+	Owner  *uintptr  `json:"owner"`
 }
 
 type RawNode struct {
-	NodeType NodeType `json:"node_type"`
-	Loc      Loc      `json:"loc"`
-	Body     any      `json:"body"`
+	NodeType NodeType        `json:"node_type"`
+	Loc      Loc             `json:"loc"`
+	Body     json.RawMessage `json:"body"`
 }
 
 type SrcErrorEntry struct {
@@ -1428,163 +1428,133 @@ type JsonAst struct {
 }
 
 type AstFile struct {
-	Files []string `json:"files"`
-	Ast   JsonAst  `json:"ast"`
-	Error SrcError `json:"error"`
+	Files []string  `json:"files"`
+	Ast   *JsonAst  `json:"ast"`
+	Error *SrcError `json:"error"`
 }
 
 type TokenFile struct {
-	Files  []string `json:"files"`
-	Tokens []Token  `json:"tokens"`
-	Error  SrcError `json:"error"`
+	Files  []string  `json:"files"`
+	Tokens []Token   `json:"tokens"`
+	Error  *SrcError `json:"error"`
 }
 
 type astConstructor struct {
 	node  []Node
 	scope []*Scope
 }
-type rawNode struct {
-	NodeType string `json:"node_type"`
-	Loc      Loc    `json:"loc"`
-	Body     json.RawMessage
-}
-type rawScope struct {
-	Prev   *uintptr  `json:"prev"`
-	Next   *uintptr  `json:"next"`
-	Branch *uintptr  `json:"branch"`
-	Ident  []uintptr `json:"ident"`
-	Owner  *uintptr  `json:"owner"`
-}
-type AST struct {
-	*Program
-}
 
-func (n *AST) UnmarshalJSON(data []byte) error {
-	var tmp astConstructor
-	prog, err := tmp.unmarshal(data)
-	if err != nil {
-		return err
-	}
-	n.Program = prog
-	return nil
-}
-func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
+func ParseAST(aux *JsonAst) (prog *Program, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("%v", r)
 		}
 	}()
-	var aux struct {
-		Node  []rawNode   `json:"node"`
-		Scope []*rawScope `json:"scope"`
-	}
-	if err = json.Unmarshal(data, &aux); err != nil {
-		return nil, err
-	}
+	n := &astConstructor{}
 	n.node = make([]Node, len(aux.Node))
 	for i, raw := range aux.Node {
 		switch raw.NodeType {
-		case "program":
+		case NodeTypeProgram:
 			n.node[i] = &Program{Loc: raw.Loc}
-		case "binary":
+		case NodeTypeBinary:
 			n.node[i] = &Binary{Loc: raw.Loc}
-		case "unary":
+		case NodeTypeUnary:
 			n.node[i] = &Unary{Loc: raw.Loc}
-		case "cond":
+		case NodeTypeCond:
 			n.node[i] = &Cond{Loc: raw.Loc}
-		case "ident":
+		case NodeTypeIdent:
 			n.node[i] = &Ident{Loc: raw.Loc}
-		case "call":
+		case NodeTypeCall:
 			n.node[i] = &Call{Loc: raw.Loc}
-		case "if":
+		case NodeTypeIf:
 			n.node[i] = &If{Loc: raw.Loc}
-		case "member_access":
+		case NodeTypeMemberAccess:
 			n.node[i] = &MemberAccess{Loc: raw.Loc}
-		case "paren":
+		case NodeTypeParen:
 			n.node[i] = &Paren{Loc: raw.Loc}
-		case "index":
+		case NodeTypeIndex:
 			n.node[i] = &Index{Loc: raw.Loc}
-		case "match":
+		case NodeTypeMatch:
 			n.node[i] = &Match{Loc: raw.Loc}
-		case "range":
+		case NodeTypeRange:
 			n.node[i] = &Range{Loc: raw.Loc}
-		case "tmp_var":
+		case NodeTypeTmpVar:
 			n.node[i] = &TmpVar{Loc: raw.Loc}
-		case "block_expr":
+		case NodeTypeBlockExpr:
 			n.node[i] = &BlockExpr{Loc: raw.Loc}
-		case "import":
+		case NodeTypeImport:
 			n.node[i] = &Import{Loc: raw.Loc}
-		case "int_literal":
+		case NodeTypeIntLiteral:
 			n.node[i] = &IntLiteral{Loc: raw.Loc}
-		case "bool_literal":
+		case NodeTypeBoolLiteral:
 			n.node[i] = &BoolLiteral{Loc: raw.Loc}
-		case "str_literal":
+		case NodeTypeStrLiteral:
 			n.node[i] = &StrLiteral{Loc: raw.Loc}
-		case "input":
+		case NodeTypeInput:
 			n.node[i] = &Input{Loc: raw.Loc}
-		case "output":
+		case NodeTypeOutput:
 			n.node[i] = &Output{Loc: raw.Loc}
-		case "config":
+		case NodeTypeConfig:
 			n.node[i] = &Config{Loc: raw.Loc}
-		case "loop":
+		case NodeTypeLoop:
 			n.node[i] = &Loop{Loc: raw.Loc}
-		case "indent_block":
+		case NodeTypeIndentBlock:
 			n.node[i] = &IndentBlock{Loc: raw.Loc}
-		case "match_branch":
+		case NodeTypeMatchBranch:
 			n.node[i] = &MatchBranch{Loc: raw.Loc}
-		case "return":
+		case NodeTypeReturn:
 			n.node[i] = &Return{Loc: raw.Loc}
-		case "break":
+		case NodeTypeBreak:
 			n.node[i] = &Break{Loc: raw.Loc}
-		case "continue":
+		case NodeTypeContinue:
 			n.node[i] = &Continue{Loc: raw.Loc}
-		case "assert":
+		case NodeTypeAssert:
 			n.node[i] = &Assert{Loc: raw.Loc}
-		case "implicit_yield":
+		case NodeTypeImplicitYield:
 			n.node[i] = &ImplicitYield{Loc: raw.Loc}
-		case "field":
+		case NodeTypeField:
 			n.node[i] = &Field{Loc: raw.Loc}
-		case "format":
+		case NodeTypeFormat:
 			n.node[i] = &Format{Loc: raw.Loc}
-		case "function":
+		case NodeTypeFunction:
 			n.node[i] = &Function{Loc: raw.Loc}
-		case "int_type":
+		case NodeTypeIntType:
 			n.node[i] = &IntType{Loc: raw.Loc}
-		case "ident_type":
+		case NodeTypeIdentType:
 			n.node[i] = &IdentType{Loc: raw.Loc}
-		case "int_literal_type":
+		case NodeTypeIntLiteralType:
 			n.node[i] = &IntLiteralType{Loc: raw.Loc}
-		case "str_literal_type":
+		case NodeTypeStrLiteralType:
 			n.node[i] = &StrLiteralType{Loc: raw.Loc}
-		case "void_type":
+		case NodeTypeVoidType:
 			n.node[i] = &VoidType{Loc: raw.Loc}
-		case "bool_type":
+		case NodeTypeBoolType:
 			n.node[i] = &BoolType{Loc: raw.Loc}
-		case "array_type":
+		case NodeTypeArrayType:
 			n.node[i] = &ArrayType{Loc: raw.Loc}
-		case "function_type":
+		case NodeTypeFunctionType:
 			n.node[i] = &FunctionType{Loc: raw.Loc}
-		case "struct_type":
+		case NodeTypeStructType:
 			n.node[i] = &StructType{Loc: raw.Loc}
-		case "struct_union_type":
+		case NodeTypeStructUnionType:
 			n.node[i] = &StructUnionType{Loc: raw.Loc}
-		case "cast":
+		case NodeTypeCast:
 			n.node[i] = &Cast{Loc: raw.Loc}
-		case "comment":
+		case NodeTypeComment:
 			n.node[i] = &Comment{Loc: raw.Loc}
-		case "comment_group":
+		case NodeTypeCommentGroup:
 			n.node[i] = &CommentGroup{Loc: raw.Loc}
-		case "union_type":
+		case NodeTypeUnionType:
 			n.node[i] = &UnionType{Loc: raw.Loc}
-		case "union_candidate":
+		case NodeTypeUnionCandidate:
 			n.node[i] = &UnionCandidate{Loc: raw.Loc}
-		case "range_type":
+		case NodeTypeRangeType:
 			n.node[i] = &RangeType{Loc: raw.Loc}
-		case "enum":
+		case NodeTypeEnum:
 			n.node[i] = &Enum{Loc: raw.Loc}
-		case "enum_member":
+		case NodeTypeEnumMember:
 			n.node[i] = &EnumMember{Loc: raw.Loc}
-		case "enum_type":
+		case NodeTypeEnumType:
 			n.node[i] = &EnumType{Loc: raw.Loc}
 		default:
 			return nil, fmt.Errorf("unknown node type: %q", raw.NodeType)
@@ -1596,7 +1566,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 	}
 	for i, raw := range aux.Node {
 		switch raw.NodeType {
-		case "program":
+		case NodeTypeProgram:
 			v := n.node[i].(*Program)
 			var tmp struct {
 				StructType  *uintptr  `json:"struct_type"`
@@ -1616,7 +1586,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.GlobalScope != nil {
 				v.GlobalScope = n.scope[*tmp.GlobalScope]
 			}
-		case "binary":
+		case NodeTypeBinary:
 			v := n.node[i].(*Binary)
 			var tmp struct {
 				ExprType *uintptr `json:"expr_type"`
@@ -1637,7 +1607,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.Right != nil {
 				v.Right = n.node[*tmp.Right].(Expr)
 			}
-		case "unary":
+		case NodeTypeUnary:
 			v := n.node[i].(*Unary)
 			var tmp struct {
 				ExprType *uintptr `json:"expr_type"`
@@ -1654,7 +1624,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.Expr != nil {
 				v.Expr = n.node[*tmp.Expr].(Expr)
 			}
-		case "cond":
+		case NodeTypeCond:
 			v := n.node[i].(*Cond)
 			var tmp struct {
 				ExprType *uintptr `json:"expr_type"`
@@ -1679,7 +1649,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.Els != nil {
 				v.Els = n.node[*tmp.Els].(Expr)
 			}
-		case "ident":
+		case NodeTypeIdent:
 			v := n.node[i].(*Ident)
 			var tmp struct {
 				ExprType *uintptr   `json:"expr_type"`
@@ -1702,7 +1672,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.Scope != nil {
 				v.Scope = n.scope[*tmp.Scope]
 			}
-		case "call":
+		case NodeTypeCall:
 			v := n.node[i].(*Call)
 			var tmp struct {
 				ExprType     *uintptr  `json:"expr_type"`
@@ -1728,7 +1698,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 				v.Arguments[j] = n.node[k].(Expr)
 			}
 			v.EndLoc = tmp.EndLoc
-		case "if":
+		case NodeTypeIf:
 			v := n.node[i].(*If)
 			var tmp struct {
 				ExprType  *uintptr `json:"expr_type"`
@@ -1755,7 +1725,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.Els != nil {
 				v.Els = n.node[*tmp.Els].(Node)
 			}
-		case "member_access":
+		case NodeTypeMemberAccess:
 			v := n.node[i].(*MemberAccess)
 			var tmp struct {
 				ExprType  *uintptr `json:"expr_type"`
@@ -1778,7 +1748,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.Base != nil {
 				v.Base = n.node[*tmp.Base].(Node)
 			}
-		case "paren":
+		case NodeTypeParen:
 			v := n.node[i].(*Paren)
 			var tmp struct {
 				ExprType *uintptr `json:"expr_type"`
@@ -1795,7 +1765,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 				v.Expr = n.node[*tmp.Expr].(Expr)
 			}
 			v.EndLoc = tmp.EndLoc
-		case "index":
+		case NodeTypeIndex:
 			v := n.node[i].(*Index)
 			var tmp struct {
 				ExprType *uintptr `json:"expr_type"`
@@ -1816,7 +1786,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 				v.Index = n.node[*tmp.Index].(Expr)
 			}
 			v.EndLoc = tmp.EndLoc
-		case "match":
+		case NodeTypeMatch:
 			v := n.node[i].(*Match)
 			var tmp struct {
 				ExprType  *uintptr  `json:"expr_type"`
@@ -1840,7 +1810,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			for j, k := range tmp.Branch {
 				v.Branch[j] = n.node[k].(Node)
 			}
-		case "range":
+		case NodeTypeRange:
 			v := n.node[i].(*Range)
 			var tmp struct {
 				ExprType *uintptr `json:"expr_type"`
@@ -1861,7 +1831,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.End != nil {
 				v.End = n.node[*tmp.End].(Expr)
 			}
-		case "tmp_var":
+		case NodeTypeTmpVar:
 			v := n.node[i].(*TmpVar)
 			var tmp struct {
 				ExprType *uintptr `json:"expr_type"`
@@ -1874,7 +1844,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 				v.ExprType = n.node[*tmp.ExprType].(Type)
 			}
 			v.TmpVar = tmp.TmpVar
-		case "block_expr":
+		case NodeTypeBlockExpr:
 			v := n.node[i].(*BlockExpr)
 			var tmp struct {
 				ExprType *uintptr  `json:"expr_type"`
@@ -1894,7 +1864,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.Expr != nil {
 				v.Expr = n.node[*tmp.Expr].(Expr)
 			}
-		case "import":
+		case NodeTypeImport:
 			v := n.node[i].(*Import)
 			var tmp struct {
 				ExprType   *uintptr `json:"expr_type"`
@@ -1915,7 +1885,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.ImportDesc != nil {
 				v.ImportDesc = n.node[*tmp.ImportDesc].(*Program)
 			}
-		case "int_literal":
+		case NodeTypeIntLiteral:
 			v := n.node[i].(*IntLiteral)
 			var tmp struct {
 				ExprType *uintptr `json:"expr_type"`
@@ -1928,7 +1898,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 				v.ExprType = n.node[*tmp.ExprType].(Type)
 			}
 			v.Value = tmp.Value
-		case "bool_literal":
+		case NodeTypeBoolLiteral:
 			v := n.node[i].(*BoolLiteral)
 			var tmp struct {
 				ExprType *uintptr `json:"expr_type"`
@@ -1941,7 +1911,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 				v.ExprType = n.node[*tmp.ExprType].(Type)
 			}
 			v.Value = tmp.Value
-		case "str_literal":
+		case NodeTypeStrLiteral:
 			v := n.node[i].(*StrLiteral)
 			var tmp struct {
 				ExprType *uintptr `json:"expr_type"`
@@ -1954,7 +1924,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 				v.ExprType = n.node[*tmp.ExprType].(Type)
 			}
 			v.Value = tmp.Value
-		case "input":
+		case NodeTypeInput:
 			v := n.node[i].(*Input)
 			var tmp struct {
 				ExprType *uintptr `json:"expr_type"`
@@ -1965,7 +1935,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.ExprType != nil {
 				v.ExprType = n.node[*tmp.ExprType].(Type)
 			}
-		case "output":
+		case NodeTypeOutput:
 			v := n.node[i].(*Output)
 			var tmp struct {
 				ExprType *uintptr `json:"expr_type"`
@@ -1976,7 +1946,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.ExprType != nil {
 				v.ExprType = n.node[*tmp.ExprType].(Type)
 			}
-		case "config":
+		case NodeTypeConfig:
 			v := n.node[i].(*Config)
 			var tmp struct {
 				ExprType *uintptr `json:"expr_type"`
@@ -1987,7 +1957,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.ExprType != nil {
 				v.ExprType = n.node[*tmp.ExprType].(Type)
 			}
-		case "loop":
+		case NodeTypeLoop:
 			v := n.node[i].(*Loop)
 			var tmp struct {
 				CondScope *uintptr `json:"cond_scope"`
@@ -2014,7 +1984,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.Body != nil {
 				v.Body = n.node[*tmp.Body].(*IndentBlock)
 			}
-		case "indent_block":
+		case NodeTypeIndentBlock:
 			v := n.node[i].(*IndentBlock)
 			var tmp struct {
 				Elements   []uintptr `json:"elements"`
@@ -2034,7 +2004,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.StructType != nil {
 				v.StructType = n.node[*tmp.StructType].(*StructType)
 			}
-		case "match_branch":
+		case NodeTypeMatchBranch:
 			v := n.node[i].(*MatchBranch)
 			var tmp struct {
 				Cond   *uintptr `json:"cond"`
@@ -2051,7 +2021,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.Then != nil {
 				v.Then = n.node[*tmp.Then].(Node)
 			}
-		case "return":
+		case NodeTypeReturn:
 			v := n.node[i].(*Return)
 			var tmp struct {
 				Expr *uintptr `json:"expr"`
@@ -2062,19 +2032,19 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.Expr != nil {
 				v.Expr = n.node[*tmp.Expr].(Expr)
 			}
-		case "break":
+		case NodeTypeBreak:
 			var tmp struct {
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
 			}
-		case "continue":
+		case NodeTypeContinue:
 			var tmp struct {
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
 			}
-		case "assert":
+		case NodeTypeAssert:
 			v := n.node[i].(*Assert)
 			var tmp struct {
 				Cond *uintptr `json:"cond"`
@@ -2085,7 +2055,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.Cond != nil {
 				v.Cond = n.node[*tmp.Cond].(*Binary)
 			}
-		case "implicit_yield":
+		case NodeTypeImplicitYield:
 			v := n.node[i].(*ImplicitYield)
 			var tmp struct {
 				Expr *uintptr `json:"expr"`
@@ -2096,7 +2066,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.Expr != nil {
 				v.Expr = n.node[*tmp.Expr].(Expr)
 			}
-		case "field":
+		case NodeTypeField:
 			v := n.node[i].(*Field)
 			var tmp struct {
 				Belong       *uintptr  `json:"belong"`
@@ -2126,7 +2096,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			for j, k := range tmp.Arguments {
 				v.Arguments[j] = n.node[k].(Expr)
 			}
-		case "format":
+		case NodeTypeFormat:
 			v := n.node[i].(*Format)
 			var tmp struct {
 				Belong *uintptr `json:"belong"`
@@ -2145,7 +2115,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.Body != nil {
 				v.Body = n.node[*tmp.Body].(*IndentBlock)
 			}
-		case "function":
+		case NodeTypeFunction:
 			v := n.node[i].(*Function)
 			var tmp struct {
 				Belong     *uintptr  `json:"belong"`
@@ -2181,7 +2151,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			}
 			v.IsCast = tmp.IsCast
 			v.CastLoc = tmp.CastLoc
-		case "int_type":
+		case NodeTypeIntType:
 			v := n.node[i].(*IntType)
 			var tmp struct {
 				IsExplicit bool   `json:"is_explicit"`
@@ -2196,7 +2166,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			v.BitSize = tmp.BitSize
 			v.Endian = tmp.Endian
 			v.IsSigned = tmp.IsSigned
-		case "ident_type":
+		case NodeTypeIdentType:
 			v := n.node[i].(*IdentType)
 			var tmp struct {
 				IsExplicit bool     `json:"is_explicit"`
@@ -2213,7 +2183,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.Base != nil {
 				v.Base = n.node[*tmp.Base].(Member)
 			}
-		case "int_literal_type":
+		case NodeTypeIntLiteralType:
 			v := n.node[i].(*IntLiteralType)
 			var tmp struct {
 				IsExplicit bool     `json:"is_explicit"`
@@ -2226,7 +2196,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.Base != nil {
 				v.Base = n.node[*tmp.Base].(*IntLiteral)
 			}
-		case "str_literal_type":
+		case NodeTypeStrLiteralType:
 			v := n.node[i].(*StrLiteralType)
 			var tmp struct {
 				IsExplicit bool     `json:"is_explicit"`
@@ -2239,7 +2209,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.Base != nil {
 				v.Base = n.node[*tmp.Base].(*StrLiteral)
 			}
-		case "void_type":
+		case NodeTypeVoidType:
 			v := n.node[i].(*VoidType)
 			var tmp struct {
 				IsExplicit bool `json:"is_explicit"`
@@ -2248,7 +2218,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 				return nil, err
 			}
 			v.IsExplicit = tmp.IsExplicit
-		case "bool_type":
+		case NodeTypeBoolType:
 			v := n.node[i].(*BoolType)
 			var tmp struct {
 				IsExplicit bool `json:"is_explicit"`
@@ -2257,7 +2227,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 				return nil, err
 			}
 			v.IsExplicit = tmp.IsExplicit
-		case "array_type":
+		case NodeTypeArrayType:
 			v := n.node[i].(*ArrayType)
 			var tmp struct {
 				IsExplicit bool     `json:"is_explicit"`
@@ -2276,7 +2246,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.Length != nil {
 				v.Length = n.node[*tmp.Length].(Expr)
 			}
-		case "function_type":
+		case NodeTypeFunctionType:
 			v := n.node[i].(*FunctionType)
 			var tmp struct {
 				IsExplicit bool      `json:"is_explicit"`
@@ -2294,7 +2264,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			for j, k := range tmp.Parameters {
 				v.Parameters[j] = n.node[k].(Type)
 			}
-		case "struct_type":
+		case NodeTypeStructType:
 			v := n.node[i].(*StructType)
 			var tmp struct {
 				IsExplicit bool      `json:"is_explicit"`
@@ -2308,7 +2278,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			for j, k := range tmp.Fields {
 				v.Fields[j] = n.node[k].(Member)
 			}
-		case "struct_union_type":
+		case NodeTypeStructUnionType:
 			v := n.node[i].(*StructUnionType)
 			var tmp struct {
 				IsExplicit  bool      `json:"is_explicit"`
@@ -2331,7 +2301,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			for j, k := range tmp.UnionFields {
 				v.UnionFields[j] = n.node[k].(*Field)
 			}
-		case "cast":
+		case NodeTypeCast:
 			v := n.node[i].(*Cast)
 			var tmp struct {
 				ExprType *uintptr `json:"expr_type"`
@@ -2350,7 +2320,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.Expr != nil {
 				v.Expr = n.node[*tmp.Expr].(Expr)
 			}
-		case "comment":
+		case NodeTypeComment:
 			v := n.node[i].(*Comment)
 			var tmp struct {
 				Comment string `json:"comment"`
@@ -2359,7 +2329,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 				return nil, err
 			}
 			v.Comment = tmp.Comment
-		case "comment_group":
+		case NodeTypeCommentGroup:
 			v := n.node[i].(*CommentGroup)
 			var tmp struct {
 				Comments []uintptr `json:"comments"`
@@ -2371,7 +2341,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			for j, k := range tmp.Comments {
 				v.Comments[j] = n.node[k].(*Comment)
 			}
-		case "union_type":
+		case NodeTypeUnionType:
 			v := n.node[i].(*UnionType)
 			var tmp struct {
 				IsExplicit bool      `json:"is_explicit"`
@@ -2393,7 +2363,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.BaseType != nil {
 				v.BaseType = n.node[*tmp.BaseType].(*StructUnionType)
 			}
-		case "union_candidate":
+		case NodeTypeUnionCandidate:
 			v := n.node[i].(*UnionCandidate)
 			var tmp struct {
 				Cond  *uintptr `json:"cond"`
@@ -2408,7 +2378,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.Field != nil {
 				v.Field = n.node[*tmp.Field].(Member)
 			}
-		case "range_type":
+		case NodeTypeRangeType:
 			v := n.node[i].(*RangeType)
 			var tmp struct {
 				IsExplicit bool     `json:"is_explicit"`
@@ -2425,7 +2395,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.Range != nil {
 				v.Range = n.node[*tmp.Range].(*Range)
 			}
-		case "enum":
+		case NodeTypeEnum:
 			v := n.node[i].(*Enum)
 			var tmp struct {
 				Belong   *uintptr  `json:"belong"`
@@ -2459,7 +2429,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.EnumType != nil {
 				v.EnumType = n.node[*tmp.EnumType].(*EnumType)
 			}
-		case "enum_member":
+		case NodeTypeEnumMember:
 			v := n.node[i].(*EnumMember)
 			var tmp struct {
 				Belong *uintptr `json:"belong"`
@@ -2478,7 +2448,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			if tmp.Expr != nil {
 				v.Expr = n.node[*tmp.Expr].(Expr)
 			}
-		case "enum_type":
+		case NodeTypeEnumType:
 			v := n.node[i].(*EnumType)
 			var tmp struct {
 				IsExplicit bool     `json:"is_explicit"`
@@ -2516,23 +2486,15 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 	return n.node[0].(*Program), nil
 }
 
-type AstFile struct {
-	Files []string  `json:"files"`
-	Ast   *AST      `json:"ast"`
-	Error *SrcError `json:"error"`
-}
-
-type TokenFile struct {
-	Files  []string  `json:"files"`
-	Tokens []*Token  `json:"tokens"`
-	Error  *SrcError `json:"error"`
-}
-
 type Visitor interface {
 	Visit(v Visitor, n Node)
 }
 
 type VisitFn func(v Visitor, n Node)
+
+func (f VisitFn) Visit(v Visitor, n Node) {
+	f(v, n)
+}
 
 func Walk(n Node, f Visitor) {
 	switch v := n.(type) {

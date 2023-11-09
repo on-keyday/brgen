@@ -541,8 +541,12 @@ func (g *Generator) Generate(file *ast2go.AstFile) (err error) {
 			err = fmt.Errorf("%v: %v", r, string(debug.Stack()))
 		}
 	}()
+	p, err := ast2go.ParseAST(file.Ast)
+	if err != nil {
+		return err
+	}
 
-	g.lookupGoConfig(file.Ast.Program)
+	g.lookupGoConfig(p)
 	if g.Config.PackageName == "" {
 		g.Config.PackageName = "main"
 	}
@@ -557,7 +561,7 @@ func (g *Generator) Generate(file *ast2go.AstFile) (err error) {
 	}
 	g.printf("\n")
 	fmts := []*GoStruct{}
-	for _, element := range file.Ast.Program.Elements {
+	for _, element := range p.Elements {
 		if f, ok := element.(*ast2go.Format); ok {
 			fmt, err := g.collectFormat(f)
 			if err != nil {

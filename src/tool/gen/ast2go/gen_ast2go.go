@@ -102,45 +102,13 @@ func generate(w io.Writer, list *gen.Defs) {
 	writer.Printf("	scope []*Scope\n")
 	writer.Printf("}\n")
 
-	writer.Printf("type rawNode struct {\n")
-	writer.Printf("	NodeType string `json:\"node_type\"`\n")
-	writer.Printf("	Loc      Loc    `json:\"loc\"`\n")
-	writer.Printf("	Body     json.RawMessage\n")
-	writer.Printf("}\n")
-
-	writer.Printf("type rawScope struct {\n")
-	for _, field := range scopeDef.Fields {
-		writer.Printf("	%s %s `json:%q`\n", field.Name, field.Type.UintptrString(), field.Tag)
-	}
-	writer.Printf("}\n")
-
-	writer.Printf("type AST struct {\n")
-	writer.Printf("	*Program\n")
-	writer.Printf("}\n\n")
-
-	writer.Printf("func (n *AST) UnmarshalJSON(data []byte) error {\n")
-	writer.Printf("	var tmp astConstructor\n")
-	writer.Printf("	prog, err := tmp.unmarshal(data);")
-	writer.Printf("	if  err != nil {\n")
-	writer.Printf("		return err\n")
-	writer.Printf("	}\n")
-	writer.Printf("	n.Program = prog\n")
-	writer.Printf("	return nil\n")
-	writer.Printf("}\n")
-
-	writer.Printf("func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {\n")
+	writer.Printf("func ParseAST(aux *JsonAst) (prog *Program, err error) {\n")
 	writer.Printf("defer func() {\n")
 	writer.Printf("	if r := recover(); r != nil {\n")
 	writer.Printf("		err = fmt.Errorf(\"%%v\", r)\n")
 	writer.Printf("	}\n")
 	writer.Printf("}()\n")
-	writer.Printf("	var aux struct {\n")
-	writer.Printf("		Node []rawNode `json:\"node\"`\n")
-	writer.Printf("		Scope []*rawScope `json:\"scope\"`\n")
-	writer.Printf("	}\n")
-	writer.Printf("	if err = json.Unmarshal(data, &aux); err != nil {\n")
-	writer.Printf("		return nil,err\n")
-	writer.Printf("	}\n")
+	writer.Printf("	n := &astConstructor{}\n")
 	writer.Printf("	n.node = make([]Node, len(aux.Node))\n")
 	writer.Printf("	for i, raw := range aux.Node {\n")
 	writer.Printf("		switch raw.NodeType {\n")
@@ -149,7 +117,7 @@ func generate(w io.Writer, list *gen.Defs) {
 			if len(structDef.Implements) == 0 {
 				continue
 			}
-			writer.Printf("		case %q:\n", structDef.NodeType)
+			writer.Printf("		case NodeType%s:\n", strcase.ToCamel(structDef.NodeType))
 			writer.Printf("			n.node[i] = &%s{Loc: raw.Loc}\n", structDef.Name)
 		}
 	}
@@ -169,7 +137,7 @@ func generate(w io.Writer, list *gen.Defs) {
 			if len(structDef.Implements) == 0 {
 				continue
 			}
-			writer.Printf("		case %q:\n", structDef.NodeType)
+			writer.Printf("		case NodeType%s:\n", strcase.ToCamel(structDef.NodeType))
 			if len(structDef.Fields) > 1 {
 				writer.Printf("			v:=n.node[i].(*%s)\n", structDef.Name)
 			}
@@ -240,23 +208,14 @@ func generate(w io.Writer, list *gen.Defs) {
 	writer.Printf("	return n.node[0].(*Program), nil\n")
 	writer.Printf("}\n\n")
 
-	writer.Printf("type AstFile struct {\n")
-	writer.Printf("	Files []string `json:\"files\"`\n")
-	writer.Printf("	Ast *AST `json:\"ast\"`\n")
-	writer.Printf("	Error *SrcError `json:\"error\"`\n")
-	writer.Printf("}\n\n")
-
-	writer.Printf("type TokenFile struct {\n")
-	writer.Printf("	Files []string `json:\"files\"`\n")
-	writer.Printf("	Tokens []*Token `json:\"tokens\"`\n")
-	writer.Printf("	Error *SrcError `json:\"error\"`\n")
-	writer.Printf("}\n\n")
-
 	writer.Printf("type Visitor interface {\n")
 	writer.Printf("	Visit(v Visitor,n Node)\n")
 	writer.Printf("}\n\n")
 
 	writer.Printf("type VisitFn func(v Visitor,n Node)\n\n")
+	writer.Printf("func (f VisitFn) Visit(v Visitor,n Node) {\n")
+	writer.Printf("	f(v,n)\n")
+	writer.Printf("}\n\n")
 
 	writer.Printf("func Walk(n Node, f Visitor) {\n")
 	writer.Printf("	switch v := n.(type) {\n")
@@ -309,6 +268,7 @@ func main() {
 
 	defs, err := gen.CollectDefinition(list, strcase.ToCamel, strcase.ToCamel, map[string]string{
 		"uint": "uint64",
+		"any":  "json.RawMessage",
 	})
 	if err != nil {
 		log.Println(err)
