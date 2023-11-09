@@ -64,24 +64,17 @@ type Node struct {
 	Body         OrderedKeyList[string] `json:"body"`
 }
 
-type Op struct {
-	Op   string `json:"op"`
-	Name string `json:"name"`
+type EnumValue struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
 }
 
+type EnumValues []*EnumValue
+
 type List struct {
-	Node       []Node                 `json:"node"`
-	UnaryOp    []Op                   `json:"unary_op"`
-	BinaryOp   []Op                   `json:"binary_op"`
-	IdentUsage []string               `json:"ident_usage"`
-	Endian     []string               `json:"endian"`
-	Scope      OrderedKeyList[string] `json:"scope"`
-	Loc        OrderedKeyList[string] `json:"loc"`
-	Pos        OrderedKeyList[string] `json:"pos"`
-	TokenTag   []string               `json:"token_tag"`
-	Token      OrderedKeyList[string] `json:"token"`
-	ErrorEntry OrderedKeyList[string] `json:"src_error_entry"`
-	Error      OrderedKeyList[string] `json:"src_error"`
+	Node   []Node                                 `json:"node"`
+	Enum   OrderedKeyList[EnumValues]             `json:"enum"`
+	Struct OrderedKeyList[OrderedKeyList[string]] `json:"struct"`
 }
 
 type Def interface {
@@ -185,7 +178,9 @@ func (d *Type) CSharpString() string {
 	postfix := ""
 	if d.IsArray {
 		prefix += "List<"
-		postfix += ">"
+		postfix += ">?"
+	} else if d.IsPtr || d.IsInterface {
+		postfix += "?"
 	}
 	return prefix + d.Name + postfix
 }
@@ -216,11 +211,6 @@ type Struct struct {
 	Implements     []string
 	Fields         []*Field
 	UnCommonFields []*Field
-}
-
-type EnumValue struct {
-	Name string
-	Str  string
 }
 
 type Enum struct {
@@ -303,11 +293,11 @@ func (c *collector) mapToStructFields(m OrderedKeyList[string], field ...*Field)
 	return
 }
 
-func (c *collector) mapOpsToEnumValues(ops []Op) (values []*EnumValue) {
+func (c *collector) mapOpsToEnumValues(ops EnumValues) (values []*EnumValue) {
 	for _, op := range ops {
 		value := EnumValue{}
 		value.Name = c.fieldCaseFn(op.Name)
-		value.Str = op.Op
+		value.Value = op.Value
 		values = append(values, &value)
 	}
 	return
@@ -317,7 +307,7 @@ func (c *collector) mapStringsToEnumValues(strings []string) (values []*EnumValu
 	for _, str := range strings {
 		value := EnumValue{}
 		value.Name = c.fieldCaseFn(str)
-		value.Str = str
+		value.Value = str
 		values = append(values, &value)
 	}
 	return
@@ -455,79 +445,25 @@ func CollectDefinition(list *List, fieldCaseFn func(string) string, typeCaseFn f
 		defs.push(&body)
 	}
 
-	//generate enum mapping of unary_op, binary_op, ident_usage, endian
-	enum := &Enum{}
-	enum.Name = c.typeCaseFn("UnaryOp")
-	enum.Values = c.mapOpsToEnumValues(list.UnaryOp)
-	defs.push(enum)
+	//generate enum mappings
 
-	enum = &Enum{}
-	enum.Name = c.typeCaseFn("BinaryOp")
-	enum.Values = c.mapOpsToEnumValues(list.BinaryOp)
-	defs.push(enum)
-
-	enum = &Enum{}
-	enum.Name = c.typeCaseFn("IdentUsage")
-	enum.Values = c.mapStringsToEnumValues(list.IdentUsage)
-	defs.push(enum)
-
-	enum = &Enum{}
-	enum.Name = c.typeCaseFn("Endian")
-	enum.Values = c.mapStringsToEnumValues(list.Endian)
-	defs.push(enum)
-
-	enum = &Enum{}
-	enum.Name = c.typeCaseFn("TokenTag")
-	enum.Values = c.mapStringsToEnumValues(list.TokenTag)
-	defs.push(enum)
-
-	// scope definition
-	scope := Struct{}
-	scope.Name = c.typeCaseFn("Scope")
-	scope.Fields = c.mapToStructFields(list.Scope)
-	defs.push(&scope)
-	scope.UnCommonFields = scope.Fields
-	defs.ScopeDef = &scope
-
-	// pos definition
-	pos := Struct{}
-	pos.Name = c.typeCaseFn("Pos")
-	pos.Fields = make([]*Field, 0, len(list.Pos))
-	pos.Fields = c.mapToStructFields(list.Pos)
-	pos.UnCommonFields = pos.Fields
-	defs.push(&pos)
-
-	// loc definition
-	loc := Struct{}
-	loc.Name = c.typeCaseFn("Loc")
-	loc.Fields = make([]*Field, 0, len(list.Loc))
-	loc.Fields = c.mapToStructFields(list.Loc)
-	loc.UnCommonFields = loc.Fields
-	defs.push(&loc)
-
-	// token definition
-	token := Struct{}
-	token.Name = c.typeCaseFn("Token")
-	token.Fields = make([]*Field, 0, len(list.Token))
-	token.Fields = c.mapToStructFields(list.Token)
-	token.UnCommonFields = token.Fields
-	defs.push(&token)
-
-	// error_entry definition
-	errorEntry := Struct{}
-	errorEntry.Name = c.typeCaseFn("SrcErrorEntry")
-	errorEntry.Fields = make([]*Field, 0, len(list.ErrorEntry))
-	errorEntry.Fields = c.mapToStructFields(list.ErrorEntry)
-	errorEntry.UnCommonFields = errorEntry.Fields
-	defs.push(&errorEntry)
-
-	// error definition
-	error := Struct{}
-	error.Name = c.typeCaseFn("SrcError")
-	error.Fields = make([]*Field, 0, len(list.Error))
-	error.Fields = c.mapToStructFields(list.Error)
-	error.UnCommonFields = error.Fields
-	defs.push(&error)
+	for _, enum := range list.Enum {
+		name := c.typeCaseFn(enum.Key)
+		defs.push(&Enum{
+			Name:   name,
+			Values: c.mapOpsToEnumValues(enum.Value),
+		})
+	}
+	//generate struct mappings
+	for _, struct_ := range list.Struct {
+		name := c.typeCaseFn(struct_.Key)
+		s := &Struct{
+			Name:   name,
+			Fields: c.mapToStructFields(struct_.Value),
+		}
+		s.UnCommonFields = s.Fields
+		defs.push(s)
+	}
 
 	return
 }

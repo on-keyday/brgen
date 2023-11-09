@@ -381,7 +381,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 			w.Printf("	fn try_from(s:&str)->Result<Self,()>{\n")
 			w.Printf("		match s{\n")
 			for _, field := range d.Values {
-				w.Printf("			%q =>Ok(Self::%s),\n", field.Str, field.Name)
+				w.Printf("			%q =>Ok(Self::%s),\n", field.Value, field.Name)
 			}
 			w.Printf("			_=> Err(()),\n")
 			w.Printf("		}\n")

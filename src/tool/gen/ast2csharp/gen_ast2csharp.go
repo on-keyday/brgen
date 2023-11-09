@@ -37,6 +37,9 @@ func generate(f *os.File, defs *gen.Defs) {
 			}
 			w.Printf("{\n")
 			for _, f := range v.Fields {
+				if f.Name == v.Name {
+					f.Name += "_" // avoid name conflict
+				}
 				w.Printf("	public %s %s{get;set;}\n", f.Type.CSharpString(), f.Name)
 			}
 			w.Printf("}\n")
@@ -69,10 +72,7 @@ func main() {
 	}
 
 	defs, err := gen.CollectDefinition(list, func(s string) string {
-		if s == "base" { // because c# has base keyword
-			return "base_"
-		}
-		return strcase.ToSnake(s)
+		return strcase.ToCamel(s)
 	}, strcase.ToCamel, map[string]string{
 		"uint": "ulong",
 	})

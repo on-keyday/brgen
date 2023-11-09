@@ -20,3 +20,5 @@ target/
 __pycache__/
 *.vsix
 /utils/
+bin/
+obj/

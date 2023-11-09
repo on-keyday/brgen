@@ -73,7 +73,7 @@ func generate(w io.Writer, list *gen.Defs) {
 			writer.Printf("	switch n {\n")
 			for _, value := range d.Values {
 				writer.Printf("	case %s%s:\n", d.Name, value.Name)
-				writer.Printf("		return \"%s\"\n", value.Str)
+				writer.Printf("		return \"%s\"\n", value.Value)
 			}
 			writer.Printf("	default:\n")
 			writer.Printf("		return fmt.Sprintf(\"%s(%%d)\", n)\n", d.Name)
@@ -86,7 +86,7 @@ func generate(w io.Writer, list *gen.Defs) {
 			writer.Printf("	}\n")
 			writer.Printf("	switch tmp {\n")
 			for _, value := range d.Values {
-				writer.Printf("	case %q:\n", value.Str)
+				writer.Printf("	case %q:\n", value.Value)
 				writer.Printf("		n = %s%s\n", d.Name, value.Name)
 			}
 			writer.Printf("	default:\n")

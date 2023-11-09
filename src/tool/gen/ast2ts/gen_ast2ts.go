@@ -105,7 +105,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 		case *gen.Enum:
 			w.Printf("export enum %s {\n", d.Name)
 			for _, val := range d.Values {
-				w.Printf("	%s = %q,\n", val.Name, val.Str)
+				w.Printf("	%s = %q,\n", val.Name, val.Value)
 			}
 			w.Printf("};\n\n")
 			w.Printf("export function is%s(obj: any): obj is %s {\n", d.Name, d.Name)
@@ -114,7 +114,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 				if i != 0 {
 					w.Printf(" || ")
 				}
-				w.Printf("obj === %q", val.Str)
+				w.Printf("obj === %q", val.Value)
 			}
 			w.Printf(")\n")
 			w.Printf("}\n\n")
