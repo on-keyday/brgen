@@ -5621,7 +5621,7 @@ pub struct AstFile {
 #[derive(Debug,Clone,Serialize,Deserialize)]
 pub struct TokenFile {
 	pub files: Vec<String>,
-	pub tokens: Vec<Option<Token>>,
+	pub tokens: Option<Vec<Token>>,
 	pub error: Option<SrcError>,
 }
 

@@ -141,8 +141,8 @@ func (d *Type) RustString() string {
 		}
 	}
 	if d.IsOptional {
-		prefix += "Option<"
-		postfix += ">"
+		prefix = "Option<" + prefix
+		postfix = postfix + ">"
 	}
 	return prefix + d.Name + postfix
 }
@@ -163,6 +163,10 @@ func (d *Type) TsString() string {
 func (d *Type) PyString() string {
 	prefix := ""
 	postfix := ""
+	if d.IsOptional {
+		prefix += "Optional["
+		postfix += "]"
+	}
 	if d.IsArray {
 		prefix += "List["
 		postfix += "]"

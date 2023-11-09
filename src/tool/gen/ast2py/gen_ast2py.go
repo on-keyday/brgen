@@ -17,12 +17,6 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("from typing import Optional,List,Dict,Any,Callable\n\n")
 	w.Printf("from enum import Enum as PyEnum\n\n")
 
-	w.Printf("class NodeType(PyEnum):\n")
-	for _, def := range defs.NodeTypes {
-		w.Printf("    %s = %q\n", strings.ToUpper(def), def)
-	}
-	w.Printf("\n\n")
-
 	for _, def := range defs.Defs {
 		switch v := def.(type) {
 		case *gen.Interface:
@@ -79,17 +73,49 @@ func generate(rw io.Writer, defs *gen.Defs) {
 				w.Printf("\n")
 				w.Printf("def parse_%s(json: dict) -> %s:\n", v.Name, v.Name)
 				w.Printf("    ret = %s()\n", v.Name)
+				isBuiltinType := func(s string) bool {
+					return s == "bool" || s == "int" || s == "str"
+				}
 				for _, field := range v.Fields {
-					if field.Type.Name == "bool" || field.Type.Name == "int" || field.Type.Name == "str" {
-						w.Printf("    ret.%s = %s(json[%q])\n", field.Name, field.Type.PyString(), field.Name)
+					if field.Type.Name == "Any" {
+						w.Printf("    ret.%s = json[%q]\n", field.Name, field.Name)
 					} else if field.Type.IsArray {
-						w.Printf("    ret.%s = [parse_%s(x) for x in json[%q]]\n", field.Name, field.Type.Name, field.Name)
+						s := "x"
+						if isBuiltinType(field.Type.Name) {
+							s = field.Type.Name + "(x)"
+						} else {
+							s = "parse_" + field.Type.Name + "(x)"
+						}
+						if field.Type.IsOptional {
+							w.Printf("    if json[%q] is not None:\n", field.Name)
+							w.Printf("        ret.%s = [%s for x in json[%q]]\n", field.Name, s, field.Name)
+							w.Printf("    else:\n")
+							w.Printf("        ret.%s = None\n", field.Name)
+						} else {
+							w.Printf("    ret.%s = [%s for x in json[%q]]\n", field.Name, s, field.Name)
+						}
+					} else if isBuiltinType(field.Type.Name) {
+						if field.Type.IsOptional {
+							w.Printf("    if json[%q] is not None:\n", field.Name)
+							w.Printf("        ret.%s = %s(json[%q])\n", field.Name, field.Type.Name, field.Name)
+							w.Printf("    else:\n")
+							w.Printf("        ret.%s = None\n", field.Name)
+						} else {
+							w.Printf("    ret.%s = %s(json[%q])\n", field.Name, field.Type.Name, field.Name)
+						}
 					} else {
 						_, found := defs.Enums[field.Type.Name]
 						if found {
 							w.Printf("    ret.%s = %s(json[%q])\n", field.Name, field.Type.PyString(), field.Name)
 						} else {
-							w.Printf("    ret.%s = parse_%s(json[%q])\n", field.Name, field.Type.Name, field.Name)
+							if field.Type.IsOptional {
+								w.Printf("    if json[%q] is not None:\n", field.Name)
+								w.Printf("        ret.%s = parse_%s(json[%q])\n", field.Name, field.Type.Name, field.Name)
+								w.Printf("    else:\n")
+								w.Printf("        ret.%s = None\n", field.Name)
+							} else {
+								w.Printf("    ret.%s = parse_%s(json[%q])\n", field.Name, field.Type.Name, field.Name)
+							}
 						}
 					}
 				}
@@ -105,86 +131,12 @@ func generate(rw io.Writer, defs *gen.Defs) {
 		w.Printf("\n\n")
 	}
 
-	w.Printf("class RawNode:\n")
-	w.Printf("    node_type: NodeType\n")
-	w.Printf("    loc: Loc\n")
-	w.Printf("    body: Dict[str,Any]\n\n")
-
-	w.Printf("def parse_RawNode(json: dict) -> RawNode:\n")
-	w.Printf("    ret = RawNode()\n")
-	w.Printf("    ret.node_type = NodeType(json['node_type'])\n")
-	w.Printf("    ret.loc = parse_Loc(json['loc'])\n")
-	w.Printf("    ret.body = json['body']\n")
-	w.Printf("    return ret\n\n")
-
-	w.Printf("class RawScope:\n")
-	w.Printf("    prev: Optional[int]\n")
-	w.Printf("    next: Optional[int]\n")
-	w.Printf("    branch: Optional[int]\n")
-	w.Printf("    ident: List[int]\n")
-	w.Printf("    owner: Optional[int]\n\n")
-
-	w.Printf("def parse_RawScope(json: dict) -> RawScope:\n")
-	w.Printf("    ret = RawScope()\n")
-	w.Printf("    ret.prev = json['prev']\n")
-	w.Printf("    ret.next = json['next']\n")
-	w.Printf("    ret.branch = json['branch']\n")
-	w.Printf("    ret.ident = json['ident']\n")
-	w.Printf("    ret.owner = json['owner']\n")
-	w.Printf("    return ret\n\n")
-
-	w.Printf("class Ast:\n")
-	w.Printf("    node: List[RawNode]\n")
-	w.Printf("    scope: List[RawScope]\n\n")
-
-	w.Printf("def parse_Ast(json: dict) -> Ast:\n")
-	w.Printf("    ret = Ast()\n")
-	w.Printf("    ret.node = [parse_RawNode(x) for x in json['node']]\n")
-	w.Printf("    ret.scope = [parse_RawScope(x) for x in json['scope']]\n")
-	w.Printf("    return ret\n\n")
-
-	w.Printf("class AstFile:\n")
-	w.Printf("    files: List[str]\n")
-	w.Printf("    ast: Optional[Ast]\n")
-	w.Printf("    error: Optional[SrcError]\n\n")
-
-	w.Printf("class TokenFile:\n")
-	w.Printf("    files: List[str]\n")
-	w.Printf("    tokens: List[Token]\n")
-	w.Printf("    error: Optional[SrcError]\n\n")
-
-	w.Printf("def parse_AstFile(data: dict) -> AstFile:\n")
-	w.Printf("    files = data['files']\n")
-	w.Printf("    error = data['error']\n")
-	w.Printf("    ast = data['ast']\n")
-	w.Printf("    if ast is not None:\n")
-	w.Printf("        ast = parse_Ast(ast)\n")
-	w.Printf("    if error is not None:\n")
-	w.Printf("        error = parse_SrcError(error)\n")
-	w.Printf("    ret = AstFile()\n")
-	w.Printf("    ret.files = files\n")
-	w.Printf("    ret.ast = ast\n")
-	w.Printf("    ret.error = error\n")
-	w.Printf("    return ret\n\n")
-
-	w.Printf("def parse_TokenFile(data: dict) -> TokenFile:\n")
-	w.Printf("    files = data['files']\n")
-	w.Printf("    error = data['error']\n")
-	w.Printf("    tokens = data['tokens']\n")
-	w.Printf("    if error is not None:\n")
-	w.Printf("        error = parse_SrcError(error)\n")
-	w.Printf("    ret = TokenFile()\n")
-	w.Printf("    ret.files = files\n")
-	w.Printf("    ret.tokens = [parse_Token(x) for x in tokens]\n")
-	w.Printf("    ret.error = error\n")
-	w.Printf("    return ret\n\n")
-
 	w.Printf("def raiseError(err):\n")
 	w.Printf("    raise err\n\n")
 
-	w.Printf("def ast2node(ast :Ast) -> Program:\n")
-	w.Printf("    if not isinstance(ast,Ast):\n")
-	w.Printf("        raise TypeError('ast must be Ast')\n")
+	w.Printf("def ast2node(ast :JsonAst) -> Program:\n")
+	w.Printf("    if not isinstance(ast,JsonAst):\n")
+	w.Printf("        raise TypeError('ast must be JsonAst')\n")
 	w.Printf("    node = list()\n")
 	w.Printf("    for raw in ast.node:\n")
 	w.Printf("        match raw.node_type:\n")
@@ -225,13 +177,13 @@ func generate(rw io.Writer, defs *gen.Defs) {
 					w.Printf("                node[i].%s = parse_Loc(ast.node[i].body[%q])\n", field.Name, field.Name)
 				} else if field.Type.Name == "bool" || field.Type.Name == "int" || field.Type.Name == "str" {
 					w.Printf("                x = ast.node[i].body[%q]\n", field.Name)
-					w.Printf("                node[i].%s = x if isinstance(x,%s)  else raiseError(TypeError('type mismatch'))\n", field.Name, field.Type.Name)
+					w.Printf("                node[i].%s = x if isinstance(x,%s)  else raiseError(TypeError('type mismatch at %s::%s'))\n", field.Name, field.Type.Name, v.Name, field.Name)
 				} else if field.Type.IsArray {
-					w.Printf("                node[i].%s = [(node[x] if isinstance(node[x],%s) else raiseError(TypeError('type mismatch'))) for x in ast.node[i].body[%q]]\n", field.Name, field.Type.Name, field.Name)
+					w.Printf("                node[i].%s = [(node[x] if isinstance(node[x],%s) else raiseError(TypeError('type mismatch at %s::%s'))) for x in ast.node[i].body[%q]]\n", field.Name, field.Type.Name, v.Name, field.Name, field.Name)
 				} else if field.Type.IsPtr || field.Type.IsInterface {
 					w.Printf("                if ast.node[i].body[%q] is not None:\n", field.Name)
 					w.Printf("                    x = node[ast.node[i].body[%q]]\n", field.Name)
-					w.Printf("                    node[i].%s = x if isinstance(x,%s) else raiseError(TypeError('type mismatch'))\n", field.Name, field.Type.Name)
+					w.Printf("                    node[i].%s = x if isinstance(x,%s) else raiseError(TypeError('type mismatch at %s::%s'))\n", field.Name, field.Type.Name, v.Name, field.Name)
 					w.Printf("                else:\n")
 					w.Printf("                    node[i].%s = None\n", field.Name)
 				} else {
@@ -250,15 +202,25 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("            case _:\n")
 	w.Printf("                raise TypeError('unknown node type')\n")
 	w.Printf("    for i in range(len(ast.scope)):\n")
-	w.Printf("        if ast.scope[i].owner is not None:\n")
-	w.Printf("            scope[i].owner = node[ast.scope[i].owner]\n")
-	w.Printf("        if ast.scope[i].next is not None:\n")
-	w.Printf("            scope[i].next = scope[ast.scope[i].next]\n")
-	w.Printf("        if ast.scope[i].branch is not None:\n")
-	w.Printf("            scope[i].branch = scope[ast.scope[i].branch]\n")
-	w.Printf("        if ast.scope[i].prev is not None:\n")
-	w.Printf("            scope[i].prev = scope[ast.scope[i].prev]\n")
-	w.Printf("        scope[i].ident = [node[x] for x in ast.scope[i].ident]\n")
+	for _, def := range defs.ScopeDef.Fields {
+		if def.Type.Name == "Scope" {
+			w.Printf("        if ast.scope[i].%s is not None:\n", def.Name)
+			w.Printf("            scope[i].%s = scope[ast.scope[i].%s]\n", def.Name, def.Name)
+		} else if def.Type.IsArray {
+			w.Printf("        scope[i].%s = [(node[x] if isinstance(node[x],%s) else raiseError(TypeError('type mismatch at Scope::%s'))) for x in ast.scope[i].%s]\n", def.Name, def.Type.Name, def.Name, def.Name)
+		} else if def.Type.IsPtr || def.Type.IsInterface {
+			w.Printf("        if ast.scope[i].%s is not None:\n", def.Name)
+			w.Printf("            scope[i].%s = ast.node[ast.scope[i].%s]\n", def.Name, def.Name)
+		} else {
+			_, found := defs.Enums[def.Type.Name]
+			if found {
+				w.Printf("        scope[i].%s = %s(ast.scope[i].%s)\n", def.Name, def.Type.PyString(), def.Name)
+			} else {
+				w.Printf("        scope[i].%s = ast.scope[i].%s\n", def.Name, def.Name)
+			}
+		}
+	}
+
 	w.Printf("    return node[0]\n\n")
 
 	w.Printf("def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:\n")
@@ -317,6 +279,7 @@ func main() {
 		"uint":    "int",
 		"uintptr": "int",
 		"string":  "str",
+		"any":     "Any",
 	})
 
 	if err != nil {
