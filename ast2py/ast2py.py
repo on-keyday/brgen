@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Optional,List,Dict,Any,Callable
 
-from enum import Enum
+from enum import Enum as PyEnum
 
-class NodeType(Enum):
+class NodeType(PyEnum):
     NODE = "node"
     PROGRAM = "program"
     EXPR = "expr"
@@ -356,12 +356,12 @@ class EnumType(Type):
     base: Optional[Enum]
 
 
-class UnaryOp(Enum):
+class UnaryOp(PyEnum):
     NOT = "!"
     MINUS_SIGN = "-"
 
 
-class BinaryOp(Enum):
+class BinaryOp(PyEnum):
     MUL = "*"
     DIV = "/"
     MOD = "%"
@@ -402,7 +402,7 @@ class BinaryOp(Enum):
     COMMA = ","
 
 
-class IdentUsage(Enum):
+class IdentUsage(PyEnum):
     UNKNOWN = "unknown"
     REFERENCE = "reference"
     DEFINE_VARIABLE = "define_variable"
@@ -417,13 +417,13 @@ class IdentUsage(Enum):
     REFERENCE_TYPE = "reference_type"
 
 
-class Endian(Enum):
+class Endian(PyEnum):
     UNSPEC = "unspec"
     BIG = "big"
     LITTLE = "little"
 
 
-class TokenTag(Enum):
+class TokenTag(PyEnum):
     INDENT = "indent"
     SPACE = "space"
     LINE = "line"

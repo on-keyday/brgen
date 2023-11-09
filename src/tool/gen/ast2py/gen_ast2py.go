@@ -15,9 +15,9 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w := gen.NewWriter(rw)
 	w.Printf("from __future__ import annotations\n\n")
 	w.Printf("from typing import Optional,List,Dict,Any,Callable\n\n")
-	w.Printf("from enum import Enum\n\n")
+	w.Printf("from enum import Enum as PyEnum\n\n")
 
-	w.Printf("class NodeType(Enum):\n")
+	w.Printf("class NodeType(PyEnum):\n")
 	for _, def := range defs.NodeTypes {
 		w.Printf("    %s = %q\n", strings.ToUpper(def), def)
 	}
@@ -97,7 +97,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 			}
 
 		case *gen.Enum:
-			w.Printf("class %s(Enum):\n", v.Name)
+			w.Printf("class %s(PyEnum):\n", v.Name)
 			for _, field := range v.Values {
 				w.Printf("    %s = %q\n", strings.ToUpper(field.Name), field.Str)
 			}
