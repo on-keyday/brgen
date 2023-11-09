@@ -181,6 +181,8 @@ func (d *Type) CString() string {
 	postfix := ""
 	if d.IsInterface || d.IsPtr {
 		postfix += "*"
+	} else if !d.IsArray && d.IsOptional {
+		postfix += "*"
 	}
 	if d.IsArray {
 		postfix += "*"

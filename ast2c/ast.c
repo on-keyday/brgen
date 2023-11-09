@@ -416,24 +416,18 @@ const char* NodeType_to_string(NodeType typ) {
 	return NULL;
 }
 
-Ast* parse_json_to_ast(json_handlers* h,void* root_obj) {
-	Ast* ast = (Ast*)h->alloc(h, sizeof(Ast), alignof(Ast));
-	if (!ast) {
-		return NULL;
-	}
+ast2c_JsonAst* ast2c_parse_json_to_ast(json_handlers* h,void* root_obj) {
+	ast2c_JsonAst* ast = (ast2c_JsonAst*)h->alloc(h, sizeof(ast2c_JsonAst), alignof(ast2c_JsonAst));
+	if (!ast) { return NULL; }
 	ast->node = NULL;
 	ast->node_size = 0;
 	ast->scope = NULL;
 	ast->scope_size = 0;
-	void* node = h->object_get(h, root_obj, "node");
-	if (!node) {
-		goto error;
-	}
-	if(!h->is_array(h,node)) {
+	void* node = h->object_get(h, node, "node")	if (!node) { goto error; }	if(!h->is_array(h,node)) {
 		goto error;
 	}
 	size_t node_size = h->array_size(h, node);
-	ast->node = (RawNode*)h->alloc(h, sizeof(RawNode) * node_size, alignof(RawNode));
+	ast->node = (ast2c_RawNode*)h->alloc(h, sizeof(ast2c_RawNode), alignof(ast2c_RawNode));
 	if (!ast->node) {
 		goto error;
 	}

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -51,15 +52,6 @@ func generateHeader(rw io.Writer, defs *gen.Defs, single bool) {
 		w.Printf("#include<stdalign.h>\n")
 	}
 	w.Printf("#endif\n\n")
-	// define node types
-	w.Printf("typedef enum NodeType {\n")
-	for _, typ := range defs.NodeTypes {
-		w.Printf("\t%s,\n", strings.ToUpper(typ))
-	}
-	w.Printf("} NodeType;\n\n")
-	w.Printf("int NodeType_from_string(const char*, NodeType*);\n")
-	w.Printf("const char* NodeType_to_string(NodeType);\n\n")
-
 	// declare all struct types
 	for _, def := range defs.Defs {
 		switch d := def.(type) {
@@ -90,7 +82,8 @@ func generateHeader(rw io.Writer, defs *gen.Defs, single bool) {
 		case *gen.Enum:
 			w.Printf("enum %s {\n", d.Name)
 			for _, field := range d.Values {
-				w.Printf("\t%s,\n", strings.ToUpper(field.Name))
+				field.Name = "AST2C_" + strings.ToUpper(field.Name)
+				w.Printf("\t%s,\n", field.Name)
 			}
 			w.Printf("};\n")
 			w.Printf("const char* %s_to_string(%s);\n", d.Name, d.Name)
@@ -102,7 +95,7 @@ func generateHeader(rw io.Writer, defs *gen.Defs, single bool) {
 		switch d := def.(type) {
 		case *gen.Interface:
 			w.Printf("struct %s {\n", d.Name)
-			w.Printf("\tconst NodeType node_type;\n")
+			w.Printf("\tconst ast2c_NodeType node_type;\n")
 			for _, field := range d.Fields {
 				w.Printf("\t%s %s;\n", field.Type.CString(), field.Name)
 			}
@@ -112,7 +105,7 @@ func generateHeader(rw io.Writer, defs *gen.Defs, single bool) {
 				continue
 			}
 			w.Printf("struct %s {\n", d.Name)
-			w.Printf("\tconst NodeType node_type;\n")
+			w.Printf("\tconst ast2c_NodeType node_type;\n")
 			for _, field := range d.Fields {
 				w.Printf("\t%s %s;\n", field.Type.CString(), field.Name)
 				if field.Type.IsArray {
@@ -122,28 +115,6 @@ func generateHeader(rw io.Writer, defs *gen.Defs, single bool) {
 			w.Printf("};\n\n")
 		}
 	}
-
-	w.Printf("typedef struct RawNode {\n")
-	w.Printf("\tconst NodeType node_type;\n")
-	w.Printf("\tLoc loc;\n")
-	w.Printf("\tvoid* body;\n")
-	w.Printf("} RawNode;\n\n")
-
-	w.Printf("typedef struct RawScope {\n")
-	w.Printf("\tuint64_t prev;\n")
-	w.Printf("\tuint64_t next;\n")
-	w.Printf("\tuint64_t branch;\n")
-	w.Printf("\tuint64_t* ident;\n")
-	w.Printf("\tsize_t ident_size;\n")
-	w.Printf("\tuint64_t owner;\n")
-	w.Printf("} RawScope;\n\n")
-
-	w.Printf("typedef struct Ast {\n")
-	w.Printf("\tRawNode* node;\n")
-	w.Printf("\tsize_t node_size;\n")
-	w.Printf("\tRawScope* scope;\n")
-	w.Printf("\tsize_t scope_size;\n")
-	w.Printf("} Ast;\n\n")
 
 	if !single {
 		w.Printf("#ifdef __cplusplus\n")
@@ -184,24 +155,36 @@ func generateSource(rw io.Writer, defs *gen.Defs, single bool) {
 	w.Printf("\treturn NULL;\n")
 	w.Printf("}\n\n")
 
-	w.Printf("Ast* parse_json_to_ast(json_handlers* h,void* root_obj) {\n")
-	w.Printf("\tAst* ast = (Ast*)h->alloc(h, sizeof(Ast), alignof(Ast));\n")
-	w.Printf("\tif (!ast) {\n")
-	w.Printf("\t\treturn NULL;\n")
-	w.Printf("\t}\n")
+	getAlloc := func(typ string) string {
+		return "(" + typ + "*)h->alloc(h, sizeof(" + typ + "), alignof(" + typ + "))"
+	}
+
+	getObj := func(target, name string) string {
+		return fmt.Sprintf("h->object_get(h, %s, %q)", target, name)
+	}
+
+	checkObj := func(target string) string {
+		return fmt.Sprintf("if (!%s) { goto error; }", target)
+	}
+
+	initObj := func(target, name string) string {
+		return fmt.Sprintf("void* %s = %s;", target, getObj(target, name))
+	}
+
+	w.Printf("ast2c_JsonAst* ast2c_parse_json_to_ast(json_handlers* h,void* root_obj) {\n")
+	w.Printf("\tast2c_JsonAst* ast = %s;\n", getAlloc("ast2c_JsonAst"))
+	w.Printf("\tif (!ast) { return NULL; }\n")
 	w.Printf("\tast->node = NULL;\n")
 	w.Printf("\tast->node_size = 0;\n")
 	w.Printf("\tast->scope = NULL;\n")
 	w.Printf("\tast->scope_size = 0;\n")
-	w.Printf("\tvoid* node = h->object_get(h, root_obj, \"node\");\n")
-	w.Printf("\tif (!node) {\n")
-	w.Printf("\t\tgoto error;\n")
-	w.Printf("\t}\n")
+	w.Printf("\t%s", initObj("node", "node"))
+	w.Printf("\t%s", checkObj("node"))
 	w.Printf("\tif(!h->is_array(h,node)) {\n")
 	w.Printf("\t\tgoto error;\n")
 	w.Printf("\t}\n")
 	w.Printf("\tsize_t node_size = h->array_size(h, node);\n")
-	w.Printf("\tast->node = (RawNode*)h->alloc(h, sizeof(RawNode) * node_size, alignof(RawNode));\n")
+	w.Printf("\tast->node = %s;\n", getAlloc("ast2c_RawNode"))
 	w.Printf("\tif (!ast->node) {\n")
 	w.Printf("\t\tgoto error;\n")
 	w.Printf("\t}\n")
@@ -389,11 +372,16 @@ func main() {
 		return
 	}
 
-	defs, err := gen.CollectDefinition(list, strcase.ToSnake, strcase.ToCamel, map[string]string{
+	defs, err := gen.CollectDefinition(list, func(s string) string {
+		return strcase.ToSnake(s)
+	}, func(s string) string {
+		return "ast2c_" + strcase.ToCamel(s)
+	}, map[string]string{
 		"uint":    "uint64_t",
 		"uintptr": "uint64_t",
 		"bool":    "int",
 		"string":  "char*",
+		"any":     "void*",
 	})
 
 	if err != nil {

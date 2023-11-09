@@ -11,850 +11,764 @@
 extern "C" {
 #endif
 
-typedef enum NodeType {
-	NODE,
-	PROGRAM,
-	EXPR,
-	BINARY,
-	UNARY,
-	COND,
-	IDENT,
-	CALL,
-	IF,
-	MEMBER_ACCESS,
-	PAREN,
-	INDEX,
-	MATCH,
-	RANGE,
-	TMP_VAR,
-	BLOCK_EXPR,
-	IMPORT,
-	LITERAL,
-	INT_LITERAL,
-	BOOL_LITERAL,
-	STR_LITERAL,
-	INPUT,
-	OUTPUT,
-	CONFIG,
-	STMT,
-	LOOP,
-	INDENT_BLOCK,
-	MATCH_BRANCH,
-	RETURN,
-	BREAK,
-	CONTINUE,
-	ASSERT,
-	IMPLICIT_YIELD,
-	MEMBER,
-	FIELD,
-	FORMAT,
-	FUNCTION,
-	TYPE,
-	INT_TYPE,
-	IDENT_TYPE,
-	INT_LITERAL_TYPE,
-	STR_LITERAL_TYPE,
-	VOID_TYPE,
-	BOOL_TYPE,
-	ARRAY_TYPE,
-	FUNCTION_TYPE,
-	STRUCT_TYPE,
-	STRUCT_UNION_TYPE,
-	CAST,
-	COMMENT,
-	COMMENT_GROUP,
-	UNION_TYPE,
-	UNION_CANDIDATE,
-	RANGE_TYPE,
-	ENUM,
-	ENUM_MEMBER,
-	ENUM_TYPE,
-} NodeType;
-
-int NodeType_from_string(const char*, NodeType*);
-const char* NodeType_to_string(NodeType);
-
-typedef enum NodeType NodeType;
-typedef enum UnaryOp UnaryOp;
-typedef enum BinaryOp BinaryOp;
-typedef enum IdentUsage IdentUsage;
-typedef enum Endian Endian;
-typedef enum TokenTag TokenTag;
-typedef struct Node Node;
-typedef struct Expr Expr;
-typedef struct Literal Literal;
-typedef struct Stmt Stmt;
-typedef struct Member Member;
-typedef struct Type Type;
-typedef struct Program Program;
-typedef struct Binary Binary;
-typedef struct Unary Unary;
-typedef struct Cond Cond;
-typedef struct Ident Ident;
-typedef struct Call Call;
-typedef struct If If;
-typedef struct MemberAccess MemberAccess;
-typedef struct Paren Paren;
-typedef struct Index Index;
-typedef struct Match Match;
-typedef struct Range Range;
-typedef struct TmpVar TmpVar;
-typedef struct BlockExpr BlockExpr;
-typedef struct Import Import;
-typedef struct IntLiteral IntLiteral;
-typedef struct BoolLiteral BoolLiteral;
-typedef struct StrLiteral StrLiteral;
-typedef struct Input Input;
-typedef struct Output Output;
-typedef struct Config Config;
-typedef struct Loop Loop;
-typedef struct IndentBlock IndentBlock;
-typedef struct MatchBranch MatchBranch;
-typedef struct Return Return;
-typedef struct Break Break;
-typedef struct Continue Continue;
-typedef struct Assert Assert;
-typedef struct ImplicitYield ImplicitYield;
-typedef struct Field Field;
-typedef struct Format Format;
-typedef struct Function Function;
-typedef struct IntType IntType;
-typedef struct IdentType IdentType;
-typedef struct IntLiteralType IntLiteralType;
-typedef struct StrLiteralType StrLiteralType;
-typedef struct VoidType VoidType;
-typedef struct BoolType BoolType;
-typedef struct ArrayType ArrayType;
-typedef struct FunctionType FunctionType;
-typedef struct StructType StructType;
-typedef struct StructUnionType StructUnionType;
-typedef struct Cast Cast;
-typedef struct Comment Comment;
-typedef struct CommentGroup CommentGroup;
-typedef struct UnionType UnionType;
-typedef struct UnionCandidate UnionCandidate;
-typedef struct RangeType RangeType;
-typedef struct Enum Enum;
-typedef struct EnumMember EnumMember;
-typedef struct EnumType EnumType;
-typedef struct Scope Scope;
-typedef struct Pos Pos;
-typedef struct Loc Loc;
-typedef struct Token Token;
-typedef struct RawScope RawScope;
-typedef struct RawNode RawNode;
-typedef struct SrcErrorEntry SrcErrorEntry;
-typedef struct SrcError SrcError;
-typedef struct JsonAst JsonAst;
-typedef struct AstFile AstFile;
-typedef struct TokenFile TokenFile;
-enum NodeType {
-	PROGRAM,
-	EXPR,
-	BINARY,
-	UNARY,
-	COND,
-	IDENT,
-	CALL,
-	IF,
-	MEMBER_ACCESS,
-	PAREN,
-	INDEX,
-	MATCH,
-	RANGE,
-	TMP_VAR,
-	BLOCK_EXPR,
-	IMPORT,
-	LITERAL,
-	INT_LITERAL,
-	BOOL_LITERAL,
-	STR_LITERAL,
-	INPUT,
-	OUTPUT,
-	CONFIG,
-	STMT,
-	LOOP,
-	INDENT_BLOCK,
-	MATCH_BRANCH,
-	RETURN,
-	BREAK,
-	CONTINUE,
-	ASSERT,
-	IMPLICIT_YIELD,
-	MEMBER,
-	FIELD,
-	FORMAT,
-	FUNCTION,
-	TYPE,
-	INT_TYPE,
-	IDENT_TYPE,
-	INT_LITERAL_TYPE,
-	STR_LITERAL_TYPE,
-	VOID_TYPE,
-	BOOL_TYPE,
-	ARRAY_TYPE,
-	FUNCTION_TYPE,
-	STRUCT_TYPE,
-	STRUCT_UNION_TYPE,
-	CAST,
-	COMMENT,
-	COMMENT_GROUP,
-	UNION_TYPE,
-	UNION_CANDIDATE,
-	RANGE_TYPE,
-	ENUM,
-	ENUM_MEMBER,
-	ENUM_TYPE,
+typedef enum ast2c_NodeType ast2c_NodeType;
+typedef enum ast2c_UnaryOp ast2c_UnaryOp;
+typedef enum ast2c_BinaryOp ast2c_BinaryOp;
+typedef enum ast2c_IdentUsage ast2c_IdentUsage;
+typedef enum ast2c_Endian ast2c_Endian;
+typedef enum ast2c_TokenTag ast2c_TokenTag;
+typedef struct ast2c_Node ast2c_Node;
+typedef struct ast2c_Expr ast2c_Expr;
+typedef struct ast2c_Literal ast2c_Literal;
+typedef struct ast2c_Stmt ast2c_Stmt;
+typedef struct ast2c_Member ast2c_Member;
+typedef struct ast2c_Type ast2c_Type;
+typedef struct ast2c_Program ast2c_Program;
+typedef struct ast2c_Binary ast2c_Binary;
+typedef struct ast2c_Unary ast2c_Unary;
+typedef struct ast2c_Cond ast2c_Cond;
+typedef struct ast2c_Ident ast2c_Ident;
+typedef struct ast2c_Call ast2c_Call;
+typedef struct ast2c_If ast2c_If;
+typedef struct ast2c_MemberAccess ast2c_MemberAccess;
+typedef struct ast2c_Paren ast2c_Paren;
+typedef struct ast2c_Index ast2c_Index;
+typedef struct ast2c_Match ast2c_Match;
+typedef struct ast2c_Range ast2c_Range;
+typedef struct ast2c_TmpVar ast2c_TmpVar;
+typedef struct ast2c_BlockExpr ast2c_BlockExpr;
+typedef struct ast2c_Import ast2c_Import;
+typedef struct ast2c_IntLiteral ast2c_IntLiteral;
+typedef struct ast2c_BoolLiteral ast2c_BoolLiteral;
+typedef struct ast2c_StrLiteral ast2c_StrLiteral;
+typedef struct ast2c_Input ast2c_Input;
+typedef struct ast2c_Output ast2c_Output;
+typedef struct ast2c_Config ast2c_Config;
+typedef struct ast2c_Loop ast2c_Loop;
+typedef struct ast2c_IndentBlock ast2c_IndentBlock;
+typedef struct ast2c_MatchBranch ast2c_MatchBranch;
+typedef struct ast2c_Return ast2c_Return;
+typedef struct ast2c_Break ast2c_Break;
+typedef struct ast2c_Continue ast2c_Continue;
+typedef struct ast2c_Assert ast2c_Assert;
+typedef struct ast2c_ImplicitYield ast2c_ImplicitYield;
+typedef struct ast2c_Field ast2c_Field;
+typedef struct ast2c_Format ast2c_Format;
+typedef struct ast2c_Function ast2c_Function;
+typedef struct ast2c_IntType ast2c_IntType;
+typedef struct ast2c_IdentType ast2c_IdentType;
+typedef struct ast2c_IntLiteralType ast2c_IntLiteralType;
+typedef struct ast2c_StrLiteralType ast2c_StrLiteralType;
+typedef struct ast2c_VoidType ast2c_VoidType;
+typedef struct ast2c_BoolType ast2c_BoolType;
+typedef struct ast2c_ArrayType ast2c_ArrayType;
+typedef struct ast2c_FunctionType ast2c_FunctionType;
+typedef struct ast2c_StructType ast2c_StructType;
+typedef struct ast2c_StructUnionType ast2c_StructUnionType;
+typedef struct ast2c_Cast ast2c_Cast;
+typedef struct ast2c_Comment ast2c_Comment;
+typedef struct ast2c_CommentGroup ast2c_CommentGroup;
+typedef struct ast2c_UnionType ast2c_UnionType;
+typedef struct ast2c_UnionCandidate ast2c_UnionCandidate;
+typedef struct ast2c_RangeType ast2c_RangeType;
+typedef struct ast2c_Enum ast2c_Enum;
+typedef struct ast2c_EnumMember ast2c_EnumMember;
+typedef struct ast2c_EnumType ast2c_EnumType;
+typedef struct ast2c_Scope ast2c_Scope;
+typedef struct ast2c_Pos ast2c_Pos;
+typedef struct ast2c_Loc ast2c_Loc;
+typedef struct ast2c_Token ast2c_Token;
+typedef struct ast2c_RawScope ast2c_RawScope;
+typedef struct ast2c_RawNode ast2c_RawNode;
+typedef struct ast2c_SrcErrorEntry ast2c_SrcErrorEntry;
+typedef struct ast2c_SrcError ast2c_SrcError;
+typedef struct ast2c_JsonAst ast2c_JsonAst;
+typedef struct ast2c_AstFile ast2c_AstFile;
+typedef struct ast2c_TokenFile ast2c_TokenFile;
+enum ast2c_NodeType {
+	AST2C_PROGRAM,
+	AST2C_EXPR,
+	AST2C_BINARY,
+	AST2C_UNARY,
+	AST2C_COND,
+	AST2C_IDENT,
+	AST2C_CALL,
+	AST2C_IF,
+	AST2C_MEMBER_ACCESS,
+	AST2C_PAREN,
+	AST2C_INDEX,
+	AST2C_MATCH,
+	AST2C_RANGE,
+	AST2C_TMP_VAR,
+	AST2C_BLOCK_EXPR,
+	AST2C_IMPORT,
+	AST2C_LITERAL,
+	AST2C_INT_LITERAL,
+	AST2C_BOOL_LITERAL,
+	AST2C_STR_LITERAL,
+	AST2C_INPUT,
+	AST2C_OUTPUT,
+	AST2C_CONFIG,
+	AST2C_STMT,
+	AST2C_LOOP,
+	AST2C_INDENT_BLOCK,
+	AST2C_MATCH_BRANCH,
+	AST2C_RETURN,
+	AST2C_BREAK,
+	AST2C_CONTINUE,
+	AST2C_ASSERT,
+	AST2C_IMPLICIT_YIELD,
+	AST2C_MEMBER,
+	AST2C_FIELD,
+	AST2C_FORMAT,
+	AST2C_FUNCTION,
+	AST2C_TYPE,
+	AST2C_INT_TYPE,
+	AST2C_IDENT_TYPE,
+	AST2C_INT_LITERAL_TYPE,
+	AST2C_STR_LITERAL_TYPE,
+	AST2C_VOID_TYPE,
+	AST2C_BOOL_TYPE,
+	AST2C_ARRAY_TYPE,
+	AST2C_FUNCTION_TYPE,
+	AST2C_STRUCT_TYPE,
+	AST2C_STRUCT_UNION_TYPE,
+	AST2C_CAST,
+	AST2C_COMMENT,
+	AST2C_COMMENT_GROUP,
+	AST2C_UNION_TYPE,
+	AST2C_UNION_CANDIDATE,
+	AST2C_RANGE_TYPE,
+	AST2C_ENUM,
+	AST2C_ENUM_MEMBER,
+	AST2C_ENUM_TYPE,
 };
-const char* NodeType_to_string(NodeType);
-int NodeType_from_string(const char*,NodeType*);
+const char* ast2c_NodeType_to_string(ast2c_NodeType);
+int ast2c_NodeType_from_string(const char*,ast2c_NodeType*);
 
-enum UnaryOp {
-	NOT,
-	MINUS_SIGN,
+enum ast2c_UnaryOp {
+	AST2C_NOT,
+	AST2C_MINUS_SIGN,
 };
-const char* UnaryOp_to_string(UnaryOp);
-int UnaryOp_from_string(const char*,UnaryOp*);
+const char* ast2c_UnaryOp_to_string(ast2c_UnaryOp);
+int ast2c_UnaryOp_from_string(const char*,ast2c_UnaryOp*);
 
-enum BinaryOp {
-	MUL,
-	DIV,
-	MOD,
-	LEFT_ARITHMETIC_SHIFT,
-	RIGHT_ARITHMETIC_SHIFT,
-	LEFT_LOGICAL_SHIFT,
-	RIGHT_LOGICAL_SHIFT,
-	BIT_AND,
-	ADD,
-	SUB,
-	BIT_OR,
-	BIT_XOR,
-	EQUAL,
-	NOT_EQUAL,
-	LESS,
-	LESS_OR_EQ,
-	GRATER,
-	GRATER_OR_EQ,
-	LOGICAL_AND,
-	LOGICAL_OR,
-	COND_OP_1,
-	COND_OP_2,
-	RANGE_EXCLUSIVE,
-	RANGE_INCLUSIVE,
-	ASSIGN,
-	DEFINE_ASSIGN,
-	CONST_ASSIGN,
-	ADD_ASSIGN,
-	SUB_ASSIGN,
-	MUL_ASSIGN,
-	DIV_ASSIGN,
-	MOD_ASSIGN,
-	LEFT_SHIFT_ASSIGN,
-	RIGHT_SHIFT_ASSIGN,
-	BIT_AND_ASSIGN,
-	BIT_OR_ASSIGN,
-	BIT_XOR_ASSIGN,
-	COMMA,
+enum ast2c_BinaryOp {
+	AST2C_MUL,
+	AST2C_DIV,
+	AST2C_MOD,
+	AST2C_LEFT_ARITHMETIC_SHIFT,
+	AST2C_RIGHT_ARITHMETIC_SHIFT,
+	AST2C_LEFT_LOGICAL_SHIFT,
+	AST2C_RIGHT_LOGICAL_SHIFT,
+	AST2C_BIT_AND,
+	AST2C_ADD,
+	AST2C_SUB,
+	AST2C_BIT_OR,
+	AST2C_BIT_XOR,
+	AST2C_EQUAL,
+	AST2C_NOT_EQUAL,
+	AST2C_LESS,
+	AST2C_LESS_OR_EQ,
+	AST2C_GRATER,
+	AST2C_GRATER_OR_EQ,
+	AST2C_LOGICAL_AND,
+	AST2C_LOGICAL_OR,
+	AST2C_COND_OP_1,
+	AST2C_COND_OP_2,
+	AST2C_RANGE_EXCLUSIVE,
+	AST2C_RANGE_INCLUSIVE,
+	AST2C_ASSIGN,
+	AST2C_DEFINE_ASSIGN,
+	AST2C_CONST_ASSIGN,
+	AST2C_ADD_ASSIGN,
+	AST2C_SUB_ASSIGN,
+	AST2C_MUL_ASSIGN,
+	AST2C_DIV_ASSIGN,
+	AST2C_MOD_ASSIGN,
+	AST2C_LEFT_SHIFT_ASSIGN,
+	AST2C_RIGHT_SHIFT_ASSIGN,
+	AST2C_BIT_AND_ASSIGN,
+	AST2C_BIT_OR_ASSIGN,
+	AST2C_BIT_XOR_ASSIGN,
+	AST2C_COMMA,
 };
-const char* BinaryOp_to_string(BinaryOp);
-int BinaryOp_from_string(const char*,BinaryOp*);
+const char* ast2c_BinaryOp_to_string(ast2c_BinaryOp);
+int ast2c_BinaryOp_from_string(const char*,ast2c_BinaryOp*);
 
-enum IdentUsage {
-	UNKNOWN,
-	REFERENCE,
-	DEFINE_VARIABLE,
-	DEFINE_CONST,
-	DEFINE_FIELD,
-	DEFINE_FORMAT,
-	DEFINE_ENUM,
-	DEFINE_ENUM_MEMBER,
-	DEFINE_FN,
-	DEFINE_CAST_FN,
-	DEFINE_ARG,
-	REFERENCE_TYPE,
+enum ast2c_IdentUsage {
+	AST2C_UNKNOWN,
+	AST2C_REFERENCE,
+	AST2C_DEFINE_VARIABLE,
+	AST2C_DEFINE_CONST,
+	AST2C_DEFINE_FIELD,
+	AST2C_DEFINE_FORMAT,
+	AST2C_DEFINE_ENUM,
+	AST2C_DEFINE_ENUM_MEMBER,
+	AST2C_DEFINE_FN,
+	AST2C_DEFINE_CAST_FN,
+	AST2C_DEFINE_ARG,
+	AST2C_REFERENCE_TYPE,
 };
-const char* IdentUsage_to_string(IdentUsage);
-int IdentUsage_from_string(const char*,IdentUsage*);
+const char* ast2c_IdentUsage_to_string(ast2c_IdentUsage);
+int ast2c_IdentUsage_from_string(const char*,ast2c_IdentUsage*);
 
-enum Endian {
-	UNSPEC,
-	BIG,
-	LITTLE,
+enum ast2c_Endian {
+	AST2C_UNSPEC,
+	AST2C_BIG,
+	AST2C_LITTLE,
 };
-const char* Endian_to_string(Endian);
-int Endian_from_string(const char*,Endian*);
+const char* ast2c_Endian_to_string(ast2c_Endian);
+int ast2c_Endian_from_string(const char*,ast2c_Endian*);
 
-enum TokenTag {
-	INDENT,
-	SPACE,
-	LINE,
-	PUNCT,
-	INT_LITERAL,
-	BOOL_LITERAL,
-	STR_LITERAL,
-	KEYWORD,
-	IDENT,
-	COMMENT,
-	ERROR,
-	UNKNOWN,
+enum ast2c_TokenTag {
+	AST2C_INDENT,
+	AST2C_SPACE,
+	AST2C_LINE,
+	AST2C_PUNCT,
+	AST2C_INT_LITERAL,
+	AST2C_BOOL_LITERAL,
+	AST2C_STR_LITERAL,
+	AST2C_KEYWORD,
+	AST2C_IDENT,
+	AST2C_COMMENT,
+	AST2C_ERROR,
+	AST2C_UNKNOWN,
 };
-const char* TokenTag_to_string(TokenTag);
-int TokenTag_from_string(const char*,TokenTag*);
+const char* ast2c_TokenTag_to_string(ast2c_TokenTag);
+int ast2c_TokenTag_from_string(const char*,ast2c_TokenTag*);
 
-struct Pos {
+struct ast2c_Scope {
+	ast2c_Scope* prev;
+	ast2c_Scope* next;
+	ast2c_Scope* branch;
+	ast2c_Ident** ident;
+	size_t ident_size;
+	ast2c_Node* owner;
+};
+
+struct ast2c_Pos {
 	uint64_t begin;
 	uint64_t end;
 };
 
-struct Loc {
-	Pos pos;
+struct ast2c_Loc {
+	ast2c_Pos pos;
 	uint64_t file;
 	uint64_t line;
 	uint64_t col;
 };
 
-struct Token {
-	TokenTag tag;
+struct ast2c_Token {
+	ast2c_TokenTag tag;
 	char* token;
-	Loc loc;
+	ast2c_Loc loc;
 };
 
-struct RawScope {
-	uint64_t prev;
-	uint64_t next;
-	uint64_t branch;
+struct ast2c_RawScope {
+	uint64_t* prev;
+	uint64_t* next;
+	uint64_t* branch;
 	uint64_t* ident;
 	size_t ident_size;
-	uint64_t owner;
+	uint64_t* owner;
 };
 
-struct RawNode {
-	NodeType node_type;
-	Loc loc;
-	any body;
+struct ast2c_RawNode {
+	ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	void* body;
 };
 
-struct SrcErrorEntry {
+struct ast2c_SrcErrorEntry {
 	char* msg;
 	char* file;
-	Loc loc;
+	ast2c_Loc loc;
 	char* src;
 	int warn;
 };
 
-struct SrcError {
-	SrcErrorEntry* errs;
+struct ast2c_SrcError {
+	ast2c_SrcErrorEntry* errs;
 	size_t errs_size;
 };
 
-struct JsonAst {
-	RawNode* node;
+struct ast2c_JsonAst {
+	ast2c_RawNode* node;
 	size_t node_size;
-	RawScope* scope;
+	ast2c_RawScope* scope;
 	size_t scope_size;
 };
 
-struct AstFile {
+struct ast2c_AstFile {
 	char** files;
 	size_t files_size;
-	JsonAst ast;
-	SrcError error;
+	ast2c_JsonAst* ast;
+	ast2c_SrcError* error;
 };
 
-struct TokenFile {
+struct ast2c_TokenFile {
 	char** files;
 	size_t files_size;
-	Token* tokens;
+	ast2c_Token* tokens;
 	size_t tokens_size;
-	SrcError error;
+	ast2c_SrcError* error;
 };
 
-struct Node {
-	const NodeType node_type;
-	Loc loc;
+struct ast2c_Node {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
 };
 
-struct Expr {
-	const NodeType node_type;
-	Loc loc;
-	Type* expr_type;
+struct ast2c_Expr {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
 };
 
-struct Literal {
-	const NodeType node_type;
-	Loc loc;
-	Type* expr_type;
+struct ast2c_Literal {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
 };
 
-struct Stmt {
-	const NodeType node_type;
-	Loc loc;
+struct ast2c_Stmt {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
 };
 
-struct Member {
-	const NodeType node_type;
-	Loc loc;
-	Member* belong;
-	Ident* ident;
+struct ast2c_Member {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Member* belong;
+	ast2c_Ident* ident;
 };
 
-struct Type {
-	const NodeType node_type;
-	Loc loc;
+struct ast2c_Type {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
 	int is_explicit;
 };
 
-struct Program {
-	const NodeType node_type;
-	Loc loc;
-	StructType* struct_type;
-	Node** elements;
+struct ast2c_Program {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_StructType* struct_type;
+	ast2c_Node** elements;
 	size_t elements_size;
-	Scope* global_scope;
+	ast2c_Scope* global_scope;
 };
 
-struct Binary {
-	const NodeType node_type;
-	Loc loc;
-	Type* expr_type;
-	BinaryOp op;
-	Expr* left;
-	Expr* right;
+struct ast2c_Binary {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
+	ast2c_BinaryOp op;
+	ast2c_Expr* left;
+	ast2c_Expr* right;
 };
 
-struct Unary {
-	const NodeType node_type;
-	Loc loc;
-	Type* expr_type;
-	UnaryOp op;
-	Expr* expr;
+struct ast2c_Unary {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
+	ast2c_UnaryOp op;
+	ast2c_Expr* expr;
 };
 
-struct Cond {
-	const NodeType node_type;
-	Loc loc;
-	Type* expr_type;
-	Expr* cond;
-	Expr* then;
-	Loc els_loc;
-	Expr* els;
+struct ast2c_Cond {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
+	ast2c_Expr* cond;
+	ast2c_Expr* then;
+	ast2c_Loc els_loc;
+	ast2c_Expr* els;
 };
 
-struct Ident {
-	const NodeType node_type;
-	Loc loc;
-	Type* expr_type;
+struct ast2c_Ident {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
 	char* ident;
-	IdentUsage usage;
-	Node* base;
-	Scope* scope;
+	ast2c_IdentUsage usage;
+	ast2c_Node* base;
+	ast2c_Scope* scope;
 };
 
-struct Call {
-	const NodeType node_type;
-	Loc loc;
-	Type* expr_type;
-	Expr* callee;
-	Expr* raw_arguments;
-	Expr** arguments;
+struct ast2c_Call {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
+	ast2c_Expr* callee;
+	ast2c_Expr* raw_arguments;
+	ast2c_Expr** arguments;
 	size_t arguments_size;
-	Loc end_loc;
+	ast2c_Loc end_loc;
 };
 
-struct If {
-	const NodeType node_type;
-	Loc loc;
-	Type* expr_type;
-	Scope* cond_scope;
-	Expr* cond;
-	IndentBlock* then;
-	Node* els;
+struct ast2c_If {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
+	ast2c_Scope* cond_scope;
+	ast2c_Expr* cond;
+	ast2c_IndentBlock* then;
+	ast2c_Node* els;
 };
 
-struct MemberAccess {
-	const NodeType node_type;
-	Loc loc;
-	Type* expr_type;
-	Expr* target;
+struct ast2c_MemberAccess {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
+	ast2c_Expr* target;
 	char* member;
-	Loc member_loc;
-	Node* base;
+	ast2c_Loc member_loc;
+	ast2c_Node* base;
 };
 
-struct Paren {
-	const NodeType node_type;
-	Loc loc;
-	Type* expr_type;
-	Expr* expr;
-	Loc end_loc;
+struct ast2c_Paren {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
+	ast2c_Expr* expr;
+	ast2c_Loc end_loc;
 };
 
-struct Index {
-	const NodeType node_type;
-	Loc loc;
-	Type* expr_type;
-	Expr* expr;
-	Expr* index;
-	Loc end_loc;
+struct ast2c_Index {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
+	ast2c_Expr* expr;
+	ast2c_Expr* index;
+	ast2c_Loc end_loc;
 };
 
-struct Match {
-	const NodeType node_type;
-	Loc loc;
-	Type* expr_type;
-	Scope* cond_scope;
-	Expr* cond;
-	Node** branch;
+struct ast2c_Match {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
+	ast2c_Scope* cond_scope;
+	ast2c_Expr* cond;
+	ast2c_Node** branch;
 	size_t branch_size;
 };
 
-struct Range {
-	const NodeType node_type;
-	Loc loc;
-	Type* expr_type;
-	BinaryOp op;
-	Expr* start;
-	Expr* end;
+struct ast2c_Range {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
+	ast2c_BinaryOp op;
+	ast2c_Expr* start;
+	ast2c_Expr* end;
 };
 
-struct TmpVar {
-	const NodeType node_type;
-	Loc loc;
-	Type* expr_type;
+struct ast2c_TmpVar {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
 	uint64_t tmp_var;
 };
 
-struct BlockExpr {
-	const NodeType node_type;
-	Loc loc;
-	Type* expr_type;
-	Node** calls;
+struct ast2c_BlockExpr {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
+	ast2c_Node** calls;
 	size_t calls_size;
-	Expr* expr;
+	ast2c_Expr* expr;
 };
 
-struct Import {
-	const NodeType node_type;
-	Loc loc;
-	Type* expr_type;
+struct ast2c_Import {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
 	char* path;
-	Call* base;
-	Program* import_desc;
+	ast2c_Call* base;
+	ast2c_Program* import_desc;
 };
 
-struct IntLiteral {
-	const NodeType node_type;
-	Loc loc;
-	Type* expr_type;
+struct ast2c_IntLiteral {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
 	char* value;
 };
 
-struct BoolLiteral {
-	const NodeType node_type;
-	Loc loc;
-	Type* expr_type;
+struct ast2c_BoolLiteral {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
 	int value;
 };
 
-struct StrLiteral {
-	const NodeType node_type;
-	Loc loc;
-	Type* expr_type;
+struct ast2c_StrLiteral {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
 	char* value;
 };
 
-struct Input {
-	const NodeType node_type;
-	Loc loc;
-	Type* expr_type;
+struct ast2c_Input {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
 };
 
-struct Output {
-	const NodeType node_type;
-	Loc loc;
-	Type* expr_type;
+struct ast2c_Output {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
 };
 
-struct Config {
-	const NodeType node_type;
-	Loc loc;
-	Type* expr_type;
+struct ast2c_Config {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
 };
 
-struct Loop {
-	const NodeType node_type;
-	Loc loc;
-	Scope* cond_scope;
-	Expr* init;
-	Expr* cond;
-	Expr* step;
-	IndentBlock* body;
+struct ast2c_Loop {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Scope* cond_scope;
+	ast2c_Expr* init;
+	ast2c_Expr* cond;
+	ast2c_Expr* step;
+	ast2c_IndentBlock* body;
 };
 
-struct IndentBlock {
-	const NodeType node_type;
-	Loc loc;
-	Node** elements;
+struct ast2c_IndentBlock {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Node** elements;
 	size_t elements_size;
-	Scope* scope;
-	StructType* struct_type;
+	ast2c_Scope* scope;
+	ast2c_StructType* struct_type;
 };
 
-struct MatchBranch {
-	const NodeType node_type;
-	Loc loc;
-	Expr* cond;
-	Loc sym_loc;
-	Node* then;
+struct ast2c_MatchBranch {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Expr* cond;
+	ast2c_Loc sym_loc;
+	ast2c_Node* then;
 };
 
-struct Return {
-	const NodeType node_type;
-	Loc loc;
-	Expr* expr;
+struct ast2c_Return {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Expr* expr;
 };
 
-struct Break {
-	const NodeType node_type;
-	Loc loc;
+struct ast2c_Break {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
 };
 
-struct Continue {
-	const NodeType node_type;
-	Loc loc;
+struct ast2c_Continue {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
 };
 
-struct Assert {
-	const NodeType node_type;
-	Loc loc;
-	Binary* cond;
+struct ast2c_Assert {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Binary* cond;
 };
 
-struct ImplicitYield {
-	const NodeType node_type;
-	Loc loc;
-	Expr* expr;
+struct ast2c_ImplicitYield {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Expr* expr;
 };
 
-struct Field {
-	const NodeType node_type;
-	Loc loc;
-	Member* belong;
-	Ident* ident;
-	Loc colon_loc;
-	Type* field_type;
-	Expr* raw_arguments;
-	Expr** arguments;
+struct ast2c_Field {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Member* belong;
+	ast2c_Ident* ident;
+	ast2c_Loc colon_loc;
+	ast2c_Type* field_type;
+	ast2c_Expr* raw_arguments;
+	ast2c_Expr** arguments;
 	size_t arguments_size;
 };
 
-struct Format {
-	const NodeType node_type;
-	Loc loc;
-	Member* belong;
-	Ident* ident;
-	IndentBlock* body;
+struct ast2c_Format {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Member* belong;
+	ast2c_Ident* ident;
+	ast2c_IndentBlock* body;
 };
 
-struct Function {
-	const NodeType node_type;
-	Loc loc;
-	Member* belong;
-	Ident* ident;
-	Field** parameters;
+struct ast2c_Function {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Member* belong;
+	ast2c_Ident* ident;
+	ast2c_Field** parameters;
 	size_t parameters_size;
-	Type* return_type;
-	IndentBlock* body;
-	FunctionType* func_type;
+	ast2c_Type* return_type;
+	ast2c_IndentBlock* body;
+	ast2c_FunctionType* func_type;
 	int is_cast;
-	Loc cast_loc;
+	ast2c_Loc cast_loc;
 };
 
-struct IntType {
-	const NodeType node_type;
-	Loc loc;
+struct ast2c_IntType {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
 	int is_explicit;
 	uint64_t bit_size;
-	Endian endian;
+	ast2c_Endian endian;
 	int is_signed;
 };
 
-struct IdentType {
-	const NodeType node_type;
-	Loc loc;
+struct ast2c_IdentType {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
 	int is_explicit;
-	Ident* ident;
-	Member* base;
+	ast2c_Ident* ident;
+	ast2c_Member* base;
 };
 
-struct IntLiteralType {
-	const NodeType node_type;
-	Loc loc;
+struct ast2c_IntLiteralType {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
 	int is_explicit;
-	IntLiteral* base;
+	ast2c_IntLiteral* base;
 };
 
-struct StrLiteralType {
-	const NodeType node_type;
-	Loc loc;
+struct ast2c_StrLiteralType {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
 	int is_explicit;
-	StrLiteral* base;
+	ast2c_StrLiteral* base;
 };
 
-struct VoidType {
-	const NodeType node_type;
-	Loc loc;
-	int is_explicit;
-};
-
-struct BoolType {
-	const NodeType node_type;
-	Loc loc;
+struct ast2c_VoidType {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
 	int is_explicit;
 };
 
-struct ArrayType {
-	const NodeType node_type;
-	Loc loc;
+struct ast2c_BoolType {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
 	int is_explicit;
-	Loc end_loc;
-	Type* base_type;
-	Expr* length;
 };
 
-struct FunctionType {
-	const NodeType node_type;
-	Loc loc;
+struct ast2c_ArrayType {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
 	int is_explicit;
-	Type* return_type;
-	Type** parameters;
+	ast2c_Loc end_loc;
+	ast2c_Type* base_type;
+	ast2c_Expr* length;
+};
+
+struct ast2c_FunctionType {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	int is_explicit;
+	ast2c_Type* return_type;
+	ast2c_Type** parameters;
 	size_t parameters_size;
 };
 
-struct StructType {
-	const NodeType node_type;
-	Loc loc;
+struct ast2c_StructType {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
 	int is_explicit;
-	Member** fields;
+	ast2c_Member** fields;
 	size_t fields_size;
 };
 
-struct StructUnionType {
-	const NodeType node_type;
-	Loc loc;
+struct ast2c_StructUnionType {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
 	int is_explicit;
-	StructType** fields;
+	ast2c_StructType** fields;
 	size_t fields_size;
-	Expr* base;
-	Field** union_fields;
+	ast2c_Expr* base;
+	ast2c_Field** union_fields;
 	size_t union_fields_size;
 };
 
-struct Cast {
-	const NodeType node_type;
-	Loc loc;
-	Type* expr_type;
-	Call* base;
-	Expr* expr;
+struct ast2c_Cast {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
+	ast2c_Call* base;
+	ast2c_Expr* expr;
 };
 
-struct Comment {
-	const NodeType node_type;
-	Loc loc;
+struct ast2c_Comment {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
 	char* comment;
 };
 
-struct CommentGroup {
-	const NodeType node_type;
-	Loc loc;
-	Comment** comments;
+struct ast2c_CommentGroup {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Comment** comments;
 	size_t comments_size;
 };
 
-struct UnionType {
-	const NodeType node_type;
-	Loc loc;
+struct ast2c_UnionType {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
 	int is_explicit;
-	Expr* cond;
-	UnionCandidate** candidates;
+	ast2c_Expr* cond;
+	ast2c_UnionCandidate** candidates;
 	size_t candidates_size;
-	StructUnionType* base_type;
+	ast2c_StructUnionType* base_type;
 };
 
-struct UnionCandidate {
-	const NodeType node_type;
-	Loc loc;
-	Expr* cond;
-	Member* field;
+struct ast2c_UnionCandidate {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Expr* cond;
+	ast2c_Member* field;
 };
 
-struct RangeType {
-	const NodeType node_type;
-	Loc loc;
+struct ast2c_RangeType {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
 	int is_explicit;
-	Type* base_type;
-	Range* range;
+	ast2c_Type* base_type;
+	ast2c_Range* range;
 };
 
-struct Enum {
-	const NodeType node_type;
-	Loc loc;
-	Member* belong;
-	Ident* ident;
-	Scope* scope;
-	Loc colon_loc;
-	Type* base_type;
-	EnumMember** members;
+struct ast2c_Enum {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Member* belong;
+	ast2c_Ident* ident;
+	ast2c_Scope* scope;
+	ast2c_Loc colon_loc;
+	ast2c_Type* base_type;
+	ast2c_EnumMember** members;
 	size_t members_size;
-	EnumType* enum_type;
+	ast2c_EnumType* enum_type;
 };
 
-struct EnumMember {
-	const NodeType node_type;
-	Loc loc;
-	Member* belong;
-	Ident* ident;
-	Expr* expr;
+struct ast2c_EnumMember {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Member* belong;
+	ast2c_Ident* ident;
+	ast2c_Expr* expr;
 };
 
-struct EnumType {
-	const NodeType node_type;
-	Loc loc;
+struct ast2c_EnumType {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
 	int is_explicit;
-	Enum* base;
+	ast2c_Enum* base;
 };
-
-struct Scope {
-	const NodeType node_type;
-	Scope* prev;
-	Scope* next;
-	Scope* branch;
-	Ident** ident;
-	size_t ident_size;
-	Node* owner;
-};
-
-typedef struct RawNode {
-	const NodeType node_type;
-	Loc loc;
-	void* body;
-} RawNode;
-
-typedef struct RawScope {
-	uint64_t prev;
-	uint64_t next;
-	uint64_t branch;
-	uint64_t* ident;
-	size_t ident_size;
-	uint64_t owner;
-} RawScope;
-
-typedef struct Ast {
-	RawNode* node;
-	size_t node_size;
-	RawScope* scope;
-	size_t scope_size;
-} Ast;
 
 #ifdef __cplusplus
 }
