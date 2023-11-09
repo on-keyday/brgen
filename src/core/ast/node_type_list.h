@@ -128,17 +128,12 @@ namespace brgen::ast {
         }
 
         template <bool ast_mode, class T>
-        void do_dump(T& t, auto&& field, bool flat, bool dump_base) {
+        void do_dump(T& t, auto&& field) {
             auto do_dump = [&](auto&& field) {
                 t.dump([&](std::string_view key, auto& v) {
                     using P = std::decay_t<decltype(v)>;
                     if constexpr (std::is_same_v<P, NodeType>) {
-                        if (flat) {
-                            field(key, node_type_to_string(T::node_type_tag));
-                            if (dump_base) {
-                                internal::dump_base_type(field, T::node_type_tag);
-                            }
-                        }
+                        // nothing to do
                     }
                     else if constexpr (std::is_same_v<P, bool>) {
                         field(key, "bool");
@@ -150,7 +145,7 @@ namespace brgen::ast {
                         field(key, "string");
                     }
                     else if constexpr (std::is_same_v<P, lexer::Loc>) {
-                        if (flat || key != "loc") {
+                        if (key != "loc") {
                             field(key, "loc");
                         }
                     }
@@ -190,29 +185,22 @@ namespace brgen::ast {
                     }
                 });
             };
-            if (!flat) {
-                t.dump([&](std::string_view key, auto& v) {
-                    using P = std::decay_t<decltype(v)>;
-                    if constexpr (std::is_same_v<P, NodeType>) {
-                        field(key, node_type_to_string(T::node_type_tag));
-                        if (dump_base) {
-                            internal::dump_base_type(field, T::node_type_tag);
-                        }
+            t.dump([&](std::string_view key, auto& v) {
+                using P = std::decay_t<decltype(v)>;
+                if constexpr (std::is_same_v<P, NodeType>) {
+                    field(key, node_type_to_string(T::node_type_tag));
+                    internal::dump_base_type(field, T::node_type_tag);
+                }
+                else if constexpr (std::is_same_v<P, lexer::Loc>) {
+                    if (key == "loc") {
+                        field(key, "loc");
                     }
-                    else if constexpr (std::is_same_v<P, lexer::Loc>) {
-                        if (key == "loc") {
-                            field(key, "loc");
-                        }
-                    }
-                });
-                field("body", [&](auto&& f) {
-                    auto field = f.object();
-                    do_dump(field);
-                });
-            }
-            else {
+                }
+            });
+            field("body", [&](auto&& f) {
+                auto field = f.object();
                 do_dump(field);
-            }
+            });
         }
 
         template <class T>
@@ -232,8 +220,10 @@ namespace brgen::ast {
     constexpr auto src_error_entry_type = R"({"msg": "string","file": "string","loc": "loc","src": "string","warn": "bool"})";
     constexpr auto src_error_type = R"({"errs": "array<src_error_entry>"})";
 
+    constexpr auto raw_node_type = R"({"node_type": "node_type","loc": "loc","body": "object"})";
+
     template <bool ast_mode = false>
-    void node_type_list(auto&& objdump, bool flat = false, bool dump_base = true) {
+    void node_types(auto&& objdump, bool flat = false, bool dump_base = true) {
         objdump([&](auto&& field) {
             field("node_type", "node");
             internal::list_derive_type<Node>(field);
@@ -244,13 +234,13 @@ namespace brgen::ast {
                 if constexpr (std::is_default_constructible_v<T>) {
                     objdump([&](auto&& field) {
                         T t;
-                        internal::do_dump<ast_mode>(t, field, flat, dump_base);
+                        internal::do_dump<ast_mode>(t, field);
                     });
                 }
                 else {
                     objdump([&](auto&& field) {
                         internal::Dummy<T> t;
-                        internal::do_dump<ast_mode>(t, field, flat, dump_base);
+                        internal::do_dump<ast_mode>(t, field);
                         internal::list_derive_type<T>(field);
                     });
                 }
@@ -258,14 +248,7 @@ namespace brgen::ast {
         }
     }
 
-    struct CustomOption {
-        bool dump_uintptr = false;
-        bool enum_name = false;
-        bool dump_lex = false;
-        bool dump_error = false;
-    };
-
-    void custom_type_mapping(auto&& field, CustomOption opt = {}) {
+    void enum_types(auto&& field) {
         struct R {
             const char* const* start;
             const char* const* finish;
@@ -279,67 +262,92 @@ namespace brgen::ast {
             }
         };
         {
+            field("node_type", [&](auto&& d) {
+                auto field = d.array();
+                for (size_t i = 0; i < node_type_count; i++) {
+                    field([&](auto&& d) {
+                        auto field = d.object();
+                        field("name", node_type_to_string(*mapValueToNodeType(i)));
+                        field("value", node_type_to_string(*mapValueToNodeType(i)));
+                    });
+                }
+            });
+        }
+        {
             R p{unary_op_str, unary_op_str + unary_op_count};
-            if (opt.enum_name) {
-                field("unary_op", [&](auto&& d) {
-                    auto field = d.array();
-                    for (size_t i = 0; i < unary_op_count; i++) {
-                        field([&](auto&& d) {
-                            auto field = d.object();
-                            field("op", unary_op_str[i]);
-                            field("name", unary_op_name[i]);
-                        });
-                    }
-                });
-            }
-            else {
-                field("unary_op", p);
-            }
+            field("unary_op", [&](auto&& d) {
+                auto field = d.array();
+                for (size_t i = 0; i < unary_op_count; i++) {
+                    field([&](auto&& d) {
+                        auto field = d.object();
+                        field("name", unary_op_name[i]);
+                        field("value", unary_op_str[i]);
+                    });
+                }
+            });
         }
         {
             R p{bin_op_list, bin_op_list + bin_op_count};
-            if (opt.enum_name) {
-                field("binary_op", [&](auto&& d) {
-                    auto field = d.array();
-                    for (size_t i = 0; i < bin_op_count; i++) {
-                        field([&](auto&& d) {
-                            auto field = d.object();
-                            field("op", bin_op_list[i]);
-                            field("name", bin_op_name[i]);
-                        });
-                    }
-                });
-            }
-            else {
-                field("binary_op", p);
-            }
+            field("binary_op", [&](auto&& d) {
+                auto field = d.array();
+                for (size_t i = 0; i < bin_op_count; i++) {
+                    field([&](auto&& d) {
+                        auto field = d.object();
+                        field("name", bin_op_name[i]);
+                        field("value", bin_op_list[i]);
+                    });
+                }
+            });
         }
         {
             R p{ident_usage_str, ident_usage_str + ident_usage_count};
-            field("ident_usage", p);
+            field("ident_usage", [&](auto&& d) {
+                auto field = d.array();
+                for (size_t i = 0; i < ident_usage_count; i++) {
+                    field([&](auto&& d) {
+                        auto field = d.object();
+                        field("name", ident_usage_str[i]);
+                        field("value", ident_usage_str[i]);
+                    });
+                }
+            });
         }
         {
             R p{endian_str, endian_str + endian_count};
-            field("endian", p);
+            field("endian", [&](auto&& d) {
+                auto field = d.array();
+                for (size_t i = 0; i < endian_count; i++) {
+                    field([&](auto&& d) {
+                        auto field = d.object();
+                        field("name", endian_str[i]);
+                        field("value", endian_str[i]);
+                    });
+                }
+            });
         }
-        if (opt.dump_uintptr) {
-            field("scope", utils::json::RawJSON<const char*>{raw_scope_type});
+        {
+            R p{lexer::tag_str, lexer::tag_str + lexer::tag_count};
+            field("token_tag", [&](auto&& d) {
+                auto field = d.array();
+                for (size_t i = 0; i < lexer::tag_count; i++) {
+                    field([&](auto&& d) {
+                        auto field = d.object();
+                        field("name", lexer::tag_str[i]);
+                        field("value", lexer::tag_str[i]);
+                    });
+                }
+            });
         }
-        else {
-            field("scope", utils::json::RawJSON<const char*>{scope_type_list});
-        }
+    }
+
+    void struct_types(auto&& field) {
+        field("scope", utils::json::RawJSON<const char*>{scope_type_list});
         field("pos", utils::json::RawJSON<const char*>{brgen::ast::pos_type});
         field("loc", utils::json::RawJSON<const char*>{brgen::ast::loc_type});
-        if (opt.dump_lex) {
-            {
-                R p{lexer::tag_str, lexer::tag_str + lexer::tag_count};
-                field("token_tag", p);
-            }
-            field("token", utils::json::RawJSON<const char*>{brgen::ast::token_type});
-        }
-        if (opt.dump_error) {
-            field("src_error_entry", utils::json::RawJSON<const char*>{brgen::ast::src_error_entry_type});
-            field("src_error", utils::json::RawJSON<const char*>{brgen::ast::src_error_type});
-        }
+        field("token", utils::json::RawJSON<const char*>{brgen::ast::token_type});
+        field("raw_scope", utils::json::RawJSON<const char*>{raw_scope_type});
+        field("raw_node", utils::json::RawJSON<const char*>{raw_node_type});
+        field("src_error_entry", utils::json::RawJSON<const char*>{brgen::ast::src_error_entry_type});
+        field("src_error", utils::json::RawJSON<const char*>{brgen::ast::src_error_type});
     }
 }  // namespace brgen::ast
