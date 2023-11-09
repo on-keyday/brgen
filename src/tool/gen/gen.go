@@ -89,10 +89,11 @@ type Def interface {
 }
 
 type Interface struct {
-	Name    string
-	Embed   string
-	Fields  []*Field // common fields
-	Derived []string
+	Name           string
+	Embed          string
+	Fields         []*Field // common fields
+	UnCommonFields []*Field // uncommon fields
+	Derived        []string
 }
 
 func (d *Interface) def() {}
@@ -179,6 +180,16 @@ func (d *Type) CString() string {
 	return d.Name + postfix
 }
 
+func (d *Type) CSharpString() string {
+	prefix := ""
+	postfix := ""
+	if d.IsArray {
+		prefix += "List<"
+		postfix += ">"
+	}
+	return prefix + d.Name + postfix
+}
+
 func (d *Type) UintptrString() string {
 	prefix := ""
 	if d.IsArray {
@@ -200,10 +211,11 @@ type Field struct {
 }
 
 type Struct struct {
-	NodeType   string
-	Name       string
-	Implements []string
-	Fields     []*Field
+	NodeType       string
+	Name           string
+	Implements     []string
+	Fields         []*Field
+	UnCommonFields []*Field
 }
 
 type EnumValue struct {
@@ -382,6 +394,24 @@ func CollectDefinition(list *List, fieldCaseFn func(string) string, typeCaseFn f
 					Tag:  field.Key,
 				})
 			}
+			if iface.Embed != "" {
+				emb, ok := defs.Interfaces[iface.Embed]
+				if ok {
+					common := map[string]struct{}{}
+					for _, field := range emb.Fields {
+						common[field.Name] = struct{}{}
+					}
+					for _, field := range iface.Fields {
+						if _, ok := common[field.Name]; !ok {
+							iface.UnCommonFields = append(iface.UnCommonFields, field)
+						}
+					}
+				} else {
+					iface.UnCommonFields = iface.Fields
+				}
+			} else {
+				iface.UnCommonFields = iface.Fields
+			}
 			continue
 		}
 		var body Struct
@@ -403,6 +433,24 @@ func CollectDefinition(list *List, fieldCaseFn func(string) string, typeCaseFn f
 		loc.Tag = "loc"
 
 		body.Fields = c.mapToStructFields(node.Body, &loc)
+
+		if len(body.Implements) != 0 {
+			if iface, ok := defs.Interfaces[body.Implements[0]]; ok {
+				common := map[string]struct{}{}
+				for _, field := range iface.Fields {
+					common[field.Name] = struct{}{}
+				}
+				for _, field := range body.Fields {
+					if _, ok := common[field.Name]; !ok {
+						body.UnCommonFields = append(body.UnCommonFields, field)
+					}
+				}
+			} else {
+				body.UnCommonFields = body.Fields
+			}
+		} else {
+			body.UnCommonFields = body.Fields
+		}
 
 		defs.push(&body)
 	}
@@ -438,6 +486,7 @@ func CollectDefinition(list *List, fieldCaseFn func(string) string, typeCaseFn f
 	scope.Name = c.typeCaseFn("Scope")
 	scope.Fields = c.mapToStructFields(list.Scope)
 	defs.push(&scope)
+	scope.UnCommonFields = scope.Fields
 	defs.ScopeDef = &scope
 
 	// pos definition
@@ -445,6 +494,7 @@ func CollectDefinition(list *List, fieldCaseFn func(string) string, typeCaseFn f
 	pos.Name = c.typeCaseFn("Pos")
 	pos.Fields = make([]*Field, 0, len(list.Pos))
 	pos.Fields = c.mapToStructFields(list.Pos)
+	pos.UnCommonFields = pos.Fields
 	defs.push(&pos)
 
 	// loc definition
@@ -452,6 +502,7 @@ func CollectDefinition(list *List, fieldCaseFn func(string) string, typeCaseFn f
 	loc.Name = c.typeCaseFn("Loc")
 	loc.Fields = make([]*Field, 0, len(list.Loc))
 	loc.Fields = c.mapToStructFields(list.Loc)
+	loc.UnCommonFields = loc.Fields
 	defs.push(&loc)
 
 	// token definition
@@ -459,6 +510,7 @@ func CollectDefinition(list *List, fieldCaseFn func(string) string, typeCaseFn f
 	token.Name = c.typeCaseFn("Token")
 	token.Fields = make([]*Field, 0, len(list.Token))
 	token.Fields = c.mapToStructFields(list.Token)
+	token.UnCommonFields = token.Fields
 	defs.push(&token)
 
 	// error_entry definition
@@ -466,6 +518,7 @@ func CollectDefinition(list *List, fieldCaseFn func(string) string, typeCaseFn f
 	errorEntry.Name = c.typeCaseFn("SrcErrorEntry")
 	errorEntry.Fields = make([]*Field, 0, len(list.ErrorEntry))
 	errorEntry.Fields = c.mapToStructFields(list.ErrorEntry)
+	errorEntry.UnCommonFields = errorEntry.Fields
 	defs.push(&errorEntry)
 
 	// error definition
@@ -473,6 +526,7 @@ func CollectDefinition(list *List, fieldCaseFn func(string) string, typeCaseFn f
 	error.Name = c.typeCaseFn("SrcError")
 	error.Fields = make([]*Field, 0, len(list.Error))
 	error.Fields = c.mapToStructFields(list.Error)
+	error.UnCommonFields = error.Fields
 	defs.push(&error)
 
 	return

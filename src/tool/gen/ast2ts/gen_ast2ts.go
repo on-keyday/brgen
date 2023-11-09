@@ -41,26 +41,14 @@ func generate(rw io.Writer, defs *gen.Defs) {
 		switch d := def.(type) {
 		case *gen.Interface:
 			w.Printf("export interface %s", d.Name)
-			commonFields := map[string]struct{}{}
 			if d.Embed != "" {
 				w.Printf(" extends %s", d.Embed)
-				embed := d.Embed
-				for embed != "" {
-					iface := defs.Interfaces[embed]
-					for _, field := range iface.Fields {
-						commonFields[field.Name] = struct{}{}
-					}
-					embed = iface.Embed
-				}
 			}
 			w.Printf(" {\n")
 			if d.Name == "Node" {
 				w.Printf("	readonly node_type: NodeType;\n")
 			}
-			for _, field := range d.Fields {
-				if _, ok := commonFields[field.Name]; ok {
-					continue
-				}
+			for _, field := range d.UnCommonFields {
 				w.Printf("	%s: %s;\n", field.Name, field.Type.TsString())
 			}
 			w.Printf("}\n\n")
@@ -77,20 +65,11 @@ func generate(rw io.Writer, defs *gen.Defs) {
 			w.Printf("}\n\n")
 		case *gen.Struct:
 			w.Printf("export interface %s ", d.Name)
-			commonFields := map[string]struct{}{}
 			if len(d.Implements) > 0 {
 				w.Printf("extends %s ", d.Implements[0])
-				for _, iface := range d.Implements {
-					for _, field := range defs.Interfaces[iface].Fields {
-						commonFields[field.Name] = struct{}{}
-					}
-				}
 			}
 			w.Printf("{\n")
-			for _, field := range d.Fields {
-				if _, ok := commonFields[field.Name]; ok {
-					continue
-				}
+			for _, field := range d.UnCommonFields {
 				w.Printf("	%s: %s;\n", field.Name, field.Type.TsString())
 			}
 			w.Printf("}\n\n")

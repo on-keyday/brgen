@@ -68,6 +68,16 @@
             "symbolSearchPath": "lib\\"
         },
         {
+            "name":"Debug generator",
+            "type": "go",
+            "request": "launch",
+            "mode": "exec",
+            "program": "${workspaceRoot}/tool/gen_ast2csharp.exe",
+            "args": ["/dev/stdout"],
+            "cwd": "${workspaceRoot}",
+
+        },
+        {
             "name": "Debug attach",
             "type": "cppvsdbg",
             "request": "attach",
