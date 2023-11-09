@@ -192,6 +192,7 @@ func generateSource(rw io.Writer, defs *gen.Defs, single bool) {
 			}
 			w.Printf("%s* %s_parse(json_handlers* h, void* obj) {\n", v.Name, v.Name)
 			w.Printf("}\n\n")
+		}
 	}
 
 	w.Printf("#ifdef __cplusplus\n")
