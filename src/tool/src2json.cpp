@@ -38,11 +38,11 @@ struct Flags : utils::cmdline::templ::HelpOption {
     bool print_json = false;
     bool print_on_error = false;
     bool debug_json = false;
-    bool dump_ptr_as_uintptr = false;
-    bool flat = false;
-    bool not_dump_base = false;
-    bool dump_enum_name = false;
-    bool dump_error = false;
+    // bool dump_ptr_as_uintptr = false;
+    // bool flat = false;
+    // bool not_dump_base = false;
+    // bool dump_enum_name = false;
+    // bool dump_error = false;
     bool no_color = false;
 
     bool stdin_mode = false;
@@ -76,11 +76,13 @@ struct Flags : utils::cmdline::templ::HelpOption {
 
         ctx.VarBool(&debug_json, "d,debug-json", "debug mode json output (not parsable ast, only for debug. use with --print-ast)");
 
+        /*
         ctx.VarBool(&dump_ptr_as_uintptr, "dump-uintptr", "make pointer type of ast field uintptr (use with --dump-ast)");
         ctx.VarBool(&flat, "dump-flat", "dump types schema with flat body (use with --dump-ast)");
         ctx.VarBool(&not_dump_base, "not-dump-base", "not dump types schema with base type (use with --dump-ast)");
         ctx.VarBool(&dump_enum_name, "dump-enum-name", "dump enum name of operator (use with --dump-ast)");
         ctx.VarBool(&dump_error, "dump-error", "dump error type (use with --dump-ast)");
+        */
 
         ctx.VarBool(&no_color, "no-color", "disable color output");
 
@@ -151,7 +153,7 @@ int check_ast(std::string_view name, utils::view::rvec view) {
     return 0;
 }
 
-int node_list(bool dump_uintptr, bool flat, bool not_dump_base, bool dump_enum_name, bool lexer_mode, bool dump_error) {
+int dump_types() {
     brgen::JSONWriter d;
     {
         auto field = d.object();
@@ -165,19 +167,16 @@ int node_list(bool dump_uintptr, bool flat, bool not_dump_base, bool dump_enum_n
                     });
                 });
             };
-            if (dump_uintptr) {
-                brgen::ast::node_type_list<true>(list, flat, !not_dump_base);
-            }
-            else {
-                brgen::ast::node_type_list(list, flat, !not_dump_base);
-            }
+            brgen::ast::node_types(list);
         });
-        brgen::ast::CustomOption opt;
-        opt.dump_lex = lexer_mode;
-        opt.enum_name = dump_enum_name;
-        opt.dump_uintptr = dump_uintptr;
-        opt.dump_error = dump_error;
-        brgen::ast::custom_type_mapping(field, opt);
+        field("struct", [&] {
+            auto field = d.object();
+            brgen::ast::struct_types(field);
+        });
+        field("enum", [&] {
+            auto field = d.object();
+            brgen::ast::enum_types(field);
+        });
     }
     cout << d.out();
     if (cout.is_tty()) {
@@ -193,7 +192,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     flags.argv_mode = flags.argv_input.size() > 0;
 
     if (flags.dump_types) {
-        return node_list(flags.dump_ptr_as_uintptr, flags.flat, flags.not_dump_base, flags.dump_enum_name, flags.lexer, flags.dump_error);
+        return dump_types();
     }
 
     if (flags.stdin_mode && flags.argv_mode) {

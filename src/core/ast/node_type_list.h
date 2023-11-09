@@ -223,7 +223,7 @@ namespace brgen::ast {
     constexpr auto raw_node_type = R"({"node_type": "node_type","loc": "loc","body": "object"})";
 
     template <bool ast_mode = false>
-    void node_types(auto&& objdump, bool flat = false, bool dump_base = true) {
+    void node_types(auto&& objdump) {
         objdump([&](auto&& field) {
             field("node_type", "node");
             internal::list_derive_type<Node>(field);
