@@ -211,7 +211,7 @@ namespace brgen::ast {
     }  // namespace internal
 
     constexpr auto scope_type_list = R"({"prev": "weak_ptr<scope>","next": "shared_ptr<scope>","branch": "shared_ptr<scope>","ident": "array<std::weak_ptr<ident>>","owner": "weak_ptr<node>"})";
-    constexpr auto raw_scope_type = R"({"prev": "optional<uintptr>","next": "uintptr","branch": "optional<uintptr>","ident": "array<uintptr>", "owner": "optional<uintptr>"})";
+    constexpr auto raw_scope_type = R"({"prev": "optional<uintptr>","next": "optional<uintptr>","branch": "optional<uintptr>","ident": "array<uintptr>", "owner": "optional<uintptr>"})";
 
     constexpr auto loc_type = R"({"pos": "pos","file": "uint","line": "uint","col": "uint"})";
     constexpr auto pos_type = R"({"begin": "uint","end": "uint"})";
@@ -220,7 +220,11 @@ namespace brgen::ast {
     constexpr auto src_error_entry_type = R"({"msg": "string","file": "string","loc": "loc","src": "string","warn": "bool"})";
     constexpr auto src_error_type = R"({"errs": "array<src_error_entry>"})";
 
-    constexpr auto raw_node_type = R"({"node_type": "node_type","loc": "loc","body": "object"})";
+    constexpr auto raw_node_type = R"({"node_type": "node_type","loc": "loc","body": "any"})";
+
+    constexpr auto json_ast = R"({"node": "array<raw_node>","scope": "array<raw_scope>"})";
+    constexpr auto ast_file = R"({"files": "array<string>","ast": "optional<json_ast>","error": "optional<src_error>"})";
+    constexpr auto token_file = R"({"files": "array<string>","tokens": "optional<array<token>>","error": "optional<src_error>"})";
 
     template <bool ast_mode = false>
     void node_types(auto&& objdump) {
@@ -349,5 +353,8 @@ namespace brgen::ast {
         field("raw_node", utils::json::RawJSON<const char*>{raw_node_type});
         field("src_error_entry", utils::json::RawJSON<const char*>{brgen::ast::src_error_entry_type});
         field("src_error", utils::json::RawJSON<const char*>{brgen::ast::src_error_type});
+        field("json_ast", utils::json::RawJSON<const char*>{brgen::ast::json_ast});
+        field("ast_file", utils::json::RawJSON<const char*>{brgen::ast::ast_file});
+        field("token_file", utils::json::RawJSON<const char*>{brgen::ast::token_file});
     }
 }  // namespace brgen::ast

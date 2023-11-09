@@ -7,6 +7,765 @@ import (
 	"fmt"
 )
 
+type NodeType int
+
+const (
+	NodeTypeProgram         NodeType = 0
+	NodeTypeExpr            NodeType = 1
+	NodeTypeBinary          NodeType = 2
+	NodeTypeUnary           NodeType = 3
+	NodeTypeCond            NodeType = 4
+	NodeTypeIdent           NodeType = 5
+	NodeTypeCall            NodeType = 6
+	NodeTypeIf              NodeType = 7
+	NodeTypeMemberAccess    NodeType = 8
+	NodeTypeParen           NodeType = 9
+	NodeTypeIndex           NodeType = 10
+	NodeTypeMatch           NodeType = 11
+	NodeTypeRange           NodeType = 12
+	NodeTypeTmpVar          NodeType = 13
+	NodeTypeBlockExpr       NodeType = 14
+	NodeTypeImport          NodeType = 15
+	NodeTypeLiteral         NodeType = 16
+	NodeTypeIntLiteral      NodeType = 17
+	NodeTypeBoolLiteral     NodeType = 18
+	NodeTypeStrLiteral      NodeType = 19
+	NodeTypeInput           NodeType = 20
+	NodeTypeOutput          NodeType = 21
+	NodeTypeConfig          NodeType = 22
+	NodeTypeStmt            NodeType = 23
+	NodeTypeLoop            NodeType = 24
+	NodeTypeIndentBlock     NodeType = 25
+	NodeTypeMatchBranch     NodeType = 26
+	NodeTypeReturn          NodeType = 27
+	NodeTypeBreak           NodeType = 28
+	NodeTypeContinue        NodeType = 29
+	NodeTypeAssert          NodeType = 30
+	NodeTypeImplicitYield   NodeType = 31
+	NodeTypeMember          NodeType = 32
+	NodeTypeField           NodeType = 33
+	NodeTypeFormat          NodeType = 34
+	NodeTypeFunction        NodeType = 35
+	NodeTypeType            NodeType = 36
+	NodeTypeIntType         NodeType = 37
+	NodeTypeIdentType       NodeType = 38
+	NodeTypeIntLiteralType  NodeType = 39
+	NodeTypeStrLiteralType  NodeType = 40
+	NodeTypeVoidType        NodeType = 41
+	NodeTypeBoolType        NodeType = 42
+	NodeTypeArrayType       NodeType = 43
+	NodeTypeFunctionType    NodeType = 44
+	NodeTypeStructType      NodeType = 45
+	NodeTypeStructUnionType NodeType = 46
+	NodeTypeCast            NodeType = 47
+	NodeTypeComment         NodeType = 48
+	NodeTypeCommentGroup    NodeType = 49
+	NodeTypeUnionType       NodeType = 50
+	NodeTypeUnionCandidate  NodeType = 51
+	NodeTypeRangeType       NodeType = 52
+	NodeTypeEnum            NodeType = 53
+	NodeTypeEnumMember      NodeType = 54
+	NodeTypeEnumType        NodeType = 55
+)
+
+func (n NodeType) String() string {
+	switch n {
+	case NodeTypeProgram:
+		return "program"
+	case NodeTypeExpr:
+		return "expr"
+	case NodeTypeBinary:
+		return "binary"
+	case NodeTypeUnary:
+		return "unary"
+	case NodeTypeCond:
+		return "cond"
+	case NodeTypeIdent:
+		return "ident"
+	case NodeTypeCall:
+		return "call"
+	case NodeTypeIf:
+		return "if"
+	case NodeTypeMemberAccess:
+		return "member_access"
+	case NodeTypeParen:
+		return "paren"
+	case NodeTypeIndex:
+		return "index"
+	case NodeTypeMatch:
+		return "match"
+	case NodeTypeRange:
+		return "range"
+	case NodeTypeTmpVar:
+		return "tmp_var"
+	case NodeTypeBlockExpr:
+		return "block_expr"
+	case NodeTypeImport:
+		return "import"
+	case NodeTypeLiteral:
+		return "literal"
+	case NodeTypeIntLiteral:
+		return "int_literal"
+	case NodeTypeBoolLiteral:
+		return "bool_literal"
+	case NodeTypeStrLiteral:
+		return "str_literal"
+	case NodeTypeInput:
+		return "input"
+	case NodeTypeOutput:
+		return "output"
+	case NodeTypeConfig:
+		return "config"
+	case NodeTypeStmt:
+		return "stmt"
+	case NodeTypeLoop:
+		return "loop"
+	case NodeTypeIndentBlock:
+		return "indent_block"
+	case NodeTypeMatchBranch:
+		return "match_branch"
+	case NodeTypeReturn:
+		return "return"
+	case NodeTypeBreak:
+		return "break"
+	case NodeTypeContinue:
+		return "continue"
+	case NodeTypeAssert:
+		return "assert"
+	case NodeTypeImplicitYield:
+		return "implicit_yield"
+	case NodeTypeMember:
+		return "member"
+	case NodeTypeField:
+		return "field"
+	case NodeTypeFormat:
+		return "format"
+	case NodeTypeFunction:
+		return "function"
+	case NodeTypeType:
+		return "type"
+	case NodeTypeIntType:
+		return "int_type"
+	case NodeTypeIdentType:
+		return "ident_type"
+	case NodeTypeIntLiteralType:
+		return "int_literal_type"
+	case NodeTypeStrLiteralType:
+		return "str_literal_type"
+	case NodeTypeVoidType:
+		return "void_type"
+	case NodeTypeBoolType:
+		return "bool_type"
+	case NodeTypeArrayType:
+		return "array_type"
+	case NodeTypeFunctionType:
+		return "function_type"
+	case NodeTypeStructType:
+		return "struct_type"
+	case NodeTypeStructUnionType:
+		return "struct_union_type"
+	case NodeTypeCast:
+		return "cast"
+	case NodeTypeComment:
+		return "comment"
+	case NodeTypeCommentGroup:
+		return "comment_group"
+	case NodeTypeUnionType:
+		return "union_type"
+	case NodeTypeUnionCandidate:
+		return "union_candidate"
+	case NodeTypeRangeType:
+		return "range_type"
+	case NodeTypeEnum:
+		return "enum"
+	case NodeTypeEnumMember:
+		return "enum_member"
+	case NodeTypeEnumType:
+		return "enum_type"
+	default:
+		return fmt.Sprintf("NodeType(%d)", n)
+	}
+}
+
+func (n NodeType) UnmarshalJSON(data []byte) error {
+	var tmp string
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+	switch tmp {
+	case "program":
+		n = NodeTypeProgram
+	case "expr":
+		n = NodeTypeExpr
+	case "binary":
+		n = NodeTypeBinary
+	case "unary":
+		n = NodeTypeUnary
+	case "cond":
+		n = NodeTypeCond
+	case "ident":
+		n = NodeTypeIdent
+	case "call":
+		n = NodeTypeCall
+	case "if":
+		n = NodeTypeIf
+	case "member_access":
+		n = NodeTypeMemberAccess
+	case "paren":
+		n = NodeTypeParen
+	case "index":
+		n = NodeTypeIndex
+	case "match":
+		n = NodeTypeMatch
+	case "range":
+		n = NodeTypeRange
+	case "tmp_var":
+		n = NodeTypeTmpVar
+	case "block_expr":
+		n = NodeTypeBlockExpr
+	case "import":
+		n = NodeTypeImport
+	case "literal":
+		n = NodeTypeLiteral
+	case "int_literal":
+		n = NodeTypeIntLiteral
+	case "bool_literal":
+		n = NodeTypeBoolLiteral
+	case "str_literal":
+		n = NodeTypeStrLiteral
+	case "input":
+		n = NodeTypeInput
+	case "output":
+		n = NodeTypeOutput
+	case "config":
+		n = NodeTypeConfig
+	case "stmt":
+		n = NodeTypeStmt
+	case "loop":
+		n = NodeTypeLoop
+	case "indent_block":
+		n = NodeTypeIndentBlock
+	case "match_branch":
+		n = NodeTypeMatchBranch
+	case "return":
+		n = NodeTypeReturn
+	case "break":
+		n = NodeTypeBreak
+	case "continue":
+		n = NodeTypeContinue
+	case "assert":
+		n = NodeTypeAssert
+	case "implicit_yield":
+		n = NodeTypeImplicitYield
+	case "member":
+		n = NodeTypeMember
+	case "field":
+		n = NodeTypeField
+	case "format":
+		n = NodeTypeFormat
+	case "function":
+		n = NodeTypeFunction
+	case "type":
+		n = NodeTypeType
+	case "int_type":
+		n = NodeTypeIntType
+	case "ident_type":
+		n = NodeTypeIdentType
+	case "int_literal_type":
+		n = NodeTypeIntLiteralType
+	case "str_literal_type":
+		n = NodeTypeStrLiteralType
+	case "void_type":
+		n = NodeTypeVoidType
+	case "bool_type":
+		n = NodeTypeBoolType
+	case "array_type":
+		n = NodeTypeArrayType
+	case "function_type":
+		n = NodeTypeFunctionType
+	case "struct_type":
+		n = NodeTypeStructType
+	case "struct_union_type":
+		n = NodeTypeStructUnionType
+	case "cast":
+		n = NodeTypeCast
+	case "comment":
+		n = NodeTypeComment
+	case "comment_group":
+		n = NodeTypeCommentGroup
+	case "union_type":
+		n = NodeTypeUnionType
+	case "union_candidate":
+		n = NodeTypeUnionCandidate
+	case "range_type":
+		n = NodeTypeRangeType
+	case "enum":
+		n = NodeTypeEnum
+	case "enum_member":
+		n = NodeTypeEnumMember
+	case "enum_type":
+		n = NodeTypeEnumType
+	default:
+		return fmt.Errorf("unknown NodeType: %q", tmp)
+	}
+	return nil
+}
+
+type UnaryOp int
+
+const (
+	UnaryOpNot       UnaryOp = 0
+	UnaryOpMinusSign UnaryOp = 1
+)
+
+func (n UnaryOp) String() string {
+	switch n {
+	case UnaryOpNot:
+		return "!"
+	case UnaryOpMinusSign:
+		return "-"
+	default:
+		return fmt.Sprintf("UnaryOp(%d)", n)
+	}
+}
+
+func (n UnaryOp) UnmarshalJSON(data []byte) error {
+	var tmp string
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+	switch tmp {
+	case "!":
+		n = UnaryOpNot
+	case "-":
+		n = UnaryOpMinusSign
+	default:
+		return fmt.Errorf("unknown UnaryOp: %q", tmp)
+	}
+	return nil
+}
+
+type BinaryOp int
+
+const (
+	BinaryOpMul                  BinaryOp = 0
+	BinaryOpDiv                  BinaryOp = 1
+	BinaryOpMod                  BinaryOp = 2
+	BinaryOpLeftArithmeticShift  BinaryOp = 3
+	BinaryOpRightArithmeticShift BinaryOp = 4
+	BinaryOpLeftLogicalShift     BinaryOp = 5
+	BinaryOpRightLogicalShift    BinaryOp = 6
+	BinaryOpBitAnd               BinaryOp = 7
+	BinaryOpAdd                  BinaryOp = 8
+	BinaryOpSub                  BinaryOp = 9
+	BinaryOpBitOr                BinaryOp = 10
+	BinaryOpBitXor               BinaryOp = 11
+	BinaryOpEqual                BinaryOp = 12
+	BinaryOpNotEqual             BinaryOp = 13
+	BinaryOpLess                 BinaryOp = 14
+	BinaryOpLessOrEq             BinaryOp = 15
+	BinaryOpGrater               BinaryOp = 16
+	BinaryOpGraterOrEq           BinaryOp = 17
+	BinaryOpLogicalAnd           BinaryOp = 18
+	BinaryOpLogicalOr            BinaryOp = 19
+	BinaryOpCondOp1              BinaryOp = 20
+	BinaryOpCondOp2              BinaryOp = 21
+	BinaryOpRangeExclusive       BinaryOp = 22
+	BinaryOpRangeInclusive       BinaryOp = 23
+	BinaryOpAssign               BinaryOp = 24
+	BinaryOpDefineAssign         BinaryOp = 25
+	BinaryOpConstAssign          BinaryOp = 26
+	BinaryOpAddAssign            BinaryOp = 27
+	BinaryOpSubAssign            BinaryOp = 28
+	BinaryOpMulAssign            BinaryOp = 29
+	BinaryOpDivAssign            BinaryOp = 30
+	BinaryOpModAssign            BinaryOp = 31
+	BinaryOpLeftShiftAssign      BinaryOp = 32
+	BinaryOpRightShiftAssign     BinaryOp = 33
+	BinaryOpBitAndAssign         BinaryOp = 34
+	BinaryOpBitOrAssign          BinaryOp = 35
+	BinaryOpBitXorAssign         BinaryOp = 36
+	BinaryOpComma                BinaryOp = 37
+)
+
+func (n BinaryOp) String() string {
+	switch n {
+	case BinaryOpMul:
+		return "*"
+	case BinaryOpDiv:
+		return "/"
+	case BinaryOpMod:
+		return "%"
+	case BinaryOpLeftArithmeticShift:
+		return "<<<"
+	case BinaryOpRightArithmeticShift:
+		return ">>>"
+	case BinaryOpLeftLogicalShift:
+		return "<<"
+	case BinaryOpRightLogicalShift:
+		return ">>"
+	case BinaryOpBitAnd:
+		return "&"
+	case BinaryOpAdd:
+		return "+"
+	case BinaryOpSub:
+		return "-"
+	case BinaryOpBitOr:
+		return "|"
+	case BinaryOpBitXor:
+		return "^"
+	case BinaryOpEqual:
+		return "=="
+	case BinaryOpNotEqual:
+		return "!="
+	case BinaryOpLess:
+		return "<"
+	case BinaryOpLessOrEq:
+		return "<="
+	case BinaryOpGrater:
+		return ">"
+	case BinaryOpGraterOrEq:
+		return ">="
+	case BinaryOpLogicalAnd:
+		return "&&"
+	case BinaryOpLogicalOr:
+		return "||"
+	case BinaryOpCondOp1:
+		return "?"
+	case BinaryOpCondOp2:
+		return ":"
+	case BinaryOpRangeExclusive:
+		return ".."
+	case BinaryOpRangeInclusive:
+		return "..="
+	case BinaryOpAssign:
+		return "="
+	case BinaryOpDefineAssign:
+		return ":="
+	case BinaryOpConstAssign:
+		return "::="
+	case BinaryOpAddAssign:
+		return "+="
+	case BinaryOpSubAssign:
+		return "-="
+	case BinaryOpMulAssign:
+		return "*="
+	case BinaryOpDivAssign:
+		return "/="
+	case BinaryOpModAssign:
+		return "%="
+	case BinaryOpLeftShiftAssign:
+		return "<<="
+	case BinaryOpRightShiftAssign:
+		return ">>="
+	case BinaryOpBitAndAssign:
+		return "&="
+	case BinaryOpBitOrAssign:
+		return "|="
+	case BinaryOpBitXorAssign:
+		return "^="
+	case BinaryOpComma:
+		return ","
+	default:
+		return fmt.Sprintf("BinaryOp(%d)", n)
+	}
+}
+
+func (n BinaryOp) UnmarshalJSON(data []byte) error {
+	var tmp string
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+	switch tmp {
+	case "*":
+		n = BinaryOpMul
+	case "/":
+		n = BinaryOpDiv
+	case "%":
+		n = BinaryOpMod
+	case "<<<":
+		n = BinaryOpLeftArithmeticShift
+	case ">>>":
+		n = BinaryOpRightArithmeticShift
+	case "<<":
+		n = BinaryOpLeftLogicalShift
+	case ">>":
+		n = BinaryOpRightLogicalShift
+	case "&":
+		n = BinaryOpBitAnd
+	case "+":
+		n = BinaryOpAdd
+	case "-":
+		n = BinaryOpSub
+	case "|":
+		n = BinaryOpBitOr
+	case "^":
+		n = BinaryOpBitXor
+	case "==":
+		n = BinaryOpEqual
+	case "!=":
+		n = BinaryOpNotEqual
+	case "<":
+		n = BinaryOpLess
+	case "<=":
+		n = BinaryOpLessOrEq
+	case ">":
+		n = BinaryOpGrater
+	case ">=":
+		n = BinaryOpGraterOrEq
+	case "&&":
+		n = BinaryOpLogicalAnd
+	case "||":
+		n = BinaryOpLogicalOr
+	case "?":
+		n = BinaryOpCondOp1
+	case ":":
+		n = BinaryOpCondOp2
+	case "..":
+		n = BinaryOpRangeExclusive
+	case "..=":
+		n = BinaryOpRangeInclusive
+	case "=":
+		n = BinaryOpAssign
+	case ":=":
+		n = BinaryOpDefineAssign
+	case "::=":
+		n = BinaryOpConstAssign
+	case "+=":
+		n = BinaryOpAddAssign
+	case "-=":
+		n = BinaryOpSubAssign
+	case "*=":
+		n = BinaryOpMulAssign
+	case "/=":
+		n = BinaryOpDivAssign
+	case "%=":
+		n = BinaryOpModAssign
+	case "<<=":
+		n = BinaryOpLeftShiftAssign
+	case ">>=":
+		n = BinaryOpRightShiftAssign
+	case "&=":
+		n = BinaryOpBitAndAssign
+	case "|=":
+		n = BinaryOpBitOrAssign
+	case "^=":
+		n = BinaryOpBitXorAssign
+	case ",":
+		n = BinaryOpComma
+	default:
+		return fmt.Errorf("unknown BinaryOp: %q", tmp)
+	}
+	return nil
+}
+
+type IdentUsage int
+
+const (
+	IdentUsageUnknown          IdentUsage = 0
+	IdentUsageReference        IdentUsage = 1
+	IdentUsageDefineVariable   IdentUsage = 2
+	IdentUsageDefineConst      IdentUsage = 3
+	IdentUsageDefineField      IdentUsage = 4
+	IdentUsageDefineFormat     IdentUsage = 5
+	IdentUsageDefineEnum       IdentUsage = 6
+	IdentUsageDefineEnumMember IdentUsage = 7
+	IdentUsageDefineFn         IdentUsage = 8
+	IdentUsageDefineCastFn     IdentUsage = 9
+	IdentUsageDefineArg        IdentUsage = 10
+	IdentUsageReferenceType    IdentUsage = 11
+)
+
+func (n IdentUsage) String() string {
+	switch n {
+	case IdentUsageUnknown:
+		return "unknown"
+	case IdentUsageReference:
+		return "reference"
+	case IdentUsageDefineVariable:
+		return "define_variable"
+	case IdentUsageDefineConst:
+		return "define_const"
+	case IdentUsageDefineField:
+		return "define_field"
+	case IdentUsageDefineFormat:
+		return "define_format"
+	case IdentUsageDefineEnum:
+		return "define_enum"
+	case IdentUsageDefineEnumMember:
+		return "define_enum_member"
+	case IdentUsageDefineFn:
+		return "define_fn"
+	case IdentUsageDefineCastFn:
+		return "define_cast_fn"
+	case IdentUsageDefineArg:
+		return "define_arg"
+	case IdentUsageReferenceType:
+		return "reference_type"
+	default:
+		return fmt.Sprintf("IdentUsage(%d)", n)
+	}
+}
+
+func (n IdentUsage) UnmarshalJSON(data []byte) error {
+	var tmp string
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+	switch tmp {
+	case "unknown":
+		n = IdentUsageUnknown
+	case "reference":
+		n = IdentUsageReference
+	case "define_variable":
+		n = IdentUsageDefineVariable
+	case "define_const":
+		n = IdentUsageDefineConst
+	case "define_field":
+		n = IdentUsageDefineField
+	case "define_format":
+		n = IdentUsageDefineFormat
+	case "define_enum":
+		n = IdentUsageDefineEnum
+	case "define_enum_member":
+		n = IdentUsageDefineEnumMember
+	case "define_fn":
+		n = IdentUsageDefineFn
+	case "define_cast_fn":
+		n = IdentUsageDefineCastFn
+	case "define_arg":
+		n = IdentUsageDefineArg
+	case "reference_type":
+		n = IdentUsageReferenceType
+	default:
+		return fmt.Errorf("unknown IdentUsage: %q", tmp)
+	}
+	return nil
+}
+
+type Endian int
+
+const (
+	EndianUnspec Endian = 0
+	EndianBig    Endian = 1
+	EndianLittle Endian = 2
+)
+
+func (n Endian) String() string {
+	switch n {
+	case EndianUnspec:
+		return "unspec"
+	case EndianBig:
+		return "big"
+	case EndianLittle:
+		return "little"
+	default:
+		return fmt.Sprintf("Endian(%d)", n)
+	}
+}
+
+func (n Endian) UnmarshalJSON(data []byte) error {
+	var tmp string
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+	switch tmp {
+	case "unspec":
+		n = EndianUnspec
+	case "big":
+		n = EndianBig
+	case "little":
+		n = EndianLittle
+	default:
+		return fmt.Errorf("unknown Endian: %q", tmp)
+	}
+	return nil
+}
+
+type TokenTag int
+
+const (
+	TokenTagIndent      TokenTag = 0
+	TokenTagSpace       TokenTag = 1
+	TokenTagLine        TokenTag = 2
+	TokenTagPunct       TokenTag = 3
+	TokenTagIntLiteral  TokenTag = 4
+	TokenTagBoolLiteral TokenTag = 5
+	TokenTagStrLiteral  TokenTag = 6
+	TokenTagKeyword     TokenTag = 7
+	TokenTagIdent       TokenTag = 8
+	TokenTagComment     TokenTag = 9
+	TokenTagError       TokenTag = 10
+	TokenTagUnknown     TokenTag = 11
+)
+
+func (n TokenTag) String() string {
+	switch n {
+	case TokenTagIndent:
+		return "indent"
+	case TokenTagSpace:
+		return "space"
+	case TokenTagLine:
+		return "line"
+	case TokenTagPunct:
+		return "punct"
+	case TokenTagIntLiteral:
+		return "int_literal"
+	case TokenTagBoolLiteral:
+		return "bool_literal"
+	case TokenTagStrLiteral:
+		return "str_literal"
+	case TokenTagKeyword:
+		return "keyword"
+	case TokenTagIdent:
+		return "ident"
+	case TokenTagComment:
+		return "comment"
+	case TokenTagError:
+		return "error"
+	case TokenTagUnknown:
+		return "unknown"
+	default:
+		return fmt.Sprintf("TokenTag(%d)", n)
+	}
+}
+
+func (n TokenTag) UnmarshalJSON(data []byte) error {
+	var tmp string
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+	switch tmp {
+	case "indent":
+		n = TokenTagIndent
+	case "space":
+		n = TokenTagSpace
+	case "line":
+		n = TokenTagLine
+	case "punct":
+		n = TokenTagPunct
+	case "int_literal":
+		n = TokenTagIntLiteral
+	case "bool_literal":
+		n = TokenTagBoolLiteral
+	case "str_literal":
+		n = TokenTagStrLiteral
+	case "keyword":
+		n = TokenTagKeyword
+	case "ident":
+		n = TokenTagIdent
+	case "comment":
+		n = TokenTagComment
+	case "error":
+		n = TokenTagError
+	case "unknown":
+		n = TokenTagUnknown
+	default:
+		return fmt.Errorf("unknown TokenTag: %q", tmp)
+	}
+	return nil
+}
+
 type Node interface {
 	isNode()
 }
@@ -611,461 +1370,6 @@ func (n *EnumType) isType() {}
 
 func (n *EnumType) isNode() {}
 
-type UnaryOp int
-
-const (
-	UnaryOpNot       UnaryOp = 0
-	UnaryOpMinusSign UnaryOp = 1
-)
-
-func (n UnaryOp) String() string {
-	switch n {
-	case UnaryOpNot:
-		return "!"
-	case UnaryOpMinusSign:
-		return "-"
-	default:
-		return fmt.Sprintf("UnaryOp(%d)", n)
-	}
-}
-
-func (n UnaryOp) UnmarshalJSON(data []byte) error {
-	var tmp string
-	if err := json.Unmarshal(data, &tmp); err != nil {
-		return err
-	}
-	switch tmp {
-	case "!":
-		n = UnaryOpNot
-	case "-":
-		n = UnaryOpMinusSign
-	default:
-		return fmt.Errorf("unknown UnaryOp: %q", tmp)
-	}
-	return nil
-}
-
-type BinaryOp int
-
-const (
-	BinaryOpMul                  BinaryOp = 0
-	BinaryOpDiv                  BinaryOp = 1
-	BinaryOpMod                  BinaryOp = 2
-	BinaryOpLeftArithmeticShift  BinaryOp = 3
-	BinaryOpRightArithmeticShift BinaryOp = 4
-	BinaryOpLeftLogicalShift     BinaryOp = 5
-	BinaryOpRightLogicalShift    BinaryOp = 6
-	BinaryOpBitAnd               BinaryOp = 7
-	BinaryOpAdd                  BinaryOp = 8
-	BinaryOpSub                  BinaryOp = 9
-	BinaryOpBitOr                BinaryOp = 10
-	BinaryOpBitXor               BinaryOp = 11
-	BinaryOpEqual                BinaryOp = 12
-	BinaryOpNotEqual             BinaryOp = 13
-	BinaryOpLess                 BinaryOp = 14
-	BinaryOpLessOrEq             BinaryOp = 15
-	BinaryOpGrater               BinaryOp = 16
-	BinaryOpGraterOrEq           BinaryOp = 17
-	BinaryOpLogicalAnd           BinaryOp = 18
-	BinaryOpLogicalOr            BinaryOp = 19
-	BinaryOpCondOp1              BinaryOp = 20
-	BinaryOpCondOp2              BinaryOp = 21
-	BinaryOpRangeExclusive       BinaryOp = 22
-	BinaryOpRangeInclusive       BinaryOp = 23
-	BinaryOpAssign               BinaryOp = 24
-	BinaryOpDefineAssign         BinaryOp = 25
-	BinaryOpConstAssign          BinaryOp = 26
-	BinaryOpAddAssign            BinaryOp = 27
-	BinaryOpSubAssign            BinaryOp = 28
-	BinaryOpMulAssign            BinaryOp = 29
-	BinaryOpDivAssign            BinaryOp = 30
-	BinaryOpModAssign            BinaryOp = 31
-	BinaryOpLeftShiftAssign      BinaryOp = 32
-	BinaryOpRightShiftAssign     BinaryOp = 33
-	BinaryOpBitAndAssign         BinaryOp = 34
-	BinaryOpBitOrAssign          BinaryOp = 35
-	BinaryOpBitXorAssign         BinaryOp = 36
-	BinaryOpComma                BinaryOp = 37
-)
-
-func (n BinaryOp) String() string {
-	switch n {
-	case BinaryOpMul:
-		return "*"
-	case BinaryOpDiv:
-		return "/"
-	case BinaryOpMod:
-		return "%"
-	case BinaryOpLeftArithmeticShift:
-		return "<<<"
-	case BinaryOpRightArithmeticShift:
-		return ">>>"
-	case BinaryOpLeftLogicalShift:
-		return "<<"
-	case BinaryOpRightLogicalShift:
-		return ">>"
-	case BinaryOpBitAnd:
-		return "&"
-	case BinaryOpAdd:
-		return "+"
-	case BinaryOpSub:
-		return "-"
-	case BinaryOpBitOr:
-		return "|"
-	case BinaryOpBitXor:
-		return "^"
-	case BinaryOpEqual:
-		return "=="
-	case BinaryOpNotEqual:
-		return "!="
-	case BinaryOpLess:
-		return "<"
-	case BinaryOpLessOrEq:
-		return "<="
-	case BinaryOpGrater:
-		return ">"
-	case BinaryOpGraterOrEq:
-		return ">="
-	case BinaryOpLogicalAnd:
-		return "&&"
-	case BinaryOpLogicalOr:
-		return "||"
-	case BinaryOpCondOp1:
-		return "?"
-	case BinaryOpCondOp2:
-		return ":"
-	case BinaryOpRangeExclusive:
-		return ".."
-	case BinaryOpRangeInclusive:
-		return "..="
-	case BinaryOpAssign:
-		return "="
-	case BinaryOpDefineAssign:
-		return ":="
-	case BinaryOpConstAssign:
-		return "::="
-	case BinaryOpAddAssign:
-		return "+="
-	case BinaryOpSubAssign:
-		return "-="
-	case BinaryOpMulAssign:
-		return "*="
-	case BinaryOpDivAssign:
-		return "/="
-	case BinaryOpModAssign:
-		return "%="
-	case BinaryOpLeftShiftAssign:
-		return "<<="
-	case BinaryOpRightShiftAssign:
-		return ">>="
-	case BinaryOpBitAndAssign:
-		return "&="
-	case BinaryOpBitOrAssign:
-		return "|="
-	case BinaryOpBitXorAssign:
-		return "^="
-	case BinaryOpComma:
-		return ","
-	default:
-		return fmt.Sprintf("BinaryOp(%d)", n)
-	}
-}
-
-func (n BinaryOp) UnmarshalJSON(data []byte) error {
-	var tmp string
-	if err := json.Unmarshal(data, &tmp); err != nil {
-		return err
-	}
-	switch tmp {
-	case "*":
-		n = BinaryOpMul
-	case "/":
-		n = BinaryOpDiv
-	case "%":
-		n = BinaryOpMod
-	case "<<<":
-		n = BinaryOpLeftArithmeticShift
-	case ">>>":
-		n = BinaryOpRightArithmeticShift
-	case "<<":
-		n = BinaryOpLeftLogicalShift
-	case ">>":
-		n = BinaryOpRightLogicalShift
-	case "&":
-		n = BinaryOpBitAnd
-	case "+":
-		n = BinaryOpAdd
-	case "-":
-		n = BinaryOpSub
-	case "|":
-		n = BinaryOpBitOr
-	case "^":
-		n = BinaryOpBitXor
-	case "==":
-		n = BinaryOpEqual
-	case "!=":
-		n = BinaryOpNotEqual
-	case "<":
-		n = BinaryOpLess
-	case "<=":
-		n = BinaryOpLessOrEq
-	case ">":
-		n = BinaryOpGrater
-	case ">=":
-		n = BinaryOpGraterOrEq
-	case "&&":
-		n = BinaryOpLogicalAnd
-	case "||":
-		n = BinaryOpLogicalOr
-	case "?":
-		n = BinaryOpCondOp1
-	case ":":
-		n = BinaryOpCondOp2
-	case "..":
-		n = BinaryOpRangeExclusive
-	case "..=":
-		n = BinaryOpRangeInclusive
-	case "=":
-		n = BinaryOpAssign
-	case ":=":
-		n = BinaryOpDefineAssign
-	case "::=":
-		n = BinaryOpConstAssign
-	case "+=":
-		n = BinaryOpAddAssign
-	case "-=":
-		n = BinaryOpSubAssign
-	case "*=":
-		n = BinaryOpMulAssign
-	case "/=":
-		n = BinaryOpDivAssign
-	case "%=":
-		n = BinaryOpModAssign
-	case "<<=":
-		n = BinaryOpLeftShiftAssign
-	case ">>=":
-		n = BinaryOpRightShiftAssign
-	case "&=":
-		n = BinaryOpBitAndAssign
-	case "|=":
-		n = BinaryOpBitOrAssign
-	case "^=":
-		n = BinaryOpBitXorAssign
-	case ",":
-		n = BinaryOpComma
-	default:
-		return fmt.Errorf("unknown BinaryOp: %q", tmp)
-	}
-	return nil
-}
-
-type IdentUsage int
-
-const (
-	IdentUsageUnknown          IdentUsage = 0
-	IdentUsageReference        IdentUsage = 1
-	IdentUsageDefineVariable   IdentUsage = 2
-	IdentUsageDefineConst      IdentUsage = 3
-	IdentUsageDefineField      IdentUsage = 4
-	IdentUsageDefineFormat     IdentUsage = 5
-	IdentUsageDefineEnum       IdentUsage = 6
-	IdentUsageDefineEnumMember IdentUsage = 7
-	IdentUsageDefineFn         IdentUsage = 8
-	IdentUsageDefineCastFn     IdentUsage = 9
-	IdentUsageDefineArg        IdentUsage = 10
-	IdentUsageReferenceType    IdentUsage = 11
-)
-
-func (n IdentUsage) String() string {
-	switch n {
-	case IdentUsageUnknown:
-		return "unknown"
-	case IdentUsageReference:
-		return "reference"
-	case IdentUsageDefineVariable:
-		return "define_variable"
-	case IdentUsageDefineConst:
-		return "define_const"
-	case IdentUsageDefineField:
-		return "define_field"
-	case IdentUsageDefineFormat:
-		return "define_format"
-	case IdentUsageDefineEnum:
-		return "define_enum"
-	case IdentUsageDefineEnumMember:
-		return "define_enum_member"
-	case IdentUsageDefineFn:
-		return "define_fn"
-	case IdentUsageDefineCastFn:
-		return "define_cast_fn"
-	case IdentUsageDefineArg:
-		return "define_arg"
-	case IdentUsageReferenceType:
-		return "reference_type"
-	default:
-		return fmt.Sprintf("IdentUsage(%d)", n)
-	}
-}
-
-func (n IdentUsage) UnmarshalJSON(data []byte) error {
-	var tmp string
-	if err := json.Unmarshal(data, &tmp); err != nil {
-		return err
-	}
-	switch tmp {
-	case "unknown":
-		n = IdentUsageUnknown
-	case "reference":
-		n = IdentUsageReference
-	case "define_variable":
-		n = IdentUsageDefineVariable
-	case "define_const":
-		n = IdentUsageDefineConst
-	case "define_field":
-		n = IdentUsageDefineField
-	case "define_format":
-		n = IdentUsageDefineFormat
-	case "define_enum":
-		n = IdentUsageDefineEnum
-	case "define_enum_member":
-		n = IdentUsageDefineEnumMember
-	case "define_fn":
-		n = IdentUsageDefineFn
-	case "define_cast_fn":
-		n = IdentUsageDefineCastFn
-	case "define_arg":
-		n = IdentUsageDefineArg
-	case "reference_type":
-		n = IdentUsageReferenceType
-	default:
-		return fmt.Errorf("unknown IdentUsage: %q", tmp)
-	}
-	return nil
-}
-
-type Endian int
-
-const (
-	EndianUnspec Endian = 0
-	EndianBig    Endian = 1
-	EndianLittle Endian = 2
-)
-
-func (n Endian) String() string {
-	switch n {
-	case EndianUnspec:
-		return "unspec"
-	case EndianBig:
-		return "big"
-	case EndianLittle:
-		return "little"
-	default:
-		return fmt.Sprintf("Endian(%d)", n)
-	}
-}
-
-func (n Endian) UnmarshalJSON(data []byte) error {
-	var tmp string
-	if err := json.Unmarshal(data, &tmp); err != nil {
-		return err
-	}
-	switch tmp {
-	case "unspec":
-		n = EndianUnspec
-	case "big":
-		n = EndianBig
-	case "little":
-		n = EndianLittle
-	default:
-		return fmt.Errorf("unknown Endian: %q", tmp)
-	}
-	return nil
-}
-
-type TokenTag int
-
-const (
-	TokenTagIndent      TokenTag = 0
-	TokenTagSpace       TokenTag = 1
-	TokenTagLine        TokenTag = 2
-	TokenTagPunct       TokenTag = 3
-	TokenTagIntLiteral  TokenTag = 4
-	TokenTagBoolLiteral TokenTag = 5
-	TokenTagStrLiteral  TokenTag = 6
-	TokenTagKeyword     TokenTag = 7
-	TokenTagIdent       TokenTag = 8
-	TokenTagComment     TokenTag = 9
-	TokenTagError       TokenTag = 10
-	TokenTagUnknown     TokenTag = 11
-)
-
-func (n TokenTag) String() string {
-	switch n {
-	case TokenTagIndent:
-		return "indent"
-	case TokenTagSpace:
-		return "space"
-	case TokenTagLine:
-		return "line"
-	case TokenTagPunct:
-		return "punct"
-	case TokenTagIntLiteral:
-		return "int_literal"
-	case TokenTagBoolLiteral:
-		return "bool_literal"
-	case TokenTagStrLiteral:
-		return "str_literal"
-	case TokenTagKeyword:
-		return "keyword"
-	case TokenTagIdent:
-		return "ident"
-	case TokenTagComment:
-		return "comment"
-	case TokenTagError:
-		return "error"
-	case TokenTagUnknown:
-		return "unknown"
-	default:
-		return fmt.Sprintf("TokenTag(%d)", n)
-	}
-}
-
-func (n TokenTag) UnmarshalJSON(data []byte) error {
-	var tmp string
-	if err := json.Unmarshal(data, &tmp); err != nil {
-		return err
-	}
-	switch tmp {
-	case "indent":
-		n = TokenTagIndent
-	case "space":
-		n = TokenTagSpace
-	case "line":
-		n = TokenTagLine
-	case "punct":
-		n = TokenTagPunct
-	case "int_literal":
-		n = TokenTagIntLiteral
-	case "bool_literal":
-		n = TokenTagBoolLiteral
-	case "str_literal":
-		n = TokenTagStrLiteral
-	case "keyword":
-		n = TokenTagKeyword
-	case "ident":
-		n = TokenTagIdent
-	case "comment":
-		n = TokenTagComment
-	case "error":
-		n = TokenTagError
-	case "unknown":
-		n = TokenTagUnknown
-	default:
-		return fmt.Errorf("unknown TokenTag: %q", tmp)
-	}
-	return nil
-}
-
 type Scope struct {
 	Prev   *Scope
 	Next   *Scope
@@ -1092,6 +1396,20 @@ type Token struct {
 	Loc   Loc      `json:"loc"`
 }
 
+type RawScope struct {
+	Prev   uintptr   `json:"prev"`
+	Next   uintptr   `json:"next"`
+	Branch uintptr   `json:"branch"`
+	Ident  []uintptr `json:"ident"`
+	Owner  uintptr   `json:"owner"`
+}
+
+type RawNode struct {
+	NodeType NodeType `json:"node_type"`
+	Loc      Loc      `json:"loc"`
+	Body     any      `json:"body"`
+}
+
 type SrcErrorEntry struct {
 	Msg  string `json:"msg"`
 	File string `json:"file"`
@@ -1102,6 +1420,23 @@ type SrcErrorEntry struct {
 
 type SrcError struct {
 	Errs []SrcErrorEntry `json:"errs"`
+}
+
+type JsonAst struct {
+	Node  []RawNode  `json:"node"`
+	Scope []RawScope `json:"scope"`
+}
+
+type AstFile struct {
+	Files []string `json:"files"`
+	Ast   JsonAst  `json:"ast"`
+	Error SrcError `json:"error"`
+}
+
+type TokenFile struct {
+	Files  []string `json:"files"`
+	Tokens []Token  `json:"tokens"`
+	Error  SrcError `json:"error"`
 }
 
 type astConstructor struct {

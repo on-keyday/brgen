@@ -64,6 +64,147 @@ class NodeType(PyEnum):
     ENUM_TYPE = "enum_type"
 
 
+class NodeType(PyEnum):
+    PROGRAM = "program"
+    EXPR = "expr"
+    BINARY = "binary"
+    UNARY = "unary"
+    COND = "cond"
+    IDENT = "ident"
+    CALL = "call"
+    IF = "if"
+    MEMBER_ACCESS = "member_access"
+    PAREN = "paren"
+    INDEX = "index"
+    MATCH = "match"
+    RANGE = "range"
+    TMP_VAR = "tmp_var"
+    BLOCK_EXPR = "block_expr"
+    IMPORT = "import"
+    LITERAL = "literal"
+    INT_LITERAL = "int_literal"
+    BOOL_LITERAL = "bool_literal"
+    STR_LITERAL = "str_literal"
+    INPUT = "input"
+    OUTPUT = "output"
+    CONFIG = "config"
+    STMT = "stmt"
+    LOOP = "loop"
+    INDENT_BLOCK = "indent_block"
+    MATCH_BRANCH = "match_branch"
+    RETURN = "return"
+    BREAK = "break"
+    CONTINUE = "continue"
+    ASSERT = "assert"
+    IMPLICIT_YIELD = "implicit_yield"
+    MEMBER = "member"
+    FIELD = "field"
+    FORMAT = "format"
+    FUNCTION = "function"
+    TYPE = "type"
+    INT_TYPE = "int_type"
+    IDENT_TYPE = "ident_type"
+    INT_LITERAL_TYPE = "int_literal_type"
+    STR_LITERAL_TYPE = "str_literal_type"
+    VOID_TYPE = "void_type"
+    BOOL_TYPE = "bool_type"
+    ARRAY_TYPE = "array_type"
+    FUNCTION_TYPE = "function_type"
+    STRUCT_TYPE = "struct_type"
+    STRUCT_UNION_TYPE = "struct_union_type"
+    CAST = "cast"
+    COMMENT = "comment"
+    COMMENT_GROUP = "comment_group"
+    UNION_TYPE = "union_type"
+    UNION_CANDIDATE = "union_candidate"
+    RANGE_TYPE = "range_type"
+    ENUM = "enum"
+    ENUM_MEMBER = "enum_member"
+    ENUM_TYPE = "enum_type"
+
+
+class UnaryOp(PyEnum):
+    NOT = "!"
+    MINUS_SIGN = "-"
+
+
+class BinaryOp(PyEnum):
+    MUL = "*"
+    DIV = "/"
+    MOD = "%"
+    LEFT_ARITHMETIC_SHIFT = "<<<"
+    RIGHT_ARITHMETIC_SHIFT = ">>>"
+    LEFT_LOGICAL_SHIFT = "<<"
+    RIGHT_LOGICAL_SHIFT = ">>"
+    BIT_AND = "&"
+    ADD = "+"
+    SUB = "-"
+    BIT_OR = "|"
+    BIT_XOR = "^"
+    EQUAL = "=="
+    NOT_EQUAL = "!="
+    LESS = "<"
+    LESS_OR_EQ = "<="
+    GRATER = ">"
+    GRATER_OR_EQ = ">="
+    LOGICAL_AND = "&&"
+    LOGICAL_OR = "||"
+    COND_OP_1 = "?"
+    COND_OP_2 = ":"
+    RANGE_EXCLUSIVE = ".."
+    RANGE_INCLUSIVE = "..="
+    ASSIGN = "="
+    DEFINE_ASSIGN = ":="
+    CONST_ASSIGN = "::="
+    ADD_ASSIGN = "+="
+    SUB_ASSIGN = "-="
+    MUL_ASSIGN = "*="
+    DIV_ASSIGN = "/="
+    MOD_ASSIGN = "%="
+    LEFT_SHIFT_ASSIGN = "<<="
+    RIGHT_SHIFT_ASSIGN = ">>="
+    BIT_AND_ASSIGN = "&="
+    BIT_OR_ASSIGN = "|="
+    BIT_XOR_ASSIGN = "^="
+    COMMA = ","
+
+
+class IdentUsage(PyEnum):
+    UNKNOWN = "unknown"
+    REFERENCE = "reference"
+    DEFINE_VARIABLE = "define_variable"
+    DEFINE_CONST = "define_const"
+    DEFINE_FIELD = "define_field"
+    DEFINE_FORMAT = "define_format"
+    DEFINE_ENUM = "define_enum"
+    DEFINE_ENUM_MEMBER = "define_enum_member"
+    DEFINE_FN = "define_fn"
+    DEFINE_CAST_FN = "define_cast_fn"
+    DEFINE_ARG = "define_arg"
+    REFERENCE_TYPE = "reference_type"
+
+
+class Endian(PyEnum):
+    UNSPEC = "unspec"
+    BIG = "big"
+    LITTLE = "little"
+
+
+class TokenTag(PyEnum):
+    INDENT = "indent"
+    SPACE = "space"
+    LINE = "line"
+    PUNCT = "punct"
+    INT_LITERAL = "int_literal"
+    BOOL_LITERAL = "bool_literal"
+    STR_LITERAL = "str_literal"
+    KEYWORD = "keyword"
+    IDENT = "ident"
+    COMMENT = "comment"
+    ERROR = "error"
+    UNKNOWN = "unknown"
+
+
 class Node:
     loc: Loc
 
@@ -356,88 +497,6 @@ class EnumType(Type):
     base: Optional[Enum]
 
 
-class UnaryOp(PyEnum):
-    NOT = "!"
-    MINUS_SIGN = "-"
-
-
-class BinaryOp(PyEnum):
-    MUL = "*"
-    DIV = "/"
-    MOD = "%"
-    LEFT_ARITHMETIC_SHIFT = "<<<"
-    RIGHT_ARITHMETIC_SHIFT = ">>>"
-    LEFT_LOGICAL_SHIFT = "<<"
-    RIGHT_LOGICAL_SHIFT = ">>"
-    BIT_AND = "&"
-    ADD = "+"
-    SUB = "-"
-    BIT_OR = "|"
-    BIT_XOR = "^"
-    EQUAL = "=="
-    NOT_EQUAL = "!="
-    LESS = "<"
-    LESS_OR_EQ = "<="
-    GRATER = ">"
-    GRATER_OR_EQ = ">="
-    LOGICAL_AND = "&&"
-    LOGICAL_OR = "||"
-    COND_OP_1 = "?"
-    COND_OP_2 = ":"
-    RANGE_EXCLUSIVE = ".."
-    RANGE_INCLUSIVE = "..="
-    ASSIGN = "="
-    DEFINE_ASSIGN = ":="
-    CONST_ASSIGN = "::="
-    ADD_ASSIGN = "+="
-    SUB_ASSIGN = "-="
-    MUL_ASSIGN = "*="
-    DIV_ASSIGN = "/="
-    MOD_ASSIGN = "%="
-    LEFT_SHIFT_ASSIGN = "<<="
-    RIGHT_SHIFT_ASSIGN = ">>="
-    BIT_AND_ASSIGN = "&="
-    BIT_OR_ASSIGN = "|="
-    BIT_XOR_ASSIGN = "^="
-    COMMA = ","
-
-
-class IdentUsage(PyEnum):
-    UNKNOWN = "unknown"
-    REFERENCE = "reference"
-    DEFINE_VARIABLE = "define_variable"
-    DEFINE_CONST = "define_const"
-    DEFINE_FIELD = "define_field"
-    DEFINE_FORMAT = "define_format"
-    DEFINE_ENUM = "define_enum"
-    DEFINE_ENUM_MEMBER = "define_enum_member"
-    DEFINE_FN = "define_fn"
-    DEFINE_CAST_FN = "define_cast_fn"
-    DEFINE_ARG = "define_arg"
-    REFERENCE_TYPE = "reference_type"
-
-
-class Endian(PyEnum):
-    UNSPEC = "unspec"
-    BIG = "big"
-    LITTLE = "little"
-
-
-class TokenTag(PyEnum):
-    INDENT = "indent"
-    SPACE = "space"
-    LINE = "line"
-    PUNCT = "punct"
-    INT_LITERAL = "int_literal"
-    BOOL_LITERAL = "bool_literal"
-    STR_LITERAL = "str_literal"
-    KEYWORD = "keyword"
-    IDENT = "ident"
-    COMMENT = "comment"
-    ERROR = "error"
-    UNKNOWN = "unknown"
-
-
 class Scope:
     prev: Optional[Scope]
     next: Optional[Scope]
@@ -488,6 +547,38 @@ def parse_Token(json: dict) -> Token:
 
 
 
+class RawScope:
+    prev: int
+    next: int
+    branch: int
+    ident: List[int]
+    owner: int
+
+def parse_RawScope(json: dict) -> RawScope:
+    ret = RawScope()
+    ret.prev = int(json["prev"])
+    ret.next = int(json["next"])
+    ret.branch = int(json["branch"])
+    ret.ident = List[int](json["ident"])
+    ret.owner = int(json["owner"])
+    return ret
+
+
+
+class RawNode:
+    node_type: NodeType
+    loc: Loc
+    body: any
+
+def parse_RawNode(json: dict) -> RawNode:
+    ret = RawNode()
+    ret.node_type = NodeType(json["node_type"])
+    ret.loc = parse_Loc(json["loc"])
+    ret.body = parse_any(json["body"])
+    return ret
+
+
+
 class SrcErrorEntry:
     msg: str
     file: str
@@ -512,6 +603,46 @@ class SrcError:
 def parse_SrcError(json: dict) -> SrcError:
     ret = SrcError()
     ret.errs = [parse_SrcErrorEntry(x) for x in json["errs"]]
+    return ret
+
+
+
+class JsonAst:
+    node: List[RawNode]
+    scope: List[RawScope]
+
+def parse_JsonAst(json: dict) -> JsonAst:
+    ret = JsonAst()
+    ret.node = [parse_RawNode(x) for x in json["node"]]
+    ret.scope = [parse_RawScope(x) for x in json["scope"]]
+    return ret
+
+
+
+class AstFile:
+    files: List[str]
+    ast: JsonAst
+    error: SrcError
+
+def parse_AstFile(json: dict) -> AstFile:
+    ret = AstFile()
+    ret.files = List[str](json["files"])
+    ret.ast = parse_JsonAst(json["ast"])
+    ret.error = parse_SrcError(json["error"])
+    return ret
+
+
+
+class TokenFile:
+    files: List[str]
+    tokens: List[Token]
+    error: SrcError
+
+def parse_TokenFile(json: dict) -> TokenFile:
+    ret = TokenFile()
+    ret.files = List[str](json["files"])
+    ret.tokens = [parse_Token(x) for x in json["tokens"]]
+    ret.error = parse_SrcError(json["error"])
     return ret
 
 

@@ -18,25 +18,6 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("\n")
 	defer w.Printf("}\n")
 
-	w.Printf("export type NodeType = ")
-	for i, typ := range defs.NodeTypes {
-		if i != 0 {
-			w.Printf(" | ")
-		}
-		w.Printf("%q", typ)
-	}
-	w.Printf(";\n\n")
-	w.Printf("export function isNodeType(obj: any): obj is NodeType {\n")
-	w.Printf("	return obj && typeof obj === 'string' && (")
-	for i, typ := range defs.NodeTypes {
-		if i != 0 {
-			w.Printf(" || ")
-		}
-		w.Printf("obj === %q", typ)
-	}
-	w.Printf(")\n")
-	w.Printf("}\n\n")
-
 	for _, def := range defs.Defs {
 		switch d := def.(type) {
 		case *gen.Interface:
@@ -85,13 +66,22 @@ func generate(rw io.Writer, defs *gen.Defs) {
 						w.Printf(" && ")
 					}
 					if field.Type.IsArray {
-						w.Printf("Array.isArray(obj?.%s)", field.Name)
+						if field.Type.IsOptional {
+							w.Printf("(obj?.%s === null || Array.isArray(obj?.%s))", field.Name, field.Name)
+						} else {
+							w.Printf("Array.isArray(obj?.%s)", field.Name)
+						}
 					} else if field.Type.Name == "Scope" {
 						// omit depth check
 						w.Printf("typeof obj?.%s === 'object'", field.Name)
-
+					} else if field.Type.Name == "any" {
+						w.Printf("obj?.%s !== undefined", field.Name)
 					} else if field.Type.Name == "number" || field.Type.Name == "string" || field.Type.Name == "boolean" {
-						w.Printf("typeof obj?.%s === '%s'", field.Name, field.Type.Name)
+						if field.Type.IsOptional {
+							w.Printf("(obj?.%s === null || typeof obj?.%s === %q)", field.Name, field.Name, field.Type.Name)
+						} else {
+							w.Printf("typeof obj?.%s === %q", field.Name, field.Type.Name)
+						}
 					} else if field.Type.IsPtr || field.Type.IsInterface {
 						w.Printf("(obj?.%s === null || is%s(obj?.%s))", field.Name, field.Type.Name, field.Name)
 					} else {
@@ -103,11 +93,22 @@ func generate(rw io.Writer, defs *gen.Defs) {
 			}
 
 		case *gen.Enum:
-			w.Printf("export enum %s {\n", d.Name)
-			for _, val := range d.Values {
-				w.Printf("	%s = %q,\n", val.Name, val.Value)
+			if d.Name == "NodeType" {
+				w.Printf("export type NodeType = ")
+				for i, val := range d.Values {
+					if i != 0 {
+						w.Printf(" | ")
+					}
+					w.Printf("%q", val.Value)
+				}
+				w.Printf(";\n\n")
+			} else {
+				w.Printf("export enum %s {\n", d.Name)
+				for _, val := range d.Values {
+					w.Printf("	%s = %q,\n", val.Name, val.Value)
+				}
+				w.Printf("};\n\n")
 			}
-			w.Printf("};\n\n")
 			w.Printf("export function is%s(obj: any): obj is %s {\n", d.Name, d.Name)
 			w.Printf("	return obj && typeof obj === 'string' && (")
 			for i, val := range d.Values {
@@ -122,47 +123,16 @@ func generate(rw io.Writer, defs *gen.Defs) {
 		}
 	}
 
-	w.Printf("export interface RawNode {\n")
-	w.Printf("	node_type: NodeType;\n")
-	w.Printf("	loc :Loc;\n")
-	w.Printf("	body :any;\n")
-	w.Printf("}\n\n")
-
-	w.Printf("export function isRawNode(obj: any): obj is RawNode {\n")
-	w.Printf("	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && isLoc(obj?.loc) && typeof obj?.body === 'object'\n")
-	w.Printf("}\n\n")
-
-	w.Printf("export interface RawScope {\n")
-	w.Printf("	prev: number | null;\n")
-	w.Printf("	next : number | null;\n")
-	w.Printf("	branch : number | null;\n")
-	w.Printf(" 	ident: number[];\n")
-	w.Printf("  owner : number | null;\n")
-	w.Printf("}\n\n")
-
-	w.Printf("export function isRawScope(obj: any): obj is RawScope {\n")
-	w.Printf("  return obj && typeof obj === 'object' && (obj?.owner === null || typeof obj?.owner === 'number') && (obj?.prev === null || typeof obj?.prev == 'number') && (obj?.next === null || typeof obj?.next == 'number') && (obj?.branch === null || typeof obj?.branch == 'number') && Array.isArray(obj?.ident)\n")
-	w.Printf("}\n\n")
-
-	w.Printf("export interface Ast {\n")
-	w.Printf("	node: RawNode[];\n")
-	w.Printf("	scope :RawScope[];\n")
-	w.Printf("}\n")
-
-	w.Printf("export function isAst(obj: any): obj is Ast {\n")
-	w.Printf("	return obj && typeof obj === 'object' && Array.isArray(obj?.node) && Array.isArray(obj?.scope)\n")
-	w.Printf("}\n\n")
-
 	w.Printf("interface astConstructor {\n")
 	w.Printf("	node : Node[];\n")
 	w.Printf("	scope : Scope[];\n")
 	w.Printf("}\n\n")
 
 	w.Printf("export function parseAST(obj: any): Program {\n")
-	w.Printf("	if (!isAst(obj)) {\n")
+	w.Printf("	if (!isJsonAst(obj)) {\n")
 	w.Printf("		throw new Error('invalid ast');\n")
 	w.Printf("	}\n")
-	w.Printf("	const o :Ast = {\n")
+	w.Printf("	const o :JsonAst = {\n")
 	w.Printf("		node: obj.node.map((n: any) => {\n")
 	w.Printf("			if (!isRawNode(n)) {\n")
 	w.Printf("				throw new Error('invalid node');\n")
@@ -224,11 +194,13 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("	}\n")
 	w.Printf("	for (const _ of o.scope) {\n")
 	w.Printf("		const n :Scope = {\n")
-	w.Printf("			prev: null,\n")
-	w.Printf("			next: null,\n")
-	w.Printf("			branch: null,\n")
-	w.Printf("			ident: [],\n")
-	w.Printf("			owner: null,\n")
+	for _, field := range defs.ScopeDef.Fields {
+		if field.Type.IsArray {
+			w.Printf("			%s: [],\n", field.Name)
+		} else {
+			w.Printf("			%s: null,\n", field.Name)
+		}
+	}
 	w.Printf("		}\n")
 	w.Printf("		c.scope.push(n);\n")
 	w.Printf("	}\n")
@@ -303,46 +275,37 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("	for (let i = 0; i < o.scope.length; i++) {\n")
 	w.Printf("		const os = o.scope[i];\n")
 	w.Printf("		const cscope = c.scope[i];\n")
-	w.Printf("		cscope.owner = os.owner === null ? null : c.node[os.owner];\n")
-	w.Printf("		cscope.prev = os.prev === null ? null : c.scope[os.prev];\n")
-	w.Printf("		cscope.next = os.next === null ? null : c.scope[os.next];\n")
-	w.Printf("		cscope.branch = os.branch === null ? null : c.scope[os.branch];\n")
-	w.Printf("		cscope.ident = os.ident.map((o: any) => {\n")
-	w.Printf("			if (typeof o !== 'number') {\n")
-	w.Printf("				throw new Error('invalid node list at Scope::ident');\n")
-	w.Printf("			}\n")
-	w.Printf("			const c_node = c.node[o];\n")
-	w.Printf("			if(!isIdent(c_node)) {\n")
-	w.Printf("				throw new Error('invalid node list at Scope::ident');\n")
-	w.Printf("			}\n")
-	w.Printf("			return c_node;\n")
-	w.Printf("		})\n")
+	for _, field := range defs.ScopeDef.Fields {
+		if field.Type.IsArray {
+			w.Printf("		for (const o of os.%s) {\n", field.Name)
+			w.Printf("			if (typeof o !== 'number') {\n")
+			w.Printf("				throw new Error('invalid node list at Scope::%s');\n", field.Name)
+			w.Printf("			}\n")
+			w.Printf("			const tmp%s = c.node[o];\n", field.Name)
+			if field.Type.Name != "Node" {
+				w.Printf("			if (!is%s(tmp%s)) {\n", field.Type.Name, field.Name)
+				w.Printf("				throw new Error('invalid node list at Scope::%s');\n", field.Name)
+				w.Printf("			}\n")
+			}
+			w.Printf("			cscope.%s.push(tmp%s);\n", field.Name, field.Name)
+			w.Printf("		}\n")
+
+		} else if field.Type.Name == "Scope" {
+			w.Printf("		if (os.%s !== null && typeof os.%s !== 'number') {\n", field.Name, field.Name)
+			w.Printf("			throw new Error('invalid node list at Scope::%s');\n", field.Name)
+			w.Printf("		}\n")
+			w.Printf("		const tmp%s = os.%s === null ? null : c.scope[os.%s];\n", field.Name, field.Name, field.Name)
+			w.Printf("		if (tmp%s !== null && !isScope(tmp%s)) {\n", field.Name, field.Name)
+			w.Printf("			throw new Error('invalid node list at Scope::%s');\n", field.Name)
+			w.Printf("		}\n")
+		}
+	}
 	w.Printf("	}\n")
 	w.Printf("	const root = c.node[0];\n")
 	w.Printf("	if (!isProgram(root)) {\n")
 	w.Printf("		throw new Error('invalid node list at node[0]');\n")
 	w.Printf("	}\n")
 	w.Printf("	return root;\n")
-	w.Printf("}\n\n")
-
-	w.Printf("export interface AstFile {\n")
-	w.Printf("	files :string[];\n")
-	w.Printf("	ast :Ast | null;\n")
-	w.Printf("	error :SrcError | null\n")
-	w.Printf("}\n\n")
-
-	w.Printf("export function isAstFile(obj: any): obj is AstFile {\n")
-	w.Printf("	return obj && typeof obj === 'object' && Array.isArray(obj?.files) && (obj?.ast === null || isAst(obj?.ast)) && (obj?.error === null || isSrcError(obj?.error));\n")
-	w.Printf("}\n\n")
-
-	w.Printf("export interface TokenFile {\n")
-	w.Printf("	files :string[];\n")
-	w.Printf("	tokens :Token[] | null;\n")
-	w.Printf("	error :SrcError | null\n")
-	w.Printf("}\n\n")
-
-	w.Printf("export function isTokenFile(obj: any): obj is TokenFile {\n")
-	w.Printf("	return obj && typeof obj === 'object' && Array.isArray(obj?.files) && (obj?.tokens === null || Array.isArray(obj?.tokens)) && (obj?.error === null || isSrcError(obj?.error));\n")
 	w.Printf("}\n\n")
 
 	w.Printf("export type VisitFn<T> = (f: VisitFn<T>, arg: T) => void;\n\n")

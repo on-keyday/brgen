@@ -297,6 +297,330 @@ impl From<NodeWeak> for NodeType {
 	}
 }
 
+#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+#[serde(rename_all = "snake_case")]pub enum NodeType {
+	Program,
+	Expr,
+	Binary,
+	Unary,
+	Cond,
+	Ident,
+	Call,
+	If,
+	MemberAccess,
+	Paren,
+	Index,
+	Match,
+	Range,
+	TmpVar,
+	BlockExpr,
+	Import,
+	Literal,
+	IntLiteral,
+	BoolLiteral,
+	StrLiteral,
+	Input,
+	Output,
+	Config,
+	Stmt,
+	Loop,
+	IndentBlock,
+	MatchBranch,
+	Return,
+	Break,
+	Continue,
+	Assert,
+	ImplicitYield,
+	Member,
+	Field,
+	Format,
+	Function,
+	Type,
+	IntType,
+	IdentType,
+	IntLiteralType,
+	StrLiteralType,
+	VoidType,
+	BoolType,
+	ArrayType,
+	FunctionType,
+	StructType,
+	StructUnionType,
+	Cast,
+	Comment,
+	CommentGroup,
+	UnionType,
+	UnionCandidate,
+	RangeType,
+	Enum,
+	EnumMember,
+	EnumType,
+}
+
+impl TryFrom<&str> for NodeType {
+	type Error = ();
+	fn try_from(s:&str)->Result<Self,()>{
+		match s{
+			"program" =>Ok(Self::Program),
+			"expr" =>Ok(Self::Expr),
+			"binary" =>Ok(Self::Binary),
+			"unary" =>Ok(Self::Unary),
+			"cond" =>Ok(Self::Cond),
+			"ident" =>Ok(Self::Ident),
+			"call" =>Ok(Self::Call),
+			"if" =>Ok(Self::If),
+			"member_access" =>Ok(Self::MemberAccess),
+			"paren" =>Ok(Self::Paren),
+			"index" =>Ok(Self::Index),
+			"match" =>Ok(Self::Match),
+			"range" =>Ok(Self::Range),
+			"tmp_var" =>Ok(Self::TmpVar),
+			"block_expr" =>Ok(Self::BlockExpr),
+			"import" =>Ok(Self::Import),
+			"literal" =>Ok(Self::Literal),
+			"int_literal" =>Ok(Self::IntLiteral),
+			"bool_literal" =>Ok(Self::BoolLiteral),
+			"str_literal" =>Ok(Self::StrLiteral),
+			"input" =>Ok(Self::Input),
+			"output" =>Ok(Self::Output),
+			"config" =>Ok(Self::Config),
+			"stmt" =>Ok(Self::Stmt),
+			"loop" =>Ok(Self::Loop),
+			"indent_block" =>Ok(Self::IndentBlock),
+			"match_branch" =>Ok(Self::MatchBranch),
+			"return" =>Ok(Self::Return),
+			"break" =>Ok(Self::Break),
+			"continue" =>Ok(Self::Continue),
+			"assert" =>Ok(Self::Assert),
+			"implicit_yield" =>Ok(Self::ImplicitYield),
+			"member" =>Ok(Self::Member),
+			"field" =>Ok(Self::Field),
+			"format" =>Ok(Self::Format),
+			"function" =>Ok(Self::Function),
+			"type" =>Ok(Self::Type),
+			"int_type" =>Ok(Self::IntType),
+			"ident_type" =>Ok(Self::IdentType),
+			"int_literal_type" =>Ok(Self::IntLiteralType),
+			"str_literal_type" =>Ok(Self::StrLiteralType),
+			"void_type" =>Ok(Self::VoidType),
+			"bool_type" =>Ok(Self::BoolType),
+			"array_type" =>Ok(Self::ArrayType),
+			"function_type" =>Ok(Self::FunctionType),
+			"struct_type" =>Ok(Self::StructType),
+			"struct_union_type" =>Ok(Self::StructUnionType),
+			"cast" =>Ok(Self::Cast),
+			"comment" =>Ok(Self::Comment),
+			"comment_group" =>Ok(Self::CommentGroup),
+			"union_type" =>Ok(Self::UnionType),
+			"union_candidate" =>Ok(Self::UnionCandidate),
+			"range_type" =>Ok(Self::RangeType),
+			"enum" =>Ok(Self::Enum),
+			"enum_member" =>Ok(Self::EnumMember),
+			"enum_type" =>Ok(Self::EnumType),
+			_=> Err(()),
+		}
+	}
+}
+
+#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+#[serde(rename_all = "snake_case")]pub enum UnaryOp {
+	Not,
+	MinusSign,
+}
+
+impl TryFrom<&str> for UnaryOp {
+	type Error = ();
+	fn try_from(s:&str)->Result<Self,()>{
+		match s{
+			"!" =>Ok(Self::Not),
+			"-" =>Ok(Self::MinusSign),
+			_=> Err(()),
+		}
+	}
+}
+
+#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+#[serde(rename_all = "snake_case")]pub enum BinaryOp {
+	Mul,
+	Div,
+	Mod,
+	LeftArithmeticShift,
+	RightArithmeticShift,
+	LeftLogicalShift,
+	RightLogicalShift,
+	BitAnd,
+	Add,
+	Sub,
+	BitOr,
+	BitXor,
+	Equal,
+	NotEqual,
+	Less,
+	LessOrEq,
+	Grater,
+	GraterOrEq,
+	LogicalAnd,
+	LogicalOr,
+	CondOp1,
+	CondOp2,
+	RangeExclusive,
+	RangeInclusive,
+	Assign,
+	DefineAssign,
+	ConstAssign,
+	AddAssign,
+	SubAssign,
+	MulAssign,
+	DivAssign,
+	ModAssign,
+	LeftShiftAssign,
+	RightShiftAssign,
+	BitAndAssign,
+	BitOrAssign,
+	BitXorAssign,
+	Comma,
+}
+
+impl TryFrom<&str> for BinaryOp {
+	type Error = ();
+	fn try_from(s:&str)->Result<Self,()>{
+		match s{
+			"*" =>Ok(Self::Mul),
+			"/" =>Ok(Self::Div),
+			"%" =>Ok(Self::Mod),
+			"<<<" =>Ok(Self::LeftArithmeticShift),
+			">>>" =>Ok(Self::RightArithmeticShift),
+			"<<" =>Ok(Self::LeftLogicalShift),
+			">>" =>Ok(Self::RightLogicalShift),
+			"&" =>Ok(Self::BitAnd),
+			"+" =>Ok(Self::Add),
+			"-" =>Ok(Self::Sub),
+			"|" =>Ok(Self::BitOr),
+			"^" =>Ok(Self::BitXor),
+			"==" =>Ok(Self::Equal),
+			"!=" =>Ok(Self::NotEqual),
+			"<" =>Ok(Self::Less),
+			"<=" =>Ok(Self::LessOrEq),
+			">" =>Ok(Self::Grater),
+			">=" =>Ok(Self::GraterOrEq),
+			"&&" =>Ok(Self::LogicalAnd),
+			"||" =>Ok(Self::LogicalOr),
+			"?" =>Ok(Self::CondOp1),
+			":" =>Ok(Self::CondOp2),
+			".." =>Ok(Self::RangeExclusive),
+			"..=" =>Ok(Self::RangeInclusive),
+			"=" =>Ok(Self::Assign),
+			":=" =>Ok(Self::DefineAssign),
+			"::=" =>Ok(Self::ConstAssign),
+			"+=" =>Ok(Self::AddAssign),
+			"-=" =>Ok(Self::SubAssign),
+			"*=" =>Ok(Self::MulAssign),
+			"/=" =>Ok(Self::DivAssign),
+			"%=" =>Ok(Self::ModAssign),
+			"<<=" =>Ok(Self::LeftShiftAssign),
+			">>=" =>Ok(Self::RightShiftAssign),
+			"&=" =>Ok(Self::BitAndAssign),
+			"|=" =>Ok(Self::BitOrAssign),
+			"^=" =>Ok(Self::BitXorAssign),
+			"," =>Ok(Self::Comma),
+			_=> Err(()),
+		}
+	}
+}
+
+#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+#[serde(rename_all = "snake_case")]pub enum IdentUsage {
+	Unknown,
+	Reference,
+	DefineVariable,
+	DefineConst,
+	DefineField,
+	DefineFormat,
+	DefineEnum,
+	DefineEnumMember,
+	DefineFn,
+	DefineCastFn,
+	DefineArg,
+	ReferenceType,
+}
+
+impl TryFrom<&str> for IdentUsage {
+	type Error = ();
+	fn try_from(s:&str)->Result<Self,()>{
+		match s{
+			"unknown" =>Ok(Self::Unknown),
+			"reference" =>Ok(Self::Reference),
+			"define_variable" =>Ok(Self::DefineVariable),
+			"define_const" =>Ok(Self::DefineConst),
+			"define_field" =>Ok(Self::DefineField),
+			"define_format" =>Ok(Self::DefineFormat),
+			"define_enum" =>Ok(Self::DefineEnum),
+			"define_enum_member" =>Ok(Self::DefineEnumMember),
+			"define_fn" =>Ok(Self::DefineFn),
+			"define_cast_fn" =>Ok(Self::DefineCastFn),
+			"define_arg" =>Ok(Self::DefineArg),
+			"reference_type" =>Ok(Self::ReferenceType),
+			_=> Err(()),
+		}
+	}
+}
+
+#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+#[serde(rename_all = "snake_case")]pub enum Endian {
+	Unspec,
+	Big,
+	Little,
+}
+
+impl TryFrom<&str> for Endian {
+	type Error = ();
+	fn try_from(s:&str)->Result<Self,()>{
+		match s{
+			"unspec" =>Ok(Self::Unspec),
+			"big" =>Ok(Self::Big),
+			"little" =>Ok(Self::Little),
+			_=> Err(()),
+		}
+	}
+}
+
+#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+#[serde(rename_all = "snake_case")]pub enum TokenTag {
+	Indent,
+	Space,
+	Line,
+	Punct,
+	IntLiteral,
+	BoolLiteral,
+	StrLiteral,
+	Keyword,
+	Ident,
+	Comment,
+	Error,
+	Unknown,
+}
+
+impl TryFrom<&str> for TokenTag {
+	type Error = ();
+	fn try_from(s:&str)->Result<Self,()>{
+		match s{
+			"indent" =>Ok(Self::Indent),
+			"space" =>Ok(Self::Space),
+			"line" =>Ok(Self::Line),
+			"punct" =>Ok(Self::Punct),
+			"int_literal" =>Ok(Self::IntLiteral),
+			"bool_literal" =>Ok(Self::BoolLiteral),
+			"str_literal" =>Ok(Self::StrLiteral),
+			"keyword" =>Ok(Self::Keyword),
+			"ident" =>Ok(Self::Ident),
+			"comment" =>Ok(Self::Comment),
+			"error" =>Ok(Self::Error),
+			"unknown" =>Ok(Self::Unknown),
+			_=> Err(()),
+		}
+	}
+}
+
 #[derive(Debug,Clone)]
 pub enum Node {
 	Program(Rc<RefCell<Program>>),
@@ -5348,205 +5672,6 @@ impl From<Rc<RefCell<EnumType>>> for Node {
 	}
 }
 
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
-#[serde(rename_all = "snake_case")]pub enum UnaryOp {
-	Not,
-	MinusSign,
-}
-
-impl TryFrom<&str> for UnaryOp {
-	type Error = ();
-	fn try_from(s:&str)->Result<Self,()>{
-		match s{
-			"!" =>Ok(Self::Not),
-			"-" =>Ok(Self::MinusSign),
-			_=> Err(()),
-		}
-	}
-}
-
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
-#[serde(rename_all = "snake_case")]pub enum BinaryOp {
-	Mul,
-	Div,
-	Mod,
-	LeftArithmeticShift,
-	RightArithmeticShift,
-	LeftLogicalShift,
-	RightLogicalShift,
-	BitAnd,
-	Add,
-	Sub,
-	BitOr,
-	BitXor,
-	Equal,
-	NotEqual,
-	Less,
-	LessOrEq,
-	Grater,
-	GraterOrEq,
-	LogicalAnd,
-	LogicalOr,
-	CondOp1,
-	CondOp2,
-	RangeExclusive,
-	RangeInclusive,
-	Assign,
-	DefineAssign,
-	ConstAssign,
-	AddAssign,
-	SubAssign,
-	MulAssign,
-	DivAssign,
-	ModAssign,
-	LeftShiftAssign,
-	RightShiftAssign,
-	BitAndAssign,
-	BitOrAssign,
-	BitXorAssign,
-	Comma,
-}
-
-impl TryFrom<&str> for BinaryOp {
-	type Error = ();
-	fn try_from(s:&str)->Result<Self,()>{
-		match s{
-			"*" =>Ok(Self::Mul),
-			"/" =>Ok(Self::Div),
-			"%" =>Ok(Self::Mod),
-			"<<<" =>Ok(Self::LeftArithmeticShift),
-			">>>" =>Ok(Self::RightArithmeticShift),
-			"<<" =>Ok(Self::LeftLogicalShift),
-			">>" =>Ok(Self::RightLogicalShift),
-			"&" =>Ok(Self::BitAnd),
-			"+" =>Ok(Self::Add),
-			"-" =>Ok(Self::Sub),
-			"|" =>Ok(Self::BitOr),
-			"^" =>Ok(Self::BitXor),
-			"==" =>Ok(Self::Equal),
-			"!=" =>Ok(Self::NotEqual),
-			"<" =>Ok(Self::Less),
-			"<=" =>Ok(Self::LessOrEq),
-			">" =>Ok(Self::Grater),
-			">=" =>Ok(Self::GraterOrEq),
-			"&&" =>Ok(Self::LogicalAnd),
-			"||" =>Ok(Self::LogicalOr),
-			"?" =>Ok(Self::CondOp1),
-			":" =>Ok(Self::CondOp2),
-			".." =>Ok(Self::RangeExclusive),
-			"..=" =>Ok(Self::RangeInclusive),
-			"=" =>Ok(Self::Assign),
-			":=" =>Ok(Self::DefineAssign),
-			"::=" =>Ok(Self::ConstAssign),
-			"+=" =>Ok(Self::AddAssign),
-			"-=" =>Ok(Self::SubAssign),
-			"*=" =>Ok(Self::MulAssign),
-			"/=" =>Ok(Self::DivAssign),
-			"%=" =>Ok(Self::ModAssign),
-			"<<=" =>Ok(Self::LeftShiftAssign),
-			">>=" =>Ok(Self::RightShiftAssign),
-			"&=" =>Ok(Self::BitAndAssign),
-			"|=" =>Ok(Self::BitOrAssign),
-			"^=" =>Ok(Self::BitXorAssign),
-			"," =>Ok(Self::Comma),
-			_=> Err(()),
-		}
-	}
-}
-
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
-#[serde(rename_all = "snake_case")]pub enum IdentUsage {
-	Unknown,
-	Reference,
-	DefineVariable,
-	DefineConst,
-	DefineField,
-	DefineFormat,
-	DefineEnum,
-	DefineEnumMember,
-	DefineFn,
-	DefineCastFn,
-	DefineArg,
-	ReferenceType,
-}
-
-impl TryFrom<&str> for IdentUsage {
-	type Error = ();
-	fn try_from(s:&str)->Result<Self,()>{
-		match s{
-			"unknown" =>Ok(Self::Unknown),
-			"reference" =>Ok(Self::Reference),
-			"define_variable" =>Ok(Self::DefineVariable),
-			"define_const" =>Ok(Self::DefineConst),
-			"define_field" =>Ok(Self::DefineField),
-			"define_format" =>Ok(Self::DefineFormat),
-			"define_enum" =>Ok(Self::DefineEnum),
-			"define_enum_member" =>Ok(Self::DefineEnumMember),
-			"define_fn" =>Ok(Self::DefineFn),
-			"define_cast_fn" =>Ok(Self::DefineCastFn),
-			"define_arg" =>Ok(Self::DefineArg),
-			"reference_type" =>Ok(Self::ReferenceType),
-			_=> Err(()),
-		}
-	}
-}
-
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
-#[serde(rename_all = "snake_case")]pub enum Endian {
-	Unspec,
-	Big,
-	Little,
-}
-
-impl TryFrom<&str> for Endian {
-	type Error = ();
-	fn try_from(s:&str)->Result<Self,()>{
-		match s{
-			"unspec" =>Ok(Self::Unspec),
-			"big" =>Ok(Self::Big),
-			"little" =>Ok(Self::Little),
-			_=> Err(()),
-		}
-	}
-}
-
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
-#[serde(rename_all = "snake_case")]pub enum TokenTag {
-	Indent,
-	Space,
-	Line,
-	Punct,
-	IntLiteral,
-	BoolLiteral,
-	StrLiteral,
-	Keyword,
-	Ident,
-	Comment,
-	Error,
-	Unknown,
-}
-
-impl TryFrom<&str> for TokenTag {
-	type Error = ();
-	fn try_from(s:&str)->Result<Self,()>{
-		match s{
-			"indent" =>Ok(Self::Indent),
-			"space" =>Ok(Self::Space),
-			"line" =>Ok(Self::Line),
-			"punct" =>Ok(Self::Punct),
-			"int_literal" =>Ok(Self::IntLiteral),
-			"bool_literal" =>Ok(Self::BoolLiteral),
-			"str_literal" =>Ok(Self::StrLiteral),
-			"keyword" =>Ok(Self::Keyword),
-			"ident" =>Ok(Self::Ident),
-			"comment" =>Ok(Self::Comment),
-			"error" =>Ok(Self::Error),
-			"unknown" =>Ok(Self::Unknown),
-			_=> Err(()),
-		}
-	}
-}
-
 #[derive(Debug,Clone)]
 pub struct Scope {
 	pub prev: Option<Weak<RefCell<Scope>>>,
@@ -5577,6 +5702,22 @@ pub struct Token {
 	pub loc: Loc,
 }
 
+#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+pub struct RawScope {
+	pub prev: usize,
+	pub next: usize,
+	pub branch: usize,
+	pub ident: Vec<usize>,
+	pub owner: usize,
+}
+
+#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+pub struct RawNode {
+	pub node_type: NodeType,
+	pub loc: Loc,
+	pub body: any,
+}
+
 #[derive(Debug,Clone,Serialize,Deserialize)]
 pub struct SrcErrorEntry {
 	pub msg: String,
@@ -5589,6 +5730,26 @@ pub struct SrcErrorEntry {
 #[derive(Debug,Clone,Serialize,Deserialize)]
 pub struct SrcError {
 	pub errs: Vec<SrcErrorEntry>,
+}
+
+#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+pub struct JsonAst {
+	pub node: Vec<RawNode>,
+	pub scope: Vec<RawScope>,
+}
+
+#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+pub struct AstFile {
+	pub files: Vec<String>,
+	pub ast: JsonAst,
+	pub error: SrcError,
+}
+
+#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+pub struct TokenFile {
+	pub files: Vec<String>,
+	pub tokens: Vec<Token>,
+	pub error: SrcError,
 }
 
 #[derive(Debug,Clone,Serialize,Deserialize)]

@@ -74,6 +74,12 @@ typedef enum NodeType {
 int NodeType_from_string(const char*, NodeType*);
 const char* NodeType_to_string(NodeType);
 
+typedef enum NodeType NodeType;
+typedef enum UnaryOp UnaryOp;
+typedef enum BinaryOp BinaryOp;
+typedef enum IdentUsage IdentUsage;
+typedef enum Endian Endian;
+typedef enum TokenTag TokenTag;
 typedef struct Node Node;
 typedef struct Expr Expr;
 typedef struct Literal Literal;
@@ -131,17 +137,78 @@ typedef struct RangeType RangeType;
 typedef struct Enum Enum;
 typedef struct EnumMember EnumMember;
 typedef struct EnumType EnumType;
-typedef enum UnaryOp UnaryOp;
-typedef enum BinaryOp BinaryOp;
-typedef enum IdentUsage IdentUsage;
-typedef enum Endian Endian;
-typedef enum TokenTag TokenTag;
 typedef struct Scope Scope;
 typedef struct Pos Pos;
 typedef struct Loc Loc;
 typedef struct Token Token;
+typedef struct RawScope RawScope;
+typedef struct RawNode RawNode;
 typedef struct SrcErrorEntry SrcErrorEntry;
 typedef struct SrcError SrcError;
+typedef struct JsonAst JsonAst;
+typedef struct AstFile AstFile;
+typedef struct TokenFile TokenFile;
+enum NodeType {
+	PROGRAM,
+	EXPR,
+	BINARY,
+	UNARY,
+	COND,
+	IDENT,
+	CALL,
+	IF,
+	MEMBER_ACCESS,
+	PAREN,
+	INDEX,
+	MATCH,
+	RANGE,
+	TMP_VAR,
+	BLOCK_EXPR,
+	IMPORT,
+	LITERAL,
+	INT_LITERAL,
+	BOOL_LITERAL,
+	STR_LITERAL,
+	INPUT,
+	OUTPUT,
+	CONFIG,
+	STMT,
+	LOOP,
+	INDENT_BLOCK,
+	MATCH_BRANCH,
+	RETURN,
+	BREAK,
+	CONTINUE,
+	ASSERT,
+	IMPLICIT_YIELD,
+	MEMBER,
+	FIELD,
+	FORMAT,
+	FUNCTION,
+	TYPE,
+	INT_TYPE,
+	IDENT_TYPE,
+	INT_LITERAL_TYPE,
+	STR_LITERAL_TYPE,
+	VOID_TYPE,
+	BOOL_TYPE,
+	ARRAY_TYPE,
+	FUNCTION_TYPE,
+	STRUCT_TYPE,
+	STRUCT_UNION_TYPE,
+	CAST,
+	COMMENT,
+	COMMENT_GROUP,
+	UNION_TYPE,
+	UNION_CANDIDATE,
+	RANGE_TYPE,
+	ENUM,
+	ENUM_MEMBER,
+	ENUM_TYPE,
+};
+const char* NodeType_to_string(NodeType);
+int NodeType_from_string(const char*,NodeType*);
+
 enum UnaryOp {
 	NOT,
 	MINUS_SIGN,
@@ -252,6 +319,21 @@ struct Token {
 	Loc loc;
 };
 
+struct RawScope {
+	uint64_t prev;
+	uint64_t next;
+	uint64_t branch;
+	uint64_t* ident;
+	size_t ident_size;
+	uint64_t owner;
+};
+
+struct RawNode {
+	NodeType node_type;
+	Loc loc;
+	any body;
+};
+
 struct SrcErrorEntry {
 	char* msg;
 	char* file;
@@ -263,6 +345,28 @@ struct SrcErrorEntry {
 struct SrcError {
 	SrcErrorEntry* errs;
 	size_t errs_size;
+};
+
+struct JsonAst {
+	RawNode* node;
+	size_t node_size;
+	RawScope* scope;
+	size_t scope_size;
+};
+
+struct AstFile {
+	char** files;
+	size_t files_size;
+	JsonAst ast;
+	SrcError error;
+};
+
+struct TokenFile {
+	char** files;
+	size_t files_size;
+	Token* tokens;
+	size_t tokens_size;
+	SrcError error;
 };
 
 struct Node {

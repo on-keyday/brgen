@@ -147,6 +147,9 @@ func (d *Type) TsString() string {
 	} else if d.IsPtr || d.IsInterface {
 		postfix += "|null"
 	}
+	if d.IsOptional {
+		postfix += "|null"
+	}
 	return d.Name + postfix
 }
 
@@ -243,6 +246,11 @@ func (c *collector) convertType(typ string) *Type {
 	isInterface := false
 	isWeak := false
 	isOptional := false
+	optionalMatch := optional.FindStringSubmatch(typ)
+	if len(optionalMatch) > 0 {
+		typ = optionalMatch[1]
+		isOptional = true
+	}
 	if len(arrayMatch) > 0 {
 		typ = arrayMatch[1]
 		isArray = true
@@ -266,12 +274,8 @@ func (c *collector) convertType(typ string) *Type {
 			isPtr = true
 		}
 	}
-	optionalMatch := optional.FindStringSubmatch(typ)
-	if len(optionalMatch) > 0 {
-		typ = optionalMatch[1]
-		isOptional = true
-	}
-	if typ != "string" && typ != "uint" && typ != "bool" && typ != "uintptr" {
+
+	if typ != "string" && typ != "uint" && typ != "bool" && typ != "uintptr" && typ != "any" {
 		typ = c.typeCaseFn(typ)
 	} else {
 		if prim, ok := c.primitiveMap[typ]; ok {
@@ -338,6 +342,9 @@ func (d *Defs) push(def Def) {
 		d.Interfaces[def.Name] = def
 	case *Struct:
 		d.Structs[def.Name] = def
+		if def.Name == "Scope" {
+			d.ScopeDef = def
+		}
 	case *Enum:
 		d.Enums[def.Name] = def
 	}
@@ -356,6 +363,16 @@ func CollectDefinition(list *List, fieldCaseFn func(string) string, typeCaseFn f
 		typeCaseFn:    typeCaseFn,
 		interfacesMap: make(map[string]*Interface),
 		primitiveMap:  primitiveMap,
+	}
+
+	//generate enum mappings
+
+	for _, enum := range list.Enum {
+		name := c.typeCaseFn(enum.Key)
+		defs.push(&Enum{
+			Name:   name,
+			Values: c.mapOpsToEnumValues(enum.Value),
+		})
 	}
 
 	// collect interface
@@ -454,15 +471,6 @@ func CollectDefinition(list *List, fieldCaseFn func(string) string, typeCaseFn f
 		defs.push(&body)
 	}
 
-	//generate enum mappings
-
-	for _, enum := range list.Enum {
-		name := c.typeCaseFn(enum.Key)
-		defs.push(&Enum{
-			Name:   name,
-			Values: c.mapOpsToEnumValues(enum.Value),
-		})
-	}
 	//generate struct mappings
 	for _, struct_ := range list.Struct {
 		name := c.typeCaseFn(struct_.Key)
@@ -500,7 +508,7 @@ func LoadFromJSON(r io.Reader) (list *List, err error) {
 }
 
 func LoadFromSrc2JSON(src2json string) (list *List, err error) {
-	cmd := exec.Command(src2json, "--dump-types", "--dump-enum-name", "--dump-error", "--lexer")
+	cmd := exec.Command(src2json, "--dump-types")
 	// get stdout
 	stdout, err := cmd.StdoutPipe()
 	err = cmd.Start()
