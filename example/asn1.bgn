@@ -1,7 +1,7 @@
 enum TagKind:
     :u8
-    RESERVED = 0
-    BOOLEAN = 1 - 2
+    RESERVED
+    BOOLEAN 
     INTEGER
     BIT_STRING
     OCTET_STRING
@@ -53,7 +53,19 @@ format Len:
                 len = len << 8
                 len = len | input.get()
                 len_of_len = len_of_len - 1            
+            
+    fn cast u64(): # cast operator
+        return len
 
-format TLV:
+format TLV: # tag length value
     tag: Tag
+    len: Len
+    value  :[len]u8
 
+format Integer:
+    tlv :TLV
+
+    fn encode():
+        tlv.tag = Tag.INTEGER
+        tlv.len = Len(value.size())
+        tlv.value = value

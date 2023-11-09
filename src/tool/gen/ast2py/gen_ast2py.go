@@ -122,7 +122,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("    next: Optional[int]\n")
 	w.Printf("    branch: Optional[int]\n")
 	w.Printf("    ident: List[int]\n")
-	w.Printf("    is_global: bool\n\n")
+	w.Printf("    owner: Optional[int]\n\n")
 
 	w.Printf("def parse_RawScope(json: dict) -> RawScope:\n")
 	w.Printf("    ret = RawScope()\n")
@@ -130,7 +130,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("    ret.next = json['next']\n")
 	w.Printf("    ret.branch = json['branch']\n")
 	w.Printf("    ret.ident = json['ident']\n")
-	w.Printf("    ret.is_global = json['is_global']\n")
+	w.Printf("    ret.owner = json['owner']\n")
 	w.Printf("    return ret\n\n")
 
 	w.Printf("class Ast:\n")
@@ -250,7 +250,8 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("            case _:\n")
 	w.Printf("                raise TypeError('unknown node type')\n")
 	w.Printf("    for i in range(len(ast.scope)):\n")
-	w.Printf("        scope[i].is_global = ast.scope[i].is_global\n")
+	w.Printf("        if ast.scope[i].owner is not None:\n")
+	w.Printf("            scope[i].owner = node[ast.scope[i].owner]\n")
 	w.Printf("        if ast.scope[i].next is not None:\n")
 	w.Printf("            scope[i].next = scope[ast.scope[i].next]\n")
 	w.Printf("        if ast.scope[i].branch is not None:\n")

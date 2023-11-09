@@ -6,75 +6,16 @@
 #include <helper/defer.h>
 
 namespace brgen::ast {
-    struct Object {
-        std::variant<std::weak_ptr<Ident>, std::weak_ptr<Field>, std::weak_ptr<Format>, std::weak_ptr<Function>> object;
-
-        std::optional<std::string> ident() {
-            switch (object.index()) {
-                case 0: {
-                    auto g = std::get<std::weak_ptr<Ident>>(object).lock();
-                    if (!g) {
-                        return std::nullopt;
-                    }
-                    return g->ident;
-                }
-                case 1: {
-                    auto g = std::get<std::weak_ptr<Field>>(object).lock();
-                    if (!g || !g->ident) {
-                        return std::nullopt;
-                    }
-                    return g->ident->ident;
-                }
-                case 2: {
-                    auto g = std::get<std::weak_ptr<Format>>(object).lock();
-                    if (!g || !g->ident) {
-                        return std::nullopt;
-                    }
-                    return g->ident->ident;
-                }
-                case 3: {
-                    auto g = std::get<std::weak_ptr<Function>>(object).lock();
-                    if (!g || !g->ident) {
-                        return std::nullopt;
-                    }
-                    return g->ident->ident;
-                }
-            }
-            return std::nullopt;
-        }
-
-        NodeType node_type() {
-            switch (object.index()) {
-                case 0:
-                    return NodeType::ident;
-                case 1:
-                    return NodeType::field;
-                case 2:
-                    return NodeType::format;
-                case 3:
-                    return NodeType::function;
-            }
-            return NodeType::program;
-        }
-
-        void visit(auto&& fn) {
-            std::visit(
-                [&](auto& o) {
-                    fn(o.lock());
-                },
-                object);
-        }
-    };
 
     struct Scope {
         std::weak_ptr<Scope> prev;
         std::list<std::weak_ptr<Ident>> objects;
         std::shared_ptr<Scope> branch;
         std::shared_ptr<Scope> next;
-        bool is_global = false;
+        std::weak_ptr<Node> owner;
 
         std::optional<std::shared_ptr<Ident>> lookup_local(auto&& fn, ast::Ident* self = nullptr) {
-            if (is_global) {
+            if (auto locked = owner.lock(); locked && locked.get()->node_type == NodeType::program) {
                 return std::nullopt;
             }
             bool myself_appear = !self;
@@ -160,12 +101,11 @@ namespace brgen::ast {
             if (!root) {
                 root = std::make_shared<Scope>();
                 current = root;
-                current->is_global = true;
             }
             if (current->branch && !current->next) {
                 current->next = std::make_shared<Scope>();
                 current->next->prev = current;
-                current->next->is_global = current->is_global;
+                current->next->owner = current->owner;
                 current = current->next;
             }
         }
@@ -175,7 +115,6 @@ namespace brgen::ast {
             maybe_init();
             current->branch = std::make_shared<Scope>();
             current->branch->prev = current;
-            current->branch->is_global = false;
             auto d = current;
             current = current->branch;
             return utils::helper::defer([this, d] {

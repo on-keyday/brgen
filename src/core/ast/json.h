@@ -203,7 +203,9 @@ namespace brgen::ast {
                 for (auto& scope : scopes) {
                     field([&] {
                         auto field = obj.object();
-                        field("is_global", scope->is_global);
+                        find_and_replace_node(scope->owner.lock(), [&](auto val){
+                            field("owner", val);
+                        });
                         field("ident", [&] {
                             auto field = obj.array();
                             for (auto& object : scope->objects) {
@@ -564,16 +566,6 @@ namespace brgen::ast {
                         return scopes[i];
                     };
                 };
-                auto is_global= json_at(val,"is_global") ;
-                if(!is_global){
-                    return is_global & empty_value<void>()|json_to_loc_error({},"is_global");
-                }
-                if(bool b; (*is_global)->as_bool(b)){
-                    scopes[i]->is_global = b;
-                }
-                else{
-                    return unexpect(error({},"is_global must be bool"));
-                }
                 auto b = get_scope("branch");
                 if (!b) {
                     return b & empty_value<void>();
@@ -609,6 +601,14 @@ namespace brgen::ast {
                         return unexpect(error({}, "expect ident but found ", node_type_to_string(val->node_type)));
                     }
                 }
+                auto owner =get_number({},"node")(&val) ;
+                if(!owner){
+                    return owner & empty_value<void>();
+                }
+                if(*owner >= nodes.size()){
+                    return unexpect(error({}, "index out of range"));
+                }
+                scopes[i]->owner = nodes[*owner];
             }
             return {};
         }

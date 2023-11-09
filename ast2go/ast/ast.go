@@ -126,6 +126,7 @@ type MemberAccess struct {
 	Target    Expr
 	Member    string
 	MemberLoc Loc
+	Base      Node
 }
 
 func (n *MemberAccess) isExpr() {}
@@ -422,7 +423,7 @@ type IdentType struct {
 	Loc        Loc
 	IsExplicit bool
 	Ident      *Ident
-	Base       *Format
+	Base       Member
 }
 
 func (n *IdentType) isType() {}
@@ -1066,11 +1067,11 @@ func (n TokenTag) UnmarshalJSON(data []byte) error {
 }
 
 type Scope struct {
-	Prev     *Scope
-	Next     *Scope
-	Branch   *Scope
-	Ident    []*Ident
-	IsGlobal bool
+	Prev   *Scope
+	Next   *Scope
+	Branch *Scope
+	Ident  []*Ident
+	Owner  Node
 }
 
 type Pos struct {
@@ -1113,11 +1114,11 @@ type rawNode struct {
 	Body     json.RawMessage
 }
 type rawScope struct {
-	Prev     *uintptr  `json:"prev"`
-	Next     *uintptr  `json:"next"`
-	Branch   *uintptr  `json:"branch"`
-	Ident    []uintptr `json:"ident"`
-	IsGlobal bool      `json:"is_global"`
+	Prev   *uintptr  `json:"prev"`
+	Next   *uintptr  `json:"next"`
+	Branch *uintptr  `json:"branch"`
+	Ident  []uintptr `json:"ident"`
+	Owner  *uintptr  `json:"owner"`
 }
 type AST struct {
 	*Program
@@ -1426,6 +1427,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 				Target    *uintptr `json:"target"`
 				Member    string   `json:"member"`
 				MemberLoc Loc      `json:"member_loc"`
+				Base      *uintptr `json:"base"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -1438,6 +1440,9 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 			}
 			v.Member = tmp.Member
 			v.MemberLoc = tmp.MemberLoc
+			if tmp.Base != nil {
+				v.Base = n.node[*tmp.Base].(Node)
+			}
 		case "paren":
 			v := n.node[i].(*Paren)
 			var tmp struct {
@@ -1871,7 +1876,7 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 				v.Ident = n.node[*tmp.Ident].(*Ident)
 			}
 			if tmp.Base != nil {
-				v.Base = n.node[*tmp.Base].(*Format)
+				v.Base = n.node[*tmp.Base].(Member)
 			}
 		case "int_literal_type":
 			v := n.node[i].(*IntLiteralType)
@@ -2169,7 +2174,9 @@ func (n *astConstructor) unmarshal(data []byte) (prog *Program, err error) {
 		for j, k := range raw.Ident {
 			n.scope[i].Ident[j] = n.node[k].(*Ident)
 		}
-		n.scope[i].IsGlobal = raw.IsGlobal
+		if raw.Owner != nil {
+			n.scope[i].Owner = n.node[*raw.Owner].(Node)
+		}
 	}
 	return n.node[0].(*Program), nil
 }

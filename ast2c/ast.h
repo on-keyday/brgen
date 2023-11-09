@@ -374,6 +374,7 @@ struct MemberAccess {
 	Expr* target;
 	char* member;
 	Loc member_loc;
+	Node* base;
 };
 
 struct Paren {
@@ -579,7 +580,7 @@ struct IdentType {
 	Loc loc;
 	int is_explicit;
 	Ident* ident;
-	Format* base;
+	Member* base;
 };
 
 struct IntLiteralType {
@@ -726,7 +727,7 @@ struct Scope {
 	Scope* branch;
 	Ident** ident;
 	size_t ident_size;
-	int is_global;
+	Node* owner;
 };
 
 typedef struct RawNode {
@@ -741,7 +742,7 @@ typedef struct RawScope {
 	uint64_t branch;
 	uint64_t* ident;
 	size_t ident_size;
-	int is_global;
+	uint64_t owner;
 } RawScope;
 
 typedef struct Ast {

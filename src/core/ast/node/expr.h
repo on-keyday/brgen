@@ -216,12 +216,14 @@ namespace brgen::ast {
         std::shared_ptr<Expr> target;
         std::string member;
         lexer::Loc member_loc;
+        std::weak_ptr<Node> base;
 
         void dump(auto&& field_) {
             Expr::dump(field_);
             sdebugf(target);
             sdebugf(member);
             sdebugf(member_loc);
+            sdebugf(base);
         }
 
         MemberAccess(lexer::Loc l, std::shared_ptr<Expr>&& t, std::string&& n, lexer::Loc ml)

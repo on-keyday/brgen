@@ -243,6 +243,7 @@ export interface MemberAccess extends Expr {
 	target: Expr|null;
 	member: string;
 	member_loc: Loc;
+	base: Node|null;
 }
 
 export function isMemberAccess(obj: any): obj is MemberAccess {
@@ -474,7 +475,7 @@ export function isIntType(obj: any): obj is IntType {
 
 export interface IdentType extends Type {
 	ident: Ident|null;
-	base: Format|null;
+	base: Member|null;
 }
 
 export function isIdentType(obj: any): obj is IdentType {
@@ -736,11 +737,11 @@ export interface Scope {
 	next: Scope|null;
 	branch: Scope|null;
 	ident: Ident[];
-	is_global: boolean;
+	owner: Node|null;
 }
 
 export function isScope(obj: any): obj is Scope {
-	return obj && typeof obj === 'object' && typeof obj?.prev === 'object' && typeof obj?.next === 'object' && typeof obj?.branch === 'object' && Array.isArray(obj?.ident) && typeof obj?.is_global === 'boolean'
+	return obj && typeof obj === 'object' && typeof obj?.prev === 'object' && typeof obj?.next === 'object' && typeof obj?.branch === 'object' && Array.isArray(obj?.ident) && isNode(obj?.owner)
 }
 
 export interface Pos {
@@ -808,11 +809,11 @@ export interface RawScope {
 	next : number | null;
 	branch : number | null;
  	ident: number[];
-  is_global : boolean;
+  owner : number | null;
 }
 
 export function isRawScope(obj: any): obj is RawScope {
-  return obj && typeof obj === 'object' && (typeof obj?.is_global === 'boolean') && (obj?.prev === null || typeof obj?.prev == 'number') && (obj?.next === null || typeof obj?.next == 'number') && (obj?.branch === null || typeof obj?.branch == 'number') && Array.isArray(obj?.ident)
+  return obj && typeof obj === 'object' && (obj?.owner === null || typeof obj?.owner === 'number') && (obj?.prev === null || typeof obj?.prev == 'number') && (obj?.next === null || typeof obj?.next == 'number') && (obj?.branch === null || typeof obj?.branch == 'number') && Array.isArray(obj?.ident)
 }
 
 export interface Ast {
@@ -946,6 +947,7 @@ export function parseAST(obj: any): Program {
 				target: null,
 				member: '',
 				member_loc: on.loc,
+				base: null,
 			}
 			c.node.push(n);
 			break;
@@ -1420,7 +1422,7 @@ export function parseAST(obj: any): Program {
 			next: null,
 			branch: null,
 			ident: [],
-			is_global: false,
+			owner: null,
 		}
 		c.scope.push(n);
 	}
@@ -1707,6 +1709,14 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at MemberAccess::member_loc');
 			}
 			n.member_loc = tmpmember_loc;
+			if (on.body?.base !== null && typeof on.body?.base !== 'number') {
+				throw new Error('invalid node list at MemberAccess::base');
+			}
+			const tmpbase = on.body.base === null ? null : c.node[on.body.base];
+			if (!(tmpbase === null || isNode(tmpbase))) {
+				throw new Error('invalid node list at MemberAccess::base');
+			}
+			n.base = tmpbase;
 			break;
 		}
 		case "paren": {
@@ -2325,7 +2335,7 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at IdentType::base');
 			}
 			const tmpbase = on.body.base === null ? null : c.node[on.body.base];
-			if (!(tmpbase === null || isFormat(tmpbase))) {
+			if (!(tmpbase === null || isMember(tmpbase))) {
 				throw new Error('invalid node list at IdentType::base');
 			}
 			n.base = tmpbase;
@@ -2736,7 +2746,7 @@ export function parseAST(obj: any): Program {
 	for (let i = 0; i < o.scope.length; i++) {
 		const os = o.scope[i];
 		const cscope = c.scope[i];
-		cscope.is_global = os.is_global;
+		cscope.owner = os.owner === null ? null : c.node[os.owner];
 		cscope.prev = os.prev === null ? null : c.scope[os.prev];
 		cscope.next = os.next === null ? null : c.scope[os.next];
 		cscope.branch = os.branch === null ? null : c.scope[os.branch];

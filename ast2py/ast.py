@@ -138,6 +138,7 @@ class MemberAccess(Expr):
     target: Optional[Expr]
     member: str
     member_loc: Loc
+    base: Optional[Node]
 
 
 class Paren(Expr):
@@ -270,7 +271,7 @@ class IntType(Type):
 
 class IdentType(Type):
     ident: Optional[Ident]
-    base: Optional[Format]
+    base: Optional[Member]
 
 
 class IntLiteralType(Type):
@@ -442,7 +443,7 @@ class Scope:
     next: Optional[Scope]
     branch: Optional[Scope]
     ident: List[Ident]
-    is_global: bool
+    owner: Optional[Node]
 
 
 class Pos:
@@ -532,7 +533,7 @@ class RawScope:
     next: Optional[int]
     branch: Optional[int]
     ident: List[int]
-    is_global: bool
+    owner: Optional[int]
 
 def parse_RawScope(json: dict) -> RawScope:
     ret = RawScope()
@@ -540,7 +541,7 @@ def parse_RawScope(json: dict) -> RawScope:
     ret.next = json['next']
     ret.branch = json['branch']
     ret.ident = json['ident']
-    ret.is_global = json['is_global']
+    ret.owner = json['owner']
     return ret
 
 class Ast:
@@ -843,6 +844,11 @@ def ast2node(ast :Ast) -> Program:
                 x = ast.node[i].body["member"]
                 node[i].member = x if isinstance(x,str)  else raiseError(TypeError('type mismatch'))
                 node[i].member_loc = parse_Loc(ast.node[i].body["member_loc"])
+                if ast.node[i].body["base"] is not None:
+                    x = node[ast.node[i].body["base"]]
+                    node[i].base = x if isinstance(x,Node) else raiseError(TypeError('type mismatch'))
+                else:
+                    node[i].base = None
             case NodeType.PAREN:
                 if ast.node[i].body["expr_type"] is not None:
                     x = node[ast.node[i].body["expr_type"]]
@@ -1142,7 +1148,7 @@ def ast2node(ast :Ast) -> Program:
                     node[i].ident = None
                 if ast.node[i].body["base"] is not None:
                     x = node[ast.node[i].body["base"]]
-                    node[i].base = x if isinstance(x,Format) else raiseError(TypeError('type mismatch'))
+                    node[i].base = x if isinstance(x,Member) else raiseError(TypeError('type mismatch'))
                 else:
                     node[i].base = None
             case NodeType.INT_LITERAL_TYPE:
@@ -1317,7 +1323,8 @@ def ast2node(ast :Ast) -> Program:
             case _:
                 raise TypeError('unknown node type')
     for i in range(len(ast.scope)):
-        scope[i].is_global = ast.scope[i].is_global
+        if ast.scope[i].owner is not None:
+            scope[i].owner = node[ast.scope[i].owner]
         if ast.scope[i].next is not None:
             scope[i].next = scope[ast.scope[i].next]
         if ast.scope[i].branch is not None:

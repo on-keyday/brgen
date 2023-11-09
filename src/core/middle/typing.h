@@ -437,12 +437,28 @@ namespace brgen::middle {
 
         std::shared_ptr<ast::StructType> lookup_struct(const std::shared_ptr<ast::Type>& typ) {
             if (auto ident = ast::as<ast::IdentType>(typ)) {
-                if (auto fmt = ident->base.lock()) {
-                    return fmt->body->struct_type;
+                if (auto b = ident->base.lock()) {
+                    if (auto fmt = ast::as<ast::Format>(b)) {
+                        return fmt->body->struct_type;
+                    }
                 }
             }
             else if (ast::as<ast::StructType>(typ)) {
                 return ast::cast_to<ast::StructType>(typ);
+            }
+            return nullptr;
+        }
+
+        std::shared_ptr<ast::EnumType> lookup_enum(const std::shared_ptr<ast::Type>& typ) {
+            if (auto ident = ast::as<ast::IdentType>(typ)) {
+                if (auto fmt = ident->base.lock()) {
+                    if (auto e = ast::as<ast::Enum>(fmt)) {
+                        return e->enum_type;
+                    }
+                }
+            }
+            else if (ast::as<ast::EnumType>(typ)) {
+                return ast::cast_to<ast::EnumType>(typ);
             }
             return nullptr;
         }
@@ -582,9 +598,11 @@ namespace brgen::middle {
                 }
                 if (auto field = ast::as<ast::Field>(stmt)) {
                     selector->expr_type = field->field_type;
+                    selector->base = stmt;
                 }
                 else if (auto fn = ast::as<ast::Function>(stmt)) {
                     selector->expr_type = fn->func_type;
+                    selector->base = stmt;
                 }
                 else {
                     error(selector->member_loc, "member ", selector->member, " is not a field or function").report();

@@ -540,8 +540,8 @@ Ast* parse_json_to_ast(json_handlers* h,void* root_obj) {
 		if (!branch) {
 			goto error;
 		}
-		void* is_global = h->object_get(h, s, "is_global");
-		if (!is_global) {
+		void* owner = h->object_get(h, s, "owner");
+		if (!owner) {
 			goto error;
 		}
 		void* ident = h->object_get(h, s, "ident");
@@ -567,7 +567,7 @@ Ast* parse_json_to_ast(json_handlers* h,void* root_obj) {
 		if (!h->number_get(h, branch, &ast->scope[i].branch)) {
 			goto error;
 		}
-		if (!h->boolean_get(h, is_global)) {
+		if (!h->number_get(h, owner, &ast->scope[i].owner)) {
 			goto error;
 		}
 		size_t j = 0;

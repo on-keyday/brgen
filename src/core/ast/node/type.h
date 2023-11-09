@@ -183,7 +183,7 @@ namespace brgen::ast {
     struct IdentType : Type {
         define_node_type(NodeType::ident_type);
         std::shared_ptr<Ident> ident;
-        std::weak_ptr<Format> base;
+        std::weak_ptr<Member> base;
         IdentType(lexer::Loc l, std::shared_ptr<Ident>&& token)
             : Type(l, NodeType::ident_type), ident(std::move(token)) {}
 

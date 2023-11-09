@@ -1079,6 +1079,7 @@ pub struct MemberAccess {
 	pub target: Option<Expr>,
 	pub member: String,
 	pub member_loc: Loc,
+	pub base: Option<Node>,
 }
 
 impl TryFrom<&Expr> for Rc<RefCell<MemberAccess>> {
@@ -3048,7 +3049,7 @@ pub struct IdentType {
 	pub loc: Loc,
 	pub is_explicit: bool,
 	pub ident: Option<Rc<RefCell<Ident>>>,
-	pub base: Option<Weak<RefCell<Format>>>,
+	pub base: Option<Member>,
 }
 
 impl TryFrom<&Type> for Rc<RefCell<IdentType>> {
@@ -4430,7 +4431,7 @@ pub struct Scope {
 	pub next: Option<Rc<RefCell<Scope>>>,
 	pub branch: Option<Rc<RefCell<Scope>>>,
 	pub ident: Vec<Weak<RefCell<Ident>>>,
-	pub is_global: bool,
+	pub owner: Option<Node>,
 }
 
 #[derive(Debug,Clone,Copy,Serialize,Deserialize)]
@@ -4481,7 +4482,7 @@ pub struct RawScope {
 	pub next :Option<u64>,
 	pub branch :Option<u64>,
 	pub ident :Vec<u64>,
-	pub is_global: bool,
+	pub owner :Option<u64>
 }
 
 #[derive(Debug,Clone,Serialize,Deserialize)]
@@ -4571,6 +4572,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 				target: None,
 				member: String::new(),
 				member_loc: raw_node.loc.clone(),
+				base: None,
 				})))
 			},
 			NodeType::Paren => {
@@ -4914,7 +4916,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 			next: None,
 			branch: None,
 			ident: Vec::new(),
-			is_global: false,
+			owner: None,
 		}));
 		scopes.push(scope);
 	}
@@ -5458,6 +5460,21 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 					Ok(v)=>v,
 					Err(e)=>return Err(Error::JSONError(e)),
 				};
+				let base_body = match raw_node.body.get("base") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"base")),
+				};
+ 				if !base_body.is_null() {
+					let base_body = match base_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(base_body.into(),JSONType::Number)),
+					};
+					let base_body = match nodes.get(base_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(base_body as usize)),
+					};
+					node.borrow_mut().base = Some(base_body.clone());
+				}
 			},
 			NodeType::Paren => {
 				let node = nodes[i].clone();
@@ -6662,11 +6679,7 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 						Some(v)=>v,
 						None => return Err(Error::IndexOutOfBounds(base_body as usize)),
 					};
-					let base_body = match base_body {
-						Node::Format(node)=>node,
-						x =>return Err(Error::MismatchNodeType(x.into(),base_body.into())),
-					};
-					node.borrow_mut().base = Some(Rc::downgrade(&base_body));
+					node.borrow_mut().base = Some(base_body.try_into()?);
 				}
 			},
 			NodeType::IntLiteralType => {
@@ -7454,7 +7467,13 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 	}
 	for (i,raw_scope) in ast.scope.into_iter().enumerate(){
 		let scope = scopes[i].clone();
-      scope.borrow_mut().is_global = raw_scope.is_global;
+      if let Some(owner) = raw_scope.owner{
+			let owner = match nodes.get(owner as usize) {
+				Some(v)=>v,
+				None =>return Err(Error::IndexOutOfBounds(owner as usize)),
+			};
+			scope.borrow_mut().owner = Some(Rc::downgrade(&owner));
+)		}
 		if let Some(prev) = raw_scope.prev{
 			let prev = match scopes.get(prev as usize) {
 				Some(v)=>v,
