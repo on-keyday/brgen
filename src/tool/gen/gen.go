@@ -138,6 +138,9 @@ func (d *Type) RustString() string {
 	if d.IsInterface && !d.IsArray {
 		prefix += "Option<"
 		postfix += ">"
+		if d.IsWeak {
+			postfix = "Weak" + postfix
+		}
 	}
 	return prefix + d.Name + postfix
 }

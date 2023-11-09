@@ -600,15 +600,21 @@ namespace brgen::ast {
                     else {
                         return unexpect(error({}, "expect ident but found ", node_type_to_string(val->node_type)));
                     }
+                }       
+                auto owner = json_at(val, "owner");
+                if (!owner) {
+                    return owner & empty_value<void>() | json_to_loc_error({}, "owner");
                 }
-                auto owner =get_number({},"node")(&val) ;
-                if(!owner){
-                    return owner & empty_value<void>();
+                if (!(*owner)->is_null()) {
+                    auto index = get_number({}, "owner")(*owner);
+                    if (!index) {
+                        return index & empty_value<void>();
+                    }
+                    if (*index >= nodes.size()) {
+                        return unexpect(error({}, "index out of range"));
+                    }
+                    scopes[i]->owner = nodes[*index];
                 }
-                if(*owner >= nodes.size()){
-                    return unexpect(error({}, "index out of range"));
-                }
-                scopes[i]->owner = nodes[*owner];
             }
             return {};
         }

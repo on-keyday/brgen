@@ -741,7 +741,7 @@ export interface Scope {
 }
 
 export function isScope(obj: any): obj is Scope {
-	return obj && typeof obj === 'object' && typeof obj?.prev === 'object' && typeof obj?.next === 'object' && typeof obj?.branch === 'object' && Array.isArray(obj?.ident) && isNode(obj?.owner)
+	return obj && typeof obj === 'object' && typeof obj?.prev === 'object' && typeof obj?.next === 'object' && typeof obj?.branch === 'object' && Array.isArray(obj?.ident) && (obj?.owner === null || isNode(obj?.owner))
 }
 
 export interface Pos {

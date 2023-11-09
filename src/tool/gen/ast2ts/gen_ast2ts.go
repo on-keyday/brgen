@@ -113,7 +113,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 
 					} else if field.Type.Name == "number" || field.Type.Name == "string" || field.Type.Name == "boolean" {
 						w.Printf("typeof obj?.%s === '%s'", field.Name, field.Type.Name)
-					} else if field.Type.IsPtr {
+					} else if field.Type.IsPtr || field.Type.IsInterface {
 						w.Printf("(obj?.%s === null || is%s(obj?.%s))", field.Name, field.Type.Name, field.Name)
 					} else {
 						w.Printf("is%s(obj?.%s)", field.Type.Name, field.Name)

@@ -273,6 +273,15 @@ const makeButton = (id :string,text :string) => {
     return button;
 }
 
+const makeLink = (id :string,text :string,href :string) => {
+    const link = document.createElement("a");
+    link.id = id;
+    link.innerText = text;
+    link.href = href;
+    setStyle(link);
+    return link;
+}
+
 const select = makeListBox("language-select",[Language.JSON_AST,Language.CPP]);
 select.value = options.language_mode;
 select.style.top = "50%";
@@ -301,9 +310,20 @@ button.onclick =async () => {
     await navigator.clipboard.writeText(code);
 };
 
+const link = makeLink("github-link","develop page","https://github.com/on-keyday/brgen");
+link.style.top = "50%";
+link.style.left = "5%";
+link.style.fontSize = "60%";
+link.style.color = "blue";
+link.onclick = (e) => {
+    e.preventDefault();
+    location.href = link.href;
+}
+
 
 title_bar.appendChild(select);
 title_bar.appendChild(button);
+title_bar.appendChild(link);
 
 const changeLanguage = async (mode :string) => {
     select.value = mode;

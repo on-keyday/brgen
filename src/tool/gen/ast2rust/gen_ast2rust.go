@@ -95,6 +95,27 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("	}\n")
 	w.Printf("}\n\n")
 
+	w.Printf("impl From<&NodeWeak> for NodeType {\n")
+	w.Printf("	fn from(node:&NodeWeak)-> Self{\n")
+	w.Printf("		match node {\n")
+	for _, nodeType := range defs.NodeTypes {
+		typ := strcase.ToCamel(nodeType)
+		_, ok := defs.Structs[typ]
+		if !ok {
+			continue
+		}
+		w.Printf("			NodeWeak::%s(_) => Self::%s,\n", typ, typ)
+	}
+	w.Printf("		}\n")
+	w.Printf("	}\n")
+	w.Printf("}\n\n")
+
+	w.Printf("impl From<NodeWeak> for NodeType {\n")
+	w.Printf("	fn from(node:NodeWeak)-> Self{\n")
+	w.Printf("		Self::from(&node)\n")
+	w.Printf("	}\n")
+	w.Printf("}\n\n")
+
 	for _, def := range defs.Defs {
 		switch d := def.(type) {
 		case *gen.Interface:
@@ -108,6 +129,60 @@ func generate(rw io.Writer, defs *gen.Defs) {
 				w.Printf("	%s(Rc<RefCell<%s>>),\n", field, found.Name)
 			}
 			w.Printf("}\n\n")
+
+			w.Printf("#[derive(Debug,Clone)]\n")
+			w.Printf("pub enum %sWeak {\n", d.Name)
+			for _, field := range d.Derived {
+				found, ok := defs.Structs[field]
+				if !ok {
+					continue
+				}
+				w.Printf("	%s(Weak<RefCell<%s>>),\n", field, found.Name)
+			}
+			w.Printf("}\n\n")
+
+			w.Printf("impl From<&%s> for %sWeak {\n", d.Name, d.Name)
+			w.Printf("	fn from(node:&%s)-> Self{\n", d.Name)
+			w.Printf("		match node {\n")
+			for _, field := range d.Derived {
+				_, ok := defs.Structs[field]
+				if !ok {
+					continue
+				}
+				w.Printf("			%s::%s(node)=>Self::%s(Rc::downgrade(node)),\n", d.Name, field, field)
+			}
+			w.Printf("		}\n")
+			w.Printf("	}\n")
+			w.Printf("}\n\n")
+
+			w.Printf("impl From<%s> for %sWeak {\n", d.Name, d.Name)
+			w.Printf("	fn from(node:%s)-> Self{\n", d.Name)
+			w.Printf("		Self::from(&node)\n")
+			w.Printf("	}\n")
+			w.Printf("}\n\n")
+
+			w.Printf("impl TryFrom<&%sWeak> for %s {\n", d.Name, d.Name)
+			w.Printf("	type Error = Error;\n")
+			w.Printf("	fn try_from(node:&%sWeak)->Result<Self,Self::Error>{\n", d.Name)
+			w.Printf("		match node {\n")
+			for _, field := range d.Derived {
+				found, ok := defs.Structs[field]
+				if !ok {
+					continue
+				}
+				w.Printf("			%sWeak::%s(node)=>Ok(Self::%s(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::%s))?)),\n", d.Name, field, field, found.Name)
+			}
+			w.Printf("		}\n")
+			w.Printf("	}\n")
+			w.Printf("}\n\n")
+
+			w.Printf("impl TryFrom<%sWeak> for %s {\n", d.Name, d.Name)
+			w.Printf("	type Error = Error;\n")
+			w.Printf("	fn try_from(node:%sWeak)->Result<Self,Self::Error>{\n", d.Name)
+			w.Printf("		Self::try_from(&node)\n")
+			w.Printf("	}\n")
+			w.Printf("}\n\n")
+
 			if d.Name == "Node" {
 				continue
 			}
@@ -152,6 +227,94 @@ func generate(rw io.Writer, defs *gen.Defs) {
 			w.Printf("impl From<%s> for Node {\n", d.Name)
 			w.Printf("	fn from(node:%s)-> Self{\n", d.Name)
 			w.Printf("		Self::from(&node)\n")
+			w.Printf("	}\n")
+			w.Printf("}\n\n")
+
+			w.Printf("impl TryFrom<&%sWeak> for Node {\n", d.Name)
+			w.Printf("	type Error = Error;\n")
+			w.Printf("	fn try_from(node:&%sWeak)->Result<Self,Self::Error>{\n", d.Name)
+			w.Printf("		match node {\n")
+			for _, field := range d.Derived {
+				found, ok := defs.Structs[field]
+				if !ok {
+					continue
+				}
+				w.Printf("			%sWeak::%s(node)=>Ok(Self::%s(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::%s))?)),\n", d.Name, field, found.Name, found.Name)
+			}
+			w.Printf("		}\n")
+			w.Printf("	}\n")
+			w.Printf("}\n\n")
+
+			w.Printf("impl TryFrom<%sWeak> for Node {\n", d.Name)
+			w.Printf("	type Error = Error;\n")
+			w.Printf("	fn try_from(node:%sWeak)->Result<Self,Self::Error>{\n", d.Name)
+			w.Printf("		Self::try_from(&node)\n")
+			w.Printf("	}\n")
+			w.Printf("}\n\n")
+
+			w.Printf("impl From<&%sWeak> for NodeWeak {\n", d.Name)
+			w.Printf("	fn from(node:&%sWeak)-> Self{\n", d.Name)
+			w.Printf("		match node {\n")
+			for _, field := range d.Derived {
+				_, ok := defs.Structs[field]
+				if !ok {
+					continue
+				}
+				w.Printf("			%sWeak::%s(node)=>Self::%s(node.clone()),\n", d.Name, field, field)
+			}
+			w.Printf("		}\n")
+			w.Printf("	}\n")
+			w.Printf("}\n\n")
+
+			w.Printf("impl From<%sWeak> for NodeWeak {\n", d.Name)
+			w.Printf("	fn from(node:%sWeak)-> Self{\n", d.Name)
+			w.Printf("		Self::from(&node)\n")
+			w.Printf("	}\n")
+			w.Printf("}\n\n")
+
+			w.Printf("impl TryFrom<&NodeWeak> for %sWeak {\n", d.Name)
+			w.Printf("	type Error = Error;\n")
+			w.Printf("	fn try_from(node:&NodeWeak)->Result<Self,Self::Error>{\n")
+			w.Printf("		match node {\n")
+			for _, field := range d.Derived {
+				_, ok := defs.Structs[field]
+				if !ok {
+					continue
+				}
+				w.Printf("			NodeWeak::%s(node)=>Ok(Self::%s(node.clone())),\n", field, field)
+			}
+			w.Printf("			_=> Err(Error::InvalidNodeType(node.into())),\n")
+			w.Printf("		}\n")
+			w.Printf("	}\n")
+			w.Printf("}\n\n")
+
+			w.Printf("impl TryFrom<NodeWeak> for %sWeak {\n", d.Name)
+			w.Printf("	type Error = Error;\n")
+			w.Printf("	fn try_from(node:NodeWeak)->Result<Self,Self::Error>{\n")
+			w.Printf("		Self::try_from(&node)\n")
+			w.Printf("	}\n")
+			w.Printf("}\n\n")
+
+			w.Printf("impl TryFrom<&Node> for %sWeak {\n", d.Name)
+			w.Printf("	type Error = Error;\n")
+			w.Printf("	fn try_from(node:&Node)->Result<Self,Self::Error>{\n")
+			w.Printf("		match node {\n")
+			for _, field := range d.Derived {
+				_, ok := defs.Structs[field]
+				if !ok {
+					continue
+				}
+				w.Printf("			Node::%s(node)=>Ok(Self::%s(Rc::downgrade(node))),\n", field, field)
+			}
+			w.Printf("			_=> Err(Error::InvalidNodeType(node.into())),\n")
+			w.Printf("		}\n")
+			w.Printf("	}\n")
+			w.Printf("}\n\n")
+
+			w.Printf("impl TryFrom<Node> for %sWeak {\n", d.Name)
+			w.Printf("	type Error = Error;\n")
+			w.Printf("	fn try_from(node:Node)->Result<Self,Self::Error>{\n")
+			w.Printf("		Self::try_from(&node)\n")
 			w.Printf("	}\n")
 			w.Printf("}\n\n")
 
@@ -385,7 +548,11 @@ func generate(rw io.Writer, defs *gen.Defs) {
 						indexNodeFn("					", field.Name+"_body", "nodes", field.Name+"_body")
 						if field.Type.IsInterface {
 							if field.Type.Name == "Node" {
-								w.Printf("					node.borrow_mut().%s = Some(%s_body.clone());\n", field.Name, field.Name)
+								if field.Type.IsWeak {
+									w.Printf("					node.borrow_mut().%s = Some(%sWeak::from(%s_body.clone()));\n", field.Name, field.Type.Name, field.Name)
+								} else {
+									w.Printf("					node.borrow_mut().%s = Some(%s_body.clone());\n", field.Name, field.Name)
+								}
 							} else {
 								w.Printf("					node.borrow_mut().%s = Some(%s_body.try_into()?);\n", field.Name, field.Name)
 							}
@@ -445,12 +612,12 @@ func generate(rw io.Writer, defs *gen.Defs) {
 
 	w.Printf("	for (i,raw_scope) in ast.scope.into_iter().enumerate(){\n")
 	w.Printf("		let scope = scopes[i].clone();\n")
-	w.Printf("      if let Some(owner) = raw_scope.owner{\n")
+	w.Printf("		if let Some(owner) = raw_scope.owner {\n")
 	w.Printf("			let owner = match nodes.get(owner as usize) {\n")
 	w.Printf("				Some(v)=>v,\n")
 	w.Printf("				None =>return Err(Error::IndexOutOfBounds(owner as usize)),\n")
 	w.Printf("			};\n")
-	w.Printf("			scope.borrow_mut().owner = Some(Rc::downgrade(&owner));\n)")
+	w.Printf("			scope.borrow_mut().owner = Some(NodeWeak::from(owner));\n")
 	w.Printf("		}\n")
 	w.Printf("		if let Some(prev) = raw_scope.prev{\n")
 	w.Printf("			let prev = match scopes.get(prev as usize) {\n")
