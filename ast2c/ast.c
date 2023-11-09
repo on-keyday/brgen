@@ -416,173 +416,691 @@ const char* NodeType_to_string(NodeType typ) {
 	return NULL;
 }
 
-ast2c_JsonAst* ast2c_parse_json_to_ast(json_handlers* h,void* root_obj) {
-	ast2c_JsonAst* ast = (ast2c_JsonAst*)h->alloc(h, sizeof(ast2c_JsonAst), alignof(ast2c_JsonAst));
-	if (!ast) { return NULL; }
-	ast->node = NULL;
-	ast->node_size = 0;
-	ast->scope = NULL;
-	ast->scope_size = 0;
-	void* node = h->object_get(h, node, "node")	if (!node) { goto error; }	if(!h->is_array(h,node)) {
-		goto error;
+const char* ast2c_NodeType_to_string(ast2c_NodeType val) {
+	switch(val) {
+	case AST2C_NODETYPE_PROGRAM: return "program";
+	case AST2C_NODETYPE_EXPR: return "expr";
+	case AST2C_NODETYPE_BINARY: return "binary";
+	case AST2C_NODETYPE_UNARY: return "unary";
+	case AST2C_NODETYPE_COND: return "cond";
+	case AST2C_NODETYPE_IDENT: return "ident";
+	case AST2C_NODETYPE_CALL: return "call";
+	case AST2C_NODETYPE_IF: return "if";
+	case AST2C_NODETYPE_MEMBER_ACCESS: return "member_access";
+	case AST2C_NODETYPE_PAREN: return "paren";
+	case AST2C_NODETYPE_INDEX: return "index";
+	case AST2C_NODETYPE_MATCH: return "match";
+	case AST2C_NODETYPE_RANGE: return "range";
+	case AST2C_NODETYPE_TMP_VAR: return "tmp_var";
+	case AST2C_NODETYPE_BLOCK_EXPR: return "block_expr";
+	case AST2C_NODETYPE_IMPORT: return "import";
+	case AST2C_NODETYPE_LITERAL: return "literal";
+	case AST2C_NODETYPE_INT_LITERAL: return "int_literal";
+	case AST2C_NODETYPE_BOOL_LITERAL: return "bool_literal";
+	case AST2C_NODETYPE_STR_LITERAL: return "str_literal";
+	case AST2C_NODETYPE_INPUT: return "input";
+	case AST2C_NODETYPE_OUTPUT: return "output";
+	case AST2C_NODETYPE_CONFIG: return "config";
+	case AST2C_NODETYPE_STMT: return "stmt";
+	case AST2C_NODETYPE_LOOP: return "loop";
+	case AST2C_NODETYPE_INDENT_BLOCK: return "indent_block";
+	case AST2C_NODETYPE_MATCH_BRANCH: return "match_branch";
+	case AST2C_NODETYPE_RETURN: return "return";
+	case AST2C_NODETYPE_BREAK: return "break";
+	case AST2C_NODETYPE_CONTINUE: return "continue";
+	case AST2C_NODETYPE_ASSERT: return "assert";
+	case AST2C_NODETYPE_IMPLICIT_YIELD: return "implicit_yield";
+	case AST2C_NODETYPE_MEMBER: return "member";
+	case AST2C_NODETYPE_FIELD: return "field";
+	case AST2C_NODETYPE_FORMAT: return "format";
+	case AST2C_NODETYPE_FUNCTION: return "function";
+	case AST2C_NODETYPE_TYPE: return "type";
+	case AST2C_NODETYPE_INT_TYPE: return "int_type";
+	case AST2C_NODETYPE_IDENT_TYPE: return "ident_type";
+	case AST2C_NODETYPE_INT_LITERAL_TYPE: return "int_literal_type";
+	case AST2C_NODETYPE_STR_LITERAL_TYPE: return "str_literal_type";
+	case AST2C_NODETYPE_VOID_TYPE: return "void_type";
+	case AST2C_NODETYPE_BOOL_TYPE: return "bool_type";
+	case AST2C_NODETYPE_ARRAY_TYPE: return "array_type";
+	case AST2C_NODETYPE_FUNCTION_TYPE: return "function_type";
+	case AST2C_NODETYPE_STRUCT_TYPE: return "struct_type";
+	case AST2C_NODETYPE_STRUCT_UNION_TYPE: return "struct_union_type";
+	case AST2C_NODETYPE_CAST: return "cast";
+	case AST2C_NODETYPE_COMMENT: return "comment";
+	case AST2C_NODETYPE_COMMENT_GROUP: return "comment_group";
+	case AST2C_NODETYPE_UNION_TYPE: return "union_type";
+	case AST2C_NODETYPE_UNION_CANDIDATE: return "union_candidate";
+	case AST2C_NODETYPE_RANGE_TYPE: return "range_type";
+	case AST2C_NODETYPE_ENUM: return "enum";
+	case AST2C_NODETYPE_ENUM_MEMBER: return "enum_member";
+	case AST2C_NODETYPE_ENUM_TYPE: return "enum_type";
+	default: return NULL;
 	}
-	size_t node_size = h->array_size(h, node);
-	ast->node = (ast2c_RawNode*)h->alloc(h, sizeof(ast2c_RawNode), alignof(ast2c_RawNode));
-	if (!ast->node) {
-		goto error;
-	}
-	ast->node_size = node_size;
-	size_t i = 0;
-	for (i=0; i < node_size; i++) {
-		void* n = h->array_get(h, node, i);
-		if (!n) {
-			goto error;
-		}
-		void* loc = h->object_get(h, n, "loc");
-		if (!loc) {
-			goto error;
-		}
-		void* loc_line = h->object_get(h, loc, "line");
-		if (!loc_line) {
-			goto error;
-		}
-		void* loc_col = h->object_get(h, loc, "col");
-		if (!loc_col) {
-			goto error;
-		}
-		void* loc_file = h->object_get(h, loc, "file");
-		if (!loc_file) {
-			goto error;
-		}
-		void* loc_pos = h->object_get(h, loc, "pos");
-		if (!loc_pos) {
-			goto error;
-		}
-		void* loc_pos_begin = h->object_get(h, loc_pos, "begin");
-		if (!loc_pos_begin) {
-			goto error;
-		}
-		void* loc_pos_end = h->object_get(h, loc_pos, "end");
-		if (!loc_pos_end) {
-			goto error;
-		}
-		void* body = h->object_get(h, n, "body");
-		if (!body) {
-			goto error;
-		}
-		if(!h->is_object(h,body)) {
-			goto error;
-		}
-		void* node_type = h->object_get(h, n, "node_type");
-		if (!node_type) {
-			goto error;
-		}
-		const char* node_type_str = h->string_get(h, node_type);
-		if (!node_type_str) {
-			goto error;
-		}
-		NodeType typ;
-		if (!NodeType_from_string(node_type_str, &typ)) {
-			goto error;
-		}
-		*(NodeType*)&ast->node[i].node_type = typ;
-		if (!h->number_get(h, loc_line, &ast->node[i].loc.line)) {
-			goto error;
-		}
-		if (!h->number_get(h, loc_col, &ast->node[i].loc.col)) {
-			goto error;
-		}
-		if(!h->number_get(h,loc_file,&ast->node[i].loc.file)) {
-			goto error;
-		}
-		if (!h->number_get(h, loc_pos_begin, &ast->node[i].loc.pos.begin)) {
-			goto error;
-		}
-		if (!h->number_get(h, loc_pos_end, &ast->node[i].loc.pos.end)) {
-			goto error;
-		}
-		ast->node[i].body = body;
-	}
-	void* scope = h->object_get(h, root_obj, "scope");
-	if (!scope) {
-		goto error;
-	}
-	if(!h->is_array(h,scope)) {
-		goto error;
-	}
-	size_t scope_size = h->array_size(h, scope);
-	ast->scope = (RawScope*)h->alloc(h, sizeof(RawScope) * scope_size, alignof(RawScope));
-	if (!ast->scope) {
-		goto error;
-	}
-	ast->scope_size = scope_size;
-	size_t scope_ident_step = 0;
-	for (i=0; i < scope_size; i++) {
-		void* s = h->array_get(h, scope, i);
-		if (!s) {
-			goto error;
-		}
-		void* prev = h->object_get(h, s, "prev");
-		if (!prev) {
-			goto error;
-		}
-		void* next = h->object_get(h, s, "next");
-		if (!next) {
-			goto error;
-		}
-		void* branch = h->object_get(h, s, "branch");
-		if (!branch) {
-			goto error;
-		}
-		void* owner = h->object_get(h, s, "owner");
-		if (!owner) {
-			goto error;
-		}
-		void* ident = h->object_get(h, s, "ident");
-		if (!ident) {
-			goto error;
-		}
-		if(!h->is_array(h,ident)) {
-			goto error;
-		}
-		size_t ident_size = h->array_size(h, ident);
-		ast->scope[i].ident = (uint64_t*)h->alloc(h, sizeof(uint64_t) * ident_size, alignof(uint64_t));
-		if (!ast->scope[i].ident) {
-			goto error;
-		}
-		scope_ident_step++;
-		ast->scope[i].ident_size = ident_size;
-		if (!h->number_get(h, prev, &ast->scope[i].prev)) {
-			goto error;
-		}
-		if (!h->number_get(h, next, &ast->scope[i].next)) {
-			goto error;
-		}
-		if (!h->number_get(h, branch, &ast->scope[i].branch)) {
-			goto error;
-		}
-		if (!h->number_get(h, owner, &ast->scope[i].owner)) {
-			goto error;
-		}
-		size_t j = 0;
-		for (j=0; j < ident_size; j++) {
-			void* id = h->array_get(h, ident, j);
-			if (!id) {
-				goto error;
-			}
-			if (!h->number_get(h, id, &ast->scope[i].ident[j])) {
-				goto error;
-			}
-		}
-	}
-	return ast;
-error:
-	h->free(h, ast->node);
-for (i=0; i < scope_ident_step; i++) {
-	h->free(h, ast->scope[i].ident);
 }
-	h->free(h, ast->scope);
-	return NULL;
+
+// returns 1 if succeed 0 if failed
+int ast2c_NodeType_from_string(const char* str, ast2c_NodeType* out) {
+	if (!str||!out) return 0;
+	if (strcmp(str, "program") == 0) {
+		*out = AST2C_NODETYPE_PROGRAM;
+		return 1;
+	}
+	if (strcmp(str, "expr") == 0) {
+		*out = AST2C_NODETYPE_EXPR;
+		return 1;
+	}
+	if (strcmp(str, "binary") == 0) {
+		*out = AST2C_NODETYPE_BINARY;
+		return 1;
+	}
+	if (strcmp(str, "unary") == 0) {
+		*out = AST2C_NODETYPE_UNARY;
+		return 1;
+	}
+	if (strcmp(str, "cond") == 0) {
+		*out = AST2C_NODETYPE_COND;
+		return 1;
+	}
+	if (strcmp(str, "ident") == 0) {
+		*out = AST2C_NODETYPE_IDENT;
+		return 1;
+	}
+	if (strcmp(str, "call") == 0) {
+		*out = AST2C_NODETYPE_CALL;
+		return 1;
+	}
+	if (strcmp(str, "if") == 0) {
+		*out = AST2C_NODETYPE_IF;
+		return 1;
+	}
+	if (strcmp(str, "member_access") == 0) {
+		*out = AST2C_NODETYPE_MEMBER_ACCESS;
+		return 1;
+	}
+	if (strcmp(str, "paren") == 0) {
+		*out = AST2C_NODETYPE_PAREN;
+		return 1;
+	}
+	if (strcmp(str, "index") == 0) {
+		*out = AST2C_NODETYPE_INDEX;
+		return 1;
+	}
+	if (strcmp(str, "match") == 0) {
+		*out = AST2C_NODETYPE_MATCH;
+		return 1;
+	}
+	if (strcmp(str, "range") == 0) {
+		*out = AST2C_NODETYPE_RANGE;
+		return 1;
+	}
+	if (strcmp(str, "tmp_var") == 0) {
+		*out = AST2C_NODETYPE_TMP_VAR;
+		return 1;
+	}
+	if (strcmp(str, "block_expr") == 0) {
+		*out = AST2C_NODETYPE_BLOCK_EXPR;
+		return 1;
+	}
+	if (strcmp(str, "import") == 0) {
+		*out = AST2C_NODETYPE_IMPORT;
+		return 1;
+	}
+	if (strcmp(str, "literal") == 0) {
+		*out = AST2C_NODETYPE_LITERAL;
+		return 1;
+	}
+	if (strcmp(str, "int_literal") == 0) {
+		*out = AST2C_NODETYPE_INT_LITERAL;
+		return 1;
+	}
+	if (strcmp(str, "bool_literal") == 0) {
+		*out = AST2C_NODETYPE_BOOL_LITERAL;
+		return 1;
+	}
+	if (strcmp(str, "str_literal") == 0) {
+		*out = AST2C_NODETYPE_STR_LITERAL;
+		return 1;
+	}
+	if (strcmp(str, "input") == 0) {
+		*out = AST2C_NODETYPE_INPUT;
+		return 1;
+	}
+	if (strcmp(str, "output") == 0) {
+		*out = AST2C_NODETYPE_OUTPUT;
+		return 1;
+	}
+	if (strcmp(str, "config") == 0) {
+		*out = AST2C_NODETYPE_CONFIG;
+		return 1;
+	}
+	if (strcmp(str, "stmt") == 0) {
+		*out = AST2C_NODETYPE_STMT;
+		return 1;
+	}
+	if (strcmp(str, "loop") == 0) {
+		*out = AST2C_NODETYPE_LOOP;
+		return 1;
+	}
+	if (strcmp(str, "indent_block") == 0) {
+		*out = AST2C_NODETYPE_INDENT_BLOCK;
+		return 1;
+	}
+	if (strcmp(str, "match_branch") == 0) {
+		*out = AST2C_NODETYPE_MATCH_BRANCH;
+		return 1;
+	}
+	if (strcmp(str, "return") == 0) {
+		*out = AST2C_NODETYPE_RETURN;
+		return 1;
+	}
+	if (strcmp(str, "break") == 0) {
+		*out = AST2C_NODETYPE_BREAK;
+		return 1;
+	}
+	if (strcmp(str, "continue") == 0) {
+		*out = AST2C_NODETYPE_CONTINUE;
+		return 1;
+	}
+	if (strcmp(str, "assert") == 0) {
+		*out = AST2C_NODETYPE_ASSERT;
+		return 1;
+	}
+	if (strcmp(str, "implicit_yield") == 0) {
+		*out = AST2C_NODETYPE_IMPLICIT_YIELD;
+		return 1;
+	}
+	if (strcmp(str, "member") == 0) {
+		*out = AST2C_NODETYPE_MEMBER;
+		return 1;
+	}
+	if (strcmp(str, "field") == 0) {
+		*out = AST2C_NODETYPE_FIELD;
+		return 1;
+	}
+	if (strcmp(str, "format") == 0) {
+		*out = AST2C_NODETYPE_FORMAT;
+		return 1;
+	}
+	if (strcmp(str, "function") == 0) {
+		*out = AST2C_NODETYPE_FUNCTION;
+		return 1;
+	}
+	if (strcmp(str, "type") == 0) {
+		*out = AST2C_NODETYPE_TYPE;
+		return 1;
+	}
+	if (strcmp(str, "int_type") == 0) {
+		*out = AST2C_NODETYPE_INT_TYPE;
+		return 1;
+	}
+	if (strcmp(str, "ident_type") == 0) {
+		*out = AST2C_NODETYPE_IDENT_TYPE;
+		return 1;
+	}
+	if (strcmp(str, "int_literal_type") == 0) {
+		*out = AST2C_NODETYPE_INT_LITERAL_TYPE;
+		return 1;
+	}
+	if (strcmp(str, "str_literal_type") == 0) {
+		*out = AST2C_NODETYPE_STR_LITERAL_TYPE;
+		return 1;
+	}
+	if (strcmp(str, "void_type") == 0) {
+		*out = AST2C_NODETYPE_VOID_TYPE;
+		return 1;
+	}
+	if (strcmp(str, "bool_type") == 0) {
+		*out = AST2C_NODETYPE_BOOL_TYPE;
+		return 1;
+	}
+	if (strcmp(str, "array_type") == 0) {
+		*out = AST2C_NODETYPE_ARRAY_TYPE;
+		return 1;
+	}
+	if (strcmp(str, "function_type") == 0) {
+		*out = AST2C_NODETYPE_FUNCTION_TYPE;
+		return 1;
+	}
+	if (strcmp(str, "struct_type") == 0) {
+		*out = AST2C_NODETYPE_STRUCT_TYPE;
+		return 1;
+	}
+	if (strcmp(str, "struct_union_type") == 0) {
+		*out = AST2C_NODETYPE_STRUCT_UNION_TYPE;
+		return 1;
+	}
+	if (strcmp(str, "cast") == 0) {
+		*out = AST2C_NODETYPE_CAST;
+		return 1;
+	}
+	if (strcmp(str, "comment") == 0) {
+		*out = AST2C_NODETYPE_COMMENT;
+		return 1;
+	}
+	if (strcmp(str, "comment_group") == 0) {
+		*out = AST2C_NODETYPE_COMMENT_GROUP;
+		return 1;
+	}
+	if (strcmp(str, "union_type") == 0) {
+		*out = AST2C_NODETYPE_UNION_TYPE;
+		return 1;
+	}
+	if (strcmp(str, "union_candidate") == 0) {
+		*out = AST2C_NODETYPE_UNION_CANDIDATE;
+		return 1;
+	}
+	if (strcmp(str, "range_type") == 0) {
+		*out = AST2C_NODETYPE_RANGE_TYPE;
+		return 1;
+	}
+	if (strcmp(str, "enum") == 0) {
+		*out = AST2C_NODETYPE_ENUM;
+		return 1;
+	}
+	if (strcmp(str, "enum_member") == 0) {
+		*out = AST2C_NODETYPE_ENUM_MEMBER;
+		return 1;
+	}
+	if (strcmp(str, "enum_type") == 0) {
+		*out = AST2C_NODETYPE_ENUM_TYPE;
+		return 1;
+	}
+	return 0;
+}
+
+const char* ast2c_UnaryOp_to_string(ast2c_UnaryOp val) {
+	switch(val) {
+	case AST2C_UNARYOP_NOT: return "!";
+	case AST2C_UNARYOP_MINUS_SIGN: return "-";
+	default: return NULL;
+	}
+}
+
+// returns 1 if succeed 0 if failed
+int ast2c_UnaryOp_from_string(const char* str, ast2c_UnaryOp* out) {
+	if (!str||!out) return 0;
+	if (strcmp(str, "!") == 0) {
+		*out = AST2C_UNARYOP_NOT;
+		return 1;
+	}
+	if (strcmp(str, "-") == 0) {
+		*out = AST2C_UNARYOP_MINUS_SIGN;
+		return 1;
+	}
+	return 0;
+}
+
+const char* ast2c_BinaryOp_to_string(ast2c_BinaryOp val) {
+	switch(val) {
+	case AST2C_BINARYOP_MUL: return "*";
+	case AST2C_BINARYOP_DIV: return "/";
+	case AST2C_BINARYOP_MOD: return "%";
+	case AST2C_BINARYOP_LEFT_ARITHMETIC_SHIFT: return "<<<";
+	case AST2C_BINARYOP_RIGHT_ARITHMETIC_SHIFT: return ">>>";
+	case AST2C_BINARYOP_LEFT_LOGICAL_SHIFT: return "<<";
+	case AST2C_BINARYOP_RIGHT_LOGICAL_SHIFT: return ">>";
+	case AST2C_BINARYOP_BIT_AND: return "&";
+	case AST2C_BINARYOP_ADD: return "+";
+	case AST2C_BINARYOP_SUB: return "-";
+	case AST2C_BINARYOP_BIT_OR: return "|";
+	case AST2C_BINARYOP_BIT_XOR: return "^";
+	case AST2C_BINARYOP_EQUAL: return "==";
+	case AST2C_BINARYOP_NOT_EQUAL: return "!=";
+	case AST2C_BINARYOP_LESS: return "<";
+	case AST2C_BINARYOP_LESS_OR_EQ: return "<=";
+	case AST2C_BINARYOP_GRATER: return ">";
+	case AST2C_BINARYOP_GRATER_OR_EQ: return ">=";
+	case AST2C_BINARYOP_LOGICAL_AND: return "&&";
+	case AST2C_BINARYOP_LOGICAL_OR: return "||";
+	case AST2C_BINARYOP_COND_OP_1: return "?";
+	case AST2C_BINARYOP_COND_OP_2: return ":";
+	case AST2C_BINARYOP_RANGE_EXCLUSIVE: return "..";
+	case AST2C_BINARYOP_RANGE_INCLUSIVE: return "..=";
+	case AST2C_BINARYOP_ASSIGN: return "=";
+	case AST2C_BINARYOP_DEFINE_ASSIGN: return ":=";
+	case AST2C_BINARYOP_CONST_ASSIGN: return "::=";
+	case AST2C_BINARYOP_ADD_ASSIGN: return "+=";
+	case AST2C_BINARYOP_SUB_ASSIGN: return "-=";
+	case AST2C_BINARYOP_MUL_ASSIGN: return "*=";
+	case AST2C_BINARYOP_DIV_ASSIGN: return "/=";
+	case AST2C_BINARYOP_MOD_ASSIGN: return "%=";
+	case AST2C_BINARYOP_LEFT_SHIFT_ASSIGN: return "<<=";
+	case AST2C_BINARYOP_RIGHT_SHIFT_ASSIGN: return ">>=";
+	case AST2C_BINARYOP_BIT_AND_ASSIGN: return "&=";
+	case AST2C_BINARYOP_BIT_OR_ASSIGN: return "|=";
+	case AST2C_BINARYOP_BIT_XOR_ASSIGN: return "^=";
+	case AST2C_BINARYOP_COMMA: return ",";
+	default: return NULL;
+	}
+}
+
+// returns 1 if succeed 0 if failed
+int ast2c_BinaryOp_from_string(const char* str, ast2c_BinaryOp* out) {
+	if (!str||!out) return 0;
+	if (strcmp(str, "*") == 0) {
+		*out = AST2C_BINARYOP_MUL;
+		return 1;
+	}
+	if (strcmp(str, "/") == 0) {
+		*out = AST2C_BINARYOP_DIV;
+		return 1;
+	}
+	if (strcmp(str, "%") == 0) {
+		*out = AST2C_BINARYOP_MOD;
+		return 1;
+	}
+	if (strcmp(str, "<<<") == 0) {
+		*out = AST2C_BINARYOP_LEFT_ARITHMETIC_SHIFT;
+		return 1;
+	}
+	if (strcmp(str, ">>>") == 0) {
+		*out = AST2C_BINARYOP_RIGHT_ARITHMETIC_SHIFT;
+		return 1;
+	}
+	if (strcmp(str, "<<") == 0) {
+		*out = AST2C_BINARYOP_LEFT_LOGICAL_SHIFT;
+		return 1;
+	}
+	if (strcmp(str, ">>") == 0) {
+		*out = AST2C_BINARYOP_RIGHT_LOGICAL_SHIFT;
+		return 1;
+	}
+	if (strcmp(str, "&") == 0) {
+		*out = AST2C_BINARYOP_BIT_AND;
+		return 1;
+	}
+	if (strcmp(str, "+") == 0) {
+		*out = AST2C_BINARYOP_ADD;
+		return 1;
+	}
+	if (strcmp(str, "-") == 0) {
+		*out = AST2C_BINARYOP_SUB;
+		return 1;
+	}
+	if (strcmp(str, "|") == 0) {
+		*out = AST2C_BINARYOP_BIT_OR;
+		return 1;
+	}
+	if (strcmp(str, "^") == 0) {
+		*out = AST2C_BINARYOP_BIT_XOR;
+		return 1;
+	}
+	if (strcmp(str, "==") == 0) {
+		*out = AST2C_BINARYOP_EQUAL;
+		return 1;
+	}
+	if (strcmp(str, "!=") == 0) {
+		*out = AST2C_BINARYOP_NOT_EQUAL;
+		return 1;
+	}
+	if (strcmp(str, "<") == 0) {
+		*out = AST2C_BINARYOP_LESS;
+		return 1;
+	}
+	if (strcmp(str, "<=") == 0) {
+		*out = AST2C_BINARYOP_LESS_OR_EQ;
+		return 1;
+	}
+	if (strcmp(str, ">") == 0) {
+		*out = AST2C_BINARYOP_GRATER;
+		return 1;
+	}
+	if (strcmp(str, ">=") == 0) {
+		*out = AST2C_BINARYOP_GRATER_OR_EQ;
+		return 1;
+	}
+	if (strcmp(str, "&&") == 0) {
+		*out = AST2C_BINARYOP_LOGICAL_AND;
+		return 1;
+	}
+	if (strcmp(str, "||") == 0) {
+		*out = AST2C_BINARYOP_LOGICAL_OR;
+		return 1;
+	}
+	if (strcmp(str, "?") == 0) {
+		*out = AST2C_BINARYOP_COND_OP_1;
+		return 1;
+	}
+	if (strcmp(str, ":") == 0) {
+		*out = AST2C_BINARYOP_COND_OP_2;
+		return 1;
+	}
+	if (strcmp(str, "..") == 0) {
+		*out = AST2C_BINARYOP_RANGE_EXCLUSIVE;
+		return 1;
+	}
+	if (strcmp(str, "..=") == 0) {
+		*out = AST2C_BINARYOP_RANGE_INCLUSIVE;
+		return 1;
+	}
+	if (strcmp(str, "=") == 0) {
+		*out = AST2C_BINARYOP_ASSIGN;
+		return 1;
+	}
+	if (strcmp(str, ":=") == 0) {
+		*out = AST2C_BINARYOP_DEFINE_ASSIGN;
+		return 1;
+	}
+	if (strcmp(str, "::=") == 0) {
+		*out = AST2C_BINARYOP_CONST_ASSIGN;
+		return 1;
+	}
+	if (strcmp(str, "+=") == 0) {
+		*out = AST2C_BINARYOP_ADD_ASSIGN;
+		return 1;
+	}
+	if (strcmp(str, "-=") == 0) {
+		*out = AST2C_BINARYOP_SUB_ASSIGN;
+		return 1;
+	}
+	if (strcmp(str, "*=") == 0) {
+		*out = AST2C_BINARYOP_MUL_ASSIGN;
+		return 1;
+	}
+	if (strcmp(str, "/=") == 0) {
+		*out = AST2C_BINARYOP_DIV_ASSIGN;
+		return 1;
+	}
+	if (strcmp(str, "%=") == 0) {
+		*out = AST2C_BINARYOP_MOD_ASSIGN;
+		return 1;
+	}
+	if (strcmp(str, "<<=") == 0) {
+		*out = AST2C_BINARYOP_LEFT_SHIFT_ASSIGN;
+		return 1;
+	}
+	if (strcmp(str, ">>=") == 0) {
+		*out = AST2C_BINARYOP_RIGHT_SHIFT_ASSIGN;
+		return 1;
+	}
+	if (strcmp(str, "&=") == 0) {
+		*out = AST2C_BINARYOP_BIT_AND_ASSIGN;
+		return 1;
+	}
+	if (strcmp(str, "|=") == 0) {
+		*out = AST2C_BINARYOP_BIT_OR_ASSIGN;
+		return 1;
+	}
+	if (strcmp(str, "^=") == 0) {
+		*out = AST2C_BINARYOP_BIT_XOR_ASSIGN;
+		return 1;
+	}
+	if (strcmp(str, ",") == 0) {
+		*out = AST2C_BINARYOP_COMMA;
+		return 1;
+	}
+	return 0;
+}
+
+const char* ast2c_IdentUsage_to_string(ast2c_IdentUsage val) {
+	switch(val) {
+	case AST2C_IDENTUSAGE_UNKNOWN: return "unknown";
+	case AST2C_IDENTUSAGE_REFERENCE: return "reference";
+	case AST2C_IDENTUSAGE_DEFINE_VARIABLE: return "define_variable";
+	case AST2C_IDENTUSAGE_DEFINE_CONST: return "define_const";
+	case AST2C_IDENTUSAGE_DEFINE_FIELD: return "define_field";
+	case AST2C_IDENTUSAGE_DEFINE_FORMAT: return "define_format";
+	case AST2C_IDENTUSAGE_DEFINE_ENUM: return "define_enum";
+	case AST2C_IDENTUSAGE_DEFINE_ENUM_MEMBER: return "define_enum_member";
+	case AST2C_IDENTUSAGE_DEFINE_FN: return "define_fn";
+	case AST2C_IDENTUSAGE_DEFINE_CAST_FN: return "define_cast_fn";
+	case AST2C_IDENTUSAGE_DEFINE_ARG: return "define_arg";
+	case AST2C_IDENTUSAGE_REFERENCE_TYPE: return "reference_type";
+	default: return NULL;
+	}
+}
+
+// returns 1 if succeed 0 if failed
+int ast2c_IdentUsage_from_string(const char* str, ast2c_IdentUsage* out) {
+	if (!str||!out) return 0;
+	if (strcmp(str, "unknown") == 0) {
+		*out = AST2C_IDENTUSAGE_UNKNOWN;
+		return 1;
+	}
+	if (strcmp(str, "reference") == 0) {
+		*out = AST2C_IDENTUSAGE_REFERENCE;
+		return 1;
+	}
+	if (strcmp(str, "define_variable") == 0) {
+		*out = AST2C_IDENTUSAGE_DEFINE_VARIABLE;
+		return 1;
+	}
+	if (strcmp(str, "define_const") == 0) {
+		*out = AST2C_IDENTUSAGE_DEFINE_CONST;
+		return 1;
+	}
+	if (strcmp(str, "define_field") == 0) {
+		*out = AST2C_IDENTUSAGE_DEFINE_FIELD;
+		return 1;
+	}
+	if (strcmp(str, "define_format") == 0) {
+		*out = AST2C_IDENTUSAGE_DEFINE_FORMAT;
+		return 1;
+	}
+	if (strcmp(str, "define_enum") == 0) {
+		*out = AST2C_IDENTUSAGE_DEFINE_ENUM;
+		return 1;
+	}
+	if (strcmp(str, "define_enum_member") == 0) {
+		*out = AST2C_IDENTUSAGE_DEFINE_ENUM_MEMBER;
+		return 1;
+	}
+	if (strcmp(str, "define_fn") == 0) {
+		*out = AST2C_IDENTUSAGE_DEFINE_FN;
+		return 1;
+	}
+	if (strcmp(str, "define_cast_fn") == 0) {
+		*out = AST2C_IDENTUSAGE_DEFINE_CAST_FN;
+		return 1;
+	}
+	if (strcmp(str, "define_arg") == 0) {
+		*out = AST2C_IDENTUSAGE_DEFINE_ARG;
+		return 1;
+	}
+	if (strcmp(str, "reference_type") == 0) {
+		*out = AST2C_IDENTUSAGE_REFERENCE_TYPE;
+		return 1;
+	}
+	return 0;
+}
+
+const char* ast2c_Endian_to_string(ast2c_Endian val) {
+	switch(val) {
+	case AST2C_ENDIAN_UNSPEC: return "unspec";
+	case AST2C_ENDIAN_BIG: return "big";
+	case AST2C_ENDIAN_LITTLE: return "little";
+	default: return NULL;
+	}
+}
+
+// returns 1 if succeed 0 if failed
+int ast2c_Endian_from_string(const char* str, ast2c_Endian* out) {
+	if (!str||!out) return 0;
+	if (strcmp(str, "unspec") == 0) {
+		*out = AST2C_ENDIAN_UNSPEC;
+		return 1;
+	}
+	if (strcmp(str, "big") == 0) {
+		*out = AST2C_ENDIAN_BIG;
+		return 1;
+	}
+	if (strcmp(str, "little") == 0) {
+		*out = AST2C_ENDIAN_LITTLE;
+		return 1;
+	}
+	return 0;
+}
+
+const char* ast2c_TokenTag_to_string(ast2c_TokenTag val) {
+	switch(val) {
+	case AST2C_TOKENTAG_INDENT: return "indent";
+	case AST2C_TOKENTAG_SPACE: return "space";
+	case AST2C_TOKENTAG_LINE: return "line";
+	case AST2C_TOKENTAG_PUNCT: return "punct";
+	case AST2C_TOKENTAG_INT_LITERAL: return "int_literal";
+	case AST2C_TOKENTAG_BOOL_LITERAL: return "bool_literal";
+	case AST2C_TOKENTAG_STR_LITERAL: return "str_literal";
+	case AST2C_TOKENTAG_KEYWORD: return "keyword";
+	case AST2C_TOKENTAG_IDENT: return "ident";
+	case AST2C_TOKENTAG_COMMENT: return "comment";
+	case AST2C_TOKENTAG_ERROR: return "error";
+	case AST2C_TOKENTAG_UNKNOWN: return "unknown";
+	default: return NULL;
+	}
+}
+
+// returns 1 if succeed 0 if failed
+int ast2c_TokenTag_from_string(const char* str, ast2c_TokenTag* out) {
+	if (!str||!out) return 0;
+	if (strcmp(str, "indent") == 0) {
+		*out = AST2C_TOKENTAG_INDENT;
+		return 1;
+	}
+	if (strcmp(str, "space") == 0) {
+		*out = AST2C_TOKENTAG_SPACE;
+		return 1;
+	}
+	if (strcmp(str, "line") == 0) {
+		*out = AST2C_TOKENTAG_LINE;
+		return 1;
+	}
+	if (strcmp(str, "punct") == 0) {
+		*out = AST2C_TOKENTAG_PUNCT;
+		return 1;
+	}
+	if (strcmp(str, "int_literal") == 0) {
+		*out = AST2C_TOKENTAG_INT_LITERAL;
+		return 1;
+	}
+	if (strcmp(str, "bool_literal") == 0) {
+		*out = AST2C_TOKENTAG_BOOL_LITERAL;
+		return 1;
+	}
+	if (strcmp(str, "str_literal") == 0) {
+		*out = AST2C_TOKENTAG_STR_LITERAL;
+		return 1;
+	}
+	if (strcmp(str, "keyword") == 0) {
+		*out = AST2C_TOKENTAG_KEYWORD;
+		return 1;
+	}
+	if (strcmp(str, "ident") == 0) {
+		*out = AST2C_TOKENTAG_IDENT;
+		return 1;
+	}
+	if (strcmp(str, "comment") == 0) {
+		*out = AST2C_TOKENTAG_COMMENT;
+		return 1;
+	}
+	if (strcmp(str, "error") == 0) {
+		*out = AST2C_TOKENTAG_ERROR;
+		return 1;
+	}
+	if (strcmp(str, "unknown") == 0) {
+		*out = AST2C_TOKENTAG_UNKNOWN;
+		return 1;
+	}
+	return 0;
 }
 
 #ifdef __cplusplus
