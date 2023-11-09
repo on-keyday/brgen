@@ -42,133 +42,6 @@ pub enum Error {
 	InvalidEnumValue(String),
 }
 
-#[derive(Debug,Clone,Copy)]
-pub enum NodeType {
-	Node,
-	Program,
-	Expr,
-	Binary,
-	Unary,
-	Cond,
-	Ident,
-	Call,
-	If,
-	MemberAccess,
-	Paren,
-	Index,
-	Match,
-	Range,
-	TmpVar,
-	BlockExpr,
-	Import,
-	Literal,
-	IntLiteral,
-	BoolLiteral,
-	StrLiteral,
-	Input,
-	Output,
-	Config,
-	Stmt,
-	Loop,
-	IndentBlock,
-	MatchBranch,
-	Return,
-	Break,
-	Continue,
-	Assert,
-	ImplicitYield,
-	Member,
-	Field,
-	Format,
-	Function,
-	Type,
-	IntType,
-	IdentType,
-	IntLiteralType,
-	StrLiteralType,
-	VoidType,
-	BoolType,
-	ArrayType,
-	FunctionType,
-	StructType,
-	StructUnionType,
-	Cast,
-	Comment,
-	CommentGroup,
-	UnionType,
-	UnionCandidate,
-	RangeType,
-	Enum,
-	EnumMember,
-	EnumType,
-}
-
-impl TryFrom<&str> for NodeType {
-	type Error = ();
-	fn try_from(s:&str)->Result<Self,Self::Error>{
-		match s{
-			"node" =>Ok(Self::Node),
-			"program" =>Ok(Self::Program),
-			"expr" =>Ok(Self::Expr),
-			"binary" =>Ok(Self::Binary),
-			"unary" =>Ok(Self::Unary),
-			"cond" =>Ok(Self::Cond),
-			"ident" =>Ok(Self::Ident),
-			"call" =>Ok(Self::Call),
-			"if" =>Ok(Self::If),
-			"member_access" =>Ok(Self::MemberAccess),
-			"paren" =>Ok(Self::Paren),
-			"index" =>Ok(Self::Index),
-			"match" =>Ok(Self::Match),
-			"range" =>Ok(Self::Range),
-			"tmp_var" =>Ok(Self::TmpVar),
-			"block_expr" =>Ok(Self::BlockExpr),
-			"import" =>Ok(Self::Import),
-			"literal" =>Ok(Self::Literal),
-			"int_literal" =>Ok(Self::IntLiteral),
-			"bool_literal" =>Ok(Self::BoolLiteral),
-			"str_literal" =>Ok(Self::StrLiteral),
-			"input" =>Ok(Self::Input),
-			"output" =>Ok(Self::Output),
-			"config" =>Ok(Self::Config),
-			"stmt" =>Ok(Self::Stmt),
-			"loop" =>Ok(Self::Loop),
-			"indent_block" =>Ok(Self::IndentBlock),
-			"match_branch" =>Ok(Self::MatchBranch),
-			"return" =>Ok(Self::Return),
-			"break" =>Ok(Self::Break),
-			"continue" =>Ok(Self::Continue),
-			"assert" =>Ok(Self::Assert),
-			"implicit_yield" =>Ok(Self::ImplicitYield),
-			"member" =>Ok(Self::Member),
-			"field" =>Ok(Self::Field),
-			"format" =>Ok(Self::Format),
-			"function" =>Ok(Self::Function),
-			"type" =>Ok(Self::Type),
-			"int_type" =>Ok(Self::IntType),
-			"ident_type" =>Ok(Self::IdentType),
-			"int_literal_type" =>Ok(Self::IntLiteralType),
-			"str_literal_type" =>Ok(Self::StrLiteralType),
-			"void_type" =>Ok(Self::VoidType),
-			"bool_type" =>Ok(Self::BoolType),
-			"array_type" =>Ok(Self::ArrayType),
-			"function_type" =>Ok(Self::FunctionType),
-			"struct_type" =>Ok(Self::StructType),
-			"struct_union_type" =>Ok(Self::StructUnionType),
-			"cast" =>Ok(Self::Cast),
-			"comment" =>Ok(Self::Comment),
-			"comment_group" =>Ok(Self::CommentGroup),
-			"union_type" =>Ok(Self::UnionType),
-			"union_candidate" =>Ok(Self::UnionCandidate),
-			"range_type" =>Ok(Self::RangeType),
-			"enum" =>Ok(Self::Enum),
-			"enum_member" =>Ok(Self::EnumMember),
-			"enum_type" =>Ok(Self::EnumType),
-			_=> Err(()),
-		}
-	}
-}
-
 impl From<&Node> for NodeType {
 	fn from(node:&Node)-> Self{
 		match node {
@@ -5702,20 +5575,20 @@ pub struct Token {
 	pub loc: Loc,
 }
 
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+#[derive(Debug,Clone,Serialize,Deserialize)]
 pub struct RawScope {
-	pub prev: usize,
-	pub next: usize,
-	pub branch: usize,
+	pub prev: Option<usize>,
+	pub next: Option<usize>,
+	pub branch: Option<usize>,
 	pub ident: Vec<usize>,
-	pub owner: usize,
+	pub owner: Option<usize>,
 }
 
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+#[derive(Debug,Clone,Serialize,Deserialize)]
 pub struct RawNode {
-	pub node_type: NodeType,
+	pub node_type: String,
 	pub loc: Loc,
-	pub body: any,
+	pub body: HashMap<String,serde_json::Value>,
 }
 
 #[derive(Debug,Clone,Serialize,Deserialize)]
@@ -5732,49 +5605,27 @@ pub struct SrcError {
 	pub errs: Vec<SrcErrorEntry>,
 }
 
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+#[derive(Debug,Clone,Serialize,Deserialize)]
 pub struct JsonAst {
 	pub node: Vec<RawNode>,
 	pub scope: Vec<RawScope>,
 }
 
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+#[derive(Debug,Clone,Serialize,Deserialize)]
 pub struct AstFile {
 	pub files: Vec<String>,
-	pub ast: JsonAst,
-	pub error: SrcError,
+	pub ast: Option<JsonAst>,
+	pub error: Option<SrcError>,
 }
 
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+#[derive(Debug,Clone,Serialize,Deserialize)]
 pub struct TokenFile {
 	pub files: Vec<String>,
-	pub tokens: Vec<Token>,
-	pub error: SrcError,
+	pub tokens: Vec<Option<Token>>,
+	pub error: Option<SrcError>,
 }
 
-#[derive(Debug,Clone,Serialize,Deserialize)]
-pub struct RawNode {
-	pub node_type: String,
-	pub loc :Loc,
-	pub body: HashMap<String,serde_json::Value>,
-}
-
-#[derive(Debug,Clone,Serialize,Deserialize)]
-pub struct RawScope {
-	pub prev :Option<u64>,
-	pub next :Option<u64>,
-	pub branch :Option<u64>,
-	pub ident :Vec<u64>,
-	pub owner :Option<u64>
-}
-
-#[derive(Debug,Clone,Serialize,Deserialize)]
-pub struct AST {
-	pub node: Vec<RawNode>,
-	pub scope: Vec<RawScope>,
-}
-
-pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
+pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 	let mut nodes = Vec::new();
 	let mut scopes = Vec::new();
 	for raw_node in &ast.node{
@@ -8798,20 +8649,6 @@ pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{
 		},
 		None=>Err(Error::IndexOutOfBounds(0)),
 	}
-}
-
-#[derive(Debug,Clone,Serialize,Deserialize)]
-pub struct AstFile {
-	pub files :Vec<String>,
-	pub ast: Option<AST>,
-	pub error :Option<SrcError>,
-}
-
-#[derive(Debug,Clone,Serialize,Deserialize)]
-pub struct TokenFile {
-	pub files :Vec<String>,
-	pub tokens: Option<Vec<Token>>, 
-	pub error :Option<SrcError>,
 }
 
 pub trait Visitor {

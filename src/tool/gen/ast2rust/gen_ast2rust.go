@@ -55,25 +55,6 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("	InvalidEnumValue(String),\n")
 	w.Printf("}\n\n")
 
-	w.Printf("#[derive(Debug,Clone,Copy)]\n")
-	w.Printf("pub enum NodeType {\n")
-	for _, nodeType := range defs.NodeTypes {
-		w.Printf("	%s,\n", strcase.ToCamel(nodeType))
-	}
-	w.Printf("}\n\n")
-
-	w.Printf("impl TryFrom<&str> for NodeType {\n")
-	w.Printf("	type Error = ();\n")
-	w.Printf("	fn try_from(s:&str)->Result<Self,Self::Error>{\n")
-	w.Printf("		match s{\n")
-	for _, nodeType := range defs.NodeTypes {
-		w.Printf("			%q =>Ok(Self::%s),\n", nodeType, strcase.ToCamel(nodeType))
-	}
-	w.Printf("			_=> Err(()),\n")
-	w.Printf("		}\n")
-	w.Printf("	}\n")
-	w.Printf("}\n\n")
-
 	w.Printf("impl From<&Node> for NodeType {\n")
 	w.Printf("	fn from(node:&Node)-> Self{\n")
 	w.Printf("		match node {\n")
@@ -319,10 +300,10 @@ func generate(rw io.Writer, defs *gen.Defs) {
 			w.Printf("}\n\n")
 
 		case *gen.Struct:
-			if d.Name == "Token" || d.Name == "SrcError" || d.Name == "SrcErrorEntry" {
-				w.Printf("#[derive(Debug,Clone,Serialize,Deserialize)]\n")
-			} else if len(d.Implements) == 0 && d.Name != "Scope" {
+			if d.Name == "Loc" || d.Name == "Pos" {
 				w.Printf("#[derive(Debug,Clone,Copy,Serialize,Deserialize)]\n")
+			} else if d.NodeType == "" && d.Name != "Scope" {
+				w.Printf("#[derive(Debug,Clone,Serialize,Deserialize)]\n")
 			} else {
 				w.Printf("#[derive(Debug,Clone)]\n")
 			}
@@ -390,29 +371,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 		}
 	}
 
-	w.Printf("#[derive(Debug,Clone,Serialize,Deserialize)]\n")
-	w.Printf("pub struct RawNode {\n")
-	w.Printf("	pub node_type: String,\n")
-	w.Printf("	pub loc :Loc,\n")
-	w.Printf("	pub body: HashMap<String,serde_json::Value>,\n")
-	w.Printf("}\n\n")
-
-	w.Printf("#[derive(Debug,Clone,Serialize,Deserialize)]\n")
-	w.Printf("pub struct RawScope {\n")
-	w.Printf("	pub prev :Option<u64>,\n")
-	w.Printf("	pub next :Option<u64>,\n")
-	w.Printf("	pub branch :Option<u64>,\n")
-	w.Printf("	pub ident :Vec<u64>,\n")
-	w.Printf("	pub owner :Option<u64>\n")
-	w.Printf("}\n\n")
-
-	w.Printf("#[derive(Debug,Clone,Serialize,Deserialize)]\n")
-	w.Printf("pub struct AST {\n")
-	w.Printf("	pub node: Vec<RawNode>,\n")
-	w.Printf("	pub scope: Vec<RawScope>,\n")
-	w.Printf("}\n\n")
-
-	w.Printf("pub fn parse_ast(ast:AST)->Result<Rc<RefCell<Program>> ,Error>{\n")
+	w.Printf("pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{\n")
 
 	w.Printf("	let mut nodes = Vec::new();\n")
 	w.Printf("	let mut scopes = Vec::new();\n")
@@ -662,20 +621,6 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("	}\n")
 	w.Printf("}\n\n")
 
-	w.Printf("#[derive(Debug,Clone,Serialize,Deserialize)]\n")
-	w.Printf("pub struct AstFile {\n")
-	w.Printf("	pub files :Vec<String>,\n")
-	w.Printf("	pub ast: Option<AST>,\n")
-	w.Printf("	pub error :Option<SrcError>,\n")
-	w.Printf("}\n\n")
-
-	w.Printf("#[derive(Debug,Clone,Serialize,Deserialize)]\n")
-	w.Printf("pub struct TokenFile {\n")
-	w.Printf("	pub files :Vec<String>,\n")
-	w.Printf("	pub tokens: Option<Vec<Token>>, \n")
-	w.Printf("	pub error :Option<SrcError>,\n")
-	w.Printf("}\n\n")
-
 	w.Printf("pub trait Visitor {\n")
 	w.Printf("	fn visit(&self,node:&Node);\n")
 	w.Printf("}\n\n")
@@ -761,9 +706,11 @@ func main() {
 	}
 
 	defs, err := gen.CollectDefinition(list, strcase.ToSnake, strcase.ToCamel, map[string]string{
-		"uint":    "u64",
-		"uintptr": "usize",
-		"string":  "String",
+		"uint":      "u64",
+		"uintptr":   "usize",
+		"string":    "String",
+		"node_type": "String", // for raw node
+		"any":       "HashMap<String,serde_json::Value>",
 	})
 
 	if err != nil {

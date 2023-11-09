@@ -140,6 +140,10 @@ func (d *Type) RustString() string {
 			postfix = "Weak" + postfix
 		}
 	}
+	if d.IsOptional {
+		prefix += "Option<"
+		postfix += ">"
+	}
 	return prefix + d.Name + postfix
 }
 
@@ -278,12 +282,10 @@ func (c *collector) convertType(typ string) *Type {
 		}
 	}
 
-	if typ != "string" && typ != "uint" && typ != "bool" && typ != "uintptr" && typ != "any" {
+	if prim, ok := c.primitiveMap[typ]; ok {
+		typ = prim
+	} else if typ != "string" && typ != "uint" && typ != "bool" && typ != "uintptr" && typ != "any" {
 		typ = c.typeCaseFn(typ)
-	} else {
-		if prim, ok := c.primitiveMap[typ]; ok {
-			typ = prim
-		}
 	}
 	return &Type{
 		Name:        typ,
