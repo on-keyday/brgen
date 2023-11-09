@@ -97,6 +97,7 @@ type Type struct {
 	IsPtr       bool
 	IsArray     bool
 	IsWeak      bool
+	IsOptional  bool
 }
 
 func (d *Type) GoString() string {
@@ -225,6 +226,7 @@ var (
 	sharedPtr = regexp.MustCompile("shared_ptr<(.*)>")
 	weakPtr   = regexp.MustCompile("weak_ptr<(.*)>")
 	array     = regexp.MustCompile("array<(.*)>")
+	optional  = regexp.MustCompile("optional<(.*)>")
 )
 
 type collector struct {
@@ -240,6 +242,7 @@ func (c *collector) convertType(typ string) *Type {
 	isArray := false
 	isInterface := false
 	isWeak := false
+	isOptional := false
 	if len(arrayMatch) > 0 {
 		typ = arrayMatch[1]
 		isArray = true
@@ -263,6 +266,11 @@ func (c *collector) convertType(typ string) *Type {
 			isPtr = true
 		}
 	}
+	optionalMatch := optional.FindStringSubmatch(typ)
+	if len(optionalMatch) > 0 {
+		typ = optionalMatch[1]
+		isOptional = true
+	}
 	if typ != "string" && typ != "uint" && typ != "bool" && typ != "uintptr" {
 		typ = c.typeCaseFn(typ)
 	} else {
@@ -276,6 +284,7 @@ func (c *collector) convertType(typ string) *Type {
 		IsPtr:       isPtr,
 		IsArray:     isArray,
 		IsWeak:      isWeak,
+		IsOptional:  isOptional,
 	}
 }
 
