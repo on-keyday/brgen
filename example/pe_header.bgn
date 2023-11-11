@@ -18,7 +18,7 @@ format IMAGE_DOS_HEADER:
     e_oeminfo :u16
     e_res2 :[10]u16
     e_lfanew :u32
-    
+
 format IMAGE_FILE_HEADER:
     Machine :u16
     NumberOfSections :u16
@@ -27,9 +27,58 @@ format IMAGE_FILE_HEADER:
     NumberOfSymbols :u32
     SizeOfOptionalHeader :u16
     Characteristics :u16
-    
+
 format IMAGE_DATA_DIRECTORY:
     VirtualAddress :u32
     Size :u32
-    
+
+format EFI_DEBUG_SUPPORT_PROTOCOL:
+    Isa :EFI_INSTRUCTION_SET_ARCHITECTURE
+    GetMaximumProcessorIndex :EFI_GET_MAXIMUM_PROCESSOR_INDEX
+    RegisterPeriodicCallback :EFI_REGISTER_PERIODIC_CALLBACK
+    RegisterExceptionCallback :EFI_REGISTER_EXCEPTION_CALLBACK
+    InvalidateInstructionCache :EFI_INVALIDATE_INSTRUCTION_CACHE
+
+enum EFI_INSTRUCTION_SET_ARCHITECTURE:
+    IsaIa32 = 0x014C
+    IsaX64 = 0x8664
+    IsaIpf = 0x0200
+    IsaEbc = 0x0EBC
+    IsaArm = 0x1C2
+    IsaAArch64 = 0xAA64
+    IsaRISCV32 = 0x5032
+    IsaRISCV64 = 0x5064
+    IsaRISCV128 = 0x5128
+    IsaLoongArch32 = 0x6232
+    IsaLoongArch64 = 0x6264
+
+format EFI_GUID:
+    TimeLow :u32
+    TimeMid :u16
+    TimeHighAndVersion :u16
+    ClockSeqHighAndReserved :u8
+    ClockSeq :u8
+    Node :[6]u8
+
+format EFI_BTT_INFO_BLOCK:
+    Sig :[16]u8
+    Uuid :EFI_GUID
+    ParentUuid :EFI_GUID
+    Flags :u32
+    Major :u16
+    Minor :u16
+    ExternalLbaSize :u32
+    ExternalNLba :u32
+    InternalLbaSize :u32
+    InternalNLba :u32
+    NFree :u32
+    InfoSize :u32
+    NextOff :u64
+    DataOff :u64
+    MapOff :u64
+    FlogOff :u64
+    InfoOff :u64
+    Unused :[3968]u8
+    Checksum :u64
+
 

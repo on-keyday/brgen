@@ -1,0 +1,89 @@
+struct IMAGE_DOS_HEADER {      // DOS .EXE header
+    MAGIC_MZ   e_magic;                     // Magic number
+    WORD   e_cblp;                      // Bytes on last page of file
+    WORD   e_cp;                        // Pages in file
+    WORD   e_crlc;                      // Relocations
+    WORD   e_cparhdr;                   // Size of header in paragraphs
+    WORD   e_minalloc;                  // Minimum extra paragraphs needed
+    WORD   e_maxalloc;                  // Maximum extra paragraphs needed
+    WORD   e_ss;                        // Initial (relative) SS value
+    WORD   e_sp;                        // Initial SP value
+    WORD   e_csum;                      // Checksum
+    WORD   e_ip;                        // Initial IP value
+    WORD   e_cs;                        // Initial (relative) CS value
+    WORD   e_lfarlc;                    // File address of relocation table
+    WORD   e_ovno;                      // Overlay number
+    WORD   e_res[4];                    // Reserved words
+    WORD   e_oemid;                     // OEM identifier (for e_oeminfo)
+    WORD   e_oeminfo;                   // OEM information; e_oemid specific
+    WORD   e_res2[10];                  // Reserved words
+    LONG   e_lfanew;                    // File address of new exe header
+  };
+
+struct IMAGE_FILE_HEADER {
+    WORD    Machine;
+    WORD    NumberOfSections;
+    DWORD   TimeDateStamp;
+    DWORD   PointerToSymbolTable;
+    DWORD   NumberOfSymbols;
+    WORD    SizeOfOptionalHeader;
+    WORD    Characteristics;
+};
+
+struct IMAGE_DATA_DIRECTORY {
+    DWORD   VirtualAddress;
+    DWORD   Size;
+};
+
+struct {
+  EFI_INSTRUCTION_SET_ARCHITECTURE        Isa;
+  EFI_GET_MAXIMUM_PROCESSOR_INDEX         GetMaximumProcessorIndex;
+  EFI_REGISTER_PERIODIC_CALLBACK          RegisterPeriodicCallback;
+  EFI_REGISTER_EXCEPTION_CALLBACK         RegisterExceptionCallback;
+  EFI_INVALIDATE_INSTRUCTION_CACHE        InvalidateInstructionCache;
+} EFI_DEBUG_SUPPORT_PROTOCOL;
+
+ enum {
+  IsaIa32 =  0x014C,
+  IsaX64 =  0x8664,
+  IsaIpf =  0x0200, 
+  IsaEbc = 0x0EBC,
+  IsaArm =  0x1C2,
+  IsaAArch64 =  0xAA64,
+  IsaRISCV32 =  0x5032,
+  IsaRISCV64 =  0x5064,
+  IsaRISCV128 =  0x5128,
+  IsaLoongArch32 = 0x6232,
+  IsaLoongArch64 =  0x6264,
+} EFI_INSTRUCTION_SET_ARCHITECTURE;
+
+struct EFI_GUID {
+  UINT32 TimeLow;
+  UINT16 TimeMid;
+  UINT16 TimeHighAndVersion;
+  UINT8 ClockSeqHighAndReserved;
+  UINT8 ClockSeq;
+  UINT8 Node[6]; 
+};
+
+struct _EFI_BTT_INFO_BLOCK {
+  CHAR8 Sig[16];
+  EFI_GUID  Uuid;
+  EFI_GUID  ParentUuid;
+  UINT32    Flags;
+  UINT16    Major;
+  UINT16    Minor;
+  UINT32    ExternalLbaSize;
+  UINT32    ExternalNLba;
+  UINT32    InternalLbaSize;
+  UINT32    InternalNLba;
+  UINT32    NFree;
+  UINT32    InfoSize;
+  UINT64    NextOff;
+  UINT64    DataOff;
+  UINT64    MapOff;
+  UINT64    FlogOff;
+  UINT64    InfoOff;
+  CHAR8     Unused[3968];
+  UINT64    Checksum;
+}  EFI_BTT_INFO_BLOCK;

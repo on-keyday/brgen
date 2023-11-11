@@ -24,6 +24,9 @@ constexpr auto tag_name = "name";
 constexpr auto tag_type_suffix = "type_suffix";
 constexpr auto tag_fields = "fields";
 
+constexpr auto tag_enum = "enum";
+constexpr auto tag_value = "value";
+
 namespace parse {
     using namespace ops;
     constexpr auto ident = cps::c_ident;
@@ -31,16 +34,21 @@ namespace parse {
     constexpr auto space = *(cps::space | cps::tab | cps::eol | comment);
     constexpr auto type = str(tag_type, ident);
     constexpr auto number = cps::hex_integer | cps::dec_integer;
-    constexpr auto type_suffix = str(tag_type_suffix, lit("[") & space & +number & space & +lit("]"));
-    constexpr auto field = group(tag_field, type& space& str(tag_name, ident) & space & -type_suffix & space & +lit(";"));
-    constexpr auto struct_ = group(tag_struct, lit("struct") & space & str(tag_name, +ident) & space & +lit("{") &
-                                                   group(tag_fields, *(space& field)) & space & +lit("}") & space & -ident & space & +lit(";") & space);
+    constexpr auto type_suffix = str(tag_type_suffix, lit("[") & space & +(ident | number) & space & +lit("]"));
+    constexpr auto field = group(tag_field, type& space & -str(tag_name, ident) & space & -type_suffix & space & +lit(";"));
+    constexpr auto name = str(tag_name, ident);
+    constexpr auto struct_ = group(tag_struct, lit("struct") & space & -name & space & +lit("{") &
+                                                   group(tag_fields, *(space& field)) & space & +lit("}") & space & -name & space & +lit(";") & space);
 
-    constexpr auto file = space & *(struct_ & space) & space & eos;
+    constexpr auto enum_field = group(tag_field, str(tag_name, ident) & space & -(lit("=") & space & +str(tag_value, number | ident)) & space & -lit(","));
+    constexpr auto enum_ = group(tag_enum, lit("enum") & space & -name & space & +lit("{") &
+                                               group(tag_fields, *(space& enum_field)) & space & +lit("}") & space & -name & space & +lit(";") & space);
+
+    constexpr auto file = space & *((struct_ | enum_) & space) & space & eos;
 
     constexpr auto test_parse() {
         auto ctx = utils::comb2::test::TestContext{};
-        auto seq = utils::make_ref_seq("struct A { int a; int b; }; struct B { int c; };");
+        auto seq = utils::make_ref_seq("struct A { int a; int b; }; struct B { int c; }; enum C { a, b, c };");
         if (file(seq, ctx, 0) != Status::match) {
             return false;
         }
@@ -103,40 +111,87 @@ int Main(Flags& flags, utils::cmdline::option::Context&) {
     for (auto& struct_ : root->children) {
         auto m = utils::comb2::tree::node::as_group(struct_);
         assert(m);
-        assert(m->tag == tag_struct);
-        assert(m->children.size() == 2);
-        auto name = utils::comb2::tree::node::as_tok(m->children[0]);
-        assert(name);
-        assert(name->tag == tag_name);
-        w.writeln("format ", name->token, ":");
-        auto fields = utils::comb2::tree::node::as_group(m->children[1]);
-        assert(fields);
-        assert(fields->tag == tag_fields);
-        auto indent = w.indent_scope();
-        for (auto& field : fields->children) {
-            auto f = utils::comb2::tree::node::as_group(field);
-            assert(f);
-            assert(f->tag == tag_field);
-            assert(f->children.size() == 2 || f->children.size() == 3);
-            auto type = utils::comb2::tree::node::as_tok(f->children[0]);
-            assert(type);
-            assert(type->tag == tag_type);
-            auto name = utils::comb2::tree::node::as_tok(f->children[1]);
+        assert(m->tag == tag_struct || m->tag == tag_enum);
+        assert(m->children.size() == 2 || m->children.size() == 3);
+        std::string struct_name;
+        size_t offset = 0;
+        if (m->children[offset]->tag == tag_name) {
+            auto name = utils::comb2::tree::node::as_tok(m->children[offset]);
             assert(name);
             assert(name->tag == tag_name);
-            std::string suffix;
-            if (f->children.size() == 3) {
-                auto s = utils::comb2::tree::node::as_tok(f->children[2]);
-                assert(s);
-                assert(s->tag == tag_type_suffix);
-                suffix = s->token;
-            }
-            std::string type_name = type->token;
-            if (auto a = map.at(type_name)) {
-                type_name = a->force_as_string<std::string>();
-            }
-            w.writeln(name->token, " :", suffix, type_name);
+            struct_name = name->token;
+            offset++;
         }
+        auto fields = utils::comb2::tree::node::as_group(m->children[offset]);
+        assert(fields);
+        assert(fields->tag == tag_fields);
+        offset++;
+        if (m->children.size() > offset && m->children[offset]->tag == tag_name) {
+            auto name = utils::comb2::tree::node::as_tok(m->children[offset]);
+            assert(name);
+            assert(name->tag == tag_name);
+            struct_name = name->token;
+            offset++;
+        }
+        if (struct_->tag == tag_struct) {
+            w.writeln("format ", struct_name, ":");
+            auto indent = w.indent_scope();
+            for (auto& field : fields->children) {
+                auto f = utils::comb2::tree::node::as_group(field);
+                assert(f);
+                assert(f->tag == tag_field);
+                assert(f->children.size() == 2 || f->children.size() == 3);
+                auto type = utils::comb2::tree::node::as_tok(f->children[0]);
+                assert(type);
+                assert(type->tag == tag_type);
+                auto name = utils::comb2::tree::node::as_tok(f->children[1]);
+                assert(name);
+                assert(name->tag == tag_name);
+                std::string suffix;
+                if (f->children.size() == 3) {
+                    auto s = utils::comb2::tree::node::as_tok(f->children[2]);
+                    assert(s);
+                    assert(s->tag == tag_type_suffix);
+                    suffix = s->token;
+                }
+                std::string type_name = type->token;
+                if (auto a = map.at(type_name)) {
+                    type_name = a->force_as_string<std::string>();
+                }
+                w.writeln(name->token, " :", suffix, type_name);
+            }
+        }
+        else if (struct_->tag == tag_enum) {
+            /*
+            enum Name:
+                field1 = value1
+                field2
+            */
+            w.writeln("enum ", struct_name, ":");
+            auto indent = w.indent_scope();
+            for (auto& field : fields->children) {
+                auto f = utils::comb2::tree::node::as_group(field);
+                assert(f);
+                assert(f->tag == tag_field);
+                assert(f->children.size() == 1 || f->children.size() == 2);
+                auto name = utils::comb2::tree::node::as_tok(f->children[0]);
+                assert(name);
+                assert(name->tag == tag_name);
+                std::string value;
+                if (f->children.size() == 2) {
+                    auto v = utils::comb2::tree::node::as_tok(f->children[1]);
+                    assert(v);
+                    assert(v->tag == tag_value);
+                    value = v->token;
+                }
+                w.write(name->token);
+                if (!value.empty()) {
+                    w.write(" = ", value);
+                }
+                w.writeln();
+            }
+        }
+
         w.writeln();
     }
     cout << w.out() << "\n";

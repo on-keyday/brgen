@@ -1,0 +1,11 @@
+{
+  "WORD": "u16",
+  "LONG": "u32",
+  "MAGIC_MZ": "\"Mz\"",
+  "DWORD": "u32",
+  "UINT16": "u16",
+  "UINT32": "u32",
+  "UINT64": "u64",
+  "CHAR8": "u8",
+  "UINT8": "u8"
+}
