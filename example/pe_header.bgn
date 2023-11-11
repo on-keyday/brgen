@@ -1,0 +1,35 @@
+format IMAGE_DOS_HEADER:
+    e_magic :"Mz"
+    e_cblp :u16
+    e_cp :u16
+    e_crlc :u16
+    e_cparhdr :u16
+    e_minalloc :u16
+    e_maxalloc :u16
+    e_ss :u16
+    e_sp :u16
+    e_csum :u16
+    e_ip :u16
+    e_cs :u16
+    e_lfarlc :u16
+    e_ovno :u16
+    e_res :[4]u16
+    e_oemid :u16
+    e_oeminfo :u16
+    e_res2 :[10]u16
+    e_lfanew :u32
+    
+format IMAGE_FILE_HEADER:
+    Machine :u16
+    NumberOfSections :u16
+    TimeDateStamp :u32
+    PointerToSymbolTable :u32
+    NumberOfSymbols :u32
+    SizeOfOptionalHeader :u16
+    Characteristics :u16
+    
+format IMAGE_DATA_DIRECTORY:
+    VirtualAddress :u32
+    Size :u32
+    
+

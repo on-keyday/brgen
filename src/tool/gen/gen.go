@@ -179,6 +179,9 @@ func (d *Type) PyString() string {
 
 func (d *Type) CString() string {
 	postfix := ""
+	if (d.IsOptional || d.IsArray) && d.Name == "uintptr_t" {
+		return "void*"
+	}
 	if d.IsInterface || d.IsPtr {
 		postfix += "*"
 	} else if !d.IsArray && d.IsOptional {

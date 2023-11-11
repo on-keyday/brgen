@@ -33,6 +33,7 @@ struct ast2c_json_handlers {
 	void (*error)(ast2c_json_handlers*, void* ptr, const char* msg);
 };
 
+typedef struct ast2c_Ast ast2c_Ast;
 typedef enum ast2c_NodeType ast2c_NodeType;
 typedef enum ast2c_UnaryOp ast2c_UnaryOp;
 typedef enum ast2c_BinaryOp ast2c_BinaryOp;
@@ -265,6 +266,7 @@ struct ast2c_Pos {
 	uint64_t end;
 };
 
+// returns 1 if succeed 0 if failed
 int ast2c_Pos_parse(ast2c_Pos*,ast2c_json_handlers*,void*);
 
 struct ast2c_Loc {
@@ -274,6 +276,7 @@ struct ast2c_Loc {
 	uint64_t col;
 };
 
+// returns 1 if succeed 0 if failed
 int ast2c_Loc_parse(ast2c_Loc*,ast2c_json_handlers*,void*);
 
 struct ast2c_Token {
@@ -283,12 +286,12 @@ struct ast2c_Token {
 };
 
 struct ast2c_RawScope {
-	uint64_t* prev;
-	uint64_t* next;
-	uint64_t* branch;
-	uint64_t* ident;
+	void* prev;
+	void* next;
+	void* branch;
+	void* ident;
 	size_t ident_size;
-	uint64_t* owner;
+	void* owner;
 };
 
 struct ast2c_RawNode {
@@ -377,7 +380,7 @@ struct ast2c_Program {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_Program_parse(ast2c_Node**,ast2c_Scope**,ast2c_Program*,ast2c_json_handlers*,void*);
+int ast2c_Program_parse(ast2c_Ast* ,ast2c_Program*,ast2c_json_handlers*,void*);
 
 struct ast2c_Binary {
 	const ast2c_NodeType node_type;
@@ -389,7 +392,7 @@ struct ast2c_Binary {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_Binary_parse(ast2c_Node**,ast2c_Scope**,ast2c_Binary*,ast2c_json_handlers*,void*);
+int ast2c_Binary_parse(ast2c_Ast* ,ast2c_Binary*,ast2c_json_handlers*,void*);
 
 struct ast2c_Unary {
 	const ast2c_NodeType node_type;
@@ -400,7 +403,7 @@ struct ast2c_Unary {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_Unary_parse(ast2c_Node**,ast2c_Scope**,ast2c_Unary*,ast2c_json_handlers*,void*);
+int ast2c_Unary_parse(ast2c_Ast* ,ast2c_Unary*,ast2c_json_handlers*,void*);
 
 struct ast2c_Cond {
 	const ast2c_NodeType node_type;
@@ -413,7 +416,7 @@ struct ast2c_Cond {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_Cond_parse(ast2c_Node**,ast2c_Scope**,ast2c_Cond*,ast2c_json_handlers*,void*);
+int ast2c_Cond_parse(ast2c_Ast* ,ast2c_Cond*,ast2c_json_handlers*,void*);
 
 struct ast2c_Ident {
 	const ast2c_NodeType node_type;
@@ -426,7 +429,7 @@ struct ast2c_Ident {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_Ident_parse(ast2c_Node**,ast2c_Scope**,ast2c_Ident*,ast2c_json_handlers*,void*);
+int ast2c_Ident_parse(ast2c_Ast* ,ast2c_Ident*,ast2c_json_handlers*,void*);
 
 struct ast2c_Call {
 	const ast2c_NodeType node_type;
@@ -440,7 +443,7 @@ struct ast2c_Call {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_Call_parse(ast2c_Node**,ast2c_Scope**,ast2c_Call*,ast2c_json_handlers*,void*);
+int ast2c_Call_parse(ast2c_Ast* ,ast2c_Call*,ast2c_json_handlers*,void*);
 
 struct ast2c_If {
 	const ast2c_NodeType node_type;
@@ -453,7 +456,7 @@ struct ast2c_If {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_If_parse(ast2c_Node**,ast2c_Scope**,ast2c_If*,ast2c_json_handlers*,void*);
+int ast2c_If_parse(ast2c_Ast* ,ast2c_If*,ast2c_json_handlers*,void*);
 
 struct ast2c_MemberAccess {
 	const ast2c_NodeType node_type;
@@ -466,7 +469,7 @@ struct ast2c_MemberAccess {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_MemberAccess_parse(ast2c_Node**,ast2c_Scope**,ast2c_MemberAccess*,ast2c_json_handlers*,void*);
+int ast2c_MemberAccess_parse(ast2c_Ast* ,ast2c_MemberAccess*,ast2c_json_handlers*,void*);
 
 struct ast2c_Paren {
 	const ast2c_NodeType node_type;
@@ -477,7 +480,7 @@ struct ast2c_Paren {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_Paren_parse(ast2c_Node**,ast2c_Scope**,ast2c_Paren*,ast2c_json_handlers*,void*);
+int ast2c_Paren_parse(ast2c_Ast* ,ast2c_Paren*,ast2c_json_handlers*,void*);
 
 struct ast2c_Index {
 	const ast2c_NodeType node_type;
@@ -489,7 +492,7 @@ struct ast2c_Index {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_Index_parse(ast2c_Node**,ast2c_Scope**,ast2c_Index*,ast2c_json_handlers*,void*);
+int ast2c_Index_parse(ast2c_Ast* ,ast2c_Index*,ast2c_json_handlers*,void*);
 
 struct ast2c_Match {
 	const ast2c_NodeType node_type;
@@ -502,7 +505,7 @@ struct ast2c_Match {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_Match_parse(ast2c_Node**,ast2c_Scope**,ast2c_Match*,ast2c_json_handlers*,void*);
+int ast2c_Match_parse(ast2c_Ast* ,ast2c_Match*,ast2c_json_handlers*,void*);
 
 struct ast2c_Range {
 	const ast2c_NodeType node_type;
@@ -514,7 +517,7 @@ struct ast2c_Range {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_Range_parse(ast2c_Node**,ast2c_Scope**,ast2c_Range*,ast2c_json_handlers*,void*);
+int ast2c_Range_parse(ast2c_Ast* ,ast2c_Range*,ast2c_json_handlers*,void*);
 
 struct ast2c_TmpVar {
 	const ast2c_NodeType node_type;
@@ -524,7 +527,7 @@ struct ast2c_TmpVar {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_TmpVar_parse(ast2c_Node**,ast2c_Scope**,ast2c_TmpVar*,ast2c_json_handlers*,void*);
+int ast2c_TmpVar_parse(ast2c_Ast* ,ast2c_TmpVar*,ast2c_json_handlers*,void*);
 
 struct ast2c_BlockExpr {
 	const ast2c_NodeType node_type;
@@ -536,7 +539,7 @@ struct ast2c_BlockExpr {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_BlockExpr_parse(ast2c_Node**,ast2c_Scope**,ast2c_BlockExpr*,ast2c_json_handlers*,void*);
+int ast2c_BlockExpr_parse(ast2c_Ast* ,ast2c_BlockExpr*,ast2c_json_handlers*,void*);
 
 struct ast2c_Import {
 	const ast2c_NodeType node_type;
@@ -548,7 +551,7 @@ struct ast2c_Import {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_Import_parse(ast2c_Node**,ast2c_Scope**,ast2c_Import*,ast2c_json_handlers*,void*);
+int ast2c_Import_parse(ast2c_Ast* ,ast2c_Import*,ast2c_json_handlers*,void*);
 
 struct ast2c_IntLiteral {
 	const ast2c_NodeType node_type;
@@ -558,7 +561,7 @@ struct ast2c_IntLiteral {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_IntLiteral_parse(ast2c_Node**,ast2c_Scope**,ast2c_IntLiteral*,ast2c_json_handlers*,void*);
+int ast2c_IntLiteral_parse(ast2c_Ast* ,ast2c_IntLiteral*,ast2c_json_handlers*,void*);
 
 struct ast2c_BoolLiteral {
 	const ast2c_NodeType node_type;
@@ -568,7 +571,7 @@ struct ast2c_BoolLiteral {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_BoolLiteral_parse(ast2c_Node**,ast2c_Scope**,ast2c_BoolLiteral*,ast2c_json_handlers*,void*);
+int ast2c_BoolLiteral_parse(ast2c_Ast* ,ast2c_BoolLiteral*,ast2c_json_handlers*,void*);
 
 struct ast2c_StrLiteral {
 	const ast2c_NodeType node_type;
@@ -578,7 +581,7 @@ struct ast2c_StrLiteral {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_StrLiteral_parse(ast2c_Node**,ast2c_Scope**,ast2c_StrLiteral*,ast2c_json_handlers*,void*);
+int ast2c_StrLiteral_parse(ast2c_Ast* ,ast2c_StrLiteral*,ast2c_json_handlers*,void*);
 
 struct ast2c_Input {
 	const ast2c_NodeType node_type;
@@ -587,7 +590,7 @@ struct ast2c_Input {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_Input_parse(ast2c_Node**,ast2c_Scope**,ast2c_Input*,ast2c_json_handlers*,void*);
+int ast2c_Input_parse(ast2c_Ast* ,ast2c_Input*,ast2c_json_handlers*,void*);
 
 struct ast2c_Output {
 	const ast2c_NodeType node_type;
@@ -596,7 +599,7 @@ struct ast2c_Output {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_Output_parse(ast2c_Node**,ast2c_Scope**,ast2c_Output*,ast2c_json_handlers*,void*);
+int ast2c_Output_parse(ast2c_Ast* ,ast2c_Output*,ast2c_json_handlers*,void*);
 
 struct ast2c_Config {
 	const ast2c_NodeType node_type;
@@ -605,7 +608,7 @@ struct ast2c_Config {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_Config_parse(ast2c_Node**,ast2c_Scope**,ast2c_Config*,ast2c_json_handlers*,void*);
+int ast2c_Config_parse(ast2c_Ast* ,ast2c_Config*,ast2c_json_handlers*,void*);
 
 struct ast2c_Loop {
 	const ast2c_NodeType node_type;
@@ -618,7 +621,7 @@ struct ast2c_Loop {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_Loop_parse(ast2c_Node**,ast2c_Scope**,ast2c_Loop*,ast2c_json_handlers*,void*);
+int ast2c_Loop_parse(ast2c_Ast* ,ast2c_Loop*,ast2c_json_handlers*,void*);
 
 struct ast2c_IndentBlock {
 	const ast2c_NodeType node_type;
@@ -630,7 +633,7 @@ struct ast2c_IndentBlock {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_IndentBlock_parse(ast2c_Node**,ast2c_Scope**,ast2c_IndentBlock*,ast2c_json_handlers*,void*);
+int ast2c_IndentBlock_parse(ast2c_Ast* ,ast2c_IndentBlock*,ast2c_json_handlers*,void*);
 
 struct ast2c_MatchBranch {
 	const ast2c_NodeType node_type;
@@ -641,7 +644,7 @@ struct ast2c_MatchBranch {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_MatchBranch_parse(ast2c_Node**,ast2c_Scope**,ast2c_MatchBranch*,ast2c_json_handlers*,void*);
+int ast2c_MatchBranch_parse(ast2c_Ast* ,ast2c_MatchBranch*,ast2c_json_handlers*,void*);
 
 struct ast2c_Return {
 	const ast2c_NodeType node_type;
@@ -650,7 +653,7 @@ struct ast2c_Return {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_Return_parse(ast2c_Node**,ast2c_Scope**,ast2c_Return*,ast2c_json_handlers*,void*);
+int ast2c_Return_parse(ast2c_Ast* ,ast2c_Return*,ast2c_json_handlers*,void*);
 
 struct ast2c_Break {
 	const ast2c_NodeType node_type;
@@ -658,7 +661,7 @@ struct ast2c_Break {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_Break_parse(ast2c_Node**,ast2c_Scope**,ast2c_Break*,ast2c_json_handlers*,void*);
+int ast2c_Break_parse(ast2c_Ast* ,ast2c_Break*,ast2c_json_handlers*,void*);
 
 struct ast2c_Continue {
 	const ast2c_NodeType node_type;
@@ -666,7 +669,7 @@ struct ast2c_Continue {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_Continue_parse(ast2c_Node**,ast2c_Scope**,ast2c_Continue*,ast2c_json_handlers*,void*);
+int ast2c_Continue_parse(ast2c_Ast* ,ast2c_Continue*,ast2c_json_handlers*,void*);
 
 struct ast2c_Assert {
 	const ast2c_NodeType node_type;
@@ -675,7 +678,7 @@ struct ast2c_Assert {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_Assert_parse(ast2c_Node**,ast2c_Scope**,ast2c_Assert*,ast2c_json_handlers*,void*);
+int ast2c_Assert_parse(ast2c_Ast* ,ast2c_Assert*,ast2c_json_handlers*,void*);
 
 struct ast2c_ImplicitYield {
 	const ast2c_NodeType node_type;
@@ -684,7 +687,7 @@ struct ast2c_ImplicitYield {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_ImplicitYield_parse(ast2c_Node**,ast2c_Scope**,ast2c_ImplicitYield*,ast2c_json_handlers*,void*);
+int ast2c_ImplicitYield_parse(ast2c_Ast* ,ast2c_ImplicitYield*,ast2c_json_handlers*,void*);
 
 struct ast2c_Field {
 	const ast2c_NodeType node_type;
@@ -699,7 +702,7 @@ struct ast2c_Field {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_Field_parse(ast2c_Node**,ast2c_Scope**,ast2c_Field*,ast2c_json_handlers*,void*);
+int ast2c_Field_parse(ast2c_Ast* ,ast2c_Field*,ast2c_json_handlers*,void*);
 
 struct ast2c_Format {
 	const ast2c_NodeType node_type;
@@ -710,7 +713,7 @@ struct ast2c_Format {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_Format_parse(ast2c_Node**,ast2c_Scope**,ast2c_Format*,ast2c_json_handlers*,void*);
+int ast2c_Format_parse(ast2c_Ast* ,ast2c_Format*,ast2c_json_handlers*,void*);
 
 struct ast2c_Function {
 	const ast2c_NodeType node_type;
@@ -727,7 +730,7 @@ struct ast2c_Function {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_Function_parse(ast2c_Node**,ast2c_Scope**,ast2c_Function*,ast2c_json_handlers*,void*);
+int ast2c_Function_parse(ast2c_Ast* ,ast2c_Function*,ast2c_json_handlers*,void*);
 
 struct ast2c_IntType {
 	const ast2c_NodeType node_type;
@@ -739,7 +742,7 @@ struct ast2c_IntType {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_IntType_parse(ast2c_Node**,ast2c_Scope**,ast2c_IntType*,ast2c_json_handlers*,void*);
+int ast2c_IntType_parse(ast2c_Ast* ,ast2c_IntType*,ast2c_json_handlers*,void*);
 
 struct ast2c_IdentType {
 	const ast2c_NodeType node_type;
@@ -750,7 +753,7 @@ struct ast2c_IdentType {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_IdentType_parse(ast2c_Node**,ast2c_Scope**,ast2c_IdentType*,ast2c_json_handlers*,void*);
+int ast2c_IdentType_parse(ast2c_Ast* ,ast2c_IdentType*,ast2c_json_handlers*,void*);
 
 struct ast2c_IntLiteralType {
 	const ast2c_NodeType node_type;
@@ -760,7 +763,7 @@ struct ast2c_IntLiteralType {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_IntLiteralType_parse(ast2c_Node**,ast2c_Scope**,ast2c_IntLiteralType*,ast2c_json_handlers*,void*);
+int ast2c_IntLiteralType_parse(ast2c_Ast* ,ast2c_IntLiteralType*,ast2c_json_handlers*,void*);
 
 struct ast2c_StrLiteralType {
 	const ast2c_NodeType node_type;
@@ -770,7 +773,7 @@ struct ast2c_StrLiteralType {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_StrLiteralType_parse(ast2c_Node**,ast2c_Scope**,ast2c_StrLiteralType*,ast2c_json_handlers*,void*);
+int ast2c_StrLiteralType_parse(ast2c_Ast* ,ast2c_StrLiteralType*,ast2c_json_handlers*,void*);
 
 struct ast2c_VoidType {
 	const ast2c_NodeType node_type;
@@ -779,7 +782,7 @@ struct ast2c_VoidType {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_VoidType_parse(ast2c_Node**,ast2c_Scope**,ast2c_VoidType*,ast2c_json_handlers*,void*);
+int ast2c_VoidType_parse(ast2c_Ast* ,ast2c_VoidType*,ast2c_json_handlers*,void*);
 
 struct ast2c_BoolType {
 	const ast2c_NodeType node_type;
@@ -788,7 +791,7 @@ struct ast2c_BoolType {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_BoolType_parse(ast2c_Node**,ast2c_Scope**,ast2c_BoolType*,ast2c_json_handlers*,void*);
+int ast2c_BoolType_parse(ast2c_Ast* ,ast2c_BoolType*,ast2c_json_handlers*,void*);
 
 struct ast2c_ArrayType {
 	const ast2c_NodeType node_type;
@@ -800,7 +803,7 @@ struct ast2c_ArrayType {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_ArrayType_parse(ast2c_Node**,ast2c_Scope**,ast2c_ArrayType*,ast2c_json_handlers*,void*);
+int ast2c_ArrayType_parse(ast2c_Ast* ,ast2c_ArrayType*,ast2c_json_handlers*,void*);
 
 struct ast2c_FunctionType {
 	const ast2c_NodeType node_type;
@@ -812,7 +815,7 @@ struct ast2c_FunctionType {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_FunctionType_parse(ast2c_Node**,ast2c_Scope**,ast2c_FunctionType*,ast2c_json_handlers*,void*);
+int ast2c_FunctionType_parse(ast2c_Ast* ,ast2c_FunctionType*,ast2c_json_handlers*,void*);
 
 struct ast2c_StructType {
 	const ast2c_NodeType node_type;
@@ -823,7 +826,7 @@ struct ast2c_StructType {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_StructType_parse(ast2c_Node**,ast2c_Scope**,ast2c_StructType*,ast2c_json_handlers*,void*);
+int ast2c_StructType_parse(ast2c_Ast* ,ast2c_StructType*,ast2c_json_handlers*,void*);
 
 struct ast2c_StructUnionType {
 	const ast2c_NodeType node_type;
@@ -837,7 +840,7 @@ struct ast2c_StructUnionType {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_StructUnionType_parse(ast2c_Node**,ast2c_Scope**,ast2c_StructUnionType*,ast2c_json_handlers*,void*);
+int ast2c_StructUnionType_parse(ast2c_Ast* ,ast2c_StructUnionType*,ast2c_json_handlers*,void*);
 
 struct ast2c_Cast {
 	const ast2c_NodeType node_type;
@@ -848,7 +851,7 @@ struct ast2c_Cast {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_Cast_parse(ast2c_Node**,ast2c_Scope**,ast2c_Cast*,ast2c_json_handlers*,void*);
+int ast2c_Cast_parse(ast2c_Ast* ,ast2c_Cast*,ast2c_json_handlers*,void*);
 
 struct ast2c_Comment {
 	const ast2c_NodeType node_type;
@@ -857,7 +860,7 @@ struct ast2c_Comment {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_Comment_parse(ast2c_Node**,ast2c_Scope**,ast2c_Comment*,ast2c_json_handlers*,void*);
+int ast2c_Comment_parse(ast2c_Ast* ,ast2c_Comment*,ast2c_json_handlers*,void*);
 
 struct ast2c_CommentGroup {
 	const ast2c_NodeType node_type;
@@ -867,7 +870,7 @@ struct ast2c_CommentGroup {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_CommentGroup_parse(ast2c_Node**,ast2c_Scope**,ast2c_CommentGroup*,ast2c_json_handlers*,void*);
+int ast2c_CommentGroup_parse(ast2c_Ast* ,ast2c_CommentGroup*,ast2c_json_handlers*,void*);
 
 struct ast2c_UnionType {
 	const ast2c_NodeType node_type;
@@ -880,7 +883,7 @@ struct ast2c_UnionType {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_UnionType_parse(ast2c_Node**,ast2c_Scope**,ast2c_UnionType*,ast2c_json_handlers*,void*);
+int ast2c_UnionType_parse(ast2c_Ast* ,ast2c_UnionType*,ast2c_json_handlers*,void*);
 
 struct ast2c_UnionCandidate {
 	const ast2c_NodeType node_type;
@@ -890,7 +893,7 @@ struct ast2c_UnionCandidate {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_UnionCandidate_parse(ast2c_Node**,ast2c_Scope**,ast2c_UnionCandidate*,ast2c_json_handlers*,void*);
+int ast2c_UnionCandidate_parse(ast2c_Ast* ,ast2c_UnionCandidate*,ast2c_json_handlers*,void*);
 
 struct ast2c_RangeType {
 	const ast2c_NodeType node_type;
@@ -901,7 +904,7 @@ struct ast2c_RangeType {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_RangeType_parse(ast2c_Node**,ast2c_Scope**,ast2c_RangeType*,ast2c_json_handlers*,void*);
+int ast2c_RangeType_parse(ast2c_Ast* ,ast2c_RangeType*,ast2c_json_handlers*,void*);
 
 struct ast2c_Enum {
 	const ast2c_NodeType node_type;
@@ -917,7 +920,7 @@ struct ast2c_Enum {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_Enum_parse(ast2c_Node**,ast2c_Scope**,ast2c_Enum*,ast2c_json_handlers*,void*);
+int ast2c_Enum_parse(ast2c_Ast* ,ast2c_Enum*,ast2c_json_handlers*,void*);
 
 struct ast2c_EnumMember {
 	const ast2c_NodeType node_type;
@@ -928,7 +931,7 @@ struct ast2c_EnumMember {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_EnumMember_parse(ast2c_Node**,ast2c_Scope**,ast2c_EnumMember*,ast2c_json_handlers*,void*);
+int ast2c_EnumMember_parse(ast2c_Ast* ,ast2c_EnumMember*,ast2c_json_handlers*,void*);
 
 struct ast2c_EnumType {
 	const ast2c_NodeType node_type;
@@ -938,7 +941,27 @@ struct ast2c_EnumType {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_EnumType_parse(ast2c_Node**,ast2c_Scope**,ast2c_EnumType*,ast2c_json_handlers*,void*);
+int ast2c_EnumType_parse(ast2c_Ast* ,ast2c_EnumType*,ast2c_json_handlers*,void*);
+
+struct ast2c_Scope {
+	const ast2c_NodeType node_type;
+	ast2c_Scope* prev;
+	ast2c_Scope* next;
+	ast2c_Scope* branch;
+	ast2c_Ident** ident;
+	size_t ident_size;
+	ast2c_Node* owner;
+};
+
+// returns 1 if succeed 0 if failed
+int ast2c_Scope_parse(ast2c_Ast* ,ast2c_Scope*,ast2c_json_handlers*,void*);
+
+struct ast2c_Ast {
+	ast2c_Node** nodes;
+	size_t nodes_size;
+	ast2c_Scope** scopes;
+	size_t scopes_size;
+};
 
 #ifdef __cplusplus
 }

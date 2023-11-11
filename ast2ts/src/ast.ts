@@ -832,7 +832,7 @@ export interface AstFile {
 }
 
 export function isAstFile(obj: any): obj is AstFile {
-	return obj && typeof obj === 'object' && Array.isArray(obj?.files) && isJsonAst(obj?.ast) && isSrcError(obj?.error)
+	return obj && typeof obj === 'object' && Array.isArray(obj?.files) && (obj?.ast === null || isJsonAst(obj?.ast)) && (obj?.error === null || isSrcError(obj?.error))
 }
 
 export interface TokenFile {
@@ -842,7 +842,7 @@ export interface TokenFile {
 }
 
 export function isTokenFile(obj: any): obj is TokenFile {
-	return obj && typeof obj === 'object' && Array.isArray(obj?.files) && (obj?.tokens === null || Array.isArray(obj?.tokens)) && isSrcError(obj?.error)
+	return obj && typeof obj === 'object' && Array.isArray(obj?.files) && (obj?.tokens === null || Array.isArray(obj?.tokens)) && (obj?.error === null || isSrcError(obj?.error))
 }
 
 interface astConstructor {

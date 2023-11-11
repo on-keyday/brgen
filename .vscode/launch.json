@@ -106,5 +106,13 @@
                 "${workspaceRoot}/lsp/server/out/**/*.js"
             ]
         },
+        {
+            "type": "cppvsdbg",
+            "request": "launch",
+            "name": "Debug ctobgn",
+            "program": "${workspaceRoot}/tool/ctobgn",
+            "args": [
+            ],
+        }
     ]
 }
