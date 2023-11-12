@@ -1966,11 +1966,12 @@ func (n *EnumType) GetLoc() Loc {
 }
 
 type Scope struct {
-	Prev   *Scope
-	Next   *Scope
-	Branch *Scope
-	Ident  []*Ident
-	Owner  Node
+	Prev       *Scope
+	Next       *Scope
+	Branch     *Scope
+	Ident      []*Ident
+	Owner      Node
+	BranchRoot bool
 }
 
 type Pos struct {
@@ -1992,11 +1993,12 @@ type Token struct {
 }
 
 type RawScope struct {
-	Prev   *uintptr  `json:"prev"`
-	Next   *uintptr  `json:"next"`
-	Branch *uintptr  `json:"branch"`
-	Ident  []uintptr `json:"ident"`
-	Owner  *uintptr  `json:"owner"`
+	Prev       *uintptr  `json:"prev"`
+	Next       *uintptr  `json:"next"`
+	Branch     *uintptr  `json:"branch"`
+	Ident      []uintptr `json:"ident"`
+	Owner      *uintptr  `json:"owner"`
+	BranchRoot bool      `json:"branch_root"`
 }
 
 type RawNode struct {
@@ -3077,6 +3079,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		if raw.Owner != nil {
 			n.scope[i].Owner = n.node[*raw.Owner].(Node)
 		}
+		n.scope[i].BranchRoot = raw.BranchRoot
 	}
 	return n.node[0].(*Program), nil
 }

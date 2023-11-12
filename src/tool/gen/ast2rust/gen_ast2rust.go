@@ -420,11 +420,19 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("	}\n")
 	w.Printf("	for _ in &ast.scope{\n")
 	w.Printf("		let scope = Rc::new(RefCell::new(Scope{\n")
-	w.Printf("			prev: None,\n")
-	w.Printf("			next: None,\n")
-	w.Printf("			branch: None,\n")
-	w.Printf("			ident: Vec::new(),\n")
-	w.Printf("			owner: None,\n")
+	for _, field := range defs.ScopeDef.Fields {
+		if field.Type.IsArray {
+			w.Printf("			%s: Vec::new(),\n", field.Name)
+		} else if field.Type.IsPtr || field.Type.IsInterface {
+			w.Printf("			%s: None,\n", field.Name)
+		} else if field.Type.Name == "bool" {
+			w.Printf("			%s: false,\n", field.Name)
+		} else if field.Type.Name == "u64" {
+			w.Printf("			%s: 0,\n", field.Name)
+		} else if field.Type.Name == "String" {
+			w.Printf("			%s: String::new(),\n", field.Name)
+		}
+	}
 	w.Printf("		}));\n")
 	w.Printf("		scopes.push(scope);\n")
 	w.Printf("	}\n")

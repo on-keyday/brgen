@@ -293,6 +293,7 @@ struct ast2c_RawScope {
 	void* ident;
 	size_t ident_size;
 	void* owner;
+	int branch_root;
 };
 
 struct ast2c_RawNode {
@@ -952,6 +953,7 @@ struct ast2c_Scope {
 	ast2c_Ident** ident;
 	size_t ident_size;
 	ast2c_Node* owner;
+	int branch_root;
 };
 
 // returns 1 if succeed 0 if failed

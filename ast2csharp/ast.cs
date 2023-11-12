@@ -465,6 +465,7 @@ public class Scope {
 	public Scope? Branch{get;set;}
 	public List<Ident>? Ident{get;set;}
 	public Node? Owner{get;set;}
+	public bool BranchRoot{get;set;}
 }
 public class Pos {
 	public ulong Begin{get;set;}
@@ -487,6 +488,7 @@ public class RawScope {
 	public uintptr Branch{get;set;}
 	public List<uintptr>? Ident{get;set;}
 	public uintptr Owner{get;set;}
+	public bool BranchRoot{get;set;}
 }
 public class RawNode {
 	public NodeType NodeType{get;set;}

@@ -13,6 +13,7 @@ namespace brgen::ast {
         std::shared_ptr<Scope> branch;
         std::shared_ptr<Scope> next;
         std::weak_ptr<Node> owner;
+        bool branch_root = false;
 
         std::optional<std::shared_ptr<Ident>> lookup_local(auto&& fn, ast::Ident* self = nullptr) {
             if (auto locked = owner.lock(); locked && locked.get()->node_type == NodeType::program) {
@@ -101,6 +102,7 @@ namespace brgen::ast {
             if (!root) {
                 root = std::make_shared<Scope>();
                 current = root;
+                root->branch_root = true;
             }
             if (current->branch && !current->next) {
                 current->next = std::make_shared<Scope>();
@@ -117,6 +119,7 @@ namespace brgen::ast {
             current->branch->prev = current;
             auto d = current;
             current = current->branch;
+            current->branch_root = true;
             return utils::helper::defer([this, d] {
                 current = d;
             });

@@ -444,6 +444,7 @@ class Scope:
     branch: Optional[Scope]
     ident: List[Ident]
     owner: Optional[Node]
+    branch_root: bool
 
 
 class Pos:
@@ -494,6 +495,7 @@ class RawScope:
     branch: Optional[int]
     ident: List[int]
     owner: Optional[int]
+    branch_root: bool
 
 def parse_RawScope(json: dict) -> RawScope:
     ret = RawScope()
@@ -514,6 +516,7 @@ def parse_RawScope(json: dict) -> RawScope:
         ret.owner = int(json["owner"])
     else:
         ret.owner = None
+    ret.branch_root = bool(json["branch_root"])
     return ret
 
 
@@ -1354,6 +1357,7 @@ def ast2node(ast :JsonAst) -> Program:
         scope[i].ident = [(node[x] if isinstance(node[x],Ident) else raiseError(TypeError('type mismatch at Scope::ident'))) for x in ast.scope[i].ident]
         if ast.scope[i].owner is not None:
             scope[i].owner = ast.node[ast.scope[i].owner]
+        scope[i].branch_root = ast.scope[i].branch_root
     return node[0]
 
 def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:

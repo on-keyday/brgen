@@ -5554,6 +5554,7 @@ pub struct Scope {
 	pub branch: Option<Rc<RefCell<Scope>>>,
 	pub ident: Vec<Weak<RefCell<Ident>>>,
 	pub owner: Option<NodeWeak>,
+	pub branch_root: bool,
 }
 
 #[derive(Debug,Clone,Copy,Serialize,Deserialize)]
@@ -5584,6 +5585,7 @@ pub struct RawScope {
 	pub branch: Option<usize>,
 	pub ident: Vec<usize>,
 	pub owner: Option<usize>,
+	pub branch_root: bool,
 }
 
 #[derive(Debug,Clone,Serialize,Deserialize)]
@@ -6053,6 +6055,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 			branch: None,
 			ident: Vec::new(),
 			owner: None,
+			branch_root: false,
 		}));
 		scopes.push(scope);
 	}

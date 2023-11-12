@@ -197,8 +197,14 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	for _, field := range defs.ScopeDef.Fields {
 		if field.Type.IsArray {
 			w.Printf("			%s: [],\n", field.Name)
-		} else {
+		} else if field.Type.IsPtr || field.Type.IsInterface {
 			w.Printf("			%s: null,\n", field.Name)
+		} else if field.Type.Name == "number" {
+			w.Printf("			%s: 0,\n", field.Name)
+		} else if field.Type.Name == "string" {
+			w.Printf("			%s: '',\n", field.Name)
+		} else if field.Type.Name == "boolean" {
+			w.Printf("			%s: false,\n", field.Name)
 		}
 	}
 	w.Printf("		}\n")

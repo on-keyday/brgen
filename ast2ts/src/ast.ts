@@ -739,10 +739,11 @@ export interface Scope {
 	branch: Scope|null;
 	ident: Ident[];
 	owner: Node|null;
+	branch_root: boolean;
 }
 
 export function isScope(obj: any): obj is Scope {
-	return obj && typeof obj === 'object' && typeof obj?.prev === 'object' && typeof obj?.next === 'object' && typeof obj?.branch === 'object' && Array.isArray(obj?.ident) && (obj?.owner === null || isNode(obj?.owner))
+	return obj && typeof obj === 'object' && typeof obj?.prev === 'object' && typeof obj?.next === 'object' && typeof obj?.branch === 'object' && Array.isArray(obj?.ident) && (obj?.owner === null || isNode(obj?.owner)) && typeof obj?.branch_root === "boolean"
 }
 
 export interface Pos {
@@ -781,10 +782,11 @@ export interface RawScope {
 	branch: number|null;
 	ident: number[];
 	owner: number|null;
+	branch_root: boolean;
 }
 
 export function isRawScope(obj: any): obj is RawScope {
-	return obj && typeof obj === 'object' && (obj?.prev === null || typeof obj?.prev === "number") && (obj?.next === null || typeof obj?.next === "number") && (obj?.branch === null || typeof obj?.branch === "number") && Array.isArray(obj?.ident) && (obj?.owner === null || typeof obj?.owner === "number")
+	return obj && typeof obj === 'object' && (obj?.prev === null || typeof obj?.prev === "number") && (obj?.next === null || typeof obj?.next === "number") && (obj?.branch === null || typeof obj?.branch === "number") && Array.isArray(obj?.ident) && (obj?.owner === null || typeof obj?.owner === "number") && typeof obj?.branch_root === "boolean"
 }
 
 export interface RawNode {
@@ -1445,6 +1447,7 @@ export function parseAST(obj: any): Program {
 			branch: null,
 			ident: [],
 			owner: null,
+			branch_root: false,
 		}
 		c.scope.push(n);
 	}
