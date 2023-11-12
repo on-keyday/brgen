@@ -14,13 +14,13 @@ import {
     SemanticTokensBuilder,
     SemanticTokenTypes,
     SemanticTokens,
-    TextDocumentsConfiguration,
-    Hover,
     MarkupKind,
     HoverParams,
+    TypeDefinitionParams,
+    Location,
 } from 'vscode-languageserver/node';
 
-import { TextDocument, TextDocumentContentChangeEvent } from 'vscode-languageserver-textdocument';
+import { Range, TextDocument } from 'vscode-languageserver-textdocument';
 
 import {execFile} from "child_process";
 import * as url from "url";
@@ -85,6 +85,7 @@ connection.onInitialize((params: InitializeParams) => {
                 full: true,
             },
             hoverProvider: true,
+            typeDefinitionProvider: true,
         }
     };
     if (hasWorkspaceFolderCapability) {
@@ -145,6 +146,7 @@ const parserCommand = (path :string) => ["--stdin","--stdin-name",path, "--no-co
 class DocumentInfo {
     readonly uri :string;
     prevSemanticTokens :SemanticTokens | null = null;
+    prevFile :ast2ts.AstFile| null = null;
     prevNode :ast2ts.Node | null = null;
     prevText :string | null = null;
 
@@ -334,6 +336,7 @@ const tokenizeSourceImpl  = async (doc :TextDocument,docInfo :DocumentInfo) =>{
         }
         return true
     });
+    docInfo.prevFile = ast;
     docInfo.prevNode = prog;
     return generateSemanticTokens();
 };
@@ -421,7 +424,23 @@ const hover = async (params :HoverParams)=>{
                     return makeHovoer(found.ident,"variable");
                 case ast2ts.IdentUsage.define_field:
                     // color of enum member
-                    return makeHovoer(color("#008fff",found.ident),"field");
+                    return makeHovoer(found.ident,"field");
+                case ast2ts.IdentUsage.define_const:
+                    return makeHovoer(found.ident,"constant");
+                case ast2ts.IdentUsage.define_enum_member:
+                    return makeHovoer(found.ident,"enum member");
+                case ast2ts.IdentUsage.define_format:
+                    return makeHovoer(found.ident,"format");
+                case ast2ts.IdentUsage.define_enum:
+                    return makeHovoer(found.ident,"enum");
+                case ast2ts.IdentUsage.reference_type:
+                    return makeHovoer(found.ident,"type");
+                case ast2ts.IdentUsage.define_cast_fn:
+                    return makeHovoer(found.ident,"cast function");
+                case ast2ts.IdentUsage.maybe_type:
+                    return makeHovoer(found.ident,"maybe type");
+                case ast2ts.IdentUsage.define_fn:
+                    return makeHovoer(found.ident,"function");
                 default:
                     return makeHovoer(found.ident,"unknown identifier");
             }
@@ -430,6 +449,84 @@ const hover = async (params :HoverParams)=>{
 }
 
 connection.onHover(hover)
+
+const typeDefinitionHandler = async (params :TypeDefinitionParams) => {
+    console.log(`textDocument/typeDefinition: ${JSON.stringify(params)}`);
+    const doc = documents.get(params?.textDocument?.uri);
+    if(doc===undefined){
+        console.log(`document ${params?.textDocument?.uri} is not found`);
+        return null; 
+    }
+    const pos =  doc.offsetAt(params.position);
+    const docInfo = getOrCreateDocumentInfo(doc);
+    if(docInfo.prevNode===null) {
+        return null;
+    }
+    let found :any;
+    ast2ts.walk(docInfo.prevNode,(f,node)=>{
+        if(node.loc.file!=1) {
+            return false; // skip other files
+        }
+        if(node.loc.pos.begin<=pos&&pos<=node.loc.pos.end){
+            if(ast2ts.isIdent(node)){
+                console.log(`found: ${node.ident} ${JSON.stringify(node.loc)}`)
+                found = node;
+                return false; // skip children
+            }
+            console.log(`hit: ${node.node_type} ${JSON.stringify(node.loc)}`)
+        }
+        ast2ts.walk(node,f);
+    });
+    const fileToLink = (loc :ast2ts.Loc, file :ast2ts.AstFile) => {
+        const path = file.files[loc.file-1];
+        const range :Range = {
+            start: {line: loc.line-1, character: loc.col-1},
+            end: {line: loc.line-1, character: loc.col-1},
+        };
+        const location :Location = {
+            uri: url.pathToFileURL(path).toString(),
+            range: range,
+        };
+        console.log(location);
+        return location;
+    }
+    if(ast2ts.isIdent(found)){
+        let ident = found;
+        for(;;){
+            switch (ident.usage) {
+                case ast2ts.IdentUsage.unknown:
+                    return null;
+                case ast2ts.IdentUsage.reference:
+                    if(ast2ts.isIdent(ident.base)){
+                        ident = ident.base;
+                        continue;
+                    }
+                    return null;
+                case ast2ts.IdentUsage.reference_type:
+                    if(ast2ts.isIdent(ident.base)){
+                        ident = ident.base;
+                        continue;
+                    }
+                    return null;
+                case ast2ts.IdentUsage.define_variable:
+                case ast2ts.IdentUsage.define_field:
+                case ast2ts.IdentUsage.define_const:
+                case ast2ts.IdentUsage.define_enum_member:
+                case ast2ts.IdentUsage.define_format:
+                case ast2ts.IdentUsage.define_enum:
+                case ast2ts.IdentUsage.define_cast_fn:
+                case ast2ts.IdentUsage.maybe_type:
+                case ast2ts.IdentUsage.define_fn:
+                    return fileToLink(ident.loc,docInfo.prevFile!);
+                default:
+                    return null;
+            }
+        }
+    }
+    return null; 
+}
+
+connection.onTypeDefinition(typeDefinitionHandler);
 
 // The example settings
 interface BrgenLSPSettings {

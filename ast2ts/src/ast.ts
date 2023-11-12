@@ -2814,7 +2814,7 @@ export function parseAST(obj: any): Program {
 	return root;
 }
 
-export type VisitFn<T> = (f: VisitFn<T>, arg: T) => void;
+export type VisitFn<T> = (f: VisitFn<T>, arg: T) => void|undefined|boolean;
 
 export function walk(node: Node, fn: VisitFn<Node>) {
 	switch (node.node_type) {
@@ -2824,10 +2824,16 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Program = node as Program;
 			if (n.struct_type !== null) {
-				fn(fn,n.struct_type);
+				const result = fn(fn,n.struct_type);
+				if (result === false) {
+					return;
+				}
 			}
 			for (const e of n.elements) {
-				fn(fn,e);
+				const result = fn(fn,e);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -2837,13 +2843,22 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Binary = node as Binary;
 			if (n.expr_type !== null) {
-				fn(fn,n.expr_type);
+				const result = fn(fn,n.expr_type);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.left !== null) {
-				fn(fn,n.left);
+				const result = fn(fn,n.left);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.right !== null) {
-				fn(fn,n.right);
+				const result = fn(fn,n.right);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -2853,10 +2868,16 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Unary = node as Unary;
 			if (n.expr_type !== null) {
-				fn(fn,n.expr_type);
+				const result = fn(fn,n.expr_type);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.expr !== null) {
-				fn(fn,n.expr);
+				const result = fn(fn,n.expr);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -2866,16 +2887,28 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Cond = node as Cond;
 			if (n.expr_type !== null) {
-				fn(fn,n.expr_type);
+				const result = fn(fn,n.expr_type);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.cond !== null) {
-				fn(fn,n.cond);
+				const result = fn(fn,n.cond);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.then !== null) {
-				fn(fn,n.then);
+				const result = fn(fn,n.then);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.els !== null) {
-				fn(fn,n.els);
+				const result = fn(fn,n.els);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -2885,7 +2918,10 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Ident = node as Ident;
 			if (n.expr_type !== null) {
-				fn(fn,n.expr_type);
+				const result = fn(fn,n.expr_type);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -2895,16 +2931,28 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Call = node as Call;
 			if (n.expr_type !== null) {
-				fn(fn,n.expr_type);
+				const result = fn(fn,n.expr_type);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.callee !== null) {
-				fn(fn,n.callee);
+				const result = fn(fn,n.callee);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.raw_arguments !== null) {
-				fn(fn,n.raw_arguments);
+				const result = fn(fn,n.raw_arguments);
+				if (result === false) {
+					return;
+				}
 			}
 			for (const e of n.arguments) {
-				fn(fn,e);
+				const result = fn(fn,e);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -2914,16 +2962,28 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :If = node as If;
 			if (n.expr_type !== null) {
-				fn(fn,n.expr_type);
+				const result = fn(fn,n.expr_type);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.cond !== null) {
-				fn(fn,n.cond);
+				const result = fn(fn,n.cond);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.then !== null) {
-				fn(fn,n.then);
+				const result = fn(fn,n.then);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.els !== null) {
-				fn(fn,n.els);
+				const result = fn(fn,n.els);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -2933,10 +2993,16 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :MemberAccess = node as MemberAccess;
 			if (n.expr_type !== null) {
-				fn(fn,n.expr_type);
+				const result = fn(fn,n.expr_type);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.target !== null) {
-				fn(fn,n.target);
+				const result = fn(fn,n.target);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -2946,10 +3012,16 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Paren = node as Paren;
 			if (n.expr_type !== null) {
-				fn(fn,n.expr_type);
+				const result = fn(fn,n.expr_type);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.expr !== null) {
-				fn(fn,n.expr);
+				const result = fn(fn,n.expr);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -2959,13 +3031,22 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Index = node as Index;
 			if (n.expr_type !== null) {
-				fn(fn,n.expr_type);
+				const result = fn(fn,n.expr_type);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.expr !== null) {
-				fn(fn,n.expr);
+				const result = fn(fn,n.expr);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.index !== null) {
-				fn(fn,n.index);
+				const result = fn(fn,n.index);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -2975,13 +3056,22 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Match = node as Match;
 			if (n.expr_type !== null) {
-				fn(fn,n.expr_type);
+				const result = fn(fn,n.expr_type);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.cond !== null) {
-				fn(fn,n.cond);
+				const result = fn(fn,n.cond);
+				if (result === false) {
+					return;
+				}
 			}
 			for (const e of n.branch) {
-				fn(fn,e);
+				const result = fn(fn,e);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -2991,13 +3081,22 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Range = node as Range;
 			if (n.expr_type !== null) {
-				fn(fn,n.expr_type);
+				const result = fn(fn,n.expr_type);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.start !== null) {
-				fn(fn,n.start);
+				const result = fn(fn,n.start);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.end !== null) {
-				fn(fn,n.end);
+				const result = fn(fn,n.end);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -3007,7 +3106,10 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :TmpVar = node as TmpVar;
 			if (n.expr_type !== null) {
-				fn(fn,n.expr_type);
+				const result = fn(fn,n.expr_type);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -3017,13 +3119,22 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :BlockExpr = node as BlockExpr;
 			if (n.expr_type !== null) {
-				fn(fn,n.expr_type);
+				const result = fn(fn,n.expr_type);
+				if (result === false) {
+					return;
+				}
 			}
 			for (const e of n.calls) {
-				fn(fn,e);
+				const result = fn(fn,e);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.expr !== null) {
-				fn(fn,n.expr);
+				const result = fn(fn,n.expr);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -3033,13 +3144,22 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Import = node as Import;
 			if (n.expr_type !== null) {
-				fn(fn,n.expr_type);
+				const result = fn(fn,n.expr_type);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.base !== null) {
-				fn(fn,n.base);
+				const result = fn(fn,n.base);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.import_desc !== null) {
-				fn(fn,n.import_desc);
+				const result = fn(fn,n.import_desc);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -3049,7 +3169,10 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :IntLiteral = node as IntLiteral;
 			if (n.expr_type !== null) {
-				fn(fn,n.expr_type);
+				const result = fn(fn,n.expr_type);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -3059,7 +3182,10 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :BoolLiteral = node as BoolLiteral;
 			if (n.expr_type !== null) {
-				fn(fn,n.expr_type);
+				const result = fn(fn,n.expr_type);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -3069,7 +3195,10 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :StrLiteral = node as StrLiteral;
 			if (n.expr_type !== null) {
-				fn(fn,n.expr_type);
+				const result = fn(fn,n.expr_type);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -3079,7 +3208,10 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Input = node as Input;
 			if (n.expr_type !== null) {
-				fn(fn,n.expr_type);
+				const result = fn(fn,n.expr_type);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -3089,7 +3221,10 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Output = node as Output;
 			if (n.expr_type !== null) {
-				fn(fn,n.expr_type);
+				const result = fn(fn,n.expr_type);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -3099,7 +3234,10 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Config = node as Config;
 			if (n.expr_type !== null) {
-				fn(fn,n.expr_type);
+				const result = fn(fn,n.expr_type);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -3109,16 +3247,28 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Loop = node as Loop;
 			if (n.init !== null) {
-				fn(fn,n.init);
+				const result = fn(fn,n.init);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.cond !== null) {
-				fn(fn,n.cond);
+				const result = fn(fn,n.cond);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.step !== null) {
-				fn(fn,n.step);
+				const result = fn(fn,n.step);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.body !== null) {
-				fn(fn,n.body);
+				const result = fn(fn,n.body);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -3128,10 +3278,16 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :IndentBlock = node as IndentBlock;
 			for (const e of n.elements) {
-				fn(fn,e);
+				const result = fn(fn,e);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.struct_type !== null) {
-				fn(fn,n.struct_type);
+				const result = fn(fn,n.struct_type);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -3141,10 +3297,16 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :MatchBranch = node as MatchBranch;
 			if (n.cond !== null) {
-				fn(fn,n.cond);
+				const result = fn(fn,n.cond);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.then !== null) {
-				fn(fn,n.then);
+				const result = fn(fn,n.then);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -3154,7 +3316,10 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Return = node as Return;
 			if (n.expr !== null) {
-				fn(fn,n.expr);
+				const result = fn(fn,n.expr);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -3178,7 +3343,10 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Assert = node as Assert;
 			if (n.cond !== null) {
-				fn(fn,n.cond);
+				const result = fn(fn,n.cond);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -3188,7 +3356,10 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :ImplicitYield = node as ImplicitYield;
 			if (n.expr !== null) {
-				fn(fn,n.expr);
+				const result = fn(fn,n.expr);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -3198,16 +3369,28 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Field = node as Field;
 			if (n.ident !== null) {
-				fn(fn,n.ident);
+				const result = fn(fn,n.ident);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.field_type !== null) {
-				fn(fn,n.field_type);
+				const result = fn(fn,n.field_type);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.raw_arguments !== null) {
-				fn(fn,n.raw_arguments);
+				const result = fn(fn,n.raw_arguments);
+				if (result === false) {
+					return;
+				}
 			}
 			for (const e of n.arguments) {
-				fn(fn,e);
+				const result = fn(fn,e);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -3217,10 +3400,16 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Format = node as Format;
 			if (n.ident !== null) {
-				fn(fn,n.ident);
+				const result = fn(fn,n.ident);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.body !== null) {
-				fn(fn,n.body);
+				const result = fn(fn,n.body);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -3230,19 +3419,34 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Function = node as Function;
 			if (n.ident !== null) {
-				fn(fn,n.ident);
+				const result = fn(fn,n.ident);
+				if (result === false) {
+					return;
+				}
 			}
 			for (const e of n.parameters) {
-				fn(fn,e);
+				const result = fn(fn,e);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.return_type !== null) {
-				fn(fn,n.return_type);
+				const result = fn(fn,n.return_type);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.body !== null) {
-				fn(fn,n.body);
+				const result = fn(fn,n.body);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.func_type !== null) {
-				fn(fn,n.func_type);
+				const result = fn(fn,n.func_type);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -3259,7 +3463,10 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :IdentType = node as IdentType;
 			if (n.ident !== null) {
-				fn(fn,n.ident);
+				const result = fn(fn,n.ident);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -3297,10 +3504,16 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :ArrayType = node as ArrayType;
 			if (n.base_type !== null) {
-				fn(fn,n.base_type);
+				const result = fn(fn,n.base_type);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.length !== null) {
-				fn(fn,n.length);
+				const result = fn(fn,n.length);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -3310,10 +3523,16 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :FunctionType = node as FunctionType;
 			if (n.return_type !== null) {
-				fn(fn,n.return_type);
+				const result = fn(fn,n.return_type);
+				if (result === false) {
+					return;
+				}
 			}
 			for (const e of n.parameters) {
-				fn(fn,e);
+				const result = fn(fn,e);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -3323,7 +3542,10 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :StructType = node as StructType;
 			for (const e of n.fields) {
-				fn(fn,e);
+				const result = fn(fn,e);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -3333,7 +3555,10 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :StructUnionType = node as StructUnionType;
 			for (const e of n.fields) {
-				fn(fn,e);
+				const result = fn(fn,e);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -3343,13 +3568,22 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Cast = node as Cast;
 			if (n.expr_type !== null) {
-				fn(fn,n.expr_type);
+				const result = fn(fn,n.expr_type);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.base !== null) {
-				fn(fn,n.base);
+				const result = fn(fn,n.base);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.expr !== null) {
-				fn(fn,n.expr);
+				const result = fn(fn,n.expr);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -3366,7 +3600,10 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :CommentGroup = node as CommentGroup;
 			for (const e of n.comments) {
-				fn(fn,e);
+				const result = fn(fn,e);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -3376,7 +3613,10 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :UnionType = node as UnionType;
 			for (const e of n.candidates) {
-				fn(fn,e);
+				const result = fn(fn,e);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -3393,7 +3633,10 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :RangeType = node as RangeType;
 			if (n.base_type !== null) {
-				fn(fn,n.base_type);
+				const result = fn(fn,n.base_type);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -3403,16 +3646,28 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Enum = node as Enum;
 			if (n.ident !== null) {
-				fn(fn,n.ident);
+				const result = fn(fn,n.ident);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.base_type !== null) {
-				fn(fn,n.base_type);
+				const result = fn(fn,n.base_type);
+				if (result === false) {
+					return;
+				}
 			}
 			for (const e of n.members) {
-				fn(fn,e);
+				const result = fn(fn,e);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.enum_type !== null) {
-				fn(fn,n.enum_type);
+				const result = fn(fn,n.enum_type);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}
@@ -3422,10 +3677,16 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :EnumMember = node as EnumMember;
 			if (n.ident !== null) {
-				fn(fn,n.ident);
+				const result = fn(fn,n.ident);
+				if (result === false) {
+					return;
+				}
 			}
 			if (n.expr !== null) {
-				fn(fn,n.expr);
+				const result = fn(fn,n.expr);
+				if (result === false) {
+					return;
+				}
 			}
 			break;
 		}

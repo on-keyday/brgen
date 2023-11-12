@@ -3085,257 +3085,395 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 }
 
 type Visitor interface {
-	Visit(v Visitor, n Node)
+	Visit(v Visitor, n Node) bool
 }
 
-type VisitFn func(v Visitor, n Node)
+type VisitFn func(v Visitor, n Node) bool
 
-func (f VisitFn) Visit(v Visitor, n Node) {
-	f(v, n)
+func (f VisitFn) Visit(v Visitor, n Node) bool {
+	return f(v, n)
 }
 
 func Walk(n Node, f Visitor) {
 	switch v := n.(type) {
 	case *Program:
 		if v.StructType != nil {
-			f.Visit(f, v.StructType)
+			if !f.Visit(f, v.StructType) {
+				return
+			}
 		}
 		for _, w := range v.Elements {
-			f.Visit(f, w)
+			if !f.Visit(f, w) {
+				return
+			}
 		}
 	case *Binary:
 		if v.ExprType != nil {
-			f.Visit(f, v.ExprType)
+			if !f.Visit(f, v.ExprType) {
+				return
+			}
 		}
 		if v.Left != nil {
-			f.Visit(f, v.Left)
+			if !f.Visit(f, v.Left) {
+				return
+			}
 		}
 		if v.Right != nil {
-			f.Visit(f, v.Right)
+			if !f.Visit(f, v.Right) {
+				return
+			}
 		}
 	case *Unary:
 		if v.ExprType != nil {
-			f.Visit(f, v.ExprType)
+			if !f.Visit(f, v.ExprType) {
+				return
+			}
 		}
 		if v.Expr != nil {
-			f.Visit(f, v.Expr)
+			if !f.Visit(f, v.Expr) {
+				return
+			}
 		}
 	case *Cond:
 		if v.ExprType != nil {
-			f.Visit(f, v.ExprType)
+			if !f.Visit(f, v.ExprType) {
+				return
+			}
 		}
 		if v.Cond != nil {
-			f.Visit(f, v.Cond)
+			if !f.Visit(f, v.Cond) {
+				return
+			}
 		}
 		if v.Then != nil {
-			f.Visit(f, v.Then)
+			if !f.Visit(f, v.Then) {
+				return
+			}
 		}
 		if v.Els != nil {
-			f.Visit(f, v.Els)
+			if !f.Visit(f, v.Els) {
+				return
+			}
 		}
 	case *Ident:
 		if v.ExprType != nil {
-			f.Visit(f, v.ExprType)
+			if !f.Visit(f, v.ExprType) {
+				return
+			}
 		}
 	case *Call:
 		if v.ExprType != nil {
-			f.Visit(f, v.ExprType)
+			if !f.Visit(f, v.ExprType) {
+				return
+			}
 		}
 		if v.Callee != nil {
-			f.Visit(f, v.Callee)
+			if !f.Visit(f, v.Callee) {
+				return
+			}
 		}
 		if v.RawArguments != nil {
-			f.Visit(f, v.RawArguments)
+			if !f.Visit(f, v.RawArguments) {
+				return
+			}
 		}
 		for _, w := range v.Arguments {
-			f.Visit(f, w)
+			if !f.Visit(f, w) {
+				return
+			}
 		}
 	case *If:
 		if v.ExprType != nil {
-			f.Visit(f, v.ExprType)
+			if !f.Visit(f, v.ExprType) {
+				return
+			}
 		}
 		if v.Cond != nil {
-			f.Visit(f, v.Cond)
+			if !f.Visit(f, v.Cond) {
+				return
+			}
 		}
 		if v.Then != nil {
-			f.Visit(f, v.Then)
+			if !f.Visit(f, v.Then) {
+				return
+			}
 		}
 		if v.Els != nil {
-			f.Visit(f, v.Els)
+			if !f.Visit(f, v.Els) {
+				return
+			}
 		}
 	case *MemberAccess:
 		if v.ExprType != nil {
-			f.Visit(f, v.ExprType)
+			if !f.Visit(f, v.ExprType) {
+				return
+			}
 		}
 		if v.Target != nil {
-			f.Visit(f, v.Target)
+			if !f.Visit(f, v.Target) {
+				return
+			}
 		}
 	case *Paren:
 		if v.ExprType != nil {
-			f.Visit(f, v.ExprType)
+			if !f.Visit(f, v.ExprType) {
+				return
+			}
 		}
 		if v.Expr != nil {
-			f.Visit(f, v.Expr)
+			if !f.Visit(f, v.Expr) {
+				return
+			}
 		}
 	case *Index:
 		if v.ExprType != nil {
-			f.Visit(f, v.ExprType)
+			if !f.Visit(f, v.ExprType) {
+				return
+			}
 		}
 		if v.Expr != nil {
-			f.Visit(f, v.Expr)
+			if !f.Visit(f, v.Expr) {
+				return
+			}
 		}
 		if v.Index != nil {
-			f.Visit(f, v.Index)
+			if !f.Visit(f, v.Index) {
+				return
+			}
 		}
 	case *Match:
 		if v.ExprType != nil {
-			f.Visit(f, v.ExprType)
+			if !f.Visit(f, v.ExprType) {
+				return
+			}
 		}
 		if v.Cond != nil {
-			f.Visit(f, v.Cond)
+			if !f.Visit(f, v.Cond) {
+				return
+			}
 		}
 		for _, w := range v.Branch {
-			f.Visit(f, w)
+			if !f.Visit(f, w) {
+				return
+			}
 		}
 	case *Range:
 		if v.ExprType != nil {
-			f.Visit(f, v.ExprType)
+			if !f.Visit(f, v.ExprType) {
+				return
+			}
 		}
 		if v.Start != nil {
-			f.Visit(f, v.Start)
+			if !f.Visit(f, v.Start) {
+				return
+			}
 		}
 		if v.End != nil {
-			f.Visit(f, v.End)
+			if !f.Visit(f, v.End) {
+				return
+			}
 		}
 	case *TmpVar:
 		if v.ExprType != nil {
-			f.Visit(f, v.ExprType)
+			if !f.Visit(f, v.ExprType) {
+				return
+			}
 		}
 	case *BlockExpr:
 		if v.ExprType != nil {
-			f.Visit(f, v.ExprType)
+			if !f.Visit(f, v.ExprType) {
+				return
+			}
 		}
 		for _, w := range v.Calls {
-			f.Visit(f, w)
+			if !f.Visit(f, w) {
+				return
+			}
 		}
 		if v.Expr != nil {
-			f.Visit(f, v.Expr)
+			if !f.Visit(f, v.Expr) {
+				return
+			}
 		}
 	case *Import:
 		if v.ExprType != nil {
-			f.Visit(f, v.ExprType)
+			if !f.Visit(f, v.ExprType) {
+				return
+			}
 		}
 		if v.Base != nil {
-			f.Visit(f, v.Base)
+			if !f.Visit(f, v.Base) {
+				return
+			}
 		}
 		if v.ImportDesc != nil {
-			f.Visit(f, v.ImportDesc)
+			if !f.Visit(f, v.ImportDesc) {
+				return
+			}
 		}
 	case *IntLiteral:
 		if v.ExprType != nil {
-			f.Visit(f, v.ExprType)
+			if !f.Visit(f, v.ExprType) {
+				return
+			}
 		}
 	case *BoolLiteral:
 		if v.ExprType != nil {
-			f.Visit(f, v.ExprType)
+			if !f.Visit(f, v.ExprType) {
+				return
+			}
 		}
 	case *StrLiteral:
 		if v.ExprType != nil {
-			f.Visit(f, v.ExprType)
+			if !f.Visit(f, v.ExprType) {
+				return
+			}
 		}
 	case *Input:
 		if v.ExprType != nil {
-			f.Visit(f, v.ExprType)
+			if !f.Visit(f, v.ExprType) {
+				return
+			}
 		}
 	case *Output:
 		if v.ExprType != nil {
-			f.Visit(f, v.ExprType)
+			if !f.Visit(f, v.ExprType) {
+				return
+			}
 		}
 	case *Config:
 		if v.ExprType != nil {
-			f.Visit(f, v.ExprType)
+			if !f.Visit(f, v.ExprType) {
+				return
+			}
 		}
 	case *Loop:
 		if v.Init != nil {
-			f.Visit(f, v.Init)
+			if !f.Visit(f, v.Init) {
+				return
+			}
 		}
 		if v.Cond != nil {
-			f.Visit(f, v.Cond)
+			if !f.Visit(f, v.Cond) {
+				return
+			}
 		}
 		if v.Step != nil {
-			f.Visit(f, v.Step)
+			if !f.Visit(f, v.Step) {
+				return
+			}
 		}
 		if v.Body != nil {
-			f.Visit(f, v.Body)
+			if !f.Visit(f, v.Body) {
+				return
+			}
 		}
 	case *IndentBlock:
 		for _, w := range v.Elements {
-			f.Visit(f, w)
+			if !f.Visit(f, w) {
+				return
+			}
 		}
 		if v.StructType != nil {
-			f.Visit(f, v.StructType)
+			if !f.Visit(f, v.StructType) {
+				return
+			}
 		}
 	case *MatchBranch:
 		if v.Cond != nil {
-			f.Visit(f, v.Cond)
+			if !f.Visit(f, v.Cond) {
+				return
+			}
 		}
 		if v.Then != nil {
-			f.Visit(f, v.Then)
+			if !f.Visit(f, v.Then) {
+				return
+			}
 		}
 	case *Return:
 		if v.Expr != nil {
-			f.Visit(f, v.Expr)
+			if !f.Visit(f, v.Expr) {
+				return
+			}
 		}
 	case *Break:
 	case *Continue:
 	case *Assert:
 		if v.Cond != nil {
-			f.Visit(f, v.Cond)
+			if !f.Visit(f, v.Cond) {
+				return
+			}
 		}
 	case *ImplicitYield:
 		if v.Expr != nil {
-			f.Visit(f, v.Expr)
+			if !f.Visit(f, v.Expr) {
+				return
+			}
 		}
 	case *Field:
 		if v.Ident != nil {
-			f.Visit(f, v.Ident)
+			if !f.Visit(f, v.Ident) {
+				return
+			}
 		}
 		if v.FieldType != nil {
-			f.Visit(f, v.FieldType)
+			if !f.Visit(f, v.FieldType) {
+				return
+			}
 		}
 		if v.RawArguments != nil {
-			f.Visit(f, v.RawArguments)
+			if !f.Visit(f, v.RawArguments) {
+				return
+			}
 		}
 		for _, w := range v.Arguments {
-			f.Visit(f, w)
+			if !f.Visit(f, w) {
+				return
+			}
 		}
 	case *Format:
 		if v.Ident != nil {
-			f.Visit(f, v.Ident)
+			if !f.Visit(f, v.Ident) {
+				return
+			}
 		}
 		if v.Body != nil {
-			f.Visit(f, v.Body)
+			if !f.Visit(f, v.Body) {
+				return
+			}
 		}
 	case *Function:
 		if v.Ident != nil {
-			f.Visit(f, v.Ident)
+			if !f.Visit(f, v.Ident) {
+				return
+			}
 		}
 		for _, w := range v.Parameters {
-			f.Visit(f, w)
+			if !f.Visit(f, w) {
+				return
+			}
 		}
 		if v.ReturnType != nil {
-			f.Visit(f, v.ReturnType)
+			if !f.Visit(f, v.ReturnType) {
+				return
+			}
 		}
 		if v.Body != nil {
-			f.Visit(f, v.Body)
+			if !f.Visit(f, v.Body) {
+				return
+			}
 		}
 		if v.FuncType != nil {
-			f.Visit(f, v.FuncType)
+			if !f.Visit(f, v.FuncType) {
+				return
+			}
 		}
 	case *IntType:
 	case *IdentType:
 		if v.Ident != nil {
-			f.Visit(f, v.Ident)
+			if !f.Visit(f, v.Ident) {
+				return
+			}
 		}
 	case *IntLiteralType:
 	case *StrLiteralType:
@@ -3343,69 +3481,105 @@ func Walk(n Node, f Visitor) {
 	case *BoolType:
 	case *ArrayType:
 		if v.BaseType != nil {
-			f.Visit(f, v.BaseType)
+			if !f.Visit(f, v.BaseType) {
+				return
+			}
 		}
 		if v.Length != nil {
-			f.Visit(f, v.Length)
+			if !f.Visit(f, v.Length) {
+				return
+			}
 		}
 	case *FunctionType:
 		if v.ReturnType != nil {
-			f.Visit(f, v.ReturnType)
+			if !f.Visit(f, v.ReturnType) {
+				return
+			}
 		}
 		for _, w := range v.Parameters {
-			f.Visit(f, w)
+			if !f.Visit(f, w) {
+				return
+			}
 		}
 	case *StructType:
 		for _, w := range v.Fields {
-			f.Visit(f, w)
+			if !f.Visit(f, w) {
+				return
+			}
 		}
 	case *StructUnionType:
 		for _, w := range v.Fields {
-			f.Visit(f, w)
+			if !f.Visit(f, w) {
+				return
+			}
 		}
 	case *Cast:
 		if v.ExprType != nil {
-			f.Visit(f, v.ExprType)
+			if !f.Visit(f, v.ExprType) {
+				return
+			}
 		}
 		if v.Base != nil {
-			f.Visit(f, v.Base)
+			if !f.Visit(f, v.Base) {
+				return
+			}
 		}
 		if v.Expr != nil {
-			f.Visit(f, v.Expr)
+			if !f.Visit(f, v.Expr) {
+				return
+			}
 		}
 	case *Comment:
 	case *CommentGroup:
 		for _, w := range v.Comments {
-			f.Visit(f, w)
+			if !f.Visit(f, w) {
+				return
+			}
 		}
 	case *UnionType:
 		for _, w := range v.Candidates {
-			f.Visit(f, w)
+			if !f.Visit(f, w) {
+				return
+			}
 		}
 	case *UnionCandidate:
 	case *RangeType:
 		if v.BaseType != nil {
-			f.Visit(f, v.BaseType)
+			if !f.Visit(f, v.BaseType) {
+				return
+			}
 		}
 	case *Enum:
 		if v.Ident != nil {
-			f.Visit(f, v.Ident)
+			if !f.Visit(f, v.Ident) {
+				return
+			}
 		}
 		if v.BaseType != nil {
-			f.Visit(f, v.BaseType)
+			if !f.Visit(f, v.BaseType) {
+				return
+			}
 		}
 		for _, w := range v.Members {
-			f.Visit(f, w)
+			if !f.Visit(f, w) {
+				return
+			}
 		}
 		if v.EnumType != nil {
-			f.Visit(f, v.EnumType)
+			if !f.Visit(f, v.EnumType) {
+				return
+			}
 		}
 	case *EnumMember:
 		if v.Ident != nil {
-			f.Visit(f, v.Ident)
+			if !f.Visit(f, v.Ident) {
+				return
+			}
 		}
 		if v.Expr != nil {
-			f.Visit(f, v.Expr)
+			if !f.Visit(f, v.Expr) {
+				return
+			}
 		}
 	case *EnumType:
 	}

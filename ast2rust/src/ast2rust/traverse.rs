@@ -5,9 +5,10 @@ pub fn traverse<F>(n: &ast::Node, f: &F)
 where
     F: Fn(&ast::Node) -> (),
 {
-    ast::walk_node(n, &|s: &dyn ast::Visitor, n: &ast::Node| {
+    ast::walk_node(n, &|s: &dyn ast::Visitor, n: &ast::Node| -> bool {
         ast::walk_node(n, s);
         f(n);
+        true
     })
 }
 

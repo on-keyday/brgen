@@ -1364,179 +1364,248 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
     match node:
         case x if isinstance(x,Program):
           if x.struct_type is not None:
-              f(f,x.struct_type)
+              if f(f,x.struct_type) == False:
+                  return
           for i in range(len(x.elements)):
-              f(f,x.elements[i])
+              if f(f,x.elements[i]) == False:
+                  return
         case x if isinstance(x,Binary):
           if x.expr_type is not None:
-              f(f,x.expr_type)
+              if f(f,x.expr_type) == False:
+                  return
           if x.left is not None:
-              f(f,x.left)
+              if f(f,x.left) == False:
+                  return
           if x.right is not None:
-              f(f,x.right)
+              if f(f,x.right) == False:
+                  return
         case x if isinstance(x,Unary):
           if x.expr_type is not None:
-              f(f,x.expr_type)
+              if f(f,x.expr_type) == False:
+                  return
           if x.expr is not None:
-              f(f,x.expr)
+              if f(f,x.expr) == False:
+                  return
         case x if isinstance(x,Cond):
           if x.expr_type is not None:
-              f(f,x.expr_type)
+              if f(f,x.expr_type) == False:
+                  return
           if x.cond is not None:
-              f(f,x.cond)
+              if f(f,x.cond) == False:
+                  return
           if x.then is not None:
-              f(f,x.then)
+              if f(f,x.then) == False:
+                  return
           if x.els is not None:
-              f(f,x.els)
+              if f(f,x.els) == False:
+                  return
         case x if isinstance(x,Ident):
           if x.expr_type is not None:
-              f(f,x.expr_type)
+              if f(f,x.expr_type) == False:
+                  return
         case x if isinstance(x,Call):
           if x.expr_type is not None:
-              f(f,x.expr_type)
+              if f(f,x.expr_type) == False:
+                  return
           if x.callee is not None:
-              f(f,x.callee)
+              if f(f,x.callee) == False:
+                  return
           if x.raw_arguments is not None:
-              f(f,x.raw_arguments)
+              if f(f,x.raw_arguments) == False:
+                  return
           for i in range(len(x.arguments)):
-              f(f,x.arguments[i])
+              if f(f,x.arguments[i]) == False:
+                  return
         case x if isinstance(x,If):
           if x.expr_type is not None:
-              f(f,x.expr_type)
+              if f(f,x.expr_type) == False:
+                  return
           if x.cond is not None:
-              f(f,x.cond)
+              if f(f,x.cond) == False:
+                  return
           if x.then is not None:
-              f(f,x.then)
+              if f(f,x.then) == False:
+                  return
           if x.els is not None:
-              f(f,x.els)
+              if f(f,x.els) == False:
+                  return
         case x if isinstance(x,MemberAccess):
           if x.expr_type is not None:
-              f(f,x.expr_type)
+              if f(f,x.expr_type) == False:
+                  return
           if x.target is not None:
-              f(f,x.target)
+              if f(f,x.target) == False:
+                  return
         case x if isinstance(x,Paren):
           if x.expr_type is not None:
-              f(f,x.expr_type)
+              if f(f,x.expr_type) == False:
+                  return
           if x.expr is not None:
-              f(f,x.expr)
+              if f(f,x.expr) == False:
+                  return
         case x if isinstance(x,Index):
           if x.expr_type is not None:
-              f(f,x.expr_type)
+              if f(f,x.expr_type) == False:
+                  return
           if x.expr is not None:
-              f(f,x.expr)
+              if f(f,x.expr) == False:
+                  return
           if x.index is not None:
-              f(f,x.index)
+              if f(f,x.index) == False:
+                  return
         case x if isinstance(x,Match):
           if x.expr_type is not None:
-              f(f,x.expr_type)
+              if f(f,x.expr_type) == False:
+                  return
           if x.cond is not None:
-              f(f,x.cond)
+              if f(f,x.cond) == False:
+                  return
           for i in range(len(x.branch)):
-              f(f,x.branch[i])
+              if f(f,x.branch[i]) == False:
+                  return
         case x if isinstance(x,Range):
           if x.expr_type is not None:
-              f(f,x.expr_type)
+              if f(f,x.expr_type) == False:
+                  return
           if x.start is not None:
-              f(f,x.start)
+              if f(f,x.start) == False:
+                  return
           if x.end is not None:
-              f(f,x.end)
+              if f(f,x.end) == False:
+                  return
         case x if isinstance(x,TmpVar):
           if x.expr_type is not None:
-              f(f,x.expr_type)
+              if f(f,x.expr_type) == False:
+                  return
         case x if isinstance(x,BlockExpr):
           if x.expr_type is not None:
-              f(f,x.expr_type)
+              if f(f,x.expr_type) == False:
+                  return
           for i in range(len(x.calls)):
-              f(f,x.calls[i])
+              if f(f,x.calls[i]) == False:
+                  return
           if x.expr is not None:
-              f(f,x.expr)
+              if f(f,x.expr) == False:
+                  return
         case x if isinstance(x,Import):
           if x.expr_type is not None:
-              f(f,x.expr_type)
+              if f(f,x.expr_type) == False:
+                  return
           if x.base is not None:
-              f(f,x.base)
+              if f(f,x.base) == False:
+                  return
           if x.import_desc is not None:
-              f(f,x.import_desc)
+              if f(f,x.import_desc) == False:
+                  return
         case x if isinstance(x,IntLiteral):
           if x.expr_type is not None:
-              f(f,x.expr_type)
+              if f(f,x.expr_type) == False:
+                  return
         case x if isinstance(x,BoolLiteral):
           if x.expr_type is not None:
-              f(f,x.expr_type)
+              if f(f,x.expr_type) == False:
+                  return
         case x if isinstance(x,StrLiteral):
           if x.expr_type is not None:
-              f(f,x.expr_type)
+              if f(f,x.expr_type) == False:
+                  return
         case x if isinstance(x,Input):
           if x.expr_type is not None:
-              f(f,x.expr_type)
+              if f(f,x.expr_type) == False:
+                  return
         case x if isinstance(x,Output):
           if x.expr_type is not None:
-              f(f,x.expr_type)
+              if f(f,x.expr_type) == False:
+                  return
         case x if isinstance(x,Config):
           if x.expr_type is not None:
-              f(f,x.expr_type)
+              if f(f,x.expr_type) == False:
+                  return
         case x if isinstance(x,Loop):
           if x.init is not None:
-              f(f,x.init)
+              if f(f,x.init) == False:
+                  return
           if x.cond is not None:
-              f(f,x.cond)
+              if f(f,x.cond) == False:
+                  return
           if x.step is not None:
-              f(f,x.step)
+              if f(f,x.step) == False:
+                  return
           if x.body is not None:
-              f(f,x.body)
+              if f(f,x.body) == False:
+                  return
         case x if isinstance(x,IndentBlock):
           for i in range(len(x.elements)):
-              f(f,x.elements[i])
+              if f(f,x.elements[i]) == False:
+                  return
           if x.struct_type is not None:
-              f(f,x.struct_type)
+              if f(f,x.struct_type) == False:
+                  return
         case x if isinstance(x,MatchBranch):
           if x.cond is not None:
-              f(f,x.cond)
+              if f(f,x.cond) == False:
+                  return
           if x.then is not None:
-              f(f,x.then)
+              if f(f,x.then) == False:
+                  return
         case x if isinstance(x,Return):
           if x.expr is not None:
-              f(f,x.expr)
+              if f(f,x.expr) == False:
+                  return
         case x if isinstance(x,Break):
             pass
         case x if isinstance(x,Continue):
             pass
         case x if isinstance(x,Assert):
           if x.cond is not None:
-              f(f,x.cond)
+              if f(f,x.cond) == False:
+                  return
         case x if isinstance(x,ImplicitYield):
           if x.expr is not None:
-              f(f,x.expr)
+              if f(f,x.expr) == False:
+                  return
         case x if isinstance(x,Field):
           if x.ident is not None:
-              f(f,x.ident)
+              if f(f,x.ident) == False:
+                  return
           if x.field_type is not None:
-              f(f,x.field_type)
+              if f(f,x.field_type) == False:
+                  return
           if x.raw_arguments is not None:
-              f(f,x.raw_arguments)
+              if f(f,x.raw_arguments) == False:
+                  return
           for i in range(len(x.arguments)):
-              f(f,x.arguments[i])
+              if f(f,x.arguments[i]) == False:
+                  return
         case x if isinstance(x,Format):
           if x.ident is not None:
-              f(f,x.ident)
+              if f(f,x.ident) == False:
+                  return
           if x.body is not None:
-              f(f,x.body)
+              if f(f,x.body) == False:
+                  return
         case x if isinstance(x,Function):
           if x.ident is not None:
-              f(f,x.ident)
+              if f(f,x.ident) == False:
+                  return
           for i in range(len(x.parameters)):
-              f(f,x.parameters[i])
+              if f(f,x.parameters[i]) == False:
+                  return
           if x.return_type is not None:
-              f(f,x.return_type)
+              if f(f,x.return_type) == False:
+                  return
           if x.body is not None:
-              f(f,x.body)
+              if f(f,x.body) == False:
+                  return
           if x.func_type is not None:
-              f(f,x.func_type)
+              if f(f,x.func_type) == False:
+                  return
         case x if isinstance(x,IntType):
             pass
         case x if isinstance(x,IdentType):
           if x.ident is not None:
-              f(f,x.ident)
+              if f(f,x.ident) == False:
+                  return
         case x if isinstance(x,IntLiteralType):
             pass
         case x if isinstance(x,StrLiteralType):
@@ -1547,53 +1616,71 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
             pass
         case x if isinstance(x,ArrayType):
           if x.base_type is not None:
-              f(f,x.base_type)
+              if f(f,x.base_type) == False:
+                  return
           if x.length is not None:
-              f(f,x.length)
+              if f(f,x.length) == False:
+                  return
         case x if isinstance(x,FunctionType):
           if x.return_type is not None:
-              f(f,x.return_type)
+              if f(f,x.return_type) == False:
+                  return
           for i in range(len(x.parameters)):
-              f(f,x.parameters[i])
+              if f(f,x.parameters[i]) == False:
+                  return
         case x if isinstance(x,StructType):
           for i in range(len(x.fields)):
-              f(f,x.fields[i])
+              if f(f,x.fields[i]) == False:
+                  return
         case x if isinstance(x,StructUnionType):
           for i in range(len(x.fields)):
-              f(f,x.fields[i])
+              if f(f,x.fields[i]) == False:
+                  return
         case x if isinstance(x,Cast):
           if x.expr_type is not None:
-              f(f,x.expr_type)
+              if f(f,x.expr_type) == False:
+                  return
           if x.base is not None:
-              f(f,x.base)
+              if f(f,x.base) == False:
+                  return
           if x.expr is not None:
-              f(f,x.expr)
+              if f(f,x.expr) == False:
+                  return
         case x if isinstance(x,Comment):
             pass
         case x if isinstance(x,CommentGroup):
           for i in range(len(x.comments)):
-              f(f,x.comments[i])
+              if f(f,x.comments[i]) == False:
+                  return
         case x if isinstance(x,UnionType):
           for i in range(len(x.candidates)):
-              f(f,x.candidates[i])
+              if f(f,x.candidates[i]) == False:
+                  return
         case x if isinstance(x,UnionCandidate):
             pass
         case x if isinstance(x,RangeType):
           if x.base_type is not None:
-              f(f,x.base_type)
+              if f(f,x.base_type) == False:
+                  return
         case x if isinstance(x,Enum):
           if x.ident is not None:
-              f(f,x.ident)
+              if f(f,x.ident) == False:
+                  return
           if x.base_type is not None:
-              f(f,x.base_type)
+              if f(f,x.base_type) == False:
+                  return
           for i in range(len(x.members)):
-              f(f,x.members[i])
+              if f(f,x.members[i]) == False:
+                  return
           if x.enum_type is not None:
-              f(f,x.enum_type)
+              if f(f,x.enum_type) == False:
+                  return
         case x if isinstance(x,EnumMember):
           if x.ident is not None:
-              f(f,x.ident)
+              if f(f,x.ident) == False:
+                  return
           if x.expr is not None:
-              f(f,x.expr)
+              if f(f,x.expr) == False:
+                  return
         case x if isinstance(x,EnumType):
             pass

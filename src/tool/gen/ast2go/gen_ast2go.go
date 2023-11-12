@@ -232,12 +232,12 @@ func generate(w io.Writer, list *gen.Defs) {
 	writer.Printf("}\n\n")
 
 	writer.Printf("type Visitor interface {\n")
-	writer.Printf("	Visit(v Visitor,n Node)\n")
+	writer.Printf("	Visit(v Visitor,n Node) bool\n")
 	writer.Printf("}\n\n")
 
-	writer.Printf("type VisitFn func(v Visitor,n Node)\n\n")
-	writer.Printf("func (f VisitFn) Visit(v Visitor,n Node) {\n")
-	writer.Printf("	f(v,n)\n")
+	writer.Printf("type VisitFn func(v Visitor,n Node) bool\n\n")
+	writer.Printf("func (f VisitFn) Visit(v Visitor,n Node) bool {\n")
+	writer.Printf("	return f(v,n)\n")
 	writer.Printf("}\n\n")
 
 	writer.Printf("func Walk(n Node, f Visitor) {\n")
@@ -257,11 +257,15 @@ func generate(w io.Writer, list *gen.Defs) {
 				}
 				if field.Type.IsArray {
 					writer.Printf("		for _, w := range v.%s {\n", field.Name)
-					writer.Printf("			f.Visit(f,w)\n")
+					writer.Printf("			if !f.Visit(f,w) {\n")
+					writer.Printf("				return\n")
+					writer.Printf("			}\n")
 					writer.Printf("		}\n")
 				} else if field.Type.IsPtr || field.Type.IsInterface {
 					writer.Printf("		if v.%s != nil {\n", field.Name)
-					writer.Printf("			f.Visit(f,v.%s)\n", field.Name)
+					writer.Printf("			if !f.Visit(f,v.%s) {\n", field.Name)
+					writer.Printf("				return\n")
+					writer.Printf("			}\n")
 					writer.Printf("		}\n")
 				}
 			}

@@ -317,7 +317,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("	return root;\n")
 	w.Printf("}\n\n")
 
-	w.Printf("export type VisitFn<T> = (f: VisitFn<T>, arg: T) => void;\n\n")
+	w.Printf("export type VisitFn<T> = (f: VisitFn<T>, arg: T) => void|undefined|boolean;\n\n")
 
 	w.Printf("export function walk(node: Node, fn: VisitFn<Node>) {\n")
 	w.Printf("	switch (node.node_type) {\n")
@@ -341,11 +341,17 @@ func generate(rw io.Writer, defs *gen.Defs) {
 				}
 				if field.Type.IsArray {
 					w.Printf("			for (const e of n.%s) {\n", field.Name)
-					w.Printf("				fn(fn,e);\n")
+					w.Printf("				const result = fn(fn,e);\n")
+					w.Printf("				if (result === false) {\n")
+					w.Printf("					return;\n")
+					w.Printf("				}\n")
 					w.Printf("			}\n")
 				} else if field.Type.IsPtr || field.Type.IsInterface {
 					w.Printf("			if (n.%s !== null) {\n", field.Name)
-					w.Printf("				fn(fn,n.%s);\n", field.Name)
+					w.Printf("				const result = fn(fn,n.%s);\n", field.Name)
+					w.Printf("				if (result === false) {\n")
+					w.Printf("					return;\n")
+					w.Printf("				}\n")
 					w.Printf("			}\n")
 				}
 			}

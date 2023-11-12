@@ -630,12 +630,12 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("}\n\n")
 
 	w.Printf("pub trait Visitor {\n")
-	w.Printf("	fn visit(&self,node:&Node);\n")
+	w.Printf("	fn visit(&self,node:&Node)->bool;\n")
 	w.Printf("}\n\n")
 
-	w.Printf("impl<F :Fn(&dyn Visitor,&Node)> Visitor for F {\n")
-	w.Printf("	fn visit(&self,node:&Node){\n")
-	w.Printf("		self(self,node);\n")
+	w.Printf("impl<F :Fn(&dyn Visitor,&Node)->bool> Visitor for F {\n")
+	w.Printf("	fn visit(&self,node:&Node)->bool{\n")
+	w.Printf("		self(self,node)\n")
 	w.Printf("	}\n")
 	w.Printf("}\n\n")
 
@@ -668,18 +668,26 @@ func generate(rw io.Writer, defs *gen.Defs) {
 					writeOnce()
 					w.Printf("			for node in &node.borrow().%s{\n", field.Name)
 					if field.Type.Name == "Node" {
-						w.Printf("				f.visit(node);\n")
+						w.Printf("				if !f.visit(node) {\n")
+						w.Printf("					return;\n")
+						w.Printf("				}\n")
 					} else {
-						w.Printf("				f.visit(&node.into());\n")
+						w.Printf("				if !f.visit(&node.into()){\n")
+						w.Printf("					return;\n")
+						w.Printf("				}\n")
 					}
 					w.Printf("			}\n")
 				} else if field.Type.IsPtr || field.Type.IsInterface {
 					writeOnce()
 					w.Printf("			if let Some(node) = &node.borrow().%s{\n", field.Name)
 					if field.Type.Name == "Node" {
-						w.Printf("				f.visit(node);\n")
+						w.Printf("				if !f.visit(node) {\n")
+						w.Printf("					return;\n")
+						w.Printf("				}\n")
 					} else {
-						w.Printf("				f.visit(&node.into());\n")
+						w.Printf("				if !f.visit(&node.into()){\n")
+						w.Printf("					return;\n")
+						w.Printf("				}\n")
 					}
 					w.Printf("			}\n")
 				}

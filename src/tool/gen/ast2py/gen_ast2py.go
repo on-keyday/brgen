@@ -242,10 +242,12 @@ func generate(rw io.Writer, defs *gen.Defs) {
 				}
 				if field.Type.IsArray {
 					w.Printf("          for i in range(len(x.%s)):\n", field.Name)
-					w.Printf("              f(f,x.%s[i])\n", field.Name)
+					w.Printf("              if f(f,x.%s[i]) == False:\n", field.Name)
+					w.Printf("                  return\n")
 				} else if field.Type.IsPtr || field.Type.IsInterface {
 					w.Printf("          if x.%s is not None:\n", field.Name)
-					w.Printf("              f(f,x.%s)\n", field.Name)
+					w.Printf("              if f(f,x.%s) == False:\n", field.Name)
+					w.Printf("                  return\n")
 				} else {
 					continue
 				}

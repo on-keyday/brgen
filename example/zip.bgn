@@ -13,6 +13,7 @@ format Section:
     match sectionType:
         0x0201 => body :CentralDirEntry
         0x0403 => body :LocalFile
+        0x0605 => body :EndOfCentralDir
         _ => error("unknown section type: ", sectionType)
 
 format DosTime:
@@ -114,3 +115,35 @@ format LocalFile:
 
 format ExtraFields:
     fields :[..]ExtraField
+
+format ExtraField:
+    headerId :u16
+    dataSize :u16
+    data :[dataSize]u8
+
+    
+
+format NtfsAttribute:
+    tag :u16
+    size :u16
+    if tag == 0x0001:
+        body :NtfsTime
+        input.eof == true
+    else:
+        body :[size]u8
+
+format NfsTime:
+    mtime :u64
+    atime :u64
+    ctime :u64
+
+format EndOfCentralDir:
+    diskNumber :u16
+    centralDirDiskNumber :u16
+    numEntriesThisDisk :u16
+    numEntriesTotal :u16
+    centralDirSize :u32
+    centralDirOffset :u32
+    commentLength :u16
+    comment :[commentLength]u8
+

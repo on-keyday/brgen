@@ -8657,12 +8657,12 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 }
 
 pub trait Visitor {
-	fn visit(&self,node:&Node);
+	fn visit(&self,node:&Node)->bool;
 }
 
-impl<F :Fn(&dyn Visitor,&Node)> Visitor for F {
-	fn visit(&self,node:&Node){
-		self(self,node);
+impl<F :Fn(&dyn Visitor,&Node)->bool> Visitor for F {
+	fn visit(&self,node:&Node)->bool{
+		self(self,node)
 	}
 }
 
@@ -8673,274 +8673,412 @@ where
 	match node {
 		Node::Program(node)=>{
 			if let Some(node) = &node.borrow().struct_type{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			for node in &node.borrow().elements{
-				f.visit(node);
+				if !f.visit(node) {
+					return;
+				}
 			}
 		},
 		Node::Binary(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().left{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().right{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 		},
 		Node::Unary(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().expr{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 		},
 		Node::Cond(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().cond{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().then{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().els{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 		},
 		Node::Ident(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 		},
 		Node::Call(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().callee{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().raw_arguments{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			for node in &node.borrow().arguments{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 		},
 		Node::If(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().cond{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().then{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().els{
-				f.visit(node);
+				if !f.visit(node) {
+					return;
+				}
 			}
 		},
 		Node::MemberAccess(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().target{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 		},
 		Node::Paren(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().expr{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 		},
 		Node::Index(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().expr{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().index{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 		},
 		Node::Match(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().cond{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			for node in &node.borrow().branch{
-				f.visit(node);
+				if !f.visit(node) {
+					return;
+				}
 			}
 		},
 		Node::Range(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().start{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().end{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 		},
 		Node::TmpVar(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 		},
 		Node::BlockExpr(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			for node in &node.borrow().calls{
-				f.visit(node);
+				if !f.visit(node) {
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().expr{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 		},
 		Node::Import(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().base{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().import_desc{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 		},
 		Node::IntLiteral(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 		},
 		Node::BoolLiteral(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 		},
 		Node::StrLiteral(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 		},
 		Node::Input(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 		},
 		Node::Output(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 		},
 		Node::Config(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 		},
 		Node::Loop(node)=>{
 			if let Some(node) = &node.borrow().init{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().cond{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().step{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().body{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 		},
 		Node::IndentBlock(node)=>{
 			for node in &node.borrow().elements{
-				f.visit(node);
+				if !f.visit(node) {
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().struct_type{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 		},
 		Node::MatchBranch(node)=>{
 			if let Some(node) = &node.borrow().cond{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().then{
-				f.visit(node);
+				if !f.visit(node) {
+					return;
+				}
 			}
 		},
 		Node::Return(node)=>{
 			if let Some(node) = &node.borrow().expr{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 		},
 		Node::Break(_)=>{},
 		Node::Continue(_)=>{},
 		Node::Assert(node)=>{
 			if let Some(node) = &node.borrow().cond{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 		},
 		Node::ImplicitYield(node)=>{
 			if let Some(node) = &node.borrow().expr{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 		},
 		Node::Field(node)=>{
 			if let Some(node) = &node.borrow().ident{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().field_type{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().raw_arguments{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			for node in &node.borrow().arguments{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 		},
 		Node::Format(node)=>{
 			if let Some(node) = &node.borrow().ident{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().body{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 		},
 		Node::Function(node)=>{
 			if let Some(node) = &node.borrow().ident{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			for node in &node.borrow().parameters{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().return_type{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().body{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().func_type{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 		},
 		Node::IntType(_)=>{},
 		Node::IdentType(node)=>{
 			if let Some(node) = &node.borrow().ident{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 		},
 		Node::IntLiteralType(_)=>{},
@@ -8949,78 +9087,114 @@ where
 		Node::BoolType(_)=>{},
 		Node::ArrayType(node)=>{
 			if let Some(node) = &node.borrow().base_type{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().length{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 		},
 		Node::FunctionType(node)=>{
 			if let Some(node) = &node.borrow().return_type{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			for node in &node.borrow().parameters{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 		},
 		Node::StructType(node)=>{
 			for node in &node.borrow().fields{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 		},
 		Node::StructUnionType(node)=>{
 			for node in &node.borrow().fields{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 		},
 		Node::Cast(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().base{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().expr{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 		},
 		Node::Comment(_)=>{},
 		Node::CommentGroup(node)=>{
 			for node in &node.borrow().comments{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 		},
 		Node::UnionType(node)=>{
 			for node in &node.borrow().candidates{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 		},
 		Node::UnionCandidate(_)=>{},
 		Node::RangeType(node)=>{
 			if let Some(node) = &node.borrow().base_type{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 		},
 		Node::Enum(node)=>{
 			if let Some(node) = &node.borrow().ident{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().base_type{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			for node in &node.borrow().members{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().enum_type{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 		},
 		Node::EnumMember(node)=>{
 			if let Some(node) = &node.borrow().ident{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 			if let Some(node) = &node.borrow().expr{
-				f.visit(&node.into());
+				if !f.visit(&node.into()){
+					return;
+				}
 			}
 		},
 		Node::EnumType(_)=>{},
