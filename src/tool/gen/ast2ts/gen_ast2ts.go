@@ -304,6 +304,9 @@ func generate(rw io.Writer, defs *gen.Defs) {
 			w.Printf("		if (tmp%s !== null && !isScope(tmp%s)) {\n", field.Name, field.Name)
 			w.Printf("			throw new Error('invalid node list at Scope::%s');\n", field.Name)
 			w.Printf("		}\n")
+			w.Printf("		cscope.%s = tmp%s;\n", field.Name, field.Name)
+		} else if field.Type.Name == "number" || field.Type.Name == "string" || field.Type.Name == "boolean" {
+			w.Printf("		cscope.%s = os.%s;\n", field.Name, field.Name)
 		}
 	}
 	w.Printf("	}\n")

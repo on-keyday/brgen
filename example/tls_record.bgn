@@ -1,9 +1,9 @@
 
 enum ContentType:
-    invalid := 0
+    invalid = 0
 
 enum TLSVersion:
-    invalid := 0
+    invalid = 0
 
 format TLSRecord:
     type :ContentType

@@ -1073,6 +1073,7 @@ namespace brgen::ast {
             }
             fn->ident = parse_ident();
             fn->ident->usage = fn->is_cast ? IdentUsage::define_cast_fn : IdentUsage::define_fn;
+            fn->ident->base = fn;
             fn->belong = state.current_member();
             fn->func_type = std::make_shared<FunctionType>(fn->loc);
             s.skip_white();

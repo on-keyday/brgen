@@ -2778,6 +2778,7 @@ export function parseAST(obj: any): Program {
 		if (tmpprev !== null && !isScope(tmpprev)) {
 			throw new Error('invalid node list at Scope::prev');
 		}
+		cscope.prev = tmpprev;
 		if (os.next !== null && typeof os.next !== 'number') {
 			throw new Error('invalid node list at Scope::next');
 		}
@@ -2785,6 +2786,7 @@ export function parseAST(obj: any): Program {
 		if (tmpnext !== null && !isScope(tmpnext)) {
 			throw new Error('invalid node list at Scope::next');
 		}
+		cscope.next = tmpnext;
 		if (os.branch !== null && typeof os.branch !== 'number') {
 			throw new Error('invalid node list at Scope::branch');
 		}
@@ -2792,6 +2794,7 @@ export function parseAST(obj: any): Program {
 		if (tmpbranch !== null && !isScope(tmpbranch)) {
 			throw new Error('invalid node list at Scope::branch');
 		}
+		cscope.branch = tmpbranch;
 		for (const o of os.ident) {
 			if (typeof o !== 'number') {
 				throw new Error('invalid node list at Scope::ident');
@@ -2802,6 +2805,7 @@ export function parseAST(obj: any): Program {
 			}
 			cscope.ident.push(tmpident);
 		}
+		cscope.branch_root = os.branch_root;
 	}
 	const root = c.node[0];
 	if (!isProgram(root)) {

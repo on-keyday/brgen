@@ -14,9 +14,10 @@ import {
     SemanticTokensBuilder,
     SemanticTokenTypes,
     SemanticTokens,
+    TextDocumentsConfiguration,
 } from 'vscode-languageserver/node';
 
-import { TextDocument } from 'vscode-languageserver-textdocument';
+import { TextDocument, TextDocumentContentChangeEvent } from 'vscode-languageserver-textdocument';
 
 import {execFile} from "child_process";
 import * as url from "url";
@@ -30,6 +31,7 @@ import assert from 'node:assert/strict';
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
 let connection = createConnection(ProposedFeatures.all);
+
 
 // Create a simple text document manager.
 let documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
@@ -78,7 +80,8 @@ connection.onInitialize((params: InitializeParams) => {
                 legend: legend,
                 range: false,
                 full: true,
-            }
+            },
+            hoverProvider: true,
         }
     };
     if (hasWorkspaceFolderCapability) {
@@ -132,17 +135,28 @@ function execSrc2JSON<T>(exe_path :string,command :Array<string>,text :string,is
     });
 }
 
-const lexerCommand=(path :string) => ["--stdin","--stdin-name",path, "--lexer", "--no-color", "--print-on-error","--print-json","--omit-json-warnings"];
-const parserCommand = (path :string) => ["--stdin","--stdin-name",path, "--no-color", "--print-on-error","--print-json","--omit-json-warnings"];
+const lexerCommand=(path :string) => ["--stdin","--stdin-name",path, "--lexer", "--no-color", "--print-on-error","--print-json","--omit-json-warning"];
+const parserCommand = (path :string) => ["--stdin","--stdin-name",path, "--no-color", "--print-on-error","--print-json","--omit-json-warning"];
 
 
-let semanticTokenCache = new Map<string,SemanticTokens>();
+class DocumentInfo {
+    readonly uri :string;
+    prevSemanticTokens :SemanticTokens | null = null;
+    prevNode :ast2ts.Node | null = null;
+    prevText :string | null = null;
+
+    constructor(uri :string){
+        this.uri = uri;
+    }
+}
+
+let documentInfos = new Map<string,DocumentInfo>();
 
 const stringEscape = (s :string) => {
     return s.replace(/\\/g,"\\\\").replace(/"/g,"\\\"").replace(/\n/g,"\\n").replace(/\r/g,"\\r");
 }
 
-const tokenizeSourceImpl  = async (doc :TextDocument) =>{
+const tokenizeSourceImpl  = async (doc :TextDocument,docInfo :DocumentInfo) =>{
     const path = url.fileURLToPath(doc.uri)
     const text = doc.getText();
     console.log(`URI: ${doc.uri}`);
@@ -245,6 +259,7 @@ const tokenizeSourceImpl  = async (doc :TextDocument) =>{
         const semanticTokens = builder.build();
         console.log(`semanticTokens (parsed): ${JSON.stringify(semanticTokens)}`);
         console.timeEnd("semanticColoring")
+        docInfo.prevSemanticTokens = semanticTokens;
         return semanticTokens;
     };
     let ast_ :ast2ts.AstFile;
@@ -270,13 +285,18 @@ const tokenizeSourceImpl  = async (doc :TextDocument) =>{
             assert(node.ident.length>0,`ident: ${node.ident}`)
             let n = node;
             console.log(`ident: ${n.ident} ${n.usage}`)
-            for(;;){
+            let counter = 0;
+            for(;;counter++){
                 switch(n.usage) {
                     case ast2ts.IdentUsage.unknown:
                         break;
                     case ast2ts.IdentUsage.reference:
                         
                         if(ast2ts.isIdent(n.base)){
+                            if(counter> 100) {
+                                console.log(n,n.base)
+                                throw new Error("what happend?");
+                            }
                             console.log("base -> "+n.base.usage);
                             n = n.base;
                             continue;
@@ -314,18 +334,23 @@ const tokenizeSourceImpl  = async (doc :TextDocument) =>{
     return generateSemanticTokens();
 };
 
+const getOrCreateDocumentInfo = (doc :TextDocument) => {
+    const found = documentInfos.get(doc.uri);
+    if(found===undefined){
+        const info = new DocumentInfo(doc.uri);
+        documentInfos.set(doc.uri,info);
+        return info;
+    }
+    return found;
+}
+
 const tokenizeSource = async (doc :TextDocument) =>{
+    const documentInfo = getOrCreateDocumentInfo(doc);
     try {
-        const s = await tokenizeSourceImpl(doc);
-        semanticTokenCache.set(doc.uri,s);
-        return s;
+        return await tokenizeSourceImpl(doc,documentInfo);
     }catch(e :any) {
         console.log(`error: ${e}`);
-        const found = semanticTokenCache.get(doc.uri);
-        if(found===undefined){
-            return null;
-        }
-        return found;
+        return documentInfo.prevSemanticTokens;
     }
 }
 
@@ -338,6 +363,17 @@ connection.onRequest("textDocument/semanticTokens/full",async (params)=>{
     }
     return await tokenizeSource(doc);
 });
+
+
+connection.onHover(async (params)=>{
+    const hovor = documents.get(params?.textDocument?.uri);
+    if(hovor===undefined){
+        return null;
+    }
+    hovor.lineCount
+    const pos =  hovor.offsetAt(params.position);
+    return null;
+})
 
 // The example settings
 interface BrgenLSPSettings {
@@ -398,6 +434,7 @@ const  getDocumentSettings = async(resource: string) => {
 // Only keep settings for open documents
 documents.onDidClose(e => {
     documentSettings.delete(e.document.uri);
+    documentInfos.delete(e.document.uri);
 });
 
 connection.onCompletion(async (textDocumentPosition) => {
