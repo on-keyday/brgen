@@ -23,6 +23,46 @@ type GenConfig struct {
 	ImportPath  []string
 }
 
+func ConfigFromProgram(p *ast2go.Program, f func(configName string, asCall bool, args ...ast2go.Expr) error) error {
+	for _, element := range p.Elements {
+		if c, ok := element.(*ast2go.Call); ok {
+			config := GetConfig(c.Callee)
+			if config == "" {
+				continue
+			}
+			if err := f(config, true, c.Arguments...); err != nil {
+				return err
+			}
+		}
+		if b, ok := element.(*ast2go.Binary); ok {
+			if b.Op != ast2go.BinaryOpAssign {
+				continue
+			}
+			config := GetConfig(b.Left)
+			if config == "" {
+				continue
+			}
+			if err := f(config, false, b.Right); err != nil {
+				return err
+			}
+		}
+		if i, ok := element.(*ast2go.Import); ok {
+			ConfigFromProgram(i.ImportDesc, f)
+		}
+	}
+	return nil
+}
+
+func CollectMember(elements []ast2go.Node) []ast2go.Member {
+	var fields []ast2go.Member
+	for _, element := range elements {
+		if m, ok := element.(ast2go.Member); ok {
+			fields = append(fields, m)
+		}
+	}
+	return fields
+}
+
 type ConfigDesc struct {
 	Scope []string
 }
@@ -547,6 +587,29 @@ func (g *Generator) Generate(file *ast2go.AstFile) (err error) {
 	}
 
 	g.lookupGoConfig(p)
+	ConfigFromProgram(p, func(configName string, asCall bool, args ...ast2go.Expr) error {
+		switch configName {
+		case "config.go.package":
+			if asCall {
+				return fmt.Errorf("config.go.package must be assignment")
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("config.go.package must have 1 argument")
+			}
+			pkgName := evalConstant(ConvertAst(args[0]).(ast.Expr))
+			g.Config.PackageName = pkgName.String()
+		case "config.go.import":
+			if !asCall {
+				return fmt.Errorf("config.go.import must be call")
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("config.go.import must have 1 argument")
+			}
+			path := evalConstant(ConvertAst(args[0]).(ast.Expr))
+			g.Config.ImportPath = append(g.Config.ImportPath, path.String())
+		}
+		return nil
+	})
 	if g.Config.PackageName == "" {
 		g.Config.PackageName = "main"
 	}

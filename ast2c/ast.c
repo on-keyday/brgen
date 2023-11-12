@@ -539,6 +539,7 @@ const char* ast2c_IdentUsage_to_string(ast2c_IdentUsage val) {
 	case AST2C_IDENTUSAGE_DEFINE_CAST_FN: return "define_cast_fn";
 	case AST2C_IDENTUSAGE_DEFINE_ARG: return "define_arg";
 	case AST2C_IDENTUSAGE_REFERENCE_TYPE: return "reference_type";
+	case AST2C_IDENTUSAGE_MAYBE_TYPE: return "maybe_type";
 	default: return NULL;
 	}
 }
@@ -592,6 +593,10 @@ int ast2c_IdentUsage_from_string(const char* str, ast2c_IdentUsage* out) {
 	}
 	if (strcmp(str, "reference_type") == 0) {
 		*out = AST2C_IDENTUSAGE_REFERENCE_TYPE;
+		return 1;
+	}
+	if (strcmp(str, "maybe_type") == 0) {
+		*out = AST2C_IDENTUSAGE_MAYBE_TYPE;
 		return 1;
 	}
 	return 0;

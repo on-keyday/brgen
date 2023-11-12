@@ -35,6 +35,12 @@ func generate(w io.Writer, list *gen.Defs) {
 			if d.Embed != "" {
 				writer.Printf("	%s\n", d.Embed)
 			}
+			for _, c := range d.UnCommonFields {
+				writer.Printf("	Get%s() %s\n", c.Name, c.Type.GoString())
+			}
+			if d.Name == "Node" {
+				writer.Printf("	GetNodeType() NodeType\n")
+			}
 			writer.Printf("}\n\n")
 
 		case *gen.Struct:
@@ -52,6 +58,13 @@ func generate(w io.Writer, list *gen.Defs) {
 			writer.Printf("}\n\n")
 			for _, iface := range d.Implements {
 				writer.Printf("func (n *%s) is%s() {}\n\n", d.Name, iface)
+				if found, ok := list.Interfaces[iface]; ok {
+					for _, c := range found.UnCommonFields {
+						writer.Printf("func (n *%s) Get%s() %s {\n", d.Name, c.Name, c.Type.GoString())
+						writer.Printf("	return n.%s\n", c.Name)
+						writer.Printf("}\n\n")
+					}
+				}
 			}
 
 			if d.Name == "Scope" {
@@ -94,6 +107,16 @@ func generate(w io.Writer, list *gen.Defs) {
 			writer.Printf("	}\n")
 			writer.Printf("	return nil\n")
 			writer.Printf("}\n\n")
+			if d.Name == "NodeType" {
+				for _, value := range d.Values {
+					if _, ok := list.Interfaces[strcase.ToCamel(value.Name)]; ok {
+						continue
+					}
+					writer.Printf("func (n *%s) GetNodeType() NodeType {\n", strcase.ToCamel(value.Name))
+					writer.Printf("	return NodeType%s\n", strcase.ToCamel(value.Name))
+					writer.Printf("}\n\n")
+				}
+			}
 		}
 	}
 

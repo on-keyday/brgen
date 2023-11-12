@@ -6,6 +6,7 @@
 #include "../common/util.h"
 #include "expected.h"
 #include <vector>
+#include <algorithm>
 
 namespace brgen {
     struct SourceEntry {
@@ -22,18 +23,18 @@ namespace brgen {
             return buf;
         }
 
-        void error(auto&& buf) {
+        void error(auto&& buf) const {
             appends(buf, warn ? "warning: " : "error: ");
             omit_error(buf);
         }
 
-        void omit_error(auto&& buf) {
+        void omit_error(auto&& buf) const {
             appends(buf, msg, "\n",
                     file, ":", nums(loc.line), ":", nums(loc.col), ":\n",
                     src);
         }
 
-        void as_json(auto&& buf) {
+        void as_json(auto&& buf) const {
             auto field = buf.object();
             field("msg", msg);
             field("file", file);
@@ -60,7 +61,7 @@ namespace brgen {
             }
         }
 
-        void for_each_error(auto&& cb) {
+        void for_each_error(auto&& cb) const {
             std::string b;
             for (auto& err : errs) {
                 b.clear();
@@ -69,7 +70,7 @@ namespace brgen {
             }
         }
 
-        void as_json(auto&& buf) {
+        void as_json(auto&& buf) const {
             auto field = buf.object();
             field("errs", errs);
         }
@@ -81,6 +82,10 @@ namespace brgen {
         std::string msg;
         lexer::Loc loc;
         bool warn = false;
+
+        bool operator==(const LocationEntry& rhs) const {
+            return msg == rhs.msg && loc == rhs.loc && warn == rhs.warn;
+        }
     };
 
     struct LocationError {
@@ -102,6 +107,13 @@ namespace brgen {
             locations.push_back(LocationEntry{std::move(buf), loc, true});
             return *this;
         }
+
+        void unique() {
+            std::sort(locations.begin(), locations.end(), [](auto& lhs, auto& rhs) {
+                return lhs.loc.pos.begin < rhs.loc.pos.begin;
+            });
+            locations.erase(std::unique(locations.begin(), locations.end()), locations.end());
+        }
     };
 
     [[nodiscard]] inline LocationError error(lexer::Loc loc, auto&&... msg) {
@@ -114,9 +126,5 @@ namespace brgen {
 
     template <class T>
     using result = expected<T, LocationError>;
-
-    inline std::string src_error_to_string(SourceError&& err) {
-        return err.to_string();
-    }
 
 }  // namespace brgen

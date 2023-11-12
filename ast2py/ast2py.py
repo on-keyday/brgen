@@ -122,6 +122,7 @@ class IdentUsage(PyEnum):
     DEFINE_CAST_FN = "define_cast_fn"
     DEFINE_ARG = "define_arg"
     REFERENCE_TYPE = "reference_type"
+    MAYBE_TYPE = "maybe_type"
 
 
 class Endian(PyEnum):

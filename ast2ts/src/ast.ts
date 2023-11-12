@@ -75,10 +75,11 @@ export enum IdentUsage {
 	define_cast_fn = "define_cast_fn",
 	define_arg = "define_arg",
 	reference_type = "reference_type",
+	maybe_type = "maybe_type",
 };
 
 export function isIdentUsage(obj: any): obj is IdentUsage {
-	return obj && typeof obj === 'string' && (obj === "unknown" || obj === "reference" || obj === "define_variable" || obj === "define_const" || obj === "define_field" || obj === "define_format" || obj === "define_enum" || obj === "define_enum_member" || obj === "define_fn" || obj === "define_cast_fn" || obj === "define_arg" || obj === "reference_type")
+	return obj && typeof obj === 'string' && (obj === "unknown" || obj === "reference" || obj === "define_variable" || obj === "define_const" || obj === "define_field" || obj === "define_format" || obj === "define_enum" || obj === "define_enum_member" || obj === "define_fn" || obj === "define_cast_fn" || obj === "define_arg" || obj === "reference_type" || obj === "maybe_type")
 }
 
 export enum Endian {

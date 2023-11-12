@@ -17,6 +17,10 @@ namespace brgen::lexer {
         size_t col = 0;
     };
 
+    constexpr bool operator==(const Loc& lhs, const Loc& rhs) {
+        return lhs.pos == rhs.pos && lhs.file == rhs.file && lhs.line == rhs.line && lhs.col == rhs.col;
+    }
+
     constexpr void as_json(Loc l, auto&& buf) {
         auto field = buf.object();
         field("pos", [&] {

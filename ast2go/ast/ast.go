@@ -311,6 +311,210 @@ func (n NodeType) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (n *Program) GetNodeType() NodeType {
+	return NodeTypeProgram
+}
+
+func (n *Binary) GetNodeType() NodeType {
+	return NodeTypeBinary
+}
+
+func (n *Unary) GetNodeType() NodeType {
+	return NodeTypeUnary
+}
+
+func (n *Cond) GetNodeType() NodeType {
+	return NodeTypeCond
+}
+
+func (n *Ident) GetNodeType() NodeType {
+	return NodeTypeIdent
+}
+
+func (n *Call) GetNodeType() NodeType {
+	return NodeTypeCall
+}
+
+func (n *If) GetNodeType() NodeType {
+	return NodeTypeIf
+}
+
+func (n *MemberAccess) GetNodeType() NodeType {
+	return NodeTypeMemberAccess
+}
+
+func (n *Paren) GetNodeType() NodeType {
+	return NodeTypeParen
+}
+
+func (n *Index) GetNodeType() NodeType {
+	return NodeTypeIndex
+}
+
+func (n *Match) GetNodeType() NodeType {
+	return NodeTypeMatch
+}
+
+func (n *Range) GetNodeType() NodeType {
+	return NodeTypeRange
+}
+
+func (n *TmpVar) GetNodeType() NodeType {
+	return NodeTypeTmpVar
+}
+
+func (n *BlockExpr) GetNodeType() NodeType {
+	return NodeTypeBlockExpr
+}
+
+func (n *Import) GetNodeType() NodeType {
+	return NodeTypeImport
+}
+
+func (n *IntLiteral) GetNodeType() NodeType {
+	return NodeTypeIntLiteral
+}
+
+func (n *BoolLiteral) GetNodeType() NodeType {
+	return NodeTypeBoolLiteral
+}
+
+func (n *StrLiteral) GetNodeType() NodeType {
+	return NodeTypeStrLiteral
+}
+
+func (n *Input) GetNodeType() NodeType {
+	return NodeTypeInput
+}
+
+func (n *Output) GetNodeType() NodeType {
+	return NodeTypeOutput
+}
+
+func (n *Config) GetNodeType() NodeType {
+	return NodeTypeConfig
+}
+
+func (n *Loop) GetNodeType() NodeType {
+	return NodeTypeLoop
+}
+
+func (n *IndentBlock) GetNodeType() NodeType {
+	return NodeTypeIndentBlock
+}
+
+func (n *MatchBranch) GetNodeType() NodeType {
+	return NodeTypeMatchBranch
+}
+
+func (n *Return) GetNodeType() NodeType {
+	return NodeTypeReturn
+}
+
+func (n *Break) GetNodeType() NodeType {
+	return NodeTypeBreak
+}
+
+func (n *Continue) GetNodeType() NodeType {
+	return NodeTypeContinue
+}
+
+func (n *Assert) GetNodeType() NodeType {
+	return NodeTypeAssert
+}
+
+func (n *ImplicitYield) GetNodeType() NodeType {
+	return NodeTypeImplicitYield
+}
+
+func (n *Field) GetNodeType() NodeType {
+	return NodeTypeField
+}
+
+func (n *Format) GetNodeType() NodeType {
+	return NodeTypeFormat
+}
+
+func (n *Function) GetNodeType() NodeType {
+	return NodeTypeFunction
+}
+
+func (n *IntType) GetNodeType() NodeType {
+	return NodeTypeIntType
+}
+
+func (n *IdentType) GetNodeType() NodeType {
+	return NodeTypeIdentType
+}
+
+func (n *IntLiteralType) GetNodeType() NodeType {
+	return NodeTypeIntLiteralType
+}
+
+func (n *StrLiteralType) GetNodeType() NodeType {
+	return NodeTypeStrLiteralType
+}
+
+func (n *VoidType) GetNodeType() NodeType {
+	return NodeTypeVoidType
+}
+
+func (n *BoolType) GetNodeType() NodeType {
+	return NodeTypeBoolType
+}
+
+func (n *ArrayType) GetNodeType() NodeType {
+	return NodeTypeArrayType
+}
+
+func (n *FunctionType) GetNodeType() NodeType {
+	return NodeTypeFunctionType
+}
+
+func (n *StructType) GetNodeType() NodeType {
+	return NodeTypeStructType
+}
+
+func (n *StructUnionType) GetNodeType() NodeType {
+	return NodeTypeStructUnionType
+}
+
+func (n *Cast) GetNodeType() NodeType {
+	return NodeTypeCast
+}
+
+func (n *Comment) GetNodeType() NodeType {
+	return NodeTypeComment
+}
+
+func (n *CommentGroup) GetNodeType() NodeType {
+	return NodeTypeCommentGroup
+}
+
+func (n *UnionType) GetNodeType() NodeType {
+	return NodeTypeUnionType
+}
+
+func (n *UnionCandidate) GetNodeType() NodeType {
+	return NodeTypeUnionCandidate
+}
+
+func (n *RangeType) GetNodeType() NodeType {
+	return NodeTypeRangeType
+}
+
+func (n *Enum) GetNodeType() NodeType {
+	return NodeTypeEnum
+}
+
+func (n *EnumMember) GetNodeType() NodeType {
+	return NodeTypeEnumMember
+}
+
+func (n *EnumType) GetNodeType() NodeType {
+	return NodeTypeEnumType
+}
+
 type UnaryOp int
 
 const (
@@ -574,6 +778,7 @@ const (
 	IdentUsageDefineCastFn     IdentUsage = 9
 	IdentUsageDefineArg        IdentUsage = 10
 	IdentUsageReferenceType    IdentUsage = 11
+	IdentUsageMaybeType        IdentUsage = 12
 )
 
 func (n IdentUsage) String() string {
@@ -602,6 +807,8 @@ func (n IdentUsage) String() string {
 		return "define_arg"
 	case IdentUsageReferenceType:
 		return "reference_type"
+	case IdentUsageMaybeType:
+		return "maybe_type"
 	default:
 		return fmt.Sprintf("IdentUsage(%d)", n)
 	}
@@ -637,6 +844,8 @@ func (n IdentUsage) UnmarshalJSON(data []byte) error {
 		n = IdentUsageDefineArg
 	case "reference_type":
 		n = IdentUsageReferenceType
+	case "maybe_type":
+		n = IdentUsageMaybeType
 	default:
 		return fmt.Errorf("unknown IdentUsage: %q", tmp)
 	}
@@ -768,11 +977,14 @@ func (n TokenTag) UnmarshalJSON(data []byte) error {
 
 type Node interface {
 	isNode()
+	GetLoc() Loc
+	GetNodeType() NodeType
 }
 
 type Expr interface {
 	isExpr()
 	Node
+	GetExprType() Type
 }
 
 type Literal interface {
@@ -788,11 +1000,14 @@ type Stmt interface {
 type Member interface {
 	isMember()
 	Stmt
+	GetBelong() Member
+	GetIdent() *Ident
 }
 
 type Type interface {
 	isType()
 	Node
+	GetIsExplicit() bool
 }
 
 type Program struct {
@@ -804,6 +1019,10 @@ type Program struct {
 
 func (n *Program) isNode() {}
 
+func (n *Program) GetLoc() Loc {
+	return n.Loc
+}
+
 type Binary struct {
 	Loc      Loc
 	ExprType Type
@@ -814,7 +1033,15 @@ type Binary struct {
 
 func (n *Binary) isExpr() {}
 
+func (n *Binary) GetExprType() Type {
+	return n.ExprType
+}
+
 func (n *Binary) isNode() {}
+
+func (n *Binary) GetLoc() Loc {
+	return n.Loc
+}
 
 type Unary struct {
 	Loc      Loc
@@ -825,7 +1052,15 @@ type Unary struct {
 
 func (n *Unary) isExpr() {}
 
+func (n *Unary) GetExprType() Type {
+	return n.ExprType
+}
+
 func (n *Unary) isNode() {}
+
+func (n *Unary) GetLoc() Loc {
+	return n.Loc
+}
 
 type Cond struct {
 	Loc      Loc
@@ -838,7 +1073,15 @@ type Cond struct {
 
 func (n *Cond) isExpr() {}
 
+func (n *Cond) GetExprType() Type {
+	return n.ExprType
+}
+
 func (n *Cond) isNode() {}
+
+func (n *Cond) GetLoc() Loc {
+	return n.Loc
+}
 
 type Ident struct {
 	Loc      Loc
@@ -851,7 +1094,15 @@ type Ident struct {
 
 func (n *Ident) isExpr() {}
 
+func (n *Ident) GetExprType() Type {
+	return n.ExprType
+}
+
 func (n *Ident) isNode() {}
+
+func (n *Ident) GetLoc() Loc {
+	return n.Loc
+}
 
 type Call struct {
 	Loc          Loc
@@ -864,7 +1115,15 @@ type Call struct {
 
 func (n *Call) isExpr() {}
 
+func (n *Call) GetExprType() Type {
+	return n.ExprType
+}
+
 func (n *Call) isNode() {}
+
+func (n *Call) GetLoc() Loc {
+	return n.Loc
+}
 
 type If struct {
 	Loc       Loc
@@ -877,7 +1136,15 @@ type If struct {
 
 func (n *If) isExpr() {}
 
+func (n *If) GetExprType() Type {
+	return n.ExprType
+}
+
 func (n *If) isNode() {}
+
+func (n *If) GetLoc() Loc {
+	return n.Loc
+}
 
 type MemberAccess struct {
 	Loc       Loc
@@ -890,7 +1157,15 @@ type MemberAccess struct {
 
 func (n *MemberAccess) isExpr() {}
 
+func (n *MemberAccess) GetExprType() Type {
+	return n.ExprType
+}
+
 func (n *MemberAccess) isNode() {}
+
+func (n *MemberAccess) GetLoc() Loc {
+	return n.Loc
+}
 
 type Paren struct {
 	Loc      Loc
@@ -901,7 +1176,15 @@ type Paren struct {
 
 func (n *Paren) isExpr() {}
 
+func (n *Paren) GetExprType() Type {
+	return n.ExprType
+}
+
 func (n *Paren) isNode() {}
+
+func (n *Paren) GetLoc() Loc {
+	return n.Loc
+}
 
 type Index struct {
 	Loc      Loc
@@ -913,7 +1196,15 @@ type Index struct {
 
 func (n *Index) isExpr() {}
 
+func (n *Index) GetExprType() Type {
+	return n.ExprType
+}
+
 func (n *Index) isNode() {}
+
+func (n *Index) GetLoc() Loc {
+	return n.Loc
+}
 
 type Match struct {
 	Loc       Loc
@@ -925,7 +1216,15 @@ type Match struct {
 
 func (n *Match) isExpr() {}
 
+func (n *Match) GetExprType() Type {
+	return n.ExprType
+}
+
 func (n *Match) isNode() {}
+
+func (n *Match) GetLoc() Loc {
+	return n.Loc
+}
 
 type Range struct {
 	Loc      Loc
@@ -937,7 +1236,15 @@ type Range struct {
 
 func (n *Range) isExpr() {}
 
+func (n *Range) GetExprType() Type {
+	return n.ExprType
+}
+
 func (n *Range) isNode() {}
+
+func (n *Range) GetLoc() Loc {
+	return n.Loc
+}
 
 type TmpVar struct {
 	Loc      Loc
@@ -947,7 +1254,15 @@ type TmpVar struct {
 
 func (n *TmpVar) isExpr() {}
 
+func (n *TmpVar) GetExprType() Type {
+	return n.ExprType
+}
+
 func (n *TmpVar) isNode() {}
+
+func (n *TmpVar) GetLoc() Loc {
+	return n.Loc
+}
 
 type BlockExpr struct {
 	Loc      Loc
@@ -958,7 +1273,15 @@ type BlockExpr struct {
 
 func (n *BlockExpr) isExpr() {}
 
+func (n *BlockExpr) GetExprType() Type {
+	return n.ExprType
+}
+
 func (n *BlockExpr) isNode() {}
+
+func (n *BlockExpr) GetLoc() Loc {
+	return n.Loc
+}
 
 type Import struct {
 	Loc        Loc
@@ -970,7 +1293,15 @@ type Import struct {
 
 func (n *Import) isExpr() {}
 
+func (n *Import) GetExprType() Type {
+	return n.ExprType
+}
+
 func (n *Import) isNode() {}
+
+func (n *Import) GetLoc() Loc {
+	return n.Loc
+}
 
 type IntLiteral struct {
 	Loc      Loc
@@ -982,7 +1313,15 @@ func (n *IntLiteral) isLiteral() {}
 
 func (n *IntLiteral) isExpr() {}
 
+func (n *IntLiteral) GetExprType() Type {
+	return n.ExprType
+}
+
 func (n *IntLiteral) isNode() {}
+
+func (n *IntLiteral) GetLoc() Loc {
+	return n.Loc
+}
 
 type BoolLiteral struct {
 	Loc      Loc
@@ -994,7 +1333,15 @@ func (n *BoolLiteral) isLiteral() {}
 
 func (n *BoolLiteral) isExpr() {}
 
+func (n *BoolLiteral) GetExprType() Type {
+	return n.ExprType
+}
+
 func (n *BoolLiteral) isNode() {}
+
+func (n *BoolLiteral) GetLoc() Loc {
+	return n.Loc
+}
 
 type StrLiteral struct {
 	Loc      Loc
@@ -1006,7 +1353,15 @@ func (n *StrLiteral) isLiteral() {}
 
 func (n *StrLiteral) isExpr() {}
 
+func (n *StrLiteral) GetExprType() Type {
+	return n.ExprType
+}
+
 func (n *StrLiteral) isNode() {}
+
+func (n *StrLiteral) GetLoc() Loc {
+	return n.Loc
+}
 
 type Input struct {
 	Loc      Loc
@@ -1017,7 +1372,15 @@ func (n *Input) isLiteral() {}
 
 func (n *Input) isExpr() {}
 
+func (n *Input) GetExprType() Type {
+	return n.ExprType
+}
+
 func (n *Input) isNode() {}
+
+func (n *Input) GetLoc() Loc {
+	return n.Loc
+}
 
 type Output struct {
 	Loc      Loc
@@ -1028,7 +1391,15 @@ func (n *Output) isLiteral() {}
 
 func (n *Output) isExpr() {}
 
+func (n *Output) GetExprType() Type {
+	return n.ExprType
+}
+
 func (n *Output) isNode() {}
+
+func (n *Output) GetLoc() Loc {
+	return n.Loc
+}
 
 type Config struct {
 	Loc      Loc
@@ -1039,7 +1410,15 @@ func (n *Config) isLiteral() {}
 
 func (n *Config) isExpr() {}
 
+func (n *Config) GetExprType() Type {
+	return n.ExprType
+}
+
 func (n *Config) isNode() {}
+
+func (n *Config) GetLoc() Loc {
+	return n.Loc
+}
 
 type Loop struct {
 	Loc       Loc
@@ -1054,6 +1433,10 @@ func (n *Loop) isStmt() {}
 
 func (n *Loop) isNode() {}
 
+func (n *Loop) GetLoc() Loc {
+	return n.Loc
+}
+
 type IndentBlock struct {
 	Loc        Loc
 	Elements   []Node
@@ -1064,6 +1447,10 @@ type IndentBlock struct {
 func (n *IndentBlock) isStmt() {}
 
 func (n *IndentBlock) isNode() {}
+
+func (n *IndentBlock) GetLoc() Loc {
+	return n.Loc
+}
 
 type MatchBranch struct {
 	Loc    Loc
@@ -1076,6 +1463,10 @@ func (n *MatchBranch) isStmt() {}
 
 func (n *MatchBranch) isNode() {}
 
+func (n *MatchBranch) GetLoc() Loc {
+	return n.Loc
+}
+
 type Return struct {
 	Loc  Loc
 	Expr Expr
@@ -1085,6 +1476,10 @@ func (n *Return) isStmt() {}
 
 func (n *Return) isNode() {}
 
+func (n *Return) GetLoc() Loc {
+	return n.Loc
+}
+
 type Break struct {
 	Loc Loc
 }
@@ -1093,6 +1488,10 @@ func (n *Break) isStmt() {}
 
 func (n *Break) isNode() {}
 
+func (n *Break) GetLoc() Loc {
+	return n.Loc
+}
+
 type Continue struct {
 	Loc Loc
 }
@@ -1100,6 +1499,10 @@ type Continue struct {
 func (n *Continue) isStmt() {}
 
 func (n *Continue) isNode() {}
+
+func (n *Continue) GetLoc() Loc {
+	return n.Loc
+}
 
 type Assert struct {
 	Loc  Loc
@@ -1110,6 +1513,10 @@ func (n *Assert) isStmt() {}
 
 func (n *Assert) isNode() {}
 
+func (n *Assert) GetLoc() Loc {
+	return n.Loc
+}
+
 type ImplicitYield struct {
 	Loc  Loc
 	Expr Expr
@@ -1118,6 +1525,10 @@ type ImplicitYield struct {
 func (n *ImplicitYield) isStmt() {}
 
 func (n *ImplicitYield) isNode() {}
+
+func (n *ImplicitYield) GetLoc() Loc {
+	return n.Loc
+}
 
 type Field struct {
 	Loc          Loc
@@ -1131,9 +1542,21 @@ type Field struct {
 
 func (n *Field) isMember() {}
 
+func (n *Field) GetBelong() Member {
+	return n.Belong
+}
+
+func (n *Field) GetIdent() *Ident {
+	return n.Ident
+}
+
 func (n *Field) isStmt() {}
 
 func (n *Field) isNode() {}
+
+func (n *Field) GetLoc() Loc {
+	return n.Loc
+}
 
 type Format struct {
 	Loc    Loc
@@ -1144,9 +1567,21 @@ type Format struct {
 
 func (n *Format) isMember() {}
 
+func (n *Format) GetBelong() Member {
+	return n.Belong
+}
+
+func (n *Format) GetIdent() *Ident {
+	return n.Ident
+}
+
 func (n *Format) isStmt() {}
 
 func (n *Format) isNode() {}
+
+func (n *Format) GetLoc() Loc {
+	return n.Loc
+}
 
 type Function struct {
 	Loc        Loc
@@ -1162,9 +1597,21 @@ type Function struct {
 
 func (n *Function) isMember() {}
 
+func (n *Function) GetBelong() Member {
+	return n.Belong
+}
+
+func (n *Function) GetIdent() *Ident {
+	return n.Ident
+}
+
 func (n *Function) isStmt() {}
 
 func (n *Function) isNode() {}
+
+func (n *Function) GetLoc() Loc {
+	return n.Loc
+}
 
 type IntType struct {
 	Loc        Loc
@@ -1176,7 +1623,15 @@ type IntType struct {
 
 func (n *IntType) isType() {}
 
+func (n *IntType) GetIsExplicit() bool {
+	return n.IsExplicit
+}
+
 func (n *IntType) isNode() {}
+
+func (n *IntType) GetLoc() Loc {
+	return n.Loc
+}
 
 type IdentType struct {
 	Loc        Loc
@@ -1187,7 +1642,15 @@ type IdentType struct {
 
 func (n *IdentType) isType() {}
 
+func (n *IdentType) GetIsExplicit() bool {
+	return n.IsExplicit
+}
+
 func (n *IdentType) isNode() {}
+
+func (n *IdentType) GetLoc() Loc {
+	return n.Loc
+}
 
 type IntLiteralType struct {
 	Loc        Loc
@@ -1197,7 +1660,15 @@ type IntLiteralType struct {
 
 func (n *IntLiteralType) isType() {}
 
+func (n *IntLiteralType) GetIsExplicit() bool {
+	return n.IsExplicit
+}
+
 func (n *IntLiteralType) isNode() {}
+
+func (n *IntLiteralType) GetLoc() Loc {
+	return n.Loc
+}
 
 type StrLiteralType struct {
 	Loc        Loc
@@ -1207,7 +1678,15 @@ type StrLiteralType struct {
 
 func (n *StrLiteralType) isType() {}
 
+func (n *StrLiteralType) GetIsExplicit() bool {
+	return n.IsExplicit
+}
+
 func (n *StrLiteralType) isNode() {}
+
+func (n *StrLiteralType) GetLoc() Loc {
+	return n.Loc
+}
 
 type VoidType struct {
 	Loc        Loc
@@ -1216,7 +1695,15 @@ type VoidType struct {
 
 func (n *VoidType) isType() {}
 
+func (n *VoidType) GetIsExplicit() bool {
+	return n.IsExplicit
+}
+
 func (n *VoidType) isNode() {}
+
+func (n *VoidType) GetLoc() Loc {
+	return n.Loc
+}
 
 type BoolType struct {
 	Loc        Loc
@@ -1225,7 +1712,15 @@ type BoolType struct {
 
 func (n *BoolType) isType() {}
 
+func (n *BoolType) GetIsExplicit() bool {
+	return n.IsExplicit
+}
+
 func (n *BoolType) isNode() {}
+
+func (n *BoolType) GetLoc() Loc {
+	return n.Loc
+}
 
 type ArrayType struct {
 	Loc        Loc
@@ -1237,7 +1732,15 @@ type ArrayType struct {
 
 func (n *ArrayType) isType() {}
 
+func (n *ArrayType) GetIsExplicit() bool {
+	return n.IsExplicit
+}
+
 func (n *ArrayType) isNode() {}
+
+func (n *ArrayType) GetLoc() Loc {
+	return n.Loc
+}
 
 type FunctionType struct {
 	Loc        Loc
@@ -1248,7 +1751,15 @@ type FunctionType struct {
 
 func (n *FunctionType) isType() {}
 
+func (n *FunctionType) GetIsExplicit() bool {
+	return n.IsExplicit
+}
+
 func (n *FunctionType) isNode() {}
+
+func (n *FunctionType) GetLoc() Loc {
+	return n.Loc
+}
 
 type StructType struct {
 	Loc        Loc
@@ -1258,7 +1769,15 @@ type StructType struct {
 
 func (n *StructType) isType() {}
 
+func (n *StructType) GetIsExplicit() bool {
+	return n.IsExplicit
+}
+
 func (n *StructType) isNode() {}
+
+func (n *StructType) GetLoc() Loc {
+	return n.Loc
+}
 
 type StructUnionType struct {
 	Loc         Loc
@@ -1270,7 +1789,15 @@ type StructUnionType struct {
 
 func (n *StructUnionType) isType() {}
 
+func (n *StructUnionType) GetIsExplicit() bool {
+	return n.IsExplicit
+}
+
 func (n *StructUnionType) isNode() {}
+
+func (n *StructUnionType) GetLoc() Loc {
+	return n.Loc
+}
 
 type Cast struct {
 	Loc      Loc
@@ -1281,7 +1808,15 @@ type Cast struct {
 
 func (n *Cast) isExpr() {}
 
+func (n *Cast) GetExprType() Type {
+	return n.ExprType
+}
+
 func (n *Cast) isNode() {}
+
+func (n *Cast) GetLoc() Loc {
+	return n.Loc
+}
 
 type Comment struct {
 	Loc     Loc
@@ -1290,12 +1825,20 @@ type Comment struct {
 
 func (n *Comment) isNode() {}
 
+func (n *Comment) GetLoc() Loc {
+	return n.Loc
+}
+
 type CommentGroup struct {
 	Loc      Loc
 	Comments []*Comment
 }
 
 func (n *CommentGroup) isNode() {}
+
+func (n *CommentGroup) GetLoc() Loc {
+	return n.Loc
+}
 
 type UnionType struct {
 	Loc        Loc
@@ -1307,7 +1850,15 @@ type UnionType struct {
 
 func (n *UnionType) isType() {}
 
+func (n *UnionType) GetIsExplicit() bool {
+	return n.IsExplicit
+}
+
 func (n *UnionType) isNode() {}
+
+func (n *UnionType) GetLoc() Loc {
+	return n.Loc
+}
 
 type UnionCandidate struct {
 	Loc   Loc
@@ -1319,6 +1870,10 @@ func (n *UnionCandidate) isStmt() {}
 
 func (n *UnionCandidate) isNode() {}
 
+func (n *UnionCandidate) GetLoc() Loc {
+	return n.Loc
+}
+
 type RangeType struct {
 	Loc        Loc
 	IsExplicit bool
@@ -1328,7 +1883,15 @@ type RangeType struct {
 
 func (n *RangeType) isType() {}
 
+func (n *RangeType) GetIsExplicit() bool {
+	return n.IsExplicit
+}
+
 func (n *RangeType) isNode() {}
+
+func (n *RangeType) GetLoc() Loc {
+	return n.Loc
+}
 
 type Enum struct {
 	Loc      Loc
@@ -1343,9 +1906,21 @@ type Enum struct {
 
 func (n *Enum) isMember() {}
 
+func (n *Enum) GetBelong() Member {
+	return n.Belong
+}
+
+func (n *Enum) GetIdent() *Ident {
+	return n.Ident
+}
+
 func (n *Enum) isStmt() {}
 
 func (n *Enum) isNode() {}
+
+func (n *Enum) GetLoc() Loc {
+	return n.Loc
+}
 
 type EnumMember struct {
 	Loc    Loc
@@ -1356,9 +1931,21 @@ type EnumMember struct {
 
 func (n *EnumMember) isMember() {}
 
+func (n *EnumMember) GetBelong() Member {
+	return n.Belong
+}
+
+func (n *EnumMember) GetIdent() *Ident {
+	return n.Ident
+}
+
 func (n *EnumMember) isStmt() {}
 
 func (n *EnumMember) isNode() {}
+
+func (n *EnumMember) GetLoc() Loc {
+	return n.Loc
+}
 
 type EnumType struct {
 	Loc        Loc
@@ -1368,7 +1955,15 @@ type EnumType struct {
 
 func (n *EnumType) isType() {}
 
+func (n *EnumType) GetIsExplicit() bool {
+	return n.IsExplicit
+}
+
 func (n *EnumType) isNode() {}
+
+func (n *EnumType) GetLoc() Loc {
+	return n.Loc
+}
 
 type Scope struct {
 	Prev   *Scope

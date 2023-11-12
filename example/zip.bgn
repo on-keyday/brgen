@@ -1,0 +1,116 @@
+
+
+# Zip file format
+
+config.export(Zip)
+
+format Zip:
+    sections :[..]Section
+
+format Section:
+    magic :"PK"
+    sectionType :u16
+    match sectionType:
+        0x0201 => body :CentralDirEntry
+        0x0403 => body :LocalFile
+        _ => error("unknown section type: ", sectionType)
+
+format DosTime:
+    secondDiv2 :u5
+    secondDiv2 <= 29 # 0-58
+    minute :u6
+    minute <= 59 # 0-59
+    hour :u5
+    hour <= 23 # 0-23
+
+    fn second():
+        return secondDiv2 * 2
+
+format DosDate:
+    day :u5
+    day <= 31 # 1-31
+    month :u4
+    month <= 12 # 1-12
+    year_minus_1980 :u7 # 0-127
+
+    fn year():
+        return u16(year_minus_1980) + 1980    
+
+
+format DosDateTime:
+    date :DosDate
+    time :DosTime
+
+enum CompressionMethod:
+    :u16
+    None = 0
+    Shrunk # this will be 1
+    Reduced1
+    Reduced2
+    Reduced3
+    Reduced4
+    Imploded
+    Deflated = 8
+    EnhancedDeflated # this will be 9
+    PKWareDCLImploded
+    BZIP2
+    LZMA
+    IBMTERSE
+    IBMLZ77
+    PPMd
+    ZStandard = 93
+    Mp3 # this will be 94
+    Xz
+    Jpeg
+    WavPack
+    Ppmd
+    AexEncryptionMarker
+
+
+format CentralDirEntry:
+    versionMadeBy :u16
+    versionNeededToExtract :u16
+    generalPurposeBitFlag :u16
+    compressionMethod :CompressionMethod
+    lastModFileTime :DosDateTime
+    crc32 :u32
+    compressedSize :u32
+    uncompressedSize :u32
+    fileNameLength :u16
+    extraFieldLength :u16
+    fileCommentLength :u16
+    diskNumberStart :u16
+    internalFileAttributes :u16
+    externalFileAttributes :u32
+    relativeOffsetOfLocalHeader :s32
+    fileName :[fileNameLength]u8
+    # input.proxy :[]u8
+    # input.subrange(offsetFromCurrentPosition, length?)
+    extraField :ExtraFields(input.proxy = input.subrange(0,extraFieldLength))
+    fileComment :[fileCommentLength]u8
+    
+    fn localHeader():
+        pkt :Section(input.proxy = input.subrange(relativeOffsetOfLocalHeader))
+        return pkt
+
+format LocaFileHeader:
+    versionNeededToExtract :u16
+    generalPurposeBitFlag :u16
+    compressionMethod :CompressionMethod
+    lastModFileTime :DosDateTime
+    crc32 :u32
+    compressedSize :u32
+    uncompressedSize :u32
+    fileNameLength :u16
+    extraFieldLength :u16
+    fileName :[fileNameLength]u8
+    extraField :ExtraFields(input.proxy = input.subrange(0,extraFieldLength))
+
+format LocalFile:
+    header :LocalFileHeader
+    body :[header.compressedSize]u8
+
+
+
+format ExtraFields:
+    fields :[..]ExtraField

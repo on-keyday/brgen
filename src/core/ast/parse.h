@@ -922,7 +922,7 @@ namespace brgen::ast {
             }
 
             auto base = std::make_shared<Ident>(ident.loc, std::move(ident.token));
-            base->usage = IdentUsage::reference_type;
+            base->usage = IdentUsage::maybe_type;
             base->scope = state.current_scope();
 
             return std::make_shared<IdentType>(ident.loc, std::move(base));

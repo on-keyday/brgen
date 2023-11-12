@@ -185,7 +185,9 @@ namespace brgen::ast {
         std::shared_ptr<Ident> ident;
         std::weak_ptr<Member> base;
         IdentType(lexer::Loc l, std::shared_ptr<Ident>&& token)
-            : Type(l, NodeType::ident_type), ident(std::move(token)) {}
+            : Type(l, NodeType::ident_type), ident(std::move(token)) {
+            this->is_explicit = true;
+        }
 
         void dump(auto&& field_) {
             Type::dump(field_);

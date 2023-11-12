@@ -415,6 +415,7 @@ impl TryFrom<&str> for BinaryOp {
 	DefineCastFn,
 	DefineArg,
 	ReferenceType,
+	MaybeType,
 }
 
 impl TryFrom<&str> for IdentUsage {
@@ -433,6 +434,7 @@ impl TryFrom<&str> for IdentUsage {
 			"define_cast_fn" =>Ok(Self::DefineCastFn),
 			"define_arg" =>Ok(Self::DefineArg),
 			"reference_type" =>Ok(Self::ReferenceType),
+			"maybe_type" =>Ok(Self::MaybeType),
 			_=> Err(()),
 		}
 	}

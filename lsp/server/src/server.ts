@@ -293,6 +293,7 @@ const tokenizeSourceImpl  = async (doc :TextDocument) =>{
                     case ast2ts.IdentUsage.define_enum:
                     case ast2ts.IdentUsage.reference_type:
                     case ast2ts.IdentUsage.define_cast_fn:
+                    case ast2ts.IdentUsage.maybe_type:
                         locList.push({loc: node.loc,length: node.ident.length,index:7});
                         break;
                     case ast2ts.IdentUsage.define_fn:

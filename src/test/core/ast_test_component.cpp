@@ -72,7 +72,9 @@ namespace brgen::ast {
                            return p.parse();
                        })
                         .transform_error(to_source_error(files))
-                        .transform_error(src_error_to_string);
+                        .transform_error([](SourceError&& err) {
+                            return err.to_string();
+                        });
         ASSERT_TRUE(::testing::AssertionResult(prog) << prog.error_or(""));
         if (handler) {
             ASSERT_NO_THROW((handler(*prog, input, files)));

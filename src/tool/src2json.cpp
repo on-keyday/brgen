@@ -279,15 +279,36 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
         return check_ast(name, input->source());
     }
 
-    auto report_error = [&](auto&& res, bool warn = false, const char* key = "ast") {
-        if (!warn && (!cout.is_tty() || flags.print_on_error)) {
-            brgen::JSONWriter d;
-            {
-                auto field = d.object();
-                field("files", files.file_list());
-                field(key, nullptr);
-                field("error", res);
+    auto dump_json_file = [&](auto&& elem, const char* elem_key, const brgen::SourceError& err) {
+        brgen::JSONWriter d;
+        {
+            auto field = d.object();
+            field("files", files.file_list());
+            field(elem_key, elem);
+            if (err.errs.size() == 0) {
+                field("error", nullptr);
             }
+            else {
+                field("error", err);
+            }
+        }
+        return d;
+    };
+
+    auto print_warnings = [&](const brgen::SourceError& err, bool warn_as_error = false) {
+        err.for_each_error([&](std::string_view msg, bool w) {
+            if (!warn_as_error && w) {
+                print_warning(msg);
+            }
+            else {
+                print_error(msg);
+            }
+        });
+    };
+
+    auto report_error = [&](auto&& res, bool warn = false, const char* key = "ast") {
+        if (!cout.is_tty() || flags.print_on_error) {
+            auto d = dump_json_file(nullptr, key, res);
             cout << d.out();
             if (cout.is_tty()) {
                 cout << "\n";
@@ -310,13 +331,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
             return -1;
         }
         if (!cout.is_tty() || flags.print_json) {
-            brgen::JSONWriter d;
-            {
-                auto field = d.object();
-                field("files", files.file_list());
-                field("tokens", res.value());
-                field("error", nullptr);
-            }
+            auto d = dump_json_file(res.value(), "tokens", brgen::SourceError{});
             cout << d.out();
             if (cout.is_tty()) {
                 cout << "\n";
@@ -349,11 +364,16 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     if (!flags.not_resolve_cast) {
         brgen::middle::resolve_cast(*res);
     }
+
+    brgen::SourceError err_or_warn;
+
     if (!flags.not_resolve_type) {
         auto ty = brgen::middle::Typing{};
-        auto res3 = ty.typing(*res).transform_error(brgen::to_source_error(files));
+        auto res3 = ty.typing(*res);
         if (!res3) {
-            report_error(res3.error());
+            auto warns = ty.warnings;
+            warns.locations.insert(warns.locations.end(), res3.error().locations.begin(), res3.error().locations.end());
+            report_error(brgen::to_source_error(files)(std::move(warns)));
             return -1;
         }
         if (flags.unresolved_type_as_error && ty.warnings.locations.size() > 0) {
@@ -361,7 +381,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
             return -1;
         }
         if (!flags.disable_untyped_warning && ty.warnings.locations.size() > 0) {
-            report_error(brgen::to_source_error(files)(std::move(ty.warnings)), true);
+            err_or_warn = brgen::to_source_error(files)(std::move(ty.warnings));
         }
     }
 
@@ -377,19 +397,13 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     brgen::JSONWriter d;
     d.set_no_colon_space(true);
     if (flags.debug_json) {
-        auto field = d.object();
-        field("files", files.file_list());
-        field("ast", res.value());
-        field("error", nullptr);
+        d = dump_json_file(*res, "ast", err_or_warn);
     }
     else {
-        auto field = d.object();
         brgen::ast::JSONConverter c;
         c.obj.set_no_colon_space(true);
-        field("files", files.file_list());
         c.encode(*res);
-        field("ast", c.obj);
-        field("error", nullptr);
+        d = dump_json_file(c.obj, "ast", err_or_warn);
     }
     cout << d.out();
     if (cout.is_tty()) {

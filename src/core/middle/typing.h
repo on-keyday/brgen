@@ -76,6 +76,10 @@ namespace brgen::middle {
             warnings.warning(expr->loc, "expression is not typed yet");
         }
 
+        void warn_type_not_found(auto&& expr) {
+            warnings.warning(expr->loc, "type is not found");
+        }
+
         void check_bool(ast::Expr* expr) {
             if (!expr->expr_type) {
                 unsupported(expr);
@@ -484,7 +488,8 @@ namespace brgen::middle {
                 lit->expr_type = std::make_shared<ast::StrLiteralType>(ast::cast_to<ast::StrLiteral>(expr));
             }
             else if (auto ident = ast::as<ast::Ident>(expr)) {
-                if (ident->usage != ast::IdentUsage::unknown) {
+                if (ident->base.lock()) {
+                    assert(ident->usage != ast::IdentUsage::unknown);
                     return;  // skip
                 }
                 if (auto found = find_matching_ident(ident)) {
@@ -500,7 +505,9 @@ namespace brgen::middle {
                     }
                 }
                 else {
-                    if (!on_define) {
+                    if (ident->usage == ast::IdentUsage::maybe_type) {
+                    }
+                    else if (!on_define) {
                         warn_not_typed(ident);
                     }
                 }
@@ -671,6 +678,32 @@ namespace brgen::middle {
                     typing_expr(ast::cast_to<ast::Expr>(ty));
                     return;
                 }
+                if (auto s = ast::as<ast::IdentType>(ty)) {
+                    // If the object is an identifier, perform identifier typing
+                    typing_expr(s->ident);
+                    if (s->ident->usage == ast::IdentUsage::maybe_type) {
+                        warn_type_not_found(s->ident);
+                    }
+                    if (s->ident->usage != ast::IdentUsage::unknown &&
+                        s->ident->usage != ast::IdentUsage::reference_type &&
+                        s->ident->usage != ast::IdentUsage::maybe_type) {
+                        auto r = error(s->loc, "expect type name but not");
+                        if (auto b = s->ident->base.lock()) {
+                            (void)r.error(b->loc, "identifier ", s->ident->ident, " is defined here");
+                        }
+                        r.report();
+                    }
+
+                    if (s->ident->usage == ast::IdentUsage::reference_type) {
+                        auto ident = ast::as<ast::Ident>(s->ident->base.lock());
+                        assert(ident);
+                        auto member = ast::as<ast::Member>(ident->base.lock());
+                        if (member) {
+                            s->base = ast::cast_to<ast::Member>(s->ident->base.lock());
+                        }
+                    }
+                    return;
+                }
                 if (auto p = ast::as<ast::Program>(ty)) {
                     auto tmp = current_global;
                     current_global = p->global_scope;
@@ -681,12 +714,6 @@ namespace brgen::middle {
                     return;
                 }
                 do_traverse();
-                if (auto t = ast::as<ast::IdentType>(ty)) {
-                    auto found = find_matching_fmt(t->ident.get());
-                    if (found) {
-                        t->base = *found;
-                    }
-                }
             };
             recursive_typing(recursive_typing, ty);
         }

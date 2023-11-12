@@ -232,6 +232,7 @@ enum ast2c_IdentUsage {
 	AST2C_IDENTUSAGE_DEFINE_CAST_FN,
 	AST2C_IDENTUSAGE_DEFINE_ARG,
 	AST2C_IDENTUSAGE_REFERENCE_TYPE,
+	AST2C_IDENTUSAGE_MAYBE_TYPE,
 };
 const char* ast2c_IdentUsage_to_string(ast2c_IdentUsage);
 int ast2c_IdentUsage_from_string(const char*,ast2c_IdentUsage*);

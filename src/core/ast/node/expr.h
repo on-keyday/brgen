@@ -22,6 +22,7 @@ namespace brgen::ast {
         define_cast_fn,
         define_arg,
         reference_type,
+        maybe_type,
     };
 
     constexpr const char* ident_usage_str[]{
@@ -37,10 +38,11 @@ namespace brgen::ast {
         "define_cast_fn",
         "define_arg",
         "reference_type",
+        "maybe_type",
         nullptr,
     };
 
-    constexpr auto ident_usage_count = 12;
+    constexpr auto ident_usage_count = 13;
 
     constexpr std::optional<IdentUsage> ident_usage(std::string_view view) {
         for (auto i = 0; ident_usage_str[i]; i++) {

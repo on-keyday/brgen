@@ -117,6 +117,7 @@ DefineFn,
 DefineCastFn,
 DefineArg,
 ReferenceType,
+MaybeType,
 }
 public enum Endian {
 Unspec,
