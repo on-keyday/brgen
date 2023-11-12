@@ -15,6 +15,9 @@ import {
     SemanticTokenTypes,
     SemanticTokens,
     TextDocumentsConfiguration,
+    Hover,
+    MarkupKind,
+    HoverParams,
 } from 'vscode-languageserver/node';
 
 import { TextDocument, TextDocumentContentChangeEvent } from 'vscode-languageserver-textdocument';
@@ -331,6 +334,7 @@ const tokenizeSourceImpl  = async (doc :TextDocument,docInfo :DocumentInfo) =>{
         }
         return true
     });
+    docInfo.prevNode = prog;
     return generateSemanticTokens();
 };
 
@@ -365,15 +369,67 @@ connection.onRequest("textDocument/semanticTokens/full",async (params)=>{
 });
 
 
-connection.onHover(async (params)=>{
-    const hovor = documents.get(params?.textDocument?.uri);
-    if(hovor===undefined){
+const hover = async (params :HoverParams)=>{
+    console.log(`textDocument/hover: ${JSON.stringify(params)}`);
+    const hover = documents.get(params?.textDocument?.uri);
+    if(hover===undefined){
         return null;
     }
-    hovor.lineCount
-    const pos =  hovor.offsetAt(params.position);
-    return null;
-})
+    const pos =  hover.offsetAt(params.position);
+    const docInfo = getOrCreateDocumentInfo(hover);
+    if(docInfo.prevNode===null) {
+        return null;
+    }
+    let found :any;
+    ast2ts.walk(docInfo.prevNode,(f,node)=>{
+        if(node.loc.file!=1) {
+            return; // skip other files
+        }
+        if(node.loc.pos.begin<=pos&&pos<=node.loc.pos.end){
+            if(ast2ts.isIdent(node)){
+                console.log(`found: ${node.ident} ${JSON.stringify(node.loc)}`)
+                found = node;
+                return;
+            }
+            console.log(`hit: ${node.node_type} ${JSON.stringify(node.loc)}`)
+        }
+        ast2ts.walk(node,f);
+    });
+    const color = (code :string,text :string) => {
+        return `<span style="color: ${code};">${text}</span>`;
+    }
+    const makeHovoer = (ident :string,role :string) => {
+        return {
+            contents: {
+                kind: MarkupKind.Markdown,
+                value: `${ident}\n\n${role}`,
+            },
+        };
+    }
+    if(ast2ts.isIdent(found)){
+        for(;;){
+            switch (found.usage) {
+                case ast2ts.IdentUsage.unknown:
+                    return makeHovoer(found.ident,"unknown identifier");
+                case ast2ts.IdentUsage.reference:
+                    if(ast2ts.isIdent(found.base)){
+                        found = found.base;
+                        continue;
+                    }
+                    return makeHovoer(found.ident,"unspecified reference");
+                case ast2ts.IdentUsage.define_variable:
+                    return makeHovoer(found.ident,"variable");
+                case ast2ts.IdentUsage.define_field:
+                    // color of enum member
+                    return makeHovoer(color("#008fff",found.ident),"field");
+                default:
+                    return makeHovoer(found.ident,"unknown identifier");
+            }
+        }   
+    }
+}
+
+connection.onHover(hover)
 
 // The example settings
 interface BrgenLSPSettings {
