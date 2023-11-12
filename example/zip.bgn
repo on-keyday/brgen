@@ -93,7 +93,7 @@ format CentralDirEntry:
         pkt :Section(input.proxy = input.subrange(relativeOffsetOfLocalHeader))
         return pkt
 
-format LocaFileHeader:
+format LocalFileHeader:
     versionNeededToExtract :u16
     generalPurposeBitFlag :u16
     compressionMethod :CompressionMethod

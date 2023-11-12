@@ -699,7 +699,7 @@ namespace brgen::middle {
                         assert(ident);
                         auto member = ast::as<ast::Member>(ident->base.lock());
                         if (member) {
-                            s->base = ast::cast_to<ast::Member>(s->ident->base.lock());
+                            s->base = ast::cast_to<ast::Member>(ident->base.lock());
                         }
                     }
                     return;

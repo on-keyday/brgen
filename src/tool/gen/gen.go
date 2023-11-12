@@ -199,7 +199,7 @@ func (d *Type) CSharpString() string {
 	if d.IsArray {
 		prefix += "List<"
 		postfix += ">?"
-	} else if d.IsPtr || d.IsInterface {
+	} else if d.IsPtr || d.IsInterface || d.IsOptional {
 		postfix += "?"
 	}
 	return prefix + d.Name + postfix

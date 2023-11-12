@@ -57,6 +57,8 @@ struct Flags : utils::cmdline::templ::HelpOption {
 
     bool report_error = false;
 
+    bool omit_warning = false;
+
     void bind(utils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&lexer, "l,lexer", "lexer mode");
@@ -73,16 +75,9 @@ struct Flags : utils::cmdline::templ::HelpOption {
 
         ctx.VarBool(&print_json, "p,print-json", "print json of ast/tokens to stdout if succeeded (if stdout is tty. if not tty, usually print json ast)");
         ctx.VarBool(&print_on_error, "print-on-error", "print json of ast/tokens to stdout if failed (if stdout is tty. if not tty, usually print json ast)");
+        ctx.VarBool(&omit_warning, "omit-json-warning", "omit warning from json output (if --print-json or --print-on-error)");
 
         ctx.VarBool(&debug_json, "d,debug-json", "debug mode json output (not parsable ast, only for debug. use with --print-ast)");
-
-        /*
-        ctx.VarBool(&dump_ptr_as_uintptr, "dump-uintptr", "make pointer type of ast field uintptr (use with --dump-ast)");
-        ctx.VarBool(&flat, "dump-flat", "dump types schema with flat body (use with --dump-ast)");
-        ctx.VarBool(&not_dump_base, "not-dump-base", "not dump types schema with base type (use with --dump-ast)");
-        ctx.VarBool(&dump_enum_name, "dump-enum-name", "dump enum name of operator (use with --dump-ast)");
-        ctx.VarBool(&dump_error, "dump-error", "dump error type (use with --dump-ast)");
-        */
 
         ctx.VarBool(&no_color, "no-color", "disable color output");
 
@@ -371,9 +366,14 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
         auto ty = brgen::middle::Typing{};
         auto res3 = ty.typing(*res);
         if (!res3) {
-            auto warns = ty.warnings;
-            warns.locations.insert(warns.locations.end(), res3.error().locations.begin(), res3.error().locations.end());
-            report_error(brgen::to_source_error(files)(std::move(warns)));
+            if (!flags.omit_warning) {
+                auto warns = ty.warnings;
+                warns.locations.insert(warns.locations.end(), res3.error().locations.begin(), res3.error().locations.end());
+                report_error(brgen::to_source_error(files)(std::move(warns)));
+            }
+            else {
+                report_error(brgen::to_source_error(files)(std::move(res3.error())));
+            }
             return -1;
         }
         if (flags.unresolved_type_as_error && ty.warnings.locations.size() > 0) {
@@ -381,7 +381,11 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
             return -1;
         }
         if (!flags.disable_untyped_warning && ty.warnings.locations.size() > 0) {
-            err_or_warn = brgen::to_source_error(files)(std::move(ty.warnings));
+            auto warns = brgen::to_source_error(files)(std::move(ty.warnings));
+            print_warnings(warns);
+            if (!flags.omit_warning) {
+                err_or_warn = std::move(warns);
+            }
         }
     }
 

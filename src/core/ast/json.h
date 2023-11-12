@@ -221,6 +221,7 @@ namespace brgen::ast {
                         find_and_replace_scope(scope->prev.lock(), [&](auto val) {
                             field("prev", val);
                         });
+                        field("branch_root", scope->branch_root);
                     });
                 }
             };
@@ -566,6 +567,13 @@ namespace brgen::ast {
                         return scopes[i];
                     };
                 };
+                auto branch_root=json_at(val,"branch_root");
+                if(!branch_root){
+                    return branch_root & empty_value<void>() | json_to_loc_error({}, "branch_root");
+                }
+                if(!(*branch_root)->as_bool(scopes[i]->branch_root)){
+                    return unexpect(error({}, "branch_root must be true"));
+                }
                 auto b = get_scope("branch");
                 if (!b) {
                     return b & empty_value<void>();

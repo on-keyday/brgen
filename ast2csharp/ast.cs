@@ -483,17 +483,17 @@ public class Token {
 	public Loc Loc{get;set;}
 }
 public class RawScope {
-	public uintptr Prev{get;set;}
-	public uintptr Next{get;set;}
-	public uintptr Branch{get;set;}
-	public List<uintptr>? Ident{get;set;}
-	public uintptr Owner{get;set;}
+	public ulong? Prev{get;set;}
+	public ulong? Next{get;set;}
+	public ulong? Branch{get;set;}
+	public List<ulong>? Ident{get;set;}
+	public ulong? Owner{get;set;}
 	public bool BranchRoot{get;set;}
 }
 public class RawNode {
 	public NodeType NodeType{get;set;}
 	public Loc Loc{get;set;}
-	public any Body{get;set;}
+	public Dictionary<string,object> Body{get;set;}
 }
 public class SrcErrorEntry {
 	public string Msg{get;set;}
@@ -511,12 +511,12 @@ public class JsonAst {
 }
 public class AstFile {
 	public List<string>? Files{get;set;}
-	public JsonAst Ast{get;set;}
-	public SrcError Error{get;set;}
+	public JsonAst? Ast{get;set;}
+	public SrcError? Error{get;set;}
 }
 public class TokenFile {
 	public List<string>? Files{get;set;}
 	public List<Token>? Tokens{get;set;}
-	public SrcError Error{get;set;}
+	public SrcError? Error{get;set;}
 }
 }

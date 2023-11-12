@@ -74,7 +74,9 @@ func main() {
 	defs, err := gen.CollectDefinition(list, func(s string) string {
 		return strcase.ToCamel(s)
 	}, strcase.ToCamel, map[string]string{
-		"uint": "ulong",
+		"uint":    "ulong",
+		"uintptr": "ulong",
+		"any":     "Dictionary<string,object>",
 	})
 	if err != nil {
 		log.Println(err)

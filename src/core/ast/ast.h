@@ -9,18 +9,6 @@
 
 namespace brgen::ast {
 
-    template <class U>
-    constexpr auto cast_to(auto&& t) {
-        using T = std::decay_t<decltype(t)>;
-        if constexpr (utils::helper::is_template_instance_of<T, std::shared_ptr>) {
-            using V = typename utils::helper::template_instance_of_t<T, std::shared_ptr>::template param_at<0>;
-            return std::static_pointer_cast<U>(std::forward<decltype(t)>(t));
-        }
-        else {
-            return static_cast<U*>(t);
-        }
-    }
-
     template <class T>
     constexpr T* as(auto&& t) {
         Node* v = std::to_address(t);
@@ -40,6 +28,19 @@ namespace brgen::ast {
             }
         }
         return nullptr;
+    }
+
+    template <class U>
+    constexpr auto cast_to(auto&& t) {
+        assert(as<U>(t) != nullptr);
+        using T = std::decay_t<decltype(t)>;
+        if constexpr (utils::helper::is_template_instance_of<T, std::shared_ptr>) {
+            using V = typename utils::helper::template_instance_of_t<T, std::shared_ptr>::template param_at<0>;
+            return std::static_pointer_cast<U>(std::forward<decltype(t)>(t));
+        }
+        else {
+            return static_cast<U*>(t);
+        }
     }
 
 }  // namespace brgen::ast

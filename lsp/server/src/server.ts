@@ -132,8 +132,8 @@ function execSrc2JSON<T>(exe_path :string,command :Array<string>,text :string,is
     });
 }
 
-const lexerCommand=(path :string) => ["--stdin","--stdin-name",path, "--lexer", "--no-color", "--print-on-error","--print-json"];
-const parserCommand = (path :string) => ["--stdin","--stdin-name",path, "--no-color", "--print-on-error","--print-json"];
+const lexerCommand=(path :string) => ["--stdin","--stdin-name",path, "--lexer", "--no-color", "--print-on-error","--print-json","--omit-json-warnings"];
+const parserCommand = (path :string) => ["--stdin","--stdin-name",path, "--no-color", "--print-on-error","--print-json","--omit-json-warnings"];
 
 
 let semanticTokenCache = new Map<string,SemanticTokens>();
