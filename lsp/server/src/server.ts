@@ -397,6 +397,7 @@ const hover = async (params :HoverParams)=>{
             console.log(`hit: ${node.node_type} ${JSON.stringify(node.loc)}`)
         }
         ast2ts.walk(node,f);
+        console.log("walked: "+node.node_type)
     });
     const color = (code :string,text :string) => {
         return `<span style="color: ${code};">${text}</span>`;
@@ -465,7 +466,8 @@ const typeDefinitionHandler = async (params :TypeDefinitionParams) => {
     let found :any;
     ast2ts.walk(docInfo.prevNode,(f,node)=>{
         if(node.loc.file!=1) {
-            return false; // skip other files
+            console.log("prevent file boundary: "+node.loc.file)
+            return; // skip other files
         }
         if(node.loc.pos.begin<=pos&&pos<=node.loc.pos.end){
             if(ast2ts.isIdent(node)){
