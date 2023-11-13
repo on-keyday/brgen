@@ -48,7 +48,7 @@ namespace brgen::lexer {
             ":", ";", "(", ")", "[", "]",
             "=>", "==", "=",
             "..=", "..", ".", "->",
-            "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "<<=", ">>=",">>>=","<<<=",
+            "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "<<=", ">>=", ">>>=", "<<<=",
             ">>>", "<<<", ">>", "<<", "~",
             "&&", "||", "&", "|",
             "!=", "!",
@@ -164,7 +164,7 @@ format Varint:
 
     }  // namespace internal
 
-    template <class T>
+    template <class TokenBuf = std::string, class T>
     std::optional<Token> parse_one(utils::Sequencer<T>& seq, std::uint64_t file) {
         auto ctx = utils::comb2::LexContext<Tag, std::string>{};
         if (auto res = internal::parse_one(seq, ctx); res != utils::comb2::Status::match) {
@@ -191,9 +191,20 @@ format Varint:
         tok.loc.file = file;
         tok.loc.pos = ctx.str_pos;
         seq.rptr = ctx.str_pos.begin;
-        tok.token.reserve(ctx.str_pos.len());
+        TokenBuf buf;
+        buf.reserve(ctx.str_pos.len());
         for (; seq.rptr < ctx.str_pos.end; seq.rptr++) {
-            tok.token.push_back(seq.current());
+            buf.push_back(seq.current());
+        }
+        if constexpr (std::is_same_v<TokenBuf, std::string>) {
+            tok.token = std::move(buf);
+        }
+        else {
+            auto err = utils::utf::convert<0, 1>(buf, tok.token, false, false);
+            if (!err) {
+                tok.tag = Tag::error;
+                tok.token = "invalid utf sequence";
+            }
         }
         return tok;
     }

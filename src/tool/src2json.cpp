@@ -15,6 +15,7 @@
 #include <core/ast/node_type_list.h>
 #include <core/ast/kill_node.h>
 #include <wrap/cin.h>
+#include <unicode/utf/view.h>
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>

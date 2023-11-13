@@ -9,7 +9,7 @@ TEST(Tool, LinerEquation) {
     ast::tool::LinerResolver r;
     auto parse_expr = [&](auto&& text) -> std::shared_ptr<ast::Program> {
         File f;
-        make_file_from_text(f, text);
+        make_file_from_text<std::string>(f, text);
         ast::Context c;
         auto e = c.enter_stream(&f, [](ast::Stream& s) {
             ast::Parser p{s};

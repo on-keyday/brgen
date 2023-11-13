@@ -43,7 +43,7 @@ namespace brgen::ast {
                 }
                 token->loc.line = line;
                 token->loc.col = col;
-                col += token->token.size();
+                col += token->loc.pos.len();
                 if (token->tag == lexer::Tag::line) {
                     line++;
                     col = 1;

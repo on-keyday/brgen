@@ -378,7 +378,9 @@ const hover = async (params :HoverParams)=>{
     if(hover===undefined){
         return null;
     }
+    hover.getText();
     const pos =  hover.offsetAt(params.position);
+    console.log("target pos: %d",pos)
     const docInfo = getOrCreateDocumentInfo(hover);
     if(docInfo.prevNode===null) {
         return null;
@@ -397,7 +399,19 @@ const hover = async (params :HoverParams)=>{
             console.log(`hit: ${node.node_type} ${JSON.stringify(node.loc)}`)
         }
         ast2ts.walk(node,f);
-        console.log("walked: "+node.node_type)
+        if(ast2ts.isMember(node)){
+            console.log("walked: "+node.node_type);
+            if(node.ident!=null){
+                console.log("ident: "+node.ident.ident+" "+JSON.stringify(node.ident.loc));
+            }
+        }
+        else if(ast2ts.isIdent(node)){
+            console.log("walked: "+node.node_type);
+            console.log("ident: "+node.ident+" "+JSON.stringify(node.loc));
+        }
+        else{
+            console.log("walked: "+node.node_type)
+        }
     });
     const color = (code :string,text :string) => {
         return `<span style="color: ${code};">${text}</span>`;

@@ -10,6 +10,8 @@
 #include <variant>
 #include <file/file_view.h>
 #include "expected.h"
+#include <unicode/utf/view.h>
+#include <binary/view.h>
 
 namespace brgen {
     namespace fs = std::filesystem;
@@ -17,24 +19,30 @@ namespace brgen {
     struct File {
        private:
         friend struct FileSet;
-        template <class T>
+        template <class Buf, class T>
         friend bool make_file_from_text(File& file, T&& t);
 
-        template <class T>
+        template <class TokenBuf, class T>
         static std::optional<lexer::Token> do_parse(void* ptr, std::uint64_t file) {
-            return lexer::parse_one(*static_cast<utils::Sequencer<T>*>(ptr), file);
+            return lexer::parse_one<TokenBuf>(*static_cast<utils::Sequencer<T>*>(ptr), file);
         }
 
-        template <class T>
+        template <class DumpBuf, class T>
         static std::pair<std::string, utils::code::SrcLoc> dump_source(void* ptr, lexer::Pos pos) {
             auto& seq = *static_cast<utils::Sequencer<T>*>(ptr);
             size_t rptr = seq.rptr;
             seq.rptr = pos.begin;
-            std::string out;
+            DumpBuf out;
             auto loc = utils::code::write_src_loc(out, seq, pos.len());
             seq.rptr = rptr;
-            return {out, loc};
+            if constexpr (std::is_same_v<DumpBuf, std::string>) {
+                return {std::move(out), loc};
+            }
+            else {
+                return {utils::utf::convert<std::string>(out), loc};
+            }
         }
+
         lexer::FileIndex file = lexer::builtin;
         bool special = false;
         fs::path file_name;
@@ -47,15 +55,18 @@ namespace brgen {
         template <class T>
         static utils::view::rvec direct_source(void* p) {
             auto& seq = *static_cast<utils::Sequencer<T>*>(p);
-            return seq.buf.buffer;
+            if constexpr (std::is_convertible_v<T, utils::view::rvec>) {
+                return seq.buf.buffer;
+            }
+            return {};
         }
 
-        template <class T>
+        template <class Buf, class T>
         void set_input(T&& t) {
             using U = std::decay_t<T>;
             ptr = std::make_unique<utils::Sequencer<U>>(std::forward<T>(t));
-            parse_ = do_parse<U>;
-            dump_ = dump_source<U>;
+            parse_ = do_parse<Buf, U>;
+            dump_ = dump_source<Buf, U>;
             direct = direct_source<U>;
         }
 
@@ -112,19 +123,134 @@ namespace brgen {
         }
     };
 
-    template <class T>
+    template <class Buf, class T>
     bool make_file_from_text(File& file, T&& t) {
-        file.set_input(std::forward<T>(t));
+        file.set_input<Buf>(std::forward<T>(t));
         return true;
     }
+
+    enum class UtfMode {
+        utf8,
+        utf16,
+        utf16le,
+        utf16be,
+        utf32,
+        utf32le,
+        utf32be,
+    };
 
     struct FileSet {
        private:
         std::map<fs::path, File> files;
         std::map<lexer::FileIndex, File*> indexes;
         lexer::FileIndex index = lexer::builtin;
+        bool utf16_mode = false;
+        bool file_as_utf16 = false;
+        UtfMode input_mode = UtfMode::utf8;
+        UtfMode interpret_mode = UtfMode::utf8;
+
+        void set_input_with_mode(File& f, auto&& buffer) {
+            if (input_mode == interpret_mode) {
+                switch (input_mode) {
+                    case UtfMode::utf8:
+                        assert(sizeof(buffer[1]) == 1);
+                        make_file_from_text<std::string>(f, std::forward<decltype(buffer)>(buffer));
+                        break;
+                    case UtfMode::utf16:
+                        assert(sizeof(buffer[1]) == 2);
+                        make_file_from_text<std::u16string>(f, std::forward<decltype(buffer)>(buffer));
+                        break;
+                    case UtfMode::utf32:
+                        assert(sizeof(buffer[1]) == 4);
+                        make_file_from_text<std::u32string>(f, std::forward<decltype(buffer)>(buffer));
+                        break;
+                    default:
+                        assert(false);
+                        __builtin_unreachable();
+                }
+                return;
+            }
+            else if (input_mode == UtfMode::utf8) {
+                assert(sizeof(buffer[1]) == 1);
+                switch (interpret_mode) {
+                    case UtfMode::utf16:
+                        make_file_from_text<std::u16string>(f, utils::utf::U16View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
+                        break;
+                    case UtfMode::utf32:
+                        make_file_from_text<std::u32string>(f, utils::utf::U32View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
+                        break;
+                    default:
+                        assert(false);
+                        __builtin_unreachable();
+                }
+                return;
+            }
+            else if (input_mode == UtfMode::utf16le || input_mode == UtfMode::utf16be) {
+                assert(sizeof(buffer[1]) == 2);
+                switch (interpret_mode) {
+                    case UtfMode::utf8:
+                        make_file_from_text<std::string>(f, utils::utf::U8View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
+                        break;
+                    case UtfMode::utf32:
+                        make_file_from_text<std::u32string>(f, utils::utf::U32View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
+                        break;
+                    default:
+                        assert(false);
+                        __builtin_unreachable();
+                }
+                return;
+            }
+            else if (input_mode == UtfMode::utf32le || input_mode == UtfMode::utf32be) {
+                assert(sizeof(buffer[1]) == 4);
+                switch (interpret_mode) {
+                    case UtfMode::utf8:
+                        make_file_from_text<std::string>(f, utils::utf::U8View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
+                        break;
+                    case UtfMode::utf16:
+                        make_file_from_text<std::u16string>(f, utils::utf::U16View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
+                        break;
+                    default:
+                        assert(false);
+                        __builtin_unreachable();
+                }
+                return;
+            }
+            assert(false);
+            __builtin_unreachable();
+        }
+
+        void set_file_with_input_mode(File& file, auto&& view) {
+            assert(sizeof(view[1]) == 1);
+            using View = std::decay_t<decltype(view)>;
+            using utils::binary::EndianView;
+            if (input_mode == UtfMode::utf8) {
+                set_input_with_mode(file, std::move(view));
+            }
+            else if (input_mode == UtfMode::utf16be) {
+                set_input_with_mode(file, EndianView<View, char16_t>(std::move(view), false));
+            }
+            else if (input_mode == UtfMode::utf16le) {
+                set_input_with_mode(file, EndianView<View, char16_t>(std::move(view), true));
+            }
+            else if (input_mode == UtfMode::utf32be) {
+                set_input_with_mode(file, EndianView<View, char32_t>(std::move(view), false));
+            }
+            else if (input_mode == UtfMode::utf32le) {
+                set_input_with_mode(file, EndianView<View, char32_t>(std::move(view), true));
+            }
+            else {
+                assert(false);
+                __builtin_unreachable();
+            }
+        }
 
        public:
+        void
+        set_utf_mode(UtfMode input_mode, UtfMode interpret_mode) {
+            this->input_mode = input_mode;
+            this->interpret_mode = interpret_mode;
+        }
+
         std::vector<std::string> file_list() {
             std::vector<std::string> ret;
             ret.reserve(files.size());
@@ -148,7 +274,7 @@ namespace brgen {
             auto& f = files[file.file_name];
             f = std::move(file);
             indexes[index] = &f;
-            make_file_from_text(f, std::forward<decltype(buffer)>(buffer));
+            set_file_with_input_mode(f, std::forward<decltype(buffer)>(buffer));
             return files.size();
         }
 
@@ -203,7 +329,7 @@ namespace brgen {
                 if (!v.open(file->file_name.c_str())) {
                     return nullptr;
                 }
-                file->set_input(std::move(v));
+                set_file_with_input_mode(*file, std::move(v));
             }
             return file;
         }
