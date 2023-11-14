@@ -60,6 +60,9 @@ struct Flags : utils::cmdline::templ::HelpOption {
 
     bool omit_warning = false;
 
+    brgen::UtfMode input_mode = brgen::UtfMode::utf8;
+    brgen::UtfMode interpret_mode = brgen::UtfMode::utf8;
+
     void bind(utils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&lexer, "l,lexer", "lexer mode");
@@ -88,6 +91,23 @@ struct Flags : utils::cmdline::templ::HelpOption {
         ctx.VarInt(&tokenization_limit, "tokenization-limit", "set tokenization limit (use with --lexer) (0=unlimited)", "<size>");
 
         ctx.VarBool(&collect_comments, "collect-comments", "collect comments");
+
+        ctx.VarMap<std::string, brgen::UtfMode, std::map>(
+            &input_mode, "input-mode", "set input mode (default:utf8) (utf8, utf16le, utf16be, utf32le ,utf32be)", "<mode>",
+            std::map<std::string, brgen::UtfMode>{
+                {"utf8", brgen::UtfMode::utf8},
+                {"utf16le", brgen::UtfMode::utf16le},
+                {"utf16be", brgen::UtfMode::utf16be},
+                {"utf32le", brgen::UtfMode::utf32le},
+                {"utf32be", brgen::UtfMode::utf32be},
+            });
+        ctx.VarMap<std::string, brgen::UtfMode, std::map>(
+            &interpret_mode, "interpret-mode", "set interpret mode (default:utf8) (used to decide file position) (utf8, utf16, utf32)", "<mode>",
+            std::map<std::string, brgen::UtfMode>{
+                {"utf8", brgen::UtfMode::utf8},
+                {"utf16", brgen::UtfMode::utf16},
+                {"utf32", brgen::UtfMode::utf32},
+            });
     }
 };
 auto& cout = utils::wrap::cout_wrap();
@@ -215,8 +235,13 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     }
 
     brgen::FileSet files;
+    files.set_utf_mode(flags.input_mode, flags.interpret_mode);
     brgen::File* input = nullptr;
     if (flags.argv_mode) {
+        if (flags.input_mode != brgen::UtfMode::utf8) {
+            print_error("argv mode only support utf8");
+            return -1;
+        }
         auto ok = files.add_special(name, flags.argv_input);
         if (!ok) {
             print_error("cannot input ", name, " code=", ok.error());
@@ -272,6 +297,10 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     }
 
     if (flags.check_ast) {
+        if (flags.input_mode != brgen::UtfMode::utf8) {
+            print_error("check-ast mode only support utf8");
+            return -1;
+        }
         return check_ast(name, input->source());
     }
 
