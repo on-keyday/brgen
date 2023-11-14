@@ -778,7 +778,8 @@ const (
 	IdentUsageDefineCastFn     IdentUsage = 9
 	IdentUsageDefineArg        IdentUsage = 10
 	IdentUsageReferenceType    IdentUsage = 11
-	IdentUsageMaybeType        IdentUsage = 12
+	IdentUsageReferenceMember  IdentUsage = 12
+	IdentUsageMaybeType        IdentUsage = 13
 )
 
 func (n IdentUsage) String() string {
@@ -807,6 +808,8 @@ func (n IdentUsage) String() string {
 		return "define_arg"
 	case IdentUsageReferenceType:
 		return "reference_type"
+	case IdentUsageReferenceMember:
+		return "reference_member"
 	case IdentUsageMaybeType:
 		return "maybe_type"
 	default:
@@ -844,6 +847,8 @@ func (n *IdentUsage) UnmarshalJSON(data []byte) error {
 		*n = IdentUsageDefineArg
 	case "reference_type":
 		*n = IdentUsageReferenceType
+	case "reference_member":
+		*n = IdentUsageReferenceMember
 	case "maybe_type":
 		*n = IdentUsageMaybeType
 	default:
@@ -1147,12 +1152,11 @@ func (n *If) GetLoc() Loc {
 }
 
 type MemberAccess struct {
-	Loc       Loc
-	ExprType  Type
-	Target    Expr
-	Member    string
-	MemberLoc Loc
-	Base      Node
+	Loc      Loc
+	ExprType Type
+	Target   Expr
+	Member   *Ident
+	Base     Node
 }
 
 func (n *MemberAccess) isExpr() {}
@@ -2325,11 +2329,10 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeMemberAccess:
 			v := n.node[i].(*MemberAccess)
 			var tmp struct {
-				ExprType  *uintptr `json:"expr_type"`
-				Target    *uintptr `json:"target"`
-				Member    string   `json:"member"`
-				MemberLoc Loc      `json:"member_loc"`
-				Base      *uintptr `json:"base"`
+				ExprType *uintptr `json:"expr_type"`
+				Target   *uintptr `json:"target"`
+				Member   *uintptr `json:"member"`
+				Base     *uintptr `json:"base"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -2340,8 +2343,9 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.Target != nil {
 				v.Target = n.node[*tmp.Target].(Expr)
 			}
-			v.Member = tmp.Member
-			v.MemberLoc = tmp.MemberLoc
+			if tmp.Member != nil {
+				v.Member = n.node[*tmp.Member].(*Ident)
+			}
 			if tmp.Base != nil {
 				v.Base = n.node[*tmp.Base].(Node)
 			}
@@ -3211,6 +3215,11 @@ func Walk(n Node, f Visitor) {
 		}
 		if v.Target != nil {
 			if !f.Visit(f, v.Target) {
+				return
+			}
+		}
+		if v.Member != nil {
+			if !f.Visit(f, v.Member) {
 				return
 			}
 		}

@@ -117,6 +117,7 @@ DefineFn,
 DefineCastFn,
 DefineArg,
 ReferenceType,
+ReferenceMember,
 MaybeType,
 }
 public enum Endian {
@@ -210,8 +211,7 @@ public class MemberAccess : Expr{
 	public Loc Loc{get;set;}
 	public Type? ExprType{get;set;}
 	public Expr? Target{get;set;}
-	public string Member{get;set;}
-	public Loc MemberLoc{get;set;}
+	public Ident? Member{get;set;}
 	public Node? Base{get;set;}
 }
 public class Paren : Expr{

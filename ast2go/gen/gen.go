@@ -83,7 +83,7 @@ func GetConfig(m ast2go.Node) string {
 	if desc == "" {
 		return ""
 	}
-	return desc + "." + member.Member
+	return desc + "." + member.Member.Ident
 }
 
 func mapToken(op ast2go.BinaryOp) token.Token {

@@ -75,11 +75,12 @@ export enum IdentUsage {
 	define_cast_fn = "define_cast_fn",
 	define_arg = "define_arg",
 	reference_type = "reference_type",
+	reference_member = "reference_member",
 	maybe_type = "maybe_type",
 };
 
 export function isIdentUsage(obj: any): obj is IdentUsage {
-	return obj && typeof obj === 'string' && (obj === "unknown" || obj === "reference" || obj === "define_variable" || obj === "define_const" || obj === "define_field" || obj === "define_format" || obj === "define_enum" || obj === "define_enum_member" || obj === "define_fn" || obj === "define_cast_fn" || obj === "define_arg" || obj === "reference_type" || obj === "maybe_type")
+	return obj && typeof obj === 'string' && (obj === "unknown" || obj === "reference" || obj === "define_variable" || obj === "define_const" || obj === "define_field" || obj === "define_format" || obj === "define_enum" || obj === "define_enum_member" || obj === "define_fn" || obj === "define_cast_fn" || obj === "define_arg" || obj === "reference_type" || obj === "reference_member" || obj === "maybe_type")
 }
 
 export enum Endian {
@@ -344,8 +345,7 @@ export function isIf(obj: any): obj is If {
 
 export interface MemberAccess extends Expr {
 	target: Expr|null;
-	member: string;
-	member_loc: Loc;
+	member: Ident|null;
 	base: Node|null;
 }
 
@@ -969,8 +969,7 @@ export function parseAST(obj: any): Program {
 				loc: on.loc,
 				expr_type: null,
 				target: null,
-				member: '',
-				member_loc: on.loc,
+				member: null,
 				base: null,
 			}
 			c.node.push(n);
@@ -1724,16 +1723,14 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at MemberAccess::target');
 			}
 			n.target = tmptarget;
-			const tmpmember = on.body?.member;
-			if (typeof on.body?.member !== "string") {
+			if (on.body?.member !== null && typeof on.body?.member !== 'number') {
 				throw new Error('invalid node list at MemberAccess::member');
 			}
-			n.member = on.body.member;
-			const tmpmember_loc = on.body?.member_loc;
-			if (!isLoc(tmpmember_loc)) {
-				throw new Error('invalid node list at MemberAccess::member_loc');
+			const tmpmember = on.body.member === null ? null : c.node[on.body.member];
+			if (!(tmpmember === null || isIdent(tmpmember))) {
+				throw new Error('invalid node list at MemberAccess::member');
 			}
-			n.member_loc = tmpmember_loc;
+			n.member = tmpmember;
 			if (on.body?.base !== null && typeof on.body?.base !== 'number') {
 				throw new Error('invalid node list at MemberAccess::base');
 			}
@@ -3000,6 +2997,12 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			if (n.target !== null) {
 				const result = fn(fn,n.target);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.member !== null) {
+				const result = fn(fn,n.member);
 				if (result === false) {
 					return;
 				}

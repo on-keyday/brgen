@@ -232,6 +232,7 @@ enum ast2c_IdentUsage {
 	AST2C_IDENTUSAGE_DEFINE_CAST_FN,
 	AST2C_IDENTUSAGE_DEFINE_ARG,
 	AST2C_IDENTUSAGE_REFERENCE_TYPE,
+	AST2C_IDENTUSAGE_REFERENCE_MEMBER,
 	AST2C_IDENTUSAGE_MAYBE_TYPE,
 };
 const char* ast2c_IdentUsage_to_string(ast2c_IdentUsage);
@@ -465,8 +466,7 @@ struct ast2c_MemberAccess {
 	ast2c_Loc loc;
 	ast2c_Type* expr_type;
 	ast2c_Expr* target;
-	char* member;
-	ast2c_Loc member_loc;
+	ast2c_Ident* member;
 	ast2c_Node* base;
 };
 

@@ -539,6 +539,7 @@ const char* ast2c_IdentUsage_to_string(ast2c_IdentUsage val) {
 	case AST2C_IDENTUSAGE_DEFINE_CAST_FN: return "define_cast_fn";
 	case AST2C_IDENTUSAGE_DEFINE_ARG: return "define_arg";
 	case AST2C_IDENTUSAGE_REFERENCE_TYPE: return "reference_type";
+	case AST2C_IDENTUSAGE_REFERENCE_MEMBER: return "reference_member";
 	case AST2C_IDENTUSAGE_MAYBE_TYPE: return "maybe_type";
 	default: return NULL;
 	}
@@ -593,6 +594,10 @@ int ast2c_IdentUsage_from_string(const char* str, ast2c_IdentUsage* out) {
 	}
 	if (strcmp(str, "reference_type") == 0) {
 		*out = AST2C_IDENTUSAGE_REFERENCE_TYPE;
+		return 1;
+	}
+	if (strcmp(str, "reference_member") == 0) {
+		*out = AST2C_IDENTUSAGE_REFERENCE_MEMBER;
 		return 1;
 	}
 	if (strcmp(str, "maybe_type") == 0) {
@@ -956,25 +961,14 @@ int ast2c_MemberAccess_parse(ast2c_Ast* ast,ast2c_MemberAccess* s,ast2c_json_han
 	void* expr_type = h->object_get(h, obj_body, "expr_type");
 	void* target = h->object_get(h, obj_body, "target");
 	void* member = h->object_get(h, obj_body, "member");
-	void* member_loc = h->object_get(h, obj_body, "member_loc");
 	void* base = h->object_get(h, obj_body, "base");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_MemberAccess::loc is null"); } return 0; }
 	if (!expr_type) { if(h->error) { h->error(h,expr_type, "ast2c_MemberAccess::expr_type is null"); } return 0; }
 	if (!target) { if(h->error) { h->error(h,target, "ast2c_MemberAccess::target is null"); } return 0; }
 	if (!member) { if(h->error) { h->error(h,member, "ast2c_MemberAccess::member is null"); } return 0; }
-	if (!member_loc) { if(h->error) { h->error(h,member_loc, "ast2c_MemberAccess::member_loc is null"); } return 0; }
 	if (!base) { if(h->error) { h->error(h,base, "ast2c_MemberAccess::base is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_MemberAccess::loc"); }
-		goto error;
-	}
-	s->member = h->string_get_alloc(h,member);
-	if (!s->member) {
-		if(h->error) { h->error(h,member, "failed to parse ast2c_MemberAccess::member"); }
-		goto error;
-	}
-	if(!ast2c_Loc_parse(&s->member_loc,h,member_loc)) {
-		if(h->error) { h->error(h,member_loc, "failed to parse ast2c_MemberAccess::member_loc"); }
 		goto error;
 	}
 	return 1;

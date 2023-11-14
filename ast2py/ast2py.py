@@ -122,6 +122,7 @@ class IdentUsage(PyEnum):
     DEFINE_CAST_FN = "define_cast_fn"
     DEFINE_ARG = "define_arg"
     REFERENCE_TYPE = "reference_type"
+    REFERENCE_MEMBER = "reference_member"
     MAYBE_TYPE = "maybe_type"
 
 
@@ -218,8 +219,7 @@ class If(Expr):
 
 class MemberAccess(Expr):
     target: Optional[Expr]
-    member: str
-    member_loc: Loc
+    member: Optional[Ident]
     base: Optional[Node]
 
 
@@ -866,9 +866,11 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].target = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at MemberAccess::target'))
                 else:
                     node[i].target = None
-                x = ast.node[i].body["member"]
-                node[i].member = x if isinstance(x,str)  else raiseError(TypeError('type mismatch at MemberAccess::member'))
-                node[i].member_loc = parse_Loc(ast.node[i].body["member_loc"])
+                if ast.node[i].body["member"] is not None:
+                    x = node[ast.node[i].body["member"]]
+                    node[i].member = x if isinstance(x,Ident) else raiseError(TypeError('type mismatch at MemberAccess::member'))
+                else:
+                    node[i].member = None
                 if ast.node[i].body["base"] is not None:
                     x = node[ast.node[i].body["base"]]
                     node[i].base = x if isinstance(x,Node) else raiseError(TypeError('type mismatch at MemberAccess::base'))
@@ -1435,6 +1437,9 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
                   return
           if x.target is not None:
               if f(f,x.target) == False:
+                  return
+          if x.member is not None:
+              if f(f,x.member) == False:
                   return
         case x if isinstance(x,Paren):
           if x.expr_type is not None:

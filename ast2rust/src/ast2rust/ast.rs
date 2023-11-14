@@ -415,6 +415,7 @@ impl TryFrom<&str> for BinaryOp {
 	DefineCastFn,
 	DefineArg,
 	ReferenceType,
+	ReferenceMember,
 	MaybeType,
 }
 
@@ -434,6 +435,7 @@ impl TryFrom<&str> for IdentUsage {
 			"define_cast_fn" =>Ok(Self::DefineCastFn),
 			"define_arg" =>Ok(Self::DefineArg),
 			"reference_type" =>Ok(Self::ReferenceType),
+			"reference_member" =>Ok(Self::ReferenceMember),
 			"maybe_type" =>Ok(Self::MaybeType),
 			_=> Err(()),
 		}
@@ -2398,8 +2400,7 @@ pub struct MemberAccess {
 	pub loc: Loc,
 	pub expr_type: Option<Type>,
 	pub target: Option<Expr>,
-	pub member: String,
-	pub member_loc: Loc,
+	pub member: Option<Rc<RefCell<Ident>>>,
 	pub base: Option<NodeWeak>,
 }
 
@@ -5708,8 +5709,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				loc: raw_node.loc.clone(),
 				expr_type: None,
 				target: None,
-				member: String::new(),
-				member_loc: raw_node.loc.clone(),
+				member: None,
 				base: None,
 				})))
 			},
@@ -6587,18 +6587,21 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"member")),
 				};
-				node.borrow_mut().member = match member_body.as_str() {
-					Some(v)=>v.to_string(),
-					None=>return Err(Error::MismatchJSONType(member_body.into(),JSONType::String)),
-				};
-				let member_loc_body = match raw_node.body.get("member_loc") {
-					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"member_loc")),
-				};
-				node.borrow_mut().member_loc = match serde_json::from_value(member_loc_body.clone()) {
-					Ok(v)=>v,
-					Err(e)=>return Err(Error::JSONError(e)),
-				};
+ 				if !member_body.is_null() {
+					let member_body = match member_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(member_body.into(),JSONType::Number)),
+					};
+					let member_body = match nodes.get(member_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(member_body as usize)),
+					};
+					let member_body = match member_body {
+						Node::Ident(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),member_body.into())),
+					};
+					node.borrow_mut().member = Some(member_body.clone());
+				}
 				let base_body = match raw_node.body.get("base") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"base")),
@@ -8792,6 +8795,11 @@ where
 				}
 			}
 			if let Some(node) = &node.borrow().target{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
+			if let Some(node) = &node.borrow().member{
 				if !f.visit(&node.into()){
 					return;
 				}
