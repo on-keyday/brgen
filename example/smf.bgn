@@ -1,0 +1,131 @@
+
+# SMF file format
+
+format StandardMidiFile:
+    header: HeaderChunk
+    tracks: [..]TrackChunk
+
+format HeaderChunk:
+    magic  :"MThd"
+    length : ub32(6)
+    format_type : ub16
+    track_count : ub16
+    time_division_flag : ub1
+    match time_division_flag:
+        0 => time_division : ub15
+        1 => time_division : SMPTE
+
+format SMPTE:
+    frames_per_second : ub7
+    ticks_per_frame : ub5
+
+format Varint:
+    value :u32
+
+    fn encode():
+        if value > 0x0fffffff:
+            error("delta time too long")
+        if value < 128:
+            output.put(u8(value))
+            return
+        data := value
+        loop data > 0:
+            output.put(u8(data & 0x7f))
+            data >>= 7
+
+    fn decode():
+        value = 0
+        shift := 0
+        loop:
+            if shift > 28:
+                error("delta time too long")
+            byte := input.get(u8)
+            value |= (byte & 0x7f) << shift
+            if byte & 0x80 == 0:
+                break
+            shift = shift + 7
+
+    fn cast u32():
+        return value
+
+format TrackChunk:
+    magic  :"MTrk"
+    length : ub32
+    events : [..]Event(input.proxy=input.subrange(0,length))
+
+enum EventType:
+    :u8
+    SysExEvent = 0xf0
+    MetaEvent = 0xff
+    NoteOffEvent = 0x80
+    NoteOnEvent = 0x90
+    PolyphonicKeyPressureEvent = 0xa0
+    ControlChangeEvent = 0xb0
+    ProgramChangeEvent = 0xc0
+    ChannelPressureEvent = 0xd0
+    PitchBendEvent = 0xe0
+    
+
+format Event:
+    delta_time : Varint
+    event_type : u8
+    fn event():
+        if event_type == 0xff:
+            return EventType.MetaEvent
+        return EventType(event_type & 0xf0)
+    fn channel():
+        return event_type & 0x0f
+    type := event_type
+    if type == (0x00..0x7f):
+        type = config.state("running_status")
+    match type:
+        0xff => data :MetaEvent
+        0xf0 => data :SysExEvent
+        0xf7 => data :SysExEvent
+        .. :
+            config.state("running_status",event_type) 
+            match event_type:     
+                0x80..0x8f => data :NoteOffEvent
+                0x90..0x9f => data :NoteOnEvent
+                0xa0..0xaf => data :PolyphonicKeyPressureEvent
+                0xb0..0xbf => data :ControlChangeEvent
+                0xc0..0xcf => data :ProgramChangeEvent
+                0xd0..0xdf => data :ChannelPressureEvent
+                0xe0..0xef => data :PitchBendEvent
+                .. => error("invalid event type")
+
+format MetaEvent:
+    event_type : u8
+    length : Varint
+    data : [length]u8
+
+format SysExEvent:
+    length : Varint
+    data : [length]u8
+
+format NoteOffEvent:
+    note : u8
+    velocity : u8
+
+format NoteOnEvent:
+    note : u8
+    velocity : u8
+
+format PolyphonicKeyPressureEvent:
+    note : u8
+    pressure : u8
+
+format ControlChangeEvent:
+    control : u8
+    value : u8
+
+format ProgramChangeEvent:
+    program : u8
+
+format ChannelPressureEvent:
+    pressure : u8
+
+format PitchBendEvent:
+    value : ub16
+
+

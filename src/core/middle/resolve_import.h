@@ -74,7 +74,7 @@ namespace brgen::middle {
                         if (access->target->node_type != ast::NodeType::config) {
                             return;
                         }
-                        if (access->member != "import") {
+                        if (access->member->ident != "import") {
                             return;
                         }
                         if (m->arguments.size() != 1) {

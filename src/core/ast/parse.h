@@ -534,8 +534,11 @@ namespace brgen::ast {
 
         std::shared_ptr<MemberAccess> parse_access(lexer::Token token, std::shared_ptr<Expr>& p) {
             s.skip_white();
-            auto ident = s.must_consume_token(lexer::Tag::ident);
-            return std::make_shared<MemberAccess>(token.loc, std::move(p), std::move(ident.token), ident.loc);
+            auto ident = parse_ident_no_scope();
+            ident->usage = IdentUsage::reference_member;
+            auto member = std::make_shared<MemberAccess>(token.loc, std::move(p), std::move(ident));
+            member->member->base = member;
+            return member;
         }
 
         /*

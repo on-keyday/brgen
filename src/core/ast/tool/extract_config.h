@@ -22,7 +22,7 @@ namespace brgen::ast::tool {
             if (conf.size() == 0) {
                 return "";
             }
-            return conf + "." + d->member;
+            return conf + "." + d->member->ident;
         }
         return "";
     }

@@ -599,9 +599,9 @@ namespace brgen::middle {
                 if (!type) {
                     error(selector->target->loc, "expect struct type but not").report();
                 }
-                auto stmt = type->lookup(selector->member);
+                auto stmt = type->lookup(selector->member->ident);
                 if (!stmt) {
-                    error(selector->member_loc, "member ", selector->member, " is not defined").report();
+                    error(selector->member->loc, "member ", selector->member->ident, " is not defined").report();
                 }
                 if (auto field = ast::as<ast::Field>(stmt)) {
                     selector->expr_type = field->field_type;
@@ -612,7 +612,7 @@ namespace brgen::middle {
                     selector->base = stmt;
                 }
                 else {
-                    error(selector->member_loc, "member ", selector->member, " is not a field or function").report();
+                    error(selector->member->loc, "member ", selector->member->ident, " is not a field or function").report();
                 }
             }
             else if (auto idx = ast::as<ast::Index>(expr)) {

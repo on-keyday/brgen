@@ -22,6 +22,7 @@ namespace brgen::ast {
         define_cast_fn,
         define_arg,
         reference_type,
+        reference_member,
         maybe_type,
     };
 
@@ -38,11 +39,12 @@ namespace brgen::ast {
         "define_cast_fn",
         "define_arg",
         "reference_type",
+        "reference_member",
         "maybe_type",
         nullptr,
     };
 
-    constexpr auto ident_usage_count = 13;
+    constexpr auto ident_usage_count = 14;
 
     constexpr std::optional<IdentUsage> ident_usage(std::string_view view) {
         for (auto i = 0; ident_usage_str[i]; i++) {
@@ -216,20 +218,18 @@ namespace brgen::ast {
     struct MemberAccess : Expr {
         define_node_type(NodeType::member_access);
         std::shared_ptr<Expr> target;
-        std::string member;
-        lexer::Loc member_loc;
+        std::shared_ptr<Ident> member;
         std::weak_ptr<Node> base;
 
         void dump(auto&& field_) {
             Expr::dump(field_);
             sdebugf(target);
             sdebugf(member);
-            sdebugf(member_loc);
             sdebugf(base);
         }
 
-        MemberAccess(lexer::Loc l, std::shared_ptr<Expr>&& t, std::string&& n, lexer::Loc ml)
-            : Expr(l, NodeType::member_access), target(std::move(t)), member(std::move(n)), member_loc(ml) {}
+        MemberAccess(lexer::Loc l, std::shared_ptr<Expr>&& t, std::shared_ptr<Ident>&& n)
+            : Expr(l, NodeType::member_access), target(std::move(t)), member(std::move(n)) {}
 
         // for decode
         MemberAccess()
