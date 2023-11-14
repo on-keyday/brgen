@@ -44,3 +44,20 @@ void print_warning(auto&&... msg) {
     }
     cerr << p.pack();
 }
+
+void print_note(auto&&... msg) {
+    auto p = utils::wrap::pack();
+    p << prefix_loc();
+    if (!no_color && cerr.is_tty()) {
+        p << cse::letter_color<cse::ColorPalette::cyan>;
+    }
+    p << "note: ";
+    if (!no_color && cerr.is_tty()) {
+        p << cse::letter_color<cse::ColorPalette::white>;
+    }
+    (p << ... << msg) << "\n";
+    if (!no_color && cerr.is_tty()) {
+        p << cse::color_reset;
+    }
+    cerr << p.pack();
+}

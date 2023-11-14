@@ -63,6 +63,8 @@ struct Flags : utils::cmdline::templ::HelpOption {
     brgen::UtfMode input_mode = brgen::UtfMode::utf8;
     brgen::UtfMode interpret_mode = brgen::UtfMode::utf8;
 
+    bool detected_output_type = false;
+
     void bind(utils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&lexer, "l,lexer", "lexer mode");
@@ -108,6 +110,8 @@ struct Flags : utils::cmdline::templ::HelpOption {
                 {"utf16", brgen::UtfMode::utf16},
                 {"utf32", brgen::UtfMode::utf32},
             });
+
+        ctx.VarBool(&detected_output_type, "detected-output-type", "detected output type (for debug)");
     }
 };
 auto& cout = utils::wrap::cout_wrap();
@@ -204,6 +208,20 @@ int dump_types() {
 int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     cerr.set_virtual_terminal(true);  // ignore error
     cout.set_virtual_terminal(true);  // ignore error
+    if (flags.detected_output_type) {
+        if (auto s = cout.get_file().stat()) {
+            print_note("detected stdout type: ", to_string(s->mode.type()));
+        }
+        else {
+            print_warning("cannot detect stdout type");
+        }
+        if (auto s = cerr.get_file().stat()) {
+            print_note("detected stderr type: ", to_string(s->mode.type()));
+        }
+        else {
+            print_warning("cannot detect stderr type");
+        }
+    }
     no_color = flags.no_color;
     flags.argv_mode = flags.argv_input.size() > 0;
 

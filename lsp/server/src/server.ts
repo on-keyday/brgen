@@ -131,7 +131,7 @@ function execSrc2JSON<T>(exe_path :string,command :Array<string>,text :string,is
         ch.stdin?.write(text);
         ch.stdin?.end();
         setTimeout(()=>{
-            if(ch.exitCode!==null){
+            if(ch.exitCode===null){
                 ch.kill();
                 reject(new Error("timeout"));
             }
@@ -139,8 +139,8 @@ function execSrc2JSON<T>(exe_path :string,command :Array<string>,text :string,is
     });
 }
 
-const lexerCommand=(path :string) => ["--stdin","--stdin-name",path, "--lexer", "--no-color", "--print-on-error","--print-json","--omit-json-warning"];
-const parserCommand = (path :string) => ["--stdin","--stdin-name",path, "--no-color", "--print-on-error","--print-json","--omit-json-warning"];
+const lexerCommand=(path :string) => ["--stdin","--stdin-name",path, "--lexer", "--no-color", "--print-on-error","--print-json","--omit-json-warning","--interpret-mode","utf16","--detected-output-type"];
+const parserCommand = (path :string) => ["--stdin","--stdin-name",path, "--no-color", "--print-on-error","--print-json","--omit-json-warning","--interpret-mode","utf16","--detected-output-type"];
 
 
 class DocumentInfo {
