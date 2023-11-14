@@ -349,6 +349,7 @@ class IntType(Type):
     bit_size: int
     endian: Endian
     is_signed: bool
+    is_common_supported: bool
 
 
 class IdentType(Type):
@@ -1165,6 +1166,8 @@ def ast2node(ast :JsonAst) -> Program:
                 node[i].endian = Endian(ast.node[i].body["endian"])
                 x = ast.node[i].body["is_signed"]
                 node[i].is_signed = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at IntType::is_signed'))
+                x = ast.node[i].body["is_common_supported"]
+                node[i].is_common_supported = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at IntType::is_common_supported'))
             case NodeType.IDENT_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at IdentType::is_explicit'))

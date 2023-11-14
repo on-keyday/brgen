@@ -1618,11 +1618,12 @@ func (n *Function) GetLoc() Loc {
 }
 
 type IntType struct {
-	Loc        Loc
-	IsExplicit bool
-	BitSize    uint64
-	Endian     Endian
-	IsSigned   bool
+	Loc               Loc
+	IsExplicit        bool
+	BitSize           uint64
+	Endian            Endian
+	IsSigned          bool
+	IsCommonSupported bool
 }
 
 func (n *IntType) isType() {}
@@ -2755,10 +2756,11 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeIntType:
 			v := n.node[i].(*IntType)
 			var tmp struct {
-				IsExplicit bool   `json:"is_explicit"`
-				BitSize    uint64 `json:"bit_size"`
-				Endian     Endian `json:"endian"`
-				IsSigned   bool   `json:"is_signed"`
+				IsExplicit        bool   `json:"is_explicit"`
+				BitSize           uint64 `json:"bit_size"`
+				Endian            Endian `json:"endian"`
+				IsSigned          bool   `json:"is_signed"`
+				IsCommonSupported bool   `json:"is_common_supported"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -2767,6 +2769,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.BitSize = tmp.BitSize
 			v.Endian = tmp.Endian
 			v.IsSigned = tmp.IsSigned
+			v.IsCommonSupported = tmp.IsCommonSupported
 		case NodeTypeIdentType:
 			v := n.node[i].(*IdentType)
 			var tmp struct {

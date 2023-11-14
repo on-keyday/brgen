@@ -1687,11 +1687,13 @@ int ast2c_IntType_parse(ast2c_Ast* ast,ast2c_IntType* s,ast2c_json_handlers* h, 
 	void* bit_size = h->object_get(h, obj_body, "bit_size");
 	void* endian = h->object_get(h, obj_body, "endian");
 	void* is_signed = h->object_get(h, obj_body, "is_signed");
+	void* is_common_supported = h->object_get(h, obj_body, "is_common_supported");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_IntType::loc is null"); } return 0; }
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_IntType::is_explicit is null"); } return 0; }
 	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_IntType::bit_size is null"); } return 0; }
 	if (!endian) { if(h->error) { h->error(h,endian, "ast2c_IntType::endian is null"); } return 0; }
 	if (!is_signed) { if(h->error) { h->error(h,is_signed, "ast2c_IntType::is_signed is null"); } return 0; }
+	if (!is_common_supported) { if(h->error) { h->error(h,is_common_supported, "ast2c_IntType::is_common_supported is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_IntType::loc"); }
 		goto error;

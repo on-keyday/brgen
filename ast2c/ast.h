@@ -741,6 +741,7 @@ struct ast2c_IntType {
 	uint64_t bit_size;
 	ast2c_Endian endian;
 	int is_signed;
+	int is_common_supported;
 };
 
 // returns 1 if succeed 0 if failed

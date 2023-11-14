@@ -4306,6 +4306,7 @@ pub struct IntType {
 	pub bit_size: u64,
 	pub endian: Endian,
 	pub is_signed: bool,
+	pub is_common_supported: bool,
 }
 
 impl TryFrom<&Type> for Rc<RefCell<IntType>> {
@@ -5904,6 +5905,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				bit_size: 0,
 				endian: Endian::Unspec,
 				is_signed: false,
+				is_common_supported: false,
 				})))
 			},
 			NodeType::IdentType => {
@@ -7773,6 +7775,14 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				node.borrow_mut().is_signed = match is_signed_body.as_bool() {
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_signed_body.into(),JSONType::Bool)),
+				};
+				let is_common_supported_body = match raw_node.body.get("is_common_supported") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"is_common_supported")),
+				};
+				node.borrow_mut().is_common_supported = match is_common_supported_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(is_common_supported_body.into(),JSONType::Bool)),
 				};
 			},
 			NodeType::IdentType => {

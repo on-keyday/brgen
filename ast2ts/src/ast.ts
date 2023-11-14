@@ -570,6 +570,7 @@ export interface IntType extends Type {
 	bit_size: number;
 	endian: Endian;
 	is_signed: boolean;
+	is_common_supported: boolean;
 }
 
 export function isIntType(obj: any): obj is IntType {
@@ -1239,6 +1240,7 @@ export function parseAST(obj: any): Program {
 				bit_size: 0,
 				endian: Endian.unspec,
 				is_signed: false,
+				is_common_supported: false,
 			}
 			c.node.push(n);
 			break;
@@ -2336,6 +2338,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at IntType::is_signed');
 			}
 			n.is_signed = on.body.is_signed;
+			const tmpis_common_supported = on.body?.is_common_supported;
+			if (typeof on.body?.is_common_supported !== "boolean") {
+				throw new Error('invalid node list at IntType::is_common_supported');
+			}
+			n.is_common_supported = on.body.is_common_supported;
 			break;
 		}
 		case "ident_type": {

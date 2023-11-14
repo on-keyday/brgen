@@ -59,15 +59,17 @@ namespace brgen::ast {
         j.string(endian_str[static_cast<std::uint8_t>(e)]);
     }
 
-    struct IntType : Type {
+     struct IntType : Type {
         define_node_type(NodeType::int_type);
         size_t bit_size = 0;
         Endian endian = Endian::unspec;
         bool is_signed = false;
+        bool is_common_supported = false;
 
         IntType(lexer::Loc l, size_t bit_size, Endian endian, bool is_signed, bool is_explicit = false)
             : Type(l, NodeType::int_type), bit_size(bit_size), endian(endian), is_signed(is_signed) {
             this->is_explicit = is_explicit;
+            is_common_supported = bit_size == 8 || bit_size == 16 || bit_size == 32 || bit_size == 64;
         }
 
         // for decode
@@ -79,6 +81,7 @@ namespace brgen::ast {
             sdebugf(bit_size);
             sdebugf(endian);
             sdebugf(is_signed);
+            sdebugf(is_common_supported);
         }
     };
 
