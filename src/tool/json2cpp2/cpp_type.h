@@ -12,15 +12,15 @@ namespace j2cp2 {
         uint128,
     };
 
-    struct BitField {
-        std::string name;
-        std::uint8_t bit = 0;
-    };
-
     struct BitFlags {
-        BuiltinType type;
-        std::vector<BitField> bit;
+        BuiltinType base_type;
+        std::vector<std::uint8_t> bits;
     };
 
     struct Bytes {};
+
+    struct Field {
+        std::vector<std::string> name;
+    };
+
 }  // namespace j2cp2

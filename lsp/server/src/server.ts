@@ -16,7 +16,7 @@ import {
     SemanticTokens,
     MarkupKind,
     HoverParams,
-    TypeDefinitionParams,
+    DefinitionParams,
     Location,
 } from 'vscode-languageserver/node';
 
@@ -85,7 +85,7 @@ connection.onInitialize((params: InitializeParams) => {
                 full: true,
             },
             hoverProvider: true,
-            typeDefinitionProvider: true,
+            definitionProvider: true,
         }
     };
     if (hasWorkspaceFolderCapability) {
@@ -416,7 +416,7 @@ const hover = async (params :HoverParams)=>{
     const color = (code :string,text :string) => {
         return `<span style="color: ${code};">${text}</span>`;
     }
-    const makeHovoer = (ident :string,role :string) => {
+    const makeHover = (ident :string,role :string) => {
         return {
             contents: {
                 kind: MarkupKind.Markdown,
@@ -428,36 +428,36 @@ const hover = async (params :HoverParams)=>{
         for(;;){
             switch (found.usage) {
                 case ast2ts.IdentUsage.unknown:
-                    return makeHovoer(found.ident,"unknown identifier");
+                    return makeHover(found.ident,"unknown identifier");
                 case ast2ts.IdentUsage.reference:
                     if(ast2ts.isIdent(found.base)){
                         found = found.base;
                         continue;
                     }
-                    return makeHovoer(found.ident,"unspecified reference");
+                    return makeHover(found.ident,"unspecified reference");
                 case ast2ts.IdentUsage.define_variable:
-                    return makeHovoer(found.ident,"variable");
+                    return makeHover(found.ident,"variable");
                 case ast2ts.IdentUsage.define_field:
                     // color of enum member
-                    return makeHovoer(found.ident,"field");
+                    return makeHover(found.ident,"field");
                 case ast2ts.IdentUsage.define_const:
-                    return makeHovoer(found.ident,"constant");
+                    return makeHover(found.ident,"constant");
                 case ast2ts.IdentUsage.define_enum_member:
-                    return makeHovoer(found.ident,"enum member");
+                    return makeHover(found.ident,"enum member");
                 case ast2ts.IdentUsage.define_format:
-                    return makeHovoer(found.ident,"format");
+                    return makeHover(found.ident,"format");
                 case ast2ts.IdentUsage.define_enum:
-                    return makeHovoer(found.ident,"enum");
+                    return makeHover(found.ident,"enum");
                 case ast2ts.IdentUsage.reference_type:
-                    return makeHovoer(found.ident,"type");
+                    return makeHover(found.ident,"type");
                 case ast2ts.IdentUsage.define_cast_fn:
-                    return makeHovoer(found.ident,"cast function");
+                    return makeHover(found.ident,"cast function");
                 case ast2ts.IdentUsage.maybe_type:
-                    return makeHovoer(found.ident,"maybe type");
+                    return makeHover(found.ident,"maybe type");
                 case ast2ts.IdentUsage.define_fn:
-                    return makeHovoer(found.ident,"function");
+                    return makeHover(found.ident,"function");
                 default:
-                    return makeHovoer(found.ident,"unknown identifier");
+                    return makeHover(found.ident,"unknown identifier");
             }
         }   
     }
@@ -465,8 +465,8 @@ const hover = async (params :HoverParams)=>{
 
 connection.onHover(hover)
 
-const typeDefinitionHandler = async (params :TypeDefinitionParams) => {
-    console.log(`textDocument/typeDefinition: ${JSON.stringify(params)}`);
+const definitionHandler = async (params :DefinitionParams) => {
+    console.log(`textDocument/definition: ${JSON.stringify(params)}`);
     const doc = documents.get(params?.textDocument?.uri);
     if(doc===undefined){
         console.log(`document ${params?.textDocument?.uri} is not found`);
@@ -542,7 +542,7 @@ const typeDefinitionHandler = async (params :TypeDefinitionParams) => {
     return null; 
 }
 
-connection.onTypeDefinition(typeDefinitionHandler);
+connection.onDefinition(definitionHandler);
 
 // The example settings
 interface BrgenLSPSettings {

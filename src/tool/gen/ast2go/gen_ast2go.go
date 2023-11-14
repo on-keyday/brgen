@@ -92,7 +92,7 @@ func generate(w io.Writer, list *gen.Defs) {
 			writer.Printf("		return fmt.Sprintf(\"%s(%%d)\", n)\n", d.Name)
 			writer.Printf("	}\n")
 			writer.Printf("}\n\n")
-			writer.Printf("func (n %s) UnmarshalJSON(data []byte) error {\n", d.Name)
+			writer.Printf("func (n *%s) UnmarshalJSON(data []byte) error {\n", d.Name)
 			writer.Printf("	var tmp string\n")
 			writer.Printf("	if err := json.Unmarshal(data, &tmp); err != nil {\n")
 			writer.Printf("		return err\n")
@@ -100,7 +100,7 @@ func generate(w io.Writer, list *gen.Defs) {
 			writer.Printf("	switch tmp {\n")
 			for _, value := range d.Values {
 				writer.Printf("	case %q:\n", value.Value)
-				writer.Printf("		n = %s%s\n", d.Name, value.Name)
+				writer.Printf("		*n = %s%s\n", d.Name, value.Name)
 			}
 			writer.Printf("	default:\n")
 			writer.Printf("		return fmt.Errorf(\"unknown %s: %%q\", tmp)\n", d.Name)

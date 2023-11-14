@@ -13,7 +13,7 @@ format Frame:
     
     if Mask == 1:
         MaskingKey :u32
-    
     # 本当はこっちが正しいのですが、現状のジェネレータの限界で、下を使っています
-    # Payload :[available(ExtendedPayloadLength) ? ExtendedPayloadLength : PayloadLength]u8
-    Payload :[PayloadLength]u8
+    Payload :[available(ExtendedPayloadLength) ? ExtendedPayloadLength : PayloadLength]u8
+    # Payload :[PayloadLength]u8
+

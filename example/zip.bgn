@@ -87,7 +87,7 @@ format CentralDirEntry:
     fileName :[fileNameLength]u8
     # input.proxy :[]u8
     # input.subrange(offsetFromCurrentPosition, length?)
-    extraField :ExtraFields(input.proxy = input.subrange(0,extraFieldLength))
+    extraField :[..]ExtraField(input.proxy = input.subrange(0,extraFieldLength))
     fileComment :[fileCommentLength]u8
     
     fn localHeader():
@@ -111,10 +111,6 @@ format LocalFile:
     header :LocalFileHeader
     body :[header.compressedSize]u8
 
-
-
-format ExtraFields:
-    fields :[..]ExtraField
 
 format ExtraField:
     headerId :u16

@@ -187,124 +187,124 @@ func (n NodeType) String() string {
 	}
 }
 
-func (n NodeType) UnmarshalJSON(data []byte) error {
+func (n *NodeType) UnmarshalJSON(data []byte) error {
 	var tmp string
 	if err := json.Unmarshal(data, &tmp); err != nil {
 		return err
 	}
 	switch tmp {
 	case "program":
-		n = NodeTypeProgram
+		*n = NodeTypeProgram
 	case "expr":
-		n = NodeTypeExpr
+		*n = NodeTypeExpr
 	case "binary":
-		n = NodeTypeBinary
+		*n = NodeTypeBinary
 	case "unary":
-		n = NodeTypeUnary
+		*n = NodeTypeUnary
 	case "cond":
-		n = NodeTypeCond
+		*n = NodeTypeCond
 	case "ident":
-		n = NodeTypeIdent
+		*n = NodeTypeIdent
 	case "call":
-		n = NodeTypeCall
+		*n = NodeTypeCall
 	case "if":
-		n = NodeTypeIf
+		*n = NodeTypeIf
 	case "member_access":
-		n = NodeTypeMemberAccess
+		*n = NodeTypeMemberAccess
 	case "paren":
-		n = NodeTypeParen
+		*n = NodeTypeParen
 	case "index":
-		n = NodeTypeIndex
+		*n = NodeTypeIndex
 	case "match":
-		n = NodeTypeMatch
+		*n = NodeTypeMatch
 	case "range":
-		n = NodeTypeRange
+		*n = NodeTypeRange
 	case "tmp_var":
-		n = NodeTypeTmpVar
+		*n = NodeTypeTmpVar
 	case "block_expr":
-		n = NodeTypeBlockExpr
+		*n = NodeTypeBlockExpr
 	case "import":
-		n = NodeTypeImport
+		*n = NodeTypeImport
 	case "literal":
-		n = NodeTypeLiteral
+		*n = NodeTypeLiteral
 	case "int_literal":
-		n = NodeTypeIntLiteral
+		*n = NodeTypeIntLiteral
 	case "bool_literal":
-		n = NodeTypeBoolLiteral
+		*n = NodeTypeBoolLiteral
 	case "str_literal":
-		n = NodeTypeStrLiteral
+		*n = NodeTypeStrLiteral
 	case "input":
-		n = NodeTypeInput
+		*n = NodeTypeInput
 	case "output":
-		n = NodeTypeOutput
+		*n = NodeTypeOutput
 	case "config":
-		n = NodeTypeConfig
+		*n = NodeTypeConfig
 	case "stmt":
-		n = NodeTypeStmt
+		*n = NodeTypeStmt
 	case "loop":
-		n = NodeTypeLoop
+		*n = NodeTypeLoop
 	case "indent_block":
-		n = NodeTypeIndentBlock
+		*n = NodeTypeIndentBlock
 	case "match_branch":
-		n = NodeTypeMatchBranch
+		*n = NodeTypeMatchBranch
 	case "return":
-		n = NodeTypeReturn
+		*n = NodeTypeReturn
 	case "break":
-		n = NodeTypeBreak
+		*n = NodeTypeBreak
 	case "continue":
-		n = NodeTypeContinue
+		*n = NodeTypeContinue
 	case "assert":
-		n = NodeTypeAssert
+		*n = NodeTypeAssert
 	case "implicit_yield":
-		n = NodeTypeImplicitYield
+		*n = NodeTypeImplicitYield
 	case "member":
-		n = NodeTypeMember
+		*n = NodeTypeMember
 	case "field":
-		n = NodeTypeField
+		*n = NodeTypeField
 	case "format":
-		n = NodeTypeFormat
+		*n = NodeTypeFormat
 	case "function":
-		n = NodeTypeFunction
+		*n = NodeTypeFunction
 	case "type":
-		n = NodeTypeType
+		*n = NodeTypeType
 	case "int_type":
-		n = NodeTypeIntType
+		*n = NodeTypeIntType
 	case "ident_type":
-		n = NodeTypeIdentType
+		*n = NodeTypeIdentType
 	case "int_literal_type":
-		n = NodeTypeIntLiteralType
+		*n = NodeTypeIntLiteralType
 	case "str_literal_type":
-		n = NodeTypeStrLiteralType
+		*n = NodeTypeStrLiteralType
 	case "void_type":
-		n = NodeTypeVoidType
+		*n = NodeTypeVoidType
 	case "bool_type":
-		n = NodeTypeBoolType
+		*n = NodeTypeBoolType
 	case "array_type":
-		n = NodeTypeArrayType
+		*n = NodeTypeArrayType
 	case "function_type":
-		n = NodeTypeFunctionType
+		*n = NodeTypeFunctionType
 	case "struct_type":
-		n = NodeTypeStructType
+		*n = NodeTypeStructType
 	case "struct_union_type":
-		n = NodeTypeStructUnionType
+		*n = NodeTypeStructUnionType
 	case "cast":
-		n = NodeTypeCast
+		*n = NodeTypeCast
 	case "comment":
-		n = NodeTypeComment
+		*n = NodeTypeComment
 	case "comment_group":
-		n = NodeTypeCommentGroup
+		*n = NodeTypeCommentGroup
 	case "union_type":
-		n = NodeTypeUnionType
+		*n = NodeTypeUnionType
 	case "union_candidate":
-		n = NodeTypeUnionCandidate
+		*n = NodeTypeUnionCandidate
 	case "range_type":
-		n = NodeTypeRangeType
+		*n = NodeTypeRangeType
 	case "enum":
-		n = NodeTypeEnum
+		*n = NodeTypeEnum
 	case "enum_member":
-		n = NodeTypeEnumMember
+		*n = NodeTypeEnumMember
 	case "enum_type":
-		n = NodeTypeEnumType
+		*n = NodeTypeEnumType
 	default:
 		return fmt.Errorf("unknown NodeType: %q", tmp)
 	}
@@ -533,16 +533,16 @@ func (n UnaryOp) String() string {
 	}
 }
 
-func (n UnaryOp) UnmarshalJSON(data []byte) error {
+func (n *UnaryOp) UnmarshalJSON(data []byte) error {
 	var tmp string
 	if err := json.Unmarshal(data, &tmp); err != nil {
 		return err
 	}
 	switch tmp {
 	case "!":
-		n = UnaryOpNot
+		*n = UnaryOpNot
 	case "-":
-		n = UnaryOpMinusSign
+		*n = UnaryOpMinusSign
 	default:
 		return fmt.Errorf("unknown UnaryOp: %q", tmp)
 	}
@@ -675,88 +675,88 @@ func (n BinaryOp) String() string {
 	}
 }
 
-func (n BinaryOp) UnmarshalJSON(data []byte) error {
+func (n *BinaryOp) UnmarshalJSON(data []byte) error {
 	var tmp string
 	if err := json.Unmarshal(data, &tmp); err != nil {
 		return err
 	}
 	switch tmp {
 	case "*":
-		n = BinaryOpMul
+		*n = BinaryOpMul
 	case "/":
-		n = BinaryOpDiv
+		*n = BinaryOpDiv
 	case "%":
-		n = BinaryOpMod
+		*n = BinaryOpMod
 	case "<<<":
-		n = BinaryOpLeftArithmeticShift
+		*n = BinaryOpLeftArithmeticShift
 	case ">>>":
-		n = BinaryOpRightArithmeticShift
+		*n = BinaryOpRightArithmeticShift
 	case "<<":
-		n = BinaryOpLeftLogicalShift
+		*n = BinaryOpLeftLogicalShift
 	case ">>":
-		n = BinaryOpRightLogicalShift
+		*n = BinaryOpRightLogicalShift
 	case "&":
-		n = BinaryOpBitAnd
+		*n = BinaryOpBitAnd
 	case "+":
-		n = BinaryOpAdd
+		*n = BinaryOpAdd
 	case "-":
-		n = BinaryOpSub
+		*n = BinaryOpSub
 	case "|":
-		n = BinaryOpBitOr
+		*n = BinaryOpBitOr
 	case "^":
-		n = BinaryOpBitXor
+		*n = BinaryOpBitXor
 	case "==":
-		n = BinaryOpEqual
+		*n = BinaryOpEqual
 	case "!=":
-		n = BinaryOpNotEqual
+		*n = BinaryOpNotEqual
 	case "<":
-		n = BinaryOpLess
+		*n = BinaryOpLess
 	case "<=":
-		n = BinaryOpLessOrEq
+		*n = BinaryOpLessOrEq
 	case ">":
-		n = BinaryOpGrater
+		*n = BinaryOpGrater
 	case ">=":
-		n = BinaryOpGraterOrEq
+		*n = BinaryOpGraterOrEq
 	case "&&":
-		n = BinaryOpLogicalAnd
+		*n = BinaryOpLogicalAnd
 	case "||":
-		n = BinaryOpLogicalOr
+		*n = BinaryOpLogicalOr
 	case "?":
-		n = BinaryOpCondOp1
+		*n = BinaryOpCondOp1
 	case ":":
-		n = BinaryOpCondOp2
+		*n = BinaryOpCondOp2
 	case "..":
-		n = BinaryOpRangeExclusive
+		*n = BinaryOpRangeExclusive
 	case "..=":
-		n = BinaryOpRangeInclusive
+		*n = BinaryOpRangeInclusive
 	case "=":
-		n = BinaryOpAssign
+		*n = BinaryOpAssign
 	case ":=":
-		n = BinaryOpDefineAssign
+		*n = BinaryOpDefineAssign
 	case "::=":
-		n = BinaryOpConstAssign
+		*n = BinaryOpConstAssign
 	case "+=":
-		n = BinaryOpAddAssign
+		*n = BinaryOpAddAssign
 	case "-=":
-		n = BinaryOpSubAssign
+		*n = BinaryOpSubAssign
 	case "*=":
-		n = BinaryOpMulAssign
+		*n = BinaryOpMulAssign
 	case "/=":
-		n = BinaryOpDivAssign
+		*n = BinaryOpDivAssign
 	case "%=":
-		n = BinaryOpModAssign
+		*n = BinaryOpModAssign
 	case "<<=":
-		n = BinaryOpLeftShiftAssign
+		*n = BinaryOpLeftShiftAssign
 	case ">>=":
-		n = BinaryOpRightShiftAssign
+		*n = BinaryOpRightShiftAssign
 	case "&=":
-		n = BinaryOpBitAndAssign
+		*n = BinaryOpBitAndAssign
 	case "|=":
-		n = BinaryOpBitOrAssign
+		*n = BinaryOpBitOrAssign
 	case "^=":
-		n = BinaryOpBitXorAssign
+		*n = BinaryOpBitXorAssign
 	case ",":
-		n = BinaryOpComma
+		*n = BinaryOpComma
 	default:
 		return fmt.Errorf("unknown BinaryOp: %q", tmp)
 	}
@@ -814,38 +814,38 @@ func (n IdentUsage) String() string {
 	}
 }
 
-func (n IdentUsage) UnmarshalJSON(data []byte) error {
+func (n *IdentUsage) UnmarshalJSON(data []byte) error {
 	var tmp string
 	if err := json.Unmarshal(data, &tmp); err != nil {
 		return err
 	}
 	switch tmp {
 	case "unknown":
-		n = IdentUsageUnknown
+		*n = IdentUsageUnknown
 	case "reference":
-		n = IdentUsageReference
+		*n = IdentUsageReference
 	case "define_variable":
-		n = IdentUsageDefineVariable
+		*n = IdentUsageDefineVariable
 	case "define_const":
-		n = IdentUsageDefineConst
+		*n = IdentUsageDefineConst
 	case "define_field":
-		n = IdentUsageDefineField
+		*n = IdentUsageDefineField
 	case "define_format":
-		n = IdentUsageDefineFormat
+		*n = IdentUsageDefineFormat
 	case "define_enum":
-		n = IdentUsageDefineEnum
+		*n = IdentUsageDefineEnum
 	case "define_enum_member":
-		n = IdentUsageDefineEnumMember
+		*n = IdentUsageDefineEnumMember
 	case "define_fn":
-		n = IdentUsageDefineFn
+		*n = IdentUsageDefineFn
 	case "define_cast_fn":
-		n = IdentUsageDefineCastFn
+		*n = IdentUsageDefineCastFn
 	case "define_arg":
-		n = IdentUsageDefineArg
+		*n = IdentUsageDefineArg
 	case "reference_type":
-		n = IdentUsageReferenceType
+		*n = IdentUsageReferenceType
 	case "maybe_type":
-		n = IdentUsageMaybeType
+		*n = IdentUsageMaybeType
 	default:
 		return fmt.Errorf("unknown IdentUsage: %q", tmp)
 	}
@@ -873,18 +873,18 @@ func (n Endian) String() string {
 	}
 }
 
-func (n Endian) UnmarshalJSON(data []byte) error {
+func (n *Endian) UnmarshalJSON(data []byte) error {
 	var tmp string
 	if err := json.Unmarshal(data, &tmp); err != nil {
 		return err
 	}
 	switch tmp {
 	case "unspec":
-		n = EndianUnspec
+		*n = EndianUnspec
 	case "big":
-		n = EndianBig
+		*n = EndianBig
 	case "little":
-		n = EndianLittle
+		*n = EndianLittle
 	default:
 		return fmt.Errorf("unknown Endian: %q", tmp)
 	}
@@ -939,36 +939,36 @@ func (n TokenTag) String() string {
 	}
 }
 
-func (n TokenTag) UnmarshalJSON(data []byte) error {
+func (n *TokenTag) UnmarshalJSON(data []byte) error {
 	var tmp string
 	if err := json.Unmarshal(data, &tmp); err != nil {
 		return err
 	}
 	switch tmp {
 	case "indent":
-		n = TokenTagIndent
+		*n = TokenTagIndent
 	case "space":
-		n = TokenTagSpace
+		*n = TokenTagSpace
 	case "line":
-		n = TokenTagLine
+		*n = TokenTagLine
 	case "punct":
-		n = TokenTagPunct
+		*n = TokenTagPunct
 	case "int_literal":
-		n = TokenTagIntLiteral
+		*n = TokenTagIntLiteral
 	case "bool_literal":
-		n = TokenTagBoolLiteral
+		*n = TokenTagBoolLiteral
 	case "str_literal":
-		n = TokenTagStrLiteral
+		*n = TokenTagStrLiteral
 	case "keyword":
-		n = TokenTagKeyword
+		*n = TokenTagKeyword
 	case "ident":
-		n = TokenTagIdent
+		*n = TokenTagIdent
 	case "comment":
-		n = TokenTagComment
+		*n = TokenTagComment
 	case "error":
-		n = TokenTagError
+		*n = TokenTagError
 	case "unknown":
-		n = TokenTagUnknown
+		*n = TokenTagUnknown
 	default:
 		return fmt.Errorf("unknown TokenTag: %q", tmp)
 	}
