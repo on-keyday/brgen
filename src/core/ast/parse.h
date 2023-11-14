@@ -1016,11 +1016,11 @@ namespace brgen::ast {
             auto parse_enum_member = [&] {
                 auto ident = parse_ident();
                 ident->usage = IdentUsage::define_enum_member;
-                ident->base = enum_;
                 ident->expr_type = enum_->enum_type;
                 auto member = std::make_shared<EnumMember>(ident->loc);
                 member->ident = ident;
                 member->belong = enum_;
+                ident->base = member;
                 s.skip_space();
                 if (s.consume_token("=")) {
                     s.skip_white();

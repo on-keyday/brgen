@@ -57,6 +57,15 @@ namespace brgen::ast {
         std::vector<std::shared_ptr<EnumMember>> members;
         std::shared_ptr<EnumType> enum_type;
 
+        std::shared_ptr<EnumMember> lookup(std::string_view ident) {
+            for (auto& m : members) {
+                if (m->ident->ident == ident) {
+                    return m;
+                }
+            }
+            return nullptr;
+        }
+
         Enum(lexer::Loc l)
             : Member(l, NodeType::enum_) {}
 

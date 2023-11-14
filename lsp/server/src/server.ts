@@ -296,7 +296,6 @@ const tokenizeSourceImpl  = async (doc :TextDocument,docInfo :DocumentInfo) =>{
                     case ast2ts.IdentUsage.unknown:
                         break;
                     case ast2ts.IdentUsage.reference:
-                        
                         if(ast2ts.isIdent(n.base)){
                             if(counter> 100) {
                                 console.log(n,n.base)
@@ -305,6 +304,19 @@ const tokenizeSourceImpl  = async (doc :TextDocument,docInfo :DocumentInfo) =>{
                             console.log("base -> "+n.base.usage);
                             n = n.base;
                             continue;
+                        }
+                        break;
+                    case ast2ts.IdentUsage.reference_member:
+                        if(ast2ts.isMemberAccess(n.base)){
+                            if(ast2ts.isIdent(n.base.base)){
+                                if(counter> 100) {
+                                    console.log(n,n.base)
+                                    throw new Error("what happend?");
+                                }
+                                console.log("base -> "+n.base.base.usage);
+                                n = n.base.base;
+                                continue;
+                            }
                         }
                         break;
                     case ast2ts.IdentUsage.define_variable:
@@ -413,9 +425,6 @@ const hover = async (params :HoverParams)=>{
             console.log("walked: "+node.node_type)
         }
     });
-    const color = (code :string,text :string) => {
-        return `<span style="color: ${code};">${text}</span>`;
-    }
     const makeHover = (ident :string,role :string) => {
         return {
             contents: {
@@ -435,6 +444,14 @@ const hover = async (params :HoverParams)=>{
                         continue;
                     }
                     return makeHover(found.ident,"unspecified reference");
+                case ast2ts.IdentUsage.reference_member:
+                    if(ast2ts.isMemberAccess(found.base)){
+                        if(ast2ts.isIdent(found.base.base)){
+                            found = found.base.base;
+                            continue;
+                        }
+                    }
+                    return makeHover(found.ident,"unspecified member reference");
                 case ast2ts.IdentUsage.define_variable:
                     return makeHover(found.ident,"variable");
                 case ast2ts.IdentUsage.define_field:
@@ -522,6 +539,14 @@ const definitionHandler = async (params :DefinitionParams) => {
                     if(ast2ts.isIdent(ident.base)){
                         ident = ident.base;
                         continue;
+                    }
+                    return null;
+                case ast2ts.IdentUsage.reference_member:
+                    if(ast2ts.isMemberAccess(ident.base)){
+                        if(ast2ts.isIdent(ident.base.base)){
+                            ident = ident.base.base;
+                            continue;
+                        }
                     }
                     return null;
                 case ast2ts.IdentUsage.define_variable:

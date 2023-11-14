@@ -75,10 +75,11 @@ format Event:
         return EventType(event_type & 0xf0)
     fn channel():
         return event_type & 0x0f
-    type := event_type
-    if type == (0x00..0x7f):
-        type = config.state("running_status")
-    match type:
+
+    if event_type == (0x00..0x7f):
+        event_type = config.state("running_status")
+        input.backward()
+    match event_type:
         0xff => data :MetaEvent
         0xf0 => data :SysExEvent
         0xf7 => data :SysExEvent

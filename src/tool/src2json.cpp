@@ -349,7 +349,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
         });
     };
 
-    auto report_error = [&](auto&& res, bool warn = false, const char* key = "ast") {
+    auto report_error = [&](brgen::SourceError&& res, bool warn = false, const char* key = "ast") {
         if (!cout.is_tty() || flags.print_on_error) {
             auto d = dump_json_file(nullptr, key, res);
             cout << d.out();
@@ -370,11 +370,11 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     if (flags.lexer) {
         auto res = do_lex(input, flags.tokenization_limit).transform_error(brgen::to_source_error(files));
         if (!res) {
-            report_error(res.error(), false, "tokens");
+            report_error(std::move(res.error()), false, "tokens");
             return -1;
         }
         if (!cout.is_tty() || flags.print_json) {
-            auto d = dump_json_file(res.value(), "tokens", brgen::SourceError{});
+            auto d = dump_json_file(*res, "tokens", brgen::SourceError{});
             cout << d.out();
             if (cout.is_tty()) {
                 cout << "\n";
@@ -389,7 +389,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     auto res = do_parse(input, flags.collect_comments).transform_error(brgen::to_source_error(files));
 
     if (!res) {
-        report_error(res.error());
+        report_error(std::move(res.error()));
         return -1;
     }
 
@@ -400,7 +400,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     if (!flags.not_resolve_import) {
         auto res2 = brgen::middle::resolve_import(*res, files).transform_error(brgen::to_source_error(files));
         if (!res2) {
-            report_error(res2.error());
+            report_error(std::move(res2.error()));
             return -1;
         }
     }

@@ -591,6 +591,22 @@ namespace brgen::middle {
             }
             else if (auto selector = ast::as<ast::MemberAccess>(expr)) {
                 typing_expr(selector->target);
+                if (auto ident = ast::as<ast::Ident>(selector->target); ident && ident->usage == ast::IdentUsage::reference_type) {
+                    auto base = ident->base.lock();
+                    if (auto def = ast::as<ast::Ident>(base); def && def->usage == ast::IdentUsage::define_enum) {
+                        base = def->base.lock();
+                        if (auto enum_ = ast::as<ast::Enum>(base)) {
+                            selector->expr_type = enum_->enum_type;
+                            auto member = enum_->lookup(selector->member->ident);
+                            if (!member) {
+                                auto r = error(selector->member->loc, "member of enum ", ident->ident, ".", selector->member->ident, " is not defined");
+                                r.error(ident->loc, "enum ", ident->ident, " is defined here").report();
+                            }
+                            selector->base = member->ident;
+                            return;
+                        }
+                    }
+                }
                 if (!selector->target->expr_type) {
                     warn_not_typed(selector);
                     return;
@@ -605,14 +621,16 @@ namespace brgen::middle {
                 }
                 if (auto field = ast::as<ast::Field>(stmt)) {
                     selector->expr_type = field->field_type;
-                    selector->base = stmt;
+                    selector->base = stmt->ident;
                 }
                 else if (auto fn = ast::as<ast::Function>(stmt)) {
                     selector->expr_type = fn->func_type;
-                    selector->base = stmt;
+                    selector->base = stmt->ident;
                 }
                 else {
-                    error(selector->member->loc, "member ", selector->member->ident, " is not a field or function").report();
+                    auto r = error(selector->member->loc, "member ", selector->member->ident, " is not a field or function");
+                    (void)r.error(stmt->ident->loc, "member ", selector->member->ident, " is defined here");
+                    r.report();
                 }
             }
             else if (auto idx = ast::as<ast::Index>(expr)) {
