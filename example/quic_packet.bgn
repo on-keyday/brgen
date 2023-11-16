@@ -24,8 +24,8 @@ format QUICPackets:
       loop input.remain > 0:
          pkt :QUICPacket
          if available(pkt.hdr):
-            frames :[..]QUICFrame(input = pkt.hdr)
-            packets push(pkt)
+            frames :[..]QUICFrame(input = pkt.hdr) # TODO(on-keyday): fix this with pkt.hdr.payload
+            packets push(pkt) # TODO: fix this with packets.push_back(pkt)
    
    fn encode():
       loop pkt:=range(packets):
@@ -84,7 +84,7 @@ format RetryPacket:
 
 format HandshakePacketHeader:
    length :VarInt
-   enc := config.arg("encrypted",bool)
+   enc := config.arg.encrypted(bool)
    if enc:
       encrypted_payload :[length]u8
    else:
@@ -93,7 +93,7 @@ format HandshakePacketHeader:
 
 format ZeroRTTPacketHeader:
    length :VarInt
-   enc := config.arg("encrypted",bool)
+   enc := bool(config.arg.encrypted)
    if enc:
       encrypted_payload :[length]u8
    else:
@@ -119,8 +119,8 @@ format OneRTTPacketHeader:
 
 
 format ConnectionID:
-   if config.arg.exists("length"):
-      length := config.arg("length",u8)
+   if available(config.arg.length):
+      length := u8(config.arg.length)
       id :[length]u8
    else:
       length :u8
@@ -145,6 +145,6 @@ format VarInt:
          ..0x4000000000000000 => output.u64(value | msb(2,3))
          _ => error("too large number")
    
-   fn u64():
+   fn cast u64():
       return value
 

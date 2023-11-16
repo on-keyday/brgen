@@ -111,6 +111,7 @@
             "request": "launch",
             "name": "Debug ctobgn",
             "program": "${workspaceRoot}/tool/ctobgn",
+            "cwd": "${workspaceRoot}",
             "args": [
             ],
         }

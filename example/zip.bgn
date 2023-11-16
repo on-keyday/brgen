@@ -122,12 +122,12 @@ format NtfsAttribute:
     tag :u16
     size :u16
     if tag == 0x0001:
+        size == sizeof(NtfsTime)
         body :NtfsTime
-        input.eof == true
     else:
         body :[size]u8
 
-format NfsTime:
+format NtfsTime:
     mtime :u64
     atime :u64
     ctime :u64
