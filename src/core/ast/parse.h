@@ -602,29 +602,31 @@ namespace brgen::ast {
             return target;
         }
 
-        bool is_finally_ident(ast::Expr* expr, bool from_access = false) {
+        bool is_finally_ident(ast::Expr* expr) {
             if (expr->node_type == ast::NodeType::ident) {
                 return true;
             }
             if (expr->node_type == ast::NodeType::member_access) {
-                return is_finally_ident(static_cast<ast::MemberAccess*>(expr)->target.get(), true);
+                return is_finally_ident(static_cast<ast::MemberAccess*>(expr)->target.get());
             }
-            if (from_access) {
-                if (expr->node_type == ast::NodeType::input ||
-                    expr->node_type == ast::NodeType::output ||
-                    expr->node_type == ast::NodeType::config) {
-                    return true;
-                }
+            if (expr->node_type == ast::NodeType::input ||
+                expr->node_type == ast::NodeType::output ||
+                expr->node_type == ast::NodeType::config) {
+                return true;
             }
             return false;
         }
 
         void check_assignment(ast::Binary* l) {
-            if (l->op == ast::BinaryOp::assign ||
-                l->op == ast::BinaryOp::define_assign ||
+            if (l->op == ast::BinaryOp::define_assign ||
                 l->op == ast::BinaryOp::const_assign) {
-                if (!is_finally_ident(l->left.get())) {
+                if (!ast::as<ast::Ident>(l->left.get())) {
                     s.report_error(l->left->loc, "left of =,:=,::= must be ident");
+                }
+            }
+            else if (l->op == ast::BinaryOp::assign) {
+                if (!is_finally_ident(l->left.get())) {
+                    s.report_error(l->left->loc, "left of = must be ident, member access or input/output/config");
                 }
             }
         }

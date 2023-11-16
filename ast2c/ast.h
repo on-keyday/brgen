@@ -752,7 +752,7 @@ struct ast2c_IdentType {
 	ast2c_Loc loc;
 	int is_explicit;
 	ast2c_Ident* ident;
-	ast2c_Member* base;
+	ast2c_Type* base;
 };
 
 // returns 1 if succeed 0 if failed

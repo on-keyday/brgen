@@ -154,22 +154,50 @@ namespace brgen::middle {
                 }
                 return;
             }
-            auto left = ast::as<ast::Ident>(b->left);
             b->expr_type = void_type(b->loc);
-            auto base = left->base.lock();
-            auto base_ident = ast::as<ast::Ident>(base);
+            std::string ident;
+            ast::Ident* left_ident = nullptr;
+            ast::Ident* base_ident = nullptr;
+            if (auto i_ = ast::as<ast::Ident>(b->left)) {
+                left_ident = i_;
+                ident = i_->ident;
+                if (auto base = ast::as<ast::Ident>(i_->base.lock())) {
+                    base_ident = base;
+                }
+            }
+            else if (ast::as<ast::Input>(b->left)) {
+                ident = "input";
+            }
+            else if (ast::as<ast::Output>(b->left)) {
+                ident = "output";
+            }
+            else if (ast::as<ast::Config>(b->left)) {
+                ident = "config";
+            }
+            else {
+                unsupported(b->left);
+            }
             auto report_assign_error = [&] {
-                error(b->loc, "cannot assign to ", left->ident).error(base->loc, "ident ", left->ident, " is defined here").report();
+                auto r = error(b->loc, "cannot assign to ", ident);
+                if (base_ident) {
+                    (void)r.error(base_ident->loc, "ident ", ident, " is defined here");
+                }
+                r.report();
             };
             if (!check_right_typed()) {
                 return;
             }
             auto new_type = assigning_type(right->expr_type);
             if (b->op == ast::BinaryOp::assign) {
-                if (left->usage == ast::IdentUsage::unknown) {
-                    error(left->loc, "identifier ", left->ident, " is not defined before; use := to define identifier").report();
+                if (left_ident && left_ident->usage == ast::IdentUsage::unknown) {
+                    error(left_ident->loc, "identifier ", left_ident->ident, " is not defined before; use := to define identifier").report();
                 }
                 else {
+                    if (!left_ident) {
+                        warn_not_typed(b->left);
+                        return;  // not typed yet
+                    }
+                    assert(base_ident);
                     if (base_ident->usage == ast::IdentUsage::define_variable) {
                         if (!equal_type(base_ident->expr_type, new_type)) {
                             report_assign_error();
@@ -181,20 +209,22 @@ namespace brgen::middle {
                 }
             }
             else if (b->op == ast::BinaryOp::define_assign) {
-                if (left->usage == ast::IdentUsage::unknown) {
-                    left->usage = ast::IdentUsage::define_variable;
-                    left->expr_type = std::move(new_type);
-                    left->base = b;
+                assert(left_ident);
+                if (left_ident->usage == ast::IdentUsage::unknown) {
+                    left_ident->usage = ast::IdentUsage::define_variable;
+                    left_ident->expr_type = std::move(new_type);
+                    left_ident->base = b;
                 }
                 else {
                     report_assign_error();
                 }
             }
             else if (b->op == ast::BinaryOp::const_assign) {
-                if (left->usage == ast::IdentUsage::unknown) {
-                    left->usage = ast::IdentUsage::define_const;
-                    left->expr_type = std::move(new_type);
-                    left->base = b;
+                assert(left_ident);
+                if (left_ident->usage == ast::IdentUsage::unknown) {
+                    left_ident->usage = ast::IdentUsage::define_const;
+                    left_ident->expr_type = std::move(new_type);
+                    left_ident->base = b;
                 }
                 else {
                     report_assign_error();
@@ -442,8 +472,8 @@ namespace brgen::middle {
         std::shared_ptr<ast::StructType> lookup_struct(const std::shared_ptr<ast::Type>& typ) {
             if (auto ident = ast::as<ast::IdentType>(typ)) {
                 if (auto b = ident->base.lock()) {
-                    if (auto fmt = ast::as<ast::Format>(b)) {
-                        return fmt->body->struct_type;
+                    if (auto fmt = ast::as<ast::StructType>(b)) {
+                        return ast::cast_to<ast::StructType>(b);
                     }
                 }
             }

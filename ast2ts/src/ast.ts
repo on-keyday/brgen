@@ -579,7 +579,7 @@ export function isIntType(obj: any): obj is IntType {
 
 export interface IdentType extends Type {
 	ident: Ident|null;
-	base: Member|null;
+	base: Type|null;
 }
 
 export function isIdentType(obj: any): obj is IdentType {
@@ -2366,7 +2366,7 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at IdentType::base');
 			}
 			const tmpbase = on.body.base === null ? null : c.node[on.body.base];
-			if (!(tmpbase === null || isMember(tmpbase))) {
+			if (!(tmpbase === null || isType(tmpbase))) {
 				throw new Error('invalid node list at IdentType::base');
 			}
 			n.base = tmpbase;

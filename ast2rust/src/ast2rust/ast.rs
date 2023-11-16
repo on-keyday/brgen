@@ -4372,7 +4372,7 @@ pub struct IdentType {
 	pub loc: Loc,
 	pub is_explicit: bool,
 	pub ident: Option<Rc<RefCell<Ident>>>,
-	pub base: Option<MemberWeak>,
+	pub base: Option<TypeWeak>,
 }
 
 impl TryFrom<&Type> for Rc<RefCell<IdentType>> {

@@ -85,13 +85,12 @@ format CentralDirEntry:
     externalFileAttributes :u32
     relativeOffsetOfLocalHeader :s32
     fileName :[fileNameLength]u8
-    # input.proxy :[]u8
     # input.subrange(offsetFromCurrentPosition, length?)
-    extraField :[..]ExtraField(input.proxy = input.subrange(0,extraFieldLength))
+    extraField :[..]ExtraField(input = input.subrange(0,extraFieldLength))
     fileComment :[fileCommentLength]u8
     
     fn localHeader():
-        pkt :Section(input.proxy = input.subrange(relativeOffsetOfLocalHeader))
+        pkt :Section(input = input.subrange(relativeOffsetOfLocalHeader))
         return pkt
 
 format LocalFileHeader:
@@ -105,7 +104,7 @@ format LocalFileHeader:
     fileNameLength :u16
     extraFieldLength :u16
     fileName :[fileNameLength]u8
-    extraField :ExtraFields(input.proxy = input.subrange(0,extraFieldLength))
+    extraField :ExtraFields(input = input.subrange(0,extraFieldLength))
 
 format LocalFile:
     header :LocalFileHeader

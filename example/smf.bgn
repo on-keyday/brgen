@@ -52,7 +52,7 @@ format Varint:
 format TrackChunk:
     magic  :"MTrk"
     length : ub32
-    events : [..]Event(input.proxy=input.subrange(0,length))
+    events : [..]Event(input=input.subrange(0,length))
 
 enum EventType:
     :u8

@@ -23,9 +23,9 @@ format QUICPackets:
       enc := config.arg("encrypted",bool)
       loop input.remain > 0:
          pkt :QUICPacket
-         input.proxy = pkt
-         frames :[..]QUICFrame
-         packets push(pkt)
+         if available(pkt.hdr):
+            frames :[..]QUICFrame(input = pkt.hdr)
+            packets push(pkt)
    
    fn encode():
       loop pkt:=range(packets):

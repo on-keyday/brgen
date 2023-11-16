@@ -1642,7 +1642,7 @@ type IdentType struct {
 	Loc        Loc
 	IsExplicit bool
 	Ident      *Ident
-	Base       Member
+	Base       Type
 }
 
 func (n *IdentType) isType() {}
@@ -2786,7 +2786,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				v.Ident = n.node[*tmp.Ident].(*Ident)
 			}
 			if tmp.Base != nil {
-				v.Base = n.node[*tmp.Base].(Member)
+				v.Base = n.node[*tmp.Base].(Type)
 			}
 		case NodeTypeIntLiteralType:
 			v := n.node[i].(*IntLiteralType)

@@ -354,7 +354,7 @@ class IntType(Type):
 
 class IdentType(Type):
     ident: Optional[Ident]
-    base: Optional[Member]
+    base: Optional[Type]
 
 
 class IntLiteralType(Type):
@@ -1179,7 +1179,7 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].ident = None
                 if ast.node[i].body["base"] is not None:
                     x = node[ast.node[i].body["base"]]
-                    node[i].base = x if isinstance(x,Member) else raiseError(TypeError('type mismatch at IdentType::base'))
+                    node[i].base = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at IdentType::base'))
                 else:
                     node[i].base = None
             case NodeType.INT_LITERAL_TYPE:

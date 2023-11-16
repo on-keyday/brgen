@@ -363,7 +363,7 @@ public class IdentType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
 	public Ident? Ident{get;set;}
-	public Member? Base{get;set;}
+	public Type? Base{get;set;}
 }
 public class IntLiteralType : Type{
 	public Loc Loc{get;set;}
