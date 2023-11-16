@@ -386,6 +386,7 @@ class FunctionType(Type):
 
 class StructType(Type):
     fields: List[Member]
+    base: Optional[Node]
 
 
 class StructUnionType(Type):
@@ -1230,6 +1231,11 @@ def ast2node(ast :JsonAst) -> Program:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at StructType::is_explicit'))
                 node[i].fields = [(node[x] if isinstance(node[x],Member) else raiseError(TypeError('type mismatch at StructType::fields'))) for x in ast.node[i].body["fields"]]
+                if ast.node[i].body["base"] is not None:
+                    x = node[ast.node[i].body["base"]]
+                    node[i].base = x if isinstance(x,Node) else raiseError(TypeError('type mismatch at StructType::base'))
+                else:
+                    node[i].base = None
             case NodeType.STRUCT_UNION_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at StructUnionType::is_explicit'))

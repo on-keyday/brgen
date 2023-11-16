@@ -93,6 +93,7 @@ namespace brgen::ast {
             prog->global_scope = state.reset_stack();
             prog->global_scope->owner = prog;
             prog->struct_type = std::make_shared<StructType>(prog->loc);
+            prog->struct_type->base = prog;
             auto st = state.enter_struct(prog->struct_type);
             s.skip_line();
             auto collect_comments = [&] {
@@ -138,6 +139,7 @@ namespace brgen::ast {
             auto block = std::make_shared<IndentBlock>(base.loc);
 
             block->struct_type = std::make_shared<StructType>(base.loc);
+            block->struct_type->base = scope_owner ? scope_owner : block;
 
             // Create a new context for the current indent level
             auto current_indent = base.token.size();
@@ -286,6 +288,7 @@ namespace brgen::ast {
                 std::shared_ptr<StructType> struct_ = std::make_shared<StructType>(loc);
                 auto c = state.enter_struct(struct_);
                 block = parse_statement();
+                struct_->base = block;
                 union_->fields.push_back(std::move(struct_));
             };
 
@@ -1047,14 +1050,12 @@ namespace brgen::ast {
         std::shared_ptr<Format> parse_format(lexer::Token&& token) {
             auto fmt = std::make_shared<Format>(token.loc);
             s.skip_white();
-            // fmt->struct_type = std::make_shared<StructType>(token.loc);
 
             fmt->ident = parse_ident();
             fmt->ident->usage = IdentUsage ::define_format;
             fmt->ident->base = fmt;
             {
                 auto m_scope = state.enter_member(fmt);
-                // auto typ = state.enter_struct(fmt->struct_type);
                 fmt->body = parse_indent_block(fmt);
             }
 
@@ -1122,8 +1123,6 @@ namespace brgen::ast {
             fn->func_type->return_type = fn->return_type;
 
             state.add_to_struct(fn);
-
-            // fn->struct_type = std::make_shared<StructType>(fn->loc);  // for function body nested
 
             {
                 auto m_scope = state.enter_member(fn);

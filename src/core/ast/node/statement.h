@@ -10,10 +10,7 @@ namespace brgen::ast {
 
     struct Format : Member {
         define_node_type(NodeType::format);
-        // bool is_enum = false;
-        //  std::shared_ptr<Ident> ident;
         std::shared_ptr<IndentBlock> body;
-        // std::shared_ptr<StructType> struct_type;
         Format(lexer::Loc l)
             : Member(l, NodeType::format) {}
 
@@ -23,10 +20,7 @@ namespace brgen::ast {
 
         void dump(auto&& field_) {
             Member::dump(field_);
-            // sdebugf(is_enum);
-            // sdebugf(ident);
             sdebugf(body);
-            // sdebugf(struct_type);
         }
     };
 

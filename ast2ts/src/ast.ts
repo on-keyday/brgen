@@ -637,6 +637,7 @@ export function isFunctionType(obj: any): obj is FunctionType {
 
 export interface StructType extends Type {
 	fields: Member[];
+	base: Node|null;
 }
 
 export function isStructType(obj: any): obj is StructType {
@@ -1323,6 +1324,7 @@ export function parseAST(obj: any): Program {
 				loc: on.loc,
 				is_explicit: false,
 				fields: [],
+				base: null,
 			}
 			c.node.push(n);
 			break;
@@ -2496,6 +2498,14 @@ export function parseAST(obj: any): Program {
 				}
 				n.fields.push(tmpfields);
 			}
+			if (on.body?.base !== null && typeof on.body?.base !== 'number') {
+				throw new Error('invalid node list at StructType::base');
+			}
+			const tmpbase = on.body.base === null ? null : c.node[on.body.base];
+			if (!(tmpbase === null || isNode(tmpbase))) {
+				throw new Error('invalid node list at StructType::base');
+			}
+			n.base = tmpbase;
 			break;
 		}
 		case "struct_union_type": {

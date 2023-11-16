@@ -4829,6 +4829,7 @@ pub struct StructType {
 	pub loc: Loc,
 	pub is_explicit: bool,
 	pub fields: Vec<Member>,
+	pub base: Option<NodeWeak>,
 }
 
 impl TryFrom<&Type> for Rc<RefCell<StructType>> {
@@ -5964,6 +5965,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
 				fields: Vec::new(),
+				base: None,
 				})))
 			},
 			NodeType::StructUnionType => {
@@ -8066,6 +8068,21 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						None => return Err(Error::IndexOutOfBounds(link as usize)),
 					};
 					node.borrow_mut().fields.push(fields_body.try_into()?);
+				}
+				let base_body = match raw_node.body.get("base") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"base")),
+				};
+ 				if !base_body.is_null() {
+					let base_body = match base_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(base_body.into(),JSONType::Number)),
+					};
+					let base_body = match nodes.get(base_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(base_body as usize)),
+					};
+					node.borrow_mut().base = Some(NodeWeak::from(base_body.clone()));
 				}
 			},
 			NodeType::StructUnionType => {

@@ -74,15 +74,24 @@ namespace j2cp2 {
     };
 
     struct Field {
-        std::vector<std::string> name;
+        std::string name;
         std::shared_ptr<Type> type;
         std::shared_ptr<ast::Field> base;
     };
 
     struct Struct : Type {
         std::vector<std::shared_ptr<Field>> fields;
+        std::shared_ptr<ast::StructType> base;
 
         Struct()
+            : Type(TypeKind::Struct) {}
+    };
+
+    struct Union : Type {
+        std::vector<std::shared_ptr<Struct>> fields;
+        std::shared_ptr<ast::StructUnionType> base;
+
+        Union()
             : Type(TypeKind::Struct) {}
     };
 

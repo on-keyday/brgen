@@ -1770,6 +1770,7 @@ type StructType struct {
 	Loc        Loc
 	IsExplicit bool
 	Fields     []Member
+	Base       Node
 }
 
 func (n *StructType) isType() {}
@@ -2873,6 +2874,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			var tmp struct {
 				IsExplicit bool      `json:"is_explicit"`
 				Fields     []uintptr `json:"fields"`
+				Base       *uintptr  `json:"base"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -2881,6 +2883,9 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.Fields = make([]Member, len(tmp.Fields))
 			for j, k := range tmp.Fields {
 				v.Fields[j] = n.node[k].(Member)
+			}
+			if tmp.Base != nil {
+				v.Base = n.node[*tmp.Base].(Node)
 			}
 		case NodeTypeStructUnionType:
 			v := n.node[i].(*StructUnionType)

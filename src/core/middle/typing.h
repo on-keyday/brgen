@@ -715,9 +715,12 @@ namespace brgen::middle {
                     if (s->ident->usage == ast::IdentUsage::reference_type) {
                         auto ident = ast::as<ast::Ident>(s->ident->base.lock());
                         assert(ident);
-                        auto member = ast::as<ast::Member>(ident->base.lock());
-                        if (member) {
-                            s->base = ast::cast_to<ast::Member>(ident->base.lock());
+                        auto member = ident->base.lock();
+                        if (auto enum_ = ast::as<ast::Enum>(member)) {
+                            s->base = enum_->enum_type;
+                        }
+                        else if (auto struct_ = ast::as<ast::Format>(member)) {
+                            s->base = struct_->body->struct_type;
                         }
                     }
                     return;

@@ -826,6 +826,7 @@ struct ast2c_StructType {
 	int is_explicit;
 	ast2c_Member** fields;
 	size_t fields_size;
+	ast2c_Node* base;
 };
 
 // returns 1 if succeed 0 if failed

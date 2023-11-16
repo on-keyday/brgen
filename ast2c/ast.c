@@ -1898,8 +1898,10 @@ int ast2c_StructType_parse(ast2c_Ast* ast,ast2c_StructType* s,ast2c_json_handler
 	void* obj_body = h->object_get(h, obj, "body");
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
 	s->fields = NULL;
+	s->base = NULL;
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
 	void* fields = h->object_get(h, obj_body, "fields");
+	void* base = h->object_get(h, obj_body, "base");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_StructType::loc is null"); } return 0; }
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_StructType::is_explicit is null"); } return 0; }
 	if (!fields) { if(h->error) { h->error(h,fields, "ast2c_StructType::fields is null"); } return 0; }
@@ -1907,6 +1909,7 @@ int ast2c_StructType_parse(ast2c_Ast* ast,ast2c_StructType* s,ast2c_json_handler
 		if(h->error) { h->error(h,fields, "failed to get array size of ast2c_StructType::fields"); }
 		return NULL;
 	}
+	if (!base) { if(h->error) { h->error(h,base, "ast2c_StructType::base is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_StructType::loc"); }
 		goto error;

@@ -400,6 +400,7 @@ public class StructType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
 	public List<Member>? Fields{get;set;}
+	public Node? Base{get;set;}
 }
 public class StructUnionType : Type{
 	public Loc Loc{get;set;}

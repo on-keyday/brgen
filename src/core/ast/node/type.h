@@ -59,7 +59,7 @@ namespace brgen::ast {
         j.string(endian_str[static_cast<std::uint8_t>(e)]);
     }
 
-     struct IntType : Type {
+    struct IntType : Type {
         define_node_type(NodeType::int_type);
         size_t bit_size = 0;
         Endian endian = Endian::unspec;
@@ -186,7 +186,7 @@ namespace brgen::ast {
     struct IdentType : Type {
         define_node_type(NodeType::ident_type);
         std::shared_ptr<Ident> ident;
-        std::weak_ptr<Member> base;
+        std::weak_ptr<Type> base;
         IdentType(lexer::Loc l, std::shared_ptr<Ident>&& token)
             : Type(l, NodeType::ident_type), ident(std::move(token)) {
             this->is_explicit = true;
@@ -283,6 +283,7 @@ namespace brgen::ast {
     struct StructType : Type {
         define_node_type(NodeType::struct_type);
         std::vector<std::shared_ptr<Member>> fields;
+        std::weak_ptr<Node> base;
 
         StructType(lexer::Loc l)
             : Type(l, NodeType::struct_type) {}
@@ -293,6 +294,7 @@ namespace brgen::ast {
         void dump(auto&& field_) {
             Type::dump(field_);
             sdebugf(fields);
+            sdebugf(base);
         }
 
         std::shared_ptr<Member> lookup(std::string_view key) {
