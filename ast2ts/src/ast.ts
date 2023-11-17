@@ -638,6 +638,7 @@ export function isFunctionType(obj: any): obj is FunctionType {
 export interface StructType extends Type {
 	fields: Member[];
 	base: Node|null;
+	recursive: boolean;
 }
 
 export function isStructType(obj: any): obj is StructType {
@@ -1325,6 +1326,7 @@ export function parseAST(obj: any): Program {
 				is_explicit: false,
 				fields: [],
 				base: null,
+				recursive: false,
 			}
 			c.node.push(n);
 			break;
@@ -2506,6 +2508,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at StructType::base');
 			}
 			n.base = tmpbase;
+			const tmprecursive = on.body?.recursive;
+			if (typeof on.body?.recursive !== "boolean") {
+				throw new Error('invalid node list at StructType::recursive');
+			}
+			n.recursive = on.body.recursive;
 			break;
 		}
 		case "struct_union_type": {

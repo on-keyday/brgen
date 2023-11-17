@@ -1771,6 +1771,7 @@ type StructType struct {
 	IsExplicit bool
 	Fields     []Member
 	Base       Node
+	Recursive  bool
 }
 
 func (n *StructType) isType() {}
@@ -2875,6 +2876,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				IsExplicit bool      `json:"is_explicit"`
 				Fields     []uintptr `json:"fields"`
 				Base       *uintptr  `json:"base"`
+				Recursive  bool      `json:"recursive"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -2887,6 +2889,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.Base != nil {
 				v.Base = n.node[*tmp.Base].(Node)
 			}
+			v.Recursive = tmp.Recursive
 		case NodeTypeStructUnionType:
 			v := n.node[i].(*StructUnionType)
 			var tmp struct {

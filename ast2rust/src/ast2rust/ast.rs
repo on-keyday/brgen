@@ -4830,6 +4830,7 @@ pub struct StructType {
 	pub is_explicit: bool,
 	pub fields: Vec<Member>,
 	pub base: Option<NodeWeak>,
+	pub recursive: bool,
 }
 
 impl TryFrom<&Type> for Rc<RefCell<StructType>> {
@@ -5966,6 +5967,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				is_explicit: false,
 				fields: Vec::new(),
 				base: None,
+				recursive: false,
 				})))
 			},
 			NodeType::StructUnionType => {
@@ -8084,6 +8086,14 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().base = Some(NodeWeak::from(base_body.clone()));
 				}
+				let recursive_body = match raw_node.body.get("recursive") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"recursive")),
+				};
+				node.borrow_mut().recursive = match recursive_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(recursive_body.into(),JSONType::Bool)),
+				};
 			},
 			NodeType::StructUnionType => {
 				let node = nodes[i].clone();

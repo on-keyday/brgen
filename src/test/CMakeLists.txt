@@ -4,7 +4,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/test")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/test")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/test")
 
-
+add_compile_definitions(__TEST__)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcoverage-mapping")
 
@@ -51,6 +51,11 @@ add_executable(liner_eq_test "core/liner_eq_test.cpp")
 target_link_libraries(liner_eq_test gtest_main)
 target_compile_options(liner_eq_test PRIVATE "-fprofile-instr-generate=liner_eq_test.profraw")
 
+add_executable(recursive_reference_detection "core/recursive_reference_detection.cpp")
+target_link_libraries(recursive_reference_detection gtest_main)
+target_compile_options(recursive_reference_detection PRIVATE "-fprofile-instr-generate=recursive_reference_detection.profraw")
+
+
 add_test(NAME "lexer_test" COMMAND lexer_test)
 add_test(NAME "ast_test" COMMAND ast_test)
 add_test(NAME "typing_test" COMMAND typing_test)
@@ -58,6 +63,7 @@ add_test(NAME "middle_test" COMMAND middle_test)
 add_test(NAME "from_json_test" COMMAND from_json_test)
 add_test(NAME "section_writer_test" COMMAND section_writer_test)
 add_test(NAME "liner_eq_test" COMMAND liner_eq_test)
+add_test(NAME "recursive_reference_detection" COMMAND recursive_reference_detection)
 
 if(WIN32)
 
@@ -65,10 +71,12 @@ add_custom_command(
 TARGET ast_test POST_BUILD
 COMMAND ${CMAKE_COMMAND} -E copy "$ENV{UTILS_DIR}/lib/libutils.dll" "${CMAKE_BINARY_DIR}/test/libutils.dll"
 )
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 add_custom_command(
 TARGET ast_test POST_BUILD
 COMMAND ${CMAKE_COMMAND} -E copy "$ENV{UTILS_DIR}/lib/libutils.pdb" "${CMAKE_BINARY_DIR}/test/libutils.pdb"
 )
+endif()
 else()
 
 add_custom_command(

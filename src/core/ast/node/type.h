@@ -284,6 +284,7 @@ namespace brgen::ast {
         define_node_type(NodeType::struct_type);
         std::vector<std::shared_ptr<Member>> fields;
         std::weak_ptr<Node> base;
+        bool recursive = false;
 
         StructType(lexer::Loc l)
             : Type(l, NodeType::struct_type) {}
@@ -295,6 +296,7 @@ namespace brgen::ast {
             Type::dump(field_);
             sdebugf(fields);
             sdebugf(base);
+            sdebugf(recursive);
         }
 
         std::shared_ptr<Member> lookup(std::string_view key) {

@@ -387,6 +387,7 @@ class FunctionType(Type):
 class StructType(Type):
     fields: List[Member]
     base: Optional[Node]
+    recursive: bool
 
 
 class StructUnionType(Type):
@@ -1236,6 +1237,8 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].base = x if isinstance(x,Node) else raiseError(TypeError('type mismatch at StructType::base'))
                 else:
                     node[i].base = None
+                x = ast.node[i].body["recursive"]
+                node[i].recursive = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at StructType::recursive'))
             case NodeType.STRUCT_UNION_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at StructUnionType::is_explicit'))

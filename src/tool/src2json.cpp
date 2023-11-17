@@ -466,7 +466,6 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
 }
 
 int src2json_main(int argc, char** argv) {
-    utils::wrap::U8Arg _(argc, argv);
     Flags flags;
     return utils::cmdline::templ::parse_or_err<std::string>(
         argc, argv, flags,
@@ -490,7 +489,9 @@ extern "C" int EMSCRIPTEN_KEEPALIVE emscripten_main(const char* cmdline) {
     return em_main(cmdline, src2json_main);
 }
 #else
+
 int main(int argc, char** argv) {
+    utils::wrap::U8Arg _(argc, argv);
     return src2json_main(argc, argv);
 }
 #endif

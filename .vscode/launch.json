@@ -43,7 +43,7 @@
             "name": "Debug test",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceRoot}/build/test/from_json_test",
+            "program": "${workspaceRoot}/built/native/Debug/test/from_json_test",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",
