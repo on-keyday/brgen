@@ -16,7 +16,6 @@ namespace brgen::middle {
                     }
                     if (typ.find(t) != typ.end()) {
                         t->recursive = true;
-                        return;
                     }
                     typ.insert(t);
                     ast::traverse(n, [&](auto&& n) {

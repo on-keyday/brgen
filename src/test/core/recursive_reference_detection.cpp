@@ -41,3 +41,30 @@ format A:
     ASSERT_TRUE(fmt);
     ASSERT_TRUE(fmt->body->struct_type->recursive);
 }
+
+TEST(RecursiveDetection, DetectNested) {
+    auto r = parse_and_typing(R"(
+format A:
+    a :B
+
+format B:
+    b :A
+
+format C:
+    c :A
+)");
+    middle::TypeAttribute attr;
+    attr.check_recursive_reference(r);
+    ASSERT_FALSE(r->struct_type->recursive);
+    auto& fields = r->struct_type->fields;
+    ASSERT_EQ(fields.size(), 3);
+    auto fmt = ast::cast_to<ast::Format>(fields[0]);
+    ASSERT_TRUE(fmt);
+    ASSERT_TRUE(fmt->body->struct_type->recursive);
+    auto fmt2 = ast::cast_to<ast::Format>(fields[1]);
+    ASSERT_TRUE(fmt2);
+    ASSERT_TRUE(fmt2->body->struct_type->recursive);
+    auto fmt3 = ast::cast_to<ast::Format>(fields[2]);
+    ASSERT_TRUE(fmt3);
+    ASSERT_FALSE(fmt3->body->struct_type->recursive);
+}
