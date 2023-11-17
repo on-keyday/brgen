@@ -19,7 +19,7 @@ if [ $BUILD_MODE = "wasm-em" ]; then
    npm install
    cd ../..
 fi
-fi
+
 
 
 
