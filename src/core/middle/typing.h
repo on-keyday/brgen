@@ -486,8 +486,8 @@ namespace brgen::middle {
         std::shared_ptr<ast::EnumType> lookup_enum(const std::shared_ptr<ast::Type>& typ) {
             if (auto ident = ast::as<ast::IdentType>(typ)) {
                 if (auto fmt = ident->base.lock()) {
-                    if (auto e = ast::as<ast::Enum>(fmt)) {
-                        return e->enum_type;
+                    if (auto e = ast::as<ast::EnumType>(fmt)) {
+                        return ast::cast_to<ast::EnumType>(fmt);
                     }
                 }
             }

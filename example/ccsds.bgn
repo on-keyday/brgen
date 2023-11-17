@@ -1,0 +1,10 @@
+
+format CCSDS:
+    version :u2
+    type :u1
+    packet_secondary_header_flag :u1
+    application_process_id :u11
+    group_flags :u2
+    soruce_sequence_count :u14
+    packet_data_length :u16
+    packet_data :[packet_data_length]u8
