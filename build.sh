@@ -11,7 +11,8 @@ if [ ! $BUILD_TYPE ]; then
 fi
 
 if [ ! -d utils ]; then
-. ./script/clone_utils.sh $BUILD_MODE
+. ./script/clone_utils.sh $BUILD_MODE $BUILD_TYPE
+fi
 go mod download
 if [ $BUILD_MODE = "wasm-em" ]; then
    cd web/dev
