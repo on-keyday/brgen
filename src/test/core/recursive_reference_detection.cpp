@@ -34,5 +34,10 @@ format A:
 )");
     middle::TypeAttribute attr;
     attr.check_recursive_reference(r);
-    ASSERT_TRUE(r->struct_type->recursive);
+    ASSERT_FALSE(r->struct_type->recursive);
+    auto& fields = r->struct_type->fields;
+    ASSERT_EQ(fields.size(), 1);
+    auto fmt = ast::cast_to<ast::Format>(fields[0]);
+    ASSERT_TRUE(fmt);
+    ASSERT_TRUE(fmt->body->struct_type->recursive);
 }
