@@ -43,7 +43,7 @@ jobs:
           cd ..
       - name: Build Wasm
         run: |
-          . build.sh wasm-em
+          . build.sh wasm-em Release
         continue-on-error: true
       - name: Setup Pages
         uses: actions/configure-pages@v3

@@ -1,6 +1,7 @@
 @echo off
 setlocal
 set BUILD_MODE=%1
+set BUILD_TYPE=%2
 
 if "%BUILD_MODE%" == "" (
     set BUILD_MODE=native
@@ -10,7 +11,10 @@ if not exist %UTILS_DIR% (
     call script\clone_utils.bat
 )
 
-set BUILD_TYPE=Debug
+if "%BUILD_TYPE%" == "" (
+    set BUILD_TYPE=Debug
+)
+
 set LLVM_DIR=C:/workspace/llvm-project/llvm/build/lib/cmake/llvm
 set Clang_DIR=C:/workspace/llvm-project/clang/build/cmake/modules/CMakeFiles
 set INSTALL_PREFIX=.

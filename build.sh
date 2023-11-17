@@ -1,8 +1,13 @@
 #!/bin/bash
 BUILD_MODE=$1
+BUILD_TYPE=$2
 
 if [ ! $BUILD_MODE ]; then
-    BUILD_MODE=native
+   BUILD_MODE=native
+fi
+
+if [ ! $BUILD_TYPE ]; then
+   BUILD_TYPE=Debug
 fi
 
 if [ ! -d utils ]; then
@@ -16,7 +21,7 @@ fi
 fi
 
 
-BUILD_TYPE=Debug
+
 
 export UTILS_DIR=$(pwd)/utils
 export BUILD_MODE=$BUILD_MODE
