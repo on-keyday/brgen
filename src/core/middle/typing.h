@@ -12,6 +12,16 @@ namespace brgen::middle {
 
         std::shared_ptr<ast::Scope> current_global;
         bool equal_type(const std::shared_ptr<ast::Type>& left, const std::shared_ptr<ast::Type>& right) {
+            // unwrap ident type
+            if (auto l = ast::as<ast::IdentType>(left), r = ast::as<ast::IdentType>(right); l || r) {
+                if (l && r) {
+                    return equal_type(l->base.lock(), r->base.lock());
+                }
+                if (l) {
+                    return equal_type(l->base.lock(), right);
+                }
+                return equal_type(left, r->base.lock());
+            }
             if (left->node_type != right->node_type) {
                 return false;
             }
@@ -19,9 +29,10 @@ namespace brgen::middle {
                 auto rty = ast::as<ast::IntType>(right);
                 return lty->bit_size == rty->bit_size;
             }
-            if (auto lty = ast::as<ast::IdentType>(left)) {
-                auto rty = ast::as<ast::IdentType>(right);
-                return lty->ident == rty->ident;
+
+            if (auto lty = ast::as<ast::EnumType>(left)) {
+                auto rty = ast::as<ast::EnumType>(right);
+                return lty->base.lock() == rty->base.lock();
             }
             if (ast::as<ast::BoolType>(left)) {
                 return true;
@@ -433,7 +444,11 @@ namespace brgen::middle {
 
         std::optional<std::shared_ptr<ast::Ident>> find_matching_ident(ast::Ident* ident) {
             auto search = [&](std::shared_ptr<ast::Ident>& def) {
-                return ident->ident == def->ident && def->usage != ast::IdentUsage::unknown;
+                return ident->ident == def->ident && def->usage != ast::IdentUsage::unknown &&
+                       def->usage != ast::IdentUsage::reference &&
+                       def->usage != ast::IdentUsage::reference_type &&
+                       def->usage != ast::IdentUsage::maybe_type &&
+                       def->usage != ast::IdentUsage::reference_member;
             };
             auto found = ident->scope->lookup_local(search, ident);
             if (found) {

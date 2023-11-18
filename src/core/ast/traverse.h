@@ -93,6 +93,7 @@ namespace brgen::ast {
         CASE(UnionType)
         CASE(RangeType)
         CASE(EnumType)
+        CASE(BitGroupType)
 
         END_SWITCH()
 #undef SWITCH

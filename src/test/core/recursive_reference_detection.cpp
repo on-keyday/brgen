@@ -33,7 +33,7 @@ format A:
     a :A
 )");
     middle::TypeAttribute attr;
-    attr.check_recursive_reference(r);
+    attr.recursive_reference(r);
     ASSERT_FALSE(r->struct_type->recursive);
     auto& fields = r->struct_type->fields;
     ASSERT_EQ(fields.size(), 1);
@@ -54,7 +54,7 @@ format C:
     c :A
 )");
     middle::TypeAttribute attr;
-    attr.check_recursive_reference(r);
+    attr.recursive_reference(r);
     ASSERT_FALSE(r->struct_type->recursive);
     auto& fields = r->struct_type->fields;
     ASSERT_EQ(fields.size(), 3);

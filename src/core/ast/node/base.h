@@ -35,10 +35,13 @@ namespace brgen::ast {
     struct Type : Node {
         define_node_type(NodeType::type);
         bool is_explicit = false;  // for language server annotation
+        bool is_int_set = false;   // type is integer, set of integer, or fixed length integer array.
+                                   // not complex type array, not dynamic array, not include recursive struct
 
         void dump(auto&& field_) {
             Node::dump(field_);
             sdebugf(is_explicit);
+            sdebugf(is_int_set);
         }
 
        protected:

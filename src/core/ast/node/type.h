@@ -407,4 +407,26 @@ namespace brgen::ast {
         }
     };
 
+    struct BitGroupType : Type {
+        define_node_type(NodeType::bit_group_type);
+        std::vector<std::weak_ptr<Field>> bit_fields;
+        bool is_aligned = false;
+        size_t bit_size = 0;
+
+        BitGroupType(lexer::Loc l)
+            : Type(l, NodeType::bit_group_type) {
+            this->is_explicit = false;
+        }
+
+        BitGroupType()
+            : Type({}, NodeType::bit_group_type) {}
+
+        void dump(auto&& field_) {
+            Type::dump(field_);
+            sdebugf(bit_fields);
+            sdebugf(is_aligned);
+            sdebugf(bit_size);
+        }
+    };
+
 }  // namespace brgen::ast

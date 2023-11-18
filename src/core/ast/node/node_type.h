@@ -74,6 +74,7 @@ namespace brgen::ast {
         union_type,
         range_type,
         enum_type,
+        bit_group_type,
     };
 
     constexpr const char* node_type_str[]{
@@ -133,6 +134,7 @@ namespace brgen::ast {
         "enum",
         "enum_member",
         "enum_type",
+        "bit_group_type",
     };
 
     constexpr int mapNodeTypeToValue(NodeType type) {
@@ -249,6 +251,8 @@ namespace brgen::ast {
                 return 54;
             case NodeType::enum_type:
                 return 55;
+            case NodeType::bit_group_type:
+                return 56;
             default:
                 return -1;
         }
@@ -368,6 +372,8 @@ namespace brgen::ast {
                 return NodeType::enum_member;
             case 55:
                 return NodeType::enum_type;
+            case 56:
+                return NodeType::bit_group_type;
             default:
                 return either::unexpected{"invalid value"};
         }

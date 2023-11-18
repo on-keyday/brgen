@@ -1,0 +1,20 @@
+
+
+
+format USBPacket:
+    sync :u8
+    pid :u4
+    pid_reverse :u4
+    !pid == pid_reverse
+    match pid:
+        0b0001 => data :StartOfFrame
+        
+
+format StartOfFrame:
+    frame :u11
+    crc :u5
+
+format TokenPacket:
+    addr :u7
+    endp :u4
+    crc :u5

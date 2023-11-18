@@ -1,0 +1,55 @@
+
+format Uint32:
+    value :u32
+
+    fn encode():
+        loop:
+            byte := u8(value & 0x7f)
+            value = value >> 7
+            if value == 0:
+                output.put(byte)
+                break
+            else:
+                output.put(byte | 0x80)
+    
+    fn decode():
+        shift := 0
+        loop:
+            byte := input.get()
+            value |= (byte & 0x7f) << shift
+            if byte & 0x80 == 0:
+                break
+            shift = shift + 7
+        return value
+
+    fn cast u32():
+        return value
+
+enum Type:
+    :u8
+    i32 = 0x7f
+    i64 = 0x7e
+    f32 = 0x7d
+    f64 = 0x7c
+    v128 = 0x7b
+    funcref = 0x70
+    externref = 0x6f
+    func = 0x60
+    empty_block_type = 0x40
+    
+format ValType:
+    type :Type
+    type == Type.i32 || 
+    type == Type.i64 || 
+    type == Type.f32 || 
+    type == Type.f64 || 
+    type == Type.v128 || 
+    type == Type.funcref || 
+    type == Type.externref
+
+format ResultType:
+    length :Uint32
+    types :[length]Type
+
+
+

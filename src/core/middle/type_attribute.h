@@ -7,7 +7,7 @@
 namespace brgen::middle {
 
     struct TypeAttribute {
-        void check_recursive_reference(const std::shared_ptr<ast::Node>& node) {
+        void recursive_reference(const std::shared_ptr<ast::Node>& node) {
             std::set<ast::StructType*> typ;
             auto traverse_fn = [&](auto&& f, const std::shared_ptr<ast::Node>& n) -> void {
                 if (auto t = ast::as<ast::StructType>(n); t) {
@@ -34,6 +34,9 @@ namespace brgen::middle {
                 });
             };
             traverse_fn(traverse_fn, node);
+        }
+
+        void int_type_detection(const std::shared_ptr<ast::Node>& node) {
         }
     };
 }  // namespace brgen::middle
