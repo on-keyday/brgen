@@ -37,6 +37,29 @@ namespace brgen::middle {
         }
 
         void int_type_detection(const std::shared_ptr<ast::Node>& node) {
+            std::set<ast::Type*> tracked;
+            auto trv = [&](auto&& f, const std::shared_ptr<ast::Node>& n) -> void {
+                if (auto t = ast::as<ast::StructType>(n); t) {
+                    if (t->recursive) {
+                        return;  // not integer
+                    }
+                    if (t->is_int_set) {
+                        return;
+                    }
+                    ast::traverse(n, [&](auto&& n) {
+                        f(f, n);
+                    });
+                }
+                if (auto t = ast::as<ast::IdentType>(n)) {
+                    auto c = t->base.lock();
+                    if (c) {
+                        f(f, c);
+                    }
+                }
+                ast::traverse(n, [&](auto&& n) {
+                    f(f, n);
+                });
+            };
         }
     };
 }  // namespace brgen::middle

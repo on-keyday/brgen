@@ -9,8 +9,6 @@ jobs:
       - name: Timeline
         uses: Kesin11/actions-timeline@v1
         with:
-          # e.g.: ${{ secrets.MY_PAT }}
-          # Default: ${{ github.token }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
         uses: actions/checkout@v3

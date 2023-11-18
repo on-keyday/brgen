@@ -1,6 +1,7 @@
 
 format Uint32:
     value :u32
+    config.replace("c++","wasm::Varint32")
 
     fn encode():
         loop:
@@ -22,7 +23,34 @@ format Uint32:
             shift = shift + 7
         return value
 
-    fn cast u32():
+    fn cast u32():   
+        return value
+
+format Uint64:
+    value :u64
+    config.replace("c++","wasm::Varint64")
+
+    fn encode():
+        loop:
+            byte := u8(value & 0x7f)
+            value = value >> 7
+            if value == 0:
+                output.put(byte)
+                break
+            else:
+                output.put(byte | 0x80)
+    
+    fn decode():
+        shift := 0
+        loop:
+            byte := input.get()
+            value |= (byte & 0x7f) << shift
+            if byte & 0x80 == 0:
+                break
+            shift = shift + 7
+        return value
+
+    fn cast u64():   
         return value
 
 enum Type:
@@ -47,9 +75,55 @@ format ValType:
     type == Type.funcref || 
     type == Type.externref
 
+format RefType:
+    type :Type
+    type == Type.funcref || 
+    type == Type.externref
+
 format ResultType:
     length :Uint32
-    types :[length]Type
+    types :[length]ValType
 
 
 
+
+format FunctionType:
+    params :ResultType
+    results :ResultType
+
+
+format Limits:
+    reserved :u5
+    memory_64 :u1
+    shared_memory :u1
+    exist_max :u1
+
+    if memory_64 == 1:
+        min :Uint64
+        if exist_max == 1:
+            max :Uint64
+    else:
+        min :Uint32
+        if exist_max == 1:
+            max :Uint32
+
+format MemoryType:
+    limits :Limits
+
+format TableType:
+    elem_type :RefType
+    limits :Limits
+
+format GlobalType:
+    type :ValType
+    mutable :u8
+    mutable == 0 || mutable == 1
+
+format BlockType:
+    type :u32
+
+    fn decode():
+        p := input.get()
+        if p == 0x40:
+            type = u32(Type.empty_block_type)
+            return

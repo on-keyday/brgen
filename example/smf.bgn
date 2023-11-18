@@ -32,7 +32,7 @@ format Varint:
         data := value
         loop data > 0:
             output.put(u8(data & 0x7f))
-            data >>= 7
+            data = data >> 7
 
     fn decode():
         value = 0
@@ -41,7 +41,7 @@ format Varint:
             if shift > 28:
                 error("delta time too long")
             byte := input.get(u8)
-            value |= (byte & 0x7f) << shift
+            value = value | (byte & 0x7f) << shift
             if byte & 0x80 == 0:
                 break
             shift = shift + 7
@@ -129,5 +129,4 @@ format ChannelPressureEvent:
 
 format PitchBendEvent:
     value : ub16
-
 

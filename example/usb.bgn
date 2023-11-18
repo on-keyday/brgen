@@ -8,7 +8,7 @@ format USBPacket:
     !pid == pid_reverse
     match pid:
         0b0001 => data :StartOfFrame
-        
+
 
 format StartOfFrame:
     frame :u11

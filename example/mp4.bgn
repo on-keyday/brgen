@@ -1,0 +1,10 @@
+
+format Box:
+    size :u32
+    type :[4]u8
+    if size == 1:
+        large_size :u64
+
+    if type == "uuid":
+        usertype :[16]u8
+

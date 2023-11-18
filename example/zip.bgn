@@ -14,7 +14,7 @@ format Section:
         0x0201 => body :CentralDirEntry
         0x0403 => body :LocalFile
         0x0605 => body :EndOfCentralDir
-        _ => error("unknown section type: ", sectionType)
+        .. => error("unknown section type: ", sectionType)
 
 format DosTime:
     secondDiv2 :u5

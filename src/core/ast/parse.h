@@ -1180,8 +1180,8 @@ namespace brgen::ast {
                 s.skip_space();
                 if (!s.eos() && !s.consume_token(lexer::Tag::line)) {
                     ret_->expr = parse_expr(prev_skip_line);
-                    skip_last();
                 }
+                skip_last();
                 return ret_;
             }
 
