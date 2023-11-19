@@ -8,3 +8,7 @@ format Box:
     if type == "uuid":
         usertype :[16]u8
 
+    if size == 0:
+        data :[..]u8
+    else:
+        data :[size-8]u8

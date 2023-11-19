@@ -35,9 +35,9 @@ namespace brgen::ast {
     struct Type : Node {
         define_node_type(NodeType::type);
         bool is_explicit = false;  // for language server annotation
-        bool is_int_set = false;   // type is integer, set of integer, or fixed length integer array.
-                                   // not complex type array, not dynamic array, not include recursive struct
-
+        // type is integer, set of integer, or fixed length integer array.
+        // not complex type array, not dynamic array, not include recursive struct
+        bool is_int_set = false;
         void dump(auto&& field_) {
             Node::dump(field_);
             sdebugf(is_explicit);
@@ -49,13 +49,45 @@ namespace brgen::ast {
             : Node(l, t) {}
     };
 
+    enum class ConstantLevel {
+        unknown,
+        const_value,
+        const_variable,
+        variable,
+    };
+
+    constexpr const char* constant_level_str[] = {
+        "unknown",
+        "const_value",
+        "const_variable",
+        "variable",
+        nullptr,
+    };
+
+    constexpr size_t constant_level_count = 4;
+
+    constexpr void as_json(ConstantLevel level, auto&& buf) {
+        buf.value(constant_level_str[int(level)]);
+    }
+
+    constexpr std::optional<ConstantLevel> constant_level(std::string_view str) {
+        for (int i = 0; constant_level_str[i]; i++) {
+            if (constant_level_str[i] == str) {
+                return ConstantLevel(i);
+            }
+        }
+        return std::nullopt;
+    }
+
     struct Expr : Node {
         define_node_type(NodeType::expr);
         std::shared_ptr<Type> expr_type;
+        ConstantLevel constant_level = ConstantLevel::unknown;
 
         void dump(auto&& field_) {
             Node::dump(field_);
             sdebugf(expr_type);
+            sdebugf(constant_level);
         }
 
        protected:

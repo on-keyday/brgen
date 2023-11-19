@@ -68,3 +68,24 @@ format C:
     ASSERT_TRUE(fmt3);
     ASSERT_FALSE(fmt3->body->struct_type->recursive);
 }
+
+TEST(IntSet, IntSetSimple) {
+    auto r = parse_and_typing(R"(
+format A:
+    hello :u8
+    world :u16
+    is    :u32
+    cheap :u64
+    )");
+    middle::TypeAttribute attr;
+    attr.recursive_reference(r);
+    attr.int_type_detection(r);
+    ASSERT_FALSE(r->struct_type->is_int_set);
+}
+
+TEST(IntSet, IntSetNested) {
+    auto r = parse_and_typing(R"(
+format A:
+    fix :[30]u8
+    )");
+}

@@ -249,6 +249,7 @@ namespace brgen::middle {
                     left_ident->usage = ast::IdentUsage::define_variable;
                     left_ident->expr_type = std::move(new_type);
                     left_ident->base = b;
+                    left_ident->constant_level = ast::ConstantLevel::variable;
                 }
                 else {
                     report_assign_error();
@@ -260,6 +261,12 @@ namespace brgen::middle {
                     left_ident->usage = ast::IdentUsage::define_const;
                     left_ident->expr_type = std::move(new_type);
                     left_ident->base = b;
+                    if (b->right->constant_level == ast::ConstantLevel::const_value) {
+                        left_ident->constant_level = ast::ConstantLevel::const_value;
+                    }
+                    else {
+                        left_ident->constant_level = ast::ConstantLevel::const_variable;
+                    }
                 }
                 else {
                     report_assign_error();
@@ -549,12 +556,15 @@ namespace brgen::middle {
             }
             if (auto lit = ast::as<ast::IntLiteral>(expr)) {
                 lit->expr_type = std::make_shared<ast::IntLiteralType>(ast::cast_to<ast::IntLiteral>(expr));
+                lit->constant_level = ast::ConstantLevel::const_value;
             }
             else if (auto lit = ast::as<ast::BoolLiteral>(expr)) {
                 lit->expr_type = std::make_shared<ast::BoolType>(lit->loc);
+                lit->constant_level = ast::ConstantLevel::const_value;
             }
             else if (auto lit = ast::as<ast::StrLiteral>(expr)) {
                 lit->expr_type = std::make_shared<ast::StrLiteralType>(ast::cast_to<ast::StrLiteral>(expr));
+                lit->constant_level = ast::ConstantLevel::const_value;
             }
             else if (auto ident = ast::as<ast::Ident>(expr)) {
                 if (ident->base.lock()) {
@@ -564,7 +574,8 @@ namespace brgen::middle {
                 if (auto found = find_matching_ident(ident)) {
                     auto& base = (*found);
                     ident->expr_type = base->expr_type;
-                    ident->base = *found;
+                    ident->base = base;
+                    ident->constant_level = base->constant_level;
                     if (base->usage == ast::IdentUsage::define_enum ||
                         base->usage == ast::IdentUsage::define_format) {
                         ident->usage = ast::IdentUsage::reference_type;
@@ -613,6 +624,7 @@ namespace brgen::middle {
             else if (auto paren = ast::as<ast::Paren>(expr)) {
                 typing_expr(paren->expr);
                 paren->expr_type = paren->expr->expr_type;
+                paren->constant_level = paren->expr->constant_level;
             }
             else if (auto unary = ast::as<ast::Unary>(expr)) {
                 typing_expr(unary->expr);

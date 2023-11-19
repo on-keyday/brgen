@@ -360,6 +360,18 @@ namespace brgen::ast {
                         return {};
                     });
             }
+            else if constexpr (std::is_same_v<T,ConstantLevel>){
+                return (res & get_string(loc, key))
+                    .and_then([&](std::string&& s) -> result<void> {
+                        if (auto res = constant_level(s.c_str()); !res) {
+                            return unexpect(error(loc, s, " cannot convert to constant level"));
+                        }
+                        else {
+                            target = *res;
+                        }
+                        return {};
+                    });
+            }
             else if constexpr (std::is_same_v<T, Endian>) {
                 return (res & get_string(loc, key))
                     .and_then([&](std::string&& s) -> result<void> {
@@ -407,7 +419,7 @@ namespace brgen::ast {
                     auto rep = std::make_shared<NodeT>();
                     rep->loc = loc;
                     rep->dump([&](auto key, auto& target) {
-                        err = err & [&] { return parse_non_node_field(**body, node_type, loc, key, target); };
+                        err = err & [&]()->result<void> { return parse_non_node_field(**body, node_type, loc, key, target); };
                     });
                     if (!err) {
                         return;

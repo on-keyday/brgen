@@ -51,10 +51,9 @@ add_executable(liner_eq_test "core/liner_eq_test.cpp")
 target_link_libraries(liner_eq_test gtest_main)
 target_compile_options(liner_eq_test PRIVATE "-fprofile-instr-generate=liner_eq_test.profraw")
 
-add_executable(recursive_reference_detection "core/recursive_reference_detection.cpp")
-target_link_libraries(recursive_reference_detection gtest_main)
-target_compile_options(recursive_reference_detection PRIVATE "-fprofile-instr-generate=recursive_reference_detection.profraw")
-
+add_executable(type_attribute "core/type_attribute_test.cpp")
+target_link_libraries(type_attribute gtest_main)
+target_compile_options(type_attribute PRIVATE "-fprofile-instr-generate=type_attribute.profraw")
 
 add_test(NAME "lexer_test" COMMAND lexer_test)
 add_test(NAME "ast_test" COMMAND ast_test)
@@ -63,7 +62,7 @@ add_test(NAME "middle_test" COMMAND middle_test)
 add_test(NAME "from_json_test" COMMAND from_json_test)
 add_test(NAME "section_writer_test" COMMAND section_writer_test)
 add_test(NAME "liner_eq_test" COMMAND liner_eq_test)
-add_test(NAME "recursive_reference_detection" COMMAND recursive_reference_detection)
+add_test(NAME "type_attribute" COMMAND type_attribute)
 
 if(WIN32)
 

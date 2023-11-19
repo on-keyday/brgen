@@ -43,12 +43,23 @@ namespace brgen::middle {
                     if (t->recursive) {
                         return;  // not integer
                     }
+                    if (tracked.find(t) != tracked.end()) {
+                        return;  // already detected
+                    }
                     if (t->is_int_set) {
-                        return;
+                        return;  // already detected
                     }
                     ast::traverse(n, [&](auto&& n) {
                         f(f, n);
                     });
+                    for (auto& fields : t->fields) {
+                        if (auto field = ast::as<ast::Field>(fields); field) {
+                            if (!field->field_type->is_int_set) {
+                                return;  // not integer
+                            }
+                        }
+                    }
+                    t->is_int_set = true;
                 }
                 if (auto t = ast::as<ast::IdentType>(n)) {
                     auto c = t->base.lock();

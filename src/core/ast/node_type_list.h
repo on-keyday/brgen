@@ -161,6 +161,9 @@ namespace brgen::ast {
                     else if constexpr (std::is_same_v<P, Endian>) {
                         field(key, "endian");
                     }
+                    else if constexpr (std::is_same_v<P, ConstantLevel>) {
+                        field(key, "constant_level");
+                    }
                     else if constexpr (utils::helper::is_template<P>) {
                         using P1 = typename utils::helper::template_of_t<P>::template param_at<0>;
                         if constexpr (utils::helper::is_template_instance_of<P, std::shared_ptr>) {
@@ -338,6 +341,19 @@ namespace brgen::ast {
                         auto field = d.object();
                         field("name", lexer::tag_str[i]);
                         field("value", lexer::tag_str[i]);
+                    });
+                }
+            });
+        }
+        {
+            R p{constant_level_str, constant_level_str + constant_level_count};
+            field("constant_level", [&](auto&& d) {
+                auto field = d.array();
+                for (size_t i = 0; i < constant_level_count; i++) {
+                    field([&](auto&& d) {
+                        auto field = d.object();
+                        field("name", constant_level_str[i]);
+                        field("value", constant_level_str[i]);
                     });
                 }
             });
