@@ -9,6 +9,7 @@ endif()
 
 set(CMAKE_CXX_STANDARD 23)
 
+
 if("$ENV{BUILD_MODE}" STREQUAL "native")
 link_directories("$ENV{UTILS_DIR}/built/shared/${CMAKE_BUILD_TYPE}/lib")
 set(UTILS_LIB_DIR "$ENV{UTILS_DIR}/built/shared/${CMAKE_BUILD_TYPE}/lib")

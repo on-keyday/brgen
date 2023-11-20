@@ -21,9 +21,10 @@ namespace brgen::lexer {
         constexpr auto indent = str(Tag::indent, bol & ~(cps::tab | cps::space) & not_(lit('#') /*ignore comment*/ | cps::eol | eos));
         constexpr auto comment = str(Tag::comment, cps::shell_comment);
 
-        constexpr auto int_literal = str(Tag::int_literal, cps::hex_integer | cps::oct_integer | cps::bin_integer | cps::dec_integer);
+        constexpr auto space_or_punct = space | line | method_proxy(puncts) | eos;
+        constexpr auto filter_keyword = peek(space_or_punct);
+        constexpr auto int_literal = str(Tag::int_literal, (cps::hex_integer | cps::oct_integer | cps::bin_integer | cps::dec_integer) & +filter_keyword);
         constexpr auto str_literal = str(Tag::str_literal, cps::c_str | cps::char_str);
-        constexpr auto filter_keyword = peek(space | line | method_proxy(puncts));
         constexpr auto bool_literal = str(Tag::bool_literal, (lit("true") | lit("false")) & filter_keyword);
 
         constexpr auto punct(auto&&... args) {
@@ -34,8 +35,7 @@ namespace brgen::lexer {
             return str(Tag::keyword, (... | lit(args)) & filter_keyword);
         }
 
-        constexpr auto ident = str(Tag::ident, ~(not_(method_proxy(puncts) |
-                                                      space | line) &
+        constexpr auto ident = str(Tag::ident, ~(not_(space_or_punct) &
                                                  uany));
 
         constexpr auto keywords = keyword(

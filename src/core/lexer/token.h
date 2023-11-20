@@ -82,4 +82,8 @@ namespace brgen::lexer {
         field("loc", token.loc);
     }
 
+    constexpr auto to_string(Tag t) {
+        return tag_str[int(t)];
+    }
+
 }  // namespace brgen::lexer
