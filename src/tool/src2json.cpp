@@ -24,6 +24,9 @@
 #define EMSCRIPTEN_KEEPALIVE
 #endif
 
+constexpr auto exit_ok = 0;
+constexpr auto exit_err = 1;
+
 struct Flags : utils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
     bool lexer = false;
@@ -156,21 +159,21 @@ int check_ast(std::string_view name, utils::view::rvec view) {
     auto js = utils::json::parse<utils::json::JSON>(view, true);
     if (js.is_undef()) {
         print_error("cannot parse json file ", name);
-        return -1;
+        return exit_err;
     }
     auto f = js.at("ast");
     if (!f) {
         print_error("cannot find ast field ", name);
-        return -1;
+        return exit_err;
     }
     brgen::ast::JSONConverter c;
     auto res = c.decode(*f);
     if (!res) {
         print_error("cannot decode json file: ", res.error().locations[0].msg);
-        return -1;
+        return exit_err;
     }
     print_ok();
-    return 0;
+    return exit_ok;
 }
 
 int dump_types() {
@@ -202,7 +205,7 @@ int dump_types() {
     if (cout.is_tty()) {
         cout << "\n";
     }
-    return 0;
+    return exit_ok;
 }
 
 int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
@@ -231,17 +234,17 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
 
     if (flags.stdin_mode && flags.argv_mode) {
         print_error("cannot use --stdin and --argv at the same time");
-        return -1;
+        return exit_err;
     }
 
     if (!flags.stdin_mode && !flags.argv_mode && flags.args.size() == 0) {
         print_error("no input file");
-        return -1;
+        return exit_err;
     }
 
     if (flags.args.size() > 1) {
         print_error("only one file is supported now");
-        return -1;
+        return exit_err;
     }
 
     std::string name;
@@ -258,24 +261,24 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     if (flags.argv_mode) {
         if (flags.input_mode != brgen::UtfMode::utf8) {
             print_error("argv mode only support utf8");
-            return -1;
+            return exit_err;
         }
         auto ok = files.add_special(name, flags.argv_input);
         if (!ok) {
             print_error("cannot input ", name, " code=", ok.error());
-            return -1;
+            return exit_err;
         }
         input = files.get_input(*ok);
         if (!input) {
             print_error("cannot input ", name);
-            return -1;
+            return exit_err;
         }
     }
     else if (flags.stdin_mode) {
         auto& cin = utils::wrap::cin_wrap();
         if (cin.is_tty()) {
             print_error("not support repl mode");
-            return -1;
+            return exit_err;
         }
         auto& file = cin.get_file();
         std::string file_buf;
@@ -293,31 +296,31 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
         auto ok = files.add_special(name, std::move(file_buf));
         if (!ok) {
             print_error("cannot input ", name, " code=", ok.error());
-            return -1;
+            return exit_err;
         }
         input = files.get_input(*ok);
         if (!input) {
             print_error("cannot input ", name);
-            return -1;
+            return exit_err;
         }
     }
     else {
         auto ok = files.add_file(name);
         if (!ok) {
             print_error("cannot open file ", name, " code=", ok.error());
-            return -1;
+            return exit_err;
         }
         input = files.get_input(*ok);
         if (!input) {
             print_error("cannot open file ", name);
-            return -1;
+            return exit_err;
         }
     }
 
     if (flags.check_ast) {
         if (flags.input_mode != brgen::UtfMode::utf8) {
             print_error("check-ast mode only support utf8");
-            return -1;
+            return exit_err;
         }
         return check_ast(name, input->source());
     }
@@ -371,7 +374,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
         auto res = do_lex(input, flags.tokenization_limit).transform_error(brgen::to_source_error(files));
         if (!res) {
             report_error(std::move(res.error()), false, "tokens");
-            return -1;
+            return exit_err;
         }
         if (!cout.is_tty() || flags.print_json) {
             auto d = dump_json_file(*res, "tokens", brgen::SourceError{});
@@ -383,14 +386,14 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
         else {
             print_ok();
         }
-        return 0;
+        return exit_ok;
     }
 
     auto res = do_parse(input, flags.collect_comments).transform_error(brgen::to_source_error(files));
 
     if (!res) {
         report_error(std::move(res.error()));
-        return -1;
+        return exit_err;
     }
 
     const auto kill = [&] {
@@ -401,7 +404,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
         auto res2 = brgen::middle::resolve_import(*res, files).transform_error(brgen::to_source_error(files));
         if (!res2) {
             report_error(std::move(res2.error()));
-            return -1;
+            return exit_err;
         }
     }
     if (!flags.not_resolve_cast) {
@@ -422,11 +425,11 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
             else {
                 report_error(brgen::to_source_error(files)(std::move(res3.error())));
             }
-            return -1;
+            return exit_err;
         }
         if (flags.unresolved_type_as_error && ty.warnings.locations.size() > 0) {
             report_error(brgen::to_source_error(files)(std::move(ty.warnings)));
-            return -1;
+            return exit_err;
         }
         if (!flags.disable_untyped_warning && ty.warnings.locations.size() > 0) {
             auto warns = brgen::to_source_error(files)(std::move(ty.warnings));
@@ -443,7 +446,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
 
     if (cout.is_tty() && !flags.print_json) {
         print_ok();
-        return 0;
+        return exit_ok;
     }
 
     brgen::JSONWriter d;
@@ -462,7 +465,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
         cout << "\n";
     }
 
-    return 0;
+    return exit_ok;
 }
 
 int src2json_main(int argc, char** argv) {
