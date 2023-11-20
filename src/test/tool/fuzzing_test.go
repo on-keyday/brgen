@@ -4,20 +4,51 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
+	"os"
 	"os/exec"
 	"runtime"
+	"syscall"
 	"testing"
 	"time"
+
+	"golang.org/x/net/websocket"
 )
 
 const src2jsonPath = "../../../tool/src2json"
 
 func FuzzSrc2JSON(f *testing.F) {
+	wsConn, err := websocket.Dial("ws://localhost:8080/log", "", "http://localhost/")
+	if err != nil {
+		f.Fatal(err)
+	}
+	defer wsConn.Close()
+
 	exeName := src2jsonPath
 	if runtime.GOOS == "windows" {
 		exeName += ".exe"
 	}
+	data := []string{
+		"format", "if", "elif", "else", "match", "fn", "loop", "enum",
+		"input", "output", "config", "true", "false",
+		"return", "break", "continue", "cast",
+		"#", "\"", "'", "$", // added but maybe not used
+		"::=", ":=",
+		":", ";", "(", ")", "[", "]",
+		"=>", "==", "=",
+		"..=", "..", ".", "->",
+		"+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "<<=", ">>=", ">>>=", "<<<=",
+		">>>", "<<<", ">>", "<<", "~",
+		"&&", "||", "&", "|",
+		"!=", "!",
+		"+", "-", "*", "/", "%", "^",
+		"<=", ">=", "<", ">", "?", ",",
+	}
+	for _, d := range data {
+		f.Add([]byte(d))
+	}
 	f.Fuzz(func(t *testing.T, data []byte) {
+		wsConn.Write([]byte(fmt.Sprintf("data: %q\n", data)))
 		c, cancel := context.WithTimeoutCause(context.Background(), 5*time.Second, errors.New("process timeout"))
 		defer cancel()
 		cmd := exec.CommandContext(c, exeName, "--stdin")
@@ -43,6 +74,8 @@ func FuzzSrc2JSON(f *testing.F) {
 			t.Fatal(err)
 		}
 		err = cmd.Wait()
+		wsConn.Write([]byte(fmt.Sprintf("stdout: %q\n", stdout.String())))
+		wsConn.Write([]byte(fmt.Sprintf("stderr: %q\n", stderr.String())))
 		t.Log("stdout:", stdout.String())
 		t.Log("stderr:", stderr.String())
 		if err != nil {
@@ -51,7 +84,16 @@ func FuzzSrc2JSON(f *testing.F) {
 					err = nil
 				}
 			}
+			if w := errors.Unwrap(err); w != nil {
+				if syscallErr, ok := w.(*os.SyscallError); ok {
+					if syscallErr.Syscall == "TerminateProcess" &&
+						syscallErr.Err == syscall.ERROR_ACCESS_DENIED {
+						err = nil
+					}
+				}
+			}
 			if err != nil {
+				t.Logf("err: %#v", err)
 				t.Fatal(err)
 			}
 		}
