@@ -40,6 +40,7 @@ typedef enum ast2c_BinaryOp ast2c_BinaryOp;
 typedef enum ast2c_IdentUsage ast2c_IdentUsage;
 typedef enum ast2c_Endian ast2c_Endian;
 typedef enum ast2c_TokenTag ast2c_TokenTag;
+typedef enum ast2c_ConstantLevel ast2c_ConstantLevel;
 typedef struct ast2c_Node ast2c_Node;
 typedef struct ast2c_Expr ast2c_Expr;
 typedef struct ast2c_Literal ast2c_Literal;
@@ -97,6 +98,7 @@ typedef struct ast2c_RangeType ast2c_RangeType;
 typedef struct ast2c_Enum ast2c_Enum;
 typedef struct ast2c_EnumMember ast2c_EnumMember;
 typedef struct ast2c_EnumType ast2c_EnumType;
+typedef struct ast2c_BitGroupType ast2c_BitGroupType;
 typedef struct ast2c_Scope ast2c_Scope;
 typedef struct ast2c_Pos ast2c_Pos;
 typedef struct ast2c_Loc ast2c_Loc;
@@ -165,6 +167,7 @@ enum ast2c_NodeType {
 	AST2C_NODETYPE_ENUM,
 	AST2C_NODETYPE_ENUM_MEMBER,
 	AST2C_NODETYPE_ENUM_TYPE,
+	AST2C_NODETYPE_BIT_GROUP_TYPE,
 };
 const char* ast2c_NodeType_to_string(ast2c_NodeType);
 int ast2c_NodeType_from_string(const char*,ast2c_NodeType*);
@@ -263,6 +266,15 @@ enum ast2c_TokenTag {
 const char* ast2c_TokenTag_to_string(ast2c_TokenTag);
 int ast2c_TokenTag_from_string(const char*,ast2c_TokenTag*);
 
+enum ast2c_ConstantLevel {
+	AST2C_CONSTANTLEVEL_UNKNOWN,
+	AST2C_CONSTANTLEVEL_CONST_VALUE,
+	AST2C_CONSTANTLEVEL_CONST_VARIABLE,
+	AST2C_CONSTANTLEVEL_VARIABLE,
+};
+const char* ast2c_ConstantLevel_to_string(ast2c_ConstantLevel);
+int ast2c_ConstantLevel_from_string(const char*,ast2c_ConstantLevel*);
+
 struct ast2c_Pos {
 	uint64_t begin;
 	uint64_t end;
@@ -347,12 +359,14 @@ struct ast2c_Expr {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
 };
 
 struct ast2c_Literal {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
 };
 
 struct ast2c_Stmt {
@@ -371,6 +385,7 @@ struct ast2c_Type {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	int is_explicit;
+	int is_int_set;
 };
 
 struct ast2c_Program {
@@ -389,6 +404,7 @@ struct ast2c_Binary {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
 	ast2c_BinaryOp op;
 	ast2c_Expr* left;
 	ast2c_Expr* right;
@@ -401,6 +417,7 @@ struct ast2c_Unary {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
 	ast2c_UnaryOp op;
 	ast2c_Expr* expr;
 };
@@ -412,6 +429,7 @@ struct ast2c_Cond {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
 	ast2c_Expr* cond;
 	ast2c_Expr* then;
 	ast2c_Loc els_loc;
@@ -425,6 +443,7 @@ struct ast2c_Ident {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
 	char* ident;
 	ast2c_IdentUsage usage;
 	ast2c_Node* base;
@@ -438,6 +457,7 @@ struct ast2c_Call {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
 	ast2c_Expr* callee;
 	ast2c_Expr* raw_arguments;
 	ast2c_Expr** arguments;
@@ -452,6 +472,7 @@ struct ast2c_If {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
 	ast2c_Scope* cond_scope;
 	ast2c_Expr* cond;
 	ast2c_IndentBlock* then;
@@ -465,6 +486,7 @@ struct ast2c_MemberAccess {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
 	ast2c_Expr* target;
 	ast2c_Ident* member;
 	ast2c_Node* base;
@@ -477,6 +499,7 @@ struct ast2c_Paren {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
 	ast2c_Expr* expr;
 	ast2c_Loc end_loc;
 };
@@ -488,6 +511,7 @@ struct ast2c_Index {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
 	ast2c_Expr* expr;
 	ast2c_Expr* index;
 	ast2c_Loc end_loc;
@@ -500,6 +524,7 @@ struct ast2c_Match {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
 	ast2c_Scope* cond_scope;
 	ast2c_Expr* cond;
 	ast2c_Node** branch;
@@ -513,6 +538,7 @@ struct ast2c_Range {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
 	ast2c_BinaryOp op;
 	ast2c_Expr* start;
 	ast2c_Expr* end;
@@ -525,6 +551,7 @@ struct ast2c_TmpVar {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
 	uint64_t tmp_var;
 };
 
@@ -535,6 +562,7 @@ struct ast2c_BlockExpr {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
 	ast2c_Node** calls;
 	size_t calls_size;
 	ast2c_Expr* expr;
@@ -547,6 +575,7 @@ struct ast2c_Import {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
 	char* path;
 	ast2c_Call* base;
 	ast2c_Program* import_desc;
@@ -559,6 +588,7 @@ struct ast2c_IntLiteral {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
 	char* value;
 };
 
@@ -569,6 +599,7 @@ struct ast2c_BoolLiteral {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
 	int value;
 };
 
@@ -579,6 +610,7 @@ struct ast2c_StrLiteral {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
 	char* value;
 };
 
@@ -589,6 +621,7 @@ struct ast2c_Input {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
 };
 
 // returns 1 if succeed 0 if failed
@@ -598,6 +631,7 @@ struct ast2c_Output {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
 };
 
 // returns 1 if succeed 0 if failed
@@ -607,6 +641,7 @@ struct ast2c_Config {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
 };
 
 // returns 1 if succeed 0 if failed
@@ -738,6 +773,7 @@ struct ast2c_IntType {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	int is_explicit;
+	int is_int_set;
 	uint64_t bit_size;
 	ast2c_Endian endian;
 	int is_signed;
@@ -751,6 +787,7 @@ struct ast2c_IdentType {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	int is_explicit;
+	int is_int_set;
 	ast2c_Ident* ident;
 	ast2c_Type* base;
 };
@@ -762,6 +799,7 @@ struct ast2c_IntLiteralType {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	int is_explicit;
+	int is_int_set;
 	ast2c_IntLiteral* base;
 };
 
@@ -772,6 +810,7 @@ struct ast2c_StrLiteralType {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	int is_explicit;
+	int is_int_set;
 	ast2c_StrLiteral* base;
 };
 
@@ -782,6 +821,7 @@ struct ast2c_VoidType {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	int is_explicit;
+	int is_int_set;
 };
 
 // returns 1 if succeed 0 if failed
@@ -791,6 +831,7 @@ struct ast2c_BoolType {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	int is_explicit;
+	int is_int_set;
 };
 
 // returns 1 if succeed 0 if failed
@@ -800,6 +841,7 @@ struct ast2c_ArrayType {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	int is_explicit;
+	int is_int_set;
 	ast2c_Loc end_loc;
 	ast2c_Type* base_type;
 	ast2c_Expr* length;
@@ -812,6 +854,7 @@ struct ast2c_FunctionType {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	int is_explicit;
+	int is_int_set;
 	ast2c_Type* return_type;
 	ast2c_Type** parameters;
 	size_t parameters_size;
@@ -824,6 +867,7 @@ struct ast2c_StructType {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	int is_explicit;
+	int is_int_set;
 	ast2c_Member** fields;
 	size_t fields_size;
 	ast2c_Node* base;
@@ -837,6 +881,7 @@ struct ast2c_StructUnionType {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	int is_explicit;
+	int is_int_set;
 	ast2c_StructType** fields;
 	size_t fields_size;
 	ast2c_Expr* base;
@@ -851,6 +896,7 @@ struct ast2c_Cast {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
 	ast2c_Call* base;
 	ast2c_Expr* expr;
 };
@@ -881,6 +927,7 @@ struct ast2c_UnionType {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	int is_explicit;
+	int is_int_set;
 	ast2c_Expr* cond;
 	ast2c_UnionCandidate** candidates;
 	size_t candidates_size;
@@ -904,6 +951,7 @@ struct ast2c_RangeType {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	int is_explicit;
+	int is_int_set;
 	ast2c_Type* base_type;
 	ast2c_Range* range;
 };
@@ -942,11 +990,26 @@ struct ast2c_EnumType {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	int is_explicit;
+	int is_int_set;
 	ast2c_Enum* base;
 };
 
 // returns 1 if succeed 0 if failed
 int ast2c_EnumType_parse(ast2c_Ast* ,ast2c_EnumType*,ast2c_json_handlers*,void*);
+
+struct ast2c_BitGroupType {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	int is_explicit;
+	int is_int_set;
+	ast2c_Field** bit_fields;
+	size_t bit_fields_size;
+	int is_aligned;
+	uint64_t bit_size;
+};
+
+// returns 1 if succeed 0 if failed
+int ast2c_BitGroupType_parse(ast2c_Ast* ,ast2c_BitGroupType*,ast2c_json_handlers*,void*);
 
 struct ast2c_Scope {
 	const ast2c_NodeType node_type;

@@ -96,6 +96,7 @@ impl From<&Node> for NodeType {
 			Node::Enum(_) => Self::Enum,
 			Node::EnumMember(_) => Self::EnumMember,
 			Node::EnumType(_) => Self::EnumType,
+			Node::BitGroupType(_) => Self::BitGroupType,
 		}
 	}
 }
@@ -160,6 +161,7 @@ impl From<&NodeWeak> for NodeType {
 			NodeWeak::Enum(_) => Self::Enum,
 			NodeWeak::EnumMember(_) => Self::EnumMember,
 			NodeWeak::EnumType(_) => Self::EnumType,
+			NodeWeak::BitGroupType(_) => Self::BitGroupType,
 		}
 	}
 }
@@ -228,6 +230,7 @@ impl From<NodeWeak> for NodeType {
 	Enum,
 	EnumMember,
 	EnumType,
+	BitGroupType,
 }
 
 impl TryFrom<&str> for NodeType {
@@ -290,6 +293,7 @@ impl TryFrom<&str> for NodeType {
 			"enum" =>Ok(Self::Enum),
 			"enum_member" =>Ok(Self::EnumMember),
 			"enum_type" =>Ok(Self::EnumType),
+			"bit_group_type" =>Ok(Self::BitGroupType),
 			_=> Err(()),
 		}
 	}
@@ -498,6 +502,27 @@ impl TryFrom<&str> for TokenTag {
 	}
 }
 
+#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+#[serde(rename_all = "snake_case")]pub enum ConstantLevel {
+	Unknown,
+	ConstValue,
+	ConstVariable,
+	Variable,
+}
+
+impl TryFrom<&str> for ConstantLevel {
+	type Error = ();
+	fn try_from(s:&str)->Result<Self,()>{
+		match s{
+			"unknown" =>Ok(Self::Unknown),
+			"const_value" =>Ok(Self::ConstValue),
+			"const_variable" =>Ok(Self::ConstVariable),
+			"variable" =>Ok(Self::Variable),
+			_=> Err(()),
+		}
+	}
+}
+
 #[derive(Debug,Clone)]
 pub enum Node {
 	Program(Rc<RefCell<Program>>),
@@ -551,6 +576,7 @@ pub enum Node {
 	Enum(Rc<RefCell<Enum>>),
 	EnumMember(Rc<RefCell<EnumMember>>),
 	EnumType(Rc<RefCell<EnumType>>),
+	BitGroupType(Rc<RefCell<BitGroupType>>),
 }
 
 #[derive(Debug,Clone)]
@@ -606,6 +632,7 @@ pub enum NodeWeak {
 	Enum(Weak<RefCell<Enum>>),
 	EnumMember(Weak<RefCell<EnumMember>>),
 	EnumType(Weak<RefCell<EnumType>>),
+	BitGroupType(Weak<RefCell<BitGroupType>>),
 }
 
 impl From<&Node> for NodeWeak {
@@ -662,6 +689,7 @@ impl From<&Node> for NodeWeak {
 			Node::Enum(node)=>Self::Enum(Rc::downgrade(node)),
 			Node::EnumMember(node)=>Self::EnumMember(Rc::downgrade(node)),
 			Node::EnumType(node)=>Self::EnumType(Rc::downgrade(node)),
+			Node::BitGroupType(node)=>Self::BitGroupType(Rc::downgrade(node)),
 		}
 	}
 }
@@ -727,6 +755,7 @@ impl TryFrom<&NodeWeak> for Node {
 			NodeWeak::Enum(node)=>Ok(Self::Enum(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Enum))?)),
 			NodeWeak::EnumMember(node)=>Ok(Self::EnumMember(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::EnumMember))?)),
 			NodeWeak::EnumType(node)=>Ok(Self::EnumType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::EnumType))?)),
+			NodeWeak::BitGroupType(node)=>Ok(Self::BitGroupType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::BitGroupType))?)),
 		}
 	}
 }
@@ -1713,6 +1742,7 @@ pub enum Type {
 	UnionType(Rc<RefCell<UnionType>>),
 	RangeType(Rc<RefCell<RangeType>>),
 	EnumType(Rc<RefCell<EnumType>>),
+	BitGroupType(Rc<RefCell<BitGroupType>>),
 }
 
 #[derive(Debug,Clone)]
@@ -1730,6 +1760,7 @@ pub enum TypeWeak {
 	UnionType(Weak<RefCell<UnionType>>),
 	RangeType(Weak<RefCell<RangeType>>),
 	EnumType(Weak<RefCell<EnumType>>),
+	BitGroupType(Weak<RefCell<BitGroupType>>),
 }
 
 impl From<&Type> for TypeWeak {
@@ -1748,6 +1779,7 @@ impl From<&Type> for TypeWeak {
 			Type::UnionType(node)=>Self::UnionType(Rc::downgrade(node)),
 			Type::RangeType(node)=>Self::RangeType(Rc::downgrade(node)),
 			Type::EnumType(node)=>Self::EnumType(Rc::downgrade(node)),
+			Type::BitGroupType(node)=>Self::BitGroupType(Rc::downgrade(node)),
 		}
 	}
 }
@@ -1775,6 +1807,7 @@ impl TryFrom<&TypeWeak> for Type {
 			TypeWeak::UnionType(node)=>Ok(Self::UnionType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::UnionType))?)),
 			TypeWeak::RangeType(node)=>Ok(Self::RangeType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::RangeType))?)),
 			TypeWeak::EnumType(node)=>Ok(Self::EnumType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::EnumType))?)),
+			TypeWeak::BitGroupType(node)=>Ok(Self::BitGroupType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::BitGroupType))?)),
 		}
 	}
 }
@@ -1803,6 +1836,7 @@ impl TryFrom<&Node> for Type {
 			Node::UnionType(node)=>Ok(Self::UnionType(node.clone())),
 			Node::RangeType(node)=>Ok(Self::RangeType(node.clone())),
 			Node::EnumType(node)=>Ok(Self::EnumType(node.clone())),
+			Node::BitGroupType(node)=>Ok(Self::BitGroupType(node.clone())),
 			_=> Err(Error::InvalidNodeType(node.into())),
 		}
 	}
@@ -1831,6 +1865,7 @@ impl From<&Type> for Node {
 			Type::UnionType(node)=>Self::UnionType(node.clone()),
 			Type::RangeType(node)=>Self::RangeType(node.clone()),
 			Type::EnumType(node)=>Self::EnumType(node.clone()),
+			Type::BitGroupType(node)=>Self::BitGroupType(node.clone()),
 		}
 	}
 }
@@ -1858,6 +1893,7 @@ impl TryFrom<&TypeWeak> for Node {
 			TypeWeak::UnionType(node)=>Ok(Self::UnionType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::UnionType))?)),
 			TypeWeak::RangeType(node)=>Ok(Self::RangeType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::RangeType))?)),
 			TypeWeak::EnumType(node)=>Ok(Self::EnumType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::EnumType))?)),
+			TypeWeak::BitGroupType(node)=>Ok(Self::BitGroupType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::BitGroupType))?)),
 		}
 	}
 }
@@ -1885,6 +1921,7 @@ impl From<&TypeWeak> for NodeWeak {
 			TypeWeak::UnionType(node)=>Self::UnionType(node.clone()),
 			TypeWeak::RangeType(node)=>Self::RangeType(node.clone()),
 			TypeWeak::EnumType(node)=>Self::EnumType(node.clone()),
+			TypeWeak::BitGroupType(node)=>Self::BitGroupType(node.clone()),
 		}
 	}
 }
@@ -1912,6 +1949,7 @@ impl TryFrom<&NodeWeak> for TypeWeak {
 			NodeWeak::UnionType(node)=>Ok(Self::UnionType(node.clone())),
 			NodeWeak::RangeType(node)=>Ok(Self::RangeType(node.clone())),
 			NodeWeak::EnumType(node)=>Ok(Self::EnumType(node.clone())),
+			NodeWeak::BitGroupType(node)=>Ok(Self::BitGroupType(node.clone())),
 			_=> Err(Error::InvalidNodeType(node.into())),
 		}
 	}
@@ -1941,6 +1979,7 @@ impl TryFrom<&Node> for TypeWeak {
 			Node::UnionType(node)=>Ok(Self::UnionType(Rc::downgrade(node))),
 			Node::RangeType(node)=>Ok(Self::RangeType(Rc::downgrade(node))),
 			Node::EnumType(node)=>Ok(Self::EnumType(Rc::downgrade(node))),
+			Node::BitGroupType(node)=>Ok(Self::BitGroupType(Rc::downgrade(node))),
 			_=> Err(Error::InvalidNodeType(node.into())),
 		}
 	}
@@ -1994,6 +2033,7 @@ impl From<Rc<RefCell<Program>>> for Node {
 pub struct Binary {
 	pub loc: Loc,
 	pub expr_type: Option<Type>,
+	pub constant_level: ConstantLevel,
 	pub op: BinaryOp,
 	pub left: Option<Expr>,
 	pub right: Option<Expr>,
@@ -2061,6 +2101,7 @@ impl From<Rc<RefCell<Binary>>> for Node {
 pub struct Unary {
 	pub loc: Loc,
 	pub expr_type: Option<Type>,
+	pub constant_level: ConstantLevel,
 	pub op: UnaryOp,
 	pub expr: Option<Expr>,
 }
@@ -2127,6 +2168,7 @@ impl From<Rc<RefCell<Unary>>> for Node {
 pub struct Cond {
 	pub loc: Loc,
 	pub expr_type: Option<Type>,
+	pub constant_level: ConstantLevel,
 	pub cond: Option<Expr>,
 	pub then: Option<Expr>,
 	pub els_loc: Loc,
@@ -2195,6 +2237,7 @@ impl From<Rc<RefCell<Cond>>> for Node {
 pub struct Ident {
 	pub loc: Loc,
 	pub expr_type: Option<Type>,
+	pub constant_level: ConstantLevel,
 	pub ident: String,
 	pub usage: IdentUsage,
 	pub base: Option<NodeWeak>,
@@ -2263,6 +2306,7 @@ impl From<Rc<RefCell<Ident>>> for Node {
 pub struct Call {
 	pub loc: Loc,
 	pub expr_type: Option<Type>,
+	pub constant_level: ConstantLevel,
 	pub callee: Option<Expr>,
 	pub raw_arguments: Option<Expr>,
 	pub arguments: Vec<Expr>,
@@ -2331,6 +2375,7 @@ impl From<Rc<RefCell<Call>>> for Node {
 pub struct If {
 	pub loc: Loc,
 	pub expr_type: Option<Type>,
+	pub constant_level: ConstantLevel,
 	pub cond_scope: Option<Rc<RefCell<Scope>>>,
 	pub cond: Option<Expr>,
 	pub then: Option<Rc<RefCell<IndentBlock>>>,
@@ -2399,6 +2444,7 @@ impl From<Rc<RefCell<If>>> for Node {
 pub struct MemberAccess {
 	pub loc: Loc,
 	pub expr_type: Option<Type>,
+	pub constant_level: ConstantLevel,
 	pub target: Option<Expr>,
 	pub member: Option<Rc<RefCell<Ident>>>,
 	pub base: Option<NodeWeak>,
@@ -2466,6 +2512,7 @@ impl From<Rc<RefCell<MemberAccess>>> for Node {
 pub struct Paren {
 	pub loc: Loc,
 	pub expr_type: Option<Type>,
+	pub constant_level: ConstantLevel,
 	pub expr: Option<Expr>,
 	pub end_loc: Loc,
 }
@@ -2532,6 +2579,7 @@ impl From<Rc<RefCell<Paren>>> for Node {
 pub struct Index {
 	pub loc: Loc,
 	pub expr_type: Option<Type>,
+	pub constant_level: ConstantLevel,
 	pub expr: Option<Expr>,
 	pub index: Option<Expr>,
 	pub end_loc: Loc,
@@ -2599,6 +2647,7 @@ impl From<Rc<RefCell<Index>>> for Node {
 pub struct Match {
 	pub loc: Loc,
 	pub expr_type: Option<Type>,
+	pub constant_level: ConstantLevel,
 	pub cond_scope: Option<Rc<RefCell<Scope>>>,
 	pub cond: Option<Expr>,
 	pub branch: Vec<Node>,
@@ -2666,6 +2715,7 @@ impl From<Rc<RefCell<Match>>> for Node {
 pub struct Range {
 	pub loc: Loc,
 	pub expr_type: Option<Type>,
+	pub constant_level: ConstantLevel,
 	pub op: BinaryOp,
 	pub start: Option<Expr>,
 	pub end: Option<Expr>,
@@ -2733,6 +2783,7 @@ impl From<Rc<RefCell<Range>>> for Node {
 pub struct TmpVar {
 	pub loc: Loc,
 	pub expr_type: Option<Type>,
+	pub constant_level: ConstantLevel,
 	pub tmp_var: u64,
 }
 
@@ -2798,6 +2849,7 @@ impl From<Rc<RefCell<TmpVar>>> for Node {
 pub struct BlockExpr {
 	pub loc: Loc,
 	pub expr_type: Option<Type>,
+	pub constant_level: ConstantLevel,
 	pub calls: Vec<Node>,
 	pub expr: Option<Expr>,
 }
@@ -2864,6 +2916,7 @@ impl From<Rc<RefCell<BlockExpr>>> for Node {
 pub struct Import {
 	pub loc: Loc,
 	pub expr_type: Option<Type>,
+	pub constant_level: ConstantLevel,
 	pub path: String,
 	pub base: Option<Rc<RefCell<Call>>>,
 	pub import_desc: Option<Rc<RefCell<Program>>>,
@@ -2931,6 +2984,7 @@ impl From<Rc<RefCell<Import>>> for Node {
 pub struct IntLiteral {
 	pub loc: Loc,
 	pub expr_type: Option<Type>,
+	pub constant_level: ConstantLevel,
 	pub value: String,
 }
 
@@ -3025,6 +3079,7 @@ impl From<Rc<RefCell<IntLiteral>>> for Node {
 pub struct BoolLiteral {
 	pub loc: Loc,
 	pub expr_type: Option<Type>,
+	pub constant_level: ConstantLevel,
 	pub value: bool,
 }
 
@@ -3119,6 +3174,7 @@ impl From<Rc<RefCell<BoolLiteral>>> for Node {
 pub struct StrLiteral {
 	pub loc: Loc,
 	pub expr_type: Option<Type>,
+	pub constant_level: ConstantLevel,
 	pub value: String,
 }
 
@@ -3213,6 +3269,7 @@ impl From<Rc<RefCell<StrLiteral>>> for Node {
 pub struct Input {
 	pub loc: Loc,
 	pub expr_type: Option<Type>,
+	pub constant_level: ConstantLevel,
 }
 
 impl TryFrom<&Literal> for Rc<RefCell<Input>> {
@@ -3306,6 +3363,7 @@ impl From<Rc<RefCell<Input>>> for Node {
 pub struct Output {
 	pub loc: Loc,
 	pub expr_type: Option<Type>,
+	pub constant_level: ConstantLevel,
 }
 
 impl TryFrom<&Literal> for Rc<RefCell<Output>> {
@@ -3399,6 +3457,7 @@ impl From<Rc<RefCell<Output>>> for Node {
 pub struct Config {
 	pub loc: Loc,
 	pub expr_type: Option<Type>,
+	pub constant_level: ConstantLevel,
 }
 
 impl TryFrom<&Literal> for Rc<RefCell<Config>> {
@@ -4303,6 +4362,7 @@ impl From<Rc<RefCell<Function>>> for Node {
 pub struct IntType {
 	pub loc: Loc,
 	pub is_explicit: bool,
+	pub is_int_set: bool,
 	pub bit_size: u64,
 	pub endian: Endian,
 	pub is_signed: bool,
@@ -4371,6 +4431,7 @@ impl From<Rc<RefCell<IntType>>> for Node {
 pub struct IdentType {
 	pub loc: Loc,
 	pub is_explicit: bool,
+	pub is_int_set: bool,
 	pub ident: Option<Rc<RefCell<Ident>>>,
 	pub base: Option<TypeWeak>,
 }
@@ -4437,6 +4498,7 @@ impl From<Rc<RefCell<IdentType>>> for Node {
 pub struct IntLiteralType {
 	pub loc: Loc,
 	pub is_explicit: bool,
+	pub is_int_set: bool,
 	pub base: Option<Weak<RefCell<IntLiteral>>>,
 }
 
@@ -4502,6 +4564,7 @@ impl From<Rc<RefCell<IntLiteralType>>> for Node {
 pub struct StrLiteralType {
 	pub loc: Loc,
 	pub is_explicit: bool,
+	pub is_int_set: bool,
 	pub base: Option<Weak<RefCell<StrLiteral>>>,
 }
 
@@ -4567,6 +4630,7 @@ impl From<Rc<RefCell<StrLiteralType>>> for Node {
 pub struct VoidType {
 	pub loc: Loc,
 	pub is_explicit: bool,
+	pub is_int_set: bool,
 }
 
 impl TryFrom<&Type> for Rc<RefCell<VoidType>> {
@@ -4631,6 +4695,7 @@ impl From<Rc<RefCell<VoidType>>> for Node {
 pub struct BoolType {
 	pub loc: Loc,
 	pub is_explicit: bool,
+	pub is_int_set: bool,
 }
 
 impl TryFrom<&Type> for Rc<RefCell<BoolType>> {
@@ -4695,6 +4760,7 @@ impl From<Rc<RefCell<BoolType>>> for Node {
 pub struct ArrayType {
 	pub loc: Loc,
 	pub is_explicit: bool,
+	pub is_int_set: bool,
 	pub end_loc: Loc,
 	pub base_type: Option<Type>,
 	pub length: Option<Expr>,
@@ -4762,6 +4828,7 @@ impl From<Rc<RefCell<ArrayType>>> for Node {
 pub struct FunctionType {
 	pub loc: Loc,
 	pub is_explicit: bool,
+	pub is_int_set: bool,
 	pub return_type: Option<Type>,
 	pub parameters: Vec<Type>,
 }
@@ -4828,6 +4895,7 @@ impl From<Rc<RefCell<FunctionType>>> for Node {
 pub struct StructType {
 	pub loc: Loc,
 	pub is_explicit: bool,
+	pub is_int_set: bool,
 	pub fields: Vec<Member>,
 	pub base: Option<NodeWeak>,
 	pub recursive: bool,
@@ -4895,6 +4963,7 @@ impl From<Rc<RefCell<StructType>>> for Node {
 pub struct StructUnionType {
 	pub loc: Loc,
 	pub is_explicit: bool,
+	pub is_int_set: bool,
 	pub fields: Vec<Rc<RefCell<StructType>>>,
 	pub base: Option<ExprWeak>,
 	pub union_fields: Vec<Weak<RefCell<Field>>>,
@@ -4962,6 +5031,7 @@ impl From<Rc<RefCell<StructUnionType>>> for Node {
 pub struct Cast {
 	pub loc: Loc,
 	pub expr_type: Option<Type>,
+	pub constant_level: ConstantLevel,
 	pub base: Option<Rc<RefCell<Call>>>,
 	pub expr: Option<Expr>,
 }
@@ -5098,6 +5168,7 @@ impl From<Rc<RefCell<CommentGroup>>> for Node {
 pub struct UnionType {
 	pub loc: Loc,
 	pub is_explicit: bool,
+	pub is_int_set: bool,
 	pub cond: Option<ExprWeak>,
 	pub candidates: Vec<Rc<RefCell<UnionCandidate>>>,
 	pub base_type: Option<Weak<RefCell<StructUnionType>>>,
@@ -5230,6 +5301,7 @@ impl From<Rc<RefCell<UnionCandidate>>> for Node {
 pub struct RangeType {
 	pub loc: Loc,
 	pub is_explicit: bool,
+	pub is_int_set: bool,
 	pub base_type: Option<Type>,
 	pub range: Option<Weak<RefCell<Range>>>,
 }
@@ -5490,6 +5562,7 @@ impl From<Rc<RefCell<EnumMember>>> for Node {
 pub struct EnumType {
 	pub loc: Loc,
 	pub is_explicit: bool,
+	pub is_int_set: bool,
 	pub base: Option<Weak<RefCell<Enum>>>,
 }
 
@@ -5547,6 +5620,74 @@ impl From<&Rc<RefCell<EnumType>>> for Node {
 
 impl From<Rc<RefCell<EnumType>>> for Node {
 	fn from(node:Rc<RefCell<EnumType>>)-> Self{
+		Self::from(&node)
+	}
+}
+
+#[derive(Debug,Clone)]
+pub struct BitGroupType {
+	pub loc: Loc,
+	pub is_explicit: bool,
+	pub is_int_set: bool,
+	pub bit_fields: Vec<Weak<RefCell<Field>>>,
+	pub is_aligned: bool,
+	pub bit_size: u64,
+}
+
+impl TryFrom<&Type> for Rc<RefCell<BitGroupType>> {
+	type Error = Error;
+	fn try_from(node:&Type)->Result<Self,Self::Error>{
+		match node {
+			Type::BitGroupType(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl TryFrom<Type> for Rc<RefCell<BitGroupType>> {
+	type Error = Error;
+	fn try_from(node:Type)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
+impl From<&Rc<RefCell<BitGroupType>>> for Type {
+	fn from(node:&Rc<RefCell<BitGroupType>>)-> Self{
+		Type::BitGroupType(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<BitGroupType>>> for Type {
+	fn from(node:Rc<RefCell<BitGroupType>>)-> Self{
+		Self::from(&node)
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<BitGroupType>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::BitGroupType(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl TryFrom<Node> for Rc<RefCell<BitGroupType>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
+impl From<&Rc<RefCell<BitGroupType>>> for Node {
+	fn from(node:&Rc<RefCell<BitGroupType>>)-> Self{
+		Node::BitGroupType(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<BitGroupType>>> for Node {
+	fn from(node:Rc<RefCell<BitGroupType>>)-> Self{
 		Self::from(&node)
 	}
 }
@@ -5654,6 +5795,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::Binary(Rc::new(RefCell::new(Binary {
 				loc: raw_node.loc.clone(),
 				expr_type: None,
+				constant_level: ConstantLevel::Unknown,
 				op: BinaryOp::Mul,
 				left: None,
 				right: None,
@@ -5663,6 +5805,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::Unary(Rc::new(RefCell::new(Unary {
 				loc: raw_node.loc.clone(),
 				expr_type: None,
+				constant_level: ConstantLevel::Unknown,
 				op: UnaryOp::Not,
 				expr: None,
 				})))
@@ -5671,6 +5814,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::Cond(Rc::new(RefCell::new(Cond {
 				loc: raw_node.loc.clone(),
 				expr_type: None,
+				constant_level: ConstantLevel::Unknown,
 				cond: None,
 				then: None,
 				els_loc: raw_node.loc.clone(),
@@ -5681,6 +5825,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::Ident(Rc::new(RefCell::new(Ident {
 				loc: raw_node.loc.clone(),
 				expr_type: None,
+				constant_level: ConstantLevel::Unknown,
 				ident: String::new(),
 				usage: IdentUsage::Unknown,
 				base: None,
@@ -5691,6 +5836,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::Call(Rc::new(RefCell::new(Call {
 				loc: raw_node.loc.clone(),
 				expr_type: None,
+				constant_level: ConstantLevel::Unknown,
 				callee: None,
 				raw_arguments: None,
 				arguments: Vec::new(),
@@ -5701,6 +5847,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::If(Rc::new(RefCell::new(If {
 				loc: raw_node.loc.clone(),
 				expr_type: None,
+				constant_level: ConstantLevel::Unknown,
 				cond_scope: None,
 				cond: None,
 				then: None,
@@ -5711,6 +5858,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::MemberAccess(Rc::new(RefCell::new(MemberAccess {
 				loc: raw_node.loc.clone(),
 				expr_type: None,
+				constant_level: ConstantLevel::Unknown,
 				target: None,
 				member: None,
 				base: None,
@@ -5720,6 +5868,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::Paren(Rc::new(RefCell::new(Paren {
 				loc: raw_node.loc.clone(),
 				expr_type: None,
+				constant_level: ConstantLevel::Unknown,
 				expr: None,
 				end_loc: raw_node.loc.clone(),
 				})))
@@ -5728,6 +5877,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::Index(Rc::new(RefCell::new(Index {
 				loc: raw_node.loc.clone(),
 				expr_type: None,
+				constant_level: ConstantLevel::Unknown,
 				expr: None,
 				index: None,
 				end_loc: raw_node.loc.clone(),
@@ -5737,6 +5887,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::Match(Rc::new(RefCell::new(Match {
 				loc: raw_node.loc.clone(),
 				expr_type: None,
+				constant_level: ConstantLevel::Unknown,
 				cond_scope: None,
 				cond: None,
 				branch: Vec::new(),
@@ -5746,6 +5897,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::Range(Rc::new(RefCell::new(Range {
 				loc: raw_node.loc.clone(),
 				expr_type: None,
+				constant_level: ConstantLevel::Unknown,
 				op: BinaryOp::Mul,
 				start: None,
 				end: None,
@@ -5755,6 +5907,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::TmpVar(Rc::new(RefCell::new(TmpVar {
 				loc: raw_node.loc.clone(),
 				expr_type: None,
+				constant_level: ConstantLevel::Unknown,
 				tmp_var: 0,
 				})))
 			},
@@ -5762,6 +5915,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::BlockExpr(Rc::new(RefCell::new(BlockExpr {
 				loc: raw_node.loc.clone(),
 				expr_type: None,
+				constant_level: ConstantLevel::Unknown,
 				calls: Vec::new(),
 				expr: None,
 				})))
@@ -5770,6 +5924,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::Import(Rc::new(RefCell::new(Import {
 				loc: raw_node.loc.clone(),
 				expr_type: None,
+				constant_level: ConstantLevel::Unknown,
 				path: String::new(),
 				base: None,
 				import_desc: None,
@@ -5779,6 +5934,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::IntLiteral(Rc::new(RefCell::new(IntLiteral {
 				loc: raw_node.loc.clone(),
 				expr_type: None,
+				constant_level: ConstantLevel::Unknown,
 				value: String::new(),
 				})))
 			},
@@ -5786,6 +5942,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::BoolLiteral(Rc::new(RefCell::new(BoolLiteral {
 				loc: raw_node.loc.clone(),
 				expr_type: None,
+				constant_level: ConstantLevel::Unknown,
 				value: false,
 				})))
 			},
@@ -5793,6 +5950,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::StrLiteral(Rc::new(RefCell::new(StrLiteral {
 				loc: raw_node.loc.clone(),
 				expr_type: None,
+				constant_level: ConstantLevel::Unknown,
 				value: String::new(),
 				})))
 			},
@@ -5800,18 +5958,21 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::Input(Rc::new(RefCell::new(Input {
 				loc: raw_node.loc.clone(),
 				expr_type: None,
+				constant_level: ConstantLevel::Unknown,
 				})))
 			},
 			NodeType::Output => {
 				Node::Output(Rc::new(RefCell::new(Output {
 				loc: raw_node.loc.clone(),
 				expr_type: None,
+				constant_level: ConstantLevel::Unknown,
 				})))
 			},
 			NodeType::Config => {
 				Node::Config(Rc::new(RefCell::new(Config {
 				loc: raw_node.loc.clone(),
 				expr_type: None,
+				constant_level: ConstantLevel::Unknown,
 				})))
 			},
 			NodeType::Loop => {
@@ -5904,6 +6065,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::IntType(Rc::new(RefCell::new(IntType {
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
+				is_int_set: false,
 				bit_size: 0,
 				endian: Endian::Unspec,
 				is_signed: false,
@@ -5914,6 +6076,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::IdentType(Rc::new(RefCell::new(IdentType {
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
+				is_int_set: false,
 				ident: None,
 				base: None,
 				})))
@@ -5922,6 +6085,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::IntLiteralType(Rc::new(RefCell::new(IntLiteralType {
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
+				is_int_set: false,
 				base: None,
 				})))
 			},
@@ -5929,6 +6093,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::StrLiteralType(Rc::new(RefCell::new(StrLiteralType {
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
+				is_int_set: false,
 				base: None,
 				})))
 			},
@@ -5936,18 +6101,21 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::VoidType(Rc::new(RefCell::new(VoidType {
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
+				is_int_set: false,
 				})))
 			},
 			NodeType::BoolType => {
 				Node::BoolType(Rc::new(RefCell::new(BoolType {
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
+				is_int_set: false,
 				})))
 			},
 			NodeType::ArrayType => {
 				Node::ArrayType(Rc::new(RefCell::new(ArrayType {
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
+				is_int_set: false,
 				end_loc: raw_node.loc.clone(),
 				base_type: None,
 				length: None,
@@ -5957,6 +6125,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::FunctionType(Rc::new(RefCell::new(FunctionType {
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
+				is_int_set: false,
 				return_type: None,
 				parameters: Vec::new(),
 				})))
@@ -5965,6 +6134,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::StructType(Rc::new(RefCell::new(StructType {
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
+				is_int_set: false,
 				fields: Vec::new(),
 				base: None,
 				recursive: false,
@@ -5974,6 +6144,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::StructUnionType(Rc::new(RefCell::new(StructUnionType {
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
+				is_int_set: false,
 				fields: Vec::new(),
 				base: None,
 				union_fields: Vec::new(),
@@ -5983,6 +6154,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::Cast(Rc::new(RefCell::new(Cast {
 				loc: raw_node.loc.clone(),
 				expr_type: None,
+				constant_level: ConstantLevel::Unknown,
 				base: None,
 				expr: None,
 				})))
@@ -6003,6 +6175,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::UnionType(Rc::new(RefCell::new(UnionType {
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
+				is_int_set: false,
 				cond: None,
 				candidates: Vec::new(),
 				base_type: None,
@@ -6019,6 +6192,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::RangeType(Rc::new(RefCell::new(RangeType {
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
+				is_int_set: false,
 				base_type: None,
 				range: None,
 				})))
@@ -6047,7 +6221,18 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::EnumType(Rc::new(RefCell::new(EnumType {
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
+				is_int_set: false,
 				base: None,
+				})))
+			},
+			NodeType::BitGroupType => {
+				Node::BitGroupType(Rc::new(RefCell::new(BitGroupType {
+				loc: raw_node.loc.clone(),
+				is_explicit: false,
+				is_int_set: false,
+				bit_fields: Vec::new(),
+				is_aligned: false,
+				bit_size: 0,
 				})))
 			},
 			_=>return Err(Error::UnknownNodeType(node_type)),
@@ -6152,6 +6337,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
 				}
+				let constant_level_body = match raw_node.body.get("constant_level") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"constant_level")),
+				};
+				node.borrow_mut().constant_level = match constant_level_body.as_str() {
+					Some(v)=>match ConstantLevel::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(constant_level_body.into(),JSONType::String)),
+				};
 				let op_body = match raw_node.body.get("op") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"op")),
@@ -6215,6 +6411,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
 				}
+				let constant_level_body = match raw_node.body.get("constant_level") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"constant_level")),
+				};
+				node.borrow_mut().constant_level = match constant_level_body.as_str() {
+					Some(v)=>match ConstantLevel::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(constant_level_body.into(),JSONType::String)),
+				};
 				let op_body = match raw_node.body.get("op") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"op")),
@@ -6263,6 +6470,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
 				}
+				let constant_level_body = match raw_node.body.get("constant_level") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"constant_level")),
+				};
+				node.borrow_mut().constant_level = match constant_level_body.as_str() {
+					Some(v)=>match ConstantLevel::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(constant_level_body.into(),JSONType::String)),
+				};
 				let cond_body = match raw_node.body.get("cond") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"cond")),
@@ -6338,6 +6556,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
 				}
+				let constant_level_body = match raw_node.body.get("constant_level") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"constant_level")),
+				};
+				node.borrow_mut().constant_level = match constant_level_body.as_str() {
+					Some(v)=>match ConstantLevel::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(constant_level_body.into(),JSONType::String)),
+				};
 				let ident_body = match raw_node.body.get("ident") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"ident")),
@@ -6409,6 +6638,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
 				}
+				let constant_level_body = match raw_node.body.get("constant_level") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"constant_level")),
+				};
+				node.borrow_mut().constant_level = match constant_level_body.as_str() {
+					Some(v)=>match ConstantLevel::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(constant_level_body.into(),JSONType::String)),
+				};
 				let callee_body = match raw_node.body.get("callee") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"callee")),
@@ -6488,6 +6728,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
 				}
+				let constant_level_body = match raw_node.body.get("constant_level") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"constant_level")),
+				};
+				node.borrow_mut().constant_level = match constant_level_body.as_str() {
+					Some(v)=>match ConstantLevel::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(constant_level_body.into(),JSONType::String)),
+				};
 				let cond_scope_body = match raw_node.body.get("cond_scope") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"cond_scope")),
@@ -6574,6 +6825,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
 				}
+				let constant_level_body = match raw_node.body.get("constant_level") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"constant_level")),
+				};
+				node.borrow_mut().constant_level = match constant_level_body.as_str() {
+					Some(v)=>match ConstantLevel::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(constant_level_body.into(),JSONType::String)),
+				};
 				let target_body = match raw_node.body.get("target") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"target")),
@@ -6645,6 +6907,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
 				}
+				let constant_level_body = match raw_node.body.get("constant_level") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"constant_level")),
+				};
+				node.borrow_mut().constant_level = match constant_level_body.as_str() {
+					Some(v)=>match ConstantLevel::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(constant_level_body.into(),JSONType::String)),
+				};
 				let expr_body = match raw_node.body.get("expr") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"expr")),
@@ -6690,6 +6963,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
 				}
+				let constant_level_body = match raw_node.body.get("constant_level") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"constant_level")),
+				};
+				node.borrow_mut().constant_level = match constant_level_body.as_str() {
+					Some(v)=>match ConstantLevel::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(constant_level_body.into(),JSONType::String)),
+				};
 				let expr_body = match raw_node.body.get("expr") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"expr")),
@@ -6750,6 +7034,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
 				}
+				let constant_level_body = match raw_node.body.get("constant_level") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"constant_level")),
+				};
+				node.borrow_mut().constant_level = match constant_level_body.as_str() {
+					Some(v)=>match ConstantLevel::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(constant_level_body.into(),JSONType::String)),
+				};
 				let cond_scope_body = match raw_node.body.get("cond_scope") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"cond_scope")),
@@ -6821,6 +7116,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
 				}
+				let constant_level_body = match raw_node.body.get("constant_level") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"constant_level")),
+				};
+				node.borrow_mut().constant_level = match constant_level_body.as_str() {
+					Some(v)=>match ConstantLevel::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(constant_level_body.into(),JSONType::String)),
+				};
 				let op_body = match raw_node.body.get("op") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"op")),
@@ -6884,6 +7190,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
 				}
+				let constant_level_body = match raw_node.body.get("constant_level") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"constant_level")),
+				};
+				node.borrow_mut().constant_level = match constant_level_body.as_str() {
+					Some(v)=>match ConstantLevel::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(constant_level_body.into(),JSONType::String)),
+				};
 				let tmp_var_body = match raw_node.body.get("tmp_var") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"tmp_var")),
@@ -6914,6 +7231,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
 				}
+				let constant_level_body = match raw_node.body.get("constant_level") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"constant_level")),
+				};
+				node.borrow_mut().constant_level = match constant_level_body.as_str() {
+					Some(v)=>match ConstantLevel::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(constant_level_body.into(),JSONType::String)),
+				};
 				let calls_body = match raw_node.body.get("calls") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"calls")),
@@ -6970,6 +7298,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
 				}
+				let constant_level_body = match raw_node.body.get("constant_level") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"constant_level")),
+				};
+				node.borrow_mut().constant_level = match constant_level_body.as_str() {
+					Some(v)=>match ConstantLevel::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(constant_level_body.into(),JSONType::String)),
+				};
 				let path_body = match raw_node.body.get("path") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"path")),
@@ -7038,6 +7377,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
 				}
+				let constant_level_body = match raw_node.body.get("constant_level") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"constant_level")),
+				};
+				node.borrow_mut().constant_level = match constant_level_body.as_str() {
+					Some(v)=>match ConstantLevel::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(constant_level_body.into(),JSONType::String)),
+				};
 				let value_body = match raw_node.body.get("value") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"value")),
@@ -7068,6 +7418,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
 				}
+				let constant_level_body = match raw_node.body.get("constant_level") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"constant_level")),
+				};
+				node.borrow_mut().constant_level = match constant_level_body.as_str() {
+					Some(v)=>match ConstantLevel::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(constant_level_body.into(),JSONType::String)),
+				};
 				let value_body = match raw_node.body.get("value") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"value")),
@@ -7098,6 +7459,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
 				}
+				let constant_level_body = match raw_node.body.get("constant_level") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"constant_level")),
+				};
+				node.borrow_mut().constant_level = match constant_level_body.as_str() {
+					Some(v)=>match ConstantLevel::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(constant_level_body.into(),JSONType::String)),
+				};
 				let value_body = match raw_node.body.get("value") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"value")),
@@ -7128,6 +7500,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
 				}
+				let constant_level_body = match raw_node.body.get("constant_level") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"constant_level")),
+				};
+				node.borrow_mut().constant_level = match constant_level_body.as_str() {
+					Some(v)=>match ConstantLevel::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(constant_level_body.into(),JSONType::String)),
+				};
 			},
 			NodeType::Output => {
 				let node = nodes[i].clone();
@@ -7150,6 +7533,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
 				}
+				let constant_level_body = match raw_node.body.get("constant_level") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"constant_level")),
+				};
+				node.borrow_mut().constant_level = match constant_level_body.as_str() {
+					Some(v)=>match ConstantLevel::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(constant_level_body.into(),JSONType::String)),
+				};
 			},
 			NodeType::Config => {
 				let node = nodes[i].clone();
@@ -7172,6 +7566,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
 				}
+				let constant_level_body = match raw_node.body.get("constant_level") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"constant_level")),
+				};
+				node.borrow_mut().constant_level = match constant_level_body.as_str() {
+					Some(v)=>match ConstantLevel::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(constant_level_body.into(),JSONType::String)),
+				};
 			},
 			NodeType::Loop => {
 				let node = nodes[i].clone();
@@ -7753,6 +8158,14 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
 				};
+				let is_int_set_body = match raw_node.body.get("is_int_set") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"is_int_set")),
+				};
+				node.borrow_mut().is_int_set = match is_int_set_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(is_int_set_body.into(),JSONType::Bool)),
+				};
 				let bit_size_body = match raw_node.body.get("bit_size") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"bit_size")),
@@ -7803,6 +8216,14 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
 				};
+				let is_int_set_body = match raw_node.body.get("is_int_set") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"is_int_set")),
+				};
+				node.borrow_mut().is_int_set = match is_int_set_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(is_int_set_body.into(),JSONType::Bool)),
+				};
 				let ident_body = match raw_node.body.get("ident") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"ident")),
@@ -7852,6 +8273,14 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
 				};
+				let is_int_set_body = match raw_node.body.get("is_int_set") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"is_int_set")),
+				};
+				node.borrow_mut().is_int_set = match is_int_set_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(is_int_set_body.into(),JSONType::Bool)),
+				};
 				let base_body = match raw_node.body.get("base") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"base")),
@@ -7885,6 +8314,14 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				node.borrow_mut().is_explicit = match is_explicit_body.as_bool() {
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
+				};
+				let is_int_set_body = match raw_node.body.get("is_int_set") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"is_int_set")),
+				};
+				node.borrow_mut().is_int_set = match is_int_set_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(is_int_set_body.into(),JSONType::Bool)),
 				};
 				let base_body = match raw_node.body.get("base") {
 					Some(v)=>v,
@@ -7920,6 +8357,14 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
 				};
+				let is_int_set_body = match raw_node.body.get("is_int_set") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"is_int_set")),
+				};
+				node.borrow_mut().is_int_set = match is_int_set_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(is_int_set_body.into(),JSONType::Bool)),
+				};
 			},
 			NodeType::BoolType => {
 				let node = nodes[i].clone();
@@ -7935,6 +8380,14 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
 				};
+				let is_int_set_body = match raw_node.body.get("is_int_set") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"is_int_set")),
+				};
+				node.borrow_mut().is_int_set = match is_int_set_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(is_int_set_body.into(),JSONType::Bool)),
+				};
 			},
 			NodeType::ArrayType => {
 				let node = nodes[i].clone();
@@ -7949,6 +8402,14 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				node.borrow_mut().is_explicit = match is_explicit_body.as_bool() {
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
+				};
+				let is_int_set_body = match raw_node.body.get("is_int_set") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"is_int_set")),
+				};
+				node.borrow_mut().is_int_set = match is_int_set_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(is_int_set_body.into(),JSONType::Bool)),
 				};
 				let end_loc_body = match raw_node.body.get("end_loc") {
 					Some(v)=>v,
@@ -8003,6 +8464,14 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
 				};
+				let is_int_set_body = match raw_node.body.get("is_int_set") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"is_int_set")),
+				};
+				node.borrow_mut().is_int_set = match is_int_set_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(is_int_set_body.into(),JSONType::Bool)),
+				};
 				let return_type_body = match raw_node.body.get("return_type") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"return_type")),
@@ -8051,6 +8520,14 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				node.borrow_mut().is_explicit = match is_explicit_body.as_bool() {
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
+				};
+				let is_int_set_body = match raw_node.body.get("is_int_set") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"is_int_set")),
+				};
+				node.borrow_mut().is_int_set = match is_int_set_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(is_int_set_body.into(),JSONType::Bool)),
 				};
 				let fields_body = match raw_node.body.get("fields") {
 					Some(v)=>v,
@@ -8108,6 +8585,14 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				node.borrow_mut().is_explicit = match is_explicit_body.as_bool() {
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
+				};
+				let is_int_set_body = match raw_node.body.get("is_int_set") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"is_int_set")),
+				};
+				node.borrow_mut().is_int_set = match is_int_set_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(is_int_set_body.into(),JSONType::Bool)),
 				};
 				let fields_body = match raw_node.body.get("fields") {
 					Some(v)=>v,
@@ -8192,6 +8677,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
 				}
+				let constant_level_body = match raw_node.body.get("constant_level") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"constant_level")),
+				};
+				node.borrow_mut().constant_level = match constant_level_body.as_str() {
+					Some(v)=>match ConstantLevel::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(constant_level_body.into(),JSONType::String)),
+				};
 				let base_body = match raw_node.body.get("base") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"base")),
@@ -8285,6 +8781,14 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				node.borrow_mut().is_explicit = match is_explicit_body.as_bool() {
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
+				};
+				let is_int_set_body = match raw_node.body.get("is_int_set") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"is_int_set")),
+				};
+				node.borrow_mut().is_int_set = match is_int_set_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(is_int_set_body.into(),JSONType::Bool)),
 				};
 				let cond_body = match raw_node.body.get("cond") {
 					Some(v)=>v,
@@ -8394,6 +8898,14 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				node.borrow_mut().is_explicit = match is_explicit_body.as_bool() {
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
+				};
+				let is_int_set_body = match raw_node.body.get("is_int_set") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"is_int_set")),
+				};
+				node.borrow_mut().is_int_set = match is_int_set_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(is_int_set_body.into(),JSONType::Bool)),
 				};
 				let base_type_body = match raw_node.body.get("base_type") {
 					Some(v)=>v,
@@ -8621,6 +9133,14 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
 				};
+				let is_int_set_body = match raw_node.body.get("is_int_set") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"is_int_set")),
+				};
+				node.borrow_mut().is_int_set = match is_int_set_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(is_int_set_body.into(),JSONType::Bool)),
+				};
 				let base_body = match raw_node.body.get("base") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"base")),
@@ -8640,6 +9160,68 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().base = Some(Rc::downgrade(&base_body));
 				}
+			},
+			NodeType::BitGroupType => {
+				let node = nodes[i].clone();
+				let node = match node {
+					Node::BitGroupType(node)=>node,
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
+				};
+				let is_explicit_body = match raw_node.body.get("is_explicit") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"is_explicit")),
+				};
+				node.borrow_mut().is_explicit = match is_explicit_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
+				};
+				let is_int_set_body = match raw_node.body.get("is_int_set") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"is_int_set")),
+				};
+				node.borrow_mut().is_int_set = match is_int_set_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(is_int_set_body.into(),JSONType::Bool)),
+				};
+				let bit_fields_body = match raw_node.body.get("bit_fields") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"bit_fields")),
+				};
+				let bit_fields_body = match bit_fields_body.as_array(){
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(bit_fields_body.into(),JSONType::Array)),
+				};
+				for link in bit_fields_body {
+					let link = match link.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
+					};
+					let bit_fields_body = match nodes.get(link as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(link as usize)),
+					};
+					let bit_fields_body = match bit_fields_body {
+						Node::Field(body)=>body,
+						x =>return Err(Error::MismatchNodeType(x.into(),bit_fields_body.into())),
+					};
+					node.borrow_mut().bit_fields.push(Rc::downgrade(&bit_fields_body));
+				}
+				let is_aligned_body = match raw_node.body.get("is_aligned") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"is_aligned")),
+				};
+				node.borrow_mut().is_aligned = match is_aligned_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(is_aligned_body.into(),JSONType::Bool)),
+				};
+				let bit_size_body = match raw_node.body.get("bit_size") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"bit_size")),
+				};
+				node.borrow_mut().bit_size = match bit_size_body.as_u64() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(bit_size_body.into(),JSONType::Number)),
+				};
 			},
 			_=>return Err(Error::UnknownNodeType(node_type)),
 		};
@@ -9243,6 +9825,7 @@ where
 			}
 		},
 		Node::EnumType(_)=>{},
+		Node::BitGroupType(_)=>{},
 	}
 }
 

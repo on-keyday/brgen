@@ -2,10 +2,10 @@
 
 export namespace ast2ts {
 
-export type NodeType = "program" | "expr" | "binary" | "unary" | "cond" | "ident" | "call" | "if" | "member_access" | "paren" | "index" | "match" | "range" | "tmp_var" | "block_expr" | "import" | "literal" | "int_literal" | "bool_literal" | "str_literal" | "input" | "output" | "config" | "stmt" | "loop" | "indent_block" | "match_branch" | "return" | "break" | "continue" | "assert" | "implicit_yield" | "member" | "field" | "format" | "function" | "type" | "int_type" | "ident_type" | "int_literal_type" | "str_literal_type" | "void_type" | "bool_type" | "array_type" | "function_type" | "struct_type" | "struct_union_type" | "cast" | "comment" | "comment_group" | "union_type" | "union_candidate" | "range_type" | "enum" | "enum_member" | "enum_type";
+export type NodeType = "program" | "expr" | "binary" | "unary" | "cond" | "ident" | "call" | "if" | "member_access" | "paren" | "index" | "match" | "range" | "tmp_var" | "block_expr" | "import" | "literal" | "int_literal" | "bool_literal" | "str_literal" | "input" | "output" | "config" | "stmt" | "loop" | "indent_block" | "match_branch" | "return" | "break" | "continue" | "assert" | "implicit_yield" | "member" | "field" | "format" | "function" | "type" | "int_type" | "ident_type" | "int_literal_type" | "str_literal_type" | "void_type" | "bool_type" | "array_type" | "function_type" | "struct_type" | "struct_union_type" | "cast" | "comment" | "comment_group" | "union_type" | "union_candidate" | "range_type" | "enum" | "enum_member" | "enum_type" | "bit_group_type";
 
 export function isNodeType(obj: any): obj is NodeType {
-	return obj && typeof obj === 'string' && (obj === "program" || obj === "expr" || obj === "binary" || obj === "unary" || obj === "cond" || obj === "ident" || obj === "call" || obj === "if" || obj === "member_access" || obj === "paren" || obj === "index" || obj === "match" || obj === "range" || obj === "tmp_var" || obj === "block_expr" || obj === "import" || obj === "literal" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "input" || obj === "output" || obj === "config" || obj === "stmt" || obj === "loop" || obj === "indent_block" || obj === "match_branch" || obj === "return" || obj === "break" || obj === "continue" || obj === "assert" || obj === "implicit_yield" || obj === "member" || obj === "field" || obj === "format" || obj === "function" || obj === "type" || obj === "int_type" || obj === "ident_type" || obj === "int_literal_type" || obj === "str_literal_type" || obj === "void_type" || obj === "bool_type" || obj === "array_type" || obj === "function_type" || obj === "struct_type" || obj === "struct_union_type" || obj === "cast" || obj === "comment" || obj === "comment_group" || obj === "union_type" || obj === "union_candidate" || obj === "range_type" || obj === "enum" || obj === "enum_member" || obj === "enum_type")
+	return obj && typeof obj === 'string' && (obj === "program" || obj === "expr" || obj === "binary" || obj === "unary" || obj === "cond" || obj === "ident" || obj === "call" || obj === "if" || obj === "member_access" || obj === "paren" || obj === "index" || obj === "match" || obj === "range" || obj === "tmp_var" || obj === "block_expr" || obj === "import" || obj === "literal" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "input" || obj === "output" || obj === "config" || obj === "stmt" || obj === "loop" || obj === "indent_block" || obj === "match_branch" || obj === "return" || obj === "break" || obj === "continue" || obj === "assert" || obj === "implicit_yield" || obj === "member" || obj === "field" || obj === "format" || obj === "function" || obj === "type" || obj === "int_type" || obj === "ident_type" || obj === "int_literal_type" || obj === "str_literal_type" || obj === "void_type" || obj === "bool_type" || obj === "array_type" || obj === "function_type" || obj === "struct_type" || obj === "struct_union_type" || obj === "cast" || obj === "comment" || obj === "comment_group" || obj === "union_type" || obj === "union_candidate" || obj === "range_type" || obj === "enum" || obj === "enum_member" || obj === "enum_type" || obj === "bit_group_type")
 }
 
 export enum UnaryOp {
@@ -112,6 +112,17 @@ export function isTokenTag(obj: any): obj is TokenTag {
 	return obj && typeof obj === 'string' && (obj === "indent" || obj === "space" || obj === "line" || obj === "punct" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "keyword" || obj === "ident" || obj === "comment" || obj === "error" || obj === "unknown")
 }
 
+export enum ConstantLevel {
+	unknown = "unknown",
+	const_value = "const_value",
+	const_variable = "const_variable",
+	variable = "variable",
+};
+
+export function isConstantLevel(obj: any): obj is ConstantLevel {
+	return obj && typeof obj === 'string' && (obj === "unknown" || obj === "const_value" || obj === "const_variable" || obj === "variable")
+}
+
 export interface Node {
 	readonly node_type: NodeType;
 	loc: Loc;
@@ -169,11 +180,13 @@ export function isNode(obj: any): obj is Node {
 	if (isEnum(obj)) return true;
 	if (isEnumMember(obj)) return true;
 	if (isEnumType(obj)) return true;
+	if (isBitGroupType(obj)) return true;
 	return false;
 }
 
 export interface Expr extends Node {
 	expr_type: Type|null;
+	constant_level: ConstantLevel;
 }
 
 export function isExpr(obj: any): obj is Expr {
@@ -251,6 +264,7 @@ export function isMember(obj: any): obj is Member {
 
 export interface Type extends Node {
 	is_explicit: boolean;
+	is_int_set: boolean;
 }
 
 export function isType(obj: any): obj is Type {
@@ -267,6 +281,7 @@ export function isType(obj: any): obj is Type {
 	if (isUnionType(obj)) return true;
 	if (isRangeType(obj)) return true;
 	if (isEnumType(obj)) return true;
+	if (isBitGroupType(obj)) return true;
 	return false;
 }
 
@@ -736,6 +751,16 @@ export function isEnumType(obj: any): obj is EnumType {
 	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "enum_type"
 }
 
+export interface BitGroupType extends Type {
+	bit_fields: Field[];
+	is_aligned: boolean;
+	bit_size: number;
+}
+
+export function isBitGroupType(obj: any): obj is BitGroupType {
+	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "bit_group_type"
+}
+
 export interface Scope {
 	prev: Scope|null;
 	next: Scope|null;
@@ -896,6 +921,7 @@ export function parseAST(obj: any): Program {
 				node_type: "binary",
 				loc: on.loc,
 				expr_type: null,
+				constant_level: ConstantLevel.unknown,
 				op: BinaryOp.mul,
 				left: null,
 				right: null,
@@ -908,6 +934,7 @@ export function parseAST(obj: any): Program {
 				node_type: "unary",
 				loc: on.loc,
 				expr_type: null,
+				constant_level: ConstantLevel.unknown,
 				op: UnaryOp.not,
 				expr: null,
 			}
@@ -919,6 +946,7 @@ export function parseAST(obj: any): Program {
 				node_type: "cond",
 				loc: on.loc,
 				expr_type: null,
+				constant_level: ConstantLevel.unknown,
 				cond: null,
 				then: null,
 				els_loc: on.loc,
@@ -932,6 +960,7 @@ export function parseAST(obj: any): Program {
 				node_type: "ident",
 				loc: on.loc,
 				expr_type: null,
+				constant_level: ConstantLevel.unknown,
 				ident: '',
 				usage: IdentUsage.unknown,
 				base: null,
@@ -945,6 +974,7 @@ export function parseAST(obj: any): Program {
 				node_type: "call",
 				loc: on.loc,
 				expr_type: null,
+				constant_level: ConstantLevel.unknown,
 				callee: null,
 				raw_arguments: null,
 				arguments: [],
@@ -958,6 +988,7 @@ export function parseAST(obj: any): Program {
 				node_type: "if",
 				loc: on.loc,
 				expr_type: null,
+				constant_level: ConstantLevel.unknown,
 				cond_scope: null,
 				cond: null,
 				then: null,
@@ -971,6 +1002,7 @@ export function parseAST(obj: any): Program {
 				node_type: "member_access",
 				loc: on.loc,
 				expr_type: null,
+				constant_level: ConstantLevel.unknown,
 				target: null,
 				member: null,
 				base: null,
@@ -983,6 +1015,7 @@ export function parseAST(obj: any): Program {
 				node_type: "paren",
 				loc: on.loc,
 				expr_type: null,
+				constant_level: ConstantLevel.unknown,
 				expr: null,
 				end_loc: on.loc,
 			}
@@ -994,6 +1027,7 @@ export function parseAST(obj: any): Program {
 				node_type: "index",
 				loc: on.loc,
 				expr_type: null,
+				constant_level: ConstantLevel.unknown,
 				expr: null,
 				index: null,
 				end_loc: on.loc,
@@ -1006,6 +1040,7 @@ export function parseAST(obj: any): Program {
 				node_type: "match",
 				loc: on.loc,
 				expr_type: null,
+				constant_level: ConstantLevel.unknown,
 				cond_scope: null,
 				cond: null,
 				branch: [],
@@ -1018,6 +1053,7 @@ export function parseAST(obj: any): Program {
 				node_type: "range",
 				loc: on.loc,
 				expr_type: null,
+				constant_level: ConstantLevel.unknown,
 				op: BinaryOp.mul,
 				start: null,
 				end: null,
@@ -1030,6 +1066,7 @@ export function parseAST(obj: any): Program {
 				node_type: "tmp_var",
 				loc: on.loc,
 				expr_type: null,
+				constant_level: ConstantLevel.unknown,
 				tmp_var: 0,
 			}
 			c.node.push(n);
@@ -1040,6 +1077,7 @@ export function parseAST(obj: any): Program {
 				node_type: "block_expr",
 				loc: on.loc,
 				expr_type: null,
+				constant_level: ConstantLevel.unknown,
 				calls: [],
 				expr: null,
 			}
@@ -1051,6 +1089,7 @@ export function parseAST(obj: any): Program {
 				node_type: "import",
 				loc: on.loc,
 				expr_type: null,
+				constant_level: ConstantLevel.unknown,
 				path: '',
 				base: null,
 				import_desc: null,
@@ -1063,6 +1102,7 @@ export function parseAST(obj: any): Program {
 				node_type: "int_literal",
 				loc: on.loc,
 				expr_type: null,
+				constant_level: ConstantLevel.unknown,
 				value: '',
 			}
 			c.node.push(n);
@@ -1073,6 +1113,7 @@ export function parseAST(obj: any): Program {
 				node_type: "bool_literal",
 				loc: on.loc,
 				expr_type: null,
+				constant_level: ConstantLevel.unknown,
 				value: false,
 			}
 			c.node.push(n);
@@ -1083,6 +1124,7 @@ export function parseAST(obj: any): Program {
 				node_type: "str_literal",
 				loc: on.loc,
 				expr_type: null,
+				constant_level: ConstantLevel.unknown,
 				value: '',
 			}
 			c.node.push(n);
@@ -1093,6 +1135,7 @@ export function parseAST(obj: any): Program {
 				node_type: "input",
 				loc: on.loc,
 				expr_type: null,
+				constant_level: ConstantLevel.unknown,
 			}
 			c.node.push(n);
 			break;
@@ -1102,6 +1145,7 @@ export function parseAST(obj: any): Program {
 				node_type: "output",
 				loc: on.loc,
 				expr_type: null,
+				constant_level: ConstantLevel.unknown,
 			}
 			c.node.push(n);
 			break;
@@ -1111,6 +1155,7 @@ export function parseAST(obj: any): Program {
 				node_type: "config",
 				loc: on.loc,
 				expr_type: null,
+				constant_level: ConstantLevel.unknown,
 			}
 			c.node.push(n);
 			break;
@@ -1239,6 +1284,7 @@ export function parseAST(obj: any): Program {
 				node_type: "int_type",
 				loc: on.loc,
 				is_explicit: false,
+				is_int_set: false,
 				bit_size: 0,
 				endian: Endian.unspec,
 				is_signed: false,
@@ -1252,6 +1298,7 @@ export function parseAST(obj: any): Program {
 				node_type: "ident_type",
 				loc: on.loc,
 				is_explicit: false,
+				is_int_set: false,
 				ident: null,
 				base: null,
 			}
@@ -1263,6 +1310,7 @@ export function parseAST(obj: any): Program {
 				node_type: "int_literal_type",
 				loc: on.loc,
 				is_explicit: false,
+				is_int_set: false,
 				base: null,
 			}
 			c.node.push(n);
@@ -1273,6 +1321,7 @@ export function parseAST(obj: any): Program {
 				node_type: "str_literal_type",
 				loc: on.loc,
 				is_explicit: false,
+				is_int_set: false,
 				base: null,
 			}
 			c.node.push(n);
@@ -1283,6 +1332,7 @@ export function parseAST(obj: any): Program {
 				node_type: "void_type",
 				loc: on.loc,
 				is_explicit: false,
+				is_int_set: false,
 			}
 			c.node.push(n);
 			break;
@@ -1292,6 +1342,7 @@ export function parseAST(obj: any): Program {
 				node_type: "bool_type",
 				loc: on.loc,
 				is_explicit: false,
+				is_int_set: false,
 			}
 			c.node.push(n);
 			break;
@@ -1301,6 +1352,7 @@ export function parseAST(obj: any): Program {
 				node_type: "array_type",
 				loc: on.loc,
 				is_explicit: false,
+				is_int_set: false,
 				end_loc: on.loc,
 				base_type: null,
 				length: null,
@@ -1313,6 +1365,7 @@ export function parseAST(obj: any): Program {
 				node_type: "function_type",
 				loc: on.loc,
 				is_explicit: false,
+				is_int_set: false,
 				return_type: null,
 				parameters: [],
 			}
@@ -1324,6 +1377,7 @@ export function parseAST(obj: any): Program {
 				node_type: "struct_type",
 				loc: on.loc,
 				is_explicit: false,
+				is_int_set: false,
 				fields: [],
 				base: null,
 				recursive: false,
@@ -1336,6 +1390,7 @@ export function parseAST(obj: any): Program {
 				node_type: "struct_union_type",
 				loc: on.loc,
 				is_explicit: false,
+				is_int_set: false,
 				fields: [],
 				base: null,
 				union_fields: [],
@@ -1348,6 +1403,7 @@ export function parseAST(obj: any): Program {
 				node_type: "cast",
 				loc: on.loc,
 				expr_type: null,
+				constant_level: ConstantLevel.unknown,
 				base: null,
 				expr: null,
 			}
@@ -1377,6 +1433,7 @@ export function parseAST(obj: any): Program {
 				node_type: "union_type",
 				loc: on.loc,
 				is_explicit: false,
+				is_int_set: false,
 				cond: null,
 				candidates: [],
 				base_type: null,
@@ -1399,6 +1456,7 @@ export function parseAST(obj: any): Program {
 				node_type: "range_type",
 				loc: on.loc,
 				is_explicit: false,
+				is_int_set: false,
 				base_type: null,
 				range: null,
 			}
@@ -1436,7 +1494,21 @@ export function parseAST(obj: any): Program {
 				node_type: "enum_type",
 				loc: on.loc,
 				is_explicit: false,
+				is_int_set: false,
 				base: null,
+			}
+			c.node.push(n);
+			break;
+		}
+		case "bit_group_type": {
+			const n :BitGroupType = {
+				node_type: "bit_group_type",
+				loc: on.loc,
+				is_explicit: false,
+				is_int_set: false,
+				bit_fields: [],
+				is_aligned: false,
+				bit_size: 0,
 			}
 			c.node.push(n);
 			break;
@@ -1497,6 +1569,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at Binary::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
+			const tmpconstant_level = on.body?.constant_level;
+			if (!isConstantLevel(tmpconstant_level)) {
+				throw new Error('invalid node list at Binary::constant_level');
+			}
+			n.constant_level = tmpconstant_level;
 			const tmpop = on.body?.op;
 			if (!isBinaryOp(tmpop)) {
 				throw new Error('invalid node list at Binary::op');
@@ -1530,6 +1607,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at Unary::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
+			const tmpconstant_level = on.body?.constant_level;
+			if (!isConstantLevel(tmpconstant_level)) {
+				throw new Error('invalid node list at Unary::constant_level');
+			}
+			n.constant_level = tmpconstant_level;
 			const tmpop = on.body?.op;
 			if (!isUnaryOp(tmpop)) {
 				throw new Error('invalid node list at Unary::op');
@@ -1555,6 +1637,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at Cond::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
+			const tmpconstant_level = on.body?.constant_level;
+			if (!isConstantLevel(tmpconstant_level)) {
+				throw new Error('invalid node list at Cond::constant_level');
+			}
+			n.constant_level = tmpconstant_level;
 			if (on.body?.cond !== null && typeof on.body?.cond !== 'number') {
 				throw new Error('invalid node list at Cond::cond');
 			}
@@ -1596,6 +1683,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at Ident::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
+			const tmpconstant_level = on.body?.constant_level;
+			if (!isConstantLevel(tmpconstant_level)) {
+				throw new Error('invalid node list at Ident::constant_level');
+			}
+			n.constant_level = tmpconstant_level;
 			const tmpident = on.body?.ident;
 			if (typeof on.body?.ident !== "string") {
 				throw new Error('invalid node list at Ident::ident');
@@ -1634,6 +1726,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at Call::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
+			const tmpconstant_level = on.body?.constant_level;
+			if (!isConstantLevel(tmpconstant_level)) {
+				throw new Error('invalid node list at Call::constant_level');
+			}
+			n.constant_level = tmpconstant_level;
 			if (on.body?.callee !== null && typeof on.body?.callee !== 'number') {
 				throw new Error('invalid node list at Call::callee');
 			}
@@ -1677,6 +1774,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at If::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
+			const tmpconstant_level = on.body?.constant_level;
+			if (!isConstantLevel(tmpconstant_level)) {
+				throw new Error('invalid node list at If::constant_level');
+			}
+			n.constant_level = tmpconstant_level;
 			if (on.body?.cond_scope !== null && typeof on.body?.cond_scope !== 'number') {
 				throw new Error('invalid node list at If::cond_scope');
 			}
@@ -1721,6 +1823,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at MemberAccess::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
+			const tmpconstant_level = on.body?.constant_level;
+			if (!isConstantLevel(tmpconstant_level)) {
+				throw new Error('invalid node list at MemberAccess::constant_level');
+			}
+			n.constant_level = tmpconstant_level;
 			if (on.body?.target !== null && typeof on.body?.target !== 'number') {
 				throw new Error('invalid node list at MemberAccess::target');
 			}
@@ -1757,6 +1864,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at Paren::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
+			const tmpconstant_level = on.body?.constant_level;
+			if (!isConstantLevel(tmpconstant_level)) {
+				throw new Error('invalid node list at Paren::constant_level');
+			}
+			n.constant_level = tmpconstant_level;
 			if (on.body?.expr !== null && typeof on.body?.expr !== 'number') {
 				throw new Error('invalid node list at Paren::expr');
 			}
@@ -1782,6 +1894,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at Index::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
+			const tmpconstant_level = on.body?.constant_level;
+			if (!isConstantLevel(tmpconstant_level)) {
+				throw new Error('invalid node list at Index::constant_level');
+			}
+			n.constant_level = tmpconstant_level;
 			if (on.body?.expr !== null && typeof on.body?.expr !== 'number') {
 				throw new Error('invalid node list at Index::expr');
 			}
@@ -1815,6 +1932,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at Match::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
+			const tmpconstant_level = on.body?.constant_level;
+			if (!isConstantLevel(tmpconstant_level)) {
+				throw new Error('invalid node list at Match::constant_level');
+			}
+			n.constant_level = tmpconstant_level;
 			if (on.body?.cond_scope !== null && typeof on.body?.cond_scope !== 'number') {
 				throw new Error('invalid node list at Match::cond_scope');
 			}
@@ -1850,6 +1972,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at Range::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
+			const tmpconstant_level = on.body?.constant_level;
+			if (!isConstantLevel(tmpconstant_level)) {
+				throw new Error('invalid node list at Range::constant_level');
+			}
+			n.constant_level = tmpconstant_level;
 			const tmpop = on.body?.op;
 			if (!isBinaryOp(tmpop)) {
 				throw new Error('invalid node list at Range::op');
@@ -1883,6 +2010,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at TmpVar::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
+			const tmpconstant_level = on.body?.constant_level;
+			if (!isConstantLevel(tmpconstant_level)) {
+				throw new Error('invalid node list at TmpVar::constant_level');
+			}
+			n.constant_level = tmpconstant_level;
 			const tmptmp_var = on.body?.tmp_var;
 			if (typeof on.body?.tmp_var !== "number") {
 				throw new Error('invalid node list at TmpVar::tmp_var');
@@ -1900,6 +2032,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at BlockExpr::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
+			const tmpconstant_level = on.body?.constant_level;
+			if (!isConstantLevel(tmpconstant_level)) {
+				throw new Error('invalid node list at BlockExpr::constant_level');
+			}
+			n.constant_level = tmpconstant_level;
 			for (const o of on.body.calls) {
 				if (typeof o !== 'number') {
 					throw new Error('invalid node list at BlockExpr::calls');
@@ -1927,6 +2064,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at Import::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
+			const tmpconstant_level = on.body?.constant_level;
+			if (!isConstantLevel(tmpconstant_level)) {
+				throw new Error('invalid node list at Import::constant_level');
+			}
+			n.constant_level = tmpconstant_level;
 			const tmppath = on.body?.path;
 			if (typeof on.body?.path !== "string") {
 				throw new Error('invalid node list at Import::path');
@@ -1960,6 +2102,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at IntLiteral::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
+			const tmpconstant_level = on.body?.constant_level;
+			if (!isConstantLevel(tmpconstant_level)) {
+				throw new Error('invalid node list at IntLiteral::constant_level');
+			}
+			n.constant_level = tmpconstant_level;
 			const tmpvalue = on.body?.value;
 			if (typeof on.body?.value !== "string") {
 				throw new Error('invalid node list at IntLiteral::value');
@@ -1977,6 +2124,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at BoolLiteral::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
+			const tmpconstant_level = on.body?.constant_level;
+			if (!isConstantLevel(tmpconstant_level)) {
+				throw new Error('invalid node list at BoolLiteral::constant_level');
+			}
+			n.constant_level = tmpconstant_level;
 			const tmpvalue = on.body?.value;
 			if (typeof on.body?.value !== "boolean") {
 				throw new Error('invalid node list at BoolLiteral::value');
@@ -1994,6 +2146,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at StrLiteral::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
+			const tmpconstant_level = on.body?.constant_level;
+			if (!isConstantLevel(tmpconstant_level)) {
+				throw new Error('invalid node list at StrLiteral::constant_level');
+			}
+			n.constant_level = tmpconstant_level;
 			const tmpvalue = on.body?.value;
 			if (typeof on.body?.value !== "string") {
 				throw new Error('invalid node list at StrLiteral::value');
@@ -2011,6 +2168,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at Input::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
+			const tmpconstant_level = on.body?.constant_level;
+			if (!isConstantLevel(tmpconstant_level)) {
+				throw new Error('invalid node list at Input::constant_level');
+			}
+			n.constant_level = tmpconstant_level;
 			break;
 		}
 		case "output": {
@@ -2023,6 +2185,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at Output::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
+			const tmpconstant_level = on.body?.constant_level;
+			if (!isConstantLevel(tmpconstant_level)) {
+				throw new Error('invalid node list at Output::constant_level');
+			}
+			n.constant_level = tmpconstant_level;
 			break;
 		}
 		case "config": {
@@ -2035,6 +2202,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at Config::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
+			const tmpconstant_level = on.body?.constant_level;
+			if (!isConstantLevel(tmpconstant_level)) {
+				throw new Error('invalid node list at Config::constant_level');
+			}
+			n.constant_level = tmpconstant_level;
 			break;
 		}
 		case "loop": {
@@ -2327,6 +2499,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at IntType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
+			const tmpis_int_set = on.body?.is_int_set;
+			if (typeof on.body?.is_int_set !== "boolean") {
+				throw new Error('invalid node list at IntType::is_int_set');
+			}
+			n.is_int_set = on.body.is_int_set;
 			const tmpbit_size = on.body?.bit_size;
 			if (typeof on.body?.bit_size !== "number") {
 				throw new Error('invalid node list at IntType::bit_size');
@@ -2356,6 +2533,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at IdentType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
+			const tmpis_int_set = on.body?.is_int_set;
+			if (typeof on.body?.is_int_set !== "boolean") {
+				throw new Error('invalid node list at IdentType::is_int_set');
+			}
+			n.is_int_set = on.body.is_int_set;
 			if (on.body?.ident !== null && typeof on.body?.ident !== 'number') {
 				throw new Error('invalid node list at IdentType::ident');
 			}
@@ -2381,6 +2563,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at IntLiteralType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
+			const tmpis_int_set = on.body?.is_int_set;
+			if (typeof on.body?.is_int_set !== "boolean") {
+				throw new Error('invalid node list at IntLiteralType::is_int_set');
+			}
+			n.is_int_set = on.body.is_int_set;
 			if (on.body?.base !== null && typeof on.body?.base !== 'number') {
 				throw new Error('invalid node list at IntLiteralType::base');
 			}
@@ -2398,6 +2585,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at StrLiteralType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
+			const tmpis_int_set = on.body?.is_int_set;
+			if (typeof on.body?.is_int_set !== "boolean") {
+				throw new Error('invalid node list at StrLiteralType::is_int_set');
+			}
+			n.is_int_set = on.body.is_int_set;
 			if (on.body?.base !== null && typeof on.body?.base !== 'number') {
 				throw new Error('invalid node list at StrLiteralType::base');
 			}
@@ -2415,6 +2607,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at VoidType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
+			const tmpis_int_set = on.body?.is_int_set;
+			if (typeof on.body?.is_int_set !== "boolean") {
+				throw new Error('invalid node list at VoidType::is_int_set');
+			}
+			n.is_int_set = on.body.is_int_set;
 			break;
 		}
 		case "bool_type": {
@@ -2424,6 +2621,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at BoolType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
+			const tmpis_int_set = on.body?.is_int_set;
+			if (typeof on.body?.is_int_set !== "boolean") {
+				throw new Error('invalid node list at BoolType::is_int_set');
+			}
+			n.is_int_set = on.body.is_int_set;
 			break;
 		}
 		case "array_type": {
@@ -2433,6 +2635,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at ArrayType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
+			const tmpis_int_set = on.body?.is_int_set;
+			if (typeof on.body?.is_int_set !== "boolean") {
+				throw new Error('invalid node list at ArrayType::is_int_set');
+			}
+			n.is_int_set = on.body.is_int_set;
 			const tmpend_loc = on.body?.end_loc;
 			if (!isLoc(tmpend_loc)) {
 				throw new Error('invalid node list at ArrayType::end_loc');
@@ -2463,6 +2670,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at FunctionType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
+			const tmpis_int_set = on.body?.is_int_set;
+			if (typeof on.body?.is_int_set !== "boolean") {
+				throw new Error('invalid node list at FunctionType::is_int_set');
+			}
+			n.is_int_set = on.body.is_int_set;
 			if (on.body?.return_type !== null && typeof on.body?.return_type !== 'number') {
 				throw new Error('invalid node list at FunctionType::return_type');
 			}
@@ -2490,6 +2702,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at StructType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
+			const tmpis_int_set = on.body?.is_int_set;
+			if (typeof on.body?.is_int_set !== "boolean") {
+				throw new Error('invalid node list at StructType::is_int_set');
+			}
+			n.is_int_set = on.body.is_int_set;
 			for (const o of on.body.fields) {
 				if (typeof o !== 'number') {
 					throw new Error('invalid node list at StructType::fields');
@@ -2522,6 +2739,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at StructUnionType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
+			const tmpis_int_set = on.body?.is_int_set;
+			if (typeof on.body?.is_int_set !== "boolean") {
+				throw new Error('invalid node list at StructUnionType::is_int_set');
+			}
+			n.is_int_set = on.body.is_int_set;
 			for (const o of on.body.fields) {
 				if (typeof o !== 'number') {
 					throw new Error('invalid node list at StructUnionType::fields');
@@ -2562,6 +2784,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at Cast::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
+			const tmpconstant_level = on.body?.constant_level;
+			if (!isConstantLevel(tmpconstant_level)) {
+				throw new Error('invalid node list at Cast::constant_level');
+			}
+			n.constant_level = tmpconstant_level;
 			if (on.body?.base !== null && typeof on.body?.base !== 'number') {
 				throw new Error('invalid node list at Cast::base');
 			}
@@ -2610,6 +2837,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at UnionType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
+			const tmpis_int_set = on.body?.is_int_set;
+			if (typeof on.body?.is_int_set !== "boolean") {
+				throw new Error('invalid node list at UnionType::is_int_set');
+			}
+			n.is_int_set = on.body.is_int_set;
 			if (on.body?.cond !== null && typeof on.body?.cond !== 'number') {
 				throw new Error('invalid node list at UnionType::cond');
 			}
@@ -2665,6 +2897,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at RangeType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
+			const tmpis_int_set = on.body?.is_int_set;
+			if (typeof on.body?.is_int_set !== "boolean") {
+				throw new Error('invalid node list at RangeType::is_int_set');
+			}
+			n.is_int_set = on.body.is_int_set;
 			if (on.body?.base_type !== null && typeof on.body?.base_type !== 'number') {
 				throw new Error('invalid node list at RangeType::base_type');
 			}
@@ -2777,6 +3014,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at EnumType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
+			const tmpis_int_set = on.body?.is_int_set;
+			if (typeof on.body?.is_int_set !== "boolean") {
+				throw new Error('invalid node list at EnumType::is_int_set');
+			}
+			n.is_int_set = on.body.is_int_set;
 			if (on.body?.base !== null && typeof on.body?.base !== 'number') {
 				throw new Error('invalid node list at EnumType::base');
 			}
@@ -2785,6 +3027,40 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at EnumType::base');
 			}
 			n.base = tmpbase;
+			break;
+		}
+		case "bit_group_type": {
+			const n :BitGroupType = cnode as BitGroupType;
+			const tmpis_explicit = on.body?.is_explicit;
+			if (typeof on.body?.is_explicit !== "boolean") {
+				throw new Error('invalid node list at BitGroupType::is_explicit');
+			}
+			n.is_explicit = on.body.is_explicit;
+			const tmpis_int_set = on.body?.is_int_set;
+			if (typeof on.body?.is_int_set !== "boolean") {
+				throw new Error('invalid node list at BitGroupType::is_int_set');
+			}
+			n.is_int_set = on.body.is_int_set;
+			for (const o of on.body.bit_fields) {
+				if (typeof o !== 'number') {
+					throw new Error('invalid node list at BitGroupType::bit_fields');
+				}
+				const tmpbit_fields = c.node[o];
+				if (!isField(tmpbit_fields)) {
+					throw new Error('invalid node list at BitGroupType::bit_fields');
+				}
+				n.bit_fields.push(tmpbit_fields);
+			}
+			const tmpis_aligned = on.body?.is_aligned;
+			if (typeof on.body?.is_aligned !== "boolean") {
+				throw new Error('invalid node list at BitGroupType::is_aligned');
+			}
+			n.is_aligned = on.body.is_aligned;
+			const tmpbit_size = on.body?.bit_size;
+			if (typeof on.body?.bit_size !== "number") {
+				throw new Error('invalid node list at BitGroupType::bit_size');
+			}
+			n.bit_size = on.body.bit_size;
 			break;
 		}
 		}
@@ -3722,6 +3998,13 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 				break;
 			}
 			const n :EnumType = node as EnumType;
+			break;
+		}
+		case "bit_group_type": {
+			if (!isBitGroupType(node)) {
+				break;
+			}
+			const n :BitGroupType = node as BitGroupType;
 			break;
 		}
 	}

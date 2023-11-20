@@ -66,6 +66,7 @@ const (
 	NodeTypeEnum            NodeType = 53
 	NodeTypeEnumMember      NodeType = 54
 	NodeTypeEnumType        NodeType = 55
+	NodeTypeBitGroupType    NodeType = 56
 )
 
 func (n NodeType) String() string {
@@ -182,6 +183,8 @@ func (n NodeType) String() string {
 		return "enum_member"
 	case NodeTypeEnumType:
 		return "enum_type"
+	case NodeTypeBitGroupType:
+		return "bit_group_type"
 	default:
 		return fmt.Sprintf("NodeType(%d)", n)
 	}
@@ -305,6 +308,8 @@ func (n *NodeType) UnmarshalJSON(data []byte) error {
 		*n = NodeTypeEnumMember
 	case "enum_type":
 		*n = NodeTypeEnumType
+	case "bit_group_type":
+		*n = NodeTypeBitGroupType
 	default:
 		return fmt.Errorf("unknown NodeType: %q", tmp)
 	}
@@ -513,6 +518,10 @@ func (n *EnumMember) GetNodeType() NodeType {
 
 func (n *EnumType) GetNodeType() NodeType {
 	return NodeTypeEnumType
+}
+
+func (n *BitGroupType) GetNodeType() NodeType {
+	return NodeTypeBitGroupType
 }
 
 type UnaryOp int
@@ -980,6 +989,50 @@ func (n *TokenTag) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+type ConstantLevel int
+
+const (
+	ConstantLevelUnknown       ConstantLevel = 0
+	ConstantLevelConstValue    ConstantLevel = 1
+	ConstantLevelConstVariable ConstantLevel = 2
+	ConstantLevelVariable      ConstantLevel = 3
+)
+
+func (n ConstantLevel) String() string {
+	switch n {
+	case ConstantLevelUnknown:
+		return "unknown"
+	case ConstantLevelConstValue:
+		return "const_value"
+	case ConstantLevelConstVariable:
+		return "const_variable"
+	case ConstantLevelVariable:
+		return "variable"
+	default:
+		return fmt.Sprintf("ConstantLevel(%d)", n)
+	}
+}
+
+func (n *ConstantLevel) UnmarshalJSON(data []byte) error {
+	var tmp string
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+	switch tmp {
+	case "unknown":
+		*n = ConstantLevelUnknown
+	case "const_value":
+		*n = ConstantLevelConstValue
+	case "const_variable":
+		*n = ConstantLevelConstVariable
+	case "variable":
+		*n = ConstantLevelVariable
+	default:
+		return fmt.Errorf("unknown ConstantLevel: %q", tmp)
+	}
+	return nil
+}
+
 type Node interface {
 	isNode()
 	GetLoc() Loc
@@ -990,6 +1043,7 @@ type Expr interface {
 	isExpr()
 	Node
 	GetExprType() Type
+	GetConstantLevel() ConstantLevel
 }
 
 type Literal interface {
@@ -1013,6 +1067,7 @@ type Type interface {
 	isType()
 	Node
 	GetIsExplicit() bool
+	GetIsIntSet() bool
 }
 
 type Program struct {
@@ -1029,17 +1084,22 @@ func (n *Program) GetLoc() Loc {
 }
 
 type Binary struct {
-	Loc      Loc
-	ExprType Type
-	Op       BinaryOp
-	Left     Expr
-	Right    Expr
+	Loc           Loc
+	ExprType      Type
+	ConstantLevel ConstantLevel
+	Op            BinaryOp
+	Left          Expr
+	Right         Expr
 }
 
 func (n *Binary) isExpr() {}
 
 func (n *Binary) GetExprType() Type {
 	return n.ExprType
+}
+
+func (n *Binary) GetConstantLevel() ConstantLevel {
+	return n.ConstantLevel
 }
 
 func (n *Binary) isNode() {}
@@ -1049,16 +1109,21 @@ func (n *Binary) GetLoc() Loc {
 }
 
 type Unary struct {
-	Loc      Loc
-	ExprType Type
-	Op       UnaryOp
-	Expr     Expr
+	Loc           Loc
+	ExprType      Type
+	ConstantLevel ConstantLevel
+	Op            UnaryOp
+	Expr          Expr
 }
 
 func (n *Unary) isExpr() {}
 
 func (n *Unary) GetExprType() Type {
 	return n.ExprType
+}
+
+func (n *Unary) GetConstantLevel() ConstantLevel {
+	return n.ConstantLevel
 }
 
 func (n *Unary) isNode() {}
@@ -1068,18 +1133,23 @@ func (n *Unary) GetLoc() Loc {
 }
 
 type Cond struct {
-	Loc      Loc
-	ExprType Type
-	Cond     Expr
-	Then     Expr
-	ElsLoc   Loc
-	Els      Expr
+	Loc           Loc
+	ExprType      Type
+	ConstantLevel ConstantLevel
+	Cond          Expr
+	Then          Expr
+	ElsLoc        Loc
+	Els           Expr
 }
 
 func (n *Cond) isExpr() {}
 
 func (n *Cond) GetExprType() Type {
 	return n.ExprType
+}
+
+func (n *Cond) GetConstantLevel() ConstantLevel {
+	return n.ConstantLevel
 }
 
 func (n *Cond) isNode() {}
@@ -1089,18 +1159,23 @@ func (n *Cond) GetLoc() Loc {
 }
 
 type Ident struct {
-	Loc      Loc
-	ExprType Type
-	Ident    string
-	Usage    IdentUsage
-	Base     Node
-	Scope    *Scope
+	Loc           Loc
+	ExprType      Type
+	ConstantLevel ConstantLevel
+	Ident         string
+	Usage         IdentUsage
+	Base          Node
+	Scope         *Scope
 }
 
 func (n *Ident) isExpr() {}
 
 func (n *Ident) GetExprType() Type {
 	return n.ExprType
+}
+
+func (n *Ident) GetConstantLevel() ConstantLevel {
+	return n.ConstantLevel
 }
 
 func (n *Ident) isNode() {}
@@ -1110,18 +1185,23 @@ func (n *Ident) GetLoc() Loc {
 }
 
 type Call struct {
-	Loc          Loc
-	ExprType     Type
-	Callee       Expr
-	RawArguments Expr
-	Arguments    []Expr
-	EndLoc       Loc
+	Loc           Loc
+	ExprType      Type
+	ConstantLevel ConstantLevel
+	Callee        Expr
+	RawArguments  Expr
+	Arguments     []Expr
+	EndLoc        Loc
 }
 
 func (n *Call) isExpr() {}
 
 func (n *Call) GetExprType() Type {
 	return n.ExprType
+}
+
+func (n *Call) GetConstantLevel() ConstantLevel {
+	return n.ConstantLevel
 }
 
 func (n *Call) isNode() {}
@@ -1131,18 +1211,23 @@ func (n *Call) GetLoc() Loc {
 }
 
 type If struct {
-	Loc       Loc
-	ExprType  Type
-	CondScope *Scope
-	Cond      Expr
-	Then      *IndentBlock
-	Els       Node
+	Loc           Loc
+	ExprType      Type
+	ConstantLevel ConstantLevel
+	CondScope     *Scope
+	Cond          Expr
+	Then          *IndentBlock
+	Els           Node
 }
 
 func (n *If) isExpr() {}
 
 func (n *If) GetExprType() Type {
 	return n.ExprType
+}
+
+func (n *If) GetConstantLevel() ConstantLevel {
+	return n.ConstantLevel
 }
 
 func (n *If) isNode() {}
@@ -1152,17 +1237,22 @@ func (n *If) GetLoc() Loc {
 }
 
 type MemberAccess struct {
-	Loc      Loc
-	ExprType Type
-	Target   Expr
-	Member   *Ident
-	Base     Node
+	Loc           Loc
+	ExprType      Type
+	ConstantLevel ConstantLevel
+	Target        Expr
+	Member        *Ident
+	Base          Node
 }
 
 func (n *MemberAccess) isExpr() {}
 
 func (n *MemberAccess) GetExprType() Type {
 	return n.ExprType
+}
+
+func (n *MemberAccess) GetConstantLevel() ConstantLevel {
+	return n.ConstantLevel
 }
 
 func (n *MemberAccess) isNode() {}
@@ -1172,16 +1262,21 @@ func (n *MemberAccess) GetLoc() Loc {
 }
 
 type Paren struct {
-	Loc      Loc
-	ExprType Type
-	Expr     Expr
-	EndLoc   Loc
+	Loc           Loc
+	ExprType      Type
+	ConstantLevel ConstantLevel
+	Expr          Expr
+	EndLoc        Loc
 }
 
 func (n *Paren) isExpr() {}
 
 func (n *Paren) GetExprType() Type {
 	return n.ExprType
+}
+
+func (n *Paren) GetConstantLevel() ConstantLevel {
+	return n.ConstantLevel
 }
 
 func (n *Paren) isNode() {}
@@ -1191,17 +1286,22 @@ func (n *Paren) GetLoc() Loc {
 }
 
 type Index struct {
-	Loc      Loc
-	ExprType Type
-	Expr     Expr
-	Index    Expr
-	EndLoc   Loc
+	Loc           Loc
+	ExprType      Type
+	ConstantLevel ConstantLevel
+	Expr          Expr
+	Index         Expr
+	EndLoc        Loc
 }
 
 func (n *Index) isExpr() {}
 
 func (n *Index) GetExprType() Type {
 	return n.ExprType
+}
+
+func (n *Index) GetConstantLevel() ConstantLevel {
+	return n.ConstantLevel
 }
 
 func (n *Index) isNode() {}
@@ -1211,17 +1311,22 @@ func (n *Index) GetLoc() Loc {
 }
 
 type Match struct {
-	Loc       Loc
-	ExprType  Type
-	CondScope *Scope
-	Cond      Expr
-	Branch    []Node
+	Loc           Loc
+	ExprType      Type
+	ConstantLevel ConstantLevel
+	CondScope     *Scope
+	Cond          Expr
+	Branch        []Node
 }
 
 func (n *Match) isExpr() {}
 
 func (n *Match) GetExprType() Type {
 	return n.ExprType
+}
+
+func (n *Match) GetConstantLevel() ConstantLevel {
+	return n.ConstantLevel
 }
 
 func (n *Match) isNode() {}
@@ -1231,17 +1336,22 @@ func (n *Match) GetLoc() Loc {
 }
 
 type Range struct {
-	Loc      Loc
-	ExprType Type
-	Op       BinaryOp
-	Start    Expr
-	End      Expr
+	Loc           Loc
+	ExprType      Type
+	ConstantLevel ConstantLevel
+	Op            BinaryOp
+	Start         Expr
+	End           Expr
 }
 
 func (n *Range) isExpr() {}
 
 func (n *Range) GetExprType() Type {
 	return n.ExprType
+}
+
+func (n *Range) GetConstantLevel() ConstantLevel {
+	return n.ConstantLevel
 }
 
 func (n *Range) isNode() {}
@@ -1251,15 +1361,20 @@ func (n *Range) GetLoc() Loc {
 }
 
 type TmpVar struct {
-	Loc      Loc
-	ExprType Type
-	TmpVar   uint64
+	Loc           Loc
+	ExprType      Type
+	ConstantLevel ConstantLevel
+	TmpVar        uint64
 }
 
 func (n *TmpVar) isExpr() {}
 
 func (n *TmpVar) GetExprType() Type {
 	return n.ExprType
+}
+
+func (n *TmpVar) GetConstantLevel() ConstantLevel {
+	return n.ConstantLevel
 }
 
 func (n *TmpVar) isNode() {}
@@ -1269,16 +1384,21 @@ func (n *TmpVar) GetLoc() Loc {
 }
 
 type BlockExpr struct {
-	Loc      Loc
-	ExprType Type
-	Calls    []Node
-	Expr     Expr
+	Loc           Loc
+	ExprType      Type
+	ConstantLevel ConstantLevel
+	Calls         []Node
+	Expr          Expr
 }
 
 func (n *BlockExpr) isExpr() {}
 
 func (n *BlockExpr) GetExprType() Type {
 	return n.ExprType
+}
+
+func (n *BlockExpr) GetConstantLevel() ConstantLevel {
+	return n.ConstantLevel
 }
 
 func (n *BlockExpr) isNode() {}
@@ -1288,17 +1408,22 @@ func (n *BlockExpr) GetLoc() Loc {
 }
 
 type Import struct {
-	Loc        Loc
-	ExprType   Type
-	Path       string
-	Base       *Call
-	ImportDesc *Program
+	Loc           Loc
+	ExprType      Type
+	ConstantLevel ConstantLevel
+	Path          string
+	Base          *Call
+	ImportDesc    *Program
 }
 
 func (n *Import) isExpr() {}
 
 func (n *Import) GetExprType() Type {
 	return n.ExprType
+}
+
+func (n *Import) GetConstantLevel() ConstantLevel {
+	return n.ConstantLevel
 }
 
 func (n *Import) isNode() {}
@@ -1308,9 +1433,10 @@ func (n *Import) GetLoc() Loc {
 }
 
 type IntLiteral struct {
-	Loc      Loc
-	ExprType Type
-	Value    string
+	Loc           Loc
+	ExprType      Type
+	ConstantLevel ConstantLevel
+	Value         string
 }
 
 func (n *IntLiteral) isLiteral() {}
@@ -1321,6 +1447,10 @@ func (n *IntLiteral) GetExprType() Type {
 	return n.ExprType
 }
 
+func (n *IntLiteral) GetConstantLevel() ConstantLevel {
+	return n.ConstantLevel
+}
+
 func (n *IntLiteral) isNode() {}
 
 func (n *IntLiteral) GetLoc() Loc {
@@ -1328,9 +1458,10 @@ func (n *IntLiteral) GetLoc() Loc {
 }
 
 type BoolLiteral struct {
-	Loc      Loc
-	ExprType Type
-	Value    bool
+	Loc           Loc
+	ExprType      Type
+	ConstantLevel ConstantLevel
+	Value         bool
 }
 
 func (n *BoolLiteral) isLiteral() {}
@@ -1341,6 +1472,10 @@ func (n *BoolLiteral) GetExprType() Type {
 	return n.ExprType
 }
 
+func (n *BoolLiteral) GetConstantLevel() ConstantLevel {
+	return n.ConstantLevel
+}
+
 func (n *BoolLiteral) isNode() {}
 
 func (n *BoolLiteral) GetLoc() Loc {
@@ -1348,9 +1483,10 @@ func (n *BoolLiteral) GetLoc() Loc {
 }
 
 type StrLiteral struct {
-	Loc      Loc
-	ExprType Type
-	Value    string
+	Loc           Loc
+	ExprType      Type
+	ConstantLevel ConstantLevel
+	Value         string
 }
 
 func (n *StrLiteral) isLiteral() {}
@@ -1361,6 +1497,10 @@ func (n *StrLiteral) GetExprType() Type {
 	return n.ExprType
 }
 
+func (n *StrLiteral) GetConstantLevel() ConstantLevel {
+	return n.ConstantLevel
+}
+
 func (n *StrLiteral) isNode() {}
 
 func (n *StrLiteral) GetLoc() Loc {
@@ -1368,8 +1508,9 @@ func (n *StrLiteral) GetLoc() Loc {
 }
 
 type Input struct {
-	Loc      Loc
-	ExprType Type
+	Loc           Loc
+	ExprType      Type
+	ConstantLevel ConstantLevel
 }
 
 func (n *Input) isLiteral() {}
@@ -1380,6 +1521,10 @@ func (n *Input) GetExprType() Type {
 	return n.ExprType
 }
 
+func (n *Input) GetConstantLevel() ConstantLevel {
+	return n.ConstantLevel
+}
+
 func (n *Input) isNode() {}
 
 func (n *Input) GetLoc() Loc {
@@ -1387,8 +1532,9 @@ func (n *Input) GetLoc() Loc {
 }
 
 type Output struct {
-	Loc      Loc
-	ExprType Type
+	Loc           Loc
+	ExprType      Type
+	ConstantLevel ConstantLevel
 }
 
 func (n *Output) isLiteral() {}
@@ -1399,6 +1545,10 @@ func (n *Output) GetExprType() Type {
 	return n.ExprType
 }
 
+func (n *Output) GetConstantLevel() ConstantLevel {
+	return n.ConstantLevel
+}
+
 func (n *Output) isNode() {}
 
 func (n *Output) GetLoc() Loc {
@@ -1406,8 +1556,9 @@ func (n *Output) GetLoc() Loc {
 }
 
 type Config struct {
-	Loc      Loc
-	ExprType Type
+	Loc           Loc
+	ExprType      Type
+	ConstantLevel ConstantLevel
 }
 
 func (n *Config) isLiteral() {}
@@ -1416,6 +1567,10 @@ func (n *Config) isExpr() {}
 
 func (n *Config) GetExprType() Type {
 	return n.ExprType
+}
+
+func (n *Config) GetConstantLevel() ConstantLevel {
+	return n.ConstantLevel
 }
 
 func (n *Config) isNode() {}
@@ -1620,6 +1775,7 @@ func (n *Function) GetLoc() Loc {
 type IntType struct {
 	Loc               Loc
 	IsExplicit        bool
+	IsIntSet          bool
 	BitSize           uint64
 	Endian            Endian
 	IsSigned          bool
@@ -1632,6 +1788,10 @@ func (n *IntType) GetIsExplicit() bool {
 	return n.IsExplicit
 }
 
+func (n *IntType) GetIsIntSet() bool {
+	return n.IsIntSet
+}
+
 func (n *IntType) isNode() {}
 
 func (n *IntType) GetLoc() Loc {
@@ -1641,6 +1801,7 @@ func (n *IntType) GetLoc() Loc {
 type IdentType struct {
 	Loc        Loc
 	IsExplicit bool
+	IsIntSet   bool
 	Ident      *Ident
 	Base       Type
 }
@@ -1649,6 +1810,10 @@ func (n *IdentType) isType() {}
 
 func (n *IdentType) GetIsExplicit() bool {
 	return n.IsExplicit
+}
+
+func (n *IdentType) GetIsIntSet() bool {
+	return n.IsIntSet
 }
 
 func (n *IdentType) isNode() {}
@@ -1660,6 +1825,7 @@ func (n *IdentType) GetLoc() Loc {
 type IntLiteralType struct {
 	Loc        Loc
 	IsExplicit bool
+	IsIntSet   bool
 	Base       *IntLiteral
 }
 
@@ -1667,6 +1833,10 @@ func (n *IntLiteralType) isType() {}
 
 func (n *IntLiteralType) GetIsExplicit() bool {
 	return n.IsExplicit
+}
+
+func (n *IntLiteralType) GetIsIntSet() bool {
+	return n.IsIntSet
 }
 
 func (n *IntLiteralType) isNode() {}
@@ -1678,6 +1848,7 @@ func (n *IntLiteralType) GetLoc() Loc {
 type StrLiteralType struct {
 	Loc        Loc
 	IsExplicit bool
+	IsIntSet   bool
 	Base       *StrLiteral
 }
 
@@ -1685,6 +1856,10 @@ func (n *StrLiteralType) isType() {}
 
 func (n *StrLiteralType) GetIsExplicit() bool {
 	return n.IsExplicit
+}
+
+func (n *StrLiteralType) GetIsIntSet() bool {
+	return n.IsIntSet
 }
 
 func (n *StrLiteralType) isNode() {}
@@ -1696,12 +1871,17 @@ func (n *StrLiteralType) GetLoc() Loc {
 type VoidType struct {
 	Loc        Loc
 	IsExplicit bool
+	IsIntSet   bool
 }
 
 func (n *VoidType) isType() {}
 
 func (n *VoidType) GetIsExplicit() bool {
 	return n.IsExplicit
+}
+
+func (n *VoidType) GetIsIntSet() bool {
+	return n.IsIntSet
 }
 
 func (n *VoidType) isNode() {}
@@ -1713,12 +1893,17 @@ func (n *VoidType) GetLoc() Loc {
 type BoolType struct {
 	Loc        Loc
 	IsExplicit bool
+	IsIntSet   bool
 }
 
 func (n *BoolType) isType() {}
 
 func (n *BoolType) GetIsExplicit() bool {
 	return n.IsExplicit
+}
+
+func (n *BoolType) GetIsIntSet() bool {
+	return n.IsIntSet
 }
 
 func (n *BoolType) isNode() {}
@@ -1730,6 +1915,7 @@ func (n *BoolType) GetLoc() Loc {
 type ArrayType struct {
 	Loc        Loc
 	IsExplicit bool
+	IsIntSet   bool
 	EndLoc     Loc
 	BaseType   Type
 	Length     Expr
@@ -1741,6 +1927,10 @@ func (n *ArrayType) GetIsExplicit() bool {
 	return n.IsExplicit
 }
 
+func (n *ArrayType) GetIsIntSet() bool {
+	return n.IsIntSet
+}
+
 func (n *ArrayType) isNode() {}
 
 func (n *ArrayType) GetLoc() Loc {
@@ -1750,6 +1940,7 @@ func (n *ArrayType) GetLoc() Loc {
 type FunctionType struct {
 	Loc        Loc
 	IsExplicit bool
+	IsIntSet   bool
 	ReturnType Type
 	Parameters []Type
 }
@@ -1758,6 +1949,10 @@ func (n *FunctionType) isType() {}
 
 func (n *FunctionType) GetIsExplicit() bool {
 	return n.IsExplicit
+}
+
+func (n *FunctionType) GetIsIntSet() bool {
+	return n.IsIntSet
 }
 
 func (n *FunctionType) isNode() {}
@@ -1769,6 +1964,7 @@ func (n *FunctionType) GetLoc() Loc {
 type StructType struct {
 	Loc        Loc
 	IsExplicit bool
+	IsIntSet   bool
 	Fields     []Member
 	Base       Node
 	Recursive  bool
@@ -1780,6 +1976,10 @@ func (n *StructType) GetIsExplicit() bool {
 	return n.IsExplicit
 }
 
+func (n *StructType) GetIsIntSet() bool {
+	return n.IsIntSet
+}
+
 func (n *StructType) isNode() {}
 
 func (n *StructType) GetLoc() Loc {
@@ -1789,6 +1989,7 @@ func (n *StructType) GetLoc() Loc {
 type StructUnionType struct {
 	Loc         Loc
 	IsExplicit  bool
+	IsIntSet    bool
 	Fields      []*StructType
 	Base        Expr
 	UnionFields []*Field
@@ -1800,6 +2001,10 @@ func (n *StructUnionType) GetIsExplicit() bool {
 	return n.IsExplicit
 }
 
+func (n *StructUnionType) GetIsIntSet() bool {
+	return n.IsIntSet
+}
+
 func (n *StructUnionType) isNode() {}
 
 func (n *StructUnionType) GetLoc() Loc {
@@ -1807,16 +2012,21 @@ func (n *StructUnionType) GetLoc() Loc {
 }
 
 type Cast struct {
-	Loc      Loc
-	ExprType Type
-	Base     *Call
-	Expr     Expr
+	Loc           Loc
+	ExprType      Type
+	ConstantLevel ConstantLevel
+	Base          *Call
+	Expr          Expr
 }
 
 func (n *Cast) isExpr() {}
 
 func (n *Cast) GetExprType() Type {
 	return n.ExprType
+}
+
+func (n *Cast) GetConstantLevel() ConstantLevel {
+	return n.ConstantLevel
 }
 
 func (n *Cast) isNode() {}
@@ -1850,6 +2060,7 @@ func (n *CommentGroup) GetLoc() Loc {
 type UnionType struct {
 	Loc        Loc
 	IsExplicit bool
+	IsIntSet   bool
 	Cond       Expr
 	Candidates []*UnionCandidate
 	BaseType   *StructUnionType
@@ -1859,6 +2070,10 @@ func (n *UnionType) isType() {}
 
 func (n *UnionType) GetIsExplicit() bool {
 	return n.IsExplicit
+}
+
+func (n *UnionType) GetIsIntSet() bool {
+	return n.IsIntSet
 }
 
 func (n *UnionType) isNode() {}
@@ -1884,6 +2099,7 @@ func (n *UnionCandidate) GetLoc() Loc {
 type RangeType struct {
 	Loc        Loc
 	IsExplicit bool
+	IsIntSet   bool
 	BaseType   Type
 	Range      *Range
 }
@@ -1892,6 +2108,10 @@ func (n *RangeType) isType() {}
 
 func (n *RangeType) GetIsExplicit() bool {
 	return n.IsExplicit
+}
+
+func (n *RangeType) GetIsIntSet() bool {
+	return n.IsIntSet
 }
 
 func (n *RangeType) isNode() {}
@@ -1957,6 +2177,7 @@ func (n *EnumMember) GetLoc() Loc {
 type EnumType struct {
 	Loc        Loc
 	IsExplicit bool
+	IsIntSet   bool
 	Base       *Enum
 }
 
@@ -1966,9 +2187,38 @@ func (n *EnumType) GetIsExplicit() bool {
 	return n.IsExplicit
 }
 
+func (n *EnumType) GetIsIntSet() bool {
+	return n.IsIntSet
+}
+
 func (n *EnumType) isNode() {}
 
 func (n *EnumType) GetLoc() Loc {
+	return n.Loc
+}
+
+type BitGroupType struct {
+	Loc        Loc
+	IsExplicit bool
+	IsIntSet   bool
+	BitFields  []*Field
+	IsAligned  bool
+	BitSize    uint64
+}
+
+func (n *BitGroupType) isType() {}
+
+func (n *BitGroupType) GetIsExplicit() bool {
+	return n.IsExplicit
+}
+
+func (n *BitGroupType) GetIsIntSet() bool {
+	return n.IsIntSet
+}
+
+func (n *BitGroupType) isNode() {}
+
+func (n *BitGroupType) GetLoc() Loc {
 	return n.Loc
 }
 
@@ -2160,6 +2410,8 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			n.node[i] = &EnumMember{Loc: raw.Loc}
 		case NodeTypeEnumType:
 			n.node[i] = &EnumType{Loc: raw.Loc}
+		case NodeTypeBitGroupType:
+			n.node[i] = &BitGroupType{Loc: raw.Loc}
 		default:
 			return nil, fmt.Errorf("unknown node type: %q", raw.NodeType)
 		}
@@ -2193,10 +2445,11 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeBinary:
 			v := n.node[i].(*Binary)
 			var tmp struct {
-				ExprType *uintptr `json:"expr_type"`
-				Op       BinaryOp `json:"op"`
-				Left     *uintptr `json:"left"`
-				Right    *uintptr `json:"right"`
+				ExprType      *uintptr      `json:"expr_type"`
+				ConstantLevel ConstantLevel `json:"constant_level"`
+				Op            BinaryOp      `json:"op"`
+				Left          *uintptr      `json:"left"`
+				Right         *uintptr      `json:"right"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -2204,6 +2457,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.ExprType != nil {
 				v.ExprType = n.node[*tmp.ExprType].(Type)
 			}
+			v.ConstantLevel = tmp.ConstantLevel
 			v.Op = tmp.Op
 			if tmp.Left != nil {
 				v.Left = n.node[*tmp.Left].(Expr)
@@ -2214,9 +2468,10 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeUnary:
 			v := n.node[i].(*Unary)
 			var tmp struct {
-				ExprType *uintptr `json:"expr_type"`
-				Op       UnaryOp  `json:"op"`
-				Expr     *uintptr `json:"expr"`
+				ExprType      *uintptr      `json:"expr_type"`
+				ConstantLevel ConstantLevel `json:"constant_level"`
+				Op            UnaryOp       `json:"op"`
+				Expr          *uintptr      `json:"expr"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -2224,6 +2479,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.ExprType != nil {
 				v.ExprType = n.node[*tmp.ExprType].(Type)
 			}
+			v.ConstantLevel = tmp.ConstantLevel
 			v.Op = tmp.Op
 			if tmp.Expr != nil {
 				v.Expr = n.node[*tmp.Expr].(Expr)
@@ -2231,11 +2487,12 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeCond:
 			v := n.node[i].(*Cond)
 			var tmp struct {
-				ExprType *uintptr `json:"expr_type"`
-				Cond     *uintptr `json:"cond"`
-				Then     *uintptr `json:"then"`
-				ElsLoc   Loc      `json:"els_loc"`
-				Els      *uintptr `json:"els"`
+				ExprType      *uintptr      `json:"expr_type"`
+				ConstantLevel ConstantLevel `json:"constant_level"`
+				Cond          *uintptr      `json:"cond"`
+				Then          *uintptr      `json:"then"`
+				ElsLoc        Loc           `json:"els_loc"`
+				Els           *uintptr      `json:"els"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -2243,6 +2500,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.ExprType != nil {
 				v.ExprType = n.node[*tmp.ExprType].(Type)
 			}
+			v.ConstantLevel = tmp.ConstantLevel
 			if tmp.Cond != nil {
 				v.Cond = n.node[*tmp.Cond].(Expr)
 			}
@@ -2256,11 +2514,12 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeIdent:
 			v := n.node[i].(*Ident)
 			var tmp struct {
-				ExprType *uintptr   `json:"expr_type"`
-				Ident    string     `json:"ident"`
-				Usage    IdentUsage `json:"usage"`
-				Base     *uintptr   `json:"base"`
-				Scope    *uintptr   `json:"scope"`
+				ExprType      *uintptr      `json:"expr_type"`
+				ConstantLevel ConstantLevel `json:"constant_level"`
+				Ident         string        `json:"ident"`
+				Usage         IdentUsage    `json:"usage"`
+				Base          *uintptr      `json:"base"`
+				Scope         *uintptr      `json:"scope"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -2268,6 +2527,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.ExprType != nil {
 				v.ExprType = n.node[*tmp.ExprType].(Type)
 			}
+			v.ConstantLevel = tmp.ConstantLevel
 			v.Ident = tmp.Ident
 			v.Usage = tmp.Usage
 			if tmp.Base != nil {
@@ -2279,11 +2539,12 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeCall:
 			v := n.node[i].(*Call)
 			var tmp struct {
-				ExprType     *uintptr  `json:"expr_type"`
-				Callee       *uintptr  `json:"callee"`
-				RawArguments *uintptr  `json:"raw_arguments"`
-				Arguments    []uintptr `json:"arguments"`
-				EndLoc       Loc       `json:"end_loc"`
+				ExprType      *uintptr      `json:"expr_type"`
+				ConstantLevel ConstantLevel `json:"constant_level"`
+				Callee        *uintptr      `json:"callee"`
+				RawArguments  *uintptr      `json:"raw_arguments"`
+				Arguments     []uintptr     `json:"arguments"`
+				EndLoc        Loc           `json:"end_loc"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -2291,6 +2552,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.ExprType != nil {
 				v.ExprType = n.node[*tmp.ExprType].(Type)
 			}
+			v.ConstantLevel = tmp.ConstantLevel
 			if tmp.Callee != nil {
 				v.Callee = n.node[*tmp.Callee].(Expr)
 			}
@@ -2305,11 +2567,12 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeIf:
 			v := n.node[i].(*If)
 			var tmp struct {
-				ExprType  *uintptr `json:"expr_type"`
-				CondScope *uintptr `json:"cond_scope"`
-				Cond      *uintptr `json:"cond"`
-				Then      *uintptr `json:"then"`
-				Els       *uintptr `json:"els"`
+				ExprType      *uintptr      `json:"expr_type"`
+				ConstantLevel ConstantLevel `json:"constant_level"`
+				CondScope     *uintptr      `json:"cond_scope"`
+				Cond          *uintptr      `json:"cond"`
+				Then          *uintptr      `json:"then"`
+				Els           *uintptr      `json:"els"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -2317,6 +2580,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.ExprType != nil {
 				v.ExprType = n.node[*tmp.ExprType].(Type)
 			}
+			v.ConstantLevel = tmp.ConstantLevel
 			if tmp.CondScope != nil {
 				v.CondScope = n.scope[*tmp.CondScope]
 			}
@@ -2332,10 +2596,11 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeMemberAccess:
 			v := n.node[i].(*MemberAccess)
 			var tmp struct {
-				ExprType *uintptr `json:"expr_type"`
-				Target   *uintptr `json:"target"`
-				Member   *uintptr `json:"member"`
-				Base     *uintptr `json:"base"`
+				ExprType      *uintptr      `json:"expr_type"`
+				ConstantLevel ConstantLevel `json:"constant_level"`
+				Target        *uintptr      `json:"target"`
+				Member        *uintptr      `json:"member"`
+				Base          *uintptr      `json:"base"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -2343,6 +2608,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.ExprType != nil {
 				v.ExprType = n.node[*tmp.ExprType].(Type)
 			}
+			v.ConstantLevel = tmp.ConstantLevel
 			if tmp.Target != nil {
 				v.Target = n.node[*tmp.Target].(Expr)
 			}
@@ -2355,9 +2621,10 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeParen:
 			v := n.node[i].(*Paren)
 			var tmp struct {
-				ExprType *uintptr `json:"expr_type"`
-				Expr     *uintptr `json:"expr"`
-				EndLoc   Loc      `json:"end_loc"`
+				ExprType      *uintptr      `json:"expr_type"`
+				ConstantLevel ConstantLevel `json:"constant_level"`
+				Expr          *uintptr      `json:"expr"`
+				EndLoc        Loc           `json:"end_loc"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -2365,6 +2632,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.ExprType != nil {
 				v.ExprType = n.node[*tmp.ExprType].(Type)
 			}
+			v.ConstantLevel = tmp.ConstantLevel
 			if tmp.Expr != nil {
 				v.Expr = n.node[*tmp.Expr].(Expr)
 			}
@@ -2372,10 +2640,11 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeIndex:
 			v := n.node[i].(*Index)
 			var tmp struct {
-				ExprType *uintptr `json:"expr_type"`
-				Expr     *uintptr `json:"expr"`
-				Index    *uintptr `json:"index"`
-				EndLoc   Loc      `json:"end_loc"`
+				ExprType      *uintptr      `json:"expr_type"`
+				ConstantLevel ConstantLevel `json:"constant_level"`
+				Expr          *uintptr      `json:"expr"`
+				Index         *uintptr      `json:"index"`
+				EndLoc        Loc           `json:"end_loc"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -2383,6 +2652,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.ExprType != nil {
 				v.ExprType = n.node[*tmp.ExprType].(Type)
 			}
+			v.ConstantLevel = tmp.ConstantLevel
 			if tmp.Expr != nil {
 				v.Expr = n.node[*tmp.Expr].(Expr)
 			}
@@ -2393,10 +2663,11 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeMatch:
 			v := n.node[i].(*Match)
 			var tmp struct {
-				ExprType  *uintptr  `json:"expr_type"`
-				CondScope *uintptr  `json:"cond_scope"`
-				Cond      *uintptr  `json:"cond"`
-				Branch    []uintptr `json:"branch"`
+				ExprType      *uintptr      `json:"expr_type"`
+				ConstantLevel ConstantLevel `json:"constant_level"`
+				CondScope     *uintptr      `json:"cond_scope"`
+				Cond          *uintptr      `json:"cond"`
+				Branch        []uintptr     `json:"branch"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -2404,6 +2675,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.ExprType != nil {
 				v.ExprType = n.node[*tmp.ExprType].(Type)
 			}
+			v.ConstantLevel = tmp.ConstantLevel
 			if tmp.CondScope != nil {
 				v.CondScope = n.scope[*tmp.CondScope]
 			}
@@ -2417,10 +2689,11 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeRange:
 			v := n.node[i].(*Range)
 			var tmp struct {
-				ExprType *uintptr `json:"expr_type"`
-				Op       BinaryOp `json:"op"`
-				Start    *uintptr `json:"start"`
-				End      *uintptr `json:"end"`
+				ExprType      *uintptr      `json:"expr_type"`
+				ConstantLevel ConstantLevel `json:"constant_level"`
+				Op            BinaryOp      `json:"op"`
+				Start         *uintptr      `json:"start"`
+				End           *uintptr      `json:"end"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -2428,6 +2701,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.ExprType != nil {
 				v.ExprType = n.node[*tmp.ExprType].(Type)
 			}
+			v.ConstantLevel = tmp.ConstantLevel
 			v.Op = tmp.Op
 			if tmp.Start != nil {
 				v.Start = n.node[*tmp.Start].(Expr)
@@ -2438,8 +2712,9 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeTmpVar:
 			v := n.node[i].(*TmpVar)
 			var tmp struct {
-				ExprType *uintptr `json:"expr_type"`
-				TmpVar   uint64   `json:"tmp_var"`
+				ExprType      *uintptr      `json:"expr_type"`
+				ConstantLevel ConstantLevel `json:"constant_level"`
+				TmpVar        uint64        `json:"tmp_var"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -2447,13 +2722,15 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.ExprType != nil {
 				v.ExprType = n.node[*tmp.ExprType].(Type)
 			}
+			v.ConstantLevel = tmp.ConstantLevel
 			v.TmpVar = tmp.TmpVar
 		case NodeTypeBlockExpr:
 			v := n.node[i].(*BlockExpr)
 			var tmp struct {
-				ExprType *uintptr  `json:"expr_type"`
-				Calls    []uintptr `json:"calls"`
-				Expr     *uintptr  `json:"expr"`
+				ExprType      *uintptr      `json:"expr_type"`
+				ConstantLevel ConstantLevel `json:"constant_level"`
+				Calls         []uintptr     `json:"calls"`
+				Expr          *uintptr      `json:"expr"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -2461,6 +2738,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.ExprType != nil {
 				v.ExprType = n.node[*tmp.ExprType].(Type)
 			}
+			v.ConstantLevel = tmp.ConstantLevel
 			v.Calls = make([]Node, len(tmp.Calls))
 			for j, k := range tmp.Calls {
 				v.Calls[j] = n.node[k].(Node)
@@ -2471,10 +2749,11 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeImport:
 			v := n.node[i].(*Import)
 			var tmp struct {
-				ExprType   *uintptr `json:"expr_type"`
-				Path       string   `json:"path"`
-				Base       *uintptr `json:"base"`
-				ImportDesc *uintptr `json:"import_desc"`
+				ExprType      *uintptr      `json:"expr_type"`
+				ConstantLevel ConstantLevel `json:"constant_level"`
+				Path          string        `json:"path"`
+				Base          *uintptr      `json:"base"`
+				ImportDesc    *uintptr      `json:"import_desc"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -2482,6 +2761,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.ExprType != nil {
 				v.ExprType = n.node[*tmp.ExprType].(Type)
 			}
+			v.ConstantLevel = tmp.ConstantLevel
 			v.Path = tmp.Path
 			if tmp.Base != nil {
 				v.Base = n.node[*tmp.Base].(*Call)
@@ -2492,8 +2772,9 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeIntLiteral:
 			v := n.node[i].(*IntLiteral)
 			var tmp struct {
-				ExprType *uintptr `json:"expr_type"`
-				Value    string   `json:"value"`
+				ExprType      *uintptr      `json:"expr_type"`
+				ConstantLevel ConstantLevel `json:"constant_level"`
+				Value         string        `json:"value"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -2501,12 +2782,14 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.ExprType != nil {
 				v.ExprType = n.node[*tmp.ExprType].(Type)
 			}
+			v.ConstantLevel = tmp.ConstantLevel
 			v.Value = tmp.Value
 		case NodeTypeBoolLiteral:
 			v := n.node[i].(*BoolLiteral)
 			var tmp struct {
-				ExprType *uintptr `json:"expr_type"`
-				Value    bool     `json:"value"`
+				ExprType      *uintptr      `json:"expr_type"`
+				ConstantLevel ConstantLevel `json:"constant_level"`
+				Value         bool          `json:"value"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -2514,12 +2797,14 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.ExprType != nil {
 				v.ExprType = n.node[*tmp.ExprType].(Type)
 			}
+			v.ConstantLevel = tmp.ConstantLevel
 			v.Value = tmp.Value
 		case NodeTypeStrLiteral:
 			v := n.node[i].(*StrLiteral)
 			var tmp struct {
-				ExprType *uintptr `json:"expr_type"`
-				Value    string   `json:"value"`
+				ExprType      *uintptr      `json:"expr_type"`
+				ConstantLevel ConstantLevel `json:"constant_level"`
+				Value         string        `json:"value"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -2527,11 +2812,13 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.ExprType != nil {
 				v.ExprType = n.node[*tmp.ExprType].(Type)
 			}
+			v.ConstantLevel = tmp.ConstantLevel
 			v.Value = tmp.Value
 		case NodeTypeInput:
 			v := n.node[i].(*Input)
 			var tmp struct {
-				ExprType *uintptr `json:"expr_type"`
+				ExprType      *uintptr      `json:"expr_type"`
+				ConstantLevel ConstantLevel `json:"constant_level"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -2539,10 +2826,12 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.ExprType != nil {
 				v.ExprType = n.node[*tmp.ExprType].(Type)
 			}
+			v.ConstantLevel = tmp.ConstantLevel
 		case NodeTypeOutput:
 			v := n.node[i].(*Output)
 			var tmp struct {
-				ExprType *uintptr `json:"expr_type"`
+				ExprType      *uintptr      `json:"expr_type"`
+				ConstantLevel ConstantLevel `json:"constant_level"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -2550,10 +2839,12 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.ExprType != nil {
 				v.ExprType = n.node[*tmp.ExprType].(Type)
 			}
+			v.ConstantLevel = tmp.ConstantLevel
 		case NodeTypeConfig:
 			v := n.node[i].(*Config)
 			var tmp struct {
-				ExprType *uintptr `json:"expr_type"`
+				ExprType      *uintptr      `json:"expr_type"`
+				ConstantLevel ConstantLevel `json:"constant_level"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -2561,6 +2852,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.ExprType != nil {
 				v.ExprType = n.node[*tmp.ExprType].(Type)
 			}
+			v.ConstantLevel = tmp.ConstantLevel
 		case NodeTypeLoop:
 			v := n.node[i].(*Loop)
 			var tmp struct {
@@ -2759,6 +3051,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v := n.node[i].(*IntType)
 			var tmp struct {
 				IsExplicit        bool   `json:"is_explicit"`
+				IsIntSet          bool   `json:"is_int_set"`
 				BitSize           uint64 `json:"bit_size"`
 				Endian            Endian `json:"endian"`
 				IsSigned          bool   `json:"is_signed"`
@@ -2768,6 +3061,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				return nil, err
 			}
 			v.IsExplicit = tmp.IsExplicit
+			v.IsIntSet = tmp.IsIntSet
 			v.BitSize = tmp.BitSize
 			v.Endian = tmp.Endian
 			v.IsSigned = tmp.IsSigned
@@ -2776,6 +3070,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v := n.node[i].(*IdentType)
 			var tmp struct {
 				IsExplicit bool     `json:"is_explicit"`
+				IsIntSet   bool     `json:"is_int_set"`
 				Ident      *uintptr `json:"ident"`
 				Base       *uintptr `json:"base"`
 			}
@@ -2783,6 +3078,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				return nil, err
 			}
 			v.IsExplicit = tmp.IsExplicit
+			v.IsIntSet = tmp.IsIntSet
 			if tmp.Ident != nil {
 				v.Ident = n.node[*tmp.Ident].(*Ident)
 			}
@@ -2793,12 +3089,14 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v := n.node[i].(*IntLiteralType)
 			var tmp struct {
 				IsExplicit bool     `json:"is_explicit"`
+				IsIntSet   bool     `json:"is_int_set"`
 				Base       *uintptr `json:"base"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
 			}
 			v.IsExplicit = tmp.IsExplicit
+			v.IsIntSet = tmp.IsIntSet
 			if tmp.Base != nil {
 				v.Base = n.node[*tmp.Base].(*IntLiteral)
 			}
@@ -2806,12 +3104,14 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v := n.node[i].(*StrLiteralType)
 			var tmp struct {
 				IsExplicit bool     `json:"is_explicit"`
+				IsIntSet   bool     `json:"is_int_set"`
 				Base       *uintptr `json:"base"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
 			}
 			v.IsExplicit = tmp.IsExplicit
+			v.IsIntSet = tmp.IsIntSet
 			if tmp.Base != nil {
 				v.Base = n.node[*tmp.Base].(*StrLiteral)
 			}
@@ -2819,24 +3119,29 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v := n.node[i].(*VoidType)
 			var tmp struct {
 				IsExplicit bool `json:"is_explicit"`
+				IsIntSet   bool `json:"is_int_set"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
 			}
 			v.IsExplicit = tmp.IsExplicit
+			v.IsIntSet = tmp.IsIntSet
 		case NodeTypeBoolType:
 			v := n.node[i].(*BoolType)
 			var tmp struct {
 				IsExplicit bool `json:"is_explicit"`
+				IsIntSet   bool `json:"is_int_set"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
 			}
 			v.IsExplicit = tmp.IsExplicit
+			v.IsIntSet = tmp.IsIntSet
 		case NodeTypeArrayType:
 			v := n.node[i].(*ArrayType)
 			var tmp struct {
 				IsExplicit bool     `json:"is_explicit"`
+				IsIntSet   bool     `json:"is_int_set"`
 				EndLoc     Loc      `json:"end_loc"`
 				BaseType   *uintptr `json:"base_type"`
 				Length     *uintptr `json:"length"`
@@ -2845,6 +3150,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				return nil, err
 			}
 			v.IsExplicit = tmp.IsExplicit
+			v.IsIntSet = tmp.IsIntSet
 			v.EndLoc = tmp.EndLoc
 			if tmp.BaseType != nil {
 				v.BaseType = n.node[*tmp.BaseType].(Type)
@@ -2856,6 +3162,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v := n.node[i].(*FunctionType)
 			var tmp struct {
 				IsExplicit bool      `json:"is_explicit"`
+				IsIntSet   bool      `json:"is_int_set"`
 				ReturnType *uintptr  `json:"return_type"`
 				Parameters []uintptr `json:"parameters"`
 			}
@@ -2863,6 +3170,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				return nil, err
 			}
 			v.IsExplicit = tmp.IsExplicit
+			v.IsIntSet = tmp.IsIntSet
 			if tmp.ReturnType != nil {
 				v.ReturnType = n.node[*tmp.ReturnType].(Type)
 			}
@@ -2874,6 +3182,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v := n.node[i].(*StructType)
 			var tmp struct {
 				IsExplicit bool      `json:"is_explicit"`
+				IsIntSet   bool      `json:"is_int_set"`
 				Fields     []uintptr `json:"fields"`
 				Base       *uintptr  `json:"base"`
 				Recursive  bool      `json:"recursive"`
@@ -2882,6 +3191,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				return nil, err
 			}
 			v.IsExplicit = tmp.IsExplicit
+			v.IsIntSet = tmp.IsIntSet
 			v.Fields = make([]Member, len(tmp.Fields))
 			for j, k := range tmp.Fields {
 				v.Fields[j] = n.node[k].(Member)
@@ -2894,6 +3204,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v := n.node[i].(*StructUnionType)
 			var tmp struct {
 				IsExplicit  bool      `json:"is_explicit"`
+				IsIntSet    bool      `json:"is_int_set"`
 				Fields      []uintptr `json:"fields"`
 				Base        *uintptr  `json:"base"`
 				UnionFields []uintptr `json:"union_fields"`
@@ -2902,6 +3213,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				return nil, err
 			}
 			v.IsExplicit = tmp.IsExplicit
+			v.IsIntSet = tmp.IsIntSet
 			v.Fields = make([]*StructType, len(tmp.Fields))
 			for j, k := range tmp.Fields {
 				v.Fields[j] = n.node[k].(*StructType)
@@ -2916,9 +3228,10 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeCast:
 			v := n.node[i].(*Cast)
 			var tmp struct {
-				ExprType *uintptr `json:"expr_type"`
-				Base     *uintptr `json:"base"`
-				Expr     *uintptr `json:"expr"`
+				ExprType      *uintptr      `json:"expr_type"`
+				ConstantLevel ConstantLevel `json:"constant_level"`
+				Base          *uintptr      `json:"base"`
+				Expr          *uintptr      `json:"expr"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -2926,6 +3239,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.ExprType != nil {
 				v.ExprType = n.node[*tmp.ExprType].(Type)
 			}
+			v.ConstantLevel = tmp.ConstantLevel
 			if tmp.Base != nil {
 				v.Base = n.node[*tmp.Base].(*Call)
 			}
@@ -2957,6 +3271,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v := n.node[i].(*UnionType)
 			var tmp struct {
 				IsExplicit bool      `json:"is_explicit"`
+				IsIntSet   bool      `json:"is_int_set"`
 				Cond       *uintptr  `json:"cond"`
 				Candidates []uintptr `json:"candidates"`
 				BaseType   *uintptr  `json:"base_type"`
@@ -2965,6 +3280,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				return nil, err
 			}
 			v.IsExplicit = tmp.IsExplicit
+			v.IsIntSet = tmp.IsIntSet
 			if tmp.Cond != nil {
 				v.Cond = n.node[*tmp.Cond].(Expr)
 			}
@@ -2994,6 +3310,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v := n.node[i].(*RangeType)
 			var tmp struct {
 				IsExplicit bool     `json:"is_explicit"`
+				IsIntSet   bool     `json:"is_int_set"`
 				BaseType   *uintptr `json:"base_type"`
 				Range      *uintptr `json:"range"`
 			}
@@ -3001,6 +3318,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				return nil, err
 			}
 			v.IsExplicit = tmp.IsExplicit
+			v.IsIntSet = tmp.IsIntSet
 			if tmp.BaseType != nil {
 				v.BaseType = n.node[*tmp.BaseType].(Type)
 			}
@@ -3064,15 +3382,37 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v := n.node[i].(*EnumType)
 			var tmp struct {
 				IsExplicit bool     `json:"is_explicit"`
+				IsIntSet   bool     `json:"is_int_set"`
 				Base       *uintptr `json:"base"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
 			}
 			v.IsExplicit = tmp.IsExplicit
+			v.IsIntSet = tmp.IsIntSet
 			if tmp.Base != nil {
 				v.Base = n.node[*tmp.Base].(*Enum)
 			}
+		case NodeTypeBitGroupType:
+			v := n.node[i].(*BitGroupType)
+			var tmp struct {
+				IsExplicit bool      `json:"is_explicit"`
+				IsIntSet   bool      `json:"is_int_set"`
+				BitFields  []uintptr `json:"bit_fields"`
+				IsAligned  bool      `json:"is_aligned"`
+				BitSize    uint64    `json:"bit_size"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			v.IsExplicit = tmp.IsExplicit
+			v.IsIntSet = tmp.IsIntSet
+			v.BitFields = make([]*Field, len(tmp.BitFields))
+			for j, k := range tmp.BitFields {
+				v.BitFields[j] = n.node[k].(*Field)
+			}
+			v.IsAligned = tmp.IsAligned
+			v.BitSize = tmp.BitSize
 		default:
 			return nil, fmt.Errorf("unknown node type: %q", raw.NodeType)
 		}
@@ -3602,5 +3942,6 @@ func Walk(n Node, f Visitor) {
 			}
 		}
 	case *EnumType:
+	case *BitGroupType:
 	}
 }

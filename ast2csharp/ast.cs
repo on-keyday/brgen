@@ -60,6 +60,7 @@ RangeType,
 Enum,
 EnumMember,
 EnumType,
+BitGroupType,
 }
 public enum UnaryOp {
 Not,
@@ -140,11 +141,18 @@ Comment,
 Error,
 Unknown,
 }
+public enum ConstantLevel {
+Unknown,
+ConstValue,
+ConstVariable,
+Variable,
+}
 public interface Node {
 	public Loc Loc {get; set;}
 }
 public interface Expr : Node {
 	public Type? ExprType {get; set;}
+	public ConstantLevel ConstantLevel {get; set;}
 }
 public interface Literal : Expr {
 }
@@ -156,6 +164,7 @@ public interface Member : Stmt {
 }
 public interface Type : Node {
 	public bool IsExplicit {get; set;}
+	public bool IsIntSet {get; set;}
 }
 public class Program : Node{
 	public Loc Loc{get;set;}
@@ -166,6 +175,7 @@ public class Program : Node{
 public class Binary : Expr{
 	public Loc Loc{get;set;}
 	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
 	public BinaryOp Op{get;set;}
 	public Expr? Left{get;set;}
 	public Expr? Right{get;set;}
@@ -173,12 +183,14 @@ public class Binary : Expr{
 public class Unary : Expr{
 	public Loc Loc{get;set;}
 	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
 	public UnaryOp Op{get;set;}
 	public Expr? Expr{get;set;}
 }
 public class Cond : Expr{
 	public Loc Loc{get;set;}
 	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
 	public Expr? Cond_{get;set;}
 	public Expr? Then{get;set;}
 	public Loc ElsLoc{get;set;}
@@ -187,6 +199,7 @@ public class Cond : Expr{
 public class Ident : Expr{
 	public Loc Loc{get;set;}
 	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
 	public string Ident_{get;set;}
 	public IdentUsage Usage{get;set;}
 	public Node? Base{get;set;}
@@ -195,6 +208,7 @@ public class Ident : Expr{
 public class Call : Expr{
 	public Loc Loc{get;set;}
 	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
 	public Expr? Callee{get;set;}
 	public Expr? RawArguments{get;set;}
 	public List<Expr>? Arguments{get;set;}
@@ -203,6 +217,7 @@ public class Call : Expr{
 public class If : Expr{
 	public Loc Loc{get;set;}
 	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
 	public Scope? CondScope{get;set;}
 	public Expr? Cond{get;set;}
 	public IndentBlock? Then{get;set;}
@@ -211,6 +226,7 @@ public class If : Expr{
 public class MemberAccess : Expr{
 	public Loc Loc{get;set;}
 	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
 	public Expr? Target{get;set;}
 	public Ident? Member{get;set;}
 	public Node? Base{get;set;}
@@ -218,12 +234,14 @@ public class MemberAccess : Expr{
 public class Paren : Expr{
 	public Loc Loc{get;set;}
 	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
 	public Expr? Expr{get;set;}
 	public Loc EndLoc{get;set;}
 }
 public class Index : Expr{
 	public Loc Loc{get;set;}
 	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
 	public Expr? Expr{get;set;}
 	public Expr? Index_{get;set;}
 	public Loc EndLoc{get;set;}
@@ -231,6 +249,7 @@ public class Index : Expr{
 public class Match : Expr{
 	public Loc Loc{get;set;}
 	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
 	public Scope? CondScope{get;set;}
 	public Expr? Cond{get;set;}
 	public List<Node>? Branch{get;set;}
@@ -238,6 +257,7 @@ public class Match : Expr{
 public class Range : Expr{
 	public Loc Loc{get;set;}
 	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
 	public BinaryOp Op{get;set;}
 	public Expr? Start{get;set;}
 	public Expr? End{get;set;}
@@ -245,17 +265,20 @@ public class Range : Expr{
 public class TmpVar : Expr{
 	public Loc Loc{get;set;}
 	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
 	public ulong TmpVar_{get;set;}
 }
 public class BlockExpr : Expr{
 	public Loc Loc{get;set;}
 	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
 	public List<Node>? Calls{get;set;}
 	public Expr? Expr{get;set;}
 }
 public class Import : Expr{
 	public Loc Loc{get;set;}
 	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
 	public string Path{get;set;}
 	public Call? Base{get;set;}
 	public Program? ImportDesc{get;set;}
@@ -263,29 +286,35 @@ public class Import : Expr{
 public class IntLiteral : Literal{
 	public Loc Loc{get;set;}
 	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
 	public string Value{get;set;}
 }
 public class BoolLiteral : Literal{
 	public Loc Loc{get;set;}
 	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
 	public bool Value{get;set;}
 }
 public class StrLiteral : Literal{
 	public Loc Loc{get;set;}
 	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
 	public string Value{get;set;}
 }
 public class Input : Literal{
 	public Loc Loc{get;set;}
 	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
 }
 public class Output : Literal{
 	public Loc Loc{get;set;}
 	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
 }
 public class Config : Literal{
 	public Loc Loc{get;set;}
 	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
 }
 public class Loop : Stmt{
 	public Loc Loc{get;set;}
@@ -354,6 +383,7 @@ public class Function : Member{
 public class IntType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
+	public bool IsIntSet{get;set;}
 	public ulong BitSize{get;set;}
 	public Endian Endian{get;set;}
 	public bool IsSigned{get;set;}
@@ -362,30 +392,36 @@ public class IntType : Type{
 public class IdentType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
+	public bool IsIntSet{get;set;}
 	public Ident? Ident{get;set;}
 	public Type? Base{get;set;}
 }
 public class IntLiteralType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
+	public bool IsIntSet{get;set;}
 	public IntLiteral? Base{get;set;}
 }
 public class StrLiteralType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
+	public bool IsIntSet{get;set;}
 	public StrLiteral? Base{get;set;}
 }
 public class VoidType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
+	public bool IsIntSet{get;set;}
 }
 public class BoolType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
+	public bool IsIntSet{get;set;}
 }
 public class ArrayType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
+	public bool IsIntSet{get;set;}
 	public Loc EndLoc{get;set;}
 	public Type? BaseType{get;set;}
 	public Expr? Length{get;set;}
@@ -393,12 +429,14 @@ public class ArrayType : Type{
 public class FunctionType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
+	public bool IsIntSet{get;set;}
 	public Type? ReturnType{get;set;}
 	public List<Type>? Parameters{get;set;}
 }
 public class StructType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
+	public bool IsIntSet{get;set;}
 	public List<Member>? Fields{get;set;}
 	public Node? Base{get;set;}
 	public bool Recursive{get;set;}
@@ -406,6 +444,7 @@ public class StructType : Type{
 public class StructUnionType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
+	public bool IsIntSet{get;set;}
 	public List<StructType>? Fields{get;set;}
 	public Expr? Base{get;set;}
 	public List<Field>? UnionFields{get;set;}
@@ -413,6 +452,7 @@ public class StructUnionType : Type{
 public class Cast : Expr{
 	public Loc Loc{get;set;}
 	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
 	public Call? Base{get;set;}
 	public Expr? Expr{get;set;}
 }
@@ -427,6 +467,7 @@ public class CommentGroup : Node{
 public class UnionType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
+	public bool IsIntSet{get;set;}
 	public Expr? Cond{get;set;}
 	public List<UnionCandidate>? Candidates{get;set;}
 	public StructUnionType? BaseType{get;set;}
@@ -439,6 +480,7 @@ public class UnionCandidate : Stmt{
 public class RangeType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
+	public bool IsIntSet{get;set;}
 	public Type? BaseType{get;set;}
 	public Range? Range{get;set;}
 }
@@ -461,7 +503,16 @@ public class EnumMember : Member{
 public class EnumType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
+	public bool IsIntSet{get;set;}
 	public Enum? Base{get;set;}
+}
+public class BitGroupType : Type{
+	public Loc Loc{get;set;}
+	public bool IsExplicit{get;set;}
+	public bool IsIntSet{get;set;}
+	public List<Field>? BitFields{get;set;}
+	public bool IsAligned{get;set;}
+	public ulong BitSize{get;set;}
 }
 public class Scope {
 	public Scope? Prev{get;set;}

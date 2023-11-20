@@ -61,6 +61,7 @@ class NodeType(PyEnum):
     ENUM = "enum"
     ENUM_MEMBER = "enum_member"
     ENUM_TYPE = "enum_type"
+    BIT_GROUP_TYPE = "bit_group_type"
 
 
 class UnaryOp(PyEnum):
@@ -147,12 +148,20 @@ class TokenTag(PyEnum):
     UNKNOWN = "unknown"
 
 
+class ConstantLevel(PyEnum):
+    UNKNOWN = "unknown"
+    CONST_VALUE = "const_value"
+    CONST_VARIABLE = "const_variable"
+    VARIABLE = "variable"
+
+
 class Node:
     loc: Loc
 
 
 class Expr(Node):
     expr_type: Optional[Type]
+    constant_level: ConstantLevel
 
 
 class Literal(Expr):
@@ -170,6 +179,7 @@ class Member(Stmt):
 
 class Type(Node):
     is_explicit: bool
+    is_int_set: bool
 
 
 class Program(Node):
@@ -439,6 +449,12 @@ class EnumMember(Member):
 
 class EnumType(Type):
     base: Optional[Enum]
+
+
+class BitGroupType(Type):
+    bit_fields: List[Field]
+    is_aligned: bool
+    bit_size: int
 
 
 class Scope:
@@ -729,6 +745,8 @@ def ast2node(ast :JsonAst) -> Program:
                 node.append(EnumMember())
             case NodeType.ENUM_TYPE:
                 node.append(EnumType())
+            case NodeType.BIT_GROUP_TYPE:
+                node.append(BitGroupType())
             case _:
                 raise TypeError('unknown node type')
     scope = [Scope() for _ in range(len(ast.scope))]
@@ -752,6 +770,7 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at Binary::expr_type'))
                 else:
                     node[i].expr_type = None
+                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
                 node[i].op = BinaryOp(ast.node[i].body["op"])
                 if ast.node[i].body["left"] is not None:
                     x = node[ast.node[i].body["left"]]
@@ -769,6 +788,7 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at Unary::expr_type'))
                 else:
                     node[i].expr_type = None
+                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
                 node[i].op = UnaryOp(ast.node[i].body["op"])
                 if ast.node[i].body["expr"] is not None:
                     x = node[ast.node[i].body["expr"]]
@@ -781,6 +801,7 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at Cond::expr_type'))
                 else:
                     node[i].expr_type = None
+                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
                 if ast.node[i].body["cond"] is not None:
                     x = node[ast.node[i].body["cond"]]
                     node[i].cond = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at Cond::cond'))
@@ -803,6 +824,7 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at Ident::expr_type'))
                 else:
                     node[i].expr_type = None
+                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
                 x = ast.node[i].body["ident"]
                 node[i].ident = x if isinstance(x,str)  else raiseError(TypeError('type mismatch at Ident::ident'))
                 node[i].usage = IdentUsage(ast.node[i].body["usage"])
@@ -821,6 +843,7 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at Call::expr_type'))
                 else:
                     node[i].expr_type = None
+                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
                 if ast.node[i].body["callee"] is not None:
                     x = node[ast.node[i].body["callee"]]
                     node[i].callee = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at Call::callee'))
@@ -839,6 +862,7 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at If::expr_type'))
                 else:
                     node[i].expr_type = None
+                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
                 if ast.node[i].body["cond_scope"] is not None:
                     node[i].cond_scope = scope[ast.node[i].body["cond_scope"]]
                 else:
@@ -864,6 +888,7 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at MemberAccess::expr_type'))
                 else:
                     node[i].expr_type = None
+                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
                 if ast.node[i].body["target"] is not None:
                     x = node[ast.node[i].body["target"]]
                     node[i].target = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at MemberAccess::target'))
@@ -885,6 +910,7 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at Paren::expr_type'))
                 else:
                     node[i].expr_type = None
+                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
                 if ast.node[i].body["expr"] is not None:
                     x = node[ast.node[i].body["expr"]]
                     node[i].expr = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at Paren::expr'))
@@ -897,6 +923,7 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at Index::expr_type'))
                 else:
                     node[i].expr_type = None
+                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
                 if ast.node[i].body["expr"] is not None:
                     x = node[ast.node[i].body["expr"]]
                     node[i].expr = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at Index::expr'))
@@ -914,6 +941,7 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at Match::expr_type'))
                 else:
                     node[i].expr_type = None
+                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
                 if ast.node[i].body["cond_scope"] is not None:
                     node[i].cond_scope = scope[ast.node[i].body["cond_scope"]]
                 else:
@@ -930,6 +958,7 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at Range::expr_type'))
                 else:
                     node[i].expr_type = None
+                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
                 node[i].op = BinaryOp(ast.node[i].body["op"])
                 if ast.node[i].body["start"] is not None:
                     x = node[ast.node[i].body["start"]]
@@ -947,6 +976,7 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at TmpVar::expr_type'))
                 else:
                     node[i].expr_type = None
+                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
                 x = ast.node[i].body["tmp_var"]
                 node[i].tmp_var = x if isinstance(x,int)  else raiseError(TypeError('type mismatch at TmpVar::tmp_var'))
             case NodeType.BLOCK_EXPR:
@@ -955,6 +985,7 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at BlockExpr::expr_type'))
                 else:
                     node[i].expr_type = None
+                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
                 node[i].calls = [(node[x] if isinstance(node[x],Node) else raiseError(TypeError('type mismatch at BlockExpr::calls'))) for x in ast.node[i].body["calls"]]
                 if ast.node[i].body["expr"] is not None:
                     x = node[ast.node[i].body["expr"]]
@@ -967,6 +998,7 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at Import::expr_type'))
                 else:
                     node[i].expr_type = None
+                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
                 x = ast.node[i].body["path"]
                 node[i].path = x if isinstance(x,str)  else raiseError(TypeError('type mismatch at Import::path'))
                 if ast.node[i].body["base"] is not None:
@@ -985,6 +1017,7 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at IntLiteral::expr_type'))
                 else:
                     node[i].expr_type = None
+                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
                 x = ast.node[i].body["value"]
                 node[i].value = x if isinstance(x,str)  else raiseError(TypeError('type mismatch at IntLiteral::value'))
             case NodeType.BOOL_LITERAL:
@@ -993,6 +1026,7 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at BoolLiteral::expr_type'))
                 else:
                     node[i].expr_type = None
+                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
                 x = ast.node[i].body["value"]
                 node[i].value = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at BoolLiteral::value'))
             case NodeType.STR_LITERAL:
@@ -1001,6 +1035,7 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at StrLiteral::expr_type'))
                 else:
                     node[i].expr_type = None
+                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
                 x = ast.node[i].body["value"]
                 node[i].value = x if isinstance(x,str)  else raiseError(TypeError('type mismatch at StrLiteral::value'))
             case NodeType.INPUT:
@@ -1009,18 +1044,21 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at Input::expr_type'))
                 else:
                     node[i].expr_type = None
+                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
             case NodeType.OUTPUT:
                 if ast.node[i].body["expr_type"] is not None:
                     x = node[ast.node[i].body["expr_type"]]
                     node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at Output::expr_type'))
                 else:
                     node[i].expr_type = None
+                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
             case NodeType.CONFIG:
                 if ast.node[i].body["expr_type"] is not None:
                     x = node[ast.node[i].body["expr_type"]]
                     node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at Config::expr_type'))
                 else:
                     node[i].expr_type = None
+                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
             case NodeType.LOOP:
                 if ast.node[i].body["cond_scope"] is not None:
                     node[i].cond_scope = scope[ast.node[i].body["cond_scope"]]
@@ -1163,6 +1201,8 @@ def ast2node(ast :JsonAst) -> Program:
             case NodeType.INT_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at IntType::is_explicit'))
+                x = ast.node[i].body["is_int_set"]
+                node[i].is_int_set = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at IntType::is_int_set'))
                 x = ast.node[i].body["bit_size"]
                 node[i].bit_size = x if isinstance(x,int)  else raiseError(TypeError('type mismatch at IntType::bit_size'))
                 node[i].endian = Endian(ast.node[i].body["endian"])
@@ -1173,6 +1213,8 @@ def ast2node(ast :JsonAst) -> Program:
             case NodeType.IDENT_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at IdentType::is_explicit'))
+                x = ast.node[i].body["is_int_set"]
+                node[i].is_int_set = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at IdentType::is_int_set'))
                 if ast.node[i].body["ident"] is not None:
                     x = node[ast.node[i].body["ident"]]
                     node[i].ident = x if isinstance(x,Ident) else raiseError(TypeError('type mismatch at IdentType::ident'))
@@ -1186,6 +1228,8 @@ def ast2node(ast :JsonAst) -> Program:
             case NodeType.INT_LITERAL_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at IntLiteralType::is_explicit'))
+                x = ast.node[i].body["is_int_set"]
+                node[i].is_int_set = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at IntLiteralType::is_int_set'))
                 if ast.node[i].body["base"] is not None:
                     x = node[ast.node[i].body["base"]]
                     node[i].base = x if isinstance(x,IntLiteral) else raiseError(TypeError('type mismatch at IntLiteralType::base'))
@@ -1194,6 +1238,8 @@ def ast2node(ast :JsonAst) -> Program:
             case NodeType.STR_LITERAL_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at StrLiteralType::is_explicit'))
+                x = ast.node[i].body["is_int_set"]
+                node[i].is_int_set = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at StrLiteralType::is_int_set'))
                 if ast.node[i].body["base"] is not None:
                     x = node[ast.node[i].body["base"]]
                     node[i].base = x if isinstance(x,StrLiteral) else raiseError(TypeError('type mismatch at StrLiteralType::base'))
@@ -1202,12 +1248,18 @@ def ast2node(ast :JsonAst) -> Program:
             case NodeType.VOID_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at VoidType::is_explicit'))
+                x = ast.node[i].body["is_int_set"]
+                node[i].is_int_set = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at VoidType::is_int_set'))
             case NodeType.BOOL_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at BoolType::is_explicit'))
+                x = ast.node[i].body["is_int_set"]
+                node[i].is_int_set = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at BoolType::is_int_set'))
             case NodeType.ARRAY_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at ArrayType::is_explicit'))
+                x = ast.node[i].body["is_int_set"]
+                node[i].is_int_set = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at ArrayType::is_int_set'))
                 node[i].end_loc = parse_Loc(ast.node[i].body["end_loc"])
                 if ast.node[i].body["base_type"] is not None:
                     x = node[ast.node[i].body["base_type"]]
@@ -1222,6 +1274,8 @@ def ast2node(ast :JsonAst) -> Program:
             case NodeType.FUNCTION_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at FunctionType::is_explicit'))
+                x = ast.node[i].body["is_int_set"]
+                node[i].is_int_set = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at FunctionType::is_int_set'))
                 if ast.node[i].body["return_type"] is not None:
                     x = node[ast.node[i].body["return_type"]]
                     node[i].return_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at FunctionType::return_type'))
@@ -1231,6 +1285,8 @@ def ast2node(ast :JsonAst) -> Program:
             case NodeType.STRUCT_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at StructType::is_explicit'))
+                x = ast.node[i].body["is_int_set"]
+                node[i].is_int_set = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at StructType::is_int_set'))
                 node[i].fields = [(node[x] if isinstance(node[x],Member) else raiseError(TypeError('type mismatch at StructType::fields'))) for x in ast.node[i].body["fields"]]
                 if ast.node[i].body["base"] is not None:
                     x = node[ast.node[i].body["base"]]
@@ -1242,6 +1298,8 @@ def ast2node(ast :JsonAst) -> Program:
             case NodeType.STRUCT_UNION_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at StructUnionType::is_explicit'))
+                x = ast.node[i].body["is_int_set"]
+                node[i].is_int_set = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at StructUnionType::is_int_set'))
                 node[i].fields = [(node[x] if isinstance(node[x],StructType) else raiseError(TypeError('type mismatch at StructUnionType::fields'))) for x in ast.node[i].body["fields"]]
                 if ast.node[i].body["base"] is not None:
                     x = node[ast.node[i].body["base"]]
@@ -1255,6 +1313,7 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at Cast::expr_type'))
                 else:
                     node[i].expr_type = None
+                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
                 if ast.node[i].body["base"] is not None:
                     x = node[ast.node[i].body["base"]]
                     node[i].base = x if isinstance(x,Call) else raiseError(TypeError('type mismatch at Cast::base'))
@@ -1273,6 +1332,8 @@ def ast2node(ast :JsonAst) -> Program:
             case NodeType.UNION_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at UnionType::is_explicit'))
+                x = ast.node[i].body["is_int_set"]
+                node[i].is_int_set = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at UnionType::is_int_set'))
                 if ast.node[i].body["cond"] is not None:
                     x = node[ast.node[i].body["cond"]]
                     node[i].cond = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at UnionType::cond'))
@@ -1298,6 +1359,8 @@ def ast2node(ast :JsonAst) -> Program:
             case NodeType.RANGE_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at RangeType::is_explicit'))
+                x = ast.node[i].body["is_int_set"]
+                node[i].is_int_set = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at RangeType::is_int_set'))
                 if ast.node[i].body["base_type"] is not None:
                     x = node[ast.node[i].body["base_type"]]
                     node[i].base_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at RangeType::base_type'))
@@ -1354,11 +1417,23 @@ def ast2node(ast :JsonAst) -> Program:
             case NodeType.ENUM_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at EnumType::is_explicit'))
+                x = ast.node[i].body["is_int_set"]
+                node[i].is_int_set = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at EnumType::is_int_set'))
                 if ast.node[i].body["base"] is not None:
                     x = node[ast.node[i].body["base"]]
                     node[i].base = x if isinstance(x,Enum) else raiseError(TypeError('type mismatch at EnumType::base'))
                 else:
                     node[i].base = None
+            case NodeType.BIT_GROUP_TYPE:
+                x = ast.node[i].body["is_explicit"]
+                node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at BitGroupType::is_explicit'))
+                x = ast.node[i].body["is_int_set"]
+                node[i].is_int_set = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at BitGroupType::is_int_set'))
+                node[i].bit_fields = [(node[x] if isinstance(node[x],Field) else raiseError(TypeError('type mismatch at BitGroupType::bit_fields'))) for x in ast.node[i].body["bit_fields"]]
+                x = ast.node[i].body["is_aligned"]
+                node[i].is_aligned = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at BitGroupType::is_aligned'))
+                x = ast.node[i].body["bit_size"]
+                node[i].bit_size = x if isinstance(x,int)  else raiseError(TypeError('type mismatch at BitGroupType::bit_size'))
             case _:
                 raise TypeError('unknown node type')
     for i in range(len(ast.scope)):
@@ -1700,4 +1775,6 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
               if f(f,x.expr) == False:
                   return
         case x if isinstance(x,EnumType):
+            pass
+        case x if isinstance(x,BitGroupType):
             pass
