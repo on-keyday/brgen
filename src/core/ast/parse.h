@@ -971,6 +971,7 @@ namespace brgen::ast {
                 field->ident->expr_type = field->field_type;
                 field->ident->base = field;
                 field->ident->usage = IdentUsage::define_field;
+                field->ident->constant_level = ConstantLevel::variable;
             }
             field->belong = state.current_member();
 
@@ -1022,6 +1023,7 @@ namespace brgen::ast {
                 auto ident = parse_ident();
                 ident->usage = IdentUsage::define_enum_member;
                 ident->expr_type = enum_->enum_type;
+                ident->constant_level = ConstantLevel::const_value;
                 auto member = std::make_shared<EnumMember>(ident->loc);
                 member->ident = ident;
                 member->belong = enum_;
@@ -1054,7 +1056,7 @@ namespace brgen::ast {
             s.skip_white();
 
             fmt->ident = parse_ident();
-            fmt->ident->usage = IdentUsage ::define_format;
+            fmt->ident->usage = IdentUsage::define_format;
             fmt->ident->base = fmt;
             {
                 auto m_scope = state.enter_member(fmt);
@@ -1080,6 +1082,7 @@ namespace brgen::ast {
             fn->ident = parse_ident();
             fn->ident->usage = fn->is_cast ? IdentUsage::define_cast_fn : IdentUsage::define_fn;
             fn->ident->base = fn;
+            fn->ident->constant_level = ConstantLevel::const_value;
             fn->belong = state.current_member();
             fn->func_type = std::make_shared<FunctionType>(fn->loc);
             s.skip_white();

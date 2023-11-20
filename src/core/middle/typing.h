@@ -330,6 +330,8 @@ namespace brgen::middle {
 
                 else_ref = std::make_shared<ast::ImplicitYield>(ast::cast_to<ast::Expr>(else_ref));
             }
+            // TODO(on-keyday): analyze branch to decide actual constant level
+            if_->constant_level = ast::ConstantLevel::variable;
         }
 
         // match has 2 pattern
@@ -386,6 +388,23 @@ namespace brgen::middle {
                 }
             }
             m->expr_type = candidate ? candidate : void_type(m->loc);
+            // TODO(on-keyday): analyze match branch to decide actual constant level
+            m->constant_level = ast::ConstantLevel::variable;
+        }
+
+        auto decide_constant_level(ast::ConstantLevel a, ast::ConstantLevel b) {
+            if (a == ast::ConstantLevel::unknown || b == ast::ConstantLevel::unknown) {
+                return ast::ConstantLevel::unknown;
+            }
+            if (a == ast::ConstantLevel::const_value && b == ast::ConstantLevel::const_value) {
+                return ast::ConstantLevel::const_value;
+            }
+            if (a == ast::ConstantLevel::variable || b == ast::ConstantLevel::variable) {
+                return ast::ConstantLevel::variable;
+            }
+            assert(a == ast::ConstantLevel::const_variable ||
+                   b == ast::ConstantLevel::const_variable);
+            return ast::ConstantLevel::const_variable;
         }
 
         void typing_binary(const std::shared_ptr<ast::Binary>& b) {
@@ -401,6 +420,7 @@ namespace brgen::middle {
                 return;  // not typed yet
             }
             int_type_fitting(lty, rty);
+            b->constant_level = decide_constant_level(b->left->constant_level, b->right->constant_level);
             switch (op) {
                 case ast::BinaryOp::left_logical_shift:
                 case ast::BinaryOp::right_logical_shift:
@@ -486,33 +506,6 @@ namespace brgen::middle {
                 return found;
             }
             return current_global->lookup_global(search);
-        }
-
-        std::optional<std::shared_ptr<ast::Format>> find_matching_fmt(ast::Ident* ident, ast::IdentUsage usage = ast::IdentUsage::define_format) {
-            bool myself_appear = false;
-            auto search = [&](std::shared_ptr<ast::Ident>& def) {
-                return (def->usage == ast::IdentUsage::define_format || def->usage == usage) &&
-                       def->ident == ident->ident;
-            };
-            auto make_format = [&](const std::shared_ptr<ast::Ident>& i) -> std::shared_ptr<ast::Format> {
-                if (!i) {
-                    return nullptr;
-                }
-                auto base = i->base.lock();
-                if (!ast::as<ast::Format>(base)) {
-                    return nullptr;
-                }
-                return ast::cast_to<ast::Format>(base);
-            };
-            auto found = ident->scope->lookup_local(search, ident);
-            if (found) {
-                return make_format(*found);
-            }
-            found = current_global->lookup_global(search);
-            if (found) {
-                return make_format(*found);
-            }
-            return std::nullopt;
         }
 
         std::shared_ptr<ast::StructType> lookup_struct(const std::shared_ptr<ast::Type>& typ) {
@@ -620,6 +613,7 @@ namespace brgen::middle {
                     report_not_equal_type(lty, rty);
                 }
                 cond->expr_type = lty;
+                cond->constant_level = decide_constant_level(cond->then->constant_level, cond->els->constant_level);
             }
             else if (auto paren = ast::as<ast::Paren>(expr)) {
                 typing_expr(paren->expr);
@@ -632,6 +626,7 @@ namespace brgen::middle {
                     case ast::UnaryOp::minus_sign:
                     case ast::UnaryOp::not_: {
                         unary->expr_type = unary->expr->expr_type;
+                        unary->constant_level = unary->expr->constant_level;
                         break;
                     }
                     default: {
@@ -669,6 +664,9 @@ namespace brgen::middle {
                         report_not_equal_type(call->arguments[i]->expr_type, type->parameters[i]);
                     }
                 }
+                call->expr_type = type->return_type;
+                // TODO(on-keyday): in the future, we may need to analyze function body to decide actual constant level
+                call->constant_level = ast::ConstantLevel::variable;
             }
             else if (auto selector = ast::as<ast::MemberAccess>(expr)) {
                 typing_expr(selector->target);
@@ -754,6 +752,8 @@ namespace brgen::middle {
                 }
                 range_type->range = ast::cast_to<ast::Range>(expr);
                 r->expr_type = range_type;
+                r->constant_level = decide_constant_level(r->start ? r->start->constant_level : ast::ConstantLevel::const_value,
+                                                          r->end ? r->end->constant_level : ast::ConstantLevel::const_value);
             }
             else if (auto i = ast::as<ast::Import>(expr)) {
                 expr->expr_type = i->import_desc->struct_type;
