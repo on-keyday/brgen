@@ -56,6 +56,7 @@ namespace brgen::ast {
         field,
 
         format,
+        state,
         enum_,
         enum_member,
         function,
@@ -135,6 +136,7 @@ namespace brgen::ast {
         "enum_member",
         "enum_type",
         "bit_group_type",
+        "state",
     };
 
     constexpr int mapNodeTypeToValue(NodeType type) {
@@ -253,6 +255,8 @@ namespace brgen::ast {
                 return 55;
             case NodeType::bit_group_type:
                 return 56;
+            case NodeType::state:
+                return 57;
             default:
                 return -1;
         }
@@ -374,6 +378,8 @@ namespace brgen::ast {
                 return NodeType::enum_type;
             case 56:
                 return NodeType::bit_group_type;
+            case 57:
+                return NodeType::state;
             default:
                 return either::unexpected{"invalid value"};
         }

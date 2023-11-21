@@ -68,6 +68,7 @@ const char* ast2c_NodeType_to_string(ast2c_NodeType val) {
 	case AST2C_NODETYPE_ENUM_MEMBER: return "enum_member";
 	case AST2C_NODETYPE_ENUM_TYPE: return "enum_type";
 	case AST2C_NODETYPE_BIT_GROUP_TYPE: return "bit_group_type";
+	case AST2C_NODETYPE_STATE: return "state";
 	default: return NULL;
 	}
 }
@@ -301,6 +302,10 @@ int ast2c_NodeType_from_string(const char* str, ast2c_NodeType* out) {
 	}
 	if (strcmp(str, "bit_group_type") == 0) {
 		*out = AST2C_NODETYPE_BIT_GROUP_TYPE;
+		return 1;
+	}
+	if (strcmp(str, "state") == 0) {
+		*out = AST2C_NODETYPE_STATE;
 		return 1;
 	}
 	return 0;
@@ -538,6 +543,7 @@ const char* ast2c_IdentUsage_to_string(ast2c_IdentUsage val) {
 	case AST2C_IDENTUSAGE_DEFINE_CONST: return "define_const";
 	case AST2C_IDENTUSAGE_DEFINE_FIELD: return "define_field";
 	case AST2C_IDENTUSAGE_DEFINE_FORMAT: return "define_format";
+	case AST2C_IDENTUSAGE_DEFINE_STATE: return "define_state";
 	case AST2C_IDENTUSAGE_DEFINE_ENUM: return "define_enum";
 	case AST2C_IDENTUSAGE_DEFINE_ENUM_MEMBER: return "define_enum_member";
 	case AST2C_IDENTUSAGE_DEFINE_FN: return "define_fn";
@@ -575,6 +581,10 @@ int ast2c_IdentUsage_from_string(const char* str, ast2c_IdentUsage* out) {
 	}
 	if (strcmp(str, "define_format") == 0) {
 		*out = AST2C_IDENTUSAGE_DEFINE_FORMAT;
+		return 1;
+	}
+	if (strcmp(str, "define_state") == 0) {
+		*out = AST2C_IDENTUSAGE_DEFINE_STATE;
 		return 1;
 	}
 	if (strcmp(str, "define_enum") == 0) {
@@ -2361,6 +2371,34 @@ int ast2c_BitGroupType_parse(ast2c_Ast* ast,ast2c_BitGroupType* s,ast2c_json_han
 	}
 	if(!h->number_get(h,bit_size,&s->bit_size)) {
 		if(h->error) { h->error(h,bit_size, "failed to parse ast2c_BitGroupType::bit_size"); }
+		goto error;
+	}
+	return 1;
+error:
+	return 0;
+}
+
+// returns 1 if succeed 0 if failed
+int ast2c_State_parse(ast2c_Ast* ast,ast2c_State* s,ast2c_json_handlers* h, void* obj) {
+	if (!ast||!s||!h||!obj) {
+		if(h->error) { h->error(h,NULL, "invalid argument"); }
+		return 0;
+	}
+	void* loc = h->object_get(h, obj, "loc");
+	void* obj_body = h->object_get(h, obj, "body");
+	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
+	s->belong = NULL;
+	s->ident = NULL;
+	s->body = NULL;
+	void* belong = h->object_get(h, obj_body, "belong");
+	void* ident = h->object_get(h, obj_body, "ident");
+	void* body = h->object_get(h, obj_body, "body");
+	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_State::loc is null"); } return 0; }
+	if (!belong) { if(h->error) { h->error(h,belong, "ast2c_State::belong is null"); } return 0; }
+	if (!ident) { if(h->error) { h->error(h,ident, "ast2c_State::ident is null"); } return 0; }
+	if (!body) { if(h->error) { h->error(h,body, "ast2c_State::body is null"); } return 0; }
+	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
+		if(h->error) { h->error(h,loc, "failed to parse ast2c_State::loc"); }
 		goto error;
 	}
 	return 1;

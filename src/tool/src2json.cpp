@@ -66,7 +66,7 @@ struct Flags : utils::cmdline::templ::HelpOption {
     brgen::UtfMode input_mode = brgen::UtfMode::utf8;
     brgen::UtfMode interpret_mode = brgen::UtfMode::utf8;
 
-    bool detected_output_type = false;
+    bool detected_stdio_type = false;
 
     void bind(utils::cmdline::option::Context& ctx) {
         bind_help(ctx);
@@ -114,7 +114,7 @@ struct Flags : utils::cmdline::templ::HelpOption {
                 {"utf32", brgen::UtfMode::utf32},
             });
 
-        ctx.VarBool(&detected_output_type, "detected-output-type", "detected output type (for debug)");
+        ctx.VarBool(&detected_stdio_type, "detected-stdio-type", "detected stdin/stdout/stderr type (for debug)");
     }
 };
 auto& cout = utils::wrap::cout_wrap();
@@ -211,7 +211,13 @@ int dump_types() {
 int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     cerr.set_virtual_terminal(true);  // ignore error
     cout.set_virtual_terminal(true);  // ignore error
-    if (flags.detected_output_type) {
+    if (flags.detected_stdio_type) {
+        if (auto s = utils::wrap::cin_wrap().get_file().stat()) {
+            print_note("detected stdin type: ", to_string(s->mode.type()));
+        }
+        else {
+            print_warning("cannot detect stdin type");
+        }
         if (auto s = cout.get_file().stat()) {
             print_note("detected stdout type: ", to_string(s->mode.type()));
         }

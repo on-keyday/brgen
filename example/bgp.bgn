@@ -1,0 +1,63 @@
+
+format BGPPacket:
+    marker :"\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11"
+    length :u16
+    type   :u8
+    match type:
+        1 => data :Open
+        2 => data :Update
+        3 => data :Notification
+        4 => data :[0]u8
+
+format Open:
+    version :u8
+    as      :u16
+    hold    :u16
+    id      :u32
+    optlen  :u8
+    options     :[..]Option(input=input.subrange(0, optlen))
+
+format Option:
+    type :u8
+    len  :u8
+    data :[len]u8
+
+format Update:
+    withdrawn_len :u16
+    withdrawn :[..]Withdrawn(input=input.subrange(0, withdrawn_len))
+    pathattr_len :u16
+    pathattr  :[..]u8(input=input.subrange(withdrawn_len, pathattr_len))
+    network_reachability_info      :[..]NetWorkReachabilityInfo
+
+
+format Withdrawn:
+    len :u16
+    data :[len]u8
+
+format AttributeType:
+    option :u1
+    transitive :u1
+    partial :u1
+    extended :u1
+    reserved :u4(0)
+    code  :u8
+
+format PathAttribute:
+    type :AttributeType
+    if type.extended == 1:
+        len :u16
+    else:
+        len :u8
+    data :[len]u8
+
+format NetWorkReachabilityInfo:
+    prefixlen :u8
+    prefix    :[prefixlen]u8
+
+format Notification:
+    code :u8
+    subcode :u8
+    data :[..]u8
+
+
+

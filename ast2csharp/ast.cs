@@ -61,6 +61,7 @@ Enum,
 EnumMember,
 EnumType,
 BitGroupType,
+State,
 }
 public enum UnaryOp {
 Not,
@@ -113,6 +114,7 @@ DefineVariable,
 DefineConst,
 DefineField,
 DefineFormat,
+DefineState,
 DefineEnum,
 DefineEnumMember,
 DefineFn,
@@ -513,6 +515,12 @@ public class BitGroupType : Type{
 	public List<Field>? BitFields{get;set;}
 	public bool IsAligned{get;set;}
 	public ulong BitSize{get;set;}
+}
+public class State : Member{
+	public Loc Loc{get;set;}
+	public Member? Belong{get;set;}
+	public Ident? Ident{get;set;}
+	public IndentBlock? Body{get;set;}
 }
 public class Scope {
 	public Scope? Prev{get;set;}

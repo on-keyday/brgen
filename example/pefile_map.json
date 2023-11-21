@@ -7,5 +7,12 @@
   "UINT32": "u32",
   "UINT64": "u64",
   "CHAR8": "u8",
-  "UINT8": "u8"
+  "UINT8": "u8",
+  "uint8_t": "u8",
+  "uint16_t": "u16",
+  "uint32_t": "u32",
+  "uint64_t": "u64",
+  "uint48_t": "u48",
+  "char16_t": "u16",
+  "time_t": "u64"
 }

@@ -99,6 +99,7 @@ typedef struct ast2c_Enum ast2c_Enum;
 typedef struct ast2c_EnumMember ast2c_EnumMember;
 typedef struct ast2c_EnumType ast2c_EnumType;
 typedef struct ast2c_BitGroupType ast2c_BitGroupType;
+typedef struct ast2c_State ast2c_State;
 typedef struct ast2c_Scope ast2c_Scope;
 typedef struct ast2c_Pos ast2c_Pos;
 typedef struct ast2c_Loc ast2c_Loc;
@@ -168,6 +169,7 @@ enum ast2c_NodeType {
 	AST2C_NODETYPE_ENUM_MEMBER,
 	AST2C_NODETYPE_ENUM_TYPE,
 	AST2C_NODETYPE_BIT_GROUP_TYPE,
+	AST2C_NODETYPE_STATE,
 };
 const char* ast2c_NodeType_to_string(ast2c_NodeType);
 int ast2c_NodeType_from_string(const char*,ast2c_NodeType*);
@@ -229,6 +231,7 @@ enum ast2c_IdentUsage {
 	AST2C_IDENTUSAGE_DEFINE_CONST,
 	AST2C_IDENTUSAGE_DEFINE_FIELD,
 	AST2C_IDENTUSAGE_DEFINE_FORMAT,
+	AST2C_IDENTUSAGE_DEFINE_STATE,
 	AST2C_IDENTUSAGE_DEFINE_ENUM,
 	AST2C_IDENTUSAGE_DEFINE_ENUM_MEMBER,
 	AST2C_IDENTUSAGE_DEFINE_FN,
@@ -1010,6 +1013,17 @@ struct ast2c_BitGroupType {
 
 // returns 1 if succeed 0 if failed
 int ast2c_BitGroupType_parse(ast2c_Ast* ,ast2c_BitGroupType*,ast2c_json_handlers*,void*);
+
+struct ast2c_State {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Member* belong;
+	ast2c_Ident* ident;
+	ast2c_IndentBlock* body;
+};
+
+// returns 1 if succeed 0 if failed
+int ast2c_State_parse(ast2c_Ast* ,ast2c_State*,ast2c_json_handlers*,void*);
 
 struct ast2c_Scope {
 	const ast2c_NodeType node_type;

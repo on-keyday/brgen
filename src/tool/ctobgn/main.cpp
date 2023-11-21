@@ -13,6 +13,7 @@
 #include <json/json_export.h>
 #include <json/parse.h>
 #include <cmdline/template/parse_and_err.h>
+#include <code/src_location.h>
 using namespace utils::comb2;
 
 namespace cps = utils::comb2::composite;
@@ -34,7 +35,7 @@ namespace parse {
     constexpr auto space = *(cps::space | cps::tab | cps::eol | comment);
     constexpr auto type = str(tag_type, ident);
     constexpr auto number = cps::hex_integer | cps::dec_integer;
-    constexpr auto type_suffix = str(tag_type_suffix, lit("[") & space & +(ident | number) & space & +lit("]"));
+    constexpr auto type_suffix = str(tag_type_suffix, lit("[") & space & ~(not_(lit(']')) & any) & space & +lit("]"));
     constexpr auto field = group(tag_field, type& space & -str(tag_name, ident) & space & -type_suffix & space & +lit(";"));
     constexpr auto name = str(tag_name, ident);
     constexpr auto struct_ = group(tag_struct, lit("struct") & space & -name & space & +lit("{") &
@@ -44,7 +45,7 @@ namespace parse {
     constexpr auto enum_ = group(tag_enum, lit("enum") & space & -name & space & +lit("{") &
                                                group(tag_fields, *(space& enum_field)) & space & +lit("}") & space & -name & space & +lit(";") & space);
 
-    constexpr auto file = space & *((struct_ | enum_) & space) & space & eos;
+    constexpr auto file = space & *(-(lit("typedef") & space) & (struct_ | enum_) & space) & space & +eos;
 
     constexpr auto test_parse() {
         auto ctx = utils::comb2::test::TestContext{};
@@ -61,10 +62,13 @@ namespace parse {
 auto& cout = utils::wrap::cout_wrap();
 
 struct Ctx : utils::comb2::tree::BranchTable {
-    constexpr void error(auto&&... err) {
+    constexpr void error_seq(auto& seq, auto&&... err) {
         cout << "error: ";
         (cout << ... << err);
         cout << "\n";
+        std::string src;
+        utils::code::write_src_loc(src, seq);
+        cout << src << "\n";
     }
 };
 

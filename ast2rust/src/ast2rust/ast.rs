@@ -97,6 +97,7 @@ impl From<&Node> for NodeType {
 			Node::EnumMember(_) => Self::EnumMember,
 			Node::EnumType(_) => Self::EnumType,
 			Node::BitGroupType(_) => Self::BitGroupType,
+			Node::State(_) => Self::State,
 		}
 	}
 }
@@ -162,6 +163,7 @@ impl From<&NodeWeak> for NodeType {
 			NodeWeak::EnumMember(_) => Self::EnumMember,
 			NodeWeak::EnumType(_) => Self::EnumType,
 			NodeWeak::BitGroupType(_) => Self::BitGroupType,
+			NodeWeak::State(_) => Self::State,
 		}
 	}
 }
@@ -231,6 +233,7 @@ impl From<NodeWeak> for NodeType {
 	EnumMember,
 	EnumType,
 	BitGroupType,
+	State,
 }
 
 impl TryFrom<&str> for NodeType {
@@ -294,6 +297,7 @@ impl TryFrom<&str> for NodeType {
 			"enum_member" =>Ok(Self::EnumMember),
 			"enum_type" =>Ok(Self::EnumType),
 			"bit_group_type" =>Ok(Self::BitGroupType),
+			"state" =>Ok(Self::State),
 			_=> Err(()),
 		}
 	}
@@ -413,6 +417,7 @@ impl TryFrom<&str> for BinaryOp {
 	DefineConst,
 	DefineField,
 	DefineFormat,
+	DefineState,
 	DefineEnum,
 	DefineEnumMember,
 	DefineFn,
@@ -433,6 +438,7 @@ impl TryFrom<&str> for IdentUsage {
 			"define_const" =>Ok(Self::DefineConst),
 			"define_field" =>Ok(Self::DefineField),
 			"define_format" =>Ok(Self::DefineFormat),
+			"define_state" =>Ok(Self::DefineState),
 			"define_enum" =>Ok(Self::DefineEnum),
 			"define_enum_member" =>Ok(Self::DefineEnumMember),
 			"define_fn" =>Ok(Self::DefineFn),
@@ -577,6 +583,7 @@ pub enum Node {
 	EnumMember(Rc<RefCell<EnumMember>>),
 	EnumType(Rc<RefCell<EnumType>>),
 	BitGroupType(Rc<RefCell<BitGroupType>>),
+	State(Rc<RefCell<State>>),
 }
 
 #[derive(Debug,Clone)]
@@ -633,6 +640,7 @@ pub enum NodeWeak {
 	EnumMember(Weak<RefCell<EnumMember>>),
 	EnumType(Weak<RefCell<EnumType>>),
 	BitGroupType(Weak<RefCell<BitGroupType>>),
+	State(Weak<RefCell<State>>),
 }
 
 impl From<&Node> for NodeWeak {
@@ -690,6 +698,7 @@ impl From<&Node> for NodeWeak {
 			Node::EnumMember(node)=>Self::EnumMember(Rc::downgrade(node)),
 			Node::EnumType(node)=>Self::EnumType(Rc::downgrade(node)),
 			Node::BitGroupType(node)=>Self::BitGroupType(Rc::downgrade(node)),
+			Node::State(node)=>Self::State(Rc::downgrade(node)),
 		}
 	}
 }
@@ -756,6 +765,7 @@ impl TryFrom<&NodeWeak> for Node {
 			NodeWeak::EnumMember(node)=>Ok(Self::EnumMember(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::EnumMember))?)),
 			NodeWeak::EnumType(node)=>Ok(Self::EnumType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::EnumType))?)),
 			NodeWeak::BitGroupType(node)=>Ok(Self::BitGroupType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::BitGroupType))?)),
+			NodeWeak::State(node)=>Ok(Self::State(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::State))?)),
 		}
 	}
 }
@@ -1303,6 +1313,7 @@ pub enum Stmt {
 	UnionCandidate(Rc<RefCell<UnionCandidate>>),
 	Enum(Rc<RefCell<Enum>>),
 	EnumMember(Rc<RefCell<EnumMember>>),
+	State(Rc<RefCell<State>>),
 }
 
 #[derive(Debug,Clone)]
@@ -1321,6 +1332,7 @@ pub enum StmtWeak {
 	UnionCandidate(Weak<RefCell<UnionCandidate>>),
 	Enum(Weak<RefCell<Enum>>),
 	EnumMember(Weak<RefCell<EnumMember>>),
+	State(Weak<RefCell<State>>),
 }
 
 impl From<&Stmt> for StmtWeak {
@@ -1340,6 +1352,7 @@ impl From<&Stmt> for StmtWeak {
 			Stmt::UnionCandidate(node)=>Self::UnionCandidate(Rc::downgrade(node)),
 			Stmt::Enum(node)=>Self::Enum(Rc::downgrade(node)),
 			Stmt::EnumMember(node)=>Self::EnumMember(Rc::downgrade(node)),
+			Stmt::State(node)=>Self::State(Rc::downgrade(node)),
 		}
 	}
 }
@@ -1368,6 +1381,7 @@ impl TryFrom<&StmtWeak> for Stmt {
 			StmtWeak::UnionCandidate(node)=>Ok(Self::UnionCandidate(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::UnionCandidate))?)),
 			StmtWeak::Enum(node)=>Ok(Self::Enum(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Enum))?)),
 			StmtWeak::EnumMember(node)=>Ok(Self::EnumMember(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::EnumMember))?)),
+			StmtWeak::State(node)=>Ok(Self::State(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::State))?)),
 		}
 	}
 }
@@ -1397,6 +1411,7 @@ impl TryFrom<&Node> for Stmt {
 			Node::UnionCandidate(node)=>Ok(Self::UnionCandidate(node.clone())),
 			Node::Enum(node)=>Ok(Self::Enum(node.clone())),
 			Node::EnumMember(node)=>Ok(Self::EnumMember(node.clone())),
+			Node::State(node)=>Ok(Self::State(node.clone())),
 			_=> Err(Error::InvalidNodeType(node.into())),
 		}
 	}
@@ -1426,6 +1441,7 @@ impl From<&Stmt> for Node {
 			Stmt::UnionCandidate(node)=>Self::UnionCandidate(node.clone()),
 			Stmt::Enum(node)=>Self::Enum(node.clone()),
 			Stmt::EnumMember(node)=>Self::EnumMember(node.clone()),
+			Stmt::State(node)=>Self::State(node.clone()),
 		}
 	}
 }
@@ -1454,6 +1470,7 @@ impl TryFrom<&StmtWeak> for Node {
 			StmtWeak::UnionCandidate(node)=>Ok(Self::UnionCandidate(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::UnionCandidate))?)),
 			StmtWeak::Enum(node)=>Ok(Self::Enum(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Enum))?)),
 			StmtWeak::EnumMember(node)=>Ok(Self::EnumMember(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::EnumMember))?)),
+			StmtWeak::State(node)=>Ok(Self::State(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::State))?)),
 		}
 	}
 }
@@ -1482,6 +1499,7 @@ impl From<&StmtWeak> for NodeWeak {
 			StmtWeak::UnionCandidate(node)=>Self::UnionCandidate(node.clone()),
 			StmtWeak::Enum(node)=>Self::Enum(node.clone()),
 			StmtWeak::EnumMember(node)=>Self::EnumMember(node.clone()),
+			StmtWeak::State(node)=>Self::State(node.clone()),
 		}
 	}
 }
@@ -1510,6 +1528,7 @@ impl TryFrom<&NodeWeak> for StmtWeak {
 			NodeWeak::UnionCandidate(node)=>Ok(Self::UnionCandidate(node.clone())),
 			NodeWeak::Enum(node)=>Ok(Self::Enum(node.clone())),
 			NodeWeak::EnumMember(node)=>Ok(Self::EnumMember(node.clone())),
+			NodeWeak::State(node)=>Ok(Self::State(node.clone())),
 			_=> Err(Error::InvalidNodeType(node.into())),
 		}
 	}
@@ -1540,6 +1559,7 @@ impl TryFrom<&Node> for StmtWeak {
 			Node::UnionCandidate(node)=>Ok(Self::UnionCandidate(Rc::downgrade(node))),
 			Node::Enum(node)=>Ok(Self::Enum(Rc::downgrade(node))),
 			Node::EnumMember(node)=>Ok(Self::EnumMember(Rc::downgrade(node))),
+			Node::State(node)=>Ok(Self::State(Rc::downgrade(node))),
 			_=> Err(Error::InvalidNodeType(node.into())),
 		}
 	}
@@ -1559,6 +1579,7 @@ pub enum Member {
 	Function(Rc<RefCell<Function>>),
 	Enum(Rc<RefCell<Enum>>),
 	EnumMember(Rc<RefCell<EnumMember>>),
+	State(Rc<RefCell<State>>),
 }
 
 #[derive(Debug,Clone)]
@@ -1568,6 +1589,7 @@ pub enum MemberWeak {
 	Function(Weak<RefCell<Function>>),
 	Enum(Weak<RefCell<Enum>>),
 	EnumMember(Weak<RefCell<EnumMember>>),
+	State(Weak<RefCell<State>>),
 }
 
 impl From<&Member> for MemberWeak {
@@ -1578,6 +1600,7 @@ impl From<&Member> for MemberWeak {
 			Member::Function(node)=>Self::Function(Rc::downgrade(node)),
 			Member::Enum(node)=>Self::Enum(Rc::downgrade(node)),
 			Member::EnumMember(node)=>Self::EnumMember(Rc::downgrade(node)),
+			Member::State(node)=>Self::State(Rc::downgrade(node)),
 		}
 	}
 }
@@ -1597,6 +1620,7 @@ impl TryFrom<&MemberWeak> for Member {
 			MemberWeak::Function(node)=>Ok(Self::Function(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Function))?)),
 			MemberWeak::Enum(node)=>Ok(Self::Enum(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Enum))?)),
 			MemberWeak::EnumMember(node)=>Ok(Self::EnumMember(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::EnumMember))?)),
+			MemberWeak::State(node)=>Ok(Self::State(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::State))?)),
 		}
 	}
 }
@@ -1617,6 +1641,7 @@ impl TryFrom<&Node> for Member {
 			Node::Function(node)=>Ok(Self::Function(node.clone())),
 			Node::Enum(node)=>Ok(Self::Enum(node.clone())),
 			Node::EnumMember(node)=>Ok(Self::EnumMember(node.clone())),
+			Node::State(node)=>Ok(Self::State(node.clone())),
 			_=> Err(Error::InvalidNodeType(node.into())),
 		}
 	}
@@ -1637,6 +1662,7 @@ impl From<&Member> for Node {
 			Member::Function(node)=>Self::Function(node.clone()),
 			Member::Enum(node)=>Self::Enum(node.clone()),
 			Member::EnumMember(node)=>Self::EnumMember(node.clone()),
+			Member::State(node)=>Self::State(node.clone()),
 		}
 	}
 }
@@ -1656,6 +1682,7 @@ impl TryFrom<&MemberWeak> for Node {
 			MemberWeak::Function(node)=>Ok(Self::Function(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Function))?)),
 			MemberWeak::Enum(node)=>Ok(Self::Enum(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Enum))?)),
 			MemberWeak::EnumMember(node)=>Ok(Self::EnumMember(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::EnumMember))?)),
+			MemberWeak::State(node)=>Ok(Self::State(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::State))?)),
 		}
 	}
 }
@@ -1675,6 +1702,7 @@ impl From<&MemberWeak> for NodeWeak {
 			MemberWeak::Function(node)=>Self::Function(node.clone()),
 			MemberWeak::Enum(node)=>Self::Enum(node.clone()),
 			MemberWeak::EnumMember(node)=>Self::EnumMember(node.clone()),
+			MemberWeak::State(node)=>Self::State(node.clone()),
 		}
 	}
 }
@@ -1694,6 +1722,7 @@ impl TryFrom<&NodeWeak> for MemberWeak {
 			NodeWeak::Function(node)=>Ok(Self::Function(node.clone())),
 			NodeWeak::Enum(node)=>Ok(Self::Enum(node.clone())),
 			NodeWeak::EnumMember(node)=>Ok(Self::EnumMember(node.clone())),
+			NodeWeak::State(node)=>Ok(Self::State(node.clone())),
 			_=> Err(Error::InvalidNodeType(node.into())),
 		}
 	}
@@ -1715,6 +1744,7 @@ impl TryFrom<&Node> for MemberWeak {
 			Node::Function(node)=>Ok(Self::Function(Rc::downgrade(node))),
 			Node::Enum(node)=>Ok(Self::Enum(Rc::downgrade(node))),
 			Node::EnumMember(node)=>Ok(Self::EnumMember(Rc::downgrade(node))),
+			Node::State(node)=>Ok(Self::State(Rc::downgrade(node))),
 			_=> Err(Error::InvalidNodeType(node.into())),
 		}
 	}
@@ -5693,6 +5723,101 @@ impl From<Rc<RefCell<BitGroupType>>> for Node {
 }
 
 #[derive(Debug,Clone)]
+pub struct State {
+	pub loc: Loc,
+	pub belong: Option<MemberWeak>,
+	pub ident: Option<Rc<RefCell<Ident>>>,
+	pub body: Option<Rc<RefCell<IndentBlock>>>,
+}
+
+impl TryFrom<&Member> for Rc<RefCell<State>> {
+	type Error = Error;
+	fn try_from(node:&Member)->Result<Self,Self::Error>{
+		match node {
+			Member::State(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl TryFrom<Member> for Rc<RefCell<State>> {
+	type Error = Error;
+	fn try_from(node:Member)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
+impl From<&Rc<RefCell<State>>> for Member {
+	fn from(node:&Rc<RefCell<State>>)-> Self{
+		Member::State(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<State>>> for Member {
+	fn from(node:Rc<RefCell<State>>)-> Self{
+		Self::from(&node)
+	}
+}
+
+impl TryFrom<&Stmt> for Rc<RefCell<State>> {
+	type Error = Error;
+	fn try_from(node:&Stmt)->Result<Self,Self::Error>{
+		match node {
+			Stmt::State(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl TryFrom<Stmt> for Rc<RefCell<State>> {
+	type Error = Error;
+	fn try_from(node:Stmt)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
+impl From<&Rc<RefCell<State>>> for Stmt {
+	fn from(node:&Rc<RefCell<State>>)-> Self{
+		Stmt::State(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<State>>> for Stmt {
+	fn from(node:Rc<RefCell<State>>)-> Self{
+		Self::from(&node)
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<State>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::State(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl TryFrom<Node> for Rc<RefCell<State>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
+impl From<&Rc<RefCell<State>>> for Node {
+	fn from(node:&Rc<RefCell<State>>)-> Self{
+		Node::State(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<State>>> for Node {
+	fn from(node:Rc<RefCell<State>>)-> Self{
+		Self::from(&node)
+	}
+}
+
+#[derive(Debug,Clone)]
 pub struct Scope {
 	pub prev: Option<Weak<RefCell<Scope>>>,
 	pub next: Option<Rc<RefCell<Scope>>>,
@@ -6233,6 +6358,14 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				bit_fields: Vec::new(),
 				is_aligned: false,
 				bit_size: 0,
+				})))
+			},
+			NodeType::State => {
+				Node::State(Rc::new(RefCell::new(State {
+				loc: raw_node.loc.clone(),
+				belong: None,
+				ident: None,
+				body: None,
 				})))
 			},
 			_=>return Err(Error::UnknownNodeType(node_type)),
@@ -9223,6 +9356,66 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					None=>return Err(Error::MismatchJSONType(bit_size_body.into(),JSONType::Number)),
 				};
 			},
+			NodeType::State => {
+				let node = nodes[i].clone();
+				let node = match node {
+					Node::State(node)=>node,
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
+				};
+				let belong_body = match raw_node.body.get("belong") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"belong")),
+				};
+ 				if !belong_body.is_null() {
+					let belong_body = match belong_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(belong_body.into(),JSONType::Number)),
+					};
+					let belong_body = match nodes.get(belong_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(belong_body as usize)),
+					};
+					node.borrow_mut().belong = Some(belong_body.try_into()?);
+				}
+				let ident_body = match raw_node.body.get("ident") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"ident")),
+				};
+ 				if !ident_body.is_null() {
+					let ident_body = match ident_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(ident_body.into(),JSONType::Number)),
+					};
+					let ident_body = match nodes.get(ident_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(ident_body as usize)),
+					};
+					let ident_body = match ident_body {
+						Node::Ident(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),ident_body.into())),
+					};
+					node.borrow_mut().ident = Some(ident_body.clone());
+				}
+				let body_body = match raw_node.body.get("body") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"body")),
+				};
+ 				if !body_body.is_null() {
+					let body_body = match body_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(body_body.into(),JSONType::Number)),
+					};
+					let body_body = match nodes.get(body_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(body_body as usize)),
+					};
+					let body_body = match body_body {
+						Node::IndentBlock(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),body_body.into())),
+					};
+					node.borrow_mut().body = Some(body_body.clone());
+				}
+			},
 			_=>return Err(Error::UnknownNodeType(node_type)),
 		};
 	}
@@ -9826,6 +10019,18 @@ where
 		},
 		Node::EnumType(_)=>{},
 		Node::BitGroupType(_)=>{},
+		Node::State(node)=>{
+			if let Some(node) = &node.borrow().ident{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
+			if let Some(node) = &node.borrow().body{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
+		},
 	}
 }
 

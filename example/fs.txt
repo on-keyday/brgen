@@ -1,0 +1,132 @@
+
+typedef struct {
+    uint64_t    FirstVCNOfData;
+    uint64_t    LastVCNOfData;
+    uint16_t    DataRunsOffset;
+    uint16_t    CompressionUnitSize;
+    uint32_t    Padding;
+    uint64_t    AllocatedDataSize;
+    uint64_t    DataSize;
+    uint64_t    ValidDataSize;
+    // uint64_t    TotalAllocatedSize; used if CompressionUnitSize > 0
+} NonResidentMFTAttribute;
+
+typedef enum {
+    STANDARD_INFORMATION    =   0x00000010,
+    ATTRIBUTE_LIST          =   0x00000020,
+    FILE_NAME               =   0x00000030,
+    OBJECT_ID               =   0x00000040, 
+    SECURITY_DESCRIPTOR     =   0x00000050,
+    VOLUME_NAME             =   0x00000060,
+    VOLUME_INFORMATION      =   0x00000070,
+    DATA                    =   0x00000080,
+    INDEX_ROOT              =   0x00000090,
+    INDEX_ALLOCATION        =   0x000000a0,
+    BITMAP                  =   0x000000b0,
+    REPARSE_POINT           =   0x000000c0,
+    EA_INFORMATION          =   0x000000d0,
+    EA                      =   0x000000e0,
+    LOGGED_UTILITY_STREAM   =   0x00000100,
+    END_OF_ATTRIBUTE        =   0xffffffff,
+} AttributeTypes;
+
+typedef enum {
+    ATTRIBUTE_FLAG_COMPRESSION_MASK = 0x00ff,
+    ATTRIBUTE_FLAG_ENCRYPTED        = 0x4000,
+    ATTRIBUTE_FLAG_SPARSE           = 0x8000
+} MFTAttributeDataFlags;
+
+
+
+typedef struct  {
+    uint8_t     Entry[3];
+    uint8_t     OEM[8];
+    uint16_t    BytesPerSector;
+    uint8_t     SectorsPerClusterBlock;
+    uint16_t    Unknown_1;
+    uint8_t     Unused_2;
+    uint16_t    Unused_3;
+    uint16_t    Unknown_4;
+    uint8_t     MediaDescriptor;
+    uint16_t    Unused_5;
+    uint16_t    Unused_6;
+    uint16_t    Unused_7;
+    uint32_t    Unused_8;
+    uint32_t    Unknown_9;
+    uint8_t     Unknown_10;
+    uint8_t     Unknown_11;
+    uint8_t     Unknown_12;
+    uint8_t     Unknown_13;
+    uint64_t    TotalNumberOfSectors;
+    uint64_t    MFTClusterBlockNumber;
+    uint64_t    MirrorMFTClusterBlockNumber;
+    uint8_t     MFTEntrySize;
+    uint8_t     Unknown_14[3];
+    uint8_t     IndexEntrySize;
+    uint8_t     Unknown_15[3];
+    uint64_t    NTFSVolumeSerialNumber;
+    uint32_t    Unused_16;
+    uint8_t     BootCode[426];
+    uint16_t    SectorSignature;
+} VolumeHeader;
+
+typedef struct {
+    uint48_t    MFTEntryIndex;
+    uint16_t    SequenceNumber;
+} FileReference;
+
+typedef struct {
+    uint8_t         Signature[4]; 
+    uint16_t        FixupValueOffset;
+    uint16_t        NumberOfFixupValues;
+    uint64_t        LSNOfLogfile;
+    uint16_t        Sequence;
+    uint16_t        RefCount;
+    uint16_t        AttributeOffset;
+    uint16_t        EntryFlags;
+    uint32_t        UsedEntrySize;
+    uint32_t        TotalEntrySize;
+    FileReference   BaseRecordFileRefs;
+    uint16_t        FirstAvailableAttributeIndentifer;
+    uint16_t        Unknown_1;
+    uint32_t        Unknown_2;
+} MFTEntryHeader;
+
+typedef struct {
+    uint32_t    AttributeType;
+    uint32_t    Size;
+    uint8_t     NonRegidentFlag; // 0 = RESIDENT_FORM, 1 = NONRESIDENT_FORM
+    uint8_t     NameSize;
+    uint16_t    NameOffset;
+    uint16_t    AttributeDataFlags;
+    uint16_t    AttributeIdentifier; // or Instance
+} MFTAttributeHeader;
+
+typedef struct {
+    uint32_t    DataSize;
+    uint16_t    DataOffset; // from MFTAttributeHeader
+    uint8_t     IndexedFlag;
+    uint8_t     Padding;
+} ResidentMFTAttribute;
+
+typedef struct {
+    uint64_t    ParentFileRef;
+    time_t      CTime; // creation data and time
+    time_t      WTime; // last written data and time
+    time_t      MTime; // last modification data and time
+    time_t      ATime; // last access data and time
+    uint64_t    AllocatedFileSize;
+    uint64_t    FileSize;
+    uint32_t    FileAttributeFlags;
+    uint32_t    ExtendedData;
+    uint8_t     NameStringSize;
+    uint8_t     Namespace;
+    char16_t    Name[NameStringSize];
+} FileNameAttribute;
+
+typedef enum {
+    POSIX,
+    WINDOWS,
+    DOS,
+    DOS_WINDOWS
+} NameSpace;

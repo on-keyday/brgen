@@ -62,6 +62,7 @@ class NodeType(PyEnum):
     ENUM_MEMBER = "enum_member"
     ENUM_TYPE = "enum_type"
     BIT_GROUP_TYPE = "bit_group_type"
+    STATE = "state"
 
 
 class UnaryOp(PyEnum):
@@ -117,6 +118,7 @@ class IdentUsage(PyEnum):
     DEFINE_CONST = "define_const"
     DEFINE_FIELD = "define_field"
     DEFINE_FORMAT = "define_format"
+    DEFINE_STATE = "define_state"
     DEFINE_ENUM = "define_enum"
     DEFINE_ENUM_MEMBER = "define_enum_member"
     DEFINE_FN = "define_fn"
@@ -457,6 +459,10 @@ class BitGroupType(Type):
     bit_size: int
 
 
+class State(Member):
+    body: Optional[IndentBlock]
+
+
 class Scope:
     prev: Optional[Scope]
     next: Optional[Scope]
@@ -747,6 +753,8 @@ def ast2node(ast :JsonAst) -> Program:
                 node.append(EnumType())
             case NodeType.BIT_GROUP_TYPE:
                 node.append(BitGroupType())
+            case NodeType.STATE:
+                node.append(State())
             case _:
                 raise TypeError('unknown node type')
     scope = [Scope() for _ in range(len(ast.scope))]
@@ -1434,6 +1442,22 @@ def ast2node(ast :JsonAst) -> Program:
                 node[i].is_aligned = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at BitGroupType::is_aligned'))
                 x = ast.node[i].body["bit_size"]
                 node[i].bit_size = x if isinstance(x,int)  else raiseError(TypeError('type mismatch at BitGroupType::bit_size'))
+            case NodeType.STATE:
+                if ast.node[i].body["belong"] is not None:
+                    x = node[ast.node[i].body["belong"]]
+                    node[i].belong = x if isinstance(x,Member) else raiseError(TypeError('type mismatch at State::belong'))
+                else:
+                    node[i].belong = None
+                if ast.node[i].body["ident"] is not None:
+                    x = node[ast.node[i].body["ident"]]
+                    node[i].ident = x if isinstance(x,Ident) else raiseError(TypeError('type mismatch at State::ident'))
+                else:
+                    node[i].ident = None
+                if ast.node[i].body["body"] is not None:
+                    x = node[ast.node[i].body["body"]]
+                    node[i].body = x if isinstance(x,IndentBlock) else raiseError(TypeError('type mismatch at State::body'))
+                else:
+                    node[i].body = None
             case _:
                 raise TypeError('unknown node type')
     for i in range(len(ast.scope)):
@@ -1778,3 +1802,10 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
             pass
         case x if isinstance(x,BitGroupType):
             pass
+        case x if isinstance(x,State):
+          if x.ident is not None:
+              if f(f,x.ident) == False:
+                  return
+          if x.body is not None:
+              if f(f,x.body) == False:
+                  return

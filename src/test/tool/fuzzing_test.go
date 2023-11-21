@@ -48,7 +48,6 @@ func FuzzSrc2JSON(f *testing.F) {
 		f.Add([]byte(d))
 	}
 	f.Fuzz(func(t *testing.T, data []byte) {
-		wsConn.Write([]byte(fmt.Sprintf("data: %q\n", data)))
 		c, cancel := context.WithTimeoutCause(context.Background(), 5*time.Second, errors.New("process timeout"))
 		defer cancel()
 		cmd := exec.CommandContext(c, exeName, "--stdin")
@@ -74,8 +73,7 @@ func FuzzSrc2JSON(f *testing.F) {
 			t.Fatal(err)
 		}
 		err = cmd.Wait()
-		wsConn.Write([]byte(fmt.Sprintf("stdout: %q\n", stdout.String())))
-		wsConn.Write([]byte(fmt.Sprintf("stderr: %q\n", stderr.String())))
+		wsConn.Write([]byte(fmt.Sprintf("stdout: %s\nstderr: %s\ndata: %q\n", stdout.String(), stderr.String(), data)))
 		t.Log("stdout:", stdout.String())
 		t.Log("stderr:", stderr.String())
 		if err != nil {

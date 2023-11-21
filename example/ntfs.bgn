@@ -1,0 +1,120 @@
+format NonResidentMFTAttribute:
+    FirstVCNOfData :u64
+    LastVCNOfData :u64
+    DataRunsOffset :u16
+    CompressionUnitSize :u16
+    Padding :u32
+    AllocatedDataSize :u64
+    DataSize :u64
+    ValidDataSize :u64
+
+enum AttributeTypes:
+    STANDARD_INFORMATION = 0x00000010
+    ATTRIBUTE_LIST = 0x00000020
+    FILE_NAME = 0x00000030
+    OBJECT_ID = 0x00000040
+    SECURITY_DESCRIPTOR = 0x00000050
+    VOLUME_NAME = 0x00000060
+    VOLUME_INFORMATION = 0x00000070
+    DATA = 0x00000080
+    INDEX_ROOT = 0x00000090
+    INDEX_ALLOCATION = 0x000000a0
+    BITMAP = 0x000000b0
+    REPARSE_POINT = 0x000000c0
+    EA_INFORMATION = 0x000000d0
+    EA = 0x000000e0
+    LOGGED_UTILITY_STREAM = 0x00000100
+    END_OF_ATTRIBUTE = 0xffffffff
+
+enum MFTAttributeDataFlags:
+    ATTRIBUTE_FLAG_COMPRESSION_MASK = 0x00ff
+    ATTRIBUTE_FLAG_ENCRYPTED = 0x4000
+    ATTRIBUTE_FLAG_SPARSE = 0x8000
+
+format VolumeHeader:
+    Entry :[3]u8
+    OEM :[8]u8
+    BytesPerSector :u16
+    SectorsPerClusterBlock :u8
+    Unknown_1 :u16
+    Unused_2 :u8
+    Unused_3 :u16
+    Unknown_4 :u16
+    MediaDescriptor :u8
+    Unused_5 :u16
+    Unused_6 :u16
+    Unused_7 :u16
+    Unused_8 :u32
+    Unknown_9 :u32
+    Unknown_10 :u8
+    Unknown_11 :u8
+    Unknown_12 :u8
+    Unknown_13 :u8
+    TotalNumberOfSectors :u64
+    MFTClusterBlockNumber :u64
+    MirrorMFTClusterBlockNumber :u64
+    MFTEntrySize :u8
+    Unknown_14 :[3]u8
+    IndexEntrySize :u8
+    Unknown_15 :[3]u8
+    NTFSVolumeSerialNumber :u64
+    Unused_16 :u32
+    BootCode :[426]u8
+    SectorSignature :u16
+
+format FileReference:
+    MFTEntryIndex :u48
+    SequenceNumber :u16
+
+format MFTEntryHeader:
+    Signature :[4]u8
+    FixupValueOffset :u16
+    NumberOfFixupValues :u16
+    LSNOfLogfile :u64
+    Sequence :u16
+    RefCount :u16
+    AttributeOffset :u16
+    EntryFlags :u16
+    UsedEntrySize :u32
+    TotalEntrySize :u32
+    BaseRecordFileRefs :FileReference
+    FirstAvailableAttributeIndentifer :u16
+    Unknown_1 :u16
+    Unknown_2 :u32
+
+format MFTAttributeHeader:
+    AttributeType :u32
+    Size :u32
+    NonRegidentFlag :u8
+    NameSize :u8
+    NameOffset :u16
+    AttributeDataFlags :u16
+    AttributeIdentifier :u16
+
+format ResidentMFTAttribute:
+    DataSize :u32
+    DataOffset :u16
+    IndexedFlag :u8
+    Padding :u8
+
+format FileNameAttribute:
+    ParentFileRef :u64
+    CTime :u64
+    WTime :u64
+    MTime :u64
+    ATime :u64
+    AllocatedFileSize :u64
+    FileSize :u64
+    FileAttributeFlags :u32
+    ExtendedData :u32
+    NameStringSize :u8
+    Namespace :u8
+    Name :[NameStringSize]u16
+
+enum NameSpace:
+    POSIX
+    WINDOWS
+    DOS
+    DOS_WINDOWS
+
+

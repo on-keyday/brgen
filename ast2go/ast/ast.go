@@ -67,6 +67,7 @@ const (
 	NodeTypeEnumMember      NodeType = 54
 	NodeTypeEnumType        NodeType = 55
 	NodeTypeBitGroupType    NodeType = 56
+	NodeTypeState           NodeType = 57
 )
 
 func (n NodeType) String() string {
@@ -185,6 +186,8 @@ func (n NodeType) String() string {
 		return "enum_type"
 	case NodeTypeBitGroupType:
 		return "bit_group_type"
+	case NodeTypeState:
+		return "state"
 	default:
 		return fmt.Sprintf("NodeType(%d)", n)
 	}
@@ -310,6 +313,8 @@ func (n *NodeType) UnmarshalJSON(data []byte) error {
 		*n = NodeTypeEnumType
 	case "bit_group_type":
 		*n = NodeTypeBitGroupType
+	case "state":
+		*n = NodeTypeState
 	default:
 		return fmt.Errorf("unknown NodeType: %q", tmp)
 	}
@@ -522,6 +527,10 @@ func (n *EnumType) GetNodeType() NodeType {
 
 func (n *BitGroupType) GetNodeType() NodeType {
 	return NodeTypeBitGroupType
+}
+
+func (n *State) GetNodeType() NodeType {
+	return NodeTypeState
 }
 
 type UnaryOp int
@@ -781,14 +790,15 @@ const (
 	IdentUsageDefineConst      IdentUsage = 3
 	IdentUsageDefineField      IdentUsage = 4
 	IdentUsageDefineFormat     IdentUsage = 5
-	IdentUsageDefineEnum       IdentUsage = 6
-	IdentUsageDefineEnumMember IdentUsage = 7
-	IdentUsageDefineFn         IdentUsage = 8
-	IdentUsageDefineCastFn     IdentUsage = 9
-	IdentUsageDefineArg        IdentUsage = 10
-	IdentUsageReferenceType    IdentUsage = 11
-	IdentUsageReferenceMember  IdentUsage = 12
-	IdentUsageMaybeType        IdentUsage = 13
+	IdentUsageDefineState      IdentUsage = 6
+	IdentUsageDefineEnum       IdentUsage = 7
+	IdentUsageDefineEnumMember IdentUsage = 8
+	IdentUsageDefineFn         IdentUsage = 9
+	IdentUsageDefineCastFn     IdentUsage = 10
+	IdentUsageDefineArg        IdentUsage = 11
+	IdentUsageReferenceType    IdentUsage = 12
+	IdentUsageReferenceMember  IdentUsage = 13
+	IdentUsageMaybeType        IdentUsage = 14
 )
 
 func (n IdentUsage) String() string {
@@ -805,6 +815,8 @@ func (n IdentUsage) String() string {
 		return "define_field"
 	case IdentUsageDefineFormat:
 		return "define_format"
+	case IdentUsageDefineState:
+		return "define_state"
 	case IdentUsageDefineEnum:
 		return "define_enum"
 	case IdentUsageDefineEnumMember:
@@ -844,6 +856,8 @@ func (n *IdentUsage) UnmarshalJSON(data []byte) error {
 		*n = IdentUsageDefineField
 	case "define_format":
 		*n = IdentUsageDefineFormat
+	case "define_state":
+		*n = IdentUsageDefineState
 	case "define_enum":
 		*n = IdentUsageDefineEnum
 	case "define_enum_member":
@@ -2222,6 +2236,31 @@ func (n *BitGroupType) GetLoc() Loc {
 	return n.Loc
 }
 
+type State struct {
+	Loc    Loc
+	Belong Member
+	Ident  *Ident
+	Body   *IndentBlock
+}
+
+func (n *State) isMember() {}
+
+func (n *State) GetBelong() Member {
+	return n.Belong
+}
+
+func (n *State) GetIdent() *Ident {
+	return n.Ident
+}
+
+func (n *State) isStmt() {}
+
+func (n *State) isNode() {}
+
+func (n *State) GetLoc() Loc {
+	return n.Loc
+}
+
 type Scope struct {
 	Prev       *Scope
 	Next       *Scope
@@ -2412,6 +2451,8 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			n.node[i] = &EnumType{Loc: raw.Loc}
 		case NodeTypeBitGroupType:
 			n.node[i] = &BitGroupType{Loc: raw.Loc}
+		case NodeTypeState:
+			n.node[i] = &State{Loc: raw.Loc}
 		default:
 			return nil, fmt.Errorf("unknown node type: %q", raw.NodeType)
 		}
@@ -3413,6 +3454,25 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			}
 			v.IsAligned = tmp.IsAligned
 			v.BitSize = tmp.BitSize
+		case NodeTypeState:
+			v := n.node[i].(*State)
+			var tmp struct {
+				Belong *uintptr `json:"belong"`
+				Ident  *uintptr `json:"ident"`
+				Body   *uintptr `json:"body"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			if tmp.Belong != nil {
+				v.Belong = n.node[*tmp.Belong].(Member)
+			}
+			if tmp.Ident != nil {
+				v.Ident = n.node[*tmp.Ident].(*Ident)
+			}
+			if tmp.Body != nil {
+				v.Body = n.node[*tmp.Body].(*IndentBlock)
+			}
 		default:
 			return nil, fmt.Errorf("unknown node type: %q", raw.NodeType)
 		}
@@ -3943,5 +4003,16 @@ func Walk(n Node, f Visitor) {
 		}
 	case *EnumType:
 	case *BitGroupType:
+	case *State:
+		if v.Ident != nil {
+			if !f.Visit(f, v.Ident) {
+				return
+			}
+		}
+		if v.Body != nil {
+			if !f.Visit(f, v.Body) {
+				return
+			}
+		}
 	}
 }

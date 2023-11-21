@@ -1069,6 +1069,26 @@ namespace brgen::ast {
         }
 
         /*
+            <state> ::= "state" <ident> <indent block>
+        */
+        std::shared_ptr<State> parse_state(lexer::Token&& token) {
+            auto state_ = std::make_shared<State>(token.loc);
+            s.skip_white();
+
+            state_->ident = parse_ident();
+            state_->ident->usage = IdentUsage::define_state;
+            state_->ident->base = state_;
+            {
+                auto m_scope = state.enter_member(state_);
+                state_->body = parse_indent_block(state_);
+            }
+
+            state.add_to_struct(state_);
+
+            return state_;
+        }
+
+        /*
             <fn> ::= fn "cast"? <ident> "(" (<ident> : <type> ("," <ident > <type>)*)? ")" ("->" <type>)? <indent block>
         */
         std::shared_ptr<Function> parse_fn(lexer::Token&& token) {

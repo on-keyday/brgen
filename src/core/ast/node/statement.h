@@ -24,6 +24,23 @@ namespace brgen::ast {
         }
     };
 
+    struct State : Member {
+        define_node_type(NodeType::state);
+        std::shared_ptr<IndentBlock> body;
+
+        State(lexer::Loc l)
+            : Member(l, NodeType::state) {}
+
+        // for decode
+        State()
+            : Member({}, NodeType::state) {}
+
+        void dump(auto&& field_) {
+            Member::dump(field_);
+            sdebugf(body);
+        }
+    };
+
     struct EnumMember : Member {
         define_node_type(NodeType::enum_member);
         std::shared_ptr<Node> comment;
