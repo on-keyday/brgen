@@ -16,6 +16,7 @@ services:
       - ./go.mod:/workspace/go.mod:cached
       - ./go.sum:/workspace/go.sum:cached
       - ./ast2go:/workspace/ast2go:cached
+      - ./brgen.json:/workspace/brgen.json:cached
     cap_add:
       - SYS_PTRACE
     security_opt:

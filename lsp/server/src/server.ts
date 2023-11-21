@@ -139,8 +139,8 @@ function execSrc2JSON<T>(exe_path :string,command :Array<string>,text :string,is
     });
 }
 
-const lexerCommand=(path :string) => ["--stdin","--stdin-name",path, "--lexer", "--no-color", "--print-on-error","--print-json","--omit-json-warning","--interpret-mode","utf16","--detected-output-type"];
-const parserCommand = (path :string) => ["--stdin","--stdin-name",path, "--no-color", "--print-on-error","--print-json","--omit-json-warning","--interpret-mode","utf16","--detected-output-type"];
+const lexerCommand=(path :string) => ["--stdin","--stdin-name",path, "--lexer", "--no-color", "--print-on-error","--print-json","--omit-json-warning","--interpret-mode","utf16","--detected-stdio-type"];
+const parserCommand = (path :string) => ["--stdin","--stdin-name",path, "--no-color", "--print-on-error","--print-json","--omit-json-warning","--interpret-mode","utf16","--detected-stdio-type"];
 
 
 class DocumentInfo {
@@ -299,7 +299,7 @@ const tokenizeSourceImpl  = async (doc :TextDocument,docInfo :DocumentInfo) =>{
                         if(ast2ts.isIdent(n.base)){
                             if(counter> 100) {
                                 console.log(n,n.base)
-                                throw new Error("what happend?");
+                                throw new Error("what happened?");
                             }
                             console.log("base -> "+n.base.usage);
                             n = n.base;
@@ -311,7 +311,7 @@ const tokenizeSourceImpl  = async (doc :TextDocument,docInfo :DocumentInfo) =>{
                             if(ast2ts.isIdent(n.base.base)){
                                 if(counter> 100) {
                                     console.log(n,n.base)
-                                    throw new Error("what happend?");
+                                    throw new Error("what happened?");
                                 }
                                 console.log("base -> "+n.base.base.usage);
                                 n = n.base.base;

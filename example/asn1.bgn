@@ -65,7 +65,4 @@ format TLV: # tag length value
 format Integer:
     tlv :TLV
 
-    fn encode():
-        tlv.tag = Tag.INTEGER
-        tlv.len = Len(value.size())
-        tlv.value = value
+
