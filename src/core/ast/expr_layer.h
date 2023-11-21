@@ -150,6 +150,12 @@ namespace brgen::ast {
         return begin <= int(op) && int(op) <= end;
     }
 
+    constexpr bool is_assign_op(BinaryOp op) {
+        constexpr auto begin = int(BinaryOp::assign);
+        constexpr auto end = int(BinaryOp::bit_xor_assign);
+        return begin <= int(op) && int(op) <= end;
+    }
+
     constexpr const char* const* bin_layers[] = {
         bin_layer0,
         bin_layer1,

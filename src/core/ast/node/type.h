@@ -180,7 +180,6 @@ namespace brgen::ast {
         }
     };
 
-    struct Format;
     struct Ident;
 
     struct IdentType : Type {

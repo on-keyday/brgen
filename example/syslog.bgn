@@ -36,6 +36,7 @@ format Version:
         version = input.cond(digit,3).u16()
     
     fn encode():
+        version == (1..999)
         config.in_range(version,1,999)
         output.as_string(version)
 

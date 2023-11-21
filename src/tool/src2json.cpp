@@ -38,15 +38,14 @@ struct Flags : utils::cmdline::templ::HelpOption {
 
     bool check_ast = false;
     bool dump_types = false;
+
     bool disable_untyped_warning = false;
+    bool disable_unused_warning = false;
+
     bool print_json = false;
     bool print_on_error = false;
     bool debug_json = false;
-    // bool dump_ptr_as_uintptr = false;
-    // bool flat = false;
-    // bool not_dump_base = false;
-    // bool dump_enum_name = false;
-    // bool dump_error = false;
+
     bool no_color = false;
 
     bool stdin_mode = false;
@@ -81,6 +80,7 @@ struct Flags : utils::cmdline::templ::HelpOption {
         ctx.VarBool(&unresolved_type_as_error, "unresolved-type-as-error", "unresolved type as error");
 
         ctx.VarBool(&disable_untyped_warning, "u,disable-untyped", "disable untyped warning");
+        ctx.VarBool(&disable_unused_warning, "disable-unused", "disable unused expression warning");
 
         ctx.VarBool(&print_json, "p,print-json", "print json of ast/tokens to stdout if succeeded (if stdout is tty. if not tty, usually print json ast)");
         ctx.VarBool(&print_on_error, "print-on-error", "print json of ast/tokens to stdout if failed (if stdout is tty. if not tty, usually print json ast)");
@@ -447,7 +447,15 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     }
 
     if (!flags.not_resolve_assert) {
-        brgen::middle::replace_assert(*res);
+        brgen::LocationError err;
+        brgen::middle::replace_assert(err, *res);
+        if (!flags.disable_unused_warning && err.locations.size() > 0) {
+            print_warnings(brgen::to_source_error(files)(std::move(err)));
+            if (!flags.omit_warning) {
+                auto tmp = brgen::to_source_error(files)(std::move(err));
+                err_or_warn.errs.insert(err_or_warn.errs.end(), tmp.errs.begin(), tmp.errs.end());
+            }
+        }
     }
 
     if (cout.is_tty() && !flags.print_json) {

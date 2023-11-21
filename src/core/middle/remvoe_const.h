@@ -49,8 +49,8 @@ namespace brgen::middle {
             each_element(b->elements);
             return;
         }
-        ast::traverse(node, [](auto&& f) {
-            replace_assert(f);
+        ast::traverse(node, [&](auto&& f) {
+            remove_const(warn, f);
         });
     }
 }  // namespace brgen::middle
