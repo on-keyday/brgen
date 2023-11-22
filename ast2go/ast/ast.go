@@ -68,6 +68,7 @@ const (
 	NodeTypeEnumType        NodeType = 55
 	NodeTypeBitGroupType    NodeType = 56
 	NodeTypeState           NodeType = 57
+	NodeTypeBuiltinFunction NodeType = 58
 )
 
 func (n NodeType) String() string {
@@ -188,6 +189,8 @@ func (n NodeType) String() string {
 		return "bit_group_type"
 	case NodeTypeState:
 		return "state"
+	case NodeTypeBuiltinFunction:
+		return "builtin_function"
 	default:
 		return fmt.Sprintf("NodeType(%d)", n)
 	}
@@ -315,6 +318,8 @@ func (n *NodeType) UnmarshalJSON(data []byte) error {
 		*n = NodeTypeBitGroupType
 	case "state":
 		*n = NodeTypeState
+	case "builtin_function":
+		*n = NodeTypeBuiltinFunction
 	default:
 		return fmt.Errorf("unknown NodeType: %q", tmp)
 	}
@@ -531,6 +536,10 @@ func (n *BitGroupType) GetNodeType() NodeType {
 
 func (n *State) GetNodeType() NodeType {
 	return NodeTypeState
+}
+
+func (n *BuiltinFunction) GetNodeType() NodeType {
+	return NodeTypeBuiltinFunction
 }
 
 type UnaryOp int
@@ -2261,6 +2270,31 @@ func (n *State) GetLoc() Loc {
 	return n.Loc
 }
 
+type BuiltinFunction struct {
+	Loc      Loc
+	Belong   Member
+	Ident    *Ident
+	FuncType *FunctionType
+}
+
+func (n *BuiltinFunction) isMember() {}
+
+func (n *BuiltinFunction) GetBelong() Member {
+	return n.Belong
+}
+
+func (n *BuiltinFunction) GetIdent() *Ident {
+	return n.Ident
+}
+
+func (n *BuiltinFunction) isStmt() {}
+
+func (n *BuiltinFunction) isNode() {}
+
+func (n *BuiltinFunction) GetLoc() Loc {
+	return n.Loc
+}
+
 type Scope struct {
 	Prev       *Scope
 	Next       *Scope
@@ -2453,6 +2487,8 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			n.node[i] = &BitGroupType{Loc: raw.Loc}
 		case NodeTypeState:
 			n.node[i] = &State{Loc: raw.Loc}
+		case NodeTypeBuiltinFunction:
+			n.node[i] = &BuiltinFunction{Loc: raw.Loc}
 		default:
 			return nil, fmt.Errorf("unknown node type: %q", raw.NodeType)
 		}
@@ -3473,6 +3509,25 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.Body != nil {
 				v.Body = n.node[*tmp.Body].(*IndentBlock)
 			}
+		case NodeTypeBuiltinFunction:
+			v := n.node[i].(*BuiltinFunction)
+			var tmp struct {
+				Belong   *uintptr `json:"belong"`
+				Ident    *uintptr `json:"ident"`
+				FuncType *uintptr `json:"func_type"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			if tmp.Belong != nil {
+				v.Belong = n.node[*tmp.Belong].(Member)
+			}
+			if tmp.Ident != nil {
+				v.Ident = n.node[*tmp.Ident].(*Ident)
+			}
+			if tmp.FuncType != nil {
+				v.FuncType = n.node[*tmp.FuncType].(*FunctionType)
+			}
 		default:
 			return nil, fmt.Errorf("unknown node type: %q", raw.NodeType)
 		}
@@ -4011,6 +4066,17 @@ func Walk(n Node, f Visitor) {
 		}
 		if v.Body != nil {
 			if !f.Visit(f, v.Body) {
+				return
+			}
+		}
+	case *BuiltinFunction:
+		if v.Ident != nil {
+			if !f.Visit(f, v.Ident) {
+				return
+			}
+		}
+		if v.FuncType != nil {
+			if !f.Visit(f, v.FuncType) {
 				return
 			}
 		}

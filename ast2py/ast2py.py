@@ -63,6 +63,7 @@ class NodeType(PyEnum):
     ENUM_TYPE = "enum_type"
     BIT_GROUP_TYPE = "bit_group_type"
     STATE = "state"
+    BUILTIN_FUNCTION = "builtin_function"
 
 
 class UnaryOp(PyEnum):
@@ -463,6 +464,10 @@ class State(Member):
     body: Optional[IndentBlock]
 
 
+class BuiltinFunction(Member):
+    func_type: Optional[FunctionType]
+
+
 class Scope:
     prev: Optional[Scope]
     next: Optional[Scope]
@@ -755,6 +760,8 @@ def ast2node(ast :JsonAst) -> Program:
                 node.append(BitGroupType())
             case NodeType.STATE:
                 node.append(State())
+            case NodeType.BUILTIN_FUNCTION:
+                node.append(BuiltinFunction())
             case _:
                 raise TypeError('unknown node type')
     scope = [Scope() for _ in range(len(ast.scope))]
@@ -1458,6 +1465,22 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].body = x if isinstance(x,IndentBlock) else raiseError(TypeError('type mismatch at State::body'))
                 else:
                     node[i].body = None
+            case NodeType.BUILTIN_FUNCTION:
+                if ast.node[i].body["belong"] is not None:
+                    x = node[ast.node[i].body["belong"]]
+                    node[i].belong = x if isinstance(x,Member) else raiseError(TypeError('type mismatch at BuiltinFunction::belong'))
+                else:
+                    node[i].belong = None
+                if ast.node[i].body["ident"] is not None:
+                    x = node[ast.node[i].body["ident"]]
+                    node[i].ident = x if isinstance(x,Ident) else raiseError(TypeError('type mismatch at BuiltinFunction::ident'))
+                else:
+                    node[i].ident = None
+                if ast.node[i].body["func_type"] is not None:
+                    x = node[ast.node[i].body["func_type"]]
+                    node[i].func_type = x if isinstance(x,FunctionType) else raiseError(TypeError('type mismatch at BuiltinFunction::func_type'))
+                else:
+                    node[i].func_type = None
             case _:
                 raise TypeError('unknown node type')
     for i in range(len(ast.scope)):
@@ -1808,4 +1831,11 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
                   return
           if x.body is not None:
               if f(f,x.body) == False:
+                  return
+        case x if isinstance(x,BuiltinFunction):
+          if x.ident is not None:
+              if f(f,x.ident) == False:
+                  return
+          if x.func_type is not None:
+              if f(f,x.func_type) == False:
                   return

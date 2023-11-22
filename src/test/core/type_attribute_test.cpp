@@ -52,12 +52,15 @@ format B:
 
 format C:
     c :A
+
+format D:
+    d :[10]D
 )");
     middle::TypeAttribute attr;
     attr.recursive_reference(r);
     ASSERT_FALSE(r->struct_type->recursive);
     auto& fields = r->struct_type->fields;
-    ASSERT_EQ(fields.size(), 3);
+    ASSERT_EQ(fields.size(), 4);
     auto fmt = ast::cast_to<ast::Format>(fields[0]);
     ASSERT_TRUE(fmt);
     ASSERT_TRUE(fmt->body->struct_type->recursive);
@@ -67,6 +70,9 @@ format C:
     auto fmt3 = ast::cast_to<ast::Format>(fields[2]);
     ASSERT_TRUE(fmt3);
     ASSERT_FALSE(fmt3->body->struct_type->recursive);
+    auto fmt4 = ast::cast_to<ast::Format>(fields[3]);
+    ASSERT_TRUE(fmt4);
+    ASSERT_TRUE(fmt4->body->struct_type->recursive);
 }
 
 TEST(IntSet, IntSetSimple) {

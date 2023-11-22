@@ -100,6 +100,7 @@ typedef struct ast2c_EnumMember ast2c_EnumMember;
 typedef struct ast2c_EnumType ast2c_EnumType;
 typedef struct ast2c_BitGroupType ast2c_BitGroupType;
 typedef struct ast2c_State ast2c_State;
+typedef struct ast2c_BuiltinFunction ast2c_BuiltinFunction;
 typedef struct ast2c_Scope ast2c_Scope;
 typedef struct ast2c_Pos ast2c_Pos;
 typedef struct ast2c_Loc ast2c_Loc;
@@ -170,6 +171,7 @@ enum ast2c_NodeType {
 	AST2C_NODETYPE_ENUM_TYPE,
 	AST2C_NODETYPE_BIT_GROUP_TYPE,
 	AST2C_NODETYPE_STATE,
+	AST2C_NODETYPE_BUILTIN_FUNCTION,
 };
 const char* ast2c_NodeType_to_string(ast2c_NodeType);
 int ast2c_NodeType_from_string(const char*,ast2c_NodeType*);
@@ -1024,6 +1026,17 @@ struct ast2c_State {
 
 // returns 1 if succeed 0 if failed
 int ast2c_State_parse(ast2c_Ast* ,ast2c_State*,ast2c_json_handlers*,void*);
+
+struct ast2c_BuiltinFunction {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Member* belong;
+	ast2c_Ident* ident;
+	ast2c_FunctionType* func_type;
+};
+
+// returns 1 if succeed 0 if failed
+int ast2c_BuiltinFunction_parse(ast2c_Ast* ,ast2c_BuiltinFunction*,ast2c_json_handlers*,void*);
 
 struct ast2c_Scope {
 	const ast2c_NodeType node_type;

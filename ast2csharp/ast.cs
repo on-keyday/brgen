@@ -62,6 +62,7 @@ EnumMember,
 EnumType,
 BitGroupType,
 State,
+BuiltinFunction,
 }
 public enum UnaryOp {
 Not,
@@ -521,6 +522,12 @@ public class State : Member{
 	public Member? Belong{get;set;}
 	public Ident? Ident{get;set;}
 	public IndentBlock? Body{get;set;}
+}
+public class BuiltinFunction : Member{
+	public Loc Loc{get;set;}
+	public Member? Belong{get;set;}
+	public Ident? Ident{get;set;}
+	public FunctionType? FuncType{get;set;}
 }
 public class Scope {
 	public Scope? Prev{get;set;}
