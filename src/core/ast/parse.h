@@ -1188,6 +1188,11 @@ namespace brgen::ast {
                 return parse_format(std::move(*format));
             }
 
+            if (auto state_ = s.consume_token("state")) {
+                set_skip();
+                return parse_state(std::move(*state_));
+            }
+
             if (auto enum_ = s.consume_token("enum")) {
                 set_skip();
                 return parse_enum(std::move(*enum_));

@@ -536,6 +536,162 @@ namespace brgen::middle {
             return nullptr;
         }
 
+        void typing_cond(ast::Cond* cond) {
+            typing_expr(cond->cond);
+            typing_expr(cond->then);
+            typing_expr(cond->els);
+            if (cond->cond->expr_type) {
+                check_bool(cond->cond.get());
+            }
+            // even if cond->cond is not typed, we still need to type then and else
+            if (!cond->then->expr_type || !cond->els->expr_type) {
+                warn_not_typed(cond);
+                return;  // not typed yet
+            }
+            auto lty = cond->then->expr_type;
+            auto rty = cond->els->expr_type;
+            int_type_fitting(lty, rty);
+            if (!equal_type(lty, rty)) {
+                report_not_equal_type(lty, rty);
+            }
+            cond->expr_type = lty;
+            cond->constant_level = decide_constant_level(cond->then->constant_level, cond->els->constant_level);
+        }
+
+        void typing_call(ast::Call* call) {
+            typing_expr(call->callee);
+            if (!call->callee->expr_type) {
+                warn_not_typed(call);
+                // anyway, we need to type arguments
+                for (auto& arg : call->arguments) {
+                    typing_expr(arg);
+                }
+                return;  // not typed yet
+            }
+            auto type = ast::as<ast::FunctionType>(call->callee->expr_type);
+            if (!type) {
+                error(call->callee->loc, "expect function type but not").report();
+            }
+            if (call->arguments.size() != type->parameters.size()) {
+                error(call->loc, "expect ", nums(type->parameters.size()), " arguments but got ", nums(call->arguments.size()))
+                    .error(type->loc, "function is defined here")
+                    .report();
+            }
+            for (size_t i = 0; i < call->arguments.size(); i++) {
+                typing_expr(call->arguments[i]);
+                if (!call->arguments[i]->expr_type) {
+                    warn_not_typed(call);
+                    continue;  // not typed yet
+                }
+                int_type_fitting(call->arguments[i]->expr_type, type->parameters[i]);
+                if (!equal_type(call->arguments[i]->expr_type, type->parameters[i])) {
+                    report_not_equal_type(call->arguments[i]->expr_type, type->parameters[i]);
+                }
+            }
+            call->expr_type = type->return_type;
+            // TODO(on-keyday): in the future, we may need to analyze function body to decide actual constant level
+            call->constant_level = ast::ConstantLevel::variable;
+        }
+
+        void typing_member_access(ast::MemberAccess* selector) {
+            typing_expr(selector->target);
+            if (auto ident = ast::as<ast::Ident>(selector->target); ident && ident->usage == ast::IdentUsage::reference_type) {
+                auto base = ident->base.lock();
+                if (auto def = ast::as<ast::Ident>(base); def && def->usage == ast::IdentUsage::define_enum) {
+                    base = def->base.lock();
+                    if (auto enum_ = ast::as<ast::Enum>(base)) {
+                        selector->expr_type = enum_->enum_type;
+                        auto member = enum_->lookup(selector->member->ident);
+                        if (!member) {
+                            auto r = error(selector->member->loc, "member of enum ", ident->ident, ".", selector->member->ident, " is not defined");
+                            r.error(ident->loc, "enum ", ident->ident, " is defined here").report();
+                        }
+                        selector->base = member->ident;
+                        return;
+                    }
+                }
+            }
+            if (!selector->target->expr_type) {
+                warn_not_typed(selector);
+                return;
+            }
+            auto type = lookup_struct(selector->target->expr_type);
+            if (!type) {
+                error(selector->target->loc, "expect struct type but not").report();
+            }
+            auto stmt = type->lookup(selector->member->ident);
+            if (!stmt) {
+                error(selector->member->loc, "member ", selector->member->ident, " is not defined").report();
+            }
+            if (auto field = ast::as<ast::Field>(stmt)) {
+                selector->expr_type = field->field_type;
+                selector->base = stmt->ident;
+            }
+            else if (auto fn = ast::as<ast::Function>(stmt)) {
+                selector->expr_type = fn->func_type;
+                selector->base = stmt->ident;
+            }
+            else {
+                auto r = error(selector->member->loc, "member ", selector->member->ident, " is not a field or function");
+                (void)r.error(stmt->ident->loc, "member ", selector->member->ident, " is defined here");
+                r.report();
+            }
+        }
+
+        void typing_range(const std::shared_ptr<ast::Range>& r) {
+            if (r->start) {
+                typing_expr(r->start);
+            }
+            if (r->end) {
+                typing_expr(r->end);
+            }
+            if (r->start && r->end) {
+                if (!r->start->expr_type || !r->end->expr_type) {
+                    warn_not_typed(r);
+                    return;
+                }
+                int_type_fitting(r->start->expr_type, r->end->expr_type);
+                if (!equal_type(r->start->expr_type, r->end->expr_type)) {
+                    report_not_equal_type(r->start->expr_type, r->end->expr_type);
+                }
+            }
+            auto range_type = std::make_shared<ast::RangeType>(r->loc);
+            if (r->start) {
+                range_type->base_type = r->start->expr_type;
+            }
+            else if (r->end) {
+                range_type->base_type = r->end->expr_type;
+            }
+            range_type->range = r;
+            r->expr_type = range_type;
+            r->constant_level = decide_constant_level(r->start ? r->start->constant_level : ast::ConstantLevel::const_value,
+                                                      r->end ? r->end->constant_level : ast::ConstantLevel::const_value);
+        }
+
+        void typing_ident(ast::Ident* ident) {
+            if (ident->base.lock()) {
+                assert(ident->usage != ast::IdentUsage::unknown);
+                return;  // skip
+            }
+            if (auto found = find_matching_ident(ident)) {
+                auto& base = (*found);
+                ident->expr_type = base->expr_type;
+                ident->base = base;
+                ident->constant_level = base->constant_level;
+                if (base->usage == ast::IdentUsage::define_enum ||
+                    base->usage == ast::IdentUsage::define_format ||
+                    base->usage == ast::IdentUsage::define_state) {
+                    ident->usage = ast::IdentUsage::reference_type;
+                }
+                else {
+                    ident->usage = ast::IdentUsage::reference;
+                }
+            }
+            else {
+                warn_not_typed(ident);
+            }
+        }
+
         void typing_expr(const std::shared_ptr<ast::Expr>& expr, bool on_define = false) {
             // treat cast as a special case
             // Cast has already been typed in the previous pass
@@ -570,7 +726,8 @@ namespace brgen::middle {
                     ident->base = base;
                     ident->constant_level = base->constant_level;
                     if (base->usage == ast::IdentUsage::define_enum ||
-                        base->usage == ast::IdentUsage::define_format) {
+                        base->usage == ast::IdentUsage::define_format ||
+                        base->usage == ast::IdentUsage::define_state) {
                         ident->usage = ast::IdentUsage::reference_type;
                     }
                     else {
@@ -595,25 +752,7 @@ namespace brgen::middle {
                 typing_match(match);
             }
             else if (auto cond = ast::as<ast::Cond>(expr)) {
-                typing_expr(cond->cond);
-                typing_expr(cond->then);
-                typing_expr(cond->els);
-                if (cond->cond->expr_type) {
-                    check_bool(cond->cond.get());
-                }
-                // even if cond->cond is not typed, we still need to type then and else
-                if (!cond->then->expr_type || !cond->els->expr_type) {
-                    warn_not_typed(cond);
-                    return;  // not typed yet
-                }
-                auto lty = cond->then->expr_type;
-                auto rty = cond->els->expr_type;
-                int_type_fitting(lty, rty);
-                if (!equal_type(lty, rty)) {
-                    report_not_equal_type(lty, rty);
-                }
-                cond->expr_type = lty;
-                cond->constant_level = decide_constant_level(cond->then->constant_level, cond->els->constant_level);
+                typing_cond(cond);
             }
             else if (auto paren = ast::as<ast::Paren>(expr)) {
                 typing_expr(paren->expr);
@@ -635,82 +774,10 @@ namespace brgen::middle {
                 }
             }
             else if (auto call = ast::as<ast::Call>(expr)) {
-                typing_expr(call->callee);
-                if (!call->callee->expr_type) {
-                    warn_not_typed(call);
-                    // anyway, we need to type arguments
-                    for (auto& arg : call->arguments) {
-                        typing_expr(arg);
-                    }
-                    return;  // not typed yet
-                }
-                auto type = ast::as<ast::FunctionType>(call->callee->expr_type);
-                if (!type) {
-                    error(call->callee->loc, "expect function type but not").report();
-                }
-                if (call->arguments.size() != type->parameters.size()) {
-                    error(call->loc, "expect ", nums(type->parameters.size()), " arguments but got ", nums(call->arguments.size()))
-                        .error(type->loc, "function is defined here")
-                        .report();
-                }
-                for (size_t i = 0; i < call->arguments.size(); i++) {
-                    typing_expr(call->arguments[i]);
-                    if (!call->arguments[i]->expr_type) {
-                        warn_not_typed(call);
-                        continue;  // not typed yet
-                    }
-                    int_type_fitting(call->arguments[i]->expr_type, type->parameters[i]);
-                    if (!equal_type(call->arguments[i]->expr_type, type->parameters[i])) {
-                        report_not_equal_type(call->arguments[i]->expr_type, type->parameters[i]);
-                    }
-                }
-                call->expr_type = type->return_type;
-                // TODO(on-keyday): in the future, we may need to analyze function body to decide actual constant level
-                call->constant_level = ast::ConstantLevel::variable;
+                typing_call(call);
             }
             else if (auto selector = ast::as<ast::MemberAccess>(expr)) {
-                typing_expr(selector->target);
-                if (auto ident = ast::as<ast::Ident>(selector->target); ident && ident->usage == ast::IdentUsage::reference_type) {
-                    auto base = ident->base.lock();
-                    if (auto def = ast::as<ast::Ident>(base); def && def->usage == ast::IdentUsage::define_enum) {
-                        base = def->base.lock();
-                        if (auto enum_ = ast::as<ast::Enum>(base)) {
-                            selector->expr_type = enum_->enum_type;
-                            auto member = enum_->lookup(selector->member->ident);
-                            if (!member) {
-                                auto r = error(selector->member->loc, "member of enum ", ident->ident, ".", selector->member->ident, " is not defined");
-                                r.error(ident->loc, "enum ", ident->ident, " is defined here").report();
-                            }
-                            selector->base = member->ident;
-                            return;
-                        }
-                    }
-                }
-                if (!selector->target->expr_type) {
-                    warn_not_typed(selector);
-                    return;
-                }
-                auto type = lookup_struct(selector->target->expr_type);
-                if (!type) {
-                    error(selector->target->loc, "expect struct type but not").report();
-                }
-                auto stmt = type->lookup(selector->member->ident);
-                if (!stmt) {
-                    error(selector->member->loc, "member ", selector->member->ident, " is not defined").report();
-                }
-                if (auto field = ast::as<ast::Field>(stmt)) {
-                    selector->expr_type = field->field_type;
-                    selector->base = stmt->ident;
-                }
-                else if (auto fn = ast::as<ast::Function>(stmt)) {
-                    selector->expr_type = fn->func_type;
-                    selector->base = stmt->ident;
-                }
-                else {
-                    auto r = error(selector->member->loc, "member ", selector->member->ident, " is not a field or function");
-                    (void)r.error(stmt->ident->loc, "member ", selector->member->ident, " is defined here");
-                    r.report();
-                }
+                typing_member_access(selector);
             }
             else if (auto idx = ast::as<ast::Index>(expr)) {
                 typing_expr(idx->expr);
@@ -726,34 +793,8 @@ namespace brgen::middle {
                      ast::as<ast::Config>(expr)) {
                 // typing already done
             }
-            else if (auto r = ast::as<ast::Range>(expr)) {
-                if (r->start) {
-                    typing_expr(r->start);
-                }
-                if (r->end) {
-                    typing_expr(r->end);
-                }
-                if (r->start && r->end) {
-                    if (!r->start->expr_type || !r->end->expr_type) {
-                        warn_not_typed(r);
-                        return;
-                    }
-                    int_type_fitting(r->start->expr_type, r->end->expr_type);
-                    if (!equal_type(r->start->expr_type, r->end->expr_type)) {
-                        report_not_equal_type(r->start->expr_type, r->end->expr_type);
-                    }
-                }
-                auto range_type = std::make_shared<ast::RangeType>(r->loc);
-                if (r->start) {
-                    range_type->base_type = r->start->expr_type;
-                }
-                else if (r->end) {
-                    range_type->base_type = r->end->expr_type;
-                }
-                range_type->range = ast::cast_to<ast::Range>(expr);
-                r->expr_type = range_type;
-                r->constant_level = decide_constant_level(r->start ? r->start->constant_level : ast::ConstantLevel::const_value,
-                                                          r->end ? r->end->constant_level : ast::ConstantLevel::const_value);
+            else if (ast::as<ast::Range>(expr)) {
+                typing_range(ast::cast_to<ast::Range>(expr));
             }
             else if (auto i = ast::as<ast::Import>(expr)) {
                 expr->expr_type = i->import_desc->struct_type;
@@ -796,12 +837,17 @@ namespace brgen::middle {
                     if (s->ident->usage == ast::IdentUsage::reference_type) {
                         auto ident = ast::as<ast::Ident>(s->ident->base.lock());
                         assert(ident);
-                        auto member = ident->base.lock();
+                        auto member = ast::as<ast::Member>(ident->base.lock());
                         if (auto enum_ = ast::as<ast::Enum>(member)) {
                             s->base = enum_->enum_type;
                         }
                         else if (auto struct_ = ast::as<ast::Format>(member)) {
                             s->base = struct_->body->struct_type;
+                        }
+                        else if (auto state_ = ast::as<ast::State>(member)) {
+                            error(s->loc, "state ", ident->ident, " is not usable for field type")
+                                .error(member->ident->loc, "state ", ident->ident, " is defined here")
+                                .report();
                         }
                     }
                     return;

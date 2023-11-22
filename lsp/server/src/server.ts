@@ -210,7 +210,7 @@ const tokenizeSourceImpl  = async (doc :TextDocument,docInfo :DocumentInfo) =>{
         if(token.tag===ast2ts.TokenTag.keyword){
             if(token.token==="input"||token.token==="output"||token.token=="config"||
                token.token=="fn"||token.token=="format"||token.token=="enum"||
-               token.token=="cast"){
+               token.token=="cast"||token.token=="state"){
                 locList.push({loc:token.loc,length: token.token.length,index:9});
                 return;
             }
@@ -328,6 +328,7 @@ const tokenizeSourceImpl  = async (doc :TextDocument,docInfo :DocumentInfo) =>{
                         break;   
                     case ast2ts.IdentUsage.define_format:
                     case ast2ts.IdentUsage.define_enum:
+                    case ast2ts.IdentUsage.define_state:
                     case ast2ts.IdentUsage.reference_type:
                     case ast2ts.IdentUsage.define_cast_fn:
                     case ast2ts.IdentUsage.maybe_type:
@@ -465,6 +466,8 @@ const hover = async (params :HoverParams)=>{
                     return makeHover(found.ident,"format");
                 case ast2ts.IdentUsage.define_enum:
                     return makeHover(found.ident,"enum");
+                case ast2ts.IdentUsage.define_state:
+                    return makeHover(found.ident,"state");
                 case ast2ts.IdentUsage.reference_type:
                     return makeHover(found.ident,"type");
                 case ast2ts.IdentUsage.define_cast_fn:

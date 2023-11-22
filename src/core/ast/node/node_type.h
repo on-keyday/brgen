@@ -60,6 +60,7 @@ namespace brgen::ast {
         enum_,
         enum_member,
         function,
+        builtin_function,
 
         type = 0x040000,
         int_type,

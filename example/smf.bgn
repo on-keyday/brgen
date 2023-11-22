@@ -52,6 +52,7 @@ format Varint:
 format TrackChunk:
     magic  :"MTrk"
     length : ub32
+    RunningStatus.type = 0
     events : [..]Event(input=input.subrange(0,length))
 
 enum EventType:
@@ -65,11 +66,15 @@ enum EventType:
     ProgramChangeEvent = 0xc0
     ChannelPressureEvent = 0xd0
     PitchBendEvent = 0xe0
-    
+
+
+state RunningStatus:
+    type : u8
+
 
 format Event:
     delta_time : Varint
-    event_type : u8
+    event_type : ub8
     fn event():
         if event_type == 0xff:
             return EventType.MetaEvent
@@ -78,14 +83,16 @@ format Event:
         return event_type & 0x0f
 
     if event_type == (0x00..0x7f):
-        event_type = config.state("running_status")
+        if RunningStatus.type == 0:
+            error("running status not set")
+        event_type = RunningStatus.type
         input.backward()
     match event_type:
         0xff => data :MetaEvent
         0xf0 => data :SysExEvent
         0xf7 => data :SysExEvent
         .. :
-            config.state("running_status",event_type) 
+            RunningStatus.type = event_type
             match event_type:     
                 0x80..0x8f => data :NoteOffEvent
                 0x90..0x9f => data :NoteOnEvent
