@@ -1,0 +1,32 @@
+
+enum PacketType:
+    :u4
+    reserved
+    connect
+    connack
+    publish
+    puback
+    pubrec
+    pubrel
+    pubcomp
+    subscribe
+    suback
+    unsubscribe
+    unsuback
+    pingreq
+    pingresp
+    disconnect
+    auth
+
+format FixedHeader:
+    packet_type: PacketType
+    if packet_type == PacketType.publish:
+        dup : u1
+        qos : u2
+        retain : u1
+    elif packet_type == PacketType.pubrel || packet_type == PacketType.unsubscribe:
+        reserved :u4(0x2)
+    else:
+        reserved : u4(0x0)
+    remaining_length : u8
+

@@ -100,6 +100,7 @@ namespace brgen::ast {
         std::shared_ptr<Type> field_type;
         std::shared_ptr<Expr> raw_arguments;
         std::list<std::shared_ptr<Expr>> arguments;
+        BitAlignment bit_alignment = BitAlignment::not_target;
 
         Field(lexer::Loc l)
             : Member(l, NodeType::field) {}
@@ -115,6 +116,7 @@ namespace brgen::ast {
             sdebugf(field_type);
             sdebugf_omit(raw_arguments);
             sdebugf(arguments);
+            sdebugf(bit_alignment);
         }
     };
 

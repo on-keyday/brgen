@@ -164,6 +164,9 @@ namespace brgen::ast {
                     else if constexpr (std::is_same_v<P, ConstantLevel>) {
                         field(key, "constant_level");
                     }
+                    else if constexpr (std::is_same_v<P, BitAlignment>) {
+                        field(key, "bit_alignment");
+                    }
                     else if constexpr (utils::helper::is_template<P>) {
                         using P1 = typename utils::helper::template_of_t<P>::template param_at<0>;
                         if constexpr (utils::helper::is_template_instance_of<P, std::shared_ptr>) {
@@ -354,6 +357,19 @@ namespace brgen::ast {
                         auto field = d.object();
                         field("name", constant_level_str[i]);
                         field("value", constant_level_str[i]);
+                    });
+                }
+            });
+        }
+        {
+            R p{bit_alignment_str, bit_alignment_str + bit_alignment_count};
+            field("bit_alignment", [&](auto&& d) {
+                auto field = d.array();
+                for (size_t i = 0; i < bit_alignment_count; i++) {
+                    field([&](auto&& d) {
+                        auto field = d.object();
+                        field("name", bit_alignment_str[i]);
+                        field("value", bit_alignment_str[i]);
                     });
                 }
             });

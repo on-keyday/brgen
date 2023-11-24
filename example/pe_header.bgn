@@ -81,6 +81,6 @@ format EFI_BTT_INFO_BLOCK:
     Unused :[3968]u8
     Checksum :u64
 
-929a
+
 
 
