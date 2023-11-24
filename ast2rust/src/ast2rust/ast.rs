@@ -533,6 +533,39 @@ impl TryFrom<&str> for ConstantLevel {
 	}
 }
 
+#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+#[serde(rename_all = "snake_case")]pub enum BitAlignment {
+	ByteAligned,
+	Bit1,
+	Bit2,
+	Bit3,
+	Bit4,
+	Bit5,
+	Bit6,
+	Bit7,
+	NotTarget,
+	NotDecidable,
+}
+
+impl TryFrom<&str> for BitAlignment {
+	type Error = ();
+	fn try_from(s:&str)->Result<Self,()>{
+		match s{
+			"byte_aligned" =>Ok(Self::ByteAligned),
+			"bit_1" =>Ok(Self::Bit1),
+			"bit_2" =>Ok(Self::Bit2),
+			"bit_3" =>Ok(Self::Bit3),
+			"bit_4" =>Ok(Self::Bit4),
+			"bit_5" =>Ok(Self::Bit5),
+			"bit_6" =>Ok(Self::Bit6),
+			"bit_7" =>Ok(Self::Bit7),
+			"not_target" =>Ok(Self::NotTarget),
+			"not_decidable" =>Ok(Self::NotDecidable),
+			_=> Err(()),
+		}
+	}
+}
+
 #[derive(Debug,Clone)]
 pub enum Node {
 	Program(Rc<RefCell<Program>>),
@@ -4132,6 +4165,7 @@ pub struct Field {
 	pub field_type: Option<Type>,
 	pub raw_arguments: Option<Expr>,
 	pub arguments: Vec<Expr>,
+	pub bit_alignment: BitAlignment,
 }
 
 impl TryFrom<&Member> for Rc<RefCell<Field>> {
@@ -4421,6 +4455,7 @@ pub struct IntType {
 	pub loc: Loc,
 	pub is_explicit: bool,
 	pub is_int_set: bool,
+	pub bit_alignment: BitAlignment,
 	pub bit_size: u64,
 	pub endian: Endian,
 	pub is_signed: bool,
@@ -4490,6 +4525,7 @@ pub struct IdentType {
 	pub loc: Loc,
 	pub is_explicit: bool,
 	pub is_int_set: bool,
+	pub bit_alignment: BitAlignment,
 	pub ident: Option<Rc<RefCell<Ident>>>,
 	pub base: Option<TypeWeak>,
 }
@@ -4557,6 +4593,7 @@ pub struct IntLiteralType {
 	pub loc: Loc,
 	pub is_explicit: bool,
 	pub is_int_set: bool,
+	pub bit_alignment: BitAlignment,
 	pub base: Option<Weak<RefCell<IntLiteral>>>,
 }
 
@@ -4623,6 +4660,7 @@ pub struct StrLiteralType {
 	pub loc: Loc,
 	pub is_explicit: bool,
 	pub is_int_set: bool,
+	pub bit_alignment: BitAlignment,
 	pub base: Option<Weak<RefCell<StrLiteral>>>,
 }
 
@@ -4689,6 +4727,7 @@ pub struct VoidType {
 	pub loc: Loc,
 	pub is_explicit: bool,
 	pub is_int_set: bool,
+	pub bit_alignment: BitAlignment,
 }
 
 impl TryFrom<&Type> for Rc<RefCell<VoidType>> {
@@ -4754,6 +4793,7 @@ pub struct BoolType {
 	pub loc: Loc,
 	pub is_explicit: bool,
 	pub is_int_set: bool,
+	pub bit_alignment: BitAlignment,
 }
 
 impl TryFrom<&Type> for Rc<RefCell<BoolType>> {
@@ -4819,6 +4859,7 @@ pub struct ArrayType {
 	pub loc: Loc,
 	pub is_explicit: bool,
 	pub is_int_set: bool,
+	pub bit_alignment: BitAlignment,
 	pub end_loc: Loc,
 	pub base_type: Option<Type>,
 	pub length: Option<Expr>,
@@ -4887,6 +4928,7 @@ pub struct FunctionType {
 	pub loc: Loc,
 	pub is_explicit: bool,
 	pub is_int_set: bool,
+	pub bit_alignment: BitAlignment,
 	pub return_type: Option<Type>,
 	pub parameters: Vec<Type>,
 }
@@ -4954,6 +4996,7 @@ pub struct StructType {
 	pub loc: Loc,
 	pub is_explicit: bool,
 	pub is_int_set: bool,
+	pub bit_alignment: BitAlignment,
 	pub fields: Vec<Member>,
 	pub base: Option<NodeWeak>,
 	pub recursive: bool,
@@ -5022,6 +5065,7 @@ pub struct StructUnionType {
 	pub loc: Loc,
 	pub is_explicit: bool,
 	pub is_int_set: bool,
+	pub bit_alignment: BitAlignment,
 	pub fields: Vec<Rc<RefCell<StructType>>>,
 	pub base: Option<ExprWeak>,
 	pub union_fields: Vec<Weak<RefCell<Field>>>,
@@ -5227,6 +5271,7 @@ pub struct UnionType {
 	pub loc: Loc,
 	pub is_explicit: bool,
 	pub is_int_set: bool,
+	pub bit_alignment: BitAlignment,
 	pub cond: Option<ExprWeak>,
 	pub candidates: Vec<Rc<RefCell<UnionCandidate>>>,
 	pub base_type: Option<Weak<RefCell<StructUnionType>>>,
@@ -5360,6 +5405,7 @@ pub struct RangeType {
 	pub loc: Loc,
 	pub is_explicit: bool,
 	pub is_int_set: bool,
+	pub bit_alignment: BitAlignment,
 	pub base_type: Option<Type>,
 	pub range: Option<Weak<RefCell<Range>>>,
 }
@@ -5621,6 +5667,7 @@ pub struct EnumType {
 	pub loc: Loc,
 	pub is_explicit: bool,
 	pub is_int_set: bool,
+	pub bit_alignment: BitAlignment,
 	pub base: Option<Weak<RefCell<Enum>>>,
 }
 
@@ -5687,6 +5734,7 @@ pub struct BitGroupType {
 	pub loc: Loc,
 	pub is_explicit: bool,
 	pub is_int_set: bool,
+	pub bit_alignment: BitAlignment,
 	pub bit_fields: Vec<Weak<RefCell<Field>>>,
 	pub is_aligned: bool,
 	pub bit_size: u64,
@@ -6286,6 +6334,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				field_type: None,
 				raw_arguments: None,
 				arguments: Vec::new(),
+				bit_alignment: BitAlignment::ByteAligned,
 				})))
 			},
 			NodeType::Format => {
@@ -6314,6 +6363,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
 				is_int_set: false,
+				bit_alignment: BitAlignment::ByteAligned,
 				bit_size: 0,
 				endian: Endian::Unspec,
 				is_signed: false,
@@ -6325,6 +6375,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
 				is_int_set: false,
+				bit_alignment: BitAlignment::ByteAligned,
 				ident: None,
 				base: None,
 				})))
@@ -6334,6 +6385,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
 				is_int_set: false,
+				bit_alignment: BitAlignment::ByteAligned,
 				base: None,
 				})))
 			},
@@ -6342,6 +6394,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
 				is_int_set: false,
+				bit_alignment: BitAlignment::ByteAligned,
 				base: None,
 				})))
 			},
@@ -6350,6 +6403,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
 				is_int_set: false,
+				bit_alignment: BitAlignment::ByteAligned,
 				})))
 			},
 			NodeType::BoolType => {
@@ -6357,6 +6411,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
 				is_int_set: false,
+				bit_alignment: BitAlignment::ByteAligned,
 				})))
 			},
 			NodeType::ArrayType => {
@@ -6364,6 +6419,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
 				is_int_set: false,
+				bit_alignment: BitAlignment::ByteAligned,
 				end_loc: raw_node.loc.clone(),
 				base_type: None,
 				length: None,
@@ -6374,6 +6430,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
 				is_int_set: false,
+				bit_alignment: BitAlignment::ByteAligned,
 				return_type: None,
 				parameters: Vec::new(),
 				})))
@@ -6383,6 +6440,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
 				is_int_set: false,
+				bit_alignment: BitAlignment::ByteAligned,
 				fields: Vec::new(),
 				base: None,
 				recursive: false,
@@ -6393,6 +6451,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
 				is_int_set: false,
+				bit_alignment: BitAlignment::ByteAligned,
 				fields: Vec::new(),
 				base: None,
 				union_fields: Vec::new(),
@@ -6424,6 +6483,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
 				is_int_set: false,
+				bit_alignment: BitAlignment::ByteAligned,
 				cond: None,
 				candidates: Vec::new(),
 				base_type: None,
@@ -6441,6 +6501,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
 				is_int_set: false,
+				bit_alignment: BitAlignment::ByteAligned,
 				base_type: None,
 				range: None,
 				})))
@@ -6470,6 +6531,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
 				is_int_set: false,
+				bit_alignment: BitAlignment::ByteAligned,
 				base: None,
 				})))
 			},
@@ -6478,6 +6540,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
 				is_int_set: false,
+				bit_alignment: BitAlignment::ByteAligned,
 				bit_fields: Vec::new(),
 				is_aligned: false,
 				bit_size: 0,
@@ -8214,6 +8277,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().arguments.push(arguments_body.try_into()?);
 				}
+				let bit_alignment_body = match raw_node.body.get("bit_alignment") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"bit_alignment")),
+				};
+				node.borrow_mut().bit_alignment = match bit_alignment_body.as_str() {
+					Some(v)=>match BitAlignment::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(bit_alignment_body.into(),JSONType::String)),
+				};
 			},
 			NodeType::Format => {
 				let node = nodes[i].clone();
@@ -8430,6 +8504,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_int_set_body.into(),JSONType::Bool)),
 				};
+				let bit_alignment_body = match raw_node.body.get("bit_alignment") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"bit_alignment")),
+				};
+				node.borrow_mut().bit_alignment = match bit_alignment_body.as_str() {
+					Some(v)=>match BitAlignment::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(bit_alignment_body.into(),JSONType::String)),
+				};
 				let bit_size_body = match raw_node.body.get("bit_size") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"bit_size")),
@@ -8488,6 +8573,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_int_set_body.into(),JSONType::Bool)),
 				};
+				let bit_alignment_body = match raw_node.body.get("bit_alignment") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"bit_alignment")),
+				};
+				node.borrow_mut().bit_alignment = match bit_alignment_body.as_str() {
+					Some(v)=>match BitAlignment::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(bit_alignment_body.into(),JSONType::String)),
+				};
 				let ident_body = match raw_node.body.get("ident") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"ident")),
@@ -8545,6 +8641,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_int_set_body.into(),JSONType::Bool)),
 				};
+				let bit_alignment_body = match raw_node.body.get("bit_alignment") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"bit_alignment")),
+				};
+				node.borrow_mut().bit_alignment = match bit_alignment_body.as_str() {
+					Some(v)=>match BitAlignment::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(bit_alignment_body.into(),JSONType::String)),
+				};
 				let base_body = match raw_node.body.get("base") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"base")),
@@ -8586,6 +8693,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				node.borrow_mut().is_int_set = match is_int_set_body.as_bool() {
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_int_set_body.into(),JSONType::Bool)),
+				};
+				let bit_alignment_body = match raw_node.body.get("bit_alignment") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"bit_alignment")),
+				};
+				node.borrow_mut().bit_alignment = match bit_alignment_body.as_str() {
+					Some(v)=>match BitAlignment::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(bit_alignment_body.into(),JSONType::String)),
 				};
 				let base_body = match raw_node.body.get("base") {
 					Some(v)=>v,
@@ -8629,6 +8747,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_int_set_body.into(),JSONType::Bool)),
 				};
+				let bit_alignment_body = match raw_node.body.get("bit_alignment") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"bit_alignment")),
+				};
+				node.borrow_mut().bit_alignment = match bit_alignment_body.as_str() {
+					Some(v)=>match BitAlignment::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(bit_alignment_body.into(),JSONType::String)),
+				};
 			},
 			NodeType::BoolType => {
 				let node = nodes[i].clone();
@@ -8652,6 +8781,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_int_set_body.into(),JSONType::Bool)),
 				};
+				let bit_alignment_body = match raw_node.body.get("bit_alignment") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"bit_alignment")),
+				};
+				node.borrow_mut().bit_alignment = match bit_alignment_body.as_str() {
+					Some(v)=>match BitAlignment::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(bit_alignment_body.into(),JSONType::String)),
+				};
 			},
 			NodeType::ArrayType => {
 				let node = nodes[i].clone();
@@ -8674,6 +8814,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				node.borrow_mut().is_int_set = match is_int_set_body.as_bool() {
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_int_set_body.into(),JSONType::Bool)),
+				};
+				let bit_alignment_body = match raw_node.body.get("bit_alignment") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"bit_alignment")),
+				};
+				node.borrow_mut().bit_alignment = match bit_alignment_body.as_str() {
+					Some(v)=>match BitAlignment::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(bit_alignment_body.into(),JSONType::String)),
 				};
 				let end_loc_body = match raw_node.body.get("end_loc") {
 					Some(v)=>v,
@@ -8736,6 +8887,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_int_set_body.into(),JSONType::Bool)),
 				};
+				let bit_alignment_body = match raw_node.body.get("bit_alignment") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"bit_alignment")),
+				};
+				node.borrow_mut().bit_alignment = match bit_alignment_body.as_str() {
+					Some(v)=>match BitAlignment::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(bit_alignment_body.into(),JSONType::String)),
+				};
 				let return_type_body = match raw_node.body.get("return_type") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"return_type")),
@@ -8792,6 +8954,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				node.borrow_mut().is_int_set = match is_int_set_body.as_bool() {
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_int_set_body.into(),JSONType::Bool)),
+				};
+				let bit_alignment_body = match raw_node.body.get("bit_alignment") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"bit_alignment")),
+				};
+				node.borrow_mut().bit_alignment = match bit_alignment_body.as_str() {
+					Some(v)=>match BitAlignment::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(bit_alignment_body.into(),JSONType::String)),
 				};
 				let fields_body = match raw_node.body.get("fields") {
 					Some(v)=>v,
@@ -8857,6 +9030,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				node.borrow_mut().is_int_set = match is_int_set_body.as_bool() {
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_int_set_body.into(),JSONType::Bool)),
+				};
+				let bit_alignment_body = match raw_node.body.get("bit_alignment") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"bit_alignment")),
+				};
+				node.borrow_mut().bit_alignment = match bit_alignment_body.as_str() {
+					Some(v)=>match BitAlignment::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(bit_alignment_body.into(),JSONType::String)),
 				};
 				let fields_body = match raw_node.body.get("fields") {
 					Some(v)=>v,
@@ -9054,6 +9238,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_int_set_body.into(),JSONType::Bool)),
 				};
+				let bit_alignment_body = match raw_node.body.get("bit_alignment") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"bit_alignment")),
+				};
+				node.borrow_mut().bit_alignment = match bit_alignment_body.as_str() {
+					Some(v)=>match BitAlignment::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(bit_alignment_body.into(),JSONType::String)),
+				};
 				let cond_body = match raw_node.body.get("cond") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"cond")),
@@ -9170,6 +9365,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				node.borrow_mut().is_int_set = match is_int_set_body.as_bool() {
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_int_set_body.into(),JSONType::Bool)),
+				};
+				let bit_alignment_body = match raw_node.body.get("bit_alignment") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"bit_alignment")),
+				};
+				node.borrow_mut().bit_alignment = match bit_alignment_body.as_str() {
+					Some(v)=>match BitAlignment::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(bit_alignment_body.into(),JSONType::String)),
 				};
 				let base_type_body = match raw_node.body.get("base_type") {
 					Some(v)=>v,
@@ -9405,6 +9611,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_int_set_body.into(),JSONType::Bool)),
 				};
+				let bit_alignment_body = match raw_node.body.get("bit_alignment") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"bit_alignment")),
+				};
+				node.borrow_mut().bit_alignment = match bit_alignment_body.as_str() {
+					Some(v)=>match BitAlignment::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(bit_alignment_body.into(),JSONType::String)),
+				};
 				let base_body = match raw_node.body.get("base") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"base")),
@@ -9446,6 +9663,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				node.borrow_mut().is_int_set = match is_int_set_body.as_bool() {
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_int_set_body.into(),JSONType::Bool)),
+				};
+				let bit_alignment_body = match raw_node.body.get("bit_alignment") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"bit_alignment")),
+				};
+				node.borrow_mut().bit_alignment = match bit_alignment_body.as_str() {
+					Some(v)=>match BitAlignment::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(bit_alignment_body.into(),JSONType::String)),
 				};
 				let bit_fields_body = match raw_node.body.get("bit_fields") {
 					Some(v)=>v,

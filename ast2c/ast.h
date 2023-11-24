@@ -41,6 +41,7 @@ typedef enum ast2c_IdentUsage ast2c_IdentUsage;
 typedef enum ast2c_Endian ast2c_Endian;
 typedef enum ast2c_TokenTag ast2c_TokenTag;
 typedef enum ast2c_ConstantLevel ast2c_ConstantLevel;
+typedef enum ast2c_BitAlignment ast2c_BitAlignment;
 typedef struct ast2c_Node ast2c_Node;
 typedef struct ast2c_Expr ast2c_Expr;
 typedef struct ast2c_Literal ast2c_Literal;
@@ -280,6 +281,21 @@ enum ast2c_ConstantLevel {
 const char* ast2c_ConstantLevel_to_string(ast2c_ConstantLevel);
 int ast2c_ConstantLevel_from_string(const char*,ast2c_ConstantLevel*);
 
+enum ast2c_BitAlignment {
+	AST2C_BITALIGNMENT_BYTE_ALIGNED,
+	AST2C_BITALIGNMENT_BIT_1,
+	AST2C_BITALIGNMENT_BIT_2,
+	AST2C_BITALIGNMENT_BIT_3,
+	AST2C_BITALIGNMENT_BIT_4,
+	AST2C_BITALIGNMENT_BIT_5,
+	AST2C_BITALIGNMENT_BIT_6,
+	AST2C_BITALIGNMENT_BIT_7,
+	AST2C_BITALIGNMENT_NOT_TARGET,
+	AST2C_BITALIGNMENT_NOT_DECIDABLE,
+};
+const char* ast2c_BitAlignment_to_string(ast2c_BitAlignment);
+int ast2c_BitAlignment_from_string(const char*,ast2c_BitAlignment*);
+
 struct ast2c_Pos {
 	uint64_t begin;
 	uint64_t end;
@@ -391,6 +407,7 @@ struct ast2c_Type {
 	ast2c_Loc loc;
 	int is_explicit;
 	int is_int_set;
+	ast2c_BitAlignment bit_alignment;
 };
 
 struct ast2c_Program {
@@ -741,6 +758,7 @@ struct ast2c_Field {
 	ast2c_Expr* raw_arguments;
 	ast2c_Expr** arguments;
 	size_t arguments_size;
+	ast2c_BitAlignment bit_alignment;
 };
 
 // returns 1 if succeed 0 if failed
@@ -779,6 +797,7 @@ struct ast2c_IntType {
 	ast2c_Loc loc;
 	int is_explicit;
 	int is_int_set;
+	ast2c_BitAlignment bit_alignment;
 	uint64_t bit_size;
 	ast2c_Endian endian;
 	int is_signed;
@@ -793,6 +812,7 @@ struct ast2c_IdentType {
 	ast2c_Loc loc;
 	int is_explicit;
 	int is_int_set;
+	ast2c_BitAlignment bit_alignment;
 	ast2c_Ident* ident;
 	ast2c_Type* base;
 };
@@ -805,6 +825,7 @@ struct ast2c_IntLiteralType {
 	ast2c_Loc loc;
 	int is_explicit;
 	int is_int_set;
+	ast2c_BitAlignment bit_alignment;
 	ast2c_IntLiteral* base;
 };
 
@@ -816,6 +837,7 @@ struct ast2c_StrLiteralType {
 	ast2c_Loc loc;
 	int is_explicit;
 	int is_int_set;
+	ast2c_BitAlignment bit_alignment;
 	ast2c_StrLiteral* base;
 };
 
@@ -827,6 +849,7 @@ struct ast2c_VoidType {
 	ast2c_Loc loc;
 	int is_explicit;
 	int is_int_set;
+	ast2c_BitAlignment bit_alignment;
 };
 
 // returns 1 if succeed 0 if failed
@@ -837,6 +860,7 @@ struct ast2c_BoolType {
 	ast2c_Loc loc;
 	int is_explicit;
 	int is_int_set;
+	ast2c_BitAlignment bit_alignment;
 };
 
 // returns 1 if succeed 0 if failed
@@ -847,6 +871,7 @@ struct ast2c_ArrayType {
 	ast2c_Loc loc;
 	int is_explicit;
 	int is_int_set;
+	ast2c_BitAlignment bit_alignment;
 	ast2c_Loc end_loc;
 	ast2c_Type* base_type;
 	ast2c_Expr* length;
@@ -860,6 +885,7 @@ struct ast2c_FunctionType {
 	ast2c_Loc loc;
 	int is_explicit;
 	int is_int_set;
+	ast2c_BitAlignment bit_alignment;
 	ast2c_Type* return_type;
 	ast2c_Type** parameters;
 	size_t parameters_size;
@@ -873,6 +899,7 @@ struct ast2c_StructType {
 	ast2c_Loc loc;
 	int is_explicit;
 	int is_int_set;
+	ast2c_BitAlignment bit_alignment;
 	ast2c_Member** fields;
 	size_t fields_size;
 	ast2c_Node* base;
@@ -887,6 +914,7 @@ struct ast2c_StructUnionType {
 	ast2c_Loc loc;
 	int is_explicit;
 	int is_int_set;
+	ast2c_BitAlignment bit_alignment;
 	ast2c_StructType** fields;
 	size_t fields_size;
 	ast2c_Expr* base;
@@ -933,6 +961,7 @@ struct ast2c_UnionType {
 	ast2c_Loc loc;
 	int is_explicit;
 	int is_int_set;
+	ast2c_BitAlignment bit_alignment;
 	ast2c_Expr* cond;
 	ast2c_UnionCandidate** candidates;
 	size_t candidates_size;
@@ -957,6 +986,7 @@ struct ast2c_RangeType {
 	ast2c_Loc loc;
 	int is_explicit;
 	int is_int_set;
+	ast2c_BitAlignment bit_alignment;
 	ast2c_Type* base_type;
 	ast2c_Range* range;
 };
@@ -996,6 +1026,7 @@ struct ast2c_EnumType {
 	ast2c_Loc loc;
 	int is_explicit;
 	int is_int_set;
+	ast2c_BitAlignment bit_alignment;
 	ast2c_Enum* base;
 };
 
@@ -1007,6 +1038,7 @@ struct ast2c_BitGroupType {
 	ast2c_Loc loc;
 	int is_explicit;
 	int is_int_set;
+	ast2c_BitAlignment bit_alignment;
 	ast2c_Field** bit_fields;
 	size_t bit_fields_size;
 	int is_aligned;

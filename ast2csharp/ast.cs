@@ -150,6 +150,18 @@ ConstValue,
 ConstVariable,
 Variable,
 }
+public enum BitAlignment {
+ByteAligned,
+Bit1,
+Bit2,
+Bit3,
+Bit4,
+Bit5,
+Bit6,
+Bit7,
+NotTarget,
+NotDecidable,
+}
 public interface Node {
 	public Loc Loc {get; set;}
 }
@@ -168,6 +180,7 @@ public interface Member : Stmt {
 public interface Type : Node {
 	public bool IsExplicit {get; set;}
 	public bool IsIntSet {get; set;}
+	public BitAlignment BitAlignment {get; set;}
 }
 public class Program : Node{
 	public Loc Loc{get;set;}
@@ -365,6 +378,7 @@ public class Field : Member{
 	public Type? FieldType{get;set;}
 	public Expr? RawArguments{get;set;}
 	public List<Expr>? Arguments{get;set;}
+	public BitAlignment BitAlignment{get;set;}
 }
 public class Format : Member{
 	public Loc Loc{get;set;}
@@ -387,6 +401,7 @@ public class IntType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
 	public bool IsIntSet{get;set;}
+	public BitAlignment BitAlignment{get;set;}
 	public ulong BitSize{get;set;}
 	public Endian Endian{get;set;}
 	public bool IsSigned{get;set;}
@@ -396,6 +411,7 @@ public class IdentType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
 	public bool IsIntSet{get;set;}
+	public BitAlignment BitAlignment{get;set;}
 	public Ident? Ident{get;set;}
 	public Type? Base{get;set;}
 }
@@ -403,28 +419,33 @@ public class IntLiteralType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
 	public bool IsIntSet{get;set;}
+	public BitAlignment BitAlignment{get;set;}
 	public IntLiteral? Base{get;set;}
 }
 public class StrLiteralType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
 	public bool IsIntSet{get;set;}
+	public BitAlignment BitAlignment{get;set;}
 	public StrLiteral? Base{get;set;}
 }
 public class VoidType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
 	public bool IsIntSet{get;set;}
+	public BitAlignment BitAlignment{get;set;}
 }
 public class BoolType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
 	public bool IsIntSet{get;set;}
+	public BitAlignment BitAlignment{get;set;}
 }
 public class ArrayType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
 	public bool IsIntSet{get;set;}
+	public BitAlignment BitAlignment{get;set;}
 	public Loc EndLoc{get;set;}
 	public Type? BaseType{get;set;}
 	public Expr? Length{get;set;}
@@ -433,6 +454,7 @@ public class FunctionType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
 	public bool IsIntSet{get;set;}
+	public BitAlignment BitAlignment{get;set;}
 	public Type? ReturnType{get;set;}
 	public List<Type>? Parameters{get;set;}
 }
@@ -440,6 +462,7 @@ public class StructType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
 	public bool IsIntSet{get;set;}
+	public BitAlignment BitAlignment{get;set;}
 	public List<Member>? Fields{get;set;}
 	public Node? Base{get;set;}
 	public bool Recursive{get;set;}
@@ -448,6 +471,7 @@ public class StructUnionType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
 	public bool IsIntSet{get;set;}
+	public BitAlignment BitAlignment{get;set;}
 	public List<StructType>? Fields{get;set;}
 	public Expr? Base{get;set;}
 	public List<Field>? UnionFields{get;set;}
@@ -471,6 +495,7 @@ public class UnionType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
 	public bool IsIntSet{get;set;}
+	public BitAlignment BitAlignment{get;set;}
 	public Expr? Cond{get;set;}
 	public List<UnionCandidate>? Candidates{get;set;}
 	public StructUnionType? BaseType{get;set;}
@@ -484,6 +509,7 @@ public class RangeType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
 	public bool IsIntSet{get;set;}
+	public BitAlignment BitAlignment{get;set;}
 	public Type? BaseType{get;set;}
 	public Range? Range{get;set;}
 }
@@ -507,12 +533,14 @@ public class EnumType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
 	public bool IsIntSet{get;set;}
+	public BitAlignment BitAlignment{get;set;}
 	public Enum? Base{get;set;}
 }
 public class BitGroupType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
 	public bool IsIntSet{get;set;}
+	public BitAlignment BitAlignment{get;set;}
 	public List<Field>? BitFields{get;set;}
 	public bool IsAligned{get;set;}
 	public ulong BitSize{get;set;}

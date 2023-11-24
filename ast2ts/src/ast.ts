@@ -124,6 +124,23 @@ export function isConstantLevel(obj: any): obj is ConstantLevel {
 	return obj && typeof obj === 'string' && (obj === "unknown" || obj === "const_value" || obj === "const_variable" || obj === "variable")
 }
 
+export enum BitAlignment {
+	byte_aligned = "byte_aligned",
+	bit_1 = "bit_1",
+	bit_2 = "bit_2",
+	bit_3 = "bit_3",
+	bit_4 = "bit_4",
+	bit_5 = "bit_5",
+	bit_6 = "bit_6",
+	bit_7 = "bit_7",
+	not_target = "not_target",
+	not_decidable = "not_decidable",
+};
+
+export function isBitAlignment(obj: any): obj is BitAlignment {
+	return obj && typeof obj === 'string' && (obj === "byte_aligned" || obj === "bit_1" || obj === "bit_2" || obj === "bit_3" || obj === "bit_4" || obj === "bit_5" || obj === "bit_6" || obj === "bit_7" || obj === "not_target" || obj === "not_decidable")
+}
+
 export interface Node {
 	readonly node_type: NodeType;
 	loc: Loc;
@@ -272,6 +289,7 @@ export function isMember(obj: any): obj is Member {
 export interface Type extends Node {
 	is_explicit: boolean;
 	is_int_set: boolean;
+	bit_alignment: BitAlignment;
 }
 
 export function isType(obj: any): obj is Type {
@@ -561,6 +579,7 @@ export interface Field extends Member {
 	field_type: Type|null;
 	raw_arguments: Expr|null;
 	arguments: Expr[];
+	bit_alignment: BitAlignment;
 }
 
 export function isField(obj: any): obj is Field {
@@ -1271,6 +1290,7 @@ export function parseAST(obj: any): Program {
 				field_type: null,
 				raw_arguments: null,
 				arguments: [],
+				bit_alignment: BitAlignment.byte_aligned,
 			}
 			c.node.push(n);
 			break;
@@ -1308,6 +1328,7 @@ export function parseAST(obj: any): Program {
 				loc: on.loc,
 				is_explicit: false,
 				is_int_set: false,
+				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: 0,
 				endian: Endian.unspec,
 				is_signed: false,
@@ -1322,6 +1343,7 @@ export function parseAST(obj: any): Program {
 				loc: on.loc,
 				is_explicit: false,
 				is_int_set: false,
+				bit_alignment: BitAlignment.byte_aligned,
 				ident: null,
 				base: null,
 			}
@@ -1334,6 +1356,7 @@ export function parseAST(obj: any): Program {
 				loc: on.loc,
 				is_explicit: false,
 				is_int_set: false,
+				bit_alignment: BitAlignment.byte_aligned,
 				base: null,
 			}
 			c.node.push(n);
@@ -1345,6 +1368,7 @@ export function parseAST(obj: any): Program {
 				loc: on.loc,
 				is_explicit: false,
 				is_int_set: false,
+				bit_alignment: BitAlignment.byte_aligned,
 				base: null,
 			}
 			c.node.push(n);
@@ -1356,6 +1380,7 @@ export function parseAST(obj: any): Program {
 				loc: on.loc,
 				is_explicit: false,
 				is_int_set: false,
+				bit_alignment: BitAlignment.byte_aligned,
 			}
 			c.node.push(n);
 			break;
@@ -1366,6 +1391,7 @@ export function parseAST(obj: any): Program {
 				loc: on.loc,
 				is_explicit: false,
 				is_int_set: false,
+				bit_alignment: BitAlignment.byte_aligned,
 			}
 			c.node.push(n);
 			break;
@@ -1376,6 +1402,7 @@ export function parseAST(obj: any): Program {
 				loc: on.loc,
 				is_explicit: false,
 				is_int_set: false,
+				bit_alignment: BitAlignment.byte_aligned,
 				end_loc: on.loc,
 				base_type: null,
 				length: null,
@@ -1389,6 +1416,7 @@ export function parseAST(obj: any): Program {
 				loc: on.loc,
 				is_explicit: false,
 				is_int_set: false,
+				bit_alignment: BitAlignment.byte_aligned,
 				return_type: null,
 				parameters: [],
 			}
@@ -1401,6 +1429,7 @@ export function parseAST(obj: any): Program {
 				loc: on.loc,
 				is_explicit: false,
 				is_int_set: false,
+				bit_alignment: BitAlignment.byte_aligned,
 				fields: [],
 				base: null,
 				recursive: false,
@@ -1414,6 +1443,7 @@ export function parseAST(obj: any): Program {
 				loc: on.loc,
 				is_explicit: false,
 				is_int_set: false,
+				bit_alignment: BitAlignment.byte_aligned,
 				fields: [],
 				base: null,
 				union_fields: [],
@@ -1457,6 +1487,7 @@ export function parseAST(obj: any): Program {
 				loc: on.loc,
 				is_explicit: false,
 				is_int_set: false,
+				bit_alignment: BitAlignment.byte_aligned,
 				cond: null,
 				candidates: [],
 				base_type: null,
@@ -1480,6 +1511,7 @@ export function parseAST(obj: any): Program {
 				loc: on.loc,
 				is_explicit: false,
 				is_int_set: false,
+				bit_alignment: BitAlignment.byte_aligned,
 				base_type: null,
 				range: null,
 			}
@@ -1518,6 +1550,7 @@ export function parseAST(obj: any): Program {
 				loc: on.loc,
 				is_explicit: false,
 				is_int_set: false,
+				bit_alignment: BitAlignment.byte_aligned,
 				base: null,
 			}
 			c.node.push(n);
@@ -1529,6 +1562,7 @@ export function parseAST(obj: any): Program {
 				loc: on.loc,
 				is_explicit: false,
 				is_int_set: false,
+				bit_alignment: BitAlignment.byte_aligned,
 				bit_fields: [],
 				is_aligned: false,
 				bit_size: 0,
@@ -2443,6 +2477,11 @@ export function parseAST(obj: any): Program {
 				}
 				n.arguments.push(tmparguments);
 			}
+			const tmpbit_alignment = on.body?.bit_alignment;
+			if (!isBitAlignment(tmpbit_alignment)) {
+				throw new Error('invalid node list at Field::bit_alignment');
+			}
+			n.bit_alignment = tmpbit_alignment;
 			break;
 		}
 		case "format": {
@@ -2549,6 +2588,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at IntType::is_int_set');
 			}
 			n.is_int_set = on.body.is_int_set;
+			const tmpbit_alignment = on.body?.bit_alignment;
+			if (!isBitAlignment(tmpbit_alignment)) {
+				throw new Error('invalid node list at IntType::bit_alignment');
+			}
+			n.bit_alignment = tmpbit_alignment;
 			const tmpbit_size = on.body?.bit_size;
 			if (typeof on.body?.bit_size !== "number") {
 				throw new Error('invalid node list at IntType::bit_size');
@@ -2583,6 +2627,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at IdentType::is_int_set');
 			}
 			n.is_int_set = on.body.is_int_set;
+			const tmpbit_alignment = on.body?.bit_alignment;
+			if (!isBitAlignment(tmpbit_alignment)) {
+				throw new Error('invalid node list at IdentType::bit_alignment');
+			}
+			n.bit_alignment = tmpbit_alignment;
 			if (on.body?.ident !== null && typeof on.body?.ident !== 'number') {
 				throw new Error('invalid node list at IdentType::ident');
 			}
@@ -2613,6 +2662,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at IntLiteralType::is_int_set');
 			}
 			n.is_int_set = on.body.is_int_set;
+			const tmpbit_alignment = on.body?.bit_alignment;
+			if (!isBitAlignment(tmpbit_alignment)) {
+				throw new Error('invalid node list at IntLiteralType::bit_alignment');
+			}
+			n.bit_alignment = tmpbit_alignment;
 			if (on.body?.base !== null && typeof on.body?.base !== 'number') {
 				throw new Error('invalid node list at IntLiteralType::base');
 			}
@@ -2635,6 +2689,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at StrLiteralType::is_int_set');
 			}
 			n.is_int_set = on.body.is_int_set;
+			const tmpbit_alignment = on.body?.bit_alignment;
+			if (!isBitAlignment(tmpbit_alignment)) {
+				throw new Error('invalid node list at StrLiteralType::bit_alignment');
+			}
+			n.bit_alignment = tmpbit_alignment;
 			if (on.body?.base !== null && typeof on.body?.base !== 'number') {
 				throw new Error('invalid node list at StrLiteralType::base');
 			}
@@ -2657,6 +2716,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at VoidType::is_int_set');
 			}
 			n.is_int_set = on.body.is_int_set;
+			const tmpbit_alignment = on.body?.bit_alignment;
+			if (!isBitAlignment(tmpbit_alignment)) {
+				throw new Error('invalid node list at VoidType::bit_alignment');
+			}
+			n.bit_alignment = tmpbit_alignment;
 			break;
 		}
 		case "bool_type": {
@@ -2671,6 +2735,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at BoolType::is_int_set');
 			}
 			n.is_int_set = on.body.is_int_set;
+			const tmpbit_alignment = on.body?.bit_alignment;
+			if (!isBitAlignment(tmpbit_alignment)) {
+				throw new Error('invalid node list at BoolType::bit_alignment');
+			}
+			n.bit_alignment = tmpbit_alignment;
 			break;
 		}
 		case "array_type": {
@@ -2685,6 +2754,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at ArrayType::is_int_set');
 			}
 			n.is_int_set = on.body.is_int_set;
+			const tmpbit_alignment = on.body?.bit_alignment;
+			if (!isBitAlignment(tmpbit_alignment)) {
+				throw new Error('invalid node list at ArrayType::bit_alignment');
+			}
+			n.bit_alignment = tmpbit_alignment;
 			const tmpend_loc = on.body?.end_loc;
 			if (!isLoc(tmpend_loc)) {
 				throw new Error('invalid node list at ArrayType::end_loc');
@@ -2720,6 +2794,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at FunctionType::is_int_set');
 			}
 			n.is_int_set = on.body.is_int_set;
+			const tmpbit_alignment = on.body?.bit_alignment;
+			if (!isBitAlignment(tmpbit_alignment)) {
+				throw new Error('invalid node list at FunctionType::bit_alignment');
+			}
+			n.bit_alignment = tmpbit_alignment;
 			if (on.body?.return_type !== null && typeof on.body?.return_type !== 'number') {
 				throw new Error('invalid node list at FunctionType::return_type');
 			}
@@ -2752,6 +2831,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at StructType::is_int_set');
 			}
 			n.is_int_set = on.body.is_int_set;
+			const tmpbit_alignment = on.body?.bit_alignment;
+			if (!isBitAlignment(tmpbit_alignment)) {
+				throw new Error('invalid node list at StructType::bit_alignment');
+			}
+			n.bit_alignment = tmpbit_alignment;
 			for (const o of on.body.fields) {
 				if (typeof o !== 'number') {
 					throw new Error('invalid node list at StructType::fields');
@@ -2789,6 +2873,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at StructUnionType::is_int_set');
 			}
 			n.is_int_set = on.body.is_int_set;
+			const tmpbit_alignment = on.body?.bit_alignment;
+			if (!isBitAlignment(tmpbit_alignment)) {
+				throw new Error('invalid node list at StructUnionType::bit_alignment');
+			}
+			n.bit_alignment = tmpbit_alignment;
 			for (const o of on.body.fields) {
 				if (typeof o !== 'number') {
 					throw new Error('invalid node list at StructUnionType::fields');
@@ -2887,6 +2976,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at UnionType::is_int_set');
 			}
 			n.is_int_set = on.body.is_int_set;
+			const tmpbit_alignment = on.body?.bit_alignment;
+			if (!isBitAlignment(tmpbit_alignment)) {
+				throw new Error('invalid node list at UnionType::bit_alignment');
+			}
+			n.bit_alignment = tmpbit_alignment;
 			if (on.body?.cond !== null && typeof on.body?.cond !== 'number') {
 				throw new Error('invalid node list at UnionType::cond');
 			}
@@ -2947,6 +3041,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at RangeType::is_int_set');
 			}
 			n.is_int_set = on.body.is_int_set;
+			const tmpbit_alignment = on.body?.bit_alignment;
+			if (!isBitAlignment(tmpbit_alignment)) {
+				throw new Error('invalid node list at RangeType::bit_alignment');
+			}
+			n.bit_alignment = tmpbit_alignment;
 			if (on.body?.base_type !== null && typeof on.body?.base_type !== 'number') {
 				throw new Error('invalid node list at RangeType::base_type');
 			}
@@ -3064,6 +3163,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at EnumType::is_int_set');
 			}
 			n.is_int_set = on.body.is_int_set;
+			const tmpbit_alignment = on.body?.bit_alignment;
+			if (!isBitAlignment(tmpbit_alignment)) {
+				throw new Error('invalid node list at EnumType::bit_alignment');
+			}
+			n.bit_alignment = tmpbit_alignment;
 			if (on.body?.base !== null && typeof on.body?.base !== 'number') {
 				throw new Error('invalid node list at EnumType::base');
 			}
@@ -3086,6 +3190,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at BitGroupType::is_int_set');
 			}
 			n.is_int_set = on.body.is_int_set;
+			const tmpbit_alignment = on.body?.bit_alignment;
+			if (!isBitAlignment(tmpbit_alignment)) {
+				throw new Error('invalid node list at BitGroupType::bit_alignment');
+			}
+			n.bit_alignment = tmpbit_alignment;
 			for (const o of on.body.bit_fields) {
 				if (typeof o !== 'number') {
 					throw new Error('invalid node list at BitGroupType::bit_fields');
