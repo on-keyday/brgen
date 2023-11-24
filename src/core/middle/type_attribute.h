@@ -192,12 +192,37 @@ namespace brgen::middle {
                     t->bit_alignment = ast::BitAlignment::byte_aligned;
                 }
                 if (auto u = ast::as<ast::StructUnionType>(n)) {
-                    ast::BitAlignment alignment = ast::BitAlignment::byte_aligned;
+                    ast::BitAlignment alignment = ast::BitAlignment::not_target;
                     for (auto& f : u->fields) {
+                        if (f->bit_alignment == ast::BitAlignment::not_target) {
+                            continue;
+                        }
+                        if (f->bit_alignment == ast::BitAlignment::not_decidable) {
+                            alignment = ast::BitAlignment::not_decidable;
+                            break;
+                        }
+                        if (alignment == ast::BitAlignment::not_target) {
+                            alignment = f->bit_alignment;
+                        }
+                        if (alignment != f->bit_alignment) {
+                            alignment = ast::BitAlignment::not_decidable;
+                            break;
+                        }
                     }
+                    u->bit_alignment = alignment;
                 }
                 if (auto u = ast::as<ast::UnionType>(n)) {
                     // not a target
+                }
+                if (auto e = ast::as<ast::EnumType>(n)) {
+                    auto b = e->base.lock();
+                    if (b && b->base_type) {
+                        e->bit_alignment = b->base_type->bit_alignment;
+                    }
+                    else {
+                        // TODO(on-keyday): how to determine bit alignment of enum type?
+                        e->bit_alignment = ast::BitAlignment::byte_aligned;
+                    }
                 }
             };
             trv(trv, node);

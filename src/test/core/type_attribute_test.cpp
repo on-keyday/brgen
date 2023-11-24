@@ -248,3 +248,257 @@ format B:
     ASSERT_EQ(field9->bit_alignment, ast::BitAlignment::bit_1);
     ASSERT_EQ(field9->field_type->bit_alignment, ast::BitAlignment::bit_2);
 }
+
+TEST(BitAlignment, BitAlignmentNested) {
+    auto r = parse_and_typing(R"(
+format A:
+    a :u8
+    b :u16
+    c :u32
+    d :u64
+
+format B:
+    a :u7
+    b :A
+    c :u1
+
+format C:
+    ackNum :u32
+    dataOffset :u4
+    reserved :u4
+    CWE :u1 ECE :u1 URG :u1 ACK :u1 PSH :u1 RST :u1 SYN :u1 FIN :u1
+    windowSize :u16
+    a :[dataOffset * 4 - 20]u8
+    )");
+    middle::TypeAttribute attr;
+    attr.recursive_reference(r);
+    attr.int_type_detection(r);
+    attr.bit_alignment(r);
+    ASSERT_EQ(r->struct_type->bit_alignment, ast::BitAlignment::not_target);
+    ASSERT_EQ(r->struct_type->fields.size(), 3);
+    auto fmt = ast::as<ast::Format>(r->struct_type->fields[0]);
+    ASSERT_TRUE(fmt);
+    ASSERT_EQ(fmt->body->struct_type->bit_alignment, ast::BitAlignment::byte_aligned);
+    ASSERT_EQ(fmt->body->struct_type->fields.size(), 4);
+    auto field = ast::as<ast::Field>(fmt->body->struct_type->fields[0]);
+    ASSERT_TRUE(field);
+    ASSERT_EQ(field->bit_alignment, ast::BitAlignment::byte_aligned);
+    ASSERT_EQ(field->field_type->bit_alignment, ast::BitAlignment::byte_aligned);
+    auto field2 = ast::as<ast::Field>(fmt->body->struct_type->fields[1]);
+    ASSERT_TRUE(field2);
+    ASSERT_EQ(field2->bit_alignment, ast::BitAlignment::byte_aligned);
+    ASSERT_EQ(field2->field_type->bit_alignment, ast::BitAlignment::byte_aligned);
+    auto field3 = ast::as<ast::Field>(fmt->body->struct_type->fields[2]);
+    ASSERT_TRUE(field3);
+    ASSERT_EQ(field3->bit_alignment, ast::BitAlignment::byte_aligned);
+    ASSERT_EQ(field3->field_type->bit_alignment, ast::BitAlignment::byte_aligned);
+    auto field4 = ast::as<ast::Field>(fmt->body->struct_type->fields[3]);
+    ASSERT_TRUE(field4);
+    ASSERT_EQ(field4->bit_alignment, ast::BitAlignment::byte_aligned);
+    ASSERT_EQ(field4->field_type->bit_alignment, ast::BitAlignment::byte_aligned);
+
+    auto fmt2 = ast::as<ast::Format>(r->struct_type->fields[1]);
+    ASSERT_TRUE(fmt2);
+    ASSERT_EQ(fmt2->body->struct_type->bit_alignment, ast::BitAlignment::byte_aligned);
+    ASSERT_EQ(fmt2->body->struct_type->fields.size(), 3);
+    auto field5 = ast::as<ast::Field>(fmt2->body->struct_type->fields[0]);
+    ASSERT_TRUE(field5);
+    ASSERT_EQ(field5->bit_alignment, ast::BitAlignment::bit_7);
+    ASSERT_EQ(field5->field_type->bit_alignment, ast::BitAlignment::bit_7);
+    auto field6 = ast::as<ast::Field>(fmt2->body->struct_type->fields[1]);
+    ASSERT_TRUE(field6);
+    ASSERT_EQ(field6->bit_alignment, ast::BitAlignment::bit_7);
+    ASSERT_EQ(field6->field_type->bit_alignment, ast::BitAlignment::byte_aligned);
+    auto field7 = ast::as<ast::Field>(fmt2->body->struct_type->fields[2]);
+    ASSERT_TRUE(field7);
+    ASSERT_EQ(field7->bit_alignment, ast::BitAlignment::byte_aligned);
+    ASSERT_EQ(field7->field_type->bit_alignment, ast::BitAlignment::bit_1);
+
+    auto fmt3 = ast::as<ast::Format>(r->struct_type->fields[2]);
+    ASSERT_TRUE(fmt3);
+    ASSERT_EQ(fmt3->body->struct_type->bit_alignment, ast::BitAlignment::byte_aligned);
+    ASSERT_EQ(fmt3->body->struct_type->fields.size(), 13);
+    auto field8 = ast::as<ast::Field>(fmt3->body->struct_type->fields[0]);
+    ASSERT_TRUE(field8);
+    ASSERT_EQ(field8->bit_alignment, ast::BitAlignment::byte_aligned);
+    ASSERT_EQ(field8->field_type->bit_alignment, ast::BitAlignment::byte_aligned);
+    auto field9 = ast::as<ast::Field>(fmt3->body->struct_type->fields[1]);
+    ASSERT_TRUE(field9);
+    ASSERT_EQ(field9->bit_alignment, ast::BitAlignment::bit_4);
+    ASSERT_EQ(field9->field_type->bit_alignment, ast::BitAlignment::bit_4);
+    auto field10 = ast::as<ast::Field>(fmt3->body->struct_type->fields[2]);
+    ASSERT_TRUE(field10);
+    ASSERT_EQ(field10->bit_alignment, ast::BitAlignment::byte_aligned);
+    ASSERT_EQ(field10->field_type->bit_alignment, ast::BitAlignment::bit_4);
+    auto field11 = ast::as<ast::Field>(fmt3->body->struct_type->fields[3]);
+    ASSERT_TRUE(field11);
+    ASSERT_EQ(field11->bit_alignment, ast::BitAlignment::bit_1);
+    ASSERT_EQ(field11->field_type->bit_alignment, ast::BitAlignment::bit_1);
+    auto field12 = ast::as<ast::Field>(fmt3->body->struct_type->fields[4]);
+    ASSERT_TRUE(field12);
+    ASSERT_EQ(field12->bit_alignment, ast::BitAlignment::bit_2);
+    ASSERT_EQ(field12->field_type->bit_alignment, ast::BitAlignment::bit_1);
+    auto field13 = ast::as<ast::Field>(fmt3->body->struct_type->fields[5]);
+    ASSERT_TRUE(field13);
+    ASSERT_EQ(field13->bit_alignment, ast::BitAlignment::bit_3);
+    ASSERT_EQ(field13->field_type->bit_alignment, ast::BitAlignment::bit_1);
+    auto field14 = ast::as<ast::Field>(fmt3->body->struct_type->fields[6]);
+    ASSERT_TRUE(field14);
+    ASSERT_EQ(field14->bit_alignment, ast::BitAlignment::bit_4);
+    ASSERT_EQ(field14->field_type->bit_alignment, ast::BitAlignment::bit_1);
+    auto field15 = ast::as<ast::Field>(fmt3->body->struct_type->fields[7]);
+    ASSERT_TRUE(field15);
+    ASSERT_EQ(field15->bit_alignment, ast::BitAlignment::bit_5);
+    ASSERT_EQ(field15->field_type->bit_alignment, ast::BitAlignment::bit_1);
+    auto field16 = ast::as<ast::Field>(fmt3->body->struct_type->fields[8]);
+    ASSERT_TRUE(field16);
+    ASSERT_EQ(field16->bit_alignment, ast::BitAlignment::bit_6);
+    ASSERT_EQ(field16->field_type->bit_alignment, ast::BitAlignment::bit_1);
+    auto field17 = ast::as<ast::Field>(fmt3->body->struct_type->fields[9]);
+    ASSERT_TRUE(field17);
+    ASSERT_EQ(field17->bit_alignment, ast::BitAlignment::bit_7);
+    ASSERT_EQ(field17->field_type->bit_alignment, ast::BitAlignment::bit_1);
+    auto field18 = ast::as<ast::Field>(fmt3->body->struct_type->fields[10]);
+    ASSERT_TRUE(field18);
+    ASSERT_EQ(field18->bit_alignment, ast::BitAlignment::byte_aligned);
+    ASSERT_EQ(field18->field_type->bit_alignment, ast::BitAlignment::bit_1);
+    auto field19 = ast::as<ast::Field>(fmt3->body->struct_type->fields[11]);
+    ASSERT_TRUE(field19);
+    ASSERT_EQ(field19->bit_alignment, ast::BitAlignment::byte_aligned);
+    ASSERT_EQ(field19->field_type->bit_alignment, ast::BitAlignment::byte_aligned);
+    auto field20 = ast::as<ast::Field>(fmt3->body->struct_type->fields[12]);
+    ASSERT_TRUE(field20);
+    ASSERT_EQ(field20->bit_alignment, ast::BitAlignment::byte_aligned);
+    ASSERT_EQ(field20->field_type->bit_alignment, ast::BitAlignment::byte_aligned);
+}
+
+TEST(BitAlignment, BitAlignmentUnionEnum) {
+    auto r = parse_and_typing(R"(
+format A:
+    cond :u8
+    if cond == 8:
+        a :u8
+    else:
+        b :u16
+    
+format B:
+    a :u7
+    b :A
+    c :u1
+
+format C:
+    flag :u1
+    match flag:
+        0 => data :D
+        1 => data :u7 
+
+format D:
+    data1 :u3
+    data2 :u4
+
+enum E:
+    :u4
+    a = 0
+    b = 1
+    c = 2
+    d = 3
+
+format F:
+    a :u3
+    b :E
+    c :u4
+
+
+    )");
+    middle::TypeAttribute attr;
+    attr.recursive_reference(r);
+    attr.int_type_detection(r);
+    attr.bit_alignment(r);
+    ASSERT_EQ(r->struct_type->bit_alignment, ast::BitAlignment::not_target);
+    ASSERT_EQ(r->struct_type->fields.size(), 6);
+
+    auto fmt = ast::as<ast::Format>(r->struct_type->fields[0]);
+    ASSERT_TRUE(fmt);
+    ASSERT_EQ(fmt->body->struct_type->bit_alignment, ast::BitAlignment::byte_aligned);
+    ASSERT_EQ(fmt->body->struct_type->fields.size(), 4);
+    auto field = ast::as<ast::Field>(fmt->body->struct_type->fields[0]);
+    ASSERT_TRUE(field);
+    ASSERT_EQ(field->bit_alignment, ast::BitAlignment::byte_aligned);
+    ASSERT_EQ(field->field_type->bit_alignment, ast::BitAlignment::byte_aligned);
+    auto field2 = ast::as<ast::Field>(fmt->body->struct_type->fields[1]);
+    ASSERT_TRUE(field2);
+    ASSERT_EQ(field2->bit_alignment, ast::BitAlignment::byte_aligned);
+    ASSERT_EQ(field2->field_type->bit_alignment, ast::BitAlignment::byte_aligned);
+    auto field3 = ast::as<ast::Field>(fmt->body->struct_type->fields[2]);
+    ASSERT_TRUE(field3);
+    ASSERT_EQ(field3->bit_alignment, ast::BitAlignment::not_target);
+    ASSERT_EQ(field3->field_type->bit_alignment, ast::BitAlignment::not_target);
+    auto field4 = ast::as<ast::Field>(fmt->body->struct_type->fields[3]);
+    ASSERT_TRUE(field4);
+    ASSERT_EQ(field4->bit_alignment, ast::BitAlignment::not_target);
+    ASSERT_EQ(field4->field_type->bit_alignment, ast::BitAlignment::not_target);
+
+    auto fmt2 = ast::as<ast::Format>(r->struct_type->fields[1]);
+    ASSERT_TRUE(fmt2);
+    ASSERT_EQ(fmt2->body->struct_type->bit_alignment, ast::BitAlignment::byte_aligned);
+    ASSERT_EQ(fmt2->body->struct_type->fields.size(), 3);
+    auto field5 = ast::as<ast::Field>(fmt2->body->struct_type->fields[0]);
+    ASSERT_TRUE(field5);
+    ASSERT_EQ(field5->bit_alignment, ast::BitAlignment::bit_7);
+    ASSERT_EQ(field5->field_type->bit_alignment, ast::BitAlignment::bit_7);
+    auto field6 = ast::as<ast::Field>(fmt2->body->struct_type->fields[1]);
+    ASSERT_TRUE(field6);
+    ASSERT_EQ(field6->bit_alignment, ast::BitAlignment::bit_7);
+    ASSERT_EQ(field6->field_type->bit_alignment, ast::BitAlignment::byte_aligned);
+    auto field7 = ast::as<ast::Field>(fmt2->body->struct_type->fields[2]);
+    ASSERT_TRUE(field7);
+    ASSERT_EQ(field7->bit_alignment, ast::BitAlignment::byte_aligned);
+    ASSERT_EQ(field7->field_type->bit_alignment, ast::BitAlignment::bit_1);
+
+    auto fmt3 = ast::as<ast::Format>(r->struct_type->fields[2]);
+    ASSERT_TRUE(fmt3);
+    ASSERT_EQ(fmt3->body->struct_type->bit_alignment, ast::BitAlignment::byte_aligned);
+    ASSERT_EQ(fmt3->body->struct_type->fields.size(), 3);
+    auto field8 = ast::as<ast::Field>(fmt3->body->struct_type->fields[0]);
+    ASSERT_TRUE(field8);
+    ASSERT_EQ(field8->bit_alignment, ast::BitAlignment::bit_1);
+    ASSERT_EQ(field8->field_type->bit_alignment, ast::BitAlignment::bit_1);
+    auto field9 = ast::as<ast::Field>(fmt3->body->struct_type->fields[1]);
+    ASSERT_TRUE(field9);
+    ASSERT_EQ(field9->bit_alignment, ast::BitAlignment::byte_aligned);
+    ASSERT_EQ(field9->field_type->bit_alignment, ast::BitAlignment::bit_7);
+    auto field10 = ast::as<ast::Field>(fmt3->body->struct_type->fields[2]);
+    ASSERT_TRUE(field10);
+    ASSERT_EQ(field10->bit_alignment, ast::BitAlignment::not_target);
+    ASSERT_EQ(field10->field_type->bit_alignment, ast::BitAlignment::not_target);
+
+    auto fmt4 = ast::as<ast::Format>(r->struct_type->fields[3]);
+    ASSERT_TRUE(fmt4);
+    ASSERT_EQ(fmt4->body->struct_type->bit_alignment, ast::BitAlignment::bit_7);
+    ASSERT_EQ(fmt4->body->struct_type->fields.size(), 2);
+    auto field11 = ast::as<ast::Field>(fmt4->body->struct_type->fields[0]);
+    ASSERT_TRUE(field11);
+    ASSERT_EQ(field11->bit_alignment, ast::BitAlignment::bit_3);
+    ASSERT_EQ(field11->field_type->bit_alignment, ast::BitAlignment::bit_3);
+    auto field12 = ast::as<ast::Field>(fmt4->body->struct_type->fields[1]);
+    ASSERT_TRUE(field12);
+    ASSERT_EQ(field12->bit_alignment, ast::BitAlignment::bit_7);
+    ASSERT_EQ(field12->field_type->bit_alignment, ast::BitAlignment::bit_4);
+
+    auto fmt5 = ast::as<ast::Format>(r->struct_type->fields[5]);
+    ASSERT_TRUE(fmt5);
+    ASSERT_EQ(fmt5->body->struct_type->bit_alignment, ast::BitAlignment::bit_3);
+    ASSERT_EQ(fmt5->body->struct_type->fields.size(), 3);
+    auto field13 = ast::as<ast::Field>(fmt5->body->struct_type->fields[0]);
+    ASSERT_TRUE(field13);
+    ASSERT_EQ(field13->bit_alignment, ast::BitAlignment::bit_3);
+    ASSERT_EQ(field13->field_type->bit_alignment, ast::BitAlignment::bit_3);
+    auto field14 = ast::as<ast::Field>(fmt5->body->struct_type->fields[1]);
+    ASSERT_TRUE(field14);
+    ASSERT_EQ(field14->bit_alignment, ast::BitAlignment::bit_7);
+    ASSERT_EQ(field14->field_type->bit_alignment, ast::BitAlignment::bit_4);
+    auto field15 = ast::as<ast::Field>(fmt5->body->struct_type->fields[2]);
+    ASSERT_TRUE(field15);
+    ASSERT_EQ(field15->bit_alignment, ast::BitAlignment::bit_3);
+    ASSERT_EQ(field15->field_type->bit_alignment, ast::BitAlignment::bit_4);
+}

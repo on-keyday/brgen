@@ -1045,6 +1045,7 @@ namespace brgen::ast {
                 s.must_consume_token(lexer::Tag::indent);
                 parse_enum_member();
             }
+            state.add_to_struct(enum_);
             return enum_;
         }
 
