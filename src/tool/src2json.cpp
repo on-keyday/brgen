@@ -10,6 +10,7 @@
 #include <core/middle/resolve_cast.h>
 #include <core/middle/replace_assert.h>
 #include <core/middle/typing.h>
+#include <core/middle/type_attribute.h>
 #include "common/print.h"
 #include <wrap/argv.h>
 #include <core/ast/node_type_list.h>
@@ -34,6 +35,9 @@ struct Flags : utils::cmdline::templ::HelpOption {
     bool not_resolve_cast = false;
     bool not_resolve_type = false;
     bool not_resolve_assert = false;
+    bool not_detect_recursive_type = false;
+    bool not_detect_int_set = false;
+    bool not_detect_alignment = false;
     bool unresolved_type_as_error = false;
 
     bool check_ast = false;
@@ -77,6 +81,9 @@ struct Flags : utils::cmdline::templ::HelpOption {
         ctx.VarBool(&not_resolve_type, "not-resolve-type", "not resolve type");
         ctx.VarBool(&not_resolve_cast, "not-resolve-cast", "not resolve cast");
         ctx.VarBool(&not_resolve_assert, "not-resolve-assert", "not-resolve assert");
+        ctx.VarBool(&not_detect_recursive_type, "not-detect-recursive-type", "not detect recursive type");
+        ctx.VarBool(&not_detect_int_set, "not-detect-int-set", "not detect int set");
+        ctx.VarBool(&not_detect_alignment, "not-detect-alignment", "not detect alignment");
         ctx.VarBool(&unresolved_type_as_error, "unresolved-type-as-error", "unresolved type as error");
 
         ctx.VarBool(&disable_untyped_warning, "u,disable-untyped", "disable untyped warning");
@@ -456,6 +463,20 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
                 err_or_warn.errs.insert(err_or_warn.errs.end(), tmp.errs.begin(), tmp.errs.end());
             }
         }
+    }
+
+    brgen::middle::TypeAttribute attr;
+
+    if (!flags.not_detect_recursive_type) {
+        attr.recursive_reference(*res);
+    }
+
+    if (!flags.not_detect_int_set) {
+        attr.int_type_detection(*res);
+    }
+
+    if (!flags.not_detect_alignment) {
+        attr.bit_alignment(*res);
     }
 
     if (cout.is_tty() && !flags.print_json) {
