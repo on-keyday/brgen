@@ -62,7 +62,7 @@ namespace parse {
 auto& cout = utils::wrap::cout_wrap();
 
 struct Ctx : utils::comb2::tree::BranchTable {
-    constexpr void error_seq(auto& seq, auto&&... err) {
+    void error_seq(auto& seq, auto&&... err) {
         cout << "error: ";
         (cout << ... << err);
         cout << "\n";
