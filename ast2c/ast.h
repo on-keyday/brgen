@@ -44,11 +44,13 @@ typedef enum ast2c_ConstantLevel ast2c_ConstantLevel;
 typedef enum ast2c_BitAlignment ast2c_BitAlignment;
 typedef struct ast2c_Node ast2c_Node;
 typedef struct ast2c_Expr ast2c_Expr;
-typedef struct ast2c_Literal ast2c_Literal;
 typedef struct ast2c_Stmt ast2c_Stmt;
-typedef struct ast2c_Member ast2c_Member;
 typedef struct ast2c_Type ast2c_Type;
+typedef struct ast2c_Literal ast2c_Literal;
+typedef struct ast2c_Member ast2c_Member;
 typedef struct ast2c_Program ast2c_Program;
+typedef struct ast2c_Comment ast2c_Comment;
+typedef struct ast2c_CommentGroup ast2c_CommentGroup;
 typedef struct ast2c_Binary ast2c_Binary;
 typedef struct ast2c_Unary ast2c_Unary;
 typedef struct ast2c_Cond ast2c_Cond;
@@ -63,23 +65,16 @@ typedef struct ast2c_Range ast2c_Range;
 typedef struct ast2c_TmpVar ast2c_TmpVar;
 typedef struct ast2c_BlockExpr ast2c_BlockExpr;
 typedef struct ast2c_Import ast2c_Import;
-typedef struct ast2c_IntLiteral ast2c_IntLiteral;
-typedef struct ast2c_BoolLiteral ast2c_BoolLiteral;
-typedef struct ast2c_StrLiteral ast2c_StrLiteral;
-typedef struct ast2c_Input ast2c_Input;
-typedef struct ast2c_Output ast2c_Output;
-typedef struct ast2c_Config ast2c_Config;
+typedef struct ast2c_Cast ast2c_Cast;
 typedef struct ast2c_Loop ast2c_Loop;
 typedef struct ast2c_IndentBlock ast2c_IndentBlock;
 typedef struct ast2c_MatchBranch ast2c_MatchBranch;
+typedef struct ast2c_UnionCandidate ast2c_UnionCandidate;
 typedef struct ast2c_Return ast2c_Return;
 typedef struct ast2c_Break ast2c_Break;
 typedef struct ast2c_Continue ast2c_Continue;
 typedef struct ast2c_Assert ast2c_Assert;
 typedef struct ast2c_ImplicitYield ast2c_ImplicitYield;
-typedef struct ast2c_Field ast2c_Field;
-typedef struct ast2c_Format ast2c_Format;
-typedef struct ast2c_Function ast2c_Function;
 typedef struct ast2c_IntType ast2c_IntType;
 typedef struct ast2c_IdentType ast2c_IdentType;
 typedef struct ast2c_IntLiteralType ast2c_IntLiteralType;
@@ -90,17 +85,22 @@ typedef struct ast2c_ArrayType ast2c_ArrayType;
 typedef struct ast2c_FunctionType ast2c_FunctionType;
 typedef struct ast2c_StructType ast2c_StructType;
 typedef struct ast2c_StructUnionType ast2c_StructUnionType;
-typedef struct ast2c_Cast ast2c_Cast;
-typedef struct ast2c_Comment ast2c_Comment;
-typedef struct ast2c_CommentGroup ast2c_CommentGroup;
 typedef struct ast2c_UnionType ast2c_UnionType;
-typedef struct ast2c_UnionCandidate ast2c_UnionCandidate;
 typedef struct ast2c_RangeType ast2c_RangeType;
-typedef struct ast2c_Enum ast2c_Enum;
-typedef struct ast2c_EnumMember ast2c_EnumMember;
 typedef struct ast2c_EnumType ast2c_EnumType;
 typedef struct ast2c_BitGroupType ast2c_BitGroupType;
+typedef struct ast2c_IntLiteral ast2c_IntLiteral;
+typedef struct ast2c_BoolLiteral ast2c_BoolLiteral;
+typedef struct ast2c_StrLiteral ast2c_StrLiteral;
+typedef struct ast2c_Input ast2c_Input;
+typedef struct ast2c_Output ast2c_Output;
+typedef struct ast2c_Config ast2c_Config;
+typedef struct ast2c_Field ast2c_Field;
+typedef struct ast2c_Format ast2c_Format;
 typedef struct ast2c_State ast2c_State;
+typedef struct ast2c_Enum ast2c_Enum;
+typedef struct ast2c_EnumMember ast2c_EnumMember;
+typedef struct ast2c_Function ast2c_Function;
 typedef struct ast2c_BuiltinFunction ast2c_BuiltinFunction;
 typedef struct ast2c_Scope ast2c_Scope;
 typedef struct ast2c_Pos ast2c_Pos;
@@ -115,6 +115,8 @@ typedef struct ast2c_AstFile ast2c_AstFile;
 typedef struct ast2c_TokenFile ast2c_TokenFile;
 enum ast2c_NodeType {
 	AST2C_NODETYPE_PROGRAM,
+	AST2C_NODETYPE_COMMENT,
+	AST2C_NODETYPE_COMMENT_GROUP,
 	AST2C_NODETYPE_EXPR,
 	AST2C_NODETYPE_BINARY,
 	AST2C_NODETYPE_UNARY,
@@ -130,26 +132,17 @@ enum ast2c_NodeType {
 	AST2C_NODETYPE_TMP_VAR,
 	AST2C_NODETYPE_BLOCK_EXPR,
 	AST2C_NODETYPE_IMPORT,
-	AST2C_NODETYPE_LITERAL,
-	AST2C_NODETYPE_INT_LITERAL,
-	AST2C_NODETYPE_BOOL_LITERAL,
-	AST2C_NODETYPE_STR_LITERAL,
-	AST2C_NODETYPE_INPUT,
-	AST2C_NODETYPE_OUTPUT,
-	AST2C_NODETYPE_CONFIG,
+	AST2C_NODETYPE_CAST,
 	AST2C_NODETYPE_STMT,
 	AST2C_NODETYPE_LOOP,
 	AST2C_NODETYPE_INDENT_BLOCK,
 	AST2C_NODETYPE_MATCH_BRANCH,
+	AST2C_NODETYPE_UNION_CANDIDATE,
 	AST2C_NODETYPE_RETURN,
 	AST2C_NODETYPE_BREAK,
 	AST2C_NODETYPE_CONTINUE,
 	AST2C_NODETYPE_ASSERT,
 	AST2C_NODETYPE_IMPLICIT_YIELD,
-	AST2C_NODETYPE_MEMBER,
-	AST2C_NODETYPE_FIELD,
-	AST2C_NODETYPE_FORMAT,
-	AST2C_NODETYPE_FUNCTION,
 	AST2C_NODETYPE_TYPE,
 	AST2C_NODETYPE_INT_TYPE,
 	AST2C_NODETYPE_IDENT_TYPE,
@@ -161,17 +154,24 @@ enum ast2c_NodeType {
 	AST2C_NODETYPE_FUNCTION_TYPE,
 	AST2C_NODETYPE_STRUCT_TYPE,
 	AST2C_NODETYPE_STRUCT_UNION_TYPE,
-	AST2C_NODETYPE_CAST,
-	AST2C_NODETYPE_COMMENT,
-	AST2C_NODETYPE_COMMENT_GROUP,
 	AST2C_NODETYPE_UNION_TYPE,
-	AST2C_NODETYPE_UNION_CANDIDATE,
 	AST2C_NODETYPE_RANGE_TYPE,
-	AST2C_NODETYPE_ENUM,
-	AST2C_NODETYPE_ENUM_MEMBER,
 	AST2C_NODETYPE_ENUM_TYPE,
 	AST2C_NODETYPE_BIT_GROUP_TYPE,
+	AST2C_NODETYPE_LITERAL,
+	AST2C_NODETYPE_INT_LITERAL,
+	AST2C_NODETYPE_BOOL_LITERAL,
+	AST2C_NODETYPE_STR_LITERAL,
+	AST2C_NODETYPE_INPUT,
+	AST2C_NODETYPE_OUTPUT,
+	AST2C_NODETYPE_CONFIG,
+	AST2C_NODETYPE_MEMBER,
+	AST2C_NODETYPE_FIELD,
+	AST2C_NODETYPE_FORMAT,
 	AST2C_NODETYPE_STATE,
+	AST2C_NODETYPE_ENUM,
+	AST2C_NODETYPE_ENUM_MEMBER,
+	AST2C_NODETYPE_FUNCTION,
 	AST2C_NODETYPE_BUILTIN_FUNCTION,
 };
 const char* ast2c_NodeType_to_string(ast2c_NodeType);
@@ -383,23 +383,9 @@ struct ast2c_Expr {
 	ast2c_ConstantLevel constant_level;
 };
 
-struct ast2c_Literal {
-	const ast2c_NodeType node_type;
-	ast2c_Loc loc;
-	ast2c_Type* expr_type;
-	ast2c_ConstantLevel constant_level;
-};
-
 struct ast2c_Stmt {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
-};
-
-struct ast2c_Member {
-	const ast2c_NodeType node_type;
-	ast2c_Loc loc;
-	ast2c_Member* belong;
-	ast2c_Ident* ident;
 };
 
 struct ast2c_Type {
@@ -408,6 +394,20 @@ struct ast2c_Type {
 	int is_explicit;
 	int is_int_set;
 	ast2c_BitAlignment bit_alignment;
+};
+
+struct ast2c_Literal {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
+};
+
+struct ast2c_Member {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Member* belong;
+	ast2c_Ident* ident;
 };
 
 struct ast2c_Program {
@@ -421,6 +421,25 @@ struct ast2c_Program {
 
 // returns 1 if succeed 0 if failed
 int ast2c_Program_parse(ast2c_Ast* ,ast2c_Program*,ast2c_json_handlers*,void*);
+
+struct ast2c_Comment {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	char* comment;
+};
+
+// returns 1 if succeed 0 if failed
+int ast2c_Comment_parse(ast2c_Ast* ,ast2c_Comment*,ast2c_json_handlers*,void*);
+
+struct ast2c_CommentGroup {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Comment** comments;
+	size_t comments_size;
+};
+
+// returns 1 if succeed 0 if failed
+int ast2c_CommentGroup_parse(ast2c_Ast* ,ast2c_CommentGroup*,ast2c_json_handlers*,void*);
 
 struct ast2c_Binary {
 	const ast2c_NodeType node_type;
@@ -606,68 +625,17 @@ struct ast2c_Import {
 // returns 1 if succeed 0 if failed
 int ast2c_Import_parse(ast2c_Ast* ,ast2c_Import*,ast2c_json_handlers*,void*);
 
-struct ast2c_IntLiteral {
+struct ast2c_Cast {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Type* expr_type;
 	ast2c_ConstantLevel constant_level;
-	char* value;
+	ast2c_Call* base;
+	ast2c_Expr* expr;
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_IntLiteral_parse(ast2c_Ast* ,ast2c_IntLiteral*,ast2c_json_handlers*,void*);
-
-struct ast2c_BoolLiteral {
-	const ast2c_NodeType node_type;
-	ast2c_Loc loc;
-	ast2c_Type* expr_type;
-	ast2c_ConstantLevel constant_level;
-	int value;
-};
-
-// returns 1 if succeed 0 if failed
-int ast2c_BoolLiteral_parse(ast2c_Ast* ,ast2c_BoolLiteral*,ast2c_json_handlers*,void*);
-
-struct ast2c_StrLiteral {
-	const ast2c_NodeType node_type;
-	ast2c_Loc loc;
-	ast2c_Type* expr_type;
-	ast2c_ConstantLevel constant_level;
-	char* value;
-};
-
-// returns 1 if succeed 0 if failed
-int ast2c_StrLiteral_parse(ast2c_Ast* ,ast2c_StrLiteral*,ast2c_json_handlers*,void*);
-
-struct ast2c_Input {
-	const ast2c_NodeType node_type;
-	ast2c_Loc loc;
-	ast2c_Type* expr_type;
-	ast2c_ConstantLevel constant_level;
-};
-
-// returns 1 if succeed 0 if failed
-int ast2c_Input_parse(ast2c_Ast* ,ast2c_Input*,ast2c_json_handlers*,void*);
-
-struct ast2c_Output {
-	const ast2c_NodeType node_type;
-	ast2c_Loc loc;
-	ast2c_Type* expr_type;
-	ast2c_ConstantLevel constant_level;
-};
-
-// returns 1 if succeed 0 if failed
-int ast2c_Output_parse(ast2c_Ast* ,ast2c_Output*,ast2c_json_handlers*,void*);
-
-struct ast2c_Config {
-	const ast2c_NodeType node_type;
-	ast2c_Loc loc;
-	ast2c_Type* expr_type;
-	ast2c_ConstantLevel constant_level;
-};
-
-// returns 1 if succeed 0 if failed
-int ast2c_Config_parse(ast2c_Ast* ,ast2c_Config*,ast2c_json_handlers*,void*);
+int ast2c_Cast_parse(ast2c_Ast* ,ast2c_Cast*,ast2c_json_handlers*,void*);
 
 struct ast2c_Loop {
 	const ast2c_NodeType node_type;
@@ -704,6 +672,16 @@ struct ast2c_MatchBranch {
 
 // returns 1 if succeed 0 if failed
 int ast2c_MatchBranch_parse(ast2c_Ast* ,ast2c_MatchBranch*,ast2c_json_handlers*,void*);
+
+struct ast2c_UnionCandidate {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Expr* cond;
+	ast2c_Member* field;
+};
+
+// returns 1 if succeed 0 if failed
+int ast2c_UnionCandidate_parse(ast2c_Ast* ,ast2c_UnionCandidate*,ast2c_json_handlers*,void*);
 
 struct ast2c_Return {
 	const ast2c_NodeType node_type;
@@ -747,50 +725,6 @@ struct ast2c_ImplicitYield {
 
 // returns 1 if succeed 0 if failed
 int ast2c_ImplicitYield_parse(ast2c_Ast* ,ast2c_ImplicitYield*,ast2c_json_handlers*,void*);
-
-struct ast2c_Field {
-	const ast2c_NodeType node_type;
-	ast2c_Loc loc;
-	ast2c_Member* belong;
-	ast2c_Ident* ident;
-	ast2c_Loc colon_loc;
-	ast2c_Type* field_type;
-	ast2c_Expr* raw_arguments;
-	ast2c_Expr** arguments;
-	size_t arguments_size;
-	ast2c_BitAlignment bit_alignment;
-};
-
-// returns 1 if succeed 0 if failed
-int ast2c_Field_parse(ast2c_Ast* ,ast2c_Field*,ast2c_json_handlers*,void*);
-
-struct ast2c_Format {
-	const ast2c_NodeType node_type;
-	ast2c_Loc loc;
-	ast2c_Member* belong;
-	ast2c_Ident* ident;
-	ast2c_IndentBlock* body;
-};
-
-// returns 1 if succeed 0 if failed
-int ast2c_Format_parse(ast2c_Ast* ,ast2c_Format*,ast2c_json_handlers*,void*);
-
-struct ast2c_Function {
-	const ast2c_NodeType node_type;
-	ast2c_Loc loc;
-	ast2c_Member* belong;
-	ast2c_Ident* ident;
-	ast2c_Field** parameters;
-	size_t parameters_size;
-	ast2c_Type* return_type;
-	ast2c_IndentBlock* body;
-	ast2c_FunctionType* func_type;
-	int is_cast;
-	ast2c_Loc cast_loc;
-};
-
-// returns 1 if succeed 0 if failed
-int ast2c_Function_parse(ast2c_Ast* ,ast2c_Function*,ast2c_json_handlers*,void*);
 
 struct ast2c_IntType {
 	const ast2c_NodeType node_type;
@@ -925,37 +859,6 @@ struct ast2c_StructUnionType {
 // returns 1 if succeed 0 if failed
 int ast2c_StructUnionType_parse(ast2c_Ast* ,ast2c_StructUnionType*,ast2c_json_handlers*,void*);
 
-struct ast2c_Cast {
-	const ast2c_NodeType node_type;
-	ast2c_Loc loc;
-	ast2c_Type* expr_type;
-	ast2c_ConstantLevel constant_level;
-	ast2c_Call* base;
-	ast2c_Expr* expr;
-};
-
-// returns 1 if succeed 0 if failed
-int ast2c_Cast_parse(ast2c_Ast* ,ast2c_Cast*,ast2c_json_handlers*,void*);
-
-struct ast2c_Comment {
-	const ast2c_NodeType node_type;
-	ast2c_Loc loc;
-	char* comment;
-};
-
-// returns 1 if succeed 0 if failed
-int ast2c_Comment_parse(ast2c_Ast* ,ast2c_Comment*,ast2c_json_handlers*,void*);
-
-struct ast2c_CommentGroup {
-	const ast2c_NodeType node_type;
-	ast2c_Loc loc;
-	ast2c_Comment** comments;
-	size_t comments_size;
-};
-
-// returns 1 if succeed 0 if failed
-int ast2c_CommentGroup_parse(ast2c_Ast* ,ast2c_CommentGroup*,ast2c_json_handlers*,void*);
-
 struct ast2c_UnionType {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
@@ -971,16 +874,6 @@ struct ast2c_UnionType {
 // returns 1 if succeed 0 if failed
 int ast2c_UnionType_parse(ast2c_Ast* ,ast2c_UnionType*,ast2c_json_handlers*,void*);
 
-struct ast2c_UnionCandidate {
-	const ast2c_NodeType node_type;
-	ast2c_Loc loc;
-	ast2c_Expr* cond;
-	ast2c_Member* field;
-};
-
-// returns 1 if succeed 0 if failed
-int ast2c_UnionCandidate_parse(ast2c_Ast* ,ast2c_UnionCandidate*,ast2c_json_handlers*,void*);
-
 struct ast2c_RangeType {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
@@ -993,33 +886,6 @@ struct ast2c_RangeType {
 
 // returns 1 if succeed 0 if failed
 int ast2c_RangeType_parse(ast2c_Ast* ,ast2c_RangeType*,ast2c_json_handlers*,void*);
-
-struct ast2c_Enum {
-	const ast2c_NodeType node_type;
-	ast2c_Loc loc;
-	ast2c_Member* belong;
-	ast2c_Ident* ident;
-	ast2c_Scope* scope;
-	ast2c_Loc colon_loc;
-	ast2c_Type* base_type;
-	ast2c_EnumMember** members;
-	size_t members_size;
-	ast2c_EnumType* enum_type;
-};
-
-// returns 1 if succeed 0 if failed
-int ast2c_Enum_parse(ast2c_Ast* ,ast2c_Enum*,ast2c_json_handlers*,void*);
-
-struct ast2c_EnumMember {
-	const ast2c_NodeType node_type;
-	ast2c_Loc loc;
-	ast2c_Member* belong;
-	ast2c_Ident* ident;
-	ast2c_Expr* expr;
-};
-
-// returns 1 if succeed 0 if failed
-int ast2c_EnumMember_parse(ast2c_Ast* ,ast2c_EnumMember*,ast2c_json_handlers*,void*);
 
 struct ast2c_EnumType {
 	const ast2c_NodeType node_type;
@@ -1048,6 +914,96 @@ struct ast2c_BitGroupType {
 // returns 1 if succeed 0 if failed
 int ast2c_BitGroupType_parse(ast2c_Ast* ,ast2c_BitGroupType*,ast2c_json_handlers*,void*);
 
+struct ast2c_IntLiteral {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
+	char* value;
+};
+
+// returns 1 if succeed 0 if failed
+int ast2c_IntLiteral_parse(ast2c_Ast* ,ast2c_IntLiteral*,ast2c_json_handlers*,void*);
+
+struct ast2c_BoolLiteral {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
+	int value;
+};
+
+// returns 1 if succeed 0 if failed
+int ast2c_BoolLiteral_parse(ast2c_Ast* ,ast2c_BoolLiteral*,ast2c_json_handlers*,void*);
+
+struct ast2c_StrLiteral {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
+	char* value;
+};
+
+// returns 1 if succeed 0 if failed
+int ast2c_StrLiteral_parse(ast2c_Ast* ,ast2c_StrLiteral*,ast2c_json_handlers*,void*);
+
+struct ast2c_Input {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
+};
+
+// returns 1 if succeed 0 if failed
+int ast2c_Input_parse(ast2c_Ast* ,ast2c_Input*,ast2c_json_handlers*,void*);
+
+struct ast2c_Output {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
+};
+
+// returns 1 if succeed 0 if failed
+int ast2c_Output_parse(ast2c_Ast* ,ast2c_Output*,ast2c_json_handlers*,void*);
+
+struct ast2c_Config {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
+};
+
+// returns 1 if succeed 0 if failed
+int ast2c_Config_parse(ast2c_Ast* ,ast2c_Config*,ast2c_json_handlers*,void*);
+
+struct ast2c_Field {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Member* belong;
+	ast2c_Ident* ident;
+	ast2c_Loc colon_loc;
+	ast2c_Type* field_type;
+	ast2c_Expr* raw_arguments;
+	ast2c_Expr** arguments;
+	size_t arguments_size;
+	ast2c_BitAlignment bit_alignment;
+};
+
+// returns 1 if succeed 0 if failed
+int ast2c_Field_parse(ast2c_Ast* ,ast2c_Field*,ast2c_json_handlers*,void*);
+
+struct ast2c_Format {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Member* belong;
+	ast2c_Ident* ident;
+	ast2c_IndentBlock* body;
+};
+
+// returns 1 if succeed 0 if failed
+int ast2c_Format_parse(ast2c_Ast* ,ast2c_Format*,ast2c_json_handlers*,void*);
+
 struct ast2c_State {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
@@ -1058,6 +1014,50 @@ struct ast2c_State {
 
 // returns 1 if succeed 0 if failed
 int ast2c_State_parse(ast2c_Ast* ,ast2c_State*,ast2c_json_handlers*,void*);
+
+struct ast2c_Enum {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Member* belong;
+	ast2c_Ident* ident;
+	ast2c_Scope* scope;
+	ast2c_Loc colon_loc;
+	ast2c_Type* base_type;
+	ast2c_EnumMember** members;
+	size_t members_size;
+	ast2c_EnumType* enum_type;
+};
+
+// returns 1 if succeed 0 if failed
+int ast2c_Enum_parse(ast2c_Ast* ,ast2c_Enum*,ast2c_json_handlers*,void*);
+
+struct ast2c_EnumMember {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Member* belong;
+	ast2c_Ident* ident;
+	ast2c_Expr* expr;
+};
+
+// returns 1 if succeed 0 if failed
+int ast2c_EnumMember_parse(ast2c_Ast* ,ast2c_EnumMember*,ast2c_json_handlers*,void*);
+
+struct ast2c_Function {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Member* belong;
+	ast2c_Ident* ident;
+	ast2c_Field** parameters;
+	size_t parameters_size;
+	ast2c_Type* return_type;
+	ast2c_IndentBlock* body;
+	ast2c_FunctionType* func_type;
+	int is_cast;
+	ast2c_Loc cast_loc;
+};
+
+// returns 1 if succeed 0 if failed
+int ast2c_Function_parse(ast2c_Ast* ,ast2c_Function*,ast2c_json_handlers*,void*);
 
 struct ast2c_BuiltinFunction {
 	const ast2c_NodeType node_type;

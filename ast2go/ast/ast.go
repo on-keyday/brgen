@@ -11,63 +11,63 @@ type NodeType int
 
 const (
 	NodeTypeProgram         NodeType = 0
-	NodeTypeExpr            NodeType = 1
-	NodeTypeBinary          NodeType = 2
-	NodeTypeUnary           NodeType = 3
-	NodeTypeCond            NodeType = 4
-	NodeTypeIdent           NodeType = 5
-	NodeTypeCall            NodeType = 6
-	NodeTypeIf              NodeType = 7
-	NodeTypeMemberAccess    NodeType = 8
-	NodeTypeParen           NodeType = 9
-	NodeTypeIndex           NodeType = 10
-	NodeTypeMatch           NodeType = 11
-	NodeTypeRange           NodeType = 12
-	NodeTypeTmpVar          NodeType = 13
-	NodeTypeBlockExpr       NodeType = 14
-	NodeTypeImport          NodeType = 15
-	NodeTypeLiteral         NodeType = 16
-	NodeTypeIntLiteral      NodeType = 17
-	NodeTypeBoolLiteral     NodeType = 18
-	NodeTypeStrLiteral      NodeType = 19
-	NodeTypeInput           NodeType = 20
-	NodeTypeOutput          NodeType = 21
-	NodeTypeConfig          NodeType = 22
-	NodeTypeStmt            NodeType = 23
-	NodeTypeLoop            NodeType = 24
-	NodeTypeIndentBlock     NodeType = 25
-	NodeTypeMatchBranch     NodeType = 26
-	NodeTypeReturn          NodeType = 27
-	NodeTypeBreak           NodeType = 28
-	NodeTypeContinue        NodeType = 29
-	NodeTypeAssert          NodeType = 30
-	NodeTypeImplicitYield   NodeType = 31
-	NodeTypeMember          NodeType = 32
-	NodeTypeField           NodeType = 33
-	NodeTypeFormat          NodeType = 34
-	NodeTypeFunction        NodeType = 35
-	NodeTypeType            NodeType = 36
-	NodeTypeIntType         NodeType = 37
-	NodeTypeIdentType       NodeType = 38
-	NodeTypeIntLiteralType  NodeType = 39
-	NodeTypeStrLiteralType  NodeType = 40
-	NodeTypeVoidType        NodeType = 41
-	NodeTypeBoolType        NodeType = 42
-	NodeTypeArrayType       NodeType = 43
-	NodeTypeFunctionType    NodeType = 44
-	NodeTypeStructType      NodeType = 45
-	NodeTypeStructUnionType NodeType = 46
-	NodeTypeCast            NodeType = 47
-	NodeTypeComment         NodeType = 48
-	NodeTypeCommentGroup    NodeType = 49
-	NodeTypeUnionType       NodeType = 50
-	NodeTypeUnionCandidate  NodeType = 51
-	NodeTypeRangeType       NodeType = 52
-	NodeTypeEnum            NodeType = 53
-	NodeTypeEnumMember      NodeType = 54
-	NodeTypeEnumType        NodeType = 55
-	NodeTypeBitGroupType    NodeType = 56
-	NodeTypeState           NodeType = 57
+	NodeTypeComment         NodeType = 1
+	NodeTypeCommentGroup    NodeType = 2
+	NodeTypeExpr            NodeType = 3
+	NodeTypeBinary          NodeType = 4
+	NodeTypeUnary           NodeType = 5
+	NodeTypeCond            NodeType = 6
+	NodeTypeIdent           NodeType = 7
+	NodeTypeCall            NodeType = 8
+	NodeTypeIf              NodeType = 9
+	NodeTypeMemberAccess    NodeType = 10
+	NodeTypeParen           NodeType = 11
+	NodeTypeIndex           NodeType = 12
+	NodeTypeMatch           NodeType = 13
+	NodeTypeRange           NodeType = 14
+	NodeTypeTmpVar          NodeType = 15
+	NodeTypeBlockExpr       NodeType = 16
+	NodeTypeImport          NodeType = 17
+	NodeTypeCast            NodeType = 18
+	NodeTypeStmt            NodeType = 19
+	NodeTypeLoop            NodeType = 20
+	NodeTypeIndentBlock     NodeType = 21
+	NodeTypeMatchBranch     NodeType = 22
+	NodeTypeUnionCandidate  NodeType = 23
+	NodeTypeReturn          NodeType = 24
+	NodeTypeBreak           NodeType = 25
+	NodeTypeContinue        NodeType = 26
+	NodeTypeAssert          NodeType = 27
+	NodeTypeImplicitYield   NodeType = 28
+	NodeTypeType            NodeType = 29
+	NodeTypeIntType         NodeType = 30
+	NodeTypeIdentType       NodeType = 31
+	NodeTypeIntLiteralType  NodeType = 32
+	NodeTypeStrLiteralType  NodeType = 33
+	NodeTypeVoidType        NodeType = 34
+	NodeTypeBoolType        NodeType = 35
+	NodeTypeArrayType       NodeType = 36
+	NodeTypeFunctionType    NodeType = 37
+	NodeTypeStructType      NodeType = 38
+	NodeTypeStructUnionType NodeType = 39
+	NodeTypeUnionType       NodeType = 40
+	NodeTypeRangeType       NodeType = 41
+	NodeTypeEnumType        NodeType = 42
+	NodeTypeBitGroupType    NodeType = 43
+	NodeTypeLiteral         NodeType = 44
+	NodeTypeIntLiteral      NodeType = 45
+	NodeTypeBoolLiteral     NodeType = 46
+	NodeTypeStrLiteral      NodeType = 47
+	NodeTypeInput           NodeType = 48
+	NodeTypeOutput          NodeType = 49
+	NodeTypeConfig          NodeType = 50
+	NodeTypeMember          NodeType = 51
+	NodeTypeField           NodeType = 52
+	NodeTypeFormat          NodeType = 53
+	NodeTypeState           NodeType = 54
+	NodeTypeEnum            NodeType = 55
+	NodeTypeEnumMember      NodeType = 56
+	NodeTypeFunction        NodeType = 57
 	NodeTypeBuiltinFunction NodeType = 58
 )
 
@@ -75,6 +75,10 @@ func (n NodeType) String() string {
 	switch n {
 	case NodeTypeProgram:
 		return "program"
+	case NodeTypeComment:
+		return "comment"
+	case NodeTypeCommentGroup:
+		return "comment_group"
 	case NodeTypeExpr:
 		return "expr"
 	case NodeTypeBinary:
@@ -105,20 +109,8 @@ func (n NodeType) String() string {
 		return "block_expr"
 	case NodeTypeImport:
 		return "import"
-	case NodeTypeLiteral:
-		return "literal"
-	case NodeTypeIntLiteral:
-		return "int_literal"
-	case NodeTypeBoolLiteral:
-		return "bool_literal"
-	case NodeTypeStrLiteral:
-		return "str_literal"
-	case NodeTypeInput:
-		return "input"
-	case NodeTypeOutput:
-		return "output"
-	case NodeTypeConfig:
-		return "config"
+	case NodeTypeCast:
+		return "cast"
 	case NodeTypeStmt:
 		return "stmt"
 	case NodeTypeLoop:
@@ -127,6 +119,8 @@ func (n NodeType) String() string {
 		return "indent_block"
 	case NodeTypeMatchBranch:
 		return "match_branch"
+	case NodeTypeUnionCandidate:
+		return "union_candidate"
 	case NodeTypeReturn:
 		return "return"
 	case NodeTypeBreak:
@@ -137,14 +131,6 @@ func (n NodeType) String() string {
 		return "assert"
 	case NodeTypeImplicitYield:
 		return "implicit_yield"
-	case NodeTypeMember:
-		return "member"
-	case NodeTypeField:
-		return "field"
-	case NodeTypeFormat:
-		return "format"
-	case NodeTypeFunction:
-		return "function"
 	case NodeTypeType:
 		return "type"
 	case NodeTypeIntType:
@@ -167,28 +153,42 @@ func (n NodeType) String() string {
 		return "struct_type"
 	case NodeTypeStructUnionType:
 		return "struct_union_type"
-	case NodeTypeCast:
-		return "cast"
-	case NodeTypeComment:
-		return "comment"
-	case NodeTypeCommentGroup:
-		return "comment_group"
 	case NodeTypeUnionType:
 		return "union_type"
-	case NodeTypeUnionCandidate:
-		return "union_candidate"
 	case NodeTypeRangeType:
 		return "range_type"
-	case NodeTypeEnum:
-		return "enum"
-	case NodeTypeEnumMember:
-		return "enum_member"
 	case NodeTypeEnumType:
 		return "enum_type"
 	case NodeTypeBitGroupType:
 		return "bit_group_type"
+	case NodeTypeLiteral:
+		return "literal"
+	case NodeTypeIntLiteral:
+		return "int_literal"
+	case NodeTypeBoolLiteral:
+		return "bool_literal"
+	case NodeTypeStrLiteral:
+		return "str_literal"
+	case NodeTypeInput:
+		return "input"
+	case NodeTypeOutput:
+		return "output"
+	case NodeTypeConfig:
+		return "config"
+	case NodeTypeMember:
+		return "member"
+	case NodeTypeField:
+		return "field"
+	case NodeTypeFormat:
+		return "format"
 	case NodeTypeState:
 		return "state"
+	case NodeTypeEnum:
+		return "enum"
+	case NodeTypeEnumMember:
+		return "enum_member"
+	case NodeTypeFunction:
+		return "function"
 	case NodeTypeBuiltinFunction:
 		return "builtin_function"
 	default:
@@ -204,6 +204,10 @@ func (n *NodeType) UnmarshalJSON(data []byte) error {
 	switch tmp {
 	case "program":
 		*n = NodeTypeProgram
+	case "comment":
+		*n = NodeTypeComment
+	case "comment_group":
+		*n = NodeTypeCommentGroup
 	case "expr":
 		*n = NodeTypeExpr
 	case "binary":
@@ -234,20 +238,8 @@ func (n *NodeType) UnmarshalJSON(data []byte) error {
 		*n = NodeTypeBlockExpr
 	case "import":
 		*n = NodeTypeImport
-	case "literal":
-		*n = NodeTypeLiteral
-	case "int_literal":
-		*n = NodeTypeIntLiteral
-	case "bool_literal":
-		*n = NodeTypeBoolLiteral
-	case "str_literal":
-		*n = NodeTypeStrLiteral
-	case "input":
-		*n = NodeTypeInput
-	case "output":
-		*n = NodeTypeOutput
-	case "config":
-		*n = NodeTypeConfig
+	case "cast":
+		*n = NodeTypeCast
 	case "stmt":
 		*n = NodeTypeStmt
 	case "loop":
@@ -256,6 +248,8 @@ func (n *NodeType) UnmarshalJSON(data []byte) error {
 		*n = NodeTypeIndentBlock
 	case "match_branch":
 		*n = NodeTypeMatchBranch
+	case "union_candidate":
+		*n = NodeTypeUnionCandidate
 	case "return":
 		*n = NodeTypeReturn
 	case "break":
@@ -266,14 +260,6 @@ func (n *NodeType) UnmarshalJSON(data []byte) error {
 		*n = NodeTypeAssert
 	case "implicit_yield":
 		*n = NodeTypeImplicitYield
-	case "member":
-		*n = NodeTypeMember
-	case "field":
-		*n = NodeTypeField
-	case "format":
-		*n = NodeTypeFormat
-	case "function":
-		*n = NodeTypeFunction
 	case "type":
 		*n = NodeTypeType
 	case "int_type":
@@ -296,28 +282,42 @@ func (n *NodeType) UnmarshalJSON(data []byte) error {
 		*n = NodeTypeStructType
 	case "struct_union_type":
 		*n = NodeTypeStructUnionType
-	case "cast":
-		*n = NodeTypeCast
-	case "comment":
-		*n = NodeTypeComment
-	case "comment_group":
-		*n = NodeTypeCommentGroup
 	case "union_type":
 		*n = NodeTypeUnionType
-	case "union_candidate":
-		*n = NodeTypeUnionCandidate
 	case "range_type":
 		*n = NodeTypeRangeType
-	case "enum":
-		*n = NodeTypeEnum
-	case "enum_member":
-		*n = NodeTypeEnumMember
 	case "enum_type":
 		*n = NodeTypeEnumType
 	case "bit_group_type":
 		*n = NodeTypeBitGroupType
+	case "literal":
+		*n = NodeTypeLiteral
+	case "int_literal":
+		*n = NodeTypeIntLiteral
+	case "bool_literal":
+		*n = NodeTypeBoolLiteral
+	case "str_literal":
+		*n = NodeTypeStrLiteral
+	case "input":
+		*n = NodeTypeInput
+	case "output":
+		*n = NodeTypeOutput
+	case "config":
+		*n = NodeTypeConfig
+	case "member":
+		*n = NodeTypeMember
+	case "field":
+		*n = NodeTypeField
+	case "format":
+		*n = NodeTypeFormat
 	case "state":
 		*n = NodeTypeState
+	case "enum":
+		*n = NodeTypeEnum
+	case "enum_member":
+		*n = NodeTypeEnumMember
+	case "function":
+		*n = NodeTypeFunction
 	case "builtin_function":
 		*n = NodeTypeBuiltinFunction
 	default:
@@ -328,6 +328,14 @@ func (n *NodeType) UnmarshalJSON(data []byte) error {
 
 func (n *Program) GetNodeType() NodeType {
 	return NodeTypeProgram
+}
+
+func (n *Comment) GetNodeType() NodeType {
+	return NodeTypeComment
+}
+
+func (n *CommentGroup) GetNodeType() NodeType {
+	return NodeTypeCommentGroup
 }
 
 func (n *Binary) GetNodeType() NodeType {
@@ -386,28 +394,8 @@ func (n *Import) GetNodeType() NodeType {
 	return NodeTypeImport
 }
 
-func (n *IntLiteral) GetNodeType() NodeType {
-	return NodeTypeIntLiteral
-}
-
-func (n *BoolLiteral) GetNodeType() NodeType {
-	return NodeTypeBoolLiteral
-}
-
-func (n *StrLiteral) GetNodeType() NodeType {
-	return NodeTypeStrLiteral
-}
-
-func (n *Input) GetNodeType() NodeType {
-	return NodeTypeInput
-}
-
-func (n *Output) GetNodeType() NodeType {
-	return NodeTypeOutput
-}
-
-func (n *Config) GetNodeType() NodeType {
-	return NodeTypeConfig
+func (n *Cast) GetNodeType() NodeType {
+	return NodeTypeCast
 }
 
 func (n *Loop) GetNodeType() NodeType {
@@ -420,6 +408,10 @@ func (n *IndentBlock) GetNodeType() NodeType {
 
 func (n *MatchBranch) GetNodeType() NodeType {
 	return NodeTypeMatchBranch
+}
+
+func (n *UnionCandidate) GetNodeType() NodeType {
+	return NodeTypeUnionCandidate
 }
 
 func (n *Return) GetNodeType() NodeType {
@@ -440,18 +432,6 @@ func (n *Assert) GetNodeType() NodeType {
 
 func (n *ImplicitYield) GetNodeType() NodeType {
 	return NodeTypeImplicitYield
-}
-
-func (n *Field) GetNodeType() NodeType {
-	return NodeTypeField
-}
-
-func (n *Format) GetNodeType() NodeType {
-	return NodeTypeFormat
-}
-
-func (n *Function) GetNodeType() NodeType {
-	return NodeTypeFunction
 }
 
 func (n *IntType) GetNodeType() NodeType {
@@ -494,36 +474,12 @@ func (n *StructUnionType) GetNodeType() NodeType {
 	return NodeTypeStructUnionType
 }
 
-func (n *Cast) GetNodeType() NodeType {
-	return NodeTypeCast
-}
-
-func (n *Comment) GetNodeType() NodeType {
-	return NodeTypeComment
-}
-
-func (n *CommentGroup) GetNodeType() NodeType {
-	return NodeTypeCommentGroup
-}
-
 func (n *UnionType) GetNodeType() NodeType {
 	return NodeTypeUnionType
 }
 
-func (n *UnionCandidate) GetNodeType() NodeType {
-	return NodeTypeUnionCandidate
-}
-
 func (n *RangeType) GetNodeType() NodeType {
 	return NodeTypeRangeType
-}
-
-func (n *Enum) GetNodeType() NodeType {
-	return NodeTypeEnum
-}
-
-func (n *EnumMember) GetNodeType() NodeType {
-	return NodeTypeEnumMember
 }
 
 func (n *EnumType) GetNodeType() NodeType {
@@ -534,8 +490,52 @@ func (n *BitGroupType) GetNodeType() NodeType {
 	return NodeTypeBitGroupType
 }
 
+func (n *IntLiteral) GetNodeType() NodeType {
+	return NodeTypeIntLiteral
+}
+
+func (n *BoolLiteral) GetNodeType() NodeType {
+	return NodeTypeBoolLiteral
+}
+
+func (n *StrLiteral) GetNodeType() NodeType {
+	return NodeTypeStrLiteral
+}
+
+func (n *Input) GetNodeType() NodeType {
+	return NodeTypeInput
+}
+
+func (n *Output) GetNodeType() NodeType {
+	return NodeTypeOutput
+}
+
+func (n *Config) GetNodeType() NodeType {
+	return NodeTypeConfig
+}
+
+func (n *Field) GetNodeType() NodeType {
+	return NodeTypeField
+}
+
+func (n *Format) GetNodeType() NodeType {
+	return NodeTypeFormat
+}
+
 func (n *State) GetNodeType() NodeType {
 	return NodeTypeState
+}
+
+func (n *Enum) GetNodeType() NodeType {
+	return NodeTypeEnum
+}
+
+func (n *EnumMember) GetNodeType() NodeType {
+	return NodeTypeEnumMember
+}
+
+func (n *Function) GetNodeType() NodeType {
+	return NodeTypeFunction
 }
 
 func (n *BuiltinFunction) GetNodeType() NodeType {
@@ -1143,21 +1143,9 @@ type Expr interface {
 	GetConstantLevel() ConstantLevel
 }
 
-type Literal interface {
-	isLiteral()
-	Expr
-}
-
 type Stmt interface {
 	isStmt()
 	Node
-}
-
-type Member interface {
-	isMember()
-	Stmt
-	GetBelong() Member
-	GetIdent() *Ident
 }
 
 type Type interface {
@@ -1166,6 +1154,18 @@ type Type interface {
 	GetIsExplicit() bool
 	GetIsIntSet() bool
 	GetBitAlignment() BitAlignment
+}
+
+type Literal interface {
+	isLiteral()
+	Expr
+}
+
+type Member interface {
+	isMember()
+	Stmt
+	GetBelong() Member
+	GetIdent() *Ident
 }
 
 type Program struct {
@@ -1178,6 +1178,28 @@ type Program struct {
 func (n *Program) isNode() {}
 
 func (n *Program) GetLoc() Loc {
+	return n.Loc
+}
+
+type Comment struct {
+	Loc     Loc
+	Comment string
+}
+
+func (n *Comment) isNode() {}
+
+func (n *Comment) GetLoc() Loc {
+	return n.Loc
+}
+
+type CommentGroup struct {
+	Loc      Loc
+	Comments []*Comment
+}
+
+func (n *CommentGroup) isNode() {}
+
+func (n *CommentGroup) GetLoc() Loc {
 	return n.Loc
 }
 
@@ -1530,150 +1552,27 @@ func (n *Import) GetLoc() Loc {
 	return n.Loc
 }
 
-type IntLiteral struct {
+type Cast struct {
 	Loc           Loc
 	ExprType      Type
 	ConstantLevel ConstantLevel
-	Value         string
+	Base          *Call
+	Expr          Expr
 }
 
-func (n *IntLiteral) isLiteral() {}
+func (n *Cast) isExpr() {}
 
-func (n *IntLiteral) isExpr() {}
-
-func (n *IntLiteral) GetExprType() Type {
+func (n *Cast) GetExprType() Type {
 	return n.ExprType
 }
 
-func (n *IntLiteral) GetConstantLevel() ConstantLevel {
+func (n *Cast) GetConstantLevel() ConstantLevel {
 	return n.ConstantLevel
 }
 
-func (n *IntLiteral) isNode() {}
+func (n *Cast) isNode() {}
 
-func (n *IntLiteral) GetLoc() Loc {
-	return n.Loc
-}
-
-type BoolLiteral struct {
-	Loc           Loc
-	ExprType      Type
-	ConstantLevel ConstantLevel
-	Value         bool
-}
-
-func (n *BoolLiteral) isLiteral() {}
-
-func (n *BoolLiteral) isExpr() {}
-
-func (n *BoolLiteral) GetExprType() Type {
-	return n.ExprType
-}
-
-func (n *BoolLiteral) GetConstantLevel() ConstantLevel {
-	return n.ConstantLevel
-}
-
-func (n *BoolLiteral) isNode() {}
-
-func (n *BoolLiteral) GetLoc() Loc {
-	return n.Loc
-}
-
-type StrLiteral struct {
-	Loc           Loc
-	ExprType      Type
-	ConstantLevel ConstantLevel
-	Value         string
-}
-
-func (n *StrLiteral) isLiteral() {}
-
-func (n *StrLiteral) isExpr() {}
-
-func (n *StrLiteral) GetExprType() Type {
-	return n.ExprType
-}
-
-func (n *StrLiteral) GetConstantLevel() ConstantLevel {
-	return n.ConstantLevel
-}
-
-func (n *StrLiteral) isNode() {}
-
-func (n *StrLiteral) GetLoc() Loc {
-	return n.Loc
-}
-
-type Input struct {
-	Loc           Loc
-	ExprType      Type
-	ConstantLevel ConstantLevel
-}
-
-func (n *Input) isLiteral() {}
-
-func (n *Input) isExpr() {}
-
-func (n *Input) GetExprType() Type {
-	return n.ExprType
-}
-
-func (n *Input) GetConstantLevel() ConstantLevel {
-	return n.ConstantLevel
-}
-
-func (n *Input) isNode() {}
-
-func (n *Input) GetLoc() Loc {
-	return n.Loc
-}
-
-type Output struct {
-	Loc           Loc
-	ExprType      Type
-	ConstantLevel ConstantLevel
-}
-
-func (n *Output) isLiteral() {}
-
-func (n *Output) isExpr() {}
-
-func (n *Output) GetExprType() Type {
-	return n.ExprType
-}
-
-func (n *Output) GetConstantLevel() ConstantLevel {
-	return n.ConstantLevel
-}
-
-func (n *Output) isNode() {}
-
-func (n *Output) GetLoc() Loc {
-	return n.Loc
-}
-
-type Config struct {
-	Loc           Loc
-	ExprType      Type
-	ConstantLevel ConstantLevel
-}
-
-func (n *Config) isLiteral() {}
-
-func (n *Config) isExpr() {}
-
-func (n *Config) GetExprType() Type {
-	return n.ExprType
-}
-
-func (n *Config) GetConstantLevel() ConstantLevel {
-	return n.ConstantLevel
-}
-
-func (n *Config) isNode() {}
-
-func (n *Config) GetLoc() Loc {
+func (n *Cast) GetLoc() Loc {
 	return n.Loc
 }
 
@@ -1721,6 +1620,20 @@ func (n *MatchBranch) isStmt() {}
 func (n *MatchBranch) isNode() {}
 
 func (n *MatchBranch) GetLoc() Loc {
+	return n.Loc
+}
+
+type UnionCandidate struct {
+	Loc   Loc
+	Cond  Expr
+	Field Member
+}
+
+func (n *UnionCandidate) isStmt() {}
+
+func (n *UnionCandidate) isNode() {}
+
+func (n *UnionCandidate) GetLoc() Loc {
 	return n.Loc
 }
 
@@ -1784,90 +1697,6 @@ func (n *ImplicitYield) isStmt() {}
 func (n *ImplicitYield) isNode() {}
 
 func (n *ImplicitYield) GetLoc() Loc {
-	return n.Loc
-}
-
-type Field struct {
-	Loc          Loc
-	Belong       Member
-	Ident        *Ident
-	ColonLoc     Loc
-	FieldType    Type
-	RawArguments Expr
-	Arguments    []Expr
-	BitAlignment BitAlignment
-}
-
-func (n *Field) isMember() {}
-
-func (n *Field) GetBelong() Member {
-	return n.Belong
-}
-
-func (n *Field) GetIdent() *Ident {
-	return n.Ident
-}
-
-func (n *Field) isStmt() {}
-
-func (n *Field) isNode() {}
-
-func (n *Field) GetLoc() Loc {
-	return n.Loc
-}
-
-type Format struct {
-	Loc    Loc
-	Belong Member
-	Ident  *Ident
-	Body   *IndentBlock
-}
-
-func (n *Format) isMember() {}
-
-func (n *Format) GetBelong() Member {
-	return n.Belong
-}
-
-func (n *Format) GetIdent() *Ident {
-	return n.Ident
-}
-
-func (n *Format) isStmt() {}
-
-func (n *Format) isNode() {}
-
-func (n *Format) GetLoc() Loc {
-	return n.Loc
-}
-
-type Function struct {
-	Loc        Loc
-	Belong     Member
-	Ident      *Ident
-	Parameters []*Field
-	ReturnType Type
-	Body       *IndentBlock
-	FuncType   *FunctionType
-	IsCast     bool
-	CastLoc    Loc
-}
-
-func (n *Function) isMember() {}
-
-func (n *Function) GetBelong() Member {
-	return n.Belong
-}
-
-func (n *Function) GetIdent() *Ident {
-	return n.Ident
-}
-
-func (n *Function) isStmt() {}
-
-func (n *Function) isNode() {}
-
-func (n *Function) GetLoc() Loc {
 	return n.Loc
 }
 
@@ -2160,52 +1989,6 @@ func (n *StructUnionType) GetLoc() Loc {
 	return n.Loc
 }
 
-type Cast struct {
-	Loc           Loc
-	ExprType      Type
-	ConstantLevel ConstantLevel
-	Base          *Call
-	Expr          Expr
-}
-
-func (n *Cast) isExpr() {}
-
-func (n *Cast) GetExprType() Type {
-	return n.ExprType
-}
-
-func (n *Cast) GetConstantLevel() ConstantLevel {
-	return n.ConstantLevel
-}
-
-func (n *Cast) isNode() {}
-
-func (n *Cast) GetLoc() Loc {
-	return n.Loc
-}
-
-type Comment struct {
-	Loc     Loc
-	Comment string
-}
-
-func (n *Comment) isNode() {}
-
-func (n *Comment) GetLoc() Loc {
-	return n.Loc
-}
-
-type CommentGroup struct {
-	Loc      Loc
-	Comments []*Comment
-}
-
-func (n *CommentGroup) isNode() {}
-
-func (n *CommentGroup) GetLoc() Loc {
-	return n.Loc
-}
-
 type UnionType struct {
 	Loc          Loc
 	IsExplicit   bool
@@ -2236,20 +2019,6 @@ func (n *UnionType) GetLoc() Loc {
 	return n.Loc
 }
 
-type UnionCandidate struct {
-	Loc   Loc
-	Cond  Expr
-	Field Member
-}
-
-func (n *UnionCandidate) isStmt() {}
-
-func (n *UnionCandidate) isNode() {}
-
-func (n *UnionCandidate) GetLoc() Loc {
-	return n.Loc
-}
-
 type RangeType struct {
 	Loc          Loc
 	IsExplicit   bool
@@ -2276,60 +2045,6 @@ func (n *RangeType) GetBitAlignment() BitAlignment {
 func (n *RangeType) isNode() {}
 
 func (n *RangeType) GetLoc() Loc {
-	return n.Loc
-}
-
-type Enum struct {
-	Loc      Loc
-	Belong   Member
-	Ident    *Ident
-	Scope    *Scope
-	ColonLoc Loc
-	BaseType Type
-	Members  []*EnumMember
-	EnumType *EnumType
-}
-
-func (n *Enum) isMember() {}
-
-func (n *Enum) GetBelong() Member {
-	return n.Belong
-}
-
-func (n *Enum) GetIdent() *Ident {
-	return n.Ident
-}
-
-func (n *Enum) isStmt() {}
-
-func (n *Enum) isNode() {}
-
-func (n *Enum) GetLoc() Loc {
-	return n.Loc
-}
-
-type EnumMember struct {
-	Loc    Loc
-	Belong Member
-	Ident  *Ident
-	Expr   Expr
-}
-
-func (n *EnumMember) isMember() {}
-
-func (n *EnumMember) GetBelong() Member {
-	return n.Belong
-}
-
-func (n *EnumMember) GetIdent() *Ident {
-	return n.Ident
-}
-
-func (n *EnumMember) isStmt() {}
-
-func (n *EnumMember) isNode() {}
-
-func (n *EnumMember) GetLoc() Loc {
 	return n.Loc
 }
 
@@ -2391,6 +2106,207 @@ func (n *BitGroupType) GetLoc() Loc {
 	return n.Loc
 }
 
+type IntLiteral struct {
+	Loc           Loc
+	ExprType      Type
+	ConstantLevel ConstantLevel
+	Value         string
+}
+
+func (n *IntLiteral) isLiteral() {}
+
+func (n *IntLiteral) isExpr() {}
+
+func (n *IntLiteral) GetExprType() Type {
+	return n.ExprType
+}
+
+func (n *IntLiteral) GetConstantLevel() ConstantLevel {
+	return n.ConstantLevel
+}
+
+func (n *IntLiteral) isNode() {}
+
+func (n *IntLiteral) GetLoc() Loc {
+	return n.Loc
+}
+
+type BoolLiteral struct {
+	Loc           Loc
+	ExprType      Type
+	ConstantLevel ConstantLevel
+	Value         bool
+}
+
+func (n *BoolLiteral) isLiteral() {}
+
+func (n *BoolLiteral) isExpr() {}
+
+func (n *BoolLiteral) GetExprType() Type {
+	return n.ExprType
+}
+
+func (n *BoolLiteral) GetConstantLevel() ConstantLevel {
+	return n.ConstantLevel
+}
+
+func (n *BoolLiteral) isNode() {}
+
+func (n *BoolLiteral) GetLoc() Loc {
+	return n.Loc
+}
+
+type StrLiteral struct {
+	Loc           Loc
+	ExprType      Type
+	ConstantLevel ConstantLevel
+	Value         string
+}
+
+func (n *StrLiteral) isLiteral() {}
+
+func (n *StrLiteral) isExpr() {}
+
+func (n *StrLiteral) GetExprType() Type {
+	return n.ExprType
+}
+
+func (n *StrLiteral) GetConstantLevel() ConstantLevel {
+	return n.ConstantLevel
+}
+
+func (n *StrLiteral) isNode() {}
+
+func (n *StrLiteral) GetLoc() Loc {
+	return n.Loc
+}
+
+type Input struct {
+	Loc           Loc
+	ExprType      Type
+	ConstantLevel ConstantLevel
+}
+
+func (n *Input) isLiteral() {}
+
+func (n *Input) isExpr() {}
+
+func (n *Input) GetExprType() Type {
+	return n.ExprType
+}
+
+func (n *Input) GetConstantLevel() ConstantLevel {
+	return n.ConstantLevel
+}
+
+func (n *Input) isNode() {}
+
+func (n *Input) GetLoc() Loc {
+	return n.Loc
+}
+
+type Output struct {
+	Loc           Loc
+	ExprType      Type
+	ConstantLevel ConstantLevel
+}
+
+func (n *Output) isLiteral() {}
+
+func (n *Output) isExpr() {}
+
+func (n *Output) GetExprType() Type {
+	return n.ExprType
+}
+
+func (n *Output) GetConstantLevel() ConstantLevel {
+	return n.ConstantLevel
+}
+
+func (n *Output) isNode() {}
+
+func (n *Output) GetLoc() Loc {
+	return n.Loc
+}
+
+type Config struct {
+	Loc           Loc
+	ExprType      Type
+	ConstantLevel ConstantLevel
+}
+
+func (n *Config) isLiteral() {}
+
+func (n *Config) isExpr() {}
+
+func (n *Config) GetExprType() Type {
+	return n.ExprType
+}
+
+func (n *Config) GetConstantLevel() ConstantLevel {
+	return n.ConstantLevel
+}
+
+func (n *Config) isNode() {}
+
+func (n *Config) GetLoc() Loc {
+	return n.Loc
+}
+
+type Field struct {
+	Loc          Loc
+	Belong       Member
+	Ident        *Ident
+	ColonLoc     Loc
+	FieldType    Type
+	RawArguments Expr
+	Arguments    []Expr
+	BitAlignment BitAlignment
+}
+
+func (n *Field) isMember() {}
+
+func (n *Field) GetBelong() Member {
+	return n.Belong
+}
+
+func (n *Field) GetIdent() *Ident {
+	return n.Ident
+}
+
+func (n *Field) isStmt() {}
+
+func (n *Field) isNode() {}
+
+func (n *Field) GetLoc() Loc {
+	return n.Loc
+}
+
+type Format struct {
+	Loc    Loc
+	Belong Member
+	Ident  *Ident
+	Body   *IndentBlock
+}
+
+func (n *Format) isMember() {}
+
+func (n *Format) GetBelong() Member {
+	return n.Belong
+}
+
+func (n *Format) GetIdent() *Ident {
+	return n.Ident
+}
+
+func (n *Format) isStmt() {}
+
+func (n *Format) isNode() {}
+
+func (n *Format) GetLoc() Loc {
+	return n.Loc
+}
+
 type State struct {
 	Loc    Loc
 	Belong Member
@@ -2413,6 +2329,90 @@ func (n *State) isStmt() {}
 func (n *State) isNode() {}
 
 func (n *State) GetLoc() Loc {
+	return n.Loc
+}
+
+type Enum struct {
+	Loc      Loc
+	Belong   Member
+	Ident    *Ident
+	Scope    *Scope
+	ColonLoc Loc
+	BaseType Type
+	Members  []*EnumMember
+	EnumType *EnumType
+}
+
+func (n *Enum) isMember() {}
+
+func (n *Enum) GetBelong() Member {
+	return n.Belong
+}
+
+func (n *Enum) GetIdent() *Ident {
+	return n.Ident
+}
+
+func (n *Enum) isStmt() {}
+
+func (n *Enum) isNode() {}
+
+func (n *Enum) GetLoc() Loc {
+	return n.Loc
+}
+
+type EnumMember struct {
+	Loc    Loc
+	Belong Member
+	Ident  *Ident
+	Expr   Expr
+}
+
+func (n *EnumMember) isMember() {}
+
+func (n *EnumMember) GetBelong() Member {
+	return n.Belong
+}
+
+func (n *EnumMember) GetIdent() *Ident {
+	return n.Ident
+}
+
+func (n *EnumMember) isStmt() {}
+
+func (n *EnumMember) isNode() {}
+
+func (n *EnumMember) GetLoc() Loc {
+	return n.Loc
+}
+
+type Function struct {
+	Loc        Loc
+	Belong     Member
+	Ident      *Ident
+	Parameters []*Field
+	ReturnType Type
+	Body       *IndentBlock
+	FuncType   *FunctionType
+	IsCast     bool
+	CastLoc    Loc
+}
+
+func (n *Function) isMember() {}
+
+func (n *Function) GetBelong() Member {
+	return n.Belong
+}
+
+func (n *Function) GetIdent() *Ident {
+	return n.Ident
+}
+
+func (n *Function) isStmt() {}
+
+func (n *Function) isNode() {}
+
+func (n *Function) GetLoc() Loc {
 	return n.Loc
 }
 
@@ -2529,6 +2529,10 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		switch raw.NodeType {
 		case NodeTypeProgram:
 			n.node[i] = &Program{Loc: raw.Loc}
+		case NodeTypeComment:
+			n.node[i] = &Comment{Loc: raw.Loc}
+		case NodeTypeCommentGroup:
+			n.node[i] = &CommentGroup{Loc: raw.Loc}
 		case NodeTypeBinary:
 			n.node[i] = &Binary{Loc: raw.Loc}
 		case NodeTypeUnary:
@@ -2557,24 +2561,16 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			n.node[i] = &BlockExpr{Loc: raw.Loc}
 		case NodeTypeImport:
 			n.node[i] = &Import{Loc: raw.Loc}
-		case NodeTypeIntLiteral:
-			n.node[i] = &IntLiteral{Loc: raw.Loc}
-		case NodeTypeBoolLiteral:
-			n.node[i] = &BoolLiteral{Loc: raw.Loc}
-		case NodeTypeStrLiteral:
-			n.node[i] = &StrLiteral{Loc: raw.Loc}
-		case NodeTypeInput:
-			n.node[i] = &Input{Loc: raw.Loc}
-		case NodeTypeOutput:
-			n.node[i] = &Output{Loc: raw.Loc}
-		case NodeTypeConfig:
-			n.node[i] = &Config{Loc: raw.Loc}
+		case NodeTypeCast:
+			n.node[i] = &Cast{Loc: raw.Loc}
 		case NodeTypeLoop:
 			n.node[i] = &Loop{Loc: raw.Loc}
 		case NodeTypeIndentBlock:
 			n.node[i] = &IndentBlock{Loc: raw.Loc}
 		case NodeTypeMatchBranch:
 			n.node[i] = &MatchBranch{Loc: raw.Loc}
+		case NodeTypeUnionCandidate:
+			n.node[i] = &UnionCandidate{Loc: raw.Loc}
 		case NodeTypeReturn:
 			n.node[i] = &Return{Loc: raw.Loc}
 		case NodeTypeBreak:
@@ -2585,12 +2581,6 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			n.node[i] = &Assert{Loc: raw.Loc}
 		case NodeTypeImplicitYield:
 			n.node[i] = &ImplicitYield{Loc: raw.Loc}
-		case NodeTypeField:
-			n.node[i] = &Field{Loc: raw.Loc}
-		case NodeTypeFormat:
-			n.node[i] = &Format{Loc: raw.Loc}
-		case NodeTypeFunction:
-			n.node[i] = &Function{Loc: raw.Loc}
 		case NodeTypeIntType:
 			n.node[i] = &IntType{Loc: raw.Loc}
 		case NodeTypeIdentType:
@@ -2611,28 +2601,38 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			n.node[i] = &StructType{Loc: raw.Loc}
 		case NodeTypeStructUnionType:
 			n.node[i] = &StructUnionType{Loc: raw.Loc}
-		case NodeTypeCast:
-			n.node[i] = &Cast{Loc: raw.Loc}
-		case NodeTypeComment:
-			n.node[i] = &Comment{Loc: raw.Loc}
-		case NodeTypeCommentGroup:
-			n.node[i] = &CommentGroup{Loc: raw.Loc}
 		case NodeTypeUnionType:
 			n.node[i] = &UnionType{Loc: raw.Loc}
-		case NodeTypeUnionCandidate:
-			n.node[i] = &UnionCandidate{Loc: raw.Loc}
 		case NodeTypeRangeType:
 			n.node[i] = &RangeType{Loc: raw.Loc}
-		case NodeTypeEnum:
-			n.node[i] = &Enum{Loc: raw.Loc}
-		case NodeTypeEnumMember:
-			n.node[i] = &EnumMember{Loc: raw.Loc}
 		case NodeTypeEnumType:
 			n.node[i] = &EnumType{Loc: raw.Loc}
 		case NodeTypeBitGroupType:
 			n.node[i] = &BitGroupType{Loc: raw.Loc}
+		case NodeTypeIntLiteral:
+			n.node[i] = &IntLiteral{Loc: raw.Loc}
+		case NodeTypeBoolLiteral:
+			n.node[i] = &BoolLiteral{Loc: raw.Loc}
+		case NodeTypeStrLiteral:
+			n.node[i] = &StrLiteral{Loc: raw.Loc}
+		case NodeTypeInput:
+			n.node[i] = &Input{Loc: raw.Loc}
+		case NodeTypeOutput:
+			n.node[i] = &Output{Loc: raw.Loc}
+		case NodeTypeConfig:
+			n.node[i] = &Config{Loc: raw.Loc}
+		case NodeTypeField:
+			n.node[i] = &Field{Loc: raw.Loc}
+		case NodeTypeFormat:
+			n.node[i] = &Format{Loc: raw.Loc}
 		case NodeTypeState:
 			n.node[i] = &State{Loc: raw.Loc}
+		case NodeTypeEnum:
+			n.node[i] = &Enum{Loc: raw.Loc}
+		case NodeTypeEnumMember:
+			n.node[i] = &EnumMember{Loc: raw.Loc}
+		case NodeTypeFunction:
+			n.node[i] = &Function{Loc: raw.Loc}
 		case NodeTypeBuiltinFunction:
 			n.node[i] = &BuiltinFunction{Loc: raw.Loc}
 		default:
@@ -2664,6 +2664,27 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			}
 			if tmp.GlobalScope != nil {
 				v.GlobalScope = n.scope[*tmp.GlobalScope]
+			}
+		case NodeTypeComment:
+			v := n.node[i].(*Comment)
+			var tmp struct {
+				Comment string `json:"comment"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			v.Comment = tmp.Comment
+		case NodeTypeCommentGroup:
+			v := n.node[i].(*CommentGroup)
+			var tmp struct {
+				Comments []uintptr `json:"comments"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			v.Comments = make([]*Comment, len(tmp.Comments))
+			for j, k := range tmp.Comments {
+				v.Comments[j] = n.node[k].(*Comment)
 			}
 		case NodeTypeBinary:
 			v := n.node[i].(*Binary)
@@ -2992,12 +3013,13 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.ImportDesc != nil {
 				v.ImportDesc = n.node[*tmp.ImportDesc].(*Program)
 			}
-		case NodeTypeIntLiteral:
-			v := n.node[i].(*IntLiteral)
+		case NodeTypeCast:
+			v := n.node[i].(*Cast)
 			var tmp struct {
 				ExprType      *uintptr      `json:"expr_type"`
 				ConstantLevel ConstantLevel `json:"constant_level"`
-				Value         string        `json:"value"`
+				Base          *uintptr      `json:"base"`
+				Expr          *uintptr      `json:"expr"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -3006,76 +3028,12 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				v.ExprType = n.node[*tmp.ExprType].(Type)
 			}
 			v.ConstantLevel = tmp.ConstantLevel
-			v.Value = tmp.Value
-		case NodeTypeBoolLiteral:
-			v := n.node[i].(*BoolLiteral)
-			var tmp struct {
-				ExprType      *uintptr      `json:"expr_type"`
-				ConstantLevel ConstantLevel `json:"constant_level"`
-				Value         bool          `json:"value"`
+			if tmp.Base != nil {
+				v.Base = n.node[*tmp.Base].(*Call)
 			}
-			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
-				return nil, err
+			if tmp.Expr != nil {
+				v.Expr = n.node[*tmp.Expr].(Expr)
 			}
-			if tmp.ExprType != nil {
-				v.ExprType = n.node[*tmp.ExprType].(Type)
-			}
-			v.ConstantLevel = tmp.ConstantLevel
-			v.Value = tmp.Value
-		case NodeTypeStrLiteral:
-			v := n.node[i].(*StrLiteral)
-			var tmp struct {
-				ExprType      *uintptr      `json:"expr_type"`
-				ConstantLevel ConstantLevel `json:"constant_level"`
-				Value         string        `json:"value"`
-			}
-			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
-				return nil, err
-			}
-			if tmp.ExprType != nil {
-				v.ExprType = n.node[*tmp.ExprType].(Type)
-			}
-			v.ConstantLevel = tmp.ConstantLevel
-			v.Value = tmp.Value
-		case NodeTypeInput:
-			v := n.node[i].(*Input)
-			var tmp struct {
-				ExprType      *uintptr      `json:"expr_type"`
-				ConstantLevel ConstantLevel `json:"constant_level"`
-			}
-			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
-				return nil, err
-			}
-			if tmp.ExprType != nil {
-				v.ExprType = n.node[*tmp.ExprType].(Type)
-			}
-			v.ConstantLevel = tmp.ConstantLevel
-		case NodeTypeOutput:
-			v := n.node[i].(*Output)
-			var tmp struct {
-				ExprType      *uintptr      `json:"expr_type"`
-				ConstantLevel ConstantLevel `json:"constant_level"`
-			}
-			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
-				return nil, err
-			}
-			if tmp.ExprType != nil {
-				v.ExprType = n.node[*tmp.ExprType].(Type)
-			}
-			v.ConstantLevel = tmp.ConstantLevel
-		case NodeTypeConfig:
-			v := n.node[i].(*Config)
-			var tmp struct {
-				ExprType      *uintptr      `json:"expr_type"`
-				ConstantLevel ConstantLevel `json:"constant_level"`
-			}
-			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
-				return nil, err
-			}
-			if tmp.ExprType != nil {
-				v.ExprType = n.node[*tmp.ExprType].(Type)
-			}
-			v.ConstantLevel = tmp.ConstantLevel
 		case NodeTypeLoop:
 			v := n.node[i].(*Loop)
 			var tmp struct {
@@ -3140,6 +3098,21 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.Then != nil {
 				v.Then = n.node[*tmp.Then].(Node)
 			}
+		case NodeTypeUnionCandidate:
+			v := n.node[i].(*UnionCandidate)
+			var tmp struct {
+				Cond  *uintptr `json:"cond"`
+				Field *uintptr `json:"field"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			if tmp.Cond != nil {
+				v.Cond = n.node[*tmp.Cond].(Expr)
+			}
+			if tmp.Field != nil {
+				v.Field = n.node[*tmp.Field].(Member)
+			}
 		case NodeTypeReturn:
 			v := n.node[i].(*Return)
 			var tmp struct {
@@ -3185,93 +3158,6 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.Expr != nil {
 				v.Expr = n.node[*tmp.Expr].(Expr)
 			}
-		case NodeTypeField:
-			v := n.node[i].(*Field)
-			var tmp struct {
-				Belong       *uintptr     `json:"belong"`
-				Ident        *uintptr     `json:"ident"`
-				ColonLoc     Loc          `json:"colon_loc"`
-				FieldType    *uintptr     `json:"field_type"`
-				RawArguments *uintptr     `json:"raw_arguments"`
-				Arguments    []uintptr    `json:"arguments"`
-				BitAlignment BitAlignment `json:"bit_alignment"`
-			}
-			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
-				return nil, err
-			}
-			if tmp.Belong != nil {
-				v.Belong = n.node[*tmp.Belong].(Member)
-			}
-			if tmp.Ident != nil {
-				v.Ident = n.node[*tmp.Ident].(*Ident)
-			}
-			v.ColonLoc = tmp.ColonLoc
-			if tmp.FieldType != nil {
-				v.FieldType = n.node[*tmp.FieldType].(Type)
-			}
-			if tmp.RawArguments != nil {
-				v.RawArguments = n.node[*tmp.RawArguments].(Expr)
-			}
-			v.Arguments = make([]Expr, len(tmp.Arguments))
-			for j, k := range tmp.Arguments {
-				v.Arguments[j] = n.node[k].(Expr)
-			}
-			v.BitAlignment = tmp.BitAlignment
-		case NodeTypeFormat:
-			v := n.node[i].(*Format)
-			var tmp struct {
-				Belong *uintptr `json:"belong"`
-				Ident  *uintptr `json:"ident"`
-				Body   *uintptr `json:"body"`
-			}
-			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
-				return nil, err
-			}
-			if tmp.Belong != nil {
-				v.Belong = n.node[*tmp.Belong].(Member)
-			}
-			if tmp.Ident != nil {
-				v.Ident = n.node[*tmp.Ident].(*Ident)
-			}
-			if tmp.Body != nil {
-				v.Body = n.node[*tmp.Body].(*IndentBlock)
-			}
-		case NodeTypeFunction:
-			v := n.node[i].(*Function)
-			var tmp struct {
-				Belong     *uintptr  `json:"belong"`
-				Ident      *uintptr  `json:"ident"`
-				Parameters []uintptr `json:"parameters"`
-				ReturnType *uintptr  `json:"return_type"`
-				Body       *uintptr  `json:"body"`
-				FuncType   *uintptr  `json:"func_type"`
-				IsCast     bool      `json:"is_cast"`
-				CastLoc    Loc       `json:"cast_loc"`
-			}
-			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
-				return nil, err
-			}
-			if tmp.Belong != nil {
-				v.Belong = n.node[*tmp.Belong].(Member)
-			}
-			if tmp.Ident != nil {
-				v.Ident = n.node[*tmp.Ident].(*Ident)
-			}
-			v.Parameters = make([]*Field, len(tmp.Parameters))
-			for j, k := range tmp.Parameters {
-				v.Parameters[j] = n.node[k].(*Field)
-			}
-			if tmp.ReturnType != nil {
-				v.ReturnType = n.node[*tmp.ReturnType].(Type)
-			}
-			if tmp.Body != nil {
-				v.Body = n.node[*tmp.Body].(*IndentBlock)
-			}
-			if tmp.FuncType != nil {
-				v.FuncType = n.node[*tmp.FuncType].(*FunctionType)
-			}
-			v.IsCast = tmp.IsCast
-			v.CastLoc = tmp.CastLoc
 		case NodeTypeIntType:
 			v := n.node[i].(*IntType)
 			var tmp struct {
@@ -3470,48 +3356,6 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			for j, k := range tmp.UnionFields {
 				v.UnionFields[j] = n.node[k].(*Field)
 			}
-		case NodeTypeCast:
-			v := n.node[i].(*Cast)
-			var tmp struct {
-				ExprType      *uintptr      `json:"expr_type"`
-				ConstantLevel ConstantLevel `json:"constant_level"`
-				Base          *uintptr      `json:"base"`
-				Expr          *uintptr      `json:"expr"`
-			}
-			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
-				return nil, err
-			}
-			if tmp.ExprType != nil {
-				v.ExprType = n.node[*tmp.ExprType].(Type)
-			}
-			v.ConstantLevel = tmp.ConstantLevel
-			if tmp.Base != nil {
-				v.Base = n.node[*tmp.Base].(*Call)
-			}
-			if tmp.Expr != nil {
-				v.Expr = n.node[*tmp.Expr].(Expr)
-			}
-		case NodeTypeComment:
-			v := n.node[i].(*Comment)
-			var tmp struct {
-				Comment string `json:"comment"`
-			}
-			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
-				return nil, err
-			}
-			v.Comment = tmp.Comment
-		case NodeTypeCommentGroup:
-			v := n.node[i].(*CommentGroup)
-			var tmp struct {
-				Comments []uintptr `json:"comments"`
-			}
-			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
-				return nil, err
-			}
-			v.Comments = make([]*Comment, len(tmp.Comments))
-			for j, k := range tmp.Comments {
-				v.Comments[j] = n.node[k].(*Comment)
-			}
 		case NodeTypeUnionType:
 			v := n.node[i].(*UnionType)
 			var tmp struct {
@@ -3538,21 +3382,6 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.BaseType != nil {
 				v.BaseType = n.node[*tmp.BaseType].(*StructUnionType)
 			}
-		case NodeTypeUnionCandidate:
-			v := n.node[i].(*UnionCandidate)
-			var tmp struct {
-				Cond  *uintptr `json:"cond"`
-				Field *uintptr `json:"field"`
-			}
-			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
-				return nil, err
-			}
-			if tmp.Cond != nil {
-				v.Cond = n.node[*tmp.Cond].(Expr)
-			}
-			if tmp.Field != nil {
-				v.Field = n.node[*tmp.Field].(Member)
-			}
 		case NodeTypeRangeType:
 			v := n.node[i].(*RangeType)
 			var tmp struct {
@@ -3573,6 +3402,199 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			}
 			if tmp.Range != nil {
 				v.Range = n.node[*tmp.Range].(*Range)
+			}
+		case NodeTypeEnumType:
+			v := n.node[i].(*EnumType)
+			var tmp struct {
+				IsExplicit   bool         `json:"is_explicit"`
+				IsIntSet     bool         `json:"is_int_set"`
+				BitAlignment BitAlignment `json:"bit_alignment"`
+				Base         *uintptr     `json:"base"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			v.IsExplicit = tmp.IsExplicit
+			v.IsIntSet = tmp.IsIntSet
+			v.BitAlignment = tmp.BitAlignment
+			if tmp.Base != nil {
+				v.Base = n.node[*tmp.Base].(*Enum)
+			}
+		case NodeTypeBitGroupType:
+			v := n.node[i].(*BitGroupType)
+			var tmp struct {
+				IsExplicit   bool         `json:"is_explicit"`
+				IsIntSet     bool         `json:"is_int_set"`
+				BitAlignment BitAlignment `json:"bit_alignment"`
+				BitFields    []uintptr    `json:"bit_fields"`
+				IsAligned    bool         `json:"is_aligned"`
+				BitSize      uint64       `json:"bit_size"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			v.IsExplicit = tmp.IsExplicit
+			v.IsIntSet = tmp.IsIntSet
+			v.BitAlignment = tmp.BitAlignment
+			v.BitFields = make([]*Field, len(tmp.BitFields))
+			for j, k := range tmp.BitFields {
+				v.BitFields[j] = n.node[k].(*Field)
+			}
+			v.IsAligned = tmp.IsAligned
+			v.BitSize = tmp.BitSize
+		case NodeTypeIntLiteral:
+			v := n.node[i].(*IntLiteral)
+			var tmp struct {
+				ExprType      *uintptr      `json:"expr_type"`
+				ConstantLevel ConstantLevel `json:"constant_level"`
+				Value         string        `json:"value"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			if tmp.ExprType != nil {
+				v.ExprType = n.node[*tmp.ExprType].(Type)
+			}
+			v.ConstantLevel = tmp.ConstantLevel
+			v.Value = tmp.Value
+		case NodeTypeBoolLiteral:
+			v := n.node[i].(*BoolLiteral)
+			var tmp struct {
+				ExprType      *uintptr      `json:"expr_type"`
+				ConstantLevel ConstantLevel `json:"constant_level"`
+				Value         bool          `json:"value"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			if tmp.ExprType != nil {
+				v.ExprType = n.node[*tmp.ExprType].(Type)
+			}
+			v.ConstantLevel = tmp.ConstantLevel
+			v.Value = tmp.Value
+		case NodeTypeStrLiteral:
+			v := n.node[i].(*StrLiteral)
+			var tmp struct {
+				ExprType      *uintptr      `json:"expr_type"`
+				ConstantLevel ConstantLevel `json:"constant_level"`
+				Value         string        `json:"value"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			if tmp.ExprType != nil {
+				v.ExprType = n.node[*tmp.ExprType].(Type)
+			}
+			v.ConstantLevel = tmp.ConstantLevel
+			v.Value = tmp.Value
+		case NodeTypeInput:
+			v := n.node[i].(*Input)
+			var tmp struct {
+				ExprType      *uintptr      `json:"expr_type"`
+				ConstantLevel ConstantLevel `json:"constant_level"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			if tmp.ExprType != nil {
+				v.ExprType = n.node[*tmp.ExprType].(Type)
+			}
+			v.ConstantLevel = tmp.ConstantLevel
+		case NodeTypeOutput:
+			v := n.node[i].(*Output)
+			var tmp struct {
+				ExprType      *uintptr      `json:"expr_type"`
+				ConstantLevel ConstantLevel `json:"constant_level"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			if tmp.ExprType != nil {
+				v.ExprType = n.node[*tmp.ExprType].(Type)
+			}
+			v.ConstantLevel = tmp.ConstantLevel
+		case NodeTypeConfig:
+			v := n.node[i].(*Config)
+			var tmp struct {
+				ExprType      *uintptr      `json:"expr_type"`
+				ConstantLevel ConstantLevel `json:"constant_level"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			if tmp.ExprType != nil {
+				v.ExprType = n.node[*tmp.ExprType].(Type)
+			}
+			v.ConstantLevel = tmp.ConstantLevel
+		case NodeTypeField:
+			v := n.node[i].(*Field)
+			var tmp struct {
+				Belong       *uintptr     `json:"belong"`
+				Ident        *uintptr     `json:"ident"`
+				ColonLoc     Loc          `json:"colon_loc"`
+				FieldType    *uintptr     `json:"field_type"`
+				RawArguments *uintptr     `json:"raw_arguments"`
+				Arguments    []uintptr    `json:"arguments"`
+				BitAlignment BitAlignment `json:"bit_alignment"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			if tmp.Belong != nil {
+				v.Belong = n.node[*tmp.Belong].(Member)
+			}
+			if tmp.Ident != nil {
+				v.Ident = n.node[*tmp.Ident].(*Ident)
+			}
+			v.ColonLoc = tmp.ColonLoc
+			if tmp.FieldType != nil {
+				v.FieldType = n.node[*tmp.FieldType].(Type)
+			}
+			if tmp.RawArguments != nil {
+				v.RawArguments = n.node[*tmp.RawArguments].(Expr)
+			}
+			v.Arguments = make([]Expr, len(tmp.Arguments))
+			for j, k := range tmp.Arguments {
+				v.Arguments[j] = n.node[k].(Expr)
+			}
+			v.BitAlignment = tmp.BitAlignment
+		case NodeTypeFormat:
+			v := n.node[i].(*Format)
+			var tmp struct {
+				Belong *uintptr `json:"belong"`
+				Ident  *uintptr `json:"ident"`
+				Body   *uintptr `json:"body"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			if tmp.Belong != nil {
+				v.Belong = n.node[*tmp.Belong].(Member)
+			}
+			if tmp.Ident != nil {
+				v.Ident = n.node[*tmp.Ident].(*Ident)
+			}
+			if tmp.Body != nil {
+				v.Body = n.node[*tmp.Body].(*IndentBlock)
+			}
+		case NodeTypeState:
+			v := n.node[i].(*State)
+			var tmp struct {
+				Belong *uintptr `json:"belong"`
+				Ident  *uintptr `json:"ident"`
+				Body   *uintptr `json:"body"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			if tmp.Belong != nil {
+				v.Belong = n.node[*tmp.Belong].(Member)
+			}
+			if tmp.Ident != nil {
+				v.Ident = n.node[*tmp.Ident].(*Ident)
+			}
+			if tmp.Body != nil {
+				v.Body = n.node[*tmp.Body].(*IndentBlock)
 			}
 		case NodeTypeEnum:
 			v := n.node[i].(*Enum)
@@ -3627,51 +3649,17 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.Expr != nil {
 				v.Expr = n.node[*tmp.Expr].(Expr)
 			}
-		case NodeTypeEnumType:
-			v := n.node[i].(*EnumType)
+		case NodeTypeFunction:
+			v := n.node[i].(*Function)
 			var tmp struct {
-				IsExplicit   bool         `json:"is_explicit"`
-				IsIntSet     bool         `json:"is_int_set"`
-				BitAlignment BitAlignment `json:"bit_alignment"`
-				Base         *uintptr     `json:"base"`
-			}
-			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
-				return nil, err
-			}
-			v.IsExplicit = tmp.IsExplicit
-			v.IsIntSet = tmp.IsIntSet
-			v.BitAlignment = tmp.BitAlignment
-			if tmp.Base != nil {
-				v.Base = n.node[*tmp.Base].(*Enum)
-			}
-		case NodeTypeBitGroupType:
-			v := n.node[i].(*BitGroupType)
-			var tmp struct {
-				IsExplicit   bool         `json:"is_explicit"`
-				IsIntSet     bool         `json:"is_int_set"`
-				BitAlignment BitAlignment `json:"bit_alignment"`
-				BitFields    []uintptr    `json:"bit_fields"`
-				IsAligned    bool         `json:"is_aligned"`
-				BitSize      uint64       `json:"bit_size"`
-			}
-			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
-				return nil, err
-			}
-			v.IsExplicit = tmp.IsExplicit
-			v.IsIntSet = tmp.IsIntSet
-			v.BitAlignment = tmp.BitAlignment
-			v.BitFields = make([]*Field, len(tmp.BitFields))
-			for j, k := range tmp.BitFields {
-				v.BitFields[j] = n.node[k].(*Field)
-			}
-			v.IsAligned = tmp.IsAligned
-			v.BitSize = tmp.BitSize
-		case NodeTypeState:
-			v := n.node[i].(*State)
-			var tmp struct {
-				Belong *uintptr `json:"belong"`
-				Ident  *uintptr `json:"ident"`
-				Body   *uintptr `json:"body"`
+				Belong     *uintptr  `json:"belong"`
+				Ident      *uintptr  `json:"ident"`
+				Parameters []uintptr `json:"parameters"`
+				ReturnType *uintptr  `json:"return_type"`
+				Body       *uintptr  `json:"body"`
+				FuncType   *uintptr  `json:"func_type"`
+				IsCast     bool      `json:"is_cast"`
+				CastLoc    Loc       `json:"cast_loc"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -3682,9 +3670,21 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.Ident != nil {
 				v.Ident = n.node[*tmp.Ident].(*Ident)
 			}
+			v.Parameters = make([]*Field, len(tmp.Parameters))
+			for j, k := range tmp.Parameters {
+				v.Parameters[j] = n.node[k].(*Field)
+			}
+			if tmp.ReturnType != nil {
+				v.ReturnType = n.node[*tmp.ReturnType].(Type)
+			}
 			if tmp.Body != nil {
 				v.Body = n.node[*tmp.Body].(*IndentBlock)
 			}
+			if tmp.FuncType != nil {
+				v.FuncType = n.node[*tmp.FuncType].(*FunctionType)
+			}
+			v.IsCast = tmp.IsCast
+			v.CastLoc = tmp.CastLoc
 		case NodeTypeBuiltinFunction:
 			v := n.node[i].(*BuiltinFunction)
 			var tmp struct {
@@ -3749,6 +3749,13 @@ func Walk(n Node, f Visitor) {
 			}
 		}
 		for _, w := range v.Elements {
+			if !f.Visit(f, w) {
+				return
+			}
+		}
+	case *Comment:
+	case *CommentGroup:
+		for _, w := range v.Comments {
 			if !f.Visit(f, w) {
 				return
 			}
@@ -3962,39 +3969,19 @@ func Walk(n Node, f Visitor) {
 				return
 			}
 		}
-	case *IntLiteral:
+	case *Cast:
 		if v.ExprType != nil {
 			if !f.Visit(f, v.ExprType) {
 				return
 			}
 		}
-	case *BoolLiteral:
-		if v.ExprType != nil {
-			if !f.Visit(f, v.ExprType) {
+		if v.Base != nil {
+			if !f.Visit(f, v.Base) {
 				return
 			}
 		}
-	case *StrLiteral:
-		if v.ExprType != nil {
-			if !f.Visit(f, v.ExprType) {
-				return
-			}
-		}
-	case *Input:
-		if v.ExprType != nil {
-			if !f.Visit(f, v.ExprType) {
-				return
-			}
-		}
-	case *Output:
-		if v.ExprType != nil {
-			if !f.Visit(f, v.ExprType) {
-				return
-			}
-		}
-	case *Config:
-		if v.ExprType != nil {
-			if !f.Visit(f, v.ExprType) {
+		if v.Expr != nil {
+			if !f.Visit(f, v.Expr) {
 				return
 			}
 		}
@@ -4041,6 +4028,7 @@ func Walk(n Node, f Visitor) {
 				return
 			}
 		}
+	case *UnionCandidate:
 	case *Return:
 		if v.Expr != nil {
 			if !f.Visit(f, v.Expr) {
@@ -4058,64 +4046,6 @@ func Walk(n Node, f Visitor) {
 	case *ImplicitYield:
 		if v.Expr != nil {
 			if !f.Visit(f, v.Expr) {
-				return
-			}
-		}
-	case *Field:
-		if v.Ident != nil {
-			if !f.Visit(f, v.Ident) {
-				return
-			}
-		}
-		if v.FieldType != nil {
-			if !f.Visit(f, v.FieldType) {
-				return
-			}
-		}
-		if v.RawArguments != nil {
-			if !f.Visit(f, v.RawArguments) {
-				return
-			}
-		}
-		for _, w := range v.Arguments {
-			if !f.Visit(f, w) {
-				return
-			}
-		}
-	case *Format:
-		if v.Ident != nil {
-			if !f.Visit(f, v.Ident) {
-				return
-			}
-		}
-		if v.Body != nil {
-			if !f.Visit(f, v.Body) {
-				return
-			}
-		}
-	case *Function:
-		if v.Ident != nil {
-			if !f.Visit(f, v.Ident) {
-				return
-			}
-		}
-		for _, w := range v.Parameters {
-			if !f.Visit(f, w) {
-				return
-			}
-		}
-		if v.ReturnType != nil {
-			if !f.Visit(f, v.ReturnType) {
-				return
-			}
-		}
-		if v.Body != nil {
-			if !f.Visit(f, v.Body) {
-				return
-			}
-		}
-		if v.FuncType != nil {
-			if !f.Visit(f, v.FuncType) {
 				return
 			}
 		}
@@ -4164,39 +4094,96 @@ func Walk(n Node, f Visitor) {
 				return
 			}
 		}
-	case *Cast:
-		if v.ExprType != nil {
-			if !f.Visit(f, v.ExprType) {
-				return
-			}
-		}
-		if v.Base != nil {
-			if !f.Visit(f, v.Base) {
-				return
-			}
-		}
-		if v.Expr != nil {
-			if !f.Visit(f, v.Expr) {
-				return
-			}
-		}
-	case *Comment:
-	case *CommentGroup:
-		for _, w := range v.Comments {
-			if !f.Visit(f, w) {
-				return
-			}
-		}
 	case *UnionType:
 		for _, w := range v.Candidates {
 			if !f.Visit(f, w) {
 				return
 			}
 		}
-	case *UnionCandidate:
 	case *RangeType:
 		if v.BaseType != nil {
 			if !f.Visit(f, v.BaseType) {
+				return
+			}
+		}
+	case *EnumType:
+	case *BitGroupType:
+	case *IntLiteral:
+		if v.ExprType != nil {
+			if !f.Visit(f, v.ExprType) {
+				return
+			}
+		}
+	case *BoolLiteral:
+		if v.ExprType != nil {
+			if !f.Visit(f, v.ExprType) {
+				return
+			}
+		}
+	case *StrLiteral:
+		if v.ExprType != nil {
+			if !f.Visit(f, v.ExprType) {
+				return
+			}
+		}
+	case *Input:
+		if v.ExprType != nil {
+			if !f.Visit(f, v.ExprType) {
+				return
+			}
+		}
+	case *Output:
+		if v.ExprType != nil {
+			if !f.Visit(f, v.ExprType) {
+				return
+			}
+		}
+	case *Config:
+		if v.ExprType != nil {
+			if !f.Visit(f, v.ExprType) {
+				return
+			}
+		}
+	case *Field:
+		if v.Ident != nil {
+			if !f.Visit(f, v.Ident) {
+				return
+			}
+		}
+		if v.FieldType != nil {
+			if !f.Visit(f, v.FieldType) {
+				return
+			}
+		}
+		if v.RawArguments != nil {
+			if !f.Visit(f, v.RawArguments) {
+				return
+			}
+		}
+		for _, w := range v.Arguments {
+			if !f.Visit(f, w) {
+				return
+			}
+		}
+	case *Format:
+		if v.Ident != nil {
+			if !f.Visit(f, v.Ident) {
+				return
+			}
+		}
+		if v.Body != nil {
+			if !f.Visit(f, v.Body) {
+				return
+			}
+		}
+	case *State:
+		if v.Ident != nil {
+			if !f.Visit(f, v.Ident) {
+				return
+			}
+		}
+		if v.Body != nil {
+			if !f.Visit(f, v.Body) {
 				return
 			}
 		}
@@ -4232,16 +4219,29 @@ func Walk(n Node, f Visitor) {
 				return
 			}
 		}
-	case *EnumType:
-	case *BitGroupType:
-	case *State:
+	case *Function:
 		if v.Ident != nil {
 			if !f.Visit(f, v.Ident) {
 				return
 			}
 		}
+		for _, w := range v.Parameters {
+			if !f.Visit(f, w) {
+				return
+			}
+		}
+		if v.ReturnType != nil {
+			if !f.Visit(f, v.ReturnType) {
+				return
+			}
+		}
 		if v.Body != nil {
 			if !f.Visit(f, v.Body) {
+				return
+			}
+		}
+		if v.FuncType != nil {
+			if !f.Visit(f, v.FuncType) {
 				return
 			}
 		}

@@ -6,6 +6,8 @@ from enum import Enum as PyEnum
 
 class NodeType(PyEnum):
     PROGRAM = "program"
+    COMMENT = "comment"
+    COMMENT_GROUP = "comment_group"
     EXPR = "expr"
     BINARY = "binary"
     UNARY = "unary"
@@ -21,26 +23,17 @@ class NodeType(PyEnum):
     TMP_VAR = "tmp_var"
     BLOCK_EXPR = "block_expr"
     IMPORT = "import"
-    LITERAL = "literal"
-    INT_LITERAL = "int_literal"
-    BOOL_LITERAL = "bool_literal"
-    STR_LITERAL = "str_literal"
-    INPUT = "input"
-    OUTPUT = "output"
-    CONFIG = "config"
+    CAST = "cast"
     STMT = "stmt"
     LOOP = "loop"
     INDENT_BLOCK = "indent_block"
     MATCH_BRANCH = "match_branch"
+    UNION_CANDIDATE = "union_candidate"
     RETURN = "return"
     BREAK = "break"
     CONTINUE = "continue"
     ASSERT = "assert"
     IMPLICIT_YIELD = "implicit_yield"
-    MEMBER = "member"
-    FIELD = "field"
-    FORMAT = "format"
-    FUNCTION = "function"
     TYPE = "type"
     INT_TYPE = "int_type"
     IDENT_TYPE = "ident_type"
@@ -52,17 +45,24 @@ class NodeType(PyEnum):
     FUNCTION_TYPE = "function_type"
     STRUCT_TYPE = "struct_type"
     STRUCT_UNION_TYPE = "struct_union_type"
-    CAST = "cast"
-    COMMENT = "comment"
-    COMMENT_GROUP = "comment_group"
     UNION_TYPE = "union_type"
-    UNION_CANDIDATE = "union_candidate"
     RANGE_TYPE = "range_type"
-    ENUM = "enum"
-    ENUM_MEMBER = "enum_member"
     ENUM_TYPE = "enum_type"
     BIT_GROUP_TYPE = "bit_group_type"
+    LITERAL = "literal"
+    INT_LITERAL = "int_literal"
+    BOOL_LITERAL = "bool_literal"
+    STR_LITERAL = "str_literal"
+    INPUT = "input"
+    OUTPUT = "output"
+    CONFIG = "config"
+    MEMBER = "member"
+    FIELD = "field"
+    FORMAT = "format"
     STATE = "state"
+    ENUM = "enum"
+    ENUM_MEMBER = "enum_member"
+    FUNCTION = "function"
     BUILTIN_FUNCTION = "builtin_function"
 
 
@@ -180,17 +180,8 @@ class Expr(Node):
     constant_level: ConstantLevel
 
 
-class Literal(Expr):
-    pass
-
-
 class Stmt(Node):
     pass
-
-
-class Member(Stmt):
-    belong: Optional[Member]
-    ident: Optional[Ident]
 
 
 class Type(Node):
@@ -199,10 +190,27 @@ class Type(Node):
     bit_alignment: BitAlignment
 
 
+class Literal(Expr):
+    pass
+
+
+class Member(Stmt):
+    belong: Optional[Member]
+    ident: Optional[Ident]
+
+
 class Program(Node):
     struct_type: Optional[StructType]
     elements: List[Node]
     global_scope: Optional[Scope]
+
+
+class Comment(Node):
+    comment: str
+
+
+class CommentGroup(Node):
+    comments: List[Comment]
 
 
 class Binary(Expr):
@@ -288,28 +296,9 @@ class Import(Expr):
     import_desc: Optional[Program]
 
 
-class IntLiteral(Literal):
-    value: str
-
-
-class BoolLiteral(Literal):
-    value: bool
-
-
-class StrLiteral(Literal):
-    value: str
-
-
-class Input(Literal):
-    pass
-
-
-class Output(Literal):
-    pass
-
-
-class Config(Literal):
-    pass
+class Cast(Expr):
+    base: Optional[Call]
+    expr: Optional[Expr]
 
 
 class Loop(Stmt):
@@ -332,6 +321,11 @@ class MatchBranch(Stmt):
     then: Optional[Node]
 
 
+class UnionCandidate(Stmt):
+    cond: Optional[Expr]
+    field: Optional[Member]
+
+
 class Return(Stmt):
     expr: Optional[Expr]
 
@@ -350,27 +344,6 @@ class Assert(Stmt):
 
 class ImplicitYield(Stmt):
     expr: Optional[Expr]
-
-
-class Field(Member):
-    colon_loc: Loc
-    field_type: Optional[Type]
-    raw_arguments: Optional[Expr]
-    arguments: List[Expr]
-    bit_alignment: BitAlignment
-
-
-class Format(Member):
-    body: Optional[IndentBlock]
-
-
-class Function(Member):
-    parameters: List[Field]
-    return_type: Optional[Type]
-    body: Optional[IndentBlock]
-    func_type: Optional[FunctionType]
-    is_cast: bool
-    cast_loc: Loc
 
 
 class IntType(Type):
@@ -424,33 +397,65 @@ class StructUnionType(Type):
     union_fields: List[Field]
 
 
-class Cast(Expr):
-    base: Optional[Call]
-    expr: Optional[Expr]
-
-
-class Comment(Node):
-    comment: str
-
-
-class CommentGroup(Node):
-    comments: List[Comment]
-
-
 class UnionType(Type):
     cond: Optional[Expr]
     candidates: List[UnionCandidate]
     base_type: Optional[StructUnionType]
 
 
-class UnionCandidate(Stmt):
-    cond: Optional[Expr]
-    field: Optional[Member]
-
-
 class RangeType(Type):
     base_type: Optional[Type]
     range: Optional[Range]
+
+
+class EnumType(Type):
+    base: Optional[Enum]
+
+
+class BitGroupType(Type):
+    bit_fields: List[Field]
+    is_aligned: bool
+    bit_size: int
+
+
+class IntLiteral(Literal):
+    value: str
+
+
+class BoolLiteral(Literal):
+    value: bool
+
+
+class StrLiteral(Literal):
+    value: str
+
+
+class Input(Literal):
+    pass
+
+
+class Output(Literal):
+    pass
+
+
+class Config(Literal):
+    pass
+
+
+class Field(Member):
+    colon_loc: Loc
+    field_type: Optional[Type]
+    raw_arguments: Optional[Expr]
+    arguments: List[Expr]
+    bit_alignment: BitAlignment
+
+
+class Format(Member):
+    body: Optional[IndentBlock]
+
+
+class State(Member):
+    body: Optional[IndentBlock]
 
 
 class Enum(Member):
@@ -465,18 +470,13 @@ class EnumMember(Member):
     expr: Optional[Expr]
 
 
-class EnumType(Type):
-    base: Optional[Enum]
-
-
-class BitGroupType(Type):
-    bit_fields: List[Field]
-    is_aligned: bool
-    bit_size: int
-
-
-class State(Member):
+class Function(Member):
+    parameters: List[Field]
+    return_type: Optional[Type]
     body: Optional[IndentBlock]
+    func_type: Optional[FunctionType]
+    is_cast: bool
+    cast_loc: Loc
 
 
 class BuiltinFunction(Member):
@@ -671,6 +671,10 @@ def ast2node(ast :JsonAst) -> Program:
         match raw.node_type:
             case NodeType.PROGRAM:
                 node.append(Program())
+            case NodeType.COMMENT:
+                node.append(Comment())
+            case NodeType.COMMENT_GROUP:
+                node.append(CommentGroup())
             case NodeType.BINARY:
                 node.append(Binary())
             case NodeType.UNARY:
@@ -699,24 +703,16 @@ def ast2node(ast :JsonAst) -> Program:
                 node.append(BlockExpr())
             case NodeType.IMPORT:
                 node.append(Import())
-            case NodeType.INT_LITERAL:
-                node.append(IntLiteral())
-            case NodeType.BOOL_LITERAL:
-                node.append(BoolLiteral())
-            case NodeType.STR_LITERAL:
-                node.append(StrLiteral())
-            case NodeType.INPUT:
-                node.append(Input())
-            case NodeType.OUTPUT:
-                node.append(Output())
-            case NodeType.CONFIG:
-                node.append(Config())
+            case NodeType.CAST:
+                node.append(Cast())
             case NodeType.LOOP:
                 node.append(Loop())
             case NodeType.INDENT_BLOCK:
                 node.append(IndentBlock())
             case NodeType.MATCH_BRANCH:
                 node.append(MatchBranch())
+            case NodeType.UNION_CANDIDATE:
+                node.append(UnionCandidate())
             case NodeType.RETURN:
                 node.append(Return())
             case NodeType.BREAK:
@@ -727,12 +723,6 @@ def ast2node(ast :JsonAst) -> Program:
                 node.append(Assert())
             case NodeType.IMPLICIT_YIELD:
                 node.append(ImplicitYield())
-            case NodeType.FIELD:
-                node.append(Field())
-            case NodeType.FORMAT:
-                node.append(Format())
-            case NodeType.FUNCTION:
-                node.append(Function())
             case NodeType.INT_TYPE:
                 node.append(IntType())
             case NodeType.IDENT_TYPE:
@@ -753,28 +743,38 @@ def ast2node(ast :JsonAst) -> Program:
                 node.append(StructType())
             case NodeType.STRUCT_UNION_TYPE:
                 node.append(StructUnionType())
-            case NodeType.CAST:
-                node.append(Cast())
-            case NodeType.COMMENT:
-                node.append(Comment())
-            case NodeType.COMMENT_GROUP:
-                node.append(CommentGroup())
             case NodeType.UNION_TYPE:
                 node.append(UnionType())
-            case NodeType.UNION_CANDIDATE:
-                node.append(UnionCandidate())
             case NodeType.RANGE_TYPE:
                 node.append(RangeType())
-            case NodeType.ENUM:
-                node.append(Enum())
-            case NodeType.ENUM_MEMBER:
-                node.append(EnumMember())
             case NodeType.ENUM_TYPE:
                 node.append(EnumType())
             case NodeType.BIT_GROUP_TYPE:
                 node.append(BitGroupType())
+            case NodeType.INT_LITERAL:
+                node.append(IntLiteral())
+            case NodeType.BOOL_LITERAL:
+                node.append(BoolLiteral())
+            case NodeType.STR_LITERAL:
+                node.append(StrLiteral())
+            case NodeType.INPUT:
+                node.append(Input())
+            case NodeType.OUTPUT:
+                node.append(Output())
+            case NodeType.CONFIG:
+                node.append(Config())
+            case NodeType.FIELD:
+                node.append(Field())
+            case NodeType.FORMAT:
+                node.append(Format())
             case NodeType.STATE:
                 node.append(State())
+            case NodeType.ENUM:
+                node.append(Enum())
+            case NodeType.ENUM_MEMBER:
+                node.append(EnumMember())
+            case NodeType.FUNCTION:
+                node.append(Function())
             case NodeType.BUILTIN_FUNCTION:
                 node.append(BuiltinFunction())
             case _:
@@ -794,6 +794,11 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].global_scope = scope[ast.node[i].body["global_scope"]]
                 else:
                     node[i].global_scope = None
+            case NodeType.COMMENT:
+                x = ast.node[i].body["comment"]
+                node[i].comment = x if isinstance(x,str)  else raiseError(TypeError('type mismatch at Comment::comment'))
+            case NodeType.COMMENT_GROUP:
+                node[i].comments = [(node[x] if isinstance(node[x],Comment) else raiseError(TypeError('type mismatch at CommentGroup::comments'))) for x in ast.node[i].body["comments"]]
             case NodeType.BINARY:
                 if ast.node[i].body["expr_type"] is not None:
                     x = node[ast.node[i].body["expr_type"]]
@@ -1041,54 +1046,23 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].import_desc = x if isinstance(x,Program) else raiseError(TypeError('type mismatch at Import::import_desc'))
                 else:
                     node[i].import_desc = None
-            case NodeType.INT_LITERAL:
+            case NodeType.CAST:
                 if ast.node[i].body["expr_type"] is not None:
                     x = node[ast.node[i].body["expr_type"]]
-                    node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at IntLiteral::expr_type'))
+                    node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at Cast::expr_type'))
                 else:
                     node[i].expr_type = None
                 node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
-                x = ast.node[i].body["value"]
-                node[i].value = x if isinstance(x,str)  else raiseError(TypeError('type mismatch at IntLiteral::value'))
-            case NodeType.BOOL_LITERAL:
-                if ast.node[i].body["expr_type"] is not None:
-                    x = node[ast.node[i].body["expr_type"]]
-                    node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at BoolLiteral::expr_type'))
+                if ast.node[i].body["base"] is not None:
+                    x = node[ast.node[i].body["base"]]
+                    node[i].base = x if isinstance(x,Call) else raiseError(TypeError('type mismatch at Cast::base'))
                 else:
-                    node[i].expr_type = None
-                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
-                x = ast.node[i].body["value"]
-                node[i].value = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at BoolLiteral::value'))
-            case NodeType.STR_LITERAL:
-                if ast.node[i].body["expr_type"] is not None:
-                    x = node[ast.node[i].body["expr_type"]]
-                    node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at StrLiteral::expr_type'))
+                    node[i].base = None
+                if ast.node[i].body["expr"] is not None:
+                    x = node[ast.node[i].body["expr"]]
+                    node[i].expr = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at Cast::expr'))
                 else:
-                    node[i].expr_type = None
-                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
-                x = ast.node[i].body["value"]
-                node[i].value = x if isinstance(x,str)  else raiseError(TypeError('type mismatch at StrLiteral::value'))
-            case NodeType.INPUT:
-                if ast.node[i].body["expr_type"] is not None:
-                    x = node[ast.node[i].body["expr_type"]]
-                    node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at Input::expr_type'))
-                else:
-                    node[i].expr_type = None
-                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
-            case NodeType.OUTPUT:
-                if ast.node[i].body["expr_type"] is not None:
-                    x = node[ast.node[i].body["expr_type"]]
-                    node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at Output::expr_type'))
-                else:
-                    node[i].expr_type = None
-                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
-            case NodeType.CONFIG:
-                if ast.node[i].body["expr_type"] is not None:
-                    x = node[ast.node[i].body["expr_type"]]
-                    node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at Config::expr_type'))
-                else:
-                    node[i].expr_type = None
-                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
+                    node[i].expr = None
             case NodeType.LOOP:
                 if ast.node[i].body["cond_scope"] is not None:
                     node[i].cond_scope = scope[ast.node[i].body["cond_scope"]]
@@ -1137,6 +1111,17 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].then = x if isinstance(x,Node) else raiseError(TypeError('type mismatch at MatchBranch::then'))
                 else:
                     node[i].then = None
+            case NodeType.UNION_CANDIDATE:
+                if ast.node[i].body["cond"] is not None:
+                    x = node[ast.node[i].body["cond"]]
+                    node[i].cond = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at UnionCandidate::cond'))
+                else:
+                    node[i].cond = None
+                if ast.node[i].body["field"] is not None:
+                    x = node[ast.node[i].body["field"]]
+                    node[i].field = x if isinstance(x,Member) else raiseError(TypeError('type mismatch at UnionCandidate::field'))
+                else:
+                    node[i].field = None
             case NodeType.RETURN:
                 if ast.node[i].body["expr"] is not None:
                     x = node[ast.node[i].body["expr"]]
@@ -1159,76 +1144,6 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].expr = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at ImplicitYield::expr'))
                 else:
                     node[i].expr = None
-            case NodeType.FIELD:
-                if ast.node[i].body["belong"] is not None:
-                    x = node[ast.node[i].body["belong"]]
-                    node[i].belong = x if isinstance(x,Member) else raiseError(TypeError('type mismatch at Field::belong'))
-                else:
-                    node[i].belong = None
-                if ast.node[i].body["ident"] is not None:
-                    x = node[ast.node[i].body["ident"]]
-                    node[i].ident = x if isinstance(x,Ident) else raiseError(TypeError('type mismatch at Field::ident'))
-                else:
-                    node[i].ident = None
-                node[i].colon_loc = parse_Loc(ast.node[i].body["colon_loc"])
-                if ast.node[i].body["field_type"] is not None:
-                    x = node[ast.node[i].body["field_type"]]
-                    node[i].field_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at Field::field_type'))
-                else:
-                    node[i].field_type = None
-                if ast.node[i].body["raw_arguments"] is not None:
-                    x = node[ast.node[i].body["raw_arguments"]]
-                    node[i].raw_arguments = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at Field::raw_arguments'))
-                else:
-                    node[i].raw_arguments = None
-                node[i].arguments = [(node[x] if isinstance(node[x],Expr) else raiseError(TypeError('type mismatch at Field::arguments'))) for x in ast.node[i].body["arguments"]]
-                node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
-            case NodeType.FORMAT:
-                if ast.node[i].body["belong"] is not None:
-                    x = node[ast.node[i].body["belong"]]
-                    node[i].belong = x if isinstance(x,Member) else raiseError(TypeError('type mismatch at Format::belong'))
-                else:
-                    node[i].belong = None
-                if ast.node[i].body["ident"] is not None:
-                    x = node[ast.node[i].body["ident"]]
-                    node[i].ident = x if isinstance(x,Ident) else raiseError(TypeError('type mismatch at Format::ident'))
-                else:
-                    node[i].ident = None
-                if ast.node[i].body["body"] is not None:
-                    x = node[ast.node[i].body["body"]]
-                    node[i].body = x if isinstance(x,IndentBlock) else raiseError(TypeError('type mismatch at Format::body'))
-                else:
-                    node[i].body = None
-            case NodeType.FUNCTION:
-                if ast.node[i].body["belong"] is not None:
-                    x = node[ast.node[i].body["belong"]]
-                    node[i].belong = x if isinstance(x,Member) else raiseError(TypeError('type mismatch at Function::belong'))
-                else:
-                    node[i].belong = None
-                if ast.node[i].body["ident"] is not None:
-                    x = node[ast.node[i].body["ident"]]
-                    node[i].ident = x if isinstance(x,Ident) else raiseError(TypeError('type mismatch at Function::ident'))
-                else:
-                    node[i].ident = None
-                node[i].parameters = [(node[x] if isinstance(node[x],Field) else raiseError(TypeError('type mismatch at Function::parameters'))) for x in ast.node[i].body["parameters"]]
-                if ast.node[i].body["return_type"] is not None:
-                    x = node[ast.node[i].body["return_type"]]
-                    node[i].return_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at Function::return_type'))
-                else:
-                    node[i].return_type = None
-                if ast.node[i].body["body"] is not None:
-                    x = node[ast.node[i].body["body"]]
-                    node[i].body = x if isinstance(x,IndentBlock) else raiseError(TypeError('type mismatch at Function::body'))
-                else:
-                    node[i].body = None
-                if ast.node[i].body["func_type"] is not None:
-                    x = node[ast.node[i].body["func_type"]]
-                    node[i].func_type = x if isinstance(x,FunctionType) else raiseError(TypeError('type mismatch at Function::func_type'))
-                else:
-                    node[i].func_type = None
-                x = ast.node[i].body["is_cast"]
-                node[i].is_cast = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at Function::is_cast'))
-                node[i].cast_loc = parse_Loc(ast.node[i].body["cast_loc"])
             case NodeType.INT_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at IntType::is_explicit'))
@@ -1348,28 +1263,6 @@ def ast2node(ast :JsonAst) -> Program:
                 else:
                     node[i].base = None
                 node[i].union_fields = [(node[x] if isinstance(node[x],Field) else raiseError(TypeError('type mismatch at StructUnionType::union_fields'))) for x in ast.node[i].body["union_fields"]]
-            case NodeType.CAST:
-                if ast.node[i].body["expr_type"] is not None:
-                    x = node[ast.node[i].body["expr_type"]]
-                    node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at Cast::expr_type'))
-                else:
-                    node[i].expr_type = None
-                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
-                if ast.node[i].body["base"] is not None:
-                    x = node[ast.node[i].body["base"]]
-                    node[i].base = x if isinstance(x,Call) else raiseError(TypeError('type mismatch at Cast::base'))
-                else:
-                    node[i].base = None
-                if ast.node[i].body["expr"] is not None:
-                    x = node[ast.node[i].body["expr"]]
-                    node[i].expr = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at Cast::expr'))
-                else:
-                    node[i].expr = None
-            case NodeType.COMMENT:
-                x = ast.node[i].body["comment"]
-                node[i].comment = x if isinstance(x,str)  else raiseError(TypeError('type mismatch at Comment::comment'))
-            case NodeType.COMMENT_GROUP:
-                node[i].comments = [(node[x] if isinstance(node[x],Comment) else raiseError(TypeError('type mismatch at CommentGroup::comments'))) for x in ast.node[i].body["comments"]]
             case NodeType.UNION_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at UnionType::is_explicit'))
@@ -1387,17 +1280,6 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].base_type = x if isinstance(x,StructUnionType) else raiseError(TypeError('type mismatch at UnionType::base_type'))
                 else:
                     node[i].base_type = None
-            case NodeType.UNION_CANDIDATE:
-                if ast.node[i].body["cond"] is not None:
-                    x = node[ast.node[i].body["cond"]]
-                    node[i].cond = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at UnionCandidate::cond'))
-                else:
-                    node[i].cond = None
-                if ast.node[i].body["field"] is not None:
-                    x = node[ast.node[i].body["field"]]
-                    node[i].field = x if isinstance(x,Member) else raiseError(TypeError('type mismatch at UnionCandidate::field'))
-                else:
-                    node[i].field = None
             case NodeType.RANGE_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at RangeType::is_explicit'))
@@ -1414,6 +1296,132 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].range = x if isinstance(x,Range) else raiseError(TypeError('type mismatch at RangeType::range'))
                 else:
                     node[i].range = None
+            case NodeType.ENUM_TYPE:
+                x = ast.node[i].body["is_explicit"]
+                node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at EnumType::is_explicit'))
+                x = ast.node[i].body["is_int_set"]
+                node[i].is_int_set = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at EnumType::is_int_set'))
+                node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
+                if ast.node[i].body["base"] is not None:
+                    x = node[ast.node[i].body["base"]]
+                    node[i].base = x if isinstance(x,Enum) else raiseError(TypeError('type mismatch at EnumType::base'))
+                else:
+                    node[i].base = None
+            case NodeType.BIT_GROUP_TYPE:
+                x = ast.node[i].body["is_explicit"]
+                node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at BitGroupType::is_explicit'))
+                x = ast.node[i].body["is_int_set"]
+                node[i].is_int_set = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at BitGroupType::is_int_set'))
+                node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
+                node[i].bit_fields = [(node[x] if isinstance(node[x],Field) else raiseError(TypeError('type mismatch at BitGroupType::bit_fields'))) for x in ast.node[i].body["bit_fields"]]
+                x = ast.node[i].body["is_aligned"]
+                node[i].is_aligned = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at BitGroupType::is_aligned'))
+                x = ast.node[i].body["bit_size"]
+                node[i].bit_size = x if isinstance(x,int)  else raiseError(TypeError('type mismatch at BitGroupType::bit_size'))
+            case NodeType.INT_LITERAL:
+                if ast.node[i].body["expr_type"] is not None:
+                    x = node[ast.node[i].body["expr_type"]]
+                    node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at IntLiteral::expr_type'))
+                else:
+                    node[i].expr_type = None
+                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
+                x = ast.node[i].body["value"]
+                node[i].value = x if isinstance(x,str)  else raiseError(TypeError('type mismatch at IntLiteral::value'))
+            case NodeType.BOOL_LITERAL:
+                if ast.node[i].body["expr_type"] is not None:
+                    x = node[ast.node[i].body["expr_type"]]
+                    node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at BoolLiteral::expr_type'))
+                else:
+                    node[i].expr_type = None
+                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
+                x = ast.node[i].body["value"]
+                node[i].value = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at BoolLiteral::value'))
+            case NodeType.STR_LITERAL:
+                if ast.node[i].body["expr_type"] is not None:
+                    x = node[ast.node[i].body["expr_type"]]
+                    node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at StrLiteral::expr_type'))
+                else:
+                    node[i].expr_type = None
+                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
+                x = ast.node[i].body["value"]
+                node[i].value = x if isinstance(x,str)  else raiseError(TypeError('type mismatch at StrLiteral::value'))
+            case NodeType.INPUT:
+                if ast.node[i].body["expr_type"] is not None:
+                    x = node[ast.node[i].body["expr_type"]]
+                    node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at Input::expr_type'))
+                else:
+                    node[i].expr_type = None
+                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
+            case NodeType.OUTPUT:
+                if ast.node[i].body["expr_type"] is not None:
+                    x = node[ast.node[i].body["expr_type"]]
+                    node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at Output::expr_type'))
+                else:
+                    node[i].expr_type = None
+                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
+            case NodeType.CONFIG:
+                if ast.node[i].body["expr_type"] is not None:
+                    x = node[ast.node[i].body["expr_type"]]
+                    node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at Config::expr_type'))
+                else:
+                    node[i].expr_type = None
+                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
+            case NodeType.FIELD:
+                if ast.node[i].body["belong"] is not None:
+                    x = node[ast.node[i].body["belong"]]
+                    node[i].belong = x if isinstance(x,Member) else raiseError(TypeError('type mismatch at Field::belong'))
+                else:
+                    node[i].belong = None
+                if ast.node[i].body["ident"] is not None:
+                    x = node[ast.node[i].body["ident"]]
+                    node[i].ident = x if isinstance(x,Ident) else raiseError(TypeError('type mismatch at Field::ident'))
+                else:
+                    node[i].ident = None
+                node[i].colon_loc = parse_Loc(ast.node[i].body["colon_loc"])
+                if ast.node[i].body["field_type"] is not None:
+                    x = node[ast.node[i].body["field_type"]]
+                    node[i].field_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at Field::field_type'))
+                else:
+                    node[i].field_type = None
+                if ast.node[i].body["raw_arguments"] is not None:
+                    x = node[ast.node[i].body["raw_arguments"]]
+                    node[i].raw_arguments = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at Field::raw_arguments'))
+                else:
+                    node[i].raw_arguments = None
+                node[i].arguments = [(node[x] if isinstance(node[x],Expr) else raiseError(TypeError('type mismatch at Field::arguments'))) for x in ast.node[i].body["arguments"]]
+                node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
+            case NodeType.FORMAT:
+                if ast.node[i].body["belong"] is not None:
+                    x = node[ast.node[i].body["belong"]]
+                    node[i].belong = x if isinstance(x,Member) else raiseError(TypeError('type mismatch at Format::belong'))
+                else:
+                    node[i].belong = None
+                if ast.node[i].body["ident"] is not None:
+                    x = node[ast.node[i].body["ident"]]
+                    node[i].ident = x if isinstance(x,Ident) else raiseError(TypeError('type mismatch at Format::ident'))
+                else:
+                    node[i].ident = None
+                if ast.node[i].body["body"] is not None:
+                    x = node[ast.node[i].body["body"]]
+                    node[i].body = x if isinstance(x,IndentBlock) else raiseError(TypeError('type mismatch at Format::body'))
+                else:
+                    node[i].body = None
+            case NodeType.STATE:
+                if ast.node[i].body["belong"] is not None:
+                    x = node[ast.node[i].body["belong"]]
+                    node[i].belong = x if isinstance(x,Member) else raiseError(TypeError('type mismatch at State::belong'))
+                else:
+                    node[i].belong = None
+                if ast.node[i].body["ident"] is not None:
+                    x = node[ast.node[i].body["ident"]]
+                    node[i].ident = x if isinstance(x,Ident) else raiseError(TypeError('type mismatch at State::ident'))
+                else:
+                    node[i].ident = None
+                if ast.node[i].body["body"] is not None:
+                    x = node[ast.node[i].body["body"]]
+                    node[i].body = x if isinstance(x,IndentBlock) else raiseError(TypeError('type mismatch at State::body'))
+                else:
+                    node[i].body = None
             case NodeType.ENUM:
                 if ast.node[i].body["belong"] is not None:
                     x = node[ast.node[i].body["belong"]]
@@ -1457,44 +1465,36 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].expr = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at EnumMember::expr'))
                 else:
                     node[i].expr = None
-            case NodeType.ENUM_TYPE:
-                x = ast.node[i].body["is_explicit"]
-                node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at EnumType::is_explicit'))
-                x = ast.node[i].body["is_int_set"]
-                node[i].is_int_set = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at EnumType::is_int_set'))
-                node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
-                if ast.node[i].body["base"] is not None:
-                    x = node[ast.node[i].body["base"]]
-                    node[i].base = x if isinstance(x,Enum) else raiseError(TypeError('type mismatch at EnumType::base'))
-                else:
-                    node[i].base = None
-            case NodeType.BIT_GROUP_TYPE:
-                x = ast.node[i].body["is_explicit"]
-                node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at BitGroupType::is_explicit'))
-                x = ast.node[i].body["is_int_set"]
-                node[i].is_int_set = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at BitGroupType::is_int_set'))
-                node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
-                node[i].bit_fields = [(node[x] if isinstance(node[x],Field) else raiseError(TypeError('type mismatch at BitGroupType::bit_fields'))) for x in ast.node[i].body["bit_fields"]]
-                x = ast.node[i].body["is_aligned"]
-                node[i].is_aligned = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at BitGroupType::is_aligned'))
-                x = ast.node[i].body["bit_size"]
-                node[i].bit_size = x if isinstance(x,int)  else raiseError(TypeError('type mismatch at BitGroupType::bit_size'))
-            case NodeType.STATE:
+            case NodeType.FUNCTION:
                 if ast.node[i].body["belong"] is not None:
                     x = node[ast.node[i].body["belong"]]
-                    node[i].belong = x if isinstance(x,Member) else raiseError(TypeError('type mismatch at State::belong'))
+                    node[i].belong = x if isinstance(x,Member) else raiseError(TypeError('type mismatch at Function::belong'))
                 else:
                     node[i].belong = None
                 if ast.node[i].body["ident"] is not None:
                     x = node[ast.node[i].body["ident"]]
-                    node[i].ident = x if isinstance(x,Ident) else raiseError(TypeError('type mismatch at State::ident'))
+                    node[i].ident = x if isinstance(x,Ident) else raiseError(TypeError('type mismatch at Function::ident'))
                 else:
                     node[i].ident = None
+                node[i].parameters = [(node[x] if isinstance(node[x],Field) else raiseError(TypeError('type mismatch at Function::parameters'))) for x in ast.node[i].body["parameters"]]
+                if ast.node[i].body["return_type"] is not None:
+                    x = node[ast.node[i].body["return_type"]]
+                    node[i].return_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at Function::return_type'))
+                else:
+                    node[i].return_type = None
                 if ast.node[i].body["body"] is not None:
                     x = node[ast.node[i].body["body"]]
-                    node[i].body = x if isinstance(x,IndentBlock) else raiseError(TypeError('type mismatch at State::body'))
+                    node[i].body = x if isinstance(x,IndentBlock) else raiseError(TypeError('type mismatch at Function::body'))
                 else:
                     node[i].body = None
+                if ast.node[i].body["func_type"] is not None:
+                    x = node[ast.node[i].body["func_type"]]
+                    node[i].func_type = x if isinstance(x,FunctionType) else raiseError(TypeError('type mismatch at Function::func_type'))
+                else:
+                    node[i].func_type = None
+                x = ast.node[i].body["is_cast"]
+                node[i].is_cast = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at Function::is_cast'))
+                node[i].cast_loc = parse_Loc(ast.node[i].body["cast_loc"])
             case NodeType.BUILTIN_FUNCTION:
                 if ast.node[i].body["belong"] is not None:
                     x = node[ast.node[i].body["belong"]]
@@ -1534,6 +1534,12 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
                   return
           for i in range(len(x.elements)):
               if f(f,x.elements[i]) == False:
+                  return
+        case x if isinstance(x,Comment):
+            pass
+        case x if isinstance(x,CommentGroup):
+          for i in range(len(x.comments)):
+              if f(f,x.comments[i]) == False:
                   return
         case x if isinstance(x,Binary):
           if x.expr_type is not None:
@@ -1666,29 +1672,15 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
           if x.import_desc is not None:
               if f(f,x.import_desc) == False:
                   return
-        case x if isinstance(x,IntLiteral):
+        case x if isinstance(x,Cast):
           if x.expr_type is not None:
               if f(f,x.expr_type) == False:
                   return
-        case x if isinstance(x,BoolLiteral):
-          if x.expr_type is not None:
-              if f(f,x.expr_type) == False:
+          if x.base is not None:
+              if f(f,x.base) == False:
                   return
-        case x if isinstance(x,StrLiteral):
-          if x.expr_type is not None:
-              if f(f,x.expr_type) == False:
-                  return
-        case x if isinstance(x,Input):
-          if x.expr_type is not None:
-              if f(f,x.expr_type) == False:
-                  return
-        case x if isinstance(x,Output):
-          if x.expr_type is not None:
-              if f(f,x.expr_type) == False:
-                  return
-        case x if isinstance(x,Config):
-          if x.expr_type is not None:
-              if f(f,x.expr_type) == False:
+          if x.expr is not None:
+              if f(f,x.expr) == False:
                   return
         case x if isinstance(x,Loop):
           if x.init is not None:
@@ -1717,6 +1709,8 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
           if x.then is not None:
               if f(f,x.then) == False:
                   return
+        case x if isinstance(x,UnionCandidate):
+            pass
         case x if isinstance(x,Return):
           if x.expr is not None:
               if f(f,x.expr) == False:
@@ -1732,42 +1726,6 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
         case x if isinstance(x,ImplicitYield):
           if x.expr is not None:
               if f(f,x.expr) == False:
-                  return
-        case x if isinstance(x,Field):
-          if x.ident is not None:
-              if f(f,x.ident) == False:
-                  return
-          if x.field_type is not None:
-              if f(f,x.field_type) == False:
-                  return
-          if x.raw_arguments is not None:
-              if f(f,x.raw_arguments) == False:
-                  return
-          for i in range(len(x.arguments)):
-              if f(f,x.arguments[i]) == False:
-                  return
-        case x if isinstance(x,Format):
-          if x.ident is not None:
-              if f(f,x.ident) == False:
-                  return
-          if x.body is not None:
-              if f(f,x.body) == False:
-                  return
-        case x if isinstance(x,Function):
-          if x.ident is not None:
-              if f(f,x.ident) == False:
-                  return
-          for i in range(len(x.parameters)):
-              if f(f,x.parameters[i]) == False:
-                  return
-          if x.return_type is not None:
-              if f(f,x.return_type) == False:
-                  return
-          if x.body is not None:
-              if f(f,x.body) == False:
-                  return
-          if x.func_type is not None:
-              if f(f,x.func_type) == False:
                   return
         case x if isinstance(x,IntType):
             pass
@@ -1805,31 +1763,68 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
           for i in range(len(x.fields)):
               if f(f,x.fields[i]) == False:
                   return
-        case x if isinstance(x,Cast):
-          if x.expr_type is not None:
-              if f(f,x.expr_type) == False:
-                  return
-          if x.base is not None:
-              if f(f,x.base) == False:
-                  return
-          if x.expr is not None:
-              if f(f,x.expr) == False:
-                  return
-        case x if isinstance(x,Comment):
-            pass
-        case x if isinstance(x,CommentGroup):
-          for i in range(len(x.comments)):
-              if f(f,x.comments[i]) == False:
-                  return
         case x if isinstance(x,UnionType):
           for i in range(len(x.candidates)):
               if f(f,x.candidates[i]) == False:
                   return
-        case x if isinstance(x,UnionCandidate):
-            pass
         case x if isinstance(x,RangeType):
           if x.base_type is not None:
               if f(f,x.base_type) == False:
+                  return
+        case x if isinstance(x,EnumType):
+            pass
+        case x if isinstance(x,BitGroupType):
+            pass
+        case x if isinstance(x,IntLiteral):
+          if x.expr_type is not None:
+              if f(f,x.expr_type) == False:
+                  return
+        case x if isinstance(x,BoolLiteral):
+          if x.expr_type is not None:
+              if f(f,x.expr_type) == False:
+                  return
+        case x if isinstance(x,StrLiteral):
+          if x.expr_type is not None:
+              if f(f,x.expr_type) == False:
+                  return
+        case x if isinstance(x,Input):
+          if x.expr_type is not None:
+              if f(f,x.expr_type) == False:
+                  return
+        case x if isinstance(x,Output):
+          if x.expr_type is not None:
+              if f(f,x.expr_type) == False:
+                  return
+        case x if isinstance(x,Config):
+          if x.expr_type is not None:
+              if f(f,x.expr_type) == False:
+                  return
+        case x if isinstance(x,Field):
+          if x.ident is not None:
+              if f(f,x.ident) == False:
+                  return
+          if x.field_type is not None:
+              if f(f,x.field_type) == False:
+                  return
+          if x.raw_arguments is not None:
+              if f(f,x.raw_arguments) == False:
+                  return
+          for i in range(len(x.arguments)):
+              if f(f,x.arguments[i]) == False:
+                  return
+        case x if isinstance(x,Format):
+          if x.ident is not None:
+              if f(f,x.ident) == False:
+                  return
+          if x.body is not None:
+              if f(f,x.body) == False:
+                  return
+        case x if isinstance(x,State):
+          if x.ident is not None:
+              if f(f,x.ident) == False:
+                  return
+          if x.body is not None:
+              if f(f,x.body) == False:
                   return
         case x if isinstance(x,Enum):
           if x.ident is not None:
@@ -1851,16 +1846,21 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
           if x.expr is not None:
               if f(f,x.expr) == False:
                   return
-        case x if isinstance(x,EnumType):
-            pass
-        case x if isinstance(x,BitGroupType):
-            pass
-        case x if isinstance(x,State):
+        case x if isinstance(x,Function):
           if x.ident is not None:
               if f(f,x.ident) == False:
                   return
+          for i in range(len(x.parameters)):
+              if f(f,x.parameters[i]) == False:
+                  return
+          if x.return_type is not None:
+              if f(f,x.return_type) == False:
+                  return
           if x.body is not None:
               if f(f,x.body) == False:
+                  return
+          if x.func_type is not None:
+              if f(f,x.func_type) == False:
                   return
         case x if isinstance(x,BuiltinFunction):
           if x.ident is not None:

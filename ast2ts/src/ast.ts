@@ -2,10 +2,10 @@
 
 export namespace ast2ts {
 
-export type NodeType = "program" | "expr" | "binary" | "unary" | "cond" | "ident" | "call" | "if" | "member_access" | "paren" | "index" | "match" | "range" | "tmp_var" | "block_expr" | "import" | "literal" | "int_literal" | "bool_literal" | "str_literal" | "input" | "output" | "config" | "stmt" | "loop" | "indent_block" | "match_branch" | "return" | "break" | "continue" | "assert" | "implicit_yield" | "member" | "field" | "format" | "function" | "type" | "int_type" | "ident_type" | "int_literal_type" | "str_literal_type" | "void_type" | "bool_type" | "array_type" | "function_type" | "struct_type" | "struct_union_type" | "cast" | "comment" | "comment_group" | "union_type" | "union_candidate" | "range_type" | "enum" | "enum_member" | "enum_type" | "bit_group_type" | "state" | "builtin_function";
+export type NodeType = "program" | "comment" | "comment_group" | "expr" | "binary" | "unary" | "cond" | "ident" | "call" | "if" | "member_access" | "paren" | "index" | "match" | "range" | "tmp_var" | "block_expr" | "import" | "cast" | "stmt" | "loop" | "indent_block" | "match_branch" | "union_candidate" | "return" | "break" | "continue" | "assert" | "implicit_yield" | "type" | "int_type" | "ident_type" | "int_literal_type" | "str_literal_type" | "void_type" | "bool_type" | "array_type" | "function_type" | "struct_type" | "struct_union_type" | "union_type" | "range_type" | "enum_type" | "bit_group_type" | "literal" | "int_literal" | "bool_literal" | "str_literal" | "input" | "output" | "config" | "member" | "field" | "format" | "state" | "enum" | "enum_member" | "function" | "builtin_function";
 
 export function isNodeType(obj: any): obj is NodeType {
-	return obj && typeof obj === 'string' && (obj === "program" || obj === "expr" || obj === "binary" || obj === "unary" || obj === "cond" || obj === "ident" || obj === "call" || obj === "if" || obj === "member_access" || obj === "paren" || obj === "index" || obj === "match" || obj === "range" || obj === "tmp_var" || obj === "block_expr" || obj === "import" || obj === "literal" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "input" || obj === "output" || obj === "config" || obj === "stmt" || obj === "loop" || obj === "indent_block" || obj === "match_branch" || obj === "return" || obj === "break" || obj === "continue" || obj === "assert" || obj === "implicit_yield" || obj === "member" || obj === "field" || obj === "format" || obj === "function" || obj === "type" || obj === "int_type" || obj === "ident_type" || obj === "int_literal_type" || obj === "str_literal_type" || obj === "void_type" || obj === "bool_type" || obj === "array_type" || obj === "function_type" || obj === "struct_type" || obj === "struct_union_type" || obj === "cast" || obj === "comment" || obj === "comment_group" || obj === "union_type" || obj === "union_candidate" || obj === "range_type" || obj === "enum" || obj === "enum_member" || obj === "enum_type" || obj === "bit_group_type" || obj === "state" || obj === "builtin_function")
+	return obj && typeof obj === 'string' && (obj === "program" || obj === "comment" || obj === "comment_group" || obj === "expr" || obj === "binary" || obj === "unary" || obj === "cond" || obj === "ident" || obj === "call" || obj === "if" || obj === "member_access" || obj === "paren" || obj === "index" || obj === "match" || obj === "range" || obj === "tmp_var" || obj === "block_expr" || obj === "import" || obj === "cast" || obj === "stmt" || obj === "loop" || obj === "indent_block" || obj === "match_branch" || obj === "union_candidate" || obj === "return" || obj === "break" || obj === "continue" || obj === "assert" || obj === "implicit_yield" || obj === "type" || obj === "int_type" || obj === "ident_type" || obj === "int_literal_type" || obj === "str_literal_type" || obj === "void_type" || obj === "bool_type" || obj === "array_type" || obj === "function_type" || obj === "struct_type" || obj === "struct_union_type" || obj === "union_type" || obj === "range_type" || obj === "enum_type" || obj === "bit_group_type" || obj === "literal" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "input" || obj === "output" || obj === "config" || obj === "member" || obj === "field" || obj === "format" || obj === "state" || obj === "enum" || obj === "enum_member" || obj === "function" || obj === "builtin_function")
 }
 
 export enum UnaryOp {
@@ -148,6 +148,8 @@ export interface Node {
 
 export function isNode(obj: any): obj is Node {
 	if (isProgram(obj)) return true;
+	if (isComment(obj)) return true;
+	if (isCommentGroup(obj)) return true;
 	if (isBinary(obj)) return true;
 	if (isUnary(obj)) return true;
 	if (isCond(obj)) return true;
@@ -162,23 +164,16 @@ export function isNode(obj: any): obj is Node {
 	if (isTmpVar(obj)) return true;
 	if (isBlockExpr(obj)) return true;
 	if (isImport(obj)) return true;
-	if (isIntLiteral(obj)) return true;
-	if (isBoolLiteral(obj)) return true;
-	if (isStrLiteral(obj)) return true;
-	if (isInput(obj)) return true;
-	if (isOutput(obj)) return true;
-	if (isConfig(obj)) return true;
+	if (isCast(obj)) return true;
 	if (isLoop(obj)) return true;
 	if (isIndentBlock(obj)) return true;
 	if (isMatchBranch(obj)) return true;
+	if (isUnionCandidate(obj)) return true;
 	if (isReturn(obj)) return true;
 	if (isBreak(obj)) return true;
 	if (isContinue(obj)) return true;
 	if (isAssert(obj)) return true;
 	if (isImplicitYield(obj)) return true;
-	if (isField(obj)) return true;
-	if (isFormat(obj)) return true;
-	if (isFunction(obj)) return true;
 	if (isIntType(obj)) return true;
 	if (isIdentType(obj)) return true;
 	if (isIntLiteralType(obj)) return true;
@@ -189,17 +184,22 @@ export function isNode(obj: any): obj is Node {
 	if (isFunctionType(obj)) return true;
 	if (isStructType(obj)) return true;
 	if (isStructUnionType(obj)) return true;
-	if (isCast(obj)) return true;
-	if (isComment(obj)) return true;
-	if (isCommentGroup(obj)) return true;
 	if (isUnionType(obj)) return true;
-	if (isUnionCandidate(obj)) return true;
 	if (isRangeType(obj)) return true;
-	if (isEnum(obj)) return true;
-	if (isEnumMember(obj)) return true;
 	if (isEnumType(obj)) return true;
 	if (isBitGroupType(obj)) return true;
+	if (isIntLiteral(obj)) return true;
+	if (isBoolLiteral(obj)) return true;
+	if (isStrLiteral(obj)) return true;
+	if (isInput(obj)) return true;
+	if (isOutput(obj)) return true;
+	if (isConfig(obj)) return true;
+	if (isField(obj)) return true;
+	if (isFormat(obj)) return true;
 	if (isState(obj)) return true;
+	if (isEnum(obj)) return true;
+	if (isEnumMember(obj)) return true;
+	if (isFunction(obj)) return true;
 	if (isBuiltinFunction(obj)) return true;
 	return false;
 }
@@ -224,20 +224,7 @@ export function isExpr(obj: any): obj is Expr {
 	if (isTmpVar(obj)) return true;
 	if (isBlockExpr(obj)) return true;
 	if (isImport(obj)) return true;
-	if (isIntLiteral(obj)) return true;
-	if (isBoolLiteral(obj)) return true;
-	if (isStrLiteral(obj)) return true;
-	if (isInput(obj)) return true;
-	if (isOutput(obj)) return true;
-	if (isConfig(obj)) return true;
 	if (isCast(obj)) return true;
-	return false;
-}
-
-export interface Literal extends Expr {
-}
-
-export function isLiteral(obj: any): obj is Literal {
 	if (isIntLiteral(obj)) return true;
 	if (isBoolLiteral(obj)) return true;
 	if (isStrLiteral(obj)) return true;
@@ -254,6 +241,7 @@ export function isStmt(obj: any): obj is Stmt {
 	if (isLoop(obj)) return true;
 	if (isIndentBlock(obj)) return true;
 	if (isMatchBranch(obj)) return true;
+	if (isUnionCandidate(obj)) return true;
 	if (isReturn(obj)) return true;
 	if (isBreak(obj)) return true;
 	if (isContinue(obj)) return true;
@@ -261,27 +249,10 @@ export function isStmt(obj: any): obj is Stmt {
 	if (isImplicitYield(obj)) return true;
 	if (isField(obj)) return true;
 	if (isFormat(obj)) return true;
-	if (isFunction(obj)) return true;
-	if (isUnionCandidate(obj)) return true;
+	if (isState(obj)) return true;
 	if (isEnum(obj)) return true;
 	if (isEnumMember(obj)) return true;
-	if (isState(obj)) return true;
-	if (isBuiltinFunction(obj)) return true;
-	return false;
-}
-
-export interface Member extends Stmt {
-	belong: Member|null;
-	ident: Ident|null;
-}
-
-export function isMember(obj: any): obj is Member {
-	if (isField(obj)) return true;
-	if (isFormat(obj)) return true;
 	if (isFunction(obj)) return true;
-	if (isEnum(obj)) return true;
-	if (isEnumMember(obj)) return true;
-	if (isState(obj)) return true;
 	if (isBuiltinFunction(obj)) return true;
 	return false;
 }
@@ -310,6 +281,35 @@ export function isType(obj: any): obj is Type {
 	return false;
 }
 
+export interface Literal extends Expr {
+}
+
+export function isLiteral(obj: any): obj is Literal {
+	if (isIntLiteral(obj)) return true;
+	if (isBoolLiteral(obj)) return true;
+	if (isStrLiteral(obj)) return true;
+	if (isInput(obj)) return true;
+	if (isOutput(obj)) return true;
+	if (isConfig(obj)) return true;
+	return false;
+}
+
+export interface Member extends Stmt {
+	belong: Member|null;
+	ident: Ident|null;
+}
+
+export function isMember(obj: any): obj is Member {
+	if (isField(obj)) return true;
+	if (isFormat(obj)) return true;
+	if (isState(obj)) return true;
+	if (isEnum(obj)) return true;
+	if (isEnumMember(obj)) return true;
+	if (isFunction(obj)) return true;
+	if (isBuiltinFunction(obj)) return true;
+	return false;
+}
+
 export interface Program extends Node {
 	struct_type: StructType|null;
 	elements: Node[];
@@ -318,6 +318,22 @@ export interface Program extends Node {
 
 export function isProgram(obj: any): obj is Program {
 	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "program"
+}
+
+export interface Comment extends Node {
+	comment: string;
+}
+
+export function isComment(obj: any): obj is Comment {
+	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "comment"
+}
+
+export interface CommentGroup extends Node {
+	comments: Comment[];
+}
+
+export function isCommentGroup(obj: any): obj is CommentGroup {
+	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "comment_group"
 }
 
 export interface Binary extends Expr {
@@ -459,49 +475,13 @@ export function isImport(obj: any): obj is Import {
 	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "import"
 }
 
-export interface IntLiteral extends Literal {
-	value: string;
+export interface Cast extends Expr {
+	base: Call|null;
+	expr: Expr|null;
 }
 
-export function isIntLiteral(obj: any): obj is IntLiteral {
-	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "int_literal"
-}
-
-export interface BoolLiteral extends Literal {
-	value: boolean;
-}
-
-export function isBoolLiteral(obj: any): obj is BoolLiteral {
-	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "bool_literal"
-}
-
-export interface StrLiteral extends Literal {
-	value: string;
-}
-
-export function isStrLiteral(obj: any): obj is StrLiteral {
-	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "str_literal"
-}
-
-export interface Input extends Literal {
-}
-
-export function isInput(obj: any): obj is Input {
-	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "input"
-}
-
-export interface Output extends Literal {
-}
-
-export function isOutput(obj: any): obj is Output {
-	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "output"
-}
-
-export interface Config extends Literal {
-}
-
-export function isConfig(obj: any): obj is Config {
-	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "config"
+export function isCast(obj: any): obj is Cast {
+	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "cast"
 }
 
 export interface Loop extends Stmt {
@@ -534,6 +514,15 @@ export interface MatchBranch extends Stmt {
 
 export function isMatchBranch(obj: any): obj is MatchBranch {
 	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "match_branch"
+}
+
+export interface UnionCandidate extends Stmt {
+	cond: Expr|null;
+	field: Member|null;
+}
+
+export function isUnionCandidate(obj: any): obj is UnionCandidate {
+	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "union_candidate"
 }
 
 export interface Return extends Stmt {
@@ -572,39 +561,6 @@ export interface ImplicitYield extends Stmt {
 
 export function isImplicitYield(obj: any): obj is ImplicitYield {
 	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "implicit_yield"
-}
-
-export interface Field extends Member {
-	colon_loc: Loc;
-	field_type: Type|null;
-	raw_arguments: Expr|null;
-	arguments: Expr[];
-	bit_alignment: BitAlignment;
-}
-
-export function isField(obj: any): obj is Field {
-	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "field"
-}
-
-export interface Format extends Member {
-	body: IndentBlock|null;
-}
-
-export function isFormat(obj: any): obj is Format {
-	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "format"
-}
-
-export interface Function extends Member {
-	parameters: Field[];
-	return_type: Type|null;
-	body: IndentBlock|null;
-	func_type: FunctionType|null;
-	is_cast: boolean;
-	cast_loc: Loc;
-}
-
-export function isFunction(obj: any): obj is Function {
-	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "function"
 }
 
 export interface IntType extends Type {
@@ -696,31 +652,6 @@ export function isStructUnionType(obj: any): obj is StructUnionType {
 	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "struct_union_type"
 }
 
-export interface Cast extends Expr {
-	base: Call|null;
-	expr: Expr|null;
-}
-
-export function isCast(obj: any): obj is Cast {
-	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "cast"
-}
-
-export interface Comment extends Node {
-	comment: string;
-}
-
-export function isComment(obj: any): obj is Comment {
-	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "comment"
-}
-
-export interface CommentGroup extends Node {
-	comments: Comment[];
-}
-
-export function isCommentGroup(obj: any): obj is CommentGroup {
-	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "comment_group"
-}
-
 export interface UnionType extends Type {
 	cond: Expr|null;
 	candidates: UnionCandidate[];
@@ -731,15 +662,6 @@ export function isUnionType(obj: any): obj is UnionType {
 	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "union_type"
 }
 
-export interface UnionCandidate extends Stmt {
-	cond: Expr|null;
-	field: Member|null;
-}
-
-export function isUnionCandidate(obj: any): obj is UnionCandidate {
-	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "union_candidate"
-}
-
 export interface RangeType extends Type {
 	base_type: Type|null;
 	range: Range|null;
@@ -747,6 +669,97 @@ export interface RangeType extends Type {
 
 export function isRangeType(obj: any): obj is RangeType {
 	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "range_type"
+}
+
+export interface EnumType extends Type {
+	base: Enum|null;
+}
+
+export function isEnumType(obj: any): obj is EnumType {
+	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "enum_type"
+}
+
+export interface BitGroupType extends Type {
+	bit_fields: Field[];
+	is_aligned: boolean;
+	bit_size: number;
+}
+
+export function isBitGroupType(obj: any): obj is BitGroupType {
+	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "bit_group_type"
+}
+
+export interface IntLiteral extends Literal {
+	value: string;
+}
+
+export function isIntLiteral(obj: any): obj is IntLiteral {
+	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "int_literal"
+}
+
+export interface BoolLiteral extends Literal {
+	value: boolean;
+}
+
+export function isBoolLiteral(obj: any): obj is BoolLiteral {
+	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "bool_literal"
+}
+
+export interface StrLiteral extends Literal {
+	value: string;
+}
+
+export function isStrLiteral(obj: any): obj is StrLiteral {
+	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "str_literal"
+}
+
+export interface Input extends Literal {
+}
+
+export function isInput(obj: any): obj is Input {
+	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "input"
+}
+
+export interface Output extends Literal {
+}
+
+export function isOutput(obj: any): obj is Output {
+	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "output"
+}
+
+export interface Config extends Literal {
+}
+
+export function isConfig(obj: any): obj is Config {
+	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "config"
+}
+
+export interface Field extends Member {
+	colon_loc: Loc;
+	field_type: Type|null;
+	raw_arguments: Expr|null;
+	arguments: Expr[];
+	bit_alignment: BitAlignment;
+}
+
+export function isField(obj: any): obj is Field {
+	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "field"
+}
+
+export interface Format extends Member {
+	body: IndentBlock|null;
+}
+
+export function isFormat(obj: any): obj is Format {
+	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "format"
+}
+
+export interface State extends Member {
+	body: IndentBlock|null;
+}
+
+export function isState(obj: any): obj is State {
+	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "state"
 }
 
 export interface Enum extends Member {
@@ -769,30 +782,17 @@ export function isEnumMember(obj: any): obj is EnumMember {
 	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "enum_member"
 }
 
-export interface EnumType extends Type {
-	base: Enum|null;
-}
-
-export function isEnumType(obj: any): obj is EnumType {
-	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "enum_type"
-}
-
-export interface BitGroupType extends Type {
-	bit_fields: Field[];
-	is_aligned: boolean;
-	bit_size: number;
-}
-
-export function isBitGroupType(obj: any): obj is BitGroupType {
-	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "bit_group_type"
-}
-
-export interface State extends Member {
+export interface Function extends Member {
+	parameters: Field[];
+	return_type: Type|null;
 	body: IndentBlock|null;
+	func_type: FunctionType|null;
+	is_cast: boolean;
+	cast_loc: Loc;
 }
 
-export function isState(obj: any): obj is State {
-	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "state"
+export function isFunction(obj: any): obj is Function {
+	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "function"
 }
 
 export interface BuiltinFunction extends Member {
@@ -954,6 +954,24 @@ export function parseAST(obj: any): Program {
 				struct_type: null,
 				elements: [],
 				global_scope: null,
+			}
+			c.node.push(n);
+			break;
+		}
+		case "comment": {
+			const n :Comment = {
+				node_type: "comment",
+				loc: on.loc,
+				comment: '',
+			}
+			c.node.push(n);
+			break;
+		}
+		case "comment_group": {
+			const n :CommentGroup = {
+				node_type: "comment_group",
+				loc: on.loc,
+				comments: [],
 			}
 			c.node.push(n);
 			break;
@@ -1139,65 +1157,14 @@ export function parseAST(obj: any): Program {
 			c.node.push(n);
 			break;
 		}
-		case "int_literal": {
-			const n :IntLiteral = {
-				node_type: "int_literal",
+		case "cast": {
+			const n :Cast = {
+				node_type: "cast",
 				loc: on.loc,
 				expr_type: null,
 				constant_level: ConstantLevel.unknown,
-				value: '',
-			}
-			c.node.push(n);
-			break;
-		}
-		case "bool_literal": {
-			const n :BoolLiteral = {
-				node_type: "bool_literal",
-				loc: on.loc,
-				expr_type: null,
-				constant_level: ConstantLevel.unknown,
-				value: false,
-			}
-			c.node.push(n);
-			break;
-		}
-		case "str_literal": {
-			const n :StrLiteral = {
-				node_type: "str_literal",
-				loc: on.loc,
-				expr_type: null,
-				constant_level: ConstantLevel.unknown,
-				value: '',
-			}
-			c.node.push(n);
-			break;
-		}
-		case "input": {
-			const n :Input = {
-				node_type: "input",
-				loc: on.loc,
-				expr_type: null,
-				constant_level: ConstantLevel.unknown,
-			}
-			c.node.push(n);
-			break;
-		}
-		case "output": {
-			const n :Output = {
-				node_type: "output",
-				loc: on.loc,
-				expr_type: null,
-				constant_level: ConstantLevel.unknown,
-			}
-			c.node.push(n);
-			break;
-		}
-		case "config": {
-			const n :Config = {
-				node_type: "config",
-				loc: on.loc,
-				expr_type: null,
-				constant_level: ConstantLevel.unknown,
+				base: null,
+				expr: null,
 			}
 			c.node.push(n);
 			break;
@@ -1233,6 +1200,16 @@ export function parseAST(obj: any): Program {
 				cond: null,
 				sym_loc: on.loc,
 				then: null,
+			}
+			c.node.push(n);
+			break;
+		}
+		case "union_candidate": {
+			const n :UnionCandidate = {
+				node_type: "union_candidate",
+				loc: on.loc,
+				cond: null,
+				field: null,
 			}
 			c.node.push(n);
 			break;
@@ -1276,48 +1253,6 @@ export function parseAST(obj: any): Program {
 				node_type: "implicit_yield",
 				loc: on.loc,
 				expr: null,
-			}
-			c.node.push(n);
-			break;
-		}
-		case "field": {
-			const n :Field = {
-				node_type: "field",
-				loc: on.loc,
-				belong: null,
-				ident: null,
-				colon_loc: on.loc,
-				field_type: null,
-				raw_arguments: null,
-				arguments: [],
-				bit_alignment: BitAlignment.byte_aligned,
-			}
-			c.node.push(n);
-			break;
-		}
-		case "format": {
-			const n :Format = {
-				node_type: "format",
-				loc: on.loc,
-				belong: null,
-				ident: null,
-				body: null,
-			}
-			c.node.push(n);
-			break;
-		}
-		case "function": {
-			const n :Function = {
-				node_type: "function",
-				loc: on.loc,
-				belong: null,
-				ident: null,
-				parameters: [],
-				return_type: null,
-				body: null,
-				func_type: null,
-				is_cast: false,
-				cast_loc: on.loc,
 			}
 			c.node.push(n);
 			break;
@@ -1451,36 +1386,6 @@ export function parseAST(obj: any): Program {
 			c.node.push(n);
 			break;
 		}
-		case "cast": {
-			const n :Cast = {
-				node_type: "cast",
-				loc: on.loc,
-				expr_type: null,
-				constant_level: ConstantLevel.unknown,
-				base: null,
-				expr: null,
-			}
-			c.node.push(n);
-			break;
-		}
-		case "comment": {
-			const n :Comment = {
-				node_type: "comment",
-				loc: on.loc,
-				comment: '',
-			}
-			c.node.push(n);
-			break;
-		}
-		case "comment_group": {
-			const n :CommentGroup = {
-				node_type: "comment_group",
-				loc: on.loc,
-				comments: [],
-			}
-			c.node.push(n);
-			break;
-		}
 		case "union_type": {
 			const n :UnionType = {
 				node_type: "union_type",
@@ -1495,16 +1400,6 @@ export function parseAST(obj: any): Program {
 			c.node.push(n);
 			break;
 		}
-		case "union_candidate": {
-			const n :UnionCandidate = {
-				node_type: "union_candidate",
-				loc: on.loc,
-				cond: null,
-				field: null,
-			}
-			c.node.push(n);
-			break;
-		}
 		case "range_type": {
 			const n :RangeType = {
 				node_type: "range_type",
@@ -1514,32 +1409,6 @@ export function parseAST(obj: any): Program {
 				bit_alignment: BitAlignment.byte_aligned,
 				base_type: null,
 				range: null,
-			}
-			c.node.push(n);
-			break;
-		}
-		case "enum": {
-			const n :Enum = {
-				node_type: "enum",
-				loc: on.loc,
-				belong: null,
-				ident: null,
-				scope: null,
-				colon_loc: on.loc,
-				base_type: null,
-				members: [],
-				enum_type: null,
-			}
-			c.node.push(n);
-			break;
-		}
-		case "enum_member": {
-			const n :EnumMember = {
-				node_type: "enum_member",
-				loc: on.loc,
-				belong: null,
-				ident: null,
-				expr: null,
 			}
 			c.node.push(n);
 			break;
@@ -1570,6 +1439,95 @@ export function parseAST(obj: any): Program {
 			c.node.push(n);
 			break;
 		}
+		case "int_literal": {
+			const n :IntLiteral = {
+				node_type: "int_literal",
+				loc: on.loc,
+				expr_type: null,
+				constant_level: ConstantLevel.unknown,
+				value: '',
+			}
+			c.node.push(n);
+			break;
+		}
+		case "bool_literal": {
+			const n :BoolLiteral = {
+				node_type: "bool_literal",
+				loc: on.loc,
+				expr_type: null,
+				constant_level: ConstantLevel.unknown,
+				value: false,
+			}
+			c.node.push(n);
+			break;
+		}
+		case "str_literal": {
+			const n :StrLiteral = {
+				node_type: "str_literal",
+				loc: on.loc,
+				expr_type: null,
+				constant_level: ConstantLevel.unknown,
+				value: '',
+			}
+			c.node.push(n);
+			break;
+		}
+		case "input": {
+			const n :Input = {
+				node_type: "input",
+				loc: on.loc,
+				expr_type: null,
+				constant_level: ConstantLevel.unknown,
+			}
+			c.node.push(n);
+			break;
+		}
+		case "output": {
+			const n :Output = {
+				node_type: "output",
+				loc: on.loc,
+				expr_type: null,
+				constant_level: ConstantLevel.unknown,
+			}
+			c.node.push(n);
+			break;
+		}
+		case "config": {
+			const n :Config = {
+				node_type: "config",
+				loc: on.loc,
+				expr_type: null,
+				constant_level: ConstantLevel.unknown,
+			}
+			c.node.push(n);
+			break;
+		}
+		case "field": {
+			const n :Field = {
+				node_type: "field",
+				loc: on.loc,
+				belong: null,
+				ident: null,
+				colon_loc: on.loc,
+				field_type: null,
+				raw_arguments: null,
+				arguments: [],
+				bit_alignment: BitAlignment.byte_aligned,
+			}
+			c.node.push(n);
+			break;
+		}
+		case "format": {
+			const n :Format = {
+				node_type: "format",
+				loc: on.loc,
+				belong: null,
+				ident: null,
+				body: null,
+			}
+			c.node.push(n);
+			break;
+		}
 		case "state": {
 			const n :State = {
 				node_type: "state",
@@ -1577,6 +1535,48 @@ export function parseAST(obj: any): Program {
 				belong: null,
 				ident: null,
 				body: null,
+			}
+			c.node.push(n);
+			break;
+		}
+		case "enum": {
+			const n :Enum = {
+				node_type: "enum",
+				loc: on.loc,
+				belong: null,
+				ident: null,
+				scope: null,
+				colon_loc: on.loc,
+				base_type: null,
+				members: [],
+				enum_type: null,
+			}
+			c.node.push(n);
+			break;
+		}
+		case "enum_member": {
+			const n :EnumMember = {
+				node_type: "enum_member",
+				loc: on.loc,
+				belong: null,
+				ident: null,
+				expr: null,
+			}
+			c.node.push(n);
+			break;
+		}
+		case "function": {
+			const n :Function = {
+				node_type: "function",
+				loc: on.loc,
+				belong: null,
+				ident: null,
+				parameters: [],
+				return_type: null,
+				body: null,
+				func_type: null,
+				is_cast: false,
+				cast_loc: on.loc,
 			}
 			c.node.push(n);
 			break;
@@ -1636,6 +1636,29 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at Program::global_scope');
 			}
 			n.global_scope = tmpglobal_scope;
+			break;
+		}
+		case "comment": {
+			const n :Comment = cnode as Comment;
+			const tmpcomment = on.body?.comment;
+			if (typeof on.body?.comment !== "string") {
+				throw new Error('invalid node list at Comment::comment');
+			}
+			n.comment = on.body.comment;
+			break;
+		}
+		case "comment_group": {
+			const n :CommentGroup = cnode as CommentGroup;
+			for (const o of on.body.comments) {
+				if (typeof o !== 'number') {
+					throw new Error('invalid node list at CommentGroup::comments');
+				}
+				const tmpcomments = c.node[o];
+				if (!isComment(tmpcomments)) {
+					throw new Error('invalid node list at CommentGroup::comments');
+				}
+				n.comments.push(tmpcomments);
+			}
 			break;
 		}
 		case "binary": {
@@ -2171,121 +2194,37 @@ export function parseAST(obj: any): Program {
 			n.import_desc = tmpimport_desc;
 			break;
 		}
-		case "int_literal": {
-			const n :IntLiteral = cnode as IntLiteral;
+		case "cast": {
+			const n :Cast = cnode as Cast;
 			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
-				throw new Error('invalid node list at IntLiteral::expr_type');
+				throw new Error('invalid node list at Cast::expr_type');
 			}
 			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
 			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
-				throw new Error('invalid node list at IntLiteral::expr_type');
+				throw new Error('invalid node list at Cast::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
 			const tmpconstant_level = on.body?.constant_level;
 			if (!isConstantLevel(tmpconstant_level)) {
-				throw new Error('invalid node list at IntLiteral::constant_level');
+				throw new Error('invalid node list at Cast::constant_level');
 			}
 			n.constant_level = tmpconstant_level;
-			const tmpvalue = on.body?.value;
-			if (typeof on.body?.value !== "string") {
-				throw new Error('invalid node list at IntLiteral::value');
+			if (on.body?.base !== null && typeof on.body?.base !== 'number') {
+				throw new Error('invalid node list at Cast::base');
 			}
-			n.value = on.body.value;
-			break;
-		}
-		case "bool_literal": {
-			const n :BoolLiteral = cnode as BoolLiteral;
-			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
-				throw new Error('invalid node list at BoolLiteral::expr_type');
+			const tmpbase = on.body.base === null ? null : c.node[on.body.base];
+			if (!(tmpbase === null || isCall(tmpbase))) {
+				throw new Error('invalid node list at Cast::base');
 			}
-			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
-			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
-				throw new Error('invalid node list at BoolLiteral::expr_type');
+			n.base = tmpbase;
+			if (on.body?.expr !== null && typeof on.body?.expr !== 'number') {
+				throw new Error('invalid node list at Cast::expr');
 			}
-			n.expr_type = tmpexpr_type;
-			const tmpconstant_level = on.body?.constant_level;
-			if (!isConstantLevel(tmpconstant_level)) {
-				throw new Error('invalid node list at BoolLiteral::constant_level');
+			const tmpexpr = on.body.expr === null ? null : c.node[on.body.expr];
+			if (!(tmpexpr === null || isExpr(tmpexpr))) {
+				throw new Error('invalid node list at Cast::expr');
 			}
-			n.constant_level = tmpconstant_level;
-			const tmpvalue = on.body?.value;
-			if (typeof on.body?.value !== "boolean") {
-				throw new Error('invalid node list at BoolLiteral::value');
-			}
-			n.value = on.body.value;
-			break;
-		}
-		case "str_literal": {
-			const n :StrLiteral = cnode as StrLiteral;
-			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
-				throw new Error('invalid node list at StrLiteral::expr_type');
-			}
-			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
-			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
-				throw new Error('invalid node list at StrLiteral::expr_type');
-			}
-			n.expr_type = tmpexpr_type;
-			const tmpconstant_level = on.body?.constant_level;
-			if (!isConstantLevel(tmpconstant_level)) {
-				throw new Error('invalid node list at StrLiteral::constant_level');
-			}
-			n.constant_level = tmpconstant_level;
-			const tmpvalue = on.body?.value;
-			if (typeof on.body?.value !== "string") {
-				throw new Error('invalid node list at StrLiteral::value');
-			}
-			n.value = on.body.value;
-			break;
-		}
-		case "input": {
-			const n :Input = cnode as Input;
-			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
-				throw new Error('invalid node list at Input::expr_type');
-			}
-			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
-			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
-				throw new Error('invalid node list at Input::expr_type');
-			}
-			n.expr_type = tmpexpr_type;
-			const tmpconstant_level = on.body?.constant_level;
-			if (!isConstantLevel(tmpconstant_level)) {
-				throw new Error('invalid node list at Input::constant_level');
-			}
-			n.constant_level = tmpconstant_level;
-			break;
-		}
-		case "output": {
-			const n :Output = cnode as Output;
-			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
-				throw new Error('invalid node list at Output::expr_type');
-			}
-			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
-			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
-				throw new Error('invalid node list at Output::expr_type');
-			}
-			n.expr_type = tmpexpr_type;
-			const tmpconstant_level = on.body?.constant_level;
-			if (!isConstantLevel(tmpconstant_level)) {
-				throw new Error('invalid node list at Output::constant_level');
-			}
-			n.constant_level = tmpconstant_level;
-			break;
-		}
-		case "config": {
-			const n :Config = cnode as Config;
-			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
-				throw new Error('invalid node list at Config::expr_type');
-			}
-			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
-			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
-				throw new Error('invalid node list at Config::expr_type');
-			}
-			n.expr_type = tmpexpr_type;
-			const tmpconstant_level = on.body?.constant_level;
-			if (!isConstantLevel(tmpconstant_level)) {
-				throw new Error('invalid node list at Config::constant_level');
-			}
-			n.constant_level = tmpconstant_level;
+			n.expr = tmpexpr;
 			break;
 		}
 		case "loop": {
@@ -2384,6 +2323,26 @@ export function parseAST(obj: any): Program {
 			n.then = tmpthen;
 			break;
 		}
+		case "union_candidate": {
+			const n :UnionCandidate = cnode as UnionCandidate;
+			if (on.body?.cond !== null && typeof on.body?.cond !== 'number') {
+				throw new Error('invalid node list at UnionCandidate::cond');
+			}
+			const tmpcond = on.body.cond === null ? null : c.node[on.body.cond];
+			if (!(tmpcond === null || isExpr(tmpcond))) {
+				throw new Error('invalid node list at UnionCandidate::cond');
+			}
+			n.cond = tmpcond;
+			if (on.body?.field !== null && typeof on.body?.field !== 'number') {
+				throw new Error('invalid node list at UnionCandidate::field');
+			}
+			const tmpfield = on.body.field === null ? null : c.node[on.body.field];
+			if (!(tmpfield === null || isMember(tmpfield))) {
+				throw new Error('invalid node list at UnionCandidate::field');
+			}
+			n.field = tmpfield;
+			break;
+		}
 		case "return": {
 			const n :Return = cnode as Return;
 			if (on.body?.expr !== null && typeof on.body?.expr !== 'number') {
@@ -2426,154 +2385,6 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at ImplicitYield::expr');
 			}
 			n.expr = tmpexpr;
-			break;
-		}
-		case "field": {
-			const n :Field = cnode as Field;
-			if (on.body?.belong !== null && typeof on.body?.belong !== 'number') {
-				throw new Error('invalid node list at Field::belong');
-			}
-			const tmpbelong = on.body.belong === null ? null : c.node[on.body.belong];
-			if (!(tmpbelong === null || isMember(tmpbelong))) {
-				throw new Error('invalid node list at Field::belong');
-			}
-			n.belong = tmpbelong;
-			if (on.body?.ident !== null && typeof on.body?.ident !== 'number') {
-				throw new Error('invalid node list at Field::ident');
-			}
-			const tmpident = on.body.ident === null ? null : c.node[on.body.ident];
-			if (!(tmpident === null || isIdent(tmpident))) {
-				throw new Error('invalid node list at Field::ident');
-			}
-			n.ident = tmpident;
-			const tmpcolon_loc = on.body?.colon_loc;
-			if (!isLoc(tmpcolon_loc)) {
-				throw new Error('invalid node list at Field::colon_loc');
-			}
-			n.colon_loc = tmpcolon_loc;
-			if (on.body?.field_type !== null && typeof on.body?.field_type !== 'number') {
-				throw new Error('invalid node list at Field::field_type');
-			}
-			const tmpfield_type = on.body.field_type === null ? null : c.node[on.body.field_type];
-			if (!(tmpfield_type === null || isType(tmpfield_type))) {
-				throw new Error('invalid node list at Field::field_type');
-			}
-			n.field_type = tmpfield_type;
-			if (on.body?.raw_arguments !== null && typeof on.body?.raw_arguments !== 'number') {
-				throw new Error('invalid node list at Field::raw_arguments');
-			}
-			const tmpraw_arguments = on.body.raw_arguments === null ? null : c.node[on.body.raw_arguments];
-			if (!(tmpraw_arguments === null || isExpr(tmpraw_arguments))) {
-				throw new Error('invalid node list at Field::raw_arguments');
-			}
-			n.raw_arguments = tmpraw_arguments;
-			for (const o of on.body.arguments) {
-				if (typeof o !== 'number') {
-					throw new Error('invalid node list at Field::arguments');
-				}
-				const tmparguments = c.node[o];
-				if (!isExpr(tmparguments)) {
-					throw new Error('invalid node list at Field::arguments');
-				}
-				n.arguments.push(tmparguments);
-			}
-			const tmpbit_alignment = on.body?.bit_alignment;
-			if (!isBitAlignment(tmpbit_alignment)) {
-				throw new Error('invalid node list at Field::bit_alignment');
-			}
-			n.bit_alignment = tmpbit_alignment;
-			break;
-		}
-		case "format": {
-			const n :Format = cnode as Format;
-			if (on.body?.belong !== null && typeof on.body?.belong !== 'number') {
-				throw new Error('invalid node list at Format::belong');
-			}
-			const tmpbelong = on.body.belong === null ? null : c.node[on.body.belong];
-			if (!(tmpbelong === null || isMember(tmpbelong))) {
-				throw new Error('invalid node list at Format::belong');
-			}
-			n.belong = tmpbelong;
-			if (on.body?.ident !== null && typeof on.body?.ident !== 'number') {
-				throw new Error('invalid node list at Format::ident');
-			}
-			const tmpident = on.body.ident === null ? null : c.node[on.body.ident];
-			if (!(tmpident === null || isIdent(tmpident))) {
-				throw new Error('invalid node list at Format::ident');
-			}
-			n.ident = tmpident;
-			if (on.body?.body !== null && typeof on.body?.body !== 'number') {
-				throw new Error('invalid node list at Format::body');
-			}
-			const tmpbody = on.body.body === null ? null : c.node[on.body.body];
-			if (!(tmpbody === null || isIndentBlock(tmpbody))) {
-				throw new Error('invalid node list at Format::body');
-			}
-			n.body = tmpbody;
-			break;
-		}
-		case "function": {
-			const n :Function = cnode as Function;
-			if (on.body?.belong !== null && typeof on.body?.belong !== 'number') {
-				throw new Error('invalid node list at Function::belong');
-			}
-			const tmpbelong = on.body.belong === null ? null : c.node[on.body.belong];
-			if (!(tmpbelong === null || isMember(tmpbelong))) {
-				throw new Error('invalid node list at Function::belong');
-			}
-			n.belong = tmpbelong;
-			if (on.body?.ident !== null && typeof on.body?.ident !== 'number') {
-				throw new Error('invalid node list at Function::ident');
-			}
-			const tmpident = on.body.ident === null ? null : c.node[on.body.ident];
-			if (!(tmpident === null || isIdent(tmpident))) {
-				throw new Error('invalid node list at Function::ident');
-			}
-			n.ident = tmpident;
-			for (const o of on.body.parameters) {
-				if (typeof o !== 'number') {
-					throw new Error('invalid node list at Function::parameters');
-				}
-				const tmpparameters = c.node[o];
-				if (!isField(tmpparameters)) {
-					throw new Error('invalid node list at Function::parameters');
-				}
-				n.parameters.push(tmpparameters);
-			}
-			if (on.body?.return_type !== null && typeof on.body?.return_type !== 'number') {
-				throw new Error('invalid node list at Function::return_type');
-			}
-			const tmpreturn_type = on.body.return_type === null ? null : c.node[on.body.return_type];
-			if (!(tmpreturn_type === null || isType(tmpreturn_type))) {
-				throw new Error('invalid node list at Function::return_type');
-			}
-			n.return_type = tmpreturn_type;
-			if (on.body?.body !== null && typeof on.body?.body !== 'number') {
-				throw new Error('invalid node list at Function::body');
-			}
-			const tmpbody = on.body.body === null ? null : c.node[on.body.body];
-			if (!(tmpbody === null || isIndentBlock(tmpbody))) {
-				throw new Error('invalid node list at Function::body');
-			}
-			n.body = tmpbody;
-			if (on.body?.func_type !== null && typeof on.body?.func_type !== 'number') {
-				throw new Error('invalid node list at Function::func_type');
-			}
-			const tmpfunc_type = on.body.func_type === null ? null : c.node[on.body.func_type];
-			if (!(tmpfunc_type === null || isFunctionType(tmpfunc_type))) {
-				throw new Error('invalid node list at Function::func_type');
-			}
-			n.func_type = tmpfunc_type;
-			const tmpis_cast = on.body?.is_cast;
-			if (typeof on.body?.is_cast !== "boolean") {
-				throw new Error('invalid node list at Function::is_cast');
-			}
-			n.is_cast = on.body.is_cast;
-			const tmpcast_loc = on.body?.cast_loc;
-			if (!isLoc(tmpcast_loc)) {
-				throw new Error('invalid node list at Function::cast_loc');
-			}
-			n.cast_loc = tmpcast_loc;
 			break;
 		}
 		case "int_type": {
@@ -2908,62 +2719,6 @@ export function parseAST(obj: any): Program {
 			}
 			break;
 		}
-		case "cast": {
-			const n :Cast = cnode as Cast;
-			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
-				throw new Error('invalid node list at Cast::expr_type');
-			}
-			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
-			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
-				throw new Error('invalid node list at Cast::expr_type');
-			}
-			n.expr_type = tmpexpr_type;
-			const tmpconstant_level = on.body?.constant_level;
-			if (!isConstantLevel(tmpconstant_level)) {
-				throw new Error('invalid node list at Cast::constant_level');
-			}
-			n.constant_level = tmpconstant_level;
-			if (on.body?.base !== null && typeof on.body?.base !== 'number') {
-				throw new Error('invalid node list at Cast::base');
-			}
-			const tmpbase = on.body.base === null ? null : c.node[on.body.base];
-			if (!(tmpbase === null || isCall(tmpbase))) {
-				throw new Error('invalid node list at Cast::base');
-			}
-			n.base = tmpbase;
-			if (on.body?.expr !== null && typeof on.body?.expr !== 'number') {
-				throw new Error('invalid node list at Cast::expr');
-			}
-			const tmpexpr = on.body.expr === null ? null : c.node[on.body.expr];
-			if (!(tmpexpr === null || isExpr(tmpexpr))) {
-				throw new Error('invalid node list at Cast::expr');
-			}
-			n.expr = tmpexpr;
-			break;
-		}
-		case "comment": {
-			const n :Comment = cnode as Comment;
-			const tmpcomment = on.body?.comment;
-			if (typeof on.body?.comment !== "string") {
-				throw new Error('invalid node list at Comment::comment');
-			}
-			n.comment = on.body.comment;
-			break;
-		}
-		case "comment_group": {
-			const n :CommentGroup = cnode as CommentGroup;
-			for (const o of on.body.comments) {
-				if (typeof o !== 'number') {
-					throw new Error('invalid node list at CommentGroup::comments');
-				}
-				const tmpcomments = c.node[o];
-				if (!isComment(tmpcomments)) {
-					throw new Error('invalid node list at CommentGroup::comments');
-				}
-				n.comments.push(tmpcomments);
-			}
-			break;
-		}
 		case "union_type": {
 			const n :UnionType = cnode as UnionType;
 			const tmpis_explicit = on.body?.is_explicit;
@@ -3009,26 +2764,6 @@ export function parseAST(obj: any): Program {
 			n.base_type = tmpbase_type;
 			break;
 		}
-		case "union_candidate": {
-			const n :UnionCandidate = cnode as UnionCandidate;
-			if (on.body?.cond !== null && typeof on.body?.cond !== 'number') {
-				throw new Error('invalid node list at UnionCandidate::cond');
-			}
-			const tmpcond = on.body.cond === null ? null : c.node[on.body.cond];
-			if (!(tmpcond === null || isExpr(tmpcond))) {
-				throw new Error('invalid node list at UnionCandidate::cond');
-			}
-			n.cond = tmpcond;
-			if (on.body?.field !== null && typeof on.body?.field !== 'number') {
-				throw new Error('invalid node list at UnionCandidate::field');
-			}
-			const tmpfield = on.body.field === null ? null : c.node[on.body.field];
-			if (!(tmpfield === null || isMember(tmpfield))) {
-				throw new Error('invalid node list at UnionCandidate::field');
-			}
-			n.field = tmpfield;
-			break;
-		}
 		case "range_type": {
 			const n :RangeType = cnode as RangeType;
 			const tmpis_explicit = on.body?.is_explicit;
@@ -3062,6 +2797,301 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at RangeType::range');
 			}
 			n.range = tmprange;
+			break;
+		}
+		case "enum_type": {
+			const n :EnumType = cnode as EnumType;
+			const tmpis_explicit = on.body?.is_explicit;
+			if (typeof on.body?.is_explicit !== "boolean") {
+				throw new Error('invalid node list at EnumType::is_explicit');
+			}
+			n.is_explicit = on.body.is_explicit;
+			const tmpis_int_set = on.body?.is_int_set;
+			if (typeof on.body?.is_int_set !== "boolean") {
+				throw new Error('invalid node list at EnumType::is_int_set');
+			}
+			n.is_int_set = on.body.is_int_set;
+			const tmpbit_alignment = on.body?.bit_alignment;
+			if (!isBitAlignment(tmpbit_alignment)) {
+				throw new Error('invalid node list at EnumType::bit_alignment');
+			}
+			n.bit_alignment = tmpbit_alignment;
+			if (on.body?.base !== null && typeof on.body?.base !== 'number') {
+				throw new Error('invalid node list at EnumType::base');
+			}
+			const tmpbase = on.body.base === null ? null : c.node[on.body.base];
+			if (!(tmpbase === null || isEnum(tmpbase))) {
+				throw new Error('invalid node list at EnumType::base');
+			}
+			n.base = tmpbase;
+			break;
+		}
+		case "bit_group_type": {
+			const n :BitGroupType = cnode as BitGroupType;
+			const tmpis_explicit = on.body?.is_explicit;
+			if (typeof on.body?.is_explicit !== "boolean") {
+				throw new Error('invalid node list at BitGroupType::is_explicit');
+			}
+			n.is_explicit = on.body.is_explicit;
+			const tmpis_int_set = on.body?.is_int_set;
+			if (typeof on.body?.is_int_set !== "boolean") {
+				throw new Error('invalid node list at BitGroupType::is_int_set');
+			}
+			n.is_int_set = on.body.is_int_set;
+			const tmpbit_alignment = on.body?.bit_alignment;
+			if (!isBitAlignment(tmpbit_alignment)) {
+				throw new Error('invalid node list at BitGroupType::bit_alignment');
+			}
+			n.bit_alignment = tmpbit_alignment;
+			for (const o of on.body.bit_fields) {
+				if (typeof o !== 'number') {
+					throw new Error('invalid node list at BitGroupType::bit_fields');
+				}
+				const tmpbit_fields = c.node[o];
+				if (!isField(tmpbit_fields)) {
+					throw new Error('invalid node list at BitGroupType::bit_fields');
+				}
+				n.bit_fields.push(tmpbit_fields);
+			}
+			const tmpis_aligned = on.body?.is_aligned;
+			if (typeof on.body?.is_aligned !== "boolean") {
+				throw new Error('invalid node list at BitGroupType::is_aligned');
+			}
+			n.is_aligned = on.body.is_aligned;
+			const tmpbit_size = on.body?.bit_size;
+			if (typeof on.body?.bit_size !== "number") {
+				throw new Error('invalid node list at BitGroupType::bit_size');
+			}
+			n.bit_size = on.body.bit_size;
+			break;
+		}
+		case "int_literal": {
+			const n :IntLiteral = cnode as IntLiteral;
+			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
+				throw new Error('invalid node list at IntLiteral::expr_type');
+			}
+			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
+			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
+				throw new Error('invalid node list at IntLiteral::expr_type');
+			}
+			n.expr_type = tmpexpr_type;
+			const tmpconstant_level = on.body?.constant_level;
+			if (!isConstantLevel(tmpconstant_level)) {
+				throw new Error('invalid node list at IntLiteral::constant_level');
+			}
+			n.constant_level = tmpconstant_level;
+			const tmpvalue = on.body?.value;
+			if (typeof on.body?.value !== "string") {
+				throw new Error('invalid node list at IntLiteral::value');
+			}
+			n.value = on.body.value;
+			break;
+		}
+		case "bool_literal": {
+			const n :BoolLiteral = cnode as BoolLiteral;
+			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
+				throw new Error('invalid node list at BoolLiteral::expr_type');
+			}
+			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
+			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
+				throw new Error('invalid node list at BoolLiteral::expr_type');
+			}
+			n.expr_type = tmpexpr_type;
+			const tmpconstant_level = on.body?.constant_level;
+			if (!isConstantLevel(tmpconstant_level)) {
+				throw new Error('invalid node list at BoolLiteral::constant_level');
+			}
+			n.constant_level = tmpconstant_level;
+			const tmpvalue = on.body?.value;
+			if (typeof on.body?.value !== "boolean") {
+				throw new Error('invalid node list at BoolLiteral::value');
+			}
+			n.value = on.body.value;
+			break;
+		}
+		case "str_literal": {
+			const n :StrLiteral = cnode as StrLiteral;
+			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
+				throw new Error('invalid node list at StrLiteral::expr_type');
+			}
+			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
+			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
+				throw new Error('invalid node list at StrLiteral::expr_type');
+			}
+			n.expr_type = tmpexpr_type;
+			const tmpconstant_level = on.body?.constant_level;
+			if (!isConstantLevel(tmpconstant_level)) {
+				throw new Error('invalid node list at StrLiteral::constant_level');
+			}
+			n.constant_level = tmpconstant_level;
+			const tmpvalue = on.body?.value;
+			if (typeof on.body?.value !== "string") {
+				throw new Error('invalid node list at StrLiteral::value');
+			}
+			n.value = on.body.value;
+			break;
+		}
+		case "input": {
+			const n :Input = cnode as Input;
+			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
+				throw new Error('invalid node list at Input::expr_type');
+			}
+			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
+			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
+				throw new Error('invalid node list at Input::expr_type');
+			}
+			n.expr_type = tmpexpr_type;
+			const tmpconstant_level = on.body?.constant_level;
+			if (!isConstantLevel(tmpconstant_level)) {
+				throw new Error('invalid node list at Input::constant_level');
+			}
+			n.constant_level = tmpconstant_level;
+			break;
+		}
+		case "output": {
+			const n :Output = cnode as Output;
+			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
+				throw new Error('invalid node list at Output::expr_type');
+			}
+			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
+			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
+				throw new Error('invalid node list at Output::expr_type');
+			}
+			n.expr_type = tmpexpr_type;
+			const tmpconstant_level = on.body?.constant_level;
+			if (!isConstantLevel(tmpconstant_level)) {
+				throw new Error('invalid node list at Output::constant_level');
+			}
+			n.constant_level = tmpconstant_level;
+			break;
+		}
+		case "config": {
+			const n :Config = cnode as Config;
+			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
+				throw new Error('invalid node list at Config::expr_type');
+			}
+			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
+			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
+				throw new Error('invalid node list at Config::expr_type');
+			}
+			n.expr_type = tmpexpr_type;
+			const tmpconstant_level = on.body?.constant_level;
+			if (!isConstantLevel(tmpconstant_level)) {
+				throw new Error('invalid node list at Config::constant_level');
+			}
+			n.constant_level = tmpconstant_level;
+			break;
+		}
+		case "field": {
+			const n :Field = cnode as Field;
+			if (on.body?.belong !== null && typeof on.body?.belong !== 'number') {
+				throw new Error('invalid node list at Field::belong');
+			}
+			const tmpbelong = on.body.belong === null ? null : c.node[on.body.belong];
+			if (!(tmpbelong === null || isMember(tmpbelong))) {
+				throw new Error('invalid node list at Field::belong');
+			}
+			n.belong = tmpbelong;
+			if (on.body?.ident !== null && typeof on.body?.ident !== 'number') {
+				throw new Error('invalid node list at Field::ident');
+			}
+			const tmpident = on.body.ident === null ? null : c.node[on.body.ident];
+			if (!(tmpident === null || isIdent(tmpident))) {
+				throw new Error('invalid node list at Field::ident');
+			}
+			n.ident = tmpident;
+			const tmpcolon_loc = on.body?.colon_loc;
+			if (!isLoc(tmpcolon_loc)) {
+				throw new Error('invalid node list at Field::colon_loc');
+			}
+			n.colon_loc = tmpcolon_loc;
+			if (on.body?.field_type !== null && typeof on.body?.field_type !== 'number') {
+				throw new Error('invalid node list at Field::field_type');
+			}
+			const tmpfield_type = on.body.field_type === null ? null : c.node[on.body.field_type];
+			if (!(tmpfield_type === null || isType(tmpfield_type))) {
+				throw new Error('invalid node list at Field::field_type');
+			}
+			n.field_type = tmpfield_type;
+			if (on.body?.raw_arguments !== null && typeof on.body?.raw_arguments !== 'number') {
+				throw new Error('invalid node list at Field::raw_arguments');
+			}
+			const tmpraw_arguments = on.body.raw_arguments === null ? null : c.node[on.body.raw_arguments];
+			if (!(tmpraw_arguments === null || isExpr(tmpraw_arguments))) {
+				throw new Error('invalid node list at Field::raw_arguments');
+			}
+			n.raw_arguments = tmpraw_arguments;
+			for (const o of on.body.arguments) {
+				if (typeof o !== 'number') {
+					throw new Error('invalid node list at Field::arguments');
+				}
+				const tmparguments = c.node[o];
+				if (!isExpr(tmparguments)) {
+					throw new Error('invalid node list at Field::arguments');
+				}
+				n.arguments.push(tmparguments);
+			}
+			const tmpbit_alignment = on.body?.bit_alignment;
+			if (!isBitAlignment(tmpbit_alignment)) {
+				throw new Error('invalid node list at Field::bit_alignment');
+			}
+			n.bit_alignment = tmpbit_alignment;
+			break;
+		}
+		case "format": {
+			const n :Format = cnode as Format;
+			if (on.body?.belong !== null && typeof on.body?.belong !== 'number') {
+				throw new Error('invalid node list at Format::belong');
+			}
+			const tmpbelong = on.body.belong === null ? null : c.node[on.body.belong];
+			if (!(tmpbelong === null || isMember(tmpbelong))) {
+				throw new Error('invalid node list at Format::belong');
+			}
+			n.belong = tmpbelong;
+			if (on.body?.ident !== null && typeof on.body?.ident !== 'number') {
+				throw new Error('invalid node list at Format::ident');
+			}
+			const tmpident = on.body.ident === null ? null : c.node[on.body.ident];
+			if (!(tmpident === null || isIdent(tmpident))) {
+				throw new Error('invalid node list at Format::ident');
+			}
+			n.ident = tmpident;
+			if (on.body?.body !== null && typeof on.body?.body !== 'number') {
+				throw new Error('invalid node list at Format::body');
+			}
+			const tmpbody = on.body.body === null ? null : c.node[on.body.body];
+			if (!(tmpbody === null || isIndentBlock(tmpbody))) {
+				throw new Error('invalid node list at Format::body');
+			}
+			n.body = tmpbody;
+			break;
+		}
+		case "state": {
+			const n :State = cnode as State;
+			if (on.body?.belong !== null && typeof on.body?.belong !== 'number') {
+				throw new Error('invalid node list at State::belong');
+			}
+			const tmpbelong = on.body.belong === null ? null : c.node[on.body.belong];
+			if (!(tmpbelong === null || isMember(tmpbelong))) {
+				throw new Error('invalid node list at State::belong');
+			}
+			n.belong = tmpbelong;
+			if (on.body?.ident !== null && typeof on.body?.ident !== 'number') {
+				throw new Error('invalid node list at State::ident');
+			}
+			const tmpident = on.body.ident === null ? null : c.node[on.body.ident];
+			if (!(tmpident === null || isIdent(tmpident))) {
+				throw new Error('invalid node list at State::ident');
+			}
+			n.ident = tmpident;
+			if (on.body?.body !== null && typeof on.body?.body !== 'number') {
+				throw new Error('invalid node list at State::body');
+			}
+			const tmpbody = on.body.body === null ? null : c.node[on.body.body];
+			if (!(tmpbody === null || isIndentBlock(tmpbody))) {
+				throw new Error('invalid node list at State::body');
+			}
+			n.body = tmpbody;
 			break;
 		}
 		case "enum": {
@@ -3151,98 +3181,68 @@ export function parseAST(obj: any): Program {
 			n.expr = tmpexpr;
 			break;
 		}
-		case "enum_type": {
-			const n :EnumType = cnode as EnumType;
-			const tmpis_explicit = on.body?.is_explicit;
-			if (typeof on.body?.is_explicit !== "boolean") {
-				throw new Error('invalid node list at EnumType::is_explicit');
-			}
-			n.is_explicit = on.body.is_explicit;
-			const tmpis_int_set = on.body?.is_int_set;
-			if (typeof on.body?.is_int_set !== "boolean") {
-				throw new Error('invalid node list at EnumType::is_int_set');
-			}
-			n.is_int_set = on.body.is_int_set;
-			const tmpbit_alignment = on.body?.bit_alignment;
-			if (!isBitAlignment(tmpbit_alignment)) {
-				throw new Error('invalid node list at EnumType::bit_alignment');
-			}
-			n.bit_alignment = tmpbit_alignment;
-			if (on.body?.base !== null && typeof on.body?.base !== 'number') {
-				throw new Error('invalid node list at EnumType::base');
-			}
-			const tmpbase = on.body.base === null ? null : c.node[on.body.base];
-			if (!(tmpbase === null || isEnum(tmpbase))) {
-				throw new Error('invalid node list at EnumType::base');
-			}
-			n.base = tmpbase;
-			break;
-		}
-		case "bit_group_type": {
-			const n :BitGroupType = cnode as BitGroupType;
-			const tmpis_explicit = on.body?.is_explicit;
-			if (typeof on.body?.is_explicit !== "boolean") {
-				throw new Error('invalid node list at BitGroupType::is_explicit');
-			}
-			n.is_explicit = on.body.is_explicit;
-			const tmpis_int_set = on.body?.is_int_set;
-			if (typeof on.body?.is_int_set !== "boolean") {
-				throw new Error('invalid node list at BitGroupType::is_int_set');
-			}
-			n.is_int_set = on.body.is_int_set;
-			const tmpbit_alignment = on.body?.bit_alignment;
-			if (!isBitAlignment(tmpbit_alignment)) {
-				throw new Error('invalid node list at BitGroupType::bit_alignment');
-			}
-			n.bit_alignment = tmpbit_alignment;
-			for (const o of on.body.bit_fields) {
-				if (typeof o !== 'number') {
-					throw new Error('invalid node list at BitGroupType::bit_fields');
-				}
-				const tmpbit_fields = c.node[o];
-				if (!isField(tmpbit_fields)) {
-					throw new Error('invalid node list at BitGroupType::bit_fields');
-				}
-				n.bit_fields.push(tmpbit_fields);
-			}
-			const tmpis_aligned = on.body?.is_aligned;
-			if (typeof on.body?.is_aligned !== "boolean") {
-				throw new Error('invalid node list at BitGroupType::is_aligned');
-			}
-			n.is_aligned = on.body.is_aligned;
-			const tmpbit_size = on.body?.bit_size;
-			if (typeof on.body?.bit_size !== "number") {
-				throw new Error('invalid node list at BitGroupType::bit_size');
-			}
-			n.bit_size = on.body.bit_size;
-			break;
-		}
-		case "state": {
-			const n :State = cnode as State;
+		case "function": {
+			const n :Function = cnode as Function;
 			if (on.body?.belong !== null && typeof on.body?.belong !== 'number') {
-				throw new Error('invalid node list at State::belong');
+				throw new Error('invalid node list at Function::belong');
 			}
 			const tmpbelong = on.body.belong === null ? null : c.node[on.body.belong];
 			if (!(tmpbelong === null || isMember(tmpbelong))) {
-				throw new Error('invalid node list at State::belong');
+				throw new Error('invalid node list at Function::belong');
 			}
 			n.belong = tmpbelong;
 			if (on.body?.ident !== null && typeof on.body?.ident !== 'number') {
-				throw new Error('invalid node list at State::ident');
+				throw new Error('invalid node list at Function::ident');
 			}
 			const tmpident = on.body.ident === null ? null : c.node[on.body.ident];
 			if (!(tmpident === null || isIdent(tmpident))) {
-				throw new Error('invalid node list at State::ident');
+				throw new Error('invalid node list at Function::ident');
 			}
 			n.ident = tmpident;
+			for (const o of on.body.parameters) {
+				if (typeof o !== 'number') {
+					throw new Error('invalid node list at Function::parameters');
+				}
+				const tmpparameters = c.node[o];
+				if (!isField(tmpparameters)) {
+					throw new Error('invalid node list at Function::parameters');
+				}
+				n.parameters.push(tmpparameters);
+			}
+			if (on.body?.return_type !== null && typeof on.body?.return_type !== 'number') {
+				throw new Error('invalid node list at Function::return_type');
+			}
+			const tmpreturn_type = on.body.return_type === null ? null : c.node[on.body.return_type];
+			if (!(tmpreturn_type === null || isType(tmpreturn_type))) {
+				throw new Error('invalid node list at Function::return_type');
+			}
+			n.return_type = tmpreturn_type;
 			if (on.body?.body !== null && typeof on.body?.body !== 'number') {
-				throw new Error('invalid node list at State::body');
+				throw new Error('invalid node list at Function::body');
 			}
 			const tmpbody = on.body.body === null ? null : c.node[on.body.body];
 			if (!(tmpbody === null || isIndentBlock(tmpbody))) {
-				throw new Error('invalid node list at State::body');
+				throw new Error('invalid node list at Function::body');
 			}
 			n.body = tmpbody;
+			if (on.body?.func_type !== null && typeof on.body?.func_type !== 'number') {
+				throw new Error('invalid node list at Function::func_type');
+			}
+			const tmpfunc_type = on.body.func_type === null ? null : c.node[on.body.func_type];
+			if (!(tmpfunc_type === null || isFunctionType(tmpfunc_type))) {
+				throw new Error('invalid node list at Function::func_type');
+			}
+			n.func_type = tmpfunc_type;
+			const tmpis_cast = on.body?.is_cast;
+			if (typeof on.body?.is_cast !== "boolean") {
+				throw new Error('invalid node list at Function::is_cast');
+			}
+			n.is_cast = on.body.is_cast;
+			const tmpcast_loc = on.body?.cast_loc;
+			if (!isLoc(tmpcast_loc)) {
+				throw new Error('invalid node list at Function::cast_loc');
+			}
+			n.cast_loc = tmpcast_loc;
 			break;
 		}
 		case "builtin_function": {
@@ -3337,6 +3337,26 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 				}
 			}
 			for (const e of n.elements) {
+				const result = fn(fn,e);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "comment": {
+			if (!isComment(node)) {
+				break;
+			}
+			const n :Comment = node as Comment;
+			break;
+		}
+		case "comment_group": {
+			if (!isCommentGroup(node)) {
+				break;
+			}
+			const n :CommentGroup = node as CommentGroup;
+			for (const e of n.comments) {
 				const result = fn(fn,e);
 				if (result === false) {
 					return;
@@ -3676,78 +3696,25 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			break;
 		}
-		case "int_literal": {
-			if (!isIntLiteral(node)) {
+		case "cast": {
+			if (!isCast(node)) {
 				break;
 			}
-			const n :IntLiteral = node as IntLiteral;
+			const n :Cast = node as Cast;
 			if (n.expr_type !== null) {
 				const result = fn(fn,n.expr_type);
 				if (result === false) {
 					return;
 				}
 			}
-			break;
-		}
-		case "bool_literal": {
-			if (!isBoolLiteral(node)) {
-				break;
-			}
-			const n :BoolLiteral = node as BoolLiteral;
-			if (n.expr_type !== null) {
-				const result = fn(fn,n.expr_type);
+			if (n.base !== null) {
+				const result = fn(fn,n.base);
 				if (result === false) {
 					return;
 				}
 			}
-			break;
-		}
-		case "str_literal": {
-			if (!isStrLiteral(node)) {
-				break;
-			}
-			const n :StrLiteral = node as StrLiteral;
-			if (n.expr_type !== null) {
-				const result = fn(fn,n.expr_type);
-				if (result === false) {
-					return;
-				}
-			}
-			break;
-		}
-		case "input": {
-			if (!isInput(node)) {
-				break;
-			}
-			const n :Input = node as Input;
-			if (n.expr_type !== null) {
-				const result = fn(fn,n.expr_type);
-				if (result === false) {
-					return;
-				}
-			}
-			break;
-		}
-		case "output": {
-			if (!isOutput(node)) {
-				break;
-			}
-			const n :Output = node as Output;
-			if (n.expr_type !== null) {
-				const result = fn(fn,n.expr_type);
-				if (result === false) {
-					return;
-				}
-			}
-			break;
-		}
-		case "config": {
-			if (!isConfig(node)) {
-				break;
-			}
-			const n :Config = node as Config;
-			if (n.expr_type !== null) {
-				const result = fn(fn,n.expr_type);
+			if (n.expr !== null) {
+				const result = fn(fn,n.expr);
 				if (result === false) {
 					return;
 				}
@@ -3823,6 +3790,13 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			break;
 		}
+		case "union_candidate": {
+			if (!isUnionCandidate(node)) {
+				break;
+			}
+			const n :UnionCandidate = node as UnionCandidate;
+			break;
+		}
 		case "return": {
 			if (!isReturn(node)) {
 				break;
@@ -3870,93 +3844,6 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			const n :ImplicitYield = node as ImplicitYield;
 			if (n.expr !== null) {
 				const result = fn(fn,n.expr);
-				if (result === false) {
-					return;
-				}
-			}
-			break;
-		}
-		case "field": {
-			if (!isField(node)) {
-				break;
-			}
-			const n :Field = node as Field;
-			if (n.ident !== null) {
-				const result = fn(fn,n.ident);
-				if (result === false) {
-					return;
-				}
-			}
-			if (n.field_type !== null) {
-				const result = fn(fn,n.field_type);
-				if (result === false) {
-					return;
-				}
-			}
-			if (n.raw_arguments !== null) {
-				const result = fn(fn,n.raw_arguments);
-				if (result === false) {
-					return;
-				}
-			}
-			for (const e of n.arguments) {
-				const result = fn(fn,e);
-				if (result === false) {
-					return;
-				}
-			}
-			break;
-		}
-		case "format": {
-			if (!isFormat(node)) {
-				break;
-			}
-			const n :Format = node as Format;
-			if (n.ident !== null) {
-				const result = fn(fn,n.ident);
-				if (result === false) {
-					return;
-				}
-			}
-			if (n.body !== null) {
-				const result = fn(fn,n.body);
-				if (result === false) {
-					return;
-				}
-			}
-			break;
-		}
-		case "function": {
-			if (!isFunction(node)) {
-				break;
-			}
-			const n :Function = node as Function;
-			if (n.ident !== null) {
-				const result = fn(fn,n.ident);
-				if (result === false) {
-					return;
-				}
-			}
-			for (const e of n.parameters) {
-				const result = fn(fn,e);
-				if (result === false) {
-					return;
-				}
-			}
-			if (n.return_type !== null) {
-				const result = fn(fn,n.return_type);
-				if (result === false) {
-					return;
-				}
-			}
-			if (n.body !== null) {
-				const result = fn(fn,n.body);
-				if (result === false) {
-					return;
-				}
-			}
-			if (n.func_type !== null) {
-				const result = fn(fn,n.func_type);
 				if (result === false) {
 					return;
 				}
@@ -4075,51 +3962,6 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			break;
 		}
-		case "cast": {
-			if (!isCast(node)) {
-				break;
-			}
-			const n :Cast = node as Cast;
-			if (n.expr_type !== null) {
-				const result = fn(fn,n.expr_type);
-				if (result === false) {
-					return;
-				}
-			}
-			if (n.base !== null) {
-				const result = fn(fn,n.base);
-				if (result === false) {
-					return;
-				}
-			}
-			if (n.expr !== null) {
-				const result = fn(fn,n.expr);
-				if (result === false) {
-					return;
-				}
-			}
-			break;
-		}
-		case "comment": {
-			if (!isComment(node)) {
-				break;
-			}
-			const n :Comment = node as Comment;
-			break;
-		}
-		case "comment_group": {
-			if (!isCommentGroup(node)) {
-				break;
-			}
-			const n :CommentGroup = node as CommentGroup;
-			for (const e of n.comments) {
-				const result = fn(fn,e);
-				if (result === false) {
-					return;
-				}
-			}
-			break;
-		}
 		case "union_type": {
 			if (!isUnionType(node)) {
 				break;
@@ -4133,13 +3975,6 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			break;
 		}
-		case "union_candidate": {
-			if (!isUnionCandidate(node)) {
-				break;
-			}
-			const n :UnionCandidate = node as UnionCandidate;
-			break;
-		}
 		case "range_type": {
 			if (!isRangeType(node)) {
 				break;
@@ -4147,6 +3982,167 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			const n :RangeType = node as RangeType;
 			if (n.base_type !== null) {
 				const result = fn(fn,n.base_type);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "enum_type": {
+			if (!isEnumType(node)) {
+				break;
+			}
+			const n :EnumType = node as EnumType;
+			break;
+		}
+		case "bit_group_type": {
+			if (!isBitGroupType(node)) {
+				break;
+			}
+			const n :BitGroupType = node as BitGroupType;
+			break;
+		}
+		case "int_literal": {
+			if (!isIntLiteral(node)) {
+				break;
+			}
+			const n :IntLiteral = node as IntLiteral;
+			if (n.expr_type !== null) {
+				const result = fn(fn,n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "bool_literal": {
+			if (!isBoolLiteral(node)) {
+				break;
+			}
+			const n :BoolLiteral = node as BoolLiteral;
+			if (n.expr_type !== null) {
+				const result = fn(fn,n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "str_literal": {
+			if (!isStrLiteral(node)) {
+				break;
+			}
+			const n :StrLiteral = node as StrLiteral;
+			if (n.expr_type !== null) {
+				const result = fn(fn,n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "input": {
+			if (!isInput(node)) {
+				break;
+			}
+			const n :Input = node as Input;
+			if (n.expr_type !== null) {
+				const result = fn(fn,n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "output": {
+			if (!isOutput(node)) {
+				break;
+			}
+			const n :Output = node as Output;
+			if (n.expr_type !== null) {
+				const result = fn(fn,n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "config": {
+			if (!isConfig(node)) {
+				break;
+			}
+			const n :Config = node as Config;
+			if (n.expr_type !== null) {
+				const result = fn(fn,n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "field": {
+			if (!isField(node)) {
+				break;
+			}
+			const n :Field = node as Field;
+			if (n.ident !== null) {
+				const result = fn(fn,n.ident);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.field_type !== null) {
+				const result = fn(fn,n.field_type);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.raw_arguments !== null) {
+				const result = fn(fn,n.raw_arguments);
+				if (result === false) {
+					return;
+				}
+			}
+			for (const e of n.arguments) {
+				const result = fn(fn,e);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "format": {
+			if (!isFormat(node)) {
+				break;
+			}
+			const n :Format = node as Format;
+			if (n.ident !== null) {
+				const result = fn(fn,n.ident);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.body !== null) {
+				const result = fn(fn,n.body);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "state": {
+			if (!isState(node)) {
+				break;
+			}
+			const n :State = node as State;
+			if (n.ident !== null) {
+				const result = fn(fn,n.ident);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.body !== null) {
+				const result = fn(fn,n.body);
 				if (result === false) {
 					return;
 				}
@@ -4203,33 +4199,37 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			break;
 		}
-		case "enum_type": {
-			if (!isEnumType(node)) {
+		case "function": {
+			if (!isFunction(node)) {
 				break;
 			}
-			const n :EnumType = node as EnumType;
-			break;
-		}
-		case "bit_group_type": {
-			if (!isBitGroupType(node)) {
-				break;
-			}
-			const n :BitGroupType = node as BitGroupType;
-			break;
-		}
-		case "state": {
-			if (!isState(node)) {
-				break;
-			}
-			const n :State = node as State;
+			const n :Function = node as Function;
 			if (n.ident !== null) {
 				const result = fn(fn,n.ident);
 				if (result === false) {
 					return;
 				}
 			}
+			for (const e of n.parameters) {
+				const result = fn(fn,e);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.return_type !== null) {
+				const result = fn(fn,n.return_type);
+				if (result === false) {
+					return;
+				}
+			}
 			if (n.body !== null) {
 				const result = fn(fn,n.body);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.func_type !== null) {
+				const result = fn(fn,n.func_type);
 				if (result === false) {
 					return;
 				}

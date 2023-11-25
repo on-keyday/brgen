@@ -5,6 +5,8 @@ using System.Collections.Generic;
 namespace ast2cs {
 public enum NodeType {
 Program,
+Comment,
+CommentGroup,
 Expr,
 Binary,
 Unary,
@@ -20,26 +22,17 @@ Range,
 TmpVar,
 BlockExpr,
 Import,
-Literal,
-IntLiteral,
-BoolLiteral,
-StrLiteral,
-Input,
-Output,
-Config,
+Cast,
 Stmt,
 Loop,
 IndentBlock,
 MatchBranch,
+UnionCandidate,
 Return,
 Break,
 Continue,
 Assert,
 ImplicitYield,
-Member,
-Field,
-Format,
-Function,
 Type,
 IntType,
 IdentType,
@@ -51,17 +44,24 @@ ArrayType,
 FunctionType,
 StructType,
 StructUnionType,
-Cast,
-Comment,
-CommentGroup,
 UnionType,
-UnionCandidate,
 RangeType,
-Enum,
-EnumMember,
 EnumType,
 BitGroupType,
+Literal,
+IntLiteral,
+BoolLiteral,
+StrLiteral,
+Input,
+Output,
+Config,
+Member,
+Field,
+Format,
 State,
+Enum,
+EnumMember,
+Function,
 BuiltinFunction,
 }
 public enum UnaryOp {
@@ -169,24 +169,32 @@ public interface Expr : Node {
 	public Type? ExprType {get; set;}
 	public ConstantLevel ConstantLevel {get; set;}
 }
-public interface Literal : Expr {
-}
 public interface Stmt : Node {
-}
-public interface Member : Stmt {
-	public Member? Belong {get; set;}
-	public Ident? Ident {get; set;}
 }
 public interface Type : Node {
 	public bool IsExplicit {get; set;}
 	public bool IsIntSet {get; set;}
 	public BitAlignment BitAlignment {get; set;}
 }
+public interface Literal : Expr {
+}
+public interface Member : Stmt {
+	public Member? Belong {get; set;}
+	public Ident? Ident {get; set;}
+}
 public class Program : Node{
 	public Loc Loc{get;set;}
 	public StructType? StructType{get;set;}
 	public List<Node>? Elements{get;set;}
 	public Scope? GlobalScope{get;set;}
+}
+public class Comment : Node{
+	public Loc Loc{get;set;}
+	public string Comment_{get;set;}
+}
+public class CommentGroup : Node{
+	public Loc Loc{get;set;}
+	public List<Comment>? Comments{get;set;}
 }
 public class Binary : Expr{
 	public Loc Loc{get;set;}
@@ -299,38 +307,12 @@ public class Import : Expr{
 	public Call? Base{get;set;}
 	public Program? ImportDesc{get;set;}
 }
-public class IntLiteral : Literal{
+public class Cast : Expr{
 	public Loc Loc{get;set;}
 	public Type? ExprType{get;set;}
 	public ConstantLevel ConstantLevel{get;set;}
-	public string Value{get;set;}
-}
-public class BoolLiteral : Literal{
-	public Loc Loc{get;set;}
-	public Type? ExprType{get;set;}
-	public ConstantLevel ConstantLevel{get;set;}
-	public bool Value{get;set;}
-}
-public class StrLiteral : Literal{
-	public Loc Loc{get;set;}
-	public Type? ExprType{get;set;}
-	public ConstantLevel ConstantLevel{get;set;}
-	public string Value{get;set;}
-}
-public class Input : Literal{
-	public Loc Loc{get;set;}
-	public Type? ExprType{get;set;}
-	public ConstantLevel ConstantLevel{get;set;}
-}
-public class Output : Literal{
-	public Loc Loc{get;set;}
-	public Type? ExprType{get;set;}
-	public ConstantLevel ConstantLevel{get;set;}
-}
-public class Config : Literal{
-	public Loc Loc{get;set;}
-	public Type? ExprType{get;set;}
-	public ConstantLevel ConstantLevel{get;set;}
+	public Call? Base{get;set;}
+	public Expr? Expr{get;set;}
 }
 public class Loop : Stmt{
 	public Loc Loc{get;set;}
@@ -352,6 +334,11 @@ public class MatchBranch : Stmt{
 	public Loc SymLoc{get;set;}
 	public Node? Then{get;set;}
 }
+public class UnionCandidate : Stmt{
+	public Loc Loc{get;set;}
+	public Expr? Cond{get;set;}
+	public Member? Field{get;set;}
+}
 public class Return : Stmt{
 	public Loc Loc{get;set;}
 	public Expr? Expr{get;set;}
@@ -369,33 +356,6 @@ public class Assert : Stmt{
 public class ImplicitYield : Stmt{
 	public Loc Loc{get;set;}
 	public Expr? Expr{get;set;}
-}
-public class Field : Member{
-	public Loc Loc{get;set;}
-	public Member? Belong{get;set;}
-	public Ident? Ident{get;set;}
-	public Loc ColonLoc{get;set;}
-	public Type? FieldType{get;set;}
-	public Expr? RawArguments{get;set;}
-	public List<Expr>? Arguments{get;set;}
-	public BitAlignment BitAlignment{get;set;}
-}
-public class Format : Member{
-	public Loc Loc{get;set;}
-	public Member? Belong{get;set;}
-	public Ident? Ident{get;set;}
-	public IndentBlock? Body{get;set;}
-}
-public class Function : Member{
-	public Loc Loc{get;set;}
-	public Member? Belong{get;set;}
-	public Ident? Ident{get;set;}
-	public List<Field>? Parameters{get;set;}
-	public Type? ReturnType{get;set;}
-	public IndentBlock? Body{get;set;}
-	public FunctionType? FuncType{get;set;}
-	public bool IsCast{get;set;}
-	public Loc CastLoc{get;set;}
 }
 public class IntType : Type{
 	public Loc Loc{get;set;}
@@ -476,21 +436,6 @@ public class StructUnionType : Type{
 	public Expr? Base{get;set;}
 	public List<Field>? UnionFields{get;set;}
 }
-public class Cast : Expr{
-	public Loc Loc{get;set;}
-	public Type? ExprType{get;set;}
-	public ConstantLevel ConstantLevel{get;set;}
-	public Call? Base{get;set;}
-	public Expr? Expr{get;set;}
-}
-public class Comment : Node{
-	public Loc Loc{get;set;}
-	public string Comment_{get;set;}
-}
-public class CommentGroup : Node{
-	public Loc Loc{get;set;}
-	public List<Comment>? Comments{get;set;}
-}
 public class UnionType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
@@ -500,11 +445,6 @@ public class UnionType : Type{
 	public List<UnionCandidate>? Candidates{get;set;}
 	public StructUnionType? BaseType{get;set;}
 }
-public class UnionCandidate : Stmt{
-	public Loc Loc{get;set;}
-	public Expr? Cond{get;set;}
-	public Member? Field{get;set;}
-}
 public class RangeType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
@@ -512,22 +452,6 @@ public class RangeType : Type{
 	public BitAlignment BitAlignment{get;set;}
 	public Type? BaseType{get;set;}
 	public Range? Range{get;set;}
-}
-public class Enum : Member{
-	public Loc Loc{get;set;}
-	public Member? Belong{get;set;}
-	public Ident? Ident{get;set;}
-	public Scope? Scope{get;set;}
-	public Loc ColonLoc{get;set;}
-	public Type? BaseType{get;set;}
-	public List<EnumMember>? Members{get;set;}
-	public EnumType? EnumType{get;set;}
-}
-public class EnumMember : Member{
-	public Loc Loc{get;set;}
-	public Member? Belong{get;set;}
-	public Ident? Ident{get;set;}
-	public Expr? Expr{get;set;}
 }
 public class EnumType : Type{
 	public Loc Loc{get;set;}
@@ -545,11 +469,87 @@ public class BitGroupType : Type{
 	public bool IsAligned{get;set;}
 	public ulong BitSize{get;set;}
 }
+public class IntLiteral : Literal{
+	public Loc Loc{get;set;}
+	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
+	public string Value{get;set;}
+}
+public class BoolLiteral : Literal{
+	public Loc Loc{get;set;}
+	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
+	public bool Value{get;set;}
+}
+public class StrLiteral : Literal{
+	public Loc Loc{get;set;}
+	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
+	public string Value{get;set;}
+}
+public class Input : Literal{
+	public Loc Loc{get;set;}
+	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
+}
+public class Output : Literal{
+	public Loc Loc{get;set;}
+	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
+}
+public class Config : Literal{
+	public Loc Loc{get;set;}
+	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
+}
+public class Field : Member{
+	public Loc Loc{get;set;}
+	public Member? Belong{get;set;}
+	public Ident? Ident{get;set;}
+	public Loc ColonLoc{get;set;}
+	public Type? FieldType{get;set;}
+	public Expr? RawArguments{get;set;}
+	public List<Expr>? Arguments{get;set;}
+	public BitAlignment BitAlignment{get;set;}
+}
+public class Format : Member{
+	public Loc Loc{get;set;}
+	public Member? Belong{get;set;}
+	public Ident? Ident{get;set;}
+	public IndentBlock? Body{get;set;}
+}
 public class State : Member{
 	public Loc Loc{get;set;}
 	public Member? Belong{get;set;}
 	public Ident? Ident{get;set;}
 	public IndentBlock? Body{get;set;}
+}
+public class Enum : Member{
+	public Loc Loc{get;set;}
+	public Member? Belong{get;set;}
+	public Ident? Ident{get;set;}
+	public Scope? Scope{get;set;}
+	public Loc ColonLoc{get;set;}
+	public Type? BaseType{get;set;}
+	public List<EnumMember>? Members{get;set;}
+	public EnumType? EnumType{get;set;}
+}
+public class EnumMember : Member{
+	public Loc Loc{get;set;}
+	public Member? Belong{get;set;}
+	public Ident? Ident{get;set;}
+	public Expr? Expr{get;set;}
+}
+public class Function : Member{
+	public Loc Loc{get;set;}
+	public Member? Belong{get;set;}
+	public Ident? Ident{get;set;}
+	public List<Field>? Parameters{get;set;}
+	public Type? ReturnType{get;set;}
+	public IndentBlock? Body{get;set;}
+	public FunctionType? FuncType{get;set;}
+	public bool IsCast{get;set;}
+	public Loc CastLoc{get;set;}
 }
 public class BuiltinFunction : Member{
 	public Loc Loc{get;set;}
