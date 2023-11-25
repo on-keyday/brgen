@@ -19,9 +19,8 @@
             "request": "launch",
             "program": "${workspaceRoot}/tool/src2json",
             "args": [
-                "c:/workspace/shbrgen/brgen/example/zip.bgn",
-                "--print-json",
-                "--interpret-mode=utf16",
+                "c:/workspace/shbrgen/brgen/example/websocket.bgn",
+                "--print-json"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",

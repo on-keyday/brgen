@@ -8,8 +8,8 @@
 namespace j2cp2 {
     struct Generator {
         void write_simple_struct(std::shared_ptr<ast::Format>& fmt) {
-            if (!fmt->body->struct_type->is_int_set) {
-                return;
+            if (fmt->body->struct_type->bit_alignment != ast::BitAlignment::byte_aligned) {
+                return;  // skip
             }
             std::vector<std::shared_ptr<ast::Field>> fields;
             for (auto& field : fmt->body->struct_type->fields) {

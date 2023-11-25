@@ -555,8 +555,8 @@ namespace brgen::ast {
 
     constexpr either::expected<NodeType, const char*> string_to_node_type(std::string_view key) {
         for (int i = 0; i < node_type_count; i++) {
-            if (key == node_type_str_array[i].second) {
-                return mapValueToNodeType_2(i);
+            if (key == sorted_node_type_str_array[i].second) {
+                return sorted_node_type_str_array[i].first;
             }
         }
         return either::unexpected{key.data()};
@@ -569,7 +569,7 @@ namespace brgen::ast {
                 if (v != i) {
                     [](auto... a) { throw "not matched"; }(v, i);
                 }
-                v = mapNodeTypeToValue_2(string_to_node_type(node_type_str_array[i].second).value());
+                v = mapNodeTypeToValue_2(string_to_node_type(sorted_node_type_str_array[i].second).value());
                 if (v != i) {
                     [](auto... a) { throw "not matched"; }(v, i);
                 }
