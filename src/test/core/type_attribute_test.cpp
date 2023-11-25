@@ -191,16 +191,30 @@ format E:
 
     auto fmt5 = ast::as<ast::Format>(r->struct_type->fields[3]);
     ASSERT_TRUE(fmt5);
-    ASSERT_TRUE(fmt5->body->struct_type->is_int_set);
+    ASSERT_FALSE(fmt5->body->struct_type->is_int_set);
 
     ASSERT_EQ(fmt5->body->struct_type->fields.size(), 2);
     auto field7 = ast::as<ast::Field>(fmt5->body->struct_type->fields[0]);
     ASSERT_TRUE(field7);
     ASSERT_TRUE(field7->field_type->is_int_set);
-
     auto field8 = ast::as<ast::Field>(fmt5->body->struct_type->fields[1]);
     ASSERT_TRUE(field8);
-    ASSERT_TRUE(field8->field_type->is_int_set);
+    ASSERT_FALSE(field8->field_type->is_int_set);
+
+    auto fmt6 = ast::as<ast::Format>(r->struct_type->fields[4]);
+    ASSERT_TRUE(fmt6);
+    ASSERT_TRUE(fmt6->body->struct_type->is_int_set);
+
+    ASSERT_EQ(fmt6->body->struct_type->fields.size(), 3);
+    auto field9 = ast::as<ast::Field>(fmt6->body->struct_type->fields[0]);
+    ASSERT_TRUE(field9);
+    ASSERT_TRUE(field9->field_type->is_int_set);
+    auto field10 = ast::as<ast::Field>(fmt6->body->struct_type->fields[1]);
+    ASSERT_TRUE(field10);
+    ASSERT_TRUE(field10->field_type->is_int_set);
+    auto field11 = ast::as<ast::Field>(fmt6->body->struct_type->fields[2]);
+    ASSERT_TRUE(field11);
+    ASSERT_TRUE(field11->field_type->is_int_set);
 }
 
 TEST(IntSet, IntSetUnion) {
