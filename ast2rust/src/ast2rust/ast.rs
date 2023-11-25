@@ -3261,9 +3261,9 @@ impl From<Rc<RefCell<Loop>>> for Node {
 #[derive(Debug,Clone)]
 pub struct IndentBlock {
 	pub loc: Loc,
+	pub struct_type: Option<Rc<RefCell<StructType>>>,
 	pub elements: Vec<Node>,
 	pub scope: Option<Rc<RefCell<Scope>>>,
-	pub struct_type: Option<Rc<RefCell<StructType>>>,
 }
 
 impl TryFrom<&Stmt> for Rc<RefCell<IndentBlock>> {
@@ -4471,6 +4471,7 @@ pub struct UnionType {
 	pub cond: Option<ExprWeak>,
 	pub candidates: Vec<Rc<RefCell<UnionCandidate>>>,
 	pub base_type: Option<Weak<RefCell<StructUnionType>>>,
+	pub common_type: Option<Type>,
 }
 
 impl TryFrom<&Type> for Rc<RefCell<UnionType>> {
@@ -6185,9 +6186,9 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 			NodeType::IndentBlock => {
 				Node::IndentBlock(Rc::new(RefCell::new(IndentBlock {
 				loc: raw_node.loc.clone(),
+				struct_type: None,
 				elements: Vec::new(),
 				scope: None,
-				struct_type: None,
 				})))
 			},
 			NodeType::MatchBranch => {
@@ -6351,6 +6352,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				cond: None,
 				candidates: Vec::new(),
 				base_type: None,
+				common_type: None,
 				})))
 			},
 			NodeType::RangeType => {
@@ -7813,6 +7815,25 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Node::IndentBlock(node)=>node,
 					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
+				let struct_type_body = match raw_node.body.get("struct_type") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"struct_type")),
+				};
+ 				if !struct_type_body.is_null() {
+					let struct_type_body = match struct_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(struct_type_body.into(),JSONType::Number)),
+					};
+					let struct_type_body = match nodes.get(struct_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(struct_type_body as usize)),
+					};
+					let struct_type_body = match struct_type_body {
+						Node::StructType(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),struct_type_body.into())),
+					};
+					node.borrow_mut().struct_type = Some(struct_type_body.clone());
+				}
 				let elements_body = match raw_node.body.get("elements") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"elements")),
@@ -7846,25 +7867,6 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						None => return Err(Error::IndexOutOfBounds(scope_body as usize)),
 					};
 					node.borrow_mut().scope = Some(scope_body.clone());
-				}
-				let struct_type_body = match raw_node.body.get("struct_type") {
-					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"struct_type")),
-				};
- 				if !struct_type_body.is_null() {
-					let struct_type_body = match struct_type_body.as_u64() {
-						Some(v)=>v,
-						None=>return Err(Error::MismatchJSONType(struct_type_body.into(),JSONType::Number)),
-					};
-					let struct_type_body = match nodes.get(struct_type_body as usize) {
-						Some(v)=>v,
-						None => return Err(Error::IndexOutOfBounds(struct_type_body as usize)),
-					};
-					let struct_type_body = match struct_type_body {
-						Node::StructType(node)=>node,
-						x =>return Err(Error::MismatchNodeType(x.into(),struct_type_body.into())),
-					};
-					node.borrow_mut().struct_type = Some(struct_type_body.clone());
 				}
 			},
 			NodeType::MatchBranch => {
@@ -8828,6 +8830,21 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						x =>return Err(Error::MismatchNodeType(x.into(),base_type_body.into())),
 					};
 					node.borrow_mut().base_type = Some(Rc::downgrade(&base_type_body));
+				}
+				let common_type_body = match raw_node.body.get("common_type") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"common_type")),
+				};
+ 				if !common_type_body.is_null() {
+					let common_type_body = match common_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(common_type_body.into(),JSONType::Number)),
+					};
+					let common_type_body = match nodes.get(common_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(common_type_body as usize)),
+					};
+					node.borrow_mut().common_type = Some(common_type_body.try_into()?);
 				}
 			},
 			NodeType::RangeType => {
@@ -10141,13 +10158,13 @@ where
 			}
 		},
 		Node::IndentBlock(node)=>{
-			for node in &node.borrow().elements{
-				if !f.visit(node) {
+			if let Some(node) = &node.borrow().struct_type{
+				if !f.visit(&node.into()){
 					return;
 				}
 			}
-			if let Some(node) = &node.borrow().struct_type{
-				if !f.visit(&node.into()){
+			for node in &node.borrow().elements{
+				if !f.visit(node) {
 					return;
 				}
 			}
@@ -10240,6 +10257,11 @@ where
 		},
 		Node::UnionType(node)=>{
 			for node in &node.borrow().candidates{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
+			if let Some(node) = &node.borrow().common_type{
 				if !f.visit(&node.into()){
 					return;
 				}

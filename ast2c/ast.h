@@ -652,10 +652,10 @@ int ast2c_Loop_parse(ast2c_Ast* ,ast2c_Loop*,ast2c_json_handlers*,void*);
 struct ast2c_IndentBlock {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
+	ast2c_StructType* struct_type;
 	ast2c_Node** elements;
 	size_t elements_size;
 	ast2c_Scope* scope;
-	ast2c_StructType* struct_type;
 };
 
 // returns 1 if succeed 0 if failed
@@ -878,6 +878,7 @@ struct ast2c_UnionType {
 	ast2c_UnionCandidate** candidates;
 	size_t candidates_size;
 	ast2c_StructUnionType* base_type;
+	ast2c_Type* common_type;
 };
 
 // returns 1 if succeed 0 if failed

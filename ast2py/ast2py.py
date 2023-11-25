@@ -310,9 +310,9 @@ class Loop(Stmt):
 
 
 class IndentBlock(Stmt):
+    struct_type: Optional[StructType]
     elements: List[Node]
     scope: Optional[Scope]
-    struct_type: Optional[StructType]
 
 
 class MatchBranch(Stmt):
@@ -400,6 +400,7 @@ class UnionType(Type):
     cond: Optional[Expr]
     candidates: List[UnionCandidate]
     base_type: Optional[StructUnionType]
+    common_type: Optional[Type]
 
 
 class RangeType(Type):
@@ -1080,16 +1081,16 @@ def ast2node(ast :JsonAst) -> Program:
                 else:
                     node[i].body = None
             case NodeType.INDENT_BLOCK:
-                node[i].elements = [(node[x] if isinstance(node[x],Node) else raiseError(TypeError('type mismatch at IndentBlock::elements'))) for x in ast.node[i].body["elements"]]
-                if ast.node[i].body["scope"] is not None:
-                    node[i].scope = scope[ast.node[i].body["scope"]]
-                else:
-                    node[i].scope = None
                 if ast.node[i].body["struct_type"] is not None:
                     x = node[ast.node[i].body["struct_type"]]
                     node[i].struct_type = x if isinstance(x,StructType) else raiseError(TypeError('type mismatch at IndentBlock::struct_type'))
                 else:
                     node[i].struct_type = None
+                node[i].elements = [(node[x] if isinstance(node[x],Node) else raiseError(TypeError('type mismatch at IndentBlock::elements'))) for x in ast.node[i].body["elements"]]
+                if ast.node[i].body["scope"] is not None:
+                    node[i].scope = scope[ast.node[i].body["scope"]]
+                else:
+                    node[i].scope = None
             case NodeType.MATCH_BRANCH:
                 if ast.node[i].body["cond"] is not None:
                     x = node[ast.node[i].body["cond"]]
@@ -1291,6 +1292,11 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].base_type = x if isinstance(x,StructUnionType) else raiseError(TypeError('type mismatch at UnionType::base_type'))
                 else:
                     node[i].base_type = None
+                if ast.node[i].body["common_type"] is not None:
+                    x = node[ast.node[i].body["common_type"]]
+                    node[i].common_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at UnionType::common_type'))
+                else:
+                    node[i].common_type = None
             case NodeType.RANGE_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at RangeType::is_explicit'))
@@ -1700,11 +1706,11 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
               if f(f,x.body) == False:
                   return
         case x if isinstance(x,IndentBlock):
-          for i in range(len(x.elements)):
-              if f(f,x.elements[i]) == False:
-                  return
           if x.struct_type is not None:
               if f(f,x.struct_type) == False:
+                  return
+          for i in range(len(x.elements)):
+              if f(f,x.elements[i]) == False:
                   return
         case x if isinstance(x,MatchBranch):
           if x.cond is not None:
@@ -1770,6 +1776,9 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
         case x if isinstance(x,UnionType):
           for i in range(len(x.candidates)):
               if f(f,x.candidates[i]) == False:
+                  return
+          if x.common_type is not None:
+              if f(f,x.common_type) == False:
                   return
         case x if isinstance(x,RangeType):
           if x.base_type is not None:

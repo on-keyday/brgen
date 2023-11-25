@@ -483,7 +483,7 @@ const hover = async (params :HoverParams)=>{
                     return makeHover(ident.ident,"enum member");
                 case ast2ts.IdentUsage.define_format:
                     if(ast2ts.isFormat(ident.base)){
-                        return makeHover(ident.ident,`format (size: ${bitSize(ident.base.body?.struct_type?.bit_size)} ${ident.base.body?.struct_type?.is_int_set?"int_set":""})`);
+                        return makeHover(ident.ident,`format (size: ${bitSize(ident.base.body?.struct_type?.bit_size)}, algin: ${ident.base.body?.struct_type?.bit_alignment||"unknown"} ${ident.base.body?.struct_type?.is_int_set?"int_set":""})`);
                     }
                     return makeHover(ident.ident,"format"); 
                 case ast2ts.IdentUsage.define_enum:

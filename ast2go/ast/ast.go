@@ -1587,9 +1587,9 @@ func (n *Loop) GetLoc() Loc {
 
 type IndentBlock struct {
 	Loc        Loc
+	StructType *StructType
 	Elements   []Node
 	Scope      *Scope
-	StructType *StructType
 }
 
 func (n *IndentBlock) isStmt() {}
@@ -2039,6 +2039,7 @@ type UnionType struct {
 	Cond         Expr
 	Candidates   []*UnionCandidate
 	BaseType     *StructUnionType
+	CommonType   Type
 }
 
 func (n *UnionType) isType() {}
@@ -3088,12 +3089,15 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeIndentBlock:
 			v := n.node[i].(*IndentBlock)
 			var tmp struct {
+				StructType *uintptr  `json:"struct_type"`
 				Elements   []uintptr `json:"elements"`
 				Scope      *uintptr  `json:"scope"`
-				StructType *uintptr  `json:"struct_type"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
+			}
+			if tmp.StructType != nil {
+				v.StructType = n.node[*tmp.StructType].(*StructType)
 			}
 			v.Elements = make([]Node, len(tmp.Elements))
 			for j, k := range tmp.Elements {
@@ -3101,9 +3105,6 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			}
 			if tmp.Scope != nil {
 				v.Scope = n.scope[*tmp.Scope]
-			}
-			if tmp.StructType != nil {
-				v.StructType = n.node[*tmp.StructType].(*StructType)
 			}
 		case NodeTypeMatchBranch:
 			v := n.node[i].(*MatchBranch)
@@ -3408,6 +3409,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				Cond         *uintptr     `json:"cond"`
 				Candidates   []uintptr    `json:"candidates"`
 				BaseType     *uintptr     `json:"base_type"`
+				CommonType   *uintptr     `json:"common_type"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -3425,6 +3427,9 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			}
 			if tmp.BaseType != nil {
 				v.BaseType = n.node[*tmp.BaseType].(*StructUnionType)
+			}
+			if tmp.CommonType != nil {
+				v.CommonType = n.node[*tmp.CommonType].(Type)
 			}
 		case NodeTypeRangeType:
 			v := n.node[i].(*RangeType)
@@ -4033,13 +4038,13 @@ func Walk(n Node, f Visitor) {
 			}
 		}
 	case *IndentBlock:
-		for _, w := range v.Elements {
-			if !f.Visit(f, w) {
+		if v.StructType != nil {
+			if !f.Visit(f, v.StructType) {
 				return
 			}
 		}
-		if v.StructType != nil {
-			if !f.Visit(f, v.StructType) {
+		for _, w := range v.Elements {
+			if !f.Visit(f, w) {
 				return
 			}
 		}
@@ -4123,6 +4128,11 @@ func Walk(n Node, f Visitor) {
 	case *UnionType:
 		for _, w := range v.Candidates {
 			if !f.Visit(f, w) {
+				return
+			}
+		}
+		if v.CommonType != nil {
+			if !f.Visit(f, v.CommonType) {
 				return
 			}
 		}

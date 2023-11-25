@@ -496,9 +496,9 @@ export function isLoop(obj: any): obj is Loop {
 }
 
 export interface IndentBlock extends Stmt {
+	struct_type: StructType|null;
 	elements: Node[];
 	scope: Scope|null;
-	struct_type: StructType|null;
 }
 
 export function isIndentBlock(obj: any): obj is IndentBlock {
@@ -654,6 +654,7 @@ export interface UnionType extends Type {
 	cond: Expr|null;
 	candidates: UnionCandidate[];
 	base_type: StructUnionType|null;
+	common_type: Type|null;
 }
 
 export function isUnionType(obj: any): obj is UnionType {
@@ -1174,9 +1175,9 @@ export function parseAST(obj: any): Program {
 			const n :IndentBlock = {
 				node_type: "indent_block",
 				loc: on.loc,
+				struct_type: null,
 				elements: [],
 				scope: null,
-				struct_type: null,
 			}
 			c.node.push(n);
 			break;
@@ -1394,6 +1395,7 @@ export function parseAST(obj: any): Program {
 				cond: null,
 				candidates: [],
 				base_type: null,
+				common_type: null,
 			}
 			c.node.push(n);
 			break;
@@ -2259,6 +2261,14 @@ export function parseAST(obj: any): Program {
 		}
 		case "indent_block": {
 			const n :IndentBlock = cnode as IndentBlock;
+			if (on.body?.struct_type !== null && typeof on.body?.struct_type !== 'number') {
+				throw new Error('invalid node list at IndentBlock::struct_type');
+			}
+			const tmpstruct_type = on.body.struct_type === null ? null : c.node[on.body.struct_type];
+			if (!(tmpstruct_type === null || isStructType(tmpstruct_type))) {
+				throw new Error('invalid node list at IndentBlock::struct_type');
+			}
+			n.struct_type = tmpstruct_type;
 			for (const o of on.body.elements) {
 				if (typeof o !== 'number') {
 					throw new Error('invalid node list at IndentBlock::elements');
@@ -2274,14 +2284,6 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at IndentBlock::scope');
 			}
 			n.scope = tmpscope;
-			if (on.body?.struct_type !== null && typeof on.body?.struct_type !== 'number') {
-				throw new Error('invalid node list at IndentBlock::struct_type');
-			}
-			const tmpstruct_type = on.body.struct_type === null ? null : c.node[on.body.struct_type];
-			if (!(tmpstruct_type === null || isStructType(tmpstruct_type))) {
-				throw new Error('invalid node list at IndentBlock::struct_type');
-			}
-			n.struct_type = tmpstruct_type;
 			break;
 		}
 		case "match_branch": {
@@ -2798,6 +2800,14 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at UnionType::base_type');
 			}
 			n.base_type = tmpbase_type;
+			if (on.body?.common_type !== null && typeof on.body?.common_type !== 'number') {
+				throw new Error('invalid node list at UnionType::common_type');
+			}
+			const tmpcommon_type = on.body.common_type === null ? null : c.node[on.body.common_type];
+			if (!(tmpcommon_type === null || isType(tmpcommon_type))) {
+				throw new Error('invalid node list at UnionType::common_type');
+			}
+			n.common_type = tmpcommon_type;
 			break;
 		}
 		case "range_type": {
@@ -3764,14 +3774,14 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 				break;
 			}
 			const n :IndentBlock = node as IndentBlock;
-			for (const e of n.elements) {
-				const result = fn(fn,e);
+			if (n.struct_type !== null) {
+				const result = fn(fn,n.struct_type);
 				if (result === false) {
 					return;
 				}
 			}
-			if (n.struct_type !== null) {
-				const result = fn(fn,n.struct_type);
+			for (const e of n.elements) {
+				const result = fn(fn,e);
 				if (result === false) {
 					return;
 				}
@@ -3976,6 +3986,12 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			const n :UnionType = node as UnionType;
 			for (const e of n.candidates) {
 				const result = fn(fn,e);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.common_type !== null) {
+				const result = fn(fn,n.common_type);
 				if (result === false) {
 					return;
 				}

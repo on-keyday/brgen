@@ -1465,20 +1465,20 @@ int ast2c_IndentBlock_parse(ast2c_Ast* ast,ast2c_IndentBlock* s,ast2c_json_handl
 	void* loc = h->object_get(h, obj, "loc");
 	void* obj_body = h->object_get(h, obj, "body");
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
+	s->struct_type = NULL;
 	s->elements = NULL;
 	s->scope = NULL;
-	s->struct_type = NULL;
+	void* struct_type = h->object_get(h, obj_body, "struct_type");
 	void* elements = h->object_get(h, obj_body, "elements");
 	void* scope = h->object_get(h, obj_body, "scope");
-	void* struct_type = h->object_get(h, obj_body, "struct_type");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_IndentBlock::loc is null"); } return 0; }
+	if (!struct_type) { if(h->error) { h->error(h,struct_type, "ast2c_IndentBlock::struct_type is null"); } return 0; }
 	if (!elements) { if(h->error) { h->error(h,elements, "ast2c_IndentBlock::elements is null"); } return 0; }
 	if(!h->array_size(h, elements,&s->elements_size)) {
 		if(h->error) { h->error(h,elements, "failed to get array size of ast2c_IndentBlock::elements"); }
 		return NULL;
 	}
 	if (!scope) { if(h->error) { h->error(h,scope, "ast2c_IndentBlock::scope is null"); } return 0; }
-	if (!struct_type) { if(h->error) { h->error(h,struct_type, "ast2c_IndentBlock::struct_type is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_IndentBlock::loc"); }
 		goto error;
@@ -2039,6 +2039,7 @@ int ast2c_UnionType_parse(ast2c_Ast* ast,ast2c_UnionType* s,ast2c_json_handlers*
 	s->cond = NULL;
 	s->candidates = NULL;
 	s->base_type = NULL;
+	s->common_type = NULL;
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
 	void* is_int_set = h->object_get(h, obj_body, "is_int_set");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
@@ -2046,6 +2047,7 @@ int ast2c_UnionType_parse(ast2c_Ast* ast,ast2c_UnionType* s,ast2c_json_handlers*
 	void* cond = h->object_get(h, obj_body, "cond");
 	void* candidates = h->object_get(h, obj_body, "candidates");
 	void* base_type = h->object_get(h, obj_body, "base_type");
+	void* common_type = h->object_get(h, obj_body, "common_type");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_UnionType::loc is null"); } return 0; }
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_UnionType::is_explicit is null"); } return 0; }
 	if (!is_int_set) { if(h->error) { h->error(h,is_int_set, "ast2c_UnionType::is_int_set is null"); } return 0; }
@@ -2058,6 +2060,7 @@ int ast2c_UnionType_parse(ast2c_Ast* ast,ast2c_UnionType* s,ast2c_json_handlers*
 		return NULL;
 	}
 	if (!base_type) { if(h->error) { h->error(h,base_type, "ast2c_UnionType::base_type is null"); } return 0; }
+	if (!common_type) { if(h->error) { h->error(h,common_type, "ast2c_UnionType::common_type is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_UnionType::loc"); }
 		goto error;

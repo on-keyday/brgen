@@ -324,9 +324,9 @@ public class Loop : Stmt{
 }
 public class IndentBlock : Stmt{
 	public Loc Loc{get;set;}
+	public StructType? StructType{get;set;}
 	public List<Node>? Elements{get;set;}
 	public Scope? Scope{get;set;}
-	public StructType? StructType{get;set;}
 }
 public class MatchBranch : Stmt{
 	public Loc Loc{get;set;}
@@ -454,6 +454,7 @@ public class UnionType : Type{
 	public Expr? Cond{get;set;}
 	public List<UnionCandidate>? Candidates{get;set;}
 	public StructUnionType? BaseType{get;set;}
+	public Type? CommonType{get;set;}
 }
 public class RangeType : Type{
 	public Loc Loc{get;set;}
