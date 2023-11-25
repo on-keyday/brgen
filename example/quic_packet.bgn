@@ -105,7 +105,7 @@ format ZeroRTTPacketHeader:
 format OneRTTPacketHeader:
    spin :u1
    reserved :u2
-   key_phase :u2
+   key_phase :u1
    packet_number_length :u2
    dst_conn_id :ConnectionID(length=config.arg("length",u8))
    enc:= config.arg("encrypted",bool)
