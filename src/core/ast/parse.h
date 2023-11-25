@@ -208,7 +208,7 @@ namespace brgen::ast {
                     }
                     auto cand = std::make_shared<UnionCandidate>(d->loc);
                     cand->cond = c;
-                    cand->field = d;
+                    cand->field = ast::cast_to<Field>(d);
                     m[d->ident->ident].push_back(std::move(cand));
                 }
             }

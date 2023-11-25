@@ -40,7 +40,7 @@ namespace brgen::ast {
         nullptr,
     };
 
-    constexpr auto endian_count = 3;
+    constexpr auto endian_count = std::size(endian_str) - 1;
 
     constexpr expected<Endian, const char*> endian_from_str(std::string_view str) {
         if (str == "big") {
@@ -61,14 +61,16 @@ namespace brgen::ast {
 
     struct IntType : Type {
         define_node_type(NodeType::int_type);
-        size_t bit_size = 0;
+
         Endian endian = Endian::unspec;
         bool is_signed = false;
+        // if bit_size is 8, 16, 32, 64, it is common supported
         bool is_common_supported = false;
 
         IntType(lexer::Loc l, size_t bit_size, Endian endian, bool is_signed, bool is_explicit = false)
-            : Type(l, NodeType::int_type), bit_size(bit_size), endian(endian), is_signed(is_signed) {
+            : Type(l, NodeType::int_type), endian(endian), is_signed(is_signed) {
             this->is_explicit = is_explicit;
+            this->bit_size = bit_size;
             is_common_supported = bit_size == 8 || bit_size == 16 || bit_size == 32 || bit_size == 64;
         }
 
@@ -78,7 +80,6 @@ namespace brgen::ast {
 
         void dump(auto&& field_) {
             Type::dump(field_);
-            sdebugf(bit_size);
             sdebugf(endian);
             sdebugf(is_signed);
             sdebugf(is_common_supported);
@@ -121,21 +122,8 @@ namespace brgen::ast {
     struct IntLiteralType : Type {
         define_node_type(NodeType::int_literal_type);
         std::weak_ptr<IntLiteral> base;
-        mutable std::optional<std::uint8_t> bit_size;
 
         std::optional<std::uint8_t> get_bit_size() const {
-            if (bit_size) {
-                return bit_size;
-            }
-            auto got = base.lock();
-            if (!got) {
-                return std::nullopt;
-            }
-            auto p = got->parse_as<std::uint64_t>();
-            if (!p) {
-                return std::nullopt;
-            }
-            bit_size = utils::binary::log2i(*p);
             return bit_size;
         }
 
@@ -154,6 +142,10 @@ namespace brgen::ast {
         IntLiteralType(const std::shared_ptr<IntLiteral>& ty, bool is_explicit = false)
             : Type(ty->loc, NodeType::int_literal_type), base(ty) {
             this->is_explicit = is_explicit;
+            auto data = ty->parse_as<std::uint64_t>();
+            if (data) {
+                this->bit_size = utils::binary::log2i(*data);
+            }
         }
 
         // for decode
@@ -331,7 +323,7 @@ namespace brgen::ast {
     struct UnionCandidate : Stmt {
         define_node_type(NodeType::union_candidate);
         std::weak_ptr<Expr> cond;
-        std::weak_ptr<Member> field;
+        std::weak_ptr<Field> field;
 
         UnionCandidate(lexer::Loc loc)
             : Stmt(loc, NodeType::union_candidate) {}
