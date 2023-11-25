@@ -103,7 +103,7 @@ namespace brgen::ast {
             const char* vec[node_type_count]{};
             size_t i = 0;
             for (size_t j = 0; j < node_type_count; j++) {
-                get_node(*mapValueToNodeType(j), [&](auto node) {
+                get_node(*mapValueToNodeType_2(j), [&](auto node) {
                     using P = typename decltype(node)::node;
                     if constexpr (std::is_base_of_v<T, P> && !std::is_same_v<T, P>) {
                         vec[i++] = node_type_to_string(P::node_type_tag);
@@ -239,7 +239,7 @@ namespace brgen::ast {
             internal::list_derive_type<Node>(field);
         });
         for (size_t i = 0; i < node_type_count; i++) {
-            get_node(*mapValueToNodeType(i), [&](auto node) {
+            get_node(*mapValueToNodeType_2(i), [&](auto node) {
                 using T = typename decltype(node)::node;
                 if constexpr (std::is_default_constructible_v<T>) {
                     objdump([&](auto&& field) {
@@ -277,8 +277,8 @@ namespace brgen::ast {
                 for (size_t i = 0; i < node_type_count; i++) {
                     field([&](auto&& d) {
                         auto field = d.object();
-                        field("name", node_type_to_string(*mapValueToNodeType(i)));
-                        field("value", node_type_to_string(*mapValueToNodeType(i)));
+                        field("name", sorted_node_type_str_array[i].second);
+                        field("value", sorted_node_type_str_array[i].second);
                     });
                 }
             });

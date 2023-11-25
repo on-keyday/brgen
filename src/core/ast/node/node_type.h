@@ -2,6 +2,8 @@
 #pragma once
 #include <core/common/expected.h>
 #include <string_view>
+#include <algorithm>
+#include <array>
 
 namespace brgen::ast {
     enum class NodeType {
@@ -79,6 +81,7 @@ namespace brgen::ast {
         bit_group_type,
     };
 
+    /*
     constexpr const char* node_type_str[]{
         "program",
         "expr",
@@ -141,6 +144,156 @@ namespace brgen::ast {
         "builtin_function",
     };
 
+    constexpr NodeType node_type_array[] = {
+        NodeType::program,
+        NodeType::expr,
+        NodeType::binary,
+        NodeType::unary,
+        NodeType::cond,
+        NodeType::ident,
+        NodeType::call,
+        NodeType::if_,
+        NodeType::member_access,
+        NodeType::paren,
+        NodeType::index,
+        NodeType::match,
+        NodeType::range,
+        NodeType::tmp_var,
+        NodeType::block_expr,
+        NodeType::import_,
+        NodeType::literal,
+        NodeType::int_literal,
+        NodeType::bool_literal,
+        NodeType::str_literal,
+        NodeType::input,
+        NodeType::output,
+        NodeType::config,
+        NodeType::stmt,
+        NodeType::loop,
+        NodeType::indent_block,
+        NodeType::match_branch,
+        NodeType::return_,
+        NodeType::break_,
+        NodeType::continue_,
+        NodeType::assert,
+        NodeType::implicit_yield,
+        NodeType::member,
+        NodeType::field,
+        NodeType::format,
+        NodeType::function,
+        NodeType::type,
+        NodeType::int_type,
+        NodeType::ident_type,
+        NodeType::int_literal_type,
+        NodeType::str_literal_type,
+        NodeType::void_type,
+        NodeType::bool_type,
+        NodeType::array_type,
+        NodeType::function_type,
+        NodeType::struct_type,
+        NodeType::struct_union_type,
+        NodeType::cast,
+        NodeType::comment,
+        NodeType::comment_group,
+        NodeType::union_type,
+        NodeType::union_candidate,
+        NodeType::range_type,
+        NodeType::enum_,
+        NodeType::enum_member,
+        NodeType::enum_type,
+        NodeType::bit_group_type,
+        NodeType::state,
+        NodeType::builtin_function,
+    };
+    */
+
+    constexpr std::pair<NodeType, const char*> node_type_str_array[] = {
+        {NodeType::program, "program"},
+        {NodeType::expr, "expr"},
+        {NodeType::binary, "binary"},
+        {NodeType::unary, "unary"},
+        {NodeType::cond, "cond"},
+        {NodeType::ident, "ident"},
+        {NodeType::call, "call"},
+        {NodeType::if_, "if"},
+        {NodeType::member_access, "member_access"},
+        {NodeType::paren, "paren"},
+        {NodeType::index, "index"},
+        {NodeType::match, "match"},
+        {NodeType::range, "range"},
+        {NodeType::tmp_var, "tmp_var"},
+        {NodeType::block_expr, "block_expr"},
+        {NodeType::import_, "import"},
+        {NodeType::literal, "literal"},
+        {NodeType::int_literal, "int_literal"},
+        {NodeType::bool_literal, "bool_literal"},
+        {NodeType::str_literal, "str_literal"},
+        {NodeType::input, "input"},
+        {NodeType::output, "output"},
+        {NodeType::config, "config"},
+        {NodeType::stmt, "stmt"},
+        {NodeType::loop, "loop"},
+        {NodeType::indent_block, "indent_block"},
+        {NodeType::match_branch, "match_branch"},
+        {NodeType::return_, "return"},
+        {NodeType::break_, "break"},
+        {NodeType::continue_, "continue"},
+        {NodeType::assert, "assert"},
+        {NodeType::implicit_yield, "implicit_yield"},
+        {NodeType::member, "member"},
+        {NodeType::field, "field"},
+        {NodeType::format, "format"},
+        {NodeType::function, "function"},
+        {NodeType::type, "type"},
+        {NodeType::int_type, "int_type"},
+        {NodeType::ident_type, "ident_type"},
+        {NodeType::int_literal_type, "int_literal_type"},
+        {NodeType::str_literal_type, "str_literal_type"},
+        {NodeType::void_type, "void_type"},
+        {NodeType::bool_type, "bool_type"},
+        {NodeType::array_type, "array_type"},
+        {NodeType::function_type, "function_type"},
+        {NodeType::struct_type, "struct_type"},
+        {NodeType::struct_union_type, "struct_union_type"},
+        {NodeType::cast, "cast"},
+        {NodeType::comment, "comment"},
+        {NodeType::comment_group, "comment_group"},
+        {NodeType::union_type, "union_type"},
+        {NodeType::union_candidate, "union_candidate"},
+        {NodeType::range_type, "range_type"},
+        {NodeType::enum_, "enum"},
+        {NodeType::enum_member, "enum_member"},
+        {NodeType::enum_type, "enum_type"},
+        {NodeType::bit_group_type, "bit_group_type"},
+        {NodeType::state, "state"},
+        {NodeType::builtin_function, "builtin_function"},
+    };
+
+    constexpr std::array<std::pair<NodeType, const char*>, std::size(node_type_str_array)> sorted_node_type_str_array = [] {
+        std::array<std::pair<NodeType, const char*>, std::size(node_type_str_array)> a;
+        for (int i = 0; i < std::size(node_type_str_array); i++) {
+            a[i] = node_type_str_array[i];
+        }
+        std::sort(a.begin(), a.end(), [](auto a, auto b) { return static_cast<int>(a.first) < static_cast<int>(b.first); });
+        return a;
+    }();
+
+    constexpr int mapNodeTypeToValue_2(NodeType type) {
+        auto low = std::lower_bound(sorted_node_type_str_array.begin(), sorted_node_type_str_array.end(), type, [](auto a, auto b) { return static_cast<int>(a.first) < static_cast<int>(b); });
+        if (low == sorted_node_type_str_array.end() || low->first != type) {
+            return -1;
+        }
+        return static_cast<int>(low - sorted_node_type_str_array.begin());
+    }
+
+    constexpr either::expected<NodeType, const char*> mapValueToNodeType_2(int value) {
+        if (value < 0 || value >= std::size(node_type_str_array)) {
+            return either::unexpected{"invalid value"};
+        }
+        return sorted_node_type_str_array[value].first;
+    }
+
+    /*
     constexpr int mapNodeTypeToValue(NodeType type) {
         switch (type) {
             case NodeType::program:
@@ -390,21 +543,22 @@ namespace brgen::ast {
                 return either::unexpected{"invalid value"};
         }
     }
+    */
 
     constexpr const char* node_type_to_string(NodeType type) {
-        auto key = mapNodeTypeToValue(type);
+        auto key = mapNodeTypeToValue_2(type);
         if (key == -1) {
             return "unknown";
         }
-        return node_type_str[key];
+        return sorted_node_type_str_array[key].second;
     }
 
-    constexpr auto node_type_count = std::size(node_type_str);
+    constexpr auto node_type_count = std::size(node_type_str_array);
 
     constexpr either::expected<NodeType, const char*> string_to_node_type(std::string_view key) {
         for (int i = 0; i < node_type_count; i++) {
-            if (key == node_type_str[i]) {
-                return mapValueToNodeType(i);
+            if (key == node_type_str_array[i].second) {
+                return mapValueToNodeType_2(i);
             }
         }
         return either::unexpected{key.data()};
@@ -413,11 +567,11 @@ namespace brgen::ast {
     namespace internal {
         constexpr auto check_func() {
             for (int i = 0; i < node_type_count; i++) {
-                auto v = mapNodeTypeToValue(mapValueToNodeType(i).value());
+                auto v = mapNodeTypeToValue_2(mapValueToNodeType_2(i).value());
                 if (v != i) {
                     [](auto... a) { throw "not matched"; }(v, i);
                 }
-                v = mapNodeTypeToValue(string_to_node_type(node_type_str[i]).value());
+                v = mapNodeTypeToValue_2(string_to_node_type(node_type_str_array[i].second).value());
                 if (v != i) {
                     [](auto... a) { throw "not matched"; }(v, i);
                 }

@@ -9,8 +9,12 @@ namespace brgen::middle {
     struct TypeAttribute {
         void recursive_reference(const std::shared_ptr<ast::Node>& node) {
             std::set<ast::StructType*> typ;
+            std::set<ast::Type*> tracked;
             auto traverse_fn = [&](auto&& f, const std::shared_ptr<ast::Node>& n) -> void {
                 if (auto t = ast::as<ast::StructType>(n); t) {
+                    if (tracked.find(t) != tracked.end()) {
+                        return;
+                    }
                     if (t->recursive) {
                         return;
                     }
@@ -22,6 +26,7 @@ namespace brgen::middle {
                         f(f, n);
                     });
                     typ.erase(t);
+                    tracked.insert(t);
                 }
                 if (auto t = ast::as<ast::IdentType>(n)) {
                     auto c = t->base.lock();
@@ -39,11 +44,14 @@ namespace brgen::middle {
         void int_type_detection(const std::shared_ptr<ast::Node>& node) {
             std::set<ast::Type*> tracked;
             auto trv = [&](auto&& f, const std::shared_ptr<ast::Node>& n) -> void {
-                if (auto t = ast::as<ast::StructType>(n); t && !t->recursive) {
-                    if (tracked.find(t) != tracked.end()) {
+                if (auto ty = ast::as<ast::Type>(n)) {
+                    if (tracked.find(ty) != tracked.end()) {
                         return;  // already detected
                     }
-                    if (t->is_int_set) {
+                    tracked.insert(ty);
+                }
+                if (auto t = ast::as<ast::StructType>(n); t && !t->recursive) {
+                    if (t->is_int_set || t->recursive) {
                         return;  // already detected
                     }
                     ast::traverse(n, [&](auto&& n) {
@@ -61,7 +69,6 @@ namespace brgen::middle {
                         }
                     }
                     t->is_int_set = has_field && all_int;
-                    tracked.insert(t);
                     return;
                 }
                 if (auto t = ast::as<ast::IdentType>(n)) {
@@ -119,10 +126,13 @@ namespace brgen::middle {
         void bit_alignment(const std::shared_ptr<ast::Node>& node) {
             std::set<ast::Type*> tracked;
             auto trv = [&](auto&& f, const std::shared_ptr<ast::Node>& n) -> void {
-                if (auto t = ast::as<ast::StructType>(n); t && !t->recursive) {
-                    if (tracked.find(t) != tracked.end()) {
+                if (auto ty = ast::as<ast::Type>(n); ty) {
+                    if (tracked.find(ty) != tracked.end()) {
                         return;  // already detected
                     }
+                    tracked.insert(ty);
+                }
+                if (auto t = ast::as<ast::StructType>(n); t && !t->recursive) {
                     if (t->bit_alignment != ast::BitAlignment::not_target) {
                         return;  // already detected
                     }

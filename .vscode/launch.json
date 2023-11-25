@@ -19,7 +19,7 @@
             "request": "launch",
             "program": "${workspaceRoot}/tool/src2json",
             "args": [
-                "c:/workspace/shbrgen/brgen/example/wasm.bgn",
+                "c:/workspace/shbrgen/brgen/example/zip.bgn",
                 "--print-json",
                 "--interpret-mode=utf16",
             ],
