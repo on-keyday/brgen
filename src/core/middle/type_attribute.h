@@ -100,7 +100,6 @@ namespace brgen::middle {
                     for (auto& f : u->fields) {
                         if (!f->is_int_set) {
                             u->is_int_set = false;
-                            break;
                         }
                     }
                 }
@@ -110,7 +109,6 @@ namespace brgen::middle {
                         if (auto f = ast::as<ast::Field>(c->field.lock()); f) {
                             if (!f->field_type->is_int_set) {
                                 u->is_int_set = false;
-                                break;
                             }
                         }
                     }

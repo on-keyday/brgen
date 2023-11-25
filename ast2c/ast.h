@@ -392,6 +392,7 @@ struct ast2c_Type {
 	int is_explicit;
 	int is_int_set;
 	ast2c_BitAlignment bit_alignment;
+	uint64_t bit_size;
 };
 
 struct ast2c_Literal {
@@ -675,7 +676,7 @@ struct ast2c_UnionCandidate {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Expr* cond;
-	ast2c_Member* field;
+	ast2c_Field* field;
 };
 
 // returns 1 if succeed 0 if failed
@@ -745,6 +746,7 @@ struct ast2c_IdentType {
 	int is_explicit;
 	int is_int_set;
 	ast2c_BitAlignment bit_alignment;
+	uint64_t bit_size;
 	ast2c_Ident* ident;
 	ast2c_Type* base;
 };
@@ -758,6 +760,7 @@ struct ast2c_IntLiteralType {
 	int is_explicit;
 	int is_int_set;
 	ast2c_BitAlignment bit_alignment;
+	uint64_t bit_size;
 	ast2c_IntLiteral* base;
 };
 
@@ -770,6 +773,7 @@ struct ast2c_StrLiteralType {
 	int is_explicit;
 	int is_int_set;
 	ast2c_BitAlignment bit_alignment;
+	uint64_t bit_size;
 	ast2c_StrLiteral* base;
 };
 
@@ -782,6 +786,7 @@ struct ast2c_VoidType {
 	int is_explicit;
 	int is_int_set;
 	ast2c_BitAlignment bit_alignment;
+	uint64_t bit_size;
 };
 
 // returns 1 if succeed 0 if failed
@@ -793,6 +798,7 @@ struct ast2c_BoolType {
 	int is_explicit;
 	int is_int_set;
 	ast2c_BitAlignment bit_alignment;
+	uint64_t bit_size;
 };
 
 // returns 1 if succeed 0 if failed
@@ -804,6 +810,7 @@ struct ast2c_ArrayType {
 	int is_explicit;
 	int is_int_set;
 	ast2c_BitAlignment bit_alignment;
+	uint64_t bit_size;
 	ast2c_Loc end_loc;
 	ast2c_Type* base_type;
 	ast2c_Expr* length;
@@ -818,6 +825,7 @@ struct ast2c_FunctionType {
 	int is_explicit;
 	int is_int_set;
 	ast2c_BitAlignment bit_alignment;
+	uint64_t bit_size;
 	ast2c_Type* return_type;
 	ast2c_Type** parameters;
 	size_t parameters_size;
@@ -832,6 +840,7 @@ struct ast2c_StructType {
 	int is_explicit;
 	int is_int_set;
 	ast2c_BitAlignment bit_alignment;
+	uint64_t bit_size;
 	ast2c_Member** fields;
 	size_t fields_size;
 	ast2c_Node* base;
@@ -847,6 +856,7 @@ struct ast2c_StructUnionType {
 	int is_explicit;
 	int is_int_set;
 	ast2c_BitAlignment bit_alignment;
+	uint64_t bit_size;
 	ast2c_StructType** fields;
 	size_t fields_size;
 	ast2c_Expr* base;
@@ -863,6 +873,7 @@ struct ast2c_UnionType {
 	int is_explicit;
 	int is_int_set;
 	ast2c_BitAlignment bit_alignment;
+	uint64_t bit_size;
 	ast2c_Expr* cond;
 	ast2c_UnionCandidate** candidates;
 	size_t candidates_size;
@@ -878,6 +889,7 @@ struct ast2c_RangeType {
 	int is_explicit;
 	int is_int_set;
 	ast2c_BitAlignment bit_alignment;
+	uint64_t bit_size;
 	ast2c_Type* base_type;
 	ast2c_Range* range;
 };
@@ -891,6 +903,7 @@ struct ast2c_EnumType {
 	int is_explicit;
 	int is_int_set;
 	ast2c_BitAlignment bit_alignment;
+	uint64_t bit_size;
 	ast2c_Enum* base;
 };
 

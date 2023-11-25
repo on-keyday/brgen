@@ -12,7 +12,8 @@ target_link_libraries(src2json utils)
 add_executable(json2cpp "tool/json2cpp/main.cpp")
 target_link_libraries(json2cpp utils)
 
-
+add_executable(json2cpp2 "tool/json2cpp2/main.cpp")
+target_link_libraries(json2cpp2 utils)
 
 if("$ENV{BUILD_MODE}" STREQUAL "wasm-em")
 install(TARGETS src2json DESTINATION "lib" OPTIONAL)
@@ -69,9 +70,10 @@ add_subdirectory(test)
 if(UNIX)
 set_target_properties(src2json PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/tool")
 set_target_properties(json2cpp PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/tool")
+set_target_properties(json2cpp2 PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/tool")
 set_target_properties(ctobgn PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/tool")
 endif()
-install(TARGETS src2json json2cpp ctobgn DESTINATION tool OPTIONAL)
+install(TARGETS src2json json2cpp json2cpp2 ctobgn DESTINATION tool OPTIONAL)
 
 install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/brgen${SUFFIX}" DESTINATION tool OPTIONAL)
 install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/json2go${SUFFIX}" DESTINATION tool OPTIONAL)

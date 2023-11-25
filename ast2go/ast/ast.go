@@ -1145,6 +1145,7 @@ type Type interface {
 	GetIsExplicit() bool
 	GetIsIntSet() bool
 	GetBitAlignment() BitAlignment
+	GetBitSize() uint64
 }
 
 type Literal interface {
@@ -1617,7 +1618,7 @@ func (n *MatchBranch) GetLoc() Loc {
 type UnionCandidate struct {
 	Loc   Loc
 	Cond  Expr
-	Field Member
+	Field *Field
 }
 
 func (n *UnionCandidate) isStmt() {}
@@ -1716,6 +1717,10 @@ func (n *IntType) GetBitAlignment() BitAlignment {
 	return n.BitAlignment
 }
 
+func (n *IntType) GetBitSize() uint64 {
+	return n.BitSize
+}
+
 func (n *IntType) isNode() {}
 
 func (n *IntType) GetLoc() Loc {
@@ -1727,6 +1732,7 @@ type IdentType struct {
 	IsExplicit   bool
 	IsIntSet     bool
 	BitAlignment BitAlignment
+	BitSize      uint64
 	Ident        *Ident
 	Base         Type
 }
@@ -1745,6 +1751,10 @@ func (n *IdentType) GetBitAlignment() BitAlignment {
 	return n.BitAlignment
 }
 
+func (n *IdentType) GetBitSize() uint64 {
+	return n.BitSize
+}
+
 func (n *IdentType) isNode() {}
 
 func (n *IdentType) GetLoc() Loc {
@@ -1756,6 +1766,7 @@ type IntLiteralType struct {
 	IsExplicit   bool
 	IsIntSet     bool
 	BitAlignment BitAlignment
+	BitSize      uint64
 	Base         *IntLiteral
 }
 
@@ -1773,6 +1784,10 @@ func (n *IntLiteralType) GetBitAlignment() BitAlignment {
 	return n.BitAlignment
 }
 
+func (n *IntLiteralType) GetBitSize() uint64 {
+	return n.BitSize
+}
+
 func (n *IntLiteralType) isNode() {}
 
 func (n *IntLiteralType) GetLoc() Loc {
@@ -1784,6 +1799,7 @@ type StrLiteralType struct {
 	IsExplicit   bool
 	IsIntSet     bool
 	BitAlignment BitAlignment
+	BitSize      uint64
 	Base         *StrLiteral
 }
 
@@ -1801,6 +1817,10 @@ func (n *StrLiteralType) GetBitAlignment() BitAlignment {
 	return n.BitAlignment
 }
 
+func (n *StrLiteralType) GetBitSize() uint64 {
+	return n.BitSize
+}
+
 func (n *StrLiteralType) isNode() {}
 
 func (n *StrLiteralType) GetLoc() Loc {
@@ -1812,6 +1832,7 @@ type VoidType struct {
 	IsExplicit   bool
 	IsIntSet     bool
 	BitAlignment BitAlignment
+	BitSize      uint64
 }
 
 func (n *VoidType) isType() {}
@@ -1828,6 +1849,10 @@ func (n *VoidType) GetBitAlignment() BitAlignment {
 	return n.BitAlignment
 }
 
+func (n *VoidType) GetBitSize() uint64 {
+	return n.BitSize
+}
+
 func (n *VoidType) isNode() {}
 
 func (n *VoidType) GetLoc() Loc {
@@ -1839,6 +1864,7 @@ type BoolType struct {
 	IsExplicit   bool
 	IsIntSet     bool
 	BitAlignment BitAlignment
+	BitSize      uint64
 }
 
 func (n *BoolType) isType() {}
@@ -1855,6 +1881,10 @@ func (n *BoolType) GetBitAlignment() BitAlignment {
 	return n.BitAlignment
 }
 
+func (n *BoolType) GetBitSize() uint64 {
+	return n.BitSize
+}
+
 func (n *BoolType) isNode() {}
 
 func (n *BoolType) GetLoc() Loc {
@@ -1866,6 +1896,7 @@ type ArrayType struct {
 	IsExplicit   bool
 	IsIntSet     bool
 	BitAlignment BitAlignment
+	BitSize      uint64
 	EndLoc       Loc
 	BaseType     Type
 	Length       Expr
@@ -1885,6 +1916,10 @@ func (n *ArrayType) GetBitAlignment() BitAlignment {
 	return n.BitAlignment
 }
 
+func (n *ArrayType) GetBitSize() uint64 {
+	return n.BitSize
+}
+
 func (n *ArrayType) isNode() {}
 
 func (n *ArrayType) GetLoc() Loc {
@@ -1896,6 +1931,7 @@ type FunctionType struct {
 	IsExplicit   bool
 	IsIntSet     bool
 	BitAlignment BitAlignment
+	BitSize      uint64
 	ReturnType   Type
 	Parameters   []Type
 }
@@ -1914,6 +1950,10 @@ func (n *FunctionType) GetBitAlignment() BitAlignment {
 	return n.BitAlignment
 }
 
+func (n *FunctionType) GetBitSize() uint64 {
+	return n.BitSize
+}
+
 func (n *FunctionType) isNode() {}
 
 func (n *FunctionType) GetLoc() Loc {
@@ -1925,6 +1965,7 @@ type StructType struct {
 	IsExplicit   bool
 	IsIntSet     bool
 	BitAlignment BitAlignment
+	BitSize      uint64
 	Fields       []Member
 	Base         Node
 	Recursive    bool
@@ -1944,6 +1985,10 @@ func (n *StructType) GetBitAlignment() BitAlignment {
 	return n.BitAlignment
 }
 
+func (n *StructType) GetBitSize() uint64 {
+	return n.BitSize
+}
+
 func (n *StructType) isNode() {}
 
 func (n *StructType) GetLoc() Loc {
@@ -1955,6 +2000,7 @@ type StructUnionType struct {
 	IsExplicit   bool
 	IsIntSet     bool
 	BitAlignment BitAlignment
+	BitSize      uint64
 	Fields       []*StructType
 	Base         Expr
 	UnionFields  []*Field
@@ -1974,6 +2020,10 @@ func (n *StructUnionType) GetBitAlignment() BitAlignment {
 	return n.BitAlignment
 }
 
+func (n *StructUnionType) GetBitSize() uint64 {
+	return n.BitSize
+}
+
 func (n *StructUnionType) isNode() {}
 
 func (n *StructUnionType) GetLoc() Loc {
@@ -1985,6 +2035,7 @@ type UnionType struct {
 	IsExplicit   bool
 	IsIntSet     bool
 	BitAlignment BitAlignment
+	BitSize      uint64
 	Cond         Expr
 	Candidates   []*UnionCandidate
 	BaseType     *StructUnionType
@@ -2004,6 +2055,10 @@ func (n *UnionType) GetBitAlignment() BitAlignment {
 	return n.BitAlignment
 }
 
+func (n *UnionType) GetBitSize() uint64 {
+	return n.BitSize
+}
+
 func (n *UnionType) isNode() {}
 
 func (n *UnionType) GetLoc() Loc {
@@ -2015,6 +2070,7 @@ type RangeType struct {
 	IsExplicit   bool
 	IsIntSet     bool
 	BitAlignment BitAlignment
+	BitSize      uint64
 	BaseType     Type
 	Range        *Range
 }
@@ -2033,6 +2089,10 @@ func (n *RangeType) GetBitAlignment() BitAlignment {
 	return n.BitAlignment
 }
 
+func (n *RangeType) GetBitSize() uint64 {
+	return n.BitSize
+}
+
 func (n *RangeType) isNode() {}
 
 func (n *RangeType) GetLoc() Loc {
@@ -2044,6 +2104,7 @@ type EnumType struct {
 	IsExplicit   bool
 	IsIntSet     bool
 	BitAlignment BitAlignment
+	BitSize      uint64
 	Base         *Enum
 }
 
@@ -2059,6 +2120,10 @@ func (n *EnumType) GetIsIntSet() bool {
 
 func (n *EnumType) GetBitAlignment() BitAlignment {
 	return n.BitAlignment
+}
+
+func (n *EnumType) GetBitSize() uint64 {
+	return n.BitSize
 }
 
 func (n *EnumType) isNode() {}
@@ -3070,7 +3135,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				v.Cond = n.node[*tmp.Cond].(Expr)
 			}
 			if tmp.Field != nil {
-				v.Field = n.node[*tmp.Field].(Member)
+				v.Field = n.node[*tmp.Field].(*Field)
 			}
 		case NodeTypeReturn:
 			v := n.node[i].(*Return)
@@ -3144,6 +3209,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				IsExplicit   bool         `json:"is_explicit"`
 				IsIntSet     bool         `json:"is_int_set"`
 				BitAlignment BitAlignment `json:"bit_alignment"`
+				BitSize      uint64       `json:"bit_size"`
 				Ident        *uintptr     `json:"ident"`
 				Base         *uintptr     `json:"base"`
 			}
@@ -3153,6 +3219,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.IsExplicit = tmp.IsExplicit
 			v.IsIntSet = tmp.IsIntSet
 			v.BitAlignment = tmp.BitAlignment
+			v.BitSize = tmp.BitSize
 			if tmp.Ident != nil {
 				v.Ident = n.node[*tmp.Ident].(*Ident)
 			}
@@ -3165,6 +3232,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				IsExplicit   bool         `json:"is_explicit"`
 				IsIntSet     bool         `json:"is_int_set"`
 				BitAlignment BitAlignment `json:"bit_alignment"`
+				BitSize      uint64       `json:"bit_size"`
 				Base         *uintptr     `json:"base"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
@@ -3173,6 +3241,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.IsExplicit = tmp.IsExplicit
 			v.IsIntSet = tmp.IsIntSet
 			v.BitAlignment = tmp.BitAlignment
+			v.BitSize = tmp.BitSize
 			if tmp.Base != nil {
 				v.Base = n.node[*tmp.Base].(*IntLiteral)
 			}
@@ -3182,6 +3251,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				IsExplicit   bool         `json:"is_explicit"`
 				IsIntSet     bool         `json:"is_int_set"`
 				BitAlignment BitAlignment `json:"bit_alignment"`
+				BitSize      uint64       `json:"bit_size"`
 				Base         *uintptr     `json:"base"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
@@ -3190,6 +3260,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.IsExplicit = tmp.IsExplicit
 			v.IsIntSet = tmp.IsIntSet
 			v.BitAlignment = tmp.BitAlignment
+			v.BitSize = tmp.BitSize
 			if tmp.Base != nil {
 				v.Base = n.node[*tmp.Base].(*StrLiteral)
 			}
@@ -3199,6 +3270,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				IsExplicit   bool         `json:"is_explicit"`
 				IsIntSet     bool         `json:"is_int_set"`
 				BitAlignment BitAlignment `json:"bit_alignment"`
+				BitSize      uint64       `json:"bit_size"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -3206,12 +3278,14 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.IsExplicit = tmp.IsExplicit
 			v.IsIntSet = tmp.IsIntSet
 			v.BitAlignment = tmp.BitAlignment
+			v.BitSize = tmp.BitSize
 		case NodeTypeBoolType:
 			v := n.node[i].(*BoolType)
 			var tmp struct {
 				IsExplicit   bool         `json:"is_explicit"`
 				IsIntSet     bool         `json:"is_int_set"`
 				BitAlignment BitAlignment `json:"bit_alignment"`
+				BitSize      uint64       `json:"bit_size"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -3219,12 +3293,14 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.IsExplicit = tmp.IsExplicit
 			v.IsIntSet = tmp.IsIntSet
 			v.BitAlignment = tmp.BitAlignment
+			v.BitSize = tmp.BitSize
 		case NodeTypeArrayType:
 			v := n.node[i].(*ArrayType)
 			var tmp struct {
 				IsExplicit   bool         `json:"is_explicit"`
 				IsIntSet     bool         `json:"is_int_set"`
 				BitAlignment BitAlignment `json:"bit_alignment"`
+				BitSize      uint64       `json:"bit_size"`
 				EndLoc       Loc          `json:"end_loc"`
 				BaseType     *uintptr     `json:"base_type"`
 				Length       *uintptr     `json:"length"`
@@ -3235,6 +3311,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.IsExplicit = tmp.IsExplicit
 			v.IsIntSet = tmp.IsIntSet
 			v.BitAlignment = tmp.BitAlignment
+			v.BitSize = tmp.BitSize
 			v.EndLoc = tmp.EndLoc
 			if tmp.BaseType != nil {
 				v.BaseType = n.node[*tmp.BaseType].(Type)
@@ -3248,6 +3325,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				IsExplicit   bool         `json:"is_explicit"`
 				IsIntSet     bool         `json:"is_int_set"`
 				BitAlignment BitAlignment `json:"bit_alignment"`
+				BitSize      uint64       `json:"bit_size"`
 				ReturnType   *uintptr     `json:"return_type"`
 				Parameters   []uintptr    `json:"parameters"`
 			}
@@ -3257,6 +3335,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.IsExplicit = tmp.IsExplicit
 			v.IsIntSet = tmp.IsIntSet
 			v.BitAlignment = tmp.BitAlignment
+			v.BitSize = tmp.BitSize
 			if tmp.ReturnType != nil {
 				v.ReturnType = n.node[*tmp.ReturnType].(Type)
 			}
@@ -3270,6 +3349,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				IsExplicit   bool         `json:"is_explicit"`
 				IsIntSet     bool         `json:"is_int_set"`
 				BitAlignment BitAlignment `json:"bit_alignment"`
+				BitSize      uint64       `json:"bit_size"`
 				Fields       []uintptr    `json:"fields"`
 				Base         *uintptr     `json:"base"`
 				Recursive    bool         `json:"recursive"`
@@ -3280,6 +3360,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.IsExplicit = tmp.IsExplicit
 			v.IsIntSet = tmp.IsIntSet
 			v.BitAlignment = tmp.BitAlignment
+			v.BitSize = tmp.BitSize
 			v.Fields = make([]Member, len(tmp.Fields))
 			for j, k := range tmp.Fields {
 				v.Fields[j] = n.node[k].(Member)
@@ -3294,6 +3375,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				IsExplicit   bool         `json:"is_explicit"`
 				IsIntSet     bool         `json:"is_int_set"`
 				BitAlignment BitAlignment `json:"bit_alignment"`
+				BitSize      uint64       `json:"bit_size"`
 				Fields       []uintptr    `json:"fields"`
 				Base         *uintptr     `json:"base"`
 				UnionFields  []uintptr    `json:"union_fields"`
@@ -3304,6 +3386,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.IsExplicit = tmp.IsExplicit
 			v.IsIntSet = tmp.IsIntSet
 			v.BitAlignment = tmp.BitAlignment
+			v.BitSize = tmp.BitSize
 			v.Fields = make([]*StructType, len(tmp.Fields))
 			for j, k := range tmp.Fields {
 				v.Fields[j] = n.node[k].(*StructType)
@@ -3321,6 +3404,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				IsExplicit   bool         `json:"is_explicit"`
 				IsIntSet     bool         `json:"is_int_set"`
 				BitAlignment BitAlignment `json:"bit_alignment"`
+				BitSize      uint64       `json:"bit_size"`
 				Cond         *uintptr     `json:"cond"`
 				Candidates   []uintptr    `json:"candidates"`
 				BaseType     *uintptr     `json:"base_type"`
@@ -3331,6 +3415,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.IsExplicit = tmp.IsExplicit
 			v.IsIntSet = tmp.IsIntSet
 			v.BitAlignment = tmp.BitAlignment
+			v.BitSize = tmp.BitSize
 			if tmp.Cond != nil {
 				v.Cond = n.node[*tmp.Cond].(Expr)
 			}
@@ -3347,6 +3432,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				IsExplicit   bool         `json:"is_explicit"`
 				IsIntSet     bool         `json:"is_int_set"`
 				BitAlignment BitAlignment `json:"bit_alignment"`
+				BitSize      uint64       `json:"bit_size"`
 				BaseType     *uintptr     `json:"base_type"`
 				Range        *uintptr     `json:"range"`
 			}
@@ -3356,6 +3442,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.IsExplicit = tmp.IsExplicit
 			v.IsIntSet = tmp.IsIntSet
 			v.BitAlignment = tmp.BitAlignment
+			v.BitSize = tmp.BitSize
 			if tmp.BaseType != nil {
 				v.BaseType = n.node[*tmp.BaseType].(Type)
 			}
@@ -3368,6 +3455,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				IsExplicit   bool         `json:"is_explicit"`
 				IsIntSet     bool         `json:"is_int_set"`
 				BitAlignment BitAlignment `json:"bit_alignment"`
+				BitSize      uint64       `json:"bit_size"`
 				Base         *uintptr     `json:"base"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
@@ -3376,6 +3464,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.IsExplicit = tmp.IsExplicit
 			v.IsIntSet = tmp.IsIntSet
 			v.BitAlignment = tmp.BitAlignment
+			v.BitSize = tmp.BitSize
 			if tmp.Base != nil {
 				v.Base = n.node[*tmp.Base].(*Enum)
 			}

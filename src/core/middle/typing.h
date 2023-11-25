@@ -87,6 +87,40 @@ namespace brgen::middle {
             return false;
         }
 
+        std::shared_ptr<ast::Type> common_type(std::shared_ptr<ast::Type>& a, std::shared_ptr<ast::Type>& b) {
+            int_type_fitting(a, b);
+            if (equal_type(a, b)) {
+                return a;
+            }
+            if (a->node_type == ast::NodeType::int_type && b->node_type == ast::NodeType::int_type) {
+                auto a_i = ast::as<ast::IntType>(a);
+                auto b_i = ast::as<ast::IntType>(b);
+                if (a_i->bit_size == b_i->bit_size) {
+                    if (a_i->is_signed == b_i->is_signed) {
+                        return a;
+                    }
+                    return a_i->is_signed ? b : a;
+                }
+                if (a_i->bit_size > b_i->bit_size) {
+                    return a;
+                }
+                return b;
+            }
+            if (auto a_u = ast::as<ast::UnionType>(a)) {
+                if (!a_u->common_type) {
+                    return nullptr;
+                }
+                return common_type(a_u->common_type, b);
+            }
+            if (auto b_u = ast::as<ast::UnionType>(b)) {
+                if (!b_u->common_type) {
+                    return nullptr;
+                }
+                return common_type(a, b_u->common_type);
+            }
+            return nullptr;
+        }
+
        private:
         auto void_type(lexer::Loc loc) {
             return std::make_shared<ast::VoidType>(loc);
@@ -98,6 +132,10 @@ namespace brgen::middle {
 
         [[noreturn]] void report_not_comparable_type(const std::shared_ptr<ast::Type>& lty, const std::shared_ptr<ast::Type>& rty) {
             error(lty->loc, "type not comparable here").error(rty->loc, "and here").report();
+        }
+
+        [[noreturn]] void report_not_have_common_type(const std::shared_ptr<ast::Type>& lty, const std::shared_ptr<ast::Type>& rty) {
+            error(lty->loc, "type not have common type here").error(rty->loc, "and here").report();
         }
 
         [[noreturn]] void unsupported(auto&& expr) {
@@ -550,11 +588,11 @@ namespace brgen::middle {
             }
             auto lty = cond->then->expr_type;
             auto rty = cond->els->expr_type;
-            int_type_fitting(lty, rty);
-            if (!equal_type(lty, rty)) {
-                report_not_equal_type(lty, rty);
+            auto ty = common_type(lty, rty);
+            if (!ty) {
+                report_not_have_common_type(lty, rty);
             }
-            cond->expr_type = lty;
+            cond->expr_type = ty;
             cond->constant_level = decide_constant_level(cond->then->constant_level, cond->els->constant_level);
         }
 
@@ -804,6 +842,41 @@ namespace brgen::middle {
             }
         }
 
+        void typing_ident_type(ast::IdentType* s) {
+            // If the object is an identifier, perform identifier typing
+            typing_expr(s->ident);
+            if (s->ident->usage == ast::IdentUsage::maybe_type) {
+                warn_type_not_found(s->ident);
+            }
+            if (s->ident->usage != ast::IdentUsage::unknown &&
+                s->ident->usage != ast::IdentUsage::reference_type &&
+                s->ident->usage != ast::IdentUsage::maybe_type) {
+                auto r = error(s->loc, "expect type name but not");
+                if (auto b = s->ident->base.lock()) {
+                    (void)r.error(b->loc, "identifier ", s->ident->ident, " is defined here");
+                }
+                r.report();
+            }
+
+            if (s->ident->usage == ast::IdentUsage::reference_type) {
+                auto ident = ast::as<ast::Ident>(s->ident->base.lock());
+                assert(ident);
+                auto member = ast::as<ast::Member>(ident->base.lock());
+                if (auto enum_ = ast::as<ast::Enum>(member)) {
+                    s->base = enum_->enum_type;
+                }
+                else if (auto struct_ = ast::as<ast::Format>(member)) {
+                    s->base = struct_->body->struct_type;
+                }
+                else if (auto state_ = ast::as<ast::State>(member)) {
+                    error(s->loc, "state ", ident->ident, " is not usable for field type")
+                        .error(member->ident->loc, "state ", ident->ident, " is defined here")
+                        .report();
+                }
+            }
+            return;
+        }
+
         void typing_object(const std::shared_ptr<ast::Node>& ty) {
             // Define a lambda function for recursive traversal and typing
             auto recursive_typing = [&](auto&& f, const std::shared_ptr<ast::Node>& ty) -> void {
@@ -820,36 +893,7 @@ namespace brgen::middle {
                 }
                 if (auto s = ast::as<ast::IdentType>(ty)) {
                     // If the object is an identifier, perform identifier typing
-                    typing_expr(s->ident);
-                    if (s->ident->usage == ast::IdentUsage::maybe_type) {
-                        warn_type_not_found(s->ident);
-                    }
-                    if (s->ident->usage != ast::IdentUsage::unknown &&
-                        s->ident->usage != ast::IdentUsage::reference_type &&
-                        s->ident->usage != ast::IdentUsage::maybe_type) {
-                        auto r = error(s->loc, "expect type name but not");
-                        if (auto b = s->ident->base.lock()) {
-                            (void)r.error(b->loc, "identifier ", s->ident->ident, " is defined here");
-                        }
-                        r.report();
-                    }
-
-                    if (s->ident->usage == ast::IdentUsage::reference_type) {
-                        auto ident = ast::as<ast::Ident>(s->ident->base.lock());
-                        assert(ident);
-                        auto member = ast::as<ast::Member>(ident->base.lock());
-                        if (auto enum_ = ast::as<ast::Enum>(member)) {
-                            s->base = enum_->enum_type;
-                        }
-                        else if (auto struct_ = ast::as<ast::Format>(member)) {
-                            s->base = struct_->body->struct_type;
-                        }
-                        else if (auto state_ = ast::as<ast::State>(member)) {
-                            error(s->loc, "state ", ident->ident, " is not usable for field type")
-                                .error(member->ident->loc, "state ", ident->ident, " is defined here")
-                                .report();
-                        }
-                    }
+                    typing_ident_type(s);
                     return;
                 }
                 if (auto p = ast::as<ast::Program>(ty)) {
@@ -860,6 +904,23 @@ namespace brgen::middle {
                     });
                     do_traverse();
                     return;
+                }
+                if (auto u = ast::as<ast::UnionType>(ty)) {
+                    for (auto& c : u->candidates) {
+                        auto f = c->field.lock();
+                        if (!f) {
+                            continue;
+                        }
+                        if (!u->common_type) {
+                            u->common_type = f->field_type;
+                        }
+                        else {
+                            u->common_type = common_type(u->common_type, f->field_type);
+                            if (!u->common_type) {
+                                break;
+                            }
+                        }
+                    }
                 }
                 do_traverse();
             };

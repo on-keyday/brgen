@@ -1699,16 +1699,22 @@ int ast2c_IdentType_parse(ast2c_Ast* ast,ast2c_IdentType* s,ast2c_json_handlers*
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
 	void* is_int_set = h->object_get(h, obj_body, "is_int_set");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
+	void* bit_size = h->object_get(h, obj_body, "bit_size");
 	void* ident = h->object_get(h, obj_body, "ident");
 	void* base = h->object_get(h, obj_body, "base");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_IdentType::loc is null"); } return 0; }
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_IdentType::is_explicit is null"); } return 0; }
 	if (!is_int_set) { if(h->error) { h->error(h,is_int_set, "ast2c_IdentType::is_int_set is null"); } return 0; }
 	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_IdentType::bit_alignment is null"); } return 0; }
+	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_IdentType::bit_size is null"); } return 0; }
 	if (!ident) { if(h->error) { h->error(h,ident, "ast2c_IdentType::ident is null"); } return 0; }
 	if (!base) { if(h->error) { h->error(h,base, "ast2c_IdentType::base is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_IdentType::loc"); }
+		goto error;
+	}
+	if(!h->number_get(h,bit_size,&s->bit_size)) {
+		if(h->error) { h->error(h,bit_size, "failed to parse ast2c_IdentType::bit_size"); }
 		goto error;
 	}
 	return 1;
@@ -1729,14 +1735,20 @@ int ast2c_IntLiteralType_parse(ast2c_Ast* ast,ast2c_IntLiteralType* s,ast2c_json
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
 	void* is_int_set = h->object_get(h, obj_body, "is_int_set");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
+	void* bit_size = h->object_get(h, obj_body, "bit_size");
 	void* base = h->object_get(h, obj_body, "base");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_IntLiteralType::loc is null"); } return 0; }
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_IntLiteralType::is_explicit is null"); } return 0; }
 	if (!is_int_set) { if(h->error) { h->error(h,is_int_set, "ast2c_IntLiteralType::is_int_set is null"); } return 0; }
 	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_IntLiteralType::bit_alignment is null"); } return 0; }
+	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_IntLiteralType::bit_size is null"); } return 0; }
 	if (!base) { if(h->error) { h->error(h,base, "ast2c_IntLiteralType::base is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_IntLiteralType::loc"); }
+		goto error;
+	}
+	if(!h->number_get(h,bit_size,&s->bit_size)) {
+		if(h->error) { h->error(h,bit_size, "failed to parse ast2c_IntLiteralType::bit_size"); }
 		goto error;
 	}
 	return 1;
@@ -1757,14 +1769,20 @@ int ast2c_StrLiteralType_parse(ast2c_Ast* ast,ast2c_StrLiteralType* s,ast2c_json
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
 	void* is_int_set = h->object_get(h, obj_body, "is_int_set");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
+	void* bit_size = h->object_get(h, obj_body, "bit_size");
 	void* base = h->object_get(h, obj_body, "base");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_StrLiteralType::loc is null"); } return 0; }
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_StrLiteralType::is_explicit is null"); } return 0; }
 	if (!is_int_set) { if(h->error) { h->error(h,is_int_set, "ast2c_StrLiteralType::is_int_set is null"); } return 0; }
 	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_StrLiteralType::bit_alignment is null"); } return 0; }
+	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_StrLiteralType::bit_size is null"); } return 0; }
 	if (!base) { if(h->error) { h->error(h,base, "ast2c_StrLiteralType::base is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_StrLiteralType::loc"); }
+		goto error;
+	}
+	if(!h->number_get(h,bit_size,&s->bit_size)) {
+		if(h->error) { h->error(h,bit_size, "failed to parse ast2c_StrLiteralType::bit_size"); }
 		goto error;
 	}
 	return 1;
@@ -1784,12 +1802,18 @@ int ast2c_VoidType_parse(ast2c_Ast* ast,ast2c_VoidType* s,ast2c_json_handlers* h
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
 	void* is_int_set = h->object_get(h, obj_body, "is_int_set");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
+	void* bit_size = h->object_get(h, obj_body, "bit_size");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_VoidType::loc is null"); } return 0; }
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_VoidType::is_explicit is null"); } return 0; }
 	if (!is_int_set) { if(h->error) { h->error(h,is_int_set, "ast2c_VoidType::is_int_set is null"); } return 0; }
 	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_VoidType::bit_alignment is null"); } return 0; }
+	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_VoidType::bit_size is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_VoidType::loc"); }
+		goto error;
+	}
+	if(!h->number_get(h,bit_size,&s->bit_size)) {
+		if(h->error) { h->error(h,bit_size, "failed to parse ast2c_VoidType::bit_size"); }
 		goto error;
 	}
 	return 1;
@@ -1809,12 +1833,18 @@ int ast2c_BoolType_parse(ast2c_Ast* ast,ast2c_BoolType* s,ast2c_json_handlers* h
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
 	void* is_int_set = h->object_get(h, obj_body, "is_int_set");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
+	void* bit_size = h->object_get(h, obj_body, "bit_size");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_BoolType::loc is null"); } return 0; }
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_BoolType::is_explicit is null"); } return 0; }
 	if (!is_int_set) { if(h->error) { h->error(h,is_int_set, "ast2c_BoolType::is_int_set is null"); } return 0; }
 	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_BoolType::bit_alignment is null"); } return 0; }
+	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_BoolType::bit_size is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_BoolType::loc"); }
+		goto error;
+	}
+	if(!h->number_get(h,bit_size,&s->bit_size)) {
+		if(h->error) { h->error(h,bit_size, "failed to parse ast2c_BoolType::bit_size"); }
 		goto error;
 	}
 	return 1;
@@ -1836,6 +1866,7 @@ int ast2c_ArrayType_parse(ast2c_Ast* ast,ast2c_ArrayType* s,ast2c_json_handlers*
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
 	void* is_int_set = h->object_get(h, obj_body, "is_int_set");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
+	void* bit_size = h->object_get(h, obj_body, "bit_size");
 	void* end_loc = h->object_get(h, obj_body, "end_loc");
 	void* base_type = h->object_get(h, obj_body, "base_type");
 	void* length = h->object_get(h, obj_body, "length");
@@ -1843,11 +1874,16 @@ int ast2c_ArrayType_parse(ast2c_Ast* ast,ast2c_ArrayType* s,ast2c_json_handlers*
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_ArrayType::is_explicit is null"); } return 0; }
 	if (!is_int_set) { if(h->error) { h->error(h,is_int_set, "ast2c_ArrayType::is_int_set is null"); } return 0; }
 	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_ArrayType::bit_alignment is null"); } return 0; }
+	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_ArrayType::bit_size is null"); } return 0; }
 	if (!end_loc) { if(h->error) { h->error(h,end_loc, "ast2c_ArrayType::end_loc is null"); } return 0; }
 	if (!base_type) { if(h->error) { h->error(h,base_type, "ast2c_ArrayType::base_type is null"); } return 0; }
 	if (!length) { if(h->error) { h->error(h,length, "ast2c_ArrayType::length is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_ArrayType::loc"); }
+		goto error;
+	}
+	if(!h->number_get(h,bit_size,&s->bit_size)) {
+		if(h->error) { h->error(h,bit_size, "failed to parse ast2c_ArrayType::bit_size"); }
 		goto error;
 	}
 	if(!ast2c_Loc_parse(&s->end_loc,h,end_loc)) {
@@ -1873,12 +1909,14 @@ int ast2c_FunctionType_parse(ast2c_Ast* ast,ast2c_FunctionType* s,ast2c_json_han
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
 	void* is_int_set = h->object_get(h, obj_body, "is_int_set");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
+	void* bit_size = h->object_get(h, obj_body, "bit_size");
 	void* return_type = h->object_get(h, obj_body, "return_type");
 	void* parameters = h->object_get(h, obj_body, "parameters");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_FunctionType::loc is null"); } return 0; }
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_FunctionType::is_explicit is null"); } return 0; }
 	if (!is_int_set) { if(h->error) { h->error(h,is_int_set, "ast2c_FunctionType::is_int_set is null"); } return 0; }
 	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_FunctionType::bit_alignment is null"); } return 0; }
+	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_FunctionType::bit_size is null"); } return 0; }
 	if (!return_type) { if(h->error) { h->error(h,return_type, "ast2c_FunctionType::return_type is null"); } return 0; }
 	if (!parameters) { if(h->error) { h->error(h,parameters, "ast2c_FunctionType::parameters is null"); } return 0; }
 	if(!h->array_size(h, parameters,&s->parameters_size)) {
@@ -1887,6 +1925,10 @@ int ast2c_FunctionType_parse(ast2c_Ast* ast,ast2c_FunctionType* s,ast2c_json_han
 	}
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_FunctionType::loc"); }
+		goto error;
+	}
+	if(!h->number_get(h,bit_size,&s->bit_size)) {
+		if(h->error) { h->error(h,bit_size, "failed to parse ast2c_FunctionType::bit_size"); }
 		goto error;
 	}
 	return 1;
@@ -1908,6 +1950,7 @@ int ast2c_StructType_parse(ast2c_Ast* ast,ast2c_StructType* s,ast2c_json_handler
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
 	void* is_int_set = h->object_get(h, obj_body, "is_int_set");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
+	void* bit_size = h->object_get(h, obj_body, "bit_size");
 	void* fields = h->object_get(h, obj_body, "fields");
 	void* base = h->object_get(h, obj_body, "base");
 	void* recursive = h->object_get(h, obj_body, "recursive");
@@ -1915,6 +1958,7 @@ int ast2c_StructType_parse(ast2c_Ast* ast,ast2c_StructType* s,ast2c_json_handler
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_StructType::is_explicit is null"); } return 0; }
 	if (!is_int_set) { if(h->error) { h->error(h,is_int_set, "ast2c_StructType::is_int_set is null"); } return 0; }
 	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_StructType::bit_alignment is null"); } return 0; }
+	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_StructType::bit_size is null"); } return 0; }
 	if (!fields) { if(h->error) { h->error(h,fields, "ast2c_StructType::fields is null"); } return 0; }
 	if(!h->array_size(h, fields,&s->fields_size)) {
 		if(h->error) { h->error(h,fields, "failed to get array size of ast2c_StructType::fields"); }
@@ -1924,6 +1968,10 @@ int ast2c_StructType_parse(ast2c_Ast* ast,ast2c_StructType* s,ast2c_json_handler
 	if (!recursive) { if(h->error) { h->error(h,recursive, "ast2c_StructType::recursive is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_StructType::loc"); }
+		goto error;
+	}
+	if(!h->number_get(h,bit_size,&s->bit_size)) {
+		if(h->error) { h->error(h,bit_size, "failed to parse ast2c_StructType::bit_size"); }
 		goto error;
 	}
 	return 1;
@@ -1946,6 +1994,7 @@ int ast2c_StructUnionType_parse(ast2c_Ast* ast,ast2c_StructUnionType* s,ast2c_js
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
 	void* is_int_set = h->object_get(h, obj_body, "is_int_set");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
+	void* bit_size = h->object_get(h, obj_body, "bit_size");
 	void* fields = h->object_get(h, obj_body, "fields");
 	void* base = h->object_get(h, obj_body, "base");
 	void* union_fields = h->object_get(h, obj_body, "union_fields");
@@ -1953,6 +2002,7 @@ int ast2c_StructUnionType_parse(ast2c_Ast* ast,ast2c_StructUnionType* s,ast2c_js
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_StructUnionType::is_explicit is null"); } return 0; }
 	if (!is_int_set) { if(h->error) { h->error(h,is_int_set, "ast2c_StructUnionType::is_int_set is null"); } return 0; }
 	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_StructUnionType::bit_alignment is null"); } return 0; }
+	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_StructUnionType::bit_size is null"); } return 0; }
 	if (!fields) { if(h->error) { h->error(h,fields, "ast2c_StructUnionType::fields is null"); } return 0; }
 	if(!h->array_size(h, fields,&s->fields_size)) {
 		if(h->error) { h->error(h,fields, "failed to get array size of ast2c_StructUnionType::fields"); }
@@ -1966,6 +2016,10 @@ int ast2c_StructUnionType_parse(ast2c_Ast* ast,ast2c_StructUnionType* s,ast2c_js
 	}
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_StructUnionType::loc"); }
+		goto error;
+	}
+	if(!h->number_get(h,bit_size,&s->bit_size)) {
+		if(h->error) { h->error(h,bit_size, "failed to parse ast2c_StructUnionType::bit_size"); }
 		goto error;
 	}
 	return 1;
@@ -1988,6 +2042,7 @@ int ast2c_UnionType_parse(ast2c_Ast* ast,ast2c_UnionType* s,ast2c_json_handlers*
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
 	void* is_int_set = h->object_get(h, obj_body, "is_int_set");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
+	void* bit_size = h->object_get(h, obj_body, "bit_size");
 	void* cond = h->object_get(h, obj_body, "cond");
 	void* candidates = h->object_get(h, obj_body, "candidates");
 	void* base_type = h->object_get(h, obj_body, "base_type");
@@ -1995,6 +2050,7 @@ int ast2c_UnionType_parse(ast2c_Ast* ast,ast2c_UnionType* s,ast2c_json_handlers*
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_UnionType::is_explicit is null"); } return 0; }
 	if (!is_int_set) { if(h->error) { h->error(h,is_int_set, "ast2c_UnionType::is_int_set is null"); } return 0; }
 	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_UnionType::bit_alignment is null"); } return 0; }
+	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_UnionType::bit_size is null"); } return 0; }
 	if (!cond) { if(h->error) { h->error(h,cond, "ast2c_UnionType::cond is null"); } return 0; }
 	if (!candidates) { if(h->error) { h->error(h,candidates, "ast2c_UnionType::candidates is null"); } return 0; }
 	if(!h->array_size(h, candidates,&s->candidates_size)) {
@@ -2004,6 +2060,10 @@ int ast2c_UnionType_parse(ast2c_Ast* ast,ast2c_UnionType* s,ast2c_json_handlers*
 	if (!base_type) { if(h->error) { h->error(h,base_type, "ast2c_UnionType::base_type is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_UnionType::loc"); }
+		goto error;
+	}
+	if(!h->number_get(h,bit_size,&s->bit_size)) {
+		if(h->error) { h->error(h,bit_size, "failed to parse ast2c_UnionType::bit_size"); }
 		goto error;
 	}
 	return 1;
@@ -2025,16 +2085,22 @@ int ast2c_RangeType_parse(ast2c_Ast* ast,ast2c_RangeType* s,ast2c_json_handlers*
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
 	void* is_int_set = h->object_get(h, obj_body, "is_int_set");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
+	void* bit_size = h->object_get(h, obj_body, "bit_size");
 	void* base_type = h->object_get(h, obj_body, "base_type");
 	void* range = h->object_get(h, obj_body, "range");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_RangeType::loc is null"); } return 0; }
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_RangeType::is_explicit is null"); } return 0; }
 	if (!is_int_set) { if(h->error) { h->error(h,is_int_set, "ast2c_RangeType::is_int_set is null"); } return 0; }
 	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_RangeType::bit_alignment is null"); } return 0; }
+	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_RangeType::bit_size is null"); } return 0; }
 	if (!base_type) { if(h->error) { h->error(h,base_type, "ast2c_RangeType::base_type is null"); } return 0; }
 	if (!range) { if(h->error) { h->error(h,range, "ast2c_RangeType::range is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_RangeType::loc"); }
+		goto error;
+	}
+	if(!h->number_get(h,bit_size,&s->bit_size)) {
+		if(h->error) { h->error(h,bit_size, "failed to parse ast2c_RangeType::bit_size"); }
 		goto error;
 	}
 	return 1;
@@ -2055,14 +2121,20 @@ int ast2c_EnumType_parse(ast2c_Ast* ast,ast2c_EnumType* s,ast2c_json_handlers* h
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
 	void* is_int_set = h->object_get(h, obj_body, "is_int_set");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
+	void* bit_size = h->object_get(h, obj_body, "bit_size");
 	void* base = h->object_get(h, obj_body, "base");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_EnumType::loc is null"); } return 0; }
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_EnumType::is_explicit is null"); } return 0; }
 	if (!is_int_set) { if(h->error) { h->error(h,is_int_set, "ast2c_EnumType::is_int_set is null"); } return 0; }
 	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_EnumType::bit_alignment is null"); } return 0; }
+	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_EnumType::bit_size is null"); } return 0; }
 	if (!base) { if(h->error) { h->error(h,base, "ast2c_EnumType::base is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_EnumType::loc"); }
+		goto error;
+	}
+	if(!h->number_get(h,bit_size,&s->bit_size)) {
+		if(h->error) { h->error(h,bit_size, "failed to parse ast2c_EnumType::bit_size"); }
 		goto error;
 	}
 	return 1;

@@ -4,7 +4,7 @@
 #include "../common/print.h"
 #include <core/ast/json.h>
 #include <file/file_view.h>
-#include "collect.h"
+#include "generate.h"
 #include <wrap/argv.h>
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
@@ -76,28 +76,10 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
         print_error("cannot decode json file: ast is null");
         return 1;
     }
-    /*
-    if (!res2) {
-        auto& err = res2.error();
-        auto loc = err.loc;
-        std::string name;
-        if (loc.file == 0) {
-            name = "<unknown file>";
-        }
-        else {
-            auto l = files->at(loc.file - 1);
-            if (!l || !l->is_string()) {
-                name = "<unknown file>";
-            }
-            else {
-                l->as_string(name);
-            }
-        }
-        print_error("cannot generate code: ", err.msg, " at ", name, ":", loc.line, ":", loc.col);
-        return 1;
-    }
-    cout << g.code.out();
-    */
+    j2cp2::Generator g;
+    auto prog = brgen::ast::cast_to<brgen::ast::Program>(*res);
+    g.write_program(prog);
+    cout << g.w.out() << "\n";
     return 0;
 }
 

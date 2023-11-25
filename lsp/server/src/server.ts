@@ -400,6 +400,9 @@ const hover = async (params :HoverParams)=>{
     }
     let found :any;
     ast2ts.walk(docInfo.prevNode,(f,node)=>{
+        if(found!==undefined){
+            return false;
+        }
         if(node.loc.file!=1) {
             return; // skip other files
         }
@@ -434,50 +437,72 @@ const hover = async (params :HoverParams)=>{
             },
         };
     }
+    if(found === null) {
+        return null;
+    }
+
+    const bitSize = (bit :number|null|undefined) => {
+        if(!bit){
+            return "unknown";
+        }
+        if(bit%8===0){
+            return `${bit/8} byte`;
+        }
+        return `${bit} bit`;
+    }
     if(ast2ts.isIdent(found)){
+        let ident = found as ast2ts.Ident;
         for(;;){
-            switch (found.usage) {
+            switch (ident.usage) {
                 case ast2ts.IdentUsage.unknown:
-                    return makeHover(found.ident,"unknown identifier");
+                    return makeHover(ident.ident,"unknown identifier");
                 case ast2ts.IdentUsage.reference:
-                    if(ast2ts.isIdent(found.base)){
-                        found = found.base;
+                    if(ast2ts.isIdent(ident.base)){
+                        ident = ident.base;
                         continue;
                     }
-                    return makeHover(found.ident,"unspecified reference");
+                    return makeHover(ident.ident,"unspecified reference");
                 case ast2ts.IdentUsage.reference_member:
-                    if(ast2ts.isMemberAccess(found.base)){
-                        if(ast2ts.isIdent(found.base.base)){
-                            found = found.base.base;
+                    if(ast2ts.isMemberAccess(ident.base)){
+                        if(ast2ts.isIdent(ident.base.base)){
+                            ident = ident.base.base;
                             continue;
                         }
                     }
-                    return makeHover(found.ident,"unspecified member reference");
+                    return makeHover(ident.ident,"unspecified member reference");
                 case ast2ts.IdentUsage.define_variable:
-                    return makeHover(found.ident,"variable");
+                    return makeHover(ident.ident,"variable");
                 case ast2ts.IdentUsage.define_field:
-                    // color of enum member
-                    return makeHover(found.ident,"field");
+                    if(ast2ts.isField(ident.base)){
+                        return makeHover(ident.ident, `field (size: ${bitSize(ident.base.field_type?.bit_size)} ,align: ${ident.base.bit_alignment}, type align: ${ident.base.field_type?.bit_alignment||"unknown"})`);
+                    }
+                    return makeHover(ident.ident,"field");
                 case ast2ts.IdentUsage.define_const:
-                    return makeHover(found.ident,"constant");
+                    return makeHover(ident.ident,"constant");
                 case ast2ts.IdentUsage.define_enum_member:
-                    return makeHover(found.ident,"enum member");
+                    return makeHover(ident.ident,"enum member");
                 case ast2ts.IdentUsage.define_format:
-                    return makeHover(found.ident,"format");
+                    if(ast2ts.isFormat(ident.base)){
+                        return makeHover(ident.ident,`format (size: ${bitSize(ident.base.body?.struct_type?.bit_size)} ${ident.base.body?.struct_type?.is_int_set?"int_set":""})`);
+                    }
+                    return makeHover(ident.ident,"format"); 
                 case ast2ts.IdentUsage.define_enum:
-                    return makeHover(found.ident,"enum");
+                    if(ast2ts.isEnum(ident.base)){
+                        return makeHover(ident.ident,`enum (size: ${bitSize(ident.base.base_type?.bit_size)}, align: ${ident.base?.base_type?.bit_alignment || "unknown"})`);
+                    }
+                    return makeHover(ident.ident,"enum");
                 case ast2ts.IdentUsage.define_state:
-                    return makeHover(found.ident,"state");
+                    return makeHover(ident.ident,"state");
                 case ast2ts.IdentUsage.reference_type:
-                    return makeHover(found.ident,"type");
+                    return makeHover(ident.ident,"type");
                 case ast2ts.IdentUsage.define_cast_fn:
-                    return makeHover(found.ident,"cast function");
+                    return makeHover(ident.ident,"cast function");
                 case ast2ts.IdentUsage.maybe_type:
-                    return makeHover(found.ident,"maybe type");
+                    return makeHover(ident.ident,"maybe type");
                 case ast2ts.IdentUsage.define_fn:
-                    return makeHover(found.ident,"function");
+                    return makeHover(ident.ident,"function");
                 default:
-                    return makeHover(found.ident,"unknown identifier");
+                    return makeHover(ident.ident,"unknown identifier");
             }
         }   
     }

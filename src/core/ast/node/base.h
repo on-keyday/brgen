@@ -80,6 +80,8 @@ namespace brgen::ast {
         // type is integer, set of integer, or fixed length integer array.
         // not complex type array, not dynamic array, not include recursive struct
         bool is_int_set = false;
+        // type is interpretable as single integer type
+        // bool single_int_type = false;
         // bit alignment of type
         BitAlignment bit_alignment = BitAlignment::not_target;
         // bit size of type. if dynamic length or not decidable, 0.
@@ -226,9 +228,9 @@ namespace brgen::ast {
 
         void dump(auto&& field_) {
             Stmt::dump(field_);
+            sdebugf(struct_type);
             sdebugf(elements);
             sdebugf(scope);
-            sdebugf(struct_type);
         }
     };
 

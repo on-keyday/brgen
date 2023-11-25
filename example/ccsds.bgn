@@ -1,6 +1,6 @@
 
 format CCSDS:
-    version :u2
+    version :u3
     type :u1
     packet_secondary_header_flag :u1
     application_process_id :u11

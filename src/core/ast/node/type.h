@@ -343,12 +343,14 @@ namespace brgen::ast {
         std::weak_ptr<Expr> cond;
         std::vector<std::shared_ptr<UnionCandidate>> candidates;
         std::weak_ptr<StructUnionType> base_type;
+        std::shared_ptr<Type> common_type;
 
         void dump(auto&& field_) {
             Type::dump(field_);
             sdebugf(cond);
             sdebugf(candidates);
             sdebugf(base_type);
+            sdebugf(common_type);
         }
 
         UnionType(lexer::Loc loc)
