@@ -53,22 +53,21 @@ const (
 	NodeTypeUnionType       NodeType = 40
 	NodeTypeRangeType       NodeType = 41
 	NodeTypeEnumType        NodeType = 42
-	NodeTypeBitGroupType    NodeType = 43
-	NodeTypeLiteral         NodeType = 44
-	NodeTypeIntLiteral      NodeType = 45
-	NodeTypeBoolLiteral     NodeType = 46
-	NodeTypeStrLiteral      NodeType = 47
-	NodeTypeInput           NodeType = 48
-	NodeTypeOutput          NodeType = 49
-	NodeTypeConfig          NodeType = 50
-	NodeTypeMember          NodeType = 51
-	NodeTypeField           NodeType = 52
-	NodeTypeFormat          NodeType = 53
-	NodeTypeState           NodeType = 54
-	NodeTypeEnum            NodeType = 55
-	NodeTypeEnumMember      NodeType = 56
-	NodeTypeFunction        NodeType = 57
-	NodeTypeBuiltinFunction NodeType = 58
+	NodeTypeLiteral         NodeType = 43
+	NodeTypeIntLiteral      NodeType = 44
+	NodeTypeBoolLiteral     NodeType = 45
+	NodeTypeStrLiteral      NodeType = 46
+	NodeTypeInput           NodeType = 47
+	NodeTypeOutput          NodeType = 48
+	NodeTypeConfig          NodeType = 49
+	NodeTypeMember          NodeType = 50
+	NodeTypeField           NodeType = 51
+	NodeTypeFormat          NodeType = 52
+	NodeTypeState           NodeType = 53
+	NodeTypeEnum            NodeType = 54
+	NodeTypeEnumMember      NodeType = 55
+	NodeTypeFunction        NodeType = 56
+	NodeTypeBuiltinFunction NodeType = 57
 )
 
 func (n NodeType) String() string {
@@ -159,8 +158,6 @@ func (n NodeType) String() string {
 		return "range_type"
 	case NodeTypeEnumType:
 		return "enum_type"
-	case NodeTypeBitGroupType:
-		return "bit_group_type"
 	case NodeTypeLiteral:
 		return "literal"
 	case NodeTypeIntLiteral:
@@ -288,8 +285,6 @@ func (n *NodeType) UnmarshalJSON(data []byte) error {
 		*n = NodeTypeRangeType
 	case "enum_type":
 		*n = NodeTypeEnumType
-	case "bit_group_type":
-		*n = NodeTypeBitGroupType
 	case "literal":
 		*n = NodeTypeLiteral
 	case "int_literal":
@@ -484,10 +479,6 @@ func (n *RangeType) GetNodeType() NodeType {
 
 func (n *EnumType) GetNodeType() NodeType {
 	return NodeTypeEnumType
-}
-
-func (n *BitGroupType) GetNodeType() NodeType {
-	return NodeTypeBitGroupType
 }
 
 func (n *IntLiteral) GetNodeType() NodeType {
@@ -2076,36 +2067,6 @@ func (n *EnumType) GetLoc() Loc {
 	return n.Loc
 }
 
-type BitGroupType struct {
-	Loc          Loc
-	IsExplicit   bool
-	IsIntSet     bool
-	BitAlignment BitAlignment
-	BitFields    []*Field
-	IsAligned    bool
-	BitSize      uint64
-}
-
-func (n *BitGroupType) isType() {}
-
-func (n *BitGroupType) GetIsExplicit() bool {
-	return n.IsExplicit
-}
-
-func (n *BitGroupType) GetIsIntSet() bool {
-	return n.IsIntSet
-}
-
-func (n *BitGroupType) GetBitAlignment() BitAlignment {
-	return n.BitAlignment
-}
-
-func (n *BitGroupType) isNode() {}
-
-func (n *BitGroupType) GetLoc() Loc {
-	return n.Loc
-}
-
 type IntLiteral struct {
 	Loc           Loc
 	ExprType      Type
@@ -2607,8 +2568,6 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			n.node[i] = &RangeType{Loc: raw.Loc}
 		case NodeTypeEnumType:
 			n.node[i] = &EnumType{Loc: raw.Loc}
-		case NodeTypeBitGroupType:
-			n.node[i] = &BitGroupType{Loc: raw.Loc}
 		case NodeTypeIntLiteral:
 			n.node[i] = &IntLiteral{Loc: raw.Loc}
 		case NodeTypeBoolLiteral:
@@ -3420,28 +3379,6 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.Base != nil {
 				v.Base = n.node[*tmp.Base].(*Enum)
 			}
-		case NodeTypeBitGroupType:
-			v := n.node[i].(*BitGroupType)
-			var tmp struct {
-				IsExplicit   bool         `json:"is_explicit"`
-				IsIntSet     bool         `json:"is_int_set"`
-				BitAlignment BitAlignment `json:"bit_alignment"`
-				BitFields    []uintptr    `json:"bit_fields"`
-				IsAligned    bool         `json:"is_aligned"`
-				BitSize      uint64       `json:"bit_size"`
-			}
-			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
-				return nil, err
-			}
-			v.IsExplicit = tmp.IsExplicit
-			v.IsIntSet = tmp.IsIntSet
-			v.BitAlignment = tmp.BitAlignment
-			v.BitFields = make([]*Field, len(tmp.BitFields))
-			for j, k := range tmp.BitFields {
-				v.BitFields[j] = n.node[k].(*Field)
-			}
-			v.IsAligned = tmp.IsAligned
-			v.BitSize = tmp.BitSize
 		case NodeTypeIntLiteral:
 			v := n.node[i].(*IntLiteral)
 			var tmp struct {
@@ -4107,7 +4044,6 @@ func Walk(n Node, f Visitor) {
 			}
 		}
 	case *EnumType:
-	case *BitGroupType:
 	case *IntLiteral:
 		if v.ExprType != nil {
 			if !f.Visit(f, v.ExprType) {

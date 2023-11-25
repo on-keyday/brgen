@@ -85,7 +85,6 @@ impl From<&Node> for NodeType {
 			Node::UnionType(_) => Self::UnionType,
 			Node::RangeType(_) => Self::RangeType,
 			Node::EnumType(_) => Self::EnumType,
-			Node::BitGroupType(_) => Self::BitGroupType,
 			Node::IntLiteral(_) => Self::IntLiteral,
 			Node::BoolLiteral(_) => Self::BoolLiteral,
 			Node::StrLiteral(_) => Self::StrLiteral,
@@ -152,7 +151,6 @@ impl From<&NodeWeak> for NodeType {
 			NodeWeak::UnionType(_) => Self::UnionType,
 			NodeWeak::RangeType(_) => Self::RangeType,
 			NodeWeak::EnumType(_) => Self::EnumType,
-			NodeWeak::BitGroupType(_) => Self::BitGroupType,
 			NodeWeak::IntLiteral(_) => Self::IntLiteral,
 			NodeWeak::BoolLiteral(_) => Self::BoolLiteral,
 			NodeWeak::StrLiteral(_) => Self::StrLiteral,
@@ -221,7 +219,6 @@ impl From<NodeWeak> for NodeType {
 	UnionType,
 	RangeType,
 	EnumType,
-	BitGroupType,
 	Literal,
 	IntLiteral,
 	BoolLiteral,
@@ -286,7 +283,6 @@ impl TryFrom<&str> for NodeType {
 			"union_type" =>Ok(Self::UnionType),
 			"range_type" =>Ok(Self::RangeType),
 			"enum_type" =>Ok(Self::EnumType),
-			"bit_group_type" =>Ok(Self::BitGroupType),
 			"literal" =>Ok(Self::Literal),
 			"int_literal" =>Ok(Self::IntLiteral),
 			"bool_literal" =>Ok(Self::BoolLiteral),
@@ -608,7 +604,6 @@ pub enum Node {
 	UnionType(Rc<RefCell<UnionType>>),
 	RangeType(Rc<RefCell<RangeType>>),
 	EnumType(Rc<RefCell<EnumType>>),
-	BitGroupType(Rc<RefCell<BitGroupType>>),
 	IntLiteral(Rc<RefCell<IntLiteral>>),
 	BoolLiteral(Rc<RefCell<BoolLiteral>>),
 	StrLiteral(Rc<RefCell<StrLiteral>>),
@@ -666,7 +661,6 @@ pub enum NodeWeak {
 	UnionType(Weak<RefCell<UnionType>>),
 	RangeType(Weak<RefCell<RangeType>>),
 	EnumType(Weak<RefCell<EnumType>>),
-	BitGroupType(Weak<RefCell<BitGroupType>>),
 	IntLiteral(Weak<RefCell<IntLiteral>>),
 	BoolLiteral(Weak<RefCell<BoolLiteral>>),
 	StrLiteral(Weak<RefCell<StrLiteral>>),
@@ -725,7 +719,6 @@ impl From<&Node> for NodeWeak {
 			Node::UnionType(node)=>Self::UnionType(Rc::downgrade(node)),
 			Node::RangeType(node)=>Self::RangeType(Rc::downgrade(node)),
 			Node::EnumType(node)=>Self::EnumType(Rc::downgrade(node)),
-			Node::BitGroupType(node)=>Self::BitGroupType(Rc::downgrade(node)),
 			Node::IntLiteral(node)=>Self::IntLiteral(Rc::downgrade(node)),
 			Node::BoolLiteral(node)=>Self::BoolLiteral(Rc::downgrade(node)),
 			Node::StrLiteral(node)=>Self::StrLiteral(Rc::downgrade(node)),
@@ -793,7 +786,6 @@ impl TryFrom<&NodeWeak> for Node {
 			NodeWeak::UnionType(node)=>Ok(Self::UnionType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::UnionType))?)),
 			NodeWeak::RangeType(node)=>Ok(Self::RangeType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::RangeType))?)),
 			NodeWeak::EnumType(node)=>Ok(Self::EnumType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::EnumType))?)),
-			NodeWeak::BitGroupType(node)=>Ok(Self::BitGroupType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::BitGroupType))?)),
 			NodeWeak::IntLiteral(node)=>Ok(Self::IntLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::IntLiteral))?)),
 			NodeWeak::BoolLiteral(node)=>Ok(Self::BoolLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::BoolLiteral))?)),
 			NodeWeak::StrLiteral(node)=>Ok(Self::StrLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::StrLiteral))?)),
@@ -1453,7 +1445,6 @@ pub enum Type {
 	UnionType(Rc<RefCell<UnionType>>),
 	RangeType(Rc<RefCell<RangeType>>),
 	EnumType(Rc<RefCell<EnumType>>),
-	BitGroupType(Rc<RefCell<BitGroupType>>),
 }
 
 #[derive(Debug,Clone)]
@@ -1471,7 +1462,6 @@ pub enum TypeWeak {
 	UnionType(Weak<RefCell<UnionType>>),
 	RangeType(Weak<RefCell<RangeType>>),
 	EnumType(Weak<RefCell<EnumType>>),
-	BitGroupType(Weak<RefCell<BitGroupType>>),
 }
 
 impl From<&Type> for TypeWeak {
@@ -1490,7 +1480,6 @@ impl From<&Type> for TypeWeak {
 			Type::UnionType(node)=>Self::UnionType(Rc::downgrade(node)),
 			Type::RangeType(node)=>Self::RangeType(Rc::downgrade(node)),
 			Type::EnumType(node)=>Self::EnumType(Rc::downgrade(node)),
-			Type::BitGroupType(node)=>Self::BitGroupType(Rc::downgrade(node)),
 		}
 	}
 }
@@ -1518,7 +1507,6 @@ impl TryFrom<&TypeWeak> for Type {
 			TypeWeak::UnionType(node)=>Ok(Self::UnionType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::UnionType))?)),
 			TypeWeak::RangeType(node)=>Ok(Self::RangeType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::RangeType))?)),
 			TypeWeak::EnumType(node)=>Ok(Self::EnumType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::EnumType))?)),
-			TypeWeak::BitGroupType(node)=>Ok(Self::BitGroupType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::BitGroupType))?)),
 		}
 	}
 }
@@ -1547,7 +1535,6 @@ impl TryFrom<&Node> for Type {
 			Node::UnionType(node)=>Ok(Self::UnionType(node.clone())),
 			Node::RangeType(node)=>Ok(Self::RangeType(node.clone())),
 			Node::EnumType(node)=>Ok(Self::EnumType(node.clone())),
-			Node::BitGroupType(node)=>Ok(Self::BitGroupType(node.clone())),
 			_=> Err(Error::InvalidNodeType(node.into())),
 		}
 	}
@@ -1576,7 +1563,6 @@ impl From<&Type> for Node {
 			Type::UnionType(node)=>Self::UnionType(node.clone()),
 			Type::RangeType(node)=>Self::RangeType(node.clone()),
 			Type::EnumType(node)=>Self::EnumType(node.clone()),
-			Type::BitGroupType(node)=>Self::BitGroupType(node.clone()),
 		}
 	}
 }
@@ -1604,7 +1590,6 @@ impl TryFrom<&TypeWeak> for Node {
 			TypeWeak::UnionType(node)=>Ok(Self::UnionType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::UnionType))?)),
 			TypeWeak::RangeType(node)=>Ok(Self::RangeType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::RangeType))?)),
 			TypeWeak::EnumType(node)=>Ok(Self::EnumType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::EnumType))?)),
-			TypeWeak::BitGroupType(node)=>Ok(Self::BitGroupType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::BitGroupType))?)),
 		}
 	}
 }
@@ -1632,7 +1617,6 @@ impl From<&TypeWeak> for NodeWeak {
 			TypeWeak::UnionType(node)=>Self::UnionType(node.clone()),
 			TypeWeak::RangeType(node)=>Self::RangeType(node.clone()),
 			TypeWeak::EnumType(node)=>Self::EnumType(node.clone()),
-			TypeWeak::BitGroupType(node)=>Self::BitGroupType(node.clone()),
 		}
 	}
 }
@@ -1660,7 +1644,6 @@ impl TryFrom<&NodeWeak> for TypeWeak {
 			NodeWeak::UnionType(node)=>Ok(Self::UnionType(node.clone())),
 			NodeWeak::RangeType(node)=>Ok(Self::RangeType(node.clone())),
 			NodeWeak::EnumType(node)=>Ok(Self::EnumType(node.clone())),
-			NodeWeak::BitGroupType(node)=>Ok(Self::BitGroupType(node.clone())),
 			_=> Err(Error::InvalidNodeType(node.into())),
 		}
 	}
@@ -1690,7 +1673,6 @@ impl TryFrom<&Node> for TypeWeak {
 			Node::UnionType(node)=>Ok(Self::UnionType(Rc::downgrade(node))),
 			Node::RangeType(node)=>Ok(Self::RangeType(Rc::downgrade(node))),
 			Node::EnumType(node)=>Ok(Self::EnumType(Rc::downgrade(node))),
-			Node::BitGroupType(node)=>Ok(Self::BitGroupType(Rc::downgrade(node))),
 			_=> Err(Error::InvalidNodeType(node.into())),
 		}
 	}
@@ -4675,75 +4657,6 @@ impl From<Rc<RefCell<EnumType>>> for Node {
 }
 
 #[derive(Debug,Clone)]
-pub struct BitGroupType {
-	pub loc: Loc,
-	pub is_explicit: bool,
-	pub is_int_set: bool,
-	pub bit_alignment: BitAlignment,
-	pub bit_fields: Vec<Weak<RefCell<Field>>>,
-	pub is_aligned: bool,
-	pub bit_size: u64,
-}
-
-impl TryFrom<&Type> for Rc<RefCell<BitGroupType>> {
-	type Error = Error;
-	fn try_from(node:&Type)->Result<Self,Self::Error>{
-		match node {
-			Type::BitGroupType(node)=>Ok(node.clone()),
-			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
-		}
-	}
-}
-
-impl TryFrom<Type> for Rc<RefCell<BitGroupType>> {
-	type Error = Error;
-	fn try_from(node:Type)->Result<Self,Self::Error>{
-		Self::try_from(&node)
-	}
-}
-
-impl From<&Rc<RefCell<BitGroupType>>> for Type {
-	fn from(node:&Rc<RefCell<BitGroupType>>)-> Self{
-		Type::BitGroupType(node.clone())
-	}
-}
-
-impl From<Rc<RefCell<BitGroupType>>> for Type {
-	fn from(node:Rc<RefCell<BitGroupType>>)-> Self{
-		Self::from(&node)
-	}
-}
-
-impl TryFrom<&Node> for Rc<RefCell<BitGroupType>> {
-	type Error = Error;
-	fn try_from(node:&Node)->Result<Self,Self::Error>{
-		match node {
-			Node::BitGroupType(node)=>Ok(node.clone()),
-			_=> Err(Error::InvalidNodeType(node.into())),
-		}
-	}
-}
-
-impl TryFrom<Node> for Rc<RefCell<BitGroupType>> {
-	type Error = Error;
-	fn try_from(node:Node)->Result<Self,Self::Error>{
-		Self::try_from(&node)
-	}
-}
-
-impl From<&Rc<RefCell<BitGroupType>>> for Node {
-	fn from(node:&Rc<RefCell<BitGroupType>>)-> Self{
-		Node::BitGroupType(node.clone())
-	}
-}
-
-impl From<Rc<RefCell<BitGroupType>>> for Node {
-	fn from(node:Rc<RefCell<BitGroupType>>)-> Self{
-		Self::from(&node)
-	}
-}
-
-#[derive(Debug,Clone)]
 pub struct IntLiteral {
 	pub loc: Loc,
 	pub expr_type: Option<Type>,
@@ -6435,17 +6348,6 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				is_int_set: false,
 				bit_alignment: BitAlignment::ByteAligned,
 				base: None,
-				})))
-			},
-			NodeType::BitGroupType => {
-				Node::BitGroupType(Rc::new(RefCell::new(BitGroupType {
-				loc: raw_node.loc.clone(),
-				is_explicit: false,
-				is_int_set: false,
-				bit_alignment: BitAlignment::ByteAligned,
-				bit_fields: Vec::new(),
-				is_aligned: false,
-				bit_size: 0,
 				})))
 			},
 			NodeType::IntLiteral => {
@@ -8941,79 +8843,6 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					node.borrow_mut().base = Some(Rc::downgrade(&base_body));
 				}
 			},
-			NodeType::BitGroupType => {
-				let node = nodes[i].clone();
-				let node = match node {
-					Node::BitGroupType(node)=>node,
-					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
-				};
-				let is_explicit_body = match raw_node.body.get("is_explicit") {
-					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"is_explicit")),
-				};
-				node.borrow_mut().is_explicit = match is_explicit_body.as_bool() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
-				};
-				let is_int_set_body = match raw_node.body.get("is_int_set") {
-					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"is_int_set")),
-				};
-				node.borrow_mut().is_int_set = match is_int_set_body.as_bool() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(is_int_set_body.into(),JSONType::Bool)),
-				};
-				let bit_alignment_body = match raw_node.body.get("bit_alignment") {
-					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"bit_alignment")),
-				};
-				node.borrow_mut().bit_alignment = match bit_alignment_body.as_str() {
-					Some(v)=>match BitAlignment::try_from(v) {
-						Ok(v)=>v,
-						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
-					},
-					None=>return Err(Error::MismatchJSONType(bit_alignment_body.into(),JSONType::String)),
-				};
-				let bit_fields_body = match raw_node.body.get("bit_fields") {
-					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"bit_fields")),
-				};
-				let bit_fields_body = match bit_fields_body.as_array(){
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(bit_fields_body.into(),JSONType::Array)),
-				};
-				for link in bit_fields_body {
-					let link = match link.as_u64() {
-						Some(v)=>v,
-						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
-					};
-					let bit_fields_body = match nodes.get(link as usize) {
-						Some(v)=>v,
-						None => return Err(Error::IndexOutOfBounds(link as usize)),
-					};
-					let bit_fields_body = match bit_fields_body {
-						Node::Field(body)=>body,
-						x =>return Err(Error::MismatchNodeType(x.into(),bit_fields_body.into())),
-					};
-					node.borrow_mut().bit_fields.push(Rc::downgrade(&bit_fields_body));
-				}
-				let is_aligned_body = match raw_node.body.get("is_aligned") {
-					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"is_aligned")),
-				};
-				node.borrow_mut().is_aligned = match is_aligned_body.as_bool() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(is_aligned_body.into(),JSONType::Bool)),
-				};
-				let bit_size_body = match raw_node.body.get("bit_size") {
-					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"bit_size")),
-				};
-				node.borrow_mut().bit_size = match bit_size_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(bit_size_body.into(),JSONType::Number)),
-				};
-			},
 			NodeType::IntLiteral => {
 				let node = nodes[i].clone();
 				let node = match node {
@@ -10300,7 +10129,6 @@ where
 			}
 		},
 		Node::EnumType(_)=>{},
-		Node::BitGroupType(_)=>{},
 		Node::IntLiteral(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
 				if !f.visit(&node.into()){

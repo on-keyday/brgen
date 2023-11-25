@@ -88,7 +88,6 @@ typedef struct ast2c_StructUnionType ast2c_StructUnionType;
 typedef struct ast2c_UnionType ast2c_UnionType;
 typedef struct ast2c_RangeType ast2c_RangeType;
 typedef struct ast2c_EnumType ast2c_EnumType;
-typedef struct ast2c_BitGroupType ast2c_BitGroupType;
 typedef struct ast2c_IntLiteral ast2c_IntLiteral;
 typedef struct ast2c_BoolLiteral ast2c_BoolLiteral;
 typedef struct ast2c_StrLiteral ast2c_StrLiteral;
@@ -157,7 +156,6 @@ enum ast2c_NodeType {
 	AST2C_NODETYPE_UNION_TYPE,
 	AST2C_NODETYPE_RANGE_TYPE,
 	AST2C_NODETYPE_ENUM_TYPE,
-	AST2C_NODETYPE_BIT_GROUP_TYPE,
 	AST2C_NODETYPE_LITERAL,
 	AST2C_NODETYPE_INT_LITERAL,
 	AST2C_NODETYPE_BOOL_LITERAL,
@@ -898,21 +896,6 @@ struct ast2c_EnumType {
 
 // returns 1 if succeed 0 if failed
 int ast2c_EnumType_parse(ast2c_Ast* ,ast2c_EnumType*,ast2c_json_handlers*,void*);
-
-struct ast2c_BitGroupType {
-	const ast2c_NodeType node_type;
-	ast2c_Loc loc;
-	int is_explicit;
-	int is_int_set;
-	ast2c_BitAlignment bit_alignment;
-	ast2c_Field** bit_fields;
-	size_t bit_fields_size;
-	int is_aligned;
-	uint64_t bit_size;
-};
-
-// returns 1 if succeed 0 if failed
-int ast2c_BitGroupType_parse(ast2c_Ast* ,ast2c_BitGroupType*,ast2c_json_handlers*,void*);
 
 struct ast2c_IntLiteral {
 	const ast2c_NodeType node_type;

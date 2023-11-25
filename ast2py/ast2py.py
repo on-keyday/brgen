@@ -48,7 +48,6 @@ class NodeType(PyEnum):
     UNION_TYPE = "union_type"
     RANGE_TYPE = "range_type"
     ENUM_TYPE = "enum_type"
-    BIT_GROUP_TYPE = "bit_group_type"
     LITERAL = "literal"
     INT_LITERAL = "int_literal"
     BOOL_LITERAL = "bool_literal"
@@ -412,12 +411,6 @@ class EnumType(Type):
     base: Optional[Enum]
 
 
-class BitGroupType(Type):
-    bit_fields: List[Field]
-    is_aligned: bool
-    bit_size: int
-
-
 class IntLiteral(Literal):
     value: str
 
@@ -749,8 +742,6 @@ def ast2node(ast :JsonAst) -> Program:
                 node.append(RangeType())
             case NodeType.ENUM_TYPE:
                 node.append(EnumType())
-            case NodeType.BIT_GROUP_TYPE:
-                node.append(BitGroupType())
             case NodeType.INT_LITERAL:
                 node.append(IntLiteral())
             case NodeType.BOOL_LITERAL:
@@ -1307,17 +1298,6 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].base = x if isinstance(x,Enum) else raiseError(TypeError('type mismatch at EnumType::base'))
                 else:
                     node[i].base = None
-            case NodeType.BIT_GROUP_TYPE:
-                x = ast.node[i].body["is_explicit"]
-                node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at BitGroupType::is_explicit'))
-                x = ast.node[i].body["is_int_set"]
-                node[i].is_int_set = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at BitGroupType::is_int_set'))
-                node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
-                node[i].bit_fields = [(node[x] if isinstance(node[x],Field) else raiseError(TypeError('type mismatch at BitGroupType::bit_fields'))) for x in ast.node[i].body["bit_fields"]]
-                x = ast.node[i].body["is_aligned"]
-                node[i].is_aligned = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at BitGroupType::is_aligned'))
-                x = ast.node[i].body["bit_size"]
-                node[i].bit_size = x if isinstance(x,int)  else raiseError(TypeError('type mismatch at BitGroupType::bit_size'))
             case NodeType.INT_LITERAL:
                 if ast.node[i].body["expr_type"] is not None:
                     x = node[ast.node[i].body["expr_type"]]
@@ -1772,8 +1752,6 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
               if f(f,x.base_type) == False:
                   return
         case x if isinstance(x,EnumType):
-            pass
-        case x if isinstance(x,BitGroupType):
             pass
         case x if isinstance(x,IntLiteral):
           if x.expr_type is not None:

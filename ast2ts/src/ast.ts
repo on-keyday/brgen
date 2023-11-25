@@ -2,10 +2,10 @@
 
 export namespace ast2ts {
 
-export type NodeType = "program" | "comment" | "comment_group" | "expr" | "binary" | "unary" | "cond" | "ident" | "call" | "if" | "member_access" | "paren" | "index" | "match" | "range" | "tmp_var" | "block_expr" | "import" | "cast" | "stmt" | "loop" | "indent_block" | "match_branch" | "union_candidate" | "return" | "break" | "continue" | "assert" | "implicit_yield" | "type" | "int_type" | "ident_type" | "int_literal_type" | "str_literal_type" | "void_type" | "bool_type" | "array_type" | "function_type" | "struct_type" | "struct_union_type" | "union_type" | "range_type" | "enum_type" | "bit_group_type" | "literal" | "int_literal" | "bool_literal" | "str_literal" | "input" | "output" | "config" | "member" | "field" | "format" | "state" | "enum" | "enum_member" | "function" | "builtin_function";
+export type NodeType = "program" | "comment" | "comment_group" | "expr" | "binary" | "unary" | "cond" | "ident" | "call" | "if" | "member_access" | "paren" | "index" | "match" | "range" | "tmp_var" | "block_expr" | "import" | "cast" | "stmt" | "loop" | "indent_block" | "match_branch" | "union_candidate" | "return" | "break" | "continue" | "assert" | "implicit_yield" | "type" | "int_type" | "ident_type" | "int_literal_type" | "str_literal_type" | "void_type" | "bool_type" | "array_type" | "function_type" | "struct_type" | "struct_union_type" | "union_type" | "range_type" | "enum_type" | "literal" | "int_literal" | "bool_literal" | "str_literal" | "input" | "output" | "config" | "member" | "field" | "format" | "state" | "enum" | "enum_member" | "function" | "builtin_function";
 
 export function isNodeType(obj: any): obj is NodeType {
-	return obj && typeof obj === 'string' && (obj === "program" || obj === "comment" || obj === "comment_group" || obj === "expr" || obj === "binary" || obj === "unary" || obj === "cond" || obj === "ident" || obj === "call" || obj === "if" || obj === "member_access" || obj === "paren" || obj === "index" || obj === "match" || obj === "range" || obj === "tmp_var" || obj === "block_expr" || obj === "import" || obj === "cast" || obj === "stmt" || obj === "loop" || obj === "indent_block" || obj === "match_branch" || obj === "union_candidate" || obj === "return" || obj === "break" || obj === "continue" || obj === "assert" || obj === "implicit_yield" || obj === "type" || obj === "int_type" || obj === "ident_type" || obj === "int_literal_type" || obj === "str_literal_type" || obj === "void_type" || obj === "bool_type" || obj === "array_type" || obj === "function_type" || obj === "struct_type" || obj === "struct_union_type" || obj === "union_type" || obj === "range_type" || obj === "enum_type" || obj === "bit_group_type" || obj === "literal" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "input" || obj === "output" || obj === "config" || obj === "member" || obj === "field" || obj === "format" || obj === "state" || obj === "enum" || obj === "enum_member" || obj === "function" || obj === "builtin_function")
+	return obj && typeof obj === 'string' && (obj === "program" || obj === "comment" || obj === "comment_group" || obj === "expr" || obj === "binary" || obj === "unary" || obj === "cond" || obj === "ident" || obj === "call" || obj === "if" || obj === "member_access" || obj === "paren" || obj === "index" || obj === "match" || obj === "range" || obj === "tmp_var" || obj === "block_expr" || obj === "import" || obj === "cast" || obj === "stmt" || obj === "loop" || obj === "indent_block" || obj === "match_branch" || obj === "union_candidate" || obj === "return" || obj === "break" || obj === "continue" || obj === "assert" || obj === "implicit_yield" || obj === "type" || obj === "int_type" || obj === "ident_type" || obj === "int_literal_type" || obj === "str_literal_type" || obj === "void_type" || obj === "bool_type" || obj === "array_type" || obj === "function_type" || obj === "struct_type" || obj === "struct_union_type" || obj === "union_type" || obj === "range_type" || obj === "enum_type" || obj === "literal" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "input" || obj === "output" || obj === "config" || obj === "member" || obj === "field" || obj === "format" || obj === "state" || obj === "enum" || obj === "enum_member" || obj === "function" || obj === "builtin_function")
 }
 
 export enum UnaryOp {
@@ -187,7 +187,6 @@ export function isNode(obj: any): obj is Node {
 	if (isUnionType(obj)) return true;
 	if (isRangeType(obj)) return true;
 	if (isEnumType(obj)) return true;
-	if (isBitGroupType(obj)) return true;
 	if (isIntLiteral(obj)) return true;
 	if (isBoolLiteral(obj)) return true;
 	if (isStrLiteral(obj)) return true;
@@ -277,7 +276,6 @@ export function isType(obj: any): obj is Type {
 	if (isUnionType(obj)) return true;
 	if (isRangeType(obj)) return true;
 	if (isEnumType(obj)) return true;
-	if (isBitGroupType(obj)) return true;
 	return false;
 }
 
@@ -677,16 +675,6 @@ export interface EnumType extends Type {
 
 export function isEnumType(obj: any): obj is EnumType {
 	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "enum_type"
-}
-
-export interface BitGroupType extends Type {
-	bit_fields: Field[];
-	is_aligned: boolean;
-	bit_size: number;
-}
-
-export function isBitGroupType(obj: any): obj is BitGroupType {
-	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "bit_group_type"
 }
 
 export interface IntLiteral extends Literal {
@@ -1421,20 +1409,6 @@ export function parseAST(obj: any): Program {
 				is_int_set: false,
 				bit_alignment: BitAlignment.byte_aligned,
 				base: null,
-			}
-			c.node.push(n);
-			break;
-		}
-		case "bit_group_type": {
-			const n :BitGroupType = {
-				node_type: "bit_group_type",
-				loc: on.loc,
-				is_explicit: false,
-				is_int_set: false,
-				bit_alignment: BitAlignment.byte_aligned,
-				bit_fields: [],
-				is_aligned: false,
-				bit_size: 0,
 			}
 			c.node.push(n);
 			break;
@@ -2826,45 +2800,6 @@ export function parseAST(obj: any): Program {
 			n.base = tmpbase;
 			break;
 		}
-		case "bit_group_type": {
-			const n :BitGroupType = cnode as BitGroupType;
-			const tmpis_explicit = on.body?.is_explicit;
-			if (typeof on.body?.is_explicit !== "boolean") {
-				throw new Error('invalid node list at BitGroupType::is_explicit');
-			}
-			n.is_explicit = on.body.is_explicit;
-			const tmpis_int_set = on.body?.is_int_set;
-			if (typeof on.body?.is_int_set !== "boolean") {
-				throw new Error('invalid node list at BitGroupType::is_int_set');
-			}
-			n.is_int_set = on.body.is_int_set;
-			const tmpbit_alignment = on.body?.bit_alignment;
-			if (!isBitAlignment(tmpbit_alignment)) {
-				throw new Error('invalid node list at BitGroupType::bit_alignment');
-			}
-			n.bit_alignment = tmpbit_alignment;
-			for (const o of on.body.bit_fields) {
-				if (typeof o !== 'number') {
-					throw new Error('invalid node list at BitGroupType::bit_fields');
-				}
-				const tmpbit_fields = c.node[o];
-				if (!isField(tmpbit_fields)) {
-					throw new Error('invalid node list at BitGroupType::bit_fields');
-				}
-				n.bit_fields.push(tmpbit_fields);
-			}
-			const tmpis_aligned = on.body?.is_aligned;
-			if (typeof on.body?.is_aligned !== "boolean") {
-				throw new Error('invalid node list at BitGroupType::is_aligned');
-			}
-			n.is_aligned = on.body.is_aligned;
-			const tmpbit_size = on.body?.bit_size;
-			if (typeof on.body?.bit_size !== "number") {
-				throw new Error('invalid node list at BitGroupType::bit_size');
-			}
-			n.bit_size = on.body.bit_size;
-			break;
-		}
 		case "int_literal": {
 			const n :IntLiteral = cnode as IntLiteral;
 			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
@@ -3993,13 +3928,6 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 				break;
 			}
 			const n :EnumType = node as EnumType;
-			break;
-		}
-		case "bit_group_type": {
-			if (!isBitGroupType(node)) {
-				break;
-			}
-			const n :BitGroupType = node as BitGroupType;
 			break;
 		}
 		case "int_literal": {

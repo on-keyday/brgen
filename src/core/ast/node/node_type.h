@@ -78,7 +78,6 @@ namespace brgen::ast {
         union_type,
         range_type,
         enum_type,
-        bit_group_type,
     };
 
     /*
@@ -264,7 +263,6 @@ namespace brgen::ast {
         {NodeType::enum_, "enum"},
         {NodeType::enum_member, "enum_member"},
         {NodeType::enum_type, "enum_type"},
-        {NodeType::bit_group_type, "bit_group_type"},
         {NodeType::state, "state"},
         {NodeType::builtin_function, "builtin_function"},
     };

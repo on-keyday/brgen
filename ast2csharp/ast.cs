@@ -47,7 +47,6 @@ StructUnionType,
 UnionType,
 RangeType,
 EnumType,
-BitGroupType,
 Literal,
 IntLiteral,
 BoolLiteral,
@@ -459,15 +458,6 @@ public class EnumType : Type{
 	public bool IsIntSet{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public Enum? Base{get;set;}
-}
-public class BitGroupType : Type{
-	public Loc Loc{get;set;}
-	public bool IsExplicit{get;set;}
-	public bool IsIntSet{get;set;}
-	public BitAlignment BitAlignment{get;set;}
-	public List<Field>? BitFields{get;set;}
-	public bool IsAligned{get;set;}
-	public ulong BitSize{get;set;}
 }
 public class IntLiteral : Literal{
 	public Loc Loc{get;set;}
