@@ -490,7 +490,7 @@ format F:
     ASSERT_TRUE(fmt3);
     ASSERT_EQ(fmt3->body->struct_type->bit_alignment, ast::BitAlignment::byte_aligned);
     ASSERT_EQ(fmt3->body->struct_type->fields.size(), 3);
-    ASSERT_EQ(fmt3->body->struct_type->bit_size, 0);  // not decidable
+    ASSERT_EQ(fmt3->body->struct_type->bit_size, 8);
     auto field8 = ast::as<ast::Field>(fmt3->body->struct_type->fields[0]);
     ASSERT_TRUE(field8);
     ASSERT_EQ(field8->bit_alignment, ast::BitAlignment::bit_1);
@@ -500,18 +500,18 @@ format F:
     ASSERT_TRUE(field9);
     ASSERT_EQ(field9->bit_alignment, ast::BitAlignment::byte_aligned);
     ASSERT_EQ(field9->field_type->bit_alignment, ast::BitAlignment::bit_7);
-    ASSERT_EQ(field9->field_type->bit_size, 0);  // not decidable
+    ASSERT_EQ(field9->field_type->bit_size, 7);  // not decidable
     auto field10 = ast::as<ast::Field>(fmt3->body->struct_type->fields[2]);
     ASSERT_TRUE(field10);
     ASSERT_EQ(field10->bit_alignment, ast::BitAlignment::not_target);
     ASSERT_EQ(field10->field_type->bit_alignment, ast::BitAlignment::not_target);
-    ASSERT_EQ(field10->field_type->bit_size, 0);  // not decidable
+    ASSERT_EQ(field10->field_type->bit_size, 7);  // not decidable
 
     auto fmt4 = ast::as<ast::Format>(r->struct_type->fields[3]);
     ASSERT_TRUE(fmt4);
     ASSERT_EQ(fmt4->body->struct_type->bit_alignment, ast::BitAlignment::bit_7);
     ASSERT_EQ(fmt4->body->struct_type->fields.size(), 2);
-    ASSERT_EQ(fmt4->body->struct_type->bit_size, 0);  // not decidable
+    ASSERT_EQ(fmt4->body->struct_type->bit_size, 7);  // not decidable
     auto field11 = ast::as<ast::Field>(fmt4->body->struct_type->fields[0]);
     ASSERT_TRUE(field11);
     ASSERT_EQ(field11->bit_alignment, ast::BitAlignment::bit_3);

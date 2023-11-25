@@ -154,7 +154,6 @@ namespace brgen::middle {
                             }
                             if (alignment == ast::BitAlignment::not_decidable) {
                                 field->bit_alignment = ast::BitAlignment::not_decidable;
-                                bit_size = 0;
                                 continue;
                             }
                             auto new_align = (int(alignment) - int(ast::BitAlignment::byte_aligned)) + (int(field->field_type->bit_alignment) - int(ast::BitAlignment::byte_aligned));
@@ -165,7 +164,12 @@ namespace brgen::middle {
                                 bit_size = field->field_type->bit_size;
                             }
                             else if (bit_size != 0) {
-                                bit_size += field->field_type->bit_size;
+                                if (field->field_type->bit_size == 0) {
+                                    bit_size = 0;
+                                }
+                                else {
+                                    bit_size += field->field_type->bit_size;
+                                }
                             }
                         }
                     }
@@ -253,7 +257,9 @@ namespace brgen::middle {
                     // estimate bit size
                     for (auto& c : u->candidates) {
                         auto f = c->field.lock();
-                        assert(f);
+                        if (!f) {
+                            continue;
+                        }
                         if (size == -1) {
                             size = f->field_type->bit_size;
                         }

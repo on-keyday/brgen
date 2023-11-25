@@ -232,6 +232,7 @@ namespace brgen::ast {
                 ident->usage = IdentUsage::define_field;
                 ident->scope = state.current_scope();
                 ident->scope->push(ident);
+                ident->expr_type = f;
                 auto field = std::make_shared<Field>(f->loc);
                 field->ident = ident;
                 ident->base = field;
