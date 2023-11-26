@@ -66,6 +66,7 @@ typedef struct ast2c_TmpVar ast2c_TmpVar;
 typedef struct ast2c_BlockExpr ast2c_BlockExpr;
 typedef struct ast2c_Import ast2c_Import;
 typedef struct ast2c_Cast ast2c_Cast;
+typedef struct ast2c_Available ast2c_Available;
 typedef struct ast2c_Loop ast2c_Loop;
 typedef struct ast2c_IndentBlock ast2c_IndentBlock;
 typedef struct ast2c_MatchBranch ast2c_MatchBranch;
@@ -132,6 +133,7 @@ enum ast2c_NodeType {
 	AST2C_NODETYPE_BLOCK_EXPR,
 	AST2C_NODETYPE_IMPORT,
 	AST2C_NODETYPE_CAST,
+	AST2C_NODETYPE_AVAILABLE,
 	AST2C_NODETYPE_STMT,
 	AST2C_NODETYPE_LOOP,
 	AST2C_NODETYPE_INDENT_BLOCK,
@@ -241,6 +243,7 @@ enum ast2c_IdentUsage {
 	AST2C_IDENTUSAGE_REFERENCE_TYPE,
 	AST2C_IDENTUSAGE_REFERENCE_MEMBER,
 	AST2C_IDENTUSAGE_MAYBE_TYPE,
+	AST2C_IDENTUSAGE_REFERENCE_BUILTIN_FN,
 };
 const char* ast2c_IdentUsage_to_string(ast2c_IdentUsage);
 int ast2c_IdentUsage_from_string(const char*,ast2c_IdentUsage*);
@@ -635,6 +638,18 @@ struct ast2c_Cast {
 
 // returns 1 if succeed 0 if failed
 int ast2c_Cast_parse(ast2c_Ast* ,ast2c_Cast*,ast2c_json_handlers*,void*);
+
+struct ast2c_Available {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
+	ast2c_Call* base;
+	ast2c_Ident* target;
+};
+
+// returns 1 if succeed 0 if failed
+int ast2c_Available_parse(ast2c_Ast* ,ast2c_Available*,ast2c_json_handlers*,void*);
 
 struct ast2c_Loop {
 	const ast2c_NodeType node_type;

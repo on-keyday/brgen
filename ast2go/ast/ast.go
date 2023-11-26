@@ -29,45 +29,46 @@ const (
 	NodeTypeBlockExpr       NodeType = 16
 	NodeTypeImport          NodeType = 17
 	NodeTypeCast            NodeType = 18
-	NodeTypeStmt            NodeType = 19
-	NodeTypeLoop            NodeType = 20
-	NodeTypeIndentBlock     NodeType = 21
-	NodeTypeMatchBranch     NodeType = 22
-	NodeTypeUnionCandidate  NodeType = 23
-	NodeTypeReturn          NodeType = 24
-	NodeTypeBreak           NodeType = 25
-	NodeTypeContinue        NodeType = 26
-	NodeTypeAssert          NodeType = 27
-	NodeTypeImplicitYield   NodeType = 28
-	NodeTypeType            NodeType = 29
-	NodeTypeIntType         NodeType = 30
-	NodeTypeIdentType       NodeType = 31
-	NodeTypeIntLiteralType  NodeType = 32
-	NodeTypeStrLiteralType  NodeType = 33
-	NodeTypeVoidType        NodeType = 34
-	NodeTypeBoolType        NodeType = 35
-	NodeTypeArrayType       NodeType = 36
-	NodeTypeFunctionType    NodeType = 37
-	NodeTypeStructType      NodeType = 38
-	NodeTypeStructUnionType NodeType = 39
-	NodeTypeUnionType       NodeType = 40
-	NodeTypeRangeType       NodeType = 41
-	NodeTypeEnumType        NodeType = 42
-	NodeTypeLiteral         NodeType = 43
-	NodeTypeIntLiteral      NodeType = 44
-	NodeTypeBoolLiteral     NodeType = 45
-	NodeTypeStrLiteral      NodeType = 46
-	NodeTypeInput           NodeType = 47
-	NodeTypeOutput          NodeType = 48
-	NodeTypeConfig          NodeType = 49
-	NodeTypeMember          NodeType = 50
-	NodeTypeField           NodeType = 51
-	NodeTypeFormat          NodeType = 52
-	NodeTypeState           NodeType = 53
-	NodeTypeEnum            NodeType = 54
-	NodeTypeEnumMember      NodeType = 55
-	NodeTypeFunction        NodeType = 56
-	NodeTypeBuiltinFunction NodeType = 57
+	NodeTypeAvailable       NodeType = 19
+	NodeTypeStmt            NodeType = 20
+	NodeTypeLoop            NodeType = 21
+	NodeTypeIndentBlock     NodeType = 22
+	NodeTypeMatchBranch     NodeType = 23
+	NodeTypeUnionCandidate  NodeType = 24
+	NodeTypeReturn          NodeType = 25
+	NodeTypeBreak           NodeType = 26
+	NodeTypeContinue        NodeType = 27
+	NodeTypeAssert          NodeType = 28
+	NodeTypeImplicitYield   NodeType = 29
+	NodeTypeType            NodeType = 30
+	NodeTypeIntType         NodeType = 31
+	NodeTypeIdentType       NodeType = 32
+	NodeTypeIntLiteralType  NodeType = 33
+	NodeTypeStrLiteralType  NodeType = 34
+	NodeTypeVoidType        NodeType = 35
+	NodeTypeBoolType        NodeType = 36
+	NodeTypeArrayType       NodeType = 37
+	NodeTypeFunctionType    NodeType = 38
+	NodeTypeStructType      NodeType = 39
+	NodeTypeStructUnionType NodeType = 40
+	NodeTypeUnionType       NodeType = 41
+	NodeTypeRangeType       NodeType = 42
+	NodeTypeEnumType        NodeType = 43
+	NodeTypeLiteral         NodeType = 44
+	NodeTypeIntLiteral      NodeType = 45
+	NodeTypeBoolLiteral     NodeType = 46
+	NodeTypeStrLiteral      NodeType = 47
+	NodeTypeInput           NodeType = 48
+	NodeTypeOutput          NodeType = 49
+	NodeTypeConfig          NodeType = 50
+	NodeTypeMember          NodeType = 51
+	NodeTypeField           NodeType = 52
+	NodeTypeFormat          NodeType = 53
+	NodeTypeState           NodeType = 54
+	NodeTypeEnum            NodeType = 55
+	NodeTypeEnumMember      NodeType = 56
+	NodeTypeFunction        NodeType = 57
+	NodeTypeBuiltinFunction NodeType = 58
 )
 
 func (n NodeType) String() string {
@@ -110,6 +111,8 @@ func (n NodeType) String() string {
 		return "import"
 	case NodeTypeCast:
 		return "cast"
+	case NodeTypeAvailable:
+		return "available"
 	case NodeTypeStmt:
 		return "stmt"
 	case NodeTypeLoop:
@@ -237,6 +240,8 @@ func (n *NodeType) UnmarshalJSON(data []byte) error {
 		*n = NodeTypeImport
 	case "cast":
 		*n = NodeTypeCast
+	case "available":
+		*n = NodeTypeAvailable
 	case "stmt":
 		*n = NodeTypeStmt
 	case "loop":
@@ -391,6 +396,10 @@ func (n *Import) GetNodeType() NodeType {
 
 func (n *Cast) GetNodeType() NodeType {
 	return NodeTypeCast
+}
+
+func (n *Available) GetNodeType() NodeType {
+	return NodeTypeAvailable
 }
 
 func (n *Loop) GetNodeType() NodeType {
@@ -784,21 +793,22 @@ func (n *BinaryOp) UnmarshalJSON(data []byte) error {
 type IdentUsage int
 
 const (
-	IdentUsageUnknown          IdentUsage = 0
-	IdentUsageReference        IdentUsage = 1
-	IdentUsageDefineVariable   IdentUsage = 2
-	IdentUsageDefineConst      IdentUsage = 3
-	IdentUsageDefineField      IdentUsage = 4
-	IdentUsageDefineFormat     IdentUsage = 5
-	IdentUsageDefineState      IdentUsage = 6
-	IdentUsageDefineEnum       IdentUsage = 7
-	IdentUsageDefineEnumMember IdentUsage = 8
-	IdentUsageDefineFn         IdentUsage = 9
-	IdentUsageDefineCastFn     IdentUsage = 10
-	IdentUsageDefineArg        IdentUsage = 11
-	IdentUsageReferenceType    IdentUsage = 12
-	IdentUsageReferenceMember  IdentUsage = 13
-	IdentUsageMaybeType        IdentUsage = 14
+	IdentUsageUnknown            IdentUsage = 0
+	IdentUsageReference          IdentUsage = 1
+	IdentUsageDefineVariable     IdentUsage = 2
+	IdentUsageDefineConst        IdentUsage = 3
+	IdentUsageDefineField        IdentUsage = 4
+	IdentUsageDefineFormat       IdentUsage = 5
+	IdentUsageDefineState        IdentUsage = 6
+	IdentUsageDefineEnum         IdentUsage = 7
+	IdentUsageDefineEnumMember   IdentUsage = 8
+	IdentUsageDefineFn           IdentUsage = 9
+	IdentUsageDefineCastFn       IdentUsage = 10
+	IdentUsageDefineArg          IdentUsage = 11
+	IdentUsageReferenceType      IdentUsage = 12
+	IdentUsageReferenceMember    IdentUsage = 13
+	IdentUsageMaybeType          IdentUsage = 14
+	IdentUsageReferenceBuiltinFn IdentUsage = 15
 )
 
 func (n IdentUsage) String() string {
@@ -833,6 +843,8 @@ func (n IdentUsage) String() string {
 		return "reference_member"
 	case IdentUsageMaybeType:
 		return "maybe_type"
+	case IdentUsageReferenceBuiltinFn:
+		return "reference_builtin_fn"
 	default:
 		return fmt.Sprintf("IdentUsage(%d)", n)
 	}
@@ -874,6 +886,8 @@ func (n *IdentUsage) UnmarshalJSON(data []byte) error {
 		*n = IdentUsageReferenceMember
 	case "maybe_type":
 		*n = IdentUsageMaybeType
+	case "reference_builtin_fn":
+		*n = IdentUsageReferenceBuiltinFn
 	default:
 		return fmt.Errorf("unknown IdentUsage: %q", tmp)
 	}
@@ -1565,6 +1579,30 @@ func (n *Cast) GetConstantLevel() ConstantLevel {
 func (n *Cast) isNode() {}
 
 func (n *Cast) GetLoc() Loc {
+	return n.Loc
+}
+
+type Available struct {
+	Loc           Loc
+	ExprType      Type
+	ConstantLevel ConstantLevel
+	Base          *Call
+	Target        *Ident
+}
+
+func (n *Available) isExpr() {}
+
+func (n *Available) GetExprType() Type {
+	return n.ExprType
+}
+
+func (n *Available) GetConstantLevel() ConstantLevel {
+	return n.ConstantLevel
+}
+
+func (n *Available) isNode() {}
+
+func (n *Available) GetLoc() Loc {
 	return n.Loc
 }
 
@@ -2590,6 +2628,8 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			n.node[i] = &Import{Loc: raw.Loc}
 		case NodeTypeCast:
 			n.node[i] = &Cast{Loc: raw.Loc}
+		case NodeTypeAvailable:
+			n.node[i] = &Available{Loc: raw.Loc}
 		case NodeTypeLoop:
 			n.node[i] = &Loop{Loc: raw.Loc}
 		case NodeTypeIndentBlock:
@@ -3058,6 +3098,27 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			}
 			if tmp.Expr != nil {
 				v.Expr = n.node[*tmp.Expr].(Expr)
+			}
+		case NodeTypeAvailable:
+			v := n.node[i].(*Available)
+			var tmp struct {
+				ExprType      *uintptr      `json:"expr_type"`
+				ConstantLevel ConstantLevel `json:"constant_level"`
+				Base          *uintptr      `json:"base"`
+				Target        *uintptr      `json:"target"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			if tmp.ExprType != nil {
+				v.ExprType = n.node[*tmp.ExprType].(Type)
+			}
+			v.ConstantLevel = tmp.ConstantLevel
+			if tmp.Base != nil {
+				v.Base = n.node[*tmp.Base].(*Call)
+			}
+			if tmp.Target != nil {
+				v.Target = n.node[*tmp.Target].(*Ident)
 			}
 		case NodeTypeLoop:
 			v := n.node[i].(*Loop)
@@ -4013,6 +4074,22 @@ func Walk(n Node, f Visitor) {
 		}
 		if v.Expr != nil {
 			if !f.Visit(f, v.Expr) {
+				return
+			}
+		}
+	case *Available:
+		if v.ExprType != nil {
+			if !f.Visit(f, v.ExprType) {
+				return
+			}
+		}
+		if v.Base != nil {
+			if !f.Visit(f, v.Base) {
+				return
+			}
+		}
+		if v.Target != nil {
+			if !f.Visit(f, v.Target) {
 				return
 			}
 		}

@@ -24,6 +24,7 @@ class NodeType(PyEnum):
     BLOCK_EXPR = "block_expr"
     IMPORT = "import"
     CAST = "cast"
+    AVAILABLE = "available"
     STMT = "stmt"
     LOOP = "loop"
     INDENT_BLOCK = "indent_block"
@@ -127,6 +128,7 @@ class IdentUsage(PyEnum):
     REFERENCE_TYPE = "reference_type"
     REFERENCE_MEMBER = "reference_member"
     MAYBE_TYPE = "maybe_type"
+    REFERENCE_BUILTIN_FN = "reference_builtin_fn"
 
 
 class Endian(PyEnum):
@@ -299,6 +301,11 @@ class Import(Expr):
 class Cast(Expr):
     base: Optional[Call]
     expr: Optional[Expr]
+
+
+class Available(Expr):
+    base: Optional[Call]
+    target: Optional[Ident]
 
 
 class Loop(Stmt):
@@ -699,6 +706,8 @@ def ast2node(ast :JsonAst) -> Program:
                 node.append(Import())
             case NodeType.CAST:
                 node.append(Cast())
+            case NodeType.AVAILABLE:
+                node.append(Available())
             case NodeType.LOOP:
                 node.append(Loop())
             case NodeType.INDENT_BLOCK:
@@ -1055,6 +1064,23 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].expr = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at Cast::expr'))
                 else:
                     node[i].expr = None
+            case NodeType.AVAILABLE:
+                if ast.node[i].body["expr_type"] is not None:
+                    x = node[ast.node[i].body["expr_type"]]
+                    node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at Available::expr_type'))
+                else:
+                    node[i].expr_type = None
+                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
+                if ast.node[i].body["base"] is not None:
+                    x = node[ast.node[i].body["base"]]
+                    node[i].base = x if isinstance(x,Call) else raiseError(TypeError('type mismatch at Available::base'))
+                else:
+                    node[i].base = None
+                if ast.node[i].body["target"] is not None:
+                    x = node[ast.node[i].body["target"]]
+                    node[i].target = x if isinstance(x,Ident) else raiseError(TypeError('type mismatch at Available::target'))
+                else:
+                    node[i].target = None
             case NodeType.LOOP:
                 if ast.node[i].body["cond_scope"] is not None:
                     node[i].cond_scope = scope[ast.node[i].body["cond_scope"]]
@@ -1691,6 +1717,16 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
                   return
           if x.expr is not None:
               if f(f,x.expr) == False:
+                  return
+        case x if isinstance(x,Available):
+          if x.expr_type is not None:
+              if f(f,x.expr_type) == False:
+                  return
+          if x.base is not None:
+              if f(f,x.base) == False:
+                  return
+          if x.target is not None:
+              if f(f,x.target) == False:
                   return
         case x if isinstance(x,Loop):
           if x.init is not None:

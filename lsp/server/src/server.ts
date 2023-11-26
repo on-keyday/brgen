@@ -324,6 +324,7 @@ const tokenizeSourceImpl  = async (doc :TextDocument,docInfo :DocumentInfo) =>{
                     case ast2ts.IdentUsage.define_field:   
                     case ast2ts.IdentUsage.define_const:
                     case ast2ts.IdentUsage.define_enum_member:
+                    case ast2ts.IdentUsage.define_arg:
                         locList.push({loc: node.loc,length: node.ident.length,index:6});
                         break;   
                     case ast2ts.IdentUsage.define_format:
@@ -336,6 +337,9 @@ const tokenizeSourceImpl  = async (doc :TextDocument,docInfo :DocumentInfo) =>{
                         break;
                     case ast2ts.IdentUsage.define_fn:
                         locList.push({loc: node.loc,length: node.ident.length,index:8});
+                        break;
+                    case ast2ts.IdentUsage.reference_builtin_fn:
+                        locList.push({loc: node.loc,length: node.ident.length,index:9});
                         break;
                 }
                 break;
@@ -505,6 +509,10 @@ const hover = async (params :HoverParams)=>{
                     return makeHover(ident.ident,"maybe type");
                 case ast2ts.IdentUsage.define_fn:
                     return makeHover(ident.ident,"function");
+                case ast2ts.IdentUsage.define_arg:
+                    return makeHover(ident.ident,"argument");
+                case ast2ts.IdentUsage.reference_builtin_fn:
+                    return makeHover(ident.ident,"builtin function");
                 default:
                     return makeHover(ident.ident,"unknown identifier");
             }

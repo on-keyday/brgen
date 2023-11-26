@@ -23,6 +23,7 @@ TmpVar,
 BlockExpr,
 Import,
 Cast,
+Available,
 Stmt,
 Loop,
 IndentBlock,
@@ -123,6 +124,7 @@ DefineArg,
 ReferenceType,
 ReferenceMember,
 MaybeType,
+ReferenceBuiltinFn,
 }
 public enum Endian {
 Unspec,
@@ -313,6 +315,13 @@ public class Cast : Expr{
 	public ConstantLevel ConstantLevel{get;set;}
 	public Call? Base{get;set;}
 	public Expr? Expr{get;set;}
+}
+public class Available : Expr{
+	public Loc Loc{get;set;}
+	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
+	public Call? Base{get;set;}
+	public Ident? Target{get;set;}
 }
 public class Loop : Stmt{
 	public Loc Loc{get;set;}

@@ -30,6 +30,7 @@ const char* ast2c_NodeType_to_string(ast2c_NodeType val) {
 	case AST2C_NODETYPE_BLOCK_EXPR: return "block_expr";
 	case AST2C_NODETYPE_IMPORT: return "import";
 	case AST2C_NODETYPE_CAST: return "cast";
+	case AST2C_NODETYPE_AVAILABLE: return "available";
 	case AST2C_NODETYPE_STMT: return "stmt";
 	case AST2C_NODETYPE_LOOP: return "loop";
 	case AST2C_NODETYPE_INDENT_BLOCK: return "indent_block";
@@ -150,6 +151,10 @@ int ast2c_NodeType_from_string(const char* str, ast2c_NodeType* out) {
 	}
 	if (strcmp(str, "cast") == 0) {
 		*out = AST2C_NODETYPE_CAST;
+		return 1;
+	}
+	if (strcmp(str, "available") == 0) {
+		*out = AST2C_NODETYPE_AVAILABLE;
 		return 1;
 	}
 	if (strcmp(str, "stmt") == 0) {
@@ -552,6 +557,7 @@ const char* ast2c_IdentUsage_to_string(ast2c_IdentUsage val) {
 	case AST2C_IDENTUSAGE_REFERENCE_TYPE: return "reference_type";
 	case AST2C_IDENTUSAGE_REFERENCE_MEMBER: return "reference_member";
 	case AST2C_IDENTUSAGE_MAYBE_TYPE: return "maybe_type";
+	case AST2C_IDENTUSAGE_REFERENCE_BUILTIN_FN: return "reference_builtin_fn";
 	default: return NULL;
 	}
 }
@@ -617,6 +623,10 @@ int ast2c_IdentUsage_from_string(const char* str, ast2c_IdentUsage* out) {
 	}
 	if (strcmp(str, "maybe_type") == 0) {
 		*out = AST2C_IDENTUSAGE_MAYBE_TYPE;
+		return 1;
+	}
+	if (strcmp(str, "reference_builtin_fn") == 0) {
+		*out = AST2C_IDENTUSAGE_REFERENCE_BUILTIN_FN;
 		return 1;
 	}
 	return 0;
@@ -1415,6 +1425,36 @@ int ast2c_Cast_parse(ast2c_Ast* ast,ast2c_Cast* s,ast2c_json_handlers* h, void* 
 	if (!expr) { if(h->error) { h->error(h,expr, "ast2c_Cast::expr is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_Cast::loc"); }
+		goto error;
+	}
+	return 1;
+error:
+	return 0;
+}
+
+// returns 1 if succeed 0 if failed
+int ast2c_Available_parse(ast2c_Ast* ast,ast2c_Available* s,ast2c_json_handlers* h, void* obj) {
+	if (!ast||!s||!h||!obj) {
+		if(h->error) { h->error(h,NULL, "invalid argument"); }
+		return 0;
+	}
+	void* loc = h->object_get(h, obj, "loc");
+	void* obj_body = h->object_get(h, obj, "body");
+	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
+	s->expr_type = NULL;
+	s->base = NULL;
+	s->target = NULL;
+	void* expr_type = h->object_get(h, obj_body, "expr_type");
+	void* constant_level = h->object_get(h, obj_body, "constant_level");
+	void* base = h->object_get(h, obj_body, "base");
+	void* target = h->object_get(h, obj_body, "target");
+	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_Available::loc is null"); } return 0; }
+	if (!expr_type) { if(h->error) { h->error(h,expr_type, "ast2c_Available::expr_type is null"); } return 0; }
+	if (!constant_level) { if(h->error) { h->error(h,constant_level, "ast2c_Available::constant_level is null"); } return 0; }
+	if (!base) { if(h->error) { h->error(h,base, "ast2c_Available::base is null"); } return 0; }
+	if (!target) { if(h->error) { h->error(h,target, "ast2c_Available::target is null"); } return 0; }
+	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
+		if(h->error) { h->error(h,loc, "failed to parse ast2c_Available::loc"); }
 		goto error;
 	}
 	return 1;

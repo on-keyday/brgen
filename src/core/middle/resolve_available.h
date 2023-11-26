@@ -29,8 +29,9 @@ namespace brgen::middle {
                         return;
                     }
                     ident->usage = ast::IdentUsage::reference_builtin_fn;
-                    node = std::make_shared<ast::Available>(ast::cast_to<ast::Ident>(p->arguments[0]), ast::cast_to<ast::Call>(std::move(node)));
-                    node->expr_type = std::make_shared<ast::BoolType>(ident->loc);
+                    auto a = std::make_shared<ast::Available>(ast::cast_to<ast::Ident>(p->arguments[0]), ast::cast_to<ast::Call>(std::move(node)));
+                    a->expr_type = std::make_shared<ast::BoolType>(ident->loc);
+                    node = std::move(a);
                 }
             }
         };
