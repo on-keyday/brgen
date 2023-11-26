@@ -187,11 +187,11 @@ namespace brgen::ast {
         }
 
         void export_union_field(const std::shared_ptr<Expr>& cond0, std::vector<std::shared_ptr<Expr>>& cond, const std::shared_ptr<StructUnionType>& type) {
-            assert(cond.size() == type->fields.size());
+            assert(cond.size() == type->structs.size());
             std::map<std::string, std::vector<std::shared_ptr<UnionCandidate>>> m;
             for (size_t i = 0; i < cond.size(); i++) {
                 auto& c = cond[i];
-                auto& f = type->fields[i];
+                auto& f = type->structs[i];
                 for (auto& d : f->fields) {
                     if (!d->ident) {
                         continue;
@@ -290,7 +290,7 @@ namespace brgen::ast {
                 auto c = state.enter_struct(struct_);
                 block = parse_statement();
                 struct_->base = block;
-                union_->fields.push_back(std::move(struct_));
+                union_->structs.push_back(std::move(struct_));
             };
 
             auto parse_match_branch = [&]() -> std::shared_ptr<MatchBranch> {
@@ -303,7 +303,7 @@ namespace brgen::ast {
                 if (!sym) {
                     auto tok = s.peek_token(":");
                     auto block = parse_indent_block(br);
-                    union_->fields.push_back(block->struct_type);
+                    union_->structs.push_back(block->struct_type);
                     br->then = std::move(block);
                     br->sym_loc = tok->loc;
                     return br;
@@ -376,7 +376,7 @@ namespace brgen::ast {
 
             auto body_with_struct = [&](lexer::Loc loc, auto& block, const auto& owner) {
                 auto tmp = parse_indent_block(owner);
-                union_->fields.push_back(tmp->struct_type);
+                union_->structs.push_back(tmp->struct_type);
                 block = std::move(tmp);
             };
 

@@ -97,7 +97,7 @@ namespace brgen::middle {
                 }
                 if (auto u = ast::as<ast::StructUnionType>(n)) {
                     u->is_int_set = true;
-                    for (auto& f : u->fields) {
+                    for (auto& f : u->structs) {
                         if (!f->is_int_set) {
                             u->is_int_set = false;
                         }
@@ -219,7 +219,7 @@ namespace brgen::middle {
                 if (auto u = ast::as<ast::StructUnionType>(n)) {
                     ast::BitAlignment alignment = ast::BitAlignment::not_target;
                     size_t bit_size = -1;
-                    for (auto& f : u->fields) {
+                    for (auto& f : u->structs) {
                         if (f->bit_alignment == ast::BitAlignment::not_target) {
                             continue;
                         }

@@ -450,7 +450,7 @@ public class StructUnionType : Type{
 	public bool IsIntSet{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public ulong BitSize{get;set;}
-	public List<StructType>? Fields{get;set;}
+	public List<StructType>? Structs{get;set;}
 	public Expr? Base{get;set;}
 	public List<Field>? UnionFields{get;set;}
 }

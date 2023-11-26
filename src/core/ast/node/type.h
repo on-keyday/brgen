@@ -303,7 +303,7 @@ namespace brgen::ast {
     struct StructUnionType : Type {
         define_node_type(NodeType::struct_union_type);
         std::weak_ptr<Expr> base;
-        std::vector<std::shared_ptr<StructType>> fields;
+        std::vector<std::shared_ptr<StructType>> structs;
         std::vector<std::weak_ptr<Field>> union_fields;
 
         StructUnionType(lexer::Loc l)
@@ -314,7 +314,7 @@ namespace brgen::ast {
 
         void dump(auto&& field_) {
             Type::dump(field_);
-            sdebugf(fields);
+            sdebugf(structs);
             sdebugf(base);
             sdebugf(union_fields);
         }

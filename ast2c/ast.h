@@ -872,8 +872,8 @@ struct ast2c_StructUnionType {
 	int is_int_set;
 	ast2c_BitAlignment bit_alignment;
 	uint64_t bit_size;
-	ast2c_StructType** fields;
-	size_t fields_size;
+	ast2c_StructType** structs;
+	size_t structs_size;
 	ast2c_Expr* base;
 	ast2c_Field** union_fields;
 	size_t union_fields_size;

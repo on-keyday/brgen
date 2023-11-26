@@ -65,11 +65,11 @@ namespace brgen::ast::tool {
                         branch.push_back(ast::cast_to<ast::MatchBranch>(br));
                     }
                 }
-                if (branch.size() != e->fields.size()) {
+                if (branch.size() != e->structs.size()) {
                     return std::nullopt;
                 }
                 for (size_t i = 0; i < branch.size(); i++) {
-                    auto s = e->fields[i];
+                    auto s = e->structs[i];
                     if (s->fields.size() != 1) {
                         return std::nullopt;
                     }
@@ -105,10 +105,10 @@ namespace brgen::ast::tool {
                 size_t i = 0;
                 std::shared_ptr<Field> cur_field;
                 auto check_field = [&]() -> std::optional<brgen::ast::IntTypeDesc> {
-                    if (e->fields.size() <= i) {
+                    if (e->structs.size() <= i) {
                         return std::nullopt;
                     }
-                    auto s = e->fields[i];
+                    auto s = e->structs[i];
                     if (s->fields.size() != 1) {
                         return std::nullopt;
                     }

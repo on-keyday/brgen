@@ -4485,7 +4485,7 @@ pub struct StructUnionType {
 	pub is_int_set: bool,
 	pub bit_alignment: BitAlignment,
 	pub bit_size: u64,
-	pub fields: Vec<Rc<RefCell<StructType>>>,
+	pub structs: Vec<Rc<RefCell<StructType>>>,
 	pub base: Option<ExprWeak>,
 	pub union_fields: Vec<Weak<RefCell<Field>>>,
 }
@@ -6433,7 +6433,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				is_int_set: false,
 				bit_alignment: BitAlignment::ByteAligned,
 				bit_size: 0,
-				fields: Vec::new(),
+				structs: Vec::new(),
 				base: None,
 				union_fields: Vec::new(),
 				})))
@@ -8838,28 +8838,28 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(bit_size_body.into(),JSONType::Number)),
 				};
-				let fields_body = match raw_node.body.get("fields") {
+				let structs_body = match raw_node.body.get("structs") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"fields")),
+					None=>return Err(Error::MissingField(node_type,"structs")),
 				};
-				let fields_body = match fields_body.as_array(){
+				let structs_body = match structs_body.as_array(){
 					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(fields_body.into(),JSONType::Array)),
+					None=>return Err(Error::MismatchJSONType(structs_body.into(),JSONType::Array)),
 				};
-				for link in fields_body {
+				for link in structs_body {
 					let link = match link.as_u64() {
 						Some(v)=>v,
 						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
 					};
-					let fields_body = match nodes.get(link as usize) {
+					let structs_body = match nodes.get(link as usize) {
 						Some(v)=>v,
 						None => return Err(Error::IndexOutOfBounds(link as usize)),
 					};
-					let fields_body = match fields_body {
+					let structs_body = match structs_body {
 						Node::StructType(body)=>body,
-						x =>return Err(Error::MismatchNodeType(x.into(),fields_body.into())),
+						x =>return Err(Error::MismatchNodeType(x.into(),structs_body.into())),
 					};
-					node.borrow_mut().fields.push(fields_body.clone());
+					node.borrow_mut().structs.push(structs_body.clone());
 				}
 				let base_body = match raw_node.body.get("base") {
 					Some(v)=>v,
@@ -10433,7 +10433,7 @@ where
 			}
 		},
 		Node::StructUnionType(node)=>{
-			for node in &node.borrow().fields{
+			for node in &node.borrow().structs{
 				if !f.visit(&node.into()){
 					return;
 				}

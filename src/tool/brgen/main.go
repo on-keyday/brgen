@@ -258,6 +258,11 @@ func (g *GeneratorHandler) Recv() <-chan *Result {
 	return g.queue
 }
 
+type Output struct {
+	Generator string `json:"generator"`
+	OutputDir string `json:"output_dir"`
+}
+
 type Config struct {
 	Source2Json           *string  `json:"src2json"`
 	Json2Code             *string  `json:"json2code"`

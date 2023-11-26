@@ -2039,7 +2039,7 @@ type StructUnionType struct {
 	IsIntSet     bool
 	BitAlignment BitAlignment
 	BitSize      uint64
-	Fields       []*StructType
+	Structs      []*StructType
 	Base         Expr
 	UnionFields  []*Field
 }
@@ -3438,7 +3438,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				IsIntSet     bool         `json:"is_int_set"`
 				BitAlignment BitAlignment `json:"bit_alignment"`
 				BitSize      uint64       `json:"bit_size"`
-				Fields       []uintptr    `json:"fields"`
+				Structs      []uintptr    `json:"structs"`
 				Base         *uintptr     `json:"base"`
 				UnionFields  []uintptr    `json:"union_fields"`
 			}
@@ -3449,9 +3449,9 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.IsIntSet = tmp.IsIntSet
 			v.BitAlignment = tmp.BitAlignment
 			v.BitSize = tmp.BitSize
-			v.Fields = make([]*StructType, len(tmp.Fields))
-			for j, k := range tmp.Fields {
-				v.Fields[j] = n.node[k].(*StructType)
+			v.Structs = make([]*StructType, len(tmp.Structs))
+			for j, k := range tmp.Structs {
+				v.Structs[j] = n.node[k].(*StructType)
 			}
 			if tmp.Base != nil {
 				v.Base = n.node[*tmp.Base].(Expr)
@@ -4197,7 +4197,7 @@ func Walk(n Node, f Visitor) {
 			}
 		}
 	case *StructUnionType:
-		for _, w := range v.Fields {
+		for _, w := range v.Structs {
 			if !f.Visit(f, w) {
 				return
 			}

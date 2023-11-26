@@ -653,7 +653,7 @@ export function isStructType(obj: any): obj is StructType {
 }
 
 export interface StructUnionType extends Type {
-	fields: StructType[];
+	structs: StructType[];
 	base: Expr|null;
 	union_fields: Field[];
 }
@@ -1401,7 +1401,7 @@ export function parseAST(obj: any): Program {
 				is_int_set: false,
 				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: 0,
-				fields: [],
+				structs: [],
 				base: null,
 				union_fields: [],
 			}
@@ -2779,15 +2779,15 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at StructUnionType::bit_size');
 			}
 			n.bit_size = on.body.bit_size;
-			for (const o of on.body.fields) {
+			for (const o of on.body.structs) {
 				if (typeof o !== 'number') {
-					throw new Error('invalid node list at StructUnionType::fields');
+					throw new Error('invalid node list at StructUnionType::structs');
 				}
-				const tmpfields = c.node[o];
-				if (!isStructType(tmpfields)) {
-					throw new Error('invalid node list at StructUnionType::fields');
+				const tmpstructs = c.node[o];
+				if (!isStructType(tmpstructs)) {
+					throw new Error('invalid node list at StructUnionType::structs');
 				}
-				n.fields.push(tmpfields);
+				n.structs.push(tmpstructs);
 			}
 			if (on.body?.base !== null && typeof on.body?.base !== 'number') {
 				throw new Error('invalid node list at StructUnionType::base');
@@ -4053,7 +4053,7 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 				break;
 			}
 			const n :StructUnionType = node as StructUnionType;
-			for (const e of n.fields) {
+			for (const e of n.structs) {
 				const result = fn(fn,e);
 				if (result === false) {
 					return;

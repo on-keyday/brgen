@@ -2028,14 +2028,14 @@ int ast2c_StructUnionType_parse(ast2c_Ast* ast,ast2c_StructUnionType* s,ast2c_js
 	void* loc = h->object_get(h, obj, "loc");
 	void* obj_body = h->object_get(h, obj, "body");
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
-	s->fields = NULL;
+	s->structs = NULL;
 	s->base = NULL;
 	s->union_fields = NULL;
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
 	void* is_int_set = h->object_get(h, obj_body, "is_int_set");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
 	void* bit_size = h->object_get(h, obj_body, "bit_size");
-	void* fields = h->object_get(h, obj_body, "fields");
+	void* structs = h->object_get(h, obj_body, "structs");
 	void* base = h->object_get(h, obj_body, "base");
 	void* union_fields = h->object_get(h, obj_body, "union_fields");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_StructUnionType::loc is null"); } return 0; }
@@ -2043,9 +2043,9 @@ int ast2c_StructUnionType_parse(ast2c_Ast* ast,ast2c_StructUnionType* s,ast2c_js
 	if (!is_int_set) { if(h->error) { h->error(h,is_int_set, "ast2c_StructUnionType::is_int_set is null"); } return 0; }
 	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_StructUnionType::bit_alignment is null"); } return 0; }
 	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_StructUnionType::bit_size is null"); } return 0; }
-	if (!fields) { if(h->error) { h->error(h,fields, "ast2c_StructUnionType::fields is null"); } return 0; }
-	if(!h->array_size(h, fields,&s->fields_size)) {
-		if(h->error) { h->error(h,fields, "failed to get array size of ast2c_StructUnionType::fields"); }
+	if (!structs) { if(h->error) { h->error(h,structs, "ast2c_StructUnionType::structs is null"); } return 0; }
+	if(!h->array_size(h, structs,&s->structs_size)) {
+		if(h->error) { h->error(h,structs, "failed to get array size of ast2c_StructUnionType::structs"); }
 		return NULL;
 	}
 	if (!base) { if(h->error) { h->error(h,base, "ast2c_StructUnionType::base is null"); } return 0; }

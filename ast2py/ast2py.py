@@ -398,7 +398,7 @@ class StructType(Type):
 
 
 class StructUnionType(Type):
-    fields: List[StructType]
+    structs: List[StructType]
     base: Optional[Expr]
     union_fields: List[Field]
 
@@ -1292,7 +1292,7 @@ def ast2node(ast :JsonAst) -> Program:
                 node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
                 x = ast.node[i].body["bit_size"]
                 node[i].bit_size = x if isinstance(x,int)  else raiseError(TypeError('type mismatch at StructUnionType::bit_size'))
-                node[i].fields = [(node[x] if isinstance(node[x],StructType) else raiseError(TypeError('type mismatch at StructUnionType::fields'))) for x in ast.node[i].body["fields"]]
+                node[i].structs = [(node[x] if isinstance(node[x],StructType) else raiseError(TypeError('type mismatch at StructUnionType::structs'))) for x in ast.node[i].body["structs"]]
                 if ast.node[i].body["base"] is not None:
                     x = node[ast.node[i].body["base"]]
                     node[i].base = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at StructUnionType::base'))
@@ -1806,8 +1806,8 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
               if f(f,x.fields[i]) == False:
                   return
         case x if isinstance(x,StructUnionType):
-          for i in range(len(x.fields)):
-              if f(f,x.fields[i]) == False:
+          for i in range(len(x.structs)):
+              if f(f,x.structs[i]) == False:
                   return
         case x if isinstance(x,UnionType):
           for i in range(len(x.candidates)):
