@@ -66,6 +66,7 @@ namespace brgen::ast {
         }
 
         void add_to_struct(const std::shared_ptr<Member>& f) {
+            f->belong_struct = current_struct_;
             current_struct_->fields.push_back(f);
         }
 

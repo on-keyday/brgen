@@ -1,0 +1,17 @@
+
+format CANFrame:
+    sof :u1
+    id :u11
+    rtr :u1
+    ide :u1
+    if ide == 1:
+        id_ext :u18
+    fdf :u1
+    dlc :u4
+    data :[dlc]u8
+    crc :u15
+    crc_delimiter :u1
+    ack :u1
+    ack_delimiter :u1
+    eof :u7
+    intermission :u3

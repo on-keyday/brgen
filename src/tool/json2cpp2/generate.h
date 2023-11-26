@@ -10,6 +10,7 @@
 namespace j2cp2 {
     struct Generator {
         brgen::writer::Writer w;
+        size_t seq = 0;
         void write_bit_fields(std::vector<std::shared_ptr<ast::Field>>& non_align, size_t bit_size, bool is_int_set, bool include_non_simple) {
             if (is_int_set && !include_non_simple) {
                 w.write("::utils::binary::flags_t<std::uint", brgen::nums(bit_size), "_t");
@@ -110,15 +111,58 @@ namespace j2cp2 {
                             }
                         }
                         if (auto union_ty = ast::as<ast::StructUnionType>(type)) {
+                            std::map<std::shared_ptr<ast::StructType>, std::string> tmp;
                             w.writeln("union {");
+                            std::string prefix = "union_struct_";
                             {
                                 auto indent = w.indent_scope();
                                 for (auto& f : union_ty->structs) {
                                     write_struct_type(f);
-                                    w.writeln(";");
+                                    auto& t = tmp[f];
+                                    t = brgen::concat(prefix, brgen::nums(seq));
+                                    seq++;
+                                    w.writeln(" ", t, ";");
                                 }
                             }
                             w.writeln("};");
+                            for (auto& f : union_ty->union_fields) {
+                                auto uf = f.lock();
+                                auto ut = ast::as<ast::UnionType>(uf->field_type);
+                                assert(ut);
+                                auto c = ut->cond.lock();
+                                ast::tool::Stringer s;
+                                std::string cond_u;
+                                if (c) {
+                                    cond_u = s.to_string(c);
+                                }
+                                else {
+                                    cond_u = "true";
+                                }
+                                if (ut->common_type) {
+                                    w.writeln(get_type_name(ut->common_type), " ", uf->ident->ident, "() const {");
+                                    {
+                                        auto indent = w.indent_scope();
+                                        for (auto& c : ut->candidates) {
+                                            auto f = c->field.lock();
+                                            auto fmt_m = f->belong.lock();
+                                            auto fmt = ast::as<ast::Format>(fmt_m);
+                                            assert(fmt);
+                                            auto cond = c->cond.lock();
+                                            if (cond) {
+                                                auto cond_s = s.to_string(cond);
+                                                w.writeln("if (", cond_s, "==", cond_u, ") {");
+                                                {
+                                                    auto indent = w.indent_scope();
+                                                    // w.writeln("return this->", tmp[fmt->body->struct_type], ".", f->ident->ident, ";");
+                                                    // w.writeln("return this->", s->ident->ident, ".", tmp[s], ";");
+                                                }
+                                                w.writeln("}");
+                                            }
+                                        }
+                                    }
+                                    w.writeln("}");
+                                }
+                            }
                         }
                     }
                 }

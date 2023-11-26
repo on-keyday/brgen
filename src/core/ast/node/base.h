@@ -155,15 +155,18 @@ namespace brgen::ast {
     };
 
     struct Ident;
+    struct StructType;
 
     struct Member : Stmt {
         define_node_type(NodeType::member);
         std::weak_ptr<Member> belong;
+        std::weak_ptr<StructType> belong_struct;
         std::shared_ptr<Ident> ident;
 
         void dump(auto&& field_) {
             Stmt::dump(field_);
             sdebugf(belong);
+            sdebugf(belong_struct);
             sdebugf(ident);
         }
 
