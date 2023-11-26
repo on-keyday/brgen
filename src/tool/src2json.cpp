@@ -8,6 +8,7 @@
 #include <console/ansiesc.h>
 #include <core/middle/resolve_import.h>
 #include <core/middle/resolve_cast.h>
+#include <core/middle/resolve_available.h>
 #include <core/middle/replace_assert.h>
 #include <core/middle/typing.h>
 #include <core/middle/type_attribute.h>
@@ -33,6 +34,7 @@ struct Flags : utils::cmdline::templ::HelpOption {
     bool lexer = false;
     bool not_resolve_import = false;
     bool not_resolve_cast = false;
+    bool not_resolve_available = false;
     bool not_resolve_type = false;
     bool not_resolve_assert = false;
     bool not_detect_recursive_type = false;
@@ -422,6 +424,9 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     }
     if (!flags.not_resolve_cast) {
         brgen::middle::resolve_cast(*res);
+    }
+    if (!flags.not_resolve_available) {
+        brgen::middle::resolve_available(*res);
     }
 
     brgen::SourceError err_or_warn;

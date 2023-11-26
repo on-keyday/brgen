@@ -25,6 +25,7 @@ namespace brgen::ast {
         reference_type,
         reference_member,
         maybe_type,
+        reference_builtin_fn,
     };
 
     constexpr const char* ident_usage_str[]{
@@ -43,6 +44,7 @@ namespace brgen::ast {
         "reference_type",
         "reference_member",
         "maybe_type",
+        "reference_builtin_fn",
         nullptr,
     };
 

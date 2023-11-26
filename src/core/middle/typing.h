@@ -737,6 +737,9 @@ namespace brgen::middle {
             if (auto c = ast::as<ast::Cast>(expr)) {
                 typing_expr(c->expr);
             }
+            if (auto a = ast::as<ast::Available>(expr)) {
+                typing_expr(a->target);
+            }
             if (expr->expr_type) {
                 typing_object(expr->expr_type);
                 return;  // already typed

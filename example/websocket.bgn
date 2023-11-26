@@ -1,10 +1,19 @@
 
+enum OpCode:
+    :u4
+    ContinuationFrame = 0x0
+    TextFrame = 0x1
+    BinaryFrame = 0x2
+    ConnectionClose = 0x8
+    Ping = 0x9
+    Pong = 0xA
+
 format Frame:
     FIN :u1
     RSV1 :u1
     RSV2 :u1
     RSV3 :u1
-    Opcode :u4
+    Opcode :OpCode
     Mask :u1
     PayloadLength :u7
     match PayloadLength:

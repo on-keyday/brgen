@@ -54,6 +54,7 @@ namespace brgen::ast {
         CASE(BlockExpr)
         CASE(Import)
         CASE(Cast)
+        CASE(Available)
 
         // stmt
         CASE(Stmt)

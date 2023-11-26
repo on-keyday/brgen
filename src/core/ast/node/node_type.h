@@ -30,6 +30,7 @@ namespace brgen::ast {
         block_expr,
         import_,
         cast,
+        available,
 
         literal = 0x110000,
         int_literal,
@@ -265,6 +266,7 @@ namespace brgen::ast {
         {NodeType::enum_type, "enum_type"},
         {NodeType::state, "state"},
         {NodeType::builtin_function, "builtin_function"},
+        {NodeType::available, "available"},
     };
 
     constexpr std::array<std::pair<NodeType, const char*>, std::size(node_type_str_array)> sorted_node_type_str_array = [] {

@@ -114,4 +114,24 @@ namespace brgen::ast {
         }
     };
 
+    // Available represents available(ident) expression
+    // ident should be field name
+    struct Available : Expr {
+        define_node_type(NodeType::available);
+        std::shared_ptr<Call> base;
+        std::shared_ptr<Ident> target;
+
+        Available(std::shared_ptr<Ident>&& a, std::shared_ptr<Call>&& c)
+            : Expr(a->loc, NodeType::available), base(std::move(c)), target(std::move(a)) {}
+
+        Available()
+            : Expr({}, NodeType::available) {}
+
+        void dump(auto&& field_) {
+            Expr::dump(field_);
+            sdebugf_omit(base);
+            sdebugf(target);
+        }
+    };
+
 }  // namespace brgen::ast
