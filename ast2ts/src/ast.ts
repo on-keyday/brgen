@@ -298,6 +298,7 @@ export function isLiteral(obj: any): obj is Literal {
 
 export interface Member extends Stmt {
 	belong: Member|null;
+	belong_struct: StructType|null;
 	ident: Ident|null;
 }
 
@@ -1519,6 +1520,7 @@ export function parseAST(obj: any): Program {
 				node_type: "field",
 				loc: on.loc,
 				belong: null,
+				belong_struct: null,
 				ident: null,
 				colon_loc: on.loc,
 				field_type: null,
@@ -1534,6 +1536,7 @@ export function parseAST(obj: any): Program {
 				node_type: "format",
 				loc: on.loc,
 				belong: null,
+				belong_struct: null,
 				ident: null,
 				body: null,
 			}
@@ -1545,6 +1548,7 @@ export function parseAST(obj: any): Program {
 				node_type: "state",
 				loc: on.loc,
 				belong: null,
+				belong_struct: null,
 				ident: null,
 				body: null,
 			}
@@ -1556,6 +1560,7 @@ export function parseAST(obj: any): Program {
 				node_type: "enum",
 				loc: on.loc,
 				belong: null,
+				belong_struct: null,
 				ident: null,
 				scope: null,
 				colon_loc: on.loc,
@@ -1571,6 +1576,7 @@ export function parseAST(obj: any): Program {
 				node_type: "enum_member",
 				loc: on.loc,
 				belong: null,
+				belong_struct: null,
 				ident: null,
 				expr: null,
 			}
@@ -1582,6 +1588,7 @@ export function parseAST(obj: any): Program {
 				node_type: "function",
 				loc: on.loc,
 				belong: null,
+				belong_struct: null,
 				ident: null,
 				parameters: [],
 				return_type: null,
@@ -1598,6 +1605,7 @@ export function parseAST(obj: any): Program {
 				node_type: "builtin_function",
 				loc: on.loc,
 				belong: null,
+				belong_struct: null,
 				ident: null,
 				func_type: null,
 			}
@@ -3066,6 +3074,14 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at Field::belong');
 			}
 			n.belong = tmpbelong;
+			if (on.body?.belong_struct !== null && typeof on.body?.belong_struct !== 'number') {
+				throw new Error('invalid node list at Field::belong_struct');
+			}
+			const tmpbelong_struct = on.body.belong_struct === null ? null : c.node[on.body.belong_struct];
+			if (!(tmpbelong_struct === null || isStructType(tmpbelong_struct))) {
+				throw new Error('invalid node list at Field::belong_struct');
+			}
+			n.belong_struct = tmpbelong_struct;
 			if (on.body?.ident !== null && typeof on.body?.ident !== 'number') {
 				throw new Error('invalid node list at Field::ident');
 			}
@@ -3122,6 +3138,14 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at Format::belong');
 			}
 			n.belong = tmpbelong;
+			if (on.body?.belong_struct !== null && typeof on.body?.belong_struct !== 'number') {
+				throw new Error('invalid node list at Format::belong_struct');
+			}
+			const tmpbelong_struct = on.body.belong_struct === null ? null : c.node[on.body.belong_struct];
+			if (!(tmpbelong_struct === null || isStructType(tmpbelong_struct))) {
+				throw new Error('invalid node list at Format::belong_struct');
+			}
+			n.belong_struct = tmpbelong_struct;
 			if (on.body?.ident !== null && typeof on.body?.ident !== 'number') {
 				throw new Error('invalid node list at Format::ident');
 			}
@@ -3150,6 +3174,14 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at State::belong');
 			}
 			n.belong = tmpbelong;
+			if (on.body?.belong_struct !== null && typeof on.body?.belong_struct !== 'number') {
+				throw new Error('invalid node list at State::belong_struct');
+			}
+			const tmpbelong_struct = on.body.belong_struct === null ? null : c.node[on.body.belong_struct];
+			if (!(tmpbelong_struct === null || isStructType(tmpbelong_struct))) {
+				throw new Error('invalid node list at State::belong_struct');
+			}
+			n.belong_struct = tmpbelong_struct;
 			if (on.body?.ident !== null && typeof on.body?.ident !== 'number') {
 				throw new Error('invalid node list at State::ident');
 			}
@@ -3178,6 +3210,14 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at Enum::belong');
 			}
 			n.belong = tmpbelong;
+			if (on.body?.belong_struct !== null && typeof on.body?.belong_struct !== 'number') {
+				throw new Error('invalid node list at Enum::belong_struct');
+			}
+			const tmpbelong_struct = on.body.belong_struct === null ? null : c.node[on.body.belong_struct];
+			if (!(tmpbelong_struct === null || isStructType(tmpbelong_struct))) {
+				throw new Error('invalid node list at Enum::belong_struct');
+			}
+			n.belong_struct = tmpbelong_struct;
 			if (on.body?.ident !== null && typeof on.body?.ident !== 'number') {
 				throw new Error('invalid node list at Enum::ident');
 			}
@@ -3237,6 +3277,14 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at EnumMember::belong');
 			}
 			n.belong = tmpbelong;
+			if (on.body?.belong_struct !== null && typeof on.body?.belong_struct !== 'number') {
+				throw new Error('invalid node list at EnumMember::belong_struct');
+			}
+			const tmpbelong_struct = on.body.belong_struct === null ? null : c.node[on.body.belong_struct];
+			if (!(tmpbelong_struct === null || isStructType(tmpbelong_struct))) {
+				throw new Error('invalid node list at EnumMember::belong_struct');
+			}
+			n.belong_struct = tmpbelong_struct;
 			if (on.body?.ident !== null && typeof on.body?.ident !== 'number') {
 				throw new Error('invalid node list at EnumMember::ident');
 			}
@@ -3265,6 +3313,14 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at Function::belong');
 			}
 			n.belong = tmpbelong;
+			if (on.body?.belong_struct !== null && typeof on.body?.belong_struct !== 'number') {
+				throw new Error('invalid node list at Function::belong_struct');
+			}
+			const tmpbelong_struct = on.body.belong_struct === null ? null : c.node[on.body.belong_struct];
+			if (!(tmpbelong_struct === null || isStructType(tmpbelong_struct))) {
+				throw new Error('invalid node list at Function::belong_struct');
+			}
+			n.belong_struct = tmpbelong_struct;
 			if (on.body?.ident !== null && typeof on.body?.ident !== 'number') {
 				throw new Error('invalid node list at Function::ident');
 			}
@@ -3329,6 +3385,14 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at BuiltinFunction::belong');
 			}
 			n.belong = tmpbelong;
+			if (on.body?.belong_struct !== null && typeof on.body?.belong_struct !== 'number') {
+				throw new Error('invalid node list at BuiltinFunction::belong_struct');
+			}
+			const tmpbelong_struct = on.body.belong_struct === null ? null : c.node[on.body.belong_struct];
+			if (!(tmpbelong_struct === null || isStructType(tmpbelong_struct))) {
+				throw new Error('invalid node list at BuiltinFunction::belong_struct');
+			}
+			n.belong_struct = tmpbelong_struct;
 			if (on.body?.ident !== null && typeof on.body?.ident !== 'number') {
 				throw new Error('invalid node list at BuiltinFunction::ident');
 			}

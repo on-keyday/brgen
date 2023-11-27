@@ -2357,11 +2357,13 @@ int ast2c_Field_parse(ast2c_Ast* ast,ast2c_Field* s,ast2c_json_handlers* h, void
 	void* obj_body = h->object_get(h, obj, "body");
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
 	s->belong = NULL;
+	s->belong_struct = NULL;
 	s->ident = NULL;
 	s->field_type = NULL;
 	s->raw_arguments = NULL;
 	s->arguments = NULL;
 	void* belong = h->object_get(h, obj_body, "belong");
+	void* belong_struct = h->object_get(h, obj_body, "belong_struct");
 	void* ident = h->object_get(h, obj_body, "ident");
 	void* colon_loc = h->object_get(h, obj_body, "colon_loc");
 	void* field_type = h->object_get(h, obj_body, "field_type");
@@ -2370,6 +2372,7 @@ int ast2c_Field_parse(ast2c_Ast* ast,ast2c_Field* s,ast2c_json_handlers* h, void
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_Field::loc is null"); } return 0; }
 	if (!belong) { if(h->error) { h->error(h,belong, "ast2c_Field::belong is null"); } return 0; }
+	if (!belong_struct) { if(h->error) { h->error(h,belong_struct, "ast2c_Field::belong_struct is null"); } return 0; }
 	if (!ident) { if(h->error) { h->error(h,ident, "ast2c_Field::ident is null"); } return 0; }
 	if (!colon_loc) { if(h->error) { h->error(h,colon_loc, "ast2c_Field::colon_loc is null"); } return 0; }
 	if (!field_type) { if(h->error) { h->error(h,field_type, "ast2c_Field::field_type is null"); } return 0; }
@@ -2403,13 +2406,16 @@ int ast2c_Format_parse(ast2c_Ast* ast,ast2c_Format* s,ast2c_json_handlers* h, vo
 	void* obj_body = h->object_get(h, obj, "body");
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
 	s->belong = NULL;
+	s->belong_struct = NULL;
 	s->ident = NULL;
 	s->body = NULL;
 	void* belong = h->object_get(h, obj_body, "belong");
+	void* belong_struct = h->object_get(h, obj_body, "belong_struct");
 	void* ident = h->object_get(h, obj_body, "ident");
 	void* body = h->object_get(h, obj_body, "body");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_Format::loc is null"); } return 0; }
 	if (!belong) { if(h->error) { h->error(h,belong, "ast2c_Format::belong is null"); } return 0; }
+	if (!belong_struct) { if(h->error) { h->error(h,belong_struct, "ast2c_Format::belong_struct is null"); } return 0; }
 	if (!ident) { if(h->error) { h->error(h,ident, "ast2c_Format::ident is null"); } return 0; }
 	if (!body) { if(h->error) { h->error(h,body, "ast2c_Format::body is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
@@ -2431,13 +2437,16 @@ int ast2c_State_parse(ast2c_Ast* ast,ast2c_State* s,ast2c_json_handlers* h, void
 	void* obj_body = h->object_get(h, obj, "body");
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
 	s->belong = NULL;
+	s->belong_struct = NULL;
 	s->ident = NULL;
 	s->body = NULL;
 	void* belong = h->object_get(h, obj_body, "belong");
+	void* belong_struct = h->object_get(h, obj_body, "belong_struct");
 	void* ident = h->object_get(h, obj_body, "ident");
 	void* body = h->object_get(h, obj_body, "body");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_State::loc is null"); } return 0; }
 	if (!belong) { if(h->error) { h->error(h,belong, "ast2c_State::belong is null"); } return 0; }
+	if (!belong_struct) { if(h->error) { h->error(h,belong_struct, "ast2c_State::belong_struct is null"); } return 0; }
 	if (!ident) { if(h->error) { h->error(h,ident, "ast2c_State::ident is null"); } return 0; }
 	if (!body) { if(h->error) { h->error(h,body, "ast2c_State::body is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
@@ -2459,12 +2468,14 @@ int ast2c_Enum_parse(ast2c_Ast* ast,ast2c_Enum* s,ast2c_json_handlers* h, void* 
 	void* obj_body = h->object_get(h, obj, "body");
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
 	s->belong = NULL;
+	s->belong_struct = NULL;
 	s->ident = NULL;
 	s->scope = NULL;
 	s->base_type = NULL;
 	s->members = NULL;
 	s->enum_type = NULL;
 	void* belong = h->object_get(h, obj_body, "belong");
+	void* belong_struct = h->object_get(h, obj_body, "belong_struct");
 	void* ident = h->object_get(h, obj_body, "ident");
 	void* scope = h->object_get(h, obj_body, "scope");
 	void* colon_loc = h->object_get(h, obj_body, "colon_loc");
@@ -2473,6 +2484,7 @@ int ast2c_Enum_parse(ast2c_Ast* ast,ast2c_Enum* s,ast2c_json_handlers* h, void* 
 	void* enum_type = h->object_get(h, obj_body, "enum_type");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_Enum::loc is null"); } return 0; }
 	if (!belong) { if(h->error) { h->error(h,belong, "ast2c_Enum::belong is null"); } return 0; }
+	if (!belong_struct) { if(h->error) { h->error(h,belong_struct, "ast2c_Enum::belong_struct is null"); } return 0; }
 	if (!ident) { if(h->error) { h->error(h,ident, "ast2c_Enum::ident is null"); } return 0; }
 	if (!scope) { if(h->error) { h->error(h,scope, "ast2c_Enum::scope is null"); } return 0; }
 	if (!colon_loc) { if(h->error) { h->error(h,colon_loc, "ast2c_Enum::colon_loc is null"); } return 0; }
@@ -2506,13 +2518,16 @@ int ast2c_EnumMember_parse(ast2c_Ast* ast,ast2c_EnumMember* s,ast2c_json_handler
 	void* obj_body = h->object_get(h, obj, "body");
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
 	s->belong = NULL;
+	s->belong_struct = NULL;
 	s->ident = NULL;
 	s->expr = NULL;
 	void* belong = h->object_get(h, obj_body, "belong");
+	void* belong_struct = h->object_get(h, obj_body, "belong_struct");
 	void* ident = h->object_get(h, obj_body, "ident");
 	void* expr = h->object_get(h, obj_body, "expr");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_EnumMember::loc is null"); } return 0; }
 	if (!belong) { if(h->error) { h->error(h,belong, "ast2c_EnumMember::belong is null"); } return 0; }
+	if (!belong_struct) { if(h->error) { h->error(h,belong_struct, "ast2c_EnumMember::belong_struct is null"); } return 0; }
 	if (!ident) { if(h->error) { h->error(h,ident, "ast2c_EnumMember::ident is null"); } return 0; }
 	if (!expr) { if(h->error) { h->error(h,expr, "ast2c_EnumMember::expr is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
@@ -2534,12 +2549,14 @@ int ast2c_Function_parse(ast2c_Ast* ast,ast2c_Function* s,ast2c_json_handlers* h
 	void* obj_body = h->object_get(h, obj, "body");
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
 	s->belong = NULL;
+	s->belong_struct = NULL;
 	s->ident = NULL;
 	s->parameters = NULL;
 	s->return_type = NULL;
 	s->body = NULL;
 	s->func_type = NULL;
 	void* belong = h->object_get(h, obj_body, "belong");
+	void* belong_struct = h->object_get(h, obj_body, "belong_struct");
 	void* ident = h->object_get(h, obj_body, "ident");
 	void* parameters = h->object_get(h, obj_body, "parameters");
 	void* return_type = h->object_get(h, obj_body, "return_type");
@@ -2549,6 +2566,7 @@ int ast2c_Function_parse(ast2c_Ast* ast,ast2c_Function* s,ast2c_json_handlers* h
 	void* cast_loc = h->object_get(h, obj_body, "cast_loc");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_Function::loc is null"); } return 0; }
 	if (!belong) { if(h->error) { h->error(h,belong, "ast2c_Function::belong is null"); } return 0; }
+	if (!belong_struct) { if(h->error) { h->error(h,belong_struct, "ast2c_Function::belong_struct is null"); } return 0; }
 	if (!ident) { if(h->error) { h->error(h,ident, "ast2c_Function::ident is null"); } return 0; }
 	if (!parameters) { if(h->error) { h->error(h,parameters, "ast2c_Function::parameters is null"); } return 0; }
 	if(!h->array_size(h, parameters,&s->parameters_size)) {
@@ -2583,13 +2601,16 @@ int ast2c_BuiltinFunction_parse(ast2c_Ast* ast,ast2c_BuiltinFunction* s,ast2c_js
 	void* obj_body = h->object_get(h, obj, "body");
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
 	s->belong = NULL;
+	s->belong_struct = NULL;
 	s->ident = NULL;
 	s->func_type = NULL;
 	void* belong = h->object_get(h, obj_body, "belong");
+	void* belong_struct = h->object_get(h, obj_body, "belong_struct");
 	void* ident = h->object_get(h, obj_body, "ident");
 	void* func_type = h->object_get(h, obj_body, "func_type");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_BuiltinFunction::loc is null"); } return 0; }
 	if (!belong) { if(h->error) { h->error(h,belong, "ast2c_BuiltinFunction::belong is null"); } return 0; }
+	if (!belong_struct) { if(h->error) { h->error(h,belong_struct, "ast2c_BuiltinFunction::belong_struct is null"); } return 0; }
 	if (!ident) { if(h->error) { h->error(h,ident, "ast2c_BuiltinFunction::ident is null"); } return 0; }
 	if (!func_type) { if(h->error) { h->error(h,func_type, "ast2c_BuiltinFunction::func_type is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {

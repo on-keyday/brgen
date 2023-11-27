@@ -198,6 +198,7 @@ class Literal(Expr):
 
 class Member(Stmt):
     belong: Optional[Member]
+    belong_struct: Optional[StructType]
     ident: Optional[Ident]
 
 
@@ -1408,6 +1409,11 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].belong = x if isinstance(x,Member) else raiseError(TypeError('type mismatch at Field::belong'))
                 else:
                     node[i].belong = None
+                if ast.node[i].body["belong_struct"] is not None:
+                    x = node[ast.node[i].body["belong_struct"]]
+                    node[i].belong_struct = x if isinstance(x,StructType) else raiseError(TypeError('type mismatch at Field::belong_struct'))
+                else:
+                    node[i].belong_struct = None
                 if ast.node[i].body["ident"] is not None:
                     x = node[ast.node[i].body["ident"]]
                     node[i].ident = x if isinstance(x,Ident) else raiseError(TypeError('type mismatch at Field::ident'))
@@ -1432,6 +1438,11 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].belong = x if isinstance(x,Member) else raiseError(TypeError('type mismatch at Format::belong'))
                 else:
                     node[i].belong = None
+                if ast.node[i].body["belong_struct"] is not None:
+                    x = node[ast.node[i].body["belong_struct"]]
+                    node[i].belong_struct = x if isinstance(x,StructType) else raiseError(TypeError('type mismatch at Format::belong_struct'))
+                else:
+                    node[i].belong_struct = None
                 if ast.node[i].body["ident"] is not None:
                     x = node[ast.node[i].body["ident"]]
                     node[i].ident = x if isinstance(x,Ident) else raiseError(TypeError('type mismatch at Format::ident'))
@@ -1448,6 +1459,11 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].belong = x if isinstance(x,Member) else raiseError(TypeError('type mismatch at State::belong'))
                 else:
                     node[i].belong = None
+                if ast.node[i].body["belong_struct"] is not None:
+                    x = node[ast.node[i].body["belong_struct"]]
+                    node[i].belong_struct = x if isinstance(x,StructType) else raiseError(TypeError('type mismatch at State::belong_struct'))
+                else:
+                    node[i].belong_struct = None
                 if ast.node[i].body["ident"] is not None:
                     x = node[ast.node[i].body["ident"]]
                     node[i].ident = x if isinstance(x,Ident) else raiseError(TypeError('type mismatch at State::ident'))
@@ -1464,6 +1480,11 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].belong = x if isinstance(x,Member) else raiseError(TypeError('type mismatch at Enum::belong'))
                 else:
                     node[i].belong = None
+                if ast.node[i].body["belong_struct"] is not None:
+                    x = node[ast.node[i].body["belong_struct"]]
+                    node[i].belong_struct = x if isinstance(x,StructType) else raiseError(TypeError('type mismatch at Enum::belong_struct'))
+                else:
+                    node[i].belong_struct = None
                 if ast.node[i].body["ident"] is not None:
                     x = node[ast.node[i].body["ident"]]
                     node[i].ident = x if isinstance(x,Ident) else raiseError(TypeError('type mismatch at Enum::ident'))
@@ -1491,6 +1512,11 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].belong = x if isinstance(x,Member) else raiseError(TypeError('type mismatch at EnumMember::belong'))
                 else:
                     node[i].belong = None
+                if ast.node[i].body["belong_struct"] is not None:
+                    x = node[ast.node[i].body["belong_struct"]]
+                    node[i].belong_struct = x if isinstance(x,StructType) else raiseError(TypeError('type mismatch at EnumMember::belong_struct'))
+                else:
+                    node[i].belong_struct = None
                 if ast.node[i].body["ident"] is not None:
                     x = node[ast.node[i].body["ident"]]
                     node[i].ident = x if isinstance(x,Ident) else raiseError(TypeError('type mismatch at EnumMember::ident'))
@@ -1507,6 +1533,11 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].belong = x if isinstance(x,Member) else raiseError(TypeError('type mismatch at Function::belong'))
                 else:
                     node[i].belong = None
+                if ast.node[i].body["belong_struct"] is not None:
+                    x = node[ast.node[i].body["belong_struct"]]
+                    node[i].belong_struct = x if isinstance(x,StructType) else raiseError(TypeError('type mismatch at Function::belong_struct'))
+                else:
+                    node[i].belong_struct = None
                 if ast.node[i].body["ident"] is not None:
                     x = node[ast.node[i].body["ident"]]
                     node[i].ident = x if isinstance(x,Ident) else raiseError(TypeError('type mismatch at Function::ident'))
@@ -1537,6 +1568,11 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].belong = x if isinstance(x,Member) else raiseError(TypeError('type mismatch at BuiltinFunction::belong'))
                 else:
                     node[i].belong = None
+                if ast.node[i].body["belong_struct"] is not None:
+                    x = node[ast.node[i].body["belong_struct"]]
+                    node[i].belong_struct = x if isinstance(x,StructType) else raiseError(TypeError('type mismatch at BuiltinFunction::belong_struct'))
+                else:
+                    node[i].belong_struct = None
                 if ast.node[i].body["ident"] is not None:
                     x = node[ast.node[i].body["ident"]]
                     node[i].ident = x if isinstance(x,Ident) else raiseError(TypeError('type mismatch at BuiltinFunction::ident'))

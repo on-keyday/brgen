@@ -409,6 +409,7 @@ struct ast2c_Member {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Member* belong;
+	ast2c_StructType* belong_struct;
 	ast2c_Ident* ident;
 };
 
@@ -993,6 +994,7 @@ struct ast2c_Field {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Member* belong;
+	ast2c_StructType* belong_struct;
 	ast2c_Ident* ident;
 	ast2c_Loc colon_loc;
 	ast2c_Type* field_type;
@@ -1009,6 +1011,7 @@ struct ast2c_Format {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Member* belong;
+	ast2c_StructType* belong_struct;
 	ast2c_Ident* ident;
 	ast2c_IndentBlock* body;
 };
@@ -1020,6 +1023,7 @@ struct ast2c_State {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Member* belong;
+	ast2c_StructType* belong_struct;
 	ast2c_Ident* ident;
 	ast2c_IndentBlock* body;
 };
@@ -1031,6 +1035,7 @@ struct ast2c_Enum {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Member* belong;
+	ast2c_StructType* belong_struct;
 	ast2c_Ident* ident;
 	ast2c_Scope* scope;
 	ast2c_Loc colon_loc;
@@ -1047,6 +1052,7 @@ struct ast2c_EnumMember {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Member* belong;
+	ast2c_StructType* belong_struct;
 	ast2c_Ident* ident;
 	ast2c_Expr* expr;
 };
@@ -1058,6 +1064,7 @@ struct ast2c_Function {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Member* belong;
+	ast2c_StructType* belong_struct;
 	ast2c_Ident* ident;
 	ast2c_Field** parameters;
 	size_t parameters_size;
@@ -1075,6 +1082,7 @@ struct ast2c_BuiltinFunction {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Member* belong;
+	ast2c_StructType* belong_struct;
 	ast2c_Ident* ident;
 	ast2c_FunctionType* func_type;
 };

@@ -182,6 +182,7 @@ public interface Literal : Expr {
 }
 public interface Member : Stmt {
 	public Member? Belong {get; set;}
+	public StructType? BelongStruct {get; set;}
 	public Ident? Ident {get; set;}
 }
 public class Program : Node{
@@ -518,6 +519,7 @@ public class Config : Literal{
 public class Field : Member{
 	public Loc Loc{get;set;}
 	public Member? Belong{get;set;}
+	public StructType? BelongStruct{get;set;}
 	public Ident? Ident{get;set;}
 	public Loc ColonLoc{get;set;}
 	public Type? FieldType{get;set;}
@@ -528,18 +530,21 @@ public class Field : Member{
 public class Format : Member{
 	public Loc Loc{get;set;}
 	public Member? Belong{get;set;}
+	public StructType? BelongStruct{get;set;}
 	public Ident? Ident{get;set;}
 	public IndentBlock? Body{get;set;}
 }
 public class State : Member{
 	public Loc Loc{get;set;}
 	public Member? Belong{get;set;}
+	public StructType? BelongStruct{get;set;}
 	public Ident? Ident{get;set;}
 	public IndentBlock? Body{get;set;}
 }
 public class Enum : Member{
 	public Loc Loc{get;set;}
 	public Member? Belong{get;set;}
+	public StructType? BelongStruct{get;set;}
 	public Ident? Ident{get;set;}
 	public Scope? Scope{get;set;}
 	public Loc ColonLoc{get;set;}
@@ -550,12 +555,14 @@ public class Enum : Member{
 public class EnumMember : Member{
 	public Loc Loc{get;set;}
 	public Member? Belong{get;set;}
+	public StructType? BelongStruct{get;set;}
 	public Ident? Ident{get;set;}
 	public Expr? Expr{get;set;}
 }
 public class Function : Member{
 	public Loc Loc{get;set;}
 	public Member? Belong{get;set;}
+	public StructType? BelongStruct{get;set;}
 	public Ident? Ident{get;set;}
 	public List<Field>? Parameters{get;set;}
 	public Type? ReturnType{get;set;}
@@ -567,6 +574,7 @@ public class Function : Member{
 public class BuiltinFunction : Member{
 	public Loc Loc{get;set;}
 	public Member? Belong{get;set;}
+	public StructType? BelongStruct{get;set;}
 	public Ident? Ident{get;set;}
 	public FunctionType? FuncType{get;set;}
 }

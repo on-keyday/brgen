@@ -1171,6 +1171,7 @@ type Member interface {
 	isMember()
 	Stmt
 	GetBelong() Member
+	GetBelongStruct() *StructType
 	GetIdent() *Ident
 }
 
@@ -2321,6 +2322,7 @@ func (n *Config) GetLoc() Loc {
 type Field struct {
 	Loc          Loc
 	Belong       Member
+	BelongStruct *StructType
 	Ident        *Ident
 	ColonLoc     Loc
 	FieldType    Type
@@ -2333,6 +2335,10 @@ func (n *Field) isMember() {}
 
 func (n *Field) GetBelong() Member {
 	return n.Belong
+}
+
+func (n *Field) GetBelongStruct() *StructType {
+	return n.BelongStruct
 }
 
 func (n *Field) GetIdent() *Ident {
@@ -2348,16 +2354,21 @@ func (n *Field) GetLoc() Loc {
 }
 
 type Format struct {
-	Loc    Loc
-	Belong Member
-	Ident  *Ident
-	Body   *IndentBlock
+	Loc          Loc
+	Belong       Member
+	BelongStruct *StructType
+	Ident        *Ident
+	Body         *IndentBlock
 }
 
 func (n *Format) isMember() {}
 
 func (n *Format) GetBelong() Member {
 	return n.Belong
+}
+
+func (n *Format) GetBelongStruct() *StructType {
+	return n.BelongStruct
 }
 
 func (n *Format) GetIdent() *Ident {
@@ -2373,16 +2384,21 @@ func (n *Format) GetLoc() Loc {
 }
 
 type State struct {
-	Loc    Loc
-	Belong Member
-	Ident  *Ident
-	Body   *IndentBlock
+	Loc          Loc
+	Belong       Member
+	BelongStruct *StructType
+	Ident        *Ident
+	Body         *IndentBlock
 }
 
 func (n *State) isMember() {}
 
 func (n *State) GetBelong() Member {
 	return n.Belong
+}
+
+func (n *State) GetBelongStruct() *StructType {
+	return n.BelongStruct
 }
 
 func (n *State) GetIdent() *Ident {
@@ -2398,20 +2414,25 @@ func (n *State) GetLoc() Loc {
 }
 
 type Enum struct {
-	Loc      Loc
-	Belong   Member
-	Ident    *Ident
-	Scope    *Scope
-	ColonLoc Loc
-	BaseType Type
-	Members  []*EnumMember
-	EnumType *EnumType
+	Loc          Loc
+	Belong       Member
+	BelongStruct *StructType
+	Ident        *Ident
+	Scope        *Scope
+	ColonLoc     Loc
+	BaseType     Type
+	Members      []*EnumMember
+	EnumType     *EnumType
 }
 
 func (n *Enum) isMember() {}
 
 func (n *Enum) GetBelong() Member {
 	return n.Belong
+}
+
+func (n *Enum) GetBelongStruct() *StructType {
+	return n.BelongStruct
 }
 
 func (n *Enum) GetIdent() *Ident {
@@ -2427,16 +2448,21 @@ func (n *Enum) GetLoc() Loc {
 }
 
 type EnumMember struct {
-	Loc    Loc
-	Belong Member
-	Ident  *Ident
-	Expr   Expr
+	Loc          Loc
+	Belong       Member
+	BelongStruct *StructType
+	Ident        *Ident
+	Expr         Expr
 }
 
 func (n *EnumMember) isMember() {}
 
 func (n *EnumMember) GetBelong() Member {
 	return n.Belong
+}
+
+func (n *EnumMember) GetBelongStruct() *StructType {
+	return n.BelongStruct
 }
 
 func (n *EnumMember) GetIdent() *Ident {
@@ -2452,21 +2478,26 @@ func (n *EnumMember) GetLoc() Loc {
 }
 
 type Function struct {
-	Loc        Loc
-	Belong     Member
-	Ident      *Ident
-	Parameters []*Field
-	ReturnType Type
-	Body       *IndentBlock
-	FuncType   *FunctionType
-	IsCast     bool
-	CastLoc    Loc
+	Loc          Loc
+	Belong       Member
+	BelongStruct *StructType
+	Ident        *Ident
+	Parameters   []*Field
+	ReturnType   Type
+	Body         *IndentBlock
+	FuncType     *FunctionType
+	IsCast       bool
+	CastLoc      Loc
 }
 
 func (n *Function) isMember() {}
 
 func (n *Function) GetBelong() Member {
 	return n.Belong
+}
+
+func (n *Function) GetBelongStruct() *StructType {
+	return n.BelongStruct
 }
 
 func (n *Function) GetIdent() *Ident {
@@ -2482,16 +2513,21 @@ func (n *Function) GetLoc() Loc {
 }
 
 type BuiltinFunction struct {
-	Loc      Loc
-	Belong   Member
-	Ident    *Ident
-	FuncType *FunctionType
+	Loc          Loc
+	Belong       Member
+	BelongStruct *StructType
+	Ident        *Ident
+	FuncType     *FunctionType
 }
 
 func (n *BuiltinFunction) isMember() {}
 
 func (n *BuiltinFunction) GetBelong() Member {
 	return n.Belong
+}
+
+func (n *BuiltinFunction) GetBelongStruct() *StructType {
+	return n.BelongStruct
 }
 
 func (n *BuiltinFunction) GetIdent() *Ident {
@@ -3622,6 +3658,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v := n.node[i].(*Field)
 			var tmp struct {
 				Belong       *uintptr     `json:"belong"`
+				BelongStruct *uintptr     `json:"belong_struct"`
 				Ident        *uintptr     `json:"ident"`
 				ColonLoc     Loc          `json:"colon_loc"`
 				FieldType    *uintptr     `json:"field_type"`
@@ -3634,6 +3671,9 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			}
 			if tmp.Belong != nil {
 				v.Belong = n.node[*tmp.Belong].(Member)
+			}
+			if tmp.BelongStruct != nil {
+				v.BelongStruct = n.node[*tmp.BelongStruct].(*StructType)
 			}
 			if tmp.Ident != nil {
 				v.Ident = n.node[*tmp.Ident].(*Ident)
@@ -3653,15 +3693,19 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeFormat:
 			v := n.node[i].(*Format)
 			var tmp struct {
-				Belong *uintptr `json:"belong"`
-				Ident  *uintptr `json:"ident"`
-				Body   *uintptr `json:"body"`
+				Belong       *uintptr `json:"belong"`
+				BelongStruct *uintptr `json:"belong_struct"`
+				Ident        *uintptr `json:"ident"`
+				Body         *uintptr `json:"body"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
 			}
 			if tmp.Belong != nil {
 				v.Belong = n.node[*tmp.Belong].(Member)
+			}
+			if tmp.BelongStruct != nil {
+				v.BelongStruct = n.node[*tmp.BelongStruct].(*StructType)
 			}
 			if tmp.Ident != nil {
 				v.Ident = n.node[*tmp.Ident].(*Ident)
@@ -3672,15 +3716,19 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeState:
 			v := n.node[i].(*State)
 			var tmp struct {
-				Belong *uintptr `json:"belong"`
-				Ident  *uintptr `json:"ident"`
-				Body   *uintptr `json:"body"`
+				Belong       *uintptr `json:"belong"`
+				BelongStruct *uintptr `json:"belong_struct"`
+				Ident        *uintptr `json:"ident"`
+				Body         *uintptr `json:"body"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
 			}
 			if tmp.Belong != nil {
 				v.Belong = n.node[*tmp.Belong].(Member)
+			}
+			if tmp.BelongStruct != nil {
+				v.BelongStruct = n.node[*tmp.BelongStruct].(*StructType)
 			}
 			if tmp.Ident != nil {
 				v.Ident = n.node[*tmp.Ident].(*Ident)
@@ -3691,19 +3739,23 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeEnum:
 			v := n.node[i].(*Enum)
 			var tmp struct {
-				Belong   *uintptr  `json:"belong"`
-				Ident    *uintptr  `json:"ident"`
-				Scope    *uintptr  `json:"scope"`
-				ColonLoc Loc       `json:"colon_loc"`
-				BaseType *uintptr  `json:"base_type"`
-				Members  []uintptr `json:"members"`
-				EnumType *uintptr  `json:"enum_type"`
+				Belong       *uintptr  `json:"belong"`
+				BelongStruct *uintptr  `json:"belong_struct"`
+				Ident        *uintptr  `json:"ident"`
+				Scope        *uintptr  `json:"scope"`
+				ColonLoc     Loc       `json:"colon_loc"`
+				BaseType     *uintptr  `json:"base_type"`
+				Members      []uintptr `json:"members"`
+				EnumType     *uintptr  `json:"enum_type"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
 			}
 			if tmp.Belong != nil {
 				v.Belong = n.node[*tmp.Belong].(Member)
+			}
+			if tmp.BelongStruct != nil {
+				v.BelongStruct = n.node[*tmp.BelongStruct].(*StructType)
 			}
 			if tmp.Ident != nil {
 				v.Ident = n.node[*tmp.Ident].(*Ident)
@@ -3725,15 +3777,19 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeEnumMember:
 			v := n.node[i].(*EnumMember)
 			var tmp struct {
-				Belong *uintptr `json:"belong"`
-				Ident  *uintptr `json:"ident"`
-				Expr   *uintptr `json:"expr"`
+				Belong       *uintptr `json:"belong"`
+				BelongStruct *uintptr `json:"belong_struct"`
+				Ident        *uintptr `json:"ident"`
+				Expr         *uintptr `json:"expr"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
 			}
 			if tmp.Belong != nil {
 				v.Belong = n.node[*tmp.Belong].(Member)
+			}
+			if tmp.BelongStruct != nil {
+				v.BelongStruct = n.node[*tmp.BelongStruct].(*StructType)
 			}
 			if tmp.Ident != nil {
 				v.Ident = n.node[*tmp.Ident].(*Ident)
@@ -3744,20 +3800,24 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeFunction:
 			v := n.node[i].(*Function)
 			var tmp struct {
-				Belong     *uintptr  `json:"belong"`
-				Ident      *uintptr  `json:"ident"`
-				Parameters []uintptr `json:"parameters"`
-				ReturnType *uintptr  `json:"return_type"`
-				Body       *uintptr  `json:"body"`
-				FuncType   *uintptr  `json:"func_type"`
-				IsCast     bool      `json:"is_cast"`
-				CastLoc    Loc       `json:"cast_loc"`
+				Belong       *uintptr  `json:"belong"`
+				BelongStruct *uintptr  `json:"belong_struct"`
+				Ident        *uintptr  `json:"ident"`
+				Parameters   []uintptr `json:"parameters"`
+				ReturnType   *uintptr  `json:"return_type"`
+				Body         *uintptr  `json:"body"`
+				FuncType     *uintptr  `json:"func_type"`
+				IsCast       bool      `json:"is_cast"`
+				CastLoc      Loc       `json:"cast_loc"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
 			}
 			if tmp.Belong != nil {
 				v.Belong = n.node[*tmp.Belong].(Member)
+			}
+			if tmp.BelongStruct != nil {
+				v.BelongStruct = n.node[*tmp.BelongStruct].(*StructType)
 			}
 			if tmp.Ident != nil {
 				v.Ident = n.node[*tmp.Ident].(*Ident)
@@ -3780,15 +3840,19 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeBuiltinFunction:
 			v := n.node[i].(*BuiltinFunction)
 			var tmp struct {
-				Belong   *uintptr `json:"belong"`
-				Ident    *uintptr `json:"ident"`
-				FuncType *uintptr `json:"func_type"`
+				Belong       *uintptr `json:"belong"`
+				BelongStruct *uintptr `json:"belong_struct"`
+				Ident        *uintptr `json:"ident"`
+				FuncType     *uintptr `json:"func_type"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
 			}
 			if tmp.Belong != nil {
 				v.Belong = n.node[*tmp.Belong].(Member)
+			}
+			if tmp.BelongStruct != nil {
+				v.BelongStruct = n.node[*tmp.BelongStruct].(*StructType)
 			}
 			if tmp.Ident != nil {
 				v.Ident = n.node[*tmp.Ident].(*Ident)
