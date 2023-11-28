@@ -13,11 +13,17 @@ namespace j2cp2 {
         std::string field_name;
         std::vector<std::shared_ptr<ast::Field>> fields;
     };
+
+    struct AnonymousStructMeta {
+        std::string field_name;
+        std::shared_ptr<ast::StructType> struct_;
+    };
     struct Generator {
         brgen::writer::Writer w;
         size_t seq = 0;
         ast::tool::Stringer str;
         std::map<ast::Field*, BitFieldMeta> bit_fields;
+        std::map<ast::Field*, AnonymousStructMeta> anonymous_structs;
         void write_bit_fields(std::vector<std::shared_ptr<ast::Field>>& non_align, size_t bit_size, bool is_int_set, bool include_non_simple) {
             if (is_int_set && !include_non_simple) {
                 w.write("::utils::binary::flags_t<std::uint", brgen::nums(bit_size), "_t");
@@ -79,8 +85,9 @@ namespace j2cp2 {
 
         void write_struct_type(const std::shared_ptr<ast::StructType>& s) {
             auto member = ast::as<ast::Member>(s->base.lock());
+            bool has_ident = member && member->node_type != ast::NodeType::field && member->ident;
             w.writeln("struct ",
-                      member && member->node_type != ast::NodeType::field && member->ident
+                      has_ident
                           ? member->ident->ident + " "
                           : "",
                       "{");
@@ -178,13 +185,15 @@ namespace j2cp2 {
                                                 w.writeln("if (", cond_s, "==", cond_u, ") {");
                                                 {
                                                     auto indent = w.indent_scope();
-                                                    w.writeln("return this->", tmp[struct_], ".", f->ident->ident, ";");
-                                                    // w.writeln("return this->", s->ident->ident, ".", tmp[s], ";");
+                                                    auto access = tmp[struct_] + "." + f->ident->ident;
+                                                    anonymous_structs[f.get()] = {access, struct_};
+                                                    w.writeln("return this->", access, ";");
                                                 }
                                                 w.writeln("}");
                                             }
                                         }
                                         w.writeln("return std::nullopt;");
+                                        str.ident_map[uf->ident->ident] = "*" + uf->ident->ident + "()";
                                     }
                                     w.writeln("}");
                                 }
@@ -192,7 +201,10 @@ namespace j2cp2 {
                         }
                     }
                 }
-                w.writeln("bool encode(::utils::binary::writer& w,int* state = nullptr);");
+                if (has_ident) {
+                    w.writeln("bool encode(::utils::binary::writer& w) const ;");
+                    w.writeln("bool decode(::utils::binary::reader& r);");
+                }
             }
             w.write("}");
         }
@@ -222,13 +234,13 @@ namespace j2cp2 {
             w.writeln("};");
         }
 
-        void encode_if(ast::If* if_) {
+        void code_if(ast::If* if_, bool encode) {
             auto cond = if_->cond;
             auto cond_s = str.to_string(cond);
             w.writeln("if (", cond_s, ") {");
             {
                 auto indent = w.indent_scope();
-                encode_indent_block(if_->then);
+                code_indent_block(if_->then, encode);
             }
             w.writeln("}");
             auto elif_ = if_;
@@ -238,116 +250,177 @@ namespace j2cp2 {
                     w.writeln("else if (", cond_s, ") {");
                     {
                         auto indent = w.indent_scope();
-                        encode_indent_block(if_->then);
+                        code_indent_block(if_->then, encode);
                     }
                     w.writeln("}");
                     elif_ = if_;
                     continue;
                 }
-                auto block = ast::cast_to<ast::IndentBlock>(elif_->els);
-                w.writeln("else {");
-                {
-                    auto indent = w.indent_scope();
-                    encode_indent_block(block);
+                if (auto b = ast::as<ast::IndentBlock>(elif_->els)) {
+                    w.writeln("else {");
+                    {
+                        auto indent = w.indent_scope();
+                        code_indent_block(ast::cast_to<ast::IndentBlock>(elif_->els), encode);
+                    }
+                    w.writeln("}");
+                    break;
                 }
-                w.writeln("}");
                 break;
             }
         }
 
-        void encode_indent_block(const std::shared_ptr<ast::IndentBlock>& block) {
-            size_t state = 1;
-            bool has_non_aligned = false;
-            // encode fields
-            for (auto& elem : block->elements) {
-                if (auto f = ast::as<ast::Field>(elem)) {
-                    if (f->bit_alignment == ast::BitAlignment::not_target) {
-                        continue;
+        void code_match(ast::Match* m, bool encode) {
+            std::string cond_s;
+            if (m->cond) {
+                cond_s = str.to_string(m->cond);
+            }
+            else {
+                cond_s = "true";
+            }
+            bool has_case = false;
+            for (auto& b : m->branch) {
+                if (auto br = ast::as<ast::MatchBranch>(b)) {
+                    auto cond = str.to_string(br->cond);
+                    if (has_case) {
+                        w.write("else ");
                     }
-                    if (f->bit_alignment != ast::BitAlignment::byte_aligned) {
-                        has_non_aligned = true;
-                        continue;
+                    w.writeln("if (", cond, "==", cond_s, ") {");
+                    {
+                        auto indent = w.indent_scope();
+                        encode_one_node(br->then, encode);
                     }
-                    if (has_non_aligned) {
-                        if (auto found = bit_fields.find(f); found != bit_fields.end()) {
-                            auto& meta = found->second;
-                            auto& fields = meta.fields;
-                            auto& field_name = meta.field_name;
-                            w.writeln("if (*state == ", brgen::nums(state), ") {");
-                            {
-                                auto indent = w.indent_scope();
-                                w.writeln("if (!::utils::binary::write_num(w,", field_name, ".as_value() ,true)) {");
-                                {
-                                    auto indent = w.indent_scope();
-                                    w.writeln("return false;");
-                                }
-                                w.writeln("}");
-                                w.writeln("*state += 1;");
-                            }
-                            w.writeln("}");
-                            state++;
-                        }
-                        has_non_aligned = false;
-                        continue;
-                    }
-                    if (auto int_ty = ast::as<ast::IntType>(f->field_type); int_ty) {
-                        auto bit_size = int_ty->bit_size;
-                        auto ident = f->ident->ident;
-                        w.writeln("if (*state == ", brgen::nums(state), ") {");
-                        {
-                            auto indent = w.indent_scope();
-                            w.writeln("if (!::utils::binary::write_num(w,", ident, ",", int_ty->endian == ast::Endian::little ? "false" : "true", ")) {");
-                            {
-                                auto indent = w.indent_scope();
-                                w.writeln("return false;");
-                            }
-                            w.writeln("}");
-                            w.writeln("*state += 1;");
-                        }
-                        w.writeln("}");
-                        state++;
-                    }
-                }
-                if (auto if_ = ast::as<ast::If>(elem)) {
-                    encode_if(if_);
+                    w.writeln("}");
+                    has_case = true;
                 }
             }
         }
 
-        void write_encode(const std::shared_ptr<ast::Format>& fmt) {
+        void write_field_code(ast::Field* f, bool encode) {
+            if (f->bit_alignment == ast::BitAlignment::not_target) {
+                return;
+            }
+            if (f->bit_alignment != ast::BitAlignment::byte_aligned) {
+                return;
+            }
+            if (encode) {
+                if (auto found = bit_fields.find(f); found != bit_fields.end()) {
+                    auto& meta = found->second;
+                    auto& fields = meta.fields;
+                    auto& field_name = meta.field_name;
+                    w.writeln("if (!::utils::binary::write_num(w,", field_name, ".as_value() ,true)) {");
+                    {
+                        auto indent = w.indent_scope();
+                        w.writeln("return false;");
+                    }
+                    w.writeln("}");
+                    return;
+                }
+                if (auto int_ty = ast::as<ast::IntType>(f->field_type); int_ty) {
+                    auto bit_size = int_ty->bit_size;
+                    auto ident = f->ident->ident;
+                    if (auto anon = anonymous_structs.find(f); anon != anonymous_structs.end()) {
+                        ident = anon->second.field_name;
+                    }
+                    auto type_name = get_type_name(f->field_type);
+                    w.writeln("if (!::utils::binary::write_num(w,static_cast<", type_name, ">(", ident, ") ,", int_ty->endian == ast::Endian::little ? "false" : "true", ")) {");
+                    {
+                        auto indent = w.indent_scope();
+                        w.writeln("return false;");
+                    }
+                    w.writeln("}");
+                }
+                if (auto arr_ty = ast::as<ast::ArrayType>(f->field_type); arr_ty) {
+                    auto typ = get_type_name(arr_ty->base_type);
+                    if (typ == "::utils::view::rvec") {
+                        auto len = str.to_string(arr_ty->length);
+                        w.writeln("if (", len, "!=", f->ident->ident, ".size()) {");
+                        {
+                            auto indent = w.indent_scope();
+                            w.writeln("return false;");
+                        }
+                        w.writeln("}");
+                        w.writeln("if (!w.write(", f->ident->ident, ")) {");
+                        {
+                            auto indent = w.indent_scope();
+                            w.writeln("return false;");
+                        }
+                        w.writeln("}");
+                    }
+                }
+            }
+            else {
+                if (auto found = bit_fields.find(f); found != bit_fields.end()) {
+                    auto& meta = found->second;
+                    auto& fields = meta.fields;
+                    auto& field_name = meta.field_name;
+                    w.writeln("if (!::utils::binary::read_num(r,", field_name, ".as_value() ,true)) {");
+                    {
+                        auto indent = w.indent_scope();
+                        w.writeln("return false;");
+                    }
+                    w.writeln("}");
+                    return;
+                }
+                if (auto int_ty = ast::as<ast::IntType>(f->field_type); int_ty) {
+                    auto bit_size = int_ty->bit_size;
+                    auto ident = f->ident->ident;
+                    if (auto anon = anonymous_structs.find(f); anon != anonymous_structs.end()) {
+                        ident = anon->second.field_name;
+                    }
+                    auto type_name = get_type_name(f->field_type);
+                    w.writeln("if (!::utils::binary::read_num(r,", ident, " ,", int_ty->endian == ast::Endian::little ? "false" : "true", ")) {");
+                    {
+                        auto indent = w.indent_scope();
+                        w.writeln("return false;");
+                    }
+                    w.writeln("}");
+                }
+            }
+        }
+
+        void encode_one_node(const std::shared_ptr<ast::Node>& elem, bool encode) {
+            if (auto f = ast::as<ast::Field>(elem)) {
+                write_field_code(f, encode);
+            }
+            if (auto if_ = ast::as<ast::If>(elem)) {
+                code_if(if_, encode);
+            }
+            if (auto block = ast::as<ast::IndentBlock>(elem)) {
+                code_indent_block(ast::cast_to<ast::IndentBlock>(elem), encode);
+            }
+            if (auto match = ast::as<ast::Match>(elem)) {
+                code_match(match, encode);
+            }
+        }
+
+        void code_indent_block(const std::shared_ptr<ast::IndentBlock>& block, bool encode) {
+            // encode fields
+            for (auto& elem : block->elements) {
+                encode_one_node(elem, encode);
+            }
+        }
+
+        void write_code_fn(const std::shared_ptr<ast::Format>& fmt, bool encode) {
             if (fmt->body->struct_type->bit_alignment != ast::BitAlignment::byte_aligned) {
                 return;  // skip
             }
-            w.writeln("bool ", fmt->ident->ident, "::encode(::utils::binary::writer& w,int* state) {");
+            w.writeln("bool ", fmt->ident->ident, "::", encode ? "encode(::utils::binary::writer& w) const" : "decode(::utils::binary::reader& r)", " {");
             {
                 auto indent = w.indent_scope();
-                w.writeln("int tmp_state = 0;");
-                w.writeln("if (!state) {");
-                {
-                    auto indent = w.indent_scope();
-                    w.writeln("state = &tmp_state;");
-                }
-                w.writeln("}");
-                w.writeln("if (*state == 0 ) {");
-                {
-                    auto indent = w.indent_scope();
-                    // first, apply assertions
-                    for (auto& elem : fmt->body->elements) {
-                        if (auto a = ast::as<ast::Assert>(elem)) {
-                            auto cond = str.to_string(a->cond);
-                            w.writeln("if (!", cond, ") {");
-                            {
-                                auto indent = w.indent_scope();
-                                w.writeln("return false;");
-                            }
-                            w.writeln("}");
+                // first, apply assertions
+                for (auto& elem : fmt->body->elements) {
+                    if (auto a = ast::as<ast::Assert>(elem)) {
+                        auto cond = str.to_string(a->cond);
+                        w.writeln("if (!", cond, ") {");
+                        {
+                            auto indent = w.indent_scope();
+                            w.writeln("return false;");
                         }
+                        w.writeln("}");
                     }
-                    w.writeln("*state += 1;");
                 }
-                w.writeln("}");
                 // encode fields
-                encode_indent_block(fmt->body);
+                code_indent_block(fmt->body, encode);
                 w.writeln("return true;");
             }
             w.writeln("}");
@@ -365,14 +438,11 @@ namespace j2cp2 {
             for (auto& fmt : prog->elements) {
                 if (auto f = ast::as<ast::Format>(fmt); f) {
                     write_simple_struct(ast::cast_to<ast::Format>(fmt));
+                    write_code_fn(ast::cast_to<ast::Format>(fmt), true);
+                    write_code_fn(ast::cast_to<ast::Format>(fmt), false);
                 }
                 if (auto e = ast::as<ast::Enum>(fmt); e) {
                     write_enum(ast::cast_to<ast::Enum>(fmt));
-                }
-            }
-            for (auto& fmt : prog->elements) {
-                if (auto f = ast::as<ast::Format>(fmt); f) {
-                    write_encode(ast::cast_to<ast::Format>(fmt));
                 }
             }
         }

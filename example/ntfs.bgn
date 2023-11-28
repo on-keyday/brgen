@@ -9,6 +9,7 @@ format NonResidentMFTAttribute:
     ValidDataSize :u64
 
 enum AttributeTypes:
+    :u32
     STANDARD_INFORMATION = 0x00000010
     ATTRIBUTE_LIST = 0x00000020
     FILE_NAME = 0x00000030

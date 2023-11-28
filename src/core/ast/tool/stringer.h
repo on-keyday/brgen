@@ -31,7 +31,8 @@ namespace brgen::ast::tool {
     }
 
     struct Stringer {
-        std::unordered_map<BinaryOp, std::function<std::string(std::string, std::string)>> bin_op_map;
+        std::unordered_map<BinaryOp, std::function<std::string(Stringer& s, const std::shared_ptr<Expr>& left, const std::shared_ptr<Expr>& right)>> bin_op_map;
+        std::unordered_map<UnaryOp, std::function<std::string(Stringer& s, const std::shared_ptr<Expr>&)>> unary_op_map;
         std::unordered_map<size_t, std::string> tmp_var_map;
         std::unordered_map<std::string, std::string> ident_map;
         std::function<std::string(std::string cond, std::string then, std::string els)> cond_op;
@@ -46,11 +47,14 @@ namespace brgen::ast::tool {
         }
 
        private:
-        std::string handle_bin_op(BinaryOp op, std::string& left, std::string& right) {
+        std::string handle_bin_op(const std::shared_ptr<Binary>& bin) {
+            auto op = bin->op;
             if (auto it = bin_op_map.find(op); it != bin_op_map.end()) {
-                return it->second(std::move(left), std::move(right));
+                return it->second(*this, bin->left, bin->right);
             }
             else {
+                auto left = to_string(bin->left);
+                auto right = to_string(bin->right);
                 return concat("(", left, " ", *bin_op_str(op), " ", right, ")");
             }
         }
@@ -78,9 +82,7 @@ namespace brgen::ast::tool {
                 return "";
             }
             if (auto e = ast::as<ast::Binary>(expr)) {
-                auto left = to_string(e->left);
-                auto right = to_string(e->right);
-                return handle_bin_op(e->op, left, right);
+                return handle_bin_op(ast::cast_to<ast::Binary>(expr));
             }
             if (auto lit = ast::as<ast::IntLiteral>(expr)) {
                 return lit->value;
@@ -111,6 +113,9 @@ namespace brgen::ast::tool {
             }
             if (auto c = ast::as<ast::Call>(expr)) {
                 return handle_call_op(ast::cast_to<ast::Call>(expr));
+            }
+            if (auto d = ast::as<ast::Unary>(expr)) {
+                return concat(unary_op_str[int(d->op)], to_string(d->expr));
             }
             return "";
         }
