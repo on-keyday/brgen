@@ -151,37 +151,25 @@ func evalConstant(e ast.Expr) constant.Value {
 	return constant.MakeUnknown()
 }
 
-func (g *Generator) lookupGoConfig(prog *ast2go.Program) {
-	for _, element := range prog.Elements {
-		if c, ok := element.(*ast2go.Call); ok {
-			config := GetConfig(c.Callee)
-			if config == "" {
-				continue
+func (config *GenConfig) LookupGoConfig(prog *ast2go.Program) error {
+	return ConfigFromProgram(prog, func(configName string, asCall bool, args ...ast2go.Expr) error {
+		if configName == "config.go.import" {
+			if !asCall {
+				return fmt.Errorf("config.go.import must be call")
 			}
-			if config == "config.go.import" {
-				expr := ConvertAst(c.Arguments[0]).(ast.Expr)
-				path := evalConstant(expr)
-				g.Config.ImportPath = append(g.Config.ImportPath, path.String())
-			}
+			path := evalConstant(ConvertAst(args[0]).(ast.Expr))
+			config.ImportPath = append(config.ImportPath, path.String())
 		}
-		if b, ok := element.(*ast2go.Binary); ok {
-			if b.Op != ast2go.BinaryOpAssign {
-				continue
+		if configName == "config.go.package" {
+			if asCall {
+				return fmt.Errorf("config.go.package must be assignment")
 			}
-			config := GetConfig(b.Left)
-			if config == "" {
-				continue
-			}
-			if config == "config.go.package" {
-				expr := ConvertAst(b.Right).(ast.Expr)
-				pkgName := evalConstant(expr)
-				g.Config.PackageName = pkgName.String()
-			}
+			expr := ConvertAst(args[0]).(ast.Expr)
+			pkgName := evalConstant(expr)
+			config.PackageName = pkgName.String()
 		}
-		if i, ok := element.(*ast2go.Import); ok {
-			g.lookupGoConfig(i.ImportDesc)
-		}
-	}
+		return nil
+	})
 }
 
 func (g *Generator) printf(format string, v ...any) {
@@ -585,8 +573,7 @@ func (g *Generator) Generate(file *ast2go.AstFile) (err error) {
 	if err != nil {
 		return err
 	}
-
-	g.lookupGoConfig(p)
+	g.Config.LookupGoConfig(p)
 	ConfigFromProgram(p, func(configName string, asCall bool, args ...ast2go.Expr) error {
 		switch configName {
 		case "config.go.package":

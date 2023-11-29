@@ -117,6 +117,39 @@ namespace brgen::ast::tool {
             if (auto d = ast::as<ast::Unary>(expr)) {
                 return concat(unary_op_str[int(d->op)], to_string(d->expr));
             }
+            if (auto a = ast::as<ast::Available>(expr)) {
+                auto base_ident = ast::as<ast::Ident>(a->target->base.lock());
+                if (!base_ident) {
+                    return "false";
+                }
+                if (auto field = ast::as<ast::Field>(base_ident->base.lock())) {
+                    if (auto typ = ast::as<ast::UnionType>(field->field_type)) {
+                        std::string cond_s = "";
+                        if (auto c = typ->cond.lock()) {
+                            cond_s = to_string(c);
+                        }
+                        else {
+                            cond_s = "true";
+                        }
+                        std::string result;
+                        for (auto& c : typ->candidates) {
+                            auto expr = c->cond.lock();
+                            auto s = to_string(expr);
+                            result += brgen::concat("(", s, "==", cond_s, ") ? ");
+                            if (c->field.lock()) {
+                                result += "true";
+                            }
+                            else {
+                                result += "false";
+                            }
+                            result += " : ";
+                        }
+                        result += "false";
+                        return brgen::concat("(", result, ")");
+                    }
+                    return "true";
+                }
+            }
             return "";
         }
     };
