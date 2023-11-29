@@ -1,8 +1,10 @@
 
 enum ContentType:
+    :u8
     invalid = 0
 
 enum TLSVersion:
+    :u8
     invalid = 0
 
 format TLSRecord:
