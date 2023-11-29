@@ -19,8 +19,8 @@ format Prival:
         config.operation(input,output)
         :">"
 
-fn digit(n :u8):
-    n == 32
+fn digit(n :u8) -> bool:
+    return n == 32
 
 
 fn nonzerodigit(n :char):

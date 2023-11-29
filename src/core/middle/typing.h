@@ -11,6 +11,14 @@ namespace brgen::middle {
         LocationError warnings;
 
         std::shared_ptr<ast::Scope> current_global;
+
+        std::shared_ptr<ast::Type> unwrap_ident_type(const std::shared_ptr<ast::Type>& typ) {
+            if (auto ident = ast::as<ast::IdentType>(typ)) {
+                return ident->base.lock();
+            }
+            return typ;
+        }
+
         bool equal_type(const std::shared_ptr<ast::Type>& left, const std::shared_ptr<ast::Type>& right) {
             // unwrap ident type
             if (auto l = ast::as<ast::IdentType>(left), r = ast::as<ast::IdentType>(right); l || r) {
@@ -459,6 +467,12 @@ namespace brgen::middle {
             }
             int_type_fitting(lty, rty);
             b->constant_level = decide_constant_level(b->left->constant_level, b->right->constant_level);
+            auto cmp_lty = unwrap_ident_type(lty);
+            auto cmp_rty = unwrap_ident_type(rty);
+            if (!cmp_lty || !cmp_rty) {
+                warn_type_not_found(b);
+                return;
+            }
             switch (op) {
                 case ast::BinaryOp::left_logical_shift:
                 case ast::BinaryOp::right_logical_shift:
