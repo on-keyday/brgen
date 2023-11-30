@@ -24,3 +24,4 @@ bin/
 obj/
 testdata/
 *.profraw
+go_dump_env.bat

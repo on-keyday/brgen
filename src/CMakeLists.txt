@@ -32,6 +32,8 @@ install(FILES "${CMAKE_BINARY_DIR}/tool/json2cpp.wasm" DESTINATION "lib" OPTIONA
 install(TARGETS json2cpp2 DESTINATION "lib" OPTIONAL)
 install(FILES "${CMAKE_BINARY_DIR}/tool/json2cpp2.wasm" DESTINATION "lib" OPTIONAL)
 install(FILES "${CMAKE_BINARY_DIR}/tool/json2go.wasm" DESTINATION "lib" OPTIONAL)
+file(TO_CMAKE_PATH "$ENV{GOROOT}" WASMEXEC_ROOT)
+install(FILES "${WASMEXEC_ROOT}/misc/wasm/wasm_exec.js" RENAME "json2go.js" DESTINATION "lib" OPTIONAL)
 return()
 endif()
 
