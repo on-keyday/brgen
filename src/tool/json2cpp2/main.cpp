@@ -24,7 +24,8 @@ auto& cout = utils::wrap::cout_wrap();
 
 int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     prefix_loc() = "json2cpp: ";
-    no_color = flags.no_color;
+    cerr_color_mode = flags.no_color ? ColorMode::no_color : cerr.is_tty() ? ColorMode::force_color
+                                                                           : ColorMode::no_color;
     if (flags.spec) {
         cout << R"({
             "pass_by": "file",

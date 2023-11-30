@@ -20,7 +20,8 @@
             "program": "${workspaceRoot}/tool/src2json",
             "args": [
                 "c:/workspace/shbrgen/brgen/example/syslog.bgn",
-                "--print-json"
+                "--print-json",
+                "--stderr-color-mode=force"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",

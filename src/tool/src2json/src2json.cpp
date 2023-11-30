@@ -54,6 +54,9 @@ struct Flags : utils::cmdline::templ::HelpOption {
 
     bool no_color = false;
 
+    ColorMode cout_color_mode = ColorMode::auto_color;
+    ColorMode cerr_color_mode = ColorMode::auto_color;
+
     bool stdin_mode = false;
     std::string as_file_name = "<stdin>";
 
@@ -97,7 +100,32 @@ struct Flags : utils::cmdline::templ::HelpOption {
 
         ctx.VarBool(&debug_json, "d,debug-json", "debug mode json output (not parsable ast, only for debug. use with --print-ast)");
 
-        ctx.VarBool(&no_color, "no-color", "disable color output");
+        // for compatibility and usability
+        ctx.VarBoolFunc(&cerr_color_mode, "no-color", "disable color output (both stdout and stderr)", [&](bool y, auto) {
+            if (y) {
+                cerr_color_mode = ColorMode::no_color;
+                cout_color_mode = ColorMode::no_color;
+            }
+            else {
+                cerr_color_mode = ColorMode::auto_color;
+                cout_color_mode = ColorMode::auto_color;
+            }
+            return true;
+        });
+        ctx.VarMap<std::string, ColorMode, std::map>(
+            &cout_color_mode, "stdout-color", "set color mode for stdout (auto, force, no)", "<mode>",
+            std::map<std::string, ColorMode>{
+                {"auto", ColorMode::auto_color},
+                {"force", ColorMode::force_color},
+                {"no", ColorMode::no_color},
+            });
+        ctx.VarMap<std::string, ColorMode, std::map>(
+            &cerr_color_mode, "stderr-color", "set color mode for stderr (auto, force, no)", "<mode>",
+            std::map<std::string, ColorMode>{
+                {"auto", ColorMode::auto_color},
+                {"force", ColorMode::force_color},
+                {"no", ColorMode::no_color},
+            });
 
         ctx.VarBool(&stdin_mode, "stdin", "read input from stdin (must not be tty)");
         ctx.VarString(&as_file_name, "stdin-name", "set name of stdin/argv (as a filename)", "<name>");
@@ -127,16 +155,18 @@ struct Flags : utils::cmdline::templ::HelpOption {
     }
 };
 auto& cout = utils::wrap::cout_wrap();
+ColorMode cout_color_mode = ColorMode::auto_color;
 
 auto print_ok() {
+    assert(cout_color_mode != ColorMode::auto_color);
     if (!cout.is_tty()) {
         return;
     }
-    if (no_color) {
-        cout << "src2json: ok\n";
+    if (cout_color_mode == ColorMode::force_color) {
+        cout << utils::wrap::packln("src2json: ", cse::letter_color<cse::ColorPalette::green>, "ok", cse::color_reset);
     }
     else {
-        cout << utils::wrap::packln("src2json: ", cse::letter_color<cse::ColorPalette::green>, "ok", cse::color_reset);
+        cout << "src2json: ok\n";
     }
 }
 
@@ -217,7 +247,7 @@ int dump_types() {
     return exit_ok;
 }
 
-int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
+int Main(Flags& flags, utils::cmdline::option::Context&) {
     cerr.set_virtual_terminal(true);  // ignore error
     cout.set_virtual_terminal(true);  // ignore error
     if (flags.detected_stdio_type) {
@@ -240,7 +270,24 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
             print_warning("cannot detect stderr type");
         }
     }
-    no_color = flags.no_color;
+    if (flags.cout_color_mode == ColorMode::auto_color) {
+        if (cout.is_tty()) {
+            flags.cout_color_mode = ColorMode::force_color;
+        }
+        else {
+            flags.cout_color_mode = ColorMode::no_color;
+        }
+    }
+    if (flags.cerr_color_mode == ColorMode::auto_color) {
+        if (cerr.is_tty()) {
+            flags.cerr_color_mode = ColorMode::force_color;
+        }
+        else {
+            flags.cerr_color_mode = ColorMode::no_color;
+        }
+    }
+    cout_color_mode = flags.cout_color_mode;
+    cerr_color_mode = flags.cerr_color_mode;
     flags.argv_mode = flags.argv_input.size() > 0;
 
     if (flags.dump_types) {
@@ -370,10 +417,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     auto report_error = [&](brgen::SourceError&& res, bool warn = false, const char* key = "ast") {
         if (!cout.is_tty() || flags.print_on_error) {
             auto d = dump_json_file(nullptr, key, res);
-            cout << d.out();
-            if (cout.is_tty()) {
-                cout << "\n";
-            }
+            cout << utils::wrap::pack(d.out(), cout.is_tty() ? "\n" : "");
         }
         res.for_each_error([&](std::string_view msg, bool w) {
             if (w && !flags.unresolved_type_as_error) {
@@ -393,10 +437,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
         }
         if (!cout.is_tty() || flags.print_json) {
             auto d = dump_json_file(*res, "tokens", brgen::SourceError{});
-            cout << d.out();
-            if (cout.is_tty()) {
-                cout << "\n";
-            }
+            cout << utils::wrap::pack(d.out(), cout.is_tty() ? "\n" : "");
         }
         else {
             print_ok();
@@ -500,10 +541,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
         c.encode(*res);
         d = dump_json_file(c.obj, "ast", err_or_warn);
     }
-    cout << d.out();
-    if (cout.is_tty()) {
-        cout << "\n";
-    }
+    cout << utils::wrap::pack(d.out(), cout.is_tty() ? "\n" : "");
 
     return exit_ok;
 }
@@ -514,7 +552,15 @@ int src2json_main(int argc, char** argv) {
         argc, argv, flags,
         [&](auto&& str, bool err) {
             if (err) {
-                no_color = flags.no_color;
+                if (flags.cerr_color_mode == ColorMode::auto_color) {
+                    if (cerr.is_tty()) {
+                        flags.cerr_color_mode = ColorMode::force_color;
+                    }
+                    else {
+                        flags.cerr_color_mode = ColorMode::no_color;
+                    }
+                }
+                cerr_color_mode = flags.cerr_color_mode;
                 print_error(str);
             }
             else {

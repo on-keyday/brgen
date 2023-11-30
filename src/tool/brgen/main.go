@@ -98,11 +98,13 @@ func NewGenerator(ctx context.Context, work *sync.WaitGroup, stderr io.Writer, r
 	}
 }
 
-func (g *Generator) execGenerator(cmd *exec.Cmd) ([]byte, error) {
+func (g *Generator) execGenerator(cmd *exec.Cmd, targetFile string) ([]byte, error) {
 	cmd.Stderr = g.stderr
 	buf := bytes.NewBuffer(nil)
 	cmd.Stdout = buf
+	log.Printf("execGenerator: starting process: %s\n", targetFile)
 	err := cmd.Run()
+	log.Printf("execGenerator: done process: %s\n", targetFile)
 	if err != nil {
 		return nil, err
 	}
@@ -122,11 +124,11 @@ func makeTmpFile(data []byte) (path string, err error) {
 	return fp.Name(), nil
 }
 
-func (g *Generator) passAst(buffer []byte) ([]byte, error) {
+func (g *Generator) passAst(filePath string, buffer []byte) ([]byte, error) {
 	if g.spec.PassBy == "stdin" {
 		cmd := exec.CommandContext(g.ctx, g.generatorPath)
 		cmd.Stdin = bytes.NewReader(buffer)
-		return g.execGenerator(cmd)
+		return g.execGenerator(cmd, filePath)
 	}
 	path, err := makeTmpFile(buffer)
 	if err != nil {
@@ -134,7 +136,7 @@ func (g *Generator) passAst(buffer []byte) ([]byte, error) {
 	}
 	defer os.Remove(path)
 	cmd := exec.CommandContext(g.ctx, g.generatorPath, path)
-	return g.execGenerator(cmd)
+	return g.execGenerator(cmd, filePath)
 }
 
 func (g *Generator) StartGenerator(out *Output) error {
@@ -151,7 +153,7 @@ func (g *Generator) StartGenerator(out *Output) error {
 				return
 			case req := <-g.request:
 				go func() {
-					data, err := g.passAst(req.Data)
+					data, err := g.passAst(req.Path, req.Data)
 					if err != nil {
 						req.Err = err
 						g.result <- req
