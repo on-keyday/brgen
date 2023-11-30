@@ -250,6 +250,24 @@ int dump_types() {
 int Main(Flags& flags, utils::cmdline::option::Context&) {
     cerr.set_virtual_terminal(true);  // ignore error
     cout.set_virtual_terminal(true);  // ignore error
+    if (flags.cout_color_mode == ColorMode::auto_color) {
+        if (cout.is_tty()) {
+            flags.cout_color_mode = ColorMode::force_color;
+        }
+        else {
+            flags.cout_color_mode = ColorMode::no_color;
+        }
+    }
+    if (flags.cerr_color_mode == ColorMode::auto_color) {
+        if (cerr.is_tty()) {
+            flags.cerr_color_mode = ColorMode::force_color;
+        }
+        else {
+            flags.cerr_color_mode = ColorMode::no_color;
+        }
+    }
+    cout_color_mode = flags.cout_color_mode;
+    cerr_color_mode = flags.cerr_color_mode;
     if (flags.detected_stdio_type) {
         if (auto s = utils::wrap::cin_wrap().get_file().stat()) {
             print_note("detected stdin type: ", to_string(s->mode.type()));
@@ -270,24 +288,7 @@ int Main(Flags& flags, utils::cmdline::option::Context&) {
             print_warning("cannot detect stderr type");
         }
     }
-    if (flags.cout_color_mode == ColorMode::auto_color) {
-        if (cout.is_tty()) {
-            flags.cout_color_mode = ColorMode::force_color;
-        }
-        else {
-            flags.cout_color_mode = ColorMode::no_color;
-        }
-    }
-    if (flags.cerr_color_mode == ColorMode::auto_color) {
-        if (cerr.is_tty()) {
-            flags.cerr_color_mode = ColorMode::force_color;
-        }
-        else {
-            flags.cerr_color_mode = ColorMode::no_color;
-        }
-    }
-    cout_color_mode = flags.cout_color_mode;
-    cerr_color_mode = flags.cerr_color_mode;
+
     flags.argv_mode = flags.argv_input.size() > 0;
 
     if (flags.dump_types) {
