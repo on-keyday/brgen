@@ -2,11 +2,18 @@
   "src2json": "./tool/src2json.exe",
   "input_dir": ["./example/", "./example/gen_step/"],
   "suffix_pattern": ".bgn",
-  "disable_untyped_warning": true,
+  "warnings": {
+    "disable_untyped": true,
+    "disable_unused": true
+  },
   "output": [
     {
       "generator": "./tool/json2cpp2.exe",
       "output_dir": "./ignore/examples/cpp2/"
+    },
+    {
+      "generator": "./tool/json2go.exe",
+      "output_dir": "./ignore/examples/go/"
     }
   ]
 }

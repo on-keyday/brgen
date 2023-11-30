@@ -351,6 +351,9 @@ const tokenizeSourceImpl  = async (doc :TextDocument,docInfo :DocumentInfo) =>{
         else if(ast2ts.isVoidType(node)&&node.is_explicit){
             locList.push({loc: node.loc,length: node.loc.pos.end - node.loc.pos.begin,index:7});
         }
+        else if(ast2ts.isBoolType(node)&&node.is_explicit){
+            locList.push({loc: node.loc,length: node.loc.pos.end - node.loc.pos.begin,index:7});
+        }
         return true
     });
     docInfo.prevFile = ast;

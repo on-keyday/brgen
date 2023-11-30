@@ -175,21 +175,39 @@ namespace j2cp2 {
                                     w.writeln("std::optional<", get_type_name(ut->common_type), "> ", uf->ident->ident, "() const {");
                                     {
                                         auto indent = w.indent_scope();
-                                        for (auto& c : ut->candidates) {
-                                            auto f = c->field.lock();
+                                        auto make_access = [&](const std::shared_ptr<ast::Field>& f) {
                                             auto struct_ = f->belong_struct.lock();
                                             assert(struct_);
+                                            auto indent = w.indent_scope();
+                                            auto access = tmp[struct_] + "." + f->ident->ident;
+                                            anonymous_structs[f.get()] = {access, struct_};
+                                            w.writeln("return this->", access, ";");
+                                        };
+                                        bool has_els = false;
+                                        for (auto& c : ut->candidates) {
                                             auto cond = c->cond.lock();
                                             if (cond) {
                                                 auto cond_s = str.to_string(cond);
                                                 w.writeln("if (", cond_s, "==", cond_u, ") {");
                                                 {
-                                                    auto indent = w.indent_scope();
-                                                    auto access = tmp[struct_] + "." + f->ident->ident;
-                                                    anonymous_structs[f.get()] = {access, struct_};
-                                                    w.writeln("return this->", access, ";");
+                                                    auto f = c->field.lock();
+                                                    if (!f) {
+                                                        w.writeln("return std::nullopt;");
+                                                    }
+                                                    else {
+                                                        make_access(f);
+                                                    }
                                                 }
                                                 w.writeln("}");
+                                            }
+                                            else {
+                                                auto f = c->field.lock();
+                                                if (!f) {
+                                                    w.writeln("return std::nullopt;");
+                                                }
+                                                else {
+                                                    make_access(f);
+                                                }
                                             }
                                         }
                                         w.writeln("return std::nullopt;");

@@ -23,11 +23,11 @@ fn digit(n :u8) -> bool:
     return n == 32
 
 
-fn nonzerodigit(n :char):
-   '1'<=n && n<='9' 
+fn nonzerodigit(n :char) -> bool:
+   return '1'<=n && n<='9' 
 
-fn nilvalue(n :char):
-    n == '-'
+fn nilvalue(n :char) -> bool:
+   return n == '-'
 
 format Version:
     version :u16

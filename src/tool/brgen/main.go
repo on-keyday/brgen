@@ -174,7 +174,9 @@ func (g *Generator) StartGenerator(out *Output) error {
 }
 
 func (g *Generator) Request(req *Result) {
-	g.request <- req
+	go func() {
+		g.request <- req
+	}()
 }
 
 func (g *Generator) askSpec() error {
@@ -232,32 +234,41 @@ func (g *GeneratorHandler) lookupPath(name string) ([]string, error) {
 
 func (g *GeneratorHandler) loadAst(path string) ([]byte, error) {
 	cmd := exec.CommandContext(g.ctx, g.src2json, path)
-	if *config.DisableUntypedWarning {
+	if config.Warnings.DisableUntypedWarning {
 		cmd.Args = append(cmd.Args, "--disable-untyped")
+	}
+	if config.Warnings.DisableUnusedWarning {
+		cmd.Args = append(cmd.Args, "--disable-unused")
 	}
 	cmd.Stderr = g.stderr
 	buf := bytes.NewBuffer(nil)
 	cmd.Stdout = buf
+	log.Printf("loadAst: starting process: %s\n", path)
 	err := cmd.Run()
+	log.Printf("loadAst: done process: %s\n", path)
 	if err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
 }
 
-func (g *GeneratorHandler) generateAST(path string) {
+func (g *GeneratorHandler) generateAST(path string, wg *sync.WaitGroup) {
 	files, err := g.lookupPath(path)
 	if err != nil {
 		log.Printf("lookupPath: %s: %s\n", path, err)
 		return
 	}
 	for _, file := range files {
+		wg.Add(1)
 		go func(file string) {
-			log.Printf("start: %s\n", file)
-			defer log.Printf("done: %s\n", file)
+			defer wg.Done()
+			log.Printf("parse start: %s\n", file)
+			defer log.Printf("parse done: %s\n", file)
 			buf, err := g.loadAst(file)
 			if err != nil {
-				g.errQueue <- fmt.Errorf("loadAst: %s: %w\n", file, err)
+				go func() {
+					g.errQueue <- fmt.Errorf("loadAst: %s: %w\n", file, err)
+				}()
 				return
 			}
 			for _, gen := range g.generators {
@@ -282,13 +293,18 @@ func (g *GeneratorHandler) dispatchGenerator(out *Output) error {
 }
 
 func (g *GeneratorHandler) StartGenerator(path ...string) {
+	g.queue = make(chan *Result, 1)
+	wg := &sync.WaitGroup{}
 	for _, p := range path {
+		wg.Add(1)
 		go func(p string) {
-			g.generateAST(p)
+			defer wg.Done()
+			g.generateAST(p, wg)
 		}(p)
 	}
-	g.queue = make(chan *Result, 1)
+
 	go func() {
+		wg.Wait()
 		for {
 			select {
 			case r := <-g.resultQueue:
@@ -318,12 +334,17 @@ type Output struct {
 	OutputDir string `json:"output_dir"`
 }
 
+type Warnings struct {
+	DisableUntypedWarning bool `json:"disable_untyped"`
+	DisableUnusedWarning  bool `json:"disable_unused"`
+}
+
 type Config struct {
-	Source2Json           *string  `json:"src2json"`
-	SuffixPattern         *string  `json:"suffix_pattern"`
-	TargetDirs            []string `json:"input_dir"`
-	DisableUntypedWarning *bool    `json:"disable_untyped_warning"`
-	Output                []*Output
+	Source2Json   *string  `json:"src2json"`
+	SuffixPattern *string  `json:"suffix_pattern"`
+	TargetDirs    []string `json:"input_dir"`
+	Warnings      Warnings `json:"warnings"`
+	Output        []*Output
 }
 
 func loadConfig() (*Config, error) {
@@ -351,9 +372,6 @@ func fillStringPtr(c *Config) {
 		c.SuffixPattern = new(string)
 		*c.SuffixPattern = ".bgn"
 	}
-	if c.DisableUntypedWarning == nil {
-		c.DisableUntypedWarning = new(bool)
-	}
 }
 
 var config *Config
@@ -373,7 +391,8 @@ func init() {
 	})
 	flag.StringVar(config.Source2Json, "src2json", *config.Source2Json, "path to src2json")
 	flag.StringVar(config.SuffixPattern, "suffix", *config.SuffixPattern, "suffix of file to generate from")
-	flag.BoolVar(config.DisableUntypedWarning, "disable-untyped", *config.DisableUntypedWarning, "disable untyped warning")
+	flag.BoolVar(&config.Warnings.DisableUntypedWarning, "disable-untyped", config.Warnings.DisableUntypedWarning, "disable untyped warning")
+	flag.BoolVar(&config.Warnings.DisableUnusedWarning, "disable-unused", config.Warnings.DisableUnusedWarning, "disable unused warning")
 
 	defer flag.Parse()
 	if err != nil {
@@ -400,32 +419,40 @@ func main() {
 		log.Fatal(err)
 	}
 	g.StartGenerator(args...)
-
-	for res := range g.Recv() {
-		if res.Err != nil {
-			log.Printf("%s: %v", res.Path, res.Err)
-			continue
+	var wg sync.WaitGroup
+	reporter := func() {
+		defer wg.Done()
+		for res := range g.Recv() {
+			if res.Err != nil {
+				log.Printf("%s: %v", res.Path, res.Err)
+				continue
+			}
+			dir := filepath.Dir(res.Path)
+			if dir == "." {
+				fmt.Printf("%s:\n", res.Path)
+				fmt.Println(string(res.Data))
+				continue
+			}
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				log.Fatal(err)
+			}
+			fp, err := os.Create(res.Path)
+			if err != nil {
+				log.Printf("create %s: %s\n", res.Path, err)
+				continue
+			}
+			defer fp.Close()
+			_, err = fp.Write(res.Data)
+			if err != nil {
+				log.Printf("write %s: %s\n", res.Path, err)
+				continue
+			}
+			log.Printf("generated: %s\n", res.Path)
 		}
-		dir := filepath.Dir(res.Path)
-		if dir == "." {
-			fmt.Printf("%s:\n", res.Path)
-			fmt.Println(string(res.Data))
-			continue
-		}
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			log.Fatal(err)
-		}
-		fp, err := os.Create(res.Path)
-		if err != nil {
-			log.Printf("create %s: %s\n", res.Path, err)
-			continue
-		}
-		defer fp.Close()
-		_, err = fp.Write(res.Data)
-		if err != nil {
-			log.Printf("write %s: %s\n", res.Path, err)
-			continue
-		}
-		log.Printf("generated: %s\n", res.Path)
 	}
+	for i := 0; i < 3; i++ {
+		wg.Add(1)
+		go reporter()
+	}
+	wg.Wait()
 }

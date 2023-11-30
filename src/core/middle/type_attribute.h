@@ -142,6 +142,7 @@ namespace brgen::middle {
                     size_t bit_size = -1;
                     for (auto& fields : t->fields) {
                         if (auto field = ast::as<ast::Field>(fields); field) {
+                            // TODO(on-keyday): bit alignment and size of field is affected by field argument
                             if (field->field_type->bit_alignment == ast::BitAlignment::not_target) {
                                 field->bit_alignment = ast::BitAlignment::not_target;
                                 continue;
@@ -280,8 +281,8 @@ namespace brgen::middle {
                         e->bit_size = b->base_type->bit_size;
                     }
                     else {
-                        // TODO(on-keyday): how to determine bit alignment of enum type?
-                        e->bit_alignment = ast::BitAlignment::byte_aligned;
+                        // bit alignment of enum which is not determined base type is not decidable
+                        e->bit_alignment = ast::BitAlignment::not_decidable;
                         // unknown bit size
                         e->bit_size = 0;
                     }

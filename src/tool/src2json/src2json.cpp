@@ -12,7 +12,7 @@
 #include <core/middle/replace_assert.h>
 #include <core/middle/typing.h>
 #include <core/middle/type_attribute.h>
-#include "common/print.h"
+#include "../common/print.h"
 #include <wrap/argv.h>
 #include <core/ast/node_type_list.h>
 #include <core/ast/kill_node.h>
@@ -21,7 +21,7 @@
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
-#include "common/em_main.h"
+#include "../common/em_main.h"
 #else
 #define EMSCRIPTEN_KEEPALIVE
 #endif
