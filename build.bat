@@ -21,6 +21,8 @@ set INSTALL_PREFIX=.
 if "%BUILD_MODE%" == "native" (
 cmake -D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang -G Ninja -DCMAKE_INSTALL_PREFIX=%INSTALL_PREFIX% -D CMAKE_BUILD_TYPE=%BUILD_TYPE% -S . -B ./built/%BUILD_MODE%/%BUILD_TYPE%
 ) else if "%BUILD_MODE%" == "wasm-em" (
+set GOOS=js
+set GOARCH=wasm
 call emcmake cmake -G Ninja -D CMAKE_BUILD_TYPE=%BUILD_TYPE% -DCMAKE_INSTALL_PREFIX=%INSTALL_PREFIX%/web/dev/src -S . -B ./built/%BUILD_MODE%/%BUILD_TYPE%
 ) else (
     echo "Invalid build mode: %BUILD_MODE%"
