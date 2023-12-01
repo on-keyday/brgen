@@ -104,6 +104,55 @@ func mapToken(op ast2go.BinaryOp) token.Token {
 	return token.ILLEGAL
 }
 
+type ExprStringer struct {
+	BinaryMapper map[ast2go.BinaryOp]func(s *ExprStringer, x, y ast2go.Expr) string
+	IdentMapper  map[string]string
+	CallMapper   map[string]func(s *ExprStringer, args ...ast2go.Expr) string
+}
+
+func NewExprStringer() *ExprStringer {
+	return &ExprStringer{
+		BinaryMapper: map[ast2go.BinaryOp]func(s *ExprStringer, x, y ast2go.Expr) string{},
+		IdentMapper:  map[string]string{},
+		CallMapper:   map[string]func(s *ExprStringer, args ...ast2go.Expr) string{},
+	}
+}
+
+func (s *ExprStringer) ExprString(e ast2go.Expr) string {
+	switch e := e.(type) {
+	case *ast2go.Binary:
+		if f, ok := s.BinaryMapper[e.Op]; ok {
+			return f(s, e.Left, e.Right)
+		}
+		return fmt.Sprintf("(%s %s %s)", s.ExprString(e.Left), e.Op.String(), s.ExprString(e.Right))
+	case *ast2go.Ident:
+		if f, ok := s.IdentMapper[e.Ident]; ok {
+			return f
+		}
+		return e.Ident
+	case *ast2go.IntLiteral:
+		return e.Value
+	case *ast2go.BoolLiteral:
+		if e.Value {
+			return "true"
+		} else {
+			return "false"
+		}
+	case *ast2go.Call:
+		callee := s.ExprString(e.Callee)
+		if f, ok := s.CallMapper[callee]; ok {
+			return f(s, e.Arguments...)
+		}
+		args := []string{}
+		for _, arg := range e.Arguments {
+			args = append(args, s.ExprString(arg))
+		}
+		return fmt.Sprintf("%s(%s)", callee, strings.Join(args, ","))
+	default:
+		return ""
+	}
+}
+
 func ConvertAst(n ast2go.Node) ast.Node {
 	if n == nil {
 		return nil
@@ -574,29 +623,6 @@ func (g *Generator) Generate(file *ast2go.AstFile) (err error) {
 		return err
 	}
 	g.Config.LookupGoConfig(p)
-	ConfigFromProgram(p, func(configName string, asCall bool, args ...ast2go.Expr) error {
-		switch configName {
-		case "config.go.package":
-			if asCall {
-				return fmt.Errorf("config.go.package must be assignment")
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("config.go.package must have 1 argument")
-			}
-			pkgName := evalConstant(ConvertAst(args[0]).(ast.Expr))
-			g.Config.PackageName = pkgName.String()
-		case "config.go.import":
-			if !asCall {
-				return fmt.Errorf("config.go.import must be call")
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("config.go.import must have 1 argument")
-			}
-			path := evalConstant(ConvertAst(args[0]).(ast.Expr))
-			g.Config.ImportPath = append(g.Config.ImportPath, path.String())
-		}
-		return nil
-	})
 	if g.Config.PackageName == "" {
 		g.Config.PackageName = "main"
 	}

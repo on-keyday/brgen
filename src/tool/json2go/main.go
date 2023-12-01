@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"go/format"
 	"io"
 	"os"
 	"strings"
@@ -39,12 +40,37 @@ func (i *IndentPrinter) Printf(format string, args ...interface{}) {
 	fmt.Fprintf(i.w, i.IndentStr()+format, args...)
 }
 
+type BitFields struct {
+	Size   uint64
+	Fields []*ast2go.Field
+	Name   string
+}
+
+type UnionStruct struct {
+	Struct *ast2go.StructType
+	Name   string
+}
+
 type Generator struct {
-	w         io.Writer
-	func_area bytes.Buffer
-	seq       int
-	bitFields map[*ast2go.Field]string
-	indent    int
+	w            io.Writer
+	type_area    bytes.Buffer
+	func_area    bytes.Buffer
+	seq          int
+	bitFields    map[*ast2go.Field]*BitFields
+	unionStructs map[*ast2go.StructType]*UnionStruct
+	indent       int
+	imports      map[string]struct{}
+	exprStringer *gen.ExprStringer
+}
+
+func NewGenerator(w io.Writer) *Generator {
+	return &Generator{
+		w:            w,
+		bitFields:    make(map[*ast2go.Field]*BitFields),
+		unionStructs: make(map[*ast2go.StructType]*UnionStruct),
+		imports:      make(map[string]struct{}),
+		exprStringer: gen.NewExprStringer(),
+	}
 }
 
 func (g *Generator) Indent(plus int) {
@@ -56,7 +82,7 @@ func (g *Generator) IndentStr() string {
 }
 
 func (g *Generator) Printf(format string, args ...interface{}) {
-	fmt.Fprintf(g.w, g.IndentStr()+format, args...)
+	fmt.Fprintf(&g.type_area, g.IndentStr()+format, args...)
 }
 
 func (g *Generator) PrintfFunc(format string, args ...interface{}) {
@@ -84,21 +110,45 @@ func (g *Generator) getType(typ ast2go.Type) string {
 	return ""
 }
 
+func MaxHexDigit(bitSize uint64) uint64 {
+	maxValue := (1 << bitSize) - 1
+	digit := uint64(0)
+	for maxValue > 0 {
+		maxValue >>= 4
+		digit++
+	}
+	return digit
+}
+
 func (g *Generator) writeBitField(belong string, fields []*ast2go.Field, size uint64, intSet, simple bool) {
 	if intSet && simple {
 		seq := g.getSeq()
 		g.Printf("flags%d uint%d\n", seq, size)
+
 		offset := uint64(0)
+		format := fmt.Sprintf("return ((t.flags%d & 0x%%0%dx) >> %%d)", seq, MaxHexDigit(size))
 		for _, v := range fields {
-			g.PrintfFunc("func (t *%s) %s() uint%d {\n", belong, v.Ident.Ident, size)
 			field_size := v.FieldType.GetBitSize()
+			if field_size == 1 {
+				g.PrintfFunc("func (t *%s) %s() bool {\n", belong, v.Ident.Ident)
+			} else {
+				g.PrintfFunc("func (t *%s) %s() uint%d {\n", belong, v.Ident.Ident, size)
+			}
 			shift := (size - field_size - offset)
-			bitMask := ((1 << field_size) - 1) << shift
-			g.PrintfFunc("return (t.flags%d & 0x%x) >> %d \n", seq, bitMask, shift)
+			bitMask := ((1 << field_size) - 1)
+			if field_size == 1 {
+				g.PrintfFunc(format+"==1\n", bitMask<<shift, shift)
+			} else {
+				g.PrintfFunc(format+"\n", bitMask<<shift, shift)
+			}
 			g.PrintfFunc("}\n")
 			offset += field_size
 		}
-		g.bitFields[fields[len(fields)-1]] = fmt.Sprintf("flags%d", seq)
+		g.bitFields[fields[len(fields)-1]] = &BitFields{
+			Size:   size,
+			Fields: fields,
+			Name:   fmt.Sprintf("flags%d", seq),
+		}
 		return
 	}
 }
@@ -152,6 +202,64 @@ func (g *Generator) writeStructType(belong string, s *ast2go.StructType) {
 					continue
 				}
 			}
+			if e_type, ok := typ.(*ast2go.EnumType); ok {
+				g.Printf("%s %s\n", field.Ident.Ident, e_type.Base.Ident.Ident)
+				continue
+			}
+			if u, ok := typ.(*ast2go.StructUnionType); ok {
+				for _, v := range u.Structs {
+					seq := g.getSeq()
+					g.Printf("union_%d_ struct {", seq)
+					g.writeStructType(belong, v)
+					g.Printf("}\n")
+					g.unionStructs[v] = &UnionStruct{
+						Struct: v,
+						Name:   fmt.Sprintf("union_%d_", seq),
+					}
+				}
+				for _, field := range u.UnionFields {
+					typ := field.FieldType.(*ast2go.UnionType)
+					if typ.CommonType != nil {
+						typStr := g.getType(typ.CommonType)
+						g.PrintfFunc("func (t *%s) %s() *%s {\n", belong, field.Ident.Ident, typStr)
+						cond0 := ""
+						if typ.Cond != nil {
+							cond0 = g.exprStringer.ExprString(typ.Cond)
+						} else {
+							cond0 = "true"
+						}
+						hasElse := false
+						for _, c := range typ.Candidates {
+							writeReturn := func() {
+								if c.Field != nil {
+									s := g.unionStructs[c.Field.BelongStruct].Name
+									g.PrintfFunc("tmp := %s(t.%s.%s)\n", typStr, s, c.Field.Ident.Ident)
+									g.PrintfFunc("return &tmp\n")
+								} else {
+									g.PrintfFunc("return nil\n")
+								}
+							}
+							if c.Cond != nil {
+								cond := g.exprStringer.ExprString(c.Cond)
+								if hasElse {
+									g.PrintfFunc("else ")
+								}
+								g.PrintfFunc("if %s == %s {\n", cond0, cond)
+								writeReturn()
+								g.PrintfFunc("}")
+								hasElse = true
+							} else {
+								g.PrintfFunc("else {\n")
+								writeReturn()
+								g.PrintfFunc("}")
+							}
+							g.PrintfFunc("\n")
+						}
+						g.PrintfFunc("return nil\n")
+						g.PrintfFunc("}\n")
+					}
+				}
+			}
 		}
 	}
 }
@@ -162,6 +270,48 @@ func (g *Generator) writeFormat(p *ast2go.Format) {
 	g.writeStructType(p.Ident.Ident, p.Body.StructType)
 	g.Indent(-1)
 	g.Printf("}\n")
+	g.writeEncode(p)
+}
+
+func (g *Generator) writeAppendUint(size uint64, field string) {
+	if size == 8 {
+		g.PrintfFunc("buf = append(buf, byte(t.%s))\n", field)
+		return
+	}
+	g.imports["encoding/binary"] = struct{}{}
+	g.PrintfFunc("buf = binary.BigEndian.AppendUint%d(buf, uint%d(t.%s))\n", size, size, field)
+}
+
+func (g *Generator) writeFieldEncode(p *ast2go.Field) {
+	if p.BitAlignment != ast2go.BitAlignmentByteAligned {
+		return
+	}
+	if b, ok := g.bitFields[p]; ok {
+		g.writeAppendUint(b.Size, b.Name)
+		return
+	}
+	typ := p.FieldType
+	if i_typ, ok := typ.(*ast2go.IdentType); ok {
+		typ = i_typ.Base
+	}
+	if i_type, ok := typ.(*ast2go.IntType); ok {
+		if i_type.IsCommonSupported {
+			g.writeAppendUint(i_type.BitSize, p.Ident.Ident)
+			return
+		}
+	}
+}
+
+func (g *Generator) writeEncode(p *ast2go.Format) {
+	g.PrintfFunc("func (t *%s) Encode() ([]byte,error) {\n", p.Ident.Ident)
+	g.PrintfFunc("buf := make([]byte, 0, %d)\n", p.Body.StructType.GetBitSize()/8)
+	for _, field := range p.Body.StructType.Fields {
+		if field, ok := field.(*ast2go.Field); ok {
+			g.writeFieldEncode(field)
+		}
+	}
+	g.PrintfFunc("return buf,nil\n")
+	g.PrintfFunc("}\n")
 }
 
 func (g *Generator) writeProgram(p *ast2go.Program) {
@@ -170,14 +320,7 @@ func (g *Generator) writeProgram(p *ast2go.Program) {
 	if conf.PackageName == "" {
 		conf.PackageName = "main"
 	}
-	g.Printf("// Code generated by brgen. DO NOT EDIT.\n")
-	g.Printf("package %s\n", conf.PackageName)
-	g.Printf("import (\n")
-	g.Indent(1)
-	g.Printf("\"encoding/binary\"\n")
-	g.Printf("\"io\"\n")
-	g.Indent(-1)
-	g.Printf(")\n")
+
 	for _, v := range p.Elements {
 		if v, ok := v.(*ast2go.Format); ok {
 			if v.Body.StructType.BitAlignment != ast2go.BitAlignmentByteAligned {
@@ -186,14 +329,17 @@ func (g *Generator) writeProgram(p *ast2go.Program) {
 			g.writeFormat(v)
 		}
 	}
-	g.w.Write(g.func_area.Bytes())
-}
-
-func NewGenerator(w io.Writer) *Generator {
-	return &Generator{
-		w:         w,
-		bitFields: make(map[*ast2go.Field]string),
+	io.WriteString(g.w, "// Code generated by brgen. DO NOT EDIT.\n")
+	fmt.Fprintf(g.w, "package %s\n", conf.PackageName)
+	if len(g.imports) > 0 {
+		fmt.Fprintf(g.w, "import (\n")
+		for k := range g.imports {
+			fmt.Fprintf(g.w, "\t%q\n", k)
+		}
+		fmt.Fprintf(g.w, ")\n")
 	}
+	g.w.Write(g.type_area.Bytes())
+	g.w.Write(g.func_area.Bytes())
 }
 
 func (g *Generator) Generate(file *ast2go.AstFile) error {
@@ -238,7 +384,8 @@ func main() {
 			return
 		}
 	}
-	g := NewGenerator(os.Stdout)
+	buf := bytes.NewBuffer(nil)
+	g := NewGenerator(buf)
 
 	err := g.Generate(&file)
 	if err != nil {
@@ -247,4 +394,11 @@ func main() {
 		return
 	}
 
+	src, err := format.Source(buf.Bytes())
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+		return
+	}
+	os.Stdout.Write(src)
 }
