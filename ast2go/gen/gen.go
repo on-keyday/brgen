@@ -108,6 +108,7 @@ type ExprStringer struct {
 	BinaryMapper map[ast2go.BinaryOp]func(s *ExprStringer, x, y ast2go.Expr) string
 	IdentMapper  map[string]string
 	CallMapper   map[string]func(s *ExprStringer, args ...ast2go.Expr) string
+	TypeProvider func(ast2go.Type) string
 }
 
 func NewExprStringer() *ExprStringer {
@@ -148,6 +149,56 @@ func (s *ExprStringer) ExprString(e ast2go.Expr) string {
 			args = append(args, s.ExprString(arg))
 		}
 		return fmt.Sprintf("%s(%s)", callee, strings.Join(args, ","))
+	case *ast2go.Cond:
+		typ := s.TypeProvider(e.ExprType)
+		return fmt.Sprintf("(func() %s {if %s { return %s(%s) } else { return %s(%s) }}())", typ, s.ExprString(e.Cond), typ, s.ExprString(e.Then), typ, s.ExprString(e.Els))
+	case *ast2go.Available:
+		ident, ok := e.Target.Base.(*ast2go.Ident)
+		if !ok {
+			return "false"
+		}
+		field, ok := ident.Base.(*ast2go.Field)
+		if !ok {
+			return "false"
+		}
+		uty, ok := field.FieldType.(*ast2go.UnionType)
+		if !ok {
+			return "true" //always true
+		}
+		b := strings.Builder{}
+		b.WriteString("(func() bool {")
+		cond0 := "true"
+		if uty.Cond != nil {
+			cond0 = s.ExprString(uty.Cond)
+		}
+		hasElse := false
+		for _, c := range uty.Candidates {
+			if c.Cond != nil {
+				cond := s.ExprString(c.Cond)
+				if hasElse {
+					b.WriteString("else ")
+				}
+				b.WriteString(fmt.Sprintf("if(%s == %s) { ", cond0, cond))
+				if c.Field != nil {
+					b.WriteString("return true")
+				} else {
+					b.WriteString("return false")
+				}
+				b.WriteString(" }")
+				hasElse = true
+			} else {
+				b.WriteString(" else { ")
+				if c.Field != nil {
+					b.WriteString("return true")
+				} else {
+					b.WriteString("return false")
+				}
+				b.WriteString(" }")
+			}
+		}
+		b.WriteString("; return false")
+		b.WriteString(" }())")
+		return b.String()
 	default:
 		return ""
 	}

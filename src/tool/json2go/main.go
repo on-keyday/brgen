@@ -107,6 +107,16 @@ func (g *Generator) getType(typ ast2go.Type) string {
 	if e_type, ok := typ.(*ast2go.EnumType); ok {
 		return fmt.Sprintf("%s", e_type.Base.Ident.Ident)
 	}
+	if arr_type, ok := typ.(*ast2go.ArrayType); ok {
+		if arr_type.Length.GetConstantLevel() == ast2go.ConstantLevelConstValue {
+			len := g.exprStringer.ExprString(arr_type.Length)
+			return fmt.Sprintf("[%s]%s", len, g.getType(arr_type.BaseType))
+		}
+		return fmt.Sprintf("[]%s", g.getType(arr_type.BaseType))
+	}
+	if enum_type, ok := typ.(*ast2go.EnumType); ok {
+		return fmt.Sprintf("%s", enum_type.Base.Ident.Ident)
+	}
 	return ""
 }
 
@@ -159,6 +169,63 @@ func (g *Generator) writeBitField(belong string, fields []*ast2go.Field, size ui
 	}
 }
 
+func (g *Generator) writeStructUnion(belong string, u *ast2go.StructUnionType) {
+	for _, v := range u.Structs {
+		seq := g.getSeq()
+		g.Printf("union_%d_ struct {", seq)
+		g.writeStructType(belong, v)
+		g.Printf("}\n")
+		g.unionStructs[v] = &UnionStruct{
+			Struct: v,
+			Name:   fmt.Sprintf("union_%d_", seq),
+		}
+	}
+	for _, field := range u.UnionFields {
+		typ := field.FieldType.(*ast2go.UnionType)
+		if typ.CommonType != nil {
+			typStr := g.getType(typ.CommonType)
+			g.PrintfFunc("func (t *%s) %s() *%s {\n", belong, field.Ident.Ident, typStr)
+			cond0 := ""
+			if typ.Cond != nil {
+				cond0 = g.exprStringer.ExprString(typ.Cond)
+			} else {
+				cond0 = "true"
+			}
+			hasElse := false
+			for _, c := range typ.Candidates {
+				writeReturn := func() {
+					if c.Field != nil {
+						s := g.unionStructs[c.Field.BelongStruct].Name
+						g.PrintfFunc("tmp := %s(t.%s.%s)\n", typStr, s, c.Field.Ident.Ident)
+						g.PrintfFunc("return &tmp\n")
+					} else {
+						g.PrintfFunc("return nil\n")
+					}
+				}
+				if c.Cond != nil {
+					cond := g.exprStringer.ExprString(c.Cond)
+					if hasElse {
+						g.PrintfFunc("else ")
+					}
+					g.PrintfFunc("if %s == %s {\n", cond0, cond)
+					writeReturn()
+					g.PrintfFunc("}")
+					hasElse = true
+				} else {
+					g.PrintfFunc("else {\n")
+					writeReturn()
+					g.PrintfFunc("}")
+				}
+			}
+			g.PrintfFunc("\n")
+			g.PrintfFunc("return nil\n")
+			g.PrintfFunc("}\n")
+			g.exprStringer.IdentMapper[field.Ident.Ident] = fmt.Sprintf("*t.%s()", field.Ident.Ident)
+		}
+	}
+
+}
+
 func (g *Generator) writeStructType(belong string, s *ast2go.StructType) {
 	var non_aligned []*ast2go.Field
 	var (
@@ -198,76 +265,25 @@ func (g *Generator) writeStructType(belong string, s *ast2go.StructType) {
 				size = 0
 				continue
 			}
+			if arr_type, ok := typ.(*ast2go.ArrayType); ok {
+				typ := g.getType(arr_type)
+				g.Printf("%s %s\n", field.Ident.Ident, typ)
+				g.exprStringer.IdentMapper[field.Ident.Ident] = "t." + field.Ident.Ident
+			}
 			if i_type, ok := typ.(*ast2go.IntType); ok {
-				if i_type.IsCommonSupported {
-					if i_type.IsSigned {
-						g.Printf("%s int%d\n", field.Ident.Ident, i_type.BitSize)
-					} else {
-						g.Printf("%s uint%d\n", field.Ident.Ident, i_type.BitSize)
-					}
-					g.exprStringer.IdentMapper[field.Ident.Ident] = "t." + field.Ident.Ident
-					continue
-				}
+				typ := g.getType(i_type)
+				g.Printf("%s %s\n", field.Ident.Ident, typ)
+				g.exprStringer.IdentMapper[field.Ident.Ident] = "t." + field.Ident.Ident
+				continue
 			}
 			if e_type, ok := typ.(*ast2go.EnumType); ok {
-				g.Printf("%s %s\n", field.Ident.Ident, e_type.Base.Ident.Ident)
+				typ := g.getType(e_type)
+				g.Printf("%s %s\n", field.Ident.Ident, typ)
 				g.exprStringer.IdentMapper[field.Ident.Ident] = "t." + field.Ident.Ident
 				continue
 			}
 			if u, ok := typ.(*ast2go.StructUnionType); ok {
-				for _, v := range u.Structs {
-					seq := g.getSeq()
-					g.Printf("union_%d_ struct {", seq)
-					g.writeStructType(belong, v)
-					g.Printf("}\n")
-					g.unionStructs[v] = &UnionStruct{
-						Struct: v,
-						Name:   fmt.Sprintf("union_%d_", seq),
-					}
-				}
-				for _, field := range u.UnionFields {
-					typ := field.FieldType.(*ast2go.UnionType)
-					if typ.CommonType != nil {
-						typStr := g.getType(typ.CommonType)
-						g.PrintfFunc("func (t *%s) %s() *%s {\n", belong, field.Ident.Ident, typStr)
-						cond0 := ""
-						if typ.Cond != nil {
-							cond0 = g.exprStringer.ExprString(typ.Cond)
-						} else {
-							cond0 = "true"
-						}
-						hasElse := false
-						for _, c := range typ.Candidates {
-							writeReturn := func() {
-								if c.Field != nil {
-									s := g.unionStructs[c.Field.BelongStruct].Name
-									g.PrintfFunc("tmp := %s(t.%s.%s)\n", typStr, s, c.Field.Ident.Ident)
-									g.PrintfFunc("return &tmp\n")
-								} else {
-									g.PrintfFunc("return nil\n")
-								}
-							}
-							if c.Cond != nil {
-								cond := g.exprStringer.ExprString(c.Cond)
-								if hasElse {
-									g.PrintfFunc("else ")
-								}
-								g.PrintfFunc("if %s == %s {\n", cond0, cond)
-								writeReturn()
-								g.PrintfFunc("}")
-								hasElse = true
-							} else {
-								g.PrintfFunc("else {\n")
-								writeReturn()
-								g.PrintfFunc("}")
-							}
-						}
-						g.PrintfFunc("\n")
-						g.PrintfFunc("return nil\n")
-						g.PrintfFunc("}\n")
-						g.exprStringer.IdentMapper[field.Ident.Ident] = fmt.Sprintf("*t.%s()", field.Ident.Ident)
-					}
-				}
+				g.writeStructUnion(belong, u)
 			}
 		}
 	}
@@ -309,6 +325,23 @@ func (g *Generator) writeFieldEncode(p *ast2go.Field) {
 		if i_type.IsCommonSupported {
 			converted := g.exprStringer.ExprString(p.Ident)
 			g.writeAppendUint(i_type.BitSize, converted)
+			return
+		}
+	}
+	if arr_type, ok := typ.(*ast2go.ArrayType); ok {
+		if i_typ, ok := arr_type.BaseType.(*ast2go.IntType); ok && i_typ.BitSize == 8 {
+			converted := g.exprStringer.ExprString(p.Ident)
+			if arr_type.Length.GetConstantLevel() == ast2go.ConstantLevelConstValue {
+				g.PrintfFunc("buf = append(buf, %s[:]...)\n", converted)
+				return
+			}
+			length := g.exprStringer.ExprString(arr_type.Length)
+			g.PrintfFunc("len_%s := int(%s)\n", p.Ident.Ident, length)
+			g.PrintfFunc("if len(%s) != len_%s {\n", converted, p.Ident.Ident)
+			g.imports["fmt"] = struct{}{}
+			g.PrintfFunc("return nil, fmt.Errorf(\"encode %s: expect %%d bytes but got %%d bytes\", len_%s, len(%s))\n", p.Ident.Ident, p.Ident.Ident, converted)
+			g.PrintfFunc("}\n")
+			g.PrintfFunc("buf = append(buf, %s...)\n", converted)
 			return
 		}
 	}
@@ -355,6 +388,38 @@ func (g *Generator) writeFieldDecode(p *ast2go.Field) {
 				converted = fmt.Sprintf("%s.%s", belongs.Name, p.Ident.Ident)
 			}
 			g.writeReadUint(i_type.BitSize, fieldName, converted)
+			return
+		}
+	}
+	if arr_type, ok := typ.(*ast2go.ArrayType); ok {
+		if i_typ, ok := arr_type.BaseType.(*ast2go.IntType); ok && i_typ.BitSize == 8 {
+			converted := "t." + p.Ident.Ident
+			if belongs, ok := g.unionStructs[p.BelongStruct]; ok {
+				converted = fmt.Sprintf("%s.%s", belongs.Name, p.Ident.Ident)
+			}
+			length := g.exprStringer.ExprString(arr_type.Length)
+			if arr_type.Length.GetConstantLevel() == ast2go.ConstantLevelConstValue {
+				g.PrintfFunc("n_%s, err := r.Read(%s[:])\n", p.Ident.Ident, converted)
+				g.PrintfFunc("if err != nil {\n")
+				g.PrintfFunc("return err\n")
+				g.PrintfFunc("}\n")
+				g.PrintfFunc("if n_%s != %s {\n", p.Ident.Ident, length)
+				g.imports["fmt"] = struct{}{}
+				g.PrintfFunc("return fmt.Errorf(\"read %s: expect %%d bytes but read %%d bytes\", %s, n_%s)\n", p.Ident.Ident, length, p.Ident.Ident)
+				g.PrintfFunc("}\n")
+				return
+			}
+			g.PrintfFunc("len_%s := int(%s)\n", p.Ident.Ident, length)
+			g.PrintfFunc("tmp%s := make([]byte, len_%s)\n", p.Ident.Ident, p.Ident.Ident)
+			g.PrintfFunc("n_%s, err := r.Read(tmp%s[:])\n", p.Ident.Ident, p.Ident.Ident)
+			g.PrintfFunc("if err != nil {\n")
+			g.PrintfFunc("return err\n")
+			g.PrintfFunc("}\n")
+			g.PrintfFunc("if n_%s != len_%s {\n", p.Ident.Ident, p.Ident.Ident)
+			g.imports["fmt"] = struct{}{}
+			g.PrintfFunc("return fmt.Errorf(\"read %s: expect %%d bytes but read %%d bytes\", len_%s, n_%s)\n", p.Ident.Ident, p.Ident.Ident, p.Ident.Ident)
+			g.PrintfFunc("}\n")
+			g.PrintfFunc("%s = tmp%s[:]\n", converted, p.Ident.Ident)
 			return
 		}
 	}
@@ -468,6 +533,7 @@ func (g *Generator) Generate(file *ast2go.AstFile) error {
 	if err != nil {
 		return err
 	}
+	g.exprStringer.TypeProvider = g.getType
 	g.writeProgram(p)
 	return nil
 }
