@@ -145,5 +145,6 @@
         "strutil"
     ],
     "rust-analyzer.cargo.sysroot": "discover",
-    "brgen-lsp.src2json" :"./tool/src2json.exe"
+    "brgen-lsp.src2json" :"./tool/src2json.exe",
+    "go.buildTags": "js,wasm"
 }

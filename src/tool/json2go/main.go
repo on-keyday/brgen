@@ -3,11 +3,9 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"go/format"
 	"os"
 
 	ast2go "github.com/on-keyday/brgen/ast2go/ast"
@@ -46,20 +44,15 @@ func main() {
 			return
 		}
 	}
-	buf := bytes.NewBuffer(nil)
-	g := NewGenerator(buf)
+	g := NewGenerator()
 
-	err := g.Generate(&file)
+	src, err := g.GenerateAndFormat(&file)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-		return
+		if src == nil {
+			os.Exit(1)
+		}
 	}
 
-	src, err := format.Source(buf.Bytes())
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		src = buf.Bytes() // anyway dump
-	}
 	os.Stdout.Write(src)
 }
