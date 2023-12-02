@@ -175,9 +175,8 @@ namespace brgen::middle {
                     }
                     if (has_field) {
                         t->bit_alignment = alignment;
-                        t->bit_size = bit_size;
+                        t->bit_size = bit_size == -1 ? 0 : bit_size;
                     }
-                    tracked.insert(t);
                     return;
                 }
                 if (auto t = ast::as<ast::IdentType>(n)) {
