@@ -734,7 +734,7 @@ int ast2c_TokenTag_from_string(const char* str, ast2c_TokenTag* out) {
 const char* ast2c_ConstantLevel_to_string(ast2c_ConstantLevel val) {
 	switch(val) {
 	case AST2C_CONSTANTLEVEL_UNKNOWN: return "unknown";
-	case AST2C_CONSTANTLEVEL_CONST_VALUE: return "const_value";
+	case AST2C_CONSTANTLEVEL_CONSTANT: return "constant";
 	case AST2C_CONSTANTLEVEL_CONST_VARIABLE: return "const_variable";
 	case AST2C_CONSTANTLEVEL_VARIABLE: return "variable";
 	default: return NULL;
@@ -748,8 +748,8 @@ int ast2c_ConstantLevel_from_string(const char* str, ast2c_ConstantLevel* out) {
 		*out = AST2C_CONSTANTLEVEL_UNKNOWN;
 		return 1;
 	}
-	if (strcmp(str, "const_value") == 0) {
-		*out = AST2C_CONSTANTLEVEL_CONST_VALUE;
+	if (strcmp(str, "constant") == 0) {
+		*out = AST2C_CONSTANTLEVEL_CONSTANT;
 		return 1;
 	}
 	if (strcmp(str, "const_variable") == 0) {
@@ -1910,6 +1910,7 @@ int ast2c_ArrayType_parse(ast2c_Ast* ast,ast2c_ArrayType* s,ast2c_json_handlers*
 	void* end_loc = h->object_get(h, obj_body, "end_loc");
 	void* base_type = h->object_get(h, obj_body, "base_type");
 	void* length = h->object_get(h, obj_body, "length");
+	void* length_value = h->object_get(h, obj_body, "length_value");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_ArrayType::loc is null"); } return 0; }
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_ArrayType::is_explicit is null"); } return 0; }
 	if (!is_int_set) { if(h->error) { h->error(h,is_int_set, "ast2c_ArrayType::is_int_set is null"); } return 0; }
@@ -1918,6 +1919,7 @@ int ast2c_ArrayType_parse(ast2c_Ast* ast,ast2c_ArrayType* s,ast2c_json_handlers*
 	if (!end_loc) { if(h->error) { h->error(h,end_loc, "ast2c_ArrayType::end_loc is null"); } return 0; }
 	if (!base_type) { if(h->error) { h->error(h,base_type, "ast2c_ArrayType::base_type is null"); } return 0; }
 	if (!length) { if(h->error) { h->error(h,length, "ast2c_ArrayType::length is null"); } return 0; }
+	if (!length_value) { if(h->error) { h->error(h,length_value, "ast2c_ArrayType::length_value is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_ArrayType::loc"); }
 		goto error;
@@ -1928,6 +1930,10 @@ int ast2c_ArrayType_parse(ast2c_Ast* ast,ast2c_ArrayType* s,ast2c_json_handlers*
 	}
 	if(!ast2c_Loc_parse(&s->end_loc,h,end_loc)) {
 		if(h->error) { h->error(h,end_loc, "failed to parse ast2c_ArrayType::end_loc"); }
+		goto error;
+	}
+	if(!h->number_get(h,length_value,&s->length_value)) {
+		if(h->error) { h->error(h,length_value, "failed to parse ast2c_ArrayType::length_value"); }
 		goto error;
 	}
 	return 1;

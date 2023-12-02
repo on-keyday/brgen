@@ -517,7 +517,7 @@ impl TryFrom<&str> for TokenTag {
 #[derive(Debug,Clone,Copy,Serialize,Deserialize)]
 #[serde(rename_all = "snake_case")]pub enum ConstantLevel {
 	Unknown,
-	ConstValue,
+	Constant,
 	ConstVariable,
 	Variable,
 }
@@ -527,7 +527,7 @@ impl TryFrom<&str> for ConstantLevel {
 	fn try_from(s:&str)->Result<Self,()>{
 		match s{
 			"unknown" =>Ok(Self::Unknown),
-			"const_value" =>Ok(Self::ConstValue),
+			"constant" =>Ok(Self::Constant),
 			"const_variable" =>Ok(Self::ConstVariable),
 			"variable" =>Ok(Self::Variable),
 			_=> Err(()),
@@ -4279,6 +4279,7 @@ pub struct ArrayType {
 	pub end_loc: Loc,
 	pub base_type: Option<Type>,
 	pub length: Option<Expr>,
+	pub length_value: u64,
 }
 
 impl TryFrom<&Type> for Rc<RefCell<ArrayType>> {
@@ -6408,6 +6409,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				end_loc: raw_node.loc.clone(),
 				base_type: None,
 				length: None,
+				length_value: 0,
 				})))
 			},
 			NodeType::FunctionType => {
@@ -8650,6 +8652,14 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().length = Some(length_body.try_into()?);
 				}
+				let length_value_body = match raw_node.body.get("length_value") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"length_value")),
+				};
+				node.borrow_mut().length_value = match length_value_body.as_u64() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(length_value_body.into(),JSONType::Number)),
+				};
 			},
 			NodeType::FunctionType => {
 				let node = nodes[i].clone();

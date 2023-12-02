@@ -3,6 +3,7 @@
 #include <core/ast/ast.h>
 #include <core/ast/traverse.h>
 #include <set>
+#include <core/ast/tool/eval.h>
 
 namespace brgen::middle {
 
@@ -85,7 +86,7 @@ namespace brgen::middle {
                     t->is_int_set = true;
                 }
                 if (auto a = ast::as<ast::ArrayType>(n); a) {
-                    if (a->length && a->length->constant_level == ast::ConstantLevel::const_value &&
+                    if (a->length && a->length->constant_level == ast::ConstantLevel::constant &&
                         a->length->node_type != ast::NodeType::range &&  // if b: [..]u8 style, b is variable length array, so not int set
                         a->base_type->is_int_set) {
                         a->is_int_set = true;
@@ -195,22 +196,39 @@ namespace brgen::middle {
                     t->bit_alignment = ast::BitAlignment(align + int(ast::BitAlignment::byte_aligned));
                 }
                 if (auto a = ast::as<ast::ArrayType>(n); a) {
-                    if (a->length && a->length->constant_level == ast::ConstantLevel::const_value &&
-                        a->length->node_type != ast::NodeType::range &&  // if b: [..]u8 style, b is variable length array, so not int set
-                        a->base_type->is_int_set) {
-                        // TODO(on-keyday): fixed length array bit alignment is decidable
-                        //                  even if not byte aligned base type
-                        //                  but currently not implemented
+                    // state
+                    // 1. a->has_const_length == true , a->length_value != 0, a->base_type->bit_size != 0 -> fixed length array (size known)
+                    // 2. a->has_const_length == true , a->length_value != 0, a->base_type->bit_size == 0 -> fixed length array (size unknown)
+                    // 3. a->has_const_length == true , a->length_value == 0, a->base_type->bit_size != 0 -> zero length array (size known==0)
+                    // 4. a->has_const_length == true , a->length_value == 0, a->base_type->bit_size == 0 -> zero length array (size known==0)
+                    // 5. a->has_const_length == false, a->length_value is any, a->base_type->bit_size != 0 -> variable length array (size unknown)
+                    // 6. a->has_const_length == false, a->length_value is any, a->base_type->bit_size == 0 -> variable length array (size unknown)
 
-                        // TODO(on-keyday): can determine bit size of fixed length array
+                    // if a->length->constant_level == constant,
+                    // and eval result has integer type, then a->length_value is set and a->has_const_length is true
+                    if (a->length && a->length->constant_level == ast::ConstantLevel::constant) {
+                        ast::tool::Evaluator eval;
+                        eval.ident_mode = ast::tool::EvalIdentMode::resolve_ident;
+                        if (auto val = eval.eval_as<ast::tool::EResultType::integer>(a->length)) {
+                            // case 1 or 2
+                            a->length_value = val->get<ast::tool::EResultType::integer>();
+                            a->has_const_length = true;
+                        }
                     }
-                    a->bit_size = 0;
+                    // determine bit size
+                    if (a->length && a->has_const_length) {
+                        a->bit_size = a->length_value * a->base_type->bit_size;
+                    }
+                    else {
+                        a->bit_size = 0;  // variable length array
+                    }
                     if (a->base_type->bit_alignment == ast::BitAlignment::byte_aligned ||
                         a->base_type->bit_alignment == ast::BitAlignment::not_target ||
                         a->base_type->bit_alignment == ast::BitAlignment::not_decidable) {
                         a->bit_alignment = a->base_type->bit_alignment;
                     }
                     else {
+                        // TODO(on-keyday): bit alignment of fixed length array non byte aligned can also be decided
                         a->bit_alignment = ast::BitAlignment::not_decidable;
                     }
                 }

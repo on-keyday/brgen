@@ -366,7 +366,7 @@ namespace j2cp2 {
                         }
                         w.writeln("}");
                     }
-                    if (arr_ty->length->constant_level == ast::ConstantLevel::const_value && arr_ty->base_type->bit_size == 8) {
+                    if (arr_ty->length->constant_level == ast::ConstantLevel::constant && arr_ty->base_type->bit_size == 8) {
                         auto ident = ident_from_field();
                         w.writeln("if (!w.write(", ident, ")) {");
                         {
@@ -413,7 +413,7 @@ namespace j2cp2 {
                         }
                         w.writeln("}");
                     }
-                    if (arr_ty->length->constant_level == ast::ConstantLevel::const_value && arr_ty->base_type->bit_size == 8) {
+                    if (arr_ty->length->constant_level == ast::ConstantLevel::constant && arr_ty->base_type->bit_size == 8) {
                         w.writeln("if (!r.read(", ident, ")) {");
                         {
                             auto indent = w.indent_scope();

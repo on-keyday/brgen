@@ -116,13 +116,13 @@ export function isTokenTag(obj: any): obj is TokenTag {
 
 export enum ConstantLevel {
 	unknown = "unknown",
-	const_value = "const_value",
+	constant = "constant",
 	const_variable = "const_variable",
 	variable = "variable",
 };
 
 export function isConstantLevel(obj: any): obj is ConstantLevel {
-	return obj && typeof obj === 'string' && (obj === "unknown" || obj === "const_value" || obj === "const_variable" || obj === "variable")
+	return obj && typeof obj === 'string' && (obj === "unknown" || obj === "constant" || obj === "const_variable" || obj === "variable")
 }
 
 export enum BitAlignment {
@@ -628,6 +628,7 @@ export interface ArrayType extends Type {
 	end_loc: Loc;
 	base_type: Type|null;
 	length: Expr|null;
+	length_value: number;
 }
 
 export function isArrayType(obj: any): obj is ArrayType {
@@ -1361,6 +1362,7 @@ export function parseAST(obj: any): Program {
 				end_loc: on.loc,
 				base_type: null,
 				length: null,
+				length_value: 0,
 			}
 			c.node.push(n);
 			break;
@@ -2674,6 +2676,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at ArrayType::length');
 			}
 			n.length = tmplength;
+			const tmplength_value = on.body?.length_value;
+			if (typeof on.body?.length_value !== "number") {
+				throw new Error('invalid node list at ArrayType::length_value');
+			}
+			n.length_value = on.body.length_value;
 			break;
 		}
 		case "function_type": {

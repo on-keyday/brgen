@@ -147,7 +147,7 @@ Unknown,
 }
 public enum ConstantLevel {
 Unknown,
-ConstValue,
+Constant,
 ConstVariable,
 Variable,
 }
@@ -425,6 +425,7 @@ public class ArrayType : Type{
 	public Loc EndLoc{get;set;}
 	public Type? BaseType{get;set;}
 	public Expr? Length{get;set;}
+	public ulong LengthValue{get;set;}
 }
 public class FunctionType : Type{
 	public Loc Loc{get;set;}

@@ -307,8 +307,8 @@ namespace brgen::middle {
                     left_ident->usage = ast::IdentUsage::define_const;
                     left_ident->expr_type = std::move(new_type);
                     left_ident->base = b;
-                    if (b->right->constant_level == ast::ConstantLevel::const_value) {
-                        left_ident->constant_level = ast::ConstantLevel::const_value;
+                    if (b->right->constant_level == ast::ConstantLevel::constant) {
+                        left_ident->constant_level = ast::ConstantLevel::constant;
                     }
                     else {
                         left_ident->constant_level = ast::ConstantLevel::const_variable;
@@ -442,8 +442,8 @@ namespace brgen::middle {
             if (a == ast::ConstantLevel::unknown || b == ast::ConstantLevel::unknown) {
                 return ast::ConstantLevel::unknown;
             }
-            if (a == ast::ConstantLevel::const_value && b == ast::ConstantLevel::const_value) {
-                return ast::ConstantLevel::const_value;
+            if (a == ast::ConstantLevel::constant && b == ast::ConstantLevel::constant) {
+                return ast::ConstantLevel::constant;
             }
             if (a == ast::ConstantLevel::variable || b == ast::ConstantLevel::variable) {
                 return ast::ConstantLevel::variable;
@@ -716,8 +716,8 @@ namespace brgen::middle {
             }
             range_type->range = r;
             r->expr_type = range_type;
-            r->constant_level = decide_constant_level(r->start ? r->start->constant_level : ast::ConstantLevel::const_value,
-                                                      r->end ? r->end->constant_level : ast::ConstantLevel::const_value);
+            r->constant_level = decide_constant_level(r->start ? r->start->constant_level : ast::ConstantLevel::constant,
+                                                      r->end ? r->end->constant_level : ast::ConstantLevel::constant);
         }
 
         void typing_ident(ast::Ident* ident) {
@@ -760,15 +760,15 @@ namespace brgen::middle {
             }
             if (auto lit = ast::as<ast::IntLiteral>(expr)) {
                 lit->expr_type = std::make_shared<ast::IntLiteralType>(ast::cast_to<ast::IntLiteral>(expr));
-                lit->constant_level = ast::ConstantLevel::const_value;
+                lit->constant_level = ast::ConstantLevel::constant;
             }
             else if (auto lit = ast::as<ast::BoolLiteral>(expr)) {
                 lit->expr_type = std::make_shared<ast::BoolType>(lit->loc);
-                lit->constant_level = ast::ConstantLevel::const_value;
+                lit->constant_level = ast::ConstantLevel::constant;
             }
             else if (auto lit = ast::as<ast::StrLiteral>(expr)) {
                 lit->expr_type = std::make_shared<ast::StrLiteralType>(ast::cast_to<ast::StrLiteral>(expr));
-                lit->constant_level = ast::ConstantLevel::const_value;
+                lit->constant_level = ast::ConstantLevel::constant;
             }
             else if (auto ident = ast::as<ast::Ident>(expr)) {
                 if (ident->base.lock()) {
@@ -943,6 +943,13 @@ namespace brgen::middle {
                     }
                 }
                 do_traverse();
+                if (auto arr_type = ast::as<ast::ArrayType>(ty)) {
+                    // array like [..]u8 is variable length array, so mark it as variable
+                    if (arr_type->length && arr_type->length->node_type == ast::NodeType::range) {
+                        arr_type->length->constant_level = ast::ConstantLevel::variable;
+                    }
+                    return;
+                }
             };
             recursive_typing(recursive_typing, ty);
         }

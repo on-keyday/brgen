@@ -1021,7 +1021,7 @@ type ConstantLevel int
 
 const (
 	ConstantLevelUnknown       ConstantLevel = 0
-	ConstantLevelConstValue    ConstantLevel = 1
+	ConstantLevelConstant      ConstantLevel = 1
 	ConstantLevelConstVariable ConstantLevel = 2
 	ConstantLevelVariable      ConstantLevel = 3
 )
@@ -1030,8 +1030,8 @@ func (n ConstantLevel) String() string {
 	switch n {
 	case ConstantLevelUnknown:
 		return "unknown"
-	case ConstantLevelConstValue:
-		return "const_value"
+	case ConstantLevelConstant:
+		return "constant"
 	case ConstantLevelConstVariable:
 		return "const_variable"
 	case ConstantLevelVariable:
@@ -1049,8 +1049,8 @@ func (n *ConstantLevel) UnmarshalJSON(data []byte) error {
 	switch tmp {
 	case "unknown":
 		*n = ConstantLevelUnknown
-	case "const_value":
-		*n = ConstantLevelConstValue
+	case "constant":
+		*n = ConstantLevelConstant
 	case "const_variable":
 		*n = ConstantLevelConstVariable
 	case "variable":
@@ -1939,6 +1939,7 @@ type ArrayType struct {
 	EndLoc       Loc
 	BaseType     Type
 	Length       Expr
+	LengthValue  uint64
 }
 
 func (n *ArrayType) isType() {}
@@ -3402,6 +3403,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				EndLoc       Loc          `json:"end_loc"`
 				BaseType     *uintptr     `json:"base_type"`
 				Length       *uintptr     `json:"length"`
+				LengthValue  uint64       `json:"length_value"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -3417,6 +3419,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.Length != nil {
 				v.Length = n.node[*tmp.Length].(Expr)
 			}
+			v.LengthValue = tmp.LengthValue
 		case NodeTypeFunctionType:
 			v := n.node[i].(*FunctionType)
 			var tmp struct {

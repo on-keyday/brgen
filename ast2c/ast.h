@@ -275,7 +275,7 @@ int ast2c_TokenTag_from_string(const char*,ast2c_TokenTag*);
 
 enum ast2c_ConstantLevel {
 	AST2C_CONSTANTLEVEL_UNKNOWN,
-	AST2C_CONSTANTLEVEL_CONST_VALUE,
+	AST2C_CONSTANTLEVEL_CONSTANT,
 	AST2C_CONSTANTLEVEL_CONST_VARIABLE,
 	AST2C_CONSTANTLEVEL_VARIABLE,
 };
@@ -830,6 +830,7 @@ struct ast2c_ArrayType {
 	ast2c_Loc end_loc;
 	ast2c_Type* base_type;
 	ast2c_Expr* length;
+	uint64_t length_value;
 };
 
 // returns 1 if succeed 0 if failed

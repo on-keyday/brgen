@@ -1025,7 +1025,7 @@ namespace brgen::ast {
                 auto ident = parse_ident();
                 ident->usage = IdentUsage::define_enum_member;
                 ident->expr_type = enum_->enum_type;
-                ident->constant_level = ConstantLevel::const_value;
+                ident->constant_level = ConstantLevel::constant;
                 auto member = std::make_shared<EnumMember>(ident->loc);
                 member->ident = ident;
                 member->belong = enum_;
@@ -1105,7 +1105,7 @@ namespace brgen::ast {
             fn->ident = parse_ident();
             fn->ident->usage = fn->is_cast ? IdentUsage::define_cast_fn : IdentUsage::define_fn;
             fn->ident->base = fn;
-            fn->ident->constant_level = ConstantLevel::const_value;
+            fn->ident->constant_level = ConstantLevel::constant;
             fn->belong = state.current_member();
             fn->func_type = std::make_shared<FunctionType>(fn->loc);
             s.skip_white();

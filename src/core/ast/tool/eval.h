@@ -13,7 +13,7 @@ namespace brgen::ast::tool {
         ident,
     };
 
-    constexpr const char* eresult_type_str[]{
+    constexpr const char* eval_result_type_str[]{
         "boolean",
         "integer",
         "string",
@@ -295,6 +295,20 @@ namespace brgen::ast::tool {
             }
         }
 
+        EResult resolve_ident(ast::Ident* ident) {
+            auto it = ident_map.find(ident->ident);
+            if (it != ident_map.end()) {
+                return it->second;
+            }
+            if (ident->constant_level == ast::ConstantLevel::constant) {
+                auto base = ident->base.lock();
+                if (auto b = ast::as<ast::Binary>(base); b && b->op == ast::BinaryOp::const_assign) {
+                    return eval(b->right);
+                }
+            }
+            return unexpect(LocError{ident->loc, "cannot resolve ident"});
+        }
+
         EResult eval_expr(ast::Expr* expr) {
             if (auto b = ast::as<ast::Binary>(expr)) {
                 return eval_binary(b);
@@ -330,11 +344,7 @@ namespace brgen::ast::tool {
             }
             if (auto i = ast::as<ast::Ident>(expr)) {
                 if (ident_mode == EvalIdentMode::resolve_ident) {
-                    auto it = ident_map.find(i->ident);
-                    if (it == ident_map.end()) {
-                        return unexpect(LocError{i->loc, "cannot resolve ident"});
-                    }
-                    return it->second;
+                    return resolve_ident(i);
                 }
                 if (ident_mode == EvalIdentMode::no_ident) {
                     return unexpect(LocError{i->loc, "cannot use ident"});
@@ -387,7 +397,7 @@ namespace brgen::ast::tool {
                 return r;
             }
             if (r->type() != t) {
-                return unexpect(LocError{n->loc, std::string("must be ") + eresult_type_str[int(t)]});
+                return unexpect(LocError{n->loc, std::string("must be ") + eval_result_type_str[int(t)]});
             }
             if constexpr (t == EResultType::string && unescape_str) {
                 auto unesc = unescape(r->get<EResultType::string>());

@@ -102,14 +102,14 @@ namespace brgen::ast {
 
     enum class ConstantLevel {
         unknown,         // not determined
-        const_value,     // decided at compile time
+        constant,        // decided at compile time
         const_variable,  // decided at runtime, but not changed
         variable,        // changed at runtime
     };
 
     constexpr const char* constant_level_str[] = {
         "unknown",
-        "const_value",
+        "constant",
         "const_variable",
         "variable",
         nullptr,

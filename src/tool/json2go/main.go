@@ -108,7 +108,7 @@ func (g *Generator) getType(typ ast2go.Type) string {
 		return fmt.Sprintf("%s", e_type.Base.Ident.Ident)
 	}
 	if arr_type, ok := typ.(*ast2go.ArrayType); ok {
-		if arr_type.Length.GetConstantLevel() == ast2go.ConstantLevelConstValue {
+		if arr_type.Length.GetConstantLevel() == ast2go.ConstantLevelConstant {
 			len := g.exprStringer.ExprString(arr_type.Length)
 			return fmt.Sprintf("[%s]%s", len, g.getType(arr_type.BaseType))
 		}
@@ -361,7 +361,7 @@ func (g *Generator) writeFieldEncode(p *ast2go.Field) {
 	if arr_type, ok := typ.(*ast2go.ArrayType); ok {
 		if i_typ, ok := arr_type.BaseType.(*ast2go.IntType); ok && i_typ.BitSize == 8 {
 			converted := g.exprStringer.ExprString(p.Ident)
-			if arr_type.Length.GetConstantLevel() == ast2go.ConstantLevelConstValue {
+			if arr_type.Length.GetConstantLevel() == ast2go.ConstantLevelConstant {
 				g.PrintfFunc("buf = append(buf, %s[:]...)\n", converted)
 				return
 			}
@@ -425,7 +425,7 @@ func (g *Generator) writeFieldDecode(p *ast2go.Field) {
 		if i_typ, ok := arr_type.BaseType.(*ast2go.IntType); ok && i_typ.BitSize == 8 {
 			converted := "t." + converted
 			length := g.exprStringer.ExprString(arr_type.Length)
-			if arr_type.Length.GetConstantLevel() == ast2go.ConstantLevelConstValue {
+			if arr_type.Length.GetConstantLevel() == ast2go.ConstantLevelConstant {
 				g.PrintfFunc("n_%s, err := r.Read(%s[:])\n", p.Ident.Ident, converted)
 				g.PrintfFunc("if err != nil {\n")
 				g.PrintfFunc("return err\n")

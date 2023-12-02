@@ -154,7 +154,7 @@ class TokenTag(PyEnum):
 
 class ConstantLevel(PyEnum):
     UNKNOWN = "unknown"
-    CONST_VALUE = "const_value"
+    CONSTANT = "constant"
     CONST_VARIABLE = "const_variable"
     VARIABLE = "variable"
 
@@ -385,6 +385,7 @@ class ArrayType(Type):
     end_loc: Loc
     base_type: Optional[Type]
     length: Optional[Expr]
+    length_value: int
 
 
 class FunctionType(Type):
@@ -1255,6 +1256,8 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].length = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at ArrayType::length'))
                 else:
                     node[i].length = None
+                x = ast.node[i].body["length_value"]
+                node[i].length_value = x if isinstance(x,int)  else raiseError(TypeError('type mismatch at ArrayType::length_value'))
             case NodeType.FUNCTION_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at FunctionType::is_explicit'))
