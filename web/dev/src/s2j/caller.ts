@@ -1,10 +1,12 @@
-import {RequestMessage,JobRequest,JobResult }  from "./msg.js";
+import {RequestLanguage,JobRequest,JobResult }  from "./msg.js";
 import {JobManager} from "./job_mgr.js";
 
 
 const WorkerFactory = class {
     #s2j_mgr_ :JobManager |null = null;
     #j2c_mgr_ :JobManager |null = null;
+    #j2c2_mgr_ :JobManager |null = null;
+    #j2go_mgr_ :JobManager |null = null;
 
     getSrc2JSONWorker = () => {
         if(this.#s2j_mgr_) return this.#s2j_mgr_;
@@ -16,6 +18,18 @@ const WorkerFactory = class {
         if(this.#j2c_mgr_) return this.#j2c_mgr_;
         this.#j2c_mgr_ = new JobManager(new Worker(new URL("./json2cpp_worker.js",import.meta.url),{type:"module"}));
         return this.#j2c_mgr_;
+    }
+
+    getJSON2Cpp2Worker = () => {
+        if(this.#j2c2_mgr_) return this.#j2c2_mgr_;
+        this.#j2c2_mgr_ = new JobManager(new Worker(new URL("./json2cpp2_worker.js",import.meta.url),{type:"module"}));
+        return this.#j2c2_mgr_;
+    }
+
+    getJSON2GoWorker = () => {
+        if(this.#j2go_mgr_) return this.#j2go_mgr_;
+        this.#j2go_mgr_ = new JobManager(new Worker(new URL("./json2go_worker.js",import.meta.url),{type:"module"}));
+        return this.#j2go_mgr_;
     }
 }
 
@@ -31,8 +45,8 @@ export const loadWorkers = () => {
     factory.getJSON2CppWorker();
 }
 
-const getRequest = (mgr :JobManager , msg :RequestMessage,sourceCode :string,options? :CallOption) :JobRequest => {
-    const req = mgr.getRequest(msg,sourceCode);
+const getRequest = (mgr :JobManager , lang :RequestLanguage,sourceCode :string,options? :CallOption) :JobRequest => {
+    const req = mgr.getRequest(lang,sourceCode);
     if(options){
         if(options.filename){
             req.arguments = ["--stdin-name",options.filename];
@@ -43,15 +57,15 @@ const getRequest = (mgr :JobManager , msg :RequestMessage,sourceCode :string,opt
 
 export const getAST = (sourceCode :string,options? :CallOption) => {
     const mgr = factory.getSrc2JSONWorker();
-    return mgr.doRequest(getRequest(mgr,RequestMessage.MSG_REQUIRE_AST,sourceCode,options));
+    return mgr.doRequest(getRequest(mgr,RequestLanguage.JSON_AST,sourceCode,options));
 }
 
 export const getTokens = (sourceCode :string,options? :CallOption) => {
     const mgr = factory.getSrc2JSONWorker();
-    return mgr.doRequest(getRequest(mgr,RequestMessage.MSG_REQUIRE_TOKENS,sourceCode,options));
+    return mgr.doRequest(getRequest(mgr,RequestLanguage.TOKENIZE,sourceCode,options));
 }
 
 export const getCppCode = (sourceCode :string,options? :CallOption) => {
     const mgr = factory.getJSON2CppWorker();
-    return mgr.doRequest(getRequest(mgr,RequestMessage.MSG_REQUIRE_GENERATED_CODE,sourceCode,{}));
+    return mgr.doRequest(getRequest(mgr,RequestLanguage.CPP_PROTOTYPE,sourceCode,{}));
 }
