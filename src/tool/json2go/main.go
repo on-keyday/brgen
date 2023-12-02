@@ -399,6 +399,9 @@ func (g *Generator) writeReadUint(size uint64, tmpName, field string) {
 }
 
 func (g *Generator) writeFieldDecode(p *ast2go.Field) {
+	if p.BitAlignment == ast2go.BitAlignmentNotTarget {
+		return
+	}
 	if p.BitAlignment != ast2go.BitAlignmentByteAligned {
 		return
 	}
@@ -409,6 +412,9 @@ func (g *Generator) writeFieldDecode(p *ast2go.Field) {
 	typ := p.FieldType
 	if i_typ, ok := typ.(*ast2go.IdentType); ok {
 		typ = i_typ.Base
+	}
+	if p.Ident == nil {
+		return
 	}
 	fieldName := p.Ident.Ident
 	converted := fieldName
