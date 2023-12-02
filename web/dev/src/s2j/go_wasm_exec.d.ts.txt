@@ -1,0 +1,11 @@
+
+export namespace Go {
+    function run(instance: WebAssembly.Instance): Promise<void>;
+    const importObject: WebAssembly.Imports;
+    // for use in the browser
+    const json2goGenerator :((sourceCode :string) => { stdout: string , stderr: string , code: number}) | undefined;
+}
+export declare class Go {
+    constructor();
+}
+

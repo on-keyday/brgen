@@ -199,7 +199,8 @@ export class EmWorkContext  {
 
 }
 
-/// <reference path="../lib/go_wasm_exec.js"/>
+import {Go} from "../lib/go_wasm_exec.js";
+
 
 export class GoWorkContext  {
     #go :Go;

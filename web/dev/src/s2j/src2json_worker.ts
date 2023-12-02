@@ -21,7 +21,7 @@ setInterval(()=>{
                 return ["src2json","--argv",e.sourceCode,"--no-color","--print-json","--print-on-error"];
             case RequestLanguage.TOKENIZE:
                 if(e.sourceCode === undefined) return new Error("sourceCode is undefined");
-                return ["src2json","--argv",e.sourceCode,"--no-color","--print-tokens","--print-on-error","--lexer"];
+                return ["src2json","--argv",e.sourceCode,"--no-color","--print-json","--print-on-error","--lexer"];
             default:
                 return new Error("unknown message type");
         }

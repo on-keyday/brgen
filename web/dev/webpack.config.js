@@ -1,6 +1,7 @@
 const { copyFile } = require("fs");
 const path = require("path");
 
+
 const copyWasm = (p) => {
     copyFile(path.resolve(__dirname, "src/lib/",p), path.resolve(__dirname, "out/lib/",p), (err) => {
         if (err) {
@@ -13,6 +14,8 @@ copyWasm("src2json.wasm");
 copyWasm("json2cpp.wasm");
 copyWasm("json2cpp2.wasm");
 copyWasm("json2go.wasm");
+
+
 
 module.exports = {
     mode: "development",
