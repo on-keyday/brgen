@@ -831,6 +831,7 @@ struct ast2c_ArrayType {
 	ast2c_Type* base_type;
 	ast2c_Expr* length;
 	uint64_t length_value;
+	int has_const_length;
 };
 
 // returns 1 if succeed 0 if failed

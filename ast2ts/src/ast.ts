@@ -629,6 +629,7 @@ export interface ArrayType extends Type {
 	base_type: Type|null;
 	length: Expr|null;
 	length_value: number;
+	has_const_length: boolean;
 }
 
 export function isArrayType(obj: any): obj is ArrayType {
@@ -1363,6 +1364,7 @@ export function parseAST(obj: any): Program {
 				base_type: null,
 				length: null,
 				length_value: 0,
+				has_const_length: false,
 			}
 			c.node.push(n);
 			break;
@@ -2681,6 +2683,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at ArrayType::length_value');
 			}
 			n.length_value = on.body.length_value;
+			const tmphas_const_length = on.body?.has_const_length;
+			if (typeof on.body?.has_const_length !== "boolean") {
+				throw new Error('invalid node list at ArrayType::has_const_length');
+			}
+			n.has_const_length = on.body.has_const_length;
 			break;
 		}
 		case "function_type": {

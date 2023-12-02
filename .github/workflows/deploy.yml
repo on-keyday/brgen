@@ -40,7 +40,9 @@ jobs:
           cd ..
       - name: Build Wasm
         run: |
-          GOROOT=`go env GOROOT` . build.sh wasm-em Release
+          GOROOT=`go env GOROOT`
+          WASMEXEC_FILE="$GOROOT/misc/wasm/wasm_exec.js"
+          . build.sh wasm-em Release
         continue-on-error: true
       - name: Setup Pages
         uses: actions/configure-pages@v3

@@ -1911,6 +1911,7 @@ int ast2c_ArrayType_parse(ast2c_Ast* ast,ast2c_ArrayType* s,ast2c_json_handlers*
 	void* base_type = h->object_get(h, obj_body, "base_type");
 	void* length = h->object_get(h, obj_body, "length");
 	void* length_value = h->object_get(h, obj_body, "length_value");
+	void* has_const_length = h->object_get(h, obj_body, "has_const_length");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_ArrayType::loc is null"); } return 0; }
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_ArrayType::is_explicit is null"); } return 0; }
 	if (!is_int_set) { if(h->error) { h->error(h,is_int_set, "ast2c_ArrayType::is_int_set is null"); } return 0; }
@@ -1920,6 +1921,7 @@ int ast2c_ArrayType_parse(ast2c_Ast* ast,ast2c_ArrayType* s,ast2c_json_handlers*
 	if (!base_type) { if(h->error) { h->error(h,base_type, "ast2c_ArrayType::base_type is null"); } return 0; }
 	if (!length) { if(h->error) { h->error(h,length, "ast2c_ArrayType::length is null"); } return 0; }
 	if (!length_value) { if(h->error) { h->error(h,length_value, "ast2c_ArrayType::length_value is null"); } return 0; }
+	if (!has_const_length) { if(h->error) { h->error(h,has_const_length, "ast2c_ArrayType::has_const_length is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_ArrayType::loc"); }
 		goto error;

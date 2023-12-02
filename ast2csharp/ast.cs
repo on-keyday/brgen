@@ -426,6 +426,7 @@ public class ArrayType : Type{
 	public Type? BaseType{get;set;}
 	public Expr? Length{get;set;}
 	public ulong LengthValue{get;set;}
+	public bool HasConstLength{get;set;}
 }
 public class FunctionType : Type{
 	public Loc Loc{get;set;}

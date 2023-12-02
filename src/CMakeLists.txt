@@ -21,7 +21,7 @@ elseif("$ENV{BUILD_MODE}" STREQUAL "wasm-em")
 set(SUFFIX ".wasm")
 endif()
 
-add_custom_target(json2go ALL COMMAND "go" "build" "-o" "${CMAKE_BINARY_DIR}/tool/json2go${SUFFIX}" "${CMAKE_SOURCE_DIR}/src/tool/json2go" DEPENDS "${CMAKE_SOURCE_DIR}/src/tool/json2go" "${CMAKE_SOURCE_DIR}/ast2go")
+add_custom_target(json2go ALL COMMAND "${GO_COMPILER}" "build" "-o" "${CMAKE_BINARY_DIR}/tool/json2go${SUFFIX}" "${CMAKE_SOURCE_DIR}/src/tool/json2go" DEPENDS "${CMAKE_SOURCE_DIR}/src/tool/json2go" "${CMAKE_SOURCE_DIR}/ast2go")
 
 
 if("$ENV{BUILD_MODE}" STREQUAL "wasm-em")
@@ -32,8 +32,8 @@ install(FILES "${CMAKE_BINARY_DIR}/tool/json2cpp.wasm" DESTINATION "lib" OPTIONA
 install(TARGETS json2cpp2 DESTINATION "lib" OPTIONAL)
 install(FILES "${CMAKE_BINARY_DIR}/tool/json2cpp2.wasm" DESTINATION "lib" OPTIONAL)
 install(FILES "${CMAKE_BINARY_DIR}/tool/json2go.wasm" DESTINATION "lib" OPTIONAL)
-file(TO_CMAKE_PATH "$ENV{GOROOT}" WASMEXEC_ROOT)
-install(FILES "${WASMEXEC_ROOT}/misc/wasm/wasm_exec.js" RENAME "json2go.js" DESTINATION "lib" OPTIONAL)
+file(TO_CMAKE_PATH "$ENV{WASMEXEC_FILE}" WASMEXEC)
+install(FILES "${WASMEXEC}" RENAME "json2go.js" DESTINATION "lib" OPTIONAL)
 return()
 endif()
 
@@ -42,14 +42,14 @@ target_link_libraries(ctobgn utils)
 
 
 
-add_custom_target(brgen ALL COMMAND "go" "build" "-o" "${CMAKE_BINARY_DIR}/tool/brgen${SUFFIX}" "${CMAKE_SOURCE_DIR}/src/tool/brgen" DEPENDS "${CMAKE_SOURCE_DIR}/src/tool/brgen" )
+add_custom_target(brgen ALL COMMAND "${GO_COMPILER}" "build" "-o" "${CMAKE_BINARY_DIR}/tool/brgen${SUFFIX}" "${CMAKE_SOURCE_DIR}/src/tool/brgen" DEPENDS "${CMAKE_SOURCE_DIR}/src/tool/brgen" )
 
-add_custom_target(gen_ast2go ALL COMMAND "go" "build" "-o" "${CMAKE_BINARY_DIR}/tool/gen_ast2go${SUFFIX}" "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2go" DEPENDS "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2go" )
-add_custom_target(gen_ast2ts ALL COMMAND "go" "build" "-o" "${CMAKE_BINARY_DIR}/tool/gen_ast2ts${SUFFIX}" "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2ts" DEPENDS "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2ts" )
-add_custom_target(gen_ast2rust ALL COMMAND "go" "build" "-o" "${CMAKE_BINARY_DIR}/tool/gen_ast2rust${SUFFIX}" "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2rust" DEPENDS "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2rust" )
-add_custom_target(gen_ast2py ALL COMMAND "go" "build" "-o" "${CMAKE_BINARY_DIR}/tool/gen_ast2py${SUFFIX}" "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2py" DEPENDS "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2py" )
-add_custom_target(gen_ast2c ALL COMMAND "go" "build" "-o" "${CMAKE_BINARY_DIR}/tool/gen_ast2c${SUFFIX}" "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2c" DEPENDS "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2c" )
-add_custom_target(gen_ast2csharp ALL COMMAND "go" "build" "-o" "${CMAKE_BINARY_DIR}/tool/gen_ast2csharp${SUFFIX}" "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2csharp" DEPENDS "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2csharp" )
+add_custom_target(gen_ast2go ALL COMMAND "${GO_COMPILER}" "build" "-o" "${CMAKE_BINARY_DIR}/tool/gen_ast2go${SUFFIX}" "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2go" DEPENDS "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2go" )
+add_custom_target(gen_ast2ts ALL COMMAND "${GO_COMPILER}" "build" "-o" "${CMAKE_BINARY_DIR}/tool/gen_ast2ts${SUFFIX}" "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2ts" DEPENDS "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2ts" )
+add_custom_target(gen_ast2rust ALL COMMAND "${GO_COMPILER}" "build" "-o" "${CMAKE_BINARY_DIR}/tool/gen_ast2rust${SUFFIX}" "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2rust" DEPENDS "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2rust" )
+add_custom_target(gen_ast2py ALL COMMAND "${GO_COMPILER}" "build" "-o" "${CMAKE_BINARY_DIR}/tool/gen_ast2py${SUFFIX}" "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2py" DEPENDS "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2py" )
+add_custom_target(gen_ast2c ALL COMMAND "${GO_COMPILER}" "build" "-o" "${CMAKE_BINARY_DIR}/tool/gen_ast2c${SUFFIX}" "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2c" DEPENDS "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2c" )
+add_custom_target(gen_ast2csharp ALL COMMAND "${GO_COMPILER}" "build" "-o" "${CMAKE_BINARY_DIR}/tool/gen_ast2csharp${SUFFIX}" "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2csharp" DEPENDS "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2csharp" )
 
 
 if(WIN32)

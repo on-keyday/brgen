@@ -4280,6 +4280,7 @@ pub struct ArrayType {
 	pub base_type: Option<Type>,
 	pub length: Option<Expr>,
 	pub length_value: u64,
+	pub has_const_length: bool,
 }
 
 impl TryFrom<&Type> for Rc<RefCell<ArrayType>> {
@@ -6410,6 +6411,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				base_type: None,
 				length: None,
 				length_value: 0,
+				has_const_length: false,
 				})))
 			},
 			NodeType::FunctionType => {
@@ -8659,6 +8661,14 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				node.borrow_mut().length_value = match length_value_body.as_u64() {
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(length_value_body.into(),JSONType::Number)),
+				};
+				let has_const_length_body = match raw_node.body.get("has_const_length") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"has_const_length")),
+				};
+				node.borrow_mut().has_const_length = match has_const_length_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(has_const_length_body.into(),JSONType::Bool)),
 				};
 			},
 			NodeType::FunctionType => {

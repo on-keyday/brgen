@@ -1931,15 +1931,16 @@ func (n *BoolType) GetLoc() Loc {
 }
 
 type ArrayType struct {
-	Loc          Loc
-	IsExplicit   bool
-	IsIntSet     bool
-	BitAlignment BitAlignment
-	BitSize      uint64
-	EndLoc       Loc
-	BaseType     Type
-	Length       Expr
-	LengthValue  uint64
+	Loc            Loc
+	IsExplicit     bool
+	IsIntSet       bool
+	BitAlignment   BitAlignment
+	BitSize        uint64
+	EndLoc         Loc
+	BaseType       Type
+	Length         Expr
+	LengthValue    uint64
+	HasConstLength bool
 }
 
 func (n *ArrayType) isType() {}
@@ -3396,14 +3397,15 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeArrayType:
 			v := n.node[i].(*ArrayType)
 			var tmp struct {
-				IsExplicit   bool         `json:"is_explicit"`
-				IsIntSet     bool         `json:"is_int_set"`
-				BitAlignment BitAlignment `json:"bit_alignment"`
-				BitSize      uint64       `json:"bit_size"`
-				EndLoc       Loc          `json:"end_loc"`
-				BaseType     *uintptr     `json:"base_type"`
-				Length       *uintptr     `json:"length"`
-				LengthValue  uint64       `json:"length_value"`
+				IsExplicit     bool         `json:"is_explicit"`
+				IsIntSet       bool         `json:"is_int_set"`
+				BitAlignment   BitAlignment `json:"bit_alignment"`
+				BitSize        uint64       `json:"bit_size"`
+				EndLoc         Loc          `json:"end_loc"`
+				BaseType       *uintptr     `json:"base_type"`
+				Length         *uintptr     `json:"length"`
+				LengthValue    uint64       `json:"length_value"`
+				HasConstLength bool         `json:"has_const_length"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -3420,6 +3422,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				v.Length = n.node[*tmp.Length].(Expr)
 			}
 			v.LengthValue = tmp.LengthValue
+			v.HasConstLength = tmp.HasConstLength
 		case NodeTypeFunctionType:
 			v := n.node[i].(*FunctionType)
 			var tmp struct {

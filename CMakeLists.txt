@@ -19,6 +19,17 @@ set(UTILS_LIB_DIR "$ENV{UTILS_DIR}/built/wasm-em/${CMAKE_BUILD_TYPE}/lib")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions -sINVOKE_RUN=0 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXIT_RUNTIME=0 -sEXPORTED_RUNTIME_METHODS=[ccall,cwrap,FS]")
 endif()
 
+if(NOT GO_COMPILER)
+if("$ENV{GO_COMPILER}" STREQUAL "")
+message("GO_COMPILER not set, using default")
+set(GO_COMPILER "go")
+else()
+message("GO_COMPILER set to $ENV{GO_COMPILER}")
+set(GO_COMPILER "$ENV{GO_COMPILER}")
+endif()
+endif()
+
+
 if("$ENV{BUILD_MODE}" STREQUAL "native")
 set(INSTALL_GTEST OFF)
 include(FetchContent)
