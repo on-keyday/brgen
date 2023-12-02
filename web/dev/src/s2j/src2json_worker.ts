@@ -3,7 +3,7 @@
 export { };
 
 import * as src2json from "../lib/src2json.js";
-import { RequestMessage, JobRequest } from "./msg.js";
+import { RequestLanguage, JobRequest } from "./msg.js";
 import { EmWorkContext, MyEmscriptenModule} from "./work_ctx.js";
 
 
@@ -15,11 +15,11 @@ const ctx = new EmWorkContext(src2jsonModule,() => {
 
 setInterval(()=>{
     ctx.handleRequest((e) => {
-        switch(e.msg) {
-            case RequestMessage.MSG_REQUIRE_AST:
+        switch(e.lang) {
+            case RequestLanguage.JSON_AST:
                 if(e.sourceCode === undefined) return new Error("sourceCode is undefined");
                 return ["src2json","--argv",e.sourceCode,"--no-color","--print-json","--print-on-error"];
-            case RequestMessage.MSG_REQUIRE_TOKENS:
+            case RequestLanguage.TOKENIZE:
                 if(e.sourceCode === undefined) return new Error("sourceCode is undefined");
                 return ["src2json","--argv",e.sourceCode,"--no-color","--print-tokens","--print-on-error","--lexer"];
             default:

@@ -148,7 +148,7 @@ export class EmWorkContext  {
         const id = e.jobID;
         if (this.#textCapture.jobId !== -1) {
             const res: JobResult = {
-                msg: e.msg,
+                lang: e.lang,
                 jobID: id,
                 err: new Error("previous job is not finished"),
                 code: -1,
@@ -162,7 +162,7 @@ export class EmWorkContext  {
         this.#setCapture(id);
         const code = await this.callEmscriptenMain(args);
         const result: JobResult = {
-            msg: e.msg,
+            lang: e.lang,
             stdout: this.#textCapture.stdout,
             stderr: this.#textCapture.stderr,
             originalSourceCode: e.sourceCode,
@@ -181,7 +181,7 @@ export class EmWorkContext  {
             const args = makeArgs(p,this.#mod!);
             if(args instanceof Error) {
                 const res: JobResult = {
-                    msg: p.msg,
+                    lang: p.lang,
                     jobID: p.jobID,
                     err: args,
                     code: -1,
@@ -245,5 +245,45 @@ export class GoWorkContext  {
     #initModule() {
         this.#go = new Go();
         this.#instance = undefined;
+    }
+
+    async #exec(e :JobRequest, srcCode :string) {
+        await this.#waitForLoad();
+        return this.#go.json2goGenerator!(srcCode)
+    }
+   
+    postRequest(ev: JobRequest) {
+        this.#msgQueue.postRequest(ev);
+    }
+
+    async handleRequest(makeArgs: (e: JobRequest) => string|Error) {
+        while(true){
+            const p = this.#msgQueue.popRequest();
+            if(p === undefined) break;
+            const args = makeArgs(p);
+            if(args instanceof Error) {
+                const res: JobResult = {
+                    lang: p.lang,
+                    jobID: p.jobID,
+                    err: args,
+                    code: -1,
+                }
+                this.#msgQueue.postResult(res);
+                continue;
+            }
+            const result = await this.#exec(p,args);
+            const res: JobResult = {
+                lang: p.lang,
+                jobID: p.jobID,
+                code: result.code,
+                stdout: result.stdout,
+                stderr: result.stderr,
+            }
+            this.#msgQueue.postResult(res);
+        }
+    }
+
+    handleResponse() {
+        this.#msgQueue.handleResponse();
     }
 }

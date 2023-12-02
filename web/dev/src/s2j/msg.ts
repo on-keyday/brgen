@@ -5,15 +5,23 @@ enum RequestMessage {
     MSG_REQUIRE_GENERATED_CODE = "MSG_REQUIRE_GENERATED_CODE",
 }
 
+enum RequestLanguage {
+    TOKENIZE = "TOKENIZE",
+    JSON_AST = "JSON_AST",
+    CPP_PROTOTYPE = "CPP_PROTOTYPE",
+    CPP = "CPP",
+    GO = "GO",
+}
+
 interface JobRequest {
-    readonly msg :RequestMessage
+    readonly lang :RequestLanguage
     readonly jobID :number
     sourceCode? :string
     arguments? :string[]
 }
 
 interface JobResult {
-    readonly msg :RequestMessage
+    readonly lang :RequestLanguage
     stdout? :string
     stderr? :string
     originalSourceCode? :string
@@ -22,4 +30,4 @@ interface JobResult {
     jobID :number
 }
 
-export {RequestMessage,JobRequest,JobResult};
+export {RequestLanguage,JobRequest,JobResult};
