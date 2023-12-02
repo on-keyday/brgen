@@ -19,9 +19,8 @@
             "request": "launch",
             "program": "${workspaceRoot}/tool/src2json",
             "args": [
-                "c:/workspace/shbrgen/brgen/example/syslog.bgn",
-                "--print-json",
-                "--stderr-color-mode=force"
+                "c:/workspace/shbrgen/brgen/example/websocket.bgn",
+                "--print-json"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",

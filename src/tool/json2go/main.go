@@ -250,7 +250,7 @@ func (g *Generator) writeStructUnion(belong string, u *ast2go.StructUnionType) {
 			g.PrintfFunc("\n")
 			g.PrintfFunc("return nil\n")
 			g.PrintfFunc("}\n")
-			g.exprStringer.IdentMapper[field.Ident.Ident] = fmt.Sprintf("*t.%s()", field.Ident.Ident)
+			g.exprStringer.IdentMapper[field.Ident.Ident] = fmt.Sprintf("(*t.%s())", field.Ident.Ident)
 		}
 	}
 
@@ -410,23 +410,20 @@ func (g *Generator) writeFieldDecode(p *ast2go.Field) {
 	if i_typ, ok := typ.(*ast2go.IdentType); ok {
 		typ = i_typ.Base
 	}
+	fieldName := p.Ident.Ident
+	converted := fieldName
+	if belongs, ok := g.unionStructs[p.BelongStruct]; ok {
+		converted = fmt.Sprintf("%s.%s", belongs.Name, p.Ident.Ident)
+	}
 	if i_type, ok := typ.(*ast2go.IntType); ok {
 		if i_type.IsCommonSupported {
-			fieldName := p.Ident.Ident
-			converted := fieldName
-			if belongs, ok := g.unionStructs[p.BelongStruct]; ok {
-				converted = fmt.Sprintf("%s.%s", belongs.Name, p.Ident.Ident)
-			}
 			g.writeReadUint(i_type.BitSize, fieldName, converted)
 			return
 		}
 	}
 	if arr_type, ok := typ.(*ast2go.ArrayType); ok {
 		if i_typ, ok := arr_type.BaseType.(*ast2go.IntType); ok && i_typ.BitSize == 8 {
-			converted := "t." + p.Ident.Ident
-			if belongs, ok := g.unionStructs[p.BelongStruct]; ok {
-				converted = fmt.Sprintf("%s.%s", belongs.Name, p.Ident.Ident)
-			}
+			converted := "t." + converted
 			length := g.exprStringer.ExprString(arr_type.Length)
 			if arr_type.Length.GetConstantLevel() == ast2go.ConstantLevelConstValue {
 				g.PrintfFunc("n_%s, err := r.Read(%s[:])\n", p.Ident.Ident, converted)

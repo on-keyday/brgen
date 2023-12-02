@@ -21,7 +21,7 @@ format Frame:
         127 => ExtendedPayloadLength :u64
     
     if Mask == 1:
-        MaskingKey :u32
+        MaskingKey :[4]u8
 
     Payload :[available(ExtendedPayloadLength) ? ExtendedPayloadLength : PayloadLength]u8
     

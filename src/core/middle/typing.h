@@ -923,6 +923,9 @@ namespace brgen::middle {
                     return;
                 }
                 if (auto u = ast::as<ast::UnionType>(ty)) {
+                    if (u->common_type) {
+                        return;
+                    }
                     for (auto& c : u->candidates) {
                         auto f = c->field.lock();
                         if (!f) {
