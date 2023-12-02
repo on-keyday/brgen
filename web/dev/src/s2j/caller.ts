@@ -43,6 +43,8 @@ interface CallOption {
 export const loadWorkers = () => {
     factory.getSrc2JSONWorker();
     factory.getJSON2CppWorker();
+    factory.getJSON2Cpp2Worker();
+    factory.getJSON2GoWorker();
 }
 
 const getRequest = (mgr :JobManager , lang :RequestLanguage,sourceCode :string,options? :CallOption) :JobRequest => {
@@ -57,15 +59,40 @@ const getRequest = (mgr :JobManager , lang :RequestLanguage,sourceCode :string,o
 
 export const getAST = (sourceCode :string,options? :CallOption) => {
     const mgr = factory.getSrc2JSONWorker();
-    return mgr.doRequest(getRequest(mgr,RequestLanguage.JSON_AST,sourceCode,options));
+    const req = mgr.getRequest(RequestLanguage.JSON_AST,sourceCode);
+    if(options){
+        if(options.filename){
+            req.arguments = ["--stdin-name",options.filename];
+        }
+    }
+    return mgr.doRequest(req);
 }
 
 export const getTokens = (sourceCode :string,options? :CallOption) => {
     const mgr = factory.getSrc2JSONWorker();
-    return mgr.doRequest(getRequest(mgr,RequestLanguage.TOKENIZE,sourceCode,options));
+    const req = mgr.getRequest(RequestLanguage.TOKENIZE,sourceCode);
+    if(options){
+        if(options.filename){
+            req.arguments = ["--stdin-name",options.filename];
+        }
+    }
+    return mgr.doRequest(req);
+}
+
+export const getCppPrototypeCode = (sourceCode :string,options? :CallOption) => {
+    const mgr = factory.getJSON2CppWorker();
+    const req= mgr.getRequest(RequestLanguage.CPP_PROTOTYPE,sourceCode);
+    return mgr.doRequest(req);
 }
 
 export const getCppCode = (sourceCode :string,options? :CallOption) => {
-    const mgr = factory.getJSON2CppWorker();
-    return mgr.doRequest(getRequest(mgr,RequestLanguage.CPP_PROTOTYPE,sourceCode,{}));
+    const mgr = factory.getJSON2Cpp2Worker();
+    const req = mgr.getRequest(RequestLanguage.CPP,sourceCode);
+    return mgr.doRequest(req);
+}
+
+export const getGoCode = (sourceCode :string,options? :CallOption) => {
+    const mgr = factory.getJSON2GoWorker();
+    const req = mgr.getRequest(RequestLanguage.GO,sourceCode);
+    return mgr.doRequest(req);
 }

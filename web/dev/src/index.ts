@@ -12,14 +12,9 @@ import * as caller from "./s2j/caller.js";
 import * as monaco from "../node_modules/monaco-editor/esm/vs/editor/editor.api.js";
 
 import {ast2ts} from "../node_modules/ast2ts/index.js";
-import { JobResult } from "./s2j/msg.js";
+import { JobResult,Language } from "./s2j/msg.js";
 
 
-
-enum Language {
-    JSON_AST = "json ast",
-    CPP = "cpp",
-}
 
 const storage  = window.localStorage;
 const getLangMode = () => {
@@ -28,8 +23,12 @@ const getLangMode = () => {
     switch(mode){
         case Language.JSON_AST:
             return Language.JSON_AST;
+        case Language.CPP_PROTOTYPE:
+            return Language.CPP_PROTOTYPE;
         case Language.CPP:
             return Language.CPP;
+        case Language.GO:
+            return Language.GO;
         default:
             return Language.JSON_AST;
     }
@@ -176,26 +175,54 @@ const alreadyUpdated = (s :JobResult) => {
     return false;
 }
 
-const handleCpp = async (s :JobResult) => {
+const handleLanguage = async (s :JobResult,generate:(src :string)=>Promise<JobResult>,lang: string) => {
     if(s.stdout===undefined) throw new Error("stdout is undefined");
-    const cpp = await caller.getCppCode(s.stdout).catch((e) => {
+    const res = await generate(s.stdout).catch((e) => {
         return e as JobResult;
     });
     if(alreadyUpdated(s)) {
         return;
     }
-    console.log(cpp);
-    if(cpp.stdout === undefined || cpp.stdout === "") {
-        if(cpp.stderr!==undefined&&cpp.stderr!==""){
-            createGenerated(cpp.stderr,"text/plain");
+    console.log(res);
+    if(res.stdout === undefined || res.stdout === "") {
+        if(res.stderr!==undefined&&res.stderr!==""){
+            createGenerated(res.stderr,"text/plain");
         }
         else{
             createGenerated("(no output. maybe generator is crashed)","text/plain");
         }
     }
     else{
-        createGenerated(cpp.stdout,"cpp");
+        createGenerated(res.stdout,lang);
     }
+}
+
+const handleCppPrototype = async (s :JobResult) => {
+    await handleLanguage(s,caller.getCppPrototypeCode,"cpp");
+}
+
+const handleCpp = async (s :JobResult) => {
+    await handleLanguage(s,caller.getCppCode,"cpp");
+}
+
+const handleGo = async (s :JobResult) => {
+    await handleLanguage(s,caller.getGoCode,"go");
+}
+
+const handleTokenize = async (value :string) => {
+    const s = await caller.getTokens(value,
+    {filename: "editor.bgn"}).catch((e) => {
+        return e as JobResult;
+    });
+    if(alreadyUpdated(s)) {
+        return;
+    }
+    if(s.stdout===undefined) throw new Error("stdout is undefined");
+    console.log(s.stdout);
+    console.log(s.stderr);
+    const js = JSON.parse(s.stdout);
+    createGenerated(JSON.stringify(js,null,4),"json");
+    return;
 }
 
 const updateGenerated = async () => {
@@ -203,6 +230,9 @@ const updateGenerated = async () => {
     if(value === ""){
         setDefault();
         return;
+    }
+    if(options.language_mode === Language.TOKENIZE) {
+       return await handleTokenize(value);
     }
     const s = await caller.getAST(value,
     {filename: "editor.bgn"}).catch((e) => {
@@ -223,10 +253,15 @@ const updateGenerated = async () => {
         case Language.JSON_AST:
             createGenerated(JSON.stringify(js,null,4),"json");
             break;
-        case Language.CPP: {
+        case Language.CPP_PROTOTYPE: 
+            await handleCppPrototype(s);
+            break;
+        case Language.CPP:
             await handleCpp(s);
             break;
-        }
+        case Language.GO:
+            await handleGo(s);
+            break;
     }
 }
 
@@ -282,7 +317,8 @@ const makeLink = (id :string,text :string,href :string) => {
     return link;
 }
 
-const select = makeListBox("language-select",[Language.JSON_AST,Language.CPP]);
+const select = makeListBox("language-select",
+[Language.TOKENIZE,Language.JSON_AST,Language.CPP_PROTOTYPE,Language.CPP,Language.GO]);
 select.value = options.language_mode;
 select.style.top = "50%";
 select.style.left ="80%";
@@ -333,6 +369,15 @@ const changeLanguage = async (mode :string) => {
             break;
         case Language.CPP:
             options.setLanguageMode(Language.CPP);
+            break;
+        case Language.CPP_PROTOTYPE:
+            options.setLanguageMode(Language.CPP_PROTOTYPE);
+            break;
+        case Language.GO:
+            options.setLanguageMode(Language.GO);
+            break;
+        case Language.TOKENIZE:
+            options.setLanguageMode(Language.TOKENIZE);
             break;
         default:
             throw new Error(`unknown language ${mode}`);

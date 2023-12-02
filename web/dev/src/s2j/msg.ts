@@ -6,11 +6,11 @@ enum RequestMessage {
 }
 
 enum RequestLanguage {
-    TOKENIZE = "TOKENIZE",
-    JSON_AST = "JSON_AST",
-    CPP_PROTOTYPE = "CPP_PROTOTYPE",
-    CPP = "CPP",
-    GO = "GO",
+    TOKENIZE = "tokens",
+    JSON_AST = "json ast",
+    CPP_PROTOTYPE = "cpp (prototype)",
+    CPP = "cpp",
+    GO = "go",
 }
 
 interface JobRequest {
@@ -30,4 +30,4 @@ interface JobResult {
     jobID :number
 }
 
-export {RequestLanguage,JobRequest,JobResult};
+export {RequestLanguage as Language,RequestLanguage,JobRequest,JobResult};
