@@ -948,6 +948,17 @@ namespace brgen::middle {
                     if (arr_type->length && arr_type->length->node_type == ast::NodeType::range) {
                         arr_type->length->constant_level = ast::ConstantLevel::variable;
                     }
+                    // TODO(on-keyday): future, separate phase of typing to disable warning effectively
+                    if (arr_type->length && arr_type->length->expr_type) {
+                        for (auto it = warnings.locations.begin(); it != warnings.locations.end();) {
+                            if (arr_type->loc.pos.begin <= it->loc.pos.begin && it->loc.pos.end <= arr_type->end_loc.pos.end) {
+                                it = warnings.locations.erase(it);
+                            }
+                            else {
+                                ++it;
+                            }
+                        }
+                    }
                     return;
                 }
             };
@@ -959,8 +970,10 @@ namespace brgen::middle {
             try {
                 typing_object(ty);
             } catch (LocationError& e) {
+                warnings.unique();
                 return unexpect(e);
             }
+            warnings.unique();
             return {};
         }
     };

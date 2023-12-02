@@ -302,8 +302,11 @@ namespace brgen::ast::tool {
             }
             if (ident->constant_level == ast::ConstantLevel::constant) {
                 auto base = ident->base.lock();
-                if (auto b = ast::as<ast::Binary>(base); b && b->op == ast::BinaryOp::const_assign) {
-                    return eval(b->right);
+                auto ident = ast::as<ast::Ident>(base);
+                if (ident) {
+                    if (auto b = ast::as<ast::Binary>(ident->base.lock()); b && b->op == ast::BinaryOp::const_assign) {
+                        return eval(b->right);
+                    }
                 }
             }
             return unexpect(LocError{ident->loc, "cannot resolve ident"});
