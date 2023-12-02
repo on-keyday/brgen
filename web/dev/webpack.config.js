@@ -11,6 +11,8 @@ const copyWasm = (p) => {
 
 copyWasm("src2json.wasm");
 copyWasm("json2cpp.wasm");
+copyWasm("json2cpp2.wasm");
+copyWasm("json2go.wasm");
 
 module.exports = {
     mode: "development",

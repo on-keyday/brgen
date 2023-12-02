@@ -6,7 +6,7 @@ import { JobRequest, RequestLanguage } from "./msg.js";
 import { GoWorkContext} from "./work_ctx.js";
 
 
-const j2go_ctx = new GoWorkContext(fetch(new URL("./json2go.wasm",import.meta.url)).then((r) => r.arrayBuffer()), () => {
+const j2go_ctx = new GoWorkContext(fetch(new URL("../lib/json2go.wasm",import.meta.url)).then((r) => r.arrayBuffer()), () => {
     console.log("json2go worker is ready");
 });
 

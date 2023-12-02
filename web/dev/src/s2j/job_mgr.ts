@@ -1,5 +1,5 @@
 
-import {RequestMessage,JobRequest,JobResult }  from "./msg.js";
+import {JobRequest,JobResult, RequestLanguage }  from "./msg.js";
 
 
 export class JobManager {
@@ -29,11 +29,11 @@ export class JobManager {
         }
     }
 
-    getRequest(msg :RequestMessage,sourceCode :string) :JobRequest {
+    getRequest(lang :RequestLanguage,sourceCode :string) :JobRequest {
         const id = this.#jobID;
         this.#jobID++;
         const req :JobRequest = {
-            msg,
+            lang,
             jobID :id,
             sourceCode
         };
