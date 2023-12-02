@@ -6,9 +6,51 @@ export interface MyEmscriptenModule extends EmscriptenModule {
 
 import { JobRequest, JobResult } from "./msg.js";
 
-export class EmWorkContext  {
+class RequestQueue {
     readonly #msgQueue: JobRequest[] = [];
     readonly #postQueue: JobResult[] = [];
+
+    constructor() {}
+
+    postRequest(ev: JobRequest) {
+        console.time(`msg queueing ${ev.jobID}`)
+        this.#msgQueue.push(ev);
+    }
+
+    popRequest(): JobRequest | undefined {
+        const r = this.#msgQueue.shift();
+        if(r !== undefined){
+            console.timeEnd(`msg queueing ${r.jobID}`)
+            console.time(`msg handling ${r.jobID}`)
+        }
+        return r;
+    }
+
+    postResult(msg: JobResult) {
+        console.timeEnd(`msg handling ${msg.jobID}`)
+        console.time(`msg posting ${msg.jobID}`)
+        this.#postQueue.push(msg);
+    }
+
+    #popResult(): JobResult | undefined {
+        const r = this.#postQueue.shift();
+        if(r !== undefined){
+            console.timeEnd(`msg posting ${r.jobID}`)
+        }
+        return r;
+    }
+
+    handleResponse() {
+        while(true){
+            const p = this.#popResult();
+            if(p === undefined) break;
+            globalThis.postMessage(p);
+        }
+    }
+}
+
+export class EmWorkContext  {
+    readonly #msgQueue: RequestQueue;
     readonly #textCapture = {
         jobId: -1,
         stdout: "",
@@ -20,8 +62,7 @@ export class EmWorkContext  {
     #onload? :() => void;
 
     constructor(mod :EmscriptenModuleFactory<MyEmscriptenModule>,onload? :() => void) {
-        this.#msgQueue = [];
-        this.#postQueue = [];
+        this.#msgQueue = new RequestQueue();
         this.#textCapture = {
             jobId: -1,
             stdout: "",
@@ -54,32 +95,17 @@ export class EmWorkContext  {
     
 
     postRequest(ev: JobRequest) {
-        console.time(`msg queueing ${ev.jobID}`)
-        this.#msgQueue.push(ev);
+        this.#msgQueue.postRequest(ev);
     }
 
     #popRequest(): JobRequest | undefined {
-        const r = this.#msgQueue.shift();
-        if(r !== undefined){
-            console.timeEnd(`msg queueing ${r.jobID}`)
-            console.time(`msg handling ${r.jobID}`)
-        }
-        return r;
+        return this.#msgQueue.popRequest();
     }
 
     #postResult(msg: JobResult) {
-        console.timeEnd(`msg handling ${msg.jobID}`)
-        console.time(`msg posting ${msg.jobID}`)
-        this.#postQueue.push(msg);
+        this.#msgQueue.postResult(msg);
     }
 
-    #popResult(): JobResult | undefined {
-        const r = this.#postQueue.shift();
-        if(r !== undefined){
-            console.timeEnd(`msg posting ${r.jobID}`)
-        }
-        return r;
-    }
 
     #clearCapture() {
         this.#textCapture.jobId = -1;
@@ -168,10 +194,41 @@ export class EmWorkContext  {
     }
 
     handleResponse() {
-        while(true){
-            const p = this.#popResult();
-            if(p === undefined) break;
-            globalThis.postMessage(p);
+        this.#msgQueue.handleResponse();
+    }
+
+}
+
+/// <reference path="../lib/go_wasm_exec.js"/>
+
+export class GoWorkContext  {
+    #go :Go;
+    #src :Promise<BufferSource> | undefined;
+    #wasm :WebAssembly.Module | undefined;
+    #instance :WebAssembly.Instance | undefined;
+    #msgQueue: RequestQueue;
+    #onload? :() => void;
+
+    constructor(p :Promise<BufferSource> ,onload? :() => void) {
+        this.#msgQueue = new RequestQueue();
+        this.#onload = onload; 
+        this.#src = p;    
+        this.#go = new Go();
+    }
+
+    async #waitForLoad() {
+        if(!this.#wasm) {
+            const data =await WebAssembly.compile(await this.#src!);
+            this.#src = undefined;
+            this.#wasm = data;
         }
+        if(!this.#instance) {
+            this.#instance = await WebAssembly.instantiate(this.#wasm,this.#go.importObject);
+        }
+    }
+
+    #initModule() {
+        this.#go = new Go();
+        this.#instance = undefined;
     }
 }
