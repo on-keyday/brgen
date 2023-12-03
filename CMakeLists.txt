@@ -30,9 +30,9 @@ endif()
 endif()
 
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
-set(GO_FLAGS "-ldflags \"-s -w\" -trimpath")
+set(CMAKE_GO_FLAGS "-ldflags=-s -w")
 else()
-set(GO_FLAGS "")
+set(CMAKE_GO_FLAGS "")
 endif()
 
 if("$ENV{BUILD_MODE}" STREQUAL "native")
