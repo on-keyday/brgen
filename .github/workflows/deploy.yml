@@ -44,8 +44,11 @@ jobs:
           echo "GOROOT=$GOROOT"
           export WASMEXEC_FILE="$GOROOT/misc/wasm/wasm_exec.js"
           . build.sh wasm-em Release
-          cat ./web/dev/out/lib/wasm_exec.js
         continue-on-error: true
+      - name: Cat
+        run: |
+          ls - ./web/dev/out/lib
+          cat ./web/dev/out/lib/go_wasm_exec.js
       - name: Setup Pages
         uses: actions/configure-pages@v3
       - name: Upload artifact
