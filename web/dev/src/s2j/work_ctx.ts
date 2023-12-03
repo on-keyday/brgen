@@ -267,18 +267,22 @@ export class GoWorkContext  {
         while(true){
             const p = this.#msgQueue.popRequest();
             if(p === undefined) break;
-            const args = makeArgs(p);
-            if(args instanceof Error) {
+            const src = makeArgs(p);
+            if(src instanceof Error) {
                 const res: JobResult = {
                     lang: p.lang,
                     jobID: p.jobID,
-                    err: args,
+                    err: src,
                     code: -1,
                 }
                 this.#msgQueue.postResult(res);
                 continue;
             }
-            const result = await this.#exec(p,args,p.arguments ?? []);
+            const arg = ["json2go"]
+            if(p.arguments !== undefined) {
+                arg.push(...p.arguments);
+            }
+            const result = await this.#exec(p,src,arg);
             const res: JobResult = {
                 lang: p.lang,
                 jobID: p.jobID,

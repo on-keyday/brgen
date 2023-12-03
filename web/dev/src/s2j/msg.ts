@@ -8,6 +8,7 @@ enum RequestMessage {
 enum RequestLanguage {
     TOKENIZE = "tokens",
     JSON_AST = "json ast",
+    JSON_DEBUG_AST = "json ast (debug)",
     CPP_PROTOTYPE = "cpp (prototype)",
     CPP = "cpp",
     GO = "go",

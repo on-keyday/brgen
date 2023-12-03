@@ -72,6 +72,17 @@ export const getAST = (sourceCode :string,options? :CallOption) => {
     return mgr.doRequest(req);
 }
 
+export const getDebugAST = (sourceCode :string,options? :CallOption) => {
+    const mgr = factory.getSrc2JSONWorker();
+    const req = mgr.getRequest(RequestLanguage.JSON_DEBUG_AST,sourceCode);
+    if(options){
+        if(options.filename){
+            req.arguments = ["--stdin-name",options.filename];
+        }
+    }
+    return mgr.doRequest(req);
+}
+
 export const getTokens = (sourceCode :string,options? :CallOption) => {
     const mgr = factory.getSrc2JSONWorker();
     const req = mgr.getRequest(RequestLanguage.TOKENIZE,sourceCode);

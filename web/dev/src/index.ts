@@ -30,6 +30,8 @@ const getLangMode = () => {
             return Language.CPP;
         case Language.GO:
             return Language.GO;
+        case Language.JSON_DEBUG_AST:
+            return Language.JSON_DEBUG_AST;
         default:
             return Language.JSON_AST;
     }
@@ -229,6 +231,22 @@ const handleTokenize = async (value :string) => {
     return;
 }
 
+const handleDebugAST = async (value :string) => {
+    const s = await caller.getDebugAST(value,
+    {filename: "editor.bgn"}).catch((e) => {
+        return e as JobResult;
+    });
+    if(alreadyUpdated(s)) {
+        return;
+    }
+    if(s.stdout===undefined) throw new Error("stdout is undefined");
+    console.log(s.stdout);
+    console.log(s.stderr);
+    const js = JSON.parse(s.stdout);
+    createGenerated(JSON.stringify(js,null,4),"json");
+    return;
+}
+
 const updateGenerated = async () => {
     const value = editor.getValue();
     if(value === ""){
@@ -237,6 +255,9 @@ const updateGenerated = async () => {
     }
     if(options.language_mode === Language.TOKENIZE) {
        return await handleTokenize(value);
+    }
+    if(options.language_mode === Language.JSON_DEBUG_AST) {
+        return await handleDebugAST(value);
     }
     const s = await caller.getAST(value,
     {filename: "editor.bgn"}).catch((e) => {
@@ -322,7 +343,7 @@ const makeLink = (id :string,text :string,href :string) => {
 }
 
 const select = makeListBox("language-select",
-[Language.TOKENIZE,Language.JSON_AST,Language.CPP_PROTOTYPE,Language.CPP,Language.GO]);
+[Language.TOKENIZE,Language.JSON_AST,Language.JSON_DEBUG_AST,Language.CPP_PROTOTYPE,Language.CPP,Language.GO]);
 select.value = options.language_mode;
 select.style.top = "50%";
 select.style.left ="80%";
@@ -383,6 +404,9 @@ const changeLanguage = async (mode :string) => {
         case Language.TOKENIZE:
             options.setLanguageMode(Language.TOKENIZE);
             break;
+        case Language.JSON_DEBUG_AST:
+            options.setLanguageMode(Language.JSON_DEBUG_AST);
+            break;
         default:
             throw new Error(`unknown language ${mode}`);
     }
@@ -417,9 +441,7 @@ format WebSocketFrame:
     if Mask == 1:
         MaskingKey :u32
     
-    # 本当はこっちが正しいのですが、現状のジェネレータの限界で、下を使っています
-    # Payload :[available(ExtendedPayloadLength) ? ExtendedPayloadLength : PayloadLength]u8
-    Payload :[PayloadLength]u8
+    Payload :[available(ExtendedPayloadLength) ? ExtendedPayloadLength : PayloadLength]u8
 `
     editor.setValue(sample);
     changeLanguage(Language.CPP);

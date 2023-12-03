@@ -19,6 +19,9 @@ setInterval(()=>{
             case RequestLanguage.JSON_AST:
                 if(e.sourceCode === undefined) return new Error("sourceCode is undefined");
                 return ["src2json","--argv",e.sourceCode,"--no-color","--print-json","--print-on-error"];
+            case RequestLanguage.JSON_DEBUG_AST:
+                if(e.sourceCode === undefined) return new Error("sourceCode is undefined");
+                return ["src2json","--argv",e.sourceCode,"--no-color","--print-json","--print-on-error","--debug-json"];
             case RequestLanguage.TOKENIZE:
                 if(e.sourceCode === undefined) return new Error("sourceCode is undefined");
                 return ["src2json","--argv",e.sourceCode,"--no-color","--print-json","--print-on-error","--lexer"];
