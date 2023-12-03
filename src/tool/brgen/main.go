@@ -35,6 +35,7 @@ type Result struct {
 type Generator struct {
 	generatorPath string
 	outputDir     string
+	args          []string
 	spec          Spec
 	result        chan *Result
 	request       chan *Result
@@ -126,7 +127,7 @@ func makeTmpFile(data []byte) (path string, err error) {
 
 func (g *Generator) passAst(filePath string, buffer []byte) ([]byte, error) {
 	if g.spec.PassBy == "stdin" {
-		cmd := exec.CommandContext(g.ctx, g.generatorPath)
+		cmd := exec.CommandContext(g.ctx, g.generatorPath, g.args...)
 		cmd.Stdin = bytes.NewReader(buffer)
 		return g.execGenerator(cmd, filePath)
 	}
@@ -135,13 +136,15 @@ func (g *Generator) passAst(filePath string, buffer []byte) ([]byte, error) {
 		return nil, err
 	}
 	defer os.Remove(path)
-	cmd := exec.CommandContext(g.ctx, g.generatorPath, path)
+	cmd := exec.CommandContext(g.ctx, g.generatorPath, g.args...)
+	cmd.Args = append(cmd.Args, path)
 	return g.execGenerator(cmd, filePath)
 }
 
 func (g *Generator) StartGenerator(out *Output) error {
 	g.generatorPath = out.Generator
 	g.outputDir = out.OutputDir
+	g.args = out.Args
 	err := g.askSpec()
 	if err != nil {
 		return fmt.Errorf("%s: askSpec: %w", g.generatorPath, err)
@@ -332,8 +335,9 @@ func (g *GeneratorHandler) Recv() <-chan *Result {
 }
 
 type Output struct {
-	Generator string `json:"generator"`
-	OutputDir string `json:"output_dir"`
+	Generator string   `json:"generator"`
+	OutputDir string   `json:"output_dir"`
+	Args      []string `json:"args"`
 }
 
 type Warnings struct {

@@ -13,6 +13,13 @@ import (
 
 var f = flag.Bool("s", false, "tell spec of json2go")
 var filename = flag.String("f", "", "file to parse")
+var usePut = flag.Bool("use-put", false, "use PutUintXXX instead of AppendUintXXX")
+
+func resetFlag() {
+	*f = false
+	*filename = ""
+	*usePut = false
+}
 
 type BitFields struct {
 	Size   uint64
@@ -297,7 +304,14 @@ func (g *Generator) writeAppendUint(size uint64, field string) {
 		return
 	}
 	g.imports["encoding/binary"] = struct{}{}
-	g.PrintfFunc("buf = binary.BigEndian.AppendUint%d(buf, uint%d(%s))\n", size, size, field)
+	if *usePut {
+		tmp := fmt.Sprintf("tmp%d", g.getSeq())
+		g.PrintfFunc("%s := [%d]byte{}\n", tmp, size/8)
+		g.PrintfFunc("binary.BigEndian.PutUint%d(%s[:], uint%d(%s))\n", size, tmp, size, field)
+		g.PrintfFunc("buf = append(buf, %s[:]...)\n", tmp)
+	} else {
+		g.PrintfFunc("buf = binary.BigEndian.AppendUint%d(buf, uint%d(%s))\n", size, size, field)
+	}
 }
 
 func (g *Generator) writeFieldEncode(p *ast2go.Field) {

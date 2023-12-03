@@ -4,6 +4,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"syscall/js"
 
 	ast2go "github.com/on-keyday/brgen/ast2go/ast"
@@ -20,8 +21,8 @@ func setFunc() {
 			"stdout": "",
 			"code":   0,
 		}
-		if len(args) < 1 {
-			result["stderr"] = "args[0] is required"
+		if len(args) < 2 {
+			result["stderr"] = "args length is less than 2"
 			result["code"] = 1
 			return result
 		}
@@ -30,14 +31,36 @@ func setFunc() {
 			result["code"] = 1
 			return result
 		}
+		jsArray := js.Global().Get("Array")
+		if !args[1].InstanceOf(jsArray) {
+			result["stderr"] = "args[1] is not array"
+			result["code"] = 1
+			return result
+		}
+		cmdargs := []string{}
+		for i := 0; i < args[1].Length(); i++ {
+			if args[1].Index(i).Type() != js.TypeString {
+				result["stderr"] = "args[1] is not string array"
+				result["code"] = 1
+				return result
+			}
+			cmdargs = append(cmdargs, args[1].Index(i).String())
+		}
 		sourceCode := args[0].String()
 		if sourceCode == "" {
 			result["stderr"] = "args[0] is empty"
 			result["code"] = 1
 			return result
 		}
+		resetFlag()
+		err := flag.CommandLine.Parse(cmdargs[1:])
+		if err != nil {
+			result["stderr"] = err.Error()
+			result["code"] = 1
+			return result
+		}
 		file := ast2go.AstFile{}
-		err := json.Unmarshal([]byte(sourceCode), &file)
+		err = json.Unmarshal([]byte(sourceCode), &file)
 		if err != nil {
 			result["stderr"] = err.Error()
 			result["code"] = 1

@@ -176,9 +176,9 @@ const alreadyUpdated = (s :JobResult) => {
     return false;
 }
 
-const handleLanguage = async (s :JobResult,generate:(src :string)=>Promise<JobResult>,lang: string) => {
+const handleLanguage = async (s :JobResult,generate:(src :string,option :any)=>Promise<JobResult>,lang: string,option? :any) => {
     if(s.stdout===undefined) throw new Error("stdout is undefined");
-    const res = await generate(s.stdout).catch((e) => {
+    const res = await generate(s.stdout,option).catch((e) => {
         return e as JobResult;
     });
     if(alreadyUpdated(s)) {
@@ -207,7 +207,10 @@ const handleCpp = async (s :JobResult) => {
 }
 
 const handleGo = async (s :JobResult) => {
-    await handleLanguage(s,caller.getGoCode,"go");
+    const goOption : caller.GoOption ={
+        use_put: true,
+    }
+    await handleLanguage(s,caller.getGoCode,"go",goOption);
 }
 
 const handleTokenize = async (value :string) => {

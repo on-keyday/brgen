@@ -36,8 +36,12 @@ const WorkerFactory = class {
 const factory = new WorkerFactory();
 
 
-interface CallOption {
+export interface CallOption {
     filename? :string
+}
+
+export interface GoOption extends CallOption {
+    use_put? :boolean
 }
 
 export const loadWorkers = () => {
@@ -91,8 +95,11 @@ export const getCppCode = (sourceCode :string,options? :CallOption) => {
     return mgr.doRequest(req);
 }
 
-export const getGoCode = (sourceCode :string,options? :CallOption) => {
+export const getGoCode = (sourceCode :string,options? :GoOption) => {
     const mgr = factory.getJSON2GoWorker();
     const req = mgr.getRequest(RequestLanguage.GO,sourceCode);
+    if(options?.use_put){
+        req.arguments = ["-use-put"];
+    }
     return mgr.doRequest(req);
 }

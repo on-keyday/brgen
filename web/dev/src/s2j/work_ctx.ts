@@ -12,7 +12,7 @@ declare class Go {
     run(instance: WebAssembly.Instance): Promise<void>;
     importObject: WebAssembly.Imports;
     // for use in the browser set by go
-    json2goGenerator :((sourceCode :string) => { stdout: string , stderr: string , code: number}) | undefined;
+    json2goGenerator :((sourceCode :string,args :string[]) => { stdout: string , stderr: string , code: number}) | undefined;
 }
 
 
@@ -254,9 +254,9 @@ export class GoWorkContext  {
         this.#instance = undefined;
     }
 
-    async #exec(e :JobRequest, srcCode :string) {
+    async #exec(e :JobRequest, srcCode :string,args :string[]) {
         await this.#waitForLoad();
-        return this.#go.json2goGenerator!(srcCode)
+        return this.#go.json2goGenerator!(srcCode,args);
     }
    
     postRequest(ev: JobRequest) {
@@ -278,7 +278,7 @@ export class GoWorkContext  {
                 this.#msgQueue.postResult(res);
                 continue;
             }
-            const result = await this.#exec(p,args);
+            const result = await this.#exec(p,args,p.arguments ?? []);
             const res: JobResult = {
                 lang: p.lang,
                 jobID: p.jobID,
