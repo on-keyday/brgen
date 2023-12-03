@@ -41,6 +41,7 @@ jobs:
       - name: Build Wasm
         run: |
           GOROOT=`go env GOROOT`
+          echo "GOROOT=$GOROOT"
           WASMEXEC_FILE="$GOROOT/misc/wasm/wasm_exec.js"
           . build.sh wasm-em Release
         continue-on-error: true
