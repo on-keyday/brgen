@@ -25,7 +25,7 @@ module.exports = {
     mode: mode,
     entry: path.resolve(__dirname, "out/index.js"),
     resolve: {
-        extensions: [".js", ".ts"],
+        extensions: [".ts",".js"],
     },
     module: {
         rules: [
@@ -44,4 +44,7 @@ module.exports = {
         path: path.resolve(__dirname, "../public/script"),
         assetModuleFilename: "[name][ext]",
     }, 
+    stats: {
+        errorDetails: true,
+    }
 }
