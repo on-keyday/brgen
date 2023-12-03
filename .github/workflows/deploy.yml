@@ -42,7 +42,8 @@ jobs:
         run: |
           GOROOT=`go env GOROOT`
           echo "GOROOT=$GOROOT"
-          WASMEXEC_FILE="$GOROOT/misc/wasm/wasm_exec.js"
+          export WASMEXEC_FILE="$GOROOT/misc/wasm/wasm_exec.js"
+          cat $WASMEXEC_FILE
           . build.sh wasm-em Release
         continue-on-error: true
       - name: Setup Pages
