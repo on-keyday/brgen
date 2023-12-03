@@ -1,4 +1,5 @@
 const { copyFile } = require("fs");
+const process = require("process")
 const path = require("path");
 
 
@@ -15,10 +16,13 @@ copyWasm("json2cpp.wasm");
 copyWasm("json2cpp2.wasm");
 copyWasm("json2go.wasm");
 
-
+let mode = "development";
+if (process.env.WEB_PRODUCTION === "production") {
+    mode = "production";
+}
 
 module.exports = {
-    mode: "development",
+    mode: mode,
     entry: path.resolve(__dirname, "out/index.js"),
     resolve: {
         extensions: [".js", ".ts"],
