@@ -53,7 +53,8 @@ func setFunc() {
 		result["stdout"] = string(data)
 		return result
 	})
-	jsGo.Set("json2goGenerator", f)
+	proto := jsGo.Get("prototype")
+	proto.Set("json2goGenerator", f)
 }
 
 func main() {

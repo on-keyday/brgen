@@ -199,7 +199,7 @@ export class EmWorkContext  {
 
 }
 
-import {Go} from "../lib/go_wasm_exec.js";
+import {Go} from "../lib/go_wasm_exec";
 
 export class GoWorkContext  {
     #go :Go;
@@ -224,21 +224,20 @@ export class GoWorkContext  {
         }
         if(!this.#instance) {
             this.#instance = await WebAssembly.instantiate(this.#wasm,this.#go.importObject);
-        }
-        // do export json2GoGenerator
-        const reload = (e :any) =>{
-            console.log(e);
-            console.log("reloading webassembly module")
-            this.#initModule();// reload module
-        }
-        this.#go.run(this.#instance)
-        .then(reload)
-        .catch(reload);
-        if(this.#go.json2goGenerator === undefined) {
-            throw new Error("failed to load json2goGenerator via go.run");
-        }
-        if(this.#onload !== undefined) {
-            this.#onload();
+            // do export json2GoGenerator
+            const reload = (e :any) =>{
+                console.log(e);
+                console.log("reloading webassembly module")
+                Go.prototype.json2goGenerator = undefined;
+                this.#initModule();// reload module
+            }
+            this.#go.run(this.#instance).then(reload,reload);
+            if(this.#go.json2goGenerator === undefined) {
+                throw new Error("failed to load json2goGenerator via go.run");
+            }
+            if(this.#onload !== undefined) {
+                this.#onload();
+            }
         }
     }
 

@@ -29,6 +29,11 @@ set(GO_COMPILER "$ENV{GO_COMPILER}")
 endif()
 endif()
 
+if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+set(GO_FLAGS "-ldflags \"-s -w\" -trimpath")
+else()
+set(GO_FLAGS "")
+endif()
 
 if("$ENV{BUILD_MODE}" STREQUAL "native")
 set(INSTALL_GTEST OFF)
