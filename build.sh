@@ -32,8 +32,6 @@ if [ $BUILD_MODE = "wasm-em" ];then
    export GOOS=js
    export GOARCH=wasm
    emcmake cmake -G Ninja -D CMAKE_BUILD_TYPE=$BUILD_TYPE -D CMAKE_INSTALL_PREFIX=$INSTALL_PREFIX/web/dev/src -S . -B ./built/$BUILD_MODE/$BUILD_TYPE
-   unset GOOS
-   unset GOARCH
 else
    cmake  -D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang -G Ninja -D CMAKE_INSTALL_PREFIX=$INSTALL_PREFIX -D CMAKE_BUILD_TYPE=$BUILD_TYPE -S . -B ./built/$BUILD_MODE/$BUILD_TYPE
 fi
@@ -41,6 +39,8 @@ ninja -C ./built/$BUILD_MODE/$BUILD_TYPE
 ninja -C ./built/$BUILD_MODE/$BUILD_TYPE install
 
 if [ $BUILD_MODE = "wasm-em" ]; then
+unset GOOS
+unset GOARCH
 cd ./web/dev
 tsc
 webpack
