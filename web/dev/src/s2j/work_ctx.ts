@@ -5,6 +5,16 @@ export interface MyEmscriptenModule extends EmscriptenModule {
 }
 
 import { JobRequest, JobResult } from "./msg.js";
+import "../lib/go_wasm_exec";
+
+declare class Go {
+    constructor();
+    run(instance: WebAssembly.Instance): Promise<void>;
+    importObject: WebAssembly.Imports;
+    // for use in the browser set by go
+    json2goGenerator :((sourceCode :string) => { stdout: string , stderr: string , code: number}) | undefined;
+}
+
 
 class RequestQueue {
     readonly #msgQueue: JobRequest[] = [];
@@ -198,8 +208,6 @@ export class EmWorkContext  {
     }
 
 }
-
-import {Go} from "../lib/go_wasm_exec.js";
 
 export class GoWorkContext  {
     #go :Go;
