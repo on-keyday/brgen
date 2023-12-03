@@ -382,7 +382,7 @@ title_bar.appendChild(link);
 
 const changeLanguage = async (mode :string) => {
     select.value = mode;
-    if(mode in LanguageList) {
+    if(LanguageList.includes(mode as Language)) {
         options.setLanguageMode(mode as Language);
     }
     else{
