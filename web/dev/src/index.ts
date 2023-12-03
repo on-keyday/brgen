@@ -1,19 +1,27 @@
 
 
+
 import "../node_modules/destyle.css/destyle.min.css";
-
-
 
 import * as caller from "./s2j/caller.js";
 
 caller.loadWorkers();
 
-/// <reference path="../node_modules/monaco-editor/dev/vs/loader.js" />
 
 import * as monaco from "../node_modules/monaco-editor/esm/vs/editor/editor.api.js";
 
 import {ast2ts} from "../node_modules/ast2ts/index.js";
 import { JobResult,Language } from "./s2j/msg.js";
+
+
+const LanguageList = [
+    Language.TOKENIZE,
+    Language.JSON_AST,
+    Language.JSON_DEBUG_AST,
+    Language.CPP_PROTOTYPE,
+    Language.CPP,
+    Language.GO,
+];
 
 
 
@@ -89,9 +97,6 @@ generated.onDidChangeModel(async (e) => {
     }
 });
 
-generated.onDidChangeModelContent(async (e) => {
-    
-});
 
 
 const generated_str = "(generated code)";
@@ -215,8 +220,8 @@ const handleGo = async (s :JobResult) => {
     await handleLanguage(s,caller.getGoCode,"go",goOption);
 }
 
-const handleTokenize = async (value :string) => {
-    const s = await caller.getTokens(value,
+const handleJSONOutput = async (value :string,generator:(srcCode :string,option:any)=>Promise<JobResult>) => {
+    const s = await generator(value,
     {filename: "editor.bgn"}).catch((e) => {
         return e as JobResult;
     });
@@ -231,20 +236,12 @@ const handleTokenize = async (value :string) => {
     return;
 }
 
+const handleTokenize = async (value :string) => {
+    await handleJSONOutput(value,caller.getTokens);
+}
+
 const handleDebugAST = async (value :string) => {
-    const s = await caller.getDebugAST(value,
-    {filename: "editor.bgn"}).catch((e) => {
-        return e as JobResult;
-    });
-    if(alreadyUpdated(s)) {
-        return;
-    }
-    if(s.stdout===undefined) throw new Error("stdout is undefined");
-    console.log(s.stdout);
-    console.log(s.stderr);
-    const js = JSON.parse(s.stdout);
-    createGenerated(JSON.stringify(js,null,4),"json");
-    return;
+    await handleJSONOutput(value,caller.getDebugAST);
 }
 
 const updateGenerated = async () => {
@@ -300,8 +297,6 @@ window.addEventListener("keydown",async (e) => {
 monaco.languages.register({ id: 'brgen' });
 const editor_model =  monaco.editor.createModel("", "brgen");
 
-
-
 editor_model.onDidChangeContent(async (e)=>{
     e.changes.forEach((change)=>{
         console.log(change);
@@ -342,8 +337,7 @@ const makeLink = (id :string,text :string,href :string) => {
     return link;
 }
 
-const select = makeListBox("language-select",
-[Language.TOKENIZE,Language.JSON_AST,Language.JSON_DEBUG_AST,Language.CPP_PROTOTYPE,Language.CPP,Language.GO]);
+const select = makeListBox("language-select",LanguageList);
 select.value = options.language_mode;
 select.style.top = "50%";
 select.style.left ="80%";
@@ -388,27 +382,11 @@ title_bar.appendChild(link);
 
 const changeLanguage = async (mode :string) => {
     select.value = mode;
-    switch(mode){
-        case Language.JSON_AST:
-            options.setLanguageMode(Language.JSON_AST);
-            break;
-        case Language.CPP:
-            options.setLanguageMode(Language.CPP);
-            break;
-        case Language.CPP_PROTOTYPE:
-            options.setLanguageMode(Language.CPP_PROTOTYPE);
-            break;
-        case Language.GO:
-            options.setLanguageMode(Language.GO);
-            break;
-        case Language.TOKENIZE:
-            options.setLanguageMode(Language.TOKENIZE);
-            break;
-        case Language.JSON_DEBUG_AST:
-            options.setLanguageMode(Language.JSON_DEBUG_AST);
-            break;
-        default:
-            throw new Error(`unknown language ${mode}`);
+    if(mode in LanguageList) {
+        options.setLanguageMode(mode as Language);
+    }
+    else{
+        throw new Error(`invalid language mode: ${mode}`);
     }
     await updateGenerated();
 }
@@ -424,7 +402,6 @@ if(src !== null) {
     editor.setValue(src);
 }
 else {
-    // イベント用
 const sample =`
 format WebSocketFrame:
     FIN :u1
@@ -447,3 +424,5 @@ format WebSocketFrame:
     changeLanguage(Language.CPP);
 }
 
+document.getElementById("ball-bound")?.remove();
+document.getElementById("ball")?.remove();
