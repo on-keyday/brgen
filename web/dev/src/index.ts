@@ -4,8 +4,9 @@ import "../node_modules/destyle.css/destyle.min.css";
 
 
 
-
 import * as caller from "./s2j/caller.js";
+
+caller.loadWorkers();
 
 /// <reference path="../node_modules/monaco-editor/dev/vs/loader.js" />
 
@@ -421,4 +422,3 @@ format WebSocketFrame:
     changeLanguage(Language.CPP);
 }
 
-caller.loadWorkers();
