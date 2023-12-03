@@ -199,7 +199,7 @@ export class EmWorkContext  {
 
 }
 
-import {Go} from "../lib/go_wasm_exec";
+import {Go} from "../lib/go_wasm_exec.js";
 
 export class GoWorkContext  {
     #go :Go;
