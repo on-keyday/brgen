@@ -1,0 +1,52 @@
+
+AEAD_LEN ::= 16
+
+format handshake_initiation:
+    message_type :u8
+    reserved_zero :[3]u8
+    sender_index :u32
+    unencrypted_ephemeral :[32]u8
+    encrypted_static :[32+AEAD_LEN]u8
+    encrypted_timestamp :[12+AEAD_LEN]u8
+    mac1 :[16]u8
+    mac2 :[16]u8
+
+format handshake_response:
+    message_type :u8
+    reserved_zero :[3]u8
+    sender_index :u32
+    receiver_index :u32
+    unencrypted_ephemeral :[32]u8
+    encrypted_nothing :[0+AEAD_LEN]u8
+    mac1 :[16]u8
+    mac2 :[16]u8
+
+#  packet_data {
+#    u8 message_type
+#    u8 reserved_zero[3]
+#    u32 receiver_index
+#    u64 counter
+#    u8 encrypted_encapsulated_packet[]
+# }
+
+format packet_data:
+    message_type :u8
+    reserved_zero :[3]u8
+    receiver_index :u32
+    counter :ul64
+    encrypted_encapsulated_packet :[..]u8
+
+# packet_cookie_reply {
+#    u8 message_type
+#    u8 reserved_zero[3]
+#    u32 receiver_index
+#    u8 nonce[24]
+#    u8 encrypted_cookie[AEAD_LEN(16)]
+# }
+
+format packet_cookie_reply:
+    message_type :u8
+    reserved_zero :[3]u8
+    receiver_index :u32
+    nonce :[24]u8
+    encrypted_cookie :[16+AEAD_LEN]u8
