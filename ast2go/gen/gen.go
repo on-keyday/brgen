@@ -4,10 +4,8 @@ import (
 	"fmt"
 	"go/ast"
 	"go/constant"
-	"go/format"
 	"go/token"
 	"io"
-	"runtime/debug"
 	"strings"
 
 	ast2go "github.com/on-keyday/brgen/ast2go/ast"
@@ -272,6 +270,7 @@ func (config *GenConfig) LookupGoConfig(prog *ast2go.Program) error {
 	})
 }
 
+/*
 func (g *Generator) printf(format string, v ...any) {
 	fmt.Fprintf(g.Output, format, v...)
 }
@@ -559,11 +558,11 @@ type MultiLineComment struct {
 }
 
 func (m *MultiLineComment) Encode() string {
-	return "/*" + m.Comment + "*/"
+	return "/*" + m.Comment + "* /"
 }
 
 func (m *MultiLineComment) Decode() string {
-	return "/*" + m.Comment + "*/"
+	return "/*" + m.Comment + "* /"
 }
 
 type Elif struct {
@@ -699,3 +698,4 @@ func (g *Generator) Generate(file *ast2go.AstFile) (err error) {
 	}
 	return nil
 }
+*/
