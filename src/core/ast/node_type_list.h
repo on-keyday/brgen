@@ -167,6 +167,9 @@ namespace brgen::ast {
                     else if constexpr (std::is_same_v<P, BitAlignment>) {
                         field(key, "bit_alignment");
                     }
+                    else if constexpr (std::is_same_v<P, Follow>) {
+                        field(key, "follow");
+                    }
                     else if constexpr (utils::helper::is_template<P>) {
                         using P1 = typename utils::helper::template_of_t<P>::template param_at<0>;
                         if constexpr (utils::helper::is_template_instance_of<P, std::shared_ptr>) {
@@ -370,6 +373,19 @@ namespace brgen::ast {
                         auto field = d.object();
                         field("name", bit_alignment_str[i]);
                         field("value", bit_alignment_str[i]);
+                    });
+                }
+            });
+        }
+        {
+            R p{follow_str, follow_str + follow_count};
+            field("follow", [&](auto&& d) {
+                auto field = d.array();
+                for (size_t i = 0; i < follow_count; i++) {
+                    field([&](auto&& d) {
+                        auto field = d.object();
+                        field("name", follow_str[i]);
+                        field("value", follow_str[i]);
                     });
                 }
             });

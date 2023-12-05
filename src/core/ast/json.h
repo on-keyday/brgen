@@ -324,78 +324,26 @@ namespace brgen::ast {
                 }
                 return res & parse_loc(target);
             }
-            else if constexpr (std::is_same_v<T, BinaryOp>) {
-                return (res & get_string(loc, key))
-                    .and_then([&](std::string&& s) -> result<void> {
-                        if (auto res = bin_op(s.c_str()); !res) {
-                            return unexpect(error(loc, s, " cannot convert to binary operator"));
-                        }
-                        else {
-                            target = *res;
-                        }
-                        return {};
-                    });
-            }
-            else if constexpr (std::is_same_v<T, UnaryOp>) {
-                return (res & get_string(loc, key))
-                    .and_then([&](std::string&& s) -> result<void> {
-                        if (auto res = unary_op(s.c_str()); !res) {
-                            return unexpect(error(loc, s, " cannot convert to unary operator"));
-                        }
-                        else {
-                            target = *res;
-                        }
-                        return {};
-                    });
-            }
-            else if constexpr (std::is_same_v<T, IdentUsage>) {
-                return (res & get_string(loc, key))
-                    .and_then([&](std::string&& s) -> result<void> {
-                        if (auto res = ident_usage(s.c_str()); !res) {
-                            return unexpect(error(loc, s, " cannot convert to unary operator"));
-                        }
-                        else {
-                            target = *res;
-                        }
-                        return {};
-                    });
-            }
-            else if constexpr (std::is_same_v<T,ConstantLevel>){
-                return (res & get_string(loc, key))
-                    .and_then([&](std::string&& s) -> result<void> {
-                        if (auto res = constant_level(s.c_str()); !res) {
-                            return unexpect(error(loc, s, " cannot convert to constant level"));
-                        }
-                        else {
-                            target = *res;
-                        }
-                        return {};
-                    });
-            }
-            else if constexpr (std::is_same_v<T, Endian>) {
-                return (res & get_string(loc, key))
-                    .and_then([&](std::string&& s) -> result<void> {
-                        if (auto res = endian_from_str(s.c_str()); !res) {
-                            return unexpect(error(loc, s, " cannot convert to endian"));
-                        }
-                        else {
-                            target = *res;
-                        }
-                        return {};
-                    });
-            }
-            else if constexpr(std::is_same_v<T, BitAlignment>){
-                return (res & get_string(loc, key))
-                    .and_then([&](std::string&& s) -> result<void> {
-                        if (auto res = bit_alignment(s.c_str()); !res) {
-                            return unexpect(error(loc, s, " cannot convert to bit alignment"));
-                        }
-                        else {
-                            target = *res;
-                        }
-                        return {};
-                    });
-            }
+#define STR_TO_ENUM(Typ,convert, err)\
+else if constexpr(std::is_same_v<T,Typ>)  {                                               \
+    return (res & get_string(loc, key)).and_then([&](std::string&& s) -> result<void> { \
+        if (auto res = convert(s.c_str()); !res) {                               \
+            return unexpect(error(loc, s, "cannot convert to" err));             \
+        }                                                                        \
+        else {                                                                   \
+            target = *res;                                                       \
+        }    \
+        return {};                                                                    \
+    });\
+}
+
+            STR_TO_ENUM(BinaryOp,bin_op,"binary operator")
+            STR_TO_ENUM(UnaryOp,unary_op,"unary operator")
+            STR_TO_ENUM(IdentUsage,ident_usage,"ident usage")
+            STR_TO_ENUM(ConstantLevel,constant_level,"constant level")
+            STR_TO_ENUM(Endian,endian_from_str,"endian")
+            STR_TO_ENUM(BitAlignment,bit_alignment,"bit alignment")
+            STR_TO_ENUM(Follow,follow_from_str,"follow")
             else if constexpr (utils::helper::is_template_instance_of<T, std::shared_ptr> ||
                                utils::helper::is_template_instance_of<T, std::weak_ptr> ||
                                utils::helper::is_template_instance_of<T, std::list> ||

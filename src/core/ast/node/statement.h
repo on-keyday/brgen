@@ -93,14 +93,45 @@ namespace brgen::ast {
         }
     };
 
+    // Follow means which type of field is followed after
+    enum class Follow {
+        unknown,  // not analyzed or not a target
+        end,      // end of struct
+        fixed,    // fixed value (like "a" or u16(0x6))
+        normal,   // otherwise
+    };
+
+    constexpr const char* follow_str[] = {
+        "unknown",
+        "end",
+        "fixed",
+        "normal",
+        nullptr,
+    };
+
+    constexpr size_t follow_count = std::size(follow_str) - 1;
+
+    constexpr void as_json(Follow f, auto& j) {
+        j.string(follow_str[static_cast<int>(f)]);
+    }
+
+    constexpr std::optional<Follow> follow_from_str(std::string_view str) {
+        for (size_t i = 0; i < follow_count; i++) {
+            if (str == follow_str[i]) {
+                return static_cast<Follow>(i);
+            }
+        }
+        return std::nullopt;
+    }
+
     struct Field : Member {
         define_node_type(NodeType::field);
-        // std::shared_ptr<Ident> ident;
         lexer::Loc colon_loc;
         std::shared_ptr<Type> field_type;
         std::shared_ptr<Expr> raw_arguments;
         std::list<std::shared_ptr<Expr>> arguments;
         BitAlignment bit_alignment = BitAlignment::not_target;
+        Follow follow = Follow::unknown;
 
         Field(lexer::Loc l)
             : Member(l, NodeType::field) {}
@@ -117,6 +148,7 @@ namespace brgen::ast {
             sdebugf_omit(raw_arguments);
             sdebugf(arguments);
             sdebugf(bit_alignment);
+            sdebugf(follow);
         }
     };
 
