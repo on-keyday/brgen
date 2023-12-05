@@ -142,6 +142,17 @@ export function isBitAlignment(obj: any): obj is BitAlignment {
 	return obj && typeof obj === 'string' && (obj === "byte_aligned" || obj === "bit_1" || obj === "bit_2" || obj === "bit_3" || obj === "bit_4" || obj === "bit_5" || obj === "bit_6" || obj === "bit_7" || obj === "not_target" || obj === "not_decidable")
 }
 
+export enum Follow {
+	unknown = "unknown",
+	end = "end",
+	fixed = "fixed",
+	normal = "normal",
+};
+
+export function isFollow(obj: any): obj is Follow {
+	return obj && typeof obj === 'string' && (obj === "unknown" || obj === "end" || obj === "fixed" || obj === "normal")
+}
+
 export interface Node {
 	readonly node_type: NodeType;
 	loc: Loc;
@@ -744,6 +755,7 @@ export interface Field extends Member {
 	raw_arguments: Expr|null;
 	arguments: Expr[];
 	bit_alignment: BitAlignment;
+	follow: Follow;
 }
 
 export function isField(obj: any): obj is Field {
@@ -1531,6 +1543,7 @@ export function parseAST(obj: any): Program {
 				raw_arguments: null,
 				arguments: [],
 				bit_alignment: BitAlignment.byte_aligned,
+				follow: Follow.unknown,
 			}
 			c.node.push(n);
 			break;
@@ -3140,6 +3153,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at Field::bit_alignment');
 			}
 			n.bit_alignment = tmpbit_alignment;
+			const tmpfollow = on.body?.follow;
+			if (!isFollow(tmpfollow)) {
+				throw new Error('invalid node list at Field::follow');
+			}
+			n.follow = tmpfollow;
 			break;
 		}
 		case "format": {

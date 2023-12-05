@@ -568,6 +568,27 @@ impl TryFrom<&str> for BitAlignment {
 	}
 }
 
+#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+#[serde(rename_all = "snake_case")]pub enum Follow {
+	Unknown,
+	End,
+	Fixed,
+	Normal,
+}
+
+impl TryFrom<&str> for Follow {
+	type Error = ();
+	fn try_from(s:&str)->Result<Self,()>{
+		match s{
+			"unknown" =>Ok(Self::Unknown),
+			"end" =>Ok(Self::End),
+			"fixed" =>Ok(Self::Fixed),
+			"normal" =>Ok(Self::Normal),
+			_=> Err(()),
+		}
+	}
+}
+
 #[derive(Debug,Clone)]
 pub enum Node {
 	Program(Rc<RefCell<Program>>),
@@ -5336,6 +5357,7 @@ pub struct Field {
 	pub raw_arguments: Option<Expr>,
 	pub arguments: Vec<Expr>,
 	pub bit_alignment: BitAlignment,
+	pub follow: Follow,
 }
 
 impl TryFrom<&Member> for Rc<RefCell<Field>> {
@@ -6539,6 +6561,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				raw_arguments: None,
 				arguments: Vec::new(),
 				bit_alignment: BitAlignment::ByteAligned,
+				follow: Follow::Unknown,
 				})))
 			},
 			NodeType::Format => {
@@ -9533,6 +9556,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
 					},
 					None=>return Err(Error::MismatchJSONType(bit_alignment_body.into(),JSONType::String)),
+				};
+				let follow_body = match raw_node.body.get("follow") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"follow")),
+				};
+				node.borrow_mut().follow = match follow_body.as_str() {
+					Some(v)=>match Follow::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(follow_body.into(),JSONType::String)),
 				};
 			},
 			NodeType::Format => {

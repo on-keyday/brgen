@@ -825,6 +825,38 @@ int ast2c_BitAlignment_from_string(const char* str, ast2c_BitAlignment* out) {
 	return 0;
 }
 
+const char* ast2c_Follow_to_string(ast2c_Follow val) {
+	switch(val) {
+	case AST2C_FOLLOW_UNKNOWN: return "unknown";
+	case AST2C_FOLLOW_END: return "end";
+	case AST2C_FOLLOW_FIXED: return "fixed";
+	case AST2C_FOLLOW_NORMAL: return "normal";
+	default: return NULL;
+	}
+}
+
+// returns 1 if succeed 0 if failed
+int ast2c_Follow_from_string(const char* str, ast2c_Follow* out) {
+	if (!str||!out) return 0;
+	if (strcmp(str, "unknown") == 0) {
+		*out = AST2C_FOLLOW_UNKNOWN;
+		return 1;
+	}
+	if (strcmp(str, "end") == 0) {
+		*out = AST2C_FOLLOW_END;
+		return 1;
+	}
+	if (strcmp(str, "fixed") == 0) {
+		*out = AST2C_FOLLOW_FIXED;
+		return 1;
+	}
+	if (strcmp(str, "normal") == 0) {
+		*out = AST2C_FOLLOW_NORMAL;
+		return 1;
+	}
+	return 0;
+}
+
 // returns 1 if succeed 0 if failed
 int ast2c_Program_parse(ast2c_Ast* ast,ast2c_Program* s,ast2c_json_handlers* h, void* obj) {
 	if (!ast||!s||!h||!obj) {
@@ -2378,6 +2410,7 @@ int ast2c_Field_parse(ast2c_Ast* ast,ast2c_Field* s,ast2c_json_handlers* h, void
 	void* raw_arguments = h->object_get(h, obj_body, "raw_arguments");
 	void* arguments = h->object_get(h, obj_body, "arguments");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
+	void* follow = h->object_get(h, obj_body, "follow");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_Field::loc is null"); } return 0; }
 	if (!belong) { if(h->error) { h->error(h,belong, "ast2c_Field::belong is null"); } return 0; }
 	if (!belong_struct) { if(h->error) { h->error(h,belong_struct, "ast2c_Field::belong_struct is null"); } return 0; }
@@ -2391,6 +2424,7 @@ int ast2c_Field_parse(ast2c_Ast* ast,ast2c_Field* s,ast2c_json_handlers* h, void
 		return NULL;
 	}
 	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_Field::bit_alignment is null"); } return 0; }
+	if (!follow) { if(h->error) { h->error(h,follow, "ast2c_Field::follow is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_Field::loc"); }
 		goto error;

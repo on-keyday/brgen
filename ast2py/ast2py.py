@@ -172,6 +172,13 @@ class BitAlignment(PyEnum):
     NOT_DECIDABLE = "not_decidable"
 
 
+class Follow(PyEnum):
+    UNKNOWN = "unknown"
+    END = "end"
+    FIXED = "fixed"
+    NORMAL = "normal"
+
+
 class Node:
     loc: Loc
 
@@ -452,6 +459,7 @@ class Field(Member):
     raw_arguments: Optional[Expr]
     arguments: List[Expr]
     bit_alignment: BitAlignment
+    follow: Follow
 
 
 class Format(Member):
@@ -1438,6 +1446,7 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].raw_arguments = None
                 node[i].arguments = [(node[x] if isinstance(node[x],Expr) else raiseError(TypeError('type mismatch at Field::arguments'))) for x in ast.node[i].body["arguments"]]
                 node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
+                node[i].follow = Follow(ast.node[i].body["follow"])
             case NodeType.FORMAT:
                 if ast.node[i].body["belong"] is not None:
                     x = node[ast.node[i].body["belong"]]

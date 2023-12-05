@@ -1135,6 +1135,50 @@ func (n *BitAlignment) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+type Follow int
+
+const (
+	FollowUnknown Follow = 0
+	FollowEnd     Follow = 1
+	FollowFixed   Follow = 2
+	FollowNormal  Follow = 3
+)
+
+func (n Follow) String() string {
+	switch n {
+	case FollowUnknown:
+		return "unknown"
+	case FollowEnd:
+		return "end"
+	case FollowFixed:
+		return "fixed"
+	case FollowNormal:
+		return "normal"
+	default:
+		return fmt.Sprintf("Follow(%d)", n)
+	}
+}
+
+func (n *Follow) UnmarshalJSON(data []byte) error {
+	var tmp string
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+	switch tmp {
+	case "unknown":
+		*n = FollowUnknown
+	case "end":
+		*n = FollowEnd
+	case "fixed":
+		*n = FollowFixed
+	case "normal":
+		*n = FollowNormal
+	default:
+		return fmt.Errorf("unknown Follow: %q", tmp)
+	}
+	return nil
+}
+
 type Node interface {
 	isNode()
 	GetLoc() Loc
@@ -2331,6 +2375,7 @@ type Field struct {
 	RawArguments Expr
 	Arguments    []Expr
 	BitAlignment BitAlignment
+	Follow       Follow
 }
 
 func (n *Field) isMember() {}
@@ -3671,6 +3716,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				RawArguments *uintptr     `json:"raw_arguments"`
 				Arguments    []uintptr    `json:"arguments"`
 				BitAlignment BitAlignment `json:"bit_alignment"`
+				Follow       Follow       `json:"follow"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -3696,6 +3742,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				v.Arguments[j] = n.node[k].(Expr)
 			}
 			v.BitAlignment = tmp.BitAlignment
+			v.Follow = tmp.Follow
 		case NodeTypeFormat:
 			v := n.node[i].(*Format)
 			var tmp struct {

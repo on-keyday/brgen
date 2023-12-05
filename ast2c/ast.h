@@ -42,6 +42,7 @@ typedef enum ast2c_Endian ast2c_Endian;
 typedef enum ast2c_TokenTag ast2c_TokenTag;
 typedef enum ast2c_ConstantLevel ast2c_ConstantLevel;
 typedef enum ast2c_BitAlignment ast2c_BitAlignment;
+typedef enum ast2c_Follow ast2c_Follow;
 typedef struct ast2c_Node ast2c_Node;
 typedef struct ast2c_Expr ast2c_Expr;
 typedef struct ast2c_Stmt ast2c_Stmt;
@@ -296,6 +297,15 @@ enum ast2c_BitAlignment {
 };
 const char* ast2c_BitAlignment_to_string(ast2c_BitAlignment);
 int ast2c_BitAlignment_from_string(const char*,ast2c_BitAlignment*);
+
+enum ast2c_Follow {
+	AST2C_FOLLOW_UNKNOWN,
+	AST2C_FOLLOW_END,
+	AST2C_FOLLOW_FIXED,
+	AST2C_FOLLOW_NORMAL,
+};
+const char* ast2c_Follow_to_string(ast2c_Follow);
+int ast2c_Follow_from_string(const char*,ast2c_Follow*);
 
 struct ast2c_Pos {
 	uint64_t begin;
@@ -1004,6 +1014,7 @@ struct ast2c_Field {
 	ast2c_Expr** arguments;
 	size_t arguments_size;
 	ast2c_BitAlignment bit_alignment;
+	ast2c_Follow follow;
 };
 
 // returns 1 if succeed 0 if failed

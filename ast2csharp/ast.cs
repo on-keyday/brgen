@@ -163,6 +163,12 @@ Bit7,
 NotTarget,
 NotDecidable,
 }
+public enum Follow {
+Unknown,
+End,
+Fixed,
+Normal,
+}
 public interface Node {
 	public Loc Loc {get; set;}
 }
@@ -528,6 +534,7 @@ public class Field : Member{
 	public Expr? RawArguments{get;set;}
 	public List<Expr>? Arguments{get;set;}
 	public BitAlignment BitAlignment{get;set;}
+	public Follow Follow{get;set;}
 }
 public class Format : Member{
 	public Loc Loc{get;set;}
