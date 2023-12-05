@@ -830,6 +830,7 @@ const char* ast2c_Follow_to_string(ast2c_Follow val) {
 	case AST2C_FOLLOW_UNKNOWN: return "unknown";
 	case AST2C_FOLLOW_END: return "end";
 	case AST2C_FOLLOW_FIXED: return "fixed";
+	case AST2C_FOLLOW_CONSTANT: return "constant";
 	case AST2C_FOLLOW_NORMAL: return "normal";
 	default: return NULL;
 	}
@@ -848,6 +849,10 @@ int ast2c_Follow_from_string(const char* str, ast2c_Follow* out) {
 	}
 	if (strcmp(str, "fixed") == 0) {
 		*out = AST2C_FOLLOW_FIXED;
+		return 1;
+	}
+	if (strcmp(str, "constant") == 0) {
+		*out = AST2C_FOLLOW_CONSTANT;
 		return 1;
 	}
 	if (strcmp(str, "normal") == 0) {

@@ -176,6 +176,7 @@ class Follow(PyEnum):
     UNKNOWN = "unknown"
     END = "end"
     FIXED = "fixed"
+    CONSTANT = "constant"
     NORMAL = "normal"
 
 

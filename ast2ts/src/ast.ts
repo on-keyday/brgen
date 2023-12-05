@@ -146,11 +146,12 @@ export enum Follow {
 	unknown = "unknown",
 	end = "end",
 	fixed = "fixed",
+	constant = "constant",
 	normal = "normal",
 };
 
 export function isFollow(obj: any): obj is Follow {
-	return obj && typeof obj === 'string' && (obj === "unknown" || obj === "end" || obj === "fixed" || obj === "normal")
+	return obj && typeof obj === 'string' && (obj === "unknown" || obj === "end" || obj === "fixed" || obj === "constant" || obj === "normal")
 }
 
 export interface Node {

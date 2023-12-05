@@ -138,9 +138,9 @@ namespace brgen::middle {
                     ast::traverse(n, [&](auto&& n) {
                         f(f, n);
                     });
-                    bool has_field = false;
                     ast::BitAlignment alignment = ast::BitAlignment::byte_aligned;
                     size_t bit_size = -1;
+                    ast::Field* prev_field = nullptr;
                     for (auto& fields : t->fields) {
                         if (auto field = ast::as<ast::Field>(fields); field) {
                             // TODO(on-keyday): bit alignment and size of field is affected by field argument
@@ -148,7 +148,19 @@ namespace brgen::middle {
                                 field->bit_alignment = ast::BitAlignment::not_target;
                                 continue;
                             }
-                            has_field = true;
+                            if (prev_field) {
+                                // TODO(on-keyday): also, like a: u8(0x8) is fixed
+                                if (ast::as<ast::StrLiteralType>(field->field_type)) {
+                                    prev_field->follow = ast::Follow::constant;
+                                }
+                                else if (field->field_type->bit_size != 0) {
+                                    prev_field->follow = ast::Follow::fixed;
+                                }
+                                else {
+                                    prev_field->follow = ast::Follow::normal;
+                                }
+                            }
+                            prev_field = field;
                             if (field->field_type->bit_alignment == ast::BitAlignment::not_decidable) {
                                 alignment = ast::BitAlignment::not_decidable;
                             }
@@ -173,7 +185,8 @@ namespace brgen::middle {
                             }
                         }
                     }
-                    if (has_field) {
+                    if (prev_field) {
+                        prev_field->follow = ast::Follow::end;
                         t->bit_alignment = alignment;
                         t->bit_size = bit_size == -1 ? 0 : bit_size;
                     }

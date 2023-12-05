@@ -167,6 +167,7 @@ public enum Follow {
 Unknown,
 End,
 Fixed,
+Constant,
 Normal,
 }
 public interface Node {

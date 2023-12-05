@@ -302,6 +302,7 @@ enum ast2c_Follow {
 	AST2C_FOLLOW_UNKNOWN,
 	AST2C_FOLLOW_END,
 	AST2C_FOLLOW_FIXED,
+	AST2C_FOLLOW_CONSTANT,
 	AST2C_FOLLOW_NORMAL,
 };
 const char* ast2c_Follow_to_string(ast2c_Follow);

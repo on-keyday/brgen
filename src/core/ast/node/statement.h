@@ -95,16 +95,18 @@ namespace brgen::ast {
 
     // Follow means which type of field is followed after
     enum class Follow {
-        unknown,  // not analyzed or not a target
-        end,      // end of struct
-        fixed,    // fixed value (like "a" or u16(0x6))
-        normal,   // otherwise
+        unknown,   // not analyzed or not a target
+        end,       // end of struct
+        fixed,     // fixed size (like [4]u8)
+        constant,  // constant value (like "a")
+        normal,    // otherwise
     };
 
     constexpr const char* follow_str[] = {
         "unknown",
         "end",
         "fixed",
+        "constant",
         "normal",
         nullptr,
     };

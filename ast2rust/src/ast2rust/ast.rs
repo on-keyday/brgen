@@ -573,6 +573,7 @@ impl TryFrom<&str> for BitAlignment {
 	Unknown,
 	End,
 	Fixed,
+	Constant,
 	Normal,
 }
 
@@ -583,6 +584,7 @@ impl TryFrom<&str> for Follow {
 			"unknown" =>Ok(Self::Unknown),
 			"end" =>Ok(Self::End),
 			"fixed" =>Ok(Self::Fixed),
+			"constant" =>Ok(Self::Constant),
 			"normal" =>Ok(Self::Normal),
 			_=> Err(()),
 		}

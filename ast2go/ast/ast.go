@@ -1138,10 +1138,11 @@ func (n *BitAlignment) UnmarshalJSON(data []byte) error {
 type Follow int
 
 const (
-	FollowUnknown Follow = 0
-	FollowEnd     Follow = 1
-	FollowFixed   Follow = 2
-	FollowNormal  Follow = 3
+	FollowUnknown  Follow = 0
+	FollowEnd      Follow = 1
+	FollowFixed    Follow = 2
+	FollowConstant Follow = 3
+	FollowNormal   Follow = 4
 )
 
 func (n Follow) String() string {
@@ -1152,6 +1153,8 @@ func (n Follow) String() string {
 		return "end"
 	case FollowFixed:
 		return "fixed"
+	case FollowConstant:
+		return "constant"
 	case FollowNormal:
 		return "normal"
 	default:
@@ -1171,6 +1174,8 @@ func (n *Follow) UnmarshalJSON(data []byte) error {
 		*n = FollowEnd
 	case "fixed":
 		*n = FollowFixed
+	case "constant":
+		*n = FollowConstant
 	case "normal":
 		*n = FollowNormal
 	default:
