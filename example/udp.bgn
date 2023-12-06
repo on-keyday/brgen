@@ -4,4 +4,4 @@ format UDPSegment:
     DstPort :u16
     Length  :u16
     Checksum :u16
-    Data :[Length]u8
+    Data :[Length-8]u8
