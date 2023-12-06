@@ -14,7 +14,7 @@
     {
       "generator": "./tool/json2go.exe",
       "output_dir": "./ignore/examples/go/",
-      "args": ["-p"]
+      "args": []
     }
   ]
 }

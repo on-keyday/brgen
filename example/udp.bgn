@@ -1,0 +1,7 @@
+
+format UDPSegment:
+    SrcPort :u16
+    DstPort :u16
+    Length  :u16
+    Checksum :u16
+    Data :[Length]u8
