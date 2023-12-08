@@ -1087,7 +1087,8 @@ namespace brgen::ast {
                 auto m_scope = state.enter_member(fmt);
                 fmt->body = parse_indent_block(fmt);
             }
-
+            // because fmt->ident->expr_type = fmt->body->struct_type
+            // makes circular reference, so not set expr_type
             state.add_to_struct(fmt);
 
             // fetch encode_fn and decode_fn
@@ -1125,7 +1126,8 @@ namespace brgen::ast {
                 auto m_scope = state.enter_member(state_);
                 state_->body = parse_indent_block(state_);
             }
-
+            // because state_->ident->expr_type = state_->body->struct_type
+            // makes circular reference, so not set expr_type
             state.add_to_struct(state_);
 
             return state_;
