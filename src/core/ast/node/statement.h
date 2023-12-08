@@ -7,10 +7,14 @@
 namespace brgen::ast {
 
     struct StructType;
+    struct Function;
 
     struct Format : Member {
         define_node_type(NodeType::format);
         std::shared_ptr<IndentBlock> body;
+        std::weak_ptr<Function> encode_fn;
+        std::weak_ptr<Function> decode_fn;
+        std::vector<std::weak_ptr<Function>> cast_fns;
         Format(lexer::Loc l)
             : Member(l, NodeType::format) {}
 
@@ -21,6 +25,9 @@ namespace brgen::ast {
         void dump(auto&& field_) {
             Member::dump(field_);
             sdebugf(body);
+            sdebugf(encode_fn);
+            sdebugf(decode_fn);
+            sdebugf(cast_fns);
         }
     };
 

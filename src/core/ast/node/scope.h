@@ -15,6 +15,30 @@ namespace brgen::ast {
         std::weak_ptr<Node> owner;
         bool branch_root = false;
 
+        std::optional<std::shared_ptr<Ident>> lookup_current(auto&& fn, ast::Ident* self = nullptr) {
+            bool myself_appear = !self;
+            for (auto it = objects.rbegin(); it != objects.rend(); it++) {
+                auto& val = *it;
+                auto obj = val.lock();
+                if (!myself_appear) {
+                    if (obj.get() == self) {
+                        myself_appear = true;
+                    }
+                    continue;
+                }
+                if (fn(obj)) {
+                    return obj;
+                }
+            }
+            if (auto got = prev.lock()) {
+                if (got->branch.get() == this) {
+                    return std::nullopt;
+                }
+                return got->template lookup_local(fn);
+            }
+            return std::nullopt;
+        }
+
         std::optional<std::shared_ptr<Ident>> lookup_local(auto&& fn, ast::Ident* self = nullptr) {
             if (auto locked = owner.lock(); locked && locked.get()->node_type == NodeType::program) {
                 return std::nullopt;

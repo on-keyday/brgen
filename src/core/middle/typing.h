@@ -126,6 +126,32 @@ namespace brgen::middle {
                 }
                 return common_type(a, b_u->common_type);
             }
+            if (auto a_c = ast::as<ast::StructType>(a)) {
+                auto fmt = ast::as<ast::Format>(a_c->base.lock());
+                if (fmt) {
+                    for (auto& fn : fmt->cast_fns) {
+                        auto c = fn.lock();
+                        // return type cannot be int literal type
+                        auto typ = common_type(c->return_type, b);
+                        if (typ) {
+                            return typ;
+                        }
+                    }
+                }
+            }
+            if (auto b_c = ast::as<ast::StructType>(b)) {
+                auto fmt = ast::as<ast::Format>(b_c->base.lock());
+                if (fmt) {
+                    for (auto& fn : fmt->cast_fns) {
+                        auto c = fn.lock();
+                        // return type cannot be int literal type
+                        auto typ = common_type(c->return_type, a);
+                        if (typ) {
+                            return typ;
+                        }
+                    }
+                }
+            }
             return nullptr;
         }
 
@@ -170,7 +196,7 @@ namespace brgen::middle {
             }
         }
 
-        std::shared_ptr<ast::Type> assigning_type(const std::shared_ptr<ast::Type>& base) {
+        std::shared_ptr<ast::Type> int_literal_to_int_type(const std::shared_ptr<ast::Type>& base) {
             if (auto ty = ast::as<ast::IntLiteralType>(base)) {
                 auto aligned = ty->get_aligned_bit();
                 return std::make_shared<ast::IntType>(ty->loc, aligned, ast::Endian::unspec, false);
@@ -200,8 +226,8 @@ namespace brgen::middle {
             }
             else if (left->node_type == ast::NodeType::int_literal_type &&
                      right->node_type == ast::NodeType::int_literal_type) {
-                left = assigning_type(left);
-                right = assigning_type(right);
+                left = int_literal_to_int_type(left);
+                right = int_literal_to_int_type(right);
                 auto li = ast::as<ast::IntType>(left);
                 auto ri = ast::as<ast::IntType>(right);
                 if (li->bit_size > ri->bit_size) {
@@ -268,7 +294,7 @@ namespace brgen::middle {
             if (!check_right_typed()) {
                 return;
             }
-            auto new_type = assigning_type(right->expr_type);
+            auto new_type = int_literal_to_int_type(right->expr_type);
             if (b->op == ast::BinaryOp::assign) {
                 if (left_ident && left_ident->usage == ast::IdentUsage::unknown) {
                     error(left_ident->loc, "identifier ", left_ident->ident, " is not defined before; use := to define identifier").report();
@@ -457,10 +483,6 @@ namespace brgen::middle {
             auto op = b->op;
             auto& lty = b->left->expr_type;
             auto& rty = b->right->expr_type;
-            auto report_binary_error = [&] {
-                error(b->loc, "binary op ", *ast::bin_op_str(b->op), " is not valid")
-                    .report();
-            };
             if (!lty || !rty) {
                 warn_not_typed(b);
                 return;  // not typed yet
@@ -473,6 +495,12 @@ namespace brgen::middle {
                 warn_type_not_found(b);
                 return;
             }
+            auto report_binary_error = [&] {
+                error(b->loc, "binary op ", *ast::bin_op_str(b->op), " is not valid")
+                    .error(b->left->loc, "left type is ", ast::node_type_to_string(cmp_lty->node_type))
+                    .error(b->right->loc, "right type is ", ast::node_type_to_string(cmp_rty->node_type))
+                    .report();
+            };
             switch (op) {
                 case ast::BinaryOp::left_logical_shift:
                 case ast::BinaryOp::right_logical_shift:
@@ -481,9 +509,9 @@ namespace brgen::middle {
                 case ast::BinaryOp::mul:
                 case ast::BinaryOp::div:
                 case ast::BinaryOp::mod: {
-                    if (lty->node_type == ast::NodeType::int_type &&
-                        rty->node_type == ast::NodeType::int_type) {
-                        b->expr_type = std::move(lty);
+                    auto typ = common_type(cmp_lty, cmp_rty);
+                    if (typ) {
+                        b->expr_type = std::move(typ);
                         return;
                     }
                     report_binary_error();
@@ -886,9 +914,7 @@ namespace brgen::middle {
                     s->base = struct_->body->struct_type;
                 }
                 else if (auto state_ = ast::as<ast::State>(member)) {
-                    error(s->loc, "state ", ident->ident, " is not usable for field type")
-                        .error(member->ident->loc, "state ", ident->ident, " is defined here")
-                        .report();
+                    s->base = state_->body->struct_type;
                 }
             }
             return;

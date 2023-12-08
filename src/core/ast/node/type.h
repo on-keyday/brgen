@@ -296,8 +296,16 @@ namespace brgen::ast {
         }
 
         std::shared_ptr<Member> lookup(std::string_view key) {
+            return lookup([&](auto& f) {
+                return f->ident && f->ident->ident == key;
+            });
+        }
+
+        std::shared_ptr<Member> lookup(auto&& cond)
+            requires std::is_invocable_v<decltype(cond), std::shared_ptr<Member>&>
+        {
             for (auto& f : fields) {
-                if (f->ident && f->ident->ident == key) {
+                if (cond(f)) {
                     return f;
                 }
             }

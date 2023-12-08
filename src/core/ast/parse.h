@@ -619,12 +619,32 @@ namespace brgen::ast {
             return false;
         }
 
-        void check_assignment(ast::Binary* l) {
+        void check_duplicated_def(ast::Ident* ident) {
+            auto found = ident->scope->lookup_current(
+                [&](std::shared_ptr<ast::Ident>& i) {
+                    if (i->ident == ident->ident) {
+                        return true;
+                    }
+                    return false;
+                },
+                ident);
+            if (found) {
+                error(ident->loc, "duplicate definition of ", ident->ident)
+                    .error((*found)->loc, "previous definition is here")
+                    .report();
+            }
+        }
+
+        void check_assignment(const std::shared_ptr<Binary>& l) {
             if (l->op == ast::BinaryOp::define_assign ||
                 l->op == ast::BinaryOp::const_assign) {
-                if (!ast::as<ast::Ident>(l->left.get())) {
-                    s.report_error(l->left->loc, "left of =,:=,::= must be ident");
+                auto ident = ast::as<ast::Ident>(l->left);
+                if (!ident) {
+                    s.report_error(l->left->loc, "left of := or ::= must be ident");
                 }
+                ident->usage = l->op == ast::BinaryOp::define_assign ? ast::IdentUsage::define_variable : ast::IdentUsage::define_const;
+                ident->base = l;
+                check_duplicated_def(ident);
             }
             else if (l->op == ast::BinaryOp::assign) {
                 if (!is_finally_ident(l->left.get())) {
@@ -726,7 +746,7 @@ namespace brgen::ast {
                         auto op = pop_stack();
                         auto cop = static_cast<Cond*>(op.expr.get());
                         if (!cop->then || !cop->cond) {
-                            s.report_error("expect cond with `cond` but not; parser bug");
+                            s.report_error("expect cond with `cond` and `then` but not; parser bug");
                         }
                         cop->els = std::move(expr);
                         expr = std::move(op.expr);
@@ -740,7 +760,7 @@ namespace brgen::ast {
                             s.report_error("expect binary with `left` but not; parser bug");
                         }
                         b->right = std::move(expr);
-                        check_assignment(b);
+                        check_assignment(ast::cast_to<Binary>(op.expr));
                         expr = std::move(op.expr);
                     }
                 }
@@ -903,11 +923,6 @@ namespace brgen::ast {
                 return std::make_shared<ArrayType>(arr_begin->loc, std::move(expr), end_tok.loc, std::move(base_type), true);
             }
 
-            if (auto lit = s.consume_token(lexer::Tag::int_literal)) {
-                auto literal = std::make_shared<IntLiteral>(lit->loc, std::move(lit->token));
-                return std::make_shared<IntLiteralType>(std::move(literal), true);
-            }
-
             if (auto lit = s.consume_token(lexer::Tag::str_literal)) {
                 auto literal = std::make_shared<StrLiteral>(lit->loc, std::move(lit->token));
                 return std::make_shared<StrLiteralType>(std::move(literal), true);
@@ -974,6 +989,7 @@ namespace brgen::ast {
                 field->ident->base = field;
                 field->ident->usage = IdentUsage::define_field;
                 field->ident->constant_level = ConstantLevel::variable;
+                check_duplicated_def(field->ident.get());
             }
             field->belong = state.current_member();
 
@@ -1004,6 +1020,7 @@ namespace brgen::ast {
             enum_->ident = parse_ident();
             enum_->ident->usage = IdentUsage::define_enum;
             enum_->ident->base = enum_;
+            check_duplicated_def(enum_->ident.get());
             enum_->enum_type = std::make_shared<EnumType>(enum_->loc);
             enum_->enum_type->base = enum_;
             must_consume_indent_sign();
@@ -1026,6 +1043,7 @@ namespace brgen::ast {
                 ident->usage = IdentUsage::define_enum_member;
                 ident->expr_type = enum_->enum_type;
                 ident->constant_level = ConstantLevel::constant;
+                check_duplicated_def(ident.get());
                 auto member = std::make_shared<EnumMember>(ident->loc);
                 member->ident = ident;
                 member->belong = enum_;
@@ -1061,12 +1079,30 @@ namespace brgen::ast {
             fmt->ident = parse_ident();
             fmt->ident->usage = IdentUsage::define_format;
             fmt->ident->base = fmt;
+            check_duplicated_def(fmt->ident.get());
             {
                 auto m_scope = state.enter_member(fmt);
                 fmt->body = parse_indent_block(fmt);
             }
 
             state.add_to_struct(fmt);
+
+            // fetch encode_fn and decode_fn
+            auto enc = fmt->body->struct_type->lookup("encode");
+            if (auto fn = as<Function>(enc)) {
+                fmt->encode_fn = cast_to<Function>(enc);
+            }
+            auto dec = fmt->body->struct_type->lookup("decode");
+            if (auto fn = as<Function>(dec)) {
+                fmt->decode_fn = cast_to<Function>(dec);
+            }
+            // lookup cast fn
+            fmt->body->struct_type->lookup([&](std::shared_ptr<Member>& m) {
+                if (auto fn = ast::as<ast::Function>(m); fn && fn->is_cast) {
+                    fmt->cast_fns.push_back(ast::cast_to<ast::Function>(m));
+                }
+                return false;
+            });
 
             return fmt;
         }
@@ -1081,6 +1117,7 @@ namespace brgen::ast {
             state_->ident = parse_ident();
             state_->ident->usage = IdentUsage::define_state;
             state_->ident->base = state_;
+            check_duplicated_def(state_->ident.get());
             {
                 auto m_scope = state.enter_member(state_);
                 state_->body = parse_indent_block(state_);
@@ -1105,6 +1142,7 @@ namespace brgen::ast {
             fn->ident = parse_ident();
             fn->ident->usage = fn->is_cast ? IdentUsage::define_cast_fn : IdentUsage::define_fn;
             fn->ident->base = fn;
+            check_duplicated_def(fn->ident.get());
             fn->ident->constant_level = ConstantLevel::constant;
             fn->belong = state.current_member();
             fn->func_type = std::make_shared<FunctionType>(fn->loc);
