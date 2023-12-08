@@ -18,7 +18,7 @@ format HeaderChunk:
 
 format SMPTE:
     frames_per_second : ub7
-    ticks_per_frame : ub5
+    ticks_per_frame : ub8
 
 format Varint:
     value :u32

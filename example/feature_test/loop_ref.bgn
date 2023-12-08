@@ -1,0 +1,10 @@
+
+format A:
+    c :C
+
+format B:
+    a :A
+
+format C:
+    b :B
+

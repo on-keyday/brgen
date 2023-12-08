@@ -1088,7 +1088,6 @@ namespace brgen::ast {
                 fmt->body = parse_indent_block(fmt);
             }
 
-            fmt->ident->expr_type = fmt->body->struct_type;
             state.add_to_struct(fmt);
 
             // fetch encode_fn and decode_fn
@@ -1127,7 +1126,6 @@ namespace brgen::ast {
                 state_->body = parse_indent_block(state_);
             }
 
-            state_->ident->expr_type = state_->body->struct_type;
             state.add_to_struct(state_);
 
             return state_;
