@@ -22,6 +22,7 @@ set(SUFFIX ".wasm")
 endif()
 
 add_custom_target(json2go ALL COMMAND "${GO_COMPILER}" "build" "${CMAKE_GO_FLAGS}" "-o" "${CMAKE_BINARY_DIR}/tool/json2go${SUFFIX}" "${CMAKE_SOURCE_DIR}/src/tool/json2go" DEPENDS "${CMAKE_SOURCE_DIR}/src/tool/json2go" "${CMAKE_SOURCE_DIR}/ast2go")
+add_custom_target(json2kaitai ALL COMMAND "${GO_COMPILER}" "build" "${CMAKE_GO_FLAGS}" "-o" "${CMAKE_BINARY_DIR}/tool/json2kaitai${SUFFIX}" "${CMAKE_SOURCE_DIR}/src/tool/json2kaitai" DEPENDS "${CMAKE_SOURCE_DIR}/src/tool/json2kaitai" "${CMAKE_SOURCE_DIR}/ast2go")
 
 
 if("$ENV{BUILD_MODE}" STREQUAL "wasm-em")
@@ -32,6 +33,7 @@ install(FILES "${CMAKE_BINARY_DIR}/tool/json2cpp.wasm" DESTINATION "lib" OPTIONA
 install(TARGETS json2cpp2 DESTINATION "lib" OPTIONAL)
 install(FILES "${CMAKE_BINARY_DIR}/tool/json2cpp2.wasm" DESTINATION "lib" OPTIONAL)
 install(FILES "${CMAKE_BINARY_DIR}/tool/json2go.wasm" DESTINATION "lib" OPTIONAL)
+install(FILES "${CMAKE_BINARY_DIR}/tool/json2kaitai.wasm" DESTINATION "lib" OPTIONAL)
 file(TO_CMAKE_PATH "$ENV{WASMEXEC_FILE}" WASMEXEC)
 install(FILES "${WASMEXEC}" RENAME "go_wasm_exec.js" DESTINATION "lib" OPTIONAL)
 install(CODE "file(APPEND \"${CMAKE_INSTALL_PREFIX}/lib/go_wasm_exec.js\" \"const Go = globalThis.Go;\n\")")

@@ -5,11 +5,11 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io"
 	"os"
 
 	"github.com/on-keyday/brgen/ast2go/ast"
 	"github.com/on-keyday/brgen/ast2go/gen"
+	"gopkg.in/yaml.v3"
 )
 
 type Type interface {
@@ -25,30 +25,26 @@ func (r Reference) String() string {
 type Case map[string]Type
 
 type SwitchType struct {
-	SwitchOn string `json:"switch-on"`
-	Cases    Case   `json:"cases"`
-}
-
-type Field struct {
-	ID       string `json:"id"`
-	Type     Type   `json:"type,omitempty"`
-	Repeat   string `json:"repeat,omitempty"`
-	Enum     string `json:"enum,omitempty"`
-	Size     string `json:"size,omitempty"`
-	Contents string `json:"contents,omitempty"`
+	SwitchOn string `yaml:"switch-on"`
+	Cases    Case   `yaml:"cases"`
 }
 
 type Attribute struct {
-	ID string `json:"id"`
+	ID       string `yaml:"id"`
+	Type     Type   `yaml:"type,omitempty"`
+	Repeat   string `yaml:"repeat,omitempty"`
+	Enum     string `yaml:"enum,omitempty"`
+	Size     string `yaml:"size,omitempty"`
+	Contents string `yaml:"contents,omitempty"`
 }
 
 type Meta struct {
-	ID string `json:"id"`
+	ID string `yaml:"id"`
 }
 
 type Kaitai struct {
-	Seq   []*Attribute    `json:"seq"`
-	Types map[string]Type `json:"types"`
+	Seq   []*Attribute    `yaml:"seq"`
+	Types map[string]Type `yaml:"types"`
 }
 
 func IntType(i *ast.IntType) Type {
@@ -70,22 +66,26 @@ func IntType(i *ast.IntType) Type {
 	return Reference(str)
 }
 
-func GenerateAttribute(s *ast.Format, w io.Writer) (*Attribute, error) {
+func GenerateAttribute(s *ast.Format) ([]*Attribute, error) {
+	attr := []*Attribute{}
 	members := s.Body.StructType.Fields
 	for _, member := range members {
 		switch f := member.(type) {
 		case *ast.Field:
-			field := &Field{
+			field := &Attribute{
 				ID: f.Ident.Ident,
 			}
 			if i_typ, ok := f.FieldType.(*ast.IntType); ok {
 				field.Type = IntType(i_typ)
+
 			}
 		}
 	}
+	return attr, nil
 }
 
-func Generate(root *ast.Program, w io.Writer) (*Kaitai, error) {
+func Generate(root *ast.Program) (*Kaitai, error) {
+	kaitai := &Kaitai{}
 	var rootTypes []ast.Member
 	gen.ConfigFromProgram(root, func(configName string, asCall bool, args ...ast.Expr) error {
 		if configName == "config.export" {
@@ -109,9 +109,14 @@ func Generate(root *ast.Program, w io.Writer) (*Kaitai, error) {
 	for _, typ := range rootTypes {
 		switch a := typ.(type) {
 		case *ast.Format:
-			GenerateAttribute(a, w)
+			attr, err := GenerateAttribute(a)
+			if err != nil {
+				return nil, err
+			}
+			kaitai.Seq = append(kaitai.Seq, attr...)
 		}
 	}
+	return kaitai, nil
 }
 
 var f = flag.Bool("s", false, "tell spec of json2go")
@@ -151,7 +156,15 @@ func main() {
 		}
 	}
 
-	src, err := g.GenerateAndFormat(&file)
+	prog, err := ast.ParseAST(file.Ast)
+
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+		return
+	}
+
+	src, err := Generate(prog)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		if src == nil {
@@ -159,5 +172,13 @@ func main() {
 		}
 	}
 
-	os.Stdout.Write(src)
+	out, err := yaml.Marshal(src)
+
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+		return
+	}
+
+	os.Stdout.Write(out)
 }
