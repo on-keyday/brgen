@@ -59,6 +59,7 @@ namespace brgen::ast {
         // stmt
         CASE(Stmt)
         CASE(Loop)
+        CASE(ScopedStatement)
         CASE(IndentBlock)
         CASE(MatchBranch)
         CASE(UnionCandidate)

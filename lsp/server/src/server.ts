@@ -301,7 +301,7 @@ const tokenizeSourceImpl  = async (doc :TextDocument,docInfo :DocumentInfo) =>{
                                 console.log(n,n.base)
                                 throw new Error("what happened?");
                             }
-                            console.log("base -> "+n.base.usage);
+                            console.log("-> "+n.base.usage);
                             n = n.base;
                             continue;
                         }
@@ -313,7 +313,7 @@ const tokenizeSourceImpl  = async (doc :TextDocument,docInfo :DocumentInfo) =>{
                                     console.log(n,n.base)
                                     throw new Error("what happened?");
                                 }
-                                console.log("base -> "+n.base.base.usage);
+                                console.log("-> "+n.base.base.usage);
                                 n = n.base.base;
                                 continue;
                             }

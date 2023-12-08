@@ -486,6 +486,8 @@ func (g *Generator) writeSingleNode(node ast2go.Node, enc bool) {
 		} else {
 			g.writeFieldDecode(node.(*ast2go.Field))
 		}
+	case ast2go.NodeTypeScopedStatement:
+		g.writeSingleNode(node.(*ast2go.ScopedStatement).Statement, enc)
 	}
 }
 

@@ -226,26 +226,26 @@ namespace brgen::ast {
                 return null_cache[i];
             };
             for (auto& [k, v] : m) {
-                auto f = std::make_shared<UnionType>();
-                f->cond = cond0;
-                f->loc = v[0]->loc;
-                auto ident = std::make_shared<Ident>(f->loc, k);
+                auto union_type = std::make_shared<UnionType>();
+                union_type->cond = cond0;
+                union_type->loc = v[0]->loc;
+                auto ident = std::make_shared<Ident>(union_type->loc, k);
                 ident->usage = IdentUsage::define_field;
                 ident->scope = state.current_scope();
                 ident->scope->push(ident);
-                ident->expr_type = f;
-                auto field = std::make_shared<Field>(f->loc);
+                ident->expr_type = union_type;
+                auto field = std::make_shared<Field>(union_type->loc);
                 field->ident = ident;
                 ident->base = field;
-                field->field_type = f;
-                f->base_type = type;
+                field->field_type = union_type;
+                union_type->base_type = type;
                 size_t cand_i = 0;
                 for (auto& c : v) {
                     while (c->cond.lock() != cond[cand_i]) {
-                        f->candidates.push_back(get_null_cache(cand_i));
+                        union_type->candidates.push_back(get_null_cache(cand_i));
                         cand_i++;
                     }
-                    f->candidates.push_back(c);
+                    union_type->candidates.push_back(c);
                     cand_i++;
                 }
                 type->union_fields.push_back(field);
@@ -287,11 +287,14 @@ namespace brgen::ast {
             must_consume_indent_sign();
 
             auto stmt_with_struct = [&](lexer::Loc loc, auto& block) {
-                std::shared_ptr<StructType> struct_ = std::make_shared<StructType>(loc);
-                auto c = state.enter_struct(struct_);
-                block = parse_statement();
-                struct_->base = block;
-                union_->structs.push_back(std::move(struct_));
+                auto scoped = std::make_shared<ScopedStatement>(loc);
+                scoped->struct_type = std::make_shared<StructType>(loc);
+                scoped->struct_type->base = block;
+                auto s_scope = state.enter_struct(scoped->struct_type);
+                auto c_scope = state.cond_scope(scoped->scope, block);
+                scoped->statement = parse_statement();
+                union_->structs.push_back(scoped->struct_type);
+                block = std::move(scoped);
             };
 
             auto parse_match_branch = [&]() -> std::shared_ptr<MatchBranch> {
@@ -635,20 +638,20 @@ namespace brgen::ast {
             }
         }
 
-        void check_assignment(const std::shared_ptr<Binary>& l) {
-            if (l->op == ast::BinaryOp::define_assign ||
-                l->op == ast::BinaryOp::const_assign) {
-                auto ident = ast::as<ast::Ident>(l->left);
+        void check_assignment(const std::shared_ptr<Binary>& assign) {
+            if (assign->op == ast::BinaryOp::define_assign ||
+                assign->op == ast::BinaryOp::const_assign) {
+                auto ident = ast::as<ast::Ident>(assign->left);
                 if (!ident) {
-                    s.report_error(l->left->loc, "left of := or ::= must be ident");
+                    s.report_error(assign->left->loc, "left of := or ::= must be ident");
                 }
-                ident->usage = l->op == ast::BinaryOp::define_assign ? ast::IdentUsage::define_variable : ast::IdentUsage::define_const;
-                ident->base = l;
+                ident->usage = assign->op == ast::BinaryOp::define_assign ? ast::IdentUsage::define_variable : ast::IdentUsage::define_const;
+                ident->base = assign;
                 check_duplicated_def(ident);
             }
-            else if (l->op == ast::BinaryOp::assign) {
-                if (!is_finally_ident(l->left.get())) {
-                    s.report_error(l->left->loc, "left of = must be ident, member access or input/output/config");
+            else if (assign->op == ast::BinaryOp::assign) {
+                if (!is_finally_ident(assign->left.get())) {
+                    s.report_error(assign->left->loc, "left of = must be ident, member access or input/output/config");
                 }
             }
         }
@@ -1085,6 +1088,7 @@ namespace brgen::ast {
                 fmt->body = parse_indent_block(fmt);
             }
 
+            fmt->ident->expr_type = fmt->body->struct_type;
             state.add_to_struct(fmt);
 
             // fetch encode_fn and decode_fn
@@ -1123,6 +1127,7 @@ namespace brgen::ast {
                 state_->body = parse_indent_block(state_);
             }
 
+            state_->ident->expr_type = state_->body->struct_type;
             state.add_to_struct(state_);
 
             return state_;
@@ -1146,6 +1151,7 @@ namespace brgen::ast {
             fn->ident->constant_level = ConstantLevel::constant;
             fn->belong = state.current_member();
             fn->func_type = std::make_shared<FunctionType>(fn->loc);
+            fn->ident->expr_type = fn->func_type;
             s.skip_white();
             lexer::Loc end_loc;
             std::vector<std::shared_ptr<Ident>> ident_param;

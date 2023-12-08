@@ -2,10 +2,10 @@
 
 export namespace ast2ts {
 
-export type NodeType = "program" | "comment" | "comment_group" | "expr" | "binary" | "unary" | "cond" | "ident" | "call" | "if" | "member_access" | "paren" | "index" | "match" | "range" | "tmp_var" | "block_expr" | "import" | "cast" | "available" | "stmt" | "loop" | "indent_block" | "match_branch" | "union_candidate" | "return" | "break" | "continue" | "assert" | "implicit_yield" | "type" | "int_type" | "ident_type" | "int_literal_type" | "str_literal_type" | "void_type" | "bool_type" | "array_type" | "function_type" | "struct_type" | "struct_union_type" | "union_type" | "range_type" | "enum_type" | "literal" | "int_literal" | "bool_literal" | "str_literal" | "input" | "output" | "config" | "member" | "field" | "format" | "state" | "enum" | "enum_member" | "function" | "builtin_function";
+export type NodeType = "program" | "comment" | "comment_group" | "expr" | "binary" | "unary" | "cond" | "ident" | "call" | "if" | "member_access" | "paren" | "index" | "match" | "range" | "tmp_var" | "block_expr" | "import" | "cast" | "available" | "stmt" | "loop" | "indent_block" | "scoped_statement" | "match_branch" | "union_candidate" | "return" | "break" | "continue" | "assert" | "implicit_yield" | "type" | "int_type" | "ident_type" | "int_literal_type" | "str_literal_type" | "void_type" | "bool_type" | "array_type" | "function_type" | "struct_type" | "struct_union_type" | "union_type" | "range_type" | "enum_type" | "literal" | "int_literal" | "bool_literal" | "str_literal" | "input" | "output" | "config" | "member" | "field" | "format" | "state" | "enum" | "enum_member" | "function" | "builtin_function";
 
 export function isNodeType(obj: any): obj is NodeType {
-	return obj && typeof obj === 'string' && (obj === "program" || obj === "comment" || obj === "comment_group" || obj === "expr" || obj === "binary" || obj === "unary" || obj === "cond" || obj === "ident" || obj === "call" || obj === "if" || obj === "member_access" || obj === "paren" || obj === "index" || obj === "match" || obj === "range" || obj === "tmp_var" || obj === "block_expr" || obj === "import" || obj === "cast" || obj === "available" || obj === "stmt" || obj === "loop" || obj === "indent_block" || obj === "match_branch" || obj === "union_candidate" || obj === "return" || obj === "break" || obj === "continue" || obj === "assert" || obj === "implicit_yield" || obj === "type" || obj === "int_type" || obj === "ident_type" || obj === "int_literal_type" || obj === "str_literal_type" || obj === "void_type" || obj === "bool_type" || obj === "array_type" || obj === "function_type" || obj === "struct_type" || obj === "struct_union_type" || obj === "union_type" || obj === "range_type" || obj === "enum_type" || obj === "literal" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "input" || obj === "output" || obj === "config" || obj === "member" || obj === "field" || obj === "format" || obj === "state" || obj === "enum" || obj === "enum_member" || obj === "function" || obj === "builtin_function")
+	return obj && typeof obj === 'string' && (obj === "program" || obj === "comment" || obj === "comment_group" || obj === "expr" || obj === "binary" || obj === "unary" || obj === "cond" || obj === "ident" || obj === "call" || obj === "if" || obj === "member_access" || obj === "paren" || obj === "index" || obj === "match" || obj === "range" || obj === "tmp_var" || obj === "block_expr" || obj === "import" || obj === "cast" || obj === "available" || obj === "stmt" || obj === "loop" || obj === "indent_block" || obj === "scoped_statement" || obj === "match_branch" || obj === "union_candidate" || obj === "return" || obj === "break" || obj === "continue" || obj === "assert" || obj === "implicit_yield" || obj === "type" || obj === "int_type" || obj === "ident_type" || obj === "int_literal_type" || obj === "str_literal_type" || obj === "void_type" || obj === "bool_type" || obj === "array_type" || obj === "function_type" || obj === "struct_type" || obj === "struct_union_type" || obj === "union_type" || obj === "range_type" || obj === "enum_type" || obj === "literal" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "input" || obj === "output" || obj === "config" || obj === "member" || obj === "field" || obj === "format" || obj === "state" || obj === "enum" || obj === "enum_member" || obj === "function" || obj === "builtin_function")
 }
 
 export enum UnaryOp {
@@ -181,6 +181,7 @@ export function isNode(obj: any): obj is Node {
 	if (isAvailable(obj)) return true;
 	if (isLoop(obj)) return true;
 	if (isIndentBlock(obj)) return true;
+	if (isScopedStatement(obj)) return true;
 	if (isMatchBranch(obj)) return true;
 	if (isUnionCandidate(obj)) return true;
 	if (isReturn(obj)) return true;
@@ -254,6 +255,7 @@ export interface Stmt extends Node {
 export function isStmt(obj: any): obj is Stmt {
 	if (isLoop(obj)) return true;
 	if (isIndentBlock(obj)) return true;
+	if (isScopedStatement(obj)) return true;
 	if (isMatchBranch(obj)) return true;
 	if (isUnionCandidate(obj)) return true;
 	if (isReturn(obj)) return true;
@@ -530,6 +532,16 @@ export function isIndentBlock(obj: any): obj is IndentBlock {
 	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "indent_block"
 }
 
+export interface ScopedStatement extends Stmt {
+	struct_type: StructType|null;
+	statement: Node|null;
+	scope: Scope|null;
+}
+
+export function isScopedStatement(obj: any): obj is ScopedStatement {
+	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "scoped_statement"
+}
+
 export interface MatchBranch extends Stmt {
 	cond: Expr|null;
 	sym_loc: Loc;
@@ -765,6 +777,9 @@ export function isField(obj: any): obj is Field {
 
 export interface Format extends Member {
 	body: IndentBlock|null;
+	encode_fn: Function|null;
+	decode_fn: Function|null;
+	cast_fns: Function[];
 }
 
 export function isFormat(obj: any): obj is Format {
@@ -1222,6 +1237,17 @@ export function parseAST(obj: any): Program {
 			c.node.push(n);
 			break;
 		}
+		case "scoped_statement": {
+			const n :ScopedStatement = {
+				node_type: "scoped_statement",
+				loc: on.loc,
+				struct_type: null,
+				statement: null,
+				scope: null,
+			}
+			c.node.push(n);
+			break;
+		}
 		case "match_branch": {
 			const n :MatchBranch = {
 				node_type: "match_branch",
@@ -1557,6 +1583,9 @@ export function parseAST(obj: any): Program {
 				belong_struct: null,
 				ident: null,
 				body: null,
+				encode_fn: null,
+				decode_fn: null,
+				cast_fns: [],
 			}
 			c.node.push(n);
 			break;
@@ -2365,6 +2394,34 @@ export function parseAST(obj: any): Program {
 			const tmpscope = on.body.scope === null ? null : c.scope[on.body.scope];
 			if (tmpscope !== null && !isScope(tmpscope)) {
 				throw new Error('invalid node list at IndentBlock::scope');
+			}
+			n.scope = tmpscope;
+			break;
+		}
+		case "scoped_statement": {
+			const n :ScopedStatement = cnode as ScopedStatement;
+			if (on.body?.struct_type !== null && typeof on.body?.struct_type !== 'number') {
+				throw new Error('invalid node list at ScopedStatement::struct_type');
+			}
+			const tmpstruct_type = on.body.struct_type === null ? null : c.node[on.body.struct_type];
+			if (!(tmpstruct_type === null || isStructType(tmpstruct_type))) {
+				throw new Error('invalid node list at ScopedStatement::struct_type');
+			}
+			n.struct_type = tmpstruct_type;
+			if (on.body?.statement !== null && typeof on.body?.statement !== 'number') {
+				throw new Error('invalid node list at ScopedStatement::statement');
+			}
+			const tmpstatement = on.body.statement === null ? null : c.node[on.body.statement];
+			if (!(tmpstatement === null || isNode(tmpstatement))) {
+				throw new Error('invalid node list at ScopedStatement::statement');
+			}
+			n.statement = tmpstatement;
+			if (on.body?.scope !== null && typeof on.body?.scope !== 'number') {
+				throw new Error('invalid node list at ScopedStatement::scope');
+			}
+			const tmpscope = on.body.scope === null ? null : c.scope[on.body.scope];
+			if (tmpscope !== null && !isScope(tmpscope)) {
+				throw new Error('invalid node list at ScopedStatement::scope');
 			}
 			n.scope = tmpscope;
 			break;
@@ -3195,6 +3252,32 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at Format::body');
 			}
 			n.body = tmpbody;
+			if (on.body?.encode_fn !== null && typeof on.body?.encode_fn !== 'number') {
+				throw new Error('invalid node list at Format::encode_fn');
+			}
+			const tmpencode_fn = on.body.encode_fn === null ? null : c.node[on.body.encode_fn];
+			if (!(tmpencode_fn === null || isFunction(tmpencode_fn))) {
+				throw new Error('invalid node list at Format::encode_fn');
+			}
+			n.encode_fn = tmpencode_fn;
+			if (on.body?.decode_fn !== null && typeof on.body?.decode_fn !== 'number') {
+				throw new Error('invalid node list at Format::decode_fn');
+			}
+			const tmpdecode_fn = on.body.decode_fn === null ? null : c.node[on.body.decode_fn];
+			if (!(tmpdecode_fn === null || isFunction(tmpdecode_fn))) {
+				throw new Error('invalid node list at Format::decode_fn');
+			}
+			n.decode_fn = tmpdecode_fn;
+			for (const o of on.body.cast_fns) {
+				if (typeof o !== 'number') {
+					throw new Error('invalid node list at Format::cast_fns');
+				}
+				const tmpcast_fns = c.node[o];
+				if (!isFunction(tmpcast_fns)) {
+					throw new Error('invalid node list at Format::cast_fns');
+				}
+				n.cast_fns.push(tmpcast_fns);
+			}
 			break;
 		}
 		case "state": {
@@ -3961,6 +4044,25 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			for (const e of n.elements) {
 				const result = fn(fn,e);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "scoped_statement": {
+			if (!isScopedStatement(node)) {
+				break;
+			}
+			const n :ScopedStatement = node as ScopedStatement;
+			if (n.struct_type !== null) {
+				const result = fn(fn,n.struct_type);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.statement !== null) {
+				const result = fn(fn,n.statement);
 				if (result === false) {
 					return;
 				}

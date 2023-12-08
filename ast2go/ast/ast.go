@@ -33,42 +33,43 @@ const (
 	NodeTypeStmt            NodeType = 20
 	NodeTypeLoop            NodeType = 21
 	NodeTypeIndentBlock     NodeType = 22
-	NodeTypeMatchBranch     NodeType = 23
-	NodeTypeUnionCandidate  NodeType = 24
-	NodeTypeReturn          NodeType = 25
-	NodeTypeBreak           NodeType = 26
-	NodeTypeContinue        NodeType = 27
-	NodeTypeAssert          NodeType = 28
-	NodeTypeImplicitYield   NodeType = 29
-	NodeTypeType            NodeType = 30
-	NodeTypeIntType         NodeType = 31
-	NodeTypeIdentType       NodeType = 32
-	NodeTypeIntLiteralType  NodeType = 33
-	NodeTypeStrLiteralType  NodeType = 34
-	NodeTypeVoidType        NodeType = 35
-	NodeTypeBoolType        NodeType = 36
-	NodeTypeArrayType       NodeType = 37
-	NodeTypeFunctionType    NodeType = 38
-	NodeTypeStructType      NodeType = 39
-	NodeTypeStructUnionType NodeType = 40
-	NodeTypeUnionType       NodeType = 41
-	NodeTypeRangeType       NodeType = 42
-	NodeTypeEnumType        NodeType = 43
-	NodeTypeLiteral         NodeType = 44
-	NodeTypeIntLiteral      NodeType = 45
-	NodeTypeBoolLiteral     NodeType = 46
-	NodeTypeStrLiteral      NodeType = 47
-	NodeTypeInput           NodeType = 48
-	NodeTypeOutput          NodeType = 49
-	NodeTypeConfig          NodeType = 50
-	NodeTypeMember          NodeType = 51
-	NodeTypeField           NodeType = 52
-	NodeTypeFormat          NodeType = 53
-	NodeTypeState           NodeType = 54
-	NodeTypeEnum            NodeType = 55
-	NodeTypeEnumMember      NodeType = 56
-	NodeTypeFunction        NodeType = 57
-	NodeTypeBuiltinFunction NodeType = 58
+	NodeTypeScopedStatement NodeType = 23
+	NodeTypeMatchBranch     NodeType = 24
+	NodeTypeUnionCandidate  NodeType = 25
+	NodeTypeReturn          NodeType = 26
+	NodeTypeBreak           NodeType = 27
+	NodeTypeContinue        NodeType = 28
+	NodeTypeAssert          NodeType = 29
+	NodeTypeImplicitYield   NodeType = 30
+	NodeTypeType            NodeType = 31
+	NodeTypeIntType         NodeType = 32
+	NodeTypeIdentType       NodeType = 33
+	NodeTypeIntLiteralType  NodeType = 34
+	NodeTypeStrLiteralType  NodeType = 35
+	NodeTypeVoidType        NodeType = 36
+	NodeTypeBoolType        NodeType = 37
+	NodeTypeArrayType       NodeType = 38
+	NodeTypeFunctionType    NodeType = 39
+	NodeTypeStructType      NodeType = 40
+	NodeTypeStructUnionType NodeType = 41
+	NodeTypeUnionType       NodeType = 42
+	NodeTypeRangeType       NodeType = 43
+	NodeTypeEnumType        NodeType = 44
+	NodeTypeLiteral         NodeType = 45
+	NodeTypeIntLiteral      NodeType = 46
+	NodeTypeBoolLiteral     NodeType = 47
+	NodeTypeStrLiteral      NodeType = 48
+	NodeTypeInput           NodeType = 49
+	NodeTypeOutput          NodeType = 50
+	NodeTypeConfig          NodeType = 51
+	NodeTypeMember          NodeType = 52
+	NodeTypeField           NodeType = 53
+	NodeTypeFormat          NodeType = 54
+	NodeTypeState           NodeType = 55
+	NodeTypeEnum            NodeType = 56
+	NodeTypeEnumMember      NodeType = 57
+	NodeTypeFunction        NodeType = 58
+	NodeTypeBuiltinFunction NodeType = 59
 )
 
 func (n NodeType) String() string {
@@ -119,6 +120,8 @@ func (n NodeType) String() string {
 		return "loop"
 	case NodeTypeIndentBlock:
 		return "indent_block"
+	case NodeTypeScopedStatement:
+		return "scoped_statement"
 	case NodeTypeMatchBranch:
 		return "match_branch"
 	case NodeTypeUnionCandidate:
@@ -248,6 +251,8 @@ func (n *NodeType) UnmarshalJSON(data []byte) error {
 		*n = NodeTypeLoop
 	case "indent_block":
 		*n = NodeTypeIndentBlock
+	case "scoped_statement":
+		*n = NodeTypeScopedStatement
 	case "match_branch":
 		*n = NodeTypeMatchBranch
 	case "union_candidate":
@@ -408,6 +413,10 @@ func (n *Loop) GetNodeType() NodeType {
 
 func (n *IndentBlock) GetNodeType() NodeType {
 	return NodeTypeIndentBlock
+}
+
+func (n *ScopedStatement) GetNodeType() NodeType {
+	return NodeTypeScopedStatement
 }
 
 func (n *MatchBranch) GetNodeType() NodeType {
@@ -1688,6 +1697,21 @@ func (n *IndentBlock) GetLoc() Loc {
 	return n.Loc
 }
 
+type ScopedStatement struct {
+	Loc        Loc
+	StructType *StructType
+	Statement  Node
+	Scope      *Scope
+}
+
+func (n *ScopedStatement) isStmt() {}
+
+func (n *ScopedStatement) isNode() {}
+
+func (n *ScopedStatement) GetLoc() Loc {
+	return n.Loc
+}
+
 type MatchBranch struct {
 	Loc    Loc
 	Cond   Expr
@@ -2411,6 +2435,9 @@ type Format struct {
 	BelongStruct *StructType
 	Ident        *Ident
 	Body         *IndentBlock
+	EncodeFn     *Function
+	DecodeFn     *Function
+	CastFns      []*Function
 }
 
 func (n *Format) isMember() {}
@@ -2722,6 +2749,8 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			n.node[i] = &Loop{Loc: raw.Loc}
 		case NodeTypeIndentBlock:
 			n.node[i] = &IndentBlock{Loc: raw.Loc}
+		case NodeTypeScopedStatement:
+			n.node[i] = &ScopedStatement{Loc: raw.Loc}
 		case NodeTypeMatchBranch:
 			n.node[i] = &MatchBranch{Loc: raw.Loc}
 		case NodeTypeUnionCandidate:
@@ -3255,6 +3284,25 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.Scope != nil {
 				v.Scope = n.scope[*tmp.Scope]
 			}
+		case NodeTypeScopedStatement:
+			v := n.node[i].(*ScopedStatement)
+			var tmp struct {
+				StructType *uintptr `json:"struct_type"`
+				Statement  *uintptr `json:"statement"`
+				Scope      *uintptr `json:"scope"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			if tmp.StructType != nil {
+				v.StructType = n.node[*tmp.StructType].(*StructType)
+			}
+			if tmp.Statement != nil {
+				v.Statement = n.node[*tmp.Statement].(Node)
+			}
+			if tmp.Scope != nil {
+				v.Scope = n.scope[*tmp.Scope]
+			}
 		case NodeTypeMatchBranch:
 			v := n.node[i].(*MatchBranch)
 			var tmp struct {
@@ -3751,10 +3799,13 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeFormat:
 			v := n.node[i].(*Format)
 			var tmp struct {
-				Belong       *uintptr `json:"belong"`
-				BelongStruct *uintptr `json:"belong_struct"`
-				Ident        *uintptr `json:"ident"`
-				Body         *uintptr `json:"body"`
+				Belong       *uintptr  `json:"belong"`
+				BelongStruct *uintptr  `json:"belong_struct"`
+				Ident        *uintptr  `json:"ident"`
+				Body         *uintptr  `json:"body"`
+				EncodeFn     *uintptr  `json:"encode_fn"`
+				DecodeFn     *uintptr  `json:"decode_fn"`
+				CastFns      []uintptr `json:"cast_fns"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -3770,6 +3821,16 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			}
 			if tmp.Body != nil {
 				v.Body = n.node[*tmp.Body].(*IndentBlock)
+			}
+			if tmp.EncodeFn != nil {
+				v.EncodeFn = n.node[*tmp.EncodeFn].(*Function)
+			}
+			if tmp.DecodeFn != nil {
+				v.DecodeFn = n.node[*tmp.DecodeFn].(*Function)
+			}
+			v.CastFns = make([]*Function, len(tmp.CastFns))
+			for j, k := range tmp.CastFns {
+				v.CastFns[j] = n.node[k].(*Function)
 			}
 		case NodeTypeState:
 			v := n.node[i].(*State)
@@ -4244,6 +4305,17 @@ func Walk(n Node, f Visitor) {
 		}
 		for _, w := range v.Elements {
 			if !f.Visit(f, w) {
+				return
+			}
+		}
+	case *ScopedStatement:
+		if v.StructType != nil {
+			if !f.Visit(f, v.StructType) {
+				return
+			}
+		}
+		if v.Statement != nil {
+			if !f.Visit(f, v.Statement) {
 				return
 			}
 		}

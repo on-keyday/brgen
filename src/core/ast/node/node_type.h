@@ -44,6 +44,7 @@ namespace brgen::ast {
         stmt = 0x020000,
         loop,
         indent_block,
+        scoped_statement,
         match_branch,
         union_candidate,
         return_,
@@ -267,6 +268,7 @@ namespace brgen::ast {
         {NodeType::state, "state"},
         {NodeType::builtin_function, "builtin_function"},
         {NodeType::available, "available"},
+        {NodeType::scoped_statement, "scoped_statement"},
     };
 
     constexpr std::array<std::pair<NodeType, const char*>, std::size(node_type_str_array)> sorted_node_type_str_array = [] {

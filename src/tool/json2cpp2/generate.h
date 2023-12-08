@@ -438,6 +438,9 @@ namespace j2cp2 {
             if (auto match = ast::as<ast::Match>(elem)) {
                 code_match(match, encode);
             }
+            if (auto scoped = ast::as<ast::ScopedStatement>(elem)) {
+                encode_one_node(scoped->statement, encode);
+            }
         }
 
         void code_indent_block(const std::shared_ptr<ast::IndentBlock>& block, bool encode) {

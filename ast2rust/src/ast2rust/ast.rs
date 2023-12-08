@@ -66,6 +66,7 @@ impl From<&Node> for NodeType {
 			Node::Available(_) => Self::Available,
 			Node::Loop(_) => Self::Loop,
 			Node::IndentBlock(_) => Self::IndentBlock,
+			Node::ScopedStatement(_) => Self::ScopedStatement,
 			Node::MatchBranch(_) => Self::MatchBranch,
 			Node::UnionCandidate(_) => Self::UnionCandidate,
 			Node::Return(_) => Self::Return,
@@ -133,6 +134,7 @@ impl From<&NodeWeak> for NodeType {
 			NodeWeak::Available(_) => Self::Available,
 			NodeWeak::Loop(_) => Self::Loop,
 			NodeWeak::IndentBlock(_) => Self::IndentBlock,
+			NodeWeak::ScopedStatement(_) => Self::ScopedStatement,
 			NodeWeak::MatchBranch(_) => Self::MatchBranch,
 			NodeWeak::UnionCandidate(_) => Self::UnionCandidate,
 			NodeWeak::Return(_) => Self::Return,
@@ -201,6 +203,7 @@ impl From<NodeWeak> for NodeType {
 	Stmt,
 	Loop,
 	IndentBlock,
+	ScopedStatement,
 	MatchBranch,
 	UnionCandidate,
 	Return,
@@ -266,6 +269,7 @@ impl TryFrom<&str> for NodeType {
 			"stmt" =>Ok(Self::Stmt),
 			"loop" =>Ok(Self::Loop),
 			"indent_block" =>Ok(Self::IndentBlock),
+			"scoped_statement" =>Ok(Self::ScopedStatement),
 			"match_branch" =>Ok(Self::MatchBranch),
 			"union_candidate" =>Ok(Self::UnionCandidate),
 			"return" =>Ok(Self::Return),
@@ -614,6 +618,7 @@ pub enum Node {
 	Available(Rc<RefCell<Available>>),
 	Loop(Rc<RefCell<Loop>>),
 	IndentBlock(Rc<RefCell<IndentBlock>>),
+	ScopedStatement(Rc<RefCell<ScopedStatement>>),
 	MatchBranch(Rc<RefCell<MatchBranch>>),
 	UnionCandidate(Rc<RefCell<UnionCandidate>>),
 	Return(Rc<RefCell<Return>>),
@@ -672,6 +677,7 @@ pub enum NodeWeak {
 	Available(Weak<RefCell<Available>>),
 	Loop(Weak<RefCell<Loop>>),
 	IndentBlock(Weak<RefCell<IndentBlock>>),
+	ScopedStatement(Weak<RefCell<ScopedStatement>>),
 	MatchBranch(Weak<RefCell<MatchBranch>>),
 	UnionCandidate(Weak<RefCell<UnionCandidate>>),
 	Return(Weak<RefCell<Return>>),
@@ -731,6 +737,7 @@ impl From<&Node> for NodeWeak {
 			Node::Available(node)=>Self::Available(Rc::downgrade(node)),
 			Node::Loop(node)=>Self::Loop(Rc::downgrade(node)),
 			Node::IndentBlock(node)=>Self::IndentBlock(Rc::downgrade(node)),
+			Node::ScopedStatement(node)=>Self::ScopedStatement(Rc::downgrade(node)),
 			Node::MatchBranch(node)=>Self::MatchBranch(Rc::downgrade(node)),
 			Node::UnionCandidate(node)=>Self::UnionCandidate(Rc::downgrade(node)),
 			Node::Return(node)=>Self::Return(Rc::downgrade(node)),
@@ -799,6 +806,7 @@ impl TryFrom<&NodeWeak> for Node {
 			NodeWeak::Available(node)=>Ok(Self::Available(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Available))?)),
 			NodeWeak::Loop(node)=>Ok(Self::Loop(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Loop))?)),
 			NodeWeak::IndentBlock(node)=>Ok(Self::IndentBlock(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::IndentBlock))?)),
+			NodeWeak::ScopedStatement(node)=>Ok(Self::ScopedStatement(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::ScopedStatement))?)),
 			NodeWeak::MatchBranch(node)=>Ok(Self::MatchBranch(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::MatchBranch))?)),
 			NodeWeak::UnionCandidate(node)=>Ok(Self::UnionCandidate(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::UnionCandidate))?)),
 			NodeWeak::Return(node)=>Ok(Self::Return(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Return))?)),
@@ -1192,6 +1200,7 @@ impl TryFrom<Node> for ExprWeak {
 pub enum Stmt {
 	Loop(Rc<RefCell<Loop>>),
 	IndentBlock(Rc<RefCell<IndentBlock>>),
+	ScopedStatement(Rc<RefCell<ScopedStatement>>),
 	MatchBranch(Rc<RefCell<MatchBranch>>),
 	UnionCandidate(Rc<RefCell<UnionCandidate>>),
 	Return(Rc<RefCell<Return>>),
@@ -1212,6 +1221,7 @@ pub enum Stmt {
 pub enum StmtWeak {
 	Loop(Weak<RefCell<Loop>>),
 	IndentBlock(Weak<RefCell<IndentBlock>>),
+	ScopedStatement(Weak<RefCell<ScopedStatement>>),
 	MatchBranch(Weak<RefCell<MatchBranch>>),
 	UnionCandidate(Weak<RefCell<UnionCandidate>>),
 	Return(Weak<RefCell<Return>>),
@@ -1233,6 +1243,7 @@ impl From<&Stmt> for StmtWeak {
 		match node {
 			Stmt::Loop(node)=>Self::Loop(Rc::downgrade(node)),
 			Stmt::IndentBlock(node)=>Self::IndentBlock(Rc::downgrade(node)),
+			Stmt::ScopedStatement(node)=>Self::ScopedStatement(Rc::downgrade(node)),
 			Stmt::MatchBranch(node)=>Self::MatchBranch(Rc::downgrade(node)),
 			Stmt::UnionCandidate(node)=>Self::UnionCandidate(Rc::downgrade(node)),
 			Stmt::Return(node)=>Self::Return(Rc::downgrade(node)),
@@ -1263,6 +1274,7 @@ impl TryFrom<&StmtWeak> for Stmt {
 		match node {
 			StmtWeak::Loop(node)=>Ok(Self::Loop(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Loop))?)),
 			StmtWeak::IndentBlock(node)=>Ok(Self::IndentBlock(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::IndentBlock))?)),
+			StmtWeak::ScopedStatement(node)=>Ok(Self::ScopedStatement(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::ScopedStatement))?)),
 			StmtWeak::MatchBranch(node)=>Ok(Self::MatchBranch(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::MatchBranch))?)),
 			StmtWeak::UnionCandidate(node)=>Ok(Self::UnionCandidate(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::UnionCandidate))?)),
 			StmtWeak::Return(node)=>Ok(Self::Return(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Return))?)),
@@ -1294,6 +1306,7 @@ impl TryFrom<&Node> for Stmt {
 		match node {
 			Node::Loop(node)=>Ok(Self::Loop(node.clone())),
 			Node::IndentBlock(node)=>Ok(Self::IndentBlock(node.clone())),
+			Node::ScopedStatement(node)=>Ok(Self::ScopedStatement(node.clone())),
 			Node::MatchBranch(node)=>Ok(Self::MatchBranch(node.clone())),
 			Node::UnionCandidate(node)=>Ok(Self::UnionCandidate(node.clone())),
 			Node::Return(node)=>Ok(Self::Return(node.clone())),
@@ -1325,6 +1338,7 @@ impl From<&Stmt> for Node {
 		match node {
 			Stmt::Loop(node)=>Self::Loop(node.clone()),
 			Stmt::IndentBlock(node)=>Self::IndentBlock(node.clone()),
+			Stmt::ScopedStatement(node)=>Self::ScopedStatement(node.clone()),
 			Stmt::MatchBranch(node)=>Self::MatchBranch(node.clone()),
 			Stmt::UnionCandidate(node)=>Self::UnionCandidate(node.clone()),
 			Stmt::Return(node)=>Self::Return(node.clone()),
@@ -1355,6 +1369,7 @@ impl TryFrom<&StmtWeak> for Node {
 		match node {
 			StmtWeak::Loop(node)=>Ok(Self::Loop(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Loop))?)),
 			StmtWeak::IndentBlock(node)=>Ok(Self::IndentBlock(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::IndentBlock))?)),
+			StmtWeak::ScopedStatement(node)=>Ok(Self::ScopedStatement(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::ScopedStatement))?)),
 			StmtWeak::MatchBranch(node)=>Ok(Self::MatchBranch(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::MatchBranch))?)),
 			StmtWeak::UnionCandidate(node)=>Ok(Self::UnionCandidate(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::UnionCandidate))?)),
 			StmtWeak::Return(node)=>Ok(Self::Return(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Return))?)),
@@ -1385,6 +1400,7 @@ impl From<&StmtWeak> for NodeWeak {
 		match node {
 			StmtWeak::Loop(node)=>Self::Loop(node.clone()),
 			StmtWeak::IndentBlock(node)=>Self::IndentBlock(node.clone()),
+			StmtWeak::ScopedStatement(node)=>Self::ScopedStatement(node.clone()),
 			StmtWeak::MatchBranch(node)=>Self::MatchBranch(node.clone()),
 			StmtWeak::UnionCandidate(node)=>Self::UnionCandidate(node.clone()),
 			StmtWeak::Return(node)=>Self::Return(node.clone()),
@@ -1415,6 +1431,7 @@ impl TryFrom<&NodeWeak> for StmtWeak {
 		match node {
 			NodeWeak::Loop(node)=>Ok(Self::Loop(node.clone())),
 			NodeWeak::IndentBlock(node)=>Ok(Self::IndentBlock(node.clone())),
+			NodeWeak::ScopedStatement(node)=>Ok(Self::ScopedStatement(node.clone())),
 			NodeWeak::MatchBranch(node)=>Ok(Self::MatchBranch(node.clone())),
 			NodeWeak::UnionCandidate(node)=>Ok(Self::UnionCandidate(node.clone())),
 			NodeWeak::Return(node)=>Ok(Self::Return(node.clone())),
@@ -1447,6 +1464,7 @@ impl TryFrom<&Node> for StmtWeak {
 		match node {
 			Node::Loop(node)=>Ok(Self::Loop(Rc::downgrade(node))),
 			Node::IndentBlock(node)=>Ok(Self::IndentBlock(Rc::downgrade(node))),
+			Node::ScopedStatement(node)=>Ok(Self::ScopedStatement(Rc::downgrade(node))),
 			Node::MatchBranch(node)=>Ok(Self::MatchBranch(Rc::downgrade(node))),
 			Node::UnionCandidate(node)=>Ok(Self::UnionCandidate(Rc::downgrade(node))),
 			Node::Return(node)=>Ok(Self::Return(Rc::downgrade(node))),
@@ -3430,6 +3448,72 @@ impl From<&Rc<RefCell<IndentBlock>>> for Node {
 
 impl From<Rc<RefCell<IndentBlock>>> for Node {
 	fn from(node:Rc<RefCell<IndentBlock>>)-> Self{
+		Self::from(&node)
+	}
+}
+
+#[derive(Debug,Clone)]
+pub struct ScopedStatement {
+	pub loc: Loc,
+	pub struct_type: Option<Rc<RefCell<StructType>>>,
+	pub statement: Option<Node>,
+	pub scope: Option<Rc<RefCell<Scope>>>,
+}
+
+impl TryFrom<&Stmt> for Rc<RefCell<ScopedStatement>> {
+	type Error = Error;
+	fn try_from(node:&Stmt)->Result<Self,Self::Error>{
+		match node {
+			Stmt::ScopedStatement(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl TryFrom<Stmt> for Rc<RefCell<ScopedStatement>> {
+	type Error = Error;
+	fn try_from(node:Stmt)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
+impl From<&Rc<RefCell<ScopedStatement>>> for Stmt {
+	fn from(node:&Rc<RefCell<ScopedStatement>>)-> Self{
+		Stmt::ScopedStatement(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<ScopedStatement>>> for Stmt {
+	fn from(node:Rc<RefCell<ScopedStatement>>)-> Self{
+		Self::from(&node)
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<ScopedStatement>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::ScopedStatement(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl TryFrom<Node> for Rc<RefCell<ScopedStatement>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
+impl From<&Rc<RefCell<ScopedStatement>>> for Node {
+	fn from(node:&Rc<RefCell<ScopedStatement>>)-> Self{
+		Node::ScopedStatement(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<ScopedStatement>>> for Node {
+	fn from(node:Rc<RefCell<ScopedStatement>>)-> Self{
 		Self::from(&node)
 	}
 }
@@ -5456,6 +5540,9 @@ pub struct Format {
 	pub belong_struct: Option<Weak<RefCell<StructType>>>,
 	pub ident: Option<Rc<RefCell<Ident>>>,
 	pub body: Option<Rc<RefCell<IndentBlock>>>,
+	pub encode_fn: Option<Weak<RefCell<Function>>>,
+	pub decode_fn: Option<Weak<RefCell<Function>>>,
+	pub cast_fns: Vec<Weak<RefCell<Function>>>,
 }
 
 impl TryFrom<&Member> for Rc<RefCell<Format>> {
@@ -6320,6 +6407,14 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				scope: None,
 				})))
 			},
+			NodeType::ScopedStatement => {
+				Node::ScopedStatement(Rc::new(RefCell::new(ScopedStatement {
+				loc: raw_node.loc.clone(),
+				struct_type: None,
+				statement: None,
+				scope: None,
+				})))
+			},
 			NodeType::MatchBranch => {
 				Node::MatchBranch(Rc::new(RefCell::new(MatchBranch {
 				loc: raw_node.loc.clone(),
@@ -6573,6 +6668,9 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				belong_struct: None,
 				ident: None,
 				body: None,
+				encode_fn: None,
+				decode_fn: None,
+				cast_fns: Vec::new(),
 				})))
 			},
 			NodeType::State => {
@@ -8062,6 +8160,62 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						None => return Err(Error::IndexOutOfBounds(link as usize)),
 					};
 					node.borrow_mut().elements.push(elements_body.clone());
+				}
+				let scope_body = match raw_node.body.get("scope") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"scope")),
+				};
+ 				if !scope_body.is_null() {
+					let scope_body = match scope_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(scope_body.into(),JSONType::Number)),
+					};
+					let scope_body = match scopes.get(scope_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(scope_body as usize)),
+					};
+					node.borrow_mut().scope = Some(scope_body.clone());
+				}
+			},
+			NodeType::ScopedStatement => {
+				let node = nodes[i].clone();
+				let node = match node {
+					Node::ScopedStatement(node)=>node,
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
+				};
+				let struct_type_body = match raw_node.body.get("struct_type") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"struct_type")),
+				};
+ 				if !struct_type_body.is_null() {
+					let struct_type_body = match struct_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(struct_type_body.into(),JSONType::Number)),
+					};
+					let struct_type_body = match nodes.get(struct_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(struct_type_body as usize)),
+					};
+					let struct_type_body = match struct_type_body {
+						Node::StructType(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),struct_type_body.into())),
+					};
+					node.borrow_mut().struct_type = Some(struct_type_body.clone());
+				}
+				let statement_body = match raw_node.body.get("statement") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"statement")),
+				};
+ 				if !statement_body.is_null() {
+					let statement_body = match statement_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(statement_body.into(),JSONType::Number)),
+					};
+					let statement_body = match nodes.get(statement_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(statement_body as usize)),
+					};
+					node.borrow_mut().statement = Some(statement_body.clone());
 				}
 				let scope_body = match raw_node.body.get("scope") {
 					Some(v)=>v,
@@ -9649,6 +9803,67 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().body = Some(body_body.clone());
 				}
+				let encode_fn_body = match raw_node.body.get("encode_fn") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"encode_fn")),
+				};
+ 				if !encode_fn_body.is_null() {
+					let encode_fn_body = match encode_fn_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(encode_fn_body.into(),JSONType::Number)),
+					};
+					let encode_fn_body = match nodes.get(encode_fn_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(encode_fn_body as usize)),
+					};
+					let encode_fn_body = match encode_fn_body {
+						Node::Function(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),encode_fn_body.into())),
+					};
+					node.borrow_mut().encode_fn = Some(Rc::downgrade(&encode_fn_body));
+				}
+				let decode_fn_body = match raw_node.body.get("decode_fn") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"decode_fn")),
+				};
+ 				if !decode_fn_body.is_null() {
+					let decode_fn_body = match decode_fn_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(decode_fn_body.into(),JSONType::Number)),
+					};
+					let decode_fn_body = match nodes.get(decode_fn_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(decode_fn_body as usize)),
+					};
+					let decode_fn_body = match decode_fn_body {
+						Node::Function(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),decode_fn_body.into())),
+					};
+					node.borrow_mut().decode_fn = Some(Rc::downgrade(&decode_fn_body));
+				}
+				let cast_fns_body = match raw_node.body.get("cast_fns") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"cast_fns")),
+				};
+				let cast_fns_body = match cast_fns_body.as_array(){
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(cast_fns_body.into(),JSONType::Array)),
+				};
+				for link in cast_fns_body {
+					let link = match link.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
+					};
+					let cast_fns_body = match nodes.get(link as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(link as usize)),
+					};
+					let cast_fns_body = match cast_fns_body {
+						Node::Function(body)=>body,
+						x =>return Err(Error::MismatchNodeType(x.into(),cast_fns_body.into())),
+					};
+					node.borrow_mut().cast_fns.push(Rc::downgrade(&cast_fns_body));
+				}
 			},
 			NodeType::State => {
 				let node = nodes[i].clone();
@@ -10551,6 +10766,18 @@ where
 				}
 			}
 			for node in &node.borrow().elements{
+				if !f.visit(node) {
+					return;
+				}
+			}
+		},
+		Node::ScopedStatement(node)=>{
+			if let Some(node) = &node.borrow().struct_type{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
+			if let Some(node) = &node.borrow().statement{
 				if !f.visit(node) {
 					return;
 				}

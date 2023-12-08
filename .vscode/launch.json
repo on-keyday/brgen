@@ -19,7 +19,7 @@
             "request": "launch",
             "program": "${workspaceRoot}/tool/src2json",
             "args": [
-                "c:/workspace/shbrgen/brgen/example/feature_test/const_length.bgn",
+                "c:/workspace/shbrgen/brgen/example/quic_packet.bgn",
                 "--print-json"
             ],
             "stopAtEntry": false,

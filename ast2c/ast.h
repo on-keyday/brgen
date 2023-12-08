@@ -70,6 +70,7 @@ typedef struct ast2c_Cast ast2c_Cast;
 typedef struct ast2c_Available ast2c_Available;
 typedef struct ast2c_Loop ast2c_Loop;
 typedef struct ast2c_IndentBlock ast2c_IndentBlock;
+typedef struct ast2c_ScopedStatement ast2c_ScopedStatement;
 typedef struct ast2c_MatchBranch ast2c_MatchBranch;
 typedef struct ast2c_UnionCandidate ast2c_UnionCandidate;
 typedef struct ast2c_Return ast2c_Return;
@@ -138,6 +139,7 @@ enum ast2c_NodeType {
 	AST2C_NODETYPE_STMT,
 	AST2C_NODETYPE_LOOP,
 	AST2C_NODETYPE_INDENT_BLOCK,
+	AST2C_NODETYPE_SCOPED_STATEMENT,
 	AST2C_NODETYPE_MATCH_BRANCH,
 	AST2C_NODETYPE_UNION_CANDIDATE,
 	AST2C_NODETYPE_RETURN,
@@ -688,6 +690,17 @@ struct ast2c_IndentBlock {
 // returns 1 if succeed 0 if failed
 int ast2c_IndentBlock_parse(ast2c_Ast* ,ast2c_IndentBlock*,ast2c_json_handlers*,void*);
 
+struct ast2c_ScopedStatement {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_StructType* struct_type;
+	ast2c_Node* statement;
+	ast2c_Scope* scope;
+};
+
+// returns 1 if succeed 0 if failed
+int ast2c_ScopedStatement_parse(ast2c_Ast* ,ast2c_ScopedStatement*,ast2c_json_handlers*,void*);
+
 struct ast2c_MatchBranch {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
@@ -1028,6 +1041,10 @@ struct ast2c_Format {
 	ast2c_StructType* belong_struct;
 	ast2c_Ident* ident;
 	ast2c_IndentBlock* body;
+	ast2c_Function* encode_fn;
+	ast2c_Function* decode_fn;
+	ast2c_Function** cast_fns;
+	size_t cast_fns_size;
 };
 
 // returns 1 if succeed 0 if failed

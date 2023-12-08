@@ -44,11 +44,12 @@ state QUICState:
    encrypted :bool
    packet_number_length :u8
 
+
 format LongPacketHeader:
    long_packet_type :u2
    reserved :u2
    packet_number_length :u2
-   QUICState.packet_number_length = u8(packet_number_length) + 1
+   qstate.packet_number_length = u8(packet_number_length) + 1
    version :u32
    dst_conn_id :ConnectionID
    src_conn_id :ConnectionID
@@ -89,12 +90,13 @@ format RetryPacket:
 
 format HandshakePacketHeader:
    length :VarInt
-   if QUICState.encrypted:
+   if qstate.encrypted:
       encrypted_payload :[length]u8
    else:
       packet_number :[qstate.packet_number_length]u8
-      payload :[length - qstate.packet_number_length]u8
-      
+      payload :[length]u8
+
+
 
 
 

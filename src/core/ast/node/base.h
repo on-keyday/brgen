@@ -217,6 +217,26 @@ namespace brgen::ast {
 
     using node_list = std::list<std::shared_ptr<Node>>;
     struct StructType;
+    struct ScopedStatement : Stmt {
+        define_node_type(NodeType::scoped_statement);
+        std::shared_ptr<Node> statement;
+        scope_ptr scope;
+        std::shared_ptr<StructType> struct_type;
+
+        ScopedStatement(lexer::Loc l)
+            : Stmt(l, NodeType::scoped_statement) {}
+
+        ScopedStatement()
+            : Stmt({}, NodeType::scoped_statement) {}
+
+        void dump(auto&& field_) {
+            Stmt::dump(field_);
+            sdebugf(struct_type);
+            sdebugf(statement);
+            sdebugf(scope);
+        }
+    };
+
     struct IndentBlock : Stmt {
         define_node_type(NodeType::indent_block);
         node_list elements;

@@ -28,6 +28,7 @@ class NodeType(PyEnum):
     STMT = "stmt"
     LOOP = "loop"
     INDENT_BLOCK = "indent_block"
+    SCOPED_STATEMENT = "scoped_statement"
     MATCH_BRANCH = "match_branch"
     UNION_CANDIDATE = "union_candidate"
     RETURN = "return"
@@ -331,6 +332,12 @@ class IndentBlock(Stmt):
     scope: Optional[Scope]
 
 
+class ScopedStatement(Stmt):
+    struct_type: Optional[StructType]
+    statement: Optional[Node]
+    scope: Optional[Scope]
+
+
 class MatchBranch(Stmt):
     cond: Optional[Expr]
     sym_loc: Loc
@@ -465,6 +472,9 @@ class Field(Member):
 
 class Format(Member):
     body: Optional[IndentBlock]
+    encode_fn: Optional[Function]
+    decode_fn: Optional[Function]
+    cast_fns: List[Function]
 
 
 class State(Member):
@@ -724,6 +734,8 @@ def ast2node(ast :JsonAst) -> Program:
                 node.append(Loop())
             case NodeType.INDENT_BLOCK:
                 node.append(IndentBlock())
+            case NodeType.SCOPED_STATEMENT:
+                node.append(ScopedStatement())
             case NodeType.MATCH_BRANCH:
                 node.append(MatchBranch())
             case NodeType.UNION_CANDIDATE:
@@ -1129,6 +1141,21 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].scope = scope[ast.node[i].body["scope"]]
                 else:
                     node[i].scope = None
+            case NodeType.SCOPED_STATEMENT:
+                if ast.node[i].body["struct_type"] is not None:
+                    x = node[ast.node[i].body["struct_type"]]
+                    node[i].struct_type = x if isinstance(x,StructType) else raiseError(TypeError('type mismatch at ScopedStatement::struct_type'))
+                else:
+                    node[i].struct_type = None
+                if ast.node[i].body["statement"] is not None:
+                    x = node[ast.node[i].body["statement"]]
+                    node[i].statement = x if isinstance(x,Node) else raiseError(TypeError('type mismatch at ScopedStatement::statement'))
+                else:
+                    node[i].statement = None
+                if ast.node[i].body["scope"] is not None:
+                    node[i].scope = scope[ast.node[i].body["scope"]]
+                else:
+                    node[i].scope = None
             case NodeType.MATCH_BRANCH:
                 if ast.node[i].body["cond"] is not None:
                     x = node[ast.node[i].body["cond"]]
@@ -1469,6 +1496,17 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].body = x if isinstance(x,IndentBlock) else raiseError(TypeError('type mismatch at Format::body'))
                 else:
                     node[i].body = None
+                if ast.node[i].body["encode_fn"] is not None:
+                    x = node[ast.node[i].body["encode_fn"]]
+                    node[i].encode_fn = x if isinstance(x,Function) else raiseError(TypeError('type mismatch at Format::encode_fn'))
+                else:
+                    node[i].encode_fn = None
+                if ast.node[i].body["decode_fn"] is not None:
+                    x = node[ast.node[i].body["decode_fn"]]
+                    node[i].decode_fn = x if isinstance(x,Function) else raiseError(TypeError('type mismatch at Format::decode_fn'))
+                else:
+                    node[i].decode_fn = None
+                node[i].cast_fns = [(node[x] if isinstance(node[x],Function) else raiseError(TypeError('type mismatch at Format::cast_fns'))) for x in ast.node[i].body["cast_fns"]]
             case NodeType.STATE:
                 if ast.node[i].body["belong"] is not None:
                     x = node[ast.node[i].body["belong"]]
@@ -1799,6 +1837,13 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
                   return
           for i in range(len(x.elements)):
               if f(f,x.elements[i]) == False:
+                  return
+        case x if isinstance(x,ScopedStatement):
+          if x.struct_type is not None:
+              if f(f,x.struct_type) == False:
+                  return
+          if x.statement is not None:
+              if f(f,x.statement) == False:
                   return
         case x if isinstance(x,MatchBranch):
           if x.cond is not None:

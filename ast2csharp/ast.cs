@@ -27,6 +27,7 @@ Available,
 Stmt,
 Loop,
 IndentBlock,
+ScopedStatement,
 MatchBranch,
 UnionCandidate,
 Return,
@@ -345,6 +346,12 @@ public class IndentBlock : Stmt{
 	public List<Node>? Elements{get;set;}
 	public Scope? Scope{get;set;}
 }
+public class ScopedStatement : Stmt{
+	public Loc Loc{get;set;}
+	public StructType? StructType{get;set;}
+	public Node? Statement{get;set;}
+	public Scope? Scope{get;set;}
+}
 public class MatchBranch : Stmt{
 	public Loc Loc{get;set;}
 	public Expr? Cond{get;set;}
@@ -543,6 +550,9 @@ public class Format : Member{
 	public StructType? BelongStruct{get;set;}
 	public Ident? Ident{get;set;}
 	public IndentBlock? Body{get;set;}
+	public Function? EncodeFn{get;set;}
+	public Function? DecodeFn{get;set;}
+	public List<Function>? CastFns{get;set;}
 }
 public class State : Member{
 	public Loc Loc{get;set;}

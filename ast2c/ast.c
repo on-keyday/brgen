@@ -34,6 +34,7 @@ const char* ast2c_NodeType_to_string(ast2c_NodeType val) {
 	case AST2C_NODETYPE_STMT: return "stmt";
 	case AST2C_NODETYPE_LOOP: return "loop";
 	case AST2C_NODETYPE_INDENT_BLOCK: return "indent_block";
+	case AST2C_NODETYPE_SCOPED_STATEMENT: return "scoped_statement";
 	case AST2C_NODETYPE_MATCH_BRANCH: return "match_branch";
 	case AST2C_NODETYPE_UNION_CANDIDATE: return "union_candidate";
 	case AST2C_NODETYPE_RETURN: return "return";
@@ -167,6 +168,10 @@ int ast2c_NodeType_from_string(const char* str, ast2c_NodeType* out) {
 	}
 	if (strcmp(str, "indent_block") == 0) {
 		*out = AST2C_NODETYPE_INDENT_BLOCK;
+		return 1;
+	}
+	if (strcmp(str, "scoped_statement") == 0) {
+		*out = AST2C_NODETYPE_SCOPED_STATEMENT;
 		return 1;
 	}
 	if (strcmp(str, "match_branch") == 0) {
@@ -1566,6 +1571,34 @@ error:
 }
 
 // returns 1 if succeed 0 if failed
+int ast2c_ScopedStatement_parse(ast2c_Ast* ast,ast2c_ScopedStatement* s,ast2c_json_handlers* h, void* obj) {
+	if (!ast||!s||!h||!obj) {
+		if(h->error) { h->error(h,NULL, "invalid argument"); }
+		return 0;
+	}
+	void* loc = h->object_get(h, obj, "loc");
+	void* obj_body = h->object_get(h, obj, "body");
+	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
+	s->struct_type = NULL;
+	s->statement = NULL;
+	s->scope = NULL;
+	void* struct_type = h->object_get(h, obj_body, "struct_type");
+	void* statement = h->object_get(h, obj_body, "statement");
+	void* scope = h->object_get(h, obj_body, "scope");
+	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_ScopedStatement::loc is null"); } return 0; }
+	if (!struct_type) { if(h->error) { h->error(h,struct_type, "ast2c_ScopedStatement::struct_type is null"); } return 0; }
+	if (!statement) { if(h->error) { h->error(h,statement, "ast2c_ScopedStatement::statement is null"); } return 0; }
+	if (!scope) { if(h->error) { h->error(h,scope, "ast2c_ScopedStatement::scope is null"); } return 0; }
+	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
+		if(h->error) { h->error(h,loc, "failed to parse ast2c_ScopedStatement::loc"); }
+		goto error;
+	}
+	return 1;
+error:
+	return 0;
+}
+
+// returns 1 if succeed 0 if failed
 int ast2c_MatchBranch_parse(ast2c_Ast* ast,ast2c_MatchBranch* s,ast2c_json_handlers* h, void* obj) {
 	if (!ast||!s||!h||!obj) {
 		if(h->error) { h->error(h,NULL, "invalid argument"); }
@@ -2456,15 +2489,28 @@ int ast2c_Format_parse(ast2c_Ast* ast,ast2c_Format* s,ast2c_json_handlers* h, vo
 	s->belong_struct = NULL;
 	s->ident = NULL;
 	s->body = NULL;
+	s->encode_fn = NULL;
+	s->decode_fn = NULL;
+	s->cast_fns = NULL;
 	void* belong = h->object_get(h, obj_body, "belong");
 	void* belong_struct = h->object_get(h, obj_body, "belong_struct");
 	void* ident = h->object_get(h, obj_body, "ident");
 	void* body = h->object_get(h, obj_body, "body");
+	void* encode_fn = h->object_get(h, obj_body, "encode_fn");
+	void* decode_fn = h->object_get(h, obj_body, "decode_fn");
+	void* cast_fns = h->object_get(h, obj_body, "cast_fns");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_Format::loc is null"); } return 0; }
 	if (!belong) { if(h->error) { h->error(h,belong, "ast2c_Format::belong is null"); } return 0; }
 	if (!belong_struct) { if(h->error) { h->error(h,belong_struct, "ast2c_Format::belong_struct is null"); } return 0; }
 	if (!ident) { if(h->error) { h->error(h,ident, "ast2c_Format::ident is null"); } return 0; }
 	if (!body) { if(h->error) { h->error(h,body, "ast2c_Format::body is null"); } return 0; }
+	if (!encode_fn) { if(h->error) { h->error(h,encode_fn, "ast2c_Format::encode_fn is null"); } return 0; }
+	if (!decode_fn) { if(h->error) { h->error(h,decode_fn, "ast2c_Format::decode_fn is null"); } return 0; }
+	if (!cast_fns) { if(h->error) { h->error(h,cast_fns, "ast2c_Format::cast_fns is null"); } return 0; }
+	if(!h->array_size(h, cast_fns,&s->cast_fns_size)) {
+		if(h->error) { h->error(h,cast_fns, "failed to get array size of ast2c_Format::cast_fns"); }
+		return NULL;
+	}
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_Format::loc"); }
 		goto error;

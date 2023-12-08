@@ -317,31 +317,21 @@ namespace brgen::middle {
             }
             else if (b->op == ast::BinaryOp::define_assign) {
                 assert(left_ident);
-                if (left_ident->usage == ast::IdentUsage::unknown) {
-                    left_ident->usage = ast::IdentUsage::define_variable;
-                    left_ident->expr_type = std::move(new_type);
-                    left_ident->base = b;
-                    left_ident->constant_level = ast::ConstantLevel::variable;
-                }
-                else {
-                    report_assign_error();
-                }
+                assert(left_ident->usage == ast::IdentUsage::define_variable);
+                assert(left_ident->base.lock() == b);
+                left_ident->expr_type = std::move(new_type);
+                left_ident->constant_level = ast::ConstantLevel::variable;
             }
             else if (b->op == ast::BinaryOp::const_assign) {
                 assert(left_ident);
-                if (left_ident->usage == ast::IdentUsage::unknown) {
-                    left_ident->usage = ast::IdentUsage::define_const;
-                    left_ident->expr_type = std::move(new_type);
-                    left_ident->base = b;
-                    if (b->right->constant_level == ast::ConstantLevel::constant) {
-                        left_ident->constant_level = ast::ConstantLevel::constant;
-                    }
-                    else {
-                        left_ident->constant_level = ast::ConstantLevel::const_variable;
-                    }
+                assert(left_ident->usage == ast::IdentUsage::define_const);
+                assert(left_ident->base.lock() == b);
+                left_ident->expr_type = std::move(new_type);
+                if (b->right->constant_level == ast::ConstantLevel::constant) {
+                    left_ident->constant_level = ast::ConstantLevel::constant;
                 }
                 else {
-                    report_assign_error();
+                    left_ident->constant_level = ast::ConstantLevel::const_variable;
                 }
             }
         }
@@ -590,7 +580,12 @@ namespace brgen::middle {
 
         std::shared_ptr<ast::StructType> lookup_struct(const std::shared_ptr<ast::Type>& typ) {
             if (auto ident = ast::as<ast::IdentType>(typ)) {
-                if (auto b = ident->base.lock()) {
+                auto b = ident->base.lock();
+                if (!b) {
+                    typing_ident_type(ident, true);
+                    b = ident->base.lock();
+                }
+                if (b) {
                     if (auto fmt = ast::as<ast::StructType>(b)) {
                         return ast::cast_to<ast::StructType>(b);
                     }
@@ -604,10 +599,13 @@ namespace brgen::middle {
 
         std::shared_ptr<ast::EnumType> lookup_enum(const std::shared_ptr<ast::Type>& typ) {
             if (auto ident = ast::as<ast::IdentType>(typ)) {
-                if (auto fmt = ident->base.lock()) {
-                    if (auto e = ast::as<ast::EnumType>(fmt)) {
-                        return ast::cast_to<ast::EnumType>(fmt);
-                    }
+                auto fmt = ident->base.lock();
+                if (!fmt) {
+                    typing_ident_type(ident, true);
+                    fmt = ident->base.lock();
+                }
+                if (auto e = ast::as<ast::EnumType>(fmt)) {
+                    return ast::cast_to<ast::EnumType>(fmt);
                 }
             }
             else if (ast::as<ast::EnumType>(typ)) {
@@ -697,7 +695,9 @@ namespace brgen::middle {
             }
             auto type = lookup_struct(selector->target->expr_type);
             if (!type) {
-                error(selector->target->loc, "expect struct type but not").report();
+                error(selector->target->loc, "expect struct type but not")
+                    .error(selector->target->loc, "type is ", ast::node_type_to_string(selector->target->expr_type->node_type))
+                    .report();
             }
             auto stmt = type->lookup(selector->member->ident);
             if (!stmt) {
@@ -712,9 +712,9 @@ namespace brgen::middle {
                 selector->base = stmt->ident;
             }
             else {
-                auto r = error(selector->member->loc, "member ", selector->member->ident, " is not a field or function");
-                (void)r.error(stmt->ident->loc, "member ", selector->member->ident, " is defined here");
-                r.report();
+                error(selector->member->loc, "member ", selector->member->ident, " is not a field or function")
+                    .error(stmt->ident->loc, "member ", selector->member->ident, " is defined here")
+                    .report();
             }
         }
 
@@ -748,7 +748,7 @@ namespace brgen::middle {
                                                       r->end ? r->end->constant_level : ast::ConstantLevel::constant);
         }
 
-        void typing_ident(ast::Ident* ident) {
+        void typing_ident(ast::Ident* ident, bool on_define) {
             if (ident->base.lock()) {
                 assert(ident->usage != ast::IdentUsage::unknown);
                 return;  // skip
@@ -768,7 +768,11 @@ namespace brgen::middle {
                 }
             }
             else {
-                warn_not_typed(ident);
+                if (ident->usage == ast::IdentUsage::maybe_type) {
+                }
+                else if (!on_define) {
+                    warn_not_typed(ident);
+                }
             }
         }
 
@@ -799,31 +803,7 @@ namespace brgen::middle {
                 lit->constant_level = ast::ConstantLevel::constant;
             }
             else if (auto ident = ast::as<ast::Ident>(expr)) {
-                if (ident->base.lock()) {
-                    assert(ident->usage != ast::IdentUsage::unknown);
-                    return;  // skip
-                }
-                if (auto found = find_matching_ident(ident)) {
-                    auto& base = (*found);
-                    ident->expr_type = base->expr_type;
-                    ident->base = base;
-                    ident->constant_level = base->constant_level;
-                    if (base->usage == ast::IdentUsage::define_enum ||
-                        base->usage == ast::IdentUsage::define_format ||
-                        base->usage == ast::IdentUsage::define_state) {
-                        ident->usage = ast::IdentUsage::reference_type;
-                    }
-                    else {
-                        ident->usage = ast::IdentUsage::reference;
-                    }
-                }
-                else {
-                    if (ident->usage == ast::IdentUsage::maybe_type) {
-                    }
-                    else if (!on_define) {
-                        warn_not_typed(ident);
-                    }
-                }
+                typing_ident(ident, on_define);
             }
             else if (auto bin = ast::as<ast::Binary>(expr)) {
                 typing_binary_expr(ast::cast_to<ast::Binary>(expr));
@@ -887,9 +867,9 @@ namespace brgen::middle {
             }
         }
 
-        void typing_ident_type(ast::IdentType* s) {
+        void typing_ident_type(ast::IdentType* s, bool disable_warning = false) {
             // If the object is an identifier, perform identifier typing
-            typing_expr(s->ident);
+            typing_ident(s->ident.get(), disable_warning);
             if (s->ident->usage == ast::IdentUsage::maybe_type) {
                 warn_type_not_found(s->ident);
             }
