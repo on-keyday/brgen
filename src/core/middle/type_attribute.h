@@ -149,7 +149,6 @@ namespace brgen::middle {
                                 continue;
                             }
                             if (prev_field) {
-                                // TODO(on-keyday): also, like a: u8(0x8) is fixed
                                 if (ast::as<ast::StrLiteralType>(field->field_type)) {
                                     prev_field->follow = ast::Follow::constant;
                                 }
@@ -189,6 +188,25 @@ namespace brgen::middle {
                         prev_field->follow = ast::Follow::end;
                         t->bit_alignment = alignment;
                         t->bit_size = bit_size == -1 ? 0 : bit_size;
+                        ast::Follow current = ast::Follow::unknown;
+                        for (auto it = t->fields.rbegin(); it != t->fields.rend(); it++) {
+                            if (auto field = ast::as<ast::Field>(*it); field) {
+                                if (field->follow == ast::Follow::unknown) {
+                                    continue;
+                                }
+                                if (field->follow == ast::Follow::end) {
+                                    current = field->follow;
+                                }
+                                else if (field->follow == ast::Follow::normal) {
+                                    current = field->follow;
+                                }
+                                else if (field->follow == ast::Follow::constant) {
+                                    current = field->follow;
+                                }
+                                assert(current != ast::Follow::unknown);
+                                field->eventual_follow = current;
+                            }
+                        }
                     }
                     return;
                 }

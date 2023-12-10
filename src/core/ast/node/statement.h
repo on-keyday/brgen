@@ -141,6 +141,39 @@ namespace brgen::ast {
         std::list<std::shared_ptr<Expr>> arguments;
         BitAlignment bit_alignment = BitAlignment::not_target;
         Follow follow = Follow::unknown;
+        // eventual follow indicates finally followed type
+        // for example, format A like below:
+        // format A:
+        //  a :u8 b :u8
+        // follow of a is fixed, but eventual follow is end
+        // follow of b is end, and eventual follow is also end
+        // for example, format B like below:
+        // format B:
+        //  a :u8 b :[a]u8
+        // follow of a is normal, and eventual follow is also normal
+        // follow of b is end, and eventual follow is also end
+        // for example, format C like below:
+        // format C:
+        //  a :u8 b :[a]u8 c :u8 d :[c]u8
+        // follow of a is normal, and eventual follow is also normal
+        // follow of b is also normal, and eventual follow is also normal
+        // follow of c is fixed, and eventual follow is normal
+        // follow of d is end, and eventual follow is also end
+        // for example, format D like below:
+        // format D:
+        //  a :u8 b :u16 c :[b]u8 d :u16
+        // follow of a is fixed, and eventual follow is normal
+        // follow of b is normal, and eventual follow is also normal
+        // follow of c is fixed, and eventual follow is end
+        // follow of d is end, and eventual follow is also end
+        // for example, format E like below:
+        // format E:
+        //  a :u8 b :u16 c :[..]u8 d :"abs"
+        // follow of a is fixed, and eventual follow is normal
+        // follow of b is normal, and eventual follow is also normal
+        // follow of c is constant, and eventual follow is constant
+        // follow of d is end, and eventual follow is also end
+        Follow eventual_follow = Follow::unknown;
 
         Field(lexer::Loc l)
             : Member(l, NodeType::field) {}
@@ -158,6 +191,7 @@ namespace brgen::ast {
             sdebugf(arguments);
             sdebugf(bit_alignment);
             sdebugf(follow);
+            sdebugf(eventual_follow);
         }
     };
 
