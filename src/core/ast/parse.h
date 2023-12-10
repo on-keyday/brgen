@@ -625,7 +625,7 @@ namespace brgen::ast {
         void check_duplicated_def(ast::Ident* ident) {
             auto found = ident->scope->lookup_current(
                 [&](std::shared_ptr<ast::Ident>& i) {
-                    if (i->ident == ident->ident) {
+                    if (i->usage != ast::IdentUsage::unknown && i->ident == ident->ident) {
                         return true;
                     }
                     return false;
