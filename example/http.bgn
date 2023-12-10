@@ -1,0 +1,16 @@
+
+format RequestLine:
+    method :[..]u8
+    :" "
+    path :[..]u8
+    :" "
+    version :[..]u8
+    :"\r\n"
+
+format ResponseLine:
+    version :[..]u8
+    :" "
+    status :[..]u8
+    :" "
+    reason :[..]u8
+    :"\r\n"

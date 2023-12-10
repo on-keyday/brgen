@@ -481,7 +481,7 @@ const hover = async (params :HoverParams)=>{
                     return makeHover(ident.ident,"variable");
                 case ast2ts.IdentUsage.define_field:
                     if(ast2ts.isField(ident.base)){
-                        return makeHover(ident.ident, `field (size: ${bitSize(ident.base.field_type?.bit_size)} ,align: ${ident.base.bit_alignment}, type align: ${ident.base.field_type?.bit_alignment||"unknown"}, follow: ${ident.base.follow})`);
+                        return makeHover(ident.ident, `field (size: ${bitSize(ident.base.field_type?.bit_size)} ,align: ${ident.base.bit_alignment}, type align: ${ident.base.field_type?.bit_alignment||"unknown"}, follow: ${ident.base.follow} eventual_follow: ${ident.base.eventual_follow})`);
                     }
                     return makeHover(ident.ident,"field");
                 case ast2ts.IdentUsage.define_const:

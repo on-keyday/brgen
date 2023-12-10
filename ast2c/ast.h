@@ -1029,6 +1029,7 @@ struct ast2c_Field {
 	size_t arguments_size;
 	ast2c_BitAlignment bit_alignment;
 	ast2c_Follow follow;
+	ast2c_Follow eventual_follow;
 };
 
 // returns 1 if succeed 0 if failed

@@ -543,6 +543,7 @@ public class Field : Member{
 	public List<Expr>? Arguments{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public Follow Follow{get;set;}
+	public Follow EventualFollow{get;set;}
 }
 public class Format : Member{
 	public Loc Loc{get;set;}

@@ -2395,16 +2395,17 @@ func (n *Config) GetLoc() Loc {
 }
 
 type Field struct {
-	Loc          Loc
-	Belong       Member
-	BelongStruct *StructType
-	Ident        *Ident
-	ColonLoc     Loc
-	FieldType    Type
-	RawArguments Expr
-	Arguments    []Expr
-	BitAlignment BitAlignment
-	Follow       Follow
+	Loc            Loc
+	Belong         Member
+	BelongStruct   *StructType
+	Ident          *Ident
+	ColonLoc       Loc
+	FieldType      Type
+	RawArguments   Expr
+	Arguments      []Expr
+	BitAlignment   BitAlignment
+	Follow         Follow
+	EventualFollow Follow
 }
 
 func (n *Field) isMember() {}
@@ -3761,15 +3762,16 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeField:
 			v := n.node[i].(*Field)
 			var tmp struct {
-				Belong       *uintptr     `json:"belong"`
-				BelongStruct *uintptr     `json:"belong_struct"`
-				Ident        *uintptr     `json:"ident"`
-				ColonLoc     Loc          `json:"colon_loc"`
-				FieldType    *uintptr     `json:"field_type"`
-				RawArguments *uintptr     `json:"raw_arguments"`
-				Arguments    []uintptr    `json:"arguments"`
-				BitAlignment BitAlignment `json:"bit_alignment"`
-				Follow       Follow       `json:"follow"`
+				Belong         *uintptr     `json:"belong"`
+				BelongStruct   *uintptr     `json:"belong_struct"`
+				Ident          *uintptr     `json:"ident"`
+				ColonLoc       Loc          `json:"colon_loc"`
+				FieldType      *uintptr     `json:"field_type"`
+				RawArguments   *uintptr     `json:"raw_arguments"`
+				Arguments      []uintptr    `json:"arguments"`
+				BitAlignment   BitAlignment `json:"bit_alignment"`
+				Follow         Follow       `json:"follow"`
+				EventualFollow Follow       `json:"eventual_follow"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -3796,6 +3798,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			}
 			v.BitAlignment = tmp.BitAlignment
 			v.Follow = tmp.Follow
+			v.EventualFollow = tmp.EventualFollow
 		case NodeTypeFormat:
 			v := n.node[i].(*Format)
 			var tmp struct {

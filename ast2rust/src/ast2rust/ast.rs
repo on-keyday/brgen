@@ -5444,6 +5444,7 @@ pub struct Field {
 	pub arguments: Vec<Expr>,
 	pub bit_alignment: BitAlignment,
 	pub follow: Follow,
+	pub eventual_follow: Follow,
 }
 
 impl TryFrom<&Member> for Rc<RefCell<Field>> {
@@ -6659,6 +6660,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				arguments: Vec::new(),
 				bit_alignment: BitAlignment::ByteAligned,
 				follow: Follow::Unknown,
+				eventual_follow: Follow::Unknown,
 				})))
 			},
 			NodeType::Format => {
@@ -9723,6 +9725,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
 					},
 					None=>return Err(Error::MismatchJSONType(follow_body.into(),JSONType::String)),
+				};
+				let eventual_follow_body = match raw_node.body.get("eventual_follow") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"eventual_follow")),
+				};
+				node.borrow_mut().eventual_follow = match eventual_follow_body.as_str() {
+					Some(v)=>match Follow::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(eventual_follow_body.into(),JSONType::String)),
 				};
 			},
 			NodeType::Format => {
