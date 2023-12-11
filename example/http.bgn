@@ -14,3 +14,21 @@ format ResponseLine:
     :" "
     reason :[..]u8
     :"\r\n"
+
+format Field:
+    name :[..]u8
+    :": "
+    value :[..]u8
+    :"\r\n"
+
+format Request:
+    line :RequestLine
+    fields :[..]Field
+    :"\r\n"
+    body :[..]u8
+
+format Response:
+    line :ResponseLine
+    fields :[..]Field
+    :"\r\n"
+    body :[..]u8

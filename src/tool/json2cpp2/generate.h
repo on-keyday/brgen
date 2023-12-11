@@ -1,14 +1,13 @@
 /*license*/
 #pragma once
 
-#include "cpp_type.h"
 #include <helper/expected.h>
 #include <core/ast/ast.h>
 #include <core/writer/writer.h>
 #include <core/ast/tool/stringer.h>
 
 namespace j2cp2 {
-
+    namespace ast = brgen::ast;
     struct BitFieldMeta {
         std::string field_name;
         std::vector<std::shared_ptr<ast::Field>> fields;
@@ -83,6 +82,80 @@ namespace j2cp2 {
             return "";
         }
 
+        void write_struct_union(ast::StructUnionType* union_ty) {
+            std::map<std::shared_ptr<ast::StructType>, std::string> tmp;
+            w.writeln("union {");
+            std::string prefix = "union_struct_";
+            {
+                auto indent = w.indent_scope();
+                for (auto& f : union_ty->structs) {
+                    write_struct_type(f);
+                    auto& t = tmp[f];
+                    t = brgen::concat(prefix, brgen::nums(seq));
+                    seq++;
+                    w.writeln(" ", t, ";");
+                }
+            }
+            w.writeln("};");
+            for (auto& f : union_ty->union_fields) {
+                auto uf = f.lock();
+                auto ut = ast::as<ast::UnionType>(uf->field_type);
+                assert(ut);
+                auto c = ut->cond.lock();
+                std::string cond_u;
+                if (c) {
+                    cond_u = str.to_string(c);
+                }
+                else {
+                    cond_u = "true";
+                }
+                if (ut->common_type) {
+                    w.writeln("std::optional<", get_type_name(ut->common_type), "> ", uf->ident->ident, "() const {");
+                    {
+                        auto indent = w.indent_scope();
+                        auto make_access = [&](const std::shared_ptr<ast::Field>& f) {
+                            auto struct_ = f->belong_struct.lock();
+                            assert(struct_);
+                            auto indent = w.indent_scope();
+                            auto access = tmp[struct_] + "." + f->ident->ident;
+                            anonymous_structs[f.get()] = {access, struct_};
+                            w.writeln("return this->", access, ";");
+                        };
+                        bool has_els = false;
+                        for (auto& c : ut->candidates) {
+                            auto cond = c->cond.lock();
+                            if (cond) {
+                                auto cond_s = str.to_string(cond);
+                                w.writeln("if (", cond_s, "==", cond_u, ") {");
+                                {
+                                    auto f = c->field.lock();
+                                    if (!f) {
+                                        w.writeln("return std::nullopt;");
+                                    }
+                                    else {
+                                        make_access(f);
+                                    }
+                                }
+                                w.writeln("}");
+                            }
+                            else {
+                                auto f = c->field.lock();
+                                if (!f) {
+                                    w.writeln("return std::nullopt;");
+                                }
+                                else {
+                                    make_access(f);
+                                }
+                            }
+                        }
+                        w.writeln("return std::nullopt;");
+                        str.ident_map[uf->ident->ident] = "*" + uf->ident->ident + "()";
+                    }
+                    w.writeln("}");
+                }
+            }
+        }
+
         void write_struct_type(const std::shared_ptr<ast::StructType>& s) {
             auto member = ast::as<ast::Member>(s->base.lock());
             bool has_ident = member && member->node_type != ast::NodeType::field && member->ident;
@@ -145,77 +218,7 @@ namespace j2cp2 {
                             w.writeln(ty, " ", f->ident->ident, ";");
                         }
                         if (auto union_ty = ast::as<ast::StructUnionType>(type)) {
-                            std::map<std::shared_ptr<ast::StructType>, std::string> tmp;
-                            w.writeln("union {");
-                            std::string prefix = "union_struct_";
-                            {
-                                auto indent = w.indent_scope();
-                                for (auto& f : union_ty->structs) {
-                                    write_struct_type(f);
-                                    auto& t = tmp[f];
-                                    t = brgen::concat(prefix, brgen::nums(seq));
-                                    seq++;
-                                    w.writeln(" ", t, ";");
-                                }
-                            }
-                            w.writeln("};");
-                            for (auto& f : union_ty->union_fields) {
-                                auto uf = f.lock();
-                                auto ut = ast::as<ast::UnionType>(uf->field_type);
-                                assert(ut);
-                                auto c = ut->cond.lock();
-                                std::string cond_u;
-                                if (c) {
-                                    cond_u = str.to_string(c);
-                                }
-                                else {
-                                    cond_u = "true";
-                                }
-                                if (ut->common_type) {
-                                    w.writeln("std::optional<", get_type_name(ut->common_type), "> ", uf->ident->ident, "() const {");
-                                    {
-                                        auto indent = w.indent_scope();
-                                        auto make_access = [&](const std::shared_ptr<ast::Field>& f) {
-                                            auto struct_ = f->belong_struct.lock();
-                                            assert(struct_);
-                                            auto indent = w.indent_scope();
-                                            auto access = tmp[struct_] + "." + f->ident->ident;
-                                            anonymous_structs[f.get()] = {access, struct_};
-                                            w.writeln("return this->", access, ";");
-                                        };
-                                        bool has_els = false;
-                                        for (auto& c : ut->candidates) {
-                                            auto cond = c->cond.lock();
-                                            if (cond) {
-                                                auto cond_s = str.to_string(cond);
-                                                w.writeln("if (", cond_s, "==", cond_u, ") {");
-                                                {
-                                                    auto f = c->field.lock();
-                                                    if (!f) {
-                                                        w.writeln("return std::nullopt;");
-                                                    }
-                                                    else {
-                                                        make_access(f);
-                                                    }
-                                                }
-                                                w.writeln("}");
-                                            }
-                                            else {
-                                                auto f = c->field.lock();
-                                                if (!f) {
-                                                    w.writeln("return std::nullopt;");
-                                                }
-                                                else {
-                                                    make_access(f);
-                                                }
-                                            }
-                                        }
-                                        w.writeln("return std::nullopt;");
-                                        str.ident_map[uf->ident->ident] = "*" + uf->ident->ident + "()";
-                                    }
-                                    w.writeln("}");
-                                }
-                            }
+                            write_struct_union(union_ty);
                         }
                     }
                 }
