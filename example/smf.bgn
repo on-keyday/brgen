@@ -71,6 +71,7 @@ enum EventType:
 state RunningStatus:
     type : u8
 
+running_status : RunningStatus
 
 format Event:
     delta_time : Varint
@@ -85,14 +86,14 @@ format Event:
     if event_type == (0x00..0x7f):
         if RunningStatus.type == 0:
             error("running status not set")
-        event_type = RunningStatus.type
+        event_type = running_status.type
         input.backward()
     match event_type:
         0xff => data :MetaEvent
         0xf0 => data :SysExEvent
         0xf7 => data :SysExEvent
         .. :
-            RunningStatus.type = event_type
+            running_status.type = event_type
             match event_type:     
                 0x80..0x8f => data :NoteOffEvent
                 0x90..0x9f => data :NoteOnEvent
