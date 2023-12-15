@@ -382,6 +382,9 @@ namespace brgen::ast::tool {
                     return eval_expr(cond->els.get());
                 }
             }
+            if (auto cast_ = ast::as<ast::Cast>(expr)) {
+                return eval_expr(cast_->expr.get());
+            }
             return unexpect(LocError{expr->loc, "not supported"});
         }
 

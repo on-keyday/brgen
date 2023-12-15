@@ -37,6 +37,7 @@ namespace brgen::ast::tool {
         std::unordered_map<std::string, std::string> ident_map;
         std::function<std::string(std::string cond, std::string then, std::string els)> cond_op;
         std::unordered_map<std::string, std::function<std::string(Stringer& s, const std::string& name, const std::vector<std::shared_ptr<ast::Expr>>&)>> call_handler;
+        std::function<std::string(Stringer&, const std::shared_ptr<Type>&)> type_resolver;
 
         void clear() {
             bin_op_map.clear();
@@ -44,6 +45,7 @@ namespace brgen::ast::tool {
             ident_map.clear();
             cond_op = nullptr;
             call_handler.clear();
+            type_resolver = nullptr;
         }
 
        private:
@@ -149,6 +151,9 @@ namespace brgen::ast::tool {
                     }
                     return "true";
                 }
+            }
+            if (auto cast_ = ast::as<ast::Cast>(expr)) {
+                return concat(type_resolver(*this, cast_->expr_type), "(", to_string(cast_->expr), ")");
             }
             return "";
         }

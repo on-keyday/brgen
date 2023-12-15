@@ -13,12 +13,12 @@ format TCPSegment:
     options :[u8(dataOffset*2)-20]u8
 
 format IPv4Header:
-    version :u4 ihl :u4 tos :u8 len :u16
-    id :u16 flags :u3 fragOffset :u13
+    version :u4 ihl :u4 dscp :u6 ecn :u2 len :u16
+    id :u16 reserved :u1 dont_fragment :u1 more_fragment :u1 fragOffset :u13
     ttl :u8 proto :u8 checksum :u16
     srcAddr :u32
     dstAddr :u32
-    options :[u8(ihl)*4-20]u8
+    # options :[u8(ihl)*4-20]u8
 
 
 format IPv6Header:

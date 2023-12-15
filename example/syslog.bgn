@@ -32,7 +32,7 @@ fn nilvalue(n :char) -> bool:
 format Version:
     version :u16
     fn decode():
-        assert(nonzerodigit(input[0]))
+        nonzerodigit(input[0]) == true
         version = input.cond(digit,3).u16()
     
     fn encode():

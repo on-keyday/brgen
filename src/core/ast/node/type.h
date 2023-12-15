@@ -183,6 +183,11 @@ namespace brgen::ast {
             this->is_explicit = true;
         }
 
+        IdentType(lexer::Loc l, const std::shared_ptr<Ident>& token, std::shared_ptr<Type>&& base)
+            : Type(l, NodeType::ident_type), ident(token), base(std::move(base)) {
+            this->is_explicit = true;
+        }
+
         void dump(auto&& field_) {
             Type::dump(field_);
             sdebugf(ident);

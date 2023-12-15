@@ -472,7 +472,7 @@ namespace j2cp2 {
                         w.writeln("}");
                     }
                 }
-                // encode fields
+                // write code
                 code_indent_block(fmt->body, encode);
                 w.writeln("return true;");
             }

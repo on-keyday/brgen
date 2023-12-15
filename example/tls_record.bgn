@@ -12,4 +12,3 @@ format TLSRecord:
     version :TLSVersion
     length :u16
     fragment :[length]u8
-

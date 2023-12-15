@@ -364,7 +364,7 @@ namespace brgen::middle {
         }
 
         void typing_if(ast::If* if_) {
-            typing_object(if_->cond);
+            typing_expr(if_->cond);
             if (if_->cond->expr_type) {
                 check_bool(if_->cond.get());
             }
@@ -540,6 +540,10 @@ namespace brgen::middle {
                     }
                     report_binary_error();
                 }
+                case ast::BinaryOp::comma: {
+                    b->expr_type = std::move(rty);
+                    return;
+                }
                 default: {
                     report_binary_error();
                 }
@@ -636,8 +640,32 @@ namespace brgen::middle {
             cond->constant_level = decide_constant_level(cond->then->constant_level, cond->els->constant_level);
         }
 
-        void typing_call(ast::Call* call) {
+        void typing_call(ast::Call* call, auto& base_node) {
             typing_expr(call->callee);
+            if (auto ident = ast::as<ast::Ident>(call->callee); ident && ident->usage == ast::IdentUsage::reference_type) {
+                // replace with cast node
+                auto s = ident->base.lock();
+                assert(s);
+                auto def = ast::as<ast::Ident>(s)->base.lock();
+                assert(def);
+                if (auto enum_ = ast::as<ast::Enum>(def)) {
+                    call->expr_type = enum_->enum_type;
+                }
+                else if (auto fmt = ast::as<ast::Format>(def)) {
+                    call->expr_type = fmt->body->struct_type;
+                }
+                else {
+                    error(call->callee->loc, "expect enum or format type but not")
+                        .error(def->loc, "type is ", ast::node_type_to_string(def->node_type))
+                        .report();
+                }
+                typing_expr(call->raw_arguments);
+                auto copy = call->expr_type;
+                auto copy2 = call->raw_arguments;
+                auto cast = std::make_shared<ast::Cast>(ast::cast_to<ast::Call>(base_node), std::move(copy), std::move(copy2));
+                base_node = std::move(cast);
+                return;
+            }
             if (!call->callee->expr_type) {
                 warn_not_typed(call);
                 // anyway, we need to type arguments
@@ -776,7 +804,8 @@ namespace brgen::middle {
             }
         }
 
-        void typing_expr(const std::shared_ptr<ast::Expr>& expr, bool on_define = false) {
+        void typing_expr(auto& base_node, bool on_define = false) {
+            auto expr = ast::cast_to<ast::Expr>(base_node);
             // treat cast as a special case
             // Cast has already been typed in the previous pass
             // but inner expression may not be typed
@@ -784,7 +813,7 @@ namespace brgen::middle {
                 typing_expr(c->expr);
             }
             if (auto a = ast::as<ast::Available>(expr)) {
-                typing_expr(a->target);
+                typing_ident(a->target.get(), false);
             }
             if (expr->expr_type) {
                 typing_object(expr->expr_type);
@@ -837,7 +866,13 @@ namespace brgen::middle {
                 }
             }
             else if (auto call = ast::as<ast::Call>(expr)) {
-                typing_call(call);
+                using Cmp = typename utils::helper::template_instance_of_t<std::decay_t<decltype(base_node)>, std::shared_ptr>::template param_at<0>;
+                if constexpr (std::is_base_of_v<Cmp, ast::Call> && !std::is_same_v<Cmp, ast::Call>) {
+                    typing_call(call, base_node);
+                }
+                else {
+                    assert(false);
+                }
             }
             else if (auto selector = ast::as<ast::MemberAccess>(expr)) {
                 typing_member_access(selector);
@@ -900,18 +935,24 @@ namespace brgen::middle {
             return;
         }
 
-        void typing_object(const std::shared_ptr<ast::Node>& ty) {
+        void typing_object(auto& ty) {
             // Define a lambda function for recursive traversal and typing
-            auto recursive_typing = [&](auto&& f, const std::shared_ptr<ast::Node>& ty) -> void {
+            auto recursive_typing = [&](auto&& f, auto& ty) -> void {
                 auto do_traverse = [&] {
                     // Traverse the object's sub components and apply the recursive function
-                    ast::traverse(ty, [&](const std::shared_ptr<ast::Node>& sub_ty) {
+                    ast::traverse(ty, [&](auto& sub_ty) -> void {
                         f(f, sub_ty);
                     });
                 };
                 if (auto expr = ast::as<ast::Expr>(ty)) {
-                    // If the object is an expression, perform expression typing
-                    typing_expr(ast::cast_to<ast::Expr>(ty));
+                    using Cmp = typename utils::helper::template_instance_of_t<std::decay_t<decltype(ty)>, std::shared_ptr>::template param_at<0>;
+                    if constexpr (std::is_base_of_v<Cmp, ast::Expr> || std::is_base_of_v<ast::Expr, Cmp>) {
+                        // If the object is an expression, perform expression typing
+                        typing_expr(ty);
+                    }
+                    else {
+                        assert(false);
+                    }
                     return;
                 }
                 if (auto s = ast::as<ast::IdentType>(ty)) {
@@ -972,7 +1013,7 @@ namespace brgen::middle {
         }
 
        public:
-        inline result<void> typing(const std::shared_ptr<ast::Node>& ty) {
+        inline result<void> typing(auto& ty) {
             try {
                 typing_object(ty);
             } catch (LocationError& e) {

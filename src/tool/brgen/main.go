@@ -60,6 +60,14 @@ type GeneratorHandler struct {
 	outputCount   atomic.Int32
 }
 
+func printf(stderr io.Writer, format string, args ...interface{}) {
+	fmt.Fprintf(stderr, "brgen: %s", fmt.Sprintf(format, args...))
+}
+
+func (g *GeneratorHandler) Printf(format string, args ...interface{}) {
+	printf(g.stderr, format, args...)
+}
+
 func (g *GeneratorHandler) Init(src2json string, output []*Output, suffix string) error {
 	if len(output) == 0 {
 		return errors.New("output is required")
@@ -99,14 +107,22 @@ func NewGenerator(ctx context.Context, work *sync.WaitGroup, stderr io.Writer, r
 	}
 }
 
+func (g *Generator) Printf(format string, args ...interface{}) {
+	printf(g.stderr, format, args...)
+}
+
 func (g *Generator) execGenerator(cmd *exec.Cmd, targetFile string) ([]byte, error) {
-	cmd.Stderr = g.stderr
+	errBuf := bytes.NewBuffer(nil)
+	cmd.Stderr = errBuf
 	buf := bytes.NewBuffer(nil)
 	cmd.Stdout = buf
-	log.Printf("execGenerator: starting process: %s\n", targetFile)
+	g.Printf("execGenerator: starting process: %s\n", targetFile)
 	err := cmd.Run()
-	log.Printf("execGenerator: done process: %s\n", targetFile)
+	g.Printf("execGenerator: done process: %s\n", targetFile)
 	if err != nil {
+		if errBuf.Len() > 0 {
+			return nil, fmt.Errorf("%w: %s", err, errBuf.String())
+		}
 		return nil, err
 	}
 	return buf.Bytes(), nil
@@ -147,7 +163,7 @@ func (g *Generator) StartGenerator(out *Output) error {
 	g.args = out.Args
 	err := g.askSpec()
 	if err != nil {
-		return fmt.Errorf("%s: askSpec: %w", g.generatorPath, err)
+		return fmt.Errorf("askSpec: %s: %w", g.generatorPath, err)
 	}
 	go func() {
 		for {
@@ -158,7 +174,7 @@ func (g *Generator) StartGenerator(out *Output) error {
 				go func() {
 					data, err := g.passAst(req.Path, req.Data)
 					if err != nil {
-						req.Err = err
+						req.Err = fmt.Errorf("passAst: %s: %w", g.generatorPath, err)
 						g.result <- req
 						return
 					}
@@ -245,13 +261,17 @@ func (g *GeneratorHandler) loadAst(path string) ([]byte, error) {
 	if config.Warnings.DisableUnusedWarning {
 		cmd.Args = append(cmd.Args, "--disable-unused")
 	}
-	cmd.Stderr = g.stderr
+	errBuf := bytes.NewBuffer(nil)
+	cmd.Stderr = errBuf
 	buf := bytes.NewBuffer(nil)
 	cmd.Stdout = buf
-	log.Printf("loadAst: starting process: %s\n", path)
+	g.Printf("loadAst: starting process: %s\n", path)
 	err := cmd.Run()
-	log.Printf("loadAst: done process: %s\n", path)
+	g.Printf("loadAst: done process: %s\n", path)
 	if err != nil {
+		if errBuf.Len() > 0 {
+			return nil, fmt.Errorf("%w: %s", err, errBuf.String())
+		}
 		return nil, err
 	}
 	return buf.Bytes(), nil
@@ -260,19 +280,17 @@ func (g *GeneratorHandler) loadAst(path string) ([]byte, error) {
 func (g *GeneratorHandler) generateAST(path string, wg *sync.WaitGroup) {
 	files, err := g.lookupPath(path)
 	if err != nil {
-		log.Printf("lookupPath: %s: %s\n", path, err)
+		g.Printf("lookupPath: %s: %s\n", path, err)
 		return
 	}
 	for _, file := range files {
 		wg.Add(1)
 		go func(file string) {
 			defer wg.Done()
-			log.Printf("parse start: %s\n", file)
-			defer log.Printf("parse done: %s\n", file)
 			buf, err := g.loadAst(file)
 			if err != nil {
 				go func() {
-					g.errQueue <- fmt.Errorf("loadAst: %s: %w\n", file, err)
+					g.errQueue <- fmt.Errorf("loadAst: %s: %w", file, err)
 				}()
 				return
 			}
@@ -411,6 +429,8 @@ func init() {
 }
 
 func main() {
+	log.SetPrefix("brgen: ")
+	log.SetOutput(os.Stderr)
 	args := flag.Args()
 	if len(config.TargetDirs) > 0 {
 		args = append(args, config.TargetDirs...)
@@ -426,17 +446,20 @@ func main() {
 	}
 	g.StartGenerator(args...)
 	var wg sync.WaitGroup
+	var totalCount atomic.Uint32
+	var errCount atomic.Uint32
 	reporter := func() {
 		defer wg.Done()
 		for res := range g.Recv() {
+			totalCount.Add(1)
 			if res.Err != nil {
-				log.Printf("%s: %v", res.Path, res.Err)
+				g.Printf("%s: %v\n", res.Path, res.Err)
+				errCount.Add(1)
 				continue
 			}
 			dir := filepath.Dir(res.Path)
 			if dir == "." {
-				fmt.Printf("%s:\n", res.Path)
-				fmt.Println(string(res.Data))
+				fmt.Printf("%s:\n%s\n", res.Path, string(res.Data))
 				continue
 			}
 			if err := os.MkdirAll(dir, 0755); err != nil {
@@ -444,16 +467,16 @@ func main() {
 			}
 			fp, err := os.Create(res.Path)
 			if err != nil {
-				log.Printf("create %s: %s\n", res.Path, err)
+				g.Printf("create %s: %s\n", res.Path, err)
 				continue
 			}
 			defer fp.Close()
 			_, err = fp.Write(res.Data)
 			if err != nil {
-				log.Printf("write %s: %s\n", res.Path, err)
+				g.Printf("write %s: %s\n", res.Path, err)
 				continue
 			}
-			log.Printf("generated: %s\n", res.Path)
+			g.Printf("generated: %s\n", res.Path)
 		}
 	}
 	for i := 0; i < 3; i++ {
@@ -461,4 +484,5 @@ func main() {
 		go reporter()
 	}
 	wg.Wait()
+	log.Printf("total: %d, error: %d\n", totalCount.Load(), errCount.Load())
 }

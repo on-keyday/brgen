@@ -465,7 +465,7 @@ int Main(Flags& flags, utils::cmdline::option::Context&) {
         }
     }
     if (!flags.not_resolve_cast) {
-        brgen::middle::resolve_cast(*res);
+        brgen::middle::resolve_int_cast(*res);
     }
     if (!flags.not_resolve_available) {
         brgen::middle::resolve_available(*res);

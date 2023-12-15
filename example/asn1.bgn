@@ -21,7 +21,7 @@ format Tag:
 format Len:
     len :u64
 
-    fn size():
+    fn size() -> u8:
         if len < 0x80:
             return 1
         else:

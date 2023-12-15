@@ -4,7 +4,8 @@
 
 namespace brgen::middle {
 
-    void resolve_cast(auto& node) {
+    // call before typing
+    void resolve_int_cast(auto& node) {
         auto f = [](auto&& f, auto& node) -> void {
             // traverse child first
             ast::traverse(node, [&](auto& n) {
@@ -34,4 +35,5 @@ namespace brgen::middle {
         };
         f(f, node);
     }
+
 }  // namespace brgen::middle

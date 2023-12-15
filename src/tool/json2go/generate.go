@@ -79,7 +79,7 @@ func (g *Generator) getType(typ ast2go.Type) string {
 		return fmt.Sprintf("%s", e_type.Base.Ident.Ident)
 	}
 	if arr_type, ok := typ.(*ast2go.ArrayType); ok {
-		if arr_type.Length.GetConstantLevel() == ast2go.ConstantLevelConstant {
+		if arr_type.Length != nil && arr_type.Length.GetConstantLevel() == ast2go.ConstantLevelConstant {
 			len := g.exprStringer.ExprString(arr_type.Length)
 			return fmt.Sprintf("[%s]%s", len, g.getType(arr_type.BaseType))
 		}
