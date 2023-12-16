@@ -783,6 +783,12 @@ namespace brgen::middle {
             }
             if (auto found = find_matching_ident(ident)) {
                 auto& base = (*found);
+                if (auto def = ast::as<ast::Binary>(base->base.lock());
+                    def && def->op == ast::BinaryOp::const_assign && !def->expr_type) {
+                    auto bin = ast::cast_to<ast::Binary>(base->base.lock());
+                    typing_expr(bin->right);
+                    typing_assign(bin);
+                }
                 ident->expr_type = base->expr_type;
                 ident->base = base;
                 ident->constant_level = base->constant_level;

@@ -19,7 +19,7 @@
             "request": "launch",
             "program": "${workspaceRoot}/tool/src2json",
             "args": [
-                "c:/workspace/shbrgen/brgen/example/zip.bgn",
+                "c:/workspace/shbrgen/brgen/example/wireguard.bgn",
                 "--print-json"
             ],
             "stopAtEntry": false,
