@@ -43,11 +43,14 @@
     <div id="ball"><h2 id="playground-jump" style="text-align: center;">Brgen Web Playground</h2></div>
     <div id="container1"></div>
     <div id="container2"></div>
-    <script async type="module" src="script/index.js" onload="reportError()" onerror="reportError()"></script>
+    <script id="main" async type="module" src="script/index.js" onload="reportError()" onerror="reportError()"></script>
     <script id="report-error"> 
         const reportError = ()=>{
             clearTimeout(id);
             const b =document.getElementById("playground-jump");
+            const main = document.getElementById("main");
+            main.onload = null;
+            main.onerror = null;
             if(!b){
                 document.getElementById("report-error").remove();
                 return;
