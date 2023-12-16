@@ -39,6 +39,7 @@ type Generator struct {
 	seq          int
 	bitFields    map[*ast2go.Field]*BitFields
 	unionStructs map[*ast2go.StructType]*UnionStruct
+	laterSize    map[*ast2go.Field]uint64
 	imports      map[string]struct{}
 	exprStringer *gen.ExprStringer
 }
@@ -234,7 +235,7 @@ func (g *Generator) writeStructType(belong string, s *ast2go.StructType) {
 		is_simple         = true
 		size       uint64 = 0
 	)
-	for _, v := range s.Fields {
+	for i, v := range s.Fields {
 		if field, ok := v.(*ast2go.Field); ok {
 			if field.BitAlignment == ast2go.BitAlignmentNotTarget {
 				continue
@@ -270,6 +271,20 @@ func (g *Generator) writeStructType(belong string, s *ast2go.StructType) {
 				typ := g.getType(arr_type)
 				g.Printf("%s %s\n", field.Ident.Ident, typ)
 				g.exprStringer.IdentMapper[field.Ident.Ident] = "t." + field.Ident.Ident
+				if _, ok := arr_type.Length.(*ast2go.Range); ok {
+					if field.EventualFollow == ast2go.FollowEnd {
+						size := uint64(0)
+						for k := i + 1; k < len(s.Fields); k++ {
+							if f, ok := s.Fields[k].(*ast2go.Field); ok {
+								if f.BitAlignment == ast2go.BitAlignmentNotTarget {
+									continue
+								}
+								size += f.FieldType.GetBitSize()
+							}
+						}
+						g.laterSize[field] = size
+					}
+				}
 			}
 			if i_type, ok := typ.(*ast2go.IntType); ok {
 				typ := g.getType(i_type)
@@ -341,12 +356,14 @@ func (g *Generator) writeFieldEncode(p *ast2go.Field) {
 				g.PrintfFunc("buf = append(buf, %s[:]...)\n", converted)
 				return
 			}
-			length := g.exprStringer.ExprString(arr_type.Length)
-			g.PrintfFunc("len_%s := int(%s)\n", p.Ident.Ident, length)
-			g.PrintfFunc("if len(%s) != len_%s {\n", converted, p.Ident.Ident)
-			g.imports["fmt"] = struct{}{}
-			g.PrintfFunc("return nil, fmt.Errorf(\"encode %s: expect %%d bytes but got %%d bytes\", len_%s, len(%s))\n", p.Ident.Ident, p.Ident.Ident, converted)
-			g.PrintfFunc("}\n")
+			if _, ok := g.laterSize[p]; !ok {
+				length := g.exprStringer.ExprString(arr_type.Length)
+				g.PrintfFunc("len_%s := int(%s)\n", p.Ident.Ident, length)
+				g.PrintfFunc("if len(%s) != len_%s {\n", converted, p.Ident.Ident)
+				g.imports["fmt"] = struct{}{}
+				g.PrintfFunc("return nil, fmt.Errorf(\"encode %s: expect %%d bytes but got %%d bytes\", len_%s, len(%s))\n", p.Ident.Ident, p.Ident.Ident, converted)
+				g.PrintfFunc("}\n")
+			}
 			g.PrintfFunc("buf = append(buf, %s...)\n", converted)
 			return
 		}
@@ -417,6 +434,34 @@ func (g *Generator) writeFieldDecode(p *ast2go.Field) {
 				g.PrintfFunc("return fmt.Errorf(\"read %s: expect %%d bytes but read %%d bytes\", %s, n_%s)\n", p.Ident.Ident, length, p.Ident.Ident)
 				g.PrintfFunc("}\n")
 				return
+			}
+			if size, ok := g.laterSize[p]; ok {
+				g.PrintfFunc("r_seeker_tmp_%s, ok := r.(io.Seeker)\n", p.Ident.Ident)
+				g.PrintfFunc("if !ok {\n")
+				g.imports["fmt"] = struct{}{}
+				g.PrintfFunc("return fmt.Errorf(\"read %s: expect io.Seeker but got %%T\", r)\n", p.Ident.Ident)
+				g.PrintfFunc("}\n")
+				g.PrintfFunc("// save current position\n")
+				g.PrintfFunc("cur_tmp_%s, err := r_seeker_tmp_%s.Seek(0, io.SeekCurrent)\n", p.Ident.Ident, p.Ident.Ident)
+				g.PrintfFunc("if err != nil {\n")
+				g.PrintfFunc("return err\n")
+				g.PrintfFunc("}\n")
+				g.PrintfFunc("// seek to end to get remaining length\n")
+				g.PrintfFunc("end_tmp_%s, err = r_seeker_tmp_%s.Seek(0, io.SeekEnd)\n", p.Ident.Ident, p.Ident.Ident)
+				g.PrintfFunc("if err != nil {\n")
+				g.PrintfFunc("return err\n")
+				g.PrintfFunc("}\n")
+				g.PrintfFunc("// restore position\n")
+				g.PrintfFunc("_, err := r_seeker_tmp_%s.Seek(cur_tmp_%s, io.SeekStart)\n", p.Ident.Ident, p.Ident.Ident)
+				g.PrintfFunc("if err != nil {\n")
+				g.PrintfFunc("return err\n")
+				g.PrintfFunc("}\n")
+				g.PrintfFunc("// check remaining length is enough to read %d byte\n", size)
+				g.PrintfFunc("if end_tmp_%s - cur_tmp_%s < %d {\n", p.Ident.Ident, p.Ident.Ident, size)
+				g.imports["fmt"] = struct{}{}
+				g.PrintfFunc("return fmt.Errorf(\"read %s: expect %%d bytes but got %%d bytes\", %d, end_tmp_%s - cur_tmp_%s)\n", p.Ident.Ident, size, p.Ident.Ident, p.Ident.Ident)
+				g.PrintfFunc("}\n")
+				length = fmt.Sprintf("end_tmp_%s - cur_tmp_%s", p.Ident.Ident, p.Ident.Ident)
 			}
 			g.PrintfFunc("len_%s := int(%s)\n", p.Ident.Ident, length)
 			g.PrintfFunc("tmp%s := make([]byte, len_%s)\n", p.Ident.Ident, p.Ident.Ident)
