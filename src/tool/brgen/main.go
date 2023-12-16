@@ -21,9 +21,10 @@ import (
 )
 
 type Spec struct {
-	Langs  []string `json:"langs"`
-	PassBy string   `json:"pass_by"`
-	Suffix string   `json:"suffix"`
+	Langs     []string `json:"langs"`
+	Suffix    []string `json:"suffix"`
+	PassBy    string   `json:"pass_by"`
+	Separator string   `json:"separator"`
 }
 
 type Result struct {
@@ -41,6 +42,7 @@ type Generator struct {
 	request       chan *Result
 	ctx           context.Context
 	stderr        io.Writer
+	outputCount   *atomic.Int64
 }
 
 type GeneratorHandler struct {
@@ -57,7 +59,7 @@ type GeneratorHandler struct {
 	suffixPattern string
 	stderr        io.Writer
 	generators    []*Generator
-	outputCount   atomic.Int32
+	outputCount   atomic.Int64
 }
 
 func printf(stderr io.Writer, format string, args ...interface{}) {
@@ -98,12 +100,13 @@ func (g *GeneratorHandler) Init(src2json string, output []*Output, suffix string
 	return nil
 }
 
-func NewGenerator(ctx context.Context, work *sync.WaitGroup, stderr io.Writer, res chan *Result) *Generator {
+func NewGenerator(ctx context.Context, work *sync.WaitGroup, stderr io.Writer, res chan *Result, outputCount *atomic.Int64) *Generator {
 	return &Generator{
-		ctx:     ctx,
-		stderr:  stderr,
-		request: make(chan *Result, 1),
-		result:  res,
+		ctx:         ctx,
+		stderr:      stderr,
+		request:     make(chan *Result, 1),
+		result:      res,
+		outputCount: outputCount,
 	}
 }
 
@@ -180,13 +183,31 @@ func (g *Generator) StartGenerator(out *Output) error {
 					}
 					ext := filepath.Ext(req.Path)
 					path := strings.TrimSuffix(filepath.Base(req.Path), ext)
-					path = filepath.Join(g.outputDir, path+g.spec.Suffix)
-					go func() {
-						g.result <- &Result{
-							Path: path,
-							Data: data,
+					var split_data [][]byte
+					if len(g.spec.Suffix) == 1 {
+						split_data = [][]byte{data}
+					} else {
+						split_data = bytes.Split(data, []byte(g.spec.Separator))
+					}
+					if len(split_data) > len(g.spec.Suffix) {
+						req.Err = fmt.Errorf("too many output. expect equal to or less than %d, got %d: %s", len(g.spec.Suffix), len(split_data), req.Path)
+						g.result <- req
+						return
+					}
+					// add output count before sending result
+					g.outputCount.Add(int64(len(split_data) - 1))
+					for i, suffix := range g.spec.Suffix {
+						if i >= len(split_data) {
+							break
 						}
-					}()
+						path := filepath.Join(g.outputDir, path+suffix)
+						go func(path string, data []byte) {
+							g.result <- &Result{
+								Path: path,
+								Data: data,
+							}
+						}(path, split_data[i])
+					}
 				}()
 			}
 		}
@@ -222,6 +243,12 @@ func (g *Generator) askSpec() error {
 	}
 	if g.spec.PassBy != "stdin" && g.spec.PassBy != "file" {
 		return errors.New("pass_by must be stdin or file")
+	}
+	if len(g.spec.Suffix) == 0 {
+		return errors.New("suffix is empty")
+	}
+	if len(g.spec.Suffix) > 1 && len(g.spec.Separator) == 0 {
+		return errors.New("separator is empty when suffix is more than 1")
 	}
 	return nil
 }
@@ -306,7 +333,7 @@ func (g *GeneratorHandler) generateAST(path string, wg *sync.WaitGroup) {
 }
 
 func (g *GeneratorHandler) dispatchGenerator(out *Output) error {
-	gen := NewGenerator(g.ctx, &g.w, g.stderr, g.resultQueue)
+	gen := NewGenerator(g.ctx, &g.w, g.stderr, g.resultQueue, &g.outputCount)
 	err := gen.StartGenerator(out)
 	if err != nil {
 		return err

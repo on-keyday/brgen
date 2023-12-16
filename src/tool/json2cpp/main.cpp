@@ -30,7 +30,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
         cout << R"({
             "pass_by": "file",
             "langs": ["cpp"],
-            "suffix": ".hpp"
+            "suffix": [".hpp"]
         })";
         return 0;
     }

@@ -14,10 +14,12 @@ struct Flags : utils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
     bool spec = false;
     bool no_color = false;
+    bool add_line_map = false;
     void bind(utils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&spec, "s", "spec mode");
         ctx.VarBool(&no_color, "no-color", "disable color output");
+        ctx.VarBool(&add_line_map, "add-line-map", "add line map");
     }
 };
 auto& cout = utils::wrap::cout_wrap();
@@ -29,8 +31,9 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     if (flags.spec) {
         cout << R"({
             "pass_by": "file",
-            "langs": ["cpp"],
-            "suffix": ".hpp"
+            "langs": ["cpp","json"],
+            "suffix": [".hpp",".json"],
+            "separator": "############\n"
         })";
         return 0;
     }
@@ -81,6 +84,12 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
     auto prog = brgen::ast::cast_to<brgen::ast::Program>(*res);
     g.write_program(prog);
     cout << g.w.out() << "\n";
+    if (flags.add_line_map) {
+        cout << "############\n";
+        utils::json::Stringer s;
+        s.value(g.line_map);
+        cout << s.out() << "\n";
+    }
     return 0;
 }
 

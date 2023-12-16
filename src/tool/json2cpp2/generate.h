@@ -23,6 +23,12 @@ namespace j2cp2 {
         size_t line;
     };
 
+    void as_json(LineMap& mp, auto&& obj) {
+        auto field = obj.object();
+        field("loc", mp.loc);
+        field("line", mp.line);
+    }
+
     struct Generator {
         brgen::writer::Writer w;
         size_t seq = 0;
@@ -31,6 +37,7 @@ namespace j2cp2 {
         std::map<ast::Field*, AnonymousStructMeta> anonymous_structs;
         std::map<ast::Field*, size_t> later_size;
         std::vector<LineMap> line_map;
+        bool enable_line_map = false;
 
         void map_line(brgen::lexer::Loc l) {
             line_map.push_back({l, w.line_count()});

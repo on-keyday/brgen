@@ -17,7 +17,7 @@ func main() {
 		fmt.Println(`{
 			"langs" : ["go"],
 			"pass_by" : "stdin",
-			"suffix" : ".go"
+			"suffix" : [".go"]
 		}`)
 		return
 	}

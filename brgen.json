@@ -9,7 +9,8 @@
   "output": [
     {
       "generator": "./tool/json2cpp2.exe",
-      "output_dir": "./ignore/examples/cpp2/"
+      "output_dir": "./ignore/examples/cpp2/",
+      "args": ["--add-line-map"]
     },
     {
       "generator": "./tool/json2go.exe",
