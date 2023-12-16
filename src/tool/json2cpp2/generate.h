@@ -23,6 +23,7 @@ namespace j2cp2 {
         ast::tool::Stringer str;
         std::map<ast::Field*, BitFieldMeta> bit_fields;
         std::map<ast::Field*, AnonymousStructMeta> anonymous_structs;
+        std::map<ast::Field*, size_t> later_size;
         void write_bit_fields(std::vector<std::shared_ptr<ast::Field>>& non_align, size_t bit_size, bool is_int_set, bool include_non_simple) {
             if (is_int_set && !include_non_simple) {
                 w.write("::utils::binary::flags_t<std::uint", brgen::nums(bit_size), "_t");
@@ -173,7 +174,8 @@ namespace j2cp2 {
                 auto is_simple_type = [&](const std::shared_ptr<ast::Type>& type) {
                     return ast::as<ast::IntType>(type) != nullptr || ast::as<ast::EnumType>(type) != nullptr;
                 };
-                for (auto& field : s->fields) {
+                for (auto i = 0; i < s->fields.size(); i++) {
+                    auto& field = s->fields[i];
                     if (auto f = ast::as<ast::Field>(field); f) {
                         auto type = f->field_type;
                         if (auto ident = ast::as<ast::IdentType>(type); ident) {
@@ -216,6 +218,20 @@ namespace j2cp2 {
                         if (auto arr_ty = ast::as<ast::ArrayType>(type); arr_ty) {
                             auto ty = get_type_name(type);
                             w.writeln(ty, " ", f->ident->ident, ";");
+                            if (auto range = ast::as<ast::Range>(arr_ty->length)) {
+                                if (f->eventual_follow == ast::Follow::end) {
+                                    size_t size_of_later = 0;
+                                    for (auto k = i + 1; k < s->fields.size(); k++) {
+                                        if (auto f2 = ast::as<ast::Field>(s->fields[k])) {
+                                            if (f2->bit_alignment == ast::BitAlignment::not_target) {
+                                                continue;
+                                            }
+                                            size_of_later += f2->field_type->bit_size;
+                                        }
+                                    }
+                                    later_size[f] = size_of_later;
+                                }
+                            }
                         }
                         if (auto union_ty = ast::as<ast::StructUnionType>(type)) {
                             write_struct_union(union_ty);
@@ -355,13 +371,18 @@ namespace j2cp2 {
                     auto typ = get_type_name(f->field_type);
                     if (typ == "::utils::view::rvec") {
                         auto ident = ident_from_field();
-                        auto len = str.to_string(arr_ty->length);
-                        w.writeln("if (", len, "!=", ident, ".size()) {");
-                        {
-                            auto indent = w.indent_scope();
-                            w.writeln("return false;");
+                        if (auto found = later_size.find(f); found != later_size.end()) {
+                            // nothing to check
                         }
-                        w.writeln("}");
+                        else {
+                            auto len = str.to_string(arr_ty->length);
+                            w.writeln("if (", len, "!=", ident, ".size()) {");
+                            {
+                                auto indent = w.indent_scope();
+                                w.writeln("return false;");
+                            }
+                            w.writeln("}");
+                        }
                         w.writeln("if (!w.write(", ident, ")) {");
                         {
                             auto indent = w.indent_scope();
@@ -408,7 +429,20 @@ namespace j2cp2 {
                     auto typ = get_type_name(f->field_type);
                     auto ident = ident_from_field();
                     if (typ == "::utils::view::rvec") {
-                        auto len = str.to_string(arr_ty->length);
+                        std::string len;
+                        if (auto found = later_size.find(f); found != later_size.end()) {
+                            auto require_remain = brgen::nums(found->second / 8);
+                            w.writeln("if (r.remain().size() < ", require_remain, ") {");
+                            {
+                                auto indent = w.indent_scope();
+                                w.writeln("return false;");
+                            }
+                            w.writeln("}");
+                            len = brgen::concat("(r.remain().size() - ", require_remain, ")");
+                        }
+                        else {
+                            len = str.to_string(arr_ty->length);
+                        }
                         w.writeln("if (!r.read(", ident, ", ", len, ")) {");
                         {
                             auto indent = w.indent_scope();
@@ -480,6 +514,9 @@ namespace j2cp2 {
         }
 
         void write_program(std::shared_ptr<ast::Program>& prog) {
+            str.type_resolver = [&](auto& s, const std::shared_ptr<ast::Type>& t) {
+                return get_type_name(t);
+            };
             w.writeln("//Code generated by json2cpp2");
             w.writeln("#pragma once");
             w.writeln("#include <cstdint>");
@@ -490,6 +527,11 @@ namespace j2cp2 {
             w.writeln("#include <optional>");
             w.writeln("#include <binary/number.h>");
             for (auto& fmt : prog->elements) {
+                if (auto b = ast::as<ast::Binary>(fmt); b && b->op == ast::BinaryOp::const_assign && b->right->constant_level == ast::ConstantLevel::constant) {
+                    auto ident = ast::as<ast::Ident>(b->left);
+                    assert(ident);
+                    w.writeln("constexpr auto ", ident->ident, " = ", str.to_string(b->right), ";");
+                }
                 if (auto f = ast::as<ast::Format>(fmt); f) {
                     write_simple_struct(ast::cast_to<ast::Format>(fmt));
                     write_code_fn(ast::cast_to<ast::Format>(fmt), true);

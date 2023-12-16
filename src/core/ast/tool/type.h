@@ -183,4 +183,23 @@ namespace brgen::ast::tool {
         }
         return nullptr;
     }
+
+    std::shared_ptr<Ident> get_definition(const std::shared_ptr<Ident>& ident) {
+        if (!ident) {
+            return nullptr;
+        }
+        auto cur = ident;
+        for (;;) {
+            auto base = cur->base.lock();
+            if (!base) {
+                return cur;  // maybe unknown
+            }
+            if (auto ident = ast::as<ast::Ident>(base)) {
+                cur = ast::cast_to<ast::Ident>(base);
+            }
+            else {
+                return cur;
+            }
+        }
+    }
 }  // namespace brgen::ast::tool
