@@ -80,6 +80,13 @@ namespace j2cp2 {
                 }
                 return "std::vector<" + get_type_name(arr_ty->base_type) + ">";
             }
+            if (auto struct_ty = ast::as<ast::StructType>(type); struct_ty) {
+                if (auto l = struct_ty->base.lock()) {
+                    if (auto fmt = ast::as<ast::Format>(l)) {
+                        return fmt->ident->ident;
+                    }
+                }
+            }
             return "";
         }
 
@@ -236,6 +243,10 @@ namespace j2cp2 {
                         if (auto union_ty = ast::as<ast::StructUnionType>(type)) {
                             write_struct_union(union_ty);
                         }
+                        if (auto struct_ty = ast::as<ast::StructType>(type)) {
+                            auto type_name = get_type_name(type);
+                            w.writeln(type_name, " ", f->ident->ident, ";");
+                        }
                     }
                 }
                 if (has_ident) {
@@ -343,6 +354,10 @@ namespace j2cp2 {
                 }
                 return ident;
             };
+            auto typ = f->field_type;
+            if (auto ident = ast::as<ast::IdentType>(typ); ident) {
+                typ = ident->base.lock();
+            }
             if (encode) {
                 if (auto found = bit_fields.find(f); found != bit_fields.end()) {
                     auto& meta = found->second;
@@ -356,10 +371,10 @@ namespace j2cp2 {
                     w.writeln("}");
                     return;
                 }
-                if (auto int_ty = ast::as<ast::IntType>(f->field_type); int_ty) {
+                if (auto int_ty = ast::as<ast::IntType>(typ); int_ty) {
                     auto bit_size = int_ty->bit_size;
                     auto ident = ident_from_field();
-                    auto type_name = get_type_name(f->field_type);
+                    auto type_name = get_type_name(typ);
                     w.writeln("if (!::utils::binary::write_num(w,static_cast<", type_name, ">(", ident, ") ,", int_ty->endian == ast::Endian::little ? "false" : "true", ")) {");
                     {
                         auto indent = w.indent_scope();
@@ -367,9 +382,9 @@ namespace j2cp2 {
                     }
                     w.writeln("}");
                 }
-                if (auto arr_ty = ast::as<ast::ArrayType>(f->field_type); arr_ty) {
-                    auto typ = get_type_name(f->field_type);
-                    if (typ == "::utils::view::rvec") {
+                if (auto arr_ty = ast::as<ast::ArrayType>(typ); arr_ty) {
+                    auto type = get_type_name(typ);
+                    if (type == "::utils::view::rvec") {
                         auto ident = ident_from_field();
                         if (auto found = later_size.find(f); found != later_size.end()) {
                             // nothing to check
@@ -400,6 +415,15 @@ namespace j2cp2 {
                         w.writeln("}");
                     }
                 }
+                if (auto struct_ty = ast::as<ast::StructType>(typ); struct_ty) {
+                    auto ident = ident_from_field();
+                    w.writeln("if (!", ident, ".encode(w)) {");
+                    {
+                        auto indent = w.indent_scope();
+                        w.writeln("return false;");
+                    }
+                    w.writeln("}");
+                }
             }
             else {
                 if (auto found = bit_fields.find(f); found != bit_fields.end()) {
@@ -414,10 +438,10 @@ namespace j2cp2 {
                     w.writeln("}");
                     return;
                 }
-                if (auto int_ty = ast::as<ast::IntType>(f->field_type); int_ty) {
+                if (auto int_ty = ast::as<ast::IntType>(typ); int_ty) {
                     auto bit_size = int_ty->bit_size;
                     auto ident = ident_from_field();
-                    auto type_name = get_type_name(f->field_type);
+                    auto type_name = get_type_name(typ);
                     w.writeln("if (!::utils::binary::read_num(r,", ident, " ,", int_ty->endian == ast::Endian::little ? "false" : "true", ")) {");
                     {
                         auto indent = w.indent_scope();
@@ -425,10 +449,10 @@ namespace j2cp2 {
                     }
                     w.writeln("}");
                 }
-                if (auto arr_ty = ast::as<ast::ArrayType>(f->field_type); arr_ty) {
-                    auto typ = get_type_name(f->field_type);
+                if (auto arr_ty = ast::as<ast::ArrayType>(typ); arr_ty) {
+                    auto type = get_type_name(typ);
                     auto ident = ident_from_field();
-                    if (typ == "::utils::view::rvec") {
+                    if (type == "::utils::view::rvec") {
                         std::string len;
                         if (auto found = later_size.find(f); found != later_size.end()) {
                             auto require_remain = brgen::nums(found->second / 8);
@@ -458,6 +482,15 @@ namespace j2cp2 {
                         }
                         w.writeln("}");
                     }
+                }
+                if (auto struct_ty = ast::as<ast::StructType>(typ); struct_ty) {
+                    auto ident = ident_from_field();
+                    w.writeln("if (!", ident, ".decode(r)) {");
+                    {
+                        auto indent = w.indent_scope();
+                        w.writeln("return false;");
+                    }
+                    w.writeln("}");
                 }
             }
         }

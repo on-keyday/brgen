@@ -1,19 +1,52 @@
 
+enum Leap:
+    :u2
+    NoWarning
+    LastMinute61
+    LastMinute59
+    Unsyncronized
+
+enum Mode:
+    :u3
+    Reserved
+    SymmetricActive
+    SymmetricPassive
+    Client
+    Server
+    Broadcast
+    ReservedForNtpControlMessage
+    ReservedForPrivateUse
+
+format ShortFormat:
+    seconds :u16
+    fraction :u16
+
+format Timestamp:
+    seconds :u32
+    fraction :u32
+
+format Extension:
+    type :u16
+    length :u16
+    value :[length]u8
+
+
 format NtpPacket:
-    leap :u2
+    leap :Leap
     version :u3
-    mode :u3
+    mode :Mode
     stratum :u8
     poll :u8
     precision :u8
-    root_delay :u32
-    root_dispersion :u32
+    root_delay :ShortFormat
+    root_dispersion :ShortFormat
     reference_id :u32
-    reference_timestamp :u64
-    origin_timestamp :u64
-    receive_timestamp :u64
-    transmit_timestamp :u64
+    reference_timestamp :Timestamp
+    origin_timestamp :Timestamp
+    receive_timestamp :Timestamp
+    transmit_timestamp :Timestamp
     extensions :[..]u8
     key_identifier :u32
     message_digenst :[16]u8
+
 

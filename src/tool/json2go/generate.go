@@ -7,6 +7,7 @@ import (
 	"go/format"
 	"io"
 
+	"github.com/iancoleman/strcase"
 	ast2go "github.com/on-keyday/brgen/ast2go/ast"
 	"github.com/on-keyday/brgen/ast2go/gen"
 )
@@ -89,6 +90,11 @@ func (g *Generator) getType(typ ast2go.Type) string {
 	}
 	if enum_type, ok := typ.(*ast2go.EnumType); ok {
 		return fmt.Sprintf("%s", enum_type.Base.Ident.Ident)
+	}
+	if struct_type, ok := typ.(*ast2go.StructType); ok {
+		if !struct_type.Recursive {
+			return fmt.Sprintf("%s", struct_type.Base.(*ast2go.Format).Ident.Ident)
+		}
 	}
 	return ""
 }
@@ -302,6 +308,11 @@ func (g *Generator) writeStructType(belong string, s *ast2go.StructType) {
 			if u, ok := typ.(*ast2go.StructUnionType); ok {
 				g.writeStructUnion(belong, u)
 			}
+			if u, ok := typ.(*ast2go.StructType); ok {
+				typ := g.getType(u)
+				g.Printf("%s %s\n", field.Ident.Ident, typ)
+				g.exprStringer.IdentMapper[field.Ident.Ident] = "t." + field.Ident.Ident
+			}
 		}
 	}
 }
@@ -368,6 +379,16 @@ func (g *Generator) writeFieldEncode(p *ast2go.Field) {
 			g.PrintfFunc("buf = append(buf, %s...)\n", converted)
 			return
 		}
+	}
+	if _, ok := typ.(*ast2go.StructType); ok {
+		converted := g.exprStringer.ExprString(p.Ident)
+		g.PrintfFunc("tmp_%s, err := %s.Encode()\n", p.Ident.Ident, converted)
+		g.PrintfFunc("if err != nil {\n")
+		g.imports["fmt"] = struct{}{}
+		g.PrintfFunc("return nil, fmt.Errorf(\"encode %s: %%w\", err)\n", p.Ident.Ident)
+		g.PrintfFunc("}\n")
+		g.PrintfFunc("buf = append(buf, tmp_%s...)\n", p.Ident.Ident)
+		return
 	}
 }
 
@@ -478,6 +499,14 @@ func (g *Generator) writeFieldDecode(p *ast2go.Field) {
 			g.PrintfFunc("%s = tmp%s[:]\n", converted, p.Ident.Ident)
 			return
 		}
+	}
+	if _, ok := typ.(*ast2go.StructType); ok {
+		converted := "t." + converted
+		g.PrintfFunc("if err := %s.Read(r); err != nil {\n", converted)
+		g.imports["fmt"] = struct{}{}
+		g.PrintfFunc("return fmt.Errorf(\"read %s: %%w\", err)\n", p.Ident.Ident)
+		g.PrintfFunc("}\n")
+		return
 	}
 }
 
@@ -641,6 +670,13 @@ func (g *Generator) Generate(file *ast2go.AstFile) error {
 	if err != nil {
 		return err
 	}
+	ast2go.Walk(p, ast2go.VisitFn(func(v ast2go.Visitor, n ast2go.Node) bool {
+		ast2go.Walk(n, v)
+		if n, ok := n.(*ast2go.Ident); ok {
+			n.Ident = strcase.ToCamel(n.Ident)
+		}
+		return true
+	}))
 	g.exprStringer.TypeProvider = g.getType
 	g.func_area.Reset()
 	g.type_area.Reset()
