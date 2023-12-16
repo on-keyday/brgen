@@ -43,19 +43,22 @@
     <div id="ball"><h2 id="playground-jump" style="text-align: center;">Brgen Web Playground</h2></div>
     <div id="container1"></div>
     <div id="container2"></div>
-    <script async type="module" src="script/index.js"></script>
-    <script> 
-        setTimeout(()=>{
+    <script async type="module" src="script/index.js" onload="reportError()" onabort="reportError()"></script>
+    <script id="report-error"> 
+        const reportError = ()=>{
+            clearTimeout(id);
             const b =document.getElementById("playground-jump");
             if(!b){
+                document.getElementById("report-error").remove();
                 return;
             }
-            b.innerText +="\nmaybe loading error~♪"
+            b.innerText +="\nmaybe loading error"
             const ref = document.createElement("a");
             ref.innerText = "goto github to issue issue";
             ref.href ="https://github.com/on-keyday/brgen";
             document.body.appendChild(ref);
-        },5000)
+        }
+        const id = setTimeout(reportError,5000)
     </script>
 </body>
 </html>

@@ -15,19 +15,49 @@ const enum StorageKey {
     SOURCE_CODE = "source_code",
 }
 
-const storage  = window.localStorage;
+const enum ElementID {
+    CONTAINER1 = "container1",
+    CONTAINER2 = "container2",
+    TITLE_BAR = "title_bar",
+    LANGUAGE_SELECT = "language-select",
+    COPY_BUTTON = "copy-button",
+    GITHUB_LINK = "github-link",
+    BALL = "ball",
+    BALL_BOUND = "ball-bound",
+}
+
+const sample =`
+format WebSocketFrame:
+    FIN :u1
+    RSV1 :u1
+    RSV2 :u1
+    RSV3 :u1
+    Opcode :u4
+    Mask :u1
+    PayloadLength :u7
+    match PayloadLength:
+        126 => ExtendedPayloadLength :u16
+        127 => ExtendedPayloadLength :u64
+    
+    if Mask == 1:
+        MaskingKey :u32
+    
+    Payload :[available(ExtendedPayloadLength) ? ExtendedPayloadLength : PayloadLength]u8
+`
+
+const storage  = globalThis.localStorage;
 const getLangMode = () => {
     const mode = storage.getItem(StorageKey.LANG_MODE);
-    if(mode === null) return Language.JSON_AST;
+    if(mode === null) return Language.CPP;
     if(LanguageList.includes(mode as Language)){
         return mode as Language;
     }
-    return Language.JSON_AST;
+    return Language.CPP;
 }
 
 const getSourceCode = () => {
     const code = storage.getItem(StorageKey.SOURCE_CODE);
-    if(code === null) return null;
+    if(code === null) return sample;
     return code;
 }
 
@@ -36,11 +66,11 @@ let options = {
 
     setLanguageMode: (mode :Language) => {
         options.language_mode = mode;
-        storage.setItem("lang_mode",mode);
+        storage.setItem(StorageKey.LANG_MODE,mode);
     },
 
     setSourceCode: (code :string) => {
-        storage.setItem("source_code",code);
+        storage.setItem(StorageKey.SOURCE_CODE,code);
     }
 }
 
@@ -50,11 +80,11 @@ const getElement = (id :string) => {
     return e;
 }
 
-const container1 = getElement("container1");
+const container1 = getElement(ElementID.CONTAINER1);
 
-const container2= getElement("container2");
+const container2= getElement(ElementID.CONTAINER2);
 
-const title_bar = getElement("title_bar");
+const title_bar = getElement(ElementID.TITLE_BAR);
 
 const editor = monaco.editor.create(container1,{
     lineHeight: 20,
@@ -69,6 +99,7 @@ const generated = monaco.editor.create(container2,{
     colorDecorators: true,
 });
 
+// to disable cursor
 generated.onDidChangeModel(async (e) => {
     const area = container2.getElementsByTagName("textarea");
     for(let i = 0;i<area.length;i++){
@@ -314,14 +345,14 @@ const makeLink = (id :string,text :string,href :string) => {
     return link;
 }
 
-const select = makeListBox("language-select",LanguageList);
+const select = makeListBox(ElementID.LANGUAGE_SELECT,LanguageList);
 select.value = options.language_mode;
 select.style.top = "50%";
 select.style.left ="80%";
 select.style.fontSize = "60%";
 select.style.border = "solid 1px black";
 
-const button = makeButton("copy-button","copy code");
+const button = makeButton(ElementID.COPY_BUTTON,"copy code");
 button.style.top = "50%";
 button.style.left = "65%";
 button.style.fontSize = "60%";
@@ -342,7 +373,7 @@ button.onclick =async () => {
     await navigator.clipboard.writeText(code);
 };
 
-const link = makeLink("github-link","develop page","https://github.com/on-keyday/brgen");
+const link = makeLink(ElementID.GITHUB_LINK,"develop page","https://github.com/on-keyday/brgen");
 link.style.top = "50%";
 link.style.left = "5%";
 link.style.fontSize = "60%";
@@ -373,33 +404,7 @@ select.onchange = async (e) => {
     await changeLanguage(value);
 };
 
-const src = getSourceCode()
+editor_model.setValue(getSourceCode());
 
-if(src !== null) {
-    editor.setValue(src);
-}
-else {
-const sample =`
-format WebSocketFrame:
-    FIN :u1
-    RSV1 :u1
-    RSV2 :u1
-    RSV3 :u1
-    Opcode :u4
-    Mask :u1
-    PayloadLength :u7
-    match PayloadLength:
-        126 => ExtendedPayloadLength :u16
-        127 => ExtendedPayloadLength :u64
-    
-    if Mask == 1:
-        MaskingKey :u32
-    
-    Payload :[available(ExtendedPayloadLength) ? ExtendedPayloadLength : PayloadLength]u8
-`
-    editor.setValue(sample);
-    changeLanguage(Language.CPP);
-}
-
-document.getElementById("ball-bound")?.remove();
-document.getElementById("ball")?.remove();
+document.getElementById(ElementID.BALL)?.remove();
+document.getElementById(ElementID.BALL_BOUND)?.remove();

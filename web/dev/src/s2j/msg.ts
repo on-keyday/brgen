@@ -1,6 +1,6 @@
 
 
-enum RequestLanguage {
+const enum RequestLanguage {
     TOKENIZE = "tokens",
     JSON_AST = "json ast",
     JSON_DEBUG_AST = "json ast (debug)",
