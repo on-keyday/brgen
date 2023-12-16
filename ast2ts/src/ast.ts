@@ -8,7 +8,7 @@ export function isNodeType(obj: any): obj is NodeType {
 	return obj && typeof obj === 'string' && (obj === "program" || obj === "comment" || obj === "comment_group" || obj === "expr" || obj === "binary" || obj === "unary" || obj === "cond" || obj === "ident" || obj === "call" || obj === "if" || obj === "member_access" || obj === "paren" || obj === "index" || obj === "match" || obj === "range" || obj === "tmp_var" || obj === "block_expr" || obj === "import" || obj === "cast" || obj === "available" || obj === "stmt" || obj === "loop" || obj === "indent_block" || obj === "scoped_statement" || obj === "match_branch" || obj === "union_candidate" || obj === "return" || obj === "break" || obj === "continue" || obj === "assert" || obj === "implicit_yield" || obj === "type" || obj === "int_type" || obj === "ident_type" || obj === "int_literal_type" || obj === "str_literal_type" || obj === "void_type" || obj === "bool_type" || obj === "array_type" || obj === "function_type" || obj === "struct_type" || obj === "struct_union_type" || obj === "union_type" || obj === "range_type" || obj === "enum_type" || obj === "literal" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "input" || obj === "output" || obj === "config" || obj === "member" || obj === "field" || obj === "format" || obj === "state" || obj === "enum" || obj === "enum_member" || obj === "function" || obj === "builtin_function")
 }
 
-export enum UnaryOp {
+export const enum UnaryOp {
 	not = "!",
 	minus_sign = "-",
 };
@@ -17,7 +17,7 @@ export function isUnaryOp(obj: any): obj is UnaryOp {
 	return obj && typeof obj === 'string' && (obj === "!" || obj === "-")
 }
 
-export enum BinaryOp {
+export const enum BinaryOp {
 	mul = "*",
 	div = "/",
 	mod = "%",
@@ -62,7 +62,7 @@ export function isBinaryOp(obj: any): obj is BinaryOp {
 	return obj && typeof obj === 'string' && (obj === "*" || obj === "/" || obj === "%" || obj === "<<<" || obj === ">>>" || obj === "<<" || obj === ">>" || obj === "&" || obj === "+" || obj === "-" || obj === "|" || obj === "^" || obj === "==" || obj === "!=" || obj === "<" || obj === "<=" || obj === ">" || obj === ">=" || obj === "&&" || obj === "||" || obj === "?" || obj === ":" || obj === ".." || obj === "..=" || obj === "=" || obj === ":=" || obj === "::=" || obj === "+=" || obj === "-=" || obj === "*=" || obj === "/=" || obj === "%=" || obj === "<<=" || obj === ">>=" || obj === "&=" || obj === "|=" || obj === "^=" || obj === ",")
 }
 
-export enum IdentUsage {
+export const enum IdentUsage {
 	unknown = "unknown",
 	reference = "reference",
 	define_variable = "define_variable",
@@ -85,7 +85,7 @@ export function isIdentUsage(obj: any): obj is IdentUsage {
 	return obj && typeof obj === 'string' && (obj === "unknown" || obj === "reference" || obj === "define_variable" || obj === "define_const" || obj === "define_field" || obj === "define_format" || obj === "define_state" || obj === "define_enum" || obj === "define_enum_member" || obj === "define_fn" || obj === "define_cast_fn" || obj === "define_arg" || obj === "reference_type" || obj === "reference_member" || obj === "maybe_type" || obj === "reference_builtin_fn")
 }
 
-export enum Endian {
+export const enum Endian {
 	unspec = "unspec",
 	big = "big",
 	little = "little",
@@ -95,7 +95,7 @@ export function isEndian(obj: any): obj is Endian {
 	return obj && typeof obj === 'string' && (obj === "unspec" || obj === "big" || obj === "little")
 }
 
-export enum TokenTag {
+export const enum TokenTag {
 	indent = "indent",
 	space = "space",
 	line = "line",
@@ -114,7 +114,7 @@ export function isTokenTag(obj: any): obj is TokenTag {
 	return obj && typeof obj === 'string' && (obj === "indent" || obj === "space" || obj === "line" || obj === "punct" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "keyword" || obj === "ident" || obj === "comment" || obj === "error" || obj === "unknown")
 }
 
-export enum ConstantLevel {
+export const enum ConstantLevel {
 	unknown = "unknown",
 	constant = "constant",
 	const_variable = "const_variable",
@@ -125,7 +125,7 @@ export function isConstantLevel(obj: any): obj is ConstantLevel {
 	return obj && typeof obj === 'string' && (obj === "unknown" || obj === "constant" || obj === "const_variable" || obj === "variable")
 }
 
-export enum BitAlignment {
+export const enum BitAlignment {
 	byte_aligned = "byte_aligned",
 	bit_1 = "bit_1",
 	bit_2 = "bit_2",
@@ -142,7 +142,7 @@ export function isBitAlignment(obj: any): obj is BitAlignment {
 	return obj && typeof obj === 'string' && (obj === "byte_aligned" || obj === "bit_1" || obj === "bit_2" || obj === "bit_3" || obj === "bit_4" || obj === "bit_5" || obj === "bit_6" || obj === "bit_7" || obj === "not_target" || obj === "not_decidable")
 }
 
-export enum Follow {
+export const enum Follow {
 	unknown = "unknown",
 	end = "end",
 	fixed = "fixed",

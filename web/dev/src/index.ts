@@ -2,54 +2,34 @@
 
 
 import "../node_modules/destyle.css/destyle.min.css";
-
+import * as monaco from "../node_modules/monaco-editor/esm/vs/editor/editor.api.js";
+import {ast2ts} from "../node_modules/ast2ts/index.js";
 import * as caller from "./s2j/caller.js";
+import { JobResult,Language,LanguageList } from "./s2j/msg.js";
 
+// first, load workers
 caller.loadWorkers();
 
-
-import * as monaco from "../node_modules/monaco-editor/esm/vs/editor/editor.api.js";
-
-import {ast2ts} from "../node_modules/ast2ts/index.js";
-import { JobResult,Language } from "./s2j/msg.js";
-
-
-const LanguageList = [
-    Language.TOKENIZE,
-    Language.JSON_AST,
-    Language.JSON_DEBUG_AST,
-    Language.CPP_PROTOTYPE,
-    Language.CPP,
-    Language.GO,
-];
-
-
+const enum StorageKey {
+    LANG_MODE = "lang_mode",
+    SOURCE_CODE = "source_code",
+}
 
 const storage  = window.localStorage;
 const getLangMode = () => {
-    const mode = storage.getItem("lang_mode");
+    const mode = storage.getItem(StorageKey.LANG_MODE);
     if(mode === null) return Language.JSON_AST;
-    switch(mode){
-        case Language.JSON_AST:
-            return Language.JSON_AST;
-        case Language.CPP_PROTOTYPE:
-            return Language.CPP_PROTOTYPE;
-        case Language.CPP:
-            return Language.CPP;
-        case Language.GO:
-            return Language.GO;
-        case Language.JSON_DEBUG_AST:
-            return Language.JSON_DEBUG_AST;
-        default:
-            return Language.JSON_AST;
+    if(LanguageList.includes(mode as Language)){
+        return mode as Language;
     }
+    return Language.JSON_AST;
 }
 
 const getSourceCode = () => {
-    const code = storage.getItem("source_code");
+    const code = storage.getItem(StorageKey.SOURCE_CODE);
     if(code === null) return null;
     return code;
-};
+}
 
 let options = {
     language_mode: getLangMode(),
@@ -97,10 +77,7 @@ generated.onDidChangeModel(async (e) => {
     }
 });
 
-
-
-const generated_str = "(generated code)";
-const generated_model = monaco.editor.createModel(generated_str,"text/plain");
+const generated_model = monaco.editor.createModel("(generated code)","text/plain");
 const setDefault = () => {
     generated.setModel(generated_model);
 };

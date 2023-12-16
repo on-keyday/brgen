@@ -40,6 +40,10 @@ export interface CallOption {
     filename? :string
 }
 
+export interface CppOption extends CallOption {
+    use_line_map? :boolean
+}
+
 export interface GoOption extends CallOption {
     use_put? :boolean
 }
@@ -100,9 +104,12 @@ export const getCppPrototypeCode = (sourceCode :string,options? :CallOption) => 
     return mgr.doRequest(req);
 }
 
-export const getCppCode = (sourceCode :string,options? :CallOption) => {
+export const getCppCode = (sourceCode :string,options? :CppOption) => {
     const mgr = factory.getJSON2Cpp2Worker();
     const req = mgr.getRequest(RequestLanguage.CPP,sourceCode);
+    if(options?.use_line_map){
+        req.arguments = ["--add-line-map"];
+    }
     return mgr.doRequest(req);
 }
 

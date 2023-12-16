@@ -1,9 +1,4 @@
 
-enum RequestMessage {
-    MSG_REQUIRE_AST = "MSG_REQUIRE_AST",
-    MSG_REQUIRE_TOKENS = "MSG_REQUIRE_TOKENS",
-    MSG_REQUIRE_GENERATED_CODE = "MSG_REQUIRE_GENERATED_CODE",
-}
 
 enum RequestLanguage {
     TOKENIZE = "tokens",
@@ -13,6 +8,16 @@ enum RequestLanguage {
     CPP = "cpp",
     GO = "go",
 }
+
+const LanguageList = [
+    RequestLanguage.TOKENIZE,
+    RequestLanguage.JSON_AST,
+    RequestLanguage.JSON_DEBUG_AST,
+    RequestLanguage.CPP_PROTOTYPE,
+    RequestLanguage.CPP,
+    RequestLanguage.GO,
+];
+
 
 interface JobRequest {
     readonly lang :RequestLanguage
@@ -31,4 +36,4 @@ interface JobResult {
     jobID :number
 }
 
-export {RequestLanguage as Language,RequestLanguage,JobRequest,JobResult};
+export {RequestLanguage as Language,RequestLanguage,LanguageList,JobRequest,JobResult};

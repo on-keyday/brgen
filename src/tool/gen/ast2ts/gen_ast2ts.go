@@ -103,7 +103,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 				}
 				w.Printf(";\n\n")
 			} else {
-				w.Printf("export enum %s {\n", d.Name)
+				w.Printf("export const enum %s {\n", d.Name)
 				for _, val := range d.Values {
 					w.Printf("	%s = %q,\n", val.Name, val.Value)
 				}
