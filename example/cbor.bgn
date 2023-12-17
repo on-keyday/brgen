@@ -1,0 +1,98 @@
+
+enum MajorType:
+    unsigned_int_n = 0
+    negative_int_1_n = 1
+    byte_string = 2
+    text_string = 3
+    array = 4
+    map = 5
+    tag = 6
+    simple_float = 7
+
+format Pair:
+    key :Value
+    value :Value
+
+format Value:
+    type :u8
+    match type:
+        0x00..0x17 => ..
+        0x18 => data :u8
+        0x19 => data :u16
+        0x1a => data :u32
+        0x1b => data :u64
+        0x20..0x37 => ..
+        0x38 => data :u8
+        0x39 => data :u16
+        0x3a => data :u32
+        0x3b => data :u64
+        0x40..0x57 => data :[type - 0x40]u8
+        0x58: 
+            length :u8
+            data :[length]u8
+        0x59:
+            length :u16
+            data :[length]u8
+        0x5a:
+            length :u32
+            data :[length]u8
+        0x5b:
+            length :u64
+            data :[length]u8
+        0x5f:
+            data :[..]u8
+            :"\xff"
+        0x60..0x77 => data :[type - 0x60]u8
+        0x78:
+            length :u8
+            data :[length]u8
+        0x79:
+            length :u16
+            data :[length]u8
+        0x7a:
+            length :u32
+            data :[length]u8
+        0x7b:
+            length :u64
+            data :[length]u8
+        0x7f:
+            data :[..]u8
+            :"\xff"
+        0x80..0x97 => data :[type - 0x80]Value
+        0x98:
+            length :u8
+            data :[length]Value
+        0x99:
+            length :u16
+            data :[length]Value
+        0x9a:
+            length :u32
+            data :[length]Value
+        0x9b:
+            length :u64
+            data :[length]Value
+        0x9f:
+            data :[..]Value
+            :"\xff"
+        0xa0..0xb7 => data :[type - 0xa0]Pair
+        0xb8:
+            length :u8
+            data :[length]Pair
+        0xb9:
+            length :u16
+            data :[length]Pair
+        0xba:
+            length :u32
+            data :[length]Pair
+        0xbb:
+            length :u64
+            data :[length]Pair
+        0xbf:
+            data :[..]Pair
+            :"\xff"
+        0xf9:
+            data :f16
+        0xfa:
+            data :f32
+        0xfb:
+            data :f64
