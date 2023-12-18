@@ -202,6 +202,30 @@ func (s *ExprStringer) ExprString(e ast2go.Expr) string {
 	}
 }
 
+func (s *ExprStringer) CollectDefine(e ast2go.Expr) []*ast2go.Binary {
+	defines := []*ast2go.Binary{}
+	ast2go.Walk(e, ast2go.VisitFn(func(v ast2go.Visitor, n ast2go.Node) bool {
+		if i, ok := n.(*ast2go.Ident); ok {
+			b := i.Base
+			if b == nil {
+				return true
+			}
+			bi, ok := i.Base.(*ast2go.Ident)
+			if !ok {
+				return true
+			}
+			if b, ok := bi.Base.(*ast2go.Binary); ok {
+				if b.Op == ast2go.BinaryOpDefineAssign ||
+					b.Op == ast2go.BinaryOpConstAssign {
+					defines = append(defines, b)
+				}
+			}
+		}
+		return true
+	}))
+	return defines
+}
+
 func ConvertAst(n ast2go.Node) ast.Node {
 	if n == nil {
 		return nil

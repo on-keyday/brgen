@@ -152,6 +152,14 @@ namespace brgen::middle {
                     }
                 }
             }
+            if (auto a_a = ast::as<ast::ArrayType>(a)) {
+                if (auto b_a = ast::as<ast::ArrayType>(b)) {
+                    if (equal_type(a_a->base_type, b_a->base_type)) {
+                        auto base_typ = a_a->base_type;
+                        return std::make_shared<ast::ArrayType>(a_a->loc, nullptr, a_a->end_loc, std::move(base_typ));
+                    }
+                }
+            }
             return nullptr;
         }
 

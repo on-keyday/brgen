@@ -217,6 +217,10 @@ func (g *Generator) writeStructUnion(belong string, u *ast2go.StructUnionType) {
 			g.PrintfFunc("func (t *%s) %s() *%s {\n", belong, field.Ident.Ident, typStr)
 			cond0 := ""
 			if typ.Cond != nil {
+				collect := g.exprStringer.CollectDefine(typ.Cond)
+				for _, v := range collect {
+					g.writeSingleNode(v, false)
+				}
 				cond0 = g.exprStringer.ExprString(typ.Cond)
 			} else {
 				cond0 = "true"
@@ -233,6 +237,10 @@ func (g *Generator) writeStructUnion(belong string, u *ast2go.StructUnionType) {
 					}
 				}
 				if c.Cond != nil {
+					collect := g.exprStringer.CollectDefine(c.Cond)
+					for _, v := range collect {
+						g.writeSingleNode(v, false)
+					}
 					cond := g.exprStringer.ExprString(c.Cond)
 					if hasElse {
 						g.PrintfFunc("else ")
@@ -633,6 +641,12 @@ func (g *Generator) writeSingleNode(node ast2go.Node, enc bool) {
 		}
 	case ast2go.NodeTypeScopedStatement:
 		g.writeSingleNode(node.(*ast2go.ScopedStatement).Statement, enc)
+	case ast2go.NodeTypeBinary:
+		binary := node.(*ast2go.Binary)
+		if binary.Op == ast2go.BinaryOpDefineAssign {
+			ident := binary.Left.(*ast2go.Ident)
+			g.PrintfFunc("%s := %s\n", ident.Ident, g.exprStringer.ExprString(binary.Right))
+		}
 	}
 }
 

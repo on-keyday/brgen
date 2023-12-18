@@ -134,6 +134,10 @@ namespace j2cp2 {
                 auto c = ut->cond.lock();
                 std::string cond_u;
                 if (c) {
+                    auto defs = str.collect_defined_ident(c);
+                    for (auto& d : defs) {
+                        encode_one_node(d, true);
+                    }
                     cond_u = str.to_string(c);
                 }
                 else {
@@ -150,13 +154,19 @@ namespace j2cp2 {
                             auto indent = w.indent_scope();
                             auto access = tmp[struct_] + "." + f->ident->ident;
                             anonymous_structs[f.get()] = {access, struct_};
+                            map_line(f->loc);
                             w.writeln("return this->", access, ";");
                         };
                         bool has_els = false;
                         for (auto& c : ut->candidates) {
                             auto cond = c->cond.lock();
                             if (cond) {
+                                auto defs = str.collect_defined_ident(cond);
+                                for (auto& d : defs) {
+                                    encode_one_node(d, true);
+                                }
                                 auto cond_s = str.to_string(cond);
+                                map_line(c->loc);
                                 w.writeln("if (", cond_s, "==", cond_u, ") {");
                                 {
                                     auto f = c->field.lock();
@@ -559,6 +569,13 @@ namespace j2cp2 {
             }
             if (auto scoped = ast::as<ast::ScopedStatement>(elem)) {
                 encode_one_node(scoped->statement, encode);
+            }
+            if (auto b = ast::as<ast::Binary>(elem); b && b->op == ast::BinaryOp::define_assign) {
+                auto ident = ast::as<ast::Ident>(b->left);
+                assert(ident);
+                auto expr = str.to_string(b->right);
+                map_line(b->loc);
+                w.writeln("auto ", ident->ident, " = ", expr, ";");
             }
         }
 

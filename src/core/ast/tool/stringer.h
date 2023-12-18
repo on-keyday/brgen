@@ -157,5 +157,31 @@ namespace brgen::ast::tool {
             }
             return "";
         }
+
+        std::vector<std::shared_ptr<ast::Binary>> collect_defined_ident(const std::shared_ptr<ast::Expr>& expr) {
+            std::vector<std::shared_ptr<ast::Binary>> defs;
+            auto f = [&](auto&& f, auto&& v) -> void {
+                ast::traverse(v, [&](auto&& v) -> void {
+                    f(f, v);
+                });
+                if (auto ident = ast::as<ast::Ident>(v)) {
+                    auto base = ast::as<ast::Ident>(ident->base.lock());
+                    if (!base) {
+                        return;
+                    }
+                    auto base_base = base->base.lock();
+                    if (auto bin = ast::as<ast::Binary>(base_base)) {
+                        if (bin->op == BinaryOp::define_assign ||
+                            bin->op == BinaryOp::const_assign) {
+                            defs.push_back(ast::cast_to<ast::Binary>(base_base));
+                        }
+                    }
+                }
+            };
+            ast::traverse(expr, [&](auto&& v) -> void {
+                f(f, v);
+            });
+            return defs;
+        }
     };
 }  // namespace brgen::ast::tool

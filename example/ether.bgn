@@ -1,0 +1,13 @@
+
+format EthernetFrame:
+    dstMac :[6]u8
+    srcMac :[6]u8
+    ether_type :u16
+    if ether_type == 0x8100:
+        vlen_tag :u16
+        ether_type2 :u16
+    len := available(ether_type2) ? ether_type2 : ether_type
+    if len >= 0x600:
+        data :[..]u8
+    else:
+        data :[len]u8
