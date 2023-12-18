@@ -1,7 +1,13 @@
 
-format UDPSegment:
+format UDPDatagram:
     SrcPort :u16
     DstPort :u16
     Length  :u16
     Checksum :u16
     Data :[Length-8]u8
+
+format UDPHeader:
+    SrcPort :u16
+    DstPort :u16
+    Length  :u16
+    Checksum :u16

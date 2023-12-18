@@ -15,7 +15,18 @@
     {
       "generator": "./tool/json2go.exe",
       "output_dir": "./ignore/examples/go/",
-      "args": ["-map-word", "Id=ID", "-map-word", "IDentifier=Identifier"]
+      "args": [
+        "-map-word",
+        "Id=ID",
+        "-map-word",
+        "IDentifier=Identifier",
+        "-map-word",
+        "Tcpsegment=TCPSegment",
+        "-map-word",
+        "Udpdatagram=UDPDatagram",
+        "-map-word",
+        "Udpheader=UDPHeader"
+      ]
     }
   ]
 }

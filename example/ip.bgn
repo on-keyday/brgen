@@ -1,0 +1,27 @@
+format IPv4Header:
+    version :u4 ihl :u4 dscp :u6 ecn :u2 len :u16
+    id :u16 reserved :u1 dont_fragment :u1 more_fragment :u1 fragOffset :u13
+    ttl :u8 proto :u8 checksum :u16
+    srcAddr :u32
+    dstAddr :u32
+    # options :[u8(ihl)*4-20]u8
+
+
+format IPv6Header:
+    version :u4 trafficClass :u8 flowLabel :u20
+    payloadLen :u16
+    nextHeader :u8
+    hopLimit :u8
+    srcAddr :[16]u8
+    dstAddr :[16]u8
+
+config.aligned_bit(8) # here input/output must be aligned to 8 bits
+ip_version :u4
+config.peek(ip_version) # marker for peeking
+
+if ip_version == 4:
+    hdr :IPv4Header
+elif ip_version == 6:
+    hdr :IPv6Header
+else:
+    errorf("invalid ip_version: %d", ip_version)

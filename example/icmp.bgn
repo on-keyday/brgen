@@ -1,0 +1,5 @@
+
+format ICMPHeader:
+    type: u8
+    code: u8
+    checksum: u16
