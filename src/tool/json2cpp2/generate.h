@@ -158,6 +158,7 @@ namespace j2cp2 {
                             w.writeln("return this->", access, ";");
                         };
                         bool has_els = false;
+                        bool end_else = false;
                         for (auto& c : ut->candidates) {
                             auto cond = c->cond.lock();
                             if (cond) {
@@ -187,9 +188,12 @@ namespace j2cp2 {
                                 else {
                                     make_access(f);
                                 }
+                                end_else = true;
                             }
                         }
-                        w.writeln("return std::nullopt;");
+                        if (!end_else) {
+                            w.writeln("return std::nullopt;");
+                        }
                         str.ident_map[uf->ident->ident] = "*" + uf->ident->ident + "()";
                     }
                     w.writeln("}");

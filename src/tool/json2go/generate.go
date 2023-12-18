@@ -226,6 +226,7 @@ func (g *Generator) writeStructUnion(belong string, u *ast2go.StructUnionType) {
 				cond0 = "true"
 			}
 			hasElse := false
+			endElse := false
 			for _, c := range typ.Candidates {
 				writeReturn := func() {
 					if c.Field != nil {
@@ -253,10 +254,13 @@ func (g *Generator) writeStructUnion(belong string, u *ast2go.StructUnionType) {
 					g.PrintfFunc("else {\n")
 					writeReturn()
 					g.PrintfFunc("}")
+					endElse = true
 				}
 			}
 			g.PrintfFunc("\n")
-			g.PrintfFunc("return nil\n")
+			if !endElse {
+				g.PrintfFunc("return nil\n")
+			}
 			g.PrintfFunc("}\n")
 			g.exprStringer.IdentMapper[field.Ident.Ident] = fmt.Sprintf("(*t.%s())", field.Ident.Ident)
 		}
