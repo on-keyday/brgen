@@ -453,7 +453,7 @@ func (g *Generator) writeFieldEncode(p *ast2go.Field) {
 	}
 }
 
-func (g *Generator) writeReadUint(size uint64, tmpName, field string) {
+func (g *Generator) writeReadUint(size uint64, tmpName, field string, sign bool) {
 	g.PrintfFunc("tmp%s := [%d]byte{}\n", tmpName, size/8)
 	g.PrintfFunc("n_%s, err := r.Read(tmp%s[:])\n", tmpName, tmpName)
 	g.PrintfFunc("if err != nil {\n")
@@ -467,10 +467,14 @@ func (g *Generator) writeReadUint(size uint64, tmpName, field string) {
 		g.PrintfFunc("return fmt.Errorf(\"read %s: expect %d bytes but read %%d bytes\", n_%s)\n", tmpName, size/8, tmpName)
 	}
 	g.PrintfFunc("}\n")
+	signStr := ""
+	if !sign {
+		signStr = "u"
+	}
 	if size == 8 {
-		g.PrintfFunc("t.%s = uint%d(tmp%s[0])\n", field, size, tmpName)
+		g.PrintfFunc("t.%s = %sint%d(tmp%s[0])\n", field, signStr, size, tmpName)
 	} else {
-		g.PrintfFunc("t.%s = uint%d(binary.BigEndian.Uint%d(tmp%s[:]))\n", field, size, size, tmpName)
+		g.PrintfFunc("t.%s = %sint%d(binary.BigEndian.Uint%d(tmp%s[:]))\n", field, signStr, size, size, tmpName)
 	}
 }
 
@@ -482,7 +486,7 @@ func (g *Generator) writeFieldDecode(p *ast2go.Field) {
 		return
 	}
 	if b, ok := g.bitFields[p]; ok {
-		g.writeReadUint(b.Size, b.Name, b.Name)
+		g.writeReadUint(b.Size, b.Name, b.Name, false)
 		return
 	}
 	typ := p.FieldType
@@ -499,7 +503,7 @@ func (g *Generator) writeFieldDecode(p *ast2go.Field) {
 	}
 	if i_type, ok := typ.(*ast2go.IntType); ok {
 		if i_type.IsCommonSupported {
-			g.writeReadUint(i_type.BitSize, fieldName, converted)
+			g.writeReadUint(i_type.BitSize, fieldName, converted, i_type.IsSigned)
 			return
 		}
 	}
