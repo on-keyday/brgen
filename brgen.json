@@ -15,7 +15,7 @@
     {
       "generator": "./tool/json2go.exe",
       "output_dir": "./ignore/examples/go/",
-      "args": []
+      "args": ["-map-word", "Id=ID", "-map-word", "IDentifier=Identifier"]
     }
   ]
 }

@@ -2,10 +2,13 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha1"
 	"flag"
 	"fmt"
 	"go/format"
 	"io"
+	"math/rand"
+	"strings"
 
 	"github.com/iancoleman/strcase"
 	ast2go "github.com/on-keyday/brgen/ast2go/ast"
@@ -15,11 +18,28 @@ import (
 var f = flag.Bool("s", false, "tell spec of json2go")
 var filename = flag.String("f", "", "file to parse")
 var usePut = flag.Bool("use-put", false, "use PutUintXXX instead of AppendUintXXX")
+var decodeReturnsLen = flag.Bool("decode-returns-len", true, "func Decode returns length of read bytes")
+var useMustEncode = flag.Bool("must-encode", true, "add MustEncode func")
+var mappingWords = map[string]string{}
+
+func init() {
+	flag.Func("map-word", "add mapping words (A=B)", func(s string) error {
+		key_value := strings.Split(s, "=")
+		if len(key_value) != 2 {
+			return fmt.Errorf("invalid format: %s", s)
+		}
+		mappingWords[key_value[0]] = key_value[1]
+		return nil
+	})
+}
 
 func resetFlag() {
 	*f = false
 	*filename = ""
 	*usePut = false
+	*decodeReturnsLen = true
+	*useMustEncode = true
+	mappingWords = map[string]string{}
 }
 
 type BitFields struct {
@@ -43,6 +63,7 @@ type Generator struct {
 	laterSize    map[*ast2go.Field]uint64
 	imports      map[string]struct{}
 	exprStringer *gen.ExprStringer
+	visitorName  string
 }
 
 func NewGenerator() *Generator {
@@ -317,10 +338,50 @@ func (g *Generator) writeStructType(belong string, s *ast2go.StructType) {
 	}
 }
 
+func gen5RandomASCIIBasedOnNameHash(name string) string {
+	hash := sha1.New()
+	hash.Write([]byte(name))
+	sum := hash.Sum(nil)
+	s := rand.NewSource(int64(sum[0]) | int64(sum[1])<<8 | int64(sum[2])<<16 | int64(sum[3])<<24 | int64(sum[4])<<32 | int64(sum[5])<<40 | int64(sum[6])<<48 | int64(sum[7])<<56)
+	r := rand.New(s)
+	for i := 0; i < 5; i++ {
+		rand := r.Intn(26) + 'A'
+		sum[i] = byte(rand)
+	}
+	return string(sum[:5])
+}
+
+func (g *Generator) writeStructVisitor(name string, p *ast2go.StructType) {
+	if g.visitorName == "" {
+		// use 3 char random string
+		g.visitorName = "Visitor" + gen5RandomASCIIBasedOnNameHash(name)
+		g.Printf("type %s interface {\n", g.visitorName)
+		g.Printf("Visit(v %s,name string,field any)\n", g.visitorName)
+		g.Printf("}\n")
+		g.Printf("type %sFunc func(v %s,name string,field any)\n", g.visitorName, g.visitorName)
+		g.Printf("func (f %sFunc) Visit(v %s,name string,field any) {\n", g.visitorName, g.visitorName)
+		g.Printf("f(v,name,field)\n")
+		g.Printf("}\n")
+	}
+	g.PrintfFunc("func (t *%s) Visit(v %s) {\n", name, g.visitorName)
+	for _, f := range p.Fields {
+		if field, ok := f.(*ast2go.Field); ok {
+			if field.Ident == nil {
+				continue
+			}
+			expr := g.exprStringer.ExprString(field.Ident)
+			expr = strings.Replace(expr, "(*", "(", 1)
+			g.PrintfFunc("v.Visit(v,%q,%s)\n", field.Ident.Ident, expr)
+		}
+	}
+	g.PrintfFunc("}\n")
+}
+
 func (g *Generator) writeFormat(p *ast2go.Format) {
 	g.Printf("type %s struct {\n", p.Ident.Ident)
 	g.writeStructType(p.Ident.Ident, p.Body.StructType)
 	g.Printf("}\n")
+	g.writeStructVisitor(p.Ident.Ident, p.Body.StructType)
 	g.writeEncode(p)
 	g.writeDecode(p)
 }
@@ -479,14 +540,15 @@ func (g *Generator) writeFieldDecode(p *ast2go.Field) {
 				g.PrintfFunc("if err != nil {\n")
 				g.PrintfFunc("return err\n")
 				g.PrintfFunc("}\n")
-				g.PrintfFunc("// check remaining length is enough to read %d byte\n", size)
+				g.PrintfFunc("// check remaining length is enough to read %d byte\n", size/8)
 				g.PrintfFunc("if end_tmp_%s - cur_tmp_%s < %d {\n", p.Ident.Ident, p.Ident.Ident, size/8)
 				g.imports["fmt"] = struct{}{}
-				g.PrintfFunc("return fmt.Errorf(\"read %s: expect %%d bytes but got %%d bytes\", %d, end_tmp_%s - cur_tmp_%s)\n", p.Ident.Ident, size, p.Ident.Ident, p.Ident.Ident)
+				g.PrintfFunc("return fmt.Errorf(\"read %s: expect %%d bytes but got %%d bytes\", %d, end_tmp_%s - cur_tmp_%s)\n", p.Ident.Ident, size/8, p.Ident.Ident, p.Ident.Ident)
 				g.PrintfFunc("}\n")
-				length = fmt.Sprintf("end_tmp_%s - cur_tmp_%s", p.Ident.Ident, p.Ident.Ident)
+				length = fmt.Sprintf("(end_tmp_%s - cur_tmp_%s) - %d", p.Ident.Ident, p.Ident.Ident, size/8)
 			}
 			g.PrintfFunc("len_%s := int(%s)\n", p.Ident.Ident, length)
+			g.PrintfFunc("if len_%s != 0 {\n", p.Ident.Ident)
 			g.PrintfFunc("tmp%s := make([]byte, len_%s)\n", p.Ident.Ident, p.Ident.Ident)
 			g.PrintfFunc("n_%s, err := r.Read(tmp%s[:])\n", p.Ident.Ident, p.Ident.Ident)
 			g.PrintfFunc("if err != nil {\n")
@@ -497,6 +559,9 @@ func (g *Generator) writeFieldDecode(p *ast2go.Field) {
 			g.PrintfFunc("return fmt.Errorf(\"read %s: expect %%d bytes but read %%d bytes\", len_%s, n_%s)\n", p.Ident.Ident, p.Ident.Ident, p.Ident.Ident)
 			g.PrintfFunc("}\n")
 			g.PrintfFunc("%s = tmp%s[:]\n", converted, p.Ident.Ident)
+			g.PrintfFunc("} else {\n")
+			g.PrintfFunc("%s = nil\n", converted)
+			g.PrintfFunc("}\n")
 			return
 		}
 	}
@@ -575,6 +640,16 @@ func (g *Generator) writeEncode(p *ast2go.Format) {
 	}
 	g.PrintfFunc("return buf,nil\n")
 	g.PrintfFunc("}\n")
+
+	if *useMustEncode {
+		g.PrintfFunc("func (t *%s) MustEncode() []byte {\n", p.Ident.Ident)
+		g.PrintfFunc("buf, err := t.Encode()\n")
+		g.PrintfFunc("if err != nil {\n")
+		g.PrintfFunc("panic(err)\n")
+		g.PrintfFunc("}\n")
+		g.PrintfFunc("return buf\n")
+		g.PrintfFunc("}\n")
+	}
 }
 
 func (g *Generator) writeDecode(p *ast2go.Format) {
@@ -587,8 +662,17 @@ func (g *Generator) writeDecode(p *ast2go.Format) {
 	g.PrintfFunc("}\n")
 	g.PrintfFunc("\n")
 	g.imports["bytes"] = struct{}{}
-	g.PrintfFunc("func (t *%s) Decode(d []byte) error {\n", p.Ident.Ident)
-	g.PrintfFunc("return t.Read(bytes.NewReader(d))\n")
+
+	if *decodeReturnsLen {
+		g.PrintfFunc("func (t *%s) Decode(d []byte) (int,error) {\n", p.Ident.Ident)
+		g.PrintfFunc("r := bytes.NewReader(d)\n")
+		g.PrintfFunc("err := t.Read(r)\n")
+		g.PrintfFunc("return int(int(r.Size()) - r.Len()),err\n")
+	} else {
+		g.PrintfFunc("func (t *%s) Decode(d []byte) error {\n", p.Ident.Ident)
+		g.PrintfFunc("r := bytes.NewReader(d)\n")
+		g.PrintfFunc("return t.Read(r)\n")
+	}
 	g.PrintfFunc("}\n")
 }
 
@@ -627,6 +711,17 @@ func (g *Generator) writeEnum(v *ast2go.Enum) {
 		}
 	}
 	g.Printf(")\n")
+
+	g.Printf("func (t %s) String() string {\n", v.Ident.Ident)
+	g.Printf("switch t {\n")
+	for _, m := range v.Members {
+		g.Printf("case %s_%s:\n", v.Ident.Ident, m.Ident.Ident)
+		g.Printf("return %q\n", m.Ident.Ident)
+	}
+	g.Printf("}\n")
+	g.imports["fmt"] = struct{}{}
+	g.Printf("return fmt.Sprintf(\"%s(%%d)\", t)\n", v.Ident.Ident)
+	g.Printf("}\n")
 }
 
 func (g *Generator) writeProgram(p *ast2go.Program) {
@@ -674,6 +769,9 @@ func (g *Generator) Generate(file *ast2go.AstFile) error {
 		ast2go.Walk(n, v)
 		if n, ok := n.(*ast2go.Ident); ok {
 			n.Ident = strcase.ToCamel(n.Ident)
+			for k, v := range mappingWords {
+				n.Ident = strings.Replace(n.Ident, k, v, -1)
+			}
 		}
 		return true
 	}))
