@@ -213,6 +213,7 @@ func (g *Generator) writeStructUnion(belong string, u *ast2go.StructUnionType) {
 	for _, field := range u.UnionFields {
 		typ := field.FieldType.(*ast2go.UnionType)
 		if typ.CommonType != nil {
+			// write getter func
 			typStr := g.getType(typ.CommonType)
 			g.PrintfFunc("func (t *%s) %s() *%s {\n", belong, field.Ident.Ident, typStr)
 			cond0 := ""
@@ -263,6 +264,47 @@ func (g *Generator) writeStructUnion(belong string, u *ast2go.StructUnionType) {
 			}
 			g.PrintfFunc("}\n")
 			g.exprStringer.IdentMapper[field.Ident.Ident] = fmt.Sprintf("(*t.%s())", field.Ident.Ident)
+
+			// write setter func
+			hasElse = false
+			endElse = false
+			g.PrintfFunc("func (t *%s) Set%s(v %s) bool {\n", belong, field.Ident.Ident, typStr)
+			for _, c := range typ.Candidates {
+				writeSet := func() {
+					if c.Field != nil {
+						s := g.unionStructs[c.Field.BelongStruct].Name
+						fieldType := g.getType(c.Field.FieldType)
+						g.PrintfFunc("t.%s.%s = %s(v)\n", s, c.Field.Ident.Ident, fieldType)
+						g.PrintfFunc("return true\n")
+					} else {
+						g.PrintfFunc("return false\n")
+					}
+				}
+				if c.Cond != nil {
+					collect := g.exprStringer.CollectDefine(c.Cond)
+					for _, v := range collect {
+						g.writeSingleNode(v, false)
+					}
+					cond := g.exprStringer.ExprString(c.Cond)
+					if hasElse {
+						g.PrintfFunc("else ")
+					}
+					g.PrintfFunc("if %s == %s {\n", cond0, cond)
+					writeSet()
+					g.PrintfFunc("}")
+					hasElse = true
+				} else {
+					g.PrintfFunc("else {\n")
+					writeSet()
+					g.PrintfFunc("}")
+					endElse = true
+				}
+			}
+			g.PrintfFunc("\n")
+			if !endElse {
+				g.PrintfFunc("return false\n")
+			}
+			g.PrintfFunc("}\n")
 		}
 	}
 

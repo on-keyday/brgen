@@ -1,0 +1,11 @@
+
+format ArpPacket:
+    hardware_type :u16
+    protocol_type :u16
+    hardware_len :u8
+    protocol_len :u8
+    operation :u16
+    source_hardware_address :[hardware_len]u8
+    source_protocol_address :[protocol_len]u8
+    target_hardware_address :[hardware_len]u8
+    target_protocol_address :[protocol_len]u8

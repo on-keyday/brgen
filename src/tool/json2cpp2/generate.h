@@ -144,6 +144,7 @@ namespace j2cp2 {
                     cond_u = "true";
                 }
                 if (ut->common_type) {
+                    // write getter func
                     map_line(uf->loc);
                     w.writeln("std::optional<", get_type_name(ut->common_type), "> ", uf->ident->ident, "() const {");
                     {
@@ -197,6 +198,59 @@ namespace j2cp2 {
                         str.ident_map[uf->ident->ident] = "*" + uf->ident->ident + "()";
                     }
                     w.writeln("}");
+
+                    // write setter func
+                    map_line(uf->loc);
+                    w.writeln("bool ", uf->ident->ident, "(const ", get_type_name(ut->common_type), "& v) {");
+                    {
+                        auto indent = w.indent_scope();
+                        auto make_access = [&](const std::shared_ptr<ast::Field>& f) {
+                            auto struct_ = f->belong_struct.lock();
+                            assert(struct_);
+                            auto indent = w.indent_scope();
+                            auto access = tmp[struct_] + "." + f->ident->ident;
+                            anonymous_structs[f.get()] = {access, struct_};
+                            map_line(f->loc);
+                            w.writeln("this->", access, " = v;");
+                        };
+                        bool has_els = false;
+                        bool end_else = false;
+                        for (auto& c : ut->candidates) {
+                            auto cond = c->cond.lock();
+                            if (cond) {
+                                auto defs = str.collect_defined_ident(cond);
+                                for (auto& d : defs) {
+                                    encode_one_node(d, true);
+                                }
+                                auto cond_s = str.to_string(cond);
+                                map_line(c->loc);
+                                w.writeln("if (", cond_s, "==", cond_u, ") {");
+                                {
+                                    auto f = c->field.lock();
+                                    if (!f) {
+                                        w.writeln("return false;");
+                                    }
+                                    else {
+                                        make_access(f);
+                                    }
+                                }
+                                w.writeln("}");
+                            }
+                            else {
+                                auto f = c->field.lock();
+                                if (!f) {
+                                    w.writeln("return false;");
+                                }
+                                else {
+                                    make_access(f);
+                                }
+                                end_else = true;
+                            }
+                        }
+                        if (!end_else) {
+                            w.writeln("return false;");
+                        }
+                    }
                 }
             }
         }
