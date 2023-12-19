@@ -1,9 +1,20 @@
 
+enum EtherType:
+    ipv4 = 0x0800
+    arp = 0x0806
+    vlan = 0x8100
+    ipv6 = 0x86DD
+
 format EthernetFrame:
     dstMac :[6]u8
     srcMac :[6]u8
     ether_type :u16
     if ether_type == 0x8100:
+        vlen_tag :u16
+        ether_type2 :u16
+    elif ether_type == 0x88a8:
+        service_vlen_tag :u16
+        dummy_ether_type :u16(0x8100)
         vlen_tag :u16
         ether_type2 :u16
     len := available(ether_type2) ? ether_type2 : ether_type

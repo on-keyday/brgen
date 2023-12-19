@@ -251,6 +251,7 @@ namespace j2cp2 {
                             w.writeln("return false;");
                         }
                     }
+                    w.writeln("}");
                 }
             }
         }
