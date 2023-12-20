@@ -3,3 +3,13 @@ format ICMPHeader:
     type: u8
     code: u8
     checksum: u16
+
+format ICMPTimeExceeded:
+    unused: u32
+    data: [..]u8
+
+format ICMPEcho:
+    id: u16
+    seq: u16
+    data: [..]u8
+
