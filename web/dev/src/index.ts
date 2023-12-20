@@ -6,7 +6,7 @@ import * as monaco from "../node_modules/monaco-editor/esm/vs/editor/editor.api.
 import {ast2ts} from "../node_modules/ast2ts/index.js";
 import * as caller from "./s2j/caller.js";
 import { JobResult,Language,LanguageList } from "./s2j/msg.js";
-import { makeButton, makeLink, makeListBox, setStyle } from "./ui";
+import { makeButton, makeLink, makeListBox, setStyle,makeCheckBox, LanguageSpecific, makeCheckBoxList } from "./ui";
 
 // first, load workers
 caller.loadWorkers();
@@ -25,6 +25,7 @@ const enum ElementID {
     GITHUB_LINK = "github-link",
     BALL = "ball",
     BALL_BOUND = "ball-bound",
+    CHECKBOX_LIST = "checkbox-list",
 }
 
 const sample =`
@@ -376,6 +377,23 @@ const changeLanguage = async (mode :string) => {
 commonUI.title_bar.appendChild(commonUI.language_select);
 commonUI.title_bar.appendChild(commonUI.copy_button);
 commonUI.title_bar.appendChild(commonUI.github_link);
+
+const box = makeCheckBoxList(ElementID.CHECKBOX_LIST,[
+    {
+        "name": "source_map",
+        "type": "checkbox",
+        "value": false,
+    }
+],"source_map",async () => {
+    
+},{
+    top: "50%",
+    left: "20%",
+    fontSize: "60%",
+    border: "solid 1px black",
+});
+
+commonUI.title_bar.appendChild(box);
 
 editor_model.setValue(getSourceCode());
 
