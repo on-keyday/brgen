@@ -39,29 +39,33 @@
     </style>
 </head>
 <body>
-    <div id="title_bar"><h1 style="text-align: center; top: 50%">now loading</h1></div>
-    <div id="ball"><h2 id="playground-jump" style="text-align: center;">Brgen Web Playground</h2></div>
+    <div id="title_bar"><h1 style="text-align: center; top: 50%"></h1>　</div>
+    <div id="ball"><h2 id="playground-jump" style="text-align: center;">Brgen Web Playground<br>now loading</h2></div>
     <div id="container1"></div>
     <div id="container2"></div>
-    <script id="main" async type="module" src="script/index.js" onload="reportError()" onerror="reportError()"></script>
+    <script id="main" async type="module" src="script/index.js"></script>
     <script id="report-error"> 
+        const main = document.getElementById("main");
         const reportError = ()=>{
             clearTimeout(id);
-            const b =document.getElementById("playground-jump");
-            const main = document.getElementById("main");
+            const b =document.getElementById("playground-jump");    
             main.onload = null;
             main.onerror = null;
             if(!b){
                 document.getElementById("report-error").remove();
                 return;
             }
-            b.innerText +="\nmaybe loading error"
+            const title = document.getElementById("title_bar");
+            title.innerText = "　";
+            b.innerText ="Brgen Web Playground\nload error"
             const ref = document.createElement("a");
             ref.innerText = "goto github to issue issue";
             ref.href ="https://github.com/on-keyday/brgen";
             document.body.appendChild(ref);
             document.getElementById("report-error").remove();
         }
+        main.onload = reportError;
+        main.onerror = reportError;
         const id = setTimeout(reportError,5000)
     </script>
 </body>

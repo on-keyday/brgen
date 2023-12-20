@@ -6,6 +6,7 @@ import * as monaco from "../node_modules/monaco-editor/esm/vs/editor/editor.api.
 import {ast2ts} from "../node_modules/ast2ts/index.js";
 import * as caller from "./s2j/caller.js";
 import { JobResult,Language,LanguageList } from "./s2j/msg.js";
+import { makeButton, makeLink, makeListBox, setStyle } from "./ui";
 
 // first, load workers
 caller.loadWorkers();
@@ -114,11 +115,7 @@ const setDefault = () => {
 };
 setDefault();
 
-// set style
-const setStyle = (e :HTMLElement) => {
-    e.style.position = "absolute";
-    e.style.display = "block";
-}
+
 
 setStyle(container1);
 setStyle(container2);
@@ -315,81 +312,58 @@ editor_model.onDidChangeContent(async (e)=>{
 
 editor.setModel(editor_model);
 
-const makeListBox = (id :string,items :string[]) => {
-    const select = document.createElement("select");
-    select.id = id;
-    items.forEach((item) => {
-        const option = document.createElement("option");
-        option.value = item;
-        option.innerText = item;
-        select.appendChild(option);
-    });
-    setStyle(select);
-    return select;
-}
-
-const makeButton = (id :string,text :string) => {
-    const button = document.createElement("button");
-    button.id = id;
-    button.innerText = text;
-    setStyle(button);
-    return button;
-}
-
-const makeLink = (id :string,text :string,href :string) => {
-    const link = document.createElement("a");
-    link.id = id;
-    link.innerText = text;
-    link.href = href;
-    setStyle(link);
-    return link;
-}
-
-const select = makeListBox(ElementID.LANGUAGE_SELECT,LanguageList);
-select.value = options.language_mode;
-select.style.top = "50%";
-select.style.left ="80%";
-select.style.fontSize = "60%";
-select.style.border = "solid 1px black";
-
-const button = makeButton(ElementID.COPY_BUTTON,"copy code");
-button.style.top = "50%";
-button.style.left = "65%";
-button.style.fontSize = "60%";
-button.style.border = "solid 1px black";
-button.onclick =async () => {
-    const code = generated.getValue();
-    if(navigator.clipboard===undefined){
-        button.innerText = "not supported";
-        setTimeout(() => {
-            button.innerText = "copy code";
-        },1000);
-        return;
-    }
-    button.innerText = "copied!";
-    setTimeout(() => {
-        button.innerText = "copy code";
-    },1000);
-    await navigator.clipboard.writeText(code);
-};
-
-const link = makeLink(ElementID.GITHUB_LINK,"develop page","https://github.com/on-keyday/brgen");
-link.style.top = "50%";
-link.style.left = "5%";
-link.style.fontSize = "60%";
-link.style.color = "blue";
-link.onclick = (e) => {
-    e.preventDefault();
-    location.href = link.href;
-}
+const commonUI = {
+    title_bar: title_bar,
+    language_select: makeListBox(ElementID.LANGUAGE_SELECT,LanguageList,
+        options.language_mode,
+        async () => {
+            const value = commonUI.language_select.value;
+            await changeLanguage(value);
+        },
+        {
+            top: "50%",
+            left: "80%",
+            fontSize: "60%",
+            border: "solid 1px black",
+        }),
+    copy_button: makeButton(ElementID.COPY_BUTTON,"copy code",async () => {
+            const code = generated.getValue();
+            if(navigator.clipboard===undefined){
+            commonUI.copy_button.innerText = "not supported";
+                setTimeout(() => {
+                    commonUI.copy_button.innerText = "copy code";
+                },1000);
+                return;
+            }
+            commonUI.copy_button.innerText = "copied!";
+            setTimeout(() => {
+                commonUI.copy_button.innerText = "copy code";
+            },1000);
+            await navigator.clipboard.writeText(code);
+        },
+        {
+            top: "50%",
+            left: "65%",
+            fontSize: "60%",
+            border: "solid 1px black",
+        }),
+    github_link: makeLink(ElementID.GITHUB_LINK,"develop page","https://github.com/on-keyday/brgen",
+        (e) => {
+            e.preventDefault();
+            location.href = commonUI.github_link.href;
+        },
+        {
+            top: "50%",
+            left: "5%",
+            fontSize: "60%",
+            color: "blue",
+        }),
+} as const;
 
 
-title_bar.appendChild(select);
-title_bar.appendChild(button);
-title_bar.appendChild(link);
 
 const changeLanguage = async (mode :string) => {
-    select.value = mode;
+    commonUI.language_select.value = mode;
     if(LanguageList.includes(mode as Language)) {
         options.setLanguageMode(mode as Language);
     }
@@ -399,10 +373,9 @@ const changeLanguage = async (mode :string) => {
     await updateGenerated();
 }
 
-select.onchange = async (e) => {
-    const value = select.value;
-    await changeLanguage(value);
-};
+commonUI.title_bar.appendChild(commonUI.language_select);
+commonUI.title_bar.appendChild(commonUI.copy_button);
+commonUI.title_bar.appendChild(commonUI.github_link);
 
 editor_model.setValue(getSourceCode());
 
