@@ -279,7 +279,7 @@ const mappingCode = (mappingInfo :MappingInfo[],origin :JobResult,count :number)
     const generated_line = editorUI.container2.getElementsByClassName("view-lines");
     const source_line_numbers_element = editorUI.container1.getElementsByClassName("line-numbers");
     const generated_line_numbers_element = editorUI.container2.getElementsByClassName("line-numbers");
-    if(generated_line_numbers_element?.length !== 1) {
+    if(generated_line_numbers_element?.length === 0) {
         if(count > 10) {
             console.log(`coloring timeout: jobID ${origin.jobID}`);
             return;
