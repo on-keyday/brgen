@@ -1,12 +1,10 @@
 
-
-
 import "../node_modules/destyle.css/destyle.min.css";
 import * as monaco from "../node_modules/monaco-editor/esm/vs/editor/editor.api.js";
 import {ast2ts} from "../node_modules/ast2ts/index.js";
 import * as caller from "./s2j/caller.js";
 import { JobResult,Language,LanguageList } from "./s2j/msg.js";
-import { makeButton, makeLink, makeListBox, setStyle,makeCheckBox, LanguageSpecific, makeCheckBoxList } from "./ui";
+import { makeButton, makeLink, makeListBox, setStyle, makeInputList, InputListElement } from "./ui";
 
 // first, load workers
 caller.loadWorkers();
@@ -25,7 +23,40 @@ const enum ElementID {
     GITHUB_LINK = "github-link",
     BALL = "ball",
     BALL_BOUND = "ball-bound",
-    CHECKBOX_LIST = "checkbox-list",
+    INPUT_LIST = "input-list",
+}
+
+const enum ConfigKey {
+    CPP_SOURCE_MAP = "source_map", 
+}
+
+interface LanguageConfig{
+    box: HTMLElement,
+    config: Map<string,InputListElement>
+};
+
+interface MappingInfo {
+    loc :ast2ts.Loc,
+    line :number,
+}
+
+const isMappingInfo = (obj :any) :obj is MappingInfo => {
+    if(ast2ts.isLoc(obj.loc) && obj.line&&typeof obj.line === 'number'){
+        return true;
+    }
+    return false;
+}
+
+const isMappingInfoArray = (obj :any) :obj is MappingInfo[] => {
+    if(Array.isArray(obj)){
+        for(let i = 0;i<obj.length;i++){
+            if(!isMappingInfo(obj[i])){
+                return false;
+            }
+        }
+        return true;
+    }
+    return false;
 }
 
 const sample =`
@@ -74,7 +105,7 @@ let options = {
     setSourceCode: (code :string) => {
         storage.setItem(StorageKey.SOURCE_CODE,code);
     }
-}
+} 
 
 const getElement = (id :string) => {
     const e = document.getElementById(id);
@@ -82,27 +113,40 @@ const getElement = (id :string) => {
     return e;
 }
 
-const container1 = getElement(ElementID.CONTAINER1);
-
-const container2= getElement(ElementID.CONTAINER2);
-
 const title_bar = getElement(ElementID.TITLE_BAR);
+const container1 = getElement(ElementID.CONTAINER1);
+const container2 = getElement(ElementID.CONTAINER2);
 
-const editor = monaco.editor.create(container1,{
-    lineHeight: 20,
-    automaticLayout: true,
-    colorDecorators: true,
-});
+setStyle(container1);
+setStyle(container2);
+setStyle(title_bar);
+title_bar.innerText = "Brgen Web Playground";
+title_bar.style.textAlign = "center";
 
-const generated = monaco.editor.create(container2,{
-    lineHeight: 20,
-    automaticLayout: true,
-    readOnly: true,
-    colorDecorators: true,
-});
+const editorUI = {
+    container1: container1,
+    container2: container2,
+    editor: monaco.editor.create(container1,{
+        lineHeight: 20,
+        automaticLayout: true,
+        colorDecorators: true,
+    }),
+    generated: monaco.editor.create(container2,{
+        lineHeight: 20,
+        automaticLayout: true,
+        readOnly: true,
+        colorDecorators: true,
+    }),
+    generated_model: monaco.editor.createModel("(generated code)","text/plain"),
+    setDefault: () => {
+        editorUI.generated.setModel(editorUI.generated_model);
+    },
+}
+
+
 
 // to disable cursor
-generated.onDidChangeModel(async (e) => {
+editorUI.generated.onDidChangeModel(async (e) => {
     const area = container2.getElementsByTagName("textarea");
     for(let i = 0;i<area.length;i++){
         area[i].style.display = "none";
@@ -110,19 +154,9 @@ generated.onDidChangeModel(async (e) => {
     }
 });
 
-const generated_model = monaco.editor.createModel("(generated code)","text/plain");
-const setDefault = () => {
-    generated.setModel(generated_model);
-};
-setDefault();
 
+editorUI.setDefault();
 
-
-setStyle(container1);
-setStyle(container2);
-setStyle(title_bar);
-title_bar.innerText = "Brgen Web Playground";
-title_bar.style.textAlign = "center";
 
 
 const setWindowSize = () => {
@@ -155,12 +189,12 @@ const setWindowSize = () => {
     container2.style.width = `${editor_width}px`;
     container2.style.left = `${editor_width}px`;
 
-    editor.layout({
+    editorUI.editor.layout({
         width: editor_width,
         height: editor_height,
     });
 
-    generated.layout({
+    editorUI.generated.layout({
         width: editor_width,
         height: editor_height,
     });
@@ -174,15 +208,17 @@ const setWindowSize = () => {
 
 setWindowSize();
 
-window.onresize = setWindowSize;
+window.addEventListener("resize",setWindowSize);
 
 const createGenerated =async (code :string,lang: string) => {
     const model = monaco.editor.createModel(code,lang);
-    generated.setModel(model);
+    editorUI.generated.setModel(model);
 }
 
+
+
 const alreadyUpdated = (s :JobResult) => {
-    if(s?.originalSourceCode !== editor.getValue()){
+    if(s?.originalSourceCode !== editorUI.editor.getValue()){
         console.log(`already updated jobID: ${s.jobID}`);
         return true;
     }
@@ -216,7 +252,24 @@ const handleCppPrototype = async (s :JobResult) => {
 }
 
 const handleCpp = async (s :JobResult) => {
-    await handleLanguage(s,caller.getCppCode,"cpp");
+    const useMap =commonUI.config.get(Language.CPP)?.config.get(ConfigKey.CPP_SOURCE_MAP)?.value;
+    const cppOption : caller.CppOption = {  
+        use_line_map: (useMap && typeof useMap == 'boolean') ? useMap: false,
+    };
+    let result : JobResult | undefined = undefined;
+    let mappingInfo :any;
+    await handleLanguage(s,async(src :string,option :any) => {
+        result = await caller.getCppCode(src,option as caller.CppOption);
+        if(result.code === 0&&cppOption.use_line_map){
+           const split = result.stdout!.split("############");
+           result.stdout = split[0];
+           mappingInfo = JSON.parse(split[1]);
+        }
+        return result;
+    },"cpp",cppOption);
+    if(isMappingInfoArray(mappingInfo)){
+        console.log(mappingInfo);
+    }
 }
 
 const handleGo = async (s :JobResult) => {
@@ -251,9 +304,9 @@ const handleDebugAST = async (value :string) => {
 }
 
 const updateGenerated = async () => {
-    const value = editor.getValue();
+    const value = editorUI.editor.getValue();
     if(value === ""){
-        setDefault();
+        editorUI.setDefault();
         return;
     }
     if(options.language_mode === Language.TOKENIZE) {
@@ -311,7 +364,11 @@ editor_model.onDidChangeContent(async (e)=>{
     await updateGenerated();
 })
 
-editor.setModel(editor_model);
+editorUI.editor.setModel(editor_model);
+
+interface Internal {
+    languageElement :HTMLElement|null;
+}
 
 const commonUI = {
     title_bar: title_bar,
@@ -328,7 +385,7 @@ const commonUI = {
             border: "solid 1px black",
         }),
     copy_button: makeButton(ElementID.COPY_BUTTON,"copy code",async () => {
-            const code = generated.getValue();
+            const code = editorUI.generated.getValue();
             if(navigator.clipboard===undefined){
             commonUI.copy_button.innerText = "not supported";
                 setTimeout(() => {
@@ -355,46 +412,67 @@ const commonUI = {
         },
         {
             top: "50%",
-            left: "5%",
+            left: "4%",
             fontSize: "60%",
             color: "blue",
         }),
+    config: new Map<Language,LanguageConfig>(),  
+    
+    internal: {
+        languageElement: null,
+    } as Internal,
+    
+    changeLanguageConfig: (lang :Language)=>{
+        commonUI.internal.languageElement?.remove();
+        commonUI.internal.languageElement = null;
+        const config = commonUI.config.get(lang);
+        if(config){
+            commonUI.internal.languageElement = config.box;
+            commonUI.title_bar.appendChild(config.box);
+        }
+    }
 } as const;
-
-
-
-const changeLanguage = async (mode :string) => {
-    commonUI.language_select.value = mode;
-    if(LanguageList.includes(mode as Language)) {
-        options.setLanguageMode(mode as Language);
-    }
-    else{
-        throw new Error(`invalid language mode: ${mode}`);
-    }
-    await updateGenerated();
-}
-
 commonUI.title_bar.appendChild(commonUI.language_select);
 commonUI.title_bar.appendChild(commonUI.copy_button);
 commonUI.title_bar.appendChild(commonUI.github_link);
 
-const box = makeCheckBoxList(ElementID.CHECKBOX_LIST,[
+const changeLanguage = async (mode :string) => {
+    if(!LanguageList.includes(mode as Language)) {
+        throw new Error(`invalid language mode: ${mode}`);
+    }
+    commonUI.language_select.value = mode;
+    options.setLanguageMode(mode as Language);
+    commonUI.changeLanguageConfig(mode as Language);
+    await updateGenerated();
+}
+
+
+const languageSpecificConfig = (conf :Map<string,InputListElement>,default_ :string,change: (change: InputListElement)=>void):LanguageConfig => {
+    const box = makeInputList(ElementID.INPUT_LIST,conf,default_,change,
     {
-        "name": "source_map",
+        top: "50%",
+        left: "25%",
+        fontSize: "60%",
+        border: "solid 1px black",
+    });
+    return {
+        box: box,
+        config: conf,
+    }
+}
+
+{
+    const cpp = new Map<string,InputListElement>();
+    cpp.set(ConfigKey.CPP_SOURCE_MAP,{
         "type": "checkbox",
         "value": false,
-    }
-],"source_map",async () => {
-    
-},{
-    top: "50%",
-    left: "20%",
-    fontSize: "60%",
-    border: "solid 1px black",
-});
+    });
+    commonUI.config.set(Language.CPP,languageSpecificConfig(cpp,ConfigKey.CPP_SOURCE_MAP,(change) => {
+        updateGenerated();
+    }));
+}
 
-commonUI.title_bar.appendChild(box);
-
+commonUI.changeLanguageConfig(options.language_mode);
 editor_model.setValue(getSourceCode());
 
 document.getElementById(ElementID.BALL)?.remove();

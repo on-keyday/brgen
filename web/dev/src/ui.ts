@@ -23,14 +23,14 @@ export const makeListBox = (id :string,items :string[],value :string,onchange :(
     return select;
 }
 
-export interface CheckBoxListElement {
-    name :string;
+export interface InputListElement {
+    name? :string;
     readonly type :'checkbox' | 'number' | 'text';
     value :boolean | number | string;
 }
 
 
-export const makeCheckBoxList = (id :string,items :CheckBoxListElement[],value :string,onchange :(e :CheckBoxListElement)=>void,css?:CSS) => {
+export const makeInputList = (id :string,items :Array<InputListElement>|Map<string,InputListElement>,value :string,onchange :(e :InputListElement)=>void,css?:CSS) => {
     const div = document.createElement("div");
     div.id = id + "-container";
     div.style.display = "flex";
@@ -40,23 +40,68 @@ export const makeCheckBoxList = (id :string,items :CheckBoxListElement[],value :
     select.id = id + "-select";    
     const inputContainer = document.createElement("div");
     inputContainer.id = "inputContainer-" + id;
-    items.forEach((item) => {
+    items.forEach((item,key) => {
+        if(typeof key === 'string'){ 
+            item.name = key;
+        }
+        if(item.name === undefined){
+            throw new Error("InputListElement must have name property");
+        }
         const option = document.createElement("option");
         option.value = item.name;
         option.innerText = item.name;
         select.appendChild(option);
     });
+    const setCheckBoxStyle = (checkbox :HTMLInputElement) => {
+        if(!checkbox.checked) {
+            checkbox.style.backgroundColor = "red";
+            // check mark design in css
+            checkbox.style.transform = 'rotate(-45deg)';
+            checkbox.style.left = `${select.clientWidth/2}px}`;
+            checkbox.style.width = `${select.clientWidth/3}px`;
+            checkbox.style.height = `${select.clientHeight/3}px`;
+        }
+        else{
+            checkbox.style.backgroundColor = "green";
+            // clear check mark design in css
+            checkbox.style.borderBottom = "";
+            checkbox.style.borderLeft = "";
+            checkbox.style.transform = '';
+            checkbox.style.top = '';
+            checkbox.style.left = '';
+            checkbox.style.left = `${select.clientWidth/2}px}`;
+            checkbox.style.width = `${select.clientWidth/3}px`;
+            checkbox.style.height = `${select.clientHeight/3}px`;
+        }
+        inputContainer.innerHTML = ''; // Clear previous input
+        const textElement = document.createElement('label');
+        textElement.innerText = checkbox.checked ? 'ON' : 'OFF';
+        textElement.appendChild(checkbox);
+        inputContainer.appendChild(textElement);
+    }
     const setInput = () => {
         inputContainer.innerHTML = ''; // Clear previous input
-        const found = items.find((item) => item.name === select.value);
+        const found = (() => {
+            if(typeof items === 'object' && items instanceof Map) {
+                return items.get(select.value);
+            }
+            else {
+                return items.find((item) => item.name === select.value);
+            }
+        })();
         if(found){
             const inputElement = document.createElement('input');
             inputElement.type = found.type;
             inputElement.value = found.value.toString();
+            inputElement.style.width = `${select.clientWidth}px`
+            inputElement.style.height = `${select.clientHeight}px`
+            inputElement.style.border = "solid 1px black";
+                     
             inputElement.onchange = () => {
                 switch(found.type){
                     case 'checkbox':
                         found.value = inputElement.checked;
+                        setCheckBoxStyle(inputElement);
                         break;
                     case 'number':
                         found.value = Number(inputElement.value);
@@ -67,19 +112,42 @@ export const makeCheckBoxList = (id :string,items :CheckBoxListElement[],value :
                 }
                 onchange(found);
             }
-            inputContainer.appendChild(inputElement);
+            if(found.type === 'checkbox'){
+                inputElement.checked = found.value as boolean;
+                setCheckBoxStyle(inputElement);
+            } 
+            else{ 
+                inputContainer.appendChild(inputElement);
+            }
         }
     }
     select.value = value;
-    setInput();
-    select.onchange = setInput;
-    selectContainer.appendChild(select);
-    div.appendChild(selectContainer);
-    div.appendChild(inputContainer);
     const rootDiv = document.createElement("div");
     rootDiv.id = id;
     rootDiv.appendChild(div);
     setStyle(rootDiv,css);
+    select.style.border = rootDiv.style.border;
+    rootDiv.style.border = "";
+    select.onchange = setInput;
+    selectContainer.appendChild(select);
+    div.appendChild(selectContainer);
+    div.appendChild(inputContainer);
+    setInput();
+    // inspect when rootDiv is inserted to Document
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if(mutation.type === 'childList'){
+                mutation.addedNodes.forEach((node) => {
+                    if(node === rootDiv){
+                        setInput();
+                        observer.disconnect();
+                    }
+                });
+            }
+        });
+    });
+    observer.observe(document.body,{childList:true,subtree:true});
+    globalThis.addEventListener('resize',setInput);
     return rootDiv;
 }
 
@@ -103,18 +171,4 @@ export const makeLink = (id :string,text :string,href :string,onclick:(e:MouseEv
 }
 
 
-export const makeCheckBox = (id :string,text :string) => {
-    const label = document.createElement("label");
-    label.innerText = text;
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.id = id;
-    label.appendChild(checkbox);
-    setStyle(label);
-    return label;
-}
 
-export interface LanguageSpecific {
-    enable(): void;
-    disable():void;   
-}
