@@ -273,7 +273,7 @@ const caches = {
 }
 
 const mappingCode = (mappingInfo :MappingInfo[],origin :JobResult,count :number) => {
-    console.log(mappingInfo);
+   
     // HACK: these elements are dependent on monaco-editor's implementation and may be changed in the future
     const source_line = editorUI.container1.getElementsByClassName("view-lines");
     const generated_line = editorUI.container2.getElementsByClassName("view-lines");
@@ -291,6 +291,7 @@ const mappingCode = (mappingInfo :MappingInfo[],origin :JobResult,count :number)
         },1);
         return;
     }
+
     const generated_model = editorUI.generated.getModel();
     if(!generated_model) throw new Error("generated model is null");
     if(source_line.length!==1) throw new Error("source line not found");
@@ -354,6 +355,7 @@ const handleCpp = async (s :JobResult) => {
         setTimeout(() => {
             if(result===undefined) throw new Error("result is undefined");
             if(alreadyUpdated(s)) return;
+            console.log(mappingInfo);
             mappingCode(mappingInfo,s,0);
         },1);
     }
