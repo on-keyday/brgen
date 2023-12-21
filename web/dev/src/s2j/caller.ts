@@ -40,6 +40,10 @@ export interface CallOption {
     filename? :string
 }
 
+export interface AstOption extends CallOption {
+    interpret_as_utf16? :boolean
+}
+
 export interface CppOption extends CallOption {
     use_line_map? :boolean
 }
@@ -65,12 +69,15 @@ const getRequest = (mgr :JobManager , lang :RequestLanguage,sourceCode :string,o
     return req;
 }
 
-export const getAST = (sourceCode :string,options? :CallOption) => {
+export const getAST = (sourceCode :string,options? :AstOption) => {
     const mgr = factory.getSrc2JSONWorker();
     const req = mgr.getRequest(RequestLanguage.JSON_AST,sourceCode);
     if(options){
         if(options.filename){
             req.arguments = ["--stdin-name",options.filename];
+        }
+        if(options.interpret_as_utf16) {
+            req.arguments = ["--interpret-mode","utf16"]
         }
     }
     return mgr.doRequest(req);

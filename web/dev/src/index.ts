@@ -1,13 +1,27 @@
 
 import "../node_modules/destyle.css/destyle.min.css";
 import * as monaco from "../node_modules/monaco-editor/esm/vs/editor/editor.api.js";
+import "../node_modules/monaco-editor/esm/vs/language/json/monaco.contribution.js"
 import {ast2ts} from "../node_modules/ast2ts/index.js";
 import * as caller from "./s2j/caller.js";
 import { JobResult,Language,LanguageList } from "./s2j/msg.js";
 import { makeButton, makeLink, makeListBox, setStyle, makeInputList, InputListElement } from "./ui";
 
+
+
 // first, load workers
 caller.loadWorkers();
+
+if(window.MonacoEnvironment === undefined) {
+    window.MonacoEnvironment = {
+        getWorker: (moduleId, label) => {
+            if (label === 'json') {
+                return new Worker(new URL('../node_modules/monaco-editor/esm/vs/language/json/json.worker',import.meta.url), { type: 'module' });
+            }
+            return new Worker(new URL('../node_modules/monaco-editor/esm/vs/editor/editor.worker',import.meta.url), { type: 'module' });
+        },
+    }
+}
 
 const enum StorageKey {
     LANG_MODE = "lang_mode",
@@ -27,6 +41,7 @@ const enum ElementID {
 }
 
 const enum ConfigKey {
+    COMMON_FILE_NAME ="file_name",
     CPP_SOURCE_MAP = "source_map", 
 }
 
@@ -225,13 +240,14 @@ const alreadyUpdated = (s :JobResult) => {
     return false;
 }
 
+// returns true if updated
 const handleLanguage = async (s :JobResult,generate:(src :string,option :any)=>Promise<JobResult>,lang: string,option? :any) => {
     if(s.stdout===undefined) throw new Error("stdout is undefined");
     const res = await generate(s.stdout,option).catch((e) => {
         return e as JobResult;
     });
     if(alreadyUpdated(s)) {
-        return;
+        return false;
     }
     console.log(res);
     if(res.stdout === undefined || res.stdout === "") {
@@ -245,10 +261,76 @@ const handleLanguage = async (s :JobResult,generate:(src :string,option :any)=>P
     else{
         createGenerated(res.stdout,lang);
     }
+    return true;
 }
 
 const handleCppPrototype = async (s :JobResult) => {
     await handleLanguage(s,caller.getCppPrototypeCode,"cpp");
+}
+
+const caches = {
+    mappingInfo: null as MappingInfo[]|null,
+}
+
+const mappingCode = (mappingInfo :MappingInfo[],origin :JobResult,count :number) => {
+    console.log(mappingInfo);
+    // HACK: these elements are dependent on monaco-editor's implementation and may be changed in the future
+    const source_line = editorUI.container1.getElementsByClassName("view-lines");
+    const generated_line = editorUI.container2.getElementsByClassName("view-lines");
+    const source_line_numbers_element = editorUI.container1.getElementsByClassName("line-numbers");
+    const generated_line_numbers_element = editorUI.container2.getElementsByClassName("line-numbers");
+    if(generated_line_numbers_element?.length !== 1) {
+        if(count > 10) {
+            console.log(`coloring timeout: jobID ${origin.jobID}`);
+            return;
+        }
+        // wait for monaco-editor's update
+        setTimeout(() => {
+            if(alreadyUpdated(origin)) return;
+            mappingCode(mappingInfo,origin,count+1);
+        },1);
+        return;
+    }
+    const generated_model = editorUI.generated.getModel();
+    if(!generated_model) throw new Error("generated model is null");
+    if(source_line.length!==1) throw new Error("source line not found");
+    if(generated_line.length!==1) throw new Error("generated line not found");
+    const source_line_element = source_line[0];
+    const generated_line_element = generated_line[0];
+    source_line_element.getElementsByClassName("view-line");
+    console.log(source_line_element);
+    console.log(generated_line_element);
+    console.log(source_line_numbers_element);
+    console.log(generated_line_numbers_element);
+    //get inner text of each line number and then make it number
+    // if inner text is not number, then ignore it
+    const source_line_numbers = Array.from(source_line_numbers_element).map((e) => {
+        const text = (e as HTMLElement).innerText;
+        const num = Number.parseInt(text,10);
+        if(isNaN(num)) return -1;
+        return num;
+    }).filter((e) => e!==-1);
+    const generated_line_numbers = Array.from(generated_line_numbers_element).map((e) => {
+        const text = (e as HTMLElement).innerText;
+        const num = Number.parseInt(text,10);
+        if(isNaN(num)) return -1;
+        return num;
+    }).filter((e) => e!==-1);
+    const source_line_limits = {
+        max: Math.max(...source_line_numbers),
+        min: Math.min(...source_line_numbers),
+    }
+    const generated_line_limits = {
+        max: Math.max(...generated_line_numbers),
+        min: Math.min(...generated_line_numbers),
+    }
+    console.log(source_line_numbers);
+    console.log(source_line_limits);
+    console.log(generated_line_numbers);
+    console.log(generated_line_limits);
+    editor_model.getLinesContent().forEach((line,i) => {
+        console.log(`${i+1}: ${line}`);
+    });
 }
 
 const handleCpp = async (s :JobResult) => {
@@ -258,7 +340,7 @@ const handleCpp = async (s :JobResult) => {
     };
     let result : JobResult | undefined = undefined;
     let mappingInfo :any;
-    await handleLanguage(s,async(src :string,option :any) => {
+    const updated = await handleLanguage(s,async(src :string,option :any) => {
         result = await caller.getCppCode(src,option as caller.CppOption);
         if(result.code === 0&&cppOption.use_line_map){
            const split = result.stdout!.split("############");
@@ -267,8 +349,13 @@ const handleCpp = async (s :JobResult) => {
         }
         return result;
     },"cpp",cppOption);
-    if(isMappingInfoArray(mappingInfo)){
-        console.log(mappingInfo);
+    if(updated&& isMappingInfoArray(mappingInfo)){
+        // for editor update 
+        setTimeout(() => {
+            if(result===undefined) throw new Error("result is undefined");
+            if(alreadyUpdated(s)) return;
+            mappingCode(mappingInfo,s,0);
+        },1);
     }
 }
 
@@ -356,18 +443,59 @@ window.addEventListener("keydown",async (e) => {
 monaco.languages.register({ id: 'brgen' });
 const editor_model =  monaco.editor.createModel("", "brgen");
 
-editor_model.onDidChangeContent(async (e)=>{
+const BrgenProvider = class implements monaco.languages.DocumentColorProvider {
+    provideDocumentColors(model: monaco.editor.ITextModel, token: monaco.CancellationToken): monaco.languages.IColorInformation[] | Promise<monaco.languages.IColorInformation[]> {
+        return caller.getAST(model.getValue(),{filename: "editor.bgn",interpret_as_utf16: true}).then((s) => {
+            if(s.stdout===undefined) throw new Error("stdout is undefined");
+            if(alreadyUpdated(s)) {
+                return [];
+            }
+            if(token.isCancellationRequested) {
+                return [];
+            }
+            const js = JSON.parse(s.stdout);
+            if(ast2ts.isAstFile(js)&&js.ast){
+                const ts = ast2ts.parseAST(js.ast);
+                console.log(ts);
+                const colors :monaco.languages.IColorInformation[] = [];
+                
+                return colors;
+            }
+            return [];
+        });
+    }
+    provideColorPresentations(model: monaco.editor.ITextModel, colorInfo: monaco.languages.IColorInformation, token: monaco.CancellationToken): monaco.languages.IColorPresentation[] | Promise<monaco.languages.IColorPresentation[]> {
+        throw new Error("Method not implemented.");
+    }
+}
+
+monaco.languages.registerColorProvider('brgen', new BrgenProvider());
+
+
+const onContentUpdate = async (e :monaco.editor.IModelContentChangedEvent)=>{
     e.changes.forEach((change)=>{
         console.log(change);
     });
     options.setSourceCode(editor_model.getValue());
     await updateGenerated();
-})
+}
+
+editor_model.onDidChangeContent(onContentUpdate)
 
 editorUI.editor.setModel(editor_model);
 
 interface Internal {
     languageElement :HTMLElement|null;
+}
+
+const changeLanguage = async (mode :string) => {
+    if(!LanguageList.includes(mode as Language)) {
+        throw new Error(`invalid language mode: ${mode}`);
+    }
+    commonUI.language_select.value = mode;
+    options.setLanguageMode(mode as Language);
+    commonUI.changeLanguageConfig(mode as Language);
+    await updateGenerated();
 }
 
 const commonUI = {
@@ -436,16 +564,6 @@ commonUI.title_bar.appendChild(commonUI.language_select);
 commonUI.title_bar.appendChild(commonUI.copy_button);
 commonUI.title_bar.appendChild(commonUI.github_link);
 
-const changeLanguage = async (mode :string) => {
-    if(!LanguageList.includes(mode as Language)) {
-        throw new Error(`invalid language mode: ${mode}`);
-    }
-    commonUI.language_select.value = mode;
-    options.setLanguageMode(mode as Language);
-    commonUI.changeLanguageConfig(mode as Language);
-    await updateGenerated();
-}
-
 
 const languageSpecificConfig = (conf :Map<string,InputListElement>,default_ :string,change: (change: InputListElement)=>void):LanguageConfig => {
     const box = makeInputList(ElementID.INPUT_LIST,conf,default_,change,
@@ -461,12 +579,44 @@ const languageSpecificConfig = (conf :Map<string,InputListElement>,default_ :str
     }
 }
 
+const fileName :InputListElement = {
+    "type": "text",
+    "value": "editor.bgn",
+}
+
+// language specific config
 {
+    const tokenize = new Map<string,InputListElement>();
+    tokenize.set(ConfigKey.COMMON_FILE_NAME,fileName);
+    commonUI.config.set(Language.TOKENIZE,languageSpecificConfig(tokenize,ConfigKey.COMMON_FILE_NAME,(change) => {
+        updateGenerated();
+    }));
+    const debugAST = new Map<string,InputListElement>();
+    debugAST.set(ConfigKey.COMMON_FILE_NAME,fileName);
+    commonUI.config.set(Language.JSON_DEBUG_AST,languageSpecificConfig(debugAST,ConfigKey.COMMON_FILE_NAME,(change) => {
+        updateGenerated();
+    }));
+    const cppProto = new Map<string,InputListElement>();
+    cppProto.set(ConfigKey.COMMON_FILE_NAME,fileName);
+    commonUI.config.set(Language.CPP_PROTOTYPE,languageSpecificConfig(cppProto,ConfigKey.COMMON_FILE_NAME,(change) => {
+        updateGenerated();
+    }));
+    const go = new Map<string,InputListElement>();
+    go.set(ConfigKey.COMMON_FILE_NAME,fileName);
+    commonUI.config.set(Language.GO,languageSpecificConfig(go,ConfigKey.COMMON_FILE_NAME,(change) => {
+        updateGenerated();
+    }));
+    const ast = new Map<string,InputListElement>();
+    ast.set(ConfigKey.COMMON_FILE_NAME,fileName);
+    commonUI.config.set(Language.JSON_AST,languageSpecificConfig(ast,ConfigKey.COMMON_FILE_NAME,(change) => {
+        updateGenerated();
+    }));
     const cpp = new Map<string,InputListElement>();
     cpp.set(ConfigKey.CPP_SOURCE_MAP,{
         "type": "checkbox",
         "value": false,
     });
+    cpp.set(ConfigKey.COMMON_FILE_NAME,fileName);
     commonUI.config.set(Language.CPP,languageSpecificConfig(cpp,ConfigKey.CPP_SOURCE_MAP,(change) => {
         updateGenerated();
     }));
@@ -477,3 +627,6 @@ editor_model.setValue(getSourceCode());
 
 document.getElementById(ElementID.BALL)?.remove();
 document.getElementById(ElementID.BALL_BOUND)?.remove();
+
+console.log(monaco.languages.getLanguages());
+
