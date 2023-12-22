@@ -140,7 +140,6 @@ export const makeInputList = (id :string,items :Array<InputListElement>|Map<stri
                 mutation.addedNodes.forEach((node) => {
                     if(node === rootDiv){
                         setInput();
-                        observer.disconnect();
                     }
                 });
             }
