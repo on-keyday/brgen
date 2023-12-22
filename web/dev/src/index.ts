@@ -55,6 +55,13 @@ interface MappingInfo {
     line :number,
 }
 
+interface ColorMap {
+    info :MappingInfo,
+    color :string,
+    sourceElement :HTMLElement|undefined,
+    generatedElement :HTMLElement|undefined
+}
+
 const isMappingInfo = (obj :any) :obj is MappingInfo => {
     if(ast2ts.isLoc(obj.loc) && obj.line&&typeof obj.line === 'number'){
         return true;
@@ -232,7 +239,7 @@ const createGenerated =async (code :string,lang: string) => {
 
 
 
-const alreadyUpdated = (s :JobResult) => {
+const editorAlreadyUpdated = (s :JobResult) => {
     if(s?.originalSourceCode !== editorUI.editor.getValue()){
         console.log(`already updated jobID: ${s.jobID}`);
         return true;
@@ -246,7 +253,10 @@ const handleLanguage = async (s :JobResult,generate:(src :string,option :any)=>P
     const res = await generate(s.stdout,option).catch((e) => {
         return e as JobResult;
     });
-    if(alreadyUpdated(s)) {
+    if(editorAlreadyUpdated(s)) {
+        return false;
+    }
+    if(lang!==options.language_mode) {
         return false;
     }
     console.log(res);
@@ -269,10 +279,10 @@ const handleCppPrototype = async (s :JobResult) => {
 }
 
 const caches = {
-    mappingInfo: null as MappingInfo[]|null,
+    recoloring: null as null|(()=>void),
 }
 
-const mappingCode = (mappingInfo :MappingInfo[],origin :JobResult,count :number) => {
+const mappingCode = (mappingInfo :MappingInfo[],origin :JobResult,lang :Language,count :number) => {
    
     // HACK: these elements are dependent on monaco-editor's implementation and may be changed in the future
     const source_line = editorUI.container1.getElementsByClassName("view-lines");
@@ -286,8 +296,8 @@ const mappingCode = (mappingInfo :MappingInfo[],origin :JobResult,count :number)
         }
         // wait for monaco-editor's update
         setTimeout(() => {
-            if(alreadyUpdated(origin)) return;
-            mappingCode(mappingInfo,origin,count+1);
+            if(editorAlreadyUpdated(origin)) return;
+            mappingCode(mappingInfo,origin,lang,count+1);
         },1);
         return;
     }
@@ -298,25 +308,34 @@ const mappingCode = (mappingInfo :MappingInfo[],origin :JobResult,count :number)
     if(generated_line.length!==1) throw new Error("generated line not found");
     const source_line_element = source_line[0];
     const generated_line_element = generated_line[0];
-    source_line_element.getElementsByClassName("view-line");
+    const source_lines = source_line_element.getElementsByClassName("view-line");
+    const generated_lines = generated_line_element.getElementsByClassName("view-line");
     console.log(source_line_element);
     console.log(generated_line_element);
+    console.log(source_lines);
+    console.log(generated_lines);
     console.log(source_line_numbers_element);
     console.log(generated_line_numbers_element);
+    const sourceMap = new Map<number,HTMLElement>();
+    const generatedMap = new Map<number,HTMLElement>();
     //get inner text of each line number and then make it number
     // if inner text is not number, then ignore it
     const source_line_numbers = Array.from(source_line_numbers_element).map((e) => {
         const text = (e as HTMLElement).innerText;
         const num = Number.parseInt(text,10);
         if(isNaN(num)) return -1;
+        sourceMap.set(num,e as HTMLElement);
         return num;
     }).filter((e) => e!==-1);
     const generated_line_numbers = Array.from(generated_line_numbers_element).map((e) => {
         const text = (e as HTMLElement).innerText;
         const num = Number.parseInt(text,10);
         if(isNaN(num)) return -1;
+        generatedMap.set(num,e as HTMLElement);
         return num;
     }).filter((e) => e!==-1);
+    if(source_line_numbers.length !== source_lines.length) throw new Error("source line number and source line element is not matched");
+    if(generated_line_numbers.length !== generated_lines.length) throw new Error("generated line number and generated line element is not matched");
     const source_line_limits = {
         max: Math.max(...source_line_numbers),
         min: Math.min(...source_line_numbers),
@@ -325,13 +344,78 @@ const mappingCode = (mappingInfo :MappingInfo[],origin :JobResult,count :number)
         max: Math.max(...generated_line_numbers),
         min: Math.min(...generated_line_numbers),
     }
+    Array.from(source_lines).forEach((e) => {
+        sourceMap.set(source_line_numbers.shift()!,e as HTMLElement);
+    })
+    Array.from(generated_lines).forEach((e) => {
+        generatedMap.set(generated_line_numbers.shift()!,e as HTMLElement);
+    })
     console.log(source_line_numbers);
     console.log(source_line_limits);
     console.log(generated_line_numbers);
     console.log(generated_line_limits);
-    editor_model.getLinesContent().forEach((line,i) => {
-        console.log(`${i+1}: ${line}`);
+    console.log(sourceMap);
+    console.log(generatedMap);
+    const colors = [
+        "rgba(255, 0, 0, 0.5)",// red
+        "rgba(0,0,255,0.5)",// blue
+        "rgba(255,255,0,0.5)",// yellow
+        "rgba(0,255,0,0.5)",// green
+        "rgba(255,0,255,0.5)",// purple
+        "rgba(255,165,0,0.5)",// orange
+    ];
+    const useMapping = mappingInfo.map((e) => {
+        const source = sourceMap.get(e.loc.line);
+        const generated = generatedMap.get(e.line);
+        if(source === undefined && generated === undefined) return null;
+        const color = colors[e.loc.line%colors.length];
+        return {
+            info: e,
+            color: color,
+            sourceElement: source,
+            generatedElement: generated,
+        } as ColorMap;
+    }).filter((e) => e!==null) as ColorMap[]; 
+    console.log(useMapping);
+    useMapping.forEach((e) => {
+        if(e.sourceElement) {
+            e.sourceElement.style.backgroundColor = e.color;
+        }
+        if(e.generatedElement) {
+            e.generatedElement.style.backgroundColor = e.color;
+        }
     });
+    const recoloring = () => {
+        observer1.disconnect();
+        observer2.disconnect();
+        const mapping = commonUI.config.get(lang)?.config.get(ConfigKey.CPP_SOURCE_MAP)?.value === true;
+        if(editorAlreadyUpdated(origin)||lang !== options.language_mode||!mapping)  {
+            useMapping.forEach((e) => {
+                if(e.sourceElement) {
+                    e.sourceElement.style.backgroundColor = '';
+                }
+                if(e.generatedElement) {
+                    e.generatedElement.style.backgroundColor = '';
+                }
+            });
+            if(caches.recoloring === recoloring) {
+                caches.recoloring = null;
+            }
+            return;
+        }
+        mappingCode(mappingInfo,origin,lang,0);
+    };
+    const observer1 = new MutationObserver(recoloring);
+    observer1.observe(source_line_element,{
+        childList: true,
+        subtree: true,
+    });
+    const observer2 = new MutationObserver(recoloring);
+    observer2.observe(generated_line_element,{
+        childList: true,
+        subtree: true,
+    });
+    caches.recoloring = recoloring;
 }
 
 const handleCpp = async (s :JobResult) => {
@@ -351,12 +435,12 @@ const handleCpp = async (s :JobResult) => {
         return result;
     },"cpp",cppOption);
     if(updated&& isMappingInfoArray(mappingInfo)){
-        // for editor update 
+        // wait for editor update 
         setTimeout(() => {
             if(result===undefined) throw new Error("result is undefined");
-            if(alreadyUpdated(s)) return;
+            if(editorAlreadyUpdated(s)) return;
             console.log(mappingInfo);
-            mappingCode(mappingInfo,s,0);
+            mappingCode(mappingInfo,s,Language.CPP,0);
         },1);
     }
 }
@@ -373,7 +457,7 @@ const handleJSONOutput = async (value :string,generator:(srcCode :string,option:
     {filename: "editor.bgn"}).catch((e) => {
         return e as JobResult;
     });
-    if(alreadyUpdated(s)) {
+    if(editorAlreadyUpdated(s)) {
         return;
     }
     if(s.stdout===undefined) throw new Error("stdout is undefined");
@@ -408,7 +492,7 @@ const updateGenerated = async () => {
     {filename: "editor.bgn"}).catch((e) => {
         return e as JobResult;
     });
-    if(alreadyUpdated(s)) {
+    if(editorAlreadyUpdated(s)) {
         return;
     }
     if(s.stdout===undefined) throw new Error("stdout is undefined");
@@ -449,7 +533,7 @@ const BrgenProvider = class implements monaco.languages.DocumentColorProvider {
     provideDocumentColors(model: monaco.editor.ITextModel, token: monaco.CancellationToken): monaco.languages.IColorInformation[] | Promise<monaco.languages.IColorInformation[]> {
         return caller.getAST(model.getValue(),{filename: "editor.bgn",interpret_as_utf16: true}).then((s) => {
             if(s.stdout===undefined) throw new Error("stdout is undefined");
-            if(alreadyUpdated(s)) {
+            if(editorAlreadyUpdated(s)) {
                 return [];
             }
             if(token.isCancellationRequested) {
@@ -560,6 +644,9 @@ const commonUI = {
             commonUI.internal.languageElement = config.box;
             commonUI.title_bar.appendChild(config.box);
         }
+        if(caches.recoloring !== null) {
+            caches.recoloring();
+        }
     }
 } as const;
 commonUI.title_bar.appendChild(commonUI.language_select);
@@ -620,6 +707,14 @@ const fileName :InputListElement = {
     });
     cpp.set(ConfigKey.COMMON_FILE_NAME,fileName);
     commonUI.config.set(Language.CPP,languageSpecificConfig(cpp,ConfigKey.CPP_SOURCE_MAP,(change) => {
+        if(change.name === ConfigKey.CPP_SOURCE_MAP){
+            if(change.value === false) {
+                if(caches.recoloring !== null) {
+                    caches.recoloring(); 
+                    return;
+                }
+            }
+        }
         updateGenerated();
     }));
 }
