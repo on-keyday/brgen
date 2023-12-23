@@ -1,0 +1,44 @@
+
+format PcapNGBlock:
+    block_type: u32
+    block_total_length: u32
+    block_body :[block_total_length -12]u8
+    block_total_length2: u32
+    block_total_length == block_total_length2
+
+format SectionHeaderBlock:
+    byte_order_magic: u32(0x1A2B3C4D)
+    major_version: u16
+    minor_version: u16
+    section_length: u64
+    section_options: [section_length - 28]u8
+
+format EnhancedPacketBlock:
+    interface_id: u32
+    timestamp_high: u32
+    timestamp_low: u32
+    captured_packet_length: u32
+    original_packet_length: u32
+    packet_data: [captured_packet_length]u8
+    options : [..]u8
+
+format InterfaceDescriptionBlock:
+    link_type: u16
+    reserved: u16
+    snap_len: u32
+    options: [..]u8
+
+format SimplePacketBlock:
+    packet_len :u32
+    packet_data: [packet_len]u8
+    options : [..]u8
+
+format Record:
+    record_type: u16
+    record_length: u16
+    record_data: [record_length]u8
+
+format NameResolutionBlock:
+    record: [..]Record
+    :""
+    options : [..]u8

@@ -4,7 +4,7 @@ format PcapHeader:
     magic == 0xa1b2c3d4 || magic == 0xa1b2cd34
     version_major :u16
     version_minor :u16
-    thiszone :i32
+    thiszone :s32
     sigfigs :u32
     snaplen :u32
     network :u32

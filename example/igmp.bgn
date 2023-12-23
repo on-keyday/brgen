@@ -1,0 +1,23 @@
+
+enum IGMPType:
+    :u8
+    query = 0x11
+    report = 0x12
+    leave = 0x13
+
+
+format IGMPPacket:
+    type :IGMPType
+    if type == IGMPType.query:
+        max_response_time :u8
+        checksum :u16
+        group :u32
+        reserved :u4
+        suppress_router_processing :u1
+        query_interval_code :u3
+    else:
+        reserved :u8
+        checksum :u16
+        group :u32
+
+    
