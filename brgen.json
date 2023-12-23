@@ -27,6 +27,10 @@
         "-map-word",
         "Udpheader=UDPHeader"
       ]
+    },
+    {
+      "generator": "./tool/json2kaitai.exe",
+      "output_dir": "./ignore/examples/kaitai/"
     }
   ]
 }

@@ -2,13 +2,11 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	"os"
 
 	"github.com/on-keyday/brgen/ast2go/ast"
-	"github.com/on-keyday/brgen/ast2go/gen"
 	"gopkg.in/yaml.v3"
 )
 
@@ -43,8 +41,7 @@ type Meta struct {
 }
 
 type Kaitai struct {
-	Seq   []*Attribute    `yaml:"seq"`
-	Types map[string]Type `yaml:"types"`
+	Seq []*Attribute `yaml:"seq"`
 }
 
 func IntType(i *ast.IntType) Type {
@@ -72,13 +69,21 @@ func GenerateAttribute(s *ast.Format) ([]*Attribute, error) {
 	for _, member := range members {
 		switch f := member.(type) {
 		case *ast.Field:
+			if f.Ident == nil {
+				continue
+			}
 			field := &Attribute{
 				ID: f.Ident.Ident,
 			}
 			if i_typ, ok := f.FieldType.(*ast.IntType); ok {
 				field.Type = IntType(i_typ)
-
 			}
+			if arr, ok := f.FieldType.(*ast.ArrayType); ok {
+				if arr.BitSize != 0 {
+					field.Size = fmt.Sprintf("%d", arr.BitSize/8)
+				}
+			}
+			attr = append(attr, field)
 		}
 	}
 	return attr, nil
@@ -86,35 +91,58 @@ func GenerateAttribute(s *ast.Format) ([]*Attribute, error) {
 
 func Generate(root *ast.Program) (*Kaitai, error) {
 	kaitai := &Kaitai{}
-	var rootTypes []ast.Member
-	gen.ConfigFromProgram(root, func(configName string, asCall bool, args ...ast.Expr) error {
-		if configName == "config.export" {
-			if !asCall {
-				return errors.New("config.export must be called")
-			}
-			for _, arg := range args {
-				ident, ok := arg.(*ast.Ident)
-				if !ok {
-					return errors.New("config.export must have identifier as argument")
-				}
-				typ, ok := ident.Base.(ast.Member)
-				if !ok {
-					return errors.New("config.export must have type as argument")
-				}
-				rootTypes = append(rootTypes, typ)
-			}
-		}
-		return nil
-	})
-	for _, typ := range rootTypes {
-		switch a := typ.(type) {
+	var rootTypes []*ast.Format
+	refMap := map[*ast.Format]int{}
+	for _, member := range root.StructType.Fields {
+		switch f := member.(type) {
 		case *ast.Format:
-			attr, err := GenerateAttribute(a)
-			if err != nil {
-				return nil, err
+			rootTypes = append(rootTypes, f)
+			refCount := 0
+			for _, member := range f.Body.StructType.Fields {
+				switch f := member.(type) {
+				case *ast.Field:
+					typ := f.FieldType
+					if ident_ty, ok := typ.(*ast.IdentType); ok {
+						typ = ident_ty.Base
+					}
+					if _, ok := typ.(*ast.StructType); ok {
+						refCount++
+					}
+				}
 			}
-			kaitai.Seq = append(kaitai.Seq, attr...)
+			refMap[f] = refCount
 		}
+	}
+	for _, fmt := range rootTypes {
+		for _, member := range fmt.Body.StructType.Fields {
+			switch f := member.(type) {
+			case *ast.Field:
+				typ := f.FieldType
+				if ident_ty, ok := typ.(*ast.IdentType); ok {
+					typ = ident_ty.Base
+				}
+				if struct_ty, ok := typ.(*ast.StructType); ok {
+					refMap[fmt] += refMap[struct_ty.Base.(*ast.Format)] - 1
+				}
+			}
+		}
+	}
+	// max reference
+	var maxRef *ast.Format
+	max := 0
+	for fmt, ref := range refMap {
+		if maxRef == nil {
+			maxRef = fmt
+			max = ref
+		} else if ref > max {
+			max = ref
+			maxRef = fmt
+		}
+	}
+	var err error
+	kaitai.Seq, err = GenerateAttribute(maxRef)
+	if err != nil {
+		return nil, err
 	}
 	return kaitai, nil
 }
@@ -128,7 +156,7 @@ func main() {
 		fmt.Println(`{
 			"langs" : ["kaitai-struct"],
 			"pass_by" : "stdin",
-			"suffix" : ".ksy"
+			"suffix" : [".ksy"]
 		}`)
 		return
 	}

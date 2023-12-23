@@ -41,11 +41,14 @@
 <body>
     <div id="title_bar"><h1 style="text-align: center; top: 50%"></h1>　</div>
     <div id="ball"><h2 id="playground-jump" style="text-align: center;">Brgen Web Playground<br>now loading</h2></div>
+    <noscript id="no-script-tag">enable JavaScript to use this application <a href="https://gihtub.com/on-keyday/brgen"></a></noscript>
     <div id="container1"></div>
     <div id="container2"></div>
     <script id="main" async type="module" src="script/index.js"></script>
     <script id="report-error"> 
         const main = document.getElementById("main");
+        const non_script = document.getElementById("no-script-tag");
+        non_script?.remove();
         const reportError = ()=>{
             clearTimeout(id);
             const b =document.getElementById("playground-jump");    
