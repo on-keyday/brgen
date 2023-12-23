@@ -1,6 +1,6 @@
 # Architecture
 
-tool/brgen - compiler driver
+tool/brgen - code generator driver <- input is brgen.json
 |
 |--tool/src2json - parse source code then convert to json ast, dump type information of ast node, lexer etc...
 |

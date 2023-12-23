@@ -1,0 +1,40 @@
+format DHCPv6:
+    msg_type :u8
+    transaction_id :u24
+    options :[..]u8
+
+format DHCPRelay:
+    msg_type :u8
+    hop_count :u8
+    link_address :[16]u8
+    peer_address :[16]u8
+
+format DUID:
+    duid_type :u16
+    match duid_type:
+        1 => duid_llt :DUID_LLT
+        2 => duid_en :DUID_EN
+        3 => duid_ll :DUID_LL
+        4 => duid_uuid :DUID_UUID
+        .. => duid_raw :[..]u8
+
+format DUID_LLT:
+    hardware_type :u16
+    time :u32
+    link_layer_address :[..]u8
+
+format DUID_EN:
+    enterprise_number :u32
+    identifier :[..]u8
+
+format DUID_LL:
+    hardware_type :u16
+    link_layer_address :[..]u8
+
+format DUID_UUID:
+    uuid :[16]u8
+
+format DHCPv6Option:
+    code :u16
+    len :u16
+    data :[..]u8

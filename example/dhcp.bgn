@@ -1,0 +1,20 @@
+
+format DHCP:
+    op :u8
+    htype :u8
+    hlen :u8
+    hops :u8
+    xid :u32
+    secs :u16
+    broadcast :u1
+    reserved :u15(0)
+    ciaddr :u32
+    yiaddr :u32
+    siaddr :u32
+    giaddr :u32
+    chaddr :[16]u8
+    sname :[64]u8
+    file :[128]u8
+    cookie :[4]u8
+    options :[..]u8
+

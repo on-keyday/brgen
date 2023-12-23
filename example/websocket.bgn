@@ -24,6 +24,8 @@ format Frame:
         MaskingKey :[4]u8
 
     Payload :[available(ExtendedPayloadLength) ? ExtendedPayloadLength : PayloadLength]u8
-    config.xor(Payload, MaskingKey)
+    
+    if Mask == 1:
+        xor(Payload, MaskingKey)
     
 

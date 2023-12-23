@@ -1,0 +1,23 @@
+
+format PcapHeader:
+    magic :u32
+    magic == 0xa1b2c3d4 || magic == 0xa1b2cd34
+    version_major :u16
+    version_minor :u16
+    thiszone :i32
+    sigfigs :u32
+    snaplen :u32
+    network :u32
+    if magic == 0xa1b2cd34:
+        ifindex :u32
+        protocol :u16
+        pkt_type :u8
+        pad :u8
+
+format PcapRecord:
+    ts_sec :u32
+    ts_usec :u32
+    incl_len :u32
+    orig_len :u32
+    data :[incl_len]u8
+

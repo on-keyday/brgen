@@ -90,6 +90,9 @@ func (g *Generator) getSeq() int {
 }
 
 func (g *Generator) getType(typ ast2go.Type) string {
+	if ident_typ, ok := typ.(*ast2go.IdentType); ok {
+		return ident_typ.Ident.Ident
+	}
 	if i_type, ok := typ.(*ast2go.IntType); ok {
 		if i_type.IsCommonSupported {
 			if i_type.IsSigned {
@@ -108,9 +111,6 @@ func (g *Generator) getType(typ ast2go.Type) string {
 			return fmt.Sprintf("[%s]%s", len, g.getType(arr_type.BaseType))
 		}
 		return fmt.Sprintf("[]%s", g.getType(arr_type.BaseType))
-	}
-	if enum_type, ok := typ.(*ast2go.EnumType); ok {
-		return fmt.Sprintf("%s", enum_type.Base.Ident.Ident)
 	}
 	if struct_type, ok := typ.(*ast2go.StructType); ok {
 		if !struct_type.Recursive {
