@@ -7,7 +7,7 @@
 #include <wrap/iocommon.h>
 #include <console/ansiesc.h>
 #include <core/middle/resolve_import.h>
-#include <core/middle/resolve_cast.h>
+#include <core/middle/resolve_primitive_cast.h>
 #include <core/middle/resolve_available.h>
 #include <core/middle/replace_assert.h>
 #include <core/middle/typing.h>
@@ -453,9 +453,9 @@ int Main(Flags& flags, utils::cmdline::option::Context&) {
         return exit_err;
     }
 
-    const auto kill = [&] {
+    const auto kill = utils::helper::defer([&] {
         brgen::ast::kill_node(*res);
-    };
+    });
 
     if (!flags.not_resolve_import) {
         auto res2 = brgen::middle::resolve_import(*res, files).transform_error(brgen::to_source_error(files));
@@ -465,7 +465,11 @@ int Main(Flags& flags, utils::cmdline::option::Context&) {
         }
     }
     if (!flags.not_resolve_cast) {
-        brgen::middle::resolve_int_cast(*res);
+        auto prim = brgen::middle::resolve_primitive_cast(*res);
+        if (!prim) {
+            report_error(brgen::to_source_error(files)(std::move(prim.error())));
+            return exit_err;
+        }
     }
     if (!flags.not_resolve_available) {
         brgen::middle::resolve_available(*res);

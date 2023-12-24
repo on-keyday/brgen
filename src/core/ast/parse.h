@@ -883,7 +883,7 @@ namespace brgen::ast {
             s.must_consume_token("(");
             s.skip_white();
             bool second = false;
-            if (!s.expect_token(")")) {
+            while (!s.expect_token(")")) {
                 if (second) {
                     s.must_consume_token(",");
                 }
