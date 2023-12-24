@@ -33,6 +33,20 @@ format DomainName:
     :"\x00"
     input.offset - start <= 255
 
+format DNSQuestion:
+    name :DomainName
+    type :u16
+    class :u16
+
+format DNSResourceRecord:
+    name :DomainName
+    type :u16
+    class :u16
+    ttl :u32
+    data_length :u16
+    data :[..]u8
+
+
 format DNSHeader:
     id :u16
     response :u1
@@ -47,4 +61,8 @@ format DNSHeader:
     answer_count :u16
     authority_count :u16
     additional_count :u16
+    questions :[query_count]DNSQuestion
+    answers :[answer_count]DNSResourceRecord
+    authorities :[authority_count]DNSResourceRecord
+    additionals :[additional_count]DNSResourceRecord
 
