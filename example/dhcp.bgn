@@ -15,6 +15,6 @@ format DHCP:
     chaddr :[16]u8
     sname :[64]u8
     file :[128]u8
-    cookie :[4]u8
+    magic :u32(0x63825363)
     options :[..]u8
 

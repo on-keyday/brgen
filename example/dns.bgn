@@ -1,0 +1,50 @@
+
+enum DNSOpCode:
+    :u4
+    QUERY = 0
+    IQUERY = 1
+    STATUS = 2
+    NOTIFY = 4
+    UPDATE = 5
+
+enum DNSReturnCode:
+    :u4
+    NOERROR = 0
+    FORMERR = 1
+    SERVFAIL = 2
+    NXDOMAIN = 3
+    NOTIMP = 4
+    REFUSED = 5
+    YXDOMAIN = 6
+    YXRRSET = 7
+    NXRRSET = 8
+    NOTAUTH = 9
+    NOTZONE = 10
+
+
+format Label:
+    length :u8
+    length <= 63
+    data :[length]u8
+
+format DomainName:
+    start := input.offset
+    labels :[..]Label
+    :"\x00"
+    input.offset - start <= 255
+
+format DNSHeader:
+    id :u16
+    response :u1
+    opcode :DNSOpCode
+    authoritative :u1
+    truncated :u1
+    recursion_desired :u1
+    recursion_available :u1
+    z :u3
+    return_code :DNSReturnCode
+    query_count :u16
+    answer_count :u16
+    authority_count :u16
+    additional_count :u16
+
