@@ -248,7 +248,7 @@ const editorAlreadyUpdated = (s :JobResult) => {
 }
 
 // returns true if updated
-const handleLanguage = async (s :JobResult,generate:(src :string,option :any)=>Promise<JobResult>,lang: string,option? :any) => {
+const handleLanguage = async (s :JobResult,generate:(src :string,option :any)=>Promise<JobResult>,lang :Language,view_lang: string,option? :any) => {
     if(s.stdout===undefined) throw new Error("stdout is undefined");
     const res = await generate(s.stdout,option).catch((e) => {
         return e as JobResult;
@@ -269,13 +269,13 @@ const handleLanguage = async (s :JobResult,generate:(src :string,option :any)=>P
         }
     }
     else{
-        createGenerated(res.stdout,lang);
+        createGenerated(res.stdout,view_lang);
     }
     return true;
 }
 
 const handleCppPrototype = async (s :JobResult) => {
-    await handleLanguage(s,caller.getCppPrototypeCode,"cpp");
+    await handleLanguage(s,caller.getCppPrototypeCode,Language.CPP_PROTOTYPE,"cpp");
 }
 
 const caches = {
@@ -433,7 +433,7 @@ const handleCpp = async (s :JobResult) => {
            mappingInfo = JSON.parse(split[1]);
         }
         return result;
-    },"cpp",cppOption);
+    },Language.CPP,"cpp",cppOption);
     if(updated&& isMappingInfoArray(mappingInfo)){
         // wait for editor update 
         setTimeout(() => {
@@ -449,7 +449,7 @@ const handleGo = async (s :JobResult) => {
     const goOption : caller.GoOption ={
         use_put: true,
     }
-    await handleLanguage(s,caller.getGoCode,"go",goOption);
+    await handleLanguage(s,caller.getGoCode,Language.GO,"go",goOption);
 }
 
 const handleJSONOutput = async (value :string,generator:(srcCode :string,option:any)=>Promise<JobResult>) => {
