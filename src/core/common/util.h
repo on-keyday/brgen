@@ -21,6 +21,15 @@ namespace brgen {
         return mid;
     }
 
+    inline std::optional<size_t> unescape_count(std::string_view str_lit) {
+        utils::helper::CountPushBacker pb;
+        utils::helper::IPushBacker<uint8_t> ipb{pb};
+        if (!utils::escape::unescape_str(str_lit.substr(1, str_lit.size() - 2), ipb)) {
+            return std::nullopt;
+        }
+        return pb.count;
+    }
+
     inline std::string escape(std::string_view str_lit) {
         return utils::escape::escape_str<std::string>(str_lit, utils::escape::EscapeFlag::utf16 | utils::escape::EscapeFlag::hex);
     }

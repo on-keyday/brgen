@@ -264,6 +264,7 @@ namespace brgen::middle {
                 }
                 if (auto t = ast::as<ast::StrLiteralType>(n)) {
                     t->bit_alignment = ast::BitAlignment::byte_aligned;
+                    t->bit_size = t->base.lock()->length *= utils::bit_per_byte;
                 }
                 if (auto u = ast::as<ast::StructUnionType>(n)) {
                     ast::BitAlignment alignment = ast::BitAlignment::not_target;
