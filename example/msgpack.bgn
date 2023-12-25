@@ -1,0 +1,46 @@
+
+enum Type:
+    :u8
+    nil = 0xc0
+    true_ = 0xc3
+    false_ = 0xc2
+    u8 = 0xcc
+    u16 = 0xcd
+    u32 = 0xce
+    u64 = 0xcf
+    s8 = 0xd0
+    s16 = 0xd1
+    s32 = 0xd2
+    s64 = 0xd3
+    f32 = 0xca
+    f64 = 0xcb
+
+# TODO(on-keyday): implement float as builtin type
+format f32:
+     value :u32
+
+format f64:
+    value :u64
+
+format MsgPack:
+   type :Type
+   match type:
+        Type.nil => ..
+        Type.true_ => ..
+        Type.false_ => ..
+        Type(0x00)..Type(0x7f):
+            fn value() -> u8:
+                return u8(type)
+        Type(0x80)..Type(0x8f):
+            fn value() -> s8:
+                return s8(type)
+        Type.u8 => value :u8
+        Type.u16 => value :u16
+        Type.u32 => value :u32
+        Type.u64 => value :u64
+        Type.s8 => value :s8
+        Type.s16 => value :s16
+        Type.s32 => value :s32
+        Type.s64 => value :s64
+        Type.f32 => value :f32
+        Type.f64 => value :f64

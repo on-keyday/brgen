@@ -131,7 +131,7 @@ namespace brgen::middle {
                     }
                     tracked.insert(ty);
                 }
-                if (auto t = ast::as<ast::StructType>(n); t && !t->recursive) {
+                if (auto t = ast::as<ast::StructType>(n); t) {
                     if (t->bit_alignment != ast::BitAlignment::not_target) {
                         return;  // already detected
                     }
