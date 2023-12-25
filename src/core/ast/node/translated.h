@@ -24,24 +24,6 @@ namespace brgen::ast {
         }
     };
 
-    struct BlockExpr : Expr {
-        define_node_type(NodeType::block_expr);
-        node_list calls;
-        std::shared_ptr<Expr> expr;
-
-        BlockExpr(std::shared_ptr<Expr>&& a, node_list&& l)
-            : Expr(a->loc, NodeType::block_expr), calls(std::move(l)), expr(std::move(a)) {}
-
-        BlockExpr()
-            : Expr({}, NodeType::block_expr) {}
-
-        void dump(auto&& field_) {
-            Expr::dump(field_);
-            sdebugf(calls);
-            sdebugf(expr);
-        }
-    };
-
     struct Assert : Stmt {
         define_node_type(NodeType::assert);
         std::shared_ptr<Binary> cond;
