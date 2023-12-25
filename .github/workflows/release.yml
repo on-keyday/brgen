@@ -1,7 +1,12 @@
-name: brgen-test
-run-name: brgen test
+name: brgen-release
+run-name: Release
 on:
   - push
+
+concurrency:
+  group: "release"
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
