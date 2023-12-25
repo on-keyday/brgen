@@ -18,6 +18,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 type Spec struct {
@@ -468,6 +469,7 @@ func main() {
 	}
 	g := &GeneratorHandler{}
 	g.stderr = os.Stdout
+	start := time.Now()
 	if err := g.Init(*config.Source2Json, config.Output, *config.SuffixPattern); err != nil {
 		log.Fatal(err)
 	}
@@ -511,5 +513,6 @@ func main() {
 		go reporter()
 	}
 	wg.Wait()
-	log.Printf("total: %d, error: %d\n", totalCount.Load(), errCount.Load())
+	elapsed := time.Since(start)
+	log.Printf("time: %v total: %d, error: %d\n", elapsed, totalCount.Load(), errCount.Load())
 }
