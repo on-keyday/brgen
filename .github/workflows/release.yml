@@ -24,4 +24,4 @@ jobs:
           . build.sh native Release
       - name: Show built binaries
         run: |
-          ls -l -R built/native/Release
+          ls -l tool/
