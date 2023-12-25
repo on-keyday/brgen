@@ -14,6 +14,27 @@ enum Type:
     s64 = 0xd3
     f32 = 0xca
     f64 = 0xcb
+    str8 = 0xd9
+    str16 = 0xda
+    str32 = 0xdb
+    bin8 = 0xc4
+    bin16 = 0xc5
+    bin32 = 0xc6
+    array16 = 0xdc
+    array32 = 0xdd
+    map16 = 0xde
+    map32 = 0xdf
+    fixext1 = 0xd4
+    fixext2 = 0xd5
+    fixext4 = 0xd6
+    fixext8 = 0xd7
+    fixext16 = 0xd8
+    ext8 = 0xc7
+    ext16 = 0xc8
+    ext32 = 0xc9
+    timestamp32 = 0xd6
+    timestamp64 = 0xd7
+    timestamp96 = 0xd8
 
 # TODO(on-keyday): implement float as builtin type
 format f32:
@@ -21,6 +42,10 @@ format f32:
 
 format f64:
     value :u64
+
+format MapPair:
+    key :MsgPack
+    value :MsgPack
 
 format MsgPack:
    type :Type
@@ -44,3 +69,78 @@ format MsgPack:
         Type.s64 => value :s64
         Type.f32 => value :f32
         Type.f64 => value :f64
+        Type(0xa0)..Type(0xbf):
+            value :[u8(type)&0x1f]u8
+        Type.str8:
+            length :u8
+            value :[length]u8
+        Type.str16:
+            length :u16
+            value :[length]u8
+        Type.str32:
+            length :u32
+            value :[length]u8
+        Type.bin8:
+            length :u8
+            value :[length]u8
+        Type.bin16:
+            length :u16
+            value :[length]u8
+        Type.bin32:
+            length :u32
+            value :[length]u8
+        Type(0x90)..Type(0x9f):
+            value :[u8(type)&0x0f]MsgPack
+        Type.array16:
+            length :u16
+            value :[length]MsgPack
+        Type.array32:
+            length :u32
+            value :[length]MsgPack
+        Type(0x80)..Type(0x8f):
+            value :[u8(type)&0x0f]MapPair
+        Type.map16:
+            length :u16
+            value :[length]MapPair
+        Type.map32:
+            length :u32
+            value :[length]MapPair
+        Type.fixext1:
+            type :s8
+            value :[1]u8
+        Type.fixext2:
+            type :s8
+            value :[2]u8
+        Type.fixext4:
+            type :s8
+            value :[4]u8
+        Type.fixext8:   
+            type :s8
+            value :[8]u8
+        Type.fixext16:
+            type :s8
+            value :[16]u8
+        Type.ext8:
+            length :u8
+            type :s8
+            value :[length]u8
+        Type.ext16:
+            length :u16
+            type :s8
+            value :[length]u8
+        Type.ext32:
+            length :u32
+            type :s8
+            value :[length]u8
+        Type.timestamp32:
+            type :s8(-1)
+            sec :u32
+        Type.timestamp64:
+            type :s8(-1)
+            nanosec :u30
+            sec :u34
+        Type.timestamp96:
+            type :s8(-1)
+            nanosec :u32
+            sec :u64
+        .. => error("invalid type")

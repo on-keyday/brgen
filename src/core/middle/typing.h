@@ -31,7 +31,7 @@ namespace brgen::middle {
                 }
                 return equal_type(left, r->base.lock());
             }
-            if (left->node_type != right->node_type) {
+            if (!left || !right || left->node_type != right->node_type) {
                 return false;
             }
             if (auto lty = ast::as<ast::IntType>(left)) {
