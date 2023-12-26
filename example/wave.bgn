@@ -3,7 +3,6 @@ format WaveHeader:
     magic :"RIFF"
     chunkSize :u32
     magic2 :"WAVE"
-    fmt :u32
     subChunk1Id :"fmt "
     subChunk1Size :u32
     audioFormat :u16
@@ -15,3 +14,6 @@ format WaveHeader:
     subChunk2Id :"data"
     subChunk2Size :u32
 
+format Wave:
+    header :WaveHeader
+    data :[header.bitsPerSample / 8 * header.numChannels]u8
