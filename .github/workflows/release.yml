@@ -8,7 +8,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
+  release-linux:
     runs-on: ubuntu-latest
     steps:
       - name: Timeline
@@ -27,6 +27,13 @@ jobs:
       - name: Build
         run: |
           . build.sh native Release
-      - name: Show built binaries
+      - name: Pack artifacts
         run: |
-          ls -l tool/
+          mkdir -p artifacts
+          cp -a ./tool ./artifacts/tool
+          cp -a ./example ./artifacts/example
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: brgen-linux
+          path: ./artifacts
