@@ -347,6 +347,8 @@ namespace j2cp2 {
                             map_line(f->loc);
                             w.writeln(type_name, " ", f->ident->ident, ";");
                         }
+                        if (auto str_type = ast::as<ast::StrLiteralType>(type)) {
+                        }
                     }
                 }
                 if (has_ident) {

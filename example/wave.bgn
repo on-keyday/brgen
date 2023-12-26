@@ -16,4 +16,4 @@ format WaveHeader:
 
 format Wave:
     header :WaveHeader
-    data :[header.bitsPerSample / 8 * header.numChannels]u8
+    data :[header.subChunk2Size]u8
