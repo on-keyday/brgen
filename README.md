@@ -13,6 +13,12 @@
 
 https://on-keyday.github.io/brgen
 
+# How to Use (simple)
+
+1.  `brgen.json`の`input_dir`を入力ファイルのあるディレクトリ`output_dir`の項目を出力先ディレクトリに設定(デフォルトでは入力は`example`ディレクトリ、出力は`ignore/examples/<language name>`となっています)
+1.  `tool/brgen`を実行
+1.  出力先ディレクトリにコードが生成されます
+
 # How to build
 
 ## 必要なもの

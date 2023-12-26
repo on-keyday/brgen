@@ -34,6 +34,9 @@ jobs:
           mkdir -p artifacts
           cp -a ./tool ./artifacts/tool
           cp -a ./example ./artifacts/example
+          cp -a ./LICENSE ./artifacts
+          cp -a ./README.md ./artifacts
+          cp -a ./brgen.json ./artifacts
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
@@ -65,6 +68,9 @@ jobs:
           mkdir artifacts
           xcopy /E /I /Y tool artifacts\tool
           xcopy /E /I /Y example artifacts\example
+          xcopy /E /I /Y LICENSE artifacts
+          xcopy /E /I /Y README.md artifacts
+          xcopy /E /I /Y brgen.json artifacts
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
