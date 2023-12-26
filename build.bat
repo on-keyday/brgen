@@ -12,15 +12,14 @@ if "%UTILS_DIR%" == "" (
     set UTILS_DIR=C:/workspace/utils_backup
 )
 if not exist %UTILS_DIR% (
-    call script\clone_utils.bat
+    call script\clone_utils.bat %BUILD_MODE% %BUILD_TYPE%
 )
 
 if "%BUILD_TYPE%" == "" (
     set BUILD_TYPE=Debug
 )
 
-set LLVM_DIR=C:/workspace/llvm-project/llvm/build/lib/cmake/llvm
-set Clang_DIR=C:/workspace/llvm-project/clang/build/cmake/modules/CMakeFiles
+
 set INSTALL_PREFIX=.
 if "%BUILD_MODE%" == "native" (
 cmake -D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang -G Ninja -DCMAKE_INSTALL_PREFIX=%INSTALL_PREFIX% -D CMAKE_BUILD_TYPE=%BUILD_TYPE% -S . -B ./built/%BUILD_MODE%/%BUILD_TYPE%
