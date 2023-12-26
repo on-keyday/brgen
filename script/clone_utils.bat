@@ -7,7 +7,7 @@ if "%2" == "" (
 ) else (
     set BUILD_TYPE=%2
 )
-if "%1" = "wasm-em" (
+if "%1" == "wasm-em" (
     call build wasm-em %BUILD_TYPE% utils
 ) else (
     call build shared %BUILD_TYPE% utils
