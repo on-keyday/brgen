@@ -99,6 +99,6 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            ./artifacts/linux/*
-            ./artifacts/windows/*
+            ./artifacts/linux/**
+            ./artifacts/windows/**
           fail_on_unmatched_files: true
