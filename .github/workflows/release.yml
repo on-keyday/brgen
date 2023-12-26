@@ -71,6 +71,8 @@ jobs:
           name: brgen-windows
           path: ./artifacts
   relase:
+    permissions:
+      contents: write
     needs: [build-linux, build-windows]
     runs-on: ubuntu-latest
     steps:
@@ -92,9 +94,7 @@ jobs:
         run: |
           pwd
           ls -al
-          ls -al ./artifacts
-          ls -al ./artifacts/linux
-          ls -al ./artifacts/windows
+          ls -alR ./artifacts
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
