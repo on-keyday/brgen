@@ -1,10 +1,11 @@
 @echo off
 setlocal
-git tag -d v0.0.0
-git push origin --delete v0.0.0
+set TAG=v0.0.1
+git tag -d %TAG%
+git push origin --delete %TAG%
 git add .
-git commit -m "release test %date% %time%"
-git tag v0.0.0
+git commit -m "release %TAG% %date% %time%"
+git tag %TAG%
 git push
-git push origin v0.0.0
+git push origin %TAG%
 

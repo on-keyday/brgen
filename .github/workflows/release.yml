@@ -68,9 +68,9 @@ jobs:
           mkdir artifacts
           xcopy /E /I /Y tool artifacts\tool
           xcopy /E /I /Y example artifacts\example
-          xcopy /E /I /Y LICENSE artifacts
-          xcopy /E /I /Y README.md artifacts
-          xcopy /E /I /Y brgen.json artifacts
+          copy /Y LICENSE artifacts
+          copy /Y README.md artifacts
+          copy /Y brgen.json artifacts
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
