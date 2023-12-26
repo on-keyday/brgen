@@ -95,7 +95,6 @@ namespace brgen::middle {
                 if (!str) {
                     return false;
                 }
-                // TODO(on-keyday): check string literal length
                 if (arr->length && arr->has_const_length) {
                     if (arr->length_value != str->base.lock()->length) {
                         return false;

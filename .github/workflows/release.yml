@@ -93,6 +93,8 @@ jobs:
           pwd
           ls -al
           ls -al ./artifacts
+          ls -al ./artifacts/linux
+          ls -al ./artifacts/windows
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
