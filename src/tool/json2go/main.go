@@ -16,7 +16,7 @@ func main() {
 	if *f {
 		fmt.Println(`{
 			"langs" : ["go"],
-			"pass_by" : "stdin",
+			"input" : "stdin",
 			"suffix" : [".go"]
 		}`)
 		return

@@ -22,6 +22,9 @@ RUN apt-get update && \
     apt-get install -y\
     ninja-build\
     cmake
+RUN apt-get update && \
+    apt-get install -y\
+    vim
 
 RUN ln -s /lib/llvm-15/bin/clang++ /bin/clang++
 RUN ln -s /lib/llvm-15/bin/clang /bin/clang

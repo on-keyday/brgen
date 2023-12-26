@@ -1,7 +1,9 @@
 name: brgen-release
 run-name: Release
 on:
-  - push
+  push:
+    tags:
+      - v*.*.*
 
 concurrency:
   group: "release"

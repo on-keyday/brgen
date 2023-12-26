@@ -30,7 +30,7 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
                                                                            : ColorMode::no_color;
     if (flags.spec) {
         cout << R"({
-            "pass_by": "file",
+            "input": "file",
             "langs": ["cpp","json"],
             "suffix": [".hpp",".json"],
             "separator": "############\n"

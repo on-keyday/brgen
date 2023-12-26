@@ -155,7 +155,7 @@ func main() {
 	if *f {
 		fmt.Println(`{
 			"langs" : ["kaitai-struct"],
-			"pass_by" : "stdin",
+			"input" : "stdin",
 			"suffix" : [".ksy"]
 		}`)
 		return

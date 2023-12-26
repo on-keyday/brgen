@@ -24,7 +24,7 @@ import (
 type Spec struct {
 	Langs     []string `json:"langs"`
 	Suffix    []string `json:"suffix"`
-	PassBy    string   `json:"pass_by"`
+	Input     string   `json:"input"`
 	Separator string   `json:"separator"`
 }
 
@@ -146,7 +146,7 @@ func makeTmpFile(data []byte) (path string, err error) {
 }
 
 func (g *Generator) passAst(filePath string, buffer []byte) ([]byte, error) {
-	if g.spec.PassBy == "stdin" {
+	if g.spec.Input == "stdin" {
 		cmd := exec.CommandContext(g.ctx, g.generatorPath, g.args...)
 		cmd.Stdin = bytes.NewReader(buffer)
 		return g.execGenerator(cmd, filePath)
@@ -239,10 +239,10 @@ func (g *Generator) askSpec() error {
 	if len(g.spec.Langs) == 0 {
 		return errors.New("langs is empty")
 	}
-	if g.spec.PassBy == "" {
+	if g.spec.Input == "" {
 		return errors.New("pass_by is empty")
 	}
-	if g.spec.PassBy != "stdin" && g.spec.PassBy != "file" {
+	if g.spec.Input != "stdin" && g.spec.Input != "file" {
 		return errors.New("pass_by must be stdin or file")
 	}
 	if len(g.spec.Suffix) == 0 {
