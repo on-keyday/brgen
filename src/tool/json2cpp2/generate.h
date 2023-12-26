@@ -481,7 +481,6 @@ namespace j2cp2 {
                     return;
                 }
                 if (auto int_ty = ast::as<ast::IntType>(typ); int_ty) {
-                    auto bit_size = int_ty->bit_size;
                     auto ident = ident_from_field();
                     auto type_name = get_type_name(typ);
                     map_line(f->loc);
@@ -554,7 +553,6 @@ namespace j2cp2 {
                     return;
                 }
                 if (auto int_ty = ast::as<ast::IntType>(typ); int_ty) {
-                    auto bit_size = int_ty->bit_size;
                     auto ident = ident_from_field();
                     auto type_name = get_type_name(typ);
                     map_line(f->loc);

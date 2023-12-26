@@ -1,0 +1,45 @@
+
+format Varint:
+    value :u64
+
+    fn decode():
+        loop:
+            v := input.get()
+            if v < 0x80:
+                value = v
+                return
+            value = (value << 7) | (v & 0x7f)
+
+    fn encode():
+        loop:
+            v := u8(value & 0x7f)
+            value = value >> 7
+            if value == 0:
+                output.put(v)
+                return
+            output.put(v | 0x80)
+
+enum WireType:
+    Varint = 0
+    Fixed64 = 1
+    LengthDelimited = 2
+    StartGroup = 3
+    EndGroup = 4
+    Fixed32 = 5
+
+format Field:
+    id :Varint
+    fn type() -> WireType:
+        return WireType(id.value & 0x7)
+    fn number() -> u64:
+        return id.value >> 3
+    
+    match type():
+        WireType.Varint => value :Varint
+        WireType.Fixed64 => value :u64
+        WireType.LengthDelimited:
+            length :Varint
+            value :[length]u8
+        WireType.StartGroup => ..
+        WireType.EndGroup => ..
+        WireType.Fixed32 => value :u32
