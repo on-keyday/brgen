@@ -79,6 +79,11 @@ namespace brgen::middle {
                     return false;
                 }
                 // TODO(on-keyday): check string literal length
+                if (arr->length && arr->has_const_length) {
+                    if (arr->length_value != str->base.lock()->length) {
+                        return false;
+                    }
+                }
                 return true;
             }
             if (auto arr = ast::as<ast::ArrayType>(left)) {
@@ -91,6 +96,11 @@ namespace brgen::middle {
                     return false;
                 }
                 // TODO(on-keyday): check string literal length
+                if (arr->length && arr->has_const_length) {
+                    if (arr->length_value != str->base.lock()->length) {
+                        return false;
+                    }
+                }
                 return true;
             }
             return false;
