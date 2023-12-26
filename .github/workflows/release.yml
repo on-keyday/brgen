@@ -90,15 +90,19 @@ jobs:
         with:
           name: brgen-windows
           path: ./artifacts/windows
-      - name: Get Current Directory
+      - name: Show Current Directory
         run: |
           pwd
-          ls -al
-          ls -alR ./artifacts
+          ls -alR .
+      - name: Make Archive
+        run: |
+          mkdir -p artifacts
+          tar -czf artifacts/brgen-linux.tar.gz -C artifacts/linux .
+          zip -r artifacts/brgen-windows.zip artifacts/windows
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            ./artifacts/linux/**
-            ./artifacts/windows/**
+            ./artifacts/brgen-linux.tar.gz
+            ./artifacts/brgen-windows.zip
           fail_on_unmatched_files: true
