@@ -56,7 +56,7 @@ jobs:
       - name: Build
         shell: cmd
         run: |
-          .\build.bat native Release ./utils
+          .\build.bat native Release %CD%\utils
       - name: Pack artifacts
         shell: cmd
         run: |
