@@ -37,3 +37,34 @@ jobs:
         with:
           name: brgen-linux
           path: ./artifacts
+  release-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Timeline
+        uses: Kesin11/actions-timeline@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Set up Ninja
+        uses: seanmiddleditch/gha-setup-ninja@master
+      - name: Set up Clang
+        uses: egor-tensin/setup-clang@v1.4
+        with:
+          version: latest
+          platform: x64
+      - name: Build
+        shell: cmd
+        run: |
+          .\build.bat native Release ./utils
+      - name: Pack artifacts
+        shell: cmd
+        run: |
+          mkdir artifacts
+          xcopy /E /I /Y tool artifacts\tool
+          xcopy /E /I /Y example artifacts\example
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: brgen-windows
+          path: ./artifacts
