@@ -88,6 +88,9 @@ jobs:
         with:
           name: brgen-windows
           path: ./artifacts/windows
+      - name: Get Current Directory
+        run: |
+          echo "::set-output name=current_dir::$(pwd)"
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
