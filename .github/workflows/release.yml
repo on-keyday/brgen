@@ -94,3 +94,4 @@ jobs:
           files: |
             ./artifacts/linux/*
             ./artifacts/windows/*
+          fail_on_unmatched_files: true
