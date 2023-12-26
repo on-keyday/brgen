@@ -90,7 +90,7 @@ jobs:
           path: ./artifacts/windows
       - name: Get Current Directory
         run: |
-          echo "::set-output name=current_dir::$(pwd)"
+          pwd
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
