@@ -91,6 +91,8 @@ jobs:
       - name: Get Current Directory
         run: |
           pwd
+          ls -al
+          ls -al ./artifacts
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
