@@ -1,0 +1,17 @@
+
+format WaveHeader:
+    magic :"RIFF"
+    chunkSize :u32
+    magic2 :"WAVE"
+    fmt :u32
+    subChunk1Id :"fmt "
+    subChunk1Size :u32
+    audioFormat :u16
+    numChannels :u16
+    sampleRate :u32
+    byteRate :u32
+    blockAlign :u16
+    bitsPerSample :u16
+    subChunk2Id :"data"
+    subChunk2Size :u32
+

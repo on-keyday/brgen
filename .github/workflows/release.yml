@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  release-linux:
+  build-linux:
     runs-on: ubuntu-latest
     steps:
       - name: Timeline
@@ -39,7 +39,7 @@ jobs:
         with:
           name: brgen-linux
           path: ./artifacts
-  release-windows:
+  build-windows:
     runs-on: windows-latest
     steps:
       - name: Timeline
@@ -70,3 +70,31 @@ jobs:
         with:
           name: brgen-windows
           path: ./artifacts
+  relase:
+    needs: [build-linux, build-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Timeline
+        uses: Kesin11/actions-timeline@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Download Linux artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: brgen-linux
+          path: ./artifacts/linux
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: brgen-windows
+          path: ./artifacts/windows
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          draft: false
+          prerelease: false
