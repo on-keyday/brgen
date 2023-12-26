@@ -64,7 +64,6 @@ typedef struct ast2c_Index ast2c_Index;
 typedef struct ast2c_Match ast2c_Match;
 typedef struct ast2c_Range ast2c_Range;
 typedef struct ast2c_TmpVar ast2c_TmpVar;
-typedef struct ast2c_BlockExpr ast2c_BlockExpr;
 typedef struct ast2c_Import ast2c_Import;
 typedef struct ast2c_Cast ast2c_Cast;
 typedef struct ast2c_Available ast2c_Available;
@@ -132,7 +131,6 @@ enum ast2c_NodeType {
 	AST2C_NODETYPE_MATCH,
 	AST2C_NODETYPE_RANGE,
 	AST2C_NODETYPE_TMP_VAR,
-	AST2C_NODETYPE_BLOCK_EXPR,
 	AST2C_NODETYPE_IMPORT,
 	AST2C_NODETYPE_CAST,
 	AST2C_NODETYPE_AVAILABLE,
@@ -615,19 +613,6 @@ struct ast2c_TmpVar {
 // returns 1 if succeed 0 if failed
 int ast2c_TmpVar_parse(ast2c_Ast* ,ast2c_TmpVar*,ast2c_json_handlers*,void*);
 
-struct ast2c_BlockExpr {
-	const ast2c_NodeType node_type;
-	ast2c_Loc loc;
-	ast2c_Type* expr_type;
-	ast2c_ConstantLevel constant_level;
-	ast2c_Node** calls;
-	size_t calls_size;
-	ast2c_Expr* expr;
-};
-
-// returns 1 if succeed 0 if failed
-int ast2c_BlockExpr_parse(ast2c_Ast* ,ast2c_BlockExpr*,ast2c_json_handlers*,void*);
-
 struct ast2c_Import {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
@@ -815,6 +800,7 @@ struct ast2c_StrLiteralType {
 	ast2c_BitAlignment bit_alignment;
 	uint64_t bit_size;
 	ast2c_StrLiteral* base;
+	ast2c_StrLiteral* strong_ref;
 };
 
 // returns 1 if succeed 0 if failed
@@ -981,6 +967,7 @@ struct ast2c_StrLiteral {
 	ast2c_Type* expr_type;
 	ast2c_ConstantLevel constant_level;
 	char* value;
+	uint64_t length;
 };
 
 // returns 1 if succeed 0 if failed

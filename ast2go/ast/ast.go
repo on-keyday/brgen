@@ -26,50 +26,49 @@ const (
 	NodeTypeMatch           NodeType = 13
 	NodeTypeRange           NodeType = 14
 	NodeTypeTmpVar          NodeType = 15
-	NodeTypeBlockExpr       NodeType = 16
-	NodeTypeImport          NodeType = 17
-	NodeTypeCast            NodeType = 18
-	NodeTypeAvailable       NodeType = 19
-	NodeTypeStmt            NodeType = 20
-	NodeTypeLoop            NodeType = 21
-	NodeTypeIndentBlock     NodeType = 22
-	NodeTypeScopedStatement NodeType = 23
-	NodeTypeMatchBranch     NodeType = 24
-	NodeTypeUnionCandidate  NodeType = 25
-	NodeTypeReturn          NodeType = 26
-	NodeTypeBreak           NodeType = 27
-	NodeTypeContinue        NodeType = 28
-	NodeTypeAssert          NodeType = 29
-	NodeTypeImplicitYield   NodeType = 30
-	NodeTypeType            NodeType = 31
-	NodeTypeIntType         NodeType = 32
-	NodeTypeIdentType       NodeType = 33
-	NodeTypeIntLiteralType  NodeType = 34
-	NodeTypeStrLiteralType  NodeType = 35
-	NodeTypeVoidType        NodeType = 36
-	NodeTypeBoolType        NodeType = 37
-	NodeTypeArrayType       NodeType = 38
-	NodeTypeFunctionType    NodeType = 39
-	NodeTypeStructType      NodeType = 40
-	NodeTypeStructUnionType NodeType = 41
-	NodeTypeUnionType       NodeType = 42
-	NodeTypeRangeType       NodeType = 43
-	NodeTypeEnumType        NodeType = 44
-	NodeTypeLiteral         NodeType = 45
-	NodeTypeIntLiteral      NodeType = 46
-	NodeTypeBoolLiteral     NodeType = 47
-	NodeTypeStrLiteral      NodeType = 48
-	NodeTypeInput           NodeType = 49
-	NodeTypeOutput          NodeType = 50
-	NodeTypeConfig          NodeType = 51
-	NodeTypeMember          NodeType = 52
-	NodeTypeField           NodeType = 53
-	NodeTypeFormat          NodeType = 54
-	NodeTypeState           NodeType = 55
-	NodeTypeEnum            NodeType = 56
-	NodeTypeEnumMember      NodeType = 57
-	NodeTypeFunction        NodeType = 58
-	NodeTypeBuiltinFunction NodeType = 59
+	NodeTypeImport          NodeType = 16
+	NodeTypeCast            NodeType = 17
+	NodeTypeAvailable       NodeType = 18
+	NodeTypeStmt            NodeType = 19
+	NodeTypeLoop            NodeType = 20
+	NodeTypeIndentBlock     NodeType = 21
+	NodeTypeScopedStatement NodeType = 22
+	NodeTypeMatchBranch     NodeType = 23
+	NodeTypeUnionCandidate  NodeType = 24
+	NodeTypeReturn          NodeType = 25
+	NodeTypeBreak           NodeType = 26
+	NodeTypeContinue        NodeType = 27
+	NodeTypeAssert          NodeType = 28
+	NodeTypeImplicitYield   NodeType = 29
+	NodeTypeType            NodeType = 30
+	NodeTypeIntType         NodeType = 31
+	NodeTypeIdentType       NodeType = 32
+	NodeTypeIntLiteralType  NodeType = 33
+	NodeTypeStrLiteralType  NodeType = 34
+	NodeTypeVoidType        NodeType = 35
+	NodeTypeBoolType        NodeType = 36
+	NodeTypeArrayType       NodeType = 37
+	NodeTypeFunctionType    NodeType = 38
+	NodeTypeStructType      NodeType = 39
+	NodeTypeStructUnionType NodeType = 40
+	NodeTypeUnionType       NodeType = 41
+	NodeTypeRangeType       NodeType = 42
+	NodeTypeEnumType        NodeType = 43
+	NodeTypeLiteral         NodeType = 44
+	NodeTypeIntLiteral      NodeType = 45
+	NodeTypeBoolLiteral     NodeType = 46
+	NodeTypeStrLiteral      NodeType = 47
+	NodeTypeInput           NodeType = 48
+	NodeTypeOutput          NodeType = 49
+	NodeTypeConfig          NodeType = 50
+	NodeTypeMember          NodeType = 51
+	NodeTypeField           NodeType = 52
+	NodeTypeFormat          NodeType = 53
+	NodeTypeState           NodeType = 54
+	NodeTypeEnum            NodeType = 55
+	NodeTypeEnumMember      NodeType = 56
+	NodeTypeFunction        NodeType = 57
+	NodeTypeBuiltinFunction NodeType = 58
 )
 
 func (n NodeType) String() string {
@@ -106,8 +105,6 @@ func (n NodeType) String() string {
 		return "range"
 	case NodeTypeTmpVar:
 		return "tmp_var"
-	case NodeTypeBlockExpr:
-		return "block_expr"
 	case NodeTypeImport:
 		return "import"
 	case NodeTypeCast:
@@ -237,8 +234,6 @@ func (n *NodeType) UnmarshalJSON(data []byte) error {
 		*n = NodeTypeRange
 	case "tmp_var":
 		*n = NodeTypeTmpVar
-	case "block_expr":
-		*n = NodeTypeBlockExpr
 	case "import":
 		*n = NodeTypeImport
 	case "cast":
@@ -389,10 +384,6 @@ func (n *Range) GetNodeType() NodeType {
 
 func (n *TmpVar) GetNodeType() NodeType {
 	return NodeTypeTmpVar
-}
-
-func (n *BlockExpr) GetNodeType() NodeType {
-	return NodeTypeBlockExpr
 }
 
 func (n *Import) GetNodeType() NodeType {
@@ -1568,30 +1559,6 @@ func (n *TmpVar) GetLoc() Loc {
 	return n.Loc
 }
 
-type BlockExpr struct {
-	Loc           Loc
-	ExprType      Type
-	ConstantLevel ConstantLevel
-	Calls         []Node
-	Expr          Expr
-}
-
-func (n *BlockExpr) isExpr() {}
-
-func (n *BlockExpr) GetExprType() Type {
-	return n.ExprType
-}
-
-func (n *BlockExpr) GetConstantLevel() ConstantLevel {
-	return n.ConstantLevel
-}
-
-func (n *BlockExpr) isNode() {}
-
-func (n *BlockExpr) GetLoc() Loc {
-	return n.Loc
-}
-
 type Import struct {
 	Loc           Loc
 	ExprType      Type
@@ -1913,6 +1880,7 @@ type StrLiteralType struct {
 	BitAlignment BitAlignment
 	BitSize      uint64
 	Base         *StrLiteral
+	StrongRef    *StrLiteral
 }
 
 func (n *StrLiteralType) isType() {}
@@ -2302,6 +2270,7 @@ type StrLiteral struct {
 	ExprType      Type
 	ConstantLevel ConstantLevel
 	Value         string
+	Length        uint64
 }
 
 func (n *StrLiteral) isLiteral() {}
@@ -2738,8 +2707,6 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			n.node[i] = &Range{Loc: raw.Loc}
 		case NodeTypeTmpVar:
 			n.node[i] = &TmpVar{Loc: raw.Loc}
-		case NodeTypeBlockExpr:
-			n.node[i] = &BlockExpr{Loc: raw.Loc}
 		case NodeTypeImport:
 			n.node[i] = &Import{Loc: raw.Loc}
 		case NodeTypeCast:
@@ -3151,28 +3118,6 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			}
 			v.ConstantLevel = tmp.ConstantLevel
 			v.TmpVar = tmp.TmpVar
-		case NodeTypeBlockExpr:
-			v := n.node[i].(*BlockExpr)
-			var tmp struct {
-				ExprType      *uintptr      `json:"expr_type"`
-				ConstantLevel ConstantLevel `json:"constant_level"`
-				Calls         []uintptr     `json:"calls"`
-				Expr          *uintptr      `json:"expr"`
-			}
-			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
-				return nil, err
-			}
-			if tmp.ExprType != nil {
-				v.ExprType = n.node[*tmp.ExprType].(Type)
-			}
-			v.ConstantLevel = tmp.ConstantLevel
-			v.Calls = make([]Node, len(tmp.Calls))
-			for j, k := range tmp.Calls {
-				v.Calls[j] = n.node[k].(Node)
-			}
-			if tmp.Expr != nil {
-				v.Expr = n.node[*tmp.Expr].(Expr)
-			}
 		case NodeTypeImport:
 			v := n.node[i].(*Import)
 			var tmp struct {
@@ -3452,6 +3397,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				BitAlignment BitAlignment `json:"bit_alignment"`
 				BitSize      uint64       `json:"bit_size"`
 				Base         *uintptr     `json:"base"`
+				StrongRef    *uintptr     `json:"strong_ref"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -3462,6 +3408,9 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.BitSize = tmp.BitSize
 			if tmp.Base != nil {
 				v.Base = n.node[*tmp.Base].(*StrLiteral)
+			}
+			if tmp.StrongRef != nil {
+				v.StrongRef = n.node[*tmp.StrongRef].(*StrLiteral)
 			}
 		case NodeTypeVoidType:
 			v := n.node[i].(*VoidType)
@@ -3711,6 +3660,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				ExprType      *uintptr      `json:"expr_type"`
 				ConstantLevel ConstantLevel `json:"constant_level"`
 				Value         string        `json:"value"`
+				Length        uint64        `json:"length"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -3720,6 +3670,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			}
 			v.ConstantLevel = tmp.ConstantLevel
 			v.Value = tmp.Value
+			v.Length = tmp.Length
 		case NodeTypeInput:
 			v := n.node[i].(*Input)
 			var tmp struct {
@@ -4215,22 +4166,6 @@ func Walk(n Node, f Visitor) {
 				return
 			}
 		}
-	case *BlockExpr:
-		if v.ExprType != nil {
-			if !f.Visit(f, v.ExprType) {
-				return
-			}
-		}
-		for _, w := range v.Calls {
-			if !f.Visit(f, w) {
-				return
-			}
-		}
-		if v.Expr != nil {
-			if !f.Visit(f, v.Expr) {
-				return
-			}
-		}
 	case *Import:
 		if v.ExprType != nil {
 			if !f.Visit(f, v.ExprType) {
@@ -4363,6 +4298,11 @@ func Walk(n Node, f Visitor) {
 		}
 	case *IntLiteralType:
 	case *StrLiteralType:
+		if v.StrongRef != nil {
+			if !f.Visit(f, v.StrongRef) {
+				return
+			}
+		}
 	case *VoidType:
 	case *BoolType:
 	case *ArrayType:

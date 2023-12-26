@@ -21,7 +21,6 @@ class NodeType(PyEnum):
     MATCH = "match"
     RANGE = "range"
     TMP_VAR = "tmp_var"
-    BLOCK_EXPR = "block_expr"
     IMPORT = "import"
     CAST = "cast"
     AVAILABLE = "available"
@@ -297,11 +296,6 @@ class TmpVar(Expr):
     tmp_var: int
 
 
-class BlockExpr(Expr):
-    calls: List[Node]
-    expr: Optional[Expr]
-
-
 class Import(Expr):
     path: str
     base: Optional[Call]
@@ -386,6 +380,7 @@ class IntLiteralType(Type):
 
 class StrLiteralType(Type):
     base: Optional[StrLiteral]
+    strong_ref: Optional[StrLiteral]
 
 
 class VoidType(Type):
@@ -447,6 +442,7 @@ class BoolLiteral(Literal):
 
 class StrLiteral(Literal):
     value: str
+    length: int
 
 
 class Input(Literal):
@@ -723,8 +719,6 @@ def ast2node(ast :JsonAst) -> Program:
                 node.append(Range())
             case NodeType.TMP_VAR:
                 node.append(TmpVar())
-            case NodeType.BLOCK_EXPR:
-                node.append(BlockExpr())
             case NodeType.IMPORT:
                 node.append(Import())
             case NodeType.CAST:
@@ -1040,19 +1034,6 @@ def ast2node(ast :JsonAst) -> Program:
                 node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
                 x = ast.node[i].body["tmp_var"]
                 node[i].tmp_var = x if isinstance(x,int)  else raiseError(TypeError('type mismatch at TmpVar::tmp_var'))
-            case NodeType.BLOCK_EXPR:
-                if ast.node[i].body["expr_type"] is not None:
-                    x = node[ast.node[i].body["expr_type"]]
-                    node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at BlockExpr::expr_type'))
-                else:
-                    node[i].expr_type = None
-                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
-                node[i].calls = [(node[x] if isinstance(node[x],Node) else raiseError(TypeError('type mismatch at BlockExpr::calls'))) for x in ast.node[i].body["calls"]]
-                if ast.node[i].body["expr"] is not None:
-                    x = node[ast.node[i].body["expr"]]
-                    node[i].expr = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at BlockExpr::expr'))
-                else:
-                    node[i].expr = None
             case NodeType.IMPORT:
                 if ast.node[i].body["expr_type"] is not None:
                     x = node[ast.node[i].body["expr_type"]]
@@ -1259,6 +1240,11 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].base = x if isinstance(x,StrLiteral) else raiseError(TypeError('type mismatch at StrLiteralType::base'))
                 else:
                     node[i].base = None
+                if ast.node[i].body["strong_ref"] is not None:
+                    x = node[ast.node[i].body["strong_ref"]]
+                    node[i].strong_ref = x if isinstance(x,StrLiteral) else raiseError(TypeError('type mismatch at StrLiteralType::strong_ref'))
+                else:
+                    node[i].strong_ref = None
             case NodeType.VOID_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at VoidType::is_explicit'))
@@ -1425,6 +1411,8 @@ def ast2node(ast :JsonAst) -> Program:
                 node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
                 x = ast.node[i].body["value"]
                 node[i].value = x if isinstance(x,str)  else raiseError(TypeError('type mismatch at StrLiteral::value'))
+                x = ast.node[i].body["length"]
+                node[i].length = x if isinstance(x,int)  else raiseError(TypeError('type mismatch at StrLiteral::length'))
             case NodeType.INPUT:
                 if ast.node[i].body["expr_type"] is not None:
                     x = node[ast.node[i].body["expr_type"]]
@@ -1780,16 +1768,6 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
           if x.expr_type is not None:
               if f(f,x.expr_type) == False:
                   return
-        case x if isinstance(x,BlockExpr):
-          if x.expr_type is not None:
-              if f(f,x.expr_type) == False:
-                  return
-          for i in range(len(x.calls)):
-              if f(f,x.calls[i]) == False:
-                  return
-          if x.expr is not None:
-              if f(f,x.expr) == False:
-                  return
         case x if isinstance(x,Import):
           if x.expr_type is not None:
               if f(f,x.expr_type) == False:
@@ -1881,7 +1859,9 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
         case x if isinstance(x,IntLiteralType):
             pass
         case x if isinstance(x,StrLiteralType):
-            pass
+          if x.strong_ref is not None:
+              if f(f,x.strong_ref) == False:
+                  return
         case x if isinstance(x,VoidType):
             pass
         case x if isinstance(x,BoolType):

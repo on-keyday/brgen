@@ -20,7 +20,6 @@ Index,
 Match,
 Range,
 TmpVar,
-BlockExpr,
 Import,
 Cast,
 Available,
@@ -303,13 +302,6 @@ public class TmpVar : Expr{
 	public ConstantLevel ConstantLevel{get;set;}
 	public ulong TmpVar_{get;set;}
 }
-public class BlockExpr : Expr{
-	public Loc Loc{get;set;}
-	public Type? ExprType{get;set;}
-	public ConstantLevel ConstantLevel{get;set;}
-	public List<Node>? Calls{get;set;}
-	public Expr? Expr{get;set;}
-}
 public class Import : Expr{
 	public Loc Loc{get;set;}
 	public Type? ExprType{get;set;}
@@ -415,6 +407,7 @@ public class StrLiteralType : Type{
 	public BitAlignment BitAlignment{get;set;}
 	public ulong BitSize{get;set;}
 	public StrLiteral? Base{get;set;}
+	public StrLiteral? StrongRef{get;set;}
 }
 public class VoidType : Type{
 	public Loc Loc{get;set;}
@@ -516,6 +509,7 @@ public class StrLiteral : Literal{
 	public Type? ExprType{get;set;}
 	public ConstantLevel ConstantLevel{get;set;}
 	public string Value{get;set;}
+	public ulong Length{get;set;}
 }
 public class Input : Literal{
 	public Loc Loc{get;set;}

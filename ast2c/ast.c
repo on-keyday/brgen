@@ -27,7 +27,6 @@ const char* ast2c_NodeType_to_string(ast2c_NodeType val) {
 	case AST2C_NODETYPE_MATCH: return "match";
 	case AST2C_NODETYPE_RANGE: return "range";
 	case AST2C_NODETYPE_TMP_VAR: return "tmp_var";
-	case AST2C_NODETYPE_BLOCK_EXPR: return "block_expr";
 	case AST2C_NODETYPE_IMPORT: return "import";
 	case AST2C_NODETYPE_CAST: return "cast";
 	case AST2C_NODETYPE_AVAILABLE: return "available";
@@ -140,10 +139,6 @@ int ast2c_NodeType_from_string(const char* str, ast2c_NodeType* out) {
 	}
 	if (strcmp(str, "tmp_var") == 0) {
 		*out = AST2C_NODETYPE_TMP_VAR;
-		return 1;
-	}
-	if (strcmp(str, "block_expr") == 0) {
-		*out = AST2C_NODETYPE_BLOCK_EXPR;
 		return 1;
 	}
 	if (strcmp(str, "import") == 0) {
@@ -1373,40 +1368,6 @@ error:
 }
 
 // returns 1 if succeed 0 if failed
-int ast2c_BlockExpr_parse(ast2c_Ast* ast,ast2c_BlockExpr* s,ast2c_json_handlers* h, void* obj) {
-	if (!ast||!s||!h||!obj) {
-		if(h->error) { h->error(h,NULL, "invalid argument"); }
-		return 0;
-	}
-	void* loc = h->object_get(h, obj, "loc");
-	void* obj_body = h->object_get(h, obj, "body");
-	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
-	s->expr_type = NULL;
-	s->calls = NULL;
-	s->expr = NULL;
-	void* expr_type = h->object_get(h, obj_body, "expr_type");
-	void* constant_level = h->object_get(h, obj_body, "constant_level");
-	void* calls = h->object_get(h, obj_body, "calls");
-	void* expr = h->object_get(h, obj_body, "expr");
-	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_BlockExpr::loc is null"); } return 0; }
-	if (!expr_type) { if(h->error) { h->error(h,expr_type, "ast2c_BlockExpr::expr_type is null"); } return 0; }
-	if (!constant_level) { if(h->error) { h->error(h,constant_level, "ast2c_BlockExpr::constant_level is null"); } return 0; }
-	if (!calls) { if(h->error) { h->error(h,calls, "ast2c_BlockExpr::calls is null"); } return 0; }
-	if(!h->array_size(h, calls,&s->calls_size)) {
-		if(h->error) { h->error(h,calls, "failed to get array size of ast2c_BlockExpr::calls"); }
-		return NULL;
-	}
-	if (!expr) { if(h->error) { h->error(h,expr, "ast2c_BlockExpr::expr is null"); } return 0; }
-	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
-		if(h->error) { h->error(h,loc, "failed to parse ast2c_BlockExpr::loc"); }
-		goto error;
-	}
-	return 1;
-error:
-	return 0;
-}
-
-// returns 1 if succeed 0 if failed
 int ast2c_Import_parse(ast2c_Ast* ast,ast2c_Import* s,ast2c_json_handlers* h, void* obj) {
 	if (!ast||!s||!h||!obj) {
 		if(h->error) { h->error(h,NULL, "invalid argument"); }
@@ -1876,17 +1837,20 @@ int ast2c_StrLiteralType_parse(ast2c_Ast* ast,ast2c_StrLiteralType* s,ast2c_json
 	void* obj_body = h->object_get(h, obj, "body");
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
 	s->base = NULL;
+	s->strong_ref = NULL;
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
 	void* is_int_set = h->object_get(h, obj_body, "is_int_set");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
 	void* bit_size = h->object_get(h, obj_body, "bit_size");
 	void* base = h->object_get(h, obj_body, "base");
+	void* strong_ref = h->object_get(h, obj_body, "strong_ref");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_StrLiteralType::loc is null"); } return 0; }
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_StrLiteralType::is_explicit is null"); } return 0; }
 	if (!is_int_set) { if(h->error) { h->error(h,is_int_set, "ast2c_StrLiteralType::is_int_set is null"); } return 0; }
 	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_StrLiteralType::bit_alignment is null"); } return 0; }
 	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_StrLiteralType::bit_size is null"); } return 0; }
 	if (!base) { if(h->error) { h->error(h,base, "ast2c_StrLiteralType::base is null"); } return 0; }
+	if (!strong_ref) { if(h->error) { h->error(h,strong_ref, "ast2c_StrLiteralType::strong_ref is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_StrLiteralType::loc"); }
 		goto error;
@@ -2335,10 +2299,12 @@ int ast2c_StrLiteral_parse(ast2c_Ast* ast,ast2c_StrLiteral* s,ast2c_json_handler
 	void* expr_type = h->object_get(h, obj_body, "expr_type");
 	void* constant_level = h->object_get(h, obj_body, "constant_level");
 	void* value = h->object_get(h, obj_body, "value");
+	void* length = h->object_get(h, obj_body, "length");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_StrLiteral::loc is null"); } return 0; }
 	if (!expr_type) { if(h->error) { h->error(h,expr_type, "ast2c_StrLiteral::expr_type is null"); } return 0; }
 	if (!constant_level) { if(h->error) { h->error(h,constant_level, "ast2c_StrLiteral::constant_level is null"); } return 0; }
 	if (!value) { if(h->error) { h->error(h,value, "ast2c_StrLiteral::value is null"); } return 0; }
+	if (!length) { if(h->error) { h->error(h,length, "ast2c_StrLiteral::length is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_StrLiteral::loc"); }
 		goto error;
@@ -2346,6 +2312,10 @@ int ast2c_StrLiteral_parse(ast2c_Ast* ast,ast2c_StrLiteral* s,ast2c_json_handler
 	s->value = h->string_get_alloc(h,value);
 	if (!s->value) {
 		if(h->error) { h->error(h,value, "failed to parse ast2c_StrLiteral::value"); }
+		goto error;
+	}
+	if(!h->number_get(h,length,&s->length)) {
+		if(h->error) { h->error(h,length, "failed to parse ast2c_StrLiteral::length"); }
 		goto error;
 	}
 	return 1;
