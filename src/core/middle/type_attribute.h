@@ -163,14 +163,6 @@ namespace brgen::middle {
                             if (field->field_type->bit_alignment == ast::BitAlignment::not_decidable) {
                                 alignment = ast::BitAlignment::not_decidable;
                             }
-                            if (alignment == ast::BitAlignment::not_decidable) {
-                                field->bit_alignment = ast::BitAlignment::not_decidable;
-                                continue;
-                            }
-                            auto new_align = (int(alignment) - int(ast::BitAlignment::byte_aligned)) + (int(field->field_type->bit_alignment) - int(ast::BitAlignment::byte_aligned));
-                            new_align %= utils::bit_per_byte;
-                            alignment = ast::BitAlignment(new_align + int(ast::BitAlignment::byte_aligned));
-                            field->bit_alignment = alignment;
                             if (bit_size == -1) {
                                 bit_size = field->field_type->bit_size;
                             }
@@ -182,6 +174,14 @@ namespace brgen::middle {
                                     bit_size += field->field_type->bit_size;
                                 }
                             }
+                            if (alignment == ast::BitAlignment::not_decidable) {
+                                field->bit_alignment = ast::BitAlignment::not_decidable;
+                                continue;
+                            }
+                            auto new_align = (int(alignment) - int(ast::BitAlignment::byte_aligned)) + (int(field->field_type->bit_alignment) - int(ast::BitAlignment::byte_aligned));
+                            new_align %= utils::bit_per_byte;
+                            alignment = ast::BitAlignment(new_align + int(ast::BitAlignment::byte_aligned));
+                            field->bit_alignment = alignment;
                         }
                     }
                     if (prev_field) {

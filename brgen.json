@@ -30,7 +30,7 @@
     },
     {
       "generator": "./tool/json2kaitai.exe",
-      "output_dir": "./ignore/examples/kaitai/"
+      "output_dir": "./ignore/example/kaitai/"
     }
   ]
 }
