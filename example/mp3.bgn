@@ -1,0 +1,16 @@
+
+format MP3Header:
+    sync :u11
+    version :u2
+    layer :u2
+    protection :u1
+    bitrate :u4
+    sampling_frequency :u2
+    padding :u1
+    private_ :u1
+    mode :u2
+    intensity_stereo :u1
+    ms_stereo :u1
+    copy_right :u1
+    original :u1
+    emphasis :u2

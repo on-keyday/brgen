@@ -36,6 +36,7 @@ namespace j2cp2 {
         std::map<ast::Field*, BitFieldMeta> bit_fields;
         std::map<ast::Field*, AnonymousStructMeta> anonymous_structs;
         std::map<ast::Field*, size_t> later_size;
+        std::map<ast::EnumMember*, std::string> enum_member_map;
         std::vector<LineMap> line_map;
         bool enable_line_map = false;
 
@@ -348,6 +349,9 @@ namespace j2cp2 {
                             w.writeln(type_name, " ", f->ident->ident, ";");
                         }
                         if (auto str_type = ast::as<ast::StrLiteralType>(type)) {
+                            auto len = str_type->strong_ref->length;
+                            map_line(f->loc);
+                            w.writeln("//", str_type->strong_ref->value, " (", brgen::nums(len), " bytes)");
                         }
                     }
                 }
@@ -537,6 +541,17 @@ namespace j2cp2 {
                     }
                     w.writeln("}");
                 }
+                if (auto str_ty = ast::as<ast::StrLiteralType>(typ)) {
+                    auto len = str_ty->strong_ref->length;
+                    auto value = str_ty->strong_ref->value;
+                    map_line(f->loc);
+                    w.writeln("if (!w.write(::utils::view::rvec(", value, ", ", brgen::nums(len), "))) {");
+                    {
+                        auto indent = w.indent_scope();
+                        w.writeln("return false;");
+                    }
+                    w.writeln("}");
+                }
             }
             else {
                 if (auto found = bit_fields.find(f); found != bit_fields.end()) {
@@ -604,6 +619,28 @@ namespace j2cp2 {
                     auto ident = ident_from_field();
                     map_line(f->loc);
                     w.writeln("if (!", ident, ".decode(r)) {");
+                    {
+                        auto indent = w.indent_scope();
+                        w.writeln("return false;");
+                    }
+                    w.writeln("}");
+                }
+                if (auto str_ty = ast::as<ast::StrLiteralType>(typ)) {
+                    auto len = str_ty->strong_ref->length;
+                    auto value = str_ty->strong_ref->value;
+                    map_line(f->loc);
+                    auto tmp_var = brgen::concat("tmp_", brgen::nums(seq), "_");
+                    w.writeln("::utils::view::rvec ", tmp_var, " = {};");
+                    seq++;
+                    map_line(f->loc);
+                    w.writeln("if (!r.read(", tmp_var, ", ", brgen::nums(len), ")) {");
+                    {
+                        auto indent = w.indent_scope();
+                        w.writeln("return false;");
+                    }
+                    w.writeln("}");
+                    map_line(f->loc);
+                    w.writeln("if (", tmp_var, " != ::utils::view::rvec(", value, ",", brgen::nums(len), ")) {");
                     {
                         auto indent = w.indent_scope();
                         w.writeln("return false;");

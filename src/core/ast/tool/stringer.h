@@ -155,6 +155,11 @@ namespace brgen::ast::tool {
             if (auto cast_ = ast::as<ast::Cast>(expr)) {
                 return concat(type_resolver(*this, cast_->expr_type), "(", to_string(cast_->expr), ")");
             }
+            if (auto access = ast::as<ast::MemberAccess>(expr)) {
+                auto base = to_string(access->target);
+                auto field = access->member->ident;
+                return concat(base, ".", field);
+            }
             return "";
         }
 
