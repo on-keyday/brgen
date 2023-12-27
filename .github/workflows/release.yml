@@ -78,7 +78,7 @@ jobs:
       contents: write
     needs: [build-linux, build-windows]
     runs-on: ubuntu-latest
-    if: startsWith('${{ github.ref }}', 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - name: Timeline
         uses: Kesin11/actions-timeline@v1
