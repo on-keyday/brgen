@@ -402,11 +402,11 @@ type Warnings struct {
 }
 
 type Config struct {
-	Source2Json   *string  `json:"src2json"`
-	SuffixPattern *string  `json:"suffix_pattern"`
-	TargetDirs    []string `json:"input_dir"`
-	Warnings      Warnings `json:"warnings"`
-	Output        []*Output
+	Source2Json *string   `json:"src2json"`
+	Suffix      *string   `json:"suffix"`
+	TargetDirs  []string  `json:"input_dir"`
+	Warnings    Warnings  `json:"warnings"`
+	Output      []*Output `json:"output"`
 }
 
 func loadConfig() (*Config, error) {
@@ -430,9 +430,9 @@ func fillStringPtr(c *Config) {
 	if c.Source2Json == nil {
 		c.Source2Json = new(string)
 	}
-	if c.SuffixPattern == nil {
-		c.SuffixPattern = new(string)
-		*c.SuffixPattern = ".bgn"
+	if c.Suffix == nil {
+		c.Suffix = new(string)
+		*c.Suffix = ".bgn"
 	}
 }
 
@@ -452,7 +452,7 @@ func init() {
 		return nil
 	})
 	flag.StringVar(config.Source2Json, "src2json", *config.Source2Json, "path to src2json")
-	flag.StringVar(config.SuffixPattern, "suffix", *config.SuffixPattern, "suffix of file to generate from")
+	flag.StringVar(config.Suffix, "suffix", *config.Suffix, "suffix of file to generate from")
 	flag.BoolVar(&config.Warnings.DisableUntypedWarning, "disable-untyped", config.Warnings.DisableUntypedWarning, "disable untyped warning")
 	flag.BoolVar(&config.Warnings.DisableUnusedWarning, "disable-unused", config.Warnings.DisableUnusedWarning, "disable unused warning")
 
@@ -480,7 +480,7 @@ func main() {
 	g := &GeneratorHandler{}
 	g.stderr = os.Stdout
 	start := time.Now()
-	if err := g.Init(*config.Source2Json, config.Output, *config.SuffixPattern); err != nil {
+	if err := g.Init(*config.Source2Json, config.Output, *config.Suffix); err != nil {
 		log.Fatal(err)
 	}
 	g.StartGenerator(args...)

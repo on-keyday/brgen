@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "src2json": {
+      "type": "string",
+      "description": "Path to the src2json executable (on windows, needless to specify .exe extension)"
+    },
+    "suffix": {
+      "type": "string",
+      "description": "Input file suffix (default: .bgn)"
+    },
+    "input_dir": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Array of target input directories"
+    },
+    "warnings": {
+      "type": "object",
+      "properties": {
+        "disable_untyped": {
+          "type": "boolean",
+          "description": "Disable untyped warnings"
+        },
+        "disable_unused": {
+          "type": "boolean",
+          "description": "Disable unused warnings"
+        }
+      },
+      "description": "Warning configuration"
+    },
+    "output": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "generator": {
+            "type": "string",
+            "description": "Generator executable path (on windows, needless to specify .exe extension)"
+          },
+          "output_dir": {
+            "type": "string",
+            "description": "Output directory"
+          },
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Array of arguments"
+          }
+        },
+        "required": ["generator", "output_dir"],
+        "additionalProperties": false
+      },
+      "description": "Array of output configurations"
+    }
+  },
+  "required": ["input_dir", "warnings", "output"],
+  "additionalProperties": false
+}
