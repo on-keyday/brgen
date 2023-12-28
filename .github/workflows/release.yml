@@ -108,6 +108,7 @@ jobs:
         with:
           name: brgen-windows
           path: ./artifacts
+
   relase:
     permissions:
       contents: write
@@ -143,10 +144,16 @@ jobs:
           tar -czf artifacts/brgen-linux.tar.gz -C artifacts/linux .
           tar -czf artifacts/brgen-macos.tar.gz -C artifacts/macos .
           zip -r artifacts/brgen-windows.zip artifacts/windows
+      - name: Calculate SHA256
+        run: |
+          sha256sum artifacts/brgen-linux.tar.gz > artifacts/brgen-checksum.txt
+          sha256sum artifacts/brgen-macos.tar.gz >> artifacts/brgen-checksum.txt
+          sha256sum artifacts/brgen-windows.zip >> artifacts/brgen-checksum.txt
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
+            ./artifacts/brgen-checksum.txt
             ./artifacts/brgen-linux.tar.gz
             ./artifacts/brgen-macos.tar.gz
             ./artifacts/brgen-windows.zip
