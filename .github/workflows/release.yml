@@ -25,7 +25,7 @@ jobs:
         if: matrix.os == 'macos-latest'
         run: |
           brew update
-          brew upgrade llvm
+          brew install llvm
       - name: Set up Clang
         uses: egor-tensin/setup-clang@v1.4
         if: matrix.os == 'ubuntu-latest'
