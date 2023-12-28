@@ -1,0 +1,14 @@
+
+format MachOHeader:
+    magic :u32(0xfeedface)
+    cputype :u32
+    cpusubtype :u32
+    filetype :u32
+    ncmds :u32
+    sizeofcmds :u32
+    flags :u32
+    reserved :u32
+
+format LoadCommandHeader:
+    cmd :u32
+    cmdsize :u32
