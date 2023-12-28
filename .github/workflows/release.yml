@@ -26,6 +26,9 @@ jobs:
         run: |
           brew update
           brew install llvm
+          echo 'export PATH="/usr/local/opt/llvm/bin:$PATH"' >> /Users/runner/.bash_profile
+          /usr/local/opt/llvm/bin/clang --version
+          clang --version
       - name: Set up Clang
         uses: egor-tensin/setup-clang@v1.4
         if: matrix.os == 'ubuntu-latest'
