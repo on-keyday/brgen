@@ -26,7 +26,8 @@ jobs:
         run: |
           brew update
           brew install llvm
-          brew link --force llvm
+          export UTILS_CXX_COMPILER=/usr/local/opt/llvm/bin/clang++
+          export UTILS_C_COMPILER=/usr/local/opt/llvm/bin/clang
       - name: Set up Clang
         uses: egor-tensin/setup-clang@v1.4
         if: matrix.os == 'ubuntu-latest'
