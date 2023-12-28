@@ -21,19 +21,27 @@ if [ $BUILD_MODE = "wasm-em" ]; then
 fi
 
 
-
-
-
 export UTILS_DIR=$(pwd)/utils
 export BUILD_MODE=$BUILD_MODE
 INSTALL_PREFIX=.
+
+CXX_COMPILER=clang++
+C_COMPILER=clang
+
+# override compiler if specified
+if [ $UTILS_CXX_COMPILER ]; then
+   CXX_COMPILER=$UTILS_CXX_COMPILER
+fi
+if [ $UTILS_C_COMPILER ]; then
+   C_COMPILER=$UTILS_C_COMPILER
+fi
 
 if [ $BUILD_MODE = "wasm-em" ];then
    export GOOS=js
    export GOARCH=wasm
    emcmake cmake -G Ninja -D CMAKE_BUILD_TYPE=$BUILD_TYPE -D CMAKE_INSTALL_PREFIX=$INSTALL_PREFIX/web/dev/src -S . -B ./built/$BUILD_MODE/$BUILD_TYPE
 else
-   cmake  -D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang -G Ninja -D CMAKE_INSTALL_PREFIX=$INSTALL_PREFIX -D CMAKE_BUILD_TYPE=$BUILD_TYPE -S . -B ./built/$BUILD_MODE/$BUILD_TYPE
+   cmake  -D CMAKE_CXX_COMPILER=$CXX_COMPILER -D CMAKE_C_COMPILER=$C_COMPILER -G Ninja -D CMAKE_INSTALL_PREFIX=$INSTALL_PREFIX -D CMAKE_BUILD_TYPE=$BUILD_TYPE -S . -B ./built/$BUILD_MODE/$BUILD_TYPE
 fi
 ninja -C ./built/$BUILD_MODE/$BUILD_TYPE
 ninja -C ./built/$BUILD_MODE/$BUILD_TYPE install
