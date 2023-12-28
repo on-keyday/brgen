@@ -60,10 +60,6 @@ jobs:
           export UTILS_C_COMPILER=/usr/local/opt/llvm/bin/clang
           . build.sh native Release
           ./tool/src2json --version
-      - name: Show Link Information
-        run: |
-          otool -L ./tool/libutils.dylib
-          otool -L ./tool/src2json
       - name: Pack artifacts
         run: |
           mkdir -p artifacts
