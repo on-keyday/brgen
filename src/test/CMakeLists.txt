@@ -76,6 +76,11 @@ TARGET ast_test POST_BUILD
 COMMAND ${CMAKE_COMMAND} -E copy "$ENV{UTILS_DIR}/lib/libutils.pdb" "${CMAKE_BINARY_DIR}/test/libutils.pdb"
 )
 endif()
+elseif(APPLE)
+add_custom_command(
+TARGET ast_test POST_BUILD
+COMMAND ${CMAKE_COMMAND} -E copy "$ENV{UTILS_DIR}/lib/libutils.dylib" "${CMAKE_BINARY_DIR}/test/libutils.dylib"
+)
 else()
 
 add_custom_command(
