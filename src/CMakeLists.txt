@@ -8,6 +8,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tool")
 
 add_executable(src2json "tool/src2json/src2json.cpp")
 target_link_libraries(src2json utils)
+add_compile_definitions(BRGEN_VERSION="${PROJECT_VERSION}")
 
 add_executable(json2cpp "tool/json2cpp/main.cpp")
 target_link_libraries(json2cpp utils)

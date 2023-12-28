@@ -1,7 +1,7 @@
 #license
 cmake_minimum_required(VERSION 3.26)
 enable_testing()
-project(brgen)
+project(brgen VERSION 0.0.1)
 if(UNIX)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
 set(CMAKE_EXE_LINKER_FLAGS "-lc++abi")
