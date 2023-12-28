@@ -30,9 +30,11 @@ jobs:
           . /Users/runner/.bash_profile
           /usr/local/opt/llvm/bin/clang --version
           /usr/bin/clang --version
-          ls -al /usr/bin/clang
-          ls -al /usr/bin
-          clang --version
+          # HACK: remove clang at /usr/bin and make a symbolic link to /usr/local/opt/llvm/bin/clang
+          rm /usr/bin/clang
+          rm /usr/bin/clang++
+          ln -s /usr/local/opt/llvm/bin/clang /usr/bin/clang
+          ln -s /usr/local/opt/llvm/bin/clang++ /usr/bin/clang++
       - name: Set up Clang
         uses: egor-tensin/setup-clang@v1.4
         if: matrix.os == 'ubuntu-latest'
