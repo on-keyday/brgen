@@ -1,4 +1,6 @@
 
+# ArpPacket 
+# -------------
 format ArpPacket:
     hardware_type :u16
     protocol_type :u16
