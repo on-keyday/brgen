@@ -27,6 +27,7 @@ jobs:
           brew update
           brew install llvm
           echo 'export PATH="/usr/local/opt/llvm/bin:$PATH"' >> /Users/runner/.bash_profile
+          . /Users/runner/.bash_profile
           /usr/local/opt/llvm/bin/clang --version
           clang --version
       - name: Set up Clang
