@@ -23,6 +23,7 @@ jobs:
         uses: seanmiddleditch/gha-setup-ninja@master
       - name: Set up Clang
         uses: egor-tensin/setup-clang@v1.4
+        if: matrix.os == 'ubuntu-latest'
         with:
           version: latest
           platform: x64
