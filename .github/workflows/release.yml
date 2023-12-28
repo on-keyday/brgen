@@ -146,9 +146,11 @@ jobs:
           zip -r artifacts/brgen-windows.zip artifacts/windows
       - name: Calculate SHA256
         run: |
-          sha256sum artifacts/brgen-linux.tar.gz > artifacts/brgen-checksum.txt
-          sha256sum artifacts/brgen-macos.tar.gz >> artifacts/brgen-checksum.txt
-          sha256sum artifacts/brgen-windows.zip >> artifacts/brgen-checksum.txt
+          cd artifacts
+          sha256sum brgen-linux.tar.gz > brgen-checksum.txt
+          sha256sum brgen-macos.tar.gz >> brgen-checksum.txt
+          sha256sum brgen-windows.zip >> brgen-checksum.txt
+          cd ..
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
