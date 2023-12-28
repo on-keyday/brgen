@@ -26,15 +26,7 @@ jobs:
         run: |
           brew update
           brew install llvm
-          echo 'export PATH="/usr/local/opt/llvm/bin:$PATH"' >> /Users/runner/.bash_profile
-          . /Users/runner/.bash_profile
-          /usr/local/opt/llvm/bin/clang --version
-          /usr/bin/clang --version
-          # HACK: remove clang at /usr/bin and make a symbolic link to /usr/local/opt/llvm/bin/clang
-          sudo rm /usr/bin/clang
-          sudo rm /usr/bin/clang++
-          sudo ln -s /usr/local/opt/llvm/bin/clang /usr/bin/clang
-          sudo ln -s /usr/local/opt/llvm/bin/clang++ /usr/bin/clang++
+          brew link --force llvm
       - name: Set up Clang
         uses: egor-tensin/setup-clang@v1.4
         if: matrix.os == 'ubuntu-latest'
