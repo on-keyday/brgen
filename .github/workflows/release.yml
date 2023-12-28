@@ -36,6 +36,8 @@ jobs:
           platform: x64
       - name: Build
         run: |
+          echo $UTILS_CXX_COMPILER
+          echo $UTILS_C_COMPILER
           . build.sh native Release
       - name: Pack artifacts
         run: |
