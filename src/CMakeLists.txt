@@ -74,6 +74,13 @@ if(WIN32)
     endif()
     install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/libutils.dll" DESTINATION tool OPTIONAL)
     
+elseif(APPLE)
+    add_custom_command(
+    TARGET src2json POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy "${UTILS_LIB_DIR}/libutils.dylib" "${CMAKE_BINARY_DIR}/tool/libutils.dylib"
+    )
+    install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/libutils.dylib" DESTINATION tool OPTIONAL)
+
 else()
 
     add_custom_command(
