@@ -62,6 +62,7 @@ jobs:
         run: |
           otool -L ./tool/libutils.dylib
           otool -L ./tool/src2json
+          ./tool/src2json --version
       - name: Pack artifacts
         run: |
           mkdir -p artifacts

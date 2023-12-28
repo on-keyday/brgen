@@ -26,11 +26,14 @@
 #define EMSCRIPTEN_KEEPALIVE
 #endif
 
+#include "version.h"
+
 constexpr auto exit_ok = 0;
 constexpr auto exit_err = 1;
 
 struct Flags : utils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
+    bool version = false;
     bool lexer = false;
     bool not_resolve_import = false;
     bool not_resolve_cast = false;
@@ -78,6 +81,7 @@ struct Flags : utils::cmdline::templ::HelpOption {
 
     void bind(utils::cmdline::option::Context& ctx) {
         bind_help(ctx);
+        ctx.VarBool(&version, "version", "print version");
         ctx.VarBool(&lexer, "l,lexer", "lexer mode");
         ctx.VarBool(&dump_types, "dump-types", "dump types schema mode");
         ctx.VarBool(&check_ast, "c,check-ast", "check ast mode");
@@ -248,6 +252,10 @@ int dump_types() {
 }
 
 int Main(Flags& flags, utils::cmdline::option::Context&) {
+    if (flags.version) {
+        cout << utils::wrap::pack("src2json version ", src2json_version, " (lang version ", lang_version, ")\n");
+        return exit_ok;
+    }
     cerr.set_virtual_terminal(true);  // ignore error
     cout.set_virtual_terminal(true);  // ignore error
     if (flags.cout_color_mode == ColorMode::auto_color) {
