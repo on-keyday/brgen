@@ -86,14 +86,14 @@ endif()
 
 
 if(APPLE)
-# fix   (maybe you meant: ___llvm_profile_runtime_user)
-target_link_libraries(ast_test "-Wl,-U,___llvm_profile_runtime_user")
-target_link_libraries(lexer_test "-Wl,-U,___llvm_profile_runtime_user")
-target_link_libraries(typing_test "-Wl,-U,___llvm_profile_runtime_user")
-target_link_libraries(middle_test "-Wl,-U,___llvm_profile_runtime_user")
-target_link_libraries(from_json_test "-Wl,-U,___llvm_profile_runtime_user")
-target_link_libraries(section_writer_test "-Wl,-U,___llvm_profile_runtime_user")
-target_link_libraries(liner_eq_test "-Wl,-U,___llvm_profile_runtime_user")
-target_link_libraries(type_attribute "-Wl,-U,___llvm_profile_runtime_user")
+# add -fprofile-instr-generate to linker flags
+set_target_properties(lexer_test PROPERTIES LINK_FLAGS "-fprofile-instr-generate=lexer_test.profraw")
+set_target_properties(ast_test PROPERTIES LINK_FLAGS "-fprofile-instr-generate=ast_test.profraw")
+set_target_properties(typing_test PROPERTIES LINK_FLAGS "-fprofile-instr-generate=typing_test.profraw")
+set_target_properties(middle_test PROPERTIES LINK_FLAGS "-fprofile-instr-generate=middle_test.profraw")
+set_target_properties(from_json_test PROPERTIES LINK_FLAGS "-fprofile-instr-generate=from_json_test.profraw")
+set_target_properties(section_writer_test PROPERTIES LINK_FLAGS "-fprofile-instr-generate=section_writer_test.profraw")
+set_target_properties(liner_eq_test PROPERTIES LINK_FLAGS "-fprofile-instr-generate=liner_eq_test.profraw")
+set_target_properties(type_attribute PROPERTIES LINK_FLAGS "-fprofile-instr-generate=type_attribute.profraw")
 endif()
 
