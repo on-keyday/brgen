@@ -8,10 +8,7 @@ concurrency:
 
 jobs:
   build-linux:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - name: Timeline
         uses: Kesin11/actions-timeline@v1
@@ -21,23 +18,13 @@ jobs:
         uses: actions/checkout@v3
       - name: Set up Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
-      - name: Update Clang
-        if: matrix.os == 'macos-latest'
-        run: |
-          brew update
-          brew install llvm
-          export UTILS_CXX_COMPILER=/usr/local/opt/llvm/bin/clang++
-          export UTILS_C_COMPILER=/usr/local/opt/llvm/bin/clang
       - name: Set up Clang
         uses: egor-tensin/setup-clang@v1.4
-        if: matrix.os == 'ubuntu-latest'
         with:
           version: latest
           platform: x64
       - name: Build
         run: |
-          echo $UTILS_CXX_COMPILER
-          echo $UTILS_C_COMPILER
           . build.sh native Release
       - name: Pack artifacts
         run: |
@@ -51,6 +38,38 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: brgen-linux
+          path: ./artifacts
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Timeline
+        uses: Kesin11/actions-timeline@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Set up Ninja
+        uses: seanmiddleditch/gha-setup-ninja@master
+      - name: Install Homebrew Clang
+        run: |
+          brew install llvm
+      - name: Build
+        run: |
+          export UTILS_CXX_COMPILER=/usr/local/opt/llvm/bin/clang++
+          export UTILS_C_COMPILER=/usr/local/opt/llvm/bin/clang
+          . build.sh native Release
+      - name: Pack artifacts
+        run: |
+          mkdir -p artifacts
+          cp -a ./tool ./artifacts/tool
+          cp -a ./example ./artifacts/example
+          cp -a ./LICENSE ./artifacts
+          cp -a ./README.md ./artifacts
+          cp -a ./brgen.json ./artifacts
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: brgen-macos
           path: ./artifacts
   build-windows:
     runs-on: windows-latest
@@ -89,7 +108,7 @@ jobs:
   relase:
     permissions:
       contents: write
-    needs: [build-linux, build-windows]
+    needs: [build-linux, build-macos, build-windows]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
@@ -102,6 +121,11 @@ jobs:
         with:
           name: brgen-linux
           path: ./artifacts/linux
+      - name: Download MacOS artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: brgen-macos
+          path: ./artifacts/macos
       - name: Download Windows artifacts
         uses: actions/download-artifact@v2
         with:
@@ -114,11 +138,13 @@ jobs:
       - name: Make Archive
         run: |
           tar -czf artifacts/brgen-linux.tar.gz -C artifacts/linux .
+          tar -czf artifacts/brgen-macos.tar.gz -C artifacts/macos .
           zip -r artifacts/brgen-windows.zip artifacts/windows
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
             ./artifacts/brgen-linux.tar.gz
+            ./artifacts/brgen-macos.tar.gz
             ./artifacts/brgen-windows.zip
           fail_on_unmatched_files: true
