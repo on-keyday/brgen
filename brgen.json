@@ -1,5 +1,5 @@
 {
-  "src2json": "./tool/src2json.exe",
+  "src2json": "./tool/src2json",
   "input_dir": ["./example/", "./example/gen_step/"],
   "suffix_pattern": ".bgn",
   "warnings": {
@@ -8,12 +8,12 @@
   },
   "output": [
     {
-      "generator": "./tool/json2cpp2.exe",
+      "generator": "./tool/json2cpp2",
       "output_dir": "./ignore/example/cpp2/",
       "args": ["--add-line-map"]
     },
     {
-      "generator": "./tool/json2go.exe",
+      "generator": "./tool/json2go",
       "output_dir": "./ignore/example/go/",
       "args": [
         "-map-word",
@@ -29,7 +29,7 @@
       ]
     },
     {
-      "generator": "./tool/json2kaitai.exe",
+      "generator": "./tool/json2kaitai",
       "output_dir": "./ignore/example/kaitai/"
     }
   ]

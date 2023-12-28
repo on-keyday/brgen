@@ -77,6 +77,11 @@ func (g *GeneratorHandler) Init(src2json string, output []*Output, suffix string
 	}
 	if src2json != "" {
 		g.src2json = src2json
+		if runtime.GOOS == "windows" {
+			if !strings.HasSuffix(g.src2json, ".exe") {
+				g.src2json += ".exe"
+			}
+		}
 	} else {
 		res, err := os.Executable()
 		if err != nil {
@@ -163,6 +168,11 @@ func (g *Generator) passAst(filePath string, buffer []byte) ([]byte, error) {
 
 func (g *Generator) StartGenerator(out *Output) error {
 	g.generatorPath = out.Generator
+	if runtime.GOOS == "windows" {
+		if !strings.HasSuffix(g.generatorPath, ".exe") {
+			g.generatorPath += ".exe"
+		}
+	}
 	g.outputDir = out.OutputDir
 	g.args = out.Args
 	err := g.askSpec()
