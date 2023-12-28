@@ -85,23 +85,15 @@ COMMAND ${CMAKE_COMMAND} -E copy "$ENV{UTILS_DIR}/lib/libutils.so" "${CMAKE_BINA
 endif()
 
 
-#[[
-
-
-add_executable(treeopt_test "core/treeopt/test.cpp")
-
-# languages
-add_executable(c_lang_test "langs/c/test.cpp"
-"langs/c/c_lang.cpp")
-
-target_compile_options(lexer_test PRIVATE "-fconstexpr-steps=2147483647")
-target_link_libraries(ast_test_component utils)
-target_link_libraries(ast_test ast_test_component)
-target_link_libraries(typing_test ast_test_component)
-target_link_libraries(treeopt_test ast_test_component)
-target_link_libraries(c_lang_test ast_test_component)
-
-
-
-]]
+if(APPLE)
+# fix   (maybe you meant: ___llvm_profile_runtime_user)
+target_link_libraries(ast_test "-Wl,-U,___llvm_profile_runtime_user")
+target_link_libraries(lexer_test "-Wl,-U,___llvm_profile_runtime_user")
+target_link_libraries(typing_test "-Wl,-U,___llvm_profile_runtime_user")
+target_link_libraries(middle_test "-Wl,-U,___llvm_profile_runtime_user")
+target_link_libraries(from_json_test "-Wl,-U,___llvm_profile_runtime_user")
+target_link_libraries(section_writer_test "-Wl,-U,___llvm_profile_runtime_user")
+target_link_libraries(liner_eq_test "-Wl,-U,___llvm_profile_runtime_user")
+target_link_libraries(type_attribute "-Wl,-U,___llvm_profile_runtime_user")
+endif()
 
