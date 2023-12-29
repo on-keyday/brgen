@@ -12,3 +12,4 @@ format MachOHeader:
 format LoadCommandHeader:
     cmd :u32
     cmdsize :u32
+    data :[cmdsize - 8]u8
