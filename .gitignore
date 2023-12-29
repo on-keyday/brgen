@@ -26,3 +26,4 @@ testdata/
 *.profraw
 go_dump_env.bat
 /web/public/doc
+/web/doc/resources/_gen
