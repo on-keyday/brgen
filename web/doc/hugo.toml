@@ -2,3 +2,7 @@ baseURL = 'https://example.org/'
 languageCode = 'en-us'
 title = 'My New Hugo Site'
 publishDir = '../public/doc'
+
+[module]
+[[module.imports]]
+path = 'github.com/alex-shpak/hugo-book'
