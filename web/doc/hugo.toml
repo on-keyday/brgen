@@ -1,7 +1,12 @@
 baseURL = 'https://on-keyday.github.io/brgen/doc'
 languageCode = 'en-us'
-title = 'My New Hugo Site'
+title = 'Brgen Document'
 publishDir = '../public/doc'
+
+enableGitInfo = true
+
+[param]
+BookRepo = 'https://on-keyday.github.io/brgen/doc'
 
 [module]
 [[module.imports]]
