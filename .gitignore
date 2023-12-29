@@ -25,3 +25,4 @@ obj/
 testdata/
 *.profraw
 go_dump_env.bat
+/web/public/doc
