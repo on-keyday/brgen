@@ -64,3 +64,20 @@ https://on-keyday.github.io/brgen
   1. `EMSDK_PATH`を`emsdk_env.bat`のパスに設定する
   1. build.bat を開き、UTILS_DIR 環境変数を`.\utils`に設定する
   1. `build_all.bat`を実行
+
+# License
+
+MIT License
+
+# Version Policy
+
+0.0.x の間は作者(リポジトリオーナー)都合で更新を行います。
+0.1.0 以降については別途定める予定です。
+
+Updates for versions 0.0.x will be made at the discretion of the author (repository owner). For versions 0.1.0 and beyond, separate guidelines will be established.
+
+# Security Policy
+
+SECURITY.md を参照してください
+
+see SECURITY.md

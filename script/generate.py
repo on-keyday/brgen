@@ -31,3 +31,5 @@ ret = sp.call(
     ["./tool/gen_ast2csharp", "./ast2csharp/ast.cs"],
     executable="./tool/gen_ast2csharp.exe",
 )
+
+print(ret)

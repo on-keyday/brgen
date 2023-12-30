@@ -109,6 +109,42 @@ jobs:
           name: brgen-windows
           path: ./artifacts
 
+  build-vscode-extension:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Timeline
+        uses: Kesin11/actions-timeline@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: "14"
+      - name: Setup ast2ts
+        run: |
+          cd ast2ts
+          npm install
+          tsc
+          cd ..
+      - name: Install VSCE
+        run: npm install -g vsce
+      - name: Build
+        run: |
+          cd lsp
+          vsce package
+      - name: Pack artifacts
+        run: |
+          mkdir -p artifacts
+          cp -a ./lsp/LICENSE ./artifacts
+          cp -a ./lsp/brgen-lsp-*.vsix ./artifacts
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: brgen-vscode-extension
+          path: ./artifacts
+
   relase:
     permissions:
       contents: write
