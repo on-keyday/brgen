@@ -133,6 +133,7 @@ jobs:
       - name: Build
         run: |
           cd lsp
+          npm install
           vsce package
       - name: Pack artifacts
         run: |
@@ -148,7 +149,7 @@ jobs:
   relase:
     permissions:
       contents: write
-    needs: [build-linux, build-macos, build-windows]
+    needs: [build-linux, build-macos, build-windows, build-vscode-extension]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
