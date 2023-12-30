@@ -7,3 +7,9 @@ draft = false
 # Brgen Document
 
 brgen - BinaRy encoder/decoder GENerator のドキュメントです
+
+TODO(on-keyday): ドキュメント整備
+
+[開発ページ(GitHub)](https://github.com/on-keyday/brgen)
+
+[Web Playground](https://on-keyday.github.io/brgen)
