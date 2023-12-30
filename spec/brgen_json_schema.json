@@ -1,10 +1,11 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
+  "description": "brgen(BinaRy encoder/decoder GENerator driver) configuration file schema",
   "properties": {
     "src2json": {
       "type": "string",
-      "description": "Path to the src2json executable (on windows, needless to specify .exe extension)"
+      "description": "Path to the src2json(convert definition file to JSON-AST format) executable (on windows, needless to specify .exe extension) (default: src2json in directory that contains brgen executable)"
     },
     "suffix": {
       "type": "string",
@@ -58,6 +59,6 @@
       "description": "Array of output configurations"
     }
   },
-  "required": ["input_dir", "warnings", "output"],
+  "required": ["input_dir", "output"],
   "additionalProperties": false
 }

@@ -1,7 +1,7 @@
 {
   "src2json": "./tool/src2json",
   "input_dir": ["./example/", "./example/gen_step/"],
-  "suffix_pattern": ".bgn",
+  "suffix": ".bgn",
   "warnings": {
     "disable_untyped": true,
     "disable_unused": true

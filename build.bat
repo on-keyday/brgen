@@ -13,6 +13,7 @@ if "%UTILS_DIR%" == "" (
 )
 if not exist %UTILS_DIR% (
     call script\clone_utils.bat %BUILD_MODE% %BUILD_TYPE%
+    set UTILS_DIR=%CD%\utils
 )
 
 if "%BUILD_TYPE%" == "" (

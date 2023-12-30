@@ -367,6 +367,11 @@ func (g *GeneratorHandler) StartGenerator(path ...string) {
 	go func() {
 		wg.Wait()
 		for {
+			if g.outputCount.Load() == 0 {
+				close(g.queue)
+				g.cancel()
+				return
+			}
 			select {
 			case r := <-g.resultQueue:
 				g.queue <- r
@@ -375,11 +380,6 @@ func (g *GeneratorHandler) StartGenerator(path ...string) {
 				g.queue <- &Result{Err: err}
 			case <-g.ctx.Done():
 				close(g.queue)
-				return
-			}
-			if g.outputCount.Load() == 0 {
-				close(g.queue)
-				g.cancel()
 				return
 			}
 		}
