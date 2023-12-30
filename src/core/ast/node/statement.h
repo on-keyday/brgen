@@ -133,6 +133,13 @@ namespace brgen::ast {
         return std::nullopt;
     }
 
+    struct FieldArgument : Node {
+        std::shared_ptr<Expr> raw_arguments;
+        std::vector<std::shared_ptr<Expr>> arguments;
+        // arguments that is passed to encode/decode function
+        std::vector<std::shared_ptr<Expr>> pass_arguments;
+    };
+
     struct Field : Member {
         define_node_type(NodeType::field);
         lexer::Loc colon_loc;
