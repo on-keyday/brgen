@@ -9,6 +9,10 @@
 - easy to write - 簡単に書ける
 - write once generate any language code - 一回書けば様々な言語で生成
 
+# Document
+
+https://on-keyday.github.io/brgen/doc
+
 # Playground
 
 https://on-keyday.github.io/brgen
