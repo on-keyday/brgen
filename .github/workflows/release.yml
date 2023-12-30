@@ -170,6 +170,11 @@ jobs:
         with:
           name: brgen-windows
           path: ./artifacts/windows
+      - name: Download VSCode Extension artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: brgen-vscode-extension
+          path: ./artifacts/vscode-extension
       - name: Show Current Directory
         run: |
           pwd
@@ -178,13 +183,17 @@ jobs:
         run: |
           tar -czf artifacts/brgen-linux.tar.gz -C artifacts/linux .
           tar -czf artifacts/brgen-macos.tar.gz -C artifacts/macos .
+          tar -czf artifacts/brgen-vscode-extension.tar.gz -C artifacts/vscode-extension .
           zip -r artifacts/brgen-windows.zip artifacts/windows
+          zip -r artifacts/brgen-vscode-extension.zip artifacts/vscode-extension
       - name: Calculate SHA256
         run: |
           cd artifacts
           sha256sum brgen-linux.tar.gz > brgen-checksum.txt
           sha256sum brgen-macos.tar.gz >> brgen-checksum.txt
           sha256sum brgen-windows.zip >> brgen-checksum.txt
+          sha256sum brgen-vscode-extension.tar.gz >> brgen-checksum.txt
+          sha256sum brgen-vscode-extension.zip >> brgen-checksum.txt
           cd ..
       - name: Release
         uses: softprops/action-gh-release@v1
@@ -194,4 +203,6 @@ jobs:
             ./artifacts/brgen-linux.tar.gz
             ./artifacts/brgen-macos.tar.gz
             ./artifacts/brgen-windows.zip
+            ./artifacts/brgen-vscode-extension.tar.gz
+            ./artifacts/brgen-vscode-extension.zip
           fail_on_unmatched_files: true
