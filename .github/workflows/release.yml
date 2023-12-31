@@ -163,7 +163,7 @@ jobs:
           export UTILS_CXX_COMPILER=aarch64-linux-gnu-g++
           export UTILS_C_COMPILER=aarch64-linux-gnu-gcc
           . build.sh native Release
-          qemu-aarch64 ./tool/src2json --version
+          qemu-user-aarch64 ./tool/src2json --version
       - name: Pack artifacts
         run: |
           mkdir -p artifacts
