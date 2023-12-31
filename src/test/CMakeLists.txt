@@ -12,11 +12,8 @@ add_library(ast_test_component STATIC
 "core/ast_test_component.cpp"
 )
 
-target_compile_options(ast_test_component PRIVATE "-fprofile-instr-generate=ast_test_component.profraw")
 
 add_executable(lexer_test "core/lexer_test.cpp")
-
-target_compile_options(lexer_test PRIVATE "-fprofile-instr-generate=lexer_test.profraw")
 
 
 target_link_libraries(lexer_test gtest_main)
@@ -24,36 +21,39 @@ target_link_libraries(ast_test_component utils gtest)
 
 add_executable(ast_test "core/ast_test.cpp")
 target_link_libraries(ast_test ast_test_component)
-target_compile_options(ast_test PRIVATE "-fprofile-instr-generate=ast_test.profraw")
 
 
 add_executable(typing_test "core/typing_test.cpp")
 
 target_link_libraries(typing_test ast_test_component)
-target_compile_options(typing_test PRIVATE "-fprofile-instr-generate=typing_test.profraw")
+
 
 add_executable(middle_test "core/middle_test.cpp")
 
 target_link_libraries(middle_test ast_test_component)
-target_compile_options(middle_test PRIVATE "-fprofile-instr-generate=middle_test.profraw")
+
+
+
 
 add_executable(from_json_test "core/from_json_test.cpp")
 
 target_link_libraries(from_json_test ast_test_component utils)
-target_compile_options(from_json_test PRIVATE "-fprofile-instr-generate=from_json_test.profraw")
+
 
 add_executable(section_writer_test "core/section_writer_test.cpp")
 
 target_link_libraries(section_writer_test gtest_main)
-target_compile_options(section_writer_test PRIVATE "-fprofile-instr-generate=section_writer_test.profraw")
+
 
 add_executable(liner_eq_test "core/liner_eq_test.cpp")
 target_link_libraries(liner_eq_test gtest_main)
-target_compile_options(liner_eq_test PRIVATE "-fprofile-instr-generate=liner_eq_test.profraw")
+
+
 
 add_executable(type_attribute "core/type_attribute_test.cpp")
 target_link_libraries(type_attribute gtest_main)
-target_compile_options(type_attribute PRIVATE "-fprofile-instr-generate=type_attribute.profraw")
+
+
 
 add_test(NAME "lexer_test" COMMAND lexer_test)
 add_test(NAME "ast_test" COMMAND ast_test)
@@ -87,6 +87,18 @@ add_custom_command(
 TARGET ast_test POST_BUILD
 COMMAND ${CMAKE_COMMAND} -E copy "$ENV{UTILS_DIR}/lib/libutils.so" "${CMAKE_BINARY_DIR}/test/libutils.so"
 )
+endif()
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+target_compile_options(ast_test_component PRIVATE "-fprofile-instr-generate=ast_test_component.profraw")
+target_compile_options(lexer_test PRIVATE "-fprofile-instr-generate=lexer_test.profraw")
+target_compile_options(ast_test PRIVATE "-fprofile-instr-generate=ast_test.profraw")
+target_compile_options(typing_test PRIVATE "-fprofile-instr-generate=typing_test.profraw")
+target_compile_options(middle_test PRIVATE "-fprofile-instr-generate=middle_test.profraw")
+target_compile_options(from_json_test PRIVATE "-fprofile-instr-generate=from_json_test.profraw")
+target_compile_options(section_writer_test PRIVATE "-fprofile-instr-generate=section_writer_test.profraw")
+target_compile_options(liner_eq_test PRIVATE "-fprofile-instr-generate=liner_eq_test.profraw")
+target_compile_options(type_attribute PRIVATE "-fprofile-instr-generate=type_attribute.profraw")
 endif()
 
 
