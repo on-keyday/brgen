@@ -157,13 +157,13 @@ jobs:
         uses: seanmiddleditch/gha-setup-ninja@master
       - name: Install Cross Compiler
         run: |
-          sudo apt-get install -y qemu-aarch64 g++-aarch64-linux-gnu
+          sudo apt-get install -y qemu-arm64 g++-aarch64-linux-gnu
       - name: Build
         run: |
           export UTILS_CXX_COMPILER=aarch64-linux-gnu-g++
           export UTILS_C_COMPILER=aarch64-linux-gnu-gcc
           . build.sh native Release
-          qemu-aarch64 ./tool/src2json --version
+          qemu-arm64 ./tool/src2json --version
       - name: Pack artifacts
         run: |
           mkdir -p artifacts
