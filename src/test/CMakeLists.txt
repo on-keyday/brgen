@@ -6,7 +6,9 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/test")
 
 add_compile_definitions(__TEST__)
 
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcoverage-mapping")
+endif()
 
 add_library(ast_test_component STATIC
 "core/ast_test_component.cpp"
