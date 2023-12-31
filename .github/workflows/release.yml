@@ -160,11 +160,15 @@ jobs:
         with:
           version: latest
           platform: x64
-      - name: Install QEMU
-        run: sudo apt-get install qemu-user-static
+      - name: Install Cross Compiler
+        run: |
+          sudo apt-get install qemu-user-static
+          sudo apt-get install gcc-aarch64-linux-gnu
       - name: Build
         run: |
           export UTILS_TARGET_TRIPLE=aarch64-linux-gnu
+          export UTILS_CXX_COMPILER=aarch64-linux-gnu-g++
+          export UTILS_C_COMPILER=aarch64-linux-gnu-gcc
           . build.sh native Release
           qemu-aarch64 ./tool/src2json --version
       - name: Pack artifacts
