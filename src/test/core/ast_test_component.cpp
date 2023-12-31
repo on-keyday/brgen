@@ -12,7 +12,7 @@
 #include <env/env.h>
 #include <wrap/exepath.h>
 using namespace brgen;
-auto& cerr = utils::wrap::cerr_wrap();
+utils::wrap::UtfOut& cerr = utils::wrap::cerr_wrap();
 namespace brgen::ast {
 
     ::testing::AssertionResult is_Index(either::expected<lexer::FileIndex, std::error_code>& v) {
