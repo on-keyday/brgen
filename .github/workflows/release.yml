@@ -160,7 +160,7 @@ jobs:
           sudo apt-get install -y g++-aarch64-linux-gnu
       - name: Build
         run: |
-          expor GOARCH=arm64
+          export GOARCH=arm64
           export UTILS_CXX_COMPILER=aarch64-linux-gnu-g++
           export UTILS_C_COMPILER=aarch64-linux-gnu-gcc
           . build.sh native Release
