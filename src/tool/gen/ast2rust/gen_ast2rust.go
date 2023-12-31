@@ -395,7 +395,11 @@ func generate(rw io.Writer, defs *gen.Defs) {
 				} else if field.Type.IsPtr || field.Type.IsInterface {
 					w.Printf("				%s: None,\n", field.Name)
 				} else if field.Type.Name == "u64" {
-					w.Printf("				%s: 0,\n", field.Name)
+					if field.Type.IsOptional {
+						w.Printf("				%s: None,\n", field.Name)
+					} else {
+						w.Printf("				%s: 0,\n", field.Name)
+					}
 				} else if field.Type.Name == "String" {
 					w.Printf("				%s: String::new(),\n", field.Name)
 				} else if field.Type.Name == "bool" {
@@ -538,8 +542,16 @@ func generate(rw io.Writer, defs *gen.Defs) {
 					w.Printf("				}\n")
 				} else if field.Type.Name == "u64" {
 					w.Printf("				node.borrow_mut().%s = match %s_body.as_u64() {\n", field.Name, field.Name)
-					w.Printf("					Some(v)=>v,\n")
-					w.Printf("					None=>return Err(Error::MismatchJSONType(%s_body.into(),JSONType::Number)),\n", field.Name)
+					if field.Type.IsOptional {
+						w.Printf("					Some(v)=>Some(v),\n")
+						w.Printf("					None=> match %s_body.is_null() {\n", field.Name)
+						w.Printf("						true=>None,\n")
+						w.Printf("						false=>return Err(Error::MismatchJSONType(%s_body.into(),JSONType::Number)),\n", field.Name)
+						w.Printf("					},\n")
+					} else {
+						w.Printf("					Some(v)=>v,\n")
+						w.Printf("					None=>return Err(Error::MismatchJSONType(%s_body.into(),JSONType::Number)),\n", field.Name)
+					}
 					w.Printf("				};\n")
 				} else if field.Type.Name == "String" {
 					w.Printf("				node.borrow_mut().%s = match %s_body.as_str() {\n", field.Name, field.Name)

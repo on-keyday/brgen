@@ -167,7 +167,11 @@ func generate(rw io.Writer, defs *gen.Defs) {
 				} else if field.Type.IsPtr || field.Type.IsInterface {
 					w.Printf("				%s: null,\n", field.Name)
 				} else if field.Type.Name == "number" {
-					w.Printf("				%s: 0,\n", field.Name)
+					if field.Type.IsOptional {
+						w.Printf("				%s: null,\n", field.Name)
+					} else {
+						w.Printf("				%s: 0,\n", field.Name)
+					}
 				} else if field.Type.Name == "string" {
 					w.Printf("				%s: '',\n", field.Name)
 				} else if field.Type.Name == "boolean" {
@@ -260,9 +264,15 @@ func generate(rw io.Writer, defs *gen.Defs) {
 					w.Printf("			n.%s = tmp%s;\n", field.Name, field.Name)
 				} else if field.Type.Name == "number" || field.Type.Name == "string" || field.Type.Name == "boolean" {
 					w.Printf("			const tmp%s = on.body?.%s;\n", field.Name, field.Name)
-					w.Printf("			if (typeof on.body?.%s !== %q) {\n", field.Name, field.Type.Name)
-					w.Printf("				throw new Error('invalid node list at %s::%s');\n", d.Name, field.Name)
-					w.Printf("			}\n")
+					if field.Type.IsOptional {
+						w.Printf("			if (tmp%s !== null && typeof tmp%s !== %q) {\n", field.Name, field.Name, field.Type.Name)
+						w.Printf("				throw new Error('invalid node list at %s::%s');\n", d.Name, field.Name)
+						w.Printf("			}\n")
+					} else {
+						w.Printf("			if (typeof tmp%s !== %q) {\n", field.Name, field.Type.Name)
+						w.Printf("				throw new Error('invalid node list at %s::%s');\n", d.Name, field.Name)
+						w.Printf("			}\n")
+					}
 					w.Printf("			n.%s = on.body.%s;\n", field.Name, field.Name)
 				} else {
 					w.Printf("			const tmp%s = on.body?.%s;\n", field.Name, field.Name)

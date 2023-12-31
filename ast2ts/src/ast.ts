@@ -642,8 +642,7 @@ export interface ArrayType extends Type {
 	end_loc: Loc;
 	base_type: Type|null;
 	length: Expr|null;
-	length_value: number;
-	has_const_length: boolean;
+	length_value: number|null;
 }
 
 export function isArrayType(obj: any): obj is ArrayType {
@@ -1383,8 +1382,7 @@ export function parseAST(obj: any): Program {
 				end_loc: on.loc,
 				base_type: null,
 				length: null,
-				length_value: 0,
-				has_const_length: false,
+				length_value: null,
 			}
 			c.node.push(n);
 			break;
@@ -1691,7 +1689,7 @@ export function parseAST(obj: any): Program {
 		case "comment": {
 			const n :Comment = cnode as Comment;
 			const tmpcomment = on.body?.comment;
-			if (typeof on.body?.comment !== "string") {
+			if (typeof tmpcomment !== "string") {
 				throw new Error('invalid node list at Comment::comment');
 			}
 			n.comment = on.body.comment;
@@ -1841,7 +1839,7 @@ export function parseAST(obj: any): Program {
 			}
 			n.constant_level = tmpconstant_level;
 			const tmpident = on.body?.ident;
-			if (typeof on.body?.ident !== "string") {
+			if (typeof tmpident !== "string") {
 				throw new Error('invalid node list at Ident::ident');
 			}
 			n.ident = on.body.ident;
@@ -2168,7 +2166,7 @@ export function parseAST(obj: any): Program {
 			}
 			n.constant_level = tmpconstant_level;
 			const tmptmp_var = on.body?.tmp_var;
-			if (typeof on.body?.tmp_var !== "number") {
+			if (typeof tmptmp_var !== "number") {
 				throw new Error('invalid node list at TmpVar::tmp_var');
 			}
 			n.tmp_var = on.body.tmp_var;
@@ -2190,7 +2188,7 @@ export function parseAST(obj: any): Program {
 			}
 			n.constant_level = tmpconstant_level;
 			const tmppath = on.body?.path;
-			if (typeof on.body?.path !== "string") {
+			if (typeof tmppath !== "string") {
 				throw new Error('invalid node list at Import::path');
 			}
 			n.path = on.body.path;
@@ -2469,12 +2467,12 @@ export function parseAST(obj: any): Program {
 		case "int_type": {
 			const n :IntType = cnode as IntType;
 			const tmpis_explicit = on.body?.is_explicit;
-			if (typeof on.body?.is_explicit !== "boolean") {
+			if (typeof tmpis_explicit !== "boolean") {
 				throw new Error('invalid node list at IntType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
 			const tmpis_int_set = on.body?.is_int_set;
-			if (typeof on.body?.is_int_set !== "boolean") {
+			if (typeof tmpis_int_set !== "boolean") {
 				throw new Error('invalid node list at IntType::is_int_set');
 			}
 			n.is_int_set = on.body.is_int_set;
@@ -2484,7 +2482,7 @@ export function parseAST(obj: any): Program {
 			}
 			n.bit_alignment = tmpbit_alignment;
 			const tmpbit_size = on.body?.bit_size;
-			if (typeof on.body?.bit_size !== "number") {
+			if (typeof tmpbit_size !== "number") {
 				throw new Error('invalid node list at IntType::bit_size');
 			}
 			n.bit_size = on.body.bit_size;
@@ -2494,12 +2492,12 @@ export function parseAST(obj: any): Program {
 			}
 			n.endian = tmpendian;
 			const tmpis_signed = on.body?.is_signed;
-			if (typeof on.body?.is_signed !== "boolean") {
+			if (typeof tmpis_signed !== "boolean") {
 				throw new Error('invalid node list at IntType::is_signed');
 			}
 			n.is_signed = on.body.is_signed;
 			const tmpis_common_supported = on.body?.is_common_supported;
-			if (typeof on.body?.is_common_supported !== "boolean") {
+			if (typeof tmpis_common_supported !== "boolean") {
 				throw new Error('invalid node list at IntType::is_common_supported');
 			}
 			n.is_common_supported = on.body.is_common_supported;
@@ -2508,12 +2506,12 @@ export function parseAST(obj: any): Program {
 		case "ident_type": {
 			const n :IdentType = cnode as IdentType;
 			const tmpis_explicit = on.body?.is_explicit;
-			if (typeof on.body?.is_explicit !== "boolean") {
+			if (typeof tmpis_explicit !== "boolean") {
 				throw new Error('invalid node list at IdentType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
 			const tmpis_int_set = on.body?.is_int_set;
-			if (typeof on.body?.is_int_set !== "boolean") {
+			if (typeof tmpis_int_set !== "boolean") {
 				throw new Error('invalid node list at IdentType::is_int_set');
 			}
 			n.is_int_set = on.body.is_int_set;
@@ -2523,7 +2521,7 @@ export function parseAST(obj: any): Program {
 			}
 			n.bit_alignment = tmpbit_alignment;
 			const tmpbit_size = on.body?.bit_size;
-			if (typeof on.body?.bit_size !== "number") {
+			if (typeof tmpbit_size !== "number") {
 				throw new Error('invalid node list at IdentType::bit_size');
 			}
 			n.bit_size = on.body.bit_size;
@@ -2548,12 +2546,12 @@ export function parseAST(obj: any): Program {
 		case "int_literal_type": {
 			const n :IntLiteralType = cnode as IntLiteralType;
 			const tmpis_explicit = on.body?.is_explicit;
-			if (typeof on.body?.is_explicit !== "boolean") {
+			if (typeof tmpis_explicit !== "boolean") {
 				throw new Error('invalid node list at IntLiteralType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
 			const tmpis_int_set = on.body?.is_int_set;
-			if (typeof on.body?.is_int_set !== "boolean") {
+			if (typeof tmpis_int_set !== "boolean") {
 				throw new Error('invalid node list at IntLiteralType::is_int_set');
 			}
 			n.is_int_set = on.body.is_int_set;
@@ -2563,7 +2561,7 @@ export function parseAST(obj: any): Program {
 			}
 			n.bit_alignment = tmpbit_alignment;
 			const tmpbit_size = on.body?.bit_size;
-			if (typeof on.body?.bit_size !== "number") {
+			if (typeof tmpbit_size !== "number") {
 				throw new Error('invalid node list at IntLiteralType::bit_size');
 			}
 			n.bit_size = on.body.bit_size;
@@ -2580,12 +2578,12 @@ export function parseAST(obj: any): Program {
 		case "str_literal_type": {
 			const n :StrLiteralType = cnode as StrLiteralType;
 			const tmpis_explicit = on.body?.is_explicit;
-			if (typeof on.body?.is_explicit !== "boolean") {
+			if (typeof tmpis_explicit !== "boolean") {
 				throw new Error('invalid node list at StrLiteralType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
 			const tmpis_int_set = on.body?.is_int_set;
-			if (typeof on.body?.is_int_set !== "boolean") {
+			if (typeof tmpis_int_set !== "boolean") {
 				throw new Error('invalid node list at StrLiteralType::is_int_set');
 			}
 			n.is_int_set = on.body.is_int_set;
@@ -2595,7 +2593,7 @@ export function parseAST(obj: any): Program {
 			}
 			n.bit_alignment = tmpbit_alignment;
 			const tmpbit_size = on.body?.bit_size;
-			if (typeof on.body?.bit_size !== "number") {
+			if (typeof tmpbit_size !== "number") {
 				throw new Error('invalid node list at StrLiteralType::bit_size');
 			}
 			n.bit_size = on.body.bit_size;
@@ -2620,12 +2618,12 @@ export function parseAST(obj: any): Program {
 		case "void_type": {
 			const n :VoidType = cnode as VoidType;
 			const tmpis_explicit = on.body?.is_explicit;
-			if (typeof on.body?.is_explicit !== "boolean") {
+			if (typeof tmpis_explicit !== "boolean") {
 				throw new Error('invalid node list at VoidType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
 			const tmpis_int_set = on.body?.is_int_set;
-			if (typeof on.body?.is_int_set !== "boolean") {
+			if (typeof tmpis_int_set !== "boolean") {
 				throw new Error('invalid node list at VoidType::is_int_set');
 			}
 			n.is_int_set = on.body.is_int_set;
@@ -2635,7 +2633,7 @@ export function parseAST(obj: any): Program {
 			}
 			n.bit_alignment = tmpbit_alignment;
 			const tmpbit_size = on.body?.bit_size;
-			if (typeof on.body?.bit_size !== "number") {
+			if (typeof tmpbit_size !== "number") {
 				throw new Error('invalid node list at VoidType::bit_size');
 			}
 			n.bit_size = on.body.bit_size;
@@ -2644,12 +2642,12 @@ export function parseAST(obj: any): Program {
 		case "bool_type": {
 			const n :BoolType = cnode as BoolType;
 			const tmpis_explicit = on.body?.is_explicit;
-			if (typeof on.body?.is_explicit !== "boolean") {
+			if (typeof tmpis_explicit !== "boolean") {
 				throw new Error('invalid node list at BoolType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
 			const tmpis_int_set = on.body?.is_int_set;
-			if (typeof on.body?.is_int_set !== "boolean") {
+			if (typeof tmpis_int_set !== "boolean") {
 				throw new Error('invalid node list at BoolType::is_int_set');
 			}
 			n.is_int_set = on.body.is_int_set;
@@ -2659,7 +2657,7 @@ export function parseAST(obj: any): Program {
 			}
 			n.bit_alignment = tmpbit_alignment;
 			const tmpbit_size = on.body?.bit_size;
-			if (typeof on.body?.bit_size !== "number") {
+			if (typeof tmpbit_size !== "number") {
 				throw new Error('invalid node list at BoolType::bit_size');
 			}
 			n.bit_size = on.body.bit_size;
@@ -2668,12 +2666,12 @@ export function parseAST(obj: any): Program {
 		case "array_type": {
 			const n :ArrayType = cnode as ArrayType;
 			const tmpis_explicit = on.body?.is_explicit;
-			if (typeof on.body?.is_explicit !== "boolean") {
+			if (typeof tmpis_explicit !== "boolean") {
 				throw new Error('invalid node list at ArrayType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
 			const tmpis_int_set = on.body?.is_int_set;
-			if (typeof on.body?.is_int_set !== "boolean") {
+			if (typeof tmpis_int_set !== "boolean") {
 				throw new Error('invalid node list at ArrayType::is_int_set');
 			}
 			n.is_int_set = on.body.is_int_set;
@@ -2683,7 +2681,7 @@ export function parseAST(obj: any): Program {
 			}
 			n.bit_alignment = tmpbit_alignment;
 			const tmpbit_size = on.body?.bit_size;
-			if (typeof on.body?.bit_size !== "number") {
+			if (typeof tmpbit_size !== "number") {
 				throw new Error('invalid node list at ArrayType::bit_size');
 			}
 			n.bit_size = on.body.bit_size;
@@ -2709,26 +2707,21 @@ export function parseAST(obj: any): Program {
 			}
 			n.length = tmplength;
 			const tmplength_value = on.body?.length_value;
-			if (typeof on.body?.length_value !== "number") {
+			if (tmplength_value !== null && typeof tmplength_value !== "number") {
 				throw new Error('invalid node list at ArrayType::length_value');
 			}
 			n.length_value = on.body.length_value;
-			const tmphas_const_length = on.body?.has_const_length;
-			if (typeof on.body?.has_const_length !== "boolean") {
-				throw new Error('invalid node list at ArrayType::has_const_length');
-			}
-			n.has_const_length = on.body.has_const_length;
 			break;
 		}
 		case "function_type": {
 			const n :FunctionType = cnode as FunctionType;
 			const tmpis_explicit = on.body?.is_explicit;
-			if (typeof on.body?.is_explicit !== "boolean") {
+			if (typeof tmpis_explicit !== "boolean") {
 				throw new Error('invalid node list at FunctionType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
 			const tmpis_int_set = on.body?.is_int_set;
-			if (typeof on.body?.is_int_set !== "boolean") {
+			if (typeof tmpis_int_set !== "boolean") {
 				throw new Error('invalid node list at FunctionType::is_int_set');
 			}
 			n.is_int_set = on.body.is_int_set;
@@ -2738,7 +2731,7 @@ export function parseAST(obj: any): Program {
 			}
 			n.bit_alignment = tmpbit_alignment;
 			const tmpbit_size = on.body?.bit_size;
-			if (typeof on.body?.bit_size !== "number") {
+			if (typeof tmpbit_size !== "number") {
 				throw new Error('invalid node list at FunctionType::bit_size');
 			}
 			n.bit_size = on.body.bit_size;
@@ -2765,12 +2758,12 @@ export function parseAST(obj: any): Program {
 		case "struct_type": {
 			const n :StructType = cnode as StructType;
 			const tmpis_explicit = on.body?.is_explicit;
-			if (typeof on.body?.is_explicit !== "boolean") {
+			if (typeof tmpis_explicit !== "boolean") {
 				throw new Error('invalid node list at StructType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
 			const tmpis_int_set = on.body?.is_int_set;
-			if (typeof on.body?.is_int_set !== "boolean") {
+			if (typeof tmpis_int_set !== "boolean") {
 				throw new Error('invalid node list at StructType::is_int_set');
 			}
 			n.is_int_set = on.body.is_int_set;
@@ -2780,7 +2773,7 @@ export function parseAST(obj: any): Program {
 			}
 			n.bit_alignment = tmpbit_alignment;
 			const tmpbit_size = on.body?.bit_size;
-			if (typeof on.body?.bit_size !== "number") {
+			if (typeof tmpbit_size !== "number") {
 				throw new Error('invalid node list at StructType::bit_size');
 			}
 			n.bit_size = on.body.bit_size;
@@ -2803,7 +2796,7 @@ export function parseAST(obj: any): Program {
 			}
 			n.base = tmpbase;
 			const tmprecursive = on.body?.recursive;
-			if (typeof on.body?.recursive !== "boolean") {
+			if (typeof tmprecursive !== "boolean") {
 				throw new Error('invalid node list at StructType::recursive');
 			}
 			n.recursive = on.body.recursive;
@@ -2812,12 +2805,12 @@ export function parseAST(obj: any): Program {
 		case "struct_union_type": {
 			const n :StructUnionType = cnode as StructUnionType;
 			const tmpis_explicit = on.body?.is_explicit;
-			if (typeof on.body?.is_explicit !== "boolean") {
+			if (typeof tmpis_explicit !== "boolean") {
 				throw new Error('invalid node list at StructUnionType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
 			const tmpis_int_set = on.body?.is_int_set;
-			if (typeof on.body?.is_int_set !== "boolean") {
+			if (typeof tmpis_int_set !== "boolean") {
 				throw new Error('invalid node list at StructUnionType::is_int_set');
 			}
 			n.is_int_set = on.body.is_int_set;
@@ -2827,7 +2820,7 @@ export function parseAST(obj: any): Program {
 			}
 			n.bit_alignment = tmpbit_alignment;
 			const tmpbit_size = on.body?.bit_size;
-			if (typeof on.body?.bit_size !== "number") {
+			if (typeof tmpbit_size !== "number") {
 				throw new Error('invalid node list at StructUnionType::bit_size');
 			}
 			n.bit_size = on.body.bit_size;
@@ -2864,12 +2857,12 @@ export function parseAST(obj: any): Program {
 		case "union_type": {
 			const n :UnionType = cnode as UnionType;
 			const tmpis_explicit = on.body?.is_explicit;
-			if (typeof on.body?.is_explicit !== "boolean") {
+			if (typeof tmpis_explicit !== "boolean") {
 				throw new Error('invalid node list at UnionType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
 			const tmpis_int_set = on.body?.is_int_set;
-			if (typeof on.body?.is_int_set !== "boolean") {
+			if (typeof tmpis_int_set !== "boolean") {
 				throw new Error('invalid node list at UnionType::is_int_set');
 			}
 			n.is_int_set = on.body.is_int_set;
@@ -2879,7 +2872,7 @@ export function parseAST(obj: any): Program {
 			}
 			n.bit_alignment = tmpbit_alignment;
 			const tmpbit_size = on.body?.bit_size;
-			if (typeof on.body?.bit_size !== "number") {
+			if (typeof tmpbit_size !== "number") {
 				throw new Error('invalid node list at UnionType::bit_size');
 			}
 			n.bit_size = on.body.bit_size;
@@ -2922,12 +2915,12 @@ export function parseAST(obj: any): Program {
 		case "range_type": {
 			const n :RangeType = cnode as RangeType;
 			const tmpis_explicit = on.body?.is_explicit;
-			if (typeof on.body?.is_explicit !== "boolean") {
+			if (typeof tmpis_explicit !== "boolean") {
 				throw new Error('invalid node list at RangeType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
 			const tmpis_int_set = on.body?.is_int_set;
-			if (typeof on.body?.is_int_set !== "boolean") {
+			if (typeof tmpis_int_set !== "boolean") {
 				throw new Error('invalid node list at RangeType::is_int_set');
 			}
 			n.is_int_set = on.body.is_int_set;
@@ -2937,7 +2930,7 @@ export function parseAST(obj: any): Program {
 			}
 			n.bit_alignment = tmpbit_alignment;
 			const tmpbit_size = on.body?.bit_size;
-			if (typeof on.body?.bit_size !== "number") {
+			if (typeof tmpbit_size !== "number") {
 				throw new Error('invalid node list at RangeType::bit_size');
 			}
 			n.bit_size = on.body.bit_size;
@@ -2962,12 +2955,12 @@ export function parseAST(obj: any): Program {
 		case "enum_type": {
 			const n :EnumType = cnode as EnumType;
 			const tmpis_explicit = on.body?.is_explicit;
-			if (typeof on.body?.is_explicit !== "boolean") {
+			if (typeof tmpis_explicit !== "boolean") {
 				throw new Error('invalid node list at EnumType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
 			const tmpis_int_set = on.body?.is_int_set;
-			if (typeof on.body?.is_int_set !== "boolean") {
+			if (typeof tmpis_int_set !== "boolean") {
 				throw new Error('invalid node list at EnumType::is_int_set');
 			}
 			n.is_int_set = on.body.is_int_set;
@@ -2977,7 +2970,7 @@ export function parseAST(obj: any): Program {
 			}
 			n.bit_alignment = tmpbit_alignment;
 			const tmpbit_size = on.body?.bit_size;
-			if (typeof on.body?.bit_size !== "number") {
+			if (typeof tmpbit_size !== "number") {
 				throw new Error('invalid node list at EnumType::bit_size');
 			}
 			n.bit_size = on.body.bit_size;
@@ -3007,7 +3000,7 @@ export function parseAST(obj: any): Program {
 			}
 			n.constant_level = tmpconstant_level;
 			const tmpvalue = on.body?.value;
-			if (typeof on.body?.value !== "string") {
+			if (typeof tmpvalue !== "string") {
 				throw new Error('invalid node list at IntLiteral::value');
 			}
 			n.value = on.body.value;
@@ -3029,7 +3022,7 @@ export function parseAST(obj: any): Program {
 			}
 			n.constant_level = tmpconstant_level;
 			const tmpvalue = on.body?.value;
-			if (typeof on.body?.value !== "boolean") {
+			if (typeof tmpvalue !== "boolean") {
 				throw new Error('invalid node list at BoolLiteral::value');
 			}
 			n.value = on.body.value;
@@ -3051,12 +3044,12 @@ export function parseAST(obj: any): Program {
 			}
 			n.constant_level = tmpconstant_level;
 			const tmpvalue = on.body?.value;
-			if (typeof on.body?.value !== "string") {
+			if (typeof tmpvalue !== "string") {
 				throw new Error('invalid node list at StrLiteral::value');
 			}
 			n.value = on.body.value;
 			const tmplength = on.body?.length;
-			if (typeof on.body?.length !== "number") {
+			if (typeof tmplength !== "number") {
 				throw new Error('invalid node list at StrLiteral::length');
 			}
 			n.length = on.body.length;
@@ -3449,7 +3442,7 @@ export function parseAST(obj: any): Program {
 			}
 			n.func_type = tmpfunc_type;
 			const tmpis_cast = on.body?.is_cast;
-			if (typeof on.body?.is_cast !== "boolean") {
+			if (typeof tmpis_cast !== "boolean") {
 				throw new Error('invalid node list at Function::is_cast');
 			}
 			n.is_cast = on.body.is_cast;

@@ -79,8 +79,8 @@ namespace brgen::middle {
                     return false;
                 }
                 // TODO(on-keyday): check string literal length
-                if (arr->length && arr->has_const_length) {
-                    if (arr->length_value != str->base.lock()->length) {
+                if (arr->length && arr->length_value) {
+                    if (*arr->length_value != str->base.lock()->length) {
                         return false;
                     }
                 }
@@ -95,8 +95,8 @@ namespace brgen::middle {
                 if (!str) {
                     return false;
                 }
-                if (arr->length && arr->has_const_length) {
-                    if (arr->length_value != str->base.lock()->length) {
+                if (arr->length && arr->length_value) {
+                    if (*arr->length_value != str->base.lock()->length) {
                         return false;
                     }
                 }

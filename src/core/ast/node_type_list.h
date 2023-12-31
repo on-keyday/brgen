@@ -141,6 +141,9 @@ namespace brgen::ast {
                     else if constexpr (std::is_same_v<P, size_t>) {
                         field(key, "uint");
                     }
+                    else if constexpr (std::is_same_v<P, std::optional<size_t>>) {
+                        field(key, "optional<uint>");
+                    }
                     else if constexpr (std::is_same_v<P, std::string>) {
                         field(key, "string");
                     }

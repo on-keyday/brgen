@@ -135,9 +135,14 @@ namespace brgen::ast {
 
     struct FieldArgument : Node {
         std::shared_ptr<Expr> raw_arguments;
+        std::vector<std::weak_ptr<Expr>> collected_arguments;
+        // arguments that is passed to encode/decode function (on format type) or fixed value (on integer or floating point type)
         std::vector<std::shared_ptr<Expr>> arguments;
-        // arguments that is passed to encode/decode function
-        std::vector<std::shared_ptr<Expr>> pass_arguments;
+        // alignment of field
+        std::shared_ptr<Expr> alignment;
+        size_t alignment_value = 0;
+        // sub byte range of field
+        std::shared_ptr<Range> range;
     };
 
     struct Field : Member {

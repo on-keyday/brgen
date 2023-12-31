@@ -395,8 +395,7 @@ class ArrayType(Type):
     end_loc: Loc
     base_type: Optional[Type]
     length: Optional[Expr]
-    length_value: int
-    has_const_length: bool
+    length_value: Optional[int]
 
 
 class FunctionType(Type):
@@ -1281,9 +1280,10 @@ def ast2node(ast :JsonAst) -> Program:
                 else:
                     node[i].length = None
                 x = ast.node[i].body["length_value"]
-                node[i].length_value = x if isinstance(x,int)  else raiseError(TypeError('type mismatch at ArrayType::length_value'))
-                x = ast.node[i].body["has_const_length"]
-                node[i].has_const_length = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at ArrayType::has_const_length'))
+                if x is not None:
+                    node[i].length_value = x if isinstance(x,int) else raiseError(TypeError('type mismatch at ArrayType::length_value'))
+                else:
+                    node[i].length_value = None
             case NodeType.FUNCTION_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at FunctionType::is_explicit'))

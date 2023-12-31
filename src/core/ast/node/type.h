@@ -242,8 +242,7 @@ namespace brgen::ast {
         define_node_type(NodeType::array_type);
         std::shared_ptr<ast::Expr> length;
         // TODO(on-keyday): use std::optional instead, but currently std::optional is not supported by json
-        size_t length_value = 0;
-        bool has_const_length = false;
+        std::optional<size_t> length_value;
         lexer::Loc end_loc;
         std::shared_ptr<ast::Type> base_type;
 
@@ -262,7 +261,6 @@ namespace brgen::ast {
             sdebugf(base_type);
             sdebugf(length);
             sdebugf(length_value);
-            sdebugf(has_const_length);
         }
     };
 

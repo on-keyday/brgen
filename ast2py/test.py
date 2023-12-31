@@ -5,7 +5,7 @@ import json
 if __name__ == "__main__":
     # execute tool/src2json(.exe) example/tree_test.bgn and get stdout
     # (stdout is json format)
-    cmd = ["./tool/src2json.exe", "example/tree_test.bgn"]
+    cmd = ["./tool/src2json.exe", "example/feature_test/tree_test.bgn"]
     proc = sp.Popen(cmd, stdout=sp.PIPE)
     stdout, stderr = proc.communicate()
     # create AstFile object

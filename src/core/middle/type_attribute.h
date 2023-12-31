@@ -242,12 +242,11 @@ namespace brgen::middle {
                         if (auto val = eval.eval_as<ast::tool::EResultType::integer>(a->length)) {
                             // case 1 or 2
                             a->length_value = val->get<ast::tool::EResultType::integer>();
-                            a->has_const_length = true;
                         }
                     }
                     // determine bit size
-                    if (a->length && a->has_const_length) {
-                        a->bit_size = a->length_value * a->base_type->bit_size;
+                    if (a->length && a->length_value) {
+                        a->bit_size = *a->length_value * a->base_type->bit_size;
                     }
                     else {
                         a->bit_size = 0;  // variable length array

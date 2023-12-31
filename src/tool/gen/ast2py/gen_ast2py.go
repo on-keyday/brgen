@@ -177,7 +177,14 @@ func generate(rw io.Writer, defs *gen.Defs) {
 					w.Printf("                node[i].%s = parse_Loc(ast.node[i].body[%q])\n", field.Name, field.Name)
 				} else if field.Type.Name == "bool" || field.Type.Name == "int" || field.Type.Name == "str" {
 					w.Printf("                x = ast.node[i].body[%q]\n", field.Name)
-					w.Printf("                node[i].%s = x if isinstance(x,%s)  else raiseError(TypeError('type mismatch at %s::%s'))\n", field.Name, field.Type.Name, v.Name, field.Name)
+					if field.Type.IsOptional {
+						w.Printf("                if x is not None:\n")
+						w.Printf("                    node[i].%s = x if isinstance(x,%s) else raiseError(TypeError('type mismatch at %s::%s'))\n", field.Name, field.Type.Name, v.Name, field.Name)
+						w.Printf("                else:\n")
+						w.Printf("                    node[i].%s = None\n", field.Name)
+					} else {
+						w.Printf("                node[i].%s = x if isinstance(x,%s)  else raiseError(TypeError('type mismatch at %s::%s'))\n", field.Name, field.Type.Name, v.Name, field.Name)
+					}
 				} else if field.Type.IsArray {
 					w.Printf("                node[i].%s = [(node[x] if isinstance(node[x],%s) else raiseError(TypeError('type mismatch at %s::%s'))) for x in ast.node[i].body[%q]]\n", field.Name, field.Type.Name, v.Name, field.Name, field.Name)
 				} else if field.Type.IsPtr || field.Type.IsInterface {

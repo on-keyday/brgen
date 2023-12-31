@@ -216,6 +216,9 @@ func (d *Type) UintptrString() string {
 		}
 		return prefix + "uintptr"
 	}
+	if d.IsOptional {
+		prefix += "*"
+	}
 	return prefix + d.Name
 }
 

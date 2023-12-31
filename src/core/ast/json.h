@@ -318,6 +318,15 @@ namespace brgen::ast {
             else if constexpr (std::is_same_v<T, size_t>) {
                 return res.and_then(get_number(loc, key)).transform(either::assign_to(target));
             }
+            else if constexpr (std::is_same_v<T,std::optional<size_t>>){
+              return  res.and_then([&](auto js) -> expected<std::optional<size_t>, LocationError> {
+                static_assert(std::is_same_v<std::decay_t<decltype(js)>, const JSON*>);
+                    if (js->is_null()) {
+                        return std::optional<size_t>{};
+                    }
+                    return get_number(loc, key)(js).transform([](auto&& v) -> std::optional<size_t> { return v; });
+                }).transform(either::assign_to(target));
+            }
             else if constexpr (std::is_same_v<T, lexer::Loc>) {
                 if (std::string_view(key) == "loc") {
                     return {};  // skip
