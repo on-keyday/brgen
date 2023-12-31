@@ -160,10 +160,10 @@ jobs:
           sudo apt-get install -y qemu-user-arm g++-aarch64-linux-gnu
       - name: Build
         run: |
+          expor GOARCH=arm64
           export UTILS_CXX_COMPILER=aarch64-linux-gnu-g++
           export UTILS_C_COMPILER=aarch64-linux-gnu-gcc
           . build.sh native Release
-          qemu-user-aarch64 ./tool/src2json --version
       - name: Pack artifacts
         run: |
           mkdir -p artifacts
@@ -181,7 +181,14 @@ jobs:
   relase:
     permissions:
       contents: write
-    needs: [build-linux, build-macos, build-windows, build-vscode-extension]
+    needs:
+      [
+        build-linux,
+        build-macos,
+        build-windows,
+        build-vscode-extension,
+        build-arm-linux,
+      ]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
@@ -209,6 +216,11 @@ jobs:
         with:
           name: brgen-vscode-extension
           path: ./artifacts/vscode-extension
+      - name: Download Linux ARM artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: brgen-linux-arm
+          path: ./artifacts/linux-arm
       - name: Show Current Directory
         run: |
           pwd
@@ -216,6 +228,7 @@ jobs:
       - name: Make Archive
         run: |
           tar -czf artifacts/brgen-linux.tar.gz -C artifacts/linux .
+          tar -czf artifacts/brgen-linux-arm.tar.gz -C artifacts/linux-arm .
           tar -czf artifacts/brgen-macos.tar.gz -C artifacts/macos .
           tar -czf artifacts/brgen-vscode-extension.tar.gz -C artifacts/vscode-extension .
           zip -r artifacts/brgen-windows.zip artifacts/windows
@@ -224,6 +237,7 @@ jobs:
         run: |
           cd artifacts
           sha256sum brgen-linux.tar.gz > brgen-checksum.txt
+          sha256sum brgen-linux-arm.tar.gz >> brgen-checksum.txt
           sha256sum brgen-macos.tar.gz >> brgen-checksum.txt
           sha256sum brgen-windows.zip >> brgen-checksum.txt
           sha256sum brgen-vscode-extension.tar.gz >> brgen-checksum.txt
@@ -235,6 +249,7 @@ jobs:
           files: |
             ./artifacts/brgen-checksum.txt
             ./artifacts/brgen-linux.tar.gz
+            ./artifacts/brgen-linux-arm.tar.gz
             ./artifacts/brgen-macos.tar.gz
             ./artifacts/brgen-windows.zip
             ./artifacts/brgen-vscode-extension.tar.gz
