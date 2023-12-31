@@ -21,13 +21,13 @@ namespace brgen::lexer {
         constexpr auto indent = str(Tag::indent, bol & ~(cps::tab | cps::space) & not_(lit('#') /*ignore comment*/ | cps::eol | eos));
         constexpr auto comment = str(Tag::comment, cps::shell_comment);
 
-        constexpr auto space_or_punct = space | line | method_proxy(puncts) | eos;
+        constexpr auto space_or_punct = space | line | method_proxy(punct) | eos;
         constexpr auto filter_keyword = peek(space_or_punct);
         constexpr auto int_literal = str(Tag::int_literal, (cps::hex_integer | cps::oct_integer | cps::bin_integer | cps::dec_integer) & +filter_keyword);
         constexpr auto str_literal = str(Tag::str_literal, cps::c_str | cps::char_str);
         constexpr auto bool_literal = str(Tag::bool_literal, (lit("true") | lit("false")) & filter_keyword);
 
-        constexpr auto punct(auto&&... args) {
+        constexpr auto puncts(auto&&... args) {
             return str(Tag::punct, (... | lit(args)));
         }
 
@@ -42,7 +42,7 @@ namespace brgen::lexer {
             "format", "if", "elif", "else", "match", "fn", "loop", "enum",
             "input", "output", "config", "true", "false",
             "return", "break", "continue", "cast", "state");
-        constexpr auto puncts = punct(
+        constexpr auto punct_ = puncts(
             "#", "\"", "\'", "$",  // added but maybe not used
             "::=", ":=",
             ":", ";", "(", ")", "[", "]",
@@ -56,11 +56,11 @@ namespace brgen::lexer {
             "<=", ">=", "<", ">", "?", ",");
 
         constexpr auto one_token_lexer() {
-            auto p = method_proxy(puncts);
+            auto p = method_proxy(punct);
             auto lex = indent | spaces | line | comment | int_literal | str_literal | p | bool_literal | keywords | ident;
             struct L {
-                decltype(puncts) puncts;
-            } l{puncts};
+                decltype(punct_) punct;
+            } l{punct_};
             return [l, lex](auto&& seq, auto&& ctx) {
                 return lex(seq, ctx, l);
             };
