@@ -1,6 +1,6 @@
 @echo off
 setlocal
-set TAG=v0.0.5
+set TAG=v0.0.6
 git tag -d %TAG%
 git push origin --delete %TAG%
 git add .
