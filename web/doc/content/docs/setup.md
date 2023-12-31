@@ -14,7 +14,7 @@ weight: 1
 ## バイナリをダウンロードする場合
 
 - windows(x64),mac,linux(x64,arm)のビルド済みバイナリを配布しています
-- 現在(2023/12/30)の最新バージョンは[v0.0.6](https://github.com/on-keyday/brgen/releases/tag/v0.0.6)です
+- 現在(2024/1/1)の最新バージョンは[v0.0.6](https://github.com/on-keyday/brgen/releases/tag/v0.0.6)です
 
 TODO(on-keyday): apt-get,brew,winget 等への対応
 
