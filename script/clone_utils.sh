@@ -6,8 +6,8 @@ if [ ! $BUILD_TYPE ]; then
     BUILD_TYPE=Debug
 fi
 if [ $1 = "wasm-em" ]; then
-    . build wasm-em $BUILD_TYPE utils
+    . build wasm-em $BUILD_TYPE futils
 else
-    . build shared $BUILD_TYPE utils
+    . build shared $BUILD_TYPE futils
 fi
 cd ..
