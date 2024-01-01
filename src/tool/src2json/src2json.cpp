@@ -264,7 +264,7 @@ int Main(Flags& flags, futils::cmdline::option::Context&) {
             cout << R"({
     "langs": "none",
     "input": "stdin",
-    "suffix: [".log"]
+    "suffix": [".log"]
 })";
         }
         else {
