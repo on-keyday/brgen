@@ -262,7 +262,7 @@ int Main(Flags& flags, futils::cmdline::option::Context&) {
     if (flags.spec) {
         if (flags.check_ast && flags.stdin_mode) {
             cout << R"({
-    "langs": "none",
+    "langs": ["log"],
     "input": "stdin",
     "suffix": [".log"]
 })";
