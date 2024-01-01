@@ -31,6 +31,7 @@ jobs:
         run: |
           mkdir -p artifacts
           cp -a ./tool ./artifacts/tool
+          cp -a ./script/link_path.sh ./artifacts
           cp -a ./example ./artifacts/example
           cp -a ./LICENSE ./artifacts
           cp -a ./README.md ./artifacts
@@ -168,6 +169,7 @@ jobs:
         run: |
           mkdir -p artifacts
           cp -a ./tool ./artifacts/tool
+          cp -a ./script/link_path.sh ./artifacts
           cp -a ./example ./artifacts/example
           cp -a ./LICENSE ./artifacts
           cp -a ./README.md ./artifacts
@@ -207,6 +209,7 @@ jobs:
         run: |
           mkdir -p artifacts
           cp -a ./tool ./artifacts/tool
+          cp -a ./script/link_path.sh ./artifacts
           cp -a ./example ./artifacts/example
           cp -a ./LICENSE ./artifacts
           cp -a ./README.md ./artifacts
