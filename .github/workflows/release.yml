@@ -192,7 +192,7 @@ jobs:
       - name: Install Android NDK
         uses: nttld/setup-ndk@v1
         with:
-          ndk-version: "21.4.7075529"
+          ndk-version: r26b
       - name: Build
         run: |
           export GOARCH=arm64
