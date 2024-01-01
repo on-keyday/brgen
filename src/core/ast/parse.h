@@ -1018,6 +1018,8 @@ namespace brgen::ast {
 
                 auto e = s.must_consume_token(")");
                 field_argument->end_loc = e.loc;
+
+                field->arguments = std::move(field_argument);
             }
 
             state.add_to_struct(field);
