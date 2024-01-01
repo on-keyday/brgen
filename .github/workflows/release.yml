@@ -178,6 +178,41 @@ jobs:
           name: brgen-linux-arm
           path: ./artifacts
 
+  brgen-android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Timeline
+        uses: Kesin11/actions-timeline@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Set up Ninja
+        uses: seanmiddleditch/gha-setup-ninja@master
+      - name: Install Android NDK
+        uses: android-actions/setup-android-ndk@v2
+        with:
+          version: "21.3.6528147"
+      - name: Build
+        run: |
+          export GOARCH=arm64
+          export UTILS_CXX_COMPILER=aarch64-linux-android21-clang++
+          export UTILS_C_COMPILER=aarch64-linux-android21-clang
+          . build.sh native Release
+      - name: Pack artifacts
+        run: |
+          mkdir -p artifacts
+          cp -a ./tool ./artifacts/tool
+          cp -a ./example ./artifacts/example
+          cp -a ./LICENSE ./artifacts
+          cp -a ./README.md ./artifacts
+          cp -a ./brgen.json ./artifacts
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: brgen-android
+          path: ./artifacts
+
   relase:
     permissions:
       contents: write
