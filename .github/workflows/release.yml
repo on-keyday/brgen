@@ -190,9 +190,7 @@ jobs:
       - name: Set up Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
       - name: Install Android NDK
-        uses: android-actions/setup-android-ndk@v2
-        with:
-          version: "21.3.6528147"
+        uses: nttld/setup-ndk@v1
       - name: Build
         run: |
           export GOARCH=arm64
