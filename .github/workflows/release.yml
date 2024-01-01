@@ -195,7 +195,7 @@ jobs:
           ndk-version: r26b
       - name: Build
         run: |
-          echo $PATH
+          ls -Ral /opt/hostedtoolcache/ndk/r26b/x64
           export GOARCH=arm64
           export UTILS_CXX_COMPILER=aarch64-linux-android21-clang++
           export UTILS_C_COMPILER=aarch64-linux-android21-clang
