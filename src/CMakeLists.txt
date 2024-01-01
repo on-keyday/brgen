@@ -7,14 +7,14 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tool")
 
 
 add_executable(src2json "tool/src2json/src2json.cpp")
-target_link_libraries(src2json utils)
+target_link_libraries(src2json futils)
 add_compile_definitions(BRGEN_VERSION="${PROJECT_VERSION}")
 
 add_executable(json2cpp "tool/json2cpp/main.cpp")
-target_link_libraries(json2cpp utils)
+target_link_libraries(json2cpp futils)
 
 add_executable(json2cpp2 "tool/json2cpp2/main.cpp")
-target_link_libraries(json2cpp2 utils)
+target_link_libraries(json2cpp2 futils)
 
 if(WIN32)
 set(SUFFIX ".exe")
@@ -43,10 +43,10 @@ return()
 endif()
 
 add_executable(ctobgn "tool/ctobgn/main.cpp")
-target_link_libraries(ctobgn utils)
+target_link_libraries(ctobgn futils)
 
 add_executable(rfc2bgn "tool/rfc2bgn/main.cpp")
-target_link_libraries(rfc2bgn utils)
+target_link_libraries(rfc2bgn futils)
 
 
 
@@ -64,31 +64,31 @@ if(WIN32)
 
     add_custom_command(
     TARGET src2json POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy "${UTILS_LIB_DIR}/libutils.dll" "${CMAKE_BINARY_DIR}/tool/libutils.dll"
+    COMMAND ${CMAKE_COMMAND} -E copy "${FUTILS_LIB_DIR}/libfutils.dll" "${CMAKE_BINARY_DIR}/tool/libfutils.dll"
     )
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_custom_command(
     TARGET src2json POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy "${UTILS_LIB_DIR}/libutils.pdb" "${CMAKE_BINARY_DIR}/tool/libutils.pdb"
+    COMMAND ${CMAKE_COMMAND} -E copy "${FUTILS_LIB_DIR}/libfutils.pdb" "${CMAKE_BINARY_DIR}/tool/libfutils.pdb"
     )
-    install(FILES "${CMAKE_BINARY_DIR}/tool/libutils.pdb" DESTINATION tool OPTIONAL)
+    install(FILES "${CMAKE_BINARY_DIR}/tool/libfutils.pdb" DESTINATION tool OPTIONAL)
     endif()
-    install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/libutils.dll" DESTINATION tool OPTIONAL)
+    install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/libfutils.dll" DESTINATION tool OPTIONAL)
     
 elseif(APPLE)
     add_custom_command(
     TARGET src2json POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy "${UTILS_LIB_DIR}/libutils.dylib" "${CMAKE_BINARY_DIR}/tool/libutils.dylib"
+    COMMAND ${CMAKE_COMMAND} -E copy "${FUTILS_LIB_DIR}/libfutils.dylib" "${CMAKE_BINARY_DIR}/tool/libfutils.dylib"
     )
-    install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/libutils.dylib" DESTINATION tool OPTIONAL)
+    install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/libfutils.dylib" DESTINATION tool OPTIONAL)
 
 else()
 
     add_custom_command(
     TARGET src2json POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy "${UTILS_LIB_DIR}/libutils.so" "${CMAKE_BINARY_DIR}/tool/libutils.so"
+    COMMAND ${CMAKE_COMMAND} -E copy "${FUTILS_LIB_DIR}/libfutils.so" "${CMAKE_BINARY_DIR}/tool/libfutils.so"
     )
-    install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/libutils.so" DESTINATION tool OPTIONAL)
+    install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/libfutils.so" DESTINATION tool OPTIONAL)
 endif()
 
 

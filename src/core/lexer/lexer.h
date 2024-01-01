@@ -13,8 +13,8 @@
 namespace brgen::lexer {
 
     namespace internal {
-        namespace cps = utils::comb2::composite;
-        using namespace utils::comb2::ops;
+        namespace cps = futils::comb2::composite;
+        using namespace futils::comb2::ops;
         constexpr auto space = cps::tab | cps::space;
         constexpr auto spaces = str(Tag::space, ~(cps::tab | cps::space));
         constexpr auto line = str(Tag::line, cps::eol);
@@ -112,8 +112,8 @@ format Varint:
 
 )a";
 
-            auto seq = utils::make_ref_seq(test_text);
-            auto ctx = utils::comb2::test::TestContext<Tag>{};
+            auto seq = futils::make_ref_seq(test_text);
+            auto ctx = futils::comb2::test::TestContext<Tag>{};
             Tag m[] = {
                 Tag::line,
                 Tag::keyword,
@@ -151,10 +151,10 @@ format Varint:
             };
             size_t i = 0;
             auto len = sizeof(m) / sizeof(m[0]);
-            while (parse_one(seq, ctx) == utils::comb2::Status::match) {
+            while (parse_one(seq, ctx) == futils::comb2::Status::match) {
                 if (i < len) {
                     if (m[i] != ctx.str_tag) {
-                        utils::comb2::test::error_if_constexpr(i, m[i], ctx.str_tag);
+                        futils::comb2::test::error_if_constexpr(i, m[i], ctx.str_tag);
                     }
                     i++;
                 }
@@ -165,10 +165,10 @@ format Varint:
     }  // namespace internal
 
     template <class TokenBuf = std::string, class T>
-    std::optional<Token> parse_one(utils::Sequencer<T>& seq, std::uint64_t file) {
-        auto ctx = utils::comb2::LexContext<Tag, std::string>{};
-        if (auto res = internal::parse_one(seq, ctx); res != utils::comb2::Status::match) {
-            if (res == utils::comb2::Status::fatal) {
+    std::optional<Token> parse_one(futils::Sequencer<T>& seq, std::uint64_t file) {
+        auto ctx = futils::comb2::LexContext<Tag, std::string>{};
+        if (auto res = internal::parse_one(seq, ctx); res != futils::comb2::Status::match) {
+            if (res == futils::comb2::Status::fatal) {
                 Token tok;
                 tok.tag = Tag::error;
                 tok.loc.file = file;
@@ -200,7 +200,7 @@ format Varint:
             tok.token = std::move(buf);
         }
         else {
-            auto err = utils::utf::convert<0, 1>(buf, tok.token, false, false);
+            auto err = futils::utf::convert<0, 1>(buf, tok.token, false, false);
             if (!err) {
                 tok.tag = Tag::error;
                 tok.token = "invalid utf sequence";

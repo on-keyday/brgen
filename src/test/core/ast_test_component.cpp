@@ -12,7 +12,7 @@
 #include <env/env.h>
 #include <wrap/exepath.h>
 using namespace brgen;
-utils::wrap::UtfOut& cerr = utils::wrap::cerr_wrap();
+futils::wrap::UtfOut& cerr = futils::wrap::cerr_wrap();
 namespace brgen::ast {
 
     ::testing::AssertionResult is_Index(either::expected<lexer::FileIndex, std::error_code>& v) {
@@ -39,8 +39,8 @@ namespace brgen::ast {
         void SetUp() override {
             std::string base_path;
             std::map<std::string, std::string> p;
-            p["BASE_PATH"] = utils::env::sys::env_getter().get_or<std::string>("BASE_PATH", ".");
-            utils::env::expand(base_path, "${BASE_PATH}/example/ast_step/", utils::env::expand_map<std::string>(p));
+            p["BASE_PATH"] = futils::env::sys::env_getter().get_or<std::string>("BASE_PATH", ".");
+            futils::env::expand(base_path, "${BASE_PATH}/example/ast_step/", futils::env::expand_map<std::string>(p));
             auto add_file = [&](const char* file_name, lexer::FileIndex expect) {
                 auto index = files.add_file(base_path + file_name);
                 ASSERT_TRUE(is_Index(index));
@@ -125,7 +125,7 @@ void add_result(JSONWriter&& d) {
 }
 
 void save_result(const char* file) {
-    std::filesystem::path path = utils::wrap::get_exepath<std::u8string>();
+    std::filesystem::path path = futils::wrap::get_exepath<std::u8string>();
     path = path.parent_path() / file;
 #ifdef __linux__
     fprintf(stderr, "log file saved to %s", path.c_str());

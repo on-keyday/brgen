@@ -17,7 +17,7 @@ int main(int argc, char** argv) {
         m.encode(a);
         auto base = m.obj.out();
         add_result(std::move(m.obj));
-        auto parsed = utils::json::parse<ast::JSON>(base);
+        auto parsed = futils::json::parse<ast::JSON>(base);
         auto d = m.decode(parsed)
                      .transform_error(to_source_error(fs))
                      .value();

@@ -34,6 +34,6 @@ TODO(on-keyday): apt-get,brew,winget 等への対応
 
 デフォルトのコンパイラは clang, clang++, gc(go compiler)です。
 
-`build.sh`の呼び出し前に`UTILS_{C,CXX}_COMPILER`環境変数に C/C++コンパイラのパスを設定するとビルドの際にそのコンパイラを C/C++コンパイラとして使用するようになります。
+`build.sh`の呼び出し前に`FUTILS_{C,CXX}_COMPILER`環境変数に C/C++コンパイラのパスを設定するとビルドの際にそのコンパイラを C/C++コンパイラとして使用するようになります。
 
 `build.sh`呼び出し前に`GO_COMPILER`環境変数に Go コンパイラのパスを設定するとビルドの際にそのコンパイラを Go コンパイラとして使用するようになります

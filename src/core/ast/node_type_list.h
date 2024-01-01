@@ -10,38 +10,38 @@ namespace brgen::ast {
         template <bool ast_mode, class P1>
         auto print_ptr(const char* ptr_annot, const char* prefix = "", const char* suffix = "") {
             if constexpr (ast_mode) {
-                utils::number::Array<char, 50, true> buf{};
-                utils::strutil::appends(buf, prefix, "uintptr", suffix);
+                futils::number::Array<char, 50, true> buf{};
+                futils::strutil::appends(buf, prefix, "uintptr", suffix);
                 return buf;
             }
             else if constexpr (std::is_base_of_v<Node, P1>) {
-                utils::number::Array<char, 50, true> buf{};
-                utils::strutil::appends(buf, prefix, ptr_annot, "<");
+                futils::number::Array<char, 50, true> buf{};
+                futils::strutil::appends(buf, prefix, ptr_annot, "<");
                 if constexpr (std::is_same_v<Node, P1>) {
-                    utils::strutil::append(buf, "node");
+                    futils::strutil::append(buf, "node");
                 }
                 else {
-                    utils::strutil::append(buf, node_type_to_string(P1::node_type_tag));
+                    futils::strutil::append(buf, node_type_to_string(P1::node_type_tag));
                 }
-                utils::strutil::appends(buf, ">", suffix);
+                futils::strutil::appends(buf, ">", suffix);
                 return buf;
             }
             else if constexpr (std::is_same_v<Scope, P1>) {
-                utils::number::Array<char, 50, true> buf{};
-                utils::strutil::appends(buf, prefix, ptr_annot, "<scope>", suffix);
+                futils::number::Array<char, 50, true> buf{};
+                futils::strutil::appends(buf, prefix, ptr_annot, "<scope>", suffix);
                 return buf;
             }
         }
 
         template <bool ast_mode, class P1>
         auto print_array() {
-            if constexpr (utils::helper::is_template<P1>) {
-                using P2 = typename utils::helper::template_of_t<P1>::template param_at<0>;
-                if constexpr (utils::helper::is_template_instance_of<P1, std::shared_ptr>) {
+            if constexpr (futils::helper::is_template<P1>) {
+                using P2 = typename futils::helper::template_of_t<P1>::template param_at<0>;
+                if constexpr (futils::helper::is_template_instance_of<P1, std::shared_ptr>) {
                     auto p = print_ptr<ast_mode, P2>("shared_ptr", "array<", ">");
                     return p;
                 }
-                else if constexpr (utils::helper::is_template_instance_of<P1, std::weak_ptr>) {
+                else if constexpr (futils::helper::is_template_instance_of<P1, std::weak_ptr>) {
                     auto p = print_ptr<ast_mode, P2>("weak_ptr", "array<", ">");
                     return p;
                 }
@@ -173,18 +173,18 @@ namespace brgen::ast {
                     else if constexpr (std::is_same_v<P, Follow>) {
                         field(key, "follow");
                     }
-                    else if constexpr (utils::helper::is_template<P>) {
-                        using P1 = typename utils::helper::template_of_t<P>::template param_at<0>;
-                        if constexpr (utils::helper::is_template_instance_of<P, std::shared_ptr>) {
+                    else if constexpr (futils::helper::is_template<P>) {
+                        using P1 = typename futils::helper::template_of_t<P>::template param_at<0>;
+                        if constexpr (futils::helper::is_template_instance_of<P, std::shared_ptr>) {
                             auto p = internal::print_ptr<ast_mode, P1>("shared_ptr");
                             field(key, internal::unwrap(p));
                         }
-                        else if constexpr (utils::helper::is_template_instance_of<P, std::weak_ptr>) {
+                        else if constexpr (futils::helper::is_template_instance_of<P, std::weak_ptr>) {
                             auto p = internal::print_ptr<ast_mode, P1>("weak_ptr");
                             field(key, internal::unwrap(p));
                         }
-                        else if constexpr (utils::helper::is_template_instance_of<P, std::list> ||
-                                           utils::helper::is_template_instance_of<P, std::vector>) {
+                        else if constexpr (futils::helper::is_template_instance_of<P, std::list> ||
+                                           futils::helper::is_template_instance_of<P, std::vector>) {
                             auto p = internal::print_array<ast_mode, P1>();
                             field(key, internal::unwrap(p));
                         }
@@ -396,16 +396,16 @@ namespace brgen::ast {
     }
 
     void struct_types(auto&& field) {
-        field("scope", utils::json::RawJSON<const char*>{scope_type_list});
-        field("pos", utils::json::RawJSON<const char*>{brgen::ast::pos_type});
-        field("loc", utils::json::RawJSON<const char*>{brgen::ast::loc_type});
-        field("token", utils::json::RawJSON<const char*>{brgen::ast::token_type});
-        field("raw_scope", utils::json::RawJSON<const char*>{raw_scope_type});
-        field("raw_node", utils::json::RawJSON<const char*>{raw_node_type});
-        field("src_error_entry", utils::json::RawJSON<const char*>{brgen::ast::src_error_entry_type});
-        field("src_error", utils::json::RawJSON<const char*>{brgen::ast::src_error_type});
-        field("json_ast", utils::json::RawJSON<const char*>{brgen::ast::json_ast});
-        field("ast_file", utils::json::RawJSON<const char*>{brgen::ast::ast_file});
-        field("token_file", utils::json::RawJSON<const char*>{brgen::ast::token_file});
+        field("scope", futils::json::RawJSON<const char*>{scope_type_list});
+        field("pos", futils::json::RawJSON<const char*>{brgen::ast::pos_type});
+        field("loc", futils::json::RawJSON<const char*>{brgen::ast::loc_type});
+        field("token", futils::json::RawJSON<const char*>{brgen::ast::token_type});
+        field("raw_scope", futils::json::RawJSON<const char*>{raw_scope_type});
+        field("raw_node", futils::json::RawJSON<const char*>{raw_node_type});
+        field("src_error_entry", futils::json::RawJSON<const char*>{brgen::ast::src_error_entry_type});
+        field("src_error", futils::json::RawJSON<const char*>{brgen::ast::src_error_type});
+        field("json_ast", futils::json::RawJSON<const char*>{brgen::ast::json_ast});
+        field("ast_file", futils::json::RawJSON<const char*>{brgen::ast::ast_file});
+        field("token_file", futils::json::RawJSON<const char*>{brgen::ast::token_file});
     }
 }  // namespace brgen::ast

@@ -7,7 +7,7 @@
 #include <wrap/cout.h>
 #include <core/common/file.h>
 
-extern utils::wrap::UtfOut& cerr;
+extern futils::wrap::UtfOut& cerr;
 
 using Continuation = void (*)(std::shared_ptr<brgen::ast::Program>& prog, brgen::File* input, brgen::FileSet& fs);
 

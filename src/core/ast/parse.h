@@ -30,7 +30,7 @@ namespace brgen::ast {
                 s.report_error("expect larger indent but not");
             }
             auto old = std::exchange(indent, std::move(new_));
-            return utils::helper::defer([this, old, sc = cond_scope(frame, scope_owner)] {
+            return futils::helper::defer([this, old, sc = cond_scope(frame, scope_owner)] {
                 indent = std::move(old);
             });
         }
@@ -40,7 +40,7 @@ namespace brgen::ast {
                 s.report_error("expect larger indent but not");
             }
             auto old = std::exchange(indent, std::move(new_));
-            return utils::helper::defer([=, this] {
+            return futils::helper::defer([=, this] {
                 indent = std::move(old);
             });
         }
@@ -48,7 +48,7 @@ namespace brgen::ast {
         auto enter_member(const std::shared_ptr<Member>& f) {
             f->belong = current_fmt_;
             current_fmt_ = f;
-            return utils::helper::defer([this] {
+            return futils::helper::defer([this] {
                 current_fmt_ = current_fmt_->belong.lock();
             });
         }
@@ -56,7 +56,7 @@ namespace brgen::ast {
         auto enter_struct(const std::shared_ptr<StructType>& type) {
             auto tmp = current_struct_;
             current_struct_ = type;
-            return utils::helper::defer([this, tmp] {
+            return futils::helper::defer([this, tmp] {
                 current_struct_ = std::move(tmp);
             });
         }

@@ -13,7 +13,7 @@ namespace brgen::ast {
         template <class T>
         std::optional<T> parse_as() const {
             T t = 0;
-            if (!utils::number::prefix_integer(value, t)) {
+            if (!futils::number::prefix_integer(value, t)) {
                 return std::nullopt;
             }
             return t;

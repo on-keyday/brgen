@@ -18,8 +18,8 @@ constexpr auto tag_struct = "struct";
 constexpr auto tag_integer = "integer";
 
 namespace parse {
-    using namespace utils::comb2;
-    namespace cps = utils::comb2::composite;
+    using namespace futils::comb2;
+    namespace cps = futils::comb2::composite;
     using namespace ops;
     constexpr auto ident = cps::c_ident;
     constexpr auto tagged_ident = str(tag_ident, ident);
@@ -181,7 +181,7 @@ struct {
     )";
 
     constexpr auto parse(auto&& view, auto&& ctx) {
-        auto seq = utils::make_ref_seq(view);
+        auto seq = futils::make_ref_seq(view);
         struct r {
             decl_method_proxy(expr);
             decl_method_proxy(type);
@@ -190,7 +190,7 @@ struct {
     }
 
     constexpr auto test_parse() {
-        using namespace utils::comb2::test;
+        using namespace futils::comb2::test;
         TestContext ctx;
         return parse(sample_text, ctx);
     }
@@ -198,28 +198,28 @@ struct {
     static_assert(test_parse());
 }  // namespace parse
 
-struct Flags : utils::cmdline::templ::HelpOption {
+struct Flags : futils::cmdline::templ::HelpOption {
     std::vector<std::string_view> args;
     std::string json_file;
-    void bind(utils::cmdline::option::Context& c) {
+    void bind(futils::cmdline::option::Context& c) {
         bind_help(c);
         c.VarString(&json_file, "json", "json file to replace type name", "FILE");
     }
 };
-auto& cout = utils::wrap::cout_wrap();
+auto& cout = futils::wrap::cout_wrap();
 
-struct Ctx : utils::comb2::tree::BranchTable {
+struct Ctx : futils::comb2::tree::BranchTable {
     void error_seq(auto& seq, auto&&... err) {
         cout << "error: ";
         (cout << ... << err);
         cout << "\n";
         std::string src;
-        utils::code::write_src_loc(src, seq);
+        futils::code::write_src_loc(src, seq);
         cout << src << "\n";
     }
 };
 
-void print(const std::shared_ptr<utils::comb2::tree::node::Node>& n, size_t depth = 0) {
+void print(const std::shared_ptr<futils::comb2::tree::node::Node>& n, size_t depth = 0) {
     for (size_t i = 0; i < depth; ++i) {
         cout << "  ";
     }
@@ -237,12 +237,12 @@ void print(const std::shared_ptr<utils::comb2::tree::node::Node>& n, size_t dept
     }
 }
 
-int Main(Flags& flags, utils::cmdline::option::Context&) {
+int Main(Flags& flags, futils::cmdline::option::Context&) {
     if (flags.args.size() != 1) {
         cout << "usage: rfc2bgn [options] FILE\n";
         return 1;
     }
-    utils::file::View input;
+    futils::file::View input;
     if (auto o = input.open(flags.args[0]); !o) {
         std::string err;
         o.error().error(err);
@@ -254,7 +254,7 @@ int Main(Flags& flags, utils::cmdline::option::Context&) {
         cout << "error: parse error\n";
         return 1;
     }
-    auto g = utils::comb2::tree::node::collect(ctx.root_branch);
+    auto g = futils::comb2::tree::node::collect(ctx.root_branch);
     if (!g) {
         cout << "error: collect error\n";
         return 1;
@@ -265,9 +265,9 @@ int Main(Flags& flags, utils::cmdline::option::Context&) {
 
 int main(int argc, char** argv) {
     Flags flags;
-    return utils::cmdline::templ::parse_or_err<std::string>(
+    return futils::cmdline::templ::parse_or_err<std::string>(
         argc, argv, flags, [](auto&& str, bool err) { cout << str; },
-        [](Flags& flags, utils::cmdline::option::Context& ctx) {
+        [](Flags& flags, futils::cmdline::option::Context& ctx) {
             return Main(flags, ctx);
         });
 }

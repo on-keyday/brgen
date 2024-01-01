@@ -179,7 +179,7 @@ namespace brgen::middle {
                                 continue;
                             }
                             auto new_align = (int(alignment) - int(ast::BitAlignment::byte_aligned)) + (int(field->field_type->bit_alignment) - int(ast::BitAlignment::byte_aligned));
-                            new_align %= utils::bit_per_byte;
+                            new_align %= futils::bit_per_byte;
                             alignment = ast::BitAlignment(new_align + int(ast::BitAlignment::byte_aligned));
                             field->bit_alignment = alignment;
                         }
@@ -222,7 +222,7 @@ namespace brgen::middle {
                     f(f, n);
                 });
                 if (auto t = ast::as<ast::IntType>(n); t) {
-                    auto align = (t->bit_size % utils::bit_per_byte);
+                    auto align = (t->bit_size % futils::bit_per_byte);
                     t->bit_alignment = ast::BitAlignment(align + int(ast::BitAlignment::byte_aligned));
                 }
                 if (auto a = ast::as<ast::ArrayType>(n); a) {
@@ -263,7 +263,7 @@ namespace brgen::middle {
                 }
                 if (auto t = ast::as<ast::StrLiteralType>(n)) {
                     t->bit_alignment = ast::BitAlignment::byte_aligned;
-                    t->bit_size = t->base.lock()->length * utils::bit_per_byte;
+                    t->bit_size = t->base.lock()->length * futils::bit_per_byte;
                 }
                 if (auto u = ast::as<ast::StructUnionType>(n)) {
                     ast::BitAlignment alignment = ast::BitAlignment::not_target;

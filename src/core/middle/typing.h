@@ -976,7 +976,7 @@ namespace brgen::middle {
                 if (auto p = ast::as<ast::Program>(node)) {
                     auto tmp = current_global;
                     current_global = p->global_scope;
-                    const auto d = utils::helper::defer([&] {
+                    const auto d = futils::helper::defer([&] {
                         current_global = std::move(tmp);
                     });
                     do_traverse();

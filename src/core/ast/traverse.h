@@ -121,15 +121,15 @@ namespace brgen::ast {
         }
         visit(o, [&](auto f) {
             f->dump([&](auto key, auto& value) {
-                if constexpr (utils::helper::is_template_instance_of<std::decay_t<decltype(value)>, std::shared_ptr>) {
-                    using T = typename utils::helper::template_of_t<std::decay_t<decltype(value)>>::template param_at<0>;
+                if constexpr (futils::helper::is_template_instance_of<std::decay_t<decltype(value)>, std::shared_ptr>) {
+                    using T = typename futils::helper::template_of_t<std::decay_t<decltype(value)>>::template param_at<0>;
                     if constexpr (std::is_base_of_v<Node, T>) {
                         fn(value);
                     }
                 }
-                else if constexpr (utils::helper::is_template_instance_of<std::decay_t<decltype(value)>, std::list> ||
-                                   utils::helper::is_template_instance_of<std::decay_t<decltype(value)>, std::vector>) {
-                    using T = typename utils::helper::template_instance_of_t<std::decay_t<decltype(*value.begin())>, std::shared_ptr>;
+                else if constexpr (futils::helper::is_template_instance_of<std::decay_t<decltype(value)>, std::list> ||
+                                   futils::helper::is_template_instance_of<std::decay_t<decltype(value)>, std::vector>) {
+                    using T = typename futils::helper::template_instance_of_t<std::decay_t<decltype(*value.begin())>, std::shared_ptr>;
                     if constexpr (T::value) {
                         if constexpr (std::is_base_of_v<Node, typename T::template param_at<0>>) {
                             for (auto& v : value) {
@@ -147,20 +147,20 @@ namespace brgen::ast {
         B& base;
 
         constexpr auto operator()(std::string_view key, auto&& value) const {
-            using P = utils::helper::template_of_t<std::decay_t<decltype(value)>>;
+            using P = futils::helper::template_of_t<std::decay_t<decltype(value)>>;
             if constexpr (std::is_same_v<decltype(value), scope_ptr&>) {
                 if (key == "global_scope") {
                     base(key, value);
                 }
             }
             else if constexpr (P::value) {
-                if constexpr (utils::helper::is_template_instance_of<std::decay_t<decltype(value)>, std::weak_ptr>) {
+                if constexpr (futils::helper::is_template_instance_of<std::decay_t<decltype(value)>, std::weak_ptr>) {
                     // ignore at here
                 }
                 else {
-                    using P2 = utils::helper::template_of_t<typename P::template param_at<0>>;
+                    using P2 = futils::helper::template_of_t<typename P::template param_at<0>>;
                     if constexpr (P2::value) {
-                        if constexpr (utils::helper::is_template_instance_of<typename P2::instance, std::weak_ptr>) {
+                        if constexpr (futils::helper::is_template_instance_of<typename P2::instance, std::weak_ptr>) {
                             // ignore at here
                         }
                         else {

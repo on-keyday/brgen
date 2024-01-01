@@ -53,7 +53,7 @@ namespace json2cpp {
             config.includes.emplace("<binary/flags.h>");
             auto prim = get_primitive_type(ast::aligned_bit(f.fixed_size), false);
             assert(prim.size());
-            code.write("::utils::binary::flags_t<", prim);
+            code.write("::futils::binary::flags_t<", prim);
             std::string base_name = "flags";
             for (auto& field : f.fields) {
                 auto i_desc = static_cast<IntDesc*>(field->desc.get());
@@ -109,11 +109,11 @@ namespace json2cpp {
             if (auto res = e.convert_to_encoder_event(f); !res) {
                 return res.transform(empty_void);
             }
-            code.writeln("constexpr bool ", "render", "(::utils::binary::writer& w) const {");
+            code.writeln("constexpr bool ", "render", "(::futils::binary::writer& w) const {");
             constexpr auto is_be = "true";
             constexpr auto io_object = "w";
-            constexpr auto num_method = "::utils::binary::write_num";
-            constexpr auto bulk_method = "::utils::binary::write_num_bulk";
+            constexpr auto num_method = "::futils::binary::write_num";
+            constexpr auto bulk_method = "::futils::binary::write_num_bulk";
             auto scope = code.indent_scope();
             std::vector<decltype(code.indent_scope_ex())> scopes;
 
@@ -199,9 +199,9 @@ namespace json2cpp {
             }
             constexpr auto is_be = "true";
             constexpr auto io_object = "r";
-            constexpr auto num_method = "::utils::binary::read_num";
-            constexpr auto bulk_method = "::utils::binary::read_num_bulk";
-            code.writeln("constexpr bool ", "parse", "(::utils::binary::reader& r) {");
+            constexpr auto num_method = "::futils::binary::read_num";
+            constexpr auto bulk_method = "::futils::binary::read_num_bulk";
+            code.writeln("constexpr bool ", "parse", "(::futils::binary::reader& r) {");
             auto scope = code.indent_scope();  // enter scope
             std::vector<decltype(code.indent_scope_ex())> scopes;
             for (auto& event : e.events) {

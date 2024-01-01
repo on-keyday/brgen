@@ -21,7 +21,7 @@ if [ $BUILD_MODE = "wasm-em" ]; then
 fi
 
 
-export UTILS_DIR=$(pwd)/utils
+export FUTILS_DIR=$(pwd)/utils
 export BUILD_MODE=$BUILD_MODE
 INSTALL_PREFIX=.
 
@@ -29,11 +29,11 @@ CXX_COMPILER=clang++
 C_COMPILER=clang
 
 # override compiler if specified
-if [ $UTILS_CXX_COMPILER ]; then
-   CXX_COMPILER=$UTILS_CXX_COMPILER
+if [ $FUTILS_CXX_COMPILER ]; then
+   CXX_COMPILER=$FUTILS_CXX_COMPILER
 fi
-if [ $UTILS_C_COMPILER ]; then
-   C_COMPILER=$UTILS_C_COMPILER
+if [ $FUTILS_C_COMPILER ]; then
+   C_COMPILER=$FUTILS_C_COMPILER
 fi
 
 if [ $BUILD_MODE = "wasm-em" ];then
@@ -55,6 +55,6 @@ webpack
 cd ../..
 fi
 
-unset UTILS_DIR
+unset FUTILS_DIR
 unset BUILD_MODE
 

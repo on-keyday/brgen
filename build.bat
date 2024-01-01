@@ -2,18 +2,18 @@
 setlocal
 set BUILD_MODE=%1
 set BUILD_TYPE=%2
-set UTILS_DIR=%3
+set FUTILS_DIR=%3
 
 if "%BUILD_MODE%" == "" (
     set BUILD_MODE=native
 )
-if "%UTILS_DIR%" == "" (
+if "%FUTILS_DIR%" == "" (
     rem for developers
-    set UTILS_DIR=C:/workspace/utils_backup
+    set FUTILS_DIR=C:/workspace/utils_backup
 )
-if not exist %UTILS_DIR% (
+if not exist %FUTILS_DIR% (
     call script\clone_utils.bat %BUILD_MODE% %BUILD_TYPE%
-    set UTILS_DIR=%CD%\utils
+    set FUTILS_DIR=%CD%\utils
 )
 
 if "%BUILD_TYPE%" == "" (

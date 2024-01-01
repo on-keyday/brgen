@@ -12,5 +12,5 @@ namespace brgen {
 #define sdebugf(name) field_(#name, name)
 #define sdebugf_omit(name) field_(#name, name)
 
-    using JSONWriter = utils::json::Stringer<>;
+    using JSONWriter = futils::json::Stringer<>;
 }  // namespace brgen

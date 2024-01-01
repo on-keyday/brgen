@@ -34,8 +34,8 @@ namespace brgen::ast {
     constexpr auto cast_to(auto&& t) {
         assert(as<U>(t) != nullptr);
         using T = std::decay_t<decltype(t)>;
-        if constexpr (utils::helper::is_template_instance_of<T, std::shared_ptr>) {
-            using V = typename utils::helper::template_instance_of_t<T, std::shared_ptr>::template param_at<0>;
+        if constexpr (futils::helper::is_template_instance_of<T, std::shared_ptr>) {
+            using V = typename futils::helper::template_instance_of_t<T, std::shared_ptr>::template param_at<0>;
             return std::static_pointer_cast<U>(std::forward<decltype(t)>(t));
         }
         else {

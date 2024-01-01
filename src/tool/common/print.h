@@ -1,8 +1,8 @@
 /*license*/
 #include <console/ansiesc.h>
 #include <wrap/cout.h>
-inline auto& cerr = utils::wrap::cerr_wrap();
-namespace cse = utils::console::escape;
+inline auto& cerr = futils::wrap::cerr_wrap();
+namespace cse = futils::console::escape;
 
 inline const char*& prefix_loc() {
     static const char* prefix = "src2json: ";
@@ -19,7 +19,7 @@ ColorMode cerr_color_mode = ColorMode::auto_color;
 
 void print_error(auto&&... msg) {
     assert(cerr_color_mode != ColorMode::auto_color);
-    auto p = utils::wrap::pack();
+    auto p = futils::wrap::pack();
     p << prefix_loc();
     if (cerr_color_mode == ColorMode::force_color) {
         p << cse::letter_color_code<9>;
@@ -37,7 +37,7 @@ void print_error(auto&&... msg) {
 
 void print_warning(auto&&... msg) {
     assert(cerr_color_mode != ColorMode::auto_color);
-    auto p = utils::wrap::pack();
+    auto p = futils::wrap::pack();
     p << prefix_loc();
     if (cerr_color_mode == ColorMode::force_color) {
         p << cse::letter_color<cse::ColorPalette::yellow>;
@@ -55,7 +55,7 @@ void print_warning(auto&&... msg) {
 
 void print_note(auto&&... msg) {
     assert(cerr_color_mode != ColorMode::auto_color);
-    auto p = utils::wrap::pack();
+    auto p = futils::wrap::pack();
     p << prefix_loc();
     if (cerr_color_mode == ColorMode::force_color) {
         p << cse::letter_color<cse::ColorPalette::cyan>;

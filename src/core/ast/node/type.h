@@ -109,7 +109,7 @@ namespace brgen::ast {
         }
         // Check if the string starts with 'u' or 'b' and has a valid unsigned integer
         size_t value = 0;
-        if (!utils::number::parse_integer(str, value)) {
+        if (!futils::number::parse_integer(str, value)) {
             return std::nullopt;
         }
         if (value == 0) {  // u0 is not valid
@@ -144,7 +144,7 @@ namespace brgen::ast {
             this->is_explicit = is_explicit;
             auto data = ty->parse_as<std::uint64_t>();
             if (data) {
-                this->bit_size = utils::binary::log2i(*data);
+                this->bit_size = futils::binary::log2i(*data);
             }
         }
 

@@ -14,7 +14,7 @@ namespace brgen::middle {
                 f(f, n);
             });
             using T = std::decay_t<decltype(node)>;
-            using P = typename utils::helper::template_of_t<T>::template param_at<0>;
+            using P = typename futils::helper::template_of_t<T>::template param_at<0>;
             if constexpr (std::is_base_of_v<P, ast::Call> && !std::is_same_v<P, ast::Call>) {
                 if (ast::Call* p = ast::as<ast::Call>(node)) {
                     auto ident = ast::as<ast::Ident>(p->callee);

@@ -12,7 +12,7 @@ namespace brgen::middle {
 
         template <class T>
         static void do_assign(void* p, std::shared_ptr<ast::Node>&& node) {
-            using N = typename utils::helper::template_of_t<T>::template param_at<0>;
+            using N = typename futils::helper::template_of_t<T>::template param_at<0>;
             *static_cast<T*>(p) = ast::cast_to<N>(std::move(node));
         }
 

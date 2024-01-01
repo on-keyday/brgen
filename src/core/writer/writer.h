@@ -8,7 +8,7 @@
 #include <vector>
 
 namespace brgen::writer {
-    using Writer = utils::code::CodeWriter<std::string>;
+    using Writer = futils::code::CodeWriter<std::string>;
 
     struct TreeWriter {
        private:

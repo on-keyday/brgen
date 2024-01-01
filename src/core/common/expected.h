@@ -3,8 +3,8 @@
 #include <helper/expected.h>
 
 namespace brgen {
-    using namespace utils::helper::either;
-    namespace either = utils::helper::either;
+    using namespace futils::helper::either;
+    namespace either = futils::helper::either;
 
     constexpr auto unexpect(auto&&... e) {
         return either::unexpected(e...);

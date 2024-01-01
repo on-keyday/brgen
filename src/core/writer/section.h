@@ -9,7 +9,7 @@
 
 namespace brgen {
     namespace writer {
-        using Writer = utils::code::CodeWriter<std::string>;
+        using Writer = futils::code::CodeWriter<std::string>;
 
         struct Section : std::enable_shared_from_this<Section> {
            private:
@@ -147,20 +147,20 @@ namespace brgen {
 
             std::string flush() {
                 std::string buf;
-                utils::code::CodeWriter<std::string&> w{buf};
+                futils::code::CodeWriter<std::string&> w{buf};
                 flush(w);
                 return std::move(buf);
             }
 
             void write(auto&&... a) {
                 std::string buf;
-                utils::strutil::appends(buf, a...);
+                futils::strutil::appends(buf, a...);
                 body.push_back(std::move(buf));
             }
 
             void writeln(auto&&... a) {
                 std::string buf;
-                utils::strutil::appends(buf, a..., "\n");
+                futils::strutil::appends(buf, a..., "\n");
                 body.push_back(std::move(buf));
             }
 

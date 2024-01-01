@@ -46,7 +46,7 @@ namespace j2cp2 {
 
         void write_bit_fields(std::vector<std::shared_ptr<ast::Field>>& non_align, size_t bit_size, bool is_int_set, bool include_non_simple) {
             if (is_int_set && !include_non_simple) {
-                w.write("::utils::binary::flags_t<std::uint", brgen::nums(bit_size), "_t");
+                w.write("::futils::binary::flags_t<std::uint", brgen::nums(bit_size), "_t");
                 for (auto& n : non_align) {
                     auto type = n->field_type;
                     if (auto ident = ast::as<ast::IdentType>(type); ident) {
@@ -98,7 +98,7 @@ namespace j2cp2 {
                     return "std::array<std::uint" + brgen::nums(arr_ty->base_type->bit_size) + "_t," + len + ">";
                 }
                 if (auto int_ty = ast::as<ast::IntType>(arr_ty->base_type); int_ty && int_ty->bit_size == 8) {
-                    return "::utils::view::rvec";
+                    return "::futils::view::rvec";
                 }
                 return "std::vector<" + get_type_name(arr_ty->base_type) + ">";
             }
@@ -356,8 +356,8 @@ namespace j2cp2 {
                     }
                 }
                 if (has_ident) {
-                    w.writeln("bool encode(::utils::binary::writer& w) const ;");
-                    w.writeln("bool decode(::utils::binary::reader& r);");
+                    w.writeln("bool encode(::futils::binary::writer& w) const ;");
+                    w.writeln("bool decode(::futils::binary::reader& r);");
                 }
             }
             w.write("}");
@@ -476,7 +476,7 @@ namespace j2cp2 {
                     auto& fields = meta.fields;
                     auto& field_name = meta.field_name;
                     map_line(f->loc);
-                    w.writeln("if (!::utils::binary::write_num(w,", field_name, ".as_value() ,true)) {");
+                    w.writeln("if (!::futils::binary::write_num(w,", field_name, ".as_value() ,true)) {");
                     {
                         auto indent = w.indent_scope();
                         w.writeln("return false;");
@@ -488,7 +488,7 @@ namespace j2cp2 {
                     auto ident = ident_from_field();
                     auto type_name = get_type_name(typ);
                     map_line(f->loc);
-                    w.writeln("if (!::utils::binary::write_num(w,static_cast<", type_name, ">(", ident, ") ,", int_ty->endian == ast::Endian::little ? "false" : "true", ")) {");
+                    w.writeln("if (!::futils::binary::write_num(w,static_cast<", type_name, ">(", ident, ") ,", int_ty->endian == ast::Endian::little ? "false" : "true", ")) {");
                     {
                         auto indent = w.indent_scope();
                         w.writeln("return false;");
@@ -497,7 +497,7 @@ namespace j2cp2 {
                 }
                 if (auto arr_ty = ast::as<ast::ArrayType>(typ); arr_ty) {
                     auto type = get_type_name(typ);
-                    if (type == "::utils::view::rvec") {
+                    if (type == "::futils::view::rvec") {
                         auto ident = ident_from_field();
                         if (auto found = later_size.find(f); found != later_size.end()) {
                             // nothing to check
@@ -545,7 +545,7 @@ namespace j2cp2 {
                     auto len = str_ty->strong_ref->length;
                     auto value = str_ty->strong_ref->value;
                     map_line(f->loc);
-                    w.writeln("if (!w.write(::utils::view::rvec(", value, ", ", brgen::nums(len), "))) {");
+                    w.writeln("if (!w.write(::futils::view::rvec(", value, ", ", brgen::nums(len), "))) {");
                     {
                         auto indent = w.indent_scope();
                         w.writeln("return false;");
@@ -559,7 +559,7 @@ namespace j2cp2 {
                     auto& fields = meta.fields;
                     auto& field_name = meta.field_name;
                     map_line(f->loc);
-                    w.writeln("if (!::utils::binary::read_num(r,", field_name, ".as_value() ,true)) {");
+                    w.writeln("if (!::futils::binary::read_num(r,", field_name, ".as_value() ,true)) {");
                     {
                         auto indent = w.indent_scope();
                         w.writeln("return false;");
@@ -571,7 +571,7 @@ namespace j2cp2 {
                     auto ident = ident_from_field();
                     auto type_name = get_type_name(typ);
                     map_line(f->loc);
-                    w.writeln("if (!::utils::binary::read_num(r,", ident, " ,", int_ty->endian == ast::Endian::little ? "false" : "true", ")) {");
+                    w.writeln("if (!::futils::binary::read_num(r,", ident, " ,", int_ty->endian == ast::Endian::little ? "false" : "true", ")) {");
                     {
                         auto indent = w.indent_scope();
                         w.writeln("return false;");
@@ -581,7 +581,7 @@ namespace j2cp2 {
                 if (auto arr_ty = ast::as<ast::ArrayType>(typ); arr_ty) {
                     auto type = get_type_name(typ);
                     auto ident = ident_from_field();
-                    if (type == "::utils::view::rvec") {
+                    if (type == "::futils::view::rvec") {
                         std::string len;
                         if (auto found = later_size.find(f); found != later_size.end()) {
                             auto require_remain = brgen::nums(found->second / 8);
@@ -630,7 +630,7 @@ namespace j2cp2 {
                     auto value = str_ty->strong_ref->value;
                     map_line(f->loc);
                     auto tmp_var = brgen::concat("tmp_", brgen::nums(seq), "_");
-                    w.writeln("::utils::view::rvec ", tmp_var, " = {};");
+                    w.writeln("::futils::view::rvec ", tmp_var, " = {};");
                     seq++;
                     map_line(f->loc);
                     w.writeln("if (!r.read(", tmp_var, ", ", brgen::nums(len), ")) {");
@@ -640,7 +640,7 @@ namespace j2cp2 {
                     }
                     w.writeln("}");
                     map_line(f->loc);
-                    w.writeln("if (", tmp_var, " != ::utils::view::rvec(", value, ",", brgen::nums(len), ")) {");
+                    w.writeln("if (", tmp_var, " != ::futils::view::rvec(", value, ",", brgen::nums(len), ")) {");
                     {
                         auto indent = w.indent_scope();
                         w.writeln("return false;");
@@ -687,7 +687,7 @@ namespace j2cp2 {
                 return;  // skip
             }
             map_line(fmt->loc);
-            w.writeln("inline bool ", fmt->ident->ident, "::", encode ? "encode(::utils::binary::writer& w) const" : "decode(::utils::binary::reader& r)", " {");
+            w.writeln("inline bool ", fmt->ident->ident, "::", encode ? "encode(::futils::binary::writer& w) const" : "decode(::futils::binary::reader& r)", " {");
             {
                 auto indent = w.indent_scope();
                 // first, apply assertions

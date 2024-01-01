@@ -14,9 +14,9 @@
 #include <json/parse.h>
 #include <cmdline/template/parse_and_err.h>
 #include <code/src_location.h>
-using namespace utils::comb2;
+using namespace futils::comb2;
 
-namespace cps = utils::comb2::composite;
+namespace cps = futils::comb2::composite;
 
 constexpr auto tag_struct = "struct";
 constexpr auto tag_field = "field";
@@ -48,8 +48,8 @@ namespace parse {
     constexpr auto file = space & *(-(lit("typedef") & space) & (struct_ | enum_) & space) & space & +eos;
 
     constexpr auto test_parse() {
-        auto ctx = utils::comb2::test::TestContext{};
-        auto seq = utils::make_ref_seq("struct A { int a; int b; }; struct B { int c; }; enum C { a, b, c };");
+        auto ctx = futils::comb2::test::TestContext{};
+        auto seq = futils::make_ref_seq("struct A { int a; int b; }; struct B { int c; }; enum C { a, b, c };");
         if (file(seq, ctx, 0) != Status::match) {
             return false;
         }
@@ -59,35 +59,35 @@ namespace parse {
     static_assert(test_parse());
 
 }  // namespace parse
-auto& cout = utils::wrap::cout_wrap();
+auto& cout = futils::wrap::cout_wrap();
 
-struct Ctx : utils::comb2::tree::BranchTable {
+struct Ctx : futils::comb2::tree::BranchTable {
     void error_seq(auto& seq, auto&&... err) {
         cout << "error: ";
         (cout << ... << err);
         cout << "\n";
         std::string src;
-        utils::code::write_src_loc(src, seq);
+        futils::code::write_src_loc(src, seq);
         cout << src << "\n";
     }
 };
 
-struct Flags : utils::cmdline::templ::HelpOption {
+struct Flags : futils::cmdline::templ::HelpOption {
     std::vector<std::string_view> args;
     std::string json_file;
-    void bind(utils::cmdline::option::Context& c) {
+    void bind(futils::cmdline::option::Context& c) {
         bind_help(c);
         c.VarString(&json_file, "json", "json file to replace type name", "FILE");
     }
 };
 
-int Main(Flags& flags, utils::cmdline::option::Context&) {
-    utils::json::JSON map;
+int Main(Flags& flags, futils::cmdline::option::Context&) {
+    futils::json::JSON map;
     if (flags.args.size() != 1) {
         cout << "usage: ctobgn [options] FILE\n";
         return 1;
     }
-    utils::file::View input;
+    futils::file::View input;
     if (auto o = input.open(flags.args[0]); !o) {
         std::string err;
         o.error().error(err);
@@ -95,43 +95,43 @@ int Main(Flags& flags, utils::cmdline::option::Context&) {
         return 1;
     }
     if (!flags.json_file.empty()) {
-        utils::file::View view;
+        futils::file::View view;
         if (view.open(flags.json_file)) {
-            utils::json::parse(view, map);  // ignore error
+            futils::json::parse(view, map);  // ignore error
         }
         else {
             cout << "warning: cannot open json file: " << flags.json_file << "\n";
         }
     }
     Ctx ctx;
-    auto seq = utils::make_ref_seq(input);
+    auto seq = futils::make_ref_seq(input);
     auto status = parse::file(seq, ctx, 0);
     if (status != Status::match) {
         cout << "error: parse error\n";
         return 1;
     }
-    auto root = utils::comb2::tree::node::collect(ctx.root_branch);
-    utils::code::CodeWriter<std::string> w;
+    auto root = futils::comb2::tree::node::collect(ctx.root_branch);
+    futils::code::CodeWriter<std::string> w;
     for (auto& struct_ : root->children) {
-        auto m = utils::comb2::tree::node::as_group(struct_);
+        auto m = futils::comb2::tree::node::as_group(struct_);
         assert(m);
         assert(m->tag == tag_struct || m->tag == tag_enum);
         assert(m->children.size() == 2 || m->children.size() == 3);
         std::string struct_name;
         size_t offset = 0;
         if (m->children[offset]->tag == tag_name) {
-            auto name = utils::comb2::tree::node::as_tok(m->children[offset]);
+            auto name = futils::comb2::tree::node::as_tok(m->children[offset]);
             assert(name);
             assert(name->tag == tag_name);
             struct_name = name->token;
             offset++;
         }
-        auto fields = utils::comb2::tree::node::as_group(m->children[offset]);
+        auto fields = futils::comb2::tree::node::as_group(m->children[offset]);
         assert(fields);
         assert(fields->tag == tag_fields);
         offset++;
         if (m->children.size() > offset && m->children[offset]->tag == tag_name) {
-            auto name = utils::comb2::tree::node::as_tok(m->children[offset]);
+            auto name = futils::comb2::tree::node::as_tok(m->children[offset]);
             assert(name);
             assert(name->tag == tag_name);
             struct_name = name->token;
@@ -141,19 +141,19 @@ int Main(Flags& flags, utils::cmdline::option::Context&) {
             w.writeln("format ", struct_name, ":");
             auto indent = w.indent_scope();
             for (auto& field : fields->children) {
-                auto f = utils::comb2::tree::node::as_group(field);
+                auto f = futils::comb2::tree::node::as_group(field);
                 assert(f);
                 assert(f->tag == tag_field);
                 assert(f->children.size() == 2 || f->children.size() == 3);
-                auto type = utils::comb2::tree::node::as_tok(f->children[0]);
+                auto type = futils::comb2::tree::node::as_tok(f->children[0]);
                 assert(type);
                 assert(type->tag == tag_type);
-                auto name = utils::comb2::tree::node::as_tok(f->children[1]);
+                auto name = futils::comb2::tree::node::as_tok(f->children[1]);
                 assert(name);
                 assert(name->tag == tag_name);
                 std::string suffix;
                 if (f->children.size() == 3) {
-                    auto s = utils::comb2::tree::node::as_tok(f->children[2]);
+                    auto s = futils::comb2::tree::node::as_tok(f->children[2]);
                     assert(s);
                     assert(s->tag == tag_type_suffix);
                     suffix = s->token;
@@ -174,16 +174,16 @@ int Main(Flags& flags, utils::cmdline::option::Context&) {
             w.writeln("enum ", struct_name, ":");
             auto indent = w.indent_scope();
             for (auto& field : fields->children) {
-                auto f = utils::comb2::tree::node::as_group(field);
+                auto f = futils::comb2::tree::node::as_group(field);
                 assert(f);
                 assert(f->tag == tag_field);
                 assert(f->children.size() == 1 || f->children.size() == 2);
-                auto name = utils::comb2::tree::node::as_tok(f->children[0]);
+                auto name = futils::comb2::tree::node::as_tok(f->children[0]);
                 assert(name);
                 assert(name->tag == tag_name);
                 std::string value;
                 if (f->children.size() == 2) {
-                    auto v = utils::comb2::tree::node::as_tok(f->children[1]);
+                    auto v = futils::comb2::tree::node::as_tok(f->children[1]);
                     assert(v);
                     assert(v->tag == tag_value);
                     value = v->token;
@@ -204,9 +204,9 @@ int Main(Flags& flags, utils::cmdline::option::Context&) {
 
 int main(int argc, char** argv) {
     Flags flags;
-    return utils::cmdline::templ::parse_or_err<std::string>(
+    return futils::cmdline::templ::parse_or_err<std::string>(
         argc, argv, flags, [](auto&& str, bool err) { cout << str; },
-        [](Flags& flags, utils::cmdline::option::Context& ctx) {
+        [](Flags& flags, futils::cmdline::option::Context& ctx) {
             return Main(flags, ctx);
         });
 }

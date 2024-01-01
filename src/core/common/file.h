@@ -24,22 +24,22 @@ namespace brgen {
 
         template <class TokenBuf, class T>
         static std::optional<lexer::Token> do_parse(void* ptr, std::uint64_t file) {
-            return lexer::parse_one<TokenBuf>(*static_cast<utils::Sequencer<T>*>(ptr), file);
+            return lexer::parse_one<TokenBuf>(*static_cast<futils::Sequencer<T>*>(ptr), file);
         }
 
         template <class DumpBuf, class T>
-        static std::pair<std::string, utils::code::SrcLoc> dump_source(void* ptr, lexer::Pos pos) {
-            auto& seq = *static_cast<utils::Sequencer<T>*>(ptr);
+        static std::pair<std::string, futils::code::SrcLoc> dump_source(void* ptr, lexer::Pos pos) {
+            auto& seq = *static_cast<futils::Sequencer<T>*>(ptr);
             size_t rptr = seq.rptr;
             seq.rptr = pos.begin;
             DumpBuf out;
-            auto loc = utils::code::write_src_loc(out, seq, pos.len());
+            auto loc = futils::code::write_src_loc(out, seq, pos.len());
             seq.rptr = rptr;
             if constexpr (std::is_same_v<DumpBuf, std::string>) {
                 return {std::move(out), loc};
             }
             else {
-                return {utils::utf::convert<std::string>(out), loc};
+                return {futils::utf::convert<std::string>(out), loc};
             }
         }
 
@@ -48,14 +48,14 @@ namespace brgen {
         fs::path file_name;
         std::shared_ptr<void> ptr;
         std::optional<lexer::Token> (*parse_)(void* seq, std::uint64_t file) = nullptr;
-        std::pair<std::string, utils::code::SrcLoc> (*dump_)(void* seq, lexer::Pos pos) = nullptr;
+        std::pair<std::string, futils::code::SrcLoc> (*dump_)(void* seq, lexer::Pos pos) = nullptr;
 
-        utils::view::rvec (*direct)(void* seq) = nullptr;
+        futils::view::rvec (*direct)(void* seq) = nullptr;
 
         template <class T>
-        static utils::view::rvec direct_source(void* p) {
-            auto& seq = *static_cast<utils::Sequencer<T>*>(p);
-            if constexpr (std::is_convertible_v<T, utils::view::rvec>) {
+        static futils::view::rvec direct_source(void* p) {
+            auto& seq = *static_cast<futils::Sequencer<T>*>(p);
+            if constexpr (std::is_convertible_v<T, futils::view::rvec>) {
                 return seq.buf.buffer;
             }
             return {};
@@ -64,7 +64,7 @@ namespace brgen {
         template <class Buf, class T>
         void set_input(T&& t) {
             using U = std::decay_t<T>;
-            ptr = std::make_unique<utils::Sequencer<U>>(std::forward<T>(t));
+            ptr = std::make_unique<futils::Sequencer<U>>(std::forward<T>(t));
             parse_ = do_parse<Buf, U>;
             dump_ = dump_source<Buf, U>;
             direct = direct_source<U>;
@@ -88,7 +88,7 @@ namespace brgen {
         }
 
        private:
-        std::pair<std::string, utils::code::SrcLoc> dump(lexer::Pos pos) {
+        std::pair<std::string, futils::code::SrcLoc> dump(lexer::Pos pos) {
             if (dump_) {
                 return dump_(ptr.get(), pos);
             }
@@ -115,7 +115,7 @@ namespace brgen {
             return file;
         }
 
-        utils::view::rvec source() const {
+        futils::view::rvec source() const {
             if (direct) {
                 return direct(ptr.get());
             }
@@ -174,10 +174,10 @@ namespace brgen {
                 assert(sizeof(buffer[1]) == 1);
                 switch (interpret_mode) {
                     case UtfMode::utf16:
-                        make_file_from_text<std::u16string>(f, utils::utf::U16View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
+                        make_file_from_text<std::u16string>(f, futils::utf::U16View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
                         break;
                     case UtfMode::utf32:
-                        make_file_from_text<std::u32string>(f, utils::utf::U32View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
+                        make_file_from_text<std::u32string>(f, futils::utf::U32View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
                         break;
                     default:
                         assert(false);
@@ -189,10 +189,10 @@ namespace brgen {
                 assert(sizeof(buffer[1]) == 2);
                 switch (interpret_mode) {
                     case UtfMode::utf8:
-                        make_file_from_text<std::string>(f, utils::utf::U8View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
+                        make_file_from_text<std::string>(f, futils::utf::U8View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
                         break;
                     case UtfMode::utf32:
-                        make_file_from_text<std::u32string>(f, utils::utf::U32View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
+                        make_file_from_text<std::u32string>(f, futils::utf::U32View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
                         break;
                     default:
                         assert(false);
@@ -204,10 +204,10 @@ namespace brgen {
                 assert(sizeof(buffer[1]) == 4);
                 switch (interpret_mode) {
                     case UtfMode::utf8:
-                        make_file_from_text<std::string>(f, utils::utf::U8View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
+                        make_file_from_text<std::string>(f, futils::utf::U8View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
                         break;
                     case UtfMode::utf16:
-                        make_file_from_text<std::u16string>(f, utils::utf::U16View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
+                        make_file_from_text<std::u16string>(f, futils::utf::U16View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
                         break;
                     default:
                         assert(false);
@@ -222,7 +222,7 @@ namespace brgen {
         void set_file_with_input_mode(File& file, auto&& view) {
             assert(sizeof(view[1]) == 1);
             using View = std::decay_t<decltype(view)>;
-            using utils::binary::EndianView;
+            using futils::binary::EndianView;
             if (input_mode == UtfMode::utf8) {
                 set_input_with_mode(file, std::move(view));
             }
@@ -262,7 +262,7 @@ namespace brgen {
         }
 
         expected<lexer::FileIndex, std::error_code> add_special(const auto& name, auto&& buffer) {
-            fs::path path = utils::utf::convert<std::u8string>(name);
+            fs::path path = futils::utf::convert<std::u8string>(name);
             if (files.find(path) != files.end()) {
                 return unexpect(std::make_error_code(std::errc::file_exists));
             }
@@ -279,7 +279,7 @@ namespace brgen {
         }
 
         expected<lexer::FileIndex, std::error_code> add_file(const auto& name, bool allow_duplicate = false, fs::path base_path = {}) {
-            fs::path path = utils::utf::convert<std::u8string>(name);
+            fs::path path = futils::utf::convert<std::u8string>(name);
             if (!base_path.empty() && path.is_relative()) {
                 path = base_path / path;
             }
@@ -325,7 +325,7 @@ namespace brgen {
             }
             auto& file = indexes[fd];
             if (!file->ptr) {
-                utils::file::View v;
+                futils::file::View v;
                 if (!v.open(file->file_name.c_str())) {
                     return nullptr;
                 }

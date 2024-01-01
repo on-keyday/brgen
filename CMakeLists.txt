@@ -4,8 +4,8 @@ enable_testing()
 project(brgen VERSION 0.0.1)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-  if(NOT "$ENV{UTILS_TARGET_TRIPLE}" STREQUAL "")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -target=$ENV{UTILS_TARGET_TRIPLE}")
+  if(NOT "$ENV{FUTILS_TARGET_TRIPLE}" STREQUAL "")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -target=$ENV{FUTILS_TARGET_TRIPLE}")
   endif()
 endif()
 
@@ -20,11 +20,11 @@ set(CMAKE_CXX_STANDARD 20)
 
 
 if("$ENV{BUILD_MODE}" STREQUAL "native")
-link_directories("$ENV{UTILS_DIR}/built/shared/${CMAKE_BUILD_TYPE}/lib")
-set(UTILS_LIB_DIR "$ENV{UTILS_DIR}/built/shared/${CMAKE_BUILD_TYPE}/lib")
+link_directories("$ENV{FUTILS_DIR}/built/shared/${CMAKE_BUILD_TYPE}/lib")
+set(FUTILS_LIB_DIR "$ENV{FUTILS_DIR}/built/shared/${CMAKE_BUILD_TYPE}/lib")
 elseif("$ENV{BUILD_MODE}" STREQUAL "wasm-em")
-link_directories("$ENV{UTILS_DIR}/built/wasm-em/${CMAKE_BUILD_TYPE}/lib")
-set(UTILS_LIB_DIR "$ENV{UTILS_DIR}/built/wasm-em/${CMAKE_BUILD_TYPE}/lib")
+link_directories("$ENV{FUTILS_DIR}/built/wasm-em/${CMAKE_BUILD_TYPE}/lib")
+set(FUTILS_LIB_DIR "$ENV{FUTILS_DIR}/built/wasm-em/${CMAKE_BUILD_TYPE}/lib")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions -sENVIRONMENT=worker -sINVOKE_RUN=0 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXIT_RUNTIME=0 -sEXPORTED_RUNTIME_METHODS=[ccall,cwrap,FS]")
 endif()
 
@@ -59,7 +59,7 @@ FetchContent_MakeAvailable(googletest)
 endif()
 
 
-include_directories("$ENV{UTILS_DIR}/src/include")
+include_directories("$ENV{FUTILS_DIR}/src/include")
 include_directories("./src")
 include_directories("./built/$ENV{BUILD_MODE}/${CMAKE_BUILD_TYPE}/_deps/googletest-src/googletest/include")
 

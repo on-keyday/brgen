@@ -19,7 +19,7 @@ add_executable(lexer_test "core/lexer_test.cpp")
 
 
 target_link_libraries(lexer_test gtest_main)
-target_link_libraries(ast_test_component utils gtest)
+target_link_libraries(ast_test_component futils gtest)
 
 add_executable(ast_test "core/ast_test.cpp")
 target_link_libraries(ast_test ast_test_component)
@@ -39,7 +39,7 @@ target_link_libraries(middle_test ast_test_component)
 
 add_executable(from_json_test "core/from_json_test.cpp")
 
-target_link_libraries(from_json_test ast_test_component utils)
+target_link_libraries(from_json_test ast_test_component futils)
 
 
 add_executable(section_writer_test "core/section_writer_test.cpp")
@@ -70,24 +70,24 @@ if(WIN32)
 
 add_custom_command(
 TARGET ast_test POST_BUILD
-COMMAND ${CMAKE_COMMAND} -E copy "$ENV{UTILS_DIR}/lib/libutils.dll" "${CMAKE_BINARY_DIR}/test/libutils.dll"
+COMMAND ${CMAKE_COMMAND} -E copy "$ENV{FUTILS_DIR}/lib/libfutils.dll" "${CMAKE_BINARY_DIR}/test/libfutils.dll"
 )
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 add_custom_command(
 TARGET ast_test POST_BUILD
-COMMAND ${CMAKE_COMMAND} -E copy "$ENV{UTILS_DIR}/lib/libutils.pdb" "${CMAKE_BINARY_DIR}/test/libutils.pdb"
+COMMAND ${CMAKE_COMMAND} -E copy "$ENV{FUTILS_DIR}/lib/libfutils.pdb" "${CMAKE_BINARY_DIR}/test/libfutils.pdb"
 )
 endif()
 elseif(APPLE)
 add_custom_command(
 TARGET ast_test POST_BUILD
-COMMAND ${CMAKE_COMMAND} -E copy "$ENV{UTILS_DIR}/lib/libutils.dylib" "${CMAKE_BINARY_DIR}/test/libutils.dylib"
+COMMAND ${CMAKE_COMMAND} -E copy "$ENV{FUTILS_DIR}/lib/libfutils.dylib" "${CMAKE_BINARY_DIR}/test/libfutils.dylib"
 )
 else()
 
 add_custom_command(
 TARGET ast_test POST_BUILD
-COMMAND ${CMAKE_COMMAND} -E copy "$ENV{UTILS_DIR}/lib/libutils.so" "${CMAKE_BINARY_DIR}/test/libutils.so"
+COMMAND ${CMAKE_COMMAND} -E copy "$ENV{FUTILS_DIR}/lib/libfutils.so" "${CMAKE_BINARY_DIR}/test/libfutils.so"
 )
 endif()
 

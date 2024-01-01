@@ -18,7 +18,7 @@ namespace brgen::writer {
         auto do_exchange(auto& m, auto v) {
             auto old = m;
             m = v;
-            return utils::helper::defer([=, &m] {
+            return futils::helper::defer([=, &m] {
                 m = old;
             });
         }

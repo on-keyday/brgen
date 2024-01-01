@@ -31,7 +31,7 @@
 constexpr auto exit_ok = 0;
 constexpr auto exit_err = 1;
 
-struct Flags : utils::cmdline::templ::HelpOption {
+struct Flags : futils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
     bool version = false;
     bool lexer = false;
@@ -79,7 +79,7 @@ struct Flags : utils::cmdline::templ::HelpOption {
 
     bool detected_stdio_type = false;
 
-    void bind(utils::cmdline::option::Context& ctx) {
+    void bind(futils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&version, "version", "print version");
         ctx.VarBool(&lexer, "l,lexer", "lexer mode");
@@ -158,7 +158,7 @@ struct Flags : utils::cmdline::templ::HelpOption {
         ctx.VarBool(&detected_stdio_type, "detected-stdio-type", "detected stdin/stdout/stderr type (for debug)");
     }
 };
-auto& cout = utils::wrap::cout_wrap();
+auto& cout = futils::wrap::cout_wrap();
 ColorMode cout_color_mode = ColorMode::auto_color;
 
 auto print_ok() {
@@ -167,7 +167,7 @@ auto print_ok() {
         return;
     }
     if (cout_color_mode == ColorMode::force_color) {
-        cout << utils::wrap::packln("src2json: ", cse::letter_color<cse::ColorPalette::green>, "ok", cse::color_reset);
+        cout << futils::wrap::packln("src2json: ", cse::letter_color<cse::ColorPalette::green>, "ok", cse::color_reset);
     }
     else {
         cout << "src2json: ok\n";
@@ -198,8 +198,8 @@ auto do_lex(brgen::File* file, size_t limit) {
     });
 }
 
-int check_ast(std::string_view name, utils::view::rvec view) {
-    auto js = utils::json::parse<utils::json::JSON>(view, true);
+int check_ast(std::string_view name, futils::view::rvec view) {
+    auto js = futils::json::parse<futils::json::JSON>(view, true);
     if (js.is_undef()) {
         print_error("cannot parse json file ", name);
         return exit_err;
@@ -251,9 +251,9 @@ int dump_types() {
     return exit_ok;
 }
 
-int Main(Flags& flags, utils::cmdline::option::Context&) {
+int Main(Flags& flags, futils::cmdline::option::Context&) {
     if (flags.version) {
-        cout << utils::wrap::pack("src2json version ", src2json_version, " (lang version ", lang_version, ")\n");
+        cout << futils::wrap::pack("src2json version ", src2json_version, " (lang version ", lang_version, ")\n");
         return exit_ok;
     }
     cerr.set_virtual_terminal(true);  // ignore error
@@ -277,7 +277,7 @@ int Main(Flags& flags, utils::cmdline::option::Context&) {
     cout_color_mode = flags.cout_color_mode;
     cerr_color_mode = flags.cerr_color_mode;
     if (flags.detected_stdio_type) {
-        if (auto s = utils::wrap::cin_wrap().get_file().stat()) {
+        if (auto s = futils::wrap::cin_wrap().get_file().stat()) {
             print_note("detected stdin type: ", to_string(s->mode.type()));
         }
         else {
@@ -346,7 +346,7 @@ int Main(Flags& flags, utils::cmdline::option::Context&) {
         }
     }
     else if (flags.stdin_mode) {
-        auto& cin = utils::wrap::cin_wrap();
+        auto& cin = futils::wrap::cin_wrap();
         if (cin.is_tty()) {
             print_error("not support repl mode");
             return exit_err;
@@ -354,7 +354,7 @@ int Main(Flags& flags, utils::cmdline::option::Context&) {
         auto& file = cin.get_file();
         std::string file_buf;
         for (;;) {
-            utils::byte buffer[1024];
+            futils::byte buffer[1024];
             auto res = file.read_file(buffer);
             if (!res) {
                 break;
@@ -426,7 +426,7 @@ int Main(Flags& flags, utils::cmdline::option::Context&) {
     auto report_error = [&](brgen::SourceError&& res, bool warn = false, const char* key = "ast") {
         if (!cout.is_tty() || flags.print_on_error) {
             auto d = dump_json_file(nullptr, key, res);
-            cout << utils::wrap::pack(d.out(), cout.is_tty() ? "\n" : "");
+            cout << futils::wrap::pack(d.out(), cout.is_tty() ? "\n" : "");
         }
         res.for_each_error([&](std::string_view msg, bool w) {
             if (w && !flags.unresolved_type_as_error) {
@@ -446,7 +446,7 @@ int Main(Flags& flags, utils::cmdline::option::Context&) {
         }
         if (!cout.is_tty() || flags.print_json) {
             auto d = dump_json_file(*res, "tokens", brgen::SourceError{});
-            cout << utils::wrap::pack(d.out(), cout.is_tty() ? "\n" : "");
+            cout << futils::wrap::pack(d.out(), cout.is_tty() ? "\n" : "");
         }
         else {
             print_ok();
@@ -461,7 +461,7 @@ int Main(Flags& flags, utils::cmdline::option::Context&) {
         return exit_err;
     }
 
-    const auto kill = utils::helper::defer([&] {
+    const auto kill = futils::helper::defer([&] {
         brgen::ast::kill_node(*res);
     });
 
@@ -554,14 +554,14 @@ int Main(Flags& flags, utils::cmdline::option::Context&) {
         c.encode(*res);
         d = dump_json_file(c.obj, "ast", err_or_warn);
     }
-    cout << utils::wrap::pack(d.out(), cout.is_tty() ? "\n" : "");
+    cout << futils::wrap::pack(d.out(), cout.is_tty() ? "\n" : "");
 
     return exit_ok;
 }
 
 int src2json_main(int argc, char** argv) {
     Flags flags;
-    return utils::cmdline::templ::parse_or_err<std::string>(
+    return futils::cmdline::templ::parse_or_err<std::string>(
         argc, argv, flags,
         [&](auto&& str, bool err) {
             if (err) {
@@ -580,7 +580,7 @@ int src2json_main(int argc, char** argv) {
                 cout << str;
             }
         },
-        [](Flags& flags, utils::cmdline::option::Context& ctx) {
+        [](Flags& flags, futils::cmdline::option::Context& ctx) {
             return Main(flags, ctx);
         },
         true);
@@ -593,7 +593,7 @@ extern "C" int EMSCRIPTEN_KEEPALIVE emscripten_main(const char* cmdline) {
 #else
 
 int main(int argc, char** argv) {
-    utils::wrap::U8Arg _(argc, argv);
+    futils::wrap::U8Arg _(argc, argv);
     return src2json_main(argc, argv);
 }
 #endif

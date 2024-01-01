@@ -62,7 +62,7 @@ namespace brgen::middle {
             ast::traverse(n, [&](auto& g) {
                 f(f, g);
             });
-            using T = utils::helper::template_of_t<std::decay_t<decltype(n)>>;
+            using T = futils::helper::template_of_t<std::decay_t<decltype(n)>>;
             if constexpr (T::value) {
                 using P = typename T::template param_at<0>;
                 if constexpr (std::is_base_of_v<P, ast::Call> && !std::is_same_v<P, ast::Call>) {

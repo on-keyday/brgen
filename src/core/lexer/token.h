@@ -4,7 +4,7 @@
 #include <string>
 
 namespace brgen::lexer {
-    using Pos = utils::comb2::Pos;
+    using Pos = futils::comb2::Pos;
 
     using FileIndex = std::uint64_t;
 

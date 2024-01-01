@@ -10,19 +10,19 @@
 #include <emscripten/emscripten.h>
 #include "../common/em_main.h"
 #endif
-struct Flags : utils::cmdline::templ::HelpOption {
+struct Flags : futils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
     bool spec = false;
     bool no_color = false;
-    void bind(utils::cmdline::option::Context& ctx) {
+    void bind(futils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&spec, "s", "spec mode");
         ctx.VarBool(&no_color, "no-color", "disable color output");
     }
 };
-auto& cout = utils::wrap::cout_wrap();
+auto& cout = futils::wrap::cout_wrap();
 
-int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
+int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
     prefix_loc() = "json2cpp: ";
     cerr_color_mode = flags.no_color ? ColorMode::no_color : cerr.is_tty() ? ColorMode::force_color
                                                                            : ColorMode::no_color;
@@ -43,12 +43,12 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
         return 1;
     }
     auto name = flags.args[0];
-    utils::file::View view;
+    futils::file::View view;
     if (!view.open(name)) {
         print_error("cannot open file ", name);
         return 1;
     }
-    auto js = utils::json::parse<utils::json::JSON>(view);
+    auto js = futils::json::parse<futils::json::JSON>(view);
     if (js.is_undef()) {
         print_error("cannot parse json file ", name);
         return 1;
@@ -103,11 +103,11 @@ int Main(Flags& flags, utils::cmdline::option::Context& ctx) {
 }
 
 int json2cpp_main(int argc, char** argv) {
-    utils::wrap::U8Arg _(argc, argv);
+    futils::wrap::U8Arg _(argc, argv);
     Flags flags;
-    return utils::cmdline::templ::parse_or_err<std::string>(
+    return futils::cmdline::templ::parse_or_err<std::string>(
         argc, argv, flags, [](auto&& str, bool err) { cerr << str; },
-        [](Flags& flags, utils::cmdline::option::Context& ctx) {
+        [](Flags& flags, futils::cmdline::option::Context& ctx) {
             return Main(flags, ctx);
         });
 }

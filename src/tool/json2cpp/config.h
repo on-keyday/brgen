@@ -12,12 +12,12 @@ namespace json2cpp {
         pointer,
     };
 
-    static constexpr auto empty_void = utils::helper::either::empty_value<void>();
+    static constexpr auto empty_void = futils::helper::either::empty_value<void>();
     template <class T>
     using result = tool::result<T>;
 
     auto error(brgen::lexer::Loc loc, std::string msg) {
-        return utils::helper::either::unexpected{tool::LocError{loc, std::move(msg)}};
+        return futils::helper::either::unexpected{tool::LocError{loc, std::move(msg)}};
     }
 
     struct Config {

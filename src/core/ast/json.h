@@ -14,7 +14,7 @@
 
 namespace brgen::ast {
 
-    using JSON = utils::json::JSON;
+    using JSON = futils::json::JSON;
 
     constexpr auto bool_to_error(const char* err) {
         return [=](bool res) -> either::expected<void, const char*> {
@@ -70,8 +70,8 @@ namespace brgen::ast {
             node_index[node] = nodes.size() - 1;
             visit(node, [&](auto&& f) {
                 f->dump([&]<class T>(std::string_view key, T& value) {
-                    if constexpr (utils::helper::is_template_instance_of<T, std::shared_ptr>) {
-                        using type = typename utils::helper::template_instance_of_t<T, std::shared_ptr>::template param_at<0>;
+                    if constexpr (futils::helper::is_template_instance_of<T, std::shared_ptr>) {
+                        using type = typename futils::helper::template_instance_of_t<T, std::shared_ptr>::template param_at<0>;
                         if constexpr (std::is_base_of_v<Node, type>) {
                             collect(value);
                         }
@@ -81,10 +81,10 @@ namespace brgen::ast {
                             }
                         }
                     }
-                    else if constexpr (utils::helper::is_template_instance_of<T, std::list> ||
-                                       utils::helper::is_template_instance_of<T, std::vector>) {
-                        using type = typename  utils::helper::template_of_t<T>::template param_at<0>;
-                        if constexpr(utils::helper::is_template_instance_of<type,std::shared_ptr>){
+                    else if constexpr (futils::helper::is_template_instance_of<T, std::list> ||
+                                       futils::helper::is_template_instance_of<T, std::vector>) {
+                        using type = typename  futils::helper::template_of_t<T>::template param_at<0>;
+                        if constexpr(futils::helper::is_template_instance_of<type,std::shared_ptr>){
                             for (auto& element : value) {
                                 collect(element);
                             }
@@ -135,8 +135,8 @@ namespace brgen::ast {
                             auto dump_f = [&] {
                                 auto field = obj.object();
                                 f->dump([&]<class T>(std::string_view key, T& value) {
-                                    if constexpr (utils::helper::is_template_instance_of<T, std::shared_ptr>) {
-                                        using type = typename utils::helper::template_instance_of_t<T, std::shared_ptr>::template param_at<0>;
+                                    if constexpr (futils::helper::is_template_instance_of<T, std::shared_ptr>) {
+                                        using type = typename futils::helper::template_instance_of_t<T, std::shared_ptr>::template param_at<0>;
                                         if constexpr (std::is_base_of_v<Node, type>) {
                                             find_and_replace_node(value, [&](auto&& val) {
                                                 field(key, val);
@@ -148,20 +148,20 @@ namespace brgen::ast {
                                             });
                                         }
                                     }
-                                    else if constexpr (utils::helper::is_template_instance_of<T, std::weak_ptr>) {
-                                        using type = typename utils::helper::template_instance_of_t<T, std::weak_ptr>::template param_at<0>;
+                                    else if constexpr (futils::helper::is_template_instance_of<T, std::weak_ptr>) {
+                                        using type = typename futils::helper::template_instance_of_t<T, std::weak_ptr>::template param_at<0>;
                                         if constexpr (std::is_base_of_v<Node, type>) {
                                             find_and_replace_node(value.lock(), [&](auto&& val) {
                                                 field(key, val);
                                             });
                                         }
                                     }
-                                    else if constexpr (utils::helper::is_template_instance_of<T, std::list> ||
-                                                       utils::helper::is_template_instance_of<T, std::vector>) {
+                                    else if constexpr (futils::helper::is_template_instance_of<T, std::list> ||
+                                                       futils::helper::is_template_instance_of<T, std::vector>) {
                                         field(key, [&] {
                                             auto field = obj.array();
                                             for (auto& element : value) {
-                                                if constexpr (utils::helper::is_template_instance_of<std::decay_t<decltype(element)>,std::weak_ptr>){
+                                                if constexpr (futils::helper::is_template_instance_of<std::decay_t<decltype(element)>,std::weak_ptr>){
                                                     find_and_replace_node(element.lock(), field);
                                                 }
                                                 else {
@@ -170,7 +170,7 @@ namespace brgen::ast {
                                             }
                                         });
                                     }
-                                    else if constexpr (utils::helper::is_template_instance_of<T, std::map>) {
+                                    else if constexpr (futils::helper::is_template_instance_of<T, std::map>) {
                                         field(key, [&] {
                                             auto field = obj.object();
                                             for (auto& f : value) {
@@ -353,11 +353,11 @@ else if constexpr(std::is_same_v<T,Typ>)  {                                     
             STR_TO_ENUM(Endian,endian_from_str,"endian")
             STR_TO_ENUM(BitAlignment,bit_alignment,"bit alignment")
             STR_TO_ENUM(Follow,follow_from_str,"follow")
-            else if constexpr (utils::helper::is_template_instance_of<T, std::shared_ptr> ||
-                               utils::helper::is_template_instance_of<T, std::weak_ptr> ||
-                               utils::helper::is_template_instance_of<T, std::list> ||
-                               utils::helper::is_template_instance_of<T, std::vector> ||
-                               utils::helper::is_template_instance_of<T, std::map> ||
+            else if constexpr (futils::helper::is_template_instance_of<T, std::shared_ptr> ||
+                               futils::helper::is_template_instance_of<T, std::weak_ptr> ||
+                               futils::helper::is_template_instance_of<T, std::list> ||
+                               futils::helper::is_template_instance_of<T, std::vector> ||
+                               futils::helper::is_template_instance_of<T, std::map> ||
                                std::is_same_v<T, const NodeType>) {
                 // nothing to do
                 return {};
@@ -423,11 +423,11 @@ else if constexpr(std::is_same_v<T,Typ>)  {                                     
                             return;  // skip
                         }
                         using T = std::decay_t<decltype(value)>;
-                        constexpr auto is_shared_or_weak = utils::helper::is_template_instance_of<T, std::shared_ptr> ||
-                                                           utils::helper::is_template_instance_of<T, std::weak_ptr>;
-                        constexpr auto is_list = utils::helper::is_template_instance_of<T, std::list> ||
-                                                 utils::helper::is_template_instance_of<T, std::vector>;
-                        constexpr auto is_map = utils::helper::is_template_instance_of<T, std::map>;
+                        constexpr auto is_shared_or_weak = futils::helper::is_template_instance_of<T, std::shared_ptr> ||
+                                                           futils::helper::is_template_instance_of<T, std::weak_ptr>;
+                        constexpr auto is_list = futils::helper::is_template_instance_of<T, std::list> ||
+                                                 futils::helper::is_template_instance_of<T, std::vector>;
+                        constexpr auto is_map = futils::helper::is_template_instance_of<T, std::map>;
                         auto& val = node_s[i]["body"];
                         auto check_index = [&](auto&& index) {
                             if (!index) {
@@ -446,7 +446,7 @@ else if constexpr(std::is_same_v<T,Typ>)  {                                     
                                     return false;
                                 }
                                 if constexpr (is_shared_or_weak) {
-                                    using P = typename utils::helper::template_of_t<T>::template param_at<0>;
+                                    using P = typename futils::helper::template_of_t<T>::template param_at<0>;
                                     if constexpr (!std::is_same_v<Node, P>) {
                                         if (!ast::as<P>(nodes[*index])) {
                                             res = unexpect(error(f->loc, "missing reference: expect node ", node_type_to_string(P::node_type_tag), " but found ", node_type_to_string(nodes[*index]->node_type)));
@@ -455,8 +455,8 @@ else if constexpr(std::is_same_v<T,Typ>)  {                                     
                                     }
                                 }
                                 else if constexpr (is_list) {
-                                    using P1 = typename utils::helper::template_of_t<T>::template param_at<0>;
-                                    using P2 = typename utils::helper::template_of_t<P1>::template param_at<0>;
+                                    using P1 = typename futils::helper::template_of_t<T>::template param_at<0>;
+                                    using P2 = typename futils::helper::template_of_t<P1>::template param_at<0>;
                                     if constexpr (!std::is_same_v<Node, P2>) {
                                         if (!ast::as<P2>(nodes[*index])) {
                                             res = unexpect(error(f->loc, "missing reference: expect node ", node_type_to_string(P2::node_type_tag), " but found ", node_type_to_string(nodes[*index]->node_type)));
@@ -488,7 +488,7 @@ else if constexpr(std::is_same_v<T,Typ>)  {                                     
                             if (!check_index(index)) {
                                 return;
                             }
-                            using P = typename utils::helper::template_of_t<T>::template param_at<0>;
+                            using P = typename futils::helper::template_of_t<T>::template param_at<0>;
                             value = cast_to<P>(nodes[*index]);
                         }
                         else if constexpr (is_list) {
@@ -497,12 +497,12 @@ else if constexpr(std::is_same_v<T,Typ>)  {                                     
                                 res = unexpect(json_to_loc_error(f->loc, key)("must be array"));
                                 return;
                             }
-                            for (auto& js : utils::json::as_array(**arr)) {
+                            for (auto& js : futils::json::as_array(**arr)) {
                                 auto index = get_number(f->loc, key)(&js);
                                 if (!check_index(index)) {
                                     return;
                                 }
-                                using P = typename utils::helper::template_of_t<std::decay_t<decltype(value.front())>>::template param_at<0>;
+                                using P = typename futils::helper::template_of_t<std::decay_t<decltype(value.front())>>::template param_at<0>;
                                 value.push_back(cast_to<P>(nodes[*index]));
                             }
                         }
@@ -511,12 +511,12 @@ else if constexpr(std::is_same_v<T,Typ>)  {                                     
                                 res = unexpect(json_to_loc_error(f->loc, key)("must be object"));
                                 return;
                             }
-                            for (auto& [k, v] : utils::json::as_object(**obj)) {
+                            for (auto& [k, v] : futils::json::as_object(**obj)) {
                                 auto index = get_number(f->loc, key)(&v);
                                 if (!check_index(index)) {
                                     return;
                                 }
-                                using P = typename utils::helper::template_of_t<std::decay_t<decltype(value.begin()->second)>>::template param_at<0>;
+                                using P = typename futils::helper::template_of_t<std::decay_t<decltype(value.begin()->second)>>::template param_at<0>;
                                 value[k] = cast_to<P>(nodes[*index]);
                             }
                         }
@@ -574,7 +574,7 @@ else if constexpr(std::is_same_v<T,Typ>)  {                                     
                 if (!ident) {
                     return ident & empty_value<void>();
                 }
-                for (auto& id : utils::json::as_array(**ident)) {
+                for (auto& id : futils::json::as_array(**ident)) {
                     auto index = get_number({}, "ident")(&id);
                     if (!index) {
                         return index & empty_value<void>();
@@ -609,7 +609,7 @@ else if constexpr(std::is_same_v<T,Typ>)  {                                     
         }
 
         result<void> parse_nodes(const JSON& node_s) {
-            for (auto& node : utils::json::as_array(node_s)) {
+            for (auto& node : futils::json::as_array(node_s)) {
                 auto result = parse_single_node(node);
                 if (!result) {
                     return result & empty_value<void>();
@@ -644,7 +644,7 @@ else if constexpr(std::is_same_v<T,Typ>)  {                                     
                 return res & empty_node;
             }
 
-            for (auto& scope : utils::json::as_array(**scope_list)) {
+            for (auto& scope : futils::json::as_array(**scope_list)) {
                 // currently only add scope; no link branch and next
                 scopes.push_back(std::make_shared<Scope>());
             }
