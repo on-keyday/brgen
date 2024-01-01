@@ -2,10 +2,10 @@
 
 export namespace ast2ts {
 
-export type NodeType = "program" | "comment" | "comment_group" | "expr" | "binary" | "unary" | "cond" | "ident" | "call" | "if" | "member_access" | "paren" | "index" | "match" | "range" | "tmp_var" | "import" | "cast" | "available" | "stmt" | "loop" | "indent_block" | "scoped_statement" | "match_branch" | "union_candidate" | "return" | "break" | "continue" | "assert" | "implicit_yield" | "type" | "int_type" | "ident_type" | "int_literal_type" | "str_literal_type" | "void_type" | "bool_type" | "array_type" | "function_type" | "struct_type" | "struct_union_type" | "union_type" | "range_type" | "enum_type" | "literal" | "int_literal" | "bool_literal" | "str_literal" | "input" | "output" | "config" | "member" | "field" | "format" | "state" | "enum" | "enum_member" | "function" | "builtin_function";
+export type NodeType = "program" | "comment" | "comment_group" | "field_argument" | "expr" | "binary" | "unary" | "cond" | "ident" | "call" | "if" | "member_access" | "paren" | "index" | "match" | "range" | "tmp_var" | "import" | "cast" | "available" | "stmt" | "loop" | "indent_block" | "scoped_statement" | "match_branch" | "union_candidate" | "return" | "break" | "continue" | "assert" | "implicit_yield" | "type" | "int_type" | "ident_type" | "int_literal_type" | "str_literal_type" | "void_type" | "bool_type" | "array_type" | "function_type" | "struct_type" | "struct_union_type" | "union_type" | "range_type" | "enum_type" | "literal" | "int_literal" | "bool_literal" | "str_literal" | "input" | "output" | "config" | "member" | "field" | "format" | "state" | "enum" | "enum_member" | "function" | "builtin_function";
 
 export function isNodeType(obj: any): obj is NodeType {
-	return obj && typeof obj === 'string' && (obj === "program" || obj === "comment" || obj === "comment_group" || obj === "expr" || obj === "binary" || obj === "unary" || obj === "cond" || obj === "ident" || obj === "call" || obj === "if" || obj === "member_access" || obj === "paren" || obj === "index" || obj === "match" || obj === "range" || obj === "tmp_var" || obj === "import" || obj === "cast" || obj === "available" || obj === "stmt" || obj === "loop" || obj === "indent_block" || obj === "scoped_statement" || obj === "match_branch" || obj === "union_candidate" || obj === "return" || obj === "break" || obj === "continue" || obj === "assert" || obj === "implicit_yield" || obj === "type" || obj === "int_type" || obj === "ident_type" || obj === "int_literal_type" || obj === "str_literal_type" || obj === "void_type" || obj === "bool_type" || obj === "array_type" || obj === "function_type" || obj === "struct_type" || obj === "struct_union_type" || obj === "union_type" || obj === "range_type" || obj === "enum_type" || obj === "literal" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "input" || obj === "output" || obj === "config" || obj === "member" || obj === "field" || obj === "format" || obj === "state" || obj === "enum" || obj === "enum_member" || obj === "function" || obj === "builtin_function")
+	return obj && typeof obj === 'string' && (obj === "program" || obj === "comment" || obj === "comment_group" || obj === "field_argument" || obj === "expr" || obj === "binary" || obj === "unary" || obj === "cond" || obj === "ident" || obj === "call" || obj === "if" || obj === "member_access" || obj === "paren" || obj === "index" || obj === "match" || obj === "range" || obj === "tmp_var" || obj === "import" || obj === "cast" || obj === "available" || obj === "stmt" || obj === "loop" || obj === "indent_block" || obj === "scoped_statement" || obj === "match_branch" || obj === "union_candidate" || obj === "return" || obj === "break" || obj === "continue" || obj === "assert" || obj === "implicit_yield" || obj === "type" || obj === "int_type" || obj === "ident_type" || obj === "int_literal_type" || obj === "str_literal_type" || obj === "void_type" || obj === "bool_type" || obj === "array_type" || obj === "function_type" || obj === "struct_type" || obj === "struct_union_type" || obj === "union_type" || obj === "range_type" || obj === "enum_type" || obj === "literal" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "input" || obj === "output" || obj === "config" || obj === "member" || obj === "field" || obj === "format" || obj === "state" || obj === "enum" || obj === "enum_member" || obj === "function" || obj === "builtin_function")
 }
 
 export const enum UnaryOp {
@@ -163,6 +163,7 @@ export function isNode(obj: any): obj is Node {
 	if (isProgram(obj)) return true;
 	if (isComment(obj)) return true;
 	if (isCommentGroup(obj)) return true;
+	if (isFieldArgument(obj)) return true;
 	if (isBinary(obj)) return true;
 	if (isUnary(obj)) return true;
 	if (isCond(obj)) return true;
@@ -349,6 +350,20 @@ export interface CommentGroup extends Node {
 
 export function isCommentGroup(obj: any): obj is CommentGroup {
 	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "comment_group"
+}
+
+export interface FieldArgument extends Node {
+	raw_arguments: Expr|null;
+	end_loc: Loc;
+	collected_arguments: Expr[];
+	arguments: Expr[];
+	alignment: Expr|null;
+	alignment_value: number|null;
+	range: Range|null;
+}
+
+export function isFieldArgument(obj: any): obj is FieldArgument {
+	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "field_argument"
 }
 
 export interface Binary extends Expr {
@@ -755,8 +770,7 @@ export function isConfig(obj: any): obj is Config {
 export interface Field extends Member {
 	colon_loc: Loc;
 	field_type: Type|null;
-	raw_arguments: Expr|null;
-	arguments: Expr[];
+	arguments: FieldArgument|null;
 	bit_alignment: BitAlignment;
 	follow: Follow;
 	eventual_follow: Follow;
@@ -995,6 +1009,21 @@ export function parseAST(obj: any): Program {
 				node_type: "comment_group",
 				loc: on.loc,
 				comments: [],
+			}
+			c.node.push(n);
+			break;
+		}
+		case "field_argument": {
+			const n :FieldArgument = {
+				node_type: "field_argument",
+				loc: on.loc,
+				raw_arguments: null,
+				end_loc: on.loc,
+				collected_arguments: [],
+				arguments: [],
+				alignment: null,
+				alignment_value: null,
+				range: null,
 			}
 			c.node.push(n);
 			break;
@@ -1547,8 +1576,7 @@ export function parseAST(obj: any): Program {
 				ident: null,
 				colon_loc: on.loc,
 				field_type: null,
-				raw_arguments: null,
-				arguments: [],
+				arguments: null,
 				bit_alignment: BitAlignment.byte_aligned,
 				follow: Follow.unknown,
 				eventual_follow: Follow.unknown,
@@ -1707,6 +1735,64 @@ export function parseAST(obj: any): Program {
 				}
 				n.comments.push(tmpcomments);
 			}
+			break;
+		}
+		case "field_argument": {
+			const n :FieldArgument = cnode as FieldArgument;
+			if (on.body?.raw_arguments !== null && typeof on.body?.raw_arguments !== 'number') {
+				throw new Error('invalid node list at FieldArgument::raw_arguments');
+			}
+			const tmpraw_arguments = on.body.raw_arguments === null ? null : c.node[on.body.raw_arguments];
+			if (!(tmpraw_arguments === null || isExpr(tmpraw_arguments))) {
+				throw new Error('invalid node list at FieldArgument::raw_arguments');
+			}
+			n.raw_arguments = tmpraw_arguments;
+			const tmpend_loc = on.body?.end_loc;
+			if (!isLoc(tmpend_loc)) {
+				throw new Error('invalid node list at FieldArgument::end_loc');
+			}
+			n.end_loc = tmpend_loc;
+			for (const o of on.body.collected_arguments) {
+				if (typeof o !== 'number') {
+					throw new Error('invalid node list at FieldArgument::collected_arguments');
+				}
+				const tmpcollected_arguments = c.node[o];
+				if (!isExpr(tmpcollected_arguments)) {
+					throw new Error('invalid node list at FieldArgument::collected_arguments');
+				}
+				n.collected_arguments.push(tmpcollected_arguments);
+			}
+			for (const o of on.body.arguments) {
+				if (typeof o !== 'number') {
+					throw new Error('invalid node list at FieldArgument::arguments');
+				}
+				const tmparguments = c.node[o];
+				if (!isExpr(tmparguments)) {
+					throw new Error('invalid node list at FieldArgument::arguments');
+				}
+				n.arguments.push(tmparguments);
+			}
+			if (on.body?.alignment !== null && typeof on.body?.alignment !== 'number') {
+				throw new Error('invalid node list at FieldArgument::alignment');
+			}
+			const tmpalignment = on.body.alignment === null ? null : c.node[on.body.alignment];
+			if (!(tmpalignment === null || isExpr(tmpalignment))) {
+				throw new Error('invalid node list at FieldArgument::alignment');
+			}
+			n.alignment = tmpalignment;
+			const tmpalignment_value = on.body?.alignment_value;
+			if (tmpalignment_value !== null && typeof tmpalignment_value !== "number") {
+				throw new Error('invalid node list at FieldArgument::alignment_value');
+			}
+			n.alignment_value = on.body.alignment_value;
+			if (on.body?.range !== null && typeof on.body?.range !== 'number') {
+				throw new Error('invalid node list at FieldArgument::range');
+			}
+			const tmprange = on.body.range === null ? null : c.node[on.body.range];
+			if (!(tmprange === null || isRange(tmprange))) {
+				throw new Error('invalid node list at FieldArgument::range');
+			}
+			n.range = tmprange;
 			break;
 		}
 		case "binary": {
@@ -3145,24 +3231,14 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at Field::field_type');
 			}
 			n.field_type = tmpfield_type;
-			if (on.body?.raw_arguments !== null && typeof on.body?.raw_arguments !== 'number') {
-				throw new Error('invalid node list at Field::raw_arguments');
+			if (on.body?.arguments !== null && typeof on.body?.arguments !== 'number') {
+				throw new Error('invalid node list at Field::arguments');
 			}
-			const tmpraw_arguments = on.body.raw_arguments === null ? null : c.node[on.body.raw_arguments];
-			if (!(tmpraw_arguments === null || isExpr(tmpraw_arguments))) {
-				throw new Error('invalid node list at Field::raw_arguments');
+			const tmparguments = on.body.arguments === null ? null : c.node[on.body.arguments];
+			if (!(tmparguments === null || isFieldArgument(tmparguments))) {
+				throw new Error('invalid node list at Field::arguments');
 			}
-			n.raw_arguments = tmpraw_arguments;
-			for (const o of on.body.arguments) {
-				if (typeof o !== 'number') {
-					throw new Error('invalid node list at Field::arguments');
-				}
-				const tmparguments = c.node[o];
-				if (!isExpr(tmparguments)) {
-					throw new Error('invalid node list at Field::arguments');
-				}
-				n.arguments.push(tmparguments);
-			}
+			n.arguments = tmparguments;
 			const tmpbit_alignment = on.body?.bit_alignment;
 			if (!isBitAlignment(tmpbit_alignment)) {
 				throw new Error('invalid node list at Field::bit_alignment');
@@ -3574,6 +3650,37 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			const n :CommentGroup = node as CommentGroup;
 			for (const e of n.comments) {
 				const result = fn(fn,e);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "field_argument": {
+			if (!isFieldArgument(node)) {
+				break;
+			}
+			const n :FieldArgument = node as FieldArgument;
+			if (n.raw_arguments !== null) {
+				const result = fn(fn,n.raw_arguments);
+				if (result === false) {
+					return;
+				}
+			}
+			for (const e of n.arguments) {
+				const result = fn(fn,e);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.alignment !== null) {
+				const result = fn(fn,n.alignment);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.range !== null) {
+				const result = fn(fn,n.range);
 				if (result === false) {
 					return;
 				}
@@ -4337,14 +4444,8 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 					return;
 				}
 			}
-			if (n.raw_arguments !== null) {
-				const result = fn(fn,n.raw_arguments);
-				if (result === false) {
-					return;
-				}
-			}
-			for (const e of n.arguments) {
-				const result = fn(fn,e);
+			if (n.arguments !== null) {
+				const result = fn(fn,n.arguments);
 				if (result === false) {
 					return;
 				}

@@ -48,6 +48,7 @@ impl From<&Node> for NodeType {
 			Node::Program(_) => Self::Program,
 			Node::Comment(_) => Self::Comment,
 			Node::CommentGroup(_) => Self::CommentGroup,
+			Node::FieldArgument(_) => Self::FieldArgument,
 			Node::Binary(_) => Self::Binary,
 			Node::Unary(_) => Self::Unary,
 			Node::Cond(_) => Self::Cond,
@@ -115,6 +116,7 @@ impl From<&NodeWeak> for NodeType {
 			NodeWeak::Program(_) => Self::Program,
 			NodeWeak::Comment(_) => Self::Comment,
 			NodeWeak::CommentGroup(_) => Self::CommentGroup,
+			NodeWeak::FieldArgument(_) => Self::FieldArgument,
 			NodeWeak::Binary(_) => Self::Binary,
 			NodeWeak::Unary(_) => Self::Unary,
 			NodeWeak::Cond(_) => Self::Cond,
@@ -181,6 +183,7 @@ impl From<NodeWeak> for NodeType {
 	Program,
 	Comment,
 	CommentGroup,
+	FieldArgument,
 	Expr,
 	Binary,
 	Unary,
@@ -246,6 +249,7 @@ impl TryFrom<&str> for NodeType {
 			"program" =>Ok(Self::Program),
 			"comment" =>Ok(Self::Comment),
 			"comment_group" =>Ok(Self::CommentGroup),
+			"field_argument" =>Ok(Self::FieldArgument),
 			"expr" =>Ok(Self::Expr),
 			"binary" =>Ok(Self::Binary),
 			"unary" =>Ok(Self::Unary),
@@ -596,6 +600,7 @@ pub enum Node {
 	Program(Rc<RefCell<Program>>),
 	Comment(Rc<RefCell<Comment>>),
 	CommentGroup(Rc<RefCell<CommentGroup>>),
+	FieldArgument(Rc<RefCell<FieldArgument>>),
 	Binary(Rc<RefCell<Binary>>),
 	Unary(Rc<RefCell<Unary>>),
 	Cond(Rc<RefCell<Cond>>),
@@ -654,6 +659,7 @@ pub enum NodeWeak {
 	Program(Weak<RefCell<Program>>),
 	Comment(Weak<RefCell<Comment>>),
 	CommentGroup(Weak<RefCell<CommentGroup>>),
+	FieldArgument(Weak<RefCell<FieldArgument>>),
 	Binary(Weak<RefCell<Binary>>),
 	Unary(Weak<RefCell<Unary>>),
 	Cond(Weak<RefCell<Cond>>),
@@ -713,6 +719,7 @@ impl From<&Node> for NodeWeak {
 			Node::Program(node)=>Self::Program(Rc::downgrade(node)),
 			Node::Comment(node)=>Self::Comment(Rc::downgrade(node)),
 			Node::CommentGroup(node)=>Self::CommentGroup(Rc::downgrade(node)),
+			Node::FieldArgument(node)=>Self::FieldArgument(Rc::downgrade(node)),
 			Node::Binary(node)=>Self::Binary(Rc::downgrade(node)),
 			Node::Unary(node)=>Self::Unary(Rc::downgrade(node)),
 			Node::Cond(node)=>Self::Cond(Rc::downgrade(node)),
@@ -781,6 +788,7 @@ impl TryFrom<&NodeWeak> for Node {
 			NodeWeak::Program(node)=>Ok(Self::Program(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Program))?)),
 			NodeWeak::Comment(node)=>Ok(Self::Comment(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Comment))?)),
 			NodeWeak::CommentGroup(node)=>Ok(Self::CommentGroup(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::CommentGroup))?)),
+			NodeWeak::FieldArgument(node)=>Ok(Self::FieldArgument(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::FieldArgument))?)),
 			NodeWeak::Binary(node)=>Ok(Self::Binary(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Binary))?)),
 			NodeWeak::Unary(node)=>Ok(Self::Unary(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Unary))?)),
 			NodeWeak::Cond(node)=>Ok(Self::Cond(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Cond))?)),
@@ -2211,6 +2219,47 @@ impl From<&Rc<RefCell<CommentGroup>>> for Node {
 
 impl From<Rc<RefCell<CommentGroup>>> for Node {
 	fn from(node:Rc<RefCell<CommentGroup>>)-> Self{
+		Self::from(&node)
+	}
+}
+
+#[derive(Debug,Clone)]
+pub struct FieldArgument {
+	pub loc: Loc,
+	pub raw_arguments: Option<Expr>,
+	pub end_loc: Loc,
+	pub collected_arguments: Vec<Expr>,
+	pub arguments: Vec<Expr>,
+	pub alignment: Option<Expr>,
+	pub alignment_value: Option<u64>,
+	pub range: Option<Rc<RefCell<Range>>>,
+}
+
+impl TryFrom<&Node> for Rc<RefCell<FieldArgument>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::FieldArgument(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl TryFrom<Node> for Rc<RefCell<FieldArgument>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
+impl From<&Rc<RefCell<FieldArgument>>> for Node {
+	fn from(node:&Rc<RefCell<FieldArgument>>)-> Self{
+		Node::FieldArgument(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<FieldArgument>>> for Node {
+	fn from(node:Rc<RefCell<FieldArgument>>)-> Self{
 		Self::from(&node)
 	}
 }
@@ -5356,8 +5405,7 @@ pub struct Field {
 	pub ident: Option<Rc<RefCell<Ident>>>,
 	pub colon_loc: Loc,
 	pub field_type: Option<Type>,
-	pub raw_arguments: Option<Expr>,
-	pub arguments: Vec<Expr>,
+	pub arguments: Option<Rc<RefCell<FieldArgument>>>,
 	pub bit_alignment: BitAlignment,
 	pub follow: Follow,
 	pub eventual_follow: Follow,
@@ -6149,6 +6197,18 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				comments: Vec::new(),
 				})))
 			},
+			NodeType::FieldArgument => {
+				Node::FieldArgument(Rc::new(RefCell::new(FieldArgument {
+				loc: raw_node.loc.clone(),
+				raw_arguments: None,
+				end_loc: raw_node.loc.clone(),
+				collected_arguments: Vec::new(),
+				arguments: Vec::new(),
+				alignment: None,
+				alignment_value: None,
+				range: None,
+				})))
+			},
 			NodeType::Binary => {
 				Node::Binary(Rc::new(RefCell::new(Binary {
 				loc: raw_node.loc.clone(),
@@ -6564,8 +6624,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				ident: None,
 				colon_loc: raw_node.loc.clone(),
 				field_type: None,
-				raw_arguments: None,
-				arguments: Vec::new(),
+				arguments: None,
 				bit_alignment: BitAlignment::ByteAligned,
 				follow: Follow::Unknown,
 				eventual_follow: Follow::Unknown,
@@ -6761,6 +6820,119 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						x =>return Err(Error::MismatchNodeType(x.into(),comments_body.into())),
 					};
 					node.borrow_mut().comments.push(comments_body.clone());
+				}
+			},
+			NodeType::FieldArgument => {
+				let node = nodes[i].clone();
+				let node = match node {
+					Node::FieldArgument(node)=>node,
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
+				};
+				let raw_arguments_body = match raw_node.body.get("raw_arguments") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"raw_arguments")),
+				};
+ 				if !raw_arguments_body.is_null() {
+					let raw_arguments_body = match raw_arguments_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(raw_arguments_body.into(),JSONType::Number)),
+					};
+					let raw_arguments_body = match nodes.get(raw_arguments_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(raw_arguments_body as usize)),
+					};
+					node.borrow_mut().raw_arguments = Some(raw_arguments_body.try_into()?);
+				}
+				let end_loc_body = match raw_node.body.get("end_loc") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"end_loc")),
+				};
+				node.borrow_mut().end_loc = match serde_json::from_value(end_loc_body.clone()) {
+					Ok(v)=>v,
+					Err(e)=>return Err(Error::JSONError(e)),
+				};
+				let collected_arguments_body = match raw_node.body.get("collected_arguments") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"collected_arguments")),
+				};
+				let collected_arguments_body = match collected_arguments_body.as_array(){
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(collected_arguments_body.into(),JSONType::Array)),
+				};
+				for link in collected_arguments_body {
+					let link = match link.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
+					};
+					let collected_arguments_body = match nodes.get(link as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(link as usize)),
+					};
+					node.borrow_mut().collected_arguments.push(collected_arguments_body.try_into()?);
+				}
+				let arguments_body = match raw_node.body.get("arguments") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"arguments")),
+				};
+				let arguments_body = match arguments_body.as_array(){
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(arguments_body.into(),JSONType::Array)),
+				};
+				for link in arguments_body {
+					let link = match link.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
+					};
+					let arguments_body = match nodes.get(link as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(link as usize)),
+					};
+					node.borrow_mut().arguments.push(arguments_body.try_into()?);
+				}
+				let alignment_body = match raw_node.body.get("alignment") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"alignment")),
+				};
+ 				if !alignment_body.is_null() {
+					let alignment_body = match alignment_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(alignment_body.into(),JSONType::Number)),
+					};
+					let alignment_body = match nodes.get(alignment_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(alignment_body as usize)),
+					};
+					node.borrow_mut().alignment = Some(alignment_body.try_into()?);
+				}
+				let alignment_value_body = match raw_node.body.get("alignment_value") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"alignment_value")),
+				};
+				node.borrow_mut().alignment_value = match alignment_value_body.as_u64() {
+					Some(v)=>Some(v),
+					None=> match alignment_value_body.is_null() {
+						true=>None,
+						false=>return Err(Error::MismatchJSONType(alignment_value_body.into(),JSONType::Number)),
+					},
+				};
+				let range_body = match raw_node.body.get("range") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"range")),
+				};
+ 				if !range_body.is_null() {
+					let range_body = match range_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(range_body.into(),JSONType::Number)),
+					};
+					let range_body = match nodes.get(range_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(range_body as usize)),
+					};
+					let range_body = match range_body {
+						Node::Range(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),range_body.into())),
+					};
+					node.borrow_mut().range = Some(range_body.clone());
 				}
 			},
 			NodeType::Binary => {
@@ -9533,39 +9705,24 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().field_type = Some(field_type_body.try_into()?);
 				}
-				let raw_arguments_body = match raw_node.body.get("raw_arguments") {
-					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"raw_arguments")),
-				};
- 				if !raw_arguments_body.is_null() {
-					let raw_arguments_body = match raw_arguments_body.as_u64() {
-						Some(v)=>v,
-						None=>return Err(Error::MismatchJSONType(raw_arguments_body.into(),JSONType::Number)),
-					};
-					let raw_arguments_body = match nodes.get(raw_arguments_body as usize) {
-						Some(v)=>v,
-						None => return Err(Error::IndexOutOfBounds(raw_arguments_body as usize)),
-					};
-					node.borrow_mut().raw_arguments = Some(raw_arguments_body.try_into()?);
-				}
 				let arguments_body = match raw_node.body.get("arguments") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"arguments")),
 				};
-				let arguments_body = match arguments_body.as_array(){
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(arguments_body.into(),JSONType::Array)),
-				};
-				for link in arguments_body {
-					let link = match link.as_u64() {
+ 				if !arguments_body.is_null() {
+					let arguments_body = match arguments_body.as_u64() {
 						Some(v)=>v,
-						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
+						None=>return Err(Error::MismatchJSONType(arguments_body.into(),JSONType::Number)),
 					};
-					let arguments_body = match nodes.get(link as usize) {
+					let arguments_body = match nodes.get(arguments_body as usize) {
 						Some(v)=>v,
-						None => return Err(Error::IndexOutOfBounds(link as usize)),
+						None => return Err(Error::IndexOutOfBounds(arguments_body as usize)),
 					};
-					node.borrow_mut().arguments.push(arguments_body.try_into()?);
+					let arguments_body = match arguments_body {
+						Node::FieldArgument(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),arguments_body.into())),
+					};
+					node.borrow_mut().arguments = Some(arguments_body.clone());
 				}
 				let bit_alignment_body = match raw_node.body.get("bit_alignment") {
 					Some(v)=>v,
@@ -10356,6 +10513,28 @@ where
 				}
 			}
 		},
+		Node::FieldArgument(node)=>{
+			if let Some(node) = &node.borrow().raw_arguments{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
+			for node in &node.borrow().arguments{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
+			if let Some(node) = &node.borrow().alignment{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
+			if let Some(node) = &node.borrow().range{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
+		},
 		Node::Binary(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
 				if !f.visit(&node.into()){
@@ -10807,12 +10986,7 @@ where
 					return;
 				}
 			}
-			if let Some(node) = &node.borrow().raw_arguments{
-				if !f.visit(&node.into()){
-					return;
-				}
-			}
-			for node in &node.borrow().arguments{
+			if let Some(node) = &node.borrow().arguments{
 				if !f.visit(&node.into()){
 					return;
 				}

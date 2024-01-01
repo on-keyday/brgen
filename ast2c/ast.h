@@ -52,6 +52,7 @@ typedef struct ast2c_Member ast2c_Member;
 typedef struct ast2c_Program ast2c_Program;
 typedef struct ast2c_Comment ast2c_Comment;
 typedef struct ast2c_CommentGroup ast2c_CommentGroup;
+typedef struct ast2c_FieldArgument ast2c_FieldArgument;
 typedef struct ast2c_Binary ast2c_Binary;
 typedef struct ast2c_Unary ast2c_Unary;
 typedef struct ast2c_Cond ast2c_Cond;
@@ -118,6 +119,7 @@ enum ast2c_NodeType {
 	AST2C_NODETYPE_PROGRAM,
 	AST2C_NODETYPE_COMMENT,
 	AST2C_NODETYPE_COMMENT_GROUP,
+	AST2C_NODETYPE_FIELD_ARGUMENT,
 	AST2C_NODETYPE_EXPR,
 	AST2C_NODETYPE_BINARY,
 	AST2C_NODETYPE_UNARY,
@@ -454,6 +456,23 @@ struct ast2c_CommentGroup {
 
 // returns 1 if succeed 0 if failed
 int ast2c_CommentGroup_parse(ast2c_Ast* ,ast2c_CommentGroup*,ast2c_json_handlers*,void*);
+
+struct ast2c_FieldArgument {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Expr* raw_arguments;
+	ast2c_Loc end_loc;
+	ast2c_Expr** collected_arguments;
+	size_t collected_arguments_size;
+	ast2c_Expr** arguments;
+	size_t arguments_size;
+	ast2c_Expr* alignment;
+	uint64_t* alignment_value;
+	ast2c_Range* range;
+};
+
+// returns 1 if succeed 0 if failed
+int ast2c_FieldArgument_parse(ast2c_Ast* ,ast2c_FieldArgument*,ast2c_json_handlers*,void*);
 
 struct ast2c_Binary {
 	const ast2c_NodeType node_type;
@@ -1010,9 +1029,7 @@ struct ast2c_Field {
 	ast2c_Ident* ident;
 	ast2c_Loc colon_loc;
 	ast2c_Type* field_type;
-	ast2c_Expr* raw_arguments;
-	ast2c_Expr** arguments;
-	size_t arguments_size;
+	ast2c_FieldArgument* arguments;
 	ast2c_BitAlignment bit_alignment;
 	ast2c_Follow follow;
 	ast2c_Follow eventual_follow;

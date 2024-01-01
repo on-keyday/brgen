@@ -1005,16 +1005,19 @@ namespace brgen::ast {
             }
             field->belong = state.current_member();
 
-            if (s.consume_token("(")) {
+            if (auto b = s.consume_token("(")) {
                 s.skip_white();
 
+                auto field_argument = std::make_shared<FieldArgument>(b->loc);
+
                 if (!s.expect_token(")")) {
-                    field->raw_arguments = parse_expr();
-                    collect_args(field->raw_arguments, field->arguments);
+                    field_argument->raw_arguments = parse_expr();
+                    collect_args(field_argument->raw_arguments, field_argument->collected_arguments);
                     s.skip_white();
                 }
 
-                s.must_consume_token(")");
+                auto e = s.must_consume_token(")");
+                field_argument->end_loc = e.loc;
             }
 
             state.add_to_struct(field);

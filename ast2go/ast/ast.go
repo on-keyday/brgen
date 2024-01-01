@@ -13,62 +13,63 @@ const (
 	NodeTypeProgram         NodeType = 0
 	NodeTypeComment         NodeType = 1
 	NodeTypeCommentGroup    NodeType = 2
-	NodeTypeExpr            NodeType = 3
-	NodeTypeBinary          NodeType = 4
-	NodeTypeUnary           NodeType = 5
-	NodeTypeCond            NodeType = 6
-	NodeTypeIdent           NodeType = 7
-	NodeTypeCall            NodeType = 8
-	NodeTypeIf              NodeType = 9
-	NodeTypeMemberAccess    NodeType = 10
-	NodeTypeParen           NodeType = 11
-	NodeTypeIndex           NodeType = 12
-	NodeTypeMatch           NodeType = 13
-	NodeTypeRange           NodeType = 14
-	NodeTypeTmpVar          NodeType = 15
-	NodeTypeImport          NodeType = 16
-	NodeTypeCast            NodeType = 17
-	NodeTypeAvailable       NodeType = 18
-	NodeTypeStmt            NodeType = 19
-	NodeTypeLoop            NodeType = 20
-	NodeTypeIndentBlock     NodeType = 21
-	NodeTypeScopedStatement NodeType = 22
-	NodeTypeMatchBranch     NodeType = 23
-	NodeTypeUnionCandidate  NodeType = 24
-	NodeTypeReturn          NodeType = 25
-	NodeTypeBreak           NodeType = 26
-	NodeTypeContinue        NodeType = 27
-	NodeTypeAssert          NodeType = 28
-	NodeTypeImplicitYield   NodeType = 29
-	NodeTypeType            NodeType = 30
-	NodeTypeIntType         NodeType = 31
-	NodeTypeIdentType       NodeType = 32
-	NodeTypeIntLiteralType  NodeType = 33
-	NodeTypeStrLiteralType  NodeType = 34
-	NodeTypeVoidType        NodeType = 35
-	NodeTypeBoolType        NodeType = 36
-	NodeTypeArrayType       NodeType = 37
-	NodeTypeFunctionType    NodeType = 38
-	NodeTypeStructType      NodeType = 39
-	NodeTypeStructUnionType NodeType = 40
-	NodeTypeUnionType       NodeType = 41
-	NodeTypeRangeType       NodeType = 42
-	NodeTypeEnumType        NodeType = 43
-	NodeTypeLiteral         NodeType = 44
-	NodeTypeIntLiteral      NodeType = 45
-	NodeTypeBoolLiteral     NodeType = 46
-	NodeTypeStrLiteral      NodeType = 47
-	NodeTypeInput           NodeType = 48
-	NodeTypeOutput          NodeType = 49
-	NodeTypeConfig          NodeType = 50
-	NodeTypeMember          NodeType = 51
-	NodeTypeField           NodeType = 52
-	NodeTypeFormat          NodeType = 53
-	NodeTypeState           NodeType = 54
-	NodeTypeEnum            NodeType = 55
-	NodeTypeEnumMember      NodeType = 56
-	NodeTypeFunction        NodeType = 57
-	NodeTypeBuiltinFunction NodeType = 58
+	NodeTypeFieldArgument   NodeType = 3
+	NodeTypeExpr            NodeType = 4
+	NodeTypeBinary          NodeType = 5
+	NodeTypeUnary           NodeType = 6
+	NodeTypeCond            NodeType = 7
+	NodeTypeIdent           NodeType = 8
+	NodeTypeCall            NodeType = 9
+	NodeTypeIf              NodeType = 10
+	NodeTypeMemberAccess    NodeType = 11
+	NodeTypeParen           NodeType = 12
+	NodeTypeIndex           NodeType = 13
+	NodeTypeMatch           NodeType = 14
+	NodeTypeRange           NodeType = 15
+	NodeTypeTmpVar          NodeType = 16
+	NodeTypeImport          NodeType = 17
+	NodeTypeCast            NodeType = 18
+	NodeTypeAvailable       NodeType = 19
+	NodeTypeStmt            NodeType = 20
+	NodeTypeLoop            NodeType = 21
+	NodeTypeIndentBlock     NodeType = 22
+	NodeTypeScopedStatement NodeType = 23
+	NodeTypeMatchBranch     NodeType = 24
+	NodeTypeUnionCandidate  NodeType = 25
+	NodeTypeReturn          NodeType = 26
+	NodeTypeBreak           NodeType = 27
+	NodeTypeContinue        NodeType = 28
+	NodeTypeAssert          NodeType = 29
+	NodeTypeImplicitYield   NodeType = 30
+	NodeTypeType            NodeType = 31
+	NodeTypeIntType         NodeType = 32
+	NodeTypeIdentType       NodeType = 33
+	NodeTypeIntLiteralType  NodeType = 34
+	NodeTypeStrLiteralType  NodeType = 35
+	NodeTypeVoidType        NodeType = 36
+	NodeTypeBoolType        NodeType = 37
+	NodeTypeArrayType       NodeType = 38
+	NodeTypeFunctionType    NodeType = 39
+	NodeTypeStructType      NodeType = 40
+	NodeTypeStructUnionType NodeType = 41
+	NodeTypeUnionType       NodeType = 42
+	NodeTypeRangeType       NodeType = 43
+	NodeTypeEnumType        NodeType = 44
+	NodeTypeLiteral         NodeType = 45
+	NodeTypeIntLiteral      NodeType = 46
+	NodeTypeBoolLiteral     NodeType = 47
+	NodeTypeStrLiteral      NodeType = 48
+	NodeTypeInput           NodeType = 49
+	NodeTypeOutput          NodeType = 50
+	NodeTypeConfig          NodeType = 51
+	NodeTypeMember          NodeType = 52
+	NodeTypeField           NodeType = 53
+	NodeTypeFormat          NodeType = 54
+	NodeTypeState           NodeType = 55
+	NodeTypeEnum            NodeType = 56
+	NodeTypeEnumMember      NodeType = 57
+	NodeTypeFunction        NodeType = 58
+	NodeTypeBuiltinFunction NodeType = 59
 )
 
 func (n NodeType) String() string {
@@ -79,6 +80,8 @@ func (n NodeType) String() string {
 		return "comment"
 	case NodeTypeCommentGroup:
 		return "comment_group"
+	case NodeTypeFieldArgument:
+		return "field_argument"
 	case NodeTypeExpr:
 		return "expr"
 	case NodeTypeBinary:
@@ -208,6 +211,8 @@ func (n *NodeType) UnmarshalJSON(data []byte) error {
 		*n = NodeTypeComment
 	case "comment_group":
 		*n = NodeTypeCommentGroup
+	case "field_argument":
+		*n = NodeTypeFieldArgument
 	case "expr":
 		*n = NodeTypeExpr
 	case "binary":
@@ -336,6 +341,10 @@ func (n *Comment) GetNodeType() NodeType {
 
 func (n *CommentGroup) GetNodeType() NodeType {
 	return NodeTypeCommentGroup
+}
+
+func (n *FieldArgument) GetNodeType() NodeType {
+	return NodeTypeFieldArgument
 }
 
 func (n *Binary) GetNodeType() NodeType {
@@ -1256,6 +1265,23 @@ type CommentGroup struct {
 func (n *CommentGroup) isNode() {}
 
 func (n *CommentGroup) GetLoc() Loc {
+	return n.Loc
+}
+
+type FieldArgument struct {
+	Loc                Loc
+	RawArguments       Expr
+	EndLoc             Loc
+	CollectedArguments []Expr
+	Arguments          []Expr
+	Alignment          Expr
+	AlignmentValue     *uint64
+	Range              *Range
+}
+
+func (n *FieldArgument) isNode() {}
+
+func (n *FieldArgument) GetLoc() Loc {
 	return n.Loc
 }
 
@@ -2369,8 +2395,7 @@ type Field struct {
 	Ident          *Ident
 	ColonLoc       Loc
 	FieldType      Type
-	RawArguments   Expr
-	Arguments      []Expr
+	Arguments      *FieldArgument
 	BitAlignment   BitAlignment
 	Follow         Follow
 	EventualFollow Follow
@@ -2682,6 +2707,8 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			n.node[i] = &Comment{Loc: raw.Loc}
 		case NodeTypeCommentGroup:
 			n.node[i] = &CommentGroup{Loc: raw.Loc}
+		case NodeTypeFieldArgument:
+			n.node[i] = &FieldArgument{Loc: raw.Loc}
 		case NodeTypeBinary:
 			n.node[i] = &Binary{Loc: raw.Loc}
 		case NodeTypeUnary:
@@ -2834,6 +2861,39 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.Comments = make([]*Comment, len(tmp.Comments))
 			for j, k := range tmp.Comments {
 				v.Comments[j] = n.node[k].(*Comment)
+			}
+		case NodeTypeFieldArgument:
+			v := n.node[i].(*FieldArgument)
+			var tmp struct {
+				RawArguments       *uintptr  `json:"raw_arguments"`
+				EndLoc             Loc       `json:"end_loc"`
+				CollectedArguments []uintptr `json:"collected_arguments"`
+				Arguments          []uintptr `json:"arguments"`
+				Alignment          *uintptr  `json:"alignment"`
+				AlignmentValue     *uint64   `json:"alignment_value"`
+				Range              *uintptr  `json:"range"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			if tmp.RawArguments != nil {
+				v.RawArguments = n.node[*tmp.RawArguments].(Expr)
+			}
+			v.EndLoc = tmp.EndLoc
+			v.CollectedArguments = make([]Expr, len(tmp.CollectedArguments))
+			for j, k := range tmp.CollectedArguments {
+				v.CollectedArguments[j] = n.node[k].(Expr)
+			}
+			v.Arguments = make([]Expr, len(tmp.Arguments))
+			for j, k := range tmp.Arguments {
+				v.Arguments[j] = n.node[k].(Expr)
+			}
+			if tmp.Alignment != nil {
+				v.Alignment = n.node[*tmp.Alignment].(Expr)
+			}
+			v.AlignmentValue = tmp.AlignmentValue
+			if tmp.Range != nil {
+				v.Range = n.node[*tmp.Range].(*Range)
 			}
 		case NodeTypeBinary:
 			v := n.node[i].(*Binary)
@@ -3715,8 +3775,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				Ident          *uintptr     `json:"ident"`
 				ColonLoc       Loc          `json:"colon_loc"`
 				FieldType      *uintptr     `json:"field_type"`
-				RawArguments   *uintptr     `json:"raw_arguments"`
-				Arguments      []uintptr    `json:"arguments"`
+				Arguments      *uintptr     `json:"arguments"`
 				BitAlignment   BitAlignment `json:"bit_alignment"`
 				Follow         Follow       `json:"follow"`
 				EventualFollow Follow       `json:"eventual_follow"`
@@ -3737,12 +3796,8 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.FieldType != nil {
 				v.FieldType = n.node[*tmp.FieldType].(Type)
 			}
-			if tmp.RawArguments != nil {
-				v.RawArguments = n.node[*tmp.RawArguments].(Expr)
-			}
-			v.Arguments = make([]Expr, len(tmp.Arguments))
-			for j, k := range tmp.Arguments {
-				v.Arguments[j] = n.node[k].(Expr)
+			if tmp.Arguments != nil {
+				v.Arguments = n.node[*tmp.Arguments].(*FieldArgument)
 			}
 			v.BitAlignment = tmp.BitAlignment
 			v.Follow = tmp.Follow
@@ -3983,6 +4038,27 @@ func Walk(n Node, f Visitor) {
 	case *CommentGroup:
 		for _, w := range v.Comments {
 			if !f.Visit(f, w) {
+				return
+			}
+		}
+	case *FieldArgument:
+		if v.RawArguments != nil {
+			if !f.Visit(f, v.RawArguments) {
+				return
+			}
+		}
+		for _, w := range v.Arguments {
+			if !f.Visit(f, w) {
+				return
+			}
+		}
+		if v.Alignment != nil {
+			if !f.Visit(f, v.Alignment) {
+				return
+			}
+		}
+		if v.Range != nil {
+			if !f.Visit(f, v.Range) {
 				return
 			}
 		}
@@ -4401,13 +4477,8 @@ func Walk(n Node, f Visitor) {
 				return
 			}
 		}
-		if v.RawArguments != nil {
-			if !f.Visit(f, v.RawArguments) {
-				return
-			}
-		}
-		for _, w := range v.Arguments {
-			if !f.Visit(f, w) {
+		if v.Arguments != nil {
+			if !f.Visit(f, v.Arguments) {
 				return
 			}
 		}

@@ -7,6 +7,7 @@ public enum NodeType {
 Program,
 Comment,
 CommentGroup,
+FieldArgument,
 Expr,
 Binary,
 Unary,
@@ -205,6 +206,16 @@ public class Comment : Node{
 public class CommentGroup : Node{
 	public Loc Loc{get;set;}
 	public List<Comment>? Comments{get;set;}
+}
+public class FieldArgument : Node{
+	public Loc Loc{get;set;}
+	public Expr? RawArguments{get;set;}
+	public Loc EndLoc{get;set;}
+	public List<Expr>? CollectedArguments{get;set;}
+	public List<Expr>? Arguments{get;set;}
+	public Expr? Alignment{get;set;}
+	public ulong? AlignmentValue{get;set;}
+	public Range? Range{get;set;}
 }
 public class Binary : Expr{
 	public Loc Loc{get;set;}
@@ -532,8 +543,7 @@ public class Field : Member{
 	public Ident? Ident{get;set;}
 	public Loc ColonLoc{get;set;}
 	public Type? FieldType{get;set;}
-	public Expr? RawArguments{get;set;}
-	public List<Expr>? Arguments{get;set;}
+	public FieldArgument? Arguments{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public Follow Follow{get;set;}
 	public Follow EventualFollow{get;set;}

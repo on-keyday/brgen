@@ -134,23 +134,41 @@ namespace brgen::ast {
     }
 
     struct FieldArgument : Node {
+        define_node_type(NodeType::field_argument);
         std::shared_ptr<Expr> raw_arguments;
+        lexer::Loc end_loc;
         std::vector<std::weak_ptr<Expr>> collected_arguments;
         // arguments that is passed to encode/decode function (on format type) or fixed value (on integer or floating point type)
         std::vector<std::shared_ptr<Expr>> arguments;
         // alignment of field
         std::shared_ptr<Expr> alignment;
-        size_t alignment_value = 0;
+        std::optional<size_t> alignment_value = 0;
         // sub byte range of field
         std::shared_ptr<Range> range;
+
+        FieldArgument(lexer::Loc l)
+            : Node(l, NodeType::field_argument) {}
+
+        FieldArgument()
+            : Node({}, NodeType::field_argument) {}
+
+        void dump(auto&& field_) {
+            Node::dump(field_);
+            sdebugf_omit(raw_arguments);
+            sdebugf(end_loc);
+            sdebugf(collected_arguments);
+            sdebugf(arguments);
+            sdebugf(alignment);
+            sdebugf(alignment_value);
+            sdebugf(range);
+        }
     };
 
     struct Field : Member {
         define_node_type(NodeType::field);
         lexer::Loc colon_loc;
         std::shared_ptr<Type> field_type;
-        std::shared_ptr<Expr> raw_arguments;
-        std::list<std::shared_ptr<Expr>> arguments;
+        std::shared_ptr<FieldArgument> arguments;
         BitAlignment bit_alignment = BitAlignment::not_target;
         Follow follow = Follow::unknown;
         // eventual follow indicates finally followed type
@@ -199,7 +217,6 @@ namespace brgen::ast {
             // sdebugf(ident);
             sdebugf(colon_loc);
             sdebugf(field_type);
-            sdebugf_omit(raw_arguments);
             sdebugf(arguments);
             sdebugf(bit_alignment);
             sdebugf(follow);

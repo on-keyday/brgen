@@ -8,6 +8,7 @@ class NodeType(PyEnum):
     PROGRAM = "program"
     COMMENT = "comment"
     COMMENT_GROUP = "comment_group"
+    FIELD_ARGUMENT = "field_argument"
     EXPR = "expr"
     BINARY = "binary"
     UNARY = "unary"
@@ -222,6 +223,16 @@ class Comment(Node):
 
 class CommentGroup(Node):
     comments: List[Comment]
+
+
+class FieldArgument(Node):
+    raw_arguments: Optional[Expr]
+    end_loc: Loc
+    collected_arguments: List[Expr]
+    arguments: List[Expr]
+    alignment: Optional[Expr]
+    alignment_value: Optional[int]
+    range: Optional[Range]
 
 
 class Binary(Expr):
@@ -459,8 +470,7 @@ class Config(Literal):
 class Field(Member):
     colon_loc: Loc
     field_type: Optional[Type]
-    raw_arguments: Optional[Expr]
-    arguments: List[Expr]
+    arguments: Optional[FieldArgument]
     bit_alignment: BitAlignment
     follow: Follow
     eventual_follow: Follow
@@ -694,6 +704,8 @@ def ast2node(ast :JsonAst) -> Program:
                 node.append(Comment())
             case NodeType.COMMENT_GROUP:
                 node.append(CommentGroup())
+            case NodeType.FIELD_ARGUMENT:
+                node.append(FieldArgument())
             case NodeType.BINARY:
                 node.append(Binary())
             case NodeType.UNARY:
@@ -818,6 +830,30 @@ def ast2node(ast :JsonAst) -> Program:
                 node[i].comment = x if isinstance(x,str)  else raiseError(TypeError('type mismatch at Comment::comment'))
             case NodeType.COMMENT_GROUP:
                 node[i].comments = [(node[x] if isinstance(node[x],Comment) else raiseError(TypeError('type mismatch at CommentGroup::comments'))) for x in ast.node[i].body["comments"]]
+            case NodeType.FIELD_ARGUMENT:
+                if ast.node[i].body["raw_arguments"] is not None:
+                    x = node[ast.node[i].body["raw_arguments"]]
+                    node[i].raw_arguments = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at FieldArgument::raw_arguments'))
+                else:
+                    node[i].raw_arguments = None
+                node[i].end_loc = parse_Loc(ast.node[i].body["end_loc"])
+                node[i].collected_arguments = [(node[x] if isinstance(node[x],Expr) else raiseError(TypeError('type mismatch at FieldArgument::collected_arguments'))) for x in ast.node[i].body["collected_arguments"]]
+                node[i].arguments = [(node[x] if isinstance(node[x],Expr) else raiseError(TypeError('type mismatch at FieldArgument::arguments'))) for x in ast.node[i].body["arguments"]]
+                if ast.node[i].body["alignment"] is not None:
+                    x = node[ast.node[i].body["alignment"]]
+                    node[i].alignment = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at FieldArgument::alignment'))
+                else:
+                    node[i].alignment = None
+                x = ast.node[i].body["alignment_value"]
+                if x is not None:
+                    node[i].alignment_value = x if isinstance(x,int) else raiseError(TypeError('type mismatch at FieldArgument::alignment_value'))
+                else:
+                    node[i].alignment_value = None
+                if ast.node[i].body["range"] is not None:
+                    x = node[ast.node[i].body["range"]]
+                    node[i].range = x if isinstance(x,Range) else raiseError(TypeError('type mismatch at FieldArgument::range'))
+                else:
+                    node[i].range = None
             case NodeType.BINARY:
                 if ast.node[i].body["expr_type"] is not None:
                     x = node[ast.node[i].body["expr_type"]]
@@ -1456,12 +1492,11 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].field_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at Field::field_type'))
                 else:
                     node[i].field_type = None
-                if ast.node[i].body["raw_arguments"] is not None:
-                    x = node[ast.node[i].body["raw_arguments"]]
-                    node[i].raw_arguments = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at Field::raw_arguments'))
+                if ast.node[i].body["arguments"] is not None:
+                    x = node[ast.node[i].body["arguments"]]
+                    node[i].arguments = x if isinstance(x,FieldArgument) else raiseError(TypeError('type mismatch at Field::arguments'))
                 else:
-                    node[i].raw_arguments = None
-                node[i].arguments = [(node[x] if isinstance(node[x],Expr) else raiseError(TypeError('type mismatch at Field::arguments'))) for x in ast.node[i].body["arguments"]]
+                    node[i].arguments = None
                 node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
                 node[i].follow = Follow(ast.node[i].body["follow"])
                 node[i].eventual_follow = Follow(ast.node[i].body["eventual_follow"])
@@ -1656,6 +1691,19 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
         case x if isinstance(x,CommentGroup):
           for i in range(len(x.comments)):
               if f(f,x.comments[i]) == False:
+                  return
+        case x if isinstance(x,FieldArgument):
+          if x.raw_arguments is not None:
+              if f(f,x.raw_arguments) == False:
+                  return
+          for i in range(len(x.arguments)):
+              if f(f,x.arguments[i]) == False:
+                  return
+          if x.alignment is not None:
+              if f(f,x.alignment) == False:
+                  return
+          if x.range is not None:
+              if f(f,x.range) == False:
                   return
         case x if isinstance(x,Binary):
           if x.expr_type is not None:
@@ -1932,11 +1980,8 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
           if x.field_type is not None:
               if f(f,x.field_type) == False:
                   return
-          if x.raw_arguments is not None:
-              if f(f,x.raw_arguments) == False:
-                  return
-          for i in range(len(x.arguments)):
-              if f(f,x.arguments[i]) == False:
+          if x.arguments is not None:
+              if f(f,x.arguments) == False:
                   return
         case x if isinstance(x,Format):
           if x.ident is not None:
