@@ -191,6 +191,8 @@ jobs:
         uses: seanmiddleditch/gha-setup-ninja@master
       - name: Install Android NDK
         uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: "21.4.7075529"
       - name: Build
         run: |
           export GOARCH=arm64
