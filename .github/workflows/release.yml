@@ -226,6 +226,7 @@ jobs:
         build-windows,
         build-vscode-extension,
         build-arm-linux,
+        brgen-android,
       ]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
@@ -259,6 +260,11 @@ jobs:
         with:
           name: brgen-linux-arm
           path: ./artifacts/linux-arm
+      - name: Download Android artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: brgen-android
+          path: ./artifacts/android
       - name: Show Current Directory
         run: |
           pwd
@@ -268,6 +274,7 @@ jobs:
           tar -czf artifacts/brgen-linux.tar.gz -C artifacts/linux .
           tar -czf artifacts/brgen-linux-arm.tar.gz -C artifacts/linux-arm .
           tar -czf artifacts/brgen-macos.tar.gz -C artifacts/macos .
+          tar -czf artifacts/brgen-android.tar.gz -C artifacts/android .
           tar -czf artifacts/brgen-vscode-extension.tar.gz -C artifacts/vscode-extension .
           zip -r artifacts/brgen-windows.zip artifacts/windows
           zip -r artifacts/brgen-vscode-extension.zip artifacts/vscode-extension
@@ -277,6 +284,7 @@ jobs:
           sha256sum brgen-linux.tar.gz > brgen-checksum.txt
           sha256sum brgen-linux-arm.tar.gz >> brgen-checksum.txt
           sha256sum brgen-macos.tar.gz >> brgen-checksum.txt
+          sha256sum brgen-android.tar.gz >> brgen-checksum.txt
           sha256sum brgen-windows.zip >> brgen-checksum.txt
           sha256sum brgen-vscode-extension.tar.gz >> brgen-checksum.txt
           sha256sum brgen-vscode-extension.zip >> brgen-checksum.txt
@@ -289,6 +297,7 @@ jobs:
             ./artifacts/brgen-linux.tar.gz
             ./artifacts/brgen-linux-arm.tar.gz
             ./artifacts/brgen-macos.tar.gz
+            ./artifacts/brgen-android.tar.gz
             ./artifacts/brgen-windows.zip
             ./artifacts/brgen-vscode-extension.tar.gz
             ./artifacts/brgen-vscode-extension.zip
