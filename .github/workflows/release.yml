@@ -195,11 +195,11 @@ jobs:
           ndk-version: r26b
       - name: Build
         run: |
-          BASE_PATH=/opt/hostedtoolcache/ndk/r26b/x64/toolchains/llvm/prebuilt/linux-x86_64/bin
+          BASE_PATH=/opt/hostedtoolcache/ndk/r26b/x64/toolchains/llvm/prebuilt/linux-x86_64
           ls -Ral $BASE_PATH
           export GOARCH=arm64
-          export UTILS_CXX_COMPILER=$BASE_PATH/aarch64-linux-android21-clang++
-          export UTILS_C_COMPILER=$BASE_PATH/aarch64-linux-android21-clang
+          export UTILS_CXX_COMPILER=$BASE_PATH/bin/aarch64-linux-android21-clang++
+          export UTILS_C_COMPILER=$BASE_PATH/bin/aarch64-linux-android21-clang
           . build.sh native Release
       - name: Pack artifacts
         run: |
