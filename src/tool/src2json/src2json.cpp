@@ -79,9 +79,12 @@ struct Flags : futils::cmdline::templ::HelpOption {
 
     bool detected_stdio_type = false;
 
+    bool spec = false;
+
     void bind(futils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&version, "version", "print version");
+        ctx.VarBool(&spec, "s,spec", "print spec of src2json (for generator mode)");
         ctx.VarBool(&lexer, "l,lexer", "lexer mode");
         ctx.VarBool(&dump_types, "dump-types", "dump types schema mode");
         ctx.VarBool(&check_ast, "c,check-ast", "check ast mode");
@@ -256,8 +259,19 @@ int Main(Flags& flags, futils::cmdline::option::Context&) {
         cout << futils::wrap::pack("src2json version ", src2json_version, " (lang version ", lang_version, ")\n");
         return exit_ok;
     }
-    cerr.set_virtual_terminal(true);  // ignore error
-    cout.set_virtual_terminal(true);  // ignore error
+    if (flags.spec) {
+        if (flags.check_ast && flags.stdin_mode) {
+            cout << R"({
+    "langs": "none",
+    "input": "stdin",
+    "suffix: [".log"]
+})";
+        }
+        else {
+            print_error("spec mode only support check-ast with stdin mode");
+        }
+        return 0;
+    }
     if (flags.cout_color_mode == ColorMode::auto_color) {
         if (cout.is_tty()) {
             flags.cout_color_mode = ColorMode::force_color;
@@ -560,6 +574,8 @@ int Main(Flags& flags, futils::cmdline::option::Context&) {
 }
 
 int src2json_main(int argc, char** argv) {
+    cerr.set_virtual_terminal(true);  // ignore error
+    cout.set_virtual_terminal(true);  // ignore error
     Flags flags;
     return futils::cmdline::templ::parse_or_err<std::string>(
         argc, argv, flags,

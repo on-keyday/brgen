@@ -212,6 +212,9 @@ func (g *Generator) StartGenerator(out *Output) error {
 							break
 						}
 						path := filepath.Join(g.outputDir, path+suffix)
+						if g.outputDir == "" {
+							path = ""
+						}
 						go func(path string, data []byte) {
 							g.result <- &Result{
 								Path: path,
@@ -234,6 +237,7 @@ func (g *Generator) Request(req *Result) {
 
 func (g *Generator) askSpec() error {
 	cmd := exec.CommandContext(g.ctx, g.generatorPath, "-s")
+	cmd.Args = append(cmd.Args, g.args...)
 	cmd.Stderr = g.stderr
 	buf := bytes.NewBuffer(nil)
 	cmd.Stdout = buf
