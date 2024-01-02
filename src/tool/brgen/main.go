@@ -193,7 +193,7 @@ func (g *Generator) StartGenerator(out *Output) error {
 						return
 					}
 					ext := filepath.Ext(req.Path)
-					path := strings.TrimSuffix(filepath.Base(req.Path), ext)
+					basePath := strings.TrimSuffix(filepath.Base(req.Path), ext)
 					var split_data [][]byte
 					if len(g.spec.Suffix) == 1 {
 						split_data = [][]byte{data}
@@ -211,11 +211,12 @@ func (g *Generator) StartGenerator(out *Output) error {
 						if i >= len(split_data) {
 							break
 						}
+						var path string
 						if strings.HasPrefix("/dev/stdout", g.outputDir) {
-							baseName := filepath.Base(path + suffix)
+							baseName := filepath.Base(basePath + suffix)
 							path = "/dev/stdout/" + baseName
 						} else {
-							path = filepath.Join(g.outputDir, path+suffix)
+							path = filepath.Join(g.outputDir, basePath+suffix)
 						}
 						go func(path string, data []byte) {
 							g.result <- &Result{
@@ -504,7 +505,25 @@ func main() {
 			}
 			if strings.HasPrefix(res.Path, "/dev/stdout") {
 				p := filepath.Base(res.Path)
-				fmt.Printf("%s:\n%s\n", p, string(res.Data))
+				count := strings.Count(p, "\n")
+				endLine := strings.HasSuffix(p, "\n")
+				if count < 2 {
+					if endLine { // single line
+						fmt.Printf("%s: %s", p, string(res.Data))
+					} else {
+						if count == 0 { // no line break; 1 line
+							fmt.Printf("%s: %s\n", p, string(res.Data))
+						} else { // 2 lines
+							fmt.Printf("%s:\n%s\n", p, string(res.Data))
+						}
+					}
+				} else {
+					if endLine { // 3 more lines end with line break
+						fmt.Printf("%s:\n%s", p, string(res.Data))
+					} else { // 3 more lines end without line break
+						fmt.Printf("%s:\n%s\n", p, string(res.Data))
+					}
+				}
 				continue
 			}
 			dir := filepath.Dir(res.Path)
