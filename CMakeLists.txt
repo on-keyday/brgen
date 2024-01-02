@@ -64,6 +64,9 @@ include_directories("./src")
 include_directories("./built/$ENV{BUILD_MODE}/${CMAKE_BUILD_TYPE}/_deps/googletest-src/googletest/include")
 
 
+if("$ENV{S2J_USE_NETWORK}" STREQUAL "1")
+set(S2J_USE_NETWORK 1)
+endif()
 
 add_subdirectory(src)
 

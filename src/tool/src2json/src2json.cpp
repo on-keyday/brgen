@@ -28,9 +28,6 @@
 
 #include "version.h"
 
-constexpr auto exit_ok = 0;
-constexpr auto exit_err = 1;
-
 struct Flags : futils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
     bool version = false;
@@ -81,6 +78,10 @@ struct Flags : futils::cmdline::templ::HelpOption {
 
     bool spec = false;
     bool force_ok = false;
+
+    bool via_http = false;
+    std::string port = "8080";
+    bool check_http = false;
 
     void bind(futils::cmdline::option::Context& ctx) {
         bind_help(ctx);
@@ -161,6 +162,10 @@ struct Flags : futils::cmdline::templ::HelpOption {
             });
 
         ctx.VarBool(&detected_stdio_type, "detected-stdio-type", "detected stdin/stdout/stderr type (for debug)");
+
+        ctx.VarBool(&via_http, "via-http", "run as http server (POST /parse endpoint for src2json ({\"args\": []} for argument), GET /stop to stop server))");
+        ctx.VarString(&port, "port", "set port of http server", "<port>");
+        ctx.VarBool(&check_http, "check-http", "check http mode is enabled (for debug)");
     }
 };
 
@@ -258,7 +263,7 @@ int dump_types() {
 }
 
 int print_spec(Flags& flags) {
-    if (flags.check_ast && flags.stdin_mode) {
+    if (flags.check_ast && flags.stdin_mode && !flags.via_http) {
         cout << R"({
     "langs": ["log"],
     "input": "stdin",
@@ -272,7 +277,7 @@ int print_spec(Flags& flags) {
     return exit_ok;
 }
 
-int Main(Flags& flags, futils::cmdline::option::Context&) {
+int Main(Flags& flags, futils::cmdline::option::Context&, bool disable_network) {
     if (flags.version) {
         cout << futils::wrap::pack("src2json version ", src2json_version, " (lang version ", lang_version, ")\n");
         return exit_ok;
@@ -280,6 +285,7 @@ int Main(Flags& flags, futils::cmdline::option::Context&) {
     if (flags.spec) {
         return print_spec(flags);
     }
+
     if (flags.cout_color_mode == ColorMode::auto_color) {
         if (cout.is_tty()) {
             flags.cout_color_mode = ColorMode::force_color;
@@ -299,6 +305,27 @@ int Main(Flags& flags, futils::cmdline::option::Context&) {
     cout_color_mode = flags.cout_color_mode;
     cerr_color_mode = flags.cerr_color_mode;
     force_print_ok = flags.force_ok;
+    if (flags.via_http) {
+        if (disable_network) {
+            print_error("network mode is disabled");
+            return exit_err;
+        }
+#ifdef S2J_USE_NETWORK
+        return network_main(flags.port.c_str());
+#else
+        print_error("network mode is not supported");
+        return exit_err;
+#endif
+    }
+    if (flags.check_http) {
+#ifdef S2J_USE_NETWORK
+        print_ok();
+        return exit_ok;
+#else
+        print_error("network mode is not supported");
+        return exit_err;
+#endif
+    }
     if (flags.detected_stdio_type) {
         if (auto s = futils::wrap::cin_wrap().get_file().stat()) {
             print_note("detected stdin type: ", to_string(s->mode.type()));
@@ -583,7 +610,7 @@ int Main(Flags& flags, futils::cmdline::option::Context&) {
 }
 
 // entry point of src2json
-int src2json_main(int argc, char** argv) {
+int src2json_main(int argc, char** argv, bool disable_network) {
     Flags flags;
     return futils::cmdline::templ::parse_or_err<std::string>(
         argc, argv, flags,
@@ -604,8 +631,8 @@ int src2json_main(int argc, char** argv) {
                 cout << str;
             }
         },
-        [](Flags& flags, futils::cmdline::option::Context& ctx) {
-            return Main(flags, ctx);
+        [&](Flags& flags, futils::cmdline::option::Context& ctx) {
+            return Main(flags, ctx, disable_network);
         },
         true);
 }

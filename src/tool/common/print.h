@@ -16,7 +16,7 @@ enum class ColorMode {
     no_color,
 };
 
-thread_local ColorMode cerr_color_mode = ColorMode::auto_color;
+inline thread_local ColorMode cerr_color_mode = ColorMode::auto_color;
 
 void print_error(auto&&... msg) {
     assert(cerr_color_mode != ColorMode::auto_color);
