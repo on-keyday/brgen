@@ -211,7 +211,12 @@ func (g *Generator) StartGenerator(out *Output) error {
 						if i >= len(split_data) {
 							break
 						}
-						path := filepath.Join(g.outputDir, path+suffix)
+						if strings.HasPrefix("/dev/stdout", g.outputDir) {
+							baseName := filepath.Base(path + suffix)
+							path = "/dev/stdout/" + baseName
+						} else {
+							path = filepath.Join(g.outputDir, path+suffix)
+						}
 						go func(path string, data []byte) {
 							g.result <- &Result{
 								Path: path,
@@ -497,12 +502,12 @@ func main() {
 				errCount.Add(1)
 				continue
 			}
-			dir := filepath.Dir(res.Path)
-			if strings.HasPrefix(dir, "/dev/stdout") {
+			if strings.HasPrefix(res.Path, "/dev/stdout") {
 				p := filepath.Base(res.Path)
 				fmt.Printf("%s:\n%s\n", p, string(res.Data))
 				continue
 			}
+			dir := filepath.Dir(res.Path)
 			if err := os.MkdirAll(dir, 0755); err != nil {
 				log.Fatal(err)
 			}

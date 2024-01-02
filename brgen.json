@@ -35,7 +35,7 @@
     {
       "generator": "./tool/src2json",
       "output_dir": "/dev/stdout",
-      "args": ["--check-ast", "--stdin"]
+      "args": ["--check-ast", "--stdin", "--force-ok"]
     }
   ]
 }
