@@ -163,9 +163,9 @@ struct Flags : futils::cmdline::templ::HelpOption {
         ctx.VarBool(&detected_stdio_type, "detected-stdio-type", "detected stdin/stdout/stderr type (for debug)");
     }
 };
-auto& cout = futils::wrap::cout_wrap();
-ColorMode cout_color_mode = ColorMode::auto_color;
-bool force_print_ok = false;
+
+thread_local ColorMode cout_color_mode = ColorMode::auto_color;
+thread_local bool force_print_ok = false;
 
 auto print_ok() {
     assert(cout_color_mode != ColorMode::auto_color);
@@ -582,9 +582,8 @@ int Main(Flags& flags, futils::cmdline::option::Context&) {
     return exit_ok;
 }
 
+// entry point of src2json
 int src2json_main(int argc, char** argv) {
-    cerr.set_virtual_terminal(true);  // ignore error
-    cout.set_virtual_terminal(true);  // ignore error
     Flags flags;
     return futils::cmdline::templ::parse_or_err<std::string>(
         argc, argv, flags,
@@ -619,6 +618,8 @@ extern "C" int EMSCRIPTEN_KEEPALIVE emscripten_main(const char* cmdline) {
 
 int main(int argc, char** argv) {
     futils::wrap::U8Arg _(argc, argv);
+    cerr.set_virtual_terminal(true);  // ignore error
+    cout.set_virtual_terminal(true);  // ignore error
     return src2json_main(argc, argv);
 }
 #endif

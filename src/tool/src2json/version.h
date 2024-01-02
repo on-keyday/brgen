@@ -9,3 +9,5 @@
 
 constexpr auto lang_version = BRGEN_VERSION;
 constexpr auto src2json_version = SRC2JSON_VERSION;
+
+int src2json_main(int argc, char** argv);

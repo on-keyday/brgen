@@ -2,6 +2,7 @@
 #include <console/ansiesc.h>
 #include <wrap/cout.h>
 inline auto& cerr = futils::wrap::cerr_wrap();
+inline auto& cout = futils::wrap::cout_wrap();
 namespace cse = futils::console::escape;
 
 inline const char*& prefix_loc() {
@@ -15,7 +16,7 @@ enum class ColorMode {
     no_color,
 };
 
-ColorMode cerr_color_mode = ColorMode::auto_color;
+thread_local ColorMode cerr_color_mode = ColorMode::auto_color;
 
 void print_error(auto&&... msg) {
     assert(cerr_color_mode != ColorMode::auto_color);

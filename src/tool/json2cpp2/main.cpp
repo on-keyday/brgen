@@ -22,7 +22,6 @@ struct Flags : futils::cmdline::templ::HelpOption {
         ctx.VarBool(&add_line_map, "add-line-map", "add line map");
     }
 };
-auto& cout = futils::wrap::cout_wrap();
 
 int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
     prefix_loc() = "json2cpp: ";

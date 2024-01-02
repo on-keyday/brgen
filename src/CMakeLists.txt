@@ -10,6 +10,11 @@ add_executable(src2json "tool/src2json/src2json.cpp")
 target_link_libraries(src2json futils)
 add_compile_definitions(BRGEN_VERSION="${PROJECT_VERSION}")
 
+if(S2J_USE_NETWORK)
+target_sources(src2json PRIVATE "tool/src2json/network.cpp")
+target_link_libraries(src2json fnet fnetserv)
+endif()
+
 add_executable(json2cpp "tool/json2cpp/main.cpp")
 target_link_libraries(json2cpp futils)
 
@@ -66,14 +71,42 @@ if(WIN32)
     TARGET src2json POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy "${FUTILS_LIB_DIR}/libfutils.dll" "${CMAKE_BINARY_DIR}/tool/libfutils.dll"
     )
-    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_custom_command(
-    TARGET src2json POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy "${FUTILS_LIB_DIR}/libfutils.pdb" "${CMAKE_BINARY_DIR}/tool/libfutils.pdb"
-    )
-    install(FILES "${CMAKE_BINARY_DIR}/tool/libfutils.pdb" DESTINATION tool OPTIONAL)
-    endif()
     install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/libfutils.dll" DESTINATION tool OPTIONAL)
+    
+    if(S2J_USE_NETWORK)
+        add_custom_command(
+        TARGET src2json POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy "${FUTILS_LIB_DIR}/libfnet.dll" "${CMAKE_BINARY_DIR}/tool/libfnet.dll"
+        )
+        install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/libfnet.dll" DESTINATION tool OPTIONAL)
+        add_custom_command(
+        TARGET src2json POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy "${FNETSERV_LIB_DIR}/libfnetserv.dll" "${CMAKE_BINARY_DIR}/tool/libfnetserv.dll"
+        )
+        install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/libfnetserv.dll" DESTINATION tool OPTIONAL)
+    endif()
+
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        add_custom_command( 
+        TARGET src2json POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy "${FUTILS_LIB_DIR}/libfutils.pdb" "${CMAKE_BINARY_DIR}/tool/libfutils.pdb"
+        )
+        install(FILES "${CMAKE_BINARY_DIR}/tool/libfutils.pdb" DESTINATION tool OPTIONAL)
+        if(S2J_USE_NETWORK)
+            add_custom_command( 
+            TARGET src2json POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy "${FUTILS_LIB_DIR}/libfnet.pdb" "${CMAKE_BINARY_DIR}/tool/libfnet.pdb"
+            )
+            install(FILES "${CMAKE_BINARY_DIR}/tool/libfnet.pdb" DESTINATION tool OPTIONAL)
+            add_custom_command( 
+            TARGET src2json POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy "${FNETSERV_LIB_DIR}/libfnetserv.pdb" "${CMAKE_BINARY_DIR}/tool/libfnetserv.pdb"
+            )
+            install(FILES "${CMAKE_BINARY_DIR}/tool/libfnetserv.pdb" DESTINATION tool OPTIONAL)
+        endif()
+    endif()
+
+
     
 elseif(APPLE)
     add_custom_command(
@@ -82,6 +115,19 @@ elseif(APPLE)
     )
     install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/libfutils.dylib" DESTINATION tool OPTIONAL)
 
+    if(S2J_USE_NETWORK)
+        add_custom_command(
+        TARGET src2json POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy "${FUTILS_LIB_DIR}/libfnet.dylib" "${CMAKE_BINARY_DIR}/tool/libfnet.dylib"
+        )
+        install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/libfnet.dylib" DESTINATION tool OPTIONAL)
+        add_custom_command(
+        TARGET src2json POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy "${FNETSERV_LIB_DIR}/libfnetserv.dylib" "${CMAKE_BINARY_DIR}/tool/libfnetserv.dylib"
+        )
+        install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/libfnetserv.dylib" DESTINATION tool OPTIONAL)
+    endif()
+
 else()
 
     add_custom_command(
@@ -89,6 +135,19 @@ else()
     COMMAND ${CMAKE_COMMAND} -E copy "${FUTILS_LIB_DIR}/libfutils.so" "${CMAKE_BINARY_DIR}/tool/libfutils.so"
     )
     install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/libfutils.so" DESTINATION tool OPTIONAL)
+
+    if(S2J_USE_NETWORK)
+        add_custom_command(
+        TARGET src2json POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy "${FUTILS_LIB_DIR}/libfnet.so" "${CMAKE_BINARY_DIR}/tool/libfnet.so"
+        )
+        install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/libfnet.so" DESTINATION tool OPTIONAL)
+        add_custom_command(
+        TARGET src2json POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy "${FNETSERV_LIB_DIR}/libfnetserv.so" "${CMAKE_BINARY_DIR}/tool/libfnetserv.so"
+        )
+        install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/libfnetserv.so" DESTINATION tool OPTIONAL)
+    endif()
 endif()
 
 

@@ -20,7 +20,6 @@ struct Flags : futils::cmdline::templ::HelpOption {
         ctx.VarBool(&no_color, "no-color", "disable color output");
     }
 };
-auto& cout = futils::wrap::cout_wrap();
 
 int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
     prefix_loc() = "json2cpp: ";

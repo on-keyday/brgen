@@ -67,7 +67,6 @@ include_directories("./built/$ENV{BUILD_MODE}/${CMAKE_BUILD_TYPE}/_deps/googlete
 
 add_subdirectory(src)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "tool")
 
 
 
