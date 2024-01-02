@@ -20,13 +20,14 @@
             "program": "${workspaceRoot}/tool/src2json",
             "args": [
                 "c:/workspace/shbrgen/brgen/example/smf.bgn",
-                "--print-json"
+                "--print-json",
+                "--via-http"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",
             "environment": [],
             "console": "integratedTerminal",
-            "preLaunchTask": "build",
+            //"preLaunchTask": "build",
             "symbolSearchPath": "lib\\"
         },
         {

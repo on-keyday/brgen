@@ -148,6 +148,7 @@ void handler(void*, futils::fnet::server::Requester req, futils::fnet::server::S
         response["Connection"] = "close";
         response["Content-Type"] = "text/plain";
         req.respond_flush(s, fnet::server::StatusCode::http_ok, response, "bye");
+        s.log(fnet::server::log_level::info, req.client.addr, ptr->method, " ", ptr->path, " -> ", futils::number::to_string<std::string>(int(fnet::server::StatusCode::http_ok)), ": bye");
         stop = true;
         return;
     }
@@ -166,7 +167,7 @@ void handler(void*, futils::fnet::server::Requester req, futils::fnet::server::S
 struct LogEntry {
     fnet::server::log_level level;
     fnet::NetAddrPort addr;
-    fnet::error::Error err;
+    std::string err;
 };
 
 std::mutex log_mutex;
@@ -174,7 +175,7 @@ std::deque<LogEntry> log_buffer;
 
 void logger(fnet::server::log_level level, fnet::NetAddrPort* addr, fnet::error::Error& err) {
     std::lock_guard<std::mutex> lock(log_mutex);
-    log_buffer.push_back({level, addr ? *addr : fnet::NetAddrPort{}, err});
+    log_buffer.push_back({level, addr ? *addr : fnet::NetAddrPort{}, err.error()});
 }
 
 int network_main(const char* port) {
@@ -205,20 +206,22 @@ int network_main(const char* port) {
             auto level = d.level;
             auto addr = d.addr.to_string<std::string>();
             if (level == fnet::server::log_level::err) {
-                print_error(addr, ": ", d.err.error());
+                print_error(addr, ": ", d.err);
             }
             else if (level == fnet::server::log_level::warn) {
-                print_warning(addr, ": ", d.err.error());
+                print_warning(addr, ": ", d.err);
             }
             else if (level == fnet::server::log_level::info) {
-                print_note(addr, ": ", d.err.error());
+                print_note(addr, ": ", d.err);
             }
             else if (level == fnet::server::log_level::debug) {
-                print_note(addr, ": [debug] ", d.err.error());
+                print_note(addr, ": [debug] ", d.err);
             }
         }
     }
     s->notify();
+    print_note("requesting shutdown...");
     std::this_thread::sleep_for(std::chrono::seconds(1));
+    print_note("exiting...");
     return exit_ok;
 }
