@@ -169,7 +169,7 @@ bool force_print_ok = false;
 
 auto print_ok() {
     assert(cout_color_mode != ColorMode::auto_color);
-    if (!cout.is_tty()) {
+    if (!cout.is_tty() && !force_print_ok) {
         return;
     }
     if (cout_color_mode == ColorMode::force_color) {
