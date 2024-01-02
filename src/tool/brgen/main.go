@@ -505,8 +505,8 @@ func main() {
 			}
 			if strings.HasPrefix(res.Path, "/dev/stdout") {
 				p := filepath.Base(res.Path)
-				count := strings.Count(p, "\n")
-				endLine := strings.HasSuffix(p, "\n")
+				count := strings.Count(string(res.Data), "\n")
+				endLine := strings.HasSuffix(string(res.Data), "\n")
 				if count < 2 {
 					if endLine { // single line
 						fmt.Printf("%s: %s", p, string(res.Data))
