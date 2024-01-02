@@ -212,9 +212,6 @@ func (g *Generator) StartGenerator(out *Output) error {
 							break
 						}
 						path := filepath.Join(g.outputDir, path+suffix)
-						if g.outputDir == "" {
-							path = ""
-						}
 						go func(path string, data []byte) {
 							g.result <- &Result{
 								Path: path,
@@ -501,8 +498,9 @@ func main() {
 				continue
 			}
 			dir := filepath.Dir(res.Path)
-			if dir == "." {
-				fmt.Printf("%s:\n%s\n", res.Path, string(res.Data))
+			if strings.HasPrefix(dir, "/dev/stdout") {
+				p := filepath.Base(res.Path)
+				fmt.Printf("%s:\n%s\n", p, string(res.Data))
 				continue
 			}
 			if err := os.MkdirAll(dir, 0755); err != nil {

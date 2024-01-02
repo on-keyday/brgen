@@ -1,7 +1,7 @@
 #license
 cmake_minimum_required(VERSION 3.26)
 enable_testing()
-project(brgen VERSION 0.0.1)
+project(brgen VERSION 0.0.2)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
   if(NOT "$ENV{FUTILS_TARGET_TRIPLE}" STREQUAL "")

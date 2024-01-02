@@ -80,11 +80,13 @@ struct Flags : futils::cmdline::templ::HelpOption {
     bool detected_stdio_type = false;
 
     bool spec = false;
+    bool force_ok = false;
 
     void bind(futils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&version, "version", "print version");
         ctx.VarBool(&spec, "s,spec", "print spec of src2json (for generator mode)");
+        ctx.VarBool(&force_ok, "force-ok", "force print ok when succeeded (for generator mode) (for debug)");
         ctx.VarBool(&lexer, "l,lexer", "lexer mode");
         ctx.VarBool(&dump_types, "dump-types", "dump types schema mode");
         ctx.VarBool(&check_ast, "c,check-ast", "check ast mode");
@@ -163,6 +165,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
 };
 auto& cout = futils::wrap::cout_wrap();
 ColorMode cout_color_mode = ColorMode::auto_color;
+bool force_print_ok = false;
 
 auto print_ok() {
     assert(cout_color_mode != ColorMode::auto_color);
@@ -254,23 +257,28 @@ int dump_types() {
     return exit_ok;
 }
 
+int print_spec(Flags& flags) {
+    if (flags.check_ast && flags.stdin_mode) {
+        cout << R"({
+    "langs": ["log"],
+    "input": "stdin",
+    "suffix": [".log"]
+})";
+    }
+    else {
+        print_error("spec mode only support check-ast with stdin mode");
+        return exit_err;
+    }
+    return exit_ok;
+}
+
 int Main(Flags& flags, futils::cmdline::option::Context&) {
     if (flags.version) {
         cout << futils::wrap::pack("src2json version ", src2json_version, " (lang version ", lang_version, ")\n");
         return exit_ok;
     }
     if (flags.spec) {
-        if (flags.check_ast && flags.stdin_mode) {
-            cout << R"({
-    "langs": ["log"],
-    "input": "stdin",
-    "suffix": [".log"]
-})";
-        }
-        else {
-            print_error("spec mode only support check-ast with stdin mode");
-        }
-        return 0;
+        return print_spec(flags);
     }
     if (flags.cout_color_mode == ColorMode::auto_color) {
         if (cout.is_tty()) {
@@ -290,6 +298,7 @@ int Main(Flags& flags, futils::cmdline::option::Context&) {
     }
     cout_color_mode = flags.cout_color_mode;
     cerr_color_mode = flags.cerr_color_mode;
+    force_print_ok = flags.force_ok;
     if (flags.detected_stdio_type) {
         if (auto s = futils::wrap::cin_wrap().get_file().stat()) {
             print_note("detected stdin type: ", to_string(s->mode.type()));
