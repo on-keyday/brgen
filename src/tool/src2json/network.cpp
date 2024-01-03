@@ -210,7 +210,7 @@ int network_main(const char* port, bool unsafe) {
     auto s = fnet::server::make_state(&serv, fnet::server::http_handler);
     s->set_log(logger);
     s->set_max_and_active(std::thread::hardware_concurrency() * 2, std::thread::hardware_concurrency() * 2);
-    auto p = fnet::server::prepare_listener(port, 10, false);
+    auto p = fnet::server::prepare_listener(port, 1000, false);
     if (!p) {
         print_error("failed to prepare listener: ", p.error());
         return exit_err;

@@ -10,6 +10,7 @@ import (
 	"io"
 	"io/fs"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -49,6 +50,7 @@ type Generator struct {
 type GeneratorHandler struct {
 	w         sync.WaitGroup
 	src2json  string
+	viaHTTP   *exec.Cmd
 	json2code string
 	ctx       context.Context
 	cancel    context.CancelFunc
@@ -101,6 +103,23 @@ func (g *GeneratorHandler) Init(src2json string, output []*Output, suffix string
 		if err != nil {
 			g.cancel()
 			return err
+		}
+	}
+	cmd := exec.CommandContext(g.ctx, g.src2json, "--version")
+	cmd.Stderr = g.stderr
+	cmd.Stdout = g.stderr
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("src2json: %w", err)
+	}
+	err = exec.CommandContext(g.ctx, g.src2json, "--check-http").Run()
+	if err == nil {
+		g.viaHTTP = exec.CommandContext(g.ctx, g.src2json, "--via-http", "--port", "8080")
+		g.viaHTTP.Stderr = g.stderr
+		g.viaHTTP.Stdout = g.stderr
+		err = g.viaHTTP.Start()
+		if err != nil {
+			return fmt.Errorf("src2json: %w", err)
 		}
 	}
 	return nil
@@ -298,14 +317,62 @@ func (g *GeneratorHandler) lookupPath(name string) ([]string, error) {
 	return []string{name}, nil
 }
 
-func (g *GeneratorHandler) loadAst(path string) ([]byte, error) {
-	cmd := exec.CommandContext(g.ctx, g.src2json, path)
+func (g *GeneratorHandler) appendConfig(args []string) []string {
 	if config.Warnings.DisableUntypedWarning {
-		cmd.Args = append(cmd.Args, "--disable-untyped")
+		args = append(args, "--disable-untyped")
 	}
 	if config.Warnings.DisableUnusedWarning {
-		cmd.Args = append(cmd.Args, "--disable-unused")
+		args = append(args, "--disable-unused")
 	}
+	return args
+}
+
+func (g *GeneratorHandler) loadAst(path string) ([]byte, error) {
+	if g.viaHTTP != nil {
+		var input struct {
+			Args []string `json:"args"`
+		}
+		input.Args = g.appendConfig([]string{path, "--print-json", "--print-on-error", "--no-color"})
+		in, err := json.Marshal(input)
+		if err != nil {
+			return nil, err
+		}
+		r, err := http.Post("http://localhost:8080/parse", "application/json", bytes.NewReader(in))
+		if err != nil {
+			return nil, err
+		}
+		defer func() {
+			io.Copy(io.Discard, r.Body)
+			r.Body.Close()
+		}()
+		data, err := io.ReadAll(r.Body)
+		if err != nil {
+			return nil, err
+		}
+		c := r.Header.Get("Content-Type")
+		if c != "application/json" {
+			return nil, fmt.Errorf("error: %d %s", r.StatusCode, string(data))
+		}
+		var res struct {
+			Stdout   string `json:"stdout"`
+			Stderr   string `json:"stderr"`
+			ExitCode int    `json:"exit_code"`
+		}
+		err = json.Unmarshal(data, &res)
+		if err != nil {
+			return nil, err
+		}
+		if res.ExitCode != 0 {
+			return nil, fmt.Errorf("error: %d %s", res.ExitCode, res.Stderr)
+		}
+		return []byte(res.Stdout), nil
+	}
+	return g.loadAstCommand(path)
+}
+
+func (g *GeneratorHandler) loadAstCommand(path string) ([]byte, error) {
+	cmd := exec.CommandContext(g.ctx, g.src2json, path)
+	cmd.Args = g.appendConfig(cmd.Args)
 	errBuf := bytes.NewBuffer(nil)
 	cmd.Stderr = errBuf
 	buf := bytes.NewBuffer(nil)
@@ -360,6 +427,21 @@ func (g *GeneratorHandler) dispatchGenerator(out *Output) error {
 	return nil
 }
 
+func (g *GeneratorHandler) requestStop() {
+	if g.viaHTTP != nil {
+		r, err := http.Get("http://localhost:8080/stop")
+		if err != nil {
+			g.Printf("requestStop: %s\n", err)
+			return
+		}
+		defer r.Body.Close()
+		io.Copy(io.Discard, r.Body)
+		if err = g.viaHTTP.Wait(); err != nil {
+			g.Printf("requestStop: %v\n", err)
+		}
+	}
+}
+
 func (g *GeneratorHandler) StartGenerator(path ...string) {
 	g.queue = make(chan *Result, 1)
 	wg := &sync.WaitGroup{}
@@ -373,10 +455,11 @@ func (g *GeneratorHandler) StartGenerator(path ...string) {
 
 	go func() {
 		wg.Wait()
+		g.requestStop()
 		for {
 			if g.outputCount.Load() == 0 {
-				close(g.queue)
 				g.cancel()
+				close(g.queue)
 				return
 			}
 			select {
@@ -530,18 +613,22 @@ func main() {
 			if err := os.MkdirAll(dir, 0755); err != nil {
 				log.Fatal(err)
 			}
-			fp, err := os.Create(res.Path)
-			if err != nil {
-				g.Printf("create %s: %s\n", res.Path, err)
-				continue
-			}
-			defer fp.Close()
-			_, err = fp.Write(res.Data)
-			if err != nil {
-				g.Printf("write %s: %s\n", res.Path, err)
-				continue
-			}
-			g.Printf("generated: %s\n", res.Path)
+			wg.Add(1)
+			go func(res *Result) {
+				defer wg.Done()
+				fp, err := os.Create(res.Path)
+				if err != nil {
+					g.Printf("create %s: %s\n", res.Path, err)
+					return
+				}
+				defer fp.Close()
+				_, err = fp.Write(res.Data)
+				if err != nil {
+					g.Printf("write %s: %s\n", res.Path, err)
+					return
+				}
+				g.Printf("generated: %s\n", res.Path)
+			}(res)
 		}
 	}
 	for i := 0; i < 3; i++ {
