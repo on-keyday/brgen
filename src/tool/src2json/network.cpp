@@ -14,6 +14,7 @@
 #include <json/iterator.h>
 #include <wrap/argv.h>
 #include <helper/lock.h>
+#include <fnet/util/uri.h>
 namespace fnet = futils::fnet;
 
 std::atomic_bool stop = false;
@@ -65,6 +66,8 @@ auto error_responder(std::map<std::string, std::string>& response, std::string& 
     };
 }
 
+bool unsafe_escape = false;
+
 void body_read(futils::fnet::server::Requester&& req, HeaderInfo* hdr, futils::http::body::HTTPBodyInfo info, futils::fnet::flex_storage&& body, futils::fnet::server::BodyState s, futils::fnet::server::StateContext c) {
     auto ptr = std::unique_ptr<HeaderInfo>(hdr);
     std::map<std::string, std::string> response;
@@ -99,7 +102,7 @@ void body_read(futils::fnet::server::Requester&& req, HeaderInfo* hdr, futils::h
         auto flag = i.force_as_string<std::string>();
         arg += " ";
         if (flag.find('\n') != std::string::npos) {
-            arg += "<source code...>";
+            arg += "<multiline text...>";
         }
         else if (flag.find(' ') != std::string::npos) {
             arg += "\"";
@@ -120,14 +123,27 @@ void body_read(futils::fnet::server::Requester&& req, HeaderInfo* hdr, futils::h
     is_worker_thread() = false;
     auto stdout_buffer = std::move(worker_stdout_buffer());
     auto stderr_buffer = std::move(worker_stderr_buffer());
-    p["stdout"] = std::move(stdout_buffer);
-    p["stderr"] = std::move(stderr_buffer);
-    p["exit_code"] = res;
-    auto text = futils::json::to_string<std::string>(p);
+    futils::json::Stringer st;
+    if (!unsafe_escape) {
+        st.set_utf_escape(true, false, true, true);
+    }
+    {
+        auto field = st.object();
+        field("stdout", stdout_buffer);
+        field("stderr", stderr_buffer);
+        field("exit_code", res);
+        field("args", args.holder_);
+    }
+    auto text = st.out();
     response["Connection"] = ptr->keep_alive ? "keep-alive" : "close";
     response["Content-Type"] = "application/json";
-    req.respond_flush(c, futils::fnet::server::StatusCode::http_ok, response, text);
-    c.log(futils::fnet::server::log_level::info, req.client.addr, ptr->method, " ", ptr->path, " -> ", futils::number::to_string<std::string>(int(futils::fnet::server::StatusCode::http_ok)));
+    auto status_code = futils::fnet::server::StatusCode::http_ok;
+    if (res != 0) {
+        status_code = futils::fnet::server::StatusCode::http_bad_request;
+    }
+    req.respond_flush(c, status_code, response, text);
+    auto level = status_code == futils::fnet::server::StatusCode::http_ok ? futils::fnet::server::log_level::info : futils::fnet::server::log_level::warn;
+    c.log(level, req.client.addr, ptr->method, " ", ptr->path, " -> ", futils::number::to_string<std::string>(int(status_code)));
     if (ptr->keep_alive) {
         futils::fnet::server::handle_keep_alive(std::move(req), std::move(c));
     }
@@ -144,7 +160,12 @@ void handler(void*, futils::fnet::server::Requester req, futils::fnet::server::S
         error_response(fnet::server::StatusCode::http_bad_request, "failed to read header");
         return;
     }
-    if (ptr->method == "GET" && ptr->path == "/stop") {
+    futils::uri::URI<std::string> uri;
+    if (futils::uri::parse_ex(uri, ptr->path, false, false) != futils::uri::ParseError::none) {
+        error_response(fnet::server::StatusCode::http_bad_request, "failed to parse uri");
+        return;
+    }
+    if (ptr->method == "GET" && uri.path == "/stop") {
         response["Connection"] = "close";
         response["Content-Type"] = "text/plain";
         req.respond_flush(s, fnet::server::StatusCode::http_ok, response, "bye");
@@ -152,8 +173,12 @@ void handler(void*, futils::fnet::server::Requester req, futils::fnet::server::S
         stop = true;
         return;
     }
-    if (ptr->method != "POST" || ptr->path != "/parse") {
+    if (ptr->method != "POST" || uri.path != "/parse") {
         error_response(fnet::server::StatusCode::http_not_found, "not found");
+        return;
+    }
+    if (ptr->headers["Content-Type"] != "application/json") {
+        error_response(fnet::server::StatusCode::http_bad_request, "Content-Type must be application/json");
         return;
     }
     if (body_info.type == futils::http::body::BodyType::no_info) {
@@ -178,7 +203,8 @@ void logger(fnet::server::log_level level, fnet::NetAddrPort* addr, fnet::error:
     log_buffer.push_back({level, addr ? *addr : fnet::NetAddrPort{}, err.error()});
 }
 
-int network_main(const char* port) {
+int network_main(const char* port, bool unsafe) {
+    unsafe_escape = unsafe;
     fnet::server::HTTPServ serv;
     serv.next = handler;
     auto s = fnet::server::make_state(&serv, fnet::server::http_handler);

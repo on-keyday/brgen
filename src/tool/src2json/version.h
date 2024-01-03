@@ -16,5 +16,5 @@ constexpr auto exit_err = 1;
 int src2json_main(int argc, char** argv, bool disable_network = false);
 
 #ifdef S2J_USE_NETWORK
-int network_main(const char* port);
+int network_main(const char* port,bool unsafe_escape);
 #endif

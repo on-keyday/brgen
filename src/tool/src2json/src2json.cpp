@@ -82,6 +82,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
     bool via_http = false;
     std::string port = "8080";
     bool check_http = false;
+    bool use_unsafe_escape = false;
 
     void bind(futils::cmdline::option::Context& ctx) {
         bind_help(ctx);
@@ -166,6 +167,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
         ctx.VarBool(&via_http, "via-http", "run as http server (POST /parse endpoint for src2json ({\"args\": []} for argument), GET /stop to stop server))");
         ctx.VarString(&port, "port", "set port of http server", "<port>");
         ctx.VarBool(&check_http, "check-http", "check http mode is enabled (for debug)");
+        ctx.VarBool(&use_unsafe_escape, "unsafe-escape", "use unsafe escape (this flag make json escape via http unsafe; ansi color escape sequence is not escaped)");
     }
 };
 
@@ -311,7 +313,7 @@ int Main(Flags& flags, futils::cmdline::option::Context&, bool disable_network) 
             return exit_err;
         }
 #ifdef S2J_USE_NETWORK
-        return network_main(flags.port.c_str());
+        return network_main(flags.port.c_str(), flags.use_unsafe_escape);
 #else
         print_error("network mode is not supported");
         return exit_err;
