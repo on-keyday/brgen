@@ -641,7 +641,7 @@ int src2json_main(int argc, char** argv, bool disable_network) {
 
 #ifdef __EMSCRIPTEN__
 extern "C" int EMSCRIPTEN_KEEPALIVE emscripten_main(const char* cmdline) {
-    return em_main(cmdline, src2json_main);
+    return em_main(cmdline, src2json_main, true);
 }
 #else
 

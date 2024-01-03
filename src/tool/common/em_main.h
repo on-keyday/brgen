@@ -4,7 +4,7 @@
 #include <fnet/util/urlencode.h>
 #include <view/slice.h>
 
-int em_main(const char* cmdline, auto main_) {
+int em_main(const char* cmdline, auto main_, auto... additional_args) {
     auto args = futils::view::make_cpy_splitview(cmdline, " ");
     futils::wrap::ArgvVector vec;
     for (size_t i = 0; i < args.size(); ++i) {
@@ -17,5 +17,5 @@ int em_main(const char* cmdline, auto main_) {
     int argc;
     char** argv;
     vec.arg(argc, argv);
-    return main_(argc, argv);
+    return main_(argc, argv, additional_args...);
 }
