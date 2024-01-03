@@ -15,7 +15,7 @@
         },
         {
             "name": "Debug src2json",
-            "type": "cppvsdbg",
+            "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceRoot}/tool/src2json",
             "args": [
@@ -26,9 +26,7 @@
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",
             "environment": [],
-            "console": "integratedTerminal",
-            //"preLaunchTask": "build",
-            "symbolSearchPath": "lib\\"
+            "miDebuggerPath": "/usr/bin/lldb-mi"
         },
         {
             "name": "Debug json2go",
@@ -36,7 +34,10 @@
             "request": "launch",
             "mode": "debug",
             "program": "${workspaceRoot}/src/tool/json2go",
-            "args": ["-f","ignore/sample.json"],
+            "args": [
+                "-f",
+                "ignore/sample.json"
+            ],
             "cwd": "${workspaceRoot}",
         },
         {
@@ -68,14 +69,15 @@
             "symbolSearchPath": "lib\\"
         },
         {
-            "name":"Debug generator",
+            "name": "Debug generator",
             "type": "go",
             "request": "launch",
             "mode": "exec",
             "program": "${workspaceRoot}/tool/gen_ast2csharp.exe",
-            "args": ["/dev/stdout"],
+            "args": [
+                "/dev/stdout"
+            ],
             "cwd": "${workspaceRoot}",
-
         },
         {
             "name": "Debug attach",
@@ -112,8 +114,7 @@
             "name": "Debug ctobgn",
             "program": "${workspaceRoot}/tool/ctobgn",
             "cwd": "${workspaceRoot}",
-            "args": [
-            ],
+            "args": [],
         }
     ]
 }
