@@ -26,7 +26,18 @@
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",
             "environment": [],
-            "miDebuggerPath": "/usr/bin/lldb-mi"
+            "MIMode": "lldb",
+            "miDebuggerPath": "/usr/bin/lldb-mi",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "logging": {
+                "engineLogging": true
+            }
         },
         {
             "name": "Debug json2go",
@@ -81,8 +92,10 @@
         },
         {
             "name": "Debug attach",
-            "type": "cppvsdbg",
+            "type": "cppdbg",
             "request": "attach",
+            "MIMode": "lldb",
+            "miDebuggerPath": "/usr/bin/lldb-mi",
             "processId": "${command:pickProcess}"
         },
         {

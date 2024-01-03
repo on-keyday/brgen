@@ -9,7 +9,7 @@ if [ $1 = "wasm-em" ]; then
     . build wasm-em $BUILD_TYPE futils
 else
     . build shared $BUILD_TYPE futils
-    if [ $S2J_USE_NETWORK = 1 ]; then
+    if [ "$S2J_USE_NETWORK" = "1" ]; then
         . build shared $BUILD_TYPE fnet
         . build shared $BUILD_TYPE fnetserv
     fi

@@ -8,7 +8,8 @@ WORKDIR /workspace
 # if you are not in Japan region, you should comment out this line, or change `ftp.jaist.ac.jp/pub/Linux` to your region millor server address.
 RUN sed -i 's@archive.ubuntu.com@ftp.jaist.ac.jp/pub/Linux@g' /etc/apt/sources.list
 
-RUN /bin/bash -c "$(curl https://apt.llvm.org/llvm.sh)"
+RUN /bin/bash -c "$(curl -s https://apt.llvm.org/llvm.sh)"
+
 
 
 RUN apt-get update && \
@@ -22,6 +23,7 @@ RUN apt-get update && \
     git\
     curl
 
+
 RUN apt-get update && \
     apt-get install -y\
     ninja-build\
@@ -33,9 +35,10 @@ RUN apt-get update && \
 # RUN ln -s /lib/llvm-15/bin/clang++ /bin/clang++
 # RUN ln -s /lib/llvm-15/bin/clang /bin/clang
 # RUN ln -s /bin/lldb-15 /bin/lldb
-# RUN ln -s /lib/llvm-15/lib/libc++abi.so.1.0 /lib/llvm-15/lib/libc++abi.so
+RUN ln -s /usr/lib/x86_64-linux-gnu/libc++abi.so.1.0 /usr/lib/x86_64-linux-gnu/libc++abi.so
 RUN unlink /usr/bin/ld
 RUN ln -s /bin/lld /usr/bin/ld
+RUN ln -s /usr/bin/lldb-server-16 /usr/bin/lldb-server-16.0.6
 
 RUN apt-get update && \
     apt-get install -y\
@@ -51,3 +54,4 @@ RUN rm /workspace/lldb-mi.zip
 RUN (cd /workspace/lldb-mi-main;cmake -G Ninja -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang .)
 RUN (cd /workspace/lldb-mi-main;cmake --build .)
 RUN cp /workspace/lldb-mi-main/src/lldb-mi /bin/lldb-mi
+

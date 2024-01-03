@@ -17,6 +17,10 @@ services:
       - ./go.sum:/workspace/go.sum:cached
       - ./ast2go:/workspace/ast2go:cached
       - ./brgen.json:/workspace/brgen.json:cached
+      - ./Dockerfile:/workspace/Dockerfile:cached
+      - ./docker-compose.yml:/workspace/docker-compose.yml:cached
+      - ./README.md:/workspace/README.md:cached
+      - ./.devcontainer:/workspace/.devcontainer:cached
     cap_add:
       - SYS_PTRACE
     security_opt:
