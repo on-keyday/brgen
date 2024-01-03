@@ -6,7 +6,6 @@
 #include <set>
 #include "../common/print.h"
 #include <map>
-#include <fnet/html.h>
 #include <atomic>
 #include "version.h"
 #include <json/json_export.h>

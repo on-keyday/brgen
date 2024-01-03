@@ -1,0 +1,92 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "command": "cmd",
+            "args": [
+                "/C",
+                "build.bat"
+            ]
+        },
+        {
+            "label": "npm_compile_server",
+            "type": "npm",
+            "script": "compile",
+            "group": "build",
+            "path": "lsp/server",
+            "presentation": {
+                "panel": "dedicated",
+                "reveal": "never"
+            },
+            "problemMatcher": [
+                "$tsc"
+            ]
+        },
+        {
+            "label": "npm_compile_client",
+            "type": "npm",
+            "script": "compile",
+            "group": "build",
+            "path": "lsp/client",
+            "presentation": {
+                "panel": "dedicated",
+                "reveal": "never"
+            },
+            "problemMatcher": [
+                "$tsc"
+            ]
+        },
+        {
+            "label": "npm_watch_client",
+            "type": "npm",
+            "script": "watch",
+            "path": "lsp/client",
+            "isBackground": true,
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "panel": "dedicated",
+                "reveal": "never"
+            },
+            "problemMatcher": [
+                "$tsc-watch"
+            ],
+            "dependsOn": [
+                "npm_compile_client"
+            ]
+        },
+        {
+            "label": "npm_watch_server",
+            "type": "npm",
+            "script": "watch",
+            "path": "lsp/server",
+            "isBackground": true,
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "panel": "dedicated",
+                "reveal": "never"
+            },
+            "problemMatcher": [
+                "$tsc-watch"
+            ],
+            "dependsOn": [
+                "npm_compile_server"
+            ]
+        },
+        {
+            "label": "npm_build_and_watch",
+            "dependsOn": [
+                "npm_watch_client",
+                "npm_watch_server"
+            ]
+        },
+    ]
+}

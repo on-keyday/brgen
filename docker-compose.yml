@@ -21,6 +21,8 @@ services:
       - SYS_PTRACE
     security_opt:
       - seccomp:unconfined
+    ports:
+      - "8090:8080"
 
 volumes:
   src:
