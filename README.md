@@ -1,10 +1,12 @@
-# brgen - binary representation interpreter generator (仮)
+# brgen - BinaRy encoder/decoder/ GENerator
 
-ネットワーク・プロトコルのパケット等の解析/生成のためのコードを吐くジェネレータ
+ネットワーク・プロトコルのパケットやファイルフォーマットなどの解析/生成のためのコードを吐くジェネレーター
+
+the generators that generate encoder/decoder code for parse/create network packet, binary file, etc...
 
 # 目標(Goal)
 
-- lightweight runtime - ランタイムは軽いもしくは無い
+- lightweight or no runtime - ランタイムは軽いもしくは無い
 - enough to represent formats - 世の中にあるネットワークプロトコルフォーマットを表現するのに十分な表現力
 - easy to write - 簡単に書ける
 - write once generate any language code - 一回書けば様々な言語で生成
@@ -16,6 +18,16 @@ https://on-keyday.github.io/brgen/doc
 # Playground
 
 https://on-keyday.github.io/brgen
+
+# examples
+
+https://github.com/on-keyday/brgen/tree/main/example を御覧ください
+
+TODO(on-keyday): 現在、example 内のコードのいくつかは実装されていない機能が使われており、ジェネレーターで生成できる保証がありません
+
+see https://github.com/on-keyday/brgen/tree/main/example
+
+TODO(on-keyday): some of these examples use non-implemented functionality and not working with current generator implementation
 
 # How to Use (simple)
 

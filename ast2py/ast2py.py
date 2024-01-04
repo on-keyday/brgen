@@ -232,7 +232,8 @@ class FieldArgument(Node):
     arguments: List[Expr]
     alignment: Optional[Expr]
     alignment_value: Optional[int]
-    range: Optional[Range]
+    sub_byte_length: Optional[Expr]
+    sub_byte_begin: Optional[Expr]
 
 
 class Binary(Expr):
@@ -849,11 +850,16 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].alignment_value = x if isinstance(x,int) else raiseError(TypeError('type mismatch at FieldArgument::alignment_value'))
                 else:
                     node[i].alignment_value = None
-                if ast.node[i].body["range"] is not None:
-                    x = node[ast.node[i].body["range"]]
-                    node[i].range = x if isinstance(x,Range) else raiseError(TypeError('type mismatch at FieldArgument::range'))
+                if ast.node[i].body["sub_byte_length"] is not None:
+                    x = node[ast.node[i].body["sub_byte_length"]]
+                    node[i].sub_byte_length = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at FieldArgument::sub_byte_length'))
                 else:
-                    node[i].range = None
+                    node[i].sub_byte_length = None
+                if ast.node[i].body["sub_byte_begin"] is not None:
+                    x = node[ast.node[i].body["sub_byte_begin"]]
+                    node[i].sub_byte_begin = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at FieldArgument::sub_byte_begin'))
+                else:
+                    node[i].sub_byte_begin = None
             case NodeType.BINARY:
                 if ast.node[i].body["expr_type"] is not None:
                     x = node[ast.node[i].body["expr_type"]]
@@ -1702,8 +1708,11 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
           if x.alignment is not None:
               if f(f,x.alignment) == False:
                   return
-          if x.range is not None:
-              if f(f,x.range) == False:
+          if x.sub_byte_length is not None:
+              if f(f,x.sub_byte_length) == False:
+                  return
+          if x.sub_byte_begin is not None:
+              if f(f,x.sub_byte_begin) == False:
                   return
         case x if isinstance(x,Binary):
           if x.expr_type is not None:

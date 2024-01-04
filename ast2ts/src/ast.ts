@@ -359,7 +359,8 @@ export interface FieldArgument extends Node {
 	arguments: Expr[];
 	alignment: Expr|null;
 	alignment_value: number|null;
-	range: Range|null;
+	sub_byte_length: Expr|null;
+	sub_byte_begin: Expr|null;
 }
 
 export function isFieldArgument(obj: any): obj is FieldArgument {
@@ -1023,7 +1024,8 @@ export function parseAST(obj: any): Program {
 				arguments: [],
 				alignment: null,
 				alignment_value: null,
-				range: null,
+				sub_byte_length: null,
+				sub_byte_begin: null,
 			}
 			c.node.push(n);
 			break;
@@ -1785,14 +1787,22 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at FieldArgument::alignment_value');
 			}
 			n.alignment_value = on.body.alignment_value;
-			if (on.body?.range !== null && typeof on.body?.range !== 'number') {
-				throw new Error('invalid node list at FieldArgument::range');
+			if (on.body?.sub_byte_length !== null && typeof on.body?.sub_byte_length !== 'number') {
+				throw new Error('invalid node list at FieldArgument::sub_byte_length');
 			}
-			const tmprange = on.body.range === null ? null : c.node[on.body.range];
-			if (!(tmprange === null || isRange(tmprange))) {
-				throw new Error('invalid node list at FieldArgument::range');
+			const tmpsub_byte_length = on.body.sub_byte_length === null ? null : c.node[on.body.sub_byte_length];
+			if (!(tmpsub_byte_length === null || isExpr(tmpsub_byte_length))) {
+				throw new Error('invalid node list at FieldArgument::sub_byte_length');
 			}
-			n.range = tmprange;
+			n.sub_byte_length = tmpsub_byte_length;
+			if (on.body?.sub_byte_begin !== null && typeof on.body?.sub_byte_begin !== 'number') {
+				throw new Error('invalid node list at FieldArgument::sub_byte_begin');
+			}
+			const tmpsub_byte_begin = on.body.sub_byte_begin === null ? null : c.node[on.body.sub_byte_begin];
+			if (!(tmpsub_byte_begin === null || isExpr(tmpsub_byte_begin))) {
+				throw new Error('invalid node list at FieldArgument::sub_byte_begin');
+			}
+			n.sub_byte_begin = tmpsub_byte_begin;
 			break;
 		}
 		case "binary": {
@@ -3679,8 +3689,14 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 					return;
 				}
 			}
-			if (n.range !== null) {
-				const result = fn(fn,n.range);
+			if (n.sub_byte_length !== null) {
+				const result = fn(fn,n.sub_byte_length);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.sub_byte_begin !== null) {
+				const result = fn(fn,n.sub_byte_begin);
 				if (result === false) {
 					return;
 				}

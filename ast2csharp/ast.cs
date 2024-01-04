@@ -215,7 +215,8 @@ public class FieldArgument : Node{
 	public List<Expr>? Arguments{get;set;}
 	public Expr? Alignment{get;set;}
 	public ulong? AlignmentValue{get;set;}
-	public Range? Range{get;set;}
+	public Expr? SubByteLength{get;set;}
+	public Expr? SubByteBegin{get;set;}
 }
 public class Binary : Expr{
 	public Loc Loc{get;set;}

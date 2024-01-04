@@ -468,7 +468,8 @@ struct ast2c_FieldArgument {
 	size_t arguments_size;
 	ast2c_Expr* alignment;
 	uint64_t* alignment_value;
-	ast2c_Range* range;
+	ast2c_Expr* sub_byte_length;
+	ast2c_Expr* sub_byte_begin;
 };
 
 // returns 1 if succeed 0 if failed

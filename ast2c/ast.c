@@ -966,14 +966,16 @@ int ast2c_FieldArgument_parse(ast2c_Ast* ast,ast2c_FieldArgument* s,ast2c_json_h
 	s->arguments = NULL;
 	s->alignment = NULL;
 	s->alignment_value = NULL;
-	s->range = NULL;
+	s->sub_byte_length = NULL;
+	s->sub_byte_begin = NULL;
 	void* raw_arguments = h->object_get(h, obj_body, "raw_arguments");
 	void* end_loc = h->object_get(h, obj_body, "end_loc");
 	void* collected_arguments = h->object_get(h, obj_body, "collected_arguments");
 	void* arguments = h->object_get(h, obj_body, "arguments");
 	void* alignment = h->object_get(h, obj_body, "alignment");
 	void* alignment_value = h->object_get(h, obj_body, "alignment_value");
-	void* range = h->object_get(h, obj_body, "range");
+	void* sub_byte_length = h->object_get(h, obj_body, "sub_byte_length");
+	void* sub_byte_begin = h->object_get(h, obj_body, "sub_byte_begin");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_FieldArgument::loc is null"); } return 0; }
 	if (!raw_arguments) { if(h->error) { h->error(h,raw_arguments, "ast2c_FieldArgument::raw_arguments is null"); } return 0; }
 	if (!end_loc) { if(h->error) { h->error(h,end_loc, "ast2c_FieldArgument::end_loc is null"); } return 0; }
@@ -989,7 +991,8 @@ int ast2c_FieldArgument_parse(ast2c_Ast* ast,ast2c_FieldArgument* s,ast2c_json_h
 	}
 	if (!alignment) { if(h->error) { h->error(h,alignment, "ast2c_FieldArgument::alignment is null"); } return 0; }
 	if (!alignment_value) { if(h->error) { h->error(h,alignment_value, "ast2c_FieldArgument::alignment_value is null"); } return 0; }
-	if (!range) { if(h->error) { h->error(h,range, "ast2c_FieldArgument::range is null"); } return 0; }
+	if (!sub_byte_length) { if(h->error) { h->error(h,sub_byte_length, "ast2c_FieldArgument::sub_byte_length is null"); } return 0; }
+	if (!sub_byte_begin) { if(h->error) { h->error(h,sub_byte_begin, "ast2c_FieldArgument::sub_byte_begin is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_FieldArgument::loc"); }
 		goto error;

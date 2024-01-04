@@ -1276,7 +1276,8 @@ type FieldArgument struct {
 	Arguments          []Expr
 	Alignment          Expr
 	AlignmentValue     *uint64
-	Range              *Range
+	SubByteLength      Expr
+	SubByteBegin       Expr
 }
 
 func (n *FieldArgument) isNode() {}
@@ -2871,7 +2872,8 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				Arguments          []uintptr `json:"arguments"`
 				Alignment          *uintptr  `json:"alignment"`
 				AlignmentValue     *uint64   `json:"alignment_value"`
-				Range              *uintptr  `json:"range"`
+				SubByteLength      *uintptr  `json:"sub_byte_length"`
+				SubByteBegin       *uintptr  `json:"sub_byte_begin"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -2892,8 +2894,11 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				v.Alignment = n.node[*tmp.Alignment].(Expr)
 			}
 			v.AlignmentValue = tmp.AlignmentValue
-			if tmp.Range != nil {
-				v.Range = n.node[*tmp.Range].(*Range)
+			if tmp.SubByteLength != nil {
+				v.SubByteLength = n.node[*tmp.SubByteLength].(Expr)
+			}
+			if tmp.SubByteBegin != nil {
+				v.SubByteBegin = n.node[*tmp.SubByteBegin].(Expr)
 			}
 		case NodeTypeBinary:
 			v := n.node[i].(*Binary)
@@ -4057,8 +4062,13 @@ func Walk(n Node, f Visitor) {
 				return
 			}
 		}
-		if v.Range != nil {
-			if !f.Visit(f, v.Range) {
+		if v.SubByteLength != nil {
+			if !f.Visit(f, v.SubByteLength) {
+				return
+			}
+		}
+		if v.SubByteBegin != nil {
+			if !f.Visit(f, v.SubByteBegin) {
 				return
 			}
 		}

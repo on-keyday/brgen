@@ -142,9 +142,10 @@ namespace brgen::ast {
         std::vector<std::shared_ptr<Expr>> arguments;
         // alignment of field
         std::shared_ptr<Expr> alignment;
-        std::optional<size_t> alignment_value = 0;
+        std::optional<size_t> alignment_value;
         // sub byte range of field
-        std::shared_ptr<Range> range;
+        std::shared_ptr<Expr> sub_byte_length;
+        std::shared_ptr<Expr> sub_byte_begin;
 
         FieldArgument(lexer::Loc l)
             : Node(l, NodeType::field_argument) {}
@@ -160,7 +161,8 @@ namespace brgen::ast {
             sdebugf(arguments);
             sdebugf(alignment);
             sdebugf(alignment_value);
-            sdebugf(range);
+            sdebugf(sub_byte_length);
+            sdebugf(sub_byte_begin);
         }
     };
 

@@ -5,6 +5,7 @@
 #include <core/ast/traverse.h>
 #include <helper/defer.h>
 #include "replacer.h"
+#include "../ast/tool/extract_config.h"
 
 namespace brgen::middle {
 
@@ -953,6 +954,53 @@ namespace brgen::middle {
             return;
         }
 
+        void typing_field(ast::Field* field) {
+            if (!field->arguments ||
+                field->arguments->collected_arguments.empty() ||
+                !field->arguments->arguments.empty() ||
+                field->arguments->alignment ||
+                field->arguments->sub_byte_length) {
+                return;
+            }
+            auto& args = field->arguments;
+            for (auto a : args->collected_arguments) {
+                auto arg = a.lock();
+                auto conf = ast::tool::extract_config(arg, ast::tool::ExtractMode::assign);
+                if (!conf) {
+                    args->arguments.push_back(std::move(arg));
+                    continue;
+                }
+                if (conf->name == "input.align") {
+                    args->alignment = std::move(conf->arguments[0]);
+                    continue;
+                }
+                if (conf->name == "input") {
+                    auto conf2 = ast::tool::extract_config(conf->arguments[0], ast::tool::ExtractMode::call);
+                    if (!conf2) {
+                        continue;
+                    }
+                    // input.subrange(length_in_bytes,[offset_in_bytes_of_full_input = input.offset])
+                    if (conf2->name == "input.subrange") {
+                        auto loc = conf->arguments[0]->loc;
+                        if (conf2->arguments.size() == 1) {
+                            // subrange(length) become subrange(length,input.offset)
+                            args->sub_byte_length = std::move(conf2->arguments[0]);
+                        }
+                        else if (conf2->arguments.size() == 2) {
+                            // subrange(offset,length) become subrange(input.offset+offset,input.offset+offset+length)
+                            args->sub_byte_length = std::move(conf2->arguments[0]);
+                            args->sub_byte_begin = std::move(conf2->arguments[1]);
+                        }
+                        else {
+                            error(loc, "expect 1 or 2 arguments but got ", nums(conf2->arguments.size())).report();
+                        }
+                    }
+                }
+                // TODO(on-keyday): support more config, or custom config?
+                // other config will be ignored
+            }
+        }
+
         void typing_object(auto& ty) {
             // Define a lambda function for recursive traversal and typing
             auto recursive_typing = [&](auto&& f, NodeReplacer ty) -> void {
@@ -1020,6 +1068,9 @@ namespace brgen::middle {
                         }
                     }
                     return;
+                }
+                if (auto field = ast::as<ast::Field>(node)) {
+                    typing_field(field);
                 }
             };
             recursive_typing(recursive_typing, ty);

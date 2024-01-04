@@ -2232,7 +2232,8 @@ pub struct FieldArgument {
 	pub arguments: Vec<Expr>,
 	pub alignment: Option<Expr>,
 	pub alignment_value: Option<u64>,
-	pub range: Option<Rc<RefCell<Range>>>,
+	pub sub_byte_length: Option<Expr>,
+	pub sub_byte_begin: Option<Expr>,
 }
 
 impl TryFrom<&Node> for Rc<RefCell<FieldArgument>> {
@@ -6206,7 +6207,8 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				arguments: Vec::new(),
 				alignment: None,
 				alignment_value: None,
-				range: None,
+				sub_byte_length: None,
+				sub_byte_begin: None,
 				})))
 			},
 			NodeType::Binary => {
@@ -6915,24 +6917,35 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						false=>return Err(Error::MismatchJSONType(alignment_value_body.into(),JSONType::Number)),
 					},
 				};
-				let range_body = match raw_node.body.get("range") {
+				let sub_byte_length_body = match raw_node.body.get("sub_byte_length") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"range")),
+					None=>return Err(Error::MissingField(node_type,"sub_byte_length")),
 				};
- 				if !range_body.is_null() {
-					let range_body = match range_body.as_u64() {
+ 				if !sub_byte_length_body.is_null() {
+					let sub_byte_length_body = match sub_byte_length_body.as_u64() {
 						Some(v)=>v,
-						None=>return Err(Error::MismatchJSONType(range_body.into(),JSONType::Number)),
+						None=>return Err(Error::MismatchJSONType(sub_byte_length_body.into(),JSONType::Number)),
 					};
-					let range_body = match nodes.get(range_body as usize) {
+					let sub_byte_length_body = match nodes.get(sub_byte_length_body as usize) {
 						Some(v)=>v,
-						None => return Err(Error::IndexOutOfBounds(range_body as usize)),
+						None => return Err(Error::IndexOutOfBounds(sub_byte_length_body as usize)),
 					};
-					let range_body = match range_body {
-						Node::Range(node)=>node,
-						x =>return Err(Error::MismatchNodeType(x.into(),range_body.into())),
+					node.borrow_mut().sub_byte_length = Some(sub_byte_length_body.try_into()?);
+				}
+				let sub_byte_begin_body = match raw_node.body.get("sub_byte_begin") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"sub_byte_begin")),
+				};
+ 				if !sub_byte_begin_body.is_null() {
+					let sub_byte_begin_body = match sub_byte_begin_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(sub_byte_begin_body.into(),JSONType::Number)),
 					};
-					node.borrow_mut().range = Some(range_body.clone());
+					let sub_byte_begin_body = match nodes.get(sub_byte_begin_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(sub_byte_begin_body as usize)),
+					};
+					node.borrow_mut().sub_byte_begin = Some(sub_byte_begin_body.try_into()?);
 				}
 			},
 			NodeType::Binary => {
@@ -10529,7 +10542,12 @@ where
 					return;
 				}
 			}
-			if let Some(node) = &node.borrow().range{
+			if let Some(node) = &node.borrow().sub_byte_length{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
+			if let Some(node) = &node.borrow().sub_byte_begin{
 				if !f.visit(&node.into()){
 					return;
 				}

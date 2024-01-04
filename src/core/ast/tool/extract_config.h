@@ -34,29 +34,39 @@ namespace brgen::ast::tool {
         lexer::Loc loc;
     };
 
-    std::optional<ConfigDesc> extract_config(auto&& node) {
-        if (auto b = ast::as<Binary>(node); b && b->op == ast::BinaryOp::assign) {
-            auto conf = extract_config_name(b->left);
-            if (conf.size() == 0) {
-                return std::nullopt;
+    enum class ExtractMode {
+        both,
+        assign,
+        call,
+    };
+
+    std::optional<ConfigDesc> extract_config(auto&& node, ExtractMode mode = ExtractMode::both) {
+        if (mode == ExtractMode::both || mode == ExtractMode::assign) {
+            if (auto b = ast::as<Binary>(node); b && b->op == ast::BinaryOp::assign) {
+                auto conf = extract_config_name(b->left);
+                if (conf.size() == 0) {
+                    return std::nullopt;
+                }
+                ConfigDesc desc;
+                desc.name = conf;
+                desc.assign_style = true;
+                desc.arguments.push_back(b->right);
+                desc.loc = b->loc;
+                return desc;
             }
-            ConfigDesc desc;
-            desc.name = conf;
-            desc.assign_style = true;
-            desc.arguments.push_back(b->right);
-            desc.loc = b->loc;
-            return desc;
         }
-        if (auto c = ast::as<Call>(node)) {
-            auto conf = extract_config_name(c->callee);
-            if (conf.size() == 0) {
-                return std::nullopt;
+        if (mode == ExtractMode::both || mode == ExtractMode::call) {
+            if (auto c = ast::as<Call>(node)) {
+                auto conf = extract_config_name(c->callee);
+                if (conf.size() == 0) {
+                    return std::nullopt;
+                }
+                ConfigDesc desc;
+                desc.name = conf;
+                desc.arguments = c->arguments;
+                desc.loc = c->loc;
+                return desc;
             }
-            ConfigDesc desc;
-            desc.name = conf;
-            desc.arguments = c->arguments;
-            desc.loc = c->loc;
-            return desc;
         }
         return std::nullopt;
     }
