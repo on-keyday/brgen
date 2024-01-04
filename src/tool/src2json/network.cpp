@@ -139,11 +139,8 @@ void body_read(futils::fnet::server::Requester&& req, HeaderInfo* hdr, futils::h
     response["Connection"] = ptr->keep_alive ? "keep-alive" : "close";
     response["Content-Type"] = "application/json";
     auto status_code = futils::fnet::server::StatusCode::http_ok;
-    if (res != 0) {
-        status_code = futils::fnet::server::StatusCode::http_bad_request;
-    }
     req.respond_flush(c, status_code, response, text);
-    auto level = status_code == futils::fnet::server::StatusCode::http_ok ? futils::fnet::server::log_level::info : futils::fnet::server::log_level::warn;
+    auto level = futils::fnet::server::log_level::info;
     c.log(level, req.client.addr, ptr->method, " ", ptr->path, " -> ", futils::number::to_string<std::string>(int(status_code)));
     if (ptr->keep_alive) {
         futils::fnet::server::handle_keep_alive(std::move(req), std::move(c));
