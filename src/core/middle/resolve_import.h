@@ -4,6 +4,8 @@
 #include "../ast/traverse.h"
 #include "../common/file.h"
 #include "../ast/parse.h"
+#include "../ast/tool/extract_config.h"
+#include "replacer.h"
 
 namespace brgen::middle {
     struct PathStack {
@@ -35,14 +37,14 @@ namespace brgen::middle {
             return nullptr;
         }
 
-        bool is_already_registered(fs::path path) {
+        bool detect_circler(fs::path path, lexer::Loc loc) {
             for (auto& p : path_stack) {
                 std::error_code ec;
                 if (fs::equivalent(p, path, ec)) {
                     return true;
                 }
                 else if (ec) {
-                    error({}, "cannot compare path ", p.generic_u8string(), " and ", path.generic_u8string(), " code=", ec.category().name(), ":", nums(ec.value())).report();
+                    error(loc, "cannot compare path ", p.generic_u8string(), " and ", path.generic_u8string(), " code=", ec.category().name(), ":", nums(ec.value())).report();
                 }
             }
             return false;
@@ -58,77 +60,67 @@ namespace brgen::middle {
         auto root_path = l->path();
         stack.push(root_path);
         stack.programs[root_path] = n;
-        auto f = [&](auto&& f, auto& n) -> void {
-            ast::traverse(n, [&](auto& g) {
+        auto f = [&](auto&& f, NodeReplacer n) -> void {
+            auto node = n.to_node();
+            ast::traverse(node, [&](auto& g) {
                 f(f, g);
             });
-            using T = futils::helper::template_of_t<std::decay_t<decltype(n)>>;
-            if constexpr (T::value) {
-                using P = typename T::template param_at<0>;
-                if constexpr (std::is_base_of_v<P, ast::Call> && !std::is_same_v<P, ast::Call>) {
-                    if (ast::Call* m = ast::as<ast::Call>(n)) {
-                        if (m->callee->node_type != ast::NodeType::member_access) {
-                            return;
+            std::optional<brgen::ast::tool::ConfigDesc> conf = ast::tool::extract_config(node, ast::tool::ExtractMode::call);
+            if (conf) {
+                if (conf->name != "config.import") {
+                    return;
+                }
+                if (conf->arguments.size() != 1) {
+                    error(conf->loc, "config.import() should take 1 argument but found ", nums(conf->arguments.size())).report();
+                }
+                if (conf->arguments[0]->node_type != ast::NodeType::str_literal) {
+                    error(conf->loc, "config.import() should take string literal but found ", ast::node_type_to_string(conf->arguments[0]->node_type)).report();
+                }
+                ast::as<ast::MemberAccess>(ast::as<ast::Call>(node)->callee)->member->usage = ast::IdentUsage::reference_builtin_fn;
+                auto raw_path = ast::cast_to<ast::StrLiteral>(conf->arguments[0]);
+                auto path = unescape(raw_path->value);
+                if (!path) {
+                    error(conf->loc, "invalid path: cannot unescape ", raw_path->value).report();
+                }
+                auto res = fs.add_file(*path, true, stack.current().parent_path());
+                if (!res) {
+                    auto fullpath = stack.current().parent_path() / *path;
+                    error(conf->loc, "cannot open file  ", fullpath.generic_u8string(), " code=", res.error().category().name(), ":", nums(res.error().value())).report();
+                }
+                auto new_input = fs.get_input(*res);
+                if (!new_input) {
+                    auto fullpath = fs.get_path(*res);
+                    error(conf->loc, "cannot open file  ", fullpath.generic_u8string()).report();
+                }
+                auto new_path = new_input->path();
+                if (stack.detect_circler(new_path, conf->loc)) {
+                    error(conf->loc, "circular import detected: ", new_path.generic_u8string()).report();
+                }
+                auto found = stack.get(new_path);
+                if (found) {
+                    auto u8 = new_path.generic_u8string();
+                    auto as_str = std::string(reinterpret_cast<const char*>(u8.c_str()), u8.size());
+                    n.replace(std::make_shared<ast::Import>(ast::cast_to<ast::Call>(n.to_node()), std::move(found), std::move(as_str)));
+                }
+                else {
+                    ast::Context c;
+                    auto p = c.enter_stream(new_input, [&](ast::Stream& s) {
+                        return ast::Parser{s}.parse();
+                    });
+                    if (!p) {
+                        auto err = error(conf->loc, "cannot parse file ", new_path.generic_u8string());
+                        for (LocationEntry& ent : p.error().locations) {
+                            err.locations.push_back(std::move(ent));
                         }
-                        auto access = ast::cast_to<ast::MemberAccess>(m->callee);
-                        if (access->target->node_type != ast::NodeType::config) {
-                            return;
-                        }
-                        if (access->member->ident != "import") {
-                            return;
-                        }
-                        if (m->arguments.size() != 1) {
-                            error(m->loc, "config.import() should take 1 argument but found ", nums(m->arguments.size())).report();
-                        }
-                        if (m->arguments[0]->node_type != ast::NodeType::str_literal) {
-                            error(m->loc, "config.import() should take string literal but found ", ast::node_type_to_string(m->arguments[0]->node_type)).report();
-                        }
-                        auto raw_path = ast::cast_to<ast::StrLiteral>(m->arguments[0]);
-                        auto path = unescape(raw_path->value);
-                        if (!path) {
-                            error(m->loc, "invalid path: cannot unescape ", raw_path->value).report();
-                        }
-                        auto res = fs.add_file(*path, true, stack.current().parent_path());
-                        if (!res) {
-                            auto fullpath = stack.current().parent_path() / *path;
-                            error(m->loc, "cannot open file  ", fullpath.generic_u8string(), " code=", res.error().category().name(), ":", nums(res.error().value())).report();
-                        }
-                        auto new_input = fs.get_input(*res);
-                        if (!new_input) {
-                            auto fullpath = fs.get_path(*res);
-                            error(m->loc, "cannot open file  ", fullpath.generic_u8string()).report();
-                        }
-                        auto new_path = new_input->path();
-                        if (stack.is_already_registered(new_path)) {
-                            error(m->loc, "circular import detected: ", new_path.generic_u8string()).report();
-                        }
-                        auto found = stack.get(new_path);
-                        if (found) {
-                            auto u8 = new_path.generic_u8string();
-                            auto as_str = std::string(reinterpret_cast<const char*>(u8.c_str()), u8.size());
-                            n = std::make_shared<ast::Import>(ast::cast_to<ast::Call>(n), std::move(found), std::move(as_str));
-                        }
-                        else {
-                            ast::Context c;
-                            auto p = c.enter_stream(new_input, [&](ast::Stream& s) {
-                                return ast::Parser{s}.parse();
-                            });
-                            if (!p) {
-                                auto err = error(m->loc, "cannot parse file ", new_path.generic_u8string());
-                                for (LocationEntry& ent : p.error().locations) {
-                                    err.locations.push_back(std::move(ent));
-                                }
-                                err.report();
-                            }
-                            stack.push(new_path);
-                            stack.programs[new_path] = *p;
-                            f(f, *p);
-                            stack.pop();
-                            auto u8 = new_path.generic_u8string();
-                            auto as_str = std::string(reinterpret_cast<const char*>(u8.c_str()), u8.size());
-                            n = std::make_shared<ast::Import>(ast::cast_to<ast::Call>(n), std::move(*p), std::move(as_str));
-                        }
+                        err.report();
                     }
+                    stack.push(new_path);
+                    stack.programs[new_path] = *p;
+                    f(f, *p);
+                    stack.pop();
+                    auto u8 = new_path.generic_u8string();
+                    auto as_str = std::string(reinterpret_cast<const char*>(u8.c_str()), u8.size());
+                    n.replace(std::make_shared<ast::Import>(ast::cast_to<ast::Call>(std::move(node)), std::move(*p), std::move(as_str)));
                 }
             }
         };

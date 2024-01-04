@@ -981,6 +981,7 @@ namespace brgen::middle {
                     }
                     // input.subrange(length_in_bytes,[offset_in_bytes_of_full_input = input.offset])
                     if (conf2->name == "input.subrange") {
+                        ast::as<ast::MemberAccess>(ast::as<ast::Call>(conf->arguments[0])->callee)->member->usage = ast::IdentUsage::reference_builtin_fn;
                         auto loc = conf->arguments[0]->loc;
                         if (conf2->arguments.size() == 1) {
                             // subrange(length) become subrange(length,input.offset)

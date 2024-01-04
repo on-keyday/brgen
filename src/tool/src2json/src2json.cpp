@@ -96,7 +96,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
         ctx.VarBool(&not_resolve_import, "not-resolve-import", "not resolve import");
         ctx.VarBool(&not_resolve_type, "not-resolve-type", "not resolve type");
         ctx.VarBool(&not_resolve_cast, "not-resolve-cast", "not resolve cast");
-        ctx.VarBool(&not_resolve_assert, "not-resolve-assert", "not-resolve assert");
+        ctx.VarBool(&not_resolve_assert, "not-resolve-assert", "not resolve assert");
         ctx.VarBool(&not_detect_recursive_type, "not-detect-recursive-type", "not detect recursive type");
         ctx.VarBool(&not_detect_int_set, "not-detect-int-set", "not detect int set");
         ctx.VarBool(&not_detect_alignment, "not-detect-alignment", "not detect alignment");
@@ -164,7 +164,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
 
         ctx.VarBool(&detected_stdio_type, "detected-stdio-type", "detected stdin/stdout/stderr type (for debug)");
 
-        ctx.VarBool(&via_http, "via-http", "run as http server (POST /parse endpoint for src2json ({\"args\": []} for argument), GET /stop to stop server))");
+        ctx.VarBool(&via_http, "via-http", "run as http server (POST /parse endpoint for src2json ({\"args\": []} for argument), GET /stop to stop server)");
         ctx.VarString(&port, "port", "set port of http server", "<port>");
         ctx.VarBool(&check_http, "check-http", "check http mode is enabled (for debug)");
         ctx.VarBool(&use_unsafe_escape, "unsafe-escape", "use unsafe escape (this flag make json escape via http unsafe; ansi color escape sequence is not escaped)");

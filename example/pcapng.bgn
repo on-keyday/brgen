@@ -40,5 +40,5 @@ format Record:
 
 format NameResolutionBlock:
     record: [..]Record
-    :""
+    :"\x00"
     options : [..]u8

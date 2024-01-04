@@ -7,7 +7,7 @@ format BGPPacket:
         1 => data :Open
         2 => data :Update
         3 => data :Notification
-        4 => data :[0]u8
+        4 => ..
 
 format Open:
     version :u8
@@ -15,7 +15,7 @@ format Open:
     hold    :u16
     id      :u32
     optlen  :u8
-    options     :[..]Option(input=input.subrange(0, optlen))
+    options     :[..]Option(input=input.subrange(optlen))
 
 format Option:
     type :u8
@@ -24,9 +24,9 @@ format Option:
 
 format Update:
     withdrawn_len :u16
-    withdrawn :[..]Withdrawn(input=input.subrange(0, withdrawn_len))
+    withdrawn :[..]Withdrawn(input=input.subrange(withdrawn_len))
     pathattr_len :u16
-    pathattr  :[..]u8(input=input.subrange(withdrawn_len, pathattr_len))
+    pathattr  :[..]u8(input=input.subrange(pathattr_len))
     network_reachability_info      :[..]NetWorkReachabilityInfo
 
 

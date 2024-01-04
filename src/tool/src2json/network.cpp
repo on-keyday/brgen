@@ -14,6 +14,8 @@
 #include <wrap/argv.h>
 #include <helper/lock.h>
 #include <fnet/util/uri.h>
+#include <mutex>
+#include <fnet/server/format_state.h>
 namespace fnet = futils::fnet;
 
 std::atomic_bool stop = false;
@@ -162,6 +164,13 @@ void handler(void*, futils::fnet::server::Requester req, futils::fnet::server::S
     futils::uri::URI<std::string> uri;
     if (futils::uri::parse_ex(uri, ptr->path, false, false) != futils::uri::ParseError::none) {
         error_response(fnet::server::StatusCode::http_bad_request, "failed to parse uri");
+        return;
+    }
+    if (ptr->method == "GET" && uri.path == "/stat") {
+        response["Connection"] = "close";
+        response["Content-Type"] = "application/json";
+        req.respond_flush(s, fnet::server::StatusCode::http_ok, response, fnet::server::format_state<std::string>(s.state()));
+        s.log(fnet::server::log_level::info, req.client.addr, ptr->method, " ", ptr->path, " -> ", futils::number::to_string<std::string>(int(fnet::server::StatusCode::http_ok)));
         return;
     }
     if (ptr->method == "GET" && uri.path == "/stop") {

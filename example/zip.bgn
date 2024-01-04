@@ -86,11 +86,11 @@ format CentralDirEntry:
     relativeOffsetOfLocalHeader :s32
     fileName :[fileNameLength]u8
     # input.subrange(offsetFromCurrentPosition, length?)
-    extraField :[..]ExtraField(input = input.subrange(0,extraFieldLength))
+    extraField :[..]ExtraField(input = input.subrange(extraFieldLength))
     fileComment :[fileCommentLength]u8
     
-    fn localHeader():
-        pkt :Section(input = input.subrange(relativeOffsetOfLocalHeader))
+    fn localHeader() -> Section:
+        pkt :Section(input = input.subrange(.., relativeOffsetOfLocalHeader))
         return pkt
 
 format LocalFileHeader:
@@ -104,7 +104,7 @@ format LocalFileHeader:
     fileNameLength :u16
     extraFieldLength :u16
     fileName :[fileNameLength]u8
-    extraField :ExtraFields(input = input.subrange(0,extraFieldLength))
+    extraField :ExtraFields(input = input.subrange(extraFieldLength))
 
 format LocalFile:
     header :LocalFileHeader
@@ -122,7 +122,7 @@ format NtfsAttribute:
     tag :u16
     size :u16
     if tag == 0x0001:
-        body :NtfsTime(input = input.subrange(0,size))
+        body :NtfsTime(input = input.subrange(size))
     else:
         body :[size]u8
 
