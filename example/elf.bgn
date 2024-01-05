@@ -1,0 +1,36 @@
+
+d ::= config.import("./dns.bgn")
+
+enum Endian:
+    :u8
+    LittleEndian = 1
+    BigEndian = 2
+
+format ELF32:
+    magic :"\177ELF"
+    class :u8
+    endian :Endian
+    endian == Endian.LittleEndian || endian == Endian.BigEndian
+    input.endian = endian == Endian.LittleEndian
+    version :u8 
+    version == 1
+    osabi :u8
+    osabi == 0
+    abiversion :u8
+    abiversion == 0
+    padding :[7]u8
+    objtype :u16
+    machine :u16
+    version2 :u32
+    entry :u32
+    program_header_offset :u32
+    section_header_offset :u32
+    flags :u32
+    header_size :u16
+    program_header_entry_size :u16
+    program_header_entry_count :u16
+    section_header_entry_size :u16
+    section_header_entry_count :u16
+    section_header_name_index :u16
+
+

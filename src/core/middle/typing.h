@@ -840,6 +840,11 @@ namespace brgen::middle {
             if (auto a = ast::as<ast::Available>(expr)) {
                 typing_ident(a->target.get(), false);
             }
+            if (auto b = ast::as<ast::SpecifyEndian>(expr)) {
+                typing_expr(b->is_little, false);
+                b->base->expr_type = void_type(b->loc);
+                b->expr_type = b->base->expr_type;
+            }
             if (expr->expr_type) {
                 typing_object(expr->expr_type);
                 return;  // already typed
@@ -972,6 +977,7 @@ namespace brgen::middle {
                 }
                 if (conf->name == "input.align") {
                     args->alignment = std::move(conf->arguments[0]);
+                    ast::as<ast::MemberAccess>(ast::as<ast::Binary>(arg)->left)->member->usage = ast::IdentUsage::reference_builtin_fn;
                     continue;
                 }
                 if (conf->name == "input") {

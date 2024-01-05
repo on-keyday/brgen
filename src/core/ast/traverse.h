@@ -55,6 +55,7 @@ namespace brgen::ast {
         CASE(Import)
         CASE(Cast)
         CASE(Available)
+        CASE(SpecifyEndian)
 
         // stmt
         CASE(Stmt)

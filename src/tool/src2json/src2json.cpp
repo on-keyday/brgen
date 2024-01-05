@@ -10,6 +10,7 @@
 #include <core/middle/resolve_primitive_cast.h>
 #include <core/middle/resolve_available.h>
 #include <core/middle/replace_assert.h>
+#include <core/middle/replace_endian_spec.h>
 #include <core/middle/typing.h>
 #include <core/middle/type_attribute.h>
 #include "../common/print.h"
@@ -37,6 +38,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
     bool not_resolve_available = false;
     bool not_resolve_type = false;
     bool not_resolve_assert = false;
+    bool not_resolve_endian_spec = false;
     bool not_detect_recursive_type = false;
     bool not_detect_int_set = false;
     bool not_detect_alignment = false;
@@ -97,6 +99,8 @@ struct Flags : futils::cmdline::templ::HelpOption {
         ctx.VarBool(&not_resolve_type, "not-resolve-type", "not resolve type");
         ctx.VarBool(&not_resolve_cast, "not-resolve-cast", "not resolve cast");
         ctx.VarBool(&not_resolve_assert, "not-resolve-assert", "not resolve assert");
+        ctx.VarBool(&not_resolve_available, "not-resolve-available", "not resolve available");
+        ctx.VarBool(&not_resolve_endian_spec, "not-resolve-endian-spec", "not resolve endian-spec");
         ctx.VarBool(&not_detect_recursive_type, "not-detect-recursive-type", "not detect recursive type");
         ctx.VarBool(&not_detect_int_set, "not-detect-int-set", "not detect int set");
         ctx.VarBool(&not_detect_alignment, "not-detect-alignment", "not detect alignment");
@@ -533,6 +537,14 @@ int Main(Flags& flags, futils::cmdline::option::Context&, bool disable_network) 
     }
     if (!flags.not_resolve_available) {
         brgen::middle::resolve_available(*res);
+    }
+
+    if (!flags.not_resolve_endian_spec) {
+        brgen::LocationError err;
+        brgen::middle::replace_specify_endian(err, *res);
+        if (!flags.disable_unused_warning && err.locations.size() > 0) {
+            print_warnings(brgen::to_source_error(files)(std::move(err)));
+        }
     }
 
     brgen::SourceError err_or_warn;

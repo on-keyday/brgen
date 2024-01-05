@@ -24,6 +24,7 @@ TmpVar,
 Import,
 Cast,
 Available,
+SpecifyEndian,
 Stmt,
 Loop,
 IndentBlock,
@@ -335,6 +336,13 @@ public class Available : Expr{
 	public ConstantLevel ConstantLevel{get;set;}
 	public Call? Base{get;set;}
 	public Ident? Target{get;set;}
+}
+public class SpecifyEndian : Expr{
+	public Loc Loc{get;set;}
+	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
+	public Binary? Base{get;set;}
+	public Expr? IsLittle{get;set;}
 }
 public class Loop : Stmt{
 	public Loc Loc{get;set;}

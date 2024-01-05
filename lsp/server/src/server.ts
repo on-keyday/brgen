@@ -18,6 +18,8 @@ import {
     HoverParams,
     DefinitionParams,
     Location,
+    Diagnostic, 
+    DiagnosticSeverity
 } from 'vscode-languageserver/node';
 
 import { Range, TextDocument } from 'vscode-languageserver-textdocument';
@@ -26,6 +28,7 @@ import {execFile} from "child_process";
 import * as url from "url";
 import { ast2ts } from "ast2ts";
 import assert from 'node:assert/strict';
+
 
 
 
@@ -161,6 +164,23 @@ const stringEscape = (s :string) => {
     return s.replace(/\\/g,"\\\\").replace(/"/g,"\\\"").replace(/\n/g,"\\n").replace(/\r/g,"\\r");
 }
 
+
+const reportDiagnostic = (doc :TextDocument,errs :ast2ts.SrcError) => {
+    const diagnostics = errs.errs.map((err)=> {
+        const range :Range = {
+            start: {line: err.loc.line-1, character: err.loc.col-1},
+            end: {line: err.loc.line-1, character: err.loc.col-1},
+        };
+        return {
+            severity: err.warn ? DiagnosticSeverity.Warning : DiagnosticSeverity.Error,
+            range: range,
+            message: err.msg,
+            source: 'brgen-lsp',
+        } as Diagnostic;
+    });
+    connection.sendDiagnostics({ uri: doc.uri, diagnostics });
+}
+
 const tokenizeSourceImpl  = async (doc :TextDocument,docInfo :DocumentInfo) =>{
     const path = url.fileURLToPath(doc.uri)
     const text = doc.getText();
@@ -278,9 +298,18 @@ const tokenizeSourceImpl  = async (doc :TextDocument,docInfo :DocumentInfo) =>{
     }
     console.timeEnd("parse")
     const ast = ast_;
-    assert(ast.ast)
+    if(ast.error !== null) {
+        reportDiagnostic(doc,ast.error);
+    }
+    if(ast.ast === null) {
+        throw new Error("ast is null, use previous ast");
+    }
     const prog = ast2ts.parseAST(ast.ast);
     ast2ts.walk(prog,(f,node)=>{
+        if(node.loc.file!=1) {
+            console.log("prevent file boundary: "+node.loc.file)
+            return; // skip other files
+        }
         ast2ts.walk(node,f);
         if(ast2ts.isIdent(node)){
             const line = node.loc.line-1;
@@ -411,6 +440,7 @@ const hover = async (params :HoverParams)=>{
             return false;
         }
         if(node.loc.file!=1) {
+            console.log("prevent file boundary: "+node.loc.file)
             return; // skip other files
         }
         if(node.loc.pos.begin<=pos&&pos<=node.loc.pos.end){

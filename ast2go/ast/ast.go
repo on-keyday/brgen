@@ -30,46 +30,47 @@ const (
 	NodeTypeImport          NodeType = 17
 	NodeTypeCast            NodeType = 18
 	NodeTypeAvailable       NodeType = 19
-	NodeTypeStmt            NodeType = 20
-	NodeTypeLoop            NodeType = 21
-	NodeTypeIndentBlock     NodeType = 22
-	NodeTypeScopedStatement NodeType = 23
-	NodeTypeMatchBranch     NodeType = 24
-	NodeTypeUnionCandidate  NodeType = 25
-	NodeTypeReturn          NodeType = 26
-	NodeTypeBreak           NodeType = 27
-	NodeTypeContinue        NodeType = 28
-	NodeTypeAssert          NodeType = 29
-	NodeTypeImplicitYield   NodeType = 30
-	NodeTypeType            NodeType = 31
-	NodeTypeIntType         NodeType = 32
-	NodeTypeIdentType       NodeType = 33
-	NodeTypeIntLiteralType  NodeType = 34
-	NodeTypeStrLiteralType  NodeType = 35
-	NodeTypeVoidType        NodeType = 36
-	NodeTypeBoolType        NodeType = 37
-	NodeTypeArrayType       NodeType = 38
-	NodeTypeFunctionType    NodeType = 39
-	NodeTypeStructType      NodeType = 40
-	NodeTypeStructUnionType NodeType = 41
-	NodeTypeUnionType       NodeType = 42
-	NodeTypeRangeType       NodeType = 43
-	NodeTypeEnumType        NodeType = 44
-	NodeTypeLiteral         NodeType = 45
-	NodeTypeIntLiteral      NodeType = 46
-	NodeTypeBoolLiteral     NodeType = 47
-	NodeTypeStrLiteral      NodeType = 48
-	NodeTypeInput           NodeType = 49
-	NodeTypeOutput          NodeType = 50
-	NodeTypeConfig          NodeType = 51
-	NodeTypeMember          NodeType = 52
-	NodeTypeField           NodeType = 53
-	NodeTypeFormat          NodeType = 54
-	NodeTypeState           NodeType = 55
-	NodeTypeEnum            NodeType = 56
-	NodeTypeEnumMember      NodeType = 57
-	NodeTypeFunction        NodeType = 58
-	NodeTypeBuiltinFunction NodeType = 59
+	NodeTypeSpecifyEndian   NodeType = 20
+	NodeTypeStmt            NodeType = 21
+	NodeTypeLoop            NodeType = 22
+	NodeTypeIndentBlock     NodeType = 23
+	NodeTypeScopedStatement NodeType = 24
+	NodeTypeMatchBranch     NodeType = 25
+	NodeTypeUnionCandidate  NodeType = 26
+	NodeTypeReturn          NodeType = 27
+	NodeTypeBreak           NodeType = 28
+	NodeTypeContinue        NodeType = 29
+	NodeTypeAssert          NodeType = 30
+	NodeTypeImplicitYield   NodeType = 31
+	NodeTypeType            NodeType = 32
+	NodeTypeIntType         NodeType = 33
+	NodeTypeIdentType       NodeType = 34
+	NodeTypeIntLiteralType  NodeType = 35
+	NodeTypeStrLiteralType  NodeType = 36
+	NodeTypeVoidType        NodeType = 37
+	NodeTypeBoolType        NodeType = 38
+	NodeTypeArrayType       NodeType = 39
+	NodeTypeFunctionType    NodeType = 40
+	NodeTypeStructType      NodeType = 41
+	NodeTypeStructUnionType NodeType = 42
+	NodeTypeUnionType       NodeType = 43
+	NodeTypeRangeType       NodeType = 44
+	NodeTypeEnumType        NodeType = 45
+	NodeTypeLiteral         NodeType = 46
+	NodeTypeIntLiteral      NodeType = 47
+	NodeTypeBoolLiteral     NodeType = 48
+	NodeTypeStrLiteral      NodeType = 49
+	NodeTypeInput           NodeType = 50
+	NodeTypeOutput          NodeType = 51
+	NodeTypeConfig          NodeType = 52
+	NodeTypeMember          NodeType = 53
+	NodeTypeField           NodeType = 54
+	NodeTypeFormat          NodeType = 55
+	NodeTypeState           NodeType = 56
+	NodeTypeEnum            NodeType = 57
+	NodeTypeEnumMember      NodeType = 58
+	NodeTypeFunction        NodeType = 59
+	NodeTypeBuiltinFunction NodeType = 60
 )
 
 func (n NodeType) String() string {
@@ -114,6 +115,8 @@ func (n NodeType) String() string {
 		return "cast"
 	case NodeTypeAvailable:
 		return "available"
+	case NodeTypeSpecifyEndian:
+		return "specify_endian"
 	case NodeTypeStmt:
 		return "stmt"
 	case NodeTypeLoop:
@@ -245,6 +248,8 @@ func (n *NodeType) UnmarshalJSON(data []byte) error {
 		*n = NodeTypeCast
 	case "available":
 		*n = NodeTypeAvailable
+	case "specify_endian":
+		*n = NodeTypeSpecifyEndian
 	case "stmt":
 		*n = NodeTypeStmt
 	case "loop":
@@ -405,6 +410,10 @@ func (n *Cast) GetNodeType() NodeType {
 
 func (n *Available) GetNodeType() NodeType {
 	return NodeTypeAvailable
+}
+
+func (n *SpecifyEndian) GetNodeType() NodeType {
+	return NodeTypeSpecifyEndian
 }
 
 func (n *Loop) GetNodeType() NodeType {
@@ -1659,6 +1668,30 @@ func (n *Available) GetLoc() Loc {
 	return n.Loc
 }
 
+type SpecifyEndian struct {
+	Loc           Loc
+	ExprType      Type
+	ConstantLevel ConstantLevel
+	Base          *Binary
+	IsLittle      Expr
+}
+
+func (n *SpecifyEndian) isExpr() {}
+
+func (n *SpecifyEndian) GetExprType() Type {
+	return n.ExprType
+}
+
+func (n *SpecifyEndian) GetConstantLevel() ConstantLevel {
+	return n.ConstantLevel
+}
+
+func (n *SpecifyEndian) isNode() {}
+
+func (n *SpecifyEndian) GetLoc() Loc {
+	return n.Loc
+}
+
 type Loop struct {
 	Loc       Loc
 	CondScope *Scope
@@ -2740,6 +2773,8 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			n.node[i] = &Cast{Loc: raw.Loc}
 		case NodeTypeAvailable:
 			n.node[i] = &Available{Loc: raw.Loc}
+		case NodeTypeSpecifyEndian:
+			n.node[i] = &SpecifyEndian{Loc: raw.Loc}
 		case NodeTypeLoop:
 			n.node[i] = &Loop{Loc: raw.Loc}
 		case NodeTypeIndentBlock:
@@ -3246,6 +3281,27 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			}
 			if tmp.Target != nil {
 				v.Target = n.node[*tmp.Target].(*Ident)
+			}
+		case NodeTypeSpecifyEndian:
+			v := n.node[i].(*SpecifyEndian)
+			var tmp struct {
+				ExprType      *uintptr      `json:"expr_type"`
+				ConstantLevel ConstantLevel `json:"constant_level"`
+				Base          *uintptr      `json:"base"`
+				IsLittle      *uintptr      `json:"is_little"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			if tmp.ExprType != nil {
+				v.ExprType = n.node[*tmp.ExprType].(Type)
+			}
+			v.ConstantLevel = tmp.ConstantLevel
+			if tmp.Base != nil {
+				v.Base = n.node[*tmp.Base].(*Binary)
+			}
+			if tmp.IsLittle != nil {
+				v.IsLittle = n.node[*tmp.IsLittle].(Expr)
 			}
 		case NodeTypeLoop:
 			v := n.node[i].(*Loop)
@@ -4294,6 +4350,22 @@ func Walk(n Node, f Visitor) {
 		}
 		if v.Target != nil {
 			if !f.Visit(f, v.Target) {
+				return
+			}
+		}
+	case *SpecifyEndian:
+		if v.ExprType != nil {
+			if !f.Visit(f, v.ExprType) {
+				return
+			}
+		}
+		if v.Base != nil {
+			if !f.Visit(f, v.Base) {
+				return
+			}
+		}
+		if v.IsLittle != nil {
+			if !f.Visit(f, v.IsLittle) {
 				return
 			}
 		}

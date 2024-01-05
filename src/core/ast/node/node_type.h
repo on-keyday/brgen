@@ -31,6 +31,7 @@ namespace brgen::ast {
         import_,
         cast,
         available,
+        specify_endian,
 
         literal = 0x110000,
         int_literal,
@@ -143,6 +144,7 @@ namespace brgen::ast {
         {NodeType::available, "available"},
         {NodeType::scoped_statement, "scoped_statement"},
         {NodeType::field_argument, "field_argument"},
+        {NodeType::specify_endian, "specify_endian"},
     };
 
     constexpr std::array<std::pair<NodeType, const char*>, std::size(node_type_str_array)> sorted_node_type_str_array = [] {

@@ -63,7 +63,7 @@ namespace brgen::ast {
         std::shared_ptr<Program> import_desc;
 
         Import(std::shared_ptr<Call>&& c, std::shared_ptr<Program>&& a, std::string&& p)
-            : Expr(a->loc, NodeType::import_), path(std::move(p)), base(std::move(c)), import_desc(std::move(a)) {
+            : Expr(c->loc, NodeType::import_), path(std::move(p)), base(std::move(c)), import_desc(std::move(a)) {
             expr_type = import_desc->struct_type;
         }
 
@@ -115,6 +115,24 @@ namespace brgen::ast {
             Expr::dump(field_);
             sdebugf_omit(base);
             sdebugf(target);
+        }
+    };
+
+    struct SpecifyEndian : Expr {
+        define_node_type(NodeType::specify_endian);
+        std::shared_ptr<Binary> base;
+        std::shared_ptr<Expr> is_little;
+
+        SpecifyEndian(std::shared_ptr<Binary>&& a, std::shared_ptr<Expr>&& b)
+            : Expr(a->loc, NodeType::specify_endian), base(std::move(a)), is_little(std::move(b)) {}
+
+        SpecifyEndian()
+            : Expr({}, NodeType::specify_endian) {}
+
+        void dump(auto&& field_) {
+            Expr::dump(field_);
+            sdebugf(base);
+            sdebugf(is_little);
         }
     };
 
