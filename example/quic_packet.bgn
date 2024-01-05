@@ -97,13 +97,9 @@ format HandshakePacketHeader:
       payload :[length]u8
 
 
-
-
-
 format ZeroRTTPacketHeader:
    length :VarInt
-   enc := bool(config.arg.encrypted)
-   if enc:
+   if qstate.encrypted:
       encrypted_payload :[length]u8
    else:
       packet_number :[config.parent.packet_number_length]u8
@@ -117,8 +113,7 @@ format OneRTTPacketHeader:
    key_phase :u1
    packet_number_length :u2
    dst_conn_id :ConnectionID(length=config.arg("length",u8))
-   enc:= config.arg("encrypted",bool)
-   if enc:
+   if qstate.encrypted:
       encrypted_payload :[..]u8
    else:
       packet_number :[packet_number_length]u8

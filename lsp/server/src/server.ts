@@ -142,8 +142,8 @@ function execSrc2JSON<T>(exe_path :string,command :Array<string>,text :string,is
     });
 }
 
-const lexerCommand=(path :string) => ["--stdin","--stdin-name",path, "--lexer", "--no-color", "--print-on-error","--print-json","--omit-json-warning","--interpret-mode","utf16","--detected-stdio-type"];
-const parserCommand = (path :string) => ["--stdin","--stdin-name",path, "--no-color", "--print-on-error","--print-json","--omit-json-warning","--interpret-mode","utf16","--detected-stdio-type"];
+const lexerCommand=(path :string) => ["--stdin","--stdin-name",path, "--lexer", "--no-color", "--print-on-error","--print-json","--interpret-mode","utf16","--detected-stdio-type"];
+const parserCommand = (path :string) => ["--stdin","--stdin-name",path, "--no-color", "--print-on-error","--print-json","--interpret-mode","utf16","--detected-stdio-type"];
 
 
 class DocumentInfo {
@@ -167,9 +167,14 @@ const stringEscape = (s :string) => {
 
 const reportDiagnostic = (doc :TextDocument,errs :ast2ts.SrcError) => {
     const diagnostics = errs.errs.map((err)=> {
+        if(err.loc.file != 1) {
+            return null; // skip other files
+        }
+        const b = doc.positionAt(err.loc.pos.begin);
+        const e = doc.positionAt(err.loc.pos.end);
         const range :Range = {
-            start: {line: err.loc.line-1, character: err.loc.col-1},
-            end: {line: err.loc.line-1, character: err.loc.col-1},
+            start: b,
+            end: e,
         };
         return {
             severity: err.warn ? DiagnosticSeverity.Warning : DiagnosticSeverity.Error,
@@ -177,8 +182,10 @@ const reportDiagnostic = (doc :TextDocument,errs :ast2ts.SrcError) => {
             message: err.msg,
             source: 'brgen-lsp',
         } as Diagnostic;
-    });
+    }).filter((x)=>x!==null) as Diagnostic[];
+    console.log(`diagnostics: ${JSON.stringify(diagnostics.map((x)=>x.message))}`);
     connection.sendDiagnostics({ uri: doc.uri, diagnostics });
+    console.log("diagnostics sent");
 }
 
 const tokenizeSourceImpl  = async (doc :TextDocument,docInfo :DocumentInfo) =>{

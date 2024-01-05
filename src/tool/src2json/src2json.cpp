@@ -539,15 +539,11 @@ int Main(Flags& flags, futils::cmdline::option::Context&, bool disable_network) 
         brgen::middle::resolve_available(*res);
     }
 
-    if (!flags.not_resolve_endian_spec) {
-        brgen::LocationError err;
-        brgen::middle::replace_specify_endian(err, *res);
-        if (!flags.disable_unused_warning && err.locations.size() > 0) {
-            print_warnings(brgen::to_source_error(files)(std::move(err)));
-        }
-    }
-
     brgen::SourceError err_or_warn;
+
+    if (!flags.not_resolve_endian_spec) {
+        brgen::middle::replace_specify_endian(*res);
+    }
 
     if (!flags.not_resolve_type) {
         auto ty = brgen::middle::Typing{};
@@ -580,9 +576,9 @@ int Main(Flags& flags, futils::cmdline::option::Context&, bool disable_network) 
         brgen::LocationError err;
         brgen::middle::replace_assert(err, *res);
         if (!flags.disable_unused_warning && err.locations.size() > 0) {
-            print_warnings(brgen::to_source_error(files)(std::move(err)));
+            auto tmp = brgen::to_source_error(files)(std::move(err));
+            print_warnings(tmp);
             if (!flags.omit_warning) {
-                auto tmp = brgen::to_source_error(files)(std::move(err));
                 err_or_warn.errs.insert(err_or_warn.errs.end(), tmp.errs.begin(), tmp.errs.end());
             }
         }

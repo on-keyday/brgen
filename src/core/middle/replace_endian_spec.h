@@ -5,13 +5,13 @@
 #include <core/ast/tool/extract_config.h>
 
 namespace brgen::middle {
-    inline void replace_specify_endian(LocationError& err, const std::shared_ptr<ast::Node>& node) {
+    inline void replace_specify_endian(const std::shared_ptr<ast::Node>& node) {
         if (!node) {
             return;
         }
         auto each_element = [&](ast::node_list& list) {
             for (auto it = list.begin(); it != list.end(); it++) {
-                replace_specify_endian(err, *it);
+                replace_specify_endian(*it);
                 auto a = ast::tool::extract_config(*it, ast::tool::ExtractMode::assign);
                 if (!a) {
                     continue;
@@ -33,7 +33,7 @@ namespace brgen::middle {
             return;
         }
         ast::traverse(node, [&](auto&& f) {
-            replace_specify_endian(err, f);
+            replace_specify_endian(f);
         });
     }
 }  // namespace brgen::middle
