@@ -16,6 +16,8 @@
 #include <fnet/util/uri.h>
 #include <mutex>
 #include <fnet/server/format_state.h>
+#include <timer/clock.h>
+#include <timer/to_string.h>
 namespace fnet = futils::fnet;
 
 std::atomic_bool stop = false;
@@ -195,6 +197,7 @@ void handler(void*, futils::fnet::server::Requester req, futils::fnet::server::S
 }
 
 struct LogEntry {
+    futils::timer::Time time;
     fnet::server::log_level level;
     fnet::NetAddrPort addr;
     std::string err;
@@ -205,7 +208,11 @@ std::deque<LogEntry> log_buffer;
 
 void logger(fnet::server::log_level level, fnet::NetAddrPort* addr, fnet::error::Error& err) {
     std::lock_guard<std::mutex> lock(log_mutex);
-    log_buffer.push_back({level, addr ? *addr : fnet::NetAddrPort{}, err.error()});
+    log_buffer.push_back({futils::timer::utc_clock.now(), level, addr ? *addr : fnet::NetAddrPort{}, err.error()});
+}
+
+auto time_str(futils::timer::Time t) {
+    return futils::timer::to_string<std::string>("%Y-%M-%D %h:%m:%s.%n", t);
 }
 
 int network_main(const char* port, bool unsafe) {
@@ -223,7 +230,9 @@ int network_main(const char* port, bool unsafe) {
     cout.set_hook_write(cout_hook);
     cerr.set_hook_write(cerr_hook);
     s->add_accept_thread(std::move(p->first));
-    print_note("listening on ", p->second.addr.to_string<std::string>());
+    print_note(time_str(futils::timer::utc_clock.now()),
+               ": listening on ",
+               p->second.addr.to_string<std::string>());
     while (!stop) {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         auto d = futils::helper::lock(log_mutex);
@@ -235,24 +244,26 @@ int network_main(const char* port, bool unsafe) {
         d.execute();  // unlock here
         for (auto d : buf) {
             auto level = d.level;
-            auto addr = d.addr.to_string<std::string>();
+            auto prefix = time_str(d.time);
+            prefix += " ";
+            prefix += d.addr.to_string<std::string>();
             if (level == fnet::server::log_level::err) {
-                print_error(addr, ": ", d.err);
+                print_error(prefix, ": ", d.err);
             }
             else if (level == fnet::server::log_level::warn) {
-                print_warning(addr, ": ", d.err);
+                print_warning(prefix, ": ", d.err);
             }
             else if (level == fnet::server::log_level::info) {
-                print_note(addr, ": ", d.err);
+                print_note(prefix, ": ", d.err);
             }
             else if (level == fnet::server::log_level::debug) {
-                print_note(addr, ": [debug] ", d.err);
+                print_note(prefix, ": [debug] ", d.err);
             }
         }
     }
     s->notify();
-    print_note("requesting shutdown...");
+    print_note(time_str(futils::timer::utc_clock.now()), ": requesting shutdown...");
     std::this_thread::sleep_for(std::chrono::seconds(1));
-    print_note("exiting...");
+    print_note(time_str(futils::timer::utc_clock.now()), ": exiting...");
     return exit_ok;
 }
