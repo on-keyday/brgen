@@ -26,6 +26,7 @@ class NodeType(PyEnum):
     CAST = "cast"
     AVAILABLE = "available"
     SPECIFY_ENDIAN = "specify_endian"
+    EXPLICIT_ERROR = "explicit_error"
     STMT = "stmt"
     LOOP = "loop"
     INDENT_BLOCK = "indent_block"
@@ -328,6 +329,11 @@ class Available(Expr):
 class SpecifyEndian(Expr):
     base: Optional[Binary]
     is_little: Optional[Expr]
+
+
+class ExplicitError(Expr):
+    base: Optional[Call]
+    message: Optional[StrLiteral]
 
 
 class Loop(Stmt):
@@ -745,6 +751,8 @@ def ast2node(ast :JsonAst) -> Program:
                 node.append(Available())
             case NodeType.SPECIFY_ENDIAN:
                 node.append(SpecifyEndian())
+            case NodeType.EXPLICIT_ERROR:
+                node.append(ExplicitError())
             case NodeType.LOOP:
                 node.append(Loop())
             case NodeType.INDENT_BLOCK:
@@ -1153,6 +1161,23 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].is_little = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at SpecifyEndian::is_little'))
                 else:
                     node[i].is_little = None
+            case NodeType.EXPLICIT_ERROR:
+                if ast.node[i].body["expr_type"] is not None:
+                    x = node[ast.node[i].body["expr_type"]]
+                    node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at ExplicitError::expr_type'))
+                else:
+                    node[i].expr_type = None
+                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
+                if ast.node[i].body["base"] is not None:
+                    x = node[ast.node[i].body["base"]]
+                    node[i].base = x if isinstance(x,Call) else raiseError(TypeError('type mismatch at ExplicitError::base'))
+                else:
+                    node[i].base = None
+                if ast.node[i].body["message"] is not None:
+                    x = node[ast.node[i].body["message"]]
+                    node[i].message = x if isinstance(x,StrLiteral) else raiseError(TypeError('type mismatch at ExplicitError::message'))
+                else:
+                    node[i].message = None
             case NodeType.LOOP:
                 if ast.node[i].body["cond_scope"] is not None:
                     node[i].cond_scope = scope[ast.node[i].body["cond_scope"]]
@@ -1889,6 +1914,16 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
                   return
           if x.is_little is not None:
               if f(f,x.is_little) == False:
+                  return
+        case x if isinstance(x,ExplicitError):
+          if x.expr_type is not None:
+              if f(f,x.expr_type) == False:
+                  return
+          if x.base is not None:
+              if f(f,x.base) == False:
+                  return
+          if x.message is not None:
+              if f(f,x.message) == False:
                   return
         case x if isinstance(x,Loop):
           if x.init is not None:

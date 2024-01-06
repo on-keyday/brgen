@@ -69,6 +69,7 @@ typedef struct ast2c_Import ast2c_Import;
 typedef struct ast2c_Cast ast2c_Cast;
 typedef struct ast2c_Available ast2c_Available;
 typedef struct ast2c_SpecifyEndian ast2c_SpecifyEndian;
+typedef struct ast2c_ExplicitError ast2c_ExplicitError;
 typedef struct ast2c_Loop ast2c_Loop;
 typedef struct ast2c_IndentBlock ast2c_IndentBlock;
 typedef struct ast2c_ScopedStatement ast2c_ScopedStatement;
@@ -138,6 +139,7 @@ enum ast2c_NodeType {
 	AST2C_NODETYPE_CAST,
 	AST2C_NODETYPE_AVAILABLE,
 	AST2C_NODETYPE_SPECIFY_ENDIAN,
+	AST2C_NODETYPE_EXPLICIT_ERROR,
 	AST2C_NODETYPE_STMT,
 	AST2C_NODETYPE_LOOP,
 	AST2C_NODETYPE_INDENT_BLOCK,
@@ -683,6 +685,18 @@ struct ast2c_SpecifyEndian {
 
 // returns 1 if succeed 0 if failed
 int ast2c_SpecifyEndian_parse(ast2c_Ast* ,ast2c_SpecifyEndian*,ast2c_json_handlers*,void*);
+
+struct ast2c_ExplicitError {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
+	ast2c_Call* base;
+	ast2c_StrLiteral* message;
+};
+
+// returns 1 if succeed 0 if failed
+int ast2c_ExplicitError_parse(ast2c_Ast* ,ast2c_ExplicitError*,ast2c_json_handlers*,void*);
 
 struct ast2c_Loop {
 	const ast2c_NodeType node_type;

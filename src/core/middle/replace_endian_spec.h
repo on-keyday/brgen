@@ -9,19 +9,22 @@ namespace brgen::middle {
         if (!node) {
             return;
         }
+        auto one_element = [&](auto it) {
+            replace_specify_endian(*it);
+            auto a = ast::tool::extract_config(*it, ast::tool::ExtractMode::assign);
+            if (!a) {
+                return;
+            }
+            if (a->name != "input.endian") {
+                return;
+            }
+            auto b = ast::cast_to<ast::Binary>(*it);
+            ast::as<ast::MemberAccess>(b->left)->member->usage = ast::IdentUsage::reference_builtin_fn;
+            *it = std::make_shared<ast::SpecifyEndian>(std::move(b), std::move(a->arguments[0]));
+        };
         auto each_element = [&](ast::node_list& list) {
             for (auto it = list.begin(); it != list.end(); it++) {
-                replace_specify_endian(*it);
-                auto a = ast::tool::extract_config(*it, ast::tool::ExtractMode::assign);
-                if (!a) {
-                    continue;
-                }
-                if (a->name != "input.endian") {
-                    continue;
-                }
-                auto b = ast::cast_to<ast::Binary>(*it);
-                ast::as<ast::MemberAccess>(b->left)->member->usage = ast::IdentUsage::reference_builtin_fn;
-                *it = std::make_shared<ast::SpecifyEndian>(std::move(b), std::move(a->arguments[0]));
+                one_element(it);
             }
         };
         if (auto a = ast::as<ast::Program>(node)) {
@@ -30,6 +33,10 @@ namespace brgen::middle {
         }
         if (auto b = ast::as<ast::IndentBlock>(node)) {
             each_element(b->elements);
+            return;
+        }
+        if (auto s = ast::as<ast::ScopedStatement>(node)) {
+            one_element(&s->statement);
             return;
         }
         ast::traverse(node, [&](auto&& f) {

@@ -2,10 +2,10 @@
 
 export namespace ast2ts {
 
-export type NodeType = "program" | "comment" | "comment_group" | "field_argument" | "expr" | "binary" | "unary" | "cond" | "ident" | "call" | "if" | "member_access" | "paren" | "index" | "match" | "range" | "tmp_var" | "import" | "cast" | "available" | "specify_endian" | "stmt" | "loop" | "indent_block" | "scoped_statement" | "match_branch" | "union_candidate" | "return" | "break" | "continue" | "assert" | "implicit_yield" | "type" | "int_type" | "ident_type" | "int_literal_type" | "str_literal_type" | "void_type" | "bool_type" | "array_type" | "function_type" | "struct_type" | "struct_union_type" | "union_type" | "range_type" | "enum_type" | "literal" | "int_literal" | "bool_literal" | "str_literal" | "input" | "output" | "config" | "member" | "field" | "format" | "state" | "enum" | "enum_member" | "function" | "builtin_function";
+export type NodeType = "program" | "comment" | "comment_group" | "field_argument" | "expr" | "binary" | "unary" | "cond" | "ident" | "call" | "if" | "member_access" | "paren" | "index" | "match" | "range" | "tmp_var" | "import" | "cast" | "available" | "specify_endian" | "explicit_error" | "stmt" | "loop" | "indent_block" | "scoped_statement" | "match_branch" | "union_candidate" | "return" | "break" | "continue" | "assert" | "implicit_yield" | "type" | "int_type" | "ident_type" | "int_literal_type" | "str_literal_type" | "void_type" | "bool_type" | "array_type" | "function_type" | "struct_type" | "struct_union_type" | "union_type" | "range_type" | "enum_type" | "literal" | "int_literal" | "bool_literal" | "str_literal" | "input" | "output" | "config" | "member" | "field" | "format" | "state" | "enum" | "enum_member" | "function" | "builtin_function";
 
 export function isNodeType(obj: any): obj is NodeType {
-	return obj && typeof obj === 'string' && (obj === "program" || obj === "comment" || obj === "comment_group" || obj === "field_argument" || obj === "expr" || obj === "binary" || obj === "unary" || obj === "cond" || obj === "ident" || obj === "call" || obj === "if" || obj === "member_access" || obj === "paren" || obj === "index" || obj === "match" || obj === "range" || obj === "tmp_var" || obj === "import" || obj === "cast" || obj === "available" || obj === "specify_endian" || obj === "stmt" || obj === "loop" || obj === "indent_block" || obj === "scoped_statement" || obj === "match_branch" || obj === "union_candidate" || obj === "return" || obj === "break" || obj === "continue" || obj === "assert" || obj === "implicit_yield" || obj === "type" || obj === "int_type" || obj === "ident_type" || obj === "int_literal_type" || obj === "str_literal_type" || obj === "void_type" || obj === "bool_type" || obj === "array_type" || obj === "function_type" || obj === "struct_type" || obj === "struct_union_type" || obj === "union_type" || obj === "range_type" || obj === "enum_type" || obj === "literal" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "input" || obj === "output" || obj === "config" || obj === "member" || obj === "field" || obj === "format" || obj === "state" || obj === "enum" || obj === "enum_member" || obj === "function" || obj === "builtin_function")
+	return obj && typeof obj === 'string' && (obj === "program" || obj === "comment" || obj === "comment_group" || obj === "field_argument" || obj === "expr" || obj === "binary" || obj === "unary" || obj === "cond" || obj === "ident" || obj === "call" || obj === "if" || obj === "member_access" || obj === "paren" || obj === "index" || obj === "match" || obj === "range" || obj === "tmp_var" || obj === "import" || obj === "cast" || obj === "available" || obj === "specify_endian" || obj === "explicit_error" || obj === "stmt" || obj === "loop" || obj === "indent_block" || obj === "scoped_statement" || obj === "match_branch" || obj === "union_candidate" || obj === "return" || obj === "break" || obj === "continue" || obj === "assert" || obj === "implicit_yield" || obj === "type" || obj === "int_type" || obj === "ident_type" || obj === "int_literal_type" || obj === "str_literal_type" || obj === "void_type" || obj === "bool_type" || obj === "array_type" || obj === "function_type" || obj === "struct_type" || obj === "struct_union_type" || obj === "union_type" || obj === "range_type" || obj === "enum_type" || obj === "literal" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "input" || obj === "output" || obj === "config" || obj === "member" || obj === "field" || obj === "format" || obj === "state" || obj === "enum" || obj === "enum_member" || obj === "function" || obj === "builtin_function")
 }
 
 export const enum UnaryOp {
@@ -180,6 +180,7 @@ export function isNode(obj: any): obj is Node {
 	if (isCast(obj)) return true;
 	if (isAvailable(obj)) return true;
 	if (isSpecifyEndian(obj)) return true;
+	if (isExplicitError(obj)) return true;
 	if (isLoop(obj)) return true;
 	if (isIndentBlock(obj)) return true;
 	if (isScopedStatement(obj)) return true;
@@ -241,6 +242,7 @@ export function isExpr(obj: any): obj is Expr {
 	if (isCast(obj)) return true;
 	if (isAvailable(obj)) return true;
 	if (isSpecifyEndian(obj)) return true;
+	if (isExplicitError(obj)) return true;
 	if (isIntLiteral(obj)) return true;
 	if (isBoolLiteral(obj)) return true;
 	if (isStrLiteral(obj)) return true;
@@ -524,6 +526,15 @@ export interface SpecifyEndian extends Expr {
 
 export function isSpecifyEndian(obj: any): obj is SpecifyEndian {
 	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "specify_endian"
+}
+
+export interface ExplicitError extends Expr {
+	base: Call|null;
+	message: StrLiteral|null;
+}
+
+export function isExplicitError(obj: any): obj is ExplicitError {
+	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "explicit_error"
 }
 
 export interface Loop extends Stmt {
@@ -1242,6 +1253,18 @@ export function parseAST(obj: any): Program {
 				constant_level: ConstantLevel.unknown,
 				base: null,
 				is_little: null,
+			}
+			c.node.push(n);
+			break;
+		}
+		case "explicit_error": {
+			const n :ExplicitError = {
+				node_type: "explicit_error",
+				loc: on.loc,
+				expr_type: null,
+				constant_level: ConstantLevel.unknown,
+				base: null,
+				message: null,
 			}
 			c.node.push(n);
 			break;
@@ -2426,6 +2449,39 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at SpecifyEndian::is_little');
 			}
 			n.is_little = tmpis_little;
+			break;
+		}
+		case "explicit_error": {
+			const n :ExplicitError = cnode as ExplicitError;
+			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
+				throw new Error('invalid node list at ExplicitError::expr_type');
+			}
+			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
+			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
+				throw new Error('invalid node list at ExplicitError::expr_type');
+			}
+			n.expr_type = tmpexpr_type;
+			const tmpconstant_level = on.body?.constant_level;
+			if (!isConstantLevel(tmpconstant_level)) {
+				throw new Error('invalid node list at ExplicitError::constant_level');
+			}
+			n.constant_level = tmpconstant_level;
+			if (on.body?.base !== null && typeof on.body?.base !== 'number') {
+				throw new Error('invalid node list at ExplicitError::base');
+			}
+			const tmpbase = on.body.base === null ? null : c.node[on.body.base];
+			if (!(tmpbase === null || isCall(tmpbase))) {
+				throw new Error('invalid node list at ExplicitError::base');
+			}
+			n.base = tmpbase;
+			if (on.body?.message !== null && typeof on.body?.message !== 'number') {
+				throw new Error('invalid node list at ExplicitError::message');
+			}
+			const tmpmessage = on.body.message === null ? null : c.node[on.body.message];
+			if (!(tmpmessage === null || isStrLiteral(tmpmessage))) {
+				throw new Error('invalid node list at ExplicitError::message');
+			}
+			n.message = tmpmessage;
 			break;
 		}
 		case "loop": {
@@ -4135,6 +4191,31 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			if (n.is_little !== null) {
 				const result = fn(fn,n.is_little);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "explicit_error": {
+			if (!isExplicitError(node)) {
+				break;
+			}
+			const n :ExplicitError = node as ExplicitError;
+			if (n.expr_type !== null) {
+				const result = fn(fn,n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.base !== null) {
+				const result = fn(fn,n.base);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.message !== null) {
+				const result = fn(fn,n.message);
 				if (result === false) {
 					return;
 				}

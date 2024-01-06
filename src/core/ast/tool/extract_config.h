@@ -4,7 +4,7 @@
 
 namespace brgen::ast::tool {
 
-    std::string extract_config_name(auto&& maybe_config) {
+    std::string extract_name(auto&& maybe_config, bool allow_ident = false) {
         if (!maybe_config) {
             return "";
         }
@@ -18,11 +18,16 @@ namespace brgen::ast::tool {
             return "output";
         }
         if (auto d = ast::as<MemberAccess>(maybe_config)) {
-            auto conf = extract_config_name(d->target);
+            auto conf = extract_name(d->target);
             if (conf.size() == 0) {
                 return "";
             }
             return conf + "." + d->member->ident;
+        }
+        if (allow_ident) {
+            if (ast::Ident* c = ast::as<Ident>(maybe_config)) {
+                return c->ident;
+            }
         }
         return "";
     }
@@ -40,10 +45,10 @@ namespace brgen::ast::tool {
         call,
     };
 
-    std::optional<ConfigDesc> extract_config(auto&& node, ExtractMode mode = ExtractMode::both) {
+    std::optional<ConfigDesc> extract_config(auto&& node, ExtractMode mode = ExtractMode::both, bool allow_ident = false) {
         if (mode == ExtractMode::both || mode == ExtractMode::assign) {
             if (auto b = ast::as<Binary>(node); b && b->op == ast::BinaryOp::assign) {
-                auto conf = extract_config_name(b->left);
+                auto conf = extract_name(b->left, allow_ident);
                 if (conf.size() == 0) {
                     return std::nullopt;
                 }
@@ -57,7 +62,7 @@ namespace brgen::ast::tool {
         }
         if (mode == ExtractMode::both || mode == ExtractMode::call) {
             if (auto c = ast::as<Call>(node)) {
-                auto conf = extract_config_name(c->callee);
+                auto conf = extract_name(c->callee, allow_ident);
                 if (conf.size() == 0) {
                     return std::nullopt;
                 }
@@ -70,4 +75,5 @@ namespace brgen::ast::tool {
         }
         return std::nullopt;
     }
+
 }  // namespace brgen::ast::tool

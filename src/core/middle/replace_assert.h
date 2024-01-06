@@ -9,18 +9,21 @@ namespace brgen::middle {
         if (!node) {
             return;
         }
+        auto one_element = [&](auto it) {
+            replace_assert(err, *it);
+            if (auto bin = ast::as<ast::Binary>(*it); bin && ast::is_boolean_op(bin->op)) {
+                *it = std::make_shared<ast::Assert>(std::static_pointer_cast<ast::Binary>(*it));
+            }
+            else if (bin && ast::is_assign_op(bin->op)) {
+                // nothing to do
+            }
+            else if (bin || ast::as<ast::Literal>(*it) || ast::as<ast::Unary>(*it) || ast::as<ast::Ident>(*it)) {
+                err.warning((*it)->loc, "unused expression");
+            }
+        };
         auto each_element = [&](ast::node_list& list) {
             for (auto it = list.begin(); it != list.end(); it++) {
-                replace_assert(err, *it);
-                if (auto bin = ast::as<ast::Binary>(*it); bin && ast::is_boolean_op(bin->op)) {
-                    *it = std::make_shared<ast::Assert>(std::static_pointer_cast<ast::Binary>(*it));
-                }
-                else if (bin && ast::is_assign_op(bin->op)) {
-                    // nothing to do
-                }
-                else if (bin || ast::as<ast::Literal>(*it) || ast::as<ast::Unary>(*it) || ast::as<ast::Ident>(*it)) {
-                    err.warning((*it)->loc, "unused expression");
-                }
+                one_element(it);
             }
         };
         if (auto a = ast::as<ast::Program>(node)) {
@@ -29,6 +32,10 @@ namespace brgen::middle {
         }
         if (auto b = ast::as<ast::IndentBlock>(node)) {
             each_element(b->elements);
+            return;
+        }
+        if (auto s = ast::as<ast::ScopedStatement>(node)) {
+            one_element(&s->statement);
             return;
         }
         ast::traverse(node, [&](auto&& f) {

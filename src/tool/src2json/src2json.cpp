@@ -11,6 +11,7 @@
 #include <core/middle/resolve_available.h>
 #include <core/middle/replace_assert.h>
 #include <core/middle/replace_endian_spec.h>
+#include <core/middle/replace_error.h>
 #include <core/middle/typing.h>
 #include <core/middle/type_attribute.h>
 #include "../common/print.h"
@@ -33,15 +34,18 @@ struct Flags : futils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
     bool version = false;
     bool lexer = false;
+
     bool not_resolve_import = false;
     bool not_resolve_cast = false;
     bool not_resolve_available = false;
     bool not_resolve_type = false;
     bool not_resolve_assert = false;
     bool not_resolve_endian_spec = false;
+    bool not_resolve_explicit_error = false;
     bool not_detect_recursive_type = false;
     bool not_detect_int_set = false;
     bool not_detect_alignment = false;
+
     bool unresolved_type_as_error = false;
 
     bool check_ast = false;
@@ -104,6 +108,8 @@ struct Flags : futils::cmdline::templ::HelpOption {
         ctx.VarBool(&not_detect_recursive_type, "not-detect-recursive-type", "not detect recursive type");
         ctx.VarBool(&not_detect_int_set, "not-detect-int-set", "not detect int set");
         ctx.VarBool(&not_detect_alignment, "not-detect-alignment", "not detect alignment");
+        ctx.VarBool(&not_resolve_explicit_error, "not-resolve-explicit-error", "not resolve explicit error");
+
         ctx.VarBool(&unresolved_type_as_error, "unresolved-type-as-error", "unresolved type as error");
 
         ctx.VarBool(&disable_untyped_warning, "u,disable-untyped", "disable untyped warning");
@@ -543,6 +549,14 @@ int Main(Flags& flags, futils::cmdline::option::Context&, bool disable_network) 
 
     if (!flags.not_resolve_endian_spec) {
         brgen::middle::replace_specify_endian(*res);
+    }
+
+    if (!flags.not_resolve_explicit_error) {
+        auto res2 = brgen::middle::replace_explicit_error(*res);
+        if (!res2) {
+            report_error(brgen::to_source_error(files)(std::move(res2.error())));
+            return exit_err;
+        }
     }
 
     if (!flags.not_resolve_type) {

@@ -65,6 +65,7 @@ impl From<&Node> for NodeType {
 			Node::Cast(_) => Self::Cast,
 			Node::Available(_) => Self::Available,
 			Node::SpecifyEndian(_) => Self::SpecifyEndian,
+			Node::ExplicitError(_) => Self::ExplicitError,
 			Node::Loop(_) => Self::Loop,
 			Node::IndentBlock(_) => Self::IndentBlock,
 			Node::ScopedStatement(_) => Self::ScopedStatement,
@@ -134,6 +135,7 @@ impl From<&NodeWeak> for NodeType {
 			NodeWeak::Cast(_) => Self::Cast,
 			NodeWeak::Available(_) => Self::Available,
 			NodeWeak::SpecifyEndian(_) => Self::SpecifyEndian,
+			NodeWeak::ExplicitError(_) => Self::ExplicitError,
 			NodeWeak::Loop(_) => Self::Loop,
 			NodeWeak::IndentBlock(_) => Self::IndentBlock,
 			NodeWeak::ScopedStatement(_) => Self::ScopedStatement,
@@ -203,6 +205,7 @@ impl From<NodeWeak> for NodeType {
 	Cast,
 	Available,
 	SpecifyEndian,
+	ExplicitError,
 	Stmt,
 	Loop,
 	IndentBlock,
@@ -270,6 +273,7 @@ impl TryFrom<&str> for NodeType {
 			"cast" =>Ok(Self::Cast),
 			"available" =>Ok(Self::Available),
 			"specify_endian" =>Ok(Self::SpecifyEndian),
+			"explicit_error" =>Ok(Self::ExplicitError),
 			"stmt" =>Ok(Self::Stmt),
 			"loop" =>Ok(Self::Loop),
 			"indent_block" =>Ok(Self::IndentBlock),
@@ -621,6 +625,7 @@ pub enum Node {
 	Cast(Rc<RefCell<Cast>>),
 	Available(Rc<RefCell<Available>>),
 	SpecifyEndian(Rc<RefCell<SpecifyEndian>>),
+	ExplicitError(Rc<RefCell<ExplicitError>>),
 	Loop(Rc<RefCell<Loop>>),
 	IndentBlock(Rc<RefCell<IndentBlock>>),
 	ScopedStatement(Rc<RefCell<ScopedStatement>>),
@@ -681,6 +686,7 @@ pub enum NodeWeak {
 	Cast(Weak<RefCell<Cast>>),
 	Available(Weak<RefCell<Available>>),
 	SpecifyEndian(Weak<RefCell<SpecifyEndian>>),
+	ExplicitError(Weak<RefCell<ExplicitError>>),
 	Loop(Weak<RefCell<Loop>>),
 	IndentBlock(Weak<RefCell<IndentBlock>>),
 	ScopedStatement(Weak<RefCell<ScopedStatement>>),
@@ -742,6 +748,7 @@ impl From<&Node> for NodeWeak {
 			Node::Cast(node)=>Self::Cast(Rc::downgrade(node)),
 			Node::Available(node)=>Self::Available(Rc::downgrade(node)),
 			Node::SpecifyEndian(node)=>Self::SpecifyEndian(Rc::downgrade(node)),
+			Node::ExplicitError(node)=>Self::ExplicitError(Rc::downgrade(node)),
 			Node::Loop(node)=>Self::Loop(Rc::downgrade(node)),
 			Node::IndentBlock(node)=>Self::IndentBlock(Rc::downgrade(node)),
 			Node::ScopedStatement(node)=>Self::ScopedStatement(Rc::downgrade(node)),
@@ -812,6 +819,7 @@ impl TryFrom<&NodeWeak> for Node {
 			NodeWeak::Cast(node)=>Ok(Self::Cast(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Cast))?)),
 			NodeWeak::Available(node)=>Ok(Self::Available(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Available))?)),
 			NodeWeak::SpecifyEndian(node)=>Ok(Self::SpecifyEndian(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::SpecifyEndian))?)),
+			NodeWeak::ExplicitError(node)=>Ok(Self::ExplicitError(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::ExplicitError))?)),
 			NodeWeak::Loop(node)=>Ok(Self::Loop(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Loop))?)),
 			NodeWeak::IndentBlock(node)=>Ok(Self::IndentBlock(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::IndentBlock))?)),
 			NodeWeak::ScopedStatement(node)=>Ok(Self::ScopedStatement(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::ScopedStatement))?)),
@@ -877,6 +885,7 @@ pub enum Expr {
 	Cast(Rc<RefCell<Cast>>),
 	Available(Rc<RefCell<Available>>),
 	SpecifyEndian(Rc<RefCell<SpecifyEndian>>),
+	ExplicitError(Rc<RefCell<ExplicitError>>),
 	IntLiteral(Rc<RefCell<IntLiteral>>),
 	BoolLiteral(Rc<RefCell<BoolLiteral>>),
 	StrLiteral(Rc<RefCell<StrLiteral>>),
@@ -903,6 +912,7 @@ pub enum ExprWeak {
 	Cast(Weak<RefCell<Cast>>),
 	Available(Weak<RefCell<Available>>),
 	SpecifyEndian(Weak<RefCell<SpecifyEndian>>),
+	ExplicitError(Weak<RefCell<ExplicitError>>),
 	IntLiteral(Weak<RefCell<IntLiteral>>),
 	BoolLiteral(Weak<RefCell<BoolLiteral>>),
 	StrLiteral(Weak<RefCell<StrLiteral>>),
@@ -930,6 +940,7 @@ impl From<&Expr> for ExprWeak {
 			Expr::Cast(node)=>Self::Cast(Rc::downgrade(node)),
 			Expr::Available(node)=>Self::Available(Rc::downgrade(node)),
 			Expr::SpecifyEndian(node)=>Self::SpecifyEndian(Rc::downgrade(node)),
+			Expr::ExplicitError(node)=>Self::ExplicitError(Rc::downgrade(node)),
 			Expr::IntLiteral(node)=>Self::IntLiteral(Rc::downgrade(node)),
 			Expr::BoolLiteral(node)=>Self::BoolLiteral(Rc::downgrade(node)),
 			Expr::StrLiteral(node)=>Self::StrLiteral(Rc::downgrade(node)),
@@ -966,6 +977,7 @@ impl TryFrom<&ExprWeak> for Expr {
 			ExprWeak::Cast(node)=>Ok(Self::Cast(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Cast))?)),
 			ExprWeak::Available(node)=>Ok(Self::Available(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Available))?)),
 			ExprWeak::SpecifyEndian(node)=>Ok(Self::SpecifyEndian(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::SpecifyEndian))?)),
+			ExprWeak::ExplicitError(node)=>Ok(Self::ExplicitError(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::ExplicitError))?)),
 			ExprWeak::IntLiteral(node)=>Ok(Self::IntLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::IntLiteral))?)),
 			ExprWeak::BoolLiteral(node)=>Ok(Self::BoolLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::BoolLiteral))?)),
 			ExprWeak::StrLiteral(node)=>Ok(Self::StrLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::StrLiteral))?)),
@@ -1003,6 +1015,7 @@ impl TryFrom<&Node> for Expr {
 			Node::Cast(node)=>Ok(Self::Cast(node.clone())),
 			Node::Available(node)=>Ok(Self::Available(node.clone())),
 			Node::SpecifyEndian(node)=>Ok(Self::SpecifyEndian(node.clone())),
+			Node::ExplicitError(node)=>Ok(Self::ExplicitError(node.clone())),
 			Node::IntLiteral(node)=>Ok(Self::IntLiteral(node.clone())),
 			Node::BoolLiteral(node)=>Ok(Self::BoolLiteral(node.clone())),
 			Node::StrLiteral(node)=>Ok(Self::StrLiteral(node.clone())),
@@ -1040,6 +1053,7 @@ impl From<&Expr> for Node {
 			Expr::Cast(node)=>Self::Cast(node.clone()),
 			Expr::Available(node)=>Self::Available(node.clone()),
 			Expr::SpecifyEndian(node)=>Self::SpecifyEndian(node.clone()),
+			Expr::ExplicitError(node)=>Self::ExplicitError(node.clone()),
 			Expr::IntLiteral(node)=>Self::IntLiteral(node.clone()),
 			Expr::BoolLiteral(node)=>Self::BoolLiteral(node.clone()),
 			Expr::StrLiteral(node)=>Self::StrLiteral(node.clone()),
@@ -1076,6 +1090,7 @@ impl TryFrom<&ExprWeak> for Node {
 			ExprWeak::Cast(node)=>Ok(Self::Cast(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Cast))?)),
 			ExprWeak::Available(node)=>Ok(Self::Available(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Available))?)),
 			ExprWeak::SpecifyEndian(node)=>Ok(Self::SpecifyEndian(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::SpecifyEndian))?)),
+			ExprWeak::ExplicitError(node)=>Ok(Self::ExplicitError(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::ExplicitError))?)),
 			ExprWeak::IntLiteral(node)=>Ok(Self::IntLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::IntLiteral))?)),
 			ExprWeak::BoolLiteral(node)=>Ok(Self::BoolLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::BoolLiteral))?)),
 			ExprWeak::StrLiteral(node)=>Ok(Self::StrLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::StrLiteral))?)),
@@ -1112,6 +1127,7 @@ impl From<&ExprWeak> for NodeWeak {
 			ExprWeak::Cast(node)=>Self::Cast(node.clone()),
 			ExprWeak::Available(node)=>Self::Available(node.clone()),
 			ExprWeak::SpecifyEndian(node)=>Self::SpecifyEndian(node.clone()),
+			ExprWeak::ExplicitError(node)=>Self::ExplicitError(node.clone()),
 			ExprWeak::IntLiteral(node)=>Self::IntLiteral(node.clone()),
 			ExprWeak::BoolLiteral(node)=>Self::BoolLiteral(node.clone()),
 			ExprWeak::StrLiteral(node)=>Self::StrLiteral(node.clone()),
@@ -1148,6 +1164,7 @@ impl TryFrom<&NodeWeak> for ExprWeak {
 			NodeWeak::Cast(node)=>Ok(Self::Cast(node.clone())),
 			NodeWeak::Available(node)=>Ok(Self::Available(node.clone())),
 			NodeWeak::SpecifyEndian(node)=>Ok(Self::SpecifyEndian(node.clone())),
+			NodeWeak::ExplicitError(node)=>Ok(Self::ExplicitError(node.clone())),
 			NodeWeak::IntLiteral(node)=>Ok(Self::IntLiteral(node.clone())),
 			NodeWeak::BoolLiteral(node)=>Ok(Self::BoolLiteral(node.clone())),
 			NodeWeak::StrLiteral(node)=>Ok(Self::StrLiteral(node.clone())),
@@ -1186,6 +1203,7 @@ impl TryFrom<&Node> for ExprWeak {
 			Node::Cast(node)=>Ok(Self::Cast(Rc::downgrade(node))),
 			Node::Available(node)=>Ok(Self::Available(Rc::downgrade(node))),
 			Node::SpecifyEndian(node)=>Ok(Self::SpecifyEndian(Rc::downgrade(node))),
+			Node::ExplicitError(node)=>Ok(Self::ExplicitError(Rc::downgrade(node))),
 			Node::IntLiteral(node)=>Ok(Self::IntLiteral(Rc::downgrade(node))),
 			Node::BoolLiteral(node)=>Ok(Self::BoolLiteral(Rc::downgrade(node))),
 			Node::StrLiteral(node)=>Ok(Self::StrLiteral(Rc::downgrade(node))),
@@ -3364,6 +3382,73 @@ impl From<&Rc<RefCell<SpecifyEndian>>> for Node {
 
 impl From<Rc<RefCell<SpecifyEndian>>> for Node {
 	fn from(node:Rc<RefCell<SpecifyEndian>>)-> Self{
+		Self::from(&node)
+	}
+}
+
+#[derive(Debug,Clone)]
+pub struct ExplicitError {
+	pub loc: Loc,
+	pub expr_type: Option<Type>,
+	pub constant_level: ConstantLevel,
+	pub base: Option<Rc<RefCell<Call>>>,
+	pub message: Option<Rc<RefCell<StrLiteral>>>,
+}
+
+impl TryFrom<&Expr> for Rc<RefCell<ExplicitError>> {
+	type Error = Error;
+	fn try_from(node:&Expr)->Result<Self,Self::Error>{
+		match node {
+			Expr::ExplicitError(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl TryFrom<Expr> for Rc<RefCell<ExplicitError>> {
+	type Error = Error;
+	fn try_from(node:Expr)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
+impl From<&Rc<RefCell<ExplicitError>>> for Expr {
+	fn from(node:&Rc<RefCell<ExplicitError>>)-> Self{
+		Expr::ExplicitError(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<ExplicitError>>> for Expr {
+	fn from(node:Rc<RefCell<ExplicitError>>)-> Self{
+		Self::from(&node)
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<ExplicitError>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::ExplicitError(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl TryFrom<Node> for Rc<RefCell<ExplicitError>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
+impl From<&Rc<RefCell<ExplicitError>>> for Node {
+	fn from(node:&Rc<RefCell<ExplicitError>>)-> Self{
+		Node::ExplicitError(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<ExplicitError>>> for Node {
+	fn from(node:Rc<RefCell<ExplicitError>>)-> Self{
 		Self::from(&node)
 	}
 }
@@ -6453,6 +6538,15 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				is_little: None,
 				})))
 			},
+			NodeType::ExplicitError => {
+				Node::ExplicitError(Rc::new(RefCell::new(ExplicitError {
+				loc: raw_node.loc.clone(),
+				expr_type: None,
+				constant_level: ConstantLevel::Unknown,
+				base: None,
+				message: None,
+				})))
+			},
 			NodeType::Loop => {
 				Node::Loop(Rc::new(RefCell::new(Loop {
 				loc: raw_node.loc.clone(),
@@ -8218,6 +8312,77 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						None => return Err(Error::IndexOutOfBounds(is_little_body as usize)),
 					};
 					node.borrow_mut().is_little = Some(is_little_body.try_into()?);
+				}
+			},
+			NodeType::ExplicitError => {
+				let node = nodes[i].clone();
+				let node = match node {
+					Node::ExplicitError(node)=>node,
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
+				};
+				let expr_type_body = match raw_node.body.get("expr_type") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"expr_type")),
+				};
+ 				if !expr_type_body.is_null() {
+					let expr_type_body = match expr_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
+					};
+					let expr_type_body = match nodes.get(expr_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
+					};
+					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+				}
+				let constant_level_body = match raw_node.body.get("constant_level") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"constant_level")),
+				};
+				node.borrow_mut().constant_level = match constant_level_body.as_str() {
+					Some(v)=>match ConstantLevel::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(constant_level_body.into(),JSONType::String)),
+				};
+				let base_body = match raw_node.body.get("base") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"base")),
+				};
+ 				if !base_body.is_null() {
+					let base_body = match base_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(base_body.into(),JSONType::Number)),
+					};
+					let base_body = match nodes.get(base_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(base_body as usize)),
+					};
+					let base_body = match base_body {
+						Node::Call(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),base_body.into())),
+					};
+					node.borrow_mut().base = Some(base_body.clone());
+				}
+				let message_body = match raw_node.body.get("message") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"message")),
+				};
+ 				if !message_body.is_null() {
+					let message_body = match message_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(message_body.into(),JSONType::Number)),
+					};
+					let message_body = match nodes.get(message_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(message_body as usize)),
+					};
+					let message_body = match message_body {
+						Node::StrLiteral(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),message_body.into())),
+					};
+					node.borrow_mut().message = Some(message_body.clone());
 				}
 			},
 			NodeType::Loop => {
@@ -10966,6 +11131,23 @@ where
 				}
 			}
 			if let Some(node) = &node.borrow().is_little{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
+		},
+		Node::ExplicitError(node)=>{
+			if let Some(node) = &node.borrow().expr_type{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
+			if let Some(node) = &node.borrow().base{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
+			if let Some(node) = &node.borrow().message{
 				if !f.visit(&node.into()){
 					return;
 				}

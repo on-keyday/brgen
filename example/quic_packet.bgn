@@ -20,12 +20,12 @@ format QUICPackets:
    packets :[]QUICPacket
    
    fn decode():
-      enc := config.arg("encrypted",bool)
+      enc := qstate.encrypted
       loop input.remain > 0:
          pkt :QUICPacket
          if available(pkt.hdr):
             frames :[..]QUICFrame(input = pkt.hdr) # TODO(on-keyday): fix this with pkt.hdr.payload
-            packets push(pkt) # TODO: fix this with packets.push_back(pkt)
+            packets = append(packets,pkt) # TODO: fix this with packets.push_back(pkt)
    
    fn encode():
       loop pkt:=range(packets):

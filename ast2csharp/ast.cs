@@ -25,6 +25,7 @@ Import,
 Cast,
 Available,
 SpecifyEndian,
+ExplicitError,
 Stmt,
 Loop,
 IndentBlock,
@@ -343,6 +344,13 @@ public class SpecifyEndian : Expr{
 	public ConstantLevel ConstantLevel{get;set;}
 	public Binary? Base{get;set;}
 	public Expr? IsLittle{get;set;}
+}
+public class ExplicitError : Expr{
+	public Loc Loc{get;set;}
+	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
+	public Call? Base{get;set;}
+	public StrLiteral? Message{get;set;}
 }
 public class Loop : Stmt{
 	public Loc Loc{get;set;}

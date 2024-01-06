@@ -146,6 +146,7 @@ namespace brgen::ast {
         {NodeType::scoped_statement, "scoped_statement"},
         {NodeType::field_argument, "field_argument"},
         {NodeType::specify_endian, "specify_endian"},
+        {NodeType::explicit_error, "explicit_error"},
     };
 
     constexpr std::array<std::pair<NodeType, const char*>, std::size(node_type_str_array)> sorted_node_type_str_array = [] {

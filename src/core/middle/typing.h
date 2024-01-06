@@ -845,6 +845,10 @@ namespace brgen::middle {
                 b->base->expr_type = void_type(b->loc);
                 b->expr_type = b->base->expr_type;
             }
+            if (auto b = ast::as<ast::ExplicitError>(expr)) {
+                typing_expr(b->base->raw_arguments, false);
+                b->expr_type = void_type(b->loc);
+            }
             if (expr->expr_type) {
                 typing_object(expr->expr_type);
                 return;  // already typed
