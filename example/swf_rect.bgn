@@ -6,4 +6,6 @@ format SWFRect:
     y_min : [len]u1
     y_max : [len]u1
     padding :[(5 + len *4)%8]u1(input.align = 8) # padding to next byte
-    
+
+
+   

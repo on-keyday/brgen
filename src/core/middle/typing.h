@@ -179,8 +179,8 @@ namespace brgen::middle {
             return std::make_shared<ast::VoidType>(loc);
         }
 
-        [[noreturn]] void report_not_equal_type(const std::shared_ptr<ast::Type>& lty, const std::shared_ptr<ast::Type>& rty) {
-            error(lty->loc, "type not equal here").error(rty->loc, "and here").report();
+        [[noreturn]] void report_not_equal_type(lexer::Loc loc, const std::shared_ptr<ast::Type>& lty, const std::shared_ptr<ast::Type>& rty) {
+            error(loc, "type mismatch").error(lty->loc, "type not equal here").error(rty->loc, "and here").report();
         }
 
         [[noreturn]] void report_not_comparable_type(const std::shared_ptr<ast::Type>& lty, const std::shared_ptr<ast::Type>& rty) {
@@ -276,7 +276,7 @@ namespace brgen::middle {
                     return;
                 }
                 if (!equal_type(m->expr_type, right->expr_type)) {
-                    report_not_equal_type(m->expr_type, right->expr_type);
+                    report_not_equal_type(m->loc, m->expr_type, right->expr_type);
                 }
                 return;
             }
@@ -531,7 +531,7 @@ namespace brgen::middle {
                     if (lty->node_type == ast::NodeType::int_type &&
                         rty->node_type == ast::NodeType::int_type) {
                         if (!equal_type(rty, lty)) {
-                            report_not_equal_type(rty, lty);
+                            report_not_equal_type(b->loc, rty, lty);
                         }
                         b->expr_type = std::move(lty);
                         return;
@@ -710,7 +710,7 @@ namespace brgen::middle {
                 }
                 int_type_fitting(call->arguments[i]->expr_type, type->parameters[i]);
                 if (!equal_type(call->arguments[i]->expr_type, type->parameters[i])) {
-                    report_not_equal_type(call->arguments[i]->expr_type, type->parameters[i]);
+                    report_not_equal_type(call->arguments[i]->loc, call->arguments[i]->expr_type, type->parameters[i]);
                 }
             }
             call->expr_type = type->return_type;
@@ -779,7 +779,7 @@ namespace brgen::middle {
                 }
                 int_type_fitting(r->start->expr_type, r->end->expr_type);
                 if (!equal_type(r->start->expr_type, r->end->expr_type)) {
-                    report_not_equal_type(r->start->expr_type, r->end->expr_type);
+                    report_not_equal_type(r->loc, r->start->expr_type, r->end->expr_type);
                 }
             }
             auto range_type = std::make_shared<ast::RangeType>(r->loc);
@@ -960,6 +960,7 @@ namespace brgen::middle {
         }
 
         void typing_field(ast::Field* field) {
+            typing_object(field->field_type);
             if (!field->arguments ||
                 field->arguments->collected_arguments.empty() ||
                 !field->arguments->arguments.empty() ||
@@ -972,10 +973,12 @@ namespace brgen::middle {
                 auto arg = a.lock();
                 auto conf = ast::tool::extract_config(arg, ast::tool::ExtractMode::assign);
                 if (!conf) {
+                    typing_expr(arg);
                     args->arguments.push_back(std::move(arg));
                     continue;
                 }
                 if (conf->name == "input.align") {
+                    typing_expr(conf->arguments[0]);
                     args->alignment = std::move(conf->arguments[0]);
                     ast::as<ast::MemberAccess>(ast::as<ast::Binary>(arg)->left)->member->usage = ast::IdentUsage::reference_builtin_fn;
                     continue;
@@ -991,10 +994,13 @@ namespace brgen::middle {
                         auto loc = conf->arguments[0]->loc;
                         if (conf2->arguments.size() == 1) {
                             // subrange(length) become subrange(length,input.offset)
+                            typing_expr(conf2->arguments[0]);
                             args->sub_byte_length = std::move(conf2->arguments[0]);
                         }
                         else if (conf2->arguments.size() == 2) {
                             // subrange(offset,length) become subrange(input.offset+offset,input.offset+offset+length)
+                            typing_expr(conf2->arguments[0]);
+                            typing_expr(conf2->arguments[1]);
                             args->sub_byte_length = std::move(conf2->arguments[0]);
                             args->sub_byte_begin = std::move(conf2->arguments[1]);
                         }
@@ -1057,6 +1063,10 @@ namespace brgen::middle {
                         }
                     }
                 }
+                if (auto field = ast::as<ast::Field>(node)) {
+                    typing_field(field);
+                    return;
+                }
                 do_traverse();
                 if (auto arr_type = ast::as<ast::ArrayType>(node)) {
                     // array like [..]u8 is variable length array, so mark it as variable
@@ -1075,9 +1085,6 @@ namespace brgen::middle {
                         }
                     }
                     return;
-                }
-                if (auto field = ast::as<ast::Field>(node)) {
-                    typing_field(field);
                 }
             };
             recursive_typing(recursive_typing, ty);

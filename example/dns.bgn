@@ -28,10 +28,10 @@ format Label:
     data :[length]u8
 
 format DomainName:
-    start := input.offset
+    start := u64(input.offset)
     labels :[..]Label
     :"\x00"
-    input.offset - start <= 255
+    u64(input.offset) - start <= 255
 
 format DNSQuestion:
     name :DomainName

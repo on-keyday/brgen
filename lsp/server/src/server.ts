@@ -28,6 +28,7 @@ import {execFile} from "child_process";
 import * as url from "url";
 import { ast2ts } from "ast2ts";
 import assert from 'node:assert/strict';
+import { report } from 'process';
 
 
 
@@ -116,7 +117,7 @@ connection.onInitialized(() => {
 function execSrc2JSON<T>(exe_path :string,command :Array<string>,text :string,isT: (x :any) => x is T) {
     return new Promise<T>((resolve,reject)=>{
         const ch = execFile(exe_path,command ,(err,stdout,stderr)=>{
-            if(err){
+            if(err&&err?.code!==1){
                 reject(err);
                 return;
             }
@@ -307,6 +308,9 @@ const tokenizeSourceImpl  = async (doc :TextDocument,docInfo :DocumentInfo) =>{
     const ast = ast_;
     if(ast.error !== null) {
         reportDiagnostic(doc,ast.error);
+    }
+    else {
+        reportDiagnostic(doc,{errs:[]});
     }
     if(ast.ast === null) {
         throw new Error("ast is null, use previous ast");

@@ -5,6 +5,7 @@ format StandardMidiFile:
     header: HeaderChunk
     tracks: [..]TrackChunk
 
+
 format HeaderChunk:
     magic  :"MThd"
     length : ub32(6)
@@ -39,8 +40,8 @@ format Varint:
         loop:
             if shift > 28:
                 error("delta time too long")
-            byte := input.get(u8)
-            value = value | (byte & 0x7f) << shift
+            byte := u8(input.get())
+            value = value | u32(byte & 0x7f) << shift
             if byte & 0x80 == 0:
                 break
             shift = shift + 7
@@ -137,4 +138,5 @@ format ChannelPressureEvent:
 
 format PitchBendEvent:
     value : ub16
+
 

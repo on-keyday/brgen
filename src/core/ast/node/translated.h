@@ -136,4 +136,22 @@ namespace brgen::ast {
         }
     };
 
+    struct ExplictError : Expr {
+        define_node_type(NodeType::explicit_error);
+        std::shared_ptr<ast::Call> base;
+        std::shared_ptr<ast::Expr> error;
+
+        ExplictError(std::shared_ptr<ast::Call>&& a, std::shared_ptr<ast::Expr>&& b)
+            : Expr(a->loc, NodeType::explicit_error), base(std::move(a)), error(std::move(b)) {}
+
+        ExplictError()
+            : Expr({}, NodeType::explicit_error) {}
+
+        void dump(auto&& field_) {
+            Expr::dump(field_);
+            sdebugf(base);
+            sdebugf(error);
+        }
+    };
+
 }  // namespace brgen::ast

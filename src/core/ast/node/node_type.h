@@ -32,6 +32,7 @@ namespace brgen::ast {
         cast,
         available,
         specify_endian,
+        explicit_error,
 
         literal = 0x110000,
         int_literal,
