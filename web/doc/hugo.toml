@@ -11,3 +11,7 @@ BookRepo = 'https://on-keyday.github.io/brgen/doc'
 [module]
 [[module.imports]]
 path = 'github.com/alex-shpak/hugo-book'
+
+[security]
+  [security.funcs]
+    getenv = ['^HUGO_', '^CI$','^RELEASE_TAG$']
