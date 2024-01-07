@@ -232,6 +232,10 @@ jobs:
       - name: fetch dependencies
         run: |
           go mod download
+          cd ast2ts
+          npm install
+          tsc
+          cp ../LICENSE ./out
           cd lsp
           npm install
           cd server
