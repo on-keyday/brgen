@@ -16,7 +16,7 @@ fi
 if [ ! -d ./license_cache/web ]; then
   mkdir ./license_cache/web
 fi
-GOCREDITS=$GOPATH/bin/gocredits
+GOCREDITS=`go env GOPATH`/bin/gocredits
 $GOCREDITS > ./license_cache/go/credits.txt
 if [ $? -eq 0 ]; then
   echo "gocredits save: OK"
