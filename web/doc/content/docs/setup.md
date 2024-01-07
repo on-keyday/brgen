@@ -25,7 +25,7 @@ TODO(on-keyday): apt-get,brew,winget 等への対応
 3. `cd brgen`を実行
 4. `. build.sh`(mac,linux,git bash(windows))または`build.bat`(cmd.exe(windows))を実行
 5. `tool`ディレクトリに実行可能ファイルが入っていることを確認
-6. `tool/brgen -version`でバージョンが確認できます
+6. `tool/src2json --version`でバージョンが確認できます(TODO(on-keyday):現在、プログラムのバージョンはリリースのバージョンと同期していません)
 7. `tool/brgen`を実行すると`ignore/example`ディレクトリにコードが生成されます
 
 ### internals
