@@ -35,9 +35,28 @@ namespace brgen::ast::tool {
         std::unordered_map<UnaryOp, std::function<std::string(Stringer& s, const std::shared_ptr<Expr>&)>> unary_op_map;
         std::unordered_map<size_t, std::string> tmp_var_map;
         std::unordered_map<std::string, std::string> ident_map;
+        std::unordered_map<std::shared_ptr<ast::Ident>, std::string> def_base_map;
         std::function<std::string(std::string cond, std::string then, std::string els)> cond_op;
         std::unordered_map<std::string, std::function<std::string(Stringer& s, const std::string& name, const std::vector<std::shared_ptr<ast::Expr>>&)>> call_handler;
         std::function<std::string(Stringer&, const std::shared_ptr<Type>&)> type_resolver;
+
+        std::optional<std::string> find_def_base(const std::shared_ptr<ast::Ident>& i) {
+            if (!i) {
+                return std::nullopt;
+            }
+            auto ref = i;
+            while (true) {
+                auto found = def_base_map.find(i);
+                if (found != def_base_map.end()) {
+                    return found->second;
+                }
+                auto base = ref->base.lock();
+                if (!base) {
+                    return std::nullopt;
+                }
+                ref = ast::cast_to<ast::Ident>(std::move(base));
+            }
+        }
 
         void clear() {
             bin_op_map.clear();

@@ -29,6 +29,9 @@ src2json-->|AST|brgen
 brgen-->|呼び出し/AST|generator
 generator-->|生成結果|brgen
 brgen-.->|生成結果書き出し|output_file[生成ファイル]
+
 ```
 
 (点線は外部(ファイルシステム)とのやりとりを表します)
+
+{{< mermaid >}}
