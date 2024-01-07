@@ -259,6 +259,7 @@ jobs:
           version: "4.4" # required: supports matching based on string equivalence or node-semver range
       - name: Collect licenses
         run: |
+          go mod edit -json
           . ./script/collect_licenses.sh
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
