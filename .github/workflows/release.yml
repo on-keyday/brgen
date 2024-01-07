@@ -236,7 +236,7 @@ jobs:
           npm install
           tsc
           cp ../LICENSE ./out
-          cd lsp
+          cd ../lsp
           npm install
           cd server
           npm install
