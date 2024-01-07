@@ -1,15 +1,17 @@
 @echo off
 setlocal
 
-for /f "tokens=*" %%a in (tag.txt) do set TAG=%%a
-if "%TAG%"=="" (
+for /f %%a in (./script/tag.txt) do set RELEASE_TAG=%%a
+if "%RELEASE_TAG%"=="" (
     echo "tag.txt" not found
     exit /b 1
 )
-git tag -d %TAG%
-git push origin --delete %TAG%
+rem test
+echo %RELEASE_TAG%
+git tag -d %RELEASE_TAG%
+git push origin --delete %RELEASE_TAG%
 git add .
-git commit -m "release %TAG% %date% %time%"
-git tag %TAG%
+git commit -m "release %RELEASE_TAG% %date% %time%"
+git tag %RELEASE_TAG%
 git push
-git push origin %TAG%
+git push origin %RELEASE_TAG%

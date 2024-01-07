@@ -1,10 +1,10 @@
 
-read TAG < tag.txt
+read RELEASE_TAG < ./script/tag.txt
 
-if [ -z "$TAG" ]; then
+if [ -z "$RELEASE_TAG" ]; then
     echo "No tag found"
     exit 1
 fi
 
-echo "Exporting tag $TAG"
-export TAG
+echo "Exporting tag $RELEASE_TAG"
+export RELEASE_TAG
