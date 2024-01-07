@@ -258,6 +258,12 @@ jobs:
       - name: Collect licenses
         run: |
           . ./script/collect_licenses.sh
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: brgen-licenses
+          path: ./license_cache
+
   relase:
     permissions:
       contents: write
