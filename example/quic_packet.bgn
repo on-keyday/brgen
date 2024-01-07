@@ -134,19 +134,20 @@ format ConnectionID:
 format VarInt:
    value :u64
    fn decode():
-      p := input[0]
+      p := input.peek(u8)
       value = match p&0xC0 >> 6:
-         0 => input.u8() & !msb(2)
-         1 => input.u16() & !msb(2)
-         2 => input.u32() & !msb(2)
-         3 => input.u64() & !msb(2)
+         0 => input.get(u8) & 0x3f
+         1 => input.get(u16) & 0x3fff
+         2 => input.get(u32) & 0x3fffffff
+         3 => input.get(u16) & 0x3fffffffffffffff
+      input.get(u8)
 
    fn encode():
       match value:
-         ..0x40 => output.u8(value)
-         ..0x4000 => output.u16(value | msb(2,1))
-         ..0x40000000 => output.u32(value | msb(2,2))
-         ..0x4000000000000000 => output.u64(value | msb(2,3))
+         ..0x40 => output.put(u8(value))
+         ..0x4000 => output.put(u16(value) | 0x4000)
+         ..0x40000000 => output.put(u32(value) | 0x80000000)
+         ..0x4000000000000000 => output.put(u64(value) | 0xc000000000000000)
          _ => error("too large number")
    
    fn cast u64():

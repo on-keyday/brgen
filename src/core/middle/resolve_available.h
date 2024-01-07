@@ -1,10 +1,11 @@
 /*license*/
 #pragma once
 #include <core/ast/traverse.h>
+#include <core/common/error.h>
 
 namespace brgen::middle {
 
-    void resolve_available(auto& node) {
+    result<void> resolve_available(auto& node) {
         auto f = [](auto&& f, auto& node) -> void {
             // traverse child first
             ast::traverse(node, [&](auto& n) {
@@ -21,20 +22,31 @@ namespace brgen::middle {
                     if (ident->ident != "available") {
                         return;
                     }
-                    if (p->arguments.size() != 1) {
-                        return;
+                    if (p->arguments.size() < 1) {
+                        error(p->loc, "invalid available; must have at least one argument").report();
                     }
-                    auto target = ast::as<ast::Ident>(p->arguments[0]);
-                    if (!target) {
-                        return;
+                    std::shared_ptr<ast::Ident> target;
+                    if (auto a = ast::as<ast::MemberAccess>(p->arguments[0])) {
+                        target = a->member;
+                    }
+                    else {
+                        if (!ast::as<ast::Ident>(p->arguments[0])) {
+                            error(p->arguments[0]->loc, "invalid target of available; must be an ident or member access").report();
+                        }
+                        target = ast::cast_to<ast::Ident>(p->arguments[0]);
                     }
                     ident->usage = ast::IdentUsage::reference_builtin_fn;
-                    auto a = std::make_shared<ast::Available>(ast::cast_to<ast::Ident>(p->arguments[0]), ast::cast_to<ast::Call>(std::move(node)));
+                    auto a = std::make_shared<ast::Available>(std::move(target), ast::cast_to<ast::Call>(std::move(node)));
                     a->expr_type = std::make_shared<ast::BoolType>(ident->loc);
                     node = std::move(a);
                 }
             }
         };
-        f(f, node);
+        try {
+            f(f, node);
+        } catch (LocationError& e) {
+            return unexpect(e);
+        }
+        return {};
     }
 }  // namespace brgen::middle

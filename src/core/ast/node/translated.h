@@ -154,4 +154,14 @@ namespace brgen::ast {
         }
     };
 
+    enum class IOMethod {};
+
+    constexpr const char* io_methods[] = {
+        "get",
+        "peek",
+        "put",
+        "offset",
+        "remain",
+    };
+
 }  // namespace brgen::ast
