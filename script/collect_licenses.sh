@@ -16,7 +16,8 @@ fi
 if [ ! -d ./license_cache/web ]; then
   mkdir ./license_cache/web
 fi
-gocredits > ./license_cache/go/credits.txt
+GOCREDITS=$GOPATH/bin/gocredits
+$GOCREDITS > ./license_cache/go/credits.txt
 if [ $? -eq 0 ]; then
   echo "gocredits save: OK"
 else
@@ -24,7 +25,7 @@ else
   return 1
 fi
 cd web/doc
-gocredits > ../../license_cache/web/credits.txt
+$GOCREDITS > ../../license_cache/web/credits.txt
 RESULT=$?
 cd ../..
 if [ $RESULT -eq 0 ]; then
