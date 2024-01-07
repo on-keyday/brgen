@@ -243,7 +243,7 @@ jobs:
           cd ../..
       - name: Install gocredits
         run: |
-          go install github.com/Songmu/gocredits/cmd/gocredits
+          go install github.com/Songmu/gocredits/cmd/gocredits@latest
       - name: Set up ruby
         uses: ruby/setup-ruby@v1
         with:
