@@ -7,10 +7,36 @@ else
   echo "licensed status: FAIL"
   return 1
 fi
-go-licenses save ./... --save_path=license_cache/go --force --alsologtostderr --ignore=./ignore
+if [ ! -d ./license_cache ]; then
+  mkdir ./license_cache
+fi
+if [ ! -d ./license_cache/go ]; then
+  mkdir ./license_cache/go
+fi
+if [ ! -d ./license_cache/web ]; then
+  mkdir ./license_cache/web
+fi
+gocredits > ./license_cache/go/credits.txt
 if [ $? -eq 0 ]; then
-  echo "go-licenses save: OK"
+  echo "gocredits save: OK"
 else
-  echo "go-licenses save: FAIL"
+  echo "gocredits save: FAIL"
+  return 1
+fi
+cd web/doc
+gocredits > ../../license_cache/web/credits.txt
+RESULT=$?
+cd ../..
+if [ $RESULT -eq 0 ]; then
+  echo "gocredits save: OK"
+else
+  echo "gocredits save: FAIL"
+  return 1
+fi
+cp ./script/license_note.txt ./license_cache/
+if [ $? -eq 0 ]; then
+  echo "license_note.txt copy: OK"
+else
+  echo "license_note.txt copy: FAIL"
   return 1
 fi

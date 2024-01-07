@@ -220,6 +220,40 @@ jobs:
           name: brgen-android
           path: ./artifacts
 
+  collect-licenses:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Timeline
+        uses: Kesin11/actions-timeline@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: fetch dependencies
+        run: |
+          go mod download
+          cd lsp
+          npm install
+          cd server
+          npm install
+          cd ../client
+          npm install
+          cd ../../web/doc
+          go mod download
+          cd ../..
+      - name: Install gocredits
+        run: |
+          go install github.com/Songmu/gocredits/cmd/gocredits
+      - name: Set up ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ruby
+      - uses: github/setup-licensed@v1
+        with:
+          version: "4.4" # required: supports matching based on string equivalence or node-semver range
+      - name: Collect licenses
+        run: |
+          . ./script/collect_licenses.sh
   relase:
     permissions:
       contents: write
@@ -231,6 +265,7 @@ jobs:
         build-vscode-extension,
         build-arm-linux,
         brgen-android,
+        collect-licenses,
       ]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')

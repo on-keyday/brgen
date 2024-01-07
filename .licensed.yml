@@ -4,7 +4,6 @@ source_path:
   - "./lsp"
   - "./lsp/server"
   - "./lsp/client"
-  - "."
 cache_path: "./license_cache" # source_pathからの相対パス。デフォルトは .licenses
 
 sources: # 今回はnpmを使います
