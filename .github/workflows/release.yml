@@ -332,7 +332,7 @@ jobs:
       - name: Make License Archive
         run: |
           tar -czf artifacts/brgen-licenses.tar.gz -C license .
-          tar -czf artifacts/brgen-licenses.zip -C license .
+          zip -r artifacts/brgen-licenses.zip license
       - name: Copy License Archive to Each Artifact
         run: |
           cp artifacts/brgen-licenses.tar.gz artifacts/linux
