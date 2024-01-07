@@ -1,0 +1,20 @@
+name: "brgen" # デフォルトはsource_pathの名前
+source_path:
+  - "./web/dev" # デフォルトはカレントディレクトリ
+  - "./lsp"
+  - "./lsp/server"
+  - "./lsp/client"
+  - "."
+cache_path: "./license_cache" # source_pathからの相対パス。デフォルトは .licenses
+
+sources: # 今回はnpmを使います
+  npm: true
+
+allowed: # 以下のライセンスならOKとします
+  - mit
+  - apache-2.0
+  - isc
+  - bsd-3-clause
+  - cc-by-4.0
+  - other
+  - gpl-2.0
