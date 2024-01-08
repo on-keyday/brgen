@@ -70,6 +70,7 @@ format LongPacketHeader:
          0 => hdr: RetryPacket
          .. => error("invalid long packet type")
       .. => error("invalid version")
+
 format VersionNegotiationPacket:
    versions :[..]u32
 

@@ -151,7 +151,11 @@ func (s *ExprStringer) ExprString(e ast2go.Expr) string {
 		typ := s.TypeProvider(e.ExprType)
 		return fmt.Sprintf("(func() %s {if %s { return %s(%s) } else { return %s(%s) }}())", typ, s.ExprString(e.Cond), typ, s.ExprString(e.Then), typ, s.ExprString(e.Els))
 	case *ast2go.Available:
-		ident, ok := e.Target.Base.(*ast2go.Ident)
+		ident, ok := e.Target.(*ast2go.Ident)
+		if !ok {
+			return "false"
+		}
+		ident, ok = ident.Base.(*ast2go.Ident)
 		if !ok {
 			return "false"
 		}
