@@ -6,6 +6,33 @@
 #include <optional>
 
 namespace brgen {
+    namespace internal {
+        template <class T, size_t... i>
+        constexpr auto enum_string_array_impl(std::index_sequence<i...>) {
+            return std::array<std::pair<T, std::string_view>, sizeof...(i)>{{
+                {T(i), enum_string<i>(T{})}...,
+            }};
+        }
+    }  // namespace internal
+
+    template <class T, size_t i = 0>
+    constexpr size_t enum_size() {
+        if constexpr (enum_end<i>(T{})) {
+            return i;
+        }
+        else {
+            return enum_size<T, i + 1>();
+        }
+    }
+
+    template <class T>
+    constexpr std::array<std::pair<T, std::string_view>, enum_size<T>()> make_enum_string_array() {
+        constexpr auto size = enum_size<T>();
+        return internal::enum_string_array_impl<T>(std::make_index_sequence<size>{});
+    }
+
+    template <class T>
+    constexpr auto enum_string_array = make_enum_string_array<T>();
 
 #define define_enum(T)                            \
     namespace T {                                 \
@@ -36,35 +63,11 @@ namespace brgen {
 
 #define define_enum_value(V) define_enum_value_str(V, #V)
 
-#define end_define_enum() }
-
-    template <class T, size_t i = 0>
-    constexpr size_t enum_size() {
-        if constexpr (enum_end<i>(T{})) {
-            return i;
-        }
-        else {
-            return enum_size<T, i + 1>();
-        }
+#define end_define_enum()                                     \
+    constexpr void as_json(InternalT t, auto&& d) {           \
+        d.value(enum_string_array<InternalT>[int(t)].second); \
+    }                                                         \
     }
-
-    namespace internal {
-        template <class T, size_t... i>
-        constexpr auto enum_string_array_impl(std::index_sequence<i...>) {
-            return std::array<std::pair<T, std::string_view>, sizeof...(i)>{{
-                {T(i), enum_string<i>(T{})}...,
-            }};
-        }
-    }  // namespace internal
-
-    template <class T>
-    constexpr std::array<std::pair<T, std::string_view>, enum_size<T>()> make_enum_string_array() {
-        constexpr auto size = enum_size<T>();
-        return internal::enum_string_array_impl<T>(std::make_index_sequence<size>{});
-    }
-
-    template <class T>
-    constexpr auto enum_string_array = make_enum_string_array<T>();
 
     template <class T>
     constexpr std::optional<T> enum_from_string(std::string_view str) {
@@ -82,7 +85,7 @@ namespace brgen {
     }
 
     namespace test {
-
+        // comment
         define_enum(TestEnum);
         define_enum_value(A);
         define_enum_value(B);

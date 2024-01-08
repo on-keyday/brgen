@@ -1,0 +1,113 @@
+
+config.cpp.namespace = "brgen::ast"
+
+enum Follow:
+    unknown
+    reference
+    define_variable
+    define_const
+    define_field
+    define_format
+    define_state
+    define_enum
+    define_enum_member
+    define_fn
+    define_cast_fn
+    define_arg
+    reference_type
+    reference_member
+    maybe_type
+    reference_builtin_fn
+
+enum BinaryOp:
+    mul = "*"
+    div = "/"
+    mod = "%"
+    left_arithmetic_shift = "<<"
+    right_arithmetic_shift = ">>"
+    left_logical_shift = "<<<"
+    right_logical_shift = ">>>"
+    bit_and = "&"
+    add = "+"
+    sub = "-"
+    bit_or = "|"
+    bit_xor = "^"
+    equal = "=="
+    not_equal = "!="
+    less = "<"
+    less_or_eq = "<="
+    grater = ">"
+    grater_or_eq = ">="
+
+    logical_and = "&&"
+
+    logical_or = "||"
+
+    cond_op1 = "?"
+    cond_op2 = ":"
+
+    range_exclusive = ".."
+    range_inclusive = "..="
+
+    assign = "="
+    define_assign = ":="
+    const_assign = "::="
+    add_assign = "+="
+    sub_assign = "-="
+    mul_assign = "*="
+    div_assign = "/="
+    mod_assign = "%="
+    left_shift_assign = "<<="
+    right_shift_assign = ">>="
+    bit_and_assign = "&="
+    bit_or_assign = "|="
+    bit_xor_assign = "^="
+
+    comma = ","
+
+enum UnaryOp:
+    not_ = "!"
+    bit_not = "~"
+
+enum BitAlignment:
+    byte_aligned
+    bit_1
+    bit_2
+    bit_3
+    bit_4
+    bit_5
+    bit_6
+    bit_7
+    not_target
+    not_decidable
+
+enum ConstantLevel:
+    unknown        # not determined
+    constant       # decided at compile time
+    const_variable # decided at runtime, but not changed
+    variable       # changed at runtime
+
+enum IdentUsage:
+    unknown
+    reference
+    define_variable
+    define_const
+    define_field
+    define_format
+    define_state
+    define_enum
+    define_enum_member
+    define_fn
+    define_cast_fn
+    define_arg
+    reference_type
+    reference_member
+    maybe_type
+    reference_builtin_fn
+
+
+enum Endian:
+    unspec
+    big
+    little
+

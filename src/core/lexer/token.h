@@ -45,7 +45,7 @@ namespace brgen::lexer {
         ident,
         comment,
         error,
-        unknwon,
+        unknown,
     };
 
     constexpr const char* tag_str[] = {
@@ -66,7 +66,7 @@ namespace brgen::lexer {
     constexpr auto tag_count = sizeof(tag_str) / sizeof(tag_str[0]);
 
     struct Token {
-        Tag tag = Tag::unknwon;
+        Tag tag = Tag::unknown;
         std::string token;
         Loc loc;
     };

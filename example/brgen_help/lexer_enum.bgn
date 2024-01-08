@@ -1,0 +1,16 @@
+
+config.cpp.namespace = "brgen::lexer"
+
+enum Tag:
+    indent
+    space
+    line
+    punct
+    int_literal
+    bool_literal
+    str_literal
+    keyword
+    ident
+    comment
+    error
+    unknown

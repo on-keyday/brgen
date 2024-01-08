@@ -5,6 +5,7 @@
 #include <core/lexer/token.h>
 #include <list>
 #include <vector>
+#include "define_enum.h"
 
 namespace brgen::ast {
     constexpr void as_json(NodeType type, auto&& buf) {
