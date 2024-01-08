@@ -601,6 +601,13 @@ namespace brgen::middle {
             return current_global->lookup_global(search);
         }
 
+        std::shared_ptr<ast::UnionType> lookup_union(const std::shared_ptr<ast::Type>& typ) {
+            if (ast::as<ast::UnionType>(typ)) {
+                return ast::cast_to<ast::UnionType>(typ);
+            }
+            return nullptr;
+        }
+
         std::shared_ptr<ast::StructType> lookup_struct(const std::shared_ptr<ast::Type>& typ) {
             if (auto ident = ast::as<ast::IdentType>(typ)) {
                 auto b = ident->base.lock();
@@ -740,15 +747,20 @@ namespace brgen::middle {
                 warn_not_typed(selector);
                 return;
             }
-            auto type = lookup_struct(selector->target->expr_type);
-            if (!type) {
+            std::shared_ptr<ast::Member> stmt;
+            if (auto union_ = lookup_union(selector->target->expr_type)) {
+                error(selector->target->loc, "union type is not supported yet").report();
+            }
+            else if (auto type = lookup_struct(selector->target->expr_type)) {
+                stmt = type->lookup(selector->member->ident);
+                if (!stmt) {
+                    error(selector->member->loc, "member ", selector->member->ident, " is not defined").report();
+                }
+            }
+            else {
                 error(selector->target->loc, "expect struct type but not")
                     .error(selector->target->loc, "type is ", ast::node_type_to_string(selector->target->expr_type->node_type))
                     .report();
-            }
-            auto stmt = type->lookup(selector->member->ident);
-            if (!stmt) {
-                error(selector->member->loc, "member ", selector->member->ident, " is not defined").report();
             }
             if (auto field = ast::as<ast::Field>(stmt)) {
                 selector->expr_type = field->field_type;

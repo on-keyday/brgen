@@ -366,6 +366,7 @@ namespace brgen::ast {
         std::vector<std::shared_ptr<UnionCandidate>> candidates;
         std::weak_ptr<StructUnionType> base_type;
         std::shared_ptr<Type> common_type;
+        std::vector<std::shared_ptr<Field>> member_candidates;
 
         void dump(auto&& field_) {
             Type::dump(field_);

@@ -15,7 +15,13 @@ namespace brgen::ast {
 
     struct Scope;
     using scope_ptr = std::shared_ptr<Scope>;
+
+#define define_node_description(desc) \
+    static constexpr const char* node_type_description = desc
     struct Node {
+        define_node_description(
+            "abstract node. all node inherit this class.\n"
+            "this class has node type and location.");
         const NodeType node_type;
         lexer::Loc loc;
 
@@ -76,6 +82,9 @@ namespace brgen::ast {
 
     struct Type : Node {
         define_node_type(NodeType::type);
+        define_node_description(
+            "abstract type class\n"
+            " this class has type attributes.\n");
         bool is_explicit = false;  // for language server annotation
         // type is integer, set of integer, or fixed length integer array.
         // not complex type array, not dynamic array, not include recursive struct
@@ -133,6 +142,10 @@ namespace brgen::ast {
 
     struct Expr : Node {
         define_node_type(NodeType::expr);
+        define_node_description(
+            "abstract expression class\n"
+            " this class has type information and constant level.");
+
         std::shared_ptr<Type> expr_type;
         ConstantLevel constant_level = ConstantLevel::unknown;
 

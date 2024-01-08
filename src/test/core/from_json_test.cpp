@@ -1,5 +1,4 @@
 /*license*/
-/*license*/
 #include "ast_test_component.h"
 #include <core/middle/middle_test.h>
 #include <gtest/gtest.h>
