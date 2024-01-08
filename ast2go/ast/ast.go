@@ -1658,7 +1658,7 @@ type Available struct {
 	ExprType      Type
 	ConstantLevel ConstantLevel
 	Base          *Call
-	Target        *Ident
+	Target        Expr
 }
 
 func (n *Available) isExpr() {}
@@ -3315,7 +3315,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				v.Base = n.node[*tmp.Base].(*Call)
 			}
 			if tmp.Target != nil {
-				v.Target = n.node[*tmp.Target].(*Ident)
+				v.Target = n.node[*tmp.Target].(Expr)
 			}
 		case NodeTypeSpecifyEndian:
 			v := n.node[i].(*SpecifyEndian)

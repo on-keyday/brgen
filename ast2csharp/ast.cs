@@ -336,7 +336,7 @@ public class Available : Expr{
 	public Type? ExprType{get;set;}
 	public ConstantLevel ConstantLevel{get;set;}
 	public Call? Base{get;set;}
-	public Ident? Target{get;set;}
+	public Expr? Target{get;set;}
 }
 public class SpecifyEndian : Expr{
 	public Loc Loc{get;set;}

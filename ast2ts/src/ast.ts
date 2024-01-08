@@ -512,7 +512,7 @@ export function isCast(obj: any): obj is Cast {
 
 export interface Available extends Expr {
 	base: Call|null;
-	target: Ident|null;
+	target: Expr|null;
 }
 
 export function isAvailable(obj: any): obj is Available {
@@ -2412,7 +2412,7 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at Available::target');
 			}
 			const tmptarget = on.body.target === null ? null : c.node[on.body.target];
-			if (!(tmptarget === null || isIdent(tmptarget))) {
+			if (!(tmptarget === null || isExpr(tmptarget))) {
 				throw new Error('invalid node list at Available::target');
 			}
 			n.target = tmptarget;

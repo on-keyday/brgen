@@ -70,8 +70,6 @@ format LongPacketHeader:
          0 => hdr: RetryPacket
          .. => error("invalid long packet type")
       .. => error("invalid version")
-
-
 format VersionNegotiationPacket:
    versions :[..]u32
 
@@ -102,9 +100,8 @@ format ZeroRTTPacketHeader:
    if qstate.encrypted:
       encrypted_payload :[length]u8
    else:
-      packet_number :[config.parent.packet_number_length]u8
-      payload :[length-config.parent.packet_number_length]u8
-
+      packet_number :[qstate.packet_number_length]u8
+      payload :[length.value - qstate.packet_number_length]u8
 
 
 format OneRTTPacketHeader:

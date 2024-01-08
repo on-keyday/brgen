@@ -668,7 +668,7 @@ struct ast2c_Available {
 	ast2c_Type* expr_type;
 	ast2c_ConstantLevel constant_level;
 	ast2c_Call* base;
-	ast2c_Ident* target;
+	ast2c_Expr* target;
 };
 
 // returns 1 if succeed 0 if failed

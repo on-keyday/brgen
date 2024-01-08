@@ -3258,7 +3258,7 @@ pub struct Available {
 	pub expr_type: Option<Type>,
 	pub constant_level: ConstantLevel,
 	pub base: Option<Rc<RefCell<Call>>>,
-	pub target: Option<Rc<RefCell<Ident>>>,
+	pub target: Option<Expr>,
 }
 
 impl TryFrom<&Expr> for Rc<RefCell<Available>> {
@@ -8240,11 +8240,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						Some(v)=>v,
 						None => return Err(Error::IndexOutOfBounds(target_body as usize)),
 					};
-					let target_body = match target_body {
-						Node::Ident(node)=>node,
-						x =>return Err(Error::MismatchNodeType(x.into(),target_body.into())),
-					};
-					node.borrow_mut().target = Some(target_body.clone());
+					node.borrow_mut().target = Some(target_body.try_into()?);
 				}
 			},
 			NodeType::SpecifyEndian => {

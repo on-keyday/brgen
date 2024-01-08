@@ -323,7 +323,7 @@ class Cast(Expr):
 
 class Available(Expr):
     base: Optional[Call]
-    target: Optional[Ident]
+    target: Optional[Expr]
 
 
 class SpecifyEndian(Expr):
@@ -1141,7 +1141,7 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].base = None
                 if ast.node[i].body["target"] is not None:
                     x = node[ast.node[i].body["target"]]
-                    node[i].target = x if isinstance(x,Ident) else raiseError(TypeError('type mismatch at Available::target'))
+                    node[i].target = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at Available::target'))
                 else:
                     node[i].target = None
             case NodeType.SPECIFY_ENDIAN:
