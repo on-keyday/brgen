@@ -25,18 +25,12 @@ namespace brgen::middle {
                     if (p->arguments.size() < 1) {
                         error(p->loc, "invalid available; must have at least one argument").report();
                     }
-                    std::shared_ptr<ast::Ident> target;
-                    if (auto a = ast::as<ast::MemberAccess>(p->arguments[0])) {
-                        target = a->member;
-                    }
-                    else {
-                        if (!ast::as<ast::Ident>(p->arguments[0])) {
-                            error(p->arguments[0]->loc, "invalid target of available; must be an ident or member access").report();
-                        }
-                        target = ast::cast_to<ast::Ident>(p->arguments[0]);
+                    if (!ast::as<ast::MemberAccess>(p->arguments[0]) && !ast::as<ast::Ident>(p->arguments[0])) {
+                        error(p->arguments[0]->loc, "invalid target of available; must be an ident or member access").report();
                     }
                     ident->usage = ast::IdentUsage::reference_builtin_fn;
-                    auto a = std::make_shared<ast::Available>(std::move(target), ast::cast_to<ast::Call>(std::move(node)));
+                    auto t = p->arguments[0];
+                    auto a = std::make_shared<ast::Available>(std::move(t), ast::cast_to<ast::Call>(std::move(node)));
                     a->expr_type = std::make_shared<ast::BoolType>(ident->loc);
                     node = std::move(a);
                 }

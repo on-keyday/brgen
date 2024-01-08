@@ -139,7 +139,11 @@ namespace brgen::ast::tool {
                 return concat(unary_op_str[int(d->op)], to_string(d->expr));
             }
             if (auto a = ast::as<ast::Available>(expr)) {
-                auto base_ident = ast::as<ast::Ident>(a->target->base.lock());
+                auto ident = ast::as<ast::Ident>(a->target);
+                if (!ident) {
+                    return "false";  // TODO(on-keyday): support member access
+                }
+                auto base_ident = ast::as<ast::Ident>(ident->base.lock());
                 if (!base_ident) {
                     return "false";
                 }

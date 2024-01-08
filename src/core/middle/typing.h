@@ -838,7 +838,7 @@ namespace brgen::middle {
                 typing_expr(c->expr);
             }
             if (auto a = ast::as<ast::Available>(expr)) {
-                typing_ident(a->target.get(), false);
+                typing_expr(a->target, false);
             }
             if (auto b = ast::as<ast::SpecifyEndian>(expr)) {
                 typing_expr(b->is_little, false);

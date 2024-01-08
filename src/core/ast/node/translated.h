@@ -103,9 +103,9 @@ namespace brgen::ast {
     struct Available : Expr {
         define_node_type(NodeType::available);
         std::shared_ptr<Call> base;
-        std::shared_ptr<Ident> target;
+        std::shared_ptr<Expr> target;
 
-        Available(std::shared_ptr<Ident>&& a, std::shared_ptr<Call>&& c)
+        Available(std::shared_ptr<Expr>&& a, std::shared_ptr<Call>&& c)
             : Expr(a->loc, NodeType::available), base(std::move(c)), target(std::move(a)) {}
 
         Available()
