@@ -60,11 +60,16 @@ func main() {
 	fmt.Printf("constexpr std::optional<T> from_string(std::string_view str);\n")
 	fmt.Printf("template<typename T>\n")
 	fmt.Printf("constexpr size_t enum_elem_count();\n")
-	fmt.Printf("template<typename T,size_t s = enum_elem_count<T>()>\n")
-	fmt.Printf("constexpr std::array<std::pair<T,std::string_view>,s> make_enum_array();\n")
+	fmt.Printf("template<typename T>\n")
+	fmt.Printf("constexpr std::array<std::pair<T,std::string_view>,enum_elem_count<T>()> make_enum_array();\n")
+	fmt.Printf("template<typename T>\n")
+	fmt.Printf("constexpr std::array<std::pair<T,std::string_view>,enum_elem_count<T>()> make_enum_name_array();\n")
 
 	fmt.Printf("template<typename T>\n")
 	fmt.Printf("constexpr auto enum_array = make_enum_array<T>();\n")
+
+	fmt.Printf("template<typename T>\n")
+	fmt.Printf("constexpr auto enum_name_array = make_enum_name_array<T>();\n")
 
 	for _, v := range p.Elements {
 		if e, ok := v.(*ast.Enum); ok {
@@ -76,14 +81,18 @@ func main() {
 			fmt.Printf("};\n")
 			fmt.Printf("constexpr const char* to_string(%s e) {\n", enumName)
 			fmt.Printf("    switch(e) {\n")
+
+			normalizeName := func(s string) string {
+				if len(s) > 1 && strings.HasSuffix(s, "_") {
+					return s[:len(s)-1]
+				}
+				return s
+			}
 			toStr := func(s *ast.EnumMember) string {
 				if s, ok := s.Expr.(*ast.StrLiteral); ok {
 					return s.Value
 				}
-				if len(s.Ident.Ident) > 1 && strings.HasSuffix(s.Ident.Ident, "_") {
-					return fmt.Sprintf("%q", s.Ident.Ident[:len(s.Ident.Ident)-1])
-				}
-				return fmt.Sprintf("%q", s.Ident.Ident)
+				return fmt.Sprintf("%q", normalizeName(s.Ident.Ident))
 			}
 			for _, v := range e.Members {
 				fmt.Printf("    case %s::%s: return %s;\n", enumName, v.Ident.Ident, toStr(v))
@@ -107,13 +116,23 @@ func main() {
 			fmt.Printf("}\n")
 
 			fmt.Printf("template<>")
-			fmt.Printf("constexpr std::array<std::pair<%s,std::string_view>,%d> make_enum_array<%s,%d>() {\n", enumName, len(e.Members), enumName, len(e.Members))
+			fmt.Printf("constexpr std::array<std::pair<%s,std::string_view>,%d> make_enum_array<%s>() {\n", enumName, len(e.Members), enumName)
 			fmt.Printf("    return {\n")
 			for _, v := range e.Members {
 				fmt.Printf("        std::pair{%s::%s,%s},\n", enumName, v.Ident.Ident, toStr(v))
 			}
 			fmt.Printf("    };\n")
 			fmt.Printf("}\n")
+
+			fmt.Printf("template<>")
+			fmt.Printf("constexpr std::array<std::pair<%s,std::string_view>,%d> make_enum_name_array<%s>() {\n", enumName, len(e.Members), enumName)
+			fmt.Printf("    return {\n")
+			for _, v := range e.Members {
+				fmt.Printf("        std::pair{%s::%s,%q},\n", enumName, v.Ident.Ident, normalizeName(v.Ident.Ident))
+			}
+			fmt.Printf("    };\n")
+			fmt.Printf("}\n")
+
 			fmt.Printf("constexpr void as_json(%s e,auto&& d) {\n", enumName)
 			fmt.Printf("    d.value(enum_array<%s>[int(e)].second);\n", enumName)
 			fmt.Printf("}\n")

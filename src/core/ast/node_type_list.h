@@ -342,14 +342,13 @@ namespace brgen::ast {
             });
         }
         {
-            R p{lexer::tag_str, lexer::tag_str + lexer::tag_count};
             field("token_tag", [&](auto&& d) {
                 auto field = d.array();
-                for (size_t i = 0; i < lexer::tag_count; i++) {
+                for (size_t i = 0; i < lexer::enum_elem_count<lexer::Tag>(); i++) {
                     field([&](auto&& d) {
                         auto field = d.object();
-                        field("name", lexer::tag_str[i]);
-                        field("value", lexer::tag_str[i]);
+                        field("name", lexer::enum_name_array<lexer::Tag>[i].second);
+                        field("value", lexer::enum_array<lexer::Tag>[i].second);
                     });
                 }
             });

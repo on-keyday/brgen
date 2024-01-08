@@ -189,7 +189,7 @@ namespace brgen::ast {
         lexer::Token must_consume_token(lexer::Tag tag) {
             auto f = consume_token(tag);
             if (!f) {
-                token_expect_error(lexer::tag_str[int(tag)], [](auto& cur) { return lexer::tag_str[int(cur->tag)]; });
+                token_expect_error(lexer::to_string(tag), [](auto& cur) { return lexer::enum_array<lexer::Tag>[int(cur->tag)].second; });
             }
             return *f;
         }

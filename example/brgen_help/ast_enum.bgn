@@ -67,7 +67,7 @@ enum BinaryOp:
 
 enum UnaryOp:
     not_ = "!"
-    bit_not = "~"
+    minus = "-"
 
 enum BitAlignment:
     byte_aligned

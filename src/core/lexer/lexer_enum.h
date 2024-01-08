@@ -9,10 +9,14 @@ template<typename T>
 constexpr std::optional<T> from_string(std::string_view str);
 template<typename T>
 constexpr size_t enum_elem_count();
-template<typename T,size_t s = enum_elem_count<T>()>
-constexpr std::array<std::pair<T,std::string_view>,s> make_enum_array();
+template<typename T>
+constexpr std::array<std::pair<T,std::string_view>,enum_elem_count<T>()> make_enum_array();
+template<typename T>
+constexpr std::array<std::pair<T,std::string_view>,enum_elem_count<T>()> make_enum_name_array();
 template<typename T>
 constexpr auto enum_array = make_enum_array<T>();
+template<typename T>
+constexpr auto enum_name_array = make_enum_name_array<T>();
 enum class Tag {
     indent,
     space,
@@ -63,7 +67,23 @@ template<>constexpr std::optional<Tag> from_string<Tag>(std::string_view str) {
 template<>constexpr size_t enum_elem_count<Tag>() {
     return 12;
 }
-template<>constexpr std::array<std::pair<Tag,std::string_view>,12> make_enum_array<Tag,12>() {
+template<>constexpr std::array<std::pair<Tag,std::string_view>,12> make_enum_array<Tag>() {
+    return {
+        std::pair{Tag::indent,"indent"},
+        std::pair{Tag::space,"space"},
+        std::pair{Tag::line,"line"},
+        std::pair{Tag::punct,"punct"},
+        std::pair{Tag::int_literal,"int_literal"},
+        std::pair{Tag::bool_literal,"bool_literal"},
+        std::pair{Tag::str_literal,"str_literal"},
+        std::pair{Tag::keyword,"keyword"},
+        std::pair{Tag::ident,"ident"},
+        std::pair{Tag::comment,"comment"},
+        std::pair{Tag::error,"error"},
+        std::pair{Tag::unknown,"unknown"},
+    };
+}
+template<>constexpr std::array<std::pair<Tag,std::string_view>,12> make_enum_name_array<Tag>() {
     return {
         std::pair{Tag::indent,"indent"},
         std::pair{Tag::space,"space"},

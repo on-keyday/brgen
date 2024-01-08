@@ -2,6 +2,7 @@
 #pragma once
 #include <comb2/pos.h>
 #include <string>
+#include "lexer_enum.h"
 
 namespace brgen::lexer {
     using Pos = futils::comb2::Pos;
@@ -33,57 +34,17 @@ namespace brgen::lexer {
         field("col", l.col);
     }
 
-    enum class Tag {
-        indent,
-        space,
-        line,
-        punct,
-        int_literal,
-        bool_literal,
-        str_literal,
-        keyword,
-        ident,
-        comment,
-        error,
-        unknown,
-    };
-
-    constexpr const char* tag_str[] = {
-        "indent",
-        "space",
-        "line",
-        "punct",
-        "int_literal",
-        "bool_literal",
-        "str_literal",
-        "keyword",
-        "ident",
-        "comment",
-        "error",
-        "unknown",
-    };
-
-    constexpr auto tag_count = sizeof(tag_str) / sizeof(tag_str[0]);
-
     struct Token {
         Tag tag = Tag::unknown;
         std::string token;
         Loc loc;
     };
 
-    constexpr void as_json(Tag tag, auto&& buf) {
-        buf.string(tag_str[int(tag)]);
-    }
-
     constexpr void as_json(const Token& token, auto&& buf) {
         auto field = buf.object();
         field("tag", token.tag);
         field("token", token.token);
         field("loc", token.loc);
-    }
-
-    constexpr auto to_string(Tag t) {
-        return tag_str[int(t)];
     }
 
 }  // namespace brgen::lexer
