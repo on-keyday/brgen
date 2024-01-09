@@ -9,11 +9,9 @@ weight: 1
 # bookSearchExclude: false
 ---
 
-~~ctrl-f を使って頑張って読んでください~~
-
 # 言語仕様
 
-以下はユーザー向け言語仕様である。厳密な言語仕様は別途 [開発ページの spec ディレクトリ内](https://github.com/on-keyday/brgen/tree/main/spec)で定義するものとする。
+この文書はユーザー向け言語仕様である。厳密な言語仕様は別途 [開発ページの spec ディレクトリ内](https://github.com/on-keyday/brgen/tree/main/spec)で定義するものとする。
 
 ## 設計思想
 
@@ -223,3 +221,12 @@ inline bool A::decode(const byte* buf) {
 ```
 
 なおこの例では各要素に対して for ループで回しているが、ジェネレーターは意味を変えない範囲で最適化をしてもよい。例えばこの場合は、memcpy などの関数を使うように書き換えてもよい。
+
+### 固定バイト列型(文字列)
+
+型部分に文字列を指定することで固定バイト列型を表現できる。
+
+```
+format A:
+   magic :"magic"
+```

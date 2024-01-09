@@ -3,9 +3,7 @@
 #include "node_type.h"
 #include <core/common/debug.h>
 #include <core/lexer/token.h>
-#include <list>
 #include <vector>
-#include "define_enum.h"
 
 namespace brgen::ast {
     constexpr void as_json(NodeType type, auto&& buf) {
@@ -229,7 +227,7 @@ namespace brgen::ast {
             : Node({}, NodeType::comment_group) {}
     };
 
-    using node_list = std::list<std::shared_ptr<Node>>;
+    using node_list = std::vector<std::shared_ptr<Node>>;
     struct StructType;
     struct ScopedStatement : Stmt {
         define_node_type(NodeType::scoped_statement);
