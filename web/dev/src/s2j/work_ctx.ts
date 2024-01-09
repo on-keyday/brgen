@@ -18,7 +18,7 @@ declare class Go {
 
 class RequestQueue {
     readonly #msgQueue: JobRequest[] = [];
-    readonly #postQueue: JobResult[] = [];
+    //readonly #postQueue: JobResult[] = [];
 
     constructor() {}
 
@@ -44,6 +44,7 @@ class RequestQueue {
         console.timeEnd(`msg posting ${msg.jobID}`)
     }
 
+    /*
     #popResult(): JobResult | undefined {
         const r = this.#postQueue.shift();
         if(r !== undefined){
@@ -59,6 +60,7 @@ class RequestQueue {
             globalThis.postMessage(p);
         }
     }
+    */
 }
 
 export class EmWorkContext  {
@@ -298,7 +300,9 @@ export class GoWorkContext  {
         }
     }
 
+    /*
     handleResponse() {
         this.#msgQueue.handleResponse();
     }
+    */
 }
