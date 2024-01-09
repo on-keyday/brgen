@@ -264,6 +264,20 @@ namespace brgen::ast {
         }
     }
 
+    template <class T>
+    void enum_type(const char* key, auto&& field) {
+        field(key, [&](auto&& d) {
+            auto field = d.array();
+            for (size_t i = 0; i < enum_elem_count<T>(); i++) {
+                field([&](auto&& d) {
+                    auto field = d.object();
+                    field("name", enum_name_array<T>[i].second);
+                    field("value", enum_array<T>[i].second);
+                });
+            }
+        });
+    }
+
     void enum_types(auto&& field) {
         struct R {
             const char* const* start;
@@ -289,32 +303,24 @@ namespace brgen::ast {
                 }
             });
         }
-        {
-            R p{unary_op_str, unary_op_str + unary_op_count};
-            field("unary_op", [&](auto&& d) {
-                auto field = d.array();
-                for (size_t i = 0; i < unary_op_count; i++) {
-                    field([&](auto&& d) {
-                        auto field = d.object();
-                        field("name", unary_op_name[i]);
-                        field("value", unary_op_str[i]);
-                    });
-                }
-            });
-        }
-        {
-            R p{bin_op_list, bin_op_list + bin_op_count};
-            field("binary_op", [&](auto&& d) {
-                auto field = d.array();
-                for (size_t i = 0; i < bin_op_count; i++) {
-                    field([&](auto&& d) {
-                        auto field = d.object();
-                        field("name", bin_op_name[i]);
-                        field("value", bin_op_list[i]);
-                    });
-                }
-            });
-        }
+        field("token_tag", [&](auto&& d) {
+            auto field = d.array();
+            for (size_t i = 0; i < lexer::enum_elem_count<lexer::Tag>(); i++) {
+                field([&](auto&& d) {
+                    auto field = d.object();
+                    field("name", lexer::enum_name_array<lexer::Tag>[i].second);
+                    field("value", lexer::enum_array<lexer::Tag>[i].second);
+                });
+            }
+        });
+        enum_type<UnaryOp>("unary_op", field);
+        enum_type<BinaryOp>("binary_op", field);
+        enum_type<IdentUsage>("ident_usage", field);
+        enum_type<Endian>("endian", field);
+        enum_type<ConstantLevel>("constant_level", field);
+        enum_type<BitAlignment>("bit_alignment", field);
+        enum_type<Follow>("follow", field);
+        /*
         {
             R p{ident_usage_str, ident_usage_str + ident_usage_count};
             field("ident_usage", [&](auto&& d) {
@@ -342,16 +348,6 @@ namespace brgen::ast {
             });
         }
         {
-            field("token_tag", [&](auto&& d) {
-                auto field = d.array();
-                for (size_t i = 0; i < lexer::enum_elem_count<lexer::Tag>(); i++) {
-                    field([&](auto&& d) {
-                        auto field = d.object();
-                        field("name", lexer::enum_name_array<lexer::Tag>[i].second);
-                        field("value", lexer::enum_array<lexer::Tag>[i].second);
-                    });
-                }
-            });
         }
         {
             R p{constant_level_str, constant_level_str + constant_level_count};
@@ -392,6 +388,7 @@ namespace brgen::ast {
                 }
             });
         }
+        */
     }
 
     void struct_types(auto&& field) {

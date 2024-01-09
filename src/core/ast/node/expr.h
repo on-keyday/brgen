@@ -8,61 +8,61 @@
 namespace brgen::ast {
 
     // exprs
+    /*
+        enum class IdentUsage {
+            unknown,
+            reference,
+            define_variable,
+            define_const,
+            define_field,
+            define_format,
+            define_state,
+            define_enum,
+            define_enum_member,
+            define_fn,
+            define_cast_fn,
+            define_arg,
+            reference_type,
+            reference_member,
+            maybe_type,
+            reference_builtin_fn,
+        };
 
-    enum class IdentUsage {
-        unknown,
-        reference,
-        define_variable,
-        define_const,
-        define_field,
-        define_format,
-        define_state,
-        define_enum,
-        define_enum_member,
-        define_fn,
-        define_cast_fn,
-        define_arg,
-        reference_type,
-        reference_member,
-        maybe_type,
-        reference_builtin_fn,
-    };
+        constexpr const char* ident_usage_str[]{
+            "unknown",
+            "reference",
+            "define_variable",
+            "define_const",
+            "define_field",
+            "define_format",
+            "define_state",
+            "define_enum",
+            "define_enum_member",
+            "define_fn",
+            "define_cast_fn",
+            "define_arg",
+            "reference_type",
+            "reference_member",
+            "maybe_type",
+            "reference_builtin_fn",
+            nullptr,
+        };
 
-    constexpr const char* ident_usage_str[]{
-        "unknown",
-        "reference",
-        "define_variable",
-        "define_const",
-        "define_field",
-        "define_format",
-        "define_state",
-        "define_enum",
-        "define_enum_member",
-        "define_fn",
-        "define_cast_fn",
-        "define_arg",
-        "reference_type",
-        "reference_member",
-        "maybe_type",
-        "reference_builtin_fn",
-        nullptr,
-    };
+        constexpr auto ident_usage_count = std::size(ident_usage_str) - 1;
 
-    constexpr auto ident_usage_count = std::size(ident_usage_str) - 1;
-
-    constexpr std::optional<IdentUsage> ident_usage(std::string_view view) {
-        for (auto i = 0; ident_usage_str[i]; i++) {
-            if (ident_usage_str[i] == view) {
-                return IdentUsage(i);
+        constexpr std::optional<IdentUsage> ident_usage(std::string_view view) {
+            for (auto i = 0; ident_usage_str[i]; i++) {
+                if (ident_usage_str[i] == view) {
+                    return IdentUsage(i);
+                }
             }
+            return std::nullopt;
         }
-        return std::nullopt;
-    }
 
-    constexpr void as_json(IdentUsage usage, auto&& buf) {
-        buf.string(ident_usage_str[int(usage)]);
-    }
-
+        constexpr void as_json(IdentUsage usage, auto&& buf) {
+            buf.string(ident_usage_str[int(usage)]);
+        }
+    */
     struct Ident : Expr {
         define_node_type(NodeType::ident);
         std::string ident;
@@ -149,11 +149,11 @@ namespace brgen::ast {
             sdebugf(els);
         }
     };
-
-    constexpr void as_json(UnaryOp op, auto&& buf) {
-        buf.value(unary_op_str[int(op)]);
-    }
-
+    /*
+        constexpr void as_json(UnaryOp op, auto&& buf) {
+            buf.value(unary_op_str[int(op)]);
+        }
+    */
     struct Unary : Expr {
         define_node_type(NodeType::unary);
         std::shared_ptr<Expr> expr;
@@ -173,10 +173,11 @@ namespace brgen::ast {
         }
     };
 
-    constexpr void as_json(BinaryOp op, auto&& buf) {
-        buf.value(bin_op_str(op));
-    }
-
+    /*
+        constexpr void as_json(BinaryOp op, auto&& buf) {
+            buf.value(bin_op_str(op));
+        }
+    */
     struct Binary : Expr {
         define_node_type(NodeType::binary);
         std::shared_ptr<Expr> left;

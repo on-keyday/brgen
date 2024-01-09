@@ -20,8 +20,7 @@
             "program": "${workspaceRoot}/tool/src2json",
             "args": [
                 "c:/workspace/shbrgen/brgen/example/smf.bgn",
-                "--print-json",
-                "--via-http"
+                "--print-json"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",

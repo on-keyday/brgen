@@ -104,7 +104,7 @@ format LocalFileHeader:
     fileNameLength :u16
     extraFieldLength :u16
     fileName :[fileNameLength]u8
-    extraField :ExtraFields(input = input.subrange(extraFieldLength))
+    extraField :[..]ExtraField(input = input.subrange(extraFieldLength))
 
 format LocalFile:
     header :LocalFileHeader

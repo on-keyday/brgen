@@ -4,6 +4,7 @@
 #include <core/ast/traverse.h>
 #include <set>
 #include <core/ast/tool/eval.h>
+#include <core/ast/node/ast_enum.h>
 
 namespace brgen::middle {
 

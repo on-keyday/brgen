@@ -17,10 +17,11 @@ brgen はバイナリパーサジェネレーター、およびその定義言�
 
 brgen(gen) はネットワークプロトコルやファイルフォーマットのバイナリエンコーダー/デコーダーを自動生成するためのツールです。
 brgen(gen) は正確にはジェネレータードライバーといって、設定ファイル(brgen.json)にしたがって適切な brgen(lang)パーサーを呼び出し、その結果をジェネレーターに渡し、さらにその結果をファイルに書き込むというプログラムです。
-以下が図になります。
+
+brgen(CLI)
 
 ```mermaid
-flowchart TD;
+flowchart
 brgen.json-.->|入力|brgen
 brgen-->|呼び出し|src2json
 input_file[定義ファイル]-.->|入力|src2json
@@ -32,6 +33,48 @@ brgen-.->|生成結果書き出し|output_file[生成ファイル]
 
 ```
 
-(点線は外部(ファイルシステム)とのやりとりを表します)
+```mermaid
+sequenceDiagram
+FileSystem ->>+ brgen: brgen.json
+brgen ->>+ src2json: 定義ファイル名+オプション(brgen.jsonに基づく)
+FileSystem ->>+ src2json: 定義ファイル読み込み
+src2json ->>+ brgen: 解析結果(AST)
+brgen ->>+ generator: 起動/AST受け渡し(brgen.jsonに基づく)
+generator ->>+ brgen: 生成結果(ソースコード)
+brgen ->>+ FileSystem :生成結果書き込み
+
+```
+
+VSCode Extension
+
+```mermaid
+flowchart
+input_file-.->|入力|VSCode
+VSCode-.->|編集|input_file
+VSCode-->|呼び出し|brgen-lsp[LSPサーバー]
+brgen-lsp-->|呼び出し/入力|src2json
+brgen-lsp-->|解析結果|VSCode
+src2json-->|AST|brgen-lsp
+```
+
+```mermaid
+sequenceDiagram
+FileSystem ->>+ VSCode: 定義ファイル
+brgen ->>+ src2json: 定義ファイル名+オプション(brgen.jsonに基づく)
+FileSystem ->>+ src2json: 定義ファイル読み込み
+src2json ->>+ brgen: 解析結果(AST)
+brgen ->>+ generator: 起動/AST受け渡し(brgen.jsonに基づく)
+generator ->>+ brgen: 生成結果(ソースコード)
+brgen ->>+ FileSystem :生成結果書き込み
+```
+
+```mermaid
+flowchart
+monaco-editor-->|変更検知|web-pg
+web-pg[WebPlaygroundフロントエンド]-->|呼び出し/入力|src2json-->|AST|web-pg
+web-pg-->|呼び出し/AST|generator
+generator-->|生成結果|web-pg
+web-pg-->|生成結果|monaco-editor
+```
 
 {{< mermaid >}}

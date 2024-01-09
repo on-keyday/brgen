@@ -2,31 +2,20 @@
 config.cpp.namespace = "brgen::ast"
 
 enum Follow:
-    unknown
-    reference
-    define_variable
-    define_const
-    define_field
-    define_format
-    define_state
-    define_enum
-    define_enum_member
-    define_fn
-    define_cast_fn
-    define_arg
-    reference_type
-    reference_member
-    maybe_type
-    reference_builtin_fn
+    unknown   # not analyzed or not a target
+    end       # end of struct
+    fixed     # fixed size (like [4]u8)
+    constant  # constant value (like "a")
+    normal    # otherwise
 
 enum BinaryOp:
     mul = "*"
     div = "/"
     mod = "%"
-    left_arithmetic_shift = "<<"
-    right_arithmetic_shift = ">>"
-    left_logical_shift = "<<<"
-    right_logical_shift = ">>>"
+    left_arithmetic_shift = "<<<"
+    right_arithmetic_shift = ">>>"
+    left_logical_shift = "<<"
+    right_logical_shift = ">>"
     bit_and = "&"
     add = "+"
     sub = "-"
@@ -67,7 +56,7 @@ enum BinaryOp:
 
 enum UnaryOp:
     not_ = "!"
-    minus = "-"
+    minus_sign = "-"
 
 enum BitAlignment:
     byte_aligned

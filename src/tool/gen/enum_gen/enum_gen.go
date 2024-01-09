@@ -64,6 +64,8 @@ func main() {
 	fmt.Printf("constexpr std::array<std::pair<T,std::string_view>,enum_elem_count<T>()> make_enum_array();\n")
 	fmt.Printf("template<typename T>\n")
 	fmt.Printf("constexpr std::array<std::pair<T,std::string_view>,enum_elem_count<T>()> make_enum_name_array();\n")
+	fmt.Printf("template<typename T>\n")
+	fmt.Printf("constexpr const char* enum_type_name();\n")
 
 	fmt.Printf("template<typename T>\n")
 	fmt.Printf("constexpr auto enum_array = make_enum_array<T>();\n")
@@ -135,6 +137,11 @@ func main() {
 
 			fmt.Printf("constexpr void as_json(%s e,auto&& d) {\n", enumName)
 			fmt.Printf("    d.value(enum_array<%s>[int(e)].second);\n", enumName)
+			fmt.Printf("}\n")
+
+			fmt.Printf("template<>\n")
+			fmt.Printf("constexpr const char* enum_type_name<%s>() {\n", enumName)
+			fmt.Printf("    return \"%s\";\n", enumName)
 			fmt.Printf("}\n")
 		}
 	}

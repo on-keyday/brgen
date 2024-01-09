@@ -582,10 +582,17 @@ namespace brgen::ast {
             return p;
         }
 
-        std::optional<lexer::Token> consume_op(size_t& i, const char* const* const ops) {
-            for (i = 0; ops[i]; i++) {
-                if (auto t = s.consume_token(ops[i])) {
-                    return t;
+        std::optional<lexer::Token> consume_op(size_t& i, auto& ops) {
+            for (i = 0; i < ops.size(); i++) {
+                if constexpr (futils::helper::is_template_instance_of<std::decay_t<decltype(ops[i])>, std::pair>) {
+                    if (auto t = s.consume_token(ops[i].second)) {
+                        return t;
+                    }
+                }
+                else {
+                    if (auto t = s.consume_token(ops[i])) {
+                        return t;
+                    }
                 }
             }
             return std::nullopt;
@@ -600,7 +607,7 @@ namespace brgen::ast {
             size_t i;
             s.skip_space();
             for (;;) {
-                if (auto token = consume_op(i, ast::unary_op_str)) {
+                if (auto token = consume_op(i, ast::enum_array<UnaryOp>)) {
                     stack.push_back(std::make_shared<Unary>(token->loc, UnaryOp(i)));
                     s.skip_white();
                     continue;
@@ -672,11 +679,8 @@ namespace brgen::ast {
         };
 
         bool appear_valid_range_end() {
-            for (auto u : unary_op_str) {
-                if (!u) {
-                    break;
-                }
-                if (s.expect_token(u)) {
+            for (auto u : enum_array<ast::UnaryOp>) {
+                if (s.expect_token(u.second)) {
                     return true;
                 }
             }
@@ -814,7 +818,7 @@ namespace brgen::ast {
                                 s.report_error(token->loc, "unexpected `", token->token, "`");
                             }
                             s.skip_space();  // for safety, skip only space, not line
-                            auto r = std::make_shared<Range>(token->loc, std::move(expr), *ast::bin_op(ast::bin_layers[depth][i]));
+                            auto r = std::make_shared<Range>(token->loc, std::move(expr), *ast::from_string<ast::BinaryOp>(ast::bin_layers[depth][i]));
                             if (appear_valid_range_end()) {
                                 s.skip_white();
                                 stack.push_back(BinOpStack{.depth = depth, .expr = std::move(r)});
@@ -825,7 +829,7 @@ namespace brgen::ast {
                             continue;
                         }
                         s.skip_white();
-                        auto b = std::make_shared<Binary>(token->loc, std::move(expr), *ast::bin_op(ast::bin_layers[depth][i]));
+                        auto b = std::make_shared<Binary>(token->loc, std::move(expr), *ast::from_string<ast::BinaryOp>(ast::bin_layers[depth][i]));
                         if (depth == 0) {                          // special case, needless to use stack
                             b->right = parse_unary(line_skipped);  // return non-nullptr or throw error
                             expr = std::move(b);

@@ -4,6 +4,7 @@
 #include <core/common/debug.h>
 #include <core/lexer/token.h>
 #include <vector>
+#include "ast_enum.h"
 
 namespace brgen::ast {
     constexpr void as_json(NodeType type, auto&& buf) {
@@ -36,49 +37,49 @@ namespace brgen::ast {
 
 #define define_node_type(type) \
     static constexpr NodeType node_type_tag = type
+    /*
+        enum class BitAlignment {
+            byte_aligned,
+            bit_1,
+            bit_2,
+            bit_3,
+            bit_4,
+            bit_5,
+            bit_6,
+            bit_7,
+            not_target,
+            not_decidable,
+        };
 
-    enum class BitAlignment {
-        byte_aligned,
-        bit_1,
-        bit_2,
-        bit_3,
-        bit_4,
-        bit_5,
-        bit_6,
-        bit_7,
-        not_target,
-        not_decidable,
-    };
+        constexpr const char* bit_alignment_str[] = {
+            "byte_aligned",
+            "bit_1",
+            "bit_2",
+            "bit_3",
+            "bit_4",
+            "bit_5",
+            "bit_6",
+            "bit_7",
+            "not_target",
+            "not_decidable",
+            nullptr,
+        };
 
-    constexpr const char* bit_alignment_str[] = {
-        "byte_aligned",
-        "bit_1",
-        "bit_2",
-        "bit_3",
-        "bit_4",
-        "bit_5",
-        "bit_6",
-        "bit_7",
-        "not_target",
-        "not_decidable",
-        nullptr,
-    };
+        constexpr size_t bit_alignment_count = std::size(bit_alignment_str) - 1;
 
-    constexpr size_t bit_alignment_count = std::size(bit_alignment_str) - 1;
-
-    constexpr void as_json(BitAlignment alignment, auto&& buf) {
-        buf.value(bit_alignment_str[int(alignment)]);
-    }
-
-    constexpr std::optional<BitAlignment> bit_alignment(std::string_view str) {
-        for (int i = 0; bit_alignment_str[i]; i++) {
-            if (bit_alignment_str[i] == str) {
-                return BitAlignment(i);
-            }
+        constexpr void as_json(BitAlignment alignment, auto&& buf) {
+            buf.value(bit_alignment_str[int(alignment)]);
         }
-        return std::nullopt;
-    }
 
+        constexpr std::optional<BitAlignment> bit_alignment(std::string_view str) {
+            for (int i = 0; bit_alignment_str[i]; i++) {
+                if (bit_alignment_str[i] == str) {
+                    return BitAlignment(i);
+                }
+            }
+            return std::nullopt;
+        }
+    */
     struct Type : Node {
         define_node_type(NodeType::type);
         define_node_description(
@@ -109,36 +110,37 @@ namespace brgen::ast {
             : Node(l, t) {}
     };
 
-    enum class ConstantLevel {
-        unknown,         // not determined
-        constant,        // decided at compile time
-        const_variable,  // decided at runtime, but not changed
-        variable,        // changed at runtime
-    };
+    /*
+        enum class ConstantLevel {
+            unknown,         // not determined
+            constant,        // decided at compile time
+            const_variable,  // decided at runtime, but not changed
+            variable,        // changed at runtime
+        };
 
-    constexpr const char* constant_level_str[] = {
-        "unknown",
-        "constant",
-        "const_variable",
-        "variable",
-        nullptr,
-    };
+        constexpr const char* constant_level_str[] = {
+            "unknown",
+            "constant",
+            "const_variable",
+            "variable",
+            nullptr,
+        };
 
-    constexpr size_t constant_level_count = 4;
+        constexpr size_t constant_level_count = 4;
 
-    constexpr void as_json(ConstantLevel level, auto&& buf) {
-        buf.value(constant_level_str[int(level)]);
-    }
-
-    constexpr std::optional<ConstantLevel> constant_level(std::string_view str) {
-        for (int i = 0; constant_level_str[i]; i++) {
-            if (constant_level_str[i] == str) {
-                return ConstantLevel(i);
-            }
+        constexpr void as_json(ConstantLevel level, auto&& buf) {
+            buf.value(constant_level_str[int(level)]);
         }
-        return std::nullopt;
-    }
 
+        constexpr std::optional<ConstantLevel> constant_level(std::string_view str) {
+            for (int i = 0; constant_level_str[i]; i++) {
+                if (constant_level_str[i] == str) {
+                    return ConstantLevel(i);
+                }
+            }
+            return std::nullopt;
+        }
+    */
     struct Expr : Node {
         define_node_type(NodeType::expr);
         define_node_description(

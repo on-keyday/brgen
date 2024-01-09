@@ -505,7 +505,7 @@ namespace brgen::middle {
                 return;
             }
             auto report_binary_error = [&] {
-                error(b->loc, "binary op ", *ast::bin_op_str(b->op), " is not valid")
+                error(b->loc, "binary op ", ast::to_string(b->op), " is not valid")
                     .error(b->left->loc, "left type is ", ast::node_type_to_string(cmp_lty->node_type))
                     .error(b->right->loc, "right type is ", ast::node_type_to_string(cmp_rty->node_type))
                     .report();

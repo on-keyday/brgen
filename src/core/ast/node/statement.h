@@ -3,6 +3,7 @@
 #include "base.h"
 #include "expr.h"
 #include <vector>
+#include "ast_enum.h"
 
 namespace brgen::ast {
 
@@ -99,39 +100,40 @@ namespace brgen::ast {
             sdebugf(enum_type);
         }
     };
+    /*
+        // Follow means which type of field is followed after
+        enum class Follow {
+            unknown,   // not analyzed or not a target
+            end,       // end of struct
+            fixed,     // fixed size (like [4]u8)
+            constant,  // constant value (like "a")
+            normal,    // otherwise
+        };
 
-    // Follow means which type of field is followed after
-    enum class Follow {
-        unknown,   // not analyzed or not a target
-        end,       // end of struct
-        fixed,     // fixed size (like [4]u8)
-        constant,  // constant value (like "a")
-        normal,    // otherwise
-    };
+        constexpr const char* follow_str[] = {
+            "unknown",
+            "end",
+            "fixed",
+            "constant",
+            "normal",
+            nullptr,
+        };
 
-    constexpr const char* follow_str[] = {
-        "unknown",
-        "end",
-        "fixed",
-        "constant",
-        "normal",
-        nullptr,
-    };
+        constexpr size_t follow_count = std::size(follow_str) - 1;
 
-    constexpr size_t follow_count = std::size(follow_str) - 1;
-
-    constexpr void as_json(Follow f, auto& j) {
-        j.string(follow_str[static_cast<int>(f)]);
-    }
-
-    constexpr std::optional<Follow> follow_from_str(std::string_view str) {
-        for (size_t i = 0; i < follow_count; i++) {
-            if (str == follow_str[i]) {
-                return static_cast<Follow>(i);
-            }
+        constexpr void as_json(Follow f, auto& j) {
+            j.string(follow_str[static_cast<int>(f)]);
         }
-        return std::nullopt;
-    }
+
+        constexpr std::optional<Follow> follow_from_str(std::string_view str) {
+            for (size_t i = 0; i < follow_count; i++) {
+                if (str == follow_str[i]) {
+                    return static_cast<Follow>(i);
+                }
+            }
+            return std::nullopt;
+        }
+    */
 
     struct FieldArgument : Node {
         define_node_type(NodeType::field_argument);

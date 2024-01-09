@@ -333,26 +333,31 @@ namespace brgen::ast {
                 }
                 return res & parse_loc(target);
             }
-#define STR_TO_ENUM(Typ,convert, err)\
+/*
+#define STR_TO_ENUM(Typ err)\
 else if constexpr(std::is_same_v<T,Typ>)  {                                               \
     return (res & get_string(loc, key)).and_then([&](std::string&& s) -> result<void> { \
-        if (auto res = convert(s.c_str()); !res) {                               \
+        if (auto res = from_string<T>(s.c_str()); !res) {                               \
             return unexpect(error(loc, s, "cannot convert to" err));             \
         }                                                                        \
         else {                                                                   \
-            target = *res;                                                       \
+            target = res;                                                       \
         }    \
         return {};                                                                    \
     });\
 }
-
-            STR_TO_ENUM(BinaryOp,bin_op,"binary operator")
-            STR_TO_ENUM(UnaryOp,unary_op,"unary operator")
-            STR_TO_ENUM(IdentUsage,ident_usage,"ident usage")
-            STR_TO_ENUM(ConstantLevel,constant_level,"constant level")
-            STR_TO_ENUM(Endian,endian_from_str,"endian")
-            STR_TO_ENUM(BitAlignment,bit_alignment,"bit alignment")
-            STR_TO_ENUM(Follow,follow_from_str,"follow")
+*/
+            else if constexpr(std::is_enum_v<T>&&!std::is_same_v<T,const NodeType>){
+                return (res&get_string(loc,key)).and_then([&](std::string&& s)->result<void>{
+                    if(auto res=from_string<T>(s.c_str());!res){
+                        return unexpect(error(loc,s,"cannot convert to enum ",enum_type_name<T>()));
+                    }
+                    else{
+                        target=*res;
+                    }
+                    return {};
+                });
+            }
             else if constexpr (futils::helper::is_template_instance_of<T, std::shared_ptr> ||
                                futils::helper::is_template_instance_of<T, std::weak_ptr> ||
                                futils::helper::is_template_instance_of<T, std::list> ||

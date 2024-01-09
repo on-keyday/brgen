@@ -76,7 +76,7 @@ namespace brgen::ast::tool {
             else {
                 auto left = to_string(bin->left);
                 auto right = to_string(bin->right);
-                return concat("(", left, " ", *bin_op_str(op), " ", right, ")");
+                return concat("(", left, " ", ast::to_string(op), " ", right, ")");
             }
         }
 
@@ -136,7 +136,7 @@ namespace brgen::ast::tool {
                 return handle_call_op(ast::cast_to<ast::Call>(expr));
             }
             if (auto d = ast::as<ast::Unary>(expr)) {
-                return concat(unary_op_str[int(d->op)], to_string(d->expr));
+                return concat(ast::to_string(d->op), to_string(d->expr));
             }
             if (auto a = ast::as<ast::Available>(expr)) {
                 auto ident = ast::as<ast::Ident>(a->target);

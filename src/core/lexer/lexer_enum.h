@@ -14,6 +14,8 @@ constexpr std::array<std::pair<T,std::string_view>,enum_elem_count<T>()> make_en
 template<typename T>
 constexpr std::array<std::pair<T,std::string_view>,enum_elem_count<T>()> make_enum_name_array();
 template<typename T>
+constexpr const char* enum_type_name();
+template<typename T>
 constexpr auto enum_array = make_enum_array<T>();
 template<typename T>
 constexpr auto enum_name_array = make_enum_name_array<T>();
@@ -101,5 +103,9 @@ template<>constexpr std::array<std::pair<Tag,std::string_view>,12> make_enum_nam
 }
 constexpr void as_json(Tag e,auto&& d) {
     d.value(enum_array<Tag>[int(e)].second);
+}
+template<>
+constexpr const char* enum_type_name<Tag>() {
+    return "Tag";
 }
 }
