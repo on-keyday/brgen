@@ -15,5 +15,5 @@ call webpack.cmd
 set LEV=%errorlevel%
 cd ../..
 rem if not %LEV% == 0 goto :error
-call install_lsp.bat
+call script\install_lsp.bat
 :error
