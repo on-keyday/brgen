@@ -7,7 +7,7 @@ import * as caller from "./s2j/caller.js";
 import { JobResult,Language,LanguageList } from "./s2j/msg.js";
 import { makeButton, makeLink, makeListBox, setStyle, makeInputList, InputListElement } from "./ui";
 
-// import "./hello"
+//import "./hello"
 
 // first, load workers
 caller.loadWorkers();
@@ -233,8 +233,10 @@ setWindowSize();
 window.addEventListener("resize",setWindowSize);
 
 const createGenerated =async (code :string,lang: string) => {
+    const top = editorUI.generated.getScrollTop();
     const model = monaco.editor.createModel(code,lang);
     editorUI.generated.setModel(model);
+    editorUI.generated.setScrollTop(top);
 }
 
 
