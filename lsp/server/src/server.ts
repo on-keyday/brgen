@@ -642,6 +642,8 @@ const definitionHandler = async (params :DefinitionParams) => {
                 case ast2ts.IdentUsage.define_cast_fn:
                 case ast2ts.IdentUsage.maybe_type:
                 case ast2ts.IdentUsage.define_fn:
+                case ast2ts.IdentUsage.define_state:
+                case ast2ts.IdentUsage.define_arg:
                     return fileToLink(ident.loc,docInfo.prevFile!);
                 default:
                     return null;
