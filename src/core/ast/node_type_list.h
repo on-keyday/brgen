@@ -183,8 +183,7 @@ namespace brgen::ast {
                             auto p = internal::print_ptr<ast_mode, P1>("weak_ptr");
                             field(key, internal::unwrap(p));
                         }
-                        else if constexpr (futils::helper::is_template_instance_of<P, std::list> ||
-                                           futils::helper::is_template_instance_of<P, std::vector>) {
+                        else if constexpr (futils::helper::is_template_instance_of<P, std::vector>) {
                             auto p = internal::print_array<ast_mode, P1>();
                             field(key, internal::unwrap(p));
                         }

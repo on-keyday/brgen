@@ -81,8 +81,7 @@ namespace brgen::ast {
                             }
                         }
                     }
-                    else if constexpr (futils::helper::is_template_instance_of<T, std::list> ||
-                                       futils::helper::is_template_instance_of<T, std::vector>) {
+                    else if constexpr (                                       futils::helper::is_template_instance_of<T, std::vector>) {
                         using type = typename  futils::helper::template_of_t<T>::template param_at<0>;
                         if constexpr(futils::helper::is_template_instance_of<type,std::shared_ptr>){
                             for (auto& element : value) {
@@ -156,8 +155,7 @@ namespace brgen::ast {
                                             });
                                         }
                                     }
-                                    else if constexpr (futils::helper::is_template_instance_of<T, std::list> ||
-                                                       futils::helper::is_template_instance_of<T, std::vector>) {
+                                    else if constexpr (futils::helper::is_template_instance_of<T, std::vector>) {
                                         field(key, [&] {
                                             auto field = obj.array();
                                             for (auto& element : value) {
@@ -360,7 +358,6 @@ else if constexpr(std::is_same_v<T,Typ>)  {                                     
             }
             else if constexpr (futils::helper::is_template_instance_of<T, std::shared_ptr> ||
                                futils::helper::is_template_instance_of<T, std::weak_ptr> ||
-                               futils::helper::is_template_instance_of<T, std::list> ||
                                futils::helper::is_template_instance_of<T, std::vector> ||
                                futils::helper::is_template_instance_of<T, std::map> ||
                                std::is_same_v<T, const NodeType>) {
@@ -430,8 +427,7 @@ else if constexpr(std::is_same_v<T,Typ>)  {                                     
                         using T = std::decay_t<decltype(value)>;
                         constexpr auto is_shared_or_weak = futils::helper::is_template_instance_of<T, std::shared_ptr> ||
                                                            futils::helper::is_template_instance_of<T, std::weak_ptr>;
-                        constexpr auto is_list = futils::helper::is_template_instance_of<T, std::list> ||
-                                                 futils::helper::is_template_instance_of<T, std::vector>;
+                        constexpr auto is_list = futils::helper::is_template_instance_of<T, std::vector>;
                         constexpr auto is_map = futils::helper::is_template_instance_of<T, std::map>;
                         auto& val = node_s[i]["body"];
                         auto check_index = [&](auto&& index) {

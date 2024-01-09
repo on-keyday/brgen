@@ -130,8 +130,7 @@ namespace brgen::ast {
                         fn(value);
                     }
                 }
-                else if constexpr (futils::helper::is_template_instance_of<std::decay_t<decltype(value)>, std::list> ||
-                                   futils::helper::is_template_instance_of<std::decay_t<decltype(value)>, std::vector>) {
+                else if constexpr (futils::helper::is_template_instance_of<std::decay_t<decltype(value)>, std::vector>) {
                     using T = typename futils::helper::template_instance_of_t<std::decay_t<decltype(*value.begin())>, std::shared_ptr>;
                     if constexpr (T::value) {
                         if constexpr (std::is_base_of_v<Node, typename T::template param_at<0>>) {

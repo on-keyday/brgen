@@ -235,7 +235,7 @@ namespace brgen::ast {
 
     struct Function : Member {
         define_node_type(NodeType::function);
-        std::list<std::shared_ptr<Field>> parameters;
+        std::vector<std::shared_ptr<Field>> parameters;
         std::shared_ptr<Type> return_type;
         std::shared_ptr<IndentBlock> body;
         std::shared_ptr<FunctionType> func_type;

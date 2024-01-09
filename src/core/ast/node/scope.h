@@ -9,7 +9,7 @@ namespace brgen::ast {
 
     struct Scope {
         std::weak_ptr<Scope> prev;
-        std::list<std::weak_ptr<Ident>> objects;
+        std::vector<std::weak_ptr<Ident>> objects;
         std::shared_ptr<Scope> branch;
         std::shared_ptr<Scope> next;
         std::weak_ptr<Node> owner;
