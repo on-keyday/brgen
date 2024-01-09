@@ -69,6 +69,21 @@ class NodeType(PyEnum):
     BUILTIN_FUNCTION = "builtin_function"
 
 
+class TokenTag(PyEnum):
+    INDENT = "indent"
+    SPACE = "space"
+    LINE = "line"
+    PUNCT = "punct"
+    INT_LITERAL = "int_literal"
+    BOOL_LITERAL = "bool_literal"
+    STR_LITERAL = "str_literal"
+    KEYWORD = "keyword"
+    IDENT = "ident"
+    COMMENT = "comment"
+    ERROR = "error"
+    UNKNOWN = "unknown"
+
+
 class UnaryOp(PyEnum):
     NOT = "!"
     MINUS_SIGN = "-"
@@ -138,21 +153,6 @@ class Endian(PyEnum):
     UNSPEC = "unspec"
     BIG = "big"
     LITTLE = "little"
-
-
-class TokenTag(PyEnum):
-    INDENT = "indent"
-    SPACE = "space"
-    LINE = "line"
-    PUNCT = "punct"
-    INT_LITERAL = "int_literal"
-    BOOL_LITERAL = "bool_literal"
-    STR_LITERAL = "str_literal"
-    KEYWORD = "keyword"
-    IDENT = "ident"
-    COMMENT = "comment"
-    ERROR = "error"
-    UNKNOWN = "unknown"
 
 
 class ConstantLevel(PyEnum):

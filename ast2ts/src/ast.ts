@@ -8,6 +8,25 @@ export function isNodeType(obj: any): obj is NodeType {
 	return obj && typeof obj === 'string' && (obj === "program" || obj === "comment" || obj === "comment_group" || obj === "field_argument" || obj === "expr" || obj === "binary" || obj === "unary" || obj === "cond" || obj === "ident" || obj === "call" || obj === "if" || obj === "member_access" || obj === "paren" || obj === "index" || obj === "match" || obj === "range" || obj === "tmp_var" || obj === "import" || obj === "cast" || obj === "available" || obj === "specify_endian" || obj === "explicit_error" || obj === "stmt" || obj === "loop" || obj === "indent_block" || obj === "scoped_statement" || obj === "match_branch" || obj === "union_candidate" || obj === "return" || obj === "break" || obj === "continue" || obj === "assert" || obj === "implicit_yield" || obj === "type" || obj === "int_type" || obj === "ident_type" || obj === "int_literal_type" || obj === "str_literal_type" || obj === "void_type" || obj === "bool_type" || obj === "array_type" || obj === "function_type" || obj === "struct_type" || obj === "struct_union_type" || obj === "union_type" || obj === "range_type" || obj === "enum_type" || obj === "literal" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "input" || obj === "output" || obj === "config" || obj === "member" || obj === "field" || obj === "format" || obj === "state" || obj === "enum" || obj === "enum_member" || obj === "function" || obj === "builtin_function")
 }
 
+export const enum TokenTag {
+	indent = "indent",
+	space = "space",
+	line = "line",
+	punct = "punct",
+	int_literal = "int_literal",
+	bool_literal = "bool_literal",
+	str_literal = "str_literal",
+	keyword = "keyword",
+	ident = "ident",
+	comment = "comment",
+	error = "error",
+	unknown = "unknown",
+};
+
+export function isTokenTag(obj: any): obj is TokenTag {
+	return obj && typeof obj === 'string' && (obj === "indent" || obj === "space" || obj === "line" || obj === "punct" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "keyword" || obj === "ident" || obj === "comment" || obj === "error" || obj === "unknown")
+}
+
 export const enum UnaryOp {
 	not = "!",
 	minus_sign = "-",
@@ -93,25 +112,6 @@ export const enum Endian {
 
 export function isEndian(obj: any): obj is Endian {
 	return obj && typeof obj === 'string' && (obj === "unspec" || obj === "big" || obj === "little")
-}
-
-export const enum TokenTag {
-	indent = "indent",
-	space = "space",
-	line = "line",
-	punct = "punct",
-	int_literal = "int_literal",
-	bool_literal = "bool_literal",
-	str_literal = "str_literal",
-	keyword = "keyword",
-	ident = "ident",
-	comment = "comment",
-	error = "error",
-	unknown = "unknown",
-};
-
-export function isTokenTag(obj: any): obj is TokenTag {
-	return obj && typeof obj === 'string' && (obj === "indent" || obj === "space" || obj === "line" || obj === "punct" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "keyword" || obj === "ident" || obj === "comment" || obj === "error" || obj === "unknown")
 }
 
 export const enum ConstantLevel {

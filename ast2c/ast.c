@@ -331,6 +331,78 @@ int ast2c_NodeType_from_string(const char* str, ast2c_NodeType* out) {
 	return 0;
 }
 
+const char* ast2c_TokenTag_to_string(ast2c_TokenTag val) {
+	switch(val) {
+	case AST2C_TOKENTAG_INDENT: return "indent";
+	case AST2C_TOKENTAG_SPACE: return "space";
+	case AST2C_TOKENTAG_LINE: return "line";
+	case AST2C_TOKENTAG_PUNCT: return "punct";
+	case AST2C_TOKENTAG_INT_LITERAL: return "int_literal";
+	case AST2C_TOKENTAG_BOOL_LITERAL: return "bool_literal";
+	case AST2C_TOKENTAG_STR_LITERAL: return "str_literal";
+	case AST2C_TOKENTAG_KEYWORD: return "keyword";
+	case AST2C_TOKENTAG_IDENT: return "ident";
+	case AST2C_TOKENTAG_COMMENT: return "comment";
+	case AST2C_TOKENTAG_ERROR: return "error";
+	case AST2C_TOKENTAG_UNKNOWN: return "unknown";
+	default: return NULL;
+	}
+}
+
+// returns 1 if succeed 0 if failed
+int ast2c_TokenTag_from_string(const char* str, ast2c_TokenTag* out) {
+	if (!str||!out) return 0;
+	if (strcmp(str, "indent") == 0) {
+		*out = AST2C_TOKENTAG_INDENT;
+		return 1;
+	}
+	if (strcmp(str, "space") == 0) {
+		*out = AST2C_TOKENTAG_SPACE;
+		return 1;
+	}
+	if (strcmp(str, "line") == 0) {
+		*out = AST2C_TOKENTAG_LINE;
+		return 1;
+	}
+	if (strcmp(str, "punct") == 0) {
+		*out = AST2C_TOKENTAG_PUNCT;
+		return 1;
+	}
+	if (strcmp(str, "int_literal") == 0) {
+		*out = AST2C_TOKENTAG_INT_LITERAL;
+		return 1;
+	}
+	if (strcmp(str, "bool_literal") == 0) {
+		*out = AST2C_TOKENTAG_BOOL_LITERAL;
+		return 1;
+	}
+	if (strcmp(str, "str_literal") == 0) {
+		*out = AST2C_TOKENTAG_STR_LITERAL;
+		return 1;
+	}
+	if (strcmp(str, "keyword") == 0) {
+		*out = AST2C_TOKENTAG_KEYWORD;
+		return 1;
+	}
+	if (strcmp(str, "ident") == 0) {
+		*out = AST2C_TOKENTAG_IDENT;
+		return 1;
+	}
+	if (strcmp(str, "comment") == 0) {
+		*out = AST2C_TOKENTAG_COMMENT;
+		return 1;
+	}
+	if (strcmp(str, "error") == 0) {
+		*out = AST2C_TOKENTAG_ERROR;
+		return 1;
+	}
+	if (strcmp(str, "unknown") == 0) {
+		*out = AST2C_TOKENTAG_UNKNOWN;
+		return 1;
+	}
+	return 0;
+}
+
 const char* ast2c_UnaryOp_to_string(ast2c_UnaryOp val) {
 	switch(val) {
 	case AST2C_UNARYOP_NOT: return "!";
@@ -669,78 +741,6 @@ int ast2c_Endian_from_string(const char* str, ast2c_Endian* out) {
 	}
 	if (strcmp(str, "little") == 0) {
 		*out = AST2C_ENDIAN_LITTLE;
-		return 1;
-	}
-	return 0;
-}
-
-const char* ast2c_TokenTag_to_string(ast2c_TokenTag val) {
-	switch(val) {
-	case AST2C_TOKENTAG_INDENT: return "indent";
-	case AST2C_TOKENTAG_SPACE: return "space";
-	case AST2C_TOKENTAG_LINE: return "line";
-	case AST2C_TOKENTAG_PUNCT: return "punct";
-	case AST2C_TOKENTAG_INT_LITERAL: return "int_literal";
-	case AST2C_TOKENTAG_BOOL_LITERAL: return "bool_literal";
-	case AST2C_TOKENTAG_STR_LITERAL: return "str_literal";
-	case AST2C_TOKENTAG_KEYWORD: return "keyword";
-	case AST2C_TOKENTAG_IDENT: return "ident";
-	case AST2C_TOKENTAG_COMMENT: return "comment";
-	case AST2C_TOKENTAG_ERROR: return "error";
-	case AST2C_TOKENTAG_UNKNOWN: return "unknown";
-	default: return NULL;
-	}
-}
-
-// returns 1 if succeed 0 if failed
-int ast2c_TokenTag_from_string(const char* str, ast2c_TokenTag* out) {
-	if (!str||!out) return 0;
-	if (strcmp(str, "indent") == 0) {
-		*out = AST2C_TOKENTAG_INDENT;
-		return 1;
-	}
-	if (strcmp(str, "space") == 0) {
-		*out = AST2C_TOKENTAG_SPACE;
-		return 1;
-	}
-	if (strcmp(str, "line") == 0) {
-		*out = AST2C_TOKENTAG_LINE;
-		return 1;
-	}
-	if (strcmp(str, "punct") == 0) {
-		*out = AST2C_TOKENTAG_PUNCT;
-		return 1;
-	}
-	if (strcmp(str, "int_literal") == 0) {
-		*out = AST2C_TOKENTAG_INT_LITERAL;
-		return 1;
-	}
-	if (strcmp(str, "bool_literal") == 0) {
-		*out = AST2C_TOKENTAG_BOOL_LITERAL;
-		return 1;
-	}
-	if (strcmp(str, "str_literal") == 0) {
-		*out = AST2C_TOKENTAG_STR_LITERAL;
-		return 1;
-	}
-	if (strcmp(str, "keyword") == 0) {
-		*out = AST2C_TOKENTAG_KEYWORD;
-		return 1;
-	}
-	if (strcmp(str, "ident") == 0) {
-		*out = AST2C_TOKENTAG_IDENT;
-		return 1;
-	}
-	if (strcmp(str, "comment") == 0) {
-		*out = AST2C_TOKENTAG_COMMENT;
-		return 1;
-	}
-	if (strcmp(str, "error") == 0) {
-		*out = AST2C_TOKENTAG_ERROR;
-		return 1;
-	}
-	if (strcmp(str, "unknown") == 0) {
-		*out = AST2C_TOKENTAG_UNKNOWN;
 		return 1;
 	}
 	return 0;

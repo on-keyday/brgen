@@ -35,11 +35,11 @@ struct ast2c_json_handlers {
 
 typedef struct ast2c_Ast ast2c_Ast;
 typedef enum ast2c_NodeType ast2c_NodeType;
+typedef enum ast2c_TokenTag ast2c_TokenTag;
 typedef enum ast2c_UnaryOp ast2c_UnaryOp;
 typedef enum ast2c_BinaryOp ast2c_BinaryOp;
 typedef enum ast2c_IdentUsage ast2c_IdentUsage;
 typedef enum ast2c_Endian ast2c_Endian;
-typedef enum ast2c_TokenTag ast2c_TokenTag;
 typedef enum ast2c_ConstantLevel ast2c_ConstantLevel;
 typedef enum ast2c_BitAlignment ast2c_BitAlignment;
 typedef enum ast2c_Follow ast2c_Follow;
@@ -184,6 +184,23 @@ enum ast2c_NodeType {
 const char* ast2c_NodeType_to_string(ast2c_NodeType);
 int ast2c_NodeType_from_string(const char*,ast2c_NodeType*);
 
+enum ast2c_TokenTag {
+	AST2C_TOKENTAG_INDENT,
+	AST2C_TOKENTAG_SPACE,
+	AST2C_TOKENTAG_LINE,
+	AST2C_TOKENTAG_PUNCT,
+	AST2C_TOKENTAG_INT_LITERAL,
+	AST2C_TOKENTAG_BOOL_LITERAL,
+	AST2C_TOKENTAG_STR_LITERAL,
+	AST2C_TOKENTAG_KEYWORD,
+	AST2C_TOKENTAG_IDENT,
+	AST2C_TOKENTAG_COMMENT,
+	AST2C_TOKENTAG_ERROR,
+	AST2C_TOKENTAG_UNKNOWN,
+};
+const char* ast2c_TokenTag_to_string(ast2c_TokenTag);
+int ast2c_TokenTag_from_string(const char*,ast2c_TokenTag*);
+
 enum ast2c_UnaryOp {
 	AST2C_UNARYOP_NOT,
 	AST2C_UNARYOP_MINUS_SIGN,
@@ -262,23 +279,6 @@ enum ast2c_Endian {
 };
 const char* ast2c_Endian_to_string(ast2c_Endian);
 int ast2c_Endian_from_string(const char*,ast2c_Endian*);
-
-enum ast2c_TokenTag {
-	AST2C_TOKENTAG_INDENT,
-	AST2C_TOKENTAG_SPACE,
-	AST2C_TOKENTAG_LINE,
-	AST2C_TOKENTAG_PUNCT,
-	AST2C_TOKENTAG_INT_LITERAL,
-	AST2C_TOKENTAG_BOOL_LITERAL,
-	AST2C_TOKENTAG_STR_LITERAL,
-	AST2C_TOKENTAG_KEYWORD,
-	AST2C_TOKENTAG_IDENT,
-	AST2C_TOKENTAG_COMMENT,
-	AST2C_TOKENTAG_ERROR,
-	AST2C_TOKENTAG_UNKNOWN,
-};
-const char* ast2c_TokenTag_to_string(ast2c_TokenTag);
-int ast2c_TokenTag_from_string(const char*,ast2c_TokenTag*);
 
 enum ast2c_ConstantLevel {
 	AST2C_CONSTANTLEVEL_UNKNOWN,

@@ -67,6 +67,20 @@ EnumMember,
 Function,
 BuiltinFunction,
 }
+public enum TokenTag {
+Indent,
+Space,
+Line,
+Punct,
+IntLiteral,
+BoolLiteral,
+StrLiteral,
+Keyword,
+Ident,
+Comment,
+Error,
+Unknown,
+}
 public enum UnaryOp {
 Not,
 MinusSign,
@@ -133,20 +147,6 @@ public enum Endian {
 Unspec,
 Big,
 Little,
-}
-public enum TokenTag {
-Indent,
-Space,
-Line,
-Punct,
-IntLiteral,
-BoolLiteral,
-StrLiteral,
-Keyword,
-Ident,
-Comment,
-Error,
-Unknown,
 }
 public enum ConstantLevel {
 Unknown,

@@ -569,6 +569,90 @@ func (n *BuiltinFunction) GetNodeType() NodeType {
 	return NodeTypeBuiltinFunction
 }
 
+type TokenTag int
+
+const (
+	TokenTagIndent      TokenTag = 0
+	TokenTagSpace       TokenTag = 1
+	TokenTagLine        TokenTag = 2
+	TokenTagPunct       TokenTag = 3
+	TokenTagIntLiteral  TokenTag = 4
+	TokenTagBoolLiteral TokenTag = 5
+	TokenTagStrLiteral  TokenTag = 6
+	TokenTagKeyword     TokenTag = 7
+	TokenTagIdent       TokenTag = 8
+	TokenTagComment     TokenTag = 9
+	TokenTagError       TokenTag = 10
+	TokenTagUnknown     TokenTag = 11
+)
+
+func (n TokenTag) String() string {
+	switch n {
+	case TokenTagIndent:
+		return "indent"
+	case TokenTagSpace:
+		return "space"
+	case TokenTagLine:
+		return "line"
+	case TokenTagPunct:
+		return "punct"
+	case TokenTagIntLiteral:
+		return "int_literal"
+	case TokenTagBoolLiteral:
+		return "bool_literal"
+	case TokenTagStrLiteral:
+		return "str_literal"
+	case TokenTagKeyword:
+		return "keyword"
+	case TokenTagIdent:
+		return "ident"
+	case TokenTagComment:
+		return "comment"
+	case TokenTagError:
+		return "error"
+	case TokenTagUnknown:
+		return "unknown"
+	default:
+		return fmt.Sprintf("TokenTag(%d)", n)
+	}
+}
+
+func (n *TokenTag) UnmarshalJSON(data []byte) error {
+	var tmp string
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+	switch tmp {
+	case "indent":
+		*n = TokenTagIndent
+	case "space":
+		*n = TokenTagSpace
+	case "line":
+		*n = TokenTagLine
+	case "punct":
+		*n = TokenTagPunct
+	case "int_literal":
+		*n = TokenTagIntLiteral
+	case "bool_literal":
+		*n = TokenTagBoolLiteral
+	case "str_literal":
+		*n = TokenTagStrLiteral
+	case "keyword":
+		*n = TokenTagKeyword
+	case "ident":
+		*n = TokenTagIdent
+	case "comment":
+		*n = TokenTagComment
+	case "error":
+		*n = TokenTagError
+	case "unknown":
+		*n = TokenTagUnknown
+	default:
+		return fmt.Errorf("unknown TokenTag: %q", tmp)
+	}
+	return nil
+}
+
 type UnaryOp int
 
 const (
@@ -956,90 +1040,6 @@ func (n *Endian) UnmarshalJSON(data []byte) error {
 		*n = EndianLittle
 	default:
 		return fmt.Errorf("unknown Endian: %q", tmp)
-	}
-	return nil
-}
-
-type TokenTag int
-
-const (
-	TokenTagIndent      TokenTag = 0
-	TokenTagSpace       TokenTag = 1
-	TokenTagLine        TokenTag = 2
-	TokenTagPunct       TokenTag = 3
-	TokenTagIntLiteral  TokenTag = 4
-	TokenTagBoolLiteral TokenTag = 5
-	TokenTagStrLiteral  TokenTag = 6
-	TokenTagKeyword     TokenTag = 7
-	TokenTagIdent       TokenTag = 8
-	TokenTagComment     TokenTag = 9
-	TokenTagError       TokenTag = 10
-	TokenTagUnknown     TokenTag = 11
-)
-
-func (n TokenTag) String() string {
-	switch n {
-	case TokenTagIndent:
-		return "indent"
-	case TokenTagSpace:
-		return "space"
-	case TokenTagLine:
-		return "line"
-	case TokenTagPunct:
-		return "punct"
-	case TokenTagIntLiteral:
-		return "int_literal"
-	case TokenTagBoolLiteral:
-		return "bool_literal"
-	case TokenTagStrLiteral:
-		return "str_literal"
-	case TokenTagKeyword:
-		return "keyword"
-	case TokenTagIdent:
-		return "ident"
-	case TokenTagComment:
-		return "comment"
-	case TokenTagError:
-		return "error"
-	case TokenTagUnknown:
-		return "unknown"
-	default:
-		return fmt.Sprintf("TokenTag(%d)", n)
-	}
-}
-
-func (n *TokenTag) UnmarshalJSON(data []byte) error {
-	var tmp string
-	if err := json.Unmarshal(data, &tmp); err != nil {
-		return err
-	}
-	switch tmp {
-	case "indent":
-		*n = TokenTagIndent
-	case "space":
-		*n = TokenTagSpace
-	case "line":
-		*n = TokenTagLine
-	case "punct":
-		*n = TokenTagPunct
-	case "int_literal":
-		*n = TokenTagIntLiteral
-	case "bool_literal":
-		*n = TokenTagBoolLiteral
-	case "str_literal":
-		*n = TokenTagStrLiteral
-	case "keyword":
-		*n = TokenTagKeyword
-	case "ident":
-		*n = TokenTagIdent
-	case "comment":
-		*n = TokenTagComment
-	case "error":
-		*n = TokenTagError
-	case "unknown":
-		*n = TokenTagUnknown
-	default:
-		return fmt.Errorf("unknown TokenTag: %q", tmp)
 	}
 	return nil
 }

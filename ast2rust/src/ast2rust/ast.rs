@@ -320,6 +320,43 @@ impl TryFrom<&str> for NodeType {
 }
 
 #[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+#[serde(rename_all = "snake_case")]pub enum TokenTag {
+	Indent,
+	Space,
+	Line,
+	Punct,
+	IntLiteral,
+	BoolLiteral,
+	StrLiteral,
+	Keyword,
+	Ident,
+	Comment,
+	Error,
+	Unknown,
+}
+
+impl TryFrom<&str> for TokenTag {
+	type Error = ();
+	fn try_from(s:&str)->Result<Self,()>{
+		match s{
+			"indent" =>Ok(Self::Indent),
+			"space" =>Ok(Self::Space),
+			"line" =>Ok(Self::Line),
+			"punct" =>Ok(Self::Punct),
+			"int_literal" =>Ok(Self::IntLiteral),
+			"bool_literal" =>Ok(Self::BoolLiteral),
+			"str_literal" =>Ok(Self::StrLiteral),
+			"keyword" =>Ok(Self::Keyword),
+			"ident" =>Ok(Self::Ident),
+			"comment" =>Ok(Self::Comment),
+			"error" =>Ok(Self::Error),
+			"unknown" =>Ok(Self::Unknown),
+			_=> Err(()),
+		}
+	}
+}
+
+#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
 #[serde(rename_all = "snake_case")]pub enum UnaryOp {
 	Not,
 	MinusSign,
@@ -484,43 +521,6 @@ impl TryFrom<&str> for Endian {
 			"unspec" =>Ok(Self::Unspec),
 			"big" =>Ok(Self::Big),
 			"little" =>Ok(Self::Little),
-			_=> Err(()),
-		}
-	}
-}
-
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
-#[serde(rename_all = "snake_case")]pub enum TokenTag {
-	Indent,
-	Space,
-	Line,
-	Punct,
-	IntLiteral,
-	BoolLiteral,
-	StrLiteral,
-	Keyword,
-	Ident,
-	Comment,
-	Error,
-	Unknown,
-}
-
-impl TryFrom<&str> for TokenTag {
-	type Error = ();
-	fn try_from(s:&str)->Result<Self,()>{
-		match s{
-			"indent" =>Ok(Self::Indent),
-			"space" =>Ok(Self::Space),
-			"line" =>Ok(Self::Line),
-			"punct" =>Ok(Self::Punct),
-			"int_literal" =>Ok(Self::IntLiteral),
-			"bool_literal" =>Ok(Self::BoolLiteral),
-			"str_literal" =>Ok(Self::StrLiteral),
-			"keyword" =>Ok(Self::Keyword),
-			"ident" =>Ok(Self::Ident),
-			"comment" =>Ok(Self::Comment),
-			"error" =>Ok(Self::Error),
-			"unknown" =>Ok(Self::Unknown),
 			_=> Err(()),
 		}
 	}
