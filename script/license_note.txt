@@ -1,9 +1,11 @@
-These bundle contains license information of web, lsp, and golang dependency.
-Some of them are used in only development or build (like compiler) and some of them are contained in binary.
-But it is too difficult for me to count and separate all dependency by usage.
-So all of licenses that related to this work(https://github.com/on-keyday/brgen) 
-collected by licensed (https://github.com/github/licensed) and gocredits (https://github.com/Songmu/gocredits)
-and reviewed by author.
-But author is a non lawyer, so maybe not complete considered about the licenses. 
-So if licenses have problems, report it by GitHub Issue of https://github.com/on-keyday/brgen
-
+This bundle contains license information for web, LSP, and Golang dependencies. 
+Some are exclusively used in development or build processes (such as compilers), 
+while others are integrated into the binary. 
+However, counting and categorizing all dependencies based on their usage has proven challenging for me.
+The licenses for these libraries have been gathered using tools 
+like licensed (https://github.com/github/licensed) and gocredits (https://github.com/Songmu/gocredits), 
+and the author has personally verified them. 
+It's important to note that the author is not a lawyer, 
+so there might be gaps in the consideration of licenses. 
+If any issues with the licenses are identified, 
+please report them through GitHub Issues at https://github.com/on-keyday/brgen.
