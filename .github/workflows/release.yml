@@ -180,7 +180,7 @@ jobs:
           name: brgen-linux-arm
           path: ./artifacts
 
-  brgen-android:
+  build-android:
     runs-on: ubuntu-latest
     steps:
       - name: Timeline
@@ -280,7 +280,7 @@ jobs:
         build-windows,
         build-vscode-extension,
         build-arm-linux,
-        brgen-android,
+        build-android,
         collect-licenses,
       ]
     runs-on: ubuntu-latest

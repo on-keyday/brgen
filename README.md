@@ -1,4 +1,4 @@
-# brgen - BinaRy encoder/decoder/ GENerator
+# brgen - BinaRy encoder/decoder GENerator
 
 ネットワーク・プロトコルのパケットやファイルフォーマットなどの解析/生成のためのコードを吐くジェネレーター
 
