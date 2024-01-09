@@ -146,7 +146,7 @@ format VarInt:
          ..0x4000 => output.put(u16(value) | 0x4000)
          ..0x40000000 => output.put(u32(value) | 0x80000000)
          ..0x4000000000000000 => output.put(u64(value) | 0xc000000000000000)
-         _ => error("too large number")
+         .. => error("too large number")
    
    fn cast u64():
       return value

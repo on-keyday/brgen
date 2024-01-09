@@ -39,8 +39,8 @@ install(FILES "${CMAKE_BINARY_DIR}/tool/json2go.wasm" DESTINATION "lib" OPTIONAL
 install(FILES "${CMAKE_BINARY_DIR}/tool/json2kaitai.wasm" DESTINATION "lib" OPTIONAL)
 file(TO_CMAKE_PATH "$ENV{WASMEXEC_FILE}" WASMEXEC)
 install(FILES "${WASMEXEC}" RENAME "go_wasm_exec.js" DESTINATION "lib" OPTIONAL)
-install(CODE "file(APPEND \"${CMAKE_INSTALL_PREFIX}/lib/go_wasm_exec.js\" \"const Go = globalThis.Go;\n\")")
-install(CODE "file(APPEND \"${CMAKE_INSTALL_PREFIX}/lib/go_wasm_exec.js\" \"export {Go}\n\")")
+install(CODE "file(APPEND \"${CMAKE_INSTALL_PREFIX}/lib/go_wasm_exec.js\" \"const Go = globalThis.Go;\n\")" OPTIONAL)
+install(CODE "file(APPEND \"${CMAKE_INSTALL_PREFIX}/lib/go_wasm_exec.js\" \"export {Go}\n\")" OPTIONAL)
 return()
 endif()
 

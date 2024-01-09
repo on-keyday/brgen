@@ -8,10 +8,9 @@
         "allowJs": true,    
         "strict": true,   
         "lib": ["ES2022","DOM"],
-        "paths": {
-            "undici-types": ["./node_modules/@type/node/node_modules/undici-types"]
-        },
-        "moduleResolution": "Node"
+        "paths": {},
+        "moduleResolution": "Node",
+        "jsx": "react-jsx"
     },
-    "include": ["**/*.ts"],
+    "include": ["**/*.ts", "**/*.tsx"],
 }

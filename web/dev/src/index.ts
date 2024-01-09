@@ -7,7 +7,7 @@ import * as caller from "./s2j/caller.js";
 import { JobResult,Language,LanguageList } from "./s2j/msg.js";
 import { makeButton, makeLink, makeListBox, setStyle, makeInputList, InputListElement } from "./ui";
 
-
+// import "./hello"
 
 // first, load workers
 caller.loadWorkers();

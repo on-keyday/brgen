@@ -25,18 +25,18 @@ module.exports = {
     mode: mode,
     entry: path.resolve(__dirname, "out/index.js"),
     resolve: {
-        extensions: [".ts",".js"],
+        extensions: [".ts",".tsx",".js"],
     },
     module: {
         rules: [
             {
-                test: /\.ts$/,
+                test: /\.(ts|tsx)$/,
                 loader: "ts-loader",
             },
             {
                 test: /\.css$/,
                 use: ["style-loader", "css-loader"],
-            }
+            },
         ],
     },
     output: {
@@ -46,5 +46,9 @@ module.exports = {
     }, 
     stats: {
         errorDetails: true,
-    }
+    },
+}
+
+if (mode === "development") {
+    module.exports.devtool = "hidden-source-map"
 }
