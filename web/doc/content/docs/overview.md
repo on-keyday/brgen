@@ -60,13 +60,14 @@ src2json-->|AST|brgen-lsp
 ```mermaid
 sequenceDiagram
 FileSystem ->>+ VSCode: 定義ファイル
-brgen ->>+ src2json: 定義ファイル名+オプション(brgen.jsonに基づく)
-FileSystem ->>+ src2json: 定義ファイル読み込み
-src2json ->>+ brgen: 解析結果(AST)
-brgen ->>+ generator: 起動/AST受け渡し(brgen.jsonに基づく)
-generator ->>+ brgen: 生成結果(ソースコード)
-brgen ->>+ FileSystem :生成結果書き込み
+VSCode ->>+ LSP-Server: 定義ファイル変更通知
+LSP-Server ->>+ src2json: 定義ファイル送信(pipe)
+src2json ->>+ LSP-Server:解析結果(AST)
+LSP-Server ->>+ VSCode:形式変換/解析結果
+VSCode ->>+ FileSystem: 変更保存
 ```
+
+WebPlayground
 
 ```mermaid
 flowchart
@@ -75,6 +76,20 @@ web-pg[WebPlaygroundフロントエンド]-->|呼び出し/入力|src2json-->|AS
 web-pg-->|呼び出し/AST|generator
 generator-->|生成結果|web-pg
 web-pg-->|生成結果|monaco-editor
+```
+
+```mermaid
+sequenceDiagram
+Monaco-Editor ->>+ WebPlaygroundフロントエンド: 定義エディター変更通知
+WebPlaygroundフロントエンド ->>+ WebWorker(src2json): 定義ファイル送信
+WebWorker(src2json) ->>+ src2json(wasm): 定義ファイル送信(via cmdline arg)
+src2json(wasm) ->>+ WebWorker(src2json): 解析結果(AST)
+WebWorker(src2json) ->>+ WebPlaygroundフロントエンド : 解析結果(AST)
+WebPlaygroundフロントエンド ->>+ WebWorker(generator) : 解析結果(AST)送信
+WebWorker(generator) ->>+ generator(wasm) : 解析結果(AST)送信
+generator(wasm) ->>+ WebWorker(generator) : 生成コード
+WebWorker(generator) ->>+ WebPlaygroundフロントエンド : 生成コード
+WebPlaygroundフロントエンド　->>+ Monaco-Editor : 生成コードエディター変更
 ```
 
 {{< mermaid >}}

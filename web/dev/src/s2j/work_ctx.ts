@@ -39,7 +39,9 @@ class RequestQueue {
     postResult(msg: JobResult) {
         console.timeEnd(`msg handling ${msg.jobID}`)
         console.time(`msg posting ${msg.jobID}`)
-        this.#postQueue.push(msg);
+        //this.#postQueue.push(msg);
+        globalThis.postMessage(msg);
+        console.timeEnd(`msg posting ${msg.jobID}`)
     }
 
     #popResult(): JobResult | undefined {
@@ -203,9 +205,11 @@ export class EmWorkContext  {
         }
     }
 
+    /*
     handleResponse() {
         this.#msgQueue.handleResponse();
     }
+    */
 
 }
 

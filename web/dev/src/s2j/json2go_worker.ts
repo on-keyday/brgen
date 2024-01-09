@@ -20,7 +20,7 @@ setInterval(() => {
                 return new Error("unknown message type");
         }
     });
-    j2go_ctx.handleResponse();
+    //j2go_ctx.handleResponse();
 }, 100);
 
 globalThis.onmessage = (ev) => {
