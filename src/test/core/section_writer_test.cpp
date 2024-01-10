@@ -1,5 +1,5 @@
 /*license*/
-#include <core/writer/section.h>
+#include <writer/section.h>
 
 #include <gtest/gtest.h>
 using namespace brgen;

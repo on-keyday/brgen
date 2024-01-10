@@ -1,7 +1,7 @@
 /*license*/
 #pragma once
 #include <core/ast/ast.h>
-#include <core/writer/section.h>
+#include <writer/section.h>
 #include <core/common/expected.h>
 #include <helper/transform.h>
 #include <set>

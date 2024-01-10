@@ -611,10 +611,14 @@ StructType {
 Member[] fields
 Node base
 boolean recursive
+number fixed_header_size
+number fixed_tail_size
 }
 StructType |o--||Member : strong
 StructType |o--||Node : weak
 StructType |o--||boolean : strong
+StructType |o--||number : strong
+StructType |o--||number : strong
 Type |o--|| StructUnionType : derive
 StructUnionType {
 StructType[] structs
@@ -678,6 +682,10 @@ Field {
 Loc colon_loc
 Type field_type
 FieldArgument arguments
+number offset_bit
+number offset_recent
+number tail_offset_bit
+number tail_offset_recent
 BitAlignment bit_alignment
 Follow follow
 Follow eventual_follow
@@ -685,6 +693,10 @@ Follow eventual_follow
 Field |o--||Loc : strong
 Field |o--||Type : strong
 Field |o--||FieldArgument : strong
+Field |o--||number : strong
+Field |o--||number : strong
+Field |o--||number : strong
+Field |o--||number : strong
 Field |o--||BitAlignment : strong
 Field |o--||Follow : strong
 Field |o--||Follow : strong
@@ -1361,10 +1373,14 @@ StructType {
 Member[] fields
 Node base
 boolean recursive
+number fixed_header_size
+number fixed_tail_size
 }
 StructType |o--||Member : strong
 StructType |o--||Node : weak
 StructType |o--||boolean : strong
+StructType |o--||number : strong
+StructType |o--||number : strong
 Type |o--|| StructUnionType : derive
 StructUnionType {
 StructType[] structs
@@ -1428,6 +1444,10 @@ Field {
 Loc colon_loc
 Type field_type
 FieldArgument arguments
+number offset_bit
+number offset_recent
+number tail_offset_bit
+number tail_offset_recent
 BitAlignment bit_alignment
 Follow follow
 Follow eventual_follow
@@ -1435,6 +1455,10 @@ Follow eventual_follow
 Field |o--||Loc : strong
 Field |o--||Type : strong
 Field |o--||FieldArgument : strong
+Field |o--||number : strong
+Field |o--||number : strong
+Field |o--||number : strong
+Field |o--||number : strong
 Field |o--||BitAlignment : strong
 Field |o--||Follow : strong
 Field |o--||Follow : strong
@@ -1590,6 +1614,1553 @@ SrcError error
 TokenFile |o--||string : strong
 TokenFile |o--||Token : strong
 TokenFile |o--||SrcError : strong
+```
+
+JSON 形式(上記の元データ)
+
+TODO(on-keyday): 各ノードの説明文を入れる
+
+```json
+{
+  "node": [
+    {
+      "node_type": "node",
+      "one_of": [
+        "program",
+        "comment",
+        "comment_group",
+        "field_argument",
+        "expr",
+        "binary",
+        "unary",
+        "cond",
+        "ident",
+        "call",
+        "if",
+        "member_access",
+        "paren",
+        "index",
+        "match",
+        "range",
+        "tmp_var",
+        "import",
+        "cast",
+        "available",
+        "specify_endian",
+        "explicit_error",
+        "stmt",
+        "loop",
+        "indent_block",
+        "scoped_statement",
+        "match_branch",
+        "union_candidate",
+        "return",
+        "break",
+        "continue",
+        "assert",
+        "implicit_yield",
+        "type",
+        "int_type",
+        "ident_type",
+        "int_literal_type",
+        "str_literal_type",
+        "void_type",
+        "bool_type",
+        "array_type",
+        "function_type",
+        "struct_type",
+        "struct_union_type",
+        "union_type",
+        "range_type",
+        "enum_type",
+        "literal",
+        "int_literal",
+        "bool_literal",
+        "str_literal",
+        "input",
+        "output",
+        "config",
+        "member",
+        "field",
+        "format",
+        "state",
+        "enum",
+        "enum_member",
+        "function",
+        "builtin_function"
+      ]
+    },
+    {
+      "node_type": "program",
+      "base_node_type": ["node"],
+      "loc": "loc",
+      "body": {
+        "struct_type": "shared_ptr<struct_type>",
+        "elements": "array<shared_ptr<node>>",
+        "global_scope": "shared_ptr<scope>"
+      }
+    },
+    {
+      "node_type": "comment",
+      "base_node_type": ["node"],
+      "loc": "loc",
+      "body": {
+        "comment": "string"
+      }
+    },
+    {
+      "node_type": "comment_group",
+      "base_node_type": ["node"],
+      "loc": "loc",
+      "body": {
+        "comments": "array<shared_ptr<comment>>"
+      }
+    },
+    {
+      "node_type": "field_argument",
+      "base_node_type": ["node"],
+      "loc": "loc",
+      "body": {
+        "raw_arguments": "shared_ptr<expr>",
+        "end_loc": "loc",
+        "collected_arguments": "array<weak_ptr<expr>>",
+        "arguments": "array<shared_ptr<expr>>",
+        "alignment": "shared_ptr<expr>",
+        "alignment_value": "optional<uint>",
+        "sub_byte_length": "shared_ptr<expr>",
+        "sub_byte_begin": "shared_ptr<expr>"
+      }
+    },
+    {
+      "node_type": "expr",
+      "base_node_type": ["node"],
+      "loc": "loc",
+      "body": {
+        "expr_type": "shared_ptr<type>",
+        "constant_level": "constant_level"
+      },
+      "one_of": [
+        "binary",
+        "unary",
+        "cond",
+        "ident",
+        "call",
+        "if",
+        "member_access",
+        "paren",
+        "index",
+        "match",
+        "range",
+        "tmp_var",
+        "import",
+        "cast",
+        "available",
+        "specify_endian",
+        "explicit_error",
+        "literal",
+        "int_literal",
+        "bool_literal",
+        "str_literal",
+        "input",
+        "output",
+        "config"
+      ]
+    },
+    {
+      "node_type": "binary",
+      "base_node_type": ["expr", "node"],
+      "loc": "loc",
+      "body": {
+        "expr_type": "shared_ptr<type>",
+        "constant_level": "constant_level",
+        "op": "binary_op",
+        "left": "shared_ptr<expr>",
+        "right": "shared_ptr<expr>"
+      }
+    },
+    {
+      "node_type": "unary",
+      "base_node_type": ["expr", "node"],
+      "loc": "loc",
+      "body": {
+        "expr_type": "shared_ptr<type>",
+        "constant_level": "constant_level",
+        "op": "unary_op",
+        "expr": "shared_ptr<expr>"
+      }
+    },
+    {
+      "node_type": "cond",
+      "base_node_type": ["expr", "node"],
+      "loc": "loc",
+      "body": {
+        "expr_type": "shared_ptr<type>",
+        "constant_level": "constant_level",
+        "cond": "shared_ptr<expr>",
+        "then": "shared_ptr<expr>",
+        "els_loc": "loc",
+        "els": "shared_ptr<expr>"
+      }
+    },
+    {
+      "node_type": "ident",
+      "base_node_type": ["expr", "node"],
+      "loc": "loc",
+      "body": {
+        "expr_type": "shared_ptr<type>",
+        "constant_level": "constant_level",
+        "ident": "string",
+        "usage": "ident_usage",
+        "base": "weak_ptr<node>",
+        "scope": "shared_ptr<scope>"
+      }
+    },
+    {
+      "node_type": "call",
+      "base_node_type": ["expr", "node"],
+      "loc": "loc",
+      "body": {
+        "expr_type": "shared_ptr<type>",
+        "constant_level": "constant_level",
+        "callee": "shared_ptr<expr>",
+        "raw_arguments": "shared_ptr<expr>",
+        "arguments": "array<shared_ptr<expr>>",
+        "end_loc": "loc"
+      }
+    },
+    {
+      "node_type": "if",
+      "base_node_type": ["expr", "node"],
+      "loc": "loc",
+      "body": {
+        "expr_type": "shared_ptr<type>",
+        "constant_level": "constant_level",
+        "cond_scope": "shared_ptr<scope>",
+        "cond": "shared_ptr<expr>",
+        "then": "shared_ptr<indent_block>",
+        "els": "shared_ptr<node>"
+      }
+    },
+    {
+      "node_type": "member_access",
+      "base_node_type": ["expr", "node"],
+      "loc": "loc",
+      "body": {
+        "expr_type": "shared_ptr<type>",
+        "constant_level": "constant_level",
+        "target": "shared_ptr<expr>",
+        "member": "shared_ptr<ident>",
+        "base": "weak_ptr<node>"
+      }
+    },
+    {
+      "node_type": "paren",
+      "base_node_type": ["expr", "node"],
+      "loc": "loc",
+      "body": {
+        "expr_type": "shared_ptr<type>",
+        "constant_level": "constant_level",
+        "expr": "shared_ptr<expr>",
+        "end_loc": "loc"
+      }
+    },
+    {
+      "node_type": "index",
+      "base_node_type": ["expr", "node"],
+      "loc": "loc",
+      "body": {
+        "expr_type": "shared_ptr<type>",
+        "constant_level": "constant_level",
+        "expr": "shared_ptr<expr>",
+        "index": "shared_ptr<expr>",
+        "end_loc": "loc"
+      }
+    },
+    {
+      "node_type": "match",
+      "base_node_type": ["expr", "node"],
+      "loc": "loc",
+      "body": {
+        "expr_type": "shared_ptr<type>",
+        "constant_level": "constant_level",
+        "cond_scope": "shared_ptr<scope>",
+        "cond": "shared_ptr<expr>",
+        "branch": "array<shared_ptr<node>>"
+      }
+    },
+    {
+      "node_type": "range",
+      "base_node_type": ["expr", "node"],
+      "loc": "loc",
+      "body": {
+        "expr_type": "shared_ptr<type>",
+        "constant_level": "constant_level",
+        "op": "binary_op",
+        "start": "shared_ptr<expr>",
+        "end": "shared_ptr<expr>"
+      }
+    },
+    {
+      "node_type": "tmp_var",
+      "base_node_type": ["expr", "node"],
+      "loc": "loc",
+      "body": {
+        "expr_type": "shared_ptr<type>",
+        "constant_level": "constant_level",
+        "tmp_var": "uint"
+      }
+    },
+    {
+      "node_type": "import",
+      "base_node_type": ["expr", "node"],
+      "loc": "loc",
+      "body": {
+        "expr_type": "shared_ptr<type>",
+        "constant_level": "constant_level",
+        "path": "string",
+        "base": "shared_ptr<call>",
+        "import_desc": "shared_ptr<program>"
+      }
+    },
+    {
+      "node_type": "cast",
+      "base_node_type": ["expr", "node"],
+      "loc": "loc",
+      "body": {
+        "expr_type": "shared_ptr<type>",
+        "constant_level": "constant_level",
+        "base": "shared_ptr<call>",
+        "expr": "shared_ptr<expr>"
+      }
+    },
+    {
+      "node_type": "available",
+      "base_node_type": ["expr", "node"],
+      "loc": "loc",
+      "body": {
+        "expr_type": "shared_ptr<type>",
+        "constant_level": "constant_level",
+        "base": "shared_ptr<call>",
+        "target": "shared_ptr<expr>"
+      }
+    },
+    {
+      "node_type": "specify_endian",
+      "base_node_type": ["expr", "node"],
+      "loc": "loc",
+      "body": {
+        "expr_type": "shared_ptr<type>",
+        "constant_level": "constant_level",
+        "base": "shared_ptr<binary>",
+        "is_little": "shared_ptr<expr>"
+      }
+    },
+    {
+      "node_type": "explicit_error",
+      "base_node_type": ["expr", "node"],
+      "loc": "loc",
+      "body": {
+        "expr_type": "shared_ptr<type>",
+        "constant_level": "constant_level",
+        "base": "shared_ptr<call>",
+        "message": "shared_ptr<str_literal>"
+      }
+    },
+    {
+      "node_type": "stmt",
+      "base_node_type": ["node"],
+      "loc": "loc",
+      "body": {},
+      "one_of": [
+        "loop",
+        "indent_block",
+        "scoped_statement",
+        "match_branch",
+        "union_candidate",
+        "return",
+        "break",
+        "continue",
+        "assert",
+        "implicit_yield",
+        "member",
+        "field",
+        "format",
+        "state",
+        "enum",
+        "enum_member",
+        "function",
+        "builtin_function"
+      ]
+    },
+    {
+      "node_type": "loop",
+      "base_node_type": ["stmt", "node"],
+      "loc": "loc",
+      "body": {
+        "cond_scope": "shared_ptr<scope>",
+        "init": "shared_ptr<expr>",
+        "cond": "shared_ptr<expr>",
+        "step": "shared_ptr<expr>",
+        "body": "shared_ptr<indent_block>"
+      }
+    },
+    {
+      "node_type": "indent_block",
+      "base_node_type": ["stmt", "node"],
+      "loc": "loc",
+      "body": {
+        "struct_type": "shared_ptr<struct_type>",
+        "elements": "array<shared_ptr<node>>",
+        "scope": "shared_ptr<scope>"
+      }
+    },
+    {
+      "node_type": "scoped_statement",
+      "base_node_type": ["stmt", "node"],
+      "loc": "loc",
+      "body": {
+        "struct_type": "shared_ptr<struct_type>",
+        "statement": "shared_ptr<node>",
+        "scope": "shared_ptr<scope>"
+      }
+    },
+    {
+      "node_type": "match_branch",
+      "base_node_type": ["stmt", "node"],
+      "loc": "loc",
+      "body": {
+        "cond": "shared_ptr<expr>",
+        "sym_loc": "loc",
+        "then": "shared_ptr<node>"
+      }
+    },
+    {
+      "node_type": "union_candidate",
+      "base_node_type": ["stmt", "node"],
+      "loc": "loc",
+      "body": {
+        "cond": "weak_ptr<expr>",
+        "field": "weak_ptr<field>"
+      }
+    },
+    {
+      "node_type": "return",
+      "base_node_type": ["stmt", "node"],
+      "loc": "loc",
+      "body": {
+        "expr": "shared_ptr<expr>"
+      }
+    },
+    {
+      "node_type": "break",
+      "base_node_type": ["stmt", "node"],
+      "loc": "loc",
+      "body": {}
+    },
+    {
+      "node_type": "continue",
+      "base_node_type": ["stmt", "node"],
+      "loc": "loc",
+      "body": {}
+    },
+    {
+      "node_type": "assert",
+      "base_node_type": ["stmt", "node"],
+      "loc": "loc",
+      "body": {
+        "cond": "shared_ptr<binary>"
+      }
+    },
+    {
+      "node_type": "implicit_yield",
+      "base_node_type": ["stmt", "node"],
+      "loc": "loc",
+      "body": {
+        "expr": "shared_ptr<expr>"
+      }
+    },
+    {
+      "node_type": "type",
+      "base_node_type": ["node"],
+      "loc": "loc",
+      "body": {
+        "is_explicit": "bool",
+        "is_int_set": "bool",
+        "bit_alignment": "bit_alignment",
+        "bit_size": "optional<uint>"
+      },
+      "one_of": [
+        "int_type",
+        "ident_type",
+        "int_literal_type",
+        "str_literal_type",
+        "void_type",
+        "bool_type",
+        "array_type",
+        "function_type",
+        "struct_type",
+        "struct_union_type",
+        "union_type",
+        "range_type",
+        "enum_type"
+      ]
+    },
+    {
+      "node_type": "int_type",
+      "base_node_type": ["type", "node"],
+      "loc": "loc",
+      "body": {
+        "is_explicit": "bool",
+        "is_int_set": "bool",
+        "bit_alignment": "bit_alignment",
+        "bit_size": "optional<uint>",
+        "endian": "endian",
+        "is_signed": "bool",
+        "is_common_supported": "bool"
+      }
+    },
+    {
+      "node_type": "ident_type",
+      "base_node_type": ["type", "node"],
+      "loc": "loc",
+      "body": {
+        "is_explicit": "bool",
+        "is_int_set": "bool",
+        "bit_alignment": "bit_alignment",
+        "bit_size": "optional<uint>",
+        "ident": "shared_ptr<ident>",
+        "base": "weak_ptr<type>"
+      }
+    },
+    {
+      "node_type": "int_literal_type",
+      "base_node_type": ["type", "node"],
+      "loc": "loc",
+      "body": {
+        "is_explicit": "bool",
+        "is_int_set": "bool",
+        "bit_alignment": "bit_alignment",
+        "bit_size": "optional<uint>",
+        "base": "weak_ptr<int_literal>"
+      }
+    },
+    {
+      "node_type": "str_literal_type",
+      "base_node_type": ["type", "node"],
+      "loc": "loc",
+      "body": {
+        "is_explicit": "bool",
+        "is_int_set": "bool",
+        "bit_alignment": "bit_alignment",
+        "bit_size": "optional<uint>",
+        "base": "weak_ptr<str_literal>",
+        "strong_ref": "shared_ptr<str_literal>"
+      }
+    },
+    {
+      "node_type": "void_type",
+      "base_node_type": ["type", "node"],
+      "loc": "loc",
+      "body": {
+        "is_explicit": "bool",
+        "is_int_set": "bool",
+        "bit_alignment": "bit_alignment",
+        "bit_size": "optional<uint>"
+      }
+    },
+    {
+      "node_type": "bool_type",
+      "base_node_type": ["type", "node"],
+      "loc": "loc",
+      "body": {
+        "is_explicit": "bool",
+        "is_int_set": "bool",
+        "bit_alignment": "bit_alignment",
+        "bit_size": "optional<uint>"
+      }
+    },
+    {
+      "node_type": "array_type",
+      "base_node_type": ["type", "node"],
+      "loc": "loc",
+      "body": {
+        "is_explicit": "bool",
+        "is_int_set": "bool",
+        "bit_alignment": "bit_alignment",
+        "bit_size": "optional<uint>",
+        "end_loc": "loc",
+        "base_type": "shared_ptr<type>",
+        "length": "shared_ptr<expr>",
+        "length_value": "optional<uint>"
+      }
+    },
+    {
+      "node_type": "function_type",
+      "base_node_type": ["type", "node"],
+      "loc": "loc",
+      "body": {
+        "is_explicit": "bool",
+        "is_int_set": "bool",
+        "bit_alignment": "bit_alignment",
+        "bit_size": "optional<uint>",
+        "return_type": "shared_ptr<type>",
+        "parameters": "array<shared_ptr<type>>"
+      }
+    },
+    {
+      "node_type": "struct_type",
+      "base_node_type": ["type", "node"],
+      "loc": "loc",
+      "body": {
+        "is_explicit": "bool",
+        "is_int_set": "bool",
+        "bit_alignment": "bit_alignment",
+        "bit_size": "optional<uint>",
+        "fields": "array<shared_ptr<member>>",
+        "base": "weak_ptr<node>",
+        "recursive": "bool",
+        "fixed_header_size": "uint",
+        "fixed_tail_size": "uint"
+      }
+    },
+    {
+      "node_type": "struct_union_type",
+      "base_node_type": ["type", "node"],
+      "loc": "loc",
+      "body": {
+        "is_explicit": "bool",
+        "is_int_set": "bool",
+        "bit_alignment": "bit_alignment",
+        "bit_size": "optional<uint>",
+        "structs": "array<shared_ptr<struct_type>>",
+        "base": "weak_ptr<expr>",
+        "union_fields": "array<weak_ptr<field>>"
+      }
+    },
+    {
+      "node_type": "union_type",
+      "base_node_type": ["type", "node"],
+      "loc": "loc",
+      "body": {
+        "is_explicit": "bool",
+        "is_int_set": "bool",
+        "bit_alignment": "bit_alignment",
+        "bit_size": "optional<uint>",
+        "cond": "weak_ptr<expr>",
+        "candidates": "array<shared_ptr<union_candidate>>",
+        "base_type": "weak_ptr<struct_union_type>",
+        "common_type": "shared_ptr<type>"
+      }
+    },
+    {
+      "node_type": "range_type",
+      "base_node_type": ["type", "node"],
+      "loc": "loc",
+      "body": {
+        "is_explicit": "bool",
+        "is_int_set": "bool",
+        "bit_alignment": "bit_alignment",
+        "bit_size": "optional<uint>",
+        "base_type": "shared_ptr<type>",
+        "range": "weak_ptr<range>"
+      }
+    },
+    {
+      "node_type": "enum_type",
+      "base_node_type": ["type", "node"],
+      "loc": "loc",
+      "body": {
+        "is_explicit": "bool",
+        "is_int_set": "bool",
+        "bit_alignment": "bit_alignment",
+        "bit_size": "optional<uint>",
+        "base": "weak_ptr<enum>"
+      }
+    },
+    {
+      "node_type": "literal",
+      "base_node_type": ["expr", "node"],
+      "loc": "loc",
+      "body": {
+        "expr_type": "shared_ptr<type>",
+        "constant_level": "constant_level"
+      },
+      "one_of": [
+        "int_literal",
+        "bool_literal",
+        "str_literal",
+        "input",
+        "output",
+        "config"
+      ]
+    },
+    {
+      "node_type": "int_literal",
+      "base_node_type": ["literal", "expr", "node"],
+      "loc": "loc",
+      "body": {
+        "expr_type": "shared_ptr<type>",
+        "constant_level": "constant_level",
+        "value": "string"
+      }
+    },
+    {
+      "node_type": "bool_literal",
+      "base_node_type": ["literal", "expr", "node"],
+      "loc": "loc",
+      "body": {
+        "expr_type": "shared_ptr<type>",
+        "constant_level": "constant_level",
+        "value": "bool"
+      }
+    },
+    {
+      "node_type": "str_literal",
+      "base_node_type": ["literal", "expr", "node"],
+      "loc": "loc",
+      "body": {
+        "expr_type": "shared_ptr<type>",
+        "constant_level": "constant_level",
+        "value": "string",
+        "length": "uint"
+      }
+    },
+    {
+      "node_type": "input",
+      "base_node_type": ["literal", "expr", "node"],
+      "loc": "loc",
+      "body": {
+        "expr_type": "shared_ptr<type>",
+        "constant_level": "constant_level"
+      }
+    },
+    {
+      "node_type": "output",
+      "base_node_type": ["literal", "expr", "node"],
+      "loc": "loc",
+      "body": {
+        "expr_type": "shared_ptr<type>",
+        "constant_level": "constant_level"
+      }
+    },
+    {
+      "node_type": "config",
+      "base_node_type": ["literal", "expr", "node"],
+      "loc": "loc",
+      "body": {
+        "expr_type": "shared_ptr<type>",
+        "constant_level": "constant_level"
+      }
+    },
+    {
+      "node_type": "member",
+      "base_node_type": ["stmt", "node"],
+      "loc": "loc",
+      "body": {
+        "belong": "weak_ptr<member>",
+        "belong_struct": "weak_ptr<struct_type>",
+        "ident": "shared_ptr<ident>"
+      },
+      "one_of": [
+        "field",
+        "format",
+        "state",
+        "enum",
+        "enum_member",
+        "function",
+        "builtin_function"
+      ]
+    },
+    {
+      "node_type": "field",
+      "base_node_type": ["member", "stmt", "node"],
+      "loc": "loc",
+      "body": {
+        "belong": "weak_ptr<member>",
+        "belong_struct": "weak_ptr<struct_type>",
+        "ident": "shared_ptr<ident>",
+        "colon_loc": "loc",
+        "field_type": "shared_ptr<type>",
+        "arguments": "shared_ptr<field_argument>",
+        "offset_bit": "optional<uint>",
+        "offset_recent": "uint",
+        "tail_offset_bit": "optional<uint>",
+        "tail_offset_recent": "uint",
+        "bit_alignment": "bit_alignment",
+        "follow": "follow",
+        "eventual_follow": "follow"
+      }
+    },
+    {
+      "node_type": "format",
+      "base_node_type": ["member", "stmt", "node"],
+      "loc": "loc",
+      "body": {
+        "belong": "weak_ptr<member>",
+        "belong_struct": "weak_ptr<struct_type>",
+        "ident": "shared_ptr<ident>",
+        "body": "shared_ptr<indent_block>",
+        "encode_fn": "weak_ptr<function>",
+        "decode_fn": "weak_ptr<function>",
+        "cast_fns": "array<weak_ptr<function>>"
+      }
+    },
+    {
+      "node_type": "state",
+      "base_node_type": ["member", "stmt", "node"],
+      "loc": "loc",
+      "body": {
+        "belong": "weak_ptr<member>",
+        "belong_struct": "weak_ptr<struct_type>",
+        "ident": "shared_ptr<ident>",
+        "body": "shared_ptr<indent_block>"
+      }
+    },
+    {
+      "node_type": "enum",
+      "base_node_type": ["member", "stmt", "node"],
+      "loc": "loc",
+      "body": {
+        "belong": "weak_ptr<member>",
+        "belong_struct": "weak_ptr<struct_type>",
+        "ident": "shared_ptr<ident>",
+        "scope": "shared_ptr<scope>",
+        "colon_loc": "loc",
+        "base_type": "shared_ptr<type>",
+        "members": "array<shared_ptr<enum_member>>",
+        "enum_type": "shared_ptr<enum_type>"
+      }
+    },
+    {
+      "node_type": "enum_member",
+      "base_node_type": ["member", "stmt", "node"],
+      "loc": "loc",
+      "body": {
+        "belong": "weak_ptr<member>",
+        "belong_struct": "weak_ptr<struct_type>",
+        "ident": "shared_ptr<ident>",
+        "expr": "shared_ptr<expr>"
+      }
+    },
+    {
+      "node_type": "function",
+      "base_node_type": ["member", "stmt", "node"],
+      "loc": "loc",
+      "body": {
+        "belong": "weak_ptr<member>",
+        "belong_struct": "weak_ptr<struct_type>",
+        "ident": "shared_ptr<ident>",
+        "parameters": "array<shared_ptr<field>>",
+        "return_type": "shared_ptr<type>",
+        "body": "shared_ptr<indent_block>",
+        "func_type": "shared_ptr<function_type>",
+        "is_cast": "bool",
+        "cast_loc": "loc"
+      }
+    },
+    {
+      "node_type": "builtin_function",
+      "base_node_type": ["member", "stmt", "node"],
+      "loc": "loc",
+      "body": {
+        "belong": "weak_ptr<member>",
+        "belong_struct": "weak_ptr<struct_type>",
+        "ident": "shared_ptr<ident>",
+        "func_type": "shared_ptr<function_type>"
+      }
+    }
+  ],
+  "struct": {
+    "scope": {
+      "prev": "weak_ptr<scope>",
+      "next": "shared_ptr<scope>",
+      "branch": "shared_ptr<scope>",
+      "ident": "array<std::weak_ptr<ident>>",
+      "owner": "weak_ptr<node>",
+      "branch_root": "bool"
+    },
+    "pos": {
+      "begin": "uint",
+      "end": "uint"
+    },
+    "loc": {
+      "pos": "pos",
+      "file": "uint",
+      "line": "uint",
+      "col": "uint"
+    },
+    "token": {
+      "tag": "token_tag",
+      "token": "string",
+      "loc": "loc"
+    },
+    "raw_scope": {
+      "prev": "optional<uintptr>",
+      "next": "optional<uintptr>",
+      "branch": "optional<uintptr>",
+      "ident": "array<uintptr>",
+      "owner": "optional<uintptr>",
+      "branch_root": "bool"
+    },
+    "raw_node": {
+      "node_type": "node_type",
+      "loc": "loc",
+      "body": "any"
+    },
+    "src_error_entry": {
+      "msg": "string",
+      "file": "string",
+      "loc": "loc",
+      "src": "string",
+      "warn": "bool"
+    },
+    "src_error": {
+      "errs": "array<src_error_entry>"
+    },
+    "json_ast": {
+      "node": "array<raw_node>",
+      "scope": "array<raw_scope>"
+    },
+    "ast_file": {
+      "files": "array<string>",
+      "ast": "optional<json_ast>",
+      "error": "optional<src_error>"
+    },
+    "token_file": {
+      "files": "array<string>",
+      "tokens": "optional<array<token>>",
+      "error": "optional<src_error>"
+    }
+  },
+  "enum": {
+    "node_type": [
+      {
+        "name": "program",
+        "value": "program"
+      },
+      {
+        "name": "comment",
+        "value": "comment"
+      },
+      {
+        "name": "comment_group",
+        "value": "comment_group"
+      },
+      {
+        "name": "field_argument",
+        "value": "field_argument"
+      },
+      {
+        "name": "expr",
+        "value": "expr"
+      },
+      {
+        "name": "binary",
+        "value": "binary"
+      },
+      {
+        "name": "unary",
+        "value": "unary"
+      },
+      {
+        "name": "cond",
+        "value": "cond"
+      },
+      {
+        "name": "ident",
+        "value": "ident"
+      },
+      {
+        "name": "call",
+        "value": "call"
+      },
+      {
+        "name": "if",
+        "value": "if"
+      },
+      {
+        "name": "member_access",
+        "value": "member_access"
+      },
+      {
+        "name": "paren",
+        "value": "paren"
+      },
+      {
+        "name": "index",
+        "value": "index"
+      },
+      {
+        "name": "match",
+        "value": "match"
+      },
+      {
+        "name": "range",
+        "value": "range"
+      },
+      {
+        "name": "tmp_var",
+        "value": "tmp_var"
+      },
+      {
+        "name": "import",
+        "value": "import"
+      },
+      {
+        "name": "cast",
+        "value": "cast"
+      },
+      {
+        "name": "available",
+        "value": "available"
+      },
+      {
+        "name": "specify_endian",
+        "value": "specify_endian"
+      },
+      {
+        "name": "explicit_error",
+        "value": "explicit_error"
+      },
+      {
+        "name": "stmt",
+        "value": "stmt"
+      },
+      {
+        "name": "loop",
+        "value": "loop"
+      },
+      {
+        "name": "indent_block",
+        "value": "indent_block"
+      },
+      {
+        "name": "scoped_statement",
+        "value": "scoped_statement"
+      },
+      {
+        "name": "match_branch",
+        "value": "match_branch"
+      },
+      {
+        "name": "union_candidate",
+        "value": "union_candidate"
+      },
+      {
+        "name": "return",
+        "value": "return"
+      },
+      {
+        "name": "break",
+        "value": "break"
+      },
+      {
+        "name": "continue",
+        "value": "continue"
+      },
+      {
+        "name": "assert",
+        "value": "assert"
+      },
+      {
+        "name": "implicit_yield",
+        "value": "implicit_yield"
+      },
+      {
+        "name": "type",
+        "value": "type"
+      },
+      {
+        "name": "int_type",
+        "value": "int_type"
+      },
+      {
+        "name": "ident_type",
+        "value": "ident_type"
+      },
+      {
+        "name": "int_literal_type",
+        "value": "int_literal_type"
+      },
+      {
+        "name": "str_literal_type",
+        "value": "str_literal_type"
+      },
+      {
+        "name": "void_type",
+        "value": "void_type"
+      },
+      {
+        "name": "bool_type",
+        "value": "bool_type"
+      },
+      {
+        "name": "array_type",
+        "value": "array_type"
+      },
+      {
+        "name": "function_type",
+        "value": "function_type"
+      },
+      {
+        "name": "struct_type",
+        "value": "struct_type"
+      },
+      {
+        "name": "struct_union_type",
+        "value": "struct_union_type"
+      },
+      {
+        "name": "union_type",
+        "value": "union_type"
+      },
+      {
+        "name": "range_type",
+        "value": "range_type"
+      },
+      {
+        "name": "enum_type",
+        "value": "enum_type"
+      },
+      {
+        "name": "literal",
+        "value": "literal"
+      },
+      {
+        "name": "int_literal",
+        "value": "int_literal"
+      },
+      {
+        "name": "bool_literal",
+        "value": "bool_literal"
+      },
+      {
+        "name": "str_literal",
+        "value": "str_literal"
+      },
+      {
+        "name": "input",
+        "value": "input"
+      },
+      {
+        "name": "output",
+        "value": "output"
+      },
+      {
+        "name": "config",
+        "value": "config"
+      },
+      {
+        "name": "member",
+        "value": "member"
+      },
+      {
+        "name": "field",
+        "value": "field"
+      },
+      {
+        "name": "format",
+        "value": "format"
+      },
+      {
+        "name": "state",
+        "value": "state"
+      },
+      {
+        "name": "enum",
+        "value": "enum"
+      },
+      {
+        "name": "enum_member",
+        "value": "enum_member"
+      },
+      {
+        "name": "function",
+        "value": "function"
+      },
+      {
+        "name": "builtin_function",
+        "value": "builtin_function"
+      }
+    ],
+    "token_tag": [
+      {
+        "name": "indent",
+        "value": "indent"
+      },
+      {
+        "name": "space",
+        "value": "space"
+      },
+      {
+        "name": "line",
+        "value": "line"
+      },
+      {
+        "name": "punct",
+        "value": "punct"
+      },
+      {
+        "name": "int_literal",
+        "value": "int_literal"
+      },
+      {
+        "name": "bool_literal",
+        "value": "bool_literal"
+      },
+      {
+        "name": "str_literal",
+        "value": "str_literal"
+      },
+      {
+        "name": "keyword",
+        "value": "keyword"
+      },
+      {
+        "name": "ident",
+        "value": "ident"
+      },
+      {
+        "name": "comment",
+        "value": "comment"
+      },
+      {
+        "name": "error",
+        "value": "error"
+      },
+      {
+        "name": "unknown",
+        "value": "unknown"
+      }
+    ],
+    "unary_op": [
+      {
+        "name": "not",
+        "value": "!"
+      },
+      {
+        "name": "minus_sign",
+        "value": "-"
+      }
+    ],
+    "binary_op": [
+      {
+        "name": "mul",
+        "value": "*"
+      },
+      {
+        "name": "div",
+        "value": "/"
+      },
+      {
+        "name": "mod",
+        "value": "%"
+      },
+      {
+        "name": "left_arithmetic_shift",
+        "value": "<<<"
+      },
+      {
+        "name": "right_arithmetic_shift",
+        "value": ">>>"
+      },
+      {
+        "name": "left_logical_shift",
+        "value": "<<"
+      },
+      {
+        "name": "right_logical_shift",
+        "value": ">>"
+      },
+      {
+        "name": "bit_and",
+        "value": "&"
+      },
+      {
+        "name": "add",
+        "value": "+"
+      },
+      {
+        "name": "sub",
+        "value": "-"
+      },
+      {
+        "name": "bit_or",
+        "value": "|"
+      },
+      {
+        "name": "bit_xor",
+        "value": "^"
+      },
+      {
+        "name": "equal",
+        "value": "=="
+      },
+      {
+        "name": "not_equal",
+        "value": "!="
+      },
+      {
+        "name": "less",
+        "value": "<"
+      },
+      {
+        "name": "less_or_eq",
+        "value": "<="
+      },
+      {
+        "name": "grater",
+        "value": ">"
+      },
+      {
+        "name": "grater_or_eq",
+        "value": ">="
+      },
+      {
+        "name": "logical_and",
+        "value": "&&"
+      },
+      {
+        "name": "logical_or",
+        "value": "||"
+      },
+      {
+        "name": "cond_op1",
+        "value": "?"
+      },
+      {
+        "name": "cond_op2",
+        "value": ":"
+      },
+      {
+        "name": "range_exclusive",
+        "value": ".."
+      },
+      {
+        "name": "range_inclusive",
+        "value": "..="
+      },
+      {
+        "name": "assign",
+        "value": "="
+      },
+      {
+        "name": "define_assign",
+        "value": ":="
+      },
+      {
+        "name": "const_assign",
+        "value": "::="
+      },
+      {
+        "name": "add_assign",
+        "value": "+="
+      },
+      {
+        "name": "sub_assign",
+        "value": "-="
+      },
+      {
+        "name": "mul_assign",
+        "value": "*="
+      },
+      {
+        "name": "div_assign",
+        "value": "/="
+      },
+      {
+        "name": "mod_assign",
+        "value": "%="
+      },
+      {
+        "name": "left_shift_assign",
+        "value": "<<="
+      },
+      {
+        "name": "right_shift_assign",
+        "value": ">>="
+      },
+      {
+        "name": "bit_and_assign",
+        "value": "&="
+      },
+      {
+        "name": "bit_or_assign",
+        "value": "|="
+      },
+      {
+        "name": "bit_xor_assign",
+        "value": "^="
+      },
+      {
+        "name": "comma",
+        "value": ","
+      }
+    ],
+    "ident_usage": [
+      {
+        "name": "unknown",
+        "value": "unknown"
+      },
+      {
+        "name": "reference",
+        "value": "reference"
+      },
+      {
+        "name": "define_variable",
+        "value": "define_variable"
+      },
+      {
+        "name": "define_const",
+        "value": "define_const"
+      },
+      {
+        "name": "define_field",
+        "value": "define_field"
+      },
+      {
+        "name": "define_format",
+        "value": "define_format"
+      },
+      {
+        "name": "define_state",
+        "value": "define_state"
+      },
+      {
+        "name": "define_enum",
+        "value": "define_enum"
+      },
+      {
+        "name": "define_enum_member",
+        "value": "define_enum_member"
+      },
+      {
+        "name": "define_fn",
+        "value": "define_fn"
+      },
+      {
+        "name": "define_cast_fn",
+        "value": "define_cast_fn"
+      },
+      {
+        "name": "define_arg",
+        "value": "define_arg"
+      },
+      {
+        "name": "reference_type",
+        "value": "reference_type"
+      },
+      {
+        "name": "reference_member",
+        "value": "reference_member"
+      },
+      {
+        "name": "maybe_type",
+        "value": "maybe_type"
+      },
+      {
+        "name": "reference_builtin_fn",
+        "value": "reference_builtin_fn"
+      }
+    ],
+    "endian": [
+      {
+        "name": "unspec",
+        "value": "unspec"
+      },
+      {
+        "name": "big",
+        "value": "big"
+      },
+      {
+        "name": "little",
+        "value": "little"
+      }
+    ],
+    "constant_level": [
+      {
+        "name": "unknown",
+        "value": "unknown"
+      },
+      {
+        "name": "constant",
+        "value": "constant"
+      },
+      {
+        "name": "const_variable",
+        "value": "const_variable"
+      },
+      {
+        "name": "variable",
+        "value": "variable"
+      }
+    ],
+    "bit_alignment": [
+      {
+        "name": "byte_aligned",
+        "value": "byte_aligned"
+      },
+      {
+        "name": "bit_1",
+        "value": "bit_1"
+      },
+      {
+        "name": "bit_2",
+        "value": "bit_2"
+      },
+      {
+        "name": "bit_3",
+        "value": "bit_3"
+      },
+      {
+        "name": "bit_4",
+        "value": "bit_4"
+      },
+      {
+        "name": "bit_5",
+        "value": "bit_5"
+      },
+      {
+        "name": "bit_6",
+        "value": "bit_6"
+      },
+      {
+        "name": "bit_7",
+        "value": "bit_7"
+      },
+      {
+        "name": "not_target",
+        "value": "not_target"
+      },
+      {
+        "name": "not_decidable",
+        "value": "not_decidable"
+      }
+    ],
+    "follow": [
+      {
+        "name": "unknown",
+        "value": "unknown"
+      },
+      {
+        "name": "end",
+        "value": "end"
+      },
+      {
+        "name": "fixed",
+        "value": "fixed"
+      },
+      {
+        "name": "constant",
+        "value": "constant"
+      },
+      {
+        "name": "normal",
+        "value": "normal"
+      }
+    ]
+  }
+}
 ```
 
 {{< mermaid >}}

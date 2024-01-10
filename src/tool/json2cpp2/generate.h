@@ -3,7 +3,7 @@
 
 #include <helper/expected.h>
 #include <core/ast/ast.h>
-#include <core/writer/writer.h>
+#include <writer/writer.h>
 #include <core/ast/tool/stringer.h>
 
 namespace j2cp2 {
