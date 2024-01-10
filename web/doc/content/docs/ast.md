@@ -11,7 +11,7 @@ weight: 1
 
 # AST
 
-brgen の AST
+brgen(lang) の AST
 
 基本の継承関係
 
