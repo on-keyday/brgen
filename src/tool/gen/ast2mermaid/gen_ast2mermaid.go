@@ -61,7 +61,11 @@ func generateEr(rw io.Writer, d *gen.Defs) {
 		case *gen.Interface:
 			w.Printf("%s {\n", val.Name)
 			for _, m := range val.UnCommonFields {
-				w.Printf("%s %s\n", m.Type.Name, m.Type.Name)
+				if m.Type.IsArray {
+					w.Printf("%s[] %s\n", m.Type.Name, m.Name)
+				} else {
+					w.Printf("%s %s\n", m.Type.Name, m.Name)
+				}
 			}
 			w.Printf("}\n")
 			if len(val.Embed) > 0 {
@@ -80,7 +84,11 @@ func generateEr(rw io.Writer, d *gen.Defs) {
 			}
 			w.Printf("%s {\n", val.Name)
 			for _, m := range val.UnCommonFields {
-				w.Printf("%s %s\n", m.Type.Name, m.Name)
+				if m.Type.IsArray {
+					w.Printf("%s[] %s\n", m.Type.Name, m.Name)
+				} else {
+					w.Printf("%s %s\n", m.Type.Name, m.Name)
+				}
 			}
 			w.Printf("}\n")
 			for _, m := range val.UnCommonFields {
