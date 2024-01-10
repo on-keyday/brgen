@@ -395,7 +395,7 @@ format C:
     ASSERT_TRUE(fmt3);
     ASSERT_EQ(fmt3->body->struct_type->bit_alignment, ast::BitAlignment::byte_aligned);
     ASSERT_EQ(fmt3->body->struct_type->fields.size(), 13);
-    ASSERT_EQ(fmt3->body->struct_type->bit_size, 0);
+    ASSERT_EQ(fmt3->body->struct_type->bit_size, std::nullopt);
     auto field8 = ast::as<ast::Field>(fmt3->body->struct_type->fields[0]);
     ASSERT_TRUE(field8);
     ASSERT_EQ(field8->bit_alignment, ast::BitAlignment::byte_aligned);
@@ -459,7 +459,7 @@ format C:
     ASSERT_TRUE(field20);
     ASSERT_EQ(field20->bit_alignment, ast::BitAlignment::byte_aligned);
     ASSERT_EQ(field20->field_type->bit_alignment, ast::BitAlignment::byte_aligned);
-    ASSERT_EQ(field20->field_type->bit_size, 0);  // TODO(on-keyday): fix this
+    ASSERT_EQ(field20->field_type->bit_size, std::nullopt);  // TODO(on-keyday): fix this
 }
 
 TEST(BitAlignment, BitAlignmentUnionEnum) {
@@ -511,7 +511,7 @@ format F:
     ASSERT_TRUE(fmt);
     ASSERT_EQ(fmt->body->struct_type->bit_alignment, ast::BitAlignment::byte_aligned);
     ASSERT_EQ(fmt->body->struct_type->fields.size(), 4);
-    ASSERT_EQ(fmt->body->struct_type->bit_size, 0);  // not decidable
+    ASSERT_EQ(fmt->body->struct_type->bit_size, std::nullopt);  // not decidable
     auto field = ast::as<ast::Field>(fmt->body->struct_type->fields[0]);
     ASSERT_TRUE(field);
     ASSERT_EQ(field->bit_alignment, ast::BitAlignment::byte_aligned);
@@ -521,7 +521,7 @@ format F:
     ASSERT_TRUE(field2);
     ASSERT_EQ(field2->bit_alignment, ast::BitAlignment::byte_aligned);
     ASSERT_EQ(field2->field_type->bit_alignment, ast::BitAlignment::byte_aligned);
-    ASSERT_EQ(field2->field_type->bit_size, 0);  // not decidable
+    ASSERT_EQ(field2->field_type->bit_size, std::nullopt);  // not decidable
     auto field3 = ast::as<ast::Field>(fmt->body->struct_type->fields[2]);
     ASSERT_TRUE(field3);
     ASSERT_EQ(field3->bit_alignment, ast::BitAlignment::not_target);
@@ -537,7 +537,7 @@ format F:
     ASSERT_TRUE(fmt2);
     ASSERT_EQ(fmt2->body->struct_type->bit_alignment, ast::BitAlignment::byte_aligned);
     ASSERT_EQ(fmt2->body->struct_type->fields.size(), 3);
-    ASSERT_EQ(fmt2->body->struct_type->bit_size, 0);  // not decidable
+    ASSERT_EQ(fmt2->body->struct_type->bit_size, std::nullopt);  // not decidable
     auto field5 = ast::as<ast::Field>(fmt2->body->struct_type->fields[0]);
     ASSERT_TRUE(field5);
     ASSERT_EQ(field5->bit_alignment, ast::BitAlignment::bit_7);
@@ -547,7 +547,7 @@ format F:
     ASSERT_TRUE(field6);
     ASSERT_EQ(field6->bit_alignment, ast::BitAlignment::bit_7);
     ASSERT_EQ(field6->field_type->bit_alignment, ast::BitAlignment::byte_aligned);
-    ASSERT_EQ(field6->field_type->bit_size, 0);  // not decidable
+    ASSERT_EQ(field6->field_type->bit_size, std::nullopt);  // not decidable
     auto field7 = ast::as<ast::Field>(fmt2->body->struct_type->fields[2]);
     ASSERT_TRUE(field7);
     ASSERT_EQ(field7->bit_alignment, ast::BitAlignment::byte_aligned);

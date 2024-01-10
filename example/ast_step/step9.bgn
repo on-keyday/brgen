@@ -3,4 +3,12 @@ format  Data:
     payload :[len]u8
 
 format 🎅サンタΑa:
-    pass
+    ..
+
+format A:
+    cond :u8
+    if cond == 8:
+        a :u8
+    else:
+        b :u16
+    

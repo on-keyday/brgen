@@ -15,7 +15,7 @@ format ELF:
     class == CPUClass._32 || class == CPUClass._64  
     endian :Endian
     endian == Endian.LittleEndian || endian == Endian.BigEndian
-    input.endian = endian == Endian.LittleEndian
+    input.endian = endian == Endian.LittleEndian ? config.endian.little : config.endian.big
     version :u8 
     version == 1
     osabi :u8

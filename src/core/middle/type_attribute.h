@@ -326,7 +326,7 @@ namespace brgen::middle {
                             continue;
                         }
                         if (f->bit_alignment == ast::BitAlignment::not_decidable) {
-                            bit_size = 0;
+                            bit_size = std::nullopt;
                             alignment = ast::BitAlignment::not_decidable;
                             break;
                         }
@@ -336,14 +336,14 @@ namespace brgen::middle {
                         if (bit_size == 0) {
                             bit_size = f->bit_size;
                         }
-                        else if (bit_size != 0) {
+                        else if (bit_size) {
                             if (bit_size != f->bit_size) {
-                                bit_size = 0;
+                                bit_size = std::nullopt;
                             }
                         }
                         if (alignment != f->bit_alignment) {
                             alignment = ast::BitAlignment::not_decidable;
-                            bit_size = 0;
+                            bit_size = std::nullopt;
                             break;
                         }
                     }
