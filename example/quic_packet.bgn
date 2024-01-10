@@ -43,6 +43,8 @@ format QUICPacket:
 state QUICState:
    encrypted :bool
    packet_number_length :u8
+   enable_length :bool
+   length :u8
 
 
 format LongPacketHeader:
@@ -110,7 +112,7 @@ format OneRTTPacketHeader:
    reserved :u2
    key_phase :u1
    packet_number_length :u2
-   dst_conn_id :ConnectionID(length=config.arg("length",u8))
+   dst_conn_id :ConnectionID
    if qstate.encrypted:
       encrypted_payload :[..]u8
    else:

@@ -1,5 +1,6 @@
 format IPv4Header:
-    version :u4 ihl :u4 dscp :u6 ecn :u2 len :u16
+    version :u4 
+    ihl :u4 dscp :u6 ecn :u2 len :u16
     id :u16 reserved :u1 dont_fragment :u1 more_fragment :u1 fragOffset :u13
     ttl :u8 proto :u8 checksum :u16
     srcAddr :u32
@@ -8,7 +9,8 @@ format IPv4Header:
 
 
 format IPv6Header:
-    version :u4 trafficClass :u8 flowLabel :u20
+    version :u4 
+    trafficClass :u8 flowLabel :u20
     payloadLen :u16
     nextHeader :u8
     hopLimit :u8

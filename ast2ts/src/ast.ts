@@ -700,6 +700,7 @@ export interface StructType extends Type {
 	fields: Member[];
 	base: Node|null;
 	recursive: boolean;
+	fixed_header_size: number;
 }
 
 export function isStructType(obj: any): obj is StructType {
@@ -794,6 +795,8 @@ export interface Field extends Member {
 	colon_loc: Loc;
 	field_type: Type|null;
 	arguments: FieldArgument|null;
+	offset_bit: number|null;
+	offset_recent: number;
 	bit_alignment: BitAlignment;
 	follow: Follow;
 	eventual_follow: Follow;
@@ -1489,6 +1492,7 @@ export function parseAST(obj: any): Program {
 				fields: [],
 				base: null,
 				recursive: false,
+				fixed_header_size: 0,
 			}
 			c.node.push(n);
 			break;
@@ -1625,6 +1629,8 @@ export function parseAST(obj: any): Program {
 				colon_loc: on.loc,
 				field_type: null,
 				arguments: null,
+				offset_bit: null,
+				offset_recent: 0,
 				bit_alignment: BitAlignment.byte_aligned,
 				follow: Follow.unknown,
 				eventual_follow: Follow.unknown,
@@ -3008,6 +3014,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at StructType::recursive');
 			}
 			n.recursive = on.body.recursive;
+			const tmpfixed_header_size = on.body?.fixed_header_size;
+			if (typeof tmpfixed_header_size !== "number") {
+				throw new Error('invalid node list at StructType::fixed_header_size');
+			}
+			n.fixed_header_size = on.body.fixed_header_size;
 			break;
 		}
 		case "struct_union_type": {
@@ -3361,6 +3372,16 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at Field::arguments');
 			}
 			n.arguments = tmparguments;
+			const tmpoffset_bit = on.body?.offset_bit;
+			if (tmpoffset_bit !== null && typeof tmpoffset_bit !== "number") {
+				throw new Error('invalid node list at Field::offset_bit');
+			}
+			n.offset_bit = on.body.offset_bit;
+			const tmpoffset_recent = on.body?.offset_recent;
+			if (typeof tmpoffset_recent !== "number") {
+				throw new Error('invalid node list at Field::offset_recent');
+			}
+			n.offset_recent = on.body.offset_recent;
 			const tmpbit_alignment = on.body?.bit_alignment;
 			if (!isBitAlignment(tmpbit_alignment)) {
 				throw new Error('invalid node list at Field::bit_alignment');

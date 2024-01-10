@@ -341,7 +341,10 @@ func (g *Generator) writeStructType(belong string, s *ast2go.StructType) {
 				is_simple = is_simple &&
 					(typ.GetNodeType() == ast2go.NodeTypeIntType ||
 						typ.GetNodeType() == ast2go.NodeTypeEnumType)
-				size += *typ.GetBitSize()
+				s := typ.GetBitSize()
+				if s != nil {
+					size += *s
+				}
 				g.writeBitField(belong, non_aligned, size, is_int_set, is_simple)
 				non_aligned = nil
 				is_int_set = true
@@ -698,7 +701,7 @@ func (g *Generator) writeSingleNode(node ast2go.Node, enc bool) {
 
 func (g *Generator) writeEncode(p *ast2go.Format) {
 	g.PrintfFunc("func (t *%s) Encode() ([]byte,error) {\n", p.Ident.Ident)
-	g.PrintfFunc("buf := make([]byte, 0, %d)\n", *p.Body.StructType.GetBitSize()/8)
+	g.PrintfFunc("buf := make([]byte, 0, %d)\n", p.Body.StructType.FixedHeaderSize/8)
 	for _, elem := range p.Body.Elements {
 		g.writeSingleNode(elem, true)
 	}

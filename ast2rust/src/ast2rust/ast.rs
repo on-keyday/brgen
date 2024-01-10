@@ -4662,6 +4662,7 @@ pub struct StructType {
 	pub fields: Vec<Member>,
 	pub base: Option<NodeWeak>,
 	pub recursive: bool,
+	pub fixed_header_size: u64,
 }
 
 impl TryFrom<&Type> for Rc<RefCell<StructType>> {
@@ -5577,6 +5578,8 @@ pub struct Field {
 	pub colon_loc: Loc,
 	pub field_type: Option<Type>,
 	pub arguments: Option<Rc<RefCell<FieldArgument>>>,
+	pub offset_bit: Option<u64>,
+	pub offset_recent: u64,
 	pub bit_alignment: BitAlignment,
 	pub follow: Follow,
 	pub eventual_follow: Follow,
@@ -6712,6 +6715,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				fields: Vec::new(),
 				base: None,
 				recursive: false,
+				fixed_header_size: 0,
 				})))
 			},
 			NodeType::StructUnionType => {
@@ -6815,6 +6819,8 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				colon_loc: raw_node.loc.clone(),
 				field_type: None,
 				arguments: None,
+				offset_bit: None,
+				offset_recent: 0,
 				bit_alignment: BitAlignment::ByteAligned,
 				follow: Follow::Unknown,
 				eventual_follow: Follow::Unknown,
@@ -9400,6 +9406,14 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(recursive_body.into(),JSONType::Bool)),
 				};
+				let fixed_header_size_body = match raw_node.body.get("fixed_header_size") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"fixed_header_size")),
+				};
+				node.borrow_mut().fixed_header_size = match fixed_header_size_body.as_u64() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(fixed_header_size_body.into(),JSONType::Number)),
+				};
 			},
 			NodeType::StructUnionType => {
 				let node = nodes[i].clone();
@@ -10098,6 +10112,25 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().arguments = Some(arguments_body.clone());
 				}
+				let offset_bit_body = match raw_node.body.get("offset_bit") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"offset_bit")),
+				};
+				node.borrow_mut().offset_bit = match offset_bit_body.as_u64() {
+					Some(v)=>Some(v),
+					None=> match offset_bit_body.is_null() {
+						true=>None,
+						false=>return Err(Error::MismatchJSONType(offset_bit_body.into(),JSONType::Number)),
+					},
+				};
+				let offset_recent_body = match raw_node.body.get("offset_recent") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"offset_recent")),
+				};
+				node.borrow_mut().offset_recent = match offset_recent_body.as_u64() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(offset_recent_body.into(),JSONType::Number)),
+				};
 				let bit_alignment_body = match raw_node.body.get("bit_alignment") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"bit_alignment")),

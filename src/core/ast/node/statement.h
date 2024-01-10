@@ -178,6 +178,10 @@ namespace brgen::ast {
         std::optional<size_t> offset_bit;
         // offset from recent fixed field
         size_t offset_recent = 0;
+
+        std::optional<size_t> tail_offset_bit;
+        size_t tail_offset_recent = 0;
+
         BitAlignment bit_alignment = BitAlignment::not_target;
         Follow follow = Follow::unknown;
         // eventual follow indicates finally followed type
@@ -229,6 +233,8 @@ namespace brgen::ast {
             sdebugf(arguments);
             sdebugf(offset_bit);
             sdebugf(offset_recent);
+            sdebugf(tail_offset_bit);
+            sdebugf(tail_offset_recent);
             sdebugf(bit_alignment);
             sdebugf(follow);
             sdebugf(eventual_follow);

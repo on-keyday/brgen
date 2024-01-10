@@ -480,6 +480,7 @@ public class StructType : Type{
 	public List<Member>? Fields{get;set;}
 	public Node? Base{get;set;}
 	public bool Recursive{get;set;}
+	public ulong FixedHeaderSize{get;set;}
 }
 public class StructUnionType : Type{
 	public Loc Loc{get;set;}
@@ -561,6 +562,8 @@ public class Field : Member{
 	public Loc ColonLoc{get;set;}
 	public Type? FieldType{get;set;}
 	public FieldArgument? Arguments{get;set;}
+	public ulong? OffsetBit{get;set;}
+	public ulong OffsetRecent{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public Follow Follow{get;set;}
 	public Follow EventualFollow{get;set;}

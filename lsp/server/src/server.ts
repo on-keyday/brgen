@@ -490,7 +490,7 @@ const hover = async (params :HoverParams)=>{
     }
 
     const bitSize = (bit :number|null|undefined) => {
-        if(!bit){
+        if(bit===null||bit===undefined){
             return "unknown";
         }
         if(bit%8===0){
@@ -519,19 +519,26 @@ const hover = async (params :HoverParams)=>{
                     }
                     return makeHover(ident.ident,"unspecified member reference");
                 case ast2ts.IdentUsage.define_variable:
-                    return makeHover(ident.ident,"variable");
+                    return makeHover(ident.ident,`variable (type: ${ident.expr_type?.node_type||"unknown"}, size: ${bitSize(ident.expr_type?.bit_size)} constant level: ${ident.constant_level})`);
+                case ast2ts.IdentUsage.define_const:
+                    return makeHover(ident.ident,`constant (type: ${ident.expr_type?.node_type||"unknown"}, size: ${bitSize(ident.expr_type?.bit_size)} constant level: ${ident.constant_level})`);
                 case ast2ts.IdentUsage.define_field:
                     if(ast2ts.isField(ident.base)){
-                        return makeHover(ident.ident, `field (size: ${bitSize(ident.base.field_type?.bit_size)} ,align: ${ident.base.bit_alignment}, type align: ${ident.base.field_type?.bit_alignment||"unknown"}, follow: ${ident.base.follow} eventual_follow: ${ident.base.eventual_follow})`);
+                        return makeHover(ident.ident, 
+                            `field (type: ${ident.base.field_type?.node_type||"unknown"}, size: ${bitSize(ident.base.field_type?.bit_size)}, offset(from begin): ${bitSize(ident.base.offset_bit)}, offset(from recent fixed): ${bitSize(ident.base.offset_recent)} ,`+
+                            `align: ${ident.base.bit_alignment}, type align: ${ident.base.field_type?.bit_alignment||"unknown"}, follow: ${ident.base.follow} eventual_follow: ${ident.base.eventual_follow})`);
                     }
                     return makeHover(ident.ident,"field");
-                case ast2ts.IdentUsage.define_const:
-                    return makeHover(ident.ident,"constant");
                 case ast2ts.IdentUsage.define_enum_member:
+                    if(ast2ts.isEnumType(ident.expr_type)) {
+                        return makeHover(ident.ident,`enum member (type: ${ident.expr_type.base?.ident?.ident||"unknown"}, size: ${bitSize(ident.expr_type?.bit_size)})`);
+                    }
                     return makeHover(ident.ident,"enum member");
                 case ast2ts.IdentUsage.define_format:
                     if(ast2ts.isFormat(ident.base)){
-                        return makeHover(ident.ident,`format (size: ${bitSize(ident.base.body?.struct_type?.bit_size)}, algin: ${ident.base.body?.struct_type?.bit_alignment||"unknown"}${ident.base.body?.struct_type?.is_int_set?" int_set":""}${ident.base.body?.struct_type?.recursive?" recursive":""})`);
+                        return makeHover(ident.ident,
+                        `format \n\n(size: ${bitSize(ident.base.body?.struct_type?.bit_size)}, fixed header size: ${bitSize(ident.base.body?.struct_type?.fixed_header_size)},`+
+                        ` algin: ${ident.base.body?.struct_type?.bit_alignment||"unknown"}${ident.base.body?.struct_type?.is_int_set?" int_set":""}${ident.base.body?.struct_type?.recursive?" recursive":""})`);
                     }
                     return makeHover(ident.ident,"format"); 
                 case ast2ts.IdentUsage.define_enum:
