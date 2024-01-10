@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"io"
 	"log"
 	"os"
@@ -54,29 +55,43 @@ func generateEr(rw io.Writer, d *gen.Defs) {
 	w := gen.NewWriter(rw)
 	w.Printf("```mermaid\n")
 	defer w.Printf("```\n")
-	w.Printf("flowchart TB\n")
+	w.Printf("erDiagram\n")
 	for _, def := range d.Defs {
 		switch val := def.(type) {
 		case *gen.Interface:
-			w.Printf("%s[%s]\n", val.Name, val.Name)
+			w.Printf("%s {\n", val.Name)
+			for _, m := range val.UnCommonFields {
+				w.Printf("%s %s\n", m.Type.Name, m.Type.Name)
+			}
+			w.Printf("}\n")
 			if len(val.Embed) > 0 {
-				w.Printf("%s -->|derive|%s\n", val.Embed, val.Name)
+				w.Printf("%s ||--|| %s : derive\n", val.Embed, val.Name)
 			}
 			for _, m := range val.UnCommonFields {
-				w.Printf("%s -->|member|%s\n", val.Name, m.Name)
-				w.Printf("%s -->|type|%s\n", m.Name, m.Type.Name)
+				if m.Type.IsWeak {
+					w.Printf("%s ||--|| %s : weak\n", val.Name, m.Type.Name)
+				} else {
+					w.Printf("%s ||--|| %s : strong\n", val.Name, m.Type.Name)
+				}
 			}
 		case *gen.Struct:
-			w.Printf("%s[%s]\n", val.Name, val.Name)
 			if len(val.Implements) > 0 {
-				w.Printf("%s -->|derive|%s\n", val.Implements[0], val.Name)
+				w.Printf("%s ||--|| %s : derive\n", val.Implements[0], val.Name)
 			}
+			w.Printf("%s {\n", val.Name)
 			for _, m := range val.UnCommonFields {
-				w.Printf("%s -->|member|%s\n", val.Name, m.Name)
-				w.Printf("%s -->|type|%s\n", m.Name, m.Type.Name)
+				w.Printf("%s %s\n", m.Type.Name, m.Name)
+			}
+			w.Printf("}\n")
+			for _, m := range val.UnCommonFields {
+				if m.Type.IsWeak {
+					w.Printf("%s ||--||%s : weak\n", val.Name, m.Type.Name)
+				} else {
+					w.Printf("%s ||--||%s : strong\n", val.Name, m.Type.Name)
+				}
 			}
 		case *gen.Enum:
-			w.Printf("%s[%s]\n", val.Name, val.Name)
+			w.Printf("%s {\n", val.Name)
 			for _, m := range val.Values {
 				if m.Name == "call" {
 					m.Name = "call_"
@@ -84,19 +99,23 @@ func generateEr(rw io.Writer, d *gen.Defs) {
 				if m.Name == "end" {
 					m.Name = "end_"
 				}
-				w.Printf("%s -->|member|%s\n", val.Name, m.Name)
+				w.Printf("%s %s\n", val.Name, m.Name)
 			}
+			w.Printf("}\n")
 		}
 	}
 }
 
+var flow = flag.Bool("flow", false, "generate flowchart")
+
 func main() {
-	if len(os.Args) != 2 {
+	flag.Parse()
+	if len(flag.Args()) != 1 {
 		log.Println("usage: gen_ast2mermaid <file>")
 		return
 	}
 
-	file := os.Args[1]
+	file := flag.Arg(0)
 
 	log.SetFlags(log.Flags() | log.Lshortfile)
 
@@ -119,7 +138,11 @@ func main() {
 	}
 
 	if file == "/dev/stdout" {
-		generateFlow(os.Stdout, defs)
+		if *flow {
+			generateFlow(os.Stdout, defs)
+		} else {
+			generateEr(os.Stdout, defs)
+		}
 		return
 	}
 
@@ -138,6 +161,10 @@ func main() {
 	}
 	defer f.Close()
 
-	generateFlow(f, defs)
+	if *flow {
+		generateFlow(f, defs)
+	} else {
+		generateEr(f, defs)
+	}
 
 }
