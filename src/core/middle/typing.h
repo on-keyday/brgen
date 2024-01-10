@@ -1004,6 +1004,12 @@ namespace brgen::middle {
                     ast::as<ast::MemberAccess>(ast::as<ast::Binary>(arg)->left)->member->usage = ast::IdentUsage::reference_builtin_fn;
                     continue;
                 }
+                if (conf->name == "input.peek") {
+                    typing_expr(conf->arguments[0]);
+                    args->peek = std::move(conf->arguments[0]);
+                    ast::as<ast::MemberAccess>(ast::as<ast::Binary>(arg)->left)->member->usage = ast::IdentUsage::reference_builtin_fn;
+                    continue;
+                }
                 if (conf->name == "input") {
                     auto conf2 = ast::tool::extract_config(conf->arguments[0], ast::tool::ExtractMode::call);
                     if (!conf2) {

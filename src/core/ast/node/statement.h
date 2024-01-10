@@ -148,6 +148,8 @@ namespace brgen::ast {
         // sub byte range of field
         std::shared_ptr<Expr> sub_byte_length;
         std::shared_ptr<Expr> sub_byte_begin;
+        // is_peek is true if field is peeked
+        std::shared_ptr<Expr> peek;
 
         FieldArgument(lexer::Loc l)
             : Node(l, NodeType::field_argument) {}

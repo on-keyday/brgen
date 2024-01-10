@@ -17,13 +17,13 @@ format IPv6Header:
     srcAddr :[16]u8
     dstAddr :[16]u8
 
-config.aligned_bit(8) # here input/output must be aligned to 8 bits
-ip_version :u4
-config.peek(ip_version) # marker for peeking
 
-if ip_version == 4:
-    hdr :IPv4Header
-elif ip_version == 6:
-    hdr :IPv6Header
-else:
-    errorf("invalid ip_version: %d", ip_version)
+format IPHeader:
+    ip_version :u4(input.peek=true)
+
+    if ip_version == 4:
+        hdr :IPv4Header
+    elif ip_version == 6:
+        hdr :IPv6Header
+    else:
+        error("invalid ip_version: %d", ip_version)

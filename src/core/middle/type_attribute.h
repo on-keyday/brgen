@@ -143,6 +143,7 @@ namespace brgen::middle {
                     std::optional<size_t> bit_size = 0;
                     size_t offset = 0;
                     ast::Field* prev_field = nullptr;
+                    t->bit_size = 0;
                     for (auto& fields : t->fields) {
                         if (auto field = ast::as<ast::Field>(fields); field) {
                             if (field->field_type->bit_alignment == ast::BitAlignment::not_target) {

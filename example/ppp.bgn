@@ -1,0 +1,23 @@
+
+format PPP:
+    flag :u8(0x7e)
+    address :u8(0xff)
+    control :u8(0x03)
+    protocol :u16
+    data :[..]u8
+    checksum :u16
+    flag2 :u8(0x7e)
+
+format LCP:
+    code :u8
+    identifier :u8
+    length :u16
+    data :LCPData
+
+format LCPData:
+    type :u8
+    length :u8
+    data :[length]u8
+
+format IPCP:
+    data :LCP

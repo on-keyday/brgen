@@ -5,6 +5,16 @@ enum EtherType:
     vlan = 0x8100
     ipv6 = 0x86DD
 
+format OUI:
+    high: u6
+    local :u1
+    multicast :u1
+    low :[2]u8
+
+format MacAddress:
+    oui :OUI
+    nic :[3]u8
+
 format EthernetFrame:
     dstMac :[6]u8
     srcMac :[6]u8
@@ -21,4 +31,5 @@ format EthernetFrame:
     if len >= 0x600:
         data :[..]u8
     else:
+        peek :u16(input.peek = true)
         data :[len]u8

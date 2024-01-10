@@ -19,7 +19,8 @@ import {
     DefinitionParams,
     Location,
     Diagnostic, 
-    DiagnosticSeverity
+    DiagnosticSeverity,
+    Hover
 } from 'vscode-languageserver/node';
 
 import { Range, TextDocument } from 'vscode-languageserver-textdocument';
@@ -481,9 +482,9 @@ const hover = async (params :HoverParams)=>{
         return {
             contents: {
                 kind: MarkupKind.Markdown,
-                value: `${ident}\n\n${role}`,
+                value: `### ${ident}\n\n${role}`,
             },
-        };
+        } as Hover
     }
     if(found === null) {
         return null;
@@ -525,8 +526,18 @@ const hover = async (params :HoverParams)=>{
                 case ast2ts.IdentUsage.define_field:
                     if(ast2ts.isField(ident.base)){
                         return makeHover(ident.ident, 
-                            `field (type: ${ident.base.field_type?.node_type||"unknown"}, size: ${bitSize(ident.base.field_type?.bit_size)}, offset(from begin): ${bitSize(ident.base.offset_bit)}, offset(from recent fixed): ${bitSize(ident.base.offset_recent)} ,`+
-                            `align: ${ident.base.bit_alignment}, type align: ${ident.base.field_type?.bit_alignment||"unknown"}, follow: ${ident.base.follow} eventual_follow: ${ident.base.eventual_follow})`);
+                            `
++ field 
+    + type: ${ident.base.field_type?.node_type||"unknown"}
+    + size: ${bitSize(ident.base.field_type?.bit_size)}
+    + offset(from begin): ${bitSize(ident.base.offset_bit)}
+    + offset(from recent fixed): ${bitSize(ident.base.offset_recent)}
+    + offset(from end): ${bitSize(ident.base.tail_offset_bit)}
+    + offset(from recent fixed): ${bitSize(ident.base.tail_offset_recent)}
+    + align: ${ident.base.bit_alignment}, 
+    + type align: ${ident.base.field_type?.bit_alignment||"unknown"}
+    + follow: ${ident.base.follow}
+    + eventual_follow: ${ident.base.eventual_follow}`);
                     }
                     return makeHover(ident.ident,"field");
                 case ast2ts.IdentUsage.define_enum_member:
@@ -537,8 +548,14 @@ const hover = async (params :HoverParams)=>{
                 case ast2ts.IdentUsage.define_format:
                     if(ast2ts.isFormat(ident.base)){
                         return makeHover(ident.ident,
-                        `format \n\n(size: ${bitSize(ident.base.body?.struct_type?.bit_size)}, fixed header size: ${bitSize(ident.base.body?.struct_type?.fixed_header_size)},`+
-                        ` algin: ${ident.base.body?.struct_type?.bit_alignment||"unknown"}${ident.base.body?.struct_type?.is_int_set?" int_set":""}${ident.base.body?.struct_type?.recursive?" recursive":""})`);
+                        `
++ format 
+    + size: ${bitSize(ident.base.body?.struct_type?.bit_size)}
+    + fixed header size: ${bitSize(ident.base.body?.struct_type?.fixed_header_size)}
+    + fixed tail size: ${bitSize(ident.base.body?.struct_type?.fixed_tail_size)}
+    + algin: ${ident.base.body?.struct_type?.bit_alignment||"unknown"}
+    ${ident.base.body?.struct_type?.is_int_set?"+ int_set\n    ":""}${ident.base.body?.struct_type?.recursive?"+ recursive\n":""}
+`);
                     }
                     return makeHover(ident.ident,"format"); 
                 case ast2ts.IdentUsage.define_enum:
