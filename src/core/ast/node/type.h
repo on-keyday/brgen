@@ -290,6 +290,7 @@ namespace brgen::ast {
         std::vector<std::shared_ptr<Member>> fields;
         std::weak_ptr<Node> base;
         bool recursive = false;
+        size_t fixed_header_size = 0;
 
         StructType(lexer::Loc l)
             : Type(l, NodeType::struct_type) {}
@@ -302,6 +303,7 @@ namespace brgen::ast {
             sdebugf(fields);
             sdebugf(base);
             sdebugf(recursive);
+            sdebugf(fixed_header_size);
         }
 
         std::shared_ptr<Member> lookup(std::string_view key) {

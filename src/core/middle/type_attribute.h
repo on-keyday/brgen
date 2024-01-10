@@ -141,14 +141,16 @@ namespace brgen::middle {
                     });
                     ast::BitAlignment alignment = ast::BitAlignment::byte_aligned;
                     std::optional<size_t> bit_size = 0;
+                    size_t offset = 0;
                     ast::Field* prev_field = nullptr;
                     for (auto& fields : t->fields) {
                         if (auto field = ast::as<ast::Field>(fields); field) {
-                            // TODO(on-keyday): bit alignment and size of field is affected by field argument
                             if (field->field_type->bit_alignment == ast::BitAlignment::not_target) {
                                 field->bit_alignment = ast::BitAlignment::not_target;
                                 continue;
                             }
+
+                            // calculate follow
                             if (prev_field) {
                                 if (ast::as<ast::StrLiteralType>(field->field_type)) {
                                     prev_field->follow = ast::Follow::constant;
@@ -161,19 +163,35 @@ namespace brgen::middle {
                                 }
                             }
                             prev_field = field;
-                            if (field->field_type->bit_alignment == ast::BitAlignment::not_decidable) {
-                                alignment = ast::BitAlignment::not_decidable;
+
+                            // calculate offset
+                            field->offset_bit = bit_size;
+                            field->offset_recent = offset;
+                            if (field->field_type->bit_size) {
+                                offset += *field->field_type->bit_size;
                             }
+                            else {
+                                offset = 0;
+                            }
+
+                            // calculate bit size
                             if (bit_size == 0) {
                                 bit_size = field->field_type->bit_size;
                             }
                             else if (bit_size) {
                                 if (!field->field_type->bit_size) {
+                                    t->fixed_header_size = *bit_size;
                                     bit_size = std::nullopt;
                                 }
                                 else {
                                     *bit_size += *field->field_type->bit_size;
                                 }
+                            }
+
+                            // calculate bit alignment
+                            // TODO(on-keyday): bit alignment and size of field is affected by field argument
+                            if (field->field_type->bit_alignment == ast::BitAlignment::not_decidable) {
+                                alignment = ast::BitAlignment::not_decidable;
                             }
                             if (alignment == ast::BitAlignment::not_decidable) {
                                 field->bit_alignment = ast::BitAlignment::not_decidable;
@@ -189,6 +207,9 @@ namespace brgen::middle {
                         prev_field->follow = ast::Follow::end;
                         t->bit_alignment = alignment;
                         t->bit_size = bit_size;
+                        if (bit_size) {
+                            t->fixed_header_size = *bit_size;
+                        }
                         ast::Follow current = ast::Follow::unknown;
                         for (auto it = t->fields.rbegin(); it != t->fields.rend(); it++) {
                             if (auto field = ast::as<ast::Field>(*it); field) {

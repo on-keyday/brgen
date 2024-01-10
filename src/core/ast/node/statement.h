@@ -173,7 +173,11 @@ namespace brgen::ast {
         lexer::Loc colon_loc;
         std::shared_ptr<Type> field_type;
         std::shared_ptr<FieldArgument> arguments;
+        // offset from the beginning of struct
+        // if offset is not decidable, offset_bit is std::nullopt
         std::optional<size_t> offset_bit;
+        // offset from recent fixed field
+        size_t offset_recent = 0;
         BitAlignment bit_alignment = BitAlignment::not_target;
         Follow follow = Follow::unknown;
         // eventual follow indicates finally followed type
@@ -223,6 +227,8 @@ namespace brgen::ast {
             sdebugf(colon_loc);
             sdebugf(field_type);
             sdebugf(arguments);
+            sdebugf(offset_bit);
+            sdebugf(offset_recent);
             sdebugf(bit_alignment);
             sdebugf(follow);
             sdebugf(eventual_follow);
