@@ -280,7 +280,7 @@ export interface Type extends Node {
 	is_explicit: boolean;
 	is_int_set: boolean;
 	bit_alignment: BitAlignment;
-	bit_size: number;
+	bit_size: number|null;
 }
 
 export function isType(obj: any): obj is Type {
@@ -1375,7 +1375,7 @@ export function parseAST(obj: any): Program {
 				is_explicit: false,
 				is_int_set: false,
 				bit_alignment: BitAlignment.byte_aligned,
-				bit_size: 0,
+				bit_size: null,
 				endian: Endian.unspec,
 				is_signed: false,
 				is_common_supported: false,
@@ -1390,7 +1390,7 @@ export function parseAST(obj: any): Program {
 				is_explicit: false,
 				is_int_set: false,
 				bit_alignment: BitAlignment.byte_aligned,
-				bit_size: 0,
+				bit_size: null,
 				ident: null,
 				base: null,
 			}
@@ -1404,7 +1404,7 @@ export function parseAST(obj: any): Program {
 				is_explicit: false,
 				is_int_set: false,
 				bit_alignment: BitAlignment.byte_aligned,
-				bit_size: 0,
+				bit_size: null,
 				base: null,
 			}
 			c.node.push(n);
@@ -1417,7 +1417,7 @@ export function parseAST(obj: any): Program {
 				is_explicit: false,
 				is_int_set: false,
 				bit_alignment: BitAlignment.byte_aligned,
-				bit_size: 0,
+				bit_size: null,
 				base: null,
 				strong_ref: null,
 			}
@@ -1431,7 +1431,7 @@ export function parseAST(obj: any): Program {
 				is_explicit: false,
 				is_int_set: false,
 				bit_alignment: BitAlignment.byte_aligned,
-				bit_size: 0,
+				bit_size: null,
 			}
 			c.node.push(n);
 			break;
@@ -1443,7 +1443,7 @@ export function parseAST(obj: any): Program {
 				is_explicit: false,
 				is_int_set: false,
 				bit_alignment: BitAlignment.byte_aligned,
-				bit_size: 0,
+				bit_size: null,
 			}
 			c.node.push(n);
 			break;
@@ -1455,7 +1455,7 @@ export function parseAST(obj: any): Program {
 				is_explicit: false,
 				is_int_set: false,
 				bit_alignment: BitAlignment.byte_aligned,
-				bit_size: 0,
+				bit_size: null,
 				end_loc: on.loc,
 				base_type: null,
 				length: null,
@@ -1471,7 +1471,7 @@ export function parseAST(obj: any): Program {
 				is_explicit: false,
 				is_int_set: false,
 				bit_alignment: BitAlignment.byte_aligned,
-				bit_size: 0,
+				bit_size: null,
 				return_type: null,
 				parameters: [],
 			}
@@ -1485,7 +1485,7 @@ export function parseAST(obj: any): Program {
 				is_explicit: false,
 				is_int_set: false,
 				bit_alignment: BitAlignment.byte_aligned,
-				bit_size: 0,
+				bit_size: null,
 				fields: [],
 				base: null,
 				recursive: false,
@@ -1500,7 +1500,7 @@ export function parseAST(obj: any): Program {
 				is_explicit: false,
 				is_int_set: false,
 				bit_alignment: BitAlignment.byte_aligned,
-				bit_size: 0,
+				bit_size: null,
 				structs: [],
 				base: null,
 				union_fields: [],
@@ -1515,7 +1515,7 @@ export function parseAST(obj: any): Program {
 				is_explicit: false,
 				is_int_set: false,
 				bit_alignment: BitAlignment.byte_aligned,
-				bit_size: 0,
+				bit_size: null,
 				cond: null,
 				candidates: [],
 				base_type: null,
@@ -1531,7 +1531,7 @@ export function parseAST(obj: any): Program {
 				is_explicit: false,
 				is_int_set: false,
 				bit_alignment: BitAlignment.byte_aligned,
-				bit_size: 0,
+				bit_size: null,
 				base_type: null,
 				range: null,
 			}
@@ -1545,7 +1545,7 @@ export function parseAST(obj: any): Program {
 				is_explicit: false,
 				is_int_set: false,
 				bit_alignment: BitAlignment.byte_aligned,
-				bit_size: 0,
+				bit_size: null,
 				base: null,
 			}
 			c.node.push(n);
@@ -2690,7 +2690,7 @@ export function parseAST(obj: any): Program {
 			}
 			n.bit_alignment = tmpbit_alignment;
 			const tmpbit_size = on.body?.bit_size;
-			if (typeof tmpbit_size !== "number") {
+			if (tmpbit_size !== null && typeof tmpbit_size !== "number") {
 				throw new Error('invalid node list at IntType::bit_size');
 			}
 			n.bit_size = on.body.bit_size;
@@ -2729,7 +2729,7 @@ export function parseAST(obj: any): Program {
 			}
 			n.bit_alignment = tmpbit_alignment;
 			const tmpbit_size = on.body?.bit_size;
-			if (typeof tmpbit_size !== "number") {
+			if (tmpbit_size !== null && typeof tmpbit_size !== "number") {
 				throw new Error('invalid node list at IdentType::bit_size');
 			}
 			n.bit_size = on.body.bit_size;
@@ -2769,7 +2769,7 @@ export function parseAST(obj: any): Program {
 			}
 			n.bit_alignment = tmpbit_alignment;
 			const tmpbit_size = on.body?.bit_size;
-			if (typeof tmpbit_size !== "number") {
+			if (tmpbit_size !== null && typeof tmpbit_size !== "number") {
 				throw new Error('invalid node list at IntLiteralType::bit_size');
 			}
 			n.bit_size = on.body.bit_size;
@@ -2801,7 +2801,7 @@ export function parseAST(obj: any): Program {
 			}
 			n.bit_alignment = tmpbit_alignment;
 			const tmpbit_size = on.body?.bit_size;
-			if (typeof tmpbit_size !== "number") {
+			if (tmpbit_size !== null && typeof tmpbit_size !== "number") {
 				throw new Error('invalid node list at StrLiteralType::bit_size');
 			}
 			n.bit_size = on.body.bit_size;
@@ -2841,7 +2841,7 @@ export function parseAST(obj: any): Program {
 			}
 			n.bit_alignment = tmpbit_alignment;
 			const tmpbit_size = on.body?.bit_size;
-			if (typeof tmpbit_size !== "number") {
+			if (tmpbit_size !== null && typeof tmpbit_size !== "number") {
 				throw new Error('invalid node list at VoidType::bit_size');
 			}
 			n.bit_size = on.body.bit_size;
@@ -2865,7 +2865,7 @@ export function parseAST(obj: any): Program {
 			}
 			n.bit_alignment = tmpbit_alignment;
 			const tmpbit_size = on.body?.bit_size;
-			if (typeof tmpbit_size !== "number") {
+			if (tmpbit_size !== null && typeof tmpbit_size !== "number") {
 				throw new Error('invalid node list at BoolType::bit_size');
 			}
 			n.bit_size = on.body.bit_size;
@@ -2889,7 +2889,7 @@ export function parseAST(obj: any): Program {
 			}
 			n.bit_alignment = tmpbit_alignment;
 			const tmpbit_size = on.body?.bit_size;
-			if (typeof tmpbit_size !== "number") {
+			if (tmpbit_size !== null && typeof tmpbit_size !== "number") {
 				throw new Error('invalid node list at ArrayType::bit_size');
 			}
 			n.bit_size = on.body.bit_size;
@@ -2939,7 +2939,7 @@ export function parseAST(obj: any): Program {
 			}
 			n.bit_alignment = tmpbit_alignment;
 			const tmpbit_size = on.body?.bit_size;
-			if (typeof tmpbit_size !== "number") {
+			if (tmpbit_size !== null && typeof tmpbit_size !== "number") {
 				throw new Error('invalid node list at FunctionType::bit_size');
 			}
 			n.bit_size = on.body.bit_size;
@@ -2981,7 +2981,7 @@ export function parseAST(obj: any): Program {
 			}
 			n.bit_alignment = tmpbit_alignment;
 			const tmpbit_size = on.body?.bit_size;
-			if (typeof tmpbit_size !== "number") {
+			if (tmpbit_size !== null && typeof tmpbit_size !== "number") {
 				throw new Error('invalid node list at StructType::bit_size');
 			}
 			n.bit_size = on.body.bit_size;
@@ -3028,7 +3028,7 @@ export function parseAST(obj: any): Program {
 			}
 			n.bit_alignment = tmpbit_alignment;
 			const tmpbit_size = on.body?.bit_size;
-			if (typeof tmpbit_size !== "number") {
+			if (tmpbit_size !== null && typeof tmpbit_size !== "number") {
 				throw new Error('invalid node list at StructUnionType::bit_size');
 			}
 			n.bit_size = on.body.bit_size;
@@ -3080,7 +3080,7 @@ export function parseAST(obj: any): Program {
 			}
 			n.bit_alignment = tmpbit_alignment;
 			const tmpbit_size = on.body?.bit_size;
-			if (typeof tmpbit_size !== "number") {
+			if (tmpbit_size !== null && typeof tmpbit_size !== "number") {
 				throw new Error('invalid node list at UnionType::bit_size');
 			}
 			n.bit_size = on.body.bit_size;
@@ -3138,7 +3138,7 @@ export function parseAST(obj: any): Program {
 			}
 			n.bit_alignment = tmpbit_alignment;
 			const tmpbit_size = on.body?.bit_size;
-			if (typeof tmpbit_size !== "number") {
+			if (tmpbit_size !== null && typeof tmpbit_size !== "number") {
 				throw new Error('invalid node list at RangeType::bit_size');
 			}
 			n.bit_size = on.body.bit_size;
@@ -3178,7 +3178,7 @@ export function parseAST(obj: any): Program {
 			}
 			n.bit_alignment = tmpbit_alignment;
 			const tmpbit_size = on.body?.bit_size;
-			if (typeof tmpbit_size !== "number") {
+			if (tmpbit_size !== null && typeof tmpbit_size !== "number") {
 				throw new Error('invalid node list at EnumType::bit_size');
 			}
 			n.bit_size = on.body.bit_size;

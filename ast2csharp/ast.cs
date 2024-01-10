@@ -186,7 +186,7 @@ public interface Type : Node {
 	public bool IsExplicit {get; set;}
 	public bool IsIntSet {get; set;}
 	public BitAlignment BitAlignment {get; set;}
-	public ulong BitSize {get; set;}
+	public ulong? BitSize {get; set;}
 }
 public interface Literal : Expr {
 }
@@ -406,7 +406,7 @@ public class IntType : Type{
 	public bool IsExplicit{get;set;}
 	public bool IsIntSet{get;set;}
 	public BitAlignment BitAlignment{get;set;}
-	public ulong BitSize{get;set;}
+	public ulong? BitSize{get;set;}
 	public Endian Endian{get;set;}
 	public bool IsSigned{get;set;}
 	public bool IsCommonSupported{get;set;}
@@ -416,7 +416,7 @@ public class IdentType : Type{
 	public bool IsExplicit{get;set;}
 	public bool IsIntSet{get;set;}
 	public BitAlignment BitAlignment{get;set;}
-	public ulong BitSize{get;set;}
+	public ulong? BitSize{get;set;}
 	public Ident? Ident{get;set;}
 	public Type? Base{get;set;}
 }
@@ -425,7 +425,7 @@ public class IntLiteralType : Type{
 	public bool IsExplicit{get;set;}
 	public bool IsIntSet{get;set;}
 	public BitAlignment BitAlignment{get;set;}
-	public ulong BitSize{get;set;}
+	public ulong? BitSize{get;set;}
 	public IntLiteral? Base{get;set;}
 }
 public class StrLiteralType : Type{
@@ -433,7 +433,7 @@ public class StrLiteralType : Type{
 	public bool IsExplicit{get;set;}
 	public bool IsIntSet{get;set;}
 	public BitAlignment BitAlignment{get;set;}
-	public ulong BitSize{get;set;}
+	public ulong? BitSize{get;set;}
 	public StrLiteral? Base{get;set;}
 	public StrLiteral? StrongRef{get;set;}
 }
@@ -442,21 +442,21 @@ public class VoidType : Type{
 	public bool IsExplicit{get;set;}
 	public bool IsIntSet{get;set;}
 	public BitAlignment BitAlignment{get;set;}
-	public ulong BitSize{get;set;}
+	public ulong? BitSize{get;set;}
 }
 public class BoolType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
 	public bool IsIntSet{get;set;}
 	public BitAlignment BitAlignment{get;set;}
-	public ulong BitSize{get;set;}
+	public ulong? BitSize{get;set;}
 }
 public class ArrayType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
 	public bool IsIntSet{get;set;}
 	public BitAlignment BitAlignment{get;set;}
-	public ulong BitSize{get;set;}
+	public ulong? BitSize{get;set;}
 	public Loc EndLoc{get;set;}
 	public Type? BaseType{get;set;}
 	public Expr? Length{get;set;}
@@ -467,7 +467,7 @@ public class FunctionType : Type{
 	public bool IsExplicit{get;set;}
 	public bool IsIntSet{get;set;}
 	public BitAlignment BitAlignment{get;set;}
-	public ulong BitSize{get;set;}
+	public ulong? BitSize{get;set;}
 	public Type? ReturnType{get;set;}
 	public List<Type>? Parameters{get;set;}
 }
@@ -476,7 +476,7 @@ public class StructType : Type{
 	public bool IsExplicit{get;set;}
 	public bool IsIntSet{get;set;}
 	public BitAlignment BitAlignment{get;set;}
-	public ulong BitSize{get;set;}
+	public ulong? BitSize{get;set;}
 	public List<Member>? Fields{get;set;}
 	public Node? Base{get;set;}
 	public bool Recursive{get;set;}
@@ -486,7 +486,7 @@ public class StructUnionType : Type{
 	public bool IsExplicit{get;set;}
 	public bool IsIntSet{get;set;}
 	public BitAlignment BitAlignment{get;set;}
-	public ulong BitSize{get;set;}
+	public ulong? BitSize{get;set;}
 	public List<StructType>? Structs{get;set;}
 	public Expr? Base{get;set;}
 	public List<Field>? UnionFields{get;set;}
@@ -496,7 +496,7 @@ public class UnionType : Type{
 	public bool IsExplicit{get;set;}
 	public bool IsIntSet{get;set;}
 	public BitAlignment BitAlignment{get;set;}
-	public ulong BitSize{get;set;}
+	public ulong? BitSize{get;set;}
 	public Expr? Cond{get;set;}
 	public List<UnionCandidate>? Candidates{get;set;}
 	public StructUnionType? BaseType{get;set;}
@@ -507,7 +507,7 @@ public class RangeType : Type{
 	public bool IsExplicit{get;set;}
 	public bool IsIntSet{get;set;}
 	public BitAlignment BitAlignment{get;set;}
-	public ulong BitSize{get;set;}
+	public ulong? BitSize{get;set;}
 	public Type? BaseType{get;set;}
 	public Range? Range{get;set;}
 }
@@ -516,7 +516,7 @@ public class EnumType : Type{
 	public bool IsExplicit{get;set;}
 	public bool IsIntSet{get;set;}
 	public BitAlignment BitAlignment{get;set;}
-	public ulong BitSize{get;set;}
+	public ulong? BitSize{get;set;}
 	public Enum? Base{get;set;}
 }
 public class IntLiteral : Literal{

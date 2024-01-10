@@ -671,6 +671,11 @@ int main(int argc, char** argv) {
     futils::wrap::U8Arg _(argc, argv);
     cerr.set_virtual_terminal(true);  // ignore error
     cout.set_virtual_terminal(true);  // ignore error
-    return src2json_main(argc, argv);
+    try {
+        return src2json_main(argc, argv);
+    } catch (const std::exception& e) {
+        print_error("uncaught exception: ", e.what());
+        return exit_err;
+    }
 }
 #endif

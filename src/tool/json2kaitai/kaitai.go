@@ -59,7 +59,7 @@ func IntType(i *ast.IntType) Type {
 	case ast.EndianUnspec:
 		str += "be"
 	}
-	str += fmt.Sprintf("%d", i.BitSize/8)
+	str += fmt.Sprintf("%d", *i.BitSize/8)
 	return Reference(str)
 }
 
@@ -79,8 +79,8 @@ func GenerateAttribute(s *ast.Format) ([]*Attribute, error) {
 				field.Type = IntType(i_typ)
 			}
 			if arr, ok := f.FieldType.(*ast.ArrayType); ok {
-				if arr.BitSize != 0 {
-					field.Size = fmt.Sprintf("%d", arr.BitSize/8)
+				if arr.BitSize != nil && *arr.BitSize != 0 {
+					field.Size = fmt.Sprintf("%d", *arr.BitSize/8)
 				}
 			}
 			attr = append(attr, field)

@@ -53,11 +53,11 @@ namespace j2cp2 {
                         type = ident->base.lock();
                     }
                     if (auto int_ty = ast::as<ast::IntType>(type); int_ty) {
-                        w.write(", ", brgen::nums(int_ty->bit_size));
+                        w.write(", ", brgen::nums(*int_ty->bit_size));
                     }
                     else if (auto enum_ty = ast::as<ast::EnumType>(type); enum_ty) {
                         auto bit_size = enum_ty->base.lock()->base_type->bit_size;
-                        w.write(", ", brgen::nums(bit_size));
+                        w.write(", ", brgen::nums(*bit_size));
                     }
                 }
                 w.writeln("> flags_", brgen::nums(seq), "_;");
@@ -87,7 +87,7 @@ namespace j2cp2 {
 
         std::string get_type_name(const std::shared_ptr<ast::Type>& type) {
             if (auto int_ty = ast::as<ast::IntType>(type); int_ty) {
-                return brgen::concat("std::", int_ty->is_signed ? "" : "u", "int", brgen::nums(int_ty->bit_size), "_t");
+                return brgen::concat("std::", int_ty->is_signed ? "" : "u", "int", brgen::nums(*int_ty->bit_size), "_t");
             }
             if (auto enum_ty = ast::as<ast::EnumType>(type); enum_ty) {
                 return enum_ty->base.lock()->ident->ident;
@@ -95,7 +95,7 @@ namespace j2cp2 {
             if (auto arr_ty = ast::as<ast::ArrayType>(type); arr_ty) {
                 if (arr_ty->is_int_set) {
                     auto len = str.to_string(arr_ty->length);
-                    return "std::array<std::uint" + brgen::nums(arr_ty->base_type->bit_size) + "_t," + len + ">";
+                    return "std::array<std::uint" + brgen::nums(*arr_ty->base_type->bit_size) + "_t," + len + ">";
                 }
                 if (auto int_ty = ast::as<ast::IntType>(arr_ty->base_type); int_ty && int_ty->bit_size == 8) {
                     return "::futils::view::rvec";
@@ -290,14 +290,14 @@ namespace j2cp2 {
                         if (f->bit_alignment != ast::BitAlignment::byte_aligned) {
                             is_int_set = is_int_set && type->is_int_set;
                             include_non_simple = include_non_simple || !is_simple_type(type);
-                            bit_size += type->bit_size;
+                            bit_size += *type->bit_size;
                             non_aligned.push_back(ast::cast_to<ast::Field>(field));
                             continue;
                         }
                         if (non_aligned.size() > 0) {
                             is_int_set = is_int_set && type->is_int_set;
                             include_non_simple = include_non_simple || !is_simple_type(type);
-                            bit_size += type->bit_size;
+                            bit_size += *type->bit_size;
                             non_aligned.push_back(ast::cast_to<ast::Field>(field));
                             write_bit_fields(non_aligned, bit_size, is_int_set, include_non_simple);
                             non_aligned.clear();
@@ -309,14 +309,14 @@ namespace j2cp2 {
                         if (auto int_ty = ast::as<ast::IntType>(type); int_ty) {
                             if (int_ty->is_common_supported) {
                                 map_line(f->loc);
-                                w.writeln("std::", int_ty->is_signed ? "" : "u", "int", brgen::nums(int_ty->bit_size), "_t ", f->ident->ident, ";");
+                                w.writeln("std::", int_ty->is_signed ? "" : "u", "int", brgen::nums(*int_ty->bit_size), "_t ", f->ident->ident, ";");
                             }
                         }
                         if (auto enum_ty = ast::as<ast::EnumType>(type); enum_ty) {
                             auto enum_ = enum_ty->base.lock();
                             auto bit_size = enum_->base_type->bit_size;
                             map_line(f->loc);
-                            w.writeln("std::uint", brgen::nums(bit_size), "_t ", f->ident->ident, "_data;");
+                            w.writeln("std::uint", brgen::nums(*bit_size), "_t ", f->ident->ident, "_data;");
                             map_line(f->loc);
                             w.writeln(enum_->ident->ident, " ", f->ident->ident, "() const { return static_cast<", enum_->ident->ident, ">(this->", f->ident->ident, "_data); }");
                             str.ident_map[f->ident->ident] = f->ident->ident + "()";
@@ -333,7 +333,7 @@ namespace j2cp2 {
                                             if (f2->bit_alignment == ast::BitAlignment::not_target) {
                                                 continue;
                                             }
-                                            size_of_later += f2->field_type->bit_size;
+                                            size_of_later += *f2->field_type->bit_size;
                                         }
                                     }
                                     later_size[f] = size_of_later;

@@ -30,7 +30,7 @@ namespace brgen::ast::tool {
     inline std::optional<IntDesc> is_int_type(auto&& typ) {
         if (auto i = ast::as<IntType>(typ)) {
             IntDesc desc;
-            desc.bit_size = i->bit_size;
+            desc.bit_size = *i->bit_size;
             desc.is_signed = i->is_signed;
             desc.endian = i->endian;
             return desc;

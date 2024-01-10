@@ -173,6 +173,7 @@ namespace brgen::ast {
         lexer::Loc colon_loc;
         std::shared_ptr<Type> field_type;
         std::shared_ptr<FieldArgument> arguments;
+        std::optional<size_t> offset_bit;
         BitAlignment bit_alignment = BitAlignment::not_target;
         Follow follow = Follow::unknown;
         // eventual follow indicates finally followed type

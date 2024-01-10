@@ -4,6 +4,7 @@
 #include <core/common/debug.h>
 #include <core/lexer/token.h>
 #include <vector>
+#include <optional>
 #include "ast_enum.h"
 
 namespace brgen::ast {
@@ -95,7 +96,7 @@ namespace brgen::ast {
         BitAlignment bit_alignment = BitAlignment::not_target;
         // bit size of type. if dynamic length or not decidable, 0.
         // TODO(on-keyday): actual zero size type is what?
-        size_t bit_size = 0;
+        std::optional<size_t> bit_size = std::nullopt;
 
         void dump(auto&& field_) {
             Node::dump(field_);

@@ -138,7 +138,7 @@ func (g *Generator) writeBitField(belong string, fields []*ast2go.Field, size ui
 		offset := uint64(0)
 		format := fmt.Sprintf("((t.flags%d & 0x%%0%dx) >> %%d)", seq, MaxHexDigit(size))
 		for _, v := range fields {
-			field_size := v.FieldType.GetBitSize()
+			field_size := *v.FieldType.GetBitSize()
 			typ := v.FieldType
 			if ident, ok := typ.(*ast2go.IdentType); ok {
 				typ = ident.Base
@@ -332,7 +332,7 @@ func (g *Generator) writeStructType(belong string, s *ast2go.StructType) {
 				is_simple = is_simple &&
 					(typ.GetNodeType() == ast2go.NodeTypeIntType ||
 						typ.GetNodeType() == ast2go.NodeTypeEnumType)
-				size += typ.GetBitSize()
+				size += *typ.GetBitSize()
 				continue
 			}
 			if len(non_aligned) > 0 {
@@ -341,7 +341,7 @@ func (g *Generator) writeStructType(belong string, s *ast2go.StructType) {
 				is_simple = is_simple &&
 					(typ.GetNodeType() == ast2go.NodeTypeIntType ||
 						typ.GetNodeType() == ast2go.NodeTypeEnumType)
-				size += typ.GetBitSize()
+				size += *typ.GetBitSize()
 				g.writeBitField(belong, non_aligned, size, is_int_set, is_simple)
 				non_aligned = nil
 				is_int_set = true
@@ -361,7 +361,7 @@ func (g *Generator) writeStructType(belong string, s *ast2go.StructType) {
 								if f.BitAlignment == ast2go.BitAlignmentNotTarget {
 									continue
 								}
-								size += f.FieldType.GetBitSize()
+								size += *f.FieldType.GetBitSize()
 							}
 						}
 						g.laterSize[field] = size
@@ -472,12 +472,12 @@ func (g *Generator) writeFieldEncode(p *ast2go.Field) {
 	if i_type, ok := typ.(*ast2go.IntType); ok {
 		if i_type.IsCommonSupported {
 			converted := g.exprStringer.ExprString(p.Ident)
-			g.writeAppendUint(i_type.BitSize, converted)
+			g.writeAppendUint(*i_type.BitSize, converted)
 			return
 		}
 	}
 	if arr_type, ok := typ.(*ast2go.ArrayType); ok {
-		if i_typ, ok := arr_type.BaseType.(*ast2go.IntType); ok && i_typ.BitSize == 8 {
+		if i_typ, ok := arr_type.BaseType.(*ast2go.IntType); ok && *i_typ.BitSize == 8 {
 			converted := g.exprStringer.ExprString(p.Ident)
 			if arr_type.Length.GetConstantLevel() == ast2go.ConstantLevelConstant {
 				g.PrintfFunc("buf = append(buf, %s[:]...)\n", converted)
@@ -557,12 +557,12 @@ func (g *Generator) writeFieldDecode(p *ast2go.Field) {
 	}
 	if i_type, ok := typ.(*ast2go.IntType); ok {
 		if i_type.IsCommonSupported {
-			g.writeReadUint(i_type.BitSize, fieldName, converted, i_type.IsSigned)
+			g.writeReadUint(*i_type.BitSize, fieldName, converted, i_type.IsSigned)
 			return
 		}
 	}
 	if arr_type, ok := typ.(*ast2go.ArrayType); ok {
-		if i_typ, ok := arr_type.BaseType.(*ast2go.IntType); ok && i_typ.BitSize == 8 {
+		if i_typ, ok := arr_type.BaseType.(*ast2go.IntType); ok && *i_typ.BitSize == 8 {
 			converted := "t." + converted
 			length := g.exprStringer.ExprString(arr_type.Length)
 			if arr_type.Length.GetConstantLevel() == ast2go.ConstantLevelConstant {
@@ -698,7 +698,7 @@ func (g *Generator) writeSingleNode(node ast2go.Node, enc bool) {
 
 func (g *Generator) writeEncode(p *ast2go.Format) {
 	g.PrintfFunc("func (t *%s) Encode() ([]byte,error) {\n", p.Ident.Ident)
-	g.PrintfFunc("buf := make([]byte, 0, %d)\n", p.Body.StructType.GetBitSize()/8)
+	g.PrintfFunc("buf := make([]byte, 0, %d)\n", *p.Body.StructType.GetBitSize()/8)
 	for _, elem := range p.Body.Elements {
 		g.writeSingleNode(elem, true)
 	}

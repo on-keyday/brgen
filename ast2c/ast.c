@@ -1861,6 +1861,7 @@ int ast2c_IntType_parse(ast2c_Ast* ast,ast2c_IntType* s,ast2c_json_handlers* h, 
 	void* loc = h->object_get(h, obj, "loc");
 	void* obj_body = h->object_get(h, obj, "body");
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
+	s->bit_size = NULL;
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
 	void* is_int_set = h->object_get(h, obj_body, "is_int_set");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
@@ -1898,6 +1899,7 @@ int ast2c_IdentType_parse(ast2c_Ast* ast,ast2c_IdentType* s,ast2c_json_handlers*
 	void* loc = h->object_get(h, obj, "loc");
 	void* obj_body = h->object_get(h, obj, "body");
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
+	s->bit_size = NULL;
 	s->ident = NULL;
 	s->base = NULL;
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
@@ -1935,6 +1937,7 @@ int ast2c_IntLiteralType_parse(ast2c_Ast* ast,ast2c_IntLiteralType* s,ast2c_json
 	void* loc = h->object_get(h, obj, "loc");
 	void* obj_body = h->object_get(h, obj, "body");
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
+	s->bit_size = NULL;
 	s->base = NULL;
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
 	void* is_int_set = h->object_get(h, obj_body, "is_int_set");
@@ -1969,6 +1972,7 @@ int ast2c_StrLiteralType_parse(ast2c_Ast* ast,ast2c_StrLiteralType* s,ast2c_json
 	void* loc = h->object_get(h, obj, "loc");
 	void* obj_body = h->object_get(h, obj, "body");
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
+	s->bit_size = NULL;
 	s->base = NULL;
 	s->strong_ref = NULL;
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
@@ -2006,6 +2010,7 @@ int ast2c_VoidType_parse(ast2c_Ast* ast,ast2c_VoidType* s,ast2c_json_handlers* h
 	void* loc = h->object_get(h, obj, "loc");
 	void* obj_body = h->object_get(h, obj, "body");
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
+	s->bit_size = NULL;
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
 	void* is_int_set = h->object_get(h, obj_body, "is_int_set");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
@@ -2037,6 +2042,7 @@ int ast2c_BoolType_parse(ast2c_Ast* ast,ast2c_BoolType* s,ast2c_json_handlers* h
 	void* loc = h->object_get(h, obj, "loc");
 	void* obj_body = h->object_get(h, obj, "body");
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
+	s->bit_size = NULL;
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
 	void* is_int_set = h->object_get(h, obj_body, "is_int_set");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
@@ -2068,6 +2074,7 @@ int ast2c_ArrayType_parse(ast2c_Ast* ast,ast2c_ArrayType* s,ast2c_json_handlers*
 	void* loc = h->object_get(h, obj, "loc");
 	void* obj_body = h->object_get(h, obj, "body");
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
+	s->bit_size = NULL;
 	s->base_type = NULL;
 	s->length = NULL;
 	s->length_value = NULL;
@@ -2118,6 +2125,7 @@ int ast2c_FunctionType_parse(ast2c_Ast* ast,ast2c_FunctionType* s,ast2c_json_han
 	void* loc = h->object_get(h, obj, "loc");
 	void* obj_body = h->object_get(h, obj, "body");
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
+	s->bit_size = NULL;
 	s->return_type = NULL;
 	s->parameters = NULL;
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
@@ -2159,6 +2167,7 @@ int ast2c_StructType_parse(ast2c_Ast* ast,ast2c_StructType* s,ast2c_json_handler
 	void* loc = h->object_get(h, obj, "loc");
 	void* obj_body = h->object_get(h, obj, "body");
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
+	s->bit_size = NULL;
 	s->fields = NULL;
 	s->base = NULL;
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
@@ -2202,6 +2211,7 @@ int ast2c_StructUnionType_parse(ast2c_Ast* ast,ast2c_StructUnionType* s,ast2c_js
 	void* loc = h->object_get(h, obj, "loc");
 	void* obj_body = h->object_get(h, obj, "body");
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
+	s->bit_size = NULL;
 	s->structs = NULL;
 	s->base = NULL;
 	s->union_fields = NULL;
@@ -2250,6 +2260,7 @@ int ast2c_UnionType_parse(ast2c_Ast* ast,ast2c_UnionType* s,ast2c_json_handlers*
 	void* loc = h->object_get(h, obj, "loc");
 	void* obj_body = h->object_get(h, obj, "body");
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
+	s->bit_size = NULL;
 	s->cond = NULL;
 	s->candidates = NULL;
 	s->base_type = NULL;
@@ -2297,6 +2308,7 @@ int ast2c_RangeType_parse(ast2c_Ast* ast,ast2c_RangeType* s,ast2c_json_handlers*
 	void* loc = h->object_get(h, obj, "loc");
 	void* obj_body = h->object_get(h, obj, "body");
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
+	s->bit_size = NULL;
 	s->base_type = NULL;
 	s->range = NULL;
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
@@ -2334,6 +2346,7 @@ int ast2c_EnumType_parse(ast2c_Ast* ast,ast2c_EnumType* s,ast2c_json_handlers* h
 	void* loc = h->object_get(h, obj, "loc");
 	void* obj_body = h->object_get(h, obj, "body");
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
+	s->bit_size = NULL;
 	s->base = NULL;
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
 	void* is_int_set = h->object_get(h, obj_body, "is_int_set");

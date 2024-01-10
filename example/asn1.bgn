@@ -1,4 +1,4 @@
-enum TagKind:
+enum Tag:
     :u8
     RESERVED
     BOOLEAN 
@@ -8,15 +8,8 @@ enum TagKind:
     NULL
     OBJECT_IDENTIFIER
 
+# c ::=config.import("./arp.bgn")
 
-format Tag:
-    tag: u8
-
-    fn cast TagKind():
-        return tag
-
-    fn cast u8(): # cast operator
-        return tag
 
 format Len:
     len :u64
@@ -34,7 +27,8 @@ format Len:
 
     fn encode():
         if len < 0x80:
-            return output.put(u8(len))
+            output.put(u8(len))
+            return
         else:
             len_of_len := size() - 1
             output.put(u8(0x80 | len_of_len))
@@ -43,6 +37,7 @@ format Len:
                 len_of_len = len_of_len - 1
 
     fn decode():
+        input.endian = true
         val := input.get()
         if val < 0x80:
             len = val
@@ -60,9 +55,10 @@ format Len:
 format TLV: # tag length value
     tag: Tag
     len: Len
-    value  :[len]u8
+    value  :[len.len]u8
 
 format Integer:
     tlv :TLV
+    tlv.tag == Tag.INTEGER
 
 

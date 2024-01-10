@@ -16,8 +16,8 @@ format Uint32:
     fn decode():
         shift := 0
         loop:
-            byte := input.get()
-            value |= (byte & 0x7f) << shift
+            byte := u8(input.get())
+            value = value | (u32(byte & 0x7f) << shift)
             if byte & 0x80 == 0:
                 break
             shift = shift + 7
@@ -123,7 +123,7 @@ format BlockType:
     type :u32
 
     fn decode():
-        p := input.get()
+        p := u8(input.get())
         if p == 0x40:
             type = u32(Type.empty_block_type)
             return

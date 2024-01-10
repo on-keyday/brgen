@@ -4108,7 +4108,7 @@ pub struct IntType {
 	pub is_explicit: bool,
 	pub is_int_set: bool,
 	pub bit_alignment: BitAlignment,
-	pub bit_size: u64,
+	pub bit_size: Option<u64>,
 	pub endian: Endian,
 	pub is_signed: bool,
 	pub is_common_supported: bool,
@@ -4178,7 +4178,7 @@ pub struct IdentType {
 	pub is_explicit: bool,
 	pub is_int_set: bool,
 	pub bit_alignment: BitAlignment,
-	pub bit_size: u64,
+	pub bit_size: Option<u64>,
 	pub ident: Option<Rc<RefCell<Ident>>>,
 	pub base: Option<TypeWeak>,
 }
@@ -4247,7 +4247,7 @@ pub struct IntLiteralType {
 	pub is_explicit: bool,
 	pub is_int_set: bool,
 	pub bit_alignment: BitAlignment,
-	pub bit_size: u64,
+	pub bit_size: Option<u64>,
 	pub base: Option<Weak<RefCell<IntLiteral>>>,
 }
 
@@ -4315,7 +4315,7 @@ pub struct StrLiteralType {
 	pub is_explicit: bool,
 	pub is_int_set: bool,
 	pub bit_alignment: BitAlignment,
-	pub bit_size: u64,
+	pub bit_size: Option<u64>,
 	pub base: Option<Weak<RefCell<StrLiteral>>>,
 	pub strong_ref: Option<Rc<RefCell<StrLiteral>>>,
 }
@@ -4384,7 +4384,7 @@ pub struct VoidType {
 	pub is_explicit: bool,
 	pub is_int_set: bool,
 	pub bit_alignment: BitAlignment,
-	pub bit_size: u64,
+	pub bit_size: Option<u64>,
 }
 
 impl TryFrom<&Type> for Rc<RefCell<VoidType>> {
@@ -4451,7 +4451,7 @@ pub struct BoolType {
 	pub is_explicit: bool,
 	pub is_int_set: bool,
 	pub bit_alignment: BitAlignment,
-	pub bit_size: u64,
+	pub bit_size: Option<u64>,
 }
 
 impl TryFrom<&Type> for Rc<RefCell<BoolType>> {
@@ -4518,7 +4518,7 @@ pub struct ArrayType {
 	pub is_explicit: bool,
 	pub is_int_set: bool,
 	pub bit_alignment: BitAlignment,
-	pub bit_size: u64,
+	pub bit_size: Option<u64>,
 	pub end_loc: Loc,
 	pub base_type: Option<Type>,
 	pub length: Option<Expr>,
@@ -4589,7 +4589,7 @@ pub struct FunctionType {
 	pub is_explicit: bool,
 	pub is_int_set: bool,
 	pub bit_alignment: BitAlignment,
-	pub bit_size: u64,
+	pub bit_size: Option<u64>,
 	pub return_type: Option<Type>,
 	pub parameters: Vec<Type>,
 }
@@ -4658,7 +4658,7 @@ pub struct StructType {
 	pub is_explicit: bool,
 	pub is_int_set: bool,
 	pub bit_alignment: BitAlignment,
-	pub bit_size: u64,
+	pub bit_size: Option<u64>,
 	pub fields: Vec<Member>,
 	pub base: Option<NodeWeak>,
 	pub recursive: bool,
@@ -4728,7 +4728,7 @@ pub struct StructUnionType {
 	pub is_explicit: bool,
 	pub is_int_set: bool,
 	pub bit_alignment: BitAlignment,
-	pub bit_size: u64,
+	pub bit_size: Option<u64>,
 	pub structs: Vec<Rc<RefCell<StructType>>>,
 	pub base: Option<ExprWeak>,
 	pub union_fields: Vec<Weak<RefCell<Field>>>,
@@ -4798,7 +4798,7 @@ pub struct UnionType {
 	pub is_explicit: bool,
 	pub is_int_set: bool,
 	pub bit_alignment: BitAlignment,
-	pub bit_size: u64,
+	pub bit_size: Option<u64>,
 	pub cond: Option<ExprWeak>,
 	pub candidates: Vec<Rc<RefCell<UnionCandidate>>>,
 	pub base_type: Option<Weak<RefCell<StructUnionType>>>,
@@ -4869,7 +4869,7 @@ pub struct RangeType {
 	pub is_explicit: bool,
 	pub is_int_set: bool,
 	pub bit_alignment: BitAlignment,
-	pub bit_size: u64,
+	pub bit_size: Option<u64>,
 	pub base_type: Option<Type>,
 	pub range: Option<Weak<RefCell<Range>>>,
 }
@@ -4938,7 +4938,7 @@ pub struct EnumType {
 	pub is_explicit: bool,
 	pub is_int_set: bool,
 	pub bit_alignment: BitAlignment,
-	pub bit_size: u64,
+	pub bit_size: Option<u64>,
 	pub base: Option<Weak<RefCell<Enum>>>,
 }
 
@@ -6622,7 +6622,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				is_explicit: false,
 				is_int_set: false,
 				bit_alignment: BitAlignment::ByteAligned,
-				bit_size: 0,
+				bit_size: None,
 				endian: Endian::Unspec,
 				is_signed: false,
 				is_common_supported: false,
@@ -6634,7 +6634,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				is_explicit: false,
 				is_int_set: false,
 				bit_alignment: BitAlignment::ByteAligned,
-				bit_size: 0,
+				bit_size: None,
 				ident: None,
 				base: None,
 				})))
@@ -6645,7 +6645,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				is_explicit: false,
 				is_int_set: false,
 				bit_alignment: BitAlignment::ByteAligned,
-				bit_size: 0,
+				bit_size: None,
 				base: None,
 				})))
 			},
@@ -6655,7 +6655,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				is_explicit: false,
 				is_int_set: false,
 				bit_alignment: BitAlignment::ByteAligned,
-				bit_size: 0,
+				bit_size: None,
 				base: None,
 				strong_ref: None,
 				})))
@@ -6666,7 +6666,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				is_explicit: false,
 				is_int_set: false,
 				bit_alignment: BitAlignment::ByteAligned,
-				bit_size: 0,
+				bit_size: None,
 				})))
 			},
 			NodeType::BoolType => {
@@ -6675,7 +6675,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				is_explicit: false,
 				is_int_set: false,
 				bit_alignment: BitAlignment::ByteAligned,
-				bit_size: 0,
+				bit_size: None,
 				})))
 			},
 			NodeType::ArrayType => {
@@ -6684,7 +6684,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				is_explicit: false,
 				is_int_set: false,
 				bit_alignment: BitAlignment::ByteAligned,
-				bit_size: 0,
+				bit_size: None,
 				end_loc: raw_node.loc.clone(),
 				base_type: None,
 				length: None,
@@ -6697,7 +6697,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				is_explicit: false,
 				is_int_set: false,
 				bit_alignment: BitAlignment::ByteAligned,
-				bit_size: 0,
+				bit_size: None,
 				return_type: None,
 				parameters: Vec::new(),
 				})))
@@ -6708,7 +6708,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				is_explicit: false,
 				is_int_set: false,
 				bit_alignment: BitAlignment::ByteAligned,
-				bit_size: 0,
+				bit_size: None,
 				fields: Vec::new(),
 				base: None,
 				recursive: false,
@@ -6720,7 +6720,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				is_explicit: false,
 				is_int_set: false,
 				bit_alignment: BitAlignment::ByteAligned,
-				bit_size: 0,
+				bit_size: None,
 				structs: Vec::new(),
 				base: None,
 				union_fields: Vec::new(),
@@ -6732,7 +6732,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				is_explicit: false,
 				is_int_set: false,
 				bit_alignment: BitAlignment::ByteAligned,
-				bit_size: 0,
+				bit_size: None,
 				cond: None,
 				candidates: Vec::new(),
 				base_type: None,
@@ -6745,7 +6745,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				is_explicit: false,
 				is_int_set: false,
 				bit_alignment: BitAlignment::ByteAligned,
-				bit_size: 0,
+				bit_size: None,
 				base_type: None,
 				range: None,
 				})))
@@ -6756,7 +6756,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				is_explicit: false,
 				is_int_set: false,
 				bit_alignment: BitAlignment::ByteAligned,
-				bit_size: 0,
+				bit_size: None,
 				base: None,
 				})))
 			},
@@ -8791,8 +8791,11 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					None=>return Err(Error::MissingField(node_type,"bit_size")),
 				};
 				node.borrow_mut().bit_size = match bit_size_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(bit_size_body.into(),JSONType::Number)),
+					Some(v)=>Some(v),
+					None=> match bit_size_body.is_null() {
+						true=>None,
+						false=>return Err(Error::MismatchJSONType(bit_size_body.into(),JSONType::Number)),
+					},
 				};
 				let endian_body = match raw_node.body.get("endian") {
 					Some(v)=>v,
@@ -8860,8 +8863,11 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					None=>return Err(Error::MissingField(node_type,"bit_size")),
 				};
 				node.borrow_mut().bit_size = match bit_size_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(bit_size_body.into(),JSONType::Number)),
+					Some(v)=>Some(v),
+					None=> match bit_size_body.is_null() {
+						true=>None,
+						false=>return Err(Error::MismatchJSONType(bit_size_body.into(),JSONType::Number)),
+					},
 				};
 				let ident_body = match raw_node.body.get("ident") {
 					Some(v)=>v,
@@ -8936,8 +8942,11 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					None=>return Err(Error::MissingField(node_type,"bit_size")),
 				};
 				node.borrow_mut().bit_size = match bit_size_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(bit_size_body.into(),JSONType::Number)),
+					Some(v)=>Some(v),
+					None=> match bit_size_body.is_null() {
+						true=>None,
+						false=>return Err(Error::MismatchJSONType(bit_size_body.into(),JSONType::Number)),
+					},
 				};
 				let base_body = match raw_node.body.get("base") {
 					Some(v)=>v,
@@ -8997,8 +9006,11 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					None=>return Err(Error::MissingField(node_type,"bit_size")),
 				};
 				node.borrow_mut().bit_size = match bit_size_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(bit_size_body.into(),JSONType::Number)),
+					Some(v)=>Some(v),
+					None=> match bit_size_body.is_null() {
+						true=>None,
+						false=>return Err(Error::MismatchJSONType(bit_size_body.into(),JSONType::Number)),
+					},
 				};
 				let base_body = match raw_node.body.get("base") {
 					Some(v)=>v,
@@ -9077,8 +9089,11 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					None=>return Err(Error::MissingField(node_type,"bit_size")),
 				};
 				node.borrow_mut().bit_size = match bit_size_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(bit_size_body.into(),JSONType::Number)),
+					Some(v)=>Some(v),
+					None=> match bit_size_body.is_null() {
+						true=>None,
+						false=>return Err(Error::MismatchJSONType(bit_size_body.into(),JSONType::Number)),
+					},
 				};
 			},
 			NodeType::BoolType => {
@@ -9119,8 +9134,11 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					None=>return Err(Error::MissingField(node_type,"bit_size")),
 				};
 				node.borrow_mut().bit_size = match bit_size_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(bit_size_body.into(),JSONType::Number)),
+					Some(v)=>Some(v),
+					None=> match bit_size_body.is_null() {
+						true=>None,
+						false=>return Err(Error::MismatchJSONType(bit_size_body.into(),JSONType::Number)),
+					},
 				};
 			},
 			NodeType::ArrayType => {
@@ -9161,8 +9179,11 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					None=>return Err(Error::MissingField(node_type,"bit_size")),
 				};
 				node.borrow_mut().bit_size = match bit_size_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(bit_size_body.into(),JSONType::Number)),
+					Some(v)=>Some(v),
+					None=> match bit_size_body.is_null() {
+						true=>None,
+						false=>return Err(Error::MismatchJSONType(bit_size_body.into(),JSONType::Number)),
+					},
 				};
 				let end_loc_body = match raw_node.body.get("end_loc") {
 					Some(v)=>v,
@@ -9252,8 +9273,11 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					None=>return Err(Error::MissingField(node_type,"bit_size")),
 				};
 				node.borrow_mut().bit_size = match bit_size_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(bit_size_body.into(),JSONType::Number)),
+					Some(v)=>Some(v),
+					None=> match bit_size_body.is_null() {
+						true=>None,
+						false=>return Err(Error::MismatchJSONType(bit_size_body.into(),JSONType::Number)),
+					},
 				};
 				let return_type_body = match raw_node.body.get("return_type") {
 					Some(v)=>v,
@@ -9328,8 +9352,11 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					None=>return Err(Error::MissingField(node_type,"bit_size")),
 				};
 				node.borrow_mut().bit_size = match bit_size_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(bit_size_body.into(),JSONType::Number)),
+					Some(v)=>Some(v),
+					None=> match bit_size_body.is_null() {
+						true=>None,
+						false=>return Err(Error::MismatchJSONType(bit_size_body.into(),JSONType::Number)),
+					},
 				};
 				let fields_body = match raw_node.body.get("fields") {
 					Some(v)=>v,
@@ -9412,8 +9439,11 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					None=>return Err(Error::MissingField(node_type,"bit_size")),
 				};
 				node.borrow_mut().bit_size = match bit_size_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(bit_size_body.into(),JSONType::Number)),
+					Some(v)=>Some(v),
+					None=> match bit_size_body.is_null() {
+						true=>None,
+						false=>return Err(Error::MismatchJSONType(bit_size_body.into(),JSONType::Number)),
+					},
 				};
 				let structs_body = match raw_node.body.get("structs") {
 					Some(v)=>v,
@@ -9515,8 +9545,11 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					None=>return Err(Error::MissingField(node_type,"bit_size")),
 				};
 				node.borrow_mut().bit_size = match bit_size_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(bit_size_body.into(),JSONType::Number)),
+					Some(v)=>Some(v),
+					None=> match bit_size_body.is_null() {
+						true=>None,
+						false=>return Err(Error::MismatchJSONType(bit_size_body.into(),JSONType::Number)),
+					},
 				};
 				let cond_body = match raw_node.body.get("cond") {
 					Some(v)=>v,
@@ -9629,8 +9662,11 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					None=>return Err(Error::MissingField(node_type,"bit_size")),
 				};
 				node.borrow_mut().bit_size = match bit_size_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(bit_size_body.into(),JSONType::Number)),
+					Some(v)=>Some(v),
+					None=> match bit_size_body.is_null() {
+						true=>None,
+						false=>return Err(Error::MismatchJSONType(bit_size_body.into(),JSONType::Number)),
+					},
 				};
 				let base_type_body = match raw_node.body.get("base_type") {
 					Some(v)=>v,
@@ -9705,8 +9741,11 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					None=>return Err(Error::MissingField(node_type,"bit_size")),
 				};
 				node.borrow_mut().bit_size = match bit_size_body.as_u64() {
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(bit_size_body.into(),JSONType::Number)),
+					Some(v)=>Some(v),
+					None=> match bit_size_body.is_null() {
+						true=>None,
+						false=>return Err(Error::MismatchJSONType(bit_size_body.into(),JSONType::Number)),
+					},
 				};
 				let base_body = match raw_node.body.get("base") {
 					Some(v)=>v,

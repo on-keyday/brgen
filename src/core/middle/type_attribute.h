@@ -140,7 +140,7 @@ namespace brgen::middle {
                         f(f, n);
                     });
                     ast::BitAlignment alignment = ast::BitAlignment::byte_aligned;
-                    size_t bit_size = -1;
+                    std::optional<size_t> bit_size = 0;
                     ast::Field* prev_field = nullptr;
                     for (auto& fields : t->fields) {
                         if (auto field = ast::as<ast::Field>(fields); field) {
@@ -153,7 +153,7 @@ namespace brgen::middle {
                                 if (ast::as<ast::StrLiteralType>(field->field_type)) {
                                     prev_field->follow = ast::Follow::constant;
                                 }
-                                else if (field->field_type->bit_size != 0) {
+                                else if (field->field_type->bit_size) {
                                     prev_field->follow = ast::Follow::fixed;
                                 }
                                 else {
@@ -164,15 +164,15 @@ namespace brgen::middle {
                             if (field->field_type->bit_alignment == ast::BitAlignment::not_decidable) {
                                 alignment = ast::BitAlignment::not_decidable;
                             }
-                            if (bit_size == -1) {
+                            if (bit_size == 0) {
                                 bit_size = field->field_type->bit_size;
                             }
-                            else if (bit_size != 0) {
-                                if (field->field_type->bit_size == 0) {
-                                    bit_size = 0;
+                            else if (bit_size) {
+                                if (!field->field_type->bit_size) {
+                                    bit_size = std::nullopt;
                                 }
                                 else {
-                                    bit_size += field->field_type->bit_size;
+                                    *bit_size += *field->field_type->bit_size;
                                 }
                             }
                             if (alignment == ast::BitAlignment::not_decidable) {
@@ -188,7 +188,7 @@ namespace brgen::middle {
                     if (prev_field) {
                         prev_field->follow = ast::Follow::end;
                         t->bit_alignment = alignment;
-                        t->bit_size = bit_size == -1 ? 0 : bit_size;
+                        t->bit_size = bit_size;
                         ast::Follow current = ast::Follow::unknown;
                         for (auto it = t->fields.rbegin(); it != t->fields.rend(); it++) {
                             if (auto field = ast::as<ast::Field>(*it); field) {
@@ -223,7 +223,7 @@ namespace brgen::middle {
                     f(f, n);
                 });
                 if (auto t = ast::as<ast::IntType>(n); t) {
-                    auto align = (t->bit_size % futils::bit_per_byte);
+                    auto align = (*t->bit_size % futils::bit_per_byte);
                     t->bit_alignment = ast::BitAlignment(align + int(ast::BitAlignment::byte_aligned));
                 }
                 if (auto a = ast::as<ast::ArrayType>(n); a) {
@@ -246,11 +246,11 @@ namespace brgen::middle {
                         }
                     }
                     // determine bit size
-                    if (a->length && a->length_value) {
-                        a->bit_size = *a->length_value * a->base_type->bit_size;
+                    if (a->length_value && a->base_type->bit_size) {
+                        a->bit_size = *a->length_value * *a->base_type->bit_size;
                     }
                     else {
-                        a->bit_size = 0;  // variable length array
+                        a->bit_size = std::nullopt;  // variable length array
                     }
                     if (a->base_type->bit_alignment == ast::BitAlignment::byte_aligned ||
                         a->base_type->bit_alignment == ast::BitAlignment::not_target ||
@@ -268,7 +268,7 @@ namespace brgen::middle {
                 }
                 if (auto u = ast::as<ast::StructUnionType>(n)) {
                     ast::BitAlignment alignment = ast::BitAlignment::not_target;
-                    size_t bit_size = -1;
+                    std::optional<size_t> bit_size = 0;
                     for (auto& f : u->structs) {
                         if (f->bit_alignment == ast::BitAlignment::not_target) {
                             continue;
@@ -281,7 +281,7 @@ namespace brgen::middle {
                         if (alignment == ast::BitAlignment::not_target) {
                             alignment = f->bit_alignment;
                         }
-                        if (bit_size == -1) {
+                        if (bit_size == 0) {
                             bit_size = f->bit_size;
                         }
                         else if (bit_size != 0) {
@@ -301,25 +301,22 @@ namespace brgen::middle {
                 if (auto u = ast::as<ast::UnionType>(n)) {
                     // not a target
                     u->bit_alignment = ast::BitAlignment::not_target;
-                    size_t size = -1;
+                    std::optional<size_t> size = 0;
                     // estimate bit size
                     for (auto& c : u->candidates) {
                         auto f = c->field.lock();
                         if (!f) {
                             continue;
                         }
-                        if (size == -1) {
+                        if (size == 0) {
                             size = f->field_type->bit_size;
                         }
-                        else if (size != 0) {
+                        else if (size) {
                             if (size != f->field_type->bit_size) {
-                                size = 0;
+                                size = std::nullopt;
                                 break;
                             }
                         }
-                    }
-                    if (size == -1) {
-                        size = 0;
                     }
                     u->bit_size = size;
                 }
@@ -333,7 +330,7 @@ namespace brgen::middle {
                         // bit alignment of enum which is not determined base type is not decidable
                         e->bit_alignment = ast::BitAlignment::not_decidable;
                         // unknown bit size
-                        e->bit_size = 0;
+                        e->bit_size = std::nullopt;
                     }
                 }
             };

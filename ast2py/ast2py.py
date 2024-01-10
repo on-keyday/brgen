@@ -200,7 +200,7 @@ class Type(Node):
     is_explicit: bool
     is_int_set: bool
     bit_alignment: BitAlignment
-    bit_size: int
+    bit_size: Optional[int]
 
 
 class Literal(Expr):
@@ -1281,7 +1281,10 @@ def ast2node(ast :JsonAst) -> Program:
                 node[i].is_int_set = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at IntType::is_int_set'))
                 node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
                 x = ast.node[i].body["bit_size"]
-                node[i].bit_size = x if isinstance(x,int)  else raiseError(TypeError('type mismatch at IntType::bit_size'))
+                if x is not None:
+                    node[i].bit_size = x if isinstance(x,int) else raiseError(TypeError('type mismatch at IntType::bit_size'))
+                else:
+                    node[i].bit_size = None
                 node[i].endian = Endian(ast.node[i].body["endian"])
                 x = ast.node[i].body["is_signed"]
                 node[i].is_signed = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at IntType::is_signed'))
@@ -1294,7 +1297,10 @@ def ast2node(ast :JsonAst) -> Program:
                 node[i].is_int_set = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at IdentType::is_int_set'))
                 node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
                 x = ast.node[i].body["bit_size"]
-                node[i].bit_size = x if isinstance(x,int)  else raiseError(TypeError('type mismatch at IdentType::bit_size'))
+                if x is not None:
+                    node[i].bit_size = x if isinstance(x,int) else raiseError(TypeError('type mismatch at IdentType::bit_size'))
+                else:
+                    node[i].bit_size = None
                 if ast.node[i].body["ident"] is not None:
                     x = node[ast.node[i].body["ident"]]
                     node[i].ident = x if isinstance(x,Ident) else raiseError(TypeError('type mismatch at IdentType::ident'))
@@ -1312,7 +1318,10 @@ def ast2node(ast :JsonAst) -> Program:
                 node[i].is_int_set = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at IntLiteralType::is_int_set'))
                 node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
                 x = ast.node[i].body["bit_size"]
-                node[i].bit_size = x if isinstance(x,int)  else raiseError(TypeError('type mismatch at IntLiteralType::bit_size'))
+                if x is not None:
+                    node[i].bit_size = x if isinstance(x,int) else raiseError(TypeError('type mismatch at IntLiteralType::bit_size'))
+                else:
+                    node[i].bit_size = None
                 if ast.node[i].body["base"] is not None:
                     x = node[ast.node[i].body["base"]]
                     node[i].base = x if isinstance(x,IntLiteral) else raiseError(TypeError('type mismatch at IntLiteralType::base'))
@@ -1325,7 +1334,10 @@ def ast2node(ast :JsonAst) -> Program:
                 node[i].is_int_set = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at StrLiteralType::is_int_set'))
                 node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
                 x = ast.node[i].body["bit_size"]
-                node[i].bit_size = x if isinstance(x,int)  else raiseError(TypeError('type mismatch at StrLiteralType::bit_size'))
+                if x is not None:
+                    node[i].bit_size = x if isinstance(x,int) else raiseError(TypeError('type mismatch at StrLiteralType::bit_size'))
+                else:
+                    node[i].bit_size = None
                 if ast.node[i].body["base"] is not None:
                     x = node[ast.node[i].body["base"]]
                     node[i].base = x if isinstance(x,StrLiteral) else raiseError(TypeError('type mismatch at StrLiteralType::base'))
@@ -1343,7 +1355,10 @@ def ast2node(ast :JsonAst) -> Program:
                 node[i].is_int_set = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at VoidType::is_int_set'))
                 node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
                 x = ast.node[i].body["bit_size"]
-                node[i].bit_size = x if isinstance(x,int)  else raiseError(TypeError('type mismatch at VoidType::bit_size'))
+                if x is not None:
+                    node[i].bit_size = x if isinstance(x,int) else raiseError(TypeError('type mismatch at VoidType::bit_size'))
+                else:
+                    node[i].bit_size = None
             case NodeType.BOOL_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at BoolType::is_explicit'))
@@ -1351,7 +1366,10 @@ def ast2node(ast :JsonAst) -> Program:
                 node[i].is_int_set = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at BoolType::is_int_set'))
                 node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
                 x = ast.node[i].body["bit_size"]
-                node[i].bit_size = x if isinstance(x,int)  else raiseError(TypeError('type mismatch at BoolType::bit_size'))
+                if x is not None:
+                    node[i].bit_size = x if isinstance(x,int) else raiseError(TypeError('type mismatch at BoolType::bit_size'))
+                else:
+                    node[i].bit_size = None
             case NodeType.ARRAY_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at ArrayType::is_explicit'))
@@ -1359,7 +1377,10 @@ def ast2node(ast :JsonAst) -> Program:
                 node[i].is_int_set = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at ArrayType::is_int_set'))
                 node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
                 x = ast.node[i].body["bit_size"]
-                node[i].bit_size = x if isinstance(x,int)  else raiseError(TypeError('type mismatch at ArrayType::bit_size'))
+                if x is not None:
+                    node[i].bit_size = x if isinstance(x,int) else raiseError(TypeError('type mismatch at ArrayType::bit_size'))
+                else:
+                    node[i].bit_size = None
                 node[i].end_loc = parse_Loc(ast.node[i].body["end_loc"])
                 if ast.node[i].body["base_type"] is not None:
                     x = node[ast.node[i].body["base_type"]]
@@ -1383,7 +1404,10 @@ def ast2node(ast :JsonAst) -> Program:
                 node[i].is_int_set = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at FunctionType::is_int_set'))
                 node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
                 x = ast.node[i].body["bit_size"]
-                node[i].bit_size = x if isinstance(x,int)  else raiseError(TypeError('type mismatch at FunctionType::bit_size'))
+                if x is not None:
+                    node[i].bit_size = x if isinstance(x,int) else raiseError(TypeError('type mismatch at FunctionType::bit_size'))
+                else:
+                    node[i].bit_size = None
                 if ast.node[i].body["return_type"] is not None:
                     x = node[ast.node[i].body["return_type"]]
                     node[i].return_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at FunctionType::return_type'))
@@ -1397,7 +1421,10 @@ def ast2node(ast :JsonAst) -> Program:
                 node[i].is_int_set = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at StructType::is_int_set'))
                 node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
                 x = ast.node[i].body["bit_size"]
-                node[i].bit_size = x if isinstance(x,int)  else raiseError(TypeError('type mismatch at StructType::bit_size'))
+                if x is not None:
+                    node[i].bit_size = x if isinstance(x,int) else raiseError(TypeError('type mismatch at StructType::bit_size'))
+                else:
+                    node[i].bit_size = None
                 node[i].fields = [(node[x] if isinstance(node[x],Member) else raiseError(TypeError('type mismatch at StructType::fields'))) for x in ast.node[i].body["fields"]]
                 if ast.node[i].body["base"] is not None:
                     x = node[ast.node[i].body["base"]]
@@ -1413,7 +1440,10 @@ def ast2node(ast :JsonAst) -> Program:
                 node[i].is_int_set = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at StructUnionType::is_int_set'))
                 node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
                 x = ast.node[i].body["bit_size"]
-                node[i].bit_size = x if isinstance(x,int)  else raiseError(TypeError('type mismatch at StructUnionType::bit_size'))
+                if x is not None:
+                    node[i].bit_size = x if isinstance(x,int) else raiseError(TypeError('type mismatch at StructUnionType::bit_size'))
+                else:
+                    node[i].bit_size = None
                 node[i].structs = [(node[x] if isinstance(node[x],StructType) else raiseError(TypeError('type mismatch at StructUnionType::structs'))) for x in ast.node[i].body["structs"]]
                 if ast.node[i].body["base"] is not None:
                     x = node[ast.node[i].body["base"]]
@@ -1428,7 +1458,10 @@ def ast2node(ast :JsonAst) -> Program:
                 node[i].is_int_set = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at UnionType::is_int_set'))
                 node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
                 x = ast.node[i].body["bit_size"]
-                node[i].bit_size = x if isinstance(x,int)  else raiseError(TypeError('type mismatch at UnionType::bit_size'))
+                if x is not None:
+                    node[i].bit_size = x if isinstance(x,int) else raiseError(TypeError('type mismatch at UnionType::bit_size'))
+                else:
+                    node[i].bit_size = None
                 if ast.node[i].body["cond"] is not None:
                     x = node[ast.node[i].body["cond"]]
                     node[i].cond = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at UnionType::cond'))
@@ -1452,7 +1485,10 @@ def ast2node(ast :JsonAst) -> Program:
                 node[i].is_int_set = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at RangeType::is_int_set'))
                 node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
                 x = ast.node[i].body["bit_size"]
-                node[i].bit_size = x if isinstance(x,int)  else raiseError(TypeError('type mismatch at RangeType::bit_size'))
+                if x is not None:
+                    node[i].bit_size = x if isinstance(x,int) else raiseError(TypeError('type mismatch at RangeType::bit_size'))
+                else:
+                    node[i].bit_size = None
                 if ast.node[i].body["base_type"] is not None:
                     x = node[ast.node[i].body["base_type"]]
                     node[i].base_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at RangeType::base_type'))
@@ -1470,7 +1506,10 @@ def ast2node(ast :JsonAst) -> Program:
                 node[i].is_int_set = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at EnumType::is_int_set'))
                 node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
                 x = ast.node[i].body["bit_size"]
-                node[i].bit_size = x if isinstance(x,int)  else raiseError(TypeError('type mismatch at EnumType::bit_size'))
+                if x is not None:
+                    node[i].bit_size = x if isinstance(x,int) else raiseError(TypeError('type mismatch at EnumType::bit_size'))
+                else:
+                    node[i].bit_size = None
                 if ast.node[i].body["base"] is not None:
                     x = node[ast.node[i].body["base"]]
                     node[i].base = x if isinstance(x,Enum) else raiseError(TypeError('type mismatch at EnumType::base'))
