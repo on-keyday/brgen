@@ -65,18 +65,18 @@ func generateEr(rw io.Writer, d *gen.Defs) {
 			}
 			w.Printf("}\n")
 			if len(val.Embed) > 0 {
-				w.Printf("%s ||--|| %s : derive\n", val.Embed, val.Name)
+				w.Printf("%s |o--|| %s : derive\n", val.Embed, val.Name)
 			}
 			for _, m := range val.UnCommonFields {
 				if m.Type.IsWeak {
-					w.Printf("%s ||--|| %s : weak\n", val.Name, m.Type.Name)
+					w.Printf("%s |o--|| %s : weak\n", val.Name, m.Type.Name)
 				} else {
-					w.Printf("%s ||--|| %s : strong\n", val.Name, m.Type.Name)
+					w.Printf("%s |o--|| %s : strong\n", val.Name, m.Type.Name)
 				}
 			}
 		case *gen.Struct:
 			if len(val.Implements) > 0 {
-				w.Printf("%s ||--|| %s : derive\n", val.Implements[0], val.Name)
+				w.Printf("%s |o--|| %s : derive\n", val.Implements[0], val.Name)
 			}
 			w.Printf("%s {\n", val.Name)
 			for _, m := range val.UnCommonFields {
@@ -85,9 +85,9 @@ func generateEr(rw io.Writer, d *gen.Defs) {
 			w.Printf("}\n")
 			for _, m := range val.UnCommonFields {
 				if m.Type.IsWeak {
-					w.Printf("%s ||--||%s : weak\n", val.Name, m.Type.Name)
+					w.Printf("%s |o--||%s : weak\n", val.Name, m.Type.Name)
 				} else {
-					w.Printf("%s ||--||%s : strong\n", val.Name, m.Type.Name)
+					w.Printf("%s |o--||%s : strong\n", val.Name, m.Type.Name)
 				}
 			}
 		case *gen.Enum:
