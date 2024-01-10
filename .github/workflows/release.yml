@@ -93,7 +93,7 @@ jobs:
       - name: Build
         shell: cmd
         run: |
-          .\build.bat native Release %CD%\utils
+          call .\build.bat native Release %CD%\utils
           .\tool\src2json.exe --version
       - name: Pack artifacts
         shell: cmd
