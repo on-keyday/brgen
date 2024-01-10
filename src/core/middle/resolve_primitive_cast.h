@@ -27,8 +27,8 @@ namespace brgen::middle {
                         ident->ident != "bool") {
                         return;
                     }
-                    if (p->arguments.size() != 1) {
-                        error(p->loc, "invalid argument count for primitive cast").report();
+                    if (p->arguments.size() > 1) {
+                        error(p->loc, "expect 0 or 1 arguments but got ", nums(p->arguments.size())).report();
                         return;
                     }
                     ident->usage = ast::IdentUsage::reference_type;
@@ -45,7 +45,10 @@ namespace brgen::middle {
                     else {
                         assert(false);
                     }
-                    auto arg = p->arguments[0];
+                    std::shared_ptr<ast::Expr> arg;
+                    if (p->arguments.size() == 1) {
+                        arg = p->arguments[0];
+                    }
                     node = std::make_shared<ast::Cast>(ast::cast_to<ast::Call>(std::move(node)), std::move(type), std::move(arg));
                 }
             }

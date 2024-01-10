@@ -84,7 +84,7 @@ namespace brgen::ast {
         std::shared_ptr<Expr> expr;
 
         Cast(std::shared_ptr<Call>&& c, std::shared_ptr<Type>&& type, std::shared_ptr<Expr>&& a)
-            : Expr(a->loc, NodeType::cast), base(std::move(c)), expr(std::move(a)) {
+            : Expr(c->loc, NodeType::cast), base(std::move(c)), expr(std::move(a)) {
             expr_type = std::move(type);
         }
 

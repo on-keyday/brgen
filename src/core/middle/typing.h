@@ -685,9 +685,14 @@ namespace brgen::middle {
                         .error(def->loc, "type is ", ast::node_type_to_string(def->node_type))
                         .report();
                 }
-                typing_expr(call->raw_arguments);
+                if (call->arguments.size() > 1) {
+                    error(call->loc, "expect 0 or 1 argument but got ", nums(call->arguments.size())).report();
+                }
+                std::shared_ptr<ast::Expr> copy2;
+                if (call->arguments.size() == 1) {
+                    copy2 = call->arguments[0];
+                }
                 auto copy = call->expr_type;
-                auto copy2 = call->raw_arguments;
                 auto cast = std::make_shared<ast::Cast>(ast::cast_to<ast::Call>(base_node.to_node()), std::move(copy), std::move(copy2));
                 base_node.replace(std::move(cast));
                 return;

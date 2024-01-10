@@ -19,7 +19,7 @@
             "request": "launch",
             "program": "${workspaceRoot}/tool/src2json",
             "args": [
-                "c:/workspace/shbrgen/brgen/example/smf.bgn",
+                "c:/workspace/shbrgen/brgen/example/arp.bgn",
                 "--print-json"
             ],
             "stopAtEntry": false,
