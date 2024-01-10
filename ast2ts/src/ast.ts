@@ -701,6 +701,7 @@ export interface StructType extends Type {
 	base: Node|null;
 	recursive: boolean;
 	fixed_header_size: number;
+	fixed_tail_size: number;
 }
 
 export function isStructType(obj: any): obj is StructType {
@@ -797,6 +798,8 @@ export interface Field extends Member {
 	arguments: FieldArgument|null;
 	offset_bit: number|null;
 	offset_recent: number;
+	tail_offset_bit: number|null;
+	tail_offset_recent: number;
 	bit_alignment: BitAlignment;
 	follow: Follow;
 	eventual_follow: Follow;
@@ -1493,6 +1496,7 @@ export function parseAST(obj: any): Program {
 				base: null,
 				recursive: false,
 				fixed_header_size: 0,
+				fixed_tail_size: 0,
 			}
 			c.node.push(n);
 			break;
@@ -1631,6 +1635,8 @@ export function parseAST(obj: any): Program {
 				arguments: null,
 				offset_bit: null,
 				offset_recent: 0,
+				tail_offset_bit: null,
+				tail_offset_recent: 0,
 				bit_alignment: BitAlignment.byte_aligned,
 				follow: Follow.unknown,
 				eventual_follow: Follow.unknown,
@@ -3019,6 +3025,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at StructType::fixed_header_size');
 			}
 			n.fixed_header_size = on.body.fixed_header_size;
+			const tmpfixed_tail_size = on.body?.fixed_tail_size;
+			if (typeof tmpfixed_tail_size !== "number") {
+				throw new Error('invalid node list at StructType::fixed_tail_size');
+			}
+			n.fixed_tail_size = on.body.fixed_tail_size;
 			break;
 		}
 		case "struct_union_type": {
@@ -3382,6 +3393,16 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at Field::offset_recent');
 			}
 			n.offset_recent = on.body.offset_recent;
+			const tmptail_offset_bit = on.body?.tail_offset_bit;
+			if (tmptail_offset_bit !== null && typeof tmptail_offset_bit !== "number") {
+				throw new Error('invalid node list at Field::tail_offset_bit');
+			}
+			n.tail_offset_bit = on.body.tail_offset_bit;
+			const tmptail_offset_recent = on.body?.tail_offset_recent;
+			if (typeof tmptail_offset_recent !== "number") {
+				throw new Error('invalid node list at Field::tail_offset_recent');
+			}
+			n.tail_offset_recent = on.body.tail_offset_recent;
 			const tmpbit_alignment = on.body?.bit_alignment;
 			if (!isBitAlignment(tmpbit_alignment)) {
 				throw new Error('invalid node list at Field::bit_alignment');

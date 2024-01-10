@@ -2178,6 +2178,7 @@ int ast2c_StructType_parse(ast2c_Ast* ast,ast2c_StructType* s,ast2c_json_handler
 	void* base = h->object_get(h, obj_body, "base");
 	void* recursive = h->object_get(h, obj_body, "recursive");
 	void* fixed_header_size = h->object_get(h, obj_body, "fixed_header_size");
+	void* fixed_tail_size = h->object_get(h, obj_body, "fixed_tail_size");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_StructType::loc is null"); } return 0; }
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_StructType::is_explicit is null"); } return 0; }
 	if (!is_int_set) { if(h->error) { h->error(h,is_int_set, "ast2c_StructType::is_int_set is null"); } return 0; }
@@ -2191,6 +2192,7 @@ int ast2c_StructType_parse(ast2c_Ast* ast,ast2c_StructType* s,ast2c_json_handler
 	if (!base) { if(h->error) { h->error(h,base, "ast2c_StructType::base is null"); } return 0; }
 	if (!recursive) { if(h->error) { h->error(h,recursive, "ast2c_StructType::recursive is null"); } return 0; }
 	if (!fixed_header_size) { if(h->error) { h->error(h,fixed_header_size, "ast2c_StructType::fixed_header_size is null"); } return 0; }
+	if (!fixed_tail_size) { if(h->error) { h->error(h,fixed_tail_size, "ast2c_StructType::fixed_tail_size is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_StructType::loc"); }
 		goto error;
@@ -2201,6 +2203,10 @@ int ast2c_StructType_parse(ast2c_Ast* ast,ast2c_StructType* s,ast2c_json_handler
 	}
 	if(!h->number_get(h,fixed_header_size,&s->fixed_header_size)) {
 		if(h->error) { h->error(h,fixed_header_size, "failed to parse ast2c_StructType::fixed_header_size"); }
+		goto error;
+	}
+	if(!h->number_get(h,fixed_tail_size,&s->fixed_tail_size)) {
+		if(h->error) { h->error(h,fixed_tail_size, "failed to parse ast2c_StructType::fixed_tail_size"); }
 		goto error;
 	}
 	return 1;
@@ -2561,6 +2567,7 @@ int ast2c_Field_parse(ast2c_Ast* ast,ast2c_Field* s,ast2c_json_handlers* h, void
 	s->field_type = NULL;
 	s->arguments = NULL;
 	s->offset_bit = NULL;
+	s->tail_offset_bit = NULL;
 	void* belong = h->object_get(h, obj_body, "belong");
 	void* belong_struct = h->object_get(h, obj_body, "belong_struct");
 	void* ident = h->object_get(h, obj_body, "ident");
@@ -2569,6 +2576,8 @@ int ast2c_Field_parse(ast2c_Ast* ast,ast2c_Field* s,ast2c_json_handlers* h, void
 	void* arguments = h->object_get(h, obj_body, "arguments");
 	void* offset_bit = h->object_get(h, obj_body, "offset_bit");
 	void* offset_recent = h->object_get(h, obj_body, "offset_recent");
+	void* tail_offset_bit = h->object_get(h, obj_body, "tail_offset_bit");
+	void* tail_offset_recent = h->object_get(h, obj_body, "tail_offset_recent");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
 	void* follow = h->object_get(h, obj_body, "follow");
 	void* eventual_follow = h->object_get(h, obj_body, "eventual_follow");
@@ -2581,6 +2590,8 @@ int ast2c_Field_parse(ast2c_Ast* ast,ast2c_Field* s,ast2c_json_handlers* h, void
 	if (!arguments) { if(h->error) { h->error(h,arguments, "ast2c_Field::arguments is null"); } return 0; }
 	if (!offset_bit) { if(h->error) { h->error(h,offset_bit, "ast2c_Field::offset_bit is null"); } return 0; }
 	if (!offset_recent) { if(h->error) { h->error(h,offset_recent, "ast2c_Field::offset_recent is null"); } return 0; }
+	if (!tail_offset_bit) { if(h->error) { h->error(h,tail_offset_bit, "ast2c_Field::tail_offset_bit is null"); } return 0; }
+	if (!tail_offset_recent) { if(h->error) { h->error(h,tail_offset_recent, "ast2c_Field::tail_offset_recent is null"); } return 0; }
 	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_Field::bit_alignment is null"); } return 0; }
 	if (!follow) { if(h->error) { h->error(h,follow, "ast2c_Field::follow is null"); } return 0; }
 	if (!eventual_follow) { if(h->error) { h->error(h,eventual_follow, "ast2c_Field::eventual_follow is null"); } return 0; }
@@ -2598,6 +2609,14 @@ int ast2c_Field_parse(ast2c_Ast* ast,ast2c_Field* s,ast2c_json_handlers* h, void
 	}
 	if(!h->number_get(h,offset_recent,&s->offset_recent)) {
 		if(h->error) { h->error(h,offset_recent, "failed to parse ast2c_Field::offset_recent"); }
+		goto error;
+	}
+	if(!h->number_get(h,tail_offset_bit,&s->tail_offset_bit)) {
+		if(h->error) { h->error(h,tail_offset_bit, "failed to parse ast2c_Field::tail_offset_bit"); }
+		goto error;
+	}
+	if(!h->number_get(h,tail_offset_recent,&s->tail_offset_recent)) {
+		if(h->error) { h->error(h,tail_offset_recent, "failed to parse ast2c_Field::tail_offset_recent"); }
 		goto error;
 	}
 	return 1;

@@ -2144,6 +2144,7 @@ type StructType struct {
 	Base            Node
 	Recursive       bool
 	FixedHeaderSize uint64
+	FixedTailSize   uint64
 }
 
 func (n *StructType) isType() {}
@@ -2457,18 +2458,20 @@ func (n *Config) GetLoc() Loc {
 }
 
 type Field struct {
-	Loc            Loc
-	Belong         Member
-	BelongStruct   *StructType
-	Ident          *Ident
-	ColonLoc       Loc
-	FieldType      Type
-	Arguments      *FieldArgument
-	OffsetBit      *uint64
-	OffsetRecent   uint64
-	BitAlignment   BitAlignment
-	Follow         Follow
-	EventualFollow Follow
+	Loc              Loc
+	Belong           Member
+	BelongStruct     *StructType
+	Ident            *Ident
+	ColonLoc         Loc
+	FieldType        Type
+	Arguments        *FieldArgument
+	OffsetBit        *uint64
+	OffsetRecent     uint64
+	TailOffsetBit    *uint64
+	TailOffsetRecent uint64
+	BitAlignment     BitAlignment
+	Follow           Follow
+	EventualFollow   Follow
 }
 
 func (n *Field) isMember() {}
@@ -3683,6 +3686,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				Base            *uintptr     `json:"base"`
 				Recursive       bool         `json:"recursive"`
 				FixedHeaderSize uint64       `json:"fixed_header_size"`
+				FixedTailSize   uint64       `json:"fixed_tail_size"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -3700,6 +3704,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			}
 			v.Recursive = tmp.Recursive
 			v.FixedHeaderSize = tmp.FixedHeaderSize
+			v.FixedTailSize = tmp.FixedTailSize
 		case NodeTypeStructUnionType:
 			v := n.node[i].(*StructUnionType)
 			var tmp struct {
@@ -3892,17 +3897,19 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeField:
 			v := n.node[i].(*Field)
 			var tmp struct {
-				Belong         *uintptr     `json:"belong"`
-				BelongStruct   *uintptr     `json:"belong_struct"`
-				Ident          *uintptr     `json:"ident"`
-				ColonLoc       Loc          `json:"colon_loc"`
-				FieldType      *uintptr     `json:"field_type"`
-				Arguments      *uintptr     `json:"arguments"`
-				OffsetBit      *uint64      `json:"offset_bit"`
-				OffsetRecent   uint64       `json:"offset_recent"`
-				BitAlignment   BitAlignment `json:"bit_alignment"`
-				Follow         Follow       `json:"follow"`
-				EventualFollow Follow       `json:"eventual_follow"`
+				Belong           *uintptr     `json:"belong"`
+				BelongStruct     *uintptr     `json:"belong_struct"`
+				Ident            *uintptr     `json:"ident"`
+				ColonLoc         Loc          `json:"colon_loc"`
+				FieldType        *uintptr     `json:"field_type"`
+				Arguments        *uintptr     `json:"arguments"`
+				OffsetBit        *uint64      `json:"offset_bit"`
+				OffsetRecent     uint64       `json:"offset_recent"`
+				TailOffsetBit    *uint64      `json:"tail_offset_bit"`
+				TailOffsetRecent uint64       `json:"tail_offset_recent"`
+				BitAlignment     BitAlignment `json:"bit_alignment"`
+				Follow           Follow       `json:"follow"`
+				EventualFollow   Follow       `json:"eventual_follow"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -3925,6 +3932,8 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			}
 			v.OffsetBit = tmp.OffsetBit
 			v.OffsetRecent = tmp.OffsetRecent
+			v.TailOffsetBit = tmp.TailOffsetBit
+			v.TailOffsetRecent = tmp.TailOffsetRecent
 			v.BitAlignment = tmp.BitAlignment
 			v.Follow = tmp.Follow
 			v.EventualFollow = tmp.EventualFollow

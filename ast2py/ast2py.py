@@ -432,6 +432,7 @@ class StructType(Type):
     base: Optional[Node]
     recursive: bool
     fixed_header_size: int
+    fixed_tail_size: int
 
 
 class StructUnionType(Type):
@@ -487,6 +488,8 @@ class Field(Member):
     arguments: Optional[FieldArgument]
     offset_bit: Optional[int]
     offset_recent: int
+    tail_offset_bit: Optional[int]
+    tail_offset_recent: int
     bit_alignment: BitAlignment
     follow: Follow
     eventual_follow: Follow
@@ -1438,6 +1441,8 @@ def ast2node(ast :JsonAst) -> Program:
                 node[i].recursive = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at StructType::recursive'))
                 x = ast.node[i].body["fixed_header_size"]
                 node[i].fixed_header_size = x if isinstance(x,int)  else raiseError(TypeError('type mismatch at StructType::fixed_header_size'))
+                x = ast.node[i].body["fixed_tail_size"]
+                node[i].fixed_tail_size = x if isinstance(x,int)  else raiseError(TypeError('type mismatch at StructType::fixed_tail_size'))
             case NodeType.STRUCT_UNION_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at StructUnionType::is_explicit'))
@@ -1604,6 +1609,13 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].offset_bit = None
                 x = ast.node[i].body["offset_recent"]
                 node[i].offset_recent = x if isinstance(x,int)  else raiseError(TypeError('type mismatch at Field::offset_recent'))
+                x = ast.node[i].body["tail_offset_bit"]
+                if x is not None:
+                    node[i].tail_offset_bit = x if isinstance(x,int) else raiseError(TypeError('type mismatch at Field::tail_offset_bit'))
+                else:
+                    node[i].tail_offset_bit = None
+                x = ast.node[i].body["tail_offset_recent"]
+                node[i].tail_offset_recent = x if isinstance(x,int)  else raiseError(TypeError('type mismatch at Field::tail_offset_recent'))
                 node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
                 node[i].follow = Follow(ast.node[i].body["follow"])
                 node[i].eventual_follow = Follow(ast.node[i].body["eventual_follow"])

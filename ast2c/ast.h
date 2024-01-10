@@ -921,6 +921,7 @@ struct ast2c_StructType {
 	ast2c_Node* base;
 	int recursive;
 	uint64_t fixed_header_size;
+	uint64_t fixed_tail_size;
 };
 
 // returns 1 if succeed 0 if failed
@@ -1062,6 +1063,8 @@ struct ast2c_Field {
 	ast2c_FieldArgument* arguments;
 	uint64_t* offset_bit;
 	uint64_t offset_recent;
+	uint64_t* tail_offset_bit;
+	uint64_t tail_offset_recent;
 	ast2c_BitAlignment bit_alignment;
 	ast2c_Follow follow;
 	ast2c_Follow eventual_follow;
