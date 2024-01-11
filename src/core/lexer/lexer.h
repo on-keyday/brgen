@@ -43,7 +43,7 @@ namespace brgen::lexer {
             "input", "output", "config", "true", "false",
             "return", "break", "continue", "cast", "state");
         constexpr auto punct_ = puncts(
-            "#", "\"", "\'", "$",  // added but maybe not used
+            "#", "\"", "\'", "$" /*for builtin method*/,  // added but maybe not used
             "::=", ":=",
             ":", ";", "(", ")", "[", "]",
             "=>", "==", "=",

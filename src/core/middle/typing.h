@@ -183,8 +183,8 @@ namespace brgen::middle {
             error(loc, "type mismatch").error(lty->loc, "type not equal here").error(rty->loc, "and here").report();
         }
 
-        [[noreturn]] void report_not_comparable_type(const std::shared_ptr<ast::Type>& lty, const std::shared_ptr<ast::Type>& rty) {
-            error(lty->loc, "type not comparable here").error(rty->loc, "and here").report();
+        [[noreturn]] void report_not_comparable_type(lexer::Loc loc, const std::shared_ptr<ast::Type>& lty, const std::shared_ptr<ast::Type>& rty) {
+            error(loc, "type mismatch").error(lty->loc, "type not comparable here").error(rty->loc, "and here").report();
         }
 
         [[noreturn]] void report_not_have_common_type(const std::shared_ptr<ast::Type>& lty, const std::shared_ptr<ast::Type>& rty) {
@@ -445,7 +445,7 @@ namespace brgen::middle {
                         if (m->cond->expr_type) {
                             int_type_fitting(m->cond->expr_type, c->cond->expr_type);
                             if (!comparable_type(m->cond->expr_type, c->cond->expr_type)) {
-                                report_not_comparable_type(m->cond->expr_type, c->cond->expr_type);
+                                report_not_comparable_type(m->cond->loc, m->cond->expr_type, c->cond->expr_type);
                             }
                         }
                     }
@@ -545,7 +545,7 @@ namespace brgen::middle {
                 case ast::BinaryOp::grater:
                 case ast::BinaryOp::grater_or_eq: {
                     if (!comparable_type(lty, rty)) {
-                        report_not_comparable_type(lty, rty);
+                        report_not_comparable_type(b->loc, lty, rty);
                     }
                     b->expr_type = std::make_shared<ast::BoolType>(b->loc);
                     return;
@@ -826,11 +826,13 @@ namespace brgen::middle {
                     typing_assign(bin);
                 }
                 ident->expr_type = base->expr_type;
+                assert([&] {auto l=base->base.lock();return l&&l->node_type != ast::NodeType::ident; }());
                 ident->base = base;
                 ident->constant_level = base->constant_level;
                 if (base->usage == ast::IdentUsage::define_enum ||
                     base->usage == ast::IdentUsage::define_format ||
                     base->usage == ast::IdentUsage::define_state) {
+                    assert(ident->expr_type == nullptr);
                     ident->usage = ast::IdentUsage::reference_type;
                 }
                 else {
@@ -878,7 +880,7 @@ namespace brgen::middle {
                                 io->expr_type = typ;
                             }
                             else {
-                                auto typ = std::make_shared<ast::IdentType>(i->loc);
+                                auto typ = std::make_shared<ast::IdentType>(i->loc, ast::cast_to<ast::Ident>(arg));
                                 io->type_arguments.push_back(typ);
                                 unwrap_reference_type_from_ident(typ.get());
                                 io->expr_type = typ;

@@ -140,11 +140,13 @@ namespace brgen::ast {
             auto block = std::make_shared<IndentBlock>(base.loc);
 
             block->struct_type = std::make_shared<StructType>(base.loc);
-            block->struct_type->base = scope_owner ? scope_owner : block;
+
+            assert(scope_owner);
+            block->struct_type->base = scope_owner;
 
             // Create a new context for the current indent level
             auto current_indent = base.token.size();
-            auto c = state.new_indent(s, current_indent, block->scope, scope_owner ? scope_owner : block);
+            auto c = state.new_indent(s, current_indent, block->scope, scope_owner);
             auto ss = state.enter_struct(block->struct_type);
 
             if (ident) {
@@ -286,19 +288,20 @@ namespace brgen::ast {
             // Consume the initial indent sign
             must_consume_indent_sign();
 
-            auto stmt_with_struct = [&](lexer::Loc loc, auto& block) {
+            auto stmt_with_struct = [&](lexer::Loc loc, std::shared_ptr<ast::MatchBranch>& br) {
                 auto scoped = std::make_shared<ScopedStatement>(loc);
                 scoped->struct_type = std::make_shared<StructType>(loc);
-                scoped->struct_type->base = block;
+                scoped->struct_type->base = br;
                 auto s_scope = state.enter_struct(scoped->struct_type);
-                auto c_scope = state.cond_scope(scoped->scope, block);
+                auto c_scope = state.cond_scope(scoped->scope, br);
                 scoped->statement = parse_statement();
                 union_->structs.push_back(scoped->struct_type);
-                block = std::move(scoped);
+                br->then = std::move(scoped);
             };
 
             auto parse_match_branch = [&]() -> std::shared_ptr<MatchBranch> {
                 auto br = std::make_shared<MatchBranch>();
+                br->belong = match;
                 br->cond = parse_expr();
                 cond.push_back(br->cond);
                 br->loc = br->cond->loc;
@@ -314,7 +317,7 @@ namespace brgen::ast {
                 }
                 br->sym_loc = sym->loc;
                 s.skip_white();
-                stmt_with_struct(sym->loc, br->then);
+                stmt_with_struct(sym->loc, br);
                 return br;
             };
 
@@ -378,7 +381,7 @@ namespace brgen::ast {
                 export_union_field(nullptr, cond, union_);
             };
 
-            auto body_with_struct = [&](lexer::Loc loc, auto& block, const auto& owner) {
+            auto body_with_struct = [&](lexer::Loc loc, auto& block, const std::shared_ptr<If>& owner) {
                 auto tmp = parse_indent_block(owner);
                 union_->structs.push_back(tmp->struct_type);
                 block = std::move(tmp);

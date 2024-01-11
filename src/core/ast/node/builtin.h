@@ -30,7 +30,7 @@ namespace brgen::ast {
 
     struct BuiltinField : BuiltinMember {
         define_node_type(NodeType::builtin_field);
-        std::shared_ptr<Type> type;
+        std::shared_ptr<Type> field_type;
         std::shared_ptr<Expr> default_value;
         bool assignable = false;
 
@@ -42,14 +42,15 @@ namespace brgen::ast {
 
         void dump(auto&& field_) {
             BuiltinMember::dump(field_);
-            sdebugf(type);
+            sdebugf(field_type);
         }
     };
 
     struct BuiltinObject : BuiltinMember {
         define_node_type(NodeType::builtin_object);
         // Builtin Field, Function, or Object
-        std::vector<std::shared_ptr<Member>> members;
+        std::vector<std::shared_ptr<BuiltinMember>> members;
+        std::shared_ptr<StructType> struct_type;
 
         BuiltinObject(lexer::Loc l)
             : BuiltinMember(l, NodeType::builtin_object) {}

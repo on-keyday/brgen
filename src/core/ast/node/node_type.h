@@ -68,7 +68,7 @@ namespace brgen::ast {
         enum_member,
         function,
 
-        builtin_member = 0x222000,
+        builtin_member = 0x620000,
         builtin_function,
         builtin_field,
         builtin_object,
@@ -87,6 +87,8 @@ namespace brgen::ast {
         union_type,
         range_type,
         enum_type,
+        meta_type,
+        optional_type,
     };
 
     constexpr std::pair<NodeType, const char*> node_type_str_array[] = {

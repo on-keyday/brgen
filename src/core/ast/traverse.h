@@ -89,7 +89,6 @@ namespace brgen::ast {
         CASE(BuiltinField)
         CASE(BuiltinObject)
 
-
         // type
         CASE(Type)
 
@@ -106,6 +105,8 @@ namespace brgen::ast {
         CASE(UnionType)
         CASE(RangeType)
         CASE(EnumType)
+        CASE(MetaType)
+        CASE(OptionalType)
 
         END_SWITCH()
 #undef SWITCH

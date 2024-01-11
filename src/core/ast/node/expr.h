@@ -285,8 +285,11 @@ namespace brgen::ast {
         }
     };
 
+    struct Match;
+
     struct MatchBranch : Stmt {
         define_node_type(NodeType::match_branch);
+        std::weak_ptr<Match> belong;
         std::shared_ptr<Expr> cond;
         lexer::Loc sym_loc;
         std::shared_ptr<Node> then;
@@ -299,6 +302,7 @@ namespace brgen::ast {
 
         void dump(auto&& field_) {
             Stmt::dump(field_);
+            sdebugf(belong);
             sdebugf(cond);
             sdebugf(sym_loc);
             sdebugf(then);

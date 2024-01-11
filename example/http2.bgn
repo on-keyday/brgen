@@ -1,0 +1,29 @@
+
+format FrameHeader:
+    len :u24
+    type:u8
+    reserved_flag :u4(0)
+    padding :u1
+    end_headers :u1
+    unused :u1
+    end_stream_or_ack :u1 #TODO(on-keyday): rename? make it more clear
+    reserved :u1
+    stream_id:u31
+
+format DataFrame:
+    header :FrameHeader
+    data :[header.len]u8
+
+format StreamWeight:
+    exclusive :u1
+    stream_id :u31
+    weight :u8
+
+
+format HeadersFrame:
+    header :FrameHeader
+    priority :StreamWeight
+    if header.padding == 1:
+        padding_len :u8
+        header.len > padding_len + 1
+    header_block :[u32(header.len) - u32(available(padding_len)?padding_len:0)]u8

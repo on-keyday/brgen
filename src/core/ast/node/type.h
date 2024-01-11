@@ -238,10 +238,47 @@ namespace brgen::ast {
         }
     };
 
+    struct MetaType : Type {
+        define_node_type(NodeType::meta_type);
+
+        MetaType(lexer::Loc l, bool is_explicit = false)
+            : Type(l, NodeType::meta_type) {
+            this->is_explicit = is_explicit;
+        }
+
+        // for decode
+        MetaType()
+            : Type({}, NodeType::meta_type) {}
+
+        void dump(auto&& field_) {
+            Type::dump(field_);
+        }
+    };
+
+    // for argument type
+    struct OptionalType : Type {
+        define_node_type(NodeType::optional_type);
+        define_node_description("optional type. this type is used only for argument type.");
+        std::shared_ptr<Type> base_type;
+
+        OptionalType(lexer::Loc l, std::shared_ptr<Type>&& base, bool is_explicit = false)
+            : Type(l, NodeType::optional_type), base_type(std::move(base)) {
+            this->is_explicit = is_explicit;
+        }
+
+        // for decode
+        OptionalType()
+            : Type({}, NodeType::optional_type) {}
+
+        void dump(auto&& field_) {
+            Type::dump(field_);
+            sdebugf(base_type);
+        }
+    };
+
     struct ArrayType : Type {
         define_node_type(NodeType::array_type);
         std::shared_ptr<ast::Expr> length;
-        // TODO(on-keyday): use std::optional instead, but currently std::optional is not supported by json
         std::optional<size_t> length_value;
         lexer::Loc end_loc;
         std::shared_ptr<ast::Type> base_type;

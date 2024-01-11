@@ -55,6 +55,9 @@ target_link_libraries(liner_eq_test gtest_main)
 add_executable(type_attribute "core/type_attribute_test.cpp")
 target_link_libraries(type_attribute gtest_main)
 
+add_executable(derive_test "core/derive_test.cpp")
+target_link_libraries(derive_test gtest_main)
+
 
 
 add_test(NAME "lexer_test" COMMAND lexer_test)
@@ -65,6 +68,7 @@ add_test(NAME "from_json_test" COMMAND from_json_test)
 add_test(NAME "section_writer_test" COMMAND section_writer_test)
 add_test(NAME "liner_eq_test" COMMAND liner_eq_test)
 add_test(NAME "type_attribute" COMMAND type_attribute)
+add_test(NAME "derive_test" COMMAND derive_test)
 
 if(WIN32)
 
@@ -101,6 +105,7 @@ target_compile_options(from_json_test PRIVATE "-fprofile-instr-generate=from_jso
 target_compile_options(section_writer_test PRIVATE "-fprofile-instr-generate=section_writer_test.profraw")
 target_compile_options(liner_eq_test PRIVATE "-fprofile-instr-generate=liner_eq_test.profraw")
 target_compile_options(type_attribute PRIVATE "-fprofile-instr-generate=type_attribute.profraw")
+target_compile_options(derive_test PRIVATE "-fprofile-instr-generate=derive_test.profraw")
 endif()
 
 
@@ -114,5 +119,7 @@ set_target_properties(from_json_test PROPERTIES LINK_FLAGS "-fprofile-instr-gene
 set_target_properties(section_writer_test PROPERTIES LINK_FLAGS "-fprofile-instr-generate=section_writer_test.profraw")
 set_target_properties(liner_eq_test PROPERTIES LINK_FLAGS "-fprofile-instr-generate=liner_eq_test.profraw")
 set_target_properties(type_attribute PROPERTIES LINK_FLAGS "-fprofile-instr-generate=type_attribute.profraw")
+set_target_properties(derive_test PROPERTIES LINK_FLAGS "-fprofile-instr-generate=derive_test.profraw")
+
 endif()
 
