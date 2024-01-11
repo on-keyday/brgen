@@ -46,7 +46,8 @@ format Len:
             len = 0
             loop len_of_len > 0:
                 len = len << 8
-                len = len | input.get()
+                v ::= input.get()
+                len = len | u64(v)
                 len_of_len = len_of_len - 1            
             
     fn cast u64(): # cast operator

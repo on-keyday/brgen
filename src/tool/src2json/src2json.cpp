@@ -12,6 +12,7 @@
 #include <core/middle/replace_assert.h>
 #include <core/middle/replace_endian_spec.h>
 #include <core/middle/replace_error.h>
+#include <core/middle/resolve_io_operation.h>
 #include <core/middle/typing.h>
 #include <core/middle/type_attribute.h>
 #include "../common/print.h"
@@ -42,6 +43,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
     bool not_resolve_assert = false;
     bool not_resolve_endian_spec = false;
     bool not_resolve_explicit_error = false;
+    bool not_resolve_io_operation = false;
     bool not_detect_recursive_type = false;
     bool not_detect_int_set = false;
     bool not_detect_alignment = false;
@@ -109,6 +111,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
         ctx.VarBool(&not_detect_int_set, "not-detect-int-set", "not detect int set");
         ctx.VarBool(&not_detect_alignment, "not-detect-alignment", "not detect alignment");
         ctx.VarBool(&not_resolve_explicit_error, "not-resolve-explicit-error", "not resolve explicit error");
+        ctx.VarBool(&not_resolve_io_operation, "not-resolve-io-operation", "not resolve io operation");
 
         ctx.VarBool(&unresolved_type_as_error, "unresolved-type-as-error", "unresolved type as error");
 
@@ -553,6 +556,14 @@ int Main(Flags& flags, futils::cmdline::option::Context&, bool disable_network) 
 
     if (!flags.not_resolve_explicit_error) {
         auto res2 = brgen::middle::replace_explicit_error(*res);
+        if (!res2) {
+            report_error(brgen::to_source_error(files)(std::move(res2.error())));
+            return exit_err;
+        }
+    }
+
+    if (!flags.not_resolve_io_operation) {
+        auto res2 = brgen::middle::resolve_io_operation(*res);
         if (!res2) {
             report_error(brgen::to_source_error(files)(std::move(res2.error())));
             return exit_err;

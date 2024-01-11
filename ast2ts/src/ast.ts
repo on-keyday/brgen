@@ -2,10 +2,10 @@
 
 export namespace ast2ts {
 
-export type NodeType = "program" | "comment" | "comment_group" | "field_argument" | "expr" | "binary" | "unary" | "cond" | "ident" | "call" | "if" | "member_access" | "paren" | "index" | "match" | "range" | "tmp_var" | "import" | "cast" | "available" | "specify_endian" | "explicit_error" | "io_operation" | "stmt" | "loop" | "indent_block" | "scoped_statement" | "match_branch" | "union_candidate" | "return" | "break" | "continue" | "assert" | "implicit_yield" | "type" | "int_type" | "ident_type" | "int_literal_type" | "str_literal_type" | "void_type" | "bool_type" | "array_type" | "function_type" | "struct_type" | "struct_union_type" | "union_type" | "range_type" | "enum_type" | "literal" | "int_literal" | "bool_literal" | "str_literal" | "input" | "output" | "config" | "member" | "field" | "format" | "state" | "enum" | "enum_member" | "function" | "builtin_function";
+export type NodeType = "program" | "comment" | "comment_group" | "field_argument" | "expr" | "binary" | "unary" | "cond" | "ident" | "call" | "if" | "member_access" | "paren" | "index" | "match" | "range" | "tmp_var" | "import" | "cast" | "available" | "specify_endian" | "explicit_error" | "io_operation" | "stmt" | "loop" | "indent_block" | "scoped_statement" | "match_branch" | "union_candidate" | "return" | "break" | "continue" | "assert" | "implicit_yield" | "type" | "int_type" | "ident_type" | "int_literal_type" | "str_literal_type" | "void_type" | "bool_type" | "array_type" | "function_type" | "struct_type" | "struct_union_type" | "union_type" | "range_type" | "enum_type" | "literal" | "int_literal" | "bool_literal" | "str_literal" | "input" | "output" | "config" | "member" | "field" | "format" | "state" | "enum" | "enum_member" | "function" | "builtin_member" | "builtin_function" | "builtin_field";
 
 export function isNodeType(obj: any): obj is NodeType {
-	return obj && typeof obj === 'string' && (obj === "program" || obj === "comment" || obj === "comment_group" || obj === "field_argument" || obj === "expr" || obj === "binary" || obj === "unary" || obj === "cond" || obj === "ident" || obj === "call" || obj === "if" || obj === "member_access" || obj === "paren" || obj === "index" || obj === "match" || obj === "range" || obj === "tmp_var" || obj === "import" || obj === "cast" || obj === "available" || obj === "specify_endian" || obj === "explicit_error" || obj === "io_operation" || obj === "stmt" || obj === "loop" || obj === "indent_block" || obj === "scoped_statement" || obj === "match_branch" || obj === "union_candidate" || obj === "return" || obj === "break" || obj === "continue" || obj === "assert" || obj === "implicit_yield" || obj === "type" || obj === "int_type" || obj === "ident_type" || obj === "int_literal_type" || obj === "str_literal_type" || obj === "void_type" || obj === "bool_type" || obj === "array_type" || obj === "function_type" || obj === "struct_type" || obj === "struct_union_type" || obj === "union_type" || obj === "range_type" || obj === "enum_type" || obj === "literal" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "input" || obj === "output" || obj === "config" || obj === "member" || obj === "field" || obj === "format" || obj === "state" || obj === "enum" || obj === "enum_member" || obj === "function" || obj === "builtin_function")
+	return obj && typeof obj === 'string' && (obj === "program" || obj === "comment" || obj === "comment_group" || obj === "field_argument" || obj === "expr" || obj === "binary" || obj === "unary" || obj === "cond" || obj === "ident" || obj === "call" || obj === "if" || obj === "member_access" || obj === "paren" || obj === "index" || obj === "match" || obj === "range" || obj === "tmp_var" || obj === "import" || obj === "cast" || obj === "available" || obj === "specify_endian" || obj === "explicit_error" || obj === "io_operation" || obj === "stmt" || obj === "loop" || obj === "indent_block" || obj === "scoped_statement" || obj === "match_branch" || obj === "union_candidate" || obj === "return" || obj === "break" || obj === "continue" || obj === "assert" || obj === "implicit_yield" || obj === "type" || obj === "int_type" || obj === "ident_type" || obj === "int_literal_type" || obj === "str_literal_type" || obj === "void_type" || obj === "bool_type" || obj === "array_type" || obj === "function_type" || obj === "struct_type" || obj === "struct_union_type" || obj === "union_type" || obj === "range_type" || obj === "enum_type" || obj === "literal" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "input" || obj === "output" || obj === "config" || obj === "member" || obj === "field" || obj === "format" || obj === "state" || obj === "enum" || obj === "enum_member" || obj === "function" || obj === "builtin_member" || obj === "builtin_function" || obj === "builtin_field")
 }
 
 export const enum TokenTag {
@@ -235,6 +235,7 @@ export function isNode(obj: any): obj is Node {
 	if (isEnumMember(obj)) return true;
 	if (isFunction(obj)) return true;
 	if (isBuiltinFunction(obj)) return true;
+	if (isBuiltinField(obj)) return true;
 	return false;
 }
 
@@ -292,6 +293,7 @@ export function isStmt(obj: any): obj is Stmt {
 	if (isEnumMember(obj)) return true;
 	if (isFunction(obj)) return true;
 	if (isBuiltinFunction(obj)) return true;
+	if (isBuiltinField(obj)) return true;
 	return false;
 }
 
@@ -346,6 +348,16 @@ export function isMember(obj: any): obj is Member {
 	if (isEnumMember(obj)) return true;
 	if (isFunction(obj)) return true;
 	if (isBuiltinFunction(obj)) return true;
+	if (isBuiltinField(obj)) return true;
+	return false;
+}
+
+export interface BuiltinMember extends Member {
+}
+
+export function isBuiltinMember(obj: any): obj is BuiltinMember {
+	if (isBuiltinFunction(obj)) return true;
+	if (isBuiltinField(obj)) return true;
 	return false;
 }
 
@@ -559,8 +571,8 @@ export function isExplicitError(obj: any): obj is ExplicitError {
 export interface IoOperation extends Expr {
 	base: Expr|null;
 	method: IoMethod;
-	args: Expr[];
-	type_args: Type[];
+	arguments: Expr[];
+	type_arguments: Type[];
 }
 
 export function isIoOperation(obj: any): obj is IoOperation {
@@ -600,6 +612,7 @@ export function isScopedStatement(obj: any): obj is ScopedStatement {
 }
 
 export interface MatchBranch extends Stmt {
+	belong: Match|null;
 	cond: Expr|null;
 	sym_loc: Loc;
 	then: Node|null;
@@ -897,6 +910,14 @@ export interface BuiltinFunction extends Member {
 
 export function isBuiltinFunction(obj: any): obj is BuiltinFunction {
 	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "builtin_function"
+}
+
+export interface BuiltinField extends Member {
+	field_type: Type|null;
+}
+
+export function isBuiltinField(obj: any): obj is BuiltinField {
+	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "builtin_field"
 }
 
 export interface Scope {
@@ -1313,8 +1334,8 @@ export function parseAST(obj: any): Program {
 				constant_level: ConstantLevel.unknown,
 				base: null,
 				method: IoMethod.unspec,
-				args: [],
-				type_args: [],
+				arguments: [],
+				type_arguments: [],
 			}
 			c.node.push(n);
 			break;
@@ -1358,6 +1379,7 @@ export function parseAST(obj: any): Program {
 			const n :MatchBranch = {
 				node_type: "match_branch",
 				loc: on.loc,
+				belong: null,
 				cond: null,
 				sym_loc: on.loc,
 				then: null,
@@ -1768,6 +1790,18 @@ export function parseAST(obj: any): Program {
 				belong_struct: null,
 				ident: null,
 				func_type: null,
+			}
+			c.node.push(n);
+			break;
+		}
+		case "builtin_field": {
+			const n :BuiltinField = {
+				node_type: "builtin_field",
+				loc: on.loc,
+				belong: null,
+				belong_struct: null,
+				ident: null,
+				field_type: null,
 			}
 			c.node.push(n);
 			break;
@@ -2568,25 +2602,25 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at IoOperation::method');
 			}
 			n.method = tmpmethod;
-			for (const o of on.body.args) {
+			for (const o of on.body.arguments) {
 				if (typeof o !== 'number') {
-					throw new Error('invalid node list at IoOperation::args');
+					throw new Error('invalid node list at IoOperation::arguments');
 				}
-				const tmpargs = c.node[o];
-				if (!isExpr(tmpargs)) {
-					throw new Error('invalid node list at IoOperation::args');
+				const tmparguments = c.node[o];
+				if (!isExpr(tmparguments)) {
+					throw new Error('invalid node list at IoOperation::arguments');
 				}
-				n.args.push(tmpargs);
+				n.arguments.push(tmparguments);
 			}
-			for (const o of on.body.type_args) {
+			for (const o of on.body.type_arguments) {
 				if (typeof o !== 'number') {
-					throw new Error('invalid node list at IoOperation::type_args');
+					throw new Error('invalid node list at IoOperation::type_arguments');
 				}
-				const tmptype_args = c.node[o];
-				if (!isType(tmptype_args)) {
-					throw new Error('invalid node list at IoOperation::type_args');
+				const tmptype_arguments = c.node[o];
+				if (!isType(tmptype_arguments)) {
+					throw new Error('invalid node list at IoOperation::type_arguments');
 				}
-				n.type_args.push(tmptype_args);
+				n.type_arguments.push(tmptype_arguments);
 			}
 			break;
 		}
@@ -2691,6 +2725,14 @@ export function parseAST(obj: any): Program {
 		}
 		case "match_branch": {
 			const n :MatchBranch = cnode as MatchBranch;
+			if (on.body?.belong !== null && typeof on.body?.belong !== 'number') {
+				throw new Error('invalid node list at MatchBranch::belong');
+			}
+			const tmpbelong = on.body.belong === null ? null : c.node[on.body.belong];
+			if (!(tmpbelong === null || isMatch(tmpbelong))) {
+				throw new Error('invalid node list at MatchBranch::belong');
+			}
+			n.belong = tmpbelong;
 			if (on.body?.cond !== null && typeof on.body?.cond !== 'number') {
 				throw new Error('invalid node list at MatchBranch::cond');
 			}
@@ -3823,6 +3865,42 @@ export function parseAST(obj: any): Program {
 			n.func_type = tmpfunc_type;
 			break;
 		}
+		case "builtin_field": {
+			const n :BuiltinField = cnode as BuiltinField;
+			if (on.body?.belong !== null && typeof on.body?.belong !== 'number') {
+				throw new Error('invalid node list at BuiltinField::belong');
+			}
+			const tmpbelong = on.body.belong === null ? null : c.node[on.body.belong];
+			if (!(tmpbelong === null || isMember(tmpbelong))) {
+				throw new Error('invalid node list at BuiltinField::belong');
+			}
+			n.belong = tmpbelong;
+			if (on.body?.belong_struct !== null && typeof on.body?.belong_struct !== 'number') {
+				throw new Error('invalid node list at BuiltinField::belong_struct');
+			}
+			const tmpbelong_struct = on.body.belong_struct === null ? null : c.node[on.body.belong_struct];
+			if (!(tmpbelong_struct === null || isStructType(tmpbelong_struct))) {
+				throw new Error('invalid node list at BuiltinField::belong_struct');
+			}
+			n.belong_struct = tmpbelong_struct;
+			if (on.body?.ident !== null && typeof on.body?.ident !== 'number') {
+				throw new Error('invalid node list at BuiltinField::ident');
+			}
+			const tmpident = on.body.ident === null ? null : c.node[on.body.ident];
+			if (!(tmpident === null || isIdent(tmpident))) {
+				throw new Error('invalid node list at BuiltinField::ident');
+			}
+			n.ident = tmpident;
+			if (on.body?.field_type !== null && typeof on.body?.field_type !== 'number') {
+				throw new Error('invalid node list at BuiltinField::field_type');
+			}
+			const tmpfield_type = on.body.field_type === null ? null : c.node[on.body.field_type];
+			if (!(tmpfield_type === null || isType(tmpfield_type))) {
+				throw new Error('invalid node list at BuiltinField::field_type');
+			}
+			n.field_type = tmpfield_type;
+			break;
+		}
 		}
 	}
 	for (let i = 0; i < o.scope.length; i++) {
@@ -4375,13 +4453,13 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 					return;
 				}
 			}
-			for (const e of n.args) {
+			for (const e of n.arguments) {
 				const result = fn(fn,e);
 				if (result === false) {
 					return;
 				}
 			}
-			for (const e of n.type_args) {
+			for (const e of n.type_arguments) {
 				const result = fn(fn,e);
 				if (result === false) {
 					return;
@@ -4935,6 +5013,25 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			if (n.func_type !== null) {
 				const result = fn(fn,n.func_type);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "builtin_field": {
+			if (!isBuiltinField(node)) {
+				break;
+			}
+			const n :BuiltinField = node as BuiltinField;
+			if (n.ident !== null) {
+				const result = fn(fn,n.ident);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.field_type !== null) {
+				const result = fn(fn,n.field_type);
 				if (result === false) {
 					return;
 				}

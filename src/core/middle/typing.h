@@ -854,11 +854,13 @@ namespace brgen::middle {
                     break;
                 case ast::IOMethod::input_offset:
                 case ast::IOMethod::input_remain:
-                    io->expr_type = std::make_shared<ast::IntType>(io->loc, 32, ast::Endian::unspec, false);
+                    io->expr_type = std::make_shared<ast::IntType>(io->loc, 64, ast::Endian::unspec, false);
+                    io->constant_level = ast::ConstantLevel::const_variable;
                     break;
                 case ast::IOMethod::output_put:
                 case ast::IOMethod::input_backward: {
                     io->expr_type = void_type(io->loc);
+                    io->constant_level = ast::ConstantLevel::variable;
                     auto c = ast::as<ast::Call>(io->base);
                     assert(c);
                     for (auto& arg : c->arguments) {
@@ -869,6 +871,7 @@ namespace brgen::middle {
                 }
                 case ast::IOMethod::input_get:
                 case ast::IOMethod::input_peek: {
+                    io->constant_level = ast::ConstantLevel::variable;
                     auto c = ast::as<ast::Call>(io->base);
                     assert(c);
                     for (auto& arg : c->arguments) {
@@ -879,6 +882,7 @@ namespace brgen::middle {
                                 auto typ = std::make_shared<ast::IntType>(i->loc, t->bit_size, t->endian, t->is_signed);
                                 io->type_arguments.push_back(typ);
                                 io->expr_type = typ;
+                                i->usage = ast::IdentUsage::reference_type;
                             }
                             else {
                                 if (i->usage == ast::IdentUsage::unknown) {
@@ -899,12 +903,16 @@ namespace brgen::middle {
                             error(io->loc, "expect 0 or 1 argument but got ", nums(io->arguments.size())).report();
                         }
                     }
+                    if (io->expr_type == nullptr) {
+                        io->expr_type = std::make_shared<ast::IntType>(io->loc, 8, ast::Endian::unspec, false);
+                    }
                     break;
                 }
                 case ast::IOMethod::config_endian_big:
                 case ast::IOMethod::config_endian_little:
                 case ast::IOMethod::config_endian_native: {
                     io->expr_type = std::make_shared<ast::BoolType>(io->loc);
+                    io->constant_level = ast::ConstantLevel::constant;
                     break;
                 }
             }
@@ -916,7 +924,9 @@ namespace brgen::middle {
             // Cast has already been typed in the previous pass
             // but inner expression may not be typed
             if (auto c = ast::as<ast::Cast>(expr)) {
-                typing_expr(c->expr);
+                if (c->expr) {
+                    typing_expr(c->expr);
+                }
             }
             if (auto a = ast::as<ast::Available>(expr)) {
                 typing_expr(a->target, false);

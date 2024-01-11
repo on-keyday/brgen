@@ -50,6 +50,7 @@ typedef struct ast2c_Stmt ast2c_Stmt;
 typedef struct ast2c_Type ast2c_Type;
 typedef struct ast2c_Literal ast2c_Literal;
 typedef struct ast2c_Member ast2c_Member;
+typedef struct ast2c_BuiltinMember ast2c_BuiltinMember;
 typedef struct ast2c_Program ast2c_Program;
 typedef struct ast2c_Comment ast2c_Comment;
 typedef struct ast2c_CommentGroup ast2c_CommentGroup;
@@ -108,6 +109,7 @@ typedef struct ast2c_Enum ast2c_Enum;
 typedef struct ast2c_EnumMember ast2c_EnumMember;
 typedef struct ast2c_Function ast2c_Function;
 typedef struct ast2c_BuiltinFunction ast2c_BuiltinFunction;
+typedef struct ast2c_BuiltinField ast2c_BuiltinField;
 typedef struct ast2c_Scope ast2c_Scope;
 typedef struct ast2c_Pos ast2c_Pos;
 typedef struct ast2c_Loc ast2c_Loc;
@@ -182,7 +184,9 @@ enum ast2c_NodeType {
 	AST2C_NODETYPE_ENUM,
 	AST2C_NODETYPE_ENUM_MEMBER,
 	AST2C_NODETYPE_FUNCTION,
+	AST2C_NODETYPE_BUILTIN_MEMBER,
 	AST2C_NODETYPE_BUILTIN_FUNCTION,
+	AST2C_NODETYPE_BUILTIN_FIELD,
 };
 const char* ast2c_NodeType_to_string(ast2c_NodeType);
 int ast2c_NodeType_from_string(const char*,ast2c_NodeType*);
@@ -441,6 +445,14 @@ struct ast2c_Literal {
 };
 
 struct ast2c_Member {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Member* belong;
+	ast2c_StructType* belong_struct;
+	ast2c_Ident* ident;
+};
+
+struct ast2c_BuiltinMember {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Member* belong;
@@ -723,10 +735,10 @@ struct ast2c_IoOperation {
 	ast2c_ConstantLevel constant_level;
 	ast2c_Expr* base;
 	ast2c_IoMethod method;
-	ast2c_Expr** args;
-	size_t args_size;
-	ast2c_Type** type_args;
-	size_t type_args_size;
+	ast2c_Expr** arguments;
+	size_t arguments_size;
+	ast2c_Type** type_arguments;
+	size_t type_arguments_size;
 };
 
 // returns 1 if succeed 0 if failed
@@ -771,6 +783,7 @@ int ast2c_ScopedStatement_parse(ast2c_Ast* ,ast2c_ScopedStatement*,ast2c_json_ha
 struct ast2c_MatchBranch {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
+	ast2c_Match* belong;
 	ast2c_Expr* cond;
 	ast2c_Loc sym_loc;
 	ast2c_Node* then;
@@ -1193,6 +1206,18 @@ struct ast2c_BuiltinFunction {
 
 // returns 1 if succeed 0 if failed
 int ast2c_BuiltinFunction_parse(ast2c_Ast* ,ast2c_BuiltinFunction*,ast2c_json_handlers*,void*);
+
+struct ast2c_BuiltinField {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Member* belong;
+	ast2c_StructType* belong_struct;
+	ast2c_Ident* ident;
+	ast2c_Type* field_type;
+};
+
+// returns 1 if succeed 0 if failed
+int ast2c_BuiltinField_parse(ast2c_Ast* ,ast2c_BuiltinField*,ast2c_json_handlers*,void*);
 
 struct ast2c_Scope {
 	const ast2c_NodeType node_type;

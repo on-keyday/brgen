@@ -532,13 +532,27 @@ func init() {
 	var err error
 	config, err = loadConfig()
 	fillStringPtr(config)
-	flag.Func("output", "output information (generator, output_dir)", func(s string) error {
-		var o Output
-		err := json.Unmarshal([]byte(s), &o)
-		if err != nil {
-			return err
+	out := &Output{}
+	flag.Func("output", "output dir (both -output and -generator are required to add output config)", func(s string) error {
+		if out.OutputDir != "" {
+			if out.Generator == "" {
+				return errors.New("generator is required")
+			}
+			config.Output = append(config.Output, out)
+			out = &Output{}
 		}
-		config.Output = append(config.Output, &o)
+		out.OutputDir = s
+		return nil
+	})
+	flag.Func("generator", "generator path (both -output and -generator are required to add output config)", func(s string) error {
+		if out.Generator != "" {
+			if out.OutputDir == "" {
+				return errors.New("output is required")
+			}
+			config.Output = append(config.Output, out)
+			out = &Output{}
+		}
+		out.Generator = s
 		return nil
 	})
 	flag.StringVar(config.Source2Json, "src2json", *config.Source2Json, "path to src2json")
@@ -546,7 +560,12 @@ func init() {
 	flag.BoolVar(&config.Warnings.DisableUntypedWarning, "disable-untyped", config.Warnings.DisableUntypedWarning, "disable untyped warning")
 	flag.BoolVar(&config.Warnings.DisableUnusedWarning, "disable-unused", config.Warnings.DisableUnusedWarning, "disable unused warning")
 
-	defer flag.Parse()
+	defer func() {
+		flag.Parse()
+		if out.OutputDir != "" && out.Generator != "" {
+			config.Output = append(config.Output, out)
+		}
+	}()
 	if err != nil {
 		log.Print(err)
 		return

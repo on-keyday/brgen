@@ -13,6 +13,9 @@ namespace brgen::middle {
             if (ast::as<ast::FieldArgument>(n)) {
                 return;  // special case
             }
+            if (ast::as<ast::IOOperation>(n)) {
+                return;  // already resolved
+            }
             // traverse child first
             ast::traverse(n, [&](NodeReplacer r) {
                 f(f, r);
@@ -29,6 +32,7 @@ namespace brgen::middle {
                 else {
                     return;
                 }
+                ast::as<ast::MemberAccess>(n)->member->usage = ast::IdentUsage::reference_builtin_fn;
                 auto a = std::make_shared<ast::IOOperation>(ast::cast_to<ast::Expr>(std::move(n)), method);
                 node.replace(std::move(a));
                 return;
@@ -52,6 +56,7 @@ namespace brgen::middle {
             else {
                 return;
             }
+            ast::as<ast::MemberAccess>(ast::as<ast::Call>(n)->callee)->member->usage = ast::IdentUsage::reference_builtin_fn;
             auto a = std::make_shared<ast::IOOperation>(ast::cast_to<ast::Expr>(std::move(n)), method);
             node.replace(std::move(a));
         };

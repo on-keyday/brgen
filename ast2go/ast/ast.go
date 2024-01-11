@@ -72,7 +72,9 @@ const (
 	NodeTypeEnum            NodeType = 59
 	NodeTypeEnumMember      NodeType = 60
 	NodeTypeFunction        NodeType = 61
-	NodeTypeBuiltinFunction NodeType = 62
+	NodeTypeBuiltinMember   NodeType = 62
+	NodeTypeBuiltinFunction NodeType = 63
+	NodeTypeBuiltinField    NodeType = 64
 )
 
 func (n NodeType) String() string {
@@ -201,8 +203,12 @@ func (n NodeType) String() string {
 		return "enum_member"
 	case NodeTypeFunction:
 		return "function"
+	case NodeTypeBuiltinMember:
+		return "builtin_member"
 	case NodeTypeBuiltinFunction:
 		return "builtin_function"
+	case NodeTypeBuiltinField:
+		return "builtin_field"
 	default:
 		return fmt.Sprintf("NodeType(%d)", n)
 	}
@@ -338,8 +344,12 @@ func (n *NodeType) UnmarshalJSON(data []byte) error {
 		*n = NodeTypeEnumMember
 	case "function":
 		*n = NodeTypeFunction
+	case "builtin_member":
+		*n = NodeTypeBuiltinMember
 	case "builtin_function":
 		*n = NodeTypeBuiltinFunction
+	case "builtin_field":
+		*n = NodeTypeBuiltinField
 	default:
 		return fmt.Errorf("unknown NodeType: %q", tmp)
 	}
@@ -576,6 +586,10 @@ func (n *Function) GetNodeType() NodeType {
 
 func (n *BuiltinFunction) GetNodeType() NodeType {
 	return NodeTypeBuiltinFunction
+}
+
+func (n *BuiltinField) GetNodeType() NodeType {
+	return NodeTypeBuiltinField
 }
 
 type TokenTag int
@@ -1334,6 +1348,11 @@ type Member interface {
 	GetIdent() *Ident
 }
 
+type BuiltinMember interface {
+	isBuiltinMember()
+	Member
+}
+
 type Program struct {
 	Loc         Loc
 	StructType  *StructType
@@ -1814,8 +1833,8 @@ type IoOperation struct {
 	ConstantLevel ConstantLevel
 	Base          Expr
 	Method        IoMethod
-	Args          []Expr
-	TypeArgs      []Type
+	Arguments     []Expr
+	TypeArguments []Type
 }
 
 func (n *IoOperation) isExpr() {}
@@ -1883,6 +1902,7 @@ func (n *ScopedStatement) GetLoc() Loc {
 
 type MatchBranch struct {
 	Loc    Loc
+	Belong *Match
 	Cond   Expr
 	SymLoc Loc
 	Then   Node
@@ -2789,11 +2809,45 @@ func (n *BuiltinFunction) GetIdent() *Ident {
 	return n.Ident
 }
 
+func (n *BuiltinFunction) isBuiltinMember() {}
+
 func (n *BuiltinFunction) isStmt() {}
 
 func (n *BuiltinFunction) isNode() {}
 
 func (n *BuiltinFunction) GetLoc() Loc {
+	return n.Loc
+}
+
+type BuiltinField struct {
+	Loc          Loc
+	Belong       Member
+	BelongStruct *StructType
+	Ident        *Ident
+	FieldType    Type
+}
+
+func (n *BuiltinField) isMember() {}
+
+func (n *BuiltinField) GetBelong() Member {
+	return n.Belong
+}
+
+func (n *BuiltinField) GetBelongStruct() *StructType {
+	return n.BelongStruct
+}
+
+func (n *BuiltinField) GetIdent() *Ident {
+	return n.Ident
+}
+
+func (n *BuiltinField) isBuiltinMember() {}
+
+func (n *BuiltinField) isStmt() {}
+
+func (n *BuiltinField) isNode() {}
+
+func (n *BuiltinField) GetLoc() Loc {
 	return n.Loc
 }
 
@@ -2999,6 +3053,8 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			n.node[i] = &Function{Loc: raw.Loc}
 		case NodeTypeBuiltinFunction:
 			n.node[i] = &BuiltinFunction{Loc: raw.Loc}
+		case NodeTypeBuiltinField:
+			n.node[i] = &BuiltinField{Loc: raw.Loc}
 		default:
 			return nil, fmt.Errorf("unknown node type: %q", raw.NodeType)
 		}
@@ -3483,8 +3539,8 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				ConstantLevel ConstantLevel `json:"constant_level"`
 				Base          *uintptr      `json:"base"`
 				Method        IoMethod      `json:"method"`
-				Args          []uintptr     `json:"args"`
-				TypeArgs      []uintptr     `json:"type_args"`
+				Arguments     []uintptr     `json:"arguments"`
+				TypeArguments []uintptr     `json:"type_arguments"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -3497,13 +3553,13 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				v.Base = n.node[*tmp.Base].(Expr)
 			}
 			v.Method = tmp.Method
-			v.Args = make([]Expr, len(tmp.Args))
-			for j, k := range tmp.Args {
-				v.Args[j] = n.node[k].(Expr)
+			v.Arguments = make([]Expr, len(tmp.Arguments))
+			for j, k := range tmp.Arguments {
+				v.Arguments[j] = n.node[k].(Expr)
 			}
-			v.TypeArgs = make([]Type, len(tmp.TypeArgs))
-			for j, k := range tmp.TypeArgs {
-				v.TypeArgs[j] = n.node[k].(Type)
+			v.TypeArguments = make([]Type, len(tmp.TypeArguments))
+			for j, k := range tmp.TypeArguments {
+				v.TypeArguments[j] = n.node[k].(Type)
 			}
 		case NodeTypeLoop:
 			v := n.node[i].(*Loop)
@@ -3574,12 +3630,16 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeMatchBranch:
 			v := n.node[i].(*MatchBranch)
 			var tmp struct {
+				Belong *uintptr `json:"belong"`
 				Cond   *uintptr `json:"cond"`
 				SymLoc Loc      `json:"sym_loc"`
 				Then   *uintptr `json:"then"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
+			}
+			if tmp.Belong != nil {
+				v.Belong = n.node[*tmp.Belong].(*Match)
 			}
 			if tmp.Cond != nil {
 				v.Cond = n.node[*tmp.Cond].(Expr)
@@ -4260,6 +4320,29 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.FuncType != nil {
 				v.FuncType = n.node[*tmp.FuncType].(*FunctionType)
 			}
+		case NodeTypeBuiltinField:
+			v := n.node[i].(*BuiltinField)
+			var tmp struct {
+				Belong       *uintptr `json:"belong"`
+				BelongStruct *uintptr `json:"belong_struct"`
+				Ident        *uintptr `json:"ident"`
+				FieldType    *uintptr `json:"field_type"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			if tmp.Belong != nil {
+				v.Belong = n.node[*tmp.Belong].(Member)
+			}
+			if tmp.BelongStruct != nil {
+				v.BelongStruct = n.node[*tmp.BelongStruct].(*StructType)
+			}
+			if tmp.Ident != nil {
+				v.Ident = n.node[*tmp.Ident].(*Ident)
+			}
+			if tmp.FieldType != nil {
+				v.FieldType = n.node[*tmp.FieldType].(Type)
+			}
 		default:
 			return nil, fmt.Errorf("unknown node type: %q", raw.NodeType)
 		}
@@ -4610,12 +4693,12 @@ func Walk(n Node, f Visitor) {
 				return
 			}
 		}
-		for _, w := range v.Args {
+		for _, w := range v.Arguments {
 			if !f.Visit(f, w) {
 				return
 			}
 		}
-		for _, w := range v.TypeArgs {
+		for _, w := range v.TypeArguments {
 			if !f.Visit(f, w) {
 				return
 			}
@@ -4903,6 +4986,17 @@ func Walk(n Node, f Visitor) {
 		}
 		if v.FuncType != nil {
 			if !f.Visit(f, v.FuncType) {
+				return
+			}
+		}
+	case *BuiltinField:
+		if v.Ident != nil {
+			if !f.Visit(f, v.Ident) {
+				return
+			}
+		}
+		if v.FieldType != nil {
+			if !f.Visit(f, v.FieldType) {
 				return
 			}
 		}

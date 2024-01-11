@@ -43,8 +43,8 @@ format Uint64:
     fn decode():
         shift := 0
         loop:
-            byte := input.get()
-            value |= (byte & 0x7f) << shift
+            byte ::= input.get()
+            value = value | u64(byte & 0x7f) << shift
             if byte & 0x80 == 0:
                 break
             shift = shift + 7

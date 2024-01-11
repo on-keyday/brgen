@@ -66,7 +66,9 @@ State,
 Enum,
 EnumMember,
 Function,
+BuiltinMember,
 BuiltinFunction,
+BuiltinField,
 }
 public enum TokenTag {
 Indent,
@@ -207,6 +209,8 @@ public interface Member : Stmt {
 	public Member? Belong {get; set;}
 	public StructType? BelongStruct {get; set;}
 	public Ident? Ident {get; set;}
+}
+public interface BuiltinMember : Member {
 }
 public class Program : Node{
 	public Loc Loc{get;set;}
@@ -371,8 +375,8 @@ public class IoOperation : Expr{
 	public ConstantLevel ConstantLevel{get;set;}
 	public Expr? Base{get;set;}
 	public IoMethod Method{get;set;}
-	public List<Expr>? Args{get;set;}
-	public List<Type>? TypeArgs{get;set;}
+	public List<Expr>? Arguments{get;set;}
+	public List<Type>? TypeArguments{get;set;}
 }
 public class Loop : Stmt{
 	public Loc Loc{get;set;}
@@ -396,6 +400,7 @@ public class ScopedStatement : Stmt{
 }
 public class MatchBranch : Stmt{
 	public Loc Loc{get;set;}
+	public Match? Belong{get;set;}
 	public Expr? Cond{get;set;}
 	public Loc SymLoc{get;set;}
 	public Node? Then{get;set;}
@@ -646,6 +651,13 @@ public class BuiltinFunction : Member{
 	public StructType? BelongStruct{get;set;}
 	public Ident? Ident{get;set;}
 	public FunctionType? FuncType{get;set;}
+}
+public class BuiltinField : Member{
+	public Loc Loc{get;set;}
+	public Member? Belong{get;set;}
+	public StructType? BelongStruct{get;set;}
+	public Ident? Ident{get;set;}
+	public Type? FieldType{get;set;}
 }
 public class Scope {
 	public Scope? Prev{get;set;}

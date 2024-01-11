@@ -67,7 +67,9 @@ class NodeType(PyEnum):
     ENUM = "enum"
     ENUM_MEMBER = "enum_member"
     FUNCTION = "function"
+    BUILTIN_MEMBER = "builtin_member"
     BUILTIN_FUNCTION = "builtin_function"
+    BUILTIN_FIELD = "builtin_field"
 
 
 class TokenTag(PyEnum):
@@ -227,6 +229,10 @@ class Member(Stmt):
     ident: Optional[Ident]
 
 
+class BuiltinMember(Member):
+    pass
+
+
 class Program(Node):
     struct_type: Optional[StructType]
     elements: List[Node]
@@ -353,8 +359,8 @@ class ExplicitError(Expr):
 class IoOperation(Expr):
     base: Optional[Expr]
     method: IoMethod
-    args: List[Expr]
-    type_args: List[Type]
+    arguments: List[Expr]
+    type_arguments: List[Type]
 
 
 class Loop(Stmt):
@@ -378,6 +384,7 @@ class ScopedStatement(Stmt):
 
 
 class MatchBranch(Stmt):
+    belong: Optional[Match]
     cond: Optional[Expr]
     sym_loc: Loc
     then: Optional[Node]
@@ -550,6 +557,10 @@ class Function(Member):
 
 class BuiltinFunction(Member):
     func_type: Optional[FunctionType]
+
+
+class BuiltinField(Member):
+    field_type: Optional[Type]
 
 
 class Scope:
@@ -854,6 +865,8 @@ def ast2node(ast :JsonAst) -> Program:
                 node.append(Function())
             case NodeType.BUILTIN_FUNCTION:
                 node.append(BuiltinFunction())
+            case NodeType.BUILTIN_FIELD:
+                node.append(BuiltinField())
             case _:
                 raise TypeError('unknown node type')
     scope = [Scope() for _ in range(len(ast.scope))]
@@ -1220,8 +1233,8 @@ def ast2node(ast :JsonAst) -> Program:
                 else:
                     node[i].base = None
                 node[i].method = IoMethod(ast.node[i].body["method"])
-                node[i].args = [(node[x] if isinstance(node[x],Expr) else raiseError(TypeError('type mismatch at IoOperation::args'))) for x in ast.node[i].body["args"]]
-                node[i].type_args = [(node[x] if isinstance(node[x],Type) else raiseError(TypeError('type mismatch at IoOperation::type_args'))) for x in ast.node[i].body["type_args"]]
+                node[i].arguments = [(node[x] if isinstance(node[x],Expr) else raiseError(TypeError('type mismatch at IoOperation::arguments'))) for x in ast.node[i].body["arguments"]]
+                node[i].type_arguments = [(node[x] if isinstance(node[x],Type) else raiseError(TypeError('type mismatch at IoOperation::type_arguments'))) for x in ast.node[i].body["type_arguments"]]
             case NodeType.LOOP:
                 if ast.node[i].body["cond_scope"] is not None:
                     node[i].cond_scope = scope[ast.node[i].body["cond_scope"]]
@@ -1274,6 +1287,11 @@ def ast2node(ast :JsonAst) -> Program:
                 else:
                     node[i].scope = None
             case NodeType.MATCH_BRANCH:
+                if ast.node[i].body["belong"] is not None:
+                    x = node[ast.node[i].body["belong"]]
+                    node[i].belong = x if isinstance(x,Match) else raiseError(TypeError('type mismatch at MatchBranch::belong'))
+                else:
+                    node[i].belong = None
                 if ast.node[i].body["cond"] is not None:
                     x = node[ast.node[i].body["cond"]]
                     node[i].cond = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at MatchBranch::cond'))
@@ -1819,6 +1837,27 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].func_type = x if isinstance(x,FunctionType) else raiseError(TypeError('type mismatch at BuiltinFunction::func_type'))
                 else:
                     node[i].func_type = None
+            case NodeType.BUILTIN_FIELD:
+                if ast.node[i].body["belong"] is not None:
+                    x = node[ast.node[i].body["belong"]]
+                    node[i].belong = x if isinstance(x,Member) else raiseError(TypeError('type mismatch at BuiltinField::belong'))
+                else:
+                    node[i].belong = None
+                if ast.node[i].body["belong_struct"] is not None:
+                    x = node[ast.node[i].body["belong_struct"]]
+                    node[i].belong_struct = x if isinstance(x,StructType) else raiseError(TypeError('type mismatch at BuiltinField::belong_struct'))
+                else:
+                    node[i].belong_struct = None
+                if ast.node[i].body["ident"] is not None:
+                    x = node[ast.node[i].body["ident"]]
+                    node[i].ident = x if isinstance(x,Ident) else raiseError(TypeError('type mismatch at BuiltinField::ident'))
+                else:
+                    node[i].ident = None
+                if ast.node[i].body["field_type"] is not None:
+                    x = node[ast.node[i].body["field_type"]]
+                    node[i].field_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at BuiltinField::field_type'))
+                else:
+                    node[i].field_type = None
             case _:
                 raise TypeError('unknown node type')
     for i in range(len(ast.scope)):
@@ -2033,11 +2072,11 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
           if x.base is not None:
               if f(f,x.base) == False:
                   return
-          for i in range(len(x.args)):
-              if f(f,x.args[i]) == False:
+          for i in range(len(x.arguments)):
+              if f(f,x.arguments[i]) == False:
                   return
-          for i in range(len(x.type_args)):
-              if f(f,x.type_args[i]) == False:
+          for i in range(len(x.type_arguments)):
+              if f(f,x.type_arguments[i]) == False:
                   return
         case x if isinstance(x,Loop):
           if x.init is not None:
@@ -2232,4 +2271,11 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
                   return
           if x.func_type is not None:
               if f(f,x.func_type) == False:
+                  return
+        case x if isinstance(x,BuiltinField):
+          if x.ident is not None:
+              if f(f,x.ident) == False:
+                  return
+          if x.field_type is not None:
+              if f(f,x.field_type) == False:
                   return

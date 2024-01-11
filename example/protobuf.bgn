@@ -8,7 +8,7 @@ format Varint:
             if v < 0x80:
                 value = v
                 return
-            value = (value << 7) | (v & 0x7f)
+            value = (value << 7) | u64(v & 0x7f)
 
     fn encode():
         loop:
