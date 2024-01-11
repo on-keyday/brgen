@@ -26,6 +26,7 @@ Cast,
 Available,
 SpecifyEndian,
 ExplicitError,
+IoOperation,
 Stmt,
 Loop,
 IndentBlock,
@@ -172,6 +173,18 @@ End,
 Fixed,
 Constant,
 Normal,
+}
+public enum IoMethod {
+Unspec,
+OutputPut,
+InputPeek,
+InputGet,
+InputOffset,
+InputRemain,
+ConfigEndianLittle,
+ConfigEndianBig,
+ConfigEndianNative,
+InputBackward,
 }
 public interface Node {
 	public Loc Loc {get; set;}
@@ -351,6 +364,15 @@ public class ExplicitError : Expr{
 	public ConstantLevel ConstantLevel{get;set;}
 	public Call? Base{get;set;}
 	public StrLiteral? Message{get;set;}
+}
+public class IoOperation : Expr{
+	public Loc Loc{get;set;}
+	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
+	public Expr? Base{get;set;}
+	public IoMethod Method{get;set;}
+	public List<Expr>? Args{get;set;}
+	public List<Type>? TypeArgs{get;set;}
 }
 public class Loop : Stmt{
 	public Loc Loc{get;set;}

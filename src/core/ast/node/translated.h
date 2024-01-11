@@ -159,8 +159,8 @@ namespace brgen::ast {
         define_node_description(R"(IOOperation represents input/output/config operation.)");
         IOMethod method = IOMethod::unspec;
         std::shared_ptr<Expr> base;
-        std::vector<std::shared_ptr<Expr>> args;
-        std::vector<std::shared_ptr<Type>> type_args;
+        std::vector<std::shared_ptr<Expr>> arguments;
+        std::vector<std::shared_ptr<Type>> type_arguments;
 
         IOOperation(std::shared_ptr<Expr>&& a, IOMethod m)
             : Expr(a->loc, NodeType::io_operation), base(std::move(a)), method(m) {}
@@ -172,8 +172,8 @@ namespace brgen::ast {
             Expr::dump(field_);
             sdebugf(base);
             sdebugf(method);
-            sdebugf(args);
-            sdebugf(type_args);
+            sdebugf(arguments);
+            sdebugf(type_arguments);
         }
     };
 

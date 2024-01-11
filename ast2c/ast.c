@@ -33,6 +33,7 @@ const char* ast2c_NodeType_to_string(ast2c_NodeType val) {
 	case AST2C_NODETYPE_AVAILABLE: return "available";
 	case AST2C_NODETYPE_SPECIFY_ENDIAN: return "specify_endian";
 	case AST2C_NODETYPE_EXPLICIT_ERROR: return "explicit_error";
+	case AST2C_NODETYPE_IO_OPERATION: return "io_operation";
 	case AST2C_NODETYPE_STMT: return "stmt";
 	case AST2C_NODETYPE_LOOP: return "loop";
 	case AST2C_NODETYPE_INDENT_BLOCK: return "indent_block";
@@ -166,6 +167,10 @@ int ast2c_NodeType_from_string(const char* str, ast2c_NodeType* out) {
 	}
 	if (strcmp(str, "explicit_error") == 0) {
 		*out = AST2C_NODETYPE_EXPLICIT_ERROR;
+		return 1;
+	}
+	if (strcmp(str, "io_operation") == 0) {
+		*out = AST2C_NODETYPE_IO_OPERATION;
 		return 1;
 	}
 	if (strcmp(str, "stmt") == 0) {
@@ -872,6 +877,68 @@ int ast2c_Follow_from_string(const char* str, ast2c_Follow* out) {
 	}
 	if (strcmp(str, "normal") == 0) {
 		*out = AST2C_FOLLOW_NORMAL;
+		return 1;
+	}
+	return 0;
+}
+
+const char* ast2c_IoMethod_to_string(ast2c_IoMethod val) {
+	switch(val) {
+	case AST2C_IOMETHOD_UNSPEC: return "unspec";
+	case AST2C_IOMETHOD_OUTPUT_PUT: return "output_put";
+	case AST2C_IOMETHOD_INPUT_PEEK: return "input_peek";
+	case AST2C_IOMETHOD_INPUT_GET: return "input_get";
+	case AST2C_IOMETHOD_INPUT_OFFSET: return "input_offset";
+	case AST2C_IOMETHOD_INPUT_REMAIN: return "input_remain";
+	case AST2C_IOMETHOD_CONFIG_ENDIAN_LITTLE: return "config_endian_little";
+	case AST2C_IOMETHOD_CONFIG_ENDIAN_BIG: return "config_endian_big";
+	case AST2C_IOMETHOD_CONFIG_ENDIAN_NATIVE: return "config_endian_native";
+	case AST2C_IOMETHOD_INPUT_BACKWARD: return "input_backward";
+	default: return NULL;
+	}
+}
+
+// returns 1 if succeed 0 if failed
+int ast2c_IoMethod_from_string(const char* str, ast2c_IoMethod* out) {
+	if (!str||!out) return 0;
+	if (strcmp(str, "unspec") == 0) {
+		*out = AST2C_IOMETHOD_UNSPEC;
+		return 1;
+	}
+	if (strcmp(str, "output_put") == 0) {
+		*out = AST2C_IOMETHOD_OUTPUT_PUT;
+		return 1;
+	}
+	if (strcmp(str, "input_peek") == 0) {
+		*out = AST2C_IOMETHOD_INPUT_PEEK;
+		return 1;
+	}
+	if (strcmp(str, "input_get") == 0) {
+		*out = AST2C_IOMETHOD_INPUT_GET;
+		return 1;
+	}
+	if (strcmp(str, "input_offset") == 0) {
+		*out = AST2C_IOMETHOD_INPUT_OFFSET;
+		return 1;
+	}
+	if (strcmp(str, "input_remain") == 0) {
+		*out = AST2C_IOMETHOD_INPUT_REMAIN;
+		return 1;
+	}
+	if (strcmp(str, "config_endian_little") == 0) {
+		*out = AST2C_IOMETHOD_CONFIG_ENDIAN_LITTLE;
+		return 1;
+	}
+	if (strcmp(str, "config_endian_big") == 0) {
+		*out = AST2C_IOMETHOD_CONFIG_ENDIAN_BIG;
+		return 1;
+	}
+	if (strcmp(str, "config_endian_native") == 0) {
+		*out = AST2C_IOMETHOD_CONFIG_ENDIAN_NATIVE;
+		return 1;
+	}
+	if (strcmp(str, "input_backward") == 0) {
+		*out = AST2C_IOMETHOD_INPUT_BACKWARD;
 		return 1;
 	}
 	return 0;
@@ -1591,6 +1658,49 @@ int ast2c_ExplicitError_parse(ast2c_Ast* ast,ast2c_ExplicitError* s,ast2c_json_h
 	if (!message) { if(h->error) { h->error(h,message, "ast2c_ExplicitError::message is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_ExplicitError::loc"); }
+		goto error;
+	}
+	return 1;
+error:
+	return 0;
+}
+
+// returns 1 if succeed 0 if failed
+int ast2c_IoOperation_parse(ast2c_Ast* ast,ast2c_IoOperation* s,ast2c_json_handlers* h, void* obj) {
+	if (!ast||!s||!h||!obj) {
+		if(h->error) { h->error(h,NULL, "invalid argument"); }
+		return 0;
+	}
+	void* loc = h->object_get(h, obj, "loc");
+	void* obj_body = h->object_get(h, obj, "body");
+	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
+	s->expr_type = NULL;
+	s->base = NULL;
+	s->args = NULL;
+	s->type_args = NULL;
+	void* expr_type = h->object_get(h, obj_body, "expr_type");
+	void* constant_level = h->object_get(h, obj_body, "constant_level");
+	void* base = h->object_get(h, obj_body, "base");
+	void* method = h->object_get(h, obj_body, "method");
+	void* args = h->object_get(h, obj_body, "args");
+	void* type_args = h->object_get(h, obj_body, "type_args");
+	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_IoOperation::loc is null"); } return 0; }
+	if (!expr_type) { if(h->error) { h->error(h,expr_type, "ast2c_IoOperation::expr_type is null"); } return 0; }
+	if (!constant_level) { if(h->error) { h->error(h,constant_level, "ast2c_IoOperation::constant_level is null"); } return 0; }
+	if (!base) { if(h->error) { h->error(h,base, "ast2c_IoOperation::base is null"); } return 0; }
+	if (!method) { if(h->error) { h->error(h,method, "ast2c_IoOperation::method is null"); } return 0; }
+	if (!args) { if(h->error) { h->error(h,args, "ast2c_IoOperation::args is null"); } return 0; }
+	if(!h->array_size(h, args,&s->args_size)) {
+		if(h->error) { h->error(h,args, "failed to get array size of ast2c_IoOperation::args"); }
+		return NULL;
+	}
+	if (!type_args) { if(h->error) { h->error(h,type_args, "ast2c_IoOperation::type_args is null"); } return 0; }
+	if(!h->array_size(h, type_args,&s->type_args_size)) {
+		if(h->error) { h->error(h,type_args, "failed to get array size of ast2c_IoOperation::type_args"); }
+		return NULL;
+	}
+	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
+		if(h->error) { h->error(h,loc, "failed to parse ast2c_IoOperation::loc"); }
 		goto error;
 	}
 	return 1;

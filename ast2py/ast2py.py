@@ -27,6 +27,7 @@ class NodeType(PyEnum):
     AVAILABLE = "available"
     SPECIFY_ENDIAN = "specify_endian"
     EXPLICIT_ERROR = "explicit_error"
+    IO_OPERATION = "io_operation"
     STMT = "stmt"
     LOOP = "loop"
     INDENT_BLOCK = "indent_block"
@@ -183,6 +184,19 @@ class Follow(PyEnum):
     NORMAL = "normal"
 
 
+class IoMethod(PyEnum):
+    UNSPEC = "unspec"
+    OUTPUT_PUT = "output_put"
+    INPUT_PEEK = "input_peek"
+    INPUT_GET = "input_get"
+    INPUT_OFFSET = "input_offset"
+    INPUT_REMAIN = "input_remain"
+    CONFIG_ENDIAN_LITTLE = "config_endian_little"
+    CONFIG_ENDIAN_BIG = "config_endian_big"
+    CONFIG_ENDIAN_NATIVE = "config_endian_native"
+    INPUT_BACKWARD = "input_backward"
+
+
 class Node:
     loc: Loc
 
@@ -334,6 +348,13 @@ class SpecifyEndian(Expr):
 class ExplicitError(Expr):
     base: Optional[Call]
     message: Optional[StrLiteral]
+
+
+class IoOperation(Expr):
+    base: Optional[Expr]
+    method: IoMethod
+    args: List[Expr]
+    type_args: List[Type]
 
 
 class Loop(Stmt):
@@ -759,6 +780,8 @@ def ast2node(ast :JsonAst) -> Program:
                 node.append(SpecifyEndian())
             case NodeType.EXPLICIT_ERROR:
                 node.append(ExplicitError())
+            case NodeType.IO_OPERATION:
+                node.append(IoOperation())
             case NodeType.LOOP:
                 node.append(Loop())
             case NodeType.INDENT_BLOCK:
@@ -1184,6 +1207,21 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].message = x if isinstance(x,StrLiteral) else raiseError(TypeError('type mismatch at ExplicitError::message'))
                 else:
                     node[i].message = None
+            case NodeType.IO_OPERATION:
+                if ast.node[i].body["expr_type"] is not None:
+                    x = node[ast.node[i].body["expr_type"]]
+                    node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at IoOperation::expr_type'))
+                else:
+                    node[i].expr_type = None
+                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
+                if ast.node[i].body["base"] is not None:
+                    x = node[ast.node[i].body["base"]]
+                    node[i].base = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at IoOperation::base'))
+                else:
+                    node[i].base = None
+                node[i].method = IoMethod(ast.node[i].body["method"])
+                node[i].args = [(node[x] if isinstance(node[x],Expr) else raiseError(TypeError('type mismatch at IoOperation::args'))) for x in ast.node[i].body["args"]]
+                node[i].type_args = [(node[x] if isinstance(node[x],Type) else raiseError(TypeError('type mismatch at IoOperation::type_args'))) for x in ast.node[i].body["type_args"]]
             case NodeType.LOOP:
                 if ast.node[i].body["cond_scope"] is not None:
                     node[i].cond_scope = scope[ast.node[i].body["cond_scope"]]
@@ -1987,6 +2025,19 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
                   return
           if x.message is not None:
               if f(f,x.message) == False:
+                  return
+        case x if isinstance(x,IoOperation):
+          if x.expr_type is not None:
+              if f(f,x.expr_type) == False:
+                  return
+          if x.base is not None:
+              if f(f,x.base) == False:
+                  return
+          for i in range(len(x.args)):
+              if f(f,x.args[i]) == False:
+                  return
+          for i in range(len(x.type_args)):
+              if f(f,x.type_args[i]) == False:
                   return
         case x if isinstance(x,Loop):
           if x.init is not None:

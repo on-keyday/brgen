@@ -61,7 +61,7 @@ namespace brgen::ast {
         }
 
         void dump_base_type(auto&& field, NodeType type) {
-            const char* vec[6]{};
+            const char* vec[7]{};
             size_t i = 0;
             auto t = int(type);
             auto is = [&](auto v) { return t != int(v) && (t & int(v)) == int(v); };
@@ -71,6 +71,9 @@ namespace brgen::ast {
             }
             if (is(NodeType::member)) {
                 vec[i++] = "member";
+            }
+            if (is(NodeType::builtin_member)) {
+                vec[i++] = "builtin_member";
             }
             if (is(NodeType::expr)) {
                 vec[i++] = "expr";

@@ -32,46 +32,47 @@ const (
 	NodeTypeAvailable       NodeType = 19
 	NodeTypeSpecifyEndian   NodeType = 20
 	NodeTypeExplicitError   NodeType = 21
-	NodeTypeStmt            NodeType = 22
-	NodeTypeLoop            NodeType = 23
-	NodeTypeIndentBlock     NodeType = 24
-	NodeTypeScopedStatement NodeType = 25
-	NodeTypeMatchBranch     NodeType = 26
-	NodeTypeUnionCandidate  NodeType = 27
-	NodeTypeReturn          NodeType = 28
-	NodeTypeBreak           NodeType = 29
-	NodeTypeContinue        NodeType = 30
-	NodeTypeAssert          NodeType = 31
-	NodeTypeImplicitYield   NodeType = 32
-	NodeTypeType            NodeType = 33
-	NodeTypeIntType         NodeType = 34
-	NodeTypeIdentType       NodeType = 35
-	NodeTypeIntLiteralType  NodeType = 36
-	NodeTypeStrLiteralType  NodeType = 37
-	NodeTypeVoidType        NodeType = 38
-	NodeTypeBoolType        NodeType = 39
-	NodeTypeArrayType       NodeType = 40
-	NodeTypeFunctionType    NodeType = 41
-	NodeTypeStructType      NodeType = 42
-	NodeTypeStructUnionType NodeType = 43
-	NodeTypeUnionType       NodeType = 44
-	NodeTypeRangeType       NodeType = 45
-	NodeTypeEnumType        NodeType = 46
-	NodeTypeLiteral         NodeType = 47
-	NodeTypeIntLiteral      NodeType = 48
-	NodeTypeBoolLiteral     NodeType = 49
-	NodeTypeStrLiteral      NodeType = 50
-	NodeTypeInput           NodeType = 51
-	NodeTypeOutput          NodeType = 52
-	NodeTypeConfig          NodeType = 53
-	NodeTypeMember          NodeType = 54
-	NodeTypeField           NodeType = 55
-	NodeTypeFormat          NodeType = 56
-	NodeTypeState           NodeType = 57
-	NodeTypeEnum            NodeType = 58
-	NodeTypeEnumMember      NodeType = 59
-	NodeTypeFunction        NodeType = 60
-	NodeTypeBuiltinFunction NodeType = 61
+	NodeTypeIoOperation     NodeType = 22
+	NodeTypeStmt            NodeType = 23
+	NodeTypeLoop            NodeType = 24
+	NodeTypeIndentBlock     NodeType = 25
+	NodeTypeScopedStatement NodeType = 26
+	NodeTypeMatchBranch     NodeType = 27
+	NodeTypeUnionCandidate  NodeType = 28
+	NodeTypeReturn          NodeType = 29
+	NodeTypeBreak           NodeType = 30
+	NodeTypeContinue        NodeType = 31
+	NodeTypeAssert          NodeType = 32
+	NodeTypeImplicitYield   NodeType = 33
+	NodeTypeType            NodeType = 34
+	NodeTypeIntType         NodeType = 35
+	NodeTypeIdentType       NodeType = 36
+	NodeTypeIntLiteralType  NodeType = 37
+	NodeTypeStrLiteralType  NodeType = 38
+	NodeTypeVoidType        NodeType = 39
+	NodeTypeBoolType        NodeType = 40
+	NodeTypeArrayType       NodeType = 41
+	NodeTypeFunctionType    NodeType = 42
+	NodeTypeStructType      NodeType = 43
+	NodeTypeStructUnionType NodeType = 44
+	NodeTypeUnionType       NodeType = 45
+	NodeTypeRangeType       NodeType = 46
+	NodeTypeEnumType        NodeType = 47
+	NodeTypeLiteral         NodeType = 48
+	NodeTypeIntLiteral      NodeType = 49
+	NodeTypeBoolLiteral     NodeType = 50
+	NodeTypeStrLiteral      NodeType = 51
+	NodeTypeInput           NodeType = 52
+	NodeTypeOutput          NodeType = 53
+	NodeTypeConfig          NodeType = 54
+	NodeTypeMember          NodeType = 55
+	NodeTypeField           NodeType = 56
+	NodeTypeFormat          NodeType = 57
+	NodeTypeState           NodeType = 58
+	NodeTypeEnum            NodeType = 59
+	NodeTypeEnumMember      NodeType = 60
+	NodeTypeFunction        NodeType = 61
+	NodeTypeBuiltinFunction NodeType = 62
 )
 
 func (n NodeType) String() string {
@@ -120,6 +121,8 @@ func (n NodeType) String() string {
 		return "specify_endian"
 	case NodeTypeExplicitError:
 		return "explicit_error"
+	case NodeTypeIoOperation:
+		return "io_operation"
 	case NodeTypeStmt:
 		return "stmt"
 	case NodeTypeLoop:
@@ -255,6 +258,8 @@ func (n *NodeType) UnmarshalJSON(data []byte) error {
 		*n = NodeTypeSpecifyEndian
 	case "explicit_error":
 		*n = NodeTypeExplicitError
+	case "io_operation":
+		*n = NodeTypeIoOperation
 	case "stmt":
 		*n = NodeTypeStmt
 	case "loop":
@@ -423,6 +428,10 @@ func (n *SpecifyEndian) GetNodeType() NodeType {
 
 func (n *ExplicitError) GetNodeType() NodeType {
 	return NodeTypeExplicitError
+}
+
+func (n *IoOperation) GetNodeType() NodeType {
+	return NodeTypeIoOperation
 }
 
 func (n *Loop) GetNodeType() NodeType {
@@ -1211,6 +1220,80 @@ func (n *Follow) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+type IoMethod int
+
+const (
+	IoMethodUnspec             IoMethod = 0
+	IoMethodOutputPut          IoMethod = 1
+	IoMethodInputPeek          IoMethod = 2
+	IoMethodInputGet           IoMethod = 3
+	IoMethodInputOffset        IoMethod = 4
+	IoMethodInputRemain        IoMethod = 5
+	IoMethodConfigEndianLittle IoMethod = 6
+	IoMethodConfigEndianBig    IoMethod = 7
+	IoMethodConfigEndianNative IoMethod = 8
+	IoMethodInputBackward      IoMethod = 9
+)
+
+func (n IoMethod) String() string {
+	switch n {
+	case IoMethodUnspec:
+		return "unspec"
+	case IoMethodOutputPut:
+		return "output_put"
+	case IoMethodInputPeek:
+		return "input_peek"
+	case IoMethodInputGet:
+		return "input_get"
+	case IoMethodInputOffset:
+		return "input_offset"
+	case IoMethodInputRemain:
+		return "input_remain"
+	case IoMethodConfigEndianLittle:
+		return "config_endian_little"
+	case IoMethodConfigEndianBig:
+		return "config_endian_big"
+	case IoMethodConfigEndianNative:
+		return "config_endian_native"
+	case IoMethodInputBackward:
+		return "input_backward"
+	default:
+		return fmt.Sprintf("IoMethod(%d)", n)
+	}
+}
+
+func (n *IoMethod) UnmarshalJSON(data []byte) error {
+	var tmp string
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+	switch tmp {
+	case "unspec":
+		*n = IoMethodUnspec
+	case "output_put":
+		*n = IoMethodOutputPut
+	case "input_peek":
+		*n = IoMethodInputPeek
+	case "input_get":
+		*n = IoMethodInputGet
+	case "input_offset":
+		*n = IoMethodInputOffset
+	case "input_remain":
+		*n = IoMethodInputRemain
+	case "config_endian_little":
+		*n = IoMethodConfigEndianLittle
+	case "config_endian_big":
+		*n = IoMethodConfigEndianBig
+	case "config_endian_native":
+		*n = IoMethodConfigEndianNative
+	case "input_backward":
+		*n = IoMethodInputBackward
+	default:
+		return fmt.Errorf("unknown IoMethod: %q", tmp)
+	}
+	return nil
+}
+
 type Node interface {
 	isNode()
 	GetLoc() Loc
@@ -1722,6 +1805,32 @@ func (n *ExplicitError) GetConstantLevel() ConstantLevel {
 func (n *ExplicitError) isNode() {}
 
 func (n *ExplicitError) GetLoc() Loc {
+	return n.Loc
+}
+
+type IoOperation struct {
+	Loc           Loc
+	ExprType      Type
+	ConstantLevel ConstantLevel
+	Base          Expr
+	Method        IoMethod
+	Args          []Expr
+	TypeArgs      []Type
+}
+
+func (n *IoOperation) isExpr() {}
+
+func (n *IoOperation) GetExprType() Type {
+	return n.ExprType
+}
+
+func (n *IoOperation) GetConstantLevel() ConstantLevel {
+	return n.ConstantLevel
+}
+
+func (n *IoOperation) isNode() {}
+
+func (n *IoOperation) GetLoc() Loc {
 	return n.Loc
 }
 
@@ -2816,6 +2925,8 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			n.node[i] = &SpecifyEndian{Loc: raw.Loc}
 		case NodeTypeExplicitError:
 			n.node[i] = &ExplicitError{Loc: raw.Loc}
+		case NodeTypeIoOperation:
+			n.node[i] = &IoOperation{Loc: raw.Loc}
 		case NodeTypeLoop:
 			n.node[i] = &Loop{Loc: raw.Loc}
 		case NodeTypeIndentBlock:
@@ -3364,6 +3475,35 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			}
 			if tmp.Message != nil {
 				v.Message = n.node[*tmp.Message].(*StrLiteral)
+			}
+		case NodeTypeIoOperation:
+			v := n.node[i].(*IoOperation)
+			var tmp struct {
+				ExprType      *uintptr      `json:"expr_type"`
+				ConstantLevel ConstantLevel `json:"constant_level"`
+				Base          *uintptr      `json:"base"`
+				Method        IoMethod      `json:"method"`
+				Args          []uintptr     `json:"args"`
+				TypeArgs      []uintptr     `json:"type_args"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			if tmp.ExprType != nil {
+				v.ExprType = n.node[*tmp.ExprType].(Type)
+			}
+			v.ConstantLevel = tmp.ConstantLevel
+			if tmp.Base != nil {
+				v.Base = n.node[*tmp.Base].(Expr)
+			}
+			v.Method = tmp.Method
+			v.Args = make([]Expr, len(tmp.Args))
+			for j, k := range tmp.Args {
+				v.Args[j] = n.node[k].(Expr)
+			}
+			v.TypeArgs = make([]Type, len(tmp.TypeArgs))
+			for j, k := range tmp.TypeArgs {
+				v.TypeArgs[j] = n.node[k].(Type)
 			}
 		case NodeTypeLoop:
 			v := n.node[i].(*Loop)
@@ -4456,6 +4596,27 @@ func Walk(n Node, f Visitor) {
 		}
 		if v.Message != nil {
 			if !f.Visit(f, v.Message) {
+				return
+			}
+		}
+	case *IoOperation:
+		if v.ExprType != nil {
+			if !f.Visit(f, v.ExprType) {
+				return
+			}
+		}
+		if v.Base != nil {
+			if !f.Visit(f, v.Base) {
+				return
+			}
+		}
+		for _, w := range v.Args {
+			if !f.Visit(f, w) {
+				return
+			}
+		}
+		for _, w := range v.TypeArgs {
+			if !f.Visit(f, w) {
 				return
 			}
 		}

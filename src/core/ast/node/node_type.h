@@ -67,7 +67,11 @@ namespace brgen::ast {
         enum_,
         enum_member,
         function,
+
+        builtin_member = 0x222000,
         builtin_function,
+        builtin_field,
+        builtin_object,
 
         type = 0x040000,
         int_type,
@@ -149,6 +153,8 @@ namespace brgen::ast {
         {NodeType::specify_endian, "specify_endian"},
         {NodeType::explicit_error, "explicit_error"},
         {NodeType::io_operation, "io_operation"},
+        {NodeType::builtin_member, "builtin_member"},
+        {NodeType::builtin_field, "builtin_field"},
     };
 
     constexpr std::array<std::pair<NodeType, const char*>, std::size(node_type_str_array)> sorted_node_type_str_array = [] {

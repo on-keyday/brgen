@@ -43,6 +43,7 @@ typedef enum ast2c_Endian ast2c_Endian;
 typedef enum ast2c_ConstantLevel ast2c_ConstantLevel;
 typedef enum ast2c_BitAlignment ast2c_BitAlignment;
 typedef enum ast2c_Follow ast2c_Follow;
+typedef enum ast2c_IoMethod ast2c_IoMethod;
 typedef struct ast2c_Node ast2c_Node;
 typedef struct ast2c_Expr ast2c_Expr;
 typedef struct ast2c_Stmt ast2c_Stmt;
@@ -70,6 +71,7 @@ typedef struct ast2c_Cast ast2c_Cast;
 typedef struct ast2c_Available ast2c_Available;
 typedef struct ast2c_SpecifyEndian ast2c_SpecifyEndian;
 typedef struct ast2c_ExplicitError ast2c_ExplicitError;
+typedef struct ast2c_IoOperation ast2c_IoOperation;
 typedef struct ast2c_Loop ast2c_Loop;
 typedef struct ast2c_IndentBlock ast2c_IndentBlock;
 typedef struct ast2c_ScopedStatement ast2c_ScopedStatement;
@@ -140,6 +142,7 @@ enum ast2c_NodeType {
 	AST2C_NODETYPE_AVAILABLE,
 	AST2C_NODETYPE_SPECIFY_ENDIAN,
 	AST2C_NODETYPE_EXPLICIT_ERROR,
+	AST2C_NODETYPE_IO_OPERATION,
 	AST2C_NODETYPE_STMT,
 	AST2C_NODETYPE_LOOP,
 	AST2C_NODETYPE_INDENT_BLOCK,
@@ -313,6 +316,21 @@ enum ast2c_Follow {
 };
 const char* ast2c_Follow_to_string(ast2c_Follow);
 int ast2c_Follow_from_string(const char*,ast2c_Follow*);
+
+enum ast2c_IoMethod {
+	AST2C_IOMETHOD_UNSPEC,
+	AST2C_IOMETHOD_OUTPUT_PUT,
+	AST2C_IOMETHOD_INPUT_PEEK,
+	AST2C_IOMETHOD_INPUT_GET,
+	AST2C_IOMETHOD_INPUT_OFFSET,
+	AST2C_IOMETHOD_INPUT_REMAIN,
+	AST2C_IOMETHOD_CONFIG_ENDIAN_LITTLE,
+	AST2C_IOMETHOD_CONFIG_ENDIAN_BIG,
+	AST2C_IOMETHOD_CONFIG_ENDIAN_NATIVE,
+	AST2C_IOMETHOD_INPUT_BACKWARD,
+};
+const char* ast2c_IoMethod_to_string(ast2c_IoMethod);
+int ast2c_IoMethod_from_string(const char*,ast2c_IoMethod*);
 
 struct ast2c_Pos {
 	uint64_t begin;
@@ -697,6 +715,22 @@ struct ast2c_ExplicitError {
 
 // returns 1 if succeed 0 if failed
 int ast2c_ExplicitError_parse(ast2c_Ast* ,ast2c_ExplicitError*,ast2c_json_handlers*,void*);
+
+struct ast2c_IoOperation {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
+	ast2c_Expr* base;
+	ast2c_IoMethod method;
+	ast2c_Expr** args;
+	size_t args_size;
+	ast2c_Type** type_args;
+	size_t type_args_size;
+};
+
+// returns 1 if succeed 0 if failed
+int ast2c_IoOperation_parse(ast2c_Ast* ,ast2c_IoOperation*,ast2c_json_handlers*,void*);
 
 struct ast2c_Loop {
 	const ast2c_NodeType node_type;

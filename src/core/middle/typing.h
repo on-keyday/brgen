@@ -846,6 +846,49 @@ namespace brgen::middle {
             }
         }
 
+        void typing_io_operation(ast::IOOperation* io) {
+            switch (io->method) {
+                case ast::IOMethod::unspec:
+                    break;
+                case ast::IOMethod::input_offset:
+                case ast::IOMethod::input_remain:
+                    io->expr_type = std::make_shared<ast::IntType>(io->loc, 32, ast::Endian::unspec, false);
+                    break;
+                case ast::IOMethod::output_put:
+                case ast::IOMethod::input_backward: {
+                    io->expr_type = void_type(io->loc);
+                    auto c = ast::as<ast::Call>(io->base);
+                    assert(c);
+                    for (auto& arg : c->arguments) {
+                        typing_expr(arg, false);
+                        io->arguments.push_back(arg);
+                    }
+                    break;
+                }
+                case ast::IOMethod::input_get: {
+                    auto c = ast::as<ast::Call>(io->base);
+                    assert(c);
+                    for (auto& arg : c->arguments) {
+                        typing_expr(arg, true);
+                        if (auto i = ast::as<ast::Ident>(arg); i && (i->usage == ast::IdentUsage::unknown ||
+                                                                     i->usage == ast::IdentUsage::reference_type)) {
+                            if (auto t = ast::is_int_type(i->ident)) {
+                                auto typ = std::make_shared<ast::IntType>(i->loc, t->bit_size, t->endian, t->is_signed);
+                                io->type_arguments.push_back(typ);
+                                io->expr_type = typ;
+                            }
+                            else {
+                                auto typ = std::make_shared<ast::IdentType>(i->loc);
+                                io->type_arguments.push_back(typ);
+                                unwrap_reference_type_from_ident(typ.get());
+                                io->expr_type = typ;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         void typing_expr(NodeReplacer base_node, bool on_define = false) {
             auto expr = ast::cast_to<ast::Expr>(base_node.to_node());
             // treat cast as a special case
@@ -870,7 +913,10 @@ namespace brgen::middle {
                 typing_object(expr->expr_type);
                 return;  // already typed
             }
-            if (auto lit = ast::as<ast::IntLiteral>(expr)) {
+            if (auto s = ast::as<ast::IOOperation>(expr)) {
+                typing_io_operation(s);
+            }
+            else if (auto lit = ast::as<ast::IntLiteral>(expr)) {
                 lit->expr_type = std::make_shared<ast::IntLiteralType>(ast::cast_to<ast::IntLiteral>(expr));
                 lit->constant_level = ast::ConstantLevel::constant;
             }
@@ -947,6 +993,23 @@ namespace brgen::middle {
             }
         }
 
+        void unwrap_reference_type_from_ident(ast::IdentType* s) {
+            if (s->ident->usage == ast::IdentUsage::reference_type) {
+                auto ident = ast::as<ast::Ident>(s->ident->base.lock());
+                assert(ident);
+                auto member = ast::as<ast::Member>(ident->base.lock());
+                if (auto enum_ = ast::as<ast::Enum>(member)) {
+                    s->base = enum_->enum_type;
+                }
+                else if (auto struct_ = ast::as<ast::Format>(member)) {
+                    s->base = struct_->body->struct_type;
+                }
+                else if (auto state_ = ast::as<ast::State>(member)) {
+                    s->base = state_->body->struct_type;
+                }
+            }
+        }
+
         void typing_ident_type(ast::IdentType* s, bool disable_warning = false) {
             // If the object is an identifier, perform identifier typing
             typing_ident(s->ident.get(), disable_warning);
@@ -963,20 +1026,8 @@ namespace brgen::middle {
                 r.report();
             }
 
-            if (s->ident->usage == ast::IdentUsage::reference_type) {
-                auto ident = ast::as<ast::Ident>(s->ident->base.lock());
-                assert(ident);
-                auto member = ast::as<ast::Member>(ident->base.lock());
-                if (auto enum_ = ast::as<ast::Enum>(member)) {
-                    s->base = enum_->enum_type;
-                }
-                else if (auto struct_ = ast::as<ast::Format>(member)) {
-                    s->base = struct_->body->struct_type;
-                }
-                else if (auto state_ = ast::as<ast::State>(member)) {
-                    s->base = state_->body->struct_type;
-                }
-            }
+            unwrap_reference_type_from_ident(s);
+
             return;
         }
 

@@ -274,23 +274,7 @@ namespace brgen::ast {
         }
     };
 
-    struct BuiltinFunction : Member {
-        define_node_type(NodeType::builtin_function);
-        std::shared_ptr<FunctionType> func_type;
-
-        BuiltinFunction(lexer::Loc l)
-            : Member(l, NodeType::builtin_function) {}
-
-        BuiltinFunction()
-            : Member({}, NodeType::builtin_function) {}
-
-        void dump(auto&& field_) {
-            Member::dump(field_);
-            sdebugf(func_type);
-        }
-    };
-
-    struct Loop : Stmt {
+        struct Loop : Stmt {
         define_node_type(NodeType::loop);
         scope_ptr cond_scope;
         std::shared_ptr<Expr> init;
