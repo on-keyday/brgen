@@ -173,6 +173,9 @@ namespace brgen::ast {
                     else if constexpr (std::is_same_v<P, Follow>) {
                         field(key, "follow");
                     }
+                    else if constexpr (std::is_same_v<P, IOMethod>) {
+                        field(key, "io_method");
+                    }
                     else if constexpr (futils::helper::is_template<P>) {
                         using P1 = typename futils::helper::template_of_t<P>::template param_at<0>;
                         if constexpr (futils::helper::is_template_instance_of<P, std::shared_ptr>) {
@@ -278,18 +281,6 @@ namespace brgen::ast {
     }
 
     void enum_types(auto&& field) {
-        struct R {
-            const char* const* start;
-            const char* const* finish;
-
-            const char* const* begin() const {
-                return start;
-            }
-
-            const char* const* end() const {
-                return finish;
-            }
-        };
         {
             field("node_type", [&](auto&& d) {
                 auto field = d.array();
@@ -319,6 +310,7 @@ namespace brgen::ast {
         enum_type<ConstantLevel>("constant_level", field);
         enum_type<BitAlignment>("bit_alignment", field);
         enum_type<Follow>("follow", field);
+        enum_type<IOMethod>("io_method", field);
         /*
         {
             R p{ident_usage_str, ident_usage_str + ident_usage_count};

@@ -112,6 +112,7 @@ format OneRTTPacketHeader:
    reserved :u2
    key_phase :u1
    packet_number_length :u2
+   qstate.enable_length = true
    dst_conn_id :ConnectionID
    if qstate.encrypted:
       encrypted_payload :[..]u8
@@ -123,9 +124,8 @@ format OneRTTPacketHeader:
 
 
 format ConnectionID:
-   if available(config.arg.length):
-      length := u8(config.arg.length)
-      id :[length]u8
+   if qstate.enable_length:
+      id :[qstate.length]u8
    else:
       length :u8
       id :[length]u8

@@ -100,3 +100,16 @@ enum Endian:
     big
     little
 
+enum IOMethod:
+    unspec
+    output_put
+    input_peek
+    input_get
+    input_offset
+    input_remain
+    config_endian_little
+    config_endian_big
+    config_endian_native
+    input_backward
+    
+

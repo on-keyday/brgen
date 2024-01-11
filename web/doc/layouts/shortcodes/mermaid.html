@@ -28,7 +28,8 @@
           console.log(target);
           inner.attr("transform", target.transform);
         });
-        svg.call(zoom)
+        svg.call(zoom);
+        console.log(svg.html());
       })
     },1000)
   })

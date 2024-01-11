@@ -612,4 +612,83 @@ template<>
 constexpr const char* enum_type_name<Endian>() {
     return "Endian";
 }
+enum class IOMethod {
+    unspec,
+    output_put,
+    input_peek,
+    input_get,
+    input_offset,
+    input_remain,
+    config_endian_little,
+    config_endian_big,
+    config_endian_native,
+    input_backward,
+};
+constexpr const char* to_string(IOMethod e) {
+    switch(e) {
+    case IOMethod::unspec: return "unspec";
+    case IOMethod::output_put: return "output_put";
+    case IOMethod::input_peek: return "input_peek";
+    case IOMethod::input_get: return "input_get";
+    case IOMethod::input_offset: return "input_offset";
+    case IOMethod::input_remain: return "input_remain";
+    case IOMethod::config_endian_little: return "config_endian_little";
+    case IOMethod::config_endian_big: return "config_endian_big";
+    case IOMethod::config_endian_native: return "config_endian_native";
+    case IOMethod::input_backward: return "input_backward";
+    default: return nullptr;
+    }
+}
+template<>constexpr std::optional<IOMethod> from_string<IOMethod>(std::string_view str) {
+    if(str.empty()) return std::nullopt;
+    if(str == "unspec") return IOMethod::unspec;
+    if(str == "output_put") return IOMethod::output_put;
+    if(str == "input_peek") return IOMethod::input_peek;
+    if(str == "input_get") return IOMethod::input_get;
+    if(str == "input_offset") return IOMethod::input_offset;
+    if(str == "input_remain") return IOMethod::input_remain;
+    if(str == "config_endian_little") return IOMethod::config_endian_little;
+    if(str == "config_endian_big") return IOMethod::config_endian_big;
+    if(str == "config_endian_native") return IOMethod::config_endian_native;
+    if(str == "input_backward") return IOMethod::input_backward;
+    return std::nullopt;
+}
+template<>constexpr size_t enum_elem_count<IOMethod>() {
+    return 10;
+}
+template<>constexpr std::array<std::pair<IOMethod,std::string_view>,10> make_enum_array<IOMethod>() {
+    return {
+        std::pair{IOMethod::unspec,"unspec"},
+        std::pair{IOMethod::output_put,"output_put"},
+        std::pair{IOMethod::input_peek,"input_peek"},
+        std::pair{IOMethod::input_get,"input_get"},
+        std::pair{IOMethod::input_offset,"input_offset"},
+        std::pair{IOMethod::input_remain,"input_remain"},
+        std::pair{IOMethod::config_endian_little,"config_endian_little"},
+        std::pair{IOMethod::config_endian_big,"config_endian_big"},
+        std::pair{IOMethod::config_endian_native,"config_endian_native"},
+        std::pair{IOMethod::input_backward,"input_backward"},
+    };
+}
+template<>constexpr std::array<std::pair<IOMethod,std::string_view>,10> make_enum_name_array<IOMethod>() {
+    return {
+        std::pair{IOMethod::unspec,"unspec"},
+        std::pair{IOMethod::output_put,"output_put"},
+        std::pair{IOMethod::input_peek,"input_peek"},
+        std::pair{IOMethod::input_get,"input_get"},
+        std::pair{IOMethod::input_offset,"input_offset"},
+        std::pair{IOMethod::input_remain,"input_remain"},
+        std::pair{IOMethod::config_endian_little,"config_endian_little"},
+        std::pair{IOMethod::config_endian_big,"config_endian_big"},
+        std::pair{IOMethod::config_endian_native,"config_endian_native"},
+        std::pair{IOMethod::input_backward,"input_backward"},
+    };
+}
+constexpr void as_json(IOMethod e,auto&& d) {
+    d.value(enum_array<IOMethod>[int(e)].second);
+}
+template<>
+constexpr const char* enum_type_name<IOMethod>() {
+    return "IOMethod";
+}
 }

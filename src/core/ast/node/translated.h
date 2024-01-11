@@ -154,14 +154,27 @@ namespace brgen::ast {
         }
     };
 
-    enum class IOMethod {};
+    struct IOOperation : Expr {
+        define_node_type(NodeType::io_operation);
+        define_node_description(R"(IOOperation represents input/output/config operation.)");
+        IOMethod method = IOMethod::unspec;
+        std::shared_ptr<Expr> base;
+        std::vector<std::shared_ptr<Expr>> args;
+        std::vector<std::shared_ptr<Type>> type_args;
 
-    constexpr const char* io_methods[] = {
-        "get",
-        "peek",
-        "put",
-        "offset",
-        "remain",
+        IOOperation(std::shared_ptr<Expr>&& a, IOMethod m)
+            : Expr(a->loc, NodeType::io_operation), base(std::move(a)), method(m) {}
+
+        IOOperation()
+            : Expr({}, NodeType::io_operation) {}
+
+        void dump(auto&& field_) {
+            Expr::dump(field_);
+            sdebugf(base);
+            sdebugf(method);
+            sdebugf(args);
+            sdebugf(type_args);
+        }
     };
 
 }  // namespace brgen::ast

@@ -33,6 +33,7 @@ namespace brgen::ast {
         available,
         specify_endian,
         explicit_error,
+        io_operation,
 
         literal = 0x110000,
         int_literal,
@@ -147,6 +148,7 @@ namespace brgen::ast {
         {NodeType::field_argument, "field_argument"},
         {NodeType::specify_endian, "specify_endian"},
         {NodeType::explicit_error, "explicit_error"},
+        {NodeType::io_operation, "io_operation"},
     };
 
     constexpr std::array<std::pair<NodeType, const char*>, std::size(node_type_str_array)> sorted_node_type_str_array = [] {
