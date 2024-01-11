@@ -25,5 +25,55 @@ format HeadersFrame:
     priority :StreamWeight
     if header.padding == 1:
         padding_len :u8
-        header.len > padding_len + 1
+        u32(header.len) > u32(padding_len + 1)
     header_block :[u32(header.len) - u32(available(padding_len)?padding_len:0)]u8
+    if header.padding == 1:
+        padding :[padding_len]u8
+
+format PriorityFrame:
+    header :FrameHeader
+    priority :StreamWeight
+
+format RstStreamFrame:
+    header :FrameHeader
+    error_code :u32
+
+format Setting:
+    id :u16
+    value :u32
+
+format SettingsFrame:
+    header :FrameHeader
+    header.len % 6 == 0
+    if header.end_stream_or_ack == 1:
+        header.len == 0
+        return
+    settings :[header.len / 6]Setting
+
+format PushPromiseFrame:
+    header :FrameHeader
+    promised_stream_id :u31
+    header_block :[header.len - 4]u8
+
+format PingFrame:
+    header :FrameHeader
+    header.len == 8
+    opaque_data :u64
+
+format GoAwayFrame:
+    header :FrameHeader
+    reserved :u1(0)
+    last_stream_id :u31
+    error_code :u32
+    debug_data :[header.len - 8]u8
+
+format WindowUpdateFrame:
+    header :FrameHeader
+    reserved :u1(0)
+    window_size_increment :u31
+
+format ContinuationFrame:
+    header :FrameHeader
+    header_block :[header.len]u8
+
+    

@@ -89,15 +89,15 @@ namespace brgen::ast::builtin {
             to_string(js.kind());
             return builtin_error("expected object, got ", to_string(js.kind()));
         }
-        auto t = js.at("type");
+        auto t = js.at("kind");
         if (!t) {
             return builtin_error("expect type field which is a string of either 'object', 'field', or 'function'");
         }
         if (!t->is_string()) {
             return builtin_error("expect type field which is a string of either 'object', 'field', or 'function'");
         }
-        auto type = t->force_as_string<std::string>();
-        if (type == "object") {
+        auto kind = t->force_as_string<std::string>();
+        if (kind == "object") {
             auto m = js.at("members");
             if (!m) {
                 return builtin_error("expect members field which is an array of either 'object', 'field', or 'function'");
@@ -124,7 +124,7 @@ namespace brgen::ast::builtin {
             }
             return obj;
         }
-        else if (type == "function") {
+        else if (kind == "function") {
             auto ret = js.at("return");
             if (!ret) {
                 return builtin_error("expect return field which is a string of type");
@@ -158,7 +158,7 @@ namespace brgen::ast::builtin {
             }
             return func;
         }
-        else if (type == "field") {
+        else if (kind == "field") {
             auto ret = js.at("type");
             if (!ret) {
                 return builtin_error("expect type field which is a string of type");
@@ -186,4 +186,54 @@ namespace brgen::ast::builtin {
             return builtin_error("expect type field which is a string of either 'object', 'field', or 'function'");
         }
     }
+
+    constexpr auto builtin_json = R"(
+{
+    "kind": "object",
+    "members": {
+        "input": {
+            "offset": {
+                "kind": "field",
+                "type": "u64"
+            },
+            "remain": {
+                "kind": "field",
+                "type": "u64"
+            },
+            "get": {
+                "kind": "function",
+                "return": "u8",
+                "args": [
+                    "*type",
+                    "*u64"
+                ]
+            },
+            "peek": {
+                "kind": "function",
+                "return": "type",
+                "args": [
+                    "*type",
+                    "*u64"
+                ]
+            },
+        },
+        "output": {
+            "put": {
+                "kind": "function",
+                "return": "void",
+                "args": [
+                    "*type",
+                    "*u8"
+                ]
+            }
+        },
+        "config": {
+            "endian": {
+                "kind": "field",
+                "type": "endian"
+            },
+        }
+    }
+}
+    )";
 }  // namespace brgen::ast::builtin

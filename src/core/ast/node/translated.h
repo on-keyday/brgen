@@ -154,6 +154,7 @@ namespace brgen::ast {
         }
     };
 
+    // TODO(on-keyday): remove this in the future with the 'builtin' system
     struct IOOperation : Expr {
         define_node_type(NodeType::io_operation);
         define_node_description(R"(IOOperation represents input/output/config operation.)");

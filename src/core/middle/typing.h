@@ -867,7 +867,8 @@ namespace brgen::middle {
                     }
                     break;
                 }
-                case ast::IOMethod::input_get: {
+                case ast::IOMethod::input_get:
+                case ast::IOMethod::input_peek: {
                     auto c = ast::as<ast::Call>(io->base);
                     assert(c);
                     for (auto& arg : c->arguments) {
@@ -880,13 +881,31 @@ namespace brgen::middle {
                                 io->expr_type = typ;
                             }
                             else {
+                                if (i->usage == ast::IdentUsage::unknown) {
+                                    error(i->loc, "type identifier ", i->ident, " is not defined").report();
+                                }
                                 auto typ = std::make_shared<ast::IdentType>(i->loc, ast::cast_to<ast::Ident>(arg));
                                 io->type_arguments.push_back(typ);
                                 unwrap_reference_type_from_ident(typ.get());
                                 io->expr_type = typ;
                             }
+                            if (io->type_arguments.size() > 1) {
+                                error(io->loc, "expect 0 or 1 type argument but got ", nums(io->type_arguments.size())).report();
+                            }
+                            continue;
+                        }
+                        io->arguments.push_back(arg);
+                        if (io->arguments.size() > 1) {
+                            error(io->loc, "expect 0 or 1 argument but got ", nums(io->arguments.size())).report();
                         }
                     }
+                    break;
+                }
+                case ast::IOMethod::config_endian_big:
+                case ast::IOMethod::config_endian_little:
+                case ast::IOMethod::config_endian_native: {
+                    io->expr_type = std::make_shared<ast::BoolType>(io->loc);
+                    break;
                 }
             }
         }

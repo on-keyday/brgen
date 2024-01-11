@@ -41,7 +41,7 @@ core-->common
 
 - ファイル全体 base: Program
 - match の =>/: のノード base: MatchBranch
-- if/elif のノード base: If
+- if/elif/else のノード base: If
 - for のノード base: For
 - format のノード base: Format
 - state のノード base: State
@@ -53,7 +53,7 @@ core-->common
 - ファイル全体 owner: Program
 - match の条件節 owner: Match
 - match の =>/: のノード owner: MatchBranch
-- if/elif のノード owner: If
+- if/elif/else のノード owner: If
 - if/elif の条件節 owner: If
 - for のノード owner: For
 - for の条件節 owner: For

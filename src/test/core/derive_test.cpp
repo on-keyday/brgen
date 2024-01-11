@@ -1,5 +1,4 @@
 /*license*/
-#pragma once
 
 #include <gtest/gtest.h>
 #include <core/ast/ast.h>

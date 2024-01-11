@@ -141,7 +141,7 @@ namespace brgen::ast {
 
             block->struct_type = std::make_shared<StructType>(base.loc);
 
-            assert(scope_owner);
+            assert(scope_owner != nullptr);
             block->struct_type->base = scope_owner;
 
             // Create a new context for the current indent level
@@ -415,16 +415,15 @@ namespace brgen::ast {
             consume_indent();  // elif or else のため次のインデントを消費
 
             // elif ブロックの解析
-            If* current_if = if_.get();
+            std::shared_ptr<If> current_if = if_;
             while (auto tok = s.consume_token("elif")) {
                 auto elif = std::make_shared<If>(tok->loc);
                 s.skip_white();
                 elif->cond = parse_expr();
                 cond.push_back(elif->cond);
                 body_with_struct(tok->loc, elif->then, elif);
-                auto next_if = elif.get();
-                current_if->els = std::move(elif);
-                current_if = next_if;
+                current_if->els = elif;
+                current_if = std::move(elif);
                 if (detect_end()) {
                     push_union_to_current_struct();
                     return if_;
@@ -435,7 +434,7 @@ namespace brgen::ast {
             // else ブロックの解析
             if (s.consume_token("else")) {
                 cond.push_back(nullptr);
-                body_with_struct(if_->loc, current_if->els, nullptr);
+                body_with_struct(if_->loc, current_if->els, current_if);
             }
             else {
                 if (cur_indent != 0) {
