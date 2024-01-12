@@ -5,6 +5,7 @@
 #include "../traverse.h"
 #include <functional>
 #include <unordered_map>
+#include <env/env.h>
 
 namespace brgen::ast::tool {
 
@@ -48,6 +49,7 @@ namespace brgen::ast::tool {
                     return std::nullopt;
                 }
                 ref = std::move(target);
+                via_member_access = true;
             }
             else if (base->node_type == NodeType::ident) {
                 ref = ast::cast_to<ast::Ident>(base);
@@ -80,33 +82,47 @@ namespace brgen::ast::tool {
             type_resolver = nullptr;
         }
 
-        void map_ident(const std::shared_ptr<ast::Ident>& ident, const std::string& text) {
+        void map_ident(const std::shared_ptr<ast::Ident>& ident, auto&&... text) {
             auto l = lookup_base(ident);
             if (!l) {
                 assert(false);
                 return;
             }
-            def_base_map[l->first] = text;
+            def_base_map[l->first] = brgen::concat(text...);
         }
 
-        std::string ident_to_string(const std::shared_ptr<ast::Ident>& ident) {
+        std::string ident_to_string(const std::shared_ptr<ast::Ident>& ident, const std::string& default_text = "") {
             if (!ident) {
                 return "";
             }
+
             auto d = lookup_base(ident);
             if (!d) {
                 return ident->ident;
             }
             auto text = def_base_map[d->first];
-            if (!d->second) {
+            auto get_text_with_replace = [&](auto&& replace) {
+                if (text.find("${THIS}") != std::string::npos || text.find("$THIS") != std::string::npos) {
+                    text = futils::env::expand<std::string>(text, [&](auto&& out, auto&& read) {
+                        std::string s;
+                        if (!read(s)) {
+                            return;
+                        }
+                        assert(s == "THIS");
+                        futils::strutil::append(out, replace);
+                    });
+                }
+                return text;
+            };
+            if (!d->second) {  // not via member access
                 if (ast::as<ast::Member>(d->first->base.lock())) {
-                    return concat("this->", ident->ident);
+                    return get_text_with_replace("this->");
                 }
             }
             if (ast::as<ast::EnumMember>(d->first->base.lock())) {
                 return text;
             }
-            return text;
+            return get_text_with_replace(default_text);
         }
 
        private:
@@ -217,8 +233,7 @@ namespace brgen::ast::tool {
             }
             if (auto access = ast::as<ast::MemberAccess>(expr)) {
                 auto base = to_string(access->target);
-                auto field = access->member->ident;
-                return concat(base, ".", field);
+                return ident_to_string(access->member, base + ".");
             }
             return "";
         }

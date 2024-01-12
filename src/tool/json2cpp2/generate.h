@@ -196,7 +196,7 @@ namespace j2cp2 {
                         if (!end_else) {
                             w.writeln("return std::nullopt;");
                         }
-                        str.map_ident(uf->ident, "*" + uf->ident->ident + "()");
+                        str.map_ident(uf->ident, "(*${THIS}" + uf->ident->ident + "())");
                     }
                     w.writeln("}");
 
@@ -282,6 +282,17 @@ namespace j2cp2 {
                     auto& field = s->fields[i];
                     if (auto f = ast::as<ast::Field>(field); f) {
                         auto type = f->field_type;
+                        futils::helper::DynDefer d;
+                        if (!f->ident) {
+                            auto h = brgen::concat("hidden_field_", brgen::nums(seq++));
+                            f->ident = std::make_shared<ast::Ident>();
+                            f->ident->ident = std::move(h);
+                            f->ident->base = field;
+                            w.writeln("private:");
+                            d = futils::helper::defer_ex([&] {
+                                w.writeln("public:");
+                            });
+                        }
                         if (auto ident = ast::as<ast::IdentType>(type); ident) {
                             type = ident->base.lock();
                         }
@@ -307,10 +318,15 @@ namespace j2cp2 {
                             bit_size = 0;
                             continue;
                         }
+                        if (auto union_ty = ast::as<ast::StructUnionType>(type)) {
+                            write_struct_union(union_ty);
+                            continue;
+                        }
                         if (auto int_ty = ast::as<ast::IntType>(type); int_ty) {
                             if (int_ty->is_common_supported) {
                                 map_line(f->loc);
                                 w.writeln("std::", int_ty->is_signed ? "" : "u", "int", brgen::nums(*int_ty->bit_size), "_t ", f->ident->ident, ";");
+                                str.map_ident(f->ident, "${THIS}", f->ident->ident);
                             }
                         }
                         if (auto enum_ty = ast::as<ast::EnumType>(type); enum_ty) {
@@ -320,7 +336,7 @@ namespace j2cp2 {
                             w.writeln("std::uint", brgen::nums(*bit_size), "_t ", f->ident->ident, "_data;");
                             map_line(f->loc);
                             w.writeln(enum_->ident->ident, " ", f->ident->ident, "() const { return static_cast<", enum_->ident->ident, ">(this->", f->ident->ident, "_data); }");
-                            str.map_ident(f->ident, f->ident->ident + "()");
+                            str.map_ident(f->ident, "${THIS}", f->ident->ident + "()");
                         }
                         if (auto arr_ty = ast::as<ast::ArrayType>(type); arr_ty) {
                             auto ty = get_type_name(type);
@@ -340,19 +356,19 @@ namespace j2cp2 {
                                     later_size[f] = size_of_later;
                                 }
                             }
-                        }
-                        if (auto union_ty = ast::as<ast::StructUnionType>(type)) {
-                            write_struct_union(union_ty);
+                            str.map_ident(f->ident, "${THIS}", f->ident->ident);
                         }
                         if (auto struct_ty = ast::as<ast::StructType>(type)) {
                             auto type_name = get_type_name(type);
                             map_line(f->loc);
                             w.writeln(type_name, " ", f->ident->ident, ";");
+                            str.map_ident(f->ident, "${THIS}", f->ident->ident);
                         }
                         if (auto str_type = ast::as<ast::StrLiteralType>(type)) {
                             auto len = str_type->strong_ref->length;
                             map_line(f->loc);
                             w.writeln("//", str_type->strong_ref->value, " (", brgen::nums(len), " bytes)");
+                            str.map_ident(f->ident, str_type->strong_ref->value);
                         }
                     }
                 }
@@ -386,6 +402,7 @@ namespace j2cp2 {
                         w.write(" = ", s.to_string(c->expr));
                     }
                     w.writeln(",");
+                    str.map_ident(enum_->ident, enum_->ident->ident, "::", c->ident->ident);
                 }
             }
             w.writeln("};");
@@ -667,12 +684,16 @@ namespace j2cp2 {
             if (auto scoped = ast::as<ast::ScopedStatement>(elem)) {
                 encode_one_node(scoped->statement, encode);
             }
-            if (auto b = ast::as<ast::Binary>(elem); b && b->op == ast::BinaryOp::define_assign) {
+            if (auto b = ast::as<ast::Binary>(elem);
+                b &&
+                (b->op == ast::BinaryOp::define_assign ||
+                 b->op == ast::BinaryOp::const_assign)) {
                 auto ident = ast::as<ast::Ident>(b->left);
                 assert(ident);
                 auto expr = str.to_string(b->right);
                 map_line(b->loc);
                 w.writeln("auto ", ident->ident, " = ", expr, ";");
+                str.map_ident(ast::cast_to<ast::Ident>(b->left), ident->ident);
             }
         }
 
