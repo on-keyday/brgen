@@ -30,7 +30,7 @@ namespace brgen::ast {
         CASE(Literal)
         CASE(IntLiteral)
         CASE(BoolLiteral)
-        CASE(StrLiteral)
+        CASE(StringLiteral)
 
         CASE(Input)
         CASE(Output)
@@ -95,7 +95,7 @@ namespace brgen::ast {
         CASE(IntType)
         CASE(IdentType)
         CASE(IntLiteralType)
-        CASE(StrLiteralType)
+        CASE(StringLiteralType)
         CASE(VoidType)
         CASE(BoolType)
         CASE(ArrayType)

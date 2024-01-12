@@ -32,16 +32,16 @@ namespace brgen::ast {
             : Literal({}, NodeType::int_literal) {}
     };
 
-    struct StrLiteral : Literal {
+    struct StringLiteral : Literal {
         define_node_type(NodeType::str_literal);
         std::string value;
         size_t length = 0;
 
-        StrLiteral(lexer::Loc l, std::string&& t)
+        StringLiteral(lexer::Loc l, std::string&& t)
             : Literal(l, NodeType::str_literal), value(std::move(t)) {}
 
         // for decode
-        StrLiteral()
+        StringLiteral()
             : Literal({}, NodeType::str_literal) {}
 
         void dump(auto&& field_) {

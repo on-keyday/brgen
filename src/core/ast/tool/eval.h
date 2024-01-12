@@ -361,7 +361,7 @@ namespace brgen::ast::tool {
                 }
                 return make_result<EResultType::integer>(*val);
             }
-            if (auto i = ast::as<ast::StrLiteral>(expr)) {
+            if (auto i = ast::as<ast::StringLiteral>(expr)) {
                 return make_result<EResultType::string>(i->value);
             }
             if (auto i = ast::as<ast::BoolLiteral>(expr)) {

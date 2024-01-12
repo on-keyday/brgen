@@ -4,7 +4,7 @@ import ast2py.ast as ast
 class EvalExpr:
     identMap: dict[ast.Ident, str]
 
-    def lookupBase(self, ident: ast.Ident) -> (ast.Ident, bool):
+    def lookupBase(self, ident: ast.Ident) -> tuple(ast.Ident, bool):
         viaMember = False
         while ident.base is not None:
             if isinstance(ident.base, ast.Ident):
@@ -16,7 +16,7 @@ class EvalExpr:
                 viaMember = True
                 continue
             break
-        return (ident, viaMember)
+        return tuple(ident, viaMember)
 
     def registerIdent(self, ident: ast.Ident, name: str):
         ident, _ = self.lookupBase(ident)
@@ -24,11 +24,19 @@ class EvalExpr:
 
     def ident_to_string(self, ident: ast.Ident):
         b, viaMember = self.lookupBase(ident)
+        if not viaMember:
+            if isinstance(b.base, ast.Member):
+                return f"self.{self.identMap[b]}"
         return self.identMap[b]
 
     def to_string(self, e: ast.Expr):
         if isinstance(e, ast.Ident):
-            return self.identMap[self.lookupBase(e)]
+            return self.ident_to_string(e)
+        elif isinstance(e, ast.MemberAccess):
+            return f"{self.to_string(e.base)}.{self.to_string(e.member)}"
+        elif isinstance(e, ast.IntLiteral):
+            return e.value
+        elif isinstance(e, ast.StringLiteral):
 
 
 class Generator:
@@ -36,11 +44,14 @@ class Generator:
     indent: int
     seq: int
     struct_map: dict[ast.StructType, str]
+    evalExpr: EvalExpr
 
     def __init__(self) -> None:
         self.w = b""
         self.indent = 0
         self.seq = 0
+        self.struct_map = {}
+        self.evalExpr = EvalExpr()
 
     def writeIndent(self):
         self.w += b"    " * self.indent
@@ -98,7 +109,7 @@ class Generator:
         self.write("def get_", field.ident.ident, "(self):\n")
         self.indent += 1
         assert isinstance(field.field_type, ast.UnionType)
-        cond0 = field.field_type.cond
+        cond0 = None if cond0 is None else self.evalExpr.to_string(cond0)
         for t in field.field_type.candidates:
             self.writeIndent()
             if cond0 is not None:

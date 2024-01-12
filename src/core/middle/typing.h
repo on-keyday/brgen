@@ -75,7 +75,7 @@ namespace brgen::middle {
                 if (!ty || ty->bit_size != 8) {
                     return false;  // only byte array is comparable with string
                 }
-                auto str = ast::as<ast::StrLiteralType>(left);
+                auto str = ast::as<ast::StringLiteralType>(left);
                 if (!str) {
                     return false;
                 }
@@ -92,7 +92,7 @@ namespace brgen::middle {
                 if (!ty || ty->bit_size != 8) {
                     return false;  // only byte array is comparable with string
                 }
-                auto str = ast::as<ast::StrLiteralType>(right);
+                auto str = ast::as<ast::StringLiteralType>(right);
                 if (!str) {
                     return false;
                 }
@@ -955,8 +955,8 @@ namespace brgen::middle {
                 lit->expr_type = std::make_shared<ast::BoolType>(lit->loc);
                 lit->constant_level = ast::ConstantLevel::constant;
             }
-            else if (auto lit = ast::as<ast::StrLiteral>(expr)) {
-                lit->expr_type = std::make_shared<ast::StrLiteralType>(ast::cast_to<ast::StrLiteral>(expr));
+            else if (auto lit = ast::as<ast::StringLiteral>(expr)) {
+                lit->expr_type = std::make_shared<ast::StringLiteralType>(ast::cast_to<ast::StringLiteral>(expr));
                 lit->constant_level = ast::ConstantLevel::constant;
             }
             else if (auto ident = ast::as<ast::Ident>(expr)) {

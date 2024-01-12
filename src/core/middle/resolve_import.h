@@ -77,7 +77,7 @@ namespace brgen::middle {
                     error(conf->loc, "config.import() should take string literal but found ", ast::node_type_to_string(conf->arguments[0]->node_type)).report();
                 }
                 ast::as<ast::MemberAccess>(ast::as<ast::Call>(node)->callee)->member->usage = ast::IdentUsage::reference_builtin_fn;
-                auto raw_path = ast::cast_to<ast::StrLiteral>(conf->arguments[0]);
+                auto raw_path = ast::cast_to<ast::StringLiteral>(conf->arguments[0]);
                 auto path = unescape(raw_path->value);
                 if (!path) {
                     error(conf->loc, "invalid path: cannot unescape ", raw_path->value).report();

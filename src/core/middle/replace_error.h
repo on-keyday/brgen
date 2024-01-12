@@ -22,7 +22,7 @@ namespace brgen::middle {
                 if (c->arguments[0]->node_type != ast::NodeType::str_literal) {
                     error((*it)->loc, "error() requires a string literal as the first argument").report();
                 }
-                auto str = ast::cast_to<ast::StrLiteral>(c->arguments[0]);
+                auto str = ast::cast_to<ast::StringLiteral>(c->arguments[0]);
                 auto ca = ast::cast_to<ast::Call>(*it);
                 ast::as<ast::Ident>(ca->callee)->usage = ast::IdentUsage::reference_builtin_fn;
                 *it = std::make_shared<ast::ExplicitError>(std::move(ca), std::move(str));
