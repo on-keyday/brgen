@@ -224,7 +224,7 @@ namespace brgen::ast {
         define_node_type(NodeType::member_access);
         std::shared_ptr<Expr> target;
         std::shared_ptr<Ident> member;
-        std::weak_ptr<Node> base;
+        std::weak_ptr<Ident> base;
 
         void dump(auto&& field_) {
             Expr::dump(field_);

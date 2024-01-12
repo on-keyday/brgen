@@ -259,7 +259,8 @@ namespace j2cp2 {
 
         void write_struct_type(const std::shared_ptr<ast::StructType>& s) {
             auto member = ast::as<ast::Member>(s->base.lock());
-            bool has_ident = member && member->node_type != ast::NodeType::field && member->ident;
+            bool has_ident = member && member->ident;
+            assert(!member || member->node_type != ast::NodeType::field);
             if (has_ident) {
                 map_line(member->loc);
             }

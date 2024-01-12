@@ -140,7 +140,7 @@ format VarInt:
          1 => input.get(u16) & 0x3fff
          2 => input.get(u32) & 0x3fffffff
          3 => input.get(u64) & 0x3fffffffffffffff
-      input.get(u8)
+
 
    fn encode():
       match value:
