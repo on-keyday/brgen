@@ -77,7 +77,7 @@ namespace brgen::ast::builtin {
             return std::make_shared<IntLiteral>(lexer::Loc{.file = lexer::builtin}, std::move(token->token));
         }
         if (token->tag == lexer::Tag::str_literal) {
-            return std::make_shared<StringLiteral>(lexer::Loc{.file = lexer::builtin}, std::move(token->token));
+            return std::make_shared<StrLiteral>(lexer::Loc{.file = lexer::builtin}, std::move(token->token));
         }
         if (token->token == "input" || token->token == "output" || token->token == "config") {
         }

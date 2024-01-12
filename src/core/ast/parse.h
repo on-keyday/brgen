@@ -471,8 +471,8 @@ namespace brgen::ast {
             return paren;
         }
 
-        std::shared_ptr<StringLiteral> parse_str_literal(lexer::Token&& lit) {
-            auto literal = std::make_shared<StringLiteral>(lit.loc, std::move(lit.token));
+        std::shared_ptr<StrLiteral> parse_str_literal(lexer::Token&& lit) {
+            auto literal = std::make_shared<StrLiteral>(lit.loc, std::move(lit.token));
             auto c = unescape_count(literal->value);
             if (!c) {
                 s.report_error(lit.loc, "invalid string literal");
@@ -943,7 +943,7 @@ namespace brgen::ast {
             }
 
             if (auto lit = s.consume_token(lexer::Tag::str_literal)) {
-                return std::make_shared<StringLiteralType>(std::move(parse_str_literal(std::move(*lit))), true);
+                return std::make_shared<StrLiteralType>(std::move(parse_str_literal(std::move(*lit))), true);
             }
 
             if (auto fn = s.consume_token("fn")) {

@@ -139,9 +139,9 @@ namespace brgen::ast {
     struct ExplicitError : Expr {
         define_node_type(NodeType::explicit_error);
         std::shared_ptr<ast::Call> base;
-        std::shared_ptr<ast::StringLiteral> message;
+        std::shared_ptr<ast::StrLiteral> message;
 
-        ExplicitError(std::shared_ptr<ast::Call>&& a, std::shared_ptr<ast::StringLiteral>&& b)
+        ExplicitError(std::shared_ptr<ast::Call>&& a, std::shared_ptr<ast::StrLiteral>&& b)
             : Expr(a->loc, NodeType::explicit_error), base(std::move(a)), message(std::move(b)) {}
 
         ExplicitError()

@@ -93,7 +93,7 @@ namespace brgen::middle {
                         a->is_int_set = true;
                     }
                 }
-                if (auto t = ast::as<ast::StringLiteralType>(n)) {
+                if (auto t = ast::as<ast::StrLiteralType>(n)) {
                     // magic number type
                     t->is_int_set = true;
                 }
@@ -153,7 +153,7 @@ namespace brgen::middle {
 
                             // calculate follow
                             if (prev_field) {
-                                if (ast::as<ast::StringLiteralType>(field->field_type)) {
+                                if (ast::as<ast::StrLiteralType>(field->field_type)) {
                                     prev_field->follow = ast::Follow::constant;
                                 }
                                 else if (field->field_type->bit_size) {
@@ -314,7 +314,7 @@ namespace brgen::middle {
                         a->bit_alignment = ast::BitAlignment::not_decidable;
                     }
                 }
-                if (auto t = ast::as<ast::StringLiteralType>(n)) {
+                if (auto t = ast::as<ast::StrLiteralType>(n)) {
                     t->bit_alignment = ast::BitAlignment::byte_aligned;
                     t->bit_size = t->base.lock()->length * futils::bit_per_byte;
                 }

@@ -153,12 +153,12 @@ namespace brgen::ast {
             : Type({}, NodeType::int_literal_type) {}
     };
 
-    struct StringLiteralType : Type {
+    struct StrLiteralType : Type {
         define_node_type(NodeType::str_literal_type);
-        std::weak_ptr<StringLiteral> base;
-        std::shared_ptr<StringLiteral> strong_ref;  // only for explicit type
+        std::weak_ptr<StrLiteral> base;
+        std::shared_ptr<StrLiteral> strong_ref;  // only for explicit type
 
-        StringLiteralType(std::shared_ptr<StringLiteral>&& str, bool is_explicit = false)
+        StrLiteralType(std::shared_ptr<StrLiteral>&& str, bool is_explicit = false)
             : Type(str->loc, NodeType::str_literal_type) {
             this->is_explicit = is_explicit;
             base = str;
@@ -168,7 +168,7 @@ namespace brgen::ast {
         }
 
         // for decode
-        StringLiteralType()
+        StrLiteralType()
             : Type({}, NodeType::str_literal_type) {}
 
         void dump(auto&& field_) {

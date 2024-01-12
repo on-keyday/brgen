@@ -349,7 +349,7 @@ namespace j2cp2 {
                             map_line(f->loc);
                             w.writeln(type_name, " ", f->ident->ident, ";");
                         }
-                        if (auto str_type = ast::as<ast::StringLiteralType>(type)) {
+                        if (auto str_type = ast::as<ast::StrLiteralType>(type)) {
                             auto len = str_type->strong_ref->length;
                             map_line(f->loc);
                             w.writeln("//", str_type->strong_ref->value, " (", brgen::nums(len), " bytes)");
@@ -542,7 +542,7 @@ namespace j2cp2 {
                     }
                     w.writeln("}");
                 }
-                if (auto str_ty = ast::as<ast::StringLiteralType>(typ)) {
+                if (auto str_ty = ast::as<ast::StrLiteralType>(typ)) {
                     auto len = str_ty->strong_ref->length;
                     auto value = str_ty->strong_ref->value;
                     map_line(f->loc);
@@ -626,7 +626,7 @@ namespace j2cp2 {
                     }
                     w.writeln("}");
                 }
-                if (auto str_ty = ast::as<ast::StringLiteralType>(typ)) {
+                if (auto str_ty = ast::as<ast::StrLiteralType>(typ)) {
                     auto len = str_ty->strong_ref->length;
                     auto value = str_ty->strong_ref->value;
                     map_line(f->loc);
