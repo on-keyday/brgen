@@ -1565,7 +1565,7 @@ type MemberAccess struct {
 	ConstantLevel ConstantLevel
 	Target        Expr
 	Member        *Ident
-	Base          Node
+	Base          *Ident
 }
 
 func (n *MemberAccess) isExpr() {}
@@ -3317,7 +3317,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				v.Member = n.node[*tmp.Member].(*Ident)
 			}
 			if tmp.Base != nil {
-				v.Base = n.node[*tmp.Base].(Node)
+				v.Base = n.node[*tmp.Base].(*Ident)
 			}
 		case NodeTypeParen:
 			v := n.node[i].(*Paren)

@@ -300,7 +300,7 @@ class If(Expr):
 class MemberAccess(Expr):
     target: Optional[Expr]
     member: Optional[Ident]
-    base: Optional[Node]
+    base: Optional[Ident]
 
 
 class Paren(Expr):
@@ -1055,7 +1055,7 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].member = None
                 if ast.node[i].body["base"] is not None:
                     x = node[ast.node[i].body["base"]]
-                    node[i].base = x if isinstance(x,Node) else raiseError(TypeError('type mismatch at MemberAccess::base'))
+                    node[i].base = x if isinstance(x,Ident) else raiseError(TypeError('type mismatch at MemberAccess::base'))
                 else:
                     node[i].base = None
             case NodeType.PAREN:

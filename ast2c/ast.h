@@ -598,7 +598,7 @@ struct ast2c_MemberAccess {
 	ast2c_ConstantLevel constant_level;
 	ast2c_Expr* target;
 	ast2c_Ident* member;
-	ast2c_Node* base;
+	ast2c_Ident* base;
 };
 
 // returns 1 if succeed 0 if failed

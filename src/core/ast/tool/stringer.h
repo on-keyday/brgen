@@ -30,41 +30,83 @@ namespace brgen::ast::tool {
         });
     }
 
+    std::optional<std::pair<std::shared_ptr<ast::Ident>, bool>> lookup_base(const std::shared_ptr<ast::Ident>& i) {
+        if (!i) {
+            return std::nullopt;
+        }
+        auto ref = i;
+        bool via_member_access = false;
+        for (;;) {
+            auto base = ref->base.lock();
+            if (!base) {
+                return std::nullopt;
+            }
+            if (base->node_type == NodeType::member_access) {
+                auto access = ast::cast_to<ast::MemberAccess>(base);
+                auto target = access->base.lock();
+                if (!target) {
+                    return std::nullopt;
+                }
+                ref = std::move(target);
+            }
+            else if (base->node_type == NodeType::ident) {
+                ref = ast::cast_to<ast::Ident>(base);
+            }
+            else {
+                return std::pair{ref, via_member_access};
+            }
+        }
+    }
+
     struct Stringer {
         std::unordered_map<BinaryOp, std::function<std::string(Stringer& s, const std::shared_ptr<Expr>& left, const std::shared_ptr<Expr>& right)>> bin_op_map;
         std::unordered_map<UnaryOp, std::function<std::string(Stringer& s, const std::shared_ptr<Expr>&)>> unary_op_map;
         std::unordered_map<size_t, std::string> tmp_var_map;
-        std::unordered_map<std::string, std::string> ident_map;
+
+       private:
         std::unordered_map<std::shared_ptr<ast::Ident>, std::string> def_base_map;
+
+       public:
         std::function<std::string(std::string cond, std::string then, std::string els)> cond_op;
         std::unordered_map<std::string, std::function<std::string(Stringer& s, const std::string& name, const std::vector<std::shared_ptr<ast::Expr>>&)>> call_handler;
         std::function<std::string(Stringer&, const std::shared_ptr<Type>&)> type_resolver;
 
-        std::optional<std::string> find_def_base(const std::shared_ptr<ast::Ident>& i) {
-            if (!i) {
-                return std::nullopt;
-            }
-            auto ref = i;
-            while (true) {
-                auto found = def_base_map.find(i);
-                if (found != def_base_map.end()) {
-                    return found->second;
-                }
-                auto base = ref->base.lock();
-                if (!base) {
-                    return std::nullopt;
-                }
-                ref = ast::cast_to<ast::Ident>(std::move(base));
-            }
-        }
-
         void clear() {
             bin_op_map.clear();
             tmp_var_map.clear();
-            ident_map.clear();
+            def_base_map.clear();
             cond_op = nullptr;
             call_handler.clear();
             type_resolver = nullptr;
+        }
+
+        void map_ident(const std::shared_ptr<ast::Ident>& ident, const std::string& text) {
+            auto l = lookup_base(ident);
+            if (!l) {
+                assert(false);
+                return;
+            }
+            def_base_map[l->first] = text;
+        }
+
+        std::string ident_to_string(const std::shared_ptr<ast::Ident>& ident) {
+            if (!ident) {
+                return "";
+            }
+            auto d = lookup_base(ident);
+            if (!d) {
+                return ident->ident;
+            }
+            auto text = def_base_map[d->first];
+            if (!d->second) {
+                if (ast::as<ast::Member>(d->first->base.lock())) {
+                    return concat("this->", ident->ident);
+                }
+            }
+            if (ast::as<ast::EnumMember>(d->first->base.lock())) {
+                return text;
+            }
+            return text;
         }
 
        private:
@@ -109,12 +151,7 @@ namespace brgen::ast::tool {
                 return lit->value;
             }
             if (auto id = ast::as<ast::Ident>(expr)) {
-                if (auto found = ident_map.find(id->ident); found != ident_map.end()) {
-                    return found->second;
-                }
-                else {
-                    return id->ident;
-                }
+                return ident_to_string(ast::cast_to<ast::Ident>(expr));
             }
             if (auto tmp = ast::as<ast::TmpVar>(expr)) {
                 if (auto found = tmp_var_map.find(tmp->tmp_var); found != tmp_var_map.end()) {

@@ -468,7 +468,7 @@ export function isIf(obj: any): obj is If {
 export interface MemberAccess extends Expr {
 	target: Expr|null;
 	member: Ident|null;
-	base: Node|null;
+	base: Ident|null;
 }
 
 export function isMemberAccess(obj: any): obj is MemberAccess {
@@ -2230,7 +2230,7 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at MemberAccess::base');
 			}
 			const tmpbase = on.body.base === null ? null : c.node[on.body.base];
-			if (!(tmpbase === null || isNode(tmpbase))) {
+			if (!(tmpbase === null || isIdent(tmpbase))) {
 				throw new Error('invalid node list at MemberAccess::base');
 			}
 			n.base = tmpbase;

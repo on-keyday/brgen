@@ -294,7 +294,7 @@ public class MemberAccess : Expr{
 	public ConstantLevel ConstantLevel{get;set;}
 	public Expr? Target{get;set;}
 	public Ident? Member{get;set;}
-	public Node? Base{get;set;}
+	public Ident? Base{get;set;}
 }
 public class Paren : Expr{
 	public Loc Loc{get;set;}

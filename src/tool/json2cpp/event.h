@@ -197,7 +197,7 @@ namespace json2cpp {
             });
             add_type_overflow_assert(tmp_var, len_field);
             if (length != value_to_be_length_field) {
-                s.ident_map[len_field->name] = tmp_var;
+                s.map_ident(len_field->base->ident, tmp_var);
                 value_to_be_length_field = s.to_string(desc->desc.length);
                 events.push_back(AssertFalse{
                     .comment = "check truncated",
@@ -234,14 +234,14 @@ namespace json2cpp {
                 //        w.write(data, length);
                 //    }
                 // };
-                s.ident_map[len_field->name] = tmp;
+                s.map_ident(len_field->base->ident, tmp);
                 s.tmp_var_map[0] = base;
                 length_expr = desc->resolved_expr;
                 check_length = desc->desc.length;
             }
             else {
                 s.tmp_var_map[0] = tmp;
-                s.ident_map[len_field->name] = base;
+                s.map_ident(len_field->base->ident, base);
                 length_expr = desc->desc.length;
                 check_length = desc->resolved_expr;
             }
@@ -361,7 +361,7 @@ namespace json2cpp {
             if (auto bit = len_desc->bit_field.lock()) {
                 replaced += "()";
             }
-            s.ident_map[len_field->name] = replaced;
+            s.map_ident(len_field->base->ident, replaced);
             auto length = s.to_string(vec_desc->desc.length);
             events.push_back(DefineLength{
                 .field_name = tmp,
@@ -443,7 +443,7 @@ namespace json2cpp {
                     if (found->second->desc->type == DescType::int_) {
                         auto int_desc = static_cast<IntDesc*>(found->second->desc.get());
                         if (int_desc->bit_field.lock()) {
-                            s.ident_map[i->ident] = found->second->name + "()";
+                            s.map_ident(found->second->base->ident, found->second->name + "()");
                         }
                     }
                 }

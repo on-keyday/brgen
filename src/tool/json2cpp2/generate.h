@@ -70,13 +70,13 @@ namespace j2cp2 {
                     if (auto int_ty = ast::as<ast::IntType>(type); int_ty) {
                         map_line(n->loc);
                         w.writeln("bits_flag_alias_method(flags_", brgen::nums(seq), "_,", brgen::nums(i), ",", n->ident->ident, ");");
-                        str.ident_map[n->ident->ident] = n->ident->ident + "()";
+                        str.map_ident(n->ident, n->ident->ident + "()");
                     }
                     else if (auto enum_ty = ast::as<ast::EnumType>(type); enum_ty) {
                         auto enum_ = enum_ty->base.lock();
                         line_map.push_back({n->loc, w.line_count()});
                         w.writeln("bits_flag_alias_method_with_enum(flags_", brgen::nums(seq), "_,", brgen::nums(i), ",", n->ident->ident, ",", enum_->ident->ident, ");");
-                        str.ident_map[n->ident->ident] = n->ident->ident + "()";
+                        str.map_ident(n->ident, n->ident->ident + "()");
                     }
                     i++;
                 }
@@ -196,7 +196,7 @@ namespace j2cp2 {
                         if (!end_else) {
                             w.writeln("return std::nullopt;");
                         }
-                        str.ident_map[uf->ident->ident] = "*" + uf->ident->ident + "()";
+                        str.map_ident(uf->ident, "*" + uf->ident->ident + "()");
                     }
                     w.writeln("}");
 
@@ -320,7 +320,7 @@ namespace j2cp2 {
                             w.writeln("std::uint", brgen::nums(*bit_size), "_t ", f->ident->ident, "_data;");
                             map_line(f->loc);
                             w.writeln(enum_->ident->ident, " ", f->ident->ident, "() const { return static_cast<", enum_->ident->ident, ">(this->", f->ident->ident, "_data); }");
-                            str.ident_map[f->ident->ident] = f->ident->ident + "()";
+                            str.map_ident(f->ident, f->ident->ident + "()");
                         }
                         if (auto arr_ty = ast::as<ast::ArrayType>(type); arr_ty) {
                             auto ty = get_type_name(type);

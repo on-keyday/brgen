@@ -103,16 +103,62 @@ func mapToken(op ast2go.BinaryOp) token.Token {
 }
 
 type ExprStringer struct {
+	Receiver     string
 	BinaryMapper map[ast2go.BinaryOp]func(s *ExprStringer, x, y ast2go.Expr) string
-	IdentMapper  map[string]string
+	IdentMapper  map[*ast2go.Ident]string
 	CallMapper   map[string]func(s *ExprStringer, args ...ast2go.Expr) string
 	TypeProvider func(ast2go.Type) string
+}
+
+func (s *ExprStringer) LookupBase(ident *ast2go.Ident) (*ast2go.Ident, bool) {
+	viaMember := false
+	for ident.Base != nil {
+		if base, ok := ident.Base.(*ast2go.Ident); ok {
+			ident = base
+		} else if member, ok := ident.Base.(*ast2go.MemberAccess); ok {
+			ident = member.Base
+			viaMember = true
+		} else {
+			break
+		}
+	}
+	return ident, viaMember
+}
+
+func (s *ExprStringer) SetIdentMap(ident *ast2go.Ident, name string) {
+	b, _ := s.LookupBase(ident)
+	if strings.Count(name, "%s") > 1 {
+		panic("name must contains 1 '%s' for receiver")
+	}
+	s.IdentMapper[b] = name
+}
+
+func (s *ExprStringer) IdentToString(ident *ast2go.Ident, default_ string) string {
+	b, viaMember := s.LookupBase(ident)
+	mappedValue := s.IdentMapper[b]
+	if mappedValue == "" {
+		mappedValue = "%s"
+	}
+	if !strings.Contains(mappedValue, "%s") {
+		return mappedValue
+	}
+	if !viaMember {
+		if _, ok := b.Base.(ast2go.Member); ok {
+			return fmt.Sprintf(mappedValue, s.Receiver)
+		}
+	}
+	// special case for enum member
+	// enum member is not a member access
+	if _, ok := b.Base.(*ast2go.EnumMember); ok {
+		return fmt.Sprintf(mappedValue, "")
+	}
+	return fmt.Sprintf(mappedValue, default_)
 }
 
 func NewExprStringer() *ExprStringer {
 	return &ExprStringer{
 		BinaryMapper: map[ast2go.BinaryOp]func(s *ExprStringer, x, y ast2go.Expr) string{},
-		IdentMapper:  map[string]string{},
+		IdentMapper:  map[*ast2go.Ident]string{},
 		CallMapper:   map[string]func(s *ExprStringer, args ...ast2go.Expr) string{},
 	}
 }
@@ -125,10 +171,7 @@ func (s *ExprStringer) ExprString(e ast2go.Expr) string {
 		}
 		return fmt.Sprintf("(%s %s %s)", s.ExprString(e.Left), e.Op.String(), s.ExprString(e.Right))
 	case *ast2go.Ident:
-		if f, ok := s.IdentMapper[e.Ident]; ok {
-			return f
-		}
-		return e.Ident
+		return s.IdentToString(e, "")
 	case *ast2go.IntLiteral:
 		return e.Value
 	case *ast2go.BoolLiteral:
@@ -137,6 +180,9 @@ func (s *ExprStringer) ExprString(e ast2go.Expr) string {
 		} else {
 			return "false"
 		}
+	case *ast2go.MemberAccess:
+		target := s.ExprString(e.Target)
+		return s.IdentToString(e.Member, target+".")
 	case *ast2go.Call:
 		callee := s.ExprString(e.Callee)
 		if f, ok := s.CallMapper[callee]; ok {
@@ -150,6 +196,9 @@ func (s *ExprStringer) ExprString(e ast2go.Expr) string {
 	case *ast2go.Cond:
 		typ := s.TypeProvider(e.ExprType)
 		return fmt.Sprintf("(func() %s {if %s { return %s(%s) } else { return %s(%s) }}())", typ, s.ExprString(e.Cond), typ, s.ExprString(e.Then), typ, s.ExprString(e.Els))
+	case *ast2go.Cast:
+		typ := s.TypeProvider(e.ExprType)
+		return fmt.Sprintf("%s(%s)", typ, s.ExprString(e.Expr))
 	case *ast2go.Available:
 		ident, ok := e.Target.(*ast2go.Ident)
 		if !ok {
@@ -169,18 +218,28 @@ func (s *ExprStringer) ExprString(e ast2go.Expr) string {
 		}
 		b := strings.Builder{}
 		b.WriteString("(func() bool {")
-		cond0 := "true"
+		var cond0 ast2go.Expr
 		if uty.Cond != nil {
-			cond0 = s.ExprString(uty.Cond)
+			cond0 = uty.Cond
+		} else {
+			cond0 = &ast2go.BoolLiteral{
+				ExprType: &ast2go.BoolType{},
+				Value:    true,
+			}
 		}
 		hasElse := false
 		for _, c := range uty.Candidates {
 			if c.Cond != nil {
-				cond := s.ExprString(c.Cond)
+				eq := &ast2go.Binary{
+					Op:    ast2go.BinaryOpEqual,
+					Left:  cond0,
+					Right: c.Cond,
+				}
+				cond := s.ExprString(eq)
 				if hasElse {
 					b.WriteString("else ")
 				}
-				b.WriteString(fmt.Sprintf("if(%s == %s) { ", cond0, cond))
+				b.WriteString(fmt.Sprintf("if %s { ", cond))
 				if c.Field != nil {
 					b.WriteString("return true")
 				} else {

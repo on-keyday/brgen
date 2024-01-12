@@ -2945,7 +2945,7 @@ pub struct MemberAccess {
 	pub constant_level: ConstantLevel,
 	pub target: Option<Expr>,
 	pub member: Option<Rc<RefCell<Ident>>>,
-	pub base: Option<NodeWeak>,
+	pub base: Option<Weak<RefCell<Ident>>>,
 }
 
 impl TryFrom<&Expr> for Rc<RefCell<MemberAccess>> {
@@ -8186,7 +8186,11 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						Some(v)=>v,
 						None => return Err(Error::IndexOutOfBounds(base_body as usize)),
 					};
-					node.borrow_mut().base = Some(NodeWeak::from(base_body.clone()));
+					let base_body = match base_body {
+						Node::Ident(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),base_body.into())),
+					};
+					node.borrow_mut().base = Some(Rc::downgrade(&base_body));
 				}
 			},
 			NodeType::Paren => {

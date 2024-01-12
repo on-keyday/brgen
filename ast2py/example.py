@@ -3,6 +3,7 @@ import ast2py.ast as ast
 
 class EvalExpr:
     identMap: dict[ast.Ident, str]
+    convertType: callable[[ast.Type], str]
 
     def lookupBase(self, ident: ast.Ident) -> tuple(ast.Ident, bool):
         viaMember = False
@@ -36,7 +37,25 @@ class EvalExpr:
             return f"{self.to_string(e.base)}.{self.to_string(e.member)}"
         elif isinstance(e, ast.IntLiteral):
             return e.value
-        elif isinstance(e, ast.StringLiteral):
+        elif isinstance(e, ast.StrLiteral):
+            return e.value
+        elif isinstance(e, ast.BoolLiteral):
+            return f"{e.value}"
+        elif isinstance(e, ast.Unary):
+            if e.op == ast.UnaryOp.NOT:
+                if isinstance(e.expr, ast.BoolType):
+                    return f"not {self.to_string(e.expr)}"
+                return f"~{self.to_string(e.expr)}"
+            elif e.op == ast.UnaryOp.MINUS_SIGN:
+                return f"-{self.to_string(e.expr)}"
+        elif isinstance(e, ast.Binary):
+            return f"{self.to_string(e.left)} {e.op} {self.to_string(e.right)}"
+        elif isinstance(e, ast.Call):
+            return f"{self.to_string(e.callee)}({', '.join(self.to_string(a) for a in e.arguments)})"
+        elif isinstance(e, ast.Cast):
+            return f"{self.convertType(e.expr_type)}({self.to_string(e.expr)})"
+        elif isinstance(e, ast.Available):
+            self.lookupBase(e.target)
 
 
 class Generator:
@@ -113,7 +132,7 @@ class Generator:
         for t in field.field_type.candidates:
             self.writeIndent()
             if cond0 is not None:
-                self.write(f"if self.{cond0} == {t.ident.ident}:\n")
+                self.write(f"if self.{cond0} == {self.evalExpr.to_string(t.cond)}:\n")
 
     def generate_field(self, field: ast.Field, prefix: str = ""):
         # special cases; union

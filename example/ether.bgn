@@ -23,8 +23,7 @@ format EthernetFrame:
     dstMac :[6]u8
     srcMac :[6]u8
     ether_type :u16
-    vlen_n ::= u16(EtherType.vlan)
-    if ether_type == vlen_n:
+    if ether_type == u16(EtherType.vlan):
         vlen_tag :u16
         ether_type2 :u16
     elif ether_type == u16(EtherType.service_vlen):
@@ -36,7 +35,7 @@ format EthernetFrame:
     if len >= 0x600:
         data :[..]u8
     else:
-        peek :u16(input.peek = true)
+        # peek :u16(input.peek = true)
         data :[len]u8
 
 format PPPoE:
