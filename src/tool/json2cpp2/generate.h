@@ -44,6 +44,12 @@ namespace j2cp2 {
             line_map.push_back({l, w.line_count()});
         }
 
+        void clean_ident(std::string& s) {
+            if (s == "class") {
+                s = "class_";
+            }
+        }
+
         void write_bit_fields(std::vector<std::shared_ptr<ast::Field>>& non_align, size_t bit_size, bool is_int_set, bool include_non_simple) {
             if (is_int_set && !include_non_simple) {
                 w.write("::futils::binary::flags_t<std::uint", brgen::nums(bit_size), "_t");
@@ -120,10 +126,11 @@ namespace j2cp2 {
             {
                 auto indent = w.indent_scope();
                 for (auto& f : union_ty->structs) {
-                    write_struct_type(f);
-                    auto& t = tmp[f];
-                    t = brgen::concat(prefix, brgen::nums(seq));
+                    auto c = brgen::concat(prefix, brgen::nums(seq));
                     seq++;
+                    write_struct_type(f, c + ".");
+                    auto& t = tmp[f];
+                    t = c;
                     w.writeln(" ", t, ";");
                 }
             }
@@ -157,7 +164,8 @@ namespace j2cp2 {
                             auto access = tmp[struct_] + "." + f->ident->ident;
                             anonymous_structs[f.get()] = {access, struct_};
                             map_line(f->loc);
-                            w.writeln("return this->", access, ";");
+                            auto a = str.to_string(f->ident);
+                            w.writeln("return ", a, ";");
                         };
                         bool has_els = false;
                         bool end_else = false;
@@ -257,7 +265,7 @@ namespace j2cp2 {
             }
         }
 
-        void write_struct_type(const std::shared_ptr<ast::StructType>& s) {
+        void write_struct_type(const std::shared_ptr<ast::StructType>& s, const std::string& prefix = "") {
             auto member = ast::as<ast::Member>(s->base.lock());
             bool has_ident = member && member->ident;
             assert(!member || member->node_type != ast::NodeType::field);
@@ -293,6 +301,7 @@ namespace j2cp2 {
                                 w.writeln("public:");
                             });
                         }
+                        clean_ident(f->ident->ident);
                         if (auto ident = ast::as<ast::IdentType>(type); ident) {
                             type = ident->base.lock();
                         }
@@ -326,7 +335,7 @@ namespace j2cp2 {
                             if (int_ty->is_common_supported) {
                                 map_line(f->loc);
                                 w.writeln("std::", int_ty->is_signed ? "" : "u", "int", brgen::nums(*int_ty->bit_size), "_t ", f->ident->ident, ";");
-                                str.map_ident(f->ident, "${THIS}", f->ident->ident);
+                                str.map_ident(f->ident, "${THIS}", prefix, f->ident->ident);
                             }
                         }
                         if (auto enum_ty = ast::as<ast::EnumType>(type); enum_ty) {
@@ -335,7 +344,7 @@ namespace j2cp2 {
                             map_line(f->loc);
                             w.writeln("std::uint", brgen::nums(*bit_size), "_t ", f->ident->ident, "_data;");
                             map_line(f->loc);
-                            w.writeln(enum_->ident->ident, " ", f->ident->ident, "() const { return static_cast<", enum_->ident->ident, ">(this->", f->ident->ident, "_data); }");
+                            w.writeln(enum_->ident->ident, " ", f->ident->ident, "() const { return static_cast<", enum_->ident->ident, ">(this->", prefix, f->ident->ident, "_data); }");
                             str.map_ident(f->ident, "${THIS}", f->ident->ident + "()");
                         }
                         if (auto arr_ty = ast::as<ast::ArrayType>(type); arr_ty) {
@@ -356,13 +365,13 @@ namespace j2cp2 {
                                     later_size[f] = size_of_later;
                                 }
                             }
-                            str.map_ident(f->ident, "${THIS}", f->ident->ident);
+                            str.map_ident(f->ident, "${THIS}", prefix, f->ident->ident);
                         }
                         if (auto struct_ty = ast::as<ast::StructType>(type)) {
                             auto type_name = get_type_name(type);
                             map_line(f->loc);
                             w.writeln(type_name, " ", f->ident->ident, ";");
-                            str.map_ident(f->ident, "${THIS}", f->ident->ident);
+                            str.map_ident(f->ident, "${THIS}", prefix, f->ident->ident);
                         }
                         if (auto str_type = ast::as<ast::StrLiteralType>(type)) {
                             auto len = str_type->strong_ref->length;
@@ -402,7 +411,7 @@ namespace j2cp2 {
                         w.write(" = ", s.to_string(c->expr));
                     }
                     w.writeln(",");
-                    str.map_ident(enum_->ident, enum_->ident->ident, "::", c->ident->ident);
+                    str.map_ident(c->ident, enum_->ident->ident, "::", c->ident->ident);
                 }
             }
             w.writeln("};");
@@ -473,97 +482,67 @@ namespace j2cp2 {
             }
         }
 
-        void write_field_code(ast::Field* f, bool encode) {
+        void write_field_encode(ast::Field* f) {
             if (f->bit_alignment != ast::BitAlignment::byte_aligned) {
                 return;
             }
-            auto ident_from_field = [&] {
-                auto ident = f->ident->ident;
-                if (auto anon = anonymous_structs.find(f); anon != anonymous_structs.end()) {
-                    ident = anon->second.field_name;
-                }
-                return ident;
-            };
             auto typ = f->field_type;
             if (auto ident = ast::as<ast::IdentType>(typ); ident) {
                 typ = ident->base.lock();
             }
-            if (encode) {
-                if (auto found = bit_fields.find(f); found != bit_fields.end()) {
-                    auto& meta = found->second;
-                    auto& fields = meta.fields;
-                    auto& field_name = meta.field_name;
-                    map_line(f->loc);
-                    w.writeln("if (!::futils::binary::write_num(w,", field_name, ".as_value() ,true)) {");
-                    {
-                        auto indent = w.indent_scope();
-                        w.writeln("return false;");
-                    }
-                    w.writeln("}");
-                    return;
+            if (auto found = bit_fields.find(f); found != bit_fields.end()) {
+                auto& meta = found->second;
+                auto& fields = meta.fields;
+                auto& field_name = meta.field_name;
+                map_line(f->loc);
+                w.writeln("if (!::futils::binary::write_num(w,", field_name, ".as_value() ,true)) {");
+                {
+                    auto indent = w.indent_scope();
+                    w.writeln("return false;");
                 }
-                if (auto int_ty = ast::as<ast::IntType>(typ); int_ty) {
-                    auto ident = ident_from_field();
-                    auto type_name = get_type_name(typ);
-                    map_line(f->loc);
-                    w.writeln("if (!::futils::binary::write_num(w,static_cast<", type_name, ">(", ident, ") ,", int_ty->endian == ast::Endian::little ? "false" : "true", ")) {");
-                    {
-                        auto indent = w.indent_scope();
-                        w.writeln("return false;");
-                    }
-                    w.writeln("}");
+                w.writeln("}");
+                return;
+            }
+            if (auto int_ty = ast::as<ast::IntType>(typ); int_ty) {
+                auto ident = str.to_string(f->ident);
+                auto type_name = get_type_name(typ);
+                map_line(f->loc);
+                w.writeln("if (!::futils::binary::write_num(w,static_cast<", type_name, ">(", ident, ") ,", int_ty->endian == ast::Endian::little ? "false" : "true", ")) {");
+                {
+                    auto indent = w.indent_scope();
+                    w.writeln("return false;");
                 }
-                if (auto arr_ty = ast::as<ast::ArrayType>(typ); arr_ty) {
-                    auto type = get_type_name(typ);
-                    if (type == "::futils::view::rvec") {
-                        auto ident = ident_from_field();
-                        if (auto found = later_size.find(f); found != later_size.end()) {
-                            // nothing to check
-                        }
-                        else {
-                            auto len = str.to_string(arr_ty->length);
-                            map_line(f->loc);
-                            w.writeln("if (", len, "!=", ident, ".size()) {");
-                            {
-                                auto indent = w.indent_scope();
-                                w.writeln("return false;");
-                            }
-                            w.writeln("}");
-                        }
+                w.writeln("}");
+            }
+            if (auto arr_ty = ast::as<ast::ArrayType>(typ); arr_ty) {
+                auto type = get_type_name(typ);
+                if (type == "::futils::view::rvec") {
+                    auto ident = str.to_string(f->ident);
+                    if (auto found = later_size.find(f); found != later_size.end()) {
+                        // nothing to check
+                    }
+                    else {
+                        auto len = str.to_string(arr_ty->length);
                         map_line(f->loc);
-                        w.writeln("if (!w.write(", ident, ")) {");
+                        w.writeln("if (", len, "!=", ident, ".size()) {");
                         {
                             auto indent = w.indent_scope();
                             w.writeln("return false;");
                         }
                         w.writeln("}");
                     }
-                    if (arr_ty->length->constant_level == ast::ConstantLevel::constant && arr_ty->base_type->bit_size == 8) {
-                        auto ident = ident_from_field();
-                        map_line(f->loc);
-                        w.writeln("if (!w.write(", ident, ")) {");
-                        {
-                            auto indent = w.indent_scope();
-                            w.writeln("return false;");
-                        }
-                        w.writeln("}");
-                    }
-                }
-                if (auto struct_ty = ast::as<ast::StructType>(typ); struct_ty) {
-                    auto ident = ident_from_field();
                     map_line(f->loc);
-                    w.writeln("if (!", ident, ".encode(w)) {");
+                    w.writeln("if (!w.write(", ident, ")) {");
                     {
                         auto indent = w.indent_scope();
                         w.writeln("return false;");
                     }
                     w.writeln("}");
                 }
-                if (auto str_ty = ast::as<ast::StrLiteralType>(typ)) {
-                    auto len = str_ty->strong_ref->length;
-                    auto value = str_ty->strong_ref->value;
+                if (arr_ty->length->constant_level == ast::ConstantLevel::constant && arr_ty->base_type->bit_size == 8) {
+                    auto ident = str.to_string(f->ident);
                     map_line(f->loc);
-                    w.writeln("if (!w.write(::futils::view::rvec(", value, ", ", brgen::nums(len), "))) {");
+                    w.writeln("if (!w.write(", ident, ")) {");
                     {
                         auto indent = w.indent_scope();
                         w.writeln("return false;");
@@ -571,100 +550,149 @@ namespace j2cp2 {
                     w.writeln("}");
                 }
             }
+            if (auto struct_ty = ast::as<ast::StructType>(typ); struct_ty) {
+                auto ident = str.to_string(f->ident);
+                map_line(f->loc);
+                w.writeln("if (!", ident, ".encode(w)) {");
+                {
+                    auto indent = w.indent_scope();
+                    w.writeln("return false;");
+                }
+                w.writeln("}");
+            }
+            if (auto str_ty = ast::as<ast::StrLiteralType>(typ)) {
+                auto len = str_ty->strong_ref->length;
+                auto value = str_ty->strong_ref->value;
+                map_line(f->loc);
+                w.writeln("if (!w.write(::futils::view::rvec(", value, ", ", brgen::nums(len), "))) {");
+                {
+                    auto indent = w.indent_scope();
+                    w.writeln("return false;");
+                }
+                w.writeln("}");
+            }
+        }
+
+        void write_field_decode(ast::Field* f) {
+            if (f->bit_alignment != ast::BitAlignment::byte_aligned) {
+                return;
+            }
+            auto typ = f->field_type;
+            if (auto ident = ast::as<ast::IdentType>(typ); ident) {
+                typ = ident->base.lock();
+            }
+            if (auto found = bit_fields.find(f); found != bit_fields.end()) {
+                auto& meta = found->second;
+                auto& fields = meta.fields;
+                auto& field_name = meta.field_name;
+                map_line(f->loc);
+                w.writeln("if (!::futils::binary::read_num(r,", field_name, ".as_value() ,true)) {");
+                {
+                    auto indent = w.indent_scope();
+                    w.writeln("return false;");
+                }
+                w.writeln("}");
+                return;
+            }
+            if (auto int_ty = ast::as<ast::IntType>(typ); int_ty) {
+                auto ident = str.to_string(f->ident);
+                auto type_name = get_type_name(typ);
+                map_line(f->loc);
+                w.writeln("if (!::futils::binary::read_num(r,", ident, " ,", int_ty->endian == ast::Endian::little ? "false" : "true", ")) {");
+                {
+                    auto indent = w.indent_scope();
+                    w.writeln("return false;");
+                }
+                w.writeln("}");
+            }
+            if (auto arr_ty = ast::as<ast::ArrayType>(typ); arr_ty) {
+                auto type = get_type_name(typ);
+                auto ident = str.to_string(f->ident);
+                if (type == "::futils::view::rvec") {
+                    std::string len;
+                    if (auto found = later_size.find(f); found != later_size.end()) {
+                        auto require_remain = brgen::nums(found->second / 8);
+                        map_line(f->loc);
+                        w.writeln("if (r.remain().size() < ", require_remain, ") {");
+                        {
+                            auto indent = w.indent_scope();
+                            w.writeln("return false;");
+                        }
+                        w.writeln("}");
+                        len = brgen::concat("(r.remain().size() - ", require_remain, ")");
+                    }
+                    else {
+                        len = str.to_string(arr_ty->length);
+                    }
+                    map_line(f->loc);
+                    w.writeln("if (!r.read(", ident, ", ", len, ")) {");
+                    {
+                        auto indent = w.indent_scope();
+                        w.writeln("return false;");
+                    }
+                    w.writeln("}");
+                }
+                if (arr_ty->length->constant_level == ast::ConstantLevel::constant && arr_ty->base_type->bit_size == 8) {
+                    map_line(f->loc);
+                    w.writeln("if (!r.read(", ident, ")) {");
+                    {
+                        auto indent = w.indent_scope();
+                        w.writeln("return false;");
+                    }
+                    w.writeln("}");
+                }
+            }
+            if (auto struct_ty = ast::as<ast::StructType>(typ); struct_ty) {
+                auto ident = str.to_string(f->ident);
+                map_line(f->loc);
+                w.writeln("if (!", ident, ".decode(r)) {");
+                {
+                    auto indent = w.indent_scope();
+                    w.writeln("return false;");
+                }
+                w.writeln("}");
+            }
+            if (auto str_ty = ast::as<ast::StrLiteralType>(typ)) {
+                auto len = str_ty->strong_ref->length;
+                auto value = str_ty->strong_ref->value;
+                map_line(f->loc);
+                auto tmp_var = brgen::concat("tmp_", brgen::nums(seq), "_");
+                w.writeln("::futils::view::rvec ", tmp_var, " = {};");
+                seq++;
+                map_line(f->loc);
+                w.writeln("if (!r.read(", tmp_var, ", ", brgen::nums(len), ")) {");
+                {
+                    auto indent = w.indent_scope();
+                    w.writeln("return false;");
+                }
+                w.writeln("}");
+                map_line(f->loc);
+                w.writeln("if (", tmp_var, " != ::futils::view::rvec(", value, ",", brgen::nums(len), ")) {");
+                {
+                    auto indent = w.indent_scope();
+                    w.writeln("return false;");
+                }
+                w.writeln("}");
+            }
+            if (auto enum_ty = ast::as<ast::EnumType>(typ)) {
+                auto ident = str.to_string(f->ident);
+                ident = ident.substr();
+                map_line(f->loc);
+                w.writeln("if (!::futils::binary::read_num(r,", ident, "_data ,", enum_ty->endian == ast::Endian::little ? "false" : "true", ")) {");
+                {
+                    auto indent = w.indent_scope();
+                    w.writeln("return false;");
+                }
+                w.writeln("}");
+            }
+        }
+
+        void write_field_code(ast::Field* f, bool encode) {
+            if (encode) {
+                write_field_encode(f);
+            }
             else {
-                if (auto found = bit_fields.find(f); found != bit_fields.end()) {
-                    auto& meta = found->second;
-                    auto& fields = meta.fields;
-                    auto& field_name = meta.field_name;
-                    map_line(f->loc);
-                    w.writeln("if (!::futils::binary::read_num(r,", field_name, ".as_value() ,true)) {");
-                    {
-                        auto indent = w.indent_scope();
-                        w.writeln("return false;");
-                    }
-                    w.writeln("}");
-                    return;
-                }
-                if (auto int_ty = ast::as<ast::IntType>(typ); int_ty) {
-                    auto ident = ident_from_field();
-                    auto type_name = get_type_name(typ);
-                    map_line(f->loc);
-                    w.writeln("if (!::futils::binary::read_num(r,", ident, " ,", int_ty->endian == ast::Endian::little ? "false" : "true", ")) {");
-                    {
-                        auto indent = w.indent_scope();
-                        w.writeln("return false;");
-                    }
-                    w.writeln("}");
-                }
-                if (auto arr_ty = ast::as<ast::ArrayType>(typ); arr_ty) {
-                    auto type = get_type_name(typ);
-                    auto ident = ident_from_field();
-                    if (type == "::futils::view::rvec") {
-                        std::string len;
-                        if (auto found = later_size.find(f); found != later_size.end()) {
-                            auto require_remain = brgen::nums(found->second / 8);
-                            map_line(f->loc);
-                            w.writeln("if (r.remain().size() < ", require_remain, ") {");
-                            {
-                                auto indent = w.indent_scope();
-                                w.writeln("return false;");
-                            }
-                            w.writeln("}");
-                            len = brgen::concat("(r.remain().size() - ", require_remain, ")");
-                        }
-                        else {
-                            len = str.to_string(arr_ty->length);
-                        }
-                        map_line(f->loc);
-                        w.writeln("if (!r.read(", ident, ", ", len, ")) {");
-                        {
-                            auto indent = w.indent_scope();
-                            w.writeln("return false;");
-                        }
-                        w.writeln("}");
-                    }
-                    if (arr_ty->length->constant_level == ast::ConstantLevel::constant && arr_ty->base_type->bit_size == 8) {
-                        map_line(f->loc);
-                        w.writeln("if (!r.read(", ident, ")) {");
-                        {
-                            auto indent = w.indent_scope();
-                            w.writeln("return false;");
-                        }
-                        w.writeln("}");
-                    }
-                }
-                if (auto struct_ty = ast::as<ast::StructType>(typ); struct_ty) {
-                    auto ident = ident_from_field();
-                    map_line(f->loc);
-                    w.writeln("if (!", ident, ".decode(r)) {");
-                    {
-                        auto indent = w.indent_scope();
-                        w.writeln("return false;");
-                    }
-                    w.writeln("}");
-                }
-                if (auto str_ty = ast::as<ast::StrLiteralType>(typ)) {
-                    auto len = str_ty->strong_ref->length;
-                    auto value = str_ty->strong_ref->value;
-                    map_line(f->loc);
-                    auto tmp_var = brgen::concat("tmp_", brgen::nums(seq), "_");
-                    w.writeln("::futils::view::rvec ", tmp_var, " = {};");
-                    seq++;
-                    map_line(f->loc);
-                    w.writeln("if (!r.read(", tmp_var, ", ", brgen::nums(len), ")) {");
-                    {
-                        auto indent = w.indent_scope();
-                        w.writeln("return false;");
-                    }
-                    w.writeln("}");
-                    map_line(f->loc);
-                    w.writeln("if (", tmp_var, " != ::futils::view::rvec(", value, ",", brgen::nums(len), ")) {");
-                    {
-                        auto indent = w.indent_scope();
-                        w.writeln("return false;");
-                    }
-                    w.writeln("}");
-                }
+                write_field_decode(f);
             }
         }
 
