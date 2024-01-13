@@ -710,7 +710,8 @@ struct ast2c_SpecifyEndian {
 	ast2c_Type* expr_type;
 	ast2c_ConstantLevel constant_level;
 	ast2c_Binary* base;
-	ast2c_Expr* is_little;
+	ast2c_Expr* endian;
+	uint64_t* endian_value;
 };
 
 // returns 1 if succeed 0 if failed

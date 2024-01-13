@@ -29,10 +29,23 @@ namespace brgen::middle {
                 else if (name == "input.remain") {
                     method = ast::IOMethod::input_remain;
                 }
+                else if (name == "config.endian.big") {
+                    method = ast::IOMethod::config_endian_big;
+                }
+                else if (name == "config.endian.little") {
+                    method = ast::IOMethod::config_endian_little;
+                }
+                else if (name == "config.endian.native") {
+                    method = ast::IOMethod::config_endian_native;
+                }
                 else {
                     return;
                 }
-                ast::as<ast::MemberAccess>(n)->member->usage = ast::IdentUsage::reference_builtin_fn;
+                auto ac = ast::as<ast::MemberAccess>(n);
+                ac->member->usage = ast::IdentUsage::reference_builtin_fn;
+                if (method == ast::IOMethod::config_endian_big || method == ast::IOMethod::config_endian_little || method == ast::IOMethod::config_endian_native) {
+                    ast::as<ast::MemberAccess>(ac->target)->member->usage = ast::IdentUsage::reference_builtin_fn;
+                }
                 auto a = std::make_shared<ast::IOOperation>(ast::cast_to<ast::Expr>(std::move(n)), method);
                 node.replace(std::move(a));
                 return;

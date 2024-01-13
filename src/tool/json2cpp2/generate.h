@@ -32,6 +32,7 @@ namespace j2cp2 {
     struct Context {
         bool encode = false;
         ast::Endian endian = ast::Endian::unspec;
+        bool dynamic_endian = false;
 
        private:
         std::string prefix_;
@@ -46,6 +47,26 @@ namespace j2cp2 {
             return futils::helper::defer([this, old = std::move(old)] {
                 prefix_ = std::move(old);
             });
+        }
+
+        std::string endian_text(ast::Endian e) {
+            if (e == ast::Endian::big) {
+                return "true";
+            }
+            if (e == ast::Endian::little) {
+                return "false";
+            }
+            // unspecified
+            if (dynamic_endian) {
+                return "dynamic_endian____";
+            }
+            if (endian == ast::Endian::little) {
+                return "false";
+            }
+            if (endian == ast::Endian::big) {
+                return "true";
+            }
+            return "true";  // default to big
         }
     };
 
@@ -168,7 +189,7 @@ namespace j2cp2 {
                 if (c) {
                     auto defs = str.collect_defined_ident(c);
                     for (auto& d : defs) {
-                        encode_one_node(d, true);
+                        code_one_node(d);
                     }
                     cond_u = str.to_string(c);
                 }
@@ -198,7 +219,7 @@ namespace j2cp2 {
                             if (cond) {
                                 auto defs = str.collect_defined_ident(cond);
                                 for (auto& d : defs) {
-                                    encode_one_node(d, true);
+                                    code_one_node(d);
                                 }
                                 auto cond_s = str.to_string(cond);
                                 map_line(c->loc);
@@ -253,7 +274,7 @@ namespace j2cp2 {
                             if (cond) {
                                 auto defs = str.collect_defined_ident(cond);
                                 for (auto& d : defs) {
-                                    encode_one_node(d, true);
+                                    code_one_node(d);
                                 }
                                 auto cond_s = str.to_string(cond);
                                 map_line(c->loc);
@@ -276,6 +297,7 @@ namespace j2cp2 {
                                 }
                                 else {
                                     make_access(f);
+                                    w.writeln("return true;");
                                 }
                                 end_else = true;
                             }
@@ -315,15 +337,13 @@ namespace j2cp2 {
                     if (auto f = ast::as<ast::Field>(field); f) {
                         auto type = f->field_type;
                         futils::helper::DynDefer d;
+                        bool hidden = false;
                         if (!f->ident) {
                             auto h = brgen::concat("hidden_field_", brgen::nums(seq++));
                             f->ident = std::make_shared<ast::Ident>();
                             f->ident->ident = std::move(h);
                             f->ident->base = field;
-                            w.writeln("private:");
-                            d = futils::helper::defer_ex([&] {
-                                w.writeln("public:");
-                            });
+                            hidden = true;
                         }
                         clean_ident(f->ident->ident);
                         if (auto ident = ast::as<ast::IdentType>(type); ident) {
@@ -354,6 +374,12 @@ namespace j2cp2 {
                         if (auto union_ty = ast::as<ast::StructUnionType>(type)) {
                             write_struct_union(union_ty);
                             continue;
+                        }
+                        if (hidden) {
+                            w.writeln("private:");
+                            d = futils::helper::defer_ex([&] {
+                                w.writeln("public:");
+                            });
                         }
                         if (auto int_ty = ast::as<ast::IntType>(type); int_ty) {
                             if (int_ty->is_common_supported) {
@@ -441,14 +467,14 @@ namespace j2cp2 {
             w.writeln("};");
         }
 
-        void code_if(ast::If* if_, bool encode) {
+        void code_if(ast::If* if_) {
             auto cond = if_->cond;
             auto cond_s = str.to_string(cond);
             map_line(if_->loc);
             w.writeln("if (", cond_s, ") {");
             {
                 auto indent = w.indent_scope();
-                code_indent_block(if_->then, encode);
+                code_indent_block(if_->then);
             }
             w.writeln("}");
             auto elif_ = if_;
@@ -459,7 +485,7 @@ namespace j2cp2 {
                     w.writeln("else if (", cond_s, ") {");
                     {
                         auto indent = w.indent_scope();
-                        code_indent_block(if_->then, encode);
+                        code_indent_block(if_->then);
                     }
                     w.writeln("}");
                     elif_ = if_;
@@ -470,7 +496,7 @@ namespace j2cp2 {
                     w.writeln("else {");
                     {
                         auto indent = w.indent_scope();
-                        code_indent_block(ast::cast_to<ast::IndentBlock>(elif_->els), encode);
+                        code_indent_block(ast::cast_to<ast::IndentBlock>(elif_->els));
                     }
                     w.writeln("}");
                     break;
@@ -479,7 +505,7 @@ namespace j2cp2 {
             }
         }
 
-        void code_match(ast::Match* m, bool encode) {
+        void code_match(ast::Match* m) {
             std::string cond_s;
             if (m->cond) {
                 cond_s = str.to_string(m->cond);
@@ -498,7 +524,7 @@ namespace j2cp2 {
                     w.writeln("if (", cond, "==", cond_s, ") {");
                     {
                         auto indent = w.indent_scope();
-                        encode_one_node(br->then, encode);
+                        code_one_node(br->then);
                     }
                     w.writeln("}");
                     has_case = true;
@@ -531,7 +557,7 @@ namespace j2cp2 {
                 auto ident = str.to_string(f->ident);
                 auto type_name = get_type_name(typ);
                 map_line(f->loc);
-                w.writeln("if (!::futils::binary::write_num(w,static_cast<", type_name, ">(", ident, ") ,", int_ty->endian == ast::Endian::little ? "false" : "true", ")) {");
+                w.writeln("if (!::futils::binary::write_num(w,static_cast<", type_name, ">(", ident, ") ,", ctx.endian_text(int_ty->endian), ")) {");
                 {
                     auto indent = w.indent_scope();
                     w.writeln("return false;");
@@ -595,6 +621,18 @@ namespace j2cp2 {
                 }
                 w.writeln("}");
             }
+            if (auto enum_ty = ast::as<ast::EnumType>(typ)) {
+                auto ident = str.to_string(f->ident);
+                ident = ident.substr(0, ident.size() - 2) + "_data";
+                auto l = ast::as<ast::IntType>(enum_ty->base.lock()->base_type);
+                map_line(f->loc);
+                w.writeln("if (!::futils::binary::write_num(w,", ident, ",", ctx.endian_text(l->endian), ")) {");
+                {
+                    auto indent = w.indent_scope();
+                    w.writeln("return false;");
+                }
+                w.writeln("}");
+            }
         }
 
         void write_field_decode(ast::Field* f) {
@@ -622,7 +660,7 @@ namespace j2cp2 {
                 auto ident = str.to_string(f->ident);
                 auto type_name = get_type_name(typ);
                 map_line(f->loc);
-                w.writeln("if (!::futils::binary::read_num(r,", ident, " ,", int_ty->endian == ast::Endian::little ? "false" : "true", ")) {");
+                w.writeln("if (!::futils::binary::read_num(r,", ident, " ,", ctx.endian_text(int_ty->endian), ")) {");
                 {
                     auto indent = w.indent_scope();
                     w.writeln("return false;");
@@ -703,7 +741,7 @@ namespace j2cp2 {
                 ident = ident.substr(0, ident.size() - 2);
                 auto s = ast::as<ast::IntType>(enum_ty->base.lock()->base_type);
                 map_line(f->loc);
-                w.writeln("if (!::futils::binary::read_num(r,", ident, "_data ,", s->endian == ast::Endian::little ? "false" : "true", ")) {");
+                w.writeln("if (!::futils::binary::read_num(r,", ident, "_data ,", ctx.endian_text(s->endian), ")) {");
                 {
                     auto indent = w.indent_scope();
                     w.writeln("return false;");
@@ -712,8 +750,8 @@ namespace j2cp2 {
             }
         }
 
-        void write_field_code(ast::Field* f, bool encode) {
-            if (encode) {
+        void write_field_code(ast::Field* f) {
+            if (ctx.encode) {
                 write_field_encode(f);
             }
             else {
@@ -721,21 +759,21 @@ namespace j2cp2 {
             }
         }
 
-        void encode_one_node(const std::shared_ptr<ast::Node>& elem, bool encode) {
+        void code_one_node(const std::shared_ptr<ast::Node>& elem) {
             if (auto f = ast::as<ast::Field>(elem)) {
-                write_field_code(f, encode);
+                write_field_code(f);
             }
             if (auto if_ = ast::as<ast::If>(elem)) {
-                code_if(if_, encode);
+                code_if(if_);
             }
             if (auto block = ast::as<ast::IndentBlock>(elem)) {
-                code_indent_block(ast::cast_to<ast::IndentBlock>(elem), encode);
+                code_indent_block(ast::cast_to<ast::IndentBlock>(elem));
             }
             if (auto match = ast::as<ast::Match>(elem)) {
-                code_match(match, encode);
+                code_match(match);
             }
             if (auto scoped = ast::as<ast::ScopedStatement>(elem)) {
-                encode_one_node(scoped->statement, encode);
+                code_one_node(scoped->statement);
             }
             if (auto b = ast::as<ast::Binary>(elem);
                 b &&
@@ -748,7 +786,23 @@ namespace j2cp2 {
                 w.writeln("auto ", ident->ident, " = ", expr, ";");
                 str.map_ident(ast::cast_to<ast::Ident>(b->left), ident->ident);
             }
-            if (!encode) {
+            if (auto s = ast::as<ast::SpecifyEndian>(elem)) {
+                if (ctx.dynamic_endian) {
+                    if (s->endian_value) {
+                        map_line(s->loc);
+                        w.writeln("dynamic_endian____ = !/*reverse for library*/(/*true->little false->big*/", brgen::nums(*s->endian_value), ");");
+                    }
+                    else {
+                        auto specify = str.to_string(s->endian);
+                        map_line(s->loc);
+                        w.writeln("dynamic_endian____ = !/*reverse for library*/(/*true->little false->big*/", specify, ");");
+                    }
+                }
+                else {
+                    ctx.endian = *s->endian_value ? ast::Endian::little : ast::Endian::big;
+                }
+            }
+            if (!ctx.encode) {
                 if (auto a = ast::as<ast::Assert>(elem)) {
                     auto cond = str.to_string(a->cond);
                     w.writeln("if (!", cond, ") {");
@@ -761,10 +815,10 @@ namespace j2cp2 {
             }
         }
 
-        void code_indent_block(const std::shared_ptr<ast::IndentBlock>& block, bool encode) {
+        void code_indent_block(const std::shared_ptr<ast::IndentBlock>& block) {
             // encode fields
             for (auto& elem : block->elements) {
-                encode_one_node(elem, encode);
+                code_one_node(elem);
             }
         }
 
@@ -773,14 +827,24 @@ namespace j2cp2 {
                 return;  // skip
             }
             ctx.encode = encode;
+            ctx.endian = ast::Endian::big;  // default to big endian
+            ctx.dynamic_endian = false;
             for (auto& elem : fmt->body->elements) {
                 if (auto f = ast::as<ast::SpecifyEndian>(elem)) {
+                    if (!f->endian_value) {
+                        ctx.dynamic_endian = true;
+                        break;
+                    }
                 }
             }
             map_line(fmt->loc);
             w.writeln("inline bool ", fmt->ident->ident, "::", encode ? "encode(::futils::binary::writer& w) const" : "decode(::futils::binary::reader& r)", " {");
             {
                 auto indent = w.indent_scope();
+                if (ctx.dynamic_endian) {
+                    map_line(fmt->loc);
+                    w.writeln("bool dynamic_endian____ = true /*big endian*/;");
+                }
                 if (encode) {
                     // first, apply assertions
                     for (auto& elem : fmt->body->elements) {
@@ -796,7 +860,7 @@ namespace j2cp2 {
                     }
                 }
                 // write code
-                code_indent_block(fmt->body, encode);
+                code_indent_block(fmt->body);
                 w.writeln("return true;");
             }
             w.writeln("}");
@@ -821,6 +885,7 @@ namespace j2cp2 {
                     assert(ident);
                     map_line(b->loc);
                     w.writeln("constexpr auto ", ident->ident, " = ", str.to_string(b->right), ";");
+                    str.map_ident(ast::cast_to<ast::Ident>(b->left), ident->ident);
                 }
                 if (auto f = ast::as<ast::Format>(fmt); f) {
                     write_simple_struct(ast::cast_to<ast::Format>(fmt));

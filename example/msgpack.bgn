@@ -47,6 +47,10 @@ format MapPair:
     key :MsgPack
     value :MsgPack
 
+format Timestamp64:
+    nanosec :u30
+    sec :u34
+
 format MsgPack:
    type :Type
    match type:
@@ -137,8 +141,7 @@ format MsgPack:
             sec :u32
         Type.timestamp64:
             type :s8(-1)
-            nanosec :u30
-            sec :u34
+            timestamp :Timestamp64
         Type.timestamp96:
             type :s8(-1)
             nanosec :u32

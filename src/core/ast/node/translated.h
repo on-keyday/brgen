@@ -121,10 +121,12 @@ namespace brgen::ast {
     struct SpecifyEndian : Expr {
         define_node_type(NodeType::specify_endian);
         std::shared_ptr<Binary> base;
-        std::shared_ptr<Expr> is_little;
+        // 0(or false) is big, 1(or true) is little,2 is native, otherwise is unspecified(default to big) or generator dependent
+        std::shared_ptr<Expr> endian;
+        std::optional<size_t> endian_value;
 
         SpecifyEndian(std::shared_ptr<Binary>&& a, std::shared_ptr<Expr>&& b)
-            : Expr(a->loc, NodeType::specify_endian), base(std::move(a)), is_little(std::move(b)) {}
+            : Expr(a->loc, NodeType::specify_endian), base(std::move(a)), endian(std::move(b)) {}
 
         SpecifyEndian()
             : Expr({}, NodeType::specify_endian) {}
@@ -132,7 +134,8 @@ namespace brgen::ast {
         void dump(auto&& field_) {
             Expr::dump(field_);
             sdebugf(base);
-            sdebugf(is_little);
+            sdebugf(endian);
+            sdebugf(endian_value);
         }
     };
 

@@ -348,7 +348,8 @@ class Available(Expr):
 
 class SpecifyEndian(Expr):
     base: Optional[Binary]
-    is_little: Optional[Expr]
+    endian: Optional[Expr]
+    endian_value: Optional[int]
 
 
 class ExplicitError(Expr):
@@ -1198,11 +1199,16 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].base = x if isinstance(x,Binary) else raiseError(TypeError('type mismatch at SpecifyEndian::base'))
                 else:
                     node[i].base = None
-                if ast.node[i].body["is_little"] is not None:
-                    x = node[ast.node[i].body["is_little"]]
-                    node[i].is_little = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at SpecifyEndian::is_little'))
+                if ast.node[i].body["endian"] is not None:
+                    x = node[ast.node[i].body["endian"]]
+                    node[i].endian = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at SpecifyEndian::endian'))
                 else:
-                    node[i].is_little = None
+                    node[i].endian = None
+                x = ast.node[i].body["endian_value"]
+                if x is not None:
+                    node[i].endian_value = x if isinstance(x,int) else raiseError(TypeError('type mismatch at SpecifyEndian::endian_value'))
+                else:
+                    node[i].endian_value = None
             case NodeType.EXPLICIT_ERROR:
                 if ast.node[i].body["expr_type"] is not None:
                     x = node[ast.node[i].body["expr_type"]]
@@ -2052,8 +2058,8 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
           if x.base is not None:
               if f(f,x.base) == False:
                   return
-          if x.is_little is not None:
-              if f(f,x.is_little) == False:
+          if x.endian is not None:
+              if f(f,x.endian) == False:
                   return
         case x if isinstance(x,ExplicitError):
           if x.expr_type is not None:

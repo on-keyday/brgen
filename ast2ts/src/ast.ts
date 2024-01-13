@@ -552,7 +552,8 @@ export function isAvailable(obj: any): obj is Available {
 
 export interface SpecifyEndian extends Expr {
 	base: Binary|null;
-	is_little: Expr|null;
+	endian: Expr|null;
+	endian_value: number|null;
 }
 
 export function isSpecifyEndian(obj: any): obj is SpecifyEndian {
@@ -1309,7 +1310,8 @@ export function parseAST(obj: any): Program {
 				expr_type: null,
 				constant_level: ConstantLevel.unknown,
 				base: null,
-				is_little: null,
+				endian: null,
+				endian_value: null,
 			}
 			c.node.push(n);
 			break;
@@ -2531,14 +2533,19 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at SpecifyEndian::base');
 			}
 			n.base = tmpbase;
-			if (on.body?.is_little !== null && typeof on.body?.is_little !== 'number') {
-				throw new Error('invalid node list at SpecifyEndian::is_little');
+			if (on.body?.endian !== null && typeof on.body?.endian !== 'number') {
+				throw new Error('invalid node list at SpecifyEndian::endian');
 			}
-			const tmpis_little = on.body.is_little === null ? null : c.node[on.body.is_little];
-			if (!(tmpis_little === null || isExpr(tmpis_little))) {
-				throw new Error('invalid node list at SpecifyEndian::is_little');
+			const tmpendian = on.body.endian === null ? null : c.node[on.body.endian];
+			if (!(tmpendian === null || isExpr(tmpendian))) {
+				throw new Error('invalid node list at SpecifyEndian::endian');
 			}
-			n.is_little = tmpis_little;
+			n.endian = tmpendian;
+			const tmpendian_value = on.body?.endian_value;
+			if (tmpendian_value !== null && typeof tmpendian_value !== "number") {
+				throw new Error('invalid node list at SpecifyEndian::endian_value');
+			}
+			n.endian_value = on.body.endian_value;
 			break;
 		}
 		case "explicit_error": {
@@ -4403,8 +4410,8 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 					return;
 				}
 			}
-			if (n.is_little !== null) {
-				const result = fn(fn,n.is_little);
+			if (n.endian !== null) {
+				const result = fn(fn,n.endian);
 				if (result === false) {
 					return;
 				}

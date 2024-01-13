@@ -360,7 +360,8 @@ public class SpecifyEndian : Expr{
 	public Type? ExprType{get;set;}
 	public ConstantLevel ConstantLevel{get;set;}
 	public Binary? Base{get;set;}
-	public Expr? IsLittle{get;set;}
+	public Expr? Endian{get;set;}
+	public ulong? EndianValue{get;set;}
 }
 public class ExplicitError : Expr{
 	public Loc Loc{get;set;}

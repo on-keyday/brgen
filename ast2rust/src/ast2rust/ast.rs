@@ -3551,7 +3551,8 @@ pub struct SpecifyEndian {
 	pub expr_type: Option<Type>,
 	pub constant_level: ConstantLevel,
 	pub base: Option<Rc<RefCell<Binary>>>,
-	pub is_little: Option<Expr>,
+	pub endian: Option<Expr>,
+	pub endian_value: Option<u64>,
 }
 
 impl TryFrom<&Expr> for Rc<RefCell<SpecifyEndian>> {
@@ -6991,7 +6992,8 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				expr_type: None,
 				constant_level: ConstantLevel::Unknown,
 				base: None,
-				is_little: None,
+				endian: None,
+				endian_value: None,
 				})))
 			},
 			NodeType::ExplicitError => {
@@ -8781,21 +8783,32 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().base = Some(base_body.clone());
 				}
-				let is_little_body = match raw_node.body.get("is_little") {
+				let endian_body = match raw_node.body.get("endian") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"is_little")),
+					None=>return Err(Error::MissingField(node_type,"endian")),
 				};
- 				if !is_little_body.is_null() {
-					let is_little_body = match is_little_body.as_u64() {
+ 				if !endian_body.is_null() {
+					let endian_body = match endian_body.as_u64() {
 						Some(v)=>v,
-						None=>return Err(Error::MismatchJSONType(is_little_body.into(),JSONType::Number)),
+						None=>return Err(Error::MismatchJSONType(endian_body.into(),JSONType::Number)),
 					};
-					let is_little_body = match nodes.get(is_little_body as usize) {
+					let endian_body = match nodes.get(endian_body as usize) {
 						Some(v)=>v,
-						None => return Err(Error::IndexOutOfBounds(is_little_body as usize)),
+						None => return Err(Error::IndexOutOfBounds(endian_body as usize)),
 					};
-					node.borrow_mut().is_little = Some(is_little_body.try_into()?);
+					node.borrow_mut().endian = Some(endian_body.try_into()?);
 				}
+				let endian_value_body = match raw_node.body.get("endian_value") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"endian_value")),
+				};
+				node.borrow_mut().endian_value = match endian_value_body.as_u64() {
+					Some(v)=>Some(v),
+					None=> match endian_value_body.is_null() {
+						true=>None,
+						false=>return Err(Error::MismatchJSONType(endian_value_body.into(),JSONType::Number)),
+					},
+				};
 			},
 			NodeType::ExplicitError => {
 				let node = nodes[i].clone();
@@ -11897,7 +11910,7 @@ where
 					return;
 				}
 			}
-			if let Some(node) = &node.borrow().is_little{
+			if let Some(node) = &node.borrow().endian{
 				if !f.visit(&node.into()){
 					return;
 				}

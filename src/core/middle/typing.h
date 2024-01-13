@@ -6,6 +6,7 @@
 #include <helper/defer.h>
 #include "replacer.h"
 #include "../ast/tool/extract_config.h"
+#include "../ast/tool/eval.h"
 
 namespace brgen::middle {
 
@@ -924,6 +925,7 @@ namespace brgen::middle {
             // Cast has already been typed in the previous pass
             // but inner expression may not be typed
             if (auto c = ast::as<ast::Cast>(expr)) {
+                assert(c->expr_type);
                 if (c->expr) {
                     typing_expr(c->expr);
                     c->constant_level = c->expr->constant_level;
@@ -934,10 +936,24 @@ namespace brgen::middle {
                 a->constant_level = ast::ConstantLevel::variable;
             }
             if (auto b = ast::as<ast::SpecifyEndian>(expr)) {
-                typing_expr(b->is_little, false);
+                typing_expr(b->endian, false);
                 b->base->expr_type = void_type(b->loc);
                 b->expr_type = b->base->expr_type;
-                b->constant_level = b->is_little->constant_level;
+                b->constant_level = b->endian->constant_level;
+                ast::tool::Evaluator eval;
+                eval.ident_mode = ast::tool::EvalIdentMode::resolve_ident;
+                if (auto val = eval.eval_as<ast::tool::EResultType::integer>(b->endian)) {
+                    // case 1 or 2
+                    if (val->type() == ast::tool::EResultType::integer) {
+                        b->endian_value = val->get<ast::tool::EResultType::integer>();
+                    }
+                    else if (val->type() == ast::tool::EResultType::boolean) {
+                        b->endian_value = val->get<ast::tool::EResultType::boolean>() ? 1 : 0;
+                    }
+                    else {
+                        error(b->endian->loc, "expect integer or boolean but got ", ast::tool::eval_result_type_str[int(val->type())]).report();
+                    }
+                }
             }
             if (auto b = ast::as<ast::ExplicitError>(expr)) {
                 typing_expr(b->base->raw_arguments, false);

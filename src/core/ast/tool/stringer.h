@@ -235,6 +235,15 @@ namespace brgen::ast::tool {
                 auto base = to_string(access->target);
                 return ident_to_string(access->member, base + ".");
             }
+            if (auto io_op = ast::as<ast::IOOperation>(expr)) {
+                if (io_op->method == ast::IOMethod::config_endian_big ||
+                    io_op->method == ast::IOMethod::config_endian_native) {
+                    return "0";
+                }
+                if (io_op->method == ast::IOMethod::config_endian_little) {
+                    return "1";
+                }
+            }
             return "";
         }
 

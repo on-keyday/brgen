@@ -1784,7 +1784,8 @@ type SpecifyEndian struct {
 	ExprType      Type
 	ConstantLevel ConstantLevel
 	Base          *Binary
-	IsLittle      Expr
+	Endian        Expr
+	EndianValue   *uint64
 }
 
 func (n *SpecifyEndian) isExpr() {}
@@ -3496,7 +3497,8 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				ExprType      *uintptr      `json:"expr_type"`
 				ConstantLevel ConstantLevel `json:"constant_level"`
 				Base          *uintptr      `json:"base"`
-				IsLittle      *uintptr      `json:"is_little"`
+				Endian        *uintptr      `json:"endian"`
+				EndianValue   *uint64       `json:"endian_value"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -3508,9 +3510,10 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.Base != nil {
 				v.Base = n.node[*tmp.Base].(*Binary)
 			}
-			if tmp.IsLittle != nil {
-				v.IsLittle = n.node[*tmp.IsLittle].(Expr)
+			if tmp.Endian != nil {
+				v.Endian = n.node[*tmp.Endian].(Expr)
 			}
+			v.EndianValue = tmp.EndianValue
 		case NodeTypeExplicitError:
 			v := n.node[i].(*ExplicitError)
 			var tmp struct {
@@ -4661,8 +4664,8 @@ func Walk(n Node, f Visitor) {
 				return
 			}
 		}
-		if v.IsLittle != nil {
-			if !f.Visit(f, v.IsLittle) {
+		if v.Endian != nil {
+			if !f.Visit(f, v.Endian) {
 				return
 			}
 		}

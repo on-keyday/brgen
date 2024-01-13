@@ -1626,18 +1626,25 @@ int ast2c_SpecifyEndian_parse(ast2c_Ast* ast,ast2c_SpecifyEndian* s,ast2c_json_h
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
 	s->expr_type = NULL;
 	s->base = NULL;
-	s->is_little = NULL;
+	s->endian = NULL;
+	s->endian_value = NULL;
 	void* expr_type = h->object_get(h, obj_body, "expr_type");
 	void* constant_level = h->object_get(h, obj_body, "constant_level");
 	void* base = h->object_get(h, obj_body, "base");
-	void* is_little = h->object_get(h, obj_body, "is_little");
+	void* endian = h->object_get(h, obj_body, "endian");
+	void* endian_value = h->object_get(h, obj_body, "endian_value");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_SpecifyEndian::loc is null"); } return 0; }
 	if (!expr_type) { if(h->error) { h->error(h,expr_type, "ast2c_SpecifyEndian::expr_type is null"); } return 0; }
 	if (!constant_level) { if(h->error) { h->error(h,constant_level, "ast2c_SpecifyEndian::constant_level is null"); } return 0; }
 	if (!base) { if(h->error) { h->error(h,base, "ast2c_SpecifyEndian::base is null"); } return 0; }
-	if (!is_little) { if(h->error) { h->error(h,is_little, "ast2c_SpecifyEndian::is_little is null"); } return 0; }
+	if (!endian) { if(h->error) { h->error(h,endian, "ast2c_SpecifyEndian::endian is null"); } return 0; }
+	if (!endian_value) { if(h->error) { h->error(h,endian_value, "ast2c_SpecifyEndian::endian_value is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_SpecifyEndian::loc"); }
+		goto error;
+	}
+	if(!h->number_get(h,endian_value,&s->endian_value)) {
+		if(h->error) { h->error(h,endian_value, "failed to parse ast2c_SpecifyEndian::endian_value"); }
 		goto error;
 	}
 	return 1;
