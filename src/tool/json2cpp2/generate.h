@@ -676,9 +676,10 @@ namespace j2cp2 {
             }
             if (auto enum_ty = ast::as<ast::EnumType>(typ)) {
                 auto ident = str.to_string(f->ident);
-                ident = ident.substr();
+                ident = ident.substr(0, ident.size() - 2);
+                auto s = ast::as<ast::IntType>(enum_ty->base.lock()->base_type);
                 map_line(f->loc);
-                w.writeln("if (!::futils::binary::read_num(r,", ident, "_data ,", enum_ty->endian == ast::Endian::little ? "false" : "true", ")) {");
+                w.writeln("if (!::futils::binary::read_num(r,", ident, "_data ,", s->endian == ast::Endian::little ? "false" : "true", ")) {");
                 {
                     auto indent = w.indent_scope();
                     w.writeln("return false;");
