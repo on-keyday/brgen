@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	gpath "path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -36,15 +37,22 @@ type Result struct {
 }
 
 type Generator struct {
-	generatorPath string
-	outputDir     string
-	args          []string
-	spec          Spec
-	result        chan *Result
-	request       chan *Result
-	ctx           context.Context
-	stderr        io.Writer
-	outputCount   *atomic.Int64
+	generatorPath     string
+	outputDir         string
+	args              []string
+	spec              Spec
+	result            chan *Result
+	request           chan *Result
+	ctx               context.Context
+	stderr            io.Writer
+	outputCount       *atomic.Int64
+	dirBaseSuffixChan chan DirBaseSuffix
+}
+
+type DirBaseSuffix struct {
+	Dir    string `json:"dir"`
+	Base   string `json:"base"`
+	Suffix string `json:"suffix"`
 }
 
 type GeneratorHandler struct {
@@ -63,6 +71,9 @@ type GeneratorHandler struct {
 	stderr        io.Writer
 	generators    []*Generator
 	outputCount   atomic.Int64
+
+	dirBaseSuffixChan chan DirBaseSuffix
+	dirBaseSuffix     []DirBaseSuffix
 }
 
 func printf(stderr io.Writer, format string, args ...interface{}) {
@@ -98,6 +109,17 @@ func (g *GeneratorHandler) Init(src2json string, output []*Output, suffix string
 	g.suffixPattern = suffix
 	g.resultQueue = make(chan *Result, 1)
 	g.errQueue = make(chan error, 1)
+	g.dirBaseSuffixChan = make(chan DirBaseSuffix, 1)
+	go func() {
+		for {
+			select {
+			case <-g.ctx.Done():
+				return
+			case req := <-g.dirBaseSuffixChan:
+				g.dirBaseSuffix = append(g.dirBaseSuffix, req)
+			}
+		}
+	}()
 	for _, out := range output {
 		err := g.dispatchGenerator(out)
 		if err != nil {
@@ -125,13 +147,14 @@ func (g *GeneratorHandler) Init(src2json string, output []*Output, suffix string
 	return nil
 }
 
-func NewGenerator(ctx context.Context, work *sync.WaitGroup, stderr io.Writer, res chan *Result, outputCount *atomic.Int64) *Generator {
+func NewGenerator(ctx context.Context, work *sync.WaitGroup, stderr io.Writer, res chan *Result, outputCount *atomic.Int64, dirBaseSuffixChan chan DirBaseSuffix) *Generator {
 	return &Generator{
-		ctx:         ctx,
-		stderr:      stderr,
-		request:     make(chan *Result, 1),
-		result:      res,
-		outputCount: outputCount,
+		ctx:               ctx,
+		stderr:            stderr,
+		request:           make(chan *Result, 1),
+		result:            res,
+		dirBaseSuffixChan: dirBaseSuffixChan,
+		outputCount:       outputCount,
 	}
 }
 
@@ -237,12 +260,20 @@ func (g *Generator) StartGenerator(out *Output) error {
 						} else {
 							path = filepath.Join(g.outputDir, basePath+suffix)
 						}
-						go func(path string, data []byte) {
+						go func(path string, data []byte, suffix string) {
+							if runtime.GOOS == "windows" {
+								path = strings.ReplaceAll(path, "\\", "/")
+							}
+							g.dirBaseSuffixChan <- DirBaseSuffix{
+								Dir:    gpath.Dir(path),
+								Base:   strings.TrimSuffix(gpath.Base(path), suffix),
+								Suffix: suffix,
+							}
 							g.result <- &Result{
 								Path: path,
 								Data: data,
 							}
-						}(path, split_data[i])
+						}(path, split_data[i], suffix)
 					}
 				}()
 			}
@@ -418,7 +449,7 @@ func (g *GeneratorHandler) generateAST(path string, wg *sync.WaitGroup) {
 }
 
 func (g *GeneratorHandler) dispatchGenerator(out *Output) error {
-	gen := NewGenerator(g.ctx, &g.w, g.stderr, g.resultQueue, &g.outputCount)
+	gen := NewGenerator(g.ctx, &g.w, g.stderr, g.resultQueue, &g.outputCount, g.dirBaseSuffixChan)
 	err := gen.StartGenerator(out)
 	if err != nil {
 		return err
@@ -497,6 +528,7 @@ type Config struct {
 	TargetDirs  []string  `json:"input_dir"`
 	Warnings    Warnings  `json:"warnings"`
 	Output      []*Output `json:"output"`
+	TestInfo    *string   `json:"test_info_output"`
 }
 
 func loadConfig() (*Config, error) {
@@ -523,6 +555,9 @@ func fillStringPtr(c *Config) {
 	if c.Suffix == nil {
 		c.Suffix = new(string)
 		*c.Suffix = ".bgn"
+	}
+	if c.TestInfo == nil {
+		c.TestInfo = new(string)
 	}
 }
 
@@ -559,6 +594,7 @@ func init() {
 	flag.StringVar(config.Suffix, "suffix", *config.Suffix, "suffix of file to generate from")
 	flag.BoolVar(&config.Warnings.DisableUntypedWarning, "disable-untyped", config.Warnings.DisableUntypedWarning, "disable untyped warning")
 	flag.BoolVar(&config.Warnings.DisableUnusedWarning, "disable-unused", config.Warnings.DisableUnusedWarning, "disable unused warning")
+	flag.StringVar(config.TestInfo, "test-info", *config.TestInfo, "path to test info output file")
 
 	defer func() {
 		flag.Parse()
@@ -657,4 +693,25 @@ func main() {
 	wg.Wait()
 	elapsed := time.Since(start)
 	log.Printf("time: %v total: %d, error: %d\n", elapsed, totalCount.Load(), errCount.Load())
+	if *config.TestInfo != "" {
+		fp, err := os.Create(*config.TestInfo)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer fp.Close()
+		var info struct {
+			TotalCount uint32          `json:"total_count"`
+			ErrorCount uint32          `json:"error_count"`
+			Time       string          `json:"time"`
+			DirAndBase []DirBaseSuffix `json:"generated_files"`
+		}
+		info.TotalCount = totalCount.Load()
+		info.ErrorCount = errCount.Load()
+		info.Time = elapsed.String()
+		info.DirAndBase = g.dirBaseSuffix
+		err = json.NewEncoder(fp).Encode(&info)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
 }

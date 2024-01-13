@@ -18,6 +18,10 @@
       },
       "description": "Array of target input directories"
     },
+    "test_info_output": {
+      "type": "string",
+      "description": "Path to the test info output file (default: no output)"
+    },
     "warnings": {
       "type": "object",
       "properties": {

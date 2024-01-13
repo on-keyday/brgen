@@ -6,6 +6,7 @@
     "disable_untyped": true,
     "disable_unused": true
   },
+  "test_info_output": "./ignore/example/test_info.json",
   "output": [
     {
       "generator": "./tool/json2cpp2",
