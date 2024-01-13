@@ -46,19 +46,57 @@ for STRUCT in $STRUCT_LIST; do
     CMAKE_FILE+=`cat << EOF
 add_executable(${STRUCT}_test "src/${STRUCT}_test.cpp")
 target_link_libraries(${STRUCT}_test futils)
+add_test(NAME ${STRUCT}_test COMMAND ${STRUCT}_test "$TEST_DIR/testData/$STRUCT.bin")
 EOF`
     CMAKE_FILE+='
 '
 done
+
+CMAKE_FILE+=`cat << EOF
+
+# copy libfutils.dll or libfutils.dylib or libfutils.so to the same directory as the executable
+if(WIN32)
+    add_custom_command(TARGET ${STRUCT}_test POST_BUILD
+        COMMAND \\\${CMAKE_COMMAND} -E copy_if_different
+        "\\\$ENV{FUTILS_DIR}/lib/libfutils.dll"
+        "\\\${CMAKE_BINARY_DIR}")
+elseif(APPLE)
+    add_custom_command(TARGET ${STRUCT}_test POST_BUILD
+        COMMAND \\\${CMAKE_COMMAND} -E copy_if_different
+        "\\\$ENV{FUTILS_DIR}/lib/libfutils.dylib"
+        "\\\${CMAKE_BINARY_DIR}")
+else()
+    add_custom_command(TARGET ${STRUCT}_test POST_BUILD
+        COMMAND \\\${CMAKE_COMMAND} -E copy_if_different
+        "\\\$ENV{FUTILS_DIR}/lib/libfutils.so"
+        "\\\${CMAKE_BINARY_DIR}")
+endif()
+EOF
+`
 
 echo "$CMAKE_FILE" > $TEST_DIR/CMakeLists.txt
 echo "create $TEST_DIR/CMakeLists.txt"
 
 BUILD_SH=`cat << EOF
 #!/bin/bash
+if [ -z "\$FUTILS_DIR" ]; then
+    echo "FUTILS_DIR is not set"
+    return 1
+fi
 cmake -S ${TEST_DIR} -B ${TEST_DIR}/built -G Ninja -DCMAKE_BUILD_TYPE=Debug 
 cmake --build ${TEST_DIR}/built
+if [ \\$? -ne 0 ]; then
+    echo "build failed"
+    return 1
+fi
+ctest --test-dir ${TEST_DIR}/built --output-on-failure
+if [ \\$? -ne 0 ]; then
+    echo "test failed"
+    return 1
+fi
+echo "test success"
 EOF`
 
 echo "$BUILD_SH" > $TEST_DIR/build.sh
 echo "create $TEST_DIR/build.sh"
+chmod +x $TEST_DIR/build.sh
