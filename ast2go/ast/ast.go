@@ -1241,12 +1241,12 @@ const (
 	IoMethodOutputPut          IoMethod = 1
 	IoMethodInputPeek          IoMethod = 2
 	IoMethodInputGet           IoMethod = 3
-	IoMethodInputOffset        IoMethod = 4
-	IoMethodInputRemain        IoMethod = 5
-	IoMethodConfigEndianLittle IoMethod = 6
-	IoMethodConfigEndianBig    IoMethod = 7
-	IoMethodConfigEndianNative IoMethod = 8
-	IoMethodInputBackward      IoMethod = 9
+	IoMethodInputBackward      IoMethod = 4
+	IoMethodInputOffset        IoMethod = 5
+	IoMethodInputRemain        IoMethod = 6
+	IoMethodConfigEndianLittle IoMethod = 7
+	IoMethodConfigEndianBig    IoMethod = 8
+	IoMethodConfigEndianNative IoMethod = 9
 )
 
 func (n IoMethod) String() string {
@@ -1259,6 +1259,8 @@ func (n IoMethod) String() string {
 		return "input_peek"
 	case IoMethodInputGet:
 		return "input_get"
+	case IoMethodInputBackward:
+		return "input_backward"
 	case IoMethodInputOffset:
 		return "input_offset"
 	case IoMethodInputRemain:
@@ -1269,8 +1271,6 @@ func (n IoMethod) String() string {
 		return "config_endian_big"
 	case IoMethodConfigEndianNative:
 		return "config_endian_native"
-	case IoMethodInputBackward:
-		return "input_backward"
 	default:
 		return fmt.Sprintf("IoMethod(%d)", n)
 	}
@@ -1290,6 +1290,8 @@ func (n *IoMethod) UnmarshalJSON(data []byte) error {
 		*n = IoMethodInputPeek
 	case "input_get":
 		*n = IoMethodInputGet
+	case "input_backward":
+		*n = IoMethodInputBackward
 	case "input_offset":
 		*n = IoMethodInputOffset
 	case "input_remain":
@@ -1300,8 +1302,6 @@ func (n *IoMethod) UnmarshalJSON(data []byte) error {
 		*n = IoMethodConfigEndianBig
 	case "config_endian_native":
 		*n = IoMethodConfigEndianNative
-	case "input_backward":
-		*n = IoMethodInputBackward
 	default:
 		return fmt.Errorf("unknown IoMethod: %q", tmp)
 	}

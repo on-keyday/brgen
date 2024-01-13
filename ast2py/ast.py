@@ -191,12 +191,12 @@ class IoMethod(PyEnum):
     OUTPUT_PUT = "output_put"
     INPUT_PEEK = "input_peek"
     INPUT_GET = "input_get"
+    INPUT_BACKWARD = "input_backward"
     INPUT_OFFSET = "input_offset"
     INPUT_REMAIN = "input_remain"
     CONFIG_ENDIAN_LITTLE = "config_endian_little"
     CONFIG_ENDIAN_BIG = "config_endian_big"
     CONFIG_ENDIAN_NATIVE = "config_endian_native"
-    INPUT_BACKWARD = "input_backward"
 
 
 class Node:

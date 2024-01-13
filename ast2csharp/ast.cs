@@ -181,12 +181,12 @@ Unspec,
 OutputPut,
 InputPeek,
 InputGet,
+InputBackward,
 InputOffset,
 InputRemain,
 ConfigEndianLittle,
 ConfigEndianBig,
 ConfigEndianNative,
-InputBackward,
 }
 public interface Node {
 	public Loc Loc {get; set;}

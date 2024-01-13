@@ -898,12 +898,12 @@ const char* ast2c_IoMethod_to_string(ast2c_IoMethod val) {
 	case AST2C_IOMETHOD_OUTPUT_PUT: return "output_put";
 	case AST2C_IOMETHOD_INPUT_PEEK: return "input_peek";
 	case AST2C_IOMETHOD_INPUT_GET: return "input_get";
+	case AST2C_IOMETHOD_INPUT_BACKWARD: return "input_backward";
 	case AST2C_IOMETHOD_INPUT_OFFSET: return "input_offset";
 	case AST2C_IOMETHOD_INPUT_REMAIN: return "input_remain";
 	case AST2C_IOMETHOD_CONFIG_ENDIAN_LITTLE: return "config_endian_little";
 	case AST2C_IOMETHOD_CONFIG_ENDIAN_BIG: return "config_endian_big";
 	case AST2C_IOMETHOD_CONFIG_ENDIAN_NATIVE: return "config_endian_native";
-	case AST2C_IOMETHOD_INPUT_BACKWARD: return "input_backward";
 	default: return NULL;
 	}
 }
@@ -927,6 +927,10 @@ int ast2c_IoMethod_from_string(const char* str, ast2c_IoMethod* out) {
 		*out = AST2C_IOMETHOD_INPUT_GET;
 		return 1;
 	}
+	if (strcmp(str, "input_backward") == 0) {
+		*out = AST2C_IOMETHOD_INPUT_BACKWARD;
+		return 1;
+	}
 	if (strcmp(str, "input_offset") == 0) {
 		*out = AST2C_IOMETHOD_INPUT_OFFSET;
 		return 1;
@@ -945,10 +949,6 @@ int ast2c_IoMethod_from_string(const char* str, ast2c_IoMethod* out) {
 	}
 	if (strcmp(str, "config_endian_native") == 0) {
 		*out = AST2C_IOMETHOD_CONFIG_ENDIAN_NATIVE;
-		return 1;
-	}
-	if (strcmp(str, "input_backward") == 0) {
-		*out = AST2C_IOMETHOD_INPUT_BACKWARD;
 		return 1;
 	}
 	return 0;

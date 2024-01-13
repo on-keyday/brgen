@@ -436,13 +436,13 @@ const handleCpp = async (s :JobResult) => {
         }
         return result;
     },Language.CPP,"cpp",cppOption);
-    if(updated&& isMappingInfoArray(mappingInfo)){
+    if(updated&& isMappingInfoArray(mappingInfo.line_map)){
         // wait for editor update 
         setTimeout(() => {
             if(result===undefined) throw new Error("result is undefined");
             if(editorAlreadyUpdated(s)) return;
             console.log(mappingInfo);
-            mappingCode(mappingInfo,s,Language.CPP,0);
+            mappingCode(mappingInfo.line_map,s,Language.CPP,0);
         },1);
     }
 }

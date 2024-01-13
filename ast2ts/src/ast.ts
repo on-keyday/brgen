@@ -159,16 +159,16 @@ export const enum IoMethod {
 	output_put = "output_put",
 	input_peek = "input_peek",
 	input_get = "input_get",
+	input_backward = "input_backward",
 	input_offset = "input_offset",
 	input_remain = "input_remain",
 	config_endian_little = "config_endian_little",
 	config_endian_big = "config_endian_big",
 	config_endian_native = "config_endian_native",
-	input_backward = "input_backward",
 };
 
 export function isIoMethod(obj: any): obj is IoMethod {
-	return obj && typeof obj === 'string' && (obj === "unspec" || obj === "output_put" || obj === "input_peek" || obj === "input_get" || obj === "input_offset" || obj === "input_remain" || obj === "config_endian_little" || obj === "config_endian_big" || obj === "config_endian_native" || obj === "input_backward")
+	return obj && typeof obj === 'string' && (obj === "unspec" || obj === "output_put" || obj === "input_peek" || obj === "input_get" || obj === "input_backward" || obj === "input_offset" || obj === "input_remain" || obj === "config_endian_little" || obj === "config_endian_big" || obj === "config_endian_native")
 }
 
 export interface Node {

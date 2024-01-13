@@ -619,12 +619,12 @@ impl TryFrom<&str> for Follow {
 	OutputPut,
 	InputPeek,
 	InputGet,
+	InputBackward,
 	InputOffset,
 	InputRemain,
 	ConfigEndianLittle,
 	ConfigEndianBig,
 	ConfigEndianNative,
-	InputBackward,
 }
 
 impl TryFrom<&str> for IoMethod {
@@ -635,12 +635,12 @@ impl TryFrom<&str> for IoMethod {
 			"output_put" =>Ok(Self::OutputPut),
 			"input_peek" =>Ok(Self::InputPeek),
 			"input_get" =>Ok(Self::InputGet),
+			"input_backward" =>Ok(Self::InputBackward),
 			"input_offset" =>Ok(Self::InputOffset),
 			"input_remain" =>Ok(Self::InputRemain),
 			"config_endian_little" =>Ok(Self::ConfigEndianLittle),
 			"config_endian_big" =>Ok(Self::ConfigEndianBig),
 			"config_endian_native" =>Ok(Self::ConfigEndianNative),
-			"input_backward" =>Ok(Self::InputBackward),
 			_=> Err(()),
 		}
 	}

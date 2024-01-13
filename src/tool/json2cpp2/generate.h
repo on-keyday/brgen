@@ -81,6 +81,7 @@ namespace j2cp2 {
         std::vector<LineMap> line_map;
         bool enable_line_map = false;
         Context ctx;
+        std::vector<std::string> struct_names;
 
         void map_line(brgen::lexer::Loc l) {
             if (!enable_line_map) {
@@ -443,6 +444,7 @@ namespace j2cp2 {
             if (fmt->body->struct_type->bit_alignment != ast::BitAlignment::byte_aligned) {
                 return;  // skip
             }
+            struct_names.push_back(fmt->ident->ident);
             write_struct_type(fmt->body->struct_type);
             w.writeln(";");
         }
@@ -826,6 +828,7 @@ namespace j2cp2 {
             if (fmt->body->struct_type->bit_alignment != ast::BitAlignment::byte_aligned) {
                 return;  // skip
             }
+
             ctx.encode = encode;
             ctx.endian = ast::Endian::big;  // default to big endian
             ctx.dynamic_endian = false;

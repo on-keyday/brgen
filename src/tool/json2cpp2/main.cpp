@@ -80,13 +80,18 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
         return 1;
     }
     j2cp2::Generator g;
+    g.enable_line_map = flags.add_line_map;
     auto prog = brgen::ast::cast_to<brgen::ast::Program>(*res);
     g.write_program(prog);
     cout << g.w.out() << "\n";
     if (flags.add_line_map) {
         cout << "############\n";
         futils::json::Stringer s;
-        s.value(g.line_map);
+        {
+            auto field = s.object();
+            field("structs", g.struct_names);
+            field("line_map", g.line_map);
+        }
         cout << s.out() << "\n";
     }
     return 0;

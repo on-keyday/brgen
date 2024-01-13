@@ -534,7 +534,7 @@ namespace brgen::middle {
                         if (!equal_type(rty, lty)) {
                             report_not_equal_type(b->loc, rty, lty);
                         }
-                        b->expr_type = std::move(lty);
+                        b->expr_type = lty;
                         return;
                     }
                     report_binary_error();
@@ -561,7 +561,7 @@ namespace brgen::middle {
                     report_binary_error();
                 }
                 case ast::BinaryOp::comma: {
-                    b->expr_type = std::move(rty);
+                    b->expr_type = rty;
                     return;
                 }
                 default: {
@@ -691,9 +691,11 @@ namespace brgen::middle {
                 }
                 std::shared_ptr<ast::Expr> copy2;
                 if (call->arguments.size() == 1) {
+                    typing_expr(call->arguments[0]);
                     copy2 = call->arguments[0];
                 }
                 auto copy = call->expr_type;
+                assert(copy);
                 auto cast = std::make_shared<ast::Cast>(ast::cast_to<ast::Call>(base_node.to_node()), std::move(copy), std::move(copy2));
                 base_node.replace(std::move(cast));
                 return;
