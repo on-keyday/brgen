@@ -29,6 +29,26 @@ namespace j2cp2 {
         field("line", mp.line);
     }
 
+    struct Context {
+        bool encode = false;
+        ast::Endian endian = ast::Endian::unspec;
+
+       private:
+        std::string prefix_;
+
+       public:
+        const std::string& prefix() const {
+            return prefix_;
+        }
+        auto add_prefix(const std::string& s) {
+            auto old = std::move(prefix_);
+            prefix_ = old + s;
+            return futils::helper::defer([this, old = std::move(old)] {
+                prefix_ = std::move(old);
+            });
+        }
+    };
+
     struct Generator {
         brgen::writer::Writer w;
         size_t seq = 0;
@@ -39,8 +59,12 @@ namespace j2cp2 {
         std::map<ast::EnumMember*, std::string> enum_member_map;
         std::vector<LineMap> line_map;
         bool enable_line_map = false;
+        Context ctx;
 
         void map_line(brgen::lexer::Loc l) {
+            if (!enable_line_map) {
+                return;
+            }
             line_map.push_back({l, w.line_count()});
         }
 
@@ -724,6 +748,17 @@ namespace j2cp2 {
                 w.writeln("auto ", ident->ident, " = ", expr, ";");
                 str.map_ident(ast::cast_to<ast::Ident>(b->left), ident->ident);
             }
+            if (!encode) {
+                if (auto a = ast::as<ast::Assert>(elem)) {
+                    auto cond = str.to_string(a->cond);
+                    w.writeln("if (!", cond, ") {");
+                    {
+                        auto indent = w.indent_scope();
+                        w.writeln("return false;");
+                    }
+                    w.writeln("}");
+                }
+            }
         }
 
         void code_indent_block(const std::shared_ptr<ast::IndentBlock>& block, bool encode) {
@@ -737,20 +772,27 @@ namespace j2cp2 {
             if (fmt->body->struct_type->bit_alignment != ast::BitAlignment::byte_aligned) {
                 return;  // skip
             }
+            ctx.encode = encode;
+            for (auto& elem : fmt->body->elements) {
+                if (auto f = ast::as<ast::SpecifyEndian>(elem)) {
+                }
+            }
             map_line(fmt->loc);
             w.writeln("inline bool ", fmt->ident->ident, "::", encode ? "encode(::futils::binary::writer& w) const" : "decode(::futils::binary::reader& r)", " {");
             {
                 auto indent = w.indent_scope();
-                // first, apply assertions
-                for (auto& elem : fmt->body->elements) {
-                    if (auto a = ast::as<ast::Assert>(elem)) {
-                        auto cond = str.to_string(a->cond);
-                        w.writeln("if (!", cond, ") {");
-                        {
-                            auto indent = w.indent_scope();
-                            w.writeln("return false;");
+                if (encode) {
+                    // first, apply assertions
+                    for (auto& elem : fmt->body->elements) {
+                        if (auto a = ast::as<ast::Assert>(elem)) {
+                            auto cond = str.to_string(a->cond);
+                            w.writeln("if (!", cond, ") {");
+                            {
+                                auto indent = w.indent_scope();
+                                w.writeln("return false;");
+                            }
+                            w.writeln("}");
                         }
-                        w.writeln("}");
                     }
                 }
                 // write code

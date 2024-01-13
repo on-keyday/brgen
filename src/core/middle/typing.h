@@ -926,19 +926,23 @@ namespace brgen::middle {
             if (auto c = ast::as<ast::Cast>(expr)) {
                 if (c->expr) {
                     typing_expr(c->expr);
+                    c->constant_level = c->expr->constant_level;
                 }
             }
             if (auto a = ast::as<ast::Available>(expr)) {
                 typing_expr(a->target, false);
+                a->constant_level = ast::ConstantLevel::variable;
             }
             if (auto b = ast::as<ast::SpecifyEndian>(expr)) {
                 typing_expr(b->is_little, false);
                 b->base->expr_type = void_type(b->loc);
                 b->expr_type = b->base->expr_type;
+                b->constant_level = b->is_little->constant_level;
             }
             if (auto b = ast::as<ast::ExplicitError>(expr)) {
                 typing_expr(b->base->raw_arguments, false);
                 b->expr_type = void_type(b->loc);
+                b->constant_level = ast::ConstantLevel::variable;
             }
             if (expr->expr_type) {
                 typing_object(expr->expr_type);
