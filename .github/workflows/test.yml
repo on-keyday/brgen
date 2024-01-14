@@ -5,6 +5,7 @@ on:
 jobs:
   test-linux:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Timeline
         uses: Kesin11/actions-timeline@v1
