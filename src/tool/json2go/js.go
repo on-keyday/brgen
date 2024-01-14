@@ -69,6 +69,7 @@ func setFunc() {
 		g := NewGenerator()
 		data, err := g.GenerateAndFormat(&file)
 		if err != nil {
+			result["stdout"] = string(data)
 			result["stderr"] = err.Error()
 			result["code"] = 1
 			return result
