@@ -963,6 +963,9 @@ namespace brgen::ast {
             if (auto desc = is_int_type(ident.token)) {
                 return std::make_shared<IntType>(ident.loc, desc->bit_size, desc->endian, desc->is_signed, true);
             }
+            if (auto desc = is_float_type(ident.token)) {
+                return std::make_shared<FloatType>(ident.loc, desc->bit_size, desc->endian, true);
+            }
 
             auto base = std::make_shared<Ident>(ident.loc, std::move(ident.token));
             base->usage = IdentUsage::maybe_type;

@@ -93,6 +93,7 @@ namespace brgen::ast {
         CASE(Type)
 
         CASE(IntType)
+        CASE(FloatType)
         CASE(IdentType)
         CASE(IntLiteralType)
         CASE(StrLiteralType)

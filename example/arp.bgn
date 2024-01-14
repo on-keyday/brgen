@@ -1,5 +1,6 @@
 
 # ArpPacket 
+# arp packet is used to resolve ip address to mac address
 # -------------
 format ArpPacket:
     hardware_type :u16

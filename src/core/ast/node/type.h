@@ -86,6 +86,24 @@ namespace brgen::ast {
         }
     };
 
+    struct FloatType : Type {
+        define_node_type(NodeType::float_type);
+        Endian endian = Endian::unspec;
+        // if bit_size is 32, 64, it is common supported
+        bool is_common_supported = false;
+
+        FloatType(lexer::Loc l, size_t bit_size, Endian endian, bool is_explicit = false)
+            : Type(l, NodeType::float_type), endian(endian) {
+            this->is_explicit = is_explicit;
+            this->bit_size = bit_size;
+            is_common_supported = bit_size == 32 || bit_size == 64;
+        }
+
+        // for decode
+        FloatType()
+            : Type({}, NodeType::float_type) {}
+    };
+
     struct IntTypeDesc {
         size_t bit_size = 0;
         Endian endian = Endian::unspec;
@@ -102,6 +120,35 @@ namespace brgen::ast {
         }
         else if (str.starts_with("u") || str.starts_with("s")) {
             desc.is_signed = str[0] == 's';
+            str = str.substr(1);
+        }
+        else {
+            return std::nullopt;
+        }
+        // Check if the string starts with 'u' or 'b' and has a valid unsigned integer
+        size_t value = 0;
+        if (!futils::number::parse_integer(str, value)) {
+            return std::nullopt;
+        }
+        if (value == 0) {  // u0 is not valid
+            return std::nullopt;
+        }
+        desc.bit_size = value;
+        return desc;
+    }
+
+    struct FloatTypeDesc {
+        size_t bit_size = 0;
+        Endian endian = Endian::unspec;
+    };
+
+    inline std::optional<FloatTypeDesc> is_float_type(std::string_view str) {
+        FloatTypeDesc desc;
+        if (str.starts_with("fb") || str.starts_with("fl")) {
+            desc.endian = str[1] == 'b' ? Endian::big : Endian::little;
+            str = str.substr(2);
+        }
+        else if (str.starts_with("f")) {
             str = str.substr(1);
         }
         else {

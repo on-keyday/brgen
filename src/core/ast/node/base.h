@@ -87,9 +87,9 @@ namespace brgen::ast {
             "abstract type class\n"
             " this class has type attributes.\n");
         bool is_explicit = false;  // for language server annotation
-        // type is integer, set of integer, or fixed length integer array.
+        // type is integer or float, set of integer or float, or fixed length integer or float array.
         // not complex type array, not dynamic array, not include recursive struct
-        bool is_int_set = false;
+        bool non_dynamic = false;
         // type is interpretable as single integer type
         // bool single_int_type = false;
         // bit alignment of type
@@ -100,7 +100,7 @@ namespace brgen::ast {
         void dump(auto&& field_) {
             Node::dump(field_);
             sdebugf(is_explicit);
-            sdebugf(is_int_set);
+            sdebugf(non_dynamic);
             sdebugf(bit_alignment);
             sdebugf(bit_size);
         }

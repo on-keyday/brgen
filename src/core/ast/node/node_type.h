@@ -75,6 +75,7 @@ namespace brgen::ast {
 
         type = 0x040000,
         int_type,
+        float_type,
         ident_type,
         int_literal_type,
         str_literal_type,
@@ -157,6 +158,10 @@ namespace brgen::ast {
         {NodeType::io_operation, "io_operation"},
         {NodeType::builtin_member, "builtin_member"},
         {NodeType::builtin_field, "builtin_field"},
+        {NodeType::builtin_object, "builtin_object"},
+        {NodeType::optional_type, "optional_type"},
+        {NodeType::meta_type, "meta_type"},
+        {NodeType::float_type, "float_type"},
     };
 
     constexpr std::array<std::pair<NodeType, const char*>, std::size(node_type_str_array)> sorted_node_type_str_array = [] {

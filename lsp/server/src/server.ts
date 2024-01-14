@@ -395,6 +395,9 @@ const tokenizeSourceImpl  = async (doc :TextDocument,docInfo :DocumentInfo) =>{
         else if(ast2ts.isBoolType(node)&&node.is_explicit){
             locList.push({loc: node.loc,length: node.loc.pos.end - node.loc.pos.begin,index:7});
         }
+        else if(ast2ts.isFloatType(node)&&node.is_explicit){
+            locList.push({loc: node.loc,length: node.loc.pos.end - node.loc.pos.begin,index:7});
+        }
         return true
     });
     docInfo.prevFile = ast;
@@ -491,8 +494,11 @@ const hover = async (params :HoverParams)=>{
     }
 
     const bitSize = (bit :number|null|undefined) => {
-        if(bit===null||bit===undefined){
+        if(bit===undefined){
             return "unknown";
+        }
+        if(bit===null){
+            return "dynamic";
         }
         if(bit%8===0){
             return `${bit/8} byte`;
@@ -554,7 +560,7 @@ const hover = async (params :HoverParams)=>{
     + fixed header size: ${bitSize(ident.base.body?.struct_type?.fixed_header_size)}
     + fixed tail size: ${bitSize(ident.base.body?.struct_type?.fixed_tail_size)}
     + algin: ${ident.base.body?.struct_type?.bit_alignment||"unknown"}
-    ${ident.base.body?.struct_type?.is_int_set?"+ int_set\n    ":""}${ident.base.body?.struct_type?.recursive?"+ recursive\n":""}
+    ${ident.base.body?.struct_type?.non_dynamic?"+ non_dynamic\n    ":""}${ident.base.body?.struct_type?.recursive?"+ recursive\n":""}
 `);
                     }
                     return makeHover(ident.ident,"format"); 

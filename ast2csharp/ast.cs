@@ -40,6 +40,7 @@ Assert,
 ImplicitYield,
 Type,
 IntType,
+FloatType,
 IdentType,
 IntLiteralType,
 StrLiteralType,
@@ -52,6 +53,8 @@ StructUnionType,
 UnionType,
 RangeType,
 EnumType,
+MetaType,
+OptionalType,
 Literal,
 IntLiteral,
 BoolLiteral,
@@ -69,6 +72,7 @@ Function,
 BuiltinMember,
 BuiltinFunction,
 BuiltinField,
+BuiltinObject,
 }
 public enum TokenTag {
 Indent,
@@ -199,7 +203,7 @@ public interface Stmt : Node {
 }
 public interface Type : Node {
 	public bool IsExplicit {get; set;}
-	public bool IsIntSet {get; set;}
+	public bool NonDynamic {get; set;}
 	public BitAlignment BitAlignment {get; set;}
 	public ulong? BitSize {get; set;}
 }
@@ -432,17 +436,24 @@ public class ImplicitYield : Stmt{
 public class IntType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
-	public bool IsIntSet{get;set;}
+	public bool NonDynamic{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public ulong? BitSize{get;set;}
 	public Endian Endian{get;set;}
 	public bool IsSigned{get;set;}
 	public bool IsCommonSupported{get;set;}
 }
+public class FloatType : Type{
+	public Loc Loc{get;set;}
+	public bool IsExplicit{get;set;}
+	public bool NonDynamic{get;set;}
+	public BitAlignment BitAlignment{get;set;}
+	public ulong? BitSize{get;set;}
+}
 public class IdentType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
-	public bool IsIntSet{get;set;}
+	public bool NonDynamic{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public ulong? BitSize{get;set;}
 	public Ident? Ident{get;set;}
@@ -451,7 +462,7 @@ public class IdentType : Type{
 public class IntLiteralType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
-	public bool IsIntSet{get;set;}
+	public bool NonDynamic{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public ulong? BitSize{get;set;}
 	public IntLiteral? Base{get;set;}
@@ -459,7 +470,7 @@ public class IntLiteralType : Type{
 public class StrLiteralType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
-	public bool IsIntSet{get;set;}
+	public bool NonDynamic{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public ulong? BitSize{get;set;}
 	public StrLiteral? Base{get;set;}
@@ -468,21 +479,21 @@ public class StrLiteralType : Type{
 public class VoidType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
-	public bool IsIntSet{get;set;}
+	public bool NonDynamic{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public ulong? BitSize{get;set;}
 }
 public class BoolType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
-	public bool IsIntSet{get;set;}
+	public bool NonDynamic{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public ulong? BitSize{get;set;}
 }
 public class ArrayType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
-	public bool IsIntSet{get;set;}
+	public bool NonDynamic{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public ulong? BitSize{get;set;}
 	public Loc EndLoc{get;set;}
@@ -493,7 +504,7 @@ public class ArrayType : Type{
 public class FunctionType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
-	public bool IsIntSet{get;set;}
+	public bool NonDynamic{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public ulong? BitSize{get;set;}
 	public Type? ReturnType{get;set;}
@@ -502,7 +513,7 @@ public class FunctionType : Type{
 public class StructType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
-	public bool IsIntSet{get;set;}
+	public bool NonDynamic{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public ulong? BitSize{get;set;}
 	public List<Member>? Fields{get;set;}
@@ -514,7 +525,7 @@ public class StructType : Type{
 public class StructUnionType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
-	public bool IsIntSet{get;set;}
+	public bool NonDynamic{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public ulong? BitSize{get;set;}
 	public List<StructType>? Structs{get;set;}
@@ -524,7 +535,7 @@ public class StructUnionType : Type{
 public class UnionType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
-	public bool IsIntSet{get;set;}
+	public bool NonDynamic{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public ulong? BitSize{get;set;}
 	public Expr? Cond{get;set;}
@@ -535,7 +546,7 @@ public class UnionType : Type{
 public class RangeType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
-	public bool IsIntSet{get;set;}
+	public bool NonDynamic{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public ulong? BitSize{get;set;}
 	public Type? BaseType{get;set;}
@@ -544,10 +555,25 @@ public class RangeType : Type{
 public class EnumType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
-	public bool IsIntSet{get;set;}
+	public bool NonDynamic{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public ulong? BitSize{get;set;}
 	public Enum? Base{get;set;}
+}
+public class MetaType : Type{
+	public Loc Loc{get;set;}
+	public bool IsExplicit{get;set;}
+	public bool NonDynamic{get;set;}
+	public BitAlignment BitAlignment{get;set;}
+	public ulong? BitSize{get;set;}
+}
+public class OptionalType : Type{
+	public Loc Loc{get;set;}
+	public bool IsExplicit{get;set;}
+	public bool NonDynamic{get;set;}
+	public BitAlignment BitAlignment{get;set;}
+	public ulong? BitSize{get;set;}
+	public Type? BaseType{get;set;}
 }
 public class IntLiteral : Literal{
 	public Loc Loc{get;set;}
@@ -659,6 +685,13 @@ public class BuiltinField : Member{
 	public StructType? BelongStruct{get;set;}
 	public Ident? Ident{get;set;}
 	public Type? FieldType{get;set;}
+}
+public class BuiltinObject : Member{
+	public Loc Loc{get;set;}
+	public Member? Belong{get;set;}
+	public StructType? BelongStruct{get;set;}
+	public Ident? Ident{get;set;}
+	public List<BuiltinMember>? Members{get;set;}
 }
 public class Scope {
 	public Scope? Prev{get;set;}

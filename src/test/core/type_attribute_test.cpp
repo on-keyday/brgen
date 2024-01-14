@@ -89,33 +89,33 @@ format B:
     middle::TypeAttribute attr;
     attr.recursive_reference(r);
     attr.int_type_detection(r);
-    ASSERT_FALSE(r->struct_type->is_int_set);
+    ASSERT_FALSE(r->struct_type->non_dynamic);
     ASSERT_EQ(r->struct_type->fields.size(), 2);
     auto fmt = ast::as<ast::Format>(r->struct_type->fields[0]);
     ASSERT_TRUE(fmt);
-    ASSERT_TRUE(fmt->body->struct_type->is_int_set);
+    ASSERT_TRUE(fmt->body->struct_type->non_dynamic);
 
     ASSERT_EQ(fmt->body->struct_type->fields.size(), 4);
     auto field = ast::as<ast::Field>(fmt->body->struct_type->fields[0]);
     ASSERT_TRUE(field);
-    ASSERT_TRUE(field->field_type->is_int_set);
+    ASSERT_TRUE(field->field_type->non_dynamic);
 
     auto field2 = ast::as<ast::Field>(fmt->body->struct_type->fields[1]);
     ASSERT_TRUE(field2);
-    ASSERT_TRUE(field2->field_type->is_int_set);
+    ASSERT_TRUE(field2->field_type->non_dynamic);
 
     auto field3 = ast::as<ast::Field>(fmt->body->struct_type->fields[2]);
     ASSERT_TRUE(field3);
-    ASSERT_TRUE(field3->field_type->is_int_set);
+    ASSERT_TRUE(field3->field_type->non_dynamic);
 
     auto fmt2 = ast::as<ast::Format>(r->struct_type->fields[1]);
     ASSERT_TRUE(fmt2);
-    ASSERT_TRUE(fmt2->body->struct_type->is_int_set);
+    ASSERT_TRUE(fmt2->body->struct_type->non_dynamic);
 
     ASSERT_EQ(fmt2->body->struct_type->fields.size(), 1);
     auto field4 = ast::as<ast::Field>(fmt2->body->struct_type->fields[0]);
     ASSERT_TRUE(field4);
-    ASSERT_TRUE(field4->field_type->is_int_set);
+    ASSERT_TRUE(field4->field_type->non_dynamic);
 }
 
 TEST(IntSet, IntSetNested) {
@@ -143,78 +143,78 @@ format E:
     middle::TypeAttribute attr;
     attr.recursive_reference(r);
     attr.int_type_detection(r);
-    ASSERT_FALSE(r->struct_type->is_int_set);
+    ASSERT_FALSE(r->struct_type->non_dynamic);
     ASSERT_EQ(r->struct_type->fields.size(), 5);
     auto fmt = ast::as<ast::Format>(r->struct_type->fields[0]);
     ASSERT_TRUE(fmt);
-    ASSERT_TRUE(fmt->body->struct_type->is_int_set);
+    ASSERT_TRUE(fmt->body->struct_type->non_dynamic);
 
     ASSERT_EQ(fmt->body->struct_type->fields.size(), 1);
     auto field = ast::as<ast::Field>(fmt->body->struct_type->fields[0]);
     ASSERT_TRUE(field);
-    ASSERT_TRUE(field->field_type->is_int_set);
+    ASSERT_TRUE(field->field_type->non_dynamic);
 
     auto fmt2 = ast::as<ast::Format>(r->struct_type->fields[1]);
     ASSERT_TRUE(fmt2);
-    ASSERT_TRUE(fmt2->body->struct_type->is_int_set);
+    ASSERT_TRUE(fmt2->body->struct_type->non_dynamic);
 
     ASSERT_EQ(fmt2->body->struct_type->fields.size(), 2);
     auto field2 = ast::as<ast::Field>(fmt2->body->struct_type->fields[0]);
     ASSERT_TRUE(field2);
-    ASSERT_TRUE(field2->field_type->is_int_set);
+    ASSERT_TRUE(field2->field_type->non_dynamic);
 
     auto field3 = ast::as<ast::Field>(fmt2->body->struct_type->fields[1]);
     ASSERT_TRUE(field3);
-    ASSERT_TRUE(field3->field_type->is_int_set);
+    ASSERT_TRUE(field3->field_type->non_dynamic);
 
     auto fmt3 = ast::as<ast::Format>(r->struct_type->fields[2]);
     ASSERT_TRUE(fmt3);
-    ASSERT_FALSE(fmt3->body->struct_type->is_int_set);
+    ASSERT_FALSE(fmt3->body->struct_type->non_dynamic);
 
     ASSERT_EQ(fmt3->body->struct_type->fields.size(), 1);
     auto field4 = ast::as<ast::Field>(fmt3->body->struct_type->fields[0]);
     ASSERT_TRUE(field4);
-    ASSERT_FALSE(field4->field_type->is_int_set);
+    ASSERT_FALSE(field4->field_type->non_dynamic);
 
     auto fmt4 = ast::as<ast::Format>(r->struct_type->fields[3]);
     ASSERT_TRUE(fmt4);
-    ASSERT_FALSE(fmt4->body->struct_type->is_int_set);
+    ASSERT_FALSE(fmt4->body->struct_type->non_dynamic);
 
     ASSERT_EQ(fmt4->body->struct_type->fields.size(), 2);
     auto field5 = ast::as<ast::Field>(fmt4->body->struct_type->fields[0]);
     ASSERT_TRUE(field5);
-    ASSERT_TRUE(field5->field_type->is_int_set);
+    ASSERT_TRUE(field5->field_type->non_dynamic);
 
     auto field6 = ast::as<ast::Field>(fmt4->body->struct_type->fields[1]);
     ASSERT_TRUE(field6);
-    ASSERT_FALSE(field6->field_type->is_int_set);
+    ASSERT_FALSE(field6->field_type->non_dynamic);
 
     auto fmt5 = ast::as<ast::Format>(r->struct_type->fields[3]);
     ASSERT_TRUE(fmt5);
-    ASSERT_FALSE(fmt5->body->struct_type->is_int_set);
+    ASSERT_FALSE(fmt5->body->struct_type->non_dynamic);
 
     ASSERT_EQ(fmt5->body->struct_type->fields.size(), 2);
     auto field7 = ast::as<ast::Field>(fmt5->body->struct_type->fields[0]);
     ASSERT_TRUE(field7);
-    ASSERT_TRUE(field7->field_type->is_int_set);
+    ASSERT_TRUE(field7->field_type->non_dynamic);
     auto field8 = ast::as<ast::Field>(fmt5->body->struct_type->fields[1]);
     ASSERT_TRUE(field8);
-    ASSERT_FALSE(field8->field_type->is_int_set);
+    ASSERT_FALSE(field8->field_type->non_dynamic);
 
     auto fmt6 = ast::as<ast::Format>(r->struct_type->fields[4]);
     ASSERT_TRUE(fmt6);
-    ASSERT_TRUE(fmt6->body->struct_type->is_int_set);
+    ASSERT_TRUE(fmt6->body->struct_type->non_dynamic);
 
     ASSERT_EQ(fmt6->body->struct_type->fields.size(), 3);
     auto field9 = ast::as<ast::Field>(fmt6->body->struct_type->fields[0]);
     ASSERT_TRUE(field9);
-    ASSERT_TRUE(field9->field_type->is_int_set);
+    ASSERT_TRUE(field9->field_type->non_dynamic);
     auto field10 = ast::as<ast::Field>(fmt6->body->struct_type->fields[1]);
     ASSERT_TRUE(field10);
-    ASSERT_TRUE(field10->field_type->is_int_set);
+    ASSERT_TRUE(field10->field_type->non_dynamic);
     auto field11 = ast::as<ast::Field>(fmt6->body->struct_type->fields[2]);
     ASSERT_TRUE(field11);
-    ASSERT_TRUE(field11->field_type->is_int_set);
+    ASSERT_TRUE(field11->field_type->non_dynamic);
 }
 
 TEST(IntSet, IntSetUnion) {
@@ -229,24 +229,24 @@ format A:
     middle::TypeAttribute attr;
     attr.recursive_reference(r);
     attr.int_type_detection(r);
-    ASSERT_FALSE(r->struct_type->is_int_set);
+    ASSERT_FALSE(r->struct_type->non_dynamic);
     ASSERT_EQ(r->struct_type->fields.size(), 1);
     auto fmt = ast::as<ast::Format>(r->struct_type->fields[0]);
     ASSERT_TRUE(fmt);
-    ASSERT_TRUE(fmt->body->struct_type->is_int_set);
+    ASSERT_TRUE(fmt->body->struct_type->non_dynamic);
     ASSERT_EQ(fmt->body->struct_type->fields.size(), 4);
     auto field = ast::as<ast::Field>(fmt->body->struct_type->fields[0]);
     ASSERT_TRUE(field);
-    ASSERT_TRUE(field->field_type->is_int_set);
+    ASSERT_TRUE(field->field_type->non_dynamic);
     auto field2 = ast::as<ast::Field>(fmt->body->struct_type->fields[1]);
     ASSERT_TRUE(field2);
-    ASSERT_TRUE(field2->field_type->is_int_set);
+    ASSERT_TRUE(field2->field_type->non_dynamic);
     auto field3 = ast::as<ast::Field>(fmt->body->struct_type->fields[2]);
     ASSERT_TRUE(field3);
-    ASSERT_TRUE(field3->field_type->is_int_set);
+    ASSERT_TRUE(field3->field_type->non_dynamic);
     auto field4 = ast::as<ast::Field>(fmt->body->struct_type->fields[3]);
     ASSERT_TRUE(field4);
-    ASSERT_TRUE(field4->field_type->is_int_set);
+    ASSERT_TRUE(field4->field_type->non_dynamic);
 }
 
 TEST(BitAlignment, BitAlignmentSimple) {

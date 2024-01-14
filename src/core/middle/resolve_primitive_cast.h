@@ -22,7 +22,8 @@ namespace brgen::middle {
                         return;
                     }
                     auto i_desc = ast::is_int_type(ident->ident);
-                    if (!i_desc &&
+                    auto f_desc = ast::is_float_type(ident->ident);
+                    if (!i_desc && !f_desc &&
                         ident->ident != "void" &&
                         ident->ident != "bool") {
                         return;
@@ -35,6 +36,9 @@ namespace brgen::middle {
                     std::shared_ptr<ast::Type> type;
                     if (i_desc) {
                         type = std::make_shared<ast::IntType>(ident->loc, i_desc->bit_size, i_desc->endian, i_desc->is_signed);
+                    }
+                    else if (f_desc) {
+                        type = std::make_shared<ast::FloatType>(ident->loc, f_desc->bit_size, f_desc->endian);
                     }
                     else if (ident->ident == "void") {
                         type = std::make_shared<ast::VoidType>(ident->loc);

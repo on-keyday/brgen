@@ -53,7 +53,7 @@ namespace brgen::middle {
                     tracked.insert(ty);
                 }
                 if (auto t = ast::as<ast::StructType>(n); t && !t->recursive) {
-                    if (t->is_int_set || t->recursive) {
+                    if (t->non_dynamic || t->recursive) {
                         return;  // already detected
                     }
                     ast::traverse(n, [&](auto&& n) {
@@ -64,60 +64,63 @@ namespace brgen::middle {
                     for (auto& fields : t->fields) {
                         if (auto field = ast::as<ast::Field>(fields); field) {
                             has_field = true;
-                            if (!field->field_type->is_int_set) {
+                            if (!field->field_type->non_dynamic) {
                                 all_int = false;
                                 break;
                             }
                         }
                     }
-                    t->is_int_set = has_field && all_int;
+                    t->non_dynamic = has_field && all_int;
                     return;
                 }
                 if (auto t = ast::as<ast::IdentType>(n)) {
                     auto c = t->base.lock();
                     if (c) {
                         f(f, c);
-                        t->is_int_set = c->is_int_set;
+                        t->non_dynamic = c->non_dynamic;
                     }
                 }
                 ast::traverse(n, [&](auto&& n) {
                     f(f, n);
                 });
                 if (auto t = ast::as<ast::IntType>(n); t) {
-                    t->is_int_set = true;
+                    t->non_dynamic = true;
                 }
                 if (auto a = ast::as<ast::ArrayType>(n); a) {
                     if (a->length && a->length->constant_level == ast::ConstantLevel::constant &&
                         a->length->node_type != ast::NodeType::range &&  // if b: [..]u8 style, b is variable length array, so not int set
-                        a->base_type->is_int_set) {
-                        a->is_int_set = true;
+                        a->base_type->non_dynamic) {
+                        a->non_dynamic = true;
                     }
                 }
                 if (auto t = ast::as<ast::StrLiteralType>(n)) {
                     // magic number type
-                    t->is_int_set = true;
+                    t->non_dynamic = true;
                 }
                 if (auto u = ast::as<ast::StructUnionType>(n)) {
-                    u->is_int_set = true;
+                    u->non_dynamic = true;
                     for (auto& f : u->structs) {
-                        if (!f->is_int_set) {
-                            u->is_int_set = false;
+                        if (!f->non_dynamic) {
+                            u->non_dynamic = false;
                         }
                     }
                 }
                 if (auto u = ast::as<ast::UnionType>(n)) {
-                    u->is_int_set = true;
+                    u->non_dynamic = true;
                     for (auto& c : u->candidates) {
                         if (auto f = ast::as<ast::Field>(c->field.lock()); f) {
-                            if (!f->field_type->is_int_set) {
-                                u->is_int_set = false;
+                            if (!f->field_type->non_dynamic) {
+                                u->non_dynamic = false;
                             }
                         }
                     }
                 }
                 if (auto c = ast::as<ast::EnumType>(n)) {
-                    // TODO(on-keyday): string enum type is not int set
-                    c->is_int_set = true;
+                    // TODO(on-keyday): string enum type is not int set?
+                    c->non_dynamic = true;
+                }
+                if (auto c = ast::as<ast::FloatType>(n)) {
+                    c->non_dynamic = true;
                 }
             };
             trv(trv, node);
@@ -275,6 +278,10 @@ namespace brgen::middle {
                     f(f, n);
                 });
                 if (auto t = ast::as<ast::IntType>(n); t) {
+                    auto align = (*t->bit_size % futils::bit_per_byte);
+                    t->bit_alignment = ast::BitAlignment(align + int(ast::BitAlignment::byte_aligned));
+                }
+                if (auto t = ast::as<ast::FloatType>(n); t) {
                     auto align = (*t->bit_size % futils::bit_per_byte);
                     t->bit_alignment = ast::BitAlignment(align + int(ast::BitAlignment::byte_aligned));
                 }

@@ -41,6 +41,11 @@ namespace brgen::middle {
                 return lty->bit_size == rty->bit_size;
             }
 
+            if (auto lty = ast::as<ast::FloatType>(left)) {
+                auto rty = ast::as<ast::FloatType>(right);
+                return lty->bit_size == rty->bit_size;
+            }
+
             if (auto lty = ast::as<ast::EnumType>(left)) {
                 auto rty = ast::as<ast::EnumType>(right);
                 return lty->base.lock() == rty->base.lock();

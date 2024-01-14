@@ -2,10 +2,10 @@
 
 export namespace ast2ts {
 
-export type NodeType = "program" | "comment" | "comment_group" | "field_argument" | "expr" | "binary" | "unary" | "cond" | "ident" | "call" | "if" | "member_access" | "paren" | "index" | "match" | "range" | "tmp_var" | "import" | "cast" | "available" | "specify_endian" | "explicit_error" | "io_operation" | "stmt" | "loop" | "indent_block" | "scoped_statement" | "match_branch" | "union_candidate" | "return" | "break" | "continue" | "assert" | "implicit_yield" | "type" | "int_type" | "ident_type" | "int_literal_type" | "str_literal_type" | "void_type" | "bool_type" | "array_type" | "function_type" | "struct_type" | "struct_union_type" | "union_type" | "range_type" | "enum_type" | "literal" | "int_literal" | "bool_literal" | "str_literal" | "input" | "output" | "config" | "member" | "field" | "format" | "state" | "enum" | "enum_member" | "function" | "builtin_member" | "builtin_function" | "builtin_field";
+export type NodeType = "program" | "comment" | "comment_group" | "field_argument" | "expr" | "binary" | "unary" | "cond" | "ident" | "call" | "if" | "member_access" | "paren" | "index" | "match" | "range" | "tmp_var" | "import" | "cast" | "available" | "specify_endian" | "explicit_error" | "io_operation" | "stmt" | "loop" | "indent_block" | "scoped_statement" | "match_branch" | "union_candidate" | "return" | "break" | "continue" | "assert" | "implicit_yield" | "type" | "int_type" | "float_type" | "ident_type" | "int_literal_type" | "str_literal_type" | "void_type" | "bool_type" | "array_type" | "function_type" | "struct_type" | "struct_union_type" | "union_type" | "range_type" | "enum_type" | "meta_type" | "optional_type" | "literal" | "int_literal" | "bool_literal" | "str_literal" | "input" | "output" | "config" | "member" | "field" | "format" | "state" | "enum" | "enum_member" | "function" | "builtin_member" | "builtin_function" | "builtin_field" | "builtin_object";
 
 export function isNodeType(obj: any): obj is NodeType {
-	return obj && typeof obj === 'string' && (obj === "program" || obj === "comment" || obj === "comment_group" || obj === "field_argument" || obj === "expr" || obj === "binary" || obj === "unary" || obj === "cond" || obj === "ident" || obj === "call" || obj === "if" || obj === "member_access" || obj === "paren" || obj === "index" || obj === "match" || obj === "range" || obj === "tmp_var" || obj === "import" || obj === "cast" || obj === "available" || obj === "specify_endian" || obj === "explicit_error" || obj === "io_operation" || obj === "stmt" || obj === "loop" || obj === "indent_block" || obj === "scoped_statement" || obj === "match_branch" || obj === "union_candidate" || obj === "return" || obj === "break" || obj === "continue" || obj === "assert" || obj === "implicit_yield" || obj === "type" || obj === "int_type" || obj === "ident_type" || obj === "int_literal_type" || obj === "str_literal_type" || obj === "void_type" || obj === "bool_type" || obj === "array_type" || obj === "function_type" || obj === "struct_type" || obj === "struct_union_type" || obj === "union_type" || obj === "range_type" || obj === "enum_type" || obj === "literal" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "input" || obj === "output" || obj === "config" || obj === "member" || obj === "field" || obj === "format" || obj === "state" || obj === "enum" || obj === "enum_member" || obj === "function" || obj === "builtin_member" || obj === "builtin_function" || obj === "builtin_field")
+	return obj && typeof obj === 'string' && (obj === "program" || obj === "comment" || obj === "comment_group" || obj === "field_argument" || obj === "expr" || obj === "binary" || obj === "unary" || obj === "cond" || obj === "ident" || obj === "call" || obj === "if" || obj === "member_access" || obj === "paren" || obj === "index" || obj === "match" || obj === "range" || obj === "tmp_var" || obj === "import" || obj === "cast" || obj === "available" || obj === "specify_endian" || obj === "explicit_error" || obj === "io_operation" || obj === "stmt" || obj === "loop" || obj === "indent_block" || obj === "scoped_statement" || obj === "match_branch" || obj === "union_candidate" || obj === "return" || obj === "break" || obj === "continue" || obj === "assert" || obj === "implicit_yield" || obj === "type" || obj === "int_type" || obj === "float_type" || obj === "ident_type" || obj === "int_literal_type" || obj === "str_literal_type" || obj === "void_type" || obj === "bool_type" || obj === "array_type" || obj === "function_type" || obj === "struct_type" || obj === "struct_union_type" || obj === "union_type" || obj === "range_type" || obj === "enum_type" || obj === "meta_type" || obj === "optional_type" || obj === "literal" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "input" || obj === "output" || obj === "config" || obj === "member" || obj === "field" || obj === "format" || obj === "state" || obj === "enum" || obj === "enum_member" || obj === "function" || obj === "builtin_member" || obj === "builtin_function" || obj === "builtin_field" || obj === "builtin_object")
 }
 
 export const enum TokenTag {
@@ -210,6 +210,7 @@ export function isNode(obj: any): obj is Node {
 	if (isAssert(obj)) return true;
 	if (isImplicitYield(obj)) return true;
 	if (isIntType(obj)) return true;
+	if (isFloatType(obj)) return true;
 	if (isIdentType(obj)) return true;
 	if (isIntLiteralType(obj)) return true;
 	if (isStrLiteralType(obj)) return true;
@@ -222,6 +223,8 @@ export function isNode(obj: any): obj is Node {
 	if (isUnionType(obj)) return true;
 	if (isRangeType(obj)) return true;
 	if (isEnumType(obj)) return true;
+	if (isMetaType(obj)) return true;
+	if (isOptionalType(obj)) return true;
 	if (isIntLiteral(obj)) return true;
 	if (isBoolLiteral(obj)) return true;
 	if (isStrLiteral(obj)) return true;
@@ -236,6 +239,7 @@ export function isNode(obj: any): obj is Node {
 	if (isFunction(obj)) return true;
 	if (isBuiltinFunction(obj)) return true;
 	if (isBuiltinField(obj)) return true;
+	if (isBuiltinObject(obj)) return true;
 	return false;
 }
 
@@ -294,18 +298,20 @@ export function isStmt(obj: any): obj is Stmt {
 	if (isFunction(obj)) return true;
 	if (isBuiltinFunction(obj)) return true;
 	if (isBuiltinField(obj)) return true;
+	if (isBuiltinObject(obj)) return true;
 	return false;
 }
 
 export interface Type extends Node {
 	is_explicit: boolean;
-	is_int_set: boolean;
+	non_dynamic: boolean;
 	bit_alignment: BitAlignment;
 	bit_size: number|null;
 }
 
 export function isType(obj: any): obj is Type {
 	if (isIntType(obj)) return true;
+	if (isFloatType(obj)) return true;
 	if (isIdentType(obj)) return true;
 	if (isIntLiteralType(obj)) return true;
 	if (isStrLiteralType(obj)) return true;
@@ -318,6 +324,8 @@ export function isType(obj: any): obj is Type {
 	if (isUnionType(obj)) return true;
 	if (isRangeType(obj)) return true;
 	if (isEnumType(obj)) return true;
+	if (isMetaType(obj)) return true;
+	if (isOptionalType(obj)) return true;
 	return false;
 }
 
@@ -349,6 +357,7 @@ export function isMember(obj: any): obj is Member {
 	if (isFunction(obj)) return true;
 	if (isBuiltinFunction(obj)) return true;
 	if (isBuiltinField(obj)) return true;
+	if (isBuiltinObject(obj)) return true;
 	return false;
 }
 
@@ -358,6 +367,7 @@ export interface BuiltinMember extends Member {
 export function isBuiltinMember(obj: any): obj is BuiltinMember {
 	if (isBuiltinFunction(obj)) return true;
 	if (isBuiltinField(obj)) return true;
+	if (isBuiltinObject(obj)) return true;
 	return false;
 }
 
@@ -680,6 +690,13 @@ export function isIntType(obj: any): obj is IntType {
 	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "int_type"
 }
 
+export interface FloatType extends Type {
+}
+
+export function isFloatType(obj: any): obj is FloatType {
+	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "float_type"
+}
+
 export interface IdentType extends Type {
 	ident: Ident|null;
 	base: Type|null;
@@ -788,6 +805,21 @@ export interface EnumType extends Type {
 
 export function isEnumType(obj: any): obj is EnumType {
 	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "enum_type"
+}
+
+export interface MetaType extends Type {
+}
+
+export function isMetaType(obj: any): obj is MetaType {
+	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "meta_type"
+}
+
+export interface OptionalType extends Type {
+	base_type: Type|null;
+}
+
+export function isOptionalType(obj: any): obj is OptionalType {
+	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "optional_type"
 }
 
 export interface IntLiteral extends Literal {
@@ -919,6 +951,14 @@ export interface BuiltinField extends Member {
 
 export function isBuiltinField(obj: any): obj is BuiltinField {
 	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "builtin_field"
+}
+
+export interface BuiltinObject extends Member {
+	members: BuiltinMember[];
+}
+
+export function isBuiltinObject(obj: any): obj is BuiltinObject {
+	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "builtin_object"
 }
 
 export interface Scope {
@@ -1447,7 +1487,7 @@ export function parseAST(obj: any): Program {
 				node_type: "int_type",
 				loc: on.loc,
 				is_explicit: false,
-				is_int_set: false,
+				non_dynamic: false,
 				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: null,
 				endian: Endian.unspec,
@@ -1457,12 +1497,24 @@ export function parseAST(obj: any): Program {
 			c.node.push(n);
 			break;
 		}
+		case "float_type": {
+			const n :FloatType = {
+				node_type: "float_type",
+				loc: on.loc,
+				is_explicit: false,
+				non_dynamic: false,
+				bit_alignment: BitAlignment.byte_aligned,
+				bit_size: null,
+			}
+			c.node.push(n);
+			break;
+		}
 		case "ident_type": {
 			const n :IdentType = {
 				node_type: "ident_type",
 				loc: on.loc,
 				is_explicit: false,
-				is_int_set: false,
+				non_dynamic: false,
 				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: null,
 				ident: null,
@@ -1476,7 +1528,7 @@ export function parseAST(obj: any): Program {
 				node_type: "int_literal_type",
 				loc: on.loc,
 				is_explicit: false,
-				is_int_set: false,
+				non_dynamic: false,
 				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: null,
 				base: null,
@@ -1489,7 +1541,7 @@ export function parseAST(obj: any): Program {
 				node_type: "str_literal_type",
 				loc: on.loc,
 				is_explicit: false,
-				is_int_set: false,
+				non_dynamic: false,
 				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: null,
 				base: null,
@@ -1503,7 +1555,7 @@ export function parseAST(obj: any): Program {
 				node_type: "void_type",
 				loc: on.loc,
 				is_explicit: false,
-				is_int_set: false,
+				non_dynamic: false,
 				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: null,
 			}
@@ -1515,7 +1567,7 @@ export function parseAST(obj: any): Program {
 				node_type: "bool_type",
 				loc: on.loc,
 				is_explicit: false,
-				is_int_set: false,
+				non_dynamic: false,
 				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: null,
 			}
@@ -1527,7 +1579,7 @@ export function parseAST(obj: any): Program {
 				node_type: "array_type",
 				loc: on.loc,
 				is_explicit: false,
-				is_int_set: false,
+				non_dynamic: false,
 				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: null,
 				end_loc: on.loc,
@@ -1543,7 +1595,7 @@ export function parseAST(obj: any): Program {
 				node_type: "function_type",
 				loc: on.loc,
 				is_explicit: false,
-				is_int_set: false,
+				non_dynamic: false,
 				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: null,
 				return_type: null,
@@ -1557,7 +1609,7 @@ export function parseAST(obj: any): Program {
 				node_type: "struct_type",
 				loc: on.loc,
 				is_explicit: false,
-				is_int_set: false,
+				non_dynamic: false,
 				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: null,
 				fields: [],
@@ -1574,7 +1626,7 @@ export function parseAST(obj: any): Program {
 				node_type: "struct_union_type",
 				loc: on.loc,
 				is_explicit: false,
-				is_int_set: false,
+				non_dynamic: false,
 				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: null,
 				structs: [],
@@ -1589,7 +1641,7 @@ export function parseAST(obj: any): Program {
 				node_type: "union_type",
 				loc: on.loc,
 				is_explicit: false,
-				is_int_set: false,
+				non_dynamic: false,
 				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: null,
 				cond: null,
@@ -1605,7 +1657,7 @@ export function parseAST(obj: any): Program {
 				node_type: "range_type",
 				loc: on.loc,
 				is_explicit: false,
-				is_int_set: false,
+				non_dynamic: false,
 				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: null,
 				base_type: null,
@@ -1619,10 +1671,35 @@ export function parseAST(obj: any): Program {
 				node_type: "enum_type",
 				loc: on.loc,
 				is_explicit: false,
-				is_int_set: false,
+				non_dynamic: false,
 				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: null,
 				base: null,
+			}
+			c.node.push(n);
+			break;
+		}
+		case "meta_type": {
+			const n :MetaType = {
+				node_type: "meta_type",
+				loc: on.loc,
+				is_explicit: false,
+				non_dynamic: false,
+				bit_alignment: BitAlignment.byte_aligned,
+				bit_size: null,
+			}
+			c.node.push(n);
+			break;
+		}
+		case "optional_type": {
+			const n :OptionalType = {
+				node_type: "optional_type",
+				loc: on.loc,
+				is_explicit: false,
+				non_dynamic: false,
+				bit_alignment: BitAlignment.byte_aligned,
+				bit_size: null,
+				base_type: null,
 			}
 			c.node.push(n);
 			break;
@@ -1804,6 +1881,18 @@ export function parseAST(obj: any): Program {
 				belong_struct: null,
 				ident: null,
 				field_type: null,
+			}
+			c.node.push(n);
+			break;
+		}
+		case "builtin_object": {
+			const n :BuiltinObject = {
+				node_type: "builtin_object",
+				loc: on.loc,
+				belong: null,
+				belong_struct: null,
+				ident: null,
+				members: [],
 			}
 			c.node.push(n);
 			break;
@@ -2834,11 +2923,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at IntType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
-			const tmpis_int_set = on.body?.is_int_set;
-			if (typeof tmpis_int_set !== "boolean") {
-				throw new Error('invalid node list at IntType::is_int_set');
+			const tmpnon_dynamic = on.body?.non_dynamic;
+			if (typeof tmpnon_dynamic !== "boolean") {
+				throw new Error('invalid node list at IntType::non_dynamic');
 			}
-			n.is_int_set = on.body.is_int_set;
+			n.non_dynamic = on.body.non_dynamic;
 			const tmpbit_alignment = on.body?.bit_alignment;
 			if (!isBitAlignment(tmpbit_alignment)) {
 				throw new Error('invalid node list at IntType::bit_alignment');
@@ -2866,6 +2955,30 @@ export function parseAST(obj: any): Program {
 			n.is_common_supported = on.body.is_common_supported;
 			break;
 		}
+		case "float_type": {
+			const n :FloatType = cnode as FloatType;
+			const tmpis_explicit = on.body?.is_explicit;
+			if (typeof tmpis_explicit !== "boolean") {
+				throw new Error('invalid node list at FloatType::is_explicit');
+			}
+			n.is_explicit = on.body.is_explicit;
+			const tmpnon_dynamic = on.body?.non_dynamic;
+			if (typeof tmpnon_dynamic !== "boolean") {
+				throw new Error('invalid node list at FloatType::non_dynamic');
+			}
+			n.non_dynamic = on.body.non_dynamic;
+			const tmpbit_alignment = on.body?.bit_alignment;
+			if (!isBitAlignment(tmpbit_alignment)) {
+				throw new Error('invalid node list at FloatType::bit_alignment');
+			}
+			n.bit_alignment = tmpbit_alignment;
+			const tmpbit_size = on.body?.bit_size;
+			if (tmpbit_size !== null && typeof tmpbit_size !== "number") {
+				throw new Error('invalid node list at FloatType::bit_size');
+			}
+			n.bit_size = on.body.bit_size;
+			break;
+		}
 		case "ident_type": {
 			const n :IdentType = cnode as IdentType;
 			const tmpis_explicit = on.body?.is_explicit;
@@ -2873,11 +2986,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at IdentType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
-			const tmpis_int_set = on.body?.is_int_set;
-			if (typeof tmpis_int_set !== "boolean") {
-				throw new Error('invalid node list at IdentType::is_int_set');
+			const tmpnon_dynamic = on.body?.non_dynamic;
+			if (typeof tmpnon_dynamic !== "boolean") {
+				throw new Error('invalid node list at IdentType::non_dynamic');
 			}
-			n.is_int_set = on.body.is_int_set;
+			n.non_dynamic = on.body.non_dynamic;
 			const tmpbit_alignment = on.body?.bit_alignment;
 			if (!isBitAlignment(tmpbit_alignment)) {
 				throw new Error('invalid node list at IdentType::bit_alignment');
@@ -2913,11 +3026,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at IntLiteralType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
-			const tmpis_int_set = on.body?.is_int_set;
-			if (typeof tmpis_int_set !== "boolean") {
-				throw new Error('invalid node list at IntLiteralType::is_int_set');
+			const tmpnon_dynamic = on.body?.non_dynamic;
+			if (typeof tmpnon_dynamic !== "boolean") {
+				throw new Error('invalid node list at IntLiteralType::non_dynamic');
 			}
-			n.is_int_set = on.body.is_int_set;
+			n.non_dynamic = on.body.non_dynamic;
 			const tmpbit_alignment = on.body?.bit_alignment;
 			if (!isBitAlignment(tmpbit_alignment)) {
 				throw new Error('invalid node list at IntLiteralType::bit_alignment');
@@ -2945,11 +3058,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at StrLiteralType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
-			const tmpis_int_set = on.body?.is_int_set;
-			if (typeof tmpis_int_set !== "boolean") {
-				throw new Error('invalid node list at StrLiteralType::is_int_set');
+			const tmpnon_dynamic = on.body?.non_dynamic;
+			if (typeof tmpnon_dynamic !== "boolean") {
+				throw new Error('invalid node list at StrLiteralType::non_dynamic');
 			}
-			n.is_int_set = on.body.is_int_set;
+			n.non_dynamic = on.body.non_dynamic;
 			const tmpbit_alignment = on.body?.bit_alignment;
 			if (!isBitAlignment(tmpbit_alignment)) {
 				throw new Error('invalid node list at StrLiteralType::bit_alignment');
@@ -2985,11 +3098,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at VoidType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
-			const tmpis_int_set = on.body?.is_int_set;
-			if (typeof tmpis_int_set !== "boolean") {
-				throw new Error('invalid node list at VoidType::is_int_set');
+			const tmpnon_dynamic = on.body?.non_dynamic;
+			if (typeof tmpnon_dynamic !== "boolean") {
+				throw new Error('invalid node list at VoidType::non_dynamic');
 			}
-			n.is_int_set = on.body.is_int_set;
+			n.non_dynamic = on.body.non_dynamic;
 			const tmpbit_alignment = on.body?.bit_alignment;
 			if (!isBitAlignment(tmpbit_alignment)) {
 				throw new Error('invalid node list at VoidType::bit_alignment');
@@ -3009,11 +3122,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at BoolType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
-			const tmpis_int_set = on.body?.is_int_set;
-			if (typeof tmpis_int_set !== "boolean") {
-				throw new Error('invalid node list at BoolType::is_int_set');
+			const tmpnon_dynamic = on.body?.non_dynamic;
+			if (typeof tmpnon_dynamic !== "boolean") {
+				throw new Error('invalid node list at BoolType::non_dynamic');
 			}
-			n.is_int_set = on.body.is_int_set;
+			n.non_dynamic = on.body.non_dynamic;
 			const tmpbit_alignment = on.body?.bit_alignment;
 			if (!isBitAlignment(tmpbit_alignment)) {
 				throw new Error('invalid node list at BoolType::bit_alignment');
@@ -3033,11 +3146,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at ArrayType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
-			const tmpis_int_set = on.body?.is_int_set;
-			if (typeof tmpis_int_set !== "boolean") {
-				throw new Error('invalid node list at ArrayType::is_int_set');
+			const tmpnon_dynamic = on.body?.non_dynamic;
+			if (typeof tmpnon_dynamic !== "boolean") {
+				throw new Error('invalid node list at ArrayType::non_dynamic');
 			}
-			n.is_int_set = on.body.is_int_set;
+			n.non_dynamic = on.body.non_dynamic;
 			const tmpbit_alignment = on.body?.bit_alignment;
 			if (!isBitAlignment(tmpbit_alignment)) {
 				throw new Error('invalid node list at ArrayType::bit_alignment');
@@ -3083,11 +3196,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at FunctionType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
-			const tmpis_int_set = on.body?.is_int_set;
-			if (typeof tmpis_int_set !== "boolean") {
-				throw new Error('invalid node list at FunctionType::is_int_set');
+			const tmpnon_dynamic = on.body?.non_dynamic;
+			if (typeof tmpnon_dynamic !== "boolean") {
+				throw new Error('invalid node list at FunctionType::non_dynamic');
 			}
-			n.is_int_set = on.body.is_int_set;
+			n.non_dynamic = on.body.non_dynamic;
 			const tmpbit_alignment = on.body?.bit_alignment;
 			if (!isBitAlignment(tmpbit_alignment)) {
 				throw new Error('invalid node list at FunctionType::bit_alignment');
@@ -3125,11 +3238,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at StructType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
-			const tmpis_int_set = on.body?.is_int_set;
-			if (typeof tmpis_int_set !== "boolean") {
-				throw new Error('invalid node list at StructType::is_int_set');
+			const tmpnon_dynamic = on.body?.non_dynamic;
+			if (typeof tmpnon_dynamic !== "boolean") {
+				throw new Error('invalid node list at StructType::non_dynamic');
 			}
-			n.is_int_set = on.body.is_int_set;
+			n.non_dynamic = on.body.non_dynamic;
 			const tmpbit_alignment = on.body?.bit_alignment;
 			if (!isBitAlignment(tmpbit_alignment)) {
 				throw new Error('invalid node list at StructType::bit_alignment');
@@ -3182,11 +3295,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at StructUnionType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
-			const tmpis_int_set = on.body?.is_int_set;
-			if (typeof tmpis_int_set !== "boolean") {
-				throw new Error('invalid node list at StructUnionType::is_int_set');
+			const tmpnon_dynamic = on.body?.non_dynamic;
+			if (typeof tmpnon_dynamic !== "boolean") {
+				throw new Error('invalid node list at StructUnionType::non_dynamic');
 			}
-			n.is_int_set = on.body.is_int_set;
+			n.non_dynamic = on.body.non_dynamic;
 			const tmpbit_alignment = on.body?.bit_alignment;
 			if (!isBitAlignment(tmpbit_alignment)) {
 				throw new Error('invalid node list at StructUnionType::bit_alignment');
@@ -3234,11 +3347,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at UnionType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
-			const tmpis_int_set = on.body?.is_int_set;
-			if (typeof tmpis_int_set !== "boolean") {
-				throw new Error('invalid node list at UnionType::is_int_set');
+			const tmpnon_dynamic = on.body?.non_dynamic;
+			if (typeof tmpnon_dynamic !== "boolean") {
+				throw new Error('invalid node list at UnionType::non_dynamic');
 			}
-			n.is_int_set = on.body.is_int_set;
+			n.non_dynamic = on.body.non_dynamic;
 			const tmpbit_alignment = on.body?.bit_alignment;
 			if (!isBitAlignment(tmpbit_alignment)) {
 				throw new Error('invalid node list at UnionType::bit_alignment');
@@ -3292,11 +3405,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at RangeType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
-			const tmpis_int_set = on.body?.is_int_set;
-			if (typeof tmpis_int_set !== "boolean") {
-				throw new Error('invalid node list at RangeType::is_int_set');
+			const tmpnon_dynamic = on.body?.non_dynamic;
+			if (typeof tmpnon_dynamic !== "boolean") {
+				throw new Error('invalid node list at RangeType::non_dynamic');
 			}
-			n.is_int_set = on.body.is_int_set;
+			n.non_dynamic = on.body.non_dynamic;
 			const tmpbit_alignment = on.body?.bit_alignment;
 			if (!isBitAlignment(tmpbit_alignment)) {
 				throw new Error('invalid node list at RangeType::bit_alignment');
@@ -3332,11 +3445,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at EnumType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
-			const tmpis_int_set = on.body?.is_int_set;
-			if (typeof tmpis_int_set !== "boolean") {
-				throw new Error('invalid node list at EnumType::is_int_set');
+			const tmpnon_dynamic = on.body?.non_dynamic;
+			if (typeof tmpnon_dynamic !== "boolean") {
+				throw new Error('invalid node list at EnumType::non_dynamic');
 			}
-			n.is_int_set = on.body.is_int_set;
+			n.non_dynamic = on.body.non_dynamic;
 			const tmpbit_alignment = on.body?.bit_alignment;
 			if (!isBitAlignment(tmpbit_alignment)) {
 				throw new Error('invalid node list at EnumType::bit_alignment');
@@ -3355,6 +3468,62 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at EnumType::base');
 			}
 			n.base = tmpbase;
+			break;
+		}
+		case "meta_type": {
+			const n :MetaType = cnode as MetaType;
+			const tmpis_explicit = on.body?.is_explicit;
+			if (typeof tmpis_explicit !== "boolean") {
+				throw new Error('invalid node list at MetaType::is_explicit');
+			}
+			n.is_explicit = on.body.is_explicit;
+			const tmpnon_dynamic = on.body?.non_dynamic;
+			if (typeof tmpnon_dynamic !== "boolean") {
+				throw new Error('invalid node list at MetaType::non_dynamic');
+			}
+			n.non_dynamic = on.body.non_dynamic;
+			const tmpbit_alignment = on.body?.bit_alignment;
+			if (!isBitAlignment(tmpbit_alignment)) {
+				throw new Error('invalid node list at MetaType::bit_alignment');
+			}
+			n.bit_alignment = tmpbit_alignment;
+			const tmpbit_size = on.body?.bit_size;
+			if (tmpbit_size !== null && typeof tmpbit_size !== "number") {
+				throw new Error('invalid node list at MetaType::bit_size');
+			}
+			n.bit_size = on.body.bit_size;
+			break;
+		}
+		case "optional_type": {
+			const n :OptionalType = cnode as OptionalType;
+			const tmpis_explicit = on.body?.is_explicit;
+			if (typeof tmpis_explicit !== "boolean") {
+				throw new Error('invalid node list at OptionalType::is_explicit');
+			}
+			n.is_explicit = on.body.is_explicit;
+			const tmpnon_dynamic = on.body?.non_dynamic;
+			if (typeof tmpnon_dynamic !== "boolean") {
+				throw new Error('invalid node list at OptionalType::non_dynamic');
+			}
+			n.non_dynamic = on.body.non_dynamic;
+			const tmpbit_alignment = on.body?.bit_alignment;
+			if (!isBitAlignment(tmpbit_alignment)) {
+				throw new Error('invalid node list at OptionalType::bit_alignment');
+			}
+			n.bit_alignment = tmpbit_alignment;
+			const tmpbit_size = on.body?.bit_size;
+			if (tmpbit_size !== null && typeof tmpbit_size !== "number") {
+				throw new Error('invalid node list at OptionalType::bit_size');
+			}
+			n.bit_size = on.body.bit_size;
+			if (on.body?.base_type !== null && typeof on.body?.base_type !== 'number') {
+				throw new Error('invalid node list at OptionalType::base_type');
+			}
+			const tmpbase_type = on.body.base_type === null ? null : c.node[on.body.base_type];
+			if (!(tmpbase_type === null || isType(tmpbase_type))) {
+				throw new Error('invalid node list at OptionalType::base_type');
+			}
+			n.base_type = tmpbase_type;
 			break;
 		}
 		case "int_literal": {
@@ -3906,6 +4075,44 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at BuiltinField::field_type');
 			}
 			n.field_type = tmpfield_type;
+			break;
+		}
+		case "builtin_object": {
+			const n :BuiltinObject = cnode as BuiltinObject;
+			if (on.body?.belong !== null && typeof on.body?.belong !== 'number') {
+				throw new Error('invalid node list at BuiltinObject::belong');
+			}
+			const tmpbelong = on.body.belong === null ? null : c.node[on.body.belong];
+			if (!(tmpbelong === null || isMember(tmpbelong))) {
+				throw new Error('invalid node list at BuiltinObject::belong');
+			}
+			n.belong = tmpbelong;
+			if (on.body?.belong_struct !== null && typeof on.body?.belong_struct !== 'number') {
+				throw new Error('invalid node list at BuiltinObject::belong_struct');
+			}
+			const tmpbelong_struct = on.body.belong_struct === null ? null : c.node[on.body.belong_struct];
+			if (!(tmpbelong_struct === null || isStructType(tmpbelong_struct))) {
+				throw new Error('invalid node list at BuiltinObject::belong_struct');
+			}
+			n.belong_struct = tmpbelong_struct;
+			if (on.body?.ident !== null && typeof on.body?.ident !== 'number') {
+				throw new Error('invalid node list at BuiltinObject::ident');
+			}
+			const tmpident = on.body.ident === null ? null : c.node[on.body.ident];
+			if (!(tmpident === null || isIdent(tmpident))) {
+				throw new Error('invalid node list at BuiltinObject::ident');
+			}
+			n.ident = tmpident;
+			for (const o of on.body.members) {
+				if (typeof o !== 'number') {
+					throw new Error('invalid node list at BuiltinObject::members');
+				}
+				const tmpmembers = c.node[o];
+				if (!isBuiltinMember(tmpmembers)) {
+					throw new Error('invalid node list at BuiltinObject::members');
+				}
+				n.members.push(tmpmembers);
+			}
 			break;
 		}
 		}
@@ -4629,6 +4836,13 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			const n :IntType = node as IntType;
 			break;
 		}
+		case "float_type": {
+			if (!isFloatType(node)) {
+				break;
+			}
+			const n :FloatType = node as FloatType;
+			break;
+		}
 		case "ident_type": {
 			if (!isIdentType(node)) {
 				break;
@@ -4777,6 +4991,26 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 				break;
 			}
 			const n :EnumType = node as EnumType;
+			break;
+		}
+		case "meta_type": {
+			if (!isMetaType(node)) {
+				break;
+			}
+			const n :MetaType = node as MetaType;
+			break;
+		}
+		case "optional_type": {
+			if (!isOptionalType(node)) {
+				break;
+			}
+			const n :OptionalType = node as OptionalType;
+			if (n.base_type !== null) {
+				const result = fn(fn,n.base_type);
+				if (result === false) {
+					return;
+				}
+			}
 			break;
 		}
 		case "int_literal": {
@@ -5039,6 +5273,25 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			if (n.field_type !== null) {
 				const result = fn(fn,n.field_type);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "builtin_object": {
+			if (!isBuiltinObject(node)) {
+				break;
+			}
+			const n :BuiltinObject = node as BuiltinObject;
+			if (n.ident !== null) {
+				const result = fn(fn,n.ident);
+				if (result === false) {
+					return;
+				}
+			}
+			for (const e of n.members) {
+				const result = fn(fn,e);
 				if (result === false) {
 					return;
 				}

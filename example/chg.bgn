@@ -1,0 +1,10 @@
+
+format MonomakhSaprChg:
+    title : [10]u8
+    block :[..]Block
+
+format Block:
+    title : [13]u8
+    file_size :ul64
+    data : [file_size]u8
+

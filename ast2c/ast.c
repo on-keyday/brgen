@@ -47,6 +47,7 @@ const char* ast2c_NodeType_to_string(ast2c_NodeType val) {
 	case AST2C_NODETYPE_IMPLICIT_YIELD: return "implicit_yield";
 	case AST2C_NODETYPE_TYPE: return "type";
 	case AST2C_NODETYPE_INT_TYPE: return "int_type";
+	case AST2C_NODETYPE_FLOAT_TYPE: return "float_type";
 	case AST2C_NODETYPE_IDENT_TYPE: return "ident_type";
 	case AST2C_NODETYPE_INT_LITERAL_TYPE: return "int_literal_type";
 	case AST2C_NODETYPE_STR_LITERAL_TYPE: return "str_literal_type";
@@ -59,6 +60,8 @@ const char* ast2c_NodeType_to_string(ast2c_NodeType val) {
 	case AST2C_NODETYPE_UNION_TYPE: return "union_type";
 	case AST2C_NODETYPE_RANGE_TYPE: return "range_type";
 	case AST2C_NODETYPE_ENUM_TYPE: return "enum_type";
+	case AST2C_NODETYPE_META_TYPE: return "meta_type";
+	case AST2C_NODETYPE_OPTIONAL_TYPE: return "optional_type";
 	case AST2C_NODETYPE_LITERAL: return "literal";
 	case AST2C_NODETYPE_INT_LITERAL: return "int_literal";
 	case AST2C_NODETYPE_BOOL_LITERAL: return "bool_literal";
@@ -76,6 +79,7 @@ const char* ast2c_NodeType_to_string(ast2c_NodeType val) {
 	case AST2C_NODETYPE_BUILTIN_MEMBER: return "builtin_member";
 	case AST2C_NODETYPE_BUILTIN_FUNCTION: return "builtin_function";
 	case AST2C_NODETYPE_BUILTIN_FIELD: return "builtin_field";
+	case AST2C_NODETYPE_BUILTIN_OBJECT: return "builtin_object";
 	default: return NULL;
 	}
 }
@@ -227,6 +231,10 @@ int ast2c_NodeType_from_string(const char* str, ast2c_NodeType* out) {
 		*out = AST2C_NODETYPE_INT_TYPE;
 		return 1;
 	}
+	if (strcmp(str, "float_type") == 0) {
+		*out = AST2C_NODETYPE_FLOAT_TYPE;
+		return 1;
+	}
 	if (strcmp(str, "ident_type") == 0) {
 		*out = AST2C_NODETYPE_IDENT_TYPE;
 		return 1;
@@ -273,6 +281,14 @@ int ast2c_NodeType_from_string(const char* str, ast2c_NodeType* out) {
 	}
 	if (strcmp(str, "enum_type") == 0) {
 		*out = AST2C_NODETYPE_ENUM_TYPE;
+		return 1;
+	}
+	if (strcmp(str, "meta_type") == 0) {
+		*out = AST2C_NODETYPE_META_TYPE;
+		return 1;
+	}
+	if (strcmp(str, "optional_type") == 0) {
+		*out = AST2C_NODETYPE_OPTIONAL_TYPE;
 		return 1;
 	}
 	if (strcmp(str, "literal") == 0) {
@@ -341,6 +357,10 @@ int ast2c_NodeType_from_string(const char* str, ast2c_NodeType* out) {
 	}
 	if (strcmp(str, "builtin_field") == 0) {
 		*out = AST2C_NODETYPE_BUILTIN_FIELD;
+		return 1;
+	}
+	if (strcmp(str, "builtin_object") == 0) {
+		*out = AST2C_NODETYPE_BUILTIN_OBJECT;
 		return 1;
 	}
 	return 0;
@@ -1993,7 +2013,7 @@ int ast2c_IntType_parse(ast2c_Ast* ast,ast2c_IntType* s,ast2c_json_handlers* h, 
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
 	s->bit_size = NULL;
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
-	void* is_int_set = h->object_get(h, obj_body, "is_int_set");
+	void* non_dynamic = h->object_get(h, obj_body, "non_dynamic");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
 	void* bit_size = h->object_get(h, obj_body, "bit_size");
 	void* endian = h->object_get(h, obj_body, "endian");
@@ -2001,7 +2021,7 @@ int ast2c_IntType_parse(ast2c_Ast* ast,ast2c_IntType* s,ast2c_json_handlers* h, 
 	void* is_common_supported = h->object_get(h, obj_body, "is_common_supported");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_IntType::loc is null"); } return 0; }
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_IntType::is_explicit is null"); } return 0; }
-	if (!is_int_set) { if(h->error) { h->error(h,is_int_set, "ast2c_IntType::is_int_set is null"); } return 0; }
+	if (!non_dynamic) { if(h->error) { h->error(h,non_dynamic, "ast2c_IntType::non_dynamic is null"); } return 0; }
 	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_IntType::bit_alignment is null"); } return 0; }
 	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_IntType::bit_size is null"); } return 0; }
 	if (!endian) { if(h->error) { h->error(h,endian, "ast2c_IntType::endian is null"); } return 0; }
@@ -2013,6 +2033,38 @@ int ast2c_IntType_parse(ast2c_Ast* ast,ast2c_IntType* s,ast2c_json_handlers* h, 
 	}
 	if(!h->number_get(h,bit_size,&s->bit_size)) {
 		if(h->error) { h->error(h,bit_size, "failed to parse ast2c_IntType::bit_size"); }
+		goto error;
+	}
+	return 1;
+error:
+	return 0;
+}
+
+// returns 1 if succeed 0 if failed
+int ast2c_FloatType_parse(ast2c_Ast* ast,ast2c_FloatType* s,ast2c_json_handlers* h, void* obj) {
+	if (!ast||!s||!h||!obj) {
+		if(h->error) { h->error(h,NULL, "invalid argument"); }
+		return 0;
+	}
+	void* loc = h->object_get(h, obj, "loc");
+	void* obj_body = h->object_get(h, obj, "body");
+	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
+	s->bit_size = NULL;
+	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
+	void* non_dynamic = h->object_get(h, obj_body, "non_dynamic");
+	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
+	void* bit_size = h->object_get(h, obj_body, "bit_size");
+	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_FloatType::loc is null"); } return 0; }
+	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_FloatType::is_explicit is null"); } return 0; }
+	if (!non_dynamic) { if(h->error) { h->error(h,non_dynamic, "ast2c_FloatType::non_dynamic is null"); } return 0; }
+	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_FloatType::bit_alignment is null"); } return 0; }
+	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_FloatType::bit_size is null"); } return 0; }
+	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
+		if(h->error) { h->error(h,loc, "failed to parse ast2c_FloatType::loc"); }
+		goto error;
+	}
+	if(!h->number_get(h,bit_size,&s->bit_size)) {
+		if(h->error) { h->error(h,bit_size, "failed to parse ast2c_FloatType::bit_size"); }
 		goto error;
 	}
 	return 1;
@@ -2033,14 +2085,14 @@ int ast2c_IdentType_parse(ast2c_Ast* ast,ast2c_IdentType* s,ast2c_json_handlers*
 	s->ident = NULL;
 	s->base = NULL;
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
-	void* is_int_set = h->object_get(h, obj_body, "is_int_set");
+	void* non_dynamic = h->object_get(h, obj_body, "non_dynamic");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
 	void* bit_size = h->object_get(h, obj_body, "bit_size");
 	void* ident = h->object_get(h, obj_body, "ident");
 	void* base = h->object_get(h, obj_body, "base");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_IdentType::loc is null"); } return 0; }
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_IdentType::is_explicit is null"); } return 0; }
-	if (!is_int_set) { if(h->error) { h->error(h,is_int_set, "ast2c_IdentType::is_int_set is null"); } return 0; }
+	if (!non_dynamic) { if(h->error) { h->error(h,non_dynamic, "ast2c_IdentType::non_dynamic is null"); } return 0; }
 	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_IdentType::bit_alignment is null"); } return 0; }
 	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_IdentType::bit_size is null"); } return 0; }
 	if (!ident) { if(h->error) { h->error(h,ident, "ast2c_IdentType::ident is null"); } return 0; }
@@ -2070,13 +2122,13 @@ int ast2c_IntLiteralType_parse(ast2c_Ast* ast,ast2c_IntLiteralType* s,ast2c_json
 	s->bit_size = NULL;
 	s->base = NULL;
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
-	void* is_int_set = h->object_get(h, obj_body, "is_int_set");
+	void* non_dynamic = h->object_get(h, obj_body, "non_dynamic");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
 	void* bit_size = h->object_get(h, obj_body, "bit_size");
 	void* base = h->object_get(h, obj_body, "base");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_IntLiteralType::loc is null"); } return 0; }
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_IntLiteralType::is_explicit is null"); } return 0; }
-	if (!is_int_set) { if(h->error) { h->error(h,is_int_set, "ast2c_IntLiteralType::is_int_set is null"); } return 0; }
+	if (!non_dynamic) { if(h->error) { h->error(h,non_dynamic, "ast2c_IntLiteralType::non_dynamic is null"); } return 0; }
 	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_IntLiteralType::bit_alignment is null"); } return 0; }
 	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_IntLiteralType::bit_size is null"); } return 0; }
 	if (!base) { if(h->error) { h->error(h,base, "ast2c_IntLiteralType::base is null"); } return 0; }
@@ -2106,14 +2158,14 @@ int ast2c_StrLiteralType_parse(ast2c_Ast* ast,ast2c_StrLiteralType* s,ast2c_json
 	s->base = NULL;
 	s->strong_ref = NULL;
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
-	void* is_int_set = h->object_get(h, obj_body, "is_int_set");
+	void* non_dynamic = h->object_get(h, obj_body, "non_dynamic");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
 	void* bit_size = h->object_get(h, obj_body, "bit_size");
 	void* base = h->object_get(h, obj_body, "base");
 	void* strong_ref = h->object_get(h, obj_body, "strong_ref");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_StrLiteralType::loc is null"); } return 0; }
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_StrLiteralType::is_explicit is null"); } return 0; }
-	if (!is_int_set) { if(h->error) { h->error(h,is_int_set, "ast2c_StrLiteralType::is_int_set is null"); } return 0; }
+	if (!non_dynamic) { if(h->error) { h->error(h,non_dynamic, "ast2c_StrLiteralType::non_dynamic is null"); } return 0; }
 	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_StrLiteralType::bit_alignment is null"); } return 0; }
 	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_StrLiteralType::bit_size is null"); } return 0; }
 	if (!base) { if(h->error) { h->error(h,base, "ast2c_StrLiteralType::base is null"); } return 0; }
@@ -2142,12 +2194,12 @@ int ast2c_VoidType_parse(ast2c_Ast* ast,ast2c_VoidType* s,ast2c_json_handlers* h
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
 	s->bit_size = NULL;
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
-	void* is_int_set = h->object_get(h, obj_body, "is_int_set");
+	void* non_dynamic = h->object_get(h, obj_body, "non_dynamic");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
 	void* bit_size = h->object_get(h, obj_body, "bit_size");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_VoidType::loc is null"); } return 0; }
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_VoidType::is_explicit is null"); } return 0; }
-	if (!is_int_set) { if(h->error) { h->error(h,is_int_set, "ast2c_VoidType::is_int_set is null"); } return 0; }
+	if (!non_dynamic) { if(h->error) { h->error(h,non_dynamic, "ast2c_VoidType::non_dynamic is null"); } return 0; }
 	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_VoidType::bit_alignment is null"); } return 0; }
 	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_VoidType::bit_size is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
@@ -2174,12 +2226,12 @@ int ast2c_BoolType_parse(ast2c_Ast* ast,ast2c_BoolType* s,ast2c_json_handlers* h
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
 	s->bit_size = NULL;
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
-	void* is_int_set = h->object_get(h, obj_body, "is_int_set");
+	void* non_dynamic = h->object_get(h, obj_body, "non_dynamic");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
 	void* bit_size = h->object_get(h, obj_body, "bit_size");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_BoolType::loc is null"); } return 0; }
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_BoolType::is_explicit is null"); } return 0; }
-	if (!is_int_set) { if(h->error) { h->error(h,is_int_set, "ast2c_BoolType::is_int_set is null"); } return 0; }
+	if (!non_dynamic) { if(h->error) { h->error(h,non_dynamic, "ast2c_BoolType::non_dynamic is null"); } return 0; }
 	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_BoolType::bit_alignment is null"); } return 0; }
 	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_BoolType::bit_size is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
@@ -2209,7 +2261,7 @@ int ast2c_ArrayType_parse(ast2c_Ast* ast,ast2c_ArrayType* s,ast2c_json_handlers*
 	s->length = NULL;
 	s->length_value = NULL;
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
-	void* is_int_set = h->object_get(h, obj_body, "is_int_set");
+	void* non_dynamic = h->object_get(h, obj_body, "non_dynamic");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
 	void* bit_size = h->object_get(h, obj_body, "bit_size");
 	void* end_loc = h->object_get(h, obj_body, "end_loc");
@@ -2218,7 +2270,7 @@ int ast2c_ArrayType_parse(ast2c_Ast* ast,ast2c_ArrayType* s,ast2c_json_handlers*
 	void* length_value = h->object_get(h, obj_body, "length_value");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_ArrayType::loc is null"); } return 0; }
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_ArrayType::is_explicit is null"); } return 0; }
-	if (!is_int_set) { if(h->error) { h->error(h,is_int_set, "ast2c_ArrayType::is_int_set is null"); } return 0; }
+	if (!non_dynamic) { if(h->error) { h->error(h,non_dynamic, "ast2c_ArrayType::non_dynamic is null"); } return 0; }
 	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_ArrayType::bit_alignment is null"); } return 0; }
 	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_ArrayType::bit_size is null"); } return 0; }
 	if (!end_loc) { if(h->error) { h->error(h,end_loc, "ast2c_ArrayType::end_loc is null"); } return 0; }
@@ -2259,14 +2311,14 @@ int ast2c_FunctionType_parse(ast2c_Ast* ast,ast2c_FunctionType* s,ast2c_json_han
 	s->return_type = NULL;
 	s->parameters = NULL;
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
-	void* is_int_set = h->object_get(h, obj_body, "is_int_set");
+	void* non_dynamic = h->object_get(h, obj_body, "non_dynamic");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
 	void* bit_size = h->object_get(h, obj_body, "bit_size");
 	void* return_type = h->object_get(h, obj_body, "return_type");
 	void* parameters = h->object_get(h, obj_body, "parameters");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_FunctionType::loc is null"); } return 0; }
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_FunctionType::is_explicit is null"); } return 0; }
-	if (!is_int_set) { if(h->error) { h->error(h,is_int_set, "ast2c_FunctionType::is_int_set is null"); } return 0; }
+	if (!non_dynamic) { if(h->error) { h->error(h,non_dynamic, "ast2c_FunctionType::non_dynamic is null"); } return 0; }
 	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_FunctionType::bit_alignment is null"); } return 0; }
 	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_FunctionType::bit_size is null"); } return 0; }
 	if (!return_type) { if(h->error) { h->error(h,return_type, "ast2c_FunctionType::return_type is null"); } return 0; }
@@ -2301,7 +2353,7 @@ int ast2c_StructType_parse(ast2c_Ast* ast,ast2c_StructType* s,ast2c_json_handler
 	s->fields = NULL;
 	s->base = NULL;
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
-	void* is_int_set = h->object_get(h, obj_body, "is_int_set");
+	void* non_dynamic = h->object_get(h, obj_body, "non_dynamic");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
 	void* bit_size = h->object_get(h, obj_body, "bit_size");
 	void* fields = h->object_get(h, obj_body, "fields");
@@ -2311,7 +2363,7 @@ int ast2c_StructType_parse(ast2c_Ast* ast,ast2c_StructType* s,ast2c_json_handler
 	void* fixed_tail_size = h->object_get(h, obj_body, "fixed_tail_size");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_StructType::loc is null"); } return 0; }
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_StructType::is_explicit is null"); } return 0; }
-	if (!is_int_set) { if(h->error) { h->error(h,is_int_set, "ast2c_StructType::is_int_set is null"); } return 0; }
+	if (!non_dynamic) { if(h->error) { h->error(h,non_dynamic, "ast2c_StructType::non_dynamic is null"); } return 0; }
 	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_StructType::bit_alignment is null"); } return 0; }
 	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_StructType::bit_size is null"); } return 0; }
 	if (!fields) { if(h->error) { h->error(h,fields, "ast2c_StructType::fields is null"); } return 0; }
@@ -2358,7 +2410,7 @@ int ast2c_StructUnionType_parse(ast2c_Ast* ast,ast2c_StructUnionType* s,ast2c_js
 	s->base = NULL;
 	s->union_fields = NULL;
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
-	void* is_int_set = h->object_get(h, obj_body, "is_int_set");
+	void* non_dynamic = h->object_get(h, obj_body, "non_dynamic");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
 	void* bit_size = h->object_get(h, obj_body, "bit_size");
 	void* structs = h->object_get(h, obj_body, "structs");
@@ -2366,7 +2418,7 @@ int ast2c_StructUnionType_parse(ast2c_Ast* ast,ast2c_StructUnionType* s,ast2c_js
 	void* union_fields = h->object_get(h, obj_body, "union_fields");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_StructUnionType::loc is null"); } return 0; }
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_StructUnionType::is_explicit is null"); } return 0; }
-	if (!is_int_set) { if(h->error) { h->error(h,is_int_set, "ast2c_StructUnionType::is_int_set is null"); } return 0; }
+	if (!non_dynamic) { if(h->error) { h->error(h,non_dynamic, "ast2c_StructUnionType::non_dynamic is null"); } return 0; }
 	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_StructUnionType::bit_alignment is null"); } return 0; }
 	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_StructUnionType::bit_size is null"); } return 0; }
 	if (!structs) { if(h->error) { h->error(h,structs, "ast2c_StructUnionType::structs is null"); } return 0; }
@@ -2408,7 +2460,7 @@ int ast2c_UnionType_parse(ast2c_Ast* ast,ast2c_UnionType* s,ast2c_json_handlers*
 	s->base_type = NULL;
 	s->common_type = NULL;
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
-	void* is_int_set = h->object_get(h, obj_body, "is_int_set");
+	void* non_dynamic = h->object_get(h, obj_body, "non_dynamic");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
 	void* bit_size = h->object_get(h, obj_body, "bit_size");
 	void* cond = h->object_get(h, obj_body, "cond");
@@ -2417,7 +2469,7 @@ int ast2c_UnionType_parse(ast2c_Ast* ast,ast2c_UnionType* s,ast2c_json_handlers*
 	void* common_type = h->object_get(h, obj_body, "common_type");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_UnionType::loc is null"); } return 0; }
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_UnionType::is_explicit is null"); } return 0; }
-	if (!is_int_set) { if(h->error) { h->error(h,is_int_set, "ast2c_UnionType::is_int_set is null"); } return 0; }
+	if (!non_dynamic) { if(h->error) { h->error(h,non_dynamic, "ast2c_UnionType::non_dynamic is null"); } return 0; }
 	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_UnionType::bit_alignment is null"); } return 0; }
 	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_UnionType::bit_size is null"); } return 0; }
 	if (!cond) { if(h->error) { h->error(h,cond, "ast2c_UnionType::cond is null"); } return 0; }
@@ -2454,14 +2506,14 @@ int ast2c_RangeType_parse(ast2c_Ast* ast,ast2c_RangeType* s,ast2c_json_handlers*
 	s->base_type = NULL;
 	s->range = NULL;
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
-	void* is_int_set = h->object_get(h, obj_body, "is_int_set");
+	void* non_dynamic = h->object_get(h, obj_body, "non_dynamic");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
 	void* bit_size = h->object_get(h, obj_body, "bit_size");
 	void* base_type = h->object_get(h, obj_body, "base_type");
 	void* range = h->object_get(h, obj_body, "range");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_RangeType::loc is null"); } return 0; }
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_RangeType::is_explicit is null"); } return 0; }
-	if (!is_int_set) { if(h->error) { h->error(h,is_int_set, "ast2c_RangeType::is_int_set is null"); } return 0; }
+	if (!non_dynamic) { if(h->error) { h->error(h,non_dynamic, "ast2c_RangeType::non_dynamic is null"); } return 0; }
 	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_RangeType::bit_alignment is null"); } return 0; }
 	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_RangeType::bit_size is null"); } return 0; }
 	if (!base_type) { if(h->error) { h->error(h,base_type, "ast2c_RangeType::base_type is null"); } return 0; }
@@ -2491,13 +2543,13 @@ int ast2c_EnumType_parse(ast2c_Ast* ast,ast2c_EnumType* s,ast2c_json_handlers* h
 	s->bit_size = NULL;
 	s->base = NULL;
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
-	void* is_int_set = h->object_get(h, obj_body, "is_int_set");
+	void* non_dynamic = h->object_get(h, obj_body, "non_dynamic");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
 	void* bit_size = h->object_get(h, obj_body, "bit_size");
 	void* base = h->object_get(h, obj_body, "base");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_EnumType::loc is null"); } return 0; }
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_EnumType::is_explicit is null"); } return 0; }
-	if (!is_int_set) { if(h->error) { h->error(h,is_int_set, "ast2c_EnumType::is_int_set is null"); } return 0; }
+	if (!non_dynamic) { if(h->error) { h->error(h,non_dynamic, "ast2c_EnumType::non_dynamic is null"); } return 0; }
 	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_EnumType::bit_alignment is null"); } return 0; }
 	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_EnumType::bit_size is null"); } return 0; }
 	if (!base) { if(h->error) { h->error(h,base, "ast2c_EnumType::base is null"); } return 0; }
@@ -2507,6 +2559,73 @@ int ast2c_EnumType_parse(ast2c_Ast* ast,ast2c_EnumType* s,ast2c_json_handlers* h
 	}
 	if(!h->number_get(h,bit_size,&s->bit_size)) {
 		if(h->error) { h->error(h,bit_size, "failed to parse ast2c_EnumType::bit_size"); }
+		goto error;
+	}
+	return 1;
+error:
+	return 0;
+}
+
+// returns 1 if succeed 0 if failed
+int ast2c_MetaType_parse(ast2c_Ast* ast,ast2c_MetaType* s,ast2c_json_handlers* h, void* obj) {
+	if (!ast||!s||!h||!obj) {
+		if(h->error) { h->error(h,NULL, "invalid argument"); }
+		return 0;
+	}
+	void* loc = h->object_get(h, obj, "loc");
+	void* obj_body = h->object_get(h, obj, "body");
+	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
+	s->bit_size = NULL;
+	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
+	void* non_dynamic = h->object_get(h, obj_body, "non_dynamic");
+	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
+	void* bit_size = h->object_get(h, obj_body, "bit_size");
+	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_MetaType::loc is null"); } return 0; }
+	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_MetaType::is_explicit is null"); } return 0; }
+	if (!non_dynamic) { if(h->error) { h->error(h,non_dynamic, "ast2c_MetaType::non_dynamic is null"); } return 0; }
+	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_MetaType::bit_alignment is null"); } return 0; }
+	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_MetaType::bit_size is null"); } return 0; }
+	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
+		if(h->error) { h->error(h,loc, "failed to parse ast2c_MetaType::loc"); }
+		goto error;
+	}
+	if(!h->number_get(h,bit_size,&s->bit_size)) {
+		if(h->error) { h->error(h,bit_size, "failed to parse ast2c_MetaType::bit_size"); }
+		goto error;
+	}
+	return 1;
+error:
+	return 0;
+}
+
+// returns 1 if succeed 0 if failed
+int ast2c_OptionalType_parse(ast2c_Ast* ast,ast2c_OptionalType* s,ast2c_json_handlers* h, void* obj) {
+	if (!ast||!s||!h||!obj) {
+		if(h->error) { h->error(h,NULL, "invalid argument"); }
+		return 0;
+	}
+	void* loc = h->object_get(h, obj, "loc");
+	void* obj_body = h->object_get(h, obj, "body");
+	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
+	s->bit_size = NULL;
+	s->base_type = NULL;
+	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
+	void* non_dynamic = h->object_get(h, obj_body, "non_dynamic");
+	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
+	void* bit_size = h->object_get(h, obj_body, "bit_size");
+	void* base_type = h->object_get(h, obj_body, "base_type");
+	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_OptionalType::loc is null"); } return 0; }
+	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_OptionalType::is_explicit is null"); } return 0; }
+	if (!non_dynamic) { if(h->error) { h->error(h,non_dynamic, "ast2c_OptionalType::non_dynamic is null"); } return 0; }
+	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_OptionalType::bit_alignment is null"); } return 0; }
+	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_OptionalType::bit_size is null"); } return 0; }
+	if (!base_type) { if(h->error) { h->error(h,base_type, "ast2c_OptionalType::base_type is null"); } return 0; }
+	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
+		if(h->error) { h->error(h,loc, "failed to parse ast2c_OptionalType::loc"); }
+		goto error;
+	}
+	if(!h->number_get(h,bit_size,&s->bit_size)) {
+		if(h->error) { h->error(h,bit_size, "failed to parse ast2c_OptionalType::bit_size"); }
 		goto error;
 	}
 	return 1;
@@ -3017,6 +3136,41 @@ int ast2c_BuiltinField_parse(ast2c_Ast* ast,ast2c_BuiltinField* s,ast2c_json_han
 	if (!field_type) { if(h->error) { h->error(h,field_type, "ast2c_BuiltinField::field_type is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_BuiltinField::loc"); }
+		goto error;
+	}
+	return 1;
+error:
+	return 0;
+}
+
+// returns 1 if succeed 0 if failed
+int ast2c_BuiltinObject_parse(ast2c_Ast* ast,ast2c_BuiltinObject* s,ast2c_json_handlers* h, void* obj) {
+	if (!ast||!s||!h||!obj) {
+		if(h->error) { h->error(h,NULL, "invalid argument"); }
+		return 0;
+	}
+	void* loc = h->object_get(h, obj, "loc");
+	void* obj_body = h->object_get(h, obj, "body");
+	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
+	s->belong = NULL;
+	s->belong_struct = NULL;
+	s->ident = NULL;
+	s->members = NULL;
+	void* belong = h->object_get(h, obj_body, "belong");
+	void* belong_struct = h->object_get(h, obj_body, "belong_struct");
+	void* ident = h->object_get(h, obj_body, "ident");
+	void* members = h->object_get(h, obj_body, "members");
+	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_BuiltinObject::loc is null"); } return 0; }
+	if (!belong) { if(h->error) { h->error(h,belong, "ast2c_BuiltinObject::belong is null"); } return 0; }
+	if (!belong_struct) { if(h->error) { h->error(h,belong_struct, "ast2c_BuiltinObject::belong_struct is null"); } return 0; }
+	if (!ident) { if(h->error) { h->error(h,ident, "ast2c_BuiltinObject::ident is null"); } return 0; }
+	if (!members) { if(h->error) { h->error(h,members, "ast2c_BuiltinObject::members is null"); } return 0; }
+	if(!h->array_size(h, members,&s->members_size)) {
+		if(h->error) { h->error(h,members, "failed to get array size of ast2c_BuiltinObject::members"); }
+		return NULL;
+	}
+	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
+		if(h->error) { h->error(h,loc, "failed to parse ast2c_BuiltinObject::loc"); }
 		goto error;
 	}
 	return 1;

@@ -1,0 +1,17 @@
+
+format STL:
+  header :[80]u8
+  num_triangles :u32
+  triangles :[num_triangles]Triangle
+
+
+format Triangle:
+    normal :[3]f32
+    vertices :[3]Vertex
+    attr :u16
+
+format Vertex:
+    x :f32
+    y :f32
+    z :f32
+    

@@ -145,7 +145,7 @@ namespace j2cp2 {
                 return enum_ty->base.lock()->ident->ident;
             }
             if (auto arr_ty = ast::as<ast::ArrayType>(type); arr_ty) {
-                if (arr_ty->is_int_set) {
+                if (arr_ty->non_dynamic) {
                     auto len = str.to_string(arr_ty->length);
                     return "std::array<std::uint" + brgen::nums(*arr_ty->base_type->bit_size) + "_t," + len + ">";
                 }
@@ -354,14 +354,14 @@ namespace j2cp2 {
                             continue;
                         }
                         if (f->bit_alignment != ast::BitAlignment::byte_aligned) {
-                            is_int_set = is_int_set && type->is_int_set;
+                            is_int_set = is_int_set && type->non_dynamic;
                             include_non_simple = include_non_simple || !is_simple_type(type);
                             bit_size += *type->bit_size;
                             non_aligned.push_back(ast::cast_to<ast::Field>(field));
                             continue;
                         }
                         if (non_aligned.size() > 0) {
-                            is_int_set = is_int_set && type->is_int_set;
+                            is_int_set = is_int_set && type->non_dynamic;
                             include_non_simple = include_non_simple || !is_simple_type(type);
                             bit_size += *type->bit_size;
                             non_aligned.push_back(ast::cast_to<ast::Field>(field));
