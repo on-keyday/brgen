@@ -148,4 +148,7 @@
     "rust-analyzer.cargo.sysroot": "discover",
     "brgen-lsp.src2json" :"./tool/src2json.exe",
     //"go.buildTags": "js,wasm"
+    "yaml.schemas": {
+        "https://ultra-supara/homebrew-sisakulint/settings.json": "/.github/workflows/*.{yml,yaml}"
+    }
 }

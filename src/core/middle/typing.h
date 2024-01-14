@@ -769,6 +769,7 @@ namespace brgen::middle {
                 if (!stmt) {
                     error(selector->member->loc, "member ", selector->member->ident, " is not defined").report();
                 }
+                typing_object(stmt);
             }
             else {
                 error(selector->target->loc, "expect struct type but not")

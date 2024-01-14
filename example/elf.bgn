@@ -9,7 +9,7 @@ enum CPUClass:
     _32 = 1
     _64 = 2
 
-format ELF:
+format ELFFileHeader:
     magic :"\177ELF"
     class :CPUClass
     class == CPUClass._32 || class == CPUClass._64  
@@ -41,5 +41,95 @@ format ELF:
     section_header_entry_size :u16
     section_header_entry_count :u16
     section_header_name_index :u16
+    estate.cpu = class
+    estate.endian = endian
 
+state ELFState:
+    cpu :CPUClass
+    endian :Endian
 
+estate :ELFState
+
+format ProgramHeader:
+    input.endian = estate.endian == Endian.LittleEndian ? config.endian.little : config.endian.big
+    type :u32
+    if estate.cpu == CPUClass._32:
+        offset :u32
+        vaddr :u32
+        paddr :u32
+        file_size :u32
+        memory_size :u32
+        flags :u32
+        align :u32
+    else:
+        flags :u32
+        offset :u64
+        vaddr :u64
+        paddr :u64
+        file_size :u64
+        memory_size :u64
+        align :u64
+
+format SectionHeader:
+    input.endian = estate.endian == Endian.LittleEndian ? config.endian.little : config.endian.big
+    name :u32
+    type :u32
+    if estate.cpu == CPUClass._32:
+        flags :u32
+        addr :u32
+        offset :u32
+        size :u32
+        link :u32
+        info :u32
+        addralign :u32
+        entsize :u32
+    else:
+        flags :u64
+        addr :u64
+        offset :u64
+        size :u64
+        link :u32
+        info :u32
+        addralign :u64
+        entsize :u64
+
+format String:
+    value :[..]u8
+    null :"\0"
+
+format SymbolTable:
+    name :u32
+    if estate.cpu == CPUClass._32:
+        value :u32
+        size :u32
+        info :u8
+        other :u8
+        shndx :u16
+    else:
+        info :u8
+        other :u8
+        shndx :u16
+        value :u64
+        size :u64
+
+format Relocation:
+    if estate.cpu == CPUClass._32:
+        offset :u32
+        info :u32
+    else:
+        offset :u64
+        info :u64
+
+format DynamicTags:
+    if estate.cpu == CPUClass._32:
+        tag :u32
+        value :u32
+    else:
+        tag :u64
+        value :u64
+
+format ELF:
+    elf_header :ELFFileHeader
+    program_headers :[elf_header.program_header_entry_count]ProgramHeader(input = 
+    input.subrange(elf_header.program_header_entry_count * elf_header.program_header_entry_size,elf_header.program_header_offset))
+    section_headers :[elf_header.section_header_entry_count]SectionHeader
