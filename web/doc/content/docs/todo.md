@@ -37,3 +37,6 @@ ToDo リストです(2023/1/7)
 - enum に文字列を割り当てる構文
   - `a = 1, "a"` みたいな
 - AST のドキュメント
+- `input = input.subrange`構文の offset は subrange がネストしたときどのように扱えばよいか。
+  - subrange は input.offset == 0 のときは subrange における 0 を示す? <-これは微妙だ。これだと全入力の任意の位置は指し示せない。
+  - 全体の入力の offset <-こっちが良いと思われる

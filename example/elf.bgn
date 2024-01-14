@@ -70,10 +70,14 @@ format ProgramHeader:
         memory_size :u64
         align :u64
 
+enum SectionType:
+    :u32
+    NoBits = 8
+
 format SectionHeader:
     input.endian = estate.endian == Endian.LittleEndian ? config.endian.little : config.endian.big
     name :u32
-    type :u32
+    type :SectionType
     if estate.cpu == CPUClass._32:
         flags :u32
         addr :u32
@@ -92,6 +96,9 @@ format SectionHeader:
         info :u32
         addralign :u64
         entsize :u64
+    
+    if type != SectionType.NoBits:
+        data :[..]u8(input = input.subrange(size, offset))
 
 format String:
     value :[..]u8
@@ -130,6 +137,15 @@ format DynamicTags:
 
 format ELF:
     elf_header :ELFFileHeader
-    program_headers :[elf_header.program_header_entry_count]ProgramHeader(input = 
-    input.subrange(elf_header.program_header_entry_count * elf_header.program_header_entry_size,elf_header.program_header_offset))
-    section_headers :[elf_header.section_header_entry_count]SectionHeader
+    if u64(elf_header.program_header_offset) != 0:
+        program_headers :[elf_header.program_header_entry_count]ProgramHeader(
+         input = 
+         input.subrange(elf_header.program_header_entry_count *
+                        elf_header.program_header_entry_size,
+                        elf_header.program_header_offset))
+    if u64(elf_header.section_header_offset) != 0:
+        section_headers :[elf_header.section_header_entry_count]SectionHeader(
+        input =
+        input.subrange(elf_header.section_header_entry_count *
+                    elf_header.section_header_entry_size,
+                    elf_header.section_header_offset))
