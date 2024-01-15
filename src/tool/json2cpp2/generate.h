@@ -71,6 +71,11 @@ namespace j2cp2 {
         }
     };
 
+    struct LaterInfo {
+        size_t size = 0;
+        std::shared_ptr<ast::Field> next_field;
+    };
+
     struct Generator {
         brgen::writer::Writer w;
         size_t seq = 0;
@@ -82,7 +87,7 @@ namespace j2cp2 {
         ast::tool::Stringer str;
         std::map<ast::Field*, BitFieldMeta> bit_fields;
         std::map<ast::Field*, AnonymousStructMeta> anonymous_structs;
-        std::map<ast::Field*, size_t> later_size;
+        std::map<ast::Field*, LaterInfo> later_size;
         std::map<ast::EnumMember*, std::string> enum_member_map;
         std::vector<LineMap> line_map;
         bool enable_line_map = false;
@@ -407,7 +412,18 @@ namespace j2cp2 {
                             w.writeln(ty, " ", f->ident->ident, ";");
                             if (auto range = ast::as<ast::Range>(arr_ty->length)) {
                                 if (f->eventual_follow == ast::Follow::end) {
-                                    later_size[f] = f->tail_offset_recent;
+                                    later_size[f].size = f->tail_offset_recent;
+                                }
+                                if (f->follow == ast::Follow::constant) {
+                                    auto& later = later_size[f];
+                                    for (auto j = i + 1; j < s->fields.size(); j++) {
+                                        auto& f2 = s->fields[j];
+                                        if (auto f2_ = ast::as<ast::Field>(f2); f2_) {
+                                            later.next_field = ast::cast_to<ast::Field>(f2);
+                                            break;
+                                        }
+                                    }
+                                    assert(later.next_field);
                                 }
                             }
                             str.map_ident(f->ident, "${THIS}", prefix, f->ident->ident);
@@ -673,9 +689,16 @@ namespace j2cp2 {
             }
             if (auto arr_ty = ast::as<ast::ArrayType>(typ); arr_ty) {
                 std::optional<std::string> len;
+                std::optional<std::tuple<std::string, brgen::lexer::Loc, size_t>> next;
                 if (auto found = later_size.find(fi); found != later_size.end()) {
-                    if (found->second != 0) {
-                        auto require_remain = brgen::nums(found->second / 8);
+                    if (found->second.next_field) {
+                        auto next_expect = str.to_string(found->second.next_field->ident);
+                        auto next_loc = found->second.next_field->loc;
+                        auto size = *found->second.next_field->field_type->bit_size / 8;
+                        next = {next_expect, next_loc, size};
+                    }
+                    else if (found->second.size != 0) {
+                        auto require_remain = brgen::nums(found->second.size / 8);
                         map_line(loc);
                         w.writeln("if (r.remain().size() < ", require_remain, ") {");
                         {
@@ -702,6 +725,36 @@ namespace j2cp2 {
                         }
                         w.writeln("}");
                     }
+                    else if (next) {
+                        // TODO(on-keyday): with boyer moore if long length string?
+                        auto base_offset_tmp = brgen::concat("base_offset_", brgen::nums(get_seq()), "_");
+                        w.writeln("auto ", base_offset_tmp, " = r.offset();");
+                        w.writeln("for(;;) {");
+                        {
+                            auto indent = w.indent_scope();
+                            auto tmp = brgen::concat("tmp_", brgen::nums(get_seq()), "_");
+                            auto term_len = brgen::nums(std::get<2>(*next));
+                            w.writeln("auto ", tmp, " = r.remain().substr(0,", term_len, ");");
+                            w.writeln("if (", tmp, ".size() < ", term_len, ") {");
+                            {
+                                auto indent = w.indent_scope();
+                                w.writeln("return false;");
+                            }
+                            w.writeln("}");
+                            w.writeln("if (", tmp, " == ", std::get<0>(*next), ") {");
+                            {
+                                auto indent = w.indent_scope();
+                                w.writeln("r.reset(", base_offset_tmp, ");");
+                                w.writeln("if(!r.read(", ident, ", ", tmp, ".size())){");
+                                w.indent_writeln("return false;");
+                                w.writeln("}");
+                                w.writeln("break;");
+                            }
+                            w.writeln("}");
+                            w.writeln("r.offset(1);");
+                        }
+                        w.writeln("}");
+                    }
                     else {
                         w.writeln("if (!r.read(", ident, ")) {");
                         {
@@ -712,16 +765,33 @@ namespace j2cp2 {
                     }
                 }
                 else {
-                    if (!len) {
+                    if (!len && !next) {
                         len = brgen::nums(*arr_ty->length_value);
                     }
                     auto tmp = brgen::concat("tmp_", brgen::nums(get_seq()), "_");
-                    auto tmp_i = brgen::concat("tmp_", brgen::nums(get_seq()), "_");
                     auto type = get_type_name(arr_ty->base_type);
                     map_line(loc);
-                    w.writeln("for (size_t  ", tmp_i, "= 0; ", tmp_i, "<", *len, "; ++", tmp_i, " ) {");
+                    if (len) {
+                        auto tmp_i = brgen::concat("tmp_", brgen::nums(get_seq()), "_");
+                        w.writeln("for (size_t  ", tmp_i, "= 0; ", tmp_i, "<", *len, "; ++", tmp_i, " ) {");
+                    }
+                    else {
+                        w.writeln("for (;;) {");
+                    }
+                    // avoid reserve() call to prevent memory exhausted
                     {
                         auto indent = w.indent_scope();
+                        if (next) {
+                            auto next_len = brgen::nums(std::get<2>(*next));
+                            auto tmp = brgen::concat("tmp_", brgen::nums(get_seq()), "_");
+                            w.writeln("auto ", tmp, " = r.remain().substr(0,", next_len, ");");
+                            w.writeln("if (", tmp, ".size() < ", next_len, ") {");
+                            w.indent_writeln("return false;");
+                            w.writeln("}");
+                            w.writeln("if (", tmp, " == ", std::get<0>(*next), ") {");
+                            w.indent_writeln("break;");
+                            w.writeln("}");
+                        }
                         w.writeln(type, " ", tmp, ";");
                         write_field_decode_impl(loc, tmp, arr_ty->base_type, fi);
                         w.writeln(ident, ".push_back(std::move(", tmp, "));");
@@ -889,6 +959,17 @@ namespace j2cp2 {
         void write_program(std::shared_ptr<ast::Program>& prog) {
             str.type_resolver = [&](auto& s, const std::shared_ptr<ast::Type>& t) {
                 return get_type_name(t);
+            };
+            str.io_op_handler = [&](auto& s, const std::shared_ptr<ast::IOOperation>& t) {
+                if (t->method == ast::IOMethod::input_offset) {
+                    if (ctx.encode) {
+                        return "w.offset()";
+                    }
+                    else {
+                        return "r.offset()";
+                    }
+                }
+                return "";
             };
             w.writeln("//Code generated by json2cpp2");
             w.writeln("#pragma once");
