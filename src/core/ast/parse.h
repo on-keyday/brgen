@@ -908,7 +908,7 @@ namespace brgen::ast {
                 }
                 s.must_consume_token(":");
                 s.skip_white();
-                func_type->parameters.push_back(parse_type());
+                func_type->parameters.push_back(parse_type(true));
                 s.skip_white();
                 second = true;
             }
@@ -916,7 +916,7 @@ namespace brgen::ast {
             s.skip_space();  // for safety, skip only space, not line
             if (s.consume_token("->")) {
                 s.skip_white();
-                func_type->return_type = parse_type();
+                func_type->return_type = parse_type(true);
             }
             return func_type;
         }
@@ -928,7 +928,7 @@ namespace brgen::ast {
             <str literal type> ::= <str literal>
             <ident type> ::= <ident>
         */
-        std::shared_ptr<Type> parse_type() {
+        std::shared_ptr<Type> parse_type(bool as_argument) {
             if (auto arr_begin = s.consume_token("[")) {
                 s.skip_white();
                 std::shared_ptr<Expr> expr;
@@ -938,7 +938,7 @@ namespace brgen::ast {
                 }
                 auto end_tok = s.must_consume_token("]");
                 s.skip_space();
-                auto base_type = parse_type();
+                auto base_type = parse_type(as_argument);
                 return std::make_shared<ArrayType>(arr_begin->loc, std::move(expr), end_tok.loc, std::move(base_type), true);
             }
 
@@ -971,7 +971,13 @@ namespace brgen::ast {
             base->usage = IdentUsage::maybe_type;
             base->scope = state.current_scope();
 
-            return std::make_shared<IdentType>(ident.loc, std::move(base));
+            auto id = std::make_shared<IdentType>(ident.loc, std::move(base));
+            if (!as_argument) {
+                if (auto fmt = ast::as<ast::Format>(state.current_member())) {
+                    fmt->depends.push_back(id);
+                }
+            }
+            return id;
         }
 
         /*
@@ -1003,7 +1009,7 @@ namespace brgen::ast {
             field->ident = std::move(ident);
             s.skip_space();
 
-            field->field_type = parse_type();
+            field->field_type = parse_type(as_argument);
 
             if (field->ident) {
                 field->ident->expr_type = field->field_type;
@@ -1012,15 +1018,8 @@ namespace brgen::ast {
                 field->ident->constant_level = ConstantLevel::variable;
                 check_duplicated_def(field->ident.get());
             }
-            auto cur_member = state.current_member();
 
-            field->belong = cur_member;
-
-            if (auto fmt = ast::as<ast::Format>(cur_member)) {
-                if (ast::as<ast::IdentType>(field->field_type)) {
-                    fmt->dependency.push_back(ast::cast_to<ast::IdentType>(field->field_type));
-                }
-            }
+            field->belong = state.current_member();
 
             if (auto b = s.consume_token("(")) {
                 s.skip_white();
@@ -1063,7 +1062,7 @@ namespace brgen::ast {
             auto s_scope = state.new_indent(s, base.token.size(), enum_->scope, enum_);
             if (auto tok = s.consume_token(":")) {
                 s.skip_white();
-                enum_->base_type = parse_type();
+                enum_->base_type = parse_type(false);
                 s.skip_space();
                 s.must_consume_token(lexer::Tag::line);
                 s.skip_line();
@@ -1217,7 +1216,7 @@ namespace brgen::ast {
             s.skip_white();
             if (auto r = s.consume_token("->")) {
                 s.skip_white();
-                fn->return_type = parse_type();
+                fn->return_type = parse_type(false);
             }
             else {
                 fn->return_type = std::make_shared<VoidType>(end_loc);

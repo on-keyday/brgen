@@ -17,7 +17,7 @@ namespace brgen::ast {
         std::weak_ptr<Function> encode_fn;
         std::weak_ptr<Function> decode_fn;
         std::vector<std::weak_ptr<Function>> cast_fns;
-        std::vector<std::weak_ptr<IdentType>> dependency;
+        std::vector<std::weak_ptr<IdentType>> depends;
         Format(lexer::Loc l)
             : Member(l, NodeType::format) {}
 
@@ -31,7 +31,7 @@ namespace brgen::ast {
             sdebugf(encode_fn);
             sdebugf(decode_fn);
             sdebugf(cast_fns);
-            sdebugf(dependency);
+            sdebugf(depends);
         }
     };
 

@@ -5,6 +5,7 @@
 #include <core/ast/ast.h>
 #include <writer/writer.h>
 #include <core/ast/tool/stringer.h>
+#include <core/ast/tool/sort.h>
 
 namespace j2cp2 {
     namespace ast = brgen::ast;
@@ -888,14 +889,16 @@ namespace j2cp2 {
                     w.writeln("constexpr auto ", ident->ident, " = ", str.to_string(b->right), ";");
                     str.map_ident(ast::cast_to<ast::Ident>(b->left), ident->ident);
                 }
-                if (auto f = ast::as<ast::Format>(fmt); f) {
-                    write_simple_struct(ast::cast_to<ast::Format>(fmt));
-                    write_code_fn(ast::cast_to<ast::Format>(fmt), true);
-                    write_code_fn(ast::cast_to<ast::Format>(fmt), false);
-                }
                 if (auto e = ast::as<ast::Enum>(fmt); e) {
                     write_enum(ast::cast_to<ast::Enum>(fmt));
                 }
+            }
+            ast::tool::FormatSorter s;
+            auto sorted = s.topological_sort(prog);
+            for (auto& fmt : sorted) {
+                write_simple_struct(fmt);
+                write_code_fn(fmt, true);
+                write_code_fn(fmt, false);
             }
         }
     };
