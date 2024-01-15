@@ -2769,7 +2769,7 @@ type Format struct {
 	EncodeFn     *Function
 	DecodeFn     *Function
 	CastFns      []*Function
-	Dependency   []*IdentType
+	Depends      []*IdentType
 }
 
 func (n *Format) isMember() {}
@@ -4376,7 +4376,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				EncodeFn     *uintptr  `json:"encode_fn"`
 				DecodeFn     *uintptr  `json:"decode_fn"`
 				CastFns      []uintptr `json:"cast_fns"`
-				Dependency   []uintptr `json:"dependency"`
+				Depends      []uintptr `json:"depends"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -4403,9 +4403,9 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			for j, k := range tmp.CastFns {
 				v.CastFns[j] = n.node[k].(*Function)
 			}
-			v.Dependency = make([]*IdentType, len(tmp.Dependency))
-			for j, k := range tmp.Dependency {
-				v.Dependency[j] = n.node[k].(*IdentType)
+			v.Depends = make([]*IdentType, len(tmp.Depends))
+			for j, k := range tmp.Depends {
+				v.Depends[j] = n.node[k].(*IdentType)
 			}
 		case NodeTypeState:
 			v := n.node[i].(*State)

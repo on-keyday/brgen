@@ -2891,7 +2891,7 @@ int ast2c_Format_parse(ast2c_Ast* ast,ast2c_Format* s,ast2c_json_handlers* h, vo
 	s->encode_fn = NULL;
 	s->decode_fn = NULL;
 	s->cast_fns = NULL;
-	s->dependency = NULL;
+	s->depends = NULL;
 	void* belong = h->object_get(h, obj_body, "belong");
 	void* belong_struct = h->object_get(h, obj_body, "belong_struct");
 	void* ident = h->object_get(h, obj_body, "ident");
@@ -2899,7 +2899,7 @@ int ast2c_Format_parse(ast2c_Ast* ast,ast2c_Format* s,ast2c_json_handlers* h, vo
 	void* encode_fn = h->object_get(h, obj_body, "encode_fn");
 	void* decode_fn = h->object_get(h, obj_body, "decode_fn");
 	void* cast_fns = h->object_get(h, obj_body, "cast_fns");
-	void* dependency = h->object_get(h, obj_body, "dependency");
+	void* depends = h->object_get(h, obj_body, "depends");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_Format::loc is null"); } return 0; }
 	if (!belong) { if(h->error) { h->error(h,belong, "ast2c_Format::belong is null"); } return 0; }
 	if (!belong_struct) { if(h->error) { h->error(h,belong_struct, "ast2c_Format::belong_struct is null"); } return 0; }
@@ -2912,9 +2912,9 @@ int ast2c_Format_parse(ast2c_Ast* ast,ast2c_Format* s,ast2c_json_handlers* h, vo
 		if(h->error) { h->error(h,cast_fns, "failed to get array size of ast2c_Format::cast_fns"); }
 		return NULL;
 	}
-	if (!dependency) { if(h->error) { h->error(h,dependency, "ast2c_Format::dependency is null"); } return 0; }
-	if(!h->array_size(h, dependency,&s->dependency_size)) {
-		if(h->error) { h->error(h,dependency, "failed to get array size of ast2c_Format::dependency"); }
+	if (!depends) { if(h->error) { h->error(h,depends, "ast2c_Format::depends is null"); } return 0; }
+	if(!h->array_size(h, depends,&s->depends_size)) {
+		if(h->error) { h->error(h,depends, "failed to get array size of ast2c_Format::depends"); }
 		return NULL;
 	}
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {

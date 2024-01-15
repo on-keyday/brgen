@@ -6277,7 +6277,7 @@ pub struct Format {
 	pub encode_fn: Option<Weak<RefCell<Function>>>,
 	pub decode_fn: Option<Weak<RefCell<Function>>>,
 	pub cast_fns: Vec<Weak<RefCell<Function>>>,
-	pub dependency: Vec<Weak<RefCell<IdentType>>>,
+	pub depends: Vec<Weak<RefCell<IdentType>>>,
 }
 
 impl TryFrom<&Member> for Rc<RefCell<Format>> {
@@ -7756,7 +7756,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				encode_fn: None,
 				decode_fn: None,
 				cast_fns: Vec::new(),
-				dependency: Vec::new(),
+				depends: Vec::new(),
 				})))
 			},
 			NodeType::State => {
@@ -11559,28 +11559,28 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().cast_fns.push(Rc::downgrade(&cast_fns_body));
 				}
-				let dependency_body = match raw_node.body.get("dependency") {
+				let depends_body = match raw_node.body.get("depends") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"dependency")),
+					None=>return Err(Error::MissingField(node_type,"depends")),
 				};
-				let dependency_body = match dependency_body.as_array(){
+				let depends_body = match depends_body.as_array(){
 					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(dependency_body.into(),JSONType::Array)),
+					None=>return Err(Error::MismatchJSONType(depends_body.into(),JSONType::Array)),
 				};
-				for link in dependency_body {
+				for link in depends_body {
 					let link = match link.as_u64() {
 						Some(v)=>v,
 						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
 					};
-					let dependency_body = match nodes.get(link as usize) {
+					let depends_body = match nodes.get(link as usize) {
 						Some(v)=>v,
 						None => return Err(Error::IndexOutOfBounds(link as usize)),
 					};
-					let dependency_body = match dependency_body {
+					let depends_body = match depends_body {
 						Node::IdentType(body)=>body,
-						x =>return Err(Error::MismatchNodeType(x.into(),dependency_body.into())),
+						x =>return Err(Error::MismatchNodeType(x.into(),depends_body.into())),
 					};
-					node.borrow_mut().dependency.push(Rc::downgrade(&dependency_body));
+					node.borrow_mut().depends.push(Rc::downgrade(&depends_body));
 				}
 			},
 			NodeType::State => {
