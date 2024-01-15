@@ -1178,6 +1178,8 @@ struct ast2c_Format {
 	ast2c_Function* decode_fn;
 	ast2c_Function** cast_fns;
 	size_t cast_fns_size;
+	ast2c_IdentType** dependency;
+	size_t dependency_size;
 };
 
 // returns 1 if succeed 0 if failed

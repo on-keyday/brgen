@@ -891,6 +891,7 @@ export interface Format extends Member {
 	encode_fn: Function|null;
 	decode_fn: Function|null;
 	cast_fns: Function[];
+	dependency: IdentType[];
 }
 
 export function isFormat(obj: any): obj is Format {
@@ -1802,6 +1803,7 @@ export function parseAST(obj: any): Program {
 				encode_fn: null,
 				decode_fn: null,
 				cast_fns: [],
+				dependency: [],
 			}
 			c.node.push(n);
 			break;
@@ -3798,6 +3800,16 @@ export function parseAST(obj: any): Program {
 					throw new Error('invalid node list at Format::cast_fns');
 				}
 				n.cast_fns.push(tmpcast_fns);
+			}
+			for (const o of on.body.dependency) {
+				if (typeof o !== 'number') {
+					throw new Error('invalid node list at Format::dependency');
+				}
+				const tmpdependency = c.node[o];
+				if (!isIdentType(tmpdependency)) {
+					throw new Error('invalid node list at Format::dependency');
+				}
+				n.dependency.push(tmpdependency);
 			}
 			break;
 		}

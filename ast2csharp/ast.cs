@@ -635,6 +635,7 @@ public class Format : Member{
 	public Function? EncodeFn{get;set;}
 	public Function? DecodeFn{get;set;}
 	public List<Function>? CastFns{get;set;}
+	public List<IdentType>? Dependency{get;set;}
 }
 public class State : Member{
 	public Loc Loc{get;set;}
