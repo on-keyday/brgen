@@ -72,6 +72,7 @@ namespace brgen::ast::tool {
         std::function<std::string(std::string cond, std::string then, std::string els)> cond_op;
         std::unordered_map<std::string, std::function<std::string(Stringer& s, const std::string& name, const std::vector<std::shared_ptr<ast::Expr>>&)>> call_handler;
         std::function<std::string(Stringer&, const std::shared_ptr<Type>&)> type_resolver;
+        std::function<std::string(Stringer&, const std::shared_ptr<IOOperation>&)> io_op_handler;
 
         void clear() {
             bin_op_map.clear();
@@ -242,6 +243,9 @@ namespace brgen::ast::tool {
                 }
                 if (io_op->method == ast::IOMethod::config_endian_little) {
                     return "1";
+                }
+                if (io_op_handler) {
+                    return io_op_handler(*this, ast::cast_to<ast::IOOperation>(expr));
                 }
             }
             return "";
