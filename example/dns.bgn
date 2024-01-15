@@ -28,7 +28,7 @@ format Label:
     data :[length]u8
 
 format DomainName:
-    start := input.offset
+    start ::= input.offset
     labels :[..]Label
     :"\x00"
     input.offset - start <= 255
