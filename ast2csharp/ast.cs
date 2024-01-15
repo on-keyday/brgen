@@ -428,6 +428,7 @@ public class Continue : Stmt{
 public class Assert : Stmt{
 	public Loc Loc{get;set;}
 	public Binary? Cond{get;set;}
+	public bool IsIoRelated{get;set;}
 }
 public class ImplicitYield : Stmt{
 	public Loc Loc{get;set;}

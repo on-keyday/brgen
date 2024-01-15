@@ -414,6 +414,7 @@ class Continue(Stmt):
 
 class Assert(Stmt):
     cond: Optional[Binary]
+    is_io_related: bool
 
 
 class ImplicitYield(Stmt):
@@ -1364,6 +1365,8 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].cond = x if isinstance(x,Binary) else raiseError(TypeError('type mismatch at Assert::cond'))
                 else:
                     node[i].cond = None
+                x = ast.node[i].body["is_io_related"]
+                node[i].is_io_related = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at Assert::is_io_related'))
             case NodeType.IMPLICIT_YIELD:
                 if ast.node[i].body["expr"] is not None:
                     x = node[ast.node[i].body["expr"]]

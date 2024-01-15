@@ -33,6 +33,7 @@ format DomainName:
     :"\x00"
     input.offset - start <= 255
 
+
 format DNSQuestion:
     name :DomainName
     type :u16

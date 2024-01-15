@@ -4367,6 +4367,7 @@ impl From<Rc<RefCell<Continue>>> for Node {
 pub struct Assert {
 	pub loc: Loc,
 	pub cond: Option<Rc<RefCell<Binary>>>,
+	pub is_io_related: bool,
 }
 
 impl TryFrom<&Stmt> for Rc<RefCell<Assert>> {
@@ -7497,6 +7498,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::Assert(Rc::new(RefCell::new(Assert {
 				loc: raw_node.loc.clone(),
 				cond: None,
+				is_io_related: false,
 				})))
 			},
 			NodeType::ImplicitYield => {
@@ -9802,6 +9804,14 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().cond = Some(cond_body.clone());
 				}
+				let is_io_related_body = match raw_node.body.get("is_io_related") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"is_io_related")),
+				};
+				node.borrow_mut().is_io_related = match is_io_related_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(is_io_related_body.into(),JSONType::Bool)),
+				};
 			},
 			NodeType::ImplicitYield => {
 				let node = nodes[i].clone();

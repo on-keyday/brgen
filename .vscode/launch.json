@@ -19,7 +19,7 @@
             "request": "launch",
             "program": "${workspaceRoot}/tool/src2json",
             "args": [
-                "c:/workspace/shbrgen/brgen/example/elf.bgn",
+                "c:/workspace/shbrgen/brgen/example/dns.bgn",
                 "--print-json"
             ],
             "stopAtEntry": false,

@@ -840,6 +840,7 @@ struct ast2c_Assert {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Binary* cond;
+	int is_io_related;
 };
 
 // returns 1 if succeed 0 if failed

@@ -27,6 +27,7 @@ namespace brgen::ast {
     struct Assert : Stmt {
         define_node_type(NodeType::assert);
         std::shared_ptr<Binary> cond;
+        bool is_io_related = false;
 
         Assert(std::shared_ptr<Binary>&& a)
             : Stmt(a->loc, NodeType::assert), cond(std::move(a)) {}
@@ -37,6 +38,7 @@ namespace brgen::ast {
         void dump(auto&& field_) {
             Stmt::dump(field_);
             sdebugf(cond);
+            sdebugf(is_io_related);
         }
     };
 

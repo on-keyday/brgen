@@ -666,6 +666,7 @@ export function isContinue(obj: any): obj is Continue {
 
 export interface Assert extends Stmt {
 	cond: Binary|null;
+	is_io_related: boolean;
 }
 
 export function isAssert(obj: any): obj is Assert {
@@ -1469,6 +1470,7 @@ export function parseAST(obj: any): Program {
 				node_type: "assert",
 				loc: on.loc,
 				cond: null,
+				is_io_related: false,
 			}
 			c.node.push(n);
 			break;
@@ -2902,6 +2904,11 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at Assert::cond');
 			}
 			n.cond = tmpcond;
+			const tmpis_io_related = on.body?.is_io_related;
+			if (typeof tmpis_io_related !== "boolean") {
+				throw new Error('invalid node list at Assert::is_io_related');
+			}
+			n.is_io_related = on.body.is_io_related;
 			break;
 		}
 		case "implicit_yield": {

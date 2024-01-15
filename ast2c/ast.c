@@ -1969,8 +1969,10 @@ int ast2c_Assert_parse(ast2c_Ast* ast,ast2c_Assert* s,ast2c_json_handlers* h, vo
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
 	s->cond = NULL;
 	void* cond = h->object_get(h, obj_body, "cond");
+	void* is_io_related = h->object_get(h, obj_body, "is_io_related");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_Assert::loc is null"); } return 0; }
 	if (!cond) { if(h->error) { h->error(h,cond, "ast2c_Assert::cond is null"); } return 0; }
+	if (!is_io_related) { if(h->error) { h->error(h,is_io_related, "ast2c_Assert::is_io_related is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_Assert::loc"); }
 		goto error;

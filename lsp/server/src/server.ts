@@ -464,6 +464,11 @@ const hover = async (params :HoverParams)=>{
                 found = node;
                 return;
             }
+            else if(ast2ts.isAssert(node)) {
+                console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
+                found = node;
+                return;
+            }
             console.log(`hit: ${node.node_type} ${JSON.stringify(node.loc)}`)
         }
         ast2ts.walk(node,f);
@@ -590,7 +595,10 @@ const hover = async (params :HoverParams)=>{
                 default:
                     return makeHover(ident.ident,"unknown identifier");
             }
-        }   
+        }     
+    }
+    else if(ast2ts.isAssert(found)){
+        return makeHover("assert",`assertion ${found.is_io_related?"(io_related)":""}`); 
     }
 }
 

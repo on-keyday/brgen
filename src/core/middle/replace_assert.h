@@ -5,6 +5,27 @@
 
 namespace brgen::middle {
 
+    inline bool is_io_related(ast::Expr* a) {
+        bool ret = false;
+        ast::traverse(a, [&](auto&& f) {
+            if (ret) {
+                return;
+            }
+            if (auto t = ast::as<ast::Type>(f)) {
+                return;  // continue
+            }
+            if (ast::as<ast::IOOperation>(f)) {
+                ret = true;
+                return;  // break
+            }
+            if (auto expr = ast::as<ast::Expr>(f)) {
+                ret = is_io_related(expr);
+                return;
+            }
+        });
+        return ret;
+    }
+
     inline void replace_assert(LocationError& err, const std::shared_ptr<ast::Node>& node) {
         if (!node) {
             return;
@@ -12,7 +33,9 @@ namespace brgen::middle {
         auto one_element = [&](auto it) {
             replace_assert(err, *it);
             if (auto bin = ast::as<ast::Binary>(*it); bin && ast::is_boolean_op(bin->op)) {
-                *it = std::make_shared<ast::Assert>(std::static_pointer_cast<ast::Binary>(*it));
+                auto a = std::make_shared<ast::Assert>(std::static_pointer_cast<ast::Binary>(*it));
+                a->is_io_related = is_io_related(a->cond.get());
+                *it = std::move(a);
             }
             else if (bin && ast::is_assign_op(bin->op)) {
                 // nothing to do

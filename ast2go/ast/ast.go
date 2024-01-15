@@ -2005,8 +2005,9 @@ func (n *Continue) GetLoc() Loc {
 }
 
 type Assert struct {
-	Loc  Loc
-	Cond *Binary
+	Loc         Loc
+	Cond        *Binary
+	IsIoRelated bool
 }
 
 func (n *Assert) isStmt() {}
@@ -3865,7 +3866,8 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeAssert:
 			v := n.node[i].(*Assert)
 			var tmp struct {
-				Cond *uintptr `json:"cond"`
+				Cond        *uintptr `json:"cond"`
+				IsIoRelated bool     `json:"is_io_related"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -3873,6 +3875,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.Cond != nil {
 				v.Cond = n.node[*tmp.Cond].(*Binary)
 			}
+			v.IsIoRelated = tmp.IsIoRelated
 		case NodeTypeImplicitYield:
 			v := n.node[i].(*ImplicitYield)
 			var tmp struct {
