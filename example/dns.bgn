@@ -45,7 +45,7 @@ format DNSResourceRecord:
     class :u16
     ttl :u32
     data_length :u16
-    data :[..]u8
+    data :[data_length]u8
 
 
 format DNSHeader:
