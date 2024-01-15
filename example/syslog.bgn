@@ -32,7 +32,7 @@ fn nilvalue(n :char) -> bool:
 format Version:
     version :u16
     fn decode():
-        nonzerodigit(input[0]) == true
+        nonzerodigit(char(input.peek())) == true
         version = input.cond(digit,3).u16()
     
     fn encode():
@@ -41,7 +41,7 @@ format Version:
         output.as_string(version)
 
 format Timestamp:
-    pass
+    ..
 
 format Header:
     pri :Prival

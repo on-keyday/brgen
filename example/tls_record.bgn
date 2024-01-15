@@ -2,13 +2,455 @@
 enum ContentType:
     :u8
     invalid = 0
+    change_cipher_spec = 20
+    alert = 21
+    handshake = 22
+    application_data = 23
 
 enum TLSVersion:
-    :u8
+    :u16
     invalid = 0
+    tls12 = 0x0303
 
 format TLSRecord:
     type :ContentType
-    version :TLSVersion
+    legacy_version :TLSVersion
     length :u16
     fragment :[length]u8
+
+format TLSInnerPlaintext:
+    content :[..]u8
+    type :ContentType
+    zeros_length_of_padding :u32
+
+format TLSCipherText:
+    opaque_type :ContentType(ContentType.application_data)
+    legacy_record_version :TLSVersion(TLSVersion.tls12)
+    length :u16
+    encrypted_record :[length]u8
+
+
+
+enum SignatureScheme:
+    :u16
+    rsa_pkcs1_sha256 = 0x0401
+    rsa_pkcs1_sha384 = 0x0501
+    rsa_pkcs1_sha512 = 0x0601
+    ecdsa_secp256r1_sha256 = 0x0403
+    ecdsa_secp384r1_sha384 = 0x0503
+    ecdsa_secp521r1_sha512 = 0x0603
+    rsa_pss_rsae_sha256 = 0x0804
+    rsa_pss_rsae_sha384 = 0x0805
+    rsa_pss_rsae_sha512 = 0x0806
+    ed25519 = 0x0807
+    ed448 = 0x0808
+    rsa_pss_pss_sha256 = 0x0809
+    rsa_pss_pss_sha384 = 0x080a
+    rsa_pss_pss_sha512 = 0x080b
+    rsa_pkcs1_sha1 = 0x0201
+    ecdsa_sha1 = 0x0203
+    private_use_start = 0xFE00
+
+enum HandshakeType:
+    :u8
+    client_hello = 1
+    server_hello = 2
+    new_session_ticket = 4
+    end_of_early_data = 5
+    encrypted_extensions = 8
+    certificate = 11
+    certificate_request = 13
+    certificate_verify = 15
+    finished = 20
+    key_update = 24
+    message_hash = 254
+
+
+enum ExtensionType:
+    :u16
+    server_name = 0
+    max_fragment_length = 1
+    status_request = 5
+    supported_groups = 10
+    signature_algorithms = 13
+    use_srtp = 14
+    heartbeat = 15
+    application_layer_protocol_negotiation = 16
+    signed_certificate_timestamp = 18
+    client_certificate_type = 19
+    server_certificate_type = 20
+    padding = 21
+    pre_shared_key = 41
+    early_data = 42
+    supported_versions = 43
+    cookie = 44
+    psk_key_exchange_modes = 45
+    certificate_authorities = 47
+    oid_filters = 48
+    post_handshake_auth = 49
+    signature_algorithms_cert = 50
+    key_share = 51
+    quic_transport_parameters = 0x39
+
+format Extension:
+    extension_type :ExtensionType
+    length :u16
+    extension_data :[length]u8
+
+format ClientSupportedVersions:
+    length :u16
+    length % 2 == 0
+    length >= 2 && length <= 254
+    versions :[length/2]TLSVersion
+
+format ServerSupportedVersion:
+    version :TLSVersion
+
+format Cookie:
+    length :u16
+    length >= 1
+    cookie :[length]u8
+
+format SignatureSchemeList:
+    length :u16
+    length % 2 == 0
+    length >= 2 && length <= 0xfffe
+    supported_signature_algorithms :[length/2]SignatureScheme
+
+format DistinguishedName:
+    length :u16
+    length >= 1
+    distinguished_name :[length]u8
+
+format CertificateAuther:
+    length :u16
+    length >= 3
+    certificate_auther :[..]DistinguishedName(input = input.subrange(length))
+
+format OID:
+    length :u8
+    length >= 1
+    oid :[length]u8
+
+format OIDFileterValue:
+    length :u16
+    value :[length]u8
+
+format OIDFilter:
+    oid :OID
+    value :OIDFileterValue
+
+format OIDFileterExtension:
+    length :u16
+    filters :[..]OIDFilter(input = input.subrange(length))
+
+format PostHandshakeAuth:
+    .. # empty 
+
+enum NamedGroup:
+    :u16
+    secp256r1 = 0x0017
+    secp384r1 = 0x0018
+    secp521r1 = 0x0019
+    x25519 = 0x001D
+    x448 = 0x001E
+    ffdhe2048 = 0x0100
+    ffdhe3072 = 0x0101
+    ffdhe4096 = 0x0102
+    ffdhe6144 = 0x0103
+    ffdhe8192 = 0x0104
+    ffdhe_private_use_begin = 0x01FC
+    ffdhe_private_use_end = 0x01FF
+    ecdhe_private_use_begin = 0xFE00
+    ecdhe_private_use_begin_end = 0xFEFF
+
+format NamedGroupList:
+    length :u16
+    length % 2 == 0
+    length >= 2 && length <= 0xffff
+    named_group_list :[length/2]NamedGroup
+
+format KeyShareEntry:
+    group :NamedGroup
+    length :u16
+    length >= 1
+    key_exchange :[length]u8
+
+format KeyShareClientHello:
+    length :u16
+    client_shares :[..]KeyShareEntry(input = input.subrange(length))
+
+format KeyShareHelloRetryRequest:
+    selected_group :NamedGroup
+
+format KeyShareServerHello:
+    server_share :KeyShareEntry
+
+state PointState:
+    group :NamedGroup
+
+pstate :PointState
+
+format UncompressedPointRepresentation:
+    legacy_form :u8(4)
+    if pstate.group == NamedGroup.x25519:
+        x :[32]u8
+        y :[32]u8
+    elif pstate.group == NamedGroup.secp384r1:
+        x :[48]u8
+        y :[48]u8
+    elif pstate.group == NamedGroup.secp521r1:
+        x :[66]u8
+        y :[66]u8
+
+enum PskKeyExchangeMode:
+    :u8
+    psk_ke = 0
+    psk_dhe_ke = 1
+
+format PskKeyExchangeModes:
+    length :u8
+    length >= 1
+    psk_key_exchange_modes :[length]PskKeyExchangeMode
+
+format EaryDataIndication:
+    max_eary_data_size :u32
+
+format EmptyEarlyDataIndication:
+    .. # empty
+
+format PskIdentity:
+    length :u16
+    length >= 1
+    identity :[length]u8
+    obfuscated_ticket_age :u32
+
+format PskBinderEntry:
+    length :u8
+    length >= 32
+    binder :[length]u8
+
+format PskIdentities:
+    length :u16
+    length >= 7
+    identities :[..]PskIdentity(input = input.subrange(length))
+
+format PskBinder:
+    length :u16
+    length >= 33
+    binders :[..]PskBinderEntry(input = input.subrange(length))
+
+format OfferedPsks:
+    identities :PskIdentities
+    binders :PskBinder
+
+format ClientPreSharedKeyExtension:
+    psks :OfferedPsks
+
+format ServerPreSharedKeyExtension:
+    selected_identity :u16
+
+format ProtocolName:
+    length :u8
+    length >= 1
+    name :[length]u8
+
+format ProtocolNameList:
+    length :u16
+    length >= 2
+    protocol_name_list :[..]ProtocolName(input = input.subrange(length))
+
+format QUICVarint:
+    length :u2
+    match length:
+        0 => value :u8
+        1 => value :u16
+        2 => value :u32
+        3 => value :u64
+
+format TransportParameter:
+    id :QUICVarint
+    length :QUICVarint
+    value :[length]u8
+
+format TransportParameters:
+    params :[..]TransportParameter
+
+
+format HandshakeHeader:
+    msg_type :HandshakeType
+    length :u24
+    
+enum CipherSuite:
+    TLS_NULL_WITH_NULL_NULL = 0x0000
+    TLS_AES_128_GCM_SHA256 = 0x1301
+    TLS_AES_256_GCM_SHA384 = 0x1302
+    TLS_CHACHA20_POLY1305_SHA256 = 0x1303
+    TLS_AES_128_CCM_SHA256 = 0x1304
+    TLS_AES_128_CCM_8_SHA256 = 0x1305
+
+format CipherSuites:
+    length :u16
+    length % 2 == 0
+    length >= 2 && length <= 0xfffe
+    cipher_suites :[length/2]CipherSuite
+
+format LegacySessionID:
+    length :u8
+    length >= 0 && length <= 32
+    session_id :[length]u8
+
+format LegacyCompressionMethods:
+    length :u8
+    length >= 1 && length <= 255
+    compression_methods :[length]u8
+
+format Extensions:
+    length :u16
+    length >= 0
+    extensions :[..]Extension(input = input.subrange(length))
+
+format ClientHello:
+    legacy_version :TLSVersion(TLSVersion.tls12)
+    random :[32]u8
+    legacy_session_id :LegacySessionID
+    cipher_suites :CipherSuites
+    legacy_compression_methods :LegacyCompressionMethods
+    extensions :Extensions
+    extensions.length >= 8
+
+format ServerHello:
+    legacy_version :TLSVersion(TLSVersion.tls12)
+    random :[32]u8
+    legacy_session_id_echo :LegacySessionID
+    cipher_suite :CipherSuite
+    legacy_compression_method :u8(0)
+    extensions :Extensions
+    extensions.length >= 6
+
+format EncryptedExtensions:
+    extensions :Extensions
+
+format CertificateRequestContext:
+    length :u8
+    context :[length]u8
+
+format CertificateRequest:
+    certificate_request_context :CertificateRequestContext
+    extensions :Extensions
+    extensions.length >= 2
+
+enum CertificateType:
+    X509 = 0
+    RawPublicKey = 2
+
+format CertData:
+    length :u24
+    length >= 1
+    certificate :[length]u8
+
+format CertificateEntry:
+    certificate :CertData
+    extensions :Extensions
+
+format CertificateEntries:
+    length :u24
+    certificate_list :[..]CertificateEntry(input = input.subrange(length))
+
+format Certificate:
+    certificate_request_context :CertificateRequestContext
+    certificate_list :CertificateEntries
+
+format Signature:
+    length :u16
+    signature :[length]u8
+
+format CertificateVerify:
+    algorithm :SignatureScheme
+    signature :Signature
+
+format Finished:
+    verify_data :[..]u8
+
+format EndOFEarlyData:
+    .. # empty
+
+format TicketNonce:
+    length :u8
+    nonce :[length]u8
+
+format Ticket:
+    length :u16
+    length >= 1
+    ticket :[length]u8      
+
+format NewSessionTicket:
+    ticket_lifetime :u32
+    ticket_age_add :u32
+    ticket_nonce :TicketNonce
+    ticket :Ticket
+    extensions :Extensions
+
+enum KeyUpdateRequest:
+    update_not_requested = 0
+    update_requested = 1
+
+format KeyUpdate:
+    request_update :KeyUpdateRequest
+
+enum AlertLevel:
+    :u8
+    warning = 1
+    fatal = 2
+
+enum AlertDescription:
+    :u8
+    close_notify = 0
+    unexpected_message = 10
+    bad_record_mac = 20
+    record_overflow = 22
+    handshake_failure = 40
+    bad_certificate = 42
+    unsupported_certificate = 43
+    certificate_revoked = 44
+    certificate_expired = 45
+    certificate_unknown = 46
+    illegal_parameter = 47
+    unknown_ca = 48
+    access_denied = 49
+    decode_error = 50
+    decrypt_error = 51
+    protocol_version = 70
+    insufficient_security = 71
+    internal_error = 80
+    inappropriate_fallback = 86
+    user_canceled = 90
+    missing_extension = 109
+    unsupported_extension = 110
+    unrecognized_name = 112
+    bad_certificate_status_response = 113
+    unknown_psk_identity = 115
+    certificate_required = 116
+    no_application_protocol = 120
+
+format Alert:
+    level :AlertLevel
+    description :AlertDescription
+
+format Label:
+    length :u8
+    length >= 7
+    label :[length]u8
+
+format Context:
+    length :u16
+    context :[length]u8
+
+format HKDFLabelDetail:
+    label :Label
+    context :Context
+
+format HKDFLabel:
+    length :u16
+    label :HKDFLabelDetail(input = input.subrange(length))
+

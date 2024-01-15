@@ -130,3 +130,142 @@ typedef enum {
     DOS,
     DOS_WINDOWS
 } NameSpace;
+
+enum SignatureScheme {
+    /* RSASSA-PKCS1-v1_5 algorithms */
+    rsa_pkcs1_sha256 = 0x0401,
+    rsa_pkcs1_sha384 = 0x0501,
+    rsa_pkcs1_sha512 = 0x0601,
+
+    /* ECDSA algorithms */
+    ecdsa_secp256r1_sha256 = 0x0403,
+    ecdsa_secp384r1_sha384 = 0x0503,
+    ecdsa_secp521r1_sha512 = 0x0603,
+
+    /* RSASSA-PSS algorithms with public key OID rsaEncryption */
+    rsa_pss_rsae_sha256 = 0x0804,
+    rsa_pss_rsae_sha384 = 0x0805,
+    rsa_pss_rsae_sha512 = 0x0806,
+
+    /* EdDSA algorithms */
+    ed25519 = 0x0807,
+    ed448 = 0x0808,
+
+    /* RSASSA-PSS algorithms with public key OID RSASSA-PSS */
+    rsa_pss_pss_sha256 = 0x0809,
+    rsa_pss_pss_sha384 = 0x080a,
+    rsa_pss_pss_sha512 = 0x080b,
+
+    /* Legacy algorithms */
+    rsa_pkcs1_sha1 = 0x0201,
+    ecdsa_sha1 = 0x0203,
+
+    /* Reserved Code Points */
+    private_use_start = 0xFE00,
+
+};
+
+enum HandshakeType  {
+                client_hello = 1,
+                server_hello = 2,
+                new_session_ticket = 4,
+                end_of_early_data = 5,
+                encrypted_extensions = 8,
+                certificate = 11,
+                certificate_request = 13,
+                certificate_verify = 15,
+                finished = 20,
+                key_update = 24,
+                message_hash = 254,
+            };
+
+         enum ExtensionType  {
+                    server_name = 0,                             /* RFC 6066 */
+                    max_fragment_length = 1,                     /* RFC 6066 */
+                    status_request = 5,                          /* RFC 6066 */
+                    supported_groups = 10,                       /* RFC 8422, 7919 */
+                    signature_algorithms = 13,                   /* RFC 8446 */
+                    use_srtp = 14,                               /* RFC 5764 */
+                    heartbeat = 15,                              /* RFC 6520 */
+                    application_layer_protocol_negotiation = 16, /* RFC 7301 */
+                    signed_certificate_timestamp = 18,           /* RFC 6962 */
+                    client_certificate_type = 19,                /* RFC 7250 */
+                    server_certificate_type = 20,                /* RFC 7250 */
+                    padding = 21,                                /* RFC 7685 */
+                    pre_shared_key = 41,                         /* RFC 8446 */
+                    early_data = 42,                             /* RFC 8446 */
+                    supported_versions = 43,                     /* RFC 8446 */
+                    cookie = 44,                                 /* RFC 8446 */
+                    psk_key_exchange_modes = 45,                 /* RFC 8446 */
+                    certificate_authorities = 47,                /* RFC 8446 */
+                    oid_filters = 48,                            /* RFC 8446 */
+                    post_handshake_auth = 49,                    /* RFC 8446 */
+                    signature_algorithms_cert = 50,              /* RFC 8446 */
+                    key_share = 51,                              /* RFC 8446 */
+                    quic_transport_parameters = 0x39,            /* RFC 9001 */
+                };
+ enum NamedGroup {
+
+                    /* Elliptic Curve Groups (ECDHE) */
+                    secp256r1 = 0x0017,
+                    secp384r1 = 0x0018,
+                    secp521r1 = 0x0019,
+                    x25519 = 0x001D,
+                    x448 = 0x001E,
+
+                    /* Finite Field Groups (DHE) */
+                    ffdhe2048 = 0x0100,
+                    ffdhe3072 = 0x0101,
+                    ffdhe4096 = 0x0102,
+                    ffdhe6144 = 0x0103,
+                    ffdhe8192 = 0x0104,
+
+                    /* Reserved Code Points */
+                    ffdhe_private_use_begin = 0x01FC,
+                    ffdhe_private_use_end = 0x01FF,
+                    ecdhe_private_use_begin = 0xFE00,
+                    ecdhe_private_use_begin_end = 0xFEFF,
+
+                };
+                  enum CipherSuite {
+                TLS_NULL_WITH_NULL_NULL = 0x0000,
+                TLS_AES_128_GCM_SHA256 = 0x1301,
+                TLS_AES_256_GCM_SHA384 = 0x1302,
+                TLS_CHACHA20_POLY1305_SHA256 = 0x1303,
+                TLS_AES_128_CCM_SHA256 = 0x1304,
+                TLS_AES_128_CCM_8_SHA256 = 0x1305,
+            };
+              enum AlertLevel {
+                warning = 1,
+                fatal = 2,
+            };
+
+            enum AlertDescription  {
+                close_notify = 0,
+                unexpected_message = 10,
+                bad_record_mac = 20,
+                record_overflow = 22,
+                handshake_failure = 40,
+                bad_certificate = 42,
+                unsupported_certificate = 43,
+                certificate_revoked = 44,
+                certificate_expired = 45,
+                certificate_unknown = 46,
+                illegal_parameter = 47,
+                unknown_ca = 48,
+                access_denied = 49,
+                decode_error = 50,
+                decrypt_error = 51,
+                protocol_version = 70,
+                insufficient_security = 71,
+                internal_error = 80,
+                inappropriate_fallback = 86,
+                user_canceled = 90,
+                missing_extension = 109,
+                unsupported_extension = 110,
+                unrecognized_name = 112,
+                bad_certificate_status_response = 113,
+                unknown_psk_identity = 115,
+                certificate_required = 116,
+                no_application_protocol = 120,
+            };

@@ -161,6 +161,9 @@ namespace j2cp2 {
                     }
                 }
             }
+            if (auto ident_ty = ast::as<ast::IdentType>(type); ident_ty) {
+                return ident_ty->ident->ident;
+            }
             return "";
         }
 
@@ -204,11 +207,6 @@ namespace j2cp2 {
                     {
                         auto indent = w.indent_scope();
                         auto make_access = [&](const std::shared_ptr<ast::Field>& f) {
-                            auto struct_ = f->belong_struct.lock();
-                            assert(struct_);
-                            auto indent = w.indent_scope();
-                            auto access = tmp[struct_] + "." + f->ident->ident;
-                            anonymous_structs[f.get()] = {access, struct_};
                             map_line(f->loc);
                             auto a = str.to_string(f->ident);
                             w.writeln("return ", a, ";");
