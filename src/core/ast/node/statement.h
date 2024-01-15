@@ -9,6 +9,7 @@ namespace brgen::ast {
 
     struct StructType;
     struct Function;
+    struct IdentType;
 
     struct Format : Member {
         define_node_type(NodeType::format);
@@ -16,6 +17,7 @@ namespace brgen::ast {
         std::weak_ptr<Function> encode_fn;
         std::weak_ptr<Function> decode_fn;
         std::vector<std::weak_ptr<Function>> cast_fns;
+        std::vector<std::weak_ptr<IdentType>> dependency;
         Format(lexer::Loc l)
             : Member(l, NodeType::format) {}
 
@@ -29,6 +31,7 @@ namespace brgen::ast {
             sdebugf(encode_fn);
             sdebugf(decode_fn);
             sdebugf(cast_fns);
+            sdebugf(dependency);
         }
     };
 
@@ -274,7 +277,7 @@ namespace brgen::ast {
         }
     };
 
-        struct Loop : Stmt {
+    struct Loop : Stmt {
         define_node_type(NodeType::loop);
         scope_ptr cond_scope;
         std::shared_ptr<Expr> init;

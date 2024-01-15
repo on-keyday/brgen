@@ -978,7 +978,7 @@ namespace brgen::ast {
             <field type> ::= ":" <type> ("(" <expr> ")")?
         */
         // may returns expr if not field
-        std::shared_ptr<Node> parse_field(const std::shared_ptr<Expr>& expr) {
+        std::shared_ptr<Node> parse_field(const std::shared_ptr<Expr>& expr, bool as_argument) {
             lexer::Token token;
             std::shared_ptr<Ident> ident;
             if (expr) {
@@ -1012,7 +1012,15 @@ namespace brgen::ast {
                 field->ident->constant_level = ConstantLevel::variable;
                 check_duplicated_def(field->ident.get());
             }
-            field->belong = state.current_member();
+            auto cur_member = state.current_member();
+
+            field->belong = cur_member;
+
+            if (auto fmt = ast::as<ast::Format>(cur_member)) {
+                if (ast::as<ast::IdentType>(field->field_type)) {
+                    fmt->dependency.push_back(ast::cast_to<ast::IdentType>(field->field_type));
+                }
+            }
 
             if (auto b = s.consume_token("(")) {
                 s.skip_white();
@@ -1197,7 +1205,7 @@ namespace brgen::ast {
                     s.must_consume_token(":");
                 }
 
-                auto f = parse_field(std::move(ident));
+                auto f = parse_field(std::move(ident), true);
                 auto field = cast_to<Field>(f);
                 fn->parameters.push_back(field);
                 fn->func_type->parameters.push_back(field->field_type);
@@ -1295,11 +1303,11 @@ namespace brgen::ast {
 
             std::shared_ptr<Node> node;
             if (s.expect_token(":")) {
-                node = parse_field(nullptr);
+                node = parse_field(nullptr, false);
             }
             else {
                 auto expr = parse_expr(prev_skip_line);
-                node = parse_field(expr);
+                node = parse_field(expr, false);
             }
 
             skip_last();
