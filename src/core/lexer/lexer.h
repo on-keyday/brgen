@@ -192,9 +192,10 @@ format Varint:
         tok.loc.pos = ctx.str_pos;
         seq.rptr = ctx.str_pos.begin;
         TokenBuf buf;
-        buf.reserve(ctx.str_pos.len());
+        buf.resize(ctx.str_pos.len());
+        auto ptr = buf.data();
         for (; seq.rptr < ctx.str_pos.end; seq.rptr++) {
-            buf.push_back(seq.current());
+            *ptr++ = seq.buf.buffer[seq.rptr];  // HACK(on-keyday): use buffer directly
         }
         if constexpr (std::is_same_v<TokenBuf, std::string>) {
             tok.token = std::move(buf);
