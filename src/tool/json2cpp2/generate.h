@@ -91,8 +91,32 @@ namespace j2cp2 {
         std::map<ast::EnumMember*, std::string> enum_member_map;
         std::vector<LineMap> line_map;
         bool enable_line_map = false;
+        bool use_error = false;
+        ast::Format* current_format = nullptr;
         Context ctx;
         std::vector<std::string> struct_names;
+
+        auto write_return_error(ast::Field* field, auto&&... msg) {
+            if (use_error) {
+                auto f = ast::as<ast::Format>(field->belong.lock());
+                assert(f);
+                w.writeln("return ::futils::error::Error<>(\"", ctx.encode ? "encode: " : "decode: ",
+                          f->ident->ident, "::", field->ident->ident, ": ", msg..., "\",::futils::error::Category::lib);");
+            }
+            else {
+                w.writeln("return false");
+            }
+        }
+
+        auto write_return_error(ast::Format* fmt, auto&&... msg) {
+            if (use_error) {
+                w.writeln("return ::futils::error::Error<>(\"", ctx.encode ? "encode: " : "decode: ",
+                          fmt->ident->ident, ": ", msg..., "\",::futils::error::Category::lib);");
+            }
+            else {
+                w.writeln("return false");
+            }
+        }
 
         void map_line(brgen::lexer::Loc l) {
             if (!enable_line_map) {
@@ -443,8 +467,14 @@ namespace j2cp2 {
                     }
                 }
                 if (has_ident) {
-                    w.writeln("bool encode(::futils::binary::writer& w) const ;");
-                    w.writeln("bool decode(::futils::binary::reader& r);");
+                    if (use_error) {
+                        w.writeln("::futils::error::Error<> encode(::futils::binary::writer& w) const ;");
+                        w.writeln("::futils::error::Error<> decode(::futils::binary::reader& r);");
+                    }
+                    else {
+                        w.writeln("bool encode(::futils::binary::writer& w) const ;");
+                        w.writeln("bool decode(::futils::binary::reader& r);");
+                    }
                 }
             }
             w.write("}");
@@ -556,7 +586,7 @@ namespace j2cp2 {
                 w.writeln("if (!::futils::binary::write_num(w,", field_name, ".as_value() ,true)) {");
                 {
                     auto indent = w.indent_scope();
-                    w.writeln("return false;");
+                    write_return_error(f, "write bit field failed");
                 }
                 w.writeln("}");
                 return;
@@ -579,7 +609,7 @@ namespace j2cp2 {
                 w.writeln("if (!::futils::binary::write_num(w,static_cast<", type_name, ">(", ident, ") ,", ctx.endian_text(int_ty->endian), ")) {");
                 {
                     auto indent = w.indent_scope();
-                    w.writeln("return false;");
+                    write_return_error(fi, "write ", type_name, " failed");
                 }
                 w.writeln("}");
             }
@@ -594,7 +624,7 @@ namespace j2cp2 {
                     w.writeln("if (", length, "!=", ident, ".size()) {");
                     {
                         auto indent = w.indent_scope();
-                        w.writeln("return false;");
+                        write_return_error(fi, "dynamic length is not compatible with its length; ", length, "!=", ident, ".size()");
                     }
                     w.writeln("}");
                 }
@@ -603,7 +633,7 @@ namespace j2cp2 {
                     w.writeln("if (!w.write(", ident, ")) {");
                     {
                         auto indent = w.indent_scope();
-                        w.writeln("return false;");
+                        write_return_error(fi, "write array failed");
                     }
                     w.writeln("}");
                 }
@@ -619,10 +649,20 @@ namespace j2cp2 {
             }
             if (auto struct_ty = ast::as<ast::StructType>(typ); struct_ty) {
                 map_line(loc);
-                w.writeln("if (!", ident, ".encode(w)) {");
+                if (use_error) {
+                    w.writeln("if (auto err = ", ident, ".encode(w)) {");
+                }
+                else {
+                    w.writeln("if (!", ident, ".encode(w)) {");
+                }
                 {
                     auto indent = w.indent_scope();
-                    w.writeln("return false;");
+                    if (use_error) {
+                        w.writeln("return err;");
+                    }
+                    else {
+                        w.writeln("return false;");
+                    }
                 }
                 w.writeln("}");
             }
@@ -633,7 +673,8 @@ namespace j2cp2 {
                 w.writeln("if (!w.write(::futils::view::rvec(", value, ", ", brgen::nums(len), "))) {");
                 {
                     auto indent = w.indent_scope();
-                    w.writeln("return false;");
+                    auto val = brgen::escape(str_ty->strong_ref->value);
+                    write_return_error(fi, "write string failed; ", val);
                 }
                 w.writeln("}");
             }
@@ -643,7 +684,7 @@ namespace j2cp2 {
                 w.writeln("if (!::futils::binary::write_num(w,", ident, ",", ctx.endian_text(l->endian), ")) {");
                 {
                     auto indent = w.indent_scope();
-                    w.writeln("return false;");
+                    write_return_error(fi, "write enum failed");
                 }
                 w.writeln("}");
             }
@@ -661,7 +702,7 @@ namespace j2cp2 {
                 w.writeln("if (!::futils::binary::read_num(r,", field_name, ".as_value() ,true)) {");
                 {
                     auto indent = w.indent_scope();
-                    w.writeln("return false;");
+                    write_return_error(f, "read bit field failed");
                 }
                 w.writeln("}");
                 return;
@@ -683,7 +724,7 @@ namespace j2cp2 {
                 w.writeln("if (!::futils::binary::read_num(r,", ident, " ,", ctx.endian_text(int_ty->endian), ")) {");
                 {
                     auto indent = w.indent_scope();
-                    w.writeln("return false;");
+                    write_return_error(fi, "read int failed");
                 }
                 w.writeln("}");
             }
@@ -703,7 +744,7 @@ namespace j2cp2 {
                         w.writeln("if (r.remain().size() < ", require_remain, ") {");
                         {
                             auto indent = w.indent_scope();
-                            w.writeln("return false;");
+                            write_return_error(fi, "remain size is not enough; ", "require ", require_remain);
                         }
                         w.writeln("}");
                         len = brgen::concat("(r.remain().size() - ", require_remain, ")");
@@ -721,7 +762,7 @@ namespace j2cp2 {
                         w.writeln("if (!r.read(", ident, ", ", *len, ")) {");
                         {
                             auto indent = w.indent_scope();
-                            w.writeln("return false;");
+                            write_return_error(fi, "read byte array failed");
                         }
                         w.writeln("}");
                     }
@@ -738,7 +779,7 @@ namespace j2cp2 {
                             w.writeln("if (", tmp, ".size() < ", term_len, ") {");
                             {
                                 auto indent = w.indent_scope();
-                                w.writeln("return false;");
+                                write_return_error(fi, "read byte array failed; no terminator found");
                             }
                             w.writeln("}");
                             w.writeln("if (", tmp, " == ", std::get<0>(*next), ") {");
@@ -746,7 +787,10 @@ namespace j2cp2 {
                                 auto indent = w.indent_scope();
                                 w.writeln("r.reset(", base_offset_tmp, ");");
                                 w.writeln("if(!r.read(", ident, ", ", tmp, ".size())){");
-                                w.indent_writeln("return false;");
+                                {
+                                    auto indent = w.indent_scope();
+                                    write_return_error(fi, "read byte array failed; fatal error");
+                                }
                                 w.writeln("}");
                                 w.writeln("break;");
                             }
@@ -759,7 +803,7 @@ namespace j2cp2 {
                         w.writeln("if (!r.read(", ident, ")) {");
                         {
                             auto indent = w.indent_scope();
-                            w.writeln("return false;");
+                            write_return_error(fi, "read byte array failed");
                         }
                         w.writeln("}");
                     }
@@ -786,7 +830,11 @@ namespace j2cp2 {
                             auto tmp = brgen::concat("tmp_", brgen::nums(get_seq()), "_");
                             w.writeln("auto ", tmp, " = r.remain().substr(0,", next_len, ");");
                             w.writeln("if (", tmp, ".size() < ", next_len, ") {");
-                            w.indent_writeln("return false;");
+                            {
+                                auto indent = w.indent_scope();
+                                auto val = brgen::escape(std::get<0>(*next));
+                                write_return_error(fi, "read array failed; no terminator ", val, " found");
+                            }
                             w.writeln("}");
                             w.writeln("if (", tmp, " == ", std::get<0>(*next), ") {");
                             w.indent_writeln("break;");
@@ -801,10 +849,20 @@ namespace j2cp2 {
             }
             if (auto struct_ty = ast::as<ast::StructType>(typ); struct_ty) {
                 map_line(loc);
-                w.writeln("if (!", ident, ".decode(r)) {");
+                if (use_error) {
+                    w.writeln("if (auto err = ", ident, ".decode(r)) {");
+                }
+                else {
+                    w.writeln("if (!", ident, ".decode(r)) {");
+                }
                 {
                     auto indent = w.indent_scope();
-                    w.writeln("return false;");
+                    if (use_error) {
+                        w.writeln("return err;");
+                    }
+                    else {
+                        w.writeln("return false;");
+                    }
                 }
                 w.writeln("}");
             }
@@ -818,14 +876,15 @@ namespace j2cp2 {
                 w.writeln("if (!r.read(", tmp_var, ", ", brgen::nums(len), ")) {");
                 {
                     auto indent = w.indent_scope();
-                    w.writeln("return false;");
+                    write_return_error(fi, "read string failed");
                 }
                 w.writeln("}");
                 map_line(loc);
                 w.writeln("if (", tmp_var, " != ::futils::view::rvec(", value, ",", brgen::nums(len), ")) {");
                 {
                     auto indent = w.indent_scope();
-                    w.writeln("return false;");
+                    auto val = brgen::escape(str_ty->strong_ref->value);
+                    write_return_error(fi, "read string failed; not match to ", val);
                 }
                 w.writeln("}");
             }
@@ -835,7 +894,7 @@ namespace j2cp2 {
                 w.writeln("if (!::futils::binary::read_num(r,", ident, ",", ctx.endian_text(s->endian), ")) {");
                 {
                     auto indent = w.indent_scope();
-                    w.writeln("return false;");
+                    write_return_error(fi, "read enum failed");
                 }
                 w.writeln("}");
             }
@@ -898,7 +957,7 @@ namespace j2cp2 {
                 w.writeln("if (!", cond, ") {");
                 {
                     auto indent = w.indent_scope();
-                    w.writeln("return false;");
+                    write_return_error(current_format, "assertion failed; ", cond);
                 }
                 w.writeln("}");
             }
@@ -915,7 +974,7 @@ namespace j2cp2 {
             if (fmt->body->struct_type->bit_alignment != ast::BitAlignment::byte_aligned) {
                 return;  // skip
             }
-
+            current_format = fmt.get();
             ctx.encode = encode;
             ctx.endian = ast::Endian::big;  // default to big endian
             ctx.dynamic_endian = false;
@@ -928,7 +987,11 @@ namespace j2cp2 {
                 }
             }
             map_line(fmt->loc);
-            w.writeln("inline bool ", fmt->ident->ident, "::", encode ? "encode(::futils::binary::writer& w) const" : "decode(::futils::binary::reader& r)", " {");
+            auto return_type = "bool";
+            if (use_error) {
+                return_type = "::futils::error::Error<>";
+            }
+            w.writeln("inline ", return_type, " ", fmt->ident->ident, "::", encode ? "encode(::futils::binary::writer& w) const" : "decode(::futils::binary::reader& r)", " {");
             {
                 auto indent = w.indent_scope();
                 if (ctx.dynamic_endian) {
@@ -943,7 +1006,7 @@ namespace j2cp2 {
                             w.writeln("if (!", cond, ") {");
                             {
                                 auto indent = w.indent_scope();
-                                w.writeln("return false;");
+                                write_return_error(current_format, "assertion failed; ", cond);
                             }
                             w.writeln("}");
                         }
@@ -951,7 +1014,12 @@ namespace j2cp2 {
                 }
                 // write code
                 code_indent_block(fmt->body);
-                w.writeln("return true;");
+                if (use_error) {
+                    w.writeln("return ::futils::error::Error<>{};");
+                }
+                else {
+                    w.writeln("return true;");
+                }
             }
             w.writeln("}");
         }
@@ -980,6 +1048,9 @@ namespace j2cp2 {
             w.writeln("#include <view/iovec.h>");
             w.writeln("#include <optional>");
             w.writeln("#include <binary/number.h>");
+            if (use_error) {
+                w.writeln("#include <error/error.h>");
+            }
             for (auto& fmt : prog->elements) {
                 if (auto b = ast::as<ast::Binary>(fmt); b && b->op == ast::BinaryOp::const_assign && b->right->constant_level == ast::ConstantLevel::constant) {
                     auto ident = ast::as<ast::Ident>(b->left);

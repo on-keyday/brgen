@@ -15,11 +15,13 @@ struct Flags : futils::cmdline::templ::HelpOption {
     bool spec = false;
     bool no_color = false;
     bool add_line_map = false;
+    bool use_error = false;
     void bind(futils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&spec, "s", "spec mode");
         ctx.VarBool(&no_color, "no-color", "disable color output");
         ctx.VarBool(&add_line_map, "add-line-map", "add line map");
+        ctx.VarBool(&use_error, "use-error", "use futils::error::Error for error reporting");
     }
 };
 
@@ -81,6 +83,7 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
     }
     j2cp2::Generator g;
     g.enable_line_map = flags.add_line_map;
+    g.use_error = flags.use_error;
     auto prog = brgen::ast::cast_to<brgen::ast::Program>(*res);
     g.write_program(prog);
     cout << g.w.out() << "\n";
