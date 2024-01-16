@@ -104,7 +104,7 @@ namespace j2cp2 {
                           f->ident->ident, "::", field->ident->ident, ": ", msg..., "\",::futils::error::Category::lib);");
             }
             else {
-                w.writeln("return false");
+                w.writeln("return false;");
             }
         }
 
@@ -114,7 +114,7 @@ namespace j2cp2 {
                           fmt->ident->ident, ": ", msg..., "\",::futils::error::Category::lib);");
             }
             else {
-                w.writeln("return false");
+                w.writeln("return false;");
             }
         }
 
