@@ -21,16 +21,25 @@ enum DNSReturnCode:
     NOTAUTH = 9
     NOTZONE = 10
 
-
-format Label:
+format PureLabel:
     length :u8
     length <= 63
     data :[length]u8
 
+format Label:
+    length :u8
+    if length & 0xc0 == 0xc0:
+        input.backward()
+        pointer :u16
+        # data :PureLabel(input = input.subrange(.., pointer&0x3fff)) #TODO(support subrange?)
+    else:
+        length <= 63
+        data :[length]u8
+
 format DomainName:
     start ::= input.offset
     labels :[..]Label
-    :"\x00"
+    null :"\x00"
     input.offset - start <= 255
 
 

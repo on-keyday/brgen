@@ -467,6 +467,7 @@ namespace j2cp2 {
                     }
                 }
                 if (has_ident) {
+                    w.writeln(member->ident->ident, "() {}");
                     if (use_error) {
                         w.writeln("::futils::error::Error<> encode(::futils::binary::writer& w) const ;");
                         w.writeln("::futils::error::Error<> decode(::futils::binary::reader& r);");
@@ -953,7 +954,7 @@ namespace j2cp2 {
                     ctx.endian = *s->endian_value ? ast::Endian::little : ast::Endian::big;
                 }
             }
-            if (auto a = ast::as<ast::Assert>(elem); a && (!ctx.encode || a->is_io_related)) {
+            if (auto a = ast::as<ast::Assert>(elem)) {
                 auto cond = str.to_string(a->cond);
                 w.writeln("if (!", cond, ") {");
                 {
@@ -961,6 +962,24 @@ namespace j2cp2 {
                     write_return_error(current_format, "assertion failed; ", cond);
                 }
                 w.writeln("}");
+            }
+            if (auto io_op = ast::as<ast::IOOperation>(elem)) {
+                if (io_op->method == ast::IOMethod::input_backward) {
+                    std::string len = "1";
+                    if (io_op->arguments.size()) {
+                        len = str.to_string(io_op->arguments[0]);
+                    }
+                    map_line(io_op->loc);
+                    auto t = ctx.encode ? "w" : "r";
+                    w.writeln("if(", t, ".offset() < ", len, ") {");
+                    {
+                        auto indent = w.indent_scope();
+                        write_return_error(current_format, "input backward failed; offset is less than ", len);
+                    }
+                    w.writeln("}");
+                    map_line(io_op->loc);
+                    w.writeln(t, ".reset(", t, ".offset() - ", len, ");");
+                }
             }
         }
 
@@ -998,20 +1017,6 @@ namespace j2cp2 {
                 if (ctx.dynamic_endian) {
                     map_line(fmt->loc);
                     w.writeln("bool dynamic_endian____ = true /*big endian*/;");
-                }
-                if (encode) {
-                    // first, apply assertions
-                    for (auto& elem : fmt->body->elements) {
-                        if (auto a = ast::as<ast::Assert>(elem); a && !a->is_io_related) {
-                            auto cond = str.to_string(a->cond);
-                            w.writeln("if (!", cond, ") {");
-                            {
-                                auto indent = w.indent_scope();
-                                write_return_error(current_format, "assertion failed; ", cond);
-                            }
-                            w.writeln("}");
-                        }
-                    }
                 }
                 // write code
                 code_indent_block(fmt->body);
