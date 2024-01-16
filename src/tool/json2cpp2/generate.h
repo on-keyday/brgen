@@ -815,6 +815,7 @@ namespace j2cp2 {
                     auto tmp = brgen::concat("tmp_", brgen::nums(get_seq()), "_");
                     auto type = get_type_name(arr_ty->base_type);
                     map_line(loc);
+                    w.writeln(ident, ".clear();");
                     if (len) {
                         auto tmp_i = brgen::concat("tmp_", brgen::nums(get_seq()), "_");
                         w.writeln("for (size_t  ", tmp_i, "= 0; ", tmp_i, "<", *len, "; ++", tmp_i, " ) {");
