@@ -48,7 +48,7 @@ format DNSResourceRecord:
     data :[data_length]u8
 
 
-format DNSHeader:
+format DNSPacket:
     id :u16
     response :u1
     opcode :DNSOpCode
