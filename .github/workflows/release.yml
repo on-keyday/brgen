@@ -29,7 +29,7 @@ jobs:
           . build.sh native Release
           ./tool/src2json --version
       - name: Pack artifacts
-        run: |
+        run: &pack |
           mkdir -p artifacts
           cp -a ./tool ./artifacts/tool
           cp -a ./script/link_path.sh ./artifacts
@@ -37,6 +37,9 @@ jobs:
           cp -a ./LICENSE ./artifacts
           cp -a ./README.md ./artifacts
           cp -a ./brgen.json ./artifacts
+          cp -a ./script/make_cpp_test.sh ./artifacts
+          cp -a ./script/make_cpp_tests.sh ./artifacts
+          cp -a ./testkit ./artifacts/testkit
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
@@ -64,13 +67,7 @@ jobs:
           . build.sh native Release
           ./tool/src2json --version
       - name: Pack artifacts
-        run: |
-          mkdir -p artifacts
-          cp -a ./tool ./artifacts/tool
-          cp -a ./example ./artifacts/example
-          cp -a ./LICENSE ./artifacts
-          cp -a ./README.md ./artifacts
-          cp -a ./brgen.json ./artifacts
+        run: *pack
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
@@ -107,6 +104,9 @@ jobs:
           copy /Y LICENSE artifacts
           copy /Y README.md artifacts
           copy /Y brgen.json artifacts
+          copy /Y script\make_cpp_test.bat artifacts
+          copy /Y script\make_cpp_tests.bat artifacts
+          xcopy /E /I /Y testkit artifacts\testkit
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
@@ -171,14 +171,7 @@ jobs:
           export FUTILS_C_COMPILER=aarch64-linux-gnu-gcc
           . build.sh native Release
       - name: Pack artifacts
-        run: |
-          mkdir -p artifacts
-          cp -a ./tool ./artifacts/tool
-          cp -a ./script/link_path.sh ./artifacts
-          cp -a ./example ./artifacts/example
-          cp -a ./LICENSE ./artifacts
-          cp -a ./README.md ./artifacts
-          cp -a ./brgen.json ./artifacts
+        run: *pack
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
@@ -212,14 +205,7 @@ jobs:
           LIBCPP_SHARED=$BASE_PATH/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so 
           cp $LIBCPP_SHARED ./tool
       - name: Pack artifacts
-        run: |
-          mkdir -p artifacts
-          cp -a ./tool ./artifacts/tool
-          cp -a ./script/link_path.sh ./artifacts
-          cp -a ./example ./artifacts/example
-          cp -a ./LICENSE ./artifacts
-          cp -a ./README.md ./artifacts
-          cp -a ./brgen.json ./artifacts
+        run: *pack
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
