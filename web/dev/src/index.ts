@@ -7,6 +7,8 @@ import * as caller from "./s2j/caller.js";
 import { JobResult,Language,LanguageList } from "./s2j/msg.js";
 import { makeButton, makeLink, makeListBox, setStyle, makeInputList, InputListElement } from "./ui";
 
+import * as inc from "./cpp_include";
+
 //import "./hello"
 
 // first, load workers
@@ -26,6 +28,7 @@ if(window.MonacoEnvironment === undefined) {
 const enum StorageKey {
     LANG_MODE = "lang_mode",
     SOURCE_CODE = "source_code",
+    LANG_SPECIFIC_OPTION = "lang_specific_option",
 }
 
 const enum ElementID {
@@ -43,6 +46,7 @@ const enum ElementID {
 const enum ConfigKey {
     COMMON_FILE_NAME ="file_name",
     CPP_SOURCE_MAP = "source_map", 
+    EXPAND_INCLUDE = "expand_include",
 }
 
 interface LanguageConfig{
@@ -422,6 +426,7 @@ const mappingCode = (mappingInfo :MappingInfo[],origin :JobResult,lang :Language
 
 const handleCpp = async (s :JobResult) => {
     const useMap =commonUI.config.get(Language.CPP)?.config.get(ConfigKey.CPP_SOURCE_MAP)?.value;
+    const expandInclude = commonUI.config.get(Language.CPP)?.config.get(ConfigKey.EXPAND_INCLUDE)?.value;
     const cppOption : caller.CppOption = {  
         use_line_map: (useMap && typeof useMap == 'boolean') ? useMap: false,
     };
@@ -434,9 +439,13 @@ const handleCpp = async (s :JobResult) => {
            result.stdout = split[0];
            mappingInfo = JSON.parse(split[1]);
         }
+        if(result.code === 0&&expandInclude===true){
+            const expanded = await inc.resolveInclude(result.stdout!);
+            result.stdout = expanded;
+        }
         return result;
     },Language.CPP,"cpp",cppOption);
-    if(updated&& isMappingInfoArray(mappingInfo.line_map)){
+    if(updated&& isMappingInfoArray(mappingInfo?.line_map)){
         // wait for editor update 
         setTimeout(() => {
             if(result===undefined) throw new Error("result is undefined");
@@ -707,6 +716,10 @@ const fileName :InputListElement = {
         "type": "checkbox",
         "value": false,
     });
+    cpp.set(ConfigKey.EXPAND_INCLUDE,{
+        "type": "checkbox",
+        "value": false,
+    })
     cpp.set(ConfigKey.COMMON_FILE_NAME,fileName);
     commonUI.config.set(Language.CPP,languageSpecificConfig(cpp,ConfigKey.CPP_SOURCE_MAP,(change) => {
         if(change.name === ConfigKey.CPP_SOURCE_MAP){
@@ -715,6 +728,14 @@ const fileName :InputListElement = {
                     caches.recoloring(); 
                     return;
                 }
+            }
+        }
+        if(change.name === ConfigKey.EXPAND_INCLUDE&&change.value === true) {
+            const ok = confirm(`this option may call external server \n${inc.RAW_GIT_URL}\nreason: GET C++ source code to expand #include.\n not execute program, only replace #include with it's source code\n are you sure to enable this option?\n`+
+                               `このオプションを有効化すると次のサーバーにアクセスします\n${inc.RAW_GIT_URL}\n理由: #includeを展開するためにC++のソースコードを取得します\nプログラムを実行するわけではなく、#includeをソースコードに置き換えるだけです\nこのオプションを有効化しますか？`);
+            if(!ok) {
+                change.value = false;
+                return;
             }
         }
         updateGenerated();

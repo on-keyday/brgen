@@ -97,7 +97,7 @@ export const makeInputList = (id :string,items :Array<InputListElement>|Map<stri
             inputElement.style.height = `${select.clientHeight}px`
             inputElement.style.border = "solid 1px black";
                      
-            inputElement.onchange = () => {
+            inputElement.onchange = () => {  
                 switch(found.type){
                     case 'checkbox':
                         found.value = inputElement.checked;
@@ -111,6 +111,18 @@ export const makeInputList = (id :string,items :Array<InputListElement>|Map<stri
                         break;
                 }
                 onchange(found);
+                switch(found.type){
+                    case 'checkbox':
+                        inputElement.checked = found.value as boolean;
+                        setCheckBoxStyle(inputElement);
+                        break;
+                    case 'number':
+                        inputElement.value = found.value.toString();
+                        break;
+                    case 'text':
+                        inputElement.value = found.value.toString();
+                        break;
+                }
             }
             if(found.type === 'checkbox'){
                 inputElement.checked = found.value as boolean;
