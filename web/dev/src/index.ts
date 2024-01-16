@@ -737,14 +737,6 @@ const fileName :InputListElement = {
                 }
             }
         }
-        if(change.name === ConfigKey.EXPAND_INCLUDE&&change.value === true) {
-            const ok = confirm(`this option may call external server \n${inc.RAW_GIT_URL}\nreason: GET C++ source code to expand #include.\n not execute program, only replace #include with it's source code\n are you sure to enable this option?\n`+
-                               `このオプションを有効化すると次のサーバーにアクセスします\n${inc.RAW_GIT_URL}\n理由: #includeを展開するためにC++のソースコードを取得します\nプログラムを実行するわけではなく、#includeをソースコードに置き換えるだけです\nこのオプションを有効化しますか？`);
-            if(!ok) {
-                change.value = false;
-                return;
-            }
-        }
         updateGenerated();
     }));
 }
