@@ -782,7 +782,7 @@ namespace j2cp2 {
                                 write_return_error(fi, "read byte array failed; no terminator found");
                             }
                             w.writeln("}");
-                            w.writeln("if (", tmp, " == ", std::get<0>(*next), ") {");
+                            w.writeln("if (", tmp, " == :::futils::view::rvec(", std::get<0>(*next), ", ", term_len, ")) {");
                             {
                                 auto indent = w.indent_scope();
                                 w.writeln("r.reset(", base_offset_tmp, ");");
@@ -836,7 +836,7 @@ namespace j2cp2 {
                                 write_return_error(fi, "read array failed; no terminator ", val, " found");
                             }
                             w.writeln("}");
-                            w.writeln("if (", tmp, " == ", std::get<0>(*next), ") {");
+                            w.writeln("if (", tmp, " == ::futils::view::rvec(", std::get<0>(*next), ", ", next_len, ")) {");
                             w.indent_writeln("break;");
                             w.writeln("}");
                         }
