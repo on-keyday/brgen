@@ -115,11 +115,12 @@ export const getCppPrototypeCode = (sourceCode :string,options? :CallOption) => 
 export const getCppCode = (sourceCode :string,options? :CppOption) => {
     const mgr = factory.getJSON2Cpp2Worker();
     const req = mgr.getRequest(RequestLanguage.CPP,sourceCode);
+    req.arguments = [];
     if(options?.use_line_map){
-        req.arguments = ["--add-line-map"];
+        req.arguments.push("--add-line-map");
     }
     if(options?.use_error){
-        req.arguments = ["--use-error"];
+        req.arguments.push("--use-error");
     }
     return mgr.doRequest(req);
 }
