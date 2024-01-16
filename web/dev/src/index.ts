@@ -428,8 +428,10 @@ const mappingCode = (mappingInfo :MappingInfo[],origin :JobResult,lang :Language
 const handleCpp = async (s :JobResult) => {
     const useMap =commonUI.config.get(Language.CPP)?.config.get(ConfigKey.CPP_SOURCE_MAP)?.value;
     const expandInclude = commonUI.config.get(Language.CPP)?.config.get(ConfigKey.EXPAND_INCLUDE)?.value;
+    const useError = commonUI.config.get(Language.CPP)?.config.get(ConfigKey.USE_ERROR)?.value;
     const cppOption : caller.CppOption = {  
-        use_line_map: (useMap && typeof useMap == 'boolean') ? useMap: false,
+        use_line_map: useMap === true,
+        use_error: useError === true,
     };
     let result : JobResult | undefined = undefined;
     let mappingInfo :any;
