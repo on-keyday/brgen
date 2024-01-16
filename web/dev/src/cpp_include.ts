@@ -20,7 +20,8 @@ const resolveInclude = async (text :string,included:string[] = []):Promise<strin
         return await resolveInclude(replaced,included);
     }
     const content = await fetchRawGitContent(path);
-    const replaced = text.replace(matched[0], content);
+    const removePragmaOnce = content.replace("#pragma once",'');
+    const replaced = text.replace(matched[0], removePragmaOnce);
     return await resolveInclude(replaced, [...included, path]);
 }
 
