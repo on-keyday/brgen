@@ -13,8 +13,8 @@ import (
 
 func generateFlow(rw io.Writer, d *gen.Defs) {
 	w := gen.NewWriter(rw)
-	w.Printf("```mermaid\n")
-	defer w.Printf("```\n")
+	//w.Printf("```mermaid\n")
+	//defer w.Printf("```\n")
 	w.Printf("flowchart TB\n")
 	for _, def := range d.Defs {
 		switch val := def.(type) {
@@ -53,8 +53,8 @@ func generateFlow(rw io.Writer, d *gen.Defs) {
 
 func generateEr(rw io.Writer, d *gen.Defs) {
 	w := gen.NewWriter(rw)
-	w.Printf("```mermaid\n")
-	defer w.Printf("```\n")
+	//w.Printf("```mermaid\n")
+	//defer w.Printf("```\n")
 	w.Printf("erDiagram\n")
 	for _, def := range d.Defs {
 		switch val := def.(type) {
@@ -145,7 +145,7 @@ func main() {
 		return
 	}
 
-	if file == "/dev/stdout" {
+	if file == "/dev/stdout" || file == "stdout" {
 		if *flow {
 			generateFlow(os.Stdout, defs)
 		} else {
