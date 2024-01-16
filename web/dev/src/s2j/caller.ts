@@ -46,6 +46,7 @@ export interface AstOption extends CallOption {
 
 export interface CppOption extends CallOption {
     use_line_map? :boolean
+    use_error? :boolean
 }
 
 export interface GoOption extends CallOption {
@@ -116,6 +117,9 @@ export const getCppCode = (sourceCode :string,options? :CppOption) => {
     const req = mgr.getRequest(RequestLanguage.CPP,sourceCode);
     if(options?.use_line_map){
         req.arguments = ["--add-line-map"];
+    }
+    if(options?.use_error){
+        req.arguments = ["--use-error"];
     }
     return mgr.doRequest(req);
 }

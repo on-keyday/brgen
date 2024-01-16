@@ -47,6 +47,7 @@ const enum ConfigKey {
     COMMON_FILE_NAME ="file_name",
     CPP_SOURCE_MAP = "source_map", 
     EXPAND_INCLUDE = "expand_include",
+    USE_ERROR = "use_error",
 }
 
 interface LanguageConfig{
@@ -720,6 +721,10 @@ const fileName :InputListElement = {
         "type": "checkbox",
         "value": false,
     })
+    cpp.set(ConfigKey.USE_ERROR,{
+        "type": "checkbox",
+        "value": false,
+    });
     cpp.set(ConfigKey.COMMON_FILE_NAME,fileName);
     commonUI.config.set(Language.CPP,languageSpecificConfig(cpp,ConfigKey.CPP_SOURCE_MAP,(change) => {
         if(change.name === ConfigKey.CPP_SOURCE_MAP){
