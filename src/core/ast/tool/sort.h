@@ -3,17 +3,23 @@
 #include <core/ast/ast.h>
 #include <core/ast/traverse.h>
 #include <set>
+#include <algorithm>
 
 namespace brgen::ast::tool {
     struct FormatSorter {
        private:
         std::set<std::shared_ptr<ast::Format>> format;
+        std::vector<std::shared_ptr<ast::Format>> ordered_format;
         std::map<std::shared_ptr<ast::Format>, std::set<std::shared_ptr<ast::Format>>> format_deps;
 
         void collect_format(const std::shared_ptr<ast::Node>& node) {
             ast::traverse(node, [&](const std::shared_ptr<ast::Node>& node) {
                 if (ast::as<ast::Format>(node)) {
-                    format.insert(ast::cast_to<ast::Format>(node));
+                    auto res = format.insert(ast::cast_to<ast::Format>(node));
+                    if (res.second) {  // newly inserted
+                        ordered_format.push_back(ast::cast_to<ast::Format>(node));
+                        return;
+                    }
                 }
                 collect_format(node);
             });
@@ -56,7 +62,10 @@ namespace brgen::ast::tool {
                 }
                 sorted.push_back(f);
             };
-            for (auto& f : format) {
+            std::stable_sort(ordered_format.begin(), ordered_format.end(), [&](auto& a, auto& b) {
+                return format_deps[a].size() < format_deps[b].size();
+            });
+            for (auto& f : ordered_format) {
                 visit(visit, f);
             }
             return sorted;

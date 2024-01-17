@@ -57,7 +57,7 @@ format DNSResourceRecord:
     data :[data_length]u8
 
 
-format DNSPacket:
+format DNSHeader:
     id :u16
     response :u1
     opcode :DNSOpCode
@@ -71,8 +71,11 @@ format DNSPacket:
     answer_count :u16
     authority_count :u16
     additional_count :u16
-    questions :[query_count]DNSQuestion
-    answers :[answer_count]DNSResourceRecord
-    authorities :[authority_count]DNSResourceRecord
-    additionals :[additional_count]DNSResourceRecord
+
+format DNSMessage:
+    header :DNSHeader
+    questions :[header.query_count]DNSQuestion
+    answers :[header.answer_count]DNSResourceRecord
+    authorities :[header.authority_count]DNSResourceRecord
+    additionals :[header.additional_count]DNSResourceRecord
 

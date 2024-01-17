@@ -14,9 +14,9 @@ namespace j2cp2 {
         std::vector<std::shared_ptr<ast::Field>> fields;
     };
 
-    struct AnonymousStructMeta {
-        std::string field_name;
-        std::shared_ptr<ast::StructType> struct_;
+    struct AnonymousStruct {
+        std::string type_name;
+        std::string variant_name;
     };
 
     struct LineMap {
@@ -86,12 +86,13 @@ namespace j2cp2 {
         }
         ast::tool::Stringer str;
         std::map<ast::Field*, BitFieldMeta> bit_fields;
-        std::map<ast::Field*, AnonymousStructMeta> anonymous_structs;
         std::map<ast::Field*, LaterInfo> later_size;
+        std::map<std::shared_ptr<ast::StructType>, AnonymousStruct> anonymous_struct;
         std::map<ast::EnumMember*, std::string> enum_member_map;
         std::vector<LineMap> line_map;
         bool enable_line_map = false;
         bool use_error = false;
+        bool use_variant = false;
         ast::Format* current_format = nullptr;
         Context ctx;
         std::vector<std::string> struct_names;
@@ -202,22 +203,74 @@ namespace j2cp2 {
             return "";
         }
 
-        void write_struct_union(ast::StructUnionType* union_ty) {
-            std::map<std::shared_ptr<ast::StructType>, std::string> tmp;
-            map_line(union_ty->loc);
-            w.writeln("union {");
-            std::string prefix = "union_struct_";
-            {
-                auto indent = w.indent_scope();
-                for (auto& f : union_ty->structs) {
-                    auto c = brgen::concat(prefix, brgen::nums(get_seq()));
-                    write_struct_type(f, c + ".");
-                    auto& t = tmp[f];
-                    t = c;
-                    w.writeln(" ", t, ";");
+        void check_variant_alternative(const std::shared_ptr<ast::StructType>& s, bool as_err = false) {
+            if (use_variant) {
+                if (auto found = anonymous_struct.find(s); found != anonymous_struct.end()) {
+                    auto& typ = found->second;
+                    w.writeln("if(!std::holds_alternative<", typ.type_name, ">(", typ.variant_name, ")) {");
+                    if (as_err) {
+                        write_return_error(current_format, typ.variant_name, " variant alternative ", typ.type_name, " is not set");
+                    }
+                    else {
+                        w.indent_writeln("return std::nullopt;");
+                    }
+                    w.writeln("}");
                 }
             }
-            w.writeln("};");
+        }
+
+        void set_variant_alternative(const std::shared_ptr<ast::StructType>& s) {
+            if (use_variant) {
+                if (auto found = anonymous_struct.find(s); found != anonymous_struct.end()) {
+                    auto& typ = found->second;
+                    w.writeln("if(!std::holds_alternative<", typ.type_name, ">(", typ.variant_name, ")) {");
+                    w.indent_writeln(typ.variant_name, " = ", typ.type_name, "();");
+                    w.writeln("}");
+                }
+            }
+        }
+
+        void variant_alternative(const std::shared_ptr<ast::StructType>& s, bool as_err = false) {
+            if (ctx.encode) {
+                check_variant_alternative(s, as_err);
+            }
+            else {
+                set_variant_alternative(s);
+            }
+        }
+
+        void write_struct_union(ast::StructUnionType* union_ty) {
+            map_line(union_ty->loc);
+            if (use_variant) {
+                auto variant_name = brgen::concat("union_variant_", brgen::nums(get_seq()));
+                size_t i = 1;
+                std::string variant_types;
+                for (auto& f : union_ty->structs) {
+                    auto c = brgen::concat("union_struct_", brgen::nums(get_seq()));
+                    write_struct_type(c, f, brgen::concat("std::get<", brgen::nums(i), ">(${THIS}", variant_name, ")."));
+                    auto& t = anonymous_struct[f];
+                    t.type_name = c;
+                    t.variant_name = variant_name;
+                    w.writeln(";");
+                    variant_types += ", " + c;
+                    i++;
+                }
+                w.writeln("std::variant<std::monostate", variant_types, "> ", variant_name, ";");
+            }
+            else {
+                w.writeln("union {");
+                std::string prefix = "union_struct_";
+                {
+                    auto indent = w.indent_scope();
+                    w.writeln("struct {} ", prefix, "dummy", brgen::nums(get_seq()), ";");
+                    for (auto& f : union_ty->structs) {
+                        auto c = brgen::concat(prefix, brgen::nums(get_seq()));
+                        write_struct_type("", f, brgen::concat("${THIS}", c, "."));
+                        w.writeln(" ", c, ";");
+                    }
+                }
+                w.writeln("};");
+            }
             for (auto& f : union_ty->union_fields) {
                 auto uf = f.lock();
                 auto ut = ast::as<ast::UnionType>(uf->field_type);
@@ -241,8 +294,9 @@ namespace j2cp2 {
                     {
                         auto indent = w.indent_scope();
                         auto make_access = [&](const std::shared_ptr<ast::Field>& f) {
-                            map_line(f->loc);
                             auto a = str.to_string(f->ident);
+                            check_variant_alternative(f->belong_struct.lock());
+                            map_line(f->loc);
                             w.writeln("return ", a, ";");
                         };
                         bool has_els = false;
@@ -292,13 +346,11 @@ namespace j2cp2 {
                     {
                         auto indent = w.indent_scope();
                         auto make_access = [&](const std::shared_ptr<ast::Field>& f) {
-                            auto struct_ = f->belong_struct.lock();
-                            assert(struct_);
-                            auto indent = w.indent_scope();
-                            auto access = tmp[struct_] + "." + f->ident->ident;
-                            anonymous_structs[f.get()] = {access, struct_};
                             map_line(f->loc);
-                            w.writeln("this->", access, " = v;");
+                            set_variant_alternative(f->belong_struct.lock());
+                            auto a = str.to_string(f->ident);
+                            w.writeln(a, " = v;");
+                            w.writeln("return true;");
                         };
                         bool has_els = false;
                         bool end_else = false;
@@ -313,6 +365,7 @@ namespace j2cp2 {
                                 map_line(c->loc);
                                 w.writeln("if (", cond_s, "==", cond_u, ") {");
                                 {
+                                    auto indent = w.indent_scope();
                                     auto f = c->field.lock();
                                     if (!f) {
                                         w.writeln("return false;");
@@ -330,7 +383,6 @@ namespace j2cp2 {
                                 }
                                 else {
                                     make_access(f);
-                                    w.writeln("return true;");
                                 }
                                 end_else = true;
                             }
@@ -344,18 +396,14 @@ namespace j2cp2 {
             }
         }
 
-        void write_struct_type(const std::shared_ptr<ast::StructType>& s, const std::string& prefix = "") {
+        void write_struct_type(std::string_view struct_name, const std::shared_ptr<ast::StructType>& s, const std::string& prefix = "") {
             auto member = ast::as<ast::Member>(s->base.lock());
             bool has_ident = member && member->ident;
             assert(!member || member->node_type != ast::NodeType::field);
             if (has_ident) {
                 map_line(member->loc);
             }
-            w.writeln("struct ",
-                      has_ident
-                          ? member->ident->ident + " "
-                          : "",
-                      "{");
+            w.writeln("struct ", struct_name, "{");
             {
                 auto indent = w.indent_scope();
                 bool is_int_set = true;
@@ -417,18 +465,18 @@ namespace j2cp2 {
                         if (auto int_ty = ast::as<ast::IntType>(type); int_ty) {
                             if (int_ty->is_common_supported) {
                                 map_line(f->loc);
-                                w.writeln("std::", int_ty->is_signed ? "" : "u", "int", brgen::nums(*int_ty->bit_size), "_t ", f->ident->ident, ";");
-                                str.map_ident(f->ident, "${THIS}", prefix, f->ident->ident);
+                                w.writeln("std::", int_ty->is_signed ? "" : "u", "int", brgen::nums(*int_ty->bit_size), "_t ", f->ident->ident, " = 0", ";");
+                                str.map_ident(f->ident, prefix, f->ident->ident);
                             }
                         }
                         if (auto enum_ty = ast::as<ast::EnumType>(type); enum_ty) {
                             auto enum_ = enum_ty->base.lock();
                             auto bit_size = enum_->base_type->bit_size;
                             map_line(f->loc);
-                            w.writeln("std::uint", brgen::nums(*bit_size), "_t ", f->ident->ident, "_data;");
+                            w.writeln("std::uint", brgen::nums(*bit_size), "_t ", f->ident->ident, "_data = 0;");
                             map_line(f->loc);
                             w.writeln(enum_->ident->ident, " ", f->ident->ident, "() const { return static_cast<", enum_->ident->ident, ">(this->", prefix, f->ident->ident, "_data); }");
-                            str.map_ident(f->ident, "${THIS}", f->ident->ident + "()");
+                            str.map_ident(f->ident, prefix, f->ident->ident + "()");
                         }
                         if (auto arr_ty = ast::as<ast::ArrayType>(type); arr_ty) {
                             auto ty = get_type_name(type);
@@ -450,13 +498,13 @@ namespace j2cp2 {
                                     assert(later.next_field);
                                 }
                             }
-                            str.map_ident(f->ident, "${THIS}", prefix, f->ident->ident);
+                            str.map_ident(f->ident, prefix, f->ident->ident);
                         }
                         if (auto struct_ty = ast::as<ast::StructType>(type)) {
                             auto type_name = get_type_name(type);
                             map_line(f->loc);
                             w.writeln(type_name, " ", f->ident->ident, ";");
-                            str.map_ident(f->ident, "${THIS}", prefix, f->ident->ident);
+                            str.map_ident(f->ident, prefix, f->ident->ident);
                         }
                         if (auto str_type = ast::as<ast::StrLiteralType>(type)) {
                             auto len = str_type->strong_ref->length;
@@ -486,7 +534,7 @@ namespace j2cp2 {
                 return;  // skip
             }
             struct_names.push_back(fmt->ident->ident);
-            write_struct_type(fmt->body->struct_type);
+            write_struct_type(fmt->ident->ident, fmt->body->struct_type, "${THIS}");
             w.writeln(";");
         }
 
@@ -925,6 +973,7 @@ namespace j2cp2 {
                 code_match(match);
             }
             if (auto scoped = ast::as<ast::ScopedStatement>(elem)) {
+                variant_alternative(scoped->struct_type, true);
                 code_one_node(scoped->statement);
             }
             if (auto b = ast::as<ast::Binary>(elem);
@@ -984,6 +1033,7 @@ namespace j2cp2 {
         }
 
         void code_indent_block(const std::shared_ptr<ast::IndentBlock>& block) {
+            variant_alternative(block->struct_type, true);
             // encode fields
             for (auto& elem : block->elements) {
                 code_one_node(elem);
@@ -1048,11 +1098,15 @@ namespace j2cp2 {
             w.writeln("//Code generated by json2cpp2");
             w.writeln("#pragma once");
             w.writeln("#include <cstdint>");
-            w.writeln("#include <binary/flags.h>");
             w.writeln("#include <vector>");
             w.writeln("#include <array>");
-            w.writeln("#include <view/iovec.h>");
             w.writeln("#include <optional>");
+            if (use_variant) {
+                w.writeln("#include <variant>");
+            }
+            w.writeln();
+            w.writeln("#include <binary/flags.h>");
+            w.writeln("#include <view/iovec.h>");
             w.writeln("#include <binary/number.h>");
             if (use_error) {
                 w.writeln("#include <error/error.h>");
