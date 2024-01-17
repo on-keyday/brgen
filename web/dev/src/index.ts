@@ -48,6 +48,7 @@ const enum ConfigKey {
     CPP_SOURCE_MAP = "source_map", 
     EXPAND_INCLUDE = "expand_include",
     USE_ERROR = "use_error",
+    USE_RAW_UNION = "use_raw_union",
 }
 
 interface LanguageConfig{
@@ -429,9 +430,11 @@ const handleCpp = async (s :JobResult) => {
     const useMap =commonUI.config.get(Language.CPP)?.config.get(ConfigKey.CPP_SOURCE_MAP)?.value;
     const expandInclude = commonUI.config.get(Language.CPP)?.config.get(ConfigKey.EXPAND_INCLUDE)?.value;
     const useError = commonUI.config.get(Language.CPP)?.config.get(ConfigKey.USE_ERROR)?.value;
+    const useRawUnion = commonUI.config.get(Language.CPP)?.config.get(ConfigKey.USE_RAW_UNION)?.value;
     const cppOption : caller.CppOption = {  
         use_line_map: useMap === true,
         use_error: useError === true,
+        use_raw_union: useRawUnion === true,
     };
     let result : JobResult | undefined = undefined;
     let mappingInfo :any;
@@ -724,6 +727,10 @@ const fileName :InputListElement = {
         "value": false,
     })
     cpp.set(ConfigKey.USE_ERROR,{
+        "type": "checkbox",
+        "value": false,
+    });
+    cpp.set(ConfigKey.USE_RAW_UNION,{
         "type": "checkbox",
         "value": false,
     });

@@ -47,6 +47,7 @@ export interface AstOption extends CallOption {
 export interface CppOption extends CallOption {
     use_line_map? :boolean
     use_error? :boolean
+    use_raw_union? :boolean
 }
 
 export interface GoOption extends CallOption {
@@ -121,6 +122,9 @@ export const getCppCode = (sourceCode :string,options? :CppOption) => {
     }
     if(options?.use_error){
         req.arguments.push("--use-error");
+    }
+    if(options?.use_raw_union){
+        req.arguments.push("--use-raw-union");
     }
     return mgr.doRequest(req);
 }

@@ -1,0 +1,21 @@
+
+format IEEE802_11:
+    frame_control: u16
+    duration_id: u16
+    addr1 : [6]u8
+    addr2 : [6]u8
+    addr3 : [6]u8
+    sequence_control: u16
+    addr4 : [6]u8
+    payload: [..]u8
+
+format IEEE802_11FCS:
+    frame_control: u16
+    duration_id: u16
+    addr1 : [6]u8
+    addr2 : [6]u8
+    addr3 : [6]u8
+    sequence_control: u16
+    addr4 : [6]u8
+    payload: [..]u8
+    fcs: u32
