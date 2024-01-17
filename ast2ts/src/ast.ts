@@ -692,6 +692,8 @@ export function isIntType(obj: any): obj is IntType {
 }
 
 export interface FloatType extends Type {
+	endian: Endian;
+	is_common_supported: boolean;
 }
 
 export function isFloatType(obj: any): obj is FloatType {
@@ -1508,6 +1510,8 @@ export function parseAST(obj: any): Program {
 				non_dynamic: false,
 				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: null,
+				endian: Endian.unspec,
+				is_common_supported: false,
 			}
 			c.node.push(n);
 			break;
@@ -2986,6 +2990,16 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at FloatType::bit_size');
 			}
 			n.bit_size = on.body.bit_size;
+			const tmpendian = on.body?.endian;
+			if (!isEndian(tmpendian)) {
+				throw new Error('invalid node list at FloatType::endian');
+			}
+			n.endian = tmpendian;
+			const tmpis_common_supported = on.body?.is_common_supported;
+			if (typeof tmpis_common_supported !== "boolean") {
+				throw new Error('invalid node list at FloatType::is_common_supported');
+			}
+			n.is_common_supported = on.body.is_common_supported;
 			break;
 		}
 		case "ident_type": {

@@ -102,6 +102,12 @@ namespace brgen::ast {
         // for decode
         FloatType()
             : Type({}, NodeType::float_type) {}
+
+        void dump(auto&& field_) {
+            Type::dump(field_);
+            sdebugf(endian);
+            sdebugf(is_common_supported);
+        }
     };
 
     struct IntTypeDesc {

@@ -177,13 +177,17 @@ namespace j2cp2 {
             if (auto int_ty = ast::as<ast::IntType>(type); int_ty) {
                 return brgen::concat("std::", int_ty->is_signed ? "" : "u", "int", brgen::nums(*int_ty->bit_size), "_t");
             }
+            if (auto typ = ast::as<ast::FloatType>(type); typ) {
+                return brgen::concat("::futils::binary::float", brgen::nums(*typ->bit_size), "_t");
+            }
             if (auto enum_ty = ast::as<ast::EnumType>(type); enum_ty) {
                 return enum_ty->base.lock()->ident->ident;
             }
             if (auto arr_ty = ast::as<ast::ArrayType>(type); arr_ty) {
                 if (arr_ty->non_dynamic) {
                     auto len = str.to_string(arr_ty->length);
-                    return "std::array<std::uint" + brgen::nums(*arr_ty->base_type->bit_size) + "_t," + len + ">";
+                    auto typ = get_type_name(arr_ty->base_type);
+                    return brgen::concat("std::array<", typ, ",", len, ">");
                 }
                 if (auto int_ty = ast::as<ast::IntType>(arr_ty->base_type); int_ty && int_ty->bit_size == 8) {
                     return "::futils::view::rvec";
@@ -469,13 +473,20 @@ namespace j2cp2 {
                                 str.map_ident(f->ident, prefix, f->ident->ident);
                             }
                         }
+                        if (auto float_ty = ast::as<ast::FloatType>(type); float_ty) {
+                            if (float_ty->is_common_supported) {
+                                map_line(f->loc);
+                                w.writeln("::futils::binary::float", brgen::nums(*float_ty->bit_size), "_t ", f->ident->ident, " = 0", ";");
+                                str.map_ident(f->ident, prefix, f->ident->ident);
+                            }
+                        }
                         if (auto enum_ty = ast::as<ast::EnumType>(type); enum_ty) {
                             auto enum_ = enum_ty->base.lock();
                             auto bit_size = enum_->base_type->bit_size;
                             map_line(f->loc);
                             w.writeln("std::uint", brgen::nums(*bit_size), "_t ", f->ident->ident, "_data = 0;");
                             map_line(f->loc);
-                            w.writeln(enum_->ident->ident, " ", f->ident->ident, "() const { return static_cast<", enum_->ident->ident, ">(this->", prefix, f->ident->ident, "_data); }");
+                            w.writeln(enum_->ident->ident, " ", f->ident->ident, "() const { return static_cast<", enum_->ident->ident, ">(this->", f->ident->ident, "_data); }");
                             str.map_ident(f->ident, prefix, f->ident->ident + "()");
                         }
                         if (auto arr_ty = ast::as<ast::ArrayType>(type); arr_ty) {
@@ -641,10 +652,13 @@ namespace j2cp2 {
                 return;
             }
             auto ident = str.to_string(f->ident);
-            if (ast::as<ast::EnumType>(f->field_type)) {
+            auto typ = f->field_type;
+            if (auto ident = ast::as<ast::IdentType>(typ); ident) {
+                typ = ident->base.lock();
+            }
+            if (ast::as<ast::EnumType>(typ)) {
                 ident = ident.substr(0, ident.size() - 2) + "_data";
             }
-            auto typ = f->field_type;
             write_field_encode_impl(f->loc, ident, typ, f);
         }
 
@@ -659,6 +673,16 @@ namespace j2cp2 {
                 {
                     auto indent = w.indent_scope();
                     write_return_error(fi, "write ", type_name, " failed");
+                }
+                w.writeln("}");
+            }
+            if (auto float_ty = ast::as<ast::FloatType>(typ); float_ty) {
+                map_line(loc);
+                auto tmp = brgen::concat("::futils::binary::make_float(", ident, ").to_int()");
+                w.writeln("if (!::futils::binary::write_num(w,", tmp, ", ", ctx.endian_text(float_ty->endian), ")) {");
+                {
+                    auto indent = w.indent_scope();
+                    write_return_error(fi, "write ", get_type_name(typ), " failed");
                 }
                 w.writeln("}");
             }
@@ -757,10 +781,13 @@ namespace j2cp2 {
                 return;
             }
             auto ident = str.to_string(f->ident);
-            if (ast::as<ast::EnumType>(f->field_type)) {
+            auto typ = f->field_type;
+            if (auto ident = ast::as<ast::IdentType>(typ); ident) {
+                typ = ident->base.lock();
+            }
+            if (ast::as<ast::EnumType>(typ)) {
                 ident = ident.substr(0, ident.size() - 2) + "_data";
             }
-            auto typ = f->field_type;
             write_field_decode_impl(f->loc, ident, typ, f);
         }
 
@@ -776,6 +803,20 @@ namespace j2cp2 {
                     write_return_error(fi, "read int failed");
                 }
                 w.writeln("}");
+            }
+            if (auto float_ty = ast::as<ast::FloatType>(typ); float_ty) {
+                auto int_ty = brgen::concat("std::uint", brgen::nums(*float_ty->bit_size), "_t");
+                map_line(loc);
+                auto tmp = brgen::concat("tmp_", brgen::nums(get_seq()), "_");
+                w.writeln(int_ty, " ", tmp, " = 0;");
+                w.writeln("if (!::futils::binary::read_num(r,", tmp, " ,", ctx.endian_text(float_ty->endian), ")) {");
+                {
+                    auto indent = w.indent_scope();
+                    write_return_error(fi, "read ", get_type_name(typ), " failed");
+                }
+                w.writeln("}");
+                map_line(loc);
+                w.writeln(ident, " = ::futils::binary::make_float(", tmp, ").to_float();");
             }
             if (auto arr_ty = ast::as<ast::ArrayType>(typ); arr_ty) {
                 std::optional<std::string> len;
@@ -802,7 +843,7 @@ namespace j2cp2 {
                         len = "r.remain().size()";
                     }
                 }
-                else {
+                else if (!arr_ty->length_value) {
                     len = str.to_string(arr_ty->length);
                 }
                 map_line(loc);
@@ -864,9 +905,12 @@ namespace j2cp2 {
                     auto tmp = brgen::concat("tmp_", brgen::nums(get_seq()), "_");
                     auto type = get_type_name(arr_ty->base_type);
                     map_line(loc);
-                    w.writeln(ident, ".clear();");
+                    if (!arr_ty->non_dynamic) {
+                        w.writeln(ident, ".clear();");
+                    }
+                    std::string tmp_i;
                     if (len) {
-                        auto tmp_i = brgen::concat("tmp_", brgen::nums(get_seq()), "_");
+                        tmp_i = brgen::concat("tmp_", brgen::nums(get_seq()), "_");
                         w.writeln("for (size_t  ", tmp_i, "= 0; ", tmp_i, "<", *len, "; ++", tmp_i, " ) {");
                     }
                     else {
@@ -890,9 +934,14 @@ namespace j2cp2 {
                             w.indent_writeln("break;");
                             w.writeln("}");
                         }
-                        w.writeln(type, " ", tmp, ";");
-                        write_field_decode_impl(loc, tmp, arr_ty->base_type, fi);
-                        w.writeln(ident, ".push_back(std::move(", tmp, "));");
+                        if (arr_ty->non_dynamic) {
+                            write_field_decode_impl(loc, brgen::concat(ident, "[", tmp_i, "]"), arr_ty->base_type, fi);
+                        }
+                        else {
+                            w.writeln(type, " ", tmp, ";");
+                            write_field_decode_impl(loc, tmp, arr_ty->base_type, fi);
+                            w.writeln(ident, ".push_back(std::move(", tmp, "));");
+                        }
                     }
                     w.writeln("}");
                 }
@@ -1106,6 +1155,7 @@ namespace j2cp2 {
             }
             w.writeln();
             w.writeln("#include <binary/flags.h>");
+            w.writeln("#include <binary/float.h>");
             w.writeln("#include <view/iovec.h>");
             w.writeln("#include <binary/number.h>");
             if (use_error) {

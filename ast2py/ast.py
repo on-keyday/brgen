@@ -428,7 +428,8 @@ class IntType(Type):
 
 
 class FloatType(Type):
-    pass
+    endian: Endian
+    is_common_supported: bool
 
 
 class IdentType(Type):
@@ -1401,6 +1402,9 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].bit_size = x if isinstance(x,int) else raiseError(TypeError('type mismatch at FloatType::bit_size'))
                 else:
                     node[i].bit_size = None
+                node[i].endian = Endian(ast.node[i].body["endian"])
+                x = ast.node[i].body["is_common_supported"]
+                node[i].is_common_supported = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at FloatType::is_common_supported'))
             case NodeType.IDENT_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at IdentType::is_explicit'))

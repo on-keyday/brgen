@@ -877,6 +877,8 @@ struct ast2c_FloatType {
 	int non_dynamic;
 	ast2c_BitAlignment bit_alignment;
 	uint64_t* bit_size;
+	ast2c_Endian endian;
+	int is_common_supported;
 };
 
 // returns 1 if succeed 0 if failed

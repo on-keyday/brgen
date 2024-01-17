@@ -2067,11 +2067,13 @@ func (n *IntType) GetLoc() Loc {
 }
 
 type FloatType struct {
-	Loc          Loc
-	IsExplicit   bool
-	NonDynamic   bool
-	BitAlignment BitAlignment
-	BitSize      *uint64
+	Loc               Loc
+	IsExplicit        bool
+	NonDynamic        bool
+	BitAlignment      BitAlignment
+	BitSize           *uint64
+	Endian            Endian
+	IsCommonSupported bool
 }
 
 func (n *FloatType) isType() {}
@@ -3912,10 +3914,12 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeFloatType:
 			v := n.node[i].(*FloatType)
 			var tmp struct {
-				IsExplicit   bool         `json:"is_explicit"`
-				NonDynamic   bool         `json:"non_dynamic"`
-				BitAlignment BitAlignment `json:"bit_alignment"`
-				BitSize      *uint64      `json:"bit_size"`
+				IsExplicit        bool         `json:"is_explicit"`
+				NonDynamic        bool         `json:"non_dynamic"`
+				BitAlignment      BitAlignment `json:"bit_alignment"`
+				BitSize           *uint64      `json:"bit_size"`
+				Endian            Endian       `json:"endian"`
+				IsCommonSupported bool         `json:"is_common_supported"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -3924,6 +3928,8 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.NonDynamic = tmp.NonDynamic
 			v.BitAlignment = tmp.BitAlignment
 			v.BitSize = tmp.BitSize
+			v.Endian = tmp.Endian
+			v.IsCommonSupported = tmp.IsCommonSupported
 		case NodeTypeIdentType:
 			v := n.node[i].(*IdentType)
 			var tmp struct {

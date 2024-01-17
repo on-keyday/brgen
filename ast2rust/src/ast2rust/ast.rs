@@ -4569,6 +4569,8 @@ pub struct FloatType {
 	pub non_dynamic: bool,
 	pub bit_alignment: BitAlignment,
 	pub bit_size: Option<u64>,
+	pub endian: Endian,
+	pub is_common_supported: bool,
 }
 
 impl TryFrom<&Type> for Rc<RefCell<FloatType>> {
@@ -7527,6 +7529,8 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				non_dynamic: false,
 				bit_alignment: BitAlignment::ByteAligned,
 				bit_size: None,
+				endian: Endian::Unspec,
+				is_common_supported: false,
 				})))
 			},
 			NodeType::IdentType => {
@@ -9952,6 +9956,25 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						true=>None,
 						false=>return Err(Error::MismatchJSONType(bit_size_body.into(),JSONType::Number)),
 					},
+				};
+				let endian_body = match raw_node.body.get("endian") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"endian")),
+				};
+				node.borrow_mut().endian = match endian_body.as_str() {
+					Some(v)=>match Endian::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(endian_body.into(),JSONType::String)),
+				};
+				let is_common_supported_body = match raw_node.body.get("is_common_supported") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"is_common_supported")),
+				};
+				node.borrow_mut().is_common_supported = match is_common_supported_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(is_common_supported_body.into(),JSONType::Bool)),
 				};
 			},
 			NodeType::IdentType => {

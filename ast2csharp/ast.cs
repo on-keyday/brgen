@@ -450,6 +450,8 @@ public class FloatType : Type{
 	public bool NonDynamic{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public ulong? BitSize{get;set;}
+	public Endian Endian{get;set;}
+	public bool IsCommonSupported{get;set;}
 }
 public class IdentType : Type{
 	public Loc Loc{get;set;}

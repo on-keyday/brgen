@@ -2056,11 +2056,15 @@ int ast2c_FloatType_parse(ast2c_Ast* ast,ast2c_FloatType* s,ast2c_json_handlers*
 	void* non_dynamic = h->object_get(h, obj_body, "non_dynamic");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
 	void* bit_size = h->object_get(h, obj_body, "bit_size");
+	void* endian = h->object_get(h, obj_body, "endian");
+	void* is_common_supported = h->object_get(h, obj_body, "is_common_supported");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_FloatType::loc is null"); } return 0; }
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_FloatType::is_explicit is null"); } return 0; }
 	if (!non_dynamic) { if(h->error) { h->error(h,non_dynamic, "ast2c_FloatType::non_dynamic is null"); } return 0; }
 	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_FloatType::bit_alignment is null"); } return 0; }
 	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_FloatType::bit_size is null"); } return 0; }
+	if (!endian) { if(h->error) { h->error(h,endian, "ast2c_FloatType::endian is null"); } return 0; }
+	if (!is_common_supported) { if(h->error) { h->error(h,is_common_supported, "ast2c_FloatType::is_common_supported is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_FloatType::loc"); }
 		goto error;
