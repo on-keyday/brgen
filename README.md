@@ -81,7 +81,7 @@ TODO(on-keyday): some of these examples use non-implemented functionality and no
 
 MIT License
 
-All of source are published with MIT license. Copyright is still remaining to on-keyday.
+All source code is released under the MIT license. The copyright remains with Onkey Day.
 
 # Version Policy
 
