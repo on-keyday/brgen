@@ -356,7 +356,9 @@ jobs:
       - name: Make License Archive
         run: |
           tar -czf artifacts/brgen-licenses.tar.gz -C license .
-          zip -r artifacts/brgen-licenses.zip license/**
+          cd license
+          zip -r brgen-licenses.zip ./**
+          mv brgen-licenses.zip ../artifacts
       - name: Copy License Archive to Each Artifact
         run: |
           cp artifacts/brgen-licenses.tar.gz artifacts/linux
@@ -378,8 +380,12 @@ jobs:
           tar -czf artifacts/brgen-macos.tar.gz -C artifacts/macos .
           tar -czf artifacts/brgen-android.tar.gz -C artifacts/android .
           tar -czf artifacts/brgen-vscode-extension.tar.gz -C artifacts/vscode-extension .
-          zip -r artifacts/brgen-windows.zip artifacts/windows/**
-          zip -r artifacts/brgen-vscode-extension.zip artifacts/vscode-extension/**
+          cd artifacts/windows
+          zip -r brgen-windows.zip ./**
+          mv brgen-windows.zip ../..
+          cd ../../vscode-extension
+          zip -r brgen-vscode-extension.zip ./**
+          mv brgen-vscode-extension.zip ../..
       - name: Calculate SHA256
         run: |
           cd artifacts
