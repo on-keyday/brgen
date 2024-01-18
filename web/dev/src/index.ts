@@ -238,7 +238,7 @@ setWindowSize();
 
 window.addEventListener("resize",setWindowSize);
 
-const createGenerated =async (code :string,lang: string) => {
+const setGenerated =async (code :string,lang: string) => {
     const top = editorUI.generated.getScrollTop();
     const model = monaco.editor.createModel(code,lang);
     editorUI.generated.setModel(model);
@@ -270,14 +270,14 @@ const handleLanguage = async (s :JobResult,generate:(src :string,option :any)=>P
     console.log(res);
     if(res.stdout === undefined || res.stdout === "") {
         if(res.stderr!==undefined&&res.stderr!==""){
-            createGenerated(res.stderr,"text/plain");
+            setGenerated(res.stderr,"text/plain");
         }
         else{
-            createGenerated("(no output. maybe generator is crashed)","text/plain");
+            setGenerated("(no output. maybe generator is crashed)","text/plain");
         }
     }
     else{
-        createGenerated(res.stdout,view_lang);
+        setGenerated(res.stdout,view_lang);
     }
     return true;
 }
@@ -481,7 +481,7 @@ const handleJSONOutput = async (value :string,generator:(srcCode :string,option:
     console.log(s.stdout);
     console.log(s.stderr);
     const js = JSON.parse(s.stdout);
-    createGenerated(JSON.stringify(js,null,4),"json");
+    setGenerated(JSON.stringify(js,null,4),"json");
     return;
 }
 
@@ -522,7 +522,7 @@ const updateGenerated = async () => {
     }
     switch(options.language_mode){
         case Language.JSON_AST:
-            createGenerated(JSON.stringify(js,null,4),"json");
+            setGenerated(JSON.stringify(js,null,4),"json");
             break;
         case Language.CPP_PROTOTYPE: 
             await handleCppPrototype(s);
@@ -745,7 +745,7 @@ const fileName :InputListElement = {
             }
         }
         if(change.name == ConfigKey.EXPAND_INCLUDE&&change.value === true) {
-            createGenerated("(waiting for generator. maybe external server call are delayed)","text/plain");
+            setGenerated("(waiting for generator. maybe external server call are delayed)","text/plain");
         }
         updateGenerated();
     }));
