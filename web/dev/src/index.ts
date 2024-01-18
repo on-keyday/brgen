@@ -447,7 +447,7 @@ const handleCpp = async (s :JobResult) => {
         }
         if(result.code === 0&&expandInclude===true){
             const expanded = await inc.resolveInclude(result.stdout!,(url :string)=>{
-                setGenerated(`maybe external server call is delayed: fetching ${url}`,"text/plain");
+                setGenerated(`maybe external server call is delayed\nfetching ${url}`,"text/plain");
             });
             result.stdout = expanded;
         }
