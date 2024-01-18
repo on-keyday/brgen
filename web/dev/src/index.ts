@@ -446,7 +446,9 @@ const handleCpp = async (s :JobResult) => {
            mappingInfo = JSON.parse(split[1]);
         }
         if(result.code === 0&&expandInclude===true){
-            const expanded = await inc.resolveInclude(result.stdout!);
+            const expanded = await inc.resolveInclude(result.stdout!,(url :string)=>{
+                setGenerated(`maybe external server call is delayed: fetching ${url}`,"text/plain");
+            });
             result.stdout = expanded;
         }
         return result;
@@ -743,9 +745,6 @@ const fileName :InputListElement = {
                     return;
                 }
             }
-        }
-        if(change.name == ConfigKey.EXPAND_INCLUDE&&change.value === true) {
-            setGenerated("(waiting for generator. maybe external server call are delayed)","text/plain");
         }
         updateGenerated();
     }));
