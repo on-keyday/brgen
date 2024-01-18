@@ -31,11 +31,6 @@ setInterval(()=>{
     });
 },100);
 
-/*
-setInterval(()=>{
-    //ctx.handleResponse();
-},100);
-*/
 
 globalThis.onmessage = (ev) => {
     ctx.postRequest(ev.data as JobRequest);

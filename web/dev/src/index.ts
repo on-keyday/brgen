@@ -2,12 +2,16 @@
 import "../node_modules/destyle.css/destyle.min.css";
 import * as monaco from "../node_modules/monaco-editor/esm/vs/editor/editor.api.js";
 import "../node_modules/monaco-editor/esm/vs/language/json/monaco.contribution.js"
+import "../node_modules/monaco-editor/esm/vs/basic-languages/cpp/cpp.contribution.js"
+import "../node_modules/monaco-editor/esm/vs/basic-languages/go/go.contribution.js"
 import {ast2ts} from "../node_modules/ast2ts/index.js";
 import * as caller from "./s2j/caller.js";
+import "./s2j/brgen_lsp.js";
 import { JobResult,Language,LanguageList } from "./s2j/msg.js";
 import { makeButton, makeLink, makeListBox, setStyle, makeInputList, InputListElement } from "./ui";
 
 import * as inc from "./cpp_include";
+
 
 //import "./hello"
 
@@ -19,6 +23,9 @@ if(window.MonacoEnvironment === undefined) {
         getWorker: (moduleId, label) => {
             if (label === 'json') {
                 return new Worker(new URL('../node_modules/monaco-editor/esm/vs/language/json/json.worker',import.meta.url), { type: 'module' });
+            }
+            if(label === 'brgen') {
+                console.log("worker required");
             }
             return new Worker(new URL('../node_modules/monaco-editor/esm/vs/editor/editor.worker',import.meta.url), { type: 'module' });
         },
@@ -158,6 +165,7 @@ const editorUI = {
         lineHeight: 20,
         automaticLayout: true,
         colorDecorators: true,
+        theme: "brgen-theme",
     }),
     generated: monaco.editor.create(container2,{
         lineHeight: 20,
@@ -545,36 +553,9 @@ window.addEventListener("keydown",async (e) => {
     }
 });
 
-monaco.languages.register({ id: 'brgen' });
+// monaco.languages.register({ id: 'brgen' });
 const editor_model =  monaco.editor.createModel("", "brgen");
 
-const BrgenProvider = class implements monaco.languages.DocumentColorProvider {
-    provideDocumentColors(model: monaco.editor.ITextModel, token: monaco.CancellationToken): monaco.languages.IColorInformation[] | Promise<monaco.languages.IColorInformation[]> {
-        return caller.getAST(model.getValue(),{filename: "editor.bgn",interpret_as_utf16: true}).then((s) => {
-            if(s.stdout===undefined) throw new Error("stdout is undefined");
-            if(editorAlreadyUpdated(s)) {
-                return [];
-            }
-            if(token.isCancellationRequested) {
-                return [];
-            }
-            const js = JSON.parse(s.stdout);
-            if(ast2ts.isAstFile(js)&&js.ast){
-                const ts = ast2ts.parseAST(js.ast);
-                console.log(ts);
-                const colors :monaco.languages.IColorInformation[] = [];
-                
-                return colors;
-            }
-            return [];
-        });
-    }
-    provideColorPresentations(model: monaco.editor.ITextModel, colorInfo: monaco.languages.IColorInformation, token: monaco.CancellationToken): monaco.languages.IColorPresentation[] | Promise<monaco.languages.IColorPresentation[]> {
-        throw new Error("Method not implemented.");
-    }
-}
-
-monaco.languages.registerColorProvider('brgen', new BrgenProvider());
 
 
 const onContentUpdate = async (e :monaco.editor.IModelContentChangedEvent)=>{
