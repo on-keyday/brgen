@@ -8,7 +8,7 @@ const fetchRawGitContent = async (url :string,progress :(t:string)=>void) => {
     const timer = setTimeout(() => {
         progress(url);
     },1000);
-    let res = await fetch(url,{cache: 'only-if-cached'});
+    let res = await fetch(url);
     if(!res.ok) {
         clearTimeout(timer);
         throw new Error(`failed to fetch ${url}`);
