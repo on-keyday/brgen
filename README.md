@@ -81,6 +81,8 @@ TODO(on-keyday): some of these examples use non-implemented functionality and no
 
 MIT License
 
+All of source are published with MIT license. Copyright is still remaining to on-keyday.
+
 # Version Policy
 
 0.0.x の間は作者(リポジトリオーナー)都合で更新を行います。
