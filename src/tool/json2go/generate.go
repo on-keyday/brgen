@@ -543,17 +543,17 @@ func (g *Generator) writeFieldEncode(p *ast2go.Field) {
 
 func (g *Generator) writeReadUint(size uint64, tmpName, field string, sign bool) {
 	g.PrintfFunc("tmp%s := [%d]byte{}\n", tmpName, size/8)
-	g.PrintfFunc("n_%s, err := r.Read(tmp%s[:])\n", tmpName, tmpName)
+	g.PrintfFunc("n_%s, err := io.ReadFull(r,tmp%s[:])\n", tmpName, tmpName)
 	g.PrintfFunc("if err != nil {\n")
-	g.PrintfFunc("return err\n")
-	g.PrintfFunc("}\n")
-	g.PrintfFunc("if n_%s != %d {\n", tmpName, size/8)
+	g.PrintfFunc("if err == io.ErrUnexpectedEOF || n_%s != %d /*stdlib bug?*/ {\n", tmpName, size/8)
 	g.imports["fmt"] = struct{}{}
 	if size == 8 {
-		g.PrintfFunc("return fmt.Errorf(\"read %s: expect 1 byte but read %%d bytes\", n_%s)\n", tmpName, tmpName)
+		g.PrintfFunc("return fmt.Errorf(\"read %s: %%w: expect 1 byte but read %%d bytes\",io.ErrUnexpectedEOF, n_%s)\n", tmpName, tmpName)
 	} else {
-		g.PrintfFunc("return fmt.Errorf(\"read %s: expect %d bytes but read %%d bytes\", n_%s)\n", tmpName, size/8, tmpName)
+		g.PrintfFunc("return fmt.Errorf(\"read %s: %%w: expect %d bytes but read %%d bytes\",io.ErrUnexpectedEOF, n_%s)\n", tmpName, size/8, tmpName)
 	}
+	g.PrintfFunc("}\n")
+	g.PrintfFunc("return err\n")
 	g.PrintfFunc("}\n")
 	signStr := ""
 	if !sign {
