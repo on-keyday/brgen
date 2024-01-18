@@ -7,7 +7,7 @@ const fetchRawGitContent = async (url :string,progress :(t:string)=>void) => {
     url = `${RAW_GIT_URL}/${url}`;
     const timer = setTimeout(() => {
         progress(url);
-    },1000);
+    },100);
     let res = await fetch(url);
     if(!res.ok) {
         clearTimeout(timer);
