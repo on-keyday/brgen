@@ -744,6 +744,9 @@ const fileName :InputListElement = {
                 }
             }
         }
+        if(change.name == ConfigKey.EXPAND_INCLUDE&&change.value === true) {
+            createGenerated("(waiting for generator. maybe external server call are delayed)","text/plain");
+        }
         updateGenerated();
     }));
 }
