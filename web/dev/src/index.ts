@@ -166,6 +166,7 @@ const editorUI = {
         automaticLayout: true,
         colorDecorators: true,
         theme: "brgen-theme",
+        "semanticHighlighting.enabled": true,
     }),
     generated: monaco.editor.create(container2,{
         lineHeight: 20,
