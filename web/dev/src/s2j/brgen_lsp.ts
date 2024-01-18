@@ -21,7 +21,7 @@ monaco.editor.defineTheme("brgen-theme", {
 		{ token: "keyword", foreground: "0000ff", fontStyle: "bold" },
 		{ token: "variable", foreground: "3e5bbf" },
 	],
-
+    
 });
 
 monaco.languages.onLanguage(BRGEN_ID,()=>{
