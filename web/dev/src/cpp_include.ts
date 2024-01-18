@@ -3,10 +3,10 @@ import { clear } from "console";
 
 const RAW_GIT_URL='https://raw.githubusercontent.com/on-keyday/utils/main/src/include'
 
-const fetchRawGitContent = async (url :string,progress :(t:string)=>void) => {
-    url = `${RAW_GIT_URL}/${url}`;
+const fetchRawGitContent = async (path :string,progress :(t:string)=>void) => {
+    const url = `${RAW_GIT_URL}/${path}`;
     const timer = setTimeout(() => {
-        progress(url);
+        progress(path);
     },100);
     let res = await fetch(url);
     if(!res.ok) {
