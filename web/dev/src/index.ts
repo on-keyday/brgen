@@ -689,11 +689,11 @@ const fileName :InputListElement = {
         updateGenerated();
     }));
     const go = new Map<string,InputListElement>();
-    go.set(ConfigKey.COMMON_FILE_NAME,fileName);
     go.set(ConfigKey.GO_USE_PUT,{
         "type": "checkbox",
         "value": false,
     });
+    go.set(ConfigKey.COMMON_FILE_NAME,fileName);
     commonUI.config.set(Language.GO,languageSpecificConfig(go,ConfigKey.COMMON_FILE_NAME,(change) => {
         updateGenerated();
     }));
