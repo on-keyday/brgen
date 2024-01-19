@@ -69,7 +69,8 @@ auto error_responder(std::map<std::string, std::string>& response, std::string& 
     };
 }
 
-bool unsafe_escape = false;
+static bool unsafe_escape = false;
+static Capability global_cap;
 
 void body_read(futils::fnet::server::Requester&& req, HeaderInfo* hdr, futils::http::body::HTTPBodyInfo info, futils::fnet::flex_storage&& body, futils::fnet::server::BodyState s, futils::fnet::server::StateContext c) {
     auto ptr = std::unique_ptr<HeaderInfo>(hdr);
@@ -122,7 +123,7 @@ void body_read(futils::fnet::server::Requester&& req, HeaderInfo* hdr, futils::h
     args.arg(argc, argv);
     c.log(futils::fnet::server::log_level::info, req.client.addr, "executing: ", arg);
     is_worker_thread() = true;
-    auto res = src2json_main(argc, argv, true);
+    auto res = src2json_main(argc, argv, global_cap);
     is_worker_thread() = false;
     auto stdout_buffer = std::move(worker_stdout_buffer());
     auto stderr_buffer = std::move(worker_stderr_buffer());
@@ -215,8 +216,10 @@ auto time_str(futils::timer::Time t) {
     return futils::timer::to_string<std::string>("%Y-%M-%D %h:%m:%s.%n", t);
 }
 
-int network_main(const char* port, bool unsafe) {
+int network_main(const char* port, bool unsafe, const Capability& cap) {
     unsafe_escape = unsafe;
+    global_cap = cap;
+    global_cap.network = false;
     fnet::server::HTTPServ serv;
     serv.next = handler;
     auto s = fnet::server::make_state(&serv, fnet::server::http_handler);

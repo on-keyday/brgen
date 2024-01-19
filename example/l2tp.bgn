@@ -1,0 +1,37 @@
+
+format L2TPHeader:
+    type :u1
+    has_len :u1
+    reserved1 :u2
+    has_seq :u1
+    reserved2 :u1
+    has_offset :u1
+    priority :u1
+    reserved3 :u4
+    version :u4
+
+    version == 2 || version == 3
+    if version == 3:
+        has_len == 1 && has_seq == 1 && has_offset == 0
+    
+    if has_len == 1:
+        length :u16
+    
+    id :u32
+    if has_seq == 1:
+        ns :u16
+        nr :u16
+    
+    if has_offset == 1:
+        ofsset :u16
+        padding :[ofsset]u8
+    
+format AVP:
+    mandatory :u1
+    hidden :u1
+    reserved :u4
+    length :u10
+    length >= 6
+    vendor_id :u16
+    type :u16
+    value :[length - 6]u8

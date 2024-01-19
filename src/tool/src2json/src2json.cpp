@@ -292,7 +292,7 @@ int print_spec(Flags& flags) {
     return exit_ok;
 }
 
-int Main(Flags& flags, futils::cmdline::option::Context&, bool disable_network) {
+int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap) {
     if (flags.version) {
         cout << futils::wrap::pack("src2json version ", src2json_version, " (lang version ", lang_version, ")\n");
         return exit_ok;
@@ -321,12 +321,12 @@ int Main(Flags& flags, futils::cmdline::option::Context&, bool disable_network) 
     cerr_color_mode = flags.cerr_color_mode;
     force_print_ok = flags.force_ok;
     if (flags.via_http) {
-        if (disable_network) {
+        if (!cap.network) {
             print_error("network mode is disabled");
             return exit_err;
         }
 #ifdef S2J_USE_NETWORK
-        return network_main(flags.port.c_str(), flags.use_unsafe_escape);
+        return network_main(flags.port.c_str(), flags.use_unsafe_escape, cap);
 #else
         print_error("network mode is not supported");
         return exit_err;
@@ -645,7 +645,7 @@ int Main(Flags& flags, futils::cmdline::option::Context&, bool disable_network) 
 }
 
 // entry point of src2json
-int src2json_main(int argc, char** argv, bool disable_network) {
+int src2json_main(int argc, char** argv, const Capability& cap) {
     Flags flags;
     return futils::cmdline::templ::parse_or_err<std::string>(
         argc, argv, flags,
@@ -667,14 +667,16 @@ int src2json_main(int argc, char** argv, bool disable_network) {
             }
         },
         [&](Flags& flags, futils::cmdline::option::Context& ctx) {
-            return Main(flags, ctx, disable_network);
+            return Main(flags, ctx, cap);
         },
         true);
 }
 
 #ifdef __EMSCRIPTEN__
 extern "C" int EMSCRIPTEN_KEEPALIVE emscripten_main(const char* cmdline) {
-    return em_main(cmdline, src2json_main, true);
+    Capability cap;
+    cap.network = false;
+    return em_main(cmdline, src2json_main, cap);
 }
 #else
 
@@ -683,7 +685,8 @@ int main(int argc, char** argv) {
     cerr.set_virtual_terminal(true);  // ignore error
     cout.set_virtual_terminal(true);  // ignore error
     try {
-        return src2json_main(argc, argv);
+        Capability cap;
+        return src2json_main(argc, argv, cap);
     } catch (const std::exception& e) {
         print_error("uncaught exception: ", e.what());
         return exit_err;

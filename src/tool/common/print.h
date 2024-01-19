@@ -1,8 +1,14 @@
 /*license*/
 #include <console/ansiesc.h>
 #include <wrap/cout.h>
-inline auto& cerr = futils::wrap::cerr_wrap();
+#ifdef SRC2JSON_DLL
+inline futils::wrap::UtfOut cout{futils::file::File::stdout_file()};
+inline futils::wrap::UtfOut cerr{futils::file::File::stderr_file()};
+#else
 inline auto& cout = futils::wrap::cout_wrap();
+inline auto& cerr = futils::wrap::cerr_wrap();
+#endif
+
 namespace cse = futils::console::escape;
 
 inline const char*& prefix_loc() {
