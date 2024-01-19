@@ -24,9 +24,6 @@ if(window.MonacoEnvironment === undefined) {
             if (label === 'json') {
                 return new Worker(new URL('../node_modules/monaco-editor/esm/vs/language/json/json.worker',import.meta.url), { type: 'module' });
             }
-            if(label === 'brgen') {
-                console.log("worker required");
-            }
             return new Worker(new URL('../node_modules/monaco-editor/esm/vs/editor/editor.worker',import.meta.url), { type: 'module' });
         },
     }
@@ -53,9 +50,10 @@ const enum ElementID {
 const enum ConfigKey {
     COMMON_FILE_NAME ="file_name",
     CPP_SOURCE_MAP = "source_map", 
-    EXPAND_INCLUDE = "expand_include",
-    USE_ERROR = "use_error",
-    USE_RAW_UNION = "use_raw_union",
+    CPP_EXPAND_INCLUDE = "expand_include",
+    CPP_USE_ERROR = "use_error",
+    CPP_USE_RAW_UNION = "use_raw_union",
+    GO_USE_PUT = "use_put",
 }
 
 interface LanguageConfig{
@@ -439,10 +437,10 @@ const mappingCode = (mappingInfo :MappingInfo[],origin :JobResult,lang :Language
 
 const handleCpp = async (s :JobResult) => {
     const useMap =commonUI.config.get(Language.CPP)?.config.get(ConfigKey.CPP_SOURCE_MAP)?.value;
-    const expandInclude = commonUI.config.get(Language.CPP)?.config.get(ConfigKey.EXPAND_INCLUDE)?.value;
-    const useError = commonUI.config.get(Language.CPP)?.config.get(ConfigKey.USE_ERROR)?.value;
-    const useRawUnion = commonUI.config.get(Language.CPP)?.config.get(ConfigKey.USE_RAW_UNION)?.value;
-    const cppOption : caller.CppOption = {  
+    const expandInclude = commonUI.config.get(Language.CPP)?.config.get(ConfigKey.CPP_EXPAND_INCLUDE)?.value;
+    const useError = commonUI.config.get(Language.CPP)?.config.get(ConfigKey.CPP_USE_ERROR)?.value;
+    const useRawUnion = commonUI.config.get(Language.CPP)?.config.get(ConfigKey.CPP_USE_RAW_UNION)?.value;
+    const cppOption : caller.CppOption = {      
         use_line_map: useMap === true,
         use_error: useError === true,
         use_raw_union: useRawUnion === true,
@@ -476,8 +474,9 @@ const handleCpp = async (s :JobResult) => {
 }
 
 const handleGo = async (s :JobResult) => {
+    const usePut = commonUI.config.get(Language.GO)?.config.get(ConfigKey.GO_USE_PUT)?.value;
     const goOption : caller.GoOption ={
-        use_put: true,
+        use_put: usePut === true,
     }
     await handleLanguage(s,caller.getGoCode,Language.GO,"go",goOption);
 }
@@ -691,6 +690,10 @@ const fileName :InputListElement = {
     }));
     const go = new Map<string,InputListElement>();
     go.set(ConfigKey.COMMON_FILE_NAME,fileName);
+    go.set(ConfigKey.GO_USE_PUT,{
+        "type": "checkbox",
+        "value": false,
+    });
     commonUI.config.set(Language.GO,languageSpecificConfig(go,ConfigKey.COMMON_FILE_NAME,(change) => {
         updateGenerated();
     }));
@@ -704,15 +707,15 @@ const fileName :InputListElement = {
         "type": "checkbox",
         "value": false,
     });
-    cpp.set(ConfigKey.EXPAND_INCLUDE,{
+    cpp.set(ConfigKey.CPP_EXPAND_INCLUDE,{
         "type": "checkbox",
         "value": false,
     })
-    cpp.set(ConfigKey.USE_ERROR,{
+    cpp.set(ConfigKey.CPP_USE_ERROR,{
         "type": "checkbox",
         "value": false,
     });
-    cpp.set(ConfigKey.USE_RAW_UNION,{
+    cpp.set(ConfigKey.CPP_USE_RAW_UNION,{
         "type": "checkbox",
         "value": false,
     });

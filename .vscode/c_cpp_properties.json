@@ -4,7 +4,8 @@
             "name": "Win32",
             "includePath": [
                 "${workspaceFolder}/src/**",
-                "C:/workspace/utils_backup/src/include"
+                "C:/workspace/utils_backup/src/include",
+                "${workspaceFolder}/built/native/Debug/_deps/googletest-src/googletest/src",
             ],
             "defines": [
                 "_DEBUG",

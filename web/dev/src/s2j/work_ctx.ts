@@ -12,7 +12,7 @@ declare class Go {
     run(instance: WebAssembly.Instance): Promise<void>;
     importObject: WebAssembly.Imports;
     // for use in the browser set by go
-    json2goGenerator :((sourceCode :string,args :string[]) => { stdout: string , stderr: string , code: number}) | undefined;
+    json2goGenerator? :(sourceCode :string,args :string[]) => { stdout: string , stderr: string , code: number};
 }
 
 
