@@ -28,6 +28,28 @@ core-->middle
 core-->common
 ```
 
+AST 解析プログラム = tool/src2json は以上を以下のような関係で使っている
+
+```mermaid
+flowchart
+ast/stream.h/Streamクラス-->|逐次呼び出し|lexer/lexer.h/parse_one関数
+ast/parse.h/Parserクラス-->|トークナイザとして使用|ast/stream.h/Streamクラス
+tool/src2json-->|パーサー呼び出し|ast/parse.h/Parserクラス
+ast/parse.h/Parserクラス-->|AST|tool/src2json
+
+
+tool/src2json-->|入力ファイルの管理|common/file.h/FileSetクラス
+
+common/file.h/FileSetクラス-->|個別のファイルの管理|common/file.h/Fileクラス
+
+common/file.h/Fileクラス-->|入力|ast/stream.h/Streamクラス
+
+tool/src2json-->|ASTの意味解析/ASTノードの置換|middle/各関数
+tool/src2json-->|importの解決|middle/resolve_import.h
+tool/src2json-->|ASTの型解析|middle/typing.h/Typingクラス
+
+```
+
 ## 開発者メモ
 
 ### StructType を make_shared している箇所

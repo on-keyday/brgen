@@ -26,6 +26,7 @@ monaco.editor.defineTheme("brgen-theme", {
 
 monaco.languages.onLanguage(BRGEN_ID,()=>{
     disposeables.forEach((d)=>d.dispose());
+    disposeables = [];
     disposeables.push(monaco.languages.registerDocumentSemanticTokensProvider(BRGEN_ID,{
         getLegend: ()=> {
             return {

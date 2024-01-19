@@ -45,6 +45,8 @@ ToDo リストです(2023/1/15)
   - Array とかに対しておんなじ形式?
 - WebPlayground を React とかモダンなウェブフレームワーク使うやつに変える
 - prefix bit + struct 型にジェネレーターを対応させる
+- WebPlayground の行マッピング(C++)を Monaco エディターの仕組みを使ったものに置き換える
+  - dirty hack すぎる
 
 # Done リスト
 

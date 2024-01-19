@@ -157,11 +157,13 @@ setStyle(container2);
 setStyle(title_bar);
 title_bar.innerText = "Brgen Web Playground";
 title_bar.style.textAlign = "center";
-
+const editor_model = monaco.editor.createModel("", "brgen");
 const editorUI = {
     container1: container1,
     container2: container2,
+    editorModel: editor_model,
     editor: monaco.editor.create(container1,{
+        model: editor_model,
         lineHeight: 20,
         automaticLayout: true,
         colorDecorators: true,
@@ -178,7 +180,7 @@ const editorUI = {
     setDefault: () => {
         editorUI.generated.setModel(editorUI.generated_model);
     },
-}
+} as const;
 
 
 
@@ -555,21 +557,17 @@ window.addEventListener("keydown",async (e) => {
 });
 
 // monaco.languages.register({ id: 'brgen' });
-const editor_model =  monaco.editor.createModel("", "brgen");
-
 
 
 const onContentUpdate = async (e :monaco.editor.IModelContentChangedEvent)=>{
     e.changes.forEach((change)=>{
         console.log(change);
     });
-    options.setSourceCode(editor_model.getValue());
+    options.setSourceCode(editorUI.editorModel.getValue());
     await updateGenerated();
 }
 
-editor_model.onDidChangeContent(onContentUpdate)
-
-editorUI.editor.setModel(editor_model);
+editorUI.editorModel.onDidChangeContent(onContentUpdate)
 
 interface Internal {
     languageElement :HTMLElement|null;
@@ -733,7 +731,7 @@ const fileName :InputListElement = {
 }
 
 commonUI.changeLanguageConfig(options.language_mode);
-editor_model.setValue(getSourceCode());
+editorUI.editorModel.setValue(getSourceCode());
 
 document.getElementById(ElementID.BALL)?.remove();
 document.getElementById(ElementID.BALL_BOUND)?.remove();
