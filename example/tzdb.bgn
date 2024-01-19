@@ -1,0 +1,28 @@
+
+format TZHeader:
+    tzMagic: "TZif"
+    tzVersion: u8
+    tzReserved: [15]u8
+    tzTimeIsUTCCount: u32
+    tzTimeIsStdCount: u32
+    tzTimeLeapCount: u32
+    tzTimeCount :u32
+    tzTypeCount: u32
+    tzCharCount: u32
+
+format TZTime:
+    tzTime: u32
+
+format TZType:
+    tzGmtOffset: u32
+    tzIsDst: u8
+    tzAbbrIndex: u8
+
+format TZChar:
+    tzChar: [..]u8
+    :"\0"
+
+format TZLeap:
+    tzLeapTime: u32
+    tzLeapGmtOffset: u32
+

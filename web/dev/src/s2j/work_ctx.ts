@@ -27,6 +27,13 @@ class RequestQueue {
         this.#msgQueue.push(ev);
     }
 
+    repostRequest(ev: JobRequest) {
+        console.timeEnd(`msg handling ${ev.jobID}`) // cancel previous
+        console.log(`requeueing ${ev.jobID}`)
+        console.time(`msg queueing ${ev.jobID}`)
+        this.#msgQueue.push(ev);
+    }
+
     popRequest(): JobRequest | undefined {
         const r = this.#msgQueue.shift();
         if(r !== undefined){
@@ -161,13 +168,7 @@ export class EmWorkContext  {
     async #exec(e :JobRequest, args :string[]) {
         const id = e.jobID;
         if (this.#textCapture.jobId !== -1) {
-            const res: JobResult = {
-                lang: e.lang,
-                jobID: id,
-                err: new Error("previous job is not finished"),
-                code: -1,
-            };
-            this.#postResult(res);
+            this.#msgQueue.repostRequest(e);
             return;
         }
         e.arguments?.forEach((v) => {

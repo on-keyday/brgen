@@ -55,10 +55,9 @@ monaco.languages.onLanguage(BRGEN_ID,()=>{
             tagMap.set(ast2ts.TokenTag.punct,3);
             tagMap.set(ast2ts.TokenTag.comment,4);
             let prevLine = 1;      
-            let prevChar = 1;   
+            let prevChar = 0;   
             const data : number[] = [];   
-            tokens.tokens.forEach((t: ast2ts.Token)=>{
-                
+            tokens.tokens.forEach((t: ast2ts.Token)=>{                
                 const tokenType = tagMap.get(t.tag);
                 if(tokenType === undefined){
                     return;
@@ -66,12 +65,13 @@ monaco.languages.onLanguage(BRGEN_ID,()=>{
                 const startAt = model.getPositionAt(t.loc.pos.begin);
                 const endAt = model.getPositionAt(t.loc.pos.end);
                 const line = startAt.lineNumber;
-                const char = startAt.column;
+                const char = startAt.column-1;
                 const length = endAt.column - startAt.column;
                 data.push(line - prevLine,prevLine == line ? char - prevChar : char, length, tokenType,0);
                 prevLine = line;
                 prevChar = char;
             })
+            console.log("token: ",data);
             return {
                 data: new Uint32Array(data),
             } as monaco.languages.SemanticTokens;
