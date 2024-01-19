@@ -1,5 +1,7 @@
 
 import * as monaco from  "../../node_modules/monaco-editor/esm/vs/editor/editor.api.js";
+import '../../node_modules/monaco-editor/esm/vs/editor/contrib/semanticTokens/browser/documentSemanticTokens.js';
+import '../../node_modules/monaco-editor/esm/vs/editor/contrib/semanticTokens/browser/viewportSemanticTokens.js';
 import * as caller from "./caller.js";
 import {ast2ts} from "../../node_modules/ast2ts/index.js";
 
@@ -52,10 +54,11 @@ monaco.languages.onLanguage(BRGEN_ID,()=>{
             tagMap.set(ast2ts.TokenTag.int_literal,3);
             tagMap.set(ast2ts.TokenTag.punct,3);
             tagMap.set(ast2ts.TokenTag.comment,4);
-            let prevLine = 0;      
-            let prevChar = 0;   
+            let prevLine = 1;      
+            let prevChar = 1;   
             const data : number[] = [];   
             tokens.tokens.forEach((t: ast2ts.Token)=>{
+                
                 const tokenType = tagMap.get(t.tag);
                 if(tokenType === undefined){
                     return;
