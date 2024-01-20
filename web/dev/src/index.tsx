@@ -1,10 +1,10 @@
 
 import "../node_modules/destyle.css/destyle.min.css";
-import * as monaco from "../node_modules/monaco-editor/esm/vs/editor/editor.api.js";
-import "../node_modules/monaco-editor/esm/vs/language/json/monaco.contribution.js"
-import "../node_modules/monaco-editor/esm/vs/basic-languages/cpp/cpp.contribution.js"
-import "../node_modules/monaco-editor/esm/vs/basic-languages/go/go.contribution.js"
-import {ast2ts} from "../node_modules/ast2ts/index.js";
+import * as monaco from "monaco-editor";
+import "monaco-editor/esm/vs/language/json/monaco.contribution"
+import "monaco-editor/esm/vs/basic-languages/cpp/cpp.contribution"
+import "monaco-editor/esm/vs/basic-languages/go/go.contribution"
+import {ast2ts} from "ast2ts";
 import * as caller from "./s2j/caller.js";
 import "./s2j/brgen_lsp.js";
 import { JobResult,Language,LanguageList } from "./s2j/msg.js";
@@ -658,6 +658,8 @@ const commonUI = {
 commonUI.title_bar.appendChild(commonUI.language_select);
 commonUI.title_bar.appendChild(commonUI.copy_button);
 commonUI.title_bar.appendChild(commonUI.github_link);
+
+
 
 
 const languageSpecificConfig = (conf :Map<string,InputListElement>,default_ :string,change: (change: InputListElement)=>void):LanguageConfig => {

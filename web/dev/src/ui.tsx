@@ -1,3 +1,5 @@
+
+
 export type CSS = Partial<CSSStyleDeclaration>;
 
 export const setStyle = (e :HTMLElement,css ?:CSS) => {
