@@ -50,4 +50,6 @@ def generate_definition(block :ast.IndentBlock):
 
 core/ast/tool(C++)や ast2go/gen(Go) ディレクトリ内にいくつか便利なツールが用意されている
 
-tool/Stringer クラス(C++)|gen/ExprStringer クラス(Go) - Expr 型ノードをその言語の式の文字列に変換する
+tool/stringer.h/Stringer クラス(C++)|gen/gen.go/ExprStringer クラス(Go) - Expr 型ノードをその言語の式の文字列に変換する
+
+tool/sort.h/FormatSorter クラス - Format を AST から抽出して依存関係の順に並び替える(トポロジカルソート)

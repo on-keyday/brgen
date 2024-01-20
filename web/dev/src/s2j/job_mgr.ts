@@ -1,7 +1,7 @@
 
 import {JobRequest,JobResult, RequestLanguage }  from "./msg.js";
 
-
+export type TraceID = number|null;
 export class JobManager {
     #worker :Worker;
     #resolverMap = new Map<number, {resolve : (value :JobResult) => void, reject : (reason :any) => void}>();
@@ -29,11 +29,12 @@ export class JobManager {
         }
     }
 
-    getRequest(lang :RequestLanguage,sourceCode :string) :JobRequest {
+    getRequest(traceID :TraceID,lang :RequestLanguage,sourceCode :string) :JobRequest {
         const id = this.#jobID;
         this.#jobID++;
         const req :JobRequest = {
             lang,
+            traceID,
             jobID :id,
             sourceCode
         };

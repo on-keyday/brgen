@@ -37,7 +37,7 @@ monaco.languages.onLanguage(BRGEN_ID,()=>{
             } as monaco.languages.SemanticTokensLegend;
         },
         provideDocumentSemanticTokens: async(model, lastResultId, token)=> {
-            const result = await caller.getTokens(model.getValue());
+            const result = await caller.getTokens(null,model.getValue(),{interpret_as_utf16:true});
             if(result.code !== 0){
                 console.log("failed ",result);
                 return null;

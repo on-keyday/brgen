@@ -11,9 +11,8 @@ import { JobResult,Language,LanguageList } from "./s2j/msg.js";
 import { makeButton, makeLink, makeListBox, setStyle, makeInputList, InputListElement } from "./ui";
 
 import * as inc from "./cpp_include";
+import { TraceID } from "./s2j/job_mgr";
 
-
-//import "./hello"
 
 // first, load workers
 caller.loadWorkers();
@@ -256,21 +255,28 @@ const setGenerated =async (code :string,lang: string) => {
 
 
 
-const editorAlreadyUpdated = (s :JobResult) => {
-    if(s?.originalSourceCode !== editorUI.editor.getValue()){
-        console.log(`already updated jobID: ${s.jobID}`);
-        return true;
+
+const updateTracer = {
+    traceID: 0,
+    getTraceID: () =>{
+        return updateTracer.traceID++;
+    },
+    editorAlreadyUpdated: (s :JobResult) => {
+        if(updateTracer.traceID !== s.traceID){
+            console.log(`already updated traceID: ${s.traceID} jobID: ${s.jobID}`);
+            return true;
+        }
+        return false;
     }
-    return false;
-}
+};
 
 // returns true if updated
-const handleLanguage = async (s :JobResult,generate:(src :string,option :any)=>Promise<JobResult>,lang :Language,view_lang: string,option? :any) => {
+const handleLanguage = async (s :JobResult,generate:(id :TraceID,src :string,option :any)=>Promise<JobResult>,lang :Language,view_lang: string,option? :any) => {
     if(s.stdout===undefined) throw new Error("stdout is undefined");
-    const res = await generate(s.stdout,option).catch((e) => {
+    const res = await generate(s.traceID,s.stdout,option).catch((e) => {
         return e as JobResult;
     });
-    if(editorAlreadyUpdated(s)) {
+    if(updateTracer.editorAlreadyUpdated(s)) {
         return false;
     }
     if(lang!==options.language_mode) {
@@ -308,12 +314,12 @@ const mappingCode = (mappingInfo :MappingInfo[],origin :JobResult,lang :Language
     const generated_line_numbers_element = editorUI.container2.getElementsByClassName("line-numbers");
     if(generated_line_numbers_element?.length === 0) {
         if(count > 10) {
-            console.log(`coloring timeout: jobID ${origin.jobID}`);
+            console.log(`coloring timeout: traceID: ${origin.traceID} jobID ${origin.jobID}`);
             return;
         }
         // wait for monaco-editor's update
         setTimeout(() => {
-            if(editorAlreadyUpdated(origin)) return;
+            if(updateTracer.editorAlreadyUpdated(origin)) return;
             mappingCode(mappingInfo,origin,lang,count+1);
         },1);
         return;
@@ -406,7 +412,7 @@ const mappingCode = (mappingInfo :MappingInfo[],origin :JobResult,lang :Language
         observer1.disconnect();
         observer2.disconnect();
         const mapping = commonUI.config.get(lang)?.config.get(ConfigKey.CPP_SOURCE_MAP)?.value === true;
-        if(editorAlreadyUpdated(origin)||lang !== options.language_mode||!mapping)  {
+        if(updateTracer.editorAlreadyUpdated(origin)||lang !== options.language_mode||!mapping)  {
             useMapping.forEach((e) => {
                 if(e.sourceElement) {
                     e.sourceElement.style.backgroundColor = '';
@@ -420,7 +426,7 @@ const mappingCode = (mappingInfo :MappingInfo[],origin :JobResult,lang :Language
             }
             return;
         }
-        mappingCode(mappingInfo,origin,lang,0);
+        mappingCode(mappingInfo,origin,lang,0);// recursive call
     };
     const observer1 = new MutationObserver(recoloring);
     observer1.observe(source_line_element,{
@@ -447,8 +453,8 @@ const handleCpp = async (s :JobResult) => {
     };
     let result : JobResult | undefined = undefined;
     let mappingInfo :any;
-    const updated = await handleLanguage(s,async(src :string,option :any) => {
-        result = await caller.getCppCode(src,option as caller.CppOption);
+    const updated = await handleLanguage(s,async(id: TraceID,src :string,option :any) => {
+        result = await caller.getCppCode(id,src,option as caller.CppOption);
         if(result.code === 0&&cppOption.use_line_map){
            const split = result.stdout!.split("############");
            result.stdout = split[0];
@@ -466,7 +472,7 @@ const handleCpp = async (s :JobResult) => {
         // wait for editor update 
         setTimeout(() => {
             if(result===undefined) throw new Error("result is undefined");
-            if(editorAlreadyUpdated(s)) return;
+            if(updateTracer.editorAlreadyUpdated(s)) return;
             console.log(mappingInfo);
             mappingCode(mappingInfo.line_map,s,Language.CPP,0);
         },1);
@@ -481,12 +487,12 @@ const handleGo = async (s :JobResult) => {
     await handleLanguage(s,caller.getGoCode,Language.GO,"go",goOption);
 }
 
-const handleJSONOutput = async (value :string,generator:(srcCode :string,option:any)=>Promise<JobResult>) => {
-    const s = await generator(value,
+const handleJSONOutput = async (id :TraceID,value :string,generator:(id :TraceID,srcCode :string,option:any)=>Promise<JobResult>) => {
+    const s = await generator(id,value,
     {filename: "editor.bgn"}).catch((e) => {
         return e as JobResult;
     });
-    if(editorAlreadyUpdated(s)) {
+    if(updateTracer.editorAlreadyUpdated(s)) {
         return;
     }
     if(s.stdout===undefined) throw new Error("stdout is undefined");
@@ -497,13 +503,14 @@ const handleJSONOutput = async (value :string,generator:(srcCode :string,option:
     return;
 }
 
-const handleTokenize = async (value :string) => {
-    await handleJSONOutput(value,caller.getTokens);
+const handleTokenize = async (id :TraceID,value :string) => {
+    await handleJSONOutput(id,value,caller.getTokens);
 }
 
-const handleDebugAST = async (value :string) => {
-    await handleJSONOutput(value,caller.getDebugAST);
+const handleDebugAST = async (id :TraceID,value :string) => {
+    await handleJSONOutput(id,value,caller.getDebugAST);
 }
+
 
 const updateGenerated = async () => {
     const value = editorUI.editor.getValue();
@@ -511,17 +518,18 @@ const updateGenerated = async () => {
         editorUI.setDefault();
         return;
     }
+    const traceID = updateTracer.getTraceID();
     if(options.language_mode === Language.TOKENIZE) {
-       return await handleTokenize(value);
+       return await handleTokenize(traceID,value);
     }
     if(options.language_mode === Language.JSON_DEBUG_AST) {
-        return await handleDebugAST(value);
+        return await handleDebugAST(traceID,value);
     }
-    const s = await caller.getAST(value,
+    const s = await caller.getAST(traceID,value,
     {filename: "editor.bgn"}).catch((e) => {
         return e as JobResult;
     });
-    if(editorAlreadyUpdated(s)) {
+    if(updateTracer.editorAlreadyUpdated(s)) {
         return;
     }
     if(s.stdout===undefined) throw new Error("stdout is undefined");

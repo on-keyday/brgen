@@ -21,6 +21,7 @@ const LanguageList = [
 
 interface JobRequest {
     readonly lang :RequestLanguage
+    readonly traceID:number|null
     readonly jobID :number
     sourceCode? :string
     arguments? :string[]
@@ -33,7 +34,8 @@ interface JobResult {
     originalSourceCode? :string
     err? :Error
     code :number
-    jobID :number
+    readonly jobID :number
+    readonly traceID:number|null
 }
 
 export {RequestLanguage as Language,RequestLanguage,LanguageList,JobRequest,JobResult};

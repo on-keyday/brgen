@@ -1,5 +1,5 @@
-import {RequestLanguage,JobRequest,JobResult }  from "./msg.js";
-import {JobManager} from "./job_mgr.js";
+import {RequestLanguage }  from "./msg.js";
+import {JobManager,TraceID} from "./job_mgr.js";
 
 
 const WorkerFactory = class {
@@ -38,10 +38,10 @@ const factory = new WorkerFactory();
 
 export interface CallOption {
     filename? :string
+    interpret_as_utf16? :boolean
 }
 
 export interface AstOption extends CallOption {
-    interpret_as_utf16? :boolean
 }
 
 export interface CppOption extends CallOption {
@@ -61,33 +61,26 @@ export const loadWorkers = () => {
     factory.getJSON2GoWorker();
 }
 
-const getRequest = (mgr :JobManager , lang :RequestLanguage,sourceCode :string,options? :CallOption) :JobRequest => {
-    const req = mgr.getRequest(lang,sourceCode);
-    if(options){
-        if(options.filename){
-            req.arguments = ["--stdin-name",options.filename];
-        }
-    }
-    return req;
-}
 
-export const getAST = (sourceCode :string,options? :AstOption) => {
+
+export const getAST = (id :TraceID,sourceCode :string,options? :AstOption) => {
     const mgr = factory.getSrc2JSONWorker();
-    const req = mgr.getRequest(RequestLanguage.JSON_AST,sourceCode);
+    const req = mgr.getRequest(id,RequestLanguage.JSON_AST,sourceCode);
     if(options){
+        req.arguments = [];
         if(options.filename){
-            req.arguments = ["--stdin-name",options.filename];
+            req.arguments.push( "--stdin-name",options.filename);
         }
         if(options.interpret_as_utf16) {
-            req.arguments = ["--interpret-mode","utf16"]
+            req.arguments.push("--interpret-mode","utf16");
         }
     }
     return mgr.doRequest(req);
 }
 
-export const getDebugAST = (sourceCode :string,options? :CallOption) => {
+export const getDebugAST = (id :TraceID,sourceCode :string,options? :CallOption) => {
     const mgr = factory.getSrc2JSONWorker();
-    const req = mgr.getRequest(RequestLanguage.JSON_DEBUG_AST,sourceCode);
+    const req = mgr.getRequest(id,RequestLanguage.JSON_DEBUG_AST,sourceCode);
     if(options){
         if(options.filename){
             req.arguments = ["--stdin-name",options.filename];
@@ -96,26 +89,30 @@ export const getDebugAST = (sourceCode :string,options? :CallOption) => {
     return mgr.doRequest(req);
 }
 
-export const getTokens = (sourceCode :string,options? :CallOption) => {
+export const getTokens = (id :TraceID,sourceCode :string,options? :CallOption) => {
     const mgr = factory.getSrc2JSONWorker();
-    const req = mgr.getRequest(RequestLanguage.TOKENIZE,sourceCode);
+    const req = mgr.getRequest(id,RequestLanguage.TOKENIZE,sourceCode);
     if(options){
+        req.arguments = [];
         if(options.filename){
-            req.arguments = ["--stdin-name",options.filename];
+            req.arguments.push("--stdin-name",options.filename);
+        }
+        if(options.interpret_as_utf16) {
+            req.arguments.push("--interpret-mode","utf16");
         }
     }
     return mgr.doRequest(req);
 }
 
-export const getCppPrototypeCode = (sourceCode :string,options? :CallOption) => {
+export const getCppPrototypeCode = (id :TraceID,sourceCode :string,options? :CallOption) => {
     const mgr = factory.getJSON2CppWorker();
-    const req= mgr.getRequest(RequestLanguage.CPP_PROTOTYPE,sourceCode);
+    const req= mgr.getRequest(id,RequestLanguage.CPP_PROTOTYPE,sourceCode);
     return mgr.doRequest(req);
 }
 
-export const getCppCode = (sourceCode :string,options? :CppOption) => {
+export const getCppCode = (id :TraceID,sourceCode :string,options? :CppOption) => {
     const mgr = factory.getJSON2Cpp2Worker();
-    const req = mgr.getRequest(RequestLanguage.CPP,sourceCode);
+    const req = mgr.getRequest(id,RequestLanguage.CPP,sourceCode);
     req.arguments = [];
     if(options?.use_line_map){
         req.arguments.push("--add-line-map");
@@ -129,9 +126,9 @@ export const getCppCode = (sourceCode :string,options? :CppOption) => {
     return mgr.doRequest(req);
 }
 
-export const getGoCode = (sourceCode :string,options? :GoOption) => {
+export const getGoCode = (id :TraceID,sourceCode :string,options? :GoOption) => {
     const mgr = factory.getJSON2GoWorker();
-    const req = mgr.getRequest(RequestLanguage.GO,sourceCode);
+    const req = mgr.getRequest(id,RequestLanguage.GO,sourceCode);
     if(options?.use_put){
         req.arguments = ["-use-put"];
     }
