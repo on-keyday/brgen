@@ -462,6 +462,7 @@ const handleCpp = async (s :JobResult) => {
         }
         if(result.code === 0&&expandInclude===true){
             const expanded = await inc.resolveInclude(result.stdout!,(url :string)=>{
+                if(updateTracer.editorAlreadyUpdated(s)) return;
                 setGenerated(`maybe external server call is delayed\nfetching ${url}`,"text/plain");
             });
             result.stdout = expanded;
