@@ -259,7 +259,7 @@ const setGenerated =async (code :string,lang: string) => {
 const updateTracer = {
     traceID: 0,
     getTraceID: () =>{
-        return updateTracer.traceID++;
+        return ++updateTracer.traceID;
     },
     editorAlreadyUpdated: (s :JobResult) => {
         if(updateTracer.traceID !== s.traceID){
