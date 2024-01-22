@@ -661,7 +661,7 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
         return exit_ok;
     }
 
-    if (!cap.std_output) {
+    if (!cap.ast_json) {
         print_error("stdout is disabled");
         return exit_err;
     }
@@ -738,7 +738,7 @@ bool init_hook() {
 thread_local out_callback_t out_callback = nullptr;
 thread_local void* out_callback_data = nullptr;
 
-extern "C" int libs2j_call(int argc, char** argv, const CAPABILITY* cap, out_callback_t cb, void* data) {
+extern "C" int libs2j_call(int argc, char** argv, CAPABILITY cap, out_callback_t cb, void* data) {
     if (argc == 0 || argv == nullptr) {
         return err_invalid;
     }
@@ -751,10 +751,7 @@ extern "C" int libs2j_call(int argc, char** argv, const CAPABILITY* cap, out_cal
             return {};
         };
     }
-    Capability cap2 = default_capability;
-    if (cap) {
-        cap2 = *cap;
-    }
+    auto cap2 = to_capability(cap);
     return src2json_main(argc, argv, cap2);
 }
 #else
