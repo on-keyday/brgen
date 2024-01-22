@@ -68,6 +68,10 @@ if("$ENV{S2J_USE_NETWORK}" STREQUAL "1")
 set(S2J_USE_NETWORK 1)
 endif()
 
+if("$ENV{S2J_LIB}" STREQUAL "1")  
+set(S2J_LIB 1)
+endif()
+
 add_subdirectory(src)
 
 

@@ -44,10 +44,27 @@ install(CODE "file(APPEND \"${CMAKE_INSTALL_PREFIX}/lib/go_wasm_exec.js\" \"expo
 return()
 endif()
 
+if(WIN32)
+  set(CMAKE_SHARED_LIBRARY_PREFIX "lib")
+  set(CMAKE_STATIC_LIBRARY_PREFIX "lib")
+endif()
+
+if(S2J_LIB)
+add_library(s2j SHARED "tool/src2json/src2json.cpp")
+target_compile_definitions(s2j PRIVATE SRC2JSON_DLL)
+target_link_libraries(s2j futils)
+install(TARGETS s2j DESTINATION "tool" OPTIONAL)
+endif()
+
 if(S2J_USE_NETWORK)
 target_sources(src2json PRIVATE "tool/src2json/network.cpp")
 target_link_libraries(src2json fnet fnetserv)
 add_compile_definitions(S2J_USE_NETWORK)
+if(S2J_LIB)
+target_sources(s2j PRIVATE "tool/src2json/network.cpp")
+target_link_libraries(s2j fnet fnetserv)
+add_compile_definitions(S2J_USE_NETWORK)
+endif()
 endif()
 
 add_executable(ctobgn "tool/ctobgn/main.cpp")

@@ -7,6 +7,9 @@
 #include "../common/print.h"
 #include <map>
 #include <atomic>
+#ifdef SRC2JSON_DLL
+#include "capi_export.h"
+#endif
 #include "version.h"
 #include <json/json_export.h>
 #include <json/to_string.h>

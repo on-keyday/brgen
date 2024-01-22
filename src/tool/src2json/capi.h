@@ -1,6 +1,14 @@
 /*license*/
 #pragma once
 
+#ifndef S2J_EXPORT
+#if _WIN32
+#define S2J_EXPORT __declspec(dllimport)
+#else
+#define S2J_EXPORT
+#endif
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #else
@@ -47,7 +55,7 @@ constexpr auto default_capability = Capability{
 #endif
 
 typedef void (*out_callback_t)(const char* str, size_t len, bool is_stderr, void* data);
-int libs2j_call(int argc, char** argv, const CAPABILITY* cap, out_callback_t out_callback, void* data);
+S2J_EXPORT int libs2j_call(int argc, char** argv, const CAPABILITY* cap, out_callback_t out_callback, void* data);
 #ifdef __cplusplus
 }
 #endif

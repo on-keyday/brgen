@@ -21,6 +21,10 @@
 #include <core/ast/kill_node.h>
 #include <wrap/cin.h>
 #include <unicode/utf/view.h>
+#ifdef SRC2JSON_DLL
+#include "hook.h"
+#include "capi_export.h"
+#endif
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
@@ -728,12 +732,16 @@ extern "C" int EMSCRIPTEN_KEEPALIVE emscripten_main(const char* cmdline) {
 bool init_hook() {
     cout.set_hook_write(cout_hook);
     cerr.set_hook_write(cerr_hook);
+    return true;
 }
 
 thread_local out_callback_t out_callback = nullptr;
 thread_local void* out_callback_data = nullptr;
 
 extern "C" int libs2j_call(int argc, char** argv, const CAPABILITY* cap, out_callback_t cb, void* data) {
+    if (argc == 0 || argv == nullptr) {
+        return err_invalid;
+    }
     static bool init = init_hook();
     if (cb) {
         out_callback = cb;

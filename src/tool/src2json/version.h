@@ -15,6 +15,7 @@ constexpr auto src2json_version = SRC2JSON_VERSION;
 
 constexpr auto exit_ok = 0;
 constexpr auto exit_err = 1;
+constexpr auto err_invalid = 2;
 
 int src2json_main(int argc, char** argv, const Capability& cap);
 
