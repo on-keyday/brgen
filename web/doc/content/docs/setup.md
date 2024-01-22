@@ -43,3 +43,6 @@ TODO(on-keyday): apt-get,brew,winget 等への対応
 `S2J_USE_NETWORK`環境変数を`1`に設定してビルドすることで src2json を http 経由で利用できるようになるモードが使用できるようになります。
 このモードを利用する際は初回ビルド時にクローンされる`utils`ディレクトリ内で`. build shared Release fnet`と`. build shared Release fnetserv`を実行して、`libfnet`と`libfnetserv`をビルドする必要があります。
 現在、windows 環境では動く可能性が高いですが、他環境での動作は保証されません。
+
+`S2J_LIB`環境変数を`1`に設定してビルドすることで src2json を共有ライブラリの形でビルドできます。
+公開する関数は`libs2j_call`関数で引数に argv,argc,capability(利用機能の制限),io_callback,io_callback_data を取ります。詳しくはソースコードを御覧ください。

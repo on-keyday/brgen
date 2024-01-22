@@ -4,6 +4,7 @@ package s2jgo
 
 import (
 	"errors"
+	"fmt"
 	"path/filepath"
 	"runtime"
 	"unsafe"
@@ -68,27 +69,48 @@ const (
 )
 
 type outData struct {
-	stdout []byte
-	stderr []byte
+	cb            func(data []byte, isStdErr bool)
+	stderrCapture []byte
 }
 
 func callback(data unsafe.Pointer, size uintptr, isStdErr uintptr, ctx unsafe.Pointer) uintptr {
 	out := (*outData)(ctx)
+	if out.cb != nil {
+		out.cb(unsafe.Slice((*byte)(data), size), isStdErr != 0)
+	}
 	if isStdErr != 0 {
-		out.stderr = append(out.stderr, unsafe.Slice((*byte)(data), size)...)
-	} else {
-		out.stdout = append(out.stdout, unsafe.Slice((*byte)(data), size)...)
+		out.stderrCapture = append(out.stderrCapture, unsafe.Slice((*byte)(data), size)...)
 	}
 	return 0
 }
 
 type Result struct {
-	Code   int
 	Stdout []byte
 	Stderr []byte
 }
 
 func (s *Src2JSON) Call(args []string, cap Capability) (*Result, error) {
+	var stdout, stderr []byte
+	err := s.CallIOCallback(args, cap, func(data []byte, isStdErr bool) {
+		if isStdErr {
+			stderr = append(stderr, data...)
+		} else {
+			stdout = append(stdout, data...)
+		}
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &Result{
+		Stdout: stdout,
+		Stderr: stderr,
+	}, nil
+}
+
+func (s *Src2JSON) CallIOCallback(args []string, cap Capability, cb func(data []byte, isStdErr bool)) error {
+	if len(args) == 0 {
+		return errors.New("args must not be empty")
+	}
 	argv_vec := make([]uintptr, len(args)+1)
 	cstrs := make([][]byte, len(args))
 	for i, arg := range args {
@@ -99,18 +121,19 @@ func (s *Src2JSON) Call(args []string, cap Capability) (*Result, error) {
 	argc := uintptr(len(args))
 	argv := uintptr(unsafe.Pointer(unsafe.SliceData(argv_vec)))
 	out_callback := windows.NewCallback(callback)
-	data := &outData{}
+	data := &outData{
+		cb: cb,
+	}
 	ret, _, err := s.libs2j_call.Call(argc, argv, uintptr(cap), out_callback, uintptr(unsafe.Pointer(data)))
 	runtime.KeepAlive(cstrs)
 	runtime.KeepAlive(argv_vec)
 	runtime.KeepAlive(out_callback)
 	runtime.KeepAlive(data)
 	if err != nil && err != windows.ERROR_SUCCESS {
-		return nil, err
+		return err
 	}
-	return &Result{
-		Code:   int(ret),
-		Stdout: data.stdout,
-		Stderr: data.stderr,
-	}, nil
+	if ret != 0 {
+		return fmt.Errorf("libs2j_call returned non-zero: %s", string(data.stderrCapture))
+	}
+	return nil
 }
