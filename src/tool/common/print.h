@@ -1,4 +1,5 @@
 /*license*/
+#pragma once
 #include <console/ansiesc.h>
 #include <wrap/cout.h>
 #ifdef SRC2JSON_DLL
@@ -24,7 +25,7 @@ enum class ColorMode {
 
 inline thread_local ColorMode cerr_color_mode = ColorMode::auto_color;
 
-void print_error(auto&&... msg) {
+inline void print_error(auto&&... msg) {
     assert(cerr_color_mode != ColorMode::auto_color);
     auto p = futils::wrap::pack();
     p << prefix_loc();
@@ -42,7 +43,7 @@ void print_error(auto&&... msg) {
     cerr << p.pack();
 }
 
-void print_warning(auto&&... msg) {
+inline void print_warning(auto&&... msg) {
     assert(cerr_color_mode != ColorMode::auto_color);
     auto p = futils::wrap::pack();
     p << prefix_loc();
@@ -60,7 +61,7 @@ void print_warning(auto&&... msg) {
     cerr << p.pack();
 }
 
-void print_note(auto&&... msg) {
+inline void print_note(auto&&... msg) {
     assert(cerr_color_mode != ColorMode::auto_color);
     auto p = futils::wrap::pack();
     p << prefix_loc();
