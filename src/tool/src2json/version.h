@@ -1,4 +1,7 @@
 
+#pragma once
+#include "capi.h"
+
 #ifndef BRGEN_VERSION
 #define BRGEN_VERSION "0.0.0 (unversioned)"
 #endif
@@ -12,10 +15,6 @@ constexpr auto src2json_version = SRC2JSON_VERSION;
 
 constexpr auto exit_ok = 0;
 constexpr auto exit_err = 1;
-
-struct Capability {
-    bool network = true;
-};
 
 int src2json_main(int argc, char** argv, const Capability& cap);
 

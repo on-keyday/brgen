@@ -22,6 +22,11 @@ brgen(CLI)
 
 ```mermaid
 flowchart
+A-->B
+```
+
+```mermaid
+flowchart
 brgen.json-.->|入力|brgen
 brgen-->|呼び出し|src2json
 input_file[定義ファイル]-.->|入力|src2json
@@ -92,8 +97,28 @@ WebWorker(generator) ->>+ WebPlaygroundフロントエンド : 生成コード
 WebPlaygroundフロントエンド　->>+ Monaco-Editor : 生成コードエディター変更
 ```
 
+プロダクト全体像
+
 ```mermaid
 flowchart
+
+コードジェネレーター-->C++ジェネレーター
+コードジェネレーター-->Goジェネレーター
+定義ファイルフォーマット-->定義ファイルパーサー
+定義ファイルフォーマット-->定義サンプル
+定義ファイルパーサー-->C++用AST
+C++用AST-->C++ジェネレーター
+C++用AST-->ASTジェネレーター
+定義ファイルパーサー-->LSPサーバー&VSCodeExtension
+定義ファイルパーサー-->WebPlayground
+コードジェネレーター-->WebPlayground
+ASTジェネレーター-->Go用AST
+ASTジェネレーター-->Typescript用AST
+Go用AST-->Goジェネレーター
+Typescript用AST-->WebPlayground
+Typescript用AST-->LSPサーバー&VSCodeExtension
+定義ファイルパーサー-->CLI
+コードジェネレーター-->CLI
 ```
 
 {{< mermaid >}}

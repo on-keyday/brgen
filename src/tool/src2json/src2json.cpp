@@ -395,6 +395,10 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
     files.set_utf_mode(flags.input_mode, flags.interpret_mode);
     brgen::File* input = nullptr;
     if (flags.argv_mode) {
+        if (!cap.argv) {
+            print_error("argv mode is disabled");
+            return exit_err;
+        }
         if (flags.input_mode != brgen::UtfMode::utf8) {
             print_error("argv mode only support utf8");
             return exit_err;
@@ -411,6 +415,10 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
         }
     }
     else if (flags.stdin_mode) {
+        if (!cap.std_input) {
+            print_error("stdin mode is disabled");
+            return exit_err;
+        }
         auto& cin = futils::wrap::cin_wrap();
         if (cin.is_tty()) {
             print_error("not support repl mode");
@@ -441,6 +449,10 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
         }
     }
     else {
+        if (!cap.file) {
+            print_error("file mode is disabled");
+            return exit_err;
+        }
         auto ok = files.add_file(name);
         if (!ok) {
             print_error("cannot open file ", name, " code=", ok.error());
@@ -454,6 +466,10 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
     }
 
     if (flags.check_ast) {
+        if (!cap.check_ast) {
+            print_error("check-ast mode is disabled");
+            return exit_err;
+        }
         if (flags.input_mode != brgen::UtfMode::utf8) {
             print_error("check-ast mode only support utf8");
             return exit_err;
@@ -504,6 +520,10 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
     };
 
     if (flags.lexer) {
+        if (!cap.lexer) {
+            print_error("lexer mode is disabled");
+            return exit_err;
+        }
         auto res = do_lex(input, flags.tokenization_limit).transform_error(brgen::to_source_error(files));
         if (!res) {
             report_error(std::move(res.error()), false, "tokens");
@@ -519,6 +539,11 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
         return exit_ok;
     }
 
+    if (!cap.parser) {
+        print_error("parser mode is disabled");
+        return exit_err;
+    }
+
     auto res = do_parse(input, flags.collect_comments).transform_error(brgen::to_source_error(files));
 
     if (!res) {
@@ -531,6 +556,10 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
     });
 
     if (!flags.not_resolve_import) {
+        if (!cap.importer) {
+            print_error("config.import is disabled");
+            return exit_err;
+        }
         auto res2 = brgen::middle::resolve_import(*res, files).transform_error(brgen::to_source_error(files));
         if (!res2) {
             report_error(std::move(res2.error()));
@@ -628,6 +657,11 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
         return exit_ok;
     }
 
+    if (!cap.std_output) {
+        print_error("stdout is disabled");
+        return exit_err;
+    }
+
     brgen::JSONWriter d;
     d.set_no_colon_space(true);
     if (flags.debug_json) {
@@ -644,8 +678,7 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
     return exit_ok;
 }
 
-// entry point of src2json
-int src2json_main(int argc, char** argv, const Capability& cap) {
+int src2json_main_noexcept(int argc, char** argv, const Capability& cap) {
     Flags flags;
     return futils::cmdline::templ::parse_or_err<std::string>(
         argc, argv, flags,
@@ -672,11 +705,49 @@ int src2json_main(int argc, char** argv, const Capability& cap) {
         true);
 }
 
+// entry point of src2json
+int src2json_main(int argc, char** argv, const Capability& cap) {
+    try {
+        return src2json_main_noexcept(argc, argv, cap);
+    } catch (const std::exception& e) {
+        print_error("uncaught exception: ", e.what());
+        return exit_err;
+    } catch (...) {
+        print_error("uncaught exception");
+        return exit_err;
+    }
+}
+
 #ifdef __EMSCRIPTEN__
 extern "C" int EMSCRIPTEN_KEEPALIVE emscripten_main(const char* cmdline) {
-    Capability cap;
+    Capability cap = default_capability;
     cap.network = false;
     return em_main(cmdline, src2json_main, cap);
+}
+#elif defined(SRC2JSON_DLL)
+bool init_hook() {
+    cout.set_hook_write(cout_hook);
+    cerr.set_hook_write(cerr_hook);
+}
+
+thread_local out_callback_t out_callback = nullptr;
+thread_local void* out_callback_data = nullptr;
+
+extern "C" int libs2j_call(int argc, char** argv, const CAPABILITY* cap, out_callback_t cb, void* data) {
+    static bool init = init_hook();
+    if (cb) {
+        out_callback = cb;
+        out_callback_data = data;
+        worker_hook() = [](futils::wrap::UtfOut& out, futils::view::rvec v) -> futils::file::file_result<void> {
+            out_callback(v.as_char(), v.size(), &out == &cerr, out_callback_data);
+            return {};
+        };
+    }
+    Capability cap2 = default_capability;
+    if (cap) {
+        cap2 = *cap;
+    }
+    return src2json_main(argc, argv, cap2);
 }
 #else
 
@@ -684,12 +755,6 @@ int main(int argc, char** argv) {
     futils::wrap::U8Arg _(argc, argv);
     cerr.set_virtual_terminal(true);  // ignore error
     cout.set_virtual_terminal(true);  // ignore error
-    try {
-        Capability cap;
-        return src2json_main(argc, argv, cap);
-    } catch (const std::exception& e) {
-        print_error("uncaught exception: ", e.what());
-        return exit_err;
-    }
+    return src2json_main(argc, argv, default_capability);
 }
 #endif

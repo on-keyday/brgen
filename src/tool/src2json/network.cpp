@@ -18,40 +18,10 @@
 #include <fnet/server/format_state.h>
 #include <timer/clock.h>
 #include <timer/to_string.h>
+#include "hook.h"
 namespace fnet = futils::fnet;
 
 std::atomic_bool stop = false;
-
-bool& is_worker_thread() {
-    static thread_local bool is_worker = false;
-    return is_worker;
-}
-
-std::string& worker_stdout_buffer() {
-    static thread_local std::string buffer;
-    return buffer;
-}
-
-std::string& worker_stderr_buffer() {
-    static thread_local std::string buffer;
-    return buffer;
-}
-
-futils::file::file_result<void> cout_hook(futils::wrap::UtfOut& out, futils::view::rvec v) {
-    if (is_worker_thread()) {
-        worker_stdout_buffer().append(v.as_char(), v.size());
-        return {};
-    }
-    return out.write_no_hook(v);
-}
-
-futils::file::file_result<void> cerr_hook(futils::wrap::UtfOut& out, futils::view::rvec v) {
-    if (is_worker_thread()) {
-        worker_stderr_buffer().append(v.as_char(), v.size());
-        return {};
-    }
-    return out.write_no_hook(v);
-}
 
 struct HeaderInfo {
     std::string method;
@@ -230,8 +200,10 @@ int network_main(const char* port, bool unsafe, const Capability& cap) {
         print_error("failed to prepare listener: ", p.error());
         return exit_err;
     }
-    cout.set_hook_write(cout_hook);
-    cerr.set_hook_write(cerr_hook);
+    if (!cout.get_hook_write()) {
+        cout.set_hook_write(cout_hook);
+        cerr.set_hook_write(cerr_hook);
+    }
     s->add_accept_thread(std::move(p->first));
     print_note(time_str(futils::timer::utc_clock.now()),
                ": listening on ",
