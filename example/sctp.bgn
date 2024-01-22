@@ -1,0 +1,222 @@
+
+format SCTPHeader:
+    srcPort :u16
+    dstPort :u16
+    verificationTag :u32
+    checksum :u32
+
+enum ChunkType:
+    :u6
+    DATA = 0
+    INIT = 1
+    INIT_ACK = 2
+    SACK = 3
+    HEARTBEAT = 4
+    HEARTBEAT_ACK = 5
+    ABORT = 6
+    SHUTDOWN = 7
+    SHUTDOWN_ACK = 8
+    ERROR = 9
+    COOKIE_ECHO = 10
+    COOKIE_ACK = 11
+    ECNE = 12
+    CWR = 13
+    SHUTDOWN_COMPLETE = 14
+    AUTH = 15
+    FORWARD_TSN = 192
+    ASCONF_ACK = 193
+    RE_CONFIG = 194
+    PAD = 195
+    RESERVED = 196  
+
+enum ChunkAction:
+    :u2
+    ABORT = 0
+    DISCARD = 1
+    KEEP = 2
+    SEND = 3
+
+format SCTPChunkHeaderFlags:
+    checkAction :ChunkAction
+    chunkType :ChunkType
+    match chunkType:
+        ChunkType.DATA:
+            reserved :u5
+            unordered :u1
+            beginningFragment :u1
+            endingFragment :u1
+        ChunkType.ABORT:
+            reserved :u7
+            t :u1
+        ChunkType.SHUTDOWN_COMPLETE:
+            reserved :u7
+            t :u1
+        ..:
+            reserved :u8
+
+
+
+format SCTPChunkHeader:
+    chunkAction :ChunkAction
+    chunkType :ChunkType
+    chunkFlags :u8
+    chunkLength :u16
+    chunkLength >= 4
+    chunkValue :[chunkLength - 4]u8
+
+format OptionalParameter:
+    parameterType :u16
+    parameterLength :u16
+    parameterLength >= 4
+    parameterValue :[parameterLength - 4]u8
+
+format DataChunk:
+    tsn :u32
+    streamId :u16
+    streamSeq :u16
+    protocolId :u32
+    userData :[..]u8
+
+format IPv4Address:
+    address :[4]u8
+
+format IPv6Address:
+    address :[16]u8
+
+format CookiePreservative:
+    suggestedCookieLife :u32
+
+format HostNameAddress:
+    name :[..]u8
+
+format SupportedAddressTypes:
+    addressTypes :[..]u8
+
+format InitChunk:
+    initiateTag :u32
+    aRwnd :u32
+    numOutboundStreams :u16
+    numInboundStreams :u16
+    initialTsn :u32
+    optionalParameters :[..]OptionalParameter
+
+format InitACK:
+    initiateTag :u32
+    aRwnd :u32
+    numOutboundStreams :u16
+    numInboundStreams :u16
+    initialTsn :u32
+    optionalParameters :[..]OptionalParameter
+
+format GapAckBlock:
+    start :u16
+    end :u16
+
+format SackChunk:
+    cumulativeTsnAck :u32
+    aRwnd :u32
+    numberOfGapAckBlocks :u16
+    numberOfDuplicateTsns :u16
+    gapAckBlocks :[numberOfGapAckBlocks]GapAckBlock
+    duplicateTsn :[numberOfDuplicateTsns]u32
+
+format HeartbeatChunk:
+    info :HeartBeatInfo
+
+format HeartBeatInfo:
+    heartbeatInfo :u16
+    heartbeatInfo >= 1
+    heartbeatLength :u16
+    sender_spec_data :[heartbeatLength]u8
+
+format HeartbeatAckChunk:
+    info :HeartBeatInfo
+
+format AbortAssociationChunk:
+    errorCauseData :[..]ErrorCause
+
+enum CauseCode:
+    :u16
+    INVALID_STREAM_IDENTIFIER = 1
+    MISSING_MANDATORY_PARAMETER = 2
+    STALE_COOKIE_ERROR = 3
+    OUT_OF_RESOURCE = 4
+    UNRESOLVABLE_ADDRESS = 5
+    UNRECOGNIZED_CHUNK_TYPE = 6
+    INVALID_MANDATORY_PARAMETER = 7
+    UNRECOGNIZED_PARAMETERS = 8
+    NO_USER_DATA = 9
+    COOKIE_RECEIVED_WHILE_SHUTTING_DOWN = 10
+    RESTART_OF_AN_ASSOCIATION_WITH_NEW_ADDRESSES = 11
+    USER_INITIATED_ABORT = 12
+    PROTOCOL_VIOLATION = 13
+
+format ErrorCause:
+    cause_code :CauseCode
+    cause_length :u16
+    cause_length >= 4
+    cause_value :[cause_length - 4]u8
+
+format ShutdownChunk:
+    cumulativeTsnAck :u32
+
+format ShutdownAckChunk:
+    ..
+
+format OperationErrorChunk:
+    errorCauseData :[1..]ErrorCause
+
+format InvalidStreamIdentifier:
+    streamIdentifier :u16
+    reserved :u16
+
+format MissingMandatoryParameter:
+    numberOfMissingMandatoryParameters :u16
+    missingMandatoryParameters :[numberOfMissingMandatoryParameters]u16
+
+format StaleCookieError:
+    mesureOfStaleness :u32
+
+format OutOfResource:
+    ..
+
+format UnresolvableAddress:
+    unresolvable_address :[..]u8
+
+format UnrecognizedChunkType:
+    unrecognizedChunkType :u8
+    unrecognizedChunkFlags :u8
+    unrecognizedChunkLength :u16
+    unrecognizedChunkLength >= 4
+    unrecognizedChunkValue :[unrecognizedChunkLength - 4]u8
+
+format InvalidMandatoryParameter:
+    ..
+
+format UnrecognizedParameters:
+    numberOfUnrecognizedParameters :u16
+    unrecognizedParameters :[numberOfUnrecognizedParameters]u16
+
+format NoUserData:
+    tsnValue :u32
+
+format CookieReceivedWhileShuttingDown:
+    ..
+
+format RestartOfAnAssociationWithNewAddresses:
+    ..
+
+format UserInitiatedAbort:
+    upperLayerAbortReason :[..]u8
+
+format ProtocolViolation:
+    additionalInformation :[..]u8
+
+format CookieEchoChunk:
+    cookie :[..]u8
+
+format CookieAckChunk:
+    ..
+
+format ShutdownComplete:
+    ..
