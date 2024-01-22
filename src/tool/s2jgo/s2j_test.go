@@ -1,12 +1,14 @@
 package s2jgo_test
 
 import (
+	"os"
 	"testing"
 
 	"github.com/on-keyday/brgen/src/tool/s2jgo"
 )
 
 func TestLoad(t *testing.T) {
+	os.Chdir("C:/workspace/shbrgen/brgen/tool")
 	s2j, err := s2jgo.Load("C:/workspace/shbrgen/brgen/tool/libs2j.dll")
 	if err != nil {
 		t.Fatal(err)

@@ -72,13 +72,14 @@ type outData struct {
 	stderr []byte
 }
 
-func callback(data unsafe.Pointer, size uintptr, isStdErr uintptr, ctx unsafe.Pointer) {
+func callback(data unsafe.Pointer, size uintptr, isStdErr uintptr, ctx unsafe.Pointer) uintptr {
 	out := (*outData)(ctx)
 	if isStdErr != 0 {
 		out.stderr = append(out.stderr, unsafe.Slice((*byte)(data), size)...)
 	} else {
 		out.stdout = append(out.stdout, unsafe.Slice((*byte)(data), size)...)
 	}
+	return 0
 }
 
 type Result struct {
@@ -104,7 +105,7 @@ func (s *Src2JSON) Call(args []string, cap Capability) (*Result, error) {
 	runtime.KeepAlive(argv_vec)
 	runtime.KeepAlive(out_callback)
 	runtime.KeepAlive(data)
-	if err != nil {
+	if err != nil && err != windows.ERROR_SUCCESS {
 		return nil, err
 	}
 	return &Result{
