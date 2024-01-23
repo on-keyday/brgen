@@ -41,19 +41,6 @@ constexpr auto default_capability = Capability{
     .importer = true,
     .ast_json = true,
 };
-#else
-#define DEFAULT_CAPABILITY \
-    (CAPABILITY) {         \
-        .std_input = true, \
-        .network = true,   \
-        .file = true,      \
-        .argv = true,      \
-        .check_ast = true, \
-        .lexer = true,     \
-        .parser = true,    \
-        .importer = true,  \
-        .ast_json = true   \
-    }
 #endif
 
 #define S2J_CAPABILITY_STDIN (1 << 0)

@@ -36,7 +36,7 @@
 #include "version.h"
 
 struct Flags : futils::cmdline::templ::HelpOption {
-    std::vector<std::string> args;
+    std::vector<std::string_view> args;
     bool version = false;
     bool lexer = false;
 
@@ -70,9 +70,9 @@ struct Flags : futils::cmdline::templ::HelpOption {
     ColorMode cerr_color_mode = ColorMode::auto_color;
 
     bool stdin_mode = false;
-    std::string as_file_name = "<stdin>";
+    std::string_view as_file_name = "<stdin>";
 
-    std::string argv_input;
+    std::string_view argv_input;
     bool argv_mode;
 
     size_t tokenization_limit = 0;
@@ -156,8 +156,8 @@ struct Flags : futils::cmdline::templ::HelpOption {
             });
 
         ctx.VarBool(&stdin_mode, "stdin", "read input from stdin (must not be tty)");
-        ctx.VarString(&as_file_name, "stdin-name", "set name of stdin/argv (as a filename)", "<name>");
-        ctx.VarString(&argv_input, "argv", "treat cmdline arg as input (this is not designed for human. this is used from other process or emscripten call)", "<source code>");
+        ctx.VarString<true>(&as_file_name, "stdin-name", "set name of stdin/argv (as a filename)", "<name>");
+        ctx.VarString<true>(&argv_input, "argv", "treat cmdline arg as input (this is not designed for human. this is used from other process or emscripten call)", "<source code>");
         ctx.VarInt(&tokenization_limit, "tokenization-limit", "set tokenization limit (use with --lexer) (0=unlimited)", "<size>");
 
         ctx.VarBool(&collect_comments, "collect-comments", "collect comments");
@@ -387,7 +387,7 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
         return exit_err;
     }
 
-    std::string name;
+    std::string_view name;
     if (flags.stdin_mode || flags.argv_mode) {
         name = flags.as_file_name;
     }
