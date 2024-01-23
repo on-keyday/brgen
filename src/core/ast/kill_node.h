@@ -5,7 +5,7 @@
 
 namespace brgen::ast {
     // for large scale of AST
-    // destructor call stack is too deep
+    // destructor call stack is too deep that makes stack overflow
     // so we need to use this
     void kill_node(const std::shared_ptr<Node>& node) {
         if (auto p = ast::as<Program>(node); p && p->global_scope) {

@@ -14,7 +14,7 @@ weight: 1
 ## バイナリをダウンロードする場合
 
 - windows(x64),mac,linux(x64,arm),android(arm,termux)のビルド済みバイナリを配布しています
-- 現在(2024/1/7)の最新バージョンは[v0.0.4](https://github.com/on-keyday/brgen/releases/tag/v0.0.4)です
+- 現在(2024/1/23)の最新バージョンは[v0.0.4](https://github.com/on-keyday/brgen/releases/tag/v0.0.4)です
 
 TODO(on-keyday): apt-get,brew,winget 等への対応
 
@@ -29,6 +29,13 @@ TODO(on-keyday): apt-get,brew,winget 等への対応
 7. `tool/brgen`を実行すると`ignore/example`ディレクトリにコードが生成されます
 
 ### internals
+
+src2json,json2cpp2 は C++で書かれています。
+brgen 及び json2go は Go 言語で書かれています。
+
+C++の依存ライブラリとして https://github.com/on-keyday/utils.git を使用しています(ビルド時に自動でクローンされます)
+
+またテスト用として [gtest](https://github.com/google/googletest)を使用しています。(ビルド時に同上)
 
 `build.sh`(及び`build.bat`)では内部で cmake と ninja を呼び出しています。
 
@@ -45,4 +52,6 @@ TODO(on-keyday): apt-get,brew,winget 等への対応
 現在、windows 環境では動く可能性が高いですが、他環境での動作は保証されません。
 
 `S2J_LIB`環境変数を`1`に設定してビルドすることで src2json を共有ライブラリの形でビルドできます。
-公開する関数は`libs2j_call`関数で引数に argv,argc,capability(利用機能の制限),io_callback,io_callback_data を取ります。詳しくはソースコードを御覧ください。
+公開する関数は`libs2j_call`関数で引数に argc,argv,capability(利用機能の制限),io_callback,io_callback_data を取ります。詳しくはソースコードを御覧ください。
+argc,argv は C 言語の main 関数に渡されるものと同じ要件に従ったものを渡してください(つまり argv[argc]==nullptr であることを要求します)
+現在、windows 環境では動く可能性が高いですが、他環境での動作は保証されません。
