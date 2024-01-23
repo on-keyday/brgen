@@ -924,6 +924,22 @@ namespace brgen::middle {
                     io->constant_level = ast::ConstantLevel::constant;
                     break;
                 }
+                case ast::IOMethod::input_subrange: {
+                    io->constant_level = ast::ConstantLevel::variable;
+                    auto c = ast::as<ast::Call>(io->base);
+                    assert(c);
+                    if (c->arguments.size() != 1 && c->arguments.size() != 2) {
+                        error(io->loc, "expect 1 or 2 arguments but got ", nums(c->arguments.size())).report();
+                    }
+                    for (auto& arg : c->arguments) {
+                        typing_expr(arg, true);
+                        io->arguments.push_back(arg);
+                    }
+                    auto u8_ty = std::make_shared<ast::IntType>(io->loc, 8, ast::Endian::unspec, false);
+                    auto arr_ty = std::make_shared<ast::ArrayType>(io->loc, nullptr, io->loc, std::move(u8_ty));
+                    io->expr_type = std::move(arr_ty);
+                    break;
+                }
             }
         }
 
@@ -1046,6 +1062,9 @@ namespace brgen::middle {
             }
             else if (auto i = ast::as<ast::Import>(expr)) {
                 expr->expr_type = i->import_desc->struct_type;
+            }
+            else if (auto typ = ast::as<ast::TypeLiteral>(expr)) {
+                expr->expr_type = std::make_shared<ast::MetaType>(typ->loc);
             }
             else {
                 unsupported(expr);

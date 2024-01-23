@@ -26,11 +26,13 @@ namespace brgen::ast {
         CASE(Comment)
         CASE(CommentGroup)
         CASE(FieldArgument)
+
         // literal
         CASE(Literal)
         CASE(IntLiteral)
         CASE(BoolLiteral)
         CASE(StrLiteral)
+        CASE(TypeLiteral)
 
         CASE(Input)
         CASE(Output)

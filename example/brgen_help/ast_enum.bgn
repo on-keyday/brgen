@@ -108,6 +108,7 @@ enum IOMethod:
     input_backward
     input_offset
     input_remain
+    input_subrange
     config_endian_little
     config_endian_big
     config_endian_native

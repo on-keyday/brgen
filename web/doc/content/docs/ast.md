@@ -611,7 +611,11 @@ IntType |o--||boolean : strong
 IntType |o--||boolean : strong
 Type |o--|| FloatType : derive
 FloatType {
+Endian endian
+boolean is_common_supported
 }
+FloatType |o--||Endian : strong
+FloatType |o--||boolean : strong
 Type |o--|| IdentType : derive
 IdentType {
 Ident ident
@@ -1435,7 +1439,11 @@ IntType |o--||boolean : strong
 IntType |o--||boolean : strong
 Type |o--|| FloatType : derive
 FloatType {
+Endian endian
+boolean is_common_supported
 }
+FloatType |o--||Endian : strong
+FloatType |o--||boolean : strong
 Type |o--|| IdentType : derive
 IdentType {
 Ident ident
@@ -2392,7 +2400,9 @@ TODO(on-keyday): 各ノードの説明文を入れる
         "is_explicit": "bool",
         "non_dynamic": "bool",
         "bit_alignment": "bit_alignment",
-        "bit_size": "optional<uint>"
+        "bit_size": "optional<uint>",
+        "endian": "endian",
+        "is_common_supported": "bool"
       }
     },
     {

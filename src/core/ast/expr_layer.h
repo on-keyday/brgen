@@ -6,86 +6,6 @@
 #include <view/span.h>
 
 namespace brgen::ast {
-    /*
-        enum class UnaryOp {
-            not_ = 0,
-            minus_sign,
-        };
-
-        constexpr const char* unary_op_str[] = {"!", "-", nullptr};
-        constexpr const char* unary_op_name[] = {"not", "minus_sign", nullptr};
-
-        constexpr auto unary_op_count = 2;
-
-        constexpr std::optional<UnaryOp> unary_op(std::string_view l) {
-            size_t i = 0;
-            while (unary_op_str[i]) {
-                if (l == unary_op_str[i]) {
-                    return UnaryOp(i);
-                }
-                i++;
-            }
-            return std::nullopt;
-        }
-
-        enum class BinaryOp {
-            // layer 0
-            mul,
-            div,
-            mod,
-            left_arithmetic_shift,
-            right_arithmetic_shift,
-            left_logical_shift,
-            right_logical_shift,
-            bit_and,
-
-            // layer 1
-            add,
-            sub,
-            bit_or,
-            bit_xor,
-
-            // layer 2
-            equal,
-            not_equal,
-            less,
-            less_or_eq,
-            grater,
-            grater_or_eq,
-
-            // layer 3
-            logical_and,
-
-            // layer 4
-            logical_or,
-
-            // layer 5
-            cond_op1,
-            cond_op2,
-
-            // layer 6
-            range_exclusive,
-            range_inclusive,
-
-            // layer 7
-            assign,
-            define_assign,
-            const_assign,
-            add_assign,
-            sub_assign,
-            mul_assign,
-            div_assign,
-            mod_assign,
-            left_shift_assign,
-            right_shift_assign,
-            bit_and_assign,
-            bit_or_assign,
-            bit_xor_assign,
-
-            // layer 8
-            comma,
-        };
-    */
 
     // clang-format off
     constexpr const char* bin_layer0[] = {"*", "/", "%", "<<<", ">>>", "<<", ">>", "&"};
@@ -202,37 +122,5 @@ namespace brgen::ast {
 
         static_assert(check_layers());
     }  // namespace test
-
-    /*
-    constexpr std::optional<BinaryOp> bin_op(std::string_view l) {
-        size_t i = 0;
-        for (auto& layer : bin_layers) {
-            size_t j = 0;
-            while (layer[j]) {
-                if (layer[j] == l) {
-                    return BinaryOp(i);
-                }
-                j++;
-                i++;
-            }
-        }
-        return std::nullopt;
-    }
-
-    constexpr std::optional<const char*> bin_op_str(BinaryOp op) {
-        size_t i = 0;
-        for (auto& layer : bin_layers) {
-            size_t j = 0;
-            while (layer[j]) {
-                if (BinaryOp(i) == op) {
-                    return layer[j];
-                }
-                j++;
-                i++;
-            }
-        }
-        return std::nullopt;
-    }
-    */
 
 }  // namespace brgen::ast

@@ -481,6 +481,15 @@ namespace brgen::ast {
             return literal;
         }
 
+        std::shared_ptr<TypeLiteral> parse_type_literal(lexer::Token&& lit) {
+            s.skip_line();
+            auto typ = parse_type(false);
+            s.skip_line();
+            auto end_tok = s.must_consume_token(">");
+            auto literal = std::make_shared<TypeLiteral>(lit.loc, std::move(typ), end_tok.loc);
+            return literal;
+        }
+
         /*
             <prim> ::= <int-literal> | <bool-literal> | <str-literal> | <ident> | "(" <expr> ")" | <if>
         */
@@ -505,6 +514,9 @@ namespace brgen::ast {
             }
             if (auto paren = s.consume_token("(")) {
                 return parse_paren(std::move(*paren));
+            }
+            if (auto typ = s.consume_token("<")) {
+                return parse_type_literal(std::move(*typ));
             }
             if (auto if_ = s.consume_token("if")) {
                 if (line_skipped) {

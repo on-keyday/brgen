@@ -68,6 +68,26 @@ namespace brgen::ast {
             : Literal({}, NodeType::bool_literal) {}
     };
 
+    struct TypeLiteral : Literal {
+        define_node_type(NodeType::type_literal);
+        define_node_description("type literal that can be used in type expressions. this is used to specify type at function arguments, field arguments, etc.");
+        std::shared_ptr<Type> type;
+        lexer::Loc end_loc;
+
+        void dump(auto&& field_) {
+            Literal::dump(field_);
+            sdebugf(type);
+            sdebugf(end_loc);
+        }
+
+        TypeLiteral(lexer::Loc l, const std::shared_ptr<Type>& t,lexer::Loc end_loc)
+            : Literal(l, NodeType::type_literal), type(t),end_loc(end_loc) {}
+
+        // for decode
+        constexpr TypeLiteral()
+            : Literal({}, NodeType::type_literal) {}
+    };
+
     struct Input : Literal {
         define_node_type(NodeType::input);
 
