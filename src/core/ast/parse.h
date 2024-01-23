@@ -515,9 +515,6 @@ namespace brgen::ast {
             if (auto paren = s.consume_token("(")) {
                 return parse_paren(std::move(*paren));
             }
-            if (auto typ = s.consume_token("<")) {
-                return parse_type_literal(std::move(*typ));
-            }
             if (auto if_ = s.consume_token("if")) {
                 if (line_skipped) {
                     *line_skipped = true;
@@ -529,6 +526,34 @@ namespace brgen::ast {
                     *line_skipped = true;
                 }
                 return parse_match(std::move(*match));
+            }
+            if (auto typ = s.consume_token("<")) {
+                return parse_type_literal(std::move(*typ));
+            }
+            if (auto i = s.peek_token(lexer::Tag::ident)) {
+                auto i_desc = ast::is_int_type(i->token);
+                auto f_desc = ast::is_float_type(i->token);
+                if (i_desc || f_desc || i->token == "void" || i->token == "bool") {
+                    std::shared_ptr<ast::Type> type;
+                    if (i_desc) {
+                        type = std::make_shared<ast::IntType>(i->loc, i_desc->bit_size, i_desc->endian, i_desc->is_signed);
+                    }
+                    else if (f_desc) {
+                        type = std::make_shared<ast::FloatType>(i->loc, f_desc->bit_size, f_desc->endian);
+                    }
+                    else if (i->token == "void") {
+                        type = std::make_shared<ast::VoidType>(i->loc);
+                    }
+                    else if (i->token == "bool") {
+                        type = std::make_shared<ast::BoolType>(i->loc);
+                    }
+                    else {
+                        assert(false);
+                    }
+                    auto type_literal = std::make_shared<TypeLiteral>(i->loc, std::move(type), i->loc);
+                    s.must_consume_token(lexer::Tag::ident);
+                    return type_literal;
+                }
             }
             return parse_ident();
         }
@@ -543,7 +568,7 @@ namespace brgen::ast {
             }
         }
 
-        std::shared_ptr<Call> parse_call(lexer::Token token, std::shared_ptr<Expr>& p) {
+        std::shared_ptr<Call> parse_call(lexer::Token&& token, std::shared_ptr<Expr>& p) {
             auto call = std::make_shared<Call>(token.loc, std::move(p));
             s.skip_white();
             if (!s.expect_token(")")) {
@@ -555,7 +580,21 @@ namespace brgen::ast {
             return call;
         }
 
-        std::shared_ptr<Index> parse_index(lexer::Token token, std::shared_ptr<Expr>& p) {
+        std::shared_ptr<Expr> parse_call_or_cast(lexer::Token&& token, std::shared_ptr<Expr>& p) {
+            auto call = parse_call(std::move(token), p);
+            if (auto typ = ast::as<ast::TypeLiteral>(call->callee)) {
+                if (call->arguments.size() != 0 && call->arguments.size() != 1) {
+                    s.report_error(call->loc, "expect 0 or 1 arguments for cast but got ", nums(call->arguments.size()));
+                }
+                auto copy = typ->type;
+                auto cast = std::make_shared<Cast>(call->loc, std::move(copy), call->arguments[0]);
+                cast->base = std::move(call);
+                return cast;
+            }
+            return call;
+        }
+
+        std::shared_ptr<Index> parse_index(lexer::Token&& token, std::shared_ptr<Expr>& p) {
             auto call = std::make_shared<Index>(token.loc, std::move(p));
             s.skip_white();
             call->index = parse_expr();
@@ -564,7 +603,7 @@ namespace brgen::ast {
             return call;
         }
 
-        std::shared_ptr<MemberAccess> parse_access(lexer::Token token, std::shared_ptr<Expr>& p) {
+        std::shared_ptr<MemberAccess> parse_access(lexer::Token&& token, std::shared_ptr<Expr>& p) {
             s.skip_white();
             auto ident = parse_ident_no_scope();
             ident->usage = IdentUsage::reference_member;
@@ -581,13 +620,13 @@ namespace brgen::ast {
             for (;;) {
                 s.skip_space();
                 if (auto c = s.consume_token("(")) {
-                    p = parse_call(*c, p);
+                    p = parse_call_or_cast(std::move(*c), p);
                 }
                 else if (auto c = s.consume_token(".")) {
-                    p = parse_access(*c, p);
+                    p = parse_access(std::move(*c), p);
                 }
                 else if (auto c = s.consume_token("[")) {
-                    p = parse_index(*c, p);
+                    p = parse_index(std::move(*c), p);
                 }
                 else {
                     break;

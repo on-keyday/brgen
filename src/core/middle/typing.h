@@ -674,11 +674,11 @@ namespace brgen::middle {
 
         void typing_call(ast::Call* call, NodeReplacer base_node) {
             typing_expr(call->callee);
-            if (auto ident = ast::as<ast::Ident>(call->callee); ident && ident->usage == ast::IdentUsage::reference_type) {
+            if (auto typ_lit = ast::as<ast::TypeLiteral>(call->callee)) {
                 // replace with cast node
-                auto s = ident->base.lock();
+                auto s = ast::as<ast::IdentType>(typ_lit->type);
                 assert(s);
-                auto def = ast::as<ast::Ident>(s)->base.lock();
+                auto def = ast::as<ast::Ident>(s->ident)->base.lock();
                 assert(def);
                 if (auto enum_ = ast::as<ast::Enum>(def)) {
                     call->expr_type = enum_->enum_type;
@@ -1005,6 +1005,15 @@ namespace brgen::middle {
             }
             else if (auto ident = ast::as<ast::Ident>(expr)) {
                 typing_ident(ident, on_define);
+                if (base_node.place() == ast::NodeType::ident) {
+                    return;  // skip
+                }
+                if (ident->usage == ast::IdentUsage::reference_type) {
+                    auto typ = std::make_shared<ast::IdentType>(ident->loc, ast::cast_to<ast::Ident>(expr));
+                    unwrap_reference_type_from_ident(typ.get());
+                    auto typ_lit = std::make_shared<ast::TypeLiteral>(ident->loc, std::move(typ), ident->loc);
+                    base_node.replace(std::move(typ_lit));
+                }
             }
             else if (auto bin = ast::as<ast::Binary>(expr)) {
                 typing_binary_expr(ast::cast_to<ast::Binary>(expr));

@@ -7,7 +7,7 @@
 #include <wrap/iocommon.h>
 #include <console/ansiesc.h>
 #include <core/middle/resolve_import.h>
-#include <core/middle/resolve_primitive_cast.h>
+#include <core/middle/resolve_lexical_cast.h>
 #include <core/middle/resolve_available.h>
 #include <core/middle/replace_assert.h>
 #include <core/middle/replace_endian_spec.h>
@@ -41,7 +41,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
     bool lexer = false;
 
     bool not_resolve_import = false;
-    bool not_resolve_cast = false;
+    // bool not_resolve_cast = false;
     bool not_resolve_available = false;
     bool not_resolve_type = false;
     bool not_resolve_assert = false;
@@ -107,7 +107,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
 
         ctx.VarBool(&not_resolve_import, "not-resolve-import", "not resolve import");
         ctx.VarBool(&not_resolve_type, "not-resolve-type", "not resolve type");
-        ctx.VarBool(&not_resolve_cast, "not-resolve-cast", "not resolve cast");
+        // ctx.VarBool(&not_resolve_cast, "not-resolve-cast", "not resolve cast");
         ctx.VarBool(&not_resolve_assert, "not-resolve-assert", "not resolve assert");
         ctx.VarBool(&not_resolve_available, "not-resolve-available", "not resolve available");
         ctx.VarBool(&not_resolve_endian_spec, "not-resolve-endian-spec", "not resolve endian-spec");
@@ -570,13 +570,17 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
             return exit_err;
         }
     }
+
+    /*
     if (!flags.not_resolve_cast) {
-        auto prim = brgen::middle::resolve_primitive_cast(*res);
+        auto prim = brgen::middle::resolve_lexical_cast(*res);
         if (!prim) {
             report_error(brgen::to_source_error(files)(std::move(prim.error())));
             return exit_err;
         }
     }
+    */
+
     if (!flags.not_resolve_available) {
         brgen::middle::resolve_available(*res);
     }

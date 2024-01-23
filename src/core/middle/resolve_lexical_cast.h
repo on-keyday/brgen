@@ -7,7 +7,7 @@
 namespace brgen::middle {
 
     // call before typing
-    result<void> resolve_primitive_cast(auto& node) {
+    result<void> resolve_lexical_cast(auto& node) {
         auto f = [](auto&& f, auto& node) -> void {
             // traverse child first
             ast::traverse(node, [&](auto& n) {
