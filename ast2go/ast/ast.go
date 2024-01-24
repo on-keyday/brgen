@@ -65,20 +65,21 @@ const (
 	NodeTypeIntLiteral      NodeType = 52
 	NodeTypeBoolLiteral     NodeType = 53
 	NodeTypeStrLiteral      NodeType = 54
-	NodeTypeInput           NodeType = 55
-	NodeTypeOutput          NodeType = 56
-	NodeTypeConfig          NodeType = 57
-	NodeTypeMember          NodeType = 58
-	NodeTypeField           NodeType = 59
-	NodeTypeFormat          NodeType = 60
-	NodeTypeState           NodeType = 61
-	NodeTypeEnum            NodeType = 62
-	NodeTypeEnumMember      NodeType = 63
-	NodeTypeFunction        NodeType = 64
-	NodeTypeBuiltinMember   NodeType = 65
-	NodeTypeBuiltinFunction NodeType = 66
-	NodeTypeBuiltinField    NodeType = 67
-	NodeTypeBuiltinObject   NodeType = 68
+	NodeTypeTypeLiteral     NodeType = 55
+	NodeTypeInput           NodeType = 56
+	NodeTypeOutput          NodeType = 57
+	NodeTypeConfig          NodeType = 58
+	NodeTypeMember          NodeType = 59
+	NodeTypeField           NodeType = 60
+	NodeTypeFormat          NodeType = 61
+	NodeTypeState           NodeType = 62
+	NodeTypeEnum            NodeType = 63
+	NodeTypeEnumMember      NodeType = 64
+	NodeTypeFunction        NodeType = 65
+	NodeTypeBuiltinMember   NodeType = 66
+	NodeTypeBuiltinFunction NodeType = 67
+	NodeTypeBuiltinField    NodeType = 68
+	NodeTypeBuiltinObject   NodeType = 69
 )
 
 func (n NodeType) String() string {
@@ -193,6 +194,8 @@ func (n NodeType) String() string {
 		return "bool_literal"
 	case NodeTypeStrLiteral:
 		return "str_literal"
+	case NodeTypeTypeLiteral:
+		return "type_literal"
 	case NodeTypeInput:
 		return "input"
 	case NodeTypeOutput:
@@ -342,6 +345,8 @@ func (n *NodeType) UnmarshalJSON(data []byte) error {
 		*n = NodeTypeBoolLiteral
 	case "str_literal":
 		*n = NodeTypeStrLiteral
+	case "type_literal":
+		*n = NodeTypeTypeLiteral
 	case "input":
 		*n = NodeTypeInput
 	case "output":
@@ -578,6 +583,10 @@ func (n *BoolLiteral) GetNodeType() NodeType {
 
 func (n *StrLiteral) GetNodeType() NodeType {
 	return NodeTypeStrLiteral
+}
+
+func (n *TypeLiteral) GetNodeType() NodeType {
+	return NodeTypeTypeLiteral
 }
 
 func (n *Input) GetNodeType() NodeType {
@@ -1280,9 +1289,10 @@ const (
 	IoMethodInputBackward      IoMethod = 4
 	IoMethodInputOffset        IoMethod = 5
 	IoMethodInputRemain        IoMethod = 6
-	IoMethodConfigEndianLittle IoMethod = 7
-	IoMethodConfigEndianBig    IoMethod = 8
-	IoMethodConfigEndianNative IoMethod = 9
+	IoMethodInputSubrange      IoMethod = 7
+	IoMethodConfigEndianLittle IoMethod = 8
+	IoMethodConfigEndianBig    IoMethod = 9
+	IoMethodConfigEndianNative IoMethod = 10
 )
 
 func (n IoMethod) String() string {
@@ -1301,6 +1311,8 @@ func (n IoMethod) String() string {
 		return "input_offset"
 	case IoMethodInputRemain:
 		return "input_remain"
+	case IoMethodInputSubrange:
+		return "input_subrange"
 	case IoMethodConfigEndianLittle:
 		return "config_endian_little"
 	case IoMethodConfigEndianBig:
@@ -1332,6 +1344,8 @@ func (n *IoMethod) UnmarshalJSON(data []byte) error {
 		*n = IoMethodInputOffset
 	case "input_remain":
 		*n = IoMethodInputRemain
+	case "input_subrange":
+		*n = IoMethodInputSubrange
 	case "config_endian_little":
 		*n = IoMethodConfigEndianLittle
 	case "config_endian_big":
@@ -2651,6 +2665,32 @@ func (n *StrLiteral) GetLoc() Loc {
 	return n.Loc
 }
 
+type TypeLiteral struct {
+	Loc           Loc
+	ExprType      Type
+	ConstantLevel ConstantLevel
+	Type          Type
+	EndLoc        Loc
+}
+
+func (n *TypeLiteral) isLiteral() {}
+
+func (n *TypeLiteral) isExpr() {}
+
+func (n *TypeLiteral) GetExprType() Type {
+	return n.ExprType
+}
+
+func (n *TypeLiteral) GetConstantLevel() ConstantLevel {
+	return n.ConstantLevel
+}
+
+func (n *TypeLiteral) isNode() {}
+
+func (n *TypeLiteral) GetLoc() Loc {
+	return n.Loc
+}
+
 type Input struct {
 	Loc           Loc
 	ExprType      Type
@@ -3209,6 +3249,8 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			n.node[i] = &BoolLiteral{Loc: raw.Loc}
 		case NodeTypeStrLiteral:
 			n.node[i] = &StrLiteral{Loc: raw.Loc}
+		case NodeTypeTypeLiteral:
+			n.node[i] = &TypeLiteral{Loc: raw.Loc}
 		case NodeTypeInput:
 			n.node[i] = &Input{Loc: raw.Loc}
 		case NodeTypeOutput:
@@ -4290,6 +4332,25 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.ConstantLevel = tmp.ConstantLevel
 			v.Value = tmp.Value
 			v.Length = tmp.Length
+		case NodeTypeTypeLiteral:
+			v := n.node[i].(*TypeLiteral)
+			var tmp struct {
+				ExprType      *uintptr      `json:"expr_type"`
+				ConstantLevel ConstantLevel `json:"constant_level"`
+				Type          *uintptr      `json:"type"`
+				EndLoc        Loc           `json:"end_loc"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			if tmp.ExprType != nil {
+				v.ExprType = n.node[*tmp.ExprType].(Type)
+			}
+			v.ConstantLevel = tmp.ConstantLevel
+			if tmp.Type != nil {
+				v.Type = n.node[*tmp.Type].(Type)
+			}
+			v.EndLoc = tmp.EndLoc
 		case NodeTypeInput:
 			v := n.node[i].(*Input)
 			var tmp struct {
@@ -5133,6 +5194,17 @@ func Walk(n Node, f Visitor) {
 	case *StrLiteral:
 		if v.ExprType != nil {
 			if !f.Visit(f, v.ExprType) {
+				return
+			}
+		}
+	case *TypeLiteral:
+		if v.ExprType != nil {
+			if !f.Visit(f, v.ExprType) {
+				return
+			}
+		}
+		if v.Type != nil {
+			if !f.Visit(f, v.Type) {
 				return
 			}
 		}

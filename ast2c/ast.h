@@ -102,6 +102,7 @@ typedef struct ast2c_OptionalType ast2c_OptionalType;
 typedef struct ast2c_IntLiteral ast2c_IntLiteral;
 typedef struct ast2c_BoolLiteral ast2c_BoolLiteral;
 typedef struct ast2c_StrLiteral ast2c_StrLiteral;
+typedef struct ast2c_TypeLiteral ast2c_TypeLiteral;
 typedef struct ast2c_Input ast2c_Input;
 typedef struct ast2c_Output ast2c_Output;
 typedef struct ast2c_Config ast2c_Config;
@@ -181,6 +182,7 @@ enum ast2c_NodeType {
 	AST2C_NODETYPE_INT_LITERAL,
 	AST2C_NODETYPE_BOOL_LITERAL,
 	AST2C_NODETYPE_STR_LITERAL,
+	AST2C_NODETYPE_TYPE_LITERAL,
 	AST2C_NODETYPE_INPUT,
 	AST2C_NODETYPE_OUTPUT,
 	AST2C_NODETYPE_CONFIG,
@@ -337,6 +339,7 @@ enum ast2c_IoMethod {
 	AST2C_IOMETHOD_INPUT_BACKWARD,
 	AST2C_IOMETHOD_INPUT_OFFSET,
 	AST2C_IOMETHOD_INPUT_REMAIN,
+	AST2C_IOMETHOD_INPUT_SUBRANGE,
 	AST2C_IOMETHOD_CONFIG_ENDIAN_LITTLE,
 	AST2C_IOMETHOD_CONFIG_ENDIAN_BIG,
 	AST2C_IOMETHOD_CONFIG_ENDIAN_NATIVE,
@@ -1117,6 +1120,18 @@ struct ast2c_StrLiteral {
 
 // returns 1 if succeed 0 if failed
 int ast2c_StrLiteral_parse(ast2c_Ast* ,ast2c_StrLiteral*,ast2c_json_handlers*,void*);
+
+struct ast2c_TypeLiteral {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
+	ast2c_Type* type;
+	ast2c_Loc end_loc;
+};
+
+// returns 1 if succeed 0 if failed
+int ast2c_TypeLiteral_parse(ast2c_Ast* ,ast2c_TypeLiteral*,ast2c_json_handlers*,void*);
 
 struct ast2c_Input {
 	const ast2c_NodeType node_type;

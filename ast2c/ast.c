@@ -66,6 +66,7 @@ const char* ast2c_NodeType_to_string(ast2c_NodeType val) {
 	case AST2C_NODETYPE_INT_LITERAL: return "int_literal";
 	case AST2C_NODETYPE_BOOL_LITERAL: return "bool_literal";
 	case AST2C_NODETYPE_STR_LITERAL: return "str_literal";
+	case AST2C_NODETYPE_TYPE_LITERAL: return "type_literal";
 	case AST2C_NODETYPE_INPUT: return "input";
 	case AST2C_NODETYPE_OUTPUT: return "output";
 	case AST2C_NODETYPE_CONFIG: return "config";
@@ -305,6 +306,10 @@ int ast2c_NodeType_from_string(const char* str, ast2c_NodeType* out) {
 	}
 	if (strcmp(str, "str_literal") == 0) {
 		*out = AST2C_NODETYPE_STR_LITERAL;
+		return 1;
+	}
+	if (strcmp(str, "type_literal") == 0) {
+		*out = AST2C_NODETYPE_TYPE_LITERAL;
 		return 1;
 	}
 	if (strcmp(str, "input") == 0) {
@@ -921,6 +926,7 @@ const char* ast2c_IoMethod_to_string(ast2c_IoMethod val) {
 	case AST2C_IOMETHOD_INPUT_BACKWARD: return "input_backward";
 	case AST2C_IOMETHOD_INPUT_OFFSET: return "input_offset";
 	case AST2C_IOMETHOD_INPUT_REMAIN: return "input_remain";
+	case AST2C_IOMETHOD_INPUT_SUBRANGE: return "input_subrange";
 	case AST2C_IOMETHOD_CONFIG_ENDIAN_LITTLE: return "config_endian_little";
 	case AST2C_IOMETHOD_CONFIG_ENDIAN_BIG: return "config_endian_big";
 	case AST2C_IOMETHOD_CONFIG_ENDIAN_NATIVE: return "config_endian_native";
@@ -957,6 +963,10 @@ int ast2c_IoMethod_from_string(const char* str, ast2c_IoMethod* out) {
 	}
 	if (strcmp(str, "input_remain") == 0) {
 		*out = AST2C_IOMETHOD_INPUT_REMAIN;
+		return 1;
+	}
+	if (strcmp(str, "input_subrange") == 0) {
+		*out = AST2C_IOMETHOD_INPUT_SUBRANGE;
 		return 1;
 	}
 	if (strcmp(str, "config_endian_little") == 0) {
@@ -2728,6 +2738,39 @@ int ast2c_StrLiteral_parse(ast2c_Ast* ast,ast2c_StrLiteral* s,ast2c_json_handler
 	}
 	if(!h->number_get(h,length,&s->length)) {
 		if(h->error) { h->error(h,length, "failed to parse ast2c_StrLiteral::length"); }
+		goto error;
+	}
+	return 1;
+error:
+	return 0;
+}
+
+// returns 1 if succeed 0 if failed
+int ast2c_TypeLiteral_parse(ast2c_Ast* ast,ast2c_TypeLiteral* s,ast2c_json_handlers* h, void* obj) {
+	if (!ast||!s||!h||!obj) {
+		if(h->error) { h->error(h,NULL, "invalid argument"); }
+		return 0;
+	}
+	void* loc = h->object_get(h, obj, "loc");
+	void* obj_body = h->object_get(h, obj, "body");
+	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
+	s->expr_type = NULL;
+	s->type = NULL;
+	void* expr_type = h->object_get(h, obj_body, "expr_type");
+	void* constant_level = h->object_get(h, obj_body, "constant_level");
+	void* type = h->object_get(h, obj_body, "type");
+	void* end_loc = h->object_get(h, obj_body, "end_loc");
+	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_TypeLiteral::loc is null"); } return 0; }
+	if (!expr_type) { if(h->error) { h->error(h,expr_type, "ast2c_TypeLiteral::expr_type is null"); } return 0; }
+	if (!constant_level) { if(h->error) { h->error(h,constant_level, "ast2c_TypeLiteral::constant_level is null"); } return 0; }
+	if (!type) { if(h->error) { h->error(h,type, "ast2c_TypeLiteral::type is null"); } return 0; }
+	if (!end_loc) { if(h->error) { h->error(h,end_loc, "ast2c_TypeLiteral::end_loc is null"); } return 0; }
+	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
+		if(h->error) { h->error(h,loc, "failed to parse ast2c_TypeLiteral::loc"); }
+		goto error;
+	}
+	if(!ast2c_Loc_parse(&s->end_loc,h,end_loc)) {
+		if(h->error) { h->error(h,end_loc, "failed to parse ast2c_TypeLiteral::end_loc"); }
 		goto error;
 	}
 	return 1;

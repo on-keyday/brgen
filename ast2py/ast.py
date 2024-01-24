@@ -60,6 +60,7 @@ class NodeType(PyEnum):
     INT_LITERAL = "int_literal"
     BOOL_LITERAL = "bool_literal"
     STR_LITERAL = "str_literal"
+    TYPE_LITERAL = "type_literal"
     INPUT = "input"
     OUTPUT = "output"
     CONFIG = "config"
@@ -198,6 +199,7 @@ class IoMethod(PyEnum):
     INPUT_BACKWARD = "input_backward"
     INPUT_OFFSET = "input_offset"
     INPUT_REMAIN = "input_remain"
+    INPUT_SUBRANGE = "input_subrange"
     CONFIG_ENDIAN_LITTLE = "config_endian_little"
     CONFIG_ENDIAN_BIG = "config_endian_big"
     CONFIG_ENDIAN_NATIVE = "config_endian_native"
@@ -515,6 +517,11 @@ class BoolLiteral(Literal):
 class StrLiteral(Literal):
     value: str
     length: int
+
+
+class TypeLiteral(Literal):
+    type: Optional[Type]
+    end_loc: Loc
 
 
 class Input(Literal):
@@ -875,6 +882,8 @@ def ast2node(ast :JsonAst) -> Program:
                 node.append(BoolLiteral())
             case NodeType.STR_LITERAL:
                 node.append(StrLiteral())
+            case NodeType.TYPE_LITERAL:
+                node.append(TypeLiteral())
             case NodeType.INPUT:
                 node.append(Input())
             case NodeType.OUTPUT:
@@ -1690,6 +1699,19 @@ def ast2node(ast :JsonAst) -> Program:
                 node[i].value = x if isinstance(x,str)  else raiseError(TypeError('type mismatch at StrLiteral::value'))
                 x = ast.node[i].body["length"]
                 node[i].length = x if isinstance(x,int)  else raiseError(TypeError('type mismatch at StrLiteral::length'))
+            case NodeType.TYPE_LITERAL:
+                if ast.node[i].body["expr_type"] is not None:
+                    x = node[ast.node[i].body["expr_type"]]
+                    node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at TypeLiteral::expr_type'))
+                else:
+                    node[i].expr_type = None
+                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
+                if ast.node[i].body["type"] is not None:
+                    x = node[ast.node[i].body["type"]]
+                    node[i].type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at TypeLiteral::type'))
+                else:
+                    node[i].type = None
+                node[i].end_loc = parse_Loc(ast.node[i].body["end_loc"])
             case NodeType.INPUT:
                 if ast.node[i].body["expr_type"] is not None:
                     x = node[ast.node[i].body["expr_type"]]
@@ -2298,6 +2320,13 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
         case x if isinstance(x,StrLiteral):
           if x.expr_type is not None:
               if f(f,x.expr_type) == False:
+                  return
+        case x if isinstance(x,TypeLiteral):
+          if x.expr_type is not None:
+              if f(f,x.expr_type) == False:
+                  return
+          if x.type is not None:
+              if f(f,x.type) == False:
                   return
         case x if isinstance(x,Input):
           if x.expr_type is not None:

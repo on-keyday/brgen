@@ -59,6 +59,7 @@ Literal,
 IntLiteral,
 BoolLiteral,
 StrLiteral,
+TypeLiteral,
 Input,
 Output,
 Config,
@@ -188,6 +189,7 @@ InputGet,
 InputBackward,
 InputOffset,
 InputRemain,
+InputSubrange,
 ConfigEndianLittle,
 ConfigEndianBig,
 ConfigEndianNative,
@@ -596,6 +598,13 @@ public class StrLiteral : Literal{
 	public ConstantLevel ConstantLevel{get;set;}
 	public string Value{get;set;}
 	public ulong Length{get;set;}
+}
+public class TypeLiteral : Literal{
+	public Loc Loc{get;set;}
+	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
+	public Type? Type{get;set;}
+	public Loc EndLoc{get;set;}
 }
 public class Input : Literal{
 	public Loc Loc{get;set;}

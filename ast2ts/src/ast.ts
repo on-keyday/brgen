@@ -2,10 +2,10 @@
 
 export namespace ast2ts {
 
-export type NodeType = "program" | "comment" | "comment_group" | "field_argument" | "expr" | "binary" | "unary" | "cond" | "ident" | "call" | "if" | "member_access" | "paren" | "index" | "match" | "range" | "tmp_var" | "import" | "cast" | "available" | "specify_endian" | "explicit_error" | "io_operation" | "stmt" | "loop" | "indent_block" | "scoped_statement" | "match_branch" | "union_candidate" | "return" | "break" | "continue" | "assert" | "implicit_yield" | "type" | "int_type" | "float_type" | "ident_type" | "int_literal_type" | "str_literal_type" | "void_type" | "bool_type" | "array_type" | "function_type" | "struct_type" | "struct_union_type" | "union_type" | "range_type" | "enum_type" | "meta_type" | "optional_type" | "literal" | "int_literal" | "bool_literal" | "str_literal" | "input" | "output" | "config" | "member" | "field" | "format" | "state" | "enum" | "enum_member" | "function" | "builtin_member" | "builtin_function" | "builtin_field" | "builtin_object";
+export type NodeType = "program" | "comment" | "comment_group" | "field_argument" | "expr" | "binary" | "unary" | "cond" | "ident" | "call" | "if" | "member_access" | "paren" | "index" | "match" | "range" | "tmp_var" | "import" | "cast" | "available" | "specify_endian" | "explicit_error" | "io_operation" | "stmt" | "loop" | "indent_block" | "scoped_statement" | "match_branch" | "union_candidate" | "return" | "break" | "continue" | "assert" | "implicit_yield" | "type" | "int_type" | "float_type" | "ident_type" | "int_literal_type" | "str_literal_type" | "void_type" | "bool_type" | "array_type" | "function_type" | "struct_type" | "struct_union_type" | "union_type" | "range_type" | "enum_type" | "meta_type" | "optional_type" | "literal" | "int_literal" | "bool_literal" | "str_literal" | "type_literal" | "input" | "output" | "config" | "member" | "field" | "format" | "state" | "enum" | "enum_member" | "function" | "builtin_member" | "builtin_function" | "builtin_field" | "builtin_object";
 
 export function isNodeType(obj: any): obj is NodeType {
-	return obj && typeof obj === 'string' && (obj === "program" || obj === "comment" || obj === "comment_group" || obj === "field_argument" || obj === "expr" || obj === "binary" || obj === "unary" || obj === "cond" || obj === "ident" || obj === "call" || obj === "if" || obj === "member_access" || obj === "paren" || obj === "index" || obj === "match" || obj === "range" || obj === "tmp_var" || obj === "import" || obj === "cast" || obj === "available" || obj === "specify_endian" || obj === "explicit_error" || obj === "io_operation" || obj === "stmt" || obj === "loop" || obj === "indent_block" || obj === "scoped_statement" || obj === "match_branch" || obj === "union_candidate" || obj === "return" || obj === "break" || obj === "continue" || obj === "assert" || obj === "implicit_yield" || obj === "type" || obj === "int_type" || obj === "float_type" || obj === "ident_type" || obj === "int_literal_type" || obj === "str_literal_type" || obj === "void_type" || obj === "bool_type" || obj === "array_type" || obj === "function_type" || obj === "struct_type" || obj === "struct_union_type" || obj === "union_type" || obj === "range_type" || obj === "enum_type" || obj === "meta_type" || obj === "optional_type" || obj === "literal" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "input" || obj === "output" || obj === "config" || obj === "member" || obj === "field" || obj === "format" || obj === "state" || obj === "enum" || obj === "enum_member" || obj === "function" || obj === "builtin_member" || obj === "builtin_function" || obj === "builtin_field" || obj === "builtin_object")
+	return obj && typeof obj === 'string' && (obj === "program" || obj === "comment" || obj === "comment_group" || obj === "field_argument" || obj === "expr" || obj === "binary" || obj === "unary" || obj === "cond" || obj === "ident" || obj === "call" || obj === "if" || obj === "member_access" || obj === "paren" || obj === "index" || obj === "match" || obj === "range" || obj === "tmp_var" || obj === "import" || obj === "cast" || obj === "available" || obj === "specify_endian" || obj === "explicit_error" || obj === "io_operation" || obj === "stmt" || obj === "loop" || obj === "indent_block" || obj === "scoped_statement" || obj === "match_branch" || obj === "union_candidate" || obj === "return" || obj === "break" || obj === "continue" || obj === "assert" || obj === "implicit_yield" || obj === "type" || obj === "int_type" || obj === "float_type" || obj === "ident_type" || obj === "int_literal_type" || obj === "str_literal_type" || obj === "void_type" || obj === "bool_type" || obj === "array_type" || obj === "function_type" || obj === "struct_type" || obj === "struct_union_type" || obj === "union_type" || obj === "range_type" || obj === "enum_type" || obj === "meta_type" || obj === "optional_type" || obj === "literal" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "type_literal" || obj === "input" || obj === "output" || obj === "config" || obj === "member" || obj === "field" || obj === "format" || obj === "state" || obj === "enum" || obj === "enum_member" || obj === "function" || obj === "builtin_member" || obj === "builtin_function" || obj === "builtin_field" || obj === "builtin_object")
 }
 
 export const enum TokenTag {
@@ -162,13 +162,14 @@ export const enum IoMethod {
 	input_backward = "input_backward",
 	input_offset = "input_offset",
 	input_remain = "input_remain",
+	input_subrange = "input_subrange",
 	config_endian_little = "config_endian_little",
 	config_endian_big = "config_endian_big",
 	config_endian_native = "config_endian_native",
 };
 
 export function isIoMethod(obj: any): obj is IoMethod {
-	return obj && typeof obj === 'string' && (obj === "unspec" || obj === "output_put" || obj === "input_peek" || obj === "input_get" || obj === "input_backward" || obj === "input_offset" || obj === "input_remain" || obj === "config_endian_little" || obj === "config_endian_big" || obj === "config_endian_native")
+	return obj && typeof obj === 'string' && (obj === "unspec" || obj === "output_put" || obj === "input_peek" || obj === "input_get" || obj === "input_backward" || obj === "input_offset" || obj === "input_remain" || obj === "input_subrange" || obj === "config_endian_little" || obj === "config_endian_big" || obj === "config_endian_native")
 }
 
 export interface Node {
@@ -228,6 +229,7 @@ export function isNode(obj: any): obj is Node {
 	if (isIntLiteral(obj)) return true;
 	if (isBoolLiteral(obj)) return true;
 	if (isStrLiteral(obj)) return true;
+	if (isTypeLiteral(obj)) return true;
 	if (isInput(obj)) return true;
 	if (isOutput(obj)) return true;
 	if (isConfig(obj)) return true;
@@ -270,6 +272,7 @@ export function isExpr(obj: any): obj is Expr {
 	if (isIntLiteral(obj)) return true;
 	if (isBoolLiteral(obj)) return true;
 	if (isStrLiteral(obj)) return true;
+	if (isTypeLiteral(obj)) return true;
 	if (isInput(obj)) return true;
 	if (isOutput(obj)) return true;
 	if (isConfig(obj)) return true;
@@ -336,6 +339,7 @@ export function isLiteral(obj: any): obj is Literal {
 	if (isIntLiteral(obj)) return true;
 	if (isBoolLiteral(obj)) return true;
 	if (isStrLiteral(obj)) return true;
+	if (isTypeLiteral(obj)) return true;
 	if (isInput(obj)) return true;
 	if (isOutput(obj)) return true;
 	if (isConfig(obj)) return true;
@@ -848,6 +852,15 @@ export interface StrLiteral extends Literal {
 
 export function isStrLiteral(obj: any): obj is StrLiteral {
 	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "str_literal"
+}
+
+export interface TypeLiteral extends Literal {
+	type: Type|null;
+	end_loc: Loc;
+}
+
+export function isTypeLiteral(obj: any): obj is TypeLiteral {
+	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "type_literal"
 }
 
 export interface Input extends Literal {
@@ -1741,6 +1754,18 @@ export function parseAST(obj: any): Program {
 				constant_level: ConstantLevel.unknown,
 				value: '',
 				length: 0,
+			}
+			c.node.push(n);
+			break;
+		}
+		case "type_literal": {
+			const n :TypeLiteral = {
+				node_type: "type_literal",
+				loc: on.loc,
+				expr_type: null,
+				constant_level: ConstantLevel.unknown,
+				type: null,
+				end_loc: on.loc,
 			}
 			c.node.push(n);
 			break;
@@ -3620,6 +3645,36 @@ export function parseAST(obj: any): Program {
 			n.length = on.body.length;
 			break;
 		}
+		case "type_literal": {
+			const n :TypeLiteral = cnode as TypeLiteral;
+			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
+				throw new Error('invalid node list at TypeLiteral::expr_type');
+			}
+			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
+			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
+				throw new Error('invalid node list at TypeLiteral::expr_type');
+			}
+			n.expr_type = tmpexpr_type;
+			const tmpconstant_level = on.body?.constant_level;
+			if (!isConstantLevel(tmpconstant_level)) {
+				throw new Error('invalid node list at TypeLiteral::constant_level');
+			}
+			n.constant_level = tmpconstant_level;
+			if (on.body?.type !== null && typeof on.body?.type !== 'number') {
+				throw new Error('invalid node list at TypeLiteral::type');
+			}
+			const tmptype = on.body.type === null ? null : c.node[on.body.type];
+			if (!(tmptype === null || isType(tmptype))) {
+				throw new Error('invalid node list at TypeLiteral::type');
+			}
+			n.type = tmptype;
+			const tmpend_loc = on.body?.end_loc;
+			if (!isLoc(tmpend_loc)) {
+				throw new Error('invalid node list at TypeLiteral::end_loc');
+			}
+			n.end_loc = tmpend_loc;
+			break;
+		}
 		case "input": {
 			const n :Input = cnode as Input;
 			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
@@ -5079,6 +5134,25 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			const n :StrLiteral = node as StrLiteral;
 			if (n.expr_type !== null) {
 				const result = fn(fn,n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "type_literal": {
+			if (!isTypeLiteral(node)) {
+				break;
+			}
+			const n :TypeLiteral = node as TypeLiteral;
+			if (n.expr_type !== null) {
+				const result = fn(fn,n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.type !== null) {
+				const result = fn(fn,n.type);
 				if (result === false) {
 					return;
 				}
