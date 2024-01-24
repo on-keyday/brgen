@@ -586,8 +586,12 @@ namespace brgen::ast {
                 if (call->arguments.size() != 0 && call->arguments.size() != 1) {
                     s.report_error(call->loc, "expect 0 or 1 arguments for cast but got ", nums(call->arguments.size()));
                 }
+                std::shared_ptr<Expr> arg;
+                if (call->arguments.size() == 1) {
+                    arg = call->arguments[0];
+                }
                 auto copy = typ->type;
-                auto cast = std::make_shared<Cast>(call->loc, std::move(copy), call->arguments[0]);
+                auto cast = std::make_shared<Cast>(call->loc, std::move(copy), std::move(arg));
                 cast->base = std::move(call);
                 return cast;
             }

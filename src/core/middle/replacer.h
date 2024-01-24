@@ -25,7 +25,12 @@ namespace brgen::middle {
         template <class T>
         static ast::NodeType do_place() {
             using N = typename futils::helper::template_of_t<T>::template param_at<0>;
-            return N::node_type_tag;
+            if constexpr (std::is_same_v<N, ast::Node>) {
+                return ast::NodeType::node;
+            }
+            else {
+                return N::node_type_tag;
+            }
         }
 
        public:

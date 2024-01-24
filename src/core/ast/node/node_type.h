@@ -7,6 +7,7 @@
 
 namespace brgen::ast {
     enum class NodeType {
+        node,  // for internal use
         program,
         comment,
         comment_group,
