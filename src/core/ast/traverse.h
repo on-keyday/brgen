@@ -22,96 +22,100 @@ namespace brgen::ast {
         return;              \
     }
         SWITCH
-        CASE(Program)
-        CASE(Comment)
-        CASE(CommentGroup)
-        CASE(FieldArgument)
+        case NodeType::node: {
+            assert(false);
+            return;
+        }
+            CASE(Program)
+            CASE(Comment)
+            CASE(CommentGroup)
+            CASE(FieldArgument)
 
-        // literal
-        CASE(Literal)
-        CASE(IntLiteral)
-        CASE(BoolLiteral)
-        CASE(StrLiteral)
-        CASE(TypeLiteral)
+            // literal
+            CASE(Literal)
+            CASE(IntLiteral)
+            CASE(BoolLiteral)
+            CASE(StrLiteral)
+            CASE(TypeLiteral)
 
-        CASE(Input)
-        CASE(Output)
-        CASE(Config)
+            CASE(Input)
+            CASE(Output)
+            CASE(Config)
 
-        // expr
-        CASE(Expr)
+            // expr
+            CASE(Expr)
 
-        CASE(Binary)
-        CASE(Unary)
-        CASE(Cond)
-        CASE(Ident)
-        CASE(Call)
-        CASE(If)
-        CASE(MemberAccess)
-        CASE(Paren)
-        CASE(Index)
-        CASE(Match)
-        CASE(Range)
+            CASE(Binary)
+            CASE(Unary)
+            CASE(Cond)
+            CASE(Ident)
+            CASE(Call)
+            CASE(If)
+            CASE(MemberAccess)
+            CASE(Paren)
+            CASE(Index)
+            CASE(Match)
+            CASE(Range)
 
-        CASE(TmpVar)
-        CASE(Import)
-        CASE(Cast)
-        CASE(Available)
-        CASE(SpecifyEndian)
-        CASE(ExplicitError)
-        CASE(IOOperation)
+            CASE(TmpVar)
+            CASE(Import)
+            CASE(Cast)
+            CASE(Available)
+            CASE(SpecifyEndian)
+            CASE(ExplicitError)
+            CASE(IOOperation)
 
-        // stmt
-        CASE(Stmt)
-        CASE(Loop)
-        CASE(ScopedStatement)
-        CASE(IndentBlock)
-        CASE(MatchBranch)
-        CASE(UnionCandidate)
-        CASE(Return)
-        CASE(Break)
-        CASE(Continue)
+            // stmt
+            CASE(Stmt)
+            CASE(Loop)
+            CASE(ScopedStatement)
+            CASE(IndentBlock)
+            CASE(MatchBranch)
+            CASE(UnionCandidate)
+            CASE(Return)
+            CASE(Break)
+            CASE(Continue)
 
-        CASE(Assert)
-        CASE(ImplicitYield)
+            CASE(Assert)
+            CASE(ImplicitYield)
 
-        // member
-        CASE(Member)
+            // member
+            CASE(Member)
 
-        CASE(Field)
-        CASE(Format)
-        CASE(State)
-        CASE(Enum)
-        CASE(EnumMember)
-        CASE(Function)
+            CASE(Field)
+            CASE(Format)
+            CASE(State)
+            CASE(Enum)
+            CASE(EnumMember)
+            CASE(Function)
 
-        // builtin
-        CASE(BuiltinMember)
-        CASE(BuiltinFunction)
-        CASE(BuiltinField)
-        CASE(BuiltinObject)
+            // builtin
+            CASE(BuiltinMember)
+            CASE(BuiltinFunction)
+            CASE(BuiltinField)
+            CASE(BuiltinObject)
 
-        // type
-        CASE(Type)
+            // type
+            CASE(Type)
 
-        CASE(IntType)
-        CASE(FloatType)
-        CASE(IdentType)
-        CASE(IntLiteralType)
-        CASE(StrLiteralType)
-        CASE(VoidType)
-        CASE(BoolType)
-        CASE(ArrayType)
-        CASE(FunctionType)
-        CASE(StructType)
-        CASE(StructUnionType)
-        CASE(UnionType)
-        CASE(RangeType)
-        CASE(EnumType)
-        CASE(MetaType)
-        CASE(OptionalType)
+            CASE(IntType)
+            CASE(FloatType)
+            CASE(IdentType)
+            CASE(IntLiteralType)
+            CASE(StrLiteralType)
+            CASE(VoidType)
+            CASE(BoolType)
+            CASE(ArrayType)
+            CASE(FunctionType)
+            CASE(StructType)
+            CASE(StructUnionType)
+            CASE(UnionType)
+            CASE(RangeType)
+            CASE(EnumType)
+            CASE(MetaType)
+            CASE(OptionalType)
 
-        END_SWITCH()
+            END_SWITCH()
 #undef SWITCH
 #undef CASE
 #undef END_SWITCH

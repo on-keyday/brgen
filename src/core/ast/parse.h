@@ -591,9 +591,7 @@ namespace brgen::ast {
                     arg = call->arguments[0];
                 }
                 auto copy = typ->type;
-                auto cast = std::make_shared<Cast>(call->loc, std::move(copy), std::move(arg));
-                cast->base = std::move(call);
-                return cast;
+                return std::make_shared<Cast>(std::move(call), std::move(copy), std::move(arg));
             }
             return call;
         }
