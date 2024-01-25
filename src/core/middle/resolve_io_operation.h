@@ -66,6 +66,9 @@ namespace brgen::middle {
             else if (conf->name == "output.put") {
                 method = ast::IOMethod::output_put;
             }
+            else if (conf->name == "input.subrange") {
+                method = ast::IOMethod::input_subrange;
+            }
             else {
                 return;
             }

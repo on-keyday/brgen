@@ -2669,7 +2669,7 @@ type TypeLiteral struct {
 	Loc           Loc
 	ExprType      Type
 	ConstantLevel ConstantLevel
-	Type          Type
+	TypeLiteral   Type
 	EndLoc        Loc
 }
 
@@ -4337,7 +4337,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			var tmp struct {
 				ExprType      *uintptr      `json:"expr_type"`
 				ConstantLevel ConstantLevel `json:"constant_level"`
-				Type          *uintptr      `json:"type"`
+				TypeLiteral   *uintptr      `json:"type_literal"`
 				EndLoc        Loc           `json:"end_loc"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
@@ -4347,8 +4347,8 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				v.ExprType = n.node[*tmp.ExprType].(Type)
 			}
 			v.ConstantLevel = tmp.ConstantLevel
-			if tmp.Type != nil {
-				v.Type = n.node[*tmp.Type].(Type)
+			if tmp.TypeLiteral != nil {
+				v.TypeLiteral = n.node[*tmp.TypeLiteral].(Type)
 			}
 			v.EndLoc = tmp.EndLoc
 		case NodeTypeInput:
@@ -5203,8 +5203,8 @@ func Walk(n Node, f Visitor) {
 				return
 			}
 		}
-		if v.Type != nil {
-			if !f.Visit(f, v.Type) {
+		if v.TypeLiteral != nil {
+			if !f.Visit(f, v.TypeLiteral) {
 				return
 			}
 		}

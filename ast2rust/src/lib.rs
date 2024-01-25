@@ -1,1 +1,1 @@
-mod ast2rust;
+pub mod ast2rust;

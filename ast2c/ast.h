@@ -1126,7 +1126,7 @@ struct ast2c_TypeLiteral {
 	ast2c_Loc loc;
 	ast2c_Type* expr_type;
 	ast2c_ConstantLevel constant_level;
-	ast2c_Type* type;
+	ast2c_Type* type_literal;
 	ast2c_Loc end_loc;
 };
 

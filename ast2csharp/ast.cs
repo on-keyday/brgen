@@ -603,7 +603,7 @@ public class TypeLiteral : Literal{
 	public Loc Loc{get;set;}
 	public Type? ExprType{get;set;}
 	public ConstantLevel ConstantLevel{get;set;}
-	public Type? Type{get;set;}
+	public Type? TypeLiteral_{get;set;}
 	public Loc EndLoc{get;set;}
 }
 public class Input : Literal{

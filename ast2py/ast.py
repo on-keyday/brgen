@@ -520,7 +520,7 @@ class StrLiteral(Literal):
 
 
 class TypeLiteral(Literal):
-    type: Optional[Type]
+    type_literal: Optional[Type]
     end_loc: Loc
 
 
@@ -1706,11 +1706,11 @@ def ast2node(ast :JsonAst) -> Program:
                 else:
                     node[i].expr_type = None
                 node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
-                if ast.node[i].body["type"] is not None:
-                    x = node[ast.node[i].body["type"]]
-                    node[i].type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at TypeLiteral::type'))
+                if ast.node[i].body["type_literal"] is not None:
+                    x = node[ast.node[i].body["type_literal"]]
+                    node[i].type_literal = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at TypeLiteral::type_literal'))
                 else:
-                    node[i].type = None
+                    node[i].type_literal = None
                 node[i].end_loc = parse_Loc(ast.node[i].body["end_loc"])
             case NodeType.INPUT:
                 if ast.node[i].body["expr_type"] is not None:
@@ -2325,8 +2325,8 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
           if x.expr_type is not None:
               if f(f,x.expr_type) == False:
                   return
-          if x.type is not None:
-              if f(f,x.type) == False:
+          if x.type_literal is not None:
+              if f(f,x.type_literal) == False:
                   return
         case x if isinstance(x,Input):
           if x.expr_type is not None:

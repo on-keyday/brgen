@@ -5917,7 +5917,7 @@ pub struct TypeLiteral {
 	pub loc: Loc,
 	pub expr_type: Option<Type>,
 	pub constant_level: ConstantLevel,
-	pub type: Option<Type>,
+	pub type_literal: Option<Type>,
 	pub end_loc: Loc,
 }
 
@@ -7842,7 +7842,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				loc: raw_node.loc.clone(),
 				expr_type: None,
 				constant_level: ConstantLevel::Unknown,
-				type: None,
+				type_literal: None,
 				end_loc: raw_node.loc.clone(),
 				})))
 			},
@@ -11338,20 +11338,20 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					},
 					None=>return Err(Error::MismatchJSONType(constant_level_body.into(),JSONType::String)),
 				};
-				let type_body = match raw_node.body.get("type") {
+				let type_literal_body = match raw_node.body.get("type_literal") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"type")),
+					None=>return Err(Error::MissingField(node_type,"type_literal")),
 				};
- 				if !type_body.is_null() {
-					let type_body = match type_body.as_u64() {
+ 				if !type_literal_body.is_null() {
+					let type_literal_body = match type_literal_body.as_u64() {
 						Some(v)=>v,
-						None=>return Err(Error::MismatchJSONType(type_body.into(),JSONType::Number)),
+						None=>return Err(Error::MismatchJSONType(type_literal_body.into(),JSONType::Number)),
 					};
-					let type_body = match nodes.get(type_body as usize) {
+					let type_literal_body = match nodes.get(type_literal_body as usize) {
 						Some(v)=>v,
-						None => return Err(Error::IndexOutOfBounds(type_body as usize)),
+						None => return Err(Error::IndexOutOfBounds(type_literal_body as usize)),
 					};
-					node.borrow_mut().type = Some(type_body.try_into()?);
+					node.borrow_mut().type_literal = Some(type_literal_body.try_into()?);
 				}
 				let end_loc_body = match raw_node.body.get("end_loc") {
 					Some(v)=>v,
@@ -13083,7 +13083,7 @@ where
 					return;
 				}
 			}
-			if let Some(node) = &node.borrow().type{
+			if let Some(node) = &node.borrow().type_literal{
 				if !f.visit(&node.into()){
 					return;
 				}

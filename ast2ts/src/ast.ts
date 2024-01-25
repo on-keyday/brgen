@@ -855,7 +855,7 @@ export function isStrLiteral(obj: any): obj is StrLiteral {
 }
 
 export interface TypeLiteral extends Literal {
-	type: Type|null;
+	type_literal: Type|null;
 	end_loc: Loc;
 }
 
@@ -1764,7 +1764,7 @@ export function parseAST(obj: any): Program {
 				loc: on.loc,
 				expr_type: null,
 				constant_level: ConstantLevel.unknown,
-				type: null,
+				type_literal: null,
 				end_loc: on.loc,
 			}
 			c.node.push(n);
@@ -3660,14 +3660,14 @@ export function parseAST(obj: any): Program {
 				throw new Error('invalid node list at TypeLiteral::constant_level');
 			}
 			n.constant_level = tmpconstant_level;
-			if (on.body?.type !== null && typeof on.body?.type !== 'number') {
-				throw new Error('invalid node list at TypeLiteral::type');
+			if (on.body?.type_literal !== null && typeof on.body?.type_literal !== 'number') {
+				throw new Error('invalid node list at TypeLiteral::type_literal');
 			}
-			const tmptype = on.body.type === null ? null : c.node[on.body.type];
-			if (!(tmptype === null || isType(tmptype))) {
-				throw new Error('invalid node list at TypeLiteral::type');
+			const tmptype_literal = on.body.type_literal === null ? null : c.node[on.body.type_literal];
+			if (!(tmptype_literal === null || isType(tmptype_literal))) {
+				throw new Error('invalid node list at TypeLiteral::type_literal');
 			}
-			n.type = tmptype;
+			n.type_literal = tmptype_literal;
 			const tmpend_loc = on.body?.end_loc;
 			if (!isLoc(tmpend_loc)) {
 				throw new Error('invalid node list at TypeLiteral::end_loc');
@@ -5151,8 +5151,8 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 					return;
 				}
 			}
-			if (n.type !== null) {
-				const result = fn(fn,n.type);
+			if (n.type_literal !== null) {
+				const result = fn(fn,n.type_literal);
 				if (result === false) {
 					return;
 				}

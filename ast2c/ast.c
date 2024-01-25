@@ -2755,15 +2755,15 @@ int ast2c_TypeLiteral_parse(ast2c_Ast* ast,ast2c_TypeLiteral* s,ast2c_json_handl
 	void* obj_body = h->object_get(h, obj, "body");
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
 	s->expr_type = NULL;
-	s->type = NULL;
+	s->type_literal = NULL;
 	void* expr_type = h->object_get(h, obj_body, "expr_type");
 	void* constant_level = h->object_get(h, obj_body, "constant_level");
-	void* type = h->object_get(h, obj_body, "type");
+	void* type_literal = h->object_get(h, obj_body, "type_literal");
 	void* end_loc = h->object_get(h, obj_body, "end_loc");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_TypeLiteral::loc is null"); } return 0; }
 	if (!expr_type) { if(h->error) { h->error(h,expr_type, "ast2c_TypeLiteral::expr_type is null"); } return 0; }
 	if (!constant_level) { if(h->error) { h->error(h,constant_level, "ast2c_TypeLiteral::constant_level is null"); } return 0; }
-	if (!type) { if(h->error) { h->error(h,type, "ast2c_TypeLiteral::type is null"); } return 0; }
+	if (!type_literal) { if(h->error) { h->error(h,type_literal, "ast2c_TypeLiteral::type_literal is null"); } return 0; }
 	if (!end_loc) { if(h->error) { h->error(h,end_loc, "ast2c_TypeLiteral::end_loc is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_TypeLiteral::loc"); }
