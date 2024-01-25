@@ -590,7 +590,7 @@ namespace brgen::ast {
                 if (call->arguments.size() == 1) {
                     arg = call->arguments[0];
                 }
-                auto copy = typ->type;
+                auto copy = typ->type_literal;
                 return std::make_shared<Cast>(std::move(call), std::move(copy), std::move(arg));
             }
             return call;

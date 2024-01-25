@@ -676,19 +676,21 @@ namespace brgen::middle {
             typing_expr(call->callee);
             if (auto typ_lit = ast::as<ast::TypeLiteral>(call->callee)) {
                 // replace with cast node
-                auto s = ast::as<ast::IdentType>(typ_lit->type);
+                auto s = ast::as<ast::IdentType>(typ_lit->type_literal);
                 assert(s);
-                auto def = ast::as<ast::Ident>(s->ident)->base.lock();
+                auto def = s->ident->base.lock();
                 assert(def);
-                if (auto enum_ = ast::as<ast::Enum>(def)) {
+                assert(def->node_type == ast::NodeType::ident);
+                auto base = ast::as<ast::Ident>(def)->base.lock();
+                if (auto enum_ = ast::as<ast::Enum>(base)) {
                     call->expr_type = enum_->enum_type;
                 }
-                else if (auto fmt = ast::as<ast::Format>(def)) {
+                else if (auto fmt = ast::as<ast::Format>(base)) {
                     call->expr_type = fmt->body->struct_type;
                 }
                 else {
                     error(call->callee->loc, "expect enum or format type but not")
-                        .error(def->loc, "type is ", ast::node_type_to_string(def->node_type))
+                        .error(def->loc, "type is ", ast::node_type_to_string(base->node_type))
                         .report();
                 }
                 if (call->arguments.size() > 1) {
@@ -740,20 +742,29 @@ namespace brgen::middle {
 
         void typing_member_access(ast::MemberAccess* selector) {
             typing_expr(selector->target);
-            if (auto ident = ast::as<ast::Ident>(selector->target); ident && ident->usage == ast::IdentUsage::reference_type) {
-                auto base = ident->base.lock();
-                if (auto def = ast::as<ast::Ident>(base); def && def->usage == ast::IdentUsage::define_enum) {
-                    base = def->base.lock();
-                    if (auto enum_ = ast::as<ast::Enum>(base)) {
-                        selector->expr_type = enum_->enum_type;
-                        auto member = enum_->lookup(selector->member->ident);
-                        if (!member) {
-                            auto r = error(selector->member->loc, "member of enum ", ident->ident, ".", selector->member->ident, " is not defined");
-                            r.error(ident->loc, "enum ", ident->ident, " is defined here").report();
-                        }
-                        selector->base = member->ident;
-                        return;
+            if (auto tylit = ast::as<ast::TypeLiteral>(selector->target)) {
+                auto ty = ast::as<ast::IdentType>(tylit->type_literal);
+                if (!ty) {
+                    error(selector->target->loc, "expect enum type but not")
+                        .error(tylit->type_literal->loc, "type is ", ast::node_type_to_string(tylit->type_literal->node_type))
+                        .report();
+                }
+                if (auto def = ast::as<ast::EnumType>(ty->base.lock())) {
+                    auto enum_ = def->base.lock();
+                    assert(enum_);
+                    selector->expr_type = enum_->enum_type;
+                    auto member = enum_->lookup(selector->member->ident);
+                    if (!member) {
+                        auto r = error(selector->member->loc, "member of enum ", ty->ident->ident, ".", selector->member->ident, " is not defined");
+                        r.error(tylit->loc, "enum ", enum_->ident->ident, " is defined here").report();
                     }
+                    selector->base = member->ident;
+                    return;
+                }
+                else {
+                    error(selector->target->loc, "expect enum type but not")
+                        .error(tylit->type_literal->loc, "type is ", ast::node_type_to_string(tylit->type_literal->node_type))
+                        .report();
                 }
             }
             if (!selector->target->expr_type) {
