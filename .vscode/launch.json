@@ -34,7 +34,7 @@
             "type": "go",
             "request": "launch",
             "mode": "debug",
-            "program": "${workspaceRoot}/src/tool/json2go",
+            "program": "${workspaceRoot}/src/tool/json2mermaid",
             "args": ["-f","ignore/sample.json"],
             "cwd": "${workspaceRoot}",
         },

@@ -26,6 +26,7 @@ endif()
 
 add_custom_target(json2go ALL COMMAND "${GO_COMPILER}" "build" "${CMAKE_GO_FLAGS}" "-o" "${CMAKE_BINARY_DIR}/tool/json2go${SUFFIX}" "${CMAKE_SOURCE_DIR}/src/tool/json2go" DEPENDS "${CMAKE_SOURCE_DIR}/src/tool/json2go" "${CMAKE_SOURCE_DIR}/ast2go")
 add_custom_target(json2kaitai ALL COMMAND "${GO_COMPILER}" "build" "${CMAKE_GO_FLAGS}" "-o" "${CMAKE_BINARY_DIR}/tool/json2kaitai${SUFFIX}" "${CMAKE_SOURCE_DIR}/src/tool/json2kaitai" DEPENDS "${CMAKE_SOURCE_DIR}/src/tool/json2kaitai" "${CMAKE_SOURCE_DIR}/ast2go")
+add_custom_target(json2mermaid ALL COMMAND "${GO_COMPILER}" "build" "${CMAKE_GO_FLAGS}" "-o" "${CMAKE_BINARY_DIR}/tool/json2mermaid${SUFFIX}" "${CMAKE_SOURCE_DIR}/src/tool/json2mermaid" DEPENDS "${CMAKE_SOURCE_DIR}/src/tool/json2mermaid" "${CMAKE_SOURCE_DIR}/ast2go")
 
 
 if("$ENV{BUILD_MODE}" STREQUAL "wasm-em")
@@ -179,12 +180,15 @@ set_target_properties(json2cpp PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/too
 set_target_properties(json2cpp2 PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/tool")
 set_target_properties(ctobgn PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/tool")
 set_target_properties(rfc2bgn PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/tool")
+set_target_properties(brgen PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/tool")
 endif()
 install(TARGETS src2json json2cpp json2cpp2 ctobgn rfc2bgn DESTINATION tool OPTIONAL)
 
 install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/brgen${SUFFIX}" DESTINATION tool OPTIONAL)
 install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/json2go${SUFFIX}" DESTINATION tool OPTIONAL)
 install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/json2kaitai${SUFFIX}" DESTINATION tool OPTIONAL)
+install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/json2mermaid${SUFFIX}" DESTINATION tool OPTIONAL)
+
 install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/gen_ast2go${SUFFIX}" DESTINATION tool OPTIONAL)
 install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/gen_ast2ts${SUFFIX}" DESTINATION tool OPTIONAL)
 install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/gen_ast2rust${SUFFIX}" DESTINATION tool OPTIONAL)
