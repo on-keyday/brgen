@@ -166,7 +166,6 @@ namespace brgen::ast {
         IOMethod method = IOMethod::unspec;
         std::shared_ptr<Expr> base;
         std::vector<std::shared_ptr<Expr>> arguments;
-        std::vector<std::shared_ptr<Type>> type_arguments;
 
         IOOperation(std::shared_ptr<Expr>&& a, IOMethod m)
             : Expr(a->loc, NodeType::io_operation), base(std::move(a)), method(m) {}
@@ -179,7 +178,6 @@ namespace brgen::ast {
             sdebugf(base);
             sdebugf(method);
             sdebugf(arguments);
-            sdebugf(type_arguments);
         }
     };
 

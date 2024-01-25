@@ -510,6 +510,16 @@ const hover = async (params :HoverParams)=>{
         }
         return `${bit} bit`;
     }
+    const unwrapType = (type :ast2ts.Type|null|undefined) :string => {
+        if(!type){
+            return "unknown";
+        }
+        if(ast2ts.isIdentType(type)){
+           return unwrapType(type.base); 
+        }
+        return type.node_type;
+    }
+
     if(ast2ts.isIdent(found)){
         let ident = found as ast2ts.Ident;
         for(;;){
@@ -531,15 +541,15 @@ const hover = async (params :HoverParams)=>{
                     }
                     return makeHover(ident.ident,"unspecified member reference");
                 case ast2ts.IdentUsage.define_variable:
-                    return makeHover(ident.ident,`variable (type: ${ident.expr_type?.node_type||"unknown"}, size: ${bitSize(ident.expr_type?.bit_size)} constant level: ${ident.constant_level})`);
+                    return makeHover(ident.ident,`variable (type: ${unwrapType(ident.expr_type)}, size: ${bitSize(ident.expr_type?.bit_size)} constant level: ${ident.constant_level})`);
                 case ast2ts.IdentUsage.define_const:
-                    return makeHover(ident.ident,`constant (type: ${ident.expr_type?.node_type||"unknown"}, size: ${bitSize(ident.expr_type?.bit_size)} constant level: ${ident.constant_level})`);
+                    return makeHover(ident.ident,`constant (type: ${unwrapType(ident.expr_type)}, size: ${bitSize(ident.expr_type?.bit_size)} constant level: ${ident.constant_level})`);
                 case ast2ts.IdentUsage.define_field:
                     if(ast2ts.isField(ident.base)){
                         return makeHover(ident.ident, 
                             `
 + field 
-    + type: ${ident.base.field_type?.node_type||"unknown"}
+    + type: ${unwrapType(ident.base.field_type)}
     + size: ${bitSize(ident.base.field_type?.bit_size)}
     + offset(from begin): ${bitSize(ident.base.offset_bit)}
     + offset(from recent fixed): ${bitSize(ident.base.offset_recent)}
@@ -599,6 +609,9 @@ const hover = async (params :HoverParams)=>{
     }
     else if(ast2ts.isAssert(found)){
         return makeHover("assert",`assertion ${found.is_io_related?"(io_related)":""}`); 
+    }
+    else if(ast2ts.isTypeLiteral(found)){
+        return makeHover("type literal",`type literal (type: ${found.type_literal?.node_type || "unknown"}, size: ${bitSize(found.type_literal?.bit_size)})`);
     }
 }
 

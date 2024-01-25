@@ -81,7 +81,9 @@ namespace brgen::ast {
         }
 
         TypeLiteral(lexer::Loc l, const std::shared_ptr<Type>& t, lexer::Loc end_loc)
-            : Literal(l, NodeType::type_literal), type_literal(t), end_loc(end_loc) {}
+            : Literal(l, NodeType::type_literal), type_literal(t), end_loc(end_loc) {
+            t->is_explicit = true;
+        }
 
         // for decode
         constexpr TypeLiteral()

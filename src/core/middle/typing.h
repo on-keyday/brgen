@@ -682,11 +682,8 @@ namespace brgen::middle {
                 assert(def);
                 assert(def->node_type == ast::NodeType::ident);
                 auto base = ast::as<ast::Ident>(def)->base.lock();
-                if (auto enum_ = ast::as<ast::Enum>(base)) {
-                    call->expr_type = enum_->enum_type;
-                }
-                else if (auto fmt = ast::as<ast::Format>(base)) {
-                    call->expr_type = fmt->body->struct_type;
+                if (ast::as<ast::Enum>(base) || ast::as<ast::Format>(base)) {
+                    call->expr_type = typ_lit->type_literal;
                 }
                 else {
                     error(call->callee->loc, "expect enum or format type but not")
@@ -894,34 +891,24 @@ namespace brgen::middle {
                     io->constant_level = ast::ConstantLevel::variable;
                     auto c = ast::as<ast::Call>(io->base);
                     assert(c);
+                    if (c->arguments.size() > 2) {
+                        error(io->loc, "expect 0, 1 or 2 arguments but got ", nums(c->arguments.size())).report();
+                    }
                     for (auto& arg : c->arguments) {
-                        typing_expr(arg, true);
-                        if (auto i = ast::as<ast::Ident>(arg); i && (i->usage == ast::IdentUsage::unknown ||
-                                                                     i->usage == ast::IdentUsage::reference_type)) {
-                            if (auto t = ast::is_int_type(i->ident)) {
-                                auto typ = std::make_shared<ast::IntType>(i->loc, t->bit_size, t->endian, t->is_signed);
-                                io->type_arguments.push_back(typ);
-                                io->expr_type = typ;
-                                i->usage = ast::IdentUsage::reference_type;
-                            }
-                            else {
-                                if (i->usage == ast::IdentUsage::unknown) {
-                                    error(i->loc, "type identifier ", i->ident, " is not defined").report();
-                                }
-                                auto typ = std::make_shared<ast::IdentType>(i->loc, ast::cast_to<ast::Ident>(arg));
-                                io->type_arguments.push_back(typ);
-                                unwrap_reference_type_from_ident(typ.get());
-                                io->expr_type = typ;
-                            }
-                            if (io->type_arguments.size() > 1) {
-                                error(io->loc, "expect 0 or 1 type argument but got ", nums(io->type_arguments.size())).report();
-                            }
-                            continue;
+                        typing_expr(arg, false);
+                    }
+                    if (c->arguments.size() >= 1) {
+                        auto typ = ast::as<ast::TypeLiteral>(c->arguments[0]);
+                        if (!typ) {
+                            error(c->arguments[1]->loc, "expect type literal but not")
+                                .error(c->arguments[1]->loc, "type is ", ast::node_type_to_string(c->arguments[1]->node_type))
+                                .report();
                         }
-                        io->arguments.push_back(arg);
-                        if (io->arguments.size() > 1) {
-                            error(io->loc, "expect 0 or 1 argument but got ", nums(io->arguments.size())).report();
-                        }
+                        c->expr_type = typ->type_literal;
+                    }
+                    if (c->arguments.size() >= 2) {
+                        io->arguments.push_back(c->arguments[1]);
+                        // TODO(on-keyday): check integer type?
                     }
                     if (io->expr_type == nullptr) {
                         io->expr_type = std::make_shared<ast::IntType>(io->loc, 8, ast::Endian::unspec, false);
@@ -1023,6 +1010,7 @@ namespace brgen::middle {
                     auto typ = std::make_shared<ast::IdentType>(ident->loc, ast::cast_to<ast::Ident>(expr));
                     unwrap_reference_type_from_ident(typ.get());
                     auto typ_lit = std::make_shared<ast::TypeLiteral>(ident->loc, std::move(typ), ident->loc);
+                    typ_lit->expr_type = std::make_shared<ast::MetaType>(ident->loc);
                     base_node.replace(std::move(typ_lit));
                 }
             }
@@ -1084,6 +1072,7 @@ namespace brgen::middle {
                 expr->expr_type = i->import_desc->struct_type;
             }
             else if (auto typ = ast::as<ast::TypeLiteral>(expr)) {
+                typing_object(typ->type_literal);
                 expr->expr_type = std::make_shared<ast::MetaType>(typ->loc);
             }
             else {

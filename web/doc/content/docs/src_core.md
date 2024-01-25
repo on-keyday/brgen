@@ -108,4 +108,7 @@ format A: <--ここの識別子や
 A # <--ここの識別子のexpr_typeはnullptr
 ```
 
+- Typing クラス実装時 StructType を不用意に用いると木構造が再帰して木構造でなくなる場合があるので注意。代わりに IdentType を用いること。
+- IdentType の base は IdentType にならないようにすること。
+
 {{< mermaid >}}
