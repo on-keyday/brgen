@@ -3810,7 +3810,6 @@ pub struct IoOperation {
 	pub base: Option<Expr>,
 	pub method: IoMethod,
 	pub arguments: Vec<Expr>,
-	pub type_arguments: Vec<Type>,
 }
 
 impl TryFrom<&Expr> for Rc<RefCell<IoOperation>> {
@@ -7562,7 +7561,6 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				base: None,
 				method: IoMethod::Unspec,
 				arguments: Vec::new(),
-				type_arguments: Vec::new(),
 				})))
 			},
 			NodeType::Loop => {
@@ -9556,25 +9554,6 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						None => return Err(Error::IndexOutOfBounds(link as usize)),
 					};
 					node.borrow_mut().arguments.push(arguments_body.try_into()?);
-				}
-				let type_arguments_body = match raw_node.body.get("type_arguments") {
-					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"type_arguments")),
-				};
-				let type_arguments_body = match type_arguments_body.as_array(){
-					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(type_arguments_body.into(),JSONType::Array)),
-				};
-				for link in type_arguments_body {
-					let link = match link.as_u64() {
-						Some(v)=>v,
-						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
-					};
-					let type_arguments_body = match nodes.get(link as usize) {
-						Some(v)=>v,
-						None => return Err(Error::IndexOutOfBounds(link as usize)),
-					};
-					node.borrow_mut().type_arguments.push(type_arguments_body.try_into()?);
 				}
 			},
 			NodeType::Loop => {
@@ -12879,11 +12858,6 @@ where
 				}
 			}
 			for node in &node.borrow().arguments{
-				if !f.visit(&node.into()){
-					return;
-				}
-			}
-			for node in &node.borrow().type_arguments{
 				if !f.visit(&node.into()){
 					return;
 				}

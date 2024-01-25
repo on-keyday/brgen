@@ -367,7 +367,6 @@ class IoOperation(Expr):
     base: Optional[Expr]
     method: IoMethod
     arguments: List[Expr]
-    type_arguments: List[Type]
 
 
 class Loop(Stmt):
@@ -1280,7 +1279,6 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].base = None
                 node[i].method = IoMethod(ast.node[i].body["method"])
                 node[i].arguments = [(node[x] if isinstance(node[x],Expr) else raiseError(TypeError('type mismatch at IoOperation::arguments'))) for x in ast.node[i].body["arguments"]]
-                node[i].type_arguments = [(node[x] if isinstance(node[x],Type) else raiseError(TypeError('type mismatch at IoOperation::type_arguments'))) for x in ast.node[i].body["type_arguments"]]
             case NodeType.LOOP:
                 if ast.node[i].body["cond_scope"] is not None:
                     node[i].cond_scope = scope[ast.node[i].body["cond_scope"]]
@@ -2194,9 +2192,6 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
                   return
           for i in range(len(x.arguments)):
               if f(f,x.arguments[i]) == False:
-                  return
-          for i in range(len(x.type_arguments)):
-              if f(f,x.type_arguments[i]) == False:
                   return
         case x if isinstance(x,Loop):
           if x.init is not None:

@@ -1724,13 +1724,11 @@ int ast2c_IoOperation_parse(ast2c_Ast* ast,ast2c_IoOperation* s,ast2c_json_handl
 	s->expr_type = NULL;
 	s->base = NULL;
 	s->arguments = NULL;
-	s->type_arguments = NULL;
 	void* expr_type = h->object_get(h, obj_body, "expr_type");
 	void* constant_level = h->object_get(h, obj_body, "constant_level");
 	void* base = h->object_get(h, obj_body, "base");
 	void* method = h->object_get(h, obj_body, "method");
 	void* arguments = h->object_get(h, obj_body, "arguments");
-	void* type_arguments = h->object_get(h, obj_body, "type_arguments");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_IoOperation::loc is null"); } return 0; }
 	if (!expr_type) { if(h->error) { h->error(h,expr_type, "ast2c_IoOperation::expr_type is null"); } return 0; }
 	if (!constant_level) { if(h->error) { h->error(h,constant_level, "ast2c_IoOperation::constant_level is null"); } return 0; }
@@ -1739,11 +1737,6 @@ int ast2c_IoOperation_parse(ast2c_Ast* ast,ast2c_IoOperation* s,ast2c_json_handl
 	if (!arguments) { if(h->error) { h->error(h,arguments, "ast2c_IoOperation::arguments is null"); } return 0; }
 	if(!h->array_size(h, arguments,&s->arguments_size)) {
 		if(h->error) { h->error(h,arguments, "failed to get array size of ast2c_IoOperation::arguments"); }
-		return NULL;
-	}
-	if (!type_arguments) { if(h->error) { h->error(h,type_arguments, "ast2c_IoOperation::type_arguments is null"); } return 0; }
-	if(!h->array_size(h, type_arguments,&s->type_arguments_size)) {
-		if(h->error) { h->error(h,type_arguments, "failed to get array size of ast2c_IoOperation::type_arguments"); }
 		return NULL;
 	}
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {

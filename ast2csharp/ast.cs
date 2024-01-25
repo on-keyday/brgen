@@ -383,7 +383,6 @@ public class IoOperation : Expr{
 	public Expr? Base{get;set;}
 	public IoMethod Method{get;set;}
 	public List<Expr>? Arguments{get;set;}
-	public List<Type>? TypeArguments{get;set;}
 }
 public class Loop : Stmt{
 	public Loc Loc{get;set;}

@@ -1885,7 +1885,6 @@ type IoOperation struct {
 	Base          Expr
 	Method        IoMethod
 	Arguments     []Expr
-	TypeArguments []Type
 }
 
 func (n *IoOperation) isExpr() {}
@@ -3762,7 +3761,6 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				Base          *uintptr      `json:"base"`
 				Method        IoMethod      `json:"method"`
 				Arguments     []uintptr     `json:"arguments"`
-				TypeArguments []uintptr     `json:"type_arguments"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -3778,10 +3776,6 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.Arguments = make([]Expr, len(tmp.Arguments))
 			for j, k := range tmp.Arguments {
 				v.Arguments[j] = n.node[k].(Expr)
-			}
-			v.TypeArguments = make([]Type, len(tmp.TypeArguments))
-			for j, k := range tmp.TypeArguments {
-				v.TypeArguments[j] = n.node[k].(Type)
 			}
 		case NodeTypeLoop:
 			v := n.node[i].(*Loop)
@@ -5019,11 +5013,6 @@ func Walk(n Node, f Visitor) {
 			}
 		}
 		for _, w := range v.Arguments {
-			if !f.Visit(f, w) {
-				return
-			}
-		}
-		for _, w := range v.TypeArguments {
 			if !f.Visit(f, w) {
 				return
 			}

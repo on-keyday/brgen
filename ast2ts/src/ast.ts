@@ -587,7 +587,6 @@ export interface IoOperation extends Expr {
 	base: Expr|null;
 	method: IoMethod;
 	arguments: Expr[];
-	type_arguments: Type[];
 }
 
 export function isIoOperation(obj: any): obj is IoOperation {
@@ -1394,7 +1393,6 @@ export function parseAST(obj: any): Program {
 				base: null,
 				method: IoMethod.unspec,
 				arguments: [],
-				type_arguments: [],
 			}
 			c.node.push(n);
 			break;
@@ -2740,16 +2738,6 @@ export function parseAST(obj: any): Program {
 					throw new Error('invalid node list at IoOperation::arguments');
 				}
 				n.arguments.push(tmparguments);
-			}
-			for (const o of on.body.type_arguments) {
-				if (typeof o !== 'number') {
-					throw new Error('invalid node list at IoOperation::type_arguments');
-				}
-				const tmptype_arguments = c.node[o];
-				if (!isType(tmptype_arguments)) {
-					throw new Error('invalid node list at IoOperation::type_arguments');
-				}
-				n.type_arguments.push(tmptype_arguments);
 			}
 			break;
 		}
@@ -4756,12 +4744,6 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 				}
 			}
 			for (const e of n.arguments) {
-				const result = fn(fn,e);
-				if (result === false) {
-					return;
-				}
-			}
-			for (const e of n.type_arguments) {
 				const result = fn(fn,e);
 				if (result === false) {
 					return;

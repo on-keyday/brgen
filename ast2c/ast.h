@@ -749,8 +749,6 @@ struct ast2c_IoOperation {
 	ast2c_IoMethod method;
 	ast2c_Expr** arguments;
 	size_t arguments_size;
-	ast2c_Type** type_arguments;
-	size_t type_arguments_size;
 };
 
 // returns 1 if succeed 0 if failed
