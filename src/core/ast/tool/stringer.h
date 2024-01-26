@@ -61,7 +61,9 @@ namespace brgen::ast::tool {
     }
 
     struct Stringer {
-        std::unordered_map<BinaryOp, std::function<std::string(Stringer& s, const std::shared_ptr<Expr>& left, const std::shared_ptr<Expr>& right)>> bin_op_map;
+        using BinaryFunc = std::function<std::string(Stringer& s, const std::shared_ptr<Binary>& v)>;
+        BinaryFunc bin_op_func;
+        std::unordered_map<BinaryOp, BinaryFunc> bin_op_map;
         std::unordered_map<UnaryOp, std::function<std::string(Stringer& s, const std::shared_ptr<Expr>&)>> unary_op_map;
         std::unordered_map<size_t, std::string> tmp_var_map;
 
@@ -126,17 +128,27 @@ namespace brgen::ast::tool {
             return get_text_with_replace(default_text);
         }
 
-       private:
-        std::string handle_bin_op(const std::shared_ptr<Binary>& bin) {
-            auto op = bin->op;
-            if (auto it = bin_op_map.find(op); it != bin_op_map.end()) {
-                return it->second(*this, bin->left, bin->right);
+        std::string default_bin_op(const std::shared_ptr<Binary>& bin) {
+            auto left = to_string(bin->left);
+            auto right = to_string(bin->right);
+            return concat("(", left, " ", ast::to_string(bin->op), " ", right, ")");
+        }
+
+        std::string bin_op_with_lookup(const std::shared_ptr<Binary>& bin) {
+            if (auto it = bin_op_map.find(bin->op); it != bin_op_map.end()) {
+                return it->second(*this, bin);
             }
             else {
-                auto left = to_string(bin->left);
-                auto right = to_string(bin->right);
-                return concat("(", left, " ", ast::to_string(op), " ", right, ")");
+                return default_bin_op(bin);
             }
+        }
+
+       private:
+        std::string handle_bin_op(const std::shared_ptr<Binary>& bin) {
+            if (bin_op_func) {
+                return bin_op_func(*this, bin);
+            }
+            return bin_op_with_lookup(bin);
         }
 
         std::string handle_call_op(const std::shared_ptr<Call>& c) {

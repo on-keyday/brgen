@@ -93,11 +93,12 @@ namespace j2cp2 {
         bool enable_line_map = false;
         bool use_error = false;
         bool use_variant = false;
+        bool use_overflow_check = false;
         ast::Format* current_format = nullptr;
         Context ctx;
         std::vector<std::string> struct_names;
 
-        auto write_return_error(ast::Field* field, auto&&... msg) {
+        auto write_return_error(brgen::writer::Writer& w, ast::Field* field, auto&&... msg) {
             if (use_error) {
                 auto f = ast::as<ast::Format>(field->belong.lock());
                 assert(f);
@@ -107,6 +108,10 @@ namespace j2cp2 {
             else {
                 w.writeln("return false;");
             }
+        }
+
+        auto write_return_error(ast::Field* field, auto&&... msg) {
+            write_return_error(w, field, msg...);
         }
 
         auto write_return_error(ast::Format* fmt, auto&&... msg) {
@@ -173,9 +178,13 @@ namespace j2cp2 {
             }
         }
 
-        std::string get_type_name(const std::shared_ptr<ast::Type>& type) {
+        std::string get_type_name(const std::shared_ptr<ast::Type>& type, bool align = false) {
             if (auto int_ty = ast::as<ast::IntType>(type); int_ty) {
-                return brgen::concat("std::", int_ty->is_signed ? "" : "u", "int", brgen::nums(*int_ty->bit_size), "_t");
+                auto size = *int_ty->bit_size;
+                if (align) {
+                    size = ast::aligned_bit(*int_ty->bit_size);
+                }
+                return brgen::concat("std::", int_ty->is_signed ? "" : "u", "int", brgen::nums(size), "_t");
             }
             if (auto typ = ast::as<ast::FloatType>(type); typ) {
                 return brgen::concat("::futils::binary::float", brgen::nums(*typ->bit_size), "_t");
@@ -693,7 +702,7 @@ namespace j2cp2 {
                 else if (!arr_ty->length_value) {
                     // check dynamic length is compatible with its length
                     map_line(loc);
-                    auto length = str.to_string(arr_ty->length);
+                    auto length = get_length(fi, arr_ty->length);
                     w.writeln("if (", length, "!=", ident, ".size()) {");
                     {
                         auto indent = w.indent_scope();
@@ -761,6 +770,51 @@ namespace j2cp2 {
                 }
                 w.writeln("}");
             }
+        }
+
+        std::string get_length(ast::Field* field, const std::shared_ptr<ast::Expr>& expr) {
+            if (use_overflow_check) {
+                std::vector<std::string> buffer;
+                str.bin_op_func = [&](ast::tool::Stringer& s, const std::shared_ptr<ast::Binary>& r) {
+                    brgen::writer::Writer w;
+                    auto op = r->op;
+                    if (op == ast::BinaryOp::add ||
+                        op == ast::BinaryOp::sub ||
+                        op == ast::BinaryOp::mul) {
+                        auto left = s.to_string(r->left);
+                        auto right = s.to_string(r->right);
+                        auto tmp_buf = brgen::concat("tmp_", brgen::nums(get_seq()), "_");
+                        auto typ = get_type_name(r->expr_type, true);
+                        std::map<ast::BinaryOp, std::string> op_map = {
+                            {ast::BinaryOp::add, "add"},
+                            {ast::BinaryOp::sub, "sub"},
+                            {ast::BinaryOp::mul, "mul"},
+                        };
+                        w.writeln(typ, " ", tmp_buf, " = 0;");
+                        w.writeln("if(__builtin_", op_map[op], "_overflow(", left, ",", right, ",&", tmp_buf, ")) {");
+                        {
+                            auto indent = w.indent_scope();
+                            write_return_error(w, field, op_map[op], " overflow");
+                        }
+                        w.writeln("}");
+                        buffer.push_back(std::move(w.out()));
+                        return tmp_buf;
+                    }
+                    return str.bin_op_with_lookup(r);
+                };
+                auto result = str.to_string(expr);
+                str.bin_op_func = nullptr;
+                for (auto& b : buffer) {
+                    w.write_unformatted(b);
+                }
+                auto tmp = brgen::concat("tmp_", brgen::nums(get_seq()), "_");
+                w.writeln("auto ", tmp, " = ", result, ";");
+                return tmp;
+            }
+            auto result = str.to_string(expr);
+            auto tmp = brgen::concat("tmp_", brgen::nums(get_seq()), "_");
+            w.writeln("auto ", tmp, " = ", result, ";");
+            return tmp;
         }
 
         void write_field_decode(ast::Field* f) {
@@ -844,7 +898,7 @@ namespace j2cp2 {
                     }
                 }
                 else if (!arr_ty->length_value) {
-                    len = str.to_string(arr_ty->length);
+                    len = get_length(fi, arr_ty->length);
                 }
                 map_line(loc);
                 if (auto int_ty = ast::as<ast::IntType>(arr_ty->base_type); int_ty && int_ty->bit_size == 8) {
@@ -872,7 +926,7 @@ namespace j2cp2 {
                                 write_return_error(fi, "read byte array failed; no terminator found");
                             }
                             w.writeln("}");
-                            w.writeln("if (", tmp, " == :::futils::view::rvec(", std::get<0>(*next), ", ", term_len, ")) {");
+                            w.writeln("if (", tmp, " == ::futils::view::rvec(", std::get<0>(*next), ", ", term_len, ")) {");
                             {
                                 auto indent = w.indent_scope();
                                 w.writeln("r.reset(", base_offset_tmp, ");");

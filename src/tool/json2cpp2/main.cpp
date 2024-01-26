@@ -17,6 +17,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
     bool add_line_map = false;
     bool use_error = false;
     bool use_raw_union = false;
+    bool use_overflow_check = false;
     void bind(futils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&spec, "s", "spec mode");
@@ -24,6 +25,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
         ctx.VarBool(&add_line_map, "add-line-map", "add line map");
         ctx.VarBool(&use_error, "use-error", "use futils::error::Error for error reporting");
         ctx.VarBool(&use_raw_union, "use-raw-union", "use raw union instead of std::variant (maybe unsafe)");
+        ctx.VarBool(&use_overflow_check, "use-overflow-check", "add overflow check for integer types");
     }
 };
 
@@ -87,6 +89,7 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
     g.enable_line_map = flags.add_line_map;
     g.use_error = flags.use_error;
     g.use_variant = !flags.use_raw_union;
+    g.use_overflow_check = flags.use_overflow_check;
     auto prog = brgen::ast::cast_to<brgen::ast::Program>(*res);
     g.write_program(prog);
     cout << g.w.out() << "\n";
