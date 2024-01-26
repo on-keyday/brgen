@@ -48,6 +48,7 @@ export interface CppOption extends CallOption {
     use_line_map? :boolean
     use_error? :boolean
     use_raw_union? :boolean
+    use_overflow_check? :boolean
 }
 
 export interface GoOption extends CallOption {
@@ -122,6 +123,9 @@ export const getCppCode = (id :TraceID,sourceCode :string,options? :CppOption) =
     }
     if(options?.use_raw_union){
         req.arguments.push("--use-raw-union");
+    }
+    if(options?.use_overflow_check) {
+        req.arguments.push("--use-overflow-check");
     }
     return mgr.doRequest(req);
 }

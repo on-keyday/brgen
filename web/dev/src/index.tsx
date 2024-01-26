@@ -52,7 +52,9 @@ const enum ConfigKey {
     CPP_EXPAND_INCLUDE = "expand_include",
     CPP_USE_ERROR = "use_error",
     CPP_USE_RAW_UNION = "use_raw_union",
+    CPP_CHECK_OVERFLOW = "check_overflow",
     GO_USE_PUT = "use_put",
+
 }
 
 interface LanguageConfig{
@@ -446,10 +448,12 @@ const handleCpp = async (s :JobResult) => {
     const expandInclude = commonUI.config.get(Language.CPP)?.config.get(ConfigKey.CPP_EXPAND_INCLUDE)?.value;
     const useError = commonUI.config.get(Language.CPP)?.config.get(ConfigKey.CPP_USE_ERROR)?.value;
     const useRawUnion = commonUI.config.get(Language.CPP)?.config.get(ConfigKey.CPP_USE_RAW_UNION)?.value;
+    const checkOverflow = commonUI.config.get(Language.CPP)?.config.get(ConfigKey.CPP_CHECK_OVERFLOW)?.value;
     const cppOption : caller.CppOption = {      
         use_line_map: useMap === true,
         use_error: useError === true,
         use_raw_union: useRawUnion === true,
+        use_overflow_check: checkOverflow === true,
     };
     let result : JobResult | undefined = undefined;
     let mappingInfo :any;
@@ -730,6 +734,10 @@ const fileName :InputListElement = {
         "type": "checkbox",
         "value": false,
     });
+    cpp.set(ConfigKey.CPP_CHECK_OVERFLOW,{
+        "type": "checkbox",
+        "value": false,
+    })
     cpp.set(ConfigKey.COMMON_FILE_NAME,fileName);
     commonUI.config.set(Language.CPP,languageSpecificConfig(cpp,ConfigKey.CPP_SOURCE_MAP,(change) => {
         if(change.name === ConfigKey.CPP_SOURCE_MAP){
