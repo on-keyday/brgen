@@ -137,7 +137,7 @@ namespace j2cp2 {
             }
         }
 
-        void write_bit_fields(std::vector<std::shared_ptr<ast::Field>>& non_align, size_t bit_size, bool is_int_set, bool include_non_simple) {
+        void write_bit_fields(std::string_view prefix, std::vector<std::shared_ptr<ast::Field>>& non_align, size_t bit_size, bool is_int_set, bool include_non_simple) {
             if (is_int_set && !include_non_simple) {
                 w.write("::futils::binary::flags_t<std::uint", brgen::nums(bit_size), "_t");
                 for (auto& n : non_align) {
@@ -164,13 +164,13 @@ namespace j2cp2 {
                     if (auto int_ty = ast::as<ast::IntType>(type); int_ty) {
                         map_line(n->loc);
                         w.writeln("bits_flag_alias_method(flags_", brgen::nums(seq), "_,", brgen::nums(i), ",", n->ident->ident, ");");
-                        str.map_ident(n->ident, n->ident->ident + "()");
+                        str.map_ident(n->ident, "${THIS}", n->ident->ident + "()");
                     }
                     else if (auto enum_ty = ast::as<ast::EnumType>(type); enum_ty) {
                         auto enum_ = enum_ty->base.lock();
                         line_map.push_back({n->loc, w.line_count()});
                         w.writeln("bits_flag_alias_method_with_enum(flags_", brgen::nums(seq), "_,", brgen::nums(i), ",", n->ident->ident, ",", enum_->ident->ident, ");");
-                        str.map_ident(n->ident, n->ident->ident + "()");
+                        str.map_ident(n->ident, "${THIS}", prefix, n->ident->ident + "()");
                     }
                     i++;
                 }
@@ -458,7 +458,7 @@ namespace j2cp2 {
                             include_non_simple = include_non_simple || !is_simple_type(type);
                             bit_size += *type->bit_size;
                             non_aligned.push_back(ast::cast_to<ast::Field>(field));
-                            write_bit_fields(non_aligned, bit_size, is_int_set, include_non_simple);
+                            write_bit_fields(prefix, non_aligned, bit_size, is_int_set, include_non_simple);
                             non_aligned.clear();
                             is_int_set = true;
                             include_non_simple = false;
@@ -479,6 +479,11 @@ namespace j2cp2 {
                             if (int_ty->is_common_supported) {
                                 map_line(f->loc);
                                 w.writeln("std::", int_ty->is_signed ? "" : "u", "int", brgen::nums(*int_ty->bit_size), "_t ", f->ident->ident, " = 0", ";");
+                                str.map_ident(f->ident, prefix, f->ident->ident);
+                            }
+                            else if (*int_ty->bit_size == 24) {
+                                map_line(f->loc);
+                                w.writeln("std::uint32_t ", f->ident->ident, " = 0; // 24 bit int");
                                 str.map_ident(f->ident, prefix, f->ident->ident);
                             }
                         }
@@ -676,14 +681,25 @@ namespace j2cp2 {
                 typ = ident->base.lock();
             }
             if (auto int_ty = ast::as<ast::IntType>(typ); int_ty) {
-                auto type_name = get_type_name(typ);
-                map_line(loc);
-                w.writeln("if (!::futils::binary::write_num(w,static_cast<", type_name, ">(", ident, ") ,", ctx.endian_text(int_ty->endian), ")) {");
-                {
-                    auto indent = w.indent_scope();
-                    write_return_error(fi, "write ", type_name, " failed");
+                auto type_name = get_type_name(typ, true);
+                if (*typ->bit_size == 24) {  // TODO(on-keyday): make arbitrary bit size int
+                    map_line(loc);
+                    w.writeln("if (!::futils::binary::write_uint24(w,", ident, ")) {");
+                    {
+                        auto indent = w.indent_scope();
+                        write_return_error(fi, "write 24 bit int failed");
+                    }
+                    w.writeln("}");
                 }
-                w.writeln("}");
+                else {
+                    map_line(loc);
+                    w.writeln("if (!::futils::binary::write_num(w,static_cast<", type_name, ">(", ident, ") ,", ctx.endian_text(int_ty->endian), ")) {");
+                    {
+                        auto indent = w.indent_scope();
+                        write_return_error(fi, "write ", type_name, " failed");
+                    }
+                    w.writeln("}");
+                }
             }
             if (auto float_ty = ast::as<ast::FloatType>(typ); float_ty) {
                 map_line(loc);
@@ -850,13 +866,24 @@ namespace j2cp2 {
                 typ = ident->base.lock();
             }
             if (auto int_ty = ast::as<ast::IntType>(typ); int_ty) {
-                map_line(loc);
-                w.writeln("if (!::futils::binary::read_num(r,", ident, " ,", ctx.endian_text(int_ty->endian), ")) {");
-                {
-                    auto indent = w.indent_scope();
-                    write_return_error(fi, "read int failed");
+                if (*int_ty->bit_size == 24) {  // TODO(on-keyday): make arbitrary bit size int
+                    map_line(loc);
+                    w.writeln("if (!::futils::binary::read_uint24(r,", ident, ")) {");
+                    {
+                        auto indent = w.indent_scope();
+                        write_return_error(fi, "read 24 bit int failed");
+                    }
+                    w.writeln("}");
                 }
-                w.writeln("}");
+                else {
+                    map_line(loc);
+                    w.writeln("if (!::futils::binary::read_num(r,", ident, " ,", ctx.endian_text(int_ty->endian), ")) {");
+                    {
+                        auto indent = w.indent_scope();
+                        write_return_error(fi, "read int failed");
+                    }
+                    w.writeln("}");
+                }
             }
             if (auto float_ty = ast::as<ast::FloatType>(typ); float_ty) {
                 auto int_ty = brgen::concat("std::uint", brgen::nums(*float_ty->bit_size), "_t");
