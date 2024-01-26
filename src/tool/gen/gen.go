@@ -225,15 +225,15 @@ func (d *Type) UintptrString() string {
 type Field struct {
 	Name string
 	Type *Type
-	Tag  string
+	Tag  string // original name
 }
 
 type Struct struct {
 	NodeType       string
 	Name           string
 	Implements     []string
-	Fields         []*Field
-	UnCommonFields []*Field
+	Fields         []*Field // all fields
+	UnCommonFields []*Field // all fields except common with base interface
 }
 
 type Enum struct {

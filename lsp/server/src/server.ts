@@ -286,8 +286,9 @@ const tokenizeSourceImpl  = async (doc :TextDocument,docInfo :DocumentInfo) =>{
                 return 1;
             }
             return 0;
-        });
-        locList.filter((x)=>!removeList.includes(x)).forEach((x)=>{
+        })
+        .filter((x)=>!removeList.includes(x))
+        .forEach((x)=>{
             builder.push(x.loc.line-1,x.loc.col-1,x.length,x.index,0);
         });
         const semanticTokens = builder.build();

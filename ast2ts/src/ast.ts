@@ -1097,10 +1097,7 @@ interface astConstructor {
 	scope : Scope[];
 }
 
-export function parseAST(obj: any): Program {
-	if (!isJsonAst(obj)) {
-		throw new Error('invalid ast');
-	}
+export function parseAST(obj: JsonAst): Program {
 	const o :JsonAst = {
 		node: obj.node.map((n: any) => {
 			if (!isRawNode(n)) {

@@ -17,7 +17,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("export namespace ast2ts {\n")
 	w.Printf("\n")
 	defer w.Printf("}\n")
-
+	// type definitions and type judgement functions
 	for _, def := range defs.Defs {
 		switch d := def.(type) {
 		case *gen.Interface:
@@ -128,10 +128,8 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("	scope : Scope[];\n")
 	w.Printf("}\n\n")
 
-	w.Printf("export function parseAST(obj: any): Program {\n")
-	w.Printf("	if (!isJsonAst(obj)) {\n")
-	w.Printf("		throw new Error('invalid ast');\n")
-	w.Printf("	}\n")
+	// parse AST function
+	w.Printf("export function parseAST(obj: JsonAst): Program {\n")
 	w.Printf("	const o :JsonAst = {\n")
 	w.Printf("		node: obj.node.map((n: any) => {\n")
 	w.Printf("			if (!isRawNode(n)) {\n")

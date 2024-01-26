@@ -17,6 +17,7 @@ func generate(f *os.File, defs *gen.Defs) {
 	w.Printf("using System.Collections.Generic;\n")
 
 	w.Printf("namespace ast2cs {\n")
+	defer w.Printf("}\n")
 
 	for _, v := range defs.Defs {
 		switch v := v.(type) {
@@ -32,7 +33,11 @@ func generate(f *os.File, defs *gen.Defs) {
 			w.Printf("}\n")
 
 		case *gen.Struct:
-			w.Printf("public class %s ", v.Name)
+			if v.Name == "Loc" || v.Name == "Pos" {
+				w.Printf("public struct %s ", v.Name)
+			} else {
+				w.Printf("public class %s ", v.Name)
+			}
 			if len(v.Implements) > 0 {
 				w.Printf(": %s", v.Implements[0])
 			}
@@ -41,7 +46,12 @@ func generate(f *os.File, defs *gen.Defs) {
 				if f.Name == v.Name {
 					f.Name += "_" // avoid name conflict
 				}
-				w.Printf("	public %s %s{get;set;}\n", f.Type.CSharpString(), f.Name)
+				typStr := f.Type.CSharpString()
+				if typStr == "string" {
+					w.Printf("	public %s %s{get;set;} = \"\";\n", typStr, f.Name)
+				} else {
+					w.Printf("	public %s %s{get;set;}\n", typStr, f.Name)
+				}
 			}
 			w.Printf("}\n")
 		case *gen.Enum:
@@ -52,6 +62,50 @@ func generate(f *os.File, defs *gen.Defs) {
 			w.Printf("}\n")
 		}
 	}
+	w.Printf("public static class Ast {\n")
+	w.Printf("  public static Program ParseAST(JsonAst ast) {\n")
+	w.Printf("       if(ast.Node == null) {\n")
+	w.Printf("           throw new NullReferenceException(\"ast.Node is null\");\n")
+	w.Printf("       }\n")
+	w.Printf("       if(ast.Scope == null) {\n")
+	w.Printf("           throw new NullReferenceException(\"ast.Scope is null\");\n")
+	w.Printf("       }\n")
+	w.Printf("       var nodes = new Node[ast.Node.Count];\n")
+	w.Printf("       var scopes = new Scope[ast.Scope.Count];\n")
+	w.Printf("       for (int i = 0; i < ast.Node.Count; i++) {\n")
+	w.Printf("           switch (ast.Node[i].NodeType) {\n")
+	for _, v := range defs.Defs {
+		switch v := v.(type) {
+		case *gen.Struct:
+			if len(v.Implements) == 0 {
+				continue
+			}
+			w.Printf("           case NodeType.%s:\n", v.Name)
+			w.Printf("               nodes[i] = new %s() { Loc = ast.Node[i].Loc };\n", v.Name)
+			w.Printf("               break;\n")
+		}
+	}
+	w.Printf("           }\n")
+	w.Printf("       }\n")
+	w.Printf("       for (int i = 0; i < ast.Scope.Count; i++) {\n")
+	w.Printf("           scopes[i] = new Scope();\n")
+	w.Printf("       }\n")
+	w.Printf("       for (int i = 0; i < ast.Node.Count; i++) {\n")
+	w.Printf("           switch (ast.Node[i].NodeType) {\n")
+	for _, v := range defs.Defs {
+		switch v := v.(type) {
+		case *gen.Struct:
+			if len(v.Implements) == 0 {
+				continue
+			}
+			w.Printf("           case NodeType.%s:\n", v.Name)
+			w.Printf("               var node = nodes[i] as %s;\n", v.Name)
+			for _, f := range v.Fields {
+				w.Printf("               node.%s = ast.Node[i].Body[%s];\n", f.Name, f.Tag)
+			}
+		}
+	}
+	w.Printf("  }\n")
 	w.Printf("}\n")
 }
 
@@ -77,7 +131,7 @@ func main() {
 	}, strcase.ToCamel, map[string]string{
 		"uint":    "ulong",
 		"uintptr": "ulong",
-		"any":     "Dictionary<string,object>",
+		"any":     "Dictionary<string,object>?",
 	})
 	if err != nil {
 		log.Println(err)

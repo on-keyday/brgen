@@ -226,7 +226,7 @@ public class Program : Node{
 }
 public class Comment : Node{
 	public Loc Loc{get;set;}
-	public string Comment_{get;set;}
+	public string Comment_{get;set;} = "";
 }
 public class CommentGroup : Node{
 	public Loc Loc{get;set;}
@@ -271,7 +271,7 @@ public class Ident : Expr{
 	public Loc Loc{get;set;}
 	public Type? ExprType{get;set;}
 	public ConstantLevel ConstantLevel{get;set;}
-	public string Ident_{get;set;}
+	public string Ident_{get;set;} = "";
 	public IdentUsage Usage{get;set;}
 	public Node? Base{get;set;}
 	public Scope? Scope{get;set;}
@@ -343,7 +343,7 @@ public class Import : Expr{
 	public Loc Loc{get;set;}
 	public Type? ExprType{get;set;}
 	public ConstantLevel ConstantLevel{get;set;}
-	public string Path{get;set;}
+	public string Path{get;set;} = "";
 	public Call? Base{get;set;}
 	public Program? ImportDesc{get;set;}
 }
@@ -583,7 +583,7 @@ public class IntLiteral : Literal{
 	public Loc Loc{get;set;}
 	public Type? ExprType{get;set;}
 	public ConstantLevel ConstantLevel{get;set;}
-	public string Value{get;set;}
+	public string Value{get;set;} = "";
 }
 public class BoolLiteral : Literal{
 	public Loc Loc{get;set;}
@@ -595,7 +595,7 @@ public class StrLiteral : Literal{
 	public Loc Loc{get;set;}
 	public Type? ExprType{get;set;}
 	public ConstantLevel ConstantLevel{get;set;}
-	public string Value{get;set;}
+	public string Value{get;set;} = "";
 	public ulong Length{get;set;}
 }
 public class TypeLiteral : Literal{
@@ -713,11 +713,11 @@ public class Scope {
 	public Node? Owner{get;set;}
 	public bool BranchRoot{get;set;}
 }
-public class Pos {
+public struct Pos {
 	public ulong Begin{get;set;}
 	public ulong End{get;set;}
 }
-public class Loc {
+public struct Loc {
 	public Pos Pos{get;set;}
 	public ulong File{get;set;}
 	public ulong Line{get;set;}
@@ -725,7 +725,7 @@ public class Loc {
 }
 public class Token {
 	public TokenTag Tag{get;set;}
-	public string Token_{get;set;}
+	public string Token_{get;set;} = "";
 	public Loc Loc{get;set;}
 }
 public class RawScope {
@@ -739,13 +739,13 @@ public class RawScope {
 public class RawNode {
 	public NodeType NodeType{get;set;}
 	public Loc Loc{get;set;}
-	public Dictionary<string,object> Body{get;set;}
+	public Dictionary<string,object>? Body{get;set;}
 }
 public class SrcErrorEntry {
-	public string Msg{get;set;}
-	public string File{get;set;}
+	public string Msg{get;set;} = "";
+	public string File{get;set;} = "";
 	public Loc Loc{get;set;}
-	public string Src{get;set;}
+	public string Src{get;set;} = "";
 	public bool Warn{get;set;}
 }
 public class SrcError {
@@ -764,5 +764,213 @@ public class TokenFile {
 	public List<string>? Files{get;set;}
 	public List<Token>? Tokens{get;set;}
 	public SrcError? Error{get;set;}
+}
+public static class Ast {
+  static Program ParseAST(JsonAst ast) {
+       if(ast.Node == null) {
+           throw new NullReferenceException("ast.Node is null");
+       }
+       if(ast.Scope == null) {
+           throw new NullReferenceException("ast.Scope is null");
+       }
+       var nodes = new Node[ast.Node.Count];
+       var scopes = new Scope[ast.Scope.Count];
+       for (int i = 0; i < ast.Node.Count; i++) {
+           switch (ast.Node[i].NodeType) {
+           case NodeType.Program:
+               nodes[i] = new Program() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.Comment:
+               nodes[i] = new Comment() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.CommentGroup:
+               nodes[i] = new CommentGroup() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.FieldArgument:
+               nodes[i] = new FieldArgument() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.Binary:
+               nodes[i] = new Binary() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.Unary:
+               nodes[i] = new Unary() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.Cond:
+               nodes[i] = new Cond() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.Ident:
+               nodes[i] = new Ident() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.Call:
+               nodes[i] = new Call() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.If:
+               nodes[i] = new If() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.MemberAccess:
+               nodes[i] = new MemberAccess() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.Paren:
+               nodes[i] = new Paren() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.Index:
+               nodes[i] = new Index() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.Match:
+               nodes[i] = new Match() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.Range:
+               nodes[i] = new Range() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.TmpVar:
+               nodes[i] = new TmpVar() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.Import:
+               nodes[i] = new Import() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.Cast:
+               nodes[i] = new Cast() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.Available:
+               nodes[i] = new Available() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.SpecifyEndian:
+               nodes[i] = new SpecifyEndian() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.ExplicitError:
+               nodes[i] = new ExplicitError() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.IoOperation:
+               nodes[i] = new IoOperation() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.Loop:
+               nodes[i] = new Loop() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.IndentBlock:
+               nodes[i] = new IndentBlock() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.ScopedStatement:
+               nodes[i] = new ScopedStatement() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.MatchBranch:
+               nodes[i] = new MatchBranch() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.UnionCandidate:
+               nodes[i] = new UnionCandidate() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.Return:
+               nodes[i] = new Return() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.Break:
+               nodes[i] = new Break() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.Continue:
+               nodes[i] = new Continue() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.Assert:
+               nodes[i] = new Assert() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.ImplicitYield:
+               nodes[i] = new ImplicitYield() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.IntType:
+               nodes[i] = new IntType() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.FloatType:
+               nodes[i] = new FloatType() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.IdentType:
+               nodes[i] = new IdentType() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.IntLiteralType:
+               nodes[i] = new IntLiteralType() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.StrLiteralType:
+               nodes[i] = new StrLiteralType() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.VoidType:
+               nodes[i] = new VoidType() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.BoolType:
+               nodes[i] = new BoolType() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.ArrayType:
+               nodes[i] = new ArrayType() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.FunctionType:
+               nodes[i] = new FunctionType() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.StructType:
+               nodes[i] = new StructType() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.StructUnionType:
+               nodes[i] = new StructUnionType() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.UnionType:
+               nodes[i] = new UnionType() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.RangeType:
+               nodes[i] = new RangeType() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.EnumType:
+               nodes[i] = new EnumType() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.MetaType:
+               nodes[i] = new MetaType() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.OptionalType:
+               nodes[i] = new OptionalType() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.IntLiteral:
+               nodes[i] = new IntLiteral() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.BoolLiteral:
+               nodes[i] = new BoolLiteral() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.StrLiteral:
+               nodes[i] = new StrLiteral() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.TypeLiteral:
+               nodes[i] = new TypeLiteral() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.Input:
+               nodes[i] = new Input() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.Output:
+               nodes[i] = new Output() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.Config:
+               nodes[i] = new Config() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.Field:
+               nodes[i] = new Field() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.Format:
+               nodes[i] = new Format() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.State:
+               nodes[i] = new State() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.Enum:
+               nodes[i] = new Enum() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.EnumMember:
+               nodes[i] = new EnumMember() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.Function:
+               nodes[i] = new Function() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.BuiltinFunction:
+               nodes[i] = new BuiltinFunction() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.BuiltinField:
+               nodes[i] = new BuiltinField() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.BuiltinObject:
+               nodes[i] = new BuiltinObject() { Loc = ast.Node[i].Loc };
+               break;
+           }
+       }
+  }
 }
 }
