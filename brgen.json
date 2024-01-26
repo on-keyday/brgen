@@ -37,6 +37,11 @@
       "generator": "./tool/src2json",
       "output_dir": "/dev/stdout",
       "args": ["--check-ast", "--stdin", "--force-ok"]
+    },
+    {
+      "generator": "./tool/json2mermaid",
+      "output_dir": "./ignore/example/mermaid/",
+      "args": ["-as-code-block", "-format"]
     }
   ]
 }

@@ -90,34 +90,7 @@ func (g *Generator) getSeq() int {
 }
 
 func (g *Generator) getType(typ ast2go.Type) string {
-	if ident_typ, ok := typ.(*ast2go.IdentType); ok {
-		return ident_typ.Ident.Ident
-	}
-	if i_type, ok := typ.(*ast2go.IntType); ok {
-		if i_type.IsCommonSupported {
-			if i_type.IsSigned {
-				return fmt.Sprintf("int%d", *i_type.BitSize)
-			} else {
-				return fmt.Sprintf("uint%d", *i_type.BitSize)
-			}
-		}
-	}
-	if e_type, ok := typ.(*ast2go.EnumType); ok {
-		return fmt.Sprintf("%s", e_type.Base.Ident.Ident)
-	}
-	if arr_type, ok := typ.(*ast2go.ArrayType); ok {
-		if arr_type.Length != nil && arr_type.Length.GetConstantLevel() == ast2go.ConstantLevelConstant {
-			len := g.exprStringer.ExprString(arr_type.Length)
-			return fmt.Sprintf("[%s]%s", len, g.getType(arr_type.BaseType))
-		}
-		return fmt.Sprintf("[]%s", g.getType(arr_type.BaseType))
-	}
-	if struct_type, ok := typ.(*ast2go.StructType); ok {
-		if !struct_type.Recursive {
-			return fmt.Sprintf("%s", struct_type.Base.(*ast2go.Format).Ident.Ident)
-		}
-	}
-	return ""
+	return g.exprStringer.GetType(typ)
 }
 
 func MaxHexDigit(bitSize uint64) uint64 {
