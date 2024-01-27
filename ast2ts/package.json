@@ -13,5 +13,8 @@
     "@types/node": "^20.7.1",
     "ts-node": "^10.9.1",
     "typescript": "^5.2.2"
+  },
+  "dependencies": {
+    "vscode-languageserver": "^9.0.1"
   }
 }
