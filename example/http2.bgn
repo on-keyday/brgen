@@ -1,4 +1,21 @@
 
+enum H2Error:
+    none = 0x0
+    protocol = 0x1
+    internal = 0x2
+    flow_control = 0x3
+    settings_timeout = 0x4
+    stream_closed = 0x5
+    frame_size = 0x6
+    refused = 0x7
+    cancel = 0x8
+    compression = 0x9
+    connect = 0xa
+    enhance_your_clam = 0xb
+    inadequate_security = 0xc
+    http_1_1_required = 0xd
+    transport = 0x100
+
 format FrameHeader:
     len :u24
     type:u8
