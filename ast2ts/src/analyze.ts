@@ -1,5 +1,5 @@
 import {ast2ts} from "./ast";
-import { Diagnostic, DiagnosticSeverity, MarkupContent, MarkupKind, Position, Range, SemanticTokensBuilder } from "vscode-languageserver";
+import { Diagnostic, DiagnosticSeverity, Hover, Location,  MarkupKind, Position, Range, SemanticTokensBuilder } from "vscode-languageserver";
 
 namespace analyze {
 export const unwrapType = (type :ast2ts.Type|null|undefined) :string => {
@@ -30,11 +30,11 @@ const makeHover = (ident :string,role :string) => {
         contents: {
             kind: MarkupKind.Markdown,
             value: `### ${ident}\n\n${role}`,
-        } as MarkupContent,
-    };
+        } ,
+    } as Hover;
 }
 
-export const analyzeHover = async (prevNode :ast2ts.Program, pos :number) =>{
+export const analyzeHover = async (prevNode :ast2ts.Node, pos :number) =>{
     let found :any;
     ast2ts.walk(prevNode,(f,node)=>{
         if(found!==undefined){
@@ -171,7 +171,7 @@ export const analyzeHover = async (prevNode :ast2ts.Program, pos :number) =>{
     return null;
 }
 
-export const analyzeDefinition = async (prevFile :ast2ts.AstFile, prevNode :ast2ts.Program,pos :number) => {
+export const analyzeDefinition = async (prevFile :ast2ts.AstFile, prevNode :ast2ts.Node,pos :number) => {
     let found :any;
     ast2ts.walk(prevNode,(f,node)=>{
         if(node.loc.file!=1) {
@@ -190,11 +190,11 @@ export const analyzeDefinition = async (prevFile :ast2ts.AstFile, prevNode :ast2
     });
     const fileToLink = (loc :ast2ts.Loc, file :ast2ts.AstFile) => {
         const path = file.files[loc.file-1];
-        const range = {
+        const range :Range = {
             start: {line: loc.line-1, character: loc.col-1},
             end: {line: loc.line-1, character: loc.col-1},
         };
-        const location  = {
+        const location :Location = {
             uri: path,
             range: range,
         };
@@ -273,7 +273,7 @@ export const makeDiagnostic =(positionAt :(pos :number)=>Position,errs :ast2ts.S
     }).filter((x)=>x!==null) as Diagnostic[];
 }
 
-export const analyzeSourceCode  = async (tokens :ast2ts.TokenFile,getAst: ()=>ast2ts.AstFile,positionAt :(pos :number)=>any,diagnostics :(s:Diagnostic[])=>void) =>{
+export const analyzeSourceCode  = async (tokens :ast2ts.TokenFile,getAst: ()=>Promise<ast2ts.AstFile>,positionAt :(pos :number)=>any,diagnostics :(s:Diagnostic[])=>void) =>{
     const mapForTokenTypes = new Map<ast2ts.TokenTag,string>([
         [ast2ts.TokenTag.comment,"comment"],
         [ast2ts.TokenTag.keyword,"keyword"],
@@ -368,7 +368,7 @@ export const analyzeSourceCode  = async (tokens :ast2ts.TokenFile,getAst: ()=>as
     let ast_ :ast2ts.AstFile;
     try {
         console.time("parse")
-        ast_ = getAst();
+        ast_ =await getAst();
     } catch(e :any) {
         console.timeEnd("parse")
         console.log(`error: ${e}`);

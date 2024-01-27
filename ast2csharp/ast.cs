@@ -766,7 +766,7 @@ public class TokenFile {
 	public SrcError? Error{get;set;}
 }
 public static class Ast {
-  static Program ParseAST(JsonAst ast) {
+  public static Program ParseAST(JsonAst ast) {
        if(ast.Node == null) {
            throw new NullReferenceException("ast.Node is null");
        }
@@ -971,6 +971,498 @@ public static class Ast {
                break;
            }
        }
+       for (int i = 0; i < ast.Scope.Count; i++) {
+           scopes[i] = new Scope();
+       }
+       for (int i = 0; i < ast.Node.Count; i++) {
+           switch (ast.Node[i].NodeType) {
+           case NodeType.Program:
+               var node = nodes[i] as Program;
+               node.Loc = ast.Node[i].Body[loc];
+               node.StructType = ast.Node[i].Body[struct_type];
+               node.Elements = ast.Node[i].Body[elements];
+               node.GlobalScope = ast.Node[i].Body[global_scope];
+           case NodeType.Comment:
+               var node = nodes[i] as Comment;
+               node.Loc = ast.Node[i].Body[loc];
+               node.Comment_ = ast.Node[i].Body[comment];
+           case NodeType.CommentGroup:
+               var node = nodes[i] as CommentGroup;
+               node.Loc = ast.Node[i].Body[loc];
+               node.Comments = ast.Node[i].Body[comments];
+           case NodeType.FieldArgument:
+               var node = nodes[i] as FieldArgument;
+               node.Loc = ast.Node[i].Body[loc];
+               node.RawArguments = ast.Node[i].Body[raw_arguments];
+               node.EndLoc = ast.Node[i].Body[end_loc];
+               node.CollectedArguments = ast.Node[i].Body[collected_arguments];
+               node.Arguments = ast.Node[i].Body[arguments];
+               node.Alignment = ast.Node[i].Body[alignment];
+               node.AlignmentValue = ast.Node[i].Body[alignment_value];
+               node.SubByteLength = ast.Node[i].Body[sub_byte_length];
+               node.SubByteBegin = ast.Node[i].Body[sub_byte_begin];
+           case NodeType.Binary:
+               var node = nodes[i] as Binary;
+               node.Loc = ast.Node[i].Body[loc];
+               node.ExprType = ast.Node[i].Body[expr_type];
+               node.ConstantLevel = ast.Node[i].Body[constant_level];
+               node.Op = ast.Node[i].Body[op];
+               node.Left = ast.Node[i].Body[left];
+               node.Right = ast.Node[i].Body[right];
+           case NodeType.Unary:
+               var node = nodes[i] as Unary;
+               node.Loc = ast.Node[i].Body[loc];
+               node.ExprType = ast.Node[i].Body[expr_type];
+               node.ConstantLevel = ast.Node[i].Body[constant_level];
+               node.Op = ast.Node[i].Body[op];
+               node.Expr = ast.Node[i].Body[expr];
+           case NodeType.Cond:
+               var node = nodes[i] as Cond;
+               node.Loc = ast.Node[i].Body[loc];
+               node.ExprType = ast.Node[i].Body[expr_type];
+               node.ConstantLevel = ast.Node[i].Body[constant_level];
+               node.Cond_ = ast.Node[i].Body[cond];
+               node.Then = ast.Node[i].Body[then];
+               node.ElsLoc = ast.Node[i].Body[els_loc];
+               node.Els = ast.Node[i].Body[els];
+           case NodeType.Ident:
+               var node = nodes[i] as Ident;
+               node.Loc = ast.Node[i].Body[loc];
+               node.ExprType = ast.Node[i].Body[expr_type];
+               node.ConstantLevel = ast.Node[i].Body[constant_level];
+               node.Ident_ = ast.Node[i].Body[ident];
+               node.Usage = ast.Node[i].Body[usage];
+               node.Base = ast.Node[i].Body[base];
+               node.Scope = ast.Node[i].Body[scope];
+           case NodeType.Call:
+               var node = nodes[i] as Call;
+               node.Loc = ast.Node[i].Body[loc];
+               node.ExprType = ast.Node[i].Body[expr_type];
+               node.ConstantLevel = ast.Node[i].Body[constant_level];
+               node.Callee = ast.Node[i].Body[callee];
+               node.RawArguments = ast.Node[i].Body[raw_arguments];
+               node.Arguments = ast.Node[i].Body[arguments];
+               node.EndLoc = ast.Node[i].Body[end_loc];
+           case NodeType.If:
+               var node = nodes[i] as If;
+               node.Loc = ast.Node[i].Body[loc];
+               node.ExprType = ast.Node[i].Body[expr_type];
+               node.ConstantLevel = ast.Node[i].Body[constant_level];
+               node.CondScope = ast.Node[i].Body[cond_scope];
+               node.Cond = ast.Node[i].Body[cond];
+               node.Then = ast.Node[i].Body[then];
+               node.Els = ast.Node[i].Body[els];
+           case NodeType.MemberAccess:
+               var node = nodes[i] as MemberAccess;
+               node.Loc = ast.Node[i].Body[loc];
+               node.ExprType = ast.Node[i].Body[expr_type];
+               node.ConstantLevel = ast.Node[i].Body[constant_level];
+               node.Target = ast.Node[i].Body[target];
+               node.Member = ast.Node[i].Body[member];
+               node.Base = ast.Node[i].Body[base];
+           case NodeType.Paren:
+               var node = nodes[i] as Paren;
+               node.Loc = ast.Node[i].Body[loc];
+               node.ExprType = ast.Node[i].Body[expr_type];
+               node.ConstantLevel = ast.Node[i].Body[constant_level];
+               node.Expr = ast.Node[i].Body[expr];
+               node.EndLoc = ast.Node[i].Body[end_loc];
+           case NodeType.Index:
+               var node = nodes[i] as Index;
+               node.Loc = ast.Node[i].Body[loc];
+               node.ExprType = ast.Node[i].Body[expr_type];
+               node.ConstantLevel = ast.Node[i].Body[constant_level];
+               node.Expr = ast.Node[i].Body[expr];
+               node.Index_ = ast.Node[i].Body[index];
+               node.EndLoc = ast.Node[i].Body[end_loc];
+           case NodeType.Match:
+               var node = nodes[i] as Match;
+               node.Loc = ast.Node[i].Body[loc];
+               node.ExprType = ast.Node[i].Body[expr_type];
+               node.ConstantLevel = ast.Node[i].Body[constant_level];
+               node.CondScope = ast.Node[i].Body[cond_scope];
+               node.Cond = ast.Node[i].Body[cond];
+               node.Branch = ast.Node[i].Body[branch];
+           case NodeType.Range:
+               var node = nodes[i] as Range;
+               node.Loc = ast.Node[i].Body[loc];
+               node.ExprType = ast.Node[i].Body[expr_type];
+               node.ConstantLevel = ast.Node[i].Body[constant_level];
+               node.Op = ast.Node[i].Body[op];
+               node.Start = ast.Node[i].Body[start];
+               node.End = ast.Node[i].Body[end];
+           case NodeType.TmpVar:
+               var node = nodes[i] as TmpVar;
+               node.Loc = ast.Node[i].Body[loc];
+               node.ExprType = ast.Node[i].Body[expr_type];
+               node.ConstantLevel = ast.Node[i].Body[constant_level];
+               node.TmpVar_ = ast.Node[i].Body[tmp_var];
+           case NodeType.Import:
+               var node = nodes[i] as Import;
+               node.Loc = ast.Node[i].Body[loc];
+               node.ExprType = ast.Node[i].Body[expr_type];
+               node.ConstantLevel = ast.Node[i].Body[constant_level];
+               node.Path = ast.Node[i].Body[path];
+               node.Base = ast.Node[i].Body[base];
+               node.ImportDesc = ast.Node[i].Body[import_desc];
+           case NodeType.Cast:
+               var node = nodes[i] as Cast;
+               node.Loc = ast.Node[i].Body[loc];
+               node.ExprType = ast.Node[i].Body[expr_type];
+               node.ConstantLevel = ast.Node[i].Body[constant_level];
+               node.Base = ast.Node[i].Body[base];
+               node.Expr = ast.Node[i].Body[expr];
+           case NodeType.Available:
+               var node = nodes[i] as Available;
+               node.Loc = ast.Node[i].Body[loc];
+               node.ExprType = ast.Node[i].Body[expr_type];
+               node.ConstantLevel = ast.Node[i].Body[constant_level];
+               node.Base = ast.Node[i].Body[base];
+               node.Target = ast.Node[i].Body[target];
+           case NodeType.SpecifyEndian:
+               var node = nodes[i] as SpecifyEndian;
+               node.Loc = ast.Node[i].Body[loc];
+               node.ExprType = ast.Node[i].Body[expr_type];
+               node.ConstantLevel = ast.Node[i].Body[constant_level];
+               node.Base = ast.Node[i].Body[base];
+               node.Endian = ast.Node[i].Body[endian];
+               node.EndianValue = ast.Node[i].Body[endian_value];
+           case NodeType.ExplicitError:
+               var node = nodes[i] as ExplicitError;
+               node.Loc = ast.Node[i].Body[loc];
+               node.ExprType = ast.Node[i].Body[expr_type];
+               node.ConstantLevel = ast.Node[i].Body[constant_level];
+               node.Base = ast.Node[i].Body[base];
+               node.Message = ast.Node[i].Body[message];
+           case NodeType.IoOperation:
+               var node = nodes[i] as IoOperation;
+               node.Loc = ast.Node[i].Body[loc];
+               node.ExprType = ast.Node[i].Body[expr_type];
+               node.ConstantLevel = ast.Node[i].Body[constant_level];
+               node.Base = ast.Node[i].Body[base];
+               node.Method = ast.Node[i].Body[method];
+               node.Arguments = ast.Node[i].Body[arguments];
+           case NodeType.Loop:
+               var node = nodes[i] as Loop;
+               node.Loc = ast.Node[i].Body[loc];
+               node.CondScope = ast.Node[i].Body[cond_scope];
+               node.Init = ast.Node[i].Body[init];
+               node.Cond = ast.Node[i].Body[cond];
+               node.Step = ast.Node[i].Body[step];
+               node.Body = ast.Node[i].Body[body];
+           case NodeType.IndentBlock:
+               var node = nodes[i] as IndentBlock;
+               node.Loc = ast.Node[i].Body[loc];
+               node.StructType = ast.Node[i].Body[struct_type];
+               node.Elements = ast.Node[i].Body[elements];
+               node.Scope = ast.Node[i].Body[scope];
+           case NodeType.ScopedStatement:
+               var node = nodes[i] as ScopedStatement;
+               node.Loc = ast.Node[i].Body[loc];
+               node.StructType = ast.Node[i].Body[struct_type];
+               node.Statement = ast.Node[i].Body[statement];
+               node.Scope = ast.Node[i].Body[scope];
+           case NodeType.MatchBranch:
+               var node = nodes[i] as MatchBranch;
+               node.Loc = ast.Node[i].Body[loc];
+               node.Belong = ast.Node[i].Body[belong];
+               node.Cond = ast.Node[i].Body[cond];
+               node.SymLoc = ast.Node[i].Body[sym_loc];
+               node.Then = ast.Node[i].Body[then];
+           case NodeType.UnionCandidate:
+               var node = nodes[i] as UnionCandidate;
+               node.Loc = ast.Node[i].Body[loc];
+               node.Cond = ast.Node[i].Body[cond];
+               node.Field = ast.Node[i].Body[field];
+           case NodeType.Return:
+               var node = nodes[i] as Return;
+               node.Loc = ast.Node[i].Body[loc];
+               node.Expr = ast.Node[i].Body[expr];
+           case NodeType.Break:
+               var node = nodes[i] as Break;
+               node.Loc = ast.Node[i].Body[loc];
+           case NodeType.Continue:
+               var node = nodes[i] as Continue;
+               node.Loc = ast.Node[i].Body[loc];
+           case NodeType.Assert:
+               var node = nodes[i] as Assert;
+               node.Loc = ast.Node[i].Body[loc];
+               node.Cond = ast.Node[i].Body[cond];
+               node.IsIoRelated = ast.Node[i].Body[is_io_related];
+           case NodeType.ImplicitYield:
+               var node = nodes[i] as ImplicitYield;
+               node.Loc = ast.Node[i].Body[loc];
+               node.Expr = ast.Node[i].Body[expr];
+           case NodeType.IntType:
+               var node = nodes[i] as IntType;
+               node.Loc = ast.Node[i].Body[loc];
+               node.IsExplicit = ast.Node[i].Body[is_explicit];
+               node.NonDynamic = ast.Node[i].Body[non_dynamic];
+               node.BitAlignment = ast.Node[i].Body[bit_alignment];
+               node.BitSize = ast.Node[i].Body[bit_size];
+               node.Endian = ast.Node[i].Body[endian];
+               node.IsSigned = ast.Node[i].Body[is_signed];
+               node.IsCommonSupported = ast.Node[i].Body[is_common_supported];
+           case NodeType.FloatType:
+               var node = nodes[i] as FloatType;
+               node.Loc = ast.Node[i].Body[loc];
+               node.IsExplicit = ast.Node[i].Body[is_explicit];
+               node.NonDynamic = ast.Node[i].Body[non_dynamic];
+               node.BitAlignment = ast.Node[i].Body[bit_alignment];
+               node.BitSize = ast.Node[i].Body[bit_size];
+               node.Endian = ast.Node[i].Body[endian];
+               node.IsCommonSupported = ast.Node[i].Body[is_common_supported];
+           case NodeType.IdentType:
+               var node = nodes[i] as IdentType;
+               node.Loc = ast.Node[i].Body[loc];
+               node.IsExplicit = ast.Node[i].Body[is_explicit];
+               node.NonDynamic = ast.Node[i].Body[non_dynamic];
+               node.BitAlignment = ast.Node[i].Body[bit_alignment];
+               node.BitSize = ast.Node[i].Body[bit_size];
+               node.Ident = ast.Node[i].Body[ident];
+               node.Base = ast.Node[i].Body[base];
+           case NodeType.IntLiteralType:
+               var node = nodes[i] as IntLiteralType;
+               node.Loc = ast.Node[i].Body[loc];
+               node.IsExplicit = ast.Node[i].Body[is_explicit];
+               node.NonDynamic = ast.Node[i].Body[non_dynamic];
+               node.BitAlignment = ast.Node[i].Body[bit_alignment];
+               node.BitSize = ast.Node[i].Body[bit_size];
+               node.Base = ast.Node[i].Body[base];
+           case NodeType.StrLiteralType:
+               var node = nodes[i] as StrLiteralType;
+               node.Loc = ast.Node[i].Body[loc];
+               node.IsExplicit = ast.Node[i].Body[is_explicit];
+               node.NonDynamic = ast.Node[i].Body[non_dynamic];
+               node.BitAlignment = ast.Node[i].Body[bit_alignment];
+               node.BitSize = ast.Node[i].Body[bit_size];
+               node.Base = ast.Node[i].Body[base];
+               node.StrongRef = ast.Node[i].Body[strong_ref];
+           case NodeType.VoidType:
+               var node = nodes[i] as VoidType;
+               node.Loc = ast.Node[i].Body[loc];
+               node.IsExplicit = ast.Node[i].Body[is_explicit];
+               node.NonDynamic = ast.Node[i].Body[non_dynamic];
+               node.BitAlignment = ast.Node[i].Body[bit_alignment];
+               node.BitSize = ast.Node[i].Body[bit_size];
+           case NodeType.BoolType:
+               var node = nodes[i] as BoolType;
+               node.Loc = ast.Node[i].Body[loc];
+               node.IsExplicit = ast.Node[i].Body[is_explicit];
+               node.NonDynamic = ast.Node[i].Body[non_dynamic];
+               node.BitAlignment = ast.Node[i].Body[bit_alignment];
+               node.BitSize = ast.Node[i].Body[bit_size];
+           case NodeType.ArrayType:
+               var node = nodes[i] as ArrayType;
+               node.Loc = ast.Node[i].Body[loc];
+               node.IsExplicit = ast.Node[i].Body[is_explicit];
+               node.NonDynamic = ast.Node[i].Body[non_dynamic];
+               node.BitAlignment = ast.Node[i].Body[bit_alignment];
+               node.BitSize = ast.Node[i].Body[bit_size];
+               node.EndLoc = ast.Node[i].Body[end_loc];
+               node.BaseType = ast.Node[i].Body[base_type];
+               node.Length = ast.Node[i].Body[length];
+               node.LengthValue = ast.Node[i].Body[length_value];
+           case NodeType.FunctionType:
+               var node = nodes[i] as FunctionType;
+               node.Loc = ast.Node[i].Body[loc];
+               node.IsExplicit = ast.Node[i].Body[is_explicit];
+               node.NonDynamic = ast.Node[i].Body[non_dynamic];
+               node.BitAlignment = ast.Node[i].Body[bit_alignment];
+               node.BitSize = ast.Node[i].Body[bit_size];
+               node.ReturnType = ast.Node[i].Body[return_type];
+               node.Parameters = ast.Node[i].Body[parameters];
+           case NodeType.StructType:
+               var node = nodes[i] as StructType;
+               node.Loc = ast.Node[i].Body[loc];
+               node.IsExplicit = ast.Node[i].Body[is_explicit];
+               node.NonDynamic = ast.Node[i].Body[non_dynamic];
+               node.BitAlignment = ast.Node[i].Body[bit_alignment];
+               node.BitSize = ast.Node[i].Body[bit_size];
+               node.Fields = ast.Node[i].Body[fields];
+               node.Base = ast.Node[i].Body[base];
+               node.Recursive = ast.Node[i].Body[recursive];
+               node.FixedHeaderSize = ast.Node[i].Body[fixed_header_size];
+               node.FixedTailSize = ast.Node[i].Body[fixed_tail_size];
+           case NodeType.StructUnionType:
+               var node = nodes[i] as StructUnionType;
+               node.Loc = ast.Node[i].Body[loc];
+               node.IsExplicit = ast.Node[i].Body[is_explicit];
+               node.NonDynamic = ast.Node[i].Body[non_dynamic];
+               node.BitAlignment = ast.Node[i].Body[bit_alignment];
+               node.BitSize = ast.Node[i].Body[bit_size];
+               node.Structs = ast.Node[i].Body[structs];
+               node.Base = ast.Node[i].Body[base];
+               node.UnionFields = ast.Node[i].Body[union_fields];
+           case NodeType.UnionType:
+               var node = nodes[i] as UnionType;
+               node.Loc = ast.Node[i].Body[loc];
+               node.IsExplicit = ast.Node[i].Body[is_explicit];
+               node.NonDynamic = ast.Node[i].Body[non_dynamic];
+               node.BitAlignment = ast.Node[i].Body[bit_alignment];
+               node.BitSize = ast.Node[i].Body[bit_size];
+               node.Cond = ast.Node[i].Body[cond];
+               node.Candidates = ast.Node[i].Body[candidates];
+               node.BaseType = ast.Node[i].Body[base_type];
+               node.CommonType = ast.Node[i].Body[common_type];
+           case NodeType.RangeType:
+               var node = nodes[i] as RangeType;
+               node.Loc = ast.Node[i].Body[loc];
+               node.IsExplicit = ast.Node[i].Body[is_explicit];
+               node.NonDynamic = ast.Node[i].Body[non_dynamic];
+               node.BitAlignment = ast.Node[i].Body[bit_alignment];
+               node.BitSize = ast.Node[i].Body[bit_size];
+               node.BaseType = ast.Node[i].Body[base_type];
+               node.Range = ast.Node[i].Body[range];
+           case NodeType.EnumType:
+               var node = nodes[i] as EnumType;
+               node.Loc = ast.Node[i].Body[loc];
+               node.IsExplicit = ast.Node[i].Body[is_explicit];
+               node.NonDynamic = ast.Node[i].Body[non_dynamic];
+               node.BitAlignment = ast.Node[i].Body[bit_alignment];
+               node.BitSize = ast.Node[i].Body[bit_size];
+               node.Base = ast.Node[i].Body[base];
+           case NodeType.MetaType:
+               var node = nodes[i] as MetaType;
+               node.Loc = ast.Node[i].Body[loc];
+               node.IsExplicit = ast.Node[i].Body[is_explicit];
+               node.NonDynamic = ast.Node[i].Body[non_dynamic];
+               node.BitAlignment = ast.Node[i].Body[bit_alignment];
+               node.BitSize = ast.Node[i].Body[bit_size];
+           case NodeType.OptionalType:
+               var node = nodes[i] as OptionalType;
+               node.Loc = ast.Node[i].Body[loc];
+               node.IsExplicit = ast.Node[i].Body[is_explicit];
+               node.NonDynamic = ast.Node[i].Body[non_dynamic];
+               node.BitAlignment = ast.Node[i].Body[bit_alignment];
+               node.BitSize = ast.Node[i].Body[bit_size];
+               node.BaseType = ast.Node[i].Body[base_type];
+           case NodeType.IntLiteral:
+               var node = nodes[i] as IntLiteral;
+               node.Loc = ast.Node[i].Body[loc];
+               node.ExprType = ast.Node[i].Body[expr_type];
+               node.ConstantLevel = ast.Node[i].Body[constant_level];
+               node.Value = ast.Node[i].Body[value];
+           case NodeType.BoolLiteral:
+               var node = nodes[i] as BoolLiteral;
+               node.Loc = ast.Node[i].Body[loc];
+               node.ExprType = ast.Node[i].Body[expr_type];
+               node.ConstantLevel = ast.Node[i].Body[constant_level];
+               node.Value = ast.Node[i].Body[value];
+           case NodeType.StrLiteral:
+               var node = nodes[i] as StrLiteral;
+               node.Loc = ast.Node[i].Body[loc];
+               node.ExprType = ast.Node[i].Body[expr_type];
+               node.ConstantLevel = ast.Node[i].Body[constant_level];
+               node.Value = ast.Node[i].Body[value];
+               node.Length = ast.Node[i].Body[length];
+           case NodeType.TypeLiteral:
+               var node = nodes[i] as TypeLiteral;
+               node.Loc = ast.Node[i].Body[loc];
+               node.ExprType = ast.Node[i].Body[expr_type];
+               node.ConstantLevel = ast.Node[i].Body[constant_level];
+               node.TypeLiteral_ = ast.Node[i].Body[type_literal];
+               node.EndLoc = ast.Node[i].Body[end_loc];
+           case NodeType.Input:
+               var node = nodes[i] as Input;
+               node.Loc = ast.Node[i].Body[loc];
+               node.ExprType = ast.Node[i].Body[expr_type];
+               node.ConstantLevel = ast.Node[i].Body[constant_level];
+           case NodeType.Output:
+               var node = nodes[i] as Output;
+               node.Loc = ast.Node[i].Body[loc];
+               node.ExprType = ast.Node[i].Body[expr_type];
+               node.ConstantLevel = ast.Node[i].Body[constant_level];
+           case NodeType.Config:
+               var node = nodes[i] as Config;
+               node.Loc = ast.Node[i].Body[loc];
+               node.ExprType = ast.Node[i].Body[expr_type];
+               node.ConstantLevel = ast.Node[i].Body[constant_level];
+           case NodeType.Field:
+               var node = nodes[i] as Field;
+               node.Loc = ast.Node[i].Body[loc];
+               node.Belong = ast.Node[i].Body[belong];
+               node.BelongStruct = ast.Node[i].Body[belong_struct];
+               node.Ident = ast.Node[i].Body[ident];
+               node.ColonLoc = ast.Node[i].Body[colon_loc];
+               node.FieldType = ast.Node[i].Body[field_type];
+               node.Arguments = ast.Node[i].Body[arguments];
+               node.OffsetBit = ast.Node[i].Body[offset_bit];
+               node.OffsetRecent = ast.Node[i].Body[offset_recent];
+               node.TailOffsetBit = ast.Node[i].Body[tail_offset_bit];
+               node.TailOffsetRecent = ast.Node[i].Body[tail_offset_recent];
+               node.BitAlignment = ast.Node[i].Body[bit_alignment];
+               node.Follow = ast.Node[i].Body[follow];
+               node.EventualFollow = ast.Node[i].Body[eventual_follow];
+           case NodeType.Format:
+               var node = nodes[i] as Format;
+               node.Loc = ast.Node[i].Body[loc];
+               node.Belong = ast.Node[i].Body[belong];
+               node.BelongStruct = ast.Node[i].Body[belong_struct];
+               node.Ident = ast.Node[i].Body[ident];
+               node.Body = ast.Node[i].Body[body];
+               node.EncodeFn = ast.Node[i].Body[encode_fn];
+               node.DecodeFn = ast.Node[i].Body[decode_fn];
+               node.CastFns = ast.Node[i].Body[cast_fns];
+               node.Depends = ast.Node[i].Body[depends];
+           case NodeType.State:
+               var node = nodes[i] as State;
+               node.Loc = ast.Node[i].Body[loc];
+               node.Belong = ast.Node[i].Body[belong];
+               node.BelongStruct = ast.Node[i].Body[belong_struct];
+               node.Ident = ast.Node[i].Body[ident];
+               node.Body = ast.Node[i].Body[body];
+           case NodeType.Enum:
+               var node = nodes[i] as Enum;
+               node.Loc = ast.Node[i].Body[loc];
+               node.Belong = ast.Node[i].Body[belong];
+               node.BelongStruct = ast.Node[i].Body[belong_struct];
+               node.Ident = ast.Node[i].Body[ident];
+               node.Scope = ast.Node[i].Body[scope];
+               node.ColonLoc = ast.Node[i].Body[colon_loc];
+               node.BaseType = ast.Node[i].Body[base_type];
+               node.Members = ast.Node[i].Body[members];
+               node.EnumType = ast.Node[i].Body[enum_type];
+           case NodeType.EnumMember:
+               var node = nodes[i] as EnumMember;
+               node.Loc = ast.Node[i].Body[loc];
+               node.Belong = ast.Node[i].Body[belong];
+               node.BelongStruct = ast.Node[i].Body[belong_struct];
+               node.Ident = ast.Node[i].Body[ident];
+               node.Expr = ast.Node[i].Body[expr];
+           case NodeType.Function:
+               var node = nodes[i] as Function;
+               node.Loc = ast.Node[i].Body[loc];
+               node.Belong = ast.Node[i].Body[belong];
+               node.BelongStruct = ast.Node[i].Body[belong_struct];
+               node.Ident = ast.Node[i].Body[ident];
+               node.Parameters = ast.Node[i].Body[parameters];
+               node.ReturnType = ast.Node[i].Body[return_type];
+               node.Body = ast.Node[i].Body[body];
+               node.FuncType = ast.Node[i].Body[func_type];
+               node.IsCast = ast.Node[i].Body[is_cast];
+               node.CastLoc = ast.Node[i].Body[cast_loc];
+           case NodeType.BuiltinFunction:
+               var node = nodes[i] as BuiltinFunction;
+               node.Loc = ast.Node[i].Body[loc];
+               node.Belong = ast.Node[i].Body[belong];
+               node.BelongStruct = ast.Node[i].Body[belong_struct];
+               node.Ident = ast.Node[i].Body[ident];
+               node.FuncType = ast.Node[i].Body[func_type];
+           case NodeType.BuiltinField:
+               var node = nodes[i] as BuiltinField;
+               node.Loc = ast.Node[i].Body[loc];
+               node.Belong = ast.Node[i].Body[belong];
+               node.BelongStruct = ast.Node[i].Body[belong_struct];
+               node.Ident = ast.Node[i].Body[ident];
+               node.FieldType = ast.Node[i].Body[field_type];
+           case NodeType.BuiltinObject:
+               var node = nodes[i] as BuiltinObject;
+               node.Loc = ast.Node[i].Body[loc];
+               node.Belong = ast.Node[i].Body[belong];
+               node.BelongStruct = ast.Node[i].Body[belong_struct];
+               node.Ident = ast.Node[i].Body[ident];
+               node.Members = ast.Node[i].Body[members];
   }
 }
 }

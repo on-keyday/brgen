@@ -27,7 +27,7 @@ import { Range, TextDocument } from 'vscode-languageserver-textdocument';
 
 import {execFile} from "child_process";
 import * as url from "url";
-import { ast2ts } from "ast2ts";
+import { ast2ts,analyze } from "ast2ts";
 import assert from 'node:assert/strict';
 import { report } from 'process';
 
@@ -185,6 +185,10 @@ const reportDiagnostic = (doc :TextDocument,errs :ast2ts.SrcError) => {
             source: 'brgen-lsp',
         } as Diagnostic;
     }).filter((x)=>x!==null) as Diagnostic[];
+ 
+}
+
+const showDiagnostic = (doc :TextDocument, diagnostics :Diagnostic[])=>{
     console.log(`diagnostics: ${JSON.stringify(diagnostics.map((x)=>x.message))}`);
     connection.sendDiagnostics({ uri: doc.uri, diagnostics });
     console.log("diagnostics sent");
@@ -208,202 +212,15 @@ const tokenizeSourceImpl  = async (doc :TextDocument,docInfo :DocumentInfo) =>{
         console.timeEnd("semanticColoring")
         throw e;
     }
-    const tokens = tokens_;
-    console.timeEnd("tokenize")
-    const mapForTokenTypes = new Map<ast2ts.TokenTag,SemanticTokenTypes>([
-        [ast2ts.TokenTag.comment,SemanticTokenTypes.comment],
-        [ast2ts.TokenTag.keyword,SemanticTokenTypes.keyword],
-        [ast2ts.TokenTag.bool_literal,SemanticTokenTypes.macro],
-        [ast2ts.TokenTag.int_literal,SemanticTokenTypes.number],
-        [ast2ts.TokenTag.str_literal,SemanticTokenTypes.string],
-        [ast2ts.TokenTag.ident,SemanticTokenTypes.variable],
-        [ast2ts.TokenTag.punct,SemanticTokenTypes.operator],
-    ]);
-    const mapTokenTypesIndex = new Map<SemanticTokenTypes,number>([
-        [SemanticTokenTypes.comment,0],
-        [SemanticTokenTypes.keyword,1],
-        [SemanticTokenTypes.number,2],
-        [SemanticTokenTypes.operator,3],
-        [SemanticTokenTypes.string,4], 
-        [SemanticTokenTypes.variable,5],
-        [SemanticTokenTypes.enumMember,6],
-        [SemanticTokenTypes.class,7],
-        [SemanticTokenTypes.function,8],
-        [SemanticTokenTypes.macro,9],
-    ]); 
-    assert(tokens.tokens);
-    type L = { readonly loc :ast2ts.Loc, readonly length :number, readonly index :number}
-    const locList = new Array<L>();
-    tokens.tokens.forEach((token:ast2ts.Token)=>{
-        console.log(`token: ${stringEscape(token.token)} ${token.tag} ${token.loc.line} ${token.loc.col}`)
-        if(token.tag===ast2ts.TokenTag.keyword){
-            if(token.token==="input"||token.token==="output"||token.token=="config"||
-               token.token=="fn"||token.token=="format"||token.token=="enum"||
-               token.token=="cast"||token.token=="state"){
-                locList.push({loc:token.loc,length: token.token.length,index:9});
-                return;
-            }
+    return await analyze.analyzeSourceCode(tokens_,async()=>{
+        let ast =await execSrc2JSON(settings.src2json,parserCommand(path),text,ast2ts.isAstFile);
+        docInfo.prevFile = ast;
+        if(ast.ast === null) {
+            docInfo.prevNode = ast.ast;
         }
-        const type = mapForTokenTypes.get(token.tag);
-        if(type===undefined){
-            return;
-        }
-        const index = mapTokenTypesIndex.get(type);
-        if(index===undefined){
-            return;
-        }
-        locList.push({loc:token.loc,length: token.token.length,index:index});
-    });
-    const generateSemanticTokens = () => {
-        const builder = new SemanticTokensBuilder();
-        const removeList = new Array<L>();
-        locList.sort((a,b)=>{
-            if(a.loc.line == b.loc.line&&
-                a.loc.col == b.loc.col){
-                if(a.index == 2){
-                    removeList.push(b);
-                }
-                else if(b.index == 2){
-                    removeList.push(a);
-                }
-                else if(a.index < b.index) {
-                    removeList.push(a);
-                }
-                else{
-                    removeList.push(b);
-                }
-            }
-            if(a.loc.line<b.loc.line){
-                return -1;
-            }
-            if(a.loc.line>b.loc.line){
-                return 1;
-            }
-            if(a.loc.col<b.loc.col){
-                return -1;
-            }
-            if(a.loc.col>b.loc.col){
-                return 1;
-            }
-            return 0;
-        })
-        .filter((x)=>!removeList.includes(x))
-        .forEach((x)=>{
-            builder.push(x.loc.line-1,x.loc.col-1,x.length,x.index,0);
-        });
-        const semanticTokens = builder.build();
-        console.log(`semanticTokens (parsed): ${JSON.stringify(semanticTokens)}`);
-        console.timeEnd("semanticColoring")
-        docInfo.prevSemanticTokens = semanticTokens;
-        return semanticTokens;
-    };
-    let ast_ :ast2ts.AstFile;
-    try {
-        console.time("parse")
-        ast_ = await execSrc2JSON(settings.src2json,parserCommand(path),text,ast2ts.isAstFile);
-    } catch(e :any) {
-        console.timeEnd("parse")
-        console.log(`error: ${e}`);
-        return generateSemanticTokens();
-    }
-    console.timeEnd("parse")
-    const ast = ast_;
-    if(ast.error !== null) {
-        reportDiagnostic(doc,ast.error);
-    }
-    else {
-        reportDiagnostic(doc,{errs:[]});
-    }
-    if(ast.ast === null) {
-        throw new Error("ast is null, use previous ast");
-    }
-    const prog = ast2ts.parseAST(ast.ast);
-    ast2ts.walk(prog,(f,node)=>{
-        if(node.loc.file!=1) {
-            console.log("prevent file boundary: "+node.loc.file)
-            return; // skip other files
-        }
-        ast2ts.walk(node,f);
-        if(ast2ts.isIdent(node)){
-            const line = node.loc.line-1;
-            const col = node.loc.col-1;
-            assert(line>=0,`line: ${line}`);
-            assert(col>=0,`col: ${col}`);
-            assert(node.ident.length>0,`ident: ${node.ident}`)
-            let n = node;
-            console.log(`ident: ${n.ident} ${n.usage}`)
-            let counter = 0;
-            for(;;counter++){
-                switch(n.usage) {
-                    case ast2ts.IdentUsage.unknown:
-                        break;
-                    case ast2ts.IdentUsage.reference:
-                        if(ast2ts.isIdent(n.base)){
-                            if(counter> 100) {
-                                console.log(n,n.base)
-                                throw new Error("what happened?");
-                            }
-                            console.log("-> "+n.base.usage);
-                            n = n.base;
-                            continue;
-                        }
-                        break;
-                    case ast2ts.IdentUsage.reference_member:
-                        if(ast2ts.isMemberAccess(n.base)){
-                            if(ast2ts.isIdent(n.base.base)){
-                                if(counter> 100) {
-                                    console.log(n,n.base)
-                                    throw new Error("what happened?");
-                                }
-                                console.log("-> "+n.base.base.usage);
-                                n = n.base.base;
-                                continue;
-                            }
-                        }
-                        break;
-                    case ast2ts.IdentUsage.define_variable:
-                        break;
-                    case ast2ts.IdentUsage.define_field:   
-                    case ast2ts.IdentUsage.define_const:
-                    case ast2ts.IdentUsage.define_enum_member:
-                    case ast2ts.IdentUsage.define_arg:
-                        locList.push({loc: node.loc,length: node.ident.length,index:6});
-                        break;   
-                    case ast2ts.IdentUsage.define_format:
-                    case ast2ts.IdentUsage.define_enum:
-                    case ast2ts.IdentUsage.define_state:
-                    case ast2ts.IdentUsage.reference_type:
-                    case ast2ts.IdentUsage.define_cast_fn:
-                    case ast2ts.IdentUsage.maybe_type:
-                        locList.push({loc: node.loc,length: node.ident.length,index:7});
-                        break;
-                    case ast2ts.IdentUsage.define_fn:
-                        locList.push({loc: node.loc,length: node.ident.length,index:8});
-                        break;
-                    case ast2ts.IdentUsage.reference_builtin_fn:
-                        locList.push({loc: node.loc,length: node.ident.length,index:9});
-                        break;
-                }
-                break;
-            }
-        }
-        else if(ast2ts.isIntType(node)&&node.is_explicit){
-            locList.push({loc: node.loc,length: node.loc.pos.end - node.loc.pos.begin,index:7});
-        }
-        else if(ast2ts.isVoidType(node)&&node.is_explicit){
-            locList.push({loc: node.loc,length: node.loc.pos.end - node.loc.pos.begin,index:7});
-        }
-        else if(ast2ts.isBoolType(node)&&node.is_explicit){
-            locList.push({loc: node.loc,length: node.loc.pos.end - node.loc.pos.begin,index:7});
-        }
-        else if(ast2ts.isFloatType(node)&&node.is_explicit){
-            locList.push({loc: node.loc,length: node.loc.pos.end - node.loc.pos.begin,index:7});
-        }
-        return true
-    });
-    docInfo.prevFile = ast;
-    docInfo.prevNode = prog;
-    return generateSemanticTokens();
+        return ast;
+    },(pos)=>{return doc.positionAt(pos)},(d)=>{showDiagnostic(doc,d)})
+   
 };
 
 const getOrCreateDocumentInfo = (doc :TextDocument) => {
@@ -450,170 +267,7 @@ const hover = async (params :HoverParams)=>{
     if(docInfo.prevNode===null) {
         return null;
     }
-    let found :any;
-    ast2ts.walk(docInfo.prevNode,(f,node)=>{
-        if(found!==undefined){
-            return false;
-        }
-        if(node.loc.file!=1) {
-            console.log("prevent file boundary: "+node.loc.file)
-            return; // skip other files
-        }
-        if(node.loc.pos.begin<=pos&&pos<=node.loc.pos.end){
-            if(ast2ts.isIdent(node)){
-                console.log(`found: ${node.ident} ${JSON.stringify(node.loc)}`)
-                found = node;
-                return;
-            }
-            else if(ast2ts.isAssert(node)) {
-                console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
-                found = node;
-                return;
-            }
-            console.log(`hit: ${node.node_type} ${JSON.stringify(node.loc)}`)
-        }
-        ast2ts.walk(node,f);
-        if(ast2ts.isMember(node)){
-            console.log("walked: "+node.node_type);
-            if(node.ident!=null){
-                console.log("ident: "+node.ident.ident+" "+JSON.stringify(node.ident.loc));
-            }
-        }
-        else if(ast2ts.isIdent(node)){
-            console.log("walked: "+node.node_type);
-            console.log("ident: "+node.ident+" "+JSON.stringify(node.loc));
-        }
-        else{
-            console.log("walked: "+node.node_type)
-        }
-    });
-    const makeHover = (ident :string,role :string) => {
-        return {
-            contents: {
-                kind: MarkupKind.Markdown,
-                value: `### ${ident}\n\n${role}`,
-            },
-        } as Hover
-    }
-    if(found === null) {
-        return null;
-    }
-
-    const bitSize = (bit :number|null|undefined) => {
-        if(bit===undefined){
-            return "unknown";
-        }
-        if(bit===null){
-            return "dynamic";
-        }
-        if(bit%8===0){
-            return `${bit/8} byte`;
-        }
-        return `${bit} bit`;
-    }
-    const unwrapType = (type :ast2ts.Type|null|undefined) :string => {
-        if(!type){
-            return "unknown";
-        }
-        if(ast2ts.isIdentType(type)){
-           return unwrapType(type.base); 
-        }
-        return type.node_type;
-    }
-
-    if(ast2ts.isIdent(found)){
-        let ident = found as ast2ts.Ident;
-        for(;;){
-            switch (ident.usage) {
-                case ast2ts.IdentUsage.unknown:
-                    return makeHover(ident.ident,"unknown identifier");
-                case ast2ts.IdentUsage.reference:
-                    if(ast2ts.isIdent(ident.base)){
-                        ident = ident.base;
-                        continue;
-                    }
-                    return makeHover(ident.ident,"unspecified reference");
-                case ast2ts.IdentUsage.reference_member:
-                    if(ast2ts.isMemberAccess(ident.base)){
-                        if(ast2ts.isIdent(ident.base.base)){
-                            ident = ident.base.base;
-                            continue;
-                        }
-                    }
-                    return makeHover(ident.ident,"unspecified member reference");
-                case ast2ts.IdentUsage.define_variable:
-                    return makeHover(ident.ident,`variable (type: ${unwrapType(ident.expr_type)}, size: ${bitSize(ident.expr_type?.bit_size)} constant level: ${ident.constant_level})`);
-                case ast2ts.IdentUsage.define_const:
-                    return makeHover(ident.ident,`constant (type: ${unwrapType(ident.expr_type)}, size: ${bitSize(ident.expr_type?.bit_size)} constant level: ${ident.constant_level})`);
-                case ast2ts.IdentUsage.define_field:
-                    if(ast2ts.isField(ident.base)){
-                        return makeHover(ident.ident, 
-                            `
-+ field 
-    + type: ${unwrapType(ident.base.field_type)}
-    + size: ${bitSize(ident.base.field_type?.bit_size)}
-    + offset(from begin): ${bitSize(ident.base.offset_bit)}
-    + offset(from recent fixed): ${bitSize(ident.base.offset_recent)}
-    + offset(from end): ${bitSize(ident.base.tail_offset_bit)}
-    + offset(from recent fixed): ${bitSize(ident.base.tail_offset_recent)}
-    + align: ${ident.base.bit_alignment}, 
-    + type align: ${ident.base.field_type?.bit_alignment||"unknown"}
-    + follow: ${ident.base.follow}
-    + eventual_follow: ${ident.base.eventual_follow}`);
-                    }
-                    return makeHover(ident.ident,"field");
-                case ast2ts.IdentUsage.define_enum_member:
-                    if(ast2ts.isEnumType(ident.expr_type)) {
-                        return makeHover(ident.ident,`enum member (type: ${ident.expr_type.base?.ident?.ident||"unknown"}, size: ${bitSize(ident.expr_type?.bit_size)})`);
-                    }
-                    return makeHover(ident.ident,"enum member");
-                case ast2ts.IdentUsage.define_format:
-                    if(ast2ts.isFormat(ident.base)){
-                        return makeHover(ident.ident,
-                        `
-+ format 
-    + size: ${bitSize(ident.base.body?.struct_type?.bit_size)}
-    + fixed header size: ${bitSize(ident.base.body?.struct_type?.fixed_header_size)}
-    + fixed tail size: ${bitSize(ident.base.body?.struct_type?.fixed_tail_size)}
-    + algin: ${ident.base.body?.struct_type?.bit_alignment||"unknown"}
-    ${ident.base.body?.struct_type?.non_dynamic?"+ non_dynamic\n    ":""}${ident.base.body?.struct_type?.recursive?"+ recursive\n":""}
-`);
-                    }
-                    return makeHover(ident.ident,"format"); 
-                case ast2ts.IdentUsage.define_enum:
-                    if(ast2ts.isEnum(ident.base)){
-                        return makeHover(ident.ident,`enum (size: ${bitSize(ident.base.base_type?.bit_size)}, align: ${ident.base?.base_type?.bit_alignment || "unknown"})`);
-                    }
-                    return makeHover(ident.ident,"enum");
-                case ast2ts.IdentUsage.define_state:
-                    return makeHover(ident.ident,"state");
-                case ast2ts.IdentUsage.reference_type:
-                    if(ast2ts.isIdent(ident.base)){
-                        ident = ident.base;
-                        continue;
-                    }
-                    return makeHover(ident.ident,"type");
-                case ast2ts.IdentUsage.define_cast_fn:
-                    return makeHover(ident.ident,"cast function");
-                case ast2ts.IdentUsage.maybe_type:
-                    return makeHover(ident.ident,"maybe type");
-                case ast2ts.IdentUsage.define_fn:
-                    return makeHover(ident.ident,"function");
-                case ast2ts.IdentUsage.define_arg:
-                    return makeHover(ident.ident,"argument");
-                case ast2ts.IdentUsage.reference_builtin_fn:
-                    return makeHover(ident.ident,"builtin function");
-                default:
-                    return makeHover(ident.ident,"unknown identifier");
-            }
-        }     
-    }
-    else if(ast2ts.isAssert(found)){
-        return makeHover("assert",`assertion ${found.is_io_related?"(io_related)":""}`); 
-    }
-    else if(ast2ts.isTypeLiteral(found)){
-        return makeHover("type literal",`type literal (type: ${found.type_literal?.node_type || "unknown"}, size: ${bitSize(found.type_literal?.bit_size)})`);
-    }
+    return await analyze.analyzeHover(docInfo.prevNode,pos);
 }
 
 connection.onHover(hover)
@@ -630,79 +284,7 @@ const definitionHandler = async (params :DefinitionParams) => {
     if(docInfo.prevNode===null) {
         return null;
     }
-    let found :any;
-    ast2ts.walk(docInfo.prevNode,(f,node)=>{
-        if(node.loc.file!=1) {
-            console.log("prevent file boundary: "+node.loc.file)
-            return; // skip other files
-        }
-        if(node.loc.pos.begin<=pos&&pos<=node.loc.pos.end){
-            if(ast2ts.isIdent(node)){
-                console.log(`found: ${node.ident} ${JSON.stringify(node.loc)}`)
-                found = node;
-                return false; // skip children
-            }
-            console.log(`hit: ${node.node_type} ${JSON.stringify(node.loc)}`)
-        }
-        ast2ts.walk(node,f);
-    });
-    const fileToLink = (loc :ast2ts.Loc, file :ast2ts.AstFile) => {
-        const path = file.files[loc.file-1];
-        const range :Range = {
-            start: {line: loc.line-1, character: loc.col-1},
-            end: {line: loc.line-1, character: loc.col-1},
-        };
-        const location :Location = {
-            uri: url.pathToFileURL(path).toString(),
-            range: range,
-        };
-        console.log(location);
-        return location;
-    }
-    if(ast2ts.isIdent(found)){
-        let ident = found;
-        for(;;){
-            switch (ident.usage) {
-                case ast2ts.IdentUsage.unknown:
-                    return null;
-                case ast2ts.IdentUsage.reference:
-                    if(ast2ts.isIdent(ident.base)){
-                        ident = ident.base;
-                        continue;
-                    }
-                    return null;
-                case ast2ts.IdentUsage.reference_type:
-                    if(ast2ts.isIdent(ident.base)){
-                        ident = ident.base;
-                        continue;
-                    }
-                    return null;
-                case ast2ts.IdentUsage.reference_member:
-                    if(ast2ts.isMemberAccess(ident.base)){
-                        if(ast2ts.isIdent(ident.base.base)){
-                            ident = ident.base.base;
-                            continue;
-                        }
-                    }
-                    return null;
-                case ast2ts.IdentUsage.define_variable:
-                case ast2ts.IdentUsage.define_field:
-                case ast2ts.IdentUsage.define_const:
-                case ast2ts.IdentUsage.define_enum_member:
-                case ast2ts.IdentUsage.define_format:
-                case ast2ts.IdentUsage.define_enum:
-                case ast2ts.IdentUsage.define_cast_fn:
-                case ast2ts.IdentUsage.maybe_type:
-                case ast2ts.IdentUsage.define_fn:
-                case ast2ts.IdentUsage.define_state:
-                case ast2ts.IdentUsage.define_arg:
-                    return fileToLink(ident.loc,docInfo.prevFile!);
-                default:
-                    return null;
-            }
-        }
-    }
-    return null; 
+    return await analyze.analyzeDefinition(docInfo.prevFile!,docInfo.prevNode,pos)
 }
 
 connection.onDefinition(definitionHandler);
