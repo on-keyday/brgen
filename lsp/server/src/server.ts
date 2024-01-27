@@ -160,26 +160,6 @@ const stringEscape = (s :string) => {
 }
 
 
-const reportDiagnostic = (doc :TextDocument,errs :ast2ts.SrcError) => {
-    const diagnostics = errs.errs.map((err)=> {
-        if(err.loc.file != 1) {
-            return null; // skip other files
-        }
-        const b = doc.positionAt(err.loc.pos.begin);
-        const e = doc.positionAt(err.loc.pos.end);
-        const range :Range = {
-            start: b,
-            end: e,
-        };
-        return {
-            severity: err.warn ? DiagnosticSeverity.Warning : DiagnosticSeverity.Error,
-            range: range,
-            message: err.msg,
-            source: 'brgen-lsp',
-        } as Diagnostic;
-    }).filter((x)=>x!==null) as Diagnostic[];
- 
-}
 
 const showDiagnostic = (doc :TextDocument, diagnostics :Diagnostic[])=>{
     console.log(`diagnostics: ${JSON.stringify(diagnostics.map((x)=>x.message))}`);
@@ -205,7 +185,8 @@ const tokenizeSourceImpl  = async (doc :TextDocument,docInfo :DocumentInfo) =>{
         console.timeEnd("semanticColoring")
         throw e;
     }
-    return await analyze.analyzeSourceCode(tokens_,async()=>{
+    console.timeEnd("tokenize")
+    const res =await analyze.analyzeSourceCode(tokens_,async()=>{
         let ast =await execSrc2JSON(settings.src2json,parserCommand(path),text,ast2ts.isAstFile);
         docInfo.prevFile = ast;
         if(ast.ast === null) {
@@ -213,7 +194,8 @@ const tokenizeSourceImpl  = async (doc :TextDocument,docInfo :DocumentInfo) =>{
         }
         return ast;
     },(pos)=>{return doc.positionAt(pos)},(d)=>{showDiagnostic(doc,d)})
-   
+    console.timeEnd("semanticColoring")
+    return res;
 };
 
 const getOrCreateDocumentInfo = (doc :TextDocument) => {

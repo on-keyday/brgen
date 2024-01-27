@@ -273,6 +273,20 @@ export const makeDiagnostic =(positionAt :(pos :number)=>Position,errs :ast2ts.S
     }).filter((x)=>x!==null) as Diagnostic[];
 }
 
+export const legendMapping = [
+    "comment",
+    "keyword",
+    "number",
+    "operator",
+    "string",
+    "variable",
+    "enumMember",
+    "class",
+    "function",
+    "macro",
+];
+
+
 export const analyzeSourceCode  = async (tokens :ast2ts.TokenFile,getAst: ()=>Promise<ast2ts.AstFile>,positionAt :(pos :number)=>any,diagnostics :(s:Diagnostic[])=>void) =>{
     const mapForTokenTypes = new Map<ast2ts.TokenTag,string>([
         [ast2ts.TokenTag.comment,"comment"],
@@ -283,18 +297,7 @@ export const analyzeSourceCode  = async (tokens :ast2ts.TokenFile,getAst: ()=>Pr
         [ast2ts.TokenTag.ident,"variable"],
         [ast2ts.TokenTag.punct,"operator"],
     ]);
-    const mapTokenTypesIndex = new Map<string,number>([
-        ["comment",0],
-        ["keyword",1],
-        ["number",2],
-        ["operator",3],
-        ["string",4], 
-        ["variable",5],
-        ["enumMember",6],
-        ["class",7],
-        ["function",8],
-        ["macro",9],
-    ]); 
+    const mapTokenTypesIndex = new Map<string,number>(legendMapping.map((x,i)=>[x,i] as [string,number])); 
     type L = { readonly loc :ast2ts.Loc, readonly length :number, readonly index :number}
     const locList = new Array<L>();
     if(tokens.error !== null) {
@@ -362,7 +365,6 @@ export const analyzeSourceCode  = async (tokens :ast2ts.TokenFile,getAst: ()=>Pr
         });
         const semanticTokens = builder.build();
         console.log(`semanticTokens (parsed): ${JSON.stringify(semanticTokens)}`);
-        console.timeEnd("semanticColoring")
         return semanticTokens;
     };
     let ast_ :ast2ts.AstFile;
@@ -386,6 +388,7 @@ export const analyzeSourceCode  = async (tokens :ast2ts.TokenFile,getAst: ()=>Pr
         throw new Error("ast is null, use previous ast");
     }
     const prog = ast2ts.parseAST(ast.ast);
+    console.time("walk ast");
     ast2ts.walk(prog,(f,node)=>{
         if(node.loc.file!=1) {
             console.log("prevent file boundary: "+node.loc.file)
@@ -395,7 +398,7 @@ export const analyzeSourceCode  = async (tokens :ast2ts.TokenFile,getAst: ()=>Pr
         if(ast2ts.isIdent(node)){
             const line = node.loc.line-1;
             const col = node.loc.col-1;
-            if(line<0||col<0){{
+            if(line<0||col<0){
                 console.log(`line: ${line} col: ${col} ident: ${node.ident}`)
             }
             let n = node;
@@ -468,7 +471,8 @@ export const analyzeSourceCode  = async (tokens :ast2ts.TokenFile,getAst: ()=>Pr
             locList.push({loc: node.loc,length: node.loc.pos.end - node.loc.pos.begin,index:7});
         }
         return true
-    }});
+    });
+    console.timeEnd("walk ast");
     return generateSemanticTokens();
 };
 

@@ -3,7 +3,9 @@ import * as monaco from  "../../node_modules/monaco-editor/esm/vs/editor/editor.
 import '../../node_modules/monaco-editor/esm/vs/editor/contrib/semanticTokens/browser/documentSemanticTokens.js';
 import '../../node_modules/monaco-editor/esm/vs/editor/contrib/semanticTokens/browser/viewportSemanticTokens.js';
 import * as caller from "./caller.js";
-import {ast2ts} from "../../node_modules/ast2ts/index.js";
+import {ast2ts,analyze} from "../../node_modules/ast2ts/index.js";
+import { UpdateTracer } from "./update.js";
+import { DiagnosticSeverity, MarkupKind } from "vscode-languageserver";
 
 const BRGEN_ID = 'brgen'
 
@@ -18,13 +20,18 @@ monaco.editor.defineTheme("brgen-theme", {
 	inherit: true,
 	colors: {},
 	rules: [
-		{ token: "comment", foreground: "aaaaaa", fontStyle: "italic" },
-		{ token: "operator", foreground: "000000" },
-		{ token: "keyword", foreground: "0000ff", fontStyle: "bold" },
-		{ token: "variable", foreground: "3e5bbf" },
+		{ token: "comment", foreground: "#aaaaaa", fontStyle: "italic" },
+		{ token: "operator", foreground: "#000000" },
+		{ token: "keyword", foreground: "#0000ff", fontStyle: "bold" },
+		{ token: "variable", foreground: "#3e5bbf" },
+        {token: "macro", foreground: "#0000ff", fontStyle: "bold"},
+        {token: "class", foreground: "#619E92", fontStyle: "bold"},
+        {token: "enumMember", foreground: "#20a6f9", fontStyle: "bold"},
 	],
-    
+
 });
+
+const updateTracer = new UpdateTracer();
 
 monaco.languages.onLanguage(BRGEN_ID,()=>{
     disposeables.forEach((d)=>d.dispose());
@@ -32,12 +39,16 @@ monaco.languages.onLanguage(BRGEN_ID,()=>{
     disposeables.push(monaco.languages.registerDocumentSemanticTokensProvider(BRGEN_ID,{
         getLegend: ()=> {
             return {
-                tokenTypes: ['keyword','variable','string','number','operator','comment'],
+                tokenTypes: analyze.legendMapping,
                 tokenModifiers: ['declaration','definition','readonly','static','async','abstract','deprecated','modification','documentation'],
             } as monaco.languages.SemanticTokensLegend;
         },
         provideDocumentSemanticTokens: async(model, lastResultId, token)=> {
-            const result = await caller.getTokens(null,model.getValue(),{interpret_as_utf16:true});
+            const traceID = updateTracer.getTraceID();
+            const result = await caller.getTokens(traceID,model.getValue(),{interpret_as_utf16:true});
+            if(updateTracer.editorAlreadyUpdated(result)){
+                return null;
+            }
             if(result.code !== 0){
                 console.log("failed ",result);
                 return null;
@@ -47,33 +58,37 @@ monaco.languages.onLanguage(BRGEN_ID,()=>{
                 console.log("failed ",result);
                 return null;
             }
-            const tagMap = new Map<string,number>();
-            tagMap.set(ast2ts.TokenTag.keyword,0);
-            tagMap.set(ast2ts.TokenTag.ident,1);
-            tagMap.set(ast2ts.TokenTag.str_literal,2);
-            tagMap.set(ast2ts.TokenTag.int_literal,3);
-            tagMap.set(ast2ts.TokenTag.punct,3);
-            tagMap.set(ast2ts.TokenTag.comment,4);
-            let prevLine = 1;      
-            let prevChar = 0;   
-            const data : number[] = [];   
-            tokens.tokens.forEach((t: ast2ts.Token)=>{                
-                const tokenType = tagMap.get(t.tag);
-                if(tokenType === undefined){
-                    return;
-                }
-                const startAt = model.getPositionAt(t.loc.pos.begin);
-                const endAt = model.getPositionAt(t.loc.pos.end);
-                const line = startAt.lineNumber;
-                const char = startAt.column-1;
-                const length = endAt.column - startAt.column;
-                data.push(line - prevLine,prevLine == line ? char - prevChar : char, length, tokenType,0);
-                prevLine = line;
-                prevChar = char;
-            })
-            console.log("token: ",data);
+            const sem = await analyze.analyzeSourceCode(tokens,async()=>{
+                return await caller.getAST(result.traceID,model.getValue(),{interpret_as_utf16:true}).
+                then((result)=>{
+                    if(result.code !== 0){
+                        console.log("failed ",result);
+                        throw new Error("failed to parse ast");
+                    }
+                    const ast = JSON.parse(result.stdout!);
+                    if(!ast2ts.isAstFile(ast)){
+                        console.log("failed ",result);
+                        throw new Error("failed to parse ast");
+                    }
+                    return ast;
+                });
+            },(pos)=>model.getPositionAt(pos),(diagnostics)=>{
+                monaco.editor.setModelMarkers(model,BRGEN_ID,diagnostics.map((d)=>{return {
+                    message: d.message,
+                    severity: d?.severity === DiagnosticSeverity.Error ? monaco.MarkerSeverity.Error : monaco.MarkerSeverity.Warning,
+                    startLineNumber: d.range.start.line+1,
+                    startColumn: d.range.start.character+1,
+                    endLineNumber: d.range.end.line+1,
+                    endColumn: d.range.end.character+1,
+                }}));
+            });
+            if(sem === null){
+                console.log("failed to analyze");
+                return null;
+            }
+            console.log("token: ",sem.data);
             return {
-                data: new Uint32Array(data),
+                data: new Uint32Array(sem.data),
             } as monaco.languages.SemanticTokens;
         },
         releaseDocumentSemanticTokens: (resultId)=> {}

@@ -12,6 +12,7 @@ import { makeButton, makeLink, makeListBox, setStyle, makeInputList, InputListEl
 
 import * as inc from "./cpp_include";
 import { TraceID } from "./s2j/job_mgr";
+import { UpdateTracer } from "./s2j/update";
 
 
 // first, load workers
@@ -257,20 +258,7 @@ const setGenerated =async (code :string,lang: string) => {
 
 
 
-
-const updateTracer = {
-    traceID: 0,
-    getTraceID: () =>{
-        return ++updateTracer.traceID;
-    },
-    editorAlreadyUpdated: (s :JobResult) => {
-        if(updateTracer.traceID !== s.traceID){
-            console.log(`already updated traceID: ${s.traceID} jobID: ${s.jobID}`);
-            return true;
-        }
-        return false;
-    }
-};
+const updateTracer = new UpdateTracer();
 
 // returns true if updated
 const handleLanguage = async (s :JobResult,generate:(id :TraceID,src :string,option :any)=>Promise<JobResult>,lang :Language,view_lang: string,option? :any) => {
