@@ -11,16 +11,11 @@ import {
     TextDocumentSyncKind,
     InitializeResult,
     SemanticTokensLegend,
-    SemanticTokensBuilder,
-    SemanticTokenTypes,
     SemanticTokens,
-    MarkupKind,
     HoverParams,
     DefinitionParams,
-    Location,
     Diagnostic, 
     DiagnosticSeverity,
-    Hover
 } from 'vscode-languageserver/node';
 
 import { Range, TextDocument } from 'vscode-languageserver-textdocument';
@@ -28,8 +23,6 @@ import { Range, TextDocument } from 'vscode-languageserver-textdocument';
 import {execFile} from "child_process";
 import * as url from "url";
 import { ast2ts,analyze } from "ast2ts";
-import assert from 'node:assert/strict';
-import { report } from 'process';
 
 
 
