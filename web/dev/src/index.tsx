@@ -13,6 +13,7 @@ import { makeButton, makeLink, makeListBox, setStyle, makeInputList, InputListEl
 import * as inc from "./cpp_include";
 import { TraceID } from "./s2j/job_mgr";
 import { UpdateTracer } from "./s2j/update";
+import {storage} from "./storage";
 
 
 // first, load workers
@@ -29,11 +30,6 @@ if(window.MonacoEnvironment === undefined) {
     }
 }
 
-const enum StorageKey {
-    LANG_MODE = "lang_mode",
-    SOURCE_CODE = "source_code",
-    LANG_SPECIFIC_OPTION = "lang_specific_option",
-}
 
 const enum ElementID {
     CONTAINER1 = "container1",
@@ -94,53 +90,7 @@ const isMappingInfoArray = (obj :any) :obj is MappingInfo[] => {
     return false;
 }
 
-const sample =`
-format WebSocketFrame:
-    FIN :u1
-    RSV1 :u1
-    RSV2 :u1
-    RSV3 :u1
-    Opcode :u4
-    Mask :u1
-    PayloadLength :u7
-    match PayloadLength:
-        126 => ExtendedPayloadLength :u16
-        127 => ExtendedPayloadLength :u64
-    
-    if Mask == 1:
-        MaskingKey :u32
-    
-    Payload :[available(ExtendedPayloadLength) ? ExtendedPayloadLength : PayloadLength]u8
-`
 
-const storage  = globalThis.localStorage;
-const getLangMode = () => {
-    const mode = storage.getItem(StorageKey.LANG_MODE);
-    if(mode === null) return Language.CPP;
-    if(LanguageList.includes(mode as Language)){
-        return mode as Language;
-    }
-    return Language.CPP;
-}
-
-const getSourceCode = () => {
-    const code = storage.getItem(StorageKey.SOURCE_CODE);
-    if(code === null) return sample;
-    return code;
-}
-
-let options = {
-    language_mode: getLangMode(),
-
-    setLanguageMode: (mode :Language) => {
-        options.language_mode = mode;
-        storage.setItem(StorageKey.LANG_MODE,mode);
-    },
-
-    setSourceCode: (code :string) => {
-        storage.setItem(StorageKey.SOURCE_CODE,code);
-    }
-} 
 
 const getElement = (id :string) => {
     const e = document.getElementById(id);
@@ -267,9 +217,6 @@ const handleLanguage = async (s :JobResult,generate:(id :TraceID,src :string,opt
         return e as JobResult;
     });
     if(updateTracer.editorAlreadyUpdated(s)) {
-        return false;
-    }
-    if(lang!==options.language_mode) {
         return false;
     }
     console.log(res);
@@ -401,8 +348,7 @@ const mappingCode = (mappingInfo :MappingInfo[],origin :JobResult,lang :Language
     const recoloring = () => {
         observer1.disconnect();
         observer2.disconnect();
-        const mapping = commonUI.config.get(lang)?.config.get(ConfigKey.CPP_SOURCE_MAP)?.value === true;
-        if(updateTracer.editorAlreadyUpdated(origin)||lang !== options.language_mode||!mapping)  {
+        if(updateTracer.editorAlreadyUpdated(origin))  {
             useMapping.forEach((e) => {
                 if(e.sourceElement) {
                     e.sourceElement.style.backgroundColor = '';
@@ -512,10 +458,11 @@ const updateGenerated = async () => {
         return;
     }
     const traceID = updateTracer.getTraceID();
-    if(options.language_mode === Language.TOKENIZE) {
+    const lang = storage.getLangMode();
+    if(lang === Language.TOKENIZE) {
        return await handleTokenize(traceID,value);
     }
-    if(options.language_mode === Language.JSON_DEBUG_AST) {
+    if(lang === Language.JSON_DEBUG_AST) {
         return await handleDebugAST(traceID,value);
     }
     const s = await caller.getAST(traceID,value,
@@ -533,7 +480,7 @@ const updateGenerated = async () => {
         const ts = ast2ts.parseAST(js.ast);
         console.log(ts);
     }
-    switch(options.language_mode){
+    switch(lang){
         case Language.JSON_AST:
             setGenerated(JSON.stringify(js,null,4),"json");
             break;
@@ -556,14 +503,12 @@ window.addEventListener("keydown",async (e) => {
     }
 });
 
-// monaco.languages.register({ id: 'brgen' });
-
 
 const onContentUpdate = async (e :monaco.editor.IModelContentChangedEvent)=>{
     e.changes.forEach((change)=>{
         console.log(change);
     });
-    options.setSourceCode(editorUI.editorModel.getValue());
+    storage.setSourceCode(editorUI.editorModel.getValue());
     await updateGenerated();
 }
 
@@ -578,7 +523,7 @@ const changeLanguage = async (mode :string) => {
         throw new Error(`invalid language mode: ${mode}`);
     }
     commonUI.language_select.value = mode;
-    options.setLanguageMode(mode as Language);
+    storage.setLangMode(mode as Language);
     commonUI.changeLanguageConfig(mode as Language);
     await updateGenerated();
 }
@@ -586,7 +531,7 @@ const changeLanguage = async (mode :string) => {
 const commonUI = {
     title_bar: title_bar,
     language_select: makeListBox(ElementID.LANGUAGE_SELECT,LanguageList,
-        options.language_mode,
+        storage.getLangMode(),
         async () => {
             const value = commonUI.language_select.value;
             await changeLanguage(value);
@@ -740,8 +685,8 @@ const fileName :InputListElement = {
     }));
 }
 
-commonUI.changeLanguageConfig(options.language_mode);
-editorUI.editorModel.setValue(getSourceCode());
+commonUI.changeLanguageConfig(storage.getLangMode());
+editorUI.editorModel.setValue(storage.getSourceCode());
 
 document.getElementById(ElementID.BALL)?.remove();
 document.getElementById(ElementID.BALL_BOUND)?.remove();
