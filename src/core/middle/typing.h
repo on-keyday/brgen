@@ -1058,7 +1058,13 @@ namespace brgen::middle {
                     warn_not_typed(idx);
                     return;
                 }
-                unsupported(expr);
+                auto arr_ty = ast::as<ast::ArrayType>(idx->expr->expr_type);
+                if (!arr_ty) {
+                    error(idx->expr->loc, "expect array type but not")
+                        .error(idx->expr->expr_type->loc, "type is ", ast::node_type_to_string(idx->expr->expr_type->node_type))
+                        .report();
+                }
+                idx->expr_type = arr_ty->base_type;
             }
             else if (ast::as<ast::Input>(expr) ||
                      ast::as<ast::Output>(expr) ||
