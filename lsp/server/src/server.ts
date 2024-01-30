@@ -189,10 +189,11 @@ const tokenizeSourceImpl  = async (doc :TextDocument,docInfo :DocumentInfo) =>{
     const res =await analyze.analyzeSourceCode(tokens_,async()=>{
         let ast =await execSrc2JSON(settings.src2json,parserCommand(path),text,ast2ts.isAstFile);
         docInfo.prevFile = ast;
-        if(ast.ast === null) {
-            docInfo.prevNode = ast.ast;
+        if(ast.ast !== null) {
+            docInfo.prevNode = ast2ts.parseAST(ast.ast);
+            return {file:ast,ast:docInfo.prevNode};
         }
-        return ast;
+        return {file:ast,ast:null};
     },(pos)=>{return doc.positionAt(pos)},(d)=>{showDiagnostic(doc,d)})
     console.timeEnd("semanticColoring")
     return res;
@@ -240,6 +241,7 @@ const hover = async (params :HoverParams)=>{
     console.log("target pos: %d",pos)
     const docInfo = getOrCreateDocumentInfo(hover);
     if(docInfo.prevNode===null) {
+        console.log("prevNode is null");
         return null;
     }
     return await analyze.analyzeHover(docInfo.prevNode,pos);
@@ -257,9 +259,16 @@ const definitionHandler = async (params :DefinitionParams) => {
     const pos =  doc.offsetAt(params.position);
     const docInfo = getOrCreateDocumentInfo(doc);
     if(docInfo.prevNode===null) {
+        console.log("prevNode is null");
         return null;
     }
-    return await analyze.analyzeDefinition(docInfo.prevFile!,docInfo.prevNode,pos)
+    const def= await analyze.analyzeDefinition(docInfo.prevFile!,docInfo.prevNode,pos)
+    if(def===null){
+        console.log("def is null");
+        return null;
+    }
+    def.uri = url.pathToFileURL(def.uri).toString();
+    return def;
 }
 
 connection.onDefinition(definitionHandler);

@@ -377,7 +377,7 @@ export const generateSemanticTokens = (locList :Array<LocMap>) => {
     return semanticTokens;
 };
 
-export const analyzeSourceCode  = async (tokens :ast2ts.TokenFile,getAst: ()=>Promise<ast2ts.AstFile>,positionAt :(pos :number)=>PosStub,diagnostics :(s:DiagnosticStub[])=>void) =>{
+export const analyzeSourceCode  = async (tokens :ast2ts.TokenFile,getAst: ()=>Promise<{file: ast2ts.AstFile,ast: ast2ts.Node|null}>,positionAt :(pos :number)=>PosStub,diagnostics :(s:DiagnosticStub[])=>void) =>{
     const mapForTokenTypes = new Map<ast2ts.TokenTag,string>([
         [ast2ts.TokenTag.comment,"comment"],
         [ast2ts.TokenTag.keyword,"keyword"],
@@ -417,9 +417,12 @@ export const analyzeSourceCode  = async (tokens :ast2ts.TokenFile,getAst: ()=>Pr
     });
     
     let ast_ :ast2ts.AstFile;
+    let prog_ :ast2ts.Node|null;
     try {
         console.time("parse")
-        ast_ =await getAst();
+        const l = await getAst();
+        ast_ = l.file;
+        prog_ = l.ast;
     } catch(e :any) {
         console.timeEnd("parse")
         console.log(`error: ${e}`);
@@ -433,10 +436,10 @@ export const analyzeSourceCode  = async (tokens :ast2ts.TokenFile,getAst: ()=>Pr
     else {
         diagnostics([]);
     }
-    if(ast.ast === null) {
+    if(prog_ === null) {
         throw new Error("ast is null, use previous ast");
     }
-    const prog = ast2ts.parseAST(ast.ast);
+    const prog = prog_;
     console.time("walk ast");
     ast2ts.walk(prog,(f,node)=>{
         if(node.loc.file!=1) {

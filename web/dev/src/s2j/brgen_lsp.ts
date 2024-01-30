@@ -70,9 +70,19 @@ monaco.languages.onLanguage(BRGEN_ID,()=>{
                         console.log("failed ",result);
                         throw new Error("failed to parse ast");
                     }
-                    return ast;
+                    if(ast.ast!==null) {
+                        const prog =ast2ts.parseAST(ast.ast);
+                      return {file:ast,ast:prog};
+                    }
+                    return {file:ast,ast:null};
                 });
-            },(pos)=>model.getPositionAt(pos),(diagnostics)=>{
+            },(pos)=>{
+                const posStub = model.getPositionAt(pos);
+                return {
+                    line: posStub.lineNumber-1,
+                    character: posStub.column-1,
+                };
+            },(diagnostics)=>{
                 monaco.editor.setModelMarkers(model,BRGEN_ID,diagnostics.map((d)=>{return {
                     message: d.message,
                     severity: d?.severity === DiagnosticSeverity.Error ? monaco.MarkerSeverity.Error : monaco.MarkerSeverity.Warning,
