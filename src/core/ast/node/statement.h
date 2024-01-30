@@ -18,6 +18,8 @@ namespace brgen::ast {
         std::weak_ptr<Function> decode_fn;
         std::vector<std::weak_ptr<Function>> cast_fns;
         std::vector<std::weak_ptr<IdentType>> depends;
+        std::vector<std::weak_ptr<Ident>> state_variables;
+
         Format(lexer::Loc l)
             : Member(l, NodeType::format) {}
 

@@ -9,6 +9,7 @@
 namespace brgen::middle {
 
     struct TypeAttribute {
+        
         void recursive_reference(const std::shared_ptr<ast::Node>& node) {
             std::set<ast::StructType*> typ;
             std::set<ast::Type*> tracked;

@@ -829,12 +829,24 @@ namespace brgen::middle {
                                                       r->end ? r->end->constant_level : ast::ConstantLevel::constant);
         }
 
-        void typing_ident(ast::Ident* ident, bool on_define) {
+        void register_state_variable(const std::shared_ptr<ast::Ident>& ident) {
+            auto s = ident->scope;
+            while (s) {
+                auto o = s->owner.lock();
+                if (auto fmt = ast::as<ast::Format>(o)) {
+                    fmt->state_variables.push_back(ast::cast_to<ast::Ident>(ident->base.lock()));
+                    return;
+                }
+                s = s->prev.lock();
+            }
+        }
+
+        void typing_ident(const std::shared_ptr<ast::Ident>& ident, bool on_define) {
             if (ident->base.lock()) {
                 assert(ident->usage != ast::IdentUsage::unknown);
                 return;  // skip
             }
-            if (auto found = find_matching_ident(ident)) {
+            if (auto found = find_matching_ident(ident.get())) {
                 auto& base = (*found);
                 if (auto def = ast::as<ast::Binary>(base->base.lock());
                     def && def->op == ast::BinaryOp::const_assign && !def->expr_type) {
@@ -851,6 +863,9 @@ namespace brgen::middle {
                     base->usage == ast::IdentUsage::define_state) {
                     assert(ident->expr_type == nullptr);
                     ident->usage = ast::IdentUsage::reference_type;
+                    if (base->usage == ast::IdentUsage::define_state) {
+                        register_state_variable(ident);
+                    }
                 }
                 else {
                     ident->usage = ast::IdentUsage::reference;
@@ -1002,7 +1017,7 @@ namespace brgen::middle {
                 lit->constant_level = ast::ConstantLevel::constant;
             }
             else if (auto ident = ast::as<ast::Ident>(expr)) {
-                typing_ident(ident, on_define);
+                typing_ident(ast::cast_to<ast::Ident>(expr), on_define);
                 if (base_node.place() == ast::NodeType::ident) {
                     return;  // skip
                 }
@@ -1105,7 +1120,7 @@ namespace brgen::middle {
 
         void typing_ident_type(ast::IdentType* s, bool disable_warning = false) {
             // If the object is an identifier, perform identifier typing
-            typing_ident(s->ident.get(), disable_warning);
+            typing_ident(s->ident, disable_warning);
             if (s->ident->usage == ast::IdentUsage::maybe_type) {
                 warn_type_not_found(s->ident);
             }
@@ -1126,6 +1141,7 @@ namespace brgen::middle {
 
         void typing_field(ast::Field* field) {
             typing_object(field->field_type);
+
             if (!field->arguments ||
                 field->arguments->collected_arguments.empty() ||
                 !field->arguments->arguments.empty() ||

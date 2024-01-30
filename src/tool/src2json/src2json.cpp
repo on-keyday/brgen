@@ -13,6 +13,7 @@
 #include <core/middle/replace_endian_spec.h>
 #include <core/middle/replace_error.h>
 #include <core/middle/resolve_io_operation.h>
+#include<core/middle/resolve_state_dependency.h>
 #include <core/middle/typing.h>
 #include <core/middle/type_attribute.h>
 #include "../common/print.h"
@@ -51,6 +52,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
     bool not_detect_recursive_type = false;
     bool not_detect_int_set = false;
     bool not_detect_alignment = false;
+    bool not_resolve_state_dependency = false;
 
     bool unresolved_type_as_error = false;
 
@@ -116,6 +118,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
         ctx.VarBool(&not_detect_alignment, "not-detect-alignment", "not detect alignment");
         ctx.VarBool(&not_resolve_explicit_error, "not-resolve-explicit-error", "not resolve explicit error");
         ctx.VarBool(&not_resolve_io_operation, "not-resolve-io-operation", "not resolve io operation");
+        ctx.VarBool(&not_resolve_state_dependency, "not-resolve-state-dependency", "not resolve state dependency");
 
         ctx.VarBool(&unresolved_type_as_error, "unresolved-type-as-error", "unresolved type as error");
 
@@ -658,6 +661,10 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
 
     if (!flags.not_detect_alignment) {
         attr.bit_alignment(*res);
+    }
+
+    if(!flags.not_resolve_state_dependency) {
+        brgen::middle::resolve_state_dependency(*res);
     }
 
     if (cout.is_tty() && !flags.print_json) {
