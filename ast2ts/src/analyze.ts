@@ -1,5 +1,4 @@
 import {ast2ts} from "./ast";
-import { Diagnostic, DiagnosticSeverity, Hover, Location,  MarkupKind, Position, Range, SemanticTokensBuilder } from "vscode-languageserver";
 
 namespace analyze {
 export const unwrapType = (type :ast2ts.Type|null|undefined) :string => {
@@ -28,10 +27,10 @@ export const bitSize = (bit :number|null|undefined) => {
 const makeHover = (ident :string,role :string) => {
     return {
         contents: {
-            kind: MarkupKind.Markdown,
+            kind: "markdown",
             value: `### ${ident}\n\n${role}`,
         } ,
-    } as Hover;
+    } as const;
 }
 
 export const analyzeHover = async (prevNode :ast2ts.Node, pos :number) =>{
@@ -190,11 +189,11 @@ export const analyzeDefinition = async (prevFile :ast2ts.AstFile, prevNode :ast2
     });
     const fileToLink = (loc :ast2ts.Loc, file :ast2ts.AstFile) => {
         const path = file.files[loc.file-1];
-        const range :Range = {
+        const range = {
             start: {line: loc.line-1, character: loc.col-1},
             end: {line: loc.line-1, character: loc.col-1},
         };
-        const location :Location = {
+        const location  = {
             uri: path,
             range: range,
         };
@@ -251,26 +250,46 @@ const stringEscape = (s :string) => {
     return s.replace(/\\/g,"\\\\").replace(/"/g,"\\\"").replace(/\n/g,"\\n").replace(/\r/g,"\\r");
 }
 
+export interface PosStub {
+    line: number;
+    character: number;
+}
 
+export interface RangeStub {
+    start: PosStub;
+    end: PosStub;
+}
 
-export const makeDiagnostic =(positionAt :(pos :number)=>Position,errs :ast2ts.SrcError) => {
+export const enum DiagnosticSeverityStub {
+    Error = 1,
+    Warning = 2,
+}
+
+export interface DiagnosticStub {
+    range: RangeStub;
+    message: string;
+    severity: DiagnosticSeverityStub;
+    source: string;
+}
+
+export const makeDiagnostic =(positionAt :(pos :number)=>PosStub,errs :ast2ts.SrcError) => {
     return errs.errs.map((err)=> {
         if(err.loc.file != 1) {
             return null; // skip other files
         }
         const b = positionAt(err.loc.pos.begin);
         const e = positionAt(err.loc.pos.end);
-        const range :Range = {
+        const range  = {
             start: b,
             end: e,
-        };
+        } as const;
         return {
-            severity: err.warn ? DiagnosticSeverity.Warning : DiagnosticSeverity.Error,
+            severity: err.warn ? DiagnosticSeverityStub.Warning : DiagnosticSeverityStub.Error,
             range: range,
             message: err.msg,
             source: 'brgen-lsp',
-        } as Diagnostic;
-    }).filter((x)=>x!==null) as Diagnostic[];
+        } as DiagnosticStub;
+    }).filter((x)=>x!==null) as DiagnosticStub[];
 }
 
 export const legendMapping = [
@@ -286,8 +305,79 @@ export const legendMapping = [
     "macro",
 ];
 
+export type LocMap = { readonly loc :ast2ts.Loc, readonly length :number, readonly index :number}
 
-export const analyzeSourceCode  = async (tokens :ast2ts.TokenFile,getAst: ()=>Promise<ast2ts.AstFile>,positionAt :(pos :number)=>any,diagnostics :(s:Diagnostic[])=>void) =>{
+class STBuilder {
+    prevLine :number = 0;
+    prevChar :number = 0;
+    data :number[] = [];
+
+    push(line :number, char :number, length :number, tokenType :number, ignore: number) {
+        let pushLine = line;
+        let pushChar = char;
+        if (this.data.length > 0) {
+            pushLine -= this.prevLine;
+            if (pushLine === 0) {
+                pushChar -= this.prevChar;
+            }
+        }
+        this.prevLine = line;
+        this.prevChar = char;
+        this.data.push(pushLine, pushChar, length, tokenType, ignore);
+    }
+
+    build() {
+        return {
+            resultId: undefined,
+            data: this.data,
+        }
+    }
+}
+
+
+export const generateSemanticTokens = (locList :Array<LocMap>) => {
+    const builder = new STBuilder();
+    const removeList = new Array<LocMap>();
+    locList.sort((a,b)=>{
+        if(a.loc.line == b.loc.line&&
+            a.loc.col == b.loc.col){
+            if(a.index == 2){
+                removeList.push(b);
+            }
+            else if(b.index == 2){
+                removeList.push(a);
+            }
+            else if(a.index < b.index) {
+                removeList.push(a);
+            }
+            else{
+                removeList.push(b);
+            }
+        }
+        if(a.loc.line<b.loc.line){
+            return -1;
+        }
+        if(a.loc.line>b.loc.line){
+            return 1;
+        }
+        if(a.loc.col<b.loc.col){
+            return -1;
+        }
+        if(a.loc.col>b.loc.col){
+            return 1;
+        }
+        return 0;
+    })
+    .filter((x)=>!removeList.includes(x))
+    .forEach((x)=>{
+        builder.push(x.loc.line-1,x.loc.col-1,x.length,x.index,0);
+    });
+    const semanticTokens = builder.build();
+    console.log(`semanticTokens (parsed): ${JSON.stringify(semanticTokens)}`);
+    return semanticTokens;
+};
+
+export const analyzeSourceCode  = async (tokens :ast2ts.TokenFile,getAst: ()=>Promise<ast2ts.AstFile>,positionAt :(pos :number)=>PosStub,diagnostics :(s:DiagnosticStub[])=>void) =>{
     const mapForTokenTypes = new Map<ast2ts.TokenTag,string>([
         [ast2ts.TokenTag.comment,"comment"],
         [ast2ts.TokenTag.keyword,"keyword"],
@@ -298,8 +388,7 @@ export const analyzeSourceCode  = async (tokens :ast2ts.TokenFile,getAst: ()=>Pr
         [ast2ts.TokenTag.punct,"operator"],
     ]);
     const mapTokenTypesIndex = new Map<string,number>(legendMapping.map((x,i)=>[x,i] as [string,number])); 
-    type L = { readonly loc :ast2ts.Loc, readonly length :number, readonly index :number}
-    const locList = new Array<L>();
+    const locList = new Array<LocMap>();
     if(tokens.error !== null) {
         diagnostics(makeDiagnostic(positionAt,tokens.error));
     }
@@ -326,47 +415,7 @@ export const analyzeSourceCode  = async (tokens :ast2ts.TokenFile,getAst: ()=>Pr
         }
         locList.push({loc:token.loc,length: token.token.length,index:index});
     });
-    const generateSemanticTokens = () => {
-        const builder = new SemanticTokensBuilder();
-        const removeList = new Array<L>();
-        locList.sort((a,b)=>{
-            if(a.loc.line == b.loc.line&&
-                a.loc.col == b.loc.col){
-                if(a.index == 2){
-                    removeList.push(b);
-                }
-                else if(b.index == 2){
-                    removeList.push(a);
-                }
-                else if(a.index < b.index) {
-                    removeList.push(a);
-                }
-                else{
-                    removeList.push(b);
-                }
-            }
-            if(a.loc.line<b.loc.line){
-                return -1;
-            }
-            if(a.loc.line>b.loc.line){
-                return 1;
-            }
-            if(a.loc.col<b.loc.col){
-                return -1;
-            }
-            if(a.loc.col>b.loc.col){
-                return 1;
-            }
-            return 0;
-        })
-        .filter((x)=>!removeList.includes(x))
-        .forEach((x)=>{
-            builder.push(x.loc.line-1,x.loc.col-1,x.length,x.index,0);
-        });
-        const semanticTokens = builder.build();
-        console.log(`semanticTokens (parsed): ${JSON.stringify(semanticTokens)}`);
-        return semanticTokens;
-    };
+    
     let ast_ :ast2ts.AstFile;
     try {
         console.time("parse")
@@ -374,7 +423,7 @@ export const analyzeSourceCode  = async (tokens :ast2ts.TokenFile,getAst: ()=>Pr
     } catch(e :any) {
         console.timeEnd("parse")
         console.log(`error: ${e}`);
-        return generateSemanticTokens();
+        return generateSemanticTokens(locList);
     }
     console.timeEnd("parse")
     const ast = ast_;
@@ -473,7 +522,7 @@ export const analyzeSourceCode  = async (tokens :ast2ts.TokenFile,getAst: ()=>Pr
         return true
     });
     console.timeEnd("walk ast");
-    return generateSemanticTokens();
+    return generateSemanticTokens(locList);
 };
 
 }

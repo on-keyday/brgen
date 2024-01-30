@@ -19,7 +19,7 @@
             "request": "launch",
             "program": "${workspaceRoot}/tool/src2json",
             "args": [
-                "c:/workspace/shbrgen/brgen/example/protobuf.bgn",
+                "c:/workspace/shbrgen/brgen/example/smf.bgn",
                 "--print-json"
             ],
             "stopAtEntry": false,

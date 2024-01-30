@@ -830,11 +830,21 @@ namespace brgen::middle {
         }
 
         void register_state_variable(const std::shared_ptr<ast::Ident>& ident) {
+            auto field = ast::as<ast::Field>(ast::as<ast::Ident>(ident->base.lock())->base.lock());
+            assert(field);
+            auto ident_typ = ast::as<ast::IdentType>(field->field_type);
+            if (!ident_typ) {
+                return;  // not a state variable
+            }
+            auto l = ident_typ->ident->base.lock();
+            if (!ast::as<ast::State>(l)) {
+                return;  // not a state variable
+            }
             auto s = ident->scope;
             while (s) {
                 auto o = s->owner.lock();
                 if (auto fmt = ast::as<ast::Format>(o)) {
-                    fmt->state_variables.push_back(ast::cast_to<ast::Ident>(ident->base.lock()));
+                    fmt->state_variables.push_back(field->ident);
                     return;
                 }
                 s = s->prev.lock();
@@ -863,7 +873,7 @@ namespace brgen::middle {
                     base->usage == ast::IdentUsage::define_state) {
                     assert(ident->expr_type == nullptr);
                     ident->usage = ast::IdentUsage::reference_type;
-                    if (base->usage == ast::IdentUsage::define_state) {
+                    if (base->usage == ast::IdentUsage::define_field) {
                         register_state_variable(ident);
                     }
                 }
