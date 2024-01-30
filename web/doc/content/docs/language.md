@@ -256,4 +256,22 @@ format A:
 ## ステート
 
 ステート変数を用いることでフォーマット間で状態を受け渡すことが可能になる。
-例えばステート
+
+```
+state RunningStatus:
+    type :u8
+
+running_status :RunningStatus
+
+format A:
+    type :u8
+    if type == 0:
+        type = running_status.type
+    running_status.type = type
+    data :Data
+
+format Data:
+    match running_status.type:
+        1  => data :[..]u8
+        .. => ..
+```
