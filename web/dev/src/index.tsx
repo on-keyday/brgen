@@ -243,7 +243,7 @@ const caches = {
 }
 
 const mappingCode = (mappingInfo :MappingInfo[],origin :JobResult,lang :Language,count :number) => {
-   
+  
     // HACK: these elements are dependent on monaco-editor's implementation and may be changed in the future
     const source_line = editorUI.container1.getElementsByClassName("view-lines");
     const generated_line = editorUI.container2.getElementsByClassName("view-lines");
@@ -261,7 +261,6 @@ const mappingCode = (mappingInfo :MappingInfo[],origin :JobResult,lang :Language
         },1);
         return;
     }
-
     const generated_model = editorUI.generated.getModel();
     if(!generated_model) throw new Error("generated model is null");
     if(source_line.length!==1) throw new Error("source line not found");
@@ -673,13 +672,9 @@ const fileName :InputListElement = {
     })
     cpp.set(ConfigKey.COMMON_FILE_NAME,fileName);
     commonUI.config.set(Language.CPP,languageSpecificConfig(cpp,ConfigKey.CPP_SOURCE_MAP,(change) => {
-        if(change.name === ConfigKey.CPP_SOURCE_MAP){
-            if(change.value === false) {
-                if(caches.recoloring !== null) {
-                    caches.recoloring(); 
-                    return;
-                }
-            }
+        updateTracer.getTraceID(); //dummy, consume id
+        if(caches.recoloring !== null) {
+            caches.recoloring();
         }
         updateGenerated();
     }));

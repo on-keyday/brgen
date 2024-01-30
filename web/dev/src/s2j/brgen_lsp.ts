@@ -5,7 +5,7 @@ import '../../node_modules/monaco-editor/esm/vs/editor/contrib/semanticTokens/br
 import * as caller from "./caller.js";
 import {ast2ts,analyze} from "../../node_modules/ast2ts/index.js";
 import { UpdateTracer } from "./update.js";
-import { DiagnosticSeverity, MarkupKind } from "vscode-languageserver";
+import { DiagnosticSeverity } from "vscode-languageserver";
 
 const BRGEN_ID = 'brgen'
 
@@ -32,6 +32,10 @@ monaco.editor.defineTheme("brgen-theme", {
 });
 
 const updateTracer = new UpdateTracer();
+const context = {
+    prevNode : null as ast2ts.Node|null,
+    traceID : -1,
+};
 
 monaco.languages.onLanguage(BRGEN_ID,()=>{
     disposeables.forEach((d)=>d.dispose());
@@ -45,6 +49,7 @@ monaco.languages.onLanguage(BRGEN_ID,()=>{
         },
         provideDocumentSemanticTokens: async(model, lastResultId, token)=> {
             const traceID = updateTracer.getTraceID();
+            context.traceID = traceID;
             const result = await caller.getTokens(traceID,model.getValue(),{interpret_as_utf16:true});
             if(updateTracer.editorAlreadyUpdated(result)){
                 return null;
@@ -103,6 +108,24 @@ monaco.languages.onLanguage(BRGEN_ID,()=>{
         },
         releaseDocumentSemanticTokens: (resultId)=> {}
     }))
+    monaco.languages.registerHoverProvider(BRGEN_ID,{
+        provideHover:async(model, position, token)=> {
+            if(context.prevNode === null){
+                return null;
+            }
+            const offset= model.getOffsetAt(position);
+            const b=analyze.analyzeHover(context.prevNode,offset)
+            if(b === null){
+                return null;
+            }
+            const r: monaco.languages.Hover = {
+                contents :[
+                    {value: b.contents.value, isTrusted: true},
+                ]
+            };
+            return r;
+        },
+    });
 })
 
 

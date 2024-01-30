@@ -244,7 +244,7 @@ const hover = async (params :HoverParams)=>{
         console.log("prevNode is null");
         return null;
     }
-    return await analyze.analyzeHover(docInfo.prevNode,pos);
+    return  analyze.analyzeHover(docInfo.prevNode,pos);
 }
 
 connection.onHover(hover)

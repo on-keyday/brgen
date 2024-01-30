@@ -33,7 +33,7 @@ const makeHover = (ident :string,role :string) => {
     } as const;
 }
 
-export const analyzeHover = async (prevNode :ast2ts.Node, pos :number) =>{
+export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
     let found :any;
     ast2ts.walk(prevNode,(f,node)=>{
         if(found!==undefined){
