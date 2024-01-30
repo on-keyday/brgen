@@ -186,7 +186,7 @@ const tokenizeSourceImpl  = async (doc :TextDocument,docInfo :DocumentInfo) =>{
         throw e;
     }
     console.timeEnd("tokenize")
-    const res =await analyze.analyzeSourceCode(tokens_,async()=>{
+    const res =await analyze.analyzeSourceCode(docInfo.prevSemanticTokens,tokens_,async()=>{
         let ast =await execSrc2JSON(settings.src2json,parserCommand(path),text,ast2ts.isAstFile);
         docInfo.prevFile = ast;
         if(ast.ast !== null) {

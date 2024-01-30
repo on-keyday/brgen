@@ -117,6 +117,9 @@ const editorUI = {
         lineHeight: 20,
         automaticLayout: true,
         colorDecorators: true,
+        hover: {
+            enabled: true,
+        },
         theme: "brgen-theme",
         "semanticHighlighting.enabled": true,
     }),
@@ -390,7 +393,7 @@ const handleCpp = async (s :JobResult) => {
     };
     let result : JobResult | undefined = undefined;
     let mappingInfo :any;
-    const updated = await handleLanguage(s,async(id: TraceID,src :string,option :any) => {
+    await handleLanguage(s,async(id: TraceID,src :string,option :any) => {
         result = await caller.getCppCode(id,src,option as caller.CppOption);
         if(result.code === 0&&cppOption.use_line_map){
            const split = result.stdout!.split("############");
@@ -406,7 +409,7 @@ const handleCpp = async (s :JobResult) => {
         }
         return result;
     },Language.CPP,"cpp",cppOption);
-    if(updated&& isMappingInfoArray(mappingInfo?.line_map)){
+    if(result&&!updateTracer.editorAlreadyUpdated(result)&& isMappingInfoArray(mappingInfo?.line_map)){
         // wait for editor update 
         setTimeout(() => {
             if(result===undefined) throw new Error("result is undefined");
@@ -452,11 +455,11 @@ const handleDebugAST = async (id :TraceID,value :string) => {
 
 const updateGenerated = async () => {
     const value = editorUI.editor.getValue();
+    const traceID = updateTracer.getTraceID();
     if(value === ""){
         editorUI.setDefault();
         return;
     }
-    const traceID = updateTracer.getTraceID();
     const lang = storage.getLangMode();
     if(lang === Language.TOKENIZE) {
        return await handleTokenize(traceID,value);

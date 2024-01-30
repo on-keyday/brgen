@@ -384,7 +384,12 @@ export const generateSemanticTokens = (locList :Array<LocMap>) => {
     return semanticTokens;
 };
 
-export const analyzeSourceCode  = async (tokens :ast2ts.TokenFile,getAst: ()=>Promise<{file: ast2ts.AstFile,ast: ast2ts.Node|null}>,positionAt :(pos :number)=>PosStub,diagnostics :(s:DiagnosticStub[])=>void) =>{
+export interface SemTokensStub {
+    resultId? :string;
+    data :number[];
+}
+
+export const analyzeSourceCode  = async (prevSemanticTokens :SemTokensStub|null,  tokens :ast2ts.TokenFile,getAst: ()=>Promise<{file: ast2ts.AstFile,ast: ast2ts.Node|null}>,positionAt :(pos :number)=>PosStub,diagnostics :(s:DiagnosticStub[])=>void) =>{
     const mapForTokenTypes = new Map<ast2ts.TokenTag,string>([
         [ast2ts.TokenTag.comment,"comment"],
         [ast2ts.TokenTag.keyword,"keyword"],
@@ -432,7 +437,8 @@ export const analyzeSourceCode  = async (tokens :ast2ts.TokenFile,getAst: ()=>Pr
         prog_ = l.ast;
     } catch(e :any) {
         console.timeEnd("parse")
-        console.log(`error: ${e}`);
+        console.error(`error: `,e);
+        diagnostics([]);
         return generateSemanticTokens(locList);
     }
     console.timeEnd("parse")
@@ -444,7 +450,10 @@ export const analyzeSourceCode  = async (tokens :ast2ts.TokenFile,getAst: ()=>Pr
         diagnostics([]);
     }
     if(prog_ === null) {
-        throw new Error("ast is null, use previous ast");
+        if(prevSemanticTokens !== null) {
+            return prevSemanticTokens;
+        }
+        return generateSemanticTokens(locList);
     }
     const prog = prog_;
     console.time("walk ast");
