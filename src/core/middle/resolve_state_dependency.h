@@ -18,9 +18,13 @@ namespace brgen::middle {
                     auto p = d.lock();
                     if (p) {
                         auto l = p->ident->base.lock();
-                        if (auto b = ast::as<ast::Format>(l)) {
-                            f(f, l);
-                            fmt->state_variables.insert(fmt->state_variables.end(), b->state_variables.begin(), b->state_variables.end());
+                        auto b = ast::as<ast::Ident>(l);
+                        if (b) {
+                            auto d = b->base.lock();
+                            if (auto dep = ast::as<ast::Format>(d)) {
+                                f(f, d);
+                                fmt->state_variables.insert(fmt->state_variables.end(), dep->state_variables.begin(), dep->state_variables.end());
+                            }
                         }
                     }
                     auto kept = std::unique(fmt->state_variables.begin(), fmt->state_variables.end(), [](auto&& a, auto&& b) {

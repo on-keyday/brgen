@@ -3,14 +3,15 @@
 state S:
     isA :bool
 
-s :S
+sstate :S
 
 format A:
     len :u8
-    if s.isA:
+    if sstate.isA:
         a :u8
     else:
         b :u8    
     
 format B:
     a :A
+
