@@ -1,0 +1,16 @@
+
+
+state S:
+    isA :bool
+
+s :S
+
+format A:
+    len :u8
+    if s.isA:
+        a :u8
+    else:
+        b :u8    
+    
+format B:
+    a :A

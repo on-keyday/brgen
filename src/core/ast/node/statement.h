@@ -34,6 +34,7 @@ namespace brgen::ast {
             sdebugf(decode_fn);
             sdebugf(cast_fns);
             sdebugf(depends);
+            sdebugf(state_variables);
         }
     };
 

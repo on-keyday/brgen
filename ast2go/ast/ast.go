@@ -2802,15 +2802,16 @@ func (n *Field) GetLoc() Loc {
 }
 
 type Format struct {
-	Loc          Loc
-	Belong       Member
-	BelongStruct *StructType
-	Ident        *Ident
-	Body         *IndentBlock
-	EncodeFn     *Function
-	DecodeFn     *Function
-	CastFns      []*Function
-	Depends      []*IdentType
+	Loc            Loc
+	Belong         Member
+	BelongStruct   *StructType
+	Ident          *Ident
+	Body           *IndentBlock
+	EncodeFn       *Function
+	DecodeFn       *Function
+	CastFns        []*Function
+	Depends        []*IdentType
+	StateVariables []*Ident
 }
 
 func (n *Format) isMember() {}
@@ -4430,14 +4431,15 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeFormat:
 			v := n.node[i].(*Format)
 			var tmp struct {
-				Belong       *uintptr  `json:"belong"`
-				BelongStruct *uintptr  `json:"belong_struct"`
-				Ident        *uintptr  `json:"ident"`
-				Body         *uintptr  `json:"body"`
-				EncodeFn     *uintptr  `json:"encode_fn"`
-				DecodeFn     *uintptr  `json:"decode_fn"`
-				CastFns      []uintptr `json:"cast_fns"`
-				Depends      []uintptr `json:"depends"`
+				Belong         *uintptr  `json:"belong"`
+				BelongStruct   *uintptr  `json:"belong_struct"`
+				Ident          *uintptr  `json:"ident"`
+				Body           *uintptr  `json:"body"`
+				EncodeFn       *uintptr  `json:"encode_fn"`
+				DecodeFn       *uintptr  `json:"decode_fn"`
+				CastFns        []uintptr `json:"cast_fns"`
+				Depends        []uintptr `json:"depends"`
+				StateVariables []uintptr `json:"state_variables"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -4467,6 +4469,10 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.Depends = make([]*IdentType, len(tmp.Depends))
 			for j, k := range tmp.Depends {
 				v.Depends[j] = n.node[k].(*IdentType)
+			}
+			v.StateVariables = make([]*Ident, len(tmp.StateVariables))
+			for j, k := range tmp.StateVariables {
+				v.StateVariables[j] = n.node[k].(*Ident)
 			}
 		case NodeTypeState:
 			v := n.node[i].(*State)

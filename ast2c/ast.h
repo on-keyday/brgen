@@ -1195,6 +1195,8 @@ struct ast2c_Format {
 	size_t cast_fns_size;
 	ast2c_IdentType** depends;
 	size_t depends_size;
+	ast2c_Ident** state_variables;
+	size_t state_variables_size;
 };
 
 // returns 1 if succeed 0 if failed

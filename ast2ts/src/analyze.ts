@@ -54,6 +54,11 @@ export const analyzeHover = async (prevNode :ast2ts.Node, pos :number) =>{
                 found = node;
                 return;
             }
+            else if(ast2ts.isType(node)&&node.is_explicit&&node.node_type!== "ident_type"){
+                console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
+                found = node;
+                return;
+            }
             console.log(`hit: ${node.node_type} ${JSON.stringify(node.loc)}`)
         }
         ast2ts.walk(node,f);
@@ -130,6 +135,8 @@ export const analyzeHover = async (prevNode :ast2ts.Node, pos :number) =>{
     + fixed tail size: ${bitSize(ident.base.body?.struct_type?.fixed_tail_size)}
     + algin: ${ident.base.body?.struct_type?.bit_alignment||"unknown"}
     ${ident.base.body?.struct_type?.non_dynamic?"+ non_dynamic\n    ":""}${ident.base.body?.struct_type?.recursive?"+ recursive\n":""}
+    ${ident.base.depends.length > 0 ?`+ depends: ${ident.base.depends.map((x)=>x.ident?.ident||"(null)").join(", ")}\n`:""}
+    ${ident.base.state_variables.length > 0 ?`+ state variables: ${ident.base.state_variables.map((x)=>x.ident).join(", ")}\n`:""}
 `);
                     }
                     return makeHover(ident.ident,"format"); 
@@ -164,8 +171,8 @@ export const analyzeHover = async (prevNode :ast2ts.Node, pos :number) =>{
     else if(ast2ts.isAssert(found)){
         return makeHover("assert",`assertion ${found.is_io_related?"(io_related)":""}`); 
     }
-    else if(ast2ts.isTypeLiteral(found)){
-        return makeHover("type literal",`type literal (type: ${found.type_literal?.node_type || "unknown"}, size: ${bitSize(found.type_literal?.bit_size)})`);
+    else if(ast2ts.isType(found)){
+        return makeHover("type",`type (type: ${found.node_type || "unknown"}, size: ${bitSize(found.bit_size)}, align: ${found.bit_alignment})`);
     }
     return null;
 }

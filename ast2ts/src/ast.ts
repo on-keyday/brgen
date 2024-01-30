@@ -906,6 +906,7 @@ export interface Format extends Member {
 	decode_fn: Function|null;
 	cast_fns: Function[];
 	depends: IdentType[];
+	state_variables: Ident[];
 }
 
 export function isFormat(obj: any): obj is Format {
@@ -1828,6 +1829,7 @@ export function parseAST(obj: JsonAst): Program {
 				decode_fn: null,
 				cast_fns: [],
 				depends: [],
+				state_variables: [],
 			}
 			c.node.push(n);
 			break;
@@ -3864,6 +3866,16 @@ export function parseAST(obj: JsonAst): Program {
 					throw new Error('invalid node list at Format::depends');
 				}
 				n.depends.push(tmpdepends);
+			}
+			for (const o of on.body.state_variables) {
+				if (typeof o !== 'number') {
+					throw new Error('invalid node list at Format::state_variables');
+				}
+				const tmpstate_variables = c.node[o];
+				if (!isIdent(tmpstate_variables)) {
+					throw new Error('invalid node list at Format::state_variables');
+				}
+				n.state_variables.push(tmpstate_variables);
 			}
 			break;
 		}

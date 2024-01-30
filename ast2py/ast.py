@@ -554,6 +554,7 @@ class Format(Member):
     decode_fn: Optional[Function]
     cast_fns: List[Function]
     depends: List[IdentType]
+    state_variables: List[Ident]
 
 
 class State(Member):
@@ -1808,6 +1809,7 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].decode_fn = None
                 node[i].cast_fns = [(node[x] if isinstance(node[x],Function) else raiseError(TypeError('type mismatch at Format::cast_fns'))) for x in ast.node[i].body["cast_fns"]]
                 node[i].depends = [(node[x] if isinstance(node[x],IdentType) else raiseError(TypeError('type mismatch at Format::depends'))) for x in ast.node[i].body["depends"]]
+                node[i].state_variables = [(node[x] if isinstance(node[x],Ident) else raiseError(TypeError('type mismatch at Format::state_variables'))) for x in ast.node[i].body["state_variables"]]
             case NodeType.STATE:
                 if ast.node[i].body["belong"] is not None:
                     x = node[ast.node[i].body["belong"]]

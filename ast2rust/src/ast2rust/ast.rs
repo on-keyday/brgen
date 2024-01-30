@@ -6405,6 +6405,7 @@ pub struct Format {
 	pub decode_fn: Option<Weak<RefCell<Function>>>,
 	pub cast_fns: Vec<Weak<RefCell<Function>>>,
 	pub depends: Vec<Weak<RefCell<IdentType>>>,
+	pub state_variables: Vec<Weak<RefCell<Ident>>>,
 }
 
 impl TryFrom<&Member> for Rc<RefCell<Format>> {
@@ -7894,6 +7895,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				decode_fn: None,
 				cast_fns: Vec::new(),
 				depends: Vec::new(),
+				state_variables: Vec::new(),
 				})))
 			},
 			NodeType::State => {
@@ -11774,6 +11776,29 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						x =>return Err(Error::MismatchNodeType(x.into(),depends_body.into())),
 					};
 					node.borrow_mut().depends.push(Rc::downgrade(&depends_body));
+				}
+				let state_variables_body = match raw_node.body.get("state_variables") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"state_variables")),
+				};
+				let state_variables_body = match state_variables_body.as_array(){
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(state_variables_body.into(),JSONType::Array)),
+				};
+				for link in state_variables_body {
+					let link = match link.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
+					};
+					let state_variables_body = match nodes.get(link as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(link as usize)),
+					};
+					let state_variables_body = match state_variables_body {
+						Node::Ident(body)=>body,
+						x =>return Err(Error::MismatchNodeType(x.into(),state_variables_body.into())),
+					};
+					node.borrow_mut().state_variables.push(Rc::downgrade(&state_variables_body));
 				}
 			},
 			NodeType::State => {
