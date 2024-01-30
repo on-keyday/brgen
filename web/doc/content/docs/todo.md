@@ -47,6 +47,9 @@ ToDo リストです(2023/1/15)
 - prefix bit + struct 型にジェネレーターを対応させる
 - WebPlayground の行マッピング(C++)を Monaco エディターの仕組みを使ったものに置き換える
   - dirty hack すぎる
+- match 文等の網羅性検査?
+  - サイズの決定のために
+- state 変数の使用の検出と依存関係解決
 
 # Done リスト
 

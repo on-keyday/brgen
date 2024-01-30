@@ -7,7 +7,7 @@
 #include <wrap/iocommon.h>
 #include <console/ansiesc.h>
 #include <core/middle/resolve_import.h>
-#include <core/middle/resolve_lexical_cast.h>
+// #include <core/middle/resolve_lexical_cast.h>
 #include <core/middle/resolve_available.h>
 #include <core/middle/replace_assert.h>
 #include <core/middle/replace_endian_spec.h>
