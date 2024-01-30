@@ -836,8 +836,13 @@ namespace brgen::middle {
             if (!ident_typ) {
                 return;  // not a state variable
             }
-            auto l = ident_typ->ident->base.lock();
-            if (!ast::as<ast::State>(l)) {
+            typing_ident_type(ident_typ, true);
+            auto l = ast::as<ast::StructType>(ident_typ->base.lock());
+            if (!l) {
+                return;  // not a state variable
+            }
+            auto st = ast::as<ast::State>(l->base.lock());
+            if (!st) {
                 return;  // not a state variable
             }
             auto s = ident->scope;
@@ -873,12 +878,12 @@ namespace brgen::middle {
                     base->usage == ast::IdentUsage::define_state) {
                     assert(ident->expr_type == nullptr);
                     ident->usage = ast::IdentUsage::reference_type;
-                    if (base->usage == ast::IdentUsage::define_field) {
-                        register_state_variable(ident);
-                    }
                 }
                 else {
                     ident->usage = ast::IdentUsage::reference;
+                    if (base->usage == ast::IdentUsage::define_field) {
+                        register_state_variable(ident);
+                    }
                 }
             }
             else {
