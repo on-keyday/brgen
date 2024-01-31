@@ -1,8 +1,8 @@
 
 fn oct2int(oct :[]u8) -> u64:
-    loop i := u32(0); i < oct.length; i = i+ 1:
-        if oct[i] < '0' || oct[i] > '7':
-            return 0
+    res := u64(0)
+    loop i := u64(0); i < oct.length; i = i + 1:
+        .. 
     return 0
 
 
