@@ -504,13 +504,13 @@ namespace brgen::ast {
                 return parse_str_literal(std::move(*t));
             }
             if (auto i = s.consume_token("input")) {
-                return std::make_shared<Input>(i->loc, state.input_type);
+                return std::make_shared<SpecialLiteral>(i->loc, state.input_type, SpecialLiteralKind::input_);
             }
             if (auto o = s.consume_token("output")) {
-                return std::make_shared<Output>(o->loc, state.output_type);
+                return std::make_shared<SpecialLiteral>(o->loc, state.output_type, SpecialLiteralKind::output_);
             }
             if (auto c = s.consume_token("config")) {
-                return std::make_shared<Config>(c->loc, state.config_type);
+                return std::make_shared<SpecialLiteral>(c->loc, state.config_type, SpecialLiteralKind::config_);
             }
             if (auto paren = s.consume_token("(")) {
                 return parse_paren(std::move(*paren));
@@ -686,9 +686,7 @@ namespace brgen::ast {
             if (expr->node_type == ast::NodeType::member_access) {
                 return is_finally_ident(static_cast<ast::MemberAccess*>(expr)->target.get());
             }
-            if (expr->node_type == ast::NodeType::input ||
-                expr->node_type == ast::NodeType::output ||
-                expr->node_type == ast::NodeType::config) {
+            if (expr->node_type == ast::NodeType::special_literal) {
                 return true;
             }
             return false;

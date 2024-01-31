@@ -8,14 +8,8 @@ namespace brgen::ast::tool {
         if (!maybe_config) {
             return "";
         }
-        if (auto c = ast::as<Config>(maybe_config)) {
-            return "config";
-        }
-        if (auto c = ast::as<Input>(maybe_config)) {
-            return "input";
-        }
-        if (auto c = ast::as<Output>(maybe_config)) {
-            return "output";
+        if (auto c = ast::as<SpecialLiteral>(maybe_config)) {
+            return to_string(c->kind);
         }
         if (auto d = ast::as<MemberAccess>(maybe_config)) {
             auto conf = extract_name(d->target);

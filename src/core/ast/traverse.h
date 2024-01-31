@@ -37,10 +37,12 @@ namespace brgen::ast {
             CASE(BoolLiteral)
             CASE(StrLiteral)
             CASE(TypeLiteral)
-
+            CASE(SpecialLiteral)
+            /*
             CASE(Input)
             CASE(Output)
             CASE(Config)
+            */
 
             // expr
             CASE(Expr)

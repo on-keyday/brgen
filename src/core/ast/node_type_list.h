@@ -179,6 +179,9 @@ namespace brgen::ast {
                     else if constexpr (std::is_same_v<P, IOMethod>) {
                         field(key, "io_method");
                     }
+                    else if constexpr (std::is_same_v<P, SpecialLiteralKind>) {
+                        field(key, "special_literal_kind");
+                    }
                     else if constexpr (futils::helper::is_template<P>) {
                         using P1 = typename futils::helper::template_of_t<P>::template param_at<0>;
                         if constexpr (futils::helper::is_template_instance_of<P, std::shared_ptr>) {

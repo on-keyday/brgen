@@ -90,6 +90,7 @@ namespace brgen::ast {
             : Literal({}, NodeType::type_literal) {}
     };
 
+    /*
     struct Input : Literal {
         define_node_type(NodeType::input);
 
@@ -127,9 +128,11 @@ namespace brgen::ast {
         constexpr Config()
             : Literal({}, NodeType::config) {}
     };
+    */
 
     struct SpecialLiteral : Literal {
         define_node_type(NodeType::special_literal);
+        define_node_description("special literal, such as input, output, config, etc.");
         SpecialLiteralKind kind = SpecialLiteralKind::config_;
 
         void dump(auto&& field_) {
@@ -137,8 +140,10 @@ namespace brgen::ast {
             sdebugf(kind);
         }
 
-        SpecialLiteral(lexer::Loc l, SpecialLiteralKind k)
-            : Literal(l, NodeType::special_literal), kind(k) {}
+        SpecialLiteral(lexer::Loc l, const std::shared_ptr<Type>& typ, SpecialLiteralKind k)
+            : Literal(l, NodeType::special_literal), kind(k) {
+            this->expr_type = typ;
+        }
 
         // for decode
         constexpr SpecialLiteral()

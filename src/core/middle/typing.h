@@ -297,14 +297,8 @@ namespace brgen::middle {
                     base_ident = base;
                 }
             }
-            else if (ast::as<ast::Input>(b->left)) {
-                ident = "input";
-            }
-            else if (ast::as<ast::Output>(b->left)) {
-                ident = "output";
-            }
-            else if (ast::as<ast::Config>(b->left)) {
-                ident = "config";
+            else if (auto sp = ast::as<ast::SpecialLiteral>(b->left)) {
+                ident = to_string(sp->kind);
             }
             else {
                 unsupported(b->left);
@@ -1096,9 +1090,7 @@ namespace brgen::middle {
                 }
                 idx->expr_type = arr_ty->base_type;
             }
-            else if (ast::as<ast::Input>(expr) ||
-                     ast::as<ast::Output>(expr) ||
-                     ast::as<ast::Config>(expr)) {
+            else if (ast::as<ast::SpecialLiteral>(expr)) {
                 // typing already done
             }
             else if (ast::as<ast::Range>(expr)) {

@@ -42,9 +42,11 @@ namespace brgen::ast {
         str_literal,
         type_literal,
 
+        /*
         input,
         output,
         config,
+        */
         special_literal,
 
         stmt = 0x020000,
@@ -115,9 +117,9 @@ namespace brgen::ast {
         {NodeType::int_literal, "int_literal"},
         {NodeType::bool_literal, "bool_literal"},
         {NodeType::str_literal, "str_literal"},
-        {NodeType::input, "input"},
-        {NodeType::output, "output"},
-        {NodeType::config, "config"},
+        //{NodeType::input, "input"},
+        //{NodeType::output, "output"},
+        //{NodeType::config, "config"},
         {NodeType::stmt, "stmt"},
         {NodeType::loop, "loop"},
         {NodeType::indent_block, "indent_block"},
