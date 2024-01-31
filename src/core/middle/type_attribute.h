@@ -9,7 +9,6 @@
 namespace brgen::middle {
 
     struct TypeAttribute {
-        
         void recursive_reference(const std::shared_ptr<ast::Node>& node) {
             std::set<ast::StructType*> typ;
             std::set<ast::Type*> tracked;
@@ -295,16 +294,6 @@ namespace brgen::middle {
                     // 5. a->has_const_length == false, a->length_value is any, a->base_type->bit_size != 0 -> variable length array (size unknown)
                     // 6. a->has_const_length == false, a->length_value is any, a->base_type->bit_size == 0 -> variable length array (size unknown)
 
-                    // if a->length->constant_level == constant,
-                    // and eval result has integer type, then a->length_value is set and a->has_const_length is true
-                    if (a->length && a->length->constant_level == ast::ConstantLevel::constant) {
-                        ast::tool::Evaluator eval;
-                        eval.ident_mode = ast::tool::EvalIdentMode::resolve_ident;
-                        if (auto val = eval.eval_as<ast::tool::EResultType::integer>(a->length)) {
-                            // case 1 or 2
-                            a->length_value = val->get<ast::tool::EResultType::integer>();
-                        }
-                    }
                     // determine bit size
                     if (a->length_value && a->base_type->bit_size) {
                         a->bit_size = *a->length_value * *a->base_type->bit_size;

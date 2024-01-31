@@ -53,6 +53,19 @@ namespace brgen::middle {
             if (ast::as<ast::BoolType>(left)) {
                 return true;
             }
+            if (auto lty = ast::as<ast::ArrayType>(left)) {
+                auto rty = ast::as<ast::ArrayType>(right);
+                if (!equal_type(lty->base_type, rty->base_type)) {
+                    return false;
+                }
+                if (lty->length_value && rty->length_value) {
+                    return *lty->length_value == *rty->length_value;  // static array
+                }
+                if (lty->length_value || rty->length_value) {
+                    return false;  // dynamic and static array is not equal
+                }
+                return true;  // dynamic array is always equal
+            }
             return false;
         }
 
@@ -731,32 +744,50 @@ namespace brgen::middle {
             call->constant_level = ast::ConstantLevel::variable;
         }
 
+        void typing_enum_member_access(ast::MemberAccess* selector, ast::TypeLiteral* tylit) {
+            auto ty = ast::as<ast::IdentType>(tylit->type_literal);
+            if (!ty) {
+                error(selector->target->loc, "expect enum type but not")
+                    .error(tylit->type_literal->loc, "type is ", ast::node_type_to_string(tylit->type_literal->node_type))
+                    .report();
+            }
+            if (auto def = ast::as<ast::EnumType>(ty->base.lock())) {
+                auto enum_ = def->base.lock();
+                assert(enum_);
+                selector->expr_type = enum_->enum_type;
+                auto member = enum_->lookup(selector->member->ident);
+                if (!member) {
+                    auto r = error(selector->member->loc, "member of enum ", ty->ident->ident, ".", selector->member->ident, " is not defined");
+                    r.error(tylit->loc, "enum ", enum_->ident->ident, " is defined here").report();
+                }
+                selector->base = member->ident;
+                return;
+            }
+            else {
+                error(selector->target->loc, "expect enum type but not")
+                    .error(tylit->type_literal->loc, "type is ", ast::node_type_to_string(tylit->type_literal->node_type))
+                    .report();
+            }
+        }
+
+        void typing_builtin_member_access(ast::MemberAccess* selector) {
+            if (auto arr = ast::as<ast::ArrayType>(selector->target->expr_type)) {
+                if (selector->member->ident == "length") {
+                    selector->member->usage = ast::IdentUsage::reference_builtin_fn;
+                    selector->expr_type = std::make_shared<ast::IntType>(selector->loc, 64, ast::Endian::unspec, false);
+                    return;  // length is a builtin function of array
+                }
+            }
+            error(selector->target->loc, "expect struct type but not")
+                .error(selector->target->loc, "type is ", ast::node_type_to_string(selector->target->expr_type->node_type))
+                .report();
+        }
+
         void typing_member_access(ast::MemberAccess* selector) {
             typing_expr(selector->target);
             if (auto tylit = ast::as<ast::TypeLiteral>(selector->target)) {
-                auto ty = ast::as<ast::IdentType>(tylit->type_literal);
-                if (!ty) {
-                    error(selector->target->loc, "expect enum type but not")
-                        .error(tylit->type_literal->loc, "type is ", ast::node_type_to_string(tylit->type_literal->node_type))
-                        .report();
-                }
-                if (auto def = ast::as<ast::EnumType>(ty->base.lock())) {
-                    auto enum_ = def->base.lock();
-                    assert(enum_);
-                    selector->expr_type = enum_->enum_type;
-                    auto member = enum_->lookup(selector->member->ident);
-                    if (!member) {
-                        auto r = error(selector->member->loc, "member of enum ", ty->ident->ident, ".", selector->member->ident, " is not defined");
-                        r.error(tylit->loc, "enum ", enum_->ident->ident, " is defined here").report();
-                    }
-                    selector->base = member->ident;
-                    return;
-                }
-                else {
-                    error(selector->target->loc, "expect enum type but not")
-                        .error(tylit->type_literal->loc, "type is ", ast::node_type_to_string(tylit->type_literal->node_type))
-                        .report();
-                }
+                typing_enum_member_access(selector, tylit);
+                return;
             }
             if (!selector->target->expr_type) {
                 warn_not_typed(selector);
@@ -774,9 +805,8 @@ namespace brgen::middle {
                 typing_object(stmt);
             }
             else {
-                error(selector->target->loc, "expect struct type but not")
-                    .error(selector->target->loc, "type is ", ast::node_type_to_string(selector->target->expr_type->node_type))
-                    .report();
+                typing_builtin_member_access(selector);
+                return;
             }
             if (auto field = ast::as<ast::Field>(stmt)) {
                 selector->expr_type = field->field_type;
@@ -1266,6 +1296,16 @@ namespace brgen::middle {
                     // array like [..]u8 is variable length array, so mark it as variable
                     if (arr_type->length && arr_type->length->node_type == ast::NodeType::range) {
                         arr_type->length->constant_level = ast::ConstantLevel::variable;
+                    }
+                    // if a->length->constant_level == constant,
+                    // and eval result has integer type, then a->length_value is set and a->has_const_length is true
+                    if (arr_type->length && arr_type->length->constant_level == ast::ConstantLevel::constant) {
+                        ast::tool::Evaluator eval;
+                        eval.ident_mode = ast::tool::EvalIdentMode::resolve_ident;
+                        if (auto val = eval.eval_as<ast::tool::EResultType::integer>(arr_type->length)) {
+                            // case 1 or 2
+                            arr_type->length_value = val->get<ast::tool::EResultType::integer>();
+                        }
                     }
                     // TODO(on-keyday): future, separate phase of typing to disable warning effectively
                     if (arr_type->length && arr_type->length->expr_type) {

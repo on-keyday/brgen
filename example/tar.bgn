@@ -1,0 +1,28 @@
+
+fn oct2int(oct :[]u8) -> u64:
+    loop i := u32(0); i < oct.length; i = i+ 1:
+        if oct[i] < '0' || oct[i] > '7':
+            return 0
+    return 0
+
+
+format TarFile:
+    name :[100]u8
+    mode :[8]u8
+    uid :[8]u8
+    gid :[8]u8
+    size :[12]u8
+    mtime :[12]u8
+    chksum :[8]u8
+    type :u8
+    linkname :[100]u8
+    magic :"ustar\0"
+    version :[2]u8
+    uname :[32]u8
+    gname :[32]u8
+    devmajor :[8]u8
+    devminor :[8]u8
+    prefix :[155]u8
+    padding :[12]u8
+    len ::= oct2int(<[]u8>(size))
+    data :[len]u8
