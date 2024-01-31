@@ -1011,6 +1011,28 @@ int ast2c_SpecialLiteralKind_from_string(const char* str, ast2c_SpecialLiteralKi
 	return 0;
 }
 
+const char* ast2c_OrderType_to_string(ast2c_OrderType val) {
+	switch(val) {
+	case AST2C_ORDERTYPE_BYTE: return "byte";
+	case AST2C_ORDERTYPE_BIT: return "bit";
+	default: return NULL;
+	}
+}
+
+// returns 1 if succeed 0 if failed
+int ast2c_OrderType_from_string(const char* str, ast2c_OrderType* out) {
+	if (!str||!out) return 0;
+	if (strcmp(str, "byte") == 0) {
+		*out = AST2C_ORDERTYPE_BYTE;
+		return 1;
+	}
+	if (strcmp(str, "bit") == 0) {
+		*out = AST2C_ORDERTYPE_BIT;
+		return 1;
+	}
+	return 0;
+}
+
 // returns 1 if succeed 0 if failed
 int ast2c_Program_parse(ast2c_Ast* ast,ast2c_Program* s,ast2c_json_handlers* h, void* obj) {
 	if (!ast||!s||!h||!obj) {
@@ -1683,25 +1705,27 @@ int ast2c_SpecifyOrder_parse(ast2c_Ast* ast,ast2c_SpecifyOrder* s,ast2c_json_han
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
 	s->expr_type = NULL;
 	s->base = NULL;
-	s->endian = NULL;
-	s->endian_value = NULL;
+	s->order = NULL;
+	s->order_value = NULL;
 	void* expr_type = h->object_get(h, obj_body, "expr_type");
 	void* constant_level = h->object_get(h, obj_body, "constant_level");
 	void* base = h->object_get(h, obj_body, "base");
-	void* endian = h->object_get(h, obj_body, "endian");
-	void* endian_value = h->object_get(h, obj_body, "endian_value");
+	void* order_type = h->object_get(h, obj_body, "order_type");
+	void* order = h->object_get(h, obj_body, "order");
+	void* order_value = h->object_get(h, obj_body, "order_value");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_SpecifyOrder::loc is null"); } return 0; }
 	if (!expr_type) { if(h->error) { h->error(h,expr_type, "ast2c_SpecifyOrder::expr_type is null"); } return 0; }
 	if (!constant_level) { if(h->error) { h->error(h,constant_level, "ast2c_SpecifyOrder::constant_level is null"); } return 0; }
 	if (!base) { if(h->error) { h->error(h,base, "ast2c_SpecifyOrder::base is null"); } return 0; }
-	if (!endian) { if(h->error) { h->error(h,endian, "ast2c_SpecifyOrder::endian is null"); } return 0; }
-	if (!endian_value) { if(h->error) { h->error(h,endian_value, "ast2c_SpecifyOrder::endian_value is null"); } return 0; }
+	if (!order_type) { if(h->error) { h->error(h,order_type, "ast2c_SpecifyOrder::order_type is null"); } return 0; }
+	if (!order) { if(h->error) { h->error(h,order, "ast2c_SpecifyOrder::order is null"); } return 0; }
+	if (!order_value) { if(h->error) { h->error(h,order_value, "ast2c_SpecifyOrder::order_value is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_SpecifyOrder::loc"); }
 		goto error;
 	}
-	if(!h->number_get(h,endian_value,&s->endian_value)) {
-		if(h->error) { h->error(h,endian_value, "failed to parse ast2c_SpecifyOrder::endian_value"); }
+	if(!h->number_get(h,order_value,&s->order_value)) {
+		if(h->error) { h->error(h,order_value, "failed to parse ast2c_SpecifyOrder::order_value"); }
 		goto error;
 	}
 	return 1;

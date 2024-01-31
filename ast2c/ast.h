@@ -45,6 +45,7 @@ typedef enum ast2c_BitAlignment ast2c_BitAlignment;
 typedef enum ast2c_Follow ast2c_Follow;
 typedef enum ast2c_IoMethod ast2c_IoMethod;
 typedef enum ast2c_SpecialLiteralKind ast2c_SpecialLiteralKind;
+typedef enum ast2c_OrderType ast2c_OrderType;
 typedef struct ast2c_Node ast2c_Node;
 typedef struct ast2c_Expr ast2c_Expr;
 typedef struct ast2c_Stmt ast2c_Stmt;
@@ -353,6 +354,13 @@ enum ast2c_SpecialLiteralKind {
 };
 const char* ast2c_SpecialLiteralKind_to_string(ast2c_SpecialLiteralKind);
 int ast2c_SpecialLiteralKind_from_string(const char*,ast2c_SpecialLiteralKind*);
+
+enum ast2c_OrderType {
+	AST2C_ORDERTYPE_BYTE,
+	AST2C_ORDERTYPE_BIT,
+};
+const char* ast2c_OrderType_to_string(ast2c_OrderType);
+int ast2c_OrderType_from_string(const char*,ast2c_OrderType*);
 
 struct ast2c_Pos {
 	uint64_t begin;
@@ -728,8 +736,9 @@ struct ast2c_SpecifyOrder {
 	ast2c_Type* expr_type;
 	ast2c_ConstantLevel constant_level;
 	ast2c_Binary* base;
-	ast2c_Expr* endian;
-	uint64_t* endian_value;
+	ast2c_OrderType order_type;
+	ast2c_Expr* order;
+	uint64_t* order_value;
 };
 
 // returns 1 if succeed 0 if failed

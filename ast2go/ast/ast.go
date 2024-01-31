@@ -1389,6 +1389,40 @@ func (n *SpecialLiteralKind) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+type OrderType int
+
+const (
+	OrderTypeByte OrderType = 0
+	OrderTypeBit  OrderType = 1
+)
+
+func (n OrderType) String() string {
+	switch n {
+	case OrderTypeByte:
+		return "byte"
+	case OrderTypeBit:
+		return "bit"
+	default:
+		return fmt.Sprintf("OrderType(%d)", n)
+	}
+}
+
+func (n *OrderType) UnmarshalJSON(data []byte) error {
+	var tmp string
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+	switch tmp {
+	case "byte":
+		*n = OrderTypeByte
+	case "bit":
+		*n = OrderTypeBit
+	default:
+		return fmt.Errorf("unknown OrderType: %q", tmp)
+	}
+	return nil
+}
+
 type Node interface {
 	isNode()
 	GetLoc() Loc
@@ -1865,8 +1899,9 @@ type SpecifyOrder struct {
 	ExprType      Type
 	ConstantLevel ConstantLevel
 	Base          *Binary
-	Endian        Expr
-	EndianValue   *uint64
+	OrderType     OrderType
+	Order         Expr
+	OrderValue    *uint64
 }
 
 func (n *SpecifyOrder) isExpr() {}
@@ -3696,8 +3731,9 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				ExprType      *uintptr      `json:"expr_type"`
 				ConstantLevel ConstantLevel `json:"constant_level"`
 				Base          *uintptr      `json:"base"`
-				Endian        *uintptr      `json:"endian"`
-				EndianValue   *uint64       `json:"endian_value"`
+				OrderType     OrderType     `json:"order_type"`
+				Order         *uintptr      `json:"order"`
+				OrderValue    *uint64       `json:"order_value"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -3709,10 +3745,11 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.Base != nil {
 				v.Base = n.node[*tmp.Base].(*Binary)
 			}
-			if tmp.Endian != nil {
-				v.Endian = n.node[*tmp.Endian].(Expr)
+			v.OrderType = tmp.OrderType
+			if tmp.Order != nil {
+				v.Order = n.node[*tmp.Order].(Expr)
 			}
-			v.EndianValue = tmp.EndianValue
+			v.OrderValue = tmp.OrderValue
 		case NodeTypeExplicitError:
 			v := n.node[i].(*ExplicitError)
 			var tmp struct {
@@ -4942,8 +4979,8 @@ func Walk(n Node, f Visitor) {
 				return
 			}
 		}
-		if v.Endian != nil {
-			if !f.Visit(f, v.Endian) {
+		if v.Order != nil {
+			if !f.Visit(f, v.Order) {
 				return
 			}
 		}

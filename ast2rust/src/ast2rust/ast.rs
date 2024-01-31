@@ -683,6 +683,23 @@ impl TryFrom<&str> for SpecialLiteralKind {
 	}
 }
 
+#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+#[serde(rename_all = "snake_case")]pub enum OrderType {
+	Byte,
+	Bit,
+}
+
+impl TryFrom<&str> for OrderType {
+	type Error = ();
+	fn try_from(s:&str)->Result<Self,()>{
+		match s{
+			"byte" =>Ok(Self::Byte),
+			"bit" =>Ok(Self::Bit),
+			_=> Err(()),
+		}
+	}
+}
+
 #[derive(Debug,Clone)]
 pub enum Node {
 	Program(Rc<RefCell<Program>>),
@@ -3640,8 +3657,9 @@ pub struct SpecifyOrder {
 	pub expr_type: Option<Type>,
 	pub constant_level: ConstantLevel,
 	pub base: Option<Rc<RefCell<Binary>>>,
-	pub endian: Option<Expr>,
-	pub endian_value: Option<u64>,
+	pub order_type: OrderType,
+	pub order: Option<Expr>,
+	pub order_value: Option<u64>,
 }
 
 impl TryFrom<&Expr> for Rc<RefCell<SpecifyOrder>> {
@@ -7321,8 +7339,9 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				expr_type: None,
 				constant_level: ConstantLevel::Unknown,
 				base: None,
-				endian: None,
-				endian_value: None,
+				order_type: OrderType::Byte,
+				order: None,
+				order_value: None,
 				})))
 			},
 			NodeType::ExplicitError => {
@@ -9149,30 +9168,41 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().base = Some(base_body.clone());
 				}
-				let endian_body = match raw_node.body.get("endian") {
+				let order_type_body = match raw_node.body.get("order_type") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"endian")),
+					None=>return Err(Error::MissingField(node_type,"order_type")),
 				};
- 				if !endian_body.is_null() {
-					let endian_body = match endian_body.as_u64() {
+				node.borrow_mut().order_type = match order_type_body.as_str() {
+					Some(v)=>match OrderType::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(order_type_body.into(),JSONType::String)),
+				};
+				let order_body = match raw_node.body.get("order") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"order")),
+				};
+ 				if !order_body.is_null() {
+					let order_body = match order_body.as_u64() {
 						Some(v)=>v,
-						None=>return Err(Error::MismatchJSONType(endian_body.into(),JSONType::Number)),
+						None=>return Err(Error::MismatchJSONType(order_body.into(),JSONType::Number)),
 					};
-					let endian_body = match nodes.get(endian_body as usize) {
+					let order_body = match nodes.get(order_body as usize) {
 						Some(v)=>v,
-						None => return Err(Error::IndexOutOfBounds(endian_body as usize)),
+						None => return Err(Error::IndexOutOfBounds(order_body as usize)),
 					};
-					node.borrow_mut().endian = Some(endian_body.try_into()?);
+					node.borrow_mut().order = Some(order_body.try_into()?);
 				}
-				let endian_value_body = match raw_node.body.get("endian_value") {
+				let order_value_body = match raw_node.body.get("order_value") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"endian_value")),
+					None=>return Err(Error::MissingField(node_type,"order_value")),
 				};
-				node.borrow_mut().endian_value = match endian_value_body.as_u64() {
+				node.borrow_mut().order_value = match order_value_body.as_u64() {
 					Some(v)=>Some(v),
-					None=> match endian_value_body.is_null() {
+					None=> match order_value_body.is_null() {
 						true=>None,
-						false=>return Err(Error::MismatchJSONType(endian_value_body.into(),JSONType::Number)),
+						false=>return Err(Error::MismatchJSONType(order_value_body.into(),JSONType::Number)),
 					},
 				};
 			},
@@ -12560,7 +12590,7 @@ where
 					return;
 				}
 			}
-			if let Some(node) = &node.borrow().endian{
+			if let Some(node) = &node.borrow().order{
 				if !f.visit(&node.into()){
 					return;
 				}

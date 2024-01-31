@@ -184,6 +184,15 @@ export function isSpecialLiteralKind(obj: any): obj is SpecialLiteralKind {
 	return obj && typeof obj === 'string' && (obj === "input" || obj === "output" || obj === "config")
 }
 
+export const enum OrderType {
+	byte = "byte",
+	bit = "bit",
+};
+
+export function isOrderType(obj: any): obj is OrderType {
+	return obj && typeof obj === 'string' && (obj === "byte" || obj === "bit")
+}
+
 export interface Node {
 	readonly node_type: NodeType;
 	loc: Loc;
@@ -572,8 +581,9 @@ export function isAvailable(obj: any): obj is Available {
 
 export interface SpecifyOrder extends Expr {
 	base: Binary|null;
-	endian: Expr|null;
-	endian_value: number|null;
+	order_type: OrderType;
+	order: Expr|null;
+	order_value: number|null;
 }
 
 export function isSpecifyOrder(obj: any): obj is SpecifyOrder {
@@ -1357,8 +1367,9 @@ export function parseAST(obj: JsonAst): Program {
 				expr_type: null,
 				constant_level: ConstantLevel.unknown,
 				base: null,
-				endian: null,
-				endian_value: null,
+				order_type: OrderType.byte,
+				order: null,
+				order_value: null,
 			}
 			c.node.push(n);
 			break;
@@ -2626,19 +2637,24 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at SpecifyOrder::base');
 			}
 			n.base = tmpbase;
-			if (on.body?.endian !== null && typeof on.body?.endian !== 'number') {
-				throw new Error('invalid node list at SpecifyOrder::endian');
+			const tmporder_type = on.body?.order_type;
+			if (!isOrderType(tmporder_type)) {
+				throw new Error('invalid node list at SpecifyOrder::order_type');
 			}
-			const tmpendian = on.body.endian === null ? null : c.node[on.body.endian];
-			if (!(tmpendian === null || isExpr(tmpendian))) {
-				throw new Error('invalid node list at SpecifyOrder::endian');
+			n.order_type = tmporder_type;
+			if (on.body?.order !== null && typeof on.body?.order !== 'number') {
+				throw new Error('invalid node list at SpecifyOrder::order');
 			}
-			n.endian = tmpendian;
-			const tmpendian_value = on.body?.endian_value;
-			if (tmpendian_value !== null && typeof tmpendian_value !== "number") {
-				throw new Error('invalid node list at SpecifyOrder::endian_value');
+			const tmporder = on.body.order === null ? null : c.node[on.body.order];
+			if (!(tmporder === null || isExpr(tmporder))) {
+				throw new Error('invalid node list at SpecifyOrder::order');
 			}
-			n.endian_value = on.body.endian_value;
+			n.order = tmporder;
+			const tmporder_value = on.body?.order_value;
+			if (tmporder_value !== null && typeof tmporder_value !== "number") {
+				throw new Error('invalid node list at SpecifyOrder::order_value');
+			}
+			n.order_value = on.body.order_value;
 			break;
 		}
 		case "explicit_error": {
@@ -4647,8 +4663,8 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 					return;
 				}
 			}
-			if (n.endian !== null) {
-				const result = fn(fn,n.endian);
+			if (n.order !== null) {
+				const result = fn(fn,n.order);
 				if (result === false) {
 					return;
 				}

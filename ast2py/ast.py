@@ -211,6 +211,11 @@ class SpecialLiteralKind(PyEnum):
     CONFIG = "config"
 
 
+class OrderType(PyEnum):
+    BYTE = "byte"
+    BIT = "bit"
+
+
 class Node:
     loc: Loc
 
@@ -360,8 +365,9 @@ class Available(Expr):
 
 class SpecifyOrder(Expr):
     base: Optional[Binary]
-    endian: Optional[Expr]
-    endian_value: Optional[int]
+    order_type: OrderType
+    order: Optional[Expr]
+    order_value: Optional[int]
 
 
 class ExplicitError(Expr):
@@ -1233,16 +1239,17 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].base = x if isinstance(x,Binary) else raiseError(TypeError('type mismatch at SpecifyOrder::base'))
                 else:
                     node[i].base = None
-                if ast.node[i].body["endian"] is not None:
-                    x = node[ast.node[i].body["endian"]]
-                    node[i].endian = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at SpecifyOrder::endian'))
+                node[i].order_type = OrderType(ast.node[i].body["order_type"])
+                if ast.node[i].body["order"] is not None:
+                    x = node[ast.node[i].body["order"]]
+                    node[i].order = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at SpecifyOrder::order'))
                 else:
-                    node[i].endian = None
-                x = ast.node[i].body["endian_value"]
+                    node[i].order = None
+                x = ast.node[i].body["order_value"]
                 if x is not None:
-                    node[i].endian_value = x if isinstance(x,int) else raiseError(TypeError('type mismatch at SpecifyOrder::endian_value'))
+                    node[i].order_value = x if isinstance(x,int) else raiseError(TypeError('type mismatch at SpecifyOrder::order_value'))
                 else:
-                    node[i].endian_value = None
+                    node[i].order_value = None
             case NodeType.EXPLICIT_ERROR:
                 if ast.node[i].body["expr_type"] is not None:
                     x = node[ast.node[i].body["expr_type"]]
@@ -2153,8 +2160,8 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
           if x.base is not None:
               if f(f,x.base) == False:
                   return
-          if x.endian is not None:
-              if f(f,x.endian) == False:
+          if x.order is not None:
+              if f(f,x.order) == False:
                   return
         case x if isinstance(x,ExplicitError):
           if x.expr_type is not None:

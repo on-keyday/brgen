@@ -199,6 +199,10 @@ Input,
 Output,
 Config,
 }
+public enum OrderType {
+Byte,
+Bit,
+}
 public interface Node {
 	public Loc Loc {get; set;}
 }
@@ -371,8 +375,9 @@ public class SpecifyOrder : Expr{
 	public Type? ExprType{get;set;}
 	public ConstantLevel ConstantLevel{get;set;}
 	public Binary? Base{get;set;}
-	public Expr? Endian{get;set;}
-	public ulong? EndianValue{get;set;}
+	public OrderType OrderType{get;set;}
+	public Expr? Order{get;set;}
+	public ulong? OrderValue{get;set;}
 }
 public class ExplicitError : Expr{
 	public Loc Loc{get;set;}
@@ -1116,8 +1121,9 @@ public static class Ast {
                node.ExprType = ast.Node[i].Body[expr_type];
                node.ConstantLevel = ast.Node[i].Body[constant_level];
                node.Base = ast.Node[i].Body[base];
-               node.Endian = ast.Node[i].Body[endian];
-               node.EndianValue = ast.Node[i].Body[endian_value];
+               node.OrderType = ast.Node[i].Body[order_type];
+               node.Order = ast.Node[i].Body[order];
+               node.OrderValue = ast.Node[i].Body[order_value];
            case NodeType.ExplicitError:
                var node = nodes[i] as ExplicitError;
                node.Loc = ast.Node[i].Body[loc];
