@@ -44,6 +44,7 @@ typedef enum ast2c_ConstantLevel ast2c_ConstantLevel;
 typedef enum ast2c_BitAlignment ast2c_BitAlignment;
 typedef enum ast2c_Follow ast2c_Follow;
 typedef enum ast2c_IoMethod ast2c_IoMethod;
+typedef enum ast2c_SpecialLiteralKind ast2c_SpecialLiteralKind;
 typedef struct ast2c_Node ast2c_Node;
 typedef struct ast2c_Expr ast2c_Expr;
 typedef struct ast2c_Stmt ast2c_Stmt;
@@ -103,9 +104,7 @@ typedef struct ast2c_IntLiteral ast2c_IntLiteral;
 typedef struct ast2c_BoolLiteral ast2c_BoolLiteral;
 typedef struct ast2c_StrLiteral ast2c_StrLiteral;
 typedef struct ast2c_TypeLiteral ast2c_TypeLiteral;
-typedef struct ast2c_Input ast2c_Input;
-typedef struct ast2c_Output ast2c_Output;
-typedef struct ast2c_Config ast2c_Config;
+typedef struct ast2c_SpecialLiteral ast2c_SpecialLiteral;
 typedef struct ast2c_Field ast2c_Field;
 typedef struct ast2c_Format ast2c_Format;
 typedef struct ast2c_State ast2c_State;
@@ -183,9 +182,7 @@ enum ast2c_NodeType {
 	AST2C_NODETYPE_BOOL_LITERAL,
 	AST2C_NODETYPE_STR_LITERAL,
 	AST2C_NODETYPE_TYPE_LITERAL,
-	AST2C_NODETYPE_INPUT,
-	AST2C_NODETYPE_OUTPUT,
-	AST2C_NODETYPE_CONFIG,
+	AST2C_NODETYPE_SPECIAL_LITERAL,
 	AST2C_NODETYPE_MEMBER,
 	AST2C_NODETYPE_FIELD,
 	AST2C_NODETYPE_FORMAT,
@@ -346,6 +343,14 @@ enum ast2c_IoMethod {
 };
 const char* ast2c_IoMethod_to_string(ast2c_IoMethod);
 int ast2c_IoMethod_from_string(const char*,ast2c_IoMethod*);
+
+enum ast2c_SpecialLiteralKind {
+	AST2C_SPECIALLITERALKIND_INPUT,
+	AST2C_SPECIALLITERALKIND_OUTPUT,
+	AST2C_SPECIALLITERALKIND_CONFIG,
+};
+const char* ast2c_SpecialLiteralKind_to_string(ast2c_SpecialLiteralKind);
+int ast2c_SpecialLiteralKind_from_string(const char*,ast2c_SpecialLiteralKind*);
 
 struct ast2c_Pos {
 	uint64_t begin;
@@ -1131,35 +1136,16 @@ struct ast2c_TypeLiteral {
 // returns 1 if succeed 0 if failed
 int ast2c_TypeLiteral_parse(ast2c_Ast* ,ast2c_TypeLiteral*,ast2c_json_handlers*,void*);
 
-struct ast2c_Input {
+struct ast2c_SpecialLiteral {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Type* expr_type;
 	ast2c_ConstantLevel constant_level;
+	ast2c_SpecialLiteralKind kind;
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_Input_parse(ast2c_Ast* ,ast2c_Input*,ast2c_json_handlers*,void*);
-
-struct ast2c_Output {
-	const ast2c_NodeType node_type;
-	ast2c_Loc loc;
-	ast2c_Type* expr_type;
-	ast2c_ConstantLevel constant_level;
-};
-
-// returns 1 if succeed 0 if failed
-int ast2c_Output_parse(ast2c_Ast* ,ast2c_Output*,ast2c_json_handlers*,void*);
-
-struct ast2c_Config {
-	const ast2c_NodeType node_type;
-	ast2c_Loc loc;
-	ast2c_Type* expr_type;
-	ast2c_ConstantLevel constant_level;
-};
-
-// returns 1 if succeed 0 if failed
-int ast2c_Config_parse(ast2c_Ast* ,ast2c_Config*,ast2c_json_handlers*,void*);
+int ast2c_SpecialLiteral_parse(ast2c_Ast* ,ast2c_SpecialLiteral*,ast2c_json_handlers*,void*);
 
 struct ast2c_Field {
 	const ast2c_NodeType node_type;

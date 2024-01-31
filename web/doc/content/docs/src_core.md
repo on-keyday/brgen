@@ -97,6 +97,17 @@ tool/src2json-->|ASTの型解析|middle/typing.h/Typingクラス
 - member_access のメンバー識別子 base: MemberAccess
 - typing/typing_ident で行われる型付け base: Ident
 
+### 新しいノード/列挙型を追加するときの注意事項
+
+- 現在新しいノードは C++のコードを変更することで追加する。将来的には JSON による定義をすべての基礎にしたいが、現状いろいろこんがらがっているので C++コードの変更で対処する
+- 以下変更を要する部分を述べる
+- ast/node_type.h/NodeType - NodeType 型(enum)にノードのタイプを追加。C++ではキャストを行う際、この型をビット演算してどの派生クラスかを判定している(dynamic_cast は遅いので)ため、それに合った位置に追加する。また新規に基底型を追加する際は、0xFF0000 部分を他の基底とかぶらないように(そしてその基底型が別の型から派生している場合はそのマスクも満たすように)設定する。
+- ast/node_type.h/node_type_str_array - NodeType と文字列のマッピングを追加する。これを追加しないと、コードジェネレーターがノードを認識してくれないので注意。
+- ast/node/各ファイル - ノード自体の定義を書く。define_node_type(NodeType::<ノードを示す値>)の定義を先頭に書く。コンストラクタで適切な NodeType を設定する必要がある。デフォルトコンストラクタは必須である。
+- ast/traverse.h/get_node - SWITCH 内に CASE(ノード型)を設定する。なお順序はどうでもいいのだが、できれば同じ種類でまとまっておいたほうが良い。
+- ast/ast.h/as - もし、新たな基底型を追加する場合は、場合分け(Expr や Type のある部分)にその基底を追加する
+- ast/node_type_list.h/do_dump - もし列挙型を追加する場合は他の列挙型と同じように追加する。
+
 ### その他メモ
 
 - 型名の識別子(Ident)の expr_type は nullptr

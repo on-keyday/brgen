@@ -70,9 +70,9 @@ func (c *ConfigDesc) String() string {
 }
 
 func GetConfig(m ast2go.Node) string {
-	if _, ok := m.(*ast2go.Config); ok {
+	/*if _, ok := m.(*ast2go.Config); ok {
 		return "config"
-	}
+	}*/
 	member, ok := m.(*ast2go.MemberAccess)
 	if !ok {
 		return ""

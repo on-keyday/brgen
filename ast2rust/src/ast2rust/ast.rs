@@ -97,9 +97,7 @@ impl From<&Node> for NodeType {
 			Node::BoolLiteral(_) => Self::BoolLiteral,
 			Node::StrLiteral(_) => Self::StrLiteral,
 			Node::TypeLiteral(_) => Self::TypeLiteral,
-			Node::Input(_) => Self::Input,
-			Node::Output(_) => Self::Output,
-			Node::Config(_) => Self::Config,
+			Node::SpecialLiteral(_) => Self::SpecialLiteral,
 			Node::Field(_) => Self::Field,
 			Node::Format(_) => Self::Format,
 			Node::State(_) => Self::State,
@@ -174,9 +172,7 @@ impl From<&NodeWeak> for NodeType {
 			NodeWeak::BoolLiteral(_) => Self::BoolLiteral,
 			NodeWeak::StrLiteral(_) => Self::StrLiteral,
 			NodeWeak::TypeLiteral(_) => Self::TypeLiteral,
-			NodeWeak::Input(_) => Self::Input,
-			NodeWeak::Output(_) => Self::Output,
-			NodeWeak::Config(_) => Self::Config,
+			NodeWeak::SpecialLiteral(_) => Self::SpecialLiteral,
 			NodeWeak::Field(_) => Self::Field,
 			NodeWeak::Format(_) => Self::Format,
 			NodeWeak::State(_) => Self::State,
@@ -254,9 +250,7 @@ impl From<NodeWeak> for NodeType {
 	BoolLiteral,
 	StrLiteral,
 	TypeLiteral,
-	Input,
-	Output,
-	Config,
+	SpecialLiteral,
 	Member,
 	Field,
 	Format,
@@ -330,9 +324,7 @@ impl TryFrom<&str> for NodeType {
 			"bool_literal" =>Ok(Self::BoolLiteral),
 			"str_literal" =>Ok(Self::StrLiteral),
 			"type_literal" =>Ok(Self::TypeLiteral),
-			"input" =>Ok(Self::Input),
-			"output" =>Ok(Self::Output),
-			"config" =>Ok(Self::Config),
+			"special_literal" =>Ok(Self::SpecialLiteral),
 			"member" =>Ok(Self::Member),
 			"field" =>Ok(Self::Field),
 			"format" =>Ok(Self::Format),
@@ -668,6 +660,25 @@ impl TryFrom<&str> for IoMethod {
 	}
 }
 
+#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+#[serde(rename_all = "snake_case")]pub enum SpecialLiteralKind {
+	Input,
+	Output,
+	Config,
+}
+
+impl TryFrom<&str> for SpecialLiteralKind {
+	type Error = ();
+	fn try_from(s:&str)->Result<Self,()>{
+		match s{
+			"input" =>Ok(Self::Input),
+			"output" =>Ok(Self::Output),
+			"config" =>Ok(Self::Config),
+			_=> Err(()),
+		}
+	}
+}
+
 #[derive(Debug,Clone)]
 pub enum Node {
 	Program(Rc<RefCell<Program>>),
@@ -722,9 +733,7 @@ pub enum Node {
 	BoolLiteral(Rc<RefCell<BoolLiteral>>),
 	StrLiteral(Rc<RefCell<StrLiteral>>),
 	TypeLiteral(Rc<RefCell<TypeLiteral>>),
-	Input(Rc<RefCell<Input>>),
-	Output(Rc<RefCell<Output>>),
-	Config(Rc<RefCell<Config>>),
+	SpecialLiteral(Rc<RefCell<SpecialLiteral>>),
 	Field(Rc<RefCell<Field>>),
 	Format(Rc<RefCell<Format>>),
 	State(Rc<RefCell<State>>),
@@ -790,9 +799,7 @@ pub enum NodeWeak {
 	BoolLiteral(Weak<RefCell<BoolLiteral>>),
 	StrLiteral(Weak<RefCell<StrLiteral>>),
 	TypeLiteral(Weak<RefCell<TypeLiteral>>),
-	Input(Weak<RefCell<Input>>),
-	Output(Weak<RefCell<Output>>),
-	Config(Weak<RefCell<Config>>),
+	SpecialLiteral(Weak<RefCell<SpecialLiteral>>),
 	Field(Weak<RefCell<Field>>),
 	Format(Weak<RefCell<Format>>),
 	State(Weak<RefCell<State>>),
@@ -859,9 +866,7 @@ impl From<&Node> for NodeWeak {
 			Node::BoolLiteral(node)=>Self::BoolLiteral(Rc::downgrade(node)),
 			Node::StrLiteral(node)=>Self::StrLiteral(Rc::downgrade(node)),
 			Node::TypeLiteral(node)=>Self::TypeLiteral(Rc::downgrade(node)),
-			Node::Input(node)=>Self::Input(Rc::downgrade(node)),
-			Node::Output(node)=>Self::Output(Rc::downgrade(node)),
-			Node::Config(node)=>Self::Config(Rc::downgrade(node)),
+			Node::SpecialLiteral(node)=>Self::SpecialLiteral(Rc::downgrade(node)),
 			Node::Field(node)=>Self::Field(Rc::downgrade(node)),
 			Node::Format(node)=>Self::Format(Rc::downgrade(node)),
 			Node::State(node)=>Self::State(Rc::downgrade(node)),
@@ -937,9 +942,7 @@ impl TryFrom<&NodeWeak> for Node {
 			NodeWeak::BoolLiteral(node)=>Ok(Self::BoolLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::BoolLiteral))?)),
 			NodeWeak::StrLiteral(node)=>Ok(Self::StrLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::StrLiteral))?)),
 			NodeWeak::TypeLiteral(node)=>Ok(Self::TypeLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::TypeLiteral))?)),
-			NodeWeak::Input(node)=>Ok(Self::Input(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Input))?)),
-			NodeWeak::Output(node)=>Ok(Self::Output(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Output))?)),
-			NodeWeak::Config(node)=>Ok(Self::Config(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Config))?)),
+			NodeWeak::SpecialLiteral(node)=>Ok(Self::SpecialLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::SpecialLiteral))?)),
 			NodeWeak::Field(node)=>Ok(Self::Field(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Field))?)),
 			NodeWeak::Format(node)=>Ok(Self::Format(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Format))?)),
 			NodeWeak::State(node)=>Ok(Self::State(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::State))?)),
@@ -984,9 +987,7 @@ pub enum Expr {
 	BoolLiteral(Rc<RefCell<BoolLiteral>>),
 	StrLiteral(Rc<RefCell<StrLiteral>>),
 	TypeLiteral(Rc<RefCell<TypeLiteral>>),
-	Input(Rc<RefCell<Input>>),
-	Output(Rc<RefCell<Output>>),
-	Config(Rc<RefCell<Config>>),
+	SpecialLiteral(Rc<RefCell<SpecialLiteral>>),
 }
 
 #[derive(Debug,Clone)]
@@ -1013,9 +1014,7 @@ pub enum ExprWeak {
 	BoolLiteral(Weak<RefCell<BoolLiteral>>),
 	StrLiteral(Weak<RefCell<StrLiteral>>),
 	TypeLiteral(Weak<RefCell<TypeLiteral>>),
-	Input(Weak<RefCell<Input>>),
-	Output(Weak<RefCell<Output>>),
-	Config(Weak<RefCell<Config>>),
+	SpecialLiteral(Weak<RefCell<SpecialLiteral>>),
 }
 
 impl From<&Expr> for ExprWeak {
@@ -1043,9 +1042,7 @@ impl From<&Expr> for ExprWeak {
 			Expr::BoolLiteral(node)=>Self::BoolLiteral(Rc::downgrade(node)),
 			Expr::StrLiteral(node)=>Self::StrLiteral(Rc::downgrade(node)),
 			Expr::TypeLiteral(node)=>Self::TypeLiteral(Rc::downgrade(node)),
-			Expr::Input(node)=>Self::Input(Rc::downgrade(node)),
-			Expr::Output(node)=>Self::Output(Rc::downgrade(node)),
-			Expr::Config(node)=>Self::Config(Rc::downgrade(node)),
+			Expr::SpecialLiteral(node)=>Self::SpecialLiteral(Rc::downgrade(node)),
 		}
 	}
 }
@@ -1082,9 +1079,7 @@ impl TryFrom<&ExprWeak> for Expr {
 			ExprWeak::BoolLiteral(node)=>Ok(Self::BoolLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::BoolLiteral))?)),
 			ExprWeak::StrLiteral(node)=>Ok(Self::StrLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::StrLiteral))?)),
 			ExprWeak::TypeLiteral(node)=>Ok(Self::TypeLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::TypeLiteral))?)),
-			ExprWeak::Input(node)=>Ok(Self::Input(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Input))?)),
-			ExprWeak::Output(node)=>Ok(Self::Output(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Output))?)),
-			ExprWeak::Config(node)=>Ok(Self::Config(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Config))?)),
+			ExprWeak::SpecialLiteral(node)=>Ok(Self::SpecialLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::SpecialLiteral))?)),
 		}
 	}
 }
@@ -1122,9 +1117,7 @@ impl TryFrom<&Node> for Expr {
 			Node::BoolLiteral(node)=>Ok(Self::BoolLiteral(node.clone())),
 			Node::StrLiteral(node)=>Ok(Self::StrLiteral(node.clone())),
 			Node::TypeLiteral(node)=>Ok(Self::TypeLiteral(node.clone())),
-			Node::Input(node)=>Ok(Self::Input(node.clone())),
-			Node::Output(node)=>Ok(Self::Output(node.clone())),
-			Node::Config(node)=>Ok(Self::Config(node.clone())),
+			Node::SpecialLiteral(node)=>Ok(Self::SpecialLiteral(node.clone())),
 			_=> Err(Error::InvalidNodeType(node.into())),
 		}
 	}
@@ -1162,9 +1155,7 @@ impl From<&Expr> for Node {
 			Expr::BoolLiteral(node)=>Self::BoolLiteral(node.clone()),
 			Expr::StrLiteral(node)=>Self::StrLiteral(node.clone()),
 			Expr::TypeLiteral(node)=>Self::TypeLiteral(node.clone()),
-			Expr::Input(node)=>Self::Input(node.clone()),
-			Expr::Output(node)=>Self::Output(node.clone()),
-			Expr::Config(node)=>Self::Config(node.clone()),
+			Expr::SpecialLiteral(node)=>Self::SpecialLiteral(node.clone()),
 		}
 	}
 }
@@ -1201,9 +1192,7 @@ impl TryFrom<&ExprWeak> for Node {
 			ExprWeak::BoolLiteral(node)=>Ok(Self::BoolLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::BoolLiteral))?)),
 			ExprWeak::StrLiteral(node)=>Ok(Self::StrLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::StrLiteral))?)),
 			ExprWeak::TypeLiteral(node)=>Ok(Self::TypeLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::TypeLiteral))?)),
-			ExprWeak::Input(node)=>Ok(Self::Input(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Input))?)),
-			ExprWeak::Output(node)=>Ok(Self::Output(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Output))?)),
-			ExprWeak::Config(node)=>Ok(Self::Config(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Config))?)),
+			ExprWeak::SpecialLiteral(node)=>Ok(Self::SpecialLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::SpecialLiteral))?)),
 		}
 	}
 }
@@ -1240,9 +1229,7 @@ impl From<&ExprWeak> for NodeWeak {
 			ExprWeak::BoolLiteral(node)=>Self::BoolLiteral(node.clone()),
 			ExprWeak::StrLiteral(node)=>Self::StrLiteral(node.clone()),
 			ExprWeak::TypeLiteral(node)=>Self::TypeLiteral(node.clone()),
-			ExprWeak::Input(node)=>Self::Input(node.clone()),
-			ExprWeak::Output(node)=>Self::Output(node.clone()),
-			ExprWeak::Config(node)=>Self::Config(node.clone()),
+			ExprWeak::SpecialLiteral(node)=>Self::SpecialLiteral(node.clone()),
 		}
 	}
 }
@@ -1279,9 +1266,7 @@ impl TryFrom<&NodeWeak> for ExprWeak {
 			NodeWeak::BoolLiteral(node)=>Ok(Self::BoolLiteral(node.clone())),
 			NodeWeak::StrLiteral(node)=>Ok(Self::StrLiteral(node.clone())),
 			NodeWeak::TypeLiteral(node)=>Ok(Self::TypeLiteral(node.clone())),
-			NodeWeak::Input(node)=>Ok(Self::Input(node.clone())),
-			NodeWeak::Output(node)=>Ok(Self::Output(node.clone())),
-			NodeWeak::Config(node)=>Ok(Self::Config(node.clone())),
+			NodeWeak::SpecialLiteral(node)=>Ok(Self::SpecialLiteral(node.clone())),
 			_=> Err(Error::InvalidNodeType(node.into())),
 		}
 	}
@@ -1320,9 +1305,7 @@ impl TryFrom<&Node> for ExprWeak {
 			Node::BoolLiteral(node)=>Ok(Self::BoolLiteral(Rc::downgrade(node))),
 			Node::StrLiteral(node)=>Ok(Self::StrLiteral(Rc::downgrade(node))),
 			Node::TypeLiteral(node)=>Ok(Self::TypeLiteral(Rc::downgrade(node))),
-			Node::Input(node)=>Ok(Self::Input(Rc::downgrade(node))),
-			Node::Output(node)=>Ok(Self::Output(Rc::downgrade(node))),
-			Node::Config(node)=>Ok(Self::Config(Rc::downgrade(node))),
+			Node::SpecialLiteral(node)=>Ok(Self::SpecialLiteral(Rc::downgrade(node))),
 			_=> Err(Error::InvalidNodeType(node.into())),
 		}
 	}
@@ -1941,9 +1924,7 @@ pub enum Literal {
 	BoolLiteral(Rc<RefCell<BoolLiteral>>),
 	StrLiteral(Rc<RefCell<StrLiteral>>),
 	TypeLiteral(Rc<RefCell<TypeLiteral>>),
-	Input(Rc<RefCell<Input>>),
-	Output(Rc<RefCell<Output>>),
-	Config(Rc<RefCell<Config>>),
+	SpecialLiteral(Rc<RefCell<SpecialLiteral>>),
 }
 
 #[derive(Debug,Clone)]
@@ -1952,9 +1933,7 @@ pub enum LiteralWeak {
 	BoolLiteral(Weak<RefCell<BoolLiteral>>),
 	StrLiteral(Weak<RefCell<StrLiteral>>),
 	TypeLiteral(Weak<RefCell<TypeLiteral>>),
-	Input(Weak<RefCell<Input>>),
-	Output(Weak<RefCell<Output>>),
-	Config(Weak<RefCell<Config>>),
+	SpecialLiteral(Weak<RefCell<SpecialLiteral>>),
 }
 
 impl From<&Literal> for LiteralWeak {
@@ -1964,9 +1943,7 @@ impl From<&Literal> for LiteralWeak {
 			Literal::BoolLiteral(node)=>Self::BoolLiteral(Rc::downgrade(node)),
 			Literal::StrLiteral(node)=>Self::StrLiteral(Rc::downgrade(node)),
 			Literal::TypeLiteral(node)=>Self::TypeLiteral(Rc::downgrade(node)),
-			Literal::Input(node)=>Self::Input(Rc::downgrade(node)),
-			Literal::Output(node)=>Self::Output(Rc::downgrade(node)),
-			Literal::Config(node)=>Self::Config(Rc::downgrade(node)),
+			Literal::SpecialLiteral(node)=>Self::SpecialLiteral(Rc::downgrade(node)),
 		}
 	}
 }
@@ -1985,9 +1962,7 @@ impl TryFrom<&LiteralWeak> for Literal {
 			LiteralWeak::BoolLiteral(node)=>Ok(Self::BoolLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::BoolLiteral))?)),
 			LiteralWeak::StrLiteral(node)=>Ok(Self::StrLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::StrLiteral))?)),
 			LiteralWeak::TypeLiteral(node)=>Ok(Self::TypeLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::TypeLiteral))?)),
-			LiteralWeak::Input(node)=>Ok(Self::Input(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Input))?)),
-			LiteralWeak::Output(node)=>Ok(Self::Output(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Output))?)),
-			LiteralWeak::Config(node)=>Ok(Self::Config(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Config))?)),
+			LiteralWeak::SpecialLiteral(node)=>Ok(Self::SpecialLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::SpecialLiteral))?)),
 		}
 	}
 }
@@ -2007,9 +1982,7 @@ impl TryFrom<&Node> for Literal {
 			Node::BoolLiteral(node)=>Ok(Self::BoolLiteral(node.clone())),
 			Node::StrLiteral(node)=>Ok(Self::StrLiteral(node.clone())),
 			Node::TypeLiteral(node)=>Ok(Self::TypeLiteral(node.clone())),
-			Node::Input(node)=>Ok(Self::Input(node.clone())),
-			Node::Output(node)=>Ok(Self::Output(node.clone())),
-			Node::Config(node)=>Ok(Self::Config(node.clone())),
+			Node::SpecialLiteral(node)=>Ok(Self::SpecialLiteral(node.clone())),
 			_=> Err(Error::InvalidNodeType(node.into())),
 		}
 	}
@@ -2029,9 +2002,7 @@ impl From<&Literal> for Node {
 			Literal::BoolLiteral(node)=>Self::BoolLiteral(node.clone()),
 			Literal::StrLiteral(node)=>Self::StrLiteral(node.clone()),
 			Literal::TypeLiteral(node)=>Self::TypeLiteral(node.clone()),
-			Literal::Input(node)=>Self::Input(node.clone()),
-			Literal::Output(node)=>Self::Output(node.clone()),
-			Literal::Config(node)=>Self::Config(node.clone()),
+			Literal::SpecialLiteral(node)=>Self::SpecialLiteral(node.clone()),
 		}
 	}
 }
@@ -2050,9 +2021,7 @@ impl TryFrom<&LiteralWeak> for Node {
 			LiteralWeak::BoolLiteral(node)=>Ok(Self::BoolLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::BoolLiteral))?)),
 			LiteralWeak::StrLiteral(node)=>Ok(Self::StrLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::StrLiteral))?)),
 			LiteralWeak::TypeLiteral(node)=>Ok(Self::TypeLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::TypeLiteral))?)),
-			LiteralWeak::Input(node)=>Ok(Self::Input(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Input))?)),
-			LiteralWeak::Output(node)=>Ok(Self::Output(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Output))?)),
-			LiteralWeak::Config(node)=>Ok(Self::Config(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Config))?)),
+			LiteralWeak::SpecialLiteral(node)=>Ok(Self::SpecialLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::SpecialLiteral))?)),
 		}
 	}
 }
@@ -2071,9 +2040,7 @@ impl From<&LiteralWeak> for NodeWeak {
 			LiteralWeak::BoolLiteral(node)=>Self::BoolLiteral(node.clone()),
 			LiteralWeak::StrLiteral(node)=>Self::StrLiteral(node.clone()),
 			LiteralWeak::TypeLiteral(node)=>Self::TypeLiteral(node.clone()),
-			LiteralWeak::Input(node)=>Self::Input(node.clone()),
-			LiteralWeak::Output(node)=>Self::Output(node.clone()),
-			LiteralWeak::Config(node)=>Self::Config(node.clone()),
+			LiteralWeak::SpecialLiteral(node)=>Self::SpecialLiteral(node.clone()),
 		}
 	}
 }
@@ -2092,9 +2059,7 @@ impl TryFrom<&NodeWeak> for LiteralWeak {
 			NodeWeak::BoolLiteral(node)=>Ok(Self::BoolLiteral(node.clone())),
 			NodeWeak::StrLiteral(node)=>Ok(Self::StrLiteral(node.clone())),
 			NodeWeak::TypeLiteral(node)=>Ok(Self::TypeLiteral(node.clone())),
-			NodeWeak::Input(node)=>Ok(Self::Input(node.clone())),
-			NodeWeak::Output(node)=>Ok(Self::Output(node.clone())),
-			NodeWeak::Config(node)=>Ok(Self::Config(node.clone())),
+			NodeWeak::SpecialLiteral(node)=>Ok(Self::SpecialLiteral(node.clone())),
 			_=> Err(Error::InvalidNodeType(node.into())),
 		}
 	}
@@ -2115,9 +2080,7 @@ impl TryFrom<&Node> for LiteralWeak {
 			Node::BoolLiteral(node)=>Ok(Self::BoolLiteral(Rc::downgrade(node))),
 			Node::StrLiteral(node)=>Ok(Self::StrLiteral(Rc::downgrade(node))),
 			Node::TypeLiteral(node)=>Ok(Self::TypeLiteral(Rc::downgrade(node))),
-			Node::Input(node)=>Ok(Self::Input(Rc::downgrade(node))),
-			Node::Output(node)=>Ok(Self::Output(Rc::downgrade(node))),
-			Node::Config(node)=>Ok(Self::Config(Rc::downgrade(node))),
+			Node::SpecialLiteral(node)=>Ok(Self::SpecialLiteral(Rc::downgrade(node))),
 			_=> Err(Error::InvalidNodeType(node.into())),
 		}
 	}
@@ -6008,283 +5971,96 @@ impl From<Rc<RefCell<TypeLiteral>>> for Node {
 }
 
 #[derive(Debug,Clone)]
-pub struct Input {
+pub struct SpecialLiteral {
 	pub loc: Loc,
 	pub expr_type: Option<Type>,
 	pub constant_level: ConstantLevel,
+	pub kind: SpecialLiteralKind,
 }
 
-impl TryFrom<&Literal> for Rc<RefCell<Input>> {
+impl TryFrom<&Literal> for Rc<RefCell<SpecialLiteral>> {
 	type Error = Error;
 	fn try_from(node:&Literal)->Result<Self,Self::Error>{
 		match node {
-			Literal::Input(node)=>Ok(node.clone()),
+			Literal::SpecialLiteral(node)=>Ok(node.clone()),
 			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
 		}
 	}
 }
 
-impl TryFrom<Literal> for Rc<RefCell<Input>> {
+impl TryFrom<Literal> for Rc<RefCell<SpecialLiteral>> {
 	type Error = Error;
 	fn try_from(node:Literal)->Result<Self,Self::Error>{
 		Self::try_from(&node)
 	}
 }
 
-impl From<&Rc<RefCell<Input>>> for Literal {
-	fn from(node:&Rc<RefCell<Input>>)-> Self{
-		Literal::Input(node.clone())
+impl From<&Rc<RefCell<SpecialLiteral>>> for Literal {
+	fn from(node:&Rc<RefCell<SpecialLiteral>>)-> Self{
+		Literal::SpecialLiteral(node.clone())
 	}
 }
 
-impl From<Rc<RefCell<Input>>> for Literal {
-	fn from(node:Rc<RefCell<Input>>)-> Self{
+impl From<Rc<RefCell<SpecialLiteral>>> for Literal {
+	fn from(node:Rc<RefCell<SpecialLiteral>>)-> Self{
 		Self::from(&node)
 	}
 }
 
-impl TryFrom<&Expr> for Rc<RefCell<Input>> {
+impl TryFrom<&Expr> for Rc<RefCell<SpecialLiteral>> {
 	type Error = Error;
 	fn try_from(node:&Expr)->Result<Self,Self::Error>{
 		match node {
-			Expr::Input(node)=>Ok(node.clone()),
+			Expr::SpecialLiteral(node)=>Ok(node.clone()),
 			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
 		}
 	}
 }
 
-impl TryFrom<Expr> for Rc<RefCell<Input>> {
+impl TryFrom<Expr> for Rc<RefCell<SpecialLiteral>> {
 	type Error = Error;
 	fn try_from(node:Expr)->Result<Self,Self::Error>{
 		Self::try_from(&node)
 	}
 }
 
-impl From<&Rc<RefCell<Input>>> for Expr {
-	fn from(node:&Rc<RefCell<Input>>)-> Self{
-		Expr::Input(node.clone())
+impl From<&Rc<RefCell<SpecialLiteral>>> for Expr {
+	fn from(node:&Rc<RefCell<SpecialLiteral>>)-> Self{
+		Expr::SpecialLiteral(node.clone())
 	}
 }
 
-impl From<Rc<RefCell<Input>>> for Expr {
-	fn from(node:Rc<RefCell<Input>>)-> Self{
+impl From<Rc<RefCell<SpecialLiteral>>> for Expr {
+	fn from(node:Rc<RefCell<SpecialLiteral>>)-> Self{
 		Self::from(&node)
 	}
 }
 
-impl TryFrom<&Node> for Rc<RefCell<Input>> {
+impl TryFrom<&Node> for Rc<RefCell<SpecialLiteral>> {
 	type Error = Error;
 	fn try_from(node:&Node)->Result<Self,Self::Error>{
 		match node {
-			Node::Input(node)=>Ok(node.clone()),
+			Node::SpecialLiteral(node)=>Ok(node.clone()),
 			_=> Err(Error::InvalidNodeType(node.into())),
 		}
 	}
 }
 
-impl TryFrom<Node> for Rc<RefCell<Input>> {
+impl TryFrom<Node> for Rc<RefCell<SpecialLiteral>> {
 	type Error = Error;
 	fn try_from(node:Node)->Result<Self,Self::Error>{
 		Self::try_from(&node)
 	}
 }
 
-impl From<&Rc<RefCell<Input>>> for Node {
-	fn from(node:&Rc<RefCell<Input>>)-> Self{
-		Node::Input(node.clone())
+impl From<&Rc<RefCell<SpecialLiteral>>> for Node {
+	fn from(node:&Rc<RefCell<SpecialLiteral>>)-> Self{
+		Node::SpecialLiteral(node.clone())
 	}
 }
 
-impl From<Rc<RefCell<Input>>> for Node {
-	fn from(node:Rc<RefCell<Input>>)-> Self{
-		Self::from(&node)
-	}
-}
-
-#[derive(Debug,Clone)]
-pub struct Output {
-	pub loc: Loc,
-	pub expr_type: Option<Type>,
-	pub constant_level: ConstantLevel,
-}
-
-impl TryFrom<&Literal> for Rc<RefCell<Output>> {
-	type Error = Error;
-	fn try_from(node:&Literal)->Result<Self,Self::Error>{
-		match node {
-			Literal::Output(node)=>Ok(node.clone()),
-			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
-		}
-	}
-}
-
-impl TryFrom<Literal> for Rc<RefCell<Output>> {
-	type Error = Error;
-	fn try_from(node:Literal)->Result<Self,Self::Error>{
-		Self::try_from(&node)
-	}
-}
-
-impl From<&Rc<RefCell<Output>>> for Literal {
-	fn from(node:&Rc<RefCell<Output>>)-> Self{
-		Literal::Output(node.clone())
-	}
-}
-
-impl From<Rc<RefCell<Output>>> for Literal {
-	fn from(node:Rc<RefCell<Output>>)-> Self{
-		Self::from(&node)
-	}
-}
-
-impl TryFrom<&Expr> for Rc<RefCell<Output>> {
-	type Error = Error;
-	fn try_from(node:&Expr)->Result<Self,Self::Error>{
-		match node {
-			Expr::Output(node)=>Ok(node.clone()),
-			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
-		}
-	}
-}
-
-impl TryFrom<Expr> for Rc<RefCell<Output>> {
-	type Error = Error;
-	fn try_from(node:Expr)->Result<Self,Self::Error>{
-		Self::try_from(&node)
-	}
-}
-
-impl From<&Rc<RefCell<Output>>> for Expr {
-	fn from(node:&Rc<RefCell<Output>>)-> Self{
-		Expr::Output(node.clone())
-	}
-}
-
-impl From<Rc<RefCell<Output>>> for Expr {
-	fn from(node:Rc<RefCell<Output>>)-> Self{
-		Self::from(&node)
-	}
-}
-
-impl TryFrom<&Node> for Rc<RefCell<Output>> {
-	type Error = Error;
-	fn try_from(node:&Node)->Result<Self,Self::Error>{
-		match node {
-			Node::Output(node)=>Ok(node.clone()),
-			_=> Err(Error::InvalidNodeType(node.into())),
-		}
-	}
-}
-
-impl TryFrom<Node> for Rc<RefCell<Output>> {
-	type Error = Error;
-	fn try_from(node:Node)->Result<Self,Self::Error>{
-		Self::try_from(&node)
-	}
-}
-
-impl From<&Rc<RefCell<Output>>> for Node {
-	fn from(node:&Rc<RefCell<Output>>)-> Self{
-		Node::Output(node.clone())
-	}
-}
-
-impl From<Rc<RefCell<Output>>> for Node {
-	fn from(node:Rc<RefCell<Output>>)-> Self{
-		Self::from(&node)
-	}
-}
-
-#[derive(Debug,Clone)]
-pub struct Config {
-	pub loc: Loc,
-	pub expr_type: Option<Type>,
-	pub constant_level: ConstantLevel,
-}
-
-impl TryFrom<&Literal> for Rc<RefCell<Config>> {
-	type Error = Error;
-	fn try_from(node:&Literal)->Result<Self,Self::Error>{
-		match node {
-			Literal::Config(node)=>Ok(node.clone()),
-			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
-		}
-	}
-}
-
-impl TryFrom<Literal> for Rc<RefCell<Config>> {
-	type Error = Error;
-	fn try_from(node:Literal)->Result<Self,Self::Error>{
-		Self::try_from(&node)
-	}
-}
-
-impl From<&Rc<RefCell<Config>>> for Literal {
-	fn from(node:&Rc<RefCell<Config>>)-> Self{
-		Literal::Config(node.clone())
-	}
-}
-
-impl From<Rc<RefCell<Config>>> for Literal {
-	fn from(node:Rc<RefCell<Config>>)-> Self{
-		Self::from(&node)
-	}
-}
-
-impl TryFrom<&Expr> for Rc<RefCell<Config>> {
-	type Error = Error;
-	fn try_from(node:&Expr)->Result<Self,Self::Error>{
-		match node {
-			Expr::Config(node)=>Ok(node.clone()),
-			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
-		}
-	}
-}
-
-impl TryFrom<Expr> for Rc<RefCell<Config>> {
-	type Error = Error;
-	fn try_from(node:Expr)->Result<Self,Self::Error>{
-		Self::try_from(&node)
-	}
-}
-
-impl From<&Rc<RefCell<Config>>> for Expr {
-	fn from(node:&Rc<RefCell<Config>>)-> Self{
-		Expr::Config(node.clone())
-	}
-}
-
-impl From<Rc<RefCell<Config>>> for Expr {
-	fn from(node:Rc<RefCell<Config>>)-> Self{
-		Self::from(&node)
-	}
-}
-
-impl TryFrom<&Node> for Rc<RefCell<Config>> {
-	type Error = Error;
-	fn try_from(node:&Node)->Result<Self,Self::Error>{
-		match node {
-			Node::Config(node)=>Ok(node.clone()),
-			_=> Err(Error::InvalidNodeType(node.into())),
-		}
-	}
-}
-
-impl TryFrom<Node> for Rc<RefCell<Config>> {
-	type Error = Error;
-	fn try_from(node:Node)->Result<Self,Self::Error>{
-		Self::try_from(&node)
-	}
-}
-
-impl From<&Rc<RefCell<Config>>> for Node {
-	fn from(node:&Rc<RefCell<Config>>)-> Self{
-		Node::Config(node.clone())
-	}
-}
-
-impl From<Rc<RefCell<Config>>> for Node {
-	fn from(node:Rc<RefCell<Config>>)-> Self{
+impl From<Rc<RefCell<SpecialLiteral>>> for Node {
+	fn from(node:Rc<RefCell<SpecialLiteral>>)-> Self{
 		Self::from(&node)
 	}
 }
@@ -7845,25 +7621,12 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				end_loc: raw_node.loc.clone(),
 				})))
 			},
-			NodeType::Input => {
-				Node::Input(Rc::new(RefCell::new(Input {
+			NodeType::SpecialLiteral => {
+				Node::SpecialLiteral(Rc::new(RefCell::new(SpecialLiteral {
 				loc: raw_node.loc.clone(),
 				expr_type: None,
 				constant_level: ConstantLevel::Unknown,
-				})))
-			},
-			NodeType::Output => {
-				Node::Output(Rc::new(RefCell::new(Output {
-				loc: raw_node.loc.clone(),
-				expr_type: None,
-				constant_level: ConstantLevel::Unknown,
-				})))
-			},
-			NodeType::Config => {
-				Node::Config(Rc::new(RefCell::new(Config {
-				loc: raw_node.loc.clone(),
-				expr_type: None,
-				constant_level: ConstantLevel::Unknown,
+				kind: SpecialLiteralKind::Input,
 				})))
 			},
 			NodeType::Field => {
@@ -11343,10 +11106,10 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Err(e)=>return Err(Error::JSONError(e)),
 				};
 			},
-			NodeType::Input => {
+			NodeType::SpecialLiteral => {
 				let node = nodes[i].clone();
 				let node = match node {
-					Node::Input(node)=>node,
+					Node::SpecialLiteral(node)=>node,
 					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let expr_type_body = match raw_node.body.get("expr_type") {
@@ -11375,71 +11138,16 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					},
 					None=>return Err(Error::MismatchJSONType(constant_level_body.into(),JSONType::String)),
 				};
-			},
-			NodeType::Output => {
-				let node = nodes[i].clone();
-				let node = match node {
-					Node::Output(node)=>node,
-					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
-				};
-				let expr_type_body = match raw_node.body.get("expr_type") {
+				let kind_body = match raw_node.body.get("kind") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"expr_type")),
+					None=>return Err(Error::MissingField(node_type,"kind")),
 				};
- 				if !expr_type_body.is_null() {
-					let expr_type_body = match expr_type_body.as_u64() {
-						Some(v)=>v,
-						None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
-					};
-					let expr_type_body = match nodes.get(expr_type_body as usize) {
-						Some(v)=>v,
-						None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
-					};
-					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
-				}
-				let constant_level_body = match raw_node.body.get("constant_level") {
-					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"constant_level")),
-				};
-				node.borrow_mut().constant_level = match constant_level_body.as_str() {
-					Some(v)=>match ConstantLevel::try_from(v) {
+				node.borrow_mut().kind = match kind_body.as_str() {
+					Some(v)=>match SpecialLiteralKind::try_from(v) {
 						Ok(v)=>v,
 						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
 					},
-					None=>return Err(Error::MismatchJSONType(constant_level_body.into(),JSONType::String)),
-				};
-			},
-			NodeType::Config => {
-				let node = nodes[i].clone();
-				let node = match node {
-					Node::Config(node)=>node,
-					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
-				};
-				let expr_type_body = match raw_node.body.get("expr_type") {
-					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"expr_type")),
-				};
- 				if !expr_type_body.is_null() {
-					let expr_type_body = match expr_type_body.as_u64() {
-						Some(v)=>v,
-						None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
-					};
-					let expr_type_body = match nodes.get(expr_type_body as usize) {
-						Some(v)=>v,
-						None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
-					};
-					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
-				}
-				let constant_level_body = match raw_node.body.get("constant_level") {
-					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"constant_level")),
-				};
-				node.borrow_mut().constant_level = match constant_level_body.as_str() {
-					Some(v)=>match ConstantLevel::try_from(v) {
-						Ok(v)=>v,
-						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
-					},
-					None=>return Err(Error::MismatchJSONType(constant_level_body.into(),JSONType::String)),
+					None=>return Err(Error::MismatchJSONType(kind_body.into(),JSONType::String)),
 				};
 			},
 			NodeType::Field => {
@@ -13088,21 +12796,7 @@ where
 				}
 			}
 		},
-		Node::Input(node)=>{
-			if let Some(node) = &node.borrow().expr_type{
-				if !f.visit(&node.into()){
-					return;
-				}
-			}
-		},
-		Node::Output(node)=>{
-			if let Some(node) = &node.borrow().expr_type{
-				if !f.visit(&node.into()){
-					return;
-				}
-			}
-		},
-		Node::Config(node)=>{
+		Node::SpecialLiteral(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
 				if !f.visit(&node.into()){
 					return;

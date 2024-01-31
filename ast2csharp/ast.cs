@@ -60,9 +60,7 @@ IntLiteral,
 BoolLiteral,
 StrLiteral,
 TypeLiteral,
-Input,
-Output,
-Config,
+SpecialLiteral,
 Member,
 Field,
 Format,
@@ -193,6 +191,11 @@ InputSubrange,
 ConfigEndianLittle,
 ConfigEndianBig,
 ConfigEndianNative,
+}
+public enum SpecialLiteralKind {
+Input,
+Output,
+Config,
 }
 public interface Node {
 	public Loc Loc {get; set;}
@@ -605,20 +608,11 @@ public class TypeLiteral : Literal{
 	public Type? TypeLiteral_{get;set;}
 	public Loc EndLoc{get;set;}
 }
-public class Input : Literal{
+public class SpecialLiteral : Literal{
 	public Loc Loc{get;set;}
 	public Type? ExprType{get;set;}
 	public ConstantLevel ConstantLevel{get;set;}
-}
-public class Output : Literal{
-	public Loc Loc{get;set;}
-	public Type? ExprType{get;set;}
-	public ConstantLevel ConstantLevel{get;set;}
-}
-public class Config : Literal{
-	public Loc Loc{get;set;}
-	public Type? ExprType{get;set;}
-	public ConstantLevel ConstantLevel{get;set;}
+	public SpecialLiteralKind Kind{get;set;}
 }
 public class Field : Member{
 	public Loc Loc{get;set;}
@@ -934,14 +928,8 @@ public static class Ast {
            case NodeType.TypeLiteral:
                nodes[i] = new TypeLiteral() { Loc = ast.Node[i].Loc };
                break;
-           case NodeType.Input:
-               nodes[i] = new Input() { Loc = ast.Node[i].Loc };
-               break;
-           case NodeType.Output:
-               nodes[i] = new Output() { Loc = ast.Node[i].Loc };
-               break;
-           case NodeType.Config:
-               nodes[i] = new Config() { Loc = ast.Node[i].Loc };
+           case NodeType.SpecialLiteral:
+               nodes[i] = new SpecialLiteral() { Loc = ast.Node[i].Loc };
                break;
            case NodeType.Field:
                nodes[i] = new Field() { Loc = ast.Node[i].Loc };
@@ -1364,21 +1352,12 @@ public static class Ast {
                node.ConstantLevel = ast.Node[i].Body[constant_level];
                node.TypeLiteral_ = ast.Node[i].Body[type_literal];
                node.EndLoc = ast.Node[i].Body[end_loc];
-           case NodeType.Input:
-               var node = nodes[i] as Input;
+           case NodeType.SpecialLiteral:
+               var node = nodes[i] as SpecialLiteral;
                node.Loc = ast.Node[i].Body[loc];
                node.ExprType = ast.Node[i].Body[expr_type];
                node.ConstantLevel = ast.Node[i].Body[constant_level];
-           case NodeType.Output:
-               var node = nodes[i] as Output;
-               node.Loc = ast.Node[i].Body[loc];
-               node.ExprType = ast.Node[i].Body[expr_type];
-               node.ConstantLevel = ast.Node[i].Body[constant_level];
-           case NodeType.Config:
-               var node = nodes[i] as Config;
-               node.Loc = ast.Node[i].Body[loc];
-               node.ExprType = ast.Node[i].Body[expr_type];
-               node.ConstantLevel = ast.Node[i].Body[constant_level];
+               node.Kind = ast.Node[i].Body[kind];
            case NodeType.Field:
                var node = nodes[i] as Field;
                node.Loc = ast.Node[i].Body[loc];

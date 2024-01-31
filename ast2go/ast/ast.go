@@ -66,20 +66,18 @@ const (
 	NodeTypeBoolLiteral     NodeType = 53
 	NodeTypeStrLiteral      NodeType = 54
 	NodeTypeTypeLiteral     NodeType = 55
-	NodeTypeInput           NodeType = 56
-	NodeTypeOutput          NodeType = 57
-	NodeTypeConfig          NodeType = 58
-	NodeTypeMember          NodeType = 59
-	NodeTypeField           NodeType = 60
-	NodeTypeFormat          NodeType = 61
-	NodeTypeState           NodeType = 62
-	NodeTypeEnum            NodeType = 63
-	NodeTypeEnumMember      NodeType = 64
-	NodeTypeFunction        NodeType = 65
-	NodeTypeBuiltinMember   NodeType = 66
-	NodeTypeBuiltinFunction NodeType = 67
-	NodeTypeBuiltinField    NodeType = 68
-	NodeTypeBuiltinObject   NodeType = 69
+	NodeTypeSpecialLiteral  NodeType = 56
+	NodeTypeMember          NodeType = 57
+	NodeTypeField           NodeType = 58
+	NodeTypeFormat          NodeType = 59
+	NodeTypeState           NodeType = 60
+	NodeTypeEnum            NodeType = 61
+	NodeTypeEnumMember      NodeType = 62
+	NodeTypeFunction        NodeType = 63
+	NodeTypeBuiltinMember   NodeType = 64
+	NodeTypeBuiltinFunction NodeType = 65
+	NodeTypeBuiltinField    NodeType = 66
+	NodeTypeBuiltinObject   NodeType = 67
 )
 
 func (n NodeType) String() string {
@@ -196,12 +194,8 @@ func (n NodeType) String() string {
 		return "str_literal"
 	case NodeTypeTypeLiteral:
 		return "type_literal"
-	case NodeTypeInput:
-		return "input"
-	case NodeTypeOutput:
-		return "output"
-	case NodeTypeConfig:
-		return "config"
+	case NodeTypeSpecialLiteral:
+		return "special_literal"
 	case NodeTypeMember:
 		return "member"
 	case NodeTypeField:
@@ -347,12 +341,8 @@ func (n *NodeType) UnmarshalJSON(data []byte) error {
 		*n = NodeTypeStrLiteral
 	case "type_literal":
 		*n = NodeTypeTypeLiteral
-	case "input":
-		*n = NodeTypeInput
-	case "output":
-		*n = NodeTypeOutput
-	case "config":
-		*n = NodeTypeConfig
+	case "special_literal":
+		*n = NodeTypeSpecialLiteral
 	case "member":
 		*n = NodeTypeMember
 	case "field":
@@ -589,16 +579,8 @@ func (n *TypeLiteral) GetNodeType() NodeType {
 	return NodeTypeTypeLiteral
 }
 
-func (n *Input) GetNodeType() NodeType {
-	return NodeTypeInput
-}
-
-func (n *Output) GetNodeType() NodeType {
-	return NodeTypeOutput
-}
-
-func (n *Config) GetNodeType() NodeType {
-	return NodeTypeConfig
+func (n *SpecialLiteral) GetNodeType() NodeType {
+	return NodeTypeSpecialLiteral
 }
 
 func (n *Field) GetNodeType() NodeType {
@@ -1354,6 +1336,45 @@ func (n *IoMethod) UnmarshalJSON(data []byte) error {
 		*n = IoMethodConfigEndianNative
 	default:
 		return fmt.Errorf("unknown IoMethod: %q", tmp)
+	}
+	return nil
+}
+
+type SpecialLiteralKind int
+
+const (
+	SpecialLiteralKindInput  SpecialLiteralKind = 0
+	SpecialLiteralKindOutput SpecialLiteralKind = 1
+	SpecialLiteralKindConfig SpecialLiteralKind = 2
+)
+
+func (n SpecialLiteralKind) String() string {
+	switch n {
+	case SpecialLiteralKindInput:
+		return "input"
+	case SpecialLiteralKindOutput:
+		return "output"
+	case SpecialLiteralKindConfig:
+		return "config"
+	default:
+		return fmt.Sprintf("SpecialLiteralKind(%d)", n)
+	}
+}
+
+func (n *SpecialLiteralKind) UnmarshalJSON(data []byte) error {
+	var tmp string
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+	switch tmp {
+	case "input":
+		*n = SpecialLiteralKindInput
+	case "output":
+		*n = SpecialLiteralKindOutput
+	case "config":
+		*n = SpecialLiteralKindConfig
+	default:
+		return fmt.Errorf("unknown SpecialLiteralKind: %q", tmp)
 	}
 	return nil
 }
@@ -2690,75 +2711,28 @@ func (n *TypeLiteral) GetLoc() Loc {
 	return n.Loc
 }
 
-type Input struct {
+type SpecialLiteral struct {
 	Loc           Loc
 	ExprType      Type
 	ConstantLevel ConstantLevel
+	Kind          SpecialLiteralKind
 }
 
-func (n *Input) isLiteral() {}
+func (n *SpecialLiteral) isLiteral() {}
 
-func (n *Input) isExpr() {}
+func (n *SpecialLiteral) isExpr() {}
 
-func (n *Input) GetExprType() Type {
+func (n *SpecialLiteral) GetExprType() Type {
 	return n.ExprType
 }
 
-func (n *Input) GetConstantLevel() ConstantLevel {
+func (n *SpecialLiteral) GetConstantLevel() ConstantLevel {
 	return n.ConstantLevel
 }
 
-func (n *Input) isNode() {}
+func (n *SpecialLiteral) isNode() {}
 
-func (n *Input) GetLoc() Loc {
-	return n.Loc
-}
-
-type Output struct {
-	Loc           Loc
-	ExprType      Type
-	ConstantLevel ConstantLevel
-}
-
-func (n *Output) isLiteral() {}
-
-func (n *Output) isExpr() {}
-
-func (n *Output) GetExprType() Type {
-	return n.ExprType
-}
-
-func (n *Output) GetConstantLevel() ConstantLevel {
-	return n.ConstantLevel
-}
-
-func (n *Output) isNode() {}
-
-func (n *Output) GetLoc() Loc {
-	return n.Loc
-}
-
-type Config struct {
-	Loc           Loc
-	ExprType      Type
-	ConstantLevel ConstantLevel
-}
-
-func (n *Config) isLiteral() {}
-
-func (n *Config) isExpr() {}
-
-func (n *Config) GetExprType() Type {
-	return n.ExprType
-}
-
-func (n *Config) GetConstantLevel() ConstantLevel {
-	return n.ConstantLevel
-}
-
-func (n *Config) isNode() {}
-
-func (n *Config) GetLoc() Loc {
+func (n *SpecialLiteral) GetLoc() Loc {
 	return n.Loc
 }
 
@@ -3251,12 +3225,8 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			n.node[i] = &StrLiteral{Loc: raw.Loc}
 		case NodeTypeTypeLiteral:
 			n.node[i] = &TypeLiteral{Loc: raw.Loc}
-		case NodeTypeInput:
-			n.node[i] = &Input{Loc: raw.Loc}
-		case NodeTypeOutput:
-			n.node[i] = &Output{Loc: raw.Loc}
-		case NodeTypeConfig:
-			n.node[i] = &Config{Loc: raw.Loc}
+		case NodeTypeSpecialLiteral:
+			n.node[i] = &SpecialLiteral{Loc: raw.Loc}
 		case NodeTypeField:
 			n.node[i] = &Field{Loc: raw.Loc}
 		case NodeTypeFormat:
@@ -4346,11 +4316,12 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				v.TypeLiteral = n.node[*tmp.TypeLiteral].(Type)
 			}
 			v.EndLoc = tmp.EndLoc
-		case NodeTypeInput:
-			v := n.node[i].(*Input)
+		case NodeTypeSpecialLiteral:
+			v := n.node[i].(*SpecialLiteral)
 			var tmp struct {
-				ExprType      *uintptr      `json:"expr_type"`
-				ConstantLevel ConstantLevel `json:"constant_level"`
+				ExprType      *uintptr           `json:"expr_type"`
+				ConstantLevel ConstantLevel      `json:"constant_level"`
+				Kind          SpecialLiteralKind `json:"kind"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -4359,32 +4330,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				v.ExprType = n.node[*tmp.ExprType].(Type)
 			}
 			v.ConstantLevel = tmp.ConstantLevel
-		case NodeTypeOutput:
-			v := n.node[i].(*Output)
-			var tmp struct {
-				ExprType      *uintptr      `json:"expr_type"`
-				ConstantLevel ConstantLevel `json:"constant_level"`
-			}
-			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
-				return nil, err
-			}
-			if tmp.ExprType != nil {
-				v.ExprType = n.node[*tmp.ExprType].(Type)
-			}
-			v.ConstantLevel = tmp.ConstantLevel
-		case NodeTypeConfig:
-			v := n.node[i].(*Config)
-			var tmp struct {
-				ExprType      *uintptr      `json:"expr_type"`
-				ConstantLevel ConstantLevel `json:"constant_level"`
-			}
-			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
-				return nil, err
-			}
-			if tmp.ExprType != nil {
-				v.ExprType = n.node[*tmp.ExprType].(Type)
-			}
-			v.ConstantLevel = tmp.ConstantLevel
+			v.Kind = tmp.Kind
 		case NodeTypeField:
 			v := n.node[i].(*Field)
 			var tmp struct {
@@ -5203,19 +5149,7 @@ func Walk(n Node, f Visitor) {
 				return
 			}
 		}
-	case *Input:
-		if v.ExprType != nil {
-			if !f.Visit(f, v.ExprType) {
-				return
-			}
-		}
-	case *Output:
-		if v.ExprType != nil {
-			if !f.Visit(f, v.ExprType) {
-				return
-			}
-		}
-	case *Config:
+	case *SpecialLiteral:
 		if v.ExprType != nil {
 			if !f.Visit(f, v.ExprType) {
 				return

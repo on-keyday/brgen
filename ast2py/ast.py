@@ -61,9 +61,7 @@ class NodeType(PyEnum):
     BOOL_LITERAL = "bool_literal"
     STR_LITERAL = "str_literal"
     TYPE_LITERAL = "type_literal"
-    INPUT = "input"
-    OUTPUT = "output"
-    CONFIG = "config"
+    SPECIAL_LITERAL = "special_literal"
     MEMBER = "member"
     FIELD = "field"
     FORMAT = "format"
@@ -203,6 +201,12 @@ class IoMethod(PyEnum):
     CONFIG_ENDIAN_LITTLE = "config_endian_little"
     CONFIG_ENDIAN_BIG = "config_endian_big"
     CONFIG_ENDIAN_NATIVE = "config_endian_native"
+
+
+class SpecialLiteralKind(PyEnum):
+    INPUT = "input"
+    OUTPUT = "output"
+    CONFIG = "config"
 
 
 class Node:
@@ -523,16 +527,8 @@ class TypeLiteral(Literal):
     end_loc: Loc
 
 
-class Input(Literal):
-    pass
-
-
-class Output(Literal):
-    pass
-
-
-class Config(Literal):
-    pass
+class SpecialLiteral(Literal):
+    kind: SpecialLiteralKind
 
 
 class Field(Member):
@@ -884,12 +880,8 @@ def ast2node(ast :JsonAst) -> Program:
                 node.append(StrLiteral())
             case NodeType.TYPE_LITERAL:
                 node.append(TypeLiteral())
-            case NodeType.INPUT:
-                node.append(Input())
-            case NodeType.OUTPUT:
-                node.append(Output())
-            case NodeType.CONFIG:
-                node.append(Config())
+            case NodeType.SPECIAL_LITERAL:
+                node.append(SpecialLiteral())
             case NodeType.FIELD:
                 node.append(Field())
             case NodeType.FORMAT:
@@ -1711,27 +1703,14 @@ def ast2node(ast :JsonAst) -> Program:
                 else:
                     node[i].type_literal = None
                 node[i].end_loc = parse_Loc(ast.node[i].body["end_loc"])
-            case NodeType.INPUT:
+            case NodeType.SPECIAL_LITERAL:
                 if ast.node[i].body["expr_type"] is not None:
                     x = node[ast.node[i].body["expr_type"]]
-                    node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at Input::expr_type'))
+                    node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at SpecialLiteral::expr_type'))
                 else:
                     node[i].expr_type = None
                 node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
-            case NodeType.OUTPUT:
-                if ast.node[i].body["expr_type"] is not None:
-                    x = node[ast.node[i].body["expr_type"]]
-                    node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at Output::expr_type'))
-                else:
-                    node[i].expr_type = None
-                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
-            case NodeType.CONFIG:
-                if ast.node[i].body["expr_type"] is not None:
-                    x = node[ast.node[i].body["expr_type"]]
-                    node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at Config::expr_type'))
-                else:
-                    node[i].expr_type = None
-                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
+                node[i].kind = SpecialLiteralKind(ast.node[i].body["kind"])
             case NodeType.FIELD:
                 if ast.node[i].body["belong"] is not None:
                     x = node[ast.node[i].body["belong"]]
@@ -2325,15 +2304,7 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
           if x.type_literal is not None:
               if f(f,x.type_literal) == False:
                   return
-        case x if isinstance(x,Input):
-          if x.expr_type is not None:
-              if f(f,x.expr_type) == False:
-                  return
-        case x if isinstance(x,Output):
-          if x.expr_type is not None:
-              if f(f,x.expr_type) == False:
-                  return
-        case x if isinstance(x,Config):
+        case x if isinstance(x,SpecialLiteral):
           if x.expr_type is not None:
               if f(f,x.expr_type) == False:
                   return
