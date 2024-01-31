@@ -84,9 +84,8 @@ Type -->|derive|OptionalType
 Literal -->|derive|IntLiteral
 Literal -->|derive|BoolLiteral
 Literal -->|derive|StrLiteral
-Literal -->|derive|Input
-Literal -->|derive|Output
-Literal -->|derive|Config
+Literal -->|derive|TypeLiteral
+Literal -->|derive|SpecialLiteral
 Member -->|derive|Field
 Member -->|derive|Format
 Member -->|derive|State
@@ -159,9 +158,8 @@ NodeType literal
 NodeType int_literal
 NodeType bool_literal
 NodeType str_literal
-NodeType input
-NodeType output
-NodeType config
+NodeType type_literal
+NodeType special_literal
 NodeType member
 NodeType field
 NodeType format
@@ -288,9 +286,15 @@ IoMethod input_get
 IoMethod input_backward
 IoMethod input_offset
 IoMethod input_remain
+IoMethod input_subrange
 IoMethod config_endian_little
 IoMethod config_endian_big
 IoMethod config_endian_native
+}
+SpecialLiteralKind {
+SpecialLiteralKind input
+SpecialLiteralKind output
+SpecialLiteralKind config
 }
 Node {
 Loc loc
@@ -522,12 +526,10 @@ IoOperation {
 Expr base
 IoMethod method
 Expr[] arguments
-Type[] type_arguments
 }
 IoOperation |o--||Expr : strong
 IoOperation |o--||IoMethod : strong
 IoOperation |o--||Expr : strong
-IoOperation |o--||Type : strong
 Stmt |o--|| Loop : derive
 Loop {
 Scope cond_scope
@@ -729,15 +731,18 @@ number length
 }
 StrLiteral |o--||string : strong
 StrLiteral |o--||number : strong
-Literal |o--|| Input : derive
-Input {
+Literal |o--|| TypeLiteral : derive
+TypeLiteral {
+Type type_literal
+Loc end_loc
 }
-Literal |o--|| Output : derive
-Output {
+TypeLiteral |o--||Type : strong
+TypeLiteral |o--||Loc : strong
+Literal |o--|| SpecialLiteral : derive
+SpecialLiteral {
+SpecialLiteralKind kind
 }
-Literal |o--|| Config : derive
-Config {
-}
+SpecialLiteral |o--||SpecialLiteralKind : strong
 Member |o--|| Field : derive
 Field {
 Loc colon_loc
@@ -768,12 +773,14 @@ Function encode_fn
 Function decode_fn
 Function[] cast_fns
 IdentType[] depends
+Ident[] state_variables
 }
 Format |o--||IndentBlock : strong
 Format |o--||Function : weak
 Format |o--||Function : weak
 Format |o--||Function : weak
 Format |o--||IdentType : weak
+Format |o--||Ident : weak
 Member |o--|| State : derive
 State {
 IndentBlock body
@@ -987,9 +994,8 @@ NodeType literal
 NodeType int_literal
 NodeType bool_literal
 NodeType str_literal
-NodeType input
-NodeType output
-NodeType config
+NodeType type_literal
+NodeType special_literal
 NodeType member
 NodeType field
 NodeType format
@@ -1116,9 +1122,15 @@ IoMethod input_get
 IoMethod input_backward
 IoMethod input_offset
 IoMethod input_remain
+IoMethod input_subrange
 IoMethod config_endian_little
 IoMethod config_endian_big
 IoMethod config_endian_native
+}
+SpecialLiteralKind {
+SpecialLiteralKind input
+SpecialLiteralKind output
+SpecialLiteralKind config
 }
 Node {
 Loc loc
@@ -1350,12 +1362,10 @@ IoOperation {
 Expr base
 IoMethod method
 Expr[] arguments
-Type[] type_arguments
 }
 IoOperation |o--||Expr : strong
 IoOperation |o--||IoMethod : strong
 IoOperation |o--||Expr : strong
-IoOperation |o--||Type : strong
 Stmt |o--|| Loop : derive
 Loop {
 Scope cond_scope
@@ -1557,15 +1567,18 @@ number length
 }
 StrLiteral |o--||string : strong
 StrLiteral |o--||number : strong
-Literal |o--|| Input : derive
-Input {
+Literal |o--|| TypeLiteral : derive
+TypeLiteral {
+Type type_literal
+Loc end_loc
 }
-Literal |o--|| Output : derive
-Output {
+TypeLiteral |o--||Type : strong
+TypeLiteral |o--||Loc : strong
+Literal |o--|| SpecialLiteral : derive
+SpecialLiteral {
+SpecialLiteralKind kind
 }
-Literal |o--|| Config : derive
-Config {
-}
+SpecialLiteral |o--||SpecialLiteralKind : strong
 Member |o--|| Field : derive
 Field {
 Loc colon_loc
@@ -1596,12 +1609,14 @@ Function encode_fn
 Function decode_fn
 Function[] cast_fns
 IdentType[] depends
+Ident[] state_variables
 }
 Format |o--||IndentBlock : strong
 Format |o--||Function : weak
 Format |o--||Function : weak
 Format |o--||Function : weak
 Format |o--||IdentType : weak
+Format |o--||Ident : weak
 Member |o--|| State : derive
 State {
 IndentBlock body
@@ -1820,9 +1835,8 @@ TODO(on-keyday): 各ノードの説明文を入れる
         "int_literal",
         "bool_literal",
         "str_literal",
-        "input",
-        "output",
-        "config",
+        "type_literal",
+        "special_literal",
         "member",
         "field",
         "format",
@@ -1918,9 +1932,8 @@ TODO(on-keyday): 各ノードの説明文を入れる
         "int_literal",
         "bool_literal",
         "str_literal",
-        "input",
-        "output",
-        "config"
+        "type_literal",
+        "special_literal"
       ]
     },
     {
@@ -2187,8 +2200,7 @@ TODO(on-keyday): 各ノードの説明文を入れる
         "constant_level": "constant_level",
         "base": "shared_ptr<expr>",
         "method": "io_method",
-        "arguments": "array<shared_ptr<expr>>",
-        "type_arguments": "array<shared_ptr<type>>"
+        "arguments": "array<shared_ptr<expr>>"
       }
     },
     {
@@ -2643,9 +2655,8 @@ TODO(on-keyday): 各ノードの説明文を入れる
         "int_literal",
         "bool_literal",
         "str_literal",
-        "input",
-        "output",
-        "config"
+        "type_literal",
+        "special_literal"
       ]
     },
     {
@@ -2692,7 +2703,7 @@ TODO(on-keyday): 各ノードの説明文を入れる
       }
     },
     {
-      "node_type": "input",
+      "node_type": "type_literal",
       "base_node_type": [
         "literal",
         "expr",
@@ -2701,11 +2712,13 @@ TODO(on-keyday): 各ノードの説明文を入れる
       "loc": "loc",
       "body": {
         "expr_type": "shared_ptr<type>",
-        "constant_level": "constant_level"
+        "constant_level": "constant_level",
+        "type_literal": "shared_ptr<type>",
+        "end_loc": "loc"
       }
     },
     {
-      "node_type": "output",
+      "node_type": "special_literal",
       "base_node_type": [
         "literal",
         "expr",
@@ -2714,20 +2727,8 @@ TODO(on-keyday): 各ノードの説明文を入れる
       "loc": "loc",
       "body": {
         "expr_type": "shared_ptr<type>",
-        "constant_level": "constant_level"
-      }
-    },
-    {
-      "node_type": "config",
-      "base_node_type": [
-        "literal",
-        "expr",
-        "node"
-      ],
-      "loc": "loc",
-      "body": {
-        "expr_type": "shared_ptr<type>",
-        "constant_level": "constant_level"
+        "constant_level": "constant_level",
+        "kind": "special_literal_kind"
       }
     },
     {
@@ -2795,7 +2796,8 @@ TODO(on-keyday): 各ノードの説明文を入れる
         "encode_fn": "weak_ptr<function>",
         "decode_fn": "weak_ptr<function>",
         "cast_fns": "array<weak_ptr<function>>",
-        "depends": "array<weak_ptr<ident_type>>"
+        "depends": "array<weak_ptr<ident_type>>",
+        "state_variables": "array<weak_ptr<ident>>"
       }
     },
     {
@@ -3220,16 +3222,12 @@ TODO(on-keyday): 各ノードの説明文を入れる
         "value": "str_literal"
       },
       {
-        "name": "input",
-        "value": "input"
+        "name": "type_literal",
+        "value": "type_literal"
       },
       {
-        "name": "output",
-        "value": "output"
-      },
-      {
-        "name": "config",
-        "value": "config"
+        "name": "special_literal",
+        "value": "special_literal"
       },
       {
         "name": "member",
@@ -3682,6 +3680,10 @@ TODO(on-keyday): 各ノードの説明文を入れる
         "value": "input_remain"
       },
       {
+        "name": "input_subrange",
+        "value": "input_subrange"
+      },
+      {
         "name": "config_endian_little",
         "value": "config_endian_little"
       },
@@ -3692,6 +3694,20 @@ TODO(on-keyday): 各ノードの説明文を入れる
       {
         "name": "config_endian_native",
         "value": "config_endian_native"
+      }
+    ],
+    "special_literal_kind": [
+      {
+        "name": "input",
+        "value": "input"
+      },
+      {
+        "name": "output",
+        "value": "output"
+      },
+      {
+        "name": "config",
+        "value": "config"
       }
     ]
   }
