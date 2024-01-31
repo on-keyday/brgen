@@ -112,6 +112,8 @@ enum IOMethod:
     config_endian_little
     config_endian_big
     config_endian_native
+    config_bit_order_lsb
+    config_bit_order_msb
 
     
 enum SpecialLiteralKind:

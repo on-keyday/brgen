@@ -1,10 +1,10 @@
 
 format SWFRect:
     len :u5 # maximum is 2^5-1 = 31
-    x_min : [len]u1
-    x_max : [len]u1
-    y_min : [len]u1
-    y_max : [len]u1
+    x_min : [len]u1(config.type = u32)
+    x_max : [len]u1(config.type = u32)
+    y_min : [len]u1(config.type = u32)
+    y_max : [len]u1(config.type = u32)
     padding :[(5 + len *4)%8]u1(input.align = 8) # padding to next byte
 
 

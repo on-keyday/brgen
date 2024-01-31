@@ -1117,7 +1117,7 @@ namespace j2cp2 {
                 w.writeln("auto ", ident->ident, " = ", expr, ";");
                 str.map_ident(ast::cast_to<ast::Ident>(b->left), ident->ident);
             }
-            if (auto s = ast::as<ast::SpecifyEndian>(elem)) {
+            if (auto s = ast::as<ast::SpecifyOrder>(elem)) {
                 if (ctx.dynamic_endian) {
                     if (s->endian_value) {
                         map_line(s->loc);
@@ -1179,7 +1179,7 @@ namespace j2cp2 {
             ctx.endian = ast::Endian::big;  // default to big endian
             ctx.dynamic_endian = false;
             for (auto& elem : fmt->body->elements) {
-                if (auto f = ast::as<ast::SpecifyEndian>(elem)) {
+                if (auto f = ast::as<ast::SpecifyOrder>(elem)) {
                     if (!f->endian_value) {
                         ctx.dynamic_endian = true;
                         break;

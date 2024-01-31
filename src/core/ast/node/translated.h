@@ -120,18 +120,18 @@ namespace brgen::ast {
         }
     };
 
-    struct SpecifyEndian : Expr {
-        define_node_type(NodeType::specify_endian);
+    struct SpecifyOrder : Expr {
+        define_node_type(NodeType::specify_order);
         std::shared_ptr<Binary> base;
         // 0(or false) is big, 1(or true) is little,2 is native, otherwise is unspecified(default to big) or generator dependent
         std::shared_ptr<Expr> endian;
         std::optional<size_t> endian_value;
 
-        SpecifyEndian(std::shared_ptr<Binary>&& a, std::shared_ptr<Expr>&& b)
-            : Expr(a->loc, NodeType::specify_endian), base(std::move(a)), endian(std::move(b)) {}
+        SpecifyOrder(std::shared_ptr<Binary>&& a, std::shared_ptr<Expr>&& b)
+            : Expr(a->loc, NodeType::specify_order), base(std::move(a)), endian(std::move(b)) {}
 
-        SpecifyEndian()
-            : Expr({}, NodeType::specify_endian) {}
+        SpecifyOrder()
+            : Expr({}, NodeType::specify_order) {}
 
         void dump(auto&& field_) {
             Expr::dump(field_);

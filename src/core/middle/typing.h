@@ -1011,7 +1011,7 @@ namespace brgen::middle {
                 typing_expr(a->target, false);
                 a->constant_level = ast::ConstantLevel::variable;
             }
-            if (auto b = ast::as<ast::SpecifyEndian>(expr)) {
+            if (auto b = ast::as<ast::SpecifyOrder>(expr)) {
                 typing_expr(b->endian, false);
                 b->base->expr_type = void_type(b->loc);
                 b->expr_type = b->base->expr_type;

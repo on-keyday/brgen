@@ -20,7 +20,7 @@ namespace brgen::middle {
             }
             auto b = ast::cast_to<ast::Binary>(*it);
             ast::as<ast::MemberAccess>(b->left)->member->usage = ast::IdentUsage::reference_builtin_fn;
-            *it = std::make_shared<ast::SpecifyEndian>(std::move(b), std::move(a->arguments[0]));
+            *it = std::make_shared<ast::SpecifyOrder>(std::move(b), std::move(a->arguments[0]));
         };
         auto each_element = [&](ast::node_list& list) {
             for (auto it = list.begin(); it != list.end(); it++) {

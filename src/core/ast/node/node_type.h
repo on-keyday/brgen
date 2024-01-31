@@ -32,7 +32,7 @@ namespace brgen::ast {
         import_,
         cast,
         available,
-        specify_endian,
+        specify_order,
         explicit_error,
         io_operation,
 
@@ -158,7 +158,7 @@ namespace brgen::ast {
         {NodeType::available, "available"},
         {NodeType::scoped_statement, "scoped_statement"},
         {NodeType::field_argument, "field_argument"},
-        {NodeType::specify_endian, "specify_endian"},
+        {NodeType::specify_order, "specify_order"},
         {NodeType::explicit_error, "explicit_error"},
         {NodeType::io_operation, "io_operation"},
         {NodeType::builtin_member, "builtin_member"},
