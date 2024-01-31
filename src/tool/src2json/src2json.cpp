@@ -10,10 +10,10 @@
 // #include <core/middle/resolve_lexical_cast.h>
 #include <core/middle/resolve_available.h>
 #include <core/middle/replace_assert.h>
-#include <core/middle/replace_endian_spec.h>
+#include <core/middle/replace_order_spec.h>
 #include <core/middle/replace_error.h>
 #include <core/middle/resolve_io_operation.h>
-#include<core/middle/resolve_state_dependency.h>
+#include <core/middle/resolve_state_dependency.h>
 #include <core/middle/typing.h>
 #include <core/middle/type_attribute.h>
 #include "../common/print.h"
@@ -591,7 +591,7 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
     brgen::SourceError err_or_warn;
 
     if (!flags.not_resolve_endian_spec) {
-        brgen::middle::replace_specify_endian(*res);
+        brgen::middle::replace_specify_order(*res);
     }
 
     if (!flags.not_resolve_explicit_error) {
@@ -663,7 +663,7 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
         attr.bit_alignment(*res);
     }
 
-    if(!flags.not_resolve_state_dependency) {
+    if (!flags.not_resolve_state_dependency) {
         brgen::middle::resolve_state_dependency(*res);
     }
 

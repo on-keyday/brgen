@@ -31,7 +31,7 @@ const char* ast2c_NodeType_to_string(ast2c_NodeType val) {
 	case AST2C_NODETYPE_IMPORT: return "import";
 	case AST2C_NODETYPE_CAST: return "cast";
 	case AST2C_NODETYPE_AVAILABLE: return "available";
-	case AST2C_NODETYPE_SPECIFY_ENDIAN: return "specify_endian";
+	case AST2C_NODETYPE_SPECIFY_ORDER: return "specify_order";
 	case AST2C_NODETYPE_EXPLICIT_ERROR: return "explicit_error";
 	case AST2C_NODETYPE_IO_OPERATION: return "io_operation";
 	case AST2C_NODETYPE_STMT: return "stmt";
@@ -166,8 +166,8 @@ int ast2c_NodeType_from_string(const char* str, ast2c_NodeType* out) {
 		*out = AST2C_NODETYPE_AVAILABLE;
 		return 1;
 	}
-	if (strcmp(str, "specify_endian") == 0) {
-		*out = AST2C_NODETYPE_SPECIFY_ENDIAN;
+	if (strcmp(str, "specify_order") == 0) {
+		*out = AST2C_NODETYPE_SPECIFY_ORDER;
 		return 1;
 	}
 	if (strcmp(str, "explicit_error") == 0) {
@@ -920,6 +920,8 @@ const char* ast2c_IoMethod_to_string(ast2c_IoMethod val) {
 	case AST2C_IOMETHOD_CONFIG_ENDIAN_LITTLE: return "config_endian_little";
 	case AST2C_IOMETHOD_CONFIG_ENDIAN_BIG: return "config_endian_big";
 	case AST2C_IOMETHOD_CONFIG_ENDIAN_NATIVE: return "config_endian_native";
+	case AST2C_IOMETHOD_CONFIG_BIT_ORDER_LSB: return "config_bit_order_lsb";
+	case AST2C_IOMETHOD_CONFIG_BIT_ORDER_MSB: return "config_bit_order_msb";
 	default: return NULL;
 	}
 }
@@ -969,6 +971,14 @@ int ast2c_IoMethod_from_string(const char* str, ast2c_IoMethod* out) {
 	}
 	if (strcmp(str, "config_endian_native") == 0) {
 		*out = AST2C_IOMETHOD_CONFIG_ENDIAN_NATIVE;
+		return 1;
+	}
+	if (strcmp(str, "config_bit_order_lsb") == 0) {
+		*out = AST2C_IOMETHOD_CONFIG_BIT_ORDER_LSB;
+		return 1;
+	}
+	if (strcmp(str, "config_bit_order_msb") == 0) {
+		*out = AST2C_IOMETHOD_CONFIG_BIT_ORDER_MSB;
 		return 1;
 	}
 	return 0;
@@ -1663,7 +1673,7 @@ error:
 }
 
 // returns 1 if succeed 0 if failed
-int ast2c_SpecifyEndian_parse(ast2c_Ast* ast,ast2c_SpecifyEndian* s,ast2c_json_handlers* h, void* obj) {
+int ast2c_SpecifyOrder_parse(ast2c_Ast* ast,ast2c_SpecifyOrder* s,ast2c_json_handlers* h, void* obj) {
 	if (!ast||!s||!h||!obj) {
 		if(h->error) { h->error(h,NULL, "invalid argument"); }
 		return 0;
@@ -1680,18 +1690,18 @@ int ast2c_SpecifyEndian_parse(ast2c_Ast* ast,ast2c_SpecifyEndian* s,ast2c_json_h
 	void* base = h->object_get(h, obj_body, "base");
 	void* endian = h->object_get(h, obj_body, "endian");
 	void* endian_value = h->object_get(h, obj_body, "endian_value");
-	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_SpecifyEndian::loc is null"); } return 0; }
-	if (!expr_type) { if(h->error) { h->error(h,expr_type, "ast2c_SpecifyEndian::expr_type is null"); } return 0; }
-	if (!constant_level) { if(h->error) { h->error(h,constant_level, "ast2c_SpecifyEndian::constant_level is null"); } return 0; }
-	if (!base) { if(h->error) { h->error(h,base, "ast2c_SpecifyEndian::base is null"); } return 0; }
-	if (!endian) { if(h->error) { h->error(h,endian, "ast2c_SpecifyEndian::endian is null"); } return 0; }
-	if (!endian_value) { if(h->error) { h->error(h,endian_value, "ast2c_SpecifyEndian::endian_value is null"); } return 0; }
+	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_SpecifyOrder::loc is null"); } return 0; }
+	if (!expr_type) { if(h->error) { h->error(h,expr_type, "ast2c_SpecifyOrder::expr_type is null"); } return 0; }
+	if (!constant_level) { if(h->error) { h->error(h,constant_level, "ast2c_SpecifyOrder::constant_level is null"); } return 0; }
+	if (!base) { if(h->error) { h->error(h,base, "ast2c_SpecifyOrder::base is null"); } return 0; }
+	if (!endian) { if(h->error) { h->error(h,endian, "ast2c_SpecifyOrder::endian is null"); } return 0; }
+	if (!endian_value) { if(h->error) { h->error(h,endian_value, "ast2c_SpecifyOrder::endian_value is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
-		if(h->error) { h->error(h,loc, "failed to parse ast2c_SpecifyEndian::loc"); }
+		if(h->error) { h->error(h,loc, "failed to parse ast2c_SpecifyOrder::loc"); }
 		goto error;
 	}
 	if(!h->number_get(h,endian_value,&s->endian_value)) {
-		if(h->error) { h->error(h,endian_value, "failed to parse ast2c_SpecifyEndian::endian_value"); }
+		if(h->error) { h->error(h,endian_value, "failed to parse ast2c_SpecifyOrder::endian_value"); }
 		goto error;
 	}
 	return 1;

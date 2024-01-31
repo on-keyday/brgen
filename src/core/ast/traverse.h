@@ -63,7 +63,7 @@ namespace brgen::ast {
             CASE(Import)
             CASE(Cast)
             CASE(Available)
-            CASE(SpecifyEndian)
+            CASE(SpecifyOrder)
             CASE(ExplicitError)
             CASE(IOOperation)
 

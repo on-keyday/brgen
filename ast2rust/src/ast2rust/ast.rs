@@ -64,7 +64,7 @@ impl From<&Node> for NodeType {
 			Node::Import(_) => Self::Import,
 			Node::Cast(_) => Self::Cast,
 			Node::Available(_) => Self::Available,
-			Node::SpecifyEndian(_) => Self::SpecifyEndian,
+			Node::SpecifyOrder(_) => Self::SpecifyOrder,
 			Node::ExplicitError(_) => Self::ExplicitError,
 			Node::IoOperation(_) => Self::IoOperation,
 			Node::Loop(_) => Self::Loop,
@@ -139,7 +139,7 @@ impl From<&NodeWeak> for NodeType {
 			NodeWeak::Import(_) => Self::Import,
 			NodeWeak::Cast(_) => Self::Cast,
 			NodeWeak::Available(_) => Self::Available,
-			NodeWeak::SpecifyEndian(_) => Self::SpecifyEndian,
+			NodeWeak::SpecifyOrder(_) => Self::SpecifyOrder,
 			NodeWeak::ExplicitError(_) => Self::ExplicitError,
 			NodeWeak::IoOperation(_) => Self::IoOperation,
 			NodeWeak::Loop(_) => Self::Loop,
@@ -214,7 +214,7 @@ impl From<NodeWeak> for NodeType {
 	Import,
 	Cast,
 	Available,
-	SpecifyEndian,
+	SpecifyOrder,
 	ExplicitError,
 	IoOperation,
 	Stmt,
@@ -288,7 +288,7 @@ impl TryFrom<&str> for NodeType {
 			"import" =>Ok(Self::Import),
 			"cast" =>Ok(Self::Cast),
 			"available" =>Ok(Self::Available),
-			"specify_endian" =>Ok(Self::SpecifyEndian),
+			"specify_order" =>Ok(Self::SpecifyOrder),
 			"explicit_error" =>Ok(Self::ExplicitError),
 			"io_operation" =>Ok(Self::IoOperation),
 			"stmt" =>Ok(Self::Stmt),
@@ -638,6 +638,8 @@ impl TryFrom<&str> for Follow {
 	ConfigEndianLittle,
 	ConfigEndianBig,
 	ConfigEndianNative,
+	ConfigBitOrderLsb,
+	ConfigBitOrderMsb,
 }
 
 impl TryFrom<&str> for IoMethod {
@@ -655,6 +657,8 @@ impl TryFrom<&str> for IoMethod {
 			"config_endian_little" =>Ok(Self::ConfigEndianLittle),
 			"config_endian_big" =>Ok(Self::ConfigEndianBig),
 			"config_endian_native" =>Ok(Self::ConfigEndianNative),
+			"config_bit_order_lsb" =>Ok(Self::ConfigBitOrderLsb),
+			"config_bit_order_msb" =>Ok(Self::ConfigBitOrderMsb),
 			_=> Err(()),
 		}
 	}
@@ -700,7 +704,7 @@ pub enum Node {
 	Import(Rc<RefCell<Import>>),
 	Cast(Rc<RefCell<Cast>>),
 	Available(Rc<RefCell<Available>>),
-	SpecifyEndian(Rc<RefCell<SpecifyEndian>>),
+	SpecifyOrder(Rc<RefCell<SpecifyOrder>>),
 	ExplicitError(Rc<RefCell<ExplicitError>>),
 	IoOperation(Rc<RefCell<IoOperation>>),
 	Loop(Rc<RefCell<Loop>>),
@@ -766,7 +770,7 @@ pub enum NodeWeak {
 	Import(Weak<RefCell<Import>>),
 	Cast(Weak<RefCell<Cast>>),
 	Available(Weak<RefCell<Available>>),
-	SpecifyEndian(Weak<RefCell<SpecifyEndian>>),
+	SpecifyOrder(Weak<RefCell<SpecifyOrder>>),
 	ExplicitError(Weak<RefCell<ExplicitError>>),
 	IoOperation(Weak<RefCell<IoOperation>>),
 	Loop(Weak<RefCell<Loop>>),
@@ -833,7 +837,7 @@ impl From<&Node> for NodeWeak {
 			Node::Import(node)=>Self::Import(Rc::downgrade(node)),
 			Node::Cast(node)=>Self::Cast(Rc::downgrade(node)),
 			Node::Available(node)=>Self::Available(Rc::downgrade(node)),
-			Node::SpecifyEndian(node)=>Self::SpecifyEndian(Rc::downgrade(node)),
+			Node::SpecifyOrder(node)=>Self::SpecifyOrder(Rc::downgrade(node)),
 			Node::ExplicitError(node)=>Self::ExplicitError(Rc::downgrade(node)),
 			Node::IoOperation(node)=>Self::IoOperation(Rc::downgrade(node)),
 			Node::Loop(node)=>Self::Loop(Rc::downgrade(node)),
@@ -909,7 +913,7 @@ impl TryFrom<&NodeWeak> for Node {
 			NodeWeak::Import(node)=>Ok(Self::Import(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Import))?)),
 			NodeWeak::Cast(node)=>Ok(Self::Cast(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Cast))?)),
 			NodeWeak::Available(node)=>Ok(Self::Available(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Available))?)),
-			NodeWeak::SpecifyEndian(node)=>Ok(Self::SpecifyEndian(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::SpecifyEndian))?)),
+			NodeWeak::SpecifyOrder(node)=>Ok(Self::SpecifyOrder(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::SpecifyOrder))?)),
 			NodeWeak::ExplicitError(node)=>Ok(Self::ExplicitError(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::ExplicitError))?)),
 			NodeWeak::IoOperation(node)=>Ok(Self::IoOperation(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::IoOperation))?)),
 			NodeWeak::Loop(node)=>Ok(Self::Loop(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Loop))?)),
@@ -980,7 +984,7 @@ pub enum Expr {
 	Import(Rc<RefCell<Import>>),
 	Cast(Rc<RefCell<Cast>>),
 	Available(Rc<RefCell<Available>>),
-	SpecifyEndian(Rc<RefCell<SpecifyEndian>>),
+	SpecifyOrder(Rc<RefCell<SpecifyOrder>>),
 	ExplicitError(Rc<RefCell<ExplicitError>>),
 	IoOperation(Rc<RefCell<IoOperation>>),
 	IntLiteral(Rc<RefCell<IntLiteral>>),
@@ -1007,7 +1011,7 @@ pub enum ExprWeak {
 	Import(Weak<RefCell<Import>>),
 	Cast(Weak<RefCell<Cast>>),
 	Available(Weak<RefCell<Available>>),
-	SpecifyEndian(Weak<RefCell<SpecifyEndian>>),
+	SpecifyOrder(Weak<RefCell<SpecifyOrder>>),
 	ExplicitError(Weak<RefCell<ExplicitError>>),
 	IoOperation(Weak<RefCell<IoOperation>>),
 	IntLiteral(Weak<RefCell<IntLiteral>>),
@@ -1035,7 +1039,7 @@ impl From<&Expr> for ExprWeak {
 			Expr::Import(node)=>Self::Import(Rc::downgrade(node)),
 			Expr::Cast(node)=>Self::Cast(Rc::downgrade(node)),
 			Expr::Available(node)=>Self::Available(Rc::downgrade(node)),
-			Expr::SpecifyEndian(node)=>Self::SpecifyEndian(Rc::downgrade(node)),
+			Expr::SpecifyOrder(node)=>Self::SpecifyOrder(Rc::downgrade(node)),
 			Expr::ExplicitError(node)=>Self::ExplicitError(Rc::downgrade(node)),
 			Expr::IoOperation(node)=>Self::IoOperation(Rc::downgrade(node)),
 			Expr::IntLiteral(node)=>Self::IntLiteral(Rc::downgrade(node)),
@@ -1072,7 +1076,7 @@ impl TryFrom<&ExprWeak> for Expr {
 			ExprWeak::Import(node)=>Ok(Self::Import(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Import))?)),
 			ExprWeak::Cast(node)=>Ok(Self::Cast(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Cast))?)),
 			ExprWeak::Available(node)=>Ok(Self::Available(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Available))?)),
-			ExprWeak::SpecifyEndian(node)=>Ok(Self::SpecifyEndian(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::SpecifyEndian))?)),
+			ExprWeak::SpecifyOrder(node)=>Ok(Self::SpecifyOrder(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::SpecifyOrder))?)),
 			ExprWeak::ExplicitError(node)=>Ok(Self::ExplicitError(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::ExplicitError))?)),
 			ExprWeak::IoOperation(node)=>Ok(Self::IoOperation(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::IoOperation))?)),
 			ExprWeak::IntLiteral(node)=>Ok(Self::IntLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::IntLiteral))?)),
@@ -1110,7 +1114,7 @@ impl TryFrom<&Node> for Expr {
 			Node::Import(node)=>Ok(Self::Import(node.clone())),
 			Node::Cast(node)=>Ok(Self::Cast(node.clone())),
 			Node::Available(node)=>Ok(Self::Available(node.clone())),
-			Node::SpecifyEndian(node)=>Ok(Self::SpecifyEndian(node.clone())),
+			Node::SpecifyOrder(node)=>Ok(Self::SpecifyOrder(node.clone())),
 			Node::ExplicitError(node)=>Ok(Self::ExplicitError(node.clone())),
 			Node::IoOperation(node)=>Ok(Self::IoOperation(node.clone())),
 			Node::IntLiteral(node)=>Ok(Self::IntLiteral(node.clone())),
@@ -1148,7 +1152,7 @@ impl From<&Expr> for Node {
 			Expr::Import(node)=>Self::Import(node.clone()),
 			Expr::Cast(node)=>Self::Cast(node.clone()),
 			Expr::Available(node)=>Self::Available(node.clone()),
-			Expr::SpecifyEndian(node)=>Self::SpecifyEndian(node.clone()),
+			Expr::SpecifyOrder(node)=>Self::SpecifyOrder(node.clone()),
 			Expr::ExplicitError(node)=>Self::ExplicitError(node.clone()),
 			Expr::IoOperation(node)=>Self::IoOperation(node.clone()),
 			Expr::IntLiteral(node)=>Self::IntLiteral(node.clone()),
@@ -1185,7 +1189,7 @@ impl TryFrom<&ExprWeak> for Node {
 			ExprWeak::Import(node)=>Ok(Self::Import(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Import))?)),
 			ExprWeak::Cast(node)=>Ok(Self::Cast(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Cast))?)),
 			ExprWeak::Available(node)=>Ok(Self::Available(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Available))?)),
-			ExprWeak::SpecifyEndian(node)=>Ok(Self::SpecifyEndian(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::SpecifyEndian))?)),
+			ExprWeak::SpecifyOrder(node)=>Ok(Self::SpecifyOrder(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::SpecifyOrder))?)),
 			ExprWeak::ExplicitError(node)=>Ok(Self::ExplicitError(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::ExplicitError))?)),
 			ExprWeak::IoOperation(node)=>Ok(Self::IoOperation(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::IoOperation))?)),
 			ExprWeak::IntLiteral(node)=>Ok(Self::IntLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::IntLiteral))?)),
@@ -1222,7 +1226,7 @@ impl From<&ExprWeak> for NodeWeak {
 			ExprWeak::Import(node)=>Self::Import(node.clone()),
 			ExprWeak::Cast(node)=>Self::Cast(node.clone()),
 			ExprWeak::Available(node)=>Self::Available(node.clone()),
-			ExprWeak::SpecifyEndian(node)=>Self::SpecifyEndian(node.clone()),
+			ExprWeak::SpecifyOrder(node)=>Self::SpecifyOrder(node.clone()),
 			ExprWeak::ExplicitError(node)=>Self::ExplicitError(node.clone()),
 			ExprWeak::IoOperation(node)=>Self::IoOperation(node.clone()),
 			ExprWeak::IntLiteral(node)=>Self::IntLiteral(node.clone()),
@@ -1259,7 +1263,7 @@ impl TryFrom<&NodeWeak> for ExprWeak {
 			NodeWeak::Import(node)=>Ok(Self::Import(node.clone())),
 			NodeWeak::Cast(node)=>Ok(Self::Cast(node.clone())),
 			NodeWeak::Available(node)=>Ok(Self::Available(node.clone())),
-			NodeWeak::SpecifyEndian(node)=>Ok(Self::SpecifyEndian(node.clone())),
+			NodeWeak::SpecifyOrder(node)=>Ok(Self::SpecifyOrder(node.clone())),
 			NodeWeak::ExplicitError(node)=>Ok(Self::ExplicitError(node.clone())),
 			NodeWeak::IoOperation(node)=>Ok(Self::IoOperation(node.clone())),
 			NodeWeak::IntLiteral(node)=>Ok(Self::IntLiteral(node.clone())),
@@ -1298,7 +1302,7 @@ impl TryFrom<&Node> for ExprWeak {
 			Node::Import(node)=>Ok(Self::Import(Rc::downgrade(node))),
 			Node::Cast(node)=>Ok(Self::Cast(Rc::downgrade(node))),
 			Node::Available(node)=>Ok(Self::Available(Rc::downgrade(node))),
-			Node::SpecifyEndian(node)=>Ok(Self::SpecifyEndian(Rc::downgrade(node))),
+			Node::SpecifyOrder(node)=>Ok(Self::SpecifyOrder(Rc::downgrade(node))),
 			Node::ExplicitError(node)=>Ok(Self::ExplicitError(Rc::downgrade(node))),
 			Node::IoOperation(node)=>Ok(Self::IoOperation(Rc::downgrade(node))),
 			Node::IntLiteral(node)=>Ok(Self::IntLiteral(Rc::downgrade(node))),
@@ -3631,7 +3635,7 @@ impl From<Rc<RefCell<Available>>> for Node {
 }
 
 #[derive(Debug,Clone)]
-pub struct SpecifyEndian {
+pub struct SpecifyOrder {
 	pub loc: Loc,
 	pub expr_type: Option<Type>,
 	pub constant_level: ConstantLevel,
@@ -3640,60 +3644,60 @@ pub struct SpecifyEndian {
 	pub endian_value: Option<u64>,
 }
 
-impl TryFrom<&Expr> for Rc<RefCell<SpecifyEndian>> {
+impl TryFrom<&Expr> for Rc<RefCell<SpecifyOrder>> {
 	type Error = Error;
 	fn try_from(node:&Expr)->Result<Self,Self::Error>{
 		match node {
-			Expr::SpecifyEndian(node)=>Ok(node.clone()),
+			Expr::SpecifyOrder(node)=>Ok(node.clone()),
 			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
 		}
 	}
 }
 
-impl TryFrom<Expr> for Rc<RefCell<SpecifyEndian>> {
+impl TryFrom<Expr> for Rc<RefCell<SpecifyOrder>> {
 	type Error = Error;
 	fn try_from(node:Expr)->Result<Self,Self::Error>{
 		Self::try_from(&node)
 	}
 }
 
-impl From<&Rc<RefCell<SpecifyEndian>>> for Expr {
-	fn from(node:&Rc<RefCell<SpecifyEndian>>)-> Self{
-		Expr::SpecifyEndian(node.clone())
+impl From<&Rc<RefCell<SpecifyOrder>>> for Expr {
+	fn from(node:&Rc<RefCell<SpecifyOrder>>)-> Self{
+		Expr::SpecifyOrder(node.clone())
 	}
 }
 
-impl From<Rc<RefCell<SpecifyEndian>>> for Expr {
-	fn from(node:Rc<RefCell<SpecifyEndian>>)-> Self{
+impl From<Rc<RefCell<SpecifyOrder>>> for Expr {
+	fn from(node:Rc<RefCell<SpecifyOrder>>)-> Self{
 		Self::from(&node)
 	}
 }
 
-impl TryFrom<&Node> for Rc<RefCell<SpecifyEndian>> {
+impl TryFrom<&Node> for Rc<RefCell<SpecifyOrder>> {
 	type Error = Error;
 	fn try_from(node:&Node)->Result<Self,Self::Error>{
 		match node {
-			Node::SpecifyEndian(node)=>Ok(node.clone()),
+			Node::SpecifyOrder(node)=>Ok(node.clone()),
 			_=> Err(Error::InvalidNodeType(node.into())),
 		}
 	}
 }
 
-impl TryFrom<Node> for Rc<RefCell<SpecifyEndian>> {
+impl TryFrom<Node> for Rc<RefCell<SpecifyOrder>> {
 	type Error = Error;
 	fn try_from(node:Node)->Result<Self,Self::Error>{
 		Self::try_from(&node)
 	}
 }
 
-impl From<&Rc<RefCell<SpecifyEndian>>> for Node {
-	fn from(node:&Rc<RefCell<SpecifyEndian>>)-> Self{
-		Node::SpecifyEndian(node.clone())
+impl From<&Rc<RefCell<SpecifyOrder>>> for Node {
+	fn from(node:&Rc<RefCell<SpecifyOrder>>)-> Self{
+		Node::SpecifyOrder(node.clone())
 	}
 }
 
-impl From<Rc<RefCell<SpecifyEndian>>> for Node {
-	fn from(node:Rc<RefCell<SpecifyEndian>>)-> Self{
+impl From<Rc<RefCell<SpecifyOrder>>> for Node {
+	fn from(node:Rc<RefCell<SpecifyOrder>>)-> Self{
 		Self::from(&node)
 	}
 }
@@ -7311,8 +7315,8 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				target: None,
 				})))
 			},
-			NodeType::SpecifyEndian => {
-				Node::SpecifyEndian(Rc::new(RefCell::new(SpecifyEndian {
+			NodeType::SpecifyOrder => {
+				Node::SpecifyOrder(Rc::new(RefCell::new(SpecifyOrder {
 				loc: raw_node.loc.clone(),
 				expr_type: None,
 				constant_level: ConstantLevel::Unknown,
@@ -9094,10 +9098,10 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					node.borrow_mut().target = Some(target_body.try_into()?);
 				}
 			},
-			NodeType::SpecifyEndian => {
+			NodeType::SpecifyOrder => {
 				let node = nodes[i].clone();
 				let node = match node {
-					Node::SpecifyEndian(node)=>node,
+					Node::SpecifyOrder(node)=>node,
 					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
 				let expr_type_body = match raw_node.body.get("expr_type") {
@@ -12545,7 +12549,7 @@ where
 				}
 			}
 		},
-		Node::SpecifyEndian(node)=>{
+		Node::SpecifyOrder(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
 				if !f.visit(&node.into()){
 					return;

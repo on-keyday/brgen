@@ -115,6 +115,9 @@ enum IOMethod:
     config_bit_order_lsb
     config_bit_order_msb
 
+enum OrderType:
+    byte
+    bit
     
 enum SpecialLiteralKind:
     input_ = "input"

@@ -971,7 +971,9 @@ namespace brgen::middle {
                 }
                 case ast::IOMethod::config_endian_big:
                 case ast::IOMethod::config_endian_little:
-                case ast::IOMethod::config_endian_native: {
+                case ast::IOMethod::config_endian_native:
+                case ast::IOMethod::config_bit_order_lsb:
+                case ast::IOMethod::config_bit_order_msb: {
                     io->expr_type = std::make_shared<ast::BoolType>(io->loc);
                     io->constant_level = ast::ConstantLevel::constant;
                     break;
@@ -1012,22 +1014,22 @@ namespace brgen::middle {
                 a->constant_level = ast::ConstantLevel::variable;
             }
             if (auto b = ast::as<ast::SpecifyOrder>(expr)) {
-                typing_expr(b->endian, false);
+                typing_expr(b->order, false);
                 b->base->expr_type = void_type(b->loc);
                 b->expr_type = b->base->expr_type;
-                b->constant_level = b->endian->constant_level;
+                b->constant_level = b->order->constant_level;
                 ast::tool::Evaluator eval;
                 eval.ident_mode = ast::tool::EvalIdentMode::resolve_ident;
-                if (auto val = eval.eval_as<ast::tool::EResultType::integer>(b->endian)) {
+                if (auto val = eval.eval_as<ast::tool::EResultType::integer>(b->order)) {
                     // case 1 or 2
                     if (val->type() == ast::tool::EResultType::integer) {
-                        b->endian_value = val->get<ast::tool::EResultType::integer>();
+                        b->order_value = val->get<ast::tool::EResultType::integer>();
                     }
                     else if (val->type() == ast::tool::EResultType::boolean) {
-                        b->endian_value = val->get<ast::tool::EResultType::boolean>() ? 1 : 0;
+                        b->order_value = val->get<ast::tool::EResultType::boolean>() ? 1 : 0;
                     }
                     else {
-                        error(b->endian->loc, "expect integer or boolean but got ", ast::tool::eval_result_type_str[int(val->type())]).report();
+                        error(b->order->loc, "expect integer or boolean but got ", ast::tool::eval_result_type_str[int(val->type())]).report();
                     }
                 }
             }

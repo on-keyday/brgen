@@ -30,7 +30,7 @@ const (
 	NodeTypeImport          NodeType = 17
 	NodeTypeCast            NodeType = 18
 	NodeTypeAvailable       NodeType = 19
-	NodeTypeSpecifyEndian   NodeType = 20
+	NodeTypeSpecifyOrder    NodeType = 20
 	NodeTypeExplicitError   NodeType = 21
 	NodeTypeIoOperation     NodeType = 22
 	NodeTypeStmt            NodeType = 23
@@ -122,8 +122,8 @@ func (n NodeType) String() string {
 		return "cast"
 	case NodeTypeAvailable:
 		return "available"
-	case NodeTypeSpecifyEndian:
-		return "specify_endian"
+	case NodeTypeSpecifyOrder:
+		return "specify_order"
 	case NodeTypeExplicitError:
 		return "explicit_error"
 	case NodeTypeIoOperation:
@@ -269,8 +269,8 @@ func (n *NodeType) UnmarshalJSON(data []byte) error {
 		*n = NodeTypeCast
 	case "available":
 		*n = NodeTypeAvailable
-	case "specify_endian":
-		*n = NodeTypeSpecifyEndian
+	case "specify_order":
+		*n = NodeTypeSpecifyOrder
 	case "explicit_error":
 		*n = NodeTypeExplicitError
 	case "io_operation":
@@ -447,8 +447,8 @@ func (n *Available) GetNodeType() NodeType {
 	return NodeTypeAvailable
 }
 
-func (n *SpecifyEndian) GetNodeType() NodeType {
-	return NodeTypeSpecifyEndian
+func (n *SpecifyOrder) GetNodeType() NodeType {
+	return NodeTypeSpecifyOrder
 }
 
 func (n *ExplicitError) GetNodeType() NodeType {
@@ -1275,6 +1275,8 @@ const (
 	IoMethodConfigEndianLittle IoMethod = 8
 	IoMethodConfigEndianBig    IoMethod = 9
 	IoMethodConfigEndianNative IoMethod = 10
+	IoMethodConfigBitOrderLsb  IoMethod = 11
+	IoMethodConfigBitOrderMsb  IoMethod = 12
 )
 
 func (n IoMethod) String() string {
@@ -1301,6 +1303,10 @@ func (n IoMethod) String() string {
 		return "config_endian_big"
 	case IoMethodConfigEndianNative:
 		return "config_endian_native"
+	case IoMethodConfigBitOrderLsb:
+		return "config_bit_order_lsb"
+	case IoMethodConfigBitOrderMsb:
+		return "config_bit_order_msb"
 	default:
 		return fmt.Sprintf("IoMethod(%d)", n)
 	}
@@ -1334,6 +1340,10 @@ func (n *IoMethod) UnmarshalJSON(data []byte) error {
 		*n = IoMethodConfigEndianBig
 	case "config_endian_native":
 		*n = IoMethodConfigEndianNative
+	case "config_bit_order_lsb":
+		*n = IoMethodConfigBitOrderLsb
+	case "config_bit_order_msb":
+		*n = IoMethodConfigBitOrderMsb
 	default:
 		return fmt.Errorf("unknown IoMethod: %q", tmp)
 	}
@@ -1850,7 +1860,7 @@ func (n *Available) GetLoc() Loc {
 	return n.Loc
 }
 
-type SpecifyEndian struct {
+type SpecifyOrder struct {
 	Loc           Loc
 	ExprType      Type
 	ConstantLevel ConstantLevel
@@ -1859,19 +1869,19 @@ type SpecifyEndian struct {
 	EndianValue   *uint64
 }
 
-func (n *SpecifyEndian) isExpr() {}
+func (n *SpecifyOrder) isExpr() {}
 
-func (n *SpecifyEndian) GetExprType() Type {
+func (n *SpecifyOrder) GetExprType() Type {
 	return n.ExprType
 }
 
-func (n *SpecifyEndian) GetConstantLevel() ConstantLevel {
+func (n *SpecifyOrder) GetConstantLevel() ConstantLevel {
 	return n.ConstantLevel
 }
 
-func (n *SpecifyEndian) isNode() {}
+func (n *SpecifyOrder) isNode() {}
 
-func (n *SpecifyEndian) GetLoc() Loc {
+func (n *SpecifyOrder) GetLoc() Loc {
 	return n.Loc
 }
 
@@ -3159,8 +3169,8 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			n.node[i] = &Cast{Loc: raw.Loc}
 		case NodeTypeAvailable:
 			n.node[i] = &Available{Loc: raw.Loc}
-		case NodeTypeSpecifyEndian:
-			n.node[i] = &SpecifyEndian{Loc: raw.Loc}
+		case NodeTypeSpecifyOrder:
+			n.node[i] = &SpecifyOrder{Loc: raw.Loc}
 		case NodeTypeExplicitError:
 			n.node[i] = &ExplicitError{Loc: raw.Loc}
 		case NodeTypeIoOperation:
@@ -3680,8 +3690,8 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.Target != nil {
 				v.Target = n.node[*tmp.Target].(Expr)
 			}
-		case NodeTypeSpecifyEndian:
-			v := n.node[i].(*SpecifyEndian)
+		case NodeTypeSpecifyOrder:
+			v := n.node[i].(*SpecifyOrder)
 			var tmp struct {
 				ExprType      *uintptr      `json:"expr_type"`
 				ConstantLevel ConstantLevel `json:"constant_level"`
@@ -4921,7 +4931,7 @@ func Walk(n Node, f Visitor) {
 				return
 			}
 		}
-	case *SpecifyEndian:
+	case *SpecifyOrder:
 		if v.ExprType != nil {
 			if !f.Visit(f, v.ExprType) {
 				return

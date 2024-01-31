@@ -25,7 +25,7 @@ class NodeType(PyEnum):
     IMPORT = "import"
     CAST = "cast"
     AVAILABLE = "available"
-    SPECIFY_ENDIAN = "specify_endian"
+    SPECIFY_ORDER = "specify_order"
     EXPLICIT_ERROR = "explicit_error"
     IO_OPERATION = "io_operation"
     STMT = "stmt"
@@ -201,6 +201,8 @@ class IoMethod(PyEnum):
     CONFIG_ENDIAN_LITTLE = "config_endian_little"
     CONFIG_ENDIAN_BIG = "config_endian_big"
     CONFIG_ENDIAN_NATIVE = "config_endian_native"
+    CONFIG_BIT_ORDER_LSB = "config_bit_order_lsb"
+    CONFIG_BIT_ORDER_MSB = "config_bit_order_msb"
 
 
 class SpecialLiteralKind(PyEnum):
@@ -356,7 +358,7 @@ class Available(Expr):
     target: Optional[Expr]
 
 
-class SpecifyEndian(Expr):
+class SpecifyOrder(Expr):
     base: Optional[Binary]
     endian: Optional[Expr]
     endian_value: Optional[int]
@@ -814,8 +816,8 @@ def ast2node(ast :JsonAst) -> Program:
                 node.append(Cast())
             case NodeType.AVAILABLE:
                 node.append(Available())
-            case NodeType.SPECIFY_ENDIAN:
-                node.append(SpecifyEndian())
+            case NodeType.SPECIFY_ORDER:
+                node.append(SpecifyOrder())
             case NodeType.EXPLICIT_ERROR:
                 node.append(ExplicitError())
             case NodeType.IO_OPERATION:
@@ -1219,26 +1221,26 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].target = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at Available::target'))
                 else:
                     node[i].target = None
-            case NodeType.SPECIFY_ENDIAN:
+            case NodeType.SPECIFY_ORDER:
                 if ast.node[i].body["expr_type"] is not None:
                     x = node[ast.node[i].body["expr_type"]]
-                    node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at SpecifyEndian::expr_type'))
+                    node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at SpecifyOrder::expr_type'))
                 else:
                     node[i].expr_type = None
                 node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
                 if ast.node[i].body["base"] is not None:
                     x = node[ast.node[i].body["base"]]
-                    node[i].base = x if isinstance(x,Binary) else raiseError(TypeError('type mismatch at SpecifyEndian::base'))
+                    node[i].base = x if isinstance(x,Binary) else raiseError(TypeError('type mismatch at SpecifyOrder::base'))
                 else:
                     node[i].base = None
                 if ast.node[i].body["endian"] is not None:
                     x = node[ast.node[i].body["endian"]]
-                    node[i].endian = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at SpecifyEndian::endian'))
+                    node[i].endian = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at SpecifyOrder::endian'))
                 else:
                     node[i].endian = None
                 x = ast.node[i].body["endian_value"]
                 if x is not None:
-                    node[i].endian_value = x if isinstance(x,int) else raiseError(TypeError('type mismatch at SpecifyEndian::endian_value'))
+                    node[i].endian_value = x if isinstance(x,int) else raiseError(TypeError('type mismatch at SpecifyOrder::endian_value'))
                 else:
                     node[i].endian_value = None
             case NodeType.EXPLICIT_ERROR:
@@ -2144,7 +2146,7 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
           if x.target is not None:
               if f(f,x.target) == False:
                   return
-        case x if isinstance(x,SpecifyEndian):
+        case x if isinstance(x,SpecifyOrder):
           if x.expr_type is not None:
               if f(f,x.expr_type) == False:
                   return

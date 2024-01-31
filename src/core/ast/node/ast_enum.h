@@ -624,6 +624,8 @@ enum class IOMethod {
     config_endian_little,
     config_endian_big,
     config_endian_native,
+    config_bit_order_lsb,
+    config_bit_order_msb,
 };
 constexpr const char* to_string(IOMethod e) {
     switch(e) {
@@ -638,6 +640,8 @@ constexpr const char* to_string(IOMethod e) {
     case IOMethod::config_endian_little: return "config_endian_little";
     case IOMethod::config_endian_big: return "config_endian_big";
     case IOMethod::config_endian_native: return "config_endian_native";
+    case IOMethod::config_bit_order_lsb: return "config_bit_order_lsb";
+    case IOMethod::config_bit_order_msb: return "config_bit_order_msb";
     default: return nullptr;
     }
 }
@@ -654,12 +658,14 @@ template<>constexpr std::optional<IOMethod> from_string<IOMethod>(std::string_vi
     if(str == "config_endian_little") return IOMethod::config_endian_little;
     if(str == "config_endian_big") return IOMethod::config_endian_big;
     if(str == "config_endian_native") return IOMethod::config_endian_native;
+    if(str == "config_bit_order_lsb") return IOMethod::config_bit_order_lsb;
+    if(str == "config_bit_order_msb") return IOMethod::config_bit_order_msb;
     return std::nullopt;
 }
 template<>constexpr size_t enum_elem_count<IOMethod>() {
-    return 11;
+    return 13;
 }
-template<>constexpr std::array<std::pair<IOMethod,std::string_view>,11> make_enum_array<IOMethod>() {
+template<>constexpr std::array<std::pair<IOMethod,std::string_view>,13> make_enum_array<IOMethod>() {
     return {
         std::pair{IOMethod::unspec,"unspec"},
         std::pair{IOMethod::output_put,"output_put"},
@@ -672,9 +678,11 @@ template<>constexpr std::array<std::pair<IOMethod,std::string_view>,11> make_enu
         std::pair{IOMethod::config_endian_little,"config_endian_little"},
         std::pair{IOMethod::config_endian_big,"config_endian_big"},
         std::pair{IOMethod::config_endian_native,"config_endian_native"},
+        std::pair{IOMethod::config_bit_order_lsb,"config_bit_order_lsb"},
+        std::pair{IOMethod::config_bit_order_msb,"config_bit_order_msb"},
     };
 }
-template<>constexpr std::array<std::pair<IOMethod,std::string_view>,11> make_enum_name_array<IOMethod>() {
+template<>constexpr std::array<std::pair<IOMethod,std::string_view>,13> make_enum_name_array<IOMethod>() {
     return {
         std::pair{IOMethod::unspec,"unspec"},
         std::pair{IOMethod::output_put,"output_put"},
@@ -687,6 +695,8 @@ template<>constexpr std::array<std::pair<IOMethod,std::string_view>,11> make_enu
         std::pair{IOMethod::config_endian_little,"config_endian_little"},
         std::pair{IOMethod::config_endian_big,"config_endian_big"},
         std::pair{IOMethod::config_endian_native,"config_endian_native"},
+        std::pair{IOMethod::config_bit_order_lsb,"config_bit_order_lsb"},
+        std::pair{IOMethod::config_bit_order_msb,"config_bit_order_msb"},
     };
 }
 constexpr void as_json(IOMethod e,auto&& d) {
@@ -695,6 +705,45 @@ constexpr void as_json(IOMethod e,auto&& d) {
 template<>
 constexpr const char* enum_type_name<IOMethod>() {
     return "IOMethod";
+}
+enum class OrderType {
+    byte,
+    bit,
+};
+constexpr const char* to_string(OrderType e) {
+    switch(e) {
+    case OrderType::byte: return "byte";
+    case OrderType::bit: return "bit";
+    default: return nullptr;
+    }
+}
+template<>constexpr std::optional<OrderType> from_string<OrderType>(std::string_view str) {
+    if(str.empty()) return std::nullopt;
+    if(str == "byte") return OrderType::byte;
+    if(str == "bit") return OrderType::bit;
+    return std::nullopt;
+}
+template<>constexpr size_t enum_elem_count<OrderType>() {
+    return 2;
+}
+template<>constexpr std::array<std::pair<OrderType,std::string_view>,2> make_enum_array<OrderType>() {
+    return {
+        std::pair{OrderType::byte,"byte"},
+        std::pair{OrderType::bit,"bit"},
+    };
+}
+template<>constexpr std::array<std::pair<OrderType,std::string_view>,2> make_enum_name_array<OrderType>() {
+    return {
+        std::pair{OrderType::byte,"byte"},
+        std::pair{OrderType::bit,"bit"},
+    };
+}
+constexpr void as_json(OrderType e,auto&& d) {
+    d.value(enum_array<OrderType>[int(e)].second);
+}
+template<>
+constexpr const char* enum_type_name<OrderType>() {
+    return "OrderType";
 }
 enum class SpecialLiteralKind {
     input_,

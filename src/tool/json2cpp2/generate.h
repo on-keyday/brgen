@@ -1117,20 +1117,20 @@ namespace j2cp2 {
                 w.writeln("auto ", ident->ident, " = ", expr, ";");
                 str.map_ident(ast::cast_to<ast::Ident>(b->left), ident->ident);
             }
-            if (auto s = ast::as<ast::SpecifyOrder>(elem)) {
+            if (auto s = ast::as<ast::SpecifyOrder>(elem); s && s->order_type == ast::OrderType::byte) {
                 if (ctx.dynamic_endian) {
-                    if (s->endian_value) {
+                    if (s->order_value) {
                         map_line(s->loc);
-                        w.writeln("dynamic_endian____ = !/*reverse for library*/(/*true->little false->big*/", brgen::nums(*s->endian_value), ");");
+                        w.writeln("dynamic_endian____ = !/*reverse for library*/(/*true->little false->big*/", brgen::nums(*s->order_value), ");");
                     }
                     else {
-                        auto specify = str.to_string(s->endian);
+                        auto specify = str.to_string(s->order);
                         map_line(s->loc);
                         w.writeln("dynamic_endian____ = !/*reverse for library*/(/*true->little false->big*/", specify, ");");
                     }
                 }
                 else {
-                    ctx.endian = *s->endian_value ? ast::Endian::little : ast::Endian::big;
+                    ctx.endian = *s->order_value ? ast::Endian::little : ast::Endian::big;
                 }
             }
             if (auto a = ast::as<ast::Assert>(elem)) {
@@ -1179,8 +1179,8 @@ namespace j2cp2 {
             ctx.endian = ast::Endian::big;  // default to big endian
             ctx.dynamic_endian = false;
             for (auto& elem : fmt->body->elements) {
-                if (auto f = ast::as<ast::SpecifyOrder>(elem)) {
-                    if (!f->endian_value) {
+                if (auto f = ast::as<ast::SpecifyOrder>(elem); f && f->order_type == ast::OrderType::byte) {
+                    if (!f->order_value) {
                         ctx.dynamic_endian = true;
                         break;
                     }

@@ -71,7 +71,7 @@ typedef struct ast2c_TmpVar ast2c_TmpVar;
 typedef struct ast2c_Import ast2c_Import;
 typedef struct ast2c_Cast ast2c_Cast;
 typedef struct ast2c_Available ast2c_Available;
-typedef struct ast2c_SpecifyEndian ast2c_SpecifyEndian;
+typedef struct ast2c_SpecifyOrder ast2c_SpecifyOrder;
 typedef struct ast2c_ExplicitError ast2c_ExplicitError;
 typedef struct ast2c_IoOperation ast2c_IoOperation;
 typedef struct ast2c_Loop ast2c_Loop;
@@ -146,7 +146,7 @@ enum ast2c_NodeType {
 	AST2C_NODETYPE_IMPORT,
 	AST2C_NODETYPE_CAST,
 	AST2C_NODETYPE_AVAILABLE,
-	AST2C_NODETYPE_SPECIFY_ENDIAN,
+	AST2C_NODETYPE_SPECIFY_ORDER,
 	AST2C_NODETYPE_EXPLICIT_ERROR,
 	AST2C_NODETYPE_IO_OPERATION,
 	AST2C_NODETYPE_STMT,
@@ -340,6 +340,8 @@ enum ast2c_IoMethod {
 	AST2C_IOMETHOD_CONFIG_ENDIAN_LITTLE,
 	AST2C_IOMETHOD_CONFIG_ENDIAN_BIG,
 	AST2C_IOMETHOD_CONFIG_ENDIAN_NATIVE,
+	AST2C_IOMETHOD_CONFIG_BIT_ORDER_LSB,
+	AST2C_IOMETHOD_CONFIG_BIT_ORDER_MSB,
 };
 const char* ast2c_IoMethod_to_string(ast2c_IoMethod);
 int ast2c_IoMethod_from_string(const char*,ast2c_IoMethod*);
@@ -720,7 +722,7 @@ struct ast2c_Available {
 // returns 1 if succeed 0 if failed
 int ast2c_Available_parse(ast2c_Ast* ,ast2c_Available*,ast2c_json_handlers*,void*);
 
-struct ast2c_SpecifyEndian {
+struct ast2c_SpecifyOrder {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Type* expr_type;
@@ -731,7 +733,7 @@ struct ast2c_SpecifyEndian {
 };
 
 // returns 1 if succeed 0 if failed
-int ast2c_SpecifyEndian_parse(ast2c_Ast* ,ast2c_SpecifyEndian*,ast2c_json_handlers*,void*);
+int ast2c_SpecifyOrder_parse(ast2c_Ast* ,ast2c_SpecifyOrder*,ast2c_json_handlers*,void*);
 
 struct ast2c_ExplicitError {
 	const ast2c_NodeType node_type;

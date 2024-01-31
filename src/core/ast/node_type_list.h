@@ -182,6 +182,9 @@ namespace brgen::ast {
                     else if constexpr (std::is_same_v<P, SpecialLiteralKind>) {
                         field(key, "special_literal_kind");
                     }
+                    else if constexpr (std::is_same_v<P, OrderType>) {
+                        field(key, "order_type");
+                    }
                     else if constexpr (futils::helper::is_template<P>) {
                         using P1 = typename futils::helper::template_of_t<P>::template param_at<0>;
                         if constexpr (futils::helper::is_template_instance_of<P, std::shared_ptr>) {
@@ -318,6 +321,7 @@ namespace brgen::ast {
         enum_type<Follow>("follow", field);
         enum_type<IOMethod>("io_method", field);
         enum_type<SpecialLiteralKind>("special_literal_kind", field);
+        enum_type<OrderType>("order_type", field);
     }
 
     void struct_types(auto&& field) {

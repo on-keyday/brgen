@@ -24,7 +24,7 @@ TmpVar,
 Import,
 Cast,
 Available,
-SpecifyEndian,
+SpecifyOrder,
 ExplicitError,
 IoOperation,
 Stmt,
@@ -191,6 +191,8 @@ InputSubrange,
 ConfigEndianLittle,
 ConfigEndianBig,
 ConfigEndianNative,
+ConfigBitOrderLsb,
+ConfigBitOrderMsb,
 }
 public enum SpecialLiteralKind {
 Input,
@@ -364,7 +366,7 @@ public class Available : Expr{
 	public Call? Base{get;set;}
 	public Expr? Target{get;set;}
 }
-public class SpecifyEndian : Expr{
+public class SpecifyOrder : Expr{
 	public Loc Loc{get;set;}
 	public Type? ExprType{get;set;}
 	public ConstantLevel ConstantLevel{get;set;}
@@ -829,8 +831,8 @@ public static class Ast {
            case NodeType.Available:
                nodes[i] = new Available() { Loc = ast.Node[i].Loc };
                break;
-           case NodeType.SpecifyEndian:
-               nodes[i] = new SpecifyEndian() { Loc = ast.Node[i].Loc };
+           case NodeType.SpecifyOrder:
+               nodes[i] = new SpecifyOrder() { Loc = ast.Node[i].Loc };
                break;
            case NodeType.ExplicitError:
                nodes[i] = new ExplicitError() { Loc = ast.Node[i].Loc };
@@ -1108,8 +1110,8 @@ public static class Ast {
                node.ConstantLevel = ast.Node[i].Body[constant_level];
                node.Base = ast.Node[i].Body[base];
                node.Target = ast.Node[i].Body[target];
-           case NodeType.SpecifyEndian:
-               var node = nodes[i] as SpecifyEndian;
+           case NodeType.SpecifyOrder:
+               var node = nodes[i] as SpecifyOrder;
                node.Loc = ast.Node[i].Body[loc];
                node.ExprType = ast.Node[i].Body[expr_type];
                node.ConstantLevel = ast.Node[i].Body[constant_level];

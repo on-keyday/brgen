@@ -2,10 +2,10 @@
 
 export namespace ast2ts {
 
-export type NodeType = "program" | "comment" | "comment_group" | "field_argument" | "expr" | "binary" | "unary" | "cond" | "ident" | "call" | "if" | "member_access" | "paren" | "index" | "match" | "range" | "tmp_var" | "import" | "cast" | "available" | "specify_endian" | "explicit_error" | "io_operation" | "stmt" | "loop" | "indent_block" | "scoped_statement" | "match_branch" | "union_candidate" | "return" | "break" | "continue" | "assert" | "implicit_yield" | "type" | "int_type" | "float_type" | "ident_type" | "int_literal_type" | "str_literal_type" | "void_type" | "bool_type" | "array_type" | "function_type" | "struct_type" | "struct_union_type" | "union_type" | "range_type" | "enum_type" | "meta_type" | "optional_type" | "literal" | "int_literal" | "bool_literal" | "str_literal" | "type_literal" | "special_literal" | "member" | "field" | "format" | "state" | "enum" | "enum_member" | "function" | "builtin_member" | "builtin_function" | "builtin_field" | "builtin_object";
+export type NodeType = "program" | "comment" | "comment_group" | "field_argument" | "expr" | "binary" | "unary" | "cond" | "ident" | "call" | "if" | "member_access" | "paren" | "index" | "match" | "range" | "tmp_var" | "import" | "cast" | "available" | "specify_order" | "explicit_error" | "io_operation" | "stmt" | "loop" | "indent_block" | "scoped_statement" | "match_branch" | "union_candidate" | "return" | "break" | "continue" | "assert" | "implicit_yield" | "type" | "int_type" | "float_type" | "ident_type" | "int_literal_type" | "str_literal_type" | "void_type" | "bool_type" | "array_type" | "function_type" | "struct_type" | "struct_union_type" | "union_type" | "range_type" | "enum_type" | "meta_type" | "optional_type" | "literal" | "int_literal" | "bool_literal" | "str_literal" | "type_literal" | "special_literal" | "member" | "field" | "format" | "state" | "enum" | "enum_member" | "function" | "builtin_member" | "builtin_function" | "builtin_field" | "builtin_object";
 
 export function isNodeType(obj: any): obj is NodeType {
-	return obj && typeof obj === 'string' && (obj === "program" || obj === "comment" || obj === "comment_group" || obj === "field_argument" || obj === "expr" || obj === "binary" || obj === "unary" || obj === "cond" || obj === "ident" || obj === "call" || obj === "if" || obj === "member_access" || obj === "paren" || obj === "index" || obj === "match" || obj === "range" || obj === "tmp_var" || obj === "import" || obj === "cast" || obj === "available" || obj === "specify_endian" || obj === "explicit_error" || obj === "io_operation" || obj === "stmt" || obj === "loop" || obj === "indent_block" || obj === "scoped_statement" || obj === "match_branch" || obj === "union_candidate" || obj === "return" || obj === "break" || obj === "continue" || obj === "assert" || obj === "implicit_yield" || obj === "type" || obj === "int_type" || obj === "float_type" || obj === "ident_type" || obj === "int_literal_type" || obj === "str_literal_type" || obj === "void_type" || obj === "bool_type" || obj === "array_type" || obj === "function_type" || obj === "struct_type" || obj === "struct_union_type" || obj === "union_type" || obj === "range_type" || obj === "enum_type" || obj === "meta_type" || obj === "optional_type" || obj === "literal" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "type_literal" || obj === "special_literal" || obj === "member" || obj === "field" || obj === "format" || obj === "state" || obj === "enum" || obj === "enum_member" || obj === "function" || obj === "builtin_member" || obj === "builtin_function" || obj === "builtin_field" || obj === "builtin_object")
+	return obj && typeof obj === 'string' && (obj === "program" || obj === "comment" || obj === "comment_group" || obj === "field_argument" || obj === "expr" || obj === "binary" || obj === "unary" || obj === "cond" || obj === "ident" || obj === "call" || obj === "if" || obj === "member_access" || obj === "paren" || obj === "index" || obj === "match" || obj === "range" || obj === "tmp_var" || obj === "import" || obj === "cast" || obj === "available" || obj === "specify_order" || obj === "explicit_error" || obj === "io_operation" || obj === "stmt" || obj === "loop" || obj === "indent_block" || obj === "scoped_statement" || obj === "match_branch" || obj === "union_candidate" || obj === "return" || obj === "break" || obj === "continue" || obj === "assert" || obj === "implicit_yield" || obj === "type" || obj === "int_type" || obj === "float_type" || obj === "ident_type" || obj === "int_literal_type" || obj === "str_literal_type" || obj === "void_type" || obj === "bool_type" || obj === "array_type" || obj === "function_type" || obj === "struct_type" || obj === "struct_union_type" || obj === "union_type" || obj === "range_type" || obj === "enum_type" || obj === "meta_type" || obj === "optional_type" || obj === "literal" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "type_literal" || obj === "special_literal" || obj === "member" || obj === "field" || obj === "format" || obj === "state" || obj === "enum" || obj === "enum_member" || obj === "function" || obj === "builtin_member" || obj === "builtin_function" || obj === "builtin_field" || obj === "builtin_object")
 }
 
 export const enum TokenTag {
@@ -166,10 +166,12 @@ export const enum IoMethod {
 	config_endian_little = "config_endian_little",
 	config_endian_big = "config_endian_big",
 	config_endian_native = "config_endian_native",
+	config_bit_order_lsb = "config_bit_order_lsb",
+	config_bit_order_msb = "config_bit_order_msb",
 };
 
 export function isIoMethod(obj: any): obj is IoMethod {
-	return obj && typeof obj === 'string' && (obj === "unspec" || obj === "output_put" || obj === "input_peek" || obj === "input_get" || obj === "input_backward" || obj === "input_offset" || obj === "input_remain" || obj === "input_subrange" || obj === "config_endian_little" || obj === "config_endian_big" || obj === "config_endian_native")
+	return obj && typeof obj === 'string' && (obj === "unspec" || obj === "output_put" || obj === "input_peek" || obj === "input_get" || obj === "input_backward" || obj === "input_offset" || obj === "input_remain" || obj === "input_subrange" || obj === "config_endian_little" || obj === "config_endian_big" || obj === "config_endian_native" || obj === "config_bit_order_lsb" || obj === "config_bit_order_msb")
 }
 
 export const enum SpecialLiteralKind {
@@ -207,7 +209,7 @@ export function isNode(obj: any): obj is Node {
 	if (isImport(obj)) return true;
 	if (isCast(obj)) return true;
 	if (isAvailable(obj)) return true;
-	if (isSpecifyEndian(obj)) return true;
+	if (isSpecifyOrder(obj)) return true;
 	if (isExplicitError(obj)) return true;
 	if (isIoOperation(obj)) return true;
 	if (isLoop(obj)) return true;
@@ -274,7 +276,7 @@ export function isExpr(obj: any): obj is Expr {
 	if (isImport(obj)) return true;
 	if (isCast(obj)) return true;
 	if (isAvailable(obj)) return true;
-	if (isSpecifyEndian(obj)) return true;
+	if (isSpecifyOrder(obj)) return true;
 	if (isExplicitError(obj)) return true;
 	if (isIoOperation(obj)) return true;
 	if (isIntLiteral(obj)) return true;
@@ -568,14 +570,14 @@ export function isAvailable(obj: any): obj is Available {
 	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "available"
 }
 
-export interface SpecifyEndian extends Expr {
+export interface SpecifyOrder extends Expr {
 	base: Binary|null;
 	endian: Expr|null;
 	endian_value: number|null;
 }
 
-export function isSpecifyEndian(obj: any): obj is SpecifyEndian {
-	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "specify_endian"
+export function isSpecifyOrder(obj: any): obj is SpecifyOrder {
+	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "specify_order"
 }
 
 export interface ExplicitError extends Expr {
@@ -1348,9 +1350,9 @@ export function parseAST(obj: JsonAst): Program {
 			c.node.push(n);
 			break;
 		}
-		case "specify_endian": {
-			const n :SpecifyEndian = {
-				node_type: "specify_endian",
+		case "specify_order": {
+			const n :SpecifyOrder = {
+				node_type: "specify_order",
 				loc: on.loc,
 				expr_type: null,
 				constant_level: ConstantLevel.unknown,
@@ -2601,40 +2603,40 @@ export function parseAST(obj: JsonAst): Program {
 			n.target = tmptarget;
 			break;
 		}
-		case "specify_endian": {
-			const n :SpecifyEndian = cnode as SpecifyEndian;
+		case "specify_order": {
+			const n :SpecifyOrder = cnode as SpecifyOrder;
 			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
-				throw new Error('invalid node list at SpecifyEndian::expr_type');
+				throw new Error('invalid node list at SpecifyOrder::expr_type');
 			}
 			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
 			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
-				throw new Error('invalid node list at SpecifyEndian::expr_type');
+				throw new Error('invalid node list at SpecifyOrder::expr_type');
 			}
 			n.expr_type = tmpexpr_type;
 			const tmpconstant_level = on.body?.constant_level;
 			if (!isConstantLevel(tmpconstant_level)) {
-				throw new Error('invalid node list at SpecifyEndian::constant_level');
+				throw new Error('invalid node list at SpecifyOrder::constant_level');
 			}
 			n.constant_level = tmpconstant_level;
 			if (on.body?.base !== null && typeof on.body?.base !== 'number') {
-				throw new Error('invalid node list at SpecifyEndian::base');
+				throw new Error('invalid node list at SpecifyOrder::base');
 			}
 			const tmpbase = on.body.base === null ? null : c.node[on.body.base];
 			if (!(tmpbase === null || isBinary(tmpbase))) {
-				throw new Error('invalid node list at SpecifyEndian::base');
+				throw new Error('invalid node list at SpecifyOrder::base');
 			}
 			n.base = tmpbase;
 			if (on.body?.endian !== null && typeof on.body?.endian !== 'number') {
-				throw new Error('invalid node list at SpecifyEndian::endian');
+				throw new Error('invalid node list at SpecifyOrder::endian');
 			}
 			const tmpendian = on.body.endian === null ? null : c.node[on.body.endian];
 			if (!(tmpendian === null || isExpr(tmpendian))) {
-				throw new Error('invalid node list at SpecifyEndian::endian');
+				throw new Error('invalid node list at SpecifyOrder::endian');
 			}
 			n.endian = tmpendian;
 			const tmpendian_value = on.body?.endian_value;
 			if (tmpendian_value !== null && typeof tmpendian_value !== "number") {
-				throw new Error('invalid node list at SpecifyEndian::endian_value');
+				throw new Error('invalid node list at SpecifyOrder::endian_value');
 			}
 			n.endian_value = on.body.endian_value;
 			break;
@@ -4628,11 +4630,11 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			break;
 		}
-		case "specify_endian": {
-			if (!isSpecifyEndian(node)) {
+		case "specify_order": {
+			if (!isSpecifyOrder(node)) {
 				break;
 			}
-			const n :SpecifyEndian = node as SpecifyEndian;
+			const n :SpecifyOrder = node as SpecifyOrder;
 			if (n.expr_type !== null) {
 				const result = fn(fn,n.expr_type);
 				if (result === false) {

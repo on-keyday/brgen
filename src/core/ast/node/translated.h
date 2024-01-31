@@ -122,13 +122,14 @@ namespace brgen::ast {
 
     struct SpecifyOrder : Expr {
         define_node_type(NodeType::specify_order);
+        OrderType order_type = OrderType::byte;
         std::shared_ptr<Binary> base;
-        // 0(or false) is big, 1(or true) is little,2 is native, otherwise is unspecified(default to big) or generator dependent
-        std::shared_ptr<Expr> endian;
-        std::optional<size_t> endian_value;
+        // 0(or false) is big/msb, 1(or true) is little/lsb,2 is native, otherwise is unspecified(default to big/msb) or generator dependent
+        std::shared_ptr<Expr> order;
+        std::optional<size_t> order_value;
 
-        SpecifyOrder(std::shared_ptr<Binary>&& a, std::shared_ptr<Expr>&& b)
-            : Expr(a->loc, NodeType::specify_order), base(std::move(a)), endian(std::move(b)) {}
+        SpecifyOrder(std::shared_ptr<Binary>&& a, std::shared_ptr<Expr>&& b, OrderType order_type)
+            : Expr(a->loc, NodeType::specify_order), base(std::move(a)), order(std::move(b)) {}
 
         SpecifyOrder()
             : Expr({}, NodeType::specify_order) {}
@@ -136,8 +137,9 @@ namespace brgen::ast {
         void dump(auto&& field_) {
             Expr::dump(field_);
             sdebugf(base);
-            sdebugf(endian);
-            sdebugf(endian_value);
+            sdebugf(order_type);
+            sdebugf(order);
+            sdebugf(order_value);
         }
     };
 
