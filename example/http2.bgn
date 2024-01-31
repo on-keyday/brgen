@@ -1,4 +1,6 @@
 
+config.cpp.namespace = "futils::fnet::http2"
+
 enum H2Error:
     none = 0x0
     protocol = 0x1

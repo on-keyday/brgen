@@ -114,4 +114,7 @@ enum IOMethod:
     config_endian_native
 
     
-
+enum SpecialLiteralKind:
+    input_ = "input"
+    output_ = "output"
+    config_  = "config"

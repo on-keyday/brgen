@@ -21,14 +21,12 @@ format Field:
     value :[..]u8
     :"\r\n"
 
-format Request:
+format RequestHeader:
     line :RequestLine
     fields :[..]Field
     :"\r\n"
-    body :[..]u8
 
-format Response:
+format ResponseHeader:
     line :ResponseLine
     fields :[..]Field
     :"\r\n"
-    body :[..]u8

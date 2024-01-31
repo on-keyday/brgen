@@ -30,6 +30,9 @@ namespace brgen::ast::builtin {
         if (auto t = ast::is_int_type(typ)) {
             return std::make_shared<IntType>(lexer::Loc{.file = lexer::builtin}, t->bit_size, t->endian, t->is_signed);
         }
+        if (auto t = ast::is_float_type(typ)) {
+            return std::make_shared<FloatType>(lexer::Loc{.file = lexer::builtin}, t->bit_size, t->endian);
+        }
         if (typ == "bool") {
             return std::make_shared<BoolType>(lexer::Loc{.file = lexer::builtin});
         }
