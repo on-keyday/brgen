@@ -20,15 +20,9 @@ const requestCallback = (e:JobRequest) => {
     }
 }
 
-setInterval(() => {
-    j2go_ctx.handleRequest(requestCallback);
-}, 100);
 
 globalThis.onmessage = (ev) => {
     const data = ev.data as JobRequest;
-    switch (data.lang) {
-        case RequestLanguage.GO:
-            j2go_ctx.postRequest(data);
-            return;
-    }
+    j2go_ctx.postRequest(data);
+    j2go_ctx.handleRequest(requestCallback);
 };

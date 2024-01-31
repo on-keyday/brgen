@@ -23,12 +23,9 @@ const requestCallback = (e:JobRequest, m:MyEmscriptenModule) => {
     }
 };
 
-setInterval(() => {
-    j2c_ctx.handleRequest(requestCallback);
-
-}, 100);
 
 globalThis.onmessage = (ev) => {
     const data = ev.data as JobRequest;
     j2c_ctx.postRequest(data);
+    j2c_ctx.handleRequest(requestCallback);
 };
