@@ -7,18 +7,19 @@ const j2c2_ctx = new EmWorkContext(json2cpp2Module, () => {
     console.log("json2cpp2 worker is ready");
 });
 
+const requestCallback = (e:JobRequest, m:MyEmscriptenModule) => {
+    switch (e.lang) {
+        case RequestLanguage.CPP:
+            if (e.sourceCode === undefined) return new Error("sourceCode is undefined");
+            m.FS.writeFile("/editor.json", e.sourceCode);
+            return ["json2cpp2", "/editor.json", "--no-color"];
+        default:
+            return new Error("unknown message type");
+    }
+}
+
 setInterval(() => {
-    j2c2_ctx.handleRequest((e, m) => {
-        switch (e.lang) {
-            case RequestLanguage.CPP:
-                if (e.sourceCode === undefined) return new Error("sourceCode is undefined");
-                m.FS.writeFile("/editor.json", e.sourceCode);
-                return ["json2cpp2", "/editor.json", "--no-color"];
-            default:
-                return new Error("unknown message type");
-        }
-    });
-    //j2c2_ctx.handleResponse();
+    j2c2_ctx.handleRequest(requestCallback);
 }, 100);
 
 globalThis.onmessage = (ev) => {

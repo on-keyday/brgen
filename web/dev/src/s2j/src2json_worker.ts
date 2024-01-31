@@ -13,22 +13,24 @@ const ctx = new EmWorkContext(src2jsonModule,() => {
     console.log("src2json worker is ready")
 });
 
+const requestCallback = (e:JobRequest, m:MyEmscriptenModule) => {
+    switch(e.lang) {
+        case RequestLanguage.JSON_AST:
+            if(e.sourceCode === undefined) return new Error("sourceCode is undefined");
+            return ["src2json","--argv",e.sourceCode,"--no-color","--print-json","--print-on-error"];
+        case RequestLanguage.JSON_DEBUG_AST:
+            if(e.sourceCode === undefined) return new Error("sourceCode is undefined");
+            return ["src2json","--argv",e.sourceCode,"--no-color","--print-json","--print-on-error","--debug-json"];
+        case RequestLanguage.TOKENIZE:
+            if(e.sourceCode === undefined) return new Error("sourceCode is undefined");
+            return ["src2json","--argv",e.sourceCode,"--no-color","--print-json","--print-on-error","--lexer"];
+        default:
+            return new Error("unknown message type");
+    }
+}
+
 setInterval(()=>{
-    ctx.handleRequest((e) => {
-        switch(e.lang) {
-            case RequestLanguage.JSON_AST:
-                if(e.sourceCode === undefined) return new Error("sourceCode is undefined");
-                return ["src2json","--argv",e.sourceCode,"--no-color","--print-json","--print-on-error"];
-            case RequestLanguage.JSON_DEBUG_AST:
-                if(e.sourceCode === undefined) return new Error("sourceCode is undefined");
-                return ["src2json","--argv",e.sourceCode,"--no-color","--print-json","--print-on-error","--debug-json"];
-            case RequestLanguage.TOKENIZE:
-                if(e.sourceCode === undefined) return new Error("sourceCode is undefined");
-                return ["src2json","--argv",e.sourceCode,"--no-color","--print-json","--print-on-error","--lexer"];
-            default:
-                return new Error("unknown message type");
-        }
-    });
+    ctx.handleRequest(requestCallback);
 },100);
 
 

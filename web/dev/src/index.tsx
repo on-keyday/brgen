@@ -205,6 +205,10 @@ window.addEventListener("resize",setWindowSize);
 const setGenerated =async (code :string,lang: string) => {
     const top = editorUI.generated.getScrollTop();
     const model = monaco.editor.createModel(code,lang);
+    const curModel = editorUI.generated.getModel();
+    if(curModel !== editorUI.generated_model) {
+        curModel?.dispose();
+    }
     editorUI.generated.setModel(model);
     editorUI.generated.setScrollTop(top);
 }

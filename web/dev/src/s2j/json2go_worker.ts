@@ -10,17 +10,18 @@ const j2go_ctx = new GoWorkContext(fetch(new URL("../lib/json2go.wasm",import.me
     console.log("json2go worker is ready");
 });
 
+const requestCallback = (e:JobRequest) => {
+    switch (e.lang) {
+        case RequestLanguage.GO:
+            if (e.sourceCode === undefined) return new Error("sourceCode is undefined");
+            return e.sourceCode;
+        default:
+            return new Error("unknown message type");
+    }
+}
+
 setInterval(() => {
-    j2go_ctx.handleRequest((e) => {
-        switch (e.lang) {
-            case RequestLanguage.GO:
-                if (e.sourceCode === undefined) return new Error("sourceCode is undefined");
-                return e.sourceCode;
-            default:
-                return new Error("unknown message type");
-        }
-    });
-    //j2go_ctx.handleResponse();
+    j2go_ctx.handleRequest(requestCallback);
 }, 100);
 
 globalThis.onmessage = (ev) => {
