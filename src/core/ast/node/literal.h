@@ -128,4 +128,21 @@ namespace brgen::ast {
             : Literal({}, NodeType::config) {}
     };
 
+    struct SpecialLiteral : Literal {
+        define_node_type(NodeType::special_literal);
+        SpecialLiteralKind kind = SpecialLiteralKind::config_;
+
+        void dump(auto&& field_) {
+            Literal::dump(field_);
+            sdebugf(kind);
+        }
+
+        SpecialLiteral(lexer::Loc l, SpecialLiteralKind k)
+            : Literal(l, NodeType::special_literal), kind(k) {}
+
+        // for decode
+        constexpr SpecialLiteral()
+            : Literal({}, NodeType::special_literal) {}
+    };
+
 }  // namespace brgen::ast

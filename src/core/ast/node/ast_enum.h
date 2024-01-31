@@ -696,4 +696,48 @@ template<>
 constexpr const char* enum_type_name<IOMethod>() {
     return "IOMethod";
 }
+enum class SpecialLiteralKind {
+    input_,
+    output_,
+    config_,
+};
+constexpr const char* to_string(SpecialLiteralKind e) {
+    switch(e) {
+    case SpecialLiteralKind::input_: return "input";
+    case SpecialLiteralKind::output_: return "output";
+    case SpecialLiteralKind::config_: return "config";
+    default: return nullptr;
+    }
+}
+template<>constexpr std::optional<SpecialLiteralKind> from_string<SpecialLiteralKind>(std::string_view str) {
+    if(str.empty()) return std::nullopt;
+    if(str == "input") return SpecialLiteralKind::input_;
+    if(str == "output") return SpecialLiteralKind::output_;
+    if(str == "config") return SpecialLiteralKind::config_;
+    return std::nullopt;
+}
+template<>constexpr size_t enum_elem_count<SpecialLiteralKind>() {
+    return 3;
+}
+template<>constexpr std::array<std::pair<SpecialLiteralKind,std::string_view>,3> make_enum_array<SpecialLiteralKind>() {
+    return {
+        std::pair{SpecialLiteralKind::input_,"input"},
+        std::pair{SpecialLiteralKind::output_,"output"},
+        std::pair{SpecialLiteralKind::config_,"config"},
+    };
+}
+template<>constexpr std::array<std::pair<SpecialLiteralKind,std::string_view>,3> make_enum_name_array<SpecialLiteralKind>() {
+    return {
+        std::pair{SpecialLiteralKind::input_,"input"},
+        std::pair{SpecialLiteralKind::output_,"output"},
+        std::pair{SpecialLiteralKind::config_,"config"},
+    };
+}
+constexpr void as_json(SpecialLiteralKind e,auto&& d) {
+    d.value(enum_array<SpecialLiteralKind>[int(e)].second);
+}
+template<>
+constexpr const char* enum_type_name<SpecialLiteralKind>() {
+    return "SpecialLiteralKind";
+}
 }

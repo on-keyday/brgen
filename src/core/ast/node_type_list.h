@@ -314,75 +314,7 @@ namespace brgen::ast {
         enum_type<BitAlignment>("bit_alignment", field);
         enum_type<Follow>("follow", field);
         enum_type<IOMethod>("io_method", field);
-        /*
-        {
-            R p{ident_usage_str, ident_usage_str + ident_usage_count};
-            field("ident_usage", [&](auto&& d) {
-                auto field = d.array();
-                for (size_t i = 0; i < ident_usage_count; i++) {
-                    field([&](auto&& d) {
-                        auto field = d.object();
-                        field("name", ident_usage_str[i]);
-                        field("value", ident_usage_str[i]);
-                    });
-                }
-            });
-        }
-        {
-            R p{endian_str, endian_str + endian_count};
-            field("endian", [&](auto&& d) {
-                auto field = d.array();
-                for (size_t i = 0; i < endian_count; i++) {
-                    field([&](auto&& d) {
-                        auto field = d.object();
-                        field("name", endian_str[i]);
-                        field("value", endian_str[i]);
-                    });
-                }
-            });
-        }
-        {
-        }
-        {
-            R p{constant_level_str, constant_level_str + constant_level_count};
-            field("constant_level", [&](auto&& d) {
-                auto field = d.array();
-                for (size_t i = 0; i < constant_level_count; i++) {
-                    field([&](auto&& d) {
-                        auto field = d.object();
-                        field("name", constant_level_str[i]);
-                        field("value", constant_level_str[i]);
-                    });
-                }
-            });
-        }
-        {
-            R p{bit_alignment_str, bit_alignment_str + bit_alignment_count};
-            field("bit_alignment", [&](auto&& d) {
-                auto field = d.array();
-                for (size_t i = 0; i < bit_alignment_count; i++) {
-                    field([&](auto&& d) {
-                        auto field = d.object();
-                        field("name", bit_alignment_str[i]);
-                        field("value", bit_alignment_str[i]);
-                    });
-                }
-            });
-        }
-        {
-            R p{follow_str, follow_str + follow_count};
-            field("follow", [&](auto&& d) {
-                auto field = d.array();
-                for (size_t i = 0; i < follow_count; i++) {
-                    field([&](auto&& d) {
-                        auto field = d.object();
-                        field("name", follow_str[i]);
-                        field("value", follow_str[i]);
-                    });
-                }
-            });
-        }
-        */
+        enum_type<SpecialLiteralKind>("special_literal_kind", field);
     }
 
     void struct_types(auto&& field) {

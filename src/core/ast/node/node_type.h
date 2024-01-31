@@ -45,6 +45,7 @@ namespace brgen::ast {
         input,
         output,
         config,
+        special_literal,
 
         stmt = 0x020000,
         loop,
