@@ -38,6 +38,12 @@ namespace brgen::middle {
                 else if (name == "config.endian.native") {
                     method = ast::IOMethod::config_endian_native;
                 }
+                else if (name == "config.bit_order.msb") {
+                    method = ast::IOMethod::config_bit_order_msb;
+                }
+                else if (name == "config.bit_order.lsb") {
+                    method = ast::IOMethod::config_bit_order_lsb;
+                }
                 else {
                     return;
                 }

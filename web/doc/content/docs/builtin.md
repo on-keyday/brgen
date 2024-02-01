@@ -34,6 +34,21 @@ config.endian.native
 エンディアンを指定したい場合はこれらの定数を使用するべきである
 
 ```
+input.bit_order = bit_order
+```
+
+デフォルトのビットオーダーを指定する構文である。
+エンディアンと同じように用いる
+
+```
+config.bit_order.msb
+config.bit_order.lsb
+```
+
+config.bit_order.msb は msb から読み取られることを示し、
+config.bit_order.lsb は lsb から読み取られることを示す。
+
+```
 a :Type(input = input.subrange(length,[offset]))
 ```
 

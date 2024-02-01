@@ -11,7 +11,7 @@ weight: 1
 
 # ToDo
 
-ToDo リストです(2023/1/15)
+ToDo リストです(2023/2/01)
 
 - field arguments の意味づけ
   - ジェネレータ側に対応させる
@@ -57,6 +57,10 @@ ToDo リストです(2023/1/15)
 - input.bit_order, config.bit_order.msb, config.bit_order.lsb の導入?
   - ジェネレーターへの対応
 - WebPlayground 上で example を触れるようにする
+- もっと自動化を推進する
+  - C++部分とか
+- ビルドスクリプトの整理
+  - bat とかいうレガシーシステムの使用はやめる?
 
 # Done リスト
 
