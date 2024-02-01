@@ -191,11 +191,11 @@ namespace brgen::ast {
 
         void export_union_field(const std::shared_ptr<Expr>& cond0, std::vector<std::shared_ptr<Expr>>& cond, const std::shared_ptr<StructUnionType>& type) {
             assert(cond.size() == type->structs.size());
-            type->cond0 = cond0;
-            type->cond = std::move(cond);
+            type->cond = cond0;
+            type->conds = std::move(cond);
             std::map<std::string, std::vector<std::shared_ptr<UnionCandidate>>> m;
-            for (size_t i = 0; i < type->cond.size(); i++) {
-                auto& c = type->cond[i];
+            for (size_t i = 0; i < type->conds.size(); i++) {
+                auto& c = type->conds[i];
                 auto& f = type->structs[i];
                 for (auto& d : f->fields) {
                     if (!d->ident) {
@@ -219,13 +219,13 @@ namespace brgen::ast {
             }
             std::vector<std::shared_ptr<UnionCandidate>> null_cache;
             auto get_null_cache = [&](size_t i) {
-                assert(i < type->cond.size());
+                assert(i < type->conds.size());
                 if (null_cache.size() <= i) {
                     null_cache.resize(i + 1);
                 }
                 if (!null_cache[i]) {
                     null_cache[i] = std::make_shared<UnionCandidate>(type->loc);
-                    null_cache[i]->cond = cond[i];
+                    null_cache[i]->cond = type->conds[i];
                 }
                 return null_cache[i];
             };
@@ -245,7 +245,7 @@ namespace brgen::ast {
                 union_type->base_type = type;
                 size_t cand_i = 0;
                 for (auto& c : v) {
-                    while (c->cond.lock() != type->cond[cand_i]) {
+                    while (c->cond.lock() != type->conds[cand_i]) {
                         union_type->candidates.push_back(get_null_cache(cand_i));
                         cand_i++;
                     }

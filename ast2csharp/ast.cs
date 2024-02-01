@@ -542,6 +542,8 @@ public class StructUnionType : Type{
 	public bool NonDynamic{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public ulong? BitSize{get;set;}
+	public Expr? Cond0{get;set;}
+	public List<Expr>? Cond{get;set;}
 	public List<StructType>? Structs{get;set;}
 	public Expr? Base{get;set;}
 	public List<Field>? UnionFields{get;set;}
@@ -1288,6 +1290,8 @@ public static class Ast {
                node.NonDynamic = ast.Node[i].Body[non_dynamic];
                node.BitAlignment = ast.Node[i].Body[bit_alignment];
                node.BitSize = ast.Node[i].Body[bit_size];
+               node.Cond0 = ast.Node[i].Body[cond0];
+               node.Cond = ast.Node[i].Body[cond];
                node.Structs = ast.Node[i].Body[structs];
                node.Base = ast.Node[i].Body[base];
                node.UnionFields = ast.Node[i].Body[union_fields];

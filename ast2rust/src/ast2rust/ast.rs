@@ -5204,6 +5204,8 @@ pub struct StructUnionType {
 	pub non_dynamic: bool,
 	pub bit_alignment: BitAlignment,
 	pub bit_size: Option<u64>,
+	pub cond_0: Option<Expr>,
+	pub cond: Vec<Expr>,
 	pub structs: Vec<Rc<RefCell<StructType>>>,
 	pub base: Option<ExprWeak>,
 	pub union_fields: Vec<Weak<RefCell<Field>>>,
@@ -7552,6 +7554,8 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				non_dynamic: false,
 				bit_alignment: BitAlignment::ByteAligned,
 				bit_size: None,
+				cond_0: None,
+				cond: Vec::new(),
 				structs: Vec::new(),
 				base: None,
 				union_fields: Vec::new(),
@@ -10526,6 +10530,40 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						false=>return Err(Error::MismatchJSONType(bit_size_body.into(),JSONType::Number)),
 					},
 				};
+				let cond_0_body = match raw_node.body.get("cond0") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"cond0")),
+				};
+ 				if !cond_0_body.is_null() {
+					let cond_0_body = match cond_0_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(cond_0_body.into(),JSONType::Number)),
+					};
+					let cond_0_body = match nodes.get(cond_0_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(cond_0_body as usize)),
+					};
+					node.borrow_mut().cond_0 = Some(cond_0_body.try_into()?);
+				}
+				let cond_body = match raw_node.body.get("cond") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"cond")),
+				};
+				let cond_body = match cond_body.as_array(){
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(cond_body.into(),JSONType::Array)),
+				};
+				for link in cond_body {
+					let link = match link.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
+					};
+					let cond_body = match nodes.get(link as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(link as usize)),
+					};
+					node.borrow_mut().cond.push(cond_body.try_into()?);
+				}
 				let structs_body = match raw_node.body.get("structs") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"structs")),
@@ -12763,6 +12801,16 @@ where
 			}
 		},
 		Node::StructUnionType(node)=>{
+			if let Some(node) = &node.borrow().cond_0{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
+			for node in &node.borrow().cond{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
 			for node in &node.borrow().structs{
 				if !f.visit(&node.into()){
 					return;

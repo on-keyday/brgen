@@ -2457,6 +2457,8 @@ type StructUnionType struct {
 	NonDynamic   bool
 	BitAlignment BitAlignment
 	BitSize      *uint64
+	Cond0        Expr
+	Cond         []Expr
 	Structs      []*StructType
 	Base         Expr
 	UnionFields  []*Field
@@ -4167,6 +4169,8 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				NonDynamic   bool         `json:"non_dynamic"`
 				BitAlignment BitAlignment `json:"bit_alignment"`
 				BitSize      *uint64      `json:"bit_size"`
+				Cond0        *uintptr     `json:"cond0"`
+				Cond         []uintptr    `json:"cond"`
 				Structs      []uintptr    `json:"structs"`
 				Base         *uintptr     `json:"base"`
 				UnionFields  []uintptr    `json:"union_fields"`
@@ -4178,6 +4182,13 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.NonDynamic = tmp.NonDynamic
 			v.BitAlignment = tmp.BitAlignment
 			v.BitSize = tmp.BitSize
+			if tmp.Cond0 != nil {
+				v.Cond0 = n.node[*tmp.Cond0].(Expr)
+			}
+			v.Cond = make([]Expr, len(tmp.Cond))
+			for j, k := range tmp.Cond {
+				v.Cond[j] = n.node[k].(Expr)
+			}
 			v.Structs = make([]*StructType, len(tmp.Structs))
 			for j, k := range tmp.Structs {
 				v.Structs[j] = n.node[k].(*StructType)
@@ -5137,6 +5148,16 @@ func Walk(n Node, f Visitor) {
 			}
 		}
 	case *StructUnionType:
+		if v.Cond0 != nil {
+			if !f.Visit(f, v.Cond0) {
+				return
+			}
+		}
+		for _, w := range v.Cond {
+			if !f.Visit(f, w) {
+				return
+			}
+		}
 		for _, w := range v.Structs {
 			if !f.Visit(f, w) {
 				return
