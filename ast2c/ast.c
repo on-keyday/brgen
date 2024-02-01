@@ -2466,8 +2466,8 @@ int ast2c_StructUnionType_parse(ast2c_Ast* ast,ast2c_StructUnionType* s,ast2c_js
 	void* obj_body = h->object_get(h, obj, "body");
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
 	s->bit_size = NULL;
-	s->cond_0 = NULL;
 	s->cond = NULL;
+	s->conds = NULL;
 	s->structs = NULL;
 	s->base = NULL;
 	s->union_fields = NULL;
@@ -2475,8 +2475,8 @@ int ast2c_StructUnionType_parse(ast2c_Ast* ast,ast2c_StructUnionType* s,ast2c_js
 	void* non_dynamic = h->object_get(h, obj_body, "non_dynamic");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
 	void* bit_size = h->object_get(h, obj_body, "bit_size");
-	void* cond_0 = h->object_get(h, obj_body, "cond_0");
 	void* cond = h->object_get(h, obj_body, "cond");
+	void* conds = h->object_get(h, obj_body, "conds");
 	void* structs = h->object_get(h, obj_body, "structs");
 	void* base = h->object_get(h, obj_body, "base");
 	void* union_fields = h->object_get(h, obj_body, "union_fields");
@@ -2485,10 +2485,10 @@ int ast2c_StructUnionType_parse(ast2c_Ast* ast,ast2c_StructUnionType* s,ast2c_js
 	if (!non_dynamic) { if(h->error) { h->error(h,non_dynamic, "ast2c_StructUnionType::non_dynamic is null"); } return 0; }
 	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_StructUnionType::bit_alignment is null"); } return 0; }
 	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_StructUnionType::bit_size is null"); } return 0; }
-	if (!cond_0) { if(h->error) { h->error(h,cond_0, "ast2c_StructUnionType::cond_0 is null"); } return 0; }
 	if (!cond) { if(h->error) { h->error(h,cond, "ast2c_StructUnionType::cond is null"); } return 0; }
-	if(!h->array_size(h, cond,&s->cond_size)) {
-		if(h->error) { h->error(h,cond, "failed to get array size of ast2c_StructUnionType::cond"); }
+	if (!conds) { if(h->error) { h->error(h,conds, "ast2c_StructUnionType::conds is null"); } return 0; }
+	if(!h->array_size(h, conds,&s->conds_size)) {
+		if(h->error) { h->error(h,conds, "failed to get array size of ast2c_StructUnionType::conds"); }
 		return NULL;
 	}
 	if (!structs) { if(h->error) { h->error(h,structs, "ast2c_StructUnionType::structs is null"); } return 0; }

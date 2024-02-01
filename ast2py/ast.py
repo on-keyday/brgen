@@ -488,8 +488,8 @@ class StructType(Type):
 
 
 class StructUnionType(Type):
-    cond_0: Optional[Expr]
-    cond: List[Expr]
+    cond: Optional[Expr]
+    conds: List[Expr]
     structs: List[StructType]
     base: Optional[Expr]
     union_fields: List[Field]
@@ -1574,12 +1574,12 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].bit_size = x if isinstance(x,int) else raiseError(TypeError('type mismatch at StructUnionType::bit_size'))
                 else:
                     node[i].bit_size = None
-                if ast.node[i].body["cond_0"] is not None:
-                    x = node[ast.node[i].body["cond_0"]]
-                    node[i].cond_0 = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at StructUnionType::cond_0'))
+                if ast.node[i].body["cond"] is not None:
+                    x = node[ast.node[i].body["cond"]]
+                    node[i].cond = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at StructUnionType::cond'))
                 else:
-                    node[i].cond_0 = None
-                node[i].cond = [(node[x] if isinstance(node[x],Expr) else raiseError(TypeError('type mismatch at StructUnionType::cond'))) for x in ast.node[i].body["cond"]]
+                    node[i].cond = None
+                node[i].conds = [(node[x] if isinstance(node[x],Expr) else raiseError(TypeError('type mismatch at StructUnionType::conds'))) for x in ast.node[i].body["conds"]]
                 node[i].structs = [(node[x] if isinstance(node[x],StructType) else raiseError(TypeError('type mismatch at StructUnionType::structs'))) for x in ast.node[i].body["structs"]]
                 if ast.node[i].body["base"] is not None:
                     x = node[ast.node[i].body["base"]]
@@ -2280,11 +2280,11 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
               if f(f,x.fields[i]) == False:
                   return
         case x if isinstance(x,StructUnionType):
-          if x.cond_0 is not None:
-              if f(f,x.cond_0) == False:
+          if x.cond is not None:
+              if f(f,x.cond) == False:
                   return
-          for i in range(len(x.cond)):
-              if f(f,x.cond[i]) == False:
+          for i in range(len(x.conds)):
+              if f(f,x.conds[i]) == False:
                   return
           for i in range(len(x.structs)):
               if f(f,x.structs[i]) == False:

@@ -792,8 +792,8 @@ export function isStructType(obj: any): obj is StructType {
 }
 
 export interface StructUnionType extends Type {
-	cond_0: Expr|null;
-	cond: Expr[];
+	cond: Expr|null;
+	conds: Expr[];
 	structs: StructType[];
 	base: Expr|null;
 	union_fields: Field[];
@@ -1651,8 +1651,8 @@ export function parseAST(obj: JsonAst): Program {
 				non_dynamic: false,
 				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: null,
-				cond_0: null,
-				cond: [],
+				cond: null,
+				conds: [],
 				structs: [],
 				base: null,
 				union_fields: [],
@@ -3339,23 +3339,23 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at StructUnionType::bit_size');
 			}
 			n.bit_size = on.body.bit_size;
-			if (on.body?.cond_0 !== null && typeof on.body?.cond_0 !== 'number') {
-				throw new Error('invalid node list at StructUnionType::cond_0');
+			if (on.body?.cond !== null && typeof on.body?.cond !== 'number') {
+				throw new Error('invalid node list at StructUnionType::cond');
 			}
-			const tmpcond_0 = on.body.cond_0 === null ? null : c.node[on.body.cond_0];
-			if (!(tmpcond_0 === null || isExpr(tmpcond_0))) {
-				throw new Error('invalid node list at StructUnionType::cond_0');
+			const tmpcond = on.body.cond === null ? null : c.node[on.body.cond];
+			if (!(tmpcond === null || isExpr(tmpcond))) {
+				throw new Error('invalid node list at StructUnionType::cond');
 			}
-			n.cond_0 = tmpcond_0;
-			for (const o of on.body.cond) {
+			n.cond = tmpcond;
+			for (const o of on.body.conds) {
 				if (typeof o !== 'number') {
-					throw new Error('invalid node list at StructUnionType::cond');
+					throw new Error('invalid node list at StructUnionType::conds');
 				}
-				const tmpcond = c.node[o];
-				if (!isExpr(tmpcond)) {
-					throw new Error('invalid node list at StructUnionType::cond');
+				const tmpconds = c.node[o];
+				if (!isExpr(tmpconds)) {
+					throw new Error('invalid node list at StructUnionType::conds');
 				}
-				n.cond.push(tmpcond);
+				n.conds.push(tmpconds);
 			}
 			for (const o of on.body.structs) {
 				if (typeof o !== 'number') {
@@ -5008,13 +5008,13 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 				break;
 			}
 			const n :StructUnionType = node as StructUnionType;
-			if (n.cond_0 !== null) {
-				const result = fn(fn,n.cond_0);
+			if (n.cond !== null) {
+				const result = fn(fn,n.cond);
 				if (result === false) {
 					return;
 				}
 			}
-			for (const e of n.cond) {
+			for (const e of n.conds) {
 				const result = fn(fn,e);
 				if (result === false) {
 					return;

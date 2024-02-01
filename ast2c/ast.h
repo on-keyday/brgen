@@ -1022,9 +1022,9 @@ struct ast2c_StructUnionType {
 	int non_dynamic;
 	ast2c_BitAlignment bit_alignment;
 	uint64_t* bit_size;
-	ast2c_Expr* cond_0;
-	ast2c_Expr** cond;
-	size_t cond_size;
+	ast2c_Expr* cond;
+	ast2c_Expr** conds;
+	size_t conds_size;
 	ast2c_StructType** structs;
 	size_t structs_size;
 	ast2c_Expr* base;
