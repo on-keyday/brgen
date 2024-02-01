@@ -13,3 +13,6 @@ TODO(on-keyday): ドキュメント整備
 [開発ページ(GitHub)](https://github.com/on-keyday/brgen)
 
 [Web Playground](https://on-keyday.github.io/brgen)
+
+[Overview](https://on-keyday.github.io/brgen/doc/docs/overview)
+[Setup](https://on-keyday.github.io/brgen/doc/docs/setup)

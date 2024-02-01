@@ -22,11 +22,6 @@ brgen(CLI)
 
 ```mermaid
 flowchart
-A-->B
-```
-
-```mermaid
-flowchart
 brgen.json-.->|入力|brgen
 brgen-->|呼び出し|src2json
 input_file[定義ファイル]-.->|入力|src2json
