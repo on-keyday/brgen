@@ -194,7 +194,7 @@ namespace brgen::ast {
             type->cond0 = cond0;
             type->cond = std::move(cond);
             std::map<std::string, std::vector<std::shared_ptr<UnionCandidate>>> m;
-            for (size_t i = 0; i < cond.size(); i++) {
+            for (size_t i = 0; i < type->cond.size(); i++) {
                 auto& c = type->cond[i];
                 auto& f = type->structs[i];
                 for (auto& d : f->fields) {
@@ -219,7 +219,7 @@ namespace brgen::ast {
             }
             std::vector<std::shared_ptr<UnionCandidate>> null_cache;
             auto get_null_cache = [&](size_t i) {
-                assert(i < cond.size());
+                assert(i < type->cond.size());
                 if (null_cache.size() <= i) {
                     null_cache.resize(i + 1);
                 }
@@ -245,7 +245,7 @@ namespace brgen::ast {
                 union_type->base_type = type;
                 size_t cand_i = 0;
                 for (auto& c : v) {
-                    while (c->cond.lock() != cond[cand_i]) {
+                    while (c->cond.lock() != type->cond[cand_i]) {
                         union_type->candidates.push_back(get_null_cache(cand_i));
                         cand_i++;
                     }
@@ -434,8 +434,15 @@ namespace brgen::ast {
             }
 
             // else ブロックの解析
-            if (s.consume_token("else")) {
-                cond.push_back(nullptr);
+            if (auto l = s.consume_token("else")) {
+                // TODO(on-keyday):
+                // because JSONConverter not accept nullptr for array element
+                // use range_exclusive(in syntax, `..`) for else cond
+                // `..` match to any condition
+                auto range = std::make_shared<Range>();
+                range->loc = l->loc;
+                range->op = ast::BinaryOp::range_exclusive;
+                cond.push_back(std::move(range));
                 body_with_struct(if_->loc, current_if->els, current_if);
             }
             else {
