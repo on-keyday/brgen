@@ -50,6 +50,12 @@ jobs:
           export WASMEXEC_FILE="$GOROOT/misc/wasm/wasm_exec.js"
           export WEB_PRODUCTION="production"
           . build.sh wasm-em Release
+      - name: Copy example
+        run: |
+          cp -r example web/public/example
+          cd web/public
+          find example | grep .bgn > example/index.txt
+          cd ../..
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v2
         with:

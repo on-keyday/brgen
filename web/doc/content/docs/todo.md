@@ -50,10 +50,13 @@ ToDo リストです(2023/1/15)
 - char 型の導入,char リテラル
 - キャストの可能性判定(整数型を配列型にキャストしようとしたりを禁止?or 要素化?)
 - f :[len]u1(config.type = u32)的な構文
+
   - ビット列をどうマッピングするかを決定する。
   - len が 32 ビット超えたらエラー?ビット列長条件は別途?
+
 - input.bit_order, config.bit_order.msb, config.bit_order.lsb の導入?
-  - gzip とかでのハフマン符号化の格納とか?
+  - ジェネレーターへの対応
+- WebPlayground 上で example を触れるようにする
 
 # Done リスト
 
@@ -62,3 +65,5 @@ ToDo リストです(2023/1/15)
 - state 変数の使用の検出と依存関係解決
 - AST のドキュメント
   - 自動生成したい
+- input.bit_order, config.bit_order.msb, config.bit_order.lsb の導入?
+  - gzip とかでのハフマン符号化の格納とか?
