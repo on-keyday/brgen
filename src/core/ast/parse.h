@@ -191,9 +191,11 @@ namespace brgen::ast {
 
         void export_union_field(const std::shared_ptr<Expr>& cond0, std::vector<std::shared_ptr<Expr>>& cond, const std::shared_ptr<StructUnionType>& type) {
             assert(cond.size() == type->structs.size());
+            type->cond0 = cond0;
+            type->cond = std::move(cond);
             std::map<std::string, std::vector<std::shared_ptr<UnionCandidate>>> m;
             for (size_t i = 0; i < cond.size(); i++) {
-                auto& c = cond[i];
+                auto& c = type->cond[i];
                 auto& f = type->structs[i];
                 for (auto& d : f->fields) {
                     if (!d->ident) {

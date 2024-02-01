@@ -418,7 +418,9 @@ namespace brgen::ast {
 
     struct StructUnionType : Type {
         define_node_type(NodeType::struct_union_type);
-        std::weak_ptr<Expr> base;
+        std::weak_ptr<Expr> base;  // match or if
+        std::shared_ptr<Expr> cond0;
+        std::vector<std::shared_ptr<Expr>> cond;  // size must equal to structs.size()
         std::vector<std::shared_ptr<StructType>> structs;
         std::vector<std::weak_ptr<Field>> union_fields;
 
@@ -430,6 +432,8 @@ namespace brgen::ast {
 
         void dump(auto&& field_) {
             Type::dump(field_);
+            sdebugf(cond0);
+            sdebugf(cond);
             sdebugf(structs);
             sdebugf(base);
             sdebugf(union_fields);
