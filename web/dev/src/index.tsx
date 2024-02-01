@@ -159,7 +159,10 @@ registerFileSelectionCallback(async() => {
             }
             return res;
         }).then((res)=>res.text()).then((text)=>{
-            editorUI.editor.setValue(text);
+            editorUI.editor.executeEdits(editorUI.editor.getValue(),[{
+                range: editorUI.editorModel.getFullModelRange(),
+                text: text,
+            }]);
         }).catch((e)=>{
             console.log(e);
         })

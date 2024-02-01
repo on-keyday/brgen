@@ -19,6 +19,10 @@ https://on-keyday.github.io/brgen/doc
 
 https://on-keyday.github.io/brgen
 
+F1 キー(もしくは右クリック->Command Palette)で表示されるコマンドパレットに load example file と入力いただきますと、サンプルファイルがロードできます
+
+You can load the sample file by typing load example file in the command palette displayed by pressing the F1 key (or right-click -> Command Palette).
+
 # examples
 
 https://github.com/on-keyday/brgen/tree/main/example を御覧ください
