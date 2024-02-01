@@ -44,4 +44,5 @@ if "%BUILD_MODE%" == "wasm-em" (
     call tsc
     call webpack
     cd ../../
+    python script/copy_example.py
 )

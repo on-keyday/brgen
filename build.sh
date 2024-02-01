@@ -53,6 +53,7 @@ cd ./web/dev
 tsc
 webpack
 cd ../..
+python script/copy_example.py
 fi
 
 unset FUTILS_DIR

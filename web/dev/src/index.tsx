@@ -1,9 +1,13 @@
 
 import "../node_modules/destyle.css/destyle.min.css";
 import * as monaco from "monaco-editor";
+
 import "monaco-editor/esm/vs/language/json/monaco.contribution"
 import "monaco-editor/esm/vs/basic-languages/cpp/cpp.contribution"
 import "monaco-editor/esm/vs/basic-languages/go/go.contribution"
+
+
+
 import {ast2ts} from "ast2ts";
 import * as caller from "./s2j/caller.js";
 import "./s2j/brgen_lsp.js";
@@ -14,7 +18,7 @@ import * as inc from "./cpp_include";
 import { TraceID } from "./s2j/job_mgr";
 import { UpdateTracer } from "./s2j/update";
 import {storage} from "./storage";
-
+import { FileCandidates, registerFileSelectionCallback } from "./s2j/file_select";
 
 // first, load workers
 caller.loadWorkers();
@@ -136,6 +140,31 @@ const editorUI = {
 } as const;
 
 
+registerFileSelectionCallback(async() => {
+    return await fetch("example/index.txt").then((res)=>res.text()).then((text)=>{
+        text = text.replace(/\r\n/g,"\n");
+        const c :FileCandidates = {
+            placeHolder: "Select example file",
+            candidates: text.split("\n").filter((e)=>e!==""),
+        }
+        return c;
+    })
+},(s)=>{
+    console.log(s);
+    if(s) {
+        fetch(s).then((res)=>{
+            if(!res.ok) {
+                console.log(res);
+                throw new Error(`failed to fetch ${s}`);
+            }
+            return res;
+        }).then((res)=>res.text()).then((text)=>{
+            editorUI.editor.setValue(text);
+        }).catch((e)=>{
+            console.log(e);
+        })
+    }
+})
 
 // to disable cursor
 editorUI.generated.onDidChangeModel(async (e) => {

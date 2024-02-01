@@ -7,7 +7,6 @@ import * as caller from "./caller.js";
 import {ast2ts,analyze} from "../../node_modules/ast2ts/index.js";
 import { UpdateTracer } from "./update.js";
 import { JobResult } from "./msg.js";
-
 const BRGEN_ID = 'brgen'
 
 monaco.languages.register({
@@ -141,7 +140,5 @@ monaco.languages.onLanguage(BRGEN_ID,()=>{
         },
     }));
 })
-
-
 
 
