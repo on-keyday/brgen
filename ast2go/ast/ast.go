@@ -2874,7 +2874,7 @@ type Format struct {
 	DecodeFn       *Function
 	CastFns        []*Function
 	Depends        []*IdentType
-	StateVariables []*Ident
+	StateVariables []*Field
 }
 
 func (n *Format) isMember() {}
@@ -4537,9 +4537,9 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			for j, k := range tmp.Depends {
 				v.Depends[j] = n.node[k].(*IdentType)
 			}
-			v.StateVariables = make([]*Ident, len(tmp.StateVariables))
+			v.StateVariables = make([]*Field, len(tmp.StateVariables))
 			for j, k := range tmp.StateVariables {
-				v.StateVariables[j] = n.node[k].(*Ident)
+				v.StateVariables[j] = n.node[k].(*Field)
 			}
 		case NodeTypeState:
 			v := n.node[i].(*State)

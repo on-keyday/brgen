@@ -921,7 +921,7 @@ export interface Format extends Member {
 	decode_fn: Function|null;
 	cast_fns: Function[];
 	depends: IdentType[];
-	state_variables: Ident[];
+	state_variables: Field[];
 }
 
 export function isFormat(obj: any): obj is Format {
@@ -3913,7 +3913,7 @@ export function parseAST(obj: JsonAst): Program {
 					throw new Error('invalid node list at Format::state_variables');
 				}
 				const tmpstate_variables = c.node[o];
-				if (!isIdent(tmpstate_variables)) {
+				if (!isField(tmpstate_variables)) {
 					throw new Error('invalid node list at Format::state_variables');
 				}
 				n.state_variables.push(tmpstate_variables);

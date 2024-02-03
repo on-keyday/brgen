@@ -658,7 +658,7 @@ public class Format : Member{
 	public Function? DecodeFn{get;set;}
 	public List<Function>? CastFns{get;set;}
 	public List<IdentType>? Depends{get;set;}
-	public List<Ident>? StateVariables{get;set;}
+	public List<Field>? StateVariables{get;set;}
 }
 public class State : Member{
 	public Loc Loc{get;set;}

@@ -23,10 +23,6 @@ namespace brgen::ast {
         std::vector<std::shared_ptr<Comment>> comments;
         bool collect_comments = false;
 
-        [[noreturn]] void report_error(std::string&& msg, lexer::Loc pos) {
-            error(pos, msg).report();
-        }
-
         Stream() = default;
         friend struct Context;
 
@@ -39,7 +35,7 @@ namespace brgen::ast {
                 if (token->tag == lexer::Tag::error) {
                     token->loc.line = line;
                     token->loc.col = col;
-                    report_error(std::move(token->token), token->loc);
+                    error(token->loc, std::move(token->token)).report();
                 }
                 token->loc.line = line;
                 token->loc.col = col;
@@ -160,28 +156,31 @@ namespace brgen::ast {
         }
 
        private:
-        [[noreturn]] void token_expect_error(auto&& expected, auto&& found) {
-            lexer::Pos pos;
+        [[nodiscard]] auto token_expect_error(auto&& expected, auto&& found) {
             std::string buf;
             appends(buf, "expect token ", expected, " but found ");
             if (eos()) {
                 append(buf, "<EOF>");
-                auto copy = cur;
-                copy--;
-                pos = {copy->loc.pos.end, copy->loc.pos.end + 1};
             }
             else {
                 append(buf, found(cur));
-                pos = cur->loc.pos;
             }
-            report_error(std::move(buf), last_loc());
+            return error(last_loc(), std::move(buf));
         }
 
        public:
+        auto token_error(lexer::Tag tag) {
+            return token_expect_error(lexer::to_string(tag), [](auto& cur) { return lexer::enum_array<lexer::Tag>[int(cur->tag)].second; });
+        }
+
+        auto token_error(std::string_view s) {
+            return token_expect_error(s, [](auto& cur) { return cur->token; });
+        }
+
         lexer::Token must_consume_token(std ::string_view view) {
             auto f = consume_token(view);
             if (!f) {
-                token_expect_error(view, [](auto& cur) { return cur->token; });
+                token_error(view).report();
             }
             return *f;
         }
@@ -189,7 +188,7 @@ namespace brgen::ast {
         lexer::Token must_consume_token(lexer::Tag tag) {
             auto f = consume_token(tag);
             if (!f) {
-                token_expect_error(lexer::to_string(tag), [](auto& cur) { return lexer::enum_array<lexer::Tag>[int(cur->tag)].second; });
+                token_error(tag).report();
             }
             return *f;
         }

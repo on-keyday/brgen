@@ -36,17 +36,15 @@ namespace brgen::ast {
         explicit_error,
         io_operation,
 
+        // bad expr
+        bad_expr,
+
         literal = 0x110000,
         int_literal,
         bool_literal,
         str_literal,
         type_literal,
 
-        /*
-        input,
-        output,
-        config,
-        */
         special_literal,
 
         stmt = 0x020000,
@@ -168,6 +166,7 @@ namespace brgen::ast {
         {NodeType::type_literal, "type_literal"},
         {NodeType::special_literal, "special_literal"},
         {NodeType::generic_type, "generic_type"},
+        {NodeType::bad_expr, "bad_expr"},
     };
 
     constexpr std::array<std::pair<NodeType, const char*>, std::size(node_type_str_array)> sorted_node_type_str_array = [] {

@@ -10,6 +10,8 @@ namespace brgen::ast {
         std::shared_ptr<Type> output_type;
         std::shared_ptr<Type> config_type;
         bool collect_comment = false;
+        bool error_tolerant = false;
+        LocationError errors;  // for error tolerant mode
 
        private:
         size_t indent = 0;
@@ -558,6 +560,11 @@ namespace brgen::ast {
                     s.must_consume_token(lexer::Tag::ident);
                     return type_literal;
                 }
+            }
+            else if (state.error_tolerant) {  // not found ident
+                auto err = s.token_error(lexer::Tag::ident);
+                state.errors.locations.insert(state.errors.locations.end(), err.locations.begin(), err.locations.end());
+                return std::make_shared<BadExpr>(s.loc(), brgen::concat(state.errors.locations.back().msg));
             }
             return parse_ident();
         }

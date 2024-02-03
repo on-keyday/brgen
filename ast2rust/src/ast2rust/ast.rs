@@ -6291,7 +6291,7 @@ pub struct Format {
 	pub decode_fn: Option<Weak<RefCell<Function>>>,
 	pub cast_fns: Vec<Weak<RefCell<Function>>>,
 	pub depends: Vec<Weak<RefCell<IdentType>>>,
-	pub state_variables: Vec<Weak<RefCell<Ident>>>,
+	pub state_variables: Vec<Weak<RefCell<Field>>>,
 }
 
 impl TryFrom<&Member> for Rc<RefCell<Format>> {
@@ -11735,7 +11735,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						None => return Err(Error::IndexOutOfBounds(link as usize)),
 					};
 					let state_variables_body = match state_variables_body {
-						Node::Ident(body)=>body,
+						Node::Field(body)=>body,
 						x =>return Err(Error::MismatchNodeType(x.into(),state_variables_body.into())),
 					};
 					node.borrow_mut().state_variables.push(Rc::downgrade(&state_variables_body));

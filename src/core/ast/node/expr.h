@@ -268,4 +268,24 @@ namespace brgen::ast {
         }
     };
 
+    // bad expr, for error tolerant
+    // this is error tolerant support node
+    struct BadExpr : Expr {
+        define_node_type(NodeType::bad_expr);
+        std::string content;
+        std::shared_ptr<Expr> bad_expr;
+
+        BadExpr(lexer::Loc l, std::string&& c)
+            : Expr(l, NodeType::bad_expr), content(std::move(c)) {}
+
+        // for decode
+        BadExpr()
+            : Expr({}, NodeType::bad_expr) {}
+
+        void dump(auto&& field_) {
+            Expr::dump(field_);
+            sdebugf(content);
+        }
+    };
+
 }  // namespace brgen::ast
