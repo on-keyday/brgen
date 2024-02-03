@@ -854,7 +854,8 @@ namespace brgen::middle {
         }
 
         void register_state_variable(const std::shared_ptr<ast::Ident>& ident) {
-            auto field = ast::as<ast::Field>(ast::as<ast::Ident>(ident->base.lock())->base.lock());
+            auto maybe_field = ast::as<ast::Ident>(ident->base.lock())->base.lock();
+            auto field = ast::as<ast::Field>(maybe_field);
             assert(field);
             auto ident_typ = ast::as<ast::IdentType>(field->field_type);
             if (!ident_typ) {
@@ -873,7 +874,7 @@ namespace brgen::middle {
             while (s) {
                 auto o = s->owner.lock();
                 if (auto fmt = ast::as<ast::Format>(o)) {
-                    fmt->state_variables.push_back(field->ident);
+                    fmt->state_variables.push_back(ast::cast_to<ast::Field>(maybe_field));
                     return;
                 }
                 s = s->prev.lock();

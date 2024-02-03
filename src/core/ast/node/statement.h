@@ -10,6 +10,7 @@ namespace brgen::ast {
     struct StructType;
     struct Function;
     struct IdentType;
+    struct Field;
 
     struct Format : Member {
         define_node_type(NodeType::format);
@@ -18,7 +19,7 @@ namespace brgen::ast {
         std::weak_ptr<Function> decode_fn;
         std::vector<std::weak_ptr<Function>> cast_fns;
         std::vector<std::weak_ptr<IdentType>> depends;
-        std::vector<std::weak_ptr<Ident>> state_variables;
+        std::vector<std::weak_ptr<Field>> state_variables;
 
         Format(lexer::Loc l)
             : Member(l, NodeType::format) {}
