@@ -61,23 +61,24 @@ const (
 	NodeTypeEnumType        NodeType = 48
 	NodeTypeMetaType        NodeType = 49
 	NodeTypeOptionalType    NodeType = 50
-	NodeTypeLiteral         NodeType = 51
-	NodeTypeIntLiteral      NodeType = 52
-	NodeTypeBoolLiteral     NodeType = 53
-	NodeTypeStrLiteral      NodeType = 54
-	NodeTypeTypeLiteral     NodeType = 55
-	NodeTypeSpecialLiteral  NodeType = 56
-	NodeTypeMember          NodeType = 57
-	NodeTypeField           NodeType = 58
-	NodeTypeFormat          NodeType = 59
-	NodeTypeState           NodeType = 60
-	NodeTypeEnum            NodeType = 61
-	NodeTypeEnumMember      NodeType = 62
-	NodeTypeFunction        NodeType = 63
-	NodeTypeBuiltinMember   NodeType = 64
-	NodeTypeBuiltinFunction NodeType = 65
-	NodeTypeBuiltinField    NodeType = 66
-	NodeTypeBuiltinObject   NodeType = 67
+	NodeTypeGenericType     NodeType = 51
+	NodeTypeLiteral         NodeType = 52
+	NodeTypeIntLiteral      NodeType = 53
+	NodeTypeBoolLiteral     NodeType = 54
+	NodeTypeStrLiteral      NodeType = 55
+	NodeTypeTypeLiteral     NodeType = 56
+	NodeTypeSpecialLiteral  NodeType = 57
+	NodeTypeMember          NodeType = 58
+	NodeTypeField           NodeType = 59
+	NodeTypeFormat          NodeType = 60
+	NodeTypeState           NodeType = 61
+	NodeTypeEnum            NodeType = 62
+	NodeTypeEnumMember      NodeType = 63
+	NodeTypeFunction        NodeType = 64
+	NodeTypeBuiltinMember   NodeType = 65
+	NodeTypeBuiltinFunction NodeType = 66
+	NodeTypeBuiltinField    NodeType = 67
+	NodeTypeBuiltinObject   NodeType = 68
 )
 
 func (n NodeType) String() string {
@@ -184,6 +185,8 @@ func (n NodeType) String() string {
 		return "meta_type"
 	case NodeTypeOptionalType:
 		return "optional_type"
+	case NodeTypeGenericType:
+		return "generic_type"
 	case NodeTypeLiteral:
 		return "literal"
 	case NodeTypeIntLiteral:
@@ -331,6 +334,8 @@ func (n *NodeType) UnmarshalJSON(data []byte) error {
 		*n = NodeTypeMetaType
 	case "optional_type":
 		*n = NodeTypeOptionalType
+	case "generic_type":
+		*n = NodeTypeGenericType
 	case "literal":
 		*n = NodeTypeLiteral
 	case "int_literal":
@@ -561,6 +566,10 @@ func (n *MetaType) GetNodeType() NodeType {
 
 func (n *OptionalType) GetNodeType() NodeType {
 	return NodeTypeOptionalType
+}
+
+func (n *GenericType) GetNodeType() NodeType {
+	return NodeTypeGenericType
 }
 
 func (n *IntLiteral) GetNodeType() NodeType {
@@ -1754,7 +1763,7 @@ type Match struct {
 	ConstantLevel ConstantLevel
 	CondScope     *Scope
 	Cond          Expr
-	Branch        []Node
+	Branch        []*MatchBranch
 }
 
 func (n *Match) isExpr() {}
@@ -2656,6 +2665,39 @@ func (n *OptionalType) GetLoc() Loc {
 	return n.Loc
 }
 
+type GenericType struct {
+	Loc          Loc
+	IsExplicit   bool
+	NonDynamic   bool
+	BitAlignment BitAlignment
+	BitSize      *uint64
+	Belong       Member
+}
+
+func (n *GenericType) isType() {}
+
+func (n *GenericType) GetIsExplicit() bool {
+	return n.IsExplicit
+}
+
+func (n *GenericType) GetNonDynamic() bool {
+	return n.NonDynamic
+}
+
+func (n *GenericType) GetBitAlignment() BitAlignment {
+	return n.BitAlignment
+}
+
+func (n *GenericType) GetBitSize() *uint64 {
+	return n.BitSize
+}
+
+func (n *GenericType) isNode() {}
+
+func (n *GenericType) GetLoc() Loc {
+	return n.Loc
+}
+
 type IntLiteral struct {
 	Loc           Loc
 	ExprType      Type
@@ -3264,6 +3306,8 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			n.node[i] = &MetaType{Loc: raw.Loc}
 		case NodeTypeOptionalType:
 			n.node[i] = &OptionalType{Loc: raw.Loc}
+		case NodeTypeGenericType:
+			n.node[i] = &GenericType{Loc: raw.Loc}
 		case NodeTypeIntLiteral:
 			n.node[i] = &IntLiteral{Loc: raw.Loc}
 		case NodeTypeBoolLiteral:
@@ -3620,9 +3664,9 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.Cond != nil {
 				v.Cond = n.node[*tmp.Cond].(Expr)
 			}
-			v.Branch = make([]Node, len(tmp.Branch))
+			v.Branch = make([]*MatchBranch, len(tmp.Branch))
 			for j, k := range tmp.Branch {
-				v.Branch[j] = n.node[k].(Node)
+				v.Branch[j] = n.node[k].(*MatchBranch)
 			}
 		case NodeTypeRange:
 			v := n.node[i].(*Range)
@@ -4307,6 +4351,25 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.BitSize = tmp.BitSize
 			if tmp.BaseType != nil {
 				v.BaseType = n.node[*tmp.BaseType].(Type)
+			}
+		case NodeTypeGenericType:
+			v := n.node[i].(*GenericType)
+			var tmp struct {
+				IsExplicit   bool         `json:"is_explicit"`
+				NonDynamic   bool         `json:"non_dynamic"`
+				BitAlignment BitAlignment `json:"bit_alignment"`
+				BitSize      *uint64      `json:"bit_size"`
+				Belong       *uintptr     `json:"belong"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			v.IsExplicit = tmp.IsExplicit
+			v.NonDynamic = tmp.NonDynamic
+			v.BitAlignment = tmp.BitAlignment
+			v.BitSize = tmp.BitSize
+			if tmp.Belong != nil {
+				v.Belong = n.node[*tmp.Belong].(Member)
 			}
 		case NodeTypeIntLiteral:
 			v := n.node[i].(*IntLiteral)
@@ -5188,6 +5251,7 @@ func Walk(n Node, f Visitor) {
 				return
 			}
 		}
+	case *GenericType:
 	case *IntLiteral:
 		if v.ExprType != nil {
 			if !f.Visit(f, v.ExprType) {

@@ -93,6 +93,7 @@ impl From<&Node> for NodeType {
 			Node::EnumType(_) => Self::EnumType,
 			Node::MetaType(_) => Self::MetaType,
 			Node::OptionalType(_) => Self::OptionalType,
+			Node::GenericType(_) => Self::GenericType,
 			Node::IntLiteral(_) => Self::IntLiteral,
 			Node::BoolLiteral(_) => Self::BoolLiteral,
 			Node::StrLiteral(_) => Self::StrLiteral,
@@ -168,6 +169,7 @@ impl From<&NodeWeak> for NodeType {
 			NodeWeak::EnumType(_) => Self::EnumType,
 			NodeWeak::MetaType(_) => Self::MetaType,
 			NodeWeak::OptionalType(_) => Self::OptionalType,
+			NodeWeak::GenericType(_) => Self::GenericType,
 			NodeWeak::IntLiteral(_) => Self::IntLiteral,
 			NodeWeak::BoolLiteral(_) => Self::BoolLiteral,
 			NodeWeak::StrLiteral(_) => Self::StrLiteral,
@@ -245,6 +247,7 @@ impl From<NodeWeak> for NodeType {
 	EnumType,
 	MetaType,
 	OptionalType,
+	GenericType,
 	Literal,
 	IntLiteral,
 	BoolLiteral,
@@ -319,6 +322,7 @@ impl TryFrom<&str> for NodeType {
 			"enum_type" =>Ok(Self::EnumType),
 			"meta_type" =>Ok(Self::MetaType),
 			"optional_type" =>Ok(Self::OptionalType),
+			"generic_type" =>Ok(Self::GenericType),
 			"literal" =>Ok(Self::Literal),
 			"int_literal" =>Ok(Self::IntLiteral),
 			"bool_literal" =>Ok(Self::BoolLiteral),
@@ -750,6 +754,7 @@ pub enum Node {
 	EnumType(Rc<RefCell<EnumType>>),
 	MetaType(Rc<RefCell<MetaType>>),
 	OptionalType(Rc<RefCell<OptionalType>>),
+	GenericType(Rc<RefCell<GenericType>>),
 	IntLiteral(Rc<RefCell<IntLiteral>>),
 	BoolLiteral(Rc<RefCell<BoolLiteral>>),
 	StrLiteral(Rc<RefCell<StrLiteral>>),
@@ -816,6 +821,7 @@ pub enum NodeWeak {
 	EnumType(Weak<RefCell<EnumType>>),
 	MetaType(Weak<RefCell<MetaType>>),
 	OptionalType(Weak<RefCell<OptionalType>>),
+	GenericType(Weak<RefCell<GenericType>>),
 	IntLiteral(Weak<RefCell<IntLiteral>>),
 	BoolLiteral(Weak<RefCell<BoolLiteral>>),
 	StrLiteral(Weak<RefCell<StrLiteral>>),
@@ -883,6 +889,7 @@ impl From<&Node> for NodeWeak {
 			Node::EnumType(node)=>Self::EnumType(Rc::downgrade(node)),
 			Node::MetaType(node)=>Self::MetaType(Rc::downgrade(node)),
 			Node::OptionalType(node)=>Self::OptionalType(Rc::downgrade(node)),
+			Node::GenericType(node)=>Self::GenericType(Rc::downgrade(node)),
 			Node::IntLiteral(node)=>Self::IntLiteral(Rc::downgrade(node)),
 			Node::BoolLiteral(node)=>Self::BoolLiteral(Rc::downgrade(node)),
 			Node::StrLiteral(node)=>Self::StrLiteral(Rc::downgrade(node)),
@@ -959,6 +966,7 @@ impl TryFrom<&NodeWeak> for Node {
 			NodeWeak::EnumType(node)=>Ok(Self::EnumType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::EnumType))?)),
 			NodeWeak::MetaType(node)=>Ok(Self::MetaType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::MetaType))?)),
 			NodeWeak::OptionalType(node)=>Ok(Self::OptionalType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::OptionalType))?)),
+			NodeWeak::GenericType(node)=>Ok(Self::GenericType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::GenericType))?)),
 			NodeWeak::IntLiteral(node)=>Ok(Self::IntLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::IntLiteral))?)),
 			NodeWeak::BoolLiteral(node)=>Ok(Self::BoolLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::BoolLiteral))?)),
 			NodeWeak::StrLiteral(node)=>Ok(Self::StrLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::StrLiteral))?)),
@@ -1672,6 +1680,7 @@ pub enum Type {
 	EnumType(Rc<RefCell<EnumType>>),
 	MetaType(Rc<RefCell<MetaType>>),
 	OptionalType(Rc<RefCell<OptionalType>>),
+	GenericType(Rc<RefCell<GenericType>>),
 }
 
 #[derive(Debug,Clone)]
@@ -1692,6 +1701,7 @@ pub enum TypeWeak {
 	EnumType(Weak<RefCell<EnumType>>),
 	MetaType(Weak<RefCell<MetaType>>),
 	OptionalType(Weak<RefCell<OptionalType>>),
+	GenericType(Weak<RefCell<GenericType>>),
 }
 
 impl From<&Type> for TypeWeak {
@@ -1713,6 +1723,7 @@ impl From<&Type> for TypeWeak {
 			Type::EnumType(node)=>Self::EnumType(Rc::downgrade(node)),
 			Type::MetaType(node)=>Self::MetaType(Rc::downgrade(node)),
 			Type::OptionalType(node)=>Self::OptionalType(Rc::downgrade(node)),
+			Type::GenericType(node)=>Self::GenericType(Rc::downgrade(node)),
 		}
 	}
 }
@@ -1743,6 +1754,7 @@ impl TryFrom<&TypeWeak> for Type {
 			TypeWeak::EnumType(node)=>Ok(Self::EnumType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::EnumType))?)),
 			TypeWeak::MetaType(node)=>Ok(Self::MetaType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::MetaType))?)),
 			TypeWeak::OptionalType(node)=>Ok(Self::OptionalType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::OptionalType))?)),
+			TypeWeak::GenericType(node)=>Ok(Self::GenericType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::GenericType))?)),
 		}
 	}
 }
@@ -1774,6 +1786,7 @@ impl TryFrom<&Node> for Type {
 			Node::EnumType(node)=>Ok(Self::EnumType(node.clone())),
 			Node::MetaType(node)=>Ok(Self::MetaType(node.clone())),
 			Node::OptionalType(node)=>Ok(Self::OptionalType(node.clone())),
+			Node::GenericType(node)=>Ok(Self::GenericType(node.clone())),
 			_=> Err(Error::InvalidNodeType(node.into())),
 		}
 	}
@@ -1805,6 +1818,7 @@ impl From<&Type> for Node {
 			Type::EnumType(node)=>Self::EnumType(node.clone()),
 			Type::MetaType(node)=>Self::MetaType(node.clone()),
 			Type::OptionalType(node)=>Self::OptionalType(node.clone()),
+			Type::GenericType(node)=>Self::GenericType(node.clone()),
 		}
 	}
 }
@@ -1835,6 +1849,7 @@ impl TryFrom<&TypeWeak> for Node {
 			TypeWeak::EnumType(node)=>Ok(Self::EnumType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::EnumType))?)),
 			TypeWeak::MetaType(node)=>Ok(Self::MetaType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::MetaType))?)),
 			TypeWeak::OptionalType(node)=>Ok(Self::OptionalType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::OptionalType))?)),
+			TypeWeak::GenericType(node)=>Ok(Self::GenericType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::GenericType))?)),
 		}
 	}
 }
@@ -1865,6 +1880,7 @@ impl From<&TypeWeak> for NodeWeak {
 			TypeWeak::EnumType(node)=>Self::EnumType(node.clone()),
 			TypeWeak::MetaType(node)=>Self::MetaType(node.clone()),
 			TypeWeak::OptionalType(node)=>Self::OptionalType(node.clone()),
+			TypeWeak::GenericType(node)=>Self::GenericType(node.clone()),
 		}
 	}
 }
@@ -1895,6 +1911,7 @@ impl TryFrom<&NodeWeak> for TypeWeak {
 			NodeWeak::EnumType(node)=>Ok(Self::EnumType(node.clone())),
 			NodeWeak::MetaType(node)=>Ok(Self::MetaType(node.clone())),
 			NodeWeak::OptionalType(node)=>Ok(Self::OptionalType(node.clone())),
+			NodeWeak::GenericType(node)=>Ok(Self::GenericType(node.clone())),
 			_=> Err(Error::InvalidNodeType(node.into())),
 		}
 	}
@@ -1927,6 +1944,7 @@ impl TryFrom<&Node> for TypeWeak {
 			Node::EnumType(node)=>Ok(Self::EnumType(Rc::downgrade(node))),
 			Node::MetaType(node)=>Ok(Self::MetaType(Rc::downgrade(node))),
 			Node::OptionalType(node)=>Ok(Self::OptionalType(Rc::downgrade(node))),
+			Node::GenericType(node)=>Ok(Self::GenericType(Rc::downgrade(node))),
 			_=> Err(Error::InvalidNodeType(node.into())),
 		}
 	}
@@ -3254,7 +3272,7 @@ pub struct Match {
 	pub constant_level: ConstantLevel,
 	pub cond_scope: Option<Rc<RefCell<Scope>>>,
 	pub cond: Option<Expr>,
-	pub branch: Vec<Node>,
+	pub branch: Vec<Rc<RefCell<MatchBranch>>>,
 }
 
 impl TryFrom<&Expr> for Rc<RefCell<Match>> {
@@ -5613,6 +5631,74 @@ impl From<Rc<RefCell<OptionalType>>> for Node {
 }
 
 #[derive(Debug,Clone)]
+pub struct GenericType {
+	pub loc: Loc,
+	pub is_explicit: bool,
+	pub non_dynamic: bool,
+	pub bit_alignment: BitAlignment,
+	pub bit_size: Option<u64>,
+	pub belong: Option<MemberWeak>,
+}
+
+impl TryFrom<&Type> for Rc<RefCell<GenericType>> {
+	type Error = Error;
+	fn try_from(node:&Type)->Result<Self,Self::Error>{
+		match node {
+			Type::GenericType(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl TryFrom<Type> for Rc<RefCell<GenericType>> {
+	type Error = Error;
+	fn try_from(node:Type)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
+impl From<&Rc<RefCell<GenericType>>> for Type {
+	fn from(node:&Rc<RefCell<GenericType>>)-> Self{
+		Type::GenericType(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<GenericType>>> for Type {
+	fn from(node:Rc<RefCell<GenericType>>)-> Self{
+		Self::from(&node)
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<GenericType>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::GenericType(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl TryFrom<Node> for Rc<RefCell<GenericType>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
+impl From<&Rc<RefCell<GenericType>>> for Node {
+	fn from(node:&Rc<RefCell<GenericType>>)-> Self{
+		Node::GenericType(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<GenericType>>> for Node {
+	fn from(node:Rc<RefCell<GenericType>>)-> Self{
+		Self::from(&node)
+	}
+}
+
+#[derive(Debug,Clone)]
 pub struct IntLiteral {
 	pub loc: Loc,
 	pub expr_type: Option<Type>,
@@ -7614,6 +7700,16 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				base_type: None,
 				})))
 			},
+			NodeType::GenericType => {
+				Node::GenericType(Rc::new(RefCell::new(GenericType {
+				loc: raw_node.loc.clone(),
+				is_explicit: false,
+				non_dynamic: false,
+				bit_alignment: BitAlignment::ByteAligned,
+				bit_size: None,
+				belong: None,
+				})))
+			},
 			NodeType::IntLiteral => {
 				Node::IntLiteral(Rc::new(RefCell::new(IntLiteral {
 				loc: raw_node.loc.clone(),
@@ -8789,6 +8885,10 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					let branch_body = match nodes.get(link as usize) {
 						Some(v)=>v,
 						None => return Err(Error::IndexOutOfBounds(link as usize)),
+					};
+					let branch_body = match branch_body {
+						Node::MatchBranch(body)=>body,
+						x =>return Err(Error::MismatchNodeType(x.into(),branch_body.into())),
 					};
 					node.borrow_mut().branch.push(branch_body.clone());
 				}
@@ -10991,6 +11091,66 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					node.borrow_mut().base_type = Some(base_type_body.try_into()?);
 				}
 			},
+			NodeType::GenericType => {
+				let node = nodes[i].clone();
+				let node = match node {
+					Node::GenericType(node)=>node,
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
+				};
+				let is_explicit_body = match raw_node.body.get("is_explicit") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"is_explicit")),
+				};
+				node.borrow_mut().is_explicit = match is_explicit_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
+				};
+				let non_dynamic_body = match raw_node.body.get("non_dynamic") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"non_dynamic")),
+				};
+				node.borrow_mut().non_dynamic = match non_dynamic_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(non_dynamic_body.into(),JSONType::Bool)),
+				};
+				let bit_alignment_body = match raw_node.body.get("bit_alignment") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"bit_alignment")),
+				};
+				node.borrow_mut().bit_alignment = match bit_alignment_body.as_str() {
+					Some(v)=>match BitAlignment::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(bit_alignment_body.into(),JSONType::String)),
+				};
+				let bit_size_body = match raw_node.body.get("bit_size") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"bit_size")),
+				};
+				node.borrow_mut().bit_size = match bit_size_body.as_u64() {
+					Some(v)=>Some(v),
+					None=> match bit_size_body.is_null() {
+						true=>None,
+						false=>return Err(Error::MismatchJSONType(bit_size_body.into(),JSONType::Number)),
+					},
+				};
+				let belong_body = match raw_node.body.get("belong") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"belong")),
+				};
+ 				if !belong_body.is_null() {
+					let belong_body = match belong_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(belong_body.into(),JSONType::Number)),
+					};
+					let belong_body = match nodes.get(belong_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(belong_body as usize)),
+					};
+					node.borrow_mut().belong = Some(belong_body.try_into()?);
+				}
+			},
 			NodeType::IntLiteral => {
 				let node = nodes[i].clone();
 				let node = match node {
@@ -12537,7 +12697,7 @@ where
 				}
 			}
 			for node in &node.borrow().branch{
-				if !f.visit(node) {
+				if !f.visit(&node.into()){
 					return;
 				}
 			}
@@ -12845,6 +13005,7 @@ where
 				}
 			}
 		},
+		Node::GenericType(_)=>{},
 		Node::IntLiteral(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
 				if !f.visit(&node.into()){

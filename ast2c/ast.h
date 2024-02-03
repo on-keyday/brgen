@@ -101,6 +101,7 @@ typedef struct ast2c_RangeType ast2c_RangeType;
 typedef struct ast2c_EnumType ast2c_EnumType;
 typedef struct ast2c_MetaType ast2c_MetaType;
 typedef struct ast2c_OptionalType ast2c_OptionalType;
+typedef struct ast2c_GenericType ast2c_GenericType;
 typedef struct ast2c_IntLiteral ast2c_IntLiteral;
 typedef struct ast2c_BoolLiteral ast2c_BoolLiteral;
 typedef struct ast2c_StrLiteral ast2c_StrLiteral;
@@ -178,6 +179,7 @@ enum ast2c_NodeType {
 	AST2C_NODETYPE_ENUM_TYPE,
 	AST2C_NODETYPE_META_TYPE,
 	AST2C_NODETYPE_OPTIONAL_TYPE,
+	AST2C_NODETYPE_GENERIC_TYPE,
 	AST2C_NODETYPE_LITERAL,
 	AST2C_NODETYPE_INT_LITERAL,
 	AST2C_NODETYPE_BOOL_LITERAL,
@@ -662,7 +664,7 @@ struct ast2c_Match {
 	ast2c_ConstantLevel constant_level;
 	ast2c_Scope* cond_scope;
 	ast2c_Expr* cond;
-	ast2c_Node** branch;
+	ast2c_MatchBranch** branch;
 	size_t branch_size;
 };
 
@@ -1103,6 +1105,19 @@ struct ast2c_OptionalType {
 
 // returns 1 if succeed 0 if failed
 int ast2c_OptionalType_parse(ast2c_Ast* ,ast2c_OptionalType*,ast2c_json_handlers*,void*);
+
+struct ast2c_GenericType {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	int is_explicit;
+	int non_dynamic;
+	ast2c_BitAlignment bit_alignment;
+	uint64_t* bit_size;
+	ast2c_Member* belong;
+};
+
+// returns 1 if succeed 0 if failed
+int ast2c_GenericType_parse(ast2c_Ast* ,ast2c_GenericType*,ast2c_json_handlers*,void*);
 
 struct ast2c_IntLiteral {
 	const ast2c_NodeType node_type;

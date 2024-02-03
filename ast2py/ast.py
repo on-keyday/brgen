@@ -56,6 +56,7 @@ class NodeType(PyEnum):
     ENUM_TYPE = "enum_type"
     META_TYPE = "meta_type"
     OPTIONAL_TYPE = "optional_type"
+    GENERIC_TYPE = "generic_type"
     LITERAL = "literal"
     INT_LITERAL = "int_literal"
     BOOL_LITERAL = "bool_literal"
@@ -334,7 +335,7 @@ class Index(Expr):
 class Match(Expr):
     cond_scope: Optional[Scope]
     cond: Optional[Expr]
-    branch: List[Node]
+    branch: List[MatchBranch]
 
 
 class Range(Expr):
@@ -517,6 +518,10 @@ class MetaType(Type):
 
 class OptionalType(Type):
     base_type: Optional[Type]
+
+
+class GenericType(Type):
+    belong: Optional[Member]
 
 
 class IntLiteral(Literal):
@@ -882,6 +887,8 @@ def ast2node(ast :JsonAst) -> Program:
                 node.append(MetaType())
             case NodeType.OPTIONAL_TYPE:
                 node.append(OptionalType())
+            case NodeType.GENERIC_TYPE:
+                node.append(GenericType())
             case NodeType.INT_LITERAL:
                 node.append(IntLiteral())
             case NodeType.BOOL_LITERAL:
@@ -1148,7 +1155,7 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].cond = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at Match::cond'))
                 else:
                     node[i].cond = None
-                node[i].branch = [(node[x] if isinstance(node[x],Node) else raiseError(TypeError('type mismatch at Match::branch'))) for x in ast.node[i].body["branch"]]
+                node[i].branch = [(node[x] if isinstance(node[x],MatchBranch) else raiseError(TypeError('type mismatch at Match::branch'))) for x in ast.node[i].body["branch"]]
             case NodeType.RANGE:
                 if ast.node[i].body["expr_type"] is not None:
                     x = node[ast.node[i].body["expr_type"]]
@@ -1678,6 +1685,22 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].base_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at OptionalType::base_type'))
                 else:
                     node[i].base_type = None
+            case NodeType.GENERIC_TYPE:
+                x = ast.node[i].body["is_explicit"]
+                node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at GenericType::is_explicit'))
+                x = ast.node[i].body["non_dynamic"]
+                node[i].non_dynamic = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at GenericType::non_dynamic'))
+                node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
+                x = ast.node[i].body["bit_size"]
+                if x is not None:
+                    node[i].bit_size = x if isinstance(x,int) else raiseError(TypeError('type mismatch at GenericType::bit_size'))
+                else:
+                    node[i].bit_size = None
+                if ast.node[i].body["belong"] is not None:
+                    x = node[ast.node[i].body["belong"]]
+                    node[i].belong = x if isinstance(x,Member) else raiseError(TypeError('type mismatch at GenericType::belong'))
+                else:
+                    node[i].belong = None
             case NodeType.INT_LITERAL:
                 if ast.node[i].body["expr_type"] is not None:
                     x = node[ast.node[i].body["expr_type"]]
@@ -2308,6 +2331,8 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
           if x.base_type is not None:
               if f(f,x.base_type) == False:
                   return
+        case x if isinstance(x,GenericType):
+            pass
         case x if isinstance(x,IntLiteral):
           if x.expr_type is not None:
               if f(f,x.expr_type) == False:

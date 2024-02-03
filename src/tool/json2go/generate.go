@@ -683,11 +683,9 @@ func (g *Generator) writeIf(if_ *ast2go.If, enc bool) {
 
 func (g *Generator) writeMatch(m *ast2go.Match, enc bool) {
 	g.PrintfFunc("switch %s {\n", g.exprStringer.ExprString(m.Cond))
-	for _, elem := range m.Branch {
-		if mb := elem.(*ast2go.MatchBranch); mb != nil {
-			g.PrintfFunc("case %s:\n", g.exprStringer.ExprString(mb.Cond))
-			g.writeSingleNode(mb.Then, enc)
-		}
+	for _, mb := range m.Branch {
+		g.PrintfFunc("case %s:\n", g.exprStringer.ExprString(mb.Cond))
+		g.writeSingleNode(mb.Then, enc)
 	}
 	g.PrintfFunc("}\n")
 }

@@ -62,6 +62,7 @@ const char* ast2c_NodeType_to_string(ast2c_NodeType val) {
 	case AST2C_NODETYPE_ENUM_TYPE: return "enum_type";
 	case AST2C_NODETYPE_META_TYPE: return "meta_type";
 	case AST2C_NODETYPE_OPTIONAL_TYPE: return "optional_type";
+	case AST2C_NODETYPE_GENERIC_TYPE: return "generic_type";
 	case AST2C_NODETYPE_LITERAL: return "literal";
 	case AST2C_NODETYPE_INT_LITERAL: return "int_literal";
 	case AST2C_NODETYPE_BOOL_LITERAL: return "bool_literal";
@@ -288,6 +289,10 @@ int ast2c_NodeType_from_string(const char* str, ast2c_NodeType* out) {
 	}
 	if (strcmp(str, "optional_type") == 0) {
 		*out = AST2C_NODETYPE_OPTIONAL_TYPE;
+		return 1;
+	}
+	if (strcmp(str, "generic_type") == 0) {
+		*out = AST2C_NODETYPE_GENERIC_TYPE;
 		return 1;
 	}
 	if (strcmp(str, "literal") == 0) {
@@ -2696,6 +2701,41 @@ int ast2c_OptionalType_parse(ast2c_Ast* ast,ast2c_OptionalType* s,ast2c_json_han
 	}
 	if(!h->number_get(h,bit_size,&s->bit_size)) {
 		if(h->error) { h->error(h,bit_size, "failed to parse ast2c_OptionalType::bit_size"); }
+		goto error;
+	}
+	return 1;
+error:
+	return 0;
+}
+
+// returns 1 if succeed 0 if failed
+int ast2c_GenericType_parse(ast2c_Ast* ast,ast2c_GenericType* s,ast2c_json_handlers* h, void* obj) {
+	if (!ast||!s||!h||!obj) {
+		if(h->error) { h->error(h,NULL, "invalid argument"); }
+		return 0;
+	}
+	void* loc = h->object_get(h, obj, "loc");
+	void* obj_body = h->object_get(h, obj, "body");
+	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
+	s->bit_size = NULL;
+	s->belong = NULL;
+	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
+	void* non_dynamic = h->object_get(h, obj_body, "non_dynamic");
+	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
+	void* bit_size = h->object_get(h, obj_body, "bit_size");
+	void* belong = h->object_get(h, obj_body, "belong");
+	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_GenericType::loc is null"); } return 0; }
+	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_GenericType::is_explicit is null"); } return 0; }
+	if (!non_dynamic) { if(h->error) { h->error(h,non_dynamic, "ast2c_GenericType::non_dynamic is null"); } return 0; }
+	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_GenericType::bit_alignment is null"); } return 0; }
+	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_GenericType::bit_size is null"); } return 0; }
+	if (!belong) { if(h->error) { h->error(h,belong, "ast2c_GenericType::belong is null"); } return 0; }
+	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
+		if(h->error) { h->error(h,loc, "failed to parse ast2c_GenericType::loc"); }
+		goto error;
+	}
+	if(!h->number_get(h,bit_size,&s->bit_size)) {
+		if(h->error) { h->error(h,bit_size, "failed to parse ast2c_GenericType::bit_size"); }
 		goto error;
 	}
 	return 1;

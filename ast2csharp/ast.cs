@@ -55,6 +55,7 @@ RangeType,
 EnumType,
 MetaType,
 OptionalType,
+GenericType,
 Literal,
 IntLiteral,
 BoolLiteral,
@@ -332,7 +333,7 @@ public class Match : Expr{
 	public ConstantLevel ConstantLevel{get;set;}
 	public Scope? CondScope{get;set;}
 	public Expr? Cond{get;set;}
-	public List<Node>? Branch{get;set;}
+	public List<MatchBranch>? Branch{get;set;}
 }
 public class Range : Expr{
 	public Loc Loc{get;set;}
@@ -590,6 +591,14 @@ public class OptionalType : Type{
 	public BitAlignment BitAlignment{get;set;}
 	public ulong? BitSize{get;set;}
 	public Type? BaseType{get;set;}
+}
+public class GenericType : Type{
+	public Loc Loc{get;set;}
+	public bool IsExplicit{get;set;}
+	public bool NonDynamic{get;set;}
+	public BitAlignment BitAlignment{get;set;}
+	public ulong? BitSize{get;set;}
+	public Member? Belong{get;set;}
 }
 public class IntLiteral : Literal{
 	public Loc Loc{get;set;}
@@ -924,6 +933,9 @@ public static class Ast {
                break;
            case NodeType.OptionalType:
                nodes[i] = new OptionalType() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.GenericType:
+               nodes[i] = new GenericType() { Loc = ast.Node[i].Loc };
                break;
            case NodeType.IntLiteral:
                nodes[i] = new IntLiteral() { Loc = ast.Node[i].Loc };
@@ -1338,6 +1350,14 @@ public static class Ast {
                node.BitAlignment = ast.Node[i].Body[bit_alignment];
                node.BitSize = ast.Node[i].Body[bit_size];
                node.BaseType = ast.Node[i].Body[base_type];
+           case NodeType.GenericType:
+               var node = nodes[i] as GenericType;
+               node.Loc = ast.Node[i].Body[loc];
+               node.IsExplicit = ast.Node[i].Body[is_explicit];
+               node.NonDynamic = ast.Node[i].Body[non_dynamic];
+               node.BitAlignment = ast.Node[i].Body[bit_alignment];
+               node.BitSize = ast.Node[i].Body[bit_size];
+               node.Belong = ast.Node[i].Body[belong];
            case NodeType.IntLiteral:
                var node = nodes[i] as IntLiteral;
                node.Loc = ast.Node[i].Body[loc];
