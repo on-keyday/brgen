@@ -13,7 +13,18 @@ format TCPSegment:
     options :[u8(dataOffset*2)-20]u8
 
 
-
+enum TCPState:
+    CLOSED
+    LISTEN
+    SYN_SENT
+    SYN_RCVD
+    ESTABLISHED
+    FIN_WAIT_1
+    FIN_WAIT_2
+    CLOSE_WAIT
+    CLOSING
+    LAST_ACK
+    TIME_WAIT
 
 
 

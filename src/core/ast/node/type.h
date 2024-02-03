@@ -25,40 +25,7 @@ namespace brgen::ast {
         }
         return 0;
     }
-    /*
-        enum class Endian {
-            unspec,
-            big,
-            little,
 
-        };
-
-        constexpr const char* endian_str[] = {
-            "unspec",
-            "big",
-            "little",
-            nullptr,
-        };
-
-        constexpr auto endian_count = std::size(endian_str) - 1;
-
-        constexpr expected<Endian, const char*> endian_from_str(std::string_view str) {
-            if (str == "big") {
-                return Endian::big;
-            }
-            else if (str == "little") {
-                return Endian::little;
-            }
-            else if (str == "unspec") {
-                return Endian::unspec;
-            }
-            return unexpect("invalid endian");
-        }
-
-        constexpr void as_json(Endian e, auto&& j) {
-            j.string(endian_str[static_cast<std::uint8_t>(e)]);
-        }
-    */
     struct IntType : Type {
         define_node_type(NodeType::int_type);
 
@@ -518,6 +485,25 @@ namespace brgen::ast {
         void dump(auto&& field_) {
             Type::dump(field_);
             sdebugf(base);
+        }
+    };
+
+    struct GenericType : Type {
+        define_node_type(NodeType::generic_type);
+        std::weak_ptr<Member> belong;
+
+        GenericType(lexer::Loc l, bool is_explicit = false)
+            : Type(l, NodeType::generic_type) {
+            this->is_explicit = is_explicit;
+        }
+
+        // for decode
+        GenericType()
+            : Type({}, NodeType::generic_type) {}
+
+        void dump(auto&& field_) {
+            Type::dump(field_);
+            sdebugf(belong);
         }
     };
 

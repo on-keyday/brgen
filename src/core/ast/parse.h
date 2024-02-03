@@ -301,10 +301,15 @@ namespace brgen::ast {
                 br->then = std::move(scoped);
             };
 
+            auto collect_comments = [&](std::shared_ptr<MatchBranch>& b) {
+                b->comment = s.get_comments();
+            };
+
             auto parse_match_branch = [&]() -> std::shared_ptr<MatchBranch> {
                 auto br = std::make_shared<MatchBranch>();
                 br->belong = match;
                 br->cond = parse_expr();
+                collect_comments(br);
                 cond.push_back(br->cond);
                 br->loc = br->cond->loc;
                 s.skip_white();
@@ -329,16 +334,6 @@ namespace brgen::ast {
             // Create a new context for the current indent level
             auto current_indent = base.token.size();
             auto c = state.new_indent_no_scope(s, current_indent);
-
-            auto collect_comments = [&] {
-                // get comments and add to scope
-                auto comment = s.get_comments();
-                if (comment) {
-                    match->branch.push_back(std::move(comment));
-                }
-            };
-
-            collect_comments();
 
             // Parse and add the first element
             match->branch.push_back(parse_match_branch());

@@ -114,7 +114,6 @@ namespace brgen::ast {
         }
     };
 
-
     struct Binary : Expr {
         define_node_type(NodeType::binary);
         std::shared_ptr<Expr> left;
@@ -230,6 +229,8 @@ namespace brgen::ast {
         std::shared_ptr<Expr> cond;
         lexer::Loc sym_loc;
         std::shared_ptr<Node> then;
+        // Comment or CommentGroup
+        std::shared_ptr<Node> comment;
 
         MatchBranch(lexer::Loc l)
             : Stmt(l, NodeType::match_branch) {}
@@ -250,8 +251,8 @@ namespace brgen::ast {
         define_node_type(NodeType::match);
         scope_ptr cond_scope;
         std::shared_ptr<Expr> cond;
-        // MatchBranch or Comment or CommentGroup
-        std::vector<std::shared_ptr<Node>> branch;
+        // MatchBranch
+        std::vector<std::shared_ptr<MatchBranch>> branch;
 
         Match(lexer::Loc l)
             : Expr(l, NodeType::match) {}

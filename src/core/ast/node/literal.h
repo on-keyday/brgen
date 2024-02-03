@@ -90,46 +90,6 @@ namespace brgen::ast {
             : Literal({}, NodeType::type_literal) {}
     };
 
-    /*
-    struct Input : Literal {
-        define_node_type(NodeType::input);
-
-        Input(lexer::Loc l, const std::shared_ptr<Type>& d)
-            : Literal(l, NodeType::input) {
-            expr_type = d;
-        }
-
-        // for decode
-        constexpr Input()
-            : Literal({}, NodeType::input) {}
-    };
-
-    struct Output : Literal {
-        define_node_type(NodeType::output);
-
-        Output(lexer::Loc l, const std::shared_ptr<Type>& d)
-            : Literal(l, NodeType::output) {
-            expr_type = d;
-        }
-
-        // for decode
-        constexpr Output()
-            : Literal({}, NodeType::output) {}
-    };
-
-    struct Config : Literal {
-        define_node_type(NodeType::config);
-
-        Config(lexer::Loc l, const std::shared_ptr<Type>& d)
-            : Literal(l, NodeType::config) {
-            expr_type = d;
-        }
-
-        constexpr Config()
-            : Literal({}, NodeType::config) {}
-    };
-    */
-
     struct SpecialLiteral : Literal {
         define_node_type(NodeType::special_literal);
         define_node_description("special literal, such as input, output, config, etc.");

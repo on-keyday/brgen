@@ -95,6 +95,7 @@ namespace brgen::ast {
         enum_type,
         meta_type,
         optional_type,
+        generic_type,
     };
 
     constexpr std::pair<NodeType, const char*> node_type_str_array[] = {
@@ -166,6 +167,7 @@ namespace brgen::ast {
         {NodeType::float_type, "float_type"},
         {NodeType::type_literal, "type_literal"},
         {NodeType::special_literal, "special_literal"},
+        {NodeType::generic_type, "generic_type"},
     };
 
     constexpr std::array<std::pair<NodeType, const char*>, std::size(node_type_str_array)> sorted_node_type_str_array = [] {

@@ -38,11 +38,6 @@ namespace brgen::ast {
             CASE(StrLiteral)
             CASE(TypeLiteral)
             CASE(SpecialLiteral)
-            /*
-            CASE(Input)
-            CASE(Output)
-            CASE(Config)
-            */
 
             // expr
             CASE(Expr)
@@ -58,7 +53,7 @@ namespace brgen::ast {
             CASE(Index)
             CASE(Match)
             CASE(Range)
-
+            // translated
             CASE(TmpVar)
             CASE(Import)
             CASE(Cast)
@@ -69,6 +64,7 @@ namespace brgen::ast {
 
             // stmt
             CASE(Stmt)
+
             CASE(Loop)
             CASE(ScopedStatement)
             CASE(IndentBlock)
@@ -93,6 +89,7 @@ namespace brgen::ast {
 
             // builtin
             CASE(BuiltinMember)
+
             CASE(BuiltinFunction)
             CASE(BuiltinField)
             CASE(BuiltinObject)
@@ -116,6 +113,7 @@ namespace brgen::ast {
             CASE(EnumType)
             CASE(MetaType)
             CASE(OptionalType)
+            CASE(GenericType)
 
             END_SWITCH()
 #undef SWITCH
