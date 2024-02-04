@@ -22,12 +22,13 @@ jobs:
         with:
           name: brgen-linux
           path: /tmp/brgen
-      - name: Install JQ, clang,
-        run: sudo apt-get install jq
-      - name: Run Brgen
+      - name: Install JQ
+        run: sudo apt-get install jq -y
+      - name: Run Brgen and Test
         run: |
           chmod +x /tmp/brgen
           cd /tmp/brgen
+          ./link_path.sh
           /tmp/brgen/tool/src2json --version
           /tmp/brgen/tool/brgen
-          ./script/make_cpp_tests.sh ./ignore/example/test_info.json run
+          ./make_cpp_tests.sh ./ignore/example/test_info.json run

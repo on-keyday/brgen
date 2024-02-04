@@ -410,3 +410,15 @@ jobs:
             ./artifacts/brgen-vscode-extension.tar.gz
             ./artifacts/brgen-vscode-extension.zip
           fail_on_unmatched_files: true
+
+  run-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [build-linux]
+    steps:
+      - name: Timeline
+        uses: Kesin11/actions-timeline@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Call brgen-test.yaml
+        uses: ./.github/workflows/brgen-test.yaml
