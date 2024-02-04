@@ -19,6 +19,6 @@ IFS=$'\n'
 for TEST_TARGET in $TEST_TARGETS; do
     DIR=`echo $TEST_TARGET | cut -d ' ' -f 1`
     BASE=`echo $TEST_TARGET | cut -d ' ' -f 2`
-    echo "make test for $DIR/$BASE.hpp"
-    bash -C $MAKE_CPP_TEST_PATH $DIR $BASE
+    echo "make test for $DIR/$BASE.hpp" 
+    bash -C $MAKE_CPP_TEST_PATH $DIR $BASE &
 done
