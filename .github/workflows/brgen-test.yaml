@@ -30,7 +30,7 @@ jobs:
         run: |
           chmod -R +x /tmp/brgen
           cd /tmp/brgen
-          ./link_path.sh
+          . ./link_path.sh
           ldd /tmp/brgen/tool/src2json
           ldd /tmp/brgen/tool/libfutils.so
           /tmp/brgen/tool/src2json --version
