@@ -1,0 +1,33 @@
+# costom boilerplate file from sisakulint
+name: Brgen Test Built Binary
+
+on:
+  # Allows you to run this workflow manually from the Actions tab on GitHub.
+  workflow_call: null
+  workflow_dispatch: null
+
+# Allow this job to clone the repo and create a page deployment
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  brgen-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Donload Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: brgen-linux
+          path: /tmp/brgen
+      - name: Install JQ, clang,
+        run: sudo apt-get install jq
+      - name: Run Brgen
+        run: |
+          chmod +x /tmp/brgen
+          cd /tmp/brgen
+          /tmp/brgen/tool/src2json --version
+          /tmp/brgen/tool/brgen
+          ./script/make_cpp_tests.sh ./ignore/example/test_info.json run

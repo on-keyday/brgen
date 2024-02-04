@@ -14,11 +14,13 @@ fi
 MAKE_CPP_TEST_PATH=`cd $(dirname ${0}) && pwd`/make_cpp_test.sh
 
 echo "$MAKE_CPP_TEST_PATH"
-
+RUN_BUILD=$2
 IFS=$'\n'
 for TEST_TARGET in $TEST_TARGETS; do
     DIR=`echo $TEST_TARGET | cut -d ' ' -f 1`
     BASE=`echo $TEST_TARGET | cut -d ' ' -f 2`
     echo "make test for $DIR/$BASE.hpp" 
-    bash -C $MAKE_CPP_TEST_PATH $DIR $BASE &
+    bash -C $MAKE_CPP_TEST_PATH $DIR $BASE $RUN_BUILD &
 done
+wait
+echo "all tests are done"

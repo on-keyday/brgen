@@ -100,3 +100,15 @@ EOF`
 echo "$BUILD_SH" > $TEST_DIR/build.sh
 echo "create $TEST_DIR/build.sh"
 chmod +x $TEST_DIR/build.sh
+
+RUN_BUILD=$3
+if [ "$RUN_BUILD" == "run" ]; then
+    echo "run $TEST_DIR/build.sh"
+    . $TEST_DIR/build.sh
+    ninja -C ${TEST_DIR}/built
+    if [ $? -ne 0 ]; then
+        echo "build failed"
+        exit 1
+    fi
+    ctest --test-dir ${TEST_DIR}/built --output-on-failure
+fi
