@@ -35,4 +35,9 @@ jobs:
           ldd /tmp/brgen/tool/libfutils.so
           /tmp/brgen/tool/src2json --version
           /tmp/brgen/tool/brgen
+          git clone https://github.com/on-keyday/utils.git
+          cd utils
+          . build shared Debug futils
+          cd ..
+          export FUTILS_DIR=/tmp/brgen/utils
           ./make_cpp_tests.sh ./ignore/example/test_info.json run
