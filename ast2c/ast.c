@@ -34,6 +34,7 @@ const char* ast2c_NodeType_to_string(ast2c_NodeType val) {
 	case AST2C_NODETYPE_SPECIFY_ORDER: return "specify_order";
 	case AST2C_NODETYPE_EXPLICIT_ERROR: return "explicit_error";
 	case AST2C_NODETYPE_IO_OPERATION: return "io_operation";
+	case AST2C_NODETYPE_BAD_EXPR: return "bad_expr";
 	case AST2C_NODETYPE_STMT: return "stmt";
 	case AST2C_NODETYPE_LOOP: return "loop";
 	case AST2C_NODETYPE_INDENT_BLOCK: return "indent_block";
@@ -177,6 +178,10 @@ int ast2c_NodeType_from_string(const char* str, ast2c_NodeType* out) {
 	}
 	if (strcmp(str, "io_operation") == 0) {
 		*out = AST2C_NODETYPE_IO_OPERATION;
+		return 1;
+	}
+	if (strcmp(str, "bad_expr") == 0) {
+		*out = AST2C_NODETYPE_BAD_EXPR;
 		return 1;
 	}
 	if (strcmp(str, "stmt") == 0) {
@@ -1797,6 +1802,38 @@ int ast2c_IoOperation_parse(ast2c_Ast* ast,ast2c_IoOperation* s,ast2c_json_handl
 	}
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_IoOperation::loc"); }
+		goto error;
+	}
+	return 1;
+error:
+	return 0;
+}
+
+// returns 1 if succeed 0 if failed
+int ast2c_BadExpr_parse(ast2c_Ast* ast,ast2c_BadExpr* s,ast2c_json_handlers* h, void* obj) {
+	if (!ast||!s||!h||!obj) {
+		if(h->error) { h->error(h,NULL, "invalid argument"); }
+		return 0;
+	}
+	void* loc = h->object_get(h, obj, "loc");
+	void* obj_body = h->object_get(h, obj, "body");
+	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
+	s->expr_type = NULL;
+	s->content = NULL;
+	void* expr_type = h->object_get(h, obj_body, "expr_type");
+	void* constant_level = h->object_get(h, obj_body, "constant_level");
+	void* content = h->object_get(h, obj_body, "content");
+	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_BadExpr::loc is null"); } return 0; }
+	if (!expr_type) { if(h->error) { h->error(h,expr_type, "ast2c_BadExpr::expr_type is null"); } return 0; }
+	if (!constant_level) { if(h->error) { h->error(h,constant_level, "ast2c_BadExpr::constant_level is null"); } return 0; }
+	if (!content) { if(h->error) { h->error(h,content, "ast2c_BadExpr::content is null"); } return 0; }
+	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
+		if(h->error) { h->error(h,loc, "failed to parse ast2c_BadExpr::loc"); }
+		goto error;
+	}
+	s->content = h->string_get_alloc(h,content);
+	if (!s->content) {
+		if(h->error) { h->error(h,content, "failed to parse ast2c_BadExpr::content"); }
 		goto error;
 	}
 	return 1;

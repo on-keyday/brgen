@@ -28,6 +28,7 @@ class NodeType(PyEnum):
     SPECIFY_ORDER = "specify_order"
     EXPLICIT_ERROR = "explicit_error"
     IO_OPERATION = "io_operation"
+    BAD_EXPR = "bad_expr"
     STMT = "stmt"
     LOOP = "loop"
     INDENT_BLOCK = "indent_block"
@@ -380,6 +381,10 @@ class IoOperation(Expr):
     base: Optional[Expr]
     method: IoMethod
     arguments: List[Expr]
+
+
+class BadExpr(Expr):
+    content: str
 
 
 class Loop(Stmt):
@@ -835,6 +840,8 @@ def ast2node(ast :JsonAst) -> Program:
                 node.append(ExplicitError())
             case NodeType.IO_OPERATION:
                 node.append(IoOperation())
+            case NodeType.BAD_EXPR:
+                node.append(BadExpr())
             case NodeType.LOOP:
                 node.append(Loop())
             case NodeType.INDENT_BLOCK:
@@ -1290,6 +1297,15 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].base = None
                 node[i].method = IoMethod(ast.node[i].body["method"])
                 node[i].arguments = [(node[x] if isinstance(node[x],Expr) else raiseError(TypeError('type mismatch at IoOperation::arguments'))) for x in ast.node[i].body["arguments"]]
+            case NodeType.BAD_EXPR:
+                if ast.node[i].body["expr_type"] is not None:
+                    x = node[ast.node[i].body["expr_type"]]
+                    node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at BadExpr::expr_type'))
+                else:
+                    node[i].expr_type = None
+                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
+                x = ast.node[i].body["content"]
+                node[i].content = x if isinstance(x,str)  else raiseError(TypeError('type mismatch at BadExpr::content'))
             case NodeType.LOOP:
                 if ast.node[i].body["cond_scope"] is not None:
                     node[i].cond_scope = scope[ast.node[i].body["cond_scope"]]
@@ -2213,6 +2229,10 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
                   return
           for i in range(len(x.arguments)):
               if f(f,x.arguments[i]) == False:
+                  return
+        case x if isinstance(x,BadExpr):
+          if x.expr_type is not None:
+              if f(f,x.expr_type) == False:
                   return
         case x if isinstance(x,Loop):
           if x.init is not None:

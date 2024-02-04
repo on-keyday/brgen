@@ -27,6 +27,7 @@ Available,
 SpecifyOrder,
 ExplicitError,
 IoOperation,
+BadExpr,
 Stmt,
 Loop,
 IndentBlock,
@@ -394,6 +395,12 @@ public class IoOperation : Expr{
 	public Expr? Base{get;set;}
 	public IoMethod Method{get;set;}
 	public List<Expr>? Arguments{get;set;}
+}
+public class BadExpr : Expr{
+	public Loc Loc{get;set;}
+	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
+	public string Content{get;set;} = "";
 }
 public class Loop : Stmt{
 	public Loc Loc{get;set;}
@@ -856,6 +863,9 @@ public static class Ast {
            case NodeType.IoOperation:
                nodes[i] = new IoOperation() { Loc = ast.Node[i].Loc };
                break;
+           case NodeType.BadExpr:
+               nodes[i] = new BadExpr() { Loc = ast.Node[i].Loc };
+               break;
            case NodeType.Loop:
                nodes[i] = new Loop() { Loc = ast.Node[i].Loc };
                break;
@@ -1153,6 +1163,12 @@ public static class Ast {
                node.Base = ast.Node[i].Body[base];
                node.Method = ast.Node[i].Body[method];
                node.Arguments = ast.Node[i].Body[arguments];
+           case NodeType.BadExpr:
+               var node = nodes[i] as BadExpr;
+               node.Loc = ast.Node[i].Body[loc];
+               node.ExprType = ast.Node[i].Body[expr_type];
+               node.ConstantLevel = ast.Node[i].Body[constant_level];
+               node.Content = ast.Node[i].Body[content];
            case NodeType.Loop:
                var node = nodes[i] as Loop;
                node.Loc = ast.Node[i].Body[loc];

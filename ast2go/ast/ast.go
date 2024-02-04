@@ -33,52 +33,53 @@ const (
 	NodeTypeSpecifyOrder    NodeType = 20
 	NodeTypeExplicitError   NodeType = 21
 	NodeTypeIoOperation     NodeType = 22
-	NodeTypeStmt            NodeType = 23
-	NodeTypeLoop            NodeType = 24
-	NodeTypeIndentBlock     NodeType = 25
-	NodeTypeScopedStatement NodeType = 26
-	NodeTypeMatchBranch     NodeType = 27
-	NodeTypeUnionCandidate  NodeType = 28
-	NodeTypeReturn          NodeType = 29
-	NodeTypeBreak           NodeType = 30
-	NodeTypeContinue        NodeType = 31
-	NodeTypeAssert          NodeType = 32
-	NodeTypeImplicitYield   NodeType = 33
-	NodeTypeType            NodeType = 34
-	NodeTypeIntType         NodeType = 35
-	NodeTypeFloatType       NodeType = 36
-	NodeTypeIdentType       NodeType = 37
-	NodeTypeIntLiteralType  NodeType = 38
-	NodeTypeStrLiteralType  NodeType = 39
-	NodeTypeVoidType        NodeType = 40
-	NodeTypeBoolType        NodeType = 41
-	NodeTypeArrayType       NodeType = 42
-	NodeTypeFunctionType    NodeType = 43
-	NodeTypeStructType      NodeType = 44
-	NodeTypeStructUnionType NodeType = 45
-	NodeTypeUnionType       NodeType = 46
-	NodeTypeRangeType       NodeType = 47
-	NodeTypeEnumType        NodeType = 48
-	NodeTypeMetaType        NodeType = 49
-	NodeTypeOptionalType    NodeType = 50
-	NodeTypeGenericType     NodeType = 51
-	NodeTypeLiteral         NodeType = 52
-	NodeTypeIntLiteral      NodeType = 53
-	NodeTypeBoolLiteral     NodeType = 54
-	NodeTypeStrLiteral      NodeType = 55
-	NodeTypeTypeLiteral     NodeType = 56
-	NodeTypeSpecialLiteral  NodeType = 57
-	NodeTypeMember          NodeType = 58
-	NodeTypeField           NodeType = 59
-	NodeTypeFormat          NodeType = 60
-	NodeTypeState           NodeType = 61
-	NodeTypeEnum            NodeType = 62
-	NodeTypeEnumMember      NodeType = 63
-	NodeTypeFunction        NodeType = 64
-	NodeTypeBuiltinMember   NodeType = 65
-	NodeTypeBuiltinFunction NodeType = 66
-	NodeTypeBuiltinField    NodeType = 67
-	NodeTypeBuiltinObject   NodeType = 68
+	NodeTypeBadExpr         NodeType = 23
+	NodeTypeStmt            NodeType = 24
+	NodeTypeLoop            NodeType = 25
+	NodeTypeIndentBlock     NodeType = 26
+	NodeTypeScopedStatement NodeType = 27
+	NodeTypeMatchBranch     NodeType = 28
+	NodeTypeUnionCandidate  NodeType = 29
+	NodeTypeReturn          NodeType = 30
+	NodeTypeBreak           NodeType = 31
+	NodeTypeContinue        NodeType = 32
+	NodeTypeAssert          NodeType = 33
+	NodeTypeImplicitYield   NodeType = 34
+	NodeTypeType            NodeType = 35
+	NodeTypeIntType         NodeType = 36
+	NodeTypeFloatType       NodeType = 37
+	NodeTypeIdentType       NodeType = 38
+	NodeTypeIntLiteralType  NodeType = 39
+	NodeTypeStrLiteralType  NodeType = 40
+	NodeTypeVoidType        NodeType = 41
+	NodeTypeBoolType        NodeType = 42
+	NodeTypeArrayType       NodeType = 43
+	NodeTypeFunctionType    NodeType = 44
+	NodeTypeStructType      NodeType = 45
+	NodeTypeStructUnionType NodeType = 46
+	NodeTypeUnionType       NodeType = 47
+	NodeTypeRangeType       NodeType = 48
+	NodeTypeEnumType        NodeType = 49
+	NodeTypeMetaType        NodeType = 50
+	NodeTypeOptionalType    NodeType = 51
+	NodeTypeGenericType     NodeType = 52
+	NodeTypeLiteral         NodeType = 53
+	NodeTypeIntLiteral      NodeType = 54
+	NodeTypeBoolLiteral     NodeType = 55
+	NodeTypeStrLiteral      NodeType = 56
+	NodeTypeTypeLiteral     NodeType = 57
+	NodeTypeSpecialLiteral  NodeType = 58
+	NodeTypeMember          NodeType = 59
+	NodeTypeField           NodeType = 60
+	NodeTypeFormat          NodeType = 61
+	NodeTypeState           NodeType = 62
+	NodeTypeEnum            NodeType = 63
+	NodeTypeEnumMember      NodeType = 64
+	NodeTypeFunction        NodeType = 65
+	NodeTypeBuiltinMember   NodeType = 66
+	NodeTypeBuiltinFunction NodeType = 67
+	NodeTypeBuiltinField    NodeType = 68
+	NodeTypeBuiltinObject   NodeType = 69
 )
 
 func (n NodeType) String() string {
@@ -129,6 +130,8 @@ func (n NodeType) String() string {
 		return "explicit_error"
 	case NodeTypeIoOperation:
 		return "io_operation"
+	case NodeTypeBadExpr:
+		return "bad_expr"
 	case NodeTypeStmt:
 		return "stmt"
 	case NodeTypeLoop:
@@ -278,6 +281,8 @@ func (n *NodeType) UnmarshalJSON(data []byte) error {
 		*n = NodeTypeExplicitError
 	case "io_operation":
 		*n = NodeTypeIoOperation
+	case "bad_expr":
+		*n = NodeTypeBadExpr
 	case "stmt":
 		*n = NodeTypeStmt
 	case "loop":
@@ -462,6 +467,10 @@ func (n *ExplicitError) GetNodeType() NodeType {
 
 func (n *IoOperation) GetNodeType() NodeType {
 	return NodeTypeIoOperation
+}
+
+func (n *BadExpr) GetNodeType() NodeType {
+	return NodeTypeBadExpr
 }
 
 func (n *Loop) GetNodeType() NodeType {
@@ -1978,6 +1987,29 @@ func (n *IoOperation) GetLoc() Loc {
 	return n.Loc
 }
 
+type BadExpr struct {
+	Loc           Loc
+	ExprType      Type
+	ConstantLevel ConstantLevel
+	Content       string
+}
+
+func (n *BadExpr) isExpr() {}
+
+func (n *BadExpr) GetExprType() Type {
+	return n.ExprType
+}
+
+func (n *BadExpr) GetConstantLevel() ConstantLevel {
+	return n.ConstantLevel
+}
+
+func (n *BadExpr) isNode() {}
+
+func (n *BadExpr) GetLoc() Loc {
+	return n.Loc
+}
+
 type Loop struct {
 	Loc       Loc
 	CondScope *Scope
@@ -3254,6 +3286,8 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			n.node[i] = &ExplicitError{Loc: raw.Loc}
 		case NodeTypeIoOperation:
 			n.node[i] = &IoOperation{Loc: raw.Loc}
+		case NodeTypeBadExpr:
+			n.node[i] = &BadExpr{Loc: raw.Loc}
 		case NodeTypeLoop:
 			n.node[i] = &Loop{Loc: raw.Loc}
 		case NodeTypeIndentBlock:
@@ -3841,6 +3875,21 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			for j, k := range tmp.Arguments {
 				v.Arguments[j] = n.node[k].(Expr)
 			}
+		case NodeTypeBadExpr:
+			v := n.node[i].(*BadExpr)
+			var tmp struct {
+				ExprType      *uintptr      `json:"expr_type"`
+				ConstantLevel ConstantLevel `json:"constant_level"`
+				Content       string        `json:"content"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			if tmp.ExprType != nil {
+				v.ExprType = n.node[*tmp.ExprType].(Type)
+			}
+			v.ConstantLevel = tmp.ConstantLevel
+			v.Content = tmp.Content
 		case NodeTypeLoop:
 			v := n.node[i].(*Loop)
 			var tmp struct {
@@ -5087,6 +5136,12 @@ func Walk(n Node, f Visitor) {
 		}
 		for _, w := range v.Arguments {
 			if !f.Visit(f, w) {
+				return
+			}
+		}
+	case *BadExpr:
+		if v.ExprType != nil {
+			if !f.Visit(f, v.ExprType) {
 				return
 			}
 		}
