@@ -85,11 +85,8 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
         print_error("cannot decode json file: ast is null");
         return 1;
     }
-    j2cp2::Generator g;
-    g.enable_line_map = flags.add_line_map;
-    g.use_error = flags.use_error;
-    g.use_variant = !flags.use_raw_union;
-    g.use_overflow_check = flags.use_overflow_check;
+    json2c::Generator g;
+
     auto prog = brgen::ast::cast_to<brgen::ast::Program>(*res);
     g.write_program(prog);
     cout << g.w.out() << "\n";
