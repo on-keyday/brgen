@@ -24,8 +24,8 @@ jobs:
         with:
           name: brgen-linux
           path: /tmp/brgen
-      - name: Install JQ
-        run: sudo apt-get install jq -y
+      - name: Install Dependencies
+        run: sudo apt-get install jq libc++-dev -y
       - name: Run Brgen and Test
         run: |
           chmod -R +x /tmp/brgen
