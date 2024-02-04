@@ -412,15 +412,5 @@ jobs:
           fail_on_unmatched_files: true
 
   run-test:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: [build-linux]
-    steps:
-      - name: Timeline
-        uses: Kesin11/actions-timeline@v1
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Checkout repository
-        uses: actions/checkout@v3
-      - name: Call brgen-test.yaml
-        uses: ./.github/workflows/
+    needs: build-linux
+    uses: ./.github/workflows/brgen-test.yaml

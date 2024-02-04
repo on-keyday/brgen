@@ -9,14 +9,16 @@ on:
 # Allow this job to clone the repo and create a page deployment
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 jobs:
   brgen-test:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - name: Timeline
+        uses: Kesin11/actions-timeline@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Donload Artifact
         uses: actions/download-artifact@v2
         with:
