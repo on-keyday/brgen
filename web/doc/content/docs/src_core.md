@@ -50,6 +50,16 @@ tool/src2json-->|ASTの型解析|middle/typing.h/Typingクラス
 
 ```
 
+## AST について
+
+### Loc について
+
+- lexer::Loc::pos の各フィールドはソースコード上の 0 オリジンでのオフセットを表す
+- lexer::Loc::file は AstFile や TokenFile の file プロパティでの index+1 を表す。0 はソースコード由来でない(ビルトイン関数等)ことを表す。0 の場合、他のフィールドは意味を持たない
+- lexer::Loc::line はソースコードの行を 1 オリジンで表す
+- lexer::Loc::col はソースコードの列を 1 オリジンで表す
+- pos や line,col は src2json の--interpret-mode に影響を受ける。たとえば入力が UTF-8 ファイルだったとしても、utf16 を指定すればそのように解釈する。これは JavaScript 環境など文字が UTF-16 前提の環境などでエラー表示や色付けなどのずれを防いだりするのに使われている
+
 ## 開発者メモ
 
 ### StructType を make_shared している箇所

@@ -446,11 +446,13 @@ namespace brgen::middle {
                 typing_expr(m->cond);
             }
             std::shared_ptr<ast::Type> candidate;
-            for (auto& bc : m->branch) {
-                auto c = ast::as<ast::MatchBranch>(bc);
-                if (!c) {
-                    // maybe comments
-                    continue;
+            std::shared_ptr<ast::Expr> any_match;
+            for (auto& c : m->branch) {
+                // TODO(on-keyday): check exhaustiveness for range, mainly for enum and int
+                if (any_match) {
+                    error(c->loc, "any match (`..`) must be unique and be end of in match branch")
+                        .error(any_match->loc, "any match (`..`) is already defined here")
+                        .report();
                 }
                 typing_expr(c->cond);
                 if (c->cond->expr_type) {
@@ -479,6 +481,9 @@ namespace brgen::middle {
                             }
                         }
                     }
+                }
+                if (auto r = ast::as<ast::Range>(c->cond); r && !r->start && !r->end) {
+                    any_match = c->cond;
                 }
             }
             m->expr_type = candidate ? candidate : void_type(m->loc);
