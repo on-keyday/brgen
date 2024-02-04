@@ -1,6 +1,6 @@
 
-if [ $# -ne 1 ]; then
-    echo "Usage: $0 <test_info_file>"
+if [ $# -lt 1 ]; then
+    echo "Usage: $0 <test_info_file> [run]"
     exit 1
 fi
 
