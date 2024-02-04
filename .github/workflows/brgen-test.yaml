@@ -28,7 +28,7 @@ jobs:
         run: sudo apt-get install jq -y
       - name: Run Brgen and Test
         run: |
-          chmod +x /tmp/brgen
+          chmod -R +x /tmp/brgen
           cd /tmp/brgen
           ./link_path.sh
           /tmp/brgen/tool/src2json --version
