@@ -1,0 +1,25 @@
+
+format IKEHeader:
+    initiators_spi :u64
+    responders_spi :u64
+    next_payload :u8
+    major_version :u4
+    minor_version :u4
+    exchange_type :u8
+    reserved1 :u2
+    response :u1
+    version :u1
+    initiator :u1
+    reserved2 :u3
+    message_id :u32
+    length :u32
+
+format GenericPayloadHeader:
+    next_payload :u8
+    critical :u1
+    reserved :u7
+    payload_length :u16
+
+format GenericPayload:
+    header :GenericPayloadHeader
+    payload :[header.payload_length - 4]u8

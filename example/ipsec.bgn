@@ -1,0 +1,27 @@
+
+format AuthenticationHeader:
+    next_header :u8
+    payload_length :u8
+    reserved :u16
+    security_parameters_index :u32
+    sequence_number :u32
+    len ::= (payload_length + 2) * 
+             4 - # per RFC 4302, the length field is in 4-byte units
+             12 # length of fixed part of header
+    integrity_check_value :[len]u8
+
+state SPIState:
+    spi :u32
+    integrity_check_value_length :u8
+
+spi_state :SPIState
+
+format EncapsulingSecurityPayload:
+    security_parameters_index :u32
+    sequence_number :u32
+    offset ::= input.offset
+    payload_and_padding :[..]u8
+    pad_length :u8
+    payload :[..]u8(input = input.subrange(payload_and_padding.length - pad_length,offset))
+    next_header :u8
+    integrity_check_value :[spi_state.integrity_check_value_length]u8

@@ -51,7 +51,7 @@ ToDo リストです(2023/2/01)
 - キャストの可能性判定(整数型を配列型にキャストしようとしたりを禁止?or 要素化?)
 - f :[len]u1(config.type = u32)的な構文
 
-  - ビット列をどうマッピングするかを決定する。
+  - ビット列をどうマッピングするかを決定する?。
   - len が 32 ビット超えたらエラー?ビット列長条件は別途?
 
 - input.bit_order, config.bit_order.msb, config.bit_order.lsb の導入?
@@ -67,8 +67,12 @@ ToDo リストです(2023/2/01)
 - コメントの対応付けをする
   - 現状集めることはできるが、対応付けが曖昧
 - AST からコード復元できるようにする
+
   - ツールで補助?
-- any match(`..`)が必ず最後にあるかを検証する
+
+- input.peek = true を指定している場合、フォーマットのサイズ計算から除外する
+- input.subrange 構文で offset を指定している場合、input.peek = true と同等の扱いにする
+- state 変数に readonly 化する構文をつける?
 
 # Done リスト
 
@@ -80,3 +84,4 @@ ToDo リストです(2023/2/01)
 - input.bit_order, config.bit_order.msb, config.bit_order.lsb の導入?
   - gzip とかでのハフマン符号化の格納とか?
 - WebPlayground 上で example を触れるようにする
+- any match(`..`)が必ず最後にあるかを検証する
