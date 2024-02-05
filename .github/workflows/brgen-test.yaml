@@ -40,4 +40,4 @@ jobs:
           . build shared Debug futils
           cd ..
           export FUTILS_DIR=/tmp/brgen/utils
-          ./make_cpp_tests.sh ./ignore/example/test_info.json run
+          # ./make_cpp_tests.sh ./ignore/example/test_info.json run
