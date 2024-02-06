@@ -638,7 +638,14 @@ namespace j2cp2 {
                     if (has_case) {
                         w.write("else ");
                     }
-                    w.writeln("if (", cond, "==", cond_s, ") {");
+                    // any match (`..`) case
+                    if (auto r = ast::as<ast::Range>(br->cond); r && !r->start && !r->end) {
+                        // nothing to write
+                        w.writeln("{");
+                    }
+                    else {
+                        w.writeln("if (", cond, "==", cond_s, ") {");
+                    }
                     {
                         auto indent = w.indent_scope();
                         code_one_node(br->then);

@@ -1,6 +1,7 @@
 enum MessageType:
     :ul32
     ECHO_MSG = 65
+    ECHO_REPLY_MSG = 66
     TCPIP_WRITE_MSG = 57
     TCPIP_DNS_RESOLVE_MSG = 61
     TCPIP_DNS_RESOLVE_REPLY_MSG = 62
@@ -14,7 +15,28 @@ enum MessageType:
 format WasmOSMessage:
     type :MessageType
     src  :ul32
-    data :[1508-8]u8
+    match type:
+        MessageType.ECHO_MSG:
+            data :echo_fields
+        MessageType.TCPIP_WRITE_MSG:
+            data :tcpip_write_fields
+        MessageType.TCPIP_DNS_RESOLVE_MSG:
+            data :tcpip_dns_resolve_fields
+        MessageType.TCPIP_DNS_RESOLVE_REPLY_MSG:
+            data :tcpip_dns_resolve_reply_fields
+        MessageType.TCPIP_CONNECT_MSG:
+            data :tcpip_connect_fields
+        MessageType.TCPIP_CONNECT_REPLY_MSG:
+            data :tcpip_connect_reply_fields
+        MessageType.TCPIP_READ_MSG:
+            data :tcpip_read_fields
+        MessageType.TCPIP_READ_REPLY_MSG:
+            data :tcpip_read_reply_fields
+        MessageType.TCPIP_DATA_MSG:
+            data :tcpip_data_fields
+        MessageType.TCPIP_CLOSED_MSG:
+            data :tcpip_closed_fields
+        .. => data :[1508-8]u8
 
 format tcpip_connect_fields:
     dst_addr :ul32
