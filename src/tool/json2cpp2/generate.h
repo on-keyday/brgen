@@ -501,6 +501,7 @@ namespace j2cp2 {
                             w.writeln("std::uint", brgen::nums(*bit_size), "_t ", f->ident->ident, "_data = 0;");
                             map_line(f->loc);
                             w.writeln(enum_->ident->ident, " ", f->ident->ident, "() const { return static_cast<", enum_->ident->ident, ">(this->", f->ident->ident, "_data); }");
+                            w.writeln("void ", f->ident->ident, "(", enum_->ident->ident, " v) { this->", f->ident->ident, "_data = static_cast<std::uint", brgen::nums(*bit_size), "_t>(v); }");
                             str.map_ident(f->ident, prefix, f->ident->ident + "()");
                         }
                         if (auto arr_ty = ast::as<ast::ArrayType>(type); arr_ty) {

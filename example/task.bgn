@@ -1,0 +1,17 @@
+enum MessageType:
+    :ul32
+    ECHO_MSG = 65
+    TCPIP_WRITE_MSG = 57
+    TCPIP_DNS_RESOLVE_MSG = 61
+    TCPIP_DNS_RESOLVE_REPLY_MSG = 62
+    TCPIP_CONNECT_MSG = 51
+    TCPIP_CONNECT_REPLY_MSG = 52
+    TCPIP_READ_MSG = 59
+    TCPIP_READ_REPLY_MSG = 60
+    TCPIP_DATA_MSG = 63
+    TCPIP_CLOSED_MSG = 64
+
+format WasmOSMessage:
+    type :MessageType
+    src  :ul32
+    data :[1508-8]u8
