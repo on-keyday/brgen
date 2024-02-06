@@ -1,0 +1,47 @@
+struct tcpip_connect_fields {
+    uint32_t dst_addr;
+    uint16_t dst_port;
+};
+struct tcpip_connect_reply_fields {
+    uint32_t sock;
+};
+
+struct tcpip_write_fields {
+    int sock;
+    uint8_t data[1024];
+    size_t data_len;
+};
+struct tcpip_write_reply_fields {
+};
+
+struct tcpip_read_fields {
+    int sock;
+};
+struct tcpip_read_reply_fields {
+    uint8_t data[1024];
+    size_t data_len;
+};
+
+struct echo_fields {
+    uint8_t data[1024];
+    size_t data_len;
+};
+struct echo_reply_fields {
+    uint8_t data[1024];
+    size_t data_len;
+};
+
+struct tcpip_data_fields {
+    int sock;
+};
+
+struct tcpip_closed_fields {
+    int sock;
+};
+
+struct tcpip_dns_resolve_fields {
+    char hostname[256];
+};
+struct tcpip_dns_resolve_reply_fields {
+    uint32_t addr;
+};

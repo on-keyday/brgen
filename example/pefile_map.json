@@ -14,5 +14,8 @@
   "uint64_t": "u64",
   "uint48_t": "u48",
   "char16_t": "u16",
-  "time_t": "u64"
+  "time_t": "u64",
+  "size_t": "u32",
+  "int": "u32",
+  "char": "u8"
 }

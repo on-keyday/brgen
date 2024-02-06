@@ -15,3 +15,45 @@ format WasmOSMessage:
     type :MessageType
     src  :ul32
     data :[1508-8]u8
+
+format tcpip_connect_fields:
+    dst_addr :ul32
+    dst_port :ul16
+
+format tcpip_connect_reply_fields:
+    sock :ul32
+
+format tcpip_write_fields:
+    sock :ul32
+    data :[1024]u8
+    data_len :ul32
+
+format tcpip_write_reply_fields:
+    ..
+
+format tcpip_read_fields:
+    sock :ul32
+
+format tcpip_read_reply_fields:
+    data :[1024]u8
+    data_len :ul32
+
+format echo_fields:
+    data :[1024]u8
+    data_len :ul32
+
+format echo_reply_fields:
+    data :[1024]u8
+    data_len :ul32
+
+format tcpip_data_fields:
+    sock :ul32
+
+format tcpip_closed_fields:
+    sock :ul32
+
+format tcpip_dns_resolve_fields:
+    hostname :[256]u8
+
+format tcpip_dns_resolve_reply_fields:
+    addr :ul32
