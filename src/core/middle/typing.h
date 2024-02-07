@@ -363,7 +363,7 @@ namespace brgen::middle {
                     left_ident->constant_level = ast::ConstantLevel::constant;
                 }
                 else {
-                    left_ident->constant_level = ast::ConstantLevel::const_variable;
+                    left_ident->constant_level = ast::ConstantLevel::immutable_variable;
                 }
             }
         }
@@ -501,9 +501,9 @@ namespace brgen::middle {
             if (a == ast::ConstantLevel::variable || b == ast::ConstantLevel::variable) {
                 return ast::ConstantLevel::variable;
             }
-            assert(a == ast::ConstantLevel::const_variable ||
-                   b == ast::ConstantLevel::const_variable);
-            return ast::ConstantLevel::const_variable;
+            assert(a == ast::ConstantLevel::immutable_variable ||
+                   b == ast::ConstantLevel::immutable_variable);
+            return ast::ConstantLevel::immutable_variable;
         }
 
         void typing_binary(const std::shared_ptr<ast::Binary>& b) {
@@ -932,7 +932,7 @@ namespace brgen::middle {
                 case ast::IOMethod::input_offset:
                 case ast::IOMethod::input_remain:
                     io->expr_type = std::make_shared<ast::IntType>(io->loc, 64, ast::Endian::unspec, false);
-                    io->constant_level = ast::ConstantLevel::const_variable;
+                    io->constant_level = ast::ConstantLevel::immutable_variable;
                     break;
                 case ast::IOMethod::output_put:
                 case ast::IOMethod::input_backward: {

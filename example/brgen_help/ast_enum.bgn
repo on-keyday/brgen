@@ -71,10 +71,10 @@ enum BitAlignment:
     not_decidable
 
 enum ConstantLevel:
-    unknown        # not determined
-    constant       # decided at compile time
-    const_variable # decided at runtime, but not changed
-    variable       # changed at runtime
+    unknown            # not determined
+    constant           # decided at compile time
+    immutable_variable # decided at runtime, but not changed
+    variable           # changed at runtime
 
 enum IdentUsage:
     unknown

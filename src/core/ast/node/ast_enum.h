@@ -413,14 +413,14 @@ constexpr const char* enum_type_name<BitAlignment>() {
 enum class ConstantLevel {
     unknown,
     constant,
-    const_variable,
+    immutable_variable,
     variable,
 };
 constexpr const char* to_string(ConstantLevel e) {
     switch(e) {
     case ConstantLevel::unknown: return "unknown";
     case ConstantLevel::constant: return "constant";
-    case ConstantLevel::const_variable: return "const_variable";
+    case ConstantLevel::immutable_variable: return "immutable_variable";
     case ConstantLevel::variable: return "variable";
     default: return nullptr;
     }
@@ -429,7 +429,7 @@ template<>constexpr std::optional<ConstantLevel> from_string<ConstantLevel>(std:
     if(str.empty()) return std::nullopt;
     if(str == "unknown") return ConstantLevel::unknown;
     if(str == "constant") return ConstantLevel::constant;
-    if(str == "const_variable") return ConstantLevel::const_variable;
+    if(str == "immutable_variable") return ConstantLevel::immutable_variable;
     if(str == "variable") return ConstantLevel::variable;
     return std::nullopt;
 }
@@ -440,7 +440,7 @@ template<>constexpr std::array<std::pair<ConstantLevel,std::string_view>,4> make
     return {
         std::pair{ConstantLevel::unknown,"unknown"},
         std::pair{ConstantLevel::constant,"constant"},
-        std::pair{ConstantLevel::const_variable,"const_variable"},
+        std::pair{ConstantLevel::immutable_variable,"immutable_variable"},
         std::pair{ConstantLevel::variable,"variable"},
     };
 }
@@ -448,7 +448,7 @@ template<>constexpr std::array<std::pair<ConstantLevel,std::string_view>,4> make
     return {
         std::pair{ConstantLevel::unknown,"unknown"},
         std::pair{ConstantLevel::constant,"constant"},
-        std::pair{ConstantLevel::const_variable,"const_variable"},
+        std::pair{ConstantLevel::immutable_variable,"immutable_variable"},
         std::pair{ConstantLevel::variable,"variable"},
     };
 }
