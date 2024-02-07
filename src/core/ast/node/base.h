@@ -110,37 +110,6 @@ namespace brgen::ast {
             : Node(l, t) {}
     };
 
-    /*
-        enum class ConstantLevel {
-            unknown,         // not determined
-            constant,        // decided at compile time
-            const_variable,  // decided at runtime, but not changed
-            variable,        // changed at runtime
-        };
-
-        constexpr const char* constant_level_str[] = {
-            "unknown",
-            "constant",
-            "const_variable",
-            "variable",
-            nullptr,
-        };
-
-        constexpr size_t constant_level_count = 4;
-
-        constexpr void as_json(ConstantLevel level, auto&& buf) {
-            buf.value(constant_level_str[int(level)]);
-        }
-
-        constexpr std::optional<ConstantLevel> constant_level(std::string_view str) {
-            for (int i = 0; constant_level_str[i]; i++) {
-                if (constant_level_str[i] == str) {
-                    return ConstantLevel(i);
-                }
-            }
-            return std::nullopt;
-        }
-    */
     struct Expr : Node {
         define_node_type(NodeType::expr);
         define_node_description(

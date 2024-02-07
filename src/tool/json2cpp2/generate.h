@@ -222,7 +222,10 @@ namespace j2cp2 {
                     auto& typ = found->second;
                     w.writeln("if(!std::holds_alternative<", typ.type_name, ">(", typ.variant_name, ")) {");
                     if (as_err) {
-                        write_return_error(current_format, typ.variant_name, " variant alternative ", typ.type_name, " is not set");
+                        {
+                            auto indent = w.indent_scope();
+                            write_return_error(current_format, typ.variant_name, " variant alternative ", typ.type_name, " is not set");
+                        }
                     }
                     else {
                         w.indent_writeln("return std::nullopt;");
@@ -250,6 +253,60 @@ namespace j2cp2 {
             else {
                 set_variant_alternative(s);
             }
+        }
+
+        void write_getter(ast::UnionType* union_ty, const std::shared_ptr<ast::Field>& union_field, const std::string& match_cond) {
+            // write getter funca
+            map_line(union_field->loc);
+            auto make_access = [&](const std::shared_ptr<ast::Field>& f) {
+                auto a = str.to_string(f->ident);
+                check_variant_alternative(f->belong_struct.lock());
+                map_line(f->loc);
+                w.writeln("return ", a, ";");
+            };
+            w.writeln("std::optional<", get_type_name(union_ty->common_type), "> ", union_field->ident->ident, "() const {");
+            {
+                auto indent = w.indent_scope();
+                bool has_els = false;
+                bool end_else = false;
+                for (auto& c : union_ty->candidates) {
+                    auto cond = c->cond.lock();
+                    if (cond) {
+                        auto defs = str.collect_defined_ident(cond);
+                        for (auto& d : defs) {
+                            code_one_node(d);
+                        }
+                        auto cond_s = str.to_string(cond);
+                        map_line(c->loc);
+                        w.writeln("if (", cond_s, "==", match_cond, ") {");
+                        {
+                            auto f = c->field.lock();
+                            if (!f) {
+                                w.writeln("return std::nullopt;");
+                            }
+                            else {
+                                make_access(f);
+                            }
+                        }
+                        w.writeln("}");
+                    }
+                    else {
+                        auto f = c->field.lock();
+                        if (!f) {
+                            w.writeln("return std::nullopt;");
+                        }
+                        else {
+                            make_access(f);
+                        }
+                        end_else = true;
+                    }
+                }
+                if (!end_else) {
+                    w.writeln("return std::nullopt;");
+                }
+                str.map_ident(union_field->ident, "(*${THIS}" + union_field->ident->ident + "())");
+            }
+            w.writeln("}");
         }
 
         void write_common_type_accessor(const std::string& cond_u, const std::shared_ptr<ast::Field>& uf, ast::UnionType* ut) {
