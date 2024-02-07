@@ -247,12 +247,15 @@ namespace brgen::ast {
         }
     };
 
+    struct StructUnionType;
+
     struct Match : Expr {
         define_node_type(NodeType::match);
         scope_ptr cond_scope;
         std::shared_ptr<Expr> cond;
         // MatchBranch
         std::vector<std::shared_ptr<MatchBranch>> branch;
+        std::shared_ptr<StructUnionType> struct_union_type;
 
         Match(lexer::Loc l)
             : Expr(l, NodeType::match) {}
@@ -265,6 +268,7 @@ namespace brgen::ast {
             sdebugf(cond_scope);
             sdebugf(cond);
             sdebugf(branch);
+            sdebugf(struct_union_type);
         }
     };
 

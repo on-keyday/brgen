@@ -336,7 +336,9 @@ namespace brgen::middle {
                             break;
                         }
                     }
-                    u->bit_size = u->exhaustive && bit_size ? *bit_size : std::nullopt;
+                    if (u->exhaustive && bit_size) {
+                        u->bit_size = bit_size;
+                    }
                     u->bit_alignment = alignment;
                 }
                 if (auto u = ast::as<ast::UnionType>(n)) {

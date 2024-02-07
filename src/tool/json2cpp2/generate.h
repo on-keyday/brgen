@@ -525,6 +525,9 @@ namespace j2cp2 {
                         if (non_aligned.size() > 0) {
                             is_int_set = is_int_set && type->non_dynamic;
                             include_non_simple = include_non_simple || !is_simple_type(type);
+                            if (!type->bit_size) {
+                                continue;  // TODO(on-keyday): make arbitrary bit size int
+                            }
                             bit_size += *type->bit_size;
                             non_aligned.push_back(ast::cast_to<ast::Field>(field));
                             write_bit_fields(prefix, non_aligned, bit_size, is_int_set, include_non_simple);

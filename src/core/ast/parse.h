@@ -268,6 +268,7 @@ namespace brgen::ast {
             auto match = std::make_shared<Match>(token.loc);
 
             std::shared_ptr<StructUnionType> union_ = std::make_shared<StructUnionType>(match->loc);
+            match->struct_union_type = union_;
             union_->base = match;
 
             std::vector<std::shared_ptr<Expr>> cond;
