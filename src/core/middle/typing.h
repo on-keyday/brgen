@@ -1003,6 +1003,27 @@ namespace brgen::middle {
             }
         }
 
+        void typing_specify_order(ast::SpecifyOrder* b) {
+            typing_expr(b->order, false);
+            b->base->expr_type = void_type(b->loc);
+            b->expr_type = b->base->expr_type;
+            b->constant_level = b->order->constant_level;
+            ast::tool::Evaluator eval;
+            eval.ident_mode = ast::tool::EvalIdentMode::resolve_ident;
+            if (auto val = eval.eval_as<ast::tool::EResultType::integer>(b->order)) {
+                // case 1 or 2
+                if (val->type() == ast::tool::EResultType::integer) {
+                    b->order_value = val->get<ast::tool::EResultType::integer>();
+                }
+                else if (val->type() == ast::tool::EResultType::boolean) {
+                    b->order_value = val->get<ast::tool::EResultType::boolean>() ? 1 : 0;
+                }
+                else {
+                    error(b->order->loc, "expect integer or boolean but got ", ast::tool::eval_result_type_str[int(val->type())]).report();
+                }
+            }
+        }
+
         void typing_expr(NodeReplacer base_node, bool on_define = false) {
             auto expr = ast::cast_to<ast::Expr>(base_node.to_node());
             // treat cast as a special case
@@ -1020,24 +1041,7 @@ namespace brgen::middle {
                 a->constant_level = ast::ConstantLevel::variable;
             }
             if (auto b = ast::as<ast::SpecifyOrder>(expr)) {
-                typing_expr(b->order, false);
-                b->base->expr_type = void_type(b->loc);
-                b->expr_type = b->base->expr_type;
-                b->constant_level = b->order->constant_level;
-                ast::tool::Evaluator eval;
-                eval.ident_mode = ast::tool::EvalIdentMode::resolve_ident;
-                if (auto val = eval.eval_as<ast::tool::EResultType::integer>(b->order)) {
-                    // case 1 or 2
-                    if (val->type() == ast::tool::EResultType::integer) {
-                        b->order_value = val->get<ast::tool::EResultType::integer>();
-                    }
-                    else if (val->type() == ast::tool::EResultType::boolean) {
-                        b->order_value = val->get<ast::tool::EResultType::boolean>() ? 1 : 0;
-                    }
-                    else {
-                        error(b->order->loc, "expect integer or boolean but got ", ast::tool::eval_result_type_str[int(val->type())]).report();
-                    }
-                }
+                typing_specify_order(b);
             }
             if (auto b = ast::as<ast::ExplicitError>(expr)) {
                 typing_expr(b->base->raw_arguments, false);
@@ -1246,6 +1250,55 @@ namespace brgen::middle {
             }
         }
 
+        void typing_array_type(ast::ArrayType* arr_type) {
+            // array like [..]u8 is variable length array, so mark it as variable
+            if (arr_type->length && arr_type->length->node_type == ast::NodeType::range) {
+                arr_type->length->constant_level = ast::ConstantLevel::variable;
+            }
+            // if a->length->constant_level == constant,
+            // and eval result has integer type, then a->length_value is set and a->has_const_length is true
+            if (arr_type->length && arr_type->length->constant_level == ast::ConstantLevel::constant) {
+                ast::tool::Evaluator eval;
+                eval.ident_mode = ast::tool::EvalIdentMode::resolve_ident;
+                if (auto val = eval.eval_as<ast::tool::EResultType::integer>(arr_type->length)) {
+                    // case 1 or 2
+                    arr_type->length_value = val->get<ast::tool::EResultType::integer>();
+                }
+            }
+            // TODO(on-keyday): future, separate phase of typing to disable warning effectively
+            if (arr_type->length && arr_type->length->expr_type) {
+                for (auto it = warnings.locations.begin(); it != warnings.locations.end();) {
+                    if (arr_type->loc.pos.begin <= it->loc.pos.begin && it->loc.pos.end <= arr_type->end_loc.pos.end) {
+                        it = warnings.locations.erase(it);
+                    }
+                    else {
+                        ++it;
+                    }
+                }
+            }
+        }
+
+        void typing_union_type(ast::UnionType* u) {
+            if (u->common_type) {
+                return;
+            }
+            for (auto& c : u->candidates) {
+                auto f = c->field.lock();
+                if (!f) {
+                    continue;
+                }
+                if (!u->common_type) {
+                    u->common_type = f->field_type;
+                }
+                else {
+                    u->common_type = common_type(u->common_type, f->field_type);
+                    if (!u->common_type) {
+                        break;
+                    }
+                }
+            }
+        }
+
         void typing_object(auto& ty) {
             // Define a lambda function for recursive traversal and typing
             auto recursive_typing = [&](auto&& f, NodeReplacer ty) -> void {
@@ -1256,6 +1309,15 @@ namespace brgen::middle {
                     });
                 };
                 auto node = ty.to_node();
+                if (auto p = ast::as<ast::Program>(node)) {
+                    auto tmp = current_global;
+                    current_global = p->global_scope;
+                    const auto d = futils::helper::defer([&] {
+                        current_global = std::move(tmp);
+                    });
+                    do_traverse();
+                    return;
+                }
                 if (auto expr = ast::as<ast::Expr>(node)) {
                     // If the object is an expression, perform expression typing
                     typing_expr(ty);
@@ -1266,34 +1328,9 @@ namespace brgen::middle {
                     typing_ident_type(s);
                     return;
                 }
-                if (auto p = ast::as<ast::Program>(node)) {
-                    auto tmp = current_global;
-                    current_global = p->global_scope;
-                    const auto d = futils::helper::defer([&] {
-                        current_global = std::move(tmp);
-                    });
-                    do_traverse();
-                    return;
-                }
                 if (auto u = ast::as<ast::UnionType>(node)) {
-                    if (u->common_type) {
-                        return;
-                    }
-                    for (auto& c : u->candidates) {
-                        auto f = c->field.lock();
-                        if (!f) {
-                            continue;
-                        }
-                        if (!u->common_type) {
-                            u->common_type = f->field_type;
-                        }
-                        else {
-                            u->common_type = common_type(u->common_type, f->field_type);
-                            if (!u->common_type) {
-                                break;
-                            }
-                        }
-                    }
+                    typing_union_type(u);
+                    return;
                 }
                 if (auto field = ast::as<ast::Field>(node)) {
                     typing_field(field);
@@ -1301,32 +1338,7 @@ namespace brgen::middle {
                 }
                 do_traverse();
                 if (auto arr_type = ast::as<ast::ArrayType>(node)) {
-                    // array like [..]u8 is variable length array, so mark it as variable
-                    if (arr_type->length && arr_type->length->node_type == ast::NodeType::range) {
-                        arr_type->length->constant_level = ast::ConstantLevel::variable;
-                    }
-                    // if a->length->constant_level == constant,
-                    // and eval result has integer type, then a->length_value is set and a->has_const_length is true
-                    if (arr_type->length && arr_type->length->constant_level == ast::ConstantLevel::constant) {
-                        ast::tool::Evaluator eval;
-                        eval.ident_mode = ast::tool::EvalIdentMode::resolve_ident;
-                        if (auto val = eval.eval_as<ast::tool::EResultType::integer>(arr_type->length)) {
-                            // case 1 or 2
-                            arr_type->length_value = val->get<ast::tool::EResultType::integer>();
-                        }
-                    }
-                    // TODO(on-keyday): future, separate phase of typing to disable warning effectively
-                    if (arr_type->length && arr_type->length->expr_type) {
-                        for (auto it = warnings.locations.begin(); it != warnings.locations.end();) {
-                            if (arr_type->loc.pos.begin <= it->loc.pos.begin && it->loc.pos.end <= arr_type->end_loc.pos.end) {
-                                it = warnings.locations.erase(it);
-                            }
-                            else {
-                                ++it;
-                            }
-                        }
-                    }
-                    return;
+                    typing_array_type(arr_type);
                 }
             };
             recursive_typing(recursive_typing, ty);

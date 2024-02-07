@@ -37,7 +37,7 @@ format Len:
                 len_of_len = len_of_len - 1
 
     fn decode():
-        input.endian = true
+        input.endian = config.endian.little
         val := input.get()
         if val < 0x80:
             len = val

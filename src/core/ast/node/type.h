@@ -385,11 +385,18 @@ namespace brgen::ast {
 
     struct StructUnionType : Type {
         define_node_type(NodeType::struct_union_type);
-        std::weak_ptr<Expr> base;  // match or if
-        std::shared_ptr<Expr> cond;
+        std::weak_ptr<Expr> base;                  // match or if expression
+        std::shared_ptr<Expr> cond;                // match condition
         std::vector<std::shared_ptr<Expr>> conds;  // size must equal to structs.size()
         std::vector<std::shared_ptr<StructType>> structs;
         std::vector<std::weak_ptr<Field>> union_fields;
+        // conditions are exhaustive
+        // for example,
+        // match u1(a)
+        //    1 => data :u8
+        //    0 => data :u16
+        // are exhaustive
+        bool exhaustive = false;
 
         StructUnionType(lexer::Loc l)
             : Type(l, NodeType::struct_union_type) {}
@@ -404,6 +411,7 @@ namespace brgen::ast {
             sdebugf(structs);
             sdebugf(base);
             sdebugf(union_fields);
+            sdebugf(exhaustive);
         }
     };
 

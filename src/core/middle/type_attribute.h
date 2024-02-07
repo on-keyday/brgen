@@ -286,14 +286,6 @@ namespace brgen::middle {
                     t->bit_alignment = ast::BitAlignment(align + int(ast::BitAlignment::byte_aligned));
                 }
                 if (auto a = ast::as<ast::ArrayType>(n); a) {
-                    // state
-                    // 1. a->has_const_length == true , a->length_value != 0, a->base_type->bit_size != 0 -> fixed length array (size known)
-                    // 2. a->has_const_length == true , a->length_value != 0, a->base_type->bit_size == 0 -> fixed length array (size unknown)
-                    // 3. a->has_const_length == true , a->length_value == 0, a->base_type->bit_size != 0 -> zero length array (size known==0)
-                    // 4. a->has_const_length == true , a->length_value == 0, a->base_type->bit_size == 0 -> zero length array (size known==0)
-                    // 5. a->has_const_length == false, a->length_value is any, a->base_type->bit_size != 0 -> variable length array (size unknown)
-                    // 6. a->has_const_length == false, a->length_value is any, a->base_type->bit_size == 0 -> variable length array (size unknown)
-
                     // determine bit size
                     if (a->length_value && a->base_type->bit_size) {
                         a->bit_size = *a->length_value * *a->base_type->bit_size;
@@ -344,7 +336,7 @@ namespace brgen::middle {
                             break;
                         }
                     }
-                    u->bit_size = bit_size;
+                    u->bit_size = u->exhaustive && bit_size ? *bit_size : std::nullopt;
                     u->bit_alignment = alignment;
                 }
                 if (auto u = ast::as<ast::UnionType>(n)) {
