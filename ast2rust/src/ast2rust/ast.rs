@@ -560,7 +560,7 @@ impl TryFrom<&str> for Endian {
 #[serde(rename_all = "snake_case")]pub enum ConstantLevel {
 	Unknown,
 	Constant,
-	ConstVariable,
+	ImmutableVariable,
 	Variable,
 }
 
@@ -570,7 +570,7 @@ impl TryFrom<&str> for ConstantLevel {
 		match s{
 			"unknown" =>Ok(Self::Unknown),
 			"constant" =>Ok(Self::Constant),
-			"const_variable" =>Ok(Self::ConstVariable),
+			"immutable_variable" =>Ok(Self::ImmutableVariable),
 			"variable" =>Ok(Self::Variable),
 			_=> Err(()),
 		}

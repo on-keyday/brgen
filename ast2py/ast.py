@@ -166,7 +166,7 @@ class Endian(PyEnum):
 class ConstantLevel(PyEnum):
     UNKNOWN = "unknown"
     CONSTANT = "constant"
-    CONST_VARIABLE = "const_variable"
+    IMMUTABLE_VARIABLE = "immutable_variable"
     VARIABLE = "variable"
 
 

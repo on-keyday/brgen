@@ -790,7 +790,7 @@ const char* ast2c_ConstantLevel_to_string(ast2c_ConstantLevel val) {
 	switch(val) {
 	case AST2C_CONSTANTLEVEL_UNKNOWN: return "unknown";
 	case AST2C_CONSTANTLEVEL_CONSTANT: return "constant";
-	case AST2C_CONSTANTLEVEL_CONST_VARIABLE: return "const_variable";
+	case AST2C_CONSTANTLEVEL_IMMUTABLE_VARIABLE: return "immutable_variable";
 	case AST2C_CONSTANTLEVEL_VARIABLE: return "variable";
 	default: return NULL;
 	}
@@ -807,8 +807,8 @@ int ast2c_ConstantLevel_from_string(const char* str, ast2c_ConstantLevel* out) {
 		*out = AST2C_CONSTANTLEVEL_CONSTANT;
 		return 1;
 	}
-	if (strcmp(str, "const_variable") == 0) {
-		*out = AST2C_CONSTANTLEVEL_CONST_VARIABLE;
+	if (strcmp(str, "immutable_variable") == 0) {
+		*out = AST2C_CONSTANTLEVEL_IMMUTABLE_VARIABLE;
 		return 1;
 	}
 	if (strcmp(str, "variable") == 0) {

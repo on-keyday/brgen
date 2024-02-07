@@ -302,7 +302,7 @@ int ast2c_Endian_from_string(const char*,ast2c_Endian*);
 enum ast2c_ConstantLevel {
 	AST2C_CONSTANTLEVEL_UNKNOWN,
 	AST2C_CONSTANTLEVEL_CONSTANT,
-	AST2C_CONSTANTLEVEL_CONST_VARIABLE,
+	AST2C_CONSTANTLEVEL_IMMUTABLE_VARIABLE,
 	AST2C_CONSTANTLEVEL_VARIABLE,
 };
 const char* ast2c_ConstantLevel_to_string(ast2c_ConstantLevel);

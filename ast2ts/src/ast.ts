@@ -117,12 +117,12 @@ export function isEndian(obj: any): obj is Endian {
 export const enum ConstantLevel {
 	unknown = "unknown",
 	constant = "constant",
-	const_variable = "const_variable",
+	immutable_variable = "immutable_variable",
 	variable = "variable",
 };
 
 export function isConstantLevel(obj: any): obj is ConstantLevel {
-	return obj && typeof obj === 'string' && (obj === "unknown" || obj === "constant" || obj === "const_variable" || obj === "variable")
+	return obj && typeof obj === 'string' && (obj === "unknown" || obj === "constant" || obj === "immutable_variable" || obj === "variable")
 }
 
 export const enum BitAlignment {

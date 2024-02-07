@@ -159,7 +159,7 @@ Little,
 public enum ConstantLevel {
 Unknown,
 Constant,
-ConstVariable,
+ImmutableVariable,
 Variable,
 }
 public enum BitAlignment {

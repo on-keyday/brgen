@@ -1115,10 +1115,10 @@ func (n *Endian) UnmarshalJSON(data []byte) error {
 type ConstantLevel int
 
 const (
-	ConstantLevelUnknown       ConstantLevel = 0
-	ConstantLevelConstant      ConstantLevel = 1
-	ConstantLevelConstVariable ConstantLevel = 2
-	ConstantLevelVariable      ConstantLevel = 3
+	ConstantLevelUnknown           ConstantLevel = 0
+	ConstantLevelConstant          ConstantLevel = 1
+	ConstantLevelImmutableVariable ConstantLevel = 2
+	ConstantLevelVariable          ConstantLevel = 3
 )
 
 func (n ConstantLevel) String() string {
@@ -1127,8 +1127,8 @@ func (n ConstantLevel) String() string {
 		return "unknown"
 	case ConstantLevelConstant:
 		return "constant"
-	case ConstantLevelConstVariable:
-		return "const_variable"
+	case ConstantLevelImmutableVariable:
+		return "immutable_variable"
 	case ConstantLevelVariable:
 		return "variable"
 	default:
@@ -1146,8 +1146,8 @@ func (n *ConstantLevel) UnmarshalJSON(data []byte) error {
 		*n = ConstantLevelUnknown
 	case "constant":
 		*n = ConstantLevelConstant
-	case "const_variable":
-		*n = ConstantLevelConstVariable
+	case "immutable_variable":
+		*n = ConstantLevelImmutableVariable
 	case "variable":
 		*n = ConstantLevelVariable
 	default:
