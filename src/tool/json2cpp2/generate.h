@@ -252,6 +252,118 @@ namespace j2cp2 {
             }
         }
 
+        void write_common_type_accessor(const std::string& cond_u, const std::shared_ptr<ast::Field>& uf, ast::UnionType* ut) {
+            // write getter func
+            map_line(uf->loc);
+            w.writeln("std::optional<", get_type_name(ut->common_type), "> ", uf->ident->ident, "() const {");
+            {
+                auto indent = w.indent_scope();
+                auto make_access = [&](const std::shared_ptr<ast::Field>& f) {
+                    auto a = str.to_string(f->ident);
+                    check_variant_alternative(f->belong_struct.lock());
+                    map_line(f->loc);
+                    w.writeln("return ", a, ";");
+                };
+                bool has_els = false;
+                bool end_else = false;
+                for (auto& c : ut->candidates) {
+                    auto cond = c->cond.lock();
+                    if (cond) {
+                        auto defs = str.collect_defined_ident(cond);
+                        for (auto& d : defs) {
+                            code_one_node(d);
+                        }
+                        auto cond_s = str.to_string(cond);
+                        map_line(c->loc);
+                        w.writeln("if (", cond_s, "==", cond_u, ") {");
+                        {
+                            auto f = c->field.lock();
+                            if (!f) {
+                                w.writeln("return std::nullopt;");
+                            }
+                            else {
+                                make_access(f);
+                            }
+                        }
+                        w.writeln("}");
+                    }
+                    else {
+                        auto f = c->field.lock();
+                        if (!f) {
+                            w.writeln("return std::nullopt;");
+                        }
+                        else {
+                            make_access(f);
+                        }
+                        end_else = true;
+                    }
+                }
+                if (!end_else) {
+                    w.writeln("return std::nullopt;");
+                }
+                str.map_ident(uf->ident, "(*${THIS}" + uf->ident->ident + "())");
+            }
+            w.writeln("}");
+
+            // write setter func
+            map_line(uf->loc);
+            w.writeln("bool ", uf->ident->ident, "(const ", get_type_name(ut->common_type), "& v) {");
+            {
+                auto indent = w.indent_scope();
+                auto make_access = [&](const std::shared_ptr<ast::Field>& f) {
+                    map_line(f->loc);
+                    set_variant_alternative(f->belong_struct.lock());
+                    auto a = str.to_string(f->ident);
+                    w.writeln(a, " = v;");
+                    w.writeln("return true;");
+                };
+                bool has_els = false;
+                bool end_else = false;
+                for (auto& c : ut->candidates) {
+                    auto cond = c->cond.lock();
+                    if (cond) {
+                        auto defs = str.collect_defined_ident(cond);
+                        for (auto& d : defs) {
+                            code_one_node(d);
+                        }
+                        auto cond_s = str.to_string(cond);
+                        map_line(c->loc);
+                        w.writeln("if (", cond_s, "==", cond_u, ") {");
+                        {
+                            auto indent = w.indent_scope();
+                            auto f = c->field.lock();
+                            if (!f) {
+                                w.writeln("return false;");
+                            }
+                            else {
+                                make_access(f);
+                            }
+                        }
+                        w.writeln("}");
+                    }
+                    else {
+                        auto f = c->field.lock();
+                        if (!f) {
+                            w.writeln("return false;");
+                        }
+                        else {
+                            make_access(f);
+                        }
+                        end_else = true;
+                    }
+                }
+                if (!end_else) {
+                    w.writeln("return false;");
+                }
+            }
+            w.writeln("}");
+        }
+
+        void write_each_type_accessor(const std::string& cond_u, const std::shared_ptr<ast::Field>& uf, ast::UnionType* ut) {
+            for (auto& cand : ut->candidates) {
+            }
+        }
+
         void write_struct_union(ast::StructUnionType* union_ty) {
             map_line(union_ty->loc);
             if (use_variant) {
@@ -301,110 +413,10 @@ namespace j2cp2 {
                     cond_u = "true";
                 }
                 if (ut->common_type) {
-                    // write getter func
-                    map_line(uf->loc);
-                    w.writeln("std::optional<", get_type_name(ut->common_type), "> ", uf->ident->ident, "() const {");
-                    {
-                        auto indent = w.indent_scope();
-                        auto make_access = [&](const std::shared_ptr<ast::Field>& f) {
-                            auto a = str.to_string(f->ident);
-                            check_variant_alternative(f->belong_struct.lock());
-                            map_line(f->loc);
-                            w.writeln("return ", a, ";");
-                        };
-                        bool has_els = false;
-                        bool end_else = false;
-                        for (auto& c : ut->candidates) {
-                            auto cond = c->cond.lock();
-                            if (cond) {
-                                auto defs = str.collect_defined_ident(cond);
-                                for (auto& d : defs) {
-                                    code_one_node(d);
-                                }
-                                auto cond_s = str.to_string(cond);
-                                map_line(c->loc);
-                                w.writeln("if (", cond_s, "==", cond_u, ") {");
-                                {
-                                    auto f = c->field.lock();
-                                    if (!f) {
-                                        w.writeln("return std::nullopt;");
-                                    }
-                                    else {
-                                        make_access(f);
-                                    }
-                                }
-                                w.writeln("}");
-                            }
-                            else {
-                                auto f = c->field.lock();
-                                if (!f) {
-                                    w.writeln("return std::nullopt;");
-                                }
-                                else {
-                                    make_access(f);
-                                }
-                                end_else = true;
-                            }
-                        }
-                        if (!end_else) {
-                            w.writeln("return std::nullopt;");
-                        }
-                        str.map_ident(uf->ident, "(*${THIS}" + uf->ident->ident + "())");
-                    }
-                    w.writeln("}");
-
-                    // write setter func
-                    map_line(uf->loc);
-                    w.writeln("bool ", uf->ident->ident, "(const ", get_type_name(ut->common_type), "& v) {");
-                    {
-                        auto indent = w.indent_scope();
-                        auto make_access = [&](const std::shared_ptr<ast::Field>& f) {
-                            map_line(f->loc);
-                            set_variant_alternative(f->belong_struct.lock());
-                            auto a = str.to_string(f->ident);
-                            w.writeln(a, " = v;");
-                            w.writeln("return true;");
-                        };
-                        bool has_els = false;
-                        bool end_else = false;
-                        for (auto& c : ut->candidates) {
-                            auto cond = c->cond.lock();
-                            if (cond) {
-                                auto defs = str.collect_defined_ident(cond);
-                                for (auto& d : defs) {
-                                    code_one_node(d);
-                                }
-                                auto cond_s = str.to_string(cond);
-                                map_line(c->loc);
-                                w.writeln("if (", cond_s, "==", cond_u, ") {");
-                                {
-                                    auto indent = w.indent_scope();
-                                    auto f = c->field.lock();
-                                    if (!f) {
-                                        w.writeln("return false;");
-                                    }
-                                    else {
-                                        make_access(f);
-                                    }
-                                }
-                                w.writeln("}");
-                            }
-                            else {
-                                auto f = c->field.lock();
-                                if (!f) {
-                                    w.writeln("return false;");
-                                }
-                                else {
-                                    make_access(f);
-                                }
-                                end_else = true;
-                            }
-                        }
-                        if (!end_else) {
-                            w.writeln("return false;");
-                        }
-                    }
-                    w.writeln("}");
+                    write_common_type_accessor(cond_u, uf, ut);
+                }
+                else {
+                    write_each_type_accessor(cond_u, uf, ut);
                 }
             }
         }

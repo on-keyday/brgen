@@ -36,7 +36,7 @@ format WasmOSMessage:
             data :tcpip_data_fields
         MessageType.TCPIP_CLOSED_MSG:
             data :tcpip_closed_fields
-        .. => data :[1508-8]u8
+        .. => data :[1500]u8
 
 format tcpip_connect_fields:
     dst_addr :ul32

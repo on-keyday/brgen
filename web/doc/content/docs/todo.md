@@ -73,6 +73,8 @@ ToDo リストです(2023/2/01)
 - input.peek = true を指定している場合、フォーマットのサイズ計算から除外する
 - input.subrange 構文で offset を指定している場合、input.peek = true と同等の扱いにする
 - state 変数に readonly 化する構文をつける?
+- available(field,Type) の構文を追加
+- union を特定の型にして使うときにはキャストで明示
 
 # Done リスト
 
