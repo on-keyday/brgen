@@ -3291,6 +3291,7 @@ pub struct Match {
 	pub cond_scope: Option<Rc<RefCell<Scope>>>,
 	pub cond: Option<Expr>,
 	pub branch: Vec<Rc<RefCell<MatchBranch>>>,
+	pub struct_union_type: Option<Rc<RefCell<StructUnionType>>>,
 }
 
 impl TryFrom<&Expr> for Rc<RefCell<Match>> {
@@ -5311,6 +5312,7 @@ pub struct StructUnionType {
 	pub structs: Vec<Rc<RefCell<StructType>>>,
 	pub base: Option<ExprWeak>,
 	pub union_fields: Vec<Weak<RefCell<Field>>>,
+	pub exhaustive: bool,
 }
 
 impl TryFrom<&Type> for Rc<RefCell<StructUnionType>> {
@@ -6667,7 +6669,9 @@ pub struct EnumMember {
 	pub belong: Option<MemberWeak>,
 	pub belong_struct: Option<Weak<RefCell<StructType>>>,
 	pub ident: Option<Rc<RefCell<Ident>>>,
-	pub expr: Option<Expr>,
+	pub raw_expr: Option<Expr>,
+	pub value: Option<Expr>,
+	pub str_literal: Option<Rc<RefCell<StrLiteral>>>,
 }
 
 impl TryFrom<&Member> for Rc<RefCell<EnumMember>> {
@@ -7457,6 +7461,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				cond_scope: None,
 				cond: None,
 				branch: Vec::new(),
+				struct_union_type: None,
 				})))
 			},
 			NodeType::Range => {
@@ -7737,6 +7742,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				structs: Vec::new(),
 				base: None,
 				union_fields: Vec::new(),
+				exhaustive: false,
 				})))
 			},
 			NodeType::UnionType => {
@@ -7904,7 +7910,9 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				belong: None,
 				belong_struct: None,
 				ident: None,
-				expr: None,
+				raw_expr: None,
+				value: None,
+				str_literal: None,
 				})))
 			},
 			NodeType::Function => {
@@ -8983,6 +8991,25 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						x =>return Err(Error::MismatchNodeType(x.into(),branch_body.into())),
 					};
 					node.borrow_mut().branch.push(branch_body.clone());
+				}
+				let struct_union_type_body = match raw_node.body.get("struct_union_type") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"struct_union_type")),
+				};
+ 				if !struct_union_type_body.is_null() {
+					let struct_union_type_body = match struct_union_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(struct_union_type_body.into(),JSONType::Number)),
+					};
+					let struct_union_type_body = match nodes.get(struct_union_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(struct_union_type_body as usize)),
+					};
+					let struct_union_type_body = match struct_union_type_body {
+						Node::StructUnionType(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),struct_union_type_body.into())),
+					};
+					node.borrow_mut().struct_union_type = Some(struct_union_type_body.clone());
 				}
 			},
 			NodeType::Range => {
@@ -10858,6 +10885,14 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().union_fields.push(Rc::downgrade(&union_fields_body));
 				}
+				let exhaustive_body = match raw_node.body.get("exhaustive") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"exhaustive")),
+				};
+				node.borrow_mut().exhaustive = match exhaustive_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(exhaustive_body.into(),JSONType::Bool)),
+				};
 			},
 			NodeType::UnionType => {
 				let node = nodes[i].clone();
@@ -12152,20 +12187,54 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().ident = Some(ident_body.clone());
 				}
-				let expr_body = match raw_node.body.get("expr") {
+				let raw_expr_body = match raw_node.body.get("raw_expr") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"expr")),
+					None=>return Err(Error::MissingField(node_type,"raw_expr")),
 				};
- 				if !expr_body.is_null() {
-					let expr_body = match expr_body.as_u64() {
+ 				if !raw_expr_body.is_null() {
+					let raw_expr_body = match raw_expr_body.as_u64() {
 						Some(v)=>v,
-						None=>return Err(Error::MismatchJSONType(expr_body.into(),JSONType::Number)),
+						None=>return Err(Error::MismatchJSONType(raw_expr_body.into(),JSONType::Number)),
 					};
-					let expr_body = match nodes.get(expr_body as usize) {
+					let raw_expr_body = match nodes.get(raw_expr_body as usize) {
 						Some(v)=>v,
-						None => return Err(Error::IndexOutOfBounds(expr_body as usize)),
+						None => return Err(Error::IndexOutOfBounds(raw_expr_body as usize)),
 					};
-					node.borrow_mut().expr = Some(expr_body.try_into()?);
+					node.borrow_mut().raw_expr = Some(raw_expr_body.try_into()?);
+				}
+				let value_body = match raw_node.body.get("value") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"value")),
+				};
+ 				if !value_body.is_null() {
+					let value_body = match value_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(value_body.into(),JSONType::Number)),
+					};
+					let value_body = match nodes.get(value_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(value_body as usize)),
+					};
+					node.borrow_mut().value = Some(value_body.try_into()?);
+				}
+				let str_literal_body = match raw_node.body.get("str_literal") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"str_literal")),
+				};
+ 				if !str_literal_body.is_null() {
+					let str_literal_body = match str_literal_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(str_literal_body.into(),JSONType::Number)),
+					};
+					let str_literal_body = match nodes.get(str_literal_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(str_literal_body as usize)),
+					};
+					let str_literal_body = match str_literal_body {
+						Node::StrLiteral(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),str_literal_body.into())),
+					};
+					node.borrow_mut().str_literal = Some(str_literal_body.clone());
 				}
 			},
 			NodeType::Function => {
@@ -12834,6 +12903,11 @@ where
 					return;
 				}
 			}
+			if let Some(node) = &node.borrow().struct_union_type{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
 		},
 		Node::Range(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
@@ -13255,7 +13329,17 @@ where
 					return;
 				}
 			}
-			if let Some(node) = &node.borrow().expr{
+			if let Some(node) = &node.borrow().raw_expr{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
+			if let Some(node) = &node.borrow().value{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
+			if let Some(node) = &node.borrow().str_literal{
 				if !f.visit(&node.into()){
 					return;
 				}

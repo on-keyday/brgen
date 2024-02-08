@@ -91,8 +91,8 @@ func main() {
 				return s
 			}
 			toStr := func(s *ast.EnumMember) string {
-				if s, ok := s.Expr.(*ast.StrLiteral); ok {
-					return s.Value
+				if s.StrLiteral != nil {
+					return s.StrLiteral.Value
 				}
 				return fmt.Sprintf("%q", normalizeName(s.Ident.Ident))
 			}

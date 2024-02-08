@@ -531,6 +531,7 @@ export interface Match extends Expr {
 	cond_scope: Scope|null;
 	cond: Expr|null;
 	branch: MatchBranch[];
+	struct_union_type: StructUnionType|null;
 }
 
 export function isMatch(obj: any): obj is Match {
@@ -809,6 +810,7 @@ export interface StructUnionType extends Type {
 	structs: StructType[];
 	base: Expr|null;
 	union_fields: Field[];
+	exhaustive: boolean;
 }
 
 export function isStructUnionType(obj: any): obj is StructUnionType {
@@ -959,7 +961,9 @@ export function isEnum(obj: any): obj is Enum {
 }
 
 export interface EnumMember extends Member {
-	expr: Expr|null;
+	raw_expr: Expr|null;
+	value: Expr|null;
+	str_literal: StrLiteral|null;
 }
 
 export function isEnumMember(obj: any): obj is EnumMember {
@@ -1317,6 +1321,7 @@ export function parseAST(obj: JsonAst): Program {
 				cond_scope: null,
 				cond: null,
 				branch: [],
+				struct_union_type: null,
 			}
 			c.node.push(n);
 			break;
@@ -1687,6 +1692,7 @@ export function parseAST(obj: JsonAst): Program {
 				structs: [],
 				base: null,
 				union_fields: [],
+				exhaustive: false,
 			}
 			c.node.push(n);
 			break;
@@ -1902,7 +1908,9 @@ export function parseAST(obj: JsonAst): Program {
 				belong: null,
 				belong_struct: null,
 				ident: null,
-				expr: null,
+				raw_expr: null,
+				value: null,
+				str_literal: null,
 			}
 			c.node.push(n);
 			break;
@@ -2499,6 +2507,14 @@ export function parseAST(obj: JsonAst): Program {
 				}
 				n.branch.push(tmpbranch);
 			}
+			if (on.body?.struct_union_type !== null && typeof on.body?.struct_union_type !== 'number') {
+				throw new Error('invalid node list at Match::struct_union_type');
+			}
+			const tmpstruct_union_type = on.body.struct_union_type === null ? null : c.node[on.body.struct_union_type];
+			if (!(tmpstruct_union_type === null || isStructUnionType(tmpstruct_union_type))) {
+				throw new Error('invalid node list at Match::struct_union_type');
+			}
+			n.struct_union_type = tmpstruct_union_type;
 			break;
 		}
 		case "range": {
@@ -3454,6 +3470,11 @@ export function parseAST(obj: JsonAst): Program {
 				}
 				n.union_fields.push(tmpunion_fields);
 			}
+			const tmpexhaustive = on.body?.exhaustive;
+			if (typeof tmpexhaustive !== "boolean") {
+				throw new Error('invalid node list at StructUnionType::exhaustive');
+			}
+			n.exhaustive = on.body.exhaustive;
 			break;
 		}
 		case "union_type": {
@@ -4092,14 +4113,30 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at EnumMember::ident');
 			}
 			n.ident = tmpident;
-			if (on.body?.expr !== null && typeof on.body?.expr !== 'number') {
-				throw new Error('invalid node list at EnumMember::expr');
+			if (on.body?.raw_expr !== null && typeof on.body?.raw_expr !== 'number') {
+				throw new Error('invalid node list at EnumMember::raw_expr');
 			}
-			const tmpexpr = on.body.expr === null ? null : c.node[on.body.expr];
-			if (!(tmpexpr === null || isExpr(tmpexpr))) {
-				throw new Error('invalid node list at EnumMember::expr');
+			const tmpraw_expr = on.body.raw_expr === null ? null : c.node[on.body.raw_expr];
+			if (!(tmpraw_expr === null || isExpr(tmpraw_expr))) {
+				throw new Error('invalid node list at EnumMember::raw_expr');
 			}
-			n.expr = tmpexpr;
+			n.raw_expr = tmpraw_expr;
+			if (on.body?.value !== null && typeof on.body?.value !== 'number') {
+				throw new Error('invalid node list at EnumMember::value');
+			}
+			const tmpvalue = on.body.value === null ? null : c.node[on.body.value];
+			if (!(tmpvalue === null || isExpr(tmpvalue))) {
+				throw new Error('invalid node list at EnumMember::value');
+			}
+			n.value = tmpvalue;
+			if (on.body?.str_literal !== null && typeof on.body?.str_literal !== 'number') {
+				throw new Error('invalid node list at EnumMember::str_literal');
+			}
+			const tmpstr_literal = on.body.str_literal === null ? null : c.node[on.body.str_literal];
+			if (!(tmpstr_literal === null || isStrLiteral(tmpstr_literal))) {
+				throw new Error('invalid node list at EnumMember::str_literal');
+			}
+			n.str_literal = tmpstr_literal;
 			break;
 		}
 		case "function": {
@@ -4650,6 +4687,12 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			for (const e of n.branch) {
 				const result = fn(fn,e);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.struct_union_type !== null) {
+				const result = fn(fn,n.struct_union_type);
 				if (result === false) {
 					return;
 				}
@@ -5384,8 +5427,20 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 					return;
 				}
 			}
-			if (n.expr !== null) {
-				const result = fn(fn,n.expr);
+			if (n.raw_expr !== null) {
+				const result = fn(fn,n.raw_expr);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.value !== null) {
+				const result = fn(fn,n.value);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.str_literal !== null) {
+				const result = fn(fn,n.str_literal);
 				if (result === false) {
 					return;
 				}

@@ -1520,11 +1520,13 @@ int ast2c_Match_parse(ast2c_Ast* ast,ast2c_Match* s,ast2c_json_handlers* h, void
 	s->cond_scope = NULL;
 	s->cond = NULL;
 	s->branch = NULL;
+	s->struct_union_type = NULL;
 	void* expr_type = h->object_get(h, obj_body, "expr_type");
 	void* constant_level = h->object_get(h, obj_body, "constant_level");
 	void* cond_scope = h->object_get(h, obj_body, "cond_scope");
 	void* cond = h->object_get(h, obj_body, "cond");
 	void* branch = h->object_get(h, obj_body, "branch");
+	void* struct_union_type = h->object_get(h, obj_body, "struct_union_type");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_Match::loc is null"); } return 0; }
 	if (!expr_type) { if(h->error) { h->error(h,expr_type, "ast2c_Match::expr_type is null"); } return 0; }
 	if (!constant_level) { if(h->error) { h->error(h,constant_level, "ast2c_Match::constant_level is null"); } return 0; }
@@ -1535,6 +1537,7 @@ int ast2c_Match_parse(ast2c_Ast* ast,ast2c_Match* s,ast2c_json_handlers* h, void
 		if(h->error) { h->error(h,branch, "failed to get array size of ast2c_Match::branch"); }
 		return NULL;
 	}
+	if (!struct_union_type) { if(h->error) { h->error(h,struct_union_type, "ast2c_Match::struct_union_type is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_Match::loc"); }
 		goto error;
@@ -2522,6 +2525,7 @@ int ast2c_StructUnionType_parse(ast2c_Ast* ast,ast2c_StructUnionType* s,ast2c_js
 	void* structs = h->object_get(h, obj_body, "structs");
 	void* base = h->object_get(h, obj_body, "base");
 	void* union_fields = h->object_get(h, obj_body, "union_fields");
+	void* exhaustive = h->object_get(h, obj_body, "exhaustive");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_StructUnionType::loc is null"); } return 0; }
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_StructUnionType::is_explicit is null"); } return 0; }
 	if (!non_dynamic) { if(h->error) { h->error(h,non_dynamic, "ast2c_StructUnionType::non_dynamic is null"); } return 0; }
@@ -2544,6 +2548,7 @@ int ast2c_StructUnionType_parse(ast2c_Ast* ast,ast2c_StructUnionType* s,ast2c_js
 		if(h->error) { h->error(h,union_fields, "failed to get array size of ast2c_StructUnionType::union_fields"); }
 		return NULL;
 	}
+	if (!exhaustive) { if(h->error) { h->error(h,exhaustive, "ast2c_StructUnionType::exhaustive is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_StructUnionType::loc"); }
 		goto error;
@@ -3158,16 +3163,22 @@ int ast2c_EnumMember_parse(ast2c_Ast* ast,ast2c_EnumMember* s,ast2c_json_handler
 	s->belong = NULL;
 	s->belong_struct = NULL;
 	s->ident = NULL;
-	s->expr = NULL;
+	s->raw_expr = NULL;
+	s->value = NULL;
+	s->str_literal = NULL;
 	void* belong = h->object_get(h, obj_body, "belong");
 	void* belong_struct = h->object_get(h, obj_body, "belong_struct");
 	void* ident = h->object_get(h, obj_body, "ident");
-	void* expr = h->object_get(h, obj_body, "expr");
+	void* raw_expr = h->object_get(h, obj_body, "raw_expr");
+	void* value = h->object_get(h, obj_body, "value");
+	void* str_literal = h->object_get(h, obj_body, "str_literal");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_EnumMember::loc is null"); } return 0; }
 	if (!belong) { if(h->error) { h->error(h,belong, "ast2c_EnumMember::belong is null"); } return 0; }
 	if (!belong_struct) { if(h->error) { h->error(h,belong_struct, "ast2c_EnumMember::belong_struct is null"); } return 0; }
 	if (!ident) { if(h->error) { h->error(h,ident, "ast2c_EnumMember::ident is null"); } return 0; }
-	if (!expr) { if(h->error) { h->error(h,expr, "ast2c_EnumMember::expr is null"); } return 0; }
+	if (!raw_expr) { if(h->error) { h->error(h,raw_expr, "ast2c_EnumMember::raw_expr is null"); } return 0; }
+	if (!value) { if(h->error) { h->error(h,value, "ast2c_EnumMember::value is null"); } return 0; }
+	if (!str_literal) { if(h->error) { h->error(h,str_literal, "ast2c_EnumMember::str_literal is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_EnumMember::loc"); }
 		goto error;

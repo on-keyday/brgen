@@ -337,6 +337,7 @@ class Match(Expr):
     cond_scope: Optional[Scope]
     cond: Optional[Expr]
     branch: List[MatchBranch]
+    struct_union_type: Optional[StructUnionType]
 
 
 class Range(Expr):
@@ -499,6 +500,7 @@ class StructUnionType(Type):
     structs: List[StructType]
     base: Optional[Expr]
     union_fields: List[Field]
+    exhaustive: bool
 
 
 class UnionType(Type):
@@ -586,7 +588,9 @@ class Enum(Member):
 
 
 class EnumMember(Member):
-    expr: Optional[Expr]
+    raw_expr: Optional[Expr]
+    value: Optional[Expr]
+    str_literal: Optional[StrLiteral]
 
 
 class Function(Member):
@@ -1163,6 +1167,11 @@ def ast2node(ast :JsonAst) -> Program:
                 else:
                     node[i].cond = None
                 node[i].branch = [(node[x] if isinstance(node[x],MatchBranch) else raiseError(TypeError('type mismatch at Match::branch'))) for x in ast.node[i].body["branch"]]
+                if ast.node[i].body["struct_union_type"] is not None:
+                    x = node[ast.node[i].body["struct_union_type"]]
+                    node[i].struct_union_type = x if isinstance(x,StructUnionType) else raiseError(TypeError('type mismatch at Match::struct_union_type'))
+                else:
+                    node[i].struct_union_type = None
             case NodeType.RANGE:
                 if ast.node[i].body["expr_type"] is not None:
                     x = node[ast.node[i].body["expr_type"]]
@@ -1610,6 +1619,8 @@ def ast2node(ast :JsonAst) -> Program:
                 else:
                     node[i].base = None
                 node[i].union_fields = [(node[x] if isinstance(node[x],Field) else raiseError(TypeError('type mismatch at StructUnionType::union_fields'))) for x in ast.node[i].body["union_fields"]]
+                x = ast.node[i].body["exhaustive"]
+                node[i].exhaustive = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at StructUnionType::exhaustive'))
             case NodeType.UNION_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at UnionType::is_explicit'))
@@ -1914,11 +1925,21 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].ident = x if isinstance(x,Ident) else raiseError(TypeError('type mismatch at EnumMember::ident'))
                 else:
                     node[i].ident = None
-                if ast.node[i].body["expr"] is not None:
-                    x = node[ast.node[i].body["expr"]]
-                    node[i].expr = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at EnumMember::expr'))
+                if ast.node[i].body["raw_expr"] is not None:
+                    x = node[ast.node[i].body["raw_expr"]]
+                    node[i].raw_expr = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at EnumMember::raw_expr'))
                 else:
-                    node[i].expr = None
+                    node[i].raw_expr = None
+                if ast.node[i].body["value"] is not None:
+                    x = node[ast.node[i].body["value"]]
+                    node[i].value = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at EnumMember::value'))
+                else:
+                    node[i].value = None
+                if ast.node[i].body["str_literal"] is not None:
+                    x = node[ast.node[i].body["str_literal"]]
+                    node[i].str_literal = x if isinstance(x,StrLiteral) else raiseError(TypeError('type mismatch at EnumMember::str_literal'))
+                else:
+                    node[i].str_literal = None
             case NodeType.FUNCTION:
                 if ast.node[i].body["belong"] is not None:
                     x = node[ast.node[i].body["belong"]]
@@ -2155,6 +2176,9 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
                   return
           for i in range(len(x.branch)):
               if f(f,x.branch[i]) == False:
+                  return
+          if x.struct_union_type is not None:
+              if f(f,x.struct_union_type) == False:
                   return
         case x if isinstance(x,Range):
           if x.expr_type is not None:
@@ -2417,8 +2441,14 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
           if x.ident is not None:
               if f(f,x.ident) == False:
                   return
-          if x.expr is not None:
-              if f(f,x.expr) == False:
+          if x.raw_expr is not None:
+              if f(f,x.raw_expr) == False:
+                  return
+          if x.value is not None:
+              if f(f,x.value) == False:
+                  return
+          if x.str_literal is not None:
+              if f(f,x.str_literal) == False:
                   return
         case x if isinstance(x,Function):
           if x.ident is not None:

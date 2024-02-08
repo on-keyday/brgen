@@ -771,27 +771,10 @@ func (g *Generator) writeEnum(v *ast2go.Enum) {
 	} else {
 		g.Printf("type %s int\n", v.Ident.Ident)
 	}
-	hasIota := false
-	prevValue := ""
 	g.Printf("const (\n")
 	for _, m := range v.Members {
-		if m.Expr != nil {
-			value := g.exprStringer.ExprString(m.Expr)
-			g.Printf("%s_%s %s = %s\n", v.Ident.Ident, m.Ident.Ident, v.Ident.Ident, value)
-			hasIota = false
-		} else {
-			if !hasIota {
-				if len(prevValue) > 0 {
-					g.Printf("%s_%s %s = iota + %s\n", v.Ident.Ident, m.Ident.Ident, v.Ident.Ident, prevValue)
-				} else {
-					g.Printf("%s_%s %s = iota\n", v.Ident.Ident, m.Ident.Ident, v.Ident.Ident)
-				}
-				hasIota = true
-			} else {
-				g.Printf("%s_%s\n", v.Ident.Ident, m.Ident.Ident)
-			}
-
-		}
+		value := g.exprStringer.ExprString(m.Value)
+		g.Printf("%s_%s %s = %s\n", v.Ident.Ident, m.Ident.Ident, v.Ident.Ident, value)
 		g.exprStringer.SetIdentMap(m.Ident, "%s"+v.Ident.Ident+"_"+m.Ident.Ident)
 	}
 	g.Printf(")\n")
@@ -800,7 +783,11 @@ func (g *Generator) writeEnum(v *ast2go.Enum) {
 	g.Printf("switch t {\n")
 	for _, m := range v.Members {
 		g.Printf("case %s_%s:\n", v.Ident.Ident, m.Ident.Ident)
-		g.Printf("return %q\n", m.Ident.Ident)
+		if m.StrLiteral != nil {
+			g.Printf("return %s\n", m.StrLiteral.Value)
+		} else {
+			g.Printf("return %q\n", m.Ident.Ident)
+		}
 	}
 	g.Printf("}\n")
 	g.imports["fmt"] = struct{}{}

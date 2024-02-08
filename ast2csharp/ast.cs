@@ -335,6 +335,7 @@ public class Match : Expr{
 	public Scope? CondScope{get;set;}
 	public Expr? Cond{get;set;}
 	public List<MatchBranch>? Branch{get;set;}
+	public StructUnionType? StructUnionType{get;set;}
 }
 public class Range : Expr{
 	public Loc Loc{get;set;}
@@ -555,6 +556,7 @@ public class StructUnionType : Type{
 	public List<StructType>? Structs{get;set;}
 	public Expr? Base{get;set;}
 	public List<Field>? UnionFields{get;set;}
+	public bool Exhaustive{get;set;}
 }
 public class UnionType : Type{
 	public Loc Loc{get;set;}
@@ -690,7 +692,9 @@ public class EnumMember : Member{
 	public Member? Belong{get;set;}
 	public StructType? BelongStruct{get;set;}
 	public Ident? Ident{get;set;}
-	public Expr? Expr{get;set;}
+	public Expr? RawExpr{get;set;}
+	public Expr? Value{get;set;}
+	public StrLiteral? StrLiteral{get;set;}
 }
 public class Function : Member{
 	public Loc Loc{get;set;}
@@ -1103,6 +1107,7 @@ public static class Ast {
                node.CondScope = ast.Node[i].Body[cond_scope];
                node.Cond = ast.Node[i].Body[cond];
                node.Branch = ast.Node[i].Body[branch];
+               node.StructUnionType = ast.Node[i].Body[struct_union_type];
            case NodeType.Range:
                var node = nodes[i] as Range;
                node.Loc = ast.Node[i].Body[loc];
@@ -1323,6 +1328,7 @@ public static class Ast {
                node.Structs = ast.Node[i].Body[structs];
                node.Base = ast.Node[i].Body[base];
                node.UnionFields = ast.Node[i].Body[union_fields];
+               node.Exhaustive = ast.Node[i].Body[exhaustive];
            case NodeType.UnionType:
                var node = nodes[i] as UnionType;
                node.Loc = ast.Node[i].Body[loc];
@@ -1458,7 +1464,9 @@ public static class Ast {
                node.Belong = ast.Node[i].Body[belong];
                node.BelongStruct = ast.Node[i].Body[belong_struct];
                node.Ident = ast.Node[i].Body[ident];
-               node.Expr = ast.Node[i].Body[expr];
+               node.RawExpr = ast.Node[i].Body[raw_expr];
+               node.Value = ast.Node[i].Body[value];
+               node.StrLiteral = ast.Node[i].Body[str_literal];
            case NodeType.Function:
                var node = nodes[i] as Function;
                node.Loc = ast.Node[i].Body[loc];

@@ -668,6 +668,7 @@ struct ast2c_Match {
 	ast2c_Expr* cond;
 	ast2c_MatchBranch** branch;
 	size_t branch_size;
+	ast2c_StructUnionType* struct_union_type;
 };
 
 // returns 1 if succeed 0 if failed
@@ -1045,6 +1046,7 @@ struct ast2c_StructUnionType {
 	ast2c_Expr* base;
 	ast2c_Field** union_fields;
 	size_t union_fields_size;
+	int exhaustive;
 };
 
 // returns 1 if succeed 0 if failed
@@ -1265,7 +1267,9 @@ struct ast2c_EnumMember {
 	ast2c_Member* belong;
 	ast2c_StructType* belong_struct;
 	ast2c_Ident* ident;
-	ast2c_Expr* expr;
+	ast2c_Expr* raw_expr;
+	ast2c_Expr* value;
+	ast2c_StrLiteral* str_literal;
 };
 
 // returns 1 if succeed 0 if failed

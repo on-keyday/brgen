@@ -1767,12 +1767,13 @@ func (n *Index) GetLoc() Loc {
 }
 
 type Match struct {
-	Loc           Loc
-	ExprType      Type
-	ConstantLevel ConstantLevel
-	CondScope     *Scope
-	Cond          Expr
-	Branch        []*MatchBranch
+	Loc             Loc
+	ExprType        Type
+	ConstantLevel   ConstantLevel
+	CondScope       *Scope
+	Cond            Expr
+	Branch          []*MatchBranch
+	StructUnionType *StructUnionType
 }
 
 func (n *Match) isExpr() {}
@@ -2503,6 +2504,7 @@ type StructUnionType struct {
 	Structs      []*StructType
 	Base         Expr
 	UnionFields  []*Field
+	Exhaustive   bool
 }
 
 func (n *StructUnionType) isType() {}
@@ -3000,7 +3002,9 @@ type EnumMember struct {
 	Belong       Member
 	BelongStruct *StructType
 	Ident        *Ident
-	Expr         Expr
+	RawExpr      Expr
+	Value        Expr
+	StrLiteral   *StrLiteral
 }
 
 func (n *EnumMember) isMember() {}
@@ -3679,11 +3683,12 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeMatch:
 			v := n.node[i].(*Match)
 			var tmp struct {
-				ExprType      *uintptr      `json:"expr_type"`
-				ConstantLevel ConstantLevel `json:"constant_level"`
-				CondScope     *uintptr      `json:"cond_scope"`
-				Cond          *uintptr      `json:"cond"`
-				Branch        []uintptr     `json:"branch"`
+				ExprType        *uintptr      `json:"expr_type"`
+				ConstantLevel   ConstantLevel `json:"constant_level"`
+				CondScope       *uintptr      `json:"cond_scope"`
+				Cond            *uintptr      `json:"cond"`
+				Branch          []uintptr     `json:"branch"`
+				StructUnionType *uintptr      `json:"struct_union_type"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -3701,6 +3706,9 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.Branch = make([]*MatchBranch, len(tmp.Branch))
 			for j, k := range tmp.Branch {
 				v.Branch[j] = n.node[k].(*MatchBranch)
+			}
+			if tmp.StructUnionType != nil {
+				v.StructUnionType = n.node[*tmp.StructUnionType].(*StructUnionType)
 			}
 		case NodeTypeRange:
 			v := n.node[i].(*Range)
@@ -4267,6 +4275,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				Structs      []uintptr    `json:"structs"`
 				Base         *uintptr     `json:"base"`
 				UnionFields  []uintptr    `json:"union_fields"`
+				Exhaustive   bool         `json:"exhaustive"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -4293,6 +4302,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			for j, k := range tmp.UnionFields {
 				v.UnionFields[j] = n.node[k].(*Field)
 			}
+			v.Exhaustive = tmp.Exhaustive
 		case NodeTypeUnionType:
 			v := n.node[i].(*UnionType)
 			var tmp struct {
@@ -4657,7 +4667,9 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				Belong       *uintptr `json:"belong"`
 				BelongStruct *uintptr `json:"belong_struct"`
 				Ident        *uintptr `json:"ident"`
-				Expr         *uintptr `json:"expr"`
+				RawExpr      *uintptr `json:"raw_expr"`
+				Value        *uintptr `json:"value"`
+				StrLiteral   *uintptr `json:"str_literal"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -4671,8 +4683,14 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.Ident != nil {
 				v.Ident = n.node[*tmp.Ident].(*Ident)
 			}
-			if tmp.Expr != nil {
-				v.Expr = n.node[*tmp.Expr].(Expr)
+			if tmp.RawExpr != nil {
+				v.RawExpr = n.node[*tmp.RawExpr].(Expr)
+			}
+			if tmp.Value != nil {
+				v.Value = n.node[*tmp.Value].(Expr)
+			}
+			if tmp.StrLiteral != nil {
+				v.StrLiteral = n.node[*tmp.StrLiteral].(*StrLiteral)
 			}
 		case NodeTypeFunction:
 			v := n.node[i].(*Function)
@@ -5018,6 +5036,11 @@ func Walk(n Node, f Visitor) {
 		}
 		for _, w := range v.Branch {
 			if !f.Visit(f, w) {
+				return
+			}
+		}
+		if v.StructUnionType != nil {
+			if !f.Visit(f, v.StructUnionType) {
 				return
 			}
 		}
@@ -5407,8 +5430,18 @@ func Walk(n Node, f Visitor) {
 				return
 			}
 		}
-		if v.Expr != nil {
-			if !f.Visit(f, v.Expr) {
+		if v.RawExpr != nil {
+			if !f.Visit(f, v.RawExpr) {
+				return
+			}
+		}
+		if v.Value != nil {
+			if !f.Visit(f, v.Value) {
+				return
+			}
+		}
+		if v.StrLiteral != nil {
+			if !f.Visit(f, v.StrLiteral) {
 				return
 			}
 		}
