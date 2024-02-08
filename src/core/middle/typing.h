@@ -428,6 +428,18 @@ namespace brgen::middle {
             if_->constant_level = ast::ConstantLevel::variable;
         }
 
+        template <class T>
+        struct UnfilledRange {
+            T start;
+            T end;
+        };
+
+        template <class T>
+        void check_filler(T min_value, T max_value) {
+            std::vector<UnfilledRange<T>> unfilled;
+            unfilled.push_back({min_value, max_value});
+        }
+
         void check_exhaustiveness(ast::Match* m) {
             auto typ = m->cond->expr_type;
             auto enum_ = ast::as<ast::EnumType>(typ);
@@ -440,6 +452,19 @@ namespace brgen::middle {
                 return;
             }
             if (int_) {
+                if (int_->bit_size > 64) {
+                    return;  // TODO(on-keyday): currently we don't support large int
+                }
+                auto max_value_base = ~(~std::uint64_t(0) << *int_->bit_size);
+                if (int_->is_signed) {
+                    max_value_base = max_value_base >> 1;
+                    std::int64_t max_value = max_value_base;
+                    std::int64_t min_value = -max_value - 1;
+                }
+                else {
+                    std::uint64_t max_value = max_value_base;
+                    std::uint64_t min_value = 0;
+                }
             }
         }
 
