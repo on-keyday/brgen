@@ -1114,12 +1114,18 @@ namespace brgen::ast {
             }
             else {
                 // make (prev expr) + offset
-                auto add = std::make_shared<ast::Binary>();
-                add->loc = member->loc;
-                add->op = ast::BinaryOp::add;
-                add->left = prev_specified->value;
-                add->right = std::make_shared<ast::IntLiteral>(member->loc, brgen::nums(offset));
-                member->value = add;
+                if (auto i_lit = ast::as<ast::IntLiteral>(prev_specified->value);
+                    i_lit && i_lit->value == "0") {
+                    member->value = std::make_shared<ast::IntLiteral>(member->loc, brgen::nums(offset));
+                }
+                else {
+                    auto add = std::make_shared<ast::Binary>();
+                    add->loc = member->loc;
+                    add->op = ast::BinaryOp::add;
+                    add->left = prev_specified->value;
+                    add->right = std::make_shared<ast::IntLiteral>(member->loc, brgen::nums(offset));
+                    member->value = add;
+                }
             }
         }
 
