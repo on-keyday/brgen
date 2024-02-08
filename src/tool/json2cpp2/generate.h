@@ -645,9 +645,9 @@ namespace j2cp2 {
                 for (auto& c : enum_->members) {
                     map_line(c->loc);
                     w.write(c->ident->ident);
-                    if (c->expr) {
+                    if (c->value) {
                         ast::tool::Stringer s;
-                        w.write(" = ", s.to_string(c->expr));
+                        w.write(" = ", s.to_string(c->value));
                     }
                     w.writeln(",");
                     str.map_ident(c->ident, enum_->ident->ident, "::", c->ident->ident);

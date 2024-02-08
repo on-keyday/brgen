@@ -1106,6 +1106,84 @@ namespace brgen::ast {
             return field;
         }
 
+        void set_enum_value(std::shared_ptr<EnumMember>& member, size_t& offset, ast::EnumMember*& prev_specified) {
+            if (!prev_specified) {
+                auto int_lit = std::make_shared<ast::IntLiteral>(member->loc, "0");
+                member->value = int_lit;
+                prev_specified = member.get();
+            }
+            else {
+                // make (prev expr) + offset
+                auto add = std::make_shared<ast::Binary>();
+                add->loc = member->loc;
+                add->op = ast::BinaryOp::add;
+                add->left = prev_specified->value;
+                add->right = std::make_shared<ast::IntLiteral>(member->loc, brgen::nums(offset));
+                member->value = add;
+            }
+        }
+
+        std::shared_ptr<EnumMember> parse_enum_member(const std::shared_ptr<ast::Enum>& enum_, size_t& offset, ast::EnumMember*& prev_specified) {
+            auto ident = parse_ident();
+            ident->usage = IdentUsage::define_enum_member;
+            ident->expr_type = enum_->enum_type;
+            ident->constant_level = ConstantLevel::constant;
+            check_duplicated_def(ident.get());
+            auto member = std::make_shared<EnumMember>(ident->loc);
+            member->ident = ident;
+            member->belong = enum_;
+            ident->base = member;
+            s.skip_space();
+            if (s.consume_token("=")) {
+                s.skip_white();
+                member->raw_expr = parse_expr();
+                std::vector<std::shared_ptr<ast::Expr>> commas;
+                collect_args(member->raw_expr, commas);
+                if (commas.size() > 2) {
+                    s.report_error(member->raw_expr->loc, "enum member value must be 1 or 2 elements but got ", nums(commas.size()));
+                }
+                for (auto& expr : commas) {
+                    if (ast::as<ast::StrLiteral>(expr)) {
+                        if (member->str_literal) {
+                            s.report_error(expr->loc, "enum member str literal already specified");
+                        }
+                        member->str_literal = cast_to<ast::StrLiteral>(expr);
+                    }
+                    else {
+                        if (member->value) {
+                            s.report_error(expr->loc, "enum member value already specified");
+                        }
+                        member->value = expr;
+                        offset = 0;
+                        prev_specified = member.get();
+                    }
+                }
+                if (!member->value) {
+                    set_enum_value(member, offset, prev_specified);
+                }
+            }
+            else {
+                set_enum_value(member, offset, prev_specified);
+            }
+            member->comment = s.get_comments();
+            enum_->members.push_back(member);
+            s.skip_line();
+            offset++;
+            return member;
+        }
+
+        void parse_enum_base_type(std::shared_ptr<ast::Enum>& enum_, lexer::Token& base) {
+            s.skip_white();
+            enum_->base_type = parse_type(false);
+            s.skip_space();
+            s.must_consume_token(lexer::Tag::line);
+            s.skip_line();
+            auto indent = s.must_consume_token(lexer::Tag::indent);
+            if (indent.token.size() != base.token.size()) {
+                s.report_error(indent.loc, "indent size must be same as enum base");
+            }
+        }
+
         /*
             <enum> ::= "enum" <ident> ":\r\n" (":"<type>)? <enum member>+
             <enum member> ::= <indent> <ident> ("=" <expr>)?
@@ -1126,25 +1204,25 @@ namespace brgen::ast {
             auto m_scope = state.enter_member(enum_);
             auto s_scope = state.new_indent(s, base.token.size(), enum_->scope, enum_);
             if (auto tok = s.consume_token(":")) {
-                s.skip_white();
-                enum_->base_type = parse_type(false);
-                s.skip_space();
-                s.must_consume_token(lexer::Tag::line);
-                s.skip_line();
-                auto indent = s.must_consume_token(lexer::Tag::indent);
-                if (indent.token.size() != base.token.size()) {
-                    s.report_error(indent.loc, "indent size must be same as enum base");
-                }
+                parse_enum_base_type(enum_, base);
             }
 
-            ast::EnumMember* prev = nullptr;
+            ast::EnumMember* prev_specified = nullptr;
             size_t offset = 0;
-            auto set_enum_expr = [&](std::shared_ptr<ast::Expr>& expr) {
-                if (!prev) {
+            /*
+            auto set_enum_value = [&](std::shared_ptr<ast::EnumMember>& expr) {
+                if (!prev_specified) {
                     auto int_lit = std::make_shared<ast::IntLiteral>(base.loc, "0");
-                    int_lit->expr_type = enum_->enum_type;
+                    expr->value = int_lit;
+                    prev_specified = expr.get();
                 }
                 else {
+                    auto add = std::make_shared<ast::Binary>();
+                    add->loc = expr->loc;
+                    add->op = ast::BinaryOp::add;
+                    add->left = prev_specified->value;
+                    add->right = std::make_shared<ast::IntLiteral>(base.loc, brgen::nums(offset));
+                    expr->value = add;
                 }
             };
 
@@ -1161,26 +1239,48 @@ namespace brgen::ast {
                 s.skip_space();
                 if (s.consume_token("=")) {
                     s.skip_white();
-                    member->expr = parse_expr();
-                    offset = 0;
+                    member->raw_expr = parse_expr();
+                    std::vector<std::shared_ptr<ast::Expr>> commas;
+                    collect_args(member->raw_expr, commas);
+                    if (commas.size() > 2) {
+                        s.report_error(member->raw_expr->loc, "enum member value must be 1 or 2 elements but got ", nums(commas.size()));
+                    }
+                    for (auto& expr : commas) {
+                        if (ast::as<ast::StrLiteral>(expr)) {
+                            if (member->str_literal) {
+                                s.report_error(expr->loc, "enum member str literal already specified");
+                            }
+                            member->str_literal = cast_to<ast::StrLiteral>(expr);
+                        }
+                        else {
+                            if (member->value) {
+                                s.report_error(expr->loc, "enum member value already specified");
+                            }
+                            member->value = expr;
+                            offset = 0;
+                            prev_specified = member.get();
+                        }
+                    }
+                    if (!member->value) {
+                        set_enum_value(member);
+                    }
                 }
                 else {
-                    set_enum_expr(member->expr);
+                    set_enum_value(member);
                 }
                 member->comment = s.get_comments();
                 enum_->members.push_back(member);
                 s.skip_line();
-                prev = member.get();
                 offset++;
             };
-
-            parse_enum_member();
+            */
+            parse_enum_member(enum_, offset, prev_specified);
             while (auto indent = s.peek_token(lexer::Tag::indent)) {
                 if (indent->token.size() != base.token.size()) {
                     break;
                 }
                 s.must_consume_token(lexer::Tag::indent);
-                parse_enum_member();
+                parse_enum_member(enum_, offset, prev_specified);
             }
             state.add_to_struct(enum_);
             return enum_;

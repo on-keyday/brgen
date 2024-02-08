@@ -611,7 +611,10 @@ func init() {
 	}
 }
 
+var exitCode int
+
 func main() {
+	defer os.Exit(exitCode)
 	log.SetPrefix("brgen: ")
 	log.SetOutput(os.Stderr)
 	args := flag.Args()
@@ -713,5 +716,8 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+	}
+	if errCount.Load() > 0 {
+		exitCode = 1
 	}
 }

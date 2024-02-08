@@ -56,10 +56,14 @@ namespace brgen::ast {
         }
     };
 
+    struct StrLiteral;
+
     struct EnumMember : Member {
         define_node_type(NodeType::enum_member);
         std::shared_ptr<Node> comment;
-        std::shared_ptr<Expr> expr;
+        std::shared_ptr<Expr> raw_expr;
+        std::shared_ptr<Expr> value;
+        std::shared_ptr<StrLiteral> str_literal;
 
         EnumMember(lexer::Loc l)
             : Member(l, NodeType::enum_member) {}
@@ -69,7 +73,9 @@ namespace brgen::ast {
 
         void dump(auto&& field_) {
             Member::dump(field_);
-            sdebugf(expr);
+            sdebugf_omit(raw_expr);
+            sdebugf(value);
+            sdebugf(str_literal);
         }
     };
 
