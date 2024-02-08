@@ -435,9 +435,22 @@ namespace brgen::middle {
         };
 
         template <class T>
-        void check_filler(T min_value, T max_value) {
+        void check_filler(T min_value, T max_value, ast::Match* m) {
             std::vector<UnfilledRange<T>> unfilled;
             unfilled.push_back({min_value, max_value});
+            ast::tool::Evaluator eval;
+            for (auto& b : m->branch) {
+                if (auto range = ast::as<ast::Range>(b)) {
+                    auto l = eval.eval_as(range->start);
+                    if (range->start && !l) {
+                        return;  // not constant, cannot check exhaustiveness
+                    }
+                    auto r = eval.eval_as(range->end);
+                    if (range->end && !r) {
+                        return;  // not constant, cannot check exhaustiveness
+                    }
+                }
+            }
         }
 
         void check_exhaustiveness(ast::Match* m) {
