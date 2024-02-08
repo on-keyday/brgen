@@ -1111,6 +1111,7 @@ namespace brgen::ast {
             <enum member> ::= <indent> <ident> ("=" <expr>)?
          */
         std::shared_ptr<Enum> parse_enum(lexer::Token&& token) {
+            // set enum type
             auto enum_ = std::make_shared<Enum>(token.loc);
             s.skip_white();
             enum_->ident = parse_ident();
@@ -1119,7 +1120,8 @@ namespace brgen::ast {
             check_duplicated_def(enum_->ident.get());
             enum_->enum_type = std::make_shared<EnumType>(enum_->loc);
             enum_->enum_type->base = enum_;
-            must_consume_indent_sign();
+            must_consume_indent_sign();  // :<CR><LF>
+
             auto base = s.must_consume_token(lexer::Tag::indent);
             auto m_scope = state.enter_member(enum_);
             auto s_scope = state.new_indent(s, base.token.size(), enum_->scope, enum_);
@@ -1134,6 +1136,18 @@ namespace brgen::ast {
                     s.report_error(indent.loc, "indent size must be same as enum base");
                 }
             }
+
+            ast::EnumMember* prev = nullptr;
+            size_t offset = 0;
+            auto set_enum_expr = [&](std::shared_ptr<ast::Expr>& expr) {
+                if (!prev) {
+                    auto int_lit = std::make_shared<ast::IntLiteral>(base.loc, "0");
+                    int_lit->expr_type = enum_->enum_type;
+                }
+                else {
+                }
+            };
+
             auto parse_enum_member = [&] {
                 auto ident = parse_ident();
                 ident->usage = IdentUsage::define_enum_member;
@@ -1148,11 +1162,18 @@ namespace brgen::ast {
                 if (s.consume_token("=")) {
                     s.skip_white();
                     member->expr = parse_expr();
+                    offset = 0;
+                }
+                else {
+                    set_enum_expr(member->expr);
                 }
                 member->comment = s.get_comments();
                 enum_->members.push_back(member);
                 s.skip_line();
+                prev = member.get();
+                offset++;
             };
+
             parse_enum_member();
             while (auto indent = s.peek_token(lexer::Tag::indent)) {
                 if (indent->token.size() != base.token.size()) {

@@ -428,6 +428,21 @@ namespace brgen::middle {
             if_->constant_level = ast::ConstantLevel::variable;
         }
 
+        void check_exhaustiveness(ast::Match* m) {
+            auto typ = m->cond->expr_type;
+            auto enum_ = ast::as<ast::EnumType>(typ);
+            auto int_ = ast::as<ast::IntType>(typ);
+            if (enum_) {
+                auto base = enum_->base.lock()->base_type;
+                int_ = ast::as<ast::IntType>(base);
+            }
+            if (!int_ && !enum_) {
+                return;
+            }
+            if (int_) {
+            }
+        }
+
         // match has 2 pattern
         // 1. match expr:
         //       cond1 => stmt1
@@ -455,6 +470,8 @@ namespace brgen::middle {
                         .report();
                 }
                 typing_expr(c->cond);
+
+                // check match branch condition type
                 if (c->cond->expr_type) {
                     if (m->cond) {
                         if (m->cond->expr_type) {
@@ -485,6 +502,11 @@ namespace brgen::middle {
                 if (auto r = ast::as<ast::Range>(c->cond); r && !r->start && !r->end) {
                     any_match = c->cond;
                 }
+            }
+            m->struct_union_type->exhaustive = any_match != nullptr;
+            // if no any match, but maybe exhaustive, then we need to check exhaustiveness
+            if (m->cond && !m->struct_union_type->exhaustive) {
+                check_exhaustiveness(m);
             }
             m->expr_type = candidate ? candidate : void_type(m->loc);
             // TODO(on-keyday): analyze match branch to decide actual constant level
