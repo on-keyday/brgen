@@ -55,6 +55,10 @@
               "type": "string"
             },
             "description": "Array of arguments"
+          },
+          "ignore_missing": {
+            "type": "boolean",
+            "description": "Ignore missing generator executable (default: false)"
           }
         },
         "required": ["generator", "output_dir"],
