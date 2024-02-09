@@ -114,6 +114,8 @@ func (g *Generator) passAst(filePath string, buffer []byte) ([]byte, error) {
 	return g.execGenerator(cmd, filePath)
 }
 
+var ErrIgnoreMissing = errors.New("ignore missing")
+
 func (g *Generator) StartGenerator(out *Output) error {
 	g.generatorPath = out.Generator
 	if runtime.GOOS == "windows" {
@@ -125,6 +127,9 @@ func (g *Generator) StartGenerator(out *Output) error {
 	g.args = out.Args
 	err := g.askSpec()
 	if err != nil {
+		if out.IgnoreMissing {
+			return ErrIgnoreMissing
+		}
 		return fmt.Errorf("askSpec: %s: %w", g.generatorPath, err)
 	}
 	go func() {

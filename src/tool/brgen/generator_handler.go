@@ -238,6 +238,9 @@ func (g *GeneratorHandler) dispatchGenerator(out *Output) error {
 	gen := NewGenerator(g.ctx, &g.w, g.stderr, g.resultQueue, &g.outputCount, g.dirBaseSuffixChan)
 	err := gen.StartGenerator(out)
 	if err != nil {
+		if err == ErrIgnoreMissing {
+			return nil
+		}
 		return err
 	}
 	g.generators = append(g.generators, gen)
