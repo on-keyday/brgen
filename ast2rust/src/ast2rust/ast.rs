@@ -844,6 +844,77 @@ pub enum NodeWeak {
 	BuiltinObject(Weak<RefCell<BuiltinObject>>),
 }
 
+impl Node {
+    pub fn get_loc(&self)-> Loc {
+        match self {
+            Node::Program(node)=>node.borrow().loc.clone(),
+            Node::Comment(node)=>node.borrow().loc.clone(),
+            Node::CommentGroup(node)=>node.borrow().loc.clone(),
+            Node::FieldArgument(node)=>node.borrow().loc.clone(),
+            Node::Binary(node)=>node.borrow().loc.clone(),
+            Node::Unary(node)=>node.borrow().loc.clone(),
+            Node::Cond(node)=>node.borrow().loc.clone(),
+            Node::Ident(node)=>node.borrow().loc.clone(),
+            Node::Call(node)=>node.borrow().loc.clone(),
+            Node::If(node)=>node.borrow().loc.clone(),
+            Node::MemberAccess(node)=>node.borrow().loc.clone(),
+            Node::Paren(node)=>node.borrow().loc.clone(),
+            Node::Index(node)=>node.borrow().loc.clone(),
+            Node::Match(node)=>node.borrow().loc.clone(),
+            Node::Range(node)=>node.borrow().loc.clone(),
+            Node::TmpVar(node)=>node.borrow().loc.clone(),
+            Node::Import(node)=>node.borrow().loc.clone(),
+            Node::Cast(node)=>node.borrow().loc.clone(),
+            Node::Available(node)=>node.borrow().loc.clone(),
+            Node::SpecifyOrder(node)=>node.borrow().loc.clone(),
+            Node::ExplicitError(node)=>node.borrow().loc.clone(),
+            Node::IoOperation(node)=>node.borrow().loc.clone(),
+            Node::BadExpr(node)=>node.borrow().loc.clone(),
+            Node::Loop(node)=>node.borrow().loc.clone(),
+            Node::IndentBlock(node)=>node.borrow().loc.clone(),
+            Node::ScopedStatement(node)=>node.borrow().loc.clone(),
+            Node::MatchBranch(node)=>node.borrow().loc.clone(),
+            Node::UnionCandidate(node)=>node.borrow().loc.clone(),
+            Node::Return(node)=>node.borrow().loc.clone(),
+            Node::Break(node)=>node.borrow().loc.clone(),
+            Node::Continue(node)=>node.borrow().loc.clone(),
+            Node::Assert(node)=>node.borrow().loc.clone(),
+            Node::ImplicitYield(node)=>node.borrow().loc.clone(),
+            Node::IntType(node)=>node.borrow().loc.clone(),
+            Node::FloatType(node)=>node.borrow().loc.clone(),
+            Node::IdentType(node)=>node.borrow().loc.clone(),
+            Node::IntLiteralType(node)=>node.borrow().loc.clone(),
+            Node::StrLiteralType(node)=>node.borrow().loc.clone(),
+            Node::VoidType(node)=>node.borrow().loc.clone(),
+            Node::BoolType(node)=>node.borrow().loc.clone(),
+            Node::ArrayType(node)=>node.borrow().loc.clone(),
+            Node::FunctionType(node)=>node.borrow().loc.clone(),
+            Node::StructType(node)=>node.borrow().loc.clone(),
+            Node::StructUnionType(node)=>node.borrow().loc.clone(),
+            Node::UnionType(node)=>node.borrow().loc.clone(),
+            Node::RangeType(node)=>node.borrow().loc.clone(),
+            Node::EnumType(node)=>node.borrow().loc.clone(),
+            Node::MetaType(node)=>node.borrow().loc.clone(),
+            Node::OptionalType(node)=>node.borrow().loc.clone(),
+            Node::GenericType(node)=>node.borrow().loc.clone(),
+            Node::IntLiteral(node)=>node.borrow().loc.clone(),
+            Node::BoolLiteral(node)=>node.borrow().loc.clone(),
+            Node::StrLiteral(node)=>node.borrow().loc.clone(),
+            Node::TypeLiteral(node)=>node.borrow().loc.clone(),
+            Node::SpecialLiteral(node)=>node.borrow().loc.clone(),
+            Node::Field(node)=>node.borrow().loc.clone(),
+            Node::Format(node)=>node.borrow().loc.clone(),
+            Node::State(node)=>node.borrow().loc.clone(),
+            Node::Enum(node)=>node.borrow().loc.clone(),
+            Node::EnumMember(node)=>node.borrow().loc.clone(),
+            Node::Function(node)=>node.borrow().loc.clone(),
+            Node::BuiltinFunction(node)=>node.borrow().loc.clone(),
+            Node::BuiltinField(node)=>node.borrow().loc.clone(),
+            Node::BuiltinObject(node)=>node.borrow().loc.clone(),
+        }
+    }
+}
+
 impl From<&Node> for NodeWeak {
 	fn from(node:&Node)-> Self{
 		match node {
@@ -1054,6 +1125,93 @@ pub enum ExprWeak {
 	StrLiteral(Weak<RefCell<StrLiteral>>),
 	TypeLiteral(Weak<RefCell<TypeLiteral>>),
 	SpecialLiteral(Weak<RefCell<SpecialLiteral>>),
+}
+
+impl Expr {
+    pub fn get_loc(&self)-> Loc {
+        match self {
+            Expr::Binary(node)=>node.borrow().loc.clone(),
+            Expr::Unary(node)=>node.borrow().loc.clone(),
+            Expr::Cond(node)=>node.borrow().loc.clone(),
+            Expr::Ident(node)=>node.borrow().loc.clone(),
+            Expr::Call(node)=>node.borrow().loc.clone(),
+            Expr::If(node)=>node.borrow().loc.clone(),
+            Expr::MemberAccess(node)=>node.borrow().loc.clone(),
+            Expr::Paren(node)=>node.borrow().loc.clone(),
+            Expr::Index(node)=>node.borrow().loc.clone(),
+            Expr::Match(node)=>node.borrow().loc.clone(),
+            Expr::Range(node)=>node.borrow().loc.clone(),
+            Expr::TmpVar(node)=>node.borrow().loc.clone(),
+            Expr::Import(node)=>node.borrow().loc.clone(),
+            Expr::Cast(node)=>node.borrow().loc.clone(),
+            Expr::Available(node)=>node.borrow().loc.clone(),
+            Expr::SpecifyOrder(node)=>node.borrow().loc.clone(),
+            Expr::ExplicitError(node)=>node.borrow().loc.clone(),
+            Expr::IoOperation(node)=>node.borrow().loc.clone(),
+            Expr::BadExpr(node)=>node.borrow().loc.clone(),
+            Expr::IntLiteral(node)=>node.borrow().loc.clone(),
+            Expr::BoolLiteral(node)=>node.borrow().loc.clone(),
+            Expr::StrLiteral(node)=>node.borrow().loc.clone(),
+            Expr::TypeLiteral(node)=>node.borrow().loc.clone(),
+            Expr::SpecialLiteral(node)=>node.borrow().loc.clone(),
+        }
+    }
+    pub fn get_expr_type(&self)-> Option<Type> {
+        match self {
+            Expr::Binary(node)=>node.borrow().expr_type.clone(),
+            Expr::Unary(node)=>node.borrow().expr_type.clone(),
+            Expr::Cond(node)=>node.borrow().expr_type.clone(),
+            Expr::Ident(node)=>node.borrow().expr_type.clone(),
+            Expr::Call(node)=>node.borrow().expr_type.clone(),
+            Expr::If(node)=>node.borrow().expr_type.clone(),
+            Expr::MemberAccess(node)=>node.borrow().expr_type.clone(),
+            Expr::Paren(node)=>node.borrow().expr_type.clone(),
+            Expr::Index(node)=>node.borrow().expr_type.clone(),
+            Expr::Match(node)=>node.borrow().expr_type.clone(),
+            Expr::Range(node)=>node.borrow().expr_type.clone(),
+            Expr::TmpVar(node)=>node.borrow().expr_type.clone(),
+            Expr::Import(node)=>node.borrow().expr_type.clone(),
+            Expr::Cast(node)=>node.borrow().expr_type.clone(),
+            Expr::Available(node)=>node.borrow().expr_type.clone(),
+            Expr::SpecifyOrder(node)=>node.borrow().expr_type.clone(),
+            Expr::ExplicitError(node)=>node.borrow().expr_type.clone(),
+            Expr::IoOperation(node)=>node.borrow().expr_type.clone(),
+            Expr::BadExpr(node)=>node.borrow().expr_type.clone(),
+            Expr::IntLiteral(node)=>node.borrow().expr_type.clone(),
+            Expr::BoolLiteral(node)=>node.borrow().expr_type.clone(),
+            Expr::StrLiteral(node)=>node.borrow().expr_type.clone(),
+            Expr::TypeLiteral(node)=>node.borrow().expr_type.clone(),
+            Expr::SpecialLiteral(node)=>node.borrow().expr_type.clone(),
+        }
+    }
+    pub fn get_constant_level(&self)-> ConstantLevel {
+        match self {
+            Expr::Binary(node)=>node.borrow().constant_level.clone(),
+            Expr::Unary(node)=>node.borrow().constant_level.clone(),
+            Expr::Cond(node)=>node.borrow().constant_level.clone(),
+            Expr::Ident(node)=>node.borrow().constant_level.clone(),
+            Expr::Call(node)=>node.borrow().constant_level.clone(),
+            Expr::If(node)=>node.borrow().constant_level.clone(),
+            Expr::MemberAccess(node)=>node.borrow().constant_level.clone(),
+            Expr::Paren(node)=>node.borrow().constant_level.clone(),
+            Expr::Index(node)=>node.borrow().constant_level.clone(),
+            Expr::Match(node)=>node.borrow().constant_level.clone(),
+            Expr::Range(node)=>node.borrow().constant_level.clone(),
+            Expr::TmpVar(node)=>node.borrow().constant_level.clone(),
+            Expr::Import(node)=>node.borrow().constant_level.clone(),
+            Expr::Cast(node)=>node.borrow().constant_level.clone(),
+            Expr::Available(node)=>node.borrow().constant_level.clone(),
+            Expr::SpecifyOrder(node)=>node.borrow().constant_level.clone(),
+            Expr::ExplicitError(node)=>node.borrow().constant_level.clone(),
+            Expr::IoOperation(node)=>node.borrow().constant_level.clone(),
+            Expr::BadExpr(node)=>node.borrow().constant_level.clone(),
+            Expr::IntLiteral(node)=>node.borrow().constant_level.clone(),
+            Expr::BoolLiteral(node)=>node.borrow().constant_level.clone(),
+            Expr::StrLiteral(node)=>node.borrow().constant_level.clone(),
+            Expr::TypeLiteral(node)=>node.borrow().constant_level.clone(),
+            Expr::SpecialLiteral(node)=>node.borrow().constant_level.clone(),
+        }
+    }
 }
 
 impl From<&Expr> for ExprWeak {
@@ -1411,6 +1569,32 @@ pub enum StmtWeak {
 	BuiltinObject(Weak<RefCell<BuiltinObject>>),
 }
 
+impl Stmt {
+    pub fn get_loc(&self)-> Loc {
+        match self {
+            Stmt::Loop(node)=>node.borrow().loc.clone(),
+            Stmt::IndentBlock(node)=>node.borrow().loc.clone(),
+            Stmt::ScopedStatement(node)=>node.borrow().loc.clone(),
+            Stmt::MatchBranch(node)=>node.borrow().loc.clone(),
+            Stmt::UnionCandidate(node)=>node.borrow().loc.clone(),
+            Stmt::Return(node)=>node.borrow().loc.clone(),
+            Stmt::Break(node)=>node.borrow().loc.clone(),
+            Stmt::Continue(node)=>node.borrow().loc.clone(),
+            Stmt::Assert(node)=>node.borrow().loc.clone(),
+            Stmt::ImplicitYield(node)=>node.borrow().loc.clone(),
+            Stmt::Field(node)=>node.borrow().loc.clone(),
+            Stmt::Format(node)=>node.borrow().loc.clone(),
+            Stmt::State(node)=>node.borrow().loc.clone(),
+            Stmt::Enum(node)=>node.borrow().loc.clone(),
+            Stmt::EnumMember(node)=>node.borrow().loc.clone(),
+            Stmt::Function(node)=>node.borrow().loc.clone(),
+            Stmt::BuiltinFunction(node)=>node.borrow().loc.clone(),
+            Stmt::BuiltinField(node)=>node.borrow().loc.clone(),
+            Stmt::BuiltinObject(node)=>node.borrow().loc.clone(),
+        }
+    }
+}
+
 impl From<&Stmt> for StmtWeak {
 	fn from(node:&Stmt)-> Self{
 		match node {
@@ -1722,6 +1906,114 @@ pub enum TypeWeak {
 	GenericType(Weak<RefCell<GenericType>>),
 }
 
+impl Type {
+    pub fn get_loc(&self)-> Loc {
+        match self {
+            Type::IntType(node)=>node.borrow().loc.clone(),
+            Type::FloatType(node)=>node.borrow().loc.clone(),
+            Type::IdentType(node)=>node.borrow().loc.clone(),
+            Type::IntLiteralType(node)=>node.borrow().loc.clone(),
+            Type::StrLiteralType(node)=>node.borrow().loc.clone(),
+            Type::VoidType(node)=>node.borrow().loc.clone(),
+            Type::BoolType(node)=>node.borrow().loc.clone(),
+            Type::ArrayType(node)=>node.borrow().loc.clone(),
+            Type::FunctionType(node)=>node.borrow().loc.clone(),
+            Type::StructType(node)=>node.borrow().loc.clone(),
+            Type::StructUnionType(node)=>node.borrow().loc.clone(),
+            Type::UnionType(node)=>node.borrow().loc.clone(),
+            Type::RangeType(node)=>node.borrow().loc.clone(),
+            Type::EnumType(node)=>node.borrow().loc.clone(),
+            Type::MetaType(node)=>node.borrow().loc.clone(),
+            Type::OptionalType(node)=>node.borrow().loc.clone(),
+            Type::GenericType(node)=>node.borrow().loc.clone(),
+        }
+    }
+    pub fn get_is_explicit(&self)-> bool {
+        match self {
+            Type::IntType(node)=>node.borrow().is_explicit.clone(),
+            Type::FloatType(node)=>node.borrow().is_explicit.clone(),
+            Type::IdentType(node)=>node.borrow().is_explicit.clone(),
+            Type::IntLiteralType(node)=>node.borrow().is_explicit.clone(),
+            Type::StrLiteralType(node)=>node.borrow().is_explicit.clone(),
+            Type::VoidType(node)=>node.borrow().is_explicit.clone(),
+            Type::BoolType(node)=>node.borrow().is_explicit.clone(),
+            Type::ArrayType(node)=>node.borrow().is_explicit.clone(),
+            Type::FunctionType(node)=>node.borrow().is_explicit.clone(),
+            Type::StructType(node)=>node.borrow().is_explicit.clone(),
+            Type::StructUnionType(node)=>node.borrow().is_explicit.clone(),
+            Type::UnionType(node)=>node.borrow().is_explicit.clone(),
+            Type::RangeType(node)=>node.borrow().is_explicit.clone(),
+            Type::EnumType(node)=>node.borrow().is_explicit.clone(),
+            Type::MetaType(node)=>node.borrow().is_explicit.clone(),
+            Type::OptionalType(node)=>node.borrow().is_explicit.clone(),
+            Type::GenericType(node)=>node.borrow().is_explicit.clone(),
+        }
+    }
+    pub fn get_non_dynamic(&self)-> bool {
+        match self {
+            Type::IntType(node)=>node.borrow().non_dynamic.clone(),
+            Type::FloatType(node)=>node.borrow().non_dynamic.clone(),
+            Type::IdentType(node)=>node.borrow().non_dynamic.clone(),
+            Type::IntLiteralType(node)=>node.borrow().non_dynamic.clone(),
+            Type::StrLiteralType(node)=>node.borrow().non_dynamic.clone(),
+            Type::VoidType(node)=>node.borrow().non_dynamic.clone(),
+            Type::BoolType(node)=>node.borrow().non_dynamic.clone(),
+            Type::ArrayType(node)=>node.borrow().non_dynamic.clone(),
+            Type::FunctionType(node)=>node.borrow().non_dynamic.clone(),
+            Type::StructType(node)=>node.borrow().non_dynamic.clone(),
+            Type::StructUnionType(node)=>node.borrow().non_dynamic.clone(),
+            Type::UnionType(node)=>node.borrow().non_dynamic.clone(),
+            Type::RangeType(node)=>node.borrow().non_dynamic.clone(),
+            Type::EnumType(node)=>node.borrow().non_dynamic.clone(),
+            Type::MetaType(node)=>node.borrow().non_dynamic.clone(),
+            Type::OptionalType(node)=>node.borrow().non_dynamic.clone(),
+            Type::GenericType(node)=>node.borrow().non_dynamic.clone(),
+        }
+    }
+    pub fn get_bit_alignment(&self)-> BitAlignment {
+        match self {
+            Type::IntType(node)=>node.borrow().bit_alignment.clone(),
+            Type::FloatType(node)=>node.borrow().bit_alignment.clone(),
+            Type::IdentType(node)=>node.borrow().bit_alignment.clone(),
+            Type::IntLiteralType(node)=>node.borrow().bit_alignment.clone(),
+            Type::StrLiteralType(node)=>node.borrow().bit_alignment.clone(),
+            Type::VoidType(node)=>node.borrow().bit_alignment.clone(),
+            Type::BoolType(node)=>node.borrow().bit_alignment.clone(),
+            Type::ArrayType(node)=>node.borrow().bit_alignment.clone(),
+            Type::FunctionType(node)=>node.borrow().bit_alignment.clone(),
+            Type::StructType(node)=>node.borrow().bit_alignment.clone(),
+            Type::StructUnionType(node)=>node.borrow().bit_alignment.clone(),
+            Type::UnionType(node)=>node.borrow().bit_alignment.clone(),
+            Type::RangeType(node)=>node.borrow().bit_alignment.clone(),
+            Type::EnumType(node)=>node.borrow().bit_alignment.clone(),
+            Type::MetaType(node)=>node.borrow().bit_alignment.clone(),
+            Type::OptionalType(node)=>node.borrow().bit_alignment.clone(),
+            Type::GenericType(node)=>node.borrow().bit_alignment.clone(),
+        }
+    }
+    pub fn get_bit_size(&self)-> Option<u64> {
+        match self {
+            Type::IntType(node)=>node.borrow().bit_size.clone(),
+            Type::FloatType(node)=>node.borrow().bit_size.clone(),
+            Type::IdentType(node)=>node.borrow().bit_size.clone(),
+            Type::IntLiteralType(node)=>node.borrow().bit_size.clone(),
+            Type::StrLiteralType(node)=>node.borrow().bit_size.clone(),
+            Type::VoidType(node)=>node.borrow().bit_size.clone(),
+            Type::BoolType(node)=>node.borrow().bit_size.clone(),
+            Type::ArrayType(node)=>node.borrow().bit_size.clone(),
+            Type::FunctionType(node)=>node.borrow().bit_size.clone(),
+            Type::StructType(node)=>node.borrow().bit_size.clone(),
+            Type::StructUnionType(node)=>node.borrow().bit_size.clone(),
+            Type::UnionType(node)=>node.borrow().bit_size.clone(),
+            Type::RangeType(node)=>node.borrow().bit_size.clone(),
+            Type::EnumType(node)=>node.borrow().bit_size.clone(),
+            Type::MetaType(node)=>node.borrow().bit_size.clone(),
+            Type::OptionalType(node)=>node.borrow().bit_size.clone(),
+            Type::GenericType(node)=>node.borrow().bit_size.clone(),
+        }
+    }
+}
+
 impl From<&Type> for TypeWeak {
 	fn from(node:&Type)-> Self{
 		match node {
@@ -1993,6 +2285,36 @@ pub enum LiteralWeak {
 	SpecialLiteral(Weak<RefCell<SpecialLiteral>>),
 }
 
+impl Literal {
+    pub fn get_loc(&self)-> Loc {
+        match self {
+            Literal::IntLiteral(node)=>node.borrow().loc.clone(),
+            Literal::BoolLiteral(node)=>node.borrow().loc.clone(),
+            Literal::StrLiteral(node)=>node.borrow().loc.clone(),
+            Literal::TypeLiteral(node)=>node.borrow().loc.clone(),
+            Literal::SpecialLiteral(node)=>node.borrow().loc.clone(),
+        }
+    }
+    pub fn get_expr_type(&self)-> Option<Type> {
+        match self {
+            Literal::IntLiteral(node)=>node.borrow().expr_type.clone(),
+            Literal::BoolLiteral(node)=>node.borrow().expr_type.clone(),
+            Literal::StrLiteral(node)=>node.borrow().expr_type.clone(),
+            Literal::TypeLiteral(node)=>node.borrow().expr_type.clone(),
+            Literal::SpecialLiteral(node)=>node.borrow().expr_type.clone(),
+        }
+    }
+    pub fn get_constant_level(&self)-> ConstantLevel {
+        match self {
+            Literal::IntLiteral(node)=>node.borrow().constant_level.clone(),
+            Literal::BoolLiteral(node)=>node.borrow().constant_level.clone(),
+            Literal::StrLiteral(node)=>node.borrow().constant_level.clone(),
+            Literal::TypeLiteral(node)=>node.borrow().constant_level.clone(),
+            Literal::SpecialLiteral(node)=>node.borrow().constant_level.clone(),
+        }
+    }
+}
+
 impl From<&Literal> for LiteralWeak {
 	fn from(node:&Literal)-> Self{
 		match node {
@@ -2174,6 +2496,61 @@ pub enum MemberWeak {
 	BuiltinFunction(Weak<RefCell<BuiltinFunction>>),
 	BuiltinField(Weak<RefCell<BuiltinField>>),
 	BuiltinObject(Weak<RefCell<BuiltinObject>>),
+}
+
+impl Member {
+    pub fn get_loc(&self)-> Loc {
+        match self {
+            Member::Field(node)=>node.borrow().loc.clone(),
+            Member::Format(node)=>node.borrow().loc.clone(),
+            Member::State(node)=>node.borrow().loc.clone(),
+            Member::Enum(node)=>node.borrow().loc.clone(),
+            Member::EnumMember(node)=>node.borrow().loc.clone(),
+            Member::Function(node)=>node.borrow().loc.clone(),
+            Member::BuiltinFunction(node)=>node.borrow().loc.clone(),
+            Member::BuiltinField(node)=>node.borrow().loc.clone(),
+            Member::BuiltinObject(node)=>node.borrow().loc.clone(),
+        }
+    }
+    pub fn get_belong(&self)-> Option<MemberWeak> {
+        match self {
+            Member::Field(node)=>node.borrow().belong.clone(),
+            Member::Format(node)=>node.borrow().belong.clone(),
+            Member::State(node)=>node.borrow().belong.clone(),
+            Member::Enum(node)=>node.borrow().belong.clone(),
+            Member::EnumMember(node)=>node.borrow().belong.clone(),
+            Member::Function(node)=>node.borrow().belong.clone(),
+            Member::BuiltinFunction(node)=>node.borrow().belong.clone(),
+            Member::BuiltinField(node)=>node.borrow().belong.clone(),
+            Member::BuiltinObject(node)=>node.borrow().belong.clone(),
+        }
+    }
+    pub fn get_belong_struct(&self)-> Option<Weak<RefCell<StructType>>> {
+        match self {
+            Member::Field(node)=>node.borrow().belong_struct.clone(),
+            Member::Format(node)=>node.borrow().belong_struct.clone(),
+            Member::State(node)=>node.borrow().belong_struct.clone(),
+            Member::Enum(node)=>node.borrow().belong_struct.clone(),
+            Member::EnumMember(node)=>node.borrow().belong_struct.clone(),
+            Member::Function(node)=>node.borrow().belong_struct.clone(),
+            Member::BuiltinFunction(node)=>node.borrow().belong_struct.clone(),
+            Member::BuiltinField(node)=>node.borrow().belong_struct.clone(),
+            Member::BuiltinObject(node)=>node.borrow().belong_struct.clone(),
+        }
+    }
+    pub fn get_ident(&self)-> Option<Rc<RefCell<Ident>>> {
+        match self {
+            Member::Field(node)=>node.borrow().ident.clone(),
+            Member::Format(node)=>node.borrow().ident.clone(),
+            Member::State(node)=>node.borrow().ident.clone(),
+            Member::Enum(node)=>node.borrow().ident.clone(),
+            Member::EnumMember(node)=>node.borrow().ident.clone(),
+            Member::Function(node)=>node.borrow().ident.clone(),
+            Member::BuiltinFunction(node)=>node.borrow().ident.clone(),
+            Member::BuiltinField(node)=>node.borrow().ident.clone(),
+            Member::BuiltinObject(node)=>node.borrow().ident.clone(),
+        }
+    }
 }
 
 impl From<&Member> for MemberWeak {
@@ -2377,6 +2754,37 @@ pub enum BuiltinMemberWeak {
 	BuiltinFunction(Weak<RefCell<BuiltinFunction>>),
 	BuiltinField(Weak<RefCell<BuiltinField>>),
 	BuiltinObject(Weak<RefCell<BuiltinObject>>),
+}
+
+impl BuiltinMember {
+    pub fn get_loc(&self)-> Loc {
+        match self {
+            BuiltinMember::BuiltinFunction(node)=>node.borrow().loc.clone(),
+            BuiltinMember::BuiltinField(node)=>node.borrow().loc.clone(),
+            BuiltinMember::BuiltinObject(node)=>node.borrow().loc.clone(),
+        }
+    }
+    pub fn get_belong(&self)-> Option<MemberWeak> {
+        match self {
+            BuiltinMember::BuiltinFunction(node)=>node.borrow().belong.clone(),
+            BuiltinMember::BuiltinField(node)=>node.borrow().belong.clone(),
+            BuiltinMember::BuiltinObject(node)=>node.borrow().belong.clone(),
+        }
+    }
+    pub fn get_belong_struct(&self)-> Option<Weak<RefCell<StructType>>> {
+        match self {
+            BuiltinMember::BuiltinFunction(node)=>node.borrow().belong_struct.clone(),
+            BuiltinMember::BuiltinField(node)=>node.borrow().belong_struct.clone(),
+            BuiltinMember::BuiltinObject(node)=>node.borrow().belong_struct.clone(),
+        }
+    }
+    pub fn get_ident(&self)-> Option<Rc<RefCell<Ident>>> {
+        match self {
+            BuiltinMember::BuiltinFunction(node)=>node.borrow().ident.clone(),
+            BuiltinMember::BuiltinField(node)=>node.borrow().ident.clone(),
+            BuiltinMember::BuiltinObject(node)=>node.borrow().ident.clone(),
+        }
+    }
 }
 
 impl From<&BuiltinMember> for BuiltinMemberWeak {

@@ -7,3 +7,5 @@ edition = "2021"
 
 [dependencies]
 ast2rust = {path ="../../../ast2rust" }
+serde = "1.0.196"
+serde_json = "1.0.113"

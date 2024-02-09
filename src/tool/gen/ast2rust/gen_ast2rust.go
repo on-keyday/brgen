@@ -122,6 +122,22 @@ func generate(rw io.Writer, defs *gen.Defs) {
 			}
 			w.Printf("}\n\n")
 
+			w.Printf("impl %s {\n", d.Name)
+			for _, field := range d.Fields {
+				w.Printf("    pub fn get_%s(&self)-> %s {\n", field.Name, field.Type.RustString())
+				w.Printf("        match self {\n")
+				for _, derived := range d.Derived {
+					_, ok := defs.Structs[derived]
+					if !ok {
+						continue
+					}
+					w.Printf("            %s::%s(node)=>node.borrow().%s.clone(),\n", d.Name, derived, field.Name)
+				}
+				w.Printf("        }\n")
+				w.Printf("    }\n")
+			}
+			w.Printf("}\n\n")
+
 			w.Printf("impl From<&%s> for %sWeak {\n", d.Name, d.Name)
 			w.Printf("	fn from(node:&%s)-> Self{\n", d.Name)
 			w.Printf("		match node {\n")
