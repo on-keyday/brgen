@@ -87,6 +87,21 @@ MIT License
 
 All source code is released under the MIT license. The copyright remains with on-keyday.
 
+# Issue Policy
+
+機能の改善、提案、バグ報告などは [このリポジトリの GitHub Issue](https://github.com/on-keyday/brgen/issues/new) で受け付けています。
+セキュリティ脆弱性等の報告方針は SECURITY.md を参照してください
+
+We welcome Feature improvements, requests, and bug reports etc... on [this repository's GitHub Issue](https://github.com/on-keyday/brgen/issues/new).
+see SECURITY.md about security vulnerability report policy.
+
+# Pull Request Policy
+
+Issue と同様に受け付けています。
+ただし、マージする場合は作者(リポジトリオーナー)に意図がわかる説明(目的、変更点など)をつけることと CI にパスすることを求めます。
+
+We also welcome PR as same as Issue. But, you have to explain about PR (purpose,change,etc.) for the author (repository owner) and pass the CI test if you request merge the PR.
+
 # Version Policy
 
 0.0.x の間は作者(リポジトリオーナー)都合で更新を行います。
