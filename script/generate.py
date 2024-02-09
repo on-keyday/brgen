@@ -14,7 +14,7 @@ if ret == 0:
 
     shutil.copy("./LICENSE", "./ast2ts/out/LICENSE")
 ret = sp.call(
-    ["./tool/gen_ast2rust", "./ast2rust/src/ast2rust/ast.rs"],
+    ["./tool/gen_ast2rust", "./ast2rust/src/ast.rs"],
     executable="./tool/gen_ast2rust.exe",
 )
 print(ret)

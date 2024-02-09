@@ -1,4 +1,6 @@
-use ast2rust::ast2rust::ast;
+use std::io::stdout;
+
+use ast2rust::ast;
 use serde::{self, Deserialize};
 mod generator;
 
@@ -15,7 +17,7 @@ fn main() {
         println!("error: {:?}", e);
         return;
     }
-    let gen = generator::Generator::new();
+    let mut gen = generator::Generator::new(stdout());
     let prog = prog.unwrap();
     gen.write_program(prog);
 }

@@ -20,7 +20,6 @@ mod tests {
     use super::traverse;
     use std::env;
     use std::path;
-    use std::process::ChildStdout;
     use std::process::Command;
 
     #[test]
