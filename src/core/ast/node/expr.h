@@ -72,8 +72,10 @@ namespace brgen::ast {
         }
     };
 
+    struct StructUnionType;
     struct If : Expr {
         define_node_type(NodeType::if_);
+        std::shared_ptr<StructUnionType> struct_union_type;
         scope_ptr cond_scope;
         std::shared_ptr<Expr> cond;
         std::shared_ptr<IndentBlock> then;
@@ -88,6 +90,7 @@ namespace brgen::ast {
 
         void dump(auto&& field_) {
             Expr::dump(field_);
+            sdebugf(struct_union_type);
             sdebugf(cond_scope);
             sdebugf(cond);
             sdebugf(then);
@@ -247,15 +250,13 @@ namespace brgen::ast {
         }
     };
 
-    struct StructUnionType;
-
     struct Match : Expr {
         define_node_type(NodeType::match);
+        std::shared_ptr<StructUnionType> struct_union_type;
         scope_ptr cond_scope;
         std::shared_ptr<Expr> cond;
         // MatchBranch
         std::vector<std::shared_ptr<MatchBranch>> branch;
-        std::shared_ptr<StructUnionType> struct_union_type;
 
         Match(lexer::Loc l)
             : Expr(l, NodeType::match) {}
@@ -265,10 +266,10 @@ namespace brgen::ast {
 
         void dump(auto&& field_) {
             Expr::dump(field_);
+            sdebugf(struct_union_type);
             sdebugf(cond_scope);
             sdebugf(cond);
             sdebugf(branch);
-            sdebugf(struct_union_type);
         }
     };
 

@@ -421,7 +421,6 @@ namespace brgen::middle {
             then_ref = std::make_shared<ast::ImplicitYield>(ast::cast_to<ast::Expr>(then_ref));
             if (auto block = ast::as<ast::IndentBlock>(if_->els)) {
                 auto& else_ref = block->elements.back();
-
                 else_ref = std::make_shared<ast::ImplicitYield>(ast::cast_to<ast::Expr>(else_ref));
             }
             // TODO(on-keyday): analyze branch to decide actual constant level
@@ -436,19 +435,75 @@ namespace brgen::middle {
 
         template <class T>
         void check_filler(T min_value, T max_value, ast::Match* m) {
-            std::vector<UnfilledRange<T>> unfilled;
+            std::list<UnfilledRange<T>> unfilled;
             unfilled.push_back({min_value, max_value});
             ast::tool::Evaluator eval;
+            bool filled = false;
             for (auto& b : m->branch) {
+                if (filled) {
+                    warnings.warning(b->loc, "maybe unreachable code");
+                    continue;
+                }
+                T l_val = 0;
+                T r_val = 0;
+                bool inclusive = false;
                 if (auto range = ast::as<ast::Range>(b)) {
-                    auto l = eval.eval_as(range->start);
+                    auto l = eval.template eval_as<ast::tool::EResultType::integer>(range->start);
                     if (range->start && !l) {
                         return;  // not constant, cannot check exhaustiveness
                     }
-                    auto r = eval.eval_as(range->end);
+                    auto r = eval.template eval_as<ast::tool::EResultType::integer>(range->end);
                     if (range->end && !r) {
                         return;  // not constant, cannot check exhaustiveness
                     }
+                    if (!l) {
+                        l->emplace<ast::tool::EResultType::integer>(min_value);
+                    }
+                    if (!r) {
+                        r->emplace<ast::tool::EResultType::integer>(max_value);
+                    }
+                    l_val = T(l->get<ast::tool::EResultType::integer>());
+                    r_val = T(r->get<ast::tool::EResultType::integer>());
+                    if (range->op == ast::BinaryOp::range_inclusive
+                            ? l_val > r_val
+                            : l_val >= r_val) {
+                        error(range->loc, "range start is greater than end").report();
+                        return;
+                    }
+                    inclusive = range->op == ast::BinaryOp::range_inclusive;
+                }
+                else {
+                    auto l = eval.template eval_as<ast::tool::EResultType::integer>(b->cond);
+                    if (!l) {
+                        return;  // not constant, cannot check exhaustiveness
+                    }
+                    l_val = T(l->get<ast::tool::EResultType::integer>());
+                    r_val = l_val;
+                    inclusive = true;
+                }
+                for (auto it = unfilled.begin(); it != unfilled.end(); it++) {
+                    auto& u = *it;
+                    bool cond = false;
+                    if (inclusive) {
+                        cond = l_val >= u.start && r_val <= u.end;
+                    }
+                    else {
+                        cond = l_val >= u.start && r_val < u.end;
+                    }
+                    if (cond) {
+                        if (l_val > u.start) {
+                            unfilled.insert(it, {u.start, l_val - 1});
+                        }
+                        if (r_val < u.end) {
+                            unfilled.insert(it, {r_val + 1, u.end});
+                        }
+                        unfilled.erase(it, unfilled.end());
+                        break;
+                    }
+                }
+                if (unfilled.empty()) {
+                    m->struct_union_type->exhaustive = true;
+                    filled = true;
                 }
             }
         }
@@ -473,10 +528,12 @@ namespace brgen::middle {
                     max_value_base = max_value_base >> 1;
                     std::int64_t max_value = max_value_base;
                     std::int64_t min_value = -max_value - 1;
+                    check_filler(min_value, max_value, m);
                 }
                 else {
                     std::uint64_t max_value = max_value_base;
                     std::uint64_t min_value = 0;
+                    check_filler(min_value, max_value, m);
                 }
             }
         }

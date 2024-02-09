@@ -367,6 +367,7 @@ namespace brgen::ast {
             // 解析して if の条件式とブロックを設定
             if_->cond = parse_expr();
             std::shared_ptr<StructUnionType> union_ = std::make_shared<StructUnionType>(if_->loc);
+            if_->struct_union_type = union_;
             union_->base = if_;
 
             std::vector<std::shared_ptr<Expr>> cond;
@@ -441,6 +442,7 @@ namespace brgen::ast {
                 range->loc = l->loc;
                 range->op = ast::BinaryOp::range_exclusive;
                 cond.push_back(std::move(range));
+                if_->struct_union_type->exhaustive = true;
                 body_with_struct(if_->loc, current_if->els, current_if);
             }
             else {
