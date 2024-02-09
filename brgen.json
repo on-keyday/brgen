@@ -42,6 +42,10 @@
       "generator": "./tool/json2mermaid",
       "output_dir": "./ignore/example/mermaid/",
       "args": ["-as-code-block", "-format"]
+    },
+    {
+      "generator": "./src/tool/json2rust/target/debug/json2rust",
+      "output_dir": "./ignore/example/rust/"
     }
   ]
 }

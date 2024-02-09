@@ -91,7 +91,31 @@ impl<W: std::io::Write> Generator<W> {
                 let x = enum_.borrow().ident.clone().unwrap().borrow().ident.clone();
                 x
             }
-            _ => todo!(),
+            ast::Type::StructType(t) => {
+                let struct_ = t.borrow().base.clone().unwrap();
+                match struct_ {
+                    ast::NodeWeak::Format(struct_) => {
+                        let struct_ = struct_.upgrade().unwrap();
+                        let x = struct_
+                            .borrow()
+                            .ident
+                            .clone()
+                            .unwrap()
+                            .borrow()
+                            .ident
+                            .clone();
+                        x
+                    }
+                    x => {
+                        eprintln!("{:?}", x);
+                        todo!("unsupported")
+                    }
+                }
+            }
+            x => {
+                eprintln!("{:?}", x);
+                todo!("unsupported")
+            }
         }
     }
 

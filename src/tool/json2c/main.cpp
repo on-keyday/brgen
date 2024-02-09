@@ -103,7 +103,7 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
     return 0;
 }
 
-int json2cpp_main(int argc, char** argv) {
+int json2c_main(int argc, char** argv) {
     futils::wrap::U8Arg _(argc, argv);
     Flags flags;
     return futils::cmdline::templ::parse_or_err<std::string>(
@@ -119,6 +119,6 @@ extern "C" int EMSCRIPTEN_KEEPALIVE emscripten_main(const char* cmdline) {
 }
 #else
 int main(int argc, char** argv) {
-    return json2cpp_main(argc, argv);
+    return json2c_main(argc, argv);
 }
 #endif
