@@ -7,6 +7,7 @@
 #include "replacer.h"
 #include "../ast/tool/extract_config.h"
 #include "../ast/tool/eval.h"
+#include <list>
 
 namespace brgen::middle {
 
