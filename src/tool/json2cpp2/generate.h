@@ -6,6 +6,7 @@
 #include <writer/writer.h>
 #include <core/ast/tool/stringer.h>
 #include <core/ast/tool/sort.h>
+#include "../common/line_map.h"
 
 namespace j2cp2 {
     namespace ast = brgen::ast;
@@ -18,17 +19,6 @@ namespace j2cp2 {
         std::string type_name;
         std::string variant_name;
     };
-
-    struct LineMap {
-        brgen::lexer::Loc loc;
-        size_t line;
-    };
-
-    void as_json(LineMap& mp, auto&& obj) {
-        auto field = obj.object();
-        field("loc", mp.loc);
-        field("line", mp.line);
-    }
 
     struct Context {
         bool encode = false;
