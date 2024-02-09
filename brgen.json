@@ -45,7 +45,8 @@
     },
     {
       "generator": "./src/tool/json2rust/target/debug/json2rust",
-      "output_dir": "./ignore/example/rust/"
+      "output_dir": "./ignore/example/rust/",
+      "ignore_missing": true
     }
   ]
 }
