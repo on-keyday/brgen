@@ -107,13 +107,23 @@ impl<W: std::io::Write> Generator<W> {
                         x
                     }
                     x => {
-                        eprintln!("{:?}", x);
+                        eprintln!("{:?}", ast::NodeType::try_from(x));
                         todo!("unsupported")
                     }
                 }
             }
+            ast::Type::IdentType(t) => t.borrow().ident.clone().unwrap().borrow().ident.clone(),
+            ast::Type::ArrayType(t) => {
+                let ty = t.borrow().base_type.clone().unwrap();
+                let ty = Self::get_type(typ);
+                if t.borrow().length_value.is_some() {
+                    format!("[{}; {}]", ty, t.borrow().length_value.clone().unwrap())
+                } else {
+                    format!("Vec<{}>", ty)
+                }
+            }
             x => {
-                eprintln!("{:?}", x);
+                eprintln!("{:?}", ast::NodeType::from(ast::Node::from(x)));
                 todo!("unsupported")
             }
         }

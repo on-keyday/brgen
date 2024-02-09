@@ -115,7 +115,7 @@ int json2c_main(int argc, char** argv) {
 
 #ifdef __EMSCRIPTEN__
 extern "C" int EMSCRIPTEN_KEEPALIVE emscripten_main(const char* cmdline) {
-    return em_main(cmdline, json2cpp_main);
+    return em_main(cmdline, json2c_main);
 }
 #else
 int main(int argc, char** argv) {
