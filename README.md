@@ -100,7 +100,7 @@ see SECURITY.md about security vulnerability report policy.
 Issue と同様に受け付けています。
 ただし、マージする場合は作者(リポジトリオーナー)に意図がわかる説明(目的、変更点など)をつけることと CI にパスすることを求めます。
 
-We also welcome PR as same as Issue. But, you have to explain about PR (purpose,change,etc.) for the author (repository owner) and pass the CI test if you request merge the PR.
+We welcome PR as well as issues. However, if you ask for a PR to be merged, you will need to provide the author (repository owner) with a description of your PR (purpose, changes, etc.) and pass a CI test.
 
 # Version Policy
 
