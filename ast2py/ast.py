@@ -310,6 +310,7 @@ class Call(Expr):
 
 
 class If(Expr):
+    struct_union_type: Optional[StructUnionType]
     cond_scope: Optional[Scope]
     cond: Optional[Expr]
     then: Optional[IndentBlock]
@@ -334,10 +335,10 @@ class Index(Expr):
 
 
 class Match(Expr):
+    struct_union_type: Optional[StructUnionType]
     cond_scope: Optional[Scope]
     cond: Optional[Expr]
     branch: List[MatchBranch]
-    struct_union_type: Optional[StructUnionType]
 
 
 class Range(Expr):
@@ -1078,6 +1079,11 @@ def ast2node(ast :JsonAst) -> Program:
                 else:
                     node[i].expr_type = None
                 node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
+                if ast.node[i].body["struct_union_type"] is not None:
+                    x = node[ast.node[i].body["struct_union_type"]]
+                    node[i].struct_union_type = x if isinstance(x,StructUnionType) else raiseError(TypeError('type mismatch at If::struct_union_type'))
+                else:
+                    node[i].struct_union_type = None
                 if ast.node[i].body["cond_scope"] is not None:
                     node[i].cond_scope = scope[ast.node[i].body["cond_scope"]]
                 else:
@@ -1157,6 +1163,11 @@ def ast2node(ast :JsonAst) -> Program:
                 else:
                     node[i].expr_type = None
                 node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
+                if ast.node[i].body["struct_union_type"] is not None:
+                    x = node[ast.node[i].body["struct_union_type"]]
+                    node[i].struct_union_type = x if isinstance(x,StructUnionType) else raiseError(TypeError('type mismatch at Match::struct_union_type'))
+                else:
+                    node[i].struct_union_type = None
                 if ast.node[i].body["cond_scope"] is not None:
                     node[i].cond_scope = scope[ast.node[i].body["cond_scope"]]
                 else:
@@ -1167,11 +1178,6 @@ def ast2node(ast :JsonAst) -> Program:
                 else:
                     node[i].cond = None
                 node[i].branch = [(node[x] if isinstance(node[x],MatchBranch) else raiseError(TypeError('type mismatch at Match::branch'))) for x in ast.node[i].body["branch"]]
-                if ast.node[i].body["struct_union_type"] is not None:
-                    x = node[ast.node[i].body["struct_union_type"]]
-                    node[i].struct_union_type = x if isinstance(x,StructUnionType) else raiseError(TypeError('type mismatch at Match::struct_union_type'))
-                else:
-                    node[i].struct_union_type = None
             case NodeType.RANGE:
                 if ast.node[i].body["expr_type"] is not None:
                     x = node[ast.node[i].body["expr_type"]]
@@ -2131,6 +2137,9 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
           if x.expr_type is not None:
               if f(f,x.expr_type) == False:
                   return
+          if x.struct_union_type is not None:
+              if f(f,x.struct_union_type) == False:
+                  return
           if x.cond is not None:
               if f(f,x.cond) == False:
                   return
@@ -2171,14 +2180,14 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
           if x.expr_type is not None:
               if f(f,x.expr_type) == False:
                   return
+          if x.struct_union_type is not None:
+              if f(f,x.struct_union_type) == False:
+                  return
           if x.cond is not None:
               if f(f,x.cond) == False:
                   return
           for i in range(len(x.branch)):
               if f(f,x.branch[i]) == False:
-                  return
-          if x.struct_union_type is not None:
-              if f(f,x.struct_union_type) == False:
                   return
         case x if isinstance(x,Range):
           if x.expr_type is not None:

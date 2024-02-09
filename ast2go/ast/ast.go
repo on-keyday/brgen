@@ -1667,13 +1667,14 @@ func (n *Call) GetLoc() Loc {
 }
 
 type If struct {
-	Loc           Loc
-	ExprType      Type
-	ConstantLevel ConstantLevel
-	CondScope     *Scope
-	Cond          Expr
-	Then          *IndentBlock
-	Els           Node
+	Loc             Loc
+	ExprType        Type
+	ConstantLevel   ConstantLevel
+	StructUnionType *StructUnionType
+	CondScope       *Scope
+	Cond            Expr
+	Then            *IndentBlock
+	Els             Node
 }
 
 func (n *If) isExpr() {}
@@ -1770,10 +1771,10 @@ type Match struct {
 	Loc             Loc
 	ExprType        Type
 	ConstantLevel   ConstantLevel
+	StructUnionType *StructUnionType
 	CondScope       *Scope
 	Cond            Expr
 	Branch          []*MatchBranch
-	StructUnionType *StructUnionType
 }
 
 func (n *Match) isExpr() {}
@@ -3587,12 +3588,13 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeIf:
 			v := n.node[i].(*If)
 			var tmp struct {
-				ExprType      *uintptr      `json:"expr_type"`
-				ConstantLevel ConstantLevel `json:"constant_level"`
-				CondScope     *uintptr      `json:"cond_scope"`
-				Cond          *uintptr      `json:"cond"`
-				Then          *uintptr      `json:"then"`
-				Els           *uintptr      `json:"els"`
+				ExprType        *uintptr      `json:"expr_type"`
+				ConstantLevel   ConstantLevel `json:"constant_level"`
+				StructUnionType *uintptr      `json:"struct_union_type"`
+				CondScope       *uintptr      `json:"cond_scope"`
+				Cond            *uintptr      `json:"cond"`
+				Then            *uintptr      `json:"then"`
+				Els             *uintptr      `json:"els"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -3601,6 +3603,9 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				v.ExprType = n.node[*tmp.ExprType].(Type)
 			}
 			v.ConstantLevel = tmp.ConstantLevel
+			if tmp.StructUnionType != nil {
+				v.StructUnionType = n.node[*tmp.StructUnionType].(*StructUnionType)
+			}
 			if tmp.CondScope != nil {
 				v.CondScope = n.scope[*tmp.CondScope]
 			}
@@ -3685,10 +3690,10 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			var tmp struct {
 				ExprType        *uintptr      `json:"expr_type"`
 				ConstantLevel   ConstantLevel `json:"constant_level"`
+				StructUnionType *uintptr      `json:"struct_union_type"`
 				CondScope       *uintptr      `json:"cond_scope"`
 				Cond            *uintptr      `json:"cond"`
 				Branch          []uintptr     `json:"branch"`
-				StructUnionType *uintptr      `json:"struct_union_type"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -3697,6 +3702,9 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				v.ExprType = n.node[*tmp.ExprType].(Type)
 			}
 			v.ConstantLevel = tmp.ConstantLevel
+			if tmp.StructUnionType != nil {
+				v.StructUnionType = n.node[*tmp.StructUnionType].(*StructUnionType)
+			}
 			if tmp.CondScope != nil {
 				v.CondScope = n.scope[*tmp.CondScope]
 			}
@@ -3706,9 +3714,6 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.Branch = make([]*MatchBranch, len(tmp.Branch))
 			for j, k := range tmp.Branch {
 				v.Branch[j] = n.node[k].(*MatchBranch)
-			}
-			if tmp.StructUnionType != nil {
-				v.StructUnionType = n.node[*tmp.StructUnionType].(*StructUnionType)
 			}
 		case NodeTypeRange:
 			v := n.node[i].(*Range)
@@ -4965,6 +4970,11 @@ func Walk(n Node, f Visitor) {
 				return
 			}
 		}
+		if v.StructUnionType != nil {
+			if !f.Visit(f, v.StructUnionType) {
+				return
+			}
+		}
 		if v.Cond != nil {
 			if !f.Visit(f, v.Cond) {
 				return
@@ -5029,6 +5039,11 @@ func Walk(n Node, f Visitor) {
 				return
 			}
 		}
+		if v.StructUnionType != nil {
+			if !f.Visit(f, v.StructUnionType) {
+				return
+			}
+		}
 		if v.Cond != nil {
 			if !f.Visit(f, v.Cond) {
 				return
@@ -5036,11 +5051,6 @@ func Walk(n Node, f Visitor) {
 		}
 		for _, w := range v.Branch {
 			if !f.Visit(f, w) {
-				return
-			}
-		}
-		if v.StructUnionType != nil {
-			if !f.Visit(f, v.StructUnionType) {
 				return
 			}
 		}

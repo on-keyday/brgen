@@ -488,6 +488,7 @@ export function isCall(obj: any): obj is Call {
 }
 
 export interface If extends Expr {
+	struct_union_type: StructUnionType|null;
 	cond_scope: Scope|null;
 	cond: Expr|null;
 	then: IndentBlock|null;
@@ -528,10 +529,10 @@ export function isIndex(obj: any): obj is Index {
 }
 
 export interface Match extends Expr {
+	struct_union_type: StructUnionType|null;
 	cond_scope: Scope|null;
 	cond: Expr|null;
 	branch: MatchBranch[];
-	struct_union_type: StructUnionType|null;
 }
 
 export function isMatch(obj: any): obj is Match {
@@ -1266,6 +1267,7 @@ export function parseAST(obj: JsonAst): Program {
 				loc: on.loc,
 				expr_type: null,
 				constant_level: ConstantLevel.unknown,
+				struct_union_type: null,
 				cond_scope: null,
 				cond: null,
 				then: null,
@@ -1318,10 +1320,10 @@ export function parseAST(obj: JsonAst): Program {
 				loc: on.loc,
 				expr_type: null,
 				constant_level: ConstantLevel.unknown,
+				struct_union_type: null,
 				cond_scope: null,
 				cond: null,
 				branch: [],
-				struct_union_type: null,
 			}
 			c.node.push(n);
 			break;
@@ -2323,6 +2325,14 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at If::constant_level');
 			}
 			n.constant_level = tmpconstant_level;
+			if (on.body?.struct_union_type !== null && typeof on.body?.struct_union_type !== 'number') {
+				throw new Error('invalid node list at If::struct_union_type');
+			}
+			const tmpstruct_union_type = on.body.struct_union_type === null ? null : c.node[on.body.struct_union_type];
+			if (!(tmpstruct_union_type === null || isStructUnionType(tmpstruct_union_type))) {
+				throw new Error('invalid node list at If::struct_union_type');
+			}
+			n.struct_union_type = tmpstruct_union_type;
 			if (on.body?.cond_scope !== null && typeof on.body?.cond_scope !== 'number') {
 				throw new Error('invalid node list at If::cond_scope');
 			}
@@ -2481,6 +2491,14 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at Match::constant_level');
 			}
 			n.constant_level = tmpconstant_level;
+			if (on.body?.struct_union_type !== null && typeof on.body?.struct_union_type !== 'number') {
+				throw new Error('invalid node list at Match::struct_union_type');
+			}
+			const tmpstruct_union_type = on.body.struct_union_type === null ? null : c.node[on.body.struct_union_type];
+			if (!(tmpstruct_union_type === null || isStructUnionType(tmpstruct_union_type))) {
+				throw new Error('invalid node list at Match::struct_union_type');
+			}
+			n.struct_union_type = tmpstruct_union_type;
 			if (on.body?.cond_scope !== null && typeof on.body?.cond_scope !== 'number') {
 				throw new Error('invalid node list at Match::cond_scope');
 			}
@@ -2507,14 +2525,6 @@ export function parseAST(obj: JsonAst): Program {
 				}
 				n.branch.push(tmpbranch);
 			}
-			if (on.body?.struct_union_type !== null && typeof on.body?.struct_union_type !== 'number') {
-				throw new Error('invalid node list at Match::struct_union_type');
-			}
-			const tmpstruct_union_type = on.body.struct_union_type === null ? null : c.node[on.body.struct_union_type];
-			if (!(tmpstruct_union_type === null || isStructUnionType(tmpstruct_union_type))) {
-				throw new Error('invalid node list at Match::struct_union_type');
-			}
-			n.struct_union_type = tmpstruct_union_type;
 			break;
 		}
 		case "range": {
@@ -4579,6 +4589,12 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 					return;
 				}
 			}
+			if (n.struct_union_type !== null) {
+				const result = fn(fn,n.struct_union_type);
+				if (result === false) {
+					return;
+				}
+			}
 			if (n.cond !== null) {
 				const result = fn(fn,n.cond);
 				if (result === false) {
@@ -4679,6 +4695,12 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 					return;
 				}
 			}
+			if (n.struct_union_type !== null) {
+				const result = fn(fn,n.struct_union_type);
+				if (result === false) {
+					return;
+				}
+			}
 			if (n.cond !== null) {
 				const result = fn(fn,n.cond);
 				if (result === false) {
@@ -4687,12 +4709,6 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			for (const e of n.branch) {
 				const result = fn(fn,e);
-				if (result === false) {
-					return;
-				}
-			}
-			if (n.struct_union_type !== null) {
-				const result = fn(fn,n.struct_union_type);
 				if (result === false) {
 					return;
 				}

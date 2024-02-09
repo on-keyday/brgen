@@ -612,6 +612,7 @@ struct ast2c_If {
 	ast2c_Loc loc;
 	ast2c_Type* expr_type;
 	ast2c_ConstantLevel constant_level;
+	ast2c_StructUnionType* struct_union_type;
 	ast2c_Scope* cond_scope;
 	ast2c_Expr* cond;
 	ast2c_IndentBlock* then;
@@ -664,11 +665,11 @@ struct ast2c_Match {
 	ast2c_Loc loc;
 	ast2c_Type* expr_type;
 	ast2c_ConstantLevel constant_level;
+	ast2c_StructUnionType* struct_union_type;
 	ast2c_Scope* cond_scope;
 	ast2c_Expr* cond;
 	ast2c_MatchBranch** branch;
 	size_t branch_size;
-	ast2c_StructUnionType* struct_union_type;
 };
 
 // returns 1 if succeed 0 if failed

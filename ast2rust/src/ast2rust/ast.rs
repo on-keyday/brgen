@@ -3016,6 +3016,7 @@ pub struct If {
 	pub loc: Loc,
 	pub expr_type: Option<Type>,
 	pub constant_level: ConstantLevel,
+	pub struct_union_type: Option<Rc<RefCell<StructUnionType>>>,
 	pub cond_scope: Option<Rc<RefCell<Scope>>>,
 	pub cond: Option<Expr>,
 	pub then: Option<Rc<RefCell<IndentBlock>>>,
@@ -3288,10 +3289,10 @@ pub struct Match {
 	pub loc: Loc,
 	pub expr_type: Option<Type>,
 	pub constant_level: ConstantLevel,
+	pub struct_union_type: Option<Rc<RefCell<StructUnionType>>>,
 	pub cond_scope: Option<Rc<RefCell<Scope>>>,
 	pub cond: Option<Expr>,
 	pub branch: Vec<Rc<RefCell<MatchBranch>>>,
-	pub struct_union_type: Option<Rc<RefCell<StructUnionType>>>,
 }
 
 impl TryFrom<&Expr> for Rc<RefCell<Match>> {
@@ -7418,6 +7419,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				loc: raw_node.loc.clone(),
 				expr_type: None,
 				constant_level: ConstantLevel::Unknown,
+				struct_union_type: None,
 				cond_scope: None,
 				cond: None,
 				then: None,
@@ -7458,10 +7460,10 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				loc: raw_node.loc.clone(),
 				expr_type: None,
 				constant_level: ConstantLevel::Unknown,
+				struct_union_type: None,
 				cond_scope: None,
 				cond: None,
 				branch: Vec::new(),
-				struct_union_type: None,
 				})))
 			},
 			NodeType::Range => {
@@ -8629,6 +8631,25 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					},
 					None=>return Err(Error::MismatchJSONType(constant_level_body.into(),JSONType::String)),
 				};
+				let struct_union_type_body = match raw_node.body.get("struct_union_type") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"struct_union_type")),
+				};
+ 				if !struct_union_type_body.is_null() {
+					let struct_union_type_body = match struct_union_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(struct_union_type_body.into(),JSONType::Number)),
+					};
+					let struct_union_type_body = match nodes.get(struct_union_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(struct_union_type_body as usize)),
+					};
+					let struct_union_type_body = match struct_union_type_body {
+						Node::StructUnionType(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),struct_union_type_body.into())),
+					};
+					node.borrow_mut().struct_union_type = Some(struct_union_type_body.clone());
+				}
 				let cond_scope_body = match raw_node.body.get("cond_scope") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"cond_scope")),
@@ -8939,6 +8960,25 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					},
 					None=>return Err(Error::MismatchJSONType(constant_level_body.into(),JSONType::String)),
 				};
+				let struct_union_type_body = match raw_node.body.get("struct_union_type") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"struct_union_type")),
+				};
+ 				if !struct_union_type_body.is_null() {
+					let struct_union_type_body = match struct_union_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(struct_union_type_body.into(),JSONType::Number)),
+					};
+					let struct_union_type_body = match nodes.get(struct_union_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(struct_union_type_body as usize)),
+					};
+					let struct_union_type_body = match struct_union_type_body {
+						Node::StructUnionType(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),struct_union_type_body.into())),
+					};
+					node.borrow_mut().struct_union_type = Some(struct_union_type_body.clone());
+				}
 				let cond_scope_body = match raw_node.body.get("cond_scope") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"cond_scope")),
@@ -8991,25 +9031,6 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						x =>return Err(Error::MismatchNodeType(x.into(),branch_body.into())),
 					};
 					node.borrow_mut().branch.push(branch_body.clone());
-				}
-				let struct_union_type_body = match raw_node.body.get("struct_union_type") {
-					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"struct_union_type")),
-				};
- 				if !struct_union_type_body.is_null() {
-					let struct_union_type_body = match struct_union_type_body.as_u64() {
-						Some(v)=>v,
-						None=>return Err(Error::MismatchJSONType(struct_union_type_body.into(),JSONType::Number)),
-					};
-					let struct_union_type_body = match nodes.get(struct_union_type_body as usize) {
-						Some(v)=>v,
-						None => return Err(Error::IndexOutOfBounds(struct_union_type_body as usize)),
-					};
-					let struct_union_type_body = match struct_union_type_body {
-						Node::StructUnionType(node)=>node,
-						x =>return Err(Error::MismatchNodeType(x.into(),struct_union_type_body.into())),
-					};
-					node.borrow_mut().struct_union_type = Some(struct_union_type_body.clone());
 				}
 			},
 			NodeType::Range => {
@@ -12825,6 +12846,11 @@ where
 					return;
 				}
 			}
+			if let Some(node) = &node.borrow().struct_union_type{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
 			if let Some(node) = &node.borrow().cond{
 				if !f.visit(&node.into()){
 					return;
@@ -12893,17 +12919,17 @@ where
 					return;
 				}
 			}
+			if let Some(node) = &node.borrow().struct_union_type{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
 			if let Some(node) = &node.borrow().cond{
 				if !f.visit(&node.into()){
 					return;
 				}
 			}
 			for node in &node.borrow().branch{
-				if !f.visit(&node.into()){
-					return;
-				}
-			}
-			if let Some(node) = &node.borrow().struct_union_type{
 				if !f.visit(&node.into()){
 					return;
 				}

@@ -1379,12 +1379,14 @@ int ast2c_If_parse(ast2c_Ast* ast,ast2c_If* s,ast2c_json_handlers* h, void* obj)
 	void* obj_body = h->object_get(h, obj, "body");
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
 	s->expr_type = NULL;
+	s->struct_union_type = NULL;
 	s->cond_scope = NULL;
 	s->cond = NULL;
 	s->then = NULL;
 	s->els = NULL;
 	void* expr_type = h->object_get(h, obj_body, "expr_type");
 	void* constant_level = h->object_get(h, obj_body, "constant_level");
+	void* struct_union_type = h->object_get(h, obj_body, "struct_union_type");
 	void* cond_scope = h->object_get(h, obj_body, "cond_scope");
 	void* cond = h->object_get(h, obj_body, "cond");
 	void* then = h->object_get(h, obj_body, "then");
@@ -1392,6 +1394,7 @@ int ast2c_If_parse(ast2c_Ast* ast,ast2c_If* s,ast2c_json_handlers* h, void* obj)
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_If::loc is null"); } return 0; }
 	if (!expr_type) { if(h->error) { h->error(h,expr_type, "ast2c_If::expr_type is null"); } return 0; }
 	if (!constant_level) { if(h->error) { h->error(h,constant_level, "ast2c_If::constant_level is null"); } return 0; }
+	if (!struct_union_type) { if(h->error) { h->error(h,struct_union_type, "ast2c_If::struct_union_type is null"); } return 0; }
 	if (!cond_scope) { if(h->error) { h->error(h,cond_scope, "ast2c_If::cond_scope is null"); } return 0; }
 	if (!cond) { if(h->error) { h->error(h,cond, "ast2c_If::cond is null"); } return 0; }
 	if (!then) { if(h->error) { h->error(h,then, "ast2c_If::then is null"); } return 0; }
@@ -1517,19 +1520,20 @@ int ast2c_Match_parse(ast2c_Ast* ast,ast2c_Match* s,ast2c_json_handlers* h, void
 	void* obj_body = h->object_get(h, obj, "body");
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
 	s->expr_type = NULL;
+	s->struct_union_type = NULL;
 	s->cond_scope = NULL;
 	s->cond = NULL;
 	s->branch = NULL;
-	s->struct_union_type = NULL;
 	void* expr_type = h->object_get(h, obj_body, "expr_type");
 	void* constant_level = h->object_get(h, obj_body, "constant_level");
+	void* struct_union_type = h->object_get(h, obj_body, "struct_union_type");
 	void* cond_scope = h->object_get(h, obj_body, "cond_scope");
 	void* cond = h->object_get(h, obj_body, "cond");
 	void* branch = h->object_get(h, obj_body, "branch");
-	void* struct_union_type = h->object_get(h, obj_body, "struct_union_type");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_Match::loc is null"); } return 0; }
 	if (!expr_type) { if(h->error) { h->error(h,expr_type, "ast2c_Match::expr_type is null"); } return 0; }
 	if (!constant_level) { if(h->error) { h->error(h,constant_level, "ast2c_Match::constant_level is null"); } return 0; }
+	if (!struct_union_type) { if(h->error) { h->error(h,struct_union_type, "ast2c_Match::struct_union_type is null"); } return 0; }
 	if (!cond_scope) { if(h->error) { h->error(h,cond_scope, "ast2c_Match::cond_scope is null"); } return 0; }
 	if (!cond) { if(h->error) { h->error(h,cond, "ast2c_Match::cond is null"); } return 0; }
 	if (!branch) { if(h->error) { h->error(h,branch, "ast2c_Match::branch is null"); } return 0; }
@@ -1537,7 +1541,6 @@ int ast2c_Match_parse(ast2c_Ast* ast,ast2c_Match* s,ast2c_json_handlers* h, void
 		if(h->error) { h->error(h,branch, "failed to get array size of ast2c_Match::branch"); }
 		return NULL;
 	}
-	if (!struct_union_type) { if(h->error) { h->error(h,struct_union_type, "ast2c_Match::struct_union_type is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_Match::loc"); }
 		goto error;

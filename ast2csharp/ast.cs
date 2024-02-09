@@ -300,6 +300,7 @@ public class If : Expr{
 	public Loc Loc{get;set;}
 	public Type? ExprType{get;set;}
 	public ConstantLevel ConstantLevel{get;set;}
+	public StructUnionType? StructUnionType{get;set;}
 	public Scope? CondScope{get;set;}
 	public Expr? Cond{get;set;}
 	public IndentBlock? Then{get;set;}
@@ -332,10 +333,10 @@ public class Match : Expr{
 	public Loc Loc{get;set;}
 	public Type? ExprType{get;set;}
 	public ConstantLevel ConstantLevel{get;set;}
+	public StructUnionType? StructUnionType{get;set;}
 	public Scope? CondScope{get;set;}
 	public Expr? Cond{get;set;}
 	public List<MatchBranch>? Branch{get;set;}
-	public StructUnionType? StructUnionType{get;set;}
 }
 public class Range : Expr{
 	public Loc Loc{get;set;}
@@ -1072,6 +1073,7 @@ public static class Ast {
                node.Loc = ast.Node[i].Body[loc];
                node.ExprType = ast.Node[i].Body[expr_type];
                node.ConstantLevel = ast.Node[i].Body[constant_level];
+               node.StructUnionType = ast.Node[i].Body[struct_union_type];
                node.CondScope = ast.Node[i].Body[cond_scope];
                node.Cond = ast.Node[i].Body[cond];
                node.Then = ast.Node[i].Body[then];
@@ -1104,10 +1106,10 @@ public static class Ast {
                node.Loc = ast.Node[i].Body[loc];
                node.ExprType = ast.Node[i].Body[expr_type];
                node.ConstantLevel = ast.Node[i].Body[constant_level];
+               node.StructUnionType = ast.Node[i].Body[struct_union_type];
                node.CondScope = ast.Node[i].Body[cond_scope];
                node.Cond = ast.Node[i].Body[cond];
                node.Branch = ast.Node[i].Body[branch];
-               node.StructUnionType = ast.Node[i].Body[struct_union_type];
            case NodeType.Range:
                var node = nodes[i] as Range;
                node.Loc = ast.Node[i].Body[loc];
