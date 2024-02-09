@@ -59,6 +59,16 @@ export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
                 found = node;
                 return;
             }
+            else if(ast2ts.isMatch(node)) {
+                console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
+                found = node;
+                return;
+            }
+            else if(ast2ts.isIf(node)) {
+                console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
+                found = node;
+                return;
+            }
             console.log(`hit: ${node.node_type} ${JSON.stringify(node.loc)}`)
         }
         ast2ts.walk(node,f);
@@ -173,6 +183,14 @@ export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
     }
     else if(ast2ts.isType(found)){
         return makeHover("type",`type (type: ${found.node_type || "unknown"}, size: ${bitSize(found.bit_size)}, align: ${found.bit_alignment})`);
+    }
+    else if(ast2ts.isMatch(found)){
+        return makeHover("match",`match (exhaustive: ${found.struct_union_type?.exhaustive||false}, size: ${bitSize(found.struct_union_type?.bit_size)})`);
+    }
+    else if(ast2ts.isIf(found)) {
+        if(found.struct_union_type !== null) {
+            return makeHover("if",`if (exhaustive: ${found.struct_union_type.exhaustive||false} size: ${bitSize(found.struct_union_type.bit_size)})`);
+        }
     }
     return null;
 }
