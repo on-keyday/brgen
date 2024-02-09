@@ -87,6 +87,12 @@ MIT License
 
 All source code is released under the MIT license. The copyright remains with on-keyday.
 
+For built binary released at GitHub Release,
+license of dependency are collected by [licensed](https://github.com/github/licensed) and [gocredits](https://github.com/Songmu/gocredits) and bundled with released binaries.
+
+If you find license problem, please tell us via GitHub Issue.
+see also [license_note.txt](https://github.com/on-keyday/brgen/blob/main/script/license_note.txt)
+
 # Issue Policy
 
 機能の改善、提案、バグ報告などは [このリポジトリの GitHub Issue](https://github.com/on-keyday/brgen/issues/new) で受け付けています。
