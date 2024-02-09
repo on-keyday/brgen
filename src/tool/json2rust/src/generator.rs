@@ -1,4 +1,4 @@
-use ast2rust::ast::{self, Expr};
+use ast2rust::ast;
 use std::cell::RefCell;
 use std::io::{self, Write};
 use std::rc::{Rc, Weak};
@@ -9,17 +9,8 @@ type WeakPtr<T> = Weak<RefCell<T>>;
 pub struct Generator<W: std::io::Write> {
     writer: std::io::BufWriter<W>,
     indent: usize,
-}
-
-struct IndentScope<'a, W: std::io::Write> {
-    generator: &'a mut Generator<W>,
-    indent: usize,
-}
-
-impl<'a, W: std::io::Write> Drop for IndentScope<'a, W> {
-    fn drop(&mut self) {
-        self.generator.indent = self.indent;
-    }
+    seq: usize,
+    should_indent: bool,
 }
 
 impl<W: std::io::Write> Generator<W> {
@@ -27,16 +18,17 @@ impl<W: std::io::Write> Generator<W> {
         Self {
             writer: std::io::BufWriter::new(w),
             indent: 0,
+            seq: 0,
+            should_indent: false,
         }
     }
 
-    fn new_indent_scope(&mut self) -> IndentScope<W> {
-        let indent = self.indent;
+    fn enter_indent_scope(&mut self) {
         self.indent += 1;
-        IndentScope {
-            generator: self,
-            indent,
-        }
+    }
+
+    fn exit_indent_scope(&mut self) {
+        self.indent -= 1;
     }
 
     fn write_indent(&mut self) {
@@ -45,11 +37,83 @@ impl<W: std::io::Write> Generator<W> {
         }
     }
 
+    fn get_seq(&mut self) -> usize {
+        let seq = self.seq;
+        self.seq += 1;
+        seq
+    }
+
     fn write(&mut self, s: &str) {
+        self.write_if_should_indent();
         self.writer.write(s.as_bytes()).unwrap();
     }
 
-    pub fn write_field(&mut self, field: &SharedPtr<ast::Field>) {}
+    fn write_if_should_indent(&mut self) {
+        if self.should_indent {
+            self.write_indent();
+            self.should_indent = false;
+        }
+    }
+
+    fn writeln(&mut self, s: &str) {
+        self.write(s);
+        self.write("\n");
+        self.should_indent = true;
+    }
+
+    pub fn get_type(typ: &ast::Type) -> String {
+        match typ {
+            ast::Type::IntType(t) => {
+                if t.borrow().is_common_supported {
+                    if t.borrow().is_signed {
+                        format!("i{}", t.borrow().bit_size.clone().unwrap())
+                    } else {
+                        format!("u{}", t.borrow().bit_size.clone().unwrap())
+                    }
+                } else {
+                    let v = t.borrow().bit_size.clone().unwrap();
+                    if v < 64 {
+                        let aligned = (v + 7) / 8;
+                        if t.borrow().is_signed {
+                            format!("i{}", aligned * 8)
+                        } else {
+                            format!("u{}", aligned * 8)
+                        }
+                    } else {
+                        format!("i{}", v)
+                    }
+                }
+            }
+            ast::Type::BoolType(_) => "bool".to_string(),
+            ast::Type::EnumType(t) => {
+                let enum_ = t.borrow().base.clone().unwrap();
+                let enum_ = enum_.upgrade().unwrap();
+                let x = enum_.borrow().ident.clone().unwrap().borrow().ident.clone();
+                x
+            }
+            _ => todo!(),
+        }
+    }
+
+    pub fn write_field(&mut self, field: &SharedPtr<ast::Field>) {
+        if field.borrow().ident.is_none() {
+            let some = Some(Rc::new(RefCell::new(ast::Ident {
+                loc: field.borrow().loc.clone(),
+                expr_type: field.borrow().field_type.clone(),
+                ident: format!("hidden_field_{}", self.get_seq()),
+                base: Some(ast::NodeWeak::Field(Rc::downgrade(&field))),
+                constant_level: ast::ConstantLevel::Variable,
+                usage: ast::IdentUsage::DefineField,
+                scope: None,
+            })));
+            field.borrow_mut().ident = some;
+        }
+        let ident = field.borrow().ident.clone().unwrap();
+        self.write("pub ");
+        self.write(&format!("{}: ", ident.borrow().ident));
+        let typ = Self::get_type(&field.borrow().field_type.clone().unwrap());
+        self.writeln(&format!("{},", typ));
+    }
 
     pub fn write_struct_type_impl(&mut self, ty: SharedPtr<ast::StructType>) -> io::Result<()> {
         let ty = ty.borrow();
@@ -66,10 +130,11 @@ impl<W: std::io::Write> Generator<W> {
             Ok(ast::Node::Format(node)) => {
                 let ident: SharedPtr<ast::Ident> = node.borrow().ident.clone().unwrap();
                 let ident = ident.borrow().ident.clone();
-                self.write(&format!("pub struct {} {{\n", ident));
-                let _ = self.new_indent_scope();
+                self.writeln(&format!("pub struct {} {{", ident));
+                self.enter_indent_scope();
                 self.write_struct_type_impl(ty.clone())?;
-                self.write("}\n");
+                self.exit_indent_scope();
+                self.writeln("}");
             }
             _ => {
                 self.write_struct_type_impl(ty.clone())?;
