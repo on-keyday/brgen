@@ -7,21 +7,14 @@ import "monaco-editor/esm/vs/basic-languages/cpp/cpp.contribution"
 import "monaco-editor/esm/vs/basic-languages/go/go.contribution"
 
 
-
-import {ast2ts} from "ast2ts";
-import * as caller from "./s2j/caller.js";
 import "./s2j/brgen_lsp.js";
 import { JobResult,Language,LanguageList } from "./s2j/msg.js";
 import { makeButton, makeLink, makeListBox, setStyle, makeInputList, InputListElement } from "./ui";
 
-import * as inc from "./cpp_include";
-import { TraceID } from "./s2j/job_mgr";
-import { UpdateTracer } from "./s2j/update";
 import {storage} from "./storage";
 import { FileCandidates, registerFileSelectionCallback } from "./s2j/file_select";
-
-// first, load workers
-caller.loadWorkers();
+import { ConfigKey, ElementID } from "./types";
+import { UIModel,updateTracer, MappingInfo, updateGenerated } from "./generator";
 
 if(window.MonacoEnvironment === undefined) {
     window.MonacoEnvironment = {
@@ -34,39 +27,10 @@ if(window.MonacoEnvironment === undefined) {
     }
 }
 
-
-const enum ElementID {
-    CONTAINER1 = "container1",
-    CONTAINER2 = "container2",
-    TITLE_BAR = "title_bar",
-    LANGUAGE_SELECT = "language-select",
-    COPY_BUTTON = "copy-button",
-    GITHUB_LINK = "github-link",
-    BALL = "ball",
-    BALL_BOUND = "ball-bound",
-    INPUT_LIST = "input-list",
-}
-
-const enum ConfigKey {
-    COMMON_FILE_NAME ="file_name",
-    CPP_SOURCE_MAP = "source_map", 
-    CPP_EXPAND_INCLUDE = "expand_include",
-    CPP_USE_ERROR = "use_error",
-    CPP_USE_RAW_UNION = "use_raw_union",
-    CPP_CHECK_OVERFLOW = "check_overflow",
-    GO_USE_PUT = "use_put",
-
-}
-
 interface LanguageConfig{
     box: HTMLElement,
     config: Map<string,InputListElement>
 };
-
-interface MappingInfo {
-    loc :ast2ts.Loc,
-    line :number,
-}
 
 interface ColorMap {
     info :MappingInfo,
@@ -74,26 +38,6 @@ interface ColorMap {
     sourceElement :HTMLElement|undefined,
     generatedElement :HTMLElement|undefined
 }
-
-const isMappingInfo = (obj :any) :obj is MappingInfo => {
-    if(ast2ts.isLoc(obj.loc) && obj.line&&typeof obj.line === 'number'){
-        return true;
-    }
-    return false;
-}
-
-const isMappingInfoArray = (obj :any) :obj is MappingInfo[] => {
-    if(Array.isArray(obj)){
-        for(let i = 0;i<obj.length;i++){
-            if(!isMappingInfo(obj[i])){
-                return false;
-            }
-        }
-        return true;
-    }
-    return false;
-}
-
 
 
 const getElement = (id :string) => {
@@ -245,37 +189,21 @@ const setGenerated =async (code :string,lang: string) => {
     editorUI.generated.setScrollTop(top);
 }
 
-
-
-const updateTracer = new UpdateTracer();
-
-// returns true if updated
-const handleLanguage = async (s :JobResult,generate:(id :TraceID,src :string,option :any)=>Promise<JobResult>,lang :Language,view_lang: string,option? :any) => {
-    if(s.stdout===undefined) throw new Error("stdout is undefined");
-    const res = await generate(s.traceID,s.stdout,option).catch((e) => {
-        return e as JobResult;
-    });
-    if(updateTracer.editorAlreadyUpdated(s)) {
-        return false;
-    }
-    console.log(res);
-    if(res.stdout === undefined || res.stdout === "") {
-        if(res.stderr!==undefined&&res.stderr!==""){
-            setGenerated(res.stderr,"text/plain");
-        }
-        else{
-            setGenerated("(no output. maybe generator is crashed)","text/plain");
-        }
-    }
-    else{
-        setGenerated(res.stdout,view_lang);
-    }
-    return true;
+const updateUI = async ()=>{
+    const ui :UIModel = {
+        getLanguageConfig: (lang,config) => {
+            return commonUI.config.get(lang)?.config.get(config);
+        },
+        getValue: () => {
+            return editorUI.editor.getValue();
+        },
+        setGenerated: setGenerated,
+        setDefault: ()=> editorUI.setDefault(),
+        mappingCode: mappingCode,
+    };
+    await updateGenerated(ui)
 }
 
-const handleCppPrototype = async (s :JobResult) => {
-    await handleLanguage(s,caller.getCppPrototypeCode,Language.CPP_PROTOTYPE,"cpp");
-}
 
 const caches = {
     recoloring: null as null|(()=>void),
@@ -415,129 +343,11 @@ const mappingCode = (mappingInfo :MappingInfo[],origin :JobResult,lang :Language
     caches.recoloring = recoloring;
 }
 
-const handleCpp = async (s :JobResult) => {
-    const useMap =commonUI.config.get(Language.CPP)?.config.get(ConfigKey.CPP_SOURCE_MAP)?.value;
-    const expandInclude = commonUI.config.get(Language.CPP)?.config.get(ConfigKey.CPP_EXPAND_INCLUDE)?.value;
-    const useError = commonUI.config.get(Language.CPP)?.config.get(ConfigKey.CPP_USE_ERROR)?.value;
-    const useRawUnion = commonUI.config.get(Language.CPP)?.config.get(ConfigKey.CPP_USE_RAW_UNION)?.value;
-    const checkOverflow = commonUI.config.get(Language.CPP)?.config.get(ConfigKey.CPP_CHECK_OVERFLOW)?.value;
-    const cppOption : caller.CppOption = {      
-        use_line_map: useMap === true,
-        use_error: useError === true,
-        use_raw_union: useRawUnion === true,
-        use_overflow_check: checkOverflow === true,
-    };
-    let result : JobResult | undefined = undefined;
-    let mappingInfo :any;
-    await handleLanguage(s,async(id: TraceID,src :string,option :any) => {
-        result = await caller.getCppCode(id,src,option as caller.CppOption);
-        if(result.code === 0&&cppOption.use_line_map){
-           const split = result.stdout!.split("############");
-           result.stdout = split[0];
-           mappingInfo = JSON.parse(split[1]);
-        }
-        if(result.code === 0&&expandInclude===true){
-            const expanded = await inc.resolveInclude(result.stdout!,(url :string)=>{
-                if(updateTracer.editorAlreadyUpdated(s)) return;
-                setGenerated(`maybe external server call is delayed\nfetching ${url}`,"text/plain");
-            });
-            result.stdout = expanded;
-        }
-        return result;
-    },Language.CPP,"cpp",cppOption);
-    if(result&&!updateTracer.editorAlreadyUpdated(result)&& isMappingInfoArray(mappingInfo?.line_map)){
-        // wait for editor update 
-        setTimeout(() => {
-            if(result===undefined) throw new Error("result is undefined");
-            if(updateTracer.editorAlreadyUpdated(s)) return;
-            console.log(mappingInfo);
-            mappingCode(mappingInfo.line_map,s,Language.CPP,0);
-        },1);
-    }
-}
-
-const handleGo = async (s :JobResult) => {
-    const usePut = commonUI.config.get(Language.GO)?.config.get(ConfigKey.GO_USE_PUT)?.value;
-    const goOption : caller.GoOption ={
-        use_put: usePut === true,
-    }
-    await handleLanguage(s,caller.getGoCode,Language.GO,"go",goOption);
-}
-
-const handleJSONOutput = async (id :TraceID,value :string,generator:(id :TraceID,srcCode :string,option:any)=>Promise<JobResult>) => {
-    const s = await generator(id,value,
-    {filename: "editor.bgn"}).catch((e) => {
-        return e as JobResult;
-    });
-    if(updateTracer.editorAlreadyUpdated(s)) {
-        return;
-    }
-    if(s.stdout===undefined) throw new Error("stdout is undefined");
-    console.log(s.stdout);
-    console.log(s.stderr);
-    const js = JSON.parse(s.stdout);
-    setGenerated(JSON.stringify(js,null,4),"json");
-    return;
-}
-
-const handleTokenize = async (id :TraceID,value :string) => {
-    await handleJSONOutput(id,value,caller.getTokens);
-}
-
-const handleDebugAST = async (id :TraceID,value :string) => {
-    await handleJSONOutput(id,value,caller.getDebugAST);
-}
-
-
-const updateGenerated = async () => {
-    const value = editorUI.editor.getValue();
-    const traceID = updateTracer.getTraceID();
-    if(value === ""){
-        editorUI.setDefault();
-        return;
-    }
-    const lang = storage.getLangMode();
-    if(lang === Language.TOKENIZE) {
-       return await handleTokenize(traceID,value);
-    }
-    if(lang === Language.JSON_DEBUG_AST) {
-        return await handleDebugAST(traceID,value);
-    }
-    const s = await caller.getAST(traceID,value,
-    {filename: "editor.bgn"}).catch((e) => {
-        return e as JobResult;
-    });
-    if(updateTracer.editorAlreadyUpdated(s)) {
-        return;
-    }
-    if(s.stdout===undefined) throw new Error("stdout is undefined");
-    console.log(s.stdout);
-    console.log(s.stderr);
-    const js = JSON.parse(s.stdout);
-    if(ast2ts.isAstFile(js)&&js.ast){
-        const ts = ast2ts.parseAST(js.ast);
-        console.log(ts);
-    }
-    switch(lang){
-        case Language.JSON_AST:
-            setGenerated(JSON.stringify(js,null,4),"json");
-            break;
-        case Language.CPP_PROTOTYPE: 
-            await handleCppPrototype(s);
-            break;
-        case Language.CPP:
-            await handleCpp(s);
-            break;
-        case Language.GO:
-            await handleGo(s);
-            break;
-    }
-}
 
 window.addEventListener("keydown",async (e) => {
     if(e.ctrlKey&&e.key==="s"){
         e.preventDefault();
-        updateGenerated();
+        updateUI();
     }
 });
 
@@ -547,7 +357,7 @@ const onContentUpdate = async (e :monaco.editor.IModelContentChangedEvent)=>{
         console.log(change);
     });
     storage.setSourceCode(editorUI.editorModel.getValue());
-    await updateGenerated();
+    await updateUI();
 }
 
 editorUI.editorModel.onDidChangeContent(onContentUpdate)
@@ -563,7 +373,7 @@ const changeLanguage = async (mode :string) => {
     commonUI.language_select.value = mode;
     storage.setLangMode(mode as Language);
     commonUI.changeLanguageConfig(mode as Language);
-    await updateGenerated();
+    await updateUI();
 }
 
 const commonUI = {
@@ -662,17 +472,17 @@ const fileName :InputListElement = {
     const tokenize = new Map<string,InputListElement>();
     tokenize.set(ConfigKey.COMMON_FILE_NAME,fileName);
     commonUI.config.set(Language.TOKENIZE,languageSpecificConfig(tokenize,ConfigKey.COMMON_FILE_NAME,(change) => {
-        updateGenerated();
+        updateUI();
     }));
     const debugAST = new Map<string,InputListElement>();
     debugAST.set(ConfigKey.COMMON_FILE_NAME,fileName);
     commonUI.config.set(Language.JSON_DEBUG_AST,languageSpecificConfig(debugAST,ConfigKey.COMMON_FILE_NAME,(change) => {
-        updateGenerated();
+        updateUI();
     }));
     const cppProto = new Map<string,InputListElement>();
     cppProto.set(ConfigKey.COMMON_FILE_NAME,fileName);
     commonUI.config.set(Language.CPP_PROTOTYPE,languageSpecificConfig(cppProto,ConfigKey.COMMON_FILE_NAME,(change) => {
-        updateGenerated();
+        updateUI();
     }));
     const go = new Map<string,InputListElement>();
     go.set(ConfigKey.GO_USE_PUT,{
@@ -681,12 +491,12 @@ const fileName :InputListElement = {
     });
     go.set(ConfigKey.COMMON_FILE_NAME,fileName);
     commonUI.config.set(Language.GO,languageSpecificConfig(go,ConfigKey.COMMON_FILE_NAME,(change) => {
-        updateGenerated();
+        updateUI();
     }));
     const ast = new Map<string,InputListElement>();
     ast.set(ConfigKey.COMMON_FILE_NAME,fileName);
     commonUI.config.set(Language.JSON_AST,languageSpecificConfig(ast,ConfigKey.COMMON_FILE_NAME,(change) => {
-        updateGenerated();
+        updateUI();
     }));
     const cpp = new Map<string,InputListElement>();
     cpp.set(ConfigKey.CPP_SOURCE_MAP,{
@@ -715,7 +525,7 @@ const fileName :InputListElement = {
         if(caches.recoloring !== null) {
             caches.recoloring();
         }
-        updateGenerated();
+        updateUI();
     }));
 }
 

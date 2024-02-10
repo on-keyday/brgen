@@ -1,12 +1,12 @@
 import { JobResult } from "./msg";
 
 export class UpdateTracer{
-    traceID: number = 0;
+    #traceID: number = 0;
     getTraceID(){
-        return ++this.traceID;
+        return ++this.#traceID;
     }
     editorAlreadyUpdated (s :JobResult) {
-        if(this.traceID !== s.traceID){
+        if(this.#traceID !== s.traceID){
             console.log(`already updated traceID: ${s.traceID} jobID: ${s.jobID}`);
             return true;
         }

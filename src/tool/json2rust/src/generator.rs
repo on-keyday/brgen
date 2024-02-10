@@ -115,7 +115,7 @@ impl<W: std::io::Write> Generator<W> {
             ast::Type::IdentType(t) => t.borrow().ident.clone().unwrap().borrow().ident.clone(),
             ast::Type::ArrayType(t) => {
                 let ty = t.borrow().base_type.clone().unwrap();
-                let ty = Self::get_type(typ);
+                let ty = Self::get_type(&ty);
                 if t.borrow().length_value.is_some() {
                     format!("[{}; {}]", ty, t.borrow().length_value.clone().unwrap())
                 } else {
