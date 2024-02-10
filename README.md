@@ -126,11 +126,11 @@ see SECURITY.md
 もし、お好みの言語がないのであれば自分でジェネレーターを書いていただくことも可能です。
 現在、AST 操作用のライブラリを C++、Go、TypeScript、Rust、Python で提供しております。TODO(on-keyday): 各種パッケージ管理システムに公開する、操作ライブラリのドキュメントを書く
 
-C++: src/core/ast/ast.h と src/core/ast/traverse.h をから利用できます。その他、src/core/ast/tool ディレクトリに各種ツールがあります。
-Go: ast2go にあります。
-TypeScript: ast2ts にあります。
-Rust: ast2rust にあります。
-Python: ast2py にあります。
+- C++: src/core/ast/ast.h と src/core/ast/traverse.h をから利用できます。その他、src/core/ast/tool ディレクトリに各種ツールがあります。
+- Go: ast2go にあります。
+- TypeScript: ast2ts にあります。
+- Rust: ast2rust にあります。
+- Python: ast2py にあります。
 
 また、C や C#向けはディレクトリはありますが、まだ書きかけなので正常に動作しません
 
@@ -143,11 +143,11 @@ Python: ast2py にあります。
 If you don't have a language you like, you can write your own generator.
 We currently provide libraries for AST manipulation in C++, Go, TypeScript, Rust, and Python. TODO(on-keyday): Publish to various package management systems, write document for AST manipulation libraries
 
-C++: src/core/ast/ast.h and src/core/ast/traverse.h are available. Other tools are located in the src/core/ast/tool directory.
-Go: Found in ast2go.
-TypeScript: Found in ast2ts.
-Rust: Found in ast2rust.
-Python: Found in ast2py.
+- C++: src/core/ast/ast.h and src/core/ast/traverse.h are available. Other tools are located in the src/core/ast/tool directory.
+- Go: Found in ast2go.
+- TypeScript: Found in ast2ts.
+- Rust: Found in ast2rust.
+- Python: Found in ast2py.
 
 Also, there are directories for C and C#, but they are still being written so they will not work properly.
 
