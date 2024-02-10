@@ -4,9 +4,10 @@ import {JobManager,TraceID} from "./job_mgr.js";
 
 const WorkerFactory = class {
     #s2j_mgr_ :JobManager |null = null;
-    #j2c_mgr_ :JobManager |null = null;
-    #j2c2_mgr_ :JobManager |null = null;
+    #j2cp_mgr_ :JobManager |null = null;
+    #j2cp2_mgr_ :JobManager |null = null;
     #j2go_mgr_ :JobManager |null = null;
+    #j2c_mgr_ :JobManager |null = null;
 
     getSrc2JSONWorker = () => {
         if(this.#s2j_mgr_) return this.#s2j_mgr_;
@@ -15,21 +16,27 @@ const WorkerFactory = class {
     }
 
     getJSON2CppWorker = () => {
-        if(this.#j2c_mgr_) return this.#j2c_mgr_;
-        this.#j2c_mgr_ = new JobManager(new Worker(new URL("./json2cpp_worker.js",import.meta.url),{type:"module"}));
-        return this.#j2c_mgr_;
+        if(this.#j2cp_mgr_) return this.#j2cp_mgr_;
+        this.#j2cp_mgr_ = new JobManager(new Worker(new URL("./json2cpp_worker.js",import.meta.url),{type:"module"}));
+        return this.#j2cp_mgr_;
     }
 
     getJSON2Cpp2Worker = () => {
-        if(this.#j2c2_mgr_) return this.#j2c2_mgr_;
-        this.#j2c2_mgr_ = new JobManager(new Worker(new URL("./json2cpp2_worker.js",import.meta.url),{type:"module"}));
-        return this.#j2c2_mgr_;
+        if(this.#j2cp2_mgr_) return this.#j2cp2_mgr_;
+        this.#j2cp2_mgr_ = new JobManager(new Worker(new URL("./json2cpp2_worker.js",import.meta.url),{type:"module"}));
+        return this.#j2cp2_mgr_;
     }
 
     getJSON2GoWorker = () => {
         if(this.#j2go_mgr_) return this.#j2go_mgr_;
         this.#j2go_mgr_ = new JobManager(new Worker(new URL("./json2go_worker.js",import.meta.url),{type:"module"}));
         return this.#j2go_mgr_;
+    }
+
+    getJSON2CWWorker = () => {
+        if(this.#j2c_mgr_) return this.#j2c_mgr_;
+        this.#j2c_mgr_ = new JobManager(new Worker(new URL("./json2c_worker.js",import.meta.url),{type:"module"}));
+        return this.#j2c_mgr_;
     }
 }
 
@@ -55,11 +62,14 @@ export interface GoOption extends CallOption {
     use_put? :boolean
 }
 
+export interface COption extends CallOption {}
+
 export const loadWorkers = () => {
     factory.getSrc2JSONWorker();
     factory.getJSON2CppWorker();
     factory.getJSON2Cpp2Worker();
     factory.getJSON2GoWorker();
+    factory.getJSON2CWWorker();
 }
 
 
@@ -136,5 +146,11 @@ export const getGoCode = (id :TraceID,sourceCode :string,options? :GoOption) => 
     if(options?.use_put){
         req.arguments = ["-use-put"];
     }
+    return mgr.doRequest(req);
+}
+
+export const getCCode = (id :TraceID,sourceCode :string,options? :COption) => {
+    const mgr = factory.getJSON2CWWorker();
+    const req = mgr.getRequest(id,RequestLanguage.C,sourceCode);
     return mgr.doRequest(req);
 }

@@ -59,7 +59,7 @@ const handleLanguage = async (ui :UIModel,s :JobResult,generate:(id :TraceID,src
         return e as JobResult;
     });
     if(updateTracer.editorAlreadyUpdated(s)) {
-        return false;
+        return;
     }
     console.log(res);
     if(res.stdout === undefined || res.stdout === "") {
@@ -73,11 +73,11 @@ const handleLanguage = async (ui :UIModel,s :JobResult,generate:(id :TraceID,src
     else{
         ui.setGenerated(res.stdout,view_lang);
     }
-    return true;
+    return;
 }
 
 const handleCppPrototype = async (ui :UIModel,s :JobResult) => {
-    await handleLanguage(ui,s,caller.getCppPrototypeCode,Language.CPP_PROTOTYPE,"cpp");
+    return handleLanguage(ui,s,caller.getCppPrototypeCode,Language.CPP_PROTOTYPE,"cpp");
 }
 
 
@@ -127,7 +127,12 @@ const handleGo = async (ui :UIModel, s :JobResult) => {
     const goOption : caller.GoOption ={
         use_put: usePut === true,
     }
-    await handleLanguage(ui,s,caller.getGoCode,Language.GO,"go",goOption);
+    return handleLanguage(ui,s,caller.getGoCode,Language.GO,"go",goOption);
+}
+
+const handleC = async (ui :UIModel, s :JobResult) => {
+    const COption : caller.COption = {};
+    return handleLanguage(ui,s,caller.getCCode,Language.C,"c",COption);
 }
 
 const handleJSONOutput = async (ui :UIModel,id :TraceID,value :string,generator:(id :TraceID,srcCode :string,option:any)=>Promise<JobResult>) => {
@@ -147,11 +152,11 @@ const handleJSONOutput = async (ui :UIModel,id :TraceID,value :string,generator:
 }
 
 const handleTokenize = async (ui :UIModel, id :TraceID,value :string) => {
-    await handleJSONOutput(ui,id,value,caller.getTokens);
+    return handleJSONOutput(ui,id,value,caller.getTokens);
 }
 
 const handleDebugAST = async (ui :UIModel, id :TraceID,value :string) => {
-    await handleJSONOutput(ui,id,value,caller.getDebugAST);
+    return handleJSONOutput(ui,id,value,caller.getDebugAST);
 }
 
 
@@ -168,10 +173,10 @@ export const updateGenerated = async (ui :UIModel) => {
     }
     const lang = storage.getLangMode();
     if(lang === Language.TOKENIZE) {
-       return await handleTokenize(ui,traceID,value);
+       return handleTokenize(ui,traceID,value);
     }
     if(lang === Language.JSON_DEBUG_AST) {
-        return await handleDebugAST(ui,traceID,value);
+        return handleDebugAST(ui,traceID,value);
     }
     const s = await caller.getAST(traceID,value,
     {filename: "editor.bgn"}).catch((e) => {
@@ -191,15 +196,14 @@ export const updateGenerated = async (ui :UIModel) => {
     switch(lang){
         case Language.JSON_AST:
             ui.setGenerated(JSON.stringify(js,null,4),"json");
-            break;
+            return;
         case Language.CPP_PROTOTYPE: 
-            await handleCppPrototype(ui,s);
-            break;
+            return handleCppPrototype(ui,s);
         case Language.CPP:
-            await handleCpp(ui,s);
-            break;
+            return handleCpp(ui,s);
         case Language.GO:
-            await handleGo(ui,s);
-            break;
+            return handleGo(ui,s);
+        case Language.C:
+            return handleC(ui,s);
     }
 }

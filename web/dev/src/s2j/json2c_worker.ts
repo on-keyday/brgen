@@ -1,10 +1,10 @@
-import * as json2cpp2 from "../lib/json2cpp2.js";
+import * as json2c from "../lib/json2c.js";
 import { JobRequest, RequestLanguage } from "./msg.js";
 import { EmWorkContext, MyEmscriptenModule} from "./em_work_ctx.js";
 
-const json2cpp2Module = json2cpp2.default as EmscriptenModuleFactory<MyEmscriptenModule>;
-const j2c2_ctx = new EmWorkContext(json2cpp2Module, () => {
-    console.log("json2cpp2 worker is ready");
+const json2cModule = json2c.default as EmscriptenModuleFactory<MyEmscriptenModule>;
+const j2c_ctx = new EmWorkContext(json2cModule, () => {
+    console.log("json2c worker is ready");
 });
 
 const requestCallback = (e:JobRequest, m:MyEmscriptenModule) => {
@@ -21,6 +21,6 @@ const requestCallback = (e:JobRequest, m:MyEmscriptenModule) => {
 
 globalThis.onmessage = (ev) => {
     const data = ev.data as JobRequest;
-    j2c2_ctx.postRequest(data);
-    j2c2_ctx.handleRequest(requestCallback);
+    j2c_ctx.postRequest(data);
+    j2c_ctx.handleRequest(requestCallback);
 };
