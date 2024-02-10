@@ -45,7 +45,7 @@ const isMappingInfoArray = (obj :any) :obj is MappingInfo[] => {
 }
 
 const isMappingInfoStruct = (obj :any) :obj is {line_map :MappingInfo[]} => {
-    if(obj.line_map&&isMappingInfoArray(obj.line_map)){
+    if(obj&&obj.line_map&&isMappingInfoArray(obj.line_map)){
         return true;
     }
     return false;
