@@ -50,24 +50,6 @@ class RequestQueue {
         globalThis.postMessage(msg);
         console.timeEnd(`msg posting ${msg.traceID}.${msg.jobID}`)
     }
-
-    /*
-    #popResult(): JobResult | undefined {
-        const r = this.#postQueue.shift();
-        if(r !== undefined){
-            console.timeEnd(`msg posting ${r.jobID}`)
-        }
-        return r;
-    }
-
-    handleResponse() {
-        while(true){
-            const p = this.#popResult();
-            if(p === undefined) break;
-            globalThis.postMessage(p);
-        }
-    }
-    */
 }
 
 export class EmWorkContext  {
@@ -210,11 +192,6 @@ export class EmWorkContext  {
         }
     }
 
-    /*
-    handleResponse() {
-        this.#msgQueue.handleResponse();
-    }
-    */
 
 }
 
@@ -305,9 +282,4 @@ export class GoWorkContext  {
         }
     }
 
-    /*
-    handleResponse() {
-        this.#msgQueue.handleResponse();
-    }
-    */
 }
