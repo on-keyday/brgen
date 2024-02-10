@@ -7,6 +7,8 @@ const enum RequestLanguage {
     CPP_PROTOTYPE = "cpp (prototype)",
     CPP = "cpp",
     GO = "go",
+    C = "c",
+    RUST = "rust",
 }
 
 const LanguageList = [
@@ -16,6 +18,8 @@ const LanguageList = [
     RequestLanguage.CPP_PROTOTYPE,
     RequestLanguage.CPP,
     RequestLanguage.GO,
+    RequestLanguage.C,
+    //RequestLanguage.RUST, // not implemented yet
 ];
 
 

@@ -1,31 +1,26 @@
-/// <reference types="emscripten" />
-
-export { };
-
-import * as json2cpp from "../lib/json2cpp.js";
+import * as json2cpp2 from "../lib/json2cpp2.js";
 import { JobRequest, RequestLanguage } from "./msg.js";
 import { EmWorkContext, MyEmscriptenModule} from "./em_work_ctx.js";
 
-
-const json2cppModule = json2cpp.default as EmscriptenModuleFactory<MyEmscriptenModule>;
-const j2c_ctx = new EmWorkContext(json2cppModule, () => {
-    console.log("json2cpp worker is ready");
+const json2cpp2Module = json2cpp2.default as EmscriptenModuleFactory<MyEmscriptenModule>;
+const j2c2_ctx = new EmWorkContext(json2cpp2Module, () => {
+    console.log("json2cpp2 worker is ready");
 });
 
 const requestCallback = (e:JobRequest, m:MyEmscriptenModule) => {
     switch (e.lang) {
-        case RequestLanguage.CPP_PROTOTYPE:
+        case RequestLanguage.C:
             if (e.sourceCode === undefined) return new Error("sourceCode is undefined");
             m.FS.writeFile("/editor.json", e.sourceCode);
-            return ["json2cpp", "/editor.json", "--no-color"];
+            return ["json2c", "/editor.json", "--no-color"];
         default:
             return new Error("unknown message type");
     }
-};
+}
 
 
 globalThis.onmessage = (ev) => {
     const data = ev.data as JobRequest;
-    j2c_ctx.postRequest(data);
-    j2c_ctx.handleRequest(requestCallback);
+    j2c2_ctx.postRequest(data);
+    j2c2_ctx.handleRequest(requestCallback);
 };

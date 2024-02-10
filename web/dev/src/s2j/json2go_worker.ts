@@ -3,7 +3,7 @@
 export { };
 
 import { JobRequest, RequestLanguage } from "./msg.js";
-import { GoWorkContext} from "./work_ctx.js";
+import { GoWorkContext} from "./go_work_ctx.js";
 
 
 const j2go_ctx = new GoWorkContext(fetch(new URL("../lib/json2go.wasm",import.meta.url)).then((r) => r.arrayBuffer()), () => {
