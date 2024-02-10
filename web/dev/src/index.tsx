@@ -536,4 +536,3 @@ document.getElementById(ElementID.BALL)?.remove();
 document.getElementById(ElementID.BALL_BOUND)?.remove();
 
 console.log(monaco.languages.getLanguages());
-
