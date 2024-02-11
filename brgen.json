@@ -47,6 +47,11 @@
       "generator": "./src/tool/json2rust/target/debug/json2rust",
       "output_dir": "./ignore/example/rust/",
       "ignore_missing": true
+    },
+    {
+      "generator": "./tool/json2c",
+      "output_dir": "./ignore/example/c/",
+      "args": ["--add-line-map", "--use-error", "--use-overflow-check"]
     }
   ]
 }

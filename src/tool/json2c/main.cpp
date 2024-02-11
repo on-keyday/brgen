@@ -37,7 +37,7 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
         cout << R"({
             "input": "file",
             "langs": ["c","json"],
-            "suffix": [".h",".c,".json"],
+            "suffix": [".c",".json"],
             "separator": "############\n"
         })";
         return 0;
@@ -89,7 +89,7 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
 
     auto prog = brgen::ast::cast_to<brgen::ast::Program>(*res);
     g.write_program(prog);
-    cout << g.w.out() << "\n";
+    cout << g.h_w.out() << "\n";
     if (flags.add_line_map) {
         cout << "############\n";
         futils::json::Stringer s;

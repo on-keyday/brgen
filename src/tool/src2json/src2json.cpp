@@ -7,7 +7,6 @@
 #include <wrap/iocommon.h>
 #include <console/ansiesc.h>
 #include <core/middle/resolve_import.h>
-// #include <core/middle/resolve_lexical_cast.h>
 #include <core/middle/resolve_available.h>
 #include <core/middle/replace_assert.h>
 #include <core/middle/replace_order_spec.h>
@@ -22,6 +21,7 @@
 #include <core/ast/kill_node.h>
 #include <wrap/cin.h>
 #include <unicode/utf/view.h>
+#include <json/convert_json.h>
 #ifdef SRC2JSON_DLL
 #include "hook.h"
 #include "capi_export.h"
@@ -42,7 +42,6 @@ struct Flags : futils::cmdline::templ::HelpOption {
     bool lexer = false;
 
     bool not_resolve_import = false;
-    // bool not_resolve_cast = false;
     bool not_resolve_available = false;
     bool not_resolve_type = false;
     bool not_resolve_assert = false;
@@ -98,6 +97,8 @@ struct Flags : futils::cmdline::templ::HelpOption {
     bool check_http = false;
     bool use_unsafe_escape = false;
 
+    std::string_view error_diagnostic;
+
     void bind(futils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&version, "version", "print version");
@@ -109,7 +110,6 @@ struct Flags : futils::cmdline::templ::HelpOption {
 
         ctx.VarBool(&not_resolve_import, "not-resolve-import", "not resolve import");
         ctx.VarBool(&not_resolve_type, "not-resolve-type", "not resolve type");
-        // ctx.VarBool(&not_resolve_cast, "not-resolve-cast", "not resolve cast");
         ctx.VarBool(&not_resolve_assert, "not-resolve-assert", "not resolve assert");
         ctx.VarBool(&not_resolve_available, "not-resolve-available", "not resolve available");
         ctx.VarBool(&not_resolve_endian_spec, "not-resolve-endian-spec", "not resolve endian-spec");
@@ -188,6 +188,8 @@ struct Flags : futils::cmdline::templ::HelpOption {
         ctx.VarString(&port, "port", "set port of http server", "<port>");
         ctx.VarBool(&check_http, "check-http", "check http mode is enabled (for debug)");
         ctx.VarBool(&use_unsafe_escape, "unsafe-escape", "use unsafe escape (this flag make json escape via http unsafe; ansi color escape sequence is not escaped)");
+
+        ctx.VarString<true>(&error_diagnostic, "error-diagnostic", "error diagnostic mode (for generator that does not have error diagnostic mode)", "<file or diagnostic json>");
     }
 };
 
@@ -282,6 +284,43 @@ int dump_types() {
         cout << "\n";
     }
     return exit_ok;
+}
+
+struct DiagnosticInfo {
+    std::string message;
+    size_t begin;
+    size_t end;
+
+    bool from_json(auto&& js) {
+        JSON_PARAM_BEGIN(*this, js)
+        FROM_JSON_PARAM(message, "msg")
+        FROM_JSON_PARAM(begin, "begin")
+        FROM_JSON_PARAM(end, "end")
+        JSON_PARAM_END()
+    }
+};
+
+int error_diagnostic(Flags& flags, brgen::File* input) {
+    // pass diagnostic directly
+    futils::json::JSON res;
+    if (flags.error_diagnostic.starts_with("{")) {
+        res = futils::json::parse<futils::json::JSON>(flags.error_diagnostic);
+    }
+    // file name
+    else {
+        futils::file::View view;
+        if (!view.open(flags.error_diagnostic)) {
+            print_error("cannot open file ", flags.error_diagnostic);
+            return exit_err;
+        }
+        res = futils::json::parse<futils::json::JSON>(view);
+    }
+    if (res.is_undef()) {
+        print_error("cannot parse json file ", flags.error_diagnostic);
+        return exit_err;
+    }
+    // input->error();
+    return 0;
 }
 
 int print_spec(Flags& flags) {
@@ -482,6 +521,10 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
             return exit_err;
         }
         return check_ast(name, input->source());
+    }
+
+    if (flags.error_diagnostic.size() > 0) {
+        return error_diagnostic(flags, input);
     }
 
     auto dump_json_file = [&](auto&& elem, const char* elem_key, const brgen::SourceError& err) {
@@ -708,7 +751,8 @@ int src2json_main_noexcept(int argc, char** argv, const Capability& cap) {
                     }
                 }
                 cerr_color_mode = flags.cerr_color_mode;
-                print_error(str);
+                print_error(str.substr(0, str.size() - 1));
+                print_note("use --help for help");
             }
             else {
                 cout << str;
