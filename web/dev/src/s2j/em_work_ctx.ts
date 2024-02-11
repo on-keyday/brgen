@@ -5,7 +5,6 @@ export interface MyEmscriptenModule extends EmscriptenModule {
 }
 
 import { JobRequest, JobResult } from "./msg.js";
-import "../lib/go_wasm_exec.js";
 import { RequestQueue } from "./request_queue.js";
 
 
