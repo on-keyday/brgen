@@ -1,0 +1,32 @@
+
+format GifHeader:
+    gif :"GIF"
+    version :[3]u8
+
+format LogicalScreen:
+    width :ul16
+    height :ul16
+    flags :u8
+    backgroundColorIndex :u8
+    pixelAspectRatio :u8
+
+format Gif:
+    header :GifHeader
+    logicalScreen :LogicalScreen
+    globalColorTable :[256]ColorTable
+    blocks :[..]Block
+    :";"
+
+format ColorTable:
+    colors :[3]u8
+
+format Block:
+    blockType :u8
+    data :[..]u8
+
+format ImageDescriptor:
+    left :ul16
+    top :ul16
+    width :ul16
+    height :ul16
+    flags :u8
