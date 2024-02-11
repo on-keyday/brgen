@@ -1,4 +1,5 @@
 
+import "../lib/go_wasm_exec.js";
 import { RequestQueue } from "./request_queue";
 import { JobRequest, JobResult } from "./msg"
 
