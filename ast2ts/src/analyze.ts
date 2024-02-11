@@ -414,6 +414,7 @@ export const analyzeSourceCode  = async (prevSemanticTokens :SemTokensStub|null,
         [ast2ts.TokenTag.bool_literal,"macro"],
         [ast2ts.TokenTag.int_literal,"number"],
         [ast2ts.TokenTag.str_literal,"string"],
+        [ast2ts.TokenTag.char_literal,"string"],        
         [ast2ts.TokenTag.ident,"variable"],
         [ast2ts.TokenTag.punct,"operator"],
     ]);

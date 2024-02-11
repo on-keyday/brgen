@@ -98,6 +98,7 @@ impl From<&Node> for NodeType {
 			Node::IntLiteral(_) => Self::IntLiteral,
 			Node::BoolLiteral(_) => Self::BoolLiteral,
 			Node::StrLiteral(_) => Self::StrLiteral,
+			Node::CharLiteral(_) => Self::CharLiteral,
 			Node::TypeLiteral(_) => Self::TypeLiteral,
 			Node::SpecialLiteral(_) => Self::SpecialLiteral,
 			Node::Field(_) => Self::Field,
@@ -175,6 +176,7 @@ impl From<&NodeWeak> for NodeType {
 			NodeWeak::IntLiteral(_) => Self::IntLiteral,
 			NodeWeak::BoolLiteral(_) => Self::BoolLiteral,
 			NodeWeak::StrLiteral(_) => Self::StrLiteral,
+			NodeWeak::CharLiteral(_) => Self::CharLiteral,
 			NodeWeak::TypeLiteral(_) => Self::TypeLiteral,
 			NodeWeak::SpecialLiteral(_) => Self::SpecialLiteral,
 			NodeWeak::Field(_) => Self::Field,
@@ -255,6 +257,7 @@ impl From<NodeWeak> for NodeType {
 	IntLiteral,
 	BoolLiteral,
 	StrLiteral,
+	CharLiteral,
 	TypeLiteral,
 	SpecialLiteral,
 	Member,
@@ -331,6 +334,7 @@ impl TryFrom<&str> for NodeType {
 			"int_literal" =>Ok(Self::IntLiteral),
 			"bool_literal" =>Ok(Self::BoolLiteral),
 			"str_literal" =>Ok(Self::StrLiteral),
+			"char_literal" =>Ok(Self::CharLiteral),
 			"type_literal" =>Ok(Self::TypeLiteral),
 			"special_literal" =>Ok(Self::SpecialLiteral),
 			"member" =>Ok(Self::Member),
@@ -358,6 +362,7 @@ impl TryFrom<&str> for NodeType {
 	IntLiteral,
 	BoolLiteral,
 	StrLiteral,
+	CharLiteral,
 	Keyword,
 	Ident,
 	Comment,
@@ -376,6 +381,7 @@ impl TryFrom<&str> for TokenTag {
 			"int_literal" =>Ok(Self::IntLiteral),
 			"bool_literal" =>Ok(Self::BoolLiteral),
 			"str_literal" =>Ok(Self::StrLiteral),
+			"char_literal" =>Ok(Self::CharLiteral),
 			"keyword" =>Ok(Self::Keyword),
 			"ident" =>Ok(Self::Ident),
 			"comment" =>Ok(Self::Comment),
@@ -763,6 +769,7 @@ pub enum Node {
 	IntLiteral(Rc<RefCell<IntLiteral>>),
 	BoolLiteral(Rc<RefCell<BoolLiteral>>),
 	StrLiteral(Rc<RefCell<StrLiteral>>),
+	CharLiteral(Rc<RefCell<CharLiteral>>),
 	TypeLiteral(Rc<RefCell<TypeLiteral>>),
 	SpecialLiteral(Rc<RefCell<SpecialLiteral>>),
 	Field(Rc<RefCell<Field>>),
@@ -831,6 +838,7 @@ pub enum NodeWeak {
 	IntLiteral(Weak<RefCell<IntLiteral>>),
 	BoolLiteral(Weak<RefCell<BoolLiteral>>),
 	StrLiteral(Weak<RefCell<StrLiteral>>),
+	CharLiteral(Weak<RefCell<CharLiteral>>),
 	TypeLiteral(Weak<RefCell<TypeLiteral>>),
 	SpecialLiteral(Weak<RefCell<SpecialLiteral>>),
 	Field(Weak<RefCell<Field>>),
@@ -900,6 +908,7 @@ impl Node {
             Node::IntLiteral(node)=>node.borrow().loc.clone(),
             Node::BoolLiteral(node)=>node.borrow().loc.clone(),
             Node::StrLiteral(node)=>node.borrow().loc.clone(),
+            Node::CharLiteral(node)=>node.borrow().loc.clone(),
             Node::TypeLiteral(node)=>node.borrow().loc.clone(),
             Node::SpecialLiteral(node)=>node.borrow().loc.clone(),
             Node::Field(node)=>node.borrow().loc.clone(),
@@ -971,6 +980,7 @@ impl From<&Node> for NodeWeak {
 			Node::IntLiteral(node)=>Self::IntLiteral(Rc::downgrade(node)),
 			Node::BoolLiteral(node)=>Self::BoolLiteral(Rc::downgrade(node)),
 			Node::StrLiteral(node)=>Self::StrLiteral(Rc::downgrade(node)),
+			Node::CharLiteral(node)=>Self::CharLiteral(Rc::downgrade(node)),
 			Node::TypeLiteral(node)=>Self::TypeLiteral(Rc::downgrade(node)),
 			Node::SpecialLiteral(node)=>Self::SpecialLiteral(Rc::downgrade(node)),
 			Node::Field(node)=>Self::Field(Rc::downgrade(node)),
@@ -1049,6 +1059,7 @@ impl TryFrom<&NodeWeak> for Node {
 			NodeWeak::IntLiteral(node)=>Ok(Self::IntLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::IntLiteral))?)),
 			NodeWeak::BoolLiteral(node)=>Ok(Self::BoolLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::BoolLiteral))?)),
 			NodeWeak::StrLiteral(node)=>Ok(Self::StrLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::StrLiteral))?)),
+			NodeWeak::CharLiteral(node)=>Ok(Self::CharLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::CharLiteral))?)),
 			NodeWeak::TypeLiteral(node)=>Ok(Self::TypeLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::TypeLiteral))?)),
 			NodeWeak::SpecialLiteral(node)=>Ok(Self::SpecialLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::SpecialLiteral))?)),
 			NodeWeak::Field(node)=>Ok(Self::Field(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Field))?)),
@@ -1095,6 +1106,7 @@ pub enum Expr {
 	IntLiteral(Rc<RefCell<IntLiteral>>),
 	BoolLiteral(Rc<RefCell<BoolLiteral>>),
 	StrLiteral(Rc<RefCell<StrLiteral>>),
+	CharLiteral(Rc<RefCell<CharLiteral>>),
 	TypeLiteral(Rc<RefCell<TypeLiteral>>),
 	SpecialLiteral(Rc<RefCell<SpecialLiteral>>),
 }
@@ -1123,6 +1135,7 @@ pub enum ExprWeak {
 	IntLiteral(Weak<RefCell<IntLiteral>>),
 	BoolLiteral(Weak<RefCell<BoolLiteral>>),
 	StrLiteral(Weak<RefCell<StrLiteral>>),
+	CharLiteral(Weak<RefCell<CharLiteral>>),
 	TypeLiteral(Weak<RefCell<TypeLiteral>>),
 	SpecialLiteral(Weak<RefCell<SpecialLiteral>>),
 }
@@ -1152,6 +1165,7 @@ impl Expr {
             Expr::IntLiteral(node)=>node.borrow().loc.clone(),
             Expr::BoolLiteral(node)=>node.borrow().loc.clone(),
             Expr::StrLiteral(node)=>node.borrow().loc.clone(),
+            Expr::CharLiteral(node)=>node.borrow().loc.clone(),
             Expr::TypeLiteral(node)=>node.borrow().loc.clone(),
             Expr::SpecialLiteral(node)=>node.borrow().loc.clone(),
         }
@@ -1180,6 +1194,7 @@ impl Expr {
             Expr::IntLiteral(node)=>node.borrow().expr_type.clone(),
             Expr::BoolLiteral(node)=>node.borrow().expr_type.clone(),
             Expr::StrLiteral(node)=>node.borrow().expr_type.clone(),
+            Expr::CharLiteral(node)=>node.borrow().expr_type.clone(),
             Expr::TypeLiteral(node)=>node.borrow().expr_type.clone(),
             Expr::SpecialLiteral(node)=>node.borrow().expr_type.clone(),
         }
@@ -1208,6 +1223,7 @@ impl Expr {
             Expr::IntLiteral(node)=>node.borrow().constant_level.clone(),
             Expr::BoolLiteral(node)=>node.borrow().constant_level.clone(),
             Expr::StrLiteral(node)=>node.borrow().constant_level.clone(),
+            Expr::CharLiteral(node)=>node.borrow().constant_level.clone(),
             Expr::TypeLiteral(node)=>node.borrow().constant_level.clone(),
             Expr::SpecialLiteral(node)=>node.borrow().constant_level.clone(),
         }
@@ -1239,6 +1255,7 @@ impl From<&Expr> for ExprWeak {
 			Expr::IntLiteral(node)=>Self::IntLiteral(Rc::downgrade(node)),
 			Expr::BoolLiteral(node)=>Self::BoolLiteral(Rc::downgrade(node)),
 			Expr::StrLiteral(node)=>Self::StrLiteral(Rc::downgrade(node)),
+			Expr::CharLiteral(node)=>Self::CharLiteral(Rc::downgrade(node)),
 			Expr::TypeLiteral(node)=>Self::TypeLiteral(Rc::downgrade(node)),
 			Expr::SpecialLiteral(node)=>Self::SpecialLiteral(Rc::downgrade(node)),
 		}
@@ -1277,6 +1294,7 @@ impl TryFrom<&ExprWeak> for Expr {
 			ExprWeak::IntLiteral(node)=>Ok(Self::IntLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::IntLiteral))?)),
 			ExprWeak::BoolLiteral(node)=>Ok(Self::BoolLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::BoolLiteral))?)),
 			ExprWeak::StrLiteral(node)=>Ok(Self::StrLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::StrLiteral))?)),
+			ExprWeak::CharLiteral(node)=>Ok(Self::CharLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::CharLiteral))?)),
 			ExprWeak::TypeLiteral(node)=>Ok(Self::TypeLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::TypeLiteral))?)),
 			ExprWeak::SpecialLiteral(node)=>Ok(Self::SpecialLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::SpecialLiteral))?)),
 		}
@@ -1316,6 +1334,7 @@ impl TryFrom<&Node> for Expr {
 			Node::IntLiteral(node)=>Ok(Self::IntLiteral(node.clone())),
 			Node::BoolLiteral(node)=>Ok(Self::BoolLiteral(node.clone())),
 			Node::StrLiteral(node)=>Ok(Self::StrLiteral(node.clone())),
+			Node::CharLiteral(node)=>Ok(Self::CharLiteral(node.clone())),
 			Node::TypeLiteral(node)=>Ok(Self::TypeLiteral(node.clone())),
 			Node::SpecialLiteral(node)=>Ok(Self::SpecialLiteral(node.clone())),
 			_=> Err(Error::InvalidNodeType(node.into())),
@@ -1355,6 +1374,7 @@ impl From<&Expr> for Node {
 			Expr::IntLiteral(node)=>Self::IntLiteral(node.clone()),
 			Expr::BoolLiteral(node)=>Self::BoolLiteral(node.clone()),
 			Expr::StrLiteral(node)=>Self::StrLiteral(node.clone()),
+			Expr::CharLiteral(node)=>Self::CharLiteral(node.clone()),
 			Expr::TypeLiteral(node)=>Self::TypeLiteral(node.clone()),
 			Expr::SpecialLiteral(node)=>Self::SpecialLiteral(node.clone()),
 		}
@@ -1393,6 +1413,7 @@ impl TryFrom<&ExprWeak> for Node {
 			ExprWeak::IntLiteral(node)=>Ok(Self::IntLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::IntLiteral))?)),
 			ExprWeak::BoolLiteral(node)=>Ok(Self::BoolLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::BoolLiteral))?)),
 			ExprWeak::StrLiteral(node)=>Ok(Self::StrLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::StrLiteral))?)),
+			ExprWeak::CharLiteral(node)=>Ok(Self::CharLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::CharLiteral))?)),
 			ExprWeak::TypeLiteral(node)=>Ok(Self::TypeLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::TypeLiteral))?)),
 			ExprWeak::SpecialLiteral(node)=>Ok(Self::SpecialLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::SpecialLiteral))?)),
 		}
@@ -1431,6 +1452,7 @@ impl From<&ExprWeak> for NodeWeak {
 			ExprWeak::IntLiteral(node)=>Self::IntLiteral(node.clone()),
 			ExprWeak::BoolLiteral(node)=>Self::BoolLiteral(node.clone()),
 			ExprWeak::StrLiteral(node)=>Self::StrLiteral(node.clone()),
+			ExprWeak::CharLiteral(node)=>Self::CharLiteral(node.clone()),
 			ExprWeak::TypeLiteral(node)=>Self::TypeLiteral(node.clone()),
 			ExprWeak::SpecialLiteral(node)=>Self::SpecialLiteral(node.clone()),
 		}
@@ -1469,6 +1491,7 @@ impl TryFrom<&NodeWeak> for ExprWeak {
 			NodeWeak::IntLiteral(node)=>Ok(Self::IntLiteral(node.clone())),
 			NodeWeak::BoolLiteral(node)=>Ok(Self::BoolLiteral(node.clone())),
 			NodeWeak::StrLiteral(node)=>Ok(Self::StrLiteral(node.clone())),
+			NodeWeak::CharLiteral(node)=>Ok(Self::CharLiteral(node.clone())),
 			NodeWeak::TypeLiteral(node)=>Ok(Self::TypeLiteral(node.clone())),
 			NodeWeak::SpecialLiteral(node)=>Ok(Self::SpecialLiteral(node.clone())),
 			_=> Err(Error::InvalidNodeType(node.into())),
@@ -1509,6 +1532,7 @@ impl TryFrom<&Node> for ExprWeak {
 			Node::IntLiteral(node)=>Ok(Self::IntLiteral(Rc::downgrade(node))),
 			Node::BoolLiteral(node)=>Ok(Self::BoolLiteral(Rc::downgrade(node))),
 			Node::StrLiteral(node)=>Ok(Self::StrLiteral(Rc::downgrade(node))),
+			Node::CharLiteral(node)=>Ok(Self::CharLiteral(Rc::downgrade(node))),
 			Node::TypeLiteral(node)=>Ok(Self::TypeLiteral(Rc::downgrade(node))),
 			Node::SpecialLiteral(node)=>Ok(Self::SpecialLiteral(Rc::downgrade(node))),
 			_=> Err(Error::InvalidNodeType(node.into())),
@@ -2272,6 +2296,7 @@ pub enum Literal {
 	IntLiteral(Rc<RefCell<IntLiteral>>),
 	BoolLiteral(Rc<RefCell<BoolLiteral>>),
 	StrLiteral(Rc<RefCell<StrLiteral>>),
+	CharLiteral(Rc<RefCell<CharLiteral>>),
 	TypeLiteral(Rc<RefCell<TypeLiteral>>),
 	SpecialLiteral(Rc<RefCell<SpecialLiteral>>),
 }
@@ -2281,6 +2306,7 @@ pub enum LiteralWeak {
 	IntLiteral(Weak<RefCell<IntLiteral>>),
 	BoolLiteral(Weak<RefCell<BoolLiteral>>),
 	StrLiteral(Weak<RefCell<StrLiteral>>),
+	CharLiteral(Weak<RefCell<CharLiteral>>),
 	TypeLiteral(Weak<RefCell<TypeLiteral>>),
 	SpecialLiteral(Weak<RefCell<SpecialLiteral>>),
 }
@@ -2291,6 +2317,7 @@ impl Literal {
             Literal::IntLiteral(node)=>node.borrow().loc.clone(),
             Literal::BoolLiteral(node)=>node.borrow().loc.clone(),
             Literal::StrLiteral(node)=>node.borrow().loc.clone(),
+            Literal::CharLiteral(node)=>node.borrow().loc.clone(),
             Literal::TypeLiteral(node)=>node.borrow().loc.clone(),
             Literal::SpecialLiteral(node)=>node.borrow().loc.clone(),
         }
@@ -2300,6 +2327,7 @@ impl Literal {
             Literal::IntLiteral(node)=>node.borrow().expr_type.clone(),
             Literal::BoolLiteral(node)=>node.borrow().expr_type.clone(),
             Literal::StrLiteral(node)=>node.borrow().expr_type.clone(),
+            Literal::CharLiteral(node)=>node.borrow().expr_type.clone(),
             Literal::TypeLiteral(node)=>node.borrow().expr_type.clone(),
             Literal::SpecialLiteral(node)=>node.borrow().expr_type.clone(),
         }
@@ -2309,6 +2337,7 @@ impl Literal {
             Literal::IntLiteral(node)=>node.borrow().constant_level.clone(),
             Literal::BoolLiteral(node)=>node.borrow().constant_level.clone(),
             Literal::StrLiteral(node)=>node.borrow().constant_level.clone(),
+            Literal::CharLiteral(node)=>node.borrow().constant_level.clone(),
             Literal::TypeLiteral(node)=>node.borrow().constant_level.clone(),
             Literal::SpecialLiteral(node)=>node.borrow().constant_level.clone(),
         }
@@ -2321,6 +2350,7 @@ impl From<&Literal> for LiteralWeak {
 			Literal::IntLiteral(node)=>Self::IntLiteral(Rc::downgrade(node)),
 			Literal::BoolLiteral(node)=>Self::BoolLiteral(Rc::downgrade(node)),
 			Literal::StrLiteral(node)=>Self::StrLiteral(Rc::downgrade(node)),
+			Literal::CharLiteral(node)=>Self::CharLiteral(Rc::downgrade(node)),
 			Literal::TypeLiteral(node)=>Self::TypeLiteral(Rc::downgrade(node)),
 			Literal::SpecialLiteral(node)=>Self::SpecialLiteral(Rc::downgrade(node)),
 		}
@@ -2340,6 +2370,7 @@ impl TryFrom<&LiteralWeak> for Literal {
 			LiteralWeak::IntLiteral(node)=>Ok(Self::IntLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::IntLiteral))?)),
 			LiteralWeak::BoolLiteral(node)=>Ok(Self::BoolLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::BoolLiteral))?)),
 			LiteralWeak::StrLiteral(node)=>Ok(Self::StrLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::StrLiteral))?)),
+			LiteralWeak::CharLiteral(node)=>Ok(Self::CharLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::CharLiteral))?)),
 			LiteralWeak::TypeLiteral(node)=>Ok(Self::TypeLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::TypeLiteral))?)),
 			LiteralWeak::SpecialLiteral(node)=>Ok(Self::SpecialLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::SpecialLiteral))?)),
 		}
@@ -2360,6 +2391,7 @@ impl TryFrom<&Node> for Literal {
 			Node::IntLiteral(node)=>Ok(Self::IntLiteral(node.clone())),
 			Node::BoolLiteral(node)=>Ok(Self::BoolLiteral(node.clone())),
 			Node::StrLiteral(node)=>Ok(Self::StrLiteral(node.clone())),
+			Node::CharLiteral(node)=>Ok(Self::CharLiteral(node.clone())),
 			Node::TypeLiteral(node)=>Ok(Self::TypeLiteral(node.clone())),
 			Node::SpecialLiteral(node)=>Ok(Self::SpecialLiteral(node.clone())),
 			_=> Err(Error::InvalidNodeType(node.into())),
@@ -2380,6 +2412,7 @@ impl From<&Literal> for Node {
 			Literal::IntLiteral(node)=>Self::IntLiteral(node.clone()),
 			Literal::BoolLiteral(node)=>Self::BoolLiteral(node.clone()),
 			Literal::StrLiteral(node)=>Self::StrLiteral(node.clone()),
+			Literal::CharLiteral(node)=>Self::CharLiteral(node.clone()),
 			Literal::TypeLiteral(node)=>Self::TypeLiteral(node.clone()),
 			Literal::SpecialLiteral(node)=>Self::SpecialLiteral(node.clone()),
 		}
@@ -2399,6 +2432,7 @@ impl TryFrom<&LiteralWeak> for Node {
 			LiteralWeak::IntLiteral(node)=>Ok(Self::IntLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::IntLiteral))?)),
 			LiteralWeak::BoolLiteral(node)=>Ok(Self::BoolLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::BoolLiteral))?)),
 			LiteralWeak::StrLiteral(node)=>Ok(Self::StrLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::StrLiteral))?)),
+			LiteralWeak::CharLiteral(node)=>Ok(Self::CharLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::CharLiteral))?)),
 			LiteralWeak::TypeLiteral(node)=>Ok(Self::TypeLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::TypeLiteral))?)),
 			LiteralWeak::SpecialLiteral(node)=>Ok(Self::SpecialLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::SpecialLiteral))?)),
 		}
@@ -2418,6 +2452,7 @@ impl From<&LiteralWeak> for NodeWeak {
 			LiteralWeak::IntLiteral(node)=>Self::IntLiteral(node.clone()),
 			LiteralWeak::BoolLiteral(node)=>Self::BoolLiteral(node.clone()),
 			LiteralWeak::StrLiteral(node)=>Self::StrLiteral(node.clone()),
+			LiteralWeak::CharLiteral(node)=>Self::CharLiteral(node.clone()),
 			LiteralWeak::TypeLiteral(node)=>Self::TypeLiteral(node.clone()),
 			LiteralWeak::SpecialLiteral(node)=>Self::SpecialLiteral(node.clone()),
 		}
@@ -2437,6 +2472,7 @@ impl TryFrom<&NodeWeak> for LiteralWeak {
 			NodeWeak::IntLiteral(node)=>Ok(Self::IntLiteral(node.clone())),
 			NodeWeak::BoolLiteral(node)=>Ok(Self::BoolLiteral(node.clone())),
 			NodeWeak::StrLiteral(node)=>Ok(Self::StrLiteral(node.clone())),
+			NodeWeak::CharLiteral(node)=>Ok(Self::CharLiteral(node.clone())),
 			NodeWeak::TypeLiteral(node)=>Ok(Self::TypeLiteral(node.clone())),
 			NodeWeak::SpecialLiteral(node)=>Ok(Self::SpecialLiteral(node.clone())),
 			_=> Err(Error::InvalidNodeType(node.into())),
@@ -2458,6 +2494,7 @@ impl TryFrom<&Node> for LiteralWeak {
 			Node::IntLiteral(node)=>Ok(Self::IntLiteral(Rc::downgrade(node))),
 			Node::BoolLiteral(node)=>Ok(Self::BoolLiteral(Rc::downgrade(node))),
 			Node::StrLiteral(node)=>Ok(Self::StrLiteral(Rc::downgrade(node))),
+			Node::CharLiteral(node)=>Ok(Self::CharLiteral(Rc::downgrade(node))),
 			Node::TypeLiteral(node)=>Ok(Self::TypeLiteral(Rc::downgrade(node))),
 			Node::SpecialLiteral(node)=>Ok(Self::SpecialLiteral(Rc::downgrade(node))),
 			_=> Err(Error::InvalidNodeType(node.into())),
@@ -6480,6 +6517,102 @@ impl From<Rc<RefCell<StrLiteral>>> for Node {
 }
 
 #[derive(Debug,Clone)]
+pub struct CharLiteral {
+	pub loc: Loc,
+	pub expr_type: Option<Type>,
+	pub constant_level: ConstantLevel,
+	pub value: String,
+	pub code: u64,
+}
+
+impl TryFrom<&Literal> for Rc<RefCell<CharLiteral>> {
+	type Error = Error;
+	fn try_from(node:&Literal)->Result<Self,Self::Error>{
+		match node {
+			Literal::CharLiteral(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl TryFrom<Literal> for Rc<RefCell<CharLiteral>> {
+	type Error = Error;
+	fn try_from(node:Literal)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
+impl From<&Rc<RefCell<CharLiteral>>> for Literal {
+	fn from(node:&Rc<RefCell<CharLiteral>>)-> Self{
+		Literal::CharLiteral(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<CharLiteral>>> for Literal {
+	fn from(node:Rc<RefCell<CharLiteral>>)-> Self{
+		Self::from(&node)
+	}
+}
+
+impl TryFrom<&Expr> for Rc<RefCell<CharLiteral>> {
+	type Error = Error;
+	fn try_from(node:&Expr)->Result<Self,Self::Error>{
+		match node {
+			Expr::CharLiteral(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl TryFrom<Expr> for Rc<RefCell<CharLiteral>> {
+	type Error = Error;
+	fn try_from(node:Expr)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
+impl From<&Rc<RefCell<CharLiteral>>> for Expr {
+	fn from(node:&Rc<RefCell<CharLiteral>>)-> Self{
+		Expr::CharLiteral(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<CharLiteral>>> for Expr {
+	fn from(node:Rc<RefCell<CharLiteral>>)-> Self{
+		Self::from(&node)
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<CharLiteral>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::CharLiteral(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl TryFrom<Node> for Rc<RefCell<CharLiteral>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
+impl From<&Rc<RefCell<CharLiteral>>> for Node {
+	fn from(node:&Rc<RefCell<CharLiteral>>)-> Self{
+		Node::CharLiteral(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<CharLiteral>>> for Node {
+	fn from(node:Rc<RefCell<CharLiteral>>)-> Self{
+		Self::from(&node)
+	}
+}
+
+#[derive(Debug,Clone)]
 pub struct TypeLiteral {
 	pub loc: Loc,
 	pub expr_type: Option<Type>,
@@ -8241,6 +8374,15 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				constant_level: ConstantLevel::Unknown,
 				value: String::new(),
 				length: 0,
+				})))
+			},
+			NodeType::CharLiteral => {
+				Node::CharLiteral(Rc::new(RefCell::new(CharLiteral {
+				loc: raw_node.loc.clone(),
+				expr_type: None,
+				constant_level: ConstantLevel::Unknown,
+				value: String::new(),
+				code: 0,
 				})))
 			},
 			NodeType::TypeLiteral => {
@@ -11879,6 +12021,55 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					None=>return Err(Error::MismatchJSONType(length_body.into(),JSONType::Number)),
 				};
 			},
+			NodeType::CharLiteral => {
+				let node = nodes[i].clone();
+				let node = match node {
+					Node::CharLiteral(node)=>node,
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
+				};
+				let expr_type_body = match raw_node.body.get("expr_type") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"expr_type")),
+				};
+ 				if !expr_type_body.is_null() {
+					let expr_type_body = match expr_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
+					};
+					let expr_type_body = match nodes.get(expr_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
+					};
+					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+				}
+				let constant_level_body = match raw_node.body.get("constant_level") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"constant_level")),
+				};
+				node.borrow_mut().constant_level = match constant_level_body.as_str() {
+					Some(v)=>match ConstantLevel::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(constant_level_body.into(),JSONType::String)),
+				};
+				let value_body = match raw_node.body.get("value") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"value")),
+				};
+				node.borrow_mut().value = match value_body.as_str() {
+					Some(v)=>v.to_string(),
+					None=>return Err(Error::MismatchJSONType(value_body.into(),JSONType::String)),
+				};
+				let code_body = match raw_node.body.get("code") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"code")),
+				};
+				node.borrow_mut().code = match code_body.as_u64() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(code_body.into(),JSONType::Number)),
+				};
+			},
 			NodeType::TypeLiteral => {
 				let node = nodes[i].clone();
 				let node = match node {
@@ -13669,6 +13860,13 @@ where
 			}
 		},
 		Node::StrLiteral(node)=>{
+			if let Some(node) = &node.borrow().expr_type{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
+		},
+		Node::CharLiteral(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
 				if !f.visit(&node.into()){
 					return;

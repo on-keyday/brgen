@@ -61,6 +61,7 @@ Literal,
 IntLiteral,
 BoolLiteral,
 StrLiteral,
+CharLiteral,
 TypeLiteral,
 SpecialLiteral,
 Member,
@@ -83,6 +84,7 @@ Punct,
 IntLiteral,
 BoolLiteral,
 StrLiteral,
+CharLiteral,
 Keyword,
 Ident,
 Comment,
@@ -629,6 +631,13 @@ public class StrLiteral : Literal{
 	public string Value{get;set;} = "";
 	public ulong Length{get;set;}
 }
+public class CharLiteral : Literal{
+	public Loc Loc{get;set;}
+	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
+	public string Value{get;set;} = "";
+	public ulong Code{get;set;}
+}
 public class TypeLiteral : Literal{
 	public Loc Loc{get;set;}
 	public Type? ExprType{get;set;}
@@ -960,6 +969,9 @@ public static class Ast {
                break;
            case NodeType.StrLiteral:
                nodes[i] = new StrLiteral() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.CharLiteral:
+               nodes[i] = new CharLiteral() { Loc = ast.Node[i].Loc };
                break;
            case NodeType.TypeLiteral:
                nodes[i] = new TypeLiteral() { Loc = ast.Node[i].Loc };
@@ -1401,6 +1413,13 @@ public static class Ast {
                node.ConstantLevel = ast.Node[i].Body[constant_level];
                node.Value = ast.Node[i].Body[value];
                node.Length = ast.Node[i].Body[length];
+           case NodeType.CharLiteral:
+               var node = nodes[i] as CharLiteral;
+               node.Loc = ast.Node[i].Body[loc];
+               node.ExprType = ast.Node[i].Body[expr_type];
+               node.ConstantLevel = ast.Node[i].Body[constant_level];
+               node.Value = ast.Node[i].Body[value];
+               node.Code = ast.Node[i].Body[code];
            case NodeType.TypeLiteral:
                var node = nodes[i] as TypeLiteral;
                node.Loc = ast.Node[i].Body[loc];

@@ -1263,6 +1263,10 @@ namespace brgen::middle {
                 typing_object(typ->type_literal);
                 expr->expr_type = std::make_shared<ast::MetaType>(typ->loc);
             }
+            else if (auto ch = ast::as<ast::CharLiteral>(expr)) {
+                auto bit = ast::aligned_bit(futils::binary::log2i(ch->code));
+                expr->expr_type = std::make_shared<ast::IntType>(ch->loc, bit, ast::Endian::unspec, false);
+            }
             else {
                 unsupported(expr);
             }

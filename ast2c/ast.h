@@ -106,6 +106,7 @@ typedef struct ast2c_GenericType ast2c_GenericType;
 typedef struct ast2c_IntLiteral ast2c_IntLiteral;
 typedef struct ast2c_BoolLiteral ast2c_BoolLiteral;
 typedef struct ast2c_StrLiteral ast2c_StrLiteral;
+typedef struct ast2c_CharLiteral ast2c_CharLiteral;
 typedef struct ast2c_TypeLiteral ast2c_TypeLiteral;
 typedef struct ast2c_SpecialLiteral ast2c_SpecialLiteral;
 typedef struct ast2c_Field ast2c_Field;
@@ -186,6 +187,7 @@ enum ast2c_NodeType {
 	AST2C_NODETYPE_INT_LITERAL,
 	AST2C_NODETYPE_BOOL_LITERAL,
 	AST2C_NODETYPE_STR_LITERAL,
+	AST2C_NODETYPE_CHAR_LITERAL,
 	AST2C_NODETYPE_TYPE_LITERAL,
 	AST2C_NODETYPE_SPECIAL_LITERAL,
 	AST2C_NODETYPE_MEMBER,
@@ -211,6 +213,7 @@ enum ast2c_TokenTag {
 	AST2C_TOKENTAG_INT_LITERAL,
 	AST2C_TOKENTAG_BOOL_LITERAL,
 	AST2C_TOKENTAG_STR_LITERAL,
+	AST2C_TOKENTAG_CHAR_LITERAL,
 	AST2C_TOKENTAG_KEYWORD,
 	AST2C_TOKENTAG_IDENT,
 	AST2C_TOKENTAG_COMMENT,
@@ -1168,6 +1171,18 @@ struct ast2c_StrLiteral {
 
 // returns 1 if succeed 0 if failed
 int ast2c_StrLiteral_parse(ast2c_Ast* ,ast2c_StrLiteral*,ast2c_json_handlers*,void*);
+
+struct ast2c_CharLiteral {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
+	char* value;
+	uint64_t code;
+};
+
+// returns 1 if succeed 0 if failed
+int ast2c_CharLiteral_parse(ast2c_Ast* ,ast2c_CharLiteral*,ast2c_json_handlers*,void*);
 
 struct ast2c_TypeLiteral {
 	const ast2c_NodeType node_type;

@@ -68,6 +68,7 @@ const char* ast2c_NodeType_to_string(ast2c_NodeType val) {
 	case AST2C_NODETYPE_INT_LITERAL: return "int_literal";
 	case AST2C_NODETYPE_BOOL_LITERAL: return "bool_literal";
 	case AST2C_NODETYPE_STR_LITERAL: return "str_literal";
+	case AST2C_NODETYPE_CHAR_LITERAL: return "char_literal";
 	case AST2C_NODETYPE_TYPE_LITERAL: return "type_literal";
 	case AST2C_NODETYPE_SPECIAL_LITERAL: return "special_literal";
 	case AST2C_NODETYPE_MEMBER: return "member";
@@ -316,6 +317,10 @@ int ast2c_NodeType_from_string(const char* str, ast2c_NodeType* out) {
 		*out = AST2C_NODETYPE_STR_LITERAL;
 		return 1;
 	}
+	if (strcmp(str, "char_literal") == 0) {
+		*out = AST2C_NODETYPE_CHAR_LITERAL;
+		return 1;
+	}
 	if (strcmp(str, "type_literal") == 0) {
 		*out = AST2C_NODETYPE_TYPE_LITERAL;
 		return 1;
@@ -380,6 +385,7 @@ const char* ast2c_TokenTag_to_string(ast2c_TokenTag val) {
 	case AST2C_TOKENTAG_INT_LITERAL: return "int_literal";
 	case AST2C_TOKENTAG_BOOL_LITERAL: return "bool_literal";
 	case AST2C_TOKENTAG_STR_LITERAL: return "str_literal";
+	case AST2C_TOKENTAG_CHAR_LITERAL: return "char_literal";
 	case AST2C_TOKENTAG_KEYWORD: return "keyword";
 	case AST2C_TOKENTAG_IDENT: return "ident";
 	case AST2C_TOKENTAG_COMMENT: return "comment";
@@ -418,6 +424,10 @@ int ast2c_TokenTag_from_string(const char* str, ast2c_TokenTag* out) {
 	}
 	if (strcmp(str, "str_literal") == 0) {
 		*out = AST2C_TOKENTAG_STR_LITERAL;
+		return 1;
+	}
+	if (strcmp(str, "char_literal") == 0) {
+		*out = AST2C_TOKENTAG_CHAR_LITERAL;
 		return 1;
 	}
 	if (strcmp(str, "keyword") == 0) {
@@ -2877,6 +2887,44 @@ int ast2c_StrLiteral_parse(ast2c_Ast* ast,ast2c_StrLiteral* s,ast2c_json_handler
 	}
 	if(!h->number_get(h,length,&s->length)) {
 		if(h->error) { h->error(h,length, "failed to parse ast2c_StrLiteral::length"); }
+		goto error;
+	}
+	return 1;
+error:
+	return 0;
+}
+
+// returns 1 if succeed 0 if failed
+int ast2c_CharLiteral_parse(ast2c_Ast* ast,ast2c_CharLiteral* s,ast2c_json_handlers* h, void* obj) {
+	if (!ast||!s||!h||!obj) {
+		if(h->error) { h->error(h,NULL, "invalid argument"); }
+		return 0;
+	}
+	void* loc = h->object_get(h, obj, "loc");
+	void* obj_body = h->object_get(h, obj, "body");
+	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
+	s->expr_type = NULL;
+	s->value = NULL;
+	void* expr_type = h->object_get(h, obj_body, "expr_type");
+	void* constant_level = h->object_get(h, obj_body, "constant_level");
+	void* value = h->object_get(h, obj_body, "value");
+	void* code = h->object_get(h, obj_body, "code");
+	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_CharLiteral::loc is null"); } return 0; }
+	if (!expr_type) { if(h->error) { h->error(h,expr_type, "ast2c_CharLiteral::expr_type is null"); } return 0; }
+	if (!constant_level) { if(h->error) { h->error(h,constant_level, "ast2c_CharLiteral::constant_level is null"); } return 0; }
+	if (!value) { if(h->error) { h->error(h,value, "ast2c_CharLiteral::value is null"); } return 0; }
+	if (!code) { if(h->error) { h->error(h,code, "ast2c_CharLiteral::code is null"); } return 0; }
+	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
+		if(h->error) { h->error(h,loc, "failed to parse ast2c_CharLiteral::loc"); }
+		goto error;
+	}
+	s->value = h->string_get_alloc(h,value);
+	if (!s->value) {
+		if(h->error) { h->error(h,value, "failed to parse ast2c_CharLiteral::value"); }
+		goto error;
+	}
+	if(!h->number_get(h,code,&s->code)) {
+		if(h->error) { h->error(h,code, "failed to parse ast2c_CharLiteral::code"); }
 		goto error;
 	}
 	return 1;
