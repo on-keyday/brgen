@@ -36,6 +36,7 @@ namespace brgen::ast {
             CASE(IntLiteral)
             CASE(BoolLiteral)
             CASE(StrLiteral)
+            CASE(CharLiteral)
             CASE(TypeLiteral)
             CASE(SpecialLiteral)
 

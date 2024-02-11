@@ -499,6 +499,19 @@ namespace brgen::ast {
             return literal;
         }
 
+        std::shared_ptr<CharLiteral> parse_char_literal(lexer::Token&& lit) {
+            auto literal = std::make_shared<CharLiteral>(lit.loc, std::move(lit.token));
+            auto c = unescape<std::u32string>(literal->value);
+            if (!c) {
+                s.report_error(lit.loc, "invalid char literal");
+            }
+            if (c->size() != 1) {
+                s.report_error(lit.loc, "invalid char literal; expect 1 char but got ", nums(c->size()));
+            }
+            literal->code = c->front();
+            return literal;
+        }
+
         /*
             <prim> ::= <int-literal> | <bool-literal> | <str-literal> | <ident> | "(" <expr> ")" | <if>
         */
@@ -511,6 +524,9 @@ namespace brgen::ast {
             }
             if (auto t = s.consume_token(lexer::Tag::str_literal)) {
                 return parse_str_literal(std::move(*t));
+            }
+            if (auto t = s.consume_token(lexer::Tag::char_literal)) {
+                return parse_char_literal(std::move(*t));
             }
             if (auto i = s.consume_token("input")) {
                 return std::make_shared<SpecialLiteral>(i->loc, state.input_type, SpecialLiteralKind::input_);

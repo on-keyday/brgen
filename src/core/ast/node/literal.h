@@ -51,6 +51,25 @@ namespace brgen::ast {
         }
     };
 
+    struct CharLiteral : Literal {
+        define_node_type(NodeType::char_literal);
+        std::string value;
+        size_t code = 0;
+
+        CharLiteral(lexer::Loc l, std::string&& t)
+            : Literal(l, NodeType::char_literal), value(std::move(t)) {}
+
+        // for decode
+        CharLiteral()
+            : Literal({}, NodeType::char_literal) {}
+
+        void dump(auto&& field_) {
+            Literal::dump(field_);
+            sdebugf(value);
+            sdebugf(code);
+        }
+    };
+
     struct BoolLiteral : Literal {
         define_node_type(NodeType::bool_literal);
         bool value = false;
