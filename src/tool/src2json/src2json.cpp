@@ -16,7 +16,6 @@
 #include <core/middle/typing.h>
 #include <core/middle/type_attribute.h>
 #include "../common/print.h"
-#include <wrap/argv.h>
 #include <core/ast/node_type_list.h>
 #include <core/ast/kill_node.h>
 #include <wrap/cin.h>
@@ -25,13 +24,6 @@
 #ifdef SRC2JSON_DLL
 #include "hook.h"
 #include "capi_export.h"
-#endif
-
-#ifdef __EMSCRIPTEN__
-#include <emscripten/emscripten.h>
-#include "../common/em_main.h"
-#else
-#define EMSCRIPTEN_KEEPALIVE
 #endif
 
 #include "version.h"
@@ -441,7 +433,7 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
             return exit_err;
         }
         if (flags.input_mode != brgen::UtfMode::utf8) {
-            print_error("argv mode only support utf8");
+            print_error("argv mode only support utf8 for --input-mode");
             return exit_err;
         }
         auto ok = files.add_special(name, flags.argv_input);
@@ -508,11 +500,11 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
 
     if (flags.check_ast) {
         if (!cap.check_ast) {
-            print_error("check-ast mode is disabled");
+            print_error("--check-ast mode is disabled");
             return exit_err;
         }
         if (flags.input_mode != brgen::UtfMode::utf8) {
-            print_error("check-ast mode only support utf8");
+            print_error("--check-ast mode only support utf8 for --input-mode");
             return exit_err;
         }
         return check_ast(name, input->source());
@@ -741,45 +733,3 @@ int src2json_main(int argc, char** argv, const Capability& cap) {
         return exit_err;
     }
 }
-
-#ifdef __EMSCRIPTEN__
-extern "C" int EMSCRIPTEN_KEEPALIVE emscripten_main(const char* cmdline) {
-    Capability cap = default_capability;
-    cap.network = false;
-    return em_main(cmdline, src2json_main, cap);
-}
-#elif defined(SRC2JSON_DLL)
-bool init_hook() {
-    cout.set_hook_write(cout_hook);
-    cerr.set_hook_write(cerr_hook);
-    return true;
-}
-
-thread_local out_callback_t out_callback = nullptr;
-thread_local void* out_callback_data = nullptr;
-
-extern "C" int libs2j_call(int argc, char** argv, CAPABILITY cap, out_callback_t cb, void* data) {
-    if (argc == 0 || argv == nullptr) {
-        return err_invalid;
-    }
-    static bool init = init_hook();
-    if (cb) {
-        out_callback = cb;
-        out_callback_data = data;
-        worker_hook() = [](futils::wrap::UtfOut& out, futils::view::rvec v) -> futils::file::file_result<void> {
-            out_callback(v.as_char(), v.size(), &out == &cerr, out_callback_data);
-            return {};
-        };
-    }
-    auto cap2 = to_capability(cap);
-    return src2json_main(argc, argv, cap2);
-}
-#else
-
-int main(int argc, char** argv) {
-    futils::wrap::U8Arg _(argc, argv);
-    cerr.set_virtual_terminal(true);  // ignore error
-    cout.set_virtual_terminal(true);  // ignore error
-    return src2json_main(argc, argv, default_capability);
-}
-#endif
