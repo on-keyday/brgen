@@ -97,7 +97,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
     bool check_http = false;
     bool use_unsafe_escape = false;
 
-    std::string_view error_diagnostic;
+    // std::string_view error_diagnostic;
 
     void bind(futils::cmdline::option::Context& ctx) {
         bind_help(ctx);
@@ -188,8 +188,6 @@ struct Flags : futils::cmdline::templ::HelpOption {
         ctx.VarString(&port, "port", "set port of http server", "<port>");
         ctx.VarBool(&check_http, "check-http", "check http mode is enabled (for debug)");
         ctx.VarBool(&use_unsafe_escape, "unsafe-escape", "use unsafe escape (this flag make json escape via http unsafe; ansi color escape sequence is not escaped)");
-
-        ctx.VarString<true>(&error_diagnostic, "error-diagnostic", "error diagnostic mode (for generator that does not have error diagnostic mode)", "<file or diagnostic json>");
     }
 };
 
@@ -290,38 +288,35 @@ struct DiagnosticInfo {
     std::string message;
     size_t begin;
     size_t end;
+    size_t line;
+    size_t col;
 
     bool from_json(auto&& js) {
         JSON_PARAM_BEGIN(*this, js)
         FROM_JSON_PARAM(message, "msg")
         FROM_JSON_PARAM(begin, "begin")
         FROM_JSON_PARAM(end, "end")
+        FROM_JSON_PARAM(line, "line")
+        FROM_JSON_PARAM(col, "col")
         JSON_PARAM_END()
     }
 };
 
-int error_diagnostic(Flags& flags, brgen::File* input) {
-    // pass diagnostic directly
-    futils::json::JSON res;
-    if (flags.error_diagnostic.starts_with("{")) {
-        res = futils::json::parse<futils::json::JSON>(flags.error_diagnostic);
-    }
-    // file name
-    else {
-        futils::file::View view;
-        if (!view.open(flags.error_diagnostic)) {
-            print_error("cannot open file ", flags.error_diagnostic);
-            return exit_err;
+auto dump_json_file(brgen::FileSet& files, auto&& elem, const char* elem_key, const brgen::SourceError& err) {
+    brgen::JSONWriter d;
+    {
+        auto field = d.object();
+        field("files", files.file_list());
+        field(elem_key, elem);
+        if (err.errs.size() == 0) {
+            field("error", nullptr);
         }
-        res = futils::json::parse<futils::json::JSON>(view);
+        else {
+            field("error", err);
+        }
     }
-    if (res.is_undef()) {
-        print_error("cannot parse json file ", flags.error_diagnostic);
-        return exit_err;
-    }
-    // input->error();
-    return 0;
-}
+    return d;
+};
 
 int print_spec(Flags& flags) {
     if (flags.check_ast && flags.stdin_mode && !flags.via_http) {
@@ -523,26 +518,6 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
         return check_ast(name, input->source());
     }
 
-    if (flags.error_diagnostic.size() > 0) {
-        return error_diagnostic(flags, input);
-    }
-
-    auto dump_json_file = [&](auto&& elem, const char* elem_key, const brgen::SourceError& err) {
-        brgen::JSONWriter d;
-        {
-            auto field = d.object();
-            field("files", files.file_list());
-            field(elem_key, elem);
-            if (err.errs.size() == 0) {
-                field("error", nullptr);
-            }
-            else {
-                field("error", err);
-            }
-        }
-        return d;
-    };
-
     auto print_warnings = [&](const brgen::SourceError& err, bool warn_as_error = false) {
         err.for_each_error([&](std::string_view msg, bool w) {
             if (!warn_as_error && w) {
@@ -556,7 +531,7 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
 
     auto report_error = [&](brgen::SourceError&& res, bool warn = false, const char* key = "ast") {
         if (!cout.is_tty() || flags.print_on_error) {
-            auto d = dump_json_file(nullptr, key, res);
+            auto d = dump_json_file(files, nullptr, key, res);
             cout << futils::wrap::pack(d.out(), cout.is_tty() ? "\n" : "");
         }
         res.for_each_error([&](std::string_view msg, bool w) {
@@ -580,7 +555,7 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
             return exit_err;
         }
         if (!cout.is_tty() || flags.print_json) {
-            auto d = dump_json_file(*res, "tokens", brgen::SourceError{});
+            auto d = dump_json_file(files, *res, "tokens", brgen::SourceError{});
             cout << futils::wrap::pack(d.out(), cout.is_tty() ? "\n" : "");
         }
         else {
@@ -616,16 +591,6 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
             return exit_err;
         }
     }
-
-    /*
-    if (!flags.not_resolve_cast) {
-        auto prim = brgen::middle::resolve_lexical_cast(*res);
-        if (!prim) {
-            report_error(brgen::to_source_error(files)(std::move(prim.error())));
-            return exit_err;
-        }
-    }
-    */
 
     if (!flags.not_resolve_available) {
         brgen::middle::resolve_available(*res);
@@ -723,13 +688,13 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
     brgen::JSONWriter d;
     d.set_no_colon_space(true);
     if (flags.debug_json) {
-        d = dump_json_file(*res, "ast", err_or_warn);
+        d = dump_json_file(files, *res, "ast", err_or_warn);
     }
     else {
         brgen::ast::JSONConverter c;
         c.obj.set_no_colon_space(true);
         c.encode(*res);
-        d = dump_json_file(c.obj, "ast", err_or_warn);
+        d = dump_json_file(files, c.obj, "ast", err_or_warn);
     }
     cout << futils::wrap::pack(d.out(), cout.is_tty() ? "\n" : "");
 
