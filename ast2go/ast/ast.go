@@ -986,22 +986,23 @@ func (n *BinaryOp) UnmarshalJSON(data []byte) error {
 type IdentUsage int
 
 const (
-	IdentUsageUnknown            IdentUsage = 0
-	IdentUsageReference          IdentUsage = 1
-	IdentUsageDefineVariable     IdentUsage = 2
-	IdentUsageDefineConst        IdentUsage = 3
-	IdentUsageDefineField        IdentUsage = 4
-	IdentUsageDefineFormat       IdentUsage = 5
-	IdentUsageDefineState        IdentUsage = 6
-	IdentUsageDefineEnum         IdentUsage = 7
-	IdentUsageDefineEnumMember   IdentUsage = 8
-	IdentUsageDefineFn           IdentUsage = 9
-	IdentUsageDefineCastFn       IdentUsage = 10
-	IdentUsageDefineArg          IdentUsage = 11
-	IdentUsageReferenceType      IdentUsage = 12
-	IdentUsageReferenceMember    IdentUsage = 13
-	IdentUsageMaybeType          IdentUsage = 14
-	IdentUsageReferenceBuiltinFn IdentUsage = 15
+	IdentUsageUnknown             IdentUsage = 0
+	IdentUsageReference           IdentUsage = 1
+	IdentUsageDefineVariable      IdentUsage = 2
+	IdentUsageDefineConst         IdentUsage = 3
+	IdentUsageDefineField         IdentUsage = 4
+	IdentUsageDefineFormat        IdentUsage = 5
+	IdentUsageDefineState         IdentUsage = 6
+	IdentUsageDefineEnum          IdentUsage = 7
+	IdentUsageDefineEnumMember    IdentUsage = 8
+	IdentUsageDefineFn            IdentUsage = 9
+	IdentUsageDefineCastFn        IdentUsage = 10
+	IdentUsageDefineArg           IdentUsage = 11
+	IdentUsageReferenceType       IdentUsage = 12
+	IdentUsageReferenceMember     IdentUsage = 13
+	IdentUsageReferenceMemberType IdentUsage = 14
+	IdentUsageMaybeType           IdentUsage = 15
+	IdentUsageReferenceBuiltinFn  IdentUsage = 16
 )
 
 func (n IdentUsage) String() string {
@@ -1034,6 +1035,8 @@ func (n IdentUsage) String() string {
 		return "reference_type"
 	case IdentUsageReferenceMember:
 		return "reference_member"
+	case IdentUsageReferenceMemberType:
+		return "reference_member_type"
 	case IdentUsageMaybeType:
 		return "maybe_type"
 	case IdentUsageReferenceBuiltinFn:
@@ -1077,6 +1080,8 @@ func (n *IdentUsage) UnmarshalJSON(data []byte) error {
 		*n = IdentUsageReferenceType
 	case "reference_member":
 		*n = IdentUsageReferenceMember
+	case "reference_member_type":
+		*n = IdentUsageReferenceMemberType
 	case "maybe_type":
 		*n = IdentUsageMaybeType
 	case "reference_builtin_fn":
@@ -2242,6 +2247,7 @@ type IdentType struct {
 	NonDynamic   bool
 	BitAlignment BitAlignment
 	BitSize      *uint64
+	ImportRef    *MemberAccess
 	Ident        *Ident
 	Base         Type
 }
@@ -4141,6 +4147,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				NonDynamic   bool         `json:"non_dynamic"`
 				BitAlignment BitAlignment `json:"bit_alignment"`
 				BitSize      *uint64      `json:"bit_size"`
+				ImportRef    *uintptr     `json:"import_ref"`
 				Ident        *uintptr     `json:"ident"`
 				Base         *uintptr     `json:"base"`
 			}
@@ -4151,6 +4158,9 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.NonDynamic = tmp.NonDynamic
 			v.BitAlignment = tmp.BitAlignment
 			v.BitSize = tmp.BitSize
+			if tmp.ImportRef != nil {
+				v.ImportRef = n.node[*tmp.ImportRef].(*MemberAccess)
+			}
 			if tmp.Ident != nil {
 				v.Ident = n.node[*tmp.Ident].(*Ident)
 			}
@@ -5315,6 +5325,11 @@ func Walk(n Node, f Visitor) {
 	case *IntType:
 	case *FloatType:
 	case *IdentType:
+		if v.ImportRef != nil {
+			if !f.Visit(f, v.ImportRef) {
+				return
+			}
+		}
 		if v.Ident != nil {
 			if !f.Visit(f, v.Ident) {
 				return

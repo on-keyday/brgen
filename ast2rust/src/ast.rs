@@ -514,6 +514,7 @@ impl TryFrom<&str> for BinaryOp {
 	DefineArg,
 	ReferenceType,
 	ReferenceMember,
+	ReferenceMemberType,
 	MaybeType,
 	ReferenceBuiltinFn,
 }
@@ -536,6 +537,7 @@ impl TryFrom<&str> for IdentUsage {
 			"define_arg" =>Ok(Self::DefineArg),
 			"reference_type" =>Ok(Self::ReferenceType),
 			"reference_member" =>Ok(Self::ReferenceMember),
+			"reference_member_type" =>Ok(Self::ReferenceMemberType),
 			"maybe_type" =>Ok(Self::MaybeType),
 			"reference_builtin_fn" =>Ok(Self::ReferenceBuiltinFn),
 			_=> Err(()),
@@ -5201,6 +5203,7 @@ pub struct IdentType {
 	pub non_dynamic: bool,
 	pub bit_alignment: BitAlignment,
 	pub bit_size: Option<u64>,
+	pub import_ref: Option<Rc<RefCell<MemberAccess>>>,
 	pub ident: Option<Rc<RefCell<Ident>>>,
 	pub base: Option<TypeWeak>,
 }
@@ -8192,6 +8195,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				non_dynamic: false,
 				bit_alignment: BitAlignment::ByteAligned,
 				bit_size: None,
+				import_ref: None,
 				ident: None,
 				base: None,
 				})))
@@ -10769,6 +10773,25 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						false=>return Err(Error::MismatchJSONType(bit_size_body.into(),JSONType::Number)),
 					},
 				};
+				let import_ref_body = match raw_node.body.get("import_ref") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"import_ref")),
+				};
+ 				if !import_ref_body.is_null() {
+					let import_ref_body = match import_ref_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(import_ref_body.into(),JSONType::Number)),
+					};
+					let import_ref_body = match nodes.get(import_ref_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(import_ref_body as usize)),
+					};
+					let import_ref_body = match import_ref_body {
+						Node::MemberAccess(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),import_ref_body.into())),
+					};
+					node.borrow_mut().import_ref = Some(import_ref_body.clone());
+				}
 				let ident_body = match raw_node.body.get("ident") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"ident")),
@@ -13752,6 +13775,11 @@ where
 		Node::IntType(_)=>{},
 		Node::FloatType(_)=>{},
 		Node::IdentType(node)=>{
+			if let Some(node) = &node.borrow().import_ref{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
 			if let Some(node) = &node.borrow().ident{
 				if !f.visit(&node.into()){
 					return;

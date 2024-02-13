@@ -288,6 +288,7 @@ enum ast2c_IdentUsage {
 	AST2C_IDENTUSAGE_DEFINE_ARG,
 	AST2C_IDENTUSAGE_REFERENCE_TYPE,
 	AST2C_IDENTUSAGE_REFERENCE_MEMBER,
+	AST2C_IDENTUSAGE_REFERENCE_MEMBER_TYPE,
 	AST2C_IDENTUSAGE_MAYBE_TYPE,
 	AST2C_IDENTUSAGE_REFERENCE_BUILTIN_FN,
 };
@@ -928,6 +929,7 @@ struct ast2c_IdentType {
 	int non_dynamic;
 	ast2c_BitAlignment bit_alignment;
 	uint64_t* bit_size;
+	ast2c_MemberAccess* import_ref;
 	ast2c_Ident* ident;
 	ast2c_Type* base;
 };

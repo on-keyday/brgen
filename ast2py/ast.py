@@ -155,6 +155,7 @@ class IdentUsage(PyEnum):
     DEFINE_ARG = "define_arg"
     REFERENCE_TYPE = "reference_type"
     REFERENCE_MEMBER = "reference_member"
+    REFERENCE_MEMBER_TYPE = "reference_member_type"
     MAYBE_TYPE = "maybe_type"
     REFERENCE_BUILTIN_FN = "reference_builtin_fn"
 
@@ -456,6 +457,7 @@ class FloatType(Type):
 
 
 class IdentType(Type):
+    import_ref: Optional[MemberAccess]
     ident: Optional[Ident]
     base: Optional[Type]
 
@@ -1474,6 +1476,11 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].bit_size = x if isinstance(x,int) else raiseError(TypeError('type mismatch at IdentType::bit_size'))
                 else:
                     node[i].bit_size = None
+                if ast.node[i].body["import_ref"] is not None:
+                    x = node[ast.node[i].body["import_ref"]]
+                    node[i].import_ref = x if isinstance(x,MemberAccess) else raiseError(TypeError('type mismatch at IdentType::import_ref'))
+                else:
+                    node[i].import_ref = None
                 if ast.node[i].body["ident"] is not None:
                     x = node[ast.node[i].body["ident"]]
                     node[i].ident = x if isinstance(x,Ident) else raiseError(TypeError('type mismatch at IdentType::ident'))
@@ -2344,6 +2351,9 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
         case x if isinstance(x,FloatType):
             pass
         case x if isinstance(x,IdentType):
+          if x.import_ref is not None:
+              if f(f,x.import_ref) == False:
+                  return
           if x.ident is not None:
               if f(f,x.ident) == False:
                   return

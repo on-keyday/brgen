@@ -693,6 +693,7 @@ const char* ast2c_IdentUsage_to_string(ast2c_IdentUsage val) {
 	case AST2C_IDENTUSAGE_DEFINE_ARG: return "define_arg";
 	case AST2C_IDENTUSAGE_REFERENCE_TYPE: return "reference_type";
 	case AST2C_IDENTUSAGE_REFERENCE_MEMBER: return "reference_member";
+	case AST2C_IDENTUSAGE_REFERENCE_MEMBER_TYPE: return "reference_member_type";
 	case AST2C_IDENTUSAGE_MAYBE_TYPE: return "maybe_type";
 	case AST2C_IDENTUSAGE_REFERENCE_BUILTIN_FN: return "reference_builtin_fn";
 	default: return NULL;
@@ -756,6 +757,10 @@ int ast2c_IdentUsage_from_string(const char* str, ast2c_IdentUsage* out) {
 	}
 	if (strcmp(str, "reference_member") == 0) {
 		*out = AST2C_IDENTUSAGE_REFERENCE_MEMBER;
+		return 1;
+	}
+	if (strcmp(str, "reference_member_type") == 0) {
+		*out = AST2C_IDENTUSAGE_REFERENCE_MEMBER_TYPE;
 		return 1;
 	}
 	if (strcmp(str, "maybe_type") == 0) {
@@ -2200,12 +2205,14 @@ int ast2c_IdentType_parse(ast2c_Ast* ast,ast2c_IdentType* s,ast2c_json_handlers*
 	void* obj_body = h->object_get(h, obj, "body");
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
 	s->bit_size = NULL;
+	s->import_ref = NULL;
 	s->ident = NULL;
 	s->base = NULL;
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
 	void* non_dynamic = h->object_get(h, obj_body, "non_dynamic");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
 	void* bit_size = h->object_get(h, obj_body, "bit_size");
+	void* import_ref = h->object_get(h, obj_body, "import_ref");
 	void* ident = h->object_get(h, obj_body, "ident");
 	void* base = h->object_get(h, obj_body, "base");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_IdentType::loc is null"); } return 0; }
@@ -2213,6 +2220,7 @@ int ast2c_IdentType_parse(ast2c_Ast* ast,ast2c_IdentType* s,ast2c_json_handlers*
 	if (!non_dynamic) { if(h->error) { h->error(h,non_dynamic, "ast2c_IdentType::non_dynamic is null"); } return 0; }
 	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_IdentType::bit_alignment is null"); } return 0; }
 	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_IdentType::bit_size is null"); } return 0; }
+	if (!import_ref) { if(h->error) { h->error(h,import_ref, "ast2c_IdentType::import_ref is null"); } return 0; }
 	if (!ident) { if(h->error) { h->error(h,ident, "ast2c_IdentType::ident is null"); } return 0; }
 	if (!base) { if(h->error) { h->error(h,base, "ast2c_IdentType::base is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {

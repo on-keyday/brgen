@@ -97,12 +97,13 @@ export const enum IdentUsage {
 	define_arg = "define_arg",
 	reference_type = "reference_type",
 	reference_member = "reference_member",
+	reference_member_type = "reference_member_type",
 	maybe_type = "maybe_type",
 	reference_builtin_fn = "reference_builtin_fn",
 };
 
 export function isIdentUsage(obj: any): obj is IdentUsage {
-	return obj && typeof obj === 'string' && (obj === "unknown" || obj === "reference" || obj === "define_variable" || obj === "define_const" || obj === "define_field" || obj === "define_format" || obj === "define_state" || obj === "define_enum" || obj === "define_enum_member" || obj === "define_fn" || obj === "define_cast_fn" || obj === "define_arg" || obj === "reference_type" || obj === "reference_member" || obj === "maybe_type" || obj === "reference_builtin_fn")
+	return obj && typeof obj === 'string' && (obj === "unknown" || obj === "reference" || obj === "define_variable" || obj === "define_const" || obj === "define_field" || obj === "define_format" || obj === "define_state" || obj === "define_enum" || obj === "define_enum_member" || obj === "define_fn" || obj === "define_cast_fn" || obj === "define_arg" || obj === "reference_type" || obj === "reference_member" || obj === "reference_member_type" || obj === "maybe_type" || obj === "reference_builtin_fn")
 }
 
 export const enum Endian {
@@ -738,6 +739,7 @@ export function isFloatType(obj: any): obj is FloatType {
 }
 
 export interface IdentType extends Type {
+	import_ref: MemberAccess|null;
 	ident: Ident|null;
 	base: Type|null;
 }
@@ -1590,6 +1592,7 @@ export function parseAST(obj: JsonAst): Program {
 				non_dynamic: false,
 				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: null,
+				import_ref: null,
 				ident: null,
 				base: null,
 			}
@@ -3150,6 +3153,14 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at IdentType::bit_size');
 			}
 			n.bit_size = on.body.bit_size;
+			if (on.body?.import_ref !== null && typeof on.body?.import_ref !== 'number') {
+				throw new Error('invalid node list at IdentType::import_ref');
+			}
+			const tmpimport_ref = on.body.import_ref === null ? null : c.node[on.body.import_ref];
+			if (!(tmpimport_ref === null || isMemberAccess(tmpimport_ref))) {
+				throw new Error('invalid node list at IdentType::import_ref');
+			}
+			n.import_ref = tmpimport_ref;
 			if (on.body?.ident !== null && typeof on.body?.ident !== 'number') {
 				throw new Error('invalid node list at IdentType::ident');
 			}
@@ -5135,6 +5146,12 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 				break;
 			}
 			const n :IdentType = node as IdentType;
+			if (n.import_ref !== null) {
+				const result = fn(fn,n.import_ref);
+				if (result === false) {
+					return;
+				}
+			}
 			if (n.ident !== null) {
 				const result = fn(fn,n.ident);
 				if (result === false) {

@@ -1,6 +1,6 @@
 path ::= config.import("./test_import.bgn")
 
-
+vdso :path.Import
 
 a := 1
 b := 2

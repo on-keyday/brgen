@@ -150,6 +150,7 @@ DefineCastFn,
 DefineArg,
 ReferenceType,
 ReferenceMember,
+ReferenceMemberType,
 MaybeType,
 ReferenceBuiltinFn,
 }
@@ -482,6 +483,7 @@ public class IdentType : Type{
 	public bool NonDynamic{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public ulong? BitSize{get;set;}
+	public MemberAccess? ImportRef{get;set;}
 	public Ident? Ident{get;set;}
 	public Type? Base{get;set;}
 }
@@ -1265,6 +1267,7 @@ public static class Ast {
                node.NonDynamic = ast.Node[i].Body[non_dynamic];
                node.BitAlignment = ast.Node[i].Body[bit_alignment];
                node.BitSize = ast.Node[i].Body[bit_size];
+               node.ImportRef = ast.Node[i].Body[import_ref];
                node.Ident = ast.Node[i].Body[ident];
                node.Base = ast.Node[i].Body[base];
            case NodeType.IntLiteralType:
