@@ -722,6 +722,27 @@ namespace brgen::middle {
             }
         }
 
+        void typing_unary(ast::Unary* unary) {
+            typing_expr(unary->expr);
+            switch (unary->op) {
+                case ast::UnaryOp::minus_sign:
+                case ast::UnaryOp::not_: {
+                    unary->expr_type = unary->expr->expr_type;
+                    unary->constant_level = unary->expr->constant_level;
+                    break;
+                }
+                default: {
+                    unsupported(unary);
+                }
+            }
+        }
+
+        void typing_paren(ast::Paren* paren) {
+            typing_expr(paren->expr);
+            paren->expr_type = paren->expr->expr_type;
+            paren->constant_level = paren->expr->constant_level;
+        }
+
         std::optional<std::shared_ptr<ast::Ident>> find_matching_ident(ast::Ident* ident) {
             auto search = [&](std::shared_ptr<ast::Ident>& def) {
                 return ident->ident == def->ident &&
@@ -893,6 +914,22 @@ namespace brgen::middle {
                     .error(tylit->type_literal->loc, "type is ", ast::node_type_to_string(tylit->type_literal->node_type))
                     .report();
             }
+        }
+
+        void typing_index(ast::Index* index) {
+            typing_expr(idx->expr);
+            typing_expr(idx->index);
+            if (!idx->expr->expr_type || !idx->index->expr_type) {
+                warn_not_typed(idx);
+                return;
+            }
+            auto arr_ty = ast::as<ast::ArrayType>(idx->expr->expr_type);
+            if (!arr_ty) {
+                error(idx->expr->loc, "expect array type but not")
+                    .error(idx->expr->expr_type->loc, "type is ", ast::node_type_to_string(idx->expr->expr_type->node_type))
+                    .report();
+            }
+            idx->expr_type = arr_ty->base_type;
         }
 
         void typing_builtin_member_access(ast::MemberAccess* selector) {
@@ -1241,23 +1278,10 @@ namespace brgen::middle {
                 typing_cond(cond);
             }
             else if (auto paren = ast::as<ast::Paren>(expr)) {
-                typing_expr(paren->expr);
-                paren->expr_type = paren->expr->expr_type;
-                paren->constant_level = paren->expr->constant_level;
+                typing_paren(paren);
             }
             else if (auto unary = ast::as<ast::Unary>(expr)) {
-                typing_expr(unary->expr);
-                switch (unary->op) {
-                    case ast::UnaryOp::minus_sign:
-                    case ast::UnaryOp::not_: {
-                        unary->expr_type = unary->expr->expr_type;
-                        unary->constant_level = unary->expr->constant_level;
-                        break;
-                    }
-                    default: {
-                        unsupported(expr);
-                    }
-                }
+                typing_unary(unary);
             }
             else if (auto call = ast::as<ast::Call>(expr)) {
                 typing_call(call, base_node);
@@ -1272,19 +1296,7 @@ namespace brgen::middle {
                 }
             }
             else if (auto idx = ast::as<ast::Index>(expr)) {
-                typing_expr(idx->expr);
-                typing_expr(idx->index);
-                if (!idx->expr->expr_type || !idx->index->expr_type) {
-                    warn_not_typed(idx);
-                    return;
-                }
-                auto arr_ty = ast::as<ast::ArrayType>(idx->expr->expr_type);
-                if (!arr_ty) {
-                    error(idx->expr->loc, "expect array type but not")
-                        .error(idx->expr->expr_type->loc, "type is ", ast::node_type_to_string(idx->expr->expr_type->node_type))
-                        .report();
-                }
-                idx->expr_type = arr_ty->base_type;
+                typing_index(idx);
             }
             else if (ast::as<ast::SpecialLiteral>(expr)) {
                 // typing already done
@@ -1309,10 +1321,9 @@ namespace brgen::middle {
         }
 
         void unwrap_reference_type_from_ident(ast::IdentType* s) {
-            if (s->ident->usage == ast::IdentUsage::reference_type) {
-                auto ident = ast::as<ast::Ident>(s->ident->base.lock());
-                assert(ident);
+            auto map_base_type = [&](const std::shared_ptr<ast::Ident>& ident) {
                 auto member = ast::as<ast::Member>(ident->base.lock());
+                map_base_type(member);
                 if (auto enum_ = ast::as<ast::Enum>(member)) {
                     s->base = enum_->enum_type;
                 }
@@ -1322,12 +1333,17 @@ namespace brgen::middle {
                 else if (auto state_ = ast::as<ast::State>(member)) {
                     s->base = state_->body->struct_type;
                 }
+            };
+            if (s->ident->usage == ast::IdentUsage::reference_type) {
+                auto ident = ast::as<ast::Ident>(s->ident->base.lock());
+                assert(ident);
+                map_base_type(ident);
             }
             if (s->ident->usage == ast::IdentUsage::reference_member_type) {
                 assert(s->import_ref);
                 auto ident = s->import_ref->base.lock();
                 assert(ident);
-                auto member = ast::as<ast::Member>(ident->base.lock());
+                map_base_type(ident);
             }
         }
 
