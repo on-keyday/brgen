@@ -13,9 +13,8 @@ namespace brgen {
 
     using futils::strutil::append, futils::strutil::appends;
 
-    template <class Str = std::string>
-    inline std::optional<Str> unescape(std::string_view str_lit) {
-        Str mid;
+    inline std::optional<std::string> unescape(std::string_view str_lit) {
+        std::string mid;
         if (!futils::escape::unescape_str(str_lit.substr(1, str_lit.size() - 2), mid)) {
             return std::nullopt;
         }

@@ -501,14 +501,24 @@ namespace brgen::ast {
 
         std::shared_ptr<CharLiteral> parse_char_literal(lexer::Token&& lit) {
             auto literal = std::make_shared<CharLiteral>(lit.loc, std::move(lit.token));
-            auto c = unescape<std::u32string>(literal->value);
+            auto c = unescape(literal->value);
             if (!c) {
                 s.report_error(lit.loc, "invalid char literal");
             }
-            if (c->size() != 1) {
-                s.report_error(lit.loc, "invalid char literal; expect 1 char but got ", nums(c->size()));
+            std::u32string str;
+            char32_t code;
+            if (futils::utf::convert(*c, str)) {
+                if (str.size() != 1) {
+                    s.report_error(lit.loc, "invalid char literal; expect 1 char but got ", nums(str.size()));
+                }
+                code = str[0];
             }
-            literal->code = c->front();
+            else {
+                if (c->size() != 1) {
+                    s.report_error(lit.loc, "invalid char literal; expect 1 char but got ", nums(c->size()));
+                }
+            }
+            literal->code = code;
             return literal;
         }
 
