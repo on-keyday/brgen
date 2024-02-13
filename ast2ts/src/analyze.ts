@@ -102,13 +102,14 @@ export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
                     }
                     return makeHover(ident.ident,"unspecified reference");
                 case ast2ts.IdentUsage.reference_member:
+                case ast2ts.IdentUsage.reference_member_type:
                     if(ast2ts.isMemberAccess(ident.base)){
                         if(ast2ts.isIdent(ident.base.base)){
                             ident = ident.base.base;
                             continue;
                         }
                     }
-                    return makeHover(ident.ident,"unspecified member reference");
+                    return makeHover(ident.ident,`unspecified member ${ident.usage == ast2ts.IdentUsage.reference_member_type ? "type": ""}reference`);
                 case ast2ts.IdentUsage.define_variable:
                     return makeHover(ident.ident,`variable (type: ${unwrapType(ident.expr_type)}, size: ${bitSize(ident.expr_type?.bit_size)} constant level: ${ident.constant_level})`);
                 case ast2ts.IdentUsage.define_const:
@@ -244,6 +245,7 @@ export const analyzeDefinition = async (prevFile :ast2ts.AstFile, prevNode :ast2
                     }
                     return null;
                 case ast2ts.IdentUsage.reference_member:
+                case ast2ts.IdentUsage.reference_member_type:
                     if(ast2ts.isMemberAccess(ident.base)){
                         if(ast2ts.isIdent(ident.base.base)){
                             ident = ident.base.base;
@@ -507,6 +509,7 @@ export const analyzeSourceCode  = async (prevSemanticTokens :SemTokensStub|null,
                         }
                         break;
                     case ast2ts.IdentUsage.reference_member:
+                    case ast2ts.IdentUsage.reference_member_type:
                         if(ast2ts.isMemberAccess(n.base)){
                             if(ast2ts.isIdent(n.base.base)){
                                 if(counter> 100) {

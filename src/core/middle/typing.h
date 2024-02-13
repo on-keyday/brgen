@@ -1361,9 +1361,14 @@ namespace brgen::middle {
                 s->ident->usage != ast::IdentUsage::reference_type &&
                 s->ident->usage != ast::IdentUsage::reference_member_type &&
                 s->ident->usage != ast::IdentUsage::maybe_type) {
-                auto r = error(s->loc, "expect type name but not");
+                auto r = error(s->ident->loc, "expect type name but not");
                 if (auto b = s->ident->base.lock()) {
-                    (void)r.error(b->loc, "identifier ", s->ident->ident, " is defined here");
+                    if (auto member = ast::as<ast::MemberAccess>(b)) {
+                        b = member->base.lock();
+                    }
+                    if (b) {
+                        (void)r.error(b->loc, "identifier ", s->ident->ident, " is defined here");
+                    }
                 }
                 r.report();
             }
