@@ -203,6 +203,10 @@ namespace brgen::ast {
     struct IdentType : Type {
         define_node_type(NodeType::ident_type);
         std::shared_ptr<Ident> ident;
+        lexer::Loc dot_loc;
+        // import_ref is reference to imported module
+        // import_ref refers `a` of `a.b`
+        std::shared_ptr<Ident> import_ref;
         std::weak_ptr<Type> base;
         IdentType(lexer::Loc l, std::shared_ptr<Ident>&& token)
             : Type(l, NodeType::ident_type), ident(std::move(token)) {
@@ -216,6 +220,7 @@ namespace brgen::ast {
 
         void dump(auto&& field_) {
             Type::dump(field_);
+            sdebugf(import_ref);
             sdebugf(ident);
             sdebugf(base);
         }

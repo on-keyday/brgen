@@ -1291,6 +1291,9 @@ namespace brgen::middle {
 
         void typing_ident_type(ast::IdentType* s, bool disable_warning = false) {
             // If the object is an identifier, perform identifier typing
+            if (s->import_ref) {
+                typing_ident(s->import_ref, disable_warning);
+            }
             typing_ident(s->ident, disable_warning);
             if (s->ident->usage == ast::IdentUsage::maybe_type) {
                 warn_type_not_found(s->ident);

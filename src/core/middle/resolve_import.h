@@ -120,7 +120,9 @@ namespace brgen::middle {
                     stack.pop();
                     auto u8 = new_path.generic_u8string();
                     auto as_str = std::string(reinterpret_cast<const char*>(u8.c_str()), u8.size());
-                    n.replace(std::make_shared<ast::Import>(ast::cast_to<ast::Call>(std::move(node)), std::move(*p), std::move(as_str)));
+                    std::shared_ptr<ast::Import> imported = std::make_shared<ast::Import>(ast::cast_to<ast::Call>(std::move(node)), std::move(*p), std::move(as_str));
+                    imported->import_desc->struct_type->base = imported;
+                    n.replace(std::move(imported));
                 }
             }
         };

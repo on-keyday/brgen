@@ -1062,7 +1062,23 @@ namespace brgen::ast {
             base->usage = IdentUsage::maybe_type;
             base->scope = state.current_scope();
 
+            s.skip_space();
+            lexer::Loc dot_loc{};
+            std::shared_ptr<ast::Ident> import_ref;
+
+            // import type
+            if (auto dot = s.consume_token(".")) {
+                dot_loc = dot->loc;
+                s.skip_white();
+                auto ident = parse_ident_no_scope();
+                ident->usage = IdentUsage::maybe_type;
+                import_ref = std::move(base);
+                import_ref->usage = IdentUsage::unknown;
+                base = std::move(ident);
+            }
+
             auto id = std::make_shared<IdentType>(ident.loc, std::move(base));
+            id->import_ref = std::move(import_ref);
             if (!as_argument) {
                 if (auto fmt = ast::as<ast::Format>(state.current_member())) {
                     fmt->depends.push_back(id);
