@@ -4,7 +4,8 @@ export { };
 
 import * as src2json from "../lib/src2json.js";
 import { RequestLanguage, JobRequest } from "./msg.js";
-import { EmWorkContext, MyEmscriptenModule} from "./em_work_ctx.js";
+import { EmWorkContext} from "./em_work_ctx.js";
+import { MyEmscriptenModule } from "./emscripten_mod.js";
 
 
 

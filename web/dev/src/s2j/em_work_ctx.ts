@@ -1,12 +1,7 @@
-/// <reference types="emscripten" />
-export interface MyEmscriptenModule extends EmscriptenModule {
-    ccall: typeof ccall;
-    FS :typeof FS
-}
 
 import { JobRequest, JobResult } from "./msg.js";
 import { RequestQueue } from "./request_queue.js";
-
+import { MyEmscriptenModule } from "./emscripten_mod.js";
 
 
 export class EmWorkContext  {

@@ -4,7 +4,8 @@ export { };
 
 import * as json2cpp from "../lib/json2cpp.js";
 import { JobRequest, RequestLanguage } from "./msg.js";
-import { EmWorkContext, MyEmscriptenModule} from "./em_work_ctx.js";
+import { EmWorkContext} from "./em_work_ctx.js";
+import { MyEmscriptenModule } from "./emscripten_mod.js";
 
 
 const json2cppModule = json2cpp.default as EmscriptenModuleFactory<MyEmscriptenModule>;

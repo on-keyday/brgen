@@ -54,6 +54,11 @@ export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
                 found = node;
                 return;
             }
+            else if(ast2ts.isCharLiteral(node)) {
+                console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
+                found = node;
+                return;
+            }
             else if(ast2ts.isAssert(node)) {
                 console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
                 found = node;
