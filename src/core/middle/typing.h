@@ -916,7 +916,7 @@ namespace brgen::middle {
             }
         }
 
-        void typing_index(ast::Index* index) {
+        void typing_index(ast::Index* idx) {
             typing_expr(idx->expr);
             typing_expr(idx->index);
             if (!idx->expr->expr_type || !idx->index->expr_type) {
@@ -1321,9 +1321,8 @@ namespace brgen::middle {
         }
 
         void unwrap_reference_type_from_ident(ast::IdentType* s) {
-            auto map_base_type = [&](const std::shared_ptr<ast::Ident>& ident) {
+            auto map_base_type = [&](ast::Ident* ident) {
                 auto member = ast::as<ast::Member>(ident->base.lock());
-                map_base_type(member);
                 if (auto enum_ = ast::as<ast::Enum>(member)) {
                     s->base = enum_->enum_type;
                 }
@@ -1343,7 +1342,7 @@ namespace brgen::middle {
                 assert(s->import_ref);
                 auto ident = s->import_ref->base.lock();
                 assert(ident);
-                map_base_type(ident);
+                map_base_type(ident.get());
             }
         }
 
