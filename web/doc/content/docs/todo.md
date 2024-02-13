@@ -80,7 +80,12 @@ ToDo リストです(2023/2/13)
 - テストの強化
   - 型づけのルールをテスト化?
 - Diagnostic mode を src2json に実装
+
   - ジェネレーターから位置とエラーメッセージを受け取って整形して出力?
+
+- config.parent[0]構文
+  - 例えば親の親の親は config.parent[2]
+  - cast を使って型を明示 `<T>(config.parent[0]).field`
 
 # Done リスト
 

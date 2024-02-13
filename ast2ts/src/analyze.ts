@@ -49,6 +49,11 @@ export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
                 found = node;
                 return;
             }
+            else if(ast2ts.isStrLiteral(node)) {
+                console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
+                found = node;
+                return;
+            }
             else if(ast2ts.isAssert(node)) {
                 console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
                 found = node;
@@ -192,6 +197,12 @@ export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
         if(found.struct_union_type !== null) {
             return makeHover("if",`if (exhaustive: ${found.struct_union_type.exhaustive||false} size: ${bitSize(found.struct_union_type.bit_size)})`);
         }
+    }
+    else if(ast2ts.isStrLiteral(found)){
+        return makeHover("string",`string literal (length: ${found.length})`);
+    }
+    else if (ast2ts.isCharLiteral(found)) {
+        return makeHover("char",`char literal (code: ${found.code})`);
     }
     return null;
 }
