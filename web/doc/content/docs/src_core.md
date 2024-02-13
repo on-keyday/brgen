@@ -121,6 +121,7 @@ tool/src2json-->|ASTの型解析|middle/typing.h/Typingクラス
 ### その他メモ
 
 - 型名の識別子(Ident)の expr_type は nullptr
+  - import された型についても同様
 
 ```brgen
 format A: <--ここの識別子や

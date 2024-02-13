@@ -724,11 +724,13 @@ namespace brgen::middle {
 
         std::optional<std::shared_ptr<ast::Ident>> find_matching_ident(ast::Ident* ident) {
             auto search = [&](std::shared_ptr<ast::Ident>& def) {
-                return ident->ident == def->ident && def->usage != ast::IdentUsage::unknown &&
+                return ident->ident == def->ident &&
+                       def->usage != ast::IdentUsage::unknown &&
                        def->usage != ast::IdentUsage::reference &&
                        def->usage != ast::IdentUsage::reference_type &&
                        def->usage != ast::IdentUsage::maybe_type &&
-                       def->usage != ast::IdentUsage::reference_member;
+                       def->usage != ast::IdentUsage::reference_member &&
+                       def->usage != ast::IdentUsage::reference_member_type;
             };
             auto found = ident->scope->lookup_local(search, ident);
             if (found) {
@@ -939,8 +941,20 @@ namespace brgen::middle {
                 selector->expr_type = fn->func_type;
                 selector->base = stmt->ident;
             }
+            else if (auto fmt = ast::as<ast::Format>(stmt)) {
+                selector->base = fmt->ident;
+                selector->member->usage = ast::IdentUsage::reference_member_type;
+            }
+            else if (auto state_ = ast::as<ast::State>(stmt)) {
+                selector->base = state_->ident;
+                selector->member->usage = ast::IdentUsage::reference_member_type;
+            }
+            else if (auto enum_ = ast::as<ast::Enum>(stmt)) {
+                selector->base = enum_->ident;
+                selector->member->usage = ast::IdentUsage::reference_member_type;
+            }
             else {
-                error(selector->member->loc, "member ", selector->member->ident, " is not a field or function")
+                error(selector->member->loc, "member ", selector->member->ident, " is not a field, function, format, state or enum")
                     .error(stmt->ident->loc, "member ", selector->member->ident, " is defined here")
                     .report();
             }
@@ -1142,6 +1156,26 @@ namespace brgen::middle {
             }
         }
 
+        void ident_to_type_literal(NodeReplacer base_node, ast::Ident* ident) {
+            auto expr = base_node.to_node();
+            auto typ = std::make_shared<ast::IdentType>(ident->loc, ast::cast_to<ast::Ident>(expr));
+            unwrap_reference_type_from_ident(typ.get());
+            auto typ_lit = std::make_shared<ast::TypeLiteral>(ident->loc, std::move(typ), ident->loc);
+            typ_lit->expr_type = std::make_shared<ast::MetaType>(ident->loc);
+            base_node.replace(std::move(typ_lit));
+        }
+
+        void member_access_to_type_literal(NodeReplacer base_node, ast::MemberAccess* selector) {
+            auto expr = base_node.to_node();
+            auto member = selector->member;
+            auto typ = std::make_shared<ast::IdentType>(selector->loc, std::move(member));
+            typ->import_ref = ast::cast_to<ast::MemberAccess>(expr);
+            unwrap_reference_type_from_ident(typ.get());
+            auto typ_lit = std::make_shared<ast::TypeLiteral>(selector->loc, std::move(typ), selector->loc);
+            typ_lit->expr_type = std::make_shared<ast::MetaType>(selector->loc);
+            base_node.replace(std::move(typ_lit));
+        }
+
         void typing_expr(NodeReplacer base_node, bool on_define = false) {
             auto expr = ast::cast_to<ast::Expr>(base_node.to_node());
             // treat cast as a special case
@@ -1191,11 +1225,7 @@ namespace brgen::middle {
                     return;  // skip
                 }
                 if (ident->usage == ast::IdentUsage::reference_type) {
-                    auto typ = std::make_shared<ast::IdentType>(ident->loc, ast::cast_to<ast::Ident>(expr));
-                    unwrap_reference_type_from_ident(typ.get());
-                    auto typ_lit = std::make_shared<ast::TypeLiteral>(ident->loc, std::move(typ), ident->loc);
-                    typ_lit->expr_type = std::make_shared<ast::MetaType>(ident->loc);
-                    base_node.replace(std::move(typ_lit));
+                    ident_to_type_literal(base_node, ident);
                 }
             }
             else if (auto bin = ast::as<ast::Binary>(expr)) {
@@ -1234,6 +1264,12 @@ namespace brgen::middle {
             }
             else if (auto selector = ast::as<ast::MemberAccess>(expr)) {
                 typing_member_access(selector);
+                if (base_node.place() == ast::NodeType::member_access) {
+                    return;  // skip
+                }
+                if (selector->member->usage == ast::IdentUsage::reference_member_type) {
+                    member_access_to_type_literal(base_node, selector);
+                }
             }
             else if (auto idx = ast::as<ast::Index>(expr)) {
                 typing_expr(idx->expr);
@@ -1287,19 +1323,28 @@ namespace brgen::middle {
                     s->base = state_->body->struct_type;
                 }
             }
+            if (s->ident->usage == ast::IdentUsage::reference_member_type) {
+                assert(s->import_ref);
+                auto ident = s->import_ref->base.lock();
+                assert(ident);
+                auto member = ast::as<ast::Member>(ident->base.lock());
+            }
         }
 
         void typing_ident_type(ast::IdentType* s, bool disable_warning = false) {
             // If the object is an identifier, perform identifier typing
             if (s->import_ref) {
-                typing_ident(s->import_ref, disable_warning);
+                typing_member_access(s->import_ref.get());
             }
-            typing_ident(s->ident, disable_warning);
+            else {
+                typing_ident(s->ident, disable_warning);
+            }
             if (s->ident->usage == ast::IdentUsage::maybe_type) {
                 warn_type_not_found(s->ident);
             }
             if (s->ident->usage != ast::IdentUsage::unknown &&
                 s->ident->usage != ast::IdentUsage::reference_type &&
+                s->ident->usage != ast::IdentUsage::reference_member_type &&
                 s->ident->usage != ast::IdentUsage::maybe_type) {
                 auto r = error(s->loc, "expect type name but not");
                 if (auto b = s->ident->base.lock()) {

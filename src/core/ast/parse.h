@@ -645,7 +645,7 @@ namespace brgen::ast {
             return call;
         }
 
-        std::shared_ptr<MemberAccess> parse_access(lexer::Token&& token, std::shared_ptr<Expr>& p) {
+        std::shared_ptr<MemberAccess> parse_access(lexer::Token&& token, auto&& p) {
             s.skip_white();
             auto ident = parse_ident_no_scope();
             ident->usage = IdentUsage::reference_member;
@@ -1063,18 +1063,12 @@ namespace brgen::ast {
             base->scope = state.current_scope();
 
             s.skip_space();
-            lexer::Loc dot_loc{};
-            std::shared_ptr<ast::Ident> import_ref;
+            std::shared_ptr<ast::MemberAccess> import_ref;
 
             // import type
             if (auto dot = s.consume_token(".")) {
-                dot_loc = dot->loc;
-                s.skip_white();
-                auto ident = parse_ident_no_scope();
-                ident->usage = IdentUsage::maybe_type;
-                import_ref = std::move(base);
-                import_ref->usage = IdentUsage::unknown;
-                base = std::move(ident);
+                import_ref = parse_access(std::move(*dot), std::move(base));
+                base = import_ref->member;
             }
 
             auto id = std::make_shared<IdentType>(ident.loc, std::move(base));
