@@ -196,11 +196,11 @@ export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
         return makeHover("type",`type (type: ${found.node_type || "unknown"}, size: ${bitSize(found.bit_size)}, align: ${found.bit_alignment})`);
     }
     else if(ast2ts.isMatch(found)){
-        return makeHover("match",`match (exhaustive: ${found.struct_union_type?.exhaustive||false}, size: ${bitSize(found.struct_union_type?.bit_size)})`);
+        return makeHover("match",`match (exhaustive: ${found.struct_union_type?.exhaustive||false}, size: ${bitSize(found.struct_union_type?.bit_size)} align: ${found.struct_union_type?.bit_alignment})`);
     }
     else if(ast2ts.isIf(found)) {
         if(found.struct_union_type !== null) {
-            return makeHover("if",`if (exhaustive: ${found.struct_union_type.exhaustive||false} size: ${bitSize(found.struct_union_type.bit_size)})`);
+            return makeHover("if",`if (exhaustive: ${found.struct_union_type.exhaustive||false} size: ${bitSize(found.struct_union_type.bit_size)} align: ${found.struct_union_type.bit_alignment})`);
         }
     }
     else if(ast2ts.isStrLiteral(found)){

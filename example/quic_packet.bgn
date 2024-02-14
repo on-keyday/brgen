@@ -1,7 +1,5 @@
 config.go.import("bytes")
 
-path ::= config.import("./ast_step/step1.bgn")
-
 config.go.file.name = "packet.go"
 config.go.package = "github.com/on-keyday/quic_packet"
 config.go.import("go/ast")
@@ -120,7 +118,6 @@ format OneRTTPacketHeader:
       packet_number :[packet_number_length]u8
       payload :[..]u8
    input.remain == 0
-   output.final = true
 
 
 format ConnectionID:
@@ -134,10 +131,10 @@ format ConnectionID:
 format VarInt:
    prefix :u2
    match prefix:
-      0 => value :u8
-      1 => value :u16
-      2 => value :u32
-      3 => value :u64
+      0 => value :u6
+      1 => value :u14
+      2 => value :u30
+      3 => value :u62
       .. => error("invalid varint prefix")
 
   

@@ -209,60 +209,60 @@ namespace brgen::middle {
                     }
                     if (prev_field) {
                         prev_field->follow = ast::Follow::end;
-                        t->bit_alignment = alignment;
-                        t->bit_size = bit_size;
-                        if (bit_size) {
-                            t->fixed_header_size = *bit_size;
-                        }
-                        std::optional<size_t> tail_bit_size = 0;
-                        size_t tail_offset = 0;
-                        ast::Follow current = ast::Follow::unknown;
-                        for (auto it = t->fields.rbegin(); it != t->fields.rend(); it++) {
-                            if (auto field = ast::as<ast::Field>(*it); field) {
-                                // calculate eventual follow
-                                if (field->follow == ast::Follow::unknown) {
-                                    continue;
-                                }
-                                if (field->follow == ast::Follow::end) {
-                                    current = field->follow;
-                                }
-                                else if (field->follow == ast::Follow::normal) {
-                                    current = field->follow;
-                                }
-                                else if (field->follow == ast::Follow::constant) {
-                                    current = field->follow;
-                                }
-                                assert(current != ast::Follow::unknown);
-                                field->eventual_follow = current;
+                    }
+                    t->bit_alignment = alignment;
+                    t->bit_size = bit_size;
+                    if (bit_size) {
+                        t->fixed_header_size = *bit_size;
+                    }
+                    std::optional<size_t> tail_bit_size = 0;
+                    size_t tail_offset = 0;
+                    ast::Follow current = ast::Follow::unknown;
+                    for (auto it = t->fields.rbegin(); it != t->fields.rend(); it++) {
+                        if (auto field = ast::as<ast::Field>(*it); field) {
+                            // calculate eventual follow
+                            if (field->follow == ast::Follow::unknown) {
+                                continue;
+                            }
+                            if (field->follow == ast::Follow::end) {
+                                current = field->follow;
+                            }
+                            else if (field->follow == ast::Follow::normal) {
+                                current = field->follow;
+                            }
+                            else if (field->follow == ast::Follow::constant) {
+                                current = field->follow;
+                            }
+                            assert(current != ast::Follow::unknown);
+                            field->eventual_follow = current;
 
-                                // calculate tail offset
-                                field->tail_offset_bit = tail_bit_size;
-                                field->tail_offset_recent = tail_offset;
-                                if (field->field_type->bit_size) {
-                                    tail_offset += *field->field_type->bit_size;
+                            // calculate tail offset
+                            field->tail_offset_bit = tail_bit_size;
+                            field->tail_offset_recent = tail_offset;
+                            if (field->field_type->bit_size) {
+                                tail_offset += *field->field_type->bit_size;
+                            }
+                            else {
+                                tail_offset = 0;
+                            }
+
+                            // calculate tail bit size
+                            if (tail_bit_size == 0) {
+                                tail_bit_size = field->field_type->bit_size;
+                            }
+                            else if (tail_bit_size) {
+                                if (!field->field_type->bit_size) {
+                                    t->fixed_tail_size = *tail_bit_size;
+                                    tail_bit_size = std::nullopt;
                                 }
                                 else {
-                                    tail_offset = 0;
-                                }
-
-                                // calculate tail bit size
-                                if (tail_bit_size == 0) {
-                                    tail_bit_size = field->field_type->bit_size;
-                                }
-                                else if (tail_bit_size) {
-                                    if (!field->field_type->bit_size) {
-                                        t->fixed_tail_size = *tail_bit_size;
-                                        tail_bit_size = std::nullopt;
-                                    }
-                                    else {
-                                        *tail_bit_size += *field->field_type->bit_size;
-                                    }
+                                    *tail_bit_size += *field->field_type->bit_size;
                                 }
                             }
                         }
-                        if (tail_bit_size) {
-                            t->fixed_tail_size = *tail_bit_size;
-                        }
+                    }
+                    if (tail_bit_size) {
+                        t->fixed_tail_size = *tail_bit_size;
                     }
                     return;
                 }
@@ -330,7 +330,8 @@ namespace brgen::middle {
                                 bit_size = std::nullopt;
                             }
                         }
-                        if (alignment != f->bit_alignment) {
+                        // if f->bit_size == 0, any of alignment is suitable for union
+                        if (alignment != f->bit_alignment && f->bit_size != 0) {
                             alignment = ast::BitAlignment::not_decidable;
                             bit_size = std::nullopt;
                             break;
