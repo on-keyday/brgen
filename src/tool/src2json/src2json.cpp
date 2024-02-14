@@ -438,7 +438,7 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
         }
         auto ok = files.add_special(name, flags.argv_input);
         if (!ok) {
-            print_error("cannot input ", name, " code=", ok.error());
+            print_error("cannot input ", name, " ", brgen::to_error_message(ok.error()));
             return exit_err;
         }
         input = files.get_input(*ok);
@@ -472,7 +472,7 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
         }
         auto ok = files.add_special(name, std::move(file_buf));
         if (!ok) {
-            print_error("cannot input ", name, " code=", ok.error());
+            print_error("cannot input ", name, " ", brgen::to_error_message(ok.error()));
             return exit_err;
         }
         input = files.get_input(*ok);
@@ -488,7 +488,7 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
         }
         auto ok = files.add_file(name);
         if (!ok) {
-            print_error("cannot open file ", name, " code=", ok.error());
+            print_error("cannot open file ", name, " ", brgen::to_error_message(ok.error()));
             return exit_err;
         }
         input = files.get_input(*ok);

@@ -3,7 +3,6 @@ import { JobRequest, JobResult } from "./msg.js";
 import { RequestQueue } from "./request_queue.js";
 import { MyEmscriptenModule } from "./emscripten_mod.js";
 
-
 export class EmWorkContext  {
     readonly #msgQueue: RequestQueue;
     readonly #textCapture = {
@@ -123,12 +122,12 @@ export class EmWorkContext  {
         this.#postResult(result);
     }
 
-    async handleRequest(makeArgs: (e: JobRequest,m :MyEmscriptenModule) => string[]|Error) {
+    async handleRequest(makeArgs: (e: JobRequest,m :MyEmscriptenModule) => string[]|Error|Promise<string[]|Error>) {
         while(true){
             const p = this.#popRequest();
             if(p === undefined) break;
             await this.#waitForPromise();
-            const args = makeArgs(p,this.#mod!);
+            const args = await makeArgs(p,this.#mod!);
             if(args instanceof Error) {
                 const res: JobResult = {
                     lang: p.lang,

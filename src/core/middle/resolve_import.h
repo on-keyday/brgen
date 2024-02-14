@@ -8,16 +8,23 @@
 #include "replacer.h"
 
 namespace brgen::middle {
+    struct PathInfo {
+        fs::path path;
+        bool special = false;
+    };
+
     struct PathStack {
-        std::vector<fs::path> path_stack;
-        std::map<fs::path, std::shared_ptr<ast::Program>> programs;
+        std::vector<PathInfo> path_stack;
+        std::vector<std::pair<PathInfo, std::shared_ptr<ast::Program>>> programs;
 
         fs::path current() {
-            return path_stack.back();
+            return path_stack.back().path;
         }
 
-        void push(fs::path path) {
-            path_stack.push_back(std::move(path));
+        void push(const std::shared_ptr<ast::Program>& p, fs::path path, bool special = false) {
+            auto pathI = PathInfo{std::move(path), special};
+            programs.push_back({pathI, p});
+            path_stack.push_back(std::move(pathI));
         }
 
         void pop() {
@@ -26,12 +33,15 @@ namespace brgen::middle {
 
         std::shared_ptr<ast::Program> get(fs::path path) {
             for (auto& p : programs) {
+                if (p.first.special) {
+                    continue;
+                }
                 std::error_code ec;
-                if (fs::equivalent(p.first, path, ec)) {
+                if (fs::equivalent(p.first.path, path, ec)) {
                     return p.second;
                 }
                 else if (ec) {
-                    error({}, "cannot compare path ", p.first.generic_u8string(), " and ", path.generic_u8string(), " code=", ec.category().name(), ":", nums(ec.value())).report();
+                    error({}, "cannot compare path ", p.first.path.generic_u8string(), " and ", path.generic_u8string(), " ", brgen::to_error_message(ec)).report();
                 }
             }
             return nullptr;
@@ -39,12 +49,15 @@ namespace brgen::middle {
 
         bool detect_circler(fs::path path, lexer::Loc loc) {
             for (auto& p : path_stack) {
+                if (p.special) {
+                    continue;
+                }
                 std::error_code ec;
-                if (fs::equivalent(p, path, ec)) {
+                if (fs::equivalent(p.path, path, ec)) {
                     return true;
                 }
                 else if (ec) {
-                    error(loc, "cannot compare path ", p.generic_u8string(), " and ", path.generic_u8string(), " code=", ec.category().name(), ":", nums(ec.value())).report();
+                    error(loc, "cannot compare path ", p.path.generic_u8string(), " and ", path.generic_u8string(), " ", to_error_message(ec)).report();
                 }
             }
             return false;
@@ -58,8 +71,7 @@ namespace brgen::middle {
             return unexpect(error(n->loc, "cannot open file at index ", nums(n->loc.file)));
         }
         auto root_path = l->path();
-        stack.push(root_path);
-        stack.programs[root_path] = n;
+        stack.push(n, root_path, l->is_special());
         auto f = [&](auto&& f, NodeReplacer n) -> void {
             auto node = n.to_node();
             ast::traverse(node, [&](auto& g) {
@@ -85,12 +97,12 @@ namespace brgen::middle {
                 auto res = fs.add_file(*path, true, stack.current().parent_path());
                 if (!res) {
                     auto fullpath = stack.current().parent_path() / *path;
-                    error(conf->loc, "cannot open file  ", fullpath.generic_u8string(), " code=", res.error().category().name(), ":", nums(res.error().value())).report();
+                    error(conf->loc, "cannot open file ", fullpath.generic_u8string(), " ", to_error_message(res.error())).report();
                 }
                 auto new_input = fs.get_input(*res);
                 if (!new_input) {
                     auto fullpath = fs.get_path(*res);
-                    error(conf->loc, "cannot open file  ", fullpath.generic_u8string()).report();
+                    error(conf->loc, "cannot open file ", fullpath.generic_u8string()).report();
                 }
                 auto new_path = new_input->path();
                 if (stack.detect_circler(new_path, conf->loc)) {
@@ -114,8 +126,7 @@ namespace brgen::middle {
                         }
                         err.report();
                     }
-                    stack.push(new_path);
-                    stack.programs[new_path] = *p;
+                    stack.push(*p, new_path);
                     f(f, *p);
                     stack.pop();
                     auto u8 = new_path.generic_u8string();

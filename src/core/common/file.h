@@ -80,6 +80,10 @@ namespace brgen {
 
         File(const File&) = delete;
 
+        constexpr bool is_special() const {
+            return special;
+        }
+
         std::optional<lexer::Token> parse() {
             if (parse_) {
                 return parse_(ptr.get(), file);
@@ -360,5 +364,12 @@ namespace brgen {
             }
             return src;
         };
+    }
+
+    inline std::string to_error_message(std::error_code ec) {
+        std::string val;
+        futils::file::format_os_error(val, ec.value());
+        std::erase_if(val, [](char c) { return c == '\n' || c == '\r'; });
+        return concat("code=", ec.category().name(), ":", nums(ec.value()), ":", val);
     }
 }  // namespace brgen
