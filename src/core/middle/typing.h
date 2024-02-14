@@ -825,36 +825,50 @@ namespace brgen::middle {
             cond->constant_level = decide_constant_level(cond->then->constant_level, cond->els->constant_level);
         }
 
-        void typing_call(ast::Call* call, NodeReplacer base_node) {
-            typing_expr(call->callee);
-            if (auto typ_lit = ast::as<ast::TypeLiteral>(call->callee)) {
-                // replace with cast node
-                auto s = ast::as<ast::IdentType>(typ_lit->type_literal);
-                assert(s);
+        void call_to_cast(ast::Call* call, NodeReplacer base_node, ast::TypeLiteral* typ_lit) {
+            // replace with cast node
+            auto s = ast::as<ast::IdentType>(typ_lit->type_literal);
+            assert(s);
+            std::shared_ptr<ast::Node> base;
+            lexer::Loc def_loc;
+            if (s->import_ref) {
+                auto def = s->import_ref->base.lock();
+                base = def->base.lock();
+                def_loc = def->loc;
+            }
+            else {
                 auto def = s->ident->base.lock();
                 assert(def);
                 assert(def->node_type == ast::NodeType::ident);
-                auto base = ast::as<ast::Ident>(def)->base.lock();
-                if (ast::as<ast::Enum>(base) || ast::as<ast::Format>(base)) {
-                    call->expr_type = typ_lit->type_literal;
-                }
-                else {
-                    error(call->callee->loc, "expect enum or format type but not")
-                        .error(def->loc, "type is ", ast::node_type_to_string(base->node_type))
-                        .report();
-                }
-                if (call->arguments.size() > 1) {
-                    error(call->loc, "expect 0 or 1 argument but got ", nums(call->arguments.size())).report();
-                }
-                std::shared_ptr<ast::Expr> copy2;
-                if (call->arguments.size() == 1) {
-                    typing_expr(call->arguments[0]);
-                    copy2 = call->arguments[0];
-                }
-                auto copy = call->expr_type;
-                assert(copy);
-                auto cast = std::make_shared<ast::Cast>(ast::cast_to<ast::Call>(base_node.to_node()), std::move(copy), std::move(copy2));
-                base_node.replace(std::move(cast));
+                base = ast::as<ast::Ident>(def)->base.lock();
+                def_loc = def->loc;
+            }
+            if (ast::as<ast::Enum>(base) || ast::as<ast::Format>(base)) {
+                call->expr_type = typ_lit->type_literal;
+            }
+            else {
+                error(call->callee->loc, "expect enum or format type but not")
+                    .error(def_loc, "type is ", ast::node_type_to_string(base->node_type))
+                    .report();
+            }
+            if (call->arguments.size() > 1) {
+                error(call->loc, "expect 0 or 1 argument but got ", nums(call->arguments.size())).report();
+            }
+            std::shared_ptr<ast::Expr> copy2;
+            if (call->arguments.size() == 1) {
+                typing_expr(call->arguments[0]);
+                copy2 = call->arguments[0];
+            }
+            auto copy = call->expr_type;
+            assert(copy);
+            auto cast = std::make_shared<ast::Cast>(ast::cast_to<ast::Call>(base_node.to_node()), std::move(copy), std::move(copy2));
+            base_node.replace(std::move(cast));
+        }
+
+        void typing_call(ast::Call* call, NodeReplacer base_node) {
+            typing_expr(call->callee);
+            if (auto typ_lit = ast::as<ast::TypeLiteral>(call->callee)) {
+                call_to_cast(call, base_node, typ_lit);
                 return;
             }
             if (!call->callee->expr_type) {

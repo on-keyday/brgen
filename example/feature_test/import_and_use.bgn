@@ -8,5 +8,4 @@ format ArpProtocol:
     ipHeader :ip.IPv4Header
     arpHeader :arp.ArpPacket
 
-
-data ::= ether.EthernetFrame()
+d ::= ether.EthernetFrame()
