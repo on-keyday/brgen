@@ -19,7 +19,7 @@
             "request": "launch",
             "program": "${workspaceRoot}/tool/src2json",
             "args": [
-                "c:/workspace/shbrgen/brgen/example/not_exist.bgn",
+                "c:/workspace/shbrgen/brgen/example/feature_test/import_and_use.bgn",
                 "--print-json"
             ],
             "stopAtEntry": false,

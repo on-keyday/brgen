@@ -1,0 +1,10 @@
+
+arp ::= config.import("../arp.bgn")
+ether ::=config.import("../ether.bgn")
+ip ::= config.import("../ip.bgn")
+
+format ArpProtocol:
+    etherHeader :ether.EthernetFrame
+    ipHeader :ip.IPv4Header
+    arpHeader :arp.ArpPacket
+

@@ -66,7 +66,6 @@ namespace brgen::ast {
 
         Import(std::shared_ptr<Call>&& c, std::shared_ptr<Program>&& a, std::string&& p)
             : Expr(c->loc, NodeType::import_), path(std::move(p)), base(std::move(c)), import_desc(std::move(a)) {
-            expr_type = import_desc->struct_type;
         }
 
         Import()

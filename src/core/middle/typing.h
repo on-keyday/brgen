@@ -1306,6 +1306,7 @@ namespace brgen::middle {
             }
             else if (auto i = ast::as<ast::Import>(expr)) {
                 expr->expr_type = i->import_desc->struct_type;
+                typing_object(i->import_desc);
             }
             else if (auto typ = ast::as<ast::TypeLiteral>(expr)) {
                 typing_object(typ->type_literal);
@@ -1507,6 +1508,14 @@ namespace brgen::middle {
                     });
                     do_traverse();
                     return;
+                }
+                if (auto s = ast::as<ast::StructType>(node)) {
+                    // NOTE(on-keyday): for imported type, we have to typing it prior to use
+                    if (auto l = s->base.lock(); l) {
+                        if (auto imp = ast::as<ast::Import>(l); imp && !imp->expr_type) {
+                            typing_expr(l);
+                        }
+                    }
                 }
                 if (auto expr = ast::as<ast::Expr>(node)) {
                     // If the object is an expression, perform expression typing
