@@ -34,7 +34,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Setup Emscripten
-        uses: mymindstorm/setup-emsdk@v12
+        uses: mymindstorm/setup-emsdk@v14
       - name: Set up Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
       - name: Set up ast2ts
