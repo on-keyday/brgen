@@ -385,6 +385,9 @@ namespace brgen::ast::tool {
             if (auto cast_ = ast::as<ast::Cast>(expr)) {
                 return eval_expr(cast_->expr.get());
             }
+            if (auto ch = ast::as<ast::CharLiteral>(expr)) {
+                return make_result<EResultType::integer>(ch->code);
+            }
             return unexpect(LocError{expr->loc, "not supported"});
         }
 

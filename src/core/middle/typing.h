@@ -930,6 +930,7 @@ namespace brgen::middle {
                     .report();
             }
             idx->expr_type = arr_ty->base_type;
+            idx->constant_level = decide_constant_level(idx->expr->constant_level, idx->index->constant_level);
         }
 
         void typing_builtin_member_access(ast::MemberAccess* selector) {
@@ -937,6 +938,7 @@ namespace brgen::middle {
                 if (selector->member->ident == "length") {
                     selector->member->usage = ast::IdentUsage::reference_builtin_fn;
                     selector->expr_type = std::make_shared<ast::IntType>(selector->loc, 64, ast::Endian::unspec, false);
+                    selector->constant_level = arr->length_value ? ast::ConstantLevel::constant : ast::ConstantLevel::immutable_variable;
                     return;  // length is a builtin function of array
                 }
             }
@@ -1191,6 +1193,7 @@ namespace brgen::middle {
                     error(b->order->loc, "expect integer or boolean but got ", ast::tool::eval_result_type_str[int(val->type())]).report();
                 }
             }
+            b->constant_level = b->order_value ? ast::ConstantLevel::constant : ast::ConstantLevel::immutable_variable;
         }
 
         void ident_to_type_literal(NodeReplacer base_node, ast::Ident* ident) {
@@ -1307,14 +1310,17 @@ namespace brgen::middle {
             else if (auto i = ast::as<ast::Import>(expr)) {
                 expr->expr_type = i->import_desc->struct_type;
                 typing_object(i->import_desc);
+                expr->constant_level = ast::ConstantLevel::constant;
             }
             else if (auto typ = ast::as<ast::TypeLiteral>(expr)) {
                 typing_object(typ->type_literal);
                 expr->expr_type = std::make_shared<ast::MetaType>(typ->loc);
+                expr->constant_level = ast::ConstantLevel::constant;
             }
             else if (auto ch = ast::as<ast::CharLiteral>(expr)) {
                 auto bit = ast::aligned_bit(futils::binary::log2i(ch->code));
                 expr->expr_type = std::make_shared<ast::IntType>(ch->loc, bit, ast::Endian::unspec, false);
+                expr->constant_level = ast::ConstantLevel::constant;
             }
             else {
                 unsupported(expr);
