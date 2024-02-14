@@ -268,7 +268,7 @@ format B:
     attr.recursive_reference(r);
     attr.int_type_detection(r);
     attr.bit_alignment(r);
-    ASSERT_EQ(r->struct_type->bit_alignment, ast::BitAlignment::not_target);
+    ASSERT_EQ(r->struct_type->bit_alignment, ast::BitAlignment::byte_aligned);
     ASSERT_EQ(r->struct_type->fields.size(), 2);
     auto fmt = ast::as<ast::Format>(r->struct_type->fields[0]);
     ASSERT_TRUE(fmt);
@@ -342,7 +342,7 @@ format C:
     attr.recursive_reference(r);
     attr.int_type_detection(r);
     attr.bit_alignment(r);
-    ASSERT_EQ(r->struct_type->bit_alignment, ast::BitAlignment::not_target);
+    ASSERT_EQ(r->struct_type->bit_alignment, ast::BitAlignment::byte_aligned);
     ASSERT_EQ(r->struct_type->fields.size(), 3);
     auto fmt = ast::as<ast::Format>(r->struct_type->fields[0]);
     ASSERT_TRUE(fmt);
@@ -504,7 +504,7 @@ format F:
     attr.recursive_reference(r);
     attr.int_type_detection(r);
     attr.bit_alignment(r);
-    ASSERT_EQ(r->struct_type->bit_alignment, ast::BitAlignment::not_target);
+    ASSERT_EQ(r->struct_type->bit_alignment, ast::BitAlignment::byte_aligned);
     ASSERT_EQ(r->struct_type->fields.size(), 6);
 
     auto fmt = ast::as<ast::Format>(r->struct_type->fields[0]);
