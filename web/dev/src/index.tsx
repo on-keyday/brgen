@@ -192,7 +192,7 @@ const setGenerated =async (code :string,lang: string) => {
 const updateUI = async ()=>{
     const ui :UIModel = {
         getLanguageConfig: (lang,config) => {
-            return commonUI.config.get(lang)?.config.get(config);
+            return commonUI.config.get(lang)?.config.get(config)?.value;
         },
         getValue: () => {
             return editorUI.editor.getValue();
