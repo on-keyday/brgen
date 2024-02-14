@@ -1331,7 +1331,7 @@ namespace brgen::middle {
             else if (auto i = ast::as<ast::Import>(expr)) {
                 expr->expr_type = i->import_desc->struct_type;
                 typing_object(i->import_desc);
-                expr->constant_level = ast::ConstantLevel::constant;
+                expr->constant_level = ast::ConstantLevel::immutable_variable;
             }
             else if (auto typ = ast::as<ast::TypeLiteral>(expr)) {
                 typing_object(typ->type_literal);
