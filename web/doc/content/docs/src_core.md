@@ -52,6 +52,13 @@ tool/src2json-->|ASTの型解析|middle/typing.h/Typingクラス
 
 ## AST について
 
+### AST 全般について
+
+現状、AST の大本の定義は src/core/ast/node 内のファイルにある C++構造体の定義群である。
+他の言語の AST は src/core/ast/node_type_list.h にある変換ルールに従って C++構造体の定義から json に変換されたのち、
+src/tool/gen/gen.go のロジックによって読み込まれ、src/tool/gen ディレクトリ内のアプリケーション達によって
+各言語に変換される。json は`tool/src2json --dump-types`コマンドを使用するすることで取得できる。
+
 ### Loc について
 
 - lexer::Loc::pos の各フィールドはソースコード上の 0 オリジンでのオフセットを表す
@@ -59,6 +66,14 @@ tool/src2json-->|ASTの型解析|middle/typing.h/Typingクラス
 - lexer::Loc::line はソースコードの行を 1 オリジンで表す
 - lexer::Loc::col はソースコードの列を 1 オリジンで表す
 - pos や line,col は src2json の--interpret-mode に影響を受ける。たとえば入力が UTF-8 ファイルだったとしても、utf16 を指定すればそのように解釈する。これは JavaScript 環境など文字が UTF-16 前提の環境などでエラー表示や色付けなどのずれを防いだりするのに使われている
+
+### Ident について
+
+- Ident は識別子一般を表す。識別子は変数名、フィールド名、フォーマット名、列挙体名、ステート名、メンバーアクセスなどすべての識別子を含む。
+- Ident.ident は識別子の文字列表現を表す
+- Ident.scope は識別子の使用されているスコープを表す
+- Ident.usage は識別子の使用の目的を表す
+- Ident.base は
 
 ## 開発者メモ
 
