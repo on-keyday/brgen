@@ -1152,8 +1152,8 @@ namespace brgen::middle {
                     if (c->arguments.size() >= 1) {
                         auto typ = ast::as<ast::TypeLiteral>(c->arguments[0]);
                         if (!typ) {
-                            error(c->arguments[1]->loc, "expect type literal but not")
-                                .error(c->arguments[1]->loc, "type is ", ast::node_type_to_string(c->arguments[1]->node_type))
+                            error(c->arguments[0]->loc, "expect type literal but not")
+                                .error(c->arguments[0]->loc, "type is ", ast::node_type_to_string(c->arguments[0]->node_type))
                                 .report();
                         }
                         c->expr_type = typ->type_literal;
