@@ -58,6 +58,7 @@ tool/src2json-->|ASTの型解析|middle/typing.h/Typingクラス
 他の言語の AST は src/core/ast/node_type_list.h にある変換ルールに従って C++構造体の定義から json に変換されたのち、
 src/tool/gen/gen.go のロジックによって読み込まれ、src/tool/gen ディレクトリ内のアプリケーション達によって
 各言語に変換される。json は`tool/src2json --dump-types`コマンドを使用するすることで取得できる。
+なお、AST の全体図は[AST](https://on-keyday.github.io/brgen/doc/docs/ast)ページに存在する。
 
 ### Loc について
 
@@ -73,7 +74,19 @@ src/tool/gen/gen.go のロジックによって読み込まれ、src/tool/gen �
 - Ident.ident は識別子の文字列表現を表す
 - Ident.scope は識別子の使用されているスコープを表す
 - Ident.usage は識別子の使用の目的を表す
-- Ident.base は
+- Ident.base は識別子の定義元への参照を表す。以下の型のパターンがありえる。
+
+  - null -　未解決の参照
+  - Ident - 定義元識別子への参照。IdentUsage が`reference`で始まる。した２つ
+  - MemberAccess - メンバーへのアクセス経由での参照。MemberAccess.base が定義元識別子への参照になる
+  - 上記 2 つは以下のいづれかを指す Ident.base を持った Ident への参照を保持する。そうでない場合それはバグである。
+  - Binary - 代入演算への参照。この場合変数が`:=`や`::=`演算子を使って定義されたことを表す
+  - Field - フィールドへの参照
+  - Format - フォーマットへの参照
+  - Enum - 列挙体への参照
+  - EnumMember - 列挙体メンバへの参照
+  - Function - 関数への参照
+  - State - ステートへの参照
 
 ## 開発者メモ
 
