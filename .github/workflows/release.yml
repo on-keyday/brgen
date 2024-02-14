@@ -307,7 +307,7 @@ jobs:
         collect-licenses,
       ]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main'
     timeout-minutes: 10
     steps:
       - name: Timeline
