@@ -1,7 +1,10 @@
 # Simple workflow for deploying static content to GitHub Pages
 name: Deploy brgen-web to GitHub Pages
 run-name: deploy brgen-web
-on: push
+on:
+  push:
+    branches:
+      - main
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
@@ -67,4 +70,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v2
-        if: ${{ github.ref == 'refs/heads/main' }}
