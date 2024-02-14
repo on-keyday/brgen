@@ -955,9 +955,12 @@ namespace brgen::middle {
                     selector->constant_level = arr->length_value ? ast::ConstantLevel::constant : ast::ConstantLevel::immutable_variable;
                     return;  // length is a builtin function of array
                 }
+                error(selector->member->loc, "member ", selector->member->ident, " is not usable for array; use `.length` instead")
+                    .error(selector->target->loc, "type is ", ast::node_type_to_string(selector->target->expr_type->node_type))
+                    .report();
             }
             error(selector->target->loc, "expect struct type but not")
-                .error(selector->target->loc, "type is ", ast::node_type_to_string(selector->target->expr_type->node_type))
+                .error(selector->target->expr_type->loc, "type is ", ast::node_type_to_string(selector->target->expr_type->node_type))
                 .report();
         }
 
@@ -978,7 +981,11 @@ namespace brgen::middle {
             else if (auto type = lookup_struct(selector->target->expr_type)) {
                 stmt = type->lookup(selector->member->ident);
                 if (!stmt) {
-                    error(selector->member->loc, "member ", selector->member->ident, " is not defined").report();
+                    auto res = error(selector->member->loc, "member ", selector->member->ident, " is not defined");
+                    if (auto f = ast::as<ast::Member>(type->base.lock())) {
+                        (void)res.error(f->ident->loc, "type ", f->ident->ident, " is defined here");
+                    }
+                    res.report();
                 }
                 typing_object(stmt);
             }
