@@ -296,6 +296,9 @@ namespace brgen {
                 return unexpect(err);
             }
             for (auto it = files.begin(); it != files.end(); it++) {
+                if (it->second.special) {
+                    continue;
+                }
                 if (fs::equivalent(it->second.file_name, path, err)) {
                     if (allow_duplicate) {
                         return it->second.file;
