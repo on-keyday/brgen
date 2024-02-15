@@ -17,6 +17,6 @@ export const enum ConfigKey {
     CPP_USE_ERROR = "use_error",
     CPP_USE_RAW_UNION = "use_raw_union",
     CPP_CHECK_OVERFLOW = "check_overflow",
+    CPP_COMPILE_VIA_API = "compile_via_api",
     GO_USE_PUT = "use_put",
-
 }

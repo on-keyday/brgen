@@ -411,7 +411,7 @@ const commonUI = {
             fontSize: "60%",
             border: "solid 1px black",
         }),
-    github_link: makeLink(ElementID.GITHUB_LINK,"develop page","https://github.com/on-keyday/brgen",
+    github_link: makeLink(ElementID.GITHUB_LINK,"github","https://github.com/on-keyday/brgen",
         (e) => {
             e.preventDefault();
             location.href = commonUI.github_link.href;
@@ -422,6 +422,15 @@ const commonUI = {
             fontSize: "60%",
             color: "blue",
         }),
+    noteforgdpr: makeLink("noteforgdpr","privacy","javascript:void(0)",(e) => {
+        e.preventDefault();
+        alert("This site uses localStorage to save your source code and configuration. These data are not sent to the server except explicitly notified. You can delete these data using Dev Tools anytime")
+    },{
+        top: "50%",
+        left: "14%",
+        fontSize: "60%",
+        color: "blue",
+    }),
     config: new Map<Language,LanguageConfig>(),  
     
     internal: {
@@ -444,6 +453,7 @@ const commonUI = {
 commonUI.title_bar.appendChild(commonUI.language_select);
 commonUI.title_bar.appendChild(commonUI.copy_button);
 commonUI.title_bar.appendChild(commonUI.github_link);
+commonUI.title_bar.appendChild(commonUI.noteforgdpr);
 
 
 
@@ -519,8 +529,28 @@ const fileName :InputListElement = {
         "type": "checkbox",
         "value": false,
     })
+    /*
+    cpp.set(ConfigKey.CPP_COMPILE_VIA_API, {
+        "type": "checkbox",
+        "value": false,
+    })
+    */
     cpp.set(ConfigKey.COMMON_FILE_NAME,fileName);
     commonUI.config.set(Language.CPP,languageSpecificConfig(cpp,ConfigKey.CPP_SOURCE_MAP,(change) => {
+        if(change.name === ConfigKey.CPP_COMPILE_VIA_API) {
+            if(change.value) {
+                if(!change.data) {
+                    const ok = confirm("if you enable this option, your code will be sent to the external server (https://godbolt.org) for compilation."+
+                                        "if you click OK, you agree to send your code to the external server and its policies. "+
+                                       " Are you sure? (if you click OK, this prompt will be omitted when switch on/off. if you click cancel, this option will be disabled)");
+                    if(!ok) {
+                        change.value = false;
+                        return;
+                    }
+                    change.data = true;
+                }
+            }
+        }
         updateTracer.getTraceID(); //dummy, consume id
         if(caches.recoloring !== null) {
             caches.recoloring();

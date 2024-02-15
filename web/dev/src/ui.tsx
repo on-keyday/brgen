@@ -29,6 +29,7 @@ export interface InputListElement {
     name? :string;
     readonly type :'checkbox' | 'number' | 'text';
     value :boolean | number | string;
+    data?:any; // private data for each element
 }
 
 

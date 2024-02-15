@@ -7,7 +7,7 @@ import { JobResult,Language } from "./s2j/msg.js";
 import {ast2ts} from "ast2ts";
 import {storage} from "./storage";
 import {ConfigKey} from "./types";
-
+//import { compileCpp } from "./compiler-explorer/api";
 
 // first, load workers
 caller.loadWorkers();
@@ -87,6 +87,7 @@ const handleCpp = async (ui :UIModel,  s :JobResult) => {
     const useError = ui.getLanguageConfig(Language.CPP,ConfigKey.CPP_USE_ERROR);
     const useRawUnion = ui.getLanguageConfig(Language.CPP,ConfigKey.CPP_USE_RAW_UNION);
     const checkOverflow = ui.getLanguageConfig(Language.CPP,ConfigKey.CPP_CHECK_OVERFLOW);
+    const compileViaAPI = ui.getLanguageConfig(Language.CPP,ConfigKey.CPP_COMPILE_VIA_API);
     const cppOption : caller.CppOption = {      
         use_line_map: useMap === true,
         use_error: useError === true,
@@ -111,15 +112,28 @@ const handleCpp = async (ui :UIModel,  s :JobResult) => {
         }
         return result;
     },Language.CPP,"cpp",cppOption);
-    if(result&&!updateTracer.editorAlreadyUpdated(result)&& isMappingInfoStruct(mappingInfo)){
-        // wait for editor update 
-        setTimeout(() => {
-            if(result===undefined) throw new Error("result is undefined");
-            if(updateTracer.editorAlreadyUpdated(s)) return;
-            console.log(mappingInfo);
-            ui.mappingCode(mappingInfo.line_map,s,Language.CPP,0);
-        },1);
-    }
+    // NOTE(on-keyday):
+    // TypeScript may not infer that `result` will be assigned within the async function below.
+    // Therefore, we explicitly cast `result` as `JobResult | undefined` to avoid type errors.
+    result = result as JobResult | undefined;
+    if(result&&!updateTracer.editorAlreadyUpdated(result)){
+        if(isMappingInfoStruct(mappingInfo)) {
+            // wait for editor update 
+            setTimeout(() => {
+                if(result===undefined) throw new Error("result is undefined");
+                if(updateTracer.editorAlreadyUpdated(s)) return;
+                console.log(mappingInfo);
+                ui.mappingCode(mappingInfo.line_map,s,Language.CPP,0);
+            },1);
+        }
+        /*
+        if(compileViaAPI===true) {
+            compileCpp(result.stdout!).then((res)=>{
+                console.log(res);
+            })
+        }
+        */
+    }    
 }
 
 const handleGo = async (ui :UIModel, s :JobResult) => {
