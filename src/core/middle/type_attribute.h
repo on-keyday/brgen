@@ -127,6 +127,18 @@ namespace brgen::middle {
         }
 
        private:
+        bool ignore_on_follow_analysis(ast::Field* field) {
+            if (field->arguments) {
+                if (field->arguments->peek_value) {
+                    return *field->arguments->peek_value;
+                }
+                if (field->arguments->sub_byte_begin) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         void analyze_forward_bit_alignment_and_size(ast::StructType* t) {
             ast::BitAlignment alignment = ast::BitAlignment::byte_aligned;
             std::optional<size_t> bit_size = 0;
@@ -145,8 +157,7 @@ namespace brgen::middle {
                         continue;
                     }
 
-                    if (field->arguments && field->arguments->peek_value &&
-                        *field->arguments->peek_value) {
+                    if (ignore_on_follow_analysis(field)) {
                         if (field->field_type->bit_alignment == ast::BitAlignment::not_decidable) {
                             field->bit_alignment = ast::BitAlignment::not_decidable;
                         }
@@ -227,10 +238,9 @@ namespace brgen::middle {
             std::optional<ast::BitAlignment> eventual_alignment;
             for (auto it = t->fields.rbegin(); it != t->fields.rend(); it++) {
                 if (auto field = ast::as<ast::Field>(*it); field) {
-                    if (field->arguments && field->arguments->peek_value && *field->arguments->peek_value) {
+                    if (ignore_on_follow_analysis(field)) {
                         field->tail_offset_bit = tail_bit_size;
                         field->tail_offset_recent = tail_offset;
-
                         field->eventual_follow = ast::Follow::unknown;
                         continue;
                     }
