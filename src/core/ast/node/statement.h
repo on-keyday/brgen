@@ -129,6 +129,7 @@ namespace brgen::ast {
         std::shared_ptr<Expr> sub_byte_begin;
         // is_peek is true if field is peeked
         std::shared_ptr<Expr> peek;
+        std::optional<size_t> peek_value;
 
         FieldArgument(lexer::Loc l)
             : Node(l, NodeType::field_argument) {}
@@ -164,6 +165,8 @@ namespace brgen::ast {
         size_t tail_offset_recent = 0;
 
         BitAlignment bit_alignment = BitAlignment::not_target;
+        // to check finally byte aligned or not
+        BitAlignment eventual_bit_alignment = BitAlignment::not_target;
         Follow follow = Follow::unknown;
         // eventual follow indicates finally followed type
         // for example, format A like below:

@@ -147,10 +147,28 @@ namespace brgen::middle {
                     size_t offset = 0;
                     ast::Field* prev_field = nullptr;
                     t->bit_size = 0;
+                    auto calc_new_align = [&](ast::BitAlignment field_algin) {
+                        auto new_align = (int(alignment) - int(ast::BitAlignment::byte_aligned)) + (int(field_algin) - int(ast::BitAlignment::byte_aligned));
+                        return ast::BitAlignment(new_align % futils::bit_per_byte);
+                    };
                     for (auto& fields : t->fields) {
                         if (auto field = ast::as<ast::Field>(fields); field) {
                             if (field->field_type->bit_alignment == ast::BitAlignment::not_target) {
                                 field->bit_alignment = ast::BitAlignment::not_target;
+                                continue;
+                            }
+
+                            if (field->arguments && field->arguments->peek_value &&
+                                *field->arguments->peek_value) {
+                                if (field->field_type->bit_alignment == ast::BitAlignment::not_decidable) {
+                                    field->bit_alignment = ast::BitAlignment::not_decidable;
+                                }
+                                else {
+                                    field->bit_alignment = calc_new_align(field->field_type->bit_alignment);
+                                }
+                                field->offset_bit = bit_size;
+                                field->offset_recent = offset;
+                                field->eventual_bit_alignment = field->bit_alignment;
                                 continue;
                             }
 
@@ -201,9 +219,7 @@ namespace brgen::middle {
                                 field->bit_alignment = ast::BitAlignment::not_decidable;
                                 continue;
                             }
-                            auto new_align = (int(alignment) - int(ast::BitAlignment::byte_aligned)) + (int(field->field_type->bit_alignment) - int(ast::BitAlignment::byte_aligned));
-                            new_align %= futils::bit_per_byte;
-                            alignment = ast::BitAlignment(new_align + int(ast::BitAlignment::byte_aligned));
+                            alignment = calc_new_align(field->field_type->bit_alignment);
                             field->bit_alignment = alignment;
                         }
                     }
@@ -220,6 +236,14 @@ namespace brgen::middle {
                     ast::Follow current = ast::Follow::unknown;
                     for (auto it = t->fields.rbegin(); it != t->fields.rend(); it++) {
                         if (auto field = ast::as<ast::Field>(*it); field) {
+                            if (field->arguments && field->arguments->peek_value && *field->arguments->peek_value) {
+                                field->tail_offset_bit = tail_bit_size;
+                                field->tail_offset_recent = tail_offset;
+
+                                field->eventual_follow = ast::Follow::unknown;
+                                continue;
+                            }
+
                             // calculate eventual follow
                             if (field->follow == ast::Follow::unknown) {
                                 continue;

@@ -10,15 +10,35 @@ namespace json2c {
     namespace ast = brgen::ast;
     struct Generator {
         brgen::writer::Writer h_w;
+        brgen::writer::Writer c_w;
         ast::tool::Stringer str;
         std::vector<std::string> struct_names;
         std::vector<LineMap> line_map;
+
+        void write_field(ast::Field* field) {
+            if (auto int_ty = ast::as<ast::IntType>(field->field_type)) {
+                auto bit = *int_ty->bit_size;
+                if (int_ty->is_common_supported) {
+                    h_w.writeln(int_ty->is_signed ? "" : "u", "int", brgen::nums(bit), "_t ", field->ident->ident, ";");
+                }
+                else if (bit < 64) {
+                }
+            }
+        }
+
+        void write_struct_type(const std::shared_ptr<ast::StructType>& typ) {
+            for (auto& field : typ->fields) {
+                if (auto f = ast::as<ast::Field>(field)) {
+                    write_field(f);
+                }
+            }
+        }
 
         void write_format(const std::shared_ptr<ast::Format>& fmt) {
             auto typ = fmt->body->struct_type;
             auto ident = fmt->ident->ident;
             h_w.writeln("typedef struct ", ident, " {");
-
+            write_struct_type(typ);
             h_w.writeln("} ", ident, ";");
         }
 
@@ -53,6 +73,7 @@ namespace json2c {
             ast::tool::FormatSorter s;
             auto sorted = s.topological_sort(prog);
             for (auto& fmt : sorted) {
+                write_format(ast::cast_to<ast::Format>(fmt));
             }
         }
     };

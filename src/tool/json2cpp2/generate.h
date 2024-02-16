@@ -743,6 +743,18 @@ namespace j2cp2 {
             if (ast::as<ast::EnumType>(typ)) {
                 ident = ident.substr(0, ident.size() - 2) + "_data";
             }
+            futils::helper::DynDefer peek;
+            if (f->arguments && f->arguments->peek) {
+                if (f->arguments->peek_value && *f->arguments->peek_value) {
+                    map_line(f->loc);
+                    auto seq = get_seq();
+                    w.writeln("auto peek_pos_", brgen::nums(seq), "_ = w.offset();");
+                    peek = futils::helper::defer_ex([&, seq] {
+                        map_line(f->loc);
+                        w.writeln("w.reset(peek_pos_", brgen::nums(seq), "_);");
+                    });
+                }
+            }
             write_field_encode_impl(f->loc, ident, typ, f);
         }
 
@@ -927,6 +939,18 @@ namespace j2cp2 {
             }
             if (ast::as<ast::EnumType>(typ)) {
                 ident = ident.substr(0, ident.size() - 2) + "_data";
+            }
+            futils::helper::DynDefer peek;
+            if (f->arguments && f->arguments->peek) {
+                if (f->arguments->peek_value && *f->arguments->peek_value) {
+                    map_line(f->loc);
+                    auto seq = get_seq();
+                    w.writeln("auto peek_pos_", brgen::nums(seq), "_ = r.offset();");
+                    peek = futils::helper::defer_ex([&, seq] {
+                        map_line(f->loc);
+                        w.writeln("r.reset(peek_pos_", brgen::nums(seq), "_);");
+                    });
+                }
             }
             write_field_decode_impl(f->loc, ident, typ, f);
         }

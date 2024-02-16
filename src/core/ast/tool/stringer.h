@@ -75,6 +75,7 @@ namespace brgen::ast::tool {
         std::unordered_map<std::string, std::function<std::string(Stringer& s, const std::string& name, const std::vector<std::shared_ptr<ast::Expr>>&)>> call_handler;
         std::function<std::string(Stringer&, const std::shared_ptr<Type>&)> type_resolver;
         std::function<std::string(Stringer&, const std::shared_ptr<IOOperation>&)> io_op_handler;
+        std::function<std::string(Stringer&, const std::shared_ptr<Available>&)> available_handler;
 
         void clear() {
             bin_op_map.clear();
@@ -205,6 +206,9 @@ namespace brgen::ast::tool {
                 return concat(ast::to_string(d->op), to_string(d->expr));
             }
             if (auto a = ast::as<ast::Available>(expr)) {
+                if (available_handler) {
+                    return available_handler(*this, ast::cast_to<ast::Available>(expr));
+                }
                 auto ident = ast::as<ast::Ident>(a->target);
                 if (!ident) {
                     return "false";  // TODO(on-keyday): support member access

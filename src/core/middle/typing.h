@@ -1434,6 +1434,19 @@ namespace brgen::middle {
                 if (conf->name == "input.peek") {
                     typing_expr(conf->arguments[0]);
                     args->peek = std::move(conf->arguments[0]);
+                    ast::tool::Evaluator eval;
+                    eval.ident_mode = ast::tool::EvalIdentMode::resolve_ident;
+                    if (auto val = eval.eval(args->peek)) {
+                        if (val->type() == ast::tool::EResultType::integer) {
+                            args->peek_value = val->get<ast::tool::EResultType::integer>();
+                        }
+                        else if (val->type() == ast::tool::EResultType::boolean) {
+                            args->peek_value = val->get<ast::tool::EResultType::boolean>() ? 1 : 0;
+                        }
+                        else {
+                            error(conf->arguments[0]->loc, "expect integer or boolean but got ", ast::tool::eval_result_type_str[int(val->type())]).report();
+                        }
+                    }
                     ast::as<ast::MemberAccess>(ast::as<ast::Binary>(arg)->left)->member->usage = ast::IdentUsage::reference_builtin_fn;
                     continue;
                 }
