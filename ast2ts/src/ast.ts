@@ -935,6 +935,7 @@ export interface Field extends Member {
 	tail_offset_bit: number|null;
 	tail_offset_recent: number;
 	bit_alignment: BitAlignment;
+	eventual_bit_alignment: BitAlignment;
 	follow: Follow;
 	eventual_follow: Follow;
 }
@@ -1880,6 +1881,7 @@ export function parseAST(obj: JsonAst): Program {
 				tail_offset_bit: null,
 				tail_offset_recent: 0,
 				bit_alignment: BitAlignment.byte_aligned,
+				eventual_bit_alignment: BitAlignment.byte_aligned,
 				follow: Follow.unknown,
 				eventual_follow: Follow.unknown,
 			}
@@ -3963,6 +3965,11 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at Field::bit_alignment');
 			}
 			n.bit_alignment = tmpbit_alignment;
+			const tmpeventual_bit_alignment = on.body?.eventual_bit_alignment;
+			if (!isBitAlignment(tmpeventual_bit_alignment)) {
+				throw new Error('invalid node list at Field::eventual_bit_alignment');
+			}
+			n.eventual_bit_alignment = tmpeventual_bit_alignment;
 			const tmpfollow = on.body?.follow;
 			if (!isFollow(tmpfollow)) {
 				throw new Error('invalid node list at Field::follow');

@@ -572,6 +572,7 @@ class Field(Member):
     tail_offset_bit: Optional[int]
     tail_offset_recent: int
     bit_alignment: BitAlignment
+    eventual_bit_alignment: BitAlignment
     follow: Follow
     eventual_follow: Follow
 
@@ -1853,6 +1854,7 @@ def ast2node(ast :JsonAst) -> Program:
                 x = ast.node[i].body["tail_offset_recent"]
                 node[i].tail_offset_recent = x if isinstance(x,int)  else raiseError(TypeError('type mismatch at Field::tail_offset_recent'))
                 node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
+                node[i].eventual_bit_alignment = BitAlignment(ast.node[i].body["eventual_bit_alignment"])
                 node[i].follow = Follow(ast.node[i].body["follow"])
                 node[i].eventual_follow = Follow(ast.node[i].body["eventual_follow"])
             case NodeType.FORMAT:

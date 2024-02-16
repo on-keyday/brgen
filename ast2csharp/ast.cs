@@ -666,6 +666,7 @@ public class Field : Member{
 	public ulong? TailOffsetBit{get;set;}
 	public ulong TailOffsetRecent{get;set;}
 	public BitAlignment BitAlignment{get;set;}
+	public BitAlignment EventualBitAlignment{get;set;}
 	public Follow Follow{get;set;}
 	public Follow EventualFollow{get;set;}
 }
@@ -1450,6 +1451,7 @@ public static class Ast {
                node.TailOffsetBit = ast.Node[i].Body[tail_offset_bit];
                node.TailOffsetRecent = ast.Node[i].Body[tail_offset_recent];
                node.BitAlignment = ast.Node[i].Body[bit_alignment];
+               node.EventualBitAlignment = ast.Node[i].Body[eventual_bit_alignment];
                node.Follow = ast.Node[i].Body[follow];
                node.EventualFollow = ast.Node[i].Body[eventual_follow];
            case NodeType.Format:

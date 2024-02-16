@@ -3026,6 +3026,7 @@ int ast2c_Field_parse(ast2c_Ast* ast,ast2c_Field* s,ast2c_json_handlers* h, void
 	void* tail_offset_bit = h->object_get(h, obj_body, "tail_offset_bit");
 	void* tail_offset_recent = h->object_get(h, obj_body, "tail_offset_recent");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
+	void* eventual_bit_alignment = h->object_get(h, obj_body, "eventual_bit_alignment");
 	void* follow = h->object_get(h, obj_body, "follow");
 	void* eventual_follow = h->object_get(h, obj_body, "eventual_follow");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_Field::loc is null"); } return 0; }
@@ -3040,6 +3041,7 @@ int ast2c_Field_parse(ast2c_Ast* ast,ast2c_Field* s,ast2c_json_handlers* h, void
 	if (!tail_offset_bit) { if(h->error) { h->error(h,tail_offset_bit, "ast2c_Field::tail_offset_bit is null"); } return 0; }
 	if (!tail_offset_recent) { if(h->error) { h->error(h,tail_offset_recent, "ast2c_Field::tail_offset_recent is null"); } return 0; }
 	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_Field::bit_alignment is null"); } return 0; }
+	if (!eventual_bit_alignment) { if(h->error) { h->error(h,eventual_bit_alignment, "ast2c_Field::eventual_bit_alignment is null"); } return 0; }
 	if (!follow) { if(h->error) { h->error(h,follow, "ast2c_Field::follow is null"); } return 0; }
 	if (!eventual_follow) { if(h->error) { h->error(h,eventual_follow, "ast2c_Field::eventual_follow is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {

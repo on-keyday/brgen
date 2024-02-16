@@ -6820,6 +6820,7 @@ pub struct Field {
 	pub tail_offset_bit: Option<u64>,
 	pub tail_offset_recent: u64,
 	pub bit_alignment: BitAlignment,
+	pub eventual_bit_alignment: BitAlignment,
 	pub follow: Follow,
 	pub eventual_follow: Follow,
 }
@@ -8420,6 +8421,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				tail_offset_bit: None,
 				tail_offset_recent: 0,
 				bit_alignment: BitAlignment::ByteAligned,
+				eventual_bit_alignment: BitAlignment::ByteAligned,
 				follow: Follow::Unknown,
 				eventual_follow: Follow::Unknown,
 				})))
@@ -12342,6 +12344,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
 					},
 					None=>return Err(Error::MismatchJSONType(bit_alignment_body.into(),JSONType::String)),
+				};
+				let eventual_bit_alignment_body = match raw_node.body.get("eventual_bit_alignment") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"eventual_bit_alignment")),
+				};
+				node.borrow_mut().eventual_bit_alignment = match eventual_bit_alignment_body.as_str() {
+					Some(v)=>match BitAlignment::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(eventual_bit_alignment_body.into(),JSONType::String)),
 				};
 				let follow_body = match raw_node.body.get("follow") {
 					Some(v)=>v,

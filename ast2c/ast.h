@@ -1223,6 +1223,7 @@ struct ast2c_Field {
 	uint64_t* tail_offset_bit;
 	uint64_t tail_offset_recent;
 	ast2c_BitAlignment bit_alignment;
+	ast2c_BitAlignment eventual_bit_alignment;
 	ast2c_Follow follow;
 	ast2c_Follow eventual_follow;
 };

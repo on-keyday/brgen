@@ -155,6 +155,7 @@ namespace brgen::middle {
                         if (auto field = ast::as<ast::Field>(fields); field) {
                             if (field->field_type->bit_alignment == ast::BitAlignment::not_target) {
                                 field->bit_alignment = ast::BitAlignment::not_target;
+                                field->eventual_bit_alignment = ast::BitAlignment::not_target;
                                 continue;
                             }
 
@@ -234,6 +235,7 @@ namespace brgen::middle {
                     std::optional<size_t> tail_bit_size = 0;
                     size_t tail_offset = 0;
                     ast::Follow current = ast::Follow::unknown;
+                    std::optional<ast::BitAlignment> eventual_alignment;
                     for (auto it = t->fields.rbegin(); it != t->fields.rend(); it++) {
                         if (auto field = ast::as<ast::Field>(*it); field) {
                             if (field->arguments && field->arguments->peek_value && *field->arguments->peek_value) {
@@ -259,6 +261,18 @@ namespace brgen::middle {
                             }
                             assert(current != ast::Follow::unknown);
                             field->eventual_follow = current;
+                            if (eventual_alignment) {
+                                if (field->bit_alignment == ast::BitAlignment::byte_aligned) {
+                                    field->eventual_bit_alignment = ast::BitAlignment::byte_aligned;
+                                }
+                                else {
+                                    field->eventual_bit_alignment = *eventual_alignment;
+                                }
+                            }
+                            else {
+                                field->eventual_bit_alignment = field->bit_alignment;
+                                eventual_alignment = field->bit_alignment;
+                            }
 
                             // calculate tail offset
                             field->tail_offset_bit = tail_bit_size;

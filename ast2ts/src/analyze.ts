@@ -136,6 +136,7 @@ export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
     + offset(from end): ${bitSize(ident.base.tail_offset_bit)}
     + offset(from recent fixed): ${bitSize(ident.base.tail_offset_recent)}
     + align: ${ident.base.bit_alignment}, 
+    + eventual_align: ${ident.base.eventual_bit_alignment}
     + type align: ${ident.base.field_type?.bit_alignment||"unknown"}
     + follow: ${ident.base.follow}
     + eventual_follow: ${ident.base.eventual_follow}`);

@@ -220,6 +220,7 @@ namespace brgen::ast {
             sdebugf(tail_offset_bit);
             sdebugf(tail_offset_recent);
             sdebugf(bit_alignment);
+            sdebugf(eventual_bit_alignment);
             sdebugf(follow);
             sdebugf(eventual_follow);
         }
