@@ -11,7 +11,7 @@ weight: 1
 
 # ToDo
 
-ToDo リストです(2023/2/13)
+ToDo リストです(2023/2/16)
 
 - field arguments の意味づけ
   - ジェネレータ側に対応させる
@@ -72,7 +72,6 @@ ToDo リストです(2023/2/13)
 
   - ツールで補助?
 
-- input.peek = true を指定している場合、フォーマットのサイズ計算から除外する
 - input.subrange 構文で offset を指定している場合、input.peek = true と同等の扱いにする
 - state 変数に readonly 化する構文をつける?
 - available(field,Type) の構文を追加
@@ -97,6 +96,8 @@ ToDo リストです(2023/2/13)
   - main に直 push はやめましょう
 
 - 現在存在する構文の完全なリストの作成
+- Field ノードの各フィールドの意味論をはっきりさせる。
+  - 作者も混乱してきています...
 
 # Done リスト
 
@@ -118,3 +119,5 @@ ToDo リストです(2023/2/13)
   - i.Type 的なものを。段階は 1 段階のみ
 - enum に文字列を割り当てる構文
   - `a = 1, "a"` みたいな
+- input.peek = true を指定している場合、フォーマットのサイズ計算から除外する
+- input = input.subrange(len,offset)で offset 指定されたときフォーマットのサイズ計算から除外する
