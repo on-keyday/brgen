@@ -126,6 +126,215 @@ namespace brgen::middle {
             trv(trv, node);
         }
 
+       private:
+        void analyze_forward_bit_alignment_and_size(ast::StructType* t) {
+            ast::BitAlignment alignment = ast::BitAlignment::byte_aligned;
+            std::optional<size_t> bit_size = 0;
+            size_t offset = 0;
+            ast::Field* prev_field = nullptr;
+            t->bit_size = 0;
+            auto calc_new_align = [&](ast::BitAlignment field_algin) {
+                auto new_align = (int(alignment) - int(ast::BitAlignment::byte_aligned)) + (int(field_algin) - int(ast::BitAlignment::byte_aligned));
+                return ast::BitAlignment(new_align % futils::bit_per_byte);
+            };
+            for (auto& fields : t->fields) {
+                if (auto field = ast::as<ast::Field>(fields); field) {
+                    if (field->field_type->bit_alignment == ast::BitAlignment::not_target) {
+                        field->bit_alignment = ast::BitAlignment::not_target;
+                        field->eventual_bit_alignment = ast::BitAlignment::not_target;
+                        continue;
+                    }
+
+                    if (field->arguments && field->arguments->peek_value &&
+                        *field->arguments->peek_value) {
+                        if (field->field_type->bit_alignment == ast::BitAlignment::not_decidable) {
+                            field->bit_alignment = ast::BitAlignment::not_decidable;
+                        }
+                        else {
+                            field->bit_alignment = calc_new_align(field->field_type->bit_alignment);
+                        }
+                        field->offset_bit = bit_size;
+                        field->offset_recent = offset;
+                        field->eventual_bit_alignment = field->bit_alignment;
+                        continue;
+                    }
+
+                    // calculate follow
+                    if (prev_field) {
+                        if (ast::as<ast::StrLiteralType>(field->field_type)) {
+                            prev_field->follow = ast::Follow::constant;
+                        }
+                        else if (field->field_type->bit_size) {
+                            prev_field->follow = ast::Follow::fixed;
+                        }
+                        else {
+                            prev_field->follow = ast::Follow::normal;
+                        }
+                    }
+                    prev_field = field;
+
+                    // calculate offset
+                    field->offset_bit = bit_size;
+                    field->offset_recent = offset;
+                    if (field->field_type->bit_size) {
+                        offset += *field->field_type->bit_size;
+                    }
+                    else {
+                        offset = 0;
+                    }
+
+                    // calculate bit size
+                    if (bit_size == 0) {
+                        bit_size = field->field_type->bit_size;
+                    }
+                    else if (bit_size) {
+                        if (!field->field_type->bit_size) {
+                            t->fixed_header_size = *bit_size;
+                            bit_size = std::nullopt;
+                        }
+                        else {
+                            *bit_size += *field->field_type->bit_size;
+                        }
+                    }
+
+                    // calculate bit alignment
+                    // TODO(on-keyday): bit alignment and size of field is affected by field argument
+                    if (field->field_type->bit_alignment == ast::BitAlignment::not_decidable) {
+                        alignment = ast::BitAlignment::not_decidable;
+                    }
+                    if (alignment == ast::BitAlignment::not_decidable) {
+                        field->bit_alignment = ast::BitAlignment::not_decidable;
+                        continue;
+                    }
+                    alignment = calc_new_align(field->field_type->bit_alignment);
+                    field->bit_alignment = alignment;
+                }
+            }
+            if (prev_field) {
+                prev_field->follow = ast::Follow::end;
+            }
+            t->bit_alignment = alignment;
+            t->bit_size = bit_size;
+            if (bit_size) {
+                t->fixed_header_size = *bit_size;
+            }
+        }
+
+        void analyze_backward_size_and_follow(ast::StructType* t) {
+            std::optional<size_t> tail_bit_size = 0;
+            size_t tail_offset = 0;
+            ast::Follow current = ast::Follow::unknown;
+            std::optional<ast::BitAlignment> eventual_alignment;
+            for (auto it = t->fields.rbegin(); it != t->fields.rend(); it++) {
+                if (auto field = ast::as<ast::Field>(*it); field) {
+                    if (field->arguments && field->arguments->peek_value && *field->arguments->peek_value) {
+                        field->tail_offset_bit = tail_bit_size;
+                        field->tail_offset_recent = tail_offset;
+
+                        field->eventual_follow = ast::Follow::unknown;
+                        continue;
+                    }
+
+                    // calculate eventual follow
+                    if (field->follow == ast::Follow::unknown) {
+                        continue;
+                    }
+                    if (field->follow == ast::Follow::end) {
+                        current = field->follow;
+                    }
+                    else if (field->follow == ast::Follow::normal) {
+                        current = field->follow;
+                    }
+                    else if (field->follow == ast::Follow::constant) {
+                        current = field->follow;
+                    }
+                    assert(current != ast::Follow::unknown);
+                    field->eventual_follow = current;
+                    if (eventual_alignment) {
+                        if (field->bit_alignment == ast::BitAlignment::byte_aligned) {
+                            field->eventual_bit_alignment = ast::BitAlignment::byte_aligned;
+                        }
+                        else {
+                            field->eventual_bit_alignment = *eventual_alignment;
+                        }
+                    }
+                    else {
+                        field->eventual_bit_alignment = field->bit_alignment;
+                        eventual_alignment = field->bit_alignment;
+                    }
+
+                    // calculate tail offset
+                    field->tail_offset_bit = tail_bit_size;
+                    field->tail_offset_recent = tail_offset;
+                    if (field->field_type->bit_size) {
+                        tail_offset += *field->field_type->bit_size;
+                    }
+                    else {
+                        tail_offset = 0;
+                    }
+
+                    // calculate tail bit size
+                    if (tail_bit_size == 0) {
+                        tail_bit_size = field->field_type->bit_size;
+                    }
+                    else if (tail_bit_size) {
+                        if (!field->field_type->bit_size) {
+                            t->fixed_tail_size = *tail_bit_size;
+                            tail_bit_size = std::nullopt;
+                        }
+                        else {
+                            *tail_bit_size += *field->field_type->bit_size;
+                        }
+                    }
+                }
+            }
+            if (tail_bit_size) {
+                t->fixed_tail_size = *tail_bit_size;
+            }
+        }
+
+        void set_struct_bit_alignment(ast::StructType* t) {
+            analyze_forward_bit_alignment_and_size(t);
+            analyze_backward_size_and_follow(t);
+        }
+
+        void set_struct_union_bit_alignment(ast::StructUnionType* u) {
+            ast::BitAlignment alignment = ast::BitAlignment::not_target;
+            std::optional<size_t> bit_size = 0;
+            for (auto& f : u->structs) {
+                if (f->bit_alignment == ast::BitAlignment::not_target) {
+                    continue;
+                }
+                if (f->bit_alignment == ast::BitAlignment::not_decidable) {
+                    bit_size = std::nullopt;
+                    alignment = ast::BitAlignment::not_decidable;
+                    break;
+                }
+                if (alignment == ast::BitAlignment::not_target) {
+                    alignment = f->bit_alignment;
+                }
+                if (bit_size == 0) {
+                    bit_size = f->bit_size;
+                }
+                else if (bit_size) {
+                    if (bit_size != f->bit_size) {
+                        bit_size = std::nullopt;
+                    }
+                }
+                // if f->bit_size == 0, any of alignment is suitable for union
+                if (alignment != f->bit_alignment && f->bit_size != 0) {
+                    alignment = ast::BitAlignment::not_decidable;
+                    bit_size = std::nullopt;
+                    break;
+                }
+            }
+            if (u->exhaustive && bit_size) {
+                u->bit_size = bit_size;
+            }
+            u->bit_alignment = alignment;
+        }
+
+       public:
         void bit_alignment(const std::shared_ptr<ast::Node>& node) {
             std::set<ast::Type*> tracked;
             auto trv = [&](auto&& f, const std::shared_ptr<ast::Node>& n) -> void {
@@ -142,166 +351,7 @@ namespace brgen::middle {
                     ast::traverse(n, [&](auto&& n) {
                         f(f, n);
                     });
-                    ast::BitAlignment alignment = ast::BitAlignment::byte_aligned;
-                    std::optional<size_t> bit_size = 0;
-                    size_t offset = 0;
-                    ast::Field* prev_field = nullptr;
-                    t->bit_size = 0;
-                    auto calc_new_align = [&](ast::BitAlignment field_algin) {
-                        auto new_align = (int(alignment) - int(ast::BitAlignment::byte_aligned)) + (int(field_algin) - int(ast::BitAlignment::byte_aligned));
-                        return ast::BitAlignment(new_align % futils::bit_per_byte);
-                    };
-                    for (auto& fields : t->fields) {
-                        if (auto field = ast::as<ast::Field>(fields); field) {
-                            if (field->field_type->bit_alignment == ast::BitAlignment::not_target) {
-                                field->bit_alignment = ast::BitAlignment::not_target;
-                                field->eventual_bit_alignment = ast::BitAlignment::not_target;
-                                continue;
-                            }
-
-                            if (field->arguments && field->arguments->peek_value &&
-                                *field->arguments->peek_value) {
-                                if (field->field_type->bit_alignment == ast::BitAlignment::not_decidable) {
-                                    field->bit_alignment = ast::BitAlignment::not_decidable;
-                                }
-                                else {
-                                    field->bit_alignment = calc_new_align(field->field_type->bit_alignment);
-                                }
-                                field->offset_bit = bit_size;
-                                field->offset_recent = offset;
-                                field->eventual_bit_alignment = field->bit_alignment;
-                                continue;
-                            }
-
-                            // calculate follow
-                            if (prev_field) {
-                                if (ast::as<ast::StrLiteralType>(field->field_type)) {
-                                    prev_field->follow = ast::Follow::constant;
-                                }
-                                else if (field->field_type->bit_size) {
-                                    prev_field->follow = ast::Follow::fixed;
-                                }
-                                else {
-                                    prev_field->follow = ast::Follow::normal;
-                                }
-                            }
-                            prev_field = field;
-
-                            // calculate offset
-                            field->offset_bit = bit_size;
-                            field->offset_recent = offset;
-                            if (field->field_type->bit_size) {
-                                offset += *field->field_type->bit_size;
-                            }
-                            else {
-                                offset = 0;
-                            }
-
-                            // calculate bit size
-                            if (bit_size == 0) {
-                                bit_size = field->field_type->bit_size;
-                            }
-                            else if (bit_size) {
-                                if (!field->field_type->bit_size) {
-                                    t->fixed_header_size = *bit_size;
-                                    bit_size = std::nullopt;
-                                }
-                                else {
-                                    *bit_size += *field->field_type->bit_size;
-                                }
-                            }
-
-                            // calculate bit alignment
-                            // TODO(on-keyday): bit alignment and size of field is affected by field argument
-                            if (field->field_type->bit_alignment == ast::BitAlignment::not_decidable) {
-                                alignment = ast::BitAlignment::not_decidable;
-                            }
-                            if (alignment == ast::BitAlignment::not_decidable) {
-                                field->bit_alignment = ast::BitAlignment::not_decidable;
-                                continue;
-                            }
-                            alignment = calc_new_align(field->field_type->bit_alignment);
-                            field->bit_alignment = alignment;
-                        }
-                    }
-                    if (prev_field) {
-                        prev_field->follow = ast::Follow::end;
-                    }
-                    t->bit_alignment = alignment;
-                    t->bit_size = bit_size;
-                    if (bit_size) {
-                        t->fixed_header_size = *bit_size;
-                    }
-                    std::optional<size_t> tail_bit_size = 0;
-                    size_t tail_offset = 0;
-                    ast::Follow current = ast::Follow::unknown;
-                    std::optional<ast::BitAlignment> eventual_alignment;
-                    for (auto it = t->fields.rbegin(); it != t->fields.rend(); it++) {
-                        if (auto field = ast::as<ast::Field>(*it); field) {
-                            if (field->arguments && field->arguments->peek_value && *field->arguments->peek_value) {
-                                field->tail_offset_bit = tail_bit_size;
-                                field->tail_offset_recent = tail_offset;
-
-                                field->eventual_follow = ast::Follow::unknown;
-                                continue;
-                            }
-
-                            // calculate eventual follow
-                            if (field->follow == ast::Follow::unknown) {
-                                continue;
-                            }
-                            if (field->follow == ast::Follow::end) {
-                                current = field->follow;
-                            }
-                            else if (field->follow == ast::Follow::normal) {
-                                current = field->follow;
-                            }
-                            else if (field->follow == ast::Follow::constant) {
-                                current = field->follow;
-                            }
-                            assert(current != ast::Follow::unknown);
-                            field->eventual_follow = current;
-                            if (eventual_alignment) {
-                                if (field->bit_alignment == ast::BitAlignment::byte_aligned) {
-                                    field->eventual_bit_alignment = ast::BitAlignment::byte_aligned;
-                                }
-                                else {
-                                    field->eventual_bit_alignment = *eventual_alignment;
-                                }
-                            }
-                            else {
-                                field->eventual_bit_alignment = field->bit_alignment;
-                                eventual_alignment = field->bit_alignment;
-                            }
-
-                            // calculate tail offset
-                            field->tail_offset_bit = tail_bit_size;
-                            field->tail_offset_recent = tail_offset;
-                            if (field->field_type->bit_size) {
-                                tail_offset += *field->field_type->bit_size;
-                            }
-                            else {
-                                tail_offset = 0;
-                            }
-
-                            // calculate tail bit size
-                            if (tail_bit_size == 0) {
-                                tail_bit_size = field->field_type->bit_size;
-                            }
-                            else if (tail_bit_size) {
-                                if (!field->field_type->bit_size) {
-                                    t->fixed_tail_size = *tail_bit_size;
-                                    tail_bit_size = std::nullopt;
-                                }
-                                else {
-                                    *tail_bit_size += *field->field_type->bit_size;
-                                }
-                            }
-                        }
-                    }
-                    if (tail_bit_size) {
-                        t->fixed_tail_size = *tail_bit_size;
-                    }
+                    set_struct_bit_alignment(t);
                     return;
                 }
                 if (auto t = ast::as<ast::IdentType>(n)) {
@@ -346,39 +396,8 @@ namespace brgen::middle {
                     t->bit_size = t->base.lock()->length * futils::bit_per_byte;
                 }
                 if (auto u = ast::as<ast::StructUnionType>(n)) {
-                    ast::BitAlignment alignment = ast::BitAlignment::not_target;
-                    std::optional<size_t> bit_size = 0;
-                    for (auto& f : u->structs) {
-                        if (f->bit_alignment == ast::BitAlignment::not_target) {
-                            continue;
-                        }
-                        if (f->bit_alignment == ast::BitAlignment::not_decidable) {
-                            bit_size = std::nullopt;
-                            alignment = ast::BitAlignment::not_decidable;
-                            break;
-                        }
-                        if (alignment == ast::BitAlignment::not_target) {
-                            alignment = f->bit_alignment;
-                        }
-                        if (bit_size == 0) {
-                            bit_size = f->bit_size;
-                        }
-                        else if (bit_size) {
-                            if (bit_size != f->bit_size) {
-                                bit_size = std::nullopt;
-                            }
-                        }
-                        // if f->bit_size == 0, any of alignment is suitable for union
-                        if (alignment != f->bit_alignment && f->bit_size != 0) {
-                            alignment = ast::BitAlignment::not_decidable;
-                            bit_size = std::nullopt;
-                            break;
-                        }
-                    }
-                    if (u->exhaustive && bit_size) {
-                        u->bit_size = bit_size;
-                    }
-                    u->bit_alignment = alignment;
+                    set_struct_union_bit_alignment(u);
+                    return;
                 }
                 if (auto u = ast::as<ast::UnionType>(n)) {
                     // not a target
