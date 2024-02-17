@@ -466,7 +466,7 @@ struct ast2c_Type {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	int is_explicit;
-	int non_dynamic;
+	int non_dynamic_allocation;
 	ast2c_BitAlignment bit_alignment;
 	uint64_t* bit_size;
 };
@@ -897,7 +897,7 @@ struct ast2c_IntType {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	int is_explicit;
-	int non_dynamic;
+	int non_dynamic_allocation;
 	ast2c_BitAlignment bit_alignment;
 	uint64_t* bit_size;
 	ast2c_Endian endian;
@@ -912,7 +912,7 @@ struct ast2c_FloatType {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	int is_explicit;
-	int non_dynamic;
+	int non_dynamic_allocation;
 	ast2c_BitAlignment bit_alignment;
 	uint64_t* bit_size;
 	ast2c_Endian endian;
@@ -926,7 +926,7 @@ struct ast2c_IdentType {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	int is_explicit;
-	int non_dynamic;
+	int non_dynamic_allocation;
 	ast2c_BitAlignment bit_alignment;
 	uint64_t* bit_size;
 	ast2c_MemberAccess* import_ref;
@@ -941,7 +941,7 @@ struct ast2c_IntLiteralType {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	int is_explicit;
-	int non_dynamic;
+	int non_dynamic_allocation;
 	ast2c_BitAlignment bit_alignment;
 	uint64_t* bit_size;
 	ast2c_IntLiteral* base;
@@ -954,7 +954,7 @@ struct ast2c_StrLiteralType {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	int is_explicit;
-	int non_dynamic;
+	int non_dynamic_allocation;
 	ast2c_BitAlignment bit_alignment;
 	uint64_t* bit_size;
 	ast2c_StrLiteral* base;
@@ -968,7 +968,7 @@ struct ast2c_VoidType {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	int is_explicit;
-	int non_dynamic;
+	int non_dynamic_allocation;
 	ast2c_BitAlignment bit_alignment;
 	uint64_t* bit_size;
 };
@@ -980,7 +980,7 @@ struct ast2c_BoolType {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	int is_explicit;
-	int non_dynamic;
+	int non_dynamic_allocation;
 	ast2c_BitAlignment bit_alignment;
 	uint64_t* bit_size;
 };
@@ -992,7 +992,7 @@ struct ast2c_ArrayType {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	int is_explicit;
-	int non_dynamic;
+	int non_dynamic_allocation;
 	ast2c_BitAlignment bit_alignment;
 	uint64_t* bit_size;
 	ast2c_Loc end_loc;
@@ -1008,7 +1008,7 @@ struct ast2c_FunctionType {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	int is_explicit;
-	int non_dynamic;
+	int non_dynamic_allocation;
 	ast2c_BitAlignment bit_alignment;
 	uint64_t* bit_size;
 	ast2c_Type* return_type;
@@ -1023,7 +1023,7 @@ struct ast2c_StructType {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	int is_explicit;
-	int non_dynamic;
+	int non_dynamic_allocation;
 	ast2c_BitAlignment bit_alignment;
 	uint64_t* bit_size;
 	ast2c_Member** fields;
@@ -1041,7 +1041,7 @@ struct ast2c_StructUnionType {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	int is_explicit;
-	int non_dynamic;
+	int non_dynamic_allocation;
 	ast2c_BitAlignment bit_alignment;
 	uint64_t* bit_size;
 	ast2c_Expr* cond;
@@ -1062,7 +1062,7 @@ struct ast2c_UnionType {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	int is_explicit;
-	int non_dynamic;
+	int non_dynamic_allocation;
 	ast2c_BitAlignment bit_alignment;
 	uint64_t* bit_size;
 	ast2c_Expr* cond;
@@ -1079,7 +1079,7 @@ struct ast2c_RangeType {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	int is_explicit;
-	int non_dynamic;
+	int non_dynamic_allocation;
 	ast2c_BitAlignment bit_alignment;
 	uint64_t* bit_size;
 	ast2c_Type* base_type;
@@ -1093,7 +1093,7 @@ struct ast2c_EnumType {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	int is_explicit;
-	int non_dynamic;
+	int non_dynamic_allocation;
 	ast2c_BitAlignment bit_alignment;
 	uint64_t* bit_size;
 	ast2c_Enum* base;
@@ -1106,7 +1106,7 @@ struct ast2c_MetaType {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	int is_explicit;
-	int non_dynamic;
+	int non_dynamic_allocation;
 	ast2c_BitAlignment bit_alignment;
 	uint64_t* bit_size;
 };
@@ -1118,7 +1118,7 @@ struct ast2c_OptionalType {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	int is_explicit;
-	int non_dynamic;
+	int non_dynamic_allocation;
 	ast2c_BitAlignment bit_alignment;
 	uint64_t* bit_size;
 	ast2c_Type* base_type;
@@ -1131,7 +1131,7 @@ struct ast2c_GenericType {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	int is_explicit;
-	int non_dynamic;
+	int non_dynamic_allocation;
 	ast2c_BitAlignment bit_alignment;
 	uint64_t* bit_size;
 	ast2c_Member* belong;

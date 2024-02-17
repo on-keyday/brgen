@@ -127,45 +127,43 @@ namespace j2cp2 {
             }
         }
 
-        void write_bit_fields(std::string_view prefix, std::vector<std::shared_ptr<ast::Field>>& non_align, size_t bit_size, bool is_int_set, bool include_non_simple) {
-            if (is_int_set && !include_non_simple) {
-                w.write("::futils::binary::flags_t<std::uint", brgen::nums(bit_size), "_t");
-                for (auto& n : non_align) {
-                    auto type = n->field_type;
-                    if (auto ident = ast::as<ast::IdentType>(type); ident) {
-                        type = ident->base.lock();
-                    }
-                    if (auto int_ty = ast::as<ast::IntType>(type); int_ty) {
-                        w.write(", ", brgen::nums(*int_ty->bit_size));
-                    }
-                    else if (auto enum_ty = ast::as<ast::EnumType>(type); enum_ty) {
-                        auto bit_size = enum_ty->base.lock()->base_type->bit_size;
-                        w.write(", ", brgen::nums(*bit_size));
-                    }
+        void write_bit_fields(std::string_view prefix, std::vector<std::shared_ptr<ast::Field>>& non_align, size_t bit_size) {
+            w.write("::futils::binary::flags_t<std::uint", brgen::nums(bit_size), "_t");
+            for (auto& n : non_align) {
+                auto type = n->field_type;
+                if (auto ident = ast::as<ast::IdentType>(type); ident) {
+                    type = ident->base.lock();
                 }
-                auto seq = get_seq();
-                w.writeln("> flags_", brgen::nums(seq), "_;");
-                size_t i = 0;
-                for (auto& n : non_align) {
-                    auto type = n->field_type;
-                    if (auto ident = ast::as<ast::IdentType>(type); ident) {
-                        type = ident->base.lock();
-                    }
-                    if (auto int_ty = ast::as<ast::IntType>(type); int_ty) {
-                        map_line(n->loc);
-                        w.writeln("bits_flag_alias_method(flags_", brgen::nums(seq), "_,", brgen::nums(i), ",", n->ident->ident, ");");
-                        str.map_ident(n->ident, "${THIS}", n->ident->ident + "()");
-                    }
-                    else if (auto enum_ty = ast::as<ast::EnumType>(type); enum_ty) {
-                        auto enum_ = enum_ty->base.lock();
-                        line_map.push_back({n->loc, w.line_count()});
-                        w.writeln("bits_flag_alias_method_with_enum(flags_", brgen::nums(seq), "_,", brgen::nums(i), ",", n->ident->ident, ",", enum_->ident->ident, ");");
-                        str.map_ident(n->ident, "${THIS}", prefix, n->ident->ident + "()");
-                    }
-                    i++;
+                if (auto int_ty = ast::as<ast::IntType>(type); int_ty) {
+                    w.write(", ", brgen::nums(*int_ty->bit_size));
                 }
-                bit_fields[non_align.back().get()] = {brgen::concat("flags_", brgen::nums(seq), "_"), non_align};
+                else if (auto enum_ty = ast::as<ast::EnumType>(type); enum_ty) {
+                    auto bit_size = enum_ty->base.lock()->base_type->bit_size;
+                    w.write(", ", brgen::nums(*bit_size));
+                }
             }
+            auto seq = get_seq();
+            w.writeln("> flags_", brgen::nums(seq), "_;");
+            size_t i = 0;
+            for (auto& n : non_align) {
+                auto type = n->field_type;
+                if (auto ident = ast::as<ast::IdentType>(type); ident) {
+                    type = ident->base.lock();
+                }
+                if (auto int_ty = ast::as<ast::IntType>(type); int_ty) {
+                    map_line(n->loc);
+                    w.writeln("bits_flag_alias_method(flags_", brgen::nums(seq), "_,", brgen::nums(i), ",", n->ident->ident, ");");
+                    str.map_ident(n->ident, "${THIS}", n->ident->ident + "()");
+                }
+                else if (auto enum_ty = ast::as<ast::EnumType>(type); enum_ty) {
+                    auto enum_ = enum_ty->base.lock();
+                    line_map.push_back({n->loc, w.line_count()});
+                    w.writeln("bits_flag_alias_method_with_enum(flags_", brgen::nums(seq), "_,", brgen::nums(i), ",", n->ident->ident, ",", enum_->ident->ident, ");");
+                    str.map_ident(n->ident, "${THIS}", prefix, n->ident->ident + "()");
+                }
+                i++;
+            }
+            bit_fields[non_align.back().get()] = {brgen::concat("flags_", brgen::nums(seq), "_"), non_align};
         }
 
         std::string get_type_name(const std::shared_ptr<ast::Type>& type, bool align = false) {
@@ -183,7 +181,7 @@ namespace j2cp2 {
                 return enum_ty->base.lock()->ident->ident;
             }
             if (auto arr_ty = ast::as<ast::ArrayType>(type); arr_ty) {
-                if (arr_ty->non_dynamic) {
+                if (arr_ty->non_dynamic_allocation) {
                     auto len = str.to_string(arr_ty->length);
                     auto typ = get_type_name(arr_ty->base_type);
                     return brgen::concat("std::array<", typ, ",", len, ">");
@@ -468,6 +466,130 @@ namespace j2cp2 {
             }
         }
 
+        bool set_hidden_ident(const std::shared_ptr<ast::Field>& f) {
+            if (!f->ident) {
+                auto h = brgen::concat("hidden_field_", brgen::nums(get_seq()));
+                f->ident = std::make_shared<ast::Ident>();
+                f->ident->ident = std::move(h);
+                f->ident->base = f;
+                return true;
+            }
+            return false;
+        }
+
+        std::shared_ptr<ast::Type> unwrap_ident_type(const std::shared_ptr<ast::Type>& type) {
+            if (auto ident = ast::as<ast::IdentType>(type); ident) {
+                return ident->base.lock();
+            }
+            return type;
+        }
+
+        void write_field(
+            std::vector<std::shared_ptr<ast::Field>>& non_aligned,
+            size_t& bit_size,
+            size_t i,
+            const std::shared_ptr<ast::StructType>& s,
+            const std::shared_ptr<ast::Field>& f, std::string_view prefix) {
+            futils::helper::DynDefer d;
+            auto is_simple_type = [&](const std::shared_ptr<ast::Type>& type) {
+                return ast::as<ast::IntType>(type) != nullptr || ast::as<ast::EnumType>(type) != nullptr;
+            };
+            bool hidden = set_hidden_ident(f);
+            clean_ident(f->ident->ident);
+            auto type = unwrap_ident_type(f->field_type);
+            if (f->bit_alignment == ast::BitAlignment::not_target) {
+                return;
+            }
+            if (f->bit_alignment != f->eventual_bit_alignment) {
+                bit_size += *type->bit_size;
+                non_aligned.push_back(ast::cast_to<ast::Field>(f));
+                return;
+            }
+            if (non_aligned.size() > 0) {
+                if (!type->bit_size) {
+                    return;
+                }
+                bit_size += *type->bit_size;
+                non_aligned.push_back(ast::cast_to<ast::Field>(f));
+                write_bit_fields(prefix, non_aligned, bit_size);
+                non_aligned.clear();
+                return;
+            }
+            if (auto union_ty = ast::as<ast::StructUnionType>(type)) {
+                write_struct_union(union_ty);
+                return;
+            }
+            if (hidden) {
+                w.writeln("private:");
+                d = futils::helper::defer_ex([&] {
+                    w.writeln("public:");
+                });
+            }
+            if (auto int_ty = ast::as<ast::IntType>(type); int_ty) {
+                if (int_ty->is_common_supported) {
+                    map_line(f->loc);
+                    w.writeln("std::", int_ty->is_signed ? "" : "u", "int", brgen::nums(*int_ty->bit_size), "_t ", f->ident->ident, " = 0", ";");
+                    str.map_ident(f->ident, prefix, f->ident->ident);
+                }
+                else if (*int_ty->bit_size == 24) {
+                    map_line(f->loc);
+                    w.writeln("std::uint32_t ", f->ident->ident, " = 0; // 24 bit int");
+                    str.map_ident(f->ident, prefix, f->ident->ident);
+                }
+            }
+            if (auto float_ty = ast::as<ast::FloatType>(type); float_ty) {
+                if (float_ty->is_common_supported) {
+                    map_line(f->loc);
+                    w.writeln("::futils::binary::float", brgen::nums(*float_ty->bit_size), "_t ", f->ident->ident, " = 0", ";");
+                    str.map_ident(f->ident, prefix, f->ident->ident);
+                }
+            }
+            if (auto enum_ty = ast::as<ast::EnumType>(type); enum_ty) {
+                auto enum_ = enum_ty->base.lock();
+                auto bit_size = enum_->base_type->bit_size;
+                map_line(f->loc);
+                w.writeln("std::uint", brgen::nums(*bit_size), "_t ", f->ident->ident, "_data = 0;");
+                map_line(f->loc);
+                w.writeln(enum_->ident->ident, " ", f->ident->ident, "() const { return static_cast<", enum_->ident->ident, ">(this->", f->ident->ident, "_data); }");
+                w.writeln("void ", f->ident->ident, "(", enum_->ident->ident, " v) { this->", f->ident->ident, "_data = static_cast<std::uint", brgen::nums(*bit_size), "_t>(v); }");
+                str.map_ident(f->ident, prefix, f->ident->ident + "()");
+            }
+            if (auto arr_ty = ast::as<ast::ArrayType>(type); arr_ty) {
+                auto ty = get_type_name(type);
+                map_line(f->loc);
+                w.writeln(ty, " ", f->ident->ident, ";");
+                if (auto range = ast::as<ast::Range>(arr_ty->length)) {
+                    if (f->eventual_follow == ast::Follow::end) {
+                        later_size[f.get()].size = f->tail_offset_recent;
+                    }
+                    if (f->follow == ast::Follow::constant) {
+                        auto& later = later_size[f.get()];
+                        for (auto j = i + 1; j < s->fields.size(); j++) {
+                            auto& f2 = s->fields[j];
+                            if (auto f2_ = ast::as<ast::Field>(f2); f2_) {
+                                later.next_field = ast::cast_to<ast::Field>(f2);
+                                break;
+                            }
+                        }
+                        assert(later.next_field);
+                    }
+                }
+                str.map_ident(f->ident, prefix, f->ident->ident);
+            }
+            if (auto struct_ty = ast::as<ast::StructType>(type)) {
+                auto type_name = get_type_name(type);
+                map_line(f->loc);
+                w.writeln(type_name, " ", f->ident->ident, ";");
+                str.map_ident(f->ident, prefix, f->ident->ident);
+            }
+            if (auto str_type = ast::as<ast::StrLiteralType>(type)) {
+                auto len = str_type->strong_ref->length;
+                map_line(f->loc);
+                w.writeln("//", str_type->strong_ref->value, " (", brgen::nums(len), " bytes)");
+                str.map_ident(f->ident, str_type->strong_ref->value);
+            }
+        }
+
         void write_struct_type(std::string_view struct_name, const std::shared_ptr<ast::StructType>& s, const std::string& prefix = "") {
             auto member = ast::as<ast::Member>(s->base.lock());
             bool has_ident = member && member->ident;
@@ -482,124 +604,10 @@ namespace j2cp2 {
                 bool include_non_simple = false;
                 size_t bit_size = 0;
                 std::vector<std::shared_ptr<ast::Field>> non_aligned;
-                auto is_simple_type = [&](const std::shared_ptr<ast::Type>& type) {
-                    return ast::as<ast::IntType>(type) != nullptr || ast::as<ast::EnumType>(type) != nullptr;
-                };
                 for (auto i = 0; i < s->fields.size(); i++) {
                     auto& field = s->fields[i];
                     if (auto f = ast::as<ast::Field>(field); f) {
-                        auto type = f->field_type;
-                        futils::helper::DynDefer d;
-                        bool hidden = false;
-                        if (!f->ident) {
-                            auto h = brgen::concat("hidden_field_", brgen::nums(get_seq()));
-                            f->ident = std::make_shared<ast::Ident>();
-                            f->ident->ident = std::move(h);
-                            f->ident->base = field;
-                            hidden = true;
-                        }
-                        clean_ident(f->ident->ident);
-                        if (auto ident = ast::as<ast::IdentType>(type); ident) {
-                            type = ident->base.lock();
-                        }
-                        if (f->bit_alignment == ast::BitAlignment::not_target) {
-                            continue;
-                        }
-                        if (f->bit_alignment != ast::BitAlignment::byte_aligned) {
-                            is_int_set = is_int_set && type->non_dynamic;
-                            include_non_simple = include_non_simple || !is_simple_type(type);
-                            bit_size += *type->bit_size;
-                            non_aligned.push_back(ast::cast_to<ast::Field>(field));
-                            continue;
-                        }
-                        if (non_aligned.size() > 0) {
-                            is_int_set = is_int_set && type->non_dynamic;
-                            include_non_simple = include_non_simple || !is_simple_type(type);
-                            if (!type->bit_size) {
-                                continue;  // TODO(on-keyday): make arbitrary bit size int
-                            }
-                            bit_size += *type->bit_size;
-                            non_aligned.push_back(ast::cast_to<ast::Field>(field));
-                            write_bit_fields(prefix, non_aligned, bit_size, is_int_set, include_non_simple);
-                            non_aligned.clear();
-                            is_int_set = true;
-                            include_non_simple = false;
-                            bit_size = 0;
-                            continue;
-                        }
-                        if (auto union_ty = ast::as<ast::StructUnionType>(type)) {
-                            write_struct_union(union_ty);
-                            continue;
-                        }
-                        if (hidden) {
-                            w.writeln("private:");
-                            d = futils::helper::defer_ex([&] {
-                                w.writeln("public:");
-                            });
-                        }
-                        if (auto int_ty = ast::as<ast::IntType>(type); int_ty) {
-                            if (int_ty->is_common_supported) {
-                                map_line(f->loc);
-                                w.writeln("std::", int_ty->is_signed ? "" : "u", "int", brgen::nums(*int_ty->bit_size), "_t ", f->ident->ident, " = 0", ";");
-                                str.map_ident(f->ident, prefix, f->ident->ident);
-                            }
-                            else if (*int_ty->bit_size == 24) {
-                                map_line(f->loc);
-                                w.writeln("std::uint32_t ", f->ident->ident, " = 0; // 24 bit int");
-                                str.map_ident(f->ident, prefix, f->ident->ident);
-                            }
-                        }
-                        if (auto float_ty = ast::as<ast::FloatType>(type); float_ty) {
-                            if (float_ty->is_common_supported) {
-                                map_line(f->loc);
-                                w.writeln("::futils::binary::float", brgen::nums(*float_ty->bit_size), "_t ", f->ident->ident, " = 0", ";");
-                                str.map_ident(f->ident, prefix, f->ident->ident);
-                            }
-                        }
-                        if (auto enum_ty = ast::as<ast::EnumType>(type); enum_ty) {
-                            auto enum_ = enum_ty->base.lock();
-                            auto bit_size = enum_->base_type->bit_size;
-                            map_line(f->loc);
-                            w.writeln("std::uint", brgen::nums(*bit_size), "_t ", f->ident->ident, "_data = 0;");
-                            map_line(f->loc);
-                            w.writeln(enum_->ident->ident, " ", f->ident->ident, "() const { return static_cast<", enum_->ident->ident, ">(this->", f->ident->ident, "_data); }");
-                            w.writeln("void ", f->ident->ident, "(", enum_->ident->ident, " v) { this->", f->ident->ident, "_data = static_cast<std::uint", brgen::nums(*bit_size), "_t>(v); }");
-                            str.map_ident(f->ident, prefix, f->ident->ident + "()");
-                        }
-                        if (auto arr_ty = ast::as<ast::ArrayType>(type); arr_ty) {
-                            auto ty = get_type_name(type);
-                            map_line(f->loc);
-                            w.writeln(ty, " ", f->ident->ident, ";");
-                            if (auto range = ast::as<ast::Range>(arr_ty->length)) {
-                                if (f->eventual_follow == ast::Follow::end) {
-                                    later_size[f].size = f->tail_offset_recent;
-                                }
-                                if (f->follow == ast::Follow::constant) {
-                                    auto& later = later_size[f];
-                                    for (auto j = i + 1; j < s->fields.size(); j++) {
-                                        auto& f2 = s->fields[j];
-                                        if (auto f2_ = ast::as<ast::Field>(f2); f2_) {
-                                            later.next_field = ast::cast_to<ast::Field>(f2);
-                                            break;
-                                        }
-                                    }
-                                    assert(later.next_field);
-                                }
-                            }
-                            str.map_ident(f->ident, prefix, f->ident->ident);
-                        }
-                        if (auto struct_ty = ast::as<ast::StructType>(type)) {
-                            auto type_name = get_type_name(type);
-                            map_line(f->loc);
-                            w.writeln(type_name, " ", f->ident->ident, ";");
-                            str.map_ident(f->ident, prefix, f->ident->ident);
-                        }
-                        if (auto str_type = ast::as<ast::StrLiteralType>(type)) {
-                            auto len = str_type->strong_ref->length;
-                            map_line(f->loc);
-                            w.writeln("//", str_type->strong_ref->value, " (", brgen::nums(len), " bytes)");
-                            str.map_ident(f->ident, str_type->strong_ref->value);
-                        }
+                        write_field(non_aligned, bit_size, i, s, ast::cast_to<ast::Field>(field), prefix);
                     }
                 }
                 if (has_ident) {
@@ -636,8 +644,7 @@ namespace j2cp2 {
                     map_line(c->loc);
                     w.write(c->ident->ident);
                     if (c->value) {
-                        ast::tool::Stringer s;
-                        w.write(" = ", s.to_string(c->value));
+                        w.write(" = ", str.to_string(c->value));
                     }
                     w.writeln(",");
                     str.map_ident(c->ident, enum_->ident->ident, "::", c->ident->ident);
@@ -1080,7 +1087,7 @@ namespace j2cp2 {
                     auto tmp = brgen::concat("tmp_", brgen::nums(get_seq()), "_");
                     auto type = get_type_name(arr_ty->base_type);
                     map_line(loc);
-                    if (!arr_ty->non_dynamic) {
+                    if (!arr_ty->non_dynamic_allocation) {
                         w.writeln(ident, ".clear();");
                     }
                     std::string tmp_i;
@@ -1109,7 +1116,7 @@ namespace j2cp2 {
                             w.indent_writeln("break;");
                             w.writeln("}");
                         }
-                        if (arr_ty->non_dynamic) {
+                        if (arr_ty->non_dynamic_allocation) {
                             write_field_decode_impl(loc, brgen::concat(ident, "[", tmp_i, "]"), arr_ty->base_type, fi);
                         }
                         else {

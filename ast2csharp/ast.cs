@@ -219,7 +219,7 @@ public interface Stmt : Node {
 }
 public interface Type : Node {
 	public bool IsExplicit {get; set;}
-	public bool NonDynamic {get; set;}
+	public bool NonDynamicAllocation {get; set;}
 	public BitAlignment BitAlignment {get; set;}
 	public ulong? BitSize {get; set;}
 }
@@ -461,7 +461,7 @@ public class ImplicitYield : Stmt{
 public class IntType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
-	public bool NonDynamic{get;set;}
+	public bool NonDynamicAllocation{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public ulong? BitSize{get;set;}
 	public Endian Endian{get;set;}
@@ -471,7 +471,7 @@ public class IntType : Type{
 public class FloatType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
-	public bool NonDynamic{get;set;}
+	public bool NonDynamicAllocation{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public ulong? BitSize{get;set;}
 	public Endian Endian{get;set;}
@@ -480,7 +480,7 @@ public class FloatType : Type{
 public class IdentType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
-	public bool NonDynamic{get;set;}
+	public bool NonDynamicAllocation{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public ulong? BitSize{get;set;}
 	public MemberAccess? ImportRef{get;set;}
@@ -490,7 +490,7 @@ public class IdentType : Type{
 public class IntLiteralType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
-	public bool NonDynamic{get;set;}
+	public bool NonDynamicAllocation{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public ulong? BitSize{get;set;}
 	public IntLiteral? Base{get;set;}
@@ -498,7 +498,7 @@ public class IntLiteralType : Type{
 public class StrLiteralType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
-	public bool NonDynamic{get;set;}
+	public bool NonDynamicAllocation{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public ulong? BitSize{get;set;}
 	public StrLiteral? Base{get;set;}
@@ -507,21 +507,21 @@ public class StrLiteralType : Type{
 public class VoidType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
-	public bool NonDynamic{get;set;}
+	public bool NonDynamicAllocation{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public ulong? BitSize{get;set;}
 }
 public class BoolType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
-	public bool NonDynamic{get;set;}
+	public bool NonDynamicAllocation{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public ulong? BitSize{get;set;}
 }
 public class ArrayType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
-	public bool NonDynamic{get;set;}
+	public bool NonDynamicAllocation{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public ulong? BitSize{get;set;}
 	public Loc EndLoc{get;set;}
@@ -532,7 +532,7 @@ public class ArrayType : Type{
 public class FunctionType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
-	public bool NonDynamic{get;set;}
+	public bool NonDynamicAllocation{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public ulong? BitSize{get;set;}
 	public Type? ReturnType{get;set;}
@@ -541,7 +541,7 @@ public class FunctionType : Type{
 public class StructType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
-	public bool NonDynamic{get;set;}
+	public bool NonDynamicAllocation{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public ulong? BitSize{get;set;}
 	public List<Member>? Fields{get;set;}
@@ -553,7 +553,7 @@ public class StructType : Type{
 public class StructUnionType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
-	public bool NonDynamic{get;set;}
+	public bool NonDynamicAllocation{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public ulong? BitSize{get;set;}
 	public Expr? Cond{get;set;}
@@ -566,7 +566,7 @@ public class StructUnionType : Type{
 public class UnionType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
-	public bool NonDynamic{get;set;}
+	public bool NonDynamicAllocation{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public ulong? BitSize{get;set;}
 	public Expr? Cond{get;set;}
@@ -577,7 +577,7 @@ public class UnionType : Type{
 public class RangeType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
-	public bool NonDynamic{get;set;}
+	public bool NonDynamicAllocation{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public ulong? BitSize{get;set;}
 	public Type? BaseType{get;set;}
@@ -586,7 +586,7 @@ public class RangeType : Type{
 public class EnumType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
-	public bool NonDynamic{get;set;}
+	public bool NonDynamicAllocation{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public ulong? BitSize{get;set;}
 	public Enum? Base{get;set;}
@@ -594,14 +594,14 @@ public class EnumType : Type{
 public class MetaType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
-	public bool NonDynamic{get;set;}
+	public bool NonDynamicAllocation{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public ulong? BitSize{get;set;}
 }
 public class OptionalType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
-	public bool NonDynamic{get;set;}
+	public bool NonDynamicAllocation{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public ulong? BitSize{get;set;}
 	public Type? BaseType{get;set;}
@@ -609,7 +609,7 @@ public class OptionalType : Type{
 public class GenericType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
-	public bool NonDynamic{get;set;}
+	public bool NonDynamicAllocation{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public ulong? BitSize{get;set;}
 	public Member? Belong{get;set;}
@@ -1246,7 +1246,7 @@ public static class Ast {
                var node = nodes[i] as IntType;
                node.Loc = ast.Node[i].Body[loc];
                node.IsExplicit = ast.Node[i].Body[is_explicit];
-               node.NonDynamic = ast.Node[i].Body[non_dynamic];
+               node.NonDynamicAllocation = ast.Node[i].Body[non_dynamic_allocation];
                node.BitAlignment = ast.Node[i].Body[bit_alignment];
                node.BitSize = ast.Node[i].Body[bit_size];
                node.Endian = ast.Node[i].Body[endian];
@@ -1256,7 +1256,7 @@ public static class Ast {
                var node = nodes[i] as FloatType;
                node.Loc = ast.Node[i].Body[loc];
                node.IsExplicit = ast.Node[i].Body[is_explicit];
-               node.NonDynamic = ast.Node[i].Body[non_dynamic];
+               node.NonDynamicAllocation = ast.Node[i].Body[non_dynamic_allocation];
                node.BitAlignment = ast.Node[i].Body[bit_alignment];
                node.BitSize = ast.Node[i].Body[bit_size];
                node.Endian = ast.Node[i].Body[endian];
@@ -1265,7 +1265,7 @@ public static class Ast {
                var node = nodes[i] as IdentType;
                node.Loc = ast.Node[i].Body[loc];
                node.IsExplicit = ast.Node[i].Body[is_explicit];
-               node.NonDynamic = ast.Node[i].Body[non_dynamic];
+               node.NonDynamicAllocation = ast.Node[i].Body[non_dynamic_allocation];
                node.BitAlignment = ast.Node[i].Body[bit_alignment];
                node.BitSize = ast.Node[i].Body[bit_size];
                node.ImportRef = ast.Node[i].Body[import_ref];
@@ -1275,7 +1275,7 @@ public static class Ast {
                var node = nodes[i] as IntLiteralType;
                node.Loc = ast.Node[i].Body[loc];
                node.IsExplicit = ast.Node[i].Body[is_explicit];
-               node.NonDynamic = ast.Node[i].Body[non_dynamic];
+               node.NonDynamicAllocation = ast.Node[i].Body[non_dynamic_allocation];
                node.BitAlignment = ast.Node[i].Body[bit_alignment];
                node.BitSize = ast.Node[i].Body[bit_size];
                node.Base = ast.Node[i].Body[base];
@@ -1283,7 +1283,7 @@ public static class Ast {
                var node = nodes[i] as StrLiteralType;
                node.Loc = ast.Node[i].Body[loc];
                node.IsExplicit = ast.Node[i].Body[is_explicit];
-               node.NonDynamic = ast.Node[i].Body[non_dynamic];
+               node.NonDynamicAllocation = ast.Node[i].Body[non_dynamic_allocation];
                node.BitAlignment = ast.Node[i].Body[bit_alignment];
                node.BitSize = ast.Node[i].Body[bit_size];
                node.Base = ast.Node[i].Body[base];
@@ -1292,21 +1292,21 @@ public static class Ast {
                var node = nodes[i] as VoidType;
                node.Loc = ast.Node[i].Body[loc];
                node.IsExplicit = ast.Node[i].Body[is_explicit];
-               node.NonDynamic = ast.Node[i].Body[non_dynamic];
+               node.NonDynamicAllocation = ast.Node[i].Body[non_dynamic_allocation];
                node.BitAlignment = ast.Node[i].Body[bit_alignment];
                node.BitSize = ast.Node[i].Body[bit_size];
            case NodeType.BoolType:
                var node = nodes[i] as BoolType;
                node.Loc = ast.Node[i].Body[loc];
                node.IsExplicit = ast.Node[i].Body[is_explicit];
-               node.NonDynamic = ast.Node[i].Body[non_dynamic];
+               node.NonDynamicAllocation = ast.Node[i].Body[non_dynamic_allocation];
                node.BitAlignment = ast.Node[i].Body[bit_alignment];
                node.BitSize = ast.Node[i].Body[bit_size];
            case NodeType.ArrayType:
                var node = nodes[i] as ArrayType;
                node.Loc = ast.Node[i].Body[loc];
                node.IsExplicit = ast.Node[i].Body[is_explicit];
-               node.NonDynamic = ast.Node[i].Body[non_dynamic];
+               node.NonDynamicAllocation = ast.Node[i].Body[non_dynamic_allocation];
                node.BitAlignment = ast.Node[i].Body[bit_alignment];
                node.BitSize = ast.Node[i].Body[bit_size];
                node.EndLoc = ast.Node[i].Body[end_loc];
@@ -1317,7 +1317,7 @@ public static class Ast {
                var node = nodes[i] as FunctionType;
                node.Loc = ast.Node[i].Body[loc];
                node.IsExplicit = ast.Node[i].Body[is_explicit];
-               node.NonDynamic = ast.Node[i].Body[non_dynamic];
+               node.NonDynamicAllocation = ast.Node[i].Body[non_dynamic_allocation];
                node.BitAlignment = ast.Node[i].Body[bit_alignment];
                node.BitSize = ast.Node[i].Body[bit_size];
                node.ReturnType = ast.Node[i].Body[return_type];
@@ -1326,7 +1326,7 @@ public static class Ast {
                var node = nodes[i] as StructType;
                node.Loc = ast.Node[i].Body[loc];
                node.IsExplicit = ast.Node[i].Body[is_explicit];
-               node.NonDynamic = ast.Node[i].Body[non_dynamic];
+               node.NonDynamicAllocation = ast.Node[i].Body[non_dynamic_allocation];
                node.BitAlignment = ast.Node[i].Body[bit_alignment];
                node.BitSize = ast.Node[i].Body[bit_size];
                node.Fields = ast.Node[i].Body[fields];
@@ -1338,7 +1338,7 @@ public static class Ast {
                var node = nodes[i] as StructUnionType;
                node.Loc = ast.Node[i].Body[loc];
                node.IsExplicit = ast.Node[i].Body[is_explicit];
-               node.NonDynamic = ast.Node[i].Body[non_dynamic];
+               node.NonDynamicAllocation = ast.Node[i].Body[non_dynamic_allocation];
                node.BitAlignment = ast.Node[i].Body[bit_alignment];
                node.BitSize = ast.Node[i].Body[bit_size];
                node.Cond = ast.Node[i].Body[cond];
@@ -1351,7 +1351,7 @@ public static class Ast {
                var node = nodes[i] as UnionType;
                node.Loc = ast.Node[i].Body[loc];
                node.IsExplicit = ast.Node[i].Body[is_explicit];
-               node.NonDynamic = ast.Node[i].Body[non_dynamic];
+               node.NonDynamicAllocation = ast.Node[i].Body[non_dynamic_allocation];
                node.BitAlignment = ast.Node[i].Body[bit_alignment];
                node.BitSize = ast.Node[i].Body[bit_size];
                node.Cond = ast.Node[i].Body[cond];
@@ -1362,7 +1362,7 @@ public static class Ast {
                var node = nodes[i] as RangeType;
                node.Loc = ast.Node[i].Body[loc];
                node.IsExplicit = ast.Node[i].Body[is_explicit];
-               node.NonDynamic = ast.Node[i].Body[non_dynamic];
+               node.NonDynamicAllocation = ast.Node[i].Body[non_dynamic_allocation];
                node.BitAlignment = ast.Node[i].Body[bit_alignment];
                node.BitSize = ast.Node[i].Body[bit_size];
                node.BaseType = ast.Node[i].Body[base_type];
@@ -1371,7 +1371,7 @@ public static class Ast {
                var node = nodes[i] as EnumType;
                node.Loc = ast.Node[i].Body[loc];
                node.IsExplicit = ast.Node[i].Body[is_explicit];
-               node.NonDynamic = ast.Node[i].Body[non_dynamic];
+               node.NonDynamicAllocation = ast.Node[i].Body[non_dynamic_allocation];
                node.BitAlignment = ast.Node[i].Body[bit_alignment];
                node.BitSize = ast.Node[i].Body[bit_size];
                node.Base = ast.Node[i].Body[base];
@@ -1379,14 +1379,14 @@ public static class Ast {
                var node = nodes[i] as MetaType;
                node.Loc = ast.Node[i].Body[loc];
                node.IsExplicit = ast.Node[i].Body[is_explicit];
-               node.NonDynamic = ast.Node[i].Body[non_dynamic];
+               node.NonDynamicAllocation = ast.Node[i].Body[non_dynamic_allocation];
                node.BitAlignment = ast.Node[i].Body[bit_alignment];
                node.BitSize = ast.Node[i].Body[bit_size];
            case NodeType.OptionalType:
                var node = nodes[i] as OptionalType;
                node.Loc = ast.Node[i].Body[loc];
                node.IsExplicit = ast.Node[i].Body[is_explicit];
-               node.NonDynamic = ast.Node[i].Body[non_dynamic];
+               node.NonDynamicAllocation = ast.Node[i].Body[non_dynamic_allocation];
                node.BitAlignment = ast.Node[i].Body[bit_alignment];
                node.BitSize = ast.Node[i].Body[bit_size];
                node.BaseType = ast.Node[i].Body[base_type];
@@ -1394,7 +1394,7 @@ public static class Ast {
                var node = nodes[i] as GenericType;
                node.Loc = ast.Node[i].Body[loc];
                node.IsExplicit = ast.Node[i].Body[is_explicit];
-               node.NonDynamic = ast.Node[i].Body[non_dynamic];
+               node.NonDynamicAllocation = ast.Node[i].Body[non_dynamic_allocation];
                node.BitAlignment = ast.Node[i].Body[bit_alignment];
                node.BitSize = ast.Node[i].Body[bit_size];
                node.Belong = ast.Node[i].Body[belong];

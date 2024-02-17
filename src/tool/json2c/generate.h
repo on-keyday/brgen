@@ -22,6 +22,9 @@ namespace json2c {
                     h_w.writeln(int_ty->is_signed ? "" : "u", "int", brgen::nums(bit), "_t ", field->ident->ident, ";");
                 }
                 else if (bit < 64) {
+                    if (field->eventual_bit_alignment != field->bit_alignment) {
+                        return;  // skip
+                    }
                 }
             }
         }

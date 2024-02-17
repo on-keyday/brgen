@@ -331,7 +331,7 @@ export function isStmt(obj: any): obj is Stmt {
 
 export interface Type extends Node {
 	is_explicit: boolean;
-	non_dynamic: boolean;
+	non_dynamic_allocation: boolean;
 	bit_alignment: BitAlignment;
 	bit_size: number|null;
 }
@@ -1561,7 +1561,7 @@ export function parseAST(obj: JsonAst): Program {
 				node_type: "int_type",
 				loc: on.loc,
 				is_explicit: false,
-				non_dynamic: false,
+				non_dynamic_allocation: false,
 				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: null,
 				endian: Endian.unspec,
@@ -1576,7 +1576,7 @@ export function parseAST(obj: JsonAst): Program {
 				node_type: "float_type",
 				loc: on.loc,
 				is_explicit: false,
-				non_dynamic: false,
+				non_dynamic_allocation: false,
 				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: null,
 				endian: Endian.unspec,
@@ -1590,7 +1590,7 @@ export function parseAST(obj: JsonAst): Program {
 				node_type: "ident_type",
 				loc: on.loc,
 				is_explicit: false,
-				non_dynamic: false,
+				non_dynamic_allocation: false,
 				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: null,
 				import_ref: null,
@@ -1605,7 +1605,7 @@ export function parseAST(obj: JsonAst): Program {
 				node_type: "int_literal_type",
 				loc: on.loc,
 				is_explicit: false,
-				non_dynamic: false,
+				non_dynamic_allocation: false,
 				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: null,
 				base: null,
@@ -1618,7 +1618,7 @@ export function parseAST(obj: JsonAst): Program {
 				node_type: "str_literal_type",
 				loc: on.loc,
 				is_explicit: false,
-				non_dynamic: false,
+				non_dynamic_allocation: false,
 				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: null,
 				base: null,
@@ -1632,7 +1632,7 @@ export function parseAST(obj: JsonAst): Program {
 				node_type: "void_type",
 				loc: on.loc,
 				is_explicit: false,
-				non_dynamic: false,
+				non_dynamic_allocation: false,
 				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: null,
 			}
@@ -1644,7 +1644,7 @@ export function parseAST(obj: JsonAst): Program {
 				node_type: "bool_type",
 				loc: on.loc,
 				is_explicit: false,
-				non_dynamic: false,
+				non_dynamic_allocation: false,
 				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: null,
 			}
@@ -1656,7 +1656,7 @@ export function parseAST(obj: JsonAst): Program {
 				node_type: "array_type",
 				loc: on.loc,
 				is_explicit: false,
-				non_dynamic: false,
+				non_dynamic_allocation: false,
 				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: null,
 				end_loc: on.loc,
@@ -1672,7 +1672,7 @@ export function parseAST(obj: JsonAst): Program {
 				node_type: "function_type",
 				loc: on.loc,
 				is_explicit: false,
-				non_dynamic: false,
+				non_dynamic_allocation: false,
 				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: null,
 				return_type: null,
@@ -1686,7 +1686,7 @@ export function parseAST(obj: JsonAst): Program {
 				node_type: "struct_type",
 				loc: on.loc,
 				is_explicit: false,
-				non_dynamic: false,
+				non_dynamic_allocation: false,
 				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: null,
 				fields: [],
@@ -1703,7 +1703,7 @@ export function parseAST(obj: JsonAst): Program {
 				node_type: "struct_union_type",
 				loc: on.loc,
 				is_explicit: false,
-				non_dynamic: false,
+				non_dynamic_allocation: false,
 				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: null,
 				cond: null,
@@ -1721,7 +1721,7 @@ export function parseAST(obj: JsonAst): Program {
 				node_type: "union_type",
 				loc: on.loc,
 				is_explicit: false,
-				non_dynamic: false,
+				non_dynamic_allocation: false,
 				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: null,
 				cond: null,
@@ -1737,7 +1737,7 @@ export function parseAST(obj: JsonAst): Program {
 				node_type: "range_type",
 				loc: on.loc,
 				is_explicit: false,
-				non_dynamic: false,
+				non_dynamic_allocation: false,
 				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: null,
 				base_type: null,
@@ -1751,7 +1751,7 @@ export function parseAST(obj: JsonAst): Program {
 				node_type: "enum_type",
 				loc: on.loc,
 				is_explicit: false,
-				non_dynamic: false,
+				non_dynamic_allocation: false,
 				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: null,
 				base: null,
@@ -1764,7 +1764,7 @@ export function parseAST(obj: JsonAst): Program {
 				node_type: "meta_type",
 				loc: on.loc,
 				is_explicit: false,
-				non_dynamic: false,
+				non_dynamic_allocation: false,
 				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: null,
 			}
@@ -1776,7 +1776,7 @@ export function parseAST(obj: JsonAst): Program {
 				node_type: "optional_type",
 				loc: on.loc,
 				is_explicit: false,
-				non_dynamic: false,
+				non_dynamic_allocation: false,
 				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: null,
 				base_type: null,
@@ -1789,7 +1789,7 @@ export function parseAST(obj: JsonAst): Program {
 				node_type: "generic_type",
 				loc: on.loc,
 				is_explicit: false,
-				non_dynamic: false,
+				non_dynamic_allocation: false,
 				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: null,
 				belong: null,
@@ -3067,11 +3067,11 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at IntType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
-			const tmpnon_dynamic = on.body?.non_dynamic;
-			if (typeof tmpnon_dynamic !== "boolean") {
-				throw new Error('invalid node list at IntType::non_dynamic');
+			const tmpnon_dynamic_allocation = on.body?.non_dynamic_allocation;
+			if (typeof tmpnon_dynamic_allocation !== "boolean") {
+				throw new Error('invalid node list at IntType::non_dynamic_allocation');
 			}
-			n.non_dynamic = on.body.non_dynamic;
+			n.non_dynamic_allocation = on.body.non_dynamic_allocation;
 			const tmpbit_alignment = on.body?.bit_alignment;
 			if (!isBitAlignment(tmpbit_alignment)) {
 				throw new Error('invalid node list at IntType::bit_alignment');
@@ -3106,11 +3106,11 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at FloatType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
-			const tmpnon_dynamic = on.body?.non_dynamic;
-			if (typeof tmpnon_dynamic !== "boolean") {
-				throw new Error('invalid node list at FloatType::non_dynamic');
+			const tmpnon_dynamic_allocation = on.body?.non_dynamic_allocation;
+			if (typeof tmpnon_dynamic_allocation !== "boolean") {
+				throw new Error('invalid node list at FloatType::non_dynamic_allocation');
 			}
-			n.non_dynamic = on.body.non_dynamic;
+			n.non_dynamic_allocation = on.body.non_dynamic_allocation;
 			const tmpbit_alignment = on.body?.bit_alignment;
 			if (!isBitAlignment(tmpbit_alignment)) {
 				throw new Error('invalid node list at FloatType::bit_alignment');
@@ -3140,11 +3140,11 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at IdentType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
-			const tmpnon_dynamic = on.body?.non_dynamic;
-			if (typeof tmpnon_dynamic !== "boolean") {
-				throw new Error('invalid node list at IdentType::non_dynamic');
+			const tmpnon_dynamic_allocation = on.body?.non_dynamic_allocation;
+			if (typeof tmpnon_dynamic_allocation !== "boolean") {
+				throw new Error('invalid node list at IdentType::non_dynamic_allocation');
 			}
-			n.non_dynamic = on.body.non_dynamic;
+			n.non_dynamic_allocation = on.body.non_dynamic_allocation;
 			const tmpbit_alignment = on.body?.bit_alignment;
 			if (!isBitAlignment(tmpbit_alignment)) {
 				throw new Error('invalid node list at IdentType::bit_alignment');
@@ -3188,11 +3188,11 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at IntLiteralType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
-			const tmpnon_dynamic = on.body?.non_dynamic;
-			if (typeof tmpnon_dynamic !== "boolean") {
-				throw new Error('invalid node list at IntLiteralType::non_dynamic');
+			const tmpnon_dynamic_allocation = on.body?.non_dynamic_allocation;
+			if (typeof tmpnon_dynamic_allocation !== "boolean") {
+				throw new Error('invalid node list at IntLiteralType::non_dynamic_allocation');
 			}
-			n.non_dynamic = on.body.non_dynamic;
+			n.non_dynamic_allocation = on.body.non_dynamic_allocation;
 			const tmpbit_alignment = on.body?.bit_alignment;
 			if (!isBitAlignment(tmpbit_alignment)) {
 				throw new Error('invalid node list at IntLiteralType::bit_alignment');
@@ -3220,11 +3220,11 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at StrLiteralType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
-			const tmpnon_dynamic = on.body?.non_dynamic;
-			if (typeof tmpnon_dynamic !== "boolean") {
-				throw new Error('invalid node list at StrLiteralType::non_dynamic');
+			const tmpnon_dynamic_allocation = on.body?.non_dynamic_allocation;
+			if (typeof tmpnon_dynamic_allocation !== "boolean") {
+				throw new Error('invalid node list at StrLiteralType::non_dynamic_allocation');
 			}
-			n.non_dynamic = on.body.non_dynamic;
+			n.non_dynamic_allocation = on.body.non_dynamic_allocation;
 			const tmpbit_alignment = on.body?.bit_alignment;
 			if (!isBitAlignment(tmpbit_alignment)) {
 				throw new Error('invalid node list at StrLiteralType::bit_alignment');
@@ -3260,11 +3260,11 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at VoidType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
-			const tmpnon_dynamic = on.body?.non_dynamic;
-			if (typeof tmpnon_dynamic !== "boolean") {
-				throw new Error('invalid node list at VoidType::non_dynamic');
+			const tmpnon_dynamic_allocation = on.body?.non_dynamic_allocation;
+			if (typeof tmpnon_dynamic_allocation !== "boolean") {
+				throw new Error('invalid node list at VoidType::non_dynamic_allocation');
 			}
-			n.non_dynamic = on.body.non_dynamic;
+			n.non_dynamic_allocation = on.body.non_dynamic_allocation;
 			const tmpbit_alignment = on.body?.bit_alignment;
 			if (!isBitAlignment(tmpbit_alignment)) {
 				throw new Error('invalid node list at VoidType::bit_alignment');
@@ -3284,11 +3284,11 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at BoolType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
-			const tmpnon_dynamic = on.body?.non_dynamic;
-			if (typeof tmpnon_dynamic !== "boolean") {
-				throw new Error('invalid node list at BoolType::non_dynamic');
+			const tmpnon_dynamic_allocation = on.body?.non_dynamic_allocation;
+			if (typeof tmpnon_dynamic_allocation !== "boolean") {
+				throw new Error('invalid node list at BoolType::non_dynamic_allocation');
 			}
-			n.non_dynamic = on.body.non_dynamic;
+			n.non_dynamic_allocation = on.body.non_dynamic_allocation;
 			const tmpbit_alignment = on.body?.bit_alignment;
 			if (!isBitAlignment(tmpbit_alignment)) {
 				throw new Error('invalid node list at BoolType::bit_alignment');
@@ -3308,11 +3308,11 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at ArrayType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
-			const tmpnon_dynamic = on.body?.non_dynamic;
-			if (typeof tmpnon_dynamic !== "boolean") {
-				throw new Error('invalid node list at ArrayType::non_dynamic');
+			const tmpnon_dynamic_allocation = on.body?.non_dynamic_allocation;
+			if (typeof tmpnon_dynamic_allocation !== "boolean") {
+				throw new Error('invalid node list at ArrayType::non_dynamic_allocation');
 			}
-			n.non_dynamic = on.body.non_dynamic;
+			n.non_dynamic_allocation = on.body.non_dynamic_allocation;
 			const tmpbit_alignment = on.body?.bit_alignment;
 			if (!isBitAlignment(tmpbit_alignment)) {
 				throw new Error('invalid node list at ArrayType::bit_alignment');
@@ -3358,11 +3358,11 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at FunctionType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
-			const tmpnon_dynamic = on.body?.non_dynamic;
-			if (typeof tmpnon_dynamic !== "boolean") {
-				throw new Error('invalid node list at FunctionType::non_dynamic');
+			const tmpnon_dynamic_allocation = on.body?.non_dynamic_allocation;
+			if (typeof tmpnon_dynamic_allocation !== "boolean") {
+				throw new Error('invalid node list at FunctionType::non_dynamic_allocation');
 			}
-			n.non_dynamic = on.body.non_dynamic;
+			n.non_dynamic_allocation = on.body.non_dynamic_allocation;
 			const tmpbit_alignment = on.body?.bit_alignment;
 			if (!isBitAlignment(tmpbit_alignment)) {
 				throw new Error('invalid node list at FunctionType::bit_alignment');
@@ -3400,11 +3400,11 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at StructType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
-			const tmpnon_dynamic = on.body?.non_dynamic;
-			if (typeof tmpnon_dynamic !== "boolean") {
-				throw new Error('invalid node list at StructType::non_dynamic');
+			const tmpnon_dynamic_allocation = on.body?.non_dynamic_allocation;
+			if (typeof tmpnon_dynamic_allocation !== "boolean") {
+				throw new Error('invalid node list at StructType::non_dynamic_allocation');
 			}
-			n.non_dynamic = on.body.non_dynamic;
+			n.non_dynamic_allocation = on.body.non_dynamic_allocation;
 			const tmpbit_alignment = on.body?.bit_alignment;
 			if (!isBitAlignment(tmpbit_alignment)) {
 				throw new Error('invalid node list at StructType::bit_alignment');
@@ -3457,11 +3457,11 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at StructUnionType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
-			const tmpnon_dynamic = on.body?.non_dynamic;
-			if (typeof tmpnon_dynamic !== "boolean") {
-				throw new Error('invalid node list at StructUnionType::non_dynamic');
+			const tmpnon_dynamic_allocation = on.body?.non_dynamic_allocation;
+			if (typeof tmpnon_dynamic_allocation !== "boolean") {
+				throw new Error('invalid node list at StructUnionType::non_dynamic_allocation');
 			}
-			n.non_dynamic = on.body.non_dynamic;
+			n.non_dynamic_allocation = on.body.non_dynamic_allocation;
 			const tmpbit_alignment = on.body?.bit_alignment;
 			if (!isBitAlignment(tmpbit_alignment)) {
 				throw new Error('invalid node list at StructUnionType::bit_alignment');
@@ -3532,11 +3532,11 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at UnionType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
-			const tmpnon_dynamic = on.body?.non_dynamic;
-			if (typeof tmpnon_dynamic !== "boolean") {
-				throw new Error('invalid node list at UnionType::non_dynamic');
+			const tmpnon_dynamic_allocation = on.body?.non_dynamic_allocation;
+			if (typeof tmpnon_dynamic_allocation !== "boolean") {
+				throw new Error('invalid node list at UnionType::non_dynamic_allocation');
 			}
-			n.non_dynamic = on.body.non_dynamic;
+			n.non_dynamic_allocation = on.body.non_dynamic_allocation;
 			const tmpbit_alignment = on.body?.bit_alignment;
 			if (!isBitAlignment(tmpbit_alignment)) {
 				throw new Error('invalid node list at UnionType::bit_alignment');
@@ -3590,11 +3590,11 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at RangeType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
-			const tmpnon_dynamic = on.body?.non_dynamic;
-			if (typeof tmpnon_dynamic !== "boolean") {
-				throw new Error('invalid node list at RangeType::non_dynamic');
+			const tmpnon_dynamic_allocation = on.body?.non_dynamic_allocation;
+			if (typeof tmpnon_dynamic_allocation !== "boolean") {
+				throw new Error('invalid node list at RangeType::non_dynamic_allocation');
 			}
-			n.non_dynamic = on.body.non_dynamic;
+			n.non_dynamic_allocation = on.body.non_dynamic_allocation;
 			const tmpbit_alignment = on.body?.bit_alignment;
 			if (!isBitAlignment(tmpbit_alignment)) {
 				throw new Error('invalid node list at RangeType::bit_alignment');
@@ -3630,11 +3630,11 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at EnumType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
-			const tmpnon_dynamic = on.body?.non_dynamic;
-			if (typeof tmpnon_dynamic !== "boolean") {
-				throw new Error('invalid node list at EnumType::non_dynamic');
+			const tmpnon_dynamic_allocation = on.body?.non_dynamic_allocation;
+			if (typeof tmpnon_dynamic_allocation !== "boolean") {
+				throw new Error('invalid node list at EnumType::non_dynamic_allocation');
 			}
-			n.non_dynamic = on.body.non_dynamic;
+			n.non_dynamic_allocation = on.body.non_dynamic_allocation;
 			const tmpbit_alignment = on.body?.bit_alignment;
 			if (!isBitAlignment(tmpbit_alignment)) {
 				throw new Error('invalid node list at EnumType::bit_alignment');
@@ -3662,11 +3662,11 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at MetaType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
-			const tmpnon_dynamic = on.body?.non_dynamic;
-			if (typeof tmpnon_dynamic !== "boolean") {
-				throw new Error('invalid node list at MetaType::non_dynamic');
+			const tmpnon_dynamic_allocation = on.body?.non_dynamic_allocation;
+			if (typeof tmpnon_dynamic_allocation !== "boolean") {
+				throw new Error('invalid node list at MetaType::non_dynamic_allocation');
 			}
-			n.non_dynamic = on.body.non_dynamic;
+			n.non_dynamic_allocation = on.body.non_dynamic_allocation;
 			const tmpbit_alignment = on.body?.bit_alignment;
 			if (!isBitAlignment(tmpbit_alignment)) {
 				throw new Error('invalid node list at MetaType::bit_alignment');
@@ -3686,11 +3686,11 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at OptionalType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
-			const tmpnon_dynamic = on.body?.non_dynamic;
-			if (typeof tmpnon_dynamic !== "boolean") {
-				throw new Error('invalid node list at OptionalType::non_dynamic');
+			const tmpnon_dynamic_allocation = on.body?.non_dynamic_allocation;
+			if (typeof tmpnon_dynamic_allocation !== "boolean") {
+				throw new Error('invalid node list at OptionalType::non_dynamic_allocation');
 			}
-			n.non_dynamic = on.body.non_dynamic;
+			n.non_dynamic_allocation = on.body.non_dynamic_allocation;
 			const tmpbit_alignment = on.body?.bit_alignment;
 			if (!isBitAlignment(tmpbit_alignment)) {
 				throw new Error('invalid node list at OptionalType::bit_alignment');
@@ -3718,11 +3718,11 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at GenericType::is_explicit');
 			}
 			n.is_explicit = on.body.is_explicit;
-			const tmpnon_dynamic = on.body?.non_dynamic;
-			if (typeof tmpnon_dynamic !== "boolean") {
-				throw new Error('invalid node list at GenericType::non_dynamic');
+			const tmpnon_dynamic_allocation = on.body?.non_dynamic_allocation;
+			if (typeof tmpnon_dynamic_allocation !== "boolean") {
+				throw new Error('invalid node list at GenericType::non_dynamic_allocation');
 			}
-			n.non_dynamic = on.body.non_dynamic;
+			n.non_dynamic_allocation = on.body.non_dynamic_allocation;
 			const tmpbit_alignment = on.body?.bit_alignment;
 			if (!isBitAlignment(tmpbit_alignment)) {
 				throw new Error('invalid node list at GenericType::bit_alignment');

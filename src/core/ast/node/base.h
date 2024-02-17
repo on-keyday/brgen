@@ -46,7 +46,7 @@ namespace brgen::ast {
         bool is_explicit = false;  // for language server annotation
         // type is integer or float, set of integer or float, or fixed length integer or float array.
         // not complex type array, not dynamic array, not include recursive struct
-        bool non_dynamic = false;
+        bool non_dynamic_allocation = false;
         // type is interpretable as single integer type
         // bool single_int_type = false;
         // bit alignment of type
@@ -57,7 +57,7 @@ namespace brgen::ast {
         void dump(auto&& field_) {
             Node::dump(field_);
             sdebugf(is_explicit);
-            sdebugf(non_dynamic);
+            sdebugf(non_dynamic_allocation);
             sdebugf(bit_alignment);
             sdebugf(bit_size);
         }

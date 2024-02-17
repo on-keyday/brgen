@@ -1975,25 +1975,25 @@ impl Type {
             Type::GenericType(node)=>node.borrow().is_explicit.clone(),
         }
     }
-    pub fn get_non_dynamic(&self)-> bool {
+    pub fn get_non_dynamic_allocation(&self)-> bool {
         match self {
-            Type::IntType(node)=>node.borrow().non_dynamic.clone(),
-            Type::FloatType(node)=>node.borrow().non_dynamic.clone(),
-            Type::IdentType(node)=>node.borrow().non_dynamic.clone(),
-            Type::IntLiteralType(node)=>node.borrow().non_dynamic.clone(),
-            Type::StrLiteralType(node)=>node.borrow().non_dynamic.clone(),
-            Type::VoidType(node)=>node.borrow().non_dynamic.clone(),
-            Type::BoolType(node)=>node.borrow().non_dynamic.clone(),
-            Type::ArrayType(node)=>node.borrow().non_dynamic.clone(),
-            Type::FunctionType(node)=>node.borrow().non_dynamic.clone(),
-            Type::StructType(node)=>node.borrow().non_dynamic.clone(),
-            Type::StructUnionType(node)=>node.borrow().non_dynamic.clone(),
-            Type::UnionType(node)=>node.borrow().non_dynamic.clone(),
-            Type::RangeType(node)=>node.borrow().non_dynamic.clone(),
-            Type::EnumType(node)=>node.borrow().non_dynamic.clone(),
-            Type::MetaType(node)=>node.borrow().non_dynamic.clone(),
-            Type::OptionalType(node)=>node.borrow().non_dynamic.clone(),
-            Type::GenericType(node)=>node.borrow().non_dynamic.clone(),
+            Type::IntType(node)=>node.borrow().non_dynamic_allocation.clone(),
+            Type::FloatType(node)=>node.borrow().non_dynamic_allocation.clone(),
+            Type::IdentType(node)=>node.borrow().non_dynamic_allocation.clone(),
+            Type::IntLiteralType(node)=>node.borrow().non_dynamic_allocation.clone(),
+            Type::StrLiteralType(node)=>node.borrow().non_dynamic_allocation.clone(),
+            Type::VoidType(node)=>node.borrow().non_dynamic_allocation.clone(),
+            Type::BoolType(node)=>node.borrow().non_dynamic_allocation.clone(),
+            Type::ArrayType(node)=>node.borrow().non_dynamic_allocation.clone(),
+            Type::FunctionType(node)=>node.borrow().non_dynamic_allocation.clone(),
+            Type::StructType(node)=>node.borrow().non_dynamic_allocation.clone(),
+            Type::StructUnionType(node)=>node.borrow().non_dynamic_allocation.clone(),
+            Type::UnionType(node)=>node.borrow().non_dynamic_allocation.clone(),
+            Type::RangeType(node)=>node.borrow().non_dynamic_allocation.clone(),
+            Type::EnumType(node)=>node.borrow().non_dynamic_allocation.clone(),
+            Type::MetaType(node)=>node.borrow().non_dynamic_allocation.clone(),
+            Type::OptionalType(node)=>node.borrow().non_dynamic_allocation.clone(),
+            Type::GenericType(node)=>node.borrow().non_dynamic_allocation.clone(),
         }
     }
     pub fn get_bit_alignment(&self)-> BitAlignment {
@@ -5061,7 +5061,7 @@ impl From<Rc<RefCell<ImplicitYield>>> for Node {
 pub struct IntType {
 	pub loc: Loc,
 	pub is_explicit: bool,
-	pub non_dynamic: bool,
+	pub non_dynamic_allocation: bool,
 	pub bit_alignment: BitAlignment,
 	pub bit_size: Option<u64>,
 	pub endian: Endian,
@@ -5131,7 +5131,7 @@ impl From<Rc<RefCell<IntType>>> for Node {
 pub struct FloatType {
 	pub loc: Loc,
 	pub is_explicit: bool,
-	pub non_dynamic: bool,
+	pub non_dynamic_allocation: bool,
 	pub bit_alignment: BitAlignment,
 	pub bit_size: Option<u64>,
 	pub endian: Endian,
@@ -5200,7 +5200,7 @@ impl From<Rc<RefCell<FloatType>>> for Node {
 pub struct IdentType {
 	pub loc: Loc,
 	pub is_explicit: bool,
-	pub non_dynamic: bool,
+	pub non_dynamic_allocation: bool,
 	pub bit_alignment: BitAlignment,
 	pub bit_size: Option<u64>,
 	pub import_ref: Option<Rc<RefCell<MemberAccess>>>,
@@ -5270,7 +5270,7 @@ impl From<Rc<RefCell<IdentType>>> for Node {
 pub struct IntLiteralType {
 	pub loc: Loc,
 	pub is_explicit: bool,
-	pub non_dynamic: bool,
+	pub non_dynamic_allocation: bool,
 	pub bit_alignment: BitAlignment,
 	pub bit_size: Option<u64>,
 	pub base: Option<Weak<RefCell<IntLiteral>>>,
@@ -5338,7 +5338,7 @@ impl From<Rc<RefCell<IntLiteralType>>> for Node {
 pub struct StrLiteralType {
 	pub loc: Loc,
 	pub is_explicit: bool,
-	pub non_dynamic: bool,
+	pub non_dynamic_allocation: bool,
 	pub bit_alignment: BitAlignment,
 	pub bit_size: Option<u64>,
 	pub base: Option<Weak<RefCell<StrLiteral>>>,
@@ -5407,7 +5407,7 @@ impl From<Rc<RefCell<StrLiteralType>>> for Node {
 pub struct VoidType {
 	pub loc: Loc,
 	pub is_explicit: bool,
-	pub non_dynamic: bool,
+	pub non_dynamic_allocation: bool,
 	pub bit_alignment: BitAlignment,
 	pub bit_size: Option<u64>,
 }
@@ -5474,7 +5474,7 @@ impl From<Rc<RefCell<VoidType>>> for Node {
 pub struct BoolType {
 	pub loc: Loc,
 	pub is_explicit: bool,
-	pub non_dynamic: bool,
+	pub non_dynamic_allocation: bool,
 	pub bit_alignment: BitAlignment,
 	pub bit_size: Option<u64>,
 }
@@ -5541,7 +5541,7 @@ impl From<Rc<RefCell<BoolType>>> for Node {
 pub struct ArrayType {
 	pub loc: Loc,
 	pub is_explicit: bool,
-	pub non_dynamic: bool,
+	pub non_dynamic_allocation: bool,
 	pub bit_alignment: BitAlignment,
 	pub bit_size: Option<u64>,
 	pub end_loc: Loc,
@@ -5612,7 +5612,7 @@ impl From<Rc<RefCell<ArrayType>>> for Node {
 pub struct FunctionType {
 	pub loc: Loc,
 	pub is_explicit: bool,
-	pub non_dynamic: bool,
+	pub non_dynamic_allocation: bool,
 	pub bit_alignment: BitAlignment,
 	pub bit_size: Option<u64>,
 	pub return_type: Option<Type>,
@@ -5681,7 +5681,7 @@ impl From<Rc<RefCell<FunctionType>>> for Node {
 pub struct StructType {
 	pub loc: Loc,
 	pub is_explicit: bool,
-	pub non_dynamic: bool,
+	pub non_dynamic_allocation: bool,
 	pub bit_alignment: BitAlignment,
 	pub bit_size: Option<u64>,
 	pub fields: Vec<Member>,
@@ -5753,7 +5753,7 @@ impl From<Rc<RefCell<StructType>>> for Node {
 pub struct StructUnionType {
 	pub loc: Loc,
 	pub is_explicit: bool,
-	pub non_dynamic: bool,
+	pub non_dynamic_allocation: bool,
 	pub bit_alignment: BitAlignment,
 	pub bit_size: Option<u64>,
 	pub cond: Option<Expr>,
@@ -5826,7 +5826,7 @@ impl From<Rc<RefCell<StructUnionType>>> for Node {
 pub struct UnionType {
 	pub loc: Loc,
 	pub is_explicit: bool,
-	pub non_dynamic: bool,
+	pub non_dynamic_allocation: bool,
 	pub bit_alignment: BitAlignment,
 	pub bit_size: Option<u64>,
 	pub cond: Option<ExprWeak>,
@@ -5897,7 +5897,7 @@ impl From<Rc<RefCell<UnionType>>> for Node {
 pub struct RangeType {
 	pub loc: Loc,
 	pub is_explicit: bool,
-	pub non_dynamic: bool,
+	pub non_dynamic_allocation: bool,
 	pub bit_alignment: BitAlignment,
 	pub bit_size: Option<u64>,
 	pub base_type: Option<Type>,
@@ -5966,7 +5966,7 @@ impl From<Rc<RefCell<RangeType>>> for Node {
 pub struct EnumType {
 	pub loc: Loc,
 	pub is_explicit: bool,
-	pub non_dynamic: bool,
+	pub non_dynamic_allocation: bool,
 	pub bit_alignment: BitAlignment,
 	pub bit_size: Option<u64>,
 	pub base: Option<Weak<RefCell<Enum>>>,
@@ -6034,7 +6034,7 @@ impl From<Rc<RefCell<EnumType>>> for Node {
 pub struct MetaType {
 	pub loc: Loc,
 	pub is_explicit: bool,
-	pub non_dynamic: bool,
+	pub non_dynamic_allocation: bool,
 	pub bit_alignment: BitAlignment,
 	pub bit_size: Option<u64>,
 }
@@ -6101,7 +6101,7 @@ impl From<Rc<RefCell<MetaType>>> for Node {
 pub struct OptionalType {
 	pub loc: Loc,
 	pub is_explicit: bool,
-	pub non_dynamic: bool,
+	pub non_dynamic_allocation: bool,
 	pub bit_alignment: BitAlignment,
 	pub bit_size: Option<u64>,
 	pub base_type: Option<Type>,
@@ -6169,7 +6169,7 @@ impl From<Rc<RefCell<OptionalType>>> for Node {
 pub struct GenericType {
 	pub loc: Loc,
 	pub is_explicit: bool,
-	pub non_dynamic: bool,
+	pub non_dynamic_allocation: bool,
 	pub bit_alignment: BitAlignment,
 	pub bit_size: Option<u64>,
 	pub belong: Option<MemberWeak>,
@@ -8170,7 +8170,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::IntType(Rc::new(RefCell::new(IntType {
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
-				non_dynamic: false,
+				non_dynamic_allocation: false,
 				bit_alignment: BitAlignment::ByteAligned,
 				bit_size: None,
 				endian: Endian::Unspec,
@@ -8182,7 +8182,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::FloatType(Rc::new(RefCell::new(FloatType {
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
-				non_dynamic: false,
+				non_dynamic_allocation: false,
 				bit_alignment: BitAlignment::ByteAligned,
 				bit_size: None,
 				endian: Endian::Unspec,
@@ -8193,7 +8193,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::IdentType(Rc::new(RefCell::new(IdentType {
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
-				non_dynamic: false,
+				non_dynamic_allocation: false,
 				bit_alignment: BitAlignment::ByteAligned,
 				bit_size: None,
 				import_ref: None,
@@ -8205,7 +8205,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::IntLiteralType(Rc::new(RefCell::new(IntLiteralType {
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
-				non_dynamic: false,
+				non_dynamic_allocation: false,
 				bit_alignment: BitAlignment::ByteAligned,
 				bit_size: None,
 				base: None,
@@ -8215,7 +8215,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::StrLiteralType(Rc::new(RefCell::new(StrLiteralType {
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
-				non_dynamic: false,
+				non_dynamic_allocation: false,
 				bit_alignment: BitAlignment::ByteAligned,
 				bit_size: None,
 				base: None,
@@ -8226,7 +8226,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::VoidType(Rc::new(RefCell::new(VoidType {
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
-				non_dynamic: false,
+				non_dynamic_allocation: false,
 				bit_alignment: BitAlignment::ByteAligned,
 				bit_size: None,
 				})))
@@ -8235,7 +8235,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::BoolType(Rc::new(RefCell::new(BoolType {
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
-				non_dynamic: false,
+				non_dynamic_allocation: false,
 				bit_alignment: BitAlignment::ByteAligned,
 				bit_size: None,
 				})))
@@ -8244,7 +8244,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::ArrayType(Rc::new(RefCell::new(ArrayType {
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
-				non_dynamic: false,
+				non_dynamic_allocation: false,
 				bit_alignment: BitAlignment::ByteAligned,
 				bit_size: None,
 				end_loc: raw_node.loc.clone(),
@@ -8257,7 +8257,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::FunctionType(Rc::new(RefCell::new(FunctionType {
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
-				non_dynamic: false,
+				non_dynamic_allocation: false,
 				bit_alignment: BitAlignment::ByteAligned,
 				bit_size: None,
 				return_type: None,
@@ -8268,7 +8268,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::StructType(Rc::new(RefCell::new(StructType {
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
-				non_dynamic: false,
+				non_dynamic_allocation: false,
 				bit_alignment: BitAlignment::ByteAligned,
 				bit_size: None,
 				fields: Vec::new(),
@@ -8282,7 +8282,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::StructUnionType(Rc::new(RefCell::new(StructUnionType {
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
-				non_dynamic: false,
+				non_dynamic_allocation: false,
 				bit_alignment: BitAlignment::ByteAligned,
 				bit_size: None,
 				cond: None,
@@ -8297,7 +8297,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::UnionType(Rc::new(RefCell::new(UnionType {
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
-				non_dynamic: false,
+				non_dynamic_allocation: false,
 				bit_alignment: BitAlignment::ByteAligned,
 				bit_size: None,
 				cond: None,
@@ -8310,7 +8310,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::RangeType(Rc::new(RefCell::new(RangeType {
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
-				non_dynamic: false,
+				non_dynamic_allocation: false,
 				bit_alignment: BitAlignment::ByteAligned,
 				bit_size: None,
 				base_type: None,
@@ -8321,7 +8321,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::EnumType(Rc::new(RefCell::new(EnumType {
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
-				non_dynamic: false,
+				non_dynamic_allocation: false,
 				bit_alignment: BitAlignment::ByteAligned,
 				bit_size: None,
 				base: None,
@@ -8331,7 +8331,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::MetaType(Rc::new(RefCell::new(MetaType {
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
-				non_dynamic: false,
+				non_dynamic_allocation: false,
 				bit_alignment: BitAlignment::ByteAligned,
 				bit_size: None,
 				})))
@@ -8340,7 +8340,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::OptionalType(Rc::new(RefCell::new(OptionalType {
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
-				non_dynamic: false,
+				non_dynamic_allocation: false,
 				bit_alignment: BitAlignment::ByteAligned,
 				bit_size: None,
 				base_type: None,
@@ -8350,7 +8350,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::GenericType(Rc::new(RefCell::new(GenericType {
 				loc: raw_node.loc.clone(),
 				is_explicit: false,
-				non_dynamic: false,
+				non_dynamic_allocation: false,
 				bit_alignment: BitAlignment::ByteAligned,
 				bit_size: None,
 				belong: None,
@@ -10609,13 +10609,13 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
 				};
-				let non_dynamic_body = match raw_node.body.get("non_dynamic") {
+				let non_dynamic_allocation_body = match raw_node.body.get("non_dynamic_allocation") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"non_dynamic")),
+					None=>return Err(Error::MissingField(node_type,"non_dynamic_allocation")),
 				};
-				node.borrow_mut().non_dynamic = match non_dynamic_body.as_bool() {
+				node.borrow_mut().non_dynamic_allocation = match non_dynamic_allocation_body.as_bool() {
 					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(non_dynamic_body.into(),JSONType::Bool)),
+					None=>return Err(Error::MismatchJSONType(non_dynamic_allocation_body.into(),JSONType::Bool)),
 				};
 				let bit_alignment_body = match raw_node.body.get("bit_alignment") {
 					Some(v)=>v,
@@ -10681,13 +10681,13 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
 				};
-				let non_dynamic_body = match raw_node.body.get("non_dynamic") {
+				let non_dynamic_allocation_body = match raw_node.body.get("non_dynamic_allocation") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"non_dynamic")),
+					None=>return Err(Error::MissingField(node_type,"non_dynamic_allocation")),
 				};
-				node.borrow_mut().non_dynamic = match non_dynamic_body.as_bool() {
+				node.borrow_mut().non_dynamic_allocation = match non_dynamic_allocation_body.as_bool() {
 					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(non_dynamic_body.into(),JSONType::Bool)),
+					None=>return Err(Error::MismatchJSONType(non_dynamic_allocation_body.into(),JSONType::Bool)),
 				};
 				let bit_alignment_body = match raw_node.body.get("bit_alignment") {
 					Some(v)=>v,
@@ -10745,13 +10745,13 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
 				};
-				let non_dynamic_body = match raw_node.body.get("non_dynamic") {
+				let non_dynamic_allocation_body = match raw_node.body.get("non_dynamic_allocation") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"non_dynamic")),
+					None=>return Err(Error::MissingField(node_type,"non_dynamic_allocation")),
 				};
-				node.borrow_mut().non_dynamic = match non_dynamic_body.as_bool() {
+				node.borrow_mut().non_dynamic_allocation = match non_dynamic_allocation_body.as_bool() {
 					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(non_dynamic_body.into(),JSONType::Bool)),
+					None=>return Err(Error::MismatchJSONType(non_dynamic_allocation_body.into(),JSONType::Bool)),
 				};
 				let bit_alignment_body = match raw_node.body.get("bit_alignment") {
 					Some(v)=>v,
@@ -10843,13 +10843,13 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
 				};
-				let non_dynamic_body = match raw_node.body.get("non_dynamic") {
+				let non_dynamic_allocation_body = match raw_node.body.get("non_dynamic_allocation") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"non_dynamic")),
+					None=>return Err(Error::MissingField(node_type,"non_dynamic_allocation")),
 				};
-				node.borrow_mut().non_dynamic = match non_dynamic_body.as_bool() {
+				node.borrow_mut().non_dynamic_allocation = match non_dynamic_allocation_body.as_bool() {
 					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(non_dynamic_body.into(),JSONType::Bool)),
+					None=>return Err(Error::MismatchJSONType(non_dynamic_allocation_body.into(),JSONType::Bool)),
 				};
 				let bit_alignment_body = match raw_node.body.get("bit_alignment") {
 					Some(v)=>v,
@@ -10907,13 +10907,13 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
 				};
-				let non_dynamic_body = match raw_node.body.get("non_dynamic") {
+				let non_dynamic_allocation_body = match raw_node.body.get("non_dynamic_allocation") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"non_dynamic")),
+					None=>return Err(Error::MissingField(node_type,"non_dynamic_allocation")),
 				};
-				node.borrow_mut().non_dynamic = match non_dynamic_body.as_bool() {
+				node.borrow_mut().non_dynamic_allocation = match non_dynamic_allocation_body.as_bool() {
 					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(non_dynamic_body.into(),JSONType::Bool)),
+					None=>return Err(Error::MismatchJSONType(non_dynamic_allocation_body.into(),JSONType::Bool)),
 				};
 				let bit_alignment_body = match raw_node.body.get("bit_alignment") {
 					Some(v)=>v,
@@ -10990,13 +10990,13 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
 				};
-				let non_dynamic_body = match raw_node.body.get("non_dynamic") {
+				let non_dynamic_allocation_body = match raw_node.body.get("non_dynamic_allocation") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"non_dynamic")),
+					None=>return Err(Error::MissingField(node_type,"non_dynamic_allocation")),
 				};
-				node.borrow_mut().non_dynamic = match non_dynamic_body.as_bool() {
+				node.borrow_mut().non_dynamic_allocation = match non_dynamic_allocation_body.as_bool() {
 					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(non_dynamic_body.into(),JSONType::Bool)),
+					None=>return Err(Error::MismatchJSONType(non_dynamic_allocation_body.into(),JSONType::Bool)),
 				};
 				let bit_alignment_body = match raw_node.body.get("bit_alignment") {
 					Some(v)=>v,
@@ -11035,13 +11035,13 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
 				};
-				let non_dynamic_body = match raw_node.body.get("non_dynamic") {
+				let non_dynamic_allocation_body = match raw_node.body.get("non_dynamic_allocation") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"non_dynamic")),
+					None=>return Err(Error::MissingField(node_type,"non_dynamic_allocation")),
 				};
-				node.borrow_mut().non_dynamic = match non_dynamic_body.as_bool() {
+				node.borrow_mut().non_dynamic_allocation = match non_dynamic_allocation_body.as_bool() {
 					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(non_dynamic_body.into(),JSONType::Bool)),
+					None=>return Err(Error::MismatchJSONType(non_dynamic_allocation_body.into(),JSONType::Bool)),
 				};
 				let bit_alignment_body = match raw_node.body.get("bit_alignment") {
 					Some(v)=>v,
@@ -11080,13 +11080,13 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
 				};
-				let non_dynamic_body = match raw_node.body.get("non_dynamic") {
+				let non_dynamic_allocation_body = match raw_node.body.get("non_dynamic_allocation") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"non_dynamic")),
+					None=>return Err(Error::MissingField(node_type,"non_dynamic_allocation")),
 				};
-				node.borrow_mut().non_dynamic = match non_dynamic_body.as_bool() {
+				node.borrow_mut().non_dynamic_allocation = match non_dynamic_allocation_body.as_bool() {
 					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(non_dynamic_body.into(),JSONType::Bool)),
+					None=>return Err(Error::MismatchJSONType(non_dynamic_allocation_body.into(),JSONType::Bool)),
 				};
 				let bit_alignment_body = match raw_node.body.get("bit_alignment") {
 					Some(v)=>v,
@@ -11174,13 +11174,13 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
 				};
-				let non_dynamic_body = match raw_node.body.get("non_dynamic") {
+				let non_dynamic_allocation_body = match raw_node.body.get("non_dynamic_allocation") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"non_dynamic")),
+					None=>return Err(Error::MissingField(node_type,"non_dynamic_allocation")),
 				};
-				node.borrow_mut().non_dynamic = match non_dynamic_body.as_bool() {
+				node.borrow_mut().non_dynamic_allocation = match non_dynamic_allocation_body.as_bool() {
 					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(non_dynamic_body.into(),JSONType::Bool)),
+					None=>return Err(Error::MismatchJSONType(non_dynamic_allocation_body.into(),JSONType::Bool)),
 				};
 				let bit_alignment_body = match raw_node.body.get("bit_alignment") {
 					Some(v)=>v,
@@ -11253,13 +11253,13 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
 				};
-				let non_dynamic_body = match raw_node.body.get("non_dynamic") {
+				let non_dynamic_allocation_body = match raw_node.body.get("non_dynamic_allocation") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"non_dynamic")),
+					None=>return Err(Error::MissingField(node_type,"non_dynamic_allocation")),
 				};
-				node.borrow_mut().non_dynamic = match non_dynamic_body.as_bool() {
+				node.borrow_mut().non_dynamic_allocation = match non_dynamic_allocation_body.as_bool() {
 					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(non_dynamic_body.into(),JSONType::Bool)),
+					None=>return Err(Error::MismatchJSONType(non_dynamic_allocation_body.into(),JSONType::Bool)),
 				};
 				let bit_alignment_body = match raw_node.body.get("bit_alignment") {
 					Some(v)=>v,
@@ -11356,13 +11356,13 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
 				};
-				let non_dynamic_body = match raw_node.body.get("non_dynamic") {
+				let non_dynamic_allocation_body = match raw_node.body.get("non_dynamic_allocation") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"non_dynamic")),
+					None=>return Err(Error::MissingField(node_type,"non_dynamic_allocation")),
 				};
-				node.borrow_mut().non_dynamic = match non_dynamic_body.as_bool() {
+				node.borrow_mut().non_dynamic_allocation = match non_dynamic_allocation_body.as_bool() {
 					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(non_dynamic_body.into(),JSONType::Bool)),
+					None=>return Err(Error::MismatchJSONType(non_dynamic_allocation_body.into(),JSONType::Bool)),
 				};
 				let bit_alignment_body = match raw_node.body.get("bit_alignment") {
 					Some(v)=>v,
@@ -11504,13 +11504,13 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
 				};
-				let non_dynamic_body = match raw_node.body.get("non_dynamic") {
+				let non_dynamic_allocation_body = match raw_node.body.get("non_dynamic_allocation") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"non_dynamic")),
+					None=>return Err(Error::MissingField(node_type,"non_dynamic_allocation")),
 				};
-				node.borrow_mut().non_dynamic = match non_dynamic_body.as_bool() {
+				node.borrow_mut().non_dynamic_allocation = match non_dynamic_allocation_body.as_bool() {
 					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(non_dynamic_body.into(),JSONType::Bool)),
+					None=>return Err(Error::MismatchJSONType(non_dynamic_allocation_body.into(),JSONType::Bool)),
 				};
 				let bit_alignment_body = match raw_node.body.get("bit_alignment") {
 					Some(v)=>v,
@@ -11621,13 +11621,13 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
 				};
-				let non_dynamic_body = match raw_node.body.get("non_dynamic") {
+				let non_dynamic_allocation_body = match raw_node.body.get("non_dynamic_allocation") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"non_dynamic")),
+					None=>return Err(Error::MissingField(node_type,"non_dynamic_allocation")),
 				};
-				node.borrow_mut().non_dynamic = match non_dynamic_body.as_bool() {
+				node.borrow_mut().non_dynamic_allocation = match non_dynamic_allocation_body.as_bool() {
 					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(non_dynamic_body.into(),JSONType::Bool)),
+					None=>return Err(Error::MismatchJSONType(non_dynamic_allocation_body.into(),JSONType::Bool)),
 				};
 				let bit_alignment_body = match raw_node.body.get("bit_alignment") {
 					Some(v)=>v,
@@ -11700,13 +11700,13 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
 				};
-				let non_dynamic_body = match raw_node.body.get("non_dynamic") {
+				let non_dynamic_allocation_body = match raw_node.body.get("non_dynamic_allocation") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"non_dynamic")),
+					None=>return Err(Error::MissingField(node_type,"non_dynamic_allocation")),
 				};
-				node.borrow_mut().non_dynamic = match non_dynamic_body.as_bool() {
+				node.borrow_mut().non_dynamic_allocation = match non_dynamic_allocation_body.as_bool() {
 					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(non_dynamic_body.into(),JSONType::Bool)),
+					None=>return Err(Error::MismatchJSONType(non_dynamic_allocation_body.into(),JSONType::Bool)),
 				};
 				let bit_alignment_body = match raw_node.body.get("bit_alignment") {
 					Some(v)=>v,
@@ -11764,13 +11764,13 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
 				};
-				let non_dynamic_body = match raw_node.body.get("non_dynamic") {
+				let non_dynamic_allocation_body = match raw_node.body.get("non_dynamic_allocation") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"non_dynamic")),
+					None=>return Err(Error::MissingField(node_type,"non_dynamic_allocation")),
 				};
-				node.borrow_mut().non_dynamic = match non_dynamic_body.as_bool() {
+				node.borrow_mut().non_dynamic_allocation = match non_dynamic_allocation_body.as_bool() {
 					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(non_dynamic_body.into(),JSONType::Bool)),
+					None=>return Err(Error::MismatchJSONType(non_dynamic_allocation_body.into(),JSONType::Bool)),
 				};
 				let bit_alignment_body = match raw_node.body.get("bit_alignment") {
 					Some(v)=>v,
@@ -11809,13 +11809,13 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
 				};
-				let non_dynamic_body = match raw_node.body.get("non_dynamic") {
+				let non_dynamic_allocation_body = match raw_node.body.get("non_dynamic_allocation") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"non_dynamic")),
+					None=>return Err(Error::MissingField(node_type,"non_dynamic_allocation")),
 				};
-				node.borrow_mut().non_dynamic = match non_dynamic_body.as_bool() {
+				node.borrow_mut().non_dynamic_allocation = match non_dynamic_allocation_body.as_bool() {
 					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(non_dynamic_body.into(),JSONType::Bool)),
+					None=>return Err(Error::MismatchJSONType(non_dynamic_allocation_body.into(),JSONType::Bool)),
 				};
 				let bit_alignment_body = match raw_node.body.get("bit_alignment") {
 					Some(v)=>v,
@@ -11869,13 +11869,13 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_explicit_body.into(),JSONType::Bool)),
 				};
-				let non_dynamic_body = match raw_node.body.get("non_dynamic") {
+				let non_dynamic_allocation_body = match raw_node.body.get("non_dynamic_allocation") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"non_dynamic")),
+					None=>return Err(Error::MissingField(node_type,"non_dynamic_allocation")),
 				};
-				node.borrow_mut().non_dynamic = match non_dynamic_body.as_bool() {
+				node.borrow_mut().non_dynamic_allocation = match non_dynamic_allocation_body.as_bool() {
 					Some(v)=>v,
-					None=>return Err(Error::MismatchJSONType(non_dynamic_body.into(),JSONType::Bool)),
+					None=>return Err(Error::MismatchJSONType(non_dynamic_allocation_body.into(),JSONType::Bool)),
 				};
 				let bit_alignment_body = match raw_node.body.get("bit_alignment") {
 					Some(v)=>v,

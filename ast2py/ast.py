@@ -236,7 +236,7 @@ class Stmt(Node):
 
 class Type(Node):
     is_explicit: bool
-    non_dynamic: bool
+    non_dynamic_allocation: bool
     bit_alignment: BitAlignment
     bit_size: Optional[int]
 
@@ -1439,8 +1439,8 @@ def ast2node(ast :JsonAst) -> Program:
             case NodeType.INT_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at IntType::is_explicit'))
-                x = ast.node[i].body["non_dynamic"]
-                node[i].non_dynamic = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at IntType::non_dynamic'))
+                x = ast.node[i].body["non_dynamic_allocation"]
+                node[i].non_dynamic_allocation = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at IntType::non_dynamic_allocation'))
                 node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
                 x = ast.node[i].body["bit_size"]
                 if x is not None:
@@ -1455,8 +1455,8 @@ def ast2node(ast :JsonAst) -> Program:
             case NodeType.FLOAT_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at FloatType::is_explicit'))
-                x = ast.node[i].body["non_dynamic"]
-                node[i].non_dynamic = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at FloatType::non_dynamic'))
+                x = ast.node[i].body["non_dynamic_allocation"]
+                node[i].non_dynamic_allocation = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at FloatType::non_dynamic_allocation'))
                 node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
                 x = ast.node[i].body["bit_size"]
                 if x is not None:
@@ -1469,8 +1469,8 @@ def ast2node(ast :JsonAst) -> Program:
             case NodeType.IDENT_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at IdentType::is_explicit'))
-                x = ast.node[i].body["non_dynamic"]
-                node[i].non_dynamic = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at IdentType::non_dynamic'))
+                x = ast.node[i].body["non_dynamic_allocation"]
+                node[i].non_dynamic_allocation = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at IdentType::non_dynamic_allocation'))
                 node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
                 x = ast.node[i].body["bit_size"]
                 if x is not None:
@@ -1495,8 +1495,8 @@ def ast2node(ast :JsonAst) -> Program:
             case NodeType.INT_LITERAL_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at IntLiteralType::is_explicit'))
-                x = ast.node[i].body["non_dynamic"]
-                node[i].non_dynamic = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at IntLiteralType::non_dynamic'))
+                x = ast.node[i].body["non_dynamic_allocation"]
+                node[i].non_dynamic_allocation = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at IntLiteralType::non_dynamic_allocation'))
                 node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
                 x = ast.node[i].body["bit_size"]
                 if x is not None:
@@ -1511,8 +1511,8 @@ def ast2node(ast :JsonAst) -> Program:
             case NodeType.STR_LITERAL_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at StrLiteralType::is_explicit'))
-                x = ast.node[i].body["non_dynamic"]
-                node[i].non_dynamic = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at StrLiteralType::non_dynamic'))
+                x = ast.node[i].body["non_dynamic_allocation"]
+                node[i].non_dynamic_allocation = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at StrLiteralType::non_dynamic_allocation'))
                 node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
                 x = ast.node[i].body["bit_size"]
                 if x is not None:
@@ -1532,8 +1532,8 @@ def ast2node(ast :JsonAst) -> Program:
             case NodeType.VOID_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at VoidType::is_explicit'))
-                x = ast.node[i].body["non_dynamic"]
-                node[i].non_dynamic = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at VoidType::non_dynamic'))
+                x = ast.node[i].body["non_dynamic_allocation"]
+                node[i].non_dynamic_allocation = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at VoidType::non_dynamic_allocation'))
                 node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
                 x = ast.node[i].body["bit_size"]
                 if x is not None:
@@ -1543,8 +1543,8 @@ def ast2node(ast :JsonAst) -> Program:
             case NodeType.BOOL_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at BoolType::is_explicit'))
-                x = ast.node[i].body["non_dynamic"]
-                node[i].non_dynamic = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at BoolType::non_dynamic'))
+                x = ast.node[i].body["non_dynamic_allocation"]
+                node[i].non_dynamic_allocation = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at BoolType::non_dynamic_allocation'))
                 node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
                 x = ast.node[i].body["bit_size"]
                 if x is not None:
@@ -1554,8 +1554,8 @@ def ast2node(ast :JsonAst) -> Program:
             case NodeType.ARRAY_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at ArrayType::is_explicit'))
-                x = ast.node[i].body["non_dynamic"]
-                node[i].non_dynamic = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at ArrayType::non_dynamic'))
+                x = ast.node[i].body["non_dynamic_allocation"]
+                node[i].non_dynamic_allocation = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at ArrayType::non_dynamic_allocation'))
                 node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
                 x = ast.node[i].body["bit_size"]
                 if x is not None:
@@ -1581,8 +1581,8 @@ def ast2node(ast :JsonAst) -> Program:
             case NodeType.FUNCTION_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at FunctionType::is_explicit'))
-                x = ast.node[i].body["non_dynamic"]
-                node[i].non_dynamic = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at FunctionType::non_dynamic'))
+                x = ast.node[i].body["non_dynamic_allocation"]
+                node[i].non_dynamic_allocation = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at FunctionType::non_dynamic_allocation'))
                 node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
                 x = ast.node[i].body["bit_size"]
                 if x is not None:
@@ -1598,8 +1598,8 @@ def ast2node(ast :JsonAst) -> Program:
             case NodeType.STRUCT_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at StructType::is_explicit'))
-                x = ast.node[i].body["non_dynamic"]
-                node[i].non_dynamic = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at StructType::non_dynamic'))
+                x = ast.node[i].body["non_dynamic_allocation"]
+                node[i].non_dynamic_allocation = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at StructType::non_dynamic_allocation'))
                 node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
                 x = ast.node[i].body["bit_size"]
                 if x is not None:
@@ -1621,8 +1621,8 @@ def ast2node(ast :JsonAst) -> Program:
             case NodeType.STRUCT_UNION_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at StructUnionType::is_explicit'))
-                x = ast.node[i].body["non_dynamic"]
-                node[i].non_dynamic = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at StructUnionType::non_dynamic'))
+                x = ast.node[i].body["non_dynamic_allocation"]
+                node[i].non_dynamic_allocation = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at StructUnionType::non_dynamic_allocation'))
                 node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
                 x = ast.node[i].body["bit_size"]
                 if x is not None:
@@ -1647,8 +1647,8 @@ def ast2node(ast :JsonAst) -> Program:
             case NodeType.UNION_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at UnionType::is_explicit'))
-                x = ast.node[i].body["non_dynamic"]
-                node[i].non_dynamic = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at UnionType::non_dynamic'))
+                x = ast.node[i].body["non_dynamic_allocation"]
+                node[i].non_dynamic_allocation = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at UnionType::non_dynamic_allocation'))
                 node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
                 x = ast.node[i].body["bit_size"]
                 if x is not None:
@@ -1674,8 +1674,8 @@ def ast2node(ast :JsonAst) -> Program:
             case NodeType.RANGE_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at RangeType::is_explicit'))
-                x = ast.node[i].body["non_dynamic"]
-                node[i].non_dynamic = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at RangeType::non_dynamic'))
+                x = ast.node[i].body["non_dynamic_allocation"]
+                node[i].non_dynamic_allocation = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at RangeType::non_dynamic_allocation'))
                 node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
                 x = ast.node[i].body["bit_size"]
                 if x is not None:
@@ -1695,8 +1695,8 @@ def ast2node(ast :JsonAst) -> Program:
             case NodeType.ENUM_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at EnumType::is_explicit'))
-                x = ast.node[i].body["non_dynamic"]
-                node[i].non_dynamic = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at EnumType::non_dynamic'))
+                x = ast.node[i].body["non_dynamic_allocation"]
+                node[i].non_dynamic_allocation = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at EnumType::non_dynamic_allocation'))
                 node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
                 x = ast.node[i].body["bit_size"]
                 if x is not None:
@@ -1711,8 +1711,8 @@ def ast2node(ast :JsonAst) -> Program:
             case NodeType.META_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at MetaType::is_explicit'))
-                x = ast.node[i].body["non_dynamic"]
-                node[i].non_dynamic = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at MetaType::non_dynamic'))
+                x = ast.node[i].body["non_dynamic_allocation"]
+                node[i].non_dynamic_allocation = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at MetaType::non_dynamic_allocation'))
                 node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
                 x = ast.node[i].body["bit_size"]
                 if x is not None:
@@ -1722,8 +1722,8 @@ def ast2node(ast :JsonAst) -> Program:
             case NodeType.OPTIONAL_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at OptionalType::is_explicit'))
-                x = ast.node[i].body["non_dynamic"]
-                node[i].non_dynamic = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at OptionalType::non_dynamic'))
+                x = ast.node[i].body["non_dynamic_allocation"]
+                node[i].non_dynamic_allocation = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at OptionalType::non_dynamic_allocation'))
                 node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
                 x = ast.node[i].body["bit_size"]
                 if x is not None:
@@ -1738,8 +1738,8 @@ def ast2node(ast :JsonAst) -> Program:
             case NodeType.GENERIC_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at GenericType::is_explicit'))
-                x = ast.node[i].body["non_dynamic"]
-                node[i].non_dynamic = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at GenericType::non_dynamic'))
+                x = ast.node[i].body["non_dynamic_allocation"]
+                node[i].non_dynamic_allocation = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at GenericType::non_dynamic_allocation'))
                 node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
                 x = ast.node[i].body["bit_size"]
                 if x is not None:
