@@ -319,7 +319,7 @@ func (g *Generator) writeStructType(belong string, prefix string, s *ast2go.Stru
 			}
 			if field.BitAlignment != ast2go.BitAlignmentByteAligned {
 				non_aligned = append(non_aligned, field)
-				is_int_set = is_int_set && typ.GetNonDynamic()
+				is_int_set = is_int_set && typ.GetNonDynamicAllocation()
 				is_simple = is_simple &&
 					(typ.GetNodeType() == ast2go.NodeTypeIntType ||
 						typ.GetNodeType() == ast2go.NodeTypeEnumType)
@@ -328,7 +328,7 @@ func (g *Generator) writeStructType(belong string, prefix string, s *ast2go.Stru
 			}
 			if len(non_aligned) > 0 {
 				non_aligned = append(non_aligned, field)
-				is_int_set = is_int_set && typ.GetNonDynamic()
+				is_int_set = is_int_set && typ.GetNonDynamicAllocation()
 				is_simple = is_simple &&
 					(typ.GetNodeType() == ast2go.NodeTypeIntType ||
 						typ.GetNodeType() == ast2go.NodeTypeEnumType)

@@ -2,12 +2,19 @@
 # ArpPacket 
 # arp packet is used to resolve ip address to mac address
 # -------------
+
+enum Operation:
+    :u16
+    Request = 1
+    Reply = 2
+
 format ArpPacket:
     hardware_type :u16
     protocol_type :u16
     hardware_len :u8
     protocol_len :u8
-    operation :u16
+    operation :Operation
+    operation == Operation.Request || operation == Operation.Reply
     source_hardware_address :[hardware_len]u8
     source_protocol_address :[protocol_len]u8
     target_hardware_address :[hardware_len]u8

@@ -1,10 +1,10 @@
 format UDPHeader:
-    SrcPort :u16
-    DstPort :u16
-    Length  :u16
-    Checksum :u16
+    src_port :u16
+    dst_port :u16
+    length  :u16
+    checksum :u16
 
 format UDPDatagram:
-    Header :UDPHeader
-    Data :[Header.Length-8]u8
+    header :UDPHeader
+    data :[header.length-8]u8
 

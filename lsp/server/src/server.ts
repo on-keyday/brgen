@@ -84,6 +84,7 @@ connection.onInitialize((params: InitializeParams) => {
             },
             hoverProvider: true,
             definitionProvider: true,
+            documentSymbolProvider: true,
         }
     };
     if (hasWorkspaceFolderCapability) {
@@ -145,7 +146,7 @@ class DocumentInfo {
     readonly uri :string;
     prevSemanticTokens :SemanticTokens | null = null;
     prevFile :ast2ts.AstFile| null = null;
-    prevNode :ast2ts.Node | null = null;
+    prevNode :ast2ts.Program | null = null;
     prevText :string | null = null;
 
     constructor(uri :string){
@@ -272,6 +273,20 @@ const definitionHandler = async (params :DefinitionParams) => {
 }
 
 connection.onDefinition(definitionHandler);
+
+connection.onDocumentSymbol(async (params) =>{
+    console.log(`textDocument/documentSymbol: ${JSON.stringify(params)}`);
+    const doc = documents.get(params?.textDocument?.uri);
+    if(doc===undefined){
+        console.log(`document ${params?.textDocument?.uri} is not found`);
+        return null; 
+    }
+    const docInfo = getOrCreateDocumentInfo(doc);
+    if(docInfo.prevNode===null) {
+        return null;
+    }
+    return analyze.analyzeSymbols(docInfo.prevNode?.global_scope!);
+})
 
 // The example settings
 interface BrgenLSPSettings {

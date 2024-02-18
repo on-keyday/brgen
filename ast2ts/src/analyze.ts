@@ -583,5 +583,62 @@ export const analyzeSourceCode  = async (prevSemanticTokens :SemTokensStub|null,
     return generateSemanticTokens(locList);
 };
 
+
+export interface PosStub {
+    line: number;
+    character: number;
 }
+
+export interface RangeStub {
+    start: PosStub;
+    end: PosStub;
+}
+
+export const enum SymbolKindStub {
+    Variable = 13,
+}
+
+export interface DocumentSymbolStub {
+    name: string;
+    kind: SymbolKindStub;
+    range: RangeStub;
+    selectionRange: RangeStub;
+    children? :DocumentSymbolStub[];
+}
+
+export const analyzeSymbols = (scope :ast2ts.Scope) :DocumentSymbolStub[] => {
+    var symbols :DocumentSymbolStub[] = [];
+    let preSym :DocumentSymbolStub | null = null;
+    for(let sc=scope as ast2ts.Scope | null;sc != null;sc = scope.next) {
+        for(const s of scope.ident) {
+            let sym : DocumentSymbolStub = {
+                name: s.ident,
+                kind: SymbolKindStub.Variable,
+                range: {
+                    start: {line: s.loc.line-1, character: s.loc.col-1},
+                    end: {line: s.loc.line-1, character: s.loc.col-1},
+                },
+                selectionRange: {
+                    start: {line: s.loc.line-1, character: s.loc.col-1},
+                    end: {line: s.loc.line-1, character: s.loc.col-1},
+                },
+            };
+            symbols.push(sym);
+            preSym = sym;
+        }  
+        if(sc.branch !== null) {
+            if(preSym !== null) {
+                preSym.children = analyzeSymbols(sc.branch);
+            }
+            else {
+                symbols = symbols.concat(analyzeSymbols(sc.branch));
+            }
+        }
+    }
+    return symbols;
+}
+
+
+}
+
 export {analyze}

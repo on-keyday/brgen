@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -46,6 +47,8 @@ func fillStringPtr(c *Config) {
 
 var config *Config
 
+var debug bool
+
 func init() {
 	var err error
 	config, err = loadConfig()
@@ -79,6 +82,8 @@ func init() {
 	flag.BoolVar(&config.Warnings.DisableUnusedWarning, "disable-unused", config.Warnings.DisableUnusedWarning, "disable unused warning")
 	flag.StringVar(config.TestInfo, "test-info", *config.TestInfo, "path to test info output file")
 
+	flag.BoolVar(&debug, "debug", false, "debug mode")
+
 	defer func() {
 		flag.Parse()
 		if out.OutputDir != "" && out.Generator != "" {
@@ -109,7 +114,11 @@ func main() {
 		return
 	}
 	g := &GeneratorHandler{}
-	g.stderr = os.Stdout
+	if debug {
+		g.stderr = os.Stdout
+	} else {
+		g.stderr = io.Discard
+	}
 	start := time.Now()
 	if err := g.Init(*config.Source2Json, config.Output, *config.Suffix); err != nil {
 		log.Fatal(err)
