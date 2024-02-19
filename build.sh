@@ -49,6 +49,9 @@ ninja -C ./built/$BUILD_MODE/$BUILD_TYPE install
 if [ $BUILD_MODE = "wasm-em" ]; then
 unset GOOS
 unset GOARCH
+cd ./src/tool/json2rust
+wasm-pack build --target web
+cd ../../..
 cd ./web/dev
 tsc
 webpack

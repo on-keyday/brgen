@@ -43,6 +43,9 @@ jobs:
           npm install
           tsc
           cd ..
+      - name: Set up wasm-pack
+        run: |
+          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
       - name: Build Wasm
         run: |
           GOROOT=`go env GOROOT`

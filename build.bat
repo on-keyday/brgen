@@ -40,6 +40,9 @@ rem ninja -C ./built/%BUILD_MODE%/%BUILD_TYPE%
 ninja -C ./built/%BUILD_MODE%/%BUILD_TYPE% install
 
 if "%BUILD_MODE%" == "wasm-em" (
+    cd ./src/tool/json2rust
+    wasm-pack build --target web
+    cd ../../../
     cd ./web/dev
     call tsc
     call webpack

@@ -8,6 +8,7 @@ const WorkerFactory = class {
     #j2cp2_mgr_ :JobManager |null = null;
     #j2go_mgr_ :JobManager |null = null;
     #j2c_mgr_ :JobManager |null = null;
+    #j2rs_mgr_ :JobManager |null = null;
 
     getSrc2JSONWorker = () => {
         if(this.#s2j_mgr_) return this.#s2j_mgr_;
@@ -37,6 +38,12 @@ const WorkerFactory = class {
         if(this.#j2c_mgr_) return this.#j2c_mgr_;
         this.#j2c_mgr_ = new JobManager(new Worker(new URL("./json2c_worker.js",import.meta.url),{type:"module"}));
         return this.#j2c_mgr_;
+    }
+
+    getJSON2RSWorker = () => {
+        if(this.#j2rs_mgr_) return this.#j2rs_mgr_;
+        this.#j2rs_mgr_ = new JobManager(new Worker(new URL("./json2rust_worker.js",import.meta.url),{type:"module"}));
+        return this.#j2rs_mgr_;
     }
 }
 
