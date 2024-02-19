@@ -42,6 +42,7 @@ ninja -C ./built/%BUILD_MODE%/%BUILD_TYPE% install
 if "%BUILD_MODE%" == "wasm-em" (
     cd ./src/tool/json2rust
     wasm-pack build --target web
+    copy ..\..\..\LICENSE .\pkg\LICENSE
     cd ../../../
     cd ./web/dev
     call tsc

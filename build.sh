@@ -51,6 +51,7 @@ unset GOOS
 unset GOARCH
 cd ./src/tool/json2rust
 wasm-pack build --target web
+cp ../../../LICENSE ./pkg
 cd ../../..
 cd ./web/dev
 tsc
