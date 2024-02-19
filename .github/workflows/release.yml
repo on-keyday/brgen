@@ -264,7 +264,10 @@ jobs:
           npm install
           cd ../client
           npm install
-          cd ../../web/doc
+          cd ../../src/tool/json2rust
+          mkdir -p ./pkg
+          cp ../../../../LICENSE ./pkg
+          cd ../../../web/doc
           go mod download
           cd ../dev
           npm install
