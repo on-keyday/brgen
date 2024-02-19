@@ -513,6 +513,7 @@ namespace j2cp2 {
                 non_aligned.push_back(ast::cast_to<ast::Field>(f));
                 write_bit_fields(prefix, non_aligned, bit_size);
                 non_aligned.clear();
+                bit_size = 0;
                 return;
             }
             if (auto union_ty = ast::as<ast::StructUnionType>(type)) {
