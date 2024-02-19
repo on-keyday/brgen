@@ -24,6 +24,68 @@ format WebSocketFrame:
     Payload :[available(ExtendedPayloadLength) ? ExtendedPayloadLength : PayloadLength]u8
 `
 
+const dbVersion = 1;
+
+
+interface DBRequest<T,E> {
+    onsuccess :null | ((...arg:any) => void);
+    onerror :null | ((...arg:any) => void);
+    readonly result :T;
+    readonly error :E;
+}
+
+function wait<T,E>(r :DBRequest<T,E>) {
+    return new Promise<T>((resolve,reject) => {
+        r.onsuccess = () => {
+            resolve(r.result);
+        }
+        r.onerror = () => {
+            reject(r.error);
+        }
+    });
+}
+
+class dbStorage {
+    #storage :IDBFactory = globalThis.indexedDB;
+    #db :IDBDatabase | undefined = undefined;
+
+    async #openDB() {
+        const request = this.#storage.open("s2j",dbVersion);
+        request.onupgradeneeded = (event) => {
+            const db = request.result;
+            db.createObjectStore("data")
+        }
+        const db = await wait(request);
+        return this.#db = db;
+    }
+
+    async #getDB() {
+        if(this.#db !== undefined) return this.#db;
+        return await this.#openDB();
+    }
+
+    async getItem(key :StorageKey) {
+        const db = await this.#getDB();
+        const transaction = db.transaction("data","readonly");
+        const store = transaction.objectStore("data");
+        return await wait(store.get(key));
+    }
+
+    async setItem(key :StorageKey,value :any) {
+        const db = await this.#getDB();
+        const transaction = db.transaction("data","readwrite");
+        const store = transaction.objectStore("data");
+        return await wait(store.put(value,key));
+    }
+
+    async clear() { 
+        const db = await this.#getDB();
+        const transaction = db.transaction("data","readwrite");
+        const store = transaction.objectStore("data");
+        return await wait(store.clear());
+    }
+}
+
 class storageManager {
     #storage :Storage =  globalThis.localStorage;
     #langMode :Language | undefined = undefined;
