@@ -266,7 +266,7 @@ jobs:
           npm install
           cd ../../src/tool/json2rust
           mkdir -p ./pkg
-          cp ../../../../LICENSE ./pkg
+          cp ../../../LICENSE ./pkg
           cd ../../../web/doc
           go mod download
           cd ../dev
