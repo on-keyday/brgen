@@ -29,3 +29,4 @@ go_dump_env.bat
 /web/public/example
 /web/doc/resources/_gen
 license_cache
+pkg/

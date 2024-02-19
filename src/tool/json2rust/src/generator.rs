@@ -23,6 +23,14 @@ impl<W: std::io::Write> Generator<W> {
         }
     }
 
+    pub fn flush(&mut self) {
+        self.writer.flush().unwrap();
+    }
+
+    pub fn get_mut_writer(&mut self) -> &mut W {
+        self.writer.get_mut()
+    }
+
     fn enter_indent_scope(&mut self) {
         self.indent += 1;
     }
