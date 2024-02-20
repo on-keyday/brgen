@@ -22,10 +22,5 @@ pub fn json2rust(input: &str) -> String {
         return format!("error: {:?}", e);
     }
     let w = gen.get_mut_writer();
-    return format!(
-        "{} length: {}",
-        String::from_utf8(w.clone()).unwrap(),
-        w.len()
-    );
     String::from_utf8(w.clone()).unwrap()
 }
