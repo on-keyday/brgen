@@ -19,7 +19,7 @@ const LanguageList = [
     RequestLanguage.CPP,
     RequestLanguage.GO,
     RequestLanguage.C,
-    //RequestLanguage.RUST, // not implemented yet
+    RequestLanguage.RUST, // not implemented yet
 ];
 
 
