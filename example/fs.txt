@@ -304,3 +304,46 @@ enum HandshakeType  {
 
             ping_failed,*/
         };
+    
+    enum  Op {
+        NOP,
+
+        // arithmetic
+        ADD,
+        SUB,
+        MUL,
+        DIV,
+        MOD,
+        AND,
+        OR,
+        XOR,
+        NOT,
+        SHL,
+        SHR,
+        INC,
+        DEC,
+        NEG,
+
+        // compare and jump
+        CMP,
+        JMP,
+        JE,
+        JNE,
+        JG,
+        JGE,
+        JL,
+        JLE,
+
+        // function calls
+        CALL,
+        RET,
+
+        // stack manipulation
+        PUSH,
+        POP,
+
+        // memory access
+        TRSF,   // transfer between registers
+        LOAD,   // load from memory
+        STORE,  // store to memory
+    };

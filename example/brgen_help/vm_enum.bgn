@@ -1,0 +1,59 @@
+
+config.cpp.namespace = "brgen::vm"
+
+enum Op:
+    NOP
+
+    # artihmetic
+    ADD
+    SUB
+    MUL
+    DIV
+    MOD
+    AND
+    OR
+    XOR
+    NOT
+    SHL
+    SHR
+    INC
+    DEC
+    NEG
+
+    # compare and jump
+    CMP
+    JMP
+    JE
+    JNE
+    JG
+    JGE
+    JL
+    JLE
+    CALL
+    RET
+
+    # stack
+    PUSH
+    POP
+
+    # memory and register
+    TRSF
+    SET_VAR_COUNT
+    INIT_VAR
+    LOAD_VAR
+    STORE_VAR
+    STATIC_LOAD
+    
+    # input and output 
+    GET_OFFSET # get offset of input/output
+    SET_OFFSET # set offset of input/output
+    READ_BYTES # read from input
+    PEEK_BYTES # peek from input
+    WRITE_BYTES # write to output
+
+    # error
+    ERROR
+  
+    # meta data
+    NEXT_FUNC
+    FUNC_NAME
