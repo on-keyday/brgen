@@ -11,7 +11,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@v1
+        uses: Kesin11/actions-timeline@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
@@ -49,7 +49,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@v1
+        uses: Kesin11/actions-timeline@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
@@ -87,7 +87,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@v1
+        uses: Kesin11/actions-timeline@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
@@ -127,7 +127,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@v1
+        uses: Kesin11/actions-timeline@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
@@ -163,7 +163,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@v1
+        uses: Kesin11/actions-timeline@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
@@ -202,7 +202,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@v1
+        uses: Kesin11/actions-timeline@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
@@ -246,7 +246,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@v1
+        uses: Kesin11/actions-timeline@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
@@ -313,7 +313,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@v1
+        uses: Kesin11/actions-timeline@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Download Linux artifacts
