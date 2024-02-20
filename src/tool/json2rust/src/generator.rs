@@ -201,6 +201,7 @@ impl<W: std::io::Write> Generator<W> {
                 self.write_format(fmt)?;
             }
         }
+        self.writer.flush()?;
         Ok(())
     }
 }

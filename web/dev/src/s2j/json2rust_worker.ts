@@ -28,6 +28,7 @@ globalThis.onmessage = async(ev) => {
         }
         globalThis.postMessage(res);
     } catch(e) {
+        console.error(e)
         const res :JobResult = {
             lang: data.lang,
             jobID: data.jobID,
