@@ -34,7 +34,7 @@ const WorkerFactory = class {
         return this.#j2go_mgr_;
     }
 
-    getJSON2CWWorker = () => {
+    getJSON2CWorker = () => {
         if(this.#j2c_mgr_) return this.#j2c_mgr_;
         this.#j2c_mgr_ = new JobManager(new Worker(new URL("./json2c_worker.js",import.meta.url),{type:"module"}));
         return this.#j2c_mgr_;
@@ -71,12 +71,15 @@ export interface GoOption extends CallOption {
 
 export interface COption extends CallOption {}
 
+export interface RustOption extends CallOption {}
+
 export const loadWorkers = () => {
     factory.getSrc2JSONWorker();
     factory.getJSON2CppWorker();
     factory.getJSON2Cpp2Worker();
     factory.getJSON2GoWorker();
-    factory.getJSON2CWWorker();
+    factory.getJSON2CWorker();
+    factory.getJSON2RSWorker();
 }
 
 
@@ -157,7 +160,13 @@ export const getGoCode = (id :TraceID,sourceCode :string,options? :GoOption) => 
 }
 
 export const getCCode = (id :TraceID,sourceCode :string,options? :COption) => {
-    const mgr = factory.getJSON2CWWorker();
+    const mgr = factory.getJSON2CWorker();
     const req = mgr.getRequest(id,RequestLanguage.C,sourceCode);
+    return mgr.doRequest(req);
+}
+
+export const getRustCode = (id :TraceID,sourceCode :string,options? :RustOption) => {
+    const mgr = factory.getJSON2RSWorker();
+    const req = mgr.getRequest(id,RequestLanguage.RUST,sourceCode);
     return mgr.doRequest(req);
 }

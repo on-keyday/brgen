@@ -149,6 +149,11 @@ const handleC = async (ui :UIModel, s :JobResult) => {
     return handleLanguage(ui,s,caller.getCCode,Language.C,"c",COption);
 }
 
+const handleRust = async (ui :UIModel, s :JobResult) => {
+    const rustOption : caller.RustOption = {};
+    return handleLanguage(ui,s,caller.getRustCode,Language.RUST,"rust",rustOption);
+}
+
 const handleJSONOutput = async (ui :UIModel,id :TraceID,value :string,generator:(id :TraceID,srcCode :string,option:any)=>Promise<JobResult>) => {
     const s = await generator(id,value,
     {filename: "editor.bgn"}).catch((e) => {
@@ -219,5 +224,7 @@ export const updateGenerated = async (ui :UIModel) => {
             return handleGo(ui,s);
         case Language.C:
             return handleC(ui,s);
+        case Language.RUST:
+            return handleRust(ui,s);
     }
 }
