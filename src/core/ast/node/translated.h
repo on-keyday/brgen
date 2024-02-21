@@ -182,4 +182,24 @@ namespace brgen::ast {
         }
     };
 
+    struct Metadata : Stmt {
+        define_node_type(NodeType::metadata);
+        std::shared_ptr<Expr> base;
+        std::string name;
+        std::vector<std::shared_ptr<Expr>> values;
+
+        Metadata(std::shared_ptr<Expr>&& a, std::string&& b)
+            : Stmt(a->loc, NodeType::metadata), base(std::move(a)), name(std::move(b)) {}
+
+        Metadata()
+            : Stmt({}, NodeType::metadata) {}
+
+        void dump(auto&& field_) {
+            Stmt::dump(field_);
+            sdebugf(base);
+            sdebugf(name);
+            sdebugf(values);
+        }
+    };
+
 }  // namespace brgen::ast

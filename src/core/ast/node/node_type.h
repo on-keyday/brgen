@@ -61,6 +61,7 @@ namespace brgen::ast {
         // translated
         assert,
         implicit_yield,
+        metadata,
 
         member = 0x220000,
 
@@ -169,6 +170,7 @@ namespace brgen::ast {
         {NodeType::generic_type, "generic_type"},
         {NodeType::bad_expr, "bad_expr"},
         {NodeType::char_literal, "char_literal"},
+        {NodeType::metadata, "metadata"},
     };
 
     constexpr std::array<std::pair<NodeType, const char*>, std::size(node_type_str_array)> sorted_node_type_str_array = [] {

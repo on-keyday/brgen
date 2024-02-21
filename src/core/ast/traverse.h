@@ -79,6 +79,7 @@ namespace brgen::ast {
 
             CASE(Assert)
             CASE(ImplicitYield)
+            CASE(Metadata)
 
             // member
             CASE(Member)

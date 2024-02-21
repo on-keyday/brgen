@@ -1,7 +1,9 @@
 
 config.cpp.namespace = "brgen::vm"
 
+
 enum Op:
+    :u8
     NOP
 
     # artihmetic
@@ -68,3 +70,17 @@ enum Op:
     NEXT_FUNC
     FUNC_NAME
     FUNC_END
+
+format Instruction:
+    op :Op
+    arg :u64
+
+format StaticData:
+    len :u64
+    data :[len]u8
+
+format Code:
+    instruction_len :u64
+    instructions :[instruction_len]Instruction
+    static_data_len :u64
+    static_data :[static_data_len]StaticData
