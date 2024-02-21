@@ -40,6 +40,7 @@ class NodeType(PyEnum):
     CONTINUE = "continue"
     ASSERT = "assert"
     IMPLICIT_YIELD = "implicit_yield"
+    METADATA = "metadata"
     TYPE = "type"
     INT_TYPE = "int_type"
     FLOAT_TYPE = "float_type"
@@ -443,6 +444,12 @@ class Assert(Stmt):
 
 class ImplicitYield(Stmt):
     expr: Optional[Expr]
+
+
+class Metadata(Stmt):
+    base: Optional[Expr]
+    name: str
+    values: List[Expr]
 
 
 class IntType(Type):
@@ -877,6 +884,8 @@ def ast2node(ast :JsonAst) -> Program:
                 node.append(Assert())
             case NodeType.IMPLICIT_YIELD:
                 node.append(ImplicitYield())
+            case NodeType.METADATA:
+                node.append(Metadata())
             case NodeType.INT_TYPE:
                 node.append(IntType())
             case NodeType.FLOAT_TYPE:
@@ -1436,6 +1445,15 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].expr = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at ImplicitYield::expr'))
                 else:
                     node[i].expr = None
+            case NodeType.METADATA:
+                if ast.node[i].body["base"] is not None:
+                    x = node[ast.node[i].body["base"]]
+                    node[i].base = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at Metadata::base'))
+                else:
+                    node[i].base = None
+                x = ast.node[i].body["name"]
+                node[i].name = x if isinstance(x,str)  else raiseError(TypeError('type mismatch at Metadata::name'))
+                node[i].values = [(node[x] if isinstance(node[x],Expr) else raiseError(TypeError('type mismatch at Metadata::values'))) for x in ast.node[i].body["values"]]
             case NodeType.INT_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at IntType::is_explicit'))
@@ -2347,6 +2365,13 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
         case x if isinstance(x,ImplicitYield):
           if x.expr is not None:
               if f(f,x.expr) == False:
+                  return
+        case x if isinstance(x,Metadata):
+          if x.base is not None:
+              if f(f,x.base) == False:
+                  return
+          for i in range(len(x.values)):
+              if f(f,x.values[i]) == False:
                   return
         case x if isinstance(x,IntType):
             pass

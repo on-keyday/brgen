@@ -46,6 +46,7 @@ const char* ast2c_NodeType_to_string(ast2c_NodeType val) {
 	case AST2C_NODETYPE_CONTINUE: return "continue";
 	case AST2C_NODETYPE_ASSERT: return "assert";
 	case AST2C_NODETYPE_IMPLICIT_YIELD: return "implicit_yield";
+	case AST2C_NODETYPE_METADATA: return "metadata";
 	case AST2C_NODETYPE_TYPE: return "type";
 	case AST2C_NODETYPE_INT_TYPE: return "int_type";
 	case AST2C_NODETYPE_FLOAT_TYPE: return "float_type";
@@ -227,6 +228,10 @@ int ast2c_NodeType_from_string(const char* str, ast2c_NodeType* out) {
 	}
 	if (strcmp(str, "implicit_yield") == 0) {
 		*out = AST2C_NODETYPE_IMPLICIT_YIELD;
+		return 1;
+	}
+	if (strcmp(str, "metadata") == 0) {
+		*out = AST2C_NODETYPE_METADATA;
 		return 1;
 	}
 	if (strcmp(str, "type") == 0) {
@@ -2114,6 +2119,43 @@ int ast2c_ImplicitYield_parse(ast2c_Ast* ast,ast2c_ImplicitYield* s,ast2c_json_h
 	if (!expr) { if(h->error) { h->error(h,expr, "ast2c_ImplicitYield::expr is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_ImplicitYield::loc"); }
+		goto error;
+	}
+	return 1;
+error:
+	return 0;
+}
+
+// returns 1 if succeed 0 if failed
+int ast2c_Metadata_parse(ast2c_Ast* ast,ast2c_Metadata* s,ast2c_json_handlers* h, void* obj) {
+	if (!ast||!s||!h||!obj) {
+		if(h->error) { h->error(h,NULL, "invalid argument"); }
+		return 0;
+	}
+	void* loc = h->object_get(h, obj, "loc");
+	void* obj_body = h->object_get(h, obj, "body");
+	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
+	s->base = NULL;
+	s->name = NULL;
+	s->values = NULL;
+	void* base = h->object_get(h, obj_body, "base");
+	void* name = h->object_get(h, obj_body, "name");
+	void* values = h->object_get(h, obj_body, "values");
+	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_Metadata::loc is null"); } return 0; }
+	if (!base) { if(h->error) { h->error(h,base, "ast2c_Metadata::base is null"); } return 0; }
+	if (!name) { if(h->error) { h->error(h,name, "ast2c_Metadata::name is null"); } return 0; }
+	if (!values) { if(h->error) { h->error(h,values, "ast2c_Metadata::values is null"); } return 0; }
+	if(!h->array_size(h, values,&s->values_size)) {
+		if(h->error) { h->error(h,values, "failed to get array size of ast2c_Metadata::values"); }
+		return NULL;
+	}
+	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
+		if(h->error) { h->error(h,loc, "failed to parse ast2c_Metadata::loc"); }
+		goto error;
+	}
+	s->name = h->string_get_alloc(h,name);
+	if (!s->name) {
+		if(h->error) { h->error(h,name, "failed to parse ast2c_Metadata::name"); }
 		goto error;
 	}
 	return 1;

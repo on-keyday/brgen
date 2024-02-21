@@ -39,6 +39,7 @@ Break,
 Continue,
 Assert,
 ImplicitYield,
+Metadata,
 Type,
 IntType,
 FloatType,
@@ -457,6 +458,12 @@ public class Assert : Stmt{
 public class ImplicitYield : Stmt{
 	public Loc Loc{get;set;}
 	public Expr? Expr{get;set;}
+}
+public class Metadata : Stmt{
+	public Loc Loc{get;set;}
+	public Expr? Base{get;set;}
+	public string Name{get;set;} = "";
+	public List<Expr>? Values{get;set;}
 }
 public class IntType : Type{
 	public Loc Loc{get;set;}
@@ -913,6 +920,9 @@ public static class Ast {
            case NodeType.ImplicitYield:
                nodes[i] = new ImplicitYield() { Loc = ast.Node[i].Loc };
                break;
+           case NodeType.Metadata:
+               nodes[i] = new Metadata() { Loc = ast.Node[i].Loc };
+               break;
            case NodeType.IntType:
                nodes[i] = new IntType() { Loc = ast.Node[i].Loc };
                break;
@@ -1242,6 +1252,12 @@ public static class Ast {
                var node = nodes[i] as ImplicitYield;
                node.Loc = ast.Node[i].Body[loc];
                node.Expr = ast.Node[i].Body[expr];
+           case NodeType.Metadata:
+               var node = nodes[i] as Metadata;
+               node.Loc = ast.Node[i].Body[loc];
+               node.Base = ast.Node[i].Body[base];
+               node.Name = ast.Node[i].Body[name];
+               node.Values = ast.Node[i].Body[values];
            case NodeType.IntType:
                var node = nodes[i] as IntType;
                node.Loc = ast.Node[i].Body[loc];

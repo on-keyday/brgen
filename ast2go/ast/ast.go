@@ -45,42 +45,43 @@ const (
 	NodeTypeContinue        NodeType = 32
 	NodeTypeAssert          NodeType = 33
 	NodeTypeImplicitYield   NodeType = 34
-	NodeTypeType            NodeType = 35
-	NodeTypeIntType         NodeType = 36
-	NodeTypeFloatType       NodeType = 37
-	NodeTypeIdentType       NodeType = 38
-	NodeTypeIntLiteralType  NodeType = 39
-	NodeTypeStrLiteralType  NodeType = 40
-	NodeTypeVoidType        NodeType = 41
-	NodeTypeBoolType        NodeType = 42
-	NodeTypeArrayType       NodeType = 43
-	NodeTypeFunctionType    NodeType = 44
-	NodeTypeStructType      NodeType = 45
-	NodeTypeStructUnionType NodeType = 46
-	NodeTypeUnionType       NodeType = 47
-	NodeTypeRangeType       NodeType = 48
-	NodeTypeEnumType        NodeType = 49
-	NodeTypeMetaType        NodeType = 50
-	NodeTypeOptionalType    NodeType = 51
-	NodeTypeGenericType     NodeType = 52
-	NodeTypeLiteral         NodeType = 53
-	NodeTypeIntLiteral      NodeType = 54
-	NodeTypeBoolLiteral     NodeType = 55
-	NodeTypeStrLiteral      NodeType = 56
-	NodeTypeCharLiteral     NodeType = 57
-	NodeTypeTypeLiteral     NodeType = 58
-	NodeTypeSpecialLiteral  NodeType = 59
-	NodeTypeMember          NodeType = 60
-	NodeTypeField           NodeType = 61
-	NodeTypeFormat          NodeType = 62
-	NodeTypeState           NodeType = 63
-	NodeTypeEnum            NodeType = 64
-	NodeTypeEnumMember      NodeType = 65
-	NodeTypeFunction        NodeType = 66
-	NodeTypeBuiltinMember   NodeType = 67
-	NodeTypeBuiltinFunction NodeType = 68
-	NodeTypeBuiltinField    NodeType = 69
-	NodeTypeBuiltinObject   NodeType = 70
+	NodeTypeMetadata        NodeType = 35
+	NodeTypeType            NodeType = 36
+	NodeTypeIntType         NodeType = 37
+	NodeTypeFloatType       NodeType = 38
+	NodeTypeIdentType       NodeType = 39
+	NodeTypeIntLiteralType  NodeType = 40
+	NodeTypeStrLiteralType  NodeType = 41
+	NodeTypeVoidType        NodeType = 42
+	NodeTypeBoolType        NodeType = 43
+	NodeTypeArrayType       NodeType = 44
+	NodeTypeFunctionType    NodeType = 45
+	NodeTypeStructType      NodeType = 46
+	NodeTypeStructUnionType NodeType = 47
+	NodeTypeUnionType       NodeType = 48
+	NodeTypeRangeType       NodeType = 49
+	NodeTypeEnumType        NodeType = 50
+	NodeTypeMetaType        NodeType = 51
+	NodeTypeOptionalType    NodeType = 52
+	NodeTypeGenericType     NodeType = 53
+	NodeTypeLiteral         NodeType = 54
+	NodeTypeIntLiteral      NodeType = 55
+	NodeTypeBoolLiteral     NodeType = 56
+	NodeTypeStrLiteral      NodeType = 57
+	NodeTypeCharLiteral     NodeType = 58
+	NodeTypeTypeLiteral     NodeType = 59
+	NodeTypeSpecialLiteral  NodeType = 60
+	NodeTypeMember          NodeType = 61
+	NodeTypeField           NodeType = 62
+	NodeTypeFormat          NodeType = 63
+	NodeTypeState           NodeType = 64
+	NodeTypeEnum            NodeType = 65
+	NodeTypeEnumMember      NodeType = 66
+	NodeTypeFunction        NodeType = 67
+	NodeTypeBuiltinMember   NodeType = 68
+	NodeTypeBuiltinFunction NodeType = 69
+	NodeTypeBuiltinField    NodeType = 70
+	NodeTypeBuiltinObject   NodeType = 71
 )
 
 func (n NodeType) String() string {
@@ -155,6 +156,8 @@ func (n NodeType) String() string {
 		return "assert"
 	case NodeTypeImplicitYield:
 		return "implicit_yield"
+	case NodeTypeMetadata:
+		return "metadata"
 	case NodeTypeType:
 		return "type"
 	case NodeTypeIntType:
@@ -308,6 +311,8 @@ func (n *NodeType) UnmarshalJSON(data []byte) error {
 		*n = NodeTypeAssert
 	case "implicit_yield":
 		*n = NodeTypeImplicitYield
+	case "metadata":
+		*n = NodeTypeMetadata
 	case "type":
 		*n = NodeTypeType
 	case "int_type":
@@ -516,6 +521,10 @@ func (n *Assert) GetNodeType() NodeType {
 
 func (n *ImplicitYield) GetNodeType() NodeType {
 	return NodeTypeImplicitYield
+}
+
+func (n *Metadata) GetNodeType() NodeType {
+	return NodeTypeMetadata
 }
 
 func (n *IntType) GetNodeType() NodeType {
@@ -2172,6 +2181,21 @@ func (n *ImplicitYield) GetLoc() Loc {
 	return n.Loc
 }
 
+type Metadata struct {
+	Loc    Loc
+	Base   Expr
+	Name   string
+	Values []Expr
+}
+
+func (n *Metadata) isStmt() {}
+
+func (n *Metadata) isNode() {}
+
+func (n *Metadata) GetLoc() Loc {
+	return n.Loc
+}
+
 type IntType struct {
 	Loc                  Loc
 	IsExplicit           bool
@@ -3360,6 +3384,8 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			n.node[i] = &Assert{Loc: raw.Loc}
 		case NodeTypeImplicitYield:
 			n.node[i] = &ImplicitYield{Loc: raw.Loc}
+		case NodeTypeMetadata:
+			n.node[i] = &Metadata{Loc: raw.Loc}
 		case NodeTypeIntType:
 			n.node[i] = &IntType{Loc: raw.Loc}
 		case NodeTypeFloatType:
@@ -4100,6 +4126,24 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			}
 			if tmp.Expr != nil {
 				v.Expr = n.node[*tmp.Expr].(Expr)
+			}
+		case NodeTypeMetadata:
+			v := n.node[i].(*Metadata)
+			var tmp struct {
+				Base   *uintptr  `json:"base"`
+				Name   string    `json:"name"`
+				Values []uintptr `json:"values"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			if tmp.Base != nil {
+				v.Base = n.node[*tmp.Base].(Expr)
+			}
+			v.Name = tmp.Name
+			v.Values = make([]Expr, len(tmp.Values))
+			for j, k := range tmp.Values {
+				v.Values[j] = n.node[k].(Expr)
 			}
 		case NodeTypeIntType:
 			v := n.node[i].(*IntType)
@@ -5322,6 +5366,17 @@ func Walk(n Node, f Visitor) {
 	case *ImplicitYield:
 		if v.Expr != nil {
 			if !f.Visit(f, v.Expr) {
+				return
+			}
+		}
+	case *Metadata:
+		if v.Base != nil {
+			if !f.Visit(f, v.Base) {
+				return
+			}
+		}
+		for _, w := range v.Values {
+			if !f.Visit(f, w) {
 				return
 			}
 		}

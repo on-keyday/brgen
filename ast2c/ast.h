@@ -86,6 +86,7 @@ typedef struct ast2c_Break ast2c_Break;
 typedef struct ast2c_Continue ast2c_Continue;
 typedef struct ast2c_Assert ast2c_Assert;
 typedef struct ast2c_ImplicitYield ast2c_ImplicitYield;
+typedef struct ast2c_Metadata ast2c_Metadata;
 typedef struct ast2c_IntType ast2c_IntType;
 typedef struct ast2c_FloatType ast2c_FloatType;
 typedef struct ast2c_IdentType ast2c_IdentType;
@@ -165,6 +166,7 @@ enum ast2c_NodeType {
 	AST2C_NODETYPE_CONTINUE,
 	AST2C_NODETYPE_ASSERT,
 	AST2C_NODETYPE_IMPLICIT_YIELD,
+	AST2C_NODETYPE_METADATA,
 	AST2C_NODETYPE_TYPE,
 	AST2C_NODETYPE_INT_TYPE,
 	AST2C_NODETYPE_FLOAT_TYPE,
@@ -892,6 +894,18 @@ struct ast2c_ImplicitYield {
 
 // returns 1 if succeed 0 if failed
 int ast2c_ImplicitYield_parse(ast2c_Ast* ,ast2c_ImplicitYield*,ast2c_json_handlers*,void*);
+
+struct ast2c_Metadata {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Expr* base;
+	char* name;
+	ast2c_Expr** values;
+	size_t values_size;
+};
+
+// returns 1 if succeed 0 if failed
+int ast2c_Metadata_parse(ast2c_Ast* ,ast2c_Metadata*,ast2c_json_handlers*,void*);
 
 struct ast2c_IntType {
 	const ast2c_NodeType node_type;

@@ -78,6 +78,7 @@ impl From<&Node> for NodeType {
 			Node::Continue(_) => Self::Continue,
 			Node::Assert(_) => Self::Assert,
 			Node::ImplicitYield(_) => Self::ImplicitYield,
+			Node::Metadata(_) => Self::Metadata,
 			Node::IntType(_) => Self::IntType,
 			Node::FloatType(_) => Self::FloatType,
 			Node::IdentType(_) => Self::IdentType,
@@ -156,6 +157,7 @@ impl From<&NodeWeak> for NodeType {
 			NodeWeak::Continue(_) => Self::Continue,
 			NodeWeak::Assert(_) => Self::Assert,
 			NodeWeak::ImplicitYield(_) => Self::ImplicitYield,
+			NodeWeak::Metadata(_) => Self::Metadata,
 			NodeWeak::IntType(_) => Self::IntType,
 			NodeWeak::FloatType(_) => Self::FloatType,
 			NodeWeak::IdentType(_) => Self::IdentType,
@@ -235,6 +237,7 @@ impl From<NodeWeak> for NodeType {
 	Continue,
 	Assert,
 	ImplicitYield,
+	Metadata,
 	Type,
 	IntType,
 	FloatType,
@@ -312,6 +315,7 @@ impl TryFrom<&str> for NodeType {
 			"continue" =>Ok(Self::Continue),
 			"assert" =>Ok(Self::Assert),
 			"implicit_yield" =>Ok(Self::ImplicitYield),
+			"metadata" =>Ok(Self::Metadata),
 			"type" =>Ok(Self::Type),
 			"int_type" =>Ok(Self::IntType),
 			"float_type" =>Ok(Self::FloatType),
@@ -751,6 +755,7 @@ pub enum Node {
 	Continue(Rc<RefCell<Continue>>),
 	Assert(Rc<RefCell<Assert>>),
 	ImplicitYield(Rc<RefCell<ImplicitYield>>),
+	Metadata(Rc<RefCell<Metadata>>),
 	IntType(Rc<RefCell<IntType>>),
 	FloatType(Rc<RefCell<FloatType>>),
 	IdentType(Rc<RefCell<IdentType>>),
@@ -820,6 +825,7 @@ pub enum NodeWeak {
 	Continue(Weak<RefCell<Continue>>),
 	Assert(Weak<RefCell<Assert>>),
 	ImplicitYield(Weak<RefCell<ImplicitYield>>),
+	Metadata(Weak<RefCell<Metadata>>),
 	IntType(Weak<RefCell<IntType>>),
 	FloatType(Weak<RefCell<FloatType>>),
 	IdentType(Weak<RefCell<IdentType>>),
@@ -890,6 +896,7 @@ impl Node {
             Node::Continue(node)=>node.borrow().loc.clone(),
             Node::Assert(node)=>node.borrow().loc.clone(),
             Node::ImplicitYield(node)=>node.borrow().loc.clone(),
+            Node::Metadata(node)=>node.borrow().loc.clone(),
             Node::IntType(node)=>node.borrow().loc.clone(),
             Node::FloatType(node)=>node.borrow().loc.clone(),
             Node::IdentType(node)=>node.borrow().loc.clone(),
@@ -962,6 +969,7 @@ impl From<&Node> for NodeWeak {
 			Node::Continue(node)=>Self::Continue(Rc::downgrade(node)),
 			Node::Assert(node)=>Self::Assert(Rc::downgrade(node)),
 			Node::ImplicitYield(node)=>Self::ImplicitYield(Rc::downgrade(node)),
+			Node::Metadata(node)=>Self::Metadata(Rc::downgrade(node)),
 			Node::IntType(node)=>Self::IntType(Rc::downgrade(node)),
 			Node::FloatType(node)=>Self::FloatType(Rc::downgrade(node)),
 			Node::IdentType(node)=>Self::IdentType(Rc::downgrade(node)),
@@ -1041,6 +1049,7 @@ impl TryFrom<&NodeWeak> for Node {
 			NodeWeak::Continue(node)=>Ok(Self::Continue(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Continue))?)),
 			NodeWeak::Assert(node)=>Ok(Self::Assert(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Assert))?)),
 			NodeWeak::ImplicitYield(node)=>Ok(Self::ImplicitYield(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::ImplicitYield))?)),
+			NodeWeak::Metadata(node)=>Ok(Self::Metadata(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Metadata))?)),
 			NodeWeak::IntType(node)=>Ok(Self::IntType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::IntType))?)),
 			NodeWeak::FloatType(node)=>Ok(Self::FloatType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::FloatType))?)),
 			NodeWeak::IdentType(node)=>Ok(Self::IdentType(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::IdentType))?)),
@@ -1561,6 +1570,7 @@ pub enum Stmt {
 	Continue(Rc<RefCell<Continue>>),
 	Assert(Rc<RefCell<Assert>>),
 	ImplicitYield(Rc<RefCell<ImplicitYield>>),
+	Metadata(Rc<RefCell<Metadata>>),
 	Field(Rc<RefCell<Field>>),
 	Format(Rc<RefCell<Format>>),
 	State(Rc<RefCell<State>>),
@@ -1584,6 +1594,7 @@ pub enum StmtWeak {
 	Continue(Weak<RefCell<Continue>>),
 	Assert(Weak<RefCell<Assert>>),
 	ImplicitYield(Weak<RefCell<ImplicitYield>>),
+	Metadata(Weak<RefCell<Metadata>>),
 	Field(Weak<RefCell<Field>>),
 	Format(Weak<RefCell<Format>>),
 	State(Weak<RefCell<State>>),
@@ -1608,6 +1619,7 @@ impl Stmt {
             Stmt::Continue(node)=>node.borrow().loc.clone(),
             Stmt::Assert(node)=>node.borrow().loc.clone(),
             Stmt::ImplicitYield(node)=>node.borrow().loc.clone(),
+            Stmt::Metadata(node)=>node.borrow().loc.clone(),
             Stmt::Field(node)=>node.borrow().loc.clone(),
             Stmt::Format(node)=>node.borrow().loc.clone(),
             Stmt::State(node)=>node.borrow().loc.clone(),
@@ -1634,6 +1646,7 @@ impl From<&Stmt> for StmtWeak {
 			Stmt::Continue(node)=>Self::Continue(Rc::downgrade(node)),
 			Stmt::Assert(node)=>Self::Assert(Rc::downgrade(node)),
 			Stmt::ImplicitYield(node)=>Self::ImplicitYield(Rc::downgrade(node)),
+			Stmt::Metadata(node)=>Self::Metadata(Rc::downgrade(node)),
 			Stmt::Field(node)=>Self::Field(Rc::downgrade(node)),
 			Stmt::Format(node)=>Self::Format(Rc::downgrade(node)),
 			Stmt::State(node)=>Self::State(Rc::downgrade(node)),
@@ -1667,6 +1680,7 @@ impl TryFrom<&StmtWeak> for Stmt {
 			StmtWeak::Continue(node)=>Ok(Self::Continue(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Continue))?)),
 			StmtWeak::Assert(node)=>Ok(Self::Assert(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Assert))?)),
 			StmtWeak::ImplicitYield(node)=>Ok(Self::ImplicitYield(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::ImplicitYield))?)),
+			StmtWeak::Metadata(node)=>Ok(Self::Metadata(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Metadata))?)),
 			StmtWeak::Field(node)=>Ok(Self::Field(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Field))?)),
 			StmtWeak::Format(node)=>Ok(Self::Format(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Format))?)),
 			StmtWeak::State(node)=>Ok(Self::State(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::State))?)),
@@ -1701,6 +1715,7 @@ impl TryFrom<&Node> for Stmt {
 			Node::Continue(node)=>Ok(Self::Continue(node.clone())),
 			Node::Assert(node)=>Ok(Self::Assert(node.clone())),
 			Node::ImplicitYield(node)=>Ok(Self::ImplicitYield(node.clone())),
+			Node::Metadata(node)=>Ok(Self::Metadata(node.clone())),
 			Node::Field(node)=>Ok(Self::Field(node.clone())),
 			Node::Format(node)=>Ok(Self::Format(node.clone())),
 			Node::State(node)=>Ok(Self::State(node.clone())),
@@ -1735,6 +1750,7 @@ impl From<&Stmt> for Node {
 			Stmt::Continue(node)=>Self::Continue(node.clone()),
 			Stmt::Assert(node)=>Self::Assert(node.clone()),
 			Stmt::ImplicitYield(node)=>Self::ImplicitYield(node.clone()),
+			Stmt::Metadata(node)=>Self::Metadata(node.clone()),
 			Stmt::Field(node)=>Self::Field(node.clone()),
 			Stmt::Format(node)=>Self::Format(node.clone()),
 			Stmt::State(node)=>Self::State(node.clone()),
@@ -1768,6 +1784,7 @@ impl TryFrom<&StmtWeak> for Node {
 			StmtWeak::Continue(node)=>Ok(Self::Continue(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Continue))?)),
 			StmtWeak::Assert(node)=>Ok(Self::Assert(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Assert))?)),
 			StmtWeak::ImplicitYield(node)=>Ok(Self::ImplicitYield(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::ImplicitYield))?)),
+			StmtWeak::Metadata(node)=>Ok(Self::Metadata(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Metadata))?)),
 			StmtWeak::Field(node)=>Ok(Self::Field(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Field))?)),
 			StmtWeak::Format(node)=>Ok(Self::Format(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Format))?)),
 			StmtWeak::State(node)=>Ok(Self::State(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::State))?)),
@@ -1801,6 +1818,7 @@ impl From<&StmtWeak> for NodeWeak {
 			StmtWeak::Continue(node)=>Self::Continue(node.clone()),
 			StmtWeak::Assert(node)=>Self::Assert(node.clone()),
 			StmtWeak::ImplicitYield(node)=>Self::ImplicitYield(node.clone()),
+			StmtWeak::Metadata(node)=>Self::Metadata(node.clone()),
 			StmtWeak::Field(node)=>Self::Field(node.clone()),
 			StmtWeak::Format(node)=>Self::Format(node.clone()),
 			StmtWeak::State(node)=>Self::State(node.clone()),
@@ -1834,6 +1852,7 @@ impl TryFrom<&NodeWeak> for StmtWeak {
 			NodeWeak::Continue(node)=>Ok(Self::Continue(node.clone())),
 			NodeWeak::Assert(node)=>Ok(Self::Assert(node.clone())),
 			NodeWeak::ImplicitYield(node)=>Ok(Self::ImplicitYield(node.clone())),
+			NodeWeak::Metadata(node)=>Ok(Self::Metadata(node.clone())),
 			NodeWeak::Field(node)=>Ok(Self::Field(node.clone())),
 			NodeWeak::Format(node)=>Ok(Self::Format(node.clone())),
 			NodeWeak::State(node)=>Ok(Self::State(node.clone())),
@@ -1869,6 +1888,7 @@ impl TryFrom<&Node> for StmtWeak {
 			Node::Continue(node)=>Ok(Self::Continue(Rc::downgrade(node))),
 			Node::Assert(node)=>Ok(Self::Assert(Rc::downgrade(node))),
 			Node::ImplicitYield(node)=>Ok(Self::ImplicitYield(Rc::downgrade(node))),
+			Node::Metadata(node)=>Ok(Self::Metadata(Rc::downgrade(node))),
 			Node::Field(node)=>Ok(Self::Field(Rc::downgrade(node))),
 			Node::Format(node)=>Ok(Self::Format(Rc::downgrade(node))),
 			Node::State(node)=>Ok(Self::State(Rc::downgrade(node))),
@@ -5058,6 +5078,72 @@ impl From<Rc<RefCell<ImplicitYield>>> for Node {
 }
 
 #[derive(Debug,Clone)]
+pub struct Metadata {
+	pub loc: Loc,
+	pub base: Option<Expr>,
+	pub name: String,
+	pub values: Vec<Expr>,
+}
+
+impl TryFrom<&Stmt> for Rc<RefCell<Metadata>> {
+	type Error = Error;
+	fn try_from(node:&Stmt)->Result<Self,Self::Error>{
+		match node {
+			Stmt::Metadata(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl TryFrom<Stmt> for Rc<RefCell<Metadata>> {
+	type Error = Error;
+	fn try_from(node:Stmt)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
+impl From<&Rc<RefCell<Metadata>>> for Stmt {
+	fn from(node:&Rc<RefCell<Metadata>>)-> Self{
+		Stmt::Metadata(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Metadata>>> for Stmt {
+	fn from(node:Rc<RefCell<Metadata>>)-> Self{
+		Self::from(&node)
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<Metadata>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::Metadata(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl TryFrom<Node> for Rc<RefCell<Metadata>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
+impl From<&Rc<RefCell<Metadata>>> for Node {
+	fn from(node:&Rc<RefCell<Metadata>>)-> Self{
+		Node::Metadata(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Metadata>>> for Node {
+	fn from(node:Rc<RefCell<Metadata>>)-> Self{
+		Self::from(&node)
+	}
+}
+
+#[derive(Debug,Clone)]
 pub struct IntType {
 	pub loc: Loc,
 	pub is_explicit: bool,
@@ -8166,6 +8252,14 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				expr: None,
 				})))
 			},
+			NodeType::Metadata => {
+				Node::Metadata(Rc::new(RefCell::new(Metadata {
+				loc: raw_node.loc.clone(),
+				base: None,
+				name: String::new(),
+				values: Vec::new(),
+				})))
+			},
 			NodeType::IntType => {
 				Node::IntType(Rc::new(RefCell::new(IntType {
 				loc: raw_node.loc.clone(),
@@ -10593,6 +10687,55 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						None => return Err(Error::IndexOutOfBounds(expr_body as usize)),
 					};
 					node.borrow_mut().expr = Some(expr_body.try_into()?);
+				}
+			},
+			NodeType::Metadata => {
+				let node = nodes[i].clone();
+				let node = match node {
+					Node::Metadata(node)=>node,
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
+				};
+				let base_body = match raw_node.body.get("base") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"base")),
+				};
+ 				if !base_body.is_null() {
+					let base_body = match base_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(base_body.into(),JSONType::Number)),
+					};
+					let base_body = match nodes.get(base_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(base_body as usize)),
+					};
+					node.borrow_mut().base = Some(base_body.try_into()?);
+				}
+				let name_body = match raw_node.body.get("name") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"name")),
+				};
+				node.borrow_mut().name = match name_body.as_str() {
+					Some(v)=>v.to_string(),
+					None=>return Err(Error::MismatchJSONType(name_body.into(),JSONType::String)),
+				};
+				let values_body = match raw_node.body.get("values") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"values")),
+				};
+				let values_body = match values_body.as_array(){
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(values_body.into(),JSONType::Array)),
+				};
+				for link in values_body {
+					let link = match link.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
+					};
+					let values_body = match nodes.get(link as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(link as usize)),
+					};
+					node.borrow_mut().values.push(values_body.try_into()?);
 				}
 			},
 			NodeType::IntType => {
@@ -13780,6 +13923,18 @@ where
 		},
 		Node::ImplicitYield(node)=>{
 			if let Some(node) = &node.borrow().expr{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
+		},
+		Node::Metadata(node)=>{
+			if let Some(node) = &node.borrow().base{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
+			for node in &node.borrow().values{
 				if !f.visit(&node.into()){
 					return;
 				}
