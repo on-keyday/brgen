@@ -31,4 +31,3 @@ enum FrameType:
 
 format FrameHeader:
     type :qpkt.VarInt
-    length :qpkt.VarInt
