@@ -4,6 +4,7 @@
 #include <variant>
 #include <view/iovec.h>
 #include <vector>
+#include <string>
 
 namespace brgen::vm {
     struct Instruction {
@@ -29,7 +30,7 @@ namespace brgen::vm {
 
     struct Value {
        private:
-        std::variant<uint64_t, futils::view::rvec, std::string> data;
+        std::variant<uint64_t, futils::view::rvec, std::string, std::vector<Value>> data;
 
        public:
         constexpr Value(uint64_t val)

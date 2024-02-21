@@ -9,26 +9,15 @@ config.cpp.file.source.name= "packet.cpp"
 config.cpp.namespace = "quic::packet"
 
 
-config.export(QUICPackets,ConnectionID,VarInt)
+config.export(QUICPackets,ConnectionID)
+
+qvarint ::= config.import("quic_varint.bgn")
 
 format QUICFrame:
-   type :VarInt
+   type :qvarint.VarInt
 
 format QUICPackets:
-   packets :[]QUICPacket
-   
-   fn decode():
-      enc := qstate.encrypted
-      loop input.remain > 0:
-         pkt :QUICPacket
-         if available(pkt.hdr):
-            frames :[..]QUICFrame(input = pkt.hdr) # TODO(on-keyday): fix this with pkt.hdr.payload
-            packets = append(packets,pkt) # TODO: fix this with packets.push_back(pkt)
-   
-   fn encode():
-      loop pkt:=range(packets):
-         pkt.encode()
-
+   packets :[..]QUICPacket
 
 format QUICPacket: 
    form :u1
@@ -78,9 +67,9 @@ format VersionNegotiationPacket:
 qstate :QUICState
 
 format InitialPacketHeader:
-   token_length :VarInt
+   token_length :qvarint.VarInt
    token :[token_length]u8
-   length :VarInt
+   length :qvarint.VarInt
    packet_number :[qstate.packet_number_length]u8
 
 format RetryPacket:
@@ -88,7 +77,7 @@ format RetryPacket:
    retry_integrity_tag :[16]u8
 
 format HandshakePacketHeader:
-   length :VarInt
+   length :qvarint.VarInt
    if qstate.encrypted:
       encrypted_payload :[length]u8
    else:
@@ -97,7 +86,7 @@ format HandshakePacketHeader:
 
 
 format ZeroRTTPacketHeader:
-   length :VarInt
+   length :qvarint.VarInt
    if qstate.encrypted:
       encrypted_payload :[length]u8
    else:
@@ -128,13 +117,6 @@ format ConnectionID:
       id :[length]u8
 
 
-format VarInt:
-   prefix :u2
-   match prefix:
-      0 => value :u6
-      1 => value :u14
-      2 => value :u30
-      3 => value :u62
-      .. => error("invalid varint prefix")
+
 
   

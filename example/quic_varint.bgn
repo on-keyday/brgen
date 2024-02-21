@@ -1,0 +1,8 @@
+
+format VarInt:
+   prefix :u2
+   match prefix:
+      0 => value :u6
+      1 => value :u14
+      2 => value :u30
+      3 => value :u62

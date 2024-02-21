@@ -52,6 +52,10 @@
       "generator": "./tool/json2c",
       "output_dir": "./ignore/example/c/",
       "args": ["--add-line-map", "--use-error", "--use-overflow-check"]
+    },
+    {
+      "generator": "./tool/json2vm",
+      "output_dir": "./ignore/example/vm/"
     }
   ]
 }

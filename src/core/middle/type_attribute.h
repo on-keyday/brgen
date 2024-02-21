@@ -70,7 +70,7 @@ namespace brgen::middle {
                             }
                         }
                     }
-                    t->non_dynamic_allocation = has_field && all_int;
+                    t->non_dynamic_allocation = !has_field || all_int;
                     return;
                 }
                 if (auto t = ast::as<ast::IdentType>(n)) {

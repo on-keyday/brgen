@@ -1,11 +1,10 @@
 /*license*/
-#pragma once
 #include "vm.h"
 #include <core/ast/ast.h>
 #include <core/ast/traverse.h>
 #include <core/ast/tool/stringer.h>
 #include "compile.h"
-
+#include <writer/writer.h>
 namespace brgen::vm {
 
     struct FieldInfo {
@@ -153,7 +152,11 @@ namespace brgen::vm {
         }
 
         void compile_decode_field(const std::shared_ptr<ast::Format>& fmt, const std::shared_ptr<ast::Field>& field) {
-            if (auto int_ty = ast::as<ast::IntType>(field->field_type)) {
+            std::shared_ptr<ast::Type> typ = field->field_type;
+            if (auto ident = ast::as<ast::IdentType>(typ)) {
+                typ = ident->base.lock();
+            }
+            if (auto int_ty = ast::as<ast::IntType>(typ)) {
                 auto size = *int_ty->bit_size;
                 if (size % 8 == 0) {
                     op(Op::LOAD_IMMEDIATE, size / 8);
@@ -166,7 +169,7 @@ namespace brgen::vm {
                     op(Op::BYTES_TO_INT, (size + 7) / 8);
                 }
             }
-            if (auto arr_ty = ast::as<ast::ArrayType>(field->field_type)) {
+            if (auto arr_ty = ast::as<ast::ArrayType>(typ)) {
                 if (auto u8 = ast::as<ast::IntType>(arr_ty->base_type); u8 && u8->bit_size == 8) {
                     if (arr_ty->length_value) {
                         op(Op::LOAD_IMMEDIATE, *arr_ty->length_value);
@@ -182,7 +185,7 @@ namespace brgen::vm {
                     op(Op::ERROR);
                 }
             }
-            if (auto str_ty = ast::as<ast::StrLiteralType>(field->field_type)) {
+            if (auto str_ty = ast::as<ast::StrLiteralType>(typ)) {
                 op(Op::LOAD_IMMEDIATE, str_ty->strong_ref->length);
                 op(Op::READ_BYTES);
                 auto str = *unescape(str_ty->strong_ref->value);
@@ -216,6 +219,17 @@ namespace brgen::vm {
             for (auto& element : block->elements) {
                 if (auto field = ast::as<ast::Field>(element)) {
                     compile_field(fmt, ast::cast_to<ast::Field>(element));
+                }
+                if (auto as = ast::as<ast::Assert>(element)) {
+                    compile_expr(as->cond);
+                    op(Op::TRSF, 0x00 | 0x01);  // register 0 to 1
+                    op(Op::LOAD_IMMEDIATE, 0);
+                    op(Op::CMP);
+                    auto instr = op(Op::JNE);
+                    auto index = add_static(Value{futils::view::rvec("error: assert failed")});
+                    op(Op::LOAD_STATIC, index);
+                    op(Op::ERROR);
+                    rewrite_arg(instr, pc());
                 }
             }
         }
@@ -251,5 +265,35 @@ namespace brgen::vm {
         Compiler compiler;
         compiler.compile(prog);
         return compiler.code;
+    }
+
+    void print_code(futils::helper::IPushBacker<> out, const Code& code) {
+        futils::code::CodeWriter<decltype(out)&> w{out};
+        w.writeln("instruction: ", brgen::nums(code.instructions.size()));
+        auto s1 = w.indent_scope();
+        for (size_t i = 0; i < code.instructions.size(); i++) {
+            auto& instr = code.instructions[i];
+            w.write(brgen::nums(i), " ", to_string(instr.op()), " 0x", brgen::nums(instr.arg(), 16));
+            if (instr.op() == Op::FUNC_NAME) {
+                auto d = code.static_data[instr.arg()].as_bytes();
+                if (d) {
+                    w.write(" # ", futils::escape::escape_str<std::string>(*d, futils::escape::EscapeFlag::all));
+                }
+            }
+            w.writeln();
+        }
+        s1.execute();
+        w.writeln("static data: ", brgen::nums(code.static_data.size()));
+        auto s2 = w.indent_scope();
+        for (size_t i = 0; i < code.static_data.size(); i++) {
+            auto& data = code.static_data[i];
+            if (auto b = data.as_bytes()) {
+                w.writeln(brgen::nums(i), " \"", futils::escape::escape_str<std::string>(*b, futils::escape::EscapeFlag::all), "\"");
+            }
+            else if (auto n = data.as_uint64()) {
+                w.writeln(brgen::nums(i), " ", brgen::nums(*n));
+            }
+        }
+        s2.execute();
     }
 }  // namespace brgen::vm

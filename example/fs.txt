@@ -347,3 +347,34 @@ enum HandshakeType  {
         LOAD,   // load from memory
         STORE,  // store to memory
     };
+
+       enum FrameType {
+            PADDING,                                 // section 19.1
+            PING,                                    // section 19.2
+            ACK,                                     // section 19.3
+            ACK_ECN,                                 // with ECN count
+            RESET_STREAM,                            // section 19.4
+            STOP_SENDING,                            // section 19.5
+            CRYPTO,                                  // section 19.6
+            NEW_TOKEN,                               // section 19.7
+            STREAM,                                  // section 19.8
+            MAX_DATA = 0x10,                         // section 19.9
+            MAX_STREAM_DATA,                         // section 19.10
+            MAX_STREAMS,                             // section 19.11
+            MAX_STREAMS_BIDI = MAX_STREAMS,          // section 19.11
+            MAX_STREAMS_UNI,                         // section 19.11
+            DATA_BLOCKED,                            // section 19.12
+            STREAM_DATA_BLOCKED,                     // section 19.13
+            STREAMS_BLOCKED,                         // section 19.14
+            STREAMS_BLOCKED_BIDI = STREAMS_BLOCKED,  // section 19.14
+            STREAMS_BLOCKED_UNI,                     // section 19.14
+            NEW_CONNECTION_ID,                       // section 19.15
+            RETIRE_CONNECTION_ID,                    // seciton 19.16
+            PATH_CHALLENGE,                          // seciton 19.17
+            PATH_RESPONSE,                           // seciton 19.18
+            CONNECTION_CLOSE,                        // seciton 19.19
+            CONNECTION_CLOSE_APP,                    // application reason section 19.19
+            HANDSHAKE_DONE,                          // seciton 19.20
+            DATAGRAM = 0x30,                         // rfc 9221 datagram
+            DATAGRAM_LEN,
+        };

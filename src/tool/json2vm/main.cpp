@@ -9,12 +9,23 @@
 #include <core/ast/file.h>
 struct Flags : futils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
+    bool spec = false;
     void bind(futils::cmdline::option::Context& ctx) {
         bind_help(ctx);
+        ctx.VarBool(&spec, "s", "spec mode");
     }
 };
 
 int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
+    if (flags.spec) {
+        cout << R"({
+            "input": "file",
+            "langs": ["vm"],
+            "suffix": [".bvm"],
+            "separator": "############\n"
+        })";
+        return 0;
+    }
     if (flags.args.empty()) {
         print_error("no input file");
         return 1;
@@ -35,9 +46,16 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
         return 1;
     }
     brgen::ast::AstFile file;
-    futils::json::convert_from_json(js, file);
+    if (!futils::json::convert_from_json(js, file)) {
+        print_error("cannot convert json file to ast: ");
+        return 1;
+    }
+    if (!file.ast) {
+        print_error("cannot convert json file to ast: ast is null");
+        return 1;
+    }
     brgen::ast::JSONConverter c;
-    auto res = c.decode(*f);
+    auto res = c.decode(*file.ast);
     if (!res) {
         print_error("cannot decode json file: ", res.error().locations[0].msg);
         return 1;
@@ -46,6 +64,11 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
         print_error("cannot decode json file: ast is null");
         return 1;
     }
+    auto code = brgen::vm::compile(brgen::ast::cast_to<brgen::ast::Program>(*res));
+    std::string buf;
+    brgen::vm::print_code(buf, code);
+    cout << buf;
+    return 0;
 }
 
 int main(int argc, char** argv) {

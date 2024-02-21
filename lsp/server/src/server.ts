@@ -84,7 +84,7 @@ connection.onInitialize((params: InitializeParams) => {
             },
             hoverProvider: true,
             definitionProvider: true,
-            documentSymbolProvider: true,
+            //documentSymbolProvider: true,
         }
     };
     if (hasWorkspaceFolderCapability) {
@@ -287,6 +287,7 @@ connection.onDocumentSymbol(async (params) =>{
     }
     return analyze.analyzeSymbols(docInfo.prevNode?.global_scope!);
 })
+
 
 // The example settings
 interface BrgenLSPSettings {
