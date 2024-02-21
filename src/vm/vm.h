@@ -12,7 +12,7 @@ namespace brgen::vm {
         std::uint64_t arg_ = 0;
 
        public:
-        constexpr Instruction(Op op, std::uint64_t arg)
+        constexpr Instruction(Op op, std::uint64_t arg = 0)
             : op_(op), arg_(arg) {}
 
         constexpr Op op() const {
@@ -80,12 +80,18 @@ namespace brgen::vm {
         }
     };
 
+    struct Code {
+        std::vector<Instruction> instructions;
+        std::vector<Value> static_data;
+    };
+
     struct VM {
        private:
         Value registers[16];
         std::vector<Value> stack;
         std::string error_message;
         std::vector<Var> variables;
+        std::uint64_t this_ptr = 0;
         friend struct VMHelper;
 
         futils::view::rvec input;
@@ -98,7 +104,7 @@ namespace brgen::vm {
         constexpr futils::view::rvec get_output() const {
             return output;
         }
-        void execute(const std::vector<Instruction>& program, const std::vector<Value>& static_data);
+        void execute(const Code& code);
     };
 
 }  // namespace brgen::vm

@@ -21,6 +21,7 @@
 #include <wrap/cin.h>
 #include <unicode/utf/view.h>
 #include <json/convert_json.h>
+#include <core/ast/file.h>
 #ifdef SRC2JSON_DLL
 #include "hook.h"
 #include "capi_export.h"
@@ -229,13 +230,17 @@ int check_ast(std::string_view name, futils::view::rvec view) {
         print_error("cannot parse json file ", name);
         return exit_err;
     }
-    auto f = js.at("ast");
-    if (!f) {
-        print_error("cannot find ast field ", name);
+    brgen::ast::AstFile file;
+    if (!futils::json::convert_from_json(js, file)) {
+        print_error("cannot convert json file ", name);
+        return exit_err;
+    }
+    if (!file.ast) {
+        print_warning("ast is null");
         return exit_err;
     }
     brgen::ast::JSONConverter c;
-    auto res = c.decode(*f);
+    auto res = c.decode(*file.ast);
     if (!res) {
         print_error("cannot decode json file: ", res.error().locations[0].msg);
         return exit_err;

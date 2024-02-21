@@ -127,7 +127,7 @@ namespace brgen::vm {
             return true;
         }
 
-        static bool static_load(VM& vm, const Instruction& instr, const std::vector<Value>& static_data) {
+        static bool load_static(VM& vm, const Instruction& instr, const std::vector<Value>& static_data) {
             auto indexOfStatic = instr.arg();
             if (static_data.size() <= indexOfStatic) {
                 return false;
@@ -168,9 +168,50 @@ namespace brgen::vm {
             r.reset(ofs);
             return true;
         }
+
+        static bool load_immediate(VM& vm, const Instruction& instr) {
+            vm.registers[0] = Value(instr.arg());
+            return true;
+        }
+
+        static bool jump(VM& vm, const Instruction& instr, size_t& pc, const std::vector<Instruction>& program) {
+            auto arg = instr.arg();
+            if (arg >= program.size()) {
+                return false;
+            }
+            pc = arg;
+            return true;
+        }
+
+        static bool jump_if(VM& vm, const Instruction& instr, size_t& pc, const std::vector<Instruction>& program, auto&& cond) {
+            auto arg = instr.arg();
+            if (arg >= program.size()) {
+                return false;
+            }
+            auto v = vm.registers[0].as_uint64();
+            if (!v) {
+                return false;
+            }
+            if (cond(*v)) {
+                pc = arg;
+                return true;
+            }
+            pc++;
+            return true;
+        }
+
+        static bool jump_if_eq(VM& vm, const Instruction& instr, size_t& pc, const std::vector<Instruction>& program) {
+            return jump_if(vm, instr, pc, program, [](auto v) { return v == 0; });
+        }
+
+        static bool jump_if_not_eq(VM& vm, const Instruction& instr, size_t& pc, const std::vector<Instruction>& program) {
+            return jump_if(vm, instr, pc, program, [](auto v) { return v != 0; });
+        }
     };
 
-    void VM::execute(const std::vector<Instruction>& program, const std::vector<Value>& static_data) {
+    void VM::execute(const Code& code) {
+        auto& program = code.instructions;
+        auto& static_data = code.static_data;
         size_t pc = 0;
         futils::binary::reader r{input};
         while (pc < program.size()) {
@@ -187,6 +228,16 @@ namespace brgen::vm {
         break;                                                 \
     }
 
+#define change_pc_op(code, op, ...)                            \
+    case code: {                                               \
+        auto pre_pc = pc;                                      \
+        if (!VMHelper::op(*this __VA_OPT__(, ) __VA_ARGS__)) { \
+            error_message = #code " failed";                   \
+        }                                                      \
+        assert(pc != pre_pc);                                  \
+        continue;                                              \
+    }
+
                     exec_op(Op::ADD, add);
                     exec_op(Op::SUB, sub);
                     exec_op(Op::MUL, mul);
@@ -200,13 +251,18 @@ namespace brgen::vm {
                     exec_op(Op::INIT_VAR, init_var, instr);
                     exec_op(Op::LOAD_VAR, load_var, instr);
                     exec_op(Op::STORE_VAR, store_var, instr);
-                    exec_op(Op::STATIC_LOAD, static_load, instr, static_data);
+                    exec_op(Op::LOAD_STATIC, load_static, instr, static_data);
 
                     exec_op(Op::PUSH, push);
                     exec_op(Op::POP, pop);
 
                     exec_op(Op::GET_OFFSET, get_offset, r);
                     exec_op(Op::SET_OFFSET, set_offset, r);
+
+                    exec_op(Op::LOAD_IMMEDIATE, load_immediate, instr);
+
+                    change_pc_op(Op::JMP, jump, instr, pc, program);
+                    change_pc_op(Op::JE, jump_if_eq, instr, pc, program);
 
                 default: {
                     auto ptr = to_string(instr.op());

@@ -48,19 +48,28 @@ enum class Op {
     PUSH,
     POP,
     TRSF,
+    LOAD_IMMEDIATE,
     SET_VAR_COUNT,
     INIT_VAR,
     LOAD_VAR,
     STORE_VAR,
-    STATIC_LOAD,
+    SET_THIS,
+    LOAD_THIS,
+    STORE_THIS,
+    LOAD_STATIC,
     GET_OFFSET,
     SET_OFFSET,
     READ_BYTES,
     PEEK_BYTES,
     WRITE_BYTES,
+    READ_BITS,
+    PEEK_BITS,
+    WRITE_BITS,
+    BYTES_TO_INT,
     ERROR,
     NEXT_FUNC,
     FUNC_NAME,
+    FUNC_END,
 };
 constexpr const char* to_string(Op e) {
     switch(e) {
@@ -92,19 +101,28 @@ constexpr const char* to_string(Op e) {
     case Op::PUSH: return "PUSH";
     case Op::POP: return "POP";
     case Op::TRSF: return "TRSF";
+    case Op::LOAD_IMMEDIATE: return "LOAD_IMMEDIATE";
     case Op::SET_VAR_COUNT: return "SET_VAR_COUNT";
     case Op::INIT_VAR: return "INIT_VAR";
     case Op::LOAD_VAR: return "LOAD_VAR";
     case Op::STORE_VAR: return "STORE_VAR";
-    case Op::STATIC_LOAD: return "STATIC_LOAD";
+    case Op::SET_THIS: return "SET_THIS";
+    case Op::LOAD_THIS: return "LOAD_THIS";
+    case Op::STORE_THIS: return "STORE_THIS";
+    case Op::LOAD_STATIC: return "LOAD_STATIC";
     case Op::GET_OFFSET: return "GET_OFFSET";
     case Op::SET_OFFSET: return "SET_OFFSET";
     case Op::READ_BYTES: return "READ_BYTES";
     case Op::PEEK_BYTES: return "PEEK_BYTES";
     case Op::WRITE_BYTES: return "WRITE_BYTES";
+    case Op::READ_BITS: return "READ_BITS";
+    case Op::PEEK_BITS: return "PEEK_BITS";
+    case Op::WRITE_BITS: return "WRITE_BITS";
+    case Op::BYTES_TO_INT: return "BYTES_TO_INT";
     case Op::ERROR: return "ERROR";
     case Op::NEXT_FUNC: return "NEXT_FUNC";
     case Op::FUNC_NAME: return "FUNC_NAME";
+    case Op::FUNC_END: return "FUNC_END";
     default: return nullptr;
     }
 }
@@ -138,25 +156,34 @@ template<>constexpr std::optional<Op> from_string<Op>(std::string_view str) {
     if(str == "PUSH") return Op::PUSH;
     if(str == "POP") return Op::POP;
     if(str == "TRSF") return Op::TRSF;
+    if(str == "LOAD_IMMEDIATE") return Op::LOAD_IMMEDIATE;
     if(str == "SET_VAR_COUNT") return Op::SET_VAR_COUNT;
     if(str == "INIT_VAR") return Op::INIT_VAR;
     if(str == "LOAD_VAR") return Op::LOAD_VAR;
     if(str == "STORE_VAR") return Op::STORE_VAR;
-    if(str == "STATIC_LOAD") return Op::STATIC_LOAD;
+    if(str == "SET_THIS") return Op::SET_THIS;
+    if(str == "LOAD_THIS") return Op::LOAD_THIS;
+    if(str == "STORE_THIS") return Op::STORE_THIS;
+    if(str == "LOAD_STATIC") return Op::LOAD_STATIC;
     if(str == "GET_OFFSET") return Op::GET_OFFSET;
     if(str == "SET_OFFSET") return Op::SET_OFFSET;
     if(str == "READ_BYTES") return Op::READ_BYTES;
     if(str == "PEEK_BYTES") return Op::PEEK_BYTES;
     if(str == "WRITE_BYTES") return Op::WRITE_BYTES;
+    if(str == "READ_BITS") return Op::READ_BITS;
+    if(str == "PEEK_BITS") return Op::PEEK_BITS;
+    if(str == "WRITE_BITS") return Op::WRITE_BITS;
+    if(str == "BYTES_TO_INT") return Op::BYTES_TO_INT;
     if(str == "ERROR") return Op::ERROR;
     if(str == "NEXT_FUNC") return Op::NEXT_FUNC;
     if(str == "FUNC_NAME") return Op::FUNC_NAME;
+    if(str == "FUNC_END") return Op::FUNC_END;
     return std::nullopt;
 }
 template<>constexpr size_t enum_elem_count<Op>() {
-    return 41;
+    return 50;
 }
-template<>constexpr std::array<std::pair<Op,std::string_view>,41> make_enum_array<Op>() {
+template<>constexpr std::array<std::pair<Op,std::string_view>,50> make_enum_array<Op>() {
     return {
         std::pair{Op::NOP,"NOP"},
         std::pair{Op::ADD,"ADD"},
@@ -186,22 +213,31 @@ template<>constexpr std::array<std::pair<Op,std::string_view>,41> make_enum_arra
         std::pair{Op::PUSH,"PUSH"},
         std::pair{Op::POP,"POP"},
         std::pair{Op::TRSF,"TRSF"},
+        std::pair{Op::LOAD_IMMEDIATE,"LOAD_IMMEDIATE"},
         std::pair{Op::SET_VAR_COUNT,"SET_VAR_COUNT"},
         std::pair{Op::INIT_VAR,"INIT_VAR"},
         std::pair{Op::LOAD_VAR,"LOAD_VAR"},
         std::pair{Op::STORE_VAR,"STORE_VAR"},
-        std::pair{Op::STATIC_LOAD,"STATIC_LOAD"},
+        std::pair{Op::SET_THIS,"SET_THIS"},
+        std::pair{Op::LOAD_THIS,"LOAD_THIS"},
+        std::pair{Op::STORE_THIS,"STORE_THIS"},
+        std::pair{Op::LOAD_STATIC,"LOAD_STATIC"},
         std::pair{Op::GET_OFFSET,"GET_OFFSET"},
         std::pair{Op::SET_OFFSET,"SET_OFFSET"},
         std::pair{Op::READ_BYTES,"READ_BYTES"},
         std::pair{Op::PEEK_BYTES,"PEEK_BYTES"},
         std::pair{Op::WRITE_BYTES,"WRITE_BYTES"},
+        std::pair{Op::READ_BITS,"READ_BITS"},
+        std::pair{Op::PEEK_BITS,"PEEK_BITS"},
+        std::pair{Op::WRITE_BITS,"WRITE_BITS"},
+        std::pair{Op::BYTES_TO_INT,"BYTES_TO_INT"},
         std::pair{Op::ERROR,"ERROR"},
         std::pair{Op::NEXT_FUNC,"NEXT_FUNC"},
         std::pair{Op::FUNC_NAME,"FUNC_NAME"},
+        std::pair{Op::FUNC_END,"FUNC_END"},
     };
 }
-template<>constexpr std::array<std::pair<Op,std::string_view>,41> make_enum_name_array<Op>() {
+template<>constexpr std::array<std::pair<Op,std::string_view>,50> make_enum_name_array<Op>() {
     return {
         std::pair{Op::NOP,"NOP"},
         std::pair{Op::ADD,"ADD"},
@@ -231,19 +267,28 @@ template<>constexpr std::array<std::pair<Op,std::string_view>,41> make_enum_name
         std::pair{Op::PUSH,"PUSH"},
         std::pair{Op::POP,"POP"},
         std::pair{Op::TRSF,"TRSF"},
+        std::pair{Op::LOAD_IMMEDIATE,"LOAD_IMMEDIATE"},
         std::pair{Op::SET_VAR_COUNT,"SET_VAR_COUNT"},
         std::pair{Op::INIT_VAR,"INIT_VAR"},
         std::pair{Op::LOAD_VAR,"LOAD_VAR"},
         std::pair{Op::STORE_VAR,"STORE_VAR"},
-        std::pair{Op::STATIC_LOAD,"STATIC_LOAD"},
+        std::pair{Op::SET_THIS,"SET_THIS"},
+        std::pair{Op::LOAD_THIS,"LOAD_THIS"},
+        std::pair{Op::STORE_THIS,"STORE_THIS"},
+        std::pair{Op::LOAD_STATIC,"LOAD_STATIC"},
         std::pair{Op::GET_OFFSET,"GET_OFFSET"},
         std::pair{Op::SET_OFFSET,"SET_OFFSET"},
         std::pair{Op::READ_BYTES,"READ_BYTES"},
         std::pair{Op::PEEK_BYTES,"PEEK_BYTES"},
         std::pair{Op::WRITE_BYTES,"WRITE_BYTES"},
+        std::pair{Op::READ_BITS,"READ_BITS"},
+        std::pair{Op::PEEK_BITS,"PEEK_BITS"},
+        std::pair{Op::WRITE_BITS,"WRITE_BITS"},
+        std::pair{Op::BYTES_TO_INT,"BYTES_TO_INT"},
         std::pair{Op::ERROR,"ERROR"},
         std::pair{Op::NEXT_FUNC,"NEXT_FUNC"},
         std::pair{Op::FUNC_NAME,"FUNC_NAME"},
+        std::pair{Op::FUNC_END,"FUNC_END"},
     };
 }
 constexpr void as_json(Op e,auto&& d) {

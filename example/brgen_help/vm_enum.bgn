@@ -38,11 +38,15 @@ enum Op:
 
     # memory and register
     TRSF
+    LOAD_IMMEDIATE
     SET_VAR_COUNT
     INIT_VAR
     LOAD_VAR
     STORE_VAR
-    STATIC_LOAD
+    SET_THIS
+    LOAD_THIS
+    STORE_THIS
+    LOAD_STATIC
     
     # input and output 
     GET_OFFSET # get offset of input/output
@@ -50,6 +54,12 @@ enum Op:
     READ_BYTES # read from input
     PEEK_BYTES # peek from input
     WRITE_BYTES # write to output
+    READ_BITS # read from input
+    PEEK_BITS # peek from input
+    WRITE_BITS # write to output
+
+    # convert bytes to integer
+    BYTES_TO_INT
 
     # error
     ERROR
@@ -57,3 +67,4 @@ enum Op:
     # meta data
     NEXT_FUNC
     FUNC_NAME
+    FUNC_END
