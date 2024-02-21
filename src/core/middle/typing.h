@@ -1530,6 +1530,12 @@ namespace brgen::middle {
             }
         }
 
+        void typing_metadata(ast::Metadata* m) {
+            for (auto& v : m->values) {
+                typing_expr(v);
+            }
+        }
+
         void typing_object(auto& ty) {
             // Define a lambda function for recursive traversal and typing
             auto recursive_typing = [&](auto&& f, NodeReplacer ty) -> void {
@@ -1573,6 +1579,10 @@ namespace brgen::middle {
                 }
                 if (auto field = ast::as<ast::Field>(node)) {
                     typing_field(field);
+                    return;
+                }
+                if (auto m = ast::as<ast::Metadata>(node)) {
+                    typing_metadata(m);
                     return;
                 }
                 do_traverse();

@@ -12,6 +12,7 @@
 #include <core/middle/replace_order_spec.h>
 #include <core/middle/replace_error.h>
 #include <core/middle/resolve_io_operation.h>
+#include <core/middle/replace_metadata.h>
 #include <core/middle/resolve_state_dependency.h>
 #include <core/middle/typing.h>
 #include <core/middle/type_attribute.h>
@@ -45,6 +46,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
     bool not_detect_int_set = false;
     bool not_detect_alignment = false;
     bool not_resolve_state_dependency = false;
+    bool not_resolve_metadata = false;
 
     bool unresolved_type_as_error = false;
 
@@ -613,6 +615,10 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
             report_error(brgen::to_source_error(files)(std::move(res2.error())));
             return exit_err;
         }
+    }
+
+    if (!flags.not_resolve_metadata) {
+        brgen::middle::replace_metadata(*res);
     }
 
     if (!flags.not_resolve_type) {

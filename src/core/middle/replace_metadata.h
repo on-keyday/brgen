@@ -2,6 +2,7 @@
 #pragma once
 #include <core/ast/traverse.h>
 #include <core/common/error.h>
+#include "replacer.h"
 
 namespace brgen::middle {
 
@@ -24,12 +25,9 @@ namespace brgen::middle {
     }
 
     // after resolve_io_operation
-    inline void replace_metadata(LocationError& err, const std::shared_ptr<ast::Node>& node) {
-        if (!node) {
-            return;
-        }
+    inline void replace_metadata(NodeReplacer rep) {
         auto one_element = [&](auto it) {
-            replace_metadata(err, *it);
+            replace_metadata(*it);
             if (auto bin = ast::as<ast::Binary>(*it); bin && bin->op == ast::BinaryOp::assign) {
                 auto meta = is_metadata(bin->left.get());
                 if (!meta) {
@@ -54,6 +52,7 @@ namespace brgen::middle {
                 one_element(it);
             }
         };
+        auto node = rep.to_node();
         if (auto a = ast::as<ast::Program>(node)) {
             each_element(a->elements);
             return;
@@ -66,8 +65,8 @@ namespace brgen::middle {
             one_element(&s->statement);
             return;
         }
-        ast::traverse(node, [&](auto&& f) {
-            replace_metadata(err, f);
+        ast::traverse(node, [&](NodeReplacer f) -> void {
+            replace_metadata(f);
         });
     }
 }  // namespace brgen::middle
