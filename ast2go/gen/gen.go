@@ -23,24 +23,9 @@ type GenConfig struct {
 
 func ConfigFromProgram(p *ast2go.Program, f func(configName string, asCall bool, args ...ast2go.Expr) error) error {
 	for _, element := range p.Elements {
-		if c, ok := element.(*ast2go.Call); ok {
-			config := GetConfig(c.Callee)
-			if config == "" {
-				continue
-			}
-			if err := f(config, true, c.Arguments...); err != nil {
-				return err
-			}
-		}
-		if b, ok := element.(*ast2go.Binary); ok {
-			if b.Op != ast2go.BinaryOpAssign {
-				continue
-			}
-			config := GetConfig(b.Left)
-			if config == "" {
-				continue
-			}
-			if err := f(config, false, b.Right); err != nil {
+		if meta, ok := element.(*ast2go.Metadata); ok {
+			_, as_call := meta.Base.(*ast2go.Call)
+			if err := f(meta.Name, as_call, meta.Values...); err != nil {
 				return err
 			}
 		}

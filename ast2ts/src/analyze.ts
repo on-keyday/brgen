@@ -64,6 +64,11 @@ export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
                 found = node;
                 return;
             }
+            else if(ast2ts.isMetadata(node)) {
+                console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
+                found = node;
+                return;
+            }
             else if(ast2ts.isType(node)&&node.is_explicit&&node.node_type!== "ident_type"){
                 console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
                 found = node;
@@ -209,6 +214,9 @@ export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
     }
     else if (ast2ts.isCharLiteral(found)) {
         return makeHover("char",`char literal (code: ${found.code})`);
+    }
+    else if(ast2ts.isMetadata(found)){
+        return makeHover("metadata",`metadata (name: ${found.name} value count: ${found.values.length})`);
     }
     return null;
 }
