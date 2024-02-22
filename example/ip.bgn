@@ -1,12 +1,16 @@
 format IPv4Header:
-    version :u4 
-    ihl :u4 dscp :u6 ecn :u2 len :u16
+    version :u4 ihl :u4 dscp :u6 ecn :u2 len :u16
     id :u16 reserved :u1 dont_fragment :u1 more_fragment :u1 fragOffset :u13
     ttl :u8 proto :u8 checksum :u16
     srcAddr :u32
     dstAddr :u32
     options :[u8(ihl)*4-20]u8
 
+format IPv4Packet:
+    hdr :IPv4Header
+    hdr.len >= u16(hdr.ihl)*4
+    len ::= hdr.len - hdr.ihl*4 
+    data :[len]u8
 
 format IPv6Header:
     version :u4 
@@ -23,9 +27,10 @@ format IPHeader:
 
     if ip_version == 4:
         hdr :IPv4Header
-        len ::= hdr.len - hdr.ihl*4 
-        data :[len]u8
+ 
     elif ip_version == 6:
         hdr :IPv6Header
     else:
         error("invalid ip_version: %d", ip_version)
+
+
