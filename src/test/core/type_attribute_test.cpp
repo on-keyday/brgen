@@ -89,7 +89,7 @@ format B:
     middle::TypeAttribute attr;
     attr.recursive_reference(r);
     attr.int_type_detection(r);
-    ASSERT_FALSE(r->struct_type->non_dynamic_allocation);
+    ASSERT_TRUE(r->struct_type->non_dynamic_allocation);
     ASSERT_EQ(r->struct_type->fields.size(), 2);
     auto fmt = ast::as<ast::Format>(r->struct_type->fields[0]);
     ASSERT_TRUE(fmt);
@@ -143,7 +143,7 @@ format E:
     middle::TypeAttribute attr;
     attr.recursive_reference(r);
     attr.int_type_detection(r);
-    ASSERT_FALSE(r->struct_type->non_dynamic_allocation);
+    ASSERT_TRUE(r->struct_type->non_dynamic_allocation);
     ASSERT_EQ(r->struct_type->fields.size(), 5);
     auto fmt = ast::as<ast::Format>(r->struct_type->fields[0]);
     ASSERT_TRUE(fmt);
@@ -229,7 +229,7 @@ format A:
     middle::TypeAttribute attr;
     attr.recursive_reference(r);
     attr.int_type_detection(r);
-    ASSERT_FALSE(r->struct_type->non_dynamic_allocation);
+    ASSERT_TRUE(r->struct_type->non_dynamic_allocation);
     ASSERT_EQ(r->struct_type->fields.size(), 1);
     auto fmt = ast::as<ast::Format>(r->struct_type->fields[0]);
     ASSERT_TRUE(fmt);
