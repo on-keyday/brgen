@@ -66,7 +66,7 @@ namespace brgen::vm {
         Value value_;
 
        public:
-        constexpr Var(std::string&& label, Value&& value)
+        Var(std::string&& label, Value&& value)
             : label_(std::move(label)), value_(std::move(value)) {}
 
         constexpr const std::string& label() const {
@@ -76,7 +76,7 @@ namespace brgen::vm {
             return value_;
         }
 
-        constexpr void value(Value&& value) {
+        void value(Value&& value) {
             value_ = std::move(value);
         }
     };
