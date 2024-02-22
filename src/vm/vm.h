@@ -38,7 +38,7 @@ namespace brgen::vm {
         constexpr Value(futils::view::rvec val)
             : data(val) {}
 
-        constexpr Value(std::string val)
+        Value(std::string val)
             : data(std::move(val)) {}
 
         constexpr std::optional<std::uint64_t> as_uint64() const {

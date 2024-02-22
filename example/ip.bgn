@@ -5,7 +5,7 @@ format IPv4Header:
     ttl :u8 proto :u8 checksum :u16
     srcAddr :u32
     dstAddr :u32
-    # options :[u8(ihl)*4-20]u8
+    options :[u8(ihl)*4-20]u8
 
 
 format IPv6Header:
@@ -23,6 +23,8 @@ format IPHeader:
 
     if ip_version == 4:
         hdr :IPv4Header
+        len ::= hdr.len - hdr.ihl*4 
+        data :[len]u8
     elif ip_version == 6:
         hdr :IPv6Header
     else:
