@@ -752,15 +752,27 @@ namespace j2cp2 {
                 ident = ident.substr(0, ident.size() - 2) + "_data";
             }
             futils::helper::DynDefer peek;
-            if (f->arguments && f->arguments->peek) {
-                if (f->arguments->peek_value && *f->arguments->peek_value) {
-                    map_line(f->loc);
-                    auto seq = get_seq();
-                    w.writeln("auto peek_pos_", brgen::nums(seq), "_ = w.offset();");
-                    peek = futils::helper::defer_ex([&, seq] {
+            if (f->arguments) {
+                if (f->arguments->arguments.size() == 1) {
+                    auto arg = f->arguments->arguments[0];
+                    auto expr = str.to_string(arg);
+                    w.writeln("if (", expr, " != ", ident, ") {");
+                    {
+                        auto indent = w.indent_scope();
+                        write_return_error(f, "field value is not equal to ", expr);
+                    }
+                    w.writeln("}");
+                }
+                if (f->arguments->peek) {
+                    if (f->arguments->peek_value && *f->arguments->peek_value) {
                         map_line(f->loc);
-                        w.writeln("w.reset(peek_pos_", brgen::nums(seq), "_);");
-                    });
+                        auto seq = get_seq();
+                        w.writeln("auto peek_pos_", brgen::nums(seq), "_ = w.offset();");
+                        peek = futils::helper::defer_ex([&, seq] {
+                            map_line(f->loc);
+                            w.writeln("w.reset(peek_pos_", brgen::nums(seq), "_);");
+                        });
+                    }
                 }
             }
             write_field_encode_impl(f->loc, ident, typ, f);
@@ -961,6 +973,16 @@ namespace j2cp2 {
                 }
             }
             write_field_decode_impl(f->loc, ident, typ, f);
+            if (f->arguments && f->arguments->arguments.size() == 1) {
+                auto arg = f->arguments->arguments[0];
+                auto expr = str.to_string(arg);
+                w.writeln("if (", ident, " != ", expr, ") {");
+                {
+                    auto indent = w.indent_scope();
+                    write_return_error(f, "field value is not equal to ", expr);
+                }
+                w.writeln("}");
+            }
         }
 
         void write_field_decode_impl(brgen::lexer::Loc loc, std::string_view ident, std::shared_ptr<ast::Type> typ, ast::Field* fi) {
