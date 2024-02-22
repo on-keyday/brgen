@@ -5631,7 +5631,7 @@ pub struct ArrayType {
 	pub bit_alignment: BitAlignment,
 	pub bit_size: Option<u64>,
 	pub end_loc: Loc,
-	pub base_type: Option<Type>,
+	pub element_type: Option<Type>,
 	pub length: Option<Expr>,
 	pub length_value: Option<u64>,
 }
@@ -8343,7 +8343,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				bit_alignment: BitAlignment::ByteAligned,
 				bit_size: None,
 				end_loc: raw_node.loc.clone(),
-				base_type: None,
+				element_type: None,
 				length: None,
 				length_value: None,
 				})))
@@ -11263,20 +11263,20 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Ok(v)=>v,
 					Err(e)=>return Err(Error::JSONError(e)),
 				};
-				let base_type_body = match raw_node.body.get("base_type") {
+				let element_type_body = match raw_node.body.get("element_type") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"base_type")),
+					None=>return Err(Error::MissingField(node_type,"element_type")),
 				};
- 				if !base_type_body.is_null() {
-					let base_type_body = match base_type_body.as_u64() {
+ 				if !element_type_body.is_null() {
+					let element_type_body = match element_type_body.as_u64() {
 						Some(v)=>v,
-						None=>return Err(Error::MismatchJSONType(base_type_body.into(),JSONType::Number)),
+						None=>return Err(Error::MismatchJSONType(element_type_body.into(),JSONType::Number)),
 					};
-					let base_type_body = match nodes.get(base_type_body as usize) {
+					let element_type_body = match nodes.get(element_type_body as usize) {
 						Some(v)=>v,
-						None => return Err(Error::IndexOutOfBounds(base_type_body as usize)),
+						None => return Err(Error::IndexOutOfBounds(element_type_body as usize)),
 					};
-					node.borrow_mut().base_type = Some(base_type_body.try_into()?);
+					node.borrow_mut().element_type = Some(element_type_body.try_into()?);
 				}
 				let length_body = match raw_node.body.get("length") {
 					Some(v)=>v,
@@ -13975,7 +13975,7 @@ where
 		Node::VoidType(_)=>{},
 		Node::BoolType(_)=>{},
 		Node::ArrayType(node)=>{
-			if let Some(node) = &node.borrow().base_type{
+			if let Some(node) = &node.borrow().element_type{
 				if !f.visit(&node.into()){
 					return;
 				}

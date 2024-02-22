@@ -532,7 +532,7 @@ public class ArrayType : Type{
 	public BitAlignment BitAlignment{get;set;}
 	public ulong? BitSize{get;set;}
 	public Loc EndLoc{get;set;}
-	public Type? BaseType{get;set;}
+	public Type? ElementType{get;set;}
 	public Expr? Length{get;set;}
 	public ulong? LengthValue{get;set;}
 }
@@ -1327,7 +1327,7 @@ public static class Ast {
                node.BitAlignment = ast.Node[i].Body[bit_alignment];
                node.BitSize = ast.Node[i].Body[bit_size];
                node.EndLoc = ast.Node[i].Body[end_loc];
-               node.BaseType = ast.Node[i].Body[base_type];
+               node.ElementType = ast.Node[i].Body[element_type];
                node.Length = ast.Node[i].Body[length];
                node.LengthValue = ast.Node[i].Body[length_value];
            case NodeType.FunctionType:

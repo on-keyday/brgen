@@ -1010,7 +1010,7 @@ struct ast2c_ArrayType {
 	ast2c_BitAlignment bit_alignment;
 	uint64_t* bit_size;
 	ast2c_Loc end_loc;
-	ast2c_Type* base_type;
+	ast2c_Type* element_type;
 	ast2c_Expr* length;
 	uint64_t* length_value;
 };

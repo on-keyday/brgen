@@ -2438,7 +2438,7 @@ type ArrayType struct {
 	BitAlignment         BitAlignment
 	BitSize              *uint64
 	EndLoc               Loc
-	BaseType             Type
+	ElementType          Type
 	Length               Expr
 	LengthValue          *uint64
 }
@@ -4293,7 +4293,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				BitAlignment         BitAlignment `json:"bit_alignment"`
 				BitSize              *uint64      `json:"bit_size"`
 				EndLoc               Loc          `json:"end_loc"`
-				BaseType             *uintptr     `json:"base_type"`
+				ElementType          *uintptr     `json:"element_type"`
 				Length               *uintptr     `json:"length"`
 				LengthValue          *uint64      `json:"length_value"`
 			}
@@ -4305,8 +4305,8 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.BitAlignment = tmp.BitAlignment
 			v.BitSize = tmp.BitSize
 			v.EndLoc = tmp.EndLoc
-			if tmp.BaseType != nil {
-				v.BaseType = n.node[*tmp.BaseType].(Type)
+			if tmp.ElementType != nil {
+				v.ElementType = n.node[*tmp.ElementType].(Type)
 			}
 			if tmp.Length != nil {
 				v.Length = n.node[*tmp.Length].(Expr)
@@ -5406,8 +5406,8 @@ func Walk(n Node, f Visitor) {
 	case *VoidType:
 	case *BoolType:
 	case *ArrayType:
-		if v.BaseType != nil {
-			if !f.Visit(f, v.BaseType) {
+		if v.ElementType != nil {
+			if !f.Visit(f, v.ElementType) {
 				return
 			}
 		}

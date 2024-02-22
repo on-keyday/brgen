@@ -488,7 +488,7 @@ class BoolType(Type):
 
 class ArrayType(Type):
     end_loc: Loc
-    base_type: Optional[Type]
+    element_type: Optional[Type]
     length: Optional[Expr]
     length_value: Optional[int]
 
@@ -1582,11 +1582,11 @@ def ast2node(ast :JsonAst) -> Program:
                 else:
                     node[i].bit_size = None
                 node[i].end_loc = parse_Loc(ast.node[i].body["end_loc"])
-                if ast.node[i].body["base_type"] is not None:
-                    x = node[ast.node[i].body["base_type"]]
-                    node[i].base_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at ArrayType::base_type'))
+                if ast.node[i].body["element_type"] is not None:
+                    x = node[ast.node[i].body["element_type"]]
+                    node[i].element_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at ArrayType::element_type'))
                 else:
-                    node[i].base_type = None
+                    node[i].element_type = None
                 if ast.node[i].body["length"] is not None:
                     x = node[ast.node[i].body["length"]]
                     node[i].length = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at ArrayType::length'))
@@ -2398,8 +2398,8 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
         case x if isinstance(x,BoolType):
             pass
         case x if isinstance(x,ArrayType):
-          if x.base_type is not None:
-              if f(f,x.base_type) == False:
+          if x.element_type is not None:
+              if f(f,x.element_type) == False:
                   return
           if x.length is not None:
               if f(f,x.length) == False:

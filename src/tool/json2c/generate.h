@@ -29,24 +29,17 @@ namespace json2c {
             if (auto arr_ty = ast::as<ast::ArrayType>(typ)) {
                 return brgen::concat(get_type(arr_ty->element_type), "*");
             }
+            return "";
         }
 
         void write_field(ast::Field* field) {
             auto typ = field->field_type;
-            if (auto int_ty = ast::as<ast::IntType>(typ)) {
-                auto bit = *int_ty->bit_size;
-                if (int_ty->is_common_supported) {
-                    h_w.writeln(int_ty->is_signed ? "" : "u", "int", brgen::nums(bit), "_t ", field->ident->ident, ";");
-                    str.map_ident(field->ident, "${THIS}", field->ident->ident);
-                }
-                else if (bit < 64) {
-                    if (field->eventual_bit_alignment != field->bit_alignment) {
-                        return;  // skip
-                    }
-                }
+            auto typ_str = get_type(typ);
+            if (field->bit_alignment != field->eventual_bit_alignment) {
+                return;
             }
-            if (auto int_ty = ast::as<ast::ArrayType>(typ)) {
-            }
+            auto ident = str.to_string(field->ident);
+            h_w.writeln(typ_str, ident, ";");
         }
 
         void write_struct_type(const std::shared_ptr<ast::StructType>& typ) {

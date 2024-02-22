@@ -2425,7 +2425,7 @@ int ast2c_ArrayType_parse(ast2c_Ast* ast,ast2c_ArrayType* s,ast2c_json_handlers*
 	void* obj_body = h->object_get(h, obj, "body");
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
 	s->bit_size = NULL;
-	s->base_type = NULL;
+	s->element_type = NULL;
 	s->length = NULL;
 	s->length_value = NULL;
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
@@ -2433,7 +2433,7 @@ int ast2c_ArrayType_parse(ast2c_Ast* ast,ast2c_ArrayType* s,ast2c_json_handlers*
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
 	void* bit_size = h->object_get(h, obj_body, "bit_size");
 	void* end_loc = h->object_get(h, obj_body, "end_loc");
-	void* base_type = h->object_get(h, obj_body, "base_type");
+	void* element_type = h->object_get(h, obj_body, "element_type");
 	void* length = h->object_get(h, obj_body, "length");
 	void* length_value = h->object_get(h, obj_body, "length_value");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_ArrayType::loc is null"); } return 0; }
@@ -2442,7 +2442,7 @@ int ast2c_ArrayType_parse(ast2c_Ast* ast,ast2c_ArrayType* s,ast2c_json_handlers*
 	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_ArrayType::bit_alignment is null"); } return 0; }
 	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_ArrayType::bit_size is null"); } return 0; }
 	if (!end_loc) { if(h->error) { h->error(h,end_loc, "ast2c_ArrayType::end_loc is null"); } return 0; }
-	if (!base_type) { if(h->error) { h->error(h,base_type, "ast2c_ArrayType::base_type is null"); } return 0; }
+	if (!element_type) { if(h->error) { h->error(h,element_type, "ast2c_ArrayType::element_type is null"); } return 0; }
 	if (!length) { if(h->error) { h->error(h,length, "ast2c_ArrayType::length is null"); } return 0; }
 	if (!length_value) { if(h->error) { h->error(h,length_value, "ast2c_ArrayType::length_value is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {

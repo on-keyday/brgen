@@ -793,7 +793,7 @@ export function isBoolType(obj: any): obj is BoolType {
 
 export interface ArrayType extends Type {
 	end_loc: Loc;
-	base_type: Type|null;
+	element_type: Type|null;
 	length: Expr|null;
 	length_value: number|null;
 }
@@ -1684,7 +1684,7 @@ export function parseAST(obj: JsonAst): Program {
 				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: null,
 				end_loc: on.loc,
-				base_type: null,
+				element_type: null,
 				length: null,
 				length_value: null,
 			}
@@ -3380,14 +3380,14 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at ArrayType::end_loc');
 			}
 			n.end_loc = tmpend_loc;
-			if (on.body?.base_type !== null && typeof on.body?.base_type !== 'number') {
-				throw new Error('invalid node list at ArrayType::base_type');
+			if (on.body?.element_type !== null && typeof on.body?.element_type !== 'number') {
+				throw new Error('invalid node list at ArrayType::element_type');
 			}
-			const tmpbase_type = on.body.base_type === null ? null : c.node[on.body.base_type];
-			if (!(tmpbase_type === null || isType(tmpbase_type))) {
-				throw new Error('invalid node list at ArrayType::base_type');
+			const tmpelement_type = on.body.element_type === null ? null : c.node[on.body.element_type];
+			if (!(tmpelement_type === null || isType(tmpelement_type))) {
+				throw new Error('invalid node list at ArrayType::element_type');
 			}
-			n.base_type = tmpbase_type;
+			n.element_type = tmpelement_type;
 			if (on.body?.length !== null && typeof on.body?.length !== 'number') {
 				throw new Error('invalid node list at ArrayType::length');
 			}
@@ -5282,8 +5282,8 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 				break;
 			}
 			const n :ArrayType = node as ArrayType;
-			if (n.base_type !== null) {
-				const result = fn(fn,n.base_type);
+			if (n.element_type !== null) {
+				const result = fn(fn,n.element_type);
 				if (result === false) {
 					return;
 				}
