@@ -15,7 +15,7 @@ namespace brgen::ast::tool {
     inline std::optional<ArrayDesc> is_array_type(auto&& typ, Evaluator& eval, bool omit_eval = false) {
         if (auto arr = ast::as<ArrayType>(typ)) {
             ArrayDesc desc;
-            desc.base_type = arr->base_type;
+            desc.base_type = arr->element_type;
             desc.length = arr->length;
             if (arr->length && !omit_eval) {
                 desc.length_eval = eval.eval_as<EResultType::integer>(arr->length);

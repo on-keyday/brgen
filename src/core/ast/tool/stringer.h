@@ -76,6 +76,7 @@ namespace brgen::ast::tool {
         std::function<std::string(Stringer&, const std::shared_ptr<Type>&)> type_resolver;
         std::function<std::string(Stringer&, const std::shared_ptr<IOOperation>&)> io_op_handler;
         std::function<std::string(Stringer&, const std::shared_ptr<Available>&)> available_handler;
+        std::string this_access = "this->";
 
         void clear() {
             bin_op_map.clear();
@@ -120,7 +121,7 @@ namespace brgen::ast::tool {
             };
             if (!d->second) {  // not via member access
                 if (ast::as<ast::Member>(d->first->base.lock())) {
-                    return get_text_with_replace("this->");
+                    return get_text_with_replace(this_access);
                 }
             }
             if (ast::as<ast::EnumMember>(d->first->base.lock())) {

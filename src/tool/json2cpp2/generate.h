@@ -183,13 +183,13 @@ namespace j2cp2 {
             if (auto arr_ty = ast::as<ast::ArrayType>(type); arr_ty) {
                 if (arr_ty->non_dynamic_allocation) {
                     auto len = str.to_string(arr_ty->length);
-                    auto typ = get_type_name(arr_ty->base_type);
+                    auto typ = get_type_name(arr_ty->element_type);
                     return brgen::concat("std::array<", typ, ",", len, ">");
                 }
-                if (auto int_ty = ast::as<ast::IntType>(arr_ty->base_type); int_ty && int_ty->bit_size == 8) {
+                if (auto int_ty = ast::as<ast::IntType>(arr_ty->element_type); int_ty && int_ty->bit_size == 8) {
                     return "::futils::view::rvec";
                 }
-                return "std::vector<" + get_type_name(arr_ty->base_type) + ">";
+                return "std::vector<" + get_type_name(arr_ty->element_type) + ">";
             }
             if (auto struct_ty = ast::as<ast::StructType>(type); struct_ty) {
                 if (auto l = struct_ty->base.lock()) {
@@ -829,7 +829,7 @@ namespace j2cp2 {
                     w.writeln("}");
                 }
                 map_line(loc);
-                if (auto int_ty = ast::as<ast::IntType>(arr_ty->base_type); int_ty && int_ty->bit_size == 8) {
+                if (auto int_ty = ast::as<ast::IntType>(arr_ty->element_type); int_ty && int_ty->bit_size == 8) {
                     w.writeln("if (!w.write(", ident, ")) {");
                     {
                         auto indent = w.indent_scope();
@@ -842,7 +842,7 @@ namespace j2cp2 {
                     w.writeln("for (auto& ", tmp, " : ", ident, ") {");
                     {
                         auto indent = w.indent_scope();
-                        write_field_encode_impl(loc, tmp, arr_ty->base_type, fi);
+                        write_field_encode_impl(loc, tmp, arr_ty->element_type, fi);
                     }
                     w.writeln("}");
                 }
@@ -1052,7 +1052,7 @@ namespace j2cp2 {
                     len = get_length(fi, arr_ty->length);
                 }
                 map_line(loc);
-                if (auto int_ty = ast::as<ast::IntType>(arr_ty->base_type); int_ty && int_ty->bit_size == 8) {
+                if (auto int_ty = ast::as<ast::IntType>(arr_ty->element_type); int_ty && int_ty->bit_size == 8) {
                     if (len) {
                         w.writeln("if (!r.read(", ident, ", ", *len, ")) {");
                         {
@@ -1108,7 +1108,7 @@ namespace j2cp2 {
                         len = brgen::nums(*arr_ty->length_value);
                     }
                     auto tmp = brgen::concat("tmp_", brgen::nums(get_seq()), "_");
-                    auto type = get_type_name(arr_ty->base_type);
+                    auto type = get_type_name(arr_ty->element_type);
                     map_line(loc);
                     if (!arr_ty->non_dynamic_allocation) {
                         w.writeln(ident, ".clear();");
@@ -1140,11 +1140,11 @@ namespace j2cp2 {
                             w.writeln("}");
                         }
                         if (arr_ty->non_dynamic_allocation) {
-                            write_field_decode_impl(loc, brgen::concat(ident, "[", tmp_i, "]"), arr_ty->base_type, fi);
+                            write_field_decode_impl(loc, brgen::concat(ident, "[", tmp_i, "]"), arr_ty->element_type, fi);
                         }
                         else {
                             w.writeln(type, " ", tmp, ";");
-                            write_field_decode_impl(loc, tmp, arr_ty->base_type, fi);
+                            write_field_decode_impl(loc, tmp, arr_ty->element_type, fi);
                             w.writeln(ident, ".push_back(std::move(", tmp, "));");
                         }
                     }

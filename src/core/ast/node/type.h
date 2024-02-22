@@ -305,10 +305,10 @@ namespace brgen::ast {
         std::shared_ptr<ast::Expr> length;
         std::optional<size_t> length_value;
         lexer::Loc end_loc;
-        std::shared_ptr<ast::Type> base_type;
+        std::shared_ptr<ast::Type> element_type;
 
         ArrayType(lexer::Loc l, std::shared_ptr<ast::Expr>&& len, lexer::Loc end, std::shared_ptr<ast::Type>&& base, bool is_explicit = false)
-            : Type(l, NodeType::array_type), length(std::move(len)), end_loc(end), base_type(std::move(base)) {
+            : Type(l, NodeType::array_type), length(std::move(len)), end_loc(end), element_type(std::move(base)) {
             this->is_explicit = is_explicit;
         }
 
@@ -319,7 +319,7 @@ namespace brgen::ast {
         void dump(auto&& field_) {
             Type::dump(field_);
             sdebugf(end_loc);
-            sdebugf(base_type);
+            sdebugf(element_type);
             sdebugf(length);
             sdebugf(length_value);
         }

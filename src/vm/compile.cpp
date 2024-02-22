@@ -170,7 +170,7 @@ namespace brgen::vm {
                 }
             }
             if (auto arr_ty = ast::as<ast::ArrayType>(typ)) {
-                if (auto u8 = ast::as<ast::IntType>(arr_ty->base_type); u8 && u8->bit_size == 8) {
+                if (auto u8 = ast::as<ast::IntType>(arr_ty->element_type); u8 && u8->bit_size == 8) {
                     if (arr_ty->length_value) {
                         op(Op::LOAD_IMMEDIATE, *arr_ty->length_value);
                     }

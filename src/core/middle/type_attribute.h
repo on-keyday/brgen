@@ -89,7 +89,7 @@ namespace brgen::middle {
                 if (auto a = ast::as<ast::ArrayType>(n); a) {
                     if (a->length && a->length->constant_level == ast::ConstantLevel::constant &&
                         a->length->node_type != ast::NodeType::range &&  // if b: [..]u8 style, b is variable length array, so not int set
-                        a->base_type->non_dynamic_allocation) {
+                        a->element_type->non_dynamic_allocation) {
                         a->non_dynamic_allocation = true;
                     }
                 }
@@ -385,16 +385,16 @@ namespace brgen::middle {
                 }
                 if (auto a = ast::as<ast::ArrayType>(n); a) {
                     // determine bit size
-                    if (a->length_value && a->base_type->bit_size) {
-                        a->bit_size = *a->length_value * *a->base_type->bit_size;
+                    if (a->length_value && a->element_type->bit_size) {
+                        a->bit_size = *a->length_value * *a->element_type->bit_size;
                     }
                     else {
                         a->bit_size = std::nullopt;  // variable length array
                     }
-                    if (a->base_type->bit_alignment == ast::BitAlignment::byte_aligned ||
-                        a->base_type->bit_alignment == ast::BitAlignment::not_target ||
-                        a->base_type->bit_alignment == ast::BitAlignment::not_decidable) {
-                        a->bit_alignment = a->base_type->bit_alignment;
+                    if (a->element_type->bit_alignment == ast::BitAlignment::byte_aligned ||
+                        a->element_type->bit_alignment == ast::BitAlignment::not_target ||
+                        a->element_type->bit_alignment == ast::BitAlignment::not_decidable) {
+                        a->bit_alignment = a->element_type->bit_alignment;
                     }
                     else {
                         // TODO(on-keyday): bit alignment of fixed length array non byte aligned can also be decided

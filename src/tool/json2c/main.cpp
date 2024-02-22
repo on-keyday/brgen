@@ -3,6 +3,7 @@
 #include <cmdline/template/parse_and_err.h>
 #include "../common/print.h"
 #include <core/ast/json.h>
+#include <core/ast/file.h>
 #include <file/file_view.h>
 #include "generate.h"
 #include <wrap/argv.h>
@@ -61,22 +62,13 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
         print_error("cannot parse json file ", name);
         return 1;
     }
-    auto files = js.at("files");
-    if (!files) {
-        print_error("cannot find files field ", name);
-        return 1;
-    }
-    if (!files->is_array()) {
-        print_error("files field is not array ", name);
-        return 1;
-    }
-    auto f = js.at("ast");
-    if (!f) {
-        print_error("cannot find ast field ", name);
+    brgen::ast::AstFile f;
+    if (!futils::json::convert_from_json(js, f)) {
+        print_error("cannot convert json file ", name);
         return 1;
     }
     brgen::ast::JSONConverter c;
-    auto res = c.decode(*f);
+    auto res = c.decode(*f.ast);
     if (!res) {
         print_error("cannot decode json file: ", res.error().locations[0].msg);
         return 1;
@@ -86,10 +78,11 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
         return 1;
     }
     json2c::Generator g;
-
     auto prog = brgen::ast::cast_to<brgen::ast::Program>(*res);
     g.write_program(prog);
     cout << g.h_w.out() << "\n";
+    // cout << "############\n";
+    cout << g.c_w.out() << "\n";
     if (flags.add_line_map) {
         cout << "############\n";
         futils::json::Stringer s;

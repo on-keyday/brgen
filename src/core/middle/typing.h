@@ -56,7 +56,7 @@ namespace brgen::middle {
             }
             if (auto lty = ast::as<ast::ArrayType>(left)) {
                 auto rty = ast::as<ast::ArrayType>(right);
-                if (!equal_type(lty->base_type, rty->base_type)) {
+                if (!equal_type(lty->element_type, rty->element_type)) {
                     return false;
                 }
                 if (lty->length_value && rty->length_value) {
@@ -91,7 +91,7 @@ namespace brgen::middle {
                 return equal_type(rty->base_type, left);
             }
             if (auto arr = ast::as<ast::ArrayType>(right)) {
-                auto ty = ast::as<ast::IntType>(arr->base_type);
+                auto ty = ast::as<ast::IntType>(arr->element_type);
                 if (!ty || ty->bit_size != 8) {
                     return false;  // only byte array is comparable with string
                 }
@@ -108,7 +108,7 @@ namespace brgen::middle {
                 return true;
             }
             if (auto arr = ast::as<ast::ArrayType>(left)) {
-                auto ty = ast::as<ast::IntType>(arr->base_type);
+                auto ty = ast::as<ast::IntType>(arr->element_type);
                 if (!ty || ty->bit_size != 8) {
                     return false;  // only byte array is comparable with string
                 }
@@ -185,8 +185,8 @@ namespace brgen::middle {
             }
             if (auto a_a = ast::as<ast::ArrayType>(a)) {
                 if (auto b_a = ast::as<ast::ArrayType>(b)) {
-                    if (equal_type(a_a->base_type, b_a->base_type)) {
-                        auto base_typ = a_a->base_type;
+                    if (equal_type(a_a->element_type, b_a->element_type)) {
+                        auto base_typ = a_a->element_type;
                         return std::make_shared<ast::ArrayType>(a_a->loc, nullptr, a_a->end_loc, std::move(base_typ));
                     }
                 }
@@ -943,7 +943,7 @@ namespace brgen::middle {
                     .error(idx->expr->expr_type->loc, "type is ", ast::node_type_to_string(idx->expr->expr_type->node_type))
                     .report();
             }
-            idx->expr_type = arr_ty->base_type;
+            idx->expr_type = arr_ty->element_type;
             idx->constant_level = decide_constant_level(idx->expr->constant_level, idx->index->constant_level);
         }
 
@@ -1055,7 +1055,7 @@ namespace brgen::middle {
                 return ast::cast_to<ast::IdentType>(typ);
             }
             if (auto arr = ast::as<ast::ArrayType>(typ)) {
-                return get_final_ident_type(arr->base_type);
+                return get_final_ident_type(arr->element_type);
             }
             return nullptr;
         }
