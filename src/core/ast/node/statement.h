@@ -153,6 +153,7 @@ namespace brgen::ast {
     struct Field : Member {
         define_node_type(NodeType::field);
         lexer::Loc colon_loc;
+        bool is_state_variable = false;
         std::shared_ptr<Type> field_type;
         std::shared_ptr<FieldArgument> arguments;
         // offset from the beginning of struct

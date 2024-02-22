@@ -1050,11 +1050,21 @@ namespace brgen::middle {
                                                       r->end ? r->end->constant_level : ast::ConstantLevel::constant);
         }
 
+        std::shared_ptr<ast::IdentType> get_final_ident_type(const std::shared_ptr<ast::Type>& typ) {
+            if (auto ident = ast::as<ast::IdentType>(typ)) {
+                return ast::cast_to<ast::IdentType>(typ);
+            }
+            if (auto arr = ast::as<ast::ArrayType>(typ)) {
+                return get_final_ident_type(arr->base_type);
+            }
+            return nullptr;
+        }
+
         void register_state_variable(const std::shared_ptr<ast::Ident>& ident) {
             auto maybe_field = ast::as<ast::Ident>(ident->base.lock())->base.lock();
             auto field = ast::as<ast::Field>(maybe_field);
             assert(field);
-            auto ident_typ = ast::as<ast::IdentType>(field->field_type);
+            auto ident_typ = get_final_ident_type(field->field_type);
             if (!ident_typ) {
                 return;  // not a state variable
             }
@@ -1071,7 +1081,9 @@ namespace brgen::middle {
             while (s) {
                 auto o = s->owner.lock();
                 if (auto fmt = ast::as<ast::Format>(o)) {
-                    fmt->state_variables.push_back(ast::cast_to<ast::Field>(maybe_field));
+                    auto field = ast::cast_to<ast::Field>(maybe_field);
+                    field->is_state_variable = true;
+                    fmt->state_variables.push_back(std::move(field));
                     return;
                 }
                 s = s->prev.lock();
