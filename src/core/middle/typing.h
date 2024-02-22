@@ -1068,7 +1068,7 @@ namespace brgen::middle {
             if (!ident_typ) {
                 return;  // not a state variable
             }
-            typing_ident_type(ident_typ, true);
+            typing_ident_type(ident_typ.get(), true);
             auto l = ast::as<ast::StructType>(ident_typ->base.lock());
             if (!l) {
                 return;  // not a state variable

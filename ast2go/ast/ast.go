@@ -2936,6 +2936,7 @@ type Field struct {
 	BelongStruct         *StructType
 	Ident                *Ident
 	ColonLoc             Loc
+	IsStateVariable      bool
 	FieldType            Type
 	Arguments            *FieldArgument
 	OffsetBit            *uint64
@@ -4637,6 +4638,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				BelongStruct         *uintptr     `json:"belong_struct"`
 				Ident                *uintptr     `json:"ident"`
 				ColonLoc             Loc          `json:"colon_loc"`
+				IsStateVariable      bool         `json:"is_state_variable"`
 				FieldType            *uintptr     `json:"field_type"`
 				Arguments            *uintptr     `json:"arguments"`
 				OffsetBit            *uint64      `json:"offset_bit"`
@@ -4661,6 +4663,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				v.Ident = n.node[*tmp.Ident].(*Ident)
 			}
 			v.ColonLoc = tmp.ColonLoc
+			v.IsStateVariable = tmp.IsStateVariable
 			if tmp.FieldType != nil {
 				v.FieldType = n.node[*tmp.FieldType].(Type)
 			}

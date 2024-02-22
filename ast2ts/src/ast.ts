@@ -940,6 +940,7 @@ export function isSpecialLiteral(obj: any): obj is SpecialLiteral {
 
 export interface Field extends Member {
 	colon_loc: Loc;
+	is_state_variable: boolean;
 	field_type: Type|null;
 	arguments: FieldArgument|null;
 	offset_bit: number|null;
@@ -1897,6 +1898,7 @@ export function parseAST(obj: JsonAst): Program {
 				belong_struct: null,
 				ident: null,
 				colon_loc: on.loc,
+				is_state_variable: false,
 				field_type: null,
 				arguments: null,
 				offset_bit: null,
@@ -3974,6 +3976,11 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at Field::colon_loc');
 			}
 			n.colon_loc = tmpcolon_loc;
+			const tmpis_state_variable = on.body?.is_state_variable;
+			if (typeof tmpis_state_variable !== "boolean") {
+				throw new Error('invalid node list at Field::is_state_variable');
+			}
+			n.is_state_variable = on.body.is_state_variable;
 			if (on.body?.field_type !== null && typeof on.body?.field_type !== 'number') {
 				throw new Error('invalid node list at Field::field_type');
 			}

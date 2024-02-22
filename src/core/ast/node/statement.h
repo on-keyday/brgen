@@ -212,8 +212,8 @@ namespace brgen::ast {
 
         void dump(auto&& field_) {
             Member::dump(field_);
-            // sdebugf(ident);
             sdebugf(colon_loc);
+            sdebugf(is_state_variable);
             sdebugf(field_type);
             sdebugf(arguments);
             sdebugf(offset_bit);

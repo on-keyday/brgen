@@ -1230,6 +1230,7 @@ struct ast2c_Field {
 	ast2c_StructType* belong_struct;
 	ast2c_Ident* ident;
 	ast2c_Loc colon_loc;
+	int is_state_variable;
 	ast2c_Type* field_type;
 	ast2c_FieldArgument* arguments;
 	uint64_t* offset_bit;

@@ -666,6 +666,7 @@ public class Field : Member{
 	public StructType? BelongStruct{get;set;}
 	public Ident? Ident{get;set;}
 	public Loc ColonLoc{get;set;}
+	public bool IsStateVariable{get;set;}
 	public Type? FieldType{get;set;}
 	public FieldArgument? Arguments{get;set;}
 	public ulong? OffsetBit{get;set;}
@@ -1460,6 +1461,7 @@ public static class Ast {
                node.BelongStruct = ast.Node[i].Body[belong_struct];
                node.Ident = ast.Node[i].Body[ident];
                node.ColonLoc = ast.Node[i].Body[colon_loc];
+               node.IsStateVariable = ast.Node[i].Body[is_state_variable];
                node.FieldType = ast.Node[i].Body[field_type];
                node.Arguments = ast.Node[i].Body[arguments];
                node.OffsetBit = ast.Node[i].Body[offset_bit];

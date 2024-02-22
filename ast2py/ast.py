@@ -572,6 +572,7 @@ class SpecialLiteral(Literal):
 
 class Field(Member):
     colon_loc: Loc
+    is_state_variable: bool
     field_type: Optional[Type]
     arguments: Optional[FieldArgument]
     offset_bit: Optional[int]
@@ -1847,6 +1848,8 @@ def ast2node(ast :JsonAst) -> Program:
                 else:
                     node[i].ident = None
                 node[i].colon_loc = parse_Loc(ast.node[i].body["colon_loc"])
+                x = ast.node[i].body["is_state_variable"]
+                node[i].is_state_variable = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at Field::is_state_variable'))
                 if ast.node[i].body["field_type"] is not None:
                     x = node[ast.node[i].body["field_type"]]
                     node[i].field_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at Field::field_type'))

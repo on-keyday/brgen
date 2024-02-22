@@ -6899,6 +6899,7 @@ pub struct Field {
 	pub belong_struct: Option<Weak<RefCell<StructType>>>,
 	pub ident: Option<Rc<RefCell<Ident>>>,
 	pub colon_loc: Loc,
+	pub is_state_variable: bool,
 	pub field_type: Option<Type>,
 	pub arguments: Option<Rc<RefCell<FieldArgument>>>,
 	pub offset_bit: Option<u64>,
@@ -8508,6 +8509,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				belong_struct: None,
 				ident: None,
 				colon_loc: raw_node.loc.clone(),
+				is_state_variable: false,
 				field_type: None,
 				arguments: None,
 				offset_bit: None,
@@ -12404,6 +12406,14 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				node.borrow_mut().colon_loc = match serde_json::from_value(colon_loc_body.clone()) {
 					Ok(v)=>v,
 					Err(e)=>return Err(Error::JSONError(e)),
+				};
+				let is_state_variable_body = match raw_node.body.get("is_state_variable") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"is_state_variable")),
+				};
+				node.borrow_mut().is_state_variable = match is_state_variable_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(is_state_variable_body.into(),JSONType::Bool)),
 				};
 				let field_type_body = match raw_node.body.get("field_type") {
 					Some(v)=>v,

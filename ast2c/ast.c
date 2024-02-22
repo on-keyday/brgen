@@ -3061,6 +3061,7 @@ int ast2c_Field_parse(ast2c_Ast* ast,ast2c_Field* s,ast2c_json_handlers* h, void
 	void* belong_struct = h->object_get(h, obj_body, "belong_struct");
 	void* ident = h->object_get(h, obj_body, "ident");
 	void* colon_loc = h->object_get(h, obj_body, "colon_loc");
+	void* is_state_variable = h->object_get(h, obj_body, "is_state_variable");
 	void* field_type = h->object_get(h, obj_body, "field_type");
 	void* arguments = h->object_get(h, obj_body, "arguments");
 	void* offset_bit = h->object_get(h, obj_body, "offset_bit");
@@ -3076,6 +3077,7 @@ int ast2c_Field_parse(ast2c_Ast* ast,ast2c_Field* s,ast2c_json_handlers* h, void
 	if (!belong_struct) { if(h->error) { h->error(h,belong_struct, "ast2c_Field::belong_struct is null"); } return 0; }
 	if (!ident) { if(h->error) { h->error(h,ident, "ast2c_Field::ident is null"); } return 0; }
 	if (!colon_loc) { if(h->error) { h->error(h,colon_loc, "ast2c_Field::colon_loc is null"); } return 0; }
+	if (!is_state_variable) { if(h->error) { h->error(h,is_state_variable, "ast2c_Field::is_state_variable is null"); } return 0; }
 	if (!field_type) { if(h->error) { h->error(h,field_type, "ast2c_Field::field_type is null"); } return 0; }
 	if (!arguments) { if(h->error) { h->error(h,arguments, "ast2c_Field::arguments is null"); } return 0; }
 	if (!offset_bit) { if(h->error) { h->error(h,offset_bit, "ast2c_Field::offset_bit is null"); } return 0; }
