@@ -40,6 +40,7 @@ namespace json2c {
             }
             auto ident = str.to_string(field->ident);
             h_w.writeln(typ_str, ident, ";");
+            str.map_ident(field->ident, "${THIS}", ident);
         }
 
         void write_struct_type(const std::shared_ptr<ast::StructType>& typ) {

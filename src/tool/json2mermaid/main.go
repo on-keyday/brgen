@@ -120,7 +120,7 @@ func diagram(out io.Writer, prog *ast.Program) {
 
 func baseTypeLink(out io.Writer, from string, t ast.Type) {
 	if a, ok := t.(*ast.ArrayType); ok {
-		baseTypeLink(out, from, a.BaseType)
+		baseTypeLink(out, from, a.ElementType)
 		return
 	}
 
@@ -133,7 +133,7 @@ func structTypeTrace(out io.Writer, name string, traceTarget *ast.StructType) {
 	s := gen.NewExprStringer()
 	s.TypeProvider = func(t ast.Type) string {
 		if arr, ok := t.(*ast.ArrayType); ok {
-			return fmt.Sprintf("%s[%s]", s.TypeProvider(arr.BaseType), s.ExprString(arr.Length))
+			return fmt.Sprintf("%s[%s]", s.TypeProvider(arr.ElementType), s.ExprString(arr.Length))
 		}
 		if _, ok := t.(*ast.StrLiteralType); ok {
 			return "fixed_string"

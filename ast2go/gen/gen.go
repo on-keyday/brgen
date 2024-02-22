@@ -372,9 +372,9 @@ func (g *ExprStringer) GetType(typ ast2go.Type) string {
 	if arr_type, ok := typ.(*ast2go.ArrayType); ok {
 		if arr_type.Length != nil && arr_type.Length.GetConstantLevel() == ast2go.ConstantLevelConstant {
 			len := g.ExprString(arr_type.Length)
-			return fmt.Sprintf("[%s]%s", len, g.TypeProvider(arr_type.BaseType))
+			return fmt.Sprintf("[%s]%s", len, g.TypeProvider(arr_type.ElementType))
 		}
-		return fmt.Sprintf("[]%s", g.TypeProvider(arr_type.BaseType))
+		return fmt.Sprintf("[]%s", g.TypeProvider(arr_type.ElementType))
 	}
 	if struct_type, ok := typ.(*ast2go.StructType); ok {
 		if !struct_type.Recursive {
