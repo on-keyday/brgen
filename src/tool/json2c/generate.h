@@ -108,11 +108,20 @@ namespace json2c {
                     if (auto f = ast::as<ast::Field>(field)) {
                         auto ident = str.to_string(f->ident);
                         auto typ = f->field_type;
+                        write_format_type_encode(ident, typ);
                     }
                 }
                 c_w.writeln("return 0;");
             }
             c_w.writeln("}");
+        }
+
+        void write_format_type_decode(std::string_view ident, const std::shared_ptr<ast::Type>& typ) {
+            if (auto int_ty = ast::as<ast::IntType>(typ)) {
+                encode_decode_int_field(int_ty, ident, false);
+            }
+            if (auto arr_ty = ast::as<ast::ArrayType>(typ)) {
+            }
         }
 
         void write_format_decode(const std::shared_ptr<ast::Format>& fmt) {
@@ -129,15 +138,14 @@ namespace json2c {
                     if (auto f = ast::as<ast::Field>(field)) {
                         auto ident = str.to_string(f->ident);
                         auto typ = f->field_type;
-                        if (auto int_ty = ast::as<ast::IntType>(typ)) {
-                            encode_decode_int_field(int_ty, ident, false);
-                        }
+                        write_format_type_decode(ident, typ);
                     }
                 }
                 c_w.writeln("return 0;");
             }
             c_w.writeln("}");
         }
+
         void write_enum_member(const std::shared_ptr<ast::EnumMember>& member) {
             auto& member_ident = member->ident->ident;
             auto value = str.to_string(member->value);
