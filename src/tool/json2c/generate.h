@@ -56,12 +56,14 @@ namespace json2c {
         static constexpr auto buffer = "buffer";
         static constexpr auto bit_per_byte = "8";
 
-        void encode_decode_int_field(ast::IntType* int_ty, std::string_view ident, bool encode) {
+        void encode_decode_int_field(ast::IntType* int_ty, std::string_view ident, bool encode, bool need_length_check = true) {
             if (int_ty->is_common_supported) {
                 auto bit = *int_ty->bit_size;
-                c_w.writeln("if (", buffer_offset, " + sizeof(", ident, ") > ", buffer_size, ") {");
-                c_w.indent_writeln("return -1;");
-                c_w.writeln("}");
+                if (need_length_check) {
+                    c_w.writeln("if (", buffer_offset, " + sizeof(", ident, ") > ", buffer_size, ") {");
+                    c_w.indent_writeln("return -1;");
+                    c_w.writeln("}");
+                }
                 c_w.writeln("for (size_t i = 0; i < sizeof(", ident, "); i++) {");
                 auto i = "i";
                 std::string shift_offset;
@@ -86,9 +88,9 @@ namespace json2c {
             }
         }
 
-        void write_format_type_encode(std::string_view ident, const std::shared_ptr<ast::Type>& typ) {
+        void write_format_type_encode(std::string_view ident, const std::shared_ptr<ast::Type>& typ, bool need_length_check = true) {
             if (auto int_ty = ast::as<ast::IntType>(typ)) {
-                encode_decode_int_field(int_ty, ident, true);
+                encode_decode_int_field(int_ty, ident, true, need_length_check);
             }
             if (auto arr_ty = ast::as<ast::ArrayType>(typ)) {
             }
@@ -102,13 +104,19 @@ namespace json2c {
             h_w.indent_writeln("return ", fmt->ident->ident, "_encode_ex(this_, buffer, buffer_size, &buffer_offset, &buffer_bit_offset);");
             h_w.writeln("}");
             c_w.writeln("int ", fmt->ident->ident, "_encode_ex(const ", fmt->ident->ident, "* this_, uint8_t* ", buffer, ", size_t ", buffer_size, ",size_t ", buffer_offset, ",size_t", buffer_bit_offset, ") {");
+            if (fmt->body->struct_type->bit_size) {
+                auto len = fmt->body->struct_type->bit_size.value() + futils::bit_per_byte - 1 / futils::bit_per_byte;
+                c_w.writeln("if (", buffer_offset, " + ", brgen::nums(len), " > ", buffer_size, ") {");
+                c_w.indent_writeln("return -1;");
+                c_w.writeln("}");
+            }
             {
                 auto scope = c_w.indent_scope();
                 for (auto& field : fmt->body->elements) {
                     if (auto f = ast::as<ast::Field>(field)) {
                         auto ident = str.to_string(f->ident);
                         auto typ = f->field_type;
-                        write_format_type_encode(ident, typ);
+                        write_format_type_encode(ident, typ, fmt->body->struct_type->bit_size.has_value());
                     }
                 }
                 c_w.writeln("return 0;");
@@ -116,9 +124,9 @@ namespace json2c {
             c_w.writeln("}");
         }
 
-        void write_format_type_decode(std::string_view ident, const std::shared_ptr<ast::Type>& typ) {
+        void write_format_type_decode(std::string_view ident, const std::shared_ptr<ast::Type>& typ, bool need_length_check = true) {
             if (auto int_ty = ast::as<ast::IntType>(typ)) {
-                encode_decode_int_field(int_ty, ident, false);
+                encode_decode_int_field(int_ty, ident, false, need_length_check);
             }
             if (auto arr_ty = ast::as<ast::ArrayType>(typ)) {
             }
@@ -132,13 +140,19 @@ namespace json2c {
             h_w.indent_writeln("return ", fmt->ident->ident, "_decode_ex(this_, buffer, buffer_size, &buffer_offset, &buffer_bit_offset);");
             h_w.writeln("}");
             c_w.writeln("int ", fmt->ident->ident, "_decode_ex(", fmt->ident->ident, "* this_,const uint8_t* ", buffer, ", size_t ", buffer_size, ",size_t ", buffer_offset, ",size_t", buffer_bit_offset, ") {");
+            if (fmt->body->struct_type->bit_size) {
+                auto len = fmt->body->struct_type->bit_size.value() + futils::bit_per_byte - 1 / futils::bit_per_byte;
+                c_w.writeln("if (", buffer_offset, " + ", brgen::nums(len), " > ", buffer_size, ") {");
+                c_w.indent_writeln("return -1;");
+                c_w.writeln("}");
+            }
             {
                 auto scope = c_w.indent_scope();
                 for (auto& field : fmt->body->elements) {
                     if (auto f = ast::as<ast::Field>(field)) {
                         auto ident = str.to_string(f->ident);
                         auto typ = f->field_type;
-                        write_format_type_decode(ident, typ);
+                        write_format_type_decode(ident, typ, fmt->body->struct_type->bit_size.has_value());
                     }
                 }
                 c_w.writeln("return 0;");
