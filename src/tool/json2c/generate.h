@@ -84,9 +84,7 @@ namespace json2c {
                         "(", shift_offset, " * ", bit_per_byte, ");");
                 }
                 c_w.writeln("}");
-                if (need_length_check) {
-                    c_w.writeln(buffer_offset, " += sizeof(", ident, ");");
-                }
+                c_w.writeln(buffer_offset, " += sizeof(", ident, ");");
             }
         }
 
@@ -115,9 +113,6 @@ namespace json2c {
                     c_w.writeln("if (", buffer_offset, " + ", brgen::nums(len), " > ", buffer_size, ") {");
                     c_w.indent_writeln("return -1;");
                     c_w.writeln("}");
-                    d = futils::helper::defer_ex([&] {
-                        c_w.writeln(buffer_offset, " += ", brgen::nums(len), ";");
-                    });
                 }
                 for (auto& field : fmt->body->elements) {
                     if (auto f = ast::as<ast::Field>(field)) {
@@ -126,7 +121,6 @@ namespace json2c {
                         write_format_type_encode(ident, typ, fmt->body->struct_type->bit_size.has_value());
                     }
                 }
-                d.execute();
                 c_w.writeln("return 0;");
             }
             c_w.writeln("}");
