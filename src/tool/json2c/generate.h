@@ -105,7 +105,7 @@ namespace json2c {
             h_w.writeln("}");
             c_w.writeln("int ", fmt->ident->ident, "_encode_ex(const ", fmt->ident->ident, "* this_, uint8_t* ", buffer, ", size_t ", buffer_size, ",size_t ", buffer_offset, ",size_t", buffer_bit_offset, ") {");
             if (fmt->body->struct_type->bit_size) {
-                auto len = fmt->body->struct_type->bit_size.value() + futils::bit_per_byte - 1 / futils::bit_per_byte;
+                auto len = (fmt->body->struct_type->bit_size.value() + futils::bit_per_byte - 1) / futils::bit_per_byte;
                 c_w.writeln("if (", buffer_offset, " + ", brgen::nums(len), " > ", buffer_size, ") {");
                 c_w.indent_writeln("return -1;");
                 c_w.writeln("}");
@@ -141,7 +141,7 @@ namespace json2c {
             h_w.writeln("}");
             c_w.writeln("int ", fmt->ident->ident, "_decode_ex(", fmt->ident->ident, "* this_,const uint8_t* ", buffer, ", size_t ", buffer_size, ",size_t ", buffer_offset, ",size_t", buffer_bit_offset, ") {");
             if (fmt->body->struct_type->bit_size) {
-                auto len = fmt->body->struct_type->bit_size.value() + futils::bit_per_byte - 1 / futils::bit_per_byte;
+                auto len = (fmt->body->struct_type->bit_size.value() + futils::bit_per_byte - 1) / futils::bit_per_byte;
                 c_w.writeln("if (", buffer_offset, " + ", brgen::nums(len), " > ", buffer_size, ") {");
                 c_w.indent_writeln("return -1;");
                 c_w.writeln("}");
