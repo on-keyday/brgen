@@ -38,9 +38,8 @@ namespace json2c {
             if (field->bit_alignment != field->eventual_bit_alignment) {
                 return;
             }
-            auto ident = str.to_string(field->ident);
-            h_w.writeln(typ_str, ident, ";");
-            str.map_ident(field->ident, "${THIS}", ident);
+            h_w.writeln(typ_str, field->ident->ident, ";");
+            str.map_ident(field->ident, "${THIS}", field->ident->ident);
         }
 
         void write_struct_type(const std::shared_ptr<ast::StructType>& typ) {
