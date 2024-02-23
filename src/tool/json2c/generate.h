@@ -138,11 +138,10 @@ namespace json2c {
             }
             c_w.writeln("}");
         }
-
         void write_enum_member(const std::shared_ptr<ast::EnumMember>& member) {
             auto& member_ident = member->ident->ident;
             auto value = str.to_string(member->value);
-            c_w.writeln(member_ident, " = ", value, ",");
+            h_w.writeln(member_ident, " = ", value, ",");
         }
 
         void write_enum(const std::shared_ptr<ast::Enum>& e) {
