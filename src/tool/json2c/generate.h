@@ -158,7 +158,10 @@ namespace json2c {
             auto typ = fmt->body->struct_type;
             auto ident = fmt->ident->ident;
             h_w.writeln("typedef struct ", ident, " {");
-            write_struct_type(typ);
+            {
+                auto scope = h_w.indent_scope();
+                write_struct_type(typ);
+            }
             h_w.writeln("} ", ident, ";");
             write_format_encode(fmt);
             write_format_decode(fmt);
