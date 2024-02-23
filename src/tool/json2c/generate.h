@@ -118,7 +118,7 @@ namespace json2c {
                     if (auto f = ast::as<ast::Field>(field)) {
                         auto ident = str.to_string(f->ident);
                         auto typ = f->field_type;
-                        write_format_type_encode(ident, typ, fmt->body->struct_type->bit_size.has_value());
+                        write_format_type_encode(ident, typ, !fmt->body->struct_type->bit_size.has_value());
                     }
                 }
                 c_w.writeln("return 0;");
@@ -154,7 +154,7 @@ namespace json2c {
                     if (auto f = ast::as<ast::Field>(field)) {
                         auto ident = str.to_string(f->ident);
                         auto typ = f->field_type;
-                        write_format_type_decode(ident, typ, fmt->body->struct_type->bit_size.has_value());
+                        write_format_type_decode(ident, typ, !fmt->body->struct_type->bit_size.has_value());
                     }
                 }
                 c_w.writeln("return 0;");
