@@ -84,7 +84,9 @@ namespace json2c {
                         "(", shift_offset, " * ", bit_per_byte, ");");
                 }
                 c_w.writeln("}");
-                c_w.writeln(buffer_offset, " += sizeof(", ident, ");");
+                if (need_length_check) {
+                    c_w.writeln(buffer_offset, " += sizeof(", ident, ");");
+                }
             }
         }
 
@@ -104,14 +106,19 @@ namespace json2c {
             h_w.indent_writeln("return ", fmt->ident->ident, "_encode_ex(this_, buffer, buffer_size, &buffer_offset, &buffer_bit_offset);");
             h_w.writeln("}");
             c_w.writeln("int ", fmt->ident->ident, "_encode_ex(const ", fmt->ident->ident, "* this_, uint8_t* ", buffer, ", size_t ", buffer_size, ",size_t ", buffer_offset, ",size_t", buffer_bit_offset, ") {");
-            if (fmt->body->struct_type->bit_size) {
-                auto len = (fmt->body->struct_type->bit_size.value() + futils::bit_per_byte - 1) / futils::bit_per_byte;
-                c_w.writeln("if (", buffer_offset, " + ", brgen::nums(len), " > ", buffer_size, ") {");
-                c_w.indent_writeln("return -1;");
-                c_w.writeln("}");
-            }
+
             {
                 auto scope = c_w.indent_scope();
+                futils::helper::DynDefer d;
+                if (fmt->body->struct_type->bit_size) {
+                    auto len = (fmt->body->struct_type->bit_size.value() + futils::bit_per_byte - 1) / futils::bit_per_byte;
+                    c_w.writeln("if (", buffer_offset, " + ", brgen::nums(len), " > ", buffer_size, ") {");
+                    c_w.indent_writeln("return -1;");
+                    c_w.writeln("}");
+                    d = futils::helper::defer_ex([&] {
+                        c_w.writeln(buffer_offset, " += ", brgen::nums(len), ";");
+                    });
+                }
                 for (auto& field : fmt->body->elements) {
                     if (auto f = ast::as<ast::Field>(field)) {
                         auto ident = str.to_string(f->ident);
@@ -119,6 +126,7 @@ namespace json2c {
                         write_format_type_encode(ident, typ, fmt->body->struct_type->bit_size.has_value());
                     }
                 }
+                d.execute();
                 c_w.writeln("return 0;");
             }
             c_w.writeln("}");
