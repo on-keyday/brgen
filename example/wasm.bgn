@@ -1,7 +1,7 @@
 
 format Uint32:
     value :u32
-    config.replace("c++","wasm::Varint32")
+    config.cpp.replace("wasm::Varint32")
 
     fn encode():
         loop:
@@ -28,7 +28,7 @@ format Uint32:
 
 format Uint64:
     value :u64
-    config.replace("c++","wasm::Varint64")
+    config.cpp.replace("wasm::Varint64")
 
     fn encode():
         loop:
