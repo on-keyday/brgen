@@ -23,7 +23,7 @@ format Uint32:
             shift = shift + 7
         return value
 
-    fn cast u32():   
+    fn u32() -> u32:   
         return value
 
 format Uint64:
@@ -50,7 +50,7 @@ format Uint64:
             shift = shift + 7
         return value
 
-    fn cast u64():   
+    fn u64() -> u64:   
         return value
 
 enum Type:

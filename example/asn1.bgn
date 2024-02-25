@@ -50,7 +50,7 @@ format Len:
                 len = len | u64(v)
                 len_of_len = len_of_len - 1            
             
-    fn cast u64(): # cast operator
+    fn u64() -> u64: # cast operator
         return len
 
 format TLV: # tag length value

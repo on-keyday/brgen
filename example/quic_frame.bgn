@@ -31,3 +31,20 @@ enum FrameType:
 
 format FrameHeader:
     type :qpkt.VarInt
+
+fn isMinValue(v :qpkt.VarInt,typ: FrameType) -> bool:
+    d := u64(typ)
+    if d < u64(!u6(0)):
+        return v.prefix == 0b00
+    elif d < u64(!u14(0)):
+        return v.prefix == 0b01
+    elif d < u64(!u30(0)):
+        return v.prefix == 0b10
+    elif d < u64(!u62(0)):
+        return v.prefix == 0b11
+    else:
+        return false
+
+format PingFrame:
+    hdr :FrameHeader
+    isMinValue(hdr.type,FrameType.PING)

@@ -67,6 +67,9 @@ namespace brgen::middle {
                 }
                 return true;  // dynamic array is always equal
             }
+            if (auto s = ast::as<ast::StructType>(left)) {
+                return left == right;  // struct type has same pointer if it is same struct
+            }
             return false;
         }
 

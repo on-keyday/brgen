@@ -47,7 +47,7 @@ format Varint:
                 break
             shift = shift + 7
 
-    fn cast u32():
+    fn u32() -> u32:
         return value
 
 format TrackChunk:

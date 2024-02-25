@@ -19,8 +19,8 @@
             "request": "launch",
             "program": "${workspaceRoot}/tool/src2json",
             "args": [
-                "c:/workspace/shbrgen/brgen/ignore/sample.json",
-                "--check-ast"
+                "c:/workspace/shbrgen/brgen/example/quic_frame.bgn",
+                //"--check-ast"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",
