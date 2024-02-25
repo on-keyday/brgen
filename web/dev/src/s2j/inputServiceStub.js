@@ -23,7 +23,11 @@ class FileSelectionProvider extends EditorAction {
             id: "brgen.loadExampleFile",
             label: 'Load Example File',
             alias: 'Load Example File',
-            precondition: undefined
+            precondition: undefined,
+            contextMenuOpts: {
+                group: 'z_commands',
+                order: 1
+            }
         })
     }
 
