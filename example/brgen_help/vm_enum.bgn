@@ -52,6 +52,7 @@ enum Op:
 
     # object control
     MAKE_OBJECT
+    SET_FIELD_LABEL
     SET_FIELD
     GET_FIELD
     

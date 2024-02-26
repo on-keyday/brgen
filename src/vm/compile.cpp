@@ -204,6 +204,10 @@ namespace brgen::vm {
             op(Op::LOAD_IMMEDIATE, field_info[field].offset);
             // from register 1 to this_register object field referenced by offset of register 0 value
             op(Op::SET_FIELD, TransferArg(1, this_register, 0));
+            auto index = add_static(Value{field->ident->ident});
+            op(Op::TRSF, TransferArg(0, 1));  // register 0 to 1
+            op(Op::LOAD_IMMEDIATE, index);
+            op(Op::SET_FIELD_LABEL, TransferArg(0, this_register, 1));
         }
 
         void compile_field(const std::shared_ptr<ast::Format>& fmt, const std::shared_ptr<ast::Field>& field) {

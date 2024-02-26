@@ -58,7 +58,9 @@
             "program": "${workspaceRoot}/tool/json2vm",
             "args": [
                 "ignore/sample.json",
-                "-r"
+                "-r",
+                "--call", "UDPHeader.decode",
+                "--binary","-"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",

@@ -100,6 +100,10 @@ namespace brgen::vm {
             return value_;
         }
 
+        void label(std::string&& label) {
+            label_ = std::move(label);
+        }
+
         void value(Value&& value) {
             value_ = std::move(value);
         }
@@ -226,12 +230,13 @@ namespace brgen::vm {
         std::vector<Value> stack;
         std::string error_message;
         std::vector<Var> variables;
-        std::uint64_t this_ptr = 0;
         friend struct VMHelper;
 
         futils::view::rvec input;
         std::string output;
         std::unordered_map<std::string, std::uint64_t> functions;
+
+        void execute_internal(const Code& code, size_t& pc);
 
        public:
         VM() = default;
@@ -242,7 +247,30 @@ namespace brgen::vm {
         constexpr futils::view::rvec get_output() const {
             return output;
         }
-        void execute(const Code& code);
+        void execute(const Code& code) {
+            size_t pc = 0;
+            execute_internal(code, pc);
+        }
+
+        void execute(const Instruction& instr) {
+            Code code;
+            code.instructions.push_back(instr);
+            size_t pc = 0;
+            execute_internal(code, pc);
+        }
+
+        void call(const Code& code, const std::string& name) {
+            auto it = functions.find(name);
+            if (it == functions.end()) {
+                error_message = "function not found: " + name;
+                return;
+            }
+            size_t pc = it->second;
+            execute_internal(code, pc);
+            if (!error_message.empty()) {
+                error_message += " in function " + name;
+            }
+        }
 
         constexpr const std::string& error() const {
             return error_message;

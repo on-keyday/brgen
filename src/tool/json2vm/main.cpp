@@ -7,14 +7,19 @@
 #include <file/file_view.h>
 #include <core/ast/json.h>
 #include <core/ast/file.h>
+#include <wrap/cin.h>
 struct Flags : futils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
     bool spec = false;
     bool run = false;
+    std::string_view call;
+    std::string_view binary_input;
     void bind(futils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&spec, "s", "spec mode");
         ctx.VarBool(&run, "r", "run mode");
+        ctx.VarString<true>(&call, "c,call", "call function in run mode", "<function name>");
+        ctx.VarString<true>(&binary_input, "b,binary", "binary input", "<file or - (stdin)>");
     }
 };
 
@@ -28,6 +33,7 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
         })";
         return 0;
     }
+    cerr_color_mode = cerr.is_tty() ? ColorMode::force_color : ColorMode::no_color;
     if (flags.args.empty()) {
         print_error("no input file");
         return 1;
@@ -69,10 +75,43 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
     auto code = brgen::vm::compile(brgen::ast::cast_to<brgen::ast::Program>(*res));
     if (flags.run) {
         brgen::vm::VM vm;
+        futils::file::View input;
+        std::string input_buf;
+        if (!flags.binary_input.empty()) {
+            if (flags.binary_input == "-") {
+                auto res = futils::file::File::stdin_file().read_all([&](futils::view::wvec buf) {
+                    input_buf.append(buf.as_char(), buf.size());
+                    return true;
+                });
+                if (!res) {
+                    std::string err_msg;
+                    res.error().error(err_msg);
+                    print_error("cannot read stdin: ", err_msg);
+                    return 1;
+                }
+                vm.set_input(input_buf);
+            }
+            else {
+                if (!input.open(flags.binary_input)) {
+                    print_error("cannot open file ", flags.binary_input);
+                    return 1;
+                }
+                vm.set_input(input);
+            }
+        }
         vm.execute(code);
         if (!vm.error().empty()) {
             print_error("vm error: ", vm.error());
             return 1;
+        }
+        if (!flags.call.empty()) {
+            // set this to an empty object
+            vm.execute(brgen::vm::Instruction{brgen::vm::Op::MAKE_OBJECT, brgen::vm::TransferArg(0, brgen::vm::this_register)});
+            vm.call(code, flags.call.data());
+            if (!vm.error().empty()) {
+                print_error("vm error: ", vm.error());
+                return 1;
+            }
         }
     }
     std::string buf;

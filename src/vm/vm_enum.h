@@ -58,6 +58,7 @@ enum class Op {
     STORE_THIS,
     LOAD_STATIC,
     MAKE_OBJECT,
+    SET_FIELD_LABEL,
     SET_FIELD,
     GET_FIELD,
     GET_OFFSET,
@@ -114,6 +115,7 @@ constexpr const char* to_string(Op e) {
     case Op::STORE_THIS: return "STORE_THIS";
     case Op::LOAD_STATIC: return "LOAD_STATIC";
     case Op::MAKE_OBJECT: return "MAKE_OBJECT";
+    case Op::SET_FIELD_LABEL: return "SET_FIELD_LABEL";
     case Op::SET_FIELD: return "SET_FIELD";
     case Op::GET_FIELD: return "GET_FIELD";
     case Op::GET_OFFSET: return "GET_OFFSET";
@@ -172,6 +174,7 @@ template<>constexpr std::optional<Op> from_string<Op>(std::string_view str) {
     if(str == "STORE_THIS") return Op::STORE_THIS;
     if(str == "LOAD_STATIC") return Op::LOAD_STATIC;
     if(str == "MAKE_OBJECT") return Op::MAKE_OBJECT;
+    if(str == "SET_FIELD_LABEL") return Op::SET_FIELD_LABEL;
     if(str == "SET_FIELD") return Op::SET_FIELD;
     if(str == "GET_FIELD") return Op::GET_FIELD;
     if(str == "GET_OFFSET") return Op::GET_OFFSET;
@@ -190,9 +193,9 @@ template<>constexpr std::optional<Op> from_string<Op>(std::string_view str) {
     return std::nullopt;
 }
 template<>constexpr size_t enum_elem_count<Op>() {
-    return 53;
+    return 54;
 }
-template<>constexpr std::array<std::pair<Op,std::string_view>,53> make_enum_array<Op>() {
+template<>constexpr std::array<std::pair<Op,std::string_view>,54> make_enum_array<Op>() {
     return {
         std::pair{Op::NOP,"NOP"},
         std::pair{Op::ADD,"ADD"},
@@ -232,6 +235,7 @@ template<>constexpr std::array<std::pair<Op,std::string_view>,53> make_enum_arra
         std::pair{Op::STORE_THIS,"STORE_THIS"},
         std::pair{Op::LOAD_STATIC,"LOAD_STATIC"},
         std::pair{Op::MAKE_OBJECT,"MAKE_OBJECT"},
+        std::pair{Op::SET_FIELD_LABEL,"SET_FIELD_LABEL"},
         std::pair{Op::SET_FIELD,"SET_FIELD"},
         std::pair{Op::GET_FIELD,"GET_FIELD"},
         std::pair{Op::GET_OFFSET,"GET_OFFSET"},
@@ -249,7 +253,7 @@ template<>constexpr std::array<std::pair<Op,std::string_view>,53> make_enum_arra
         std::pair{Op::FUNC_END,"FUNC_END"},
     };
 }
-template<>constexpr std::array<std::pair<Op,std::string_view>,53> make_enum_name_array<Op>() {
+template<>constexpr std::array<std::pair<Op,std::string_view>,54> make_enum_name_array<Op>() {
     return {
         std::pair{Op::NOP,"NOP"},
         std::pair{Op::ADD,"ADD"},
@@ -289,6 +293,7 @@ template<>constexpr std::array<std::pair<Op,std::string_view>,53> make_enum_name
         std::pair{Op::STORE_THIS,"STORE_THIS"},
         std::pair{Op::LOAD_STATIC,"LOAD_STATIC"},
         std::pair{Op::MAKE_OBJECT,"MAKE_OBJECT"},
+        std::pair{Op::SET_FIELD_LABEL,"SET_FIELD_LABEL"},
         std::pair{Op::SET_FIELD,"SET_FIELD"},
         std::pair{Op::GET_FIELD,"GET_FIELD"},
         std::pair{Op::GET_OFFSET,"GET_OFFSET"},

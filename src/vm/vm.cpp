@@ -369,6 +369,36 @@ namespace brgen::vm {
             return true;
         }
 
+        static void set_field_label(VM& vm, const Instruction& instr, const std::vector<Value>& static_data) {
+            auto arg = TransferArg(instr.arg());
+            if (!arg.valid()) {
+                return;
+            }
+            auto obj = vm.registers[arg.to()].as_vars();
+            if (!obj) {
+                return;
+            }
+            auto index = vm.registers[arg.index()].as_uint64();
+            if (!index) {
+                return;
+            }
+            auto labelIndex = vm.registers[arg.from()].as_uint64();
+            if (!labelIndex) {
+                return;
+            }
+            if (static_data.size() <= *labelIndex) {
+                return;
+            }
+            if (obj->size() <= *index) {
+                obj->resize(*index + 1);
+            }
+            auto bytes = static_data[*labelIndex].as_bytes();
+            if (!bytes) {
+                return;
+            }
+            (*obj)[*index].label(std::string(bytes->as_char(), bytes->size()));
+        }
+
         static bool get_field(VM& vm, const Instruction& instr) {
             auto arg = TransferArg(instr.arg());
             if (!arg.valid()) {
@@ -390,10 +420,9 @@ namespace brgen::vm {
         }
     };
 
-    void VM::execute(const Code& code) {
+    void VM::execute_internal(const Code& code, size_t& pc) {
         auto& program = code.instructions;
         auto& static_data = code.static_data;
-        size_t pc = 0;
         futils::binary::reader r{input};
         size_t read_bit_offset = 0;
         while (pc < program.size()) {
@@ -401,8 +430,11 @@ namespace brgen::vm {
             switch (instr.op()) {
                 case Op::NOP:
                 case Op::FUNC_NAME:
-                case Op::FUNC_END:
                     break;
+                case Op::FUNC_END: {
+                    pc++;
+                    return;
+                }
 #define exec_op(code, op, ...)                                 \
     case code: {                                               \
         if (!VMHelper::op(*this __VA_OPT__(, ) __VA_ARGS__)) { \
