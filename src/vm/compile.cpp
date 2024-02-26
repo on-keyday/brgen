@@ -69,12 +69,12 @@ namespace brgen::vm {
                 switch (b->op) {
                     case ast::BinaryOp::logical_and: {
                         compile_expr(b->left);
-                        op(Op::TRSF, 0x00 | 0x01);  // register 0 to 1
+                        op(Op::TRSF, TransferArg(0, 1));  // register 0 to 1
                         op(Op::LOAD_IMMEDIATE, 0);
                         op(Op::CMP);
                         auto idx = op(Op::JNE);
                         compile_expr(b->right);
-                        op(Op::TRSF, 0x00 | 0x01);  // register 0 to 1
+                        op(Op::TRSF, TransferArg(0, 1));  // register 0 to 1
                         op(Op::LOAD_IMMEDIATE, 0);
                         op(Op::CMP);
                         auto idx2 = op(Op::JNE);
@@ -88,12 +88,12 @@ namespace brgen::vm {
                     }
                     case ast::BinaryOp::logical_or: {
                         compile_expr(b->left);
-                        op(Op::TRSF, 0x00 | 0x01);  // register 0 to 1
+                        op(Op::TRSF, TransferArg(0, 1));  // register 0 to 1
                         op(Op::LOAD_IMMEDIATE, 0);
                         op(Op::CMP);
                         auto idx = op(Op::JE);
                         compile_expr(b->right);
-                        op(Op::TRSF, 0x00 | 0x01);  // register 0 to 1
+                        op(Op::TRSF, TransferArg(0, 1));  // register 0 to 1
                         op(Op::LOAD_IMMEDIATE, 0);
                         op(Op::CMP);
                         auto idx2 = op(Op::JE);
@@ -109,9 +109,9 @@ namespace brgen::vm {
                         break;
                 }
                 compile_expr(b->left);
-                op(Op::PUSH);
+                op(Op::PUSH);  // push register 0 to stack
                 compile_expr(b->right);
-                op(Op::TRSF, 0x00 | 0x01);  // register 0 to 1
+                op(Op::TRSF, TransferArg(0, 1));  // register 0 to 1
                 op(Op::POP);
                 switch (b->op) {
                     case ast::BinaryOp::add:
@@ -198,7 +198,12 @@ namespace brgen::vm {
                 op(Op::ERROR);
                 rewrite_arg(instr, pc());
             }
-            op(Op::STORE_THIS, field_info[field].offset);
+            // register 0 to 1
+            op(Op::TRSF, TransferArg(0, 1));
+            // load offset to register 0
+            op(Op::LOAD_IMMEDIATE, field_info[field].offset);
+            // from register 1 to this_register object field referenced by offset of register 0 value
+            op(Op::SET_FIELD, TransferArg(1, this_register, 0));
         }
 
         void compile_field(const std::shared_ptr<ast::Format>& fmt, const std::shared_ptr<ast::Field>& field) {

@@ -21,7 +21,7 @@ target_link_libraries(json2cpp2 futils)
 add_executable(json2c "tool/json2c/main.cpp")
 target_link_libraries(json2c futils)
 
-add_executable(json2vm "tool/json2vm/main.cpp" "vm/compile.cpp")
+add_executable(json2vm "tool/json2vm/main.cpp" "vm/compile.cpp" "vm/vm.cpp")
 target_link_libraries(json2vm futils)
 
 if(WIN32)

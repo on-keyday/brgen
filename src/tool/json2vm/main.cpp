@@ -10,9 +10,11 @@
 struct Flags : futils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
     bool spec = false;
+    bool run = false;
     void bind(futils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&spec, "s", "spec mode");
+        ctx.VarBool(&run, "r", "run mode");
     }
 };
 
@@ -65,6 +67,14 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
         return 1;
     }
     auto code = brgen::vm::compile(brgen::ast::cast_to<brgen::ast::Program>(*res));
+    if (flags.run) {
+        brgen::vm::VM vm;
+        vm.execute(code);
+        if (!vm.error().empty()) {
+            print_error("vm error: ", vm.error());
+            return 1;
+        }
+    }
     std::string buf;
     brgen::vm::print_code(buf, code);
     cout << buf;

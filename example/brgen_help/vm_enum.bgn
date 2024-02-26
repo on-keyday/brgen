@@ -49,6 +49,11 @@ enum Op:
     LOAD_THIS
     STORE_THIS
     LOAD_STATIC
+
+    # object control
+    MAKE_OBJECT
+    SET_FIELD
+    GET_FIELD
     
     # input and output 
     GET_OFFSET # get offset of input/output
