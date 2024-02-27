@@ -1,0 +1,7 @@
+
+udp ::= config.import("../udp.bgn")
+quic ::= config.import("../quic_packet.bgn")
+
+format Test:
+    hdr :udp.UDPHeader
+    pkt :quic.QUICPackets

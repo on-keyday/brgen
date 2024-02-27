@@ -18,6 +18,9 @@ namespace brgen::middle {
                     auto p = d.lock();
                     if (p) {
                         auto l = p->ident->base.lock();
+                        if (auto a = ast::as<ast::MemberAccess>(l)) {
+                            l = a->base.lock();
+                        }
                         auto b = ast::as<ast::Ident>(l);
                         if (b) {
                             auto d = b->base.lock();

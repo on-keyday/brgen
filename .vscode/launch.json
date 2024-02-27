@@ -19,7 +19,7 @@
             "request": "launch",
             "program": "${workspaceRoot}/tool/src2json",
             "args": [
-                "c:/workspace/shbrgen/brgen/example/quic_frame.bgn",
+                "c:/workspace/shbrgen/brgen/example/vm_test/udp_test.bgn",
                 //"--check-ast"
             ],
             "stopAtEntry": false,

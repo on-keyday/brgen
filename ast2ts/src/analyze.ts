@@ -144,7 +144,8 @@ export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
     + eventual_align: ${ident.base.eventual_bit_alignment}
     + type align: ${ident.base.field_type?.bit_alignment||"unknown"}
     + follow: ${ident.base.follow}
-    + eventual_follow: ${ident.base.eventual_follow}`);
+    + eventual_follow: ${ident.base.eventual_follow}
+    ${ident.base.is_state_variable?"+ state variable\n":""}`);
                     }
                     return makeHover(ident.ident,"field");
                 case ast2ts.IdentUsage.define_enum_member:
