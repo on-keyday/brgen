@@ -9,6 +9,7 @@
 #include <core/ast/file.h>
 #include <wrap/cin.h>
 #include "hex.h"
+
 struct Flags : futils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
     bool spec = false;
@@ -79,7 +80,7 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
     if (flags.run) {
         brgen::vm::VM vm;
         vm.set_inject([](brgen::vm::VM& vm, const brgen::vm::Instruction& instr, size_t& pc) {
-            cout << brgen::vm::to_string(instr.op()) << " " << brgen::nums(instr.arg()) << "\n";
+            cout << pc << ": " << brgen::vm::to_string(instr.op()) << " " << brgen::nums(instr.arg()) << "\n";
         });
         futils::file::View input;
         std::string input_buf;

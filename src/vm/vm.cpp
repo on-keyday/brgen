@@ -56,11 +56,15 @@ namespace brgen::vm {
         }
 
         static bool compare_op(VM& vm, const Instruction& instr, auto&& cb) {
-            auto a = vm.registers[0].as_uint64();
-            auto b = vm.registers[1].as_uint64();
+            auto arg = TransferArg(instr.arg());
+            if (!arg.valid()) {
+                return false;
+            }
+            auto a = vm.registers[arg.from()].as_uint64();
+            auto b = vm.registers[arg.to()].as_uint64();
             if (!a || !b) {
-                auto a_bytes = vm.registers[0].as_bytes();
-                auto b_bytes = vm.registers[1].as_bytes();
+                auto a_bytes = vm.registers[arg.from()].as_bytes();
+                auto b_bytes = vm.registers[arg.to()].as_bytes();
                 if (!a_bytes || !b_bytes) {
                     return false;
                 }
@@ -98,37 +102,40 @@ namespace brgen::vm {
         }
 
         static bool init_var(VM& vm, const Instruction& instr) {
-            auto indexOfVar = instr.arg();
-            if (vm.variables.size() <= indexOfVar) {
-                return false;
-            }
-            auto value = vm.registers[0];
-            auto label = vm.registers[1].as_bytes();
-            if (!label) {
-                vm.variables[indexOfVar] = Var("", std::move(value));
-            }
-            else {
-                vm.variables[indexOfVar] = Var(std::string(label->as_char(), label->size()), std::move(value));
-            }
+            vm.variables.resize(instr.arg() + 1);
             return true;
         }
 
         static bool store_var(VM& vm, const Instruction& instr) {
-            auto indexOfVar = instr.arg();
-            if (vm.variables.size() <= indexOfVar) {
+            auto arg = TransferArg(instr.arg());
+            if (!arg.valid()) {
                 return false;
             }
-            auto value = vm.registers[0];
-            vm.variables[indexOfVar].value(std::move(value));
+            auto indexOfVar = vm.registers[arg.to()].as_uint64();
+            if (!indexOfVar) {
+                return false;
+            }
+            auto value = vm.registers[arg.from()];
+            if (vm.variables.size() <= *indexOfVar) {
+                return false;
+            }
+            vm.variables[*indexOfVar].value(std::move(value));
             return true;
         }
 
         static bool load_var(VM& vm, const Instruction& instr) {
-            auto indexOfVar = instr.arg();
-            if (vm.variables.size() <= indexOfVar) {
+            auto arg = TransferArg(instr.arg());
+            if (!arg.valid()) {
                 return false;
             }
-            vm.registers[0] = vm.variables[indexOfVar].value();
+            auto indexOfVar = vm.registers[arg.from()].as_uint64();
+            if (!indexOfVar) {
+                return false;
+            }
+            if (vm.variables.size() <= *indexOfVar) {
+                return false;
+            }
+            vm.registers[arg.to()] = vm.variables[*indexOfVar].value();
             return true;
         }
 
@@ -411,21 +418,11 @@ namespace brgen::vm {
             if (!index) {
                 return false;
             }
-            auto labelIndex = vm.registers[arg.from()].as_uint64();
-            if (!labelIndex) {
+            auto label = vm.registers[arg.from()].as_bytes();
+            if (!label) {
                 return false;
             }
-            if (static_data.size() <= *labelIndex) {
-                return false;
-            }
-            if (obj->size() <= *index) {
-                obj->resize(*index + 1);
-            }
-            auto bytes = static_data[*labelIndex].as_bytes();
-            if (!bytes) {
-                return false;
-            }
-            (*obj)[*index].label(std::string(bytes->as_char(), bytes->size()));
+            (*obj)[*index].label(std::string(label->as_char(), label->size()));
             return true;
         }
 
@@ -522,6 +519,27 @@ namespace brgen::vm {
             vm.registers[to] = Value(std::make_shared<std::vector<Value>>(*size));
             return true;
         }
+
+        static bool set_array(VM& vm, const Instruction& instr) {
+            auto arg = TransferArg(instr.arg());
+            if (!arg.valid()) {
+                return false;
+            }
+            auto obj = vm.registers[arg.to()].as_array();
+            if (!obj) {
+                return false;
+            }
+            auto index = vm.registers[arg.index()].as_uint64();
+            if (!index) {
+                return false;
+            }
+            auto value = vm.registers[arg.from()];
+            if (obj->size() <= *index) {
+                obj->resize(*index + 1);
+            }
+            (*obj)[*index] = std::move(value);
+            return true;
+        }
     };
 
     void VM::execute_internal(const Code& code, size_t& pc) {
@@ -577,7 +595,7 @@ namespace brgen::vm {
 
                     exec_op(Op::TRSF, transfer, instr);
 
-                    exec_op(Op::INIT_VAR, init_var, instr);
+                    exec_op(Op::INIT_VARIABLE, init_var, instr);
                     exec_op(Op::LOAD_VARIABLE, load_var, instr);
                     exec_op(Op::STORE_VARIABLE, store_var, instr);
                     exec_op(Op::LOAD_STATIC, load_static, instr, static_data);
@@ -613,6 +631,7 @@ namespace brgen::vm {
                     change_pc_op(Op::ERROR, error, instr, pc, program);
 
                     exec_op(Op::MAKE_ARRAY, make_array, instr);
+                    exec_op(Op::SET_ARRAY, set_array, instr);
 
                 default: {
                     auto ptr = to_string(instr.op());

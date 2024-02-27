@@ -30,6 +30,7 @@ namespace brgen::vm {
         std::map<std::shared_ptr<ast::Field>, StateVariable> state_variable_info;
 
         bool encode = false;
+        size_t state_variable_offset = 0;
 
         size_t op(Op op, std::uint64_t arg = 0) {
             auto pc = code.instructions.size();
@@ -78,7 +79,7 @@ namespace brgen::vm {
                     if (field->is_state_variable) {
                         auto& info = state_variable_info[ast::cast_to<ast::Field>(node)];
                         op(Op::LOAD_IMMEDIATE, info.offset);
-                        op(Op::LOAD_VARIABLE, 0);
+                        op(Op::LOAD_VARIABLE, TransferArg(0, 0));
                     }
                     else {
                         auto& info = field_info[ast::cast_to<ast::Field>(node)];
@@ -216,6 +217,9 @@ namespace brgen::vm {
                     if (arr_ty->length_value) {
                         op(Op::LOAD_IMMEDIATE, *arr_ty->length_value);
                     }
+                    else if (auto l = ast::as<ast::Range>(arr_ty->length);
+                             l && !l->start && !l->end) {
+                    }
                     else {
                         compile_expr(arr_ty->length);
                     }
@@ -287,7 +291,7 @@ namespace brgen::vm {
             op(Op::SET_FIELD, TransferArg(1, this_register, 0));
             auto index = add_static(Value{field->ident->ident});
             op(Op::TRSF, TransferArg(0, 1));  // register 0 to 1
-            op(Op::LOAD_IMMEDIATE, index);
+            op(Op::LOAD_STATIC, index);
             op(Op::SET_FIELD_LABEL, TransferArg(0, this_register, 1));
         }
 
@@ -365,6 +369,41 @@ namespace brgen::vm {
             compile_block(fmt, fmt->body);
         }
 
+        void compile_init_var(const std::shared_ptr<ast::Type>& b_typ) {
+            auto typ = b_typ;
+            if (auto ident = ast::as<ast::IdentType>(typ)) {
+                typ = ident->base.lock();
+            }
+            if (auto i_typ = ast::as<ast::IntType>(typ)) {
+                op(Op::LOAD_IMMEDIATE, 0);
+            }
+            if (auto s = ast::as<ast::StructType>(typ)) {
+                auto base = s->base.lock();
+                op(Op::MAKE_OBJECT, this_register);
+                size_t i = 0;
+                for (auto& field : s->fields) {
+                    if (auto f = ast::as<ast::Field>(field)) {
+                        field_info[ast::cast_to<ast::Field>(field)].offset = i;
+                        op(Op::PUSH, this_register);
+                        compile_init_var(f->field_type);
+                        op(Op::POP, this_register);
+                        op(Op::TRSF, TransferArg(0, 1));  // register 0 to 1
+                        op(Op::LOAD_IMMEDIATE, i);
+                        op(Op::SET_FIELD, TransferArg(1, this_register, 0));
+                        auto index = add_static(Value{f->ident->ident});
+                        op(Op::TRSF, TransferArg(0, 1));  // register 0 to 1
+                        op(Op::LOAD_STATIC, index);
+                        op(Op::SET_FIELD_LABEL, TransferArg(0, this_register, 1));
+                        i++;
+                    }
+                }
+                op(Op::TRSF, TransferArg(this_register, 0));
+            }
+            if (auto b = ast::as<ast::BoolType>(typ)) {
+                op(Op::LOAD_IMMEDIATE, 0);
+            }
+        }
+
         void compile_format(const std::shared_ptr<ast::Format>& fmt) {
             if (format_info.find(fmt) != format_info.end()) {
                 return;
@@ -380,6 +419,17 @@ namespace brgen::vm {
                             compile_format(ast::cast_to<ast::Format>(maybe_fmt));
                         }
                     }
+                }
+            }
+            for (auto& state_variable : fmt->state_variables) {
+                auto f = state_variable.lock();
+                if (state_variable_info.find(f) == state_variable_info.end()) {
+                    state_variable_info[f].offset = state_variable_offset++;
+                    op(Op::INIT_VARIABLE, state_variable_offset - 1);
+                    compile_init_var(f->field_type);
+                    op(Op::TRSF, TransferArg(0, 1));  // register 0 to 1
+                    op(Op::LOAD_IMMEDIATE, state_variable_offset - 1);
+                    op(Op::STORE_VARIABLE, TransferArg(1, 0));
                 }
             }
             compile_encode_format(fmt);

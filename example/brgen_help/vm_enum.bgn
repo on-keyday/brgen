@@ -42,10 +42,13 @@ enum Op:
     TRSF # TRSF <from register number> << 4 | <register number>
     LOAD_IMMEDIATE # LOAD_IMMEDIATE <immediate value>
     SET_VAR_COUNT
-    INIT_VAR
-    LOAD_VARIABLE
-    STORE_VARIABLE
+
     LOAD_STATIC
+
+    # variable control
+    INIT_VARIABLE # INIT_VARIABLE <variable index>
+    LOAD_VARIABLE # LOAD_VARIABLE <from variable register number> << 4 | <to register number>
+    STORE_VARIABLE # STORE_VARIABLE <from register number> << 4 | <to variable register number>
 
     # object control
     MAKE_OBJECT # MAKE_OBJECT <register number>

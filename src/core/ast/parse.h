@@ -70,6 +70,14 @@ namespace brgen::ast {
         void add_to_struct(const std::shared_ptr<Member>& f) {
             f->belong_struct = current_struct_;
             current_struct_->fields.push_back(f);
+            if (auto field = ast::as<Field>(f)) {
+                for (auto it = current_struct_->fields.rbegin(); it != current_struct_->fields.rend(); it++) {
+                    if (auto p = ast::as<Field>(*it)) {
+                        p->next = ast::cast_to<Field>(f);
+                        break;
+                    }
+                }
+            }
         }
 
         size_t current_indent() {
@@ -1253,71 +1261,6 @@ namespace brgen::ast {
 
             ast::EnumMember* prev_specified = nullptr;
             size_t offset = 0;
-            /*
-            auto set_enum_value = [&](std::shared_ptr<ast::EnumMember>& expr) {
-                if (!prev_specified) {
-                    auto int_lit = std::make_shared<ast::IntLiteral>(base.loc, "0");
-                    expr->value = int_lit;
-                    prev_specified = expr.get();
-                }
-                else {
-                    auto add = std::make_shared<ast::Binary>();
-                    add->loc = expr->loc;
-                    add->op = ast::BinaryOp::add;
-                    add->left = prev_specified->value;
-                    add->right = std::make_shared<ast::IntLiteral>(base.loc, brgen::nums(offset));
-                    expr->value = add;
-                }
-            };
-
-            auto parse_enum_member = [&] {
-                auto ident = parse_ident();
-                ident->usage = IdentUsage::define_enum_member;
-                ident->expr_type = enum_->enum_type;
-                ident->constant_level = ConstantLevel::constant;
-                check_duplicated_def(ident.get());
-                auto member = std::make_shared<EnumMember>(ident->loc);
-                member->ident = ident;
-                member->belong = enum_;
-                ident->base = member;
-                s.skip_space();
-                if (s.consume_token("=")) {
-                    s.skip_white();
-                    member->raw_expr = parse_expr();
-                    std::vector<std::shared_ptr<ast::Expr>> commas;
-                    collect_args(member->raw_expr, commas);
-                    if (commas.size() > 2) {
-                        s.report_error(member->raw_expr->loc, "enum member value must be 1 or 2 elements but got ", nums(commas.size()));
-                    }
-                    for (auto& expr : commas) {
-                        if (ast::as<ast::StrLiteral>(expr)) {
-                            if (member->str_literal) {
-                                s.report_error(expr->loc, "enum member str literal already specified");
-                            }
-                            member->str_literal = cast_to<ast::StrLiteral>(expr);
-                        }
-                        else {
-                            if (member->value) {
-                                s.report_error(expr->loc, "enum member value already specified");
-                            }
-                            member->value = expr;
-                            offset = 0;
-                            prev_specified = member.get();
-                        }
-                    }
-                    if (!member->value) {
-                        set_enum_value(member);
-                    }
-                }
-                else {
-                    set_enum_value(member);
-                }
-                member->comment = s.get_comments();
-                enum_->members.push_back(member);
-                s.skip_line();
-                offset++;
-            };
-            */
             parse_enum_member(enum_, offset, prev_specified);
             while (auto indent = s.peek_token(lexer::Tag::indent)) {
                 if (indent->token.size() != base.token.size()) {

@@ -203,6 +203,8 @@ namespace brgen::ast {
         // follow of d is end, and eventual follow is also end
         Follow eventual_follow = Follow::unknown;
 
+        std::weak_ptr<Field> next;
+
         Field(lexer::Loc l)
             : Member(l, NodeType::field) {}
 
@@ -224,6 +226,7 @@ namespace brgen::ast {
             sdebugf(eventual_bit_alignment);
             sdebugf(follow);
             sdebugf(eventual_follow);
+            sdebugf_omit(next);
         }
     };
 
