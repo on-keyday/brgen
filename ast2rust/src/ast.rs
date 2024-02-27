@@ -6910,6 +6910,7 @@ pub struct Field {
 	pub eventual_bit_alignment: BitAlignment,
 	pub follow: Follow,
 	pub eventual_follow: Follow,
+	pub next: Option<Weak<RefCell<Field>>>,
 }
 
 impl TryFrom<&Member> for Rc<RefCell<Field>> {
@@ -8520,6 +8521,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				eventual_bit_alignment: BitAlignment::ByteAligned,
 				follow: Follow::Unknown,
 				eventual_follow: Follow::Unknown,
+				next: None,
 				})))
 			},
 			NodeType::Format => {
@@ -12531,6 +12533,25 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					},
 					None=>return Err(Error::MismatchJSONType(eventual_follow_body.into(),JSONType::String)),
 				};
+				let next_body = match raw_node.body.get("next") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"next")),
+				};
+ 				if !next_body.is_null() {
+					let next_body = match next_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(next_body.into(),JSONType::Number)),
+					};
+					let next_body = match nodes.get(next_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(next_body as usize)),
+					};
+					let next_body = match next_body {
+						Node::Field(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),next_body.into())),
+					};
+					node.borrow_mut().next = Some(Rc::downgrade(&next_body));
+				}
 			},
 			NodeType::Format => {
 				let node = nodes[i].clone();

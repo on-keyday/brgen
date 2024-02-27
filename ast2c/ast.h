@@ -1241,6 +1241,7 @@ struct ast2c_Field {
 	ast2c_BitAlignment eventual_bit_alignment;
 	ast2c_Follow follow;
 	ast2c_Follow eventual_follow;
+	ast2c_Field* next;
 };
 
 // returns 1 if succeed 0 if failed

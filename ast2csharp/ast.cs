@@ -677,6 +677,7 @@ public class Field : Member{
 	public BitAlignment EventualBitAlignment{get;set;}
 	public Follow Follow{get;set;}
 	public Follow EventualFollow{get;set;}
+	public Field? Next{get;set;}
 }
 public class Format : Member{
 	public Loc Loc{get;set;}
@@ -1472,6 +1473,7 @@ public static class Ast {
                node.EventualBitAlignment = ast.Node[i].Body[eventual_bit_alignment];
                node.Follow = ast.Node[i].Body[follow];
                node.EventualFollow = ast.Node[i].Body[eventual_follow];
+               node.Next = ast.Node[i].Body[next];
            case NodeType.Format:
                var node = nodes[i] as Format;
                node.Loc = ast.Node[i].Body[loc];

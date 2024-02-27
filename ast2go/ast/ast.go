@@ -2947,6 +2947,7 @@ type Field struct {
 	EventualBitAlignment BitAlignment
 	Follow               Follow
 	EventualFollow       Follow
+	Next                 *Field
 }
 
 func (n *Field) isMember() {}
@@ -4649,6 +4650,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				EventualBitAlignment BitAlignment `json:"eventual_bit_alignment"`
 				Follow               Follow       `json:"follow"`
 				EventualFollow       Follow       `json:"eventual_follow"`
+				Next                 *uintptr     `json:"next"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -4678,6 +4680,9 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.EventualBitAlignment = tmp.EventualBitAlignment
 			v.Follow = tmp.Follow
 			v.EventualFollow = tmp.EventualFollow
+			if tmp.Next != nil {
+				v.Next = n.node[*tmp.Next].(*Field)
+			}
 		case NodeTypeFormat:
 			v := n.node[i].(*Format)
 			var tmp struct {

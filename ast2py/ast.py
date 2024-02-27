@@ -583,6 +583,7 @@ class Field(Member):
     eventual_bit_alignment: BitAlignment
     follow: Follow
     eventual_follow: Follow
+    next: Optional[Field]
 
 
 class Format(Member):
@@ -1878,6 +1879,11 @@ def ast2node(ast :JsonAst) -> Program:
                 node[i].eventual_bit_alignment = BitAlignment(ast.node[i].body["eventual_bit_alignment"])
                 node[i].follow = Follow(ast.node[i].body["follow"])
                 node[i].eventual_follow = Follow(ast.node[i].body["eventual_follow"])
+                if ast.node[i].body["next"] is not None:
+                    x = node[ast.node[i].body["next"]]
+                    node[i].next = x if isinstance(x,Field) else raiseError(TypeError('type mismatch at Field::next'))
+                else:
+                    node[i].next = None
             case NodeType.FORMAT:
                 if ast.node[i].body["belong"] is not None:
                     x = node[ast.node[i].body["belong"]]

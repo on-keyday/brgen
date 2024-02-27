@@ -951,6 +951,7 @@ export interface Field extends Member {
 	eventual_bit_alignment: BitAlignment;
 	follow: Follow;
 	eventual_follow: Follow;
+	next: Field|null;
 }
 
 export function isField(obj: any): obj is Field {
@@ -1909,6 +1910,7 @@ export function parseAST(obj: JsonAst): Program {
 				eventual_bit_alignment: BitAlignment.byte_aligned,
 				follow: Follow.unknown,
 				eventual_follow: Follow.unknown,
+				next: null,
 			}
 			c.node.push(n);
 			break;
@@ -4037,6 +4039,14 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at Field::eventual_follow');
 			}
 			n.eventual_follow = tmpeventual_follow;
+			if (on.body?.next !== null && typeof on.body?.next !== 'number') {
+				throw new Error('invalid node list at Field::next');
+			}
+			const tmpnext = on.body.next === null ? null : c.node[on.body.next];
+			if (!(tmpnext === null || isField(tmpnext))) {
+				throw new Error('invalid node list at Field::next');
+			}
+			n.next = tmpnext;
 			break;
 		}
 		case "format": {

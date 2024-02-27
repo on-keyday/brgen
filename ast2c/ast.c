@@ -3057,6 +3057,7 @@ int ast2c_Field_parse(ast2c_Ast* ast,ast2c_Field* s,ast2c_json_handlers* h, void
 	s->arguments = NULL;
 	s->offset_bit = NULL;
 	s->tail_offset_bit = NULL;
+	s->next = NULL;
 	void* belong = h->object_get(h, obj_body, "belong");
 	void* belong_struct = h->object_get(h, obj_body, "belong_struct");
 	void* ident = h->object_get(h, obj_body, "ident");
@@ -3072,6 +3073,7 @@ int ast2c_Field_parse(ast2c_Ast* ast,ast2c_Field* s,ast2c_json_handlers* h, void
 	void* eventual_bit_alignment = h->object_get(h, obj_body, "eventual_bit_alignment");
 	void* follow = h->object_get(h, obj_body, "follow");
 	void* eventual_follow = h->object_get(h, obj_body, "eventual_follow");
+	void* next = h->object_get(h, obj_body, "next");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_Field::loc is null"); } return 0; }
 	if (!belong) { if(h->error) { h->error(h,belong, "ast2c_Field::belong is null"); } return 0; }
 	if (!belong_struct) { if(h->error) { h->error(h,belong_struct, "ast2c_Field::belong_struct is null"); } return 0; }
@@ -3088,6 +3090,7 @@ int ast2c_Field_parse(ast2c_Ast* ast,ast2c_Field* s,ast2c_json_handlers* h, void
 	if (!eventual_bit_alignment) { if(h->error) { h->error(h,eventual_bit_alignment, "ast2c_Field::eventual_bit_alignment is null"); } return 0; }
 	if (!follow) { if(h->error) { h->error(h,follow, "ast2c_Field::follow is null"); } return 0; }
 	if (!eventual_follow) { if(h->error) { h->error(h,eventual_follow, "ast2c_Field::eventual_follow is null"); } return 0; }
+	if (!next) { if(h->error) { h->error(h,next, "ast2c_Field::next is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_Field::loc"); }
 		goto error;
