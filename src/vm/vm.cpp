@@ -612,6 +612,7 @@ namespace brgen::vm {
     }
 
                     change_pc_op(Op::FUNC_END, func_end, pc, program);
+                    change_pc_op(Op::RET, func_end, pc, program);
                     exec_op(Op::ADD, add, instr);
                     exec_op(Op::SUB, sub, instr);
                     exec_op(Op::MUL, mul, instr);

@@ -12,10 +12,16 @@ namespace brgen::vm {
         size_t offset = 0;
     };
 
+    struct CastEntry {
+        std::shared_ptr<ast::Type> to;
+        size_t entry = 0;
+    };
+
     struct FormatInfo {
         size_t current_offset = 0;
         size_t encode_entry = 0;
         size_t decode_entry = 0;
+        std::vector<CastEntry> cast_fn_entry;
     };
 
     struct StateVariable {
@@ -233,6 +239,7 @@ namespace brgen::vm {
             }
             else {
                 compile_expr(arr_ty->length);
+                compile_to_length(arr_ty->length->expr_type);
                 op(Op::READ_BYTES);
             }
         }
@@ -281,6 +288,7 @@ namespace brgen::vm {
                 }
                 else {
                     compile_expr(arr_ty->length);
+                    compile_to_length(arr_ty->length->expr_type);
                 }
                 op(Op::TRSF, TransferArg(0, 1));                      // register 0 to 1
                 op(Op::PUSH, this_register);                          // save this_register
@@ -391,6 +399,28 @@ namespace brgen::vm {
             }
         }
 
+        void compile_to_length(const std::shared_ptr<ast::Type>& typ) {
+            auto base = typ;
+            if (auto ident = ast::as<ast::IdentType>(typ)) {
+                base = ident->base.lock();
+            }
+            if (auto struct_ty = ast::as<ast::StructType>(base)) {
+                auto base = struct_ty->base.lock();
+                if (auto fmt = ast::as<ast::Format>(base)) {
+                    auto& info = format_info[ast::cast_to<ast::Format>(base)];
+                    for (auto& entry : info.cast_fn_entry) {
+                        if (auto ity = ast::as<ast::IntType>(entry.to)) {
+                            op(Op::PUSH, this_register);                  // save this_register
+                            op(Op::TRSF, TransferArg(0, this_register));  // register 0 to this_register
+                            op(Op::LOAD_IMMEDIATE, info.encode_entry);    // set cast function address
+                            op(Op::CALL, 0);                              // register[0]() call cast function, return value in register 0
+                            op(Op::POP, this_register);                   // restore this_register
+                        }
+                    }
+                }
+            }
+        }
+
         void compile_node(const std::shared_ptr<ast::Format>& fmt, const std::shared_ptr<ast::Node>& element) {
             if (auto block = ast::as<ast::IndentBlock>(element)) {
                 compile_block(fmt, ast::cast_to<ast::IndentBlock>(element));
@@ -468,6 +498,10 @@ namespace brgen::vm {
                 for (auto i : jump) {  // rewrite all jump to end of match
                     rewrite_arg(i, pc());
                 }
+            }
+            if (auto ret = ast::as<ast::Return>(element)) {
+                compile_expr(ret->expr);
+                op(Op::RET);
             }
         }
 
@@ -553,6 +587,13 @@ namespace brgen::vm {
                     op(Op::LOAD_IMMEDIATE, state_variable_offset - 1);
                     op(Op::STORE_VARIABLE, TransferArg(1, 0));
                 }
+            }
+            for (auto& cast_fn : fmt->cast_fns) {
+                auto fn = cast_fn.lock();
+                auto ep = function_prologue(fmt->ident->ident + "." + fn->ident->ident);
+                auto ptr = pc();
+                format_info[fmt].cast_fn_entry.push_back(CastEntry{fn->return_type, ptr});
+                compile_block(fmt, fn->body);
             }
             compile_encode_format(fmt);
             compile_decode_format(fmt);

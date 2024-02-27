@@ -1303,7 +1303,7 @@ namespace brgen::ast {
             }
             // lookup cast fn
             fmt->body->struct_type->lookup([&](std::shared_ptr<Member>& m) {
-                if (auto fn = ast::as<ast::Function>(m); fn) {
+                if (auto fn = ast::as<ast::Function>(m); fn && fn->parameters.size() == 0) {
                     if (auto i_ty = ast::is_int_type(fn->ident->ident); i_ty) {
                         auto ok_ty = ast::as<ast::IntType>(fn->return_type);
                         if (ok_ty && ok_ty->is_signed == i_ty->is_signed && ok_ty->bit_size == i_ty->bit_size) {
