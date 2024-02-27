@@ -23,7 +23,7 @@ enum Op:
     NEG
 
     # compare and jump
-    CMP
+    CMP # CMP <register number> << 4 | <register number> store: register 0 (0: equal, 1: greater, 2: less)
     JMP
     JE
     JNE
@@ -41,7 +41,6 @@ enum Op:
     # memory and register
     TRSF # TRSF <from register number> << 4 | <register number>
     LOAD_IMMEDIATE # LOAD_IMMEDIATE <immediate value>
-    SET_VAR_COUNT
 
     LOAD_STATIC
 
@@ -62,8 +61,10 @@ enum Op:
     GET_ARRAY # GET_ARRAY <array index register number> << 8 | <from array register number> << 4 | <to register number>
 
     # input and output 
-    GET_OFFSET # get offset of input/output
-    SET_OFFSET # set offset of input/output
+    GET_INPUT_OFFSET # get offset of input
+    SET_INPUT_OFFSET # set offset of input
+    GET_INPUT_REMAIN # get remaining bytes of input
+
     READ_BYTES # read from input
     PEEK_BYTES # peek from input
     WRITE_BYTES # write to output

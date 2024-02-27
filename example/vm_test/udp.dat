@@ -10,7 +10,7 @@ c0
 # no data
 00 # token length
 # no token
-01 # length
+12 # length
 00 # packet number 
 01 # ping frame
 # Message Authentication Code (16 byte)

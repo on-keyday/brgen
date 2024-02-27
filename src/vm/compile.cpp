@@ -188,7 +188,112 @@ namespace brgen::vm {
             }
         }
 
-        void compile_decode_type(const std::shared_ptr<ast::Type>& base_ty) {
+        void compile_byte_array_decode(const std::shared_ptr<ast::Field>& f, ast::ArrayType* arr_ty) {
+            if (arr_ty->length_value) {
+                op(Op::LOAD_IMMEDIATE, *arr_ty->length_value);
+                op(Op::READ_BYTES);
+            }
+            else if (auto l = ast::as<ast::Range>(arr_ty->length);
+                     l && !l->start && !l->end) {
+                if (!f) {
+                    auto index = add_static(Value{futils::view::rvec("error: array length is not decidable")});
+                    op(Op::LOAD_STATIC, index);
+                    op(Op::ERROR);
+                }
+                else if (f->eventual_follow == ast::Follow::end) {
+                    auto tail = f->belong_struct.lock()->fixed_tail_size;
+                    op(Op::GET_INPUT_REMAIN, 1);
+                    op(Op::LOAD_IMMEDIATE, tail);
+                    op(Op::CMP, TransferArg(1, 0));
+                    auto instr = op(Op::JL);  // if input remain < tail then jump to error
+                    op(Op::GET_INPUT_REMAIN, 1);
+                    op(Op::LOAD_IMMEDIATE, tail);
+                    op(Op::SUB, TransferArg(1, 0));  // input remain - tail
+                    op(Op::READ_BYTES);
+                    auto instr2 = op(Op::JMP);  // jump to end of array decode
+                    rewrite_arg(instr, pc());   // rewrite jump to error
+                    auto index = add_static(Value{futils::view::rvec("error: input remain is not enough")});
+                    op(Op::LOAD_STATIC, index);
+                    op(Op::ERROR);
+                    rewrite_arg(instr2, pc());  // rewrite jump to end of array decode
+                }
+                else {
+                    auto index = add_static(Value{futils::view::rvec("error: array length is not decidable")});
+                    op(Op::LOAD_STATIC, index);
+                    op(Op::ERROR);
+                }
+            }
+            else {
+                compile_expr(arr_ty->length);
+                op(Op::READ_BYTES);
+            }
+        }
+
+        void compile_complex_array(const std::shared_ptr<ast::Field>& f, ast::ArrayType* arr_ty) {
+            auto elm = arr_ty->element_type;
+            if (auto l = ast::as<ast::Range>(arr_ty->length);
+                l && !l->start && !l->end) {
+                if (!f) {
+                    auto index = add_static(Value{futils::view::rvec("error: array length is not decidable")});
+                    op(Op::LOAD_STATIC, index);
+                    op(Op::ERROR);
+                }
+                else if (f->eventual_follow == ast::Follow::end) {
+                    auto tail = f->belong_struct.lock()->fixed_tail_size;
+                    op(Op::LOAD_IMMEDIATE, 0);
+                    op(Op::PUSH, this_register);                          // save this_register
+                    op(Op::MAKE_ARRAY, TransferArg(0, this_register));    // make empty array to this_register
+                    op(Op::LOAD_IMMEDIATE, 0);                            // load 0 to register 0
+                    op(Op::TRSF, TransferArg(0, 2));                      // register 0 to 2. register 2 is index of array
+                    auto loop_start = op(Op::GET_INPUT_REMAIN, 1);        // get input remain to register 1
+                    op(Op::LOAD_IMMEDIATE, tail);                         // load tail size to register 0
+                    op(Op::CMP, TransferArg(1, 0));                       // compare input remain and tail size
+                    auto instr = op(Op::JLE);                             // if input remain <= tail then jump to end of array decode
+                    op(Op::PUSH, 1);                                      // push register 1 to stack
+                    op(Op::PUSH, 2);                                      // push register 2 to stack
+                    compile_decode_type(nullptr, elm);                    // decode element type
+                    op(Op::POP, 2);                                       // pop stack to register 2
+                    op(Op::POP, 1);                                       // pop stack to register 1
+                    op(Op::SET_ARRAY, TransferArg(0, this_register, 2));  // this_register[register 2] = register 0
+                    op(Op::INC, 2);                                       // register 2 += 1
+                    op(Op::JMP, loop_start);                              // jump to loop start
+                    rewrite_arg(instr, pc());                             // rewrite jump to end of array decode
+                }
+                else {
+                    auto index = add_static(Value{futils::view::rvec("error: array length is not decidable")});
+                    op(Op::LOAD_STATIC, index);
+                    op(Op::ERROR);
+                }
+            }
+            else {
+                if (arr_ty->length_value) {
+                    op(Op::LOAD_IMMEDIATE, *arr_ty->length_value);
+                }
+                else {
+                    compile_expr(arr_ty->length);
+                }
+                op(Op::TRSF, TransferArg(0, 1));                      // register 0 to 1
+                op(Op::PUSH, this_register);                          // save this_register
+                op(Op::MAKE_ARRAY, TransferArg(1, this_register));    // make array to this_register with length of register 1
+                op(Op::LOAD_IMMEDIATE, 0);                            // load 0 to register 0
+                op(Op::TRSF, TransferArg(0, 2));                      // register 0 to 2
+                auto loop_start = op(Op::CMP, TransferArg(1, 2));     // compare register 1 and 2
+                auto brk = op(Op::JE);                                // if register 1 == register 2 then jump to end of array decode
+                op(Op::PUSH, 1);                                      // push register 1 to stack
+                op(Op::PUSH, 2);                                      // push register 2 to stack
+                compile_decode_type(nullptr, elm);                    // decode element type
+                op(Op::POP, 2);                                       // pop stack to register 2
+                op(Op::POP, 1);                                       // pop stack to register 1
+                op(Op::SET_ARRAY, TransferArg(0, this_register, 2));  // this_register[register 2] = register 0
+                op(Op::INC, 2);                                       // register 2 += 1
+                op(Op::JMP, loop_start);                              // jump to loop start
+                rewrite_arg(brk, pc());                               // rewrite jump to end of array decode
+                op(Op::TRSF, TransferArg(this_register, 0));          // this_register to register 0
+                op(Op::POP, this_register);                           // restore this_register
+            }
+        }
+
+        void compile_decode_type(const std::shared_ptr<ast::Field>& f, const std::shared_ptr<ast::Type>& base_ty) {
             std::shared_ptr<ast::Type> typ = base_ty;
             if (auto ident = ast::as<ast::IdentType>(typ)) {
                 typ = ident->base.lock();
@@ -214,43 +319,10 @@ namespace brgen::vm {
             }
             if (auto arr_ty = ast::as<ast::ArrayType>(typ)) {
                 if (auto u8 = ast::as<ast::IntType>(arr_ty->element_type); u8 && u8->bit_size == 8) {
-                    if (arr_ty->length_value) {
-                        op(Op::LOAD_IMMEDIATE, *arr_ty->length_value);
-                    }
-                    else if (auto l = ast::as<ast::Range>(arr_ty->length);
-                             l && !l->start && !l->end) {
-                    }
-                    else {
-                        compile_expr(arr_ty->length);
-                    }
-                    op(Op::READ_BYTES);
+                    compile_byte_array_decode(f, arr_ty);
                 }
                 else {
-                    auto elm = arr_ty->element_type;
-                    if (arr_ty->length_value) {
-                        op(Op::LOAD_IMMEDIATE, *arr_ty->length_value);
-                    }
-                    else {
-                        compile_expr(arr_ty->length);
-                    }
-                    op(Op::TRSF, TransferArg(0, 1));                      // register 0 to 1
-                    op(Op::PUSH, this_register);                          // save this_register
-                    op(Op::MAKE_ARRAY, TransferArg(1, this_register));    // make array to this_register with length of register 1
-                    op(Op::LOAD_IMMEDIATE, 0);                            // load 0 to register 0
-                    op(Op::TRSF, TransferArg(0, 2));                      // register 0 to 2
-                    auto loop_start = op(Op::CMP, TransferArg(1, 2));     // compare register 1 and 2
-                    auto brk = op(Op::JE);                                // if register 1 == register 2 then jump to end of array decode
-                    op(Op::PUSH, 1);                                      // push register 1 to stack
-                    op(Op::PUSH, 2);                                      // push register 2 to stack
-                    compile_decode_type(elm);                             // decode element type
-                    op(Op::POP, 2);                                       // pop stack to register 2
-                    op(Op::POP, 1);                                       // pop stack to register 1
-                    op(Op::SET_ARRAY, TransferArg(0, this_register, 2));  // this_register[register 2] = register 0
-                    op(Op::INC, 2);                                       // register 2 += 1
-                    op(Op::JMP, loop_start);                              // jump to loop start
-                    rewrite_arg(brk, pc());                               // rewrite jump to end of array decode
-                    op(Op::TRSF, TransferArg(this_register, 0));          // this_register to register 0
-                    op(Op::POP, this_register);                           // restore this_register
+                    compile_complex_array(f, arr_ty);
                 }
             }
             if (auto str_ty = ast::as<ast::StrLiteralType>(typ)) {
@@ -282,7 +354,7 @@ namespace brgen::vm {
         }
 
         void compile_decode_field(const std::shared_ptr<ast::Format>& fmt, const std::shared_ptr<ast::Field>& field) {
-            compile_decode_type(field->field_type);
+            compile_decode_type(field, field->field_type);
             // register 0 to 1
             op(Op::TRSF, TransferArg(0, 1));
             // load offset to register 0
@@ -336,8 +408,7 @@ namespace brgen::vm {
                         op(Op::CMP, TransferArg(0, 1));
                         instr = op(Op::JE);
                         compile_block(fmt, elif_->then);
-                        instr2 = op(Op::JMP);  // jump to end of if-elif-else
-                        jump.push_back(instr2);
+                        jump.push_back(op(Op::JMP));
                         rewrite_arg(instr, pc());  // next if or else or end of if-elif-else
                         auto next = ast::as<ast::If>(elif_->els);
                         if (!next) {

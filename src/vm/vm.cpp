@@ -170,13 +170,30 @@ namespace brgen::vm {
             return true;
         }
 
-        static bool get_offset(VM& vm, futils::binary::reader& r) {
-            vm.registers[0] = Value(r.offset());
+        static bool get_offset(VM& vm, const Instruction& instr, futils::binary::reader& r) {
+            auto arg = instr.arg();
+            if (arg > 0xf) {
+                return false;
+            }
+            vm.registers[arg] = Value(r.offset());
             return true;
         }
 
-        static bool set_offset(VM& vm, futils::binary::reader& r) {
-            auto offset = vm.registers[0].as_uint64();
+        static bool get_remain_offset(VM& vm, const Instruction& instr, futils::binary::reader& r) {
+            auto arg = instr.arg();
+            if (arg > 0xf) {
+                return false;
+            }
+            vm.registers[arg] = Value(r.remain().size());
+            return true;
+        }
+
+        static bool set_offset(VM& vm, const Instruction& instr, futils::binary::reader& r) {
+            auto arg = instr.arg();
+            if (arg > 0xf) {
+                return false;
+            }
+            auto offset = vm.registers[arg].as_uint64();
             if (!offset) {
                 return false;
             }
@@ -226,6 +243,18 @@ namespace brgen::vm {
 
         static bool jump_if_not_eq(VM& vm, const Instruction& instr, size_t& pc, const std::vector<Instruction>& program) {
             return jump_if(vm, instr, pc, program, [](auto v) { return v != 0; });
+        }
+
+        static bool jump_if_less(VM& vm, const Instruction& instr, size_t& pc, const std::vector<Instruction>& program) {
+            return jump_if(vm, instr, pc, program, [](auto v) {
+                return v == 1;
+            });
+        }
+
+        static bool jump_if_less_or_equal(VM& vm, const Instruction& instr, size_t& pc, const std::vector<Instruction>& program) {
+            return jump_if(vm, instr, pc, program, [](auto v) {
+                return v == 1 || v == 0;
+            });
         }
 
         static bool read_bits_internal(VM& vm, const Instruction& instr, futils::binary::reader& r, size_t& read_bit_offset,
@@ -603,14 +632,17 @@ namespace brgen::vm {
                     exec_op(Op::PUSH, push, instr);
                     exec_op(Op::POP, pop, instr);
 
-                    exec_op(Op::GET_OFFSET, get_offset, r);
-                    exec_op(Op::SET_OFFSET, set_offset, r);
+                    exec_op(Op::GET_INPUT_OFFSET, get_offset, instr, r);
+                    exec_op(Op::SET_INPUT_OFFSET, set_offset, instr, r);
+                    exec_op(Op::GET_INPUT_REMAIN, get_remain_offset, instr, r);
 
                     exec_op(Op::LOAD_IMMEDIATE, load_immediate, instr);
 
                     change_pc_op(Op::JMP, jump, instr, pc, program);
                     change_pc_op(Op::JE, jump_if_eq, instr, pc, program);
                     change_pc_op(Op::JNE, jump_if_not_eq, instr, pc, program);
+                    change_pc_op(Op::JL, jump_if_less, instr, pc, program);
+                    change_pc_op(Op::JLE, jump_if_less_or_equal, instr, pc, program);
 
                     exec_op(Op::READ_BITS, read_bits, instr, r, read_bit_offset);
                     exec_op(Op::READ_BYTES, read_bytes, instr, r, read_bit_offset);

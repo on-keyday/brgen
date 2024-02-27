@@ -49,7 +49,6 @@ enum class Op {
     POP,
     TRSF,
     LOAD_IMMEDIATE,
-    SET_VAR_COUNT,
     LOAD_STATIC,
     INIT_VARIABLE,
     LOAD_VARIABLE,
@@ -61,8 +60,9 @@ enum class Op {
     MAKE_ARRAY,
     SET_ARRAY,
     GET_ARRAY,
-    GET_OFFSET,
-    SET_OFFSET,
+    GET_INPUT_OFFSET,
+    SET_INPUT_OFFSET,
+    GET_INPUT_REMAIN,
     READ_BYTES,
     PEEK_BYTES,
     WRITE_BYTES,
@@ -107,7 +107,6 @@ constexpr const char* to_string(Op e) {
     case Op::POP: return "POP";
     case Op::TRSF: return "TRSF";
     case Op::LOAD_IMMEDIATE: return "LOAD_IMMEDIATE";
-    case Op::SET_VAR_COUNT: return "SET_VAR_COUNT";
     case Op::LOAD_STATIC: return "LOAD_STATIC";
     case Op::INIT_VARIABLE: return "INIT_VARIABLE";
     case Op::LOAD_VARIABLE: return "LOAD_VARIABLE";
@@ -119,8 +118,9 @@ constexpr const char* to_string(Op e) {
     case Op::MAKE_ARRAY: return "MAKE_ARRAY";
     case Op::SET_ARRAY: return "SET_ARRAY";
     case Op::GET_ARRAY: return "GET_ARRAY";
-    case Op::GET_OFFSET: return "GET_OFFSET";
-    case Op::SET_OFFSET: return "SET_OFFSET";
+    case Op::GET_INPUT_OFFSET: return "GET_INPUT_OFFSET";
+    case Op::SET_INPUT_OFFSET: return "SET_INPUT_OFFSET";
+    case Op::GET_INPUT_REMAIN: return "GET_INPUT_REMAIN";
     case Op::READ_BYTES: return "READ_BYTES";
     case Op::PEEK_BYTES: return "PEEK_BYTES";
     case Op::WRITE_BYTES: return "WRITE_BYTES";
@@ -167,7 +167,6 @@ template<>constexpr std::optional<Op> from_string<Op>(std::string_view str) {
     if(str == "POP") return Op::POP;
     if(str == "TRSF") return Op::TRSF;
     if(str == "LOAD_IMMEDIATE") return Op::LOAD_IMMEDIATE;
-    if(str == "SET_VAR_COUNT") return Op::SET_VAR_COUNT;
     if(str == "LOAD_STATIC") return Op::LOAD_STATIC;
     if(str == "INIT_VARIABLE") return Op::INIT_VARIABLE;
     if(str == "LOAD_VARIABLE") return Op::LOAD_VARIABLE;
@@ -179,8 +178,9 @@ template<>constexpr std::optional<Op> from_string<Op>(std::string_view str) {
     if(str == "MAKE_ARRAY") return Op::MAKE_ARRAY;
     if(str == "SET_ARRAY") return Op::SET_ARRAY;
     if(str == "GET_ARRAY") return Op::GET_ARRAY;
-    if(str == "GET_OFFSET") return Op::GET_OFFSET;
-    if(str == "SET_OFFSET") return Op::SET_OFFSET;
+    if(str == "GET_INPUT_OFFSET") return Op::GET_INPUT_OFFSET;
+    if(str == "SET_INPUT_OFFSET") return Op::SET_INPUT_OFFSET;
+    if(str == "GET_INPUT_REMAIN") return Op::GET_INPUT_REMAIN;
     if(str == "READ_BYTES") return Op::READ_BYTES;
     if(str == "PEEK_BYTES") return Op::PEEK_BYTES;
     if(str == "WRITE_BYTES") return Op::WRITE_BYTES;
@@ -229,7 +229,6 @@ template<>constexpr std::array<std::pair<Op,std::string_view>,55> make_enum_arra
         std::pair{Op::POP,"POP"},
         std::pair{Op::TRSF,"TRSF"},
         std::pair{Op::LOAD_IMMEDIATE,"LOAD_IMMEDIATE"},
-        std::pair{Op::SET_VAR_COUNT,"SET_VAR_COUNT"},
         std::pair{Op::LOAD_STATIC,"LOAD_STATIC"},
         std::pair{Op::INIT_VARIABLE,"INIT_VARIABLE"},
         std::pair{Op::LOAD_VARIABLE,"LOAD_VARIABLE"},
@@ -241,8 +240,9 @@ template<>constexpr std::array<std::pair<Op,std::string_view>,55> make_enum_arra
         std::pair{Op::MAKE_ARRAY,"MAKE_ARRAY"},
         std::pair{Op::SET_ARRAY,"SET_ARRAY"},
         std::pair{Op::GET_ARRAY,"GET_ARRAY"},
-        std::pair{Op::GET_OFFSET,"GET_OFFSET"},
-        std::pair{Op::SET_OFFSET,"SET_OFFSET"},
+        std::pair{Op::GET_INPUT_OFFSET,"GET_INPUT_OFFSET"},
+        std::pair{Op::SET_INPUT_OFFSET,"SET_INPUT_OFFSET"},
+        std::pair{Op::GET_INPUT_REMAIN,"GET_INPUT_REMAIN"},
         std::pair{Op::READ_BYTES,"READ_BYTES"},
         std::pair{Op::PEEK_BYTES,"PEEK_BYTES"},
         std::pair{Op::WRITE_BYTES,"WRITE_BYTES"},
@@ -288,7 +288,6 @@ template<>constexpr std::array<std::pair<Op,std::string_view>,55> make_enum_name
         std::pair{Op::POP,"POP"},
         std::pair{Op::TRSF,"TRSF"},
         std::pair{Op::LOAD_IMMEDIATE,"LOAD_IMMEDIATE"},
-        std::pair{Op::SET_VAR_COUNT,"SET_VAR_COUNT"},
         std::pair{Op::LOAD_STATIC,"LOAD_STATIC"},
         std::pair{Op::INIT_VARIABLE,"INIT_VARIABLE"},
         std::pair{Op::LOAD_VARIABLE,"LOAD_VARIABLE"},
@@ -300,8 +299,9 @@ template<>constexpr std::array<std::pair<Op,std::string_view>,55> make_enum_name
         std::pair{Op::MAKE_ARRAY,"MAKE_ARRAY"},
         std::pair{Op::SET_ARRAY,"SET_ARRAY"},
         std::pair{Op::GET_ARRAY,"GET_ARRAY"},
-        std::pair{Op::GET_OFFSET,"GET_OFFSET"},
-        std::pair{Op::SET_OFFSET,"SET_OFFSET"},
+        std::pair{Op::GET_INPUT_OFFSET,"GET_INPUT_OFFSET"},
+        std::pair{Op::SET_INPUT_OFFSET,"SET_INPUT_OFFSET"},
+        std::pair{Op::GET_INPUT_REMAIN,"GET_INPUT_REMAIN"},
         std::pair{Op::READ_BYTES,"READ_BYTES"},
         std::pair{Op::PEEK_BYTES,"PEEK_BYTES"},
         std::pair{Op::WRITE_BYTES,"WRITE_BYTES"},
