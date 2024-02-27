@@ -36,7 +36,7 @@ namespace brgen::vm {
     struct Var;
     struct Value {
        private:
-        std::variant<uint64_t, futils::view::rvec, std::string, std::vector<Value>,
+        std::variant<uint64_t, futils::view::rvec, std::string, std::shared_ptr<std::vector<Value>>,
                      std::shared_ptr<std::vector<Var>>>
             data;
 
@@ -49,6 +49,9 @@ namespace brgen::vm {
             : data(val) {}
 
         Value(std::shared_ptr<std::vector<Var>> val)
+            : data(std::move(val)) {}
+
+        Value(std::shared_ptr<std::vector<Value>> val)
             : data(std::move(val)) {}
 
         Value(std::string val)
@@ -87,11 +90,17 @@ namespace brgen::vm {
         }
 
         std::vector<Value>* as_array() {
-            return std::get_if<std::vector<Value>>(&data);
+            if (auto p = std::get_if<std::shared_ptr<std::vector<Value>>>(&data)) {
+                return p->get();
+            }
+            return nullptr;
         }
 
         const std::vector<Value>* as_array() const {
-            return std::get_if<std::vector<Value>>(&data);
+            if (auto p = std::get_if<std::shared_ptr<std::vector<Value>>>(&data)) {
+                return p->get();
+            }
+            return nullptr;
         }
     };
 
@@ -238,6 +247,7 @@ namespace brgen::vm {
     constexpr auto this_register = 15;
 
     struct CallStack {
+        size_t call_target;
         size_t ret_pc;
         size_t ret_stack_size;
     };
@@ -254,6 +264,7 @@ namespace brgen::vm {
         futils::view::rvec input;
         std::string output;
         std::unordered_map<std::string, std::uint64_t> functions;
+        std::unordered_map<std::uint64_t, std::string> inverse_functions;
         ast::Endian endian = ast::Endian::big;
 
         void execute_internal(const Code& code, size_t& pc);
@@ -300,9 +311,10 @@ namespace brgen::vm {
                 error_message = "function not found: " + name;
                 return;
             }
+            call_stack.push_back({it->second, code.instructions.size(), stack.size()});
             size_t pc = it->second;
             execute_internal(code, pc);
-            if (!error_message.empty()) {
+            if (pc != code.instructions.size() && !error_message.empty()) {
                 error_message += " in function " + name;
             }
         }

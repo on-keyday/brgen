@@ -95,12 +95,12 @@ namespace brgen::vm {
                         compile_expr(b->left);
                         op(Op::TRSF, TransferArg(0, 1));  // register 0 to 1
                         op(Op::LOAD_IMMEDIATE, 0);
-                        op(Op::CMP);
+                        op(Op::CMP, TransferArg(0, 1));  // compare register 0 and 1
                         auto idx = op(Op::JNE);
                         compile_expr(b->right);
                         op(Op::TRSF, TransferArg(0, 1));  // register 0 to 1
                         op(Op::LOAD_IMMEDIATE, 0);
-                        op(Op::CMP);
+                        op(Op::CMP, TransferArg(0, 1));  // compare register 0 and 1
                         auto idx2 = op(Op::JNE);
                         op(Op::LOAD_IMMEDIATE, 1);
                         auto idx3 = op(Op::JMP);
@@ -114,12 +114,12 @@ namespace brgen::vm {
                         compile_expr(b->left);
                         op(Op::TRSF, TransferArg(0, 1));  // register 0 to 1
                         op(Op::LOAD_IMMEDIATE, 0);
-                        op(Op::CMP);
+                        op(Op::CMP, TransferArg(0, 1));  // compare register 0 and 1
                         auto idx = op(Op::JE);
                         compile_expr(b->right);
                         op(Op::TRSF, TransferArg(0, 1));  // register 0 to 1
                         op(Op::LOAD_IMMEDIATE, 0);
-                        op(Op::CMP);
+                        op(Op::CMP, TransferArg(0, 1));  // compare register 0 and 1
                         auto idx2 = op(Op::JE);
                         op(Op::LOAD_IMMEDIATE, 0);
                         auto idx3 = op(Op::JMP);
@@ -133,29 +133,29 @@ namespace brgen::vm {
                         break;
                 }
                 compile_expr(b->left);
-                op(Op::PUSH);  // push register 0 to stack
+                op(Op::PUSH, 0);  // push register 0 to stack
                 compile_expr(b->right);
                 op(Op::TRSF, TransferArg(0, 1));  // register 0 to 1
-                op(Op::POP);
+                op(Op::POP, 0);
                 switch (b->op) {
                     case ast::BinaryOp::add:
-                        op(Op::ADD);
+                        op(Op::ADD, TransferArg(0, 1));
                         break;
                     case ast::BinaryOp::sub:
-                        op(Op::SUB);
+                        op(Op::SUB, TransferArg(0, 1));
                         break;
                     case ast::BinaryOp::mul:
-                        op(Op::MUL);
+                        op(Op::MUL, TransferArg(0, 1));
                         break;
                     case ast::BinaryOp::div:
-                        op(Op::DIV);
+                        op(Op::DIV, TransferArg(0, 1));
                         break;
                     case ast::BinaryOp::mod:
-                        op(Op::MOD);
+                        op(Op::MOD, TransferArg(0, 1));
                         break;
                     case ast::BinaryOp::equal:
                     case ast::BinaryOp::not_equal: {
-                        op(Op::CMP);
+                        op(Op::CMP, TransferArg(0, 1));
                         auto eq_not_eq = b->op == ast::BinaryOp::equal ? Op::JE : Op::JNE;
                         auto idx = op(eq_not_eq);
                         op(Op::LOAD_IMMEDIATE, 0);
@@ -175,8 +175,8 @@ namespace brgen::vm {
             }
         }
 
-        void compile_decode_field(const std::shared_ptr<ast::Format>& fmt, const std::shared_ptr<ast::Field>& field) {
-            std::shared_ptr<ast::Type> typ = field->field_type;
+        void compile_decode_type(const std::shared_ptr<ast::Type>& base_ty) {
+            std::shared_ptr<ast::Type> typ = base_ty;
             if (auto ident = ast::as<ast::IdentType>(typ)) {
                 typ = ident->base.lock();
             }
@@ -210,9 +210,31 @@ namespace brgen::vm {
                     op(Op::READ_BYTES);
                 }
                 else {
-                    auto index = add_static(Value{futils::view::rvec("error: only u8 array is supported now")});
-                    op(Op::LOAD_STATIC, index);
-                    op(Op::ERROR);
+                    auto elm = arr_ty->element_type;
+                    if (arr_ty->length_value) {
+                        op(Op::LOAD_IMMEDIATE, *arr_ty->length_value);
+                    }
+                    else {
+                        compile_expr(arr_ty->length);
+                    }
+                    op(Op::TRSF, TransferArg(0, 1));                      // register 0 to 1
+                    op(Op::PUSH, this_register);                          // save this_register
+                    op(Op::MAKE_ARRAY, TransferArg(1, this_register));    // make array to this_register with length of register 1
+                    op(Op::LOAD_IMMEDIATE, 0);                            // load 0 to register 0
+                    op(Op::TRSF, TransferArg(0, 2));                      // register 0 to 2
+                    auto loop_start = op(Op::CMP, TransferArg(1, 2));     // compare register 1 and 2
+                    auto brk = op(Op::JE);                                // if register 1 == register 2 then jump to end of array decode
+                    op(Op::PUSH, 1);                                      // push register 1 to stack
+                    op(Op::PUSH, 2);                                      // push register 2 to stack
+                    compile_decode_type(elm);                             // decode element type
+                    op(Op::POP, 2);                                       // pop stack to register 2
+                    op(Op::POP, 1);                                       // pop stack to register 1
+                    op(Op::SET_ARRAY, TransferArg(0, this_register, 2));  // this_register[register 2] = register 0
+                    op(Op::INC, 2);                                       // register 2 += 1
+                    op(Op::JMP, loop_start);                              // jump to loop start
+                    rewrite_arg(brk, pc());                               // rewrite jump to end of array decode
+                    op(Op::TRSF, TransferArg(this_register, 0));          // this_register to register 0
+                    op(Op::POP, this_register);                           // restore this_register
                 }
             }
             if (auto str_ty = ast::as<ast::StrLiteralType>(typ)) {
@@ -221,7 +243,7 @@ namespace brgen::vm {
                 auto str = *unescape(str_ty->strong_ref->value);
                 auto index = add_static(Value{std::move(str)});
                 op(Op::LOAD_STATIC, index);
-                op(Op::CMP);
+                op(Op::CMP, TransferArg(0, 1));
                 auto instr = op(Op::JE);
                 index = add_static(Value{brgen::concat("error: expect ", str_ty->strong_ref->value, " but not")});
                 op(Op::LOAD_STATIC, index);
@@ -241,6 +263,10 @@ namespace brgen::vm {
                     op(Op::POP, this_register);                   // restore this_register
                 }
             }
+        }
+
+        void compile_decode_field(const std::shared_ptr<ast::Format>& fmt, const std::shared_ptr<ast::Field>& field) {
+            compile_decode_type(field->field_type);
             // register 0 to 1
             op(Op::TRSF, TransferArg(0, 1));
             // load offset to register 0
@@ -276,7 +302,7 @@ namespace brgen::vm {
                     compile_expr(as->cond);
                     op(Op::TRSF, TransferArg(0, 1));  // register 0 to 1
                     op(Op::LOAD_IMMEDIATE, 0);
-                    op(Op::CMP);
+                    op(Op::CMP, TransferArg(0, 1));
                     auto instr = op(Op::JNE);
                     auto index = add_static(Value{futils::view::rvec("error: assert failed")});
                     op(Op::LOAD_STATIC, index);
@@ -291,7 +317,7 @@ namespace brgen::vm {
                         compile_expr(elif_->cond);
                         op(Op::TRSF, TransferArg(0, 1));  // register 0 to 1
                         op(Op::LOAD_IMMEDIATE, 0);
-                        op(Op::CMP);
+                        op(Op::CMP, TransferArg(0, 1));
                         instr = op(Op::JE);
                         compile_block(fmt, elif_->then);
                         instr2 = op(Op::JMP);  // jump to end of if-elif-else
@@ -327,7 +353,22 @@ namespace brgen::vm {
         }
 
         void compile_format(const std::shared_ptr<ast::Format>& fmt) {
+            if (format_info.find(fmt) != format_info.end()) {
+                return;
+            }
             format_info[fmt] = FormatInfo{};
+            for (auto& dep : fmt->depends) {
+                auto l = dep.lock();
+                if (l) {
+                    auto s = l->base.lock();
+                    if (auto st = ast::as<ast::StructType>(s)) {
+                        auto maybe_fmt = st->base.lock();
+                        if (auto fmt2 = ast::as<ast::Format>(maybe_fmt)) {
+                            compile_format(ast::cast_to<ast::Format>(maybe_fmt));
+                        }
+                    }
+                }
+            }
             compile_encode_format(fmt);
             compile_decode_format(fmt);
         }

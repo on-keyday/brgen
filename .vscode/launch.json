@@ -59,8 +59,8 @@
             "args": [
                 "ignore/sample.json",
                 "-r",
-                "--call", "UDPDatagram.decode",
-                "--binary","example/test_data/udp.dat",
+                "--call", "Test.decode",
+                "--binary","example/vm_test/udp.dat",
                 "--hex",
             ],
             "stopAtEntry": false,

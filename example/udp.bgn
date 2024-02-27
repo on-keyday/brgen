@@ -1,6 +1,7 @@
 
 
 format UDPHeader:
+    config.rfc = "https://datatracker.ietf.org/doc/html/rfc768"
     src_port :u16
     dst_port :u16
     length  :u16

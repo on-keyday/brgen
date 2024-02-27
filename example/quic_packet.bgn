@@ -2,7 +2,7 @@ config.go.import("bytes")
 
 config.go.file.name = "packet.go"
 config.go.package = "github.com/on-keyday/quic_packet"
-config.go.import("go/ast")
+
 
 config.cpp.file.header.name= "packet.h"
 config.cpp.file.source.name= "packet.cpp"

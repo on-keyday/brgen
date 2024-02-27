@@ -61,6 +61,9 @@ enum class Op {
     SET_FIELD_LABEL,
     SET_FIELD,
     GET_FIELD,
+    MAKE_ARRAY,
+    SET_ARRAY,
+    GET_ARRAY,
     GET_OFFSET,
     SET_OFFSET,
     READ_BYTES,
@@ -119,6 +122,9 @@ constexpr const char* to_string(Op e) {
     case Op::SET_FIELD_LABEL: return "SET_FIELD_LABEL";
     case Op::SET_FIELD: return "SET_FIELD";
     case Op::GET_FIELD: return "GET_FIELD";
+    case Op::MAKE_ARRAY: return "MAKE_ARRAY";
+    case Op::SET_ARRAY: return "SET_ARRAY";
+    case Op::GET_ARRAY: return "GET_ARRAY";
     case Op::GET_OFFSET: return "GET_OFFSET";
     case Op::SET_OFFSET: return "SET_OFFSET";
     case Op::READ_BYTES: return "READ_BYTES";
@@ -179,6 +185,9 @@ template<>constexpr std::optional<Op> from_string<Op>(std::string_view str) {
     if(str == "SET_FIELD_LABEL") return Op::SET_FIELD_LABEL;
     if(str == "SET_FIELD") return Op::SET_FIELD;
     if(str == "GET_FIELD") return Op::GET_FIELD;
+    if(str == "MAKE_ARRAY") return Op::MAKE_ARRAY;
+    if(str == "SET_ARRAY") return Op::SET_ARRAY;
+    if(str == "GET_ARRAY") return Op::GET_ARRAY;
     if(str == "GET_OFFSET") return Op::GET_OFFSET;
     if(str == "SET_OFFSET") return Op::SET_OFFSET;
     if(str == "READ_BYTES") return Op::READ_BYTES;
@@ -196,9 +205,9 @@ template<>constexpr std::optional<Op> from_string<Op>(std::string_view str) {
     return std::nullopt;
 }
 template<>constexpr size_t enum_elem_count<Op>() {
-    return 55;
+    return 58;
 }
-template<>constexpr std::array<std::pair<Op,std::string_view>,55> make_enum_array<Op>() {
+template<>constexpr std::array<std::pair<Op,std::string_view>,58> make_enum_array<Op>() {
     return {
         std::pair{Op::NOP,"NOP"},
         std::pair{Op::ADD,"ADD"},
@@ -241,6 +250,9 @@ template<>constexpr std::array<std::pair<Op,std::string_view>,55> make_enum_arra
         std::pair{Op::SET_FIELD_LABEL,"SET_FIELD_LABEL"},
         std::pair{Op::SET_FIELD,"SET_FIELD"},
         std::pair{Op::GET_FIELD,"GET_FIELD"},
+        std::pair{Op::MAKE_ARRAY,"MAKE_ARRAY"},
+        std::pair{Op::SET_ARRAY,"SET_ARRAY"},
+        std::pair{Op::GET_ARRAY,"GET_ARRAY"},
         std::pair{Op::GET_OFFSET,"GET_OFFSET"},
         std::pair{Op::SET_OFFSET,"SET_OFFSET"},
         std::pair{Op::READ_BYTES,"READ_BYTES"},
@@ -257,7 +269,7 @@ template<>constexpr std::array<std::pair<Op,std::string_view>,55> make_enum_arra
         std::pair{Op::FUNC_END,"FUNC_END"},
     };
 }
-template<>constexpr std::array<std::pair<Op,std::string_view>,55> make_enum_name_array<Op>() {
+template<>constexpr std::array<std::pair<Op,std::string_view>,58> make_enum_name_array<Op>() {
     return {
         std::pair{Op::NOP,"NOP"},
         std::pair{Op::ADD,"ADD"},
@@ -300,6 +312,9 @@ template<>constexpr std::array<std::pair<Op,std::string_view>,55> make_enum_name
         std::pair{Op::SET_FIELD_LABEL,"SET_FIELD_LABEL"},
         std::pair{Op::SET_FIELD,"SET_FIELD"},
         std::pair{Op::GET_FIELD,"GET_FIELD"},
+        std::pair{Op::MAKE_ARRAY,"MAKE_ARRAY"},
+        std::pair{Op::SET_ARRAY,"SET_ARRAY"},
+        std::pair{Op::GET_ARRAY,"GET_ARRAY"},
         std::pair{Op::GET_OFFSET,"GET_OFFSET"},
         std::pair{Op::SET_OFFSET,"SET_OFFSET"},
         std::pair{Op::READ_BYTES,"READ_BYTES"},

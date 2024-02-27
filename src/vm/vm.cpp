@@ -7,9 +7,13 @@
 namespace brgen::vm {
 
     struct VMHelper {
-        static bool arithmetic_op(VM& vm, auto&& cb) {
-            auto a = vm.registers[0].as_uint64();
-            auto b = vm.registers[1].as_uint64();
+        static bool arithmetic_op(VM& vm, const Instruction& instr, auto&& cb) {
+            auto arg = TransferArg(instr.arg());
+            if (!arg.valid()) {
+                return false;
+            }
+            auto a = vm.registers[arg.from()].as_uint64();
+            auto b = vm.registers[arg.to()].as_uint64();
             if (!a || !b) {
                 return false;
             }
@@ -21,20 +25,20 @@ namespace brgen::vm {
             return true;
         }
 
-        static bool add(VM& vm) {
-            return arithmetic_op(vm, [](auto a, auto b) { return a + b; });
+        static bool add(VM& vm, const Instruction& instr) {
+            return arithmetic_op(vm, instr, [](auto a, auto b) { return a + b; });
         }
 
-        static bool sub(VM& vm) {
-            return arithmetic_op(vm, [](auto a, auto b) { return a - b; });
+        static bool sub(VM& vm, const Instruction& instr) {
+            return arithmetic_op(vm, instr, [](auto a, auto b) { return a - b; });
         }
 
-        static bool mul(VM& vm) {
-            return arithmetic_op(vm, [](auto a, auto b) { return a * b; });
+        static bool mul(VM& vm, const Instruction& instr) {
+            return arithmetic_op(vm, instr, [](auto a, auto b) { return a * b; });
         }
 
-        static bool div(VM& vm) {
-            return arithmetic_op(vm, [](auto a, auto b) -> std::optional<std::uint64_t> {
+        static bool div(VM& vm, const Instruction& instr) {
+            return arithmetic_op(vm, instr, [](auto a, auto b) -> std::optional<std::uint64_t> {
                 if (b == 0) {
                     return std::nullopt;
                 }
@@ -42,8 +46,8 @@ namespace brgen::vm {
             });
         }
 
-        static bool mod(VM& vm) {
-            return arithmetic_op(vm, [](auto a, auto b) -> std::optional<std::uint64_t> {
+        static bool mod(VM& vm, const Instruction& instr) {
+            return arithmetic_op(vm, instr, [](auto a, auto b) -> std::optional<std::uint64_t> {
                 if (b == 0) {
                     return std::nullopt;
                 }
@@ -51,7 +55,7 @@ namespace brgen::vm {
             });
         }
 
-        static bool compare_op(VM& vm, auto&& cb) {
+        static bool compare_op(VM& vm, const Instruction& instr, auto&& cb) {
             auto a = vm.registers[0].as_uint64();
             auto b = vm.registers[1].as_uint64();
             if (!a || !b) {
@@ -67,8 +71,8 @@ namespace brgen::vm {
             return true;
         }
 
-        static bool cmp(VM& vm) {
-            return compare_op(vm, [](auto a, auto b) {
+        static bool cmp(VM& vm, const Instruction& instr) {
+            return compare_op(vm, instr, [](auto a, auto b) {
                 if (a == b) {
                     return std::uint64_t(0);
                 }
@@ -351,7 +355,9 @@ namespace brgen::vm {
             if (!name) {
                 return false;
             }
-            vm.functions[std::string(name->as_char(), name->size())] = pc + 2;
+            auto key = std::string(name->as_char(), name->size());
+            vm.functions[key] = pc + 2;
+            vm.inverse_functions[pc + 2] = std::move(key);
             auto ptr = instr.arg();
             if (ptr > program.size()) {
                 return false;
@@ -461,12 +467,59 @@ namespace brgen::vm {
                 return false;
             }
             auto next_pc = pc + 1;
-            vm.call_stack.push_back({next_pc, vm.stack.size()});  // set clean up point
             auto ptr = vm.registers[arg].as_uint64();
             if (!ptr) {
                 return false;
             }
+            vm.call_stack.push_back({*ptr, next_pc, vm.stack.size()});  // set clean up point
             pc = *ptr;
+            return true;
+        }
+
+        static bool error(VM& vm, const Instruction& instr, size_t& pc, const std::vector<Instruction>& program) {
+            auto data = vm.registers[0].as_bytes();
+            if (!data) {
+                return false;
+            }
+            vm.error_message = std::string(data->as_char(), data->size());
+            for (auto it = vm.call_stack.rbegin(); it != vm.call_stack.rend(); it++) {
+                auto found = vm.inverse_functions.find(it->call_target);
+                if (found != vm.inverse_functions.end()) {
+                    vm.error_message += " in function " + found->second;
+                }
+                else {
+                    vm.error_message += " in function ???";
+                }
+            }
+            pc = program.size();  // terminate the program
+            return true;
+        }
+
+        static bool increment(VM& vm, const Instruction& instr) {
+            auto arg = TransferArg(instr.arg());
+            if (!arg.valid()) {
+                return false;
+            }
+            auto to = arg.to();
+            auto a = vm.registers[to].as_uint64();
+            if (!a) {
+                return false;
+            }
+            vm.registers[to] = Value(*a + 1);
+            return true;
+        }
+
+        static bool make_array(VM& vm, const Instruction& instr) {
+            auto arg = TransferArg(instr.arg());
+            if (!arg.valid()) {
+                return false;
+            }
+            auto to = arg.to();
+            auto size = vm.registers[arg.from()].as_uint64();
+            if (!size) {
+                return false;
+            }
+            vm.registers[to] = Value(std::make_shared<std::vector<Value>>(*size));
             return true;
         }
     };
@@ -512,13 +565,15 @@ namespace brgen::vm {
     }
 
                     change_pc_op(Op::FUNC_END, func_end, pc, program);
-                    exec_op(Op::ADD, add);
-                    exec_op(Op::SUB, sub);
-                    exec_op(Op::MUL, mul);
-                    exec_op(Op::DIV, div);
-                    exec_op(Op::MOD, mod);
+                    exec_op(Op::ADD, add, instr);
+                    exec_op(Op::SUB, sub, instr);
+                    exec_op(Op::MUL, mul, instr);
+                    exec_op(Op::DIV, div, instr);
+                    exec_op(Op::MOD, mod, instr);
 
-                    exec_op(Op::CMP, cmp);
+                    exec_op(Op::CMP, cmp, instr);
+
+                    exec_op(Op::INC, increment, instr);
 
                     exec_op(Op::TRSF, transfer, instr);
 
@@ -554,6 +609,10 @@ namespace brgen::vm {
                     exec_op(Op::SET_FIELD_LABEL, set_field_label, instr, static_data);
 
                     change_pc_op(Op::CALL, call, instr, pc);
+
+                    change_pc_op(Op::ERROR, error, instr, pc, program);
+
+                    exec_op(Op::MAKE_ARRAY, make_array, instr);
 
                 default: {
                     auto ptr = to_string(instr.op());

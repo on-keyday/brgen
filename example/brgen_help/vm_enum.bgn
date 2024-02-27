@@ -56,6 +56,11 @@ enum Op:
     SET_FIELD # SET_FIELD <field index> << 8 | <from register number> << 4 | <to object register number>
     GET_FIELD # GET_FIELD <field index> << 8 | <from object register number> << 4 | <to register number>
     
+    # array control
+    MAKE_ARRAY # MAKE_ARRAY <register number>
+    SET_ARRAY # SET_ARRAY <array index register number> << 8 | <from register number> << 4 | <to array register number>
+    GET_ARRAY # GET_ARRAY <array index register number> << 8 | <from array register number> << 4 | <to register number>
+
     # input and output 
     GET_OFFSET # get offset of input/output
     SET_OFFSET # set offset of input/output

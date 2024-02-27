@@ -3,5 +3,6 @@ udp ::= config.import("../udp.bgn")
 quic ::= config.import("../quic_packet.bgn")
 
 format Test:
-    hdr :udp.UDPHeader
-    pkt :quic.QUICPackets
+    # UDP Header (rfc 768)
+    udpHeader :udp.UDPHeader
+    quicPacket :quic.QUICPackets(input = input.subrange(udpHeader.length - 8))
