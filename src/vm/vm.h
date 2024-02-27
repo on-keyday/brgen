@@ -262,6 +262,11 @@ namespace brgen::vm {
         constexpr void set_input(futils::view::rvec input) {
             this->input = input;
         }
+
+        constexpr futils::view::rvec get_input() const {
+            return input;
+        }
+
         constexpr futils::view::rvec get_output() const {
             return output;
         }

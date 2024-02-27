@@ -8,16 +8,19 @@
 #include <core/ast/json.h>
 #include <core/ast/file.h>
 #include <wrap/cin.h>
+#include "hex.h"
 struct Flags : futils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
     bool spec = false;
     bool run = false;
+    bool hex = false;
     std::string_view call;
     std::string_view binary_input;
     void bind(futils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&spec, "s", "spec mode");
         ctx.VarBool(&run, "r", "run mode");
+        ctx.VarBool(&hex, "x,hex", "hex text input for binary input (ignore spaces and newlines, # is comment)");
         ctx.VarString<true>(&call, "c,call", "call function in run mode", "<function name>");
         ctx.VarString<true>(&binary_input, "b,binary", "binary input", "<file or - (stdin)>");
     }
@@ -100,6 +103,14 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
                     return 1;
                 }
                 vm.set_input(input);
+            }
+            if (flags.hex) {
+                auto seq = futils::make_cpy_seq(vm.get_input());
+                auto h = json2vm::hex::read_hex(seq);
+                if (!h) {
+                    print_error("cannot read hex input");
+                    return 1;
+                }
             }
         }
         vm.execute(code);

@@ -60,7 +60,8 @@
                 "ignore/sample.json",
                 "-r",
                 "--call", "UDPDatagram.decode",
-                "--binary","-"
+                "--binary","ignore/udp.dat",
+                "--hex",
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",
