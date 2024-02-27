@@ -75,6 +75,9 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
     auto code = brgen::vm::compile(brgen::ast::cast_to<brgen::ast::Program>(*res));
     if (flags.run) {
         brgen::vm::VM vm;
+        vm.set_inject([](brgen::vm::VM& vm, const brgen::vm::Instruction& instr, size_t& pc) {
+            cout << brgen::vm::to_string(instr.op()) << " " << brgen::nums(instr.arg()) << "\n";
+        });
         futils::file::View input;
         std::string input_buf;
         if (!flags.binary_input.empty()) {

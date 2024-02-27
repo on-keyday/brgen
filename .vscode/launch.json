@@ -59,7 +59,7 @@
             "args": [
                 "ignore/sample.json",
                 "-r",
-                "--call", "UDPHeader.decode",
+                "--call", "UDPDatagram.decode",
                 "--binary","-"
             ],
             "stopAtEntry": false,

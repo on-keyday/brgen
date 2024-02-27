@@ -8,6 +8,7 @@
 #include <binary/flags.h>
 #include <unordered_map>
 #include <memory>
+#include <core/ast/node/ast_enum.h>
 
 namespace brgen::vm {
     struct Instruction {
@@ -224,10 +225,16 @@ namespace brgen::vm {
     constexpr auto register_size = 16;
     constexpr auto this_register = 15;
 
+    struct CallStack {
+        size_t ret_pc;
+        size_t ret_stack_size;
+    };
+
     struct VM {
        private:
         Value registers[register_size];
         std::vector<Value> stack;
+        std::vector<CallStack> call_stack;
         std::string error_message;
         std::vector<Var> variables;
         friend struct VMHelper;
@@ -235,11 +242,22 @@ namespace brgen::vm {
         futils::view::rvec input;
         std::string output;
         std::unordered_map<std::string, std::uint64_t> functions;
+        ast::Endian endian = ast::Endian::big;
 
         void execute_internal(const Code& code, size_t& pc);
 
+        void (*inject)(VM& vm, const Instruction& instr, size_t& pc) = nullptr;
+
        public:
         VM() = default;
+
+        void set_endian(ast::Endian endian) {
+            this->endian = endian;
+        }
+
+        void set_inject(void (*inject)(VM& vm, const Instruction& instr, size_t& pc)) {
+            this->inject = inject;
+        }
 
         constexpr void set_input(futils::view::rvec input) {
             this->input = input;

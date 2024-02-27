@@ -14,6 +14,8 @@ namespace brgen::vm {
 
     struct FormatInfo {
         size_t current_offset = 0;
+        size_t encode_entry = 0;
+        size_t decode_entry = 0;
     };
 
     struct Compiler {
@@ -57,13 +59,35 @@ namespace brgen::vm {
         void compile_expr(const std::shared_ptr<ast::Expr>& expr) {
             if (auto i_lit = ast::as<ast::IntLiteral>(expr)) {
                 op(Op::LOAD_IMMEDIATE, *i_lit->parse_as<std::uint64_t>());
+                return;
             }
             if (auto str_lit = ast::as<ast::StrLiteral>(expr)) {
                 auto index = add_static(Value{str_lit->value});
                 op(Op::LOAD_STATIC, index);
+                return;
             }
             if (auto b = ast::as<ast::Ident>(expr)) {
                 auto base = ast::tool::lookup_base(ast::cast_to<ast::Ident>(expr));
+                auto node = base->first->base.lock();
+                if (auto field = ast::as<ast::Field>(node)) {
+                    auto& info = field_info[ast::cast_to<ast::Field>(node)];
+                    op(Op::LOAD_IMMEDIATE, info.offset);
+                    op(Op::GET_FIELD, TransferArg(this_register, 0, 0));
+                    return;
+                }
+            }
+            if (auto a = ast::as<ast::MemberAccess>(expr)) {
+                compile_expr(a->target);
+                auto base = ast::tool::lookup_base(a->member);
+                auto node = base->first->base.lock();
+                if (auto field = ast::as<ast::Field>(node)) {
+                    auto& info = field_info[ast::cast_to<ast::Field>(node)];
+                    op(Op::TRSF, TransferArg(0, 1));  // register 0 to 1
+                    op(Op::LOAD_IMMEDIATE, info.offset);
+                    // registers[0] = registers[1][registers[0]]
+                    op(Op::GET_FIELD, TransferArg(1, 0, 0));
+                    return;
+                }
             }
             if (auto b = ast::as<ast::Binary>(expr)) {
                 switch (b->op) {
@@ -161,11 +185,17 @@ namespace brgen::vm {
                 if (size % 8 == 0) {
                     op(Op::LOAD_IMMEDIATE, size / 8);
                     op(Op::READ_BYTES);
+                    if (int_ty->endian != ast::Endian::unspec) {
+                        op(Op::SET_ENDIAN, int_ty->endian == ast::Endian::big ? 0 : 1);
+                    }
                     op(Op::BYTES_TO_INT, size / 8);
                 }
                 else {
                     op(Op::LOAD_IMMEDIATE, size);
                     op(Op::READ_BITS);
+                    if (int_ty->endian != ast::Endian::unspec) {
+                        op(Op::SET_ENDIAN, int_ty->endian == ast::Endian::big ? 0 : 1);
+                    }
                     op(Op::BYTES_TO_INT, (size + 7) / 8);
                 }
             }
@@ -197,6 +227,19 @@ namespace brgen::vm {
                 op(Op::LOAD_STATIC, index);
                 op(Op::ERROR);
                 rewrite_arg(instr, pc());
+            }
+            if (auto struct_ty = ast::as<ast::StructType>(typ)) {
+                auto base = struct_ty->base.lock();
+                if (auto fmt = ast::as<ast::Format>(base)) {
+                    auto& info = format_info[ast::cast_to<ast::Format>(base)];
+                    op(Op::MAKE_OBJECT, 0);
+                    op(Op::PUSH, this_register);                  // save this_register
+                    op(Op::TRSF, TransferArg(0, this_register));  // register 0 to this_register
+                    op(Op::LOAD_IMMEDIATE, info.decode_entry);    // set decode function address
+                    op(Op::CALL, 0);                              // register[0]() call decode function
+                    op(Op::TRSF, TransferArg(this_register, 0));  // this_register to register 0
+                    op(Op::POP, this_register);                   // restore this_register
+                }
             }
             // register 0 to 1
             op(Op::TRSF, TransferArg(0, 1));
@@ -231,7 +274,7 @@ namespace brgen::vm {
                 }
                 if (auto as = ast::as<ast::Assert>(element)) {
                     compile_expr(as->cond);
-                    op(Op::TRSF, 0x00 | 0x01);  // register 0 to 1
+                    op(Op::TRSF, TransferArg(0, 1));  // register 0 to 1
                     op(Op::LOAD_IMMEDIATE, 0);
                     op(Op::CMP);
                     auto instr = op(Op::JNE);
@@ -240,18 +283,46 @@ namespace brgen::vm {
                     op(Op::ERROR);
                     rewrite_arg(instr, pc());
                 }
+                if (auto if_ = ast::as<ast::If>(element)) {
+                    auto elif_ = if_;
+                    size_t instr = 0, instr2 = 0;
+                    std::vector<size_t> jump;
+                    while (elif_) {
+                        compile_expr(elif_->cond);
+                        op(Op::TRSF, TransferArg(0, 1));  // register 0 to 1
+                        op(Op::LOAD_IMMEDIATE, 0);
+                        op(Op::CMP);
+                        instr = op(Op::JE);
+                        compile_block(fmt, elif_->then);
+                        instr2 = op(Op::JMP);  // jump to end of if-elif-else
+                        jump.push_back(instr2);
+                        rewrite_arg(instr, pc());  // next if or else or end of if-elif-else
+                        auto next = ast::as<ast::If>(elif_->els);
+                        if (!next) {
+                            break;
+                        }
+                    }
+                    if (auto block = ast::as<ast::IndentBlock>(elif_->els)) {
+                        compile_block(fmt, ast::cast_to<ast::IndentBlock>(elif_->els));
+                    }
+                    for (auto i : jump) {  // rewrite all jump to end of if-elif-else
+                        rewrite_arg(i, pc());
+                    }
+                }
             }
         }
 
         void compile_encode_format(const std::shared_ptr<ast::Format>& fmt) {
             const auto d = function_prologue(fmt->ident->ident + ".encode");
             encode = true;
+            format_info[fmt].encode_entry = pc();
             compile_block(fmt, fmt->body);
         }
 
         void compile_decode_format(const std::shared_ptr<ast::Format>& fmt) {
             const auto d = function_prologue(fmt->ident->ident + ".decode");
             encode = false;
+            format_info[fmt].decode_entry = pc();
             compile_block(fmt, fmt->body);
         }
 

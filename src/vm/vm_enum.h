@@ -70,6 +70,7 @@ enum class Op {
     PEEK_BITS,
     WRITE_BITS,
     BYTES_TO_INT,
+    SET_ENDIAN,
     ERROR,
     NEXT_FUNC,
     FUNC_NAME,
@@ -127,6 +128,7 @@ constexpr const char* to_string(Op e) {
     case Op::PEEK_BITS: return "PEEK_BITS";
     case Op::WRITE_BITS: return "WRITE_BITS";
     case Op::BYTES_TO_INT: return "BYTES_TO_INT";
+    case Op::SET_ENDIAN: return "SET_ENDIAN";
     case Op::ERROR: return "ERROR";
     case Op::NEXT_FUNC: return "NEXT_FUNC";
     case Op::FUNC_NAME: return "FUNC_NAME";
@@ -186,6 +188,7 @@ template<>constexpr std::optional<Op> from_string<Op>(std::string_view str) {
     if(str == "PEEK_BITS") return Op::PEEK_BITS;
     if(str == "WRITE_BITS") return Op::WRITE_BITS;
     if(str == "BYTES_TO_INT") return Op::BYTES_TO_INT;
+    if(str == "SET_ENDIAN") return Op::SET_ENDIAN;
     if(str == "ERROR") return Op::ERROR;
     if(str == "NEXT_FUNC") return Op::NEXT_FUNC;
     if(str == "FUNC_NAME") return Op::FUNC_NAME;
@@ -193,9 +196,9 @@ template<>constexpr std::optional<Op> from_string<Op>(std::string_view str) {
     return std::nullopt;
 }
 template<>constexpr size_t enum_elem_count<Op>() {
-    return 54;
+    return 55;
 }
-template<>constexpr std::array<std::pair<Op,std::string_view>,54> make_enum_array<Op>() {
+template<>constexpr std::array<std::pair<Op,std::string_view>,55> make_enum_array<Op>() {
     return {
         std::pair{Op::NOP,"NOP"},
         std::pair{Op::ADD,"ADD"},
@@ -247,13 +250,14 @@ template<>constexpr std::array<std::pair<Op,std::string_view>,54> make_enum_arra
         std::pair{Op::PEEK_BITS,"PEEK_BITS"},
         std::pair{Op::WRITE_BITS,"WRITE_BITS"},
         std::pair{Op::BYTES_TO_INT,"BYTES_TO_INT"},
+        std::pair{Op::SET_ENDIAN,"SET_ENDIAN"},
         std::pair{Op::ERROR,"ERROR"},
         std::pair{Op::NEXT_FUNC,"NEXT_FUNC"},
         std::pair{Op::FUNC_NAME,"FUNC_NAME"},
         std::pair{Op::FUNC_END,"FUNC_END"},
     };
 }
-template<>constexpr std::array<std::pair<Op,std::string_view>,54> make_enum_name_array<Op>() {
+template<>constexpr std::array<std::pair<Op,std::string_view>,55> make_enum_name_array<Op>() {
     return {
         std::pair{Op::NOP,"NOP"},
         std::pair{Op::ADD,"ADD"},
@@ -305,6 +309,7 @@ template<>constexpr std::array<std::pair<Op,std::string_view>,54> make_enum_name
         std::pair{Op::PEEK_BITS,"PEEK_BITS"},
         std::pair{Op::WRITE_BITS,"WRITE_BITS"},
         std::pair{Op::BYTES_TO_INT,"BYTES_TO_INT"},
+        std::pair{Op::SET_ENDIAN,"SET_ENDIAN"},
         std::pair{Op::ERROR,"ERROR"},
         std::pair{Op::NEXT_FUNC,"NEXT_FUNC"},
         std::pair{Op::FUNC_NAME,"FUNC_NAME"},

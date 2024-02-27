@@ -306,10 +306,32 @@ namespace brgen::vm {
                 return false;
             }
             std::uint64_t result = 0;
-            for (auto& byte : *bytes) {
-                result = (result << 8) | byte;
+            if (vm.endian == ast::Endian::big) {
+                for (auto& byte : *bytes) {
+                    result = (result << 8) | byte;
+                }
+            }
+            else {
+                std::reverse_iterator it{bytes->end()}, end{bytes->begin()};
+                for (; it != end; it++) {
+                    result = (result << 8) | *it;
+                }
             }
             vm.registers[0] = Value(result);
+            return true;
+        }
+
+        static bool set_endian(VM& vm, const Instruction& instr) {
+            auto arg = instr.arg();
+            if (arg == 0) {
+                vm.endian = ast::Endian::big;
+            }
+            else if (arg == 1) {
+                vm.endian = ast::Endian::little;
+            }
+            else {
+                return false;
+            }
             return true;
         }
 
@@ -369,34 +391,35 @@ namespace brgen::vm {
             return true;
         }
 
-        static void set_field_label(VM& vm, const Instruction& instr, const std::vector<Value>& static_data) {
+        static bool set_field_label(VM& vm, const Instruction& instr, const std::vector<Value>& static_data) {
             auto arg = TransferArg(instr.arg());
             if (!arg.valid()) {
-                return;
+                return false;
             }
             auto obj = vm.registers[arg.to()].as_vars();
             if (!obj) {
-                return;
+                return false;
             }
             auto index = vm.registers[arg.index()].as_uint64();
             if (!index) {
-                return;
+                return false;
             }
             auto labelIndex = vm.registers[arg.from()].as_uint64();
             if (!labelIndex) {
-                return;
+                return false;
             }
             if (static_data.size() <= *labelIndex) {
-                return;
+                return false;
             }
             if (obj->size() <= *index) {
                 obj->resize(*index + 1);
             }
             auto bytes = static_data[*labelIndex].as_bytes();
             if (!bytes) {
-                return;
+                return false;
             }
             (*obj)[*index].label(std::string(bytes->as_char(), bytes->size()));
+            return true;
         }
 
         static bool get_field(VM& vm, const Instruction& instr) {
@@ -418,6 +441,33 @@ namespace brgen::vm {
             vm.registers[arg.to()] = (*obj)[*index].value();
             return true;
         }
+
+        static bool func_end(VM& vm, size_t& pc, const std::vector<Instruction>& program) {
+            if (vm.call_stack.empty()) {
+                pc = program.size();
+                return true;
+            }
+            auto ret = vm.call_stack.back();
+            vm.call_stack.pop_back();
+            vm.stack.resize(ret.ret_stack_size);
+            pc = ret.ret_pc;
+            return true;
+        }
+
+        static bool call(VM& vm, const Instruction& instr, size_t& pc) {
+            auto arg = instr.arg();
+            if (arg > 0xf) {
+                return false;
+            }
+            auto next_pc = pc + 1;
+            vm.call_stack.push_back({next_pc, vm.stack.size()});  // set clean up point
+            auto ptr = vm.registers[arg].as_uint64();
+            if (!ptr) {
+                return false;
+            }
+            pc = *ptr;
+            return true;
+        }
     };
 
     void VM::execute_internal(const Code& code, size_t& pc) {
@@ -426,15 +476,18 @@ namespace brgen::vm {
         futils::binary::reader r{input};
         size_t read_bit_offset = 0;
         while (pc < program.size()) {
+            if (inject) {
+                inject(*this, program[pc], pc);
+                if (pc >= program.size()) {
+                    break;
+                }
+            }
             const auto& instr = program[pc];
             switch (instr.op()) {
                 case Op::NOP:
                 case Op::FUNC_NAME:
                     break;
-                case Op::FUNC_END: {
-                    pc++;
-                    return;
-                }
+
 #define exec_op(code, op, ...)                                 \
     case code: {                                               \
         if (!VMHelper::op(*this __VA_OPT__(, ) __VA_ARGS__)) { \
@@ -457,6 +510,7 @@ namespace brgen::vm {
         continue;                                              \
     }
 
+                    change_pc_op(Op::FUNC_END, func_end, pc, program);
                     exec_op(Op::ADD, add);
                     exec_op(Op::SUB, sub);
                     exec_op(Op::MUL, mul);
@@ -489,12 +543,16 @@ namespace brgen::vm {
                     exec_op(Op::PEEK_BITS, peek_bits, instr, r, read_bit_offset);
                     exec_op(Op::PEEK_BYTES, peek_bytes, instr, r, read_bit_offset);
                     exec_op(Op::BYTES_TO_INT, bytes_to_int, instr);
+                    exec_op(Op::SET_ENDIAN, set_endian, instr);
 
                     change_pc_op(Op::NEXT_FUNC, next_func, instr, pc, program, static_data);
 
                     exec_op(Op::MAKE_OBJECT, make_object, instr);
                     exec_op(Op::SET_FIELD, set_field, instr);
                     exec_op(Op::GET_FIELD, get_field, instr);
+                    exec_op(Op::SET_FIELD_LABEL, set_field_label, instr, static_data);
+
+                    change_pc_op(Op::CALL, call, instr, pc);
 
                 default: {
                     auto ptr = to_string(instr.op());

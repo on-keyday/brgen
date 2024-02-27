@@ -68,6 +68,8 @@ enum Op:
 
     # convert bytes to integer
     BYTES_TO_INT
+    SET_ENDIAN
+    
 
     # error
     ERROR
