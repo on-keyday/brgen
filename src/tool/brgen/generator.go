@@ -85,8 +85,9 @@ func (g *Generator) execGenerator(cmd *exec.Cmd, targetFile string) ([]byte, err
 	return buf.Bytes(), nil
 }
 
-func makeTmpFile(data []byte) (path string, err error) {
-	fp, err := os.CreateTemp(os.TempDir(), "brgen*.json")
+func makeTmpFile(basePath string, data []byte) (path string, err error) {
+	base := filepath.Base(basePath)
+	fp, err := os.CreateTemp(os.TempDir(), fmt.Sprintf("brgen*_%s.json", base))
 	if err != nil {
 		return
 	}
@@ -104,7 +105,7 @@ func (g *Generator) passAst(filePath string, buffer []byte) ([]byte, error) {
 		cmd.Stdin = bytes.NewReader(buffer)
 		return g.execGenerator(cmd, filePath)
 	}
-	path, err := makeTmpFile(buffer)
+	path, err := makeTmpFile(filePath, buffer)
 	if err != nil {
 		return nil, err
 	}

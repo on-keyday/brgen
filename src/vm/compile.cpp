@@ -339,6 +339,7 @@ namespace brgen::vm {
                         if (!next) {
                             break;
                         }
+                        elif_ = next;
                     }
                     if (auto block = ast::as<ast::IndentBlock>(elif_->els)) {
                         compile_block(fmt, ast::cast_to<ast::IndentBlock>(elif_->els));

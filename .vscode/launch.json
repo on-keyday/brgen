@@ -58,10 +58,12 @@
             "program": "${workspaceRoot}/tool/json2vm",
             "args": [
                 "ignore/sample.json",
+                /*
                 "-r",
                 "--call", "Test.decode",
                 "--binary","example/vm_test/udp.dat",
                 "--hex",
+                */
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",
