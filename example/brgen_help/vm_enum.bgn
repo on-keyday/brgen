@@ -35,12 +35,12 @@ enum Op:
     RET
 
     # stack
-    PUSH
-    POP
+    PUSH # PUSH <register number>
+    POP # POP <register number>
 
     # memory and register
-    TRSF
-    LOAD_IMMEDIATE
+    TRSF # TRSF <from register number> << 4 | <register number>
+    LOAD_IMMEDIATE # LOAD_IMMEDIATE <immediate value>
     SET_VAR_COUNT
     INIT_VAR
     LOAD_VAR
@@ -51,10 +51,10 @@ enum Op:
     LOAD_STATIC
 
     # object control
-    MAKE_OBJECT
-    SET_FIELD_LABEL
-    SET_FIELD
-    GET_FIELD
+    MAKE_OBJECT # MAKE_OBJECT <register number>
+    SET_FIELD_LABEL # SET_FIELD_LABEL <field index> << 8 | <from label register number> << 4 | <to object register number>
+    SET_FIELD # SET_FIELD <field index> << 8 | <from register number> << 4 | <to object register number>
+    GET_FIELD # GET_FIELD <field index> << 8 | <from object register number> << 4 | <to register number>
     
     # input and output 
     GET_OFFSET # get offset of input/output
