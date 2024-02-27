@@ -6,3 +6,6 @@ format VarInt:
       1 => value :u14
       2 => value :u30
       3 => value :u62
+   
+   fn u64() -> u64:
+      return value

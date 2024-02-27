@@ -1303,8 +1303,28 @@ namespace brgen::ast {
             }
             // lookup cast fn
             fmt->body->struct_type->lookup([&](std::shared_ptr<Member>& m) {
-                if (auto fn = ast::as<ast::Function>(m); fn && fn->is_cast) {
-                    fmt->cast_fns.push_back(ast::cast_to<ast::Function>(m));
+                if (auto fn = ast::as<ast::Function>(m); fn) {
+                    if (auto i_ty = ast::is_int_type(fn->ident->ident); i_ty) {
+                        auto ok_ty = ast::as<ast::IntType>(fn->return_type);
+                        if (ok_ty && ok_ty->is_signed == i_ty->is_signed && ok_ty->bit_size == i_ty->bit_size) {
+                            fn->is_cast = true;
+                            fmt->cast_fns.push_back(ast::cast_to<ast::Function>(m));
+                        }
+                    }
+                    if (auto f_ty = ast::is_float_type(fn->ident->ident); f_ty) {
+                        auto ok_ty = ast::as<ast::FloatType>(fn->return_type);
+                        if (ok_ty && ok_ty->bit_size == f_ty->bit_size) {
+                            fn->is_cast = true;
+                            fmt->cast_fns.push_back(ast::cast_to<ast::Function>(m));
+                        }
+                    }
+                    if (fn->ident->ident == "bool") {
+                        auto ok_ty = ast::as<ast::BoolType>(fn->return_type);
+                        if (ok_ty) {
+                            fn->is_cast = true;
+                            fmt->cast_fns.push_back(ast::cast_to<ast::Function>(m));
+                        }
+                    }
                 }
                 return false;
             });
@@ -1340,13 +1360,6 @@ namespace brgen::ast {
         std::shared_ptr<Function> parse_fn(lexer::Token&& token) {
             auto fn = std::make_shared<Function>(token.loc);
             s.skip_white();
-            /*
-            if (auto cast = s.consume_token("cast")) {
-                fn->is_cast = true;
-                fn->cast_loc = cast->loc;
-                s.skip_white();
-            }
-            */
             fn->ident = parse_ident();
             fn->ident->usage = fn->is_cast ? IdentUsage::define_cast_fn : IdentUsage::define_fn;
             fn->ident->base = fn;

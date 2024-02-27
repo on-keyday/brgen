@@ -102,6 +102,14 @@ namespace brgen::vm {
                     return;
                 }
             }
+            if (auto io = ast::as<ast::IOOperation>(expr)) {
+                if (io->method == ast::IOMethod::input_offset) {
+                    op(Op::GET_INPUT_OFFSET, 0);
+                }
+                if (io->method == ast::IOMethod::input_remain) {
+                    op(Op::GET_INPUT_REMAIN, 0);
+                }
+            }
             if (auto b = ast::as<ast::Binary>(expr)) {
                 switch (b->op) {
                     case ast::BinaryOp::logical_and: {
@@ -258,6 +266,8 @@ namespace brgen::vm {
                     op(Op::INC, 2);                                       // register 2 += 1
                     op(Op::JMP, loop_start);                              // jump to loop start
                     rewrite_arg(instr, pc());                             // rewrite jump to end of array decode
+                    op(Op::TRSF, TransferArg(this_register, 0));          // this_register to register 0
+                    op(Op::POP, this_register);                           // restore this_register
                 }
                 else {
                     auto index = add_static(Value{futils::view::rvec("error: array length is not decidable")});
@@ -381,48 +391,89 @@ namespace brgen::vm {
             }
         }
 
-        void compile_block(const std::shared_ptr<ast::Format>& fmt, const std::shared_ptr<ast::IndentBlock>& block) {
-            for (auto& element : block->elements) {
-                if (auto field = ast::as<ast::Field>(element)) {
-                    compile_field(fmt, ast::cast_to<ast::Field>(element));
-                }
-                if (auto as = ast::as<ast::Assert>(element)) {
-                    compile_expr(as->cond);
+        void compile_node(const std::shared_ptr<ast::Format>& fmt, const std::shared_ptr<ast::Node>& element) {
+            if (auto block = ast::as<ast::IndentBlock>(element)) {
+                compile_block(fmt, ast::cast_to<ast::IndentBlock>(element));
+            }
+            if (auto scoped_stmt = ast::as<ast::ScopedStatement>(element)) {
+                compile_node(fmt, scoped_stmt->statement);
+            }
+            if (auto field = ast::as<ast::Field>(element)) {
+                compile_field(fmt, ast::cast_to<ast::Field>(element));
+            }
+            if (auto as = ast::as<ast::Assert>(element)) {
+                compile_expr(as->cond);
+                op(Op::TRSF, TransferArg(0, 1));  // register 0 to 1
+                op(Op::LOAD_IMMEDIATE, 0);
+                op(Op::CMP, TransferArg(0, 1));
+                auto instr = op(Op::JNE);
+                auto index = add_static(Value{futils::view::rvec("error: assert failed")});
+                op(Op::LOAD_STATIC, index);
+                op(Op::ERROR);
+                rewrite_arg(instr, pc());
+            }
+            if (auto if_ = ast::as<ast::If>(element)) {
+                auto elif_ = if_;
+                size_t instr = 0, instr2 = 0;
+                std::vector<size_t> jump;
+                while (elif_) {
+                    compile_expr(elif_->cond);
                     op(Op::TRSF, TransferArg(0, 1));  // register 0 to 1
                     op(Op::LOAD_IMMEDIATE, 0);
                     op(Op::CMP, TransferArg(0, 1));
-                    auto instr = op(Op::JNE);
-                    auto index = add_static(Value{futils::view::rvec("error: assert failed")});
-                    op(Op::LOAD_STATIC, index);
-                    op(Op::ERROR);
-                    rewrite_arg(instr, pc());
+                    instr = op(Op::JE);
+                    compile_block(fmt, elif_->then);
+                    jump.push_back(op(Op::JMP));
+                    rewrite_arg(instr, pc());  // next if or else or end of if-elif-else
+                    auto next = ast::as<ast::If>(elif_->els);
+                    if (!next) {
+                        break;
+                    }
+                    elif_ = next;
                 }
-                if (auto if_ = ast::as<ast::If>(element)) {
-                    auto elif_ = if_;
-                    size_t instr = 0, instr2 = 0;
-                    std::vector<size_t> jump;
-                    while (elif_) {
-                        compile_expr(elif_->cond);
-                        op(Op::TRSF, TransferArg(0, 1));  // register 0 to 1
-                        op(Op::LOAD_IMMEDIATE, 0);
-                        op(Op::CMP, TransferArg(0, 1));
-                        instr = op(Op::JE);
-                        compile_block(fmt, elif_->then);
+                if (auto block = ast::as<ast::IndentBlock>(elif_->els)) {
+                    compile_block(fmt, ast::cast_to<ast::IndentBlock>(elif_->els));
+                }
+                for (auto i : jump) {  // rewrite all jump to end of if-elif-else
+                    rewrite_arg(i, pc());
+                }
+            }
+            if (auto match = ast::as<ast::Match>(element)) {
+                if (match->cond) {
+                    compile_expr(match->cond);
+                }
+                else {
+                    op(Op::LOAD_IMMEDIATE, 1);
+                }
+                op(Op::PUSH, 0);  // push register 0 to stack
+                std::vector<size_t> jump;
+                for (auto& br : match->branch) {
+                    if (auto any = ast::as<ast::Range>(br->cond); any && !any->start && !any->end) {
+                        compile_node(fmt, br->then);
                         jump.push_back(op(Op::JMP));
-                        rewrite_arg(instr, pc());  // next if or else or end of if-elif-else
-                        auto next = ast::as<ast::If>(elif_->els);
-                        if (!next) {
-                            break;
-                        }
-                        elif_ = next;
                     }
-                    if (auto block = ast::as<ast::IndentBlock>(elif_->els)) {
-                        compile_block(fmt, ast::cast_to<ast::IndentBlock>(elif_->els));
-                    }
-                    for (auto i : jump) {  // rewrite all jump to end of if-elif-else
-                        rewrite_arg(i, pc());
+                    else {
+                        compile_expr(br->cond);
+                        op(Op::TRSF, TransferArg(0, 1));  // register 0 to 1
+                        op(Op::POP, 2);                   // pop stack to register 0
+                        op(Op::CMP, TransferArg(1, 2));   // compare register 0 and 1
+                        auto instr = op(Op::JNE);
+                        compile_node(fmt, br->then);
+                        jump.push_back(op(Op::JMP));
+                        rewrite_arg(instr, pc());  // next branch or end of match
+                        op(Op::PUSH, 2);           // push register 2 to stack
                     }
                 }
+                op(Op::POP, 0);        // pop stack to register 0
+                for (auto i : jump) {  // rewrite all jump to end of match
+                    rewrite_arg(i, pc());
+                }
+            }
+        }
+
+        void compile_block(const std::shared_ptr<ast::Format>& fmt, const std::shared_ptr<ast::IndentBlock>& block) {
+            for (auto& element : block->elements) {
+                compile_node(fmt, element);
             }
         }
 
