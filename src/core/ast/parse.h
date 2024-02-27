@@ -1308,6 +1308,7 @@ namespace brgen::ast {
                         auto ok_ty = ast::as<ast::IntType>(fn->return_type);
                         if (ok_ty && ok_ty->is_signed == i_ty->is_signed && ok_ty->bit_size == i_ty->bit_size) {
                             fn->is_cast = true;
+                            fn->ident->usage = IdentUsage::define_cast_fn;
                             fmt->cast_fns.push_back(ast::cast_to<ast::Function>(m));
                         }
                     }
@@ -1315,6 +1316,7 @@ namespace brgen::ast {
                         auto ok_ty = ast::as<ast::FloatType>(fn->return_type);
                         if (ok_ty && ok_ty->bit_size == f_ty->bit_size) {
                             fn->is_cast = true;
+                            fn->ident->usage = IdentUsage::define_cast_fn;
                             fmt->cast_fns.push_back(ast::cast_to<ast::Function>(m));
                         }
                     }
@@ -1322,6 +1324,7 @@ namespace brgen::ast {
                         auto ok_ty = ast::as<ast::BoolType>(fn->return_type);
                         if (ok_ty) {
                             fn->is_cast = true;
+                            fn->ident->usage = IdentUsage::define_cast_fn;
                             fmt->cast_fns.push_back(ast::cast_to<ast::Function>(m));
                         }
                     }
@@ -1361,7 +1364,7 @@ namespace brgen::ast {
             auto fn = std::make_shared<Function>(token.loc);
             s.skip_white();
             fn->ident = parse_ident();
-            fn->ident->usage = fn->is_cast ? IdentUsage::define_cast_fn : IdentUsage::define_fn;
+            fn->ident->usage = IdentUsage::define_fn;
             fn->ident->base = fn;
             check_duplicated_def(fn->ident.get());
             fn->ident->constant_level = ConstantLevel::constant;
