@@ -2,6 +2,7 @@
 #include "vm.h"
 #include <core/common/util.h>
 #include <binary/reader.h>
+#include <number/insert_space.h>
 
 namespace brgen::vm {
 
@@ -566,6 +567,38 @@ namespace brgen::vm {
                 }
             }
             pc++;
+        }
+    }
+
+    void print_value(futils::helper::IPushBacker<> pb, const Value& val) {
+        if (auto pval = val.as_uint64()) {
+            futils::number::to_string(pb, *pval);
+        }
+        else if (auto pval = val.as_bytes()) {
+            pb.push_back('0');
+            pb.push_back('x');
+            for (auto c : *pval) {
+                futils::number::insert_space(pb, 2, c, 16);
+                futils::number::to_string(pb, c, 16);
+            }
+        }
+        else if (auto pval = val.as_array()) {
+            pb.push_back('[');
+            for (const auto& v : *pval) {
+                print_value(pb, v);
+                futils::strutil::append(pb, ", ");
+            }
+            pb.push_back(']');
+        }
+        else if (auto pval = val.as_vars()) {
+            pb.push_back('{');
+            for (const auto& v : *pval) {
+                futils::strutil::append(pb, v.label());
+                pb.push_back(':');
+                print_value(pb, v.value());
+                futils::strutil::append(pb, ", ");
+            }
+            pb.push_back('}');
         }
     }
 }  // namespace brgen::vm

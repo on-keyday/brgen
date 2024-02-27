@@ -111,6 +111,8 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
                     print_error("cannot read hex input");
                     return 1;
                 }
+                input_buf = std::move(*h);
+                vm.set_input(input_buf);
             }
         }
         vm.execute(code);
@@ -120,12 +122,13 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
         }
         if (!flags.call.empty()) {
             // set this to an empty object
-            vm.execute(brgen::vm::Instruction{brgen::vm::Op::MAKE_OBJECT, brgen::vm::TransferArg(0, brgen::vm::this_register)});
+            vm.execute(brgen::vm::Instruction{brgen::vm::Op::MAKE_OBJECT, brgen::vm::this_register});
             vm.call(code, flags.call.data());
             if (!vm.error().empty()) {
                 print_error("vm error: ", vm.error());
                 return 1;
             }
+            auto val = vm.get_register(brgen::vm::this_register);
         }
     }
     std::string buf;

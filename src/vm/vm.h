@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <memory>
 #include <core/ast/node/ast_enum.h>
+#include <helper/pushbacker.h>
 
 namespace brgen::vm {
     struct Instruction {
@@ -78,7 +79,18 @@ namespace brgen::vm {
             return nullptr;
         }
 
+        const std::vector<Var>* as_vars() const {
+            if (auto p = std::get_if<std::shared_ptr<std::vector<Var>>>(&data)) {
+                return p->get();
+            }
+            return nullptr;
+        }
+
         std::vector<Value>* as_array() {
+            return std::get_if<std::vector<Value>>(&data);
+        }
+
+        const std::vector<Value>* as_array() const {
             return std::get_if<std::vector<Value>>(&data);
         }
     };
@@ -298,6 +310,15 @@ namespace brgen::vm {
         constexpr const std::string& error() const {
             return error_message;
         }
+
+        Value get_register(size_t index) const {
+            if (index < register_size) {
+                return registers[index];
+            }
+            return {};
+        }
     };
+
+    void print_value(futils::helper::IPushBacker<> pb, const Value& val);
 
 }  // namespace brgen::vm

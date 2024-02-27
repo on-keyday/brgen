@@ -60,7 +60,7 @@
                 "ignore/sample.json",
                 "-r",
                 "--call", "UDPDatagram.decode",
-                "--binary","ignore/udp.dat",
+                "--binary","example/test_data/udp.dat",
                 "--hex",
             ],
             "stopAtEntry": false,
