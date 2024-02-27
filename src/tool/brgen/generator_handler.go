@@ -17,6 +17,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"syscall"
 )
 
 type GeneratorHandler struct {
@@ -65,7 +66,7 @@ func (g *GeneratorHandler) Init(src2json string, output []*Output, suffix string
 			g.src2json += ".exe"
 		}
 	}
-	g.ctx, g.cancel = signal.NotifyContext(context.Background(), os.Interrupt)
+	g.ctx, g.cancel = signal.NotifyContext(context.Background(), os.Interrupt, os.Kill, syscall.SIGTERM)
 	g.suffixPattern = suffix
 	g.resultQueue = make(chan *Result, 1)
 	g.errQueue = make(chan error, 1)
