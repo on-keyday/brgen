@@ -311,7 +311,7 @@ namespace brgen::vm {
                 error_message = "function not found: " + name;
                 return;
             }
-            call_stack.push_back({it->second, code.instructions.size(), stack.size()});
+            call_stack.push_back({size_t(it->second), code.instructions.size(), stack.size()});
             size_t pc = it->second;
             execute_internal(code, pc);
             if (pc != code.instructions.size() && !error_message.empty()) {

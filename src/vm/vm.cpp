@@ -471,7 +471,7 @@ namespace brgen::vm {
             if (!ptr) {
                 return false;
             }
-            vm.call_stack.push_back({*ptr, next_pc, vm.stack.size()});  // set clean up point
+            vm.call_stack.push_back({size_t(*ptr), next_pc, vm.stack.size()});  // set clean up point
             pc = *ptr;
             return true;
         }
@@ -578,8 +578,8 @@ namespace brgen::vm {
                     exec_op(Op::TRSF, transfer, instr);
 
                     exec_op(Op::INIT_VAR, init_var, instr);
-                    exec_op(Op::LOAD_VAR, load_var, instr);
-                    exec_op(Op::STORE_VAR, store_var, instr);
+                    exec_op(Op::LOAD_VARIABLE, load_var, instr);
+                    exec_op(Op::STORE_VARIABLE, store_var, instr);
                     exec_op(Op::LOAD_STATIC, load_static, instr, static_data);
 
                     exec_op(Op::PUSH, push, instr);

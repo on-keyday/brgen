@@ -18,11 +18,16 @@ namespace brgen::vm {
         size_t decode_entry = 0;
     };
 
+    struct StateVariable {
+        size_t offset = 0;
+    };
+
     struct Compiler {
         Code code;
 
         std::map<std::shared_ptr<ast::Format>, FormatInfo> format_info;
         std::map<std::shared_ptr<ast::Field>, FieldInfo> field_info;
+        std::map<std::shared_ptr<ast::Field>, StateVariable> state_variable_info;
 
         bool encode = false;
 
@@ -70,9 +75,16 @@ namespace brgen::vm {
                 auto base = ast::tool::lookup_base(ast::cast_to<ast::Ident>(expr));
                 auto node = base->first->base.lock();
                 if (auto field = ast::as<ast::Field>(node)) {
-                    auto& info = field_info[ast::cast_to<ast::Field>(node)];
-                    op(Op::LOAD_IMMEDIATE, info.offset);
-                    op(Op::GET_FIELD, TransferArg(this_register, 0, 0));
+                    if (field->is_state_variable) {
+                        auto& info = state_variable_info[ast::cast_to<ast::Field>(node)];
+                        op(Op::LOAD_IMMEDIATE, info.offset);
+                        op(Op::LOAD_VARIABLE, 0);
+                    }
+                    else {
+                        auto& info = field_info[ast::cast_to<ast::Field>(node)];
+                        op(Op::LOAD_IMMEDIATE, info.offset);
+                        op(Op::GET_FIELD, TransferArg(this_register, 0, 0));
+                    }
                     return;
                 }
             }

@@ -43,11 +43,8 @@ enum Op:
     LOAD_IMMEDIATE # LOAD_IMMEDIATE <immediate value>
     SET_VAR_COUNT
     INIT_VAR
-    LOAD_VAR
-    STORE_VAR
-    SET_THIS
-    LOAD_THIS
-    STORE_THIS
+    LOAD_VARIABLE
+    STORE_VARIABLE
     LOAD_STATIC
 
     # object control
