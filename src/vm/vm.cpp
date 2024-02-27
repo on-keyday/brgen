@@ -575,28 +575,47 @@ namespace brgen::vm {
             futils::number::to_string(pb, *pval);
         }
         else if (auto pval = val.as_bytes()) {
-            pb.push_back('0');
-            pb.push_back('x');
+            pb.push_back('"');
             for (auto c : *pval) {
-                futils::number::insert_space(pb, 2, c, 16);
+                if (futils::number::is_ascii_non_control(c)) {
+                    if (c == '"' || c == '\\') {
+                        pb.push_back('\\');
+                    }
+                    pb.push_back(c);
+                    continue;
+                }
+                pb.push_back('\\');
+                pb.push_back('x');
+                futils::number::insert_space(pb, 2, c, 16, '0');
                 futils::number::to_string(pb, c, 16);
             }
+            pb.push_back('"');
         }
         else if (auto pval = val.as_array()) {
             pb.push_back('[');
+            bool first = true;
             for (const auto& v : *pval) {
+                if (!first) {
+                    futils::strutil::append(pb, ", ");
+                }
                 print_value(pb, v);
-                futils::strutil::append(pb, ", ");
+                first = false;
             }
             pb.push_back(']');
         }
         else if (auto pval = val.as_vars()) {
             pb.push_back('{');
+            bool first = true;
             for (const auto& v : *pval) {
+                if (!first) {
+                    futils::strutil::append(pb, ", ");
+                }
+                pb.push_back('"');
                 futils::strutil::append(pb, v.label());
+                pb.push_back('"');
                 pb.push_back(':');
                 print_value(pb, v.value());
-                futils::strutil::append(pb, ", ");
+                first = false;
             }
             pb.push_back('}');
         }

@@ -1,8 +1,18 @@
 # UDP Header
-abcd ef12
-0018 0000
+ef12 01bb 
+0023 0000
 # Data
-aa aa aa aa
-aa aa aa aa
-aa aa aa aa
-aa aa aa aa
+c0 
+00 00 00 01 # version
+00 # dst connection id
+# no data
+00 # src connection id
+# no data
+00 # token length
+# no token
+01 # length
+00 # packet number 
+01 # ping frame
+# Message Authentication Code (16 byte)
+00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff 
+

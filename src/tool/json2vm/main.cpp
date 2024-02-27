@@ -129,6 +129,9 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
                 return 1;
             }
             auto val = vm.get_register(brgen::vm::this_register);
+            std::string buf;
+            brgen::vm::print_value(buf, val);
+            cout << buf << "\n";
         }
     }
     std::string buf;
