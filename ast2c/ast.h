@@ -541,6 +541,11 @@ struct ast2c_FieldArgument {
 	uint64_t* alignment_value;
 	ast2c_Expr* sub_byte_length;
 	ast2c_Expr* sub_byte_begin;
+	ast2c_Expr* peek;
+	uint64_t* peek_value;
+	ast2c_TypeLiteral* type_map;
+	ast2c_Metadata** metadata;
+	size_t metadata_size;
 };
 
 // returns 1 if succeed 0 if failed

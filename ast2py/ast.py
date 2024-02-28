@@ -280,6 +280,10 @@ class FieldArgument(Node):
     alignment_value: Optional[int]
     sub_byte_length: Optional[Expr]
     sub_byte_begin: Optional[Expr]
+    peek: Optional[Expr]
+    peek_value: Optional[int]
+    type_map: Optional[TypeLiteral]
+    metadata: List[Metadata]
 
 
 class Binary(Expr):
@@ -1004,6 +1008,22 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].sub_byte_begin = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at FieldArgument::sub_byte_begin'))
                 else:
                     node[i].sub_byte_begin = None
+                if ast.node[i].body["peek"] is not None:
+                    x = node[ast.node[i].body["peek"]]
+                    node[i].peek = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at FieldArgument::peek'))
+                else:
+                    node[i].peek = None
+                x = ast.node[i].body["peek_value"]
+                if x is not None:
+                    node[i].peek_value = x if isinstance(x,int) else raiseError(TypeError('type mismatch at FieldArgument::peek_value'))
+                else:
+                    node[i].peek_value = None
+                if ast.node[i].body["type_map"] is not None:
+                    x = node[ast.node[i].body["type_map"]]
+                    node[i].type_map = x if isinstance(x,TypeLiteral) else raiseError(TypeError('type mismatch at FieldArgument::type_map'))
+                else:
+                    node[i].type_map = None
+                node[i].metadata = [(node[x] if isinstance(node[x],Metadata) else raiseError(TypeError('type mismatch at FieldArgument::metadata'))) for x in ast.node[i].body["metadata"]]
             case NodeType.BINARY:
                 if ast.node[i].body["expr_type"] is not None:
                     x = node[ast.node[i].body["expr_type"]]
@@ -2142,6 +2162,15 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
                   return
           if x.sub_byte_begin is not None:
               if f(f,x.sub_byte_begin) == False:
+                  return
+          if x.peek is not None:
+              if f(f,x.peek) == False:
+                  return
+          if x.type_map is not None:
+              if f(f,x.type_map) == False:
+                  return
+          for i in range(len(x.metadata)):
+              if f(f,x.metadata[i]) == False:
                   return
         case x if isinstance(x,Binary):
           if x.expr_type is not None:

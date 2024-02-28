@@ -1564,6 +1564,10 @@ type FieldArgument struct {
 	AlignmentValue     *uint64
 	SubByteLength      Expr
 	SubByteBegin       Expr
+	Peek               Expr
+	PeekValue          *uint64
+	TypeMap            *TypeLiteral
+	Metadata           []*Metadata
 }
 
 func (n *FieldArgument) isNode() {}
@@ -3519,6 +3523,10 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				AlignmentValue     *uint64   `json:"alignment_value"`
 				SubByteLength      *uintptr  `json:"sub_byte_length"`
 				SubByteBegin       *uintptr  `json:"sub_byte_begin"`
+				Peek               *uintptr  `json:"peek"`
+				PeekValue          *uint64   `json:"peek_value"`
+				TypeMap            *uintptr  `json:"type_map"`
+				Metadata           []uintptr `json:"metadata"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -3544,6 +3552,17 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			}
 			if tmp.SubByteBegin != nil {
 				v.SubByteBegin = n.node[*tmp.SubByteBegin].(Expr)
+			}
+			if tmp.Peek != nil {
+				v.Peek = n.node[*tmp.Peek].(Expr)
+			}
+			v.PeekValue = tmp.PeekValue
+			if tmp.TypeMap != nil {
+				v.TypeMap = n.node[*tmp.TypeMap].(*TypeLiteral)
+			}
+			v.Metadata = make([]*Metadata, len(tmp.Metadata))
+			for j, k := range tmp.Metadata {
+				v.Metadata[j] = n.node[k].(*Metadata)
 			}
 		case NodeTypeBinary:
 			v := n.node[i].(*Binary)
@@ -5015,6 +5034,21 @@ func Walk(n Node, f Visitor) {
 		}
 		if v.SubByteBegin != nil {
 			if !f.Visit(f, v.SubByteBegin) {
+				return
+			}
+		}
+		if v.Peek != nil {
+			if !f.Visit(f, v.Peek) {
+				return
+			}
+		}
+		if v.TypeMap != nil {
+			if !f.Visit(f, v.TypeMap) {
+				return
+			}
+		}
+		for _, w := range v.Metadata {
+			if !f.Visit(f, w) {
 				return
 			}
 		}

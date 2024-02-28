@@ -1514,6 +1514,7 @@ namespace brgen::middle {
                         else {
                             error(loc, "expect 1 or 2 arguments but got ", nums(conf2->arguments.size())).report();
                         }
+                        continue;
                     }
                 }
                 auto m = std::make_shared<ast::Metadata>(ast::cast_to<ast::Expr>(arg), std::move(conf->name));

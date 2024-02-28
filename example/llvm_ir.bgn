@@ -2,11 +2,34 @@
 format LLVMBitCodeFile:
     magic :"BC\x0C\xED"
     input.bit_order = config.bit_order.lsb
+    abbrev.current_abbrev_id_width = 2 # starts with 2
 
 state VBRState:
     len :u8
 
 vbr :VBRState
+
+state AbbrevState:
+    current_abbrev_id_width :u32
+    add :fn()
+
+abbrev :AbbrevState
+
+format ArbilityBitInt:
+    config.cpp.replace = "llvm::APInt"
+    config.must_replace = true
+    value :[..]u1
+
+    fn u64() -> u64:
+        return value
+
+format AbbrevID:
+    input.bit_order = config.bit_order.lsb
+    input.bit_order.mapping = config.bit_order.lsb   
+    value :[abbrev.current_abbrev_id_width]u1(input.type = u32)
+
+    fn u32() -> u32:
+        return value
 
 format VBRField: # TODO(on-keyday): make this to generic VBRField
     input.bit_order = config.bit_order.lsb
@@ -57,3 +80,16 @@ fn CharToIdentCode(c :u8) -> u6:
     elif c== '_':
         return 63
     error("Invalid character")
+
+enum DefinedAbbrevID:
+    END_BLOCK = 0
+    ENTER_SUBBLOCK = 1
+    DEFINE_ABBREV = 2
+    UNABBREV_RECORD = 3
+
+format EnterSubBlock:
+    id :AbbrevID(DefinedAbbrevID.ENTER_SUBBLOCK)
+    vbr.len = 8
+    block_id :VBR
+    vbr.len = 4
+    new_abbrev_id_width :VBR

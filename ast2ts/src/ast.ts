@@ -437,6 +437,10 @@ export interface FieldArgument extends Node {
 	alignment_value: number|null;
 	sub_byte_length: Expr|null;
 	sub_byte_begin: Expr|null;
+	peek: Expr|null;
+	peek_value: number|null;
+	type_map: TypeLiteral|null;
+	metadata: Metadata[];
 }
 
 export function isFieldArgument(obj: any): obj is FieldArgument {
@@ -1221,6 +1225,10 @@ export function parseAST(obj: JsonAst): Program {
 				alignment_value: null,
 				sub_byte_length: null,
 				sub_byte_begin: null,
+				peek: null,
+				peek_value: null,
+				type_map: null,
+				metadata: [],
 			}
 			c.node.push(n);
 			break;
@@ -2161,6 +2169,37 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at FieldArgument::sub_byte_begin');
 			}
 			n.sub_byte_begin = tmpsub_byte_begin;
+			if (on.body?.peek !== null && typeof on.body?.peek !== 'number') {
+				throw new Error('invalid node list at FieldArgument::peek');
+			}
+			const tmppeek = on.body.peek === null ? null : c.node[on.body.peek];
+			if (!(tmppeek === null || isExpr(tmppeek))) {
+				throw new Error('invalid node list at FieldArgument::peek');
+			}
+			n.peek = tmppeek;
+			const tmppeek_value = on.body?.peek_value;
+			if (tmppeek_value !== null && typeof tmppeek_value !== "number") {
+				throw new Error('invalid node list at FieldArgument::peek_value');
+			}
+			n.peek_value = on.body.peek_value;
+			if (on.body?.type_map !== null && typeof on.body?.type_map !== 'number') {
+				throw new Error('invalid node list at FieldArgument::type_map');
+			}
+			const tmptype_map = on.body.type_map === null ? null : c.node[on.body.type_map];
+			if (!(tmptype_map === null || isTypeLiteral(tmptype_map))) {
+				throw new Error('invalid node list at FieldArgument::type_map');
+			}
+			n.type_map = tmptype_map;
+			for (const o of on.body.metadata) {
+				if (typeof o !== 'number') {
+					throw new Error('invalid node list at FieldArgument::metadata');
+				}
+				const tmpmetadata = c.node[o];
+				if (!isMetadata(tmpmetadata)) {
+					throw new Error('invalid node list at FieldArgument::metadata');
+				}
+				n.metadata.push(tmpmetadata);
+			}
 			break;
 		}
 		case "binary": {
@@ -4591,6 +4630,24 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			if (n.sub_byte_begin !== null) {
 				const result = fn(fn,n.sub_byte_begin);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.peek !== null) {
+				const result = fn(fn,n.peek);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.type_map !== null) {
+				const result = fn(fn,n.type_map);
+				if (result === false) {
+					return;
+				}
+			}
+			for (const e of n.metadata) {
+				const result = fn(fn,e);
 				if (result === false) {
 					return;
 				}

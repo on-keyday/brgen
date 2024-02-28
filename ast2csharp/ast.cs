@@ -258,6 +258,10 @@ public class FieldArgument : Node{
 	public ulong? AlignmentValue{get;set;}
 	public Expr? SubByteLength{get;set;}
 	public Expr? SubByteBegin{get;set;}
+	public Expr? Peek{get;set;}
+	public ulong? PeekValue{get;set;}
+	public TypeLiteral? TypeMap{get;set;}
+	public List<Metadata>? Metadata{get;set;}
 }
 public class Binary : Expr{
 	public Loc Loc{get;set;}
@@ -1054,6 +1058,10 @@ public static class Ast {
                node.AlignmentValue = ast.Node[i].Body[alignment_value];
                node.SubByteLength = ast.Node[i].Body[sub_byte_length];
                node.SubByteBegin = ast.Node[i].Body[sub_byte_begin];
+               node.Peek = ast.Node[i].Body[peek];
+               node.PeekValue = ast.Node[i].Body[peek_value];
+               node.TypeMap = ast.Node[i].Body[type_map];
+               node.Metadata = ast.Node[i].Body[metadata];
            case NodeType.Binary:
                var node = nodes[i] as Binary;
                node.Loc = ast.Node[i].Body[loc];

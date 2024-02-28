@@ -3107,6 +3107,10 @@ pub struct FieldArgument {
 	pub alignment_value: Option<u64>,
 	pub sub_byte_length: Option<Expr>,
 	pub sub_byte_begin: Option<Expr>,
+	pub peek: Option<Expr>,
+	pub peek_value: Option<u64>,
+	pub type_map: Option<Rc<RefCell<TypeLiteral>>>,
+	pub metadata: Vec<Rc<RefCell<Metadata>>>,
 }
 
 impl TryFrom<&Node> for Rc<RefCell<FieldArgument>> {
@@ -7995,6 +7999,10 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				alignment_value: None,
 				sub_byte_length: None,
 				sub_byte_begin: None,
+				peek: None,
+				peek_value: None,
+				type_map: None,
+				metadata: Vec::new(),
 				})))
 			},
 			NodeType::Binary => {
@@ -8862,6 +8870,74 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						None => return Err(Error::IndexOutOfBounds(sub_byte_begin_body as usize)),
 					};
 					node.borrow_mut().sub_byte_begin = Some(sub_byte_begin_body.try_into()?);
+				}
+				let peek_body = match raw_node.body.get("peek") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"peek")),
+				};
+ 				if !peek_body.is_null() {
+					let peek_body = match peek_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(peek_body.into(),JSONType::Number)),
+					};
+					let peek_body = match nodes.get(peek_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(peek_body as usize)),
+					};
+					node.borrow_mut().peek = Some(peek_body.try_into()?);
+				}
+				let peek_value_body = match raw_node.body.get("peek_value") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"peek_value")),
+				};
+				node.borrow_mut().peek_value = match peek_value_body.as_u64() {
+					Some(v)=>Some(v),
+					None=> match peek_value_body.is_null() {
+						true=>None,
+						false=>return Err(Error::MismatchJSONType(peek_value_body.into(),JSONType::Number)),
+					},
+				};
+				let type_map_body = match raw_node.body.get("type_map") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"type_map")),
+				};
+ 				if !type_map_body.is_null() {
+					let type_map_body = match type_map_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(type_map_body.into(),JSONType::Number)),
+					};
+					let type_map_body = match nodes.get(type_map_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(type_map_body as usize)),
+					};
+					let type_map_body = match type_map_body {
+						Node::TypeLiteral(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),type_map_body.into())),
+					};
+					node.borrow_mut().type_map = Some(type_map_body.clone());
+				}
+				let metadata_body = match raw_node.body.get("metadata") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"metadata")),
+				};
+				let metadata_body = match metadata_body.as_array(){
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(metadata_body.into(),JSONType::Array)),
+				};
+				for link in metadata_body {
+					let link = match link.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
+					};
+					let metadata_body = match nodes.get(link as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(link as usize)),
+					};
+					let metadata_body = match metadata_body {
+						Node::Metadata(body)=>body,
+						x =>return Err(Error::MismatchNodeType(x.into(),metadata_body.into())),
+					};
+					node.borrow_mut().metadata.push(metadata_body.clone());
 				}
 			},
 			NodeType::Binary => {
@@ -13566,6 +13642,21 @@ where
 				}
 			}
 			if let Some(node) = &node.borrow().sub_byte_begin{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
+			if let Some(node) = &node.borrow().peek{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
+			if let Some(node) = &node.borrow().type_map{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
+			for node in &node.borrow().metadata{
 				if !f.visit(&node.into()){
 					return;
 				}
