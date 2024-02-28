@@ -29,6 +29,9 @@ namespace brgen::middle {
                 else if (name == "input.remain") {
                     method = ast::IOMethod::input_remain;
                 }
+                else if (name == "input.bit_offset") {
+                    method = ast::IOMethod::input_bit_offset;
+                }
                 else if (name == "config.endian.big") {
                     method = ast::IOMethod::config_endian_big;
                 }
