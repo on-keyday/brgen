@@ -388,6 +388,16 @@ namespace brgen::ast::tool {
             if (auto ch = ast::as<ast::CharLiteral>(expr)) {
                 return make_result<EResultType::integer>(ch->code);
             }
+            if (auto io_op = ast::as<ast::IOOperation>(expr)) {
+                if (io_op->method == ast::IOMethod::config_endian_big ||
+                    io_op->method == ast::IOMethod::config_bit_order_msb) {
+                    return make_result<EResultType::boolean>(false);
+                }
+                if (io_op->method == ast::IOMethod::config_endian_little ||
+                    io_op->method == ast::IOMethod::config_bit_order_lsb) {
+                    return make_result<EResultType::boolean>(true);
+                }
+            }
             return unexpect(LocError{expr->loc, "not supported"});
         }
 

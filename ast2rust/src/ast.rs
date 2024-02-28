@@ -708,8 +708,9 @@ impl TryFrom<&str> for SpecialLiteralKind {
 #[derive(Debug,Clone,Copy,Serialize,Deserialize)]
 #[serde(rename_all = "snake_case")]pub enum OrderType {
 	Byte,
-	BitInput,
+	BitStream,
 	BitMapping,
+	BitBoth,
 }
 
 impl TryFrom<&str> for OrderType {
@@ -717,8 +718,9 @@ impl TryFrom<&str> for OrderType {
 	fn try_from(s:&str)->Result<Self,()>{
 		match s{
 			"byte" =>Ok(Self::Byte),
-			"bit_input" =>Ok(Self::BitInput),
+			"bit_stream" =>Ok(Self::BitStream),
 			"bit_mapping" =>Ok(Self::BitMapping),
+			"bit_both" =>Ok(Self::BitBoth),
 			_=> Err(()),
 		}
 	}

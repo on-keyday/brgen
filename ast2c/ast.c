@@ -1049,8 +1049,9 @@ int ast2c_SpecialLiteralKind_from_string(const char* str, ast2c_SpecialLiteralKi
 const char* ast2c_OrderType_to_string(ast2c_OrderType val) {
 	switch(val) {
 	case AST2C_ORDERTYPE_BYTE: return "byte";
-	case AST2C_ORDERTYPE_BIT_INPUT: return "bit_input";
+	case AST2C_ORDERTYPE_BIT_STREAM: return "bit_stream";
 	case AST2C_ORDERTYPE_BIT_MAPPING: return "bit_mapping";
+	case AST2C_ORDERTYPE_BIT_BOTH: return "bit_both";
 	default: return NULL;
 	}
 }
@@ -1062,12 +1063,16 @@ int ast2c_OrderType_from_string(const char* str, ast2c_OrderType* out) {
 		*out = AST2C_ORDERTYPE_BYTE;
 		return 1;
 	}
-	if (strcmp(str, "bit_input") == 0) {
-		*out = AST2C_ORDERTYPE_BIT_INPUT;
+	if (strcmp(str, "bit_stream") == 0) {
+		*out = AST2C_ORDERTYPE_BIT_STREAM;
 		return 1;
 	}
 	if (strcmp(str, "bit_mapping") == 0) {
 		*out = AST2C_ORDERTYPE_BIT_MAPPING;
+		return 1;
+	}
+	if (strcmp(str, "bit_both") == 0) {
+		*out = AST2C_ORDERTYPE_BIT_BOTH;
 		return 1;
 	}
 	return 0;

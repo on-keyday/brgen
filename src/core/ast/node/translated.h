@@ -128,7 +128,7 @@ namespace brgen::ast {
         std::optional<size_t> order_value;
 
         SpecifyOrder(std::shared_ptr<Binary>&& a, std::shared_ptr<Expr>&& b, OrderType order_type)
-            : Expr(a->loc, NodeType::specify_order), base(std::move(a)), order(std::move(b)) {}
+            : Expr(a->loc, NodeType::specify_order), base(std::move(a)), order(std::move(b)), order_type(order_type) {}
 
         SpecifyOrder()
             : Expr({}, NodeType::specify_order) {}

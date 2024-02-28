@@ -33,6 +33,21 @@ const makeHover = (ident :string,role :string) => {
     } as const;
 }
 
+const mapOrderToString = (typ :ast2ts.OrderType,val  :number|null|undefined) => {
+    if(val === undefined) {
+        return "unknown";
+    }
+    if(val === null) {
+        return "dynamic";
+    }
+    switch(typ) {
+        case ast2ts.OrderType.byte:
+            return `${val === 0? "big" : val === 1 ? "little" : "platform depended"} endian(${val})`;
+        default: // bit order
+            return `${val === 0? "msb" : val === 1 ? "lsb" : "platform depended"} first(${val})`;
+    }
+}
+
 export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
     let found :any;
     ast2ts.walk(prevNode,(f,node)=>{
@@ -80,6 +95,11 @@ export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
                 return;
             }
             else if(ast2ts.isIf(node)) {
+                console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
+                found = node;
+                return;
+            }
+            else if(ast2ts.isSpecifyOrder(node)) {
                 console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
                 found = node;
                 return;
@@ -218,6 +238,9 @@ export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
     }
     else if(ast2ts.isMetadata(found)){
         return makeHover("metadata",`metadata (name: ${found.name} value count: ${found.values.length})`);
+    }
+    else if(ast2ts.isSpecifyOrder(found)){
+        return makeHover("specify_order",`specify_order (order_type: ${found.order_type}, order: ${mapOrderToString(found.order_type,found.order_value)})`);
     }
     return null;
 }

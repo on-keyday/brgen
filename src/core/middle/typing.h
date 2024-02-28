@@ -1234,7 +1234,7 @@ namespace brgen::middle {
             b->constant_level = b->order->constant_level;
             ast::tool::Evaluator eval;
             eval.ident_mode = ast::tool::EvalIdentMode::resolve_ident;
-            if (auto val = eval.eval_as<ast::tool::EResultType::integer>(b->order)) {
+            if (auto val = eval.eval(b->order)) {
                 // case 1 or 2
                 if (val->type() == ast::tool::EResultType::integer) {
                     b->order_value = val->get<ast::tool::EResultType::integer>();
