@@ -219,7 +219,8 @@ class SpecialLiteralKind(PyEnum):
 
 class OrderType(PyEnum):
     BYTE = "byte"
-    BIT = "bit"
+    BIT_INPUT = "bit_input"
+    BIT_MAPPING = "bit_mapping"
 
 
 class Node:

@@ -207,7 +207,8 @@ Config,
 }
 public enum OrderType {
 Byte,
-Bit,
+BitInput,
+BitMapping,
 }
 public interface Node {
 	public Loc Loc {get; set;}

@@ -1438,16 +1438,19 @@ func (n *SpecialLiteralKind) UnmarshalJSON(data []byte) error {
 type OrderType int
 
 const (
-	OrderTypeByte OrderType = 0
-	OrderTypeBit  OrderType = 1
+	OrderTypeByte       OrderType = 0
+	OrderTypeBitInput   OrderType = 1
+	OrderTypeBitMapping OrderType = 2
 )
 
 func (n OrderType) String() string {
 	switch n {
 	case OrderTypeByte:
 		return "byte"
-	case OrderTypeBit:
-		return "bit"
+	case OrderTypeBitInput:
+		return "bit_input"
+	case OrderTypeBitMapping:
+		return "bit_mapping"
 	default:
 		return fmt.Sprintf("OrderType(%d)", n)
 	}
@@ -1461,8 +1464,10 @@ func (n *OrderType) UnmarshalJSON(data []byte) error {
 	switch tmp {
 	case "byte":
 		*n = OrderTypeByte
-	case "bit":
-		*n = OrderTypeBit
+	case "bit_input":
+		*n = OrderTypeBitInput
+	case "bit_mapping":
+		*n = OrderTypeBitMapping
 	default:
 		return fmt.Errorf("unknown OrderType: %q", tmp)
 	}

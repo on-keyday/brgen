@@ -188,11 +188,12 @@ export function isSpecialLiteralKind(obj: any): obj is SpecialLiteralKind {
 
 export const enum OrderType {
 	byte = "byte",
-	bit = "bit",
+	bit_input = "bit_input",
+	bit_mapping = "bit_mapping",
 };
 
 export function isOrderType(obj: any): obj is OrderType {
-	return obj && typeof obj === 'string' && (obj === "byte" || obj === "bit")
+	return obj && typeof obj === 'string' && (obj === "byte" || obj === "bit_input" || obj === "bit_mapping")
 }
 
 export interface Node {

@@ -367,7 +367,8 @@ int ast2c_SpecialLiteralKind_from_string(const char*,ast2c_SpecialLiteralKind*);
 
 enum ast2c_OrderType {
 	AST2C_ORDERTYPE_BYTE,
-	AST2C_ORDERTYPE_BIT,
+	AST2C_ORDERTYPE_BIT_INPUT,
+	AST2C_ORDERTYPE_BIT_MAPPING,
 };
 const char* ast2c_OrderType_to_string(ast2c_OrderType);
 int ast2c_OrderType_from_string(const char*,ast2c_OrderType*);
