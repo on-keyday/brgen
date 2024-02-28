@@ -114,6 +114,9 @@ namespace brgen::ast {
         }
     };
 
+    struct TypeLiteral;
+    struct Metadata;
+
     struct FieldArgument : Node {
         define_node_type(NodeType::field_argument);
         std::shared_ptr<Expr> raw_arguments;
@@ -130,6 +133,11 @@ namespace brgen::ast {
         // is_peek is true if field is peeked
         std::shared_ptr<Expr> peek;
         std::optional<size_t> peek_value;
+        // type literal
+        std::shared_ptr<TypeLiteral> type_map;
+
+        // other metadata
+        std::vector<std::shared_ptr<Metadata>> metadata;
 
         FieldArgument(lexer::Loc l)
             : Node(l, NodeType::field_argument) {}
@@ -147,6 +155,10 @@ namespace brgen::ast {
             sdebugf(alignment_value);
             sdebugf(sub_byte_length);
             sdebugf(sub_byte_begin);
+            sdebugf(peek);
+            sdebugf(peek_value);
+            sdebugf(type_map);
+            sdebugf(metadata);
         }
     };
 

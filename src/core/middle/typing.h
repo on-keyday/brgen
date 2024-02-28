@@ -298,6 +298,7 @@ namespace brgen::middle {
                 if (!check_right_typed()) {
                     return;
                 }
+                int_type_fitting(m->expr_type, right->expr_type);
                 if (!equal_type(m->expr_type, right->expr_type)) {
                     report_not_equal_type(m->loc, m->expr_type, right->expr_type);
                 }
@@ -311,6 +312,7 @@ namespace brgen::middle {
                 if (!check_right_typed()) {
                     return;
                 }
+                int_type_fitting(idx->expr_type, right->expr_type);
                 if (!equal_type(idx->expr_type, right->expr_type)) {
                     report_not_equal_type(idx->loc, idx->expr_type, right->expr_type);
                 }
@@ -1479,6 +1481,15 @@ namespace brgen::middle {
                     ast::as<ast::MemberAccess>(ast::as<ast::Binary>(arg)->left)->member->usage = ast::IdentUsage::reference_builtin_fn;
                     continue;
                 }
+                if (conf->name == "input.type") {
+                    typing_expr(conf->arguments[0]);
+                    if (!ast::as<ast::TypeLiteral>(conf->arguments[0])) {
+                        error(conf->arguments[0]->loc, "expect type literal but not").error(conf->arguments[0]->loc, "type is ", ast::node_type_to_string(conf->arguments[0]->node_type)).report();
+                    }
+                    args->type_map = ast::cast_to<ast::TypeLiteral>(conf->arguments[0]);
+                    ast::as<ast::MemberAccess>(ast::as<ast::Binary>(arg)->left)->member->usage = ast::IdentUsage::reference_builtin_fn;
+                    continue;
+                }
                 if (conf->name == "input") {
                     auto conf2 = ast::tool::extract_config(conf->arguments[0], ast::tool::ExtractMode::call);
                     if (!conf2) {
@@ -1505,8 +1516,12 @@ namespace brgen::middle {
                         }
                     }
                 }
-                // TODO(on-keyday): support more config, or custom config?
-                // other config will be ignored
+                auto m = std::make_shared<ast::Metadata>(ast::cast_to<ast::Expr>(arg), std::move(conf->name));
+                m->values = conf->arguments;
+                for (auto& v : conf->arguments) {
+                    typing_expr(v);
+                }
+                args->metadata.push_back(std::move(m));
             }
         }
 

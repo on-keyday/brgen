@@ -3,11 +3,17 @@ format LLVMBitCodeFile:
     magic :"BC\x0C\xED"
     input.bit_order = config.bit_order.lsb
 
-format VBRField:
+state VBRState:
+    len :u8
+
+vbr :VBRState
+
+format VBRField: # TODO(on-keyday): make this to generic VBRField
     input.bit_order = config.bit_order.lsb
     input.bit_order.mapping = config.bit_order.lsb    
-    value :u3
+    value :[vbr.len - 1]u1(input.type = u8)
     cont :u1
+
 
 format VBR:
     fields :[]VBRField
@@ -20,9 +26,34 @@ format VBR:
                 break
     
     fn encode():
-        loop i:= u64(i); i< fields.length; i = i+1:
+        loop i:= u64(0); i< fields.length; i = i+1:
             if i == fields.length-1:
                 fields[i].cont = 0
             else:
                 fields[i].cont = 1
-        
+            output.put(fields[i])
+
+fn IdentCodeToChar(code :u6) -> u8:
+    if code < 26:
+        return 'a' + code
+    elif code < 52:
+        return 'A' + code - 26
+    elif code < 62:
+        return '0' + code - 52
+    elif code == 62:
+        return '.'
+    else:
+        return '_'
+
+fn CharToIdentCode(c :u8) -> u6:
+    if c >= 'a' && c <= 'z':
+        return c - 'a'
+    elif c >= 'A' && c <= 'Z':
+        return c - 'A' + 26
+    elif c >= '0' && c <= '9':
+        return c - '0' + 52
+    elif c == '.':
+        return 62
+    elif c== '_':
+        return 63
+    error("Invalid character")
