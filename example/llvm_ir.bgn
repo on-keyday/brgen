@@ -5,7 +5,7 @@ input.bit_order = config.bit_order.lsb
 
 
 format LLVMBitCodeFile:
-    magic :"BC\x0C\xED"
+    magic :"BC\xC0\xDE"
     abbrev.current_abbrev_id_width = 2 # starts with 2
 
 state VBRState:
@@ -98,3 +98,54 @@ format EnterSubBlock:
     new_abbrev_id_width :VBR(vbr.len = 4)
     :[align32()]u1(input.align = 32) # align to 32-bit boundary
     block_size :u32
+
+format UuabbrevRecord:
+    id :AbbrevID(DefinedAbbrevID.UNABBREV_RECORD)
+    code :VBR(vbr.len = 6)
+    num_ops :VBR(vbr.len = 6)
+    ops :[num_ops]VBR(vbr.len = 6)
+
+format EndBlock:
+    id :AbbrevID(DefinedAbbrevID.END_BLOCK)
+    :[align32()]u1(input.align = 32) # align to 32-bit boundary
+
+format DefineAbbrev:
+    id :AbbrevID(DefinedAbbrevID.DEFINE_ABBREV)
+    num_ops :VBR(vbr.len = 5)
+    ops :[num_ops]AbbrevOp
+
+enum Encoding:
+    :u3
+    FIXED = 1
+    VBR = 2
+    ARRAY = 3
+    CHAR6 = 4
+    BLOB = 5
+
+format AbbrevOp:
+    is_literal :u1
+    if is_literal == 1:
+        value :VBR(vbr.len = 8)
+    else:
+        encoding :Encoding
+        if encoding == Encoding.FIXED:
+            width :VBR(vbr.len = 5)
+        elif encoding == Encoding.VBR:
+            width :VBR(vbr.len = 5)
+        elif encoding == Encoding.ARRAY:
+            .. # nothing
+        elif encoding == Encoding.CHAR6:
+            .. # nothing
+        elif encoding == Encoding.BLOB:
+            .. # nothing
+
+format BitCodeWrapper:
+    magic: u32(0x0B17C0DE)
+    version: u32
+    offset :u32
+    size :u32
+    cpu_type :u32
+
+format BlockInfoBlock:
+    id :AbbrevID
+    
