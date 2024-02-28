@@ -117,8 +117,30 @@ enum IOMethod:
     config_bit_order_msb
 
 enum OrderType:
+    # byte order
+    # if input is 0x12345678:
+    #   config.endian.big: 0x12 0x34 0x56 0x78 
+    #   config.endian.little: 0x78 0x56 0x34 0x12
     byte
-    bit
+    # input bit order
+    # if input byte is 0xC0
+    # interpret as bit stream:
+    #   config.bit_order.msb: 1 1 0 0 0 0 0 0 
+    #   config.bit_order.lsb: 0 0 0 0 0 0 1 1 
+    bit_input 
+    # bit mapping order
+    # if input bit stream is 1 1 0 0 0 0 0 0
+    # mapping to byte: 
+    #   config.bit_order.msb: 0xC0 
+    #   config.bit_order.lsb: 0x03
+    # bit_input and bit_mapping is used together
+    # for example if input is 0xC0:
+    #   bit_input             bit_mapping           byte
+    #   config.bit_order.msb, config.bit_order.msb: 0xC0
+    #   config.bit_order.lsb, config.bit_order.lsb: 0xC0
+    #   config.bit_order.msb, config.bit_order.lsb: 0x03
+    #   config.bit_order.lsb, config.bit_order.msb: 0x03
+    bit_mapping 
     
 enum SpecialLiteralKind:
     input_ = "input"

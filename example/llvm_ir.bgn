@@ -1,5 +1,10 @@
 
-format LLVMBitCode:
-    magic :[4]u8
+format LLVMBitCodeFile:
+    magic :"BC\x0C\xED"
     input.bit_order = config.bit_order.lsb
-    
+
+format VBRField:
+    input.bit_order = config.bit_order.lsb
+    value :u3
+    cont :u1
+

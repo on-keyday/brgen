@@ -713,34 +713,39 @@ constexpr const char* enum_type_name<IOMethod>() {
 }
 enum class OrderType {
     byte,
-    bit,
+    bit_input,
+    bit_mapping,
 };
 constexpr const char* to_string(OrderType e) {
     switch(e) {
     case OrderType::byte: return "byte";
-    case OrderType::bit: return "bit";
+    case OrderType::bit_input: return "bit_input";
+    case OrderType::bit_mapping: return "bit_mapping";
     default: return nullptr;
     }
 }
 template<>constexpr std::optional<OrderType> from_string<OrderType>(std::string_view str) {
     if(str.empty()) return std::nullopt;
     if(str == "byte") return OrderType::byte;
-    if(str == "bit") return OrderType::bit;
+    if(str == "bit_input") return OrderType::bit_input;
+    if(str == "bit_mapping") return OrderType::bit_mapping;
     return std::nullopt;
 }
 template<>constexpr size_t enum_elem_count<OrderType>() {
-    return 2;
+    return 3;
 }
-template<>constexpr std::array<std::pair<OrderType,std::string_view>,2> make_enum_array<OrderType>() {
+template<>constexpr std::array<std::pair<OrderType,std::string_view>,3> make_enum_array<OrderType>() {
     return {
         std::pair{OrderType::byte,"byte"},
-        std::pair{OrderType::bit,"bit"},
+        std::pair{OrderType::bit_input,"bit_input"},
+        std::pair{OrderType::bit_mapping,"bit_mapping"},
     };
 }
-template<>constexpr std::array<std::pair<OrderType,std::string_view>,2> make_enum_name_array<OrderType>() {
+template<>constexpr std::array<std::pair<OrderType,std::string_view>,3> make_enum_name_array<OrderType>() {
     return {
         std::pair{OrderType::byte,"byte"},
-        std::pair{OrderType::bit,"bit"},
+        std::pair{OrderType::bit_input,"bit_input"},
+        std::pair{OrderType::bit_mapping,"bit_mapping"},
     };
 }
 constexpr void as_json(OrderType e,auto&& d) {
