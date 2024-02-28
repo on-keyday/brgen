@@ -22,9 +22,14 @@ namespace brgen::vm {
         size_t encode_entry = 0;
         size_t decode_entry = 0;
         std::vector<CastEntry> cast_fn_entry;
+        size_t local_variable_offset = 0;
     };
 
-    struct StateVariable {
+    struct GlobalVariable {
+        size_t offset = 0;
+    };
+
+    struct LocalVariable {
         size_t offset = 0;
     };
 
@@ -33,10 +38,11 @@ namespace brgen::vm {
 
         std::map<std::shared_ptr<ast::Format>, FormatInfo> format_info;
         std::map<std::shared_ptr<ast::Field>, FieldInfo> field_info;
-        std::map<std::shared_ptr<ast::Field>, StateVariable> state_variable_info;
+        std::map<std::shared_ptr<ast::Ident>, GlobalVariable> global_variable_info;
+        std::map<std::shared_ptr<ast::Ident>, LocalVariable> local_variable_info;
 
         bool encode = false;
-        size_t state_variable_offset = 0;
+        size_t global_variable_offset = 0;
 
         size_t op(Op op, std::uint64_t arg = 0) {
             auto pc = code.instructions.size();
@@ -68,47 +74,96 @@ namespace brgen::vm {
             });
         }
 
+        void compile_union_ident_load(ast::UnionType* typ) {
+            auto cond0 = typ->cond.lock();
+            if (cond0) {
+                compile_expr(cond0);
+            }
+            else {
+                op(Op::LOAD_IMMEDIATE, 1);
+            }
+            for (auto& cand : typ->candidates) {
+                auto cond = cand->cond.lock();
+                if (cond) {
+                    compile_expr(cond0);
+                }
+            }
+        }
+
         void compile_expr(const std::shared_ptr<ast::Expr>& expr) {
             if (auto i_lit = ast::as<ast::IntLiteral>(expr)) {
                 op(Op::LOAD_IMMEDIATE, *i_lit->parse_as<std::uint64_t>());
                 return;
             }
-            if (auto str_lit = ast::as<ast::StrLiteral>(expr)) {
+            else if (auto b_lit = ast::as<ast::BoolLiteral>(expr)) {
+                op(Op::LOAD_IMMEDIATE, b_lit->value);
+                return;
+            }
+            else if (auto str_lit = ast::as<ast::StrLiteral>(expr)) {
                 auto index = add_static(Value{str_lit->value});
                 op(Op::LOAD_STATIC, index);
                 return;
             }
-            if (auto b = ast::as<ast::Ident>(expr)) {
+            else if (auto b = ast::as<ast::Ident>(expr)) {
                 auto base = ast::tool::lookup_base(ast::cast_to<ast::Ident>(expr));
                 auto node = base->first->base.lock();
                 if (auto field = ast::as<ast::Field>(node)) {
                     if (field->is_state_variable) {
-                        auto& info = state_variable_info[ast::cast_to<ast::Field>(node)];
+                        auto& info = global_variable_info[field->ident];
                         op(Op::LOAD_IMMEDIATE, info.offset);
-                        op(Op::LOAD_VARIABLE, TransferArg(0, 0));
+                        op(Op::LOAD_GLOBAL_VARIABLE, TransferArg(0, 0));
                     }
                     else {
-                        auto& info = field_info[ast::cast_to<ast::Field>(node)];
-                        op(Op::LOAD_IMMEDIATE, info.offset);
-                        op(Op::GET_FIELD, TransferArg(this_register, 0, 0));
+                        if (auto union_typ = ast::as<ast::UnionType>(field->field_type)) {
+                            compile_union_ident_load(union_typ);
+                        }
+                        else {
+                            auto& info = field_info[ast::cast_to<ast::Field>(node)];
+                            op(Op::LOAD_IMMEDIATE, info.offset);
+                            op(Op::GET_FIELD, TransferArg(this_register, 0, 0));
+                        }
                     }
                     return;
                 }
+                if (auto b = ast::as<ast::Binary>(node)) {
+                    auto base = ast::cast_to<ast::Ident>(b->left);
+                    if (auto found = global_variable_info.find(base); found != global_variable_info.end()) {
+                        auto& info = found->second;
+                        op(Op::LOAD_IMMEDIATE, info.offset);
+                        // registers[0] = global_variables[registers[0]]
+                        op(Op::LOAD_GLOBAL_VARIABLE, TransferArg(0, 0));
+                        return;
+                    }
+                    else if (auto found = local_variable_info.find(base); found != local_variable_info.end()) {
+                        auto& info = found->second;
+                        op(Op::LOAD_IMMEDIATE, info.offset);
+                        // registers[0] = local_variables[registers[0]]
+                        op(Op::LOAD_LOCAL_VARIABLE, TransferArg(0, 0));
+                        return;
+                    }
+                }
             }
-            if (auto a = ast::as<ast::MemberAccess>(expr)) {
-                compile_expr(a->target);
+            else if (auto a = ast::as<ast::MemberAccess>(expr)) {
                 auto base = ast::tool::lookup_base(a->member);
                 auto node = base->first->base.lock();
                 if (auto field = ast::as<ast::Field>(node)) {
-                    auto& info = field_info[ast::cast_to<ast::Field>(node)];
-                    op(Op::TRSF, TransferArg(0, 1));  // register 0 to 1
-                    op(Op::LOAD_IMMEDIATE, info.offset);
-                    // registers[0] = registers[1][registers[0]]
-                    op(Op::GET_FIELD, TransferArg(1, 0, 0));
+                    if (field->is_state_variable) {
+                        auto& info = global_variable_info[field->ident];
+                        op(Op::LOAD_IMMEDIATE, info.offset);
+                        op(Op::LOAD_GLOBAL_VARIABLE, TransferArg(0, 0));
+                    }
+                    else {
+                        compile_expr(a->target);
+                        auto& info = field_info[ast::cast_to<ast::Field>(node)];
+                        op(Op::TRSF, TransferArg(0, 1));  // register 0 to 1
+                        op(Op::LOAD_IMMEDIATE, info.offset);
+                        // registers[0] = registers[0][registers[1]]
+                        op(Op::GET_FIELD, TransferArg(1, 0, 0));
+                    }
                     return;
                 }
             }
-            if (auto io = ast::as<ast::IOOperation>(expr)) {
+            else if (auto io = ast::as<ast::IOOperation>(expr)) {
                 if (io->method == ast::IOMethod::input_offset) {
                     op(Op::GET_INPUT_OFFSET, 0);
                 }
@@ -116,7 +171,10 @@ namespace brgen::vm {
                     op(Op::GET_INPUT_REMAIN, 0);
                 }
             }
-            if (auto b = ast::as<ast::Binary>(expr)) {
+            else if (auto c = ast::as<ast::Cast>(expr)) {
+                compile_expr(c->expr);
+            }
+            else if (auto b = ast::as<ast::Binary>(expr)) {
                 switch (b->op) {
                     case ast::BinaryOp::logical_and: {
                         compile_expr(b->left);
@@ -199,6 +257,11 @@ namespace brgen::vm {
                         break;
                     }
                 }
+            }
+            else {
+                auto index = add_static(Value{futils::view::rvec("error: unknown expression")});
+                op(Op::LOAD_STATIC, index);
+                op(Op::ERROR);
             }
         }
 
@@ -503,6 +566,58 @@ namespace brgen::vm {
                 compile_expr(ret->expr);
                 op(Op::RET);
             }
+            if (auto c = ast::as<ast::Binary>(element); c) {
+                if (c->op == ast::BinaryOp::define_assign ||
+                    c->op == ast::BinaryOp::const_assign) {
+                    auto ident = ast::cast_to<ast::Ident>(c->left);
+                    auto offset = format_info[fmt].local_variable_offset++;
+                    local_variable_info[ident].offset = offset;
+                    op(Op::INIT_LOCAL_VARIABLE, offset);
+                    compile_expr(c->right);
+                    op(Op::TRSF, TransferArg(0, 1));  // register 0 to 1
+                    op(Op::LOAD_IMMEDIATE, offset);
+                    op(Op::STORE_LOCAL_VARIABLE, TransferArg(1, 0));
+                }
+                else {
+                    if (auto member = ast::as<ast::MemberAccess>(c->left)) {
+                        compile_expr(member->target);
+                        auto base = ast::tool::lookup_base(member->member);
+                        auto node = base->first->base.lock();
+                        if (auto field = ast::as<ast::Field>(node)) {
+                            auto& info = field_info[ast::cast_to<ast::Field>(node)];
+                            op(Op::PUSH, 0);  // push register 0 to stack
+                            compile_expr(c->right);
+                            op(Op::TRSF, TransferArg(0, 1));  // register 0 to 1
+                            op(Op::POP, 2);                   // pop stack to register 2
+                            op(Op::LOAD_IMMEDIATE, info.offset);
+                            // registers[2][registers[0]] = registers[1]
+                            op(Op::SET_FIELD, TransferArg(1, 2, 0));
+                            return;
+                        }
+                    }
+                    else {
+                        auto [base, _] = *ast::tool::lookup_base(ast::cast_to<ast::Ident>(c->left));
+                        if (auto found = global_variable_info.find(base); found != global_variable_info.end()) {
+                            auto& info = found->second;
+                            compile_expr(c->right);
+                            op(Op::TRSF, TransferArg(0, 1));  // register 0 to 1
+                            op(Op::LOAD_IMMEDIATE, info.offset);
+                            // global_variables[registers[0]] = registers[1]
+                            op(Op::STORE_GLOBAL_VARIABLE, TransferArg(1, 0));
+                            return;
+                        }
+                        else if (auto found = local_variable_info.find(base); found != local_variable_info.end()) {
+                            auto& info = found->second;
+                            compile_expr(c->right);
+                            op(Op::TRSF, TransferArg(0, 1));  // register 0 to 1
+                            op(Op::LOAD_IMMEDIATE, info.offset);
+                            // local_variables[registers[0]] = registers[1]
+                            op(Op::STORE_LOCAL_VARIABLE, TransferArg(1, 0));
+                            return;
+                        }
+                    }
+                }
+            }
         }
 
         void compile_block(const std::shared_ptr<ast::Format>& fmt, const std::shared_ptr<ast::IndentBlock>& block) {
@@ -579,13 +694,13 @@ namespace brgen::vm {
             }
             for (auto& state_variable : fmt->state_variables) {
                 auto f = state_variable.lock();
-                if (state_variable_info.find(f) == state_variable_info.end()) {
-                    state_variable_info[f].offset = state_variable_offset++;
-                    op(Op::INIT_VARIABLE, state_variable_offset - 1);
+                if (global_variable_info.find(f->ident) == global_variable_info.end()) {
+                    global_variable_info[f->ident].offset = global_variable_offset++;
+                    op(Op::INIT_GLOBAL_VARIABLE, global_variable_offset - 1);
                     compile_init_var(f->field_type);
                     op(Op::TRSF, TransferArg(0, 1));  // register 0 to 1
-                    op(Op::LOAD_IMMEDIATE, state_variable_offset - 1);
-                    op(Op::STORE_VARIABLE, TransferArg(1, 0));
+                    op(Op::LOAD_IMMEDIATE, global_variable_offset - 1);
+                    op(Op::STORE_GLOBAL_VARIABLE, TransferArg(1, 0));
                 }
             }
             for (auto& cast_fn : fmt->cast_fns) {
@@ -603,6 +718,18 @@ namespace brgen::vm {
             for (auto& element : prog->elements) {
                 if (auto fmt = ast::as<ast::Format>(element)) {
                     compile_format(ast::cast_to<ast::Format>(element));
+                }
+                if (auto b = ast::as<ast::Binary>(element);
+                    b &&
+                    (b->op == ast::BinaryOp::define_assign ||
+                     b->op == ast::BinaryOp::const_assign)) {
+                    auto ident = ast::cast_to<ast::Ident>(b->left);
+                    global_variable_info[ident].offset = global_variable_offset++;
+                    op(Op::INIT_GLOBAL_VARIABLE, global_variable_offset - 1);
+                    compile_expr(b->right);
+                    op(Op::TRSF, TransferArg(0, 1));  // register 0 to 1
+                    op(Op::LOAD_IMMEDIATE, global_variable_offset - 1);
+                    op(Op::STORE_GLOBAL_VARIABLE, TransferArg(1, 0));
                 }
             }
         }

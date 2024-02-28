@@ -134,6 +134,7 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
             brgen::vm::print_value(buf, val);
             cout << buf << "\n";
         }
+        return 0;
     }
     std::string buf;
     brgen::vm::print_code(buf, code);

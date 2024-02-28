@@ -258,7 +258,7 @@ namespace brgen::vm {
         std::vector<Value> stack;
         std::vector<CallStack> call_stack;
         std::string error_message;
-        std::vector<Var> variables;
+        std::vector<Var> global_variables;
         friend struct VMHelper;
 
         futils::view::rvec input;
@@ -314,9 +314,6 @@ namespace brgen::vm {
             call_stack.push_back({size_t(it->second), code.instructions.size(), stack.size()});
             size_t pc = it->second;
             execute_internal(code, pc);
-            if (pc != code.instructions.size() && !error_message.empty()) {
-                error_message += " in function " + name;
-            }
         }
 
         constexpr const std::string& error() const {

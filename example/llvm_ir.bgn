@@ -1,0 +1,5 @@
+
+format LLVMBitCode:
+    magic :[4]u8
+    input.bit_order = config.bit_order.lsb
+    

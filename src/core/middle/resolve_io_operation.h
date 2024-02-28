@@ -49,7 +49,8 @@ namespace brgen::middle {
                 }
                 auto ac = ast::as<ast::MemberAccess>(n);
                 ac->member->usage = ast::IdentUsage::reference_builtin_fn;
-                if (method == ast::IOMethod::config_endian_big || method == ast::IOMethod::config_endian_little || method == ast::IOMethod::config_endian_native) {
+                if (method == ast::IOMethod::config_endian_big || method == ast::IOMethod::config_endian_little || method == ast::IOMethod::config_endian_native ||
+                    method == ast::IOMethod::config_bit_order_msb || method == ast::IOMethod::config_bit_order_lsb) {
                     ast::as<ast::MemberAccess>(ac->target)->member->usage = ast::IdentUsage::reference_builtin_fn;
                 }
                 auto a = std::make_shared<ast::IOOperation>(ast::cast_to<ast::Expr>(std::move(n)), method);

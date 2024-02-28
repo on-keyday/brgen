@@ -30,7 +30,12 @@ namespace brgen::vm {
         }
 
         static bool sub(VM& vm, const Instruction& instr) {
-            return arithmetic_op(vm, instr, [](auto a, auto b) { return a - b; });
+            return arithmetic_op(vm, instr, [](auto a, auto b) -> std::optional<std::uint64_t> {
+                if (a < b) {
+                    return std::nullopt;
+                }
+                return a - b;
+            });
         }
 
         static bool mul(VM& vm, const Instruction& instr) {
@@ -102,7 +107,7 @@ namespace brgen::vm {
         }
 
         static bool init_var(VM& vm, const Instruction& instr) {
-            vm.variables.resize(instr.arg() + 1);
+            vm.global_variables.resize(instr.arg() + 1);
             return true;
         }
 
@@ -116,10 +121,10 @@ namespace brgen::vm {
                 return false;
             }
             auto value = vm.registers[arg.from()];
-            if (vm.variables.size() <= *indexOfVar) {
+            if (vm.global_variables.size() <= *indexOfVar) {
                 return false;
             }
-            vm.variables[*indexOfVar].value(std::move(value));
+            vm.global_variables[*indexOfVar].value(std::move(value));
             return true;
         }
 
@@ -132,10 +137,10 @@ namespace brgen::vm {
             if (!indexOfVar) {
                 return false;
             }
-            if (vm.variables.size() <= *indexOfVar) {
+            if (vm.global_variables.size() <= *indexOfVar) {
                 return false;
             }
-            vm.registers[arg.to()] = vm.variables[*indexOfVar].value();
+            vm.registers[arg.to()] = vm.global_variables[*indexOfVar].value();
             return true;
         }
 
@@ -508,6 +513,12 @@ namespace brgen::vm {
                 return false;
             }
             vm.error_message = std::string(data->as_char(), data->size());
+            add_call_stack(vm);
+            pc = program.size();  // terminate the program
+            return true;
+        }
+
+        static void add_call_stack(VM& vm) {
             for (auto it = vm.call_stack.rbegin(); it != vm.call_stack.rend(); it++) {
                 auto found = vm.inverse_functions.find(it->call_target);
                 if (found != vm.inverse_functions.end()) {
@@ -517,8 +528,6 @@ namespace brgen::vm {
                     vm.error_message += " in function ???";
                 }
             }
-            pc = program.size();  // terminate the program
-            return true;
         }
 
         static bool increment(VM& vm, const Instruction& instr) {
@@ -593,6 +602,7 @@ namespace brgen::vm {
     case code: {                                               \
         if (!VMHelper::op(*this __VA_OPT__(, ) __VA_ARGS__)) { \
             error_message = #code " failed";                   \
+            VMHelper::add_call_stack(*this);                   \
             return;                                            \
         }                                                      \
         break;                                                 \
@@ -603,9 +613,11 @@ namespace brgen::vm {
         auto pre_pc = pc;                                      \
         if (!VMHelper::op(*this __VA_OPT__(, ) __VA_ARGS__)) { \
             error_message = #code " failed";                   \
+            VMHelper::add_call_stack(*this);                   \
         }                                                      \
         if (pc == pre_pc) {                                    \
             error_message = #code " is hung up";               \
+            VMHelper::add_call_stack(*this);                   \
             return;                                            \
         }                                                      \
         continue;                                              \
@@ -625,9 +637,9 @@ namespace brgen::vm {
 
                     exec_op(Op::TRSF, transfer, instr);
 
-                    exec_op(Op::INIT_VARIABLE, init_var, instr);
-                    exec_op(Op::LOAD_VARIABLE, load_var, instr);
-                    exec_op(Op::STORE_VARIABLE, store_var, instr);
+                    exec_op(Op::INIT_GLOBAL_VARIABLE, init_var, instr);
+                    exec_op(Op::LOAD_GLOBAL_VARIABLE, load_var, instr);
+                    exec_op(Op::STORE_GLOBAL_VARIABLE, store_var, instr);
                     exec_op(Op::LOAD_STATIC, load_static, instr, static_data);
 
                     exec_op(Op::PUSH, push, instr);

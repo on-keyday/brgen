@@ -45,9 +45,12 @@ enum Op:
     LOAD_STATIC
 
     # variable control
-    INIT_VARIABLE # INIT_VARIABLE <variable index>
-    LOAD_VARIABLE # LOAD_VARIABLE <from variable register number> << 4 | <to register number>
-    STORE_VARIABLE # STORE_VARIABLE <from register number> << 4 | <to variable register number>
+    INIT_GLOBAL_VARIABLE # INIT_VARIABLE <variable index>
+    LOAD_GLOBAL_VARIABLE # LOAD_VARIABLE <from variable register number> << 4 | <to register number>
+    STORE_GLOBAL_VARIABLE # STORE_VARIABLE <from register number> << 4 | <to variable register number>
+    INIT_LOCAL_VARIABLE # INIT_VARIABLE <variable index>
+    LOAD_LOCAL_VARIABLE # LOAD_VARIABLE <from variable register number> << 4 | <to register number>
+    STORE_LOCAL_VARIABLE # STORE_VARIABLE <from register number> << 4 | <to variable register number>
 
     # object control
     MAKE_OBJECT # MAKE_OBJECT <register number>

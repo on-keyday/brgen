@@ -40,6 +40,7 @@ format LongPacketHeader:
    packet_number_length :u2
    qstate.packet_number_length = u8(packet_number_length) + 1
    version :u32
+   qstate.enable_length = false
    dst_conn_id :ConnectionID
    src_conn_id :ConnectionID
    match version:
@@ -70,7 +71,11 @@ format InitialPacketHeader:
    token_length :qvarint.VarInt
    token :[token_length]u8
    length :qvarint.VarInt
-   packet_number :[qstate.packet_number_length]u8
+   if qstate.encrypted:
+      encrypted_payload :[length]u8
+   else:
+      packet_number :[qstate.packet_number_length]u8
+      payload :[length.value - qstate.packet_number_length]u8
 
 format RetryPacket:
    retry_token :[..]u8
@@ -82,7 +87,7 @@ format HandshakePacketHeader:
       encrypted_payload :[length]u8
    else:
       packet_number :[qstate.packet_number_length]u8
-      payload :[length]u8
+      payload :[length.value - qstate.packet_number_length]u8
 
 
 format ZeroRTTPacketHeader:

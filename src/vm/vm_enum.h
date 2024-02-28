@@ -50,9 +50,12 @@ enum class Op {
     TRSF,
     LOAD_IMMEDIATE,
     LOAD_STATIC,
-    INIT_VARIABLE,
-    LOAD_VARIABLE,
-    STORE_VARIABLE,
+    INIT_GLOBAL_VARIABLE,
+    LOAD_GLOBAL_VARIABLE,
+    STORE_GLOBAL_VARIABLE,
+    INIT_LOCAL_VARIABLE,
+    LOAD_LOCAL_VARIABLE,
+    STORE_LOCAL_VARIABLE,
     MAKE_OBJECT,
     SET_FIELD_LABEL,
     SET_FIELD,
@@ -108,9 +111,12 @@ constexpr const char* to_string(Op e) {
     case Op::TRSF: return "TRSF";
     case Op::LOAD_IMMEDIATE: return "LOAD_IMMEDIATE";
     case Op::LOAD_STATIC: return "LOAD_STATIC";
-    case Op::INIT_VARIABLE: return "INIT_VARIABLE";
-    case Op::LOAD_VARIABLE: return "LOAD_VARIABLE";
-    case Op::STORE_VARIABLE: return "STORE_VARIABLE";
+    case Op::INIT_GLOBAL_VARIABLE: return "INIT_GLOBAL_VARIABLE";
+    case Op::LOAD_GLOBAL_VARIABLE: return "LOAD_GLOBAL_VARIABLE";
+    case Op::STORE_GLOBAL_VARIABLE: return "STORE_GLOBAL_VARIABLE";
+    case Op::INIT_LOCAL_VARIABLE: return "INIT_LOCAL_VARIABLE";
+    case Op::LOAD_LOCAL_VARIABLE: return "LOAD_LOCAL_VARIABLE";
+    case Op::STORE_LOCAL_VARIABLE: return "STORE_LOCAL_VARIABLE";
     case Op::MAKE_OBJECT: return "MAKE_OBJECT";
     case Op::SET_FIELD_LABEL: return "SET_FIELD_LABEL";
     case Op::SET_FIELD: return "SET_FIELD";
@@ -168,9 +174,12 @@ template<>constexpr std::optional<Op> from_string<Op>(std::string_view str) {
     if(str == "TRSF") return Op::TRSF;
     if(str == "LOAD_IMMEDIATE") return Op::LOAD_IMMEDIATE;
     if(str == "LOAD_STATIC") return Op::LOAD_STATIC;
-    if(str == "INIT_VARIABLE") return Op::INIT_VARIABLE;
-    if(str == "LOAD_VARIABLE") return Op::LOAD_VARIABLE;
-    if(str == "STORE_VARIABLE") return Op::STORE_VARIABLE;
+    if(str == "INIT_GLOBAL_VARIABLE") return Op::INIT_GLOBAL_VARIABLE;
+    if(str == "LOAD_GLOBAL_VARIABLE") return Op::LOAD_GLOBAL_VARIABLE;
+    if(str == "STORE_GLOBAL_VARIABLE") return Op::STORE_GLOBAL_VARIABLE;
+    if(str == "INIT_LOCAL_VARIABLE") return Op::INIT_LOCAL_VARIABLE;
+    if(str == "LOAD_LOCAL_VARIABLE") return Op::LOAD_LOCAL_VARIABLE;
+    if(str == "STORE_LOCAL_VARIABLE") return Op::STORE_LOCAL_VARIABLE;
     if(str == "MAKE_OBJECT") return Op::MAKE_OBJECT;
     if(str == "SET_FIELD_LABEL") return Op::SET_FIELD_LABEL;
     if(str == "SET_FIELD") return Op::SET_FIELD;
@@ -196,9 +205,9 @@ template<>constexpr std::optional<Op> from_string<Op>(std::string_view str) {
     return std::nullopt;
 }
 template<>constexpr size_t enum_elem_count<Op>() {
-    return 55;
+    return 58;
 }
-template<>constexpr std::array<std::pair<Op,std::string_view>,55> make_enum_array<Op>() {
+template<>constexpr std::array<std::pair<Op,std::string_view>,58> make_enum_array<Op>() {
     return {
         std::pair{Op::NOP,"NOP"},
         std::pair{Op::ADD,"ADD"},
@@ -230,9 +239,12 @@ template<>constexpr std::array<std::pair<Op,std::string_view>,55> make_enum_arra
         std::pair{Op::TRSF,"TRSF"},
         std::pair{Op::LOAD_IMMEDIATE,"LOAD_IMMEDIATE"},
         std::pair{Op::LOAD_STATIC,"LOAD_STATIC"},
-        std::pair{Op::INIT_VARIABLE,"INIT_VARIABLE"},
-        std::pair{Op::LOAD_VARIABLE,"LOAD_VARIABLE"},
-        std::pair{Op::STORE_VARIABLE,"STORE_VARIABLE"},
+        std::pair{Op::INIT_GLOBAL_VARIABLE,"INIT_GLOBAL_VARIABLE"},
+        std::pair{Op::LOAD_GLOBAL_VARIABLE,"LOAD_GLOBAL_VARIABLE"},
+        std::pair{Op::STORE_GLOBAL_VARIABLE,"STORE_GLOBAL_VARIABLE"},
+        std::pair{Op::INIT_LOCAL_VARIABLE,"INIT_LOCAL_VARIABLE"},
+        std::pair{Op::LOAD_LOCAL_VARIABLE,"LOAD_LOCAL_VARIABLE"},
+        std::pair{Op::STORE_LOCAL_VARIABLE,"STORE_LOCAL_VARIABLE"},
         std::pair{Op::MAKE_OBJECT,"MAKE_OBJECT"},
         std::pair{Op::SET_FIELD_LABEL,"SET_FIELD_LABEL"},
         std::pair{Op::SET_FIELD,"SET_FIELD"},
@@ -257,7 +269,7 @@ template<>constexpr std::array<std::pair<Op,std::string_view>,55> make_enum_arra
         std::pair{Op::FUNC_END,"FUNC_END"},
     };
 }
-template<>constexpr std::array<std::pair<Op,std::string_view>,55> make_enum_name_array<Op>() {
+template<>constexpr std::array<std::pair<Op,std::string_view>,58> make_enum_name_array<Op>() {
     return {
         std::pair{Op::NOP,"NOP"},
         std::pair{Op::ADD,"ADD"},
@@ -289,9 +301,12 @@ template<>constexpr std::array<std::pair<Op,std::string_view>,55> make_enum_name
         std::pair{Op::TRSF,"TRSF"},
         std::pair{Op::LOAD_IMMEDIATE,"LOAD_IMMEDIATE"},
         std::pair{Op::LOAD_STATIC,"LOAD_STATIC"},
-        std::pair{Op::INIT_VARIABLE,"INIT_VARIABLE"},
-        std::pair{Op::LOAD_VARIABLE,"LOAD_VARIABLE"},
-        std::pair{Op::STORE_VARIABLE,"STORE_VARIABLE"},
+        std::pair{Op::INIT_GLOBAL_VARIABLE,"INIT_GLOBAL_VARIABLE"},
+        std::pair{Op::LOAD_GLOBAL_VARIABLE,"LOAD_GLOBAL_VARIABLE"},
+        std::pair{Op::STORE_GLOBAL_VARIABLE,"STORE_GLOBAL_VARIABLE"},
+        std::pair{Op::INIT_LOCAL_VARIABLE,"INIT_LOCAL_VARIABLE"},
+        std::pair{Op::LOAD_LOCAL_VARIABLE,"LOAD_LOCAL_VARIABLE"},
+        std::pair{Op::STORE_LOCAL_VARIABLE,"STORE_LOCAL_VARIABLE"},
         std::pair{Op::MAKE_OBJECT,"MAKE_OBJECT"},
         std::pair{Op::SET_FIELD_LABEL,"SET_FIELD_LABEL"},
         std::pair{Op::SET_FIELD,"SET_FIELD"},
