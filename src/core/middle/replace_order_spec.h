@@ -16,18 +16,21 @@ namespace brgen::middle {
                 return;
             }
             if (a->name != "input.endian" && a->name != "input.bit_order" &&
+                a->name != "input.bit_order.stream" &&
                 a->name != "input.bit_order.mapping") {
                 return;
             }
             auto b = ast::cast_to<ast::Binary>(*it);
             ast::as<ast::MemberAccess>(b->left)->member->usage = ast::IdentUsage::reference_builtin_fn;
-            if (a->name == "input.bit_order.mapping") {
+            if (a->name == "input.bit_order.mapping" ||
+                a->name == "input.bit_order.stream") {
                 ast::as<ast::MemberAccess>(ast::as<ast::MemberAccess>(b->left)->target)->member->usage = ast::IdentUsage::reference_builtin_fn;
             }
             *it = std::make_shared<ast::SpecifyOrder>(std::move(b), std::move(a->arguments[0]),
-                                                      a->name == "input.endian"      ? ast::OrderType::byte
-                                                      : a->name == "input.bit_order" ? ast::OrderType::bit_input
-                                                                                     : ast::OrderType::bit_mapping);
+                                                      a->name == "input.endian"             ? ast::OrderType::byte
+                                                      : a->name == "input.bit_order"        ? ast::OrderType::bit_both
+                                                      : a->name == "input.bit_order.stream" ? ast::OrderType::bit_stream
+                                                                                            : ast::OrderType::bit_mapping);
         };
         auto each_element = [&](ast::node_list& list) {
             for (auto it = list.begin(); it != list.end(); it++) {

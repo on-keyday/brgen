@@ -123,12 +123,12 @@ enum OrderType:
     #   config.endian.big: 0x12 0x34 0x56 0x78 
     #   config.endian.little: 0x78 0x56 0x34 0x12
     byte
-    # input bit order
+    # input stream bit order
     # if input byte is 0xC0
     # interpret as bit stream:
     #   config.bit_order.msb: 1 1 0 0 0 0 0 0 
     #   config.bit_order.lsb: 0 0 0 0 0 0 1 1 
-    bit_input 
+    bit_stream 
     # bit mapping order
     # if input bit stream is 1 1 0 0 0 0 0 0
     # mapping to byte: 
@@ -142,6 +142,8 @@ enum OrderType:
     #   config.bit_order.msb, config.bit_order.lsb: 0x03
     #   config.bit_order.lsb, config.bit_order.msb: 0x03
     bit_mapping 
+    # specify both bit_input and bit_mapping
+    bit_both
     
 enum SpecialLiteralKind:
     input_ = "input"
