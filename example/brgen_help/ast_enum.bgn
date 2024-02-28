@@ -136,7 +136,7 @@ enum OrderType:
     #   config.bit_order.lsb: 0x03
     # bit_input and bit_mapping is used together
     # for example if input is 0xC0:
-    #   bit_input             bit_mapping           byte
+    #   bit_stream             bit_mapping           byte
     #   config.bit_order.msb, config.bit_order.msb: 0xC0
     #   config.bit_order.lsb, config.bit_order.lsb: 0xC0
     #   config.bit_order.msb, config.bit_order.lsb: 0x03

@@ -3,15 +3,12 @@
 input.endian = config.endian.little
 input.bit_order = config.bit_order.lsb
 
-
+config.url = "https://llvm.org/docs/BitCodeFormat.html#variable-width-value"
 format LLVMBitCodeFile:
     magic :"BC\xC0\xDE"
     abbrev.current_abbrev_id_width = 2 # starts with 2
 
-state VBRState:
-    len :u8
 
-vbr :VBRState
 
 state AbbrevState:
     current_abbrev_id_width :u32
@@ -34,11 +31,19 @@ format AbbrevID:
     fn u32() -> u32:
         return value
 
+
+state VBRState:
+    len :u8
+
+vbr :VBRState
+
+# variable bit rate field
+config.url = "https://llvm.org/docs/BitCodeFormat.html#variable-width-value"
 format VBRField: # TODO(on-keyday): make this to generic VBRField
     value :[vbr.len - 1]u1(input.type = u8)
     cont :u1
 
-
+# variable bit rate
 format VBR:
     fields :[]VBRField
 
@@ -82,6 +87,7 @@ fn CharToIdentCode(c :u8) -> u6:
         return 63
     error("Invalid character")
 
+config.url = "https://llvm.org/docs/BitCodeFormat.html#abbreviation-ids"
 enum DefinedAbbrevID:
     END_BLOCK = 0
     ENTER_SUBBLOCK = 1
@@ -109,10 +115,12 @@ format EndBlock:
     id :AbbrevID(DefinedAbbrevID.END_BLOCK)
     :[align32()]u1(input.align = 32) # align to 32-bit boundary
 
+config.url = "https://llvm.org/docs/BitCodeFormat.html#abbreviations"
 format DefineAbbrev:
     id :AbbrevID(DefinedAbbrevID.DEFINE_ABBREV)
     num_ops :VBR(vbr.len = 5)
     ops :[num_ops]AbbrevOp
+
 
 enum Encoding:
     :u3
@@ -122,6 +130,8 @@ enum Encoding:
     CHAR6 = 4
     BLOB = 5
 
+# abbreviation operation
+config.url = "https://llvm.org/docs/BitCodeFormat.html#abbreviations"
 format AbbrevOp:
     is_literal :u1
     if is_literal == 1:
@@ -148,4 +158,3 @@ format BitCodeWrapper:
 
 format BlockInfoBlock:
     id :AbbrevID
-    
