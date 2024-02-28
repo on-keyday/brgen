@@ -19,7 +19,7 @@
             "request": "launch",
             "program": "${workspaceRoot}/tool/src2json",
             "args": [
-                "c:/workspace/shbrgen/brgen/example/vm_test/udp_test.bgn",
+                "c:/workspace/shbrgen/brgen/example/llvm_ir.bgn",
                 //"--check-ast"
             ],
             "stopAtEntry": false,

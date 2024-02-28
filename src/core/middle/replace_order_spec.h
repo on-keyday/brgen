@@ -21,6 +21,9 @@ namespace brgen::middle {
             }
             auto b = ast::cast_to<ast::Binary>(*it);
             ast::as<ast::MemberAccess>(b->left)->member->usage = ast::IdentUsage::reference_builtin_fn;
+            if (a->name == "input.bit_order.mapping") {
+                ast::as<ast::MemberAccess>(ast::as<ast::MemberAccess>(b->left)->target)->member->usage = ast::IdentUsage::reference_builtin_fn;
+            }
             *it = std::make_shared<ast::SpecifyOrder>(std::move(b), std::move(a->arguments[0]),
                                                       a->name == "input.endian"      ? ast::OrderType::byte
                                                       : a->name == "input.bit_order" ? ast::OrderType::bit_input

@@ -165,6 +165,9 @@ namespace brgen::ast {
             auto data = ty->parse_as<std::uint64_t>();
             if (data) {
                 this->bit_size = futils::binary::log2i(*data);
+                if (this->bit_size == 0) {
+                    this->bit_size = 1;  // least 1 bit
+                }
             }
         }
 

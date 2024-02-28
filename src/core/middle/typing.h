@@ -303,6 +303,19 @@ namespace brgen::middle {
                 }
                 return;
             }
+            if (auto idx = ast::as<ast::Index>(b->left)) {
+                if (!idx->expr_type) {
+                    warn_not_typed(idx);
+                    return;  // not typed yet
+                }
+                if (!check_right_typed()) {
+                    return;
+                }
+                if (!equal_type(idx->expr_type, right->expr_type)) {
+                    report_not_equal_type(idx->loc, idx->expr_type, right->expr_type);
+                }
+                return;
+            }
             b->expr_type = void_type(b->loc);
             std::string ident;
             ast::Ident* left_ident = nullptr;
@@ -748,7 +761,8 @@ namespace brgen::middle {
 
         std::optional<std::shared_ptr<ast::Ident>> find_matching_ident(ast::Ident* ident) {
             auto search = [&](std::shared_ptr<ast::Ident>& def) {
-                return ident->ident == def->ident &&
+                return ident != def.get() &&
+                       ident->ident == def->ident &&
                        def->usage != ast::IdentUsage::unknown &&
                        def->usage != ast::IdentUsage::reference &&
                        def->usage != ast::IdentUsage::reference_type &&

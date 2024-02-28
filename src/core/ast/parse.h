@@ -731,6 +731,9 @@ namespace brgen::ast {
             if (expr->node_type == ast::NodeType::ident) {
                 return true;
             }
+            if (expr->node_type == ast::NodeType::index) {
+                return is_finally_ident(static_cast<ast::Index*>(expr)->expr.get());
+            }
             if (expr->node_type == ast::NodeType::member_access) {
                 return is_finally_ident(static_cast<ast::MemberAccess*>(expr)->target.get());
             }
@@ -765,6 +768,12 @@ namespace brgen::ast {
                 }
                 ident->usage = assign->op == ast::BinaryOp::define_assign ? ast::IdentUsage::define_variable : ast::IdentUsage::define_const;
                 ident->base = assign;
+                // rewrite scope information for semantic analysis
+                std::erase_if(ident->scope->objects, [&](auto& i) {
+                    return i.lock() == assign->left;
+                });
+                ident->scope = state.current_scope();
+                ident->scope->push(ast::cast_to<ast::Ident>(assign->left));
                 check_duplicated_def(ident);
             }
             else if (assign->op == ast::BinaryOp::assign) {
