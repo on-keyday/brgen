@@ -945,6 +945,7 @@ const char* ast2c_IoMethod_to_string(ast2c_IoMethod val) {
 	case AST2C_IOMETHOD_INPUT_GET: return "input_get";
 	case AST2C_IOMETHOD_INPUT_BACKWARD: return "input_backward";
 	case AST2C_IOMETHOD_INPUT_OFFSET: return "input_offset";
+	case AST2C_IOMETHOD_INPUT_BIT_OFFSET: return "input_bit_offset";
 	case AST2C_IOMETHOD_INPUT_REMAIN: return "input_remain";
 	case AST2C_IOMETHOD_INPUT_SUBRANGE: return "input_subrange";
 	case AST2C_IOMETHOD_CONFIG_ENDIAN_LITTLE: return "config_endian_little";
@@ -981,6 +982,10 @@ int ast2c_IoMethod_from_string(const char* str, ast2c_IoMethod* out) {
 	}
 	if (strcmp(str, "input_offset") == 0) {
 		*out = AST2C_IOMETHOD_INPUT_OFFSET;
+		return 1;
+	}
+	if (strcmp(str, "input_bit_offset") == 0) {
+		*out = AST2C_IOMETHOD_INPUT_BIT_OFFSET;
 		return 1;
 	}
 	if (strcmp(str, "input_remain") == 0) {

@@ -1316,13 +1316,14 @@ const (
 	IoMethodInputGet           IoMethod = 3
 	IoMethodInputBackward      IoMethod = 4
 	IoMethodInputOffset        IoMethod = 5
-	IoMethodInputRemain        IoMethod = 6
-	IoMethodInputSubrange      IoMethod = 7
-	IoMethodConfigEndianLittle IoMethod = 8
-	IoMethodConfigEndianBig    IoMethod = 9
-	IoMethodConfigEndianNative IoMethod = 10
-	IoMethodConfigBitOrderLsb  IoMethod = 11
-	IoMethodConfigBitOrderMsb  IoMethod = 12
+	IoMethodInputBitOffset     IoMethod = 6
+	IoMethodInputRemain        IoMethod = 7
+	IoMethodInputSubrange      IoMethod = 8
+	IoMethodConfigEndianLittle IoMethod = 9
+	IoMethodConfigEndianBig    IoMethod = 10
+	IoMethodConfigEndianNative IoMethod = 11
+	IoMethodConfigBitOrderLsb  IoMethod = 12
+	IoMethodConfigBitOrderMsb  IoMethod = 13
 )
 
 func (n IoMethod) String() string {
@@ -1339,6 +1340,8 @@ func (n IoMethod) String() string {
 		return "input_backward"
 	case IoMethodInputOffset:
 		return "input_offset"
+	case IoMethodInputBitOffset:
+		return "input_bit_offset"
 	case IoMethodInputRemain:
 		return "input_remain"
 	case IoMethodInputSubrange:
@@ -1376,6 +1379,8 @@ func (n *IoMethod) UnmarshalJSON(data []byte) error {
 		*n = IoMethodInputBackward
 	case "input_offset":
 		*n = IoMethodInputOffset
+	case "input_bit_offset":
+		*n = IoMethodInputBitOffset
 	case "input_remain":
 		*n = IoMethodInputRemain
 	case "input_subrange":

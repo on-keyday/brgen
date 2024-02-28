@@ -1154,6 +1154,7 @@ namespace brgen::middle {
                     break;
                 case ast::IOMethod::input_offset:
                 case ast::IOMethod::input_remain:
+                case ast::IOMethod::input_bit_offset:
                     io->expr_type = std::make_shared<ast::IntType>(io->loc, 64, ast::Endian::unspec, false);
                     io->constant_level = ast::ConstantLevel::immutable_variable;
                     break;
