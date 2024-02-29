@@ -37,3 +37,10 @@ ret = sp.call(
 )
 
 print(ret)
+
+ret = sp.call(
+    ["./tool/gen_ast2dart", "./ast2dart/lib/ast.dart"],
+    executable="./tool/gen_ast2dart.exe",
+)
+
+print(ret)

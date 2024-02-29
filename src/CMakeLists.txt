@@ -96,6 +96,7 @@ add_custom_target(gen_ast2py ALL COMMAND "${GO_COMPILER}" "build" "${CMAKE_GO_FL
 add_custom_target(gen_ast2c ALL COMMAND "${GO_COMPILER}" "build" "${CMAKE_GO_FLAGS}" "-o" "${CMAKE_BINARY_DIR}/tool/gen_ast2c${SUFFIX}" "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2c" DEPENDS "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2c" )
 add_custom_target(gen_ast2csharp ALL COMMAND "${GO_COMPILER}" "build" "${CMAKE_GO_FLAGS}" "-o" "${CMAKE_BINARY_DIR}/tool/gen_ast2csharp${SUFFIX}" "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2csharp" DEPENDS "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2csharp" )
 add_custom_target(gen_ast2mermaid ALL COMMAND "${GO_COMPILER}" "build" "${CMAKE_GO_FLAGS}" "-o" "${CMAKE_BINARY_DIR}/tool/gen_ast2mermaid${SUFFIX}" "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2mermaid" DEPENDS "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2mermaid" )
+add_custom_target(gen_ast2dart ALL COMMAND "${GO_COMPILER}" "build" "${CMAKE_GO_FLAGS}" "-o" "${CMAKE_BINARY_DIR}/tool/gen_ast2dart${SUFFIX}" "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2dart" DEPENDS "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2dart" )
 
 
 if(WIN32)
@@ -209,3 +210,4 @@ install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/gen_ast2py${SUFFIX}" DESTINATION tool
 install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/gen_ast2c${SUFFIX}" DESTINATION tool OPTIONAL)
 install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/gen_ast2csharp${SUFFIX}" DESTINATION tool OPTIONAL)
 install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/gen_ast2mermaid${SUFFIX}" DESTINATION tool OPTIONAL)
+install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/gen_ast2dart${SUFFIX}" DESTINATION tool OPTIONAL)
