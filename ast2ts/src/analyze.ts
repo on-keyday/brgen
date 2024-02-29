@@ -64,6 +64,11 @@ export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
                 found = node;
                 return;
             }
+            else if(ast2ts.isIntLiteral(node)) {
+                console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
+                found = node;
+                return;
+            }
             else if(ast2ts.isStrLiteral(node)) {
                 console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
                 found = node;
@@ -240,7 +245,10 @@ export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
         return makeHover("metadata",`metadata (name: ${found.name} value count: ${found.values.length})`);
     }
     else if(ast2ts.isSpecifyOrder(found)){
-        return makeHover("specify_order",`specify_order (order_type: ${found.order_type}, order: ${mapOrderToString(found.order_type,found.order_value)})`);
+        return makeHover("specify_order",`specify_order (order_type: ${found.order_type} order: ${mapOrderToString(found.order_type,found.order_value)})`);
+    }
+    else if(ast2ts.isIntLiteral(found)){
+        return makeHover("int",`int literal (value: ${found.value} type: ${unwrapType(found.expr_type)} size: ${bitSize(found.expr_type?.bit_size)})`);
     }
     return null;
 }

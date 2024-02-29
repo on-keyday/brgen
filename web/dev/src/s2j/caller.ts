@@ -82,7 +82,7 @@ export const loadWorkers = () => {
     factory.getJSON2RSWorker();
 }
 
-
+loadWorkers();
 
 export const getAST = (id :TraceID,sourceCode :string,options? :AstOption) => {
     const mgr = factory.getSrc2JSONWorker();

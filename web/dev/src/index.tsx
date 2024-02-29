@@ -1,3 +1,4 @@
+import { UIModel,updateTracer, MappingInfo, updateGenerated } from "./generator";
 
 import "../node_modules/destyle.css/destyle.min.css";
 import * as monaco from "monaco-editor";
@@ -14,8 +15,9 @@ import { makeButton, makeLink, makeListBox, setStyle, makeInputList, InputListEl
 import {storage} from "./storage";
 import { FileCandidates, registerFileSelectionCallback } from "./s2j/file_select";
 import { ConfigKey, ElementID } from "./types";
-import { UIModel,updateTracer, MappingInfo, updateGenerated } from "./generator";
 
+//(async () => {
+//await null;
 if(window.MonacoEnvironment === undefined) {
     window.MonacoEnvironment = {
         getWorker: (moduleId, label) => {
@@ -566,3 +568,4 @@ document.getElementById(ElementID.BALL)?.remove();
 document.getElementById(ElementID.BALL_BOUND)?.remove();
 
 console.log(monaco.languages.getLanguages());
+//})();

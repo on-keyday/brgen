@@ -9,9 +9,6 @@ import {storage} from "./storage";
 import {ConfigKey} from "./types";
 //import { compileCpp } from "./compiler-explorer/api";
 
-// first, load workers
-caller.loadWorkers();
-
 export interface UIModel {
     getValue():string;
     setDefault():void;
