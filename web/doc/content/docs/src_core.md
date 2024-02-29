@@ -15,8 +15,6 @@ weight: 1
 
 src/core ディレクトリには brgen(lang)の解析のコアとなる部分が入っている。
 
-TODO(on-keyday): 説明を加える
-
 ```mermaid
 flowchart LR
 core-->ast
@@ -27,6 +25,17 @@ core-->lexer
 core-->middle
 core-->common
 ```
+
+- src/core/ast - brgen の AST の関係のツール
+- node - AST ノードの定義
+  - base.h - Node クラスや Comment 等ベースとなるクラス群
+  - expr.h - 式関係のクラス。Ident はここにある。
+  - literal.h - 式関係の中でリテラル値のクラス。
+  - statement.h -　 loop とか format 等のステートメント。Member 系もここにある。
+  - type.h - 型関係のクラス
+  - scope.h - 識別子のスコープ管理クラスの定義
+
+TODO(on-keyday): 説明を書く...
 
 AST 解析プログラム = tool/src2json は以上を以下のような関係で使っている
 
@@ -55,10 +64,27 @@ tool/src2json-->|ASTの型解析|middle/typing.h/Typingクラス
 ### AST 全般について
 
 現状、AST の大本の定義は src/core/ast/node 内のファイルにある C++構造体の定義群である。
+AST の種類一覧は src/core/ast/node/node_type.h がわかりやすい。
 他の言語の AST は src/core/ast/node_type_list.h にある変換ルールに従って C++構造体の定義から json に変換されたのち、
 src/tool/gen/gen.go のロジックによって読み込まれ、src/tool/gen ディレクトリ内のアプリケーション達によって
 各言語に変換される。json は`tool/src2json --dump-types`コマンドを使用するすることで取得できる。
 なお、AST の全体図は[AST](https://on-keyday.github.io/brgen/doc/docs/ast)ページに存在する。
+
+すべての AST ノードは Node を継承する。
+継承関係については先程のリンクを参照。
+
+brgen(lang)の AST は一旦構文解析フェーズで基本的なノードとしてパースした後、
+意味解析フェーズで必要に応じて別のノードに変換するようになっている。
+src/core/ast/node/translate.h には変換される先のノードが入っているので参考にされたし。
+
+### 未使用要素について
+
+現在存在だけしているが未使用だったり非推奨になっている機能を挙げる
+
+- TmpVar ノード
+- Builtin\*ノード
+- OptionalType ノード
+- GenericType ノード
 
 ### Loc について
 
