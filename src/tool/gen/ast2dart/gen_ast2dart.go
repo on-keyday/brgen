@@ -13,10 +13,11 @@ import (
 func generate(w io.Writer, list *gen.Defs) {
 	g := gen.NewWriter(w)
 	g.Printf("library ast;\n")
+	g.Printf("import 'package:json_annotation/json_annotation.dart';\n")
 
 	writeField := func(f *gen.Field) {
 		typ := f.Type.DartString()
-		g.Printf("%s %s", typ, f.Name)
+		g.Printf("    %s %s", typ, f.Name)
 		if f.Type.IsArray {
 			g.Printf(" = []")
 		} else if f.Type.Name == "String" {
@@ -47,6 +48,7 @@ func generate(w io.Writer, list *gen.Defs) {
 			}
 			g.Printf("}\n")
 		case *gen.Struct:
+			g.Printf("@JsonSerializable()\n")
 			g.Printf("class %s ", v.Name)
 			if len(v.Implements) > 0 {
 				g.Printf("extends %s ", v.Implements[0])
@@ -55,11 +57,13 @@ func generate(w io.Writer, list *gen.Defs) {
 			for _, e := range v.UnCommonFields {
 				writeField(e)
 			}
+			g.Printf("factory %s.fromJson(Map<String, dynamic> json) => _$%sFromJson(json);\n", v.Name, v.Name)
 			g.Printf("}\n")
 		case *gen.Enum:
 			g.Printf("enum %s {\n", v.Name)
 			for _, e := range v.Values {
 				e.Name = strcase.ToCamel(e.Name)
+				g.Printf("@JsonValue('%s')\n", e.Value)
 				g.Printf("%s,\n", e.Name)
 			}
 			g.Printf("}\n")
