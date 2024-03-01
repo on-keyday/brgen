@@ -14,3 +14,4 @@ format Test2:
     v2 :varint.VarInt
     v3 :varint.VarInt
     v4 :varint.VarInt
+    input.remain == 0

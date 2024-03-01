@@ -271,7 +271,8 @@ namespace brgen::vm {
                     if (r.empty()) {
                         return false;
                     }
-                    data |= std::uint8_t(*ByteToBit{r.top()}[read_bit_offset]) << i;
+                    data <<= 1;
+                    data |= std::uint8_t(*ByteToBit{r.top()}[read_bit_offset]);
                     read_bit_offset++;
                     if (read_bit_offset == 8) {
                         read_bit_offset = 0;
