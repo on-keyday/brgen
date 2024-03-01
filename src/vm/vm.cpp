@@ -730,6 +730,9 @@ namespace brgen::vm {
             pb.push_back('{');
             bool first = true;
             for (const auto& v : *pval) {
+                if (v.label() == "" && v.value().as_uint64() == 0) {
+                    continue;
+                }
                 if (!first) {
                     futils::strutil::append(pb, ", ");
                 }

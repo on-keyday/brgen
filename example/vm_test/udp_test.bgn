@@ -1,9 +1,16 @@
 
 udp ::= config.import("../udp.bgn")
 quic ::= config.import("../quic_packet.bgn")
+varint ::= config.import("../quic_varint.bgn")
 
 format Test:
     quic.qstate.encrypted = true
     # UDP Header (rfc 768)
     udpHeader :udp.UDPHeader
     quicPacket :quic.QUICPackets(input = input.subrange(udpHeader.length - 8))
+
+format Test2:
+    v1 :varint.VarInt
+    v2 :varint.VarInt
+    v3 :varint.VarInt
+    v4 :varint.VarInt

@@ -259,7 +259,7 @@ namespace brgen::vm {
                 }
             }
             else {
-                auto index = add_static(Value{futils::view::rvec("error: unknown expression")});
+                auto index = add_static(Value{std::string("unknown expression: ") + ast::node_type_to_string(expr->node_type)});
                 op(Op::LOAD_STATIC, index);
                 op(Op::ERROR);
             }
@@ -722,7 +722,8 @@ namespace brgen::vm {
                 if (auto b = ast::as<ast::Binary>(element);
                     b &&
                     (b->op == ast::BinaryOp::define_assign ||
-                     b->op == ast::BinaryOp::const_assign)) {
+                     b->op == ast::BinaryOp::const_assign) &&
+                    !ast::as<ast::Import>(b->right)) {
                     auto ident = ast::cast_to<ast::Ident>(b->left);
                     global_variable_info[ident].offset = global_variable_offset++;
                     op(Op::INIT_GLOBAL_VARIABLE, global_variable_offset - 1);
