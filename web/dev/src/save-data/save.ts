@@ -4,10 +4,9 @@ export const save =async (baseUrl :string,sourceCode :string,config :any) => {
         sourceCode,
         config
     });
-    const s= (new Blob([data], {type: 'application/json'})).stream()
     return await fetch(`${baseUrl}/save`,{
         method: 'POST',
-        body: s,
+        body: data,
         headers: {
             'Content-Type': 'application/json'
         }

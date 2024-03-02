@@ -12,6 +12,7 @@ export const enum ElementID {
 
 export const enum ConfigKey {
     COMMON_FILE_NAME ="file_name",
+    COMMON_SAVE_LOCATION = "save_url",
     CPP_SOURCE_MAP = "source_map", 
     CPP_EXPAND_INCLUDE = "expand_include",
     CPP_USE_ERROR = "use_error",

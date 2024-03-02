@@ -1,5 +1,6 @@
 library ast;
-import 'package:json_annotation/json_annotation.dart';enum NodeType {
+import 'package:json_annotation/json_annotation.dart';
+enum NodeType {
 @JsonValue('program')
 Program,
 @JsonValue('comment')

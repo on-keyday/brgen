@@ -15,6 +15,7 @@ import { makeButton, makeLink, makeListBox, setStyle, makeInputList, InputListEl
 import {storage} from "./storage";
 import { FileCandidates, registerFileSelectionCallback } from "./s2j/file_select";
 import { ConfigKey, ElementID } from "./types";
+import { save } from "./save-data/save";
 
 //(async () => {
 //await null;
@@ -345,11 +346,24 @@ const mappingCode = (mappingInfo :MappingInfo[],origin :JobResult,lang :Language
     caches.recoloring = recoloring;
 }
 
+const saveConfig = () => {
+    const URL = commonUI.config.get(storage.getLangMode())?.config.get(ConfigKey.COMMON_SAVE_LOCATION)?.value;
+    if(!URL || typeof URL !== 'string' || URL === "") return;
+    const config = new Map<string,any>();
+    commonUI.config.forEach((value,key) => {
+        value.config.forEach((value,key) => {
+            config.set(key,value.value);
+        });
+    });
+    save(URL,editorUI.editor.getValue(),{langMode: storage.getLangMode(),config});
+}
+
 
 window.addEventListener("keydown",async (e) => {
     if(e.ctrlKey&&e.key==="s"){
         e.preventDefault();
         updateUI();
+        saveConfig();
     }
 });
 
@@ -479,35 +493,56 @@ const fileName :InputListElement = {
     "value": "editor.bgn",
 }
 
+const saveURL :InputListElement = {
+    "type": "text",
+    "value": "",
+}
+
+const setCommon = (m :Map<string,InputListElement>) => {
+    m.set(ConfigKey.COMMON_FILE_NAME,fileName);
+    m.set(ConfigKey.COMMON_SAVE_LOCATION,saveURL);
+}
+
 // language specific config
 {
     const tokenize = new Map<string,InputListElement>();
-    tokenize.set(ConfigKey.COMMON_FILE_NAME,fileName);
+    setCommon(tokenize);
     commonUI.config.set(Language.TOKENIZE,languageSpecificConfig(tokenize,ConfigKey.COMMON_FILE_NAME,(change) => {
         updateUI();
     }));
     const debugAST = new Map<string,InputListElement>();
-    debugAST.set(ConfigKey.COMMON_FILE_NAME,fileName);
+    setCommon(debugAST);
     commonUI.config.set(Language.JSON_DEBUG_AST,languageSpecificConfig(debugAST,ConfigKey.COMMON_FILE_NAME,(change) => {
         updateUI();
     }));
     const cppProto = new Map<string,InputListElement>();
-    cppProto.set(ConfigKey.COMMON_FILE_NAME,fileName);
+    setCommon(cppProto);
     commonUI.config.set(Language.CPP_PROTOTYPE,languageSpecificConfig(cppProto,ConfigKey.COMMON_FILE_NAME,(change) => {
         updateUI();
     }));
+    
+    const ast = new Map<string,InputListElement>();
+    commonUI.config.set(Language.JSON_AST,languageSpecificConfig(ast,ConfigKey.COMMON_FILE_NAME,(change) => {
+        updateUI();
+    }));
+    setCommon(ast);
     const go = new Map<string,InputListElement>();
     go.set(ConfigKey.GO_USE_PUT,{
         "type": "checkbox",
         "value": false,
     });
-    go.set(ConfigKey.COMMON_FILE_NAME,fileName);
+    setCommon(go);
     commonUI.config.set(Language.GO,languageSpecificConfig(go,ConfigKey.COMMON_FILE_NAME,(change) => {
         updateUI();
     }));
-    const ast = new Map<string,InputListElement>();
-    ast.set(ConfigKey.COMMON_FILE_NAME,fileName);
-    commonUI.config.set(Language.JSON_AST,languageSpecificConfig(ast,ConfigKey.COMMON_FILE_NAME,(change) => {
+    const c = new Map<string,InputListElement>();
+    setCommon(c);
+    commonUI.config.set(Language.C,languageSpecificConfig(c,ConfigKey.COMMON_FILE_NAME,(change) => {
+        updateUI();
+    }));
+    const rust = new Map<string,InputListElement>();
+    setCommon(rust);
+    commonUI.config.set(Language.RUST,languageSpecificConfig(rust,ConfigKey.COMMON_FILE_NAME,(change) => {
         updateUI();
     }));
     const cpp = new Map<string,InputListElement>();
@@ -537,7 +572,7 @@ const fileName :InputListElement = {
         "value": false,
     })
     */
-    cpp.set(ConfigKey.COMMON_FILE_NAME,fileName);
+    setCommon(cpp);
     commonUI.config.set(Language.CPP,languageSpecificConfig(cpp,ConfigKey.CPP_SOURCE_MAP,(change) => {
         if(change.name === ConfigKey.CPP_COMPILE_VIA_API) {
             if(change.value) {
