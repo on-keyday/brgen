@@ -6,15 +6,61 @@ the generators that generate encoder/decoder code for parse/create network packe
 
 # 目標(Goal)
 
-- lightweight or no runtime - ランタイムは軽いもしくは無い
 - enough to represent formats - 世の中にあるネットワークプロトコルフォーマットを表現するのに十分な表現力
-- easy to write - 簡単に書ける
+- easy to write and read - 簡単に書ける/読める
 - write once generate any language code - 一回書けば様々な言語で生成
+
+# Design Doc
+
+## このプロダクトの目標
+
+本プロダクトの最終的な目標(大それた野望とも言う)はバイナリフォーマットの仕様書に brgen の定義言語をつけることが常識となることである。
+それによってバイナリフォーマットの仕様書を手に入れたら即コードジェネレーターに生成させることができ、
+そして実際に使用をすることも簡単になるであろう。また、一意に定まる構文によって文章や図表による曖昧さがなくなり、
+より初学者やプログラマーにとって理解しやすいものになるであろう。
+
+もちろん現実的にはバイナリフォーマットを開発した人がそれを扱うためのライブラリを提供しているだったり、速度的な制約等がありこれらのコードジェネレーターでは無理という場合、
+他にも何かしら都合が悪かったりして使えない場合もあるだろう。
+しかし、意味的に曖昧さのない定義書が存在することはそういった手書きで実装する際にも大いに役に立つであろう。
+
+## 設計概要
+
+本プロダクトはコアの部分としてバイナリフォーマット定義言語(brgen(lang)と表記する)のパーサーと
+コードジェネレーターの２つの部分に分けられる。
+brgen(lang)のパーサーは本プロダクトでは C++で書かれており、これが同時に定義言語の文法を決定しているという面がある。
+そしてコードジェネレーターは C++向けを C++で、 Go 向けは Go で、Rust 向けは Rust で書かれつつある。これは、brgen(lang)のパース結果が様々な言語で扱えることを示す PoC 的な意味合いが強く、実際開発する際は、
+かならずしもその言語自身での開発が要求されるわけではない。
+
+## 開発方針
+
+本プロダクトは、まず最小限でいいから動くものを作り、そこから徐々に成長させていくという
+方針で作っている。本リポジトリには多くの書きかけの、しかし一応は動くというコードがかなりの数ある。
+また、brgen のコードジェネレーター自体の実装方針も全部が全部すべての言語仕様を出力できなくても良いという方針を敷いている。
+将来的にはこれらの完成度合いを表す指標を導入したいと考えている。
+
+# Design Document
+
+## Goals of the Product
+
+The ultimate goal of this product (some might call it a lofty ambition) is to make it common practice to include the definition language of `brgen` in binary format specifications. This would enable individuals to obtain a binary format specification and immediately generate code using a code generator. Consequently, using the format would become much simpler. Additionally, having a syntax that is unambiguous would eliminate ambiguities found in textual descriptions and diagrams, making it more accessible to beginners and programmers alike.
+
+Of course, in reality, there may be constraints such as the developers of the binary format providing libraries for handling it, or limitations in terms of speed that make it impossible to use such code generators. However, having a definition document that is unambiguous in meaning would still be immensely helpful even in scenarios where manual implementation is necessary.
+
+## Design Overview
+
+This product can be divided into two core components: the parser for the binary format definition language (`brgen(lang)`) and the code generator.
+
+- The parser for `brgen(lang)` is implemented in C++. It simultaneously determines the grammar of the definition language.
+- The code generator is being developed separately for C++, Go, and Rust. This serves as a proof of concept showing that the parsing results of `brgen(lang)` can be handled in various languages. However, it is not mandatory to develop in the same language as the target language when actually developing.
+
+## Development Approach
+
+The development approach for this product is to create a minimum viable product first and then gradually expand its capabilities. The repository contains many incomplete but somewhat functional pieces of code. Additionally, the implementation strategy for the `brgen` code generator itself does not require it to be able to output all language specifications perfectly. In the future, we aim to introduce metrics to indicate the completeness of these implementations.
 
 # 謝辞
 
 本作品は [SecHack365'23](https://sechack365.nict.go.jp/) の作品として作り始められました。
-成果発表会時点のコードは SecHack365-final タグのコミットです。
+成果発表会時点のコードは SecHack365-final タグのコミットになります。
 
 # Document
 
