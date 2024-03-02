@@ -11,6 +11,11 @@ the generators that generate encoder/decoder code for parse/create network packe
 - easy to write - 簡単に書ける
 - write once generate any language code - 一回書けば様々な言語で生成
 
+# 謝辞
+
+本作品は [SecHack365'23](https://sechack365.nict.go.jp/) の作品として作り始められました。
+成果発表会時点のコードは SecHack365-final タグのコミットです。
+
 # Document
 
 https://on-keyday.github.io/brgen/doc
