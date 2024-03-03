@@ -17,15 +17,13 @@ import { FileCandidates, registerFileSelectionCallback } from "./s2j/file_select
 import { ConfigKey, ElementID } from "./types";
 import { save } from "./save-data/save";
 
-//(async () => {
-//await null;
 if(window.MonacoEnvironment === undefined) {
     window.MonacoEnvironment = {
         getWorker: (moduleId, label) => {
             if (label === 'json') {
                 return new Worker(new URL('../node_modules/monaco-editor/esm/vs/language/json/json.worker',import.meta.url), { type: 'module' });
             }
-            return new Worker(new URL('../node_modules/monaco-editor/esm/vs/editor/editor.worker',import.meta.url), { type: 'module' });
+            throw new Error(`Cannot create worker for label ${label}`);
         },
     }
 }
@@ -603,4 +601,4 @@ document.getElementById(ElementID.BALL)?.remove();
 document.getElementById(ElementID.BALL_BOUND)?.remove();
 
 console.log(monaco.languages.getLanguages());
-//})();
+

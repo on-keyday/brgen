@@ -1367,7 +1367,7 @@ namespace brgen::ast {
         }
 
         /*
-            <fn> ::= fn "cast"? <ident> "(" (<ident> : <type> ("," <ident > <type>)*)? ")" ("->" <type>)? <indent block>
+            <fn> ::= "fn" <ident> "(" (<ident> : <type> ("," <ident > <type>)*)? ")" ("->" <type>)? <indent block>
         */
         std::shared_ptr<Function> parse_fn(lexer::Token&& token) {
             auto fn = std::make_shared<Function>(token.loc);
