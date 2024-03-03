@@ -17,5 +17,5 @@ TODO(on-keyday): ドキュメント整備
 [Overview](https://on-keyday.github.io/brgen/doc/docs/overview)
 [Setup](https://on-keyday.github.io/brgen/doc/docs/setup)
 
-ドキュメントに間違いを見つけた場合や追加したい場合は GitHub Issue で報告するか、修正して PR をしてください。
-PR する場合はブランチ名に`document/`というプリフィックスをつけてください。
+ドキュメントに間違いを見つけた場合や追加したい場合は GitHub Issue で報告するか、修正して Pull Request をしてください。
+PR する場合はブランチ名に`doc/`というプリフィックスをつけてください。

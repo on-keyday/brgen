@@ -158,8 +158,34 @@ see SECURITY.md about security vulnerability report policy.
 
 Issue と同様に受け付けています。
 ただし、マージする場合は作者(リポジトリオーナー)に意図がわかる説明(目的、変更点など)をつけることと CI にパスすることを求めます。
+以下のブランチ命名規則に従っていただけると作者に意図が伝わりやすくなると思います。
+
+- doc/ - ドキュメントへの提案/変更
+- lang/ - 言語仕様/言語パーサーへの提案/変更
+- gen/ - brgen(lang)を入力とするコードジェネレーターへの提案/変更
+- ast/ - AST コードジェネレーターや AST ハンドリングツールへの提案/変更
+- web/ - WebPlayground への提案/変更
+- lsp/ - LSP サーバーへの提案/変更
+- env/ - 開発環境(shell script, GitHub Actions Workflow ファイル,Dockerfile など)への提案/変更
+- tool/ - その他のツール(他言語から brgen 形式にするツールなど)の提案/変更
+- other/ - 以上以外で何かしらの
+
+分類を増やすべきという場合やその他の事項は GitHub Issue で提案してください。
 
 We welcome PR as well as issues. However, if you ask for a PR to be merged, you will need to provide the author (repository owner) with a description of your PR (purpose, changes, etc.) and pass a CI test.
+Following the branch naming conventions below would make it easier for the author to understand the intention:
+
+- doc/ - Proposals/changes to documentation
+- lang/ - Proposals/changes to language specifications/language parsers
+- gen/ - Proposals/changes to code generators taking brgen(lang) as input
+- ast/ - Proposals/changes to AST code generators or AST handling tools
+- web/ - Proposals/changes to WebPlayground
+- lsp/ - Proposals/changes to LSP servers
+- env/ - Proposals/changes to development environment (shell scripts, GitHub Actions Workflow files,Dockerfile, etc.)
+- tool/ - Proposals/changes to other tools (tools to convert from other languages to brgen format, etc.)
+- other/ - Anything else not covered above
+
+If there is a need to add more categories or any other issues, please propose them through GitHub Issue.
 
 # Version Policy
 
