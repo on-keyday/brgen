@@ -51,7 +51,11 @@ weight: 1
 <call> := "(" (<expr> *("," <expr>))? ")"
 <prim> := <int literal> | <bool literal> | <string literal> | <char literal> | <special literal> | <type literal> | <paran> | <if> | <match> | <ident>
 
-<int literal> := +[0-9] | "0x" +([0-9]|[a-f]|[A-F]) | "0b" +[0-1]
+<hex digit> := [0-9]|[a-f]|[A-F]
+<binary digit> := "0" | "1"
+<oct digit> := [0-7]
+<digit> :=[0-9]
+<int literal> := +<digit> | "0x" +<hex digit> | "0b" +<binary digit>
 <bool literal> := "true" | "false"
 <string literal> := "\""  *(<escape sequence> | <any unicode char except '"'>) "\""
 <char literal> := "'" (<escape sequence> | <any unicode char except "'">) "'"
@@ -64,6 +68,7 @@ weight: 1
 
 <ident> := <any unicode characters except control character or characters used for other usage (symbol or keyword)>
 
+<escape sequence> := "\" ( "\"" | "'" |"x" <hex digit> <hex digit> | "n" | "r" | "t" | "u" <hex digit> <hex digit> <hex digit> <hex digit> )
 
 <field> := <ident>? <anonymous field>
 <anonymous field> := ":" <type> <call>?
