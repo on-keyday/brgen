@@ -27,7 +27,7 @@ weight: 1
 <format> := "format" <ident> <indent block>
 <state> := "state" <ident> <indent block>
 <enum> := "enum" <ident> <skip space> ":" <skip space> <line> (<indent> <anonymous field>)? +(<indent> <enum member> <skip line>)
-<enum member> := <ident> ("=" <expr> | <expr> "," <string literal> | <string literal> "," <expr> | <string literal>)?
+<enum member> := <ident> ("=" (<expr> | <expr> "," <string literal> | <string literal> "," <expr> | <string literal>))?
 <fn> := "fn" <ident> <fn parameter> ("->" <type>) <indent block>
 <fn parameter> := "(" (<field> *("," <field>))? ")"
 <return> := "return" <skip space> (<line> | <expr>)
