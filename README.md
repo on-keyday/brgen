@@ -34,9 +34,10 @@ brgen(lang)のパーサーは本プロダクトでは C++で書かれており�
 ## 開発方針
 
 本プロダクトは、まず最小限でいいから動くものを作り、そこから徐々に成長させていくという
-方針で作っている。本リポジトリには多くの書きかけの、しかし一応は動くというコードがかなりの数ある。
+方針で作っている。実際本リポジトリには多くの書きかけの、しかし一応は動くというコードがかなりの数ある。
 また、brgen のコードジェネレーター自体の実装方針も全部が全部すべての言語仕様を出力できなくても良いという方針を敷いている。
 将来的にはこれらの完成度合いを表す指標を導入したいと考えている。
+現段階で CI/CD をしてはいるが、現状ビルド可能かと tool\brgen と入力した際に、[brgen.json](https://github.com/on-keyday/brgen/blob/main/brgen.json)に書いたジェネレーターが動く(動くというのは実行可能であるかであり、仕様通りに動くかではない)ことしか検証していないため、今後より強化していきたい。
 
 # Design Document
 
@@ -56,6 +57,7 @@ This product can be divided into two core components: the parser for the binary 
 ## Development Approach
 
 The development approach for this product is to create a minimum viable product first and then gradually expand its capabilities. The repository contains many incomplete but somewhat functional pieces of code. Additionally, the implementation strategy for the `brgen` code generator itself does not require it to be able to output all language specifications perfectly. In the future, we aim to introduce metrics to indicate the completeness of these implementations.
+At the current stage, while we are implementing CI/CD, we are only verifying whether the project is buildable and whether the generators listed in brgen.json actually run (by "run", I mean they are executable, not necessarily that they function as specified) when the command tool\brgen is input. We haven't yet validated whether they function according to specifications. Therefore, we aim to enhance our CI/CD process in the future.
 
 # 謝辞
 
