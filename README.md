@@ -166,7 +166,7 @@ Issue と同様に受け付けています。
 - ast/ - AST コードジェネレーターや AST ハンドリングツールへの提案/変更
 - web/ - WebPlayground への提案/変更
 - lsp/ - LSP サーバーへの提案/変更
-- env/ - 開発環境(shell script, GitHub Actions Workflow ファイル,dockerfile など)への提案/変更
+- env/ - 開発環境(shell script, GitHub Actions Workflow ファイル,Dockerfile など)への提案/変更
 - tool/ - その他のツール(他言語から brgen 形式にするツールなど)の提案/変更
 - other/ - 以上以外で何かしらの
 
@@ -181,7 +181,7 @@ Following the branch naming conventions below would make it easier for the autho
 - ast/ - Proposals/changes to AST code generators or AST handling tools
 - web/ - Proposals/changes to WebPlayground
 - lsp/ - Proposals/changes to LSP servers
-- env/ - Proposals/changes to development environment (shell scripts, GitHub Actions Workflow files, etc.)
+- env/ - Proposals/changes to development environment (shell scripts, GitHub Actions Workflow files,Dockerfile, etc.)
 - tool/ - Proposals/changes to other tools (tools to convert from other languages to brgen format, etc.)
 - other/ - Anything else not covered above
 
