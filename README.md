@@ -166,7 +166,7 @@ Issue と同様に受け付けています。
 - ast/ - AST コードジェネレーターや AST ハンドリングツールへの提案/変更
 - web/ - WebPlayground への提案/変更
 - lsp/ - LSP サーバーへの提案/変更
-- env/ - 開発環境(shell scriot, GitHub Actions Workflow ファイルなど)への提案/変更
+- env/ - 開発環境(shell script, GitHub Actions Workflow ファイル,dockerfile など)への提案/変更
 - tool/ - その他のツール(他言語から brgen 形式にするツールなど)の提案/変更
 - other/ - 以上以外で何かしらの
 
