@@ -7,44 +7,24 @@ import (
 	"os"
 
 	"github.com/on-keyday/brgen/ast2go/ast"
+	"github.com/on-keyday/brgen/ast2go/gen"
 	"gopkg.in/yaml.v3"
 )
 
-type Type interface {
-	String() string
+func KaitaiExpr(e ast.Expr) string {
+	if i_lit := e.(*ast.IntLiteral); i_lit != nil {
+		return i_lit.Value
+	}
+	if i_lit := e.(*ast.Ident); i_lit != nil {
+		return i_lit.Ident
+	}
+	if b := e.(*ast.Binary); b != nil {
+		return fmt.Sprintf("%s %s %s", KaitaiExpr(b.Left), b.Op.String(), KaitaiExpr(b.Right))
+	}
+	return ""
 }
 
-type Reference string
-
-func (r Reference) String() string {
-	return string(r)
-}
-
-type Case map[string]Type
-
-type SwitchType struct {
-	SwitchOn string `yaml:"switch-on"`
-	Cases    Case   `yaml:"cases"`
-}
-
-type Attribute struct {
-	ID       string `yaml:"id"`
-	Type     Type   `yaml:"type,omitempty"`
-	Repeat   string `yaml:"repeat,omitempty"`
-	Enum     string `yaml:"enum,omitempty"`
-	Size     string `yaml:"size,omitempty"`
-	Contents string `yaml:"contents,omitempty"`
-}
-
-type Meta struct {
-	ID string `yaml:"id"`
-}
-
-type Kaitai struct {
-	Seq []*Attribute `yaml:"seq"`
-}
-
-func IntType(i *ast.IntType) Type {
+func IntType(i *ast.IntType) *string {
 	str := ""
 	if i.IsSigned {
 		str += "s"
@@ -60,87 +40,44 @@ func IntType(i *ast.IntType) Type {
 		str += "be"
 	}
 	str += fmt.Sprintf("%d", *i.BitSize/8)
-	return Reference(str)
+	return &str
+
 }
 
-func GenerateAttribute(s *ast.Format) ([]*Attribute, error) {
-	attr := []*Attribute{}
+func GenerateAttribute(s *ast.Format) ([]Attribute, error) {
+	attr := []Attribute{}
 	members := s.Body.StructType.Fields
 	for _, member := range members {
 		switch f := member.(type) {
 		case *ast.Field:
-			if f.Ident == nil {
-				continue
-			}
-			field := &Attribute{
-				ID: f.Ident.Ident,
+			field := &Attribute{}
+			if f.Ident != nil {
+				field.ID = &f.Ident.Ident
 			}
 			if i_typ, ok := f.FieldType.(*ast.IntType); ok {
-				field.Type = IntType(i_typ)
+				field.Type = &TypeRef{
+					String: IntType(i_typ),
+				}
 			}
 			if arr, ok := f.FieldType.(*ast.ArrayType); ok {
 				if arr.BitSize != nil && *arr.BitSize != 0 {
-					field.Size = fmt.Sprintf("%d", *arr.BitSize/8)
+					val := fmt.Sprintf("%d", *arr.BitSize/8)
+					field.Size.String = &val
 				}
+				rep := KaitaiExpr(arr.Length)
+				field.RepeatExpr.String = &rep
 			}
-			attr = append(attr, field)
+			attr = append(attr, *field)
 		}
 	}
 	return attr, nil
 }
 
-func Generate(root *ast.Program) (*Kaitai, error) {
-	kaitai := &Kaitai{}
-	var rootTypes []*ast.Format
-	refMap := map[*ast.Format]int{}
-	for _, member := range root.StructType.Fields {
-		switch f := member.(type) {
-		case *ast.Format:
-			rootTypes = append(rootTypes, f)
-			refCount := 0
-			for _, member := range f.Body.StructType.Fields {
-				switch f := member.(type) {
-				case *ast.Field:
-					typ := f.FieldType
-					if ident_ty, ok := typ.(*ast.IdentType); ok {
-						typ = ident_ty.Base
-					}
-					if _, ok := typ.(*ast.StructType); ok {
-						refCount++
-					}
-				}
-			}
-			refMap[f] = refCount
-		}
-	}
-	for _, fmt := range rootTypes {
-		for _, member := range fmt.Body.StructType.Fields {
-			switch f := member.(type) {
-			case *ast.Field:
-				typ := f.FieldType
-				if ident_ty, ok := typ.(*ast.IdentType); ok {
-					typ = ident_ty.Base
-				}
-				if struct_ty, ok := typ.(*ast.StructType); ok {
-					refMap[fmt] += refMap[struct_ty.Base.(*ast.Format)] - 1
-				}
-			}
-		}
-	}
-	// max reference
-	var maxRef *ast.Format
-	max := 0
-	for fmt, ref := range refMap {
-		if maxRef == nil {
-			maxRef = fmt
-			max = ref
-		} else if ref > max {
-			max = ref
-			maxRef = fmt
-		}
-	}
+func Generate(root *ast.Program) (*Coordinate, error) {
+	kaitai := &Coordinate{}
+	sorted := gen.TopologicalSortFormat(root)
 	var err error
-	kaitai.Seq, err = GenerateAttribute(maxRef)
+	kaitai.Seq, err = GenerateAttribute(sorted[0])
 	if err != nil {
 		return nil, err
 	}

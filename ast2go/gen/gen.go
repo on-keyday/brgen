@@ -385,7 +385,7 @@ func (g *ExprStringer) GetType(typ ast2go.Type) string {
 	return ""
 }
 
-func TopologicalSortFormat(p *ast2go.Program) *ast2go.Format {
+func TopologicalSortFormat(p *ast2go.Program) []*ast2go.Format {
 	formats := []*ast2go.Format{}
 	ast2go.Walk(p, ast2go.VisitFn(func(v ast2go.Visitor, n ast2go.Node) bool {
 		ast2go.Walk(n, v)
@@ -423,5 +423,5 @@ func TopologicalSortFormat(p *ast2go.Program) *ast2go.Format {
 	for _, f := range formats {
 		visit(f)
 	}
-	return nil
+	return sorted
 }
