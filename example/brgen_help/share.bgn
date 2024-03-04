@@ -1,0 +1,15 @@
+
+format OpenRequest:
+    reserved :u7
+    is_owner :u1
+    share_id :[16]u8
+
+format OpenReply:
+    reserved :u7
+    success :u1
+    if success == 1:
+        share_id :[16]u8
+        client_id :[16]u8
+    else:
+        len :u8
+        message :[len]u8
