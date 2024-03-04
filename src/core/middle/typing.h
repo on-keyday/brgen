@@ -1519,6 +1519,7 @@ namespace brgen::middle {
                     }
                 }
                 auto m = std::make_shared<ast::Metadata>(ast::cast_to<ast::Expr>(arg), std::move(conf->name));
+                ast::tool::marking_builtin(ast::as<ast::Binary>(arg)->left);
                 m->values = conf->arguments;
                 for (auto& v : conf->arguments) {
                     typing_expr(v);

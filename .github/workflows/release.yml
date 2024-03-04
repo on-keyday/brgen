@@ -3,7 +3,8 @@ run-name: Release
 on: push
 
 concurrency:
-  group: "release"
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
   build-linux:
