@@ -88,7 +88,7 @@ namespace brgen::middle {
                 if (conf->arguments[0]->node_type != ast::NodeType::str_literal) {
                     error(conf->loc, "config.import() should take string literal but found ", ast::node_type_to_string(conf->arguments[0]->node_type)).report();
                 }
-                ast::tool::marking_builtin(ast::cast_to<ast::Call>(node)->callee);
+                ast::tool::marking_builtin(ast::as<ast::Call>(node)->callee);
                 auto raw_path = ast::cast_to<ast::StrLiteral>(conf->arguments[0]);
                 auto path = unescape(raw_path->value);
                 if (!path) {
