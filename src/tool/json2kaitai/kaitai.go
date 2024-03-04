@@ -33,6 +33,15 @@ func IntType(i *ast.IntType) *string {
 			str += "u"
 		}
 		str += fmt.Sprintf("%d", *i.BitSize/8)
+		if *i.BitSize != 8 {
+			if i.Endian == ast.EndianBig {
+				str += "be"
+			} else if i.Endian == ast.EndianLittle {
+				str += "le"
+			} else {
+				str += "be"
+			}
+		}
 	} else {
 		str = fmt.Sprintf("b%d", *i.BitSize)
 	}
