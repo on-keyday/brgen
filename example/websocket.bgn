@@ -26,10 +26,8 @@ format Frame:
     len ::= available(ExtendedPayloadLength) ? 
             ExtendedPayloadLength : 
             PayloadLength
-    Payload :[len]u8
+    Payload :[len]u8(config.xor = MaskingKey)
     
-    #if Mask == 1:
-    #    xor(Payload, MaskingKey)
     
 
 
