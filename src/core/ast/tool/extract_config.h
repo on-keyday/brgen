@@ -4,6 +4,19 @@
 
 namespace brgen::ast::tool {
 
+    bool marking_builtin(const std::shared_ptr<ast::Expr>& node) {
+        if (auto memb = ast::as<ast::MemberAccess>(node)) {
+            auto bt = marking_builtin(memb->target);
+            if (bt) {
+                memb->member->usage = ast::IdentUsage::reference_builtin_fn;
+                return true;
+            }
+        }
+        if (auto spc = ast::as<ast::SpecialLiteral>(node)) {
+            return true;
+        }
+        return false;
+    }
     std::string extract_name(auto&& maybe_config, bool allow_ident = false) {
         if (!maybe_config) {
             return "";
