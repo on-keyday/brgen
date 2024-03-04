@@ -26,22 +26,30 @@ func KaitaiExpr(e ast.Expr) string {
 
 func IntType(i *ast.IntType) *string {
 	str := ""
-	if i.IsSigned {
-		str += "s"
+	if i.IsCommonSupported {
+		if i.IsSigned {
+			str += "s"
+		} else {
+			str += "u"
+		}
+		str += fmt.Sprintf("%d", *i.BitSize/8)
 	} else {
-		str += "u"
+		str = fmt.Sprintf("b%d", *i.BitSize)
 	}
-	switch i.Endian {
-	case ast.EndianBig:
-		str += "be"
-	case ast.EndianLittle:
-		str += "le"
-	case ast.EndianUnspec:
-		str += "be"
-	}
-	str += fmt.Sprintf("%d", *i.BitSize/8)
+
 	return &str
 
+}
+
+func FloatType(f *ast.FloatType) *string {
+	str := ""
+	switch *f.BitSize {
+	case 32:
+		str += "f4"
+	case 64:
+		str += "f8"
+	}
+	return &str
 }
 
 func GenerateAttribute(s *ast.Format) ([]Attribute, error) {
@@ -57,6 +65,12 @@ func GenerateAttribute(s *ast.Format) ([]Attribute, error) {
 			if i_typ, ok := f.FieldType.(*ast.IntType); ok {
 				field.Type = &TypeRef{
 					String: IntType(i_typ),
+				}
+
+			}
+			if f_typ, ok := f.FieldType.(*ast.FloatType); ok {
+				field.Type = &TypeRef{
+					String: FloatType(f_typ),
 				}
 			}
 			if arr, ok := f.FieldType.(*ast.ArrayType); ok {
@@ -81,6 +95,7 @@ func Generate(root *ast.Program) (*Coordinate, error) {
 	if err != nil {
 		return nil, err
 	}
+	kaitai.Meta = &Meta{}
 	return kaitai, nil
 }
 
