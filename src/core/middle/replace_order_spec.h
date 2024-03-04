@@ -3,7 +3,6 @@
 #include <core/ast/traverse.h>
 #include <core/common/error.h>
 #include <core/ast/tool/extract_config.h>
-#include <core/ast/tool/extract_config.h>
 
 namespace brgen::middle {
     inline void replace_specify_order(const std::shared_ptr<ast::Node>& node) {

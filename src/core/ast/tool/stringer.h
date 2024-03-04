@@ -60,7 +60,7 @@ namespace brgen::ast::tool {
         }
     }
 
-        struct Stringer {
+    struct Stringer {
         using BinaryFunc = std::function<std::string(Stringer& s, const std::shared_ptr<Binary>& v)>;
         BinaryFunc bin_op_func;
         std::unordered_map<BinaryOp, BinaryFunc> bin_op_map;
