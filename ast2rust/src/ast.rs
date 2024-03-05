@@ -5929,6 +5929,7 @@ pub struct UnionType {
 	pub candidates: Vec<Rc<RefCell<UnionCandidate>>>,
 	pub base_type: Option<Weak<RefCell<StructUnionType>>>,
 	pub common_type: Option<Type>,
+	pub member_candidates: Vec<Rc<RefCell<Field>>>,
 }
 
 impl TryFrom<&Type> for Rc<RefCell<UnionType>> {
@@ -8414,6 +8415,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				candidates: Vec::new(),
 				base_type: None,
 				common_type: None,
+				member_candidates: Vec::new(),
 				})))
 			},
 			NodeType::RangeType => {
@@ -11835,6 +11837,29 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().common_type = Some(common_type_body.try_into()?);
 				}
+				let member_candidates_body = match raw_node.body.get("member_candidates") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"member_candidates")),
+				};
+				let member_candidates_body = match member_candidates_body.as_array(){
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(member_candidates_body.into(),JSONType::Array)),
+				};
+				for link in member_candidates_body {
+					let link = match link.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
+					};
+					let member_candidates_body = match nodes.get(link as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(link as usize)),
+					};
+					let member_candidates_body = match member_candidates_body {
+						Node::Field(body)=>body,
+						x =>return Err(Error::MismatchNodeType(x.into(),member_candidates_body.into())),
+					};
+					node.borrow_mut().member_candidates.push(member_candidates_body.clone());
+				}
 			},
 			NodeType::RangeType => {
 				let node = nodes[i].clone();
@@ -14147,6 +14172,11 @@ where
 				}
 			}
 			if let Some(node) = &node.borrow().common_type{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
+			for node in &node.borrow().member_candidates{
 				if !f.visit(&node.into()){
 					return;
 				}
