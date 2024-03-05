@@ -1092,6 +1092,8 @@ struct ast2c_UnionType {
 	size_t candidates_size;
 	ast2c_StructUnionType* base_type;
 	ast2c_Type* common_type;
+	ast2c_Field** member_candidates;
+	size_t member_candidates_size;
 };
 
 // returns 1 if succeed 0 if failed

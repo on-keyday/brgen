@@ -848,6 +848,7 @@ export interface UnionType extends Type {
 	candidates: UnionCandidate[];
 	base_type: StructUnionType|null;
 	common_type: Type|null;
+	member_candidates: Field[];
 }
 
 export function isUnionType(obj: any): obj is UnionType {
@@ -1764,6 +1765,7 @@ export function parseAST(obj: JsonAst): Program {
 				candidates: [],
 				base_type: null,
 				common_type: null,
+				member_candidates: [],
 			}
 			c.node.push(n);
 			break;
@@ -3677,6 +3679,16 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at UnionType::common_type');
 			}
 			n.common_type = tmpcommon_type;
+			for (const o of on.body.member_candidates) {
+				if (typeof o !== 'number') {
+					throw new Error('invalid node list at UnionType::member_candidates');
+				}
+				const tmpmember_candidates = c.node[o];
+				if (!isField(tmpmember_candidates)) {
+					throw new Error('invalid node list at UnionType::member_candidates');
+				}
+				n.member_candidates.push(tmpmember_candidates);
+			}
 			break;
 		}
 		case "range_type": {
@@ -5436,6 +5448,12 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			if (n.common_type !== null) {
 				const result = fn(fn,n.common_type);
+				if (result === false) {
+					return;
+				}
+			}
+			for (const e of n.member_candidates) {
+				const result = fn(fn,e);
 				if (result === false) {
 					return;
 				}

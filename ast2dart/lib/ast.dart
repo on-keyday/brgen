@@ -728,6 +728,7 @@ class UnionType extends Type {
     List<UnionCandidate>? candidates = [];
     StructUnionType? baseType;
     Type? commonType;
+    List<Field>? memberCandidates = [];
 factory UnionType.fromJson(Map<String, dynamic> json) => _$UnionTypeFromJson(json);
 }
 @JsonSerializable()

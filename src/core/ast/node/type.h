@@ -454,6 +454,7 @@ namespace brgen::ast {
             sdebugf(candidates);
             sdebugf(base_type);
             sdebugf(common_type);
+            sdebugf(member_candidates);
         }
 
         UnionType(lexer::Loc loc)

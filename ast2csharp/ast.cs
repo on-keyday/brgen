@@ -587,6 +587,7 @@ public class UnionType : Type{
 	public List<UnionCandidate>? Candidates{get;set;}
 	public StructUnionType? BaseType{get;set;}
 	public Type? CommonType{get;set;}
+	public List<Field>? MemberCandidates{get;set;}
 }
 public class RangeType : Type{
 	public Loc Loc{get;set;}
@@ -1387,6 +1388,7 @@ public static class Ast {
                node.Candidates = ast.Node[i].Body[candidates];
                node.BaseType = ast.Node[i].Body[base_type];
                node.CommonType = ast.Node[i].Body[common_type];
+               node.MemberCandidates = ast.Node[i].Body[member_candidates];
            case NodeType.RangeType:
                var node = nodes[i] as RangeType;
                node.Loc = ast.Node[i].Body[loc];
