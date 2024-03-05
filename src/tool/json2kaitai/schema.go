@@ -12,26 +12,22 @@ import (
 	"errors"
 )
 
-func UnmarshalCoordinate(data []byte) (Coordinate, error) {
-	var r Coordinate
+func UnmarshalCoordinate(data []byte) (Type, error) {
+	var r Type
 	err := json.Unmarshal(data, &r)
 	return r, err
 }
 
-func (r *Coordinate) Marshal() ([]byte, error) {
+func (r *Type) Marshal() ([]byte, error) {
 	return json.Marshal(r)
 }
 
+type EnumSpec map[string]string
+
 // the schema for ksy files
-type Coordinate struct {
+type Type struct {
 	Doc    *string `json:"doc,omitempty"`
-	DocRef *DocRef `json:"doc-ref"`
-	// allows for the setup of named enums, mappings of integer constants to symbolic names. Can
-	// be used with integer attributes using the enum key.
-	//
-	// would be represented as enum-like construct (or closest equivalent, if target language
-	// doesn't support enums), nested or namespaced in current type/class
-	Enums *EnumsSpec `json:"enums,omitempty"`
+	DocRef *DocRef `json:"doc-ref,omitempty"`
 	// Purpose: description of data that lies outside of normal sequential parsing flow (for
 	// example, that requires seeking somewhere in the file) or just needs to be loaded only by
 	// special request
@@ -49,7 +45,13 @@ type Coordinate struct {
 	// instances element
 	//
 	// would be directly translated into classes
-	Types *TypesSpec `json:"types,omitempty"`
+	Types map[string]Type `json:"types,omitempty"`
+	// allows for the setup of named enums, mappings of integer constants to symbolic names. Can
+	// be used with integer attributes using the enum key.
+	//
+	// would be represented as enum-like construct (or closest equivalent, if target language
+	// doesn't support enums), nested or namespaced in current type/class
+	Enums map[string]EnumSpec `json:"enums,omitempty"`
 }
 
 // allows for the setup of named enums, mappings of integer constants to symbolic names. Can
@@ -69,12 +71,14 @@ type EnumsSpec struct {
 type InstancesSpec struct {
 }
 
+type TypeSpec struct{}
+
 type Meta struct {
 	ID            *Identifier  `json:"id"`
-	Application   *DocRef      `json:"application"`
+	Application   *DocRef      `json:"application,omitempty"`
 	Encoding      *string      `json:"encoding,omitempty"`
-	Endian        *EndianUnion `json:"endian"`
-	FileExtension *DocRef      `json:"file-extension"`
+	Endian        *EndianUnion `json:"endian,omitempty"`
+	FileExtension *DocRef      `json:"file-extension,omitempty"`
 	// list of relative or absolute paths to another `.ksy` files to import (**without** the
 	// `.ksy` extension)
 	//
@@ -87,7 +91,7 @@ type Meta struct {
 	// assume that these types are already provided externally by the environment the classes
 	// are generated for
 	KsOpaqueTypes *bool      `json:"ks-opaque-types,omitempty"`
-	KsVersion     *KsVersion `json:"ks-version"`
+	KsVersion     *KsVersion `json:"ks-version,omitempty"`
 	License       *string    `json:"license,omitempty"`
 	Title         *string    `json:"title,omitempty"`
 	Xref          *Xref      `json:"xref,omitempty"`
@@ -207,9 +211,9 @@ type Attribute struct {
 	// specify fixed contents that the parser should encounter at this point. If the content of
 	// the stream doesn't match the given bytes, an error is thrown and it's meaningless to
 	// continue parsing
-	Contents *Contents `json:"contents"`
+	Contents *Contents `json:"contents,omitempty"`
 	Doc      *string   `json:"doc,omitempty"`
-	DocRef   *DocRef   `json:"doc-ref"`
+	DocRef   *DocRef   `json:"doc-ref,omitempty"`
 	Encoding *string   `json:"encoding,omitempty"`
 	// name of existing enum field data type becomes given enum
 	Enum *string `json:"enum,omitempty"`
@@ -226,7 +230,7 @@ type Attribute struct {
 	ID *string `json:"id,omitempty"`
 	// marks the attribute as optional (attribute is parsed only if the condition specified
 	// evaluates to `true`)
-	If *If `json:"if"`
+	If *If `json:"if,omitempty"`
 	// specifies if terminator byte should be considered part of the string read and thus be
 	// appended to it
 	//
@@ -247,7 +251,7 @@ type Attribute struct {
 	// is only relevant for serialization
 	PadRight *int64 `json:"pad-right,omitempty"`
 	// specifies position at which the value should be parsed
-	Pos *StringOrInteger `json:"pos"`
+	Pos *StringOrInteger `json:"pos,omitempty"`
 	// specifies an algorithm to be applied to the underlying byte buffer of the attribute
 	// before parsing
 	//
@@ -306,17 +310,17 @@ type Attribute struct {
 	// attribute read as array/list/sequence
 	Repeat *Repeat `json:"repeat,omitempty"`
 	// specify number of repetitions for repeated attribute
-	RepeatExpr *StringOrInteger `json:"repeat-expr"`
+	RepeatExpr *StringOrInteger `json:"repeat-expr,omitempty"`
 	// specifies a condition to be checked **after** each parsed item, repeating while the
 	// expression is `false`
 	//
 	// one can use `_` in the expression, which is a special **local** variable that references
 	// the last read element
-	RepeatUntil *If `json:"repeat-until"`
+	RepeatUntil *If `json:"repeat-until,omitempty"`
 	// the number of bytes to read if `type` isn't defined.
 	//
 	// can also be an expression
-	Size *StringOrInteger `json:"size"`
+	Size *StringOrInteger `json:"size,omitempty"`
 	// if `true`, reads all the bytes till the end of the stream
 	//
 	// default is `false`
@@ -335,10 +339,10 @@ type Attribute struct {
 	Type *TypeRef `json:"type"`
 	// overrides any reading & parsing. Instead, just calculates function specified in value and
 	// returns the result as this instance. Has many purposes
-	Value interface{} `json:"value"`
+	Value interface{} `json:"value,omitempty"`
 }
 
-type Type struct {
+type TypeSwitch struct {
 	Cases    TypeCases  `json:"cases"`
 	SwitchOn *AnyScalar `json:"switch-on"`
 }
@@ -436,7 +440,7 @@ type AnyScalar struct {
 	String  *string
 }
 
-func (x *AnyScalar) UnmarshalJSON(data []byte) error {
+func (x *AnyScalar) UnmarshalYAML(data []byte) error {
 	object, err := unmarshalUnion(data, &x.Integer, &x.Double, &x.Bool, &x.String, false, nil, false, nil, false, nil, false, nil, true)
 	if err != nil {
 		return err
@@ -758,12 +762,12 @@ func (x *If) MarshalJSON() ([]byte, error) {
 type TypeRef struct {
 	Bool   *bool
 	String *string
-	Type   *Type
+	Type   *TypeSwitch
 }
 
 func (x *TypeRef) UnmarshalJSON(data []byte) error {
 	x.Type = nil
-	var c Type
+	var c TypeSwitch
 	object, err := unmarshalUnion(data, nil, nil, &x.Bool, &x.String, false, nil, true, &c, false, nil, false, nil, true)
 	if err != nil {
 		return err

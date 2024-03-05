@@ -5,26 +5,31 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 
+	"github.com/iancoleman/strcase"
 	"github.com/on-keyday/brgen/ast2go/ast"
 	"github.com/on-keyday/brgen/ast2go/gen"
-	"gopkg.in/yaml.v3"
+	convert "sigs.k8s.io/yaml"
 )
 
-func KaitaiExpr(e ast.Expr) string {
-	if i_lit := e.(*ast.IntLiteral); i_lit != nil {
-		return i_lit.Value
-	}
-	if i_lit := e.(*ast.Ident); i_lit != nil {
-		return i_lit.Ident
-	}
-	if b := e.(*ast.Binary); b != nil {
-		return fmt.Sprintf("%s %s %s", KaitaiExpr(b.Left), b.Op.String(), KaitaiExpr(b.Right))
+type Generator struct{}
+
+func (g *Generator) KaitaiExpr(e ast.Expr) string {
+	switch v := e.(type) {
+	case *ast.Ident:
+		return v.Ident
+	case *ast.Binary:
+		return fmt.Sprintf("%s %s %s", g.KaitaiExpr(v.Left), v.Op, g.KaitaiExpr(v.Right))
+	case *ast.IntLiteral:
+		return v.Value
+	case *ast.Cast:
+		return g.KaitaiExpr(v.Expr)
 	}
 	return ""
 }
 
-func IntType(i *ast.IntType) *string {
+func (g *Generator) IntType(i *ast.IntType) *string {
 	str := ""
 	if i.IsCommonSupported {
 		if i.IsSigned {
@@ -50,7 +55,7 @@ func IntType(i *ast.IntType) *string {
 
 }
 
-func FloatType(f *ast.FloatType) *string {
+func (g *Generator) FloatType(f *ast.FloatType) *string {
 	str := ""
 	switch *f.BitSize {
 	case 32:
@@ -61,50 +66,103 @@ func FloatType(f *ast.FloatType) *string {
 	return &str
 }
 
-func GenerateAttribute(s *ast.Format) ([]Attribute, error) {
+func (g *Generator) KaitaiType(t ast.Type) *string {
+	switch v := t.(type) {
+	case *ast.IdentType:
+		i, _ := gen.LookupIdent(v.Ident)
+		return &i.Ident
+	case *ast.IntType:
+		return g.IntType(v)
+	case *ast.FloatType:
+		return g.FloatType(v)
+	}
+	return nil
+}
+
+func (g *Generator) GenerateAttribute(c *Type, s *ast.Format) ([]Attribute, error) {
 	attr := []Attribute{}
 	members := s.Body.StructType.Fields
 	for _, member := range members {
 		switch f := member.(type) {
 		case *ast.Field:
-			field := &Attribute{}
-			if f.Ident != nil {
-				field.ID = &f.Ident.Ident
-			}
-			if i_typ, ok := f.FieldType.(*ast.IntType); ok {
-				field.Type = &TypeRef{
-					String: IntType(i_typ),
-				}
+			if u, ok := f.FieldType.(*ast.StructUnionType); ok {
 
 			}
-			if f_typ, ok := f.FieldType.(*ast.FloatType); ok {
+			field := Attribute{}
+			if f.Ident != nil {
+				f.Ident.Ident = strcase.ToSnake(f.Ident.Ident)
+				field.ID = &f.Ident.Ident
+			}
+			typ := f.FieldType
+			if i_typ, ok := typ.(*ast.IdentType); ok {
+				typ = i_typ.Base
+			}
+			if i_typ, ok := typ.(*ast.IntType); ok {
 				field.Type = &TypeRef{
-					String: FloatType(f_typ),
+					String: g.IntType(i_typ),
 				}
 			}
-			if arr, ok := f.FieldType.(*ast.ArrayType); ok {
+			if i_typ, ok := typ.(*ast.EnumType); ok {
+				field.Enum = &i_typ.Base.Ident.Ident
+				field.Type = &TypeRef{
+					String: g.KaitaiType(i_typ.Base.BaseType),
+				}
+			}
+			if f_typ, ok := typ.(*ast.FloatType); ok {
+				field.Type = &TypeRef{
+					String: g.FloatType(f_typ),
+				}
+			}
+			if arr, ok := typ.(*ast.ArrayType); ok {
+				field.Type = &TypeRef{
+					String: g.KaitaiType(arr.ElementType),
+				}
 				if arr.BitSize != nil && *arr.BitSize != 0 {
 					val := fmt.Sprintf("%d", *arr.BitSize/8)
-					field.Size.String = &val
+					field.Size = &StringOrInteger{
+						String: &val,
+					}
 				}
-				rep := KaitaiExpr(arr.Length)
-				field.RepeatExpr.String = &rep
+				rep := g.KaitaiExpr(arr.Length)
+				field.RepeatExpr = &StringOrInteger{
+					String: &rep,
+				}
+				rep2 := Expr
+				field.Repeat = &rep2
 			}
-			attr = append(attr, *field)
+			attr = append(attr, field)
 		}
 	}
 	return attr, nil
 }
 
-func Generate(root *ast.Program) (*Coordinate, error) {
-	kaitai := &Coordinate{}
+func (g *Generator) Generate(id string, root *ast.Program) (*Type, error) {
+	kaitai := &Type{}
+	for _, element := range root.Elements {
+		if enum, ok := element.(*ast.Enum); ok {
+			if kaitai.Enums == nil {
+				kaitai.Enums = map[string]EnumSpec{}
+			}
+			spec := EnumSpec{}
+			enum.Ident.Ident = strcase.ToSnake(enum.Ident.Ident)
+			for _, member := range enum.Members {
+				val := g.KaitaiExpr(member.Value)
+				spec[val] = member.Ident.Ident
+			}
+			kaitai.Enums[enum.Ident.Ident] = spec
+		}
+	}
 	sorted := gen.TopologicalSortFormat(root)
 	var err error
-	kaitai.Seq, err = GenerateAttribute(sorted[0])
+	kaitai.Seq, err = g.GenerateAttribute(kaitai, sorted[0])
 	if err != nil {
 		return nil, err
 	}
-	kaitai.Meta = &Meta{}
+	kaitai.Meta = &Meta{
+		ID: &Identifier{
+			String: &id,
+		},
+	}
 	return kaitai, nil
 }
 
@@ -152,8 +210,10 @@ func main() {
 		os.Exit(1)
 		return
 	}
-
-	src, err := Generate(prog)
+	id := filepath.Base(file.Files[0])
+	id = id[:len(id)-len(filepath.Ext(id))]
+	g := &Generator{}
+	src, err := g.Generate(id, prog)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		if src == nil {
@@ -161,7 +221,15 @@ func main() {
 		}
 	}
 
-	out, err := yaml.Marshal(src)
+	j, err := json.Marshal(src)
+
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+		return
+	}
+
+	out, err := convert.JSONToYAML(j)
 
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)

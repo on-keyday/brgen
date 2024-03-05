@@ -425,3 +425,18 @@ func TopologicalSortFormat(p *ast2go.Program) []*ast2go.Format {
 	}
 	return sorted
 }
+
+func LookupIdent(ident *ast2go.Ident) (*ast2go.Ident, bool /*via member*/) {
+	viaMember := false
+	for ident.Base != nil {
+		if base, ok := ident.Base.(*ast2go.Ident); ok {
+			ident = base
+		} else if id, ok := ident.Base.(*ast2go.MemberAccess); ok {
+			viaMember = true
+			ident = id.Base
+		} else {
+			break
+		}
+	}
+	return ident, viaMember
+}
