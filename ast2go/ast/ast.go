@@ -2605,6 +2605,7 @@ type UnionType struct {
 	Candidates           []*UnionCandidate
 	BaseType             *StructUnionType
 	CommonType           Type
+	MemberCandidates     []*Field
 }
 
 func (n *UnionType) isType() {}
@@ -4452,6 +4453,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				Candidates           []uintptr    `json:"candidates"`
 				BaseType             *uintptr     `json:"base_type"`
 				CommonType           *uintptr     `json:"common_type"`
+				MemberCandidates     []uintptr    `json:"member_candidates"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -4472,6 +4474,10 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			}
 			if tmp.CommonType != nil {
 				v.CommonType = n.node[*tmp.CommonType].(Type)
+			}
+			v.MemberCandidates = make([]*Field, len(tmp.MemberCandidates))
+			for j, k := range tmp.MemberCandidates {
+				v.MemberCandidates[j] = n.node[k].(*Field)
 			}
 		case NodeTypeRangeType:
 			v := n.node[i].(*RangeType)
@@ -5511,6 +5517,11 @@ func Walk(n Node, f Visitor) {
 		}
 		if v.CommonType != nil {
 			if !f.Visit(f, v.CommonType) {
+				return
+			}
+		}
+		for _, w := range v.MemberCandidates {
+			if !f.Visit(f, w) {
 				return
 			}
 		}

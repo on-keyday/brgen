@@ -2674,6 +2674,7 @@ int ast2c_UnionType_parse(ast2c_Ast* ast,ast2c_UnionType* s,ast2c_json_handlers*
 	s->candidates = NULL;
 	s->base_type = NULL;
 	s->common_type = NULL;
+	s->member_candidates = NULL;
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
 	void* non_dynamic_allocation = h->object_get(h, obj_body, "non_dynamic_allocation");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
@@ -2682,6 +2683,7 @@ int ast2c_UnionType_parse(ast2c_Ast* ast,ast2c_UnionType* s,ast2c_json_handlers*
 	void* candidates = h->object_get(h, obj_body, "candidates");
 	void* base_type = h->object_get(h, obj_body, "base_type");
 	void* common_type = h->object_get(h, obj_body, "common_type");
+	void* member_candidates = h->object_get(h, obj_body, "member_candidates");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_UnionType::loc is null"); } return 0; }
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_UnionType::is_explicit is null"); } return 0; }
 	if (!non_dynamic_allocation) { if(h->error) { h->error(h,non_dynamic_allocation, "ast2c_UnionType::non_dynamic_allocation is null"); } return 0; }
@@ -2695,6 +2697,11 @@ int ast2c_UnionType_parse(ast2c_Ast* ast,ast2c_UnionType* s,ast2c_json_handlers*
 	}
 	if (!base_type) { if(h->error) { h->error(h,base_type, "ast2c_UnionType::base_type is null"); } return 0; }
 	if (!common_type) { if(h->error) { h->error(h,common_type, "ast2c_UnionType::common_type is null"); } return 0; }
+	if (!member_candidates) { if(h->error) { h->error(h,member_candidates, "ast2c_UnionType::member_candidates is null"); } return 0; }
+	if(!h->array_size(h, member_candidates,&s->member_candidates_size)) {
+		if(h->error) { h->error(h,member_candidates, "failed to get array size of ast2c_UnionType::member_candidates"); }
+		return NULL;
+	}
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_UnionType::loc"); }
 		goto error;
