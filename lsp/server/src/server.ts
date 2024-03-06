@@ -156,9 +156,6 @@ class DocumentInfo {
 
 let documentInfos = new Map<string,DocumentInfo>();
 
-const stringEscape = (s :string) => {
-    return s.replace(/\\/g,"\\\\").replace(/"/g,"\\\"").replace(/\n/g,"\\n").replace(/\r/g,"\\r");
-}
 
 
 
