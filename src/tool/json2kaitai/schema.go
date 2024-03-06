@@ -38,14 +38,14 @@ type Type struct {
 	Meta      *Meta          `json:"meta,omitempty"`
 	Params    []ParamSpec    `json:"params,omitempty"`
 	// identifier for a primary structure described in top-level map
-	Seq []Attribute `json:"seq,omitempty"`
+	Seq []*Attribute `json:"seq,omitempty"`
 	// maps of strings to user-defined types
 	//
 	// declares types for substructures that can be referenced in the attributes of seq or
 	// instances element
 	//
 	// would be directly translated into classes
-	Types map[string]Type `json:"types,omitempty"`
+	Types map[string]*Type `json:"types,omitempty"`
 	// allows for the setup of named enums, mappings of integer constants to symbolic names. Can
 	// be used with integer attributes using the enum key.
 	//
@@ -343,11 +343,8 @@ type Attribute struct {
 }
 
 type TypeSwitch struct {
-	Cases    TypeCases  `json:"cases"`
-	SwitchOn *AnyScalar `json:"switch-on"`
-}
-
-type TypeCases struct {
+	Cases    map[string]*TypeRef `json:"cases"`
+	SwitchOn *AnyScalar          `json:"switch-on"`
 }
 
 // maps of strings to user-defined types
@@ -762,24 +759,24 @@ func (x *If) MarshalJSON() ([]byte, error) {
 type TypeRef struct {
 	Bool   *bool
 	String *string
-	Type   *TypeSwitch
+	Switch *TypeSwitch
 }
 
 func (x *TypeRef) UnmarshalJSON(data []byte) error {
-	x.Type = nil
+	x.Switch = nil
 	var c TypeSwitch
 	object, err := unmarshalUnion(data, nil, nil, &x.Bool, &x.String, false, nil, true, &c, false, nil, false, nil, true)
 	if err != nil {
 		return err
 	}
 	if object {
-		x.Type = &c
+		x.Switch = &c
 	}
 	return nil
 }
 
 func (x *TypeRef) MarshalJSON() ([]byte, error) {
-	return marshalUnion(nil, nil, x.Bool, x.String, false, nil, x.Type != nil, x.Type, false, nil, false, nil, true)
+	return marshalUnion(nil, nil, x.Bool, x.String, false, nil, x.Switch != nil, x.Switch, false, nil, false, nil, true)
 }
 
 func unmarshalUnion(data []byte, pi **int64, pf **float64, pb **bool, ps **string, haveArray bool, pa interface{}, haveObject bool, pc interface{}, haveMap bool, pm interface{}, haveEnum bool, pe interface{}, nullable bool) (bool, error) {

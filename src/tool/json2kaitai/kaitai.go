@@ -86,14 +86,12 @@ func (g *Generator) KaitaiType(t ast.Type) *string {
 	return nil
 }
 
-func (g *Generator) GenerateAttribute(c *Type, s *ast.Format) ([]Attribute, error) {
-	attr := []Attribute{}
-	members := s.Body.StructType.Fields
+func (g *Generator) GenerateAttribute(c *Type, s *ast.StructType) error {
+	c.Seq = []*Attribute{}
+	members := s.Fields
 	for _, member := range members {
 		switch f := member.(type) {
 		case *ast.Field:
-			if u, ok := f.FieldType.(*ast.StructUnionType); ok {
-			}
 			field := Attribute{}
 			if f.Ident != nil {
 				f.Ident.Ident = strcase.ToSnake(f.Ident.Ident)
@@ -102,6 +100,39 @@ func (g *Generator) GenerateAttribute(c *Type, s *ast.Format) ([]Attribute, erro
 			typ := f.FieldType
 			if i_typ, ok := typ.(*ast.IdentType); ok {
 				typ = i_typ.Base
+			}
+			if u, ok := typ.(*ast.StructUnionType); ok {
+				field.Type = &TypeRef{
+					Switch: &TypeSwitch{
+						Cases: map[string]*TypeRef{},
+					},
+				}
+				if u.Cond != nil {
+					trueExpr := "true"
+					field.Type.Switch.SwitchOn = &AnyScalar{
+						String: &trueExpr,
+					}
+				} else {
+					expr := g.KaitaiExpr(u.Cond)
+					field.Type.Switch.SwitchOn = &AnyScalar{
+						String: &expr,
+					}
+				}
+				for i, s := range u.Structs {
+					seq := g.NextSeq()
+					name := fmt.Sprintf("anonymous%d", seq)
+					newTy := &Type{}
+					c.Types[name] = newTy
+					err := g.GenerateAttribute(newTy, s)
+					if err != nil {
+						return err
+					}
+					expr := g.KaitaiExpr(u.Conds[i])
+					field.Type.Switch.Cases[expr] = &TypeRef{
+						String: g.KaitaiType(s),
+					}
+				}
+				continue
 			}
 			if i_typ, ok := typ.(*ast.IntType); ok {
 				field.Type = &TypeRef{
@@ -136,10 +167,10 @@ func (g *Generator) GenerateAttribute(c *Type, s *ast.Format) ([]Attribute, erro
 				rep2 := Expr
 				field.Repeat = &rep2
 			}
-			attr = append(attr, field)
+			c.Seq = append(c.Seq, &field)
 		}
 	}
-	return attr, nil
+	return nil
 }
 
 func (g *Generator) Generate(id string, root *ast.Program) (*Type, error) {
@@ -159,8 +190,7 @@ func (g *Generator) Generate(id string, root *ast.Program) (*Type, error) {
 		}
 	}
 	sorted := gen.TopologicalSortFormat(root)
-	var err error
-	kaitai.Seq, err = g.GenerateAttribute(kaitai, sorted[0])
+	err := g.GenerateAttribute(kaitai, sorted[0].Body.StructType)
 	if err != nil {
 		return nil, err
 	}
