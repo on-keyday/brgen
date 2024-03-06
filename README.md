@@ -138,7 +138,11 @@ TODO(on-keyday): some of these examples use non-implemented functionality and no
 
 MIT License
 
-All source code is released under the MIT license. The copyright remains with on-keyday.
+All source code is released under the MIT license.
+The copyright remains with on-keyday and contributors.
+if you want to contribute this product, you must agree with publishing your code under the MIT license.
+
+You can decide license of code that is generated from code generator (and not contained in this repository) freely.
 
 For built binary released at GitHub Release,
 license of dependency are collected by [licensed](https://github.com/github/licensed) and [gocredits](https://github.com/Songmu/gocredits) and bundled with released binaries.
