@@ -172,6 +172,7 @@ Issue と同様に受け付けています。
 - lsp/ - LSP サーバーへの提案/変更
 - env/ - 開発環境(shell script, GitHub Actions Workflow ファイル,Dockerfile など)への提案/変更
 - tool/ - その他のツール(他言語から brgen 形式にするツールなど)の提案/変更
+- sample/ - フォーマットのサンプルへの提案変更
 - other/ - 以上以外で何かしらの
 
 分類を増やすべきという場合やその他の事項は GitHub Issue で提案してください。
@@ -187,6 +188,7 @@ Following the branch naming conventions below would make it easier for the autho
 - lsp/ - Proposals/changes to LSP servers
 - env/ - Proposals/changes to development environment (shell scripts, GitHub Actions Workflow files,Dockerfile, etc.)
 - tool/ - Proposals/changes to other tools (tools to convert from other languages to brgen format, etc.)
+- sample/ - Proposals/changes to format samples
 - other/ - Anything else not covered above
 
 If there is a need to add more categories or any other issues, please propose them through GitHub Issue.
