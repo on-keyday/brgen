@@ -13,7 +13,14 @@ import (
 	convert "sigs.k8s.io/yaml"
 )
 
-type Generator struct{}
+type Generator struct {
+	seq int
+}
+
+func (g *Generator) NextSeq() int {
+	g.seq++
+	return g.seq
+}
 
 func (g *Generator) KaitaiExpr(e ast.Expr) string {
 	switch v := e.(type) {
@@ -86,7 +93,6 @@ func (g *Generator) GenerateAttribute(c *Type, s *ast.Format) ([]Attribute, erro
 		switch f := member.(type) {
 		case *ast.Field:
 			if u, ok := f.FieldType.(*ast.StructUnionType); ok {
-
 			}
 			field := Attribute{}
 			if f.Ident != nil {
