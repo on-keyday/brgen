@@ -1,8 +1,9 @@
 # brgen - BinaRy encoder/decoder GENerator
 
 ネットワーク・プロトコルのパケットやファイルフォーマットなどの解析/生成のためのコードを吐くジェネレーター
+及びバイナリフォーマット定義言語
 
-the generators that generate encoder/decoder code for parse/create network packet, binary file, etc...
+the generators that generate encoder/decoder code for parse/create network packet, binary file, etc...　 and binary format definition language
 
 # 目標(Goal)
 
