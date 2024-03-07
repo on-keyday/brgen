@@ -6,6 +6,7 @@ import (
 	"go/constant"
 	"go/token"
 	"io"
+	"sort"
 	"strings"
 
 	ast2go "github.com/on-keyday/brgen/ast2go/ast"
@@ -367,7 +368,7 @@ func (g *ExprStringer) GetType(typ ast2go.Type) string {
 		return fmt.Sprintf("float%d", *f_typ.BitSize)
 	}
 	if e_type, ok := typ.(*ast2go.EnumType); ok {
-		return fmt.Sprintf("%s", e_type.Base.Ident.Ident)
+		return e_type.Base.Ident.Ident
 	}
 	if arr_type, ok := typ.(*ast2go.ArrayType); ok {
 		if arr_type.Length != nil && arr_type.Length.GetConstantLevel() == ast2go.ConstantLevelConstant {
@@ -382,6 +383,62 @@ func (g *ExprStringer) GetType(typ ast2go.Type) string {
 		}
 	}
 	return ""
+}
+
+func TopologicalSortFormat(p *ast2go.Program) []*ast2go.Format {
+	formats := []*ast2go.Format{}
+	ast2go.Walk(p, ast2go.VisitFn(func(v ast2go.Visitor, n ast2go.Node) bool {
+		ast2go.Walk(n, v)
+		if f, ok := n.(*ast2go.Format); ok {
+			formats = append(formats, f)
+		}
+		return true
+	}))
+	format_deps := map[*ast2go.Format][]*ast2go.Format{}
+	for _, f := range formats {
+		for _, d := range f.Depends {
+			if s, ok := d.Base.(*ast2go.StructType); ok {
+				if f2, ok := s.Base.(*ast2go.Format); ok {
+					format_deps[f] = append(format_deps[f], f2)
+				}
+			}
+		}
+	}
+	sort.SliceStable(formats, func(i, j int) bool {
+		return len(format_deps[formats[i]]) < len(format_deps[formats[j]])
+	})
+	sorted := []*ast2go.Format{}
+	visited := map[*ast2go.Format]bool{}
+	var visit func(f *ast2go.Format)
+	visit = func(f *ast2go.Format) {
+		if visited[f] {
+			return
+		}
+		visited[f] = true
+		for _, d := range format_deps[f] {
+			visit(d)
+		}
+		sorted = append(sorted, f)
+	}
+	for _, f := range formats {
+		visit(f)
+	}
+	return sorted
+}
+
+func LookupIdent(ident *ast2go.Ident) (*ast2go.Ident, bool /*via member*/) {
+	viaMember := false
+	for ident.Base != nil {
+		if base, ok := ident.Base.(*ast2go.Ident); ok {
+			ident = base
+		} else if id, ok := ident.Base.(*ast2go.MemberAccess); ok {
+			viaMember = true
+			ident = id.Base
+		} else {
+			break
+		}
+	}
+	return ident, viaMember
 }
 
 func IsAnyRange(e ast2go.Node) bool {
@@ -402,4 +459,5 @@ func IsOnNamedStruct(f *ast2go.Field) bool {
 		return s == state.Body.StructType
 	}
 	return false
+
 }
