@@ -55,7 +55,7 @@
             "name": "Debug json2cpp",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceRoot}/tool/json2cpp2",
+            "program": "${workspaceRoot}/tool/json2ts",
             "args": [
                 "ignore/sample.json",
                 /*"-r",
