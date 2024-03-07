@@ -315,8 +315,8 @@ namespace brgen::ast {
         ArrayType(lexer::Loc l, std::shared_ptr<ast::Expr>&& len, lexer::Loc end, std::shared_ptr<ast::Type>&& base, bool is_explicit = false)
             : Type(l, NodeType::array_type), length(std::move(len)), end_loc(end), element_type(std::move(base)) {
             this->is_explicit = is_explicit;
-            if (auto b = ast::as<ast::IntType>(element_type)) {
-                is_bytes = b->bit_size == 8;
+            if (element_type->node_type == NodeType::int_type) {
+                is_bytes = element_type->bit_size == 8;
             }
         }
 
