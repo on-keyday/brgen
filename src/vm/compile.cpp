@@ -270,8 +270,7 @@ namespace brgen::vm {
                 op(Op::LOAD_IMMEDIATE, *arr_ty->length_value);
                 op(Op::READ_BYTES);
             }
-            else if (auto l = ast::as<ast::Range>(arr_ty->length);
-                     l && !l->start && !l->end) {
+            else if (ast::is_any_range(arr_ty->length)) {
                 if (!f) {
                     auto index = add_static(Value{futils::view::rvec("error: array length is not decidable")});
                     op(Op::LOAD_STATIC, index);
@@ -309,8 +308,7 @@ namespace brgen::vm {
 
         void compile_complex_array(const std::shared_ptr<ast::Field>& f, ast::ArrayType* arr_ty) {
             auto elm = arr_ty->element_type;
-            if (auto l = ast::as<ast::Range>(arr_ty->length);
-                l && !l->start && !l->end) {
+            if (ast::is_any_range(arr_ty->length)) {
                 if (!f) {
                     auto index = add_static(Value{futils::view::rvec("error: array length is not decidable")});
                     op(Op::LOAD_STATIC, index);
@@ -541,7 +539,7 @@ namespace brgen::vm {
                 op(Op::PUSH, 0);  // push register 0 to stack
                 std::vector<size_t> jump;
                 for (auto& br : match->branch) {
-                    if (auto any = ast::as<ast::Range>(br->cond); any && !any->start && !any->end) {
+                    if (ast::is_any_range(br->cond)) {
                         compile_node(fmt, br->then);
                         jump.push_back(op(Op::JMP));
                     }

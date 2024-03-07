@@ -83,7 +83,7 @@ namespace brgen::ast::tool {
                         if (!desc.ignore_if_not_match &&
                             ast::as<ast::VoidType>(f->field_type)) {
                             if (auto r = ast::as<ast::Range>(branch[i]->cond);
-                                r && !r->start && !r->end &&
+                                ast::is_any_range(r) &&
                                 r->op == ast::BinaryOp::range_exclusive) {
                                 desc.ignore_if_not_match = true;
                                 continue;
@@ -201,5 +201,18 @@ namespace brgen::ast::tool {
                 return cur;
             }
         }
+    }
+
+    bool is_on_named_struct(const std::shared_ptr<ast::Field>& field) {
+        if (!field) {
+            return false;
+        }
+        if (auto fmt = ast::as<ast::Format>(field->belong.lock())) {
+            return field->belong_struct.lock() == fmt->body->struct_type;
+        }
+        if (auto state = ast::as<ast::State>(field->belong.lock())) {
+            return field->belong_struct.lock() == state->body->struct_type;
+        }
+        return false;
     }
 }  // namespace brgen::ast::tool

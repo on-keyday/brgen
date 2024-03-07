@@ -6,6 +6,7 @@
 #include <writer/writer.h>
 #include <core/ast/tool/stringer.h>
 #include <core/ast/tool/sort.h>
+#include <core/ast/tool/type.h>
 #include "../common/line_map.h"
 
 namespace j2cp2 {
@@ -297,6 +298,34 @@ namespace j2cp2 {
             w.writeln("}");
         }
 
+        std::shared_ptr<ast::Ident> has_ident_len(const std::shared_ptr<ast::Type>& typ) {
+            if (auto arr_ty = ast::as<ast::ArrayType>(typ);
+                arr_ty && !arr_ty->length_value) {
+                if (auto ident_len = ast::as<ast::Ident>(arr_ty->length)) {
+                    return ast::cast_to<ast::Ident>(arr_ty->length);
+                }
+            }
+            return nullptr;
+        }
+
+        void maybe_write_auto_length_set(std::string_view to_set, const std::shared_ptr<ast::Type>& typ) {
+            if (auto ident_len = has_ident_len(typ)) {
+                auto [base, _] = *ast::tool::lookup_base(ident_len);
+                if (auto f = ast::as<ast::Field>(base->base.lock())) {
+                    auto typ = get_type_name(f->field_type);
+                    w.writeln("if(", to_set, "> ~", typ, "(0)) {");
+                    {
+                        auto indent = w.indent_scope();
+                        w.writeln("return false;");
+                    }
+                    w.writeln("}");
+                    auto ident = str.to_string(f->ident);
+                    map_line(f->loc);
+                    w.writeln(ident, " = ", to_set, ";");
+                }
+            }
+        }
+
         void write_common_type_accessor(const std::string& cond_u, const std::shared_ptr<ast::Field>& uf, ast::UnionType* ut) {
             // write getter func
             map_line(uf->loc);
@@ -359,6 +388,7 @@ namespace j2cp2 {
                     map_line(f->loc);
                     set_variant_alternative(f->belong_struct.lock());
                     auto a = str.to_string(f->ident);
+                    maybe_write_auto_length_set("v.size()", f->field_type);
                     w.writeln(a, " = v;");
                     w.writeln("return true;");
                 };
@@ -488,7 +518,7 @@ namespace j2cp2 {
             std::vector<std::shared_ptr<ast::Field>>& non_aligned,
             size_t& bit_size,
             size_t i,
-            const std::shared_ptr<ast::StructType>& s,
+            // const std::shared_ptr<ast::StructType>& s,
             const std::shared_ptr<ast::Field>& f, std::string_view prefix) {
             futils::helper::DynDefer d;
             auto is_simple_type = [&](const std::shared_ptr<ast::Type>& type) {
@@ -565,17 +595,21 @@ namespace j2cp2 {
                     }
                     if (f->follow == ast::Follow::constant) {
                         auto& later = later_size[f.get()];
-                        for (auto j = i + 1; j < s->fields.size(); j++) {
-                            auto& f2 = s->fields[j];
-                            if (auto f2_ = ast::as<ast::Field>(f2); f2_) {
-                                later.next_field = ast::cast_to<ast::Field>(f2);
-                                break;
-                            }
-                        }
+                        later.next_field = f->next.lock();
                         assert(later.next_field);
                     }
                 }
                 str.map_ident(f->ident, prefix, f->ident->ident);
+                if (auto ident = has_ident_len(type); ident && ast::tool::is_on_named_struct(f)) {
+                    w.writeln("bool set_", f->ident->ident, "(auto&& v) {");
+                    {
+                        auto indent = w.indent_scope();
+                        maybe_write_auto_length_set("v.size()", type);
+                        auto to = str.to_string(f->ident);
+                        w.writeln(to, " = std::forward<decltype(v)>(v);");
+                    }
+                    w.writeln("}");
+                }
             }
             if (auto struct_ty = ast::as<ast::StructType>(type)) {
                 auto type_name = get_type_name(type);
@@ -608,7 +642,7 @@ namespace j2cp2 {
                 for (auto i = 0; i < s->fields.size(); i++) {
                     auto& field = s->fields[i];
                     if (auto f = ast::as<ast::Field>(field); f) {
-                        write_field(non_aligned, bit_size, i, s, ast::cast_to<ast::Field>(field), prefix);
+                        write_field(non_aligned, bit_size, i, ast::cast_to<ast::Field>(field), prefix);
                     }
                 }
                 if (has_ident) {
@@ -709,7 +743,7 @@ namespace j2cp2 {
                         w.write("else ");
                     }
                     // any match (`..`) case
-                    if (auto r = ast::as<ast::Range>(br->cond); r && !r->start && !r->end) {
+                    if (ast::is_any_range(br->cond)) {
                         // nothing to write
                         w.writeln("{");
                     }

@@ -613,7 +613,7 @@ namespace brgen::middle {
                         }
                     }
                 }
-                if (auto r = ast::as<ast::Range>(c->cond); r && !r->start && !r->end) {
+                if (ast::is_any_range(c->cond)) {
                     any_match = c->cond;
                 }
             }
