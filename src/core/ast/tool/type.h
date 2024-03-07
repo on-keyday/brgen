@@ -83,7 +83,7 @@ namespace brgen::ast::tool {
                         if (!desc.ignore_if_not_match &&
                             ast::as<ast::VoidType>(f->field_type)) {
                             if (auto r = ast::as<ast::Range>(branch[i]->cond);
-                                r && !r->start && !r->end &&
+                                ast::is_any_range(r) &&
                                 r->op == ast::BinaryOp::range_exclusive) {
                                 desc.ignore_if_not_match = true;
                                 continue;

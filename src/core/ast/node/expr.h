@@ -159,6 +159,16 @@ namespace brgen::ast {
         }
     };
 
+    // .. or ..=
+    constexpr bool is_any_range(auto&& e) {
+        if (e && e->node_type == NodeType::range) {
+            auto p = static_cast<ast::Range*>(std::to_address(e));
+
+            return !p->start && !p->end;
+        }
+        return false;
+    }
+
     struct MemberAccess : Expr {
         define_node_type(NodeType::member_access);
         std::shared_ptr<Expr> target;

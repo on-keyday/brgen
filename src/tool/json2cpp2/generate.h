@@ -488,7 +488,7 @@ namespace j2cp2 {
             std::vector<std::shared_ptr<ast::Field>>& non_aligned,
             size_t& bit_size,
             size_t i,
-            const std::shared_ptr<ast::StructType>& s,
+            // const std::shared_ptr<ast::StructType>& s,
             const std::shared_ptr<ast::Field>& f, std::string_view prefix) {
             futils::helper::DynDefer d;
             auto is_simple_type = [&](const std::shared_ptr<ast::Type>& type) {
@@ -565,13 +565,7 @@ namespace j2cp2 {
                     }
                     if (f->follow == ast::Follow::constant) {
                         auto& later = later_size[f.get()];
-                        for (auto j = i + 1; j < s->fields.size(); j++) {
-                            auto& f2 = s->fields[j];
-                            if (auto f2_ = ast::as<ast::Field>(f2); f2_) {
-                                later.next_field = ast::cast_to<ast::Field>(f2);
-                                break;
-                            }
-                        }
+                        later.next_field = f->next.lock();
                         assert(later.next_field);
                     }
                 }
@@ -608,7 +602,7 @@ namespace j2cp2 {
                 for (auto i = 0; i < s->fields.size(); i++) {
                     auto& field = s->fields[i];
                     if (auto f = ast::as<ast::Field>(field); f) {
-                        write_field(non_aligned, bit_size, i, s, ast::cast_to<ast::Field>(field), prefix);
+                        write_field(non_aligned, bit_size, i, ast::cast_to<ast::Field>(field), prefix);
                     }
                 }
                 if (has_ident) {
@@ -709,7 +703,7 @@ namespace j2cp2 {
                         w.write("else ");
                     }
                     // any match (`..`) case
-                    if (auto r = ast::as<ast::Range>(br->cond); r && !r->start && !r->end) {
+                    if (ast::is_any_range(br->cond)) {
                         // nothing to write
                         w.writeln("{");
                     }

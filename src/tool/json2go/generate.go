@@ -212,8 +212,8 @@ func (g *Generator) writeStructUnion(belong string, prefix string, u *ast2go.Str
 			for _, c := range typ.Candidates {
 				writeReturn := func() {
 					if c.Field != nil {
-						s := g.unionStructs[c.Field.BelongStruct].Name
-						g.PrintfFunc("tmp := %s(t.%s.%s)\n", typStr, s, c.Field.Ident.Ident)
+						ident := g.exprStringer.ExprString(c.Field.Ident)
+						g.PrintfFunc("tmp := %s(%s)\n", typStr, ident)
 						g.PrintfFunc("return &tmp\n")
 					} else {
 						g.PrintfFunc("return nil\n")
@@ -258,9 +258,14 @@ func (g *Generator) writeStructUnion(belong string, prefix string, u *ast2go.Str
 			for _, c := range typ.Candidates {
 				writeSet := func() {
 					if c.Field != nil {
-						s := g.unionStructs[c.Field.BelongStruct].Name
+						s := g.exprStringer.ExprString(c.Field.Ident)
 						fieldType := g.getType(c.Field.FieldType)
-						g.PrintfFunc("t.%s.%s = %s(v)\n", s, c.Field.Ident.Ident, fieldType)
+						if fieldType != typStr && c.Field.FieldType.GetNodeType() == ast2go.NodeTypeIntType {
+							g.PrintfFunc("if v > %s(^%s(0)) {\n", typStr, fieldType)
+							g.PrintfFunc("return false\n")
+							g.PrintfFunc("}\n")
+						}
+						g.PrintfFunc("%s = %s(v)\n", s, fieldType)
 						g.PrintfFunc("return true\n")
 					} else {
 						g.PrintfFunc("return false\n")
@@ -573,13 +578,13 @@ func (g *Generator) writeFieldDecode(p *ast2go.Field) {
 			converted := "t." + converted
 			length := g.exprStringer.ExprString(arr_type.Length)
 			if arr_type.Length.GetConstantLevel() == ast2go.ConstantLevelConstant {
-				g.PrintfFunc("n_%s, err := r.Read(%s[:])\n", p.Ident.Ident, converted)
+				g.PrintfFunc("n_%s, err := io.ReadFull(r,%s[:])\n", p.Ident.Ident, converted)
 				g.PrintfFunc("if err != nil {\n")
-				g.PrintfFunc("return err\n")
-				g.PrintfFunc("}\n")
-				g.PrintfFunc("if n_%s != %s {\n", p.Ident.Ident, length)
+				g.PrintfFunc("if err == io.ErrUnexpectedEOF || n_%s != %s /*stdlib bug?*/ {\n", p.Ident.Ident, length)
 				g.imports["fmt"] = struct{}{}
-				g.PrintfFunc("return fmt.Errorf(\"read %s: expect %%d bytes but read %%d bytes\", %s, n_%s)\n", p.Ident.Ident, length, p.Ident.Ident)
+				g.PrintfFunc("return fmt.Errorf(\"read %s: %%w: expect %%d bytes but read %%d bytes\",io.ErrUnexpectedEOF, %s, n_%s)\n", p.Ident.Ident, length, p.Ident.Ident)
+				g.PrintfFunc("}\n")
+				g.PrintfFunc("return err\n")
 				g.PrintfFunc("}\n")
 				return
 			}
@@ -588,7 +593,7 @@ func (g *Generator) writeFieldDecode(p *ast2go.Field) {
 				g.PrintfFunc("r_seeker_tmp_%s, ok := r.(io.Seeker)\n", p.Ident.Ident)
 				g.PrintfFunc("if !ok {\n")
 				g.imports["fmt"] = struct{}{}
-				g.PrintfFunc("return fmt.Errorf(\"read %s: expect io.Seeker but got %%T\", r)\n", p.Ident.Ident)
+				g.PrintfFunc("return fmt.Errorf(\"read %s: expect io.Seeker but %%T not implement\", r)\n", p.Ident.Ident)
 				g.PrintfFunc("}\n")
 				g.PrintfFunc("// save current position\n")
 				g.PrintfFunc("cur_tmp_%s, err := r_seeker_tmp_%s.Seek(0, io.SeekCurrent)\n", p.Ident.Ident, p.Ident.Ident)
@@ -608,20 +613,19 @@ func (g *Generator) writeFieldDecode(p *ast2go.Field) {
 				g.PrintfFunc("// check remaining length is enough to read %d byte\n", size/8)
 				g.PrintfFunc("if end_tmp_%s - cur_tmp_%s < %d {\n", p.Ident.Ident, p.Ident.Ident, size/8)
 				g.imports["fmt"] = struct{}{}
-				g.PrintfFunc("return fmt.Errorf(\"read %s: expect %%d bytes but got %%d bytes\", %d, end_tmp_%s - cur_tmp_%s)\n", p.Ident.Ident, size/8, p.Ident.Ident, p.Ident.Ident)
+				g.PrintfFunc("return fmt.Errorf(\"read %s: expect %d bytes but got %%d bytes\", end_tmp_%s - cur_tmp_%s)\n", p.Ident.Ident, size/8, p.Ident.Ident, p.Ident.Ident)
 				g.PrintfFunc("}\n")
 				length = fmt.Sprintf("(end_tmp_%s - cur_tmp_%s) - %d", p.Ident.Ident, p.Ident.Ident, size/8)
 			}
 			g.PrintfFunc("len_%s := int(%s)\n", p.Ident.Ident, length)
 			g.PrintfFunc("if len_%s != 0 {\n", p.Ident.Ident)
 			g.PrintfFunc("tmp%s := make([]byte, len_%s)\n", p.Ident.Ident, p.Ident.Ident)
-			g.PrintfFunc("n_%s, err := r.Read(tmp%s[:])\n", p.Ident.Ident, p.Ident.Ident)
-			g.PrintfFunc("if err != nil {\n")
-			g.PrintfFunc("return err\n")
-			g.PrintfFunc("}\n")
-			g.PrintfFunc("if n_%s != len_%s {\n", p.Ident.Ident, p.Ident.Ident)
+			g.PrintfFunc("n_%s, err := io.ReadFull(r,tmp%s[:])\n", p.Ident.Ident, p.Ident.Ident)
+			g.PrintfFunc("if err == io.ErrUnexpectedEOF || n_%s != len_%s /*stdlib bug?*/ {\n", p.Ident.Ident, p.Ident.Ident)
 			g.imports["fmt"] = struct{}{}
-			g.PrintfFunc("return fmt.Errorf(\"read %s: expect %%d bytes but read %%d bytes\", len_%s, n_%s)\n", p.Ident.Ident, p.Ident.Ident, p.Ident.Ident)
+			g.PrintfFunc("return fmt.Errorf(\"read %s: %%w: expect %%d bytes but read %%d bytes\",io.ErrUnexpectedEOF, n_%s, len_%s)\n", p.Ident.Ident, p.Ident.Ident, p.Ident.Ident)
+			g.PrintfFunc("}\n")
+			g.PrintfFunc("return err\n")
 			g.PrintfFunc("}\n")
 			g.PrintfFunc("%s = tmp%s[:]\n", converted, p.Ident.Ident)
 			g.PrintfFunc("} else {\n")
@@ -641,13 +645,13 @@ func (g *Generator) writeFieldDecode(p *ast2go.Field) {
 	if t, ok := typ.(*ast2go.StrLiteralType); ok {
 		tmp := fmt.Sprintf("tmp%d_", g.getSeq())
 		g.PrintfFunc("%s := [%d]byte{}\n", tmp, *t.GetBitSize()/8)
-		g.PrintfFunc("n_%s, err := r.Read(%s[:])\n", tmp, tmp)
+		g.PrintfFunc("n_%s, err := io.ReadFull(r,%s[:])\n", tmp, tmp)
 		g.PrintfFunc("if err != nil {\n")
-		g.PrintfFunc("return err\n")
-		g.PrintfFunc("}\n")
-		g.PrintfFunc("if n_%s != %d {\n", tmp, *t.GetBitSize()/8)
+		g.PrintfFunc("if err == io.ErrUnexpectedEOF || n_%s != %d /*stdlib bug?*/ {\n", tmp, *t.GetBitSize()/8)
 		g.imports["fmt"] = struct{}{}
-		g.PrintfFunc("return fmt.Errorf(\"read %s: expect %d bytes but read %%d bytes\", n_%s)\n", p.Ident.Ident, *t.GetBitSize()/8, tmp)
+		g.PrintfFunc("return fmt.Errorf(\"read %s: %%w: expect %d bytes but read %%d bytes\",io.ErrUnexpectedEOF, n_%s)\n", p.Ident.Ident, *t.GetBitSize()/8, tmp)
+		g.PrintfFunc("}\n")
+		g.PrintfFunc("return err\n")
 		g.PrintfFunc("}\n")
 		g.PrintfFunc("if string(%s[:]) != %s {\n", tmp, t.Base.Value)
 		g.imports["fmt"] = struct{}{}
