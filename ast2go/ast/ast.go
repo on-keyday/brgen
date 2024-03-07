@@ -2460,6 +2460,7 @@ type ArrayType struct {
 	ElementType          Type
 	Length               Expr
 	LengthValue          *uint64
+	IsBytes              bool
 }
 
 func (n *ArrayType) isType() {}
@@ -4332,6 +4333,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				ElementType          *uintptr     `json:"element_type"`
 				Length               *uintptr     `json:"length"`
 				LengthValue          *uint64      `json:"length_value"`
+				IsBytes              bool         `json:"is_bytes"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -4348,6 +4350,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				v.Length = n.node[*tmp.Length].(Expr)
 			}
 			v.LengthValue = tmp.LengthValue
+			v.IsBytes = tmp.IsBytes
 		case NodeTypeFunctionType:
 			v := n.node[i].(*FunctionType)
 			var tmp struct {

@@ -695,6 +695,7 @@ class ArrayType extends Type {
     Type? elementType;
     Expr? length;
     int? lengthValue;
+    bool isBytes = false;
 factory ArrayType.fromJson(Map<String, dynamic> json) => _$ArrayTypeFromJson(json);
 }
 @JsonSerializable()
