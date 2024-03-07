@@ -498,6 +498,7 @@ class ArrayType(Type):
     element_type: Optional[Type]
     length: Optional[Expr]
     length_value: Optional[int]
+    is_bytes: bool
 
 
 class FunctionType(Type):
@@ -1622,6 +1623,8 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].length_value = x if isinstance(x,int) else raiseError(TypeError('type mismatch at ArrayType::length_value'))
                 else:
                     node[i].length_value = None
+                x = ast.node[i].body["is_bytes"]
+                node[i].is_bytes = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at ArrayType::is_bytes'))
             case NodeType.FUNCTION_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at FunctionType::is_explicit'))
