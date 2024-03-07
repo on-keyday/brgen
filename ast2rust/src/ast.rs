@@ -5644,6 +5644,7 @@ pub struct ArrayType {
 	pub element_type: Option<Type>,
 	pub length: Option<Expr>,
 	pub length_value: Option<u64>,
+	pub is_bytes: bool,
 }
 
 impl TryFrom<&Type> for Rc<RefCell<ArrayType>> {
@@ -8362,6 +8363,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				element_type: None,
 				length: None,
 				length_value: None,
+				is_bytes: false,
 				})))
 			},
 			NodeType::FunctionType => {
@@ -11389,6 +11391,14 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						true=>None,
 						false=>return Err(Error::MismatchJSONType(length_value_body.into(),JSONType::Number)),
 					},
+				};
+				let is_bytes_body = match raw_node.body.get("is_bytes") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"is_bytes")),
+				};
+				node.borrow_mut().is_bytes = match is_bytes_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(is_bytes_body.into(),JSONType::Bool)),
 				};
 			},
 			NodeType::FunctionType => {

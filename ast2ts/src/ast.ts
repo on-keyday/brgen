@@ -803,6 +803,7 @@ export interface ArrayType extends Type {
 	element_type: Type|null;
 	length: Expr|null;
 	length_value: number|null;
+	is_bytes: boolean;
 }
 
 export function isArrayType(obj: any): obj is ArrayType {
@@ -1700,6 +1701,7 @@ export function parseAST(obj: JsonAst): Program {
 				element_type: null,
 				length: null,
 				length_value: null,
+				is_bytes: false,
 			}
 			c.node.push(n);
 			break;
@@ -3447,6 +3449,11 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at ArrayType::length_value');
 			}
 			n.length_value = on.body.length_value;
+			const tmpis_bytes = on.body?.is_bytes;
+			if (typeof tmpis_bytes !== "boolean") {
+				throw new Error('invalid node list at ArrayType::is_bytes');
+			}
+			n.is_bytes = on.body.is_bytes;
 			break;
 		}
 		case "function_type": {
