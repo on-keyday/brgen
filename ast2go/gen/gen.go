@@ -95,7 +95,7 @@ type ExprStringer struct {
 	TypeProvider func(ast2go.Type) string
 }
 
-func (s *ExprStringer) LookupBase(ident *ast2go.Ident) (*ast2go.Ident, bool) {
+func LookupBase(ident *ast2go.Ident) (*ast2go.Ident, bool) {
 	viaMember := false
 	for ident.Base != nil {
 		if base, ok := ident.Base.(*ast2go.Ident); ok {
@@ -111,7 +111,7 @@ func (s *ExprStringer) LookupBase(ident *ast2go.Ident) (*ast2go.Ident, bool) {
 }
 
 func (s *ExprStringer) SetIdentMap(ident *ast2go.Ident, name string) {
-	b, _ := s.LookupBase(ident)
+	b, _ := LookupBase(ident)
 	if strings.Count(name, "%s") > 1 {
 		panic("name must contains 1 '%s' for receiver")
 	}
@@ -119,7 +119,7 @@ func (s *ExprStringer) SetIdentMap(ident *ast2go.Ident, name string) {
 }
 
 func (s *ExprStringer) IdentToString(ident *ast2go.Ident, default_ string) string {
-	b, viaMember := s.LookupBase(ident)
+	b, viaMember := LookupBase(ident)
 	mappedValue := s.IdentMapper[b]
 	if mappedValue == "" {
 		mappedValue = "%s"
@@ -378,8 +378,28 @@ func (g *ExprStringer) GetType(typ ast2go.Type) string {
 	}
 	if struct_type, ok := typ.(*ast2go.StructType); ok {
 		if !struct_type.Recursive {
-			return fmt.Sprintf("%s", struct_type.Base.(*ast2go.Format).Ident.Ident)
+			return struct_type.Base.(*ast2go.Format).Ident.Ident
 		}
 	}
 	return ""
+}
+
+func IsAnyRange(e ast2go.Node) bool {
+	if r, ok := e.(*ast2go.Range); ok {
+		return r.Start == nil && r.End == nil
+	}
+	return false
+}
+
+func IsOnAnonymousStruct(f *ast2go.Field) bool {
+	s := f.BelongStruct
+	fmt, ok := f.Belong.(*ast2go.Format)
+	if ok {
+		return s != fmt.Body.StructType
+	}
+	state, ok := f.Belong.(*ast2go.State)
+	if ok {
+		return s != state.Body.StructType
+	}
+	return false
 }

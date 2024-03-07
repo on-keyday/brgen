@@ -52,7 +52,7 @@ func setFunc() {
 			result["code"] = 1
 			return result
 		}
-		resetFlag()
+		ResetFlag()
 		err := flag.CommandLine.Parse(cmdargs[1:])
 		if err != nil {
 			result["stderr"] = err.Error()

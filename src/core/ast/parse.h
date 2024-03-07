@@ -69,7 +69,6 @@ namespace brgen::ast {
 
         void add_to_struct(const std::shared_ptr<Member>& f) {
             f->belong_struct = current_struct_;
-            current_struct_->fields.push_back(f);
             if (auto field = ast::as<Field>(f)) {
                 for (auto it = current_struct_->fields.rbegin(); it != current_struct_->fields.rend(); it++) {
                     if (auto p = ast::as<Field>(*it)) {
@@ -78,6 +77,7 @@ namespace brgen::ast {
                     }
                 }
             }
+            current_struct_->fields.push_back(f);
         }
 
         size_t current_indent() {
