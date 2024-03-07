@@ -387,7 +387,7 @@ func (g *Generator) writeStructType(belong string, prefix string, s *ast2go.Stru
 						g.laterSize[field] = field.BelongStruct.FixedTailSize
 					}
 				}
-				if !gen.IsOnAnonymousStruct(field) && arr_type.LengthValue == nil && !gen.IsAnyRange(arr_type.Length) {
+				if gen.IsOnNamedStruct(field) && arr_type.LengthValue == nil && !gen.IsAnyRange(arr_type.Length) {
 					s := g.exprStringer.ExprString(field.Ident)
 					g.PrintfFunc("func (t *%s) Set%s(v %s) bool {\n", belong, field.Ident.Ident, typ)
 					g.maybeWriteLengthSet("len("+s+")", arr_type.Length)

@@ -202,4 +202,17 @@ namespace brgen::ast::tool {
             }
         }
     }
+
+    bool is_on_named_struct(const std::shared_ptr<ast::Field>& field) {
+        if (!field) {
+            return false;
+        }
+        if (auto fmt = ast::as<ast::Format>(field->belong.lock())) {
+            return field->belong_struct.lock() == fmt->body->struct_type;
+        }
+        if (auto state = ast::as<ast::State>(field->belong.lock())) {
+            return field->belong_struct.lock() == state->body->struct_type;
+        }
+        return false;
+    }
 }  // namespace brgen::ast::tool

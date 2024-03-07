@@ -391,15 +391,15 @@ func IsAnyRange(e ast2go.Node) bool {
 	return false
 }
 
-func IsOnAnonymousStruct(f *ast2go.Field) bool {
+func IsOnNamedStruct(f *ast2go.Field) bool {
 	s := f.BelongStruct
 	fmt, ok := f.Belong.(*ast2go.Format)
 	if ok {
-		return s != fmt.Body.StructType
+		return s == fmt.Body.StructType
 	}
 	state, ok := f.Belong.(*ast2go.State)
 	if ok {
-		return s != state.Body.StructType
+		return s == state.Body.StructType
 	}
 	return false
 }
