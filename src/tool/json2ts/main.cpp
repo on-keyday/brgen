@@ -7,8 +7,7 @@
 #include <file/file_view.h>
 #include <core/ast/json.h>
 #include <core/ast/file.h>
-#include <wrap/cin.h>
-#include "hex.h"
+#include "generate.h"
 
 struct Flags : futils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
@@ -31,8 +30,8 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
     if (flags.spec) {
         cout << R"({
             "input": "file",
-            "langs": ["vm"],
-            "suffix": [".bvm"],
+            "langs": ["ts"],
+            "suffix": [".ts"],
             "separator": "############\n"
         })";
         return 0;
@@ -76,7 +75,10 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
         print_error("cannot decode json file: ast is null");
         return 1;
     }
-    auto code = brgen::vm::compile(brgen::ast::cast_to<brgen::ast::Program>(*res));
+
+    auto out = json2ts::generate(brgen::ast::cast_to<brgen::ast::Program>(*res));
+    cout << out << "\n";
+    return 0;
 }
 
 int main(int argc, char** argv) {
