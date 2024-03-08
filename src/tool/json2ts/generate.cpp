@@ -28,6 +28,7 @@ namespace json2ts {
         size_t seq_ = 0;
         std::map<std::shared_ptr<ast::StructType>, AnonymousType> anonymous_types;
         std::map<std::shared_ptr<ast::Field>, BitFields> bit_field_map;
+        bool typescript = true;
 
         size_t get_seq() {
             return seq_++;
@@ -127,7 +128,7 @@ namespace json2ts {
                 wt.writeln(anonymous_field, ": ");
                 for (auto s : u->structs) {
                     if (!first) {
-                        w.writeln("|");
+                        wt.writeln("|");
                     }
                     auto p = std::move(prefix);
                     prefix = brgen::concat(p, anonymous_field, "!.");
@@ -203,8 +204,10 @@ namespace json2ts {
                 }
             }
             else {
-                w.write("obj.", typ.field_name, " = {} as ");
-                w.write_unformatted(typ.type);
+                w.write("obj.", typ.field_name, " = {} ");
+                if (typescript) {
+                    w.write("as ", typ.type);
+                }
                 w.writeln(";");
             }
         }
@@ -513,7 +516,12 @@ namespace json2ts {
             w.write("export interface ", fmt->ident->ident, " ");
             write_struct_type(w, fmt->body->struct_type);
             w.writeln(";");
-            w.write("export function ", fmt->ident->ident, "_encode(w :{view :DataView,offset :number}, obj: ", fmt->ident->ident, ") {");
+            if (typescript) {
+                w.write("export function ", fmt->ident->ident, "_encode(w :{view :DataView,offset :number}, obj: ", fmt->ident->ident, ") {");
+            }
+            else {
+                w.write("export function ", fmt->ident->ident, "_encode(w, obj) {");
+            }
             {
                 encode = true;
                 auto s = w.indent_scope();
@@ -522,13 +530,22 @@ namespace json2ts {
                 write_single_node(fmt->body, true);
             }
             w.writeln("}");
-            w.writeln("export function ", fmt->ident->ident, "_decode(r :{view :DataView,offset :number}): ", fmt->ident->ident, " {");
+            if (typescript) {
+                w.writeln("export function ", fmt->ident->ident, "_decode(r :{view :DataView,offset :number}): ", fmt->ident->ident, " {");
+            }
+            else {
+                w.writeln("export function ", fmt->ident->ident, "_decode(r) {");
+            }
             {
                 encode = false;
                 auto s = w.indent_scope();
                 w.writeln("// ensure offset is unsigned integer");
                 w.writeln("r.offset >>>= 0;");
-                w.writeln("const obj = {} as ", fmt->ident->ident, ";");
+                w.write("const obj = {}");
+                if (typescript) {
+                    w.write(" as ", fmt->ident->ident);
+                }
+                w.writeln(";");
                 write_single_node(fmt->body, true);
                 w.writeln("return obj;");
             }
@@ -544,7 +561,12 @@ namespace json2ts {
                         for (auto& elem : enum_->members) {
                             auto v = str.to_string(elem->value);
                             w.writeln(elem->ident->ident, " = ", v, ",");
-                            str.map_ident(elem->ident, enum_->ident->ident, ".", elem->ident->ident);
+                            if (typescript) {
+                                str.map_ident(elem->ident, enum_->ident->ident, ".", elem->ident->ident);
+                            }
+                            else {
+                                str.map_ident(elem->ident, v, "/*", enum_->ident->ident, ".", elem->ident->ident, "*/");
+                            }
                         }
                     }
                     w.writeln("}");
@@ -558,7 +580,7 @@ namespace json2ts {
         }
     };
 
-    std::string generate(const std::shared_ptr<brgen::ast::Program>& p) {
+    std::string generate(const std::shared_ptr<brgen::ast::Program>& p,bool javascript) {
         Generator g;
         g.str.this_access = "obj.";
         g.str.cast_handler = [](ast::tool::Stringer& s, const std::shared_ptr<ast::Cast>& c) {

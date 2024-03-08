@@ -12,17 +12,11 @@
 struct Flags : futils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
     bool spec = false;
-    bool run = false;
-    bool hex = false;
-    std::string_view call;
-    std::string_view binary_input;
+    bool javascript = false;
     void bind(futils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&spec, "s", "spec mode");
-        ctx.VarBool(&run, "r", "run mode");
-        ctx.VarBool(&hex, "x,hex", "hex text input for binary input (ignore spaces and newlines, # is comment)");
-        ctx.VarString<true>(&call, "c,call", "call function in run mode", "<function name>");
-        ctx.VarString<true>(&binary_input, "b,binary", "binary input", "<file or - (stdin)>");
+        ctx.VarBool(&javascript, "j,javascript", "javascript mode");
     }
 };
 
@@ -76,7 +70,7 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
         return 1;
     }
 
-    auto out = json2ts::generate(brgen::ast::cast_to<brgen::ast::Program>(*res));
+    auto out = json2ts::generate(brgen::ast::cast_to<brgen::ast::Program>(*res), flags.javascript);
     cout << out << "\n";
     return 0;
 }
