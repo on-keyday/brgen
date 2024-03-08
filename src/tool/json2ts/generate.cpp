@@ -77,10 +77,13 @@ namespace json2ts {
             if (auto ident = ast::as<ast::IdentType>(typ)) {
                 typ = ident->base.lock();
             }
+            if (ast::as<ast::UnionType>(typ)) {
+                return;
+            }
             if (auto u = ast::as<ast::StructUnionType>(typ)) {
                 assert(!field->ident);
                 bool first = true;
-                auto anonymous_field = "union_" + brgen::nums(get_seq());
+                const auto anonymous_field = "union_" + brgen::nums(get_seq());
                 auto ident = std::make_shared<ast::Ident>();
                 ident->base = field;
                 ident->ident = anonymous_field;
@@ -119,6 +122,10 @@ namespace json2ts {
                     wt.write("undefined");
                 }
                 wt.writeln(";");
+                for (auto& f : u->union_fields) {
+                    auto field = f.lock();
+                    str.map_ident(field->ident, prefix, anonymous_field, "!.", field->ident->ident);
+                }
                 return;
             }
             auto type = get_type(typ);
@@ -255,7 +262,7 @@ namespace json2ts {
             w.writeln("}");
         }
 
-        void write_type_encode(std::string_view ident, const std::shared_ptr<ast::Type>& type) {
+        void write_type_encode(std::string_view err_ident, std::string_view ident, const std::shared_ptr<ast::Type>& type) {
             auto typ = type;
             if (auto ident = ast::as<ast::IdentType>(typ)) {
                 typ = ident->base.lock();
@@ -265,7 +272,7 @@ namespace json2ts {
                 if (ity->is_common_supported) {
                     auto bit = *ity->bit_size;
                     auto sign = ity->is_signed ? "Int" : "Uint";
-                    write_resize_check(brgen::nums(bit / 8), ident);
+                    write_resize_check(brgen::nums(bit / 8), err_ident);
                     auto endian = ity->endian == ast::Endian::little ? "true" : "false";
                     auto big = bit > 32 ? "Big" : "";
                     // auto ident = str.to_string(field->ident);
@@ -288,7 +295,7 @@ namespace json2ts {
                     auto endian = typ->endian == ast::Endian::little ? "true" : "false";
                     auto big = bit > 32 ? "Big" : "";
                     auto class_ = brgen::concat(big, sign, brgen::nums(bit));
-                    write_resize_check(brgen::concat(len, " * ", brgen::nums(bit / 8)), ident);
+                    write_resize_check(brgen::concat(len, " * ", brgen::nums(bit / 8)), err_ident);
                     w.writeln("for (let i = 0; i < ", len, "; i++) {");
                     {
                         auto s = w.indent_scope();
@@ -308,7 +315,7 @@ namespace json2ts {
             w.writeln("throw new Error('unsupported type for ", ident, "');");
         }
 
-        void write_type_decode(std::string_view ident, const std::shared_ptr<ast::Type>& type) {
+        void write_type_decode(std::string_view err_ident, std::string_view ident, const std::shared_ptr<ast::Type>& type) {
             auto typ = type;
             if (auto ident = ast::as<ast::IdentType>(typ)) {
                 typ = ident->base.lock();
@@ -317,7 +324,7 @@ namespace json2ts {
                 if (ity->is_common_supported) {
                     auto bit = *ity->bit_size;
                     auto sign = ity->is_signed ? "Int" : "Uint";
-                    read_input_size_check(brgen::nums(bit / 8), ident);
+                    read_input_size_check(brgen::nums(bit / 8), err_ident);
                     auto endian = ity->endian == ast::Endian::little ? "true" : "false";
                     // auto ident = str.to_string(field->ident);
                     auto big = bit > 32 ? "Big" : "";
@@ -341,7 +348,7 @@ namespace json2ts {
                     auto class_ = brgen::concat(big, sign, brgen::nums(bit), "Array");
                     // auto ident = str.to_string(field->ident);
                     auto total = brgen::concat(len, " * ", brgen::nums(bit / 8));
-                    read_input_size_check(total, ident);
+                    read_input_size_check(total, err_ident);
                     if (bit == 8) {
                         w.writeln(ident, " = new ", class_, "(r.view.buffer, r.offset, ", len, ")");
                     }
@@ -366,17 +373,17 @@ namespace json2ts {
                     return;
                 }
             }
-            w.writeln("throw new Error('unsupported type for ", ident, "');");
+            w.writeln("throw new Error('unsupported type for ", err_ident, "');");
         }
 
         void write_field_code(const std::shared_ptr<ast::Field>& field) {
             if (encode) {
                 auto ident = str.to_string(field->ident);
-                write_type_encode(ident, field->field_type);
+                write_type_encode(field->ident->ident, ident, field->field_type);
             }
             else {
                 auto ident = str.to_string(field->ident);
-                write_type_decode(ident, field->field_type);
+                write_type_decode(field->ident->ident, ident, field->field_type);
             }
         }
 
