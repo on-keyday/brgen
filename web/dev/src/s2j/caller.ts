@@ -46,6 +46,13 @@ const WorkerFactory = class {
         this.#j2rs_mgr_ = new JobManager(new Worker(new URL("./json2rust_worker.js",import.meta.url),{type:"module"}));
         return this.#j2rs_mgr_;
     }
+
+    getJSON2TSWorker = () => {
+        if(this.#j2ts_mgr_) return this.#j2ts_mgr_;
+        this.#j2ts_mgr_ = new JobManager(new Worker(new URL("./json2ts_worker.js",import.meta.url),{type:"module"}));
+        return this.#j2ts_mgr_;
+    
+    }
 }
 
 const factory = new WorkerFactory();
@@ -74,6 +81,10 @@ export interface COption extends CallOption {}
 
 export interface RustOption extends CallOption {}
 
+export interface TSOption extends CallOption {
+    javascript? :boolean
+}
+
 export const loadWorkers = () => {
     factory.getSrc2JSONWorker();
     factory.getJSON2CppWorker();
@@ -81,6 +92,7 @@ export const loadWorkers = () => {
     factory.getJSON2GoWorker();
     factory.getJSON2CWorker();
     factory.getJSON2RSWorker();
+    factory.getJSON2TSWorker();
 }
 
 loadWorkers();
@@ -169,5 +181,14 @@ export const getCCode = (id :TraceID,sourceCode :string,options? :COption) => {
 export const getRustCode = (id :TraceID,sourceCode :string,options? :RustOption) => {
     const mgr = factory.getJSON2RSWorker();
     const req = mgr.getRequest(id,RequestLanguage.RUST,sourceCode);
+    return mgr.doRequest(req);
+}
+
+export const getTSCode = (id :TraceID,sourceCode :string,options? :TSOption) => {
+    const mgr = factory.getJSON2TSWorker();
+    const req = mgr.getRequest(id,RequestLanguage.TYPESCRIPT,sourceCode);
+    if(options?.javascript){
+        req.arguments = ["--javascript"];
+    }
     return mgr.doRequest(req);
 }

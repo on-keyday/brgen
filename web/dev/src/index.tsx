@@ -543,6 +543,15 @@ const setCommon = (m :Map<string,InputListElement>) => {
     commonUI.config.set(Language.RUST,languageSpecificConfig(rust,ConfigKey.COMMON_FILE_NAME,(change) => {
         updateUI();
     }));
+    const ts = new Map<string,InputListElement>();
+    setCommon(ts);
+    ts.set(ConfigKey.TS_JAVASCRIPT,{
+        "type": "checkbox",
+        "value": false,
+    });
+    commonUI.config.set(Language.TYPESCRIPT,languageSpecificConfig(ts,ConfigKey.COMMON_FILE_NAME,(change) => {
+        updateUI();
+    }));
     const cpp = new Map<string,InputListElement>();
     cpp.set(ConfigKey.CPP_SOURCE_MAP,{
         "type": "checkbox",

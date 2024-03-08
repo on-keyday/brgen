@@ -7,7 +7,12 @@
 #include <file/file_view.h>
 #include <core/ast/json.h>
 #include <core/ast/file.h>
+#include <wrap/argv.h>
 #include "generate.h"
+#ifdef __EMSCRIPTEN__
+#include <emscripten/emscripten.h>
+#include "../common/em_main.h"
+#endif
 
 struct Flags : futils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
@@ -86,8 +91,7 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
     cout << out << "\n";
     return 0;
 }
-
-int main(int argc, char** argv) {
+int json2ts_main(int argc, char** argv) {
     Flags flags;
     return futils::cmdline::templ::parse_or_err<std::string>(
         argc, argv, flags, [](auto&& str, bool err) { cout << str; },
@@ -95,3 +99,14 @@ int main(int argc, char** argv) {
             return Main(flags, ctx);
         });
 }
+
+#ifdef __EMSCRIPTEN__
+extern "C" int EMSCRIPTEN_KEEPALIVE emscripten_main(const char* cmdline) {
+    return em_main(cmdline, json2ts_main);
+}
+#else
+int main(int argc, char** argv) {
+    futils::wrap::U8Arg _(argc, argv);
+    return json2ts_main(argc, argv);
+}
+#endif

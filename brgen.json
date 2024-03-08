@@ -1,6 +1,12 @@
 {
   "src2json": "./tool/src2json",
-  "input_dir": ["./example/", "./example/gen_step/"],
+  "input_dir": [
+    "./example/",
+    "./example/gen_step/",
+    "./example/brgen_help",
+    "./example/vm_test",
+    "./example/feature_test"
+  ],
   "suffix": ".bgn",
   "warnings": {
     "disable_untyped": true,
