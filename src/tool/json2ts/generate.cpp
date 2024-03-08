@@ -12,6 +12,14 @@ namespace json2ts {
         std::string type;
         std::shared_ptr<ast::Field> field;
     };
+
+    struct BitFields {
+        std::string field_name;
+        std::vector<std::shared_ptr<ast::Field>> bit_fields;
+        std::optional<size_t> bit_size = 0;
+        std::shared_ptr<ast::IntType> type;
+    };
+
     struct Generator {
         ast::tool::Stringer str;
         brgen::writer::Writer w;
@@ -19,7 +27,7 @@ namespace json2ts {
         std::string prefix = "${THIS}";
         size_t seq_ = 0;
         std::map<std::shared_ptr<ast::StructType>, AnonymousType> anonymous_types;
-        std::vector<std::shared_ptr<ast::Field>> bit_fields;
+        std::map<std::shared_ptr<ast::Field>, BitFields> bit_field_map;
 
         size_t get_seq() {
             return seq_++;
@@ -72,10 +80,37 @@ namespace json2ts {
             return "any";
         }
 
-        void write_field(brgen::writer::Writer& wt, const std::shared_ptr<ast::Field>& field) {
+        void write_field(brgen::writer::Writer& wt, std::vector<std::shared_ptr<ast::Field>>& bit_fields, const std::shared_ptr<ast::Field>& field) {
             auto typ = field->field_type;
             if (auto ident = ast::as<ast::IdentType>(typ)) {
                 typ = ident->base.lock();
+            }
+            if (field->bit_alignment != field->eventual_bit_alignment) {
+                if (bit_fields.size() == 0) {
+                    wt.writeln("/* bit fields */");
+                }
+                bit_fields.push_back(field);
+            }
+            futils::helper::DynDefer d;
+            if (bit_fields.size() && field->bit_alignment == field->eventual_bit_alignment) {
+                bit_fields.push_back(field);
+                auto& bf = bit_field_map[field];
+                bf.field_name = "bit_field_" + brgen::nums(get_seq());
+                bf.bit_fields = std::move(bit_fields);
+                bf.bit_size = 0;
+                for (auto& f : bf.bit_fields) {
+                    if (!f->field_type->bit_size) {
+                        bf.bit_size = std::nullopt;
+                        break;
+                    }
+                    *bf.bit_size += *f->field_type->bit_size;
+                }
+                if (bf.bit_size) {
+                    bf.type = std::make_shared<ast::IntType>(field->loc, *bf.bit_size, ast::Endian::big, false);
+                }
+                d = futils::helper::defer_ex([&] {
+                    wt.writeln("/* bit fields end */");
+                });
             }
             if (ast::as<ast::UnionType>(typ)) {
                 return;
@@ -137,9 +172,10 @@ namespace json2ts {
             wt.writeln("{");
             {
                 auto s = wt.indent_scope();
+                std::vector<std::shared_ptr<ast::Field>> bit_fields;
                 for (auto& field : typ->fields) {
                     if (auto f = ast::as<ast::Field>(field)) {
-                        write_field(wt, ast::cast_to<ast::Field>(field));
+                        write_field(wt, bit_fields, ast::cast_to<ast::Field>(field));
                     }
                 }
             }
@@ -376,7 +412,31 @@ namespace json2ts {
             w.writeln("throw new Error('unsupported type for ", err_ident, "');");
         }
 
+        void write_bit_field_code(BitFields& bit_field) {
+            if (!bit_field.bit_size) {
+                w.writeln("throw new Error('unsupported bit field type');");
+                return;
+            }
+            if (encode) {
+                w.writeln("let ", bit_field.field_name, " = 0;");
+                auto bit_size = *bit_field.bit_size;
+                for (auto& split : bit_field.bit_fields) {
+                    auto sp = *split->field_type->bit_size;
+                    auto ident = str.to_string(split->ident);
+                    w.writeln(bit_field.field_name, " |= (obj.", ident, " & ", brgen::nums((1 << sp) - 1), ") << ", brgen::nums(bit_size - sp), ";");
+                }
+                write_type_encode(bit_field.field_name, bit_field.field_name, bit_field.type);
+            }
+        }
+
         void write_field_code(const std::shared_ptr<ast::Field>& field) {
+            if (field->bit_alignment != field->eventual_bit_alignment) {
+                return;
+            }
+            if (auto bit = bit_field_map.find(field); bit != bit_field_map.end()) {
+                write_bit_field_code(bit->second);
+                return;
+            }
             if (encode) {
                 auto ident = str.to_string(field->ident);
                 write_type_encode(field->ident->ident, ident, field->field_type);
