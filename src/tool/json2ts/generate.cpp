@@ -420,12 +420,33 @@ namespace json2ts {
             if (encode) {
                 w.writeln("let ", bit_field.field_name, " = 0;");
                 auto bit_size = *bit_field.bit_size;
+                size_t sum = 0;
                 for (auto& split : bit_field.bit_fields) {
                     auto sp = *split->field_type->bit_size;
                     auto ident = str.to_string(split->ident);
-                    w.writeln(bit_field.field_name, " |= (obj.", ident, " & ", brgen::nums((1 << sp) - 1), ") << ", brgen::nums(bit_size - sp), ";");
+                    if (sp == 1) {
+                        ident = brgen::concat("(", ident, " ? 1 : 0)");
+                    }
+                    sum += sp;
+                    w.writeln(bit_field.field_name, " |= (", ident, " & ", brgen::nums((1 << sp) - 1), ") << ", brgen::nums(bit_size - sum), ";");
                 }
                 write_type_encode(bit_field.field_name, bit_field.field_name, bit_field.type);
+            }
+            else {
+                auto bit_size = *bit_field.bit_size;
+                w.writeln("let ", bit_field.field_name, " = 0;");
+                write_type_decode(bit_field.field_name, bit_field.field_name, bit_field.type);
+                size_t sum = 0;
+                for (auto& split : bit_field.bit_fields) {
+                    auto sp = *split->field_type->bit_size;
+                    auto ident = str.to_string(split->ident);
+                    w.write(ident, " = ((", bit_field.field_name, " >>> ", brgen::nums(bit_size - sum), ") & ", brgen::nums((1 << sp) - 1), ")");
+                    if (sp == 1) {
+                        w.write(" === 1");
+                    }
+                    w.writeln(";");
+                    sum += sp;
+                }
             }
         }
 
@@ -466,16 +487,18 @@ namespace json2ts {
                 write_field_code(ast::cast_to<ast::Field>(node));
             }
             else if (auto bin = ast::as<ast::Binary>(node); bin && ast::is_assign_op(bin->op)) {
-                if (bin->op == ast::BinaryOp::define_assign) {
+                if (bin->op == ast::BinaryOp::define_assign || bin->op == ast::BinaryOp::const_assign) {
                     auto init = str.to_string(bin->right);
                     auto ident = ast::cast_to<ast::Ident>(bin->left);
-                    w.writeln("let ", ident->ident, " = ", init, ";");
-                    str.map_ident(ident, ident->ident);
-                }
-                if (bin->op == ast::BinaryOp::const_assign) {
-                    auto init = str.to_string(bin->right);
-                    auto ident = ast::cast_to<ast::Ident>(bin->left);
-                    w.writeln("const ", ident->ident, " = ", init, ";");
+                    auto typ = get_type(bin->right->expr_type);
+                    auto let_const = bin->op == ast::BinaryOp::const_assign ? "const" : "let";
+                    if (typ == "bigint") {
+                        w.writeln("// TODO: bigint is not well supported and conversion logic is incomplete");
+                        w.writeln(let_const, " ", ident->ident, " = Number(", init, ");");
+                    }
+                    else {
+                        w.writeln(let_const, " ", ident->ident, " = ", init, ";");
+                    }
                     str.map_ident(ident, ident->ident);
                 }
                 else {
