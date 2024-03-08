@@ -126,12 +126,13 @@ namespace json2ts {
                 field->ident = ident;
                 str.map_ident(ident, prefix, anonymous_field);
                 wt.writeln(anonymous_field, ": ");
+                auto dot = typescript ? "!." : ".";
                 for (auto s : u->structs) {
                     if (!first) {
                         wt.writeln("|");
                     }
                     auto p = std::move(prefix);
-                    prefix = brgen::concat(p, anonymous_field, "!.");
+                    prefix = brgen::concat(p, anonymous_field, dot);
                     brgen::writer::Writer tmpw;
 
                     write_struct_type(tmpw, s);
@@ -160,7 +161,8 @@ namespace json2ts {
                 wt.writeln(";");
                 for (auto& f : u->union_fields) {
                     auto field = f.lock();
-                    str.map_ident(field->ident, prefix, anonymous_field, "!.", field->ident->ident);
+
+                    str.map_ident(field->ident, prefix, anonymous_field, dot, field->ident->ident);
                 }
                 return;
             }
@@ -276,10 +278,11 @@ namespace json2ts {
                 auto s = w.indent_scope();
                 w.writeln("// check resize method existence");
                 w.writeln("// TODO: resize method is experimental feature so that we cast to any");
-                w.writeln("if(typeof (w.view as any).resize == 'function') {");
+                auto w_view = typescript ? "(w.view as any)" : "w.view";
+                w.writeln("if(typeof ", w_view, ".resize == 'function') {");
                 {
                     auto s = w.indent_scope();
-                    w.writeln("(w.view as any).resize(w.view.byteLength + (", len, "));");
+                    w.writeln(w_view, ".resize(w.view.byteLength + (", len, "));");
                 }
                 w.writeln("}");
                 w.writeln("else {");
@@ -316,7 +319,10 @@ namespace json2ts {
                     auto big = bit > 32 ? "Big" : "";
                     // auto ident = str.to_string(field->ident);
                     auto typ_str = get_type(typ);
-                    w.write("w.view.set", big, sign, brgen::nums(bit), "(w.offset, ", ident, " as ", typ_str);
+                    w.write("w.view.set", big, sign, brgen::nums(bit), "(w.offset, ", ident);
+                    if (typescript) {
+                        w.write(" as ", typ_str);
+                    }
                     if (bit != 8) {
                         w.write(", ", endian);
                     }
@@ -350,6 +356,12 @@ namespace json2ts {
                     w.writeln("w.offset += ", len, " * ", brgen::nums(bit / 8), ";");
                     return;
                 }
+            }
+            else if (auto enum_ = ast::as<ast::EnumType>(typ)) {
+                auto base = enum_->base.lock();
+                auto base_ident = base->base_type;
+                write_type_encode(err_ident, ident, base->base_type);
+                return;
             }
             w.writeln("throw new Error('unsupported type for ", ident, "');");
         }
@@ -513,9 +525,15 @@ namespace json2ts {
         }
 
         void write_format(const std::shared_ptr<ast::Format>& fmt) {
-            w.write("export interface ", fmt->ident->ident, " ");
-            write_struct_type(w, fmt->body->struct_type);
-            w.writeln(";");
+            if (typescript) {
+                w.write("export interface ", fmt->ident->ident, " ");
+                write_struct_type(w, fmt->body->struct_type);
+                w.writeln(";");
+            }
+            else {
+                brgen::writer::Writer discard;
+                write_struct_type(discard, fmt->body->struct_type);
+            }
             if (typescript) {
                 w.write("export function ", fmt->ident->ident, "_encode(w :{view :DataView,offset :number}, obj: ", fmt->ident->ident, ") {");
             }
@@ -555,13 +573,19 @@ namespace json2ts {
         void generate(const std::shared_ptr<ast::Program>& p) {
             for (auto& elem : p->elements) {
                 if (auto enum_ = ast::as<ast::Enum>(elem)) {
-                    w.writeln("export const enum ", enum_->ident->ident, " {");
+                    futils::helper::DynDefer d;
+                    if (typescript) {
+                        w.writeln("export const enum ", enum_->ident->ident, " {");
+                        d = futils::helper::defer_ex([&] {
+                            w.writeln("}");
+                        });
+                    }
                     {
                         auto s = w.indent_scope();
                         for (auto& elem : enum_->members) {
                             auto v = str.to_string(elem->value);
-                            w.writeln(elem->ident->ident, " = ", v, ",");
                             if (typescript) {
+                                w.writeln(elem->ident->ident, " = ", v, ",");
                                 str.map_ident(elem->ident, enum_->ident->ident, ".", elem->ident->ident);
                             }
                             else {
@@ -569,7 +593,6 @@ namespace json2ts {
                             }
                         }
                     }
-                    w.writeln("}");
                 }
             }
             auto s = ast::tool::FormatSorter{};
@@ -580,8 +603,9 @@ namespace json2ts {
         }
     };
 
-    std::string generate(const std::shared_ptr<brgen::ast::Program>& p,bool javascript) {
+    std::string generate(const std::shared_ptr<brgen::ast::Program>& p, bool javascript) {
         Generator g;
+        g.typescript = !javascript;
         g.str.this_access = "obj.";
         g.str.cast_handler = [](ast::tool::Stringer& s, const std::shared_ptr<ast::Cast>& c) {
             return s.to_string(c->expr);

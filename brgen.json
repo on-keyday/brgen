@@ -59,7 +59,13 @@
     },
     {
       "generator": "./tool/json2ts",
-      "output_dir": "./ignore/example/ts/"
+      "output_dir": "./ignore/example/ts/",
+      "args": []
+    },
+    {
+      "generator": "./tool/json2ts",
+      "output_dir": "./ignore/example/ts/",
+      "args": ["--javascript"]
     }
   ]
 }

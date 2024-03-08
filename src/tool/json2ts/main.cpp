@@ -22,12 +22,22 @@ struct Flags : futils::cmdline::templ::HelpOption {
 
 int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
     if (flags.spec) {
-        cout << R"({
+        if (flags.javascript) {
+            cout << R"({
+            "input": "file",
+            "langs": ["js"],
+            "suffix": [".js"],
+            "separator": "############\n"
+        })";
+        }
+        else {
+            cout << R"({
             "input": "file",
             "langs": ["ts"],
             "suffix": [".ts"],
             "separator": "############\n"
         })";
+        }
         return 0;
     }
     cerr_color_mode = cerr.is_tty() ? ColorMode::force_color : ColorMode::no_color;
