@@ -6,12 +6,20 @@
 
 namespace json2ts {
     namespace ast = brgen::ast;
+
+    struct AnonymousType {
+        std::string field_name;
+        std::string type;
+        std::shared_ptr<ast::Field> field;
+    };
     struct Generator {
         ast::tool::Stringer str;
         brgen::writer::Writer w;
         bool encode = false;
         std::string prefix = "${THIS}";
         size_t seq_ = 0;
+        std::map<std::shared_ptr<ast::StructType>, AnonymousType> anonymous_types;
+        std::vector<std::shared_ptr<ast::Field>> bit_fields;
 
         size_t get_seq() {
             return seq_++;
@@ -19,7 +27,10 @@ namespace json2ts {
 
         std::string get_type(const std::shared_ptr<ast::Type>& type) {
             if (auto i = ast::as<ast::IntType>(type)) {
-                if (i->bit_size <= 32) {
+                if (i->bit_size == 1) {
+                    return "boolean";
+                }
+                else if (i->bit_size <= 32) {
                     return "number";
                 }
                 else {
@@ -61,57 +72,107 @@ namespace json2ts {
             return "any";
         }
 
-        void write_field(const std::shared_ptr<ast::Field>& field) {
+        void write_field(brgen::writer::Writer& wt, const std::shared_ptr<ast::Field>& field) {
             auto typ = field->field_type;
             if (auto ident = ast::as<ast::IdentType>(typ)) {
                 typ = ident->base.lock();
             }
             if (auto u = ast::as<ast::StructUnionType>(typ)) {
+                assert(!field->ident);
                 bool first = true;
                 auto anonymous_field = "union_" + brgen::nums(get_seq());
-                w.writeln(anonymous_field, ": ");
+                auto ident = std::make_shared<ast::Ident>();
+                ident->base = field;
+                ident->ident = anonymous_field;
+                field->ident = ident;
+                str.map_ident(ident, prefix, anonymous_field);
+                wt.writeln(anonymous_field, ": ");
                 for (auto s : u->structs) {
                     if (!first) {
                         w.writeln("|");
                     }
                     auto p = std::move(prefix);
-                    prefix = brgen::concat(p, anonymous_field, ".");
-                    write_struct_type(s);
+                    prefix = brgen::concat(p, anonymous_field, "!.");
+                    brgen::writer::Writer tmpw;
+
+                    write_struct_type(tmpw, s);
+
                     prefix = std::move(p);
                     first = false;
+                    wt.write_unformatted(tmpw.out());
+                    char prev_char = 0;
+                    std::erase_if(tmpw.out(), [&](char c) {
+                        if (prev_char == ' ' && c == ' ') {
+                            return true;
+                        }
+                        prev_char = c;
+                        return c == '\n';
+                    });
+                    anonymous_types[s] = {anonymous_field, tmpw.out(), field};
+
+                    wt.writeln();
                 }
                 if (!u->exhaustive) {
                     if (!first) {
-                        w.writeln("|");
+                        wt.writeln("|");
                     }
-                    w.write("undefined");
+                    wt.write("undefined");
                 }
-                w.writeln(";");
+                wt.writeln(";");
                 return;
             }
             auto type = get_type(typ);
-            w.writeln(field->ident->ident, ": ", type, ";");
+            wt.writeln(field->ident->ident, ": ", type, ";");
             str.map_ident(field->ident, prefix, field->ident->ident);
         }
 
-        void write_struct_type(const std::shared_ptr<ast::StructType>& typ) {
-            w.writeln("{");
+        void write_struct_type(brgen::writer::Writer& wt, const std::shared_ptr<ast::StructType>& typ) {
+            wt.writeln("{");
             {
-                auto s = w.indent_scope();
+                auto s = wt.indent_scope();
                 for (auto& field : typ->fields) {
                     if (auto f = ast::as<ast::Field>(field)) {
-                        write_field(ast::cast_to<ast::Field>(field));
+                        write_field(wt, ast::cast_to<ast::Field>(field));
                     }
                 }
             }
-            w.writeln("}");
+            wt.write("}");
+        }
+
+        void assert_obj(AnonymousType& typ, const std::shared_ptr<ast::StructType>& st) {
+            if (encode) {
+                w.writeln("if(obj.", typ.field_name, " === undefined) {");
+                {
+                    auto s = w.indent_scope();
+                    w.writeln("throw new Error('field ", typ.field_name, " is undefined');");
+                }
+                w.writeln("}");
+                for (auto& field : st->fields) {
+                    if (auto f = ast::as<ast::Field>(field)) {
+                        auto ident = str.to_string(f->ident);
+                        w.writeln("if(", ident, " === undefined) {");
+                        {
+                            auto s = w.indent_scope();
+                            w.writeln("throw new Error('field ", ident, " is undefined');");
+                        }
+                        w.writeln("}");
+                    }
+                }
+            }
+            else {
+                w.write("obj.", typ.field_name, " = {} as ");
+                w.write_unformatted(typ.type);
+                w.writeln(";");
+            }
         }
 
         void write_if(const std::shared_ptr<ast::If>& if_) {
             auto cond = str.to_string(if_->cond);
-            w.write("if (", cond, ") {");
+            w.writeln("if (", cond, ") {");
             {
                 auto s = w.indent_scope();
+                auto& typ = anonymous_types[if_->then->struct_type];
+                assert_obj(typ, if_->then->struct_type);
                 write_single_node(if_->then);
             }
             w.writeln("}");
@@ -124,6 +185,9 @@ namespace json2ts {
                     w.writeln("{");
                     {
                         auto s = w.indent_scope();
+                        auto struct_ = ast::as<ast::IndentBlock>(if_->els)->struct_type;
+                        auto& typ = anonymous_types[struct_];
+                        assert_obj(typ, struct_);
                         write_single_node(if_->els);
                     }
                     w.writeln("}");
@@ -131,8 +195,37 @@ namespace json2ts {
             }
         }
 
+        void write_match(const std::shared_ptr<ast::Match>& match) {
+            auto cond = match->cond ? str.to_string(match->cond) : "true";
+            bool first = true;
+            for (auto& m : match->branch) {
+                if (!first) {
+                    w.write("else ");
+                }
+                if (ast::is_any_range(m->cond)) {
+                    w.writeln("{");
+                }
+                else {
+                    w.writeln("if (", cond, " === ", str.to_string(m->cond), ") {");
+                }
+                {
+                    auto s = w.indent_scope();
+                    if (auto scope = ast::as<ast::IndentBlock>(m->then)) {
+                        assert_obj(anonymous_types[scope->struct_type], scope->struct_type);
+                    }
+                    else {
+                        auto s = ast::as<ast::ScopedStatement>(m->then);
+                        assert_obj(anonymous_types[s->struct_type], s->struct_type);
+                    }
+                    write_single_node(m->then);
+                }
+                w.writeln("}");
+                first = false;
+            }
+        }
+
         void write_resize_check(std::string_view len, std::string_view field_name) {
-            w.writeln("if (w.offset + (", len, ") > w.view.byteLength) {");
+            w.writeln("if (w.offset + ", len, " > w.view.byteLength) {");
             {
                 auto s = w.indent_scope();
                 w.writeln("// check resize method existence");
@@ -154,7 +247,7 @@ namespace json2ts {
         }
 
         void read_input_size_check(std::string_view len, std::string_view field_name) {
-            w.writeln("if (r.offset + (", len, ") > r.view.byteLength) {");
+            w.writeln("if (r.offset + ", len, " > r.view.byteLength) {");
             {
                 auto s = w.indent_scope();
                 w.writeln("throw new Error('out of buffer at ", field_name, "');");
@@ -162,22 +255,22 @@ namespace json2ts {
             w.writeln("}");
         }
 
-        void write_field_encode(const std::shared_ptr<ast::Field>& field) {
-            auto typ = field->field_type;
+        void write_type_encode(std::string_view ident, const std::shared_ptr<ast::Type>& type) {
+            auto typ = type;
             if (auto ident = ast::as<ast::IdentType>(typ)) {
                 typ = ident->base.lock();
             }
-            if (field->bit_alignment != field->eventual_bit_alignment) {
-            }
+
             if (auto ity = ast::as<ast::IntType>(typ)) {
                 if (ity->is_common_supported) {
                     auto bit = *ity->bit_size;
                     auto sign = ity->is_signed ? "Int" : "Uint";
-                    write_resize_check(brgen::nums(bit / 8), field->ident->ident);
+                    write_resize_check(brgen::nums(bit / 8), ident);
                     auto endian = ity->endian == ast::Endian::little ? "true" : "false";
                     auto big = bit > 32 ? "Big" : "";
-                    auto ident = str.to_string(field->ident);
-                    w.write("w.view.set", big, sign, brgen::nums(bit), "(w.offset, ", ident);
+                    // auto ident = str.to_string(field->ident);
+                    auto typ_str = get_type(typ);
+                    w.write("w.view.set", big, sign, brgen::nums(bit), "(w.offset, ", ident, " as ", typ_str);
                     if (bit != 8) {
                         w.write(", ", endian);
                     }
@@ -195,11 +288,12 @@ namespace json2ts {
                     auto endian = typ->endian == ast::Endian::little ? "true" : "false";
                     auto big = bit > 32 ? "Big" : "";
                     auto class_ = brgen::concat(big, sign, brgen::nums(bit));
-                    write_resize_check(brgen::concat(len, " * ", brgen::nums(bit / 8)), field->ident->ident);
+                    write_resize_check(brgen::concat(len, " * ", brgen::nums(bit / 8)), ident);
                     w.writeln("for (let i = 0; i < ", len, "; i++) {");
                     {
                         auto s = w.indent_scope();
-                        auto ident = str.to_string(field->ident);
+                        // auto ident = str.to_string(field->ident);
+                        auto typ = get_type(arr->element_type);
                         w.write("w.view.set", class_, "(w.offset + i * ", brgen::nums(bit / 8), ", ", ident, "[i]");
                         if (bit != 8) {
                             w.write(", ", endian);
@@ -211,11 +305,11 @@ namespace json2ts {
                     return;
                 }
             }
-            w.writeln("throw new Error('unsupported type for ", field->ident->ident, "');");
+            w.writeln("throw new Error('unsupported type for ", ident, "');");
         }
 
-        void write_field_decode(const std::shared_ptr<ast::Field>& field) {
-            auto typ = field->field_type;
+        void write_type_decode(std::string_view ident, const std::shared_ptr<ast::Type>& type) {
+            auto typ = type;
             if (auto ident = ast::as<ast::IdentType>(typ)) {
                 typ = ident->base.lock();
             }
@@ -223,10 +317,11 @@ namespace json2ts {
                 if (ity->is_common_supported) {
                     auto bit = *ity->bit_size;
                     auto sign = ity->is_signed ? "Int" : "Uint";
-                    read_input_size_check(brgen::nums(bit / 8), field->ident->ident);
+                    read_input_size_check(brgen::nums(bit / 8), ident);
                     auto endian = ity->endian == ast::Endian::little ? "true" : "false";
-                    auto ident = str.to_string(field->ident);
-                    w.write(ident, " = r.view.get", sign, brgen::nums(bit), "(r.offset");
+                    // auto ident = str.to_string(field->ident);
+                    auto big = bit > 32 ? "Big" : "";
+                    w.write(ident, " = r.view.get", big, sign, brgen::nums(bit), "(r.offset");
                     if (bit != 8) {
                         w.write(", ", endian);
                     }
@@ -244,9 +339,9 @@ namespace json2ts {
                     auto endian = typ->endian == ast::Endian::little ? "true" : "false";
                     auto big = bit > 32 ? "Big" : "";
                     auto class_ = brgen::concat(big, sign, brgen::nums(bit), "Array");
-                    auto ident = str.to_string(field->ident);
+                    // auto ident = str.to_string(field->ident);
                     auto total = brgen::concat(len, " * ", brgen::nums(bit / 8));
-                    read_input_size_check(total, field->ident->ident);
+                    read_input_size_check(total, ident);
                     if (bit == 8) {
                         w.writeln(ident, " = new ", class_, "(r.view.buffer, r.offset, ", len, ")");
                     }
@@ -259,7 +354,7 @@ namespace json2ts {
                         w.writeln("for (let i = 0; i < ", len, "; i++) {");
                         {
                             auto s = w.indent_scope();
-                            w.write(ident, "[i] = r.view.get", sign, brgen::nums(bit), "(r.offset + i * ", brgen::nums(bit / 8));
+                            w.write(ident, "[i] = r.view.get", big, sign, brgen::nums(bit), "(r.offset + i * ", brgen::nums(bit / 8));
                             if (bit != 8) {
                                 w.write(", ", endian);
                             }
@@ -271,15 +366,17 @@ namespace json2ts {
                     return;
                 }
             }
-            w.writeln("throw new Error('unsupported type for ", field->ident->ident, "');");
+            w.writeln("throw new Error('unsupported type for ", ident, "');");
         }
 
         void write_field_code(const std::shared_ptr<ast::Field>& field) {
             if (encode) {
-                write_field_encode(field);
+                auto ident = str.to_string(field->ident);
+                write_type_encode(ident, field->field_type);
             }
             else {
-                write_field_decode(field);
+                auto ident = str.to_string(field->ident);
+                write_type_decode(ident, field->field_type);
             }
         }
 
@@ -295,14 +392,37 @@ namespace json2ts {
             else if (auto if_ = ast::as<ast::If>(node)) {
                 write_if(ast::cast_to<ast::If>(node));
             }
+            else if (auto m = ast::as<ast::Match>(node)) {
+                write_match(ast::cast_to<ast::Match>(node));
+            }
             else if (auto field = ast::as<ast::Field>(node)) {
                 write_field_code(ast::cast_to<ast::Field>(node));
+            }
+            else if (auto bin = ast::as<ast::Binary>(node); bin && ast::is_assign_op(bin->op)) {
+                if (bin->op == ast::BinaryOp::define_assign) {
+                    auto init = str.to_string(bin->right);
+                    auto ident = ast::cast_to<ast::Ident>(bin->left);
+                    w.writeln("let ", ident->ident, " = ", init, ";");
+                    str.map_ident(ident, ident->ident);
+                }
+                if (bin->op == ast::BinaryOp::const_assign) {
+                    auto init = str.to_string(bin->right);
+                    auto ident = ast::cast_to<ast::Ident>(bin->left);
+                    w.writeln("const ", ident->ident, " = ", init, ";");
+                    str.map_ident(ident, ident->ident);
+                }
+                else {
+                    auto ident = str.to_string(bin->left);
+                    auto right = str.to_string(bin->right);
+                    w.writeln(ident, " ", ast::to_string(bin->op), " ", right, ";");
+                }
             }
         }
 
         void write_format(const std::shared_ptr<ast::Format>& fmt) {
             w.write("export interface ", fmt->ident->ident, " ");
-            write_struct_type(fmt->body->struct_type);
+            write_struct_type(w, fmt->body->struct_type);
+            w.writeln(";");
             w.write("export function ", fmt->ident->ident, "_encode(w :{view :DataView,offset :number}, obj: ", fmt->ident->ident, ") {");
             {
                 encode = true;
@@ -353,6 +473,14 @@ namespace json2ts {
         g.str.this_access = "obj.";
         g.str.cast_handler = [](ast::tool::Stringer& s, const std::shared_ptr<ast::Cast>& c) {
             return s.to_string(c->expr);
+        };
+        g.str.bin_op_map[ast::BinaryOp::equal] = [](ast::tool::Stringer& s, const std::shared_ptr<ast::Binary>& v) {
+            if (auto ity = ast::as<ast::IntType>(v->left->expr_type)) {
+                if (ity->bit_size == 1) {
+                    return "(" + s.to_string(v->left) + "?1:0)" + " === " + s.to_string(v->right);
+                }
+            }
+            return s.to_string(v->left) + " === " + s.to_string(v->right);
         };
         g.generate(p);
         return g.w.out();
