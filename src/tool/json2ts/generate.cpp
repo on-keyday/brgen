@@ -126,18 +126,23 @@ namespace json2ts {
                 field->ident = ident;
                 str.map_ident(ident, prefix, anonymous_field);
                 wt.writeln(anonymous_field, ": ");
-                auto dot = typescript ? "!." : ".";
+                auto dot = ".";
+                auto p = std::move(prefix);
+                if (typescript) {
+                    prefix = brgen::concat("(", p, anonymous_field, " as any)", dot);
+                }
+                else {
+                    prefix = brgen::concat(p, anonymous_field, dot);
+                }
                 for (auto s : u->structs) {
                     if (!first) {
                         wt.writeln("|");
                     }
-                    auto p = std::move(prefix);
-                    prefix = brgen::concat(p, anonymous_field, dot);
+
                     brgen::writer::Writer tmpw;
 
                     write_struct_type(tmpw, s);
 
-                    prefix = std::move(p);
                     first = false;
                     wt.write_unformatted(tmpw.out());
                     char prev_char = 0;
@@ -152,6 +157,7 @@ namespace json2ts {
 
                     wt.writeln();
                 }
+                std::swap(prefix, p);
                 if (!u->exhaustive) {
                     if (!first) {
                         wt.writeln("|");
@@ -161,8 +167,7 @@ namespace json2ts {
                 wt.writeln(";");
                 for (auto& f : u->union_fields) {
                     auto field = f.lock();
-
-                    str.map_ident(field->ident, prefix, anonymous_field, dot, field->ident->ident);
+                    str.map_ident(field->ident, p, field->ident->ident);
                 }
                 return;
             }

@@ -151,6 +151,15 @@ const handleRust = async (ui :UIModel, s :JobResult) => {
     return handleLanguage(ui,s,caller.getRustCode,Language.RUST,"rust",rustOption);
 }
 
+const handleTypeScript = async (ui :UIModel, s :JobResult) => {
+    const isJavascript = ui.getLanguageConfig(Language.TYPESCRIPT,ConfigKey.TS_JAVASCRIPT);
+    const tsOption : caller.TSOption = {
+        javascript: isJavascript === true,
+    };
+    return handleLanguage(ui,s,caller.getTSCode,Language.TYPESCRIPT,
+       isJavascript?"javascript" : "typescript",tsOption);
+}
+
 const handleJSONOutput = async (ui :UIModel,id :TraceID,value :string,generator:(id :TraceID,srcCode :string,option:any)=>Promise<JobResult>) => {
     const s = await generator(id,value,
     {filename: "editor.bgn"}).catch((e) => {
@@ -223,5 +232,7 @@ export const updateGenerated = async (ui :UIModel) => {
             return handleC(ui,s);
         case Language.RUST:
             return handleRust(ui,s);
+        case Language.TYPESCRIPT:
+            return handleTypeScript(ui,s);
     }
 }
