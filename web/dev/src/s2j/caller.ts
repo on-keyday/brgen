@@ -9,6 +9,7 @@ const WorkerFactory = class {
     #j2go_mgr_ :JobManager |null = null;
     #j2c_mgr_ :JobManager |null = null;
     #j2rs_mgr_ :JobManager |null = null;
+    #j2ts_mgr_ :JobManager |null = null;
 
     getSrc2JSONWorker = () => {
         if(this.#s2j_mgr_) return this.#s2j_mgr_;

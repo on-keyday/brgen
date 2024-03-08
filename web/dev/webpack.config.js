@@ -16,6 +16,7 @@ copyWasm("json2cpp.wasm");
 copyWasm("json2cpp2.wasm");
 copyWasm("json2go.wasm");
 copyWasm("json2c.wasm");
+copyWasm("json2ts.wasm");
 
 let mode = "development";
 if (process.env.WEB_PRODUCTION === "production") {

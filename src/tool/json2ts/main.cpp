@@ -13,10 +13,12 @@ struct Flags : futils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
     bool spec = false;
     bool javascript = false;
+    bool no_color = false;
     void bind(futils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&spec, "s", "spec mode");
         ctx.VarBool(&javascript, "j,javascript", "javascript mode");
+        ctx.VarBool(&no_color, "no-color", "no color mode");
     }
 };
 
@@ -40,7 +42,7 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
         }
         return 0;
     }
-    cerr_color_mode = cerr.is_tty() ? ColorMode::force_color : ColorMode::no_color;
+    cerr_color_mode = cerr.is_tty() && !flags.no_color ? ColorMode::force_color : ColorMode::no_color;
     if (flags.args.empty()) {
         print_error("no input file");
         return 1;
