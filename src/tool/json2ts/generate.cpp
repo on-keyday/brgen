@@ -321,49 +321,56 @@ namespace json2ts {
             w.writeln("}");
         }
 
-        void write_type_encode(std::string_view err_ident, std::string_view ident, const std::shared_ptr<ast::Type>& type) {
+        void write_int_encode(std::string_view err_ident, const std::shared_ptr<ast::IntType>& ity, std::string_view ident) {
+            if (ity->is_common_supported) {
+                auto bit = *ity->bit_size;
+                auto sign = ity->is_signed ? "Int" : "Uint";
+                write_resize_check(brgen::nums(bit / 8), err_ident);
+                auto endian = ity->endian == ast::Endian::little ? "true" : "false";
+                auto big = bit > 32 ? "Big" : "";
+                auto typ = get_type(ity);
+                w.write("w.view.set", big, sign, brgen::nums(bit), "(w.offset,", ident, " as ", typ);
+                if (bit != 8) {
+                    w.write(", ", endian);
+                }
+                w.writeln(");");
+                w.writeln("w.offset += ", brgen::nums(bit / 8), ";");
+                return;
+            }
+        }
+
+        void write_type_encode(std::shared_ptr<ast::Ident> err_ident, std::string_view ident, const std::shared_ptr<ast::Type>& type) {
             auto typ = type;
             if (auto ident = ast::as<ast::IdentType>(typ)) {
                 typ = ident->base.lock();
             }
 
             if (auto ity = ast::as<ast::IntType>(typ)) {
-                if (ity->is_common_supported) {
-                    auto bit = *ity->bit_size;
-                    auto sign = ity->is_signed ? "Int" : "Uint";
-                    write_resize_check(brgen::nums(bit / 8), err_ident);
-                    auto endian = ity->endian == ast::Endian::little ? "true" : "false";
-                    auto big = bit > 32 ? "Big" : "";
-                    // auto ident = str.to_string(field->ident);
-                    auto typ_str = get_type(typ);
-                    w.write("w.view.set", big, sign, brgen::nums(bit), "(w.offset, ", ident);
-                    if (typescript) {
-                        w.write(" as ", typ_str);
-                    }
-                    if (bit != 8) {
-                        w.write(", ", endian);
-                    }
-                    w.writeln(");");
-                    w.writeln("w.offset += ", brgen::nums(bit / 8), ";");
-                    return;
-                }
+                write_int_encode(err_ident->ident, ast::cast_to<ast::IntType>(typ), ident);
+                return;
             }
             else if (auto arr = ast::as<ast::ArrayType>(typ)) {
                 auto elm = arr->element_type;
-                auto len = str.to_string(arr->length);
-                w.writeln("if (", ident, ".length !== ", len, ") {");
-                {
-                    auto s = w.indent_scope();
-                    w.writeln("throw new Error(`array length mismatch for ", ident, " expected=${", len, "} actual=${", ident, ".length}`);");
+                std::string len;
+                if (ast::is_any_range(arr->length)) {
+                    len = brgen::concat(ident, ".length");
                 }
-                w.writeln("}");
+                else {
+                    len = str.to_string(arr->length);
+                    w.writeln("if (", ident, ".length !== ", len, ") {");
+                    {
+                        auto s = w.indent_scope();
+                        w.writeln("throw new Error(`array length mismatch for ", ident, " expected=${", len, "} actual=${", ident, ".length}`);");
+                    }
+                    w.writeln("}");
+                }
                 if (auto typ = ast::as<ast::IntType>(elm); typ && typ->is_common_supported) {
                     auto bit = *typ->bit_size;
                     auto sign = typ->is_signed ? "Int" : "Uint";
                     auto endian = typ->endian == ast::Endian::little ? "true" : "false";
                     auto big = bit > 32 ? "Big" : "";
                     auto class_ = brgen::concat(big, sign, brgen::nums(bit));
-                    write_resize_check(brgen::concat(len, " * ", brgen::nums(bit / 8)), err_ident);
+                    write_resize_check(brgen::concat(len, " * ", brgen::nums(bit / 8)), err_ident->ident);
                     w.writeln("for (let i = 0; i < ", len, "; i++) {");
                     {
                         auto s = w.indent_scope();
@@ -391,43 +398,92 @@ namespace json2ts {
                     return;
                 }
             }
-            w.writeln("throw new Error('unsupported type for ", ident, "');");
+            w.writeln("throw new Error('unsupported type for ", err_ident->ident, "');");
         }
 
-        void write_type_decode(std::string_view err_ident, std::string_view ident, const std::shared_ptr<ast::Type>& type) {
+        void write_int_decode(std::string_view err_ident, const std::shared_ptr<ast::IntType>& ity, std::string_view ident) {
+            if (ity->is_common_supported) {
+                auto bit = *ity->bit_size;
+                auto sign = ity->is_signed ? "Int" : "Uint";
+                read_input_size_check(brgen::nums(bit / 8), err_ident);
+                auto endian = ity->endian == ast::Endian::little ? "true" : "false";
+                // auto ident = str.to_string(field->ident);
+                auto big = bit > 32 ? "Big" : "";
+                w.write(ident, " = r.view.get", big, sign, brgen::nums(bit), "(r.offset");
+                if (bit != 8) {
+                    w.write(", ", endian);
+                }
+                w.writeln(");");
+                w.writeln("r.offset += ", brgen::nums(bit / 8), ";");
+                return;
+            }
+        }
+
+        void write_type_decode(const std::shared_ptr<ast::Ident>& err_ident, std::string_view ident, const std::shared_ptr<ast::Type>& type) {
             auto typ = type;
             if (auto ident = ast::as<ast::IdentType>(typ)) {
                 typ = ident->base.lock();
             }
             if (auto ity = ast::as<ast::IntType>(typ)) {
-                if (ity->is_common_supported) {
-                    auto bit = *ity->bit_size;
-                    auto sign = ity->is_signed ? "Int" : "Uint";
-                    read_input_size_check(brgen::nums(bit / 8), err_ident);
-                    auto endian = ity->endian == ast::Endian::little ? "true" : "false";
-                    // auto ident = str.to_string(field->ident);
-                    auto big = bit > 32 ? "Big" : "";
-                    w.write(ident, " = r.view.get", big, sign, brgen::nums(bit), "(r.offset");
-                    if (bit != 8) {
-                        w.write(", ", endian);
-                    }
-                    w.writeln(");");
-                    w.writeln("r.offset += ", brgen::nums(bit / 8), ";");
-                    return;
-                }
+                write_int_decode(err_ident->ident, ast::cast_to<ast::IntType>(typ), ident);
+                return;
             }
             else if (auto arr = ast::as<ast::ArrayType>(typ)) {
                 auto elm = arr->element_type;
+                std::string len;
+                if (ast::is_any_range(arr->length)) {
+                    if (!err_ident) {
+                        w.writeln("throw new Error('unsupported type for ", err_ident->ident, "');");
+                        return;
+                    }
+                    auto diff = brgen::concat("r.view.byteLength - r.offset");
+                    auto [base, _] = *ast::tool::lookup_base(err_ident);
+                    if (auto f = ast::as<ast::Field>(base->base.lock())) {
+                        if (auto fmt = ast::as<ast::Format>(f->belong.lock())) {
+                            auto compare = brgen::nums(fmt->body->struct_type->fixed_tail_size);
+                            w.writeln("if (", diff, " < ", compare, ") {");
+                            {
+                                auto s = w.indent_scope();
+                                w.writeln("throw new Error(`insufficient buffer for ", err_ident->ident, " require=${", compare, "} actual=${", diff, "}`);");
+                            }
+                            w.writeln("}");
+                            auto len_in_bytes = brgen::concat("(", diff, "-", compare, ")");
+                            if (!arr->element_type->bit_size) {
+                                w.writeln("throw new Error('unsupported type for ", err_ident->ident, "');");
+                                return;
+                            }
+                            auto bytes = brgen::nums(*arr->element_type->bit_size / 8);
+
+                            if (bytes != "1") {
+                                w.writeln("if (", len_in_bytes, " % ", bytes, " !== 0) {");
+                                {
+                                    auto s = w.indent_scope();
+                                    w.writeln("throw new Error(`invalid buffer size for ", err_ident->ident, " require multiple of ", bytes, " actual=${", len_in_bytes, "}`);");
+                                }
+                                w.writeln("}");
+                                len = brgen::concat(len_in_bytes, " / ", bytes);
+                            }
+                            else {
+                                len = len_in_bytes;
+                            }
+                        }
+                    }
+                    if (len == "") {
+                        w.writeln("throw new Error('unsupported type for ", err_ident->ident, "');");
+                        return;
+                    }
+                }
+                else {
+                    len = str.to_string(arr->length);
+                }
                 if (auto typ = ast::as<ast::IntType>(elm); typ && typ->is_common_supported) {
                     auto bit = *typ->bit_size;
                     auto sign = typ->is_signed ? "Int" : "Uint";
-                    auto len = str.to_string(arr->length);
                     auto endian = typ->endian == ast::Endian::little ? "true" : "false";
                     auto big = bit > 32 ? "Big" : "";
                     auto class_ = brgen::concat(big, sign, brgen::nums(bit), "Array");
-                    // auto ident = str.to_string(field->ident);
                     auto total = brgen::concat(len, " * ", brgen::nums(bit / 8));
-                    read_input_size_check(total, err_ident);
+                    read_input_size_check(total, err_ident->ident);
                     if (bit == 8) {
                         w.writeln(ident, " = new ", class_, "(r.view.buffer, r.offset, ", len, ")");
                     }
@@ -464,7 +520,7 @@ namespace json2ts {
                     return;
                 }
             }
-            w.writeln("throw new Error('unsupported type for ", err_ident, "');");
+            w.writeln("throw new Error('unsupported type for ", err_ident->ident, "');");
         }
 
         void write_bit_field_code(BitFields& bit_field) {
@@ -485,12 +541,12 @@ namespace json2ts {
                     sum += sp;
                     w.writeln(bit_field.field_name, " |= (", ident, " & ", brgen::nums((1 << sp) - 1), ") << ", brgen::nums(bit_size - sum), ";");
                 }
-                write_type_encode(bit_field.field_name, bit_field.field_name, bit_field.type);
+                write_int_encode(bit_field.field_name, bit_field.type, bit_field.field_name);
             }
             else {
                 auto bit_size = *bit_field.bit_size;
                 w.writeln("let ", bit_field.field_name, " = 0;");
-                write_type_decode(bit_field.field_name, bit_field.field_name, bit_field.type);
+                write_int_decode(bit_field.field_name, bit_field.type, bit_field.field_name);
                 size_t sum = 0;
                 for (auto& split : bit_field.bit_fields) {
                     auto sp = *split->field_type->bit_size;
@@ -515,11 +571,11 @@ namespace json2ts {
             }
             if (encode) {
                 auto ident = str.to_string(field->ident);
-                write_type_encode(field->ident->ident, ident, field->field_type);
+                write_type_encode(field->ident, ident, field->field_type);
             }
             else {
                 auto ident = str.to_string(field->ident);
-                write_type_decode(field->ident->ident, ident, field->field_type);
+                write_type_decode(field->ident, ident, field->field_type);
             }
         }
 
