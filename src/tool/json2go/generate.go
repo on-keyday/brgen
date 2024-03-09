@@ -503,6 +503,11 @@ func (g *Generator) writeFieldEncode(p *ast2go.Field) {
 			return
 		}
 	}
+	if enum_type, ok := typ.(*ast2go.EnumType); ok {
+		converted := g.exprStringer.ExprString(p.Ident)
+		g.writeAppendUint(*enum_type.BitSize, converted)
+		return
+	}
 	if arr_type, ok := typ.(*ast2go.ArrayType); ok {
 		if i_typ, ok := arr_type.ElementType.(*ast2go.IntType); ok && *i_typ.BitSize == 8 {
 			converted := g.exprStringer.ExprString(p.Ident)
@@ -538,7 +543,7 @@ func (g *Generator) writeFieldEncode(p *ast2go.Field) {
 	}
 }
 
-func (g *Generator) writeReadUint(size uint64, tmpName, field string, sign bool) {
+func (g *Generator) writeReadUint(size uint64, tmpName, field string, sign bool, enumTy *string) {
 	g.PrintfFunc("tmp%s := [%d]byte{}\n", tmpName, size/8)
 	g.PrintfFunc("n_%s, err := io.ReadFull(r,tmp%s[:])\n", tmpName, tmpName)
 	g.PrintfFunc("if err != nil {\n")
@@ -556,10 +561,16 @@ func (g *Generator) writeReadUint(size uint64, tmpName, field string, sign bool)
 	if !sign {
 		signStr = "u"
 	}
-	if size == 8 {
-		g.PrintfFunc("t.%s = %sint%d(tmp%s[0])\n", field, signStr, size, tmpName)
+	castTo := ""
+	if enumTy != nil {
+		castTo = fmt.Sprintf("%s", *enumTy)
 	} else {
-		g.PrintfFunc("t.%s = %sint%d(binary.BigEndian.Uint%d(tmp%s[:]))\n", field, signStr, size, size, tmpName)
+		castTo = fmt.Sprintf("%sint%d", signStr, size)
+	}
+	if size == 8 {
+		g.PrintfFunc("t.%s = %s(tmp%s[0])\n", field, castTo, tmpName)
+	} else {
+		g.PrintfFunc("t.%s = %s(binary.BigEndian.Uint%d(tmp%s[:]))\n", field, castTo, size, tmpName)
 	}
 }
 
@@ -571,7 +582,7 @@ func (g *Generator) writeFieldDecode(p *ast2go.Field) {
 		return
 	}
 	if b, ok := g.bitFields[p]; ok {
-		g.writeReadUint(b.Size, b.Ident.Ident, b.Ident.Ident, false)
+		g.writeReadUint(b.Size, b.Ident.Ident, b.Ident.Ident, false, nil)
 		return
 	}
 	typ := p.FieldType
@@ -588,9 +599,13 @@ func (g *Generator) writeFieldDecode(p *ast2go.Field) {
 	}
 	if i_type, ok := typ.(*ast2go.IntType); ok {
 		if i_type.IsCommonSupported {
-			g.writeReadUint(*i_type.BitSize, fieldName, converted, i_type.IsSigned)
+			g.writeReadUint(*i_type.BitSize, fieldName, converted, i_type.IsSigned, nil)
 			return
 		}
+	}
+	if enum_type, ok := typ.(*ast2go.EnumType); ok {
+		g.writeReadUint(*enum_type.BitSize, fieldName, converted, false, &enum_type.Base.Ident.Ident)
+		return
 	}
 	if arr_type, ok := typ.(*ast2go.ArrayType); ok {
 		if i_typ, ok := arr_type.ElementType.(*ast2go.IntType); ok && *i_typ.BitSize == 8 {
