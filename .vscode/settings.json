@@ -137,7 +137,6 @@
     "editor.formatOnSave": true,
     "editor.formatOnType": false,
     "cmake.configureOnOpen": false,
-    "audioCues.volume": 0,
     "cSpell.words": [
         "brgen",
         "GTEST",
@@ -153,5 +152,6 @@
     //"go.buildTags": "js,wasm"
     "yaml.schemas": {
         "https://ultra-supara/homebrew-sisakulint/settings.json": "/.github/workflows/*.{yml,yaml}"
-    }
+    },
+    "accessibility.signals.sounds.volume": 0
 }
