@@ -78,6 +78,11 @@ namespace json2ts {
             if (auto ident = ast::as<ast::EnumType>(type)) {
                 return ident->base.lock()->ident->ident;
             }
+            if (auto s = ast::as<ast::StructType>(type)) {
+                if (auto memb = ast::as<ast::Member>(s->base.lock())) {
+                    return memb->ident->ident;
+                }
+            }
             return "any";
         }
 
@@ -345,24 +350,23 @@ namespace json2ts {
             }
             else if (auto arr = ast::as<ast::ArrayType>(typ)) {
                 auto elm = arr->element_type;
+                auto len = str.to_string(arr->length);
+                w.writeln("if (", ident, ".length !== ", len, ") {");
+                {
+                    auto s = w.indent_scope();
+                    w.writeln("throw new Error(`array length mismatch for ", ident, " expected=${", len, "} actual=${", ident, ".length}`);");
+                }
+                w.writeln("}");
                 if (auto typ = ast::as<ast::IntType>(elm); typ && typ->is_common_supported) {
                     auto bit = *typ->bit_size;
                     auto sign = typ->is_signed ? "Int" : "Uint";
-                    auto len = str.to_string(arr->length);
                     auto endian = typ->endian == ast::Endian::little ? "true" : "false";
                     auto big = bit > 32 ? "Big" : "";
                     auto class_ = brgen::concat(big, sign, brgen::nums(bit));
                     write_resize_check(brgen::concat(len, " * ", brgen::nums(bit / 8)), err_ident);
-                    w.writeln("if (", ident, ".length !== ", len, ") {");
-                    {
-                        auto s = w.indent_scope();
-                        w.writeln("throw new Error(`array length mismatch for ", ident, " expected=${", len, "} actual=${", ident, ".length}`);");
-                    }
-                    w.writeln("}");
                     w.writeln("for (let i = 0; i < ", len, "; i++) {");
                     {
                         auto s = w.indent_scope();
-                        // auto ident = str.to_string(field->ident);
                         auto typ = get_type(arr->element_type);
                         w.write("w.view.set", class_, "(w.offset + i * ", brgen::nums(bit / 8), ", ", ident, "[i]");
                         if (bit != 8) {
@@ -380,6 +384,12 @@ namespace json2ts {
                 auto base_ident = base->base_type;
                 write_type_encode(err_ident, ident, base->base_type);
                 return;
+            }
+            else if (auto struct_ = ast::as<ast::StructType>(typ)) {
+                if (auto memb = ast::as<ast::Member>(struct_->base.lock())) {
+                    w.writeln(memb->ident->ident, "_encode(w, ", ident, ");");
+                    return;
+                }
             }
             w.writeln("throw new Error('unsupported type for ", ident, "');");
         }
@@ -439,6 +449,18 @@ namespace json2ts {
                         w.writeln("}");
                     }
                     w.writeln("r.offset += ", total, ";");
+                    return;
+                }
+            }
+            else if (auto enum_ = ast::as<ast::EnumType>(typ)) {
+                auto base = enum_->base.lock();
+                auto base_ident = base->base_type;
+                write_type_decode(err_ident, ident, base->base_type);
+                return;
+            }
+            else if (auto struct_ = ast::as<ast::StructType>(typ)) {
+                if (auto memb = ast::as<ast::Member>(struct_->base.lock())) {
+                    w.writeln(ident, " = ", memb->ident->ident, "_decode(r);");
                     return;
                 }
             }
