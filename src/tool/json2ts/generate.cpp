@@ -358,6 +358,7 @@ namespace json2ts {
                         auto s = w.indent_scope();
                         w.writeln("throw new Error(`array length mismatch for ", ident, " expected=${", len, "} actual=${", ident, ".length}`);");
                     }
+                    w.writeln("}");
                     w.writeln("for (let i = 0; i < ", len, "; i++) {");
                     {
                         auto s = w.indent_scope();
