@@ -296,7 +296,7 @@ namespace json2ts {
                 w.writeln("// check resize method existence");
                 w.writeln("// TODO: resize method is experimental feature so that we cast to any");
                 auto w_view = typescript ? "(w.view.buffer as any)" : "w.view.buffer";
-                w.writeln("if(typeof ", w_view, ".resize == 'function') {");
+                w.writeln("if(typeof ", w_view, ".resize == 'function' && ", w_view, "?.resizable === true) {");
                 {
                     auto s = w.indent_scope();
                     w.writeln(w_view, ".resize(w.view.byteLength + (", len, "));");
