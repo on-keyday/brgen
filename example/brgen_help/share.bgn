@@ -1,15 +1,18 @@
 
+format ID:
+    id :[16]u8
+
 format OpenRequest:
     reserved :u7
     is_owner :u1
-    share_id :[16]u8
+    share_id :ID
 
 format OpenReply:
     reserved :u7
     success :u1
     if success == 1:
-        share_id :[16]u8
-        client_id :[16]u8
+        share_id :ID
+        client_id :ID
     else:
         len :u8
         message :[len]u8
@@ -24,6 +27,30 @@ enum MessageType:
 format Message:
     msg_type :MessageType
     if msg_type == MessageType.interact:
-        target :[16]u8
+        target :ID
     len :u8
     message :[len]u8
+
+enum ControlType:
+    :u8
+    change_permission = 0
+    close_hub = 1
+
+enum Permission:
+    :u16
+    none = 0
+    read = 1
+    write = 2
+    dismiss = 4
+    change_permission = 8
+    destroy_hub = 16
+    broadcast = 32
+    admin = 0xffff
+
+format ControlMessage:
+    control_type :ControlType
+    if control_type == ControlType.change_permission:
+        client_id :ID
+        permission :Permission
+    else:
+        ..
