@@ -353,6 +353,11 @@ namespace json2ts {
                     auto big = bit > 32 ? "Big" : "";
                     auto class_ = brgen::concat(big, sign, brgen::nums(bit));
                     write_resize_check(brgen::concat(len, " * ", brgen::nums(bit / 8)), err_ident);
+                    w.writeln("if (", ident, ".length !== ", len, ") {");
+                    {
+                        auto s = w.indent_scope();
+                        w.writeln("throw new Error(`array length mismatch for ", ident, " expected=${", len, "} actual=${", ident, ".length}`);");
+                    }
                     w.writeln("for (let i = 0; i < ", len, "; i++) {");
                     {
                         auto s = w.indent_scope();
