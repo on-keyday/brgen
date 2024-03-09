@@ -22,12 +22,16 @@ enum MessageType:
     control = 0
     interact = 1
     broadcast = 2
-    error = 3
+    interact_reply = 3
+    broadcast_reply = 4
+    error = 5
 
 
 format Message:
     msg_type :MessageType
-    if msg_type == MessageType.interact:
+    if msg_type == MessageType.interact ||
+       msg_type == MessageType.broadcast_reply||
+       msg_type == MessageType.interact_reply:
         client_id :ID
     len :u8
     message :[len]u8
