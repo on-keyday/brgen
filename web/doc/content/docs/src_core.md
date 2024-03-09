@@ -103,9 +103,9 @@ src/core/ast/node/translate.h には変換される先のノードが入って�
 - Ident.base は識別子の定義元への参照を表す。以下の型のパターンがありえる。
 
   - null -　未解決の参照
-  - Ident - 定義元識別子への参照。IdentUsage が`reference`で始まる。した２つ
+  - Ident - 定義元識別子への参照。このとき Ident.usage が`IdentUsage::reference*`のいずれかになる
   - MemberAccess - メンバーへのアクセス経由での参照。MemberAccess.base が定義元識別子への参照になる
-  - 上記 2 つは以下のいづれかを指す Ident.base を持った Ident への参照を保持する。そうでない場合それはバグである。
+  - 上記 2 つは以下のいずれかを指す Ident.base を持った Ident への参照を保持する。そうでない場合それはバグである。
   - Binary - 代入演算への参照。この場合変数が`:=`や`::=`演算子を使って定義されたことを表す
   - Field - フィールドへの参照
   - Format - フォーマットへの参照
@@ -172,6 +172,36 @@ src/core/ast/node/translate.h には変換される先のノードが入って�
 - ast/ast.h/as - もし、新たな基底型を追加する場合は、場合分け(Expr や Type のある部分)にその基底を追加する
 - ast/node_type_list.h/do_dump - もし列挙型を追加する場合は他の列挙型と同じように追加する。
 
+### null にならない制約
+
+AST の生成の都合上 null になりえる表現になっている箇所があるが、正規の brgen の parser では null にならない
+箇所について述べる。ジェネレーターはこの制約を前提にしてよい(もしその通りになっていなかったらそれはバグである)
+
+- IntType.bit_size
+- FloatType.bit_size
+- MemberAccess.member
+- Format.ident
+- State.ident
+- Enum.ident
+
+### StructUnionType の扱いについて
+
+StructUnionType が field_type に設定されている Field は特別な扱いを要する。
+StructUnionType は C 言語における以下のような形式に変換されうる。
+
+```c
+union {
+  struct {
+    int a;
+  }_1;
+  struct {
+    char b;
+  }_2;
+}
+```
+
+もちろん実装者は好きなように実装していいが、なにかしらここの部分のユーザーインターフェースについて説明が要される。
+
 ### その他メモ
 
 - 型名の識別子(Ident)の expr_type は nullptr
@@ -184,7 +214,7 @@ format A: <--ここの識別子や
 A # <--ここの識別子のexpr_typeはnullptr
 ```
 
-- Typing クラス実装時 StructType を不用意に用いると木構造が再帰して木構造でなくなる場合があるので注意。代わりに IdentType を用いること。
+- middle::Typing クラス実装時 StructType を不用意に用いると木構造が再帰して木構造でなくなる場合があるので注意。代わりに IdentType を用いること。
 - IdentType の base は IdentType にならないようにすること。
 
 {{< mermaid >}}
