@@ -40,6 +40,8 @@ enum ControlType:
     :u8
     change_permission = 0
     close_hub = 1
+    request_permission = 2
+    notify_permission_request = 3
 
 enum Permission:
     :u16
@@ -54,8 +56,11 @@ enum Permission:
 
 format ControlMessage:
     control_type :ControlType
-    if control_type == ControlType.change_permission:
+    if control_type == ControlType.change_permission || 
+       control_type == ControlType.notify_permission_request:
         client_id :ID
+        permission :Permission
+    elif control_type == ControlType.request_permission:
         permission :Permission
     else:
         ..
