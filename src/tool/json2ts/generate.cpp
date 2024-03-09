@@ -134,6 +134,7 @@ namespace json2ts {
                 else {
                     prefix = brgen::concat(p, anonymous_field, dot);
                 }
+                size_t i = 0;
                 for (auto s : u->structs) {
                     if (!first) {
                         wt.writeln("|");
@@ -154,6 +155,12 @@ namespace json2ts {
                         return c == '\n';
                     });
                     anonymous_types[s] = {anonymous_field, tmpw.out(), field};
+
+                    if (typescript) {
+                        auto& name = field->belong.lock()->ident->ident;
+                        w.writeln("export interface ", name, "_", anonymous_field, "_", brgen::nums(i), " ", tmpw.out(), ";");
+                        i++;
+                    }
 
                     wt.writeln();
                 }
@@ -293,7 +300,7 @@ namespace json2ts {
                 w.writeln("else {");
                 {
                     auto s = w.indent_scope();
-                    w.writeln("throw new Error('out of buffer at ", field_name, "');");
+                    w.writeln("throw new Error(`out of buffer at ", field_name, ". len=${", len, "} > remain=${w.view.byteLength - w.offset}`);");
                 }
                 w.writeln("}");
             }
@@ -304,7 +311,7 @@ namespace json2ts {
             w.writeln("if (r.offset + ", len, " > r.view.byteLength) {");
             {
                 auto s = w.indent_scope();
-                w.writeln("throw new Error('out of buffer at ", field_name, "');");
+                w.writeln("throw new Error(`out of buffer at ", field_name, ". len=${", len, "} > remain=${r.view.byteLength - r.offset}`);");
             }
             w.writeln("}");
         }
@@ -460,12 +467,12 @@ namespace json2ts {
                 for (auto& split : bit_field.bit_fields) {
                     auto sp = *split->field_type->bit_size;
                     auto ident = str.to_string(split->ident);
+                    sum += sp;
                     w.write(ident, " = ((", bit_field.field_name, " >>> ", brgen::nums(bit_size - sum), ") & ", brgen::nums((1 << sp) - 1), ")");
                     if (sp == 1) {
                         w.write(" === 1");
                     }
                     w.writeln(";");
-                    sum += sp;
                 }
             }
         }
@@ -530,14 +537,15 @@ namespace json2ts {
         }
 
         void write_format(const std::shared_ptr<ast::Format>& fmt) {
+            brgen::writer::Writer tmpw;
             if (typescript) {
-                w.write("export interface ", fmt->ident->ident, " ");
-                write_struct_type(w, fmt->body->struct_type);
-                w.writeln(";");
+                tmpw.write("export interface ", fmt->ident->ident, " ");
+                write_struct_type(tmpw, fmt->body->struct_type);
+                tmpw.writeln(";");
+                w.write_unformatted(tmpw.out());
             }
             else {
-                brgen::writer::Writer discard;
-                write_struct_type(discard, fmt->body->struct_type);
+                write_struct_type(tmpw, fmt->body->struct_type);
             }
             if (typescript) {
                 w.write("export function ", fmt->ident->ident, "_encode(w :{view :DataView,offset :number}, obj: ", fmt->ident->ident, ") {");
