@@ -378,6 +378,8 @@ namespace brgen::middle {
                 if (auto t = ast::as<ast::IntType>(n); t) {
                     auto align = (*t->bit_size % futils::bit_per_byte);
                     t->bit_alignment = ast::BitAlignment(align + int(ast::BitAlignment::byte_aligned));
+                    assert(t->bit_alignment != ast::BitAlignment::not_target &&
+                           t->bit_alignment != ast::BitAlignment::not_decidable);
                 }
                 if (auto t = ast::as<ast::FloatType>(n); t) {
                     auto align = (*t->bit_size % futils::bit_per_byte);
@@ -433,7 +435,11 @@ namespace brgen::middle {
                 }
                 if (auto e = ast::as<ast::EnumType>(n)) {
                     auto b = e->base.lock();
+
                     if (b && b->base_type) {
+                        ast::traverse(b, [&](auto&& n) {
+                            f(f, n);
+                        });
                         e->bit_alignment = b->base_type->bit_alignment;
                         e->bit_size = b->base_type->bit_size;
                     }
