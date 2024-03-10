@@ -19,7 +19,7 @@
             "request": "launch",
             "program": "${workspaceRoot}/tool/src2json",
             "args": [
-                "c:/workspace/shbrgen/brgen/example/llvm_ir.bgn",
+                "c:/workspace/shbrgen/brgen/example/brgen_help/share.bgn",
                 //"--check-ast"
             ],
             "stopAtEntry": false,
@@ -34,7 +34,7 @@
             "type": "go",
             "request": "launch",
             "mode": "debug",
-            "program": "${workspaceRoot}/src/tool/json2mermaid",
+            "program": "${workspaceRoot}/src/tool/json2go",
             "args": ["-f","ignore/sample.json"],
             "cwd": "${workspaceRoot}",
         },

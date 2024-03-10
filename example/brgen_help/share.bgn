@@ -26,6 +26,9 @@ enum MessageType:
     broadcast_reply = 4
     error = 5
 
+format PlainMessage:
+    len :u8
+    message :[len]u8
 
 format Message:
     msg_type :MessageType
@@ -33,8 +36,10 @@ format Message:
        msg_type == MessageType.broadcast_reply||
        msg_type == MessageType.interact_reply:
         client_id :ID
-    len :u8
-    message :[len]u8
+    if msg_type == MessageType.control:
+        control :ControlMessage
+    else:
+        message :PlainMessage
 
 enum ControlType:
     :u8
