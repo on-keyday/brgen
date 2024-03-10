@@ -47,6 +47,7 @@ enum ControlType:
     close_hub = 1
     request_permission = 2
     notify_permission_request = 3
+    
 
 enum Permission:
     :u16
