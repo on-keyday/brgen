@@ -401,7 +401,7 @@ jobs:
           sha256sum brgen-vscode-extension.zip >> brgen-checksum.txt
           cd ..
       - name: Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: |
             ./artifacts/brgen-checksum.txt
