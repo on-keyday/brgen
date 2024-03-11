@@ -7,6 +7,7 @@ import (
 	"go/token"
 	"io"
 	"sort"
+	"strconv"
 	"strings"
 
 	ast2go "github.com/on-keyday/brgen/ast2go/ast"
@@ -342,9 +343,15 @@ func (config *GenConfig) LookupGoConfig(prog *ast2go.Program) error {
 			if asCall {
 				return fmt.Errorf("config.go.package must be assignment")
 			}
-			expr := ConvertAst(args[0]).(ast.Expr)
-			pkgName := evalConstant(expr)
-			config.PackageName = pkgName.String()
+			expr, ok := args[0].(*ast2go.StrLiteral)
+			if !ok {
+				return fmt.Errorf("config.go.package must be string")
+			}
+			pkgName, err := strconv.Unquote(expr.Value)
+			if err != nil {
+				return err
+			}
+			config.PackageName = pkgName
 		}
 		return nil
 	})
