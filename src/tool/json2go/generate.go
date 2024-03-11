@@ -704,7 +704,7 @@ func (g *Generator) writeIf(if_ *ast2go.If, enc bool) {
 	for if_.Els != nil {
 		if if_2, ok := if_.Els.(*ast2go.If); ok {
 			g.PrintfFunc("} else if %s {\n", g.exprStringer.ExprString(if_2.Cond))
-			for _, elem := range if_.Then.Elements {
+			for _, elem := range if_2.Then.Elements {
 				g.writeSingleNode(elem, enc)
 			}
 			if_ = if_2
