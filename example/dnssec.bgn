@@ -1,0 +1,19 @@
+
+dns ::= config.import("./dns.bgn")
+
+format DNSKeyRData:
+    flags :u16
+    protocol :u8
+    algorithm :u8
+    public_key :[..]u8
+
+format RRSIGRData:
+    type_covered :u16
+    algorithm :u8
+    labels :u8
+    original_ttl :u32
+    signature_expiration :u32
+    signature_inception :u32
+    key_tag :u16
+    signer_name :dns.DomainName
+    signature :[..]u8
