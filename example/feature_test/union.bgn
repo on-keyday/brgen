@@ -32,14 +32,14 @@ format LEB128:
   fn encode():
     data := value
     # encode value to LEB128
-    loop data > 0:
+    for data > 0:
       output.put(0x80 | (data & 0x7f))
       data = data >> 7
 
   fn decode():
     # decode LEB128 to value
     i := 0
-    loop value < 0x80:
+    for value < 0x80:
       byte := input.get()
       value = value | (byte & 0x7f) << (i * 7)
       i = i + 1

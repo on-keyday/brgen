@@ -403,7 +403,27 @@ namespace brgen::middle {
                     left_ident->usage = ast::IdentUsage::define_const;
                     left_ident->constant_level = ast::ConstantLevel::immutable_variable;
                 }
-                else if () {
+                // `for x in 1..10`, x is base_type of range
+                else if (auto r = ast::as<ast::RangeType>(new_type)) {
+                    left_ident->expr_type = r->base_type;
+                    left_ident->usage = ast::IdentUsage::define_const;
+                    left_ident->constant_level = ast::ConstantLevel::immutable_variable;
+                }
+                // `for x in array`, x is element type of array
+                else if (auto arr = ast::as<ast::ArrayType>(new_type)) {
+                    left_ident->expr_type = arr->element_type;
+                    if (right->constant_level == ast::ConstantLevel::constant ||
+                        right->constant_level == ast::ConstantLevel::immutable_variable) {
+                        left_ident->usage = ast::IdentUsage::define_const;
+                        left_ident->constant_level = ast::ConstantLevel::immutable_variable;
+                    }
+                    else {
+                        left_ident->usage = ast::IdentUsage::define_variable;
+                        left_ident->constant_level = ast::ConstantLevel::variable;
+                    }
+                }
+                else {
+                    error(b->loc, "cannot use ", ast::node_type_to_string(new_type->node_type), " in `for in` syntax; integer, string, range, and array are allowed").report();
                 }
             }
         }

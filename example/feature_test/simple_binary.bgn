@@ -9,5 +9,5 @@ V ::= if n < 10 && n > -10:
 else: 
    n / 2
 
-loop i:=0; i<10; i=i+1 :
+for i in 10:
    print(i)

@@ -46,21 +46,21 @@ match c:
 
 ..=
 
-loop:
+for:
     c = 1
     break
     c = 2
     continue
     c = 3   
 
-loop i:=0; i<10; i = i + 1:
+for i:=0; i<10; i = i + 1:
     c = 1
     break
     c = 2
     continue
     c = 3
 
-loop c == 1:
+for c == 1:
     return
     return 0
 
@@ -117,7 +117,7 @@ if y == 20:
 if y == 0:
     return 0
 
-loop i:=0;i<10;i = i+1:
+for i:=0;i<10;i = i+1:
     break
 
 z ::= y == 10 ? 1 : 0

@@ -761,7 +761,8 @@ namespace brgen::ast {
 
         void check_assignment(const std::shared_ptr<Binary>& assign) {
             if (assign->op == ast::BinaryOp::define_assign ||
-                assign->op == ast::BinaryOp::const_assign) {
+                assign->op == ast::BinaryOp::const_assign ||
+                assign->op == ast::BinaryOp::in_assign) {
                 auto ident = ast::as<ast::Ident>(assign->left);
                 if (!ident) {
                     s.report_error(assign->left->loc, "left of := or ::= must be ident");

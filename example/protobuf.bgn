@@ -3,7 +3,7 @@ format Varint:
     value :u64
 
     fn decode():
-        loop:
+        for:
             v := input.get()
             if v < 0x80:
                 value = v
@@ -12,7 +12,7 @@ format Varint:
       
 
     fn encode():
-        loop:
+        for:
             v := u8(value & 0x7f)
             value = value >> 7
             if value == 0:

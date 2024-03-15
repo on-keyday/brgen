@@ -48,14 +48,14 @@ format VBR:
     fields :[]VBRField
 
     fn decode():
-        loop:
+        for:
            f :VBRField
            fields[fields.length] = f # append
            if f.cont == 0:
                 break
     
     fn encode():
-        loop i:= u64(0); i< fields.length; i = i+1:
+        for i:= u64(0); i< fields.length; i = i+1:
             if i == fields.length-1:
                 fields[i].cont = 0
             else:

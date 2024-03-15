@@ -20,7 +20,7 @@ format Len:
         else:
             len_of_len := 0
             val := len
-            loop val > 0:
+            for val > 0:
                 len_of_len = len_of_len + 1
                 val = val >> 8
             return len_of_len + 1
@@ -32,7 +32,7 @@ format Len:
         else:
             len_of_len := size() - 1
             output.put(u8(0x80 | len_of_len))
-            loop len_of_len > 0:
+            for len_of_len > 0:
                 output.put(u8(len >> (len_of_len - 1) * 8))
                 len_of_len = len_of_len - 1
 
@@ -44,7 +44,7 @@ format Len:
         else:
             len_of_len := val & 0x7f
             len = 0
-            loop len_of_len > 0:
+            for len_of_len > 0:
                 len = len << 8
                 v ::= input.get()
                 len = len | u64(v)

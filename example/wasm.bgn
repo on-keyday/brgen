@@ -4,7 +4,7 @@ format Uint32:
     config.cpp.replace("wasm::Varint32")
 
     fn encode():
-        loop:
+        for:
             byte := u8(value & 0x7f)
             value = value >> 7
             if value == 0:
@@ -15,7 +15,7 @@ format Uint32:
     
     fn decode():
         shift := 0
-        loop:
+        for:
             byte := u8(input.get())
             value = value | (u32(byte & 0x7f) << shift)
             if byte & 0x80 == 0:
@@ -31,7 +31,7 @@ format Uint64:
     config.cpp.replace("wasm::Varint64")
 
     fn encode():
-        loop:
+        for:
             byte := u8(value & 0x7f)
             value = value >> 7
             if value == 0:
@@ -42,7 +42,7 @@ format Uint64:
     
     fn decode():
         shift := 0
-        loop:
+        for:
             byte ::= input.get()
             value = value | u64(byte & 0x7f) << shift
             if byte & 0x80 == 0:
