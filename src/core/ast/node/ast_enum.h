@@ -112,6 +112,7 @@ enum class BinaryOp {
     bit_or_assign,
     bit_xor_assign,
     comma,
+    in_assign,
 };
 constexpr const char* to_string(BinaryOp e) {
     switch(e) {
@@ -153,6 +154,7 @@ constexpr const char* to_string(BinaryOp e) {
     case BinaryOp::bit_or_assign: return "|=";
     case BinaryOp::bit_xor_assign: return "^=";
     case BinaryOp::comma: return ",";
+    case BinaryOp::in_assign: return "in";
     default: return nullptr;
     }
 }
@@ -196,12 +198,13 @@ template<>constexpr std::optional<BinaryOp> from_string<BinaryOp>(std::string_vi
     if(str == "|=") return BinaryOp::bit_or_assign;
     if(str == "^=") return BinaryOp::bit_xor_assign;
     if(str == ",") return BinaryOp::comma;
+    if(str == "in") return BinaryOp::in_assign;
     return std::nullopt;
 }
 template<>constexpr size_t enum_elem_count<BinaryOp>() {
-    return 38;
+    return 39;
 }
-template<>constexpr std::array<std::pair<BinaryOp,std::string_view>,38> make_enum_array<BinaryOp>() {
+template<>constexpr std::array<std::pair<BinaryOp,std::string_view>,39> make_enum_array<BinaryOp>() {
     return {
         std::pair{BinaryOp::mul,"*"},
         std::pair{BinaryOp::div,"/"},
@@ -241,9 +244,10 @@ template<>constexpr std::array<std::pair<BinaryOp,std::string_view>,38> make_enu
         std::pair{BinaryOp::bit_or_assign,"|="},
         std::pair{BinaryOp::bit_xor_assign,"^="},
         std::pair{BinaryOp::comma,","},
+        std::pair{BinaryOp::in_assign,"in"},
     };
 }
-template<>constexpr std::array<std::pair<BinaryOp,std::string_view>,38> make_enum_name_array<BinaryOp>() {
+template<>constexpr std::array<std::pair<BinaryOp,std::string_view>,39> make_enum_name_array<BinaryOp>() {
     return {
         std::pair{BinaryOp::mul,"mul"},
         std::pair{BinaryOp::div,"div"},
@@ -283,6 +287,7 @@ template<>constexpr std::array<std::pair<BinaryOp,std::string_view>,38> make_enu
         std::pair{BinaryOp::bit_or_assign,"bit_or_assign"},
         std::pair{BinaryOp::bit_xor_assign,"bit_xor_assign"},
         std::pair{BinaryOp::comma,"comma"},
+        std::pair{BinaryOp::in_assign,"in_assign"},
     };
 }
 constexpr void as_json(BinaryOp e,auto&& d) {

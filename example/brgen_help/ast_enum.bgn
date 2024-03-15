@@ -53,6 +53,7 @@ enum BinaryOp:
     bit_xor_assign = "^="
 
     comma = ","
+    in_assign = "in"
 
 enum UnaryOp:
     not_ = "!"
