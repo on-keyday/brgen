@@ -114,6 +114,40 @@ src/core/ast/node/translate.h には変換される先のノードが入って�
   - Function - 関数への参照
   - State - ステートへの参照
 
+### Type について
+
+- Type は型を表す。
+- Type も Node を継承する
+- 型システムは結構ぐちゃぐちゃであり理論根拠的なものに薄い面がある。
+  - これは要改善である
+- 共通のフィールド
+  - bit_size - 型のサイズ。動的な場合は`null`
+  - is_explicit - 構文内に明示的に示されているか(例:`x :u8`の`u8`など)
+  - non_dynamic_allocation - 動的確保を要さないかどうか。なお、内部の配列長が長すぎるなどは考慮していない
+  - bit_alignment - 型のビットアラインメント。基本的には bit_size % 8。また bit_size が決定できない場合でも決定可能な場合は設定される。設定不可なら not_decidable,そもそも考慮しない場合(bool など)は not_target となる
+- bool は整数型と非可換である。1 ビット整数は`u1`で表現する
+- よく使うであろう型
+  - IntType - 整数型
+    - 整数型を表す。また文字リテラル(`'a'`など)もこれになる
+    - is_signed - 符号ありかどうか
+    - endian - エンディアン指定
+    - is_common_supported - 8,16,32,64 ビット型のいずれかである
+  - ArrayType - 配列型
+    - 動的、静的両方を兼ねる
+    - length - 長さを指定する
+    - length_value - 静的に計算された長さ
+      - これによって動的配列か静的配列かが判定される
+  - StrLiteralType - 文字列リテラル型
+    - マジックナンバー型。文字列リテラルの方もこれである。
+    - 比較演算などで ArrayType と可換な部分が存在する
+    - base - 元となる文字列(StrLiteral ノード)。弱参照
+    - strong_ref - `x:"hello"`などのようにしたときなどの`"hello"`の StrLiteral ノードへの参照
+      - 弱参照の`base`が解放されてしまうバグがあったためこれが存在する。
+      - 基本は base を使用する(`strong_ref`が設定されている場合`base`にも同じものが設定される)
+  - EnumType - 列挙体型
+    - base - 元となる Enum ノードへの参照
+    - Enum.base_type で列挙体の基底型が入手できる
+
 ## 開発者メモ
 
 ### StructType を make_shared している箇所

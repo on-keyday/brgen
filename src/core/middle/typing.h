@@ -246,6 +246,7 @@ namespace brgen::middle {
             return base;
         }
 
+        // int_type_fitting convert IntLiteralType to IntType to assign or compare
         void int_type_fitting(std::shared_ptr<ast::Type>& left, std::shared_ptr<ast::Type>& right) {
             auto fitting = [&](auto& a, auto& b) {
                 auto ity = ast::as<ast::IntType>(a);
@@ -383,6 +384,26 @@ namespace brgen::middle {
                 }
                 else {
                     left_ident->constant_level = ast::ConstantLevel::immutable_variable;
+                }
+            }
+            else if (b->op == ast::BinaryOp::in_assign) {
+                assert(left_ident);
+                assert(left_ident->usage == ast::IdentUsage::define_variable);
+                assert(left_ident->base.lock() == b);
+                // `for x in 10`, x is int type inferred from 10
+                if (auto p = ast::as<ast::IntType>(new_type)) {
+                    left_ident->expr_type = std::move(new_type);
+                    left_ident->usage = ast::IdentUsage::define_const;
+                    left_ident->constant_level = ast::ConstantLevel::immutable_variable;
+                }
+                // `for x in "hello"`, x is u8 type
+                else if (auto str = ast::as<ast::StrLiteralType>(new_type)) {
+                    auto u8 = std::make_shared<ast::IntType>(str->loc, 8, ast::Endian::unspec, false);
+                    left_ident->expr_type = std::move(u8);
+                    left_ident->usage = ast::IdentUsage::define_const;
+                    left_ident->constant_level = ast::ConstantLevel::immutable_variable;
+                }
+                else if () {
                 }
             }
         }
@@ -727,12 +748,14 @@ namespace brgen::middle {
             auto op = bin->op;
             typing_expr(
                 bin->left,
-                op == ast::BinaryOp::define_assign || op == ast::BinaryOp::const_assign);
+                op == ast::BinaryOp::define_assign || op == ast::BinaryOp::const_assign ||
+                    op == ast::BinaryOp::in_assign /*`for x in range*/);
             typing_expr(bin->right);
             switch (op) {
                 case ast::BinaryOp::assign:
                 case ast::BinaryOp::define_assign:
                 case ast::BinaryOp::const_assign:
+                case ast::BinaryOp::in_assign:
                     typing_assign(bin);
                     break;
                 default:

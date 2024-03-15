@@ -766,7 +766,9 @@ namespace brgen::ast {
                 if (!ident) {
                     s.report_error(assign->left->loc, "left of := or ::= must be ident");
                 }
-                ident->usage = assign->op == ast::BinaryOp::define_assign ? ast::IdentUsage::define_variable : ast::IdentUsage::define_const;
+                ident->usage = assign->op == ast::BinaryOp::const_assign
+                                   ? ast::IdentUsage::define_const
+                                   : ast::IdentUsage::define_variable;
                 ident->base = assign;
                 // rewrite scope information for semantic analysis
                 std::erase_if(ident->scope->objects, [&](auto& i) {
@@ -960,7 +962,7 @@ namespace brgen::ast {
         /*
             <loop> ::= "loop" <expr>? (";" <expr>?)? (";" <expr>?)? <indent block>
         */
-        std::shared_ptr<Loop> parse_loop(lexer::Token&& token) {
+        std::shared_ptr<Loop> parse_for(lexer::Token&& token) {
             auto for_ = std::make_shared<Loop>(token.loc);
             auto cs = state.cond_scope(for_->cond_scope, for_);
             s.skip_white();
@@ -977,6 +979,7 @@ namespace brgen::ast {
                     auto range = parse_expr();
                     auto bin = std::make_shared<ast::Binary>(in_->loc, std::move(for_->init), ast::BinaryOp::in_assign);
                     bin->right = std::move(range);
+                    check_assignment(bin);
                     for_->init = std::move(bin);
                     s.skip_white();
                     for_->body = parse_indent_block(for_);
@@ -1464,9 +1467,9 @@ namespace brgen::ast {
                 }
             };
 
-            if (auto loop = s.consume_token("loop")) {
+            if (auto loop = s.consume_token("for")) {
                 set_skip();
-                return parse_loop(std::move(*loop));
+                return parse_for(std::move(*loop));
             }
 
             if (auto format = s.consume_token("format")) {
