@@ -31,7 +31,7 @@ format Label:
     if length & 0xc0 == 0xc0:
         input.backward()
         pointer :u16
-        # data :PureLabel(input = input.subrange(.., pointer&0x3fff)) #TODO(support subrange?)
+        data :PureLabel(input = input.subrange(.., pointer&0x3fff)) #TODO(support subrange?)
     else:
         length <= 63
         data :[length]u8

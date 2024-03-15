@@ -1,4 +1,6 @@
 
+config.go.package = "service"
+
 format ID:
     id :[16]u8
 
@@ -27,7 +29,7 @@ enum MessageType:
     error = 5
 
 format PlainMessage:
-    len :u8
+    len :u32
     message :[len]u8
 
 format Message:
@@ -47,6 +49,9 @@ enum ControlType:
     close_hub = 1
     request_permission = 2
     notify_permission_request = 3
+    notify_permission_change = 4
+    notify_close = 5
+    close_client = 6
     
 
 enum Permission:
@@ -58,15 +63,21 @@ enum Permission:
     change_permission = 8
     destroy_hub = 16
     broadcast = 32
+    listen_close = 64
+    close_others = 128
     admin = 0xffff
 
 format ControlMessage:
     control_type :ControlType
     if control_type == ControlType.change_permission || 
-       control_type == ControlType.notify_permission_request:
+       control_type == ControlType.notify_permission_request ||
+       control_type == ControlType.notify_permission_change:
         client_id :ID
         permission :Permission
     elif control_type == ControlType.request_permission:
-        permission :Permission
-    else:
-        ..
+        permission :Permission # broadcast to clients that have change_permission permission
+    elif control_type == ControlType.notify_close || 
+         control_type == ControlType.close_client:
+        client_id :ID
+
+        
