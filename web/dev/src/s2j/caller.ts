@@ -2,13 +2,13 @@ import {AstOption, COption, CallOption, CppOption, GoOption, JobRequest, Languag
 import {JobManager,TraceID} from "./job_mgr.js";
 
 const workerMap = Object.freeze({
-    [WorkerType.SRC2JSON]:()=> new Worker(new URL("./src2json_worker.js",import.meta.url),{type:"module"}),
-    [WorkerType.JSON2CPP]:()=> new Worker(new URL("./json2cpp_worker.js",import.meta.url),{type:"module"}),
-    [WorkerType.JSON2CPP2]:()=> new Worker(new URL("./json2cpp2_worker.js",import.meta.url),{type:"module"}),
-    [WorkerType.JSON2GO]:()=> new Worker(new URL("./json2go_worker.js",import.meta.url),{type:"module"}),
-    [WorkerType.JSON2C]:()=> new Worker(new URL("./json2c_worker.js",import.meta.url),{type:"module"}),
-    [WorkerType.JSON2RUST]:()=> new Worker(new URL("./json2rust_worker.js",import.meta.url),{type:"module"}),
-    [WorkerType.JSON2TS]:()=> new Worker(new URL("./json2ts_worker.js",import.meta.url),{type:"module"}),
+    [WorkerType.SRC2JSON]:()=> new Worker(new URL("./worker/src2json_worker.js",import.meta.url),{type:"module"}),
+    [WorkerType.JSON2CPP]:()=> new Worker(new URL("./worker/json2cpp_worker.js",import.meta.url),{type:"module"}),
+    [WorkerType.JSON2CPP2]:()=> new Worker(new URL("./worker/json2cpp2_worker.js",import.meta.url),{type:"module"}),
+    [WorkerType.JSON2GO]:()=> new Worker(new URL("./worker/json2go_worker.js",import.meta.url),{type:"module"}),
+    [WorkerType.JSON2C]:()=> new Worker(new URL("./worker/json2c_worker.js",import.meta.url),{type:"module"}),
+    [WorkerType.JSON2RUST]:()=> new Worker(new URL("./worker/json2rust_worker.js",import.meta.url),{type:"module"}),
+    [WorkerType.JSON2TS]:()=> new Worker(new URL("./worker/json2ts_worker.js",import.meta.url),{type:"module"}),
 });
 
 

@@ -20,7 +20,7 @@ const requestCallback = (e:JobRequest) => {
 
 
 const j2go_ctx = new GoWorkContext(
-    fetch(new URL("../lib/json2go.wasm",import.meta.url)).then((r) => r.arrayBuffer()),
+    fetch(new URL("../../lib/json2go.wasm",import.meta.url)).then((r) => r.arrayBuffer()),
     requestCallback, () => {
     console.log("json2go worker is ready");
 });
