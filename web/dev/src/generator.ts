@@ -3,7 +3,7 @@ import * as caller from "./s2j/caller";
 import { TraceID } from "./s2j/job_mgr";
 import { UpdateTracer } from "./s2j/update";
 import * as inc from "./cpp_include";
-import  { COption, CppOption, GoOption, JobResult,Language, RustOption, TSOption } from "./s2j/msg.js";
+import  { COption, CallOption, CppOption, GoOption, JobResult,Language, RustOption, TSOption } from "./s2j/msg.js";
 import {ast2ts} from "ast2ts";
 import {storage} from "./storage";
 import {ConfigKey} from "./types";
@@ -50,7 +50,7 @@ const isMappingInfoStruct = (obj :any) :obj is {line_map :MappingInfo[]} => {
 
 
 // returns true if updated
-const handleLanguage = async (ui :UIModel,s :JobResult,generate:(id :TraceID,src :string,option :any)=>Promise<JobResult>,lang :Language,view_lang: string,option? :any) => {
+const handleLanguage = async (ui :UIModel,s :JobResult,generate:(id :TraceID,src :string,option :any)=>Promise<JobResult>,lang :Language,view_lang: string,option :any) => {
     if(s.stdout===undefined) throw new Error("stdout is undefined");
     const res = await generate(s.traceID,s.stdout,option).catch((e) => {
         return e as JobResult;
@@ -74,7 +74,8 @@ const handleLanguage = async (ui :UIModel,s :JobResult,generate:(id :TraceID,src
 }
 
 const handleCppPrototype = async (ui :UIModel,s :JobResult) => {
-    return handleLanguage(ui,s,caller.getCppPrototypeCode,Language.CPP_PROTOTYPE,"cpp");
+    const option :CallOption= {};
+    return handleLanguage(ui,s,caller.getCppPrototypeCode,Language.CPP_PROTOTYPE,"cpp",option);
 }
 
 
