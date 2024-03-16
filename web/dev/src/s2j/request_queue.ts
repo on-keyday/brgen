@@ -3,11 +3,19 @@ import { JobRequest, JobResult } from "./msg"
 
 export class RequestQueue {
     readonly #msgQueue: JobRequest[] = [];
-    //readonly #postQueue: JobResult[] = [];
+    handler: ()=>void = ()=>{};
 
-    constructor() {}
+    constructor(requestHandler: ()=>void) {
+        globalThis.onmessage = this.#onmessage.bind(this);
+        this.handler = requestHandler;
+    }
 
-    postRequest(ev: JobRequest) {
+    #onmessage(e :MessageEvent) {
+        this.#postRequest(e.data as JobRequest);
+        this.handler();
+    }
+
+    #postRequest(ev: JobRequest) {
         console.time(`msg queueing ${ev.traceID}.${ev.jobID}`)
         this.#msgQueue.push(ev);
     }

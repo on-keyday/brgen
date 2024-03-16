@@ -1,6 +1,6 @@
 
 import _wbg_init, { InitOutput, json2rust } from "json2rust"
-import { JobRequest, JobResult } from "./msg";
+import { JobRequest, JobResult } from "../msg";
 
 let _mod :InitOutput | null = null;
 
