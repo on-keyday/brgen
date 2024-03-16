@@ -16,7 +16,7 @@ namespace brgen::ast {
     constexpr const char* bin_layer5[] = {"?", ":"};
     constexpr const char* bin_layer6[] = {"..", "..="};
     constexpr const char* bin_layer7[] = {"=", ":=", "::=", "+=", "-=", "*=",
-                                          "/=", "%=", "<<=", ">>=",
+                                          "/=", "%=", "<<=", ">>=","<<<=",">>>=",
                                           "&=", "|=", "^=",
                                          };
     constexpr const char* bin_layer8[] = {","};
@@ -32,7 +32,7 @@ namespace brgen::ast {
         "||",
         "?", ":",
         "..", "..=",
-        "=", ":=", "::=", "+=", "-=", "*=", "/=", "%=", "<<=", ">>=", "&=", "|=", "^=",
+        "=", ":=", "::=", "+=", "-=", "*=", "/=", "%=", "<<=", ">>=","<<<=",">>>=", "&=", "|=", "^=",
         ",",
         "in",
         nullptr,
@@ -46,7 +46,7 @@ namespace brgen::ast {
         "logical_or",
         "cond_op1", "cond_op2",
         "range_exclusive", "range_inclusive",
-        "assign", "define_assign", "const_assign", "add_assign", "sub_assign", "mul_assign", "div_assign", "mod_assign", "left_shift_assign", "right_shift_assign", "bit_and_assign", "bit_or_assign", "bit_xor_assign",
+        "assign", "define_assign", "const_assign", "add_assign", "sub_assign", "mul_assign", "div_assign", "mod_assign", "left_logical_shift_assign", "right_logical_shift_assign","left_arithmetic_shift_assign","right_arithmetic_shift_assign", "bit_and_assign", "bit_or_assign", "bit_xor_assign",
         "comma",
         "in",
         nullptr,

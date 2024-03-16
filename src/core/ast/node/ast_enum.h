@@ -106,8 +106,10 @@ enum class BinaryOp {
     mul_assign,
     div_assign,
     mod_assign,
-    left_shift_assign,
-    right_shift_assign,
+    left_logical_shift_assign,
+    right_logical_shift_assign,
+    left_arithmetic_shift_assign,
+    right_arithmetic_shift_assign,
     bit_and_assign,
     bit_or_assign,
     bit_xor_assign,
@@ -148,8 +150,10 @@ constexpr const char* to_string(BinaryOp e) {
     case BinaryOp::mul_assign: return "*=";
     case BinaryOp::div_assign: return "/=";
     case BinaryOp::mod_assign: return "%=";
-    case BinaryOp::left_shift_assign: return "<<=";
-    case BinaryOp::right_shift_assign: return ">>=";
+    case BinaryOp::left_logical_shift_assign: return "<<=";
+    case BinaryOp::right_logical_shift_assign: return ">>=";
+    case BinaryOp::left_arithmetic_shift_assign: return "<<<=";
+    case BinaryOp::right_arithmetic_shift_assign: return ">>>=";
     case BinaryOp::bit_and_assign: return "&=";
     case BinaryOp::bit_or_assign: return "|=";
     case BinaryOp::bit_xor_assign: return "^=";
@@ -192,8 +196,10 @@ template<>constexpr std::optional<BinaryOp> from_string<BinaryOp>(std::string_vi
     if(str == "*=") return BinaryOp::mul_assign;
     if(str == "/=") return BinaryOp::div_assign;
     if(str == "%=") return BinaryOp::mod_assign;
-    if(str == "<<=") return BinaryOp::left_shift_assign;
-    if(str == ">>=") return BinaryOp::right_shift_assign;
+    if(str == "<<=") return BinaryOp::left_logical_shift_assign;
+    if(str == ">>=") return BinaryOp::right_logical_shift_assign;
+    if(str == "<<<=") return BinaryOp::left_arithmetic_shift_assign;
+    if(str == ">>>=") return BinaryOp::right_arithmetic_shift_assign;
     if(str == "&=") return BinaryOp::bit_and_assign;
     if(str == "|=") return BinaryOp::bit_or_assign;
     if(str == "^=") return BinaryOp::bit_xor_assign;
@@ -202,9 +208,9 @@ template<>constexpr std::optional<BinaryOp> from_string<BinaryOp>(std::string_vi
     return std::nullopt;
 }
 template<>constexpr size_t enum_elem_count<BinaryOp>() {
-    return 39;
+    return 41;
 }
-template<>constexpr std::array<std::pair<BinaryOp,std::string_view>,39> make_enum_array<BinaryOp>() {
+template<>constexpr std::array<std::pair<BinaryOp,std::string_view>,41> make_enum_array<BinaryOp>() {
     return {
         std::pair{BinaryOp::mul,"*"},
         std::pair{BinaryOp::div,"/"},
@@ -238,8 +244,10 @@ template<>constexpr std::array<std::pair<BinaryOp,std::string_view>,39> make_enu
         std::pair{BinaryOp::mul_assign,"*="},
         std::pair{BinaryOp::div_assign,"/="},
         std::pair{BinaryOp::mod_assign,"%="},
-        std::pair{BinaryOp::left_shift_assign,"<<="},
-        std::pair{BinaryOp::right_shift_assign,">>="},
+        std::pair{BinaryOp::left_logical_shift_assign,"<<="},
+        std::pair{BinaryOp::right_logical_shift_assign,">>="},
+        std::pair{BinaryOp::left_arithmetic_shift_assign,"<<<="},
+        std::pair{BinaryOp::right_arithmetic_shift_assign,">>>="},
         std::pair{BinaryOp::bit_and_assign,"&="},
         std::pair{BinaryOp::bit_or_assign,"|="},
         std::pair{BinaryOp::bit_xor_assign,"^="},
@@ -247,7 +255,7 @@ template<>constexpr std::array<std::pair<BinaryOp,std::string_view>,39> make_enu
         std::pair{BinaryOp::in_assign,"in"},
     };
 }
-template<>constexpr std::array<std::pair<BinaryOp,std::string_view>,39> make_enum_name_array<BinaryOp>() {
+template<>constexpr std::array<std::pair<BinaryOp,std::string_view>,41> make_enum_name_array<BinaryOp>() {
     return {
         std::pair{BinaryOp::mul,"mul"},
         std::pair{BinaryOp::div,"div"},
@@ -281,8 +289,10 @@ template<>constexpr std::array<std::pair<BinaryOp,std::string_view>,39> make_enu
         std::pair{BinaryOp::mul_assign,"mul_assign"},
         std::pair{BinaryOp::div_assign,"div_assign"},
         std::pair{BinaryOp::mod_assign,"mod_assign"},
-        std::pair{BinaryOp::left_shift_assign,"left_shift_assign"},
-        std::pair{BinaryOp::right_shift_assign,"right_shift_assign"},
+        std::pair{BinaryOp::left_logical_shift_assign,"left_logical_shift_assign"},
+        std::pair{BinaryOp::right_logical_shift_assign,"right_logical_shift_assign"},
+        std::pair{BinaryOp::left_arithmetic_shift_assign,"left_arithmetic_shift_assign"},
+        std::pair{BinaryOp::right_arithmetic_shift_assign,"right_arithmetic_shift_assign"},
         std::pair{BinaryOp::bit_and_assign,"bit_and_assign"},
         std::pair{BinaryOp::bit_or_assign,"bit_or_assign"},
         std::pair{BinaryOp::bit_xor_assign,"bit_xor_assign"},
