@@ -11,7 +11,6 @@ import { GoWorkContext} from "../go_work_ctx.js";
 const requestCallback = (e:JobRequest) => {
     switch (e.lang) {
         case RequestLanguage.GO:
-            if (e.sourceCode === undefined) return new Error("sourceCode is undefined");
             return e.sourceCode;
         default:
             return new Error("unknown message type");

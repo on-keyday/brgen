@@ -16,7 +16,7 @@ globalThis.onmessage = async(ev) => {
     const data = ev.data as JobRequest;
     await getWasmModule();
     try {
-        const result = json2rust(data.sourceCode!);
+        const result = json2rust(data.sourceCode);
         const res :JobResult = {
             lang: data.lang,
             jobID: data.jobID,

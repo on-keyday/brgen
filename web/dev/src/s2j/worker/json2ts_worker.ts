@@ -12,7 +12,6 @@ const json2tsModule = json2ts.default as EmscriptenModuleFactory<MyEmscriptenMod
 const requestCallback = (e:JobRequest, m:MyEmscriptenModule) => {
     switch (e.lang) {
         case RequestLanguage.TYPESCRIPT:
-            if (e.sourceCode === undefined) return new Error("sourceCode is undefined");
             m.FS.writeFile("/editor.json", e.sourceCode);
             return ["json2ts", "/editor.json", "--no-color"];
         default:

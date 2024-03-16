@@ -8,7 +8,6 @@ const json2cpp2Module = json2cpp2.default as EmscriptenModuleFactory<MyEmscripte
 const requestCallback = (e:JobRequest, m:MyEmscriptenModule) => {
     switch (e.lang) {
         case RequestLanguage.CPP:
-            if (e.sourceCode === undefined) return new Error("sourceCode is undefined");
             m.FS.writeFile("/editor.json", e.sourceCode);
             return ["json2cpp2", "/editor.json", "--no-color"];
         default:

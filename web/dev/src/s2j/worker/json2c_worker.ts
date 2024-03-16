@@ -10,7 +10,6 @@ const json2cModule = json2c.default as EmscriptenModuleFactory<MyEmscriptenModul
 const requestCallback = (e:JobRequest, m:MyEmscriptenModule) => {
     switch (e.lang) {
         case RequestLanguage.C:
-            if (e.sourceCode === undefined) return new Error("sourceCode is undefined");
             m.FS.writeFile("/editor.json", e.sourceCode);
             return ["json2c", "/editor.json", "--no-color"];
         default:
