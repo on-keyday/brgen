@@ -1,6 +1,6 @@
 
 import _wbg_init, { InitOutput, json2rust } from "json2rust"
-import { JobRequest, JobResult } from "./msg";
+import { JobRequest, JobResult } from "../msg";
 
 let _mod :InitOutput | null = null;
 
@@ -16,7 +16,7 @@ globalThis.onmessage = async(ev) => {
     const data = ev.data as JobRequest;
     await getWasmModule();
     try {
-        const result = json2rust(data.sourceCode!);
+        const result = json2rust(data.sourceCode);
         const res :JobResult = {
             lang: data.lang,
             jobID: data.jobID,
