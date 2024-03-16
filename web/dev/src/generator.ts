@@ -3,7 +3,7 @@ import * as caller from "./s2j/caller";
 import { TraceID } from "./s2j/job_mgr";
 import { UpdateTracer } from "./s2j/update";
 import * as inc from "./cpp_include";
-import { JobResult,Language } from "./s2j/msg.js";
+import  { COption, CppOption, GoOption, JobResult,Language, RustOption, TSOption } from "./s2j/msg.js";
 import {ast2ts} from "ast2ts";
 import {storage} from "./storage";
 import {ConfigKey} from "./types";
@@ -85,7 +85,7 @@ const handleCpp = async (ui :UIModel,  s :JobResult) => {
     const useRawUnion = ui.getLanguageConfig(Language.CPP,ConfigKey.CPP_USE_RAW_UNION);
     const checkOverflow = ui.getLanguageConfig(Language.CPP,ConfigKey.CPP_CHECK_OVERFLOW);
     const compileViaAPI = ui.getLanguageConfig(Language.CPP,ConfigKey.CPP_COMPILE_VIA_API);
-    const cppOption : caller.CppOption = {      
+    const cppOption : CppOption = {      
         use_line_map: useMap === true,
         use_error: useError === true,
         use_raw_union: useRawUnion === true,
@@ -94,7 +94,7 @@ const handleCpp = async (ui :UIModel,  s :JobResult) => {
     let result : JobResult | undefined = undefined;
     let mappingInfo :any;
     await handleLanguage(ui,s,async(id: TraceID,src :string,option :any) => {
-        result = await caller.getCppCode(id,src,option as caller.CppOption);
+        result = await caller.getCppCode(id,src,option as CppOption);
         if(result.code === 0&&cppOption.use_line_map){
            const split = result.stdout!.split("############");
            result.stdout = split[0];
@@ -135,25 +135,25 @@ const handleCpp = async (ui :UIModel,  s :JobResult) => {
 
 const handleGo = async (ui :UIModel, s :JobResult) => {
     const usePut = ui.getLanguageConfig(Language.GO,ConfigKey.GO_USE_PUT);
-    const goOption : caller.GoOption ={
+    const goOption : GoOption ={
         use_put: usePut === true,
     }
     return handleLanguage(ui,s,caller.getGoCode,Language.GO,"go",goOption);
 }
 
 const handleC = async (ui :UIModel, s :JobResult) => {
-    const COption : caller.COption = {};
+    const COption : COption = {};
     return handleLanguage(ui,s,caller.getCCode,Language.C,"c",COption);
 }
 
 const handleRust = async (ui :UIModel, s :JobResult) => {
-    const rustOption : caller.RustOption = {};
+    const rustOption : RustOption = {};
     return handleLanguage(ui,s,caller.getRustCode,Language.RUST,"rust",rustOption);
 }
 
 const handleTypeScript = async (ui :UIModel, s :JobResult) => {
     const isJavascript = ui.getLanguageConfig(Language.TYPESCRIPT,ConfigKey.TS_JAVASCRIPT);
-    const tsOption : caller.TSOption = {
+    const tsOption : TSOption = {
         javascript: isJavascript === true,
     };
     return handleLanguage(ui,s,caller.getTSCode,Language.TYPESCRIPT,
