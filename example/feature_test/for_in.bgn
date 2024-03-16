@@ -1,0 +1,14 @@
+
+for x in 10:
+    y ::= x + 1 
+
+for x in 1..10:
+    y ::= x + 1
+
+for x in "HELLO":
+    y ::= x + 1
+
+arr :[]u8
+
+for x in arr:
+    x = 0

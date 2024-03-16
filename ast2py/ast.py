@@ -139,6 +139,7 @@ class BinaryOp(PyEnum):
     BIT_OR_ASSIGN = "|="
     BIT_XOR_ASSIGN = "^="
     COMMA = ","
+    IN_ASSIGN = "in"
 
 
 class IdentUsage(PyEnum):

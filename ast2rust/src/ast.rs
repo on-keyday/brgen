@@ -453,6 +453,7 @@ impl TryFrom<&str> for UnaryOp {
 	BitOrAssign,
 	BitXorAssign,
 	Comma,
+	InAssign,
 }
 
 impl TryFrom<&str> for BinaryOp {
@@ -497,6 +498,7 @@ impl TryFrom<&str> for BinaryOp {
 			"|=" =>Ok(Self::BitOrAssign),
 			"^=" =>Ok(Self::BitXorAssign),
 			"," =>Ok(Self::Comma),
+			"in" =>Ok(Self::InAssign),
 			_=> Err(()),
 		}
 	}

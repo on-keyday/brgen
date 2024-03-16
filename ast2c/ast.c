@@ -520,6 +520,7 @@ const char* ast2c_BinaryOp_to_string(ast2c_BinaryOp val) {
 	case AST2C_BINARYOP_BIT_OR_ASSIGN: return "|=";
 	case AST2C_BINARYOP_BIT_XOR_ASSIGN: return "^=";
 	case AST2C_BINARYOP_COMMA: return ",";
+	case AST2C_BINARYOP_IN_ASSIGN: return "in";
 	default: return NULL;
 	}
 }
@@ -677,6 +678,10 @@ int ast2c_BinaryOp_from_string(const char* str, ast2c_BinaryOp* out) {
 	}
 	if (strcmp(str, ",") == 0) {
 		*out = AST2C_BINARYOP_COMMA;
+		return 1;
+	}
+	if (strcmp(str, "in") == 0) {
+		*out = AST2C_BINARYOP_IN_ASSIGN;
 		return 1;
 	}
 	return 0;

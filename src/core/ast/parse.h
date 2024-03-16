@@ -761,12 +761,15 @@ namespace brgen::ast {
 
         void check_assignment(const std::shared_ptr<Binary>& assign) {
             if (assign->op == ast::BinaryOp::define_assign ||
-                assign->op == ast::BinaryOp::const_assign) {
+                assign->op == ast::BinaryOp::const_assign ||
+                assign->op == ast::BinaryOp::in_assign) {
                 auto ident = ast::as<ast::Ident>(assign->left);
                 if (!ident) {
                     s.report_error(assign->left->loc, "left of := or ::= must be ident");
                 }
-                ident->usage = assign->op == ast::BinaryOp::define_assign ? ast::IdentUsage::define_variable : ast::IdentUsage::define_const;
+                ident->usage = assign->op == ast::BinaryOp::const_assign
+                                   ? ast::IdentUsage::define_const
+                                   : ast::IdentUsage::define_variable;
                 ident->base = assign;
                 // rewrite scope information for semantic analysis
                 std::erase_if(ident->scope->objects, [&](auto& i) {
@@ -971,6 +974,18 @@ namespace brgen::ast {
             if (!s.expect_token(";")) {
                 for_->init = parse_expr();
                 s.skip_white();
+                // like `for x in 0..10`
+                if (auto in_ = s.consume_token("in")) {
+                    s.skip_white();
+                    auto range = parse_expr();
+                    auto bin = std::make_shared<ast::Binary>(in_->loc, std::move(for_->init), ast::BinaryOp::in_assign);
+                    bin->right = std::move(range);
+                    check_assignment(bin);
+                    for_->init = std::move(bin);
+                    s.skip_white();
+                    for_->body = parse_indent_block(for_);
+                    return for_;
+                }
             }
             if (s.expect_token(":")) {
                 for_->cond = std::move(for_->init);
@@ -1453,7 +1468,7 @@ namespace brgen::ast {
                 }
             };
 
-            if (auto loop = s.consume_token("loop")) {
+            if (auto loop = s.consume_token("for")) {
                 set_skip();
                 return parse_for(std::move(*loop));
             }

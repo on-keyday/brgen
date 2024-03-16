@@ -617,6 +617,9 @@ export const analyzeSourceCode  = async (prevSemanticTokens :SemTokensStub|null,
         else if(ast2ts.isFloatType(node)&&node.is_explicit){
             locList.push({loc: node.loc,length: node.loc.pos.end - node.loc.pos.begin,index:7});
         }
+        else if(ast2ts.isBinary(node)&&node.op == ast2ts.BinaryOp.in_assign) {
+            locList.push({loc: node.loc,length: 2,index:9});
+        }
         return true
     });
     console.timeEnd("walk ast");

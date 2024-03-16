@@ -20,6 +20,7 @@ namespace brgen::ast {
                                           "&=", "|=", "^=",
                                          };
     constexpr const char* bin_layer8[] = {","};
+    constexpr const char* ignored_layer[] = {"in"};
 
 
 
@@ -33,6 +34,7 @@ namespace brgen::ast {
         "..", "..=",
         "=", ":=", "::=", "+=", "-=", "*=", "/=", "%=", "<<=", ">>=", "&=", "|=", "^=",
         ",",
+        "in",
         nullptr,
     };
 
@@ -46,6 +48,7 @@ namespace brgen::ast {
         "range_exclusive", "range_inclusive",
         "assign", "define_assign", "const_assign", "add_assign", "sub_assign", "mul_assign", "div_assign", "mod_assign", "left_shift_assign", "right_shift_assign", "bit_and_assign", "bit_or_assign", "bit_xor_assign",
         "comma",
+        "in",
         nullptr,
     };
     // clang-format on
@@ -82,7 +85,7 @@ namespace brgen::ast {
         return begin <= int(op) && int(op) <= end;
     }
 
-    constexpr std::array<futils::view::rspan<const char* const>, 9> bin_layers = {
+    constexpr std::array<futils::view::rspan<const char* const>, 10> bin_layers = {
         bin_layer0,
         bin_layer1,
         bin_layer2,
@@ -92,9 +95,10 @@ namespace brgen::ast {
         bin_layer6,
         bin_layer7,
         bin_layer8,
+        ignored_layer,
     };
 
-    constexpr size_t bin_layer_len = sizeof(bin_layers) / sizeof(bin_layers[0]);
+    constexpr size_t bin_layer_len = sizeof(bin_layers) / sizeof(bin_layers[0]) - 1;
 
     namespace test {
         constexpr bool check_layers() {
@@ -113,6 +117,7 @@ namespace brgen::ast {
                     seq++;
                 }
             }
+            seq += sizeof(ignored_layer) / sizeof(ignored_layer[0]);
             if (seq != a.size()) {
                 [](auto...) { throw "error"; }(seq, bin_op_count);
                 return false;
