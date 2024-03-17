@@ -33,14 +33,25 @@ format Label:
     if length & 0xc0 == 0xc0:
         input.backward()
         pointer :u16
-        data :PureLabel(input = input.subrange(.., pointer&0x3fff)) #TODO(support subrange?)
     else:
         length <= 63
         data :[length]u8
 
 format DomainName:
-    labels :[..]Label
-    null :"\x00"
+    labels :[]Label
+    
+    fn decode():
+        for:
+           label :Label
+           labels[labels.length] = label
+           if label.length == 0 || label.length & 0xc0 == 0xc0:
+              break
+    
+    fn encode():
+        for i in labels.length:
+            if labels[i].length == 0 || available(labels[i].pointer):
+                i == labels.length
+            output.put(labels[i])
     
 
 
