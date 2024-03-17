@@ -26,6 +26,8 @@ format PureLabel:
     length <= 63
     data :[length]u8
 
+    
+
 format Label:
     length :u8
     if length & 0xc0 == 0xc0:
@@ -37,10 +39,9 @@ format Label:
         data :[length]u8
 
 format DomainName:
-    start ::= input.offset
     labels :[..]Label
     null :"\x00"
-    input.offset - start <= 255
+    
 
 
 format DNSQuestion:
