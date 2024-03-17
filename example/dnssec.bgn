@@ -17,3 +17,28 @@ format RRSIGRData:
     key_tag :u16
     signer_name :dns.DomainName
     signature :[..]u8
+
+#    unsigned int
+#   keytag (
+#           unsigned char key[],  /* the RDATA part of the DNSKEY RR */
+#           unsigned int keysize  /* the RDLENGTH */
+#          )
+#   {
+#           unsigned long ac;     /* assumed to be 32 bits or larger */
+#           int i;                /* loop index */
+#
+#          for ( ac = 0, i = 0; i < keysize; ++i )
+#                   ac += (i & 1) ? key[i] : key[i] << 8;
+#           ac += (ac >> 16) & 0xFFFF;
+#           return ac & 0xFFFF;
+#   }
+
+fn keytag(key: []u8) -> u16:
+    ac := u32(0)
+    for i in key.length:
+        if i & 1 == 1:
+           ac += u32(key[i])
+        else:
+           ac += u32(key[i]) << 8
+    ac += (ac >> 16) & 0xFFFF
+    return ac & 0xFFFF

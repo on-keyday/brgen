@@ -514,8 +514,10 @@ const char* ast2c_BinaryOp_to_string(ast2c_BinaryOp val) {
 	case AST2C_BINARYOP_MUL_ASSIGN: return "*=";
 	case AST2C_BINARYOP_DIV_ASSIGN: return "/=";
 	case AST2C_BINARYOP_MOD_ASSIGN: return "%=";
-	case AST2C_BINARYOP_LEFT_SHIFT_ASSIGN: return "<<=";
-	case AST2C_BINARYOP_RIGHT_SHIFT_ASSIGN: return ">>=";
+	case AST2C_BINARYOP_LEFT_LOGICAL_SHIFT_ASSIGN: return "<<=";
+	case AST2C_BINARYOP_RIGHT_LOGICAL_SHIFT_ASSIGN: return ">>=";
+	case AST2C_BINARYOP_LEFT_ARITHMETIC_SHIFT_ASSIGN: return "<<<=";
+	case AST2C_BINARYOP_RIGHT_ARITHMETIC_SHIFT_ASSIGN: return ">>>=";
 	case AST2C_BINARYOP_BIT_AND_ASSIGN: return "&=";
 	case AST2C_BINARYOP_BIT_OR_ASSIGN: return "|=";
 	case AST2C_BINARYOP_BIT_XOR_ASSIGN: return "^=";
@@ -657,11 +659,19 @@ int ast2c_BinaryOp_from_string(const char* str, ast2c_BinaryOp* out) {
 		return 1;
 	}
 	if (strcmp(str, "<<=") == 0) {
-		*out = AST2C_BINARYOP_LEFT_SHIFT_ASSIGN;
+		*out = AST2C_BINARYOP_LEFT_LOGICAL_SHIFT_ASSIGN;
 		return 1;
 	}
 	if (strcmp(str, ">>=") == 0) {
-		*out = AST2C_BINARYOP_RIGHT_SHIFT_ASSIGN;
+		*out = AST2C_BINARYOP_RIGHT_LOGICAL_SHIFT_ASSIGN;
+		return 1;
+	}
+	if (strcmp(str, "<<<=") == 0) {
+		*out = AST2C_BINARYOP_LEFT_ARITHMETIC_SHIFT_ASSIGN;
+		return 1;
+	}
+	if (strcmp(str, ">>>=") == 0) {
+		*out = AST2C_BINARYOP_RIGHT_ARITHMETIC_SHIFT_ASSIGN;
 		return 1;
 	}
 	if (strcmp(str, "&=") == 0) {

@@ -347,27 +347,8 @@ namespace brgen::middle {
                 return;
             }
             auto new_type = int_literal_to_int_type(right->expr_type);
-            if (b->op == ast::BinaryOp::assign) {
-                if (left_ident && left_ident->usage == ast::IdentUsage::unknown) {
-                    error(left_ident->loc, "identifier ", left_ident->ident, " is not defined before; use := to define identifier").report();
-                }
-                else {
-                    if (!left_ident) {
-                        warn_not_typed(b->left);
-                        return;  // not typed yet
-                    }
-                    assert(base_ident);
-                    if (base_ident->usage == ast::IdentUsage::define_variable) {
-                        if (!equal_type(base_ident->expr_type, new_type)) {
-                            report_assign_error();
-                        }
-                    }
-                    else if (base_ident->usage == ast::IdentUsage::define_const) {
-                        report_assign_error();
-                    }
-                }
-            }
-            else if (b->op == ast::BinaryOp::define_assign) {
+
+            if (b->op == ast::BinaryOp::define_assign) {
                 assert(left_ident);
                 assert(left_ident->usage == ast::IdentUsage::define_variable);
                 assert(left_ident->base.lock() == b);
@@ -424,6 +405,26 @@ namespace brgen::middle {
                 }
                 else {
                     error(b->loc, "cannot use ", ast::node_type_to_string(new_type->node_type), " in `for in` syntax; integer, string, range, and array are allowed").report();
+                }
+            }
+            else {  // other assignments like =, +=, -=, *=, /=, %=, &=, |=, ^=, <<=, >>=
+                if (left_ident && left_ident->usage == ast::IdentUsage::unknown) {
+                    error(left_ident->loc, "identifier ", left_ident->ident, " is not defined before; use := to define identifier").report();
+                }
+                else {
+                    if (!left_ident) {
+                        warn_not_typed(b->left);
+                        return;  // not typed yet
+                    }
+                    assert(base_ident);
+                    if (base_ident->usage == ast::IdentUsage::define_variable) {
+                        if (!equal_type(base_ident->expr_type, new_type)) {
+                            report_assign_error();
+                        }
+                    }
+                    else if (base_ident->usage == ast::IdentUsage::define_const) {
+                        report_assign_error();
+                    }
                 }
             }
         }
@@ -776,6 +777,18 @@ namespace brgen::middle {
                 case ast::BinaryOp::define_assign:
                 case ast::BinaryOp::const_assign:
                 case ast::BinaryOp::in_assign:
+                case ast::BinaryOp::add_assign:
+                case ast::BinaryOp::sub_assign:
+                case ast::BinaryOp::mul_assign:
+                case ast::BinaryOp::div_assign:
+                case ast::BinaryOp::mod_assign:
+                case ast::BinaryOp::left_logical_shift_assign:
+                case ast::BinaryOp::right_logical_shift_assign:
+                case ast::BinaryOp::left_arithmetic_shift_assign:
+                case ast::BinaryOp::right_arithmetic_shift_assign:
+                case ast::BinaryOp::bit_and_assign:
+                case ast::BinaryOp::bit_or_assign:
+                case ast::BinaryOp::bit_xor_assign:
                     typing_assign(bin);
                     break;
                 default:
