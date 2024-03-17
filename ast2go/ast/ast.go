@@ -781,45 +781,47 @@ func (n *UnaryOp) UnmarshalJSON(data []byte) error {
 type BinaryOp int
 
 const (
-	BinaryOpMul                  BinaryOp = 0
-	BinaryOpDiv                  BinaryOp = 1
-	BinaryOpMod                  BinaryOp = 2
-	BinaryOpLeftArithmeticShift  BinaryOp = 3
-	BinaryOpRightArithmeticShift BinaryOp = 4
-	BinaryOpLeftLogicalShift     BinaryOp = 5
-	BinaryOpRightLogicalShift    BinaryOp = 6
-	BinaryOpBitAnd               BinaryOp = 7
-	BinaryOpAdd                  BinaryOp = 8
-	BinaryOpSub                  BinaryOp = 9
-	BinaryOpBitOr                BinaryOp = 10
-	BinaryOpBitXor               BinaryOp = 11
-	BinaryOpEqual                BinaryOp = 12
-	BinaryOpNotEqual             BinaryOp = 13
-	BinaryOpLess                 BinaryOp = 14
-	BinaryOpLessOrEq             BinaryOp = 15
-	BinaryOpGrater               BinaryOp = 16
-	BinaryOpGraterOrEq           BinaryOp = 17
-	BinaryOpLogicalAnd           BinaryOp = 18
-	BinaryOpLogicalOr            BinaryOp = 19
-	BinaryOpCondOp1              BinaryOp = 20
-	BinaryOpCondOp2              BinaryOp = 21
-	BinaryOpRangeExclusive       BinaryOp = 22
-	BinaryOpRangeInclusive       BinaryOp = 23
-	BinaryOpAssign               BinaryOp = 24
-	BinaryOpDefineAssign         BinaryOp = 25
-	BinaryOpConstAssign          BinaryOp = 26
-	BinaryOpAddAssign            BinaryOp = 27
-	BinaryOpSubAssign            BinaryOp = 28
-	BinaryOpMulAssign            BinaryOp = 29
-	BinaryOpDivAssign            BinaryOp = 30
-	BinaryOpModAssign            BinaryOp = 31
-	BinaryOpLeftShiftAssign      BinaryOp = 32
-	BinaryOpRightShiftAssign     BinaryOp = 33
-	BinaryOpBitAndAssign         BinaryOp = 34
-	BinaryOpBitOrAssign          BinaryOp = 35
-	BinaryOpBitXorAssign         BinaryOp = 36
-	BinaryOpComma                BinaryOp = 37
-	BinaryOpInAssign             BinaryOp = 38
+	BinaryOpMul                        BinaryOp = 0
+	BinaryOpDiv                        BinaryOp = 1
+	BinaryOpMod                        BinaryOp = 2
+	BinaryOpLeftArithmeticShift        BinaryOp = 3
+	BinaryOpRightArithmeticShift       BinaryOp = 4
+	BinaryOpLeftLogicalShift           BinaryOp = 5
+	BinaryOpRightLogicalShift          BinaryOp = 6
+	BinaryOpBitAnd                     BinaryOp = 7
+	BinaryOpAdd                        BinaryOp = 8
+	BinaryOpSub                        BinaryOp = 9
+	BinaryOpBitOr                      BinaryOp = 10
+	BinaryOpBitXor                     BinaryOp = 11
+	BinaryOpEqual                      BinaryOp = 12
+	BinaryOpNotEqual                   BinaryOp = 13
+	BinaryOpLess                       BinaryOp = 14
+	BinaryOpLessOrEq                   BinaryOp = 15
+	BinaryOpGrater                     BinaryOp = 16
+	BinaryOpGraterOrEq                 BinaryOp = 17
+	BinaryOpLogicalAnd                 BinaryOp = 18
+	BinaryOpLogicalOr                  BinaryOp = 19
+	BinaryOpCondOp1                    BinaryOp = 20
+	BinaryOpCondOp2                    BinaryOp = 21
+	BinaryOpRangeExclusive             BinaryOp = 22
+	BinaryOpRangeInclusive             BinaryOp = 23
+	BinaryOpAssign                     BinaryOp = 24
+	BinaryOpDefineAssign               BinaryOp = 25
+	BinaryOpConstAssign                BinaryOp = 26
+	BinaryOpAddAssign                  BinaryOp = 27
+	BinaryOpSubAssign                  BinaryOp = 28
+	BinaryOpMulAssign                  BinaryOp = 29
+	BinaryOpDivAssign                  BinaryOp = 30
+	BinaryOpModAssign                  BinaryOp = 31
+	BinaryOpLeftLogicalShiftAssign     BinaryOp = 32
+	BinaryOpRightLogicalShiftAssign    BinaryOp = 33
+	BinaryOpLeftArithmeticShiftAssign  BinaryOp = 34
+	BinaryOpRightArithmeticShiftAssign BinaryOp = 35
+	BinaryOpBitAndAssign               BinaryOp = 36
+	BinaryOpBitOrAssign                BinaryOp = 37
+	BinaryOpBitXorAssign               BinaryOp = 38
+	BinaryOpComma                      BinaryOp = 39
+	BinaryOpInAssign                   BinaryOp = 40
 )
 
 func (n BinaryOp) String() string {
@@ -888,10 +890,14 @@ func (n BinaryOp) String() string {
 		return "/="
 	case BinaryOpModAssign:
 		return "%="
-	case BinaryOpLeftShiftAssign:
+	case BinaryOpLeftLogicalShiftAssign:
 		return "<<="
-	case BinaryOpRightShiftAssign:
+	case BinaryOpRightLogicalShiftAssign:
 		return ">>="
+	case BinaryOpLeftArithmeticShiftAssign:
+		return "<<<="
+	case BinaryOpRightArithmeticShiftAssign:
+		return ">>>="
 	case BinaryOpBitAndAssign:
 		return "&="
 	case BinaryOpBitOrAssign:
@@ -978,9 +984,13 @@ func (n *BinaryOp) UnmarshalJSON(data []byte) error {
 	case "%=":
 		*n = BinaryOpModAssign
 	case "<<=":
-		*n = BinaryOpLeftShiftAssign
+		*n = BinaryOpLeftLogicalShiftAssign
 	case ">>=":
-		*n = BinaryOpRightShiftAssign
+		*n = BinaryOpRightLogicalShiftAssign
+	case "<<<=":
+		*n = BinaryOpLeftArithmeticShiftAssign
+	case ">>>=":
+		*n = BinaryOpRightArithmeticShiftAssign
 	case "&=":
 		*n = BinaryOpBitAndAssign
 	case "|=":

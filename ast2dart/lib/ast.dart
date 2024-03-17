@@ -246,9 +246,13 @@ DivAssign,
 @JsonValue('%=')
 ModAssign,
 @JsonValue('<<=')
-LeftShiftAssign,
+LeftLogicalShiftAssign,
 @JsonValue('>>=')
-RightShiftAssign,
+RightLogicalShiftAssign,
+@JsonValue('<<<=')
+LeftArithmeticShiftAssign,
+@JsonValue('>>>=')
+RightArithmeticShiftAssign,
 @JsonValue('&=')
 BitAndAssign,
 @JsonValue('|=')
