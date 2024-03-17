@@ -78,4 +78,8 @@ weight: 1
 
 <field> := <ident>? <anonymous field>
 <anonymous field> := ":" <type> <call>?
+
+<type> := <fn type> | "[" <expr>? "]" <type> | <str literal> | <ident> ("." <ident>)?
+<fn type> := "fn" <skip white> "(" (<fn type param> *("," <fn type param>))? ")" ("->" <type>)?
+<fn type param> := <ident>? ":" <type>
 ```
