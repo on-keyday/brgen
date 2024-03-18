@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/iancoleman/strcase"
@@ -202,76 +201,23 @@ func (g *Generator) Generate(id string, root *ast.Program) (*Type, error) {
 	return kaitai, nil
 }
 
-var f = flag.Bool("s", false, "tell spec of json2go")
-var filename = flag.String("f", "", "file to parse")
-
-func main() {
-	flag.Parse()
-	if *f {
-		fmt.Println(`{
-			"langs" : ["kaitai-struct"],
-			"input" : "stdin",
-			"suffix" : [".ksy"]
-		}`)
-		return
-	}
-	file := ast.AstFile{}
-	if *filename != "" {
-		f, err := os.Open(*filename)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
-			return
-		}
-		defer f.Close()
-		err = json.NewDecoder(f).Decode(&file)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
-			return
-		}
-	} else {
-		err := json.NewDecoder(os.Stdin).Decode(&file)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
-			return
-		}
-	}
-
+func (g *Generator) GenerateAndFormat(file *ast.AstFile) ([]byte, error) {
 	prog, err := ast.ParseAST(file.Ast)
-
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-		return
+		return nil, err
 	}
 	id := filepath.Base(file.Files[0])
 	id = id[:len(id)-len(filepath.Ext(id))]
-	g := &Generator{}
 	src, err := g.Generate(id, prog)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		if src == nil {
-			os.Exit(1)
-		}
+		return nil, err
 	}
-
 	j, err := json.Marshal(src)
-
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-		return
+		return nil, err
 	}
-
-	out, err := convert.JSONToYAML(j)
-
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-		return
-	}
-
-	os.Stdout.Write(out)
+	return convert.JSONToYAML(j)
 }
+
+var f = flag.Bool("s", false, "tell spec of json2go")
+var filename = flag.String("f", "", "file to parse")

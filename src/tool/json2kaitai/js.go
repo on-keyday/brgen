@@ -13,7 +13,7 @@ func (m *makeGenerator) New() js.Generator {
 }
 
 func (m *makeGenerator) ResetFlag() {
-	ResetFlag()
+
 }
 
 func setFunc() {
