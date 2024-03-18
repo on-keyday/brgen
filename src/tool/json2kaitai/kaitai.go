@@ -4,209 +4,220 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"os"
+	"path/filepath"
 
+	"github.com/iancoleman/strcase"
 	"github.com/on-keyday/brgen/ast2go/ast"
-	"gopkg.in/yaml.v3"
+	"github.com/on-keyday/brgen/ast2go/gen"
+	convert "sigs.k8s.io/yaml"
 )
 
-type Type interface {
-	String() string
+type Generator struct {
+	seq int
 }
 
-type Reference string
-
-func (r Reference) String() string {
-	return string(r)
+func (g *Generator) NextSeq() int {
+	g.seq++
+	return g.seq
 }
 
-type Case map[string]Type
-
-type SwitchType struct {
-	SwitchOn string `yaml:"switch-on"`
-	Cases    Case   `yaml:"cases"`
+func (g *Generator) KaitaiExpr(e ast.Expr) string {
+	switch v := e.(type) {
+	case *ast.Ident:
+		return v.Ident
+	case *ast.Binary:
+		return fmt.Sprintf("%s %s %s", g.KaitaiExpr(v.Left), v.Op, g.KaitaiExpr(v.Right))
+	case *ast.IntLiteral:
+		return v.Value
+	case *ast.Cast:
+		return g.KaitaiExpr(v.Expr)
+	}
+	return ""
 }
 
-type Attribute struct {
-	ID       string `yaml:"id"`
-	Type     Type   `yaml:"type,omitempty"`
-	Repeat   string `yaml:"repeat,omitempty"`
-	Enum     string `yaml:"enum,omitempty"`
-	Size     string `yaml:"size,omitempty"`
-	Contents string `yaml:"contents,omitempty"`
-}
-
-type Meta struct {
-	ID string `yaml:"id"`
-}
-
-type Kaitai struct {
-	Seq []*Attribute `yaml:"seq"`
-}
-
-func IntType(i *ast.IntType) Type {
+func (g *Generator) IntType(i *ast.IntType) *string {
 	str := ""
-	if i.IsSigned {
-		str += "s"
+	if i.IsCommonSupported {
+		if i.IsSigned {
+			str += "s"
+		} else {
+			str += "u"
+		}
+		str += fmt.Sprintf("%d", *i.BitSize/8)
+		if *i.BitSize != 8 {
+			if i.Endian == ast.EndianBig {
+				str += "be"
+			} else if i.Endian == ast.EndianLittle {
+				str += "le"
+			} else {
+				str += "be"
+			}
+		}
 	} else {
-		str += "u"
+		str = fmt.Sprintf("b%d", *i.BitSize)
 	}
-	switch i.Endian {
-	case ast.EndianBig:
-		str += "be"
-	case ast.EndianLittle:
-		str += "le"
-	case ast.EndianUnspec:
-		str += "be"
-	}
-	str += fmt.Sprintf("%d", *i.BitSize/8)
-	return Reference(str)
+
+	return &str
+
 }
 
-func GenerateAttribute(s *ast.Format) ([]*Attribute, error) {
-	attr := []*Attribute{}
-	members := s.Body.StructType.Fields
+func (g *Generator) FloatType(f *ast.FloatType) *string {
+	str := ""
+	switch *f.BitSize {
+	case 32:
+		str += "f4"
+	case 64:
+		str += "f8"
+	}
+	return &str
+}
+
+func (g *Generator) KaitaiType(t ast.Type) *string {
+	switch v := t.(type) {
+	case *ast.IdentType:
+		i, _ := gen.LookupIdent(v.Ident)
+		return &i.Ident
+	case *ast.IntType:
+		return g.IntType(v)
+	case *ast.FloatType:
+		return g.FloatType(v)
+	}
+	return nil
+}
+
+func (g *Generator) GenerateAttribute(c *Type, s *ast.StructType) error {
+	c.Seq = []*Attribute{}
+	members := s.Fields
 	for _, member := range members {
 		switch f := member.(type) {
 		case *ast.Field:
-			if f.Ident == nil {
+			field := Attribute{}
+			if f.Ident != nil {
+				f.Ident.Ident = strcase.ToSnake(f.Ident.Ident)
+				field.ID = &f.Ident.Ident
+			}
+			typ := f.FieldType
+			if i_typ, ok := typ.(*ast.IdentType); ok {
+				typ = i_typ.Base
+			}
+			if u, ok := typ.(*ast.StructUnionType); ok {
+				field.Type = &TypeRef{
+					Switch: &TypeSwitch{
+						Cases: map[string]*TypeRef{},
+					},
+				}
+				if u.Cond != nil {
+					trueExpr := "true"
+					field.Type.Switch.SwitchOn = &AnyScalar{
+						String: &trueExpr,
+					}
+				} else {
+					expr := g.KaitaiExpr(u.Cond)
+					field.Type.Switch.SwitchOn = &AnyScalar{
+						String: &expr,
+					}
+				}
+				for i, s := range u.Structs {
+					seq := g.NextSeq()
+					name := fmt.Sprintf("anonymous%d", seq)
+					newTy := &Type{}
+					c.Types[name] = newTy
+					err := g.GenerateAttribute(newTy, s)
+					if err != nil {
+						return err
+					}
+					expr := g.KaitaiExpr(u.Conds[i])
+					field.Type.Switch.Cases[expr] = &TypeRef{
+						String: g.KaitaiType(s),
+					}
+				}
 				continue
 			}
-			field := &Attribute{
-				ID: f.Ident.Ident,
-			}
-			if i_typ, ok := f.FieldType.(*ast.IntType); ok {
-				field.Type = IntType(i_typ)
-			}
-			if arr, ok := f.FieldType.(*ast.ArrayType); ok {
-				if arr.BitSize != nil && *arr.BitSize != 0 {
-					field.Size = fmt.Sprintf("%d", *arr.BitSize/8)
+			if i_typ, ok := typ.(*ast.IntType); ok {
+				field.Type = &TypeRef{
+					String: g.IntType(i_typ),
 				}
 			}
-			attr = append(attr, field)
+			if i_typ, ok := typ.(*ast.EnumType); ok {
+				field.Enum = &i_typ.Base.Ident.Ident
+				field.Type = &TypeRef{
+					String: g.KaitaiType(i_typ.Base.BaseType),
+				}
+			}
+			if f_typ, ok := typ.(*ast.FloatType); ok {
+				field.Type = &TypeRef{
+					String: g.FloatType(f_typ),
+				}
+			}
+			if arr, ok := typ.(*ast.ArrayType); ok {
+				field.Type = &TypeRef{
+					String: g.KaitaiType(arr.ElementType),
+				}
+				if arr.BitSize != nil && *arr.BitSize != 0 {
+					val := fmt.Sprintf("%d", *arr.BitSize/8)
+					field.Size = &StringOrInteger{
+						String: &val,
+					}
+				}
+				rep := g.KaitaiExpr(arr.Length)
+				field.RepeatExpr = &StringOrInteger{
+					String: &rep,
+				}
+				rep2 := Expr
+				field.Repeat = &rep2
+			}
+			c.Seq = append(c.Seq, &field)
 		}
 	}
-	return attr, nil
+	return nil
 }
 
-func Generate(root *ast.Program) (*Kaitai, error) {
-	kaitai := &Kaitai{}
-	var rootTypes []*ast.Format
-	refMap := map[*ast.Format]int{}
-	for _, member := range root.StructType.Fields {
-		switch f := member.(type) {
-		case *ast.Format:
-			rootTypes = append(rootTypes, f)
-			refCount := 0
-			for _, member := range f.Body.StructType.Fields {
-				switch f := member.(type) {
-				case *ast.Field:
-					typ := f.FieldType
-					if ident_ty, ok := typ.(*ast.IdentType); ok {
-						typ = ident_ty.Base
-					}
-					if _, ok := typ.(*ast.StructType); ok {
-						refCount++
-					}
-				}
+func (g *Generator) Generate(id string, root *ast.Program) (*Type, error) {
+	kaitai := &Type{}
+	for _, element := range root.Elements {
+		if enum, ok := element.(*ast.Enum); ok {
+			if kaitai.Enums == nil {
+				kaitai.Enums = map[string]EnumSpec{}
 			}
-			refMap[f] = refCount
-		}
-	}
-	for _, fmt := range rootTypes {
-		for _, member := range fmt.Body.StructType.Fields {
-			switch f := member.(type) {
-			case *ast.Field:
-				typ := f.FieldType
-				if ident_ty, ok := typ.(*ast.IdentType); ok {
-					typ = ident_ty.Base
-				}
-				if struct_ty, ok := typ.(*ast.StructType); ok {
-					refMap[fmt] += refMap[struct_ty.Base.(*ast.Format)] - 1
-				}
+			spec := EnumSpec{}
+			enum.Ident.Ident = strcase.ToSnake(enum.Ident.Ident)
+			for _, member := range enum.Members {
+				val := g.KaitaiExpr(member.Value)
+				spec[val] = member.Ident.Ident
 			}
+			kaitai.Enums[enum.Ident.Ident] = spec
 		}
 	}
-	// max reference
-	var maxRef *ast.Format
-	max := 0
-	for fmt, ref := range refMap {
-		if maxRef == nil {
-			maxRef = fmt
-			max = ref
-		} else if ref > max {
-			max = ref
-			maxRef = fmt
-		}
-	}
-	var err error
-	kaitai.Seq, err = GenerateAttribute(maxRef)
+	sorted := gen.TopologicalSortFormat(root)
+	err := g.GenerateAttribute(kaitai, sorted[0].Body.StructType)
 	if err != nil {
 		return nil, err
+	}
+	kaitai.Meta = &Meta{
+		ID: &Identifier{
+			String: &id,
+		},
 	}
 	return kaitai, nil
 }
 
+func (g *Generator) GenerateAndFormat(file *ast.AstFile) ([]byte, error) {
+	prog, err := ast.ParseAST(file.Ast)
+	if err != nil {
+		return nil, err
+	}
+	id := filepath.Base(file.Files[0])
+	id = id[:len(id)-len(filepath.Ext(id))]
+	src, err := g.Generate(id, prog)
+	if err != nil {
+		return nil, err
+	}
+	j, err := json.Marshal(src)
+	if err != nil {
+		return nil, err
+	}
+	return convert.JSONToYAML(j)
+}
+
 var f = flag.Bool("s", false, "tell spec of json2go")
 var filename = flag.String("f", "", "file to parse")
-
-func main() {
-	flag.Parse()
-	if *f {
-		fmt.Println(`{
-			"langs" : ["kaitai-struct"],
-			"input" : "stdin",
-			"suffix" : [".ksy"]
-		}`)
-		return
-	}
-	file := ast.AstFile{}
-	if *filename != "" {
-		f, err := os.Open(*filename)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
-			return
-		}
-		defer f.Close()
-		err = json.NewDecoder(f).Decode(&file)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
-			return
-		}
-	} else {
-		err := json.NewDecoder(os.Stdin).Decode(&file)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
-			return
-		}
-	}
-
-	prog, err := ast.ParseAST(file.Ast)
-
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-		return
-	}
-
-	src, err := Generate(prog)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		if src == nil {
-			os.Exit(1)
-		}
-	}
-
-	out, err := yaml.Marshal(src)
-
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-		return
-	}
-
-	os.Stdout.Write(out)
-}

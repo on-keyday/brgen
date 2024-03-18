@@ -161,6 +161,11 @@ const handleTypeScript = async (ui :UIModel, s :JobResult) => {
        isJavascript?"javascript" : "typescript",tsOption);
 }
 
+const handleKaitaiStruct = async (ui :UIModel, s :JobResult) => {
+    const option :CallOption= {};
+    return handleLanguage(ui,s,caller.getKaitaiStructCode,Language.KAITAI_STRUCT,"yaml",option);
+}
+
 const handleJSONOutput = async (ui :UIModel,id :TraceID,value :string,generator:(id :TraceID,srcCode :string,option:any)=>Promise<JobResult>) => {
     const s = await generator(id,value,
     {filename: "editor.bgn"}).catch((e) => {
@@ -235,5 +240,7 @@ export const updateGenerated = async (ui :UIModel) => {
             return handleRust(ui,s);
         case Language.TYPESCRIPT:
             return handleTypeScript(ui,s);
+        case Language.KAITAI_STRUCT:
+            return handleKaitaiStruct(ui,s);
     }
 }

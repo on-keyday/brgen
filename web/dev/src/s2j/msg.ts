@@ -9,7 +9,8 @@ export const enum RequestLanguage {
     GO = "go",
     C = "c",
     RUST = "rust",
-    TYPESCRIPT="typescript"
+    TYPESCRIPT="typescript",
+    KAITAI_STRUCT = "kaitai struct",
 }
 
 export const LanguageList = [
@@ -21,7 +22,8 @@ export const LanguageList = [
     RequestLanguage.GO,
     RequestLanguage.C,
     RequestLanguage.RUST, 
-    RequestLanguage.TYPESCRIPT
+    RequestLanguage.TYPESCRIPT,
+    RequestLanguage.KAITAI_STRUCT
 ];
 
 export const enum WorkerType {
@@ -31,7 +33,8 @@ export const enum WorkerType {
     JSON2GO,
     JSON2C,
     JSON2RUST,
-    JSON2TS
+    JSON2TS,
+    JSON2KAITAI,
 }
 
 export const WorkerList = Object.freeze([
@@ -41,7 +44,8 @@ export const WorkerList = Object.freeze([
     WorkerType.JSON2GO,
     WorkerType.JSON2C,
     WorkerType.JSON2RUST,
-    WorkerType.JSON2TS
+    WorkerType.JSON2TS,
+    WorkerType.JSON2KAITAI,
 ]);
 
 
@@ -83,6 +87,7 @@ export type LanguageToOptionType = {
     [RequestLanguage.C]:COption
     [RequestLanguage.RUST]:RustOption
     [RequestLanguage.TYPESCRIPT]:TSOption
+    [RequestLanguage.KAITAI_STRUCT]:CallOption
 }
 
 export const LanguageToWorkerType = Object.freeze({
@@ -95,6 +100,7 @@ export const LanguageToWorkerType = Object.freeze({
     [RequestLanguage.C]: WorkerType.JSON2C,
     [RequestLanguage.RUST]: WorkerType.JSON2RUST,
     [RequestLanguage.TYPESCRIPT]: WorkerType.JSON2TS,
+    [RequestLanguage.KAITAI_STRUCT]: WorkerType.JSON2KAITAI,
 })
 
 

@@ -9,6 +9,7 @@ const workerMap = Object.freeze({
     [WorkerType.JSON2C]:()=> new Worker(new URL("./worker/json2c_worker.js",import.meta.url),{type:"module"}),
     [WorkerType.JSON2RUST]:()=> new Worker(new URL("./worker/json2rust_worker.js",import.meta.url),{type:"module"}),
     [WorkerType.JSON2TS]:()=> new Worker(new URL("./worker/json2ts_worker.js",import.meta.url),{type:"module"}),
+    [WorkerType.JSON2KAITAI]:()=> new Worker(new URL("./worker/json2kaitai_worker.js",import.meta.url),{type:"module"}),
 });
 
 
@@ -154,6 +155,10 @@ const argConverter = Object.freeze({
         }
         return args;
     },
+    [RequestLanguage.KAITAI_STRUCT] : (opt :CallOption) => {
+        const args :string[] = [];
+        return args;
+    }
 })
 
 
@@ -206,4 +211,8 @@ export const getRustCode = (id :TraceID,sourceCode :string,options :RustOption) 
 
 export const getTSCode = (id :TraceID,sourceCode :string,options :TSOption) => {
     return getLanguage(id,sourceCode,RequestLanguage.TYPESCRIPT,options)
+}
+
+export const getKaitaiStructCode = (id :TraceID,sourceCode :string,options :CallOption) => {
+    return getLanguage(id,sourceCode,RequestLanguage.KAITAI_STRUCT,options)
 }
