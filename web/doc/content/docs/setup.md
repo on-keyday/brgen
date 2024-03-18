@@ -14,7 +14,8 @@ weight: 1
 ## バイナリをダウンロードする場合
 
 - windows(x64),mac,linux(x64,arm),android(arm,termux)のビルド済みバイナリを配布しています
-- 現在(2024/1/23)の最新バージョンは[v0.0.4](https://github.com/on-keyday/brgen/releases/tag/v0.0.4)です
+- 現在(2024/3/17)の最新バージョンは[v0.0.5](https://github.com/on-keyday/brgen/releases/tag/v0.0.5)です
+- WebPlayground は常に main ブランチの最新版が反映されています
 
 TODO(on-keyday): apt-get,brew,winget 等への対応
 

@@ -514,12 +514,15 @@ const char* ast2c_BinaryOp_to_string(ast2c_BinaryOp val) {
 	case AST2C_BINARYOP_MUL_ASSIGN: return "*=";
 	case AST2C_BINARYOP_DIV_ASSIGN: return "/=";
 	case AST2C_BINARYOP_MOD_ASSIGN: return "%=";
-	case AST2C_BINARYOP_LEFT_SHIFT_ASSIGN: return "<<=";
-	case AST2C_BINARYOP_RIGHT_SHIFT_ASSIGN: return ">>=";
+	case AST2C_BINARYOP_LEFT_LOGICAL_SHIFT_ASSIGN: return "<<=";
+	case AST2C_BINARYOP_RIGHT_LOGICAL_SHIFT_ASSIGN: return ">>=";
+	case AST2C_BINARYOP_LEFT_ARITHMETIC_SHIFT_ASSIGN: return "<<<=";
+	case AST2C_BINARYOP_RIGHT_ARITHMETIC_SHIFT_ASSIGN: return ">>>=";
 	case AST2C_BINARYOP_BIT_AND_ASSIGN: return "&=";
 	case AST2C_BINARYOP_BIT_OR_ASSIGN: return "|=";
 	case AST2C_BINARYOP_BIT_XOR_ASSIGN: return "^=";
 	case AST2C_BINARYOP_COMMA: return ",";
+	case AST2C_BINARYOP_IN_ASSIGN: return "in";
 	default: return NULL;
 	}
 }
@@ -656,11 +659,19 @@ int ast2c_BinaryOp_from_string(const char* str, ast2c_BinaryOp* out) {
 		return 1;
 	}
 	if (strcmp(str, "<<=") == 0) {
-		*out = AST2C_BINARYOP_LEFT_SHIFT_ASSIGN;
+		*out = AST2C_BINARYOP_LEFT_LOGICAL_SHIFT_ASSIGN;
 		return 1;
 	}
 	if (strcmp(str, ">>=") == 0) {
-		*out = AST2C_BINARYOP_RIGHT_SHIFT_ASSIGN;
+		*out = AST2C_BINARYOP_RIGHT_LOGICAL_SHIFT_ASSIGN;
+		return 1;
+	}
+	if (strcmp(str, "<<<=") == 0) {
+		*out = AST2C_BINARYOP_LEFT_ARITHMETIC_SHIFT_ASSIGN;
+		return 1;
+	}
+	if (strcmp(str, ">>>=") == 0) {
+		*out = AST2C_BINARYOP_RIGHT_ARITHMETIC_SHIFT_ASSIGN;
 		return 1;
 	}
 	if (strcmp(str, "&=") == 0) {
@@ -677,6 +688,10 @@ int ast2c_BinaryOp_from_string(const char* str, ast2c_BinaryOp* out) {
 	}
 	if (strcmp(str, ",") == 0) {
 		*out = AST2C_BINARYOP_COMMA;
+		return 1;
+	}
+	if (strcmp(str, "in") == 0) {
+		*out = AST2C_BINARYOP_IN_ASSIGN;
 		return 1;
 	}
 	return 0;
@@ -2471,6 +2486,7 @@ int ast2c_ArrayType_parse(ast2c_Ast* ast,ast2c_ArrayType* s,ast2c_json_handlers*
 	void* element_type = h->object_get(h, obj_body, "element_type");
 	void* length = h->object_get(h, obj_body, "length");
 	void* length_value = h->object_get(h, obj_body, "length_value");
+	void* is_bytes = h->object_get(h, obj_body, "is_bytes");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_ArrayType::loc is null"); } return 0; }
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_ArrayType::is_explicit is null"); } return 0; }
 	if (!non_dynamic_allocation) { if(h->error) { h->error(h,non_dynamic_allocation, "ast2c_ArrayType::non_dynamic_allocation is null"); } return 0; }
@@ -2480,6 +2496,7 @@ int ast2c_ArrayType_parse(ast2c_Ast* ast,ast2c_ArrayType* s,ast2c_json_handlers*
 	if (!element_type) { if(h->error) { h->error(h,element_type, "ast2c_ArrayType::element_type is null"); } return 0; }
 	if (!length) { if(h->error) { h->error(h,length, "ast2c_ArrayType::length is null"); } return 0; }
 	if (!length_value) { if(h->error) { h->error(h,length_value, "ast2c_ArrayType::length_value is null"); } return 0; }
+	if (!is_bytes) { if(h->error) { h->error(h,is_bytes, "ast2c_ArrayType::is_bytes is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_ArrayType::loc"); }
 		goto error;

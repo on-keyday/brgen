@@ -190,6 +190,8 @@ export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
     ${ident.base.body?.struct_type?.non_dynamic_allocation?"+ non_dynamic\n    ":""}${ident.base.body?.struct_type?.recursive?"+ recursive\n":""}
     ${ident.base.depends.length > 0 ?`+ depends: ${ident.base.depends.map((x)=>x.ident?.ident||"(null)").join(", ")}\n`:""}
     ${ident.base.state_variables.length > 0 ?`+ state variables: ${ident.base.state_variables.map((x)=>x.ident?.ident||"(null)").join(", ")}\n`:""}
+    ${ident.base.encode_fn?"+ custom encode\n":""}
+    ${ident.base.decode_fn?"+ custom decode\n":""}
 `);
                     }
                     return makeHover(ident.ident,"format"); 
@@ -616,6 +618,9 @@ export const analyzeSourceCode  = async (prevSemanticTokens :SemTokensStub|null,
         }
         else if(ast2ts.isFloatType(node)&&node.is_explicit){
             locList.push({loc: node.loc,length: node.loc.pos.end - node.loc.pos.begin,index:7});
+        }
+        else if(ast2ts.isBinary(node)&&node.op == ast2ts.BinaryOp.in_assign) {
+            locList.push({loc: node.loc,length: 2,index:9});
         }
         return true
     });

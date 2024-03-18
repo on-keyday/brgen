@@ -20,8 +20,10 @@ export class GoWorkContext  {
     #msgQueue: RequestQueue;
     #onload? :() => void;
 
-    constructor(p :Promise<BufferSource> ,onload? :() => void) {
-        this.#msgQueue = new RequestQueue();
+    constructor(p :Promise<BufferSource> ,makeArgs: (e: JobRequest) => string|Error,onload? :() => void){
+        this.#msgQueue = new RequestQueue(()=>{
+            this.#handleRequest(makeArgs)
+        });
         this.#onload = onload; 
         this.#src = p;    
         this.#go = new Go();
@@ -61,12 +63,9 @@ export class GoWorkContext  {
         await this.#waitForLoad();
         return this.#go.json2goGenerator!(srcCode,args);
     }
-   
-    postRequest(ev: JobRequest) {
-        this.#msgQueue.postRequest(ev);
-    }
+       
 
-    async handleRequest(makeArgs: (e: JobRequest) => string|Error) {
+    async #handleRequest(makeArgs: (e: JobRequest) => string|Error) {
         while(true){
             const p = this.#msgQueue.popRequest();
             if(p === undefined) break;

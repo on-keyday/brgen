@@ -40,7 +40,8 @@ namespace brgen::middle {
             else if (bin && ast::is_assign_op(bin->op)) {
                 // nothing to do
             }
-            else if (bin || ast::as<ast::Literal>(*it) || ast::as<ast::Unary>(*it) || ast::as<ast::Ident>(*it)) {
+            else if (bin || ast::as<ast::Literal>(*it) || ast::as<ast::Unary>(*it) || ast::as<ast::Ident>(*it) ||
+                     ast::as<ast::Index>(*it)) {
                 err.warning((*it)->loc, "unused expression");
             }
         };

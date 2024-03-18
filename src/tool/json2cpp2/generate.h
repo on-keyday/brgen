@@ -342,7 +342,7 @@ namespace j2cp2 {
                 bool end_else = false;
                 for (auto& c : ut->candidates) {
                     auto cond = c->cond.lock();
-                    if (cond) {
+                    if (!ast::is_any_range(cond)) {
                         auto defs = str.collect_defined_ident(cond);
                         for (auto& d : defs) {
                             code_one_node(d);
@@ -396,7 +396,7 @@ namespace j2cp2 {
                 bool end_else = false;
                 for (auto& c : ut->candidates) {
                     auto cond = c->cond.lock();
-                    if (cond) {
+                    if (!ast::is_any_range(cond)) {
                         auto defs = str.collect_defined_ident(cond);
                         for (auto& d : defs) {
                             code_one_node(d);

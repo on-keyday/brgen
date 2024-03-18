@@ -129,12 +129,15 @@ SubAssign,
 MulAssign,
 DivAssign,
 ModAssign,
-LeftShiftAssign,
-RightShiftAssign,
+LeftLogicalShiftAssign,
+RightLogicalShiftAssign,
+LeftArithmeticShiftAssign,
+RightArithmeticShiftAssign,
 BitAndAssign,
 BitOrAssign,
 BitXorAssign,
 Comma,
+InAssign,
 }
 public enum IdentUsage {
 Unknown,
@@ -542,6 +545,7 @@ public class ArrayType : Type{
 	public Type? ElementType{get;set;}
 	public Expr? Length{get;set;}
 	public ulong? LengthValue{get;set;}
+	public bool IsBytes{get;set;}
 }
 public class FunctionType : Type{
 	public Loc Loc{get;set;}
@@ -1343,6 +1347,7 @@ public static class Ast {
                node.ElementType = ast.Node[i].Body[element_type];
                node.Length = ast.Node[i].Body[length];
                node.LengthValue = ast.Node[i].Body[length_value];
+               node.IsBytes = ast.Node[i].Body[is_bytes];
            case NodeType.FunctionType:
                var node = nodes[i] as FunctionType;
                node.Loc = ast.Node[i].Body[loc];

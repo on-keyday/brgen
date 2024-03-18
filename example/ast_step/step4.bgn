@@ -1,5 +1,5 @@
 config.debug = true
-loop:
+for:
     if config.debug:
         trace()
     data = readfrom()

@@ -1,15 +1,83 @@
 
+config.go.package = "service"
+
+format ID:
+    id :[16]u8
+
 format OpenRequest:
     reserved :u7
     is_owner :u1
-    share_id :[16]u8
+    share_id :ID
 
 format OpenReply:
     reserved :u7
     success :u1
     if success == 1:
-        share_id :[16]u8
-        client_id :[16]u8
+        share_id :ID
+        client_id :ID
     else:
         len :u8
         message :[len]u8
+
+enum MessageType:
+    :u8
+    control = 0
+    interact = 1
+    broadcast = 2
+    interact_reply = 3
+    broadcast_reply = 4
+    error = 5
+
+format PlainMessage:
+    len :u32
+    message :[len]u8
+
+format Message:
+    msg_type :MessageType
+    if msg_type == MessageType.interact ||
+       msg_type == MessageType.broadcast_reply||
+       msg_type == MessageType.interact_reply:
+        client_id :ID
+    if msg_type == MessageType.control:
+        control :ControlMessage
+    else:
+        message :PlainMessage
+
+enum ControlType:
+    :u8
+    change_permission = 0
+    close_hub = 1
+    request_permission = 2
+    notify_permission_request = 3
+    notify_permission_change = 4
+    notify_close = 5
+    close_client = 6
+    
+
+enum Permission:
+    :u16
+    none = 0
+    read = 1
+    write = 2
+    dismiss = 4
+    change_permission = 8
+    destroy_hub = 16
+    broadcast = 32
+    listen_close = 64
+    close_others = 128
+    admin = 0xffff
+
+format ControlMessage:
+    control_type :ControlType
+    if control_type == ControlType.change_permission || 
+       control_type == ControlType.notify_permission_request ||
+       control_type == ControlType.notify_permission_change:
+        client_id :ID
+        permission :Permission
+    elif control_type == ControlType.request_permission:
+        permission :Permission # broadcast to clients that have change_permission permission
+    elif control_type == ControlType.notify_close || 
+         control_type == ControlType.close_client:
+        client_id :ID
+
+        

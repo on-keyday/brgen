@@ -19,7 +19,7 @@
             "request": "launch",
             "program": "${workspaceRoot}/tool/src2json",
             "args": [
-                "c:/workspace/shbrgen/brgen/example/llvm_ir.bgn",
+                "c:/workspace/shbrgen/brgen/example/feature_test/for_in.bgn",
                 //"--check-ast"
             ],
             "stopAtEntry": false,
@@ -34,7 +34,7 @@
             "type": "go",
             "request": "launch",
             "mode": "debug",
-            "program": "${workspaceRoot}/src/tool/json2mermaid",
+            "program": "${workspaceRoot}/src/tool/json2go",
             "args": ["-f","ignore/sample.json"],
             "cwd": "${workspaceRoot}",
         },
@@ -55,7 +55,7 @@
             "name": "Debug json2cpp",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceRoot}/tool/json2cpp2",
+            "program": "${workspaceRoot}/tool/json2ts",
             "args": [
                 "ignore/sample.json",
                 /*"-r",

@@ -1,4 +1,4 @@
-1 + 1
+x := 1 + 1
 err := if true:
         2
 else:
@@ -9,5 +9,5 @@ V ::= if n < 10 && n > -10:
 else: 
    n / 2
 
-loop i:=0; i<10; i=i+1 :
-   print(i)
+for i in 10:
+   error("error!",i)

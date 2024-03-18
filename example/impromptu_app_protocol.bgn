@@ -1,0 +1,25 @@
+
+enum AppProtocolStatus:
+    :u8
+    start = 0
+    middle = 1
+    end = 2
+    once = 3
+    control = 4
+    fileWatch = 5
+    fileRequestList = 6
+    fileRequestWrite = 7
+    fileRequestRead = 8
+    fileAcceptWrite = 9
+    fileAcceptRead = 10
+    fileError = 11
+
+format AppProtocolHeader:
+    id :u32
+    status :AppProtocolStatus
+    order :u32
+
+format AppProtocol:
+    header :AppProtocolHeader
+    data :[..]u8
+

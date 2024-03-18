@@ -28,7 +28,8 @@ weight: 1
 <program> := <skip line> *(<statement> <skip>) <eof>
 <statement> := <loop> | <format> | <state> | <enum> | <fn> | <return> | <break> | <continue> | <field> | <expr>
 <indent block> := ":" <skip space> <line> +(<indent> <statement> <skip line>)
-<loop> := "loop" <expr>? (";" <expr>? (";" <expr>?)?)?  <indent block>
+<loop> := "for" (<range loop> | <expr>? (";" <expr>? (";" <expr>?)?)?)  <indent block>
+<range loop> := <ident> "in" <expr>
 <format> := "format" <ident> <indent block>
 <state> := "state" <ident> <indent block>
 <enum> := "enum" <ident> <skip space> ":" <skip space> <line> (<indent> <anonymous field>)? +(<indent> <enum member> <skip line>)
@@ -77,4 +78,8 @@ weight: 1
 
 <field> := <ident>? <anonymous field>
 <anonymous field> := ":" <type> <call>?
+
+<type> := <fn type> | "[" <expr>? "]" <type> | <str literal> | <ident> ("." <ident>)?
+<fn type> := "fn" <skip white> "(" (<fn type param> *("," <fn type param>))? ")" ("->" <type>)?
+<fn type param> := <ident>? ":" <type>
 ```

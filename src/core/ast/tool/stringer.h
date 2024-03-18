@@ -76,6 +76,7 @@ namespace brgen::ast::tool {
         std::function<std::string(Stringer&, const std::shared_ptr<Type>&)> type_resolver;
         std::function<std::string(Stringer&, const std::shared_ptr<IOOperation>&)> io_op_handler;
         std::function<std::string(Stringer&, const std::shared_ptr<Available>&)> available_handler;
+        std::function<std::string(Stringer&, const std::shared_ptr<ast::Cast>&)> cast_handler;
         std::string this_access = "this->";
 
         void clear() {
@@ -247,6 +248,9 @@ namespace brgen::ast::tool {
                 }
             }
             if (auto cast_ = ast::as<ast::Cast>(expr)) {
+                if (cast_handler) {
+                    return cast_handler(*this, ast::cast_to<ast::Cast>(expr));
+                }
                 return concat(type_resolver(*this, cast_->expr_type), "(", to_string(cast_->expr), ")");
             }
             if (auto access = ast::as<ast::MemberAccess>(expr)) {

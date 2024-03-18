@@ -246,9 +246,13 @@ DivAssign,
 @JsonValue('%=')
 ModAssign,
 @JsonValue('<<=')
-LeftShiftAssign,
+LeftLogicalShiftAssign,
 @JsonValue('>>=')
-RightShiftAssign,
+RightLogicalShiftAssign,
+@JsonValue('<<<=')
+LeftArithmeticShiftAssign,
+@JsonValue('>>>=')
+RightArithmeticShiftAssign,
 @JsonValue('&=')
 BitAndAssign,
 @JsonValue('|=')
@@ -257,6 +261,8 @@ BitOrAssign,
 BitXorAssign,
 @JsonValue(',')
 Comma,
+@JsonValue('in')
+InAssign,
 }
 enum IdentUsage {
 @JsonValue('unknown')
@@ -695,6 +701,7 @@ class ArrayType extends Type {
     Type? elementType;
     Expr? length;
     int? lengthValue;
+    bool isBytes = false;
 factory ArrayType.fromJson(Map<String, dynamic> json) => _$ArrayTypeFromJson(json);
 }
 @JsonSerializable()

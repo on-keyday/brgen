@@ -246,6 +246,7 @@ namespace brgen::middle {
             return base;
         }
 
+        // int_type_fitting convert IntLiteralType to IntType to assign or compare
         void int_type_fitting(std::shared_ptr<ast::Type>& left, std::shared_ptr<ast::Type>& right) {
             auto fitting = [&](auto& a, auto& b) {
                 auto ity = ast::as<ast::IntType>(a);
@@ -346,7 +347,67 @@ namespace brgen::middle {
                 return;
             }
             auto new_type = int_literal_to_int_type(right->expr_type);
-            if (b->op == ast::BinaryOp::assign) {
+
+            if (b->op == ast::BinaryOp::define_assign) {
+                assert(left_ident);
+                assert(left_ident->usage == ast::IdentUsage::define_variable);
+                assert(left_ident->base.lock() == b);
+                left_ident->expr_type = std::move(new_type);
+                left_ident->constant_level = ast::ConstantLevel::variable;
+            }
+            else if (b->op == ast::BinaryOp::const_assign) {
+                assert(left_ident);
+                assert(left_ident->usage == ast::IdentUsage::define_const);
+                assert(left_ident->base.lock() == b);
+                left_ident->expr_type = std::move(new_type);
+                if (b->right->constant_level == ast::ConstantLevel::constant) {
+                    left_ident->constant_level = ast::ConstantLevel::constant;
+                }
+                else {
+                    left_ident->constant_level = ast::ConstantLevel::immutable_variable;
+                }
+            }
+            else if (b->op == ast::BinaryOp::in_assign) {
+                assert(left_ident);
+                assert(left_ident->usage == ast::IdentUsage::define_variable);
+                assert(left_ident->base.lock() == b);
+                // `for x in 10`, x is int type inferred from 10
+                if (auto p = ast::as<ast::IntType>(new_type)) {
+                    left_ident->expr_type = std::move(new_type);
+                    left_ident->usage = ast::IdentUsage::define_const;
+                    left_ident->constant_level = ast::ConstantLevel::immutable_variable;
+                }
+                // `for x in "hello"`, x is u8 type
+                else if (auto str = ast::as<ast::StrLiteralType>(new_type)) {
+                    auto u8 = std::make_shared<ast::IntType>(str->loc, 8, ast::Endian::unspec, false);
+                    left_ident->expr_type = std::move(u8);
+                    left_ident->usage = ast::IdentUsage::define_const;
+                    left_ident->constant_level = ast::ConstantLevel::immutable_variable;
+                }
+                // `for x in 1..10`, x is base_type of range
+                else if (auto r = ast::as<ast::RangeType>(new_type)) {
+                    left_ident->expr_type = r->base_type;
+                    left_ident->usage = ast::IdentUsage::define_const;
+                    left_ident->constant_level = ast::ConstantLevel::immutable_variable;
+                }
+                // `for x in array`, x is element type of array
+                else if (auto arr = ast::as<ast::ArrayType>(new_type)) {
+                    left_ident->expr_type = arr->element_type;
+                    if (right->constant_level == ast::ConstantLevel::constant ||
+                        right->constant_level == ast::ConstantLevel::immutable_variable) {
+                        left_ident->usage = ast::IdentUsage::define_const;
+                        left_ident->constant_level = ast::ConstantLevel::immutable_variable;
+                    }
+                    else {
+                        left_ident->usage = ast::IdentUsage::define_variable;
+                        left_ident->constant_level = ast::ConstantLevel::variable;
+                    }
+                }
+                else {
+                    error(b->loc, "cannot use ", ast::node_type_to_string(new_type->node_type), " in `for in` syntax; integer, string, range, and array are allowed").report();
+                }
+            }
+            else {  // other assignments like =, +=, -=, *=, /=, %=, &=, |=, ^=, <<=, >>=
                 if (left_ident && left_ident->usage == ast::IdentUsage::unknown) {
                     error(left_ident->loc, "identifier ", left_ident->ident, " is not defined before; use := to define identifier").report();
                 }
@@ -364,25 +425,6 @@ namespace brgen::middle {
                     else if (base_ident->usage == ast::IdentUsage::define_const) {
                         report_assign_error();
                     }
-                }
-            }
-            else if (b->op == ast::BinaryOp::define_assign) {
-                assert(left_ident);
-                assert(left_ident->usage == ast::IdentUsage::define_variable);
-                assert(left_ident->base.lock() == b);
-                left_ident->expr_type = std::move(new_type);
-                left_ident->constant_level = ast::ConstantLevel::variable;
-            }
-            else if (b->op == ast::BinaryOp::const_assign) {
-                assert(left_ident);
-                assert(left_ident->usage == ast::IdentUsage::define_const);
-                assert(left_ident->base.lock() == b);
-                left_ident->expr_type = std::move(new_type);
-                if (b->right->constant_level == ast::ConstantLevel::constant) {
-                    left_ident->constant_level = ast::ConstantLevel::constant;
-                }
-                else {
-                    left_ident->constant_level = ast::ConstantLevel::immutable_variable;
                 }
             }
         }
@@ -727,12 +769,26 @@ namespace brgen::middle {
             auto op = bin->op;
             typing_expr(
                 bin->left,
-                op == ast::BinaryOp::define_assign || op == ast::BinaryOp::const_assign);
+                op == ast::BinaryOp::define_assign || op == ast::BinaryOp::const_assign ||
+                    op == ast::BinaryOp::in_assign /*`for x in range*/);
             typing_expr(bin->right);
             switch (op) {
                 case ast::BinaryOp::assign:
                 case ast::BinaryOp::define_assign:
                 case ast::BinaryOp::const_assign:
+                case ast::BinaryOp::in_assign:
+                case ast::BinaryOp::add_assign:
+                case ast::BinaryOp::sub_assign:
+                case ast::BinaryOp::mul_assign:
+                case ast::BinaryOp::div_assign:
+                case ast::BinaryOp::mod_assign:
+                case ast::BinaryOp::left_logical_shift_assign:
+                case ast::BinaryOp::right_logical_shift_assign:
+                case ast::BinaryOp::left_arithmetic_shift_assign:
+                case ast::BinaryOp::right_arithmetic_shift_assign:
+                case ast::BinaryOp::bit_and_assign:
+                case ast::BinaryOp::bit_or_assign:
+                case ast::BinaryOp::bit_xor_assign:
                     typing_assign(bin);
                     break;
                 default:

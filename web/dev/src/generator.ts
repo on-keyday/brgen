@@ -3,7 +3,7 @@ import * as caller from "./s2j/caller";
 import { TraceID } from "./s2j/job_mgr";
 import { UpdateTracer } from "./s2j/update";
 import * as inc from "./cpp_include";
-import { JobResult,Language } from "./s2j/msg.js";
+import  { COption, CallOption, CppOption, GoOption, JobResult,Language, RustOption, TSOption } from "./s2j/msg.js";
 import {ast2ts} from "ast2ts";
 import {storage} from "./storage";
 import {ConfigKey} from "./types";
@@ -50,7 +50,7 @@ const isMappingInfoStruct = (obj :any) :obj is {line_map :MappingInfo[]} => {
 
 
 // returns true if updated
-const handleLanguage = async (ui :UIModel,s :JobResult,generate:(id :TraceID,src :string,option :any)=>Promise<JobResult>,lang :Language,view_lang: string,option? :any) => {
+const handleLanguage = async (ui :UIModel,s :JobResult,generate:(id :TraceID,src :string,option :any)=>Promise<JobResult>,lang :Language,view_lang: string,option :any) => {
     if(s.stdout===undefined) throw new Error("stdout is undefined");
     const res = await generate(s.traceID,s.stdout,option).catch((e) => {
         return e as JobResult;
@@ -74,7 +74,8 @@ const handleLanguage = async (ui :UIModel,s :JobResult,generate:(id :TraceID,src
 }
 
 const handleCppPrototype = async (ui :UIModel,s :JobResult) => {
-    return handleLanguage(ui,s,caller.getCppPrototypeCode,Language.CPP_PROTOTYPE,"cpp");
+    const option :CallOption= {};
+    return handleLanguage(ui,s,caller.getCppPrototypeCode,Language.CPP_PROTOTYPE,"cpp",option);
 }
 
 
@@ -85,7 +86,7 @@ const handleCpp = async (ui :UIModel,  s :JobResult) => {
     const useRawUnion = ui.getLanguageConfig(Language.CPP,ConfigKey.CPP_USE_RAW_UNION);
     const checkOverflow = ui.getLanguageConfig(Language.CPP,ConfigKey.CPP_CHECK_OVERFLOW);
     const compileViaAPI = ui.getLanguageConfig(Language.CPP,ConfigKey.CPP_COMPILE_VIA_API);
-    const cppOption : caller.CppOption = {      
+    const cppOption : CppOption = {      
         use_line_map: useMap === true,
         use_error: useError === true,
         use_raw_union: useRawUnion === true,
@@ -94,7 +95,7 @@ const handleCpp = async (ui :UIModel,  s :JobResult) => {
     let result : JobResult | undefined = undefined;
     let mappingInfo :any;
     await handleLanguage(ui,s,async(id: TraceID,src :string,option :any) => {
-        result = await caller.getCppCode(id,src,option as caller.CppOption);
+        result = await caller.getCppCode(id,src,option as CppOption);
         if(result.code === 0&&cppOption.use_line_map){
            const split = result.stdout!.split("############");
            result.stdout = split[0];
@@ -135,20 +136,29 @@ const handleCpp = async (ui :UIModel,  s :JobResult) => {
 
 const handleGo = async (ui :UIModel, s :JobResult) => {
     const usePut = ui.getLanguageConfig(Language.GO,ConfigKey.GO_USE_PUT);
-    const goOption : caller.GoOption ={
+    const goOption : GoOption ={
         use_put: usePut === true,
     }
     return handleLanguage(ui,s,caller.getGoCode,Language.GO,"go",goOption);
 }
 
 const handleC = async (ui :UIModel, s :JobResult) => {
-    const COption : caller.COption = {};
+    const COption : COption = {};
     return handleLanguage(ui,s,caller.getCCode,Language.C,"c",COption);
 }
 
 const handleRust = async (ui :UIModel, s :JobResult) => {
-    const rustOption : caller.RustOption = {};
+    const rustOption : RustOption = {};
     return handleLanguage(ui,s,caller.getRustCode,Language.RUST,"rust",rustOption);
+}
+
+const handleTypeScript = async (ui :UIModel, s :JobResult) => {
+    const isJavascript = ui.getLanguageConfig(Language.TYPESCRIPT,ConfigKey.TS_JAVASCRIPT);
+    const tsOption : TSOption = {
+        javascript: isJavascript === true,
+    };
+    return handleLanguage(ui,s,caller.getTSCode,Language.TYPESCRIPT,
+       isJavascript?"javascript" : "typescript",tsOption);
 }
 
 const handleJSONOutput = async (ui :UIModel,id :TraceID,value :string,generator:(id :TraceID,srcCode :string,option:any)=>Promise<JobResult>) => {
@@ -223,5 +233,7 @@ export const updateGenerated = async (ui :UIModel) => {
             return handleC(ui,s);
         case Language.RUST:
             return handleRust(ui,s);
+        case Language.TYPESCRIPT:
+            return handleTypeScript(ui,s);
     }
 }

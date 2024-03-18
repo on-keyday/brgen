@@ -1,6 +1,12 @@
 {
   "src2json": "./tool/src2json",
-  "input_dir": ["./example/", "./example/gen_step/"],
+  "input_dir": [
+    "./example/",
+    "./example/gen_step/",
+    "./example/brgen_help",
+    "./example/vm_test",
+    "./example/feature_test"
+  ],
   "suffix": ".bgn",
   "warnings": {
     "disable_untyped": true,
@@ -56,6 +62,16 @@
     {
       "generator": "./tool/json2vm",
       "output_dir": "./ignore/example/vm/"
+    },
+    {
+      "generator": "./tool/json2ts",
+      "output_dir": "./ignore/example/ts/",
+      "args": []
+    },
+    {
+      "generator": "./tool/json2ts",
+      "output_dir": "./ignore/example/ts/",
+      "args": ["--javascript"]
     }
   ]
 }

@@ -15,8 +15,11 @@ export class EmWorkContext  {
     #factory :EmscriptenModuleFactory<MyEmscriptenModule>;
     #onload? :() => void;
 
-    constructor(mod :EmscriptenModuleFactory<MyEmscriptenModule>,onload? :() => void) {
-        this.#msgQueue = new RequestQueue();
+    constructor(mod :EmscriptenModuleFactory<MyEmscriptenModule>,
+        makeArgs: (e: JobRequest,m :MyEmscriptenModule) => string[]|Error|Promise<string[]|Error>,onload? :() => void) {
+        this.#msgQueue = new RequestQueue(()=>{
+            this.#handleRequest(makeArgs);
+        });
         this.#textCapture = {
             jobId: -1,
             stdout: "",
@@ -48,10 +51,6 @@ export class EmWorkContext  {
 
     
 
-    postRequest(ev: JobRequest) {
-        this.#msgQueue.postRequest(ev);
-    }
-
     #popRequest(): JobRequest | undefined {
         return this.#msgQueue.popRequest();
     }
@@ -79,7 +78,7 @@ export class EmWorkContext  {
         }
     }
 
-    async callEmscriptenMain(args: string[]): Promise<number> {
+    async #callEmscriptenMain(args: string[]): Promise<number> {
         await this.#waitForPromise();
         let arg: string = "";
         for (let i = 0; i < args.length; i++) {
@@ -108,7 +107,7 @@ export class EmWorkContext  {
             args.push(v);
         });
         this.#setCapture(id);
-        const code = await this.callEmscriptenMain(args);
+        const code = await this.#callEmscriptenMain(args);
         const result: JobResult = {
             lang: e.lang,
             stdout: this.#textCapture.stdout,
@@ -122,7 +121,7 @@ export class EmWorkContext  {
         this.#postResult(result);
     }
 
-    async handleRequest(makeArgs: (e: JobRequest,m :MyEmscriptenModule) => string[]|Error|Promise<string[]|Error>) {
+    async #handleRequest(makeArgs: (e: JobRequest,m :MyEmscriptenModule) => string[]|Error|Promise<string[]|Error>) {
         while(true){
             const p = this.#popRequest();
             if(p === undefined) break;

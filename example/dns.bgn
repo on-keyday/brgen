@@ -26,22 +26,38 @@ format PureLabel:
     length <= 63
     data :[length]u8
 
+    
+
 format Label:
     length :u8
     if length & 0xc0 == 0xc0:
         input.backward()
         pointer :u16
-        # data :PureLabel(input = input.subrange(.., pointer&0x3fff)) #TODO(support subrange?)
     else:
         length <= 63
         data :[length]u8
 
 format DomainName:
-    start ::= input.offset
-    labels :[..]Label
-    null :"\x00"
-    input.offset - start <= 255
-
+    labels :[]Label
+    
+    fn decode():
+        for:
+           label :Label
+           labels[labels.length] = label
+           if label.length == 0 || label.length & 0xc0 == 0xc0:
+              break
+    
+    fn encode():
+        for i in labels.length:
+            if labels[i].length == 0 || available(labels[i].pointer):
+                i == labels.length - 1
+            output.put(labels[i])
+    
+format DomainName2:
+    for:
+        label :Label
+        if label.length == 0 || available(label.pointer):
+            break
 
 format DNSQuestion:
     name :DomainName
@@ -78,4 +94,5 @@ format DNSMessage:
     answers :[header.answer_count]DNSResourceRecord
     authorities :[header.authority_count]DNSResourceRecord
     additionals :[header.additional_count]DNSResourceRecord
+
 

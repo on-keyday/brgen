@@ -15,6 +15,10 @@ weight: 1
 NOTE(on-keyday): 現状、言語の開発速度に対して spec の整理は追いついていないので当てにならない可能性はある。それでも
 基本的な部分に関しては十分カバーしているであろう。
 
+また、構文が存在することとジェネレーターによる生成ができることは同一ではないため、
+ジェネレーターの生成能力については Implementation Level を参照せよ。
+TODO(on-keyday): 現状 Implementation Level は定義しきれていない。[Issue](https://github.com/on-keyday/brgen/issues/9) を参照
+
 ## 設計思想
 
 brgen(lang)は宣言的にバイナリフォーマットおよびそのエンコード・デコードルールを記述するための言語(DSL)である。
@@ -276,4 +280,111 @@ format Data:
     match running_status.type:
         1  => data :[..]u8
         .. => ..
+```
+
+## 制御構文
+
+### if
+
+```
+format VarInt:
+    prefix :u2
+    if prefix == 1:
+        data :u6
+    elif prefix == 2:
+        data :u30
+    else:
+        data :u14
+```
+
+このように条件分岐を書くことで条件によってフィールドを変更することができる。
+なお、brgen はこれを自動で処理して union に変換する
+
+### match
+
+```
+format VarInt2:
+    prefix :u2
+    match prefix:
+       0 => data :u6
+       1 => data :u14
+       2 => data :u30
+       3 => data :u62
+```
+
+if 文と同様に match 文もある。
+
+```
+format X:
+    len :u8
+    match len:
+        0: # `=>`の代わりに `:`とすると複数の文を書ける
+          data :[..]u8
+          :"\0"
+        .. => data :[len]u8
+```
+
+なお match 文の条件の最後に`..`を指定するとどの条件にも当てはまらなかった場合の処理が書くことができる。
+
+`match` と `if` には exhaustive(bool) という属性がついている。
+これは条件を網羅しているかを静的に検査して判定している。
+なお、このチェックは完全でないため、人間の目には網羅していても
+brgen(lang)のパーサーは網羅していないと判定する可能性もある。
+もし、確実に網羅していることを保証したい場合は、`if` の場合は `else` を、match の場合は`..`を
+それぞれ書くと exhaustive 属性が true となる。
+
+### for
+
+本言語は Go 言語のごとく全ループ構文を`for`でまかなっている
+
+```
+for: # 無限ループ
+   x :u8
+```
+
+```
+x := random()
+for x != 0: # 条件付きループ(while文相当)
+    x = random()
+```
+
+```
+for x := random(); x != 0: # 初期化&条件付きループ
+    x = random()
+```
+
+```
+for x := random(); x != 0; x = random(): # forループ(基本形)
+   ..
+```
+
+```
+for x := random();;x = random(): #　条件抜き(初期化抜きや更新抜き、全抜き(`;;`)も可)
+   if x == 0:
+      break # breakやcontinueあり
+```
+
+```
+for x in 10: # 範囲ループ (0から9まで)
+　　if x == 9:
+        break
+　  # これは不可(xはimmutable)
+    # x = 0
+```
+
+```
+for x in 1..10: # 範囲ループ (1から9まで) (`..=`も使える)
+　　if x == 9:
+        break
+```
+
+```
+for x in "HELLO": # 範囲ループ(各文字について)
+   ..
+```
+
+```
+array :[]u8
+for x in array: # 範囲ループ(各要素について)
+   x = 0 # arrayの場合はarrayが変更可能であれば変更可能でその場合xに代入された値はarrayに反映される
 ```

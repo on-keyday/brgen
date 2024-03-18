@@ -103,9 +103,9 @@ src/core/ast/node/translate.h には変換される先のノードが入って�
 - Ident.base は識別子の定義元への参照を表す。以下の型のパターンがありえる。
 
   - null -　未解決の参照
-  - Ident - 定義元識別子への参照。IdentUsage が`reference`で始まる。した２つ
+  - Ident - 定義元識別子への参照。このとき Ident.usage が`IdentUsage::reference*`のいずれかになる
   - MemberAccess - メンバーへのアクセス経由での参照。MemberAccess.base が定義元識別子への参照になる
-  - 上記 2 つは以下のいづれかを指す Ident.base を持った Ident への参照を保持する。そうでない場合それはバグである。
+  - 上記 2 つは以下のいずれかを指す Ident.base を持った Ident への参照を保持する。そうでない場合それはバグである。
   - Binary - 代入演算への参照。この場合変数が`:=`や`::=`演算子を使って定義されたことを表す
   - Field - フィールドへの参照
   - Format - フォーマットへの参照
@@ -113,6 +113,40 @@ src/core/ast/node/translate.h には変換される先のノードが入って�
   - EnumMember - 列挙体メンバへの参照
   - Function - 関数への参照
   - State - ステートへの参照
+
+### Type について
+
+- Type は型を表す。
+- Type も Node を継承する
+- 型システムは結構ぐちゃぐちゃであり理論根拠的なものに薄い面がある。
+  - これは要改善である
+- 共通のフィールド
+  - bit_size - 型のサイズ。動的な場合は`null`
+  - is_explicit - 構文内に明示的に示されているか(例:`x :u8`の`u8`など)
+  - non_dynamic_allocation - 動的確保を要さないかどうか。なお、内部の配列長が長すぎるなどは考慮していない
+  - bit_alignment - 型のビットアラインメント。基本的には bit_size % 8。また bit_size が決定できない場合でも決定可能な場合は設定される。設定不可なら not_decidable,そもそも考慮しない場合(bool など)は not_target となる
+- bool は整数型と非可換である。1 ビット整数は`u1`で表現する
+- よく使うであろう型
+  - IntType - 整数型
+    - 整数型を表す。また文字リテラル(`'a'`など)もこれになる
+    - is_signed - 符号ありかどうか
+    - endian - エンディアン指定
+    - is_common_supported - 8,16,32,64 ビット型のいずれかである
+  - ArrayType - 配列型
+    - 動的、静的両方を兼ねる
+    - length - 長さを指定する
+    - length_value - 静的に計算された長さ
+      - これによって動的配列か静的配列かが判定される
+  - StrLiteralType - 文字列リテラル型
+    - マジックナンバー型。文字列リテラルの方もこれである。
+    - 比較演算などで ArrayType と可換な部分が存在する
+    - base - 元となる文字列(StrLiteral ノード)。弱参照
+    - strong_ref - `x:"hello"`などのようにしたときなどの`"hello"`の StrLiteral ノードへの参照
+      - 弱参照の`base`が解放されてしまうバグがあったためこれが存在する。
+      - 基本は base を使用する(`strong_ref`が設定されている場合`base`にも同じものが設定される)
+  - EnumType - 列挙体型
+    - base - 元となる Enum ノードへの参照
+    - Enum.base_type で列挙体の基底型が入手できる
 
 ## 開発者メモ
 
@@ -172,6 +206,36 @@ src/core/ast/node/translate.h には変換される先のノードが入って�
 - ast/ast.h/as - もし、新たな基底型を追加する場合は、場合分け(Expr や Type のある部分)にその基底を追加する
 - ast/node_type_list.h/do_dump - もし列挙型を追加する場合は他の列挙型と同じように追加する。
 
+### null にならない制約
+
+AST の生成の都合上 null になりえる表現になっている箇所があるが、正規の brgen の parser では null にならない
+箇所について述べる。ジェネレーターはこの制約を前提にしてよい(もしその通りになっていなかったらそれはバグである)
+
+- IntType.bit_size
+- FloatType.bit_size
+- MemberAccess.member
+- Format.ident
+- State.ident
+- Enum.ident
+
+### StructUnionType の扱いについて
+
+StructUnionType が field_type に設定されている Field は特別な扱いを要する。
+StructUnionType は C 言語における以下のような形式に変換されうる。
+
+```c
+union {
+  struct {
+    int a;
+  }_1;
+  struct {
+    char b;
+  }_2;
+}
+```
+
+もちろん実装者は好きなように実装していいが、なにかしらここの部分のユーザーインターフェースについて説明が要される。
+
 ### その他メモ
 
 - 型名の識別子(Ident)の expr_type は nullptr
@@ -184,7 +248,7 @@ format A: <--ここの識別子や
 A # <--ここの識別子のexpr_typeはnullptr
 ```
 
-- Typing クラス実装時 StructType を不用意に用いると木構造が再帰して木構造でなくなる場合があるので注意。代わりに IdentType を用いること。
+- middle::Typing クラス実装時 StructType を不用意に用いると木構造が再帰して木構造でなくなる場合があるので注意。代わりに IdentType を用いること。
 - IdentType の base は IdentType にならないようにすること。
 
 {{< mermaid >}}

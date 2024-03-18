@@ -727,15 +727,18 @@ namespace brgen::ast {
             return target;
         }
 
-        bool is_finally_ident(ast::Expr* expr) {
+        bool is_finally_ident(const std::shared_ptr<ast::Expr>& expr, std::shared_ptr<ast::Ident>* ident) {
             if (expr->node_type == ast::NodeType::ident) {
+                if (ident) {
+                    *ident = ast::cast_to<ast::Ident>(expr);
+                }
                 return true;
             }
             if (expr->node_type == ast::NodeType::index) {
-                return is_finally_ident(static_cast<ast::Index*>(expr)->expr.get());
+                return is_finally_ident(static_cast<ast::Index*>(expr.get())->expr, ident);
             }
             if (expr->node_type == ast::NodeType::member_access) {
-                return is_finally_ident(static_cast<ast::MemberAccess*>(expr)->target.get());
+                return is_finally_ident(static_cast<ast::MemberAccess*>(expr.get())->target, ident);
             }
             if (expr->node_type == ast::NodeType::special_literal) {
                 return true;
@@ -759,26 +762,37 @@ namespace brgen::ast {
             }
         }
 
+        void rewrite_ident_scope(const std::shared_ptr<ast::Ident>& ident) {
+            std::erase_if(ident->scope->objects, [&](auto& i) {
+                return i.lock() == ident;
+            });
+            ident->scope = state.current_scope();
+            ident->scope->push(ident);
+        }
+
         void check_assignment(const std::shared_ptr<Binary>& assign) {
             if (assign->op == ast::BinaryOp::define_assign ||
-                assign->op == ast::BinaryOp::const_assign) {
+                assign->op == ast::BinaryOp::const_assign ||
+                assign->op == ast::BinaryOp::in_assign) {
                 auto ident = ast::as<ast::Ident>(assign->left);
                 if (!ident) {
                     s.report_error(assign->left->loc, "left of := or ::= must be ident");
                 }
-                ident->usage = assign->op == ast::BinaryOp::define_assign ? ast::IdentUsage::define_variable : ast::IdentUsage::define_const;
+                ident->usage = assign->op == ast::BinaryOp::const_assign
+                                   ? ast::IdentUsage::define_const
+                                   : ast::IdentUsage::define_variable;
                 ident->base = assign;
                 // rewrite scope information for semantic analysis
-                std::erase_if(ident->scope->objects, [&](auto& i) {
-                    return i.lock() == assign->left;
-                });
-                ident->scope = state.current_scope();
-                ident->scope->push(ast::cast_to<ast::Ident>(assign->left));
+                rewrite_ident_scope(ast::cast_to<ast::Ident>(assign->left));
                 check_duplicated_def(ident);
             }
-            else if (assign->op == ast::BinaryOp::assign) {
-                if (!is_finally_ident(assign->left.get())) {
-                    s.report_error(assign->left->loc, "left of = must be ident, member access or input/output/config");
+            else {  // otherwise, assign
+                std::shared_ptr<ast::Ident> ident;
+                if (!is_finally_ident(assign->left, &ident)) {
+                    s.report_error(assign->left->loc, "left of = must be ident, member access, indexed or input/output/config");
+                }
+                if (ident) {
+                    rewrite_ident_scope(ident);
                 }
             }
         }
@@ -971,6 +985,18 @@ namespace brgen::ast {
             if (!s.expect_token(";")) {
                 for_->init = parse_expr();
                 s.skip_white();
+                // like `for x in 0..10`
+                if (auto in_ = s.consume_token("in")) {
+                    s.skip_white();
+                    auto range = parse_expr();
+                    auto bin = std::make_shared<ast::Binary>(in_->loc, std::move(for_->init), ast::BinaryOp::in_assign);
+                    bin->right = std::move(range);
+                    check_assignment(bin);
+                    for_->init = std::move(bin);
+                    s.skip_white();
+                    for_->body = parse_indent_block(for_);
+                    return for_;
+                }
             }
             if (s.expect_token(":")) {
                 for_->cond = std::move(for_->init);
@@ -1453,7 +1479,7 @@ namespace brgen::ast {
                 }
             };
 
-            if (auto loop = s.consume_token("loop")) {
+            if (auto loop = s.consume_token("for")) {
                 set_skip();
                 return parse_for(std::move(*loop));
             }
