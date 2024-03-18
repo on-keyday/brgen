@@ -10,6 +10,9 @@ namespace boiler {
         ast::tool::Stringer str;
         bool encode = false;
         bool custom_fn = false;
+        virtual void on_program_begin(const std::shared_ptr<ast::Program>& p) {}
+        virtual void on_program_end(const std::shared_ptr<ast::Program>& p) {}
+
         virtual void on_metadata(const std::shared_ptr<ast::Metadata>& m) {}
         virtual void on_enum_begin(const std::shared_ptr<ast::Enum>& e) {}
         virtual void on_enum_member(const std::shared_ptr<ast::EnumMember>& e) {}
@@ -247,6 +250,7 @@ namespace boiler {
         }
 
         void generate(const std::shared_ptr<ast::Program>& p) {
+            on_program_begin(p);
             for (const auto& m : p->elements) {
                 if (ast::as<ast::Metadata>(m)) {
                     on_metadata(ast::cast_to<ast::Metadata>(m));
@@ -273,6 +277,7 @@ namespace boiler {
             for (const auto& m : sorted) {
                 generate_format(m);
             }
+            on_program_end(p);
         }
     };
 }  // namespace boiler
