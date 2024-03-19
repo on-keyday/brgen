@@ -26,6 +26,7 @@ namespace brgen::lexer {
         constexpr auto int_literal = str(Tag::int_literal, (cps::hex_integer | cps::oct_integer | cps::bin_integer | cps::dec_integer) & +filter_keyword);
         constexpr auto str_literal = str(Tag::str_literal, cps::c_str);
         constexpr auto char_literal = str(Tag::char_literal, cps::char_str);
+        constexpr auto regex_literal = str(Tag::regex_literal, cps::js_regex_str & -(~oneof("dgimsuy") & +filter_keyword));
         constexpr auto bool_literal = str(Tag::bool_literal, (lit("true") | lit("false")) & filter_keyword);
 
         constexpr auto puncts(auto&&... args) {
@@ -58,7 +59,7 @@ namespace brgen::lexer {
 
         constexpr auto one_token_lexer() {
             auto p = method_proxy(punct);
-            auto lex = indent | spaces | line | comment | int_literal | str_literal | char_literal | p | bool_literal | keywords | ident;
+            auto lex = indent | spaces | line | comment | int_literal | str_literal | regex_literal | char_literal | p | bool_literal | keywords | ident;
             struct L {
                 decltype(punct_) punct;
             } l{punct_};

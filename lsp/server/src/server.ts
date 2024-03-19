@@ -52,6 +52,7 @@ const legend:SemanticTokensLegend = {
         'class',
         'function',
         'macro',
+        'regexp',
     ],
     tokenModifiers: [
         "declaration",
