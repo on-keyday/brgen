@@ -15,7 +15,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
         bind_help(ctx);
         ctx.VarBool(&bin2hex, "b", "binary to hex");
         ctx.VarBool(&verbose, "v,verbose", "verbose output");
-        ctx.VarInt(&buffer_size, "s,size", "copy buffer size", "<size>");
+        ctx.VarInt(&buffer_size, "s,size", "streaming buffer size", "<size>");
     }
 };
 auto& cout = futils::wrap::cout_wrap();
@@ -88,7 +88,9 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
         for (size_t i = 0; i < view.size(); i++) {
             append_to_buffer(buffer, size, view[i]);
         }
-        cerr << "hex2bin: read " << view.size() << " bytes\n";
+        if (flags.verbose) {
+            cerr << "hex2bin: read " << view.size() << " bytes\n";
+        }
         cout.write(buffer);
         return 0;
     }
