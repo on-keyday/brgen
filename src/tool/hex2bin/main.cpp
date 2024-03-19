@@ -41,29 +41,30 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
         size_t total_bytes = 0;
         std::string bulk_buffer;
         bulk_buffer.resize(flags.buffer_size);
-        auto res = cin.get_file().read_all([&](futils::view::rcvec data) {
-            if (flags.bin2hex) {
-                for (auto c : data) {
-                    append_to_buffer(buffer, size, c);
+        auto res = cin.get_file().read_all(
+            [&](futils::view::rcvec data) {
+                if (flags.bin2hex) {
+                    for (auto c : data) {
+                        append_to_buffer(buffer, size, c);
+                    }
+                    cout.write(buffer);
+                    if (flags.verbose) {
+                        cerr << "hex2bin: read " << data.size() << " bytes\n";
+                        total_bytes += data.size();
+                        cerr << "hex2bin: total read " << total_bytes << " bytes\n";
+                    }
+                    buffer.clear();
+                    return true;
                 }
-                cout.write(buffer);
-                if (flags.verbose) {
-                    cerr << "hex2bin: read " << data.size() << " bytes\n";
-                    total_bytes += data.size();
-                    cerr << "hex2bin: total read " << total_bytes << " bytes\n";
+                auto p = hex2bin::read_hex_stream(data, buffer);
+                if (!p) {
+                    cerr << "hex2bin: error: cannot parse hex data\n";
+                    return false;
                 }
-                buffer.clear();
+                cout.write(*p);
                 return true;
-            }
-            auto p = hex2bin::read_hex_stream(data, buffer);
-            if (!p) {
-                cerr << "hex2bin: error: cannot parse hex data\n";
-                return false;
-            }
-            cout.write(*p);
-            return true;
-        },
-                                           bulk_buffer);
+            },
+            bulk_buffer);
         if (!res) {
             std::string buf;
             res.error().error(buf);
