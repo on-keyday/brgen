@@ -8,7 +8,7 @@
 #include <core/ast/json.h>
 #include <core/ast/file.h>
 #include <wrap/cin.h>
-#include "hex.h"
+#include "../hex2bin/hex.h"
 
 struct Flags : futils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
@@ -106,8 +106,7 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
                 vm.set_input(input);
             }
             if (flags.hex) {
-                auto seq = futils::make_cpy_seq(vm.get_input());
-                auto h = json2vm::hex::read_hex(seq);
+                auto h = hex2bin::read_hex(vm.get_input());
                 if (!h) {
                     print_error("cannot read hex input");
                     return 1;
