@@ -1459,6 +1459,26 @@ namespace brgen::ast {
             return fn;
         }
 
+        std::shared_ptr<Loop> lookup_loop_scope() {
+            auto scope = state.current_scope();
+            for (auto s = scope; s; s = s->prev.lock()) {
+                if (auto loop = s->owner.lock(); ast::as<ast::Loop>(loop)) {
+                    return ast::cast_to<ast::Loop>(loop);
+                }
+            }
+            return nullptr;
+        }
+
+        std::shared_ptr<Function> lookup_function_scope() {
+            auto scope = state.current_scope();
+            for (auto s = scope; s; s = s->prev.lock()) {
+                if (auto fn = s->owner.lock(); ast::as<ast::Function>(fn)) {
+                    return ast::cast_to<ast::Function>(fn);
+                }
+            }
+            return nullptr;
+        }
+
         /*
             <statement> ::= <for> | <if> | <format> | <fn> | <return> | <break> | <continue> | <expr or field>
             <expr or field> ::= <expr>? <field type>
@@ -1511,17 +1531,22 @@ namespace brgen::ast {
                     ret_->expr = parse_expr(prev_skip_line);
                 }
                 skip_last();
+                ret_->related_function = lookup_function_scope();
                 return ret_;
             }
 
             if (auto br = s.consume_token("break")) {
                 skip_last();
-                return std::make_shared<Break>(br->loc);
+                auto brk = std::make_shared<Break>(br->loc);
+                brk->related_loop = lookup_loop_scope();
+                return brk;
             }
 
             if (auto cont = s.consume_token("continue")) {
                 skip_last();
-                return std::make_shared<Continue>(cont->loc);
+                auto con = std::make_shared<Continue>(cont->loc);
+                con->related_loop = lookup_loop_scope();
+                return con;
             }
 
             std::shared_ptr<Node> node;

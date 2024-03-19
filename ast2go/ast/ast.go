@@ -2152,8 +2152,9 @@ func (n *UnionCandidate) GetLoc() Loc {
 }
 
 type Return struct {
-	Loc  Loc
-	Expr Expr
+	Loc             Loc
+	Expr            Expr
+	RelatedFunction *Function
 }
 
 func (n *Return) isStmt() {}
@@ -2165,7 +2166,8 @@ func (n *Return) GetLoc() Loc {
 }
 
 type Break struct {
-	Loc Loc
+	Loc         Loc
+	RelatedLoop *Loop
 }
 
 func (n *Break) isStmt() {}
@@ -2177,7 +2179,8 @@ func (n *Break) GetLoc() Loc {
 }
 
 type Continue struct {
-	Loc Loc
+	Loc         Loc
+	RelatedLoop *Loop
 }
 
 func (n *Continue) isStmt() {}
@@ -4136,7 +4139,8 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeReturn:
 			v := n.node[i].(*Return)
 			var tmp struct {
-				Expr *uintptr `json:"expr"`
+				Expr            *uintptr `json:"expr"`
+				RelatedFunction *uintptr `json:"related_function"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -4144,17 +4148,30 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.Expr != nil {
 				v.Expr = n.node[*tmp.Expr].(Expr)
 			}
+			if tmp.RelatedFunction != nil {
+				v.RelatedFunction = n.node[*tmp.RelatedFunction].(*Function)
+			}
 		case NodeTypeBreak:
+			v := n.node[i].(*Break)
 			var tmp struct {
+				RelatedLoop *uintptr `json:"related_loop"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
+			}
+			if tmp.RelatedLoop != nil {
+				v.RelatedLoop = n.node[*tmp.RelatedLoop].(*Loop)
 			}
 		case NodeTypeContinue:
+			v := n.node[i].(*Continue)
 			var tmp struct {
+				RelatedLoop *uintptr `json:"related_loop"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
+			}
+			if tmp.RelatedLoop != nil {
+				v.RelatedLoop = n.node[*tmp.RelatedLoop].(*Loop)
 			}
 		case NodeTypeAssert:
 			v := n.node[i].(*Assert)

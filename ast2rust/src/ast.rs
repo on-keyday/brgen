@@ -4778,6 +4778,7 @@ impl From<Rc<RefCell<UnionCandidate>>> for Node {
 pub struct Return {
 	pub loc: Loc,
 	pub expr: Option<Expr>,
+	pub related_function: Option<Weak<RefCell<Function>>>,
 }
 
 impl TryFrom<&Stmt> for Rc<RefCell<Return>> {
@@ -4841,6 +4842,7 @@ impl From<Rc<RefCell<Return>>> for Node {
 #[derive(Debug,Clone)]
 pub struct Break {
 	pub loc: Loc,
+	pub related_loop: Option<Weak<RefCell<Loop>>>,
 }
 
 impl TryFrom<&Stmt> for Rc<RefCell<Break>> {
@@ -4904,6 +4906,7 @@ impl From<Rc<RefCell<Break>>> for Node {
 #[derive(Debug,Clone)]
 pub struct Continue {
 	pub loc: Loc,
+	pub related_loop: Option<Weak<RefCell<Loop>>>,
 }
 
 impl TryFrom<&Stmt> for Rc<RefCell<Continue>> {
@@ -8251,16 +8254,19 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				Node::Return(Rc::new(RefCell::new(Return {
 				loc: raw_node.loc.clone(),
 				expr: None,
+				related_function: None,
 				})))
 			},
 			NodeType::Break => {
 				Node::Break(Rc::new(RefCell::new(Break {
 				loc: raw_node.loc.clone(),
+				related_loop: None,
 				})))
 			},
 			NodeType::Continue => {
 				Node::Continue(Rc::new(RefCell::new(Continue {
 				loc: raw_node.loc.clone(),
+				related_loop: None,
 				})))
 			},
 			NodeType::Assert => {
@@ -10714,20 +10720,77 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().expr = Some(expr_body.try_into()?);
 				}
+				let related_function_body = match raw_node.body.get("related_function") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"related_function")),
+				};
+ 				if !related_function_body.is_null() {
+					let related_function_body = match related_function_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(related_function_body.into(),JSONType::Number)),
+					};
+					let related_function_body = match nodes.get(related_function_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(related_function_body as usize)),
+					};
+					let related_function_body = match related_function_body {
+						Node::Function(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),related_function_body.into())),
+					};
+					node.borrow_mut().related_function = Some(Rc::downgrade(&related_function_body));
+				}
 			},
 			NodeType::Break => {
 				let node = nodes[i].clone();
-				let _ = match node {
+				let node = match node {
 					Node::Break(node)=>node,
 					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
+				let related_loop_body = match raw_node.body.get("related_loop") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"related_loop")),
+				};
+ 				if !related_loop_body.is_null() {
+					let related_loop_body = match related_loop_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(related_loop_body.into(),JSONType::Number)),
+					};
+					let related_loop_body = match nodes.get(related_loop_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(related_loop_body as usize)),
+					};
+					let related_loop_body = match related_loop_body {
+						Node::Loop(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),related_loop_body.into())),
+					};
+					node.borrow_mut().related_loop = Some(Rc::downgrade(&related_loop_body));
+				}
 			},
 			NodeType::Continue => {
 				let node = nodes[i].clone();
-				let _ = match node {
+				let node = match node {
 					Node::Continue(node)=>node,
 					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
+				let related_loop_body = match raw_node.body.get("related_loop") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"related_loop")),
+				};
+ 				if !related_loop_body.is_null() {
+					let related_loop_body = match related_loop_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(related_loop_body.into(),JSONType::Number)),
+					};
+					let related_loop_body = match nodes.get(related_loop_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(related_loop_body as usize)),
+					};
+					let related_loop_body = match related_loop_body {
+						Node::Loop(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),related_loop_body.into())),
+					};
+					node.borrow_mut().related_loop = Some(Rc::downgrade(&related_loop_body));
+				}
 			},
 			NodeType::Assert => {
 				let node = nodes[i].clone();

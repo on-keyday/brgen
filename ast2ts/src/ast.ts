@@ -694,6 +694,7 @@ export function isUnionCandidate(obj: any): obj is UnionCandidate {
 
 export interface Return extends Stmt {
 	expr: Expr|null;
+	related_function: Function|null;
 }
 
 export function isReturn(obj: any): obj is Return {
@@ -701,6 +702,7 @@ export function isReturn(obj: any): obj is Return {
 }
 
 export interface Break extends Stmt {
+	related_loop: Loop|null;
 }
 
 export function isBreak(obj: any): obj is Break {
@@ -708,6 +710,7 @@ export function isBreak(obj: any): obj is Break {
 }
 
 export interface Continue extends Stmt {
+	related_loop: Loop|null;
 }
 
 export function isContinue(obj: any): obj is Continue {
@@ -1547,6 +1550,7 @@ export function parseAST(obj: JsonAst): Program {
 				node_type: "return",
 				loc: on.loc,
 				expr: null,
+				related_function: null,
 			}
 			c.node.push(n);
 			break;
@@ -1555,6 +1559,7 @@ export function parseAST(obj: JsonAst): Program {
 			const n :Break = {
 				node_type: "break",
 				loc: on.loc,
+				related_loop: null,
 			}
 			c.node.push(n);
 			break;
@@ -1563,6 +1568,7 @@ export function parseAST(obj: JsonAst): Program {
 			const n :Continue = {
 				node_type: "continue",
 				loc: on.loc,
+				related_loop: null,
 			}
 			c.node.push(n);
 			break;
@@ -3097,14 +3103,38 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at Return::expr');
 			}
 			n.expr = tmpexpr;
+			if (on.body?.related_function !== null && typeof on.body?.related_function !== 'number') {
+				throw new Error('invalid node list at Return::related_function');
+			}
+			const tmprelated_function = on.body.related_function === null ? null : c.node[on.body.related_function];
+			if (!(tmprelated_function === null || isFunction(tmprelated_function))) {
+				throw new Error('invalid node list at Return::related_function');
+			}
+			n.related_function = tmprelated_function;
 			break;
 		}
 		case "break": {
 			const n :Break = cnode as Break;
+			if (on.body?.related_loop !== null && typeof on.body?.related_loop !== 'number') {
+				throw new Error('invalid node list at Break::related_loop');
+			}
+			const tmprelated_loop = on.body.related_loop === null ? null : c.node[on.body.related_loop];
+			if (!(tmprelated_loop === null || isLoop(tmprelated_loop))) {
+				throw new Error('invalid node list at Break::related_loop');
+			}
+			n.related_loop = tmprelated_loop;
 			break;
 		}
 		case "continue": {
 			const n :Continue = cnode as Continue;
+			if (on.body?.related_loop !== null && typeof on.body?.related_loop !== 'number') {
+				throw new Error('invalid node list at Continue::related_loop');
+			}
+			const tmprelated_loop = on.body.related_loop === null ? null : c.node[on.body.related_loop];
+			if (!(tmprelated_loop === null || isLoop(tmprelated_loop))) {
+				throw new Error('invalid node list at Continue::related_loop');
+			}
+			n.related_loop = tmprelated_loop;
 			break;
 		}
 		case "assert": {

@@ -9,7 +9,7 @@ import (
 type makeGenerator struct{}
 
 func (m *makeGenerator) New() js.Generator {
-	return &Generator{}
+	return NewGenerator()
 }
 
 func (m *makeGenerator) ResetFlag() {

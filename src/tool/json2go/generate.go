@@ -186,8 +186,8 @@ func (g *Generator) maybeWriteLengthSet(toSet string, length ast2go.Expr) {
 	ident, ok := length.(*ast2go.Ident)
 	if ok {
 		ident, _ := gen.LookupBase(ident)
-		f := ident.Base.(*ast2go.Field)
-		if f != nil {
+		f, ok := ident.Base.(*ast2go.Field)
+		if ok {
 			setTo := g.exprStringer.ExprString(f.Ident)
 			typ := g.getType(f.FieldType)
 			g.InsertOverflowCheck(toSet, "int", typ)

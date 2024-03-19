@@ -2080,9 +2080,12 @@ int ast2c_Return_parse(ast2c_Ast* ast,ast2c_Return* s,ast2c_json_handlers* h, vo
 	void* obj_body = h->object_get(h, obj, "body");
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
 	s->expr = NULL;
+	s->related_function = NULL;
 	void* expr = h->object_get(h, obj_body, "expr");
+	void* related_function = h->object_get(h, obj_body, "related_function");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_Return::loc is null"); } return 0; }
 	if (!expr) { if(h->error) { h->error(h,expr, "ast2c_Return::expr is null"); } return 0; }
+	if (!related_function) { if(h->error) { h->error(h,related_function, "ast2c_Return::related_function is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_Return::loc"); }
 		goto error;
@@ -2101,7 +2104,10 @@ int ast2c_Break_parse(ast2c_Ast* ast,ast2c_Break* s,ast2c_json_handlers* h, void
 	void* loc = h->object_get(h, obj, "loc");
 	void* obj_body = h->object_get(h, obj, "body");
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
+	s->related_loop = NULL;
+	void* related_loop = h->object_get(h, obj_body, "related_loop");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_Break::loc is null"); } return 0; }
+	if (!related_loop) { if(h->error) { h->error(h,related_loop, "ast2c_Break::related_loop is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_Break::loc"); }
 		goto error;
@@ -2120,7 +2126,10 @@ int ast2c_Continue_parse(ast2c_Ast* ast,ast2c_Continue* s,ast2c_json_handlers* h
 	void* loc = h->object_get(h, obj, "loc");
 	void* obj_body = h->object_get(h, obj, "body");
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
+	s->related_loop = NULL;
+	void* related_loop = h->object_get(h, obj_body, "related_loop");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_Continue::loc is null"); } return 0; }
+	if (!related_loop) { if(h->error) { h->error(h,related_loop, "ast2c_Continue::related_loop is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_Continue::loc"); }
 		goto error;
