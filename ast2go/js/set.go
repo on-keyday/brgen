@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"runtime/debug"
 	"syscall/js"
 
 	ast2go "github.com/on-keyday/brgen/ast2go/ast"
@@ -80,12 +81,7 @@ func SetGoFunc(newGenerator GeneratorMaker) {
 		invoke := func() (data []byte, err error) {
 			defer func() {
 				if e := recover(); e != nil {
-					var ok bool
-					err, ok = e.(error)
-					if !ok {
-						err = fmt.Errorf("%v", e)
-
-					}
+					err = fmt.Errorf("%v%s", e, debug.Stack())
 					data = []byte{}
 				}
 			}()
