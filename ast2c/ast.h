@@ -866,6 +866,7 @@ struct ast2c_Return {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Expr* expr;
+	ast2c_Function* related_function;
 };
 
 // returns 1 if succeed 0 if failed
@@ -874,6 +875,7 @@ int ast2c_Return_parse(ast2c_Ast* ,ast2c_Return*,ast2c_json_handlers*,void*);
 struct ast2c_Break {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
+	ast2c_Loop* related_loop;
 };
 
 // returns 1 if succeed 0 if failed
@@ -882,6 +884,7 @@ int ast2c_Break_parse(ast2c_Ast* ,ast2c_Break*,ast2c_json_handlers*,void*);
 struct ast2c_Continue {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
+	ast2c_Loop* related_loop;
 };
 
 // returns 1 if succeed 0 if failed

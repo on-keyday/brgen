@@ -437,14 +437,15 @@ class UnionCandidate(Stmt):
 
 class Return(Stmt):
     expr: Optional[Expr]
+    related_function: Optional[Function]
 
 
 class Break(Stmt):
-    pass
+    related_loop: Optional[Loop]
 
 
 class Continue(Stmt):
-    pass
+    related_loop: Optional[Loop]
 
 
 class Assert(Stmt):
@@ -1457,10 +1458,23 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].expr = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at Return::expr'))
                 else:
                     node[i].expr = None
+                if ast.node[i].body["related_function"] is not None:
+                    x = node[ast.node[i].body["related_function"]]
+                    node[i].related_function = x if isinstance(x,Function) else raiseError(TypeError('type mismatch at Return::related_function'))
+                else:
+                    node[i].related_function = None
             case NodeType.BREAK:
-                pass
+                if ast.node[i].body["related_loop"] is not None:
+                    x = node[ast.node[i].body["related_loop"]]
+                    node[i].related_loop = x if isinstance(x,Loop) else raiseError(TypeError('type mismatch at Break::related_loop'))
+                else:
+                    node[i].related_loop = None
             case NodeType.CONTINUE:
-                pass
+                if ast.node[i].body["related_loop"] is not None:
+                    x = node[ast.node[i].body["related_loop"]]
+                    node[i].related_loop = x if isinstance(x,Loop) else raiseError(TypeError('type mismatch at Continue::related_loop'))
+                else:
+                    node[i].related_loop = None
             case NodeType.ASSERT:
                 if ast.node[i].body["cond"] is not None:
                     x = node[ast.node[i].body["cond"]]

@@ -453,12 +453,15 @@ public class UnionCandidate : Stmt{
 public class Return : Stmt{
 	public Loc Loc{get;set;}
 	public Expr? Expr{get;set;}
+	public Function? RelatedFunction{get;set;}
 }
 public class Break : Stmt{
 	public Loc Loc{get;set;}
+	public Loop? RelatedLoop{get;set;}
 }
 public class Continue : Stmt{
 	public Loc Loc{get;set;}
+	public Loop? RelatedLoop{get;set;}
 }
 public class Assert : Stmt{
 	public Loc Loc{get;set;}
@@ -1255,12 +1258,15 @@ public static class Ast {
                var node = nodes[i] as Return;
                node.Loc = ast.Node[i].Body[loc];
                node.Expr = ast.Node[i].Body[expr];
+               node.RelatedFunction = ast.Node[i].Body[related_function];
            case NodeType.Break:
                var node = nodes[i] as Break;
                node.Loc = ast.Node[i].Body[loc];
+               node.RelatedLoop = ast.Node[i].Body[related_loop];
            case NodeType.Continue:
                var node = nodes[i] as Continue;
                node.Loc = ast.Node[i].Body[loc];
+               node.RelatedLoop = ast.Node[i].Body[related_loop];
            case NodeType.Assert:
                var node = nodes[i] as Assert;
                node.Loc = ast.Node[i].Body[loc];

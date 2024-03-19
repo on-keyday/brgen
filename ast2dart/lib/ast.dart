@@ -628,14 +628,17 @@ factory UnionCandidate.fromJson(Map<String, dynamic> json) => _$UnionCandidateFr
 @JsonSerializable()
 class Return extends Stmt {
     Expr? expr;
+    Func? relatedFunction;
 factory Return.fromJson(Map<String, dynamic> json) => _$ReturnFromJson(json);
 }
 @JsonSerializable()
 class Break extends Stmt {
+    Loop? relatedLoop;
 factory Break.fromJson(Map<String, dynamic> json) => _$BreakFromJson(json);
 }
 @JsonSerializable()
 class Continue extends Stmt {
+    Loop? relatedLoop;
 factory Continue.fromJson(Map<String, dynamic> json) => _$ContinueFromJson(json);
 }
 @JsonSerializable()

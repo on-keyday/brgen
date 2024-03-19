@@ -300,6 +300,7 @@ namespace brgen::ast {
     struct Return : Stmt {
         define_node_type(NodeType::return_);
         std::shared_ptr<Expr> expr;
+        std::weak_ptr<Function> related_function;
 
         Return(lexer::Loc l)
             : Stmt(l, NodeType::return_) {}
@@ -310,25 +311,38 @@ namespace brgen::ast {
         void dump(auto&& field_) {
             Stmt::dump(field_);
             sdebugf(expr);
+            sdebugf_omit(related_function);
         }
     };
 
     struct Break : Stmt {
         define_node_type(NodeType::break_);
+        std::weak_ptr<Loop> related_loop;
         Break(lexer::Loc l)
             : Stmt(l, NodeType::break_) {}
 
         Break()
             : Stmt({}, NodeType::break_) {}
+
+        void dump(auto&& field_) {
+            Stmt::dump(field_);
+            sdebugf_omit(related_loop);
+        }
     };
 
     struct Continue : Stmt {
         define_node_type(NodeType::continue_);
+        std::weak_ptr<Loop> related_loop;
         Continue(lexer::Loc l)
             : Stmt(l, NodeType::continue_) {}
 
         Continue()
             : Stmt({}, NodeType::continue_) {}
+
+        void dump(auto&& field_) {
+            Stmt::dump(field_);
+            sdebugf_omit(related_loop);
+        }
     };
 
 }  // namespace brgen::ast
