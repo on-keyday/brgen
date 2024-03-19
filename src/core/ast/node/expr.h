@@ -300,6 +300,7 @@ namespace brgen::ast {
         void dump(auto&& field_) {
             Expr::dump(field_);
             sdebugf(content);
+            sdebugf(bad_expr);
         }
     };
 

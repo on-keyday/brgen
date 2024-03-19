@@ -39,7 +39,8 @@ namespace brgen::ast {
         // bad expr
         bad_expr,
 
-        literal = 0x110000,
+        // literal
+        literal = 0x210000,
         int_literal,
         bool_literal,
         str_literal,

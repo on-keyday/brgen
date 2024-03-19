@@ -81,6 +81,7 @@ enum ConstantLevel:
 
 enum IdentUsage:
     unknown
+    bad_ident
     reference
     define_variable
     define_const
