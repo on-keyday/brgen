@@ -4,3 +4,4 @@ format RegExp:
 
 r ::= /r/gi 
 
+"a" == r
