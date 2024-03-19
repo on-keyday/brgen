@@ -1422,6 +1422,10 @@ namespace brgen::middle {
                 expr->expr_type = std::make_shared<ast::IntType>(ch->loc, bit, ast::Endian::unspec, false);
                 expr->constant_level = ast::ConstantLevel::constant;
             }
+            else if (auto regex = ast::as<ast::RegexLiteral>(expr)) {
+                expr->expr_type = std::make_shared<ast::RegexLiteralType>(regex->loc);
+                expr->constant_level = ast::ConstantLevel::constant;
+            }
             else {
                 unsupported(expr);
             }
