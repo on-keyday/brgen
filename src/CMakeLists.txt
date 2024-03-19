@@ -90,6 +90,9 @@ target_link_libraries(ctobgn futils)
 add_executable(rfc2bgn "tool/rfc2bgn/main.cpp")
 target_link_libraries(rfc2bgn futils)
 
+add_executable(hex2bin "tool/hex2bin/main.cpp")
+target_link_libraries(hex2bin futils)
+
 
 
 add_custom_target(brgen ALL COMMAND "${GO_COMPILER}" "build" "${CMAKE_GO_FLAGS}" "-o" "${CMAKE_BINARY_DIR}/tool/brgen${SUFFIX}" "${CMAKE_SOURCE_DIR}/src/tool/brgen" DEPENDS "${CMAKE_SOURCE_DIR}/src/tool/brgen" )
@@ -200,9 +203,10 @@ set_target_properties(json2vm PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/tool
 set_target_properties(json2ts PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/tool")
 set_target_properties(ctobgn PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/tool")
 set_target_properties(rfc2bgn PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/tool")
+set_target_properties(hex2bin PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/tool")
 set_target_properties(brgen PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/tool")
 endif()
-install(TARGETS src2json json2cpp json2cpp2 json2c json2vm json2ts ctobgn rfc2bgn DESTINATION tool OPTIONAL)
+install(TARGETS src2json json2cpp json2cpp2 json2c json2vm json2ts ctobgn rfc2bgn hex2bin DESTINATION tool OPTIONAL)
 
 install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/brgen${SUFFIX}" DESTINATION tool OPTIONAL)
 install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/json2go${SUFFIX}" DESTINATION tool OPTIONAL)

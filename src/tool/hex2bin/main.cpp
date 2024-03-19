@@ -9,9 +9,13 @@
 struct Flags : futils::cmdline::templ::HelpOption {
     std::vector<std::string_view> args;
     bool bin2hex = false;
+    bool verbose = false;
+    size_t buffer_size = 1024 * 4;
     void bind(futils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&bin2hex, "b", "binary to hex");
+        ctx.VarBool(&verbose, "v,verbose", "verbose output");
+        ctx.VarInt(&buffer_size, "s,size", "copy buffer size", "<size>");
     }
 };
 auto& cout = futils::wrap::cout_wrap();
@@ -34,24 +38,35 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
     if (flags.args.empty()) {
         std::string buffer;
         size_t size = 0;
-        auto err = cin.get_file().read_all([&](futils::view::rcvec data) {
+        size_t total_bytes = 0;
+        std::string bulk_buffer;
+        bulk_buffer.resize(flags.buffer_size);
+        auto res = cin.get_file().read_all([&](futils::view::rcvec data) {
             if (flags.bin2hex) {
                 for (auto c : data) {
                     append_to_buffer(buffer, size, c);
                 }
                 cout.write(buffer);
+                if (flags.verbose) {
+                    cerr << "hex2bin: read " << data.size() << " bytes\n";
+                    total_bytes += data.size();
+                    cerr << "hex2bin: total read " << total_bytes << " bytes\n";
+                }
+                buffer.clear();
                 return true;
             }
             auto p = hex2bin::read_hex_stream(data, buffer);
             if (!p) {
+                cerr << "hex2bin: error: cannot parse hex data\n";
                 return false;
             }
             cout.write(*p);
             return true;
-        });
-        if (err) {
+        },
+                                           bulk_buffer);
+        if (!res) {
             std::string buf;
-            err.error().error(buf);
+            res.error().error(buf);
             cerr << "hex2bin: error: " << buf << "\n";
             return 1;
         }
@@ -72,6 +87,7 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
         for (size_t i = 0; i < view.size(); i++) {
             append_to_buffer(buffer, size, view[i]);
         }
+        cerr << "hex2bin: read " << view.size() << " bytes\n";
         cout.write(buffer);
         return 0;
     }
