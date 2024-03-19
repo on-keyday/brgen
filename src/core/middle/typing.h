@@ -1423,7 +1423,7 @@ namespace brgen::middle {
                 expr->constant_level = ast::ConstantLevel::constant;
             }
             else if (auto regex = ast::as<ast::RegexLiteral>(expr)) {
-                expr->expr_type = std::make_shared<ast::RegexLiteralType>(regex->loc);
+                expr->expr_type = std::make_shared<ast::RegexLiteralType>(ast::cast_to<ast::RegexLiteral>(expr));
                 expr->constant_level = ast::ConstantLevel::constant;
             }
             else {

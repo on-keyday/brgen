@@ -53,6 +53,7 @@ const char* ast2c_NodeType_to_string(ast2c_NodeType val) {
 	case AST2C_NODETYPE_IDENT_TYPE: return "ident_type";
 	case AST2C_NODETYPE_INT_LITERAL_TYPE: return "int_literal_type";
 	case AST2C_NODETYPE_STR_LITERAL_TYPE: return "str_literal_type";
+	case AST2C_NODETYPE_REGEX_LITERAL_TYPE: return "regex_literal_type";
 	case AST2C_NODETYPE_VOID_TYPE: return "void_type";
 	case AST2C_NODETYPE_BOOL_TYPE: return "bool_type";
 	case AST2C_NODETYPE_ARRAY_TYPE: return "array_type";
@@ -69,6 +70,7 @@ const char* ast2c_NodeType_to_string(ast2c_NodeType val) {
 	case AST2C_NODETYPE_INT_LITERAL: return "int_literal";
 	case AST2C_NODETYPE_BOOL_LITERAL: return "bool_literal";
 	case AST2C_NODETYPE_STR_LITERAL: return "str_literal";
+	case AST2C_NODETYPE_REGEX_LITERAL: return "regex_literal";
 	case AST2C_NODETYPE_CHAR_LITERAL: return "char_literal";
 	case AST2C_NODETYPE_TYPE_LITERAL: return "type_literal";
 	case AST2C_NODETYPE_SPECIAL_LITERAL: return "special_literal";
@@ -258,6 +260,10 @@ int ast2c_NodeType_from_string(const char* str, ast2c_NodeType* out) {
 		*out = AST2C_NODETYPE_STR_LITERAL_TYPE;
 		return 1;
 	}
+	if (strcmp(str, "regex_literal_type") == 0) {
+		*out = AST2C_NODETYPE_REGEX_LITERAL_TYPE;
+		return 1;
+	}
 	if (strcmp(str, "void_type") == 0) {
 		*out = AST2C_NODETYPE_VOID_TYPE;
 		return 1;
@@ -320,6 +326,10 @@ int ast2c_NodeType_from_string(const char* str, ast2c_NodeType* out) {
 	}
 	if (strcmp(str, "str_literal") == 0) {
 		*out = AST2C_NODETYPE_STR_LITERAL;
+		return 1;
+	}
+	if (strcmp(str, "regex_literal") == 0) {
+		*out = AST2C_NODETYPE_REGEX_LITERAL;
 		return 1;
 	}
 	if (strcmp(str, "char_literal") == 0) {
@@ -390,6 +400,7 @@ const char* ast2c_TokenTag_to_string(ast2c_TokenTag val) {
 	case AST2C_TOKENTAG_INT_LITERAL: return "int_literal";
 	case AST2C_TOKENTAG_BOOL_LITERAL: return "bool_literal";
 	case AST2C_TOKENTAG_STR_LITERAL: return "str_literal";
+	case AST2C_TOKENTAG_REGEX_LITERAL: return "regex_literal";
 	case AST2C_TOKENTAG_CHAR_LITERAL: return "char_literal";
 	case AST2C_TOKENTAG_KEYWORD: return "keyword";
 	case AST2C_TOKENTAG_IDENT: return "ident";
@@ -429,6 +440,10 @@ int ast2c_TokenTag_from_string(const char* str, ast2c_TokenTag* out) {
 	}
 	if (strcmp(str, "str_literal") == 0) {
 		*out = AST2C_TOKENTAG_STR_LITERAL;
+		return 1;
+	}
+	if (strcmp(str, "regex_literal") == 0) {
+		*out = AST2C_TOKENTAG_REGEX_LITERAL;
 		return 1;
 	}
 	if (strcmp(str, "char_literal") == 0) {
@@ -2411,6 +2426,44 @@ error:
 }
 
 // returns 1 if succeed 0 if failed
+int ast2c_RegexLiteralType_parse(ast2c_Ast* ast,ast2c_RegexLiteralType* s,ast2c_json_handlers* h, void* obj) {
+	if (!ast||!s||!h||!obj) {
+		if(h->error) { h->error(h,NULL, "invalid argument"); }
+		return 0;
+	}
+	void* loc = h->object_get(h, obj, "loc");
+	void* obj_body = h->object_get(h, obj, "body");
+	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
+	s->bit_size = NULL;
+	s->base = NULL;
+	s->strong_ref = NULL;
+	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
+	void* non_dynamic_allocation = h->object_get(h, obj_body, "non_dynamic_allocation");
+	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
+	void* bit_size = h->object_get(h, obj_body, "bit_size");
+	void* base = h->object_get(h, obj_body, "base");
+	void* strong_ref = h->object_get(h, obj_body, "strong_ref");
+	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_RegexLiteralType::loc is null"); } return 0; }
+	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_RegexLiteralType::is_explicit is null"); } return 0; }
+	if (!non_dynamic_allocation) { if(h->error) { h->error(h,non_dynamic_allocation, "ast2c_RegexLiteralType::non_dynamic_allocation is null"); } return 0; }
+	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_RegexLiteralType::bit_alignment is null"); } return 0; }
+	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_RegexLiteralType::bit_size is null"); } return 0; }
+	if (!base) { if(h->error) { h->error(h,base, "ast2c_RegexLiteralType::base is null"); } return 0; }
+	if (!strong_ref) { if(h->error) { h->error(h,strong_ref, "ast2c_RegexLiteralType::strong_ref is null"); } return 0; }
+	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
+		if(h->error) { h->error(h,loc, "failed to parse ast2c_RegexLiteralType::loc"); }
+		goto error;
+	}
+	if(!h->number_get(h,bit_size,&s->bit_size)) {
+		if(h->error) { h->error(h,bit_size, "failed to parse ast2c_RegexLiteralType::bit_size"); }
+		goto error;
+	}
+	return 1;
+error:
+	return 0;
+}
+
+// returns 1 if succeed 0 if failed
 int ast2c_VoidType_parse(ast2c_Ast* ast,ast2c_VoidType* s,ast2c_json_handlers* h, void* obj) {
 	if (!ast||!s||!h||!obj) {
 		if(h->error) { h->error(h,NULL, "invalid argument"); }
@@ -3005,6 +3058,38 @@ int ast2c_StrLiteral_parse(ast2c_Ast* ast,ast2c_StrLiteral* s,ast2c_json_handler
 	}
 	if(!h->number_get(h,length,&s->length)) {
 		if(h->error) { h->error(h,length, "failed to parse ast2c_StrLiteral::length"); }
+		goto error;
+	}
+	return 1;
+error:
+	return 0;
+}
+
+// returns 1 if succeed 0 if failed
+int ast2c_RegexLiteral_parse(ast2c_Ast* ast,ast2c_RegexLiteral* s,ast2c_json_handlers* h, void* obj) {
+	if (!ast||!s||!h||!obj) {
+		if(h->error) { h->error(h,NULL, "invalid argument"); }
+		return 0;
+	}
+	void* loc = h->object_get(h, obj, "loc");
+	void* obj_body = h->object_get(h, obj, "body");
+	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
+	s->expr_type = NULL;
+	s->value = NULL;
+	void* expr_type = h->object_get(h, obj_body, "expr_type");
+	void* constant_level = h->object_get(h, obj_body, "constant_level");
+	void* value = h->object_get(h, obj_body, "value");
+	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_RegexLiteral::loc is null"); } return 0; }
+	if (!expr_type) { if(h->error) { h->error(h,expr_type, "ast2c_RegexLiteral::expr_type is null"); } return 0; }
+	if (!constant_level) { if(h->error) { h->error(h,constant_level, "ast2c_RegexLiteral::constant_level is null"); } return 0; }
+	if (!value) { if(h->error) { h->error(h,value, "ast2c_RegexLiteral::value is null"); } return 0; }
+	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
+		if(h->error) { h->error(h,loc, "failed to parse ast2c_RegexLiteral::loc"); }
+		goto error;
+	}
+	s->value = h->string_get_alloc(h,value);
+	if (!s->value) {
+		if(h->error) { h->error(h,value, "failed to parse ast2c_RegexLiteral::value"); }
 		goto error;
 	}
 	return 1;

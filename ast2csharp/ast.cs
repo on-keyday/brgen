@@ -46,6 +46,7 @@ FloatType,
 IdentType,
 IntLiteralType,
 StrLiteralType,
+RegexLiteralType,
 VoidType,
 BoolType,
 ArrayType,
@@ -62,6 +63,7 @@ Literal,
 IntLiteral,
 BoolLiteral,
 StrLiteral,
+RegexLiteral,
 CharLiteral,
 TypeLiteral,
 SpecialLiteral,
@@ -85,6 +87,7 @@ Punct,
 IntLiteral,
 BoolLiteral,
 StrLiteral,
+RegexLiteral,
 CharLiteral,
 Keyword,
 Ident,
@@ -524,6 +527,15 @@ public class StrLiteralType : Type{
 	public StrLiteral? Base{get;set;}
 	public StrLiteral? StrongRef{get;set;}
 }
+public class RegexLiteralType : Type{
+	public Loc Loc{get;set;}
+	public bool IsExplicit{get;set;}
+	public bool NonDynamicAllocation{get;set;}
+	public BitAlignment BitAlignment{get;set;}
+	public ulong? BitSize{get;set;}
+	public RegexLiteral? Base{get;set;}
+	public RegexLiteral? StrongRef{get;set;}
+}
 public class VoidType : Type{
 	public Loc Loc{get;set;}
 	public bool IsExplicit{get;set;}
@@ -654,6 +666,12 @@ public class StrLiteral : Literal{
 	public ConstantLevel ConstantLevel{get;set;}
 	public string Value{get;set;} = "";
 	public ulong Length{get;set;}
+}
+public class RegexLiteral : Literal{
+	public Loc Loc{get;set;}
+	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
+	public string Value{get;set;} = "";
 }
 public class CharLiteral : Literal{
 	public Loc Loc{get;set;}
@@ -955,6 +973,9 @@ public static class Ast {
            case NodeType.StrLiteralType:
                nodes[i] = new StrLiteralType() { Loc = ast.Node[i].Loc };
                break;
+           case NodeType.RegexLiteralType:
+               nodes[i] = new RegexLiteralType() { Loc = ast.Node[i].Loc };
+               break;
            case NodeType.VoidType:
                nodes[i] = new VoidType() { Loc = ast.Node[i].Loc };
                break;
@@ -999,6 +1020,9 @@ public static class Ast {
                break;
            case NodeType.StrLiteral:
                nodes[i] = new StrLiteral() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.RegexLiteral:
+               nodes[i] = new RegexLiteral() { Loc = ast.Node[i].Loc };
                break;
            case NodeType.CharLiteral:
                nodes[i] = new CharLiteral() { Loc = ast.Node[i].Loc };
@@ -1328,6 +1352,15 @@ public static class Ast {
                node.BitSize = ast.Node[i].Body[bit_size];
                node.Base = ast.Node[i].Body[base];
                node.StrongRef = ast.Node[i].Body[strong_ref];
+           case NodeType.RegexLiteralType:
+               var node = nodes[i] as RegexLiteralType;
+               node.Loc = ast.Node[i].Body[loc];
+               node.IsExplicit = ast.Node[i].Body[is_explicit];
+               node.NonDynamicAllocation = ast.Node[i].Body[non_dynamic_allocation];
+               node.BitAlignment = ast.Node[i].Body[bit_alignment];
+               node.BitSize = ast.Node[i].Body[bit_size];
+               node.Base = ast.Node[i].Body[base];
+               node.StrongRef = ast.Node[i].Body[strong_ref];
            case NodeType.VoidType:
                var node = nodes[i] as VoidType;
                node.Loc = ast.Node[i].Body[loc];
@@ -1459,6 +1492,12 @@ public static class Ast {
                node.ConstantLevel = ast.Node[i].Body[constant_level];
                node.Value = ast.Node[i].Body[value];
                node.Length = ast.Node[i].Body[length];
+           case NodeType.RegexLiteral:
+               var node = nodes[i] as RegexLiteral;
+               node.Loc = ast.Node[i].Body[loc];
+               node.ExprType = ast.Node[i].Body[expr_type];
+               node.ConstantLevel = ast.Node[i].Body[constant_level];
+               node.Value = ast.Node[i].Body[value];
            case NodeType.CharLiteral:
                var node = nodes[i] as CharLiteral;
                node.Loc = ast.Node[i].Body[loc];
