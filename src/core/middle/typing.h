@@ -77,54 +77,48 @@ namespace brgen::middle {
             if (equal_type(left, right)) {
                 return true;
             }
-            if (left->node_type == ast::NodeType::range_type) {
-                auto rty = ast::as<ast::RangeType>(left);
+            auto check_range_compare = [&](ast::RangeType* rty, std::shared_ptr<ast::Type>& other_hand) {
                 if (!rty->base_type) {
                     return true;  // range .. or ..= is always comparable to any type
                 }
-                int_type_fitting(rty->base_type, right);
-                return equal_type(rty->base_type, right);
+                int_type_fitting(rty->base_type, other_hand);
+                return equal_type(rty->base_type, other_hand);
+            };
+            if (auto rty = ast::as<ast::RangeType>(left)) {
+                return check_range_compare(rty, right);
             }
-            if (right->node_type == ast::NodeType::range_type) {
-                auto rty = ast::as<ast::RangeType>(right);
-                if (!rty->base_type) {
-                    return true;  // range .. or ..= is always comparable to any type
-                }
-                int_type_fitting(rty->base_type, left);
-                return equal_type(rty->base_type, left);
+            if (auto rty = ast::as<ast::RangeType>(right)) {
+                return check_range_compare(rty, left);
             }
-            if (auto arr = ast::as<ast::ArrayType>(right)) {
+            auto check_array_str_compare = [&](ast::ArrayType* arr, const std::shared_ptr<ast::Type>& other_hand) {
                 auto ty = ast::as<ast::IntType>(arr->element_type);
                 if (!ty || ty->bit_size != 8) {
                     return false;  // only byte array is comparable with string
                 }
-                auto str = ast::as<ast::StrLiteralType>(left);
-                if (!str) {
-                    return false;
-                }
-                // TODO(on-keyday): check string literal length
-                if (arr->length && arr->length_value) {
-                    if (*arr->length_value != str->base.lock()->length) {
-                        return false;
+                if (auto str = ast::as<ast::StrLiteralType>(other_hand)) {
+                    if (arr->length && arr->length_value) {
+                        if (*arr->length_value != str->base.lock()->length) {
+                            return false;
+                        }
                     }
+                    return true;
                 }
-                return true;
+                if (auto regex = ast::as<ast::RegexLiteralType>(other_hand)) {
+                    return true;
+                }
+                return false;
+            };
+            if (auto arr = ast::as<ast::ArrayType>(right)) {
+                return check_array_str_compare(arr, left);
             }
             if (auto arr = ast::as<ast::ArrayType>(left)) {
-                auto ty = ast::as<ast::IntType>(arr->element_type);
-                if (!ty || ty->bit_size != 8) {
-                    return false;  // only byte array is comparable with string
-                }
-                auto str = ast::as<ast::StrLiteralType>(right);
-                if (!str) {
-                    return false;
-                }
-                if (arr->length && arr->length_value) {
-                    if (*arr->length_value != str->base.lock()->length) {
-                        return false;
-                    }
-                }
-                return true;
+                return check_array_str_compare(arr, right);
+            }
+            if (auto regex = ast::as<ast::RegexLiteralType>(left)) {
+                return ast::as<ast::StrLiteralType>(right) || ast::as<ast::ArrayType>(right);
+            }
+            if (auto regex = ast::as<ast::RegexLiteralType>(right)) {
+                return ast::as<ast::StrLiteralType>(left) || ast::as<ast::ArrayType>(left);
             }
             return false;
         }
@@ -1429,6 +1423,10 @@ namespace brgen::middle {
             else if (auto ch = ast::as<ast::CharLiteral>(expr)) {
                 auto bit = ast::aligned_bit(futils::binary::log2i(ch->code));
                 expr->expr_type = std::make_shared<ast::IntType>(ch->loc, bit, ast::Endian::unspec, false);
+                expr->constant_level = ast::ConstantLevel::constant;
+            }
+            else if (auto regex = ast::as<ast::RegexLiteral>(expr)) {
+                expr->expr_type = std::make_shared<ast::RegexLiteralType>(ast::cast_to<ast::RegexLiteral>(expr));
                 expr->constant_level = ast::ConstantLevel::constant;
             }
             else {

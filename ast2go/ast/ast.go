@@ -10,78 +10,80 @@ import (
 type NodeType int
 
 const (
-	NodeTypeProgram         NodeType = 0
-	NodeTypeComment         NodeType = 1
-	NodeTypeCommentGroup    NodeType = 2
-	NodeTypeFieldArgument   NodeType = 3
-	NodeTypeExpr            NodeType = 4
-	NodeTypeBinary          NodeType = 5
-	NodeTypeUnary           NodeType = 6
-	NodeTypeCond            NodeType = 7
-	NodeTypeIdent           NodeType = 8
-	NodeTypeCall            NodeType = 9
-	NodeTypeIf              NodeType = 10
-	NodeTypeMemberAccess    NodeType = 11
-	NodeTypeParen           NodeType = 12
-	NodeTypeIndex           NodeType = 13
-	NodeTypeMatch           NodeType = 14
-	NodeTypeRange           NodeType = 15
-	NodeTypeTmpVar          NodeType = 16
-	NodeTypeImport          NodeType = 17
-	NodeTypeCast            NodeType = 18
-	NodeTypeAvailable       NodeType = 19
-	NodeTypeSpecifyOrder    NodeType = 20
-	NodeTypeExplicitError   NodeType = 21
-	NodeTypeIoOperation     NodeType = 22
-	NodeTypeBadExpr         NodeType = 23
-	NodeTypeStmt            NodeType = 24
-	NodeTypeLoop            NodeType = 25
-	NodeTypeIndentBlock     NodeType = 26
-	NodeTypeScopedStatement NodeType = 27
-	NodeTypeMatchBranch     NodeType = 28
-	NodeTypeUnionCandidate  NodeType = 29
-	NodeTypeReturn          NodeType = 30
-	NodeTypeBreak           NodeType = 31
-	NodeTypeContinue        NodeType = 32
-	NodeTypeAssert          NodeType = 33
-	NodeTypeImplicitYield   NodeType = 34
-	NodeTypeMetadata        NodeType = 35
-	NodeTypeType            NodeType = 36
-	NodeTypeIntType         NodeType = 37
-	NodeTypeFloatType       NodeType = 38
-	NodeTypeIdentType       NodeType = 39
-	NodeTypeIntLiteralType  NodeType = 40
-	NodeTypeStrLiteralType  NodeType = 41
-	NodeTypeVoidType        NodeType = 42
-	NodeTypeBoolType        NodeType = 43
-	NodeTypeArrayType       NodeType = 44
-	NodeTypeFunctionType    NodeType = 45
-	NodeTypeStructType      NodeType = 46
-	NodeTypeStructUnionType NodeType = 47
-	NodeTypeUnionType       NodeType = 48
-	NodeTypeRangeType       NodeType = 49
-	NodeTypeEnumType        NodeType = 50
-	NodeTypeMetaType        NodeType = 51
-	NodeTypeOptionalType    NodeType = 52
-	NodeTypeGenericType     NodeType = 53
-	NodeTypeLiteral         NodeType = 54
-	NodeTypeIntLiteral      NodeType = 55
-	NodeTypeBoolLiteral     NodeType = 56
-	NodeTypeStrLiteral      NodeType = 57
-	NodeTypeCharLiteral     NodeType = 58
-	NodeTypeTypeLiteral     NodeType = 59
-	NodeTypeSpecialLiteral  NodeType = 60
-	NodeTypeMember          NodeType = 61
-	NodeTypeField           NodeType = 62
-	NodeTypeFormat          NodeType = 63
-	NodeTypeState           NodeType = 64
-	NodeTypeEnum            NodeType = 65
-	NodeTypeEnumMember      NodeType = 66
-	NodeTypeFunction        NodeType = 67
-	NodeTypeBuiltinMember   NodeType = 68
-	NodeTypeBuiltinFunction NodeType = 69
-	NodeTypeBuiltinField    NodeType = 70
-	NodeTypeBuiltinObject   NodeType = 71
+	NodeTypeProgram          NodeType = 0
+	NodeTypeComment          NodeType = 1
+	NodeTypeCommentGroup     NodeType = 2
+	NodeTypeFieldArgument    NodeType = 3
+	NodeTypeExpr             NodeType = 4
+	NodeTypeBinary           NodeType = 5
+	NodeTypeUnary            NodeType = 6
+	NodeTypeCond             NodeType = 7
+	NodeTypeIdent            NodeType = 8
+	NodeTypeCall             NodeType = 9
+	NodeTypeIf               NodeType = 10
+	NodeTypeMemberAccess     NodeType = 11
+	NodeTypeParen            NodeType = 12
+	NodeTypeIndex            NodeType = 13
+	NodeTypeMatch            NodeType = 14
+	NodeTypeRange            NodeType = 15
+	NodeTypeTmpVar           NodeType = 16
+	NodeTypeImport           NodeType = 17
+	NodeTypeCast             NodeType = 18
+	NodeTypeAvailable        NodeType = 19
+	NodeTypeSpecifyOrder     NodeType = 20
+	NodeTypeExplicitError    NodeType = 21
+	NodeTypeIoOperation      NodeType = 22
+	NodeTypeBadExpr          NodeType = 23
+	NodeTypeStmt             NodeType = 24
+	NodeTypeLoop             NodeType = 25
+	NodeTypeIndentBlock      NodeType = 26
+	NodeTypeScopedStatement  NodeType = 27
+	NodeTypeMatchBranch      NodeType = 28
+	NodeTypeUnionCandidate   NodeType = 29
+	NodeTypeReturn           NodeType = 30
+	NodeTypeBreak            NodeType = 31
+	NodeTypeContinue         NodeType = 32
+	NodeTypeAssert           NodeType = 33
+	NodeTypeImplicitYield    NodeType = 34
+	NodeTypeMetadata         NodeType = 35
+	NodeTypeType             NodeType = 36
+	NodeTypeIntType          NodeType = 37
+	NodeTypeFloatType        NodeType = 38
+	NodeTypeIdentType        NodeType = 39
+	NodeTypeIntLiteralType   NodeType = 40
+	NodeTypeStrLiteralType   NodeType = 41
+	NodeTypeRegexLiteralType NodeType = 42
+	NodeTypeVoidType         NodeType = 43
+	NodeTypeBoolType         NodeType = 44
+	NodeTypeArrayType        NodeType = 45
+	NodeTypeFunctionType     NodeType = 46
+	NodeTypeStructType       NodeType = 47
+	NodeTypeStructUnionType  NodeType = 48
+	NodeTypeUnionType        NodeType = 49
+	NodeTypeRangeType        NodeType = 50
+	NodeTypeEnumType         NodeType = 51
+	NodeTypeMetaType         NodeType = 52
+	NodeTypeOptionalType     NodeType = 53
+	NodeTypeGenericType      NodeType = 54
+	NodeTypeLiteral          NodeType = 55
+	NodeTypeIntLiteral       NodeType = 56
+	NodeTypeBoolLiteral      NodeType = 57
+	NodeTypeStrLiteral       NodeType = 58
+	NodeTypeRegexLiteral     NodeType = 59
+	NodeTypeCharLiteral      NodeType = 60
+	NodeTypeTypeLiteral      NodeType = 61
+	NodeTypeSpecialLiteral   NodeType = 62
+	NodeTypeMember           NodeType = 63
+	NodeTypeField            NodeType = 64
+	NodeTypeFormat           NodeType = 65
+	NodeTypeState            NodeType = 66
+	NodeTypeEnum             NodeType = 67
+	NodeTypeEnumMember       NodeType = 68
+	NodeTypeFunction         NodeType = 69
+	NodeTypeBuiltinMember    NodeType = 70
+	NodeTypeBuiltinFunction  NodeType = 71
+	NodeTypeBuiltinField     NodeType = 72
+	NodeTypeBuiltinObject    NodeType = 73
 )
 
 func (n NodeType) String() string {
@@ -170,6 +172,8 @@ func (n NodeType) String() string {
 		return "int_literal_type"
 	case NodeTypeStrLiteralType:
 		return "str_literal_type"
+	case NodeTypeRegexLiteralType:
+		return "regex_literal_type"
 	case NodeTypeVoidType:
 		return "void_type"
 	case NodeTypeBoolType:
@@ -202,6 +206,8 @@ func (n NodeType) String() string {
 		return "bool_literal"
 	case NodeTypeStrLiteral:
 		return "str_literal"
+	case NodeTypeRegexLiteral:
+		return "regex_literal"
 	case NodeTypeCharLiteral:
 		return "char_literal"
 	case NodeTypeTypeLiteral:
@@ -325,6 +331,8 @@ func (n *NodeType) UnmarshalJSON(data []byte) error {
 		*n = NodeTypeIntLiteralType
 	case "str_literal_type":
 		*n = NodeTypeStrLiteralType
+	case "regex_literal_type":
+		*n = NodeTypeRegexLiteralType
 	case "void_type":
 		*n = NodeTypeVoidType
 	case "bool_type":
@@ -357,6 +365,8 @@ func (n *NodeType) UnmarshalJSON(data []byte) error {
 		*n = NodeTypeBoolLiteral
 	case "str_literal":
 		*n = NodeTypeStrLiteral
+	case "regex_literal":
+		*n = NodeTypeRegexLiteral
 	case "char_literal":
 		*n = NodeTypeCharLiteral
 	case "type_literal":
@@ -547,6 +557,10 @@ func (n *StrLiteralType) GetNodeType() NodeType {
 	return NodeTypeStrLiteralType
 }
 
+func (n *RegexLiteralType) GetNodeType() NodeType {
+	return NodeTypeRegexLiteralType
+}
+
 func (n *VoidType) GetNodeType() NodeType {
 	return NodeTypeVoidType
 }
@@ -607,6 +621,10 @@ func (n *StrLiteral) GetNodeType() NodeType {
 	return NodeTypeStrLiteral
 }
 
+func (n *RegexLiteral) GetNodeType() NodeType {
+	return NodeTypeRegexLiteral
+}
+
 func (n *CharLiteral) GetNodeType() NodeType {
 	return NodeTypeCharLiteral
 }
@@ -658,19 +676,20 @@ func (n *BuiltinObject) GetNodeType() NodeType {
 type TokenTag int
 
 const (
-	TokenTagIndent      TokenTag = 0
-	TokenTagSpace       TokenTag = 1
-	TokenTagLine        TokenTag = 2
-	TokenTagPunct       TokenTag = 3
-	TokenTagIntLiteral  TokenTag = 4
-	TokenTagBoolLiteral TokenTag = 5
-	TokenTagStrLiteral  TokenTag = 6
-	TokenTagCharLiteral TokenTag = 7
-	TokenTagKeyword     TokenTag = 8
-	TokenTagIdent       TokenTag = 9
-	TokenTagComment     TokenTag = 10
-	TokenTagError       TokenTag = 11
-	TokenTagUnknown     TokenTag = 12
+	TokenTagIndent       TokenTag = 0
+	TokenTagSpace        TokenTag = 1
+	TokenTagLine         TokenTag = 2
+	TokenTagPunct        TokenTag = 3
+	TokenTagIntLiteral   TokenTag = 4
+	TokenTagBoolLiteral  TokenTag = 5
+	TokenTagStrLiteral   TokenTag = 6
+	TokenTagRegexLiteral TokenTag = 7
+	TokenTagCharLiteral  TokenTag = 8
+	TokenTagKeyword      TokenTag = 9
+	TokenTagIdent        TokenTag = 10
+	TokenTagComment      TokenTag = 11
+	TokenTagError        TokenTag = 12
+	TokenTagUnknown      TokenTag = 13
 )
 
 func (n TokenTag) String() string {
@@ -689,6 +708,8 @@ func (n TokenTag) String() string {
 		return "bool_literal"
 	case TokenTagStrLiteral:
 		return "str_literal"
+	case TokenTagRegexLiteral:
+		return "regex_literal"
 	case TokenTagCharLiteral:
 		return "char_literal"
 	case TokenTagKeyword:
@@ -726,6 +747,8 @@ func (n *TokenTag) UnmarshalJSON(data []byte) error {
 		*n = TokenTagBoolLiteral
 	case "str_literal":
 		*n = TokenTagStrLiteral
+	case "regex_literal":
+		*n = TokenTagRegexLiteral
 	case "char_literal":
 		*n = TokenTagCharLiteral
 	case "keyword":
@@ -2404,6 +2427,40 @@ func (n *StrLiteralType) GetLoc() Loc {
 	return n.Loc
 }
 
+type RegexLiteralType struct {
+	Loc                  Loc
+	IsExplicit           bool
+	NonDynamicAllocation bool
+	BitAlignment         BitAlignment
+	BitSize              *uint64
+	Base                 *RegexLiteral
+	StrongRef            *RegexLiteral
+}
+
+func (n *RegexLiteralType) isType() {}
+
+func (n *RegexLiteralType) GetIsExplicit() bool {
+	return n.IsExplicit
+}
+
+func (n *RegexLiteralType) GetNonDynamicAllocation() bool {
+	return n.NonDynamicAllocation
+}
+
+func (n *RegexLiteralType) GetBitAlignment() BitAlignment {
+	return n.BitAlignment
+}
+
+func (n *RegexLiteralType) GetBitSize() *uint64 {
+	return n.BitSize
+}
+
+func (n *RegexLiteralType) isNode() {}
+
+func (n *RegexLiteralType) GetLoc() Loc {
+	return n.Loc
+}
+
 type VoidType struct {
 	Loc                  Loc
 	IsExplicit           bool
@@ -2889,6 +2946,31 @@ func (n *StrLiteral) GetConstantLevel() ConstantLevel {
 func (n *StrLiteral) isNode() {}
 
 func (n *StrLiteral) GetLoc() Loc {
+	return n.Loc
+}
+
+type RegexLiteral struct {
+	Loc           Loc
+	ExprType      Type
+	ConstantLevel ConstantLevel
+	Value         string
+}
+
+func (n *RegexLiteral) isLiteral() {}
+
+func (n *RegexLiteral) isExpr() {}
+
+func (n *RegexLiteral) GetExprType() Type {
+	return n.ExprType
+}
+
+func (n *RegexLiteral) GetConstantLevel() ConstantLevel {
+	return n.ConstantLevel
+}
+
+func (n *RegexLiteral) isNode() {}
+
+func (n *RegexLiteral) GetLoc() Loc {
 	return n.Loc
 }
 
@@ -3437,6 +3519,8 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			n.node[i] = &IntLiteralType{Loc: raw.Loc}
 		case NodeTypeStrLiteralType:
 			n.node[i] = &StrLiteralType{Loc: raw.Loc}
+		case NodeTypeRegexLiteralType:
+			n.node[i] = &RegexLiteralType{Loc: raw.Loc}
 		case NodeTypeVoidType:
 			n.node[i] = &VoidType{Loc: raw.Loc}
 		case NodeTypeBoolType:
@@ -3467,6 +3551,8 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			n.node[i] = &BoolLiteral{Loc: raw.Loc}
 		case NodeTypeStrLiteral:
 			n.node[i] = &StrLiteral{Loc: raw.Loc}
+		case NodeTypeRegexLiteral:
+			n.node[i] = &RegexLiteral{Loc: raw.Loc}
 		case NodeTypeCharLiteral:
 			n.node[i] = &CharLiteral{Loc: raw.Loc}
 		case NodeTypeTypeLiteral:
@@ -4324,6 +4410,29 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.StrongRef != nil {
 				v.StrongRef = n.node[*tmp.StrongRef].(*StrLiteral)
 			}
+		case NodeTypeRegexLiteralType:
+			v := n.node[i].(*RegexLiteralType)
+			var tmp struct {
+				IsExplicit           bool         `json:"is_explicit"`
+				NonDynamicAllocation bool         `json:"non_dynamic_allocation"`
+				BitAlignment         BitAlignment `json:"bit_alignment"`
+				BitSize              *uint64      `json:"bit_size"`
+				Base                 *uintptr     `json:"base"`
+				StrongRef            *uintptr     `json:"strong_ref"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			v.IsExplicit = tmp.IsExplicit
+			v.NonDynamicAllocation = tmp.NonDynamicAllocation
+			v.BitAlignment = tmp.BitAlignment
+			v.BitSize = tmp.BitSize
+			if tmp.Base != nil {
+				v.Base = n.node[*tmp.Base].(*RegexLiteral)
+			}
+			if tmp.StrongRef != nil {
+				v.StrongRef = n.node[*tmp.StrongRef].(*RegexLiteral)
+			}
 		case NodeTypeVoidType:
 			v := n.node[i].(*VoidType)
 			var tmp struct {
@@ -4656,6 +4765,21 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.ConstantLevel = tmp.ConstantLevel
 			v.Value = tmp.Value
 			v.Length = tmp.Length
+		case NodeTypeRegexLiteral:
+			v := n.node[i].(*RegexLiteral)
+			var tmp struct {
+				ExprType      *uintptr      `json:"expr_type"`
+				ConstantLevel ConstantLevel `json:"constant_level"`
+				Value         string        `json:"value"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			if tmp.ExprType != nil {
+				v.ExprType = n.node[*tmp.ExprType].(Type)
+			}
+			v.ConstantLevel = tmp.ConstantLevel
+			v.Value = tmp.Value
 		case NodeTypeCharLiteral:
 			v := n.node[i].(*CharLiteral)
 			var tmp struct {
@@ -5498,6 +5622,12 @@ func Walk(n Node, f Visitor) {
 				return
 			}
 		}
+	case *RegexLiteralType:
+		if v.StrongRef != nil {
+			if !f.Visit(f, v.StrongRef) {
+				return
+			}
+		}
 	case *VoidType:
 	case *BoolType:
 	case *ArrayType:
@@ -5588,6 +5718,12 @@ func Walk(n Node, f Visitor) {
 			}
 		}
 	case *StrLiteral:
+		if v.ExprType != nil {
+			if !f.Visit(f, v.ExprType) {
+				return
+			}
+		}
+	case *RegexLiteral:
 		if v.ExprType != nil {
 			if !f.Visit(f, v.ExprType) {
 				return

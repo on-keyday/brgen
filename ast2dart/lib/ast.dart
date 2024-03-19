@@ -85,6 +85,8 @@ IdentType,
 IntLiteralType,
 @JsonValue('str_literal_type')
 StrLiteralType,
+@JsonValue('regex_literal_type')
+RegexLiteralType,
 @JsonValue('void_type')
 VoidType,
 @JsonValue('bool_type')
@@ -117,6 +119,8 @@ IntLiteral,
 BoolLiteral,
 @JsonValue('str_literal')
 StrLiteral,
+@JsonValue('regex_literal')
+RegexLiteral,
 @JsonValue('char_literal')
 CharLiteral,
 @JsonValue('type_literal')
@@ -161,6 +165,8 @@ IntLiteral,
 BoolLiteral,
 @JsonValue('str_literal')
 StrLiteral,
+@JsonValue('regex_literal')
+RegexLiteral,
 @JsonValue('char_literal')
 CharLiteral,
 @JsonValue('keyword')
@@ -691,6 +697,12 @@ class StrLiteralType extends Type {
 factory StrLiteralType.fromJson(Map<String, dynamic> json) => _$StrLiteralTypeFromJson(json);
 }
 @JsonSerializable()
+class RegexLiteralType extends Type {
+    RegexLiteral? base;
+    RegexLiteral? strongRef;
+factory RegexLiteralType.fromJson(Map<String, dynamic> json) => _$RegexLiteralTypeFromJson(json);
+}
+@JsonSerializable()
 class VoidType extends Type {
 factory VoidType.fromJson(Map<String, dynamic> json) => _$VoidTypeFromJson(json);
 }
@@ -781,6 +793,11 @@ class StrLiteral extends Literal {
     String value = '';
     int length = 0;
 factory StrLiteral.fromJson(Map<String, dynamic> json) => _$StrLiteralFromJson(json);
+}
+@JsonSerializable()
+class RegexLiteral extends Literal {
+    String value = '';
+factory RegexLiteral.fromJson(Map<String, dynamic> json) => _$RegexLiteralFromJson(json);
 }
 @JsonSerializable()
 class CharLiteral extends Literal {

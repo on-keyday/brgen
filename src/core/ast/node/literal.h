@@ -51,6 +51,23 @@ namespace brgen::ast {
         }
     };
 
+    struct RegexLiteral :Literal {
+        define_node_type(NodeType::regex_literal);
+        std::string value;
+
+        RegexLiteral(lexer::Loc l, std::string&& t)
+            : Literal(l, NodeType::regex_literal), value(std::move(t)) {}
+
+        // for decode
+        RegexLiteral()
+            : Literal({}, NodeType::regex_literal) {}
+
+        void dump(auto&& field_) {
+            Literal::dump(field_);
+            sdebugf(value);
+        }
+    };
+
     struct CharLiteral : Literal {
         define_node_type(NodeType::char_literal);
         std::string value;

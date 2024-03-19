@@ -201,6 +201,31 @@ namespace brgen::ast {
         }
     };
 
+    struct RegexLiteralType : Type {
+        define_node_type(NodeType::regex_literal_type);
+        std::weak_ptr<RegexLiteral> base;
+        std::shared_ptr<RegexLiteral> strong_ref;  // only for explicit type
+
+        RegexLiteralType(std::shared_ptr<RegexLiteral>&& str, bool is_explicit = false)
+            : Type(str->loc, NodeType::regex_literal_type) {
+            this->is_explicit = is_explicit;
+            base = str;
+            if (is_explicit) {
+                strong_ref = std::move(str);
+            }
+        }
+
+        // for decode
+        RegexLiteralType()
+            : Type({}, NodeType::regex_literal_type) {}
+
+        void dump(auto&& field_) {
+            Type::dump(field_);
+            sdebugf(base);
+            sdebugf(strong_ref);
+        }
+    };
+
     struct Ident;
 
     struct IdentType : Type {

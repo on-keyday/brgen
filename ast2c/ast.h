@@ -92,6 +92,7 @@ typedef struct ast2c_FloatType ast2c_FloatType;
 typedef struct ast2c_IdentType ast2c_IdentType;
 typedef struct ast2c_IntLiteralType ast2c_IntLiteralType;
 typedef struct ast2c_StrLiteralType ast2c_StrLiteralType;
+typedef struct ast2c_RegexLiteralType ast2c_RegexLiteralType;
 typedef struct ast2c_VoidType ast2c_VoidType;
 typedef struct ast2c_BoolType ast2c_BoolType;
 typedef struct ast2c_ArrayType ast2c_ArrayType;
@@ -107,6 +108,7 @@ typedef struct ast2c_GenericType ast2c_GenericType;
 typedef struct ast2c_IntLiteral ast2c_IntLiteral;
 typedef struct ast2c_BoolLiteral ast2c_BoolLiteral;
 typedef struct ast2c_StrLiteral ast2c_StrLiteral;
+typedef struct ast2c_RegexLiteral ast2c_RegexLiteral;
 typedef struct ast2c_CharLiteral ast2c_CharLiteral;
 typedef struct ast2c_TypeLiteral ast2c_TypeLiteral;
 typedef struct ast2c_SpecialLiteral ast2c_SpecialLiteral;
@@ -173,6 +175,7 @@ enum ast2c_NodeType {
 	AST2C_NODETYPE_IDENT_TYPE,
 	AST2C_NODETYPE_INT_LITERAL_TYPE,
 	AST2C_NODETYPE_STR_LITERAL_TYPE,
+	AST2C_NODETYPE_REGEX_LITERAL_TYPE,
 	AST2C_NODETYPE_VOID_TYPE,
 	AST2C_NODETYPE_BOOL_TYPE,
 	AST2C_NODETYPE_ARRAY_TYPE,
@@ -189,6 +192,7 @@ enum ast2c_NodeType {
 	AST2C_NODETYPE_INT_LITERAL,
 	AST2C_NODETYPE_BOOL_LITERAL,
 	AST2C_NODETYPE_STR_LITERAL,
+	AST2C_NODETYPE_REGEX_LITERAL,
 	AST2C_NODETYPE_CHAR_LITERAL,
 	AST2C_NODETYPE_TYPE_LITERAL,
 	AST2C_NODETYPE_SPECIAL_LITERAL,
@@ -215,6 +219,7 @@ enum ast2c_TokenTag {
 	AST2C_TOKENTAG_INT_LITERAL,
 	AST2C_TOKENTAG_BOOL_LITERAL,
 	AST2C_TOKENTAG_STR_LITERAL,
+	AST2C_TOKENTAG_REGEX_LITERAL,
 	AST2C_TOKENTAG_CHAR_LITERAL,
 	AST2C_TOKENTAG_KEYWORD,
 	AST2C_TOKENTAG_IDENT,
@@ -992,6 +997,20 @@ struct ast2c_StrLiteralType {
 // returns 1 if succeed 0 if failed
 int ast2c_StrLiteralType_parse(ast2c_Ast* ,ast2c_StrLiteralType*,ast2c_json_handlers*,void*);
 
+struct ast2c_RegexLiteralType {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	int is_explicit;
+	int non_dynamic_allocation;
+	ast2c_BitAlignment bit_alignment;
+	uint64_t* bit_size;
+	ast2c_RegexLiteral* base;
+	ast2c_RegexLiteral* strong_ref;
+};
+
+// returns 1 if succeed 0 if failed
+int ast2c_RegexLiteralType_parse(ast2c_Ast* ,ast2c_RegexLiteralType*,ast2c_json_handlers*,void*);
+
 struct ast2c_VoidType {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
@@ -1204,6 +1223,17 @@ struct ast2c_StrLiteral {
 
 // returns 1 if succeed 0 if failed
 int ast2c_StrLiteral_parse(ast2c_Ast* ,ast2c_StrLiteral*,ast2c_json_handlers*,void*);
+
+struct ast2c_RegexLiteral {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
+	char* value;
+};
+
+// returns 1 if succeed 0 if failed
+int ast2c_RegexLiteral_parse(ast2c_Ast* ,ast2c_RegexLiteral*,ast2c_json_handlers*,void*);
 
 struct ast2c_CharLiteral {
 	const ast2c_NodeType node_type;

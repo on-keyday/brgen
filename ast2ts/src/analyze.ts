@@ -74,6 +74,11 @@ export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
                 found = node;
                 return;
             }
+            else if(ast2ts.isRegexLiteral(node)) {
+                console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
+                found = node;
+                return;
+            }
             else if(ast2ts.isCharLiteral(node)) {
                 console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
                 found = node;
@@ -240,6 +245,9 @@ export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
     else if(ast2ts.isStrLiteral(found)){
         return makeHover("string",`string literal (length: ${found.length})`);
     }
+    else if(ast2ts.isRegexLiteral(found)){
+        return makeHover("regex",`regex literal (pattern: ${found.value})`);
+    }
     else if (ast2ts.isCharLiteral(found)) {
         return makeHover("char",`char literal (code: ${found.code})`);
     }
@@ -389,6 +397,7 @@ export const legendMapping = [
     "class",
     "function",
     "macro",
+    "regexp",
 ];
 
 export type LocMap = { readonly loc :ast2ts.Loc, readonly length :number, readonly index :number}
@@ -475,6 +484,7 @@ export const analyzeSourceCode  = async (prevSemanticTokens :SemTokensStub|null,
         [ast2ts.TokenTag.bool_literal,"macro"],
         [ast2ts.TokenTag.int_literal,"number"],
         [ast2ts.TokenTag.str_literal,"string"],
+        [ast2ts.TokenTag.regex_literal,"string"],
         [ast2ts.TokenTag.char_literal,"string"],        
         [ast2ts.TokenTag.ident,"variable"],
         [ast2ts.TokenTag.punct,"operator"],

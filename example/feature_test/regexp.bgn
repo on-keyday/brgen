@@ -1,0 +1,7 @@
+
+format RegExp:
+    reg : /\s/
+
+r ::= /r/gi 
+
+"a" == r

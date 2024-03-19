@@ -47,6 +47,7 @@ class NodeType(PyEnum):
     IDENT_TYPE = "ident_type"
     INT_LITERAL_TYPE = "int_literal_type"
     STR_LITERAL_TYPE = "str_literal_type"
+    REGEX_LITERAL_TYPE = "regex_literal_type"
     VOID_TYPE = "void_type"
     BOOL_TYPE = "bool_type"
     ARRAY_TYPE = "array_type"
@@ -63,6 +64,7 @@ class NodeType(PyEnum):
     INT_LITERAL = "int_literal"
     BOOL_LITERAL = "bool_literal"
     STR_LITERAL = "str_literal"
+    REGEX_LITERAL = "regex_literal"
     CHAR_LITERAL = "char_literal"
     TYPE_LITERAL = "type_literal"
     SPECIAL_LITERAL = "special_literal"
@@ -87,6 +89,7 @@ class TokenTag(PyEnum):
     INT_LITERAL = "int_literal"
     BOOL_LITERAL = "bool_literal"
     STR_LITERAL = "str_literal"
+    REGEX_LITERAL = "regex_literal"
     CHAR_LITERAL = "char_literal"
     KEYWORD = "keyword"
     IDENT = "ident"
@@ -489,6 +492,11 @@ class StrLiteralType(Type):
     strong_ref: Optional[StrLiteral]
 
 
+class RegexLiteralType(Type):
+    base: Optional[RegexLiteral]
+    strong_ref: Optional[RegexLiteral]
+
+
 class VoidType(Type):
     pass
 
@@ -567,6 +575,10 @@ class BoolLiteral(Literal):
 class StrLiteral(Literal):
     value: str
     length: int
+
+
+class RegexLiteral(Literal):
+    value: str
 
 
 class CharLiteral(Literal):
@@ -911,6 +923,8 @@ def ast2node(ast :JsonAst) -> Program:
                 node.append(IntLiteralType())
             case NodeType.STR_LITERAL_TYPE:
                 node.append(StrLiteralType())
+            case NodeType.REGEX_LITERAL_TYPE:
+                node.append(RegexLiteralType())
             case NodeType.VOID_TYPE:
                 node.append(VoidType())
             case NodeType.BOOL_TYPE:
@@ -941,6 +955,8 @@ def ast2node(ast :JsonAst) -> Program:
                 node.append(BoolLiteral())
             case NodeType.STR_LITERAL:
                 node.append(StrLiteral())
+            case NodeType.REGEX_LITERAL:
+                node.append(RegexLiteral())
             case NodeType.CHAR_LITERAL:
                 node.append(CharLiteral())
             case NodeType.TYPE_LITERAL:
@@ -1591,6 +1607,27 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].strong_ref = x if isinstance(x,StrLiteral) else raiseError(TypeError('type mismatch at StrLiteralType::strong_ref'))
                 else:
                     node[i].strong_ref = None
+            case NodeType.REGEX_LITERAL_TYPE:
+                x = ast.node[i].body["is_explicit"]
+                node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at RegexLiteralType::is_explicit'))
+                x = ast.node[i].body["non_dynamic_allocation"]
+                node[i].non_dynamic_allocation = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at RegexLiteralType::non_dynamic_allocation'))
+                node[i].bit_alignment = BitAlignment(ast.node[i].body["bit_alignment"])
+                x = ast.node[i].body["bit_size"]
+                if x is not None:
+                    node[i].bit_size = x if isinstance(x,int) else raiseError(TypeError('type mismatch at RegexLiteralType::bit_size'))
+                else:
+                    node[i].bit_size = None
+                if ast.node[i].body["base"] is not None:
+                    x = node[ast.node[i].body["base"]]
+                    node[i].base = x if isinstance(x,RegexLiteral) else raiseError(TypeError('type mismatch at RegexLiteralType::base'))
+                else:
+                    node[i].base = None
+                if ast.node[i].body["strong_ref"] is not None:
+                    x = node[ast.node[i].body["strong_ref"]]
+                    node[i].strong_ref = x if isinstance(x,RegexLiteral) else raiseError(TypeError('type mismatch at RegexLiteralType::strong_ref'))
+                else:
+                    node[i].strong_ref = None
             case NodeType.VOID_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at VoidType::is_explicit'))
@@ -1845,6 +1882,15 @@ def ast2node(ast :JsonAst) -> Program:
                 node[i].value = x if isinstance(x,str)  else raiseError(TypeError('type mismatch at StrLiteral::value'))
                 x = ast.node[i].body["length"]
                 node[i].length = x if isinstance(x,int)  else raiseError(TypeError('type mismatch at StrLiteral::length'))
+            case NodeType.REGEX_LITERAL:
+                if ast.node[i].body["expr_type"] is not None:
+                    x = node[ast.node[i].body["expr_type"]]
+                    node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at RegexLiteral::expr_type'))
+                else:
+                    node[i].expr_type = None
+                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
+                x = ast.node[i].body["value"]
+                node[i].value = x if isinstance(x,str)  else raiseError(TypeError('type mismatch at RegexLiteral::value'))
             case NodeType.CHAR_LITERAL:
                 if ast.node[i].body["expr_type"] is not None:
                     x = node[ast.node[i].body["expr_type"]]
@@ -2453,6 +2499,10 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
           if x.strong_ref is not None:
               if f(f,x.strong_ref) == False:
                   return
+        case x if isinstance(x,RegexLiteralType):
+          if x.strong_ref is not None:
+              if f(f,x.strong_ref) == False:
+                  return
         case x if isinstance(x,VoidType):
             pass
         case x if isinstance(x,BoolType):
@@ -2518,6 +2568,10 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
               if f(f,x.expr_type) == False:
                   return
         case x if isinstance(x,StrLiteral):
+          if x.expr_type is not None:
+              if f(f,x.expr_type) == False:
+                  return
+        case x if isinstance(x,RegexLiteral):
           if x.expr_type is not None:
               if f(f,x.expr_type) == False:
                   return

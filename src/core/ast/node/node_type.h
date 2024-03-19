@@ -43,6 +43,7 @@ namespace brgen::ast {
         int_literal,
         bool_literal,
         str_literal,
+        regex_literal,
         char_literal,
         type_literal,
 
@@ -84,6 +85,7 @@ namespace brgen::ast {
         ident_type,
         int_literal_type,
         str_literal_type,
+        regex_literal_type,
         void_type,
         bool_type,
         array_type,
@@ -171,6 +173,8 @@ namespace brgen::ast {
         {NodeType::bad_expr, "bad_expr"},
         {NodeType::char_literal, "char_literal"},
         {NodeType::metadata, "metadata"},
+        {NodeType::regex_literal, "regex_literal"},
+        {NodeType::regex_literal_type, "regex_literal_type"},
     };
 
     constexpr std::array<std::pair<NodeType, const char*>, std::size(node_type_str_array)> sorted_node_type_str_array = [] {

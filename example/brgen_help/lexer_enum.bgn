@@ -9,6 +9,7 @@ enum Tag:
     int_literal
     bool_literal
     str_literal
+    regex_literal
     char_literal
     keyword
     ident
