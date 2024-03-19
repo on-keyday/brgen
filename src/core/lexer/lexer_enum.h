@@ -27,6 +27,7 @@ enum class Tag {
     int_literal,
     bool_literal,
     str_literal,
+    regex_literal,
     char_literal,
     keyword,
     ident,
@@ -43,6 +44,7 @@ constexpr const char* to_string(Tag e) {
     case Tag::int_literal: return "int_literal";
     case Tag::bool_literal: return "bool_literal";
     case Tag::str_literal: return "str_literal";
+    case Tag::regex_literal: return "regex_literal";
     case Tag::char_literal: return "char_literal";
     case Tag::keyword: return "keyword";
     case Tag::ident: return "ident";
@@ -61,6 +63,7 @@ template<>constexpr std::optional<Tag> from_string<Tag>(std::string_view str) {
     if(str == "int_literal") return Tag::int_literal;
     if(str == "bool_literal") return Tag::bool_literal;
     if(str == "str_literal") return Tag::str_literal;
+    if(str == "regex_literal") return Tag::regex_literal;
     if(str == "char_literal") return Tag::char_literal;
     if(str == "keyword") return Tag::keyword;
     if(str == "ident") return Tag::ident;
@@ -70,9 +73,9 @@ template<>constexpr std::optional<Tag> from_string<Tag>(std::string_view str) {
     return std::nullopt;
 }
 template<>constexpr size_t enum_elem_count<Tag>() {
-    return 13;
+    return 14;
 }
-template<>constexpr std::array<std::pair<Tag,std::string_view>,13> make_enum_array<Tag>() {
+template<>constexpr std::array<std::pair<Tag,std::string_view>,14> make_enum_array<Tag>() {
     return {
         std::pair{Tag::indent,"indent"},
         std::pair{Tag::space,"space"},
@@ -81,6 +84,7 @@ template<>constexpr std::array<std::pair<Tag,std::string_view>,13> make_enum_arr
         std::pair{Tag::int_literal,"int_literal"},
         std::pair{Tag::bool_literal,"bool_literal"},
         std::pair{Tag::str_literal,"str_literal"},
+        std::pair{Tag::regex_literal,"regex_literal"},
         std::pair{Tag::char_literal,"char_literal"},
         std::pair{Tag::keyword,"keyword"},
         std::pair{Tag::ident,"ident"},
@@ -89,7 +93,7 @@ template<>constexpr std::array<std::pair<Tag,std::string_view>,13> make_enum_arr
         std::pair{Tag::unknown,"unknown"},
     };
 }
-template<>constexpr std::array<std::pair<Tag,std::string_view>,13> make_enum_name_array<Tag>() {
+template<>constexpr std::array<std::pair<Tag,std::string_view>,14> make_enum_name_array<Tag>() {
     return {
         std::pair{Tag::indent,"indent"},
         std::pair{Tag::space,"space"},
@@ -98,6 +102,7 @@ template<>constexpr std::array<std::pair<Tag,std::string_view>,13> make_enum_nam
         std::pair{Tag::int_literal,"int_literal"},
         std::pair{Tag::bool_literal,"bool_literal"},
         std::pair{Tag::str_literal,"str_literal"},
+        std::pair{Tag::regex_literal,"regex_literal"},
         std::pair{Tag::char_literal,"char_literal"},
         std::pair{Tag::keyword,"keyword"},
         std::pair{Tag::ident,"ident"},

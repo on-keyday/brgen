@@ -498,6 +498,11 @@ namespace brgen::ast {
             return literal;
         }
 
+        std::shared_ptr<RegexLiteral> parse_regex_literal(lexer::Token&& lit) {
+            auto literal = std::make_shared<RegexLiteral>(lit.loc, std::move(lit.token));
+            return literal;
+        }
+
         std::shared_ptr<TypeLiteral> parse_type_literal(lexer::Token&& lit) {
             s.skip_line();
             auto typ = parse_type(false);
@@ -542,6 +547,9 @@ namespace brgen::ast {
             }
             if (auto t = s.consume_token(lexer::Tag::str_literal)) {
                 return parse_str_literal(std::move(*t));
+            }
+            if (auto t = s.consume_token(lexer::Tag::regex_literal)) {
+                return parse_regex_literal(std::move(*t));
             }
             if (auto t = s.consume_token(lexer::Tag::char_literal)) {
                 return parse_char_literal(std::move(*t));
@@ -1078,6 +1086,10 @@ namespace brgen::ast {
 
             if (auto lit = s.consume_token(lexer::Tag::str_literal)) {
                 return std::make_shared<StrLiteralType>(std::move(parse_str_literal(std::move(*lit))), true);
+            }
+
+            if (auto lit = s.consume_token(lexer::Tag::regex_literal)) {
+                return std::make_shared<RegexLiteralType>(std::move(parse_regex_literal(std::move(*lit))), true);
             }
 
             if (auto fn = s.consume_token("fn")) {

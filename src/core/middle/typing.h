@@ -93,38 +93,29 @@ namespace brgen::middle {
                 int_type_fitting(rty->base_type, left);
                 return equal_type(rty->base_type, left);
             }
-            if (auto arr = ast::as<ast::ArrayType>(right)) {
+            auto check_array_str_compare = [&](ast::ArrayType* arr, const std::shared_ptr<ast::Type>& other_hand) {
                 auto ty = ast::as<ast::IntType>(arr->element_type);
                 if (!ty || ty->bit_size != 8) {
                     return false;  // only byte array is comparable with string
                 }
-                auto str = ast::as<ast::StrLiteralType>(left);
-                if (!str) {
-                    return false;
-                }
-                // TODO(on-keyday): check string literal length
-                if (arr->length && arr->length_value) {
-                    if (*arr->length_value != str->base.lock()->length) {
-                        return false;
+                if (auto str = ast::as<ast::StrLiteralType>(other_hand)) {
+                    if (arr->length && arr->length_value) {
+                        if (*arr->length_value != str->base.lock()->length) {
+                            return false;
+                        }
                     }
+                    return true;
                 }
-                return true;
+                if (auto regex = ast::as<ast::RegexLiteralType>(other_hand)) {
+                    return true;
+                }
+                return false;
+            };
+            if (auto arr = ast::as<ast::ArrayType>(right)) {
+                return check_array_str_compare(arr, left);
             }
             if (auto arr = ast::as<ast::ArrayType>(left)) {
-                auto ty = ast::as<ast::IntType>(arr->element_type);
-                if (!ty || ty->bit_size != 8) {
-                    return false;  // only byte array is comparable with string
-                }
-                auto str = ast::as<ast::StrLiteralType>(right);
-                if (!str) {
-                    return false;
-                }
-                if (arr->length && arr->length_value) {
-                    if (*arr->length_value != str->base.lock()->length) {
-                        return false;
-                    }
-                }
-                return true;
+                return check_array_str_compare(arr, right);
             }
             return false;
         }
