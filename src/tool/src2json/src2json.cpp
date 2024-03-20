@@ -309,10 +309,14 @@ struct DiagnosticInfo {
     }
 };
 
-auto dump_json_file(brgen::FileSet& files, auto&& elem, const char* elem_key, const brgen::SourceError& err) {
+auto dump_json_file(brgen::FileSet& files, bool ok, auto&& elem, const char* elem_key, brgen::LocationError&& err) {
+    auto src_err = brgen::to_source_error(files)(std::move(err));
     brgen::JSONWriter d;
     {
         auto field = d.object();
+        // when error tolerant, ast may not be null even if error exists
+        // so, we add success field
+        field("success", ok);
         field("files", files.file_list());
         field(elem_key, elem);
         if (err.errs.size() == 0) {
@@ -338,6 +342,116 @@ int print_spec(Flags& flags) {
         return exit_err;
     }
     return exit_ok;
+}
+
+int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& files, brgen::File* input, Flags& flags, const Capability& cap, brgen::LocationError& err_or_warn) {
+    assert(p);
+    auto to_src_error = brgen::to_source_error(files);
+    auto res = do_parse(input, flags);
+
+    if (!res) {
+        report_error(to_src_error(std::move(res.error())));
+        return exit_err;
+    }
+
+    const auto kill = futils::helper::defer([&] {
+        brgen::ast::kill_node(*res);
+    });
+
+    if (!flags.not_resolve_import) {
+        if (!cap.importer) {
+            print_error("import is disabled");
+            return exit_err;
+        }
+        auto res2 = brgen::middle::resolve_import(*res, files).transform_error(brgen::to_source_error(files));
+        if (!res2) {
+            report_error(std::move(res2.error()));
+            return exit_err;
+        }
+    }
+
+    if (!flags.not_resolve_available) {
+        brgen::middle::resolve_available(*res);
+    }
+
+    brgen::LocationError err_or_warn;
+
+    if (!flags.not_resolve_endian_spec) {
+        brgen::middle::replace_specify_order(*res);
+    }
+
+    if (!flags.not_resolve_explicit_error) {
+        auto res2 = brgen::middle::replace_explicit_error(*res);
+        if (!res2) {
+            report_error(brgen::to_source_error(files)(std::move(res2.error())));
+            return exit_err;
+        }
+    }
+
+    if (!flags.not_resolve_io_operation) {
+        auto res2 = brgen::middle::resolve_io_operation(*res);
+        if (!res2) {
+            report_error(brgen::to_source_error(files)(std::move(res2.error())));
+            return exit_err;
+        }
+    }
+
+    if (!flags.not_resolve_metadata) {
+        brgen::middle::replace_metadata(*res);
+    }
+
+    if (!flags.not_resolve_type) {
+        brgen::LocationError warns;
+        auto res3 = brgen::middle::analyze_type(*res, warns);
+        if (!res3) {
+            if (!flags.omit_warning) {
+                warns.locations.insert(warns.locations.end(), res3.error().locations.begin(), res3.error().locations.end());
+                report_error(brgen::to_source_error(files)(std::move(warns)));
+            }
+            else {
+                report_error(brgen::to_source_error(files)(std::move(res3.error())));
+            }
+            return exit_err;
+        }
+        if (flags.unresolved_type_as_error && err_or_warn.locations.size() > 0) {
+            report_error(brgen::to_source_error(files)(std::move(warns)));
+            return exit_err;
+        }
+        if (!flags.disable_untyped_warning && err_or_warn.locations.size() > 0) {
+            auto warns = brgen::to_source_error(files)(std::move(warns));
+            print_warnings(warns);
+        }
+    }
+
+    if (!flags.not_resolve_assert) {
+        brgen::LocationError err;
+        brgen::middle::replace_assert(*res, err);
+        if (!flags.disable_unused_warning && err.locations.size() > 0) {
+            auto tmp = brgen::to_source_error(files)(std::move(err));
+            print_warnings(tmp);
+            if (!flags.omit_warning) {
+                err_or_warn.errs.insert(err_or_warn.errs.end(), tmp.errs.begin(), tmp.errs.end());
+            }
+        }
+    }
+
+    brgen::middle::TypeAttribute attr;
+
+    if (!flags.not_detect_recursive_type) {
+        attr.mark_recursive_reference(*res);
+    }
+
+    if (!flags.not_detect_non_dynamic) {
+        attr.detect_non_dynamic_type(*res);
+    }
+
+    if (!flags.not_detect_alignment) {
+        attr.analyze_bit_size_and_alignment(*res);
+    }
+
+    if (!flags.not_resolve_state_dependency) {
+        brgen::middle::resolve_state_dependency(*res);
+    }
 }
 
 int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap) {
@@ -562,7 +676,7 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
             return exit_err;
         }
         if (!cout.is_tty() || flags.print_json) {
-            auto d = dump_json_file(files, *res, "tokens", brgen::SourceError{});
+            auto d = dump_json_file(files, true, *res, "tokens", brgen::LocationError{});
             cout << futils::wrap::pack(d.out(), cout.is_tty() ? "\n" : "");
         }
         else {
@@ -575,111 +689,12 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
         print_error("parser mode is disabled");
         return exit_err;
     }
-
-    auto res = do_parse(input, flags).transform_error(brgen::to_source_error(files));
-
-    if (!res) {
-        report_error(std::move(res.error()));
-        return exit_err;
-    }
-
-    const auto kill = futils::helper::defer([&] {
-        brgen::ast::kill_node(*res);
-    });
-
-    if (!flags.not_resolve_import) {
-        if (!cap.importer) {
-            print_error("config.import is disabled");
-            return exit_err;
-        }
-        auto res2 = brgen::middle::resolve_import(*res, files).transform_error(brgen::to_source_error(files));
-        if (!res2) {
-            report_error(std::move(res2.error()));
-            return exit_err;
-        }
-    }
-
-    if (!flags.not_resolve_available) {
-        brgen::middle::resolve_available(*res);
-    }
-
     brgen::LocationError err_or_warn;
+    std::shared_ptr<brgen::ast::Program> res;
+    auto code = parse_and_analyze(&res, files, input, flags, cap, err_or_warn);
 
-    if (!flags.not_resolve_endian_spec) {
-        brgen::middle::replace_specify_order(*res);
-    }
-
-    if (!flags.not_resolve_explicit_error) {
-        auto res2 = brgen::middle::replace_explicit_error(*res);
-        if (!res2) {
-            report_error(brgen::to_source_error(files)(std::move(res2.error())));
-            return exit_err;
-        }
-    }
-
-    if (!flags.not_resolve_io_operation) {
-        auto res2 = brgen::middle::resolve_io_operation(*res);
-        if (!res2) {
-            report_error(brgen::to_source_error(files)(std::move(res2.error())));
-            return exit_err;
-        }
-    }
-
-    if (!flags.not_resolve_metadata) {
-        brgen::middle::replace_metadata(*res);
-    }
-
-    if (!flags.not_resolve_type) {
-        brgen::LocationError warns;
-        auto res3 = brgen::middle::analyze_type(*res, warns);
-        if (!res3) {
-            if (!flags.omit_warning) {
-                warns.locations.insert(warns.locations.end(), res3.error().locations.begin(), res3.error().locations.end());
-                report_error(brgen::to_source_error(files)(std::move(warns)));
-            }
-            else {
-                report_error(brgen::to_source_error(files)(std::move(res3.error())));
-            }
-            return exit_err;
-        }
-        if (flags.unresolved_type_as_error && err_or_warn.locations.size() > 0) {
-            report_error(brgen::to_source_error(files)(std::move(warns)));
-            return exit_err;
-        }
-        if (!flags.disable_untyped_warning && err_or_warn.locations.size() > 0) {
-            auto warns = brgen::to_source_error(files)(std::move(warns));
-            print_warnings(warns);
-        }
-    }
-
-    if (!flags.not_resolve_assert) {
-        brgen::LocationError err;
-        brgen::middle::replace_assert(*res, err);
-        if (!flags.disable_unused_warning && err.locations.size() > 0) {
-            auto tmp = brgen::to_source_error(files)(std::move(err));
-            print_warnings(tmp);
-            if (!flags.omit_warning) {
-                err_or_warn.errs.insert(err_or_warn.errs.end(), tmp.errs.begin(), tmp.errs.end());
-            }
-        }
-    }
-
-    brgen::middle::TypeAttribute attr;
-
-    if (!flags.not_detect_recursive_type) {
-        attr.mark_recursive_reference(*res);
-    }
-
-    if (!flags.not_detect_non_dynamic) {
-        attr.detect_non_dynamic_type(*res);
-    }
-
-    if (!flags.not_detect_alignment) {
-        attr.analyze_bit_size_and_alignment(*res);
-    }
-
-    if (!flags.not_resolve_state_dependency) {
-        brgen::middle::resolve_state_dependency(*res);
+    if (code != exit_ok) {
+        return code;
     }
 
     if (cout.is_tty() && !flags.print_json) {
@@ -695,13 +710,13 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
     brgen::JSONWriter d;
     d.set_no_colon_space(true);
     if (flags.debug_json) {
-        d = dump_json_file(files, *res, "ast", err_or_warn);
+        d = dump_json_file(files, true, res, "ast", std::move(err_or_warn));
     }
     else {
         brgen::ast::JSONConverter c;
         c.obj.set_no_colon_space(true);
-        c.encode(*res);
-        d = dump_json_file(files, c.obj, "ast", err_or_warn);
+        c.encode(res);
+        d = dump_json_file(files, true, c.obj, "ast", std::move(err_or_warn));
     }
     cout << futils::wrap::pack(d.out(), cout.is_tty() ? "\n" : "");
 

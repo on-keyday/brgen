@@ -64,12 +64,14 @@ namespace brgen {
 
     namespace ast {
         struct TokenFile {
+            bool success = false;
             std::vector<std::string> files;
             std::optional<std::vector<lexer::Token>> tokens;
             std::optional<SourceError> error;
 
             bool from_json(const auto& j) {
                 JSON_PARAM_BEGIN(*this, j)
+                FROM_JSON_PARAM(success, "success")
                 FROM_JSON_PARAM(files, "files")
                 FROM_JSON_PARAM(tokens, "tokens")
                 FROM_JSON_PARAM(error, "error")
@@ -78,12 +80,14 @@ namespace brgen {
         };
 
         struct AstFile {
+            bool success = false;
             std::vector<std::string> files;
             std::optional<JSON> ast;
             std::optional<SourceError> error;
 
             bool from_json(const auto& j) {
                 JSON_PARAM_BEGIN(*this, j)
+                FROM_JSON_PARAM(success, "success")
                 FROM_JSON_PARAM(files, "files")
                 FROM_JSON_PARAM(ast, "ast")
                 FROM_JSON_PARAM(error, "error")
