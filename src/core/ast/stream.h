@@ -139,6 +139,10 @@ namespace brgen::ast {
             return *cur;
         }
 
+        lexer::Token peek_token() {
+            return *cur;
+        }
+
         std::optional<lexer::Token> consume_token(std::string_view s) {
             if (auto token = peek_token(s)) {
                 consume();
@@ -239,6 +243,13 @@ namespace brgen::ast {
                 return;
             }
             cur--;
+        }
+
+        std::optional<lexer::Token> prev_token() {
+            if (cur == tokens.begin()) {
+                return std::nullopt;
+            }
+            return *std::prev(cur);
         }
 
        private:

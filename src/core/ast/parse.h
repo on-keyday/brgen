@@ -127,9 +127,59 @@ namespace brgen::ast {
        private:
         friend struct ParserTest;
 
+        void consume_ident_sign_with_error_tolerant() {
+            auto ok = s.consume_token(":");
+            if (!ok) {
+                if (auto p = s.prev_token(); p && p->tag == lexer::Tag::indent) {
+                    s.backward();
+                }
+                if (auto p = s.prev_token(); p && p->tag == lexer::Tag::line) {
+                    s.backward();  // for error report correctly
+                    state.errors.locations.push_back(s.token_error(":").locations[0]);
+                    s.must_consume_token(lexer::Tag::line);
+                }
+                else {
+                    state.errors.locations.push_back(s.token_error(":").locations[0]);
+                }
+                return;  // error tolerant mode; ignore error
+            }
+            s.skip_space();
+            ok = s.consume_token(lexer::Tag::line);
+            if (!ok) {
+                while (true) {  // first, rollback to previous ":"
+                    if (auto p = s.prev_token(); p && p->token == ":") {
+                        s.backward();
+                        break;
+                    }
+                    else if (!p) {
+                        s.report_error(s.loc(), "unexpected state on error recover; parser bug!!");
+                    }
+                    s.backward();
+                }
+                if (auto indent = s.prev_token(); indent && indent->tag == lexer::Tag::indent) {
+                    s.backward();
+                }
+                if (auto line = s.prev_token(); line && line->tag == lexer::Tag::line) {
+                    s.backward();  // for error report correctly
+                    state.errors.locations.push_back(s.token_error(lexer::Tag::line).locations[0]);
+                    s.must_consume_token(lexer::Tag::line);
+                }
+                else {
+                    state.errors.locations.push_back(s.token_error(lexer::Tag::line).locations[0]);
+                }
+                return;  // error tolerant mode; ignore error
+            }
+            s.skip_line();
+            return;
+        }
+
         // :\\r\\n
         void must_consume_indent_sign() {
             s.skip_white();
+            if (state.error_tolerant) {
+                consume_ident_sign_with_error_tolerant();
+                return;
+            }
             s.must_consume_token(":");
             s.skip_space();
             s.must_consume_token(lexer::Tag::line);
@@ -530,6 +580,7 @@ namespace brgen::ast {
                 if (c->size() != 1) {
                     s.report_error(lit.loc, "invalid char literal; expect 1 char but got ", nums(c->size()));
                 }
+                code = (*c)[0];
             }
             literal->code = code;
             return literal;
@@ -608,7 +659,7 @@ namespace brgen::ast {
             }
             else if (state.error_tolerant) {  // not found ident
                 auto err = s.token_error(lexer::Tag::ident);
-                state.errors.locations.insert(state.errors.locations.end(), err.locations.begin(), err.locations.end());
+                state.errors.locations.push_back(err.locations[0]);
                 return std::make_shared<BadExpr>(s.loc(), brgen::concat(state.errors.locations.back().msg));
             }
             return parse_ident();
@@ -784,7 +835,11 @@ namespace brgen::ast {
                 assign->op == ast::BinaryOp::in_assign) {
                 auto ident = ast::as<ast::Ident>(assign->left);
                 if (!ident) {
-                    s.report_error(assign->left->loc, "left of := or ::= must be ident");
+                    if (state.error_tolerant) {
+                        (void)state.errors.error(assign->left->loc, "left of `:=`, `::=`, or `in` must be ident");
+                        return;
+                    }
+                    s.report_error(assign->left->loc, "left of `:=`, `::=`, or `in` must be ident");
                 }
                 ident->usage = assign->op == ast::BinaryOp::const_assign
                                    ? ast::IdentUsage::define_const
@@ -797,7 +852,11 @@ namespace brgen::ast {
             else {  // otherwise, assign
                 std::shared_ptr<ast::Ident> ident;
                 if (!is_finally_ident(assign->left, &ident)) {
-                    s.report_error(assign->left->loc, "left of = must be ident, member access, indexed or input/output/config");
+                    if (state.error_tolerant) {
+                        (void)state.errors.error(assign->left->loc, "left of `=` must be ident, member access, indexed or input/output/config");
+                        return;
+                    }
+                    s.report_error(assign->left->loc, "left of `=` must be ident, member access, indexed or input/output/config");
                 }
                 if (ident) {
                     rewrite_ident_scope(ident);

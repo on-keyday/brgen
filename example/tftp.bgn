@@ -1,0 +1,35 @@
+
+enum OpCode:
+    :u16
+    RRQ = 1 # Read Request
+    WRQ = 2 # Write Request
+    DATA = 3  # Data
+    ACK = 4 # Acknowledgment
+    ERROR = 5 # Error
+
+format Packet:
+    op :OpCode
+    match op:
+        OpCode.RRQ => rrq :Request
+        OpCode.WRQ => wrq :Request
+        OpCode.DATA => data :Data
+        OpCode.ACK => ack :Ack
+        OpCode.ERROR => error :Error
+
+format Request:
+    fileName :[..]u8
+    :"\0"
+    mode :[..]u8
+    :"\0"
+
+format Data:
+    blockNumber :u16
+    data :[..]u8
+
+format Ack:
+    blockNumber :u16
+
+format Error:
+    errorCode :u16
+    errorMsg :[..]u8
+    :"\0"

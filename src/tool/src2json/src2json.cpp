@@ -43,7 +43,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
     bool not_resolve_explicit_error = false;
     bool not_resolve_io_operation = false;
     bool not_detect_recursive_type = false;
-    bool not_detect_int_set = false;
+    bool not_detect_non_dynamic = false;
     bool not_detect_alignment = false;
     bool not_resolve_state_dependency = false;
     bool not_resolve_metadata = false;
@@ -94,6 +94,8 @@ struct Flags : futils::cmdline::templ::HelpOption {
 
     // std::string_view error_diagnostic;
 
+    bool error_tolerant = false;
+
     void bind(futils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&version, "version", "print version");
@@ -109,7 +111,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
         ctx.VarBool(&not_resolve_available, "not-resolve-available", "not resolve available");
         ctx.VarBool(&not_resolve_endian_spec, "not-resolve-endian-spec", "not resolve endian-spec");
         ctx.VarBool(&not_detect_recursive_type, "not-detect-recursive-type", "not detect recursive type");
-        ctx.VarBool(&not_detect_int_set, "not-detect-int-set", "not detect int set");
+        ctx.VarBool(&not_detect_non_dynamic, "not-detect-non-dynamic", "not detect non-dynamic type");
         ctx.VarBool(&not_detect_alignment, "not-detect-alignment", "not detect alignment");
         ctx.VarBool(&not_resolve_explicit_error, "not-resolve-explicit-error", "not resolve explicit error");
         ctx.VarBool(&not_resolve_io_operation, "not-resolve-io-operation", "not resolve io operation");
@@ -183,6 +185,8 @@ struct Flags : futils::cmdline::templ::HelpOption {
         ctx.VarString(&port, "port", "set port of http server", "<port>");
         ctx.VarBool(&check_http, "check-http", "check http mode is enabled (for debug)");
         ctx.VarBool(&use_unsafe_escape, "unsafe-escape", "use unsafe escape (this flag make json escape via http unsafe; ansi color escape sequence is not escaped)");
+
+        ctx.VarBool(&error_tolerant, "error-tolerant", "error tolerant mode (for lsp) (experimental)");
     }
 };
 
@@ -202,11 +206,15 @@ auto print_ok() {
     }
 }
 
-auto do_parse(brgen::File* file, bool collect_comments) {
+auto do_parse(brgen::File* file, Flags& flags) {
     brgen::ast::Context c;
-    c.set_collect_comments(collect_comments);
+    c.set_collect_comments(flags.collect_comments);
+
     return c.enter_stream(file, [&](brgen::ast::Stream& s) {
-        return brgen::ast::Parser{s}.parse();
+        auto p = brgen::ast::Parser{s};
+        p.state.error_tolerant = flags.error_tolerant;
+        auto res = p.parse();
+        return res;
     });
 }
 
@@ -568,7 +576,7 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
         return exit_err;
     }
 
-    auto res = do_parse(input, flags.collect_comments).transform_error(brgen::to_source_error(files));
+    auto res = do_parse(input, flags).transform_error(brgen::to_source_error(files));
 
     if (!res) {
         report_error(std::move(res.error()));
@@ -595,7 +603,7 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
         brgen::middle::resolve_available(*res);
     }
 
-    brgen::SourceError err_or_warn;
+    brgen::LocationError err_or_warn;
 
     if (!flags.not_resolve_endian_spec) {
         brgen::middle::replace_specify_order(*res);
@@ -622,11 +630,10 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
     }
 
     if (!flags.not_resolve_type) {
-        auto ty = brgen::middle::Typing{};
-        auto res3 = ty.typing(*res);
+        brgen::LocationError warns;
+        auto res3 = brgen::middle::analyze_type(*res, warns);
         if (!res3) {
             if (!flags.omit_warning) {
-                auto warns = ty.warnings;
                 warns.locations.insert(warns.locations.end(), res3.error().locations.begin(), res3.error().locations.end());
                 report_error(brgen::to_source_error(files)(std::move(warns)));
             }
@@ -635,22 +642,19 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
             }
             return exit_err;
         }
-        if (flags.unresolved_type_as_error && ty.warnings.locations.size() > 0) {
-            report_error(brgen::to_source_error(files)(std::move(ty.warnings)));
+        if (flags.unresolved_type_as_error && err_or_warn.locations.size() > 0) {
+            report_error(brgen::to_source_error(files)(std::move(warns)));
             return exit_err;
         }
-        if (!flags.disable_untyped_warning && ty.warnings.locations.size() > 0) {
-            auto warns = brgen::to_source_error(files)(std::move(ty.warnings));
+        if (!flags.disable_untyped_warning && err_or_warn.locations.size() > 0) {
+            auto warns = brgen::to_source_error(files)(std::move(warns));
             print_warnings(warns);
-            if (!flags.omit_warning) {
-                err_or_warn = std::move(warns);
-            }
         }
     }
 
     if (!flags.not_resolve_assert) {
         brgen::LocationError err;
-        brgen::middle::replace_assert(err, *res);
+        brgen::middle::replace_assert(*res, err);
         if (!flags.disable_unused_warning && err.locations.size() > 0) {
             auto tmp = brgen::to_source_error(files)(std::move(err));
             print_warnings(tmp);
@@ -663,15 +667,15 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
     brgen::middle::TypeAttribute attr;
 
     if (!flags.not_detect_recursive_type) {
-        attr.recursive_reference(*res);
+        attr.mark_recursive_reference(*res);
     }
 
-    if (!flags.not_detect_int_set) {
-        attr.int_type_detection(*res);
+    if (!flags.not_detect_non_dynamic) {
+        attr.detect_non_dynamic_type(*res);
     }
 
     if (!flags.not_detect_alignment) {
-        attr.bit_alignment(*res);
+        attr.analyze_bit_size_and_alignment(*res);
     }
 
     if (!flags.not_resolve_state_dependency) {
