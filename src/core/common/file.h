@@ -100,10 +100,10 @@ namespace brgen {
         }
 
        public:
-        SourceEntry error(std::string&& msg, lexer::Loc loc, bool warn = false) {
+        SourceEntry error(auto&& msg, lexer::Loc loc, bool warn = false) {
             auto [src, _] = dump(loc.pos);
             return SourceEntry{
-                std::move(msg),
+                std::forward<decltype(msg)>(msg),
                 file_name.generic_string(),
                 loc,
                 std::move(src),

@@ -12,15 +12,13 @@ std::shared_ptr<ast::Program> parse_and_typing(auto text) {
     make_file_from_text<std::string>(file, text);
     ast::Context c;
     auto s = c.enter_stream(&file, [&](ast::Stream& s) {
-        ast::Parser p{s};
-        return p.parse();
+        return ast::parse(s, nullptr);
     });
     [&] {
         ASSERT_TRUE(s);
     }();
     auto p = (*s);
-    middle::Typing typing;
-    auto r = typing.typing(p);
+    auto r = middle::analyze_type(p);
     [&] {
         ASSERT_TRUE(s);
     }();
@@ -33,7 +31,7 @@ format A:
     a :A
 )");
     middle::TypeAttribute attr;
-    attr.recursive_reference(r);
+    attr.mark_recursive_reference(r);
     ASSERT_FALSE(r->struct_type->recursive);
     auto& fields = r->struct_type->fields;
     ASSERT_EQ(fields.size(), 1);
@@ -57,7 +55,7 @@ format D:
     d :[10]D
 )");
     middle::TypeAttribute attr;
-    attr.recursive_reference(r);
+    attr.mark_recursive_reference(r);
     ASSERT_FALSE(r->struct_type->recursive);
     auto& fields = r->struct_type->fields;
     ASSERT_EQ(fields.size(), 4);
@@ -87,7 +85,7 @@ format B:
     a :u8
     )");
     middle::TypeAttribute attr;
-    attr.recursive_reference(r);
+    attr.mark_recursive_reference(r);
     attr.int_type_detection(r);
     ASSERT_TRUE(r->struct_type->non_dynamic_allocation);
     ASSERT_EQ(r->struct_type->fields.size(), 2);
@@ -141,7 +139,7 @@ format E:
         b :u16
     )");
     middle::TypeAttribute attr;
-    attr.recursive_reference(r);
+    attr.mark_recursive_reference(r);
     attr.int_type_detection(r);
     ASSERT_TRUE(r->struct_type->non_dynamic_allocation);
     ASSERT_EQ(r->struct_type->fields.size(), 5);
@@ -227,7 +225,7 @@ format A:
         b :u16
 )");
     middle::TypeAttribute attr;
-    attr.recursive_reference(r);
+    attr.mark_recursive_reference(r);
     attr.int_type_detection(r);
     ASSERT_TRUE(r->struct_type->non_dynamic_allocation);
     ASSERT_EQ(r->struct_type->fields.size(), 1);
@@ -265,7 +263,7 @@ format B:
     e :u2
 )");
     middle::TypeAttribute attr;
-    attr.recursive_reference(r);
+    attr.mark_recursive_reference(r);
     attr.int_type_detection(r);
     attr.bit_alignment(r);
     ASSERT_EQ(r->struct_type->bit_alignment, ast::BitAlignment::byte_aligned);
@@ -339,7 +337,7 @@ format C:
     a :[dataOffset * 4 - 20]u8
     )");
     middle::TypeAttribute attr;
-    attr.recursive_reference(r);
+    attr.mark_recursive_reference(r);
     attr.int_type_detection(r);
     attr.bit_alignment(r);
     ASSERT_EQ(r->struct_type->bit_alignment, ast::BitAlignment::byte_aligned);
@@ -501,7 +499,7 @@ format F:
 
     )");
     middle::TypeAttribute attr;
-    attr.recursive_reference(r);
+    attr.mark_recursive_reference(r);
     attr.int_type_detection(r);
     attr.bit_alignment(r);
     ASSERT_EQ(r->struct_type->bit_alignment, ast::BitAlignment::byte_aligned);

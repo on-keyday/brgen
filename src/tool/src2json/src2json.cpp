@@ -731,7 +731,7 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
     d.set_no_colon_space(true);
     auto src_err = brgen::to_source_error(files)(err_or_warn);
     if (flags.debug_json) {
-        d = dump_json_file(files, true, res, "ast", src_err);
+        d = dump_json_file(files, true, *res, "ast", src_err);
     }
     else {
         brgen::ast::JSONConverter c;

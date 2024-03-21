@@ -68,8 +68,7 @@ namespace brgen::ast {
         auto input = files.get_input(GetParam());
         ASSERT_TRUE(::testing::AssertionResult(bool(input)) << input->path());
         auto prog = ctx.enter_stream(input, [&](ast::Stream& s) {
-                           auto p = ast::Parser{s};
-                           return p.parse();
+                           return ast::parse(s, nullptr);
                        })
                         .transform_error(to_source_error(files))
                         .transform_error([](SourceError&& err) {

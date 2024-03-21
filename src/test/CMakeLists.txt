@@ -12,6 +12,8 @@ endif()
 
 add_library(ast_test_component STATIC
 "core/ast_test_component.cpp"
+"../core/ast/parse.cpp"
+"../core/middle/typing.cpp"
 )
 
 

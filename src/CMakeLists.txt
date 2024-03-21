@@ -6,7 +6,12 @@ cmake_minimum_required(VERSION 3.22.1)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tool")
 
 
-add_executable(src2json "tool/src2json/src2json.cpp" "tool/src2json/entry.cpp")
+add_executable(src2json 
+    "tool/src2json/src2json.cpp" 
+    "tool/src2json/entry.cpp"
+    "core/ast/parse.cpp"
+    "core/middle/typing.cpp"
+)
 target_link_libraries(src2json futils)
 add_compile_definitions(BRGEN_VERSION="${PROJECT_VERSION}")
 

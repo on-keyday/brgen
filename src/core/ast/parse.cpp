@@ -1,5 +1,4 @@
 /*license*/
-#pragma once
 #include "stream.h"
 #include "node/scope.h"
 #include "parse.h"
@@ -1644,8 +1643,12 @@ namespace brgen::ast {
         }
     };
 
-    std::shared_ptr<ast::Program> parse(Stream& stream, LocationError& err_or_warn, ParseOption option = {}) {
-        Parser p(stream, err_or_warn);
+    std::shared_ptr<ast::Program> parse(Stream& stream, LocationError* err_or_warn, ParseOption option) {
+        LocationError ignore;
+        if (!err_or_warn) {
+            err_or_warn = &ignore;
+        }
+        Parser p(stream, *err_or_warn);
         stream.set_collect_comments(option.collect_comments);
         p.state.error_tolerant = option.error_tolerant;
         return p.parse();

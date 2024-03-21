@@ -119,7 +119,7 @@ namespace brgen::middle {
                 else {
                     ast::Context c;
                     auto p = c.enter_stream(new_input, [&](ast::Stream& s) {
-                        return ast::parse(s, err_or_warn, option);
+                        return ast::parse(s, &err_or_warn, option);
                     });
                     if (!p) {
                         auto err = error(conf->loc, "cannot parse file ", new_path.generic_u8string());

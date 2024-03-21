@@ -8,5 +8,5 @@ namespace brgen::ast {
         bool collect_comments = false;
         bool error_tolerant = false;
     };
-    std::shared_ptr<ast::Program> parse(Stream& stream, LocationError& err_or_warn, ParseOption option = {});
+    std::shared_ptr<ast::Program> parse(Stream& stream, LocationError* err_or_warn, ParseOption option = {});
 }  // namespace brgen::ast
