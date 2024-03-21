@@ -341,26 +341,26 @@ namespace brgen {
             return file;
         }
 
-        SourceEntry error(std::string&& msg, lexer::Loc loc, bool warn = false) {
+        SourceEntry error(auto&& msg, lexer::Loc loc, bool warn = false) {
             auto got = get_input(loc.file);
             if (!got) {
                 return SourceEntry{
-                    .msg = std::move(msg),
+                    .msg = std::forward<decltype(msg)>(msg),
                     .file = "<unknown source>",
                     .loc = {0, 0},
                     .src = "",
                     .warn = warn,
                 };
             }
-            return got->error(std::move(msg), loc, warn);
+            return got->error(std::forward<decltype(msg)>(msg), loc, warn);
         }
     };
 
     inline auto to_source_error(FileSet& fs) {
-        return [&](LocationError&& err) {
+        return [&](const LocationError& err) {
             SourceError src;
             for (auto& loc : err.locations) {
-                src.errs.push_back(fs.error(std::move(loc.msg), loc.loc, loc.warn));
+                src.errs.push_back(fs.error(loc.msg, loc.loc, loc.warn));
             }
             if (err.locations.size() == 0) {
                 src.errs.push_back(fs.error("unexpected errors", {}));

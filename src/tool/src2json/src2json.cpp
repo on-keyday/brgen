@@ -77,7 +77,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
 
     bool report_error = false;
 
-    bool omit_warning = false;
+    bool omit_json_warning = false;
 
     brgen::UtfMode input_mode = brgen::UtfMode::utf8;
     brgen::UtfMode interpret_mode = brgen::UtfMode::utf8;
@@ -124,7 +124,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
 
         ctx.VarBool(&print_json, "p,print-json", "print json of ast/tokens to stdout if succeeded (if stdout is tty. if not tty, usually print json ast)");
         ctx.VarBool(&print_on_error, "print-on-error", "print json of ast/tokens to stdout if failed (if stdout is tty. if not tty, usually print json ast)");
-        ctx.VarBool(&omit_warning, "omit-json-warning", "omit warning from json output (if --print-json or --print-on-error)");
+        ctx.VarBool(&omit_json_warning, "omit-json-warning", "omit warning from json output (if --print-json or --print-on-error)");
 
         ctx.VarBool(&debug_json, "d,debug-json", "debug mode json output (not parsable ast, only for debug. use with --print-ast)");
 
@@ -206,15 +206,11 @@ auto print_ok() {
     }
 }
 
-auto do_parse(brgen::File* file, Flags& flags) {
+auto do_parse(brgen::File* file, brgen::ast::ParseOption option, brgen::LocationError& err_or_warn) {
     brgen::ast::Context c;
-    c.set_collect_comments(flags.collect_comments);
-
     return c.enter_stream(file, [&](brgen::ast::Stream& s) {
-        auto p = brgen::ast::Parser{s};
-        p.state.error_tolerant = flags.error_tolerant;
-        auto res = p.parse();
-        return res;
+        return brgen::ast::parse(s, err_or_warn,
+                                 option);
     });
 }
 
@@ -309,8 +305,7 @@ struct DiagnosticInfo {
     }
 };
 
-auto dump_json_file(brgen::FileSet& files, bool ok, auto&& elem, const char* elem_key, brgen::LocationError&& err) {
-    auto src_err = brgen::to_source_error(files)(std::move(err));
+auto dump_json_file(brgen::FileSet& files, bool ok, auto&& elem, const char* elem_key, const brgen::SourceError& err) {
     brgen::JSONWriter d;
     {
         auto field = d.object();
@@ -327,7 +322,7 @@ auto dump_json_file(brgen::FileSet& files, bool ok, auto&& elem, const char* ele
         }
     }
     return d;
-};
+}
 
 int print_spec(Flags& flags) {
     if (flags.check_ast && flags.stdin_mode && !flags.via_http) {
@@ -344,28 +339,66 @@ int print_spec(Flags& flags) {
     return exit_ok;
 }
 
+auto print_errors(const brgen::SourceError& err, bool warn_as_error = false) {
+    err.for_each_error([&](std::string_view msg, bool w) {
+        if (!warn_as_error && w) {
+            print_warning(msg);
+        }
+        else {
+            print_error(msg);
+        }
+    });
+}
+
+auto report_error(Flags& flags, brgen::FileSet& files, brgen::LocationError&& loc_err, bool warn = false, const char* key = "ast") {
+    auto src_err = brgen::to_source_error(files)(loc_err);
+    if (!cout.is_tty() || flags.print_on_error) {
+        auto d = dump_json_file(files, false, nullptr, key, src_err);
+        cout << futils::wrap::pack(d.out(), cout.is_tty() ? "\n" : "");
+    }
+    print_errors(src_err, flags.unresolved_type_as_error);
+    src_err.for_each_error([&](std::string_view msg, bool w) {
+        if (w && !flags.unresolved_type_as_error) {
+            print_warning(msg);
+        }
+        else {
+            print_error(msg);
+        }
+    });
+}
+
 int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& files, brgen::File* input, Flags& flags, const Capability& cap, brgen::LocationError& err_or_warn) {
     assert(p);
-    auto to_src_error = brgen::to_source_error(files);
-    auto res = do_parse(input, flags);
+    auto report = [&](brgen::LocationError&& err) {
+        if (err_or_warn.locations.size()) {
+            err_or_warn.locations.insert(err_or_warn.locations.end(), err.locations.begin(), err.locations.end());
+            err = std::move(err_or_warn);
+        }
+        report_error(flags, files, std::move(err));
+    };
+
+    auto option = brgen::ast::ParseOption{
+        .collect_comments = flags.collect_comments,
+        .error_tolerant = flags.error_tolerant,
+    };
+
+    auto res = do_parse(input, option, err_or_warn);
 
     if (!res) {
-        report_error(to_src_error(std::move(res.error())));
+        report(std::move(res.error()));
         return exit_err;
     }
 
-    const auto kill = futils::helper::defer([&] {
-        brgen::ast::kill_node(*res);
-    });
+    *p = std::move(*res);
 
     if (!flags.not_resolve_import) {
         if (!cap.importer) {
             print_error("import is disabled");
             return exit_err;
         }
-        auto res2 = brgen::middle::resolve_import(*res, files).transform_error(brgen::to_source_error(files));
+        auto res2 = brgen::middle::resolve_import(*p, files, err_or_warn, option);
         if (!res2) {
-            report_error(std::move(res2.error()));
+            report(std::move(res2.error()));
             return exit_err;
         }
     }
@@ -374,8 +407,6 @@ int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& f
         brgen::middle::resolve_available(*res);
     }
 
-    brgen::LocationError err_or_warn;
-
     if (!flags.not_resolve_endian_spec) {
         brgen::middle::replace_specify_order(*res);
     }
@@ -383,7 +414,7 @@ int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& f
     if (!flags.not_resolve_explicit_error) {
         auto res2 = brgen::middle::replace_explicit_error(*res);
         if (!res2) {
-            report_error(brgen::to_source_error(files)(std::move(res2.error())));
+            report(std::move(res2.error()));
             return exit_err;
         }
     }
@@ -391,7 +422,7 @@ int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& f
     if (!flags.not_resolve_io_operation) {
         auto res2 = brgen::middle::resolve_io_operation(*res);
         if (!res2) {
-            report_error(brgen::to_source_error(files)(std::move(res2.error())));
+            report(std::move(res2.error()));
             return exit_err;
         }
     }
@@ -404,34 +435,35 @@ int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& f
         brgen::LocationError warns;
         auto res3 = brgen::middle::analyze_type(*res, warns);
         if (!res3) {
-            if (!flags.omit_warning) {
+            if (!flags.omit_json_warning) {
                 warns.locations.insert(warns.locations.end(), res3.error().locations.begin(), res3.error().locations.end());
-                report_error(brgen::to_source_error(files)(std::move(warns)));
+                res3.error() = std::move(warns);
             }
-            else {
-                report_error(brgen::to_source_error(files)(std::move(res3.error())));
-            }
+            report(std::move(res3.error()));
             return exit_err;
         }
         if (flags.unresolved_type_as_error && err_or_warn.locations.size() > 0) {
-            report_error(brgen::to_source_error(files)(std::move(warns)));
+            report(std::move(warns));
             return exit_err;
         }
         if (!flags.disable_untyped_warning && err_or_warn.locations.size() > 0) {
-            auto warns = brgen::to_source_error(files)(std::move(warns));
-            print_warnings(warns);
+            if (!flags.omit_json_warning) {
+                err_or_warn.locations.insert(err_or_warn.locations.end(), warns.locations.begin(), warns.locations.end());
+            }
+            auto src_err = brgen::to_source_error(files)(std::move(warns));
+            print_errors(src_err);
         }
     }
 
     if (!flags.not_resolve_assert) {
-        brgen::LocationError err;
-        brgen::middle::replace_assert(*res, err);
-        if (!flags.disable_unused_warning && err.locations.size() > 0) {
-            auto tmp = brgen::to_source_error(files)(std::move(err));
-            print_warnings(tmp);
-            if (!flags.omit_warning) {
-                err_or_warn.errs.insert(err_or_warn.errs.end(), tmp.errs.begin(), tmp.errs.end());
+        brgen::LocationError warns;
+        brgen::middle::replace_assert(*res, warns);
+        if (!flags.disable_unused_warning && warns.locations.size() > 0) {
+            if (!flags.omit_json_warning) {
+                err_or_warn.locations.insert(err_or_warn.locations.end(), warns.locations.begin(), warns.locations.end());
             }
+            auto tmp = brgen::to_source_error(files)(std::move(warns));
+            print_errors(tmp);
         }
     }
 
@@ -452,99 +484,32 @@ int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& f
     if (!flags.not_resolve_state_dependency) {
         brgen::middle::resolve_state_dependency(*res);
     }
+
+    return exit_ok;
 }
 
-int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap) {
-    if (flags.version) {
-        cout << futils::wrap::pack("src2json version ", src2json_version, " (lang version ", lang_version, ")\n");
-        return exit_ok;
+void print_stdio_type() {
+    if (auto s = futils::wrap::cin_wrap().get_file().stat()) {
+        print_note("detected stdin type: ", to_string(s->mode.type()));
     }
-    if (flags.spec) {
-        return print_spec(flags);
+    else {
+        print_warning("cannot detect stdin type");
     }
+    if (auto s = cout.get_file().stat()) {
+        print_note("detected stdout type: ", to_string(s->mode.type()));
+    }
+    else {
+        print_warning("cannot detect stdout type");
+    }
+    if (auto s = cerr.get_file().stat()) {
+        print_note("detected stderr type: ", to_string(s->mode.type()));
+    }
+    else {
+        print_warning("cannot detect stderr type");
+    }
+}
 
-    if (flags.cout_color_mode == ColorMode::auto_color) {
-        if (cout.is_tty()) {
-            flags.cout_color_mode = ColorMode::force_color;
-        }
-        else {
-            flags.cout_color_mode = ColorMode::no_color;
-        }
-    }
-    if (flags.cerr_color_mode == ColorMode::auto_color) {
-        if (cerr.is_tty()) {
-            flags.cerr_color_mode = ColorMode::force_color;
-        }
-        else {
-            flags.cerr_color_mode = ColorMode::no_color;
-        }
-    }
-    cout_color_mode = flags.cout_color_mode;
-    cerr_color_mode = flags.cerr_color_mode;
-    force_print_ok = flags.force_ok;
-    if (flags.via_http) {
-        if (!cap.network) {
-            print_error("network mode is disabled");
-            return exit_err;
-        }
-#ifdef S2J_USE_NETWORK
-        return network_main(flags.port.c_str(), flags.use_unsafe_escape, cap);
-#else
-        print_error("network mode is not supported");
-        return exit_err;
-#endif
-    }
-    if (flags.check_http) {
-#ifdef S2J_USE_NETWORK
-        print_ok();
-        return exit_ok;
-#else
-        print_error("network mode is not supported");
-        return exit_err;
-#endif
-    }
-    if (flags.detected_stdio_type) {
-        if (auto s = futils::wrap::cin_wrap().get_file().stat()) {
-            print_note("detected stdin type: ", to_string(s->mode.type()));
-        }
-        else {
-            print_warning("cannot detect stdin type");
-        }
-        if (auto s = cout.get_file().stat()) {
-            print_note("detected stdout type: ", to_string(s->mode.type()));
-        }
-        else {
-            print_warning("cannot detect stdout type");
-        }
-        if (auto s = cerr.get_file().stat()) {
-            print_note("detected stderr type: ", to_string(s->mode.type()));
-        }
-        else {
-            print_warning("cannot detect stderr type");
-        }
-    }
-
-    flags.argv_mode = flags.argv_input.size() > 0;
-
-    if (flags.dump_types) {
-        return dump_types();
-    }
-
-    if (flags.stdin_mode && flags.argv_mode) {
-        print_error("cannot use --stdin and --argv at the same time");
-        return exit_err;
-    }
-
-    if (!flags.stdin_mode && !flags.argv_mode && flags.args.size() == 0) {
-        print_error("no input file");
-        return exit_err;
-    }
-
-    if (flags.args.size() > 1) {
-        print_error("only one file is supported now");
-        return exit_err;
-    }
-
+int load_file(Flags& flags, brgen::FileSet& files, brgen::File*& input, const Capability& cap) {
     std::string_view name;
     if (flags.stdin_mode || flags.argv_mode) {
         name = flags.as_file_name;
@@ -553,9 +518,7 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
         name = flags.args[0];
     }
 
-    brgen::FileSet files;
     files.set_utf_mode(flags.input_mode, flags.interpret_mode);
-    brgen::File* input = nullptr;
     if (flags.argv_mode) {
         if (!cap.argv) {
             print_error("argv mode is disabled");
@@ -626,6 +589,88 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
             return exit_err;
         }
     }
+}
+
+int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap) {
+    if (flags.version) {
+        cout << futils::wrap::pack("src2json version ", src2json_version, " (lang version ", lang_version, ")\n");
+        return exit_ok;
+    }
+    if (flags.spec) {
+        return print_spec(flags);
+    }
+
+    if (flags.cout_color_mode == ColorMode::auto_color) {
+        if (cout.is_tty()) {
+            flags.cout_color_mode = ColorMode::force_color;
+        }
+        else {
+            flags.cout_color_mode = ColorMode::no_color;
+        }
+    }
+    if (flags.cerr_color_mode == ColorMode::auto_color) {
+        if (cerr.is_tty()) {
+            flags.cerr_color_mode = ColorMode::force_color;
+        }
+        else {
+            flags.cerr_color_mode = ColorMode::no_color;
+        }
+    }
+    cout_color_mode = flags.cout_color_mode;
+    cerr_color_mode = flags.cerr_color_mode;
+    force_print_ok = flags.force_ok;
+    if (flags.via_http) {
+        if (!cap.network) {
+            print_error("network mode is disabled");
+            return exit_err;
+        }
+#ifdef S2J_USE_NETWORK
+        return network_main(flags.port.c_str(), flags.use_unsafe_escape, cap);
+#else
+        print_error("network mode is not supported");
+        return exit_err;
+#endif
+    }
+    if (flags.check_http) {
+#ifdef S2J_USE_NETWORK
+        print_ok();
+        return exit_ok;
+#else
+        print_error("network mode is not supported");
+        return exit_err;
+#endif
+    }
+    if (flags.detected_stdio_type) {
+        print_stdio_type();
+    }
+
+    flags.argv_mode = flags.argv_input.size() > 0;
+
+    if (flags.dump_types) {
+        return dump_types();
+    }
+
+    if (flags.stdin_mode && flags.argv_mode) {
+        print_error("cannot use --stdin and --argv at the same time");
+        return exit_err;
+    }
+
+    if (!flags.stdin_mode && !flags.argv_mode && flags.args.size() == 0) {
+        print_error("no input file");
+        return exit_err;
+    }
+
+    if (flags.args.size() > 1) {
+        print_error("only one file is supported now");
+        return exit_err;
+    }
+
+    brgen::FileSet files;
+    brgen::File* input = nullptr;
+    auto code = load_file(flags, files, input, cap);
+    if (code != exit_ok) {
+        return code;
+    }
 
     if (flags.check_ast) {
         if (!cap.check_ast) {
@@ -636,47 +681,22 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
             print_error("--check-ast mode only support utf8 for --input-mode");
             return exit_err;
         }
-        return check_ast(name, input->source());
+        auto tmp = input->path().generic_u8string();
+        return check_ast((char*)tmp.c_str(), input->source());
     }
-
-    auto print_warnings = [&](const brgen::SourceError& err, bool warn_as_error = false) {
-        err.for_each_error([&](std::string_view msg, bool w) {
-            if (!warn_as_error && w) {
-                print_warning(msg);
-            }
-            else {
-                print_error(msg);
-            }
-        });
-    };
-
-    auto report_error = [&](brgen::SourceError&& res, bool warn = false, const char* key = "ast") {
-        if (!cout.is_tty() || flags.print_on_error) {
-            auto d = dump_json_file(files, nullptr, key, res);
-            cout << futils::wrap::pack(d.out(), cout.is_tty() ? "\n" : "");
-        }
-        res.for_each_error([&](std::string_view msg, bool w) {
-            if (w && !flags.unresolved_type_as_error) {
-                print_warning(msg);
-            }
-            else {
-                print_error(msg);
-            }
-        });
-    };
 
     if (flags.lexer) {
         if (!cap.lexer) {
             print_error("lexer mode is disabled");
             return exit_err;
         }
-        auto res = do_lex(input, flags.tokenization_limit).transform_error(brgen::to_source_error(files));
+        auto res = do_lex(input, flags.tokenization_limit);
         if (!res) {
-            report_error(std::move(res.error()), false, "tokens");
+            report_error(flags, files, std::move(res.error()), false, "tokens");
             return exit_err;
         }
         if (!cout.is_tty() || flags.print_json) {
-            auto d = dump_json_file(files, true, *res, "tokens", brgen::LocationError{});
+            auto d = dump_json_file(files, true, *res, "tokens", brgen::SourceError{});
             cout << futils::wrap::pack(d.out(), cout.is_tty() ? "\n" : "");
         }
         else {
@@ -691,7 +711,7 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
     }
     brgen::LocationError err_or_warn;
     std::shared_ptr<brgen::ast::Program> res;
-    auto code = parse_and_analyze(&res, files, input, flags, cap, err_or_warn);
+    code = parse_and_analyze(&res, files, input, flags, cap, err_or_warn);
 
     if (code != exit_ok) {
         return code;
@@ -709,14 +729,15 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
 
     brgen::JSONWriter d;
     d.set_no_colon_space(true);
+    auto src_err = brgen::to_source_error(files)(err_or_warn);
     if (flags.debug_json) {
-        d = dump_json_file(files, true, res, "ast", std::move(err_or_warn));
+        d = dump_json_file(files, true, res, "ast", src_err);
     }
     else {
         brgen::ast::JSONConverter c;
         c.obj.set_no_colon_space(true);
         c.encode(res);
-        d = dump_json_file(files, true, c.obj, "ast", std::move(err_or_warn));
+        d = dump_json_file(files, true, c.obj, "ast", src_err);
     }
     cout << futils::wrap::pack(d.out(), cout.is_tty() ? "\n" : "");
 

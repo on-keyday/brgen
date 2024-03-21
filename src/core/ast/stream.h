@@ -252,6 +252,10 @@ namespace brgen::ast {
             return *std::prev(cur);
         }
 
+        void set_collect_comments(bool b) {
+            collect_comments = b;
+        }
+
        private:
         auto enter_stream(auto&& fn) -> result<std::invoke_result_t<decltype(fn), Stream&>> {
             try {
@@ -271,10 +275,6 @@ namespace brgen::ast {
         auto enter_stream(File* file, auto&& parser) {
             s.input = file;
             return s.enter_stream(parser);
-        }
-
-        void set_collect_comments(bool b) {
-            s.collect_comments = b;
         }
     };
 
