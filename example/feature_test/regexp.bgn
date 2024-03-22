@@ -1,6 +1,6 @@
 
 format RegExp:
-    reg : /\s/
+    reg : /\s/(input.skip = true)
 
 r ::= /r/gi 
 

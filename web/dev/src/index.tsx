@@ -523,10 +523,10 @@ const setCommon = (m :Map<string,InputListElement>) => {
     }));
     
     const ast = new Map<string,InputListElement>();
+    setCommon(ast);
     commonUI.config.set(Language.JSON_AST,languageSpecificConfig(ast,ConfigKey.COMMON_FILE_NAME,(change) => {
         updateUI();
     }));
-    setCommon(ast);
     const go = new Map<string,InputListElement>();
     go.set(ConfigKey.GO_USE_PUT,{
         "type": "checkbox",
