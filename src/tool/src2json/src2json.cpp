@@ -324,6 +324,21 @@ auto dump_json_file(brgen::FileSet& files, bool ok, auto&& elem, const char* ele
     return d;
 }
 
+auto dump_ast_json(Flags& flags, std::shared_ptr<brgen::ast::Program>& elem) {
+    brgen::JSONWriter d;
+    d.set_no_colon_space(true);
+    if (flags.debug_json) {
+        d.value(elem);
+    }
+    else {
+        brgen::ast::JSONConverter c;
+        c.obj.set_no_colon_space(true);
+        c.encode(elem);
+        d = std::move(c.obj);
+    }
+    return d;
+}
+
 int print_spec(Flags& flags) {
     if (flags.check_ast && flags.stdin_mode && !flags.via_http) {
         cout << R"({
@@ -350,21 +365,13 @@ auto print_errors(const brgen::SourceError& err, bool warn_as_error = false) {
     });
 }
 
-auto report_error(Flags& flags, brgen::FileSet& files, brgen::LocationError&& loc_err, bool warn = false, const char* key = "ast") {
+auto report_error(Flags& flags, auto&& elem, brgen::FileSet& files, brgen::LocationError&& loc_err, bool warn = false, const char* key = "ast") {
     auto src_err = brgen::to_source_error(files)(loc_err);
     if (!cout.is_tty() || flags.print_on_error) {
-        auto d = dump_json_file(files, false, nullptr, key, src_err);
+        auto d = dump_json_file(files, false, elem, key, src_err);
         cout << futils::wrap::pack(d.out(), cout.is_tty() ? "\n" : "");
     }
     print_errors(src_err, flags.unresolved_type_as_error);
-    src_err.for_each_error([&](std::string_view msg, bool w) {
-        if (w && !flags.unresolved_type_as_error) {
-            print_warning(msg);
-        }
-        else {
-            print_error(msg);
-        }
-    });
 }
 
 int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& files, brgen::File* input, Flags& flags, const Capability& cap, brgen::LocationError& err_or_warn) {
@@ -374,7 +381,13 @@ int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& f
             err_or_warn.locations.insert(err_or_warn.locations.end(), err.locations.begin(), err.locations.end());
             err = std::move(err_or_warn);
         }
-        report_error(flags, files, std::move(err));
+        if (*p && flags.error_tolerant) {
+            auto d = dump_ast_json(flags, *p);
+            report_error(flags, d, files, std::move(err));
+        }
+        else {
+            report_error(flags, nullptr, files, std::move(err));
+        }
     };
 
     auto option = brgen::ast::ParseOption{
@@ -693,7 +706,7 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
         }
         auto res = do_lex(input, flags.tokenization_limit);
         if (!res) {
-            report_error(flags, files, std::move(res.error()), false, "tokens");
+            report_error(flags, nullptr, files, std::move(res.error()), false, "tokens");
             return exit_err;
         }
         if (!cout.is_tty() || flags.print_json) {
@@ -727,19 +740,8 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
         print_error("stdout is disabled");
         return exit_err;
     }
-
-    brgen::JSONWriter d;
-    d.set_no_colon_space(true);
     auto src_err = brgen::to_source_error(files)(err_or_warn);
-    if (flags.debug_json) {
-        d = dump_json_file(files, true, *res, "ast", src_err);
-    }
-    else {
-        brgen::ast::JSONConverter c;
-        c.obj.set_no_colon_space(true);
-        c.encode(res);
-        d = dump_json_file(files, true, c.obj, "ast", src_err);
-    }
+    auto d = dump_json_file(files, true, dump_ast_json(flags, res), "ast", src_err);
     cout << futils::wrap::pack(d.out(), cout.is_tty() ? "\n" : "");
 
     return exit_ok;
