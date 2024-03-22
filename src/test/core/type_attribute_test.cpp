@@ -18,7 +18,7 @@ std::shared_ptr<ast::Program> parse_and_typing(auto text) {
         ASSERT_TRUE(s);
     }();
     auto p = (*s);
-    auto r = middle::analyze_type(p);
+    auto r = middle::analyze_type(p, nullptr);
     [&] {
         ASSERT_TRUE(s);
     }();
@@ -86,7 +86,7 @@ format B:
     )");
     middle::TypeAttribute attr;
     attr.mark_recursive_reference(r);
-    attr.int_type_detection(r);
+    attr.detect_non_dynamic_type(r);
     ASSERT_TRUE(r->struct_type->non_dynamic_allocation);
     ASSERT_EQ(r->struct_type->fields.size(), 2);
     auto fmt = ast::as<ast::Format>(r->struct_type->fields[0]);
@@ -140,7 +140,7 @@ format E:
     )");
     middle::TypeAttribute attr;
     attr.mark_recursive_reference(r);
-    attr.int_type_detection(r);
+    attr.detect_non_dynamic_type(r);
     ASSERT_TRUE(r->struct_type->non_dynamic_allocation);
     ASSERT_EQ(r->struct_type->fields.size(), 5);
     auto fmt = ast::as<ast::Format>(r->struct_type->fields[0]);
@@ -226,7 +226,7 @@ format A:
 )");
     middle::TypeAttribute attr;
     attr.mark_recursive_reference(r);
-    attr.int_type_detection(r);
+    attr.detect_non_dynamic_type(r);
     ASSERT_TRUE(r->struct_type->non_dynamic_allocation);
     ASSERT_EQ(r->struct_type->fields.size(), 1);
     auto fmt = ast::as<ast::Format>(r->struct_type->fields[0]);
@@ -264,8 +264,8 @@ format B:
 )");
     middle::TypeAttribute attr;
     attr.mark_recursive_reference(r);
-    attr.int_type_detection(r);
-    attr.bit_alignment(r);
+    attr.detect_non_dynamic_type(r);
+    attr.analyze_bit_size_and_alignment(r);
     ASSERT_EQ(r->struct_type->bit_alignment, ast::BitAlignment::byte_aligned);
     ASSERT_EQ(r->struct_type->fields.size(), 2);
     auto fmt = ast::as<ast::Format>(r->struct_type->fields[0]);
@@ -338,8 +338,8 @@ format C:
     )");
     middle::TypeAttribute attr;
     attr.mark_recursive_reference(r);
-    attr.int_type_detection(r);
-    attr.bit_alignment(r);
+    attr.detect_non_dynamic_type(r);
+    attr.analyze_bit_size_and_alignment(r);
     ASSERT_EQ(r->struct_type->bit_alignment, ast::BitAlignment::byte_aligned);
     ASSERT_EQ(r->struct_type->fields.size(), 3);
     auto fmt = ast::as<ast::Format>(r->struct_type->fields[0]);
@@ -500,8 +500,8 @@ format F:
     )");
     middle::TypeAttribute attr;
     attr.mark_recursive_reference(r);
-    attr.int_type_detection(r);
-    attr.bit_alignment(r);
+    attr.detect_non_dynamic_type(r);
+    attr.analyze_bit_size_and_alignment(r);
     ASSERT_EQ(r->struct_type->bit_alignment, ast::BitAlignment::byte_aligned);
     ASSERT_EQ(r->struct_type->fields.size(), 6);
 

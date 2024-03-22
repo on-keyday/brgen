@@ -209,7 +209,7 @@ auto print_ok() {
 auto do_parse(brgen::File* file, brgen::ast::ParseOption option, brgen::LocationError& err_or_warn) {
     brgen::ast::Context c;
     return c.enter_stream(file, [&](brgen::ast::Stream& s) {
-        return brgen::ast::parse(s, err_or_warn,
+        return brgen::ast::parse(s, &err_or_warn,
                                  option);
     });
 }
@@ -404,15 +404,15 @@ int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& f
     }
 
     if (!flags.not_resolve_available) {
-        brgen::middle::resolve_available(*res);
+        brgen::middle::resolve_available(*p);
     }
 
     if (!flags.not_resolve_endian_spec) {
-        brgen::middle::replace_specify_order(*res);
+        brgen::middle::replace_specify_order(*p);
     }
 
     if (!flags.not_resolve_explicit_error) {
-        auto res2 = brgen::middle::replace_explicit_error(*res);
+        auto res2 = brgen::middle::replace_explicit_error(*p);
         if (!res2) {
             report(std::move(res2.error()));
             return exit_err;
@@ -420,7 +420,7 @@ int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& f
     }
 
     if (!flags.not_resolve_io_operation) {
-        auto res2 = brgen::middle::resolve_io_operation(*res);
+        auto res2 = brgen::middle::resolve_io_operation(*p);
         if (!res2) {
             report(std::move(res2.error()));
             return exit_err;
@@ -428,12 +428,12 @@ int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& f
     }
 
     if (!flags.not_resolve_metadata) {
-        brgen::middle::replace_metadata(*res);
+        brgen::middle::replace_metadata(*p);
     }
 
     if (!flags.not_resolve_type) {
         brgen::LocationError warns;
-        auto res3 = brgen::middle::analyze_type(*res, warns);
+        auto res3 = brgen::middle::analyze_type(*p, &warns);
         if (!res3) {
             if (!flags.omit_json_warning) {
                 warns.locations.insert(warns.locations.end(), res3.error().locations.begin(), res3.error().locations.end());
@@ -457,7 +457,7 @@ int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& f
 
     if (!flags.not_resolve_assert) {
         brgen::LocationError warns;
-        brgen::middle::replace_assert(*res, warns);
+        brgen::middle::replace_assert(*p, warns);
         if (!flags.disable_unused_warning && warns.locations.size() > 0) {
             if (!flags.omit_json_warning) {
                 err_or_warn.locations.insert(err_or_warn.locations.end(), warns.locations.begin(), warns.locations.end());
@@ -470,19 +470,19 @@ int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& f
     brgen::middle::TypeAttribute attr;
 
     if (!flags.not_detect_recursive_type) {
-        attr.mark_recursive_reference(*res);
+        attr.mark_recursive_reference(*p);
     }
 
     if (!flags.not_detect_non_dynamic) {
-        attr.detect_non_dynamic_type(*res);
+        attr.detect_non_dynamic_type(*p);
     }
 
     if (!flags.not_detect_alignment) {
-        attr.analyze_bit_size_and_alignment(*res);
+        attr.analyze_bit_size_and_alignment(*p);
     }
 
     if (!flags.not_resolve_state_dependency) {
-        brgen::middle::resolve_state_dependency(*res);
+        brgen::middle::resolve_state_dependency(*p);
     }
 
     return exit_ok;
@@ -589,6 +589,7 @@ int load_file(Flags& flags, brgen::FileSet& files, brgen::File*& input, const Ca
             return exit_err;
         }
     }
+    return exit_ok;
 }
 
 int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap) {

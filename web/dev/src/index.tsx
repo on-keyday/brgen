@@ -17,6 +17,9 @@ import { FileCandidates, registerFileSelectionCallback } from "./s2j/file_select
 import { ConfigKey, ElementID } from "./types";
 import { save } from "./save-data/save";
 
+1 / 2 / 3 / 4;
+
+
 if(window.MonacoEnvironment === undefined) {
     window.MonacoEnvironment = {
         getWorker: (moduleId, label) => {

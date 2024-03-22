@@ -7,8 +7,7 @@ using namespace brgen;
 
 int main(int argc, char** argv) {
     set_test_handler([](auto& a, File* input, FileSet& fs) {
-        brgen::LocationError err;
-        middle::analyze_type(a, err).transform_error(to_source_error(fs)).value();
+        middle::analyze_type(a, nullptr).transform_error(to_source_error(fs)).value();
         JSONWriter d;
         d.value(*a);
         add_result(std::move(d));

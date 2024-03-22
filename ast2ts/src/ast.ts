@@ -88,6 +88,7 @@ export function isBinaryOp(obj: any): obj is BinaryOp {
 
 export const enum IdentUsage {
 	unknown = "unknown",
+	bad_ident = "bad_ident",
 	reference = "reference",
 	define_variable = "define_variable",
 	define_const = "define_const",
@@ -107,7 +108,7 @@ export const enum IdentUsage {
 };
 
 export function isIdentUsage(obj: any): obj is IdentUsage {
-	return obj && typeof obj === 'string' && (obj === "unknown" || obj === "reference" || obj === "define_variable" || obj === "define_const" || obj === "define_field" || obj === "define_format" || obj === "define_state" || obj === "define_enum" || obj === "define_enum_member" || obj === "define_fn" || obj === "define_cast_fn" || obj === "define_arg" || obj === "reference_type" || obj === "reference_member" || obj === "reference_member_type" || obj === "maybe_type" || obj === "reference_builtin_fn")
+	return obj && typeof obj === 'string' && (obj === "unknown" || obj === "bad_ident" || obj === "reference" || obj === "define_variable" || obj === "define_const" || obj === "define_field" || obj === "define_format" || obj === "define_state" || obj === "define_enum" || obj === "define_enum_member" || obj === "define_fn" || obj === "define_cast_fn" || obj === "define_arg" || obj === "reference_type" || obj === "reference_member" || obj === "reference_member_type" || obj === "maybe_type" || obj === "reference_builtin_fn")
 }
 
 export const enum Endian {
@@ -640,6 +641,7 @@ export function isIoOperation(obj: any): obj is IoOperation {
 
 export interface BadExpr extends Expr {
 	content: string;
+	bad_expr: Expr|null;
 }
 
 export function isBadExpr(obj: any): obj is BadExpr {
@@ -1172,23 +1174,25 @@ export function isJsonAst(obj: any): obj is JsonAst {
 }
 
 export interface AstFile {
+	success: boolean;
 	files: string[];
 	ast: JsonAst|null;
 	error: SrcError|null;
 }
 
 export function isAstFile(obj: any): obj is AstFile {
-	return obj && typeof obj === 'object' && Array.isArray(obj?.files) && (obj?.ast === null || isJsonAst(obj?.ast)) && (obj?.error === null || isSrcError(obj?.error))
+	return obj && typeof obj === 'object' && typeof obj?.success === "boolean" && Array.isArray(obj?.files) && (obj?.ast === null || isJsonAst(obj?.ast)) && (obj?.error === null || isSrcError(obj?.error))
 }
 
 export interface TokenFile {
+	success: boolean;
 	files: string[];
 	tokens: Token[]|null;
 	error: SrcError|null;
 }
 
 export function isTokenFile(obj: any): obj is TokenFile {
-	return obj && typeof obj === 'object' && Array.isArray(obj?.files) && (obj?.tokens === null || Array.isArray(obj?.tokens)) && (obj?.error === null || isSrcError(obj?.error))
+	return obj && typeof obj === 'object' && typeof obj?.success === "boolean" && Array.isArray(obj?.files) && (obj?.tokens === null || Array.isArray(obj?.tokens)) && (obj?.error === null || isSrcError(obj?.error))
 }
 
 interface astConstructor {
@@ -1507,6 +1511,7 @@ export function parseAST(obj: JsonAst): Program {
 				expr_type: null,
 				constant_level: ConstantLevel.unknown,
 				content: '',
+				bad_expr: null,
 			}
 			c.node.push(n);
 			break;
@@ -2987,6 +2992,14 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at BadExpr::content');
 			}
 			n.content = on.body.content;
+			if (on.body?.bad_expr !== null && typeof on.body?.bad_expr !== 'number') {
+				throw new Error('invalid node list at BadExpr::bad_expr');
+			}
+			const tmpbad_expr = on.body.bad_expr === null ? null : c.node[on.body.bad_expr];
+			if (!(tmpbad_expr === null || isExpr(tmpbad_expr))) {
+				throw new Error('invalid node list at BadExpr::bad_expr');
+			}
+			n.bad_expr = tmpbad_expr;
 			break;
 		}
 		case "loop": {
@@ -5269,6 +5282,12 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			const n :BadExpr = node as BadExpr;
 			if (n.expr_type !== null) {
 				const result = fn(fn,n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.bad_expr !== null) {
+				const result = fn(fn,n.bad_expr);
 				if (result === false) {
 					return;
 				}

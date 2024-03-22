@@ -23,8 +23,8 @@ namespace brgen {
         friend bool make_file_from_text(File& file, T&& t);
 
         template <class TokenBuf, class T>
-        static std::optional<lexer::Token> do_parse(void* ptr, std::uint64_t file) {
-            return lexer::parse_one<TokenBuf>(*static_cast<futils::Sequencer<T>*>(ptr), file);
+        static std::optional<lexer::Token> do_parse(void* ptr, std::uint64_t file, lexer::Option opt) {
+            return lexer::parse_one<TokenBuf>(*static_cast<futils::Sequencer<T>*>(ptr), file, opt);
         }
 
         template <class DumpBuf, class T>
@@ -47,7 +47,7 @@ namespace brgen {
         bool special = false;
         fs::path file_name;
         std::shared_ptr<void> ptr;
-        std::optional<lexer::Token> (*parse_)(void* seq, std::uint64_t file) = nullptr;
+        std::optional<lexer::Token> (*parse_)(void* seq, std::uint64_t file, lexer::Option opt) = nullptr;
         std::pair<std::string, futils::code::SrcLoc> (*dump_)(void* seq, lexer::Pos pos) = nullptr;
 
         futils::view::rvec (*direct)(void* seq) = nullptr;
@@ -84,9 +84,9 @@ namespace brgen {
             return special;
         }
 
-        std::optional<lexer::Token> parse() {
+        std::optional<lexer::Token> parse(lexer::Option option) {
             if (parse_) {
-                return parse_(ptr.get(), file);
+                return parse_(ptr.get(), file, option);
             }
             return std::nullopt;
         }
@@ -362,9 +362,11 @@ namespace brgen {
             for (auto& loc : err.locations) {
                 src.errs.push_back(fs.error(loc.msg, loc.loc, loc.warn));
             }
+            /*
             if (err.locations.size() == 0) {
                 src.errs.push_back(fs.error("unexpected errors", {}));
             }
+            */
             return src;
         };
     }

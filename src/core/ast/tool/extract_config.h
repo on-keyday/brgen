@@ -4,7 +4,7 @@
 
 namespace brgen::ast::tool {
 
-    bool marking_builtin(const std::shared_ptr<ast::Expr>& node) {
+    inline bool marking_builtin(const std::shared_ptr<ast::Expr>& node) {
         if (auto memb = ast::as<ast::MemberAccess>(node)) {
             auto bt = marking_builtin(memb->target);
             if (bt) {

@@ -149,6 +149,7 @@ class BinaryOp(PyEnum):
 
 class IdentUsage(PyEnum):
     UNKNOWN = "unknown"
+    BAD_IDENT = "bad_ident"
     REFERENCE = "reference"
     DEFINE_VARIABLE = "define_variable"
     DEFINE_CONST = "define_const"
@@ -404,6 +405,7 @@ class IoOperation(Expr):
 
 class BadExpr(Expr):
     content: str
+    bad_expr: Optional[Expr]
 
 
 class Loop(Stmt):
@@ -797,12 +799,14 @@ def parse_JsonAst(json: dict) -> JsonAst:
 
 
 class AstFile:
+    success: bool
     files: List[str]
     ast: Optional[JsonAst]
     error: Optional[SrcError]
 
 def parse_AstFile(json: dict) -> AstFile:
     ret = AstFile()
+    ret.success = bool(json["success"])
     ret.files = [str(x) for x in json["files"]]
     if json["ast"] is not None:
         ret.ast = parse_JsonAst(json["ast"])
@@ -817,12 +821,14 @@ def parse_AstFile(json: dict) -> AstFile:
 
 
 class TokenFile:
+    success: bool
     files: List[str]
     tokens: Optional[List[Token]]
     error: Optional[SrcError]
 
 def parse_TokenFile(json: dict) -> TokenFile:
     ret = TokenFile()
+    ret.success = bool(json["success"])
     ret.files = [str(x) for x in json["files"]]
     if json["tokens"] is not None:
         ret.tokens = [parse_Token(x) for x in json["tokens"]]
@@ -1389,6 +1395,11 @@ def ast2node(ast :JsonAst) -> Program:
                 node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
                 x = ast.node[i].body["content"]
                 node[i].content = x if isinstance(x,str)  else raiseError(TypeError('type mismatch at BadExpr::content'))
+                if ast.node[i].body["bad_expr"] is not None:
+                    x = node[ast.node[i].body["bad_expr"]]
+                    node[i].bad_expr = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at BadExpr::bad_expr'))
+                else:
+                    node[i].bad_expr = None
             case NodeType.LOOP:
                 if ast.node[i].body["cond_scope"] is not None:
                     node[i].cond_scope = scope[ast.node[i].body["cond_scope"]]
@@ -2422,6 +2433,9 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
         case x if isinstance(x,BadExpr):
           if x.expr_type is not None:
               if f(f,x.expr_type) == False:
+                  return
+          if x.bad_expr is not None:
+              if f(f,x.bad_expr) == False:
                   return
         case x if isinstance(x,Loop):
           if x.init is not None:

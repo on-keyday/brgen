@@ -22,13 +22,14 @@ namespace brgen::ast {
         size_t col = 1;
         std::vector<std::shared_ptr<Comment>> comments;
         bool collect_comments = false;
+        lexer::Option lex_option;
 
         Stream() = default;
         friend struct Context;
 
         void maybe_parse() {
             if (cur == tokens.end()) {
-                auto token = input->parse();
+                auto token = input->parse(lex_option);
                 if (!token) {
                     return;
                 }
@@ -254,6 +255,10 @@ namespace brgen::ast {
 
         void set_collect_comments(bool b) {
             collect_comments = b;
+        }
+
+        void set_regex_mode(bool b) {
+            lex_option.regex_mode = b;
         }
 
        private:

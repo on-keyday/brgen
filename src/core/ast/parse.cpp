@@ -107,6 +107,7 @@ namespace brgen::ast {
         }
 
         std::shared_ptr<Program> parse() {
+            s.set_regex_mode(true);  // default regex mode is on
             auto prog = std::make_shared<Program>();
             prog->loc = s.loc();
             prog->global_scope = state.reset_stack();
@@ -734,6 +735,7 @@ namespace brgen::ast {
         */
         std::shared_ptr<Expr> parse_post(bool* line_skipped) {
             auto p = parse_prim(line_skipped);
+            s.set_regex_mode(false);  // from here, regex literal is not allowed
             for (;;) {
                 s.skip_space();
                 if (auto c = s.consume_token("(")) {
@@ -989,6 +991,7 @@ namespace brgen::ast {
             else {
                 depth = 0;
             }
+            s.set_regex_mode(false);  // from here, regex literal is not allowed
 
             while (depth < ast::bin_layer_len) {
                 if (update_stack()) {
@@ -997,6 +1000,7 @@ namespace brgen::ast {
                 s.skip_space();
                 if (depth == ast::bin_cond_layer) {
                     if (auto token = s.consume_token("?")) {
+                        s.set_regex_mode(true);  // from here, regex literal is allowed
                         stack.push_back(BinOpStack{.depth = depth, .expr = std::make_shared<Cond>(token->loc, std::move(expr))});
                         s.skip_white();
                         parse_low();
@@ -1005,6 +1009,7 @@ namespace brgen::ast {
                 }
                 else {
                     if (auto token = consume_op(i, ast::bin_layers[depth])) {
+                        s.set_regex_mode(true);  // from here, regex literal is allowed
                         if (depth == ast::bin_compare_layer) {
                             if (auto bin = as<Binary>(expr); bin && is_compare_op(bin->op)) {
                                 // this is like `a == b == c` but this language not support it
@@ -1043,6 +1048,7 @@ namespace brgen::ast {
                 post_update_stack();
                 depth++;
             }
+            s.set_regex_mode(true);
             return expr;
         }
 

@@ -63,7 +63,7 @@ namespace brgen::ast::tool {
 
     using EResult = expected<EvalResult, LocError>;
 
-    EResult add_string(const std::string& a, const std::string& b, lexer::Loc a_loc = {}, lexer::Loc b_loc = {}) {
+    inline EResult add_string(const std::string& a, const std::string& b, lexer::Loc a_loc = {}, lexer::Loc b_loc = {}) {
         auto left = unescape(a);
         if (!left) {
             return unexpect(LocError{a_loc, "cannot unescape left string"});

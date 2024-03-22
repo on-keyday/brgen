@@ -1,5 +1,4 @@
 /*license*/
-#pragma once
 #include "../lexer/token.h"
 #include "../common/file.h"
 #include <core/ast/traverse.h>
@@ -1707,8 +1706,12 @@ namespace brgen::middle {
         }
     };
 
-    result<void> analyze_type(std::shared_ptr<ast::Program>& node, LocationError& warnings) {
-        return Typing{warnings}.typing(node);
+    result<void> analyze_type(std::shared_ptr<ast::Program>& node, LocationError* warnings) {
+        brgen::LocationError ignore;
+        if (!warnings) {
+            warnings = &ignore;
+        }
+        return Typing{*warnings}.typing(node);
     }
 
 }  // namespace brgen::middle

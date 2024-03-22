@@ -285,6 +285,7 @@ int ast2c_BinaryOp_from_string(const char*,ast2c_BinaryOp*);
 
 enum ast2c_IdentUsage {
 	AST2C_IDENTUSAGE_UNKNOWN,
+	AST2C_IDENTUSAGE_BAD_IDENT,
 	AST2C_IDENTUSAGE_REFERENCE,
 	AST2C_IDENTUSAGE_DEFINE_VARIABLE,
 	AST2C_IDENTUSAGE_DEFINE_CONST,
@@ -444,6 +445,7 @@ struct ast2c_JsonAst {
 };
 
 struct ast2c_AstFile {
+	int success;
 	char** files;
 	size_t files_size;
 	ast2c_JsonAst* ast;
@@ -451,6 +453,7 @@ struct ast2c_AstFile {
 };
 
 struct ast2c_TokenFile {
+	int success;
 	char** files;
 	size_t files_size;
 	ast2c_Token* tokens;
@@ -804,6 +807,7 @@ struct ast2c_BadExpr {
 	ast2c_Type* expr_type;
 	ast2c_ConstantLevel constant_level;
 	char* content;
+	ast2c_Expr* bad_expr;
 };
 
 // returns 1 if succeed 0 if failed

@@ -273,6 +273,8 @@ InAssign,
 enum IdentUsage {
 @JsonValue('unknown')
 Unknown,
+@JsonValue('bad_ident')
+BadIdent,
 @JsonValue('reference')
 Reference,
 @JsonValue('define_variable')
@@ -592,6 +594,7 @@ factory IoOperation.fromJson(Map<String, dynamic> json) => _$IoOperationFromJson
 @JsonSerializable()
 class BadExpr extends Expr {
     String content = '';
+    Expr? badExpr;
 factory BadExpr.fromJson(Map<String, dynamic> json) => _$BadExprFromJson(json);
 }
 @JsonSerializable()
@@ -959,6 +962,7 @@ factory JsonAst.fromJson(Map<String, dynamic> json) => _$JsonAstFromJson(json);
 }
 @JsonSerializable()
 class AstFile {
+    bool success = false;
     List<String> files = [];
     JsonAst? ast;
     SrcError? error;
@@ -966,6 +970,7 @@ factory AstFile.fromJson(Map<String, dynamic> json) => _$AstFileFromJson(json);
 }
 @JsonSerializable()
 class TokenFile {
+    bool success = false;
     List<String> files = [];
     List<Token>? tokens = [];
     SrcError? error;

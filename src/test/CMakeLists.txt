@@ -10,18 +10,20 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcoverage-mapping")
 endif()
 
-add_library(ast_test_component STATIC
-"core/ast_test_component.cpp"
+add_library(parse_core STATIC 
 "../core/ast/parse.cpp"
 "../core/middle/typing.cpp"
 )
 
+add_library(ast_test_component STATIC
+"core/ast_test_component.cpp"
+)
+target_link_libraries(ast_test_component futils gtest parse_core)
 
 add_executable(lexer_test "core/lexer_test.cpp")
 
-
 target_link_libraries(lexer_test gtest_main)
-target_link_libraries(ast_test_component futils gtest)
+
 
 add_executable(ast_test "core/ast_test.cpp")
 target_link_libraries(ast_test ast_test_component)
@@ -44,18 +46,20 @@ add_executable(from_json_test "core/from_json_test.cpp")
 target_link_libraries(from_json_test ast_test_component futils)
 
 
-add_executable(section_writer_test "core/section_writer_test.cpp")
+add_executable(section_writer_test 
+  "core/section_writer_test.cpp"
+)
 
 target_link_libraries(section_writer_test gtest_main)
 
 
 add_executable(liner_eq_test "core/liner_eq_test.cpp")
-target_link_libraries(liner_eq_test gtest_main)
+target_link_libraries(liner_eq_test gtest_main parse_core)
 
 
 
 add_executable(type_attribute "core/type_attribute_test.cpp")
-target_link_libraries(type_attribute gtest_main)
+target_link_libraries(type_attribute gtest_main parse_core)
 
 add_executable(derive_test "core/derive_test.cpp")
 target_link_libraries(derive_test gtest_main)
@@ -99,6 +103,7 @@ endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 target_compile_options(ast_test_component PRIVATE "-fprofile-instr-generate=ast_test_component.profraw")
+target_compile_options(parse_core PRIVATE "-fprofile-instr-generate=parse_core.profraw")
 target_compile_options(lexer_test PRIVATE "-fprofile-instr-generate=lexer_test.profraw")
 target_compile_options(ast_test PRIVATE "-fprofile-instr-generate=ast_test.profraw")
 target_compile_options(typing_test PRIVATE "-fprofile-instr-generate=typing_test.profraw")
