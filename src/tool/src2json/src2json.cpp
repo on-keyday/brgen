@@ -455,11 +455,11 @@ int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& f
             report(std::move(res3.error()));
             return exit_err;
         }
-        if (flags.unresolved_type_as_error && err_or_warn.locations.size() > 0) {
+        if (flags.unresolved_type_as_error && warns.locations.size() > 0) {
             report(std::move(warns));
             return exit_err;
         }
-        if (!flags.disable_untyped_warning && err_or_warn.locations.size() > 0) {
+        if (!flags.disable_untyped_warning && warns.locations.size() > 0) {
             if (!flags.omit_json_warning) {
                 err_or_warn.locations.insert(err_or_warn.locations.end(), warns.locations.begin(), warns.locations.end());
             }
