@@ -44,7 +44,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
     bool not_resolve_io_operation = false;
     bool not_detect_recursive_type = false;
     bool not_detect_non_dynamic = false;
-    bool not_detect_alignment = false;
+    bool not_analyze_size_alignment = false;
     bool not_resolve_state_dependency = false;
     bool not_resolve_metadata = false;
 
@@ -112,7 +112,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
         ctx.VarBool(&not_resolve_endian_spec, "not-resolve-endian-spec", "not resolve endian-spec");
         ctx.VarBool(&not_detect_recursive_type, "not-detect-recursive-type", "not detect recursive type");
         ctx.VarBool(&not_detect_non_dynamic, "not-detect-non-dynamic", "not detect non-dynamic type");
-        ctx.VarBool(&not_detect_alignment, "not-detect-alignment", "not detect alignment");
+        ctx.VarBool(&not_analyze_size_alignment, "not-analyze-size-alignment", "not analyze size and alignment");
         ctx.VarBool(&not_resolve_explicit_error, "not-resolve-explicit-error", "not resolve explicit error");
         ctx.VarBool(&not_resolve_io_operation, "not-resolve-io-operation", "not resolve io operation");
         ctx.VarBool(&not_resolve_state_dependency, "not-resolve-state-dependency", "not resolve state dependency");
@@ -490,7 +490,7 @@ int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& f
         attr.detect_non_dynamic_type(*p);
     }
 
-    if (!flags.not_detect_alignment) {
+    if (!flags.not_analyze_size_alignment) {
         attr.analyze_bit_size_and_alignment(*p);
     }
 
@@ -737,7 +737,7 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
     }
 
     if (!cap.ast_json) {
-        print_error("stdout is disabled");
+        print_error("print ast json is disabled");
         return exit_err;
     }
     auto src_err = brgen::to_source_error(files)(err_or_warn);
