@@ -17,6 +17,9 @@ import { FileCandidates, registerFileSelectionCallback } from "./s2j/file_select
 import { ConfigKey, ElementID } from "./types";
 import { save } from "./save-data/save";
 
+1 / 2 / 3 / 4;
+
+
 if(window.MonacoEnvironment === undefined) {
     window.MonacoEnvironment = {
         getWorker: (moduleId, label) => {
@@ -520,10 +523,10 @@ const setCommon = (m :Map<string,InputListElement>) => {
     }));
     
     const ast = new Map<string,InputListElement>();
+    setCommon(ast);
     commonUI.config.set(Language.JSON_AST,languageSpecificConfig(ast,ConfigKey.COMMON_FILE_NAME,(change) => {
         updateUI();
     }));
-    setCommon(ast);
     const go = new Map<string,InputListElement>();
     go.set(ConfigKey.GO_USE_PUT,{
         "type": "checkbox",

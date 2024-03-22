@@ -26,12 +26,12 @@ namespace brgen::middle {
         return ret;
     }
 
-    inline void replace_assert(LocationError& err, const std::shared_ptr<ast::Node>& node) {
+    inline void replace_assert(const std::shared_ptr<ast::Node>& node, LocationError& err_or_warn) {
         if (!node) {
             return;
         }
         auto one_element = [&](auto it) {
-            replace_assert(err, *it);
+            replace_assert(*it, err_or_warn);
             if (auto bin = ast::as<ast::Binary>(*it); bin && ast::is_boolean_op(bin->op)) {
                 auto a = std::make_shared<ast::Assert>(std::static_pointer_cast<ast::Binary>(*it));
                 a->is_io_related = is_io_related(a->cond.get());
@@ -42,7 +42,7 @@ namespace brgen::middle {
             }
             else if (bin || ast::as<ast::Literal>(*it) || ast::as<ast::Unary>(*it) || ast::as<ast::Ident>(*it) ||
                      ast::as<ast::Index>(*it)) {
-                err.warning((*it)->loc, "unused expression");
+                err_or_warn.warning((*it)->loc, "unused expression");
             }
         };
         auto each_element = [&](ast::node_list& list) {
@@ -63,7 +63,7 @@ namespace brgen::middle {
             return;
         }
         ast::traverse(node, [&](auto&& f) {
-            replace_assert(err, f);
+            replace_assert(f, err_or_warn);
         });
     }
 }  // namespace brgen::middle

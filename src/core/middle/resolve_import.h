@@ -64,7 +64,9 @@ namespace brgen::middle {
         }
     };
 
-    inline result<void> resolve_import(std::shared_ptr<ast::Program>& n, FileSet& fs) {
+    inline result<void> resolve_import(
+        std::shared_ptr<ast::Program>& n,
+        FileSet& fs, brgen::LocationError& err_or_warn, ast::ParseOption option = {}) {
         PathStack stack;
         auto l = fs.get_input(n->loc.file);
         if (!l) {
@@ -117,7 +119,7 @@ namespace brgen::middle {
                 else {
                     ast::Context c;
                     auto p = c.enter_stream(new_input, [&](ast::Stream& s) {
-                        return ast::Parser{s}.parse();
+                        return ast::parse(s, &err_or_warn, option);
                     });
                     if (!p) {
                         auto err = error(conf->loc, "cannot parse file ", new_path.generic_u8string());

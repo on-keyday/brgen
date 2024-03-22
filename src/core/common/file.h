@@ -23,8 +23,8 @@ namespace brgen {
         friend bool make_file_from_text(File& file, T&& t);
 
         template <class TokenBuf, class T>
-        static std::optional<lexer::Token> do_parse(void* ptr, std::uint64_t file) {
-            return lexer::parse_one<TokenBuf>(*static_cast<futils::Sequencer<T>*>(ptr), file);
+        static std::optional<lexer::Token> do_parse(void* ptr, std::uint64_t file, lexer::Option opt) {
+            return lexer::parse_one<TokenBuf>(*static_cast<futils::Sequencer<T>*>(ptr), file, opt);
         }
 
         template <class DumpBuf, class T>
@@ -47,7 +47,7 @@ namespace brgen {
         bool special = false;
         fs::path file_name;
         std::shared_ptr<void> ptr;
-        std::optional<lexer::Token> (*parse_)(void* seq, std::uint64_t file) = nullptr;
+        std::optional<lexer::Token> (*parse_)(void* seq, std::uint64_t file, lexer::Option opt) = nullptr;
         std::pair<std::string, futils::code::SrcLoc> (*dump_)(void* seq, lexer::Pos pos) = nullptr;
 
         futils::view::rvec (*direct)(void* seq) = nullptr;
@@ -84,9 +84,9 @@ namespace brgen {
             return special;
         }
 
-        std::optional<lexer::Token> parse() {
+        std::optional<lexer::Token> parse(lexer::Option option) {
             if (parse_) {
-                return parse_(ptr.get(), file);
+                return parse_(ptr.get(), file, option);
             }
             return std::nullopt;
         }
@@ -100,10 +100,10 @@ namespace brgen {
         }
 
        public:
-        SourceEntry error(std::string&& msg, lexer::Loc loc, bool warn = false) {
+        SourceEntry error(auto&& msg, lexer::Loc loc, bool warn = false) {
             auto [src, _] = dump(loc.pos);
             return SourceEntry{
-                std::move(msg),
+                std::forward<decltype(msg)>(msg),
                 file_name.generic_string(),
                 loc,
                 std::move(src),
@@ -341,30 +341,32 @@ namespace brgen {
             return file;
         }
 
-        SourceEntry error(std::string&& msg, lexer::Loc loc, bool warn = false) {
+        SourceEntry error(auto&& msg, lexer::Loc loc, bool warn = false) {
             auto got = get_input(loc.file);
             if (!got) {
                 return SourceEntry{
-                    .msg = std::move(msg),
+                    .msg = std::forward<decltype(msg)>(msg),
                     .file = "<unknown source>",
                     .loc = {0, 0},
                     .src = "",
                     .warn = warn,
                 };
             }
-            return got->error(std::move(msg), loc, warn);
+            return got->error(std::forward<decltype(msg)>(msg), loc, warn);
         }
     };
 
     inline auto to_source_error(FileSet& fs) {
-        return [&](LocationError&& err) {
+        return [&](const LocationError& err) {
             SourceError src;
             for (auto& loc : err.locations) {
-                src.errs.push_back(fs.error(std::move(loc.msg), loc.loc, loc.warn));
+                src.errs.push_back(fs.error(loc.msg, loc.loc, loc.warn));
             }
+            /*
             if (err.locations.size() == 0) {
                 src.errs.push_back(fs.error("unexpected errors", {}));
             }
+            */
             return src;
         };
     }

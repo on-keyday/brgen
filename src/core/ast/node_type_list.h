@@ -246,8 +246,8 @@ namespace brgen::ast {
     constexpr auto raw_node_type = R"({"node_type": "node_type","loc": "loc","body": "any"})";
 
     constexpr auto json_ast = R"({"node": "array<raw_node>","scope": "array<raw_scope>"})";
-    constexpr auto ast_file = R"({"files": "array<string>","ast": "optional<json_ast>","error": "optional<src_error>"})";
-    constexpr auto token_file = R"({"files": "array<string>","tokens": "optional<array<token>>","error": "optional<src_error>"})";
+    constexpr auto ast_file = R"({"success":"bool","files": "array<string>","ast": "optional<json_ast>","error": "optional<src_error>"})";
+    constexpr auto token_file = R"({"success":"bool","files": "array<string>","tokens": "optional<array<token>>","error": "optional<src_error>"})";
 
     template <bool ast_mode = false>
     void node_types(auto&& objdump) {

@@ -715,6 +715,7 @@ int ast2c_BinaryOp_from_string(const char* str, ast2c_BinaryOp* out) {
 const char* ast2c_IdentUsage_to_string(ast2c_IdentUsage val) {
 	switch(val) {
 	case AST2C_IDENTUSAGE_UNKNOWN: return "unknown";
+	case AST2C_IDENTUSAGE_BAD_IDENT: return "bad_ident";
 	case AST2C_IDENTUSAGE_REFERENCE: return "reference";
 	case AST2C_IDENTUSAGE_DEFINE_VARIABLE: return "define_variable";
 	case AST2C_IDENTUSAGE_DEFINE_CONST: return "define_const";
@@ -740,6 +741,10 @@ int ast2c_IdentUsage_from_string(const char* str, ast2c_IdentUsage* out) {
 	if (!str||!out) return 0;
 	if (strcmp(str, "unknown") == 0) {
 		*out = AST2C_IDENTUSAGE_UNKNOWN;
+		return 1;
+	}
+	if (strcmp(str, "bad_ident") == 0) {
+		*out = AST2C_IDENTUSAGE_BAD_IDENT;
 		return 1;
 	}
 	if (strcmp(str, "reference") == 0) {
@@ -1911,13 +1916,16 @@ int ast2c_BadExpr_parse(ast2c_Ast* ast,ast2c_BadExpr* s,ast2c_json_handlers* h, 
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
 	s->expr_type = NULL;
 	s->content = NULL;
+	s->bad_expr = NULL;
 	void* expr_type = h->object_get(h, obj_body, "expr_type");
 	void* constant_level = h->object_get(h, obj_body, "constant_level");
 	void* content = h->object_get(h, obj_body, "content");
+	void* bad_expr = h->object_get(h, obj_body, "bad_expr");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_BadExpr::loc is null"); } return 0; }
 	if (!expr_type) { if(h->error) { h->error(h,expr_type, "ast2c_BadExpr::expr_type is null"); } return 0; }
 	if (!constant_level) { if(h->error) { h->error(h,constant_level, "ast2c_BadExpr::constant_level is null"); } return 0; }
 	if (!content) { if(h->error) { h->error(h,content, "ast2c_BadExpr::content is null"); } return 0; }
+	if (!bad_expr) { if(h->error) { h->error(h,bad_expr, "ast2c_BadExpr::bad_expr is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_BadExpr::loc"); }
 		goto error;

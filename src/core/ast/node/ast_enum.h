@@ -476,6 +476,7 @@ constexpr const char* enum_type_name<ConstantLevel>() {
 }
 enum class IdentUsage {
     unknown,
+    bad_ident,
     reference,
     define_variable,
     define_const,
@@ -496,6 +497,7 @@ enum class IdentUsage {
 constexpr const char* to_string(IdentUsage e) {
     switch(e) {
     case IdentUsage::unknown: return "unknown";
+    case IdentUsage::bad_ident: return "bad_ident";
     case IdentUsage::reference: return "reference";
     case IdentUsage::define_variable: return "define_variable";
     case IdentUsage::define_const: return "define_const";
@@ -518,6 +520,7 @@ constexpr const char* to_string(IdentUsage e) {
 template<>constexpr std::optional<IdentUsage> from_string<IdentUsage>(std::string_view str) {
     if(str.empty()) return std::nullopt;
     if(str == "unknown") return IdentUsage::unknown;
+    if(str == "bad_ident") return IdentUsage::bad_ident;
     if(str == "reference") return IdentUsage::reference;
     if(str == "define_variable") return IdentUsage::define_variable;
     if(str == "define_const") return IdentUsage::define_const;
@@ -537,11 +540,12 @@ template<>constexpr std::optional<IdentUsage> from_string<IdentUsage>(std::strin
     return std::nullopt;
 }
 template<>constexpr size_t enum_elem_count<IdentUsage>() {
-    return 17;
+    return 18;
 }
-template<>constexpr std::array<std::pair<IdentUsage,std::string_view>,17> make_enum_array<IdentUsage>() {
+template<>constexpr std::array<std::pair<IdentUsage,std::string_view>,18> make_enum_array<IdentUsage>() {
     return {
         std::pair{IdentUsage::unknown,"unknown"},
+        std::pair{IdentUsage::bad_ident,"bad_ident"},
         std::pair{IdentUsage::reference,"reference"},
         std::pair{IdentUsage::define_variable,"define_variable"},
         std::pair{IdentUsage::define_const,"define_const"},
@@ -560,9 +564,10 @@ template<>constexpr std::array<std::pair<IdentUsage,std::string_view>,17> make_e
         std::pair{IdentUsage::reference_builtin_fn,"reference_builtin_fn"},
     };
 }
-template<>constexpr std::array<std::pair<IdentUsage,std::string_view>,17> make_enum_name_array<IdentUsage>() {
+template<>constexpr std::array<std::pair<IdentUsage,std::string_view>,18> make_enum_name_array<IdentUsage>() {
     return {
         std::pair{IdentUsage::unknown,"unknown"},
+        std::pair{IdentUsage::bad_ident,"bad_ident"},
         std::pair{IdentUsage::reference,"reference"},
         std::pair{IdentUsage::define_variable,"define_variable"},
         std::pair{IdentUsage::define_const,"define_const"},

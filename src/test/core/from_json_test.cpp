@@ -1,6 +1,6 @@
 /*license*/
 #include "ast_test_component.h"
-#include <core/middle/middle_test.h>
+#include "middle_test.h"
 #include <gtest/gtest.h>
 #include <core/ast/json.h>
 #include <json/parse.h>

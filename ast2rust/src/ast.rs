@@ -521,6 +521,7 @@ impl TryFrom<&str> for BinaryOp {
 #[derive(Debug,Clone,Copy,Serialize,Deserialize)]
 #[serde(rename_all = "snake_case")]pub enum IdentUsage {
 	Unknown,
+	BadIdent,
 	Reference,
 	DefineVariable,
 	DefineConst,
@@ -544,6 +545,7 @@ impl TryFrom<&str> for IdentUsage {
 	fn try_from(s:&str)->Result<Self,()>{
 		match s{
 			"unknown" =>Ok(Self::Unknown),
+			"bad_ident" =>Ok(Self::BadIdent),
 			"reference" =>Ok(Self::Reference),
 			"define_variable" =>Ok(Self::DefineVariable),
 			"define_const" =>Ok(Self::DefineConst),
@@ -4443,6 +4445,7 @@ pub struct BadExpr {
 	pub expr_type: Option<Type>,
 	pub constant_level: ConstantLevel,
 	pub content: String,
+	pub bad_expr: Option<Expr>,
 }
 
 impl TryFrom<&Expr> for Rc<RefCell<BadExpr>> {
@@ -8187,6 +8190,7 @@ pub struct JsonAst {
 
 #[derive(Debug,Clone,Serialize,Deserialize)]
 pub struct AstFile {
+	pub success: bool,
 	pub files: Vec<String>,
 	pub ast: Option<JsonAst>,
 	pub error: Option<SrcError>,
@@ -8194,6 +8198,7 @@ pub struct AstFile {
 
 #[derive(Debug,Clone,Serialize,Deserialize)]
 pub struct TokenFile {
+	pub success: bool,
 	pub files: Vec<String>,
 	pub tokens: Option<Vec<Token>>,
 	pub error: Option<SrcError>,
@@ -8431,6 +8436,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				expr_type: None,
 				constant_level: ConstantLevel::Unknown,
 				content: String::new(),
+				bad_expr: None,
 				})))
 			},
 			NodeType::Loop => {
@@ -10635,6 +10641,21 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v.to_string(),
 					None=>return Err(Error::MismatchJSONType(content_body.into(),JSONType::String)),
 				};
+				let bad_expr_body = match raw_node.body.get("bad_expr") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"bad_expr")),
+				};
+ 				if !bad_expr_body.is_null() {
+					let bad_expr_body = match bad_expr_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(bad_expr_body.into(),JSONType::Number)),
+					};
+					let bad_expr_body = match nodes.get(bad_expr_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(bad_expr_body as usize)),
+					};
+					node.borrow_mut().bad_expr = Some(bad_expr_body.try_into()?);
+				}
 			},
 			NodeType::Loop => {
 				let node = nodes[i].clone();
@@ -14441,6 +14462,11 @@ where
 		},
 		Node::BadExpr(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
+			if let Some(node) = &node.borrow().bad_expr{
 				if !f.visit(&node.into()){
 					return;
 				}

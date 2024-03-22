@@ -57,15 +57,16 @@ namespace brgen::lexer {
             "+", "-", "*", "/", "%", "^",
             "<=", ">=", "<", ">", "?", ",");
 
+        struct Option {
+            decltype(punct_) punct{punct_};
+            bool regex_mode = false;
+        };
+
         constexpr auto one_token_lexer() {
             auto p = method_proxy(punct);
-            auto lex = indent | spaces | line | comment | int_literal | str_literal | regex_literal | char_literal | p | bool_literal | keywords | ident;
-            struct L {
-                decltype(punct_) punct;
-            } l{punct_};
-            return [l, lex](auto&& seq, auto&& ctx) {
-                return lex(seq, ctx, l);
-            };
+            auto regex = conditional_method(regex_mode, futils::comb2::Status::not_match, regex_literal);
+            auto lex = indent | spaces | line | comment | int_literal | str_literal | regex | char_literal | p | bool_literal | keywords | ident;
+            return lex;
         }
 
         constexpr auto parse_one = one_token_lexer();
@@ -153,7 +154,7 @@ format Varint:
             };
             size_t i = 0;
             auto len = sizeof(m) / sizeof(m[0]);
-            while (parse_one(seq, ctx) == futils::comb2::Status::match) {
+            while (parse_one(seq, ctx, Option{}) == futils::comb2::Status::match) {
                 if (i < len) {
                     if (m[i] != ctx.str_tag) {
                         futils::comb2::test::error_if_constexpr(i, m[i], ctx.str_tag);
@@ -166,10 +167,16 @@ format Varint:
 
     }  // namespace internal
 
+    struct Option {
+        bool regex_mode = false;
+    };
+
     template <class TokenBuf = std::string, class T>
-    std::optional<Token> parse_one(futils::Sequencer<T>& seq, std::uint64_t file) {
+    std::optional<Token> parse_one(futils::Sequencer<T>& seq, std::uint64_t file, Option opt) {
+        internal::Option option;
+        option.regex_mode = opt.regex_mode;
         auto ctx = futils::comb2::LexContext<Tag, std::string>{};
-        if (auto res = internal::parse_one(seq, ctx); res != futils::comb2::Status::match) {
+        if (auto res = internal::parse_one(seq, ctx, option); res != futils::comb2::Status::match) {
             if (res == futils::comb2::Status::fatal) {
                 Token tok;
                 tok.tag = Tag::error;

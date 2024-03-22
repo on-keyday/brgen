@@ -1,14 +1,15 @@
 /*license*/
 #include "ast_test_component.h"
 #include <core/middle/typing.h>
+#include <core/ast/traverse.h>
 #include <gtest/gtest.h>
 using namespace brgen;
 
 int main(int argc, char** argv) {
     set_test_handler([](auto& a, File* input, FileSet& fs) {
-        middle::Typing{}.typing(a).transform_error(to_source_error(fs)).value();
+        middle::analyze_type(a, nullptr).transform_error(to_source_error(fs)).value();
         JSONWriter d;
-        d.value(a);
+        d.value(*a);
         add_result(std::move(d));
     });
     ::testing::InitGoogleTest(&argc, argv);

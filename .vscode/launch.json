@@ -19,8 +19,8 @@
             "request": "launch",
             "program": "${workspaceRoot}/tool/src2json",
             "args": [
-                "c:/workspace/shbrgen/brgen/example/feature_test/for_in.bgn",
-                //"--check-ast"
+                "c:/workspace/shbrgen/brgen/example/tls_record.bgn",
+                "--print-json","--print-on-error"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",

@@ -12,8 +12,7 @@ TEST(Tool, LinerEquation) {
         make_file_from_text<std::string>(f, text);
         ast::Context c;
         auto e = c.enter_stream(&f, [](ast::Stream& s) {
-            ast::Parser p{s};
-            return p.parse();
+            return ast::parse(s, nullptr);
         });
         auto program = e.value();
         auto element = program->elements.front();

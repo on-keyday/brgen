@@ -55,7 +55,7 @@ weight: 1
 <member access> := "." <ident>
 <index> := "[" <expr> "]"
 <call> := "(" (<expr> *("," <expr>))? ")"
-<prim> := <int literal> | <bool literal> | <string literal> | <char literal> | <special literal> | <type literal> | <paran> | <if> | <match> | <ident>
+<prim> := <int literal> | <bool literal> | <string literal> | <regex literal> | <char literal> | <special literal> | <type literal> | <paran> | <if> | <match> | <ident>
 
 <hex digit> := [0-9]|[a-f]|[A-F]
 <binary digit> := "0" | "1"
@@ -64,6 +64,7 @@ weight: 1
 <int literal> := +<digit> | "0x" +<hex digit> | "0b" +<binary digit>
 <bool literal> := "true" | "false"
 <string literal> := "\""  *(<escape sequence> | <any unicode char except '"'>) "\""
+<regex literal> := "/" *(<escape sequence> | <any unicode char except '/'>) "/"
 <char literal> := "'" (<escape sequence> | <any unicode char except "'">) "'"
 <special literal> := "input" | "output" | ""
 <type literal> := "<" <type> ">"
@@ -74,7 +75,7 @@ weight: 1
 
 <ident> := <any unicode characters except control character or characters used for other usage (symbol or keyword)>
 
-<escape sequence> := "\" ( "\"" | "'" |"x" <hex digit> <hex digit> | "n" | "r" | "t" | "u" <hex digit> <hex digit> <hex digit> <hex digit> )
+<escape sequence> := "\" ( "\" | "/" | "\"" | "'" |"x" <hex digit> <hex digit> | "n" | "r" | "t" | "u" <hex digit> <hex digit> <hex digit> <hex digit> )
 
 <field> := <ident>? <anonymous field>
 <anonymous field> := ":" <type> <call>?

@@ -22,13 +22,14 @@ namespace brgen::ast {
         size_t col = 1;
         std::vector<std::shared_ptr<Comment>> comments;
         bool collect_comments = false;
+        lexer::Option lex_option;
 
         Stream() = default;
         friend struct Context;
 
         void maybe_parse() {
             if (cur == tokens.end()) {
-                auto token = input->parse();
+                auto token = input->parse(lex_option);
                 if (!token) {
                     return;
                 }
@@ -139,6 +140,10 @@ namespace brgen::ast {
             return *cur;
         }
 
+        lexer::Token peek_token() {
+            return *cur;
+        }
+
         std::optional<lexer::Token> consume_token(std::string_view s) {
             if (auto token = peek_token(s)) {
                 consume();
@@ -241,6 +246,21 @@ namespace brgen::ast {
             cur--;
         }
 
+        std::optional<lexer::Token> prev_token() {
+            if (cur == tokens.begin()) {
+                return std::nullopt;
+            }
+            return *std::prev(cur);
+        }
+
+        void set_collect_comments(bool b) {
+            collect_comments = b;
+        }
+
+        void set_regex_mode(bool b) {
+            lex_option.regex_mode = b;
+        }
+
        private:
         auto enter_stream(auto&& fn) -> result<std::invoke_result_t<decltype(fn), Stream&>> {
             try {
@@ -260,10 +280,6 @@ namespace brgen::ast {
         auto enter_stream(File* file, auto&& parser) {
             s.input = file;
             return s.enter_stream(parser);
-        }
-
-        void set_collect_comments(bool b) {
-            s.collect_comments = b;
         }
     };
 

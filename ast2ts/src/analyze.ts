@@ -490,7 +490,7 @@ export const analyzeSourceCode  = async (prevSemanticTokens :SemTokensStub|null,
         [ast2ts.TokenTag.punct,"operator"],
     ]);
     const mapTokenTypesIndex = new Map<string,number>(legendMapping.map((x,i)=>[x,i] as [string,number])); 
-    const locList = new Array<LocMap>();
+    let locList = new Array<LocMap>();
     if(tokens.error !== null) {
         diagnostics(makeDiagnostic(positionAt,tokens.error));
     }
@@ -631,6 +631,13 @@ export const analyzeSourceCode  = async (prevSemanticTokens :SemTokensStub|null,
         }
         else if(ast2ts.isBinary(node)&&node.op == ast2ts.BinaryOp.in_assign) {
             locList.push({loc: node.loc,length: 2,index:9});
+        }
+        else if(ast2ts.isRegexLiteral(node)){
+            // remove tokenized string
+            locList =  locList.filter((l)=>{
+                return !(l.loc.pos.begin >= node.loc.pos.begin && l.loc.pos.end <= node.loc.pos.end);
+            });
+            locList.push({loc: node.loc,length: node.value.length,index:4});
         }
         return true
     });

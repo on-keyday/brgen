@@ -144,6 +144,7 @@ InAssign,
 }
 public enum IdentUsage {
 Unknown,
+BadIdent,
 Reference,
 DefineVariable,
 DefineConst,
@@ -420,6 +421,7 @@ public class BadExpr : Expr{
 	public Type? ExprType{get;set;}
 	public ConstantLevel ConstantLevel{get;set;}
 	public string Content{get;set;} = "";
+	public Expr? BadExpr_{get;set;}
 }
 public class Loop : Stmt{
 	public Loc Loc{get;set;}
@@ -835,11 +837,13 @@ public class JsonAst {
 	public List<RawScope>? Scope{get;set;}
 }
 public class AstFile {
+	public bool Success{get;set;}
 	public List<string>? Files{get;set;}
 	public JsonAst? Ast{get;set;}
 	public SrcError? Error{get;set;}
 }
 public class TokenFile {
+	public bool Success{get;set;}
 	public List<string>? Files{get;set;}
 	public List<Token>? Tokens{get;set;}
 	public SrcError? Error{get;set;}
@@ -1246,6 +1250,7 @@ public static class Ast {
                node.ExprType = ast.Node[i].Body[expr_type];
                node.ConstantLevel = ast.Node[i].Body[constant_level];
                node.Content = ast.Node[i].Body[content];
+               node.BadExpr_ = ast.Node[i].Body[bad_expr];
            case NodeType.Loop:
                var node = nodes[i] as Loop;
                node.Loc = ast.Node[i].Body[loc];

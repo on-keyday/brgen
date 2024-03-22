@@ -1034,28 +1034,31 @@ type IdentUsage int
 
 const (
 	IdentUsageUnknown             IdentUsage = 0
-	IdentUsageReference           IdentUsage = 1
-	IdentUsageDefineVariable      IdentUsage = 2
-	IdentUsageDefineConst         IdentUsage = 3
-	IdentUsageDefineField         IdentUsage = 4
-	IdentUsageDefineFormat        IdentUsage = 5
-	IdentUsageDefineState         IdentUsage = 6
-	IdentUsageDefineEnum          IdentUsage = 7
-	IdentUsageDefineEnumMember    IdentUsage = 8
-	IdentUsageDefineFn            IdentUsage = 9
-	IdentUsageDefineCastFn        IdentUsage = 10
-	IdentUsageDefineArg           IdentUsage = 11
-	IdentUsageReferenceType       IdentUsage = 12
-	IdentUsageReferenceMember     IdentUsage = 13
-	IdentUsageReferenceMemberType IdentUsage = 14
-	IdentUsageMaybeType           IdentUsage = 15
-	IdentUsageReferenceBuiltinFn  IdentUsage = 16
+	IdentUsageBadIdent            IdentUsage = 1
+	IdentUsageReference           IdentUsage = 2
+	IdentUsageDefineVariable      IdentUsage = 3
+	IdentUsageDefineConst         IdentUsage = 4
+	IdentUsageDefineField         IdentUsage = 5
+	IdentUsageDefineFormat        IdentUsage = 6
+	IdentUsageDefineState         IdentUsage = 7
+	IdentUsageDefineEnum          IdentUsage = 8
+	IdentUsageDefineEnumMember    IdentUsage = 9
+	IdentUsageDefineFn            IdentUsage = 10
+	IdentUsageDefineCastFn        IdentUsage = 11
+	IdentUsageDefineArg           IdentUsage = 12
+	IdentUsageReferenceType       IdentUsage = 13
+	IdentUsageReferenceMember     IdentUsage = 14
+	IdentUsageReferenceMemberType IdentUsage = 15
+	IdentUsageMaybeType           IdentUsage = 16
+	IdentUsageReferenceBuiltinFn  IdentUsage = 17
 )
 
 func (n IdentUsage) String() string {
 	switch n {
 	case IdentUsageUnknown:
 		return "unknown"
+	case IdentUsageBadIdent:
+		return "bad_ident"
 	case IdentUsageReference:
 		return "reference"
 	case IdentUsageDefineVariable:
@@ -1101,6 +1104,8 @@ func (n *IdentUsage) UnmarshalJSON(data []byte) error {
 	switch tmp {
 	case "unknown":
 		*n = IdentUsageUnknown
+	case "bad_ident":
+		*n = IdentUsageBadIdent
 	case "reference":
 		*n = IdentUsageReference
 	case "define_variable":
@@ -2079,6 +2084,7 @@ type BadExpr struct {
 	ExprType      Type
 	ConstantLevel ConstantLevel
 	Content       string
+	BadExpr       Expr
 }
 
 func (n *BadExpr) isExpr() {}
@@ -3415,15 +3421,17 @@ type JsonAst struct {
 }
 
 type AstFile struct {
-	Files []string  `json:"files"`
-	Ast   *JsonAst  `json:"ast"`
-	Error *SrcError `json:"error"`
+	Success bool      `json:"success"`
+	Files   []string  `json:"files"`
+	Ast     *JsonAst  `json:"ast"`
+	Error   *SrcError `json:"error"`
 }
 
 type TokenFile struct {
-	Files  []string  `json:"files"`
-	Tokens []Token   `json:"tokens"`
-	Error  *SrcError `json:"error"`
+	Success bool      `json:"success"`
+	Files   []string  `json:"files"`
+	Tokens  []Token   `json:"tokens"`
+	Error   *SrcError `json:"error"`
 }
 
 type astConstructor struct {
@@ -4111,6 +4119,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				ExprType      *uintptr      `json:"expr_type"`
 				ConstantLevel ConstantLevel `json:"constant_level"`
 				Content       string        `json:"content"`
+				BadExpr       *uintptr      `json:"bad_expr"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -4120,6 +4129,9 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			}
 			v.ConstantLevel = tmp.ConstantLevel
 			v.Content = tmp.Content
+			if tmp.BadExpr != nil {
+				v.BadExpr = n.node[*tmp.BadExpr].(Expr)
+			}
 		case NodeTypeLoop:
 			v := n.node[i].(*Loop)
 			var tmp struct {
@@ -5513,6 +5525,11 @@ func Walk(n Node, f Visitor) {
 	case *BadExpr:
 		if v.ExprType != nil {
 			if !f.Visit(f, v.ExprType) {
+				return
+			}
+		}
+		if v.BadExpr != nil {
+			if !f.Visit(f, v.BadExpr) {
 				return
 			}
 		}

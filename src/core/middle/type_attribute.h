@@ -9,7 +9,7 @@
 namespace brgen::middle {
 
     struct TypeAttribute {
-        void recursive_reference(const std::shared_ptr<ast::Node>& node) {
+        void mark_recursive_reference(const std::shared_ptr<ast::Node>& node) {
             std::set<ast::StructType*> typ;
             std::set<ast::Type*> tracked;
             auto traverse_fn = [&](auto&& f, const std::shared_ptr<ast::Node>& n) -> void {
@@ -43,7 +43,7 @@ namespace brgen::middle {
             traverse_fn(traverse_fn, node);
         }
 
-        void int_type_detection(const std::shared_ptr<ast::Node>& node) {
+        void detect_non_dynamic_type(const std::shared_ptr<ast::Node>& node) {
             std::set<ast::Type*> tracked;
             auto trv = [&](auto&& f, const std::shared_ptr<ast::Node>& n) -> void {
                 if (auto ty = ast::as<ast::Type>(n)) {
@@ -345,7 +345,7 @@ namespace brgen::middle {
         }
 
        public:
-        void bit_alignment(const std::shared_ptr<ast::Node>& node) {
+        void analyze_bit_size_and_alignment(const std::shared_ptr<ast::Node>& node) {
             std::set<ast::Type*> tracked;
             auto trv = [&](auto&& f, const std::shared_ptr<ast::Node>& n) -> void {
                 if (auto ty = ast::as<ast::Type>(n); ty) {
