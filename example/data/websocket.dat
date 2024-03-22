@@ -1,0 +1,9 @@
+# WebSocket Frame
+8 # fin=true rsv1-rsv3
+1 # text frame 
+0 # mask = false
+f # payload len = 15
+# no extended len
+# no mask
+# payload 15 byte
+68 65 6c 6c 6f 20 77 6f 72 6c 64 20 21 21 21
