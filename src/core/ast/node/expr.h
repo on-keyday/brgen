@@ -72,12 +72,33 @@ namespace brgen::ast {
         }
     };
 
+    // this node is used for condition expression
+    // to make it immutable
+    // by type analysis method, expression is maybe replaced
+    // but condition expression is shared with other nodes
+    // so we need to make it immutable
+    struct Identity : Expr {
+        define_node_type(NodeType::identity);
+        std::shared_ptr<Expr> expr;
+        Identity(std::shared_ptr<Expr>&& e)
+            : Expr(e->loc, NodeType::identity), expr(std::move(e)) {}
+
+        // for decode
+        Identity()
+            : Expr({}, NodeType::identity) {}
+
+        void dump(auto&& field_) {
+            Expr::dump(field_);
+            sdebugf(expr);
+        }
+    };
+
     struct StructUnionType;
     struct If : Expr {
         define_node_type(NodeType::if_);
         std::shared_ptr<StructUnionType> struct_union_type;
         scope_ptr cond_scope;
-        std::shared_ptr<Expr> cond;
+        std::shared_ptr<Identity> cond;
         std::shared_ptr<IndentBlock> then;
         std::shared_ptr<Node> els;
 
@@ -161,10 +182,18 @@ namespace brgen::ast {
 
     // .. or ..=
     constexpr bool is_any_range(auto&& e) {
-        if (e && e->node_type == NodeType::range) {
-            auto p = static_cast<ast::Range*>(std::to_address(e));
-
+        auto q = static_cast<ast::Node*>(std::to_address(e));
+        if (q && q->node_type == NodeType::range) {
+            auto p = static_cast<ast::Range*>(q);
             return !p->start && !p->end;
+        }
+        if (q && q->node_type == NodeType::identity) {
+            auto p = static_cast<ast::Identity*>(q);
+            return is_any_range(p->expr);
+        }
+        if (q && q->node_type == NodeType::paren) {
+            auto p = static_cast<ast::Paren*>(q);
+            return is_any_range(p->expr);
         }
         return false;
     }
@@ -239,7 +268,7 @@ namespace brgen::ast {
     struct MatchBranch : Stmt {
         define_node_type(NodeType::match_branch);
         std::weak_ptr<Match> belong;
-        std::shared_ptr<Expr> cond;
+        std::shared_ptr<Identity> cond;
         lexer::Loc sym_loc;
         std::shared_ptr<Node> then;
         // Comment or CommentGroup
@@ -264,7 +293,7 @@ namespace brgen::ast {
         define_node_type(NodeType::match);
         std::shared_ptr<StructUnionType> struct_union_type;
         scope_ptr cond_scope;
-        std::shared_ptr<Expr> cond;
+        std::shared_ptr<Identity> cond;
         // MatchBranch
         std::vector<std::shared_ptr<MatchBranch>> branch;
 

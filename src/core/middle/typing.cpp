@@ -1428,6 +1428,11 @@ namespace brgen::middle {
                 expr->expr_type = std::make_shared<ast::RegexLiteralType>(ast::cast_to<ast::RegexLiteral>(expr));
                 expr->constant_level = ast::ConstantLevel::constant;
             }
+            else if (auto identity = ast::as<ast::Identity>(expr)) {
+                typing_expr(identity->expr);
+                identity->expr_type = identity->expr->expr_type;
+                identity->constant_level = identity->expr->constant_level;
+            }
             else {
                 unsupported(expr);
             }

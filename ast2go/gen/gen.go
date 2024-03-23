@@ -193,6 +193,8 @@ func (s *ExprStringer) ExprString(e ast2go.Expr) string {
 		}
 		typ := s.TypeProvider(e.ExprType)
 		return fmt.Sprintf("%s(%s)", typ, s.ExprString(e.Expr))
+	case *ast2go.Identity:
+		return s.ExprString(e.Expr)
 	case *ast2go.Available:
 		ident, ok := e.Target.(*ast2go.Ident)
 		if !ok {
@@ -451,6 +453,12 @@ func LookupIdent(ident *ast2go.Ident) (*ast2go.Ident, bool /*via member*/) {
 func IsAnyRange(e ast2go.Node) bool {
 	if r, ok := e.(*ast2go.Range); ok {
 		return r.Start == nil && r.End == nil
+	}
+	if r, ok := e.(*ast2go.Identity); ok {
+		return IsAnyRange(r.Expr)
+	}
+	if r, ok := e.(*ast2go.Paren); ok {
+		return IsAnyRange(r.Expr)
 	}
 	return false
 }

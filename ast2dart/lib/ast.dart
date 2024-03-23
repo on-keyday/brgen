@@ -33,6 +33,8 @@ Index,
 Match,
 @JsonValue('range')
 Range,
+@JsonValue('identity')
+Identity,
 @JsonValue('tmp_var')
 TmpVar,
 @JsonValue('import')
@@ -506,7 +508,7 @@ factory Call.fromJson(Map<String, dynamic> json) => _$CallFromJson(json);
 class If extends Expr {
     StructUnionType? structUnionType;
     Scope? condScope;
-    Expr? cond;
+    Identity? cond;
     IndentBlock? then;
     Node? els;
 factory If.fromJson(Map<String, dynamic> json) => _$IfFromJson(json);
@@ -535,7 +537,7 @@ factory Index.fromJson(Map<String, dynamic> json) => _$IndexFromJson(json);
 class Match extends Expr {
     StructUnionType? structUnionType;
     Scope? condScope;
-    Expr? cond;
+    Identity? cond;
     List<MatchBranch>? branch = [];
 factory Match.fromJson(Map<String, dynamic> json) => _$MatchFromJson(json);
 }
@@ -545,6 +547,11 @@ class Range extends Expr {
     Expr? start;
     Expr? end;
 factory Range.fromJson(Map<String, dynamic> json) => _$RangeFromJson(json);
+}
+@JsonSerializable()
+class Identity extends Expr {
+    Expr? expr;
+factory Identity.fromJson(Map<String, dynamic> json) => _$IdentityFromJson(json);
 }
 @JsonSerializable()
 class TmpVar extends Expr {
@@ -623,7 +630,7 @@ factory ScopedStatement.fromJson(Map<String, dynamic> json) => _$ScopedStatement
 @JsonSerializable()
 class MatchBranch extends Stmt {
     Match? belong;
-    Expr? cond;
+    Identity? cond;
     Loc symLoc = Loc();
     Node? then;
 factory MatchBranch.fromJson(Map<String, dynamic> json) => _$MatchBranchFromJson(json);

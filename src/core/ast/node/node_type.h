@@ -27,6 +27,9 @@ namespace brgen::ast {
         match,
         range,
 
+        // for ast replacement helper
+        identity,
+
         // translated
         tmp_var,
         import_,
@@ -176,6 +179,7 @@ namespace brgen::ast {
         {NodeType::metadata, "metadata"},
         {NodeType::regex_literal, "regex_literal"},
         {NodeType::regex_literal_type, "regex_literal_type"},
+        {NodeType::identity, "identity"},
     };
 
     constexpr std::array<std::pair<NodeType, const char*>, std::size(node_type_str_array)> sorted_node_type_str_array = [] {

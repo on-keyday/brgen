@@ -68,6 +68,7 @@ typedef struct ast2c_Paren ast2c_Paren;
 typedef struct ast2c_Index ast2c_Index;
 typedef struct ast2c_Match ast2c_Match;
 typedef struct ast2c_Range ast2c_Range;
+typedef struct ast2c_Identity ast2c_Identity;
 typedef struct ast2c_TmpVar ast2c_TmpVar;
 typedef struct ast2c_Import ast2c_Import;
 typedef struct ast2c_Cast ast2c_Cast;
@@ -149,6 +150,7 @@ enum ast2c_NodeType {
 	AST2C_NODETYPE_INDEX,
 	AST2C_NODETYPE_MATCH,
 	AST2C_NODETYPE_RANGE,
+	AST2C_NODETYPE_IDENTITY,
 	AST2C_NODETYPE_TMP_VAR,
 	AST2C_NODETYPE_IMPORT,
 	AST2C_NODETYPE_CAST,
@@ -639,7 +641,7 @@ struct ast2c_If {
 	ast2c_ConstantLevel constant_level;
 	ast2c_StructUnionType* struct_union_type;
 	ast2c_Scope* cond_scope;
-	ast2c_Expr* cond;
+	ast2c_Identity* cond;
 	ast2c_IndentBlock* then;
 	ast2c_Node* els;
 };
@@ -692,7 +694,7 @@ struct ast2c_Match {
 	ast2c_ConstantLevel constant_level;
 	ast2c_StructUnionType* struct_union_type;
 	ast2c_Scope* cond_scope;
-	ast2c_Expr* cond;
+	ast2c_Identity* cond;
 	ast2c_MatchBranch** branch;
 	size_t branch_size;
 };
@@ -712,6 +714,17 @@ struct ast2c_Range {
 
 // returns 1 if succeed 0 if failed
 int ast2c_Range_parse(ast2c_Ast* ,ast2c_Range*,ast2c_json_handlers*,void*);
+
+struct ast2c_Identity {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
+	ast2c_Expr* expr;
+};
+
+// returns 1 if succeed 0 if failed
+int ast2c_Identity_parse(ast2c_Ast* ,ast2c_Identity*,ast2c_json_handlers*,void*);
 
 struct ast2c_TmpVar {
 	const ast2c_NodeType node_type;
@@ -853,7 +866,7 @@ struct ast2c_MatchBranch {
 	const ast2c_NodeType node_type;
 	ast2c_Loc loc;
 	ast2c_Match* belong;
-	ast2c_Expr* cond;
+	ast2c_Identity* cond;
 	ast2c_Loc sym_loc;
 	ast2c_Node* then;
 };

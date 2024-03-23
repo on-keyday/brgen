@@ -261,7 +261,9 @@ namespace brgen::ast {
         void export_union_field(const std::shared_ptr<Expr>& cond0, std::vector<std::shared_ptr<Expr>>& cond, const std::shared_ptr<StructUnionType>& type) {
             assert(cond.size() == type->structs.size());
             type->cond = cond0;
-            type->conds = std::move(cond);
+            for (auto& c : cond) {
+                type->conds.push_back(c);
+            }
             std::map<std::string, std::vector<std::shared_ptr<UnionCandidate>>> m;
             for (size_t i = 0; i < type->conds.size(); i++) {
                 auto& c = type->conds[i];
@@ -275,8 +277,8 @@ namespace brgen::ast {
                     }
                     if (auto found = m.find(d->ident->ident); found != m.end()) {
                         for (auto& c1 : found->second) {
-                            if (c1->cond.lock() == c) {
-                                error(d->loc, "duplicate field name: ", d->ident->ident).error(c->loc, "previous definition is here").report();
+                            if (c1->cond.lock() == c.lock()) {
+                                error(d->loc, "duplicate field name: ", d->ident->ident).error(c.lock()->loc, "previous definition is here").report();
                             }
                         }
                     }
@@ -314,7 +316,7 @@ namespace brgen::ast {
                 union_type->base_type = type;
                 size_t cand_i = 0;
                 for (auto& c : v) {
-                    while (c->cond.lock() != type->conds[cand_i]) {
+                    while (c->cond.lock() != type->conds[cand_i].lock()) {
                         union_type->candidates.push_back(get_null_cache(cand_i));
                         cand_i++;
                     }
@@ -354,7 +356,7 @@ namespace brgen::ast {
             s.skip_white();
 
             if (!s.expect_token(":")) {
-                match->cond = parse_expr();
+                match->cond = parse_expr_identity();
             }
 
             // Consume the initial indent sign
@@ -378,7 +380,7 @@ namespace brgen::ast {
             auto parse_match_branch = [&]() -> std::shared_ptr<MatchBranch> {
                 auto br = std::make_shared<MatchBranch>();
                 br->belong = match;
-                br->cond = parse_expr();
+                br->cond = parse_expr_identity();
                 collect_comments(br);
                 cond.push_back(br->cond);
                 br->loc = br->cond->loc;
@@ -432,7 +434,7 @@ namespace brgen::ast {
             auto cs = state.cond_scope(if_->cond_scope, if_);
 
             // 解析して if の条件式とブロックを設定
-            if_->cond = parse_expr();
+            if_->cond = parse_expr_identity();
             std::shared_ptr<StructUnionType> union_ = std::make_shared<StructUnionType>(if_->loc);
             if_->struct_union_type = union_;
             union_->base = if_;
@@ -487,7 +489,7 @@ namespace brgen::ast {
             while (auto tok = s.consume_token("elif")) {
                 auto elif = std::make_shared<If>(tok->loc);
                 s.skip_white();
-                elif->cond = parse_expr();
+                elif->cond = parse_expr_identity();
                 cond.push_back(elif->cond);
                 body_with_struct(tok->loc, elif->then, elif);
                 current_if->els = elif;
@@ -894,6 +896,10 @@ namespace brgen::ast {
                 return true;
             }
             return false;
+        }
+
+        std::shared_ptr<Identity> parse_expr_identity(bool* line_skipped = nullptr) {
+            return std::make_shared<Identity>(parse_expr(line_skipped));
         }
 
         /*

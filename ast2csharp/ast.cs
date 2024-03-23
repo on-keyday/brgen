@@ -20,6 +20,7 @@ Paren,
 Index,
 Match,
 Range,
+Identity,
 TmpVar,
 Import,
 Cast,
@@ -320,7 +321,7 @@ public class If : Expr{
 	public ConstantLevel ConstantLevel{get;set;}
 	public StructUnionType? StructUnionType{get;set;}
 	public Scope? CondScope{get;set;}
-	public Expr? Cond{get;set;}
+	public Identity? Cond{get;set;}
 	public IndentBlock? Then{get;set;}
 	public Node? Els{get;set;}
 }
@@ -353,7 +354,7 @@ public class Match : Expr{
 	public ConstantLevel ConstantLevel{get;set;}
 	public StructUnionType? StructUnionType{get;set;}
 	public Scope? CondScope{get;set;}
-	public Expr? Cond{get;set;}
+	public Identity? Cond{get;set;}
 	public List<MatchBranch>? Branch{get;set;}
 }
 public class Range : Expr{
@@ -363,6 +364,12 @@ public class Range : Expr{
 	public BinaryOp Op{get;set;}
 	public Expr? Start{get;set;}
 	public Expr? End{get;set;}
+}
+public class Identity : Expr{
+	public Loc Loc{get;set;}
+	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
+	public Expr? Expr{get;set;}
 }
 public class TmpVar : Expr{
 	public Loc Loc{get;set;}
@@ -446,7 +453,7 @@ public class ScopedStatement : Stmt{
 public class MatchBranch : Stmt{
 	public Loc Loc{get;set;}
 	public Match? Belong{get;set;}
-	public Expr? Cond{get;set;}
+	public Identity? Cond{get;set;}
 	public Loc SymLoc{get;set;}
 	public Node? Then{get;set;}
 }
@@ -905,6 +912,9 @@ public static class Ast {
            case NodeType.Range:
                nodes[i] = new Range() { Loc = ast.Node[i].Loc };
                break;
+           case NodeType.Identity:
+               nodes[i] = new Identity() { Loc = ast.Node[i].Loc };
+               break;
            case NodeType.TmpVar:
                nodes[i] = new TmpVar() { Loc = ast.Node[i].Loc };
                break;
@@ -1192,6 +1202,12 @@ public static class Ast {
                node.Op = ast.Node[i].Body[op];
                node.Start = ast.Node[i].Body[start];
                node.End = ast.Node[i].Body[end];
+           case NodeType.Identity:
+               var node = nodes[i] as Identity;
+               node.Loc = ast.Node[i].Body[loc];
+               node.ExprType = ast.Node[i].Body[expr_type];
+               node.ConstantLevel = ast.Node[i].Body[constant_level];
+               node.Expr = ast.Node[i].Body[expr];
            case NodeType.TmpVar:
                var node = nodes[i] as TmpVar;
                node.Loc = ast.Node[i].Body[loc];

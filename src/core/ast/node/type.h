@@ -424,8 +424,8 @@ namespace brgen::ast {
     struct StructUnionType : Type {
         define_node_type(NodeType::struct_union_type);
         std::weak_ptr<Expr> base;                  // match or if expression
-        std::shared_ptr<Expr> cond;                // match condition
-        std::vector<std::shared_ptr<Expr>> conds;  // size must equal to structs.size()
+        std::weak_ptr<Expr> cond;                // match condition
+        std::vector<std::weak_ptr<Expr>> conds;  // size must equal to structs.size()
         std::vector<std::shared_ptr<StructType>> structs;
         std::vector<std::weak_ptr<Field>> union_fields;
         // conditions are exhaustive

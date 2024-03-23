@@ -21,6 +21,7 @@ class NodeType(PyEnum):
     INDEX = "index"
     MATCH = "match"
     RANGE = "range"
+    IDENTITY = "identity"
     TMP_VAR = "tmp_var"
     IMPORT = "import"
     CAST = "cast"
@@ -330,7 +331,7 @@ class Call(Expr):
 class If(Expr):
     struct_union_type: Optional[StructUnionType]
     cond_scope: Optional[Scope]
-    cond: Optional[Expr]
+    cond: Optional[Identity]
     then: Optional[IndentBlock]
     els: Optional[Node]
 
@@ -355,7 +356,7 @@ class Index(Expr):
 class Match(Expr):
     struct_union_type: Optional[StructUnionType]
     cond_scope: Optional[Scope]
-    cond: Optional[Expr]
+    cond: Optional[Identity]
     branch: List[MatchBranch]
 
 
@@ -363,6 +364,10 @@ class Range(Expr):
     op: BinaryOp
     start: Optional[Expr]
     end: Optional[Expr]
+
+
+class Identity(Expr):
+    expr: Optional[Expr]
 
 
 class TmpVar(Expr):
@@ -430,7 +435,7 @@ class ScopedStatement(Stmt):
 
 class MatchBranch(Stmt):
     belong: Optional[Match]
-    cond: Optional[Expr]
+    cond: Optional[Identity]
     sym_loc: Loc
     then: Optional[Node]
 
@@ -881,6 +886,8 @@ def ast2node(ast :JsonAst) -> Program:
                 node.append(Match())
             case NodeType.RANGE:
                 node.append(Range())
+            case NodeType.IDENTITY:
+                node.append(Identity())
             case NodeType.TMP_VAR:
                 node.append(TmpVar())
             case NodeType.IMPORT:
@@ -1164,7 +1171,7 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].cond_scope = None
                 if ast.node[i].body["cond"] is not None:
                     x = node[ast.node[i].body["cond"]]
-                    node[i].cond = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at If::cond'))
+                    node[i].cond = x if isinstance(x,Identity) else raiseError(TypeError('type mismatch at If::cond'))
                 else:
                     node[i].cond = None
                 if ast.node[i].body["then"] is not None:
@@ -1248,7 +1255,7 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].cond_scope = None
                 if ast.node[i].body["cond"] is not None:
                     x = node[ast.node[i].body["cond"]]
-                    node[i].cond = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at Match::cond'))
+                    node[i].cond = x if isinstance(x,Identity) else raiseError(TypeError('type mismatch at Match::cond'))
                 else:
                     node[i].cond = None
                 node[i].branch = [(node[x] if isinstance(node[x],MatchBranch) else raiseError(TypeError('type mismatch at Match::branch'))) for x in ast.node[i].body["branch"]]
@@ -1270,6 +1277,18 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].end = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at Range::end'))
                 else:
                     node[i].end = None
+            case NodeType.IDENTITY:
+                if ast.node[i].body["expr_type"] is not None:
+                    x = node[ast.node[i].body["expr_type"]]
+                    node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at Identity::expr_type'))
+                else:
+                    node[i].expr_type = None
+                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
+                if ast.node[i].body["expr"] is not None:
+                    x = node[ast.node[i].body["expr"]]
+                    node[i].expr = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at Identity::expr'))
+                else:
+                    node[i].expr = None
             case NodeType.TMP_VAR:
                 if ast.node[i].body["expr_type"] is not None:
                     x = node[ast.node[i].body["expr_type"]]
@@ -1459,7 +1478,7 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].belong = None
                 if ast.node[i].body["cond"] is not None:
                     x = node[ast.node[i].body["cond"]]
-                    node[i].cond = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at MatchBranch::cond'))
+                    node[i].cond = x if isinstance(x,Identity) else raiseError(TypeError('type mismatch at MatchBranch::cond'))
                 else:
                     node[i].cond = None
                 node[i].sym_loc = parse_Loc(ast.node[i].body["sym_loc"])
@@ -2366,6 +2385,13 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
           if x.end is not None:
               if f(f,x.end) == False:
                   return
+        case x if isinstance(x,Identity):
+          if x.expr_type is not None:
+              if f(f,x.expr_type) == False:
+                  return
+          if x.expr is not None:
+              if f(f,x.expr) == False:
+                  return
         case x if isinstance(x,TmpVar):
           if x.expr_type is not None:
               if f(f,x.expr_type) == False:
@@ -2540,12 +2566,6 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
               if f(f,x.fields[i]) == False:
                   return
         case x if isinstance(x,StructUnionType):
-          if x.cond is not None:
-              if f(f,x.cond) == False:
-                  return
-          for i in range(len(x.conds)):
-              if f(f,x.conds[i]) == False:
-                  return
           for i in range(len(x.structs)):
               if f(f,x.structs[i]) == False:
                   return
