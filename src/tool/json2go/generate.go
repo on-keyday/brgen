@@ -472,6 +472,10 @@ func (g *Generator) writeAppendUint(size uint64, field string) {
 		g.PrintfFunc("buf = append(buf, byte(%s))\n", field)
 		return
 	}
+	if size == 24 {
+		g.PrintfFunc("buf = append(buf, byte(%s>>16),byte(%s>>8),byte(%s))\n", field, field, field)
+		return
+	}
 	g.imports["encoding/binary"] = struct{}{}
 	if *usePut {
 		tmp := fmt.Sprintf("tmp%d", g.getSeq())
@@ -679,13 +683,16 @@ func (g *Generator) writeTypeDecode(ident string, typ ast2go.Type, p *ast2go.Fie
 				g.PrintfFunc("return err\n")
 				g.PrintfFunc("}\n")
 				g.imports["bytes"] = struct{}{}
-				g.PrintfFunc("range_tmp_%s := bytes.NewBuffer(tmp%s[:])\n", p.Ident.Ident, p.Ident.Ident)
-				g.PrintfFunc("for range_tmp_%s.Available() > 0 {\n", p.Ident.Ident)
+				g.PrintfFunc("range_tmp_%s := bytes.NewReader(tmp%s[:])\n", p.Ident.Ident, p.Ident.Ident)
+				g.PrintfFunc("tmp_old_r_%s := r\n", p.Ident.Ident)
+				g.PrintfFunc("r = range_tmp_%s\n", p.Ident.Ident)
+				g.PrintfFunc("for range_tmp_%s.Len() > 0 {\n", p.Ident.Ident)
 				seq := g.getSeq()
 				g.PrintfFunc("var tmp%d_ %s\n", seq, g.getType(arr_type.ElementType))
 				g.writeTypeDecode(fmt.Sprintf("tmp%d_", seq), arr_type.ElementType, p)
 				g.PrintfFunc("%s = append(%s, tmp%d_)\n", ident, ident, seq)
 				g.PrintfFunc("}\n")
+				g.PrintfFunc("r = tmp_old_r_%s\n", p.Ident.Ident)
 			} else {
 				g.PrintfFunc("len_%s := int(%s)\n", p.Ident.Ident, length)
 				g.PrintfFunc("for i := 0; i < len_%s; i++ {\n", p.Ident.Ident)

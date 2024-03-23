@@ -2,6 +2,9 @@ config.go.package = "ether"
 
 DHCP_MAGIC ::= 0x63825363
 
+DHCP_SERVER_PORT ::= 67
+DHCP_CLIENT_PORT ::= 68
+
 enum DHCP_OP:
     :u8
     REQUEST = 1

@@ -1,4 +1,4 @@
-
+config.go.package = "ether"
 format TCPSegment:
     srcPort :u16
     dstPort :u16
@@ -27,4 +27,16 @@ enum TCPState:
     TIME_WAIT
 
 
+format TCPPseudoHeader:
+    srcAddr :[4]u8
+    dstAddr :[4]u8
+    zero :u8
+    protocol :u8
+    length :u16
 
+format IPv6ChecksumPseudoHeader:
+    srcAddr :[16]u8
+    dstAddr :[16]u8
+    length :u32
+    zero :u24
+    nextHeader :u8
