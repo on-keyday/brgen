@@ -374,12 +374,12 @@ auto report_error(Flags& flags, auto&& elem, brgen::FileSet& files, brgen::Locat
     print_errors(src_err, flags.unresolved_type_as_error);
 }
 
-int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& files, brgen::File* input, Flags& flags, const Capability& cap, brgen::LocationError& err_or_warn) {
+int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& files, brgen::File* input, Flags& flags, const Capability& cap, brgen::LocationError& json_out_err) {
     assert(p);
     auto report = [&](brgen::LocationError&& err) {
-        if (err_or_warn.locations.size()) {
-            err_or_warn.locations.insert(err_or_warn.locations.end(), err.locations.begin(), err.locations.end());
-            err = std::move(err_or_warn);
+        if (json_out_err.locations.size()) {
+            json_out_err.locations.insert(json_out_err.locations.end(), err.locations.begin(), err.locations.end());
+            err = std::move(json_out_err);
         }
         if (*p && flags.error_tolerant) {
             auto d = dump_ast_json(flags, *p);
@@ -395,7 +395,7 @@ int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& f
         .error_tolerant = flags.error_tolerant,
     };
 
-    auto res = do_parse(input, option, err_or_warn);
+    auto res = do_parse(input, option, json_out_err);
 
     if (!res) {
         report(std::move(res.error()));
@@ -409,7 +409,7 @@ int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& f
             print_error("import is disabled");
             return exit_err;
         }
-        auto res2 = brgen::middle::resolve_import(*p, files, err_or_warn, option);
+        auto res2 = brgen::middle::resolve_import(*p, files, json_out_err, option);
         if (!res2) {
             report(std::move(res2.error()));
             return exit_err;
@@ -461,7 +461,7 @@ int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& f
         }
         if (!flags.disable_untyped_warning && warns.locations.size() > 0) {
             if (!flags.omit_json_warning) {
-                err_or_warn.locations.insert(err_or_warn.locations.end(), warns.locations.begin(), warns.locations.end());
+                json_out_err.locations.insert(json_out_err.locations.end(), warns.locations.begin(), warns.locations.end());
             }
             auto src_err = brgen::to_source_error(files)(std::move(warns));
             print_errors(src_err);
@@ -473,7 +473,7 @@ int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& f
         brgen::middle::replace_assert(*p, warns);
         if (!flags.disable_unused_warning && warns.locations.size() > 0) {
             if (!flags.omit_json_warning) {
-                err_or_warn.locations.insert(err_or_warn.locations.end(), warns.locations.begin(), warns.locations.end());
+                json_out_err.locations.insert(json_out_err.locations.end(), warns.locations.begin(), warns.locations.end());
             }
             auto tmp = brgen::to_source_error(files)(std::move(warns));
             print_errors(tmp);
@@ -731,6 +731,16 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
         return code;
     }
 
+    bool has_err = err_or_warn.locations.size() &&
+                   std::find_if(err_or_warn.locations.begin(), err_or_warn.locations.end(), [](auto&& loc) {
+                       return !loc.warn;
+                   }) != err_or_warn.locations.end();
+
+    auto src_err = brgen::to_source_error(files)(err_or_warn);
+    if (has_err) {
+        print_errors(src_err);
+    }
+
     if (cout.is_tty() && !flags.print_json) {
         print_ok();
         return exit_ok;
@@ -740,7 +750,7 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
         print_error("print ast json is disabled");
         return exit_err;
     }
-    auto src_err = brgen::to_source_error(files)(err_or_warn);
+
     auto d = dump_json_file(files, true, dump_ast_json(flags, res), "ast", src_err);
     cout << futils::wrap::pack(d.out(), cout.is_tty() ? "\n" : "");
 

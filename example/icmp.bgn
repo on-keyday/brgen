@@ -5,7 +5,9 @@ format ICMPHeader:
     checksum: u16
 
 format ICMPTimeExceeded:
-    unused: u32
+    unused1: u8
+    length: u8
+    unused2: u16
     data: [..]u8
 
 format ICMPEcho:
@@ -13,3 +15,168 @@ format ICMPEcho:
     seq: u16
     data: [..]u8
 
+format ICMPEchoReply:
+    id: u16
+    seq: u16
+    data: [..]u8
+
+format ICMPDestinationUnreachable:
+    unused: u16
+    next_hop_mtu: u16
+    data: [..]u8
+
+format ICMPv6RouterAdvertisement:
+    cur_hop_limit: u8
+    m :u1
+    o :u1
+    reserved: u6
+    router_lifetime: u16
+    reachable_time: u32
+    retrans_timer: u32
+    options: [..]u8
+
+format ICMPv6NeighborSolicitation:
+    target_addr: [16]u8
+    options: [..]u8
+
+format ICMPv6NeighborAdvertisement:
+    target_addr: [16]u8
+    flags: u32
+    options: [..]u8
+
+format ICMPv4Packet:
+    header: ICMPHeader
+    match ICMPv4Type(header.type):
+        ICMPv4Type.echo:
+            echo: ICMPEcho
+        ICMPv4Type.echo_reply:
+            echo_reply: ICMPEchoReply
+        ICMPv4Type.time_exceeded:
+            time_exceeded: ICMPTimeExceeded
+        ICMPv4Type.dst_unreachable:
+            destination_unreachable: ICMPDestinationUnreachable
+        ..:
+            data: [..]u8
+
+format ICMPv6Packet:
+    header: ICMPHeader
+    match ICMPv6Type(header.type):
+        ICMPv6Type.router_advertisement:
+            router_advertisement: ICMPv6RouterAdvertisement
+        ICMPv6Type.neighbor_solicitation:
+            neighbor_solicitation: ICMPv6NeighborSolicitation
+        ICMPv6Type.neighbor_advertisement:
+            neighbor_advertisement: ICMPv6NeighborAdvertisement
+        ..:
+            data: [..]u8
+
+
+enum ICMPv4Type:
+    :u8
+    echo_reply
+    reserved_1
+    reserved_2
+    dst_unreachable
+    src_quench
+    redirect
+    alt_host_address
+    reserved_3
+    echo
+    router_advertisement
+    router_solicitation
+    time_exceeded
+    parameter_problem
+    timestamp
+    timestamp_reply
+    information_request
+    information_reply
+    address_mask_request
+    address_mask_reply
+    reserved_for_security_1
+    reserved_for_robustness_experiment_1
+    reserved_for_robustness_experiment_2
+    reserved_for_robustness_experiment_3
+    reserved_for_robustness_experiment_4
+    reserved_for_robustness_experiment_5
+    reserved_for_robustness_experiment_6
+    reserved_for_robustness_experiment_7
+    reserved_for_robustness_experiment_8
+    reserved_for_robustness_experiment_9
+    reserved_for_robustness_experiment_10
+    traceroute
+    datagram_conversion_error
+    mobile_host_redirect
+    where_are_you
+    here_I_am
+    mobile_registration_request
+    mobile_registration_reply
+    domain_name_request
+    domain_name_reply
+    skip_discovery
+    security_failure
+    icmp_for_seamoby
+    experimental_1 = 253
+    experimental_2 = 255
+
+enum ICMPv4Code:
+    :u8
+    net_unreachable
+    host_unreachable
+    protocol_unreachable
+    port_unreachable
+    fragmentation_needed
+    source_route_failed
+    network_unknown
+    host_unknown
+    network_prohibited
+    host_prohibited
+    TOS_network_unreachable
+    TOS_host_unreachable
+    communication_prohibited
+    host_precedence_violation
+    precedence_cutoff
+
+enum ICMPv6Type:
+    :u8
+    destination_unreachable
+    packet_too_big
+    time_exceeded
+    parameter_problem
+    echo_request
+    echo_reply
+    multicast_listener_query
+    multicast_listener_report
+    multicast_listener_done
+    router_solicitation
+    router_advertisement
+    neighbor_solicitation
+    neighbor_advertisement
+    redirect_message
+    router_renumbering
+    node_information_query
+    node_information_response
+    inverse_neighbor_discovery_solicitation
+    inverse_neighbor_discovery_advertisement
+    v2_multicast_listener_report
+    home_agent_address_discovery_request
+    home_agent_address_discovery_reply
+    mobile_prefix_solicitation
+    mobile_prefix_advertisement
+    certification_path_solicitation
+    certification_path_advertisement
+    experimental_mobility_protocols = 253
+    experimental_mobility_protocols_2 = 254
+    reserved = 255
+
+enum ICMPv6Code:
+    :u8
+    no_route_to_dst
+    communication_with_dst_admin_prohibited
+    beyond_scope_of_src
+    address_unreachable
+    port_unreachable
+    src_addr_failed_ingress_egress_policy
+    reject_route_to_dst
+    error_in_src_routing_header
+    rejected_dst_addr_unreachable
+    error_in_dst_options_header

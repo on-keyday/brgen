@@ -22,15 +22,15 @@ format IPv6Header:
     dstAddr :[16]u8
 
 
-format IPHeader:
-    ip_version :u4(input.peek=true)
+#format IPHeader:
+#    ip_version :u4(input.peek=true)
 
-    if ip_version == 4:
-        hdr :IPv4Header
+#    if ip_version == 4:
+#        hdr :IPv4Header
  
-    elif ip_version == 6:
-        hdr :IPv6Header
-    else:
-        error("invalid ip_version: %d", ip_version)
+#    elif ip_version == 6:
+#        hdr :IPv6Header
+#    else:
+#        error("invalid ip_version: %d", ip_version)
 
 

@@ -170,11 +170,11 @@ namespace brgen::ast {
                 }
                 if (auto line = s.prev_token(); line && line->tag == lexer::Tag::line) {
                     s.backward();  // for error report correctly
-                    state.errors.locations.push_back(s.token_error(lexer::Tag::line).locations[0]);
+                    state.errors.locations.push_back(s.token_error(":").locations[0]);
                     s.must_consume_token(lexer::Tag::line);
                 }
                 else {
-                    state.errors.locations.push_back(s.token_error(lexer::Tag::line).locations[0]);
+                    state.errors.locations.push_back(s.token_error(":").locations[0]);
                 }
                 return;  // error tolerant mode; ignore error
             }

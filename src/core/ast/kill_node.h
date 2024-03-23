@@ -16,7 +16,9 @@ namespace brgen::ast {
                 auto s = std::move(stack.back());
                 stack.pop_back();
                 if (s->next) {
-                    stack.push_back(std::move(s->next));
+                    if (s->next->prev.lock() == s) {
+                        stack.push_back(std::move(s->next));
+                    }
                     s->next = nullptr;
                 }
                 if (s->branch) {

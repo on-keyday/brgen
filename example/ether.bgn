@@ -1,4 +1,6 @@
 
+config.go.package = "ether"
+
 enum EtherType:
     :u16
     ipv4 = 0x0800

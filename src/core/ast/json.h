@@ -50,7 +50,9 @@ namespace brgen::ast {
                 stack.pop_back();
                 collect_scope(v);    
                 if(v->next){
-                    stack.push_back(v->next);
+                    if(v->next->prev.lock()==v){                
+                        stack.push_back(v->next);
+                    }
                 }
                 if(v->branch){
                     stack.push_back(v->branch);
