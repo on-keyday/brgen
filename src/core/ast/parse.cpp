@@ -277,8 +277,8 @@ namespace brgen::ast {
                     }
                     if (auto found = m.find(d->ident->ident); found != m.end()) {
                         for (auto& c1 : found->second) {
-                            if (c1->cond.lock() == c.lock()) {
-                                error(d->loc, "duplicate field name: ", d->ident->ident).error(c.lock()->loc, "previous definition is here").report();
+                            if (c1->cond.lock() == c) {
+                                error(d->loc, "duplicate field name: ", d->ident->ident).error(c->loc, "previous definition is here").report();
                             }
                         }
                     }
@@ -316,7 +316,7 @@ namespace brgen::ast {
                 union_type->base_type = type;
                 size_t cand_i = 0;
                 for (auto& c : v) {
-                    while (c->cond.lock() != type->conds[cand_i].lock()) {
+                    while (c->cond.lock() != type->conds[cand_i]) {
                         union_type->candidates.push_back(get_null_cache(cand_i));
                         cand_i++;
                     }

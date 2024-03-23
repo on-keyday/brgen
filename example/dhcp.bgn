@@ -1,6 +1,14 @@
+config.go.package = "ether"
 
-format DHCP:
-    op :u8
+DHCP_MAGIC ::= 0x63825363
+
+enum DHCP_OP:
+    :u8
+    REQUEST = 1
+    REPLY = 2
+
+format DHCPMessage:
+    op :DHCP_OP
     htype :u8
     hlen :u8
     hops :u8
@@ -8,13 +16,77 @@ format DHCP:
     secs :u16
     broadcast :u1
     reserved :u15(0)
-    ciaddr :u32
-    yiaddr :u32
-    siaddr :u32
-    giaddr :u32
-    chaddr :[16]u8
+    client_addr :[4]u8
+    your_addr :[4]u8
+    server_addr :[4]u8
+    gateway_addr :[4]u8
+    client_hardware_addr :[16]u8
     sname :[64]u8
     file :[128]u8
-    magic :u32(0x63825363)
-    options :[..]u8
+    magic :u32(DHCP_MAGIC)
+    options :[..]Option
+
+enum DHCP_OPTION:
+    :u8
+    PAD = 0
+    SUBNET_MASK = 1
+    ROUTER = 3
+    DNS_SERVER = 6
+    HOST_NAME = 12
+    DOMAIN_NAME = 15
+    REQUESTED_IP = 50
+    LEASE_TIME = 51
+    MESSAGE_TYPE = 53
+    SERVER_ID = 54
+    PARAMETER_REQUEST_LIST = 55
+    RENEWAL_TIME = 58
+    REBINDING_TIME = 59
+    END = 255
+
+enum DHCP_TYPE:
+    :u8
+    DISCOVER = 1
+    OFFER = 2
+    REQUEST = 3
+    DECLINE = 4
+    ACK = 5
+    NAK = 6
+    RELEASE = 7
+    INFORM = 8
+
+format Option:
+    code :DHCP_OPTION
+    match code:
+        DHCP_OPTION.PAD => ..
+        DHCP_OPTION.END => ..
+        DHCP_OPTION.SUBNET_MASK:
+            len :u8(4)
+            addr :[len]u8
+        DHCP_OPTION.MESSAGE_TYPE:
+            len :u8(1)
+            type :DHCP_TYPE
+        DHCP_OPTION.REQUESTED_IP:
+            len :u8(4)
+            addr :[len]u8
+        DHCP_OPTION.SERVER_ID:
+            len :u8(4)
+            addr :[len]u8
+        DHCP_OPTION.PARAMETER_REQUEST_LIST:
+            len :u8
+            list :[len]DHCP_OPTION
+        DHCP_OPTION.ROUTER:
+            len :u8
+            addr :[len]u8
+        DHCP_OPTION.DNS_SERVER:
+            len :u8
+            addr :[len]u8
+        DHCP_OPTION.LEASE_TIME:
+            len :u8(4)
+            time :u32
+        DHCP_OPTION.DOMAIN_NAME:
+            len :u8
+            name :[len]u8    
+        ..:
+            len :u8
+            data :[len]u8
 

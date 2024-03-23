@@ -5662,6 +5662,18 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 				break;
 			}
 			const n :StructUnionType = node as StructUnionType;
+			if (n.cond !== null) {
+				const result = fn(fn,n.cond);
+				if (result === false) {
+					return;
+				}
+			}
+			for (const e of n.conds) {
+				const result = fn(fn,e);
+				if (result === false) {
+					return;
+				}
+			}
 			for (const e of n.structs) {
 				const result = fn(fn,e);
 				if (result === false) {

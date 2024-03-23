@@ -2566,6 +2566,12 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
               if f(f,x.fields[i]) == False:
                   return
         case x if isinstance(x,StructUnionType):
+          if x.cond is not None:
+              if f(f,x.cond) == False:
+                  return
+          for i in range(len(x.conds)):
+              if f(f,x.conds[i]) == False:
+                  return
           for i in range(len(x.structs)):
               if f(f,x.structs[i]) == False:
                   return

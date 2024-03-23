@@ -6083,7 +6083,7 @@ pub struct StructUnionType {
 	pub non_dynamic_allocation: bool,
 	pub bit_alignment: BitAlignment,
 	pub bit_size: Option<u64>,
-	pub cond: Option<ExprWeak>,
+	pub cond: Option<Expr>,
 	pub conds: Vec<Expr>,
 	pub structs: Vec<Rc<RefCell<StructType>>>,
 	pub base: Option<ExprWeak>,
@@ -14797,6 +14797,16 @@ where
 			}
 		},
 		Node::StructUnionType(node)=>{
+			if let Some(node) = &node.borrow().cond{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
+			for node in &node.borrow().conds{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
 			for node in &node.borrow().structs{
 				if !f.visit(&node.into()){
 					return;

@@ -5738,6 +5738,16 @@ func Walk(n Node, f Visitor) {
 			}
 		}
 	case *StructUnionType:
+		if v.Cond != nil {
+			if !f.Visit(f, v.Cond) {
+				return
+			}
+		}
+		for _, w := range v.Conds {
+			if !f.Visit(f, w) {
+				return
+			}
+		}
 		for _, w := range v.Structs {
 			if !f.Visit(f, w) {
 				return
