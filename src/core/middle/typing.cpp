@@ -501,7 +501,7 @@ namespace brgen::middle {
                 T l_val = 0;
                 T r_val = 0;
                 bool inclusive = false;
-                if (auto range = ast::as<ast::Range>(b)) {
+                if (auto range = ast::as<ast::Range>(b->cond->expr)) {
                     auto l = eval.template eval_as<ast::tool::EResultType::integer>(range->start);
                     if (range->start && !l) {
                         return;  // not constant, cannot check exhaustiveness
@@ -527,7 +527,7 @@ namespace brgen::middle {
                     inclusive = range->op == ast::BinaryOp::range_inclusive;
                 }
                 else {
-                    auto l = eval.template eval_as<ast::tool::EResultType::integer>(b->cond);
+                    auto l = eval.template eval_as<ast::tool::EResultType::integer>(b->cond->expr);
                     if (!l) {
                         return;  // not constant, cannot check exhaustiveness
                     }
