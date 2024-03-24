@@ -1,3 +1,4 @@
+config.go.package = "ether"
 
 format ICMPHeader:
     type: u8
@@ -25,7 +26,11 @@ format ICMPDestinationUnreachable:
     next_hop_mtu: u16
     data: [..]u8
 
-format ICMPv6RouterAdvertisement:
+format NDPRouterSolicitation:
+    reserved: u32
+    options : [..]NDPOption
+
+format NDPRouterAdvertisement:
     cur_hop_limit: u8
     m :u1
     o :u1
@@ -33,16 +38,21 @@ format ICMPv6RouterAdvertisement:
     router_lifetime: u16
     reachable_time: u32
     retrans_timer: u32
-    options: [..]u8
+    options: [..]NDPOption
 
-format ICMPv6NeighborSolicitation:
+format NDPNeighborSolicitation:
     target_addr: [16]u8
-    options: [..]u8
+    options: [..]NDPOption
 
-format ICMPv6NeighborAdvertisement:
+format NDPNeighborAdvertisement:
     target_addr: [16]u8
     flags: u32
-    options: [..]u8
+    options: [..]NDPOption
+
+format NDPRedirectMessage:
+    target_addr: [16]u8
+    dest_addr: [16]u8
+    options: [..]NDPOption
 
 format ICMPv4Packet:
     header: ICMPHeader
@@ -61,15 +71,61 @@ format ICMPv4Packet:
 format ICMPv6Packet:
     header: ICMPHeader
     match ICMPv6Type(header.type):
+        ICMPv6Type.router_solicitation:
+            router_solicitation: NDPRouterSolicitation
         ICMPv6Type.router_advertisement:
-            router_advertisement: ICMPv6RouterAdvertisement
+            router_advertisement: NDPRouterAdvertisement
         ICMPv6Type.neighbor_solicitation:
-            neighbor_solicitation: ICMPv6NeighborSolicitation
+            neighbor_solicitation: NDPNeighborSolicitation
         ICMPv6Type.neighbor_advertisement:
-            neighbor_advertisement: ICMPv6NeighborAdvertisement
+            neighbor_advertisement: NDPNeighborAdvertisement
         ..:
             data: [..]u8
 
+
+enum NDPOptionType:
+    :u8
+    source_link_layer_address = 1
+    target_link_layer_address = 2
+    prefix_information = 3
+    redirect_header = 4
+    mtu = 5
+
+format NDPOption:
+    type: NDPOptionType
+    length: u8
+    length != 0
+    match NDPOptionType(type):
+        NDPOptionType.source_link_layer_address:
+            link_layer_address: [length*8 - 2]u8
+        NDPOptionType.target_link_layer_address:
+            link_layer_address: [length*8 - 2]u8
+        NDPOptionType.prefix_information:
+            prefix_information: PrefixInformation(input = input.subrange(length*8 - 2))
+        NDPOptionType.redirect_header:
+            redirect_header: RedirectHeader(input = input.subrange(length*8 - 2))
+        NDPOptionType.mtu:
+            mtu: MTU(input = input.subrange(length*8 - 2))
+        ..:
+            data: [length * 8 - 2]u8
+
+format PrefixInformation:
+    prefix_length: u8
+    l :u1
+    a :u1
+    reserved1: u6
+    valid_lifetime: u32
+    preferred_lifetime: u32
+    reserved2: u32
+    prefix: [16]u8
+
+format RedirectHeader:
+    reserved :[6]u8
+    hdr_and_data: [..]u8
+
+format MTU:
+    reserved: u16
+    mtu: u32
 
 enum ICMPv4Type:
     :u8
@@ -138,39 +194,39 @@ enum ICMPv4Code:
 
 enum ICMPv6Type:
     :u8
-    destination_unreachable
-    packet_too_big
-    time_exceeded
-    parameter_problem
-    echo_request
-    echo_reply
-    multicast_listener_query
-    multicast_listener_report
-    multicast_listener_done
-    router_solicitation
-    router_advertisement
-    neighbor_solicitation
-    neighbor_advertisement
-    redirect_message
-    router_renumbering
-    node_information_query
-    node_information_response
-    inverse_neighbor_discovery_solicitation
-    inverse_neighbor_discovery_advertisement
-    v2_multicast_listener_report
-    home_agent_address_discovery_request
-    home_agent_address_discovery_reply
-    mobile_prefix_solicitation
-    mobile_prefix_advertisement
-    certification_path_solicitation
-    certification_path_advertisement
+    destination_unreachable = 1
+    packet_too_big = 2
+    time_exceeded = 3
+    parameter_problem = 4
+    echo_request = 128
+    echo_reply = 129
+    multicast_listener_query = 130
+    multicast_listener_report = 131
+    multicast_listener_done = 132
+    router_solicitation = 133
+    router_advertisement = 134
+    neighbor_solicitation = 135
+    neighbor_advertisement = 136
+    redirect_message = 137
+    router_renumbering = 138
+    node_information_query = 139
+    node_information_response = 140 
+    inverse_neighbor_discovery_solicitation = 141
+    inverse_neighbor_discovery_advertisement = 142
+    v2_multicast_listener_report = 143
+    home_agent_address_discovery_request = 144
+    home_agent_address_discovery_reply = 145
+    mobile_prefix_solicitation = 146
+    mobile_prefix_advertisement = 147
+    certification_path_solicitation = 148
+    certification_path_advertisement = 149
     experimental_mobility_protocols = 253
     experimental_mobility_protocols_2 = 254
     reserved = 255
 
 enum ICMPv6Code:
     :u8
-    no_route_to_dst
+    no_route_to_dst 
     communication_with_dst_admin_prohibited
     beyond_scope_of_src
     address_unreachable

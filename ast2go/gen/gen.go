@@ -150,6 +150,17 @@ func NewExprStringer() *ExprStringer {
 	}
 }
 
+func AlignInt(size uint64) uint64 {
+	if size <= 8 {
+		return 8
+	} else if size <= 16 {
+		return 16
+	} else if size <= 32 {
+		return 32
+	}
+	return 64
+}
+
 func (s *ExprStringer) ExprString(e ast2go.Expr) string {
 
 	switch e := e.(type) {
@@ -369,9 +380,9 @@ func (g *ExprStringer) GetType(typ ast2go.Type) string {
 	}
 	if i_type, ok := typ.(*ast2go.IntType); ok {
 		if i_type.IsSigned {
-			return fmt.Sprintf("int%d", *i_type.BitSize)
+			return fmt.Sprintf("int%d", AlignInt(*i_type.BitSize))
 		} else {
-			return fmt.Sprintf("uint%d", *i_type.BitSize)
+			return fmt.Sprintf("uint%d", AlignInt(*i_type.BitSize))
 		}
 	}
 	if f_typ, ok := typ.(*ast2go.FloatType); ok {

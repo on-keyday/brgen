@@ -1,17 +1,20 @@
 config.go.package = "ether"
-format TCPSegment:
+format TCPHeader:
     srcPort :u16
     dstPort :u16
     seqNum :u32
     ackNum :u32
     dataOffset :u4
     reserved :u4
-    CWE :u1 ECE :u1 URG :u1 ACK :u1 PSH :u1 RST :u1 SYN :u1 FIN :u1
+    CWR :u1 ECE :u1 URG :u1 ACK :u1 PSH :u1 RST :u1 SYN :u1 FIN :u1
     windowSize :u16
     checksum :u16
     urgentPointer :u16
-    options :[u8(dataOffset*2)-20]u8
+    options :[u8(dataOffset*4)-20]u8
 
+format TCPSegment:
+    hdr :TCPHeader
+    payload :[..]u8
 
 enum TCPState:
     CLOSED

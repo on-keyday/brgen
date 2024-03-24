@@ -1,3 +1,5 @@
+config.go.package = "ether"
+
 format IPv4Header:
     version :u4 ihl :u4 dscp :u6 ecn :u2 len :u16
     id :u16 reserved :u1 dont_fragment :u1 more_fragment :u1 fragOffset :u13
@@ -60,15 +62,33 @@ fn checkSum(data :[]u8) -> u16:
         sum = (sum & 0xffff) + (sum >> 16)
     return u16(!sum)
 
-#format IPHeader:
-#    ip_version :u4(input.peek=true)
+format HopByHopOptionHeader:
+    nextHeader :ProtocolNumber 
+    hdrExtLen :u8
+    options :[hdrExtLen*8+6]u8
 
-#    if ip_version == 4:
-#        hdr :IPv4Header
- 
-#    elif ip_version == 6:
-#        hdr :IPv6Header
-#    else:
-#        error("invalid ip_version: %d", ip_version)
+enum HopOptionType:
+    :u8
+    PAD1 = 0
+    PADN = 1
 
+format HopOption:
+    type :HopOptionType
+    if type != HopOptionType.PAD1: 
+        len :u8 
+        data :[len]u8
 
+format Routing:
+    nextHeader :ProtocolNumber 
+    hdrExtLen :u8 
+    routingType :u8 
+    if routingType == 0:
+        type0 :Type0Routing(input = input.subrange(hdrExtLen*8+4))
+    else:
+        segmentsLeft :u8
+        data :[hdrExtLen*8+4]u8
+
+format Type0Routing:
+    segmentsLeft :u8
+    reserved :u32
+    address :[segmentsLeft][16]u8

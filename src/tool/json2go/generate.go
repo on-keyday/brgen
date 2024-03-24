@@ -492,10 +492,8 @@ func (g *Generator) writeTypeEncode(ident string, typ ast2go.Type, p *ast2go.Fie
 		typ = i_typ.Base
 	}
 	if i_type, ok := typ.(*ast2go.IntType); ok {
-		if i_type.IsCommonSupported {
-			g.writeAppendUint(*i_type.BitSize, ident)
-			return
-		}
+		g.writeAppendUint(*i_type.BitSize, ident)
+		return
 	}
 	if enum_type, ok := typ.(*ast2go.EnumType); ok {
 		g.writeAppendUint(*enum_type.BitSize, ident)
@@ -557,6 +555,25 @@ func (g *Generator) writeFieldEncode(p *ast2go.Field) {
 		return
 	}
 	ident := g.exprStringer.ExprString(p.Ident)
+	var restore []func()
+	defer func() {
+		for _, f := range restore {
+			f()
+		}
+	}()
+	if p.Arguments != nil {
+		if p.Arguments.SubByteLength != nil {
+			len := g.exprStringer.ExprString(p.Arguments.SubByteLength)
+			seq := g.getSeq()
+			g.PrintfFunc("cur_len_%d := len(buf)\n", seq)
+			restore = append(restore, func() {
+				g.PrintfFunc("if len(buf) != cur_len_%d + int(%s) {\n", seq, len)
+				g.imports["fmt"] = struct{}{}
+				g.PrintfFunc("return nil, fmt.Errorf(\"encode %s: expect %%d bytes but got %%d bytes\", cur_len_%d + int(%s), len(buf))\n", p.Ident.Ident, seq, len)
+				g.PrintfFunc("}\n")
+			})
+		}
+	}
 	g.writeTypeEncode(ident, p.FieldType, p)
 }
 
@@ -582,10 +599,13 @@ func (g *Generator) writeReadUint(size uint64, tmpName, field string, sign bool,
 	if enumTy != nil {
 		castTo = *enumTy
 	} else {
-		castTo = fmt.Sprintf("%sint%d", signStr, size)
+
+		castTo = fmt.Sprintf("%sint%d", signStr, gen.AlignInt(size))
 	}
 	if size == 8 {
 		g.PrintfFunc("%s = %s(tmp%s[0])\n", field, castTo, tmpName)
+	} else if size == 24 {
+		g.PrintfFunc("%s = %s(uint32(tmp%s[0])<<16 | uint32(tmp%s[1])<<8 | uint32(tmp%s[2]))\n", field, castTo, tmpName, tmpName, tmpName)
 	} else {
 		g.PrintfFunc("%s = %s(binary.BigEndian.Uint%d(tmp%s[:]))\n", field, castTo, size, tmpName)
 	}
@@ -625,10 +645,8 @@ func (g *Generator) writeTypeDecode(ident string, typ ast2go.Type, p *ast2go.Fie
 		typ = i_typ.Base
 	}
 	if i_type, ok := typ.(*ast2go.IntType); ok {
-		if i_type.IsCommonSupported {
-			g.writeReadUint(*i_type.BitSize, p.Ident.Ident, ident, i_type.IsSigned, nil)
-			return
-		}
+		g.writeReadUint(*i_type.BitSize, p.Ident.Ident, ident, i_type.IsSigned, nil)
+		return
 	}
 	if enum_type, ok := typ.(*ast2go.EnumType); ok {
 		g.writeReadUint(*enum_type.BitSize, p.Ident.Ident, ident, false, &enum_type.Base.Ident.Ident)
@@ -659,7 +677,7 @@ func (g *Generator) writeTypeDecode(ident string, typ ast2go.Type, p *ast2go.Fie
 			g.PrintfFunc("if err != nil {\n")
 			g.PrintfFunc("if err == io.ErrUnexpectedEOF || n_%s != len_%s /*stdlib bug?*/ {\n", p.Ident.Ident, p.Ident.Ident)
 			g.imports["fmt"] = struct{}{}
-			g.PrintfFunc("return fmt.Errorf(\"read %s: %%w: expect %%d bytes but read %%d bytes\",io.ErrUnexpectedEOF, n_%s, len_%s)\n", p.Ident.Ident, p.Ident.Ident, p.Ident.Ident)
+			g.PrintfFunc("return fmt.Errorf(\"read %s: %%w: expect %%d bytes but read %%d bytes\",io.ErrUnexpectedEOF, len_%s, n_%s)\n", p.Ident.Ident, p.Ident.Ident, p.Ident.Ident)
 			g.PrintfFunc("}\n")
 			g.PrintfFunc("return err\n")
 			g.PrintfFunc("}\n")
@@ -743,6 +761,29 @@ func (g *Generator) writeFieldDecode(p *ast2go.Field) {
 	}
 	typ := p.FieldType
 	ident := g.exprStringer.ExprString(p.Ident)
+	var restore []func()
+	defer func() {
+		for _, f := range restore {
+			f()
+		}
+	}()
+	if p.Arguments != nil {
+		if p.Arguments.SubByteLength != nil {
+			len := g.exprStringer.ExprString(p.Arguments.SubByteLength)
+			g.PrintfFunc("sub_byte_len_%s := int64(%s)\n", p.Ident.Ident, len)
+			g.PrintfFunc("sub_byte_r_%s := io.LimitReader(r, int64(sub_byte_len_%s))\n", p.Ident.Ident, p.Ident.Ident)
+			seq := g.getSeq()
+			g.PrintfFunc("tmp_old_r_%s_%d := r\n", p.Ident.Ident, seq)
+			g.PrintfFunc("r = sub_byte_r_%s\n", p.Ident.Ident)
+			restore = append(restore, func() {
+				g.PrintfFunc("if sub_byte_r_%s.(*io.LimitedReader).N != 0 {\n", p.Ident.Ident)
+				g.imports["fmt"] = struct{}{}
+				g.PrintfFunc("return fmt.Errorf(\"read %s: expect %%d bytes but got %%d bytes\", sub_byte_len_%s, sub_byte_len_%s - sub_byte_r_%s.(*io.LimitedReader).N)\n", p.Ident.Ident, p.Ident.Ident, p.Ident.Ident, p.Ident.Ident)
+				g.PrintfFunc("}\n")
+				g.PrintfFunc("r = tmp_old_r_%s_%d\n", p.Ident.Ident, seq)
+			})
+		}
+	}
 	g.writeTypeDecode(ident, typ, p)
 }
 
