@@ -40,6 +40,6 @@ format TCPPseudoHeader:
 format IPv6ChecksumPseudoHeader:
     srcAddr :[16]u8
     dstAddr :[16]u8
-    length :u32
+    upper_layer_length :u32
     zero :u24
     nextHeader :u8

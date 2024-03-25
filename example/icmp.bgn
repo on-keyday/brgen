@@ -32,8 +32,8 @@ format NDPRouterSolicitation:
 
 format NDPRouterAdvertisement:
     cur_hop_limit: u8
-    m :u1
-    o :u1
+    managed_addr_config :u1
+    other_stateful_config :u1
     reserved: u6
     router_lifetime: u16
     reachable_time: u32
@@ -53,6 +53,36 @@ format NDPRedirectMessage:
     target_addr: [16]u8
     dest_addr: [16]u8
     options: [..]NDPOption
+
+format FloatMaximumResponseCode:
+    one :u1(1)
+    exp :u3
+    mant :u12
+
+format MulticastListenerQuery:
+    max_resp_code :u16
+    reserved1: u16
+    mcast_addr: [16]u8
+    reserved2 :u4
+    suppress_router_processing :u1
+    queries_robustness_var :u3
+    querier_query_interval :u8
+    number_of_sources :u16
+    source_addr: [number_of_sources][16]u8
+
+format MulticastAddressRecord:
+    record_type: u8
+    aux_data_len: u8
+    number_of_sources: u16
+    multicast_addr: [16]u8
+    source_addr: [number_of_sources][16]u8
+    aux_data :[aux_data_len]u8
+
+format V2MulticastListernerReport:
+    reserved1: u16
+    number_of_records: u16
+    records: [number_of_records]MulticastAddressRecord
+
 
 format ICMPv4Packet:
     header: ICMPHeader
@@ -79,6 +109,12 @@ format ICMPv6Packet:
             neighbor_solicitation: NDPNeighborSolicitation
         ICMPv6Type.neighbor_advertisement:
             neighbor_advertisement: NDPNeighborAdvertisement
+        ICMPv6Type.redirect_message:
+            redirect_message: NDPRedirectMessage
+        ICMPv6Type.multicast_listener_query:
+            multicast_listener_query: MulticastListenerQuery
+        ICMPv6Type.v2_multicast_listener_report:
+            v2_multicast_listener_report: V2MulticastListernerReport
         ..:
             data: [..]u8
 
@@ -111,8 +147,8 @@ format NDPOption:
 
 format PrefixInformation:
     prefix_length: u8
-    l :u1
-    a :u1
+    on_link: u1
+    autoconfig: u1
     reserved1: u6
     valid_lifetime: u32
     preferred_lifetime: u32

@@ -399,9 +399,7 @@ func (g *ExprStringer) GetType(typ ast2go.Type) string {
 		return fmt.Sprintf("[]%s", g.TypeProvider(arr_type.ElementType))
 	}
 	if struct_type, ok := typ.(*ast2go.StructType); ok {
-		if !struct_type.Recursive {
-			return struct_type.Base.(*ast2go.Format).Ident.Ident
-		}
+		return struct_type.Base.(*ast2go.Format).Ident.Ident
 	}
 	return ""
 }
