@@ -139,6 +139,11 @@ namespace brgen::middle {
             return false;
         }
 
+        ast::BitAlignment calc_alignment(ast::BitAlignment current, ast::BitAlignment add) {
+            auto new_align = (int(current) - int(ast::BitAlignment::byte_aligned)) + (int(add) - int(ast::BitAlignment::byte_aligned));
+            return ast::BitAlignment(new_align % futils::bit_per_byte);
+        }
+
         void analyze_forward_bit_alignment_and_size(ast::StructType* t) {
             ast::BitAlignment alignment = ast::BitAlignment::byte_aligned;
             std::optional<size_t> bit_size = 0;
@@ -146,8 +151,7 @@ namespace brgen::middle {
             ast::Field* prev_field = nullptr;
             t->bit_size = 0;
             auto calc_new_align = [&](ast::BitAlignment field_algin) {
-                auto new_align = (int(alignment) - int(ast::BitAlignment::byte_aligned)) + (int(field_algin) - int(ast::BitAlignment::byte_aligned));
-                return ast::BitAlignment(new_align % futils::bit_per_byte);
+                return calc_alignment(alignment, field_algin);
             };
             for (auto& fields : t->fields) {
                 if (auto field = ast::as<ast::Field>(fields); field) {
@@ -425,6 +429,9 @@ namespace brgen::middle {
                         a->element_type->bit_alignment == ast::BitAlignment::not_target ||
                         a->element_type->bit_alignment == ast::BitAlignment::not_decidable) {
                         a->bit_alignment = a->element_type->bit_alignment;
+                    }
+                    else if (a->bit_size) {
+                        a->bit_alignment = ast::BitAlignment(*a->bit_size % futils::bit_per_byte);
                     }
                     else {
                         // TODO(on-keyday): bit alignment of fixed length array non byte aligned can also be decided

@@ -6,9 +6,7 @@ format ICMPHeader:
     checksum: u16
 
 format ICMPTimeExceeded:
-    unused1: u8
-    length: u8
-    unused2: u16
+    unused :u32
     data: [..]u8
 
 format ICMPEcho:
@@ -16,14 +14,35 @@ format ICMPEcho:
     seq: u16
     data: [..]u8
 
-format ICMPEchoReply:
-    id: u16
-    seq: u16
-    data: [..]u8
 
 format ICMPDestinationUnreachable:
     unused: u16
     next_hop_mtu: u16
+    data: [..]u8
+
+format ICMPPacketTooBig:
+    unused: u32
+    mtu: u32
+    data: [..]u8
+
+format ICMPRedirect:
+    gateway: [4]u8
+    data: [..]u8
+
+format ICMPTimestamp:
+    id: u16
+    seq: u16
+    originate: u32
+    receive: u32
+    transmit: u32
+
+format ICMPParameterProblem:
+    pointer: u8
+    unused: u24
+    data: [..]u8
+
+format ICMPv6ParameterProblem:
+    pointer: u32
     data: [..]u8
 
 format NDPRouterSolicitation:
@@ -41,12 +60,16 @@ format NDPRouterAdvertisement:
     options: [..]NDPOption
 
 format NDPNeighborSolicitation:
+    reserved: u32
     target_addr: [16]u8
     options: [..]NDPOption
 
 format NDPNeighborAdvertisement:
+    router :u1
+    solicited :u1
+    override :u1
+    flags: u29
     target_addr: [16]u8
-    flags: u32
     options: [..]NDPOption
 
 format NDPRedirectMessage:
@@ -58,6 +81,11 @@ format FloatMaximumResponseCode:
     one :u1(1)
     exp :u3
     mant :u12
+
+format FloatQQIC:
+    one :u1(1)
+    exp :u3
+    mant :u4
 
 format MulticastListenerQuery:
     max_resp_code :u16
@@ -90,17 +118,35 @@ format ICMPv4Packet:
         ICMPv4Type.echo:
             echo: ICMPEcho
         ICMPv4Type.echo_reply:
-            echo_reply: ICMPEchoReply
+            echo_reply: ICMPEcho
         ICMPv4Type.time_exceeded:
             time_exceeded: ICMPTimeExceeded
         ICMPv4Type.dst_unreachable:
             destination_unreachable: ICMPDestinationUnreachable
+        ICMPv4Type.redirect:
+            redirect: ICMPRedirect
+        ICMPv4Type.parameter_problem:
+            parameter_problem: ICMPParameterProblem
+        ICMPv4Type.timestamp:
+            timestamp: ICMPTimestamp
         ..:
             data: [..]u8
 
 format ICMPv6Packet:
     header: ICMPHeader
     match ICMPv6Type(header.type):
+        ICMPv6Type.echo_request:
+            echo_request: ICMPEcho
+        ICMPv6Type.echo_reply:
+            echo_reply: ICMPEcho
+        ICMPv6Type.time_exceeded:
+            time_exceeded: ICMPv6ParameterProblem
+        ICMPv6Type.packet_too_big:
+            packet_too_big: ICMPPacketTooBig
+        ICMPv6Type.parameter_problem:
+            parameter_problem: ICMPv6ParameterProblem
+        ICMPv6Type.destination_unreachable:
+            destination_unreachable: ICMPDestinationUnreachable
         ICMPv6Type.router_solicitation:
             router_solicitation: NDPRouterSolicitation
         ICMPv6Type.router_advertisement:

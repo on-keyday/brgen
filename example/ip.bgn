@@ -92,3 +92,17 @@ format Type0Routing:
     segmentsLeft :u8
     reserved :u32
     address :[segmentsLeft][16]u8
+
+format IPv6ChecksumPseudoHeader:
+    srcAddr :[16]u8
+    dstAddr :[16]u8
+    upper_layer_length :u32
+    zero :u24
+    nextHeader :ProtocolNumber
+
+format IPv4PseudoHeader:
+    srcAddr :[4]u8
+    dstAddr :[4]u8
+    zero :u8
+    protocol :ProtocolNumber
+    length :u16

@@ -689,7 +689,13 @@ func (g *Generator) writeTypeDecode(ident string, typ ast2go.Type, p *ast2go.Fie
 		} else {
 			// use laterSize (like [..]u8)
 			if size, ok := g.laterSize[p]; ok {
-				lengthInByte := g.calcLengthInByteOfTailSize(size, p.Ident.Ident)
+				lengthInByte := ""
+				if p.FieldType == typ && p.Arguments != nil && p.Arguments.SubByteLength != nil {
+					// at this time, r is *io.LimitedReader so we can use N of r
+					lengthInByte = "r.(*io.LimitedReader).N"
+				} else {
+					lengthInByte = g.calcLengthInByteOfTailSize(size, p.Ident.Ident)
+				}
 				g.PrintfFunc("len_%s := int(%s)\n", p.Ident.Ident, lengthInByte)
 				g.PrintfFunc("tmp%s := make([]byte, len_%s)\n", p.Ident.Ident, p.Ident.Ident)
 				g.PrintfFunc("n_%s, err := io.ReadFull(r,tmp%s[:])\n", p.Ident.Ident, p.Ident.Ident)

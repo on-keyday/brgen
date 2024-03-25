@@ -10,7 +10,7 @@ format TCPHeader:
     windowSize :u16
     checksum :u16
     urgentPointer :u16
-    options :[u8(dataOffset*4)-20]u8
+    options :[..]TCPOption(input = input.subrange(u8(dataOffset*4)-20))
 
 format TCPSegment:
     hdr :TCPHeader
@@ -29,17 +29,50 @@ enum TCPState:
     LAST_ACK
     TIME_WAIT
 
+enum TCPOptionKind:
+    :u8
+    END_OF_OPTIONS_LIST = 0
+    NOP = 1
+    MAXIMUM_SEGMENT_SIZE = 2
+    WINDOW_SCALE = 3
+    SACK_PERMITTED = 4
+    SACK = 5
+    TIMESTAMP = 8
 
-format TCPPseudoHeader:
-    srcAddr :[4]u8
-    dstAddr :[4]u8
-    zero :u8
-    protocol :u8
-    length :u16
 
-format IPv6ChecksumPseudoHeader:
-    srcAddr :[16]u8
-    dstAddr :[16]u8
-    upper_layer_length :u32
-    zero :u24
-    nextHeader :u8
+format TCPOption:
+    kind :TCPOptionKind
+    match kind:
+        TCPOptionKind.END_OF_OPTIONS_LIST => ..
+        TCPOptionKind.NOP => ..
+        TCPOptionKind.MAXIMUM_SEGMENT_SIZE:
+            length :u8
+            length == 4
+            mss :u16    
+        TCPOptionKind.WINDOW_SCALE:
+            length :u8
+            length == 3
+            shiftCount :u8
+        TCPOptionKind.SACK_PERMITTED: 
+            length :u8
+            length == 2
+        TCPOptionKind.SACK:
+            length :u8
+            length >= 2
+            sack :Sack(input = input.subrange(length-2))    
+        ..:
+            length :u8
+            length >= 2
+            data :[length-2]u8
+            
+
+format SackBlock:
+    left :u32
+    right :u32
+
+format Sack:
+    blocks :[..]SackBlock
+
+format Timestamp:
+    value :u32
+    echoReply :u32
