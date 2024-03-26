@@ -1,0 +1,74 @@
+enum NameTableArrangement:
+    :u1
+    Horizontal = 0
+    Vertical = 1
+
+config.url = "https://www.nesdev.org/wiki/INES#Flags_6"
+format NESFileHeader:
+    magic: "NES\x1A"
+    prg_rom_size: u8
+    chr_rom_size: u8
+    mapper_lower :u4
+    alt_name_table: u1
+    trainer :u1
+    battery_backed_ram: u1
+    name_table_arrangement: NameTableArrangement
+    mapper_upper: u4
+    nes2 :u2 # TODO(on-keyday): Implement NES 2.0 format
+    playchoice_10: u1
+    vs_unisystem: u1
+    if trainer == 1:
+        trainer_data: [512]u8
+    prg_rom: [u32(prg_rom_size) * 16384]u8
+    chr_rom: [u32(chr_rom_size) * 8192]u8
+
+enum SNESMapMode:
+    :u4
+    LoROM = 0
+    HiROM = 1
+    ExHiROM = 5
+
+SNES_ROMHEADER_FIRST_ADDRESS ::= 0xFFC0
+
+enum SNESSpeed:
+    :u1
+    Slow = 0
+    Fast = 1
+
+enum SNESChipset:
+    :u4
+    ROM_ONLY = 0
+    ROM_RAM = 1
+    ROM_RAM_BATTERY = 2
+    ROM_COMPROSSOR = 3
+    ROM_RAM_COMPROSSOR = 4
+    ROM_RAM_BATTERY_COMPROSSOR = 5
+    ROM_BATTERY_COMPROSSOR = 6
+
+enum ComprossorType:
+    :u4
+    DSP = 0
+    SuperFX = 1
+    OBC1 = 2
+    SA1 = 3
+    SDD1 = 4
+    SRTC = 5
+    OTHER = 0xe
+    CUSTOM = 0xf
+
+config.url = "https://snes.nesdev.org/wiki/ROM_header"
+format SNESRomHeader:
+    title : [21]u8
+    reserved :u3(1)
+    speed :SNESSpeed
+    mapMode :u4
+    comprossor :ComprossorType 
+    chipset :SNESChipset 
+    romSize :u8
+    ramSize :u8
+    country :u8
+    developer_id :u8
+    version :u8
+    checksum :u16
+    checksum_complement :u16
+    interrupt_vecotrs : [4]u32

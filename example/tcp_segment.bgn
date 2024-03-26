@@ -59,7 +59,11 @@ format TCPOption:
         TCPOptionKind.SACK:
             length :u8
             length >= 2
-            sack :Sack(input = input.subrange(length-2))    
+            sack :Sack(input = input.subrange(length-2))  
+        TCPOptionKind.TIMESTAMP:
+            length :u8
+            length == 10
+            timestamp :Timestamp(input = input.subrange(length-2))  
         ..:
             length :u8
             length >= 2
