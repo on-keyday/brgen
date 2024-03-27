@@ -18,39 +18,25 @@ namespace json2c {
         std::vector<LineMap> line_map;
         bool encode = false;
 
-        std::string get_type(const std::shared_ptr<ast::Type>& typ) {
-            if (auto int_ty = ast::as<ast::IntType>(typ)) {
-                auto bit = *int_ty->bit_size;
-                if (int_ty->is_common_supported) {
-                    return brgen::concat(int_ty->is_signed ? "" : "u", "int", brgen::nums(bit), "_t ");
-                }
-                else if (bit < 64) {
-                    bit = brgen::ast::aligned_bit(bit);
-                    return brgen::concat("uint", brgen::nums(bit), "_t ");
-                }
-            }
-            if (auto arr_ty = ast::as<ast::ArrayType>(typ)) {
-                if (arr_ty->length_value) {
-                }
-                return brgen::concat(get_type(arr_ty->element_type), "*");
-            }
-            return "";
-        }
-
-        void write_field(ast::Field* field) {
-            auto typ = field->field_type;
-            auto typ_str = get_type(typ);
+        void write_field(brgen::writer::Writer& t_w, ast::Field* field) {
             if (field->bit_alignment != field->eventual_bit_alignment) {
                 return;
             }
-            h_w.writeln(typ_str, field->ident->ident, ";");
-            str.map_ident(field->ident, "${THIS}", field->ident->ident);
+            auto typ = field->field_type;
+            auto typ_str = get_type(typ);
+            auto field_str = typ_str->to_string(field->ident->ident);
+            t_w.writeln(field_str, ";");
+
+            if (auto arr_ty = ast::as<ast::ArrayType>(field->field_type);
+                arr_ty && !arr_ty->length_value) {
+                t_w.writeln("size_t ", field->ident->ident, "_size;");
+            }
         }
 
-        void write_struct_type(const std::shared_ptr<ast::StructType>& typ) {
+        void write_struct_type(brgen::writer::Writer& t_w, const std::shared_ptr<ast::StructType>& typ) {
             for (auto& field : typ->fields) {
                 if (auto f = ast::as<ast::Field>(field)) {
-                    write_field(f);
+                    write_field(t_w, f);
                 }
             }
         }
@@ -65,10 +51,10 @@ namespace json2c {
         static constexpr auto bit_per_byte = "8";
 
         void add_buffer_offset(auto&&... offset) {
-            c_w.writeln("this_->", buffer_offset, " += ", offset..., ";");
+            c_w.writeln(io_(buffer_offset), " += ", offset..., ";");
         }
 
-        auto io_(std::string_view ident) {
+        std::string io_(std::string_view ident) {
             if (encode) {
                 return brgen::concat("output_->", ident);
             }
@@ -77,15 +63,29 @@ namespace json2c {
             }
         }
 
+        std::string length_of(std::string_view ident) {
+            return brgen::concat(ident, "_size");
+        }
+
+        void check_dynamic_array_length(auto&& ident, auto&& length) {
+            c_w.writeln("if (", ident, "_size != ", length, ") {");
+            c_w.indent_writeln("return -1;");
+            c_w.writeln("}");
+        }
+
+        void check_buffer_length(auto&&... size) {
+            c_w.writeln(
+                "if (", io_(buffer_offset),
+                " + (", size..., ") > ", io_(buffer_size), ") {");
+            c_w.indent_writeln("return -1;");
+            c_w.writeln("}");
+        }
+
         void encode_decode_int_field(ast::IntType* int_ty, std::string_view ident, bool encode, bool need_length_check = true) {
             if (int_ty->is_common_supported) {
                 auto bit = *int_ty->bit_size;
                 if (need_length_check) {
-                    c_w.writeln(
-                        "if (", io_(buffer_offset),
-                        " + sizeof(", ident, ") > ", io_(buffer_size), ") {");
-                    c_w.indent_writeln("return -1;");
-                    c_w.writeln("}");
+                    check_buffer_length("sizeof(", ident, ")");
                 }
                 c_w.writeln("for (size_t i = 0; i < sizeof(", ident, "); i++) {");
                 auto i = "i";
@@ -113,11 +113,46 @@ namespace json2c {
             }
         }
 
+        void write_array_for_loop(std::string_view ident, std::string_view length, const std::shared_ptr<ast::Type> elem_typ, bool encode, bool need_length_check) {
+            c_w.writeln("for (size_t i = 0; i < ", length, "; i++) {");
+            if (encode) {
+                write_type_encode(brgen::concat(ident, "[i]"), elem_typ, need_length_check);
+            }
+            else {
+                write_type_decode(brgen::concat(ident, "[i]"), elem_typ, need_length_check);
+            }
+            c_w.writeln("}");
+        }
+
         void write_type_encode(std::string_view ident, const std::shared_ptr<ast::Type>& typ, bool need_length_check = true) {
             if (auto int_ty = ast::as<ast::IntType>(typ)) {
                 encode_decode_int_field(int_ty, ident, true, need_length_check);
             }
             if (auto arr_ty = ast::as<ast::ArrayType>(typ)) {
+                auto for_loop = [&](auto&& length, bool need_length_check) {
+                    write_array_for_loop(ident, length, arr_ty->element_type, true, need_length_check);
+                };
+                if (arr_ty->bit_size) {
+                    check_buffer_length(arr_ty->bit_size.value() / futils::bit_per_byte);
+                    for_loop(brgen::nums(arr_ty->bit_size.value() / futils::bit_per_byte), false);
+                }
+                else if (arr_ty->length_value) {
+                    for_loop(brgen::nums(*arr_ty->length_value), true);
+                }
+                else if (ast::is_any_range(arr_ty->length)) {
+                    for_loop(length_of(ident), true);
+                }
+                else {
+                    auto len = str.to_string(arr_ty->length);
+                    check_dynamic_array_length(ident, len);
+                    if (auto ity = ast::as<ast::IntType>(arr_ty->element_type); ity && ity->is_common_supported) {
+                        check_buffer_length(len, " * sizeof(", ident, "[0])");
+                        for_loop(len, false);
+                    }
+                    else {
+                        for_loop(len, true);
+                    }
+                }
             }
             if (auto ident_ty = ast::as<ast::IdentType>(typ)) {
                 write_type_encode(ident, ident_ty->base.lock(), need_length_check);
@@ -134,6 +169,32 @@ namespace json2c {
                 encode_decode_int_field(int_ty, ident, false, need_length_check);
             }
             if (auto arr_ty = ast::as<ast::ArrayType>(typ)) {
+                auto for_loop = [&](auto&& length, bool need_length_check) {
+                    write_array_for_loop(ident, length, arr_ty->element_type, false, need_length_check);
+                };
+                if (arr_ty->bit_size) {
+                    auto len = brgen::nums(arr_ty->bit_size.value() / futils::bit_per_byte);
+                    check_buffer_length(len);
+                    c_w.writeln("for (size_t i = 0; i < ", len, "; i++) {");
+                    write_type_decode(brgen::concat(ident, "[i]"), arr_ty->element_type, false);
+                    c_w.writeln("}");
+                }
+                else if (arr_ty->length_value) {
+                    c_w.writeln("for (size_t i = 0; i < ", arr_ty->length_value.value(), "; i++) {");
+                    write_type_decode(brgen::concat(ident, "[i]"), arr_ty->element_type, true);
+                    c_w.writeln("}");
+                }
+                else if (ast::is_any_range(arr_ty->length)) {
+                    c_w.writeln("for (size_t i = 0; i < ", ident, "_size; i++) {");
+                    write_type_decode(brgen::concat(ident, "[i]"), arr_ty->element_type, true);
+                    c_w.writeln("}");
+                }
+                else {
+                    auto len = str.to_string(arr_ty->length);
+                    c_w.writeln("for (size_t i = 0; i < ", len, "; i++) {");
+                    write_type_decode(brgen::concat(ident, "[i]"), arr_ty->element_type, true);
+                    c_w.writeln("}");
+                }
             }
             if (auto ident_ty = ast::as<ast::IdentType>(typ)) {
                 write_type_decode(ident, ident_ty->base.lock(), need_length_check);

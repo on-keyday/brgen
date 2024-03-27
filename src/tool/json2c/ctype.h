@@ -92,6 +92,12 @@ namespace json2c {
                 return std::make_shared<CPointer>(element_type);
             }
         }
+        if (auto struct_ty = ast::as<ast::StructType>(typ)) {
+            auto member = ast::as<ast::Member>(struct_ty->base.lock());
+            if (member) {
+                return std::make_shared<CPrimitive>(brgen::concat("struct ", member->ident->ident));
+            }
+        }
         return nullptr;
     }
 

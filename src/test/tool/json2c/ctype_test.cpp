@@ -40,12 +40,14 @@ format A:
     c :[x][x]u8 # dynamic array of dynamic array
     d :[x][3][x]u8 # dynamic array of static array of dynamic array       
     e :[3][x][4]u8 # static array of dynamic array of static array
+    f :[3][4][5]u8 # static array of static array of static array
+    g :[x][x][x]u8 # dynamic array of dynamic array of dynamic array
 )");
     ASSERT_TRUE(p && p->struct_type);
     ASSERT_EQ(p->struct_type->fields.size(), 1);
     auto f = ast::as<ast::Format>(p->struct_type->fields[0]);
     ASSERT_TRUE(f && f->body);
-    ASSERT_EQ(f->body->elements.size(), 8);
+    ASSERT_EQ(f->body->elements.size(), 10);
     std::vector<std::string_view> expects{
         "uint8_t x",
         "uint8_t y[2]",
@@ -55,6 +57,8 @@ format A:
         "uint8_t** c",
         "uint8_t*(* d)[3]",
         "uint8_t(* e[3])[4]",
+        "uint8_t f[3][4][5]",
+        "uint8_t*** g",
     };
     for (auto i = 0; i < f->body->elements.size(); i++) {
         auto e = ast::as<ast::Field>(f->body->elements[i]);
