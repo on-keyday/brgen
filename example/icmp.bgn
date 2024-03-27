@@ -256,7 +256,7 @@ enum ICMPv4Type:
     experimental_1 = 253
     experimental_2 = 255
 
-enum ICMPv4Code:
+enum ICMPv4DstUnreachableCode:
     :u8
     net_unreachable
     host_unreachable
@@ -273,6 +273,18 @@ enum ICMPv4Code:
     communication_prohibited
     host_precedence_violation
     precedence_cutoff
+
+enum ICMPv4RedirectCode:
+    :u8
+    redirect_for_network
+    redirect_for_host
+    redirect_for_TOS_and_network
+    redirect_for_TOS_and_host
+
+enum ICMPv4TimeExceededCode:
+    :u8
+    ttl_exceeded_in_transit
+    frag_reassembly_time_exceeded
 
 enum ICMPv6Type:
     :u8
@@ -316,5 +328,14 @@ enum ICMPv6Code:
     src_addr_failed_ingress_egress_policy
     reject_route_to_dst
     error_in_src_routing_header
-    rejected_dst_addr_unreachable
-    error_in_dst_options_header
+
+enum ICMPv6TimeExceededCode:
+    :u8
+    hop_limit_exceeded
+    fragment_reassembly_time_exceeded
+
+enum ICMPv6ParameterProblemCode:
+    :u8
+    erroneous_header_field
+    unrecognized_next_header
+    unrecognized_ipv6_option

@@ -65,7 +65,7 @@ fn checkSum(data :[]u8) -> u16:
 format HopByHopOptionHeader:
     nextHeader :ProtocolNumber 
     hdrExtLen :u8
-    options :[hdrExtLen*8+6]u8
+    options :[..]HopOption(input = input.subrange(hdrExtLen*8+6))
 
 enum HopOptionType:
     :u8
