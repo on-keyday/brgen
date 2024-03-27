@@ -5,15 +5,18 @@
 #include <writer/writer.h>
 #include <core/ast/tool/stringer.h>
 #include "../common/line_map.h"
+#include "ctype.h"
 
 namespace json2c {
     namespace ast = brgen::ast;
+
     struct Generator {
         brgen::writer::Writer h_w;
         brgen::writer::Writer c_w;
         ast::tool::Stringer str;
         std::vector<std::string> struct_names;
         std::vector<LineMap> line_map;
+        bool encode = false;
 
         std::string get_type(const std::shared_ptr<ast::Type>& typ) {
             if (auto int_ty = ast::as<ast::IntType>(typ)) {
@@ -27,6 +30,8 @@ namespace json2c {
                 }
             }
             if (auto arr_ty = ast::as<ast::ArrayType>(typ)) {
+                if (arr_ty->length_value) {
+                }
                 return brgen::concat(get_type(arr_ty->element_type), "*");
             }
             return "";
@@ -50,17 +55,35 @@ namespace json2c {
             }
         }
 
-        static constexpr auto buffer_offset = "*buffer_offset";
-        static constexpr auto buffer_bit_offset = "*buffer_bit_offset";
+        static constexpr auto buffer_offset = "buffer_offset";
+        static constexpr auto buffer_bit_offset = "buffer_bit_offset";
         static constexpr auto buffer_size = "buffer_size";
         static constexpr auto buffer = "buffer";
+        static constexpr auto allocation_holder = "allocation_holder";
+        static constexpr auto allocation_holder_size = "allocation_holder_size";
+        static constexpr auto alloc = "alloc";
         static constexpr auto bit_per_byte = "8";
+
+        void add_buffer_offset(auto&&... offset) {
+            c_w.writeln("this_->", buffer_offset, " += ", offset..., ";");
+        }
+
+        auto io_(std::string_view ident) {
+            if (encode) {
+                return brgen::concat("output_->", ident);
+            }
+            else {
+                return brgen::concat("input_->", ident);
+            }
+        }
 
         void encode_decode_int_field(ast::IntType* int_ty, std::string_view ident, bool encode, bool need_length_check = true) {
             if (int_ty->is_common_supported) {
                 auto bit = *int_ty->bit_size;
                 if (need_length_check) {
-                    c_w.writeln("if (", buffer_offset, " + sizeof(", ident, ") > ", buffer_size, ") {");
+                    c_w.writeln(
+                        "if (", io_(buffer_offset),
+                        " + sizeof(", ident, ") > ", io_(buffer_size), ") {");
                     c_w.indent_writeln("return -1;");
                     c_w.writeln("}");
                 }
@@ -75,25 +98,77 @@ namespace json2c {
                 }
                 if (encode) {
                     c_w.indent_writeln(
-                        buffer, "[", buffer_offset, " + ", i, "] = ",
-                        "(uint8_t)((((uint", brgen::nums(bit), "_t)", ident, ") >> (", shift_offset, " * ", bit_per_byte, "))&0xff);");
+                        io_(buffer), "[", io_(buffer_offset), " + ", i, "] = ",
+                        "(uint8_t)((((uint", brgen::nums(bit), "_t)", ident, ")", " >> ",
+                        "(", shift_offset, " * ", bit_per_byte, "))&0xff);");
                 }
                 else {
                     c_w.indent_writeln(
-                        ident, " |= ((uint", brgen::nums(bit), "_t)", buffer, "[", buffer_offset, " + ", i, "]) << ",
+                        ident, " |= ((uint", brgen::nums(bit), "_t)",
+                        io_(buffer), "[", io_(buffer_offset), " + ", i, "]) << ",
                         "(", shift_offset, " * ", bit_per_byte, ");");
                 }
                 c_w.writeln("}");
-                c_w.writeln(buffer_offset, " += sizeof(", ident, ");");
+                add_buffer_offset("sizeof(", ident, ")");
             }
         }
 
-        void write_format_type_encode(std::string_view ident, const std::shared_ptr<ast::Type>& typ, bool need_length_check = true) {
+        void write_type_encode(std::string_view ident, const std::shared_ptr<ast::Type>& typ, bool need_length_check = true) {
             if (auto int_ty = ast::as<ast::IntType>(typ)) {
                 encode_decode_int_field(int_ty, ident, true, need_length_check);
             }
             if (auto arr_ty = ast::as<ast::ArrayType>(typ)) {
             }
+            if (auto ident_ty = ast::as<ast::IdentType>(typ)) {
+                write_type_encode(ident, ident_ty->base.lock(), need_length_check);
+            }
+        }
+
+        void write_field_encode(const std::shared_ptr<ast::Field>& field, bool need_length_check) {
+            auto ident = str.to_string(field->ident);
+            write_type_encode(ident, field->field_type, need_length_check);
+        }
+
+        void write_type_decode(std::string_view ident, const std::shared_ptr<ast::Type>& typ, bool need_length_check = true) {
+            if (auto int_ty = ast::as<ast::IntType>(typ)) {
+                encode_decode_int_field(int_ty, ident, false, need_length_check);
+            }
+            if (auto arr_ty = ast::as<ast::ArrayType>(typ)) {
+            }
+            if (auto ident_ty = ast::as<ast::IdentType>(typ)) {
+                write_type_decode(ident, ident_ty->base.lock(), need_length_check);
+            }
+        }
+
+        void write_field_decode(const std::shared_ptr<ast::Field>& field, bool need_length_check) {
+        }
+
+        void write_format_input_type(const std::shared_ptr<ast::Format>& typ) {
+            h_w.writeln("typedef struct ", typ->ident->ident, "DecodeInput {");
+            {
+                auto scope = h_w.indent_scope();
+                h_w.writeln("const uint8_t* ", buffer, ";");
+                h_w.writeln("size_t ", buffer_size, ";");
+                h_w.writeln("size_t ", buffer_offset, ";");
+                h_w.writeln("size_t ", buffer_bit_offset, ";");
+                h_w.writeln("void** ", allocation_holder, ";");
+                h_w.writeln("size_t ", allocation_holder_size, ";");
+                h_w.writeln("void* (*", alloc, ")(void*** holder,size_t* holder_size ,size_t size,size_t align);");
+            }
+            h_w.writeln("} ", typ->ident->ident, "DecodeInput;");
+            h_w.writeln();
+            h_w.writeln("typedef struct ", typ->ident->ident, "EncodeInput {");
+            {
+                auto scope = h_w.indent_scope();
+                h_w.writeln("uint8_t* ", buffer, ";");
+                h_w.writeln("size_t ", buffer_size, ";");
+                h_w.writeln("size_t ", buffer_offset, ";");
+                h_w.writeln("size_t ", buffer_bit_offset, ";");
+                h_w.writeln("void** ", allocation_holder, ";");
+                h_w.writeln("size_t ", allocation_holder_size, ";");
+                h_w.writeln("void* (*", alloc, ")(void*** holder,size_t* holder_size ,size_t size,size_t align);");
+            }
+            h_w.writeln("} ", typ->ident->ident, "EncodeInput;");
         }
 
         void write_format_encode(const std::shared_ptr<ast::Format>& fmt) {
@@ -110,28 +185,19 @@ namespace json2c {
                 futils::helper::DynDefer d;
                 if (fmt->body->struct_type->bit_size) {
                     auto len = (fmt->body->struct_type->bit_size.value() + futils::bit_per_byte - 1) / futils::bit_per_byte;
-                    c_w.writeln("if (", buffer_offset, " + ", brgen::nums(len), " > ", buffer_size, ") {");
+                    c_w.writeln("if (", io_(buffer_offset), " + ",
+                                brgen::nums(len), " > ", io_(buffer_size), ") {");
                     c_w.indent_writeln("return -1;");
                     c_w.writeln("}");
                 }
                 for (auto& field : fmt->body->elements) {
                     if (auto f = ast::as<ast::Field>(field)) {
-                        auto ident = str.to_string(f->ident);
-                        auto typ = f->field_type;
-                        write_format_type_encode(ident, typ, !fmt->body->struct_type->bit_size.has_value());
+                        write_field_encode(ast::cast_to<ast::Field>(field), !fmt->body->struct_type->bit_size.has_value());
                     }
                 }
                 c_w.writeln("return 0;");
             }
             c_w.writeln("}");
-        }
-
-        void write_format_type_decode(std::string_view ident, const std::shared_ptr<ast::Type>& typ, bool need_length_check = true) {
-            if (auto int_ty = ast::as<ast::IntType>(typ)) {
-                encode_decode_int_field(int_ty, ident, false, need_length_check);
-            }
-            if (auto arr_ty = ast::as<ast::ArrayType>(typ)) {
-            }
         }
 
         void write_format_decode(const std::shared_ptr<ast::Format>& fmt) {
@@ -152,9 +218,7 @@ namespace json2c {
                 auto scope = c_w.indent_scope();
                 for (auto& field : fmt->body->elements) {
                     if (auto f = ast::as<ast::Field>(field)) {
-                        auto ident = str.to_string(f->ident);
-                        auto typ = f->field_type;
-                        write_format_type_decode(ident, typ, !fmt->body->struct_type->bit_size.has_value());
+                        write_field_decode(ast::cast_to<ast::Field>(field), !fmt->body->struct_type->bit_size.has_value());
                     }
                 }
                 c_w.writeln("return 0;");
@@ -162,17 +226,18 @@ namespace json2c {
             c_w.writeln("}");
         }
 
-        void write_enum_member(const std::shared_ptr<ast::EnumMember>& member) {
+        void write_enum_member(auto& enum_ident, const std::shared_ptr<ast::EnumMember>& member) {
             auto& member_ident = member->ident->ident;
             auto value = str.to_string(member->value);
-            h_w.writeln(member_ident, " = ", value, ",");
+            h_w.writeln(enum_ident, "_", member_ident, " = ", value, ",");
+            str.map_ident(member->ident, enum_ident + "_" + member_ident);
         }
 
         void write_enum(const std::shared_ptr<ast::Enum>& e) {
             auto& enum_ident = e->ident->ident;
             h_w.writeln("typedef enum ", enum_ident, " {");
             for (auto& member : e->members) {
-                write_enum_member(member);
+                write_enum_member(enum_ident, member);
             }
             h_w.writeln("} ", enum_ident, ";");
         }
@@ -196,7 +261,6 @@ namespace json2c {
             h_w.writeln("#include <stddef.h>");
             h_w.writeln("#include <stdint.h>");
             c_w.writeln("//Code generated by json2c");
-            // c_w.writeln("#include \"\"");
             str.this_access = "this_->";
             for (auto& fmt : prog->elements) {
                 if (auto b = ast::as<ast::Binary>(fmt); b && b->op == ast::BinaryOp::const_assign && b->right->constant_level == ast::ConstantLevel::constant) {

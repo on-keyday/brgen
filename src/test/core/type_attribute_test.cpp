@@ -30,8 +30,7 @@ TEST(RecursiveDetection, DetectSimple) {
 format A:
     a :A
 )");
-    middle::TypeAttribute attr;
-    attr.mark_recursive_reference(r);
+    middle::mark_recursive_reference(r);
     ASSERT_FALSE(r->struct_type->recursive);
     auto& fields = r->struct_type->fields;
     ASSERT_EQ(fields.size(), 1);
@@ -54,8 +53,7 @@ format C:
 format D:
     d :[10]D
 )");
-    middle::TypeAttribute attr;
-    attr.mark_recursive_reference(r);
+    middle::mark_recursive_reference(r);
     ASSERT_FALSE(r->struct_type->recursive);
     auto& fields = r->struct_type->fields;
     ASSERT_EQ(fields.size(), 4);
@@ -84,9 +82,8 @@ format A:
 format B:
     a :u8
     )");
-    middle::TypeAttribute attr;
-    attr.mark_recursive_reference(r);
-    attr.detect_non_dynamic_type(r);
+    middle::mark_recursive_reference(r);
+    middle::detect_non_dynamic_type(r);
     ASSERT_TRUE(r->struct_type->non_dynamic_allocation);
     ASSERT_EQ(r->struct_type->fields.size(), 2);
     auto fmt = ast::as<ast::Format>(r->struct_type->fields[0]);
@@ -138,9 +135,8 @@ format E:
     else:
         b :u16
     )");
-    middle::TypeAttribute attr;
-    attr.mark_recursive_reference(r);
-    attr.detect_non_dynamic_type(r);
+    middle::mark_recursive_reference(r);
+    middle::detect_non_dynamic_type(r);
     ASSERT_TRUE(r->struct_type->non_dynamic_allocation);
     ASSERT_EQ(r->struct_type->fields.size(), 5);
     auto fmt = ast::as<ast::Format>(r->struct_type->fields[0]);
@@ -224,9 +220,8 @@ format A:
     else:
         b :u16
 )");
-    middle::TypeAttribute attr;
-    attr.mark_recursive_reference(r);
-    attr.detect_non_dynamic_type(r);
+    middle::mark_recursive_reference(r);
+    middle::detect_non_dynamic_type(r);
     ASSERT_TRUE(r->struct_type->non_dynamic_allocation);
     ASSERT_EQ(r->struct_type->fields.size(), 1);
     auto fmt = ast::as<ast::Format>(r->struct_type->fields[0]);
@@ -262,10 +257,9 @@ format B:
     d :u15
     e :u2
 )");
-    middle::TypeAttribute attr;
-    attr.mark_recursive_reference(r);
-    attr.detect_non_dynamic_type(r);
-    attr.analyze_bit_size_and_alignment(r);
+    middle::mark_recursive_reference(r);
+    middle::detect_non_dynamic_type(r);
+    middle::analyze_bit_size_and_alignment(r);
     ASSERT_EQ(r->struct_type->bit_alignment, ast::BitAlignment::byte_aligned);
     ASSERT_EQ(r->struct_type->fields.size(), 2);
     auto fmt = ast::as<ast::Format>(r->struct_type->fields[0]);
@@ -336,10 +330,9 @@ format C:
     windowSize :u16
     a :[dataOffset * 4 - 20]u8
     )");
-    middle::TypeAttribute attr;
-    attr.mark_recursive_reference(r);
-    attr.detect_non_dynamic_type(r);
-    attr.analyze_bit_size_and_alignment(r);
+    middle::mark_recursive_reference(r);
+    middle::detect_non_dynamic_type(r);
+    middle::analyze_bit_size_and_alignment(r);
     ASSERT_EQ(r->struct_type->bit_alignment, ast::BitAlignment::byte_aligned);
     ASSERT_EQ(r->struct_type->fields.size(), 3);
     auto fmt = ast::as<ast::Format>(r->struct_type->fields[0]);
@@ -498,10 +491,9 @@ format F:
 
 
     )");
-    middle::TypeAttribute attr;
-    attr.mark_recursive_reference(r);
-    attr.detect_non_dynamic_type(r);
-    attr.analyze_bit_size_and_alignment(r);
+    middle::mark_recursive_reference(r);
+    middle::detect_non_dynamic_type(r);
+    middle::analyze_bit_size_and_alignment(r);
     ASSERT_EQ(r->struct_type->bit_alignment, ast::BitAlignment::byte_aligned);
     ASSERT_EQ(r->struct_type->fields.size(), 6);
 
