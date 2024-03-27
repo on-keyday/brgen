@@ -150,6 +150,17 @@ func NewExprStringer() *ExprStringer {
 	}
 }
 
+func AlignInt(size uint64) uint64 {
+	if size <= 8 {
+		return 8
+	} else if size <= 16 {
+		return 16
+	} else if size <= 32 {
+		return 32
+	}
+	return 64
+}
+
 func (s *ExprStringer) ExprString(e ast2go.Expr) string {
 
 	switch e := e.(type) {
@@ -193,6 +204,8 @@ func (s *ExprStringer) ExprString(e ast2go.Expr) string {
 		}
 		typ := s.TypeProvider(e.ExprType)
 		return fmt.Sprintf("%s(%s)", typ, s.ExprString(e.Expr))
+	case *ast2go.Identity:
+		return s.ExprString(e.Expr)
 	case *ast2go.Available:
 		ident, ok := e.Target.(*ast2go.Ident)
 		if !ok {
@@ -262,6 +275,7 @@ func (s *ExprStringer) ExprString(e ast2go.Expr) string {
 func (s *ExprStringer) CollectDefine(e ast2go.Expr) []*ast2go.Binary {
 	defines := []*ast2go.Binary{}
 	ast2go.Walk(e, ast2go.VisitFn(func(v ast2go.Visitor, n ast2go.Node) bool {
+		ast2go.Walk(n, v)
 		if i, ok := n.(*ast2go.Ident); ok {
 			b := i.Base
 			if b == nil {
@@ -366,9 +380,9 @@ func (g *ExprStringer) GetType(typ ast2go.Type) string {
 	}
 	if i_type, ok := typ.(*ast2go.IntType); ok {
 		if i_type.IsSigned {
-			return fmt.Sprintf("int%d", *i_type.BitSize)
+			return fmt.Sprintf("int%d", AlignInt(*i_type.BitSize))
 		} else {
-			return fmt.Sprintf("uint%d", *i_type.BitSize)
+			return fmt.Sprintf("uint%d", AlignInt(*i_type.BitSize))
 		}
 	}
 	if f_typ, ok := typ.(*ast2go.FloatType); ok {
@@ -385,9 +399,7 @@ func (g *ExprStringer) GetType(typ ast2go.Type) string {
 		return fmt.Sprintf("[]%s", g.TypeProvider(arr_type.ElementType))
 	}
 	if struct_type, ok := typ.(*ast2go.StructType); ok {
-		if !struct_type.Recursive {
-			return struct_type.Base.(*ast2go.Format).Ident.Ident
-		}
+		return struct_type.Base.(*ast2go.Format).Ident.Ident
 	}
 	return ""
 }
@@ -451,6 +463,12 @@ func LookupIdent(ident *ast2go.Ident) (*ast2go.Ident, bool /*via member*/) {
 func IsAnyRange(e ast2go.Node) bool {
 	if r, ok := e.(*ast2go.Range); ok {
 		return r.Start == nil && r.End == nil
+	}
+	if r, ok := e.(*ast2go.Identity); ok {
+		return IsAnyRange(r.Expr)
+	}
+	if r, ok := e.(*ast2go.Paren); ok {
+		return IsAnyRange(r.Expr)
 	}
 	return false
 }

@@ -1,3 +1,4 @@
+config.go.package = "ether"
 
 format ICMPHeader:
     type: u8
@@ -5,9 +6,7 @@ format ICMPHeader:
     checksum: u16
 
 format ICMPTimeExceeded:
-    unused1: u8
-    length: u8
-    unused2: u16
+    unused :u32
     data: [..]u8
 
 format ICMPEcho:
@@ -15,34 +14,103 @@ format ICMPEcho:
     seq: u16
     data: [..]u8
 
-format ICMPEchoReply:
-    id: u16
-    seq: u16
-    data: [..]u8
 
 format ICMPDestinationUnreachable:
     unused: u16
     next_hop_mtu: u16
     data: [..]u8
 
-format ICMPv6RouterAdvertisement:
+format ICMPPacketTooBig:
+    unused: u32
+    mtu: u32
+    data: [..]u8
+
+format ICMPRedirect:
+    gateway: [4]u8
+    data: [..]u8
+
+format ICMPTimestamp:
+    id: u16
+    seq: u16
+    originate: u32
+    receive: u32
+    transmit: u32
+
+format ICMPParameterProblem:
+    pointer: u8
+    unused: u24
+    data: [..]u8
+
+format ICMPv6ParameterProblem:
+    pointer: u32
+    data: [..]u8
+
+format NDPRouterSolicitation:
+    reserved: u32
+    options : [..]NDPOption
+
+format NDPRouterAdvertisement:
     cur_hop_limit: u8
-    m :u1
-    o :u1
+    managed_addr_config :u1
+    other_stateful_config :u1
     reserved: u6
     router_lifetime: u16
     reachable_time: u32
     retrans_timer: u32
-    options: [..]u8
+    options: [..]NDPOption
 
-format ICMPv6NeighborSolicitation:
+format NDPNeighborSolicitation:
+    reserved: u32
     target_addr: [16]u8
-    options: [..]u8
+    options: [..]NDPOption
 
-format ICMPv6NeighborAdvertisement:
+format NDPNeighborAdvertisement:
+    router :u1
+    solicited :u1
+    override :u1
+    flags: u29
     target_addr: [16]u8
-    flags: u32
-    options: [..]u8
+    options: [..]NDPOption
+
+format NDPRedirectMessage:
+    target_addr: [16]u8
+    dest_addr: [16]u8
+    options: [..]NDPOption
+
+format FloatMaximumResponseCode:
+    one :u1(1)
+    exp :u3
+    mant :u12
+
+format FloatQQIC:
+    one :u1(1)
+    exp :u3
+    mant :u4
+
+format MulticastListenerQuery:
+    max_resp_code :u16
+    reserved1: u16
+    mcast_addr: [16]u8
+    reserved2 :u4
+    suppress_router_processing :u1
+    queries_robustness_var :u3
+    querier_query_interval :u8
+    number_of_sources :u16
+    source_addr: [number_of_sources][16]u8
+
+format MulticastAddressRecord:
+    record_type: u8
+    aux_data_len: u8
+    number_of_sources: u16
+    multicast_addr: [16]u8
+    source_addr: [number_of_sources][16]u8
+    aux_data :[aux_data_len]u8
+
+format V2MulticastListernerReport:
+    reserved1: u16
+    number_of_records: u16
+    records: [number_of_records]MulticastAddressRecord
+
 
 format ICMPv4Packet:
     header: ICMPHeader
@@ -50,26 +118,96 @@ format ICMPv4Packet:
         ICMPv4Type.echo:
             echo: ICMPEcho
         ICMPv4Type.echo_reply:
-            echo_reply: ICMPEchoReply
+            echo_reply: ICMPEcho
         ICMPv4Type.time_exceeded:
             time_exceeded: ICMPTimeExceeded
         ICMPv4Type.dst_unreachable:
             destination_unreachable: ICMPDestinationUnreachable
+        ICMPv4Type.redirect:
+            redirect: ICMPRedirect
+        ICMPv4Type.parameter_problem:
+            parameter_problem: ICMPParameterProblem
+        ICMPv4Type.timestamp:
+            timestamp: ICMPTimestamp
         ..:
             data: [..]u8
 
 format ICMPv6Packet:
     header: ICMPHeader
     match ICMPv6Type(header.type):
+        ICMPv6Type.echo_request:
+            echo_request: ICMPEcho
+        ICMPv6Type.echo_reply:
+            echo_reply: ICMPEcho
+        ICMPv6Type.time_exceeded:
+            time_exceeded: ICMPv6ParameterProblem
+        ICMPv6Type.packet_too_big:
+            packet_too_big: ICMPPacketTooBig
+        ICMPv6Type.parameter_problem:
+            parameter_problem: ICMPv6ParameterProblem
+        ICMPv6Type.destination_unreachable:
+            destination_unreachable: ICMPDestinationUnreachable
+        ICMPv6Type.router_solicitation:
+            router_solicitation: NDPRouterSolicitation
         ICMPv6Type.router_advertisement:
-            router_advertisement: ICMPv6RouterAdvertisement
+            router_advertisement: NDPRouterAdvertisement
         ICMPv6Type.neighbor_solicitation:
-            neighbor_solicitation: ICMPv6NeighborSolicitation
+            neighbor_solicitation: NDPNeighborSolicitation
         ICMPv6Type.neighbor_advertisement:
-            neighbor_advertisement: ICMPv6NeighborAdvertisement
+            neighbor_advertisement: NDPNeighborAdvertisement
+        ICMPv6Type.redirect_message:
+            redirect_message: NDPRedirectMessage
+        ICMPv6Type.multicast_listener_query:
+            multicast_listener_query: MulticastListenerQuery
+        ICMPv6Type.v2_multicast_listener_report:
+            v2_multicast_listener_report: V2MulticastListernerReport
         ..:
             data: [..]u8
 
+
+enum NDPOptionType:
+    :u8
+    source_link_layer_address = 1
+    target_link_layer_address = 2
+    prefix_information = 3
+    redirect_header = 4
+    mtu = 5
+
+format NDPOption:
+    type: NDPOptionType
+    length: u8
+    length != 0
+    match NDPOptionType(type):
+        NDPOptionType.source_link_layer_address:
+            link_layer_address: [length*8 - 2]u8
+        NDPOptionType.target_link_layer_address:
+            link_layer_address: [length*8 - 2]u8
+        NDPOptionType.prefix_information:
+            prefix_information: PrefixInformation(input = input.subrange(length*8 - 2))
+        NDPOptionType.redirect_header:
+            redirect_header: RedirectHeader(input = input.subrange(length*8 - 2))
+        NDPOptionType.mtu:
+            mtu: MTU(input = input.subrange(length*8 - 2))
+        ..:
+            data: [length * 8 - 2]u8
+
+format PrefixInformation:
+    prefix_length: u8
+    on_link: u1
+    autoconfig: u1
+    reserved1: u6
+    valid_lifetime: u32
+    preferred_lifetime: u32
+    reserved2: u32
+    prefix: [16]u8
+
+format RedirectHeader:
+    reserved :[6]u8
+    hdr_and_data: [..]u8
+
+format MTU:
+    reserved: u16
+    mtu: u32
 
 enum ICMPv4Type:
     :u8
@@ -118,7 +256,7 @@ enum ICMPv4Type:
     experimental_1 = 253
     experimental_2 = 255
 
-enum ICMPv4Code:
+enum ICMPv4DstUnreachableCode:
     :u8
     net_unreachable
     host_unreachable
@@ -136,41 +274,53 @@ enum ICMPv4Code:
     host_precedence_violation
     precedence_cutoff
 
+enum ICMPv4RedirectCode:
+    :u8
+    redirect_for_network
+    redirect_for_host
+    redirect_for_TOS_and_network
+    redirect_for_TOS_and_host
+
+enum ICMPv4TimeExceededCode:
+    :u8
+    ttl_exceeded_in_transit
+    frag_reassembly_time_exceeded
+
 enum ICMPv6Type:
     :u8
-    destination_unreachable
-    packet_too_big
-    time_exceeded
-    parameter_problem
-    echo_request
-    echo_reply
-    multicast_listener_query
-    multicast_listener_report
-    multicast_listener_done
-    router_solicitation
-    router_advertisement
-    neighbor_solicitation
-    neighbor_advertisement
-    redirect_message
-    router_renumbering
-    node_information_query
-    node_information_response
-    inverse_neighbor_discovery_solicitation
-    inverse_neighbor_discovery_advertisement
-    v2_multicast_listener_report
-    home_agent_address_discovery_request
-    home_agent_address_discovery_reply
-    mobile_prefix_solicitation
-    mobile_prefix_advertisement
-    certification_path_solicitation
-    certification_path_advertisement
+    destination_unreachable = 1
+    packet_too_big = 2
+    time_exceeded = 3
+    parameter_problem = 4
+    echo_request = 128
+    echo_reply = 129
+    multicast_listener_query = 130
+    multicast_listener_report = 131
+    multicast_listener_done = 132
+    router_solicitation = 133
+    router_advertisement = 134
+    neighbor_solicitation = 135
+    neighbor_advertisement = 136
+    redirect_message = 137
+    router_renumbering = 138
+    node_information_query = 139
+    node_information_response = 140 
+    inverse_neighbor_discovery_solicitation = 141
+    inverse_neighbor_discovery_advertisement = 142
+    v2_multicast_listener_report = 143
+    home_agent_address_discovery_request = 144
+    home_agent_address_discovery_reply = 145
+    mobile_prefix_solicitation = 146
+    mobile_prefix_advertisement = 147
+    certification_path_solicitation = 148
+    certification_path_advertisement = 149
     experimental_mobility_protocols = 253
     experimental_mobility_protocols_2 = 254
     reserved = 255
 
 enum ICMPv6Code:
     :u8
-    no_route_to_dst
+    no_route_to_dst 
     communication_with_dst_admin_prohibited
     beyond_scope_of_src
     address_unreachable
@@ -178,5 +328,14 @@ enum ICMPv6Code:
     src_addr_failed_ingress_egress_policy
     reject_route_to_dst
     error_in_src_routing_header
-    rejected_dst_addr_unreachable
-    error_in_dst_options_header
+
+enum ICMPv6TimeExceededCode:
+    :u8
+    hop_limit_exceeded
+    fragment_reassembly_time_exceeded
+
+enum ICMPv6ParameterProblemCode:
+    :u8
+    erroneous_header_field
+    unrecognized_next_header
+    unrecognized_ipv6_option

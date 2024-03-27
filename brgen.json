@@ -32,7 +32,9 @@
         "-map-word",
         "Udpdatagram=UDPDatagram",
         "-map-word",
-        "Udpheader=UDPHeader"
+        "Udpheader=UDPHeader",
+        "-map-word",
+        "icmp=ICMP"
       ]
     },
     {

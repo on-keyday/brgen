@@ -1,13 +1,32 @@
+
+config.go.package = "ether"
+
 format DHCPv6:
     msg_type :u8
     transaction_id :u24
-    options :[..]u8
+    options :[..]DHCPv6Option
+
+enum DHCPv6MessageType:
+    SOLICIT = 1
+    ADVERTISE = 2
+    REQUEST = 3
+    CONFIRM = 4
+    RENEW = 5
+    REBIND = 6
+    REPLY = 7
+    RELEASE = 8
+    DECLINE = 9
+    RECONFIGURE = 10
+    INFORMATION_REQUEST = 11
+    RELAY_FORW = 12
+    RELAY_REPL = 13
 
 format DHCPRelay:
     msg_type :u8
     hop_count :u8
     link_address :[16]u8
     peer_address :[16]u8
+    options :[..]DHCPv6Option
 
 format DUID:
     duid_type :u16
@@ -16,7 +35,7 @@ format DUID:
         2 => duid_en :DUID_EN
         3 => duid_ll :DUID_LL
         4 => duid_uuid :DUID_UUID
-        .. => duid_raw :[..]u8
+        .. => error("Unknown DUID type: ", duid_type)
 
 format DUID_LLT:
     hardware_type :u16
@@ -35,6 +54,167 @@ format DUID_UUID:
     uuid :[16]u8
 
 format DHCPv6Option:
+    code :DHCPv6OptionCode
+    len :u16
+    match code:
+        DHCPv6OptionCode.CLIENTID => clientID :ClientID(input = input.subrange(len))
+        DHCPv6OptionCode.SERVERID => serverID :ServerID(input = input.subrange(len))
+        DHCPv6OptionCode.IA_NA => ia_na :IdentityAssociationForNonTemporaryAddresses(input = input.subrange(len))
+        DHCPv6OptionCode.IA_TA => ia_ta :IdentityAssociationFormTemporaryAddresses(input = input.subrange(len))
+        DHCPv6OptionCode.IAADDR => iaaddr :IAAddress(input = input.subrange(len))
+        DHCPv6OptionCode.OPTION_REQUEST => option_request :OptionRequest(input = input.subrange(len))
+        DHCPv6OptionCode.PREFERENCE => preference :PreferenceOption(input = input.subrange(len))
+        DHCPv6OptionCode.ELAPSED_TIME => elapsed_time :ElaspedTime(input = input.subrange(len))
+        DHCPv6OptionCode.RELAY_MSG => relay_msg :DHCPRelay(input = input.subrange(len))
+        DHCPv6OptionCode.AUTH => auth :Authentication(input = input.subrange(len))
+        DHCPv6OptionCode.SERVER_UNICAST => server_unicast :ServerUnicast(input = input.subrange(len))
+        DHCPv6OptionCode.STATUS_CODE => status_code :StatusCode(input = input.subrange(len))
+        DHCPv6OptionCode.RAPID_COMMIT => rapid_commit :RapidCommit(input = input.subrange(len))
+        DHCPv6OptionCode.USER_CLASS => user_class :UserClass(input = input.subrange(len))
+        DHCPv6OptionCode.VENDOR_CLASS => vendor_class :VendorClass(input = input.subrange(len))
+        DHCPv6OptionCode.VENDOR_SPECIFIC => vendor_specific :VendorSpecificInformation(input = input.subrange(len))
+        DHCPv6OptionCode.INTERFACE_ID => interface_id :InterfaceID(input = input.subrange(len))
+        DHCPv6OptionCode.RECONFIGURE_MSG => reconfigure_msg :ReconfigureMessage(input = input.subrange(len))
+        DHCPv6OptionCode.RECONFIGURE_ACCEPT => reconfigure_accept :RenconfigureAccept(input = input.subrange(len))
+        DHCPv6OptionCode.IA_PD => ia_pd :IdentityAssociationForPrefixDelegation(input = input.subrange(len))
+        DHCPv6OptionCode.IAPREFIX => iaprefix :IAPrefix(input = input.subrange(len))
+        DHCPv6OptionCode.INFORMATION_REFRESH_TIME => information_refresh_time :InformationRefreshTime(input = input.subrange(len))
+        DHCPv6OptionCode.SOL_MAX_RT => sol_max_rt :SolMaxRt(input = input.subrange(len))
+        DHCPv6OptionCode.INF_MAX_RT => inf_max_rt :InfMaxRt(input = input.subrange(len))
+        .. => data :[len]u8
+
+
+enum DHCPv6OptionCode:
+    :u16
+    CLIENTID = 1
+    SERVERID = 2
+    IA_NA = 3
+    IA_TA = 4
+    IAADDR = 5
+    OPTION_REQUEST = 6  
+    PREFERENCE = 7
+    ELAPSED_TIME = 8
+    RELAY_MSG = 9
+    AUTH = 11
+    SERVER_UNICAST = 12
+    STATUS_CODE = 13
+    RAPID_COMMIT = 14
+    USER_CLASS = 15
+    VENDOR_CLASS = 16
+    VENDOR_SPECIFIC = 17
+    INTERFACE_ID = 18
+    RECONFIGURE_MSG = 19
+    RECONFIGURE_ACCEPT = 20
+    IA_PD = 25
+    IAPREFIX = 26
+    INFORMATION_REFRESH_TIME = 32
+    SOL_MAX_RT = 82
+    INF_MAX_RT = 83
+
+format ClientID:
+    duid :DUID
+
+format ServerID:
+    duid :DUID
+
+format IdentityAssociationForNonTemporaryAddresses:
+    id :u32
+    t1 :u32
+    t2 :u32
+    options :[..]DHCPv6Option
+
+format IdentityAssociationFormTemporaryAddresses:
+    id :u32
+    options :[..]DHCPv6Option 
+
+format IAAddress:
+    address :[16]u8
+    preferred_lifetime :u32
+    valid_lifetime :u32
+    options :[..]DHCPv6Option
+
+format OptionRequest:
+    options :[..]DHCPv6OptionCode
+
+format PreferenceOption:
+    pref :u8
+
+format ElaspedTime:
+    elapsed_time :u16
+
+format Authentication:
+    protocol :u8
+    algorithm :u8
+    rdm :u8
+    replay_detection :u64
+    authentication_information :[..]u8
+
+format ServerUnicast:
+    server_address :[16]u8
+
+format StatusCode:
+    status_code :DHCPv6StatusCode
+    message :[..]u8
+
+enum DHCPv6StatusCode:
+    :u16
+    SUCCESS = 0
+    UNSPECIFIED_FAILURE = 1
+    NO_BINDING = 2
+    NOT_ON_LINK = 3
+    USE_MULTICAST = 4
+    NO_PREFIX_AVAIL = 6
+
+format RapidCommit:
+    ..
+
+format UserClass:
+    data :[..]u8
+
+format VendorData:
+    len :u16
+    data :[len]u8
+
+format VendorClass:
+    enterprise_number :u32
+    data :[..]VendorData
+
+format VendorSpecificOption:
     code :u16
     len :u16
-    data :[..]u8
+    data :[len]u8
+
+format VendorSpecificInformation:
+    enterprise_number :u32
+    data :[..]VendorSpecificOption
+
+format InterfaceID:
+    interfaceID :[..]u8
+
+format ReconfigureMessage:
+    msg_type :u8
+
+format RenconfigureAccept:
+    ..
+
+format IdentityAssociationForPrefixDelegation:
+    id :u32
+    t1 :u32
+    t2 :u32
+    options :[..]DHCPv6Option
+
+format IAPrefix:
+    preferred_lifetime :u32
+    valid_lifetime :u32
+    prefix_length :u8
+    prefix :[16]u8
+    options :[..]DHCPv6Option
+
+format InformationRefreshTime:
+    refresh_time :u32
+
+format SolMaxRt:
+    max_rt :u32
+
+format InfMaxRt:
+    max_rt :u32

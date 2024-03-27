@@ -1,0 +1,55 @@
+
+state PrefixInfo:
+    global :u8
+    subnet :u8
+
+pinfo :PrefixInfo
+
+# 2000::/3
+format GlobalUnicast:   
+    prefix :u3(1)
+    global_routing_prefix :[pinfo.global]u1
+    subnet :[pinfo.subnet]u1
+    pinfo.global + pinfo.subnet <= 64
+    interface_id :[125 - pinfo.global - pinfo.subnet]u1
+
+# fe80::/10
+format LinkLocalUnicast:
+    prefix :u10(0x3fa)
+    subnet :[54]u1
+    interface_id :[64/8]u8
+
+# fc00::/7 || fd00::/8
+format UniqueLocalUnicast:
+    prefix :u7(0x7e)
+    local_subnet :u1
+    globalID :[40/8]u8
+    subnetID :[16/8]u8
+    interface_id :[64]u1 
+
+# ff00::/8
+format Multicast:
+    prefix :u8(0xff)
+    flags :u4
+    scope :u4
+    group_id :[14]u8
+
+# fe80::/10
+format SolicitedMulticast:
+    prefix :u104(0xff0200000000000000000001)
+    addr :[3]u8
+
+# ::1/128
+format Loopback:
+    prefix :u128(0x1)
+
+# ::/128
+format Unspecified:
+    prefix :u128(0x0)
+
+# ::ffff:0:0/96
+format IPv4Mapped:
+    prefix :u96(0x0000000000ffff)
+    addr :[4]u8
+
+    

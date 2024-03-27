@@ -1,36 +1,108 @@
+config.go.package = "ether"
+
 format IPv4Header:
     version :u4 ihl :u4 dscp :u6 ecn :u2 len :u16
     id :u16 reserved :u1 dont_fragment :u1 more_fragment :u1 fragOffset :u13
-    ttl :u8 proto :u8 checksum :u16
-    srcAddr :u32
-    dstAddr :u32
+    ttl :u8 proto :ProtocolNumber checksum :u16
+    srcAddr :[4]u8
+    dstAddr :[4]u8
     options :[u8(ihl)*4-20]u8
 
 format IPv4Packet:
     hdr :IPv4Header
     hdr.len >= u16(hdr.ihl)*4
-    len ::= hdr.len - hdr.ihl*4 
+    len ::= hdr.len - u16(hdr.ihl*4) 
     data :[len]u8
 
 format IPv6Header:
     version :u4 
     trafficClass :u8 flowLabel :u20
     payloadLen :u16
-    nextHeader :u8
+    nextHeader :ProtocolNumber
     hopLimit :u8
     srcAddr :[16]u8
     dstAddr :[16]u8
 
+enum ProtocolNumber:
+    :u8
+    HOPOPT = 0
+    ICMP = 1
+    IGMP = 2
+    GGP = 3
+    IPV4 = 4
+    ST = 5
+    TCP = 6
+    CBT = 7
+    EGP = 8
+    IGP = 9
+    BBN_RCC_MON = 10
+    NVP_II = 11
+    PUP = 12
+    ARGUS = 13
+    EMCON = 14
+    XNET = 15
+    CHAOS = 16
+    UDP = 17
+    MUX = 18
+    DCN_MEAS = 19
+    HMP = 20
+    PRM = 21
+    XNS_IDP = 22
+    TRUNK_1 = 23
+    TRUNK_2 = 24
+    ICMPV6 = 58
 
-#format IPHeader:
-#    ip_version :u4(input.peek=true)
+fn checkSum(data :[]u8) -> u16:
+    sum := u32(0)
+    for i in data.length / 2:
+        sum += u32(data[i*2]) << 8 | u32(data[i*2+1])
+    if data.length % 2 == 1:
+        sum += u32(data[data.length-1]) << 8
+    for sum > 0xffff:
+        sum = (sum & 0xffff) + (sum >> 16)
+    return u16(!sum)
 
-#    if ip_version == 4:
-#        hdr :IPv4Header
- 
-#    elif ip_version == 6:
-#        hdr :IPv6Header
-#    else:
-#        error("invalid ip_version: %d", ip_version)
+format HopByHopOptionHeader:
+    nextHeader :ProtocolNumber 
+    hdrExtLen :u8
+    options :[..]HopOption(input = input.subrange(hdrExtLen*8+6))
 
+enum HopOptionType:
+    :u8
+    PAD1 = 0
+    PADN = 1
 
+format HopOption:
+    type :HopOptionType
+    if type != HopOptionType.PAD1: 
+        len :u8 
+        data :[len]u8
+
+format Routing:
+    nextHeader :ProtocolNumber 
+    hdrExtLen :u8 
+    routingType :u8 
+    if routingType == 0:
+        type0 :Type0Routing(input = input.subrange(hdrExtLen*8+4))
+    else:
+        segmentsLeft :u8
+        data :[hdrExtLen*8+4]u8
+
+format Type0Routing:
+    segmentsLeft :u8
+    reserved :u32
+    address :[segmentsLeft][16]u8
+
+format IPv6ChecksumPseudoHeader:
+    srcAddr :[16]u8
+    dstAddr :[16]u8
+    upper_layer_length :u32
+    zero :u24
+    nextHeader :ProtocolNumber
+
+format IPv4PseudoHeader:
+    srcAddr :[4]u8
+    dstAddr :[4]u8
+    zero :u8
+    protocol :ProtocolNumber
+    length :u16

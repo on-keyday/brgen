@@ -60,6 +60,7 @@ impl From<&Node> for NodeType {
 			Node::Index(_) => Self::Index,
 			Node::Match(_) => Self::Match,
 			Node::Range(_) => Self::Range,
+			Node::Identity(_) => Self::Identity,
 			Node::TmpVar(_) => Self::TmpVar,
 			Node::Import(_) => Self::Import,
 			Node::Cast(_) => Self::Cast,
@@ -141,6 +142,7 @@ impl From<&NodeWeak> for NodeType {
 			NodeWeak::Index(_) => Self::Index,
 			NodeWeak::Match(_) => Self::Match,
 			NodeWeak::Range(_) => Self::Range,
+			NodeWeak::Identity(_) => Self::Identity,
 			NodeWeak::TmpVar(_) => Self::TmpVar,
 			NodeWeak::Import(_) => Self::Import,
 			NodeWeak::Cast(_) => Self::Cast,
@@ -222,6 +224,7 @@ impl From<NodeWeak> for NodeType {
 	Index,
 	Match,
 	Range,
+	Identity,
 	TmpVar,
 	Import,
 	Cast,
@@ -302,6 +305,7 @@ impl TryFrom<&str> for NodeType {
 			"index" =>Ok(Self::Index),
 			"match" =>Ok(Self::Match),
 			"range" =>Ok(Self::Range),
+			"identity" =>Ok(Self::Identity),
 			"tmp_var" =>Ok(Self::TmpVar),
 			"import" =>Ok(Self::Import),
 			"cast" =>Ok(Self::Cast),
@@ -761,6 +765,7 @@ pub enum Node {
 	Index(Rc<RefCell<Index>>),
 	Match(Rc<RefCell<Match>>),
 	Range(Rc<RefCell<Range>>),
+	Identity(Rc<RefCell<Identity>>),
 	TmpVar(Rc<RefCell<TmpVar>>),
 	Import(Rc<RefCell<Import>>),
 	Cast(Rc<RefCell<Cast>>),
@@ -833,6 +838,7 @@ pub enum NodeWeak {
 	Index(Weak<RefCell<Index>>),
 	Match(Weak<RefCell<Match>>),
 	Range(Weak<RefCell<Range>>),
+	Identity(Weak<RefCell<Identity>>),
 	TmpVar(Weak<RefCell<TmpVar>>),
 	Import(Weak<RefCell<Import>>),
 	Cast(Weak<RefCell<Cast>>),
@@ -906,6 +912,7 @@ impl Node {
             Node::Index(node)=>node.borrow().loc.clone(),
             Node::Match(node)=>node.borrow().loc.clone(),
             Node::Range(node)=>node.borrow().loc.clone(),
+            Node::Identity(node)=>node.borrow().loc.clone(),
             Node::TmpVar(node)=>node.borrow().loc.clone(),
             Node::Import(node)=>node.borrow().loc.clone(),
             Node::Cast(node)=>node.borrow().loc.clone(),
@@ -981,6 +988,7 @@ impl From<&Node> for NodeWeak {
 			Node::Index(node)=>Self::Index(Rc::downgrade(node)),
 			Node::Match(node)=>Self::Match(Rc::downgrade(node)),
 			Node::Range(node)=>Self::Range(Rc::downgrade(node)),
+			Node::Identity(node)=>Self::Identity(Rc::downgrade(node)),
 			Node::TmpVar(node)=>Self::TmpVar(Rc::downgrade(node)),
 			Node::Import(node)=>Self::Import(Rc::downgrade(node)),
 			Node::Cast(node)=>Self::Cast(Rc::downgrade(node)),
@@ -1063,6 +1071,7 @@ impl TryFrom<&NodeWeak> for Node {
 			NodeWeak::Index(node)=>Ok(Self::Index(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Index))?)),
 			NodeWeak::Match(node)=>Ok(Self::Match(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Match))?)),
 			NodeWeak::Range(node)=>Ok(Self::Range(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Range))?)),
+			NodeWeak::Identity(node)=>Ok(Self::Identity(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Identity))?)),
 			NodeWeak::TmpVar(node)=>Ok(Self::TmpVar(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::TmpVar))?)),
 			NodeWeak::Import(node)=>Ok(Self::Import(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Import))?)),
 			NodeWeak::Cast(node)=>Ok(Self::Cast(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Cast))?)),
@@ -1140,6 +1149,7 @@ pub enum Expr {
 	Index(Rc<RefCell<Index>>),
 	Match(Rc<RefCell<Match>>),
 	Range(Rc<RefCell<Range>>),
+	Identity(Rc<RefCell<Identity>>),
 	TmpVar(Rc<RefCell<TmpVar>>),
 	Import(Rc<RefCell<Import>>),
 	Cast(Rc<RefCell<Cast>>),
@@ -1170,6 +1180,7 @@ pub enum ExprWeak {
 	Index(Weak<RefCell<Index>>),
 	Match(Weak<RefCell<Match>>),
 	Range(Weak<RefCell<Range>>),
+	Identity(Weak<RefCell<Identity>>),
 	TmpVar(Weak<RefCell<TmpVar>>),
 	Import(Weak<RefCell<Import>>),
 	Cast(Weak<RefCell<Cast>>),
@@ -1201,6 +1212,7 @@ impl Expr {
             Expr::Index(node)=>node.borrow().loc.clone(),
             Expr::Match(node)=>node.borrow().loc.clone(),
             Expr::Range(node)=>node.borrow().loc.clone(),
+            Expr::Identity(node)=>node.borrow().loc.clone(),
             Expr::TmpVar(node)=>node.borrow().loc.clone(),
             Expr::Import(node)=>node.borrow().loc.clone(),
             Expr::Cast(node)=>node.borrow().loc.clone(),
@@ -1231,6 +1243,7 @@ impl Expr {
             Expr::Index(node)=>node.borrow().expr_type.clone(),
             Expr::Match(node)=>node.borrow().expr_type.clone(),
             Expr::Range(node)=>node.borrow().expr_type.clone(),
+            Expr::Identity(node)=>node.borrow().expr_type.clone(),
             Expr::TmpVar(node)=>node.borrow().expr_type.clone(),
             Expr::Import(node)=>node.borrow().expr_type.clone(),
             Expr::Cast(node)=>node.borrow().expr_type.clone(),
@@ -1261,6 +1274,7 @@ impl Expr {
             Expr::Index(node)=>node.borrow().constant_level.clone(),
             Expr::Match(node)=>node.borrow().constant_level.clone(),
             Expr::Range(node)=>node.borrow().constant_level.clone(),
+            Expr::Identity(node)=>node.borrow().constant_level.clone(),
             Expr::TmpVar(node)=>node.borrow().constant_level.clone(),
             Expr::Import(node)=>node.borrow().constant_level.clone(),
             Expr::Cast(node)=>node.borrow().constant_level.clone(),
@@ -1294,6 +1308,7 @@ impl From<&Expr> for ExprWeak {
 			Expr::Index(node)=>Self::Index(Rc::downgrade(node)),
 			Expr::Match(node)=>Self::Match(Rc::downgrade(node)),
 			Expr::Range(node)=>Self::Range(Rc::downgrade(node)),
+			Expr::Identity(node)=>Self::Identity(Rc::downgrade(node)),
 			Expr::TmpVar(node)=>Self::TmpVar(Rc::downgrade(node)),
 			Expr::Import(node)=>Self::Import(Rc::downgrade(node)),
 			Expr::Cast(node)=>Self::Cast(Rc::downgrade(node)),
@@ -1334,6 +1349,7 @@ impl TryFrom<&ExprWeak> for Expr {
 			ExprWeak::Index(node)=>Ok(Self::Index(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Index))?)),
 			ExprWeak::Match(node)=>Ok(Self::Match(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Match))?)),
 			ExprWeak::Range(node)=>Ok(Self::Range(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Range))?)),
+			ExprWeak::Identity(node)=>Ok(Self::Identity(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Identity))?)),
 			ExprWeak::TmpVar(node)=>Ok(Self::TmpVar(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::TmpVar))?)),
 			ExprWeak::Import(node)=>Ok(Self::Import(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Import))?)),
 			ExprWeak::Cast(node)=>Ok(Self::Cast(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Cast))?)),
@@ -1375,6 +1391,7 @@ impl TryFrom<&Node> for Expr {
 			Node::Index(node)=>Ok(Self::Index(node.clone())),
 			Node::Match(node)=>Ok(Self::Match(node.clone())),
 			Node::Range(node)=>Ok(Self::Range(node.clone())),
+			Node::Identity(node)=>Ok(Self::Identity(node.clone())),
 			Node::TmpVar(node)=>Ok(Self::TmpVar(node.clone())),
 			Node::Import(node)=>Ok(Self::Import(node.clone())),
 			Node::Cast(node)=>Ok(Self::Cast(node.clone())),
@@ -1416,6 +1433,7 @@ impl From<&Expr> for Node {
 			Expr::Index(node)=>Self::Index(node.clone()),
 			Expr::Match(node)=>Self::Match(node.clone()),
 			Expr::Range(node)=>Self::Range(node.clone()),
+			Expr::Identity(node)=>Self::Identity(node.clone()),
 			Expr::TmpVar(node)=>Self::TmpVar(node.clone()),
 			Expr::Import(node)=>Self::Import(node.clone()),
 			Expr::Cast(node)=>Self::Cast(node.clone()),
@@ -1456,6 +1474,7 @@ impl TryFrom<&ExprWeak> for Node {
 			ExprWeak::Index(node)=>Ok(Self::Index(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Index))?)),
 			ExprWeak::Match(node)=>Ok(Self::Match(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Match))?)),
 			ExprWeak::Range(node)=>Ok(Self::Range(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Range))?)),
+			ExprWeak::Identity(node)=>Ok(Self::Identity(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Identity))?)),
 			ExprWeak::TmpVar(node)=>Ok(Self::TmpVar(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::TmpVar))?)),
 			ExprWeak::Import(node)=>Ok(Self::Import(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Import))?)),
 			ExprWeak::Cast(node)=>Ok(Self::Cast(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Cast))?)),
@@ -1496,6 +1515,7 @@ impl From<&ExprWeak> for NodeWeak {
 			ExprWeak::Index(node)=>Self::Index(node.clone()),
 			ExprWeak::Match(node)=>Self::Match(node.clone()),
 			ExprWeak::Range(node)=>Self::Range(node.clone()),
+			ExprWeak::Identity(node)=>Self::Identity(node.clone()),
 			ExprWeak::TmpVar(node)=>Self::TmpVar(node.clone()),
 			ExprWeak::Import(node)=>Self::Import(node.clone()),
 			ExprWeak::Cast(node)=>Self::Cast(node.clone()),
@@ -1536,6 +1556,7 @@ impl TryFrom<&NodeWeak> for ExprWeak {
 			NodeWeak::Index(node)=>Ok(Self::Index(node.clone())),
 			NodeWeak::Match(node)=>Ok(Self::Match(node.clone())),
 			NodeWeak::Range(node)=>Ok(Self::Range(node.clone())),
+			NodeWeak::Identity(node)=>Ok(Self::Identity(node.clone())),
 			NodeWeak::TmpVar(node)=>Ok(Self::TmpVar(node.clone())),
 			NodeWeak::Import(node)=>Ok(Self::Import(node.clone())),
 			NodeWeak::Cast(node)=>Ok(Self::Cast(node.clone())),
@@ -1578,6 +1599,7 @@ impl TryFrom<&Node> for ExprWeak {
 			Node::Index(node)=>Ok(Self::Index(Rc::downgrade(node))),
 			Node::Match(node)=>Ok(Self::Match(Rc::downgrade(node))),
 			Node::Range(node)=>Ok(Self::Range(Rc::downgrade(node))),
+			Node::Identity(node)=>Ok(Self::Identity(Rc::downgrade(node))),
 			Node::TmpVar(node)=>Ok(Self::TmpVar(Rc::downgrade(node))),
 			Node::Import(node)=>Ok(Self::Import(Rc::downgrade(node))),
 			Node::Cast(node)=>Ok(Self::Cast(Rc::downgrade(node))),
@@ -3564,7 +3586,7 @@ pub struct If {
 	pub constant_level: ConstantLevel,
 	pub struct_union_type: Option<Rc<RefCell<StructUnionType>>>,
 	pub cond_scope: Option<Rc<RefCell<Scope>>>,
-	pub cond: Option<Expr>,
+	pub cond: Option<Rc<RefCell<Identity>>>,
 	pub then: Option<Rc<RefCell<IndentBlock>>>,
 	pub els: Option<Node>,
 }
@@ -3837,7 +3859,7 @@ pub struct Match {
 	pub constant_level: ConstantLevel,
 	pub struct_union_type: Option<Rc<RefCell<StructUnionType>>>,
 	pub cond_scope: Option<Rc<RefCell<Scope>>>,
-	pub cond: Option<Expr>,
+	pub cond: Option<Rc<RefCell<Identity>>>,
 	pub branch: Vec<Rc<RefCell<MatchBranch>>>,
 }
 
@@ -3963,6 +3985,72 @@ impl From<&Rc<RefCell<Range>>> for Node {
 
 impl From<Rc<RefCell<Range>>> for Node {
 	fn from(node:Rc<RefCell<Range>>)-> Self{
+		Self::from(&node)
+	}
+}
+
+#[derive(Debug,Clone)]
+pub struct Identity {
+	pub loc: Loc,
+	pub expr_type: Option<Type>,
+	pub constant_level: ConstantLevel,
+	pub expr: Option<Expr>,
+}
+
+impl TryFrom<&Expr> for Rc<RefCell<Identity>> {
+	type Error = Error;
+	fn try_from(node:&Expr)->Result<Self,Self::Error>{
+		match node {
+			Expr::Identity(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl TryFrom<Expr> for Rc<RefCell<Identity>> {
+	type Error = Error;
+	fn try_from(node:Expr)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
+impl From<&Rc<RefCell<Identity>>> for Expr {
+	fn from(node:&Rc<RefCell<Identity>>)-> Self{
+		Expr::Identity(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Identity>>> for Expr {
+	fn from(node:Rc<RefCell<Identity>>)-> Self{
+		Self::from(&node)
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<Identity>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::Identity(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl TryFrom<Node> for Rc<RefCell<Identity>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
+impl From<&Rc<RefCell<Identity>>> for Node {
+	fn from(node:&Rc<RefCell<Identity>>)-> Self{
+		Node::Identity(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Identity>>> for Node {
+	fn from(node:Rc<RefCell<Identity>>)-> Self{
 		Self::from(&node)
 	}
 }
@@ -4710,7 +4798,7 @@ impl From<Rc<RefCell<ScopedStatement>>> for Node {
 pub struct MatchBranch {
 	pub loc: Loc,
 	pub belong: Option<Weak<RefCell<Match>>>,
-	pub cond: Option<Expr>,
+	pub cond: Option<Rc<RefCell<Identity>>>,
 	pub sym_loc: Loc,
 	pub then: Option<Node>,
 }
@@ -8364,6 +8452,14 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				end: None,
 				})))
 			},
+			NodeType::Identity => {
+				Node::Identity(Rc::new(RefCell::new(Identity {
+				loc: raw_node.loc.clone(),
+				expr_type: None,
+				constant_level: ConstantLevel::Unknown,
+				expr: None,
+				})))
+			},
 			NodeType::TmpVar => {
 				Node::TmpVar(Rc::new(RefCell::new(TmpVar {
 				loc: raw_node.loc.clone(),
@@ -9680,7 +9776,11 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						Some(v)=>v,
 						None => return Err(Error::IndexOutOfBounds(cond_body as usize)),
 					};
-					node.borrow_mut().cond = Some(cond_body.try_into()?);
+					let cond_body = match cond_body {
+						Node::Identity(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),cond_body.into())),
+					};
+					node.borrow_mut().cond = Some(cond_body.clone());
 				}
 				let then_body = match raw_node.body.get("then") {
 					Some(v)=>v,
@@ -10009,7 +10109,11 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						Some(v)=>v,
 						None => return Err(Error::IndexOutOfBounds(cond_body as usize)),
 					};
-					node.borrow_mut().cond = Some(cond_body.try_into()?);
+					let cond_body = match cond_body {
+						Node::Identity(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),cond_body.into())),
+					};
+					node.borrow_mut().cond = Some(cond_body.clone());
 				}
 				let branch_body = match raw_node.body.get("branch") {
 					Some(v)=>v,
@@ -10107,6 +10211,54 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						None => return Err(Error::IndexOutOfBounds(end_body as usize)),
 					};
 					node.borrow_mut().end = Some(end_body.try_into()?);
+				}
+			},
+			NodeType::Identity => {
+				let node = nodes[i].clone();
+				let node = match node {
+					Node::Identity(node)=>node,
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
+				};
+				let expr_type_body = match raw_node.body.get("expr_type") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"expr_type")),
+				};
+ 				if !expr_type_body.is_null() {
+					let expr_type_body = match expr_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
+					};
+					let expr_type_body = match nodes.get(expr_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
+					};
+					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+				}
+				let constant_level_body = match raw_node.body.get("constant_level") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"constant_level")),
+				};
+				node.borrow_mut().constant_level = match constant_level_body.as_str() {
+					Some(v)=>match ConstantLevel::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(constant_level_body.into(),JSONType::String)),
+				};
+				let expr_body = match raw_node.body.get("expr") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"expr")),
+				};
+ 				if !expr_body.is_null() {
+					let expr_body = match expr_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(expr_body.into(),JSONType::Number)),
+					};
+					let expr_body = match nodes.get(expr_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(expr_body as usize)),
+					};
+					node.borrow_mut().expr = Some(expr_body.try_into()?);
 				}
 			},
 			NodeType::TmpVar => {
@@ -10897,7 +11049,11 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						Some(v)=>v,
 						None => return Err(Error::IndexOutOfBounds(cond_body as usize)),
 					};
-					node.borrow_mut().cond = Some(cond_body.try_into()?);
+					let cond_body = match cond_body {
+						Node::Identity(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),cond_body.into())),
+					};
+					node.borrow_mut().cond = Some(cond_body.clone());
 				}
 				let sym_loc_body = match raw_node.body.get("sym_loc") {
 					Some(v)=>v,
@@ -14346,6 +14502,18 @@ where
 				}
 			}
 			if let Some(node) = &node.borrow().end{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
+		},
+		Node::Identity(node)=>{
+			if let Some(node) = &node.borrow().expr_type{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
+			if let Some(node) = &node.borrow().expr{
 				if !f.visit(&node.into()){
 					return;
 				}

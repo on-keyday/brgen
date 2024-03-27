@@ -501,7 +501,7 @@ namespace brgen::middle {
                 T l_val = 0;
                 T r_val = 0;
                 bool inclusive = false;
-                if (auto range = ast::as<ast::Range>(b)) {
+                if (auto range = ast::as<ast::Range>(b->cond->expr)) {
                     auto l = eval.template eval_as<ast::tool::EResultType::integer>(range->start);
                     if (range->start && !l) {
                         return;  // not constant, cannot check exhaustiveness
@@ -527,7 +527,7 @@ namespace brgen::middle {
                     inclusive = range->op == ast::BinaryOp::range_inclusive;
                 }
                 else {
-                    auto l = eval.template eval_as<ast::tool::EResultType::integer>(b->cond);
+                    auto l = eval.template eval_as<ast::tool::EResultType::integer>(b->cond->expr);
                     if (!l) {
                         return;  // not constant, cannot check exhaustiveness
                     }
@@ -1427,6 +1427,11 @@ namespace brgen::middle {
             else if (auto regex = ast::as<ast::RegexLiteral>(expr)) {
                 expr->expr_type = std::make_shared<ast::RegexLiteralType>(ast::cast_to<ast::RegexLiteral>(expr));
                 expr->constant_level = ast::ConstantLevel::constant;
+            }
+            else if (auto identity = ast::as<ast::Identity>(expr)) {
+                typing_expr(identity->expr);
+                identity->expr_type = identity->expr->expr_type;
+                identity->constant_level = identity->expr->constant_level;
             }
             else {
                 unsupported(expr);

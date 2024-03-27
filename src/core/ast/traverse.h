@@ -55,6 +55,8 @@ namespace brgen::ast {
             CASE(Index)
             CASE(Match)
             CASE(Range)
+
+            CASE(Identity)
             // translated
             CASE(TmpVar)
             CASE(Import)

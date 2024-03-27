@@ -1,0 +1,6 @@
+
+config.rfc = "https://www.rfc-editor.org/rfc/rfc3378"
+
+format EtherIP:
+   version :u3
+   reserved :u13

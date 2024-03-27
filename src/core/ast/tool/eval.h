@@ -313,6 +313,9 @@ namespace brgen::ast::tool {
         }
 
         EResult eval_expr(ast::Expr* expr) {
+            if (auto identity = ast::as<ast::Identity>(expr)) {
+                return eval_expr(identity->expr.get());
+            }
             if (auto b = ast::as<ast::Binary>(expr)) {
                 return eval_binary(b);
             }

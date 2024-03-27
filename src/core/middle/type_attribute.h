@@ -139,6 +139,11 @@ namespace brgen::middle {
             return false;
         }
 
+        ast::BitAlignment calc_alignment(ast::BitAlignment current, ast::BitAlignment add) {
+            auto new_align = (int(current) - int(ast::BitAlignment::byte_aligned)) + (int(add) - int(ast::BitAlignment::byte_aligned));
+            return ast::BitAlignment(new_align % futils::bit_per_byte);
+        }
+
         void analyze_forward_bit_alignment_and_size(ast::StructType* t) {
             ast::BitAlignment alignment = ast::BitAlignment::byte_aligned;
             std::optional<size_t> bit_size = 0;
@@ -146,8 +151,7 @@ namespace brgen::middle {
             ast::Field* prev_field = nullptr;
             t->bit_size = 0;
             auto calc_new_align = [&](ast::BitAlignment field_algin) {
-                auto new_align = (int(alignment) - int(ast::BitAlignment::byte_aligned)) + (int(field_algin) - int(ast::BitAlignment::byte_aligned));
-                return ast::BitAlignment(new_align % futils::bit_per_byte);
+                return calc_alignment(alignment, field_algin);
             };
             for (auto& fields : t->fields) {
                 if (auto field = ast::as<ast::Field>(fields); field) {
@@ -344,8 +348,30 @@ namespace brgen::middle {
             u->bit_alignment = alignment;
         }
 
-       public:
-        void analyze_bit_size_and_alignment(const std::shared_ptr<ast::Node>& node) {
+        bool is_recursive(const std::shared_ptr<ast::Type>& type) {
+            if (auto ident = ast::as<ast::IdentType>(type); ident) {
+                return is_recursive(ident->base.lock());
+            }
+            if (auto t = ast::as<ast::StructType>(type); t) {
+                return t->recursive;
+            }
+            if (auto t = ast::as<ast::StructUnionType>(type); t) {
+                for (auto& f : t->structs) {
+                    if (is_recursive(f)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            return false;
+        }
+
+        enum AnalyzeMode {
+            first,
+            second,
+        };
+
+        void analyze_bit_size_and_alignment_internal(const std::shared_ptr<ast::Node>& node, AnalyzeMode mode) {
             std::set<ast::Type*> tracked;
             auto trv = [&](auto&& f, const std::shared_ptr<ast::Node>& n) -> void {
                 if (auto ty = ast::as<ast::Type>(n); ty) {
@@ -355,9 +381,6 @@ namespace brgen::middle {
                     tracked.insert(ty);
                 }
                 if (auto t = ast::as<ast::StructType>(n); t) {
-                    if (t->bit_alignment != ast::BitAlignment::not_target) {
-                        return;  // already detected
-                    }
                     ast::traverse(n, [&](auto&& n) {
                         f(f, n);
                     });
@@ -375,15 +398,24 @@ namespace brgen::middle {
                 ast::traverse(n, [&](auto&& n) {
                     f(f, n);
                 });
-                if (auto t = ast::as<ast::IntType>(n); t) {
-                    auto align = (*t->bit_size % futils::bit_per_byte);
-                    t->bit_alignment = ast::BitAlignment(align + int(ast::BitAlignment::byte_aligned));
-                    assert(t->bit_alignment != ast::BitAlignment::not_target &&
-                           t->bit_alignment != ast::BitAlignment::not_decidable);
-                }
-                if (auto t = ast::as<ast::FloatType>(n); t) {
-                    auto align = (*t->bit_size % futils::bit_per_byte);
-                    t->bit_alignment = ast::BitAlignment(align + int(ast::BitAlignment::byte_aligned));
+                if (mode == AnalyzeMode::first) {
+                    if (auto t = ast::as<ast::IntType>(n); t) {
+                        auto align = (*t->bit_size % futils::bit_per_byte);
+                        t->bit_alignment = ast::BitAlignment(align + int(ast::BitAlignment::byte_aligned));
+                        assert(t->bit_alignment != ast::BitAlignment::not_target &&
+                               t->bit_alignment != ast::BitAlignment::not_decidable);
+                        return;
+                    }
+                    if (auto t = ast::as<ast::FloatType>(n); t) {
+                        auto align = (*t->bit_size % futils::bit_per_byte);
+                        t->bit_alignment = ast::BitAlignment(align + int(ast::BitAlignment::byte_aligned));
+                        return;
+                    }
+                    if (auto t = ast::as<ast::StrLiteralType>(n)) {
+                        t->bit_alignment = ast::BitAlignment::byte_aligned;
+                        t->bit_size = t->base.lock()->length * futils::bit_per_byte;
+                        return;
+                    }
                 }
                 if (auto a = ast::as<ast::ArrayType>(n); a) {
                     // determine bit size
@@ -398,15 +430,15 @@ namespace brgen::middle {
                         a->element_type->bit_alignment == ast::BitAlignment::not_decidable) {
                         a->bit_alignment = a->element_type->bit_alignment;
                     }
+                    else if (a->bit_size) {
+                        a->bit_alignment = ast::BitAlignment(*a->bit_size % futils::bit_per_byte);
+                    }
                     else {
                         // TODO(on-keyday): bit alignment of fixed length array non byte aligned can also be decided
                         a->bit_alignment = ast::BitAlignment::not_decidable;
                     }
                 }
-                if (auto t = ast::as<ast::StrLiteralType>(n)) {
-                    t->bit_alignment = ast::BitAlignment::byte_aligned;
-                    t->bit_size = t->base.lock()->length * futils::bit_per_byte;
-                }
+
                 if (auto u = ast::as<ast::StructUnionType>(n)) {
                     set_struct_union_bit_alignment(u);
                     return;
@@ -452,6 +484,12 @@ namespace brgen::middle {
                 }
             };
             trv(trv, node);
+        }
+
+       public:
+        void analyze_bit_size_and_alignment(const std::shared_ptr<ast::Node>& node) {
+            analyze_bit_size_and_alignment_internal(node, AnalyzeMode::first);
+            analyze_bit_size_and_alignment_internal(node, AnalyzeMode::second);
         }
     };
 }  // namespace brgen::middle
