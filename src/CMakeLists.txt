@@ -11,6 +11,7 @@ add_executable(src2json
     "tool/src2json/entry.cpp"
     "core/ast/parse.cpp"
     "core/middle/typing.cpp"
+    "core/middle/type_attribute.cpp"
 )
 target_link_libraries(src2json futils)
 add_compile_definitions(BRGEN_VERSION="${PROJECT_VERSION}")
@@ -72,7 +73,13 @@ if(WIN32)
 endif()
 
 if(S2J_LIB)
-add_library(s2j SHARED "tool/src2json/src2json.cpp" "tool/src2json/entry.cpp")
+add_library(s2j SHARED 
+    "tool/src2json/src2json.cpp" 
+    "tool/src2json/entry.cpp"
+    "core/ast/parse.cpp"
+    "core/middle/typing.cpp"
+    "core/middle/type_attribute.cpp"
+)
 target_compile_definitions(s2j PRIVATE SRC2JSON_DLL)
 target_link_libraries(s2j futils)
 install(TARGETS s2j DESTINATION "tool" OPTIONAL)

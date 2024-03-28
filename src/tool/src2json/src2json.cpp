@@ -480,18 +480,16 @@ int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& f
         }
     }
 
-    brgen::middle::TypeAttribute attr;
-
     if (!flags.not_detect_recursive_type) {
-        attr.mark_recursive_reference(*p);
+        brgen::middle::mark_recursive_reference(*p);
     }
 
     if (!flags.not_detect_non_dynamic) {
-        attr.detect_non_dynamic_type(*p);
+        brgen::middle::detect_non_dynamic_type(*p);
     }
 
     if (!flags.not_analyze_size_alignment) {
-        attr.analyze_bit_size_and_alignment(*p);
+        brgen::middle::analyze_bit_size_and_alignment(*p);
     }
 
     if (!flags.not_resolve_state_dependency) {

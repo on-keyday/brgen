@@ -5,6 +5,7 @@
 #include <core/ast/json.h>
 #include <core/ast/file.h>
 #include <file/file_view.h>
+#include <filesystem>
 #include "generate.h"
 #include <wrap/argv.h>
 #ifdef __EMSCRIPTEN__
@@ -19,6 +20,8 @@ struct Flags : futils::cmdline::templ::HelpOption {
     bool use_error = false;
     bool use_raw_union = false;
     bool use_overflow_check = false;
+    bool single = false;
+    bool omit_error_callback = false;
     void bind(futils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&spec, "s", "spec mode");
@@ -27,6 +30,8 @@ struct Flags : futils::cmdline::templ::HelpOption {
         ctx.VarBool(&use_error, "use-error", "use futils::error::Error for error reporting");
         ctx.VarBool(&use_raw_union, "use-raw-union", "use raw union instead of std::variant (maybe unsafe)");
         ctx.VarBool(&use_overflow_check, "use-overflow-check", "add overflow check for integer types");
+        ctx.VarBool(&single, "single", "output as single file");
+        ctx.VarBool(&omit_error_callback, "omit-error-callback", "omit error callback");
     }
 };
 
@@ -35,12 +40,22 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
     cerr_color_mode = flags.no_color ? ColorMode::no_color : cerr.is_tty() ? ColorMode::force_color
                                                                            : ColorMode::no_color;
     if (flags.spec) {
-        cout << R"({
+        if (flags.single) {
+            cout << R"({
             "input": "file",
             "langs": ["c","json"],
             "suffix": [".c",".json"],
             "separator": "############\n"
         })";
+        }
+        else {
+            cout << R"({
+            "input": "file",
+            "langs": ["c","json"],
+            "suffix": [".h",".c",".json"],
+            "separator": "############\n"
+        })";
+        }
         return 0;
     }
     if (flags.args.empty()) {
@@ -78,10 +93,15 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
         return 1;
     }
     json2c::Generator g;
+    g.omit_error_callback = flags.omit_error_callback;
     auto prog = brgen::ast::cast_to<brgen::ast::Program>(*res);
-    g.write_program(prog);
+    namespace fs = std::filesystem;
+    auto include_path = fs::path(f.files[0]).filename().replace_extension(".h");
+    g.write_program(prog, flags.single ? "" : include_path.generic_string());
     cout << g.h_w.out() << "\n";
-    // cout << "############\n";
+    if (!flags.single) {
+        cout << "############\n";
+    }
     cout << g.c_w.out() << "\n";
     if (flags.add_line_map) {
         cout << "############\n";

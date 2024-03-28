@@ -68,7 +68,10 @@ export interface GoOption extends CallOption {
     use_put? :boolean
 }
 
-export interface COption extends CallOption {}
+export interface COption extends CallOption {
+    multi_file? :boolean
+    omit_error_callback? :boolean
+}
 
 export interface RustOption extends CallOption {}
 
