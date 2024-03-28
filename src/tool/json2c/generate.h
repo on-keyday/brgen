@@ -26,7 +26,9 @@ namespace json2c {
     static constexpr auto allocation_holder = "allocation_holder";
     static constexpr auto allocation_holder_size = "allocation_holder_size";
     static constexpr auto alloc = "alloc";
-    static constexpr auto realloc = "realloc";
+    static constexpr auto error_msg = "error_msg_buf";
+    static constexpr auto error_msg_size = "error_msg_size";
+    static constexpr auto error_msg_callback = "error_msg_callback";
     static constexpr auto bit_per_byte = "8";
 
     struct BitField {
@@ -35,6 +37,7 @@ namespace json2c {
     };
 
     struct Generator {
+        bool omit_error_callback = false;
         brgen::writer::Writer h_w;
         brgen::writer::Writer c_w;
         ast::tool::Stringer str;
@@ -216,37 +219,60 @@ namespace json2c {
             }
         }
 
-        void write_return_error() {
+        void write_return_error_impl(auto&& msg0, auto&&... msg) {
+            if (!omit_error_callback) {
+                auto esc = brgen::escape(brgen::concat(msg0, msg...));
+                {
+                    auto scope = c_w.indent_scope();
+                    c_w.writeln("if (", io_(error_msg_callback), ") {");
+                    c_w.indent_writeln(io_(error_msg_callback), "(&", io_(error_msg), ", &", io_(error_msg_size), ", \"", esc, "\");");
+                    c_w.writeln("}");
+                }
+            }
             c_w.indent_writeln("return 0;");
         }
 
-        void allocate(auto&& assign_to, auto&& align, auto&& size) {
-            c_w.writeln("if (", io_(alloc), ") {");
-            // TODO(on-keyday): cast for C++ compatibility?
-            c_w.indent_writeln(assign_to, " = ", io_(alloc), "(&", io_(allocation_holder), ", &", io_(allocation_holder_size), ", ", size, ",", align, ");");
-            {
-                auto scope = c_w.indent_scope();
-                c_w.writeln("if (!", assign_to, ") {");
-                write_return_error();
-                c_w.writeln("}");
-            }
-            c_w.writeln("} else {");
-            write_return_error();
+        void write_return_error(const std::shared_ptr<ast::Field>& f, auto&& msg0, auto&&... msg) {
+            auto fmt = ast::as<ast::Format>(f->belong.lock());
+            assert(fmt);
+            auto fmt_name = fmt->ident->ident;
+            auto field_name = f->ident->ident;
+            write_return_error_impl(brgen::concat(fmt_name, "::", field_name, ": ", msg0, msg...));
+        }
+
+        void write_return_error(const std::shared_ptr<ast::Format>& fmt, auto&& msg0, auto&&... msg) {
+            assert(fmt);
+            auto fmt_name = fmt->ident->ident;
+            write_return_error_impl(fmt_name, ": ", msg0, msg...);
+        }
+
+        void check_buffer_length(const std::shared_ptr<ast::Field>& f, auto&&... size) {
+            c_w.writeln(
+                "if (", io_(buffer_offset),
+                " + (", size..., ") > ", io_(buffer_size), ") {");
+            write_return_error(f, "require ", size..., " bytes but got ", io_(buffer_size), " is not enough");
             c_w.writeln("}");
         }
 
-        void reallocate(auto&& assign_to, auto&& old, auto&& align, auto&& size) {
-            c_w.writeln("if (", io_(realloc), ") {");
-            // TODO(on-keyday): cast for C++ compatibility?
-            c_w.indent_writeln(assign_to, " = ", io_(realloc), "(", old, ", &", io_(allocation_holder), ", &", io_(allocation_holder_size), ", ", size, ",", align, ");");
+        void check_buffer_length(const std::shared_ptr<ast::Format>& f, auto&&... size) {
+            c_w.writeln(
+                "if (", io_(buffer_offset),
+                " + (", size..., ") > ", io_(buffer_size), ") {");
+            write_return_error(f, "require ", size..., " bytes but got ", io_(buffer_size), " is not enough");
+            c_w.writeln("}");
+        }
+
+        void allocate(const std::shared_ptr<ast::Field>& f, auto&& assign_to, auto&& align, auto&& size, auto&& elem_size) {
+            c_w.writeln("if (", io_(alloc), ") {");
+            c_w.indent_writeln(io_(alloc), "((void**)&", assign_to, ",&", io_(allocation_holder), ", &", io_(allocation_holder_size), ", ", size, ",", align, ",", elem_size, ");");
             {
                 auto scope = c_w.indent_scope();
                 c_w.writeln("if (!", assign_to, ") {");
-                write_return_error();
+                write_return_error(f, "allocation failed");
                 c_w.writeln("}");
             }
             c_w.writeln("} else {");
-            write_return_error();
+            write_return_error(f, "no alloc function");
             c_w.writeln("}");
         }
 
@@ -258,25 +284,17 @@ namespace json2c {
             return brgen::concat(ident, ".data");
         }
 
-        void check_dynamic_array_length(auto&& ident, auto&& length) {
+        void check_dynamic_array_length(const std::shared_ptr<ast::Field>& f, auto&& ident, auto&& length) {
             c_w.writeln("if (", length_of(ident), " != ", length, ") {");
-            write_return_error();
+            write_return_error(f, "require ", length, " but got ", length_of(ident), " is not equal");
             c_w.writeln("}");
         }
 
-        void check_buffer_length(auto&&... size) {
-            c_w.writeln(
-                "if (", io_(buffer_offset),
-                " + (", size..., ") > ", io_(buffer_size), ") {");
-            write_return_error();
-            c_w.writeln("}");
-        }
-
-        void encode_decode_int_field(ast::IntType* int_ty, std::string_view ident, bool encode, bool need_length_check = true) {
+        void encode_decode_int_field(const std::shared_ptr<ast::Field>& f, ast::IntType* int_ty, std::string_view ident, bool encode, bool need_length_check = true) {
             if (int_ty->is_common_supported) {
                 auto bit = *int_ty->bit_size;
                 if (need_length_check) {
-                    check_buffer_length("sizeof(", ident, ")");
+                    check_buffer_length(f, "sizeof(", ident, ")");
                 }
                 if (int_ty->bit_size == 8) {
                     if (encode) {
@@ -338,7 +356,7 @@ namespace json2c {
                     if (need_array_length_check) {
                         // at here, ident is dynamic array
                         assert(!ident.ends_with(".data"));
-                        reallocate(data_of(ident), data_of(ident), brgen::concat("_Alignof(", typeof_(elem_typ), ")"), brgen::concat("(i + 1) * sizeof(", data_of(ident), "[0])"));
+                        allocate(field, data_of(ident), brgen::concat("alignof(", typeof_(elem_typ), ")"), brgen::concat("(i + 1) * sizeof(", data_of(ident), "[0])"), brgen::concat("sizeof(", data_of(ident), "[0])"));
                         c_w.writeln(length_of(ident), " = i + 1;");
                         write_type_decode(field, brgen::concat(data_of(ident), "[i]"), elem_typ, need_buffer_length_check);
                     }
@@ -352,7 +370,7 @@ namespace json2c {
 
         void write_type_encode(const std::shared_ptr<ast::Field>& f, std::string_view ident, const std::shared_ptr<ast::Type>& typ, bool need_length_check = true) {
             if (auto int_ty = ast::as<ast::IntType>(typ)) {
-                encode_decode_int_field(int_ty, ident, true, need_length_check);
+                encode_decode_int_field(f, int_ty, ident, true, need_length_check);
             }
             if (auto arr_ty = ast::as<ast::ArrayType>(typ)) {
                 auto for_loop = [&](auto&& ident, auto&& length, bool need_buffer_length_check) {
@@ -361,7 +379,7 @@ namespace json2c {
                 if (arr_ty->bit_size) {
                     auto len = brgen::nums(arr_ty->bit_size.value() / futils::bit_per_byte);
                     if (need_length_check) {
-                        check_buffer_length(len);
+                        check_buffer_length(f, len);
                     }
                     for_loop(ident, len, false);
                 }
@@ -370,7 +388,7 @@ namespace json2c {
                 }
                 else if (ast::is_any_range(arr_ty->length)) {
                     if (auto ity = ast::as<ast::IntType>(arr_ty->element_type); ity && ity->is_common_supported) {
-                        check_buffer_length(length_of(ident), " * sizeof(", data_of(ident), "[0])");
+                        check_buffer_length(f, length_of(ident), " * sizeof(", data_of(ident), "[0])");
                         for_loop(data_of(ident), length_of(ident), false);
                     }
                     else {
@@ -381,9 +399,9 @@ namespace json2c {
                     auto len = str.to_string(arr_ty->length);
                     auto len_var = "tmp_len_" + brgen::nums(get_seq());
                     c_w.writeln("size_t ", len_var, " = ", len, ";");
-                    check_dynamic_array_length(ident, len_var);
+                    check_dynamic_array_length(f, ident, len_var);
                     if (arr_ty->element_type->bit_size) {
-                        check_buffer_length(len_var, " * sizeof(", data_of(ident), "[0])");
+                        check_buffer_length(f, len_var, " * sizeof(", data_of(ident), "[0])");
                         for_loop(data_of(ident), len_var, false);
                     }
                     else {
@@ -417,7 +435,7 @@ namespace json2c {
                     auto c_typ = get_type(b);
                     auto tmp_typ = c_typ->to_string("");
                     c_w.writeln(tmp_typ, " ", tmp, " = (", tmp_typ, ")", ident, ";");
-                    encode_decode_int_field(base_ty, tmp, true, need_length_check);
+                    encode_decode_int_field(f, base_ty, tmp, true, need_length_check);
                 }
             }
         }
@@ -429,8 +447,22 @@ namespace json2c {
             if (auto found = bit_fields.find(field); found != bit_fields.end()) {
                 auto ident = str.to_string(found->second.bit_field->ident);
                 auto int_ty = ast::as<ast::IntType>(found->second.bit_field->field_type);
-                encode_decode_int_field(int_ty, ident, true, need_length_check);
+                encode_decode_int_field(field, int_ty, ident, true, need_length_check);
                 return;
+            }
+            futils::helper::DynDefer d;
+            if (field->arguments && field->arguments->sub_byte_length) {
+                auto len_in_bytes = str.to_string(field->arguments->sub_byte_length);
+                check_buffer_length(field, len_in_bytes);
+                auto tmp_var = "tmp_save_buffer_size" + brgen::nums(get_seq());
+                c_w.writeln("size_t ", tmp_var, " = ", io_(buffer_size), ";");
+                c_w.writeln(io_(buffer_size), " = ", io_(buffer_offset), " + ", len_in_bytes, ";");
+                d = futils::helper::DynDefer([=, this] {
+                    c_w.writeln("if (", io_(buffer_size), " != ", io_(buffer_offset), ") {");
+                    write_return_error(field, "require ", len_in_bytes, " bytes but got ", io_(buffer_size), " is not enough");
+                    c_w.writeln("}");
+                    c_w.writeln(io_(buffer_size), " = ", tmp_var, ";");
+                });
             }
             auto ident = str.to_string(field->ident);
             write_type_encode(field, ident, field->field_type, need_length_check);
@@ -438,12 +470,12 @@ namespace json2c {
 
         void write_type_decode(const std::shared_ptr<ast::Field>& f, std::string_view ident, const std::shared_ptr<ast::Type>& typ, bool need_length_check = true) {
             if (auto int_ty = ast::as<ast::IntType>(typ)) {
-                encode_decode_int_field(int_ty, ident, false, need_length_check);
+                encode_decode_int_field(f, int_ty, ident, false, need_length_check);
             }
             if (auto arr_ty = ast::as<ast::ArrayType>(typ)) {
                 auto do_alloc = [&](auto&& len) {
-                    allocate(data_of(ident), brgen::concat("_Alignof(", typeof_(arr_ty->element_type), ")"),
-                             brgen::concat(len, "* sizeof(", data_of(ident), "[0])"));
+                    allocate(f, data_of(ident), brgen::concat("alignof(", typeof_(arr_ty->element_type), ")"),
+                             brgen::concat(len, "* sizeof(", data_of(ident), "[0])"), brgen::concat("sizeof(", data_of(ident), "[0])"));
                     c_w.writeln(length_of(ident), " = ", len, ";");
                 };
                 auto for_loop = [&](auto&& ident, auto&& length, bool need_buffer_length_check, bool need_array_length_check) {
@@ -452,7 +484,7 @@ namespace json2c {
                 if (arr_ty->bit_size) {
                     auto len = brgen::nums(arr_ty->bit_size.value() / futils::bit_per_byte);
                     if (need_length_check) {
-                        check_buffer_length(len);
+                        check_buffer_length(f, len);
                     }
                     for_loop(ident, len, false, false);
                 }
@@ -464,15 +496,17 @@ namespace json2c {
                     assert(fmt);
                     auto tail_size = fmt->body->struct_type->fixed_tail_size;
                     c_w.writeln("if(", brgen::nums(tail_size), " + ", io_(buffer_offset), " > ", io_(buffer_size), ") {");
-                    write_return_error();
+                    write_return_error(f, "require ", brgen::nums(tail_size), " bytes for tail size but not");
                     c_w.writeln("}");
 
                     if (arr_ty->element_type->bit_size) {
                         auto len_in_bytes = brgen::concat("(", io_(buffer_size), " - ", io_(buffer_offset), " - ", brgen::nums(tail_size), ")");
                         auto per_elem = brgen::nums(*arr_ty->element_type->bit_size / futils::bit_per_byte);
-                        c_w.writeln("if(", len_in_bytes, " % ", per_elem, " != 0) {");
-                        write_return_error();
-                        c_w.writeln("}");
+                        if (per_elem != "1") {
+                            c_w.writeln("if(", len_in_bytes, " % ", per_elem, " != 0) {");
+                            write_return_error(f, "require ", per_elem, " bytes aligned but not");
+                            c_w.writeln("}");
+                        }
                         auto len = brgen::concat("(", len_in_bytes, " / ", per_elem, ")");
                         auto len_var = "tmp_len_" + brgen::nums(get_seq());
                         c_w.writeln("size_t ", len_var, " = ", len, ";");
@@ -493,7 +527,7 @@ namespace json2c {
                     auto len_var = "tmp_len_" + brgen::nums(get_seq());
                     c_w.writeln("size_t ", len_var, " = ", len, ";");
                     if (arr_ty->element_type->bit_size) {
-                        check_buffer_length(len_var, " * sizeof(", data_of(ident), "[0])");
+                        check_buffer_length(f, len_var, " * sizeof(", data_of(ident), "[0])");
                         do_alloc(len_var);
                         for_loop(data_of(ident), len_var, false, false);
                     }
@@ -528,7 +562,7 @@ namespace json2c {
                     auto tmp = "tmp_" + brgen::nums(get_seq());
                     auto c_typ = get_type(b);
                     c_w.writeln(c_typ->to_string(""), " ", tmp, ";");
-                    encode_decode_int_field(base_ty, tmp, false, need_length_check);
+                    encode_decode_int_field(f, base_ty, tmp, false, need_length_check);
                     c_w.writeln(ident, " = (", typeof_(typ), ")", tmp, ";");
                 }
             }
@@ -541,17 +575,40 @@ namespace json2c {
             if (auto found = bit_fields.find(field); found != bit_fields.end()) {
                 auto ident = str.to_string(found->second.bit_field->ident);
                 auto int_ty = ast::as<ast::IntType>(found->second.bit_field->field_type);
-                encode_decode_int_field(int_ty, ident, false, need_length_check);
+                encode_decode_int_field(field, int_ty, ident, false, need_length_check);
                 return;
+            }
+            futils::helper::DynDefer d;
+            if (field->arguments && field->arguments->sub_byte_length) {
+                auto len_in_bytes = str.to_string(field->arguments->sub_byte_length);
+                check_buffer_length(field, len_in_bytes);
+                auto tmp_var = "tmp_save_buffer_size" + brgen::nums(get_seq());
+                c_w.writeln("size_t ", tmp_var, " = ", io_(buffer_size), ";");
+                c_w.writeln(io_(buffer_size), " = ", io_(buffer_offset), " + ", len_in_bytes, ";");
+                d = futils::helper::DynDefer([=, this] {
+                    c_w.writeln("if (", io_(buffer_size), " != ", io_(buffer_offset), ") {");
+                    write_return_error(field, "require ", len_in_bytes, " bytes but got ", io_(buffer_size), " is not enough");
+                    c_w.writeln("}");
+                    c_w.writeln(io_(buffer_size), " = ", tmp_var, ";");
+                });
             }
             auto ident = str.to_string(field->ident);
             write_type_decode(field, ident, field->field_type, need_length_check);
         }
 
         void write_format_input_type(const std::shared_ptr<ast::Format>& typ) {
+            auto write_error_callback = [&] {
+                if (omit_error_callback) {
+                    return;
+                }
+                h_w.writeln("char* ", error_msg, ";");
+                h_w.writeln("size_t ", error_msg_size, ";");
+                h_w.writeln("void (*", error_msg_callback, ")(char** buf,size_t* size,const char* msg);");
+            };
             h_w.writeln("typedef struct ", typ->ident->ident, "DecodeInput {");
             {
                 auto scope = h_w.indent_scope();
+                write_error_callback();
                 h_w.writeln("const uint8_t* ", buffer, ";");
                 h_w.writeln("size_t ", buffer_size, ";");
                 h_w.writeln("size_t ", buffer_size_origin, ";");
@@ -559,14 +616,14 @@ namespace json2c {
                 h_w.writeln("size_t ", buffer_bit_offset, ";");
                 h_w.writeln("void** ", allocation_holder, ";");
                 h_w.writeln("size_t ", allocation_holder_size, ";");
-                h_w.writeln("void* (*", alloc, ")(void*** holder,size_t* holder_size ,size_t size,size_t align);");
-                h_w.writeln("void* (*", realloc, ")(void* p,void*** holder,size_t* holder_size ,size_t size,size_t align);");
+                h_w.writeln("void (*", alloc, ")(void** p,void*** holder,size_t* holder_size ,size_t size,size_t align,size_t elem_size);");
             }
             h_w.writeln("} ", typ->ident->ident, "DecodeInput;");
             h_w.writeln();
             h_w.writeln("typedef struct ", typ->ident->ident, "EncodeInput {");
             {
                 auto scope = h_w.indent_scope();
+                write_error_callback();
                 h_w.writeln("uint8_t* ", buffer, ";");
                 h_w.writeln("size_t ", buffer_size, ";");
                 h_w.writeln("size_t ", buffer_offset, ";");
@@ -603,6 +660,11 @@ namespace json2c {
         }
 
         void copy_io_base(auto&& from, auto&& to) {
+            if (!omit_error_callback) {
+                c_w.writeln(to, "->", error_msg, " = ", from, "->", error_msg, ";");
+                c_w.writeln(to, "->", error_msg_size, " = ", from, "->", error_msg_size, ";");
+                c_w.writeln(to, "->", error_msg_callback, " = ", from, "->", error_msg_callback, ";");
+            }
             c_w.writeln(to, "->", buffer, " = ", from, "->", buffer, ";");
             c_w.writeln(to, "->", buffer_size, " = ", from, "->", buffer_size, ";");
             c_w.writeln(to, "->", buffer_offset, " = ", from, "->", buffer_offset, ";");
@@ -612,7 +674,6 @@ namespace json2c {
                 c_w.writeln(to, "->", allocation_holder, " = ", from, "->", allocation_holder, ";");
                 c_w.writeln(to, "->", allocation_holder_size, " = ", from, "->", allocation_holder_size, ";");
                 c_w.writeln(to, "->", alloc, " = ", from, "->", alloc, ";");
-                c_w.writeln(to, "->", realloc, " = ", from, "->", realloc, ";");
             }
         }
 
@@ -702,7 +763,7 @@ namespace json2c {
                 futils::helper::DynDefer d;
                 if (fmt->body->struct_type->bit_size) {
                     auto len = (fmt->body->struct_type->bit_size.value() + futils::bit_per_byte - 1) / futils::bit_per_byte;
-                    check_buffer_length(brgen::nums(len));
+                    check_buffer_length(fmt, brgen::nums(len));
                 }
                 format_need_length_check = !fmt->body->struct_type->bit_size.has_value();
                 write_node(fmt->body);
@@ -719,7 +780,7 @@ namespace json2c {
                 auto scope = c_w.indent_scope();
                 if (fmt->body->struct_type->bit_size) {
                     auto len = (fmt->body->struct_type->bit_size.value() + futils::bit_per_byte - 1) / futils::bit_per_byte;
-                    check_buffer_length(brgen::nums(len));
+                    check_buffer_length(fmt, brgen::nums(len));
                 }
                 format_need_length_check = !fmt->body->struct_type->bit_size.has_value();
                 write_node(fmt->body);
@@ -775,8 +836,14 @@ namespace json2c {
             h_w.writeln("#pragma once");
             h_w.writeln("#include <stddef.h>");
             h_w.writeln("#include <stdint.h>");
-            c_w.writeln("//Code generated by json2c");
-            c_w.writeln("#include \"", h_path, "\"");
+            h_w.writeln("#ifndef __cplusplus");
+            h_w.writeln("#include <stdbool.h>");
+            h_w.writeln("#include <stdalign.h>");
+            h_w.writeln("#endif");
+            if (h_path != "") {
+                c_w.writeln("//Code generated by json2c");
+                c_w.writeln("#include \"", h_path, "\"");
+            }
             str.this_access = "this_->";
             for (auto& fmt : prog->elements) {
                 if (auto b = ast::as<ast::Binary>(fmt); b && b->op == ast::BinaryOp::const_assign && b->right->constant_level == ast::ConstantLevel::constant) {
