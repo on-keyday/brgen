@@ -538,6 +538,14 @@ const setCommon = (m :Map<string,InputListElement>) => {
     }));
     const c = new Map<string,InputListElement>();
     setCommon(c);
+    c.set(ConfigKey.C_MULTI_FILE,{
+        "type": "checkbox",
+        "value": false,
+    });
+    c.set(ConfigKey.C_OMIT_ERROR_CALLBACK,{
+        "type": "checkbox",
+        "value": false,
+    });
     commonUI.config.set(Language.C,languageSpecificConfig(c,ConfigKey.COMMON_FILE_NAME,(change) => {
         updateUI();
     }));
