@@ -337,6 +337,8 @@ namespace json2c {
         }
 
         void write_field_decode(const std::shared_ptr<ast::Field>& field, bool need_length_check) {
+            auto ident = str.to_string(field->ident);
+            write_type_decode(ident, field->field_type, need_length_check);
         }
 
         void write_format_input_type(const std::shared_ptr<ast::Format>& typ) {
