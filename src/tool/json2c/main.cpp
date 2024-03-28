@@ -5,6 +5,7 @@
 #include <core/ast/json.h>
 #include <core/ast/file.h>
 #include <file/file_view.h>
+#include <filesystem>
 #include "generate.h"
 #include <wrap/argv.h>
 #ifdef __EMSCRIPTEN__
@@ -38,7 +39,7 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
         cout << R"({
             "input": "file",
             "langs": ["c","json"],
-            "suffix": [".c",".json"],
+            "suffix": [".h",".c",".json"],
             "separator": "############\n"
         })";
         return 0;
@@ -79,9 +80,11 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
     }
     json2c::Generator g;
     auto prog = brgen::ast::cast_to<brgen::ast::Program>(*res);
-    g.write_program(prog);
+    namespace fs = std::filesystem;
+    auto include_path = fs::path(f.files[0]).filename().replace_extension(".h");
+    g.write_program(prog, include_path.generic_string());
     cout << g.h_w.out() << "\n";
-    // cout << "############\n";
+    cout << "############\n";
     cout << g.c_w.out() << "\n";
     if (flags.add_line_map) {
         cout << "############\n";
