@@ -20,6 +20,8 @@ namespace json2c {
     static constexpr auto buffer_offset = "buffer_offset";
     static constexpr auto buffer_bit_offset = "buffer_bit_offset";
     static constexpr auto buffer_size = "buffer_size";
+    // immutable
+    static constexpr auto buffer_size_origin = "buffer_size_origin";
     static constexpr auto buffer = "buffer";
     static constexpr auto allocation_holder = "allocation_holder";
     static constexpr auto allocation_holder_size = "allocation_holder_size";
@@ -312,6 +314,7 @@ namespace json2c {
             }
         }
 
+        // if length is "<EOF>", it means that the length is determined by the remaining buffer size.
         void write_array_for_loop(
             const std::shared_ptr<ast::Field>& field,
             std::string_view ident, std::string_view length,
@@ -319,7 +322,12 @@ namespace json2c {
             bool encode,
             bool need_buffer_length_check,
             bool need_array_length_check) {
-            c_w.writeln("for (size_t i = 0; i < ", length, "; i++) {");
+            if (length == "<EOF>") {
+                c_w.writeln("for (size_t i = 0; ", io_(buffer_offset), " < ", io_(buffer_size), "; i++) {");
+            }
+            else {
+                c_w.writeln("for (size_t i = 0; i < ", length, "; i++) {");
+            }
             {
                 auto scope = c_w.indent_scope();
                 if (encode) {
@@ -331,6 +339,7 @@ namespace json2c {
                         // at here, ident is dynamic array
                         assert(!ident.ends_with(".data"));
                         reallocate(data_of(ident), data_of(ident), brgen::concat("_Alignof(", typeof_(elem_typ), ")"), brgen::concat("(i + 1) * sizeof(", data_of(ident), "[0])"));
+                        c_w.writeln(length_of(ident), " = i + 1;");
                         write_type_decode(field, brgen::concat(data_of(ident), "[i]"), elem_typ, need_buffer_length_check);
                     }
                     else {
@@ -360,17 +369,25 @@ namespace json2c {
                     for_loop(ident, brgen::nums(*arr_ty->length_value), true);
                 }
                 else if (ast::is_any_range(arr_ty->length)) {
-                    for_loop(data_of(ident), length_of(ident), true);
+                    if (auto ity = ast::as<ast::IntType>(arr_ty->element_type); ity && ity->is_common_supported) {
+                        check_buffer_length(length_of(ident), " * sizeof(", data_of(ident), "[0])");
+                        for_loop(data_of(ident), length_of(ident), false);
+                    }
+                    else {
+                        for_loop(data_of(ident), length_of(ident), true);
+                    }
                 }
                 else {
                     auto len = str.to_string(arr_ty->length);
-                    check_dynamic_array_length(ident, len);
-                    if (auto ity = ast::as<ast::IntType>(arr_ty->element_type); ity && ity->is_common_supported) {
-                        check_buffer_length(len, " * sizeof(", data_of(ident), "[0])");
-                        for_loop(data_of(ident), len, false);
+                    auto len_var = "tmp_len_" + brgen::nums(get_seq());
+                    c_w.writeln("size_t ", len_var, " = ", len, ";");
+                    check_dynamic_array_length(ident, len_var);
+                    if (arr_ty->element_type->bit_size) {
+                        check_buffer_length(len_var, " * sizeof(", data_of(ident), "[0])");
+                        for_loop(data_of(ident), len_var, false);
                     }
                     else {
-                        for_loop(data_of(ident), len, true);
+                        for_loop(data_of(ident), len_var, true);
                     }
                 }
             }
@@ -424,31 +441,65 @@ namespace json2c {
                 encode_decode_int_field(int_ty, ident, false, need_length_check);
             }
             if (auto arr_ty = ast::as<ast::ArrayType>(typ)) {
+                auto do_alloc = [&](auto&& len) {
+                    allocate(data_of(ident), brgen::concat("_Alignof(", typeof_(arr_ty->element_type), ")"),
+                             brgen::concat(len, "* sizeof(", data_of(ident), "[0])"));
+                    c_w.writeln(length_of(ident), " = ", len, ";");
+                };
                 auto for_loop = [&](auto&& ident, auto&& length, bool need_buffer_length_check, bool need_array_length_check) {
                     write_array_for_loop(f, ident, length, arr_ty->element_type, false, need_buffer_length_check, need_array_length_check);
                 };
                 if (arr_ty->bit_size) {
                     auto len = brgen::nums(arr_ty->bit_size.value() / futils::bit_per_byte);
-                    check_buffer_length(len);
+                    if (need_length_check) {
+                        check_buffer_length(len);
+                    }
                     for_loop(ident, len, false, false);
                 }
                 else if (arr_ty->length_value) {
                     for_loop(ident, brgen::nums(*arr_ty->length_value), true, false);
                 }
                 else if (ast::is_any_range(arr_ty->length)) {
-                    for_loop(ident, length_of(ident), true, true);
+                    auto fmt = ast::as<ast::Format>(f->belong.lock());
+                    assert(fmt);
+                    auto tail_size = fmt->body->struct_type->fixed_tail_size;
+                    c_w.writeln("if(", brgen::nums(tail_size), " + ", io_(buffer_offset), " > ", io_(buffer_size), ") {");
+                    write_return_error();
+                    c_w.writeln("}");
+
+                    if (arr_ty->element_type->bit_size) {
+                        auto len_in_bytes = brgen::concat("(", io_(buffer_size), " - ", io_(buffer_offset), " - ", brgen::nums(tail_size), ")");
+                        auto per_elem = brgen::nums(*arr_ty->element_type->bit_size / futils::bit_per_byte);
+                        c_w.writeln("if(", len_in_bytes, " % ", per_elem, " != 0) {");
+                        write_return_error();
+                        c_w.writeln("}");
+                        auto len = brgen::concat("(", len_in_bytes, " / ", per_elem, ")");
+                        auto len_var = "tmp_len_" + brgen::nums(get_seq());
+                        c_w.writeln("size_t ", len_var, " = ", len, ";");
+                        do_alloc(len_var);
+                        for_loop(data_of(ident), len_var, false, false);
+                    }
+                    else {
+                        auto len_in_bytes_without_tail = brgen::concat("(", io_(buffer_size), " - ", brgen::nums(tail_size), ")");
+                        auto tmp_var = "tmp_save_buffer_size" + brgen::nums(get_seq());
+                        c_w.writeln("size_t ", tmp_var, " = ", io_(buffer_size), ";");
+                        c_w.writeln(io_(buffer_size), " = ", len_in_bytes_without_tail, ";");
+                        for_loop(ident, "<EOF>", true, true);
+                        c_w.writeln(io_(buffer_size), " = ", tmp_var, ";");
+                    }
                 }
                 else {
                     auto len = str.to_string(arr_ty->length);
-                    check_dynamic_array_length(ident, len);
-                    allocate(data_of(ident), brgen::concat("_Alignof(", typeof_(arr_ty->element_type), ")"),
-                             brgen::concat(len, "* sizeof(", data_of(ident), "[0])"));
-                    if (auto ity = ast::as<ast::IntType>(arr_ty->element_type); ity && ity->is_common_supported) {
-                        check_buffer_length(len, " * sizeof(", data_of(ident), "[0])");
-                        for_loop(data_of(ident), len, false, false);
+                    auto len_var = "tmp_len_" + brgen::nums(get_seq());
+                    c_w.writeln("size_t ", len_var, " = ", len, ";");
+                    if (arr_ty->element_type->bit_size) {
+                        check_buffer_length(len_var, " * sizeof(", data_of(ident), "[0])");
+                        do_alloc(len_var);
+                        for_loop(data_of(ident), len_var, false, false);
                     }
                     else {
-                        for_loop(data_of(ident), len, true, false);
+                        do_alloc(len_var);
+                        for_loop(data_of(ident), len_var, true, false);
                     }
                 }
             }
@@ -503,6 +554,7 @@ namespace json2c {
                 auto scope = h_w.indent_scope();
                 h_w.writeln("const uint8_t* ", buffer, ";");
                 h_w.writeln("size_t ", buffer_size, ";");
+                h_w.writeln("size_t ", buffer_size_origin, ";");
                 h_w.writeln("size_t ", buffer_offset, ";");
                 h_w.writeln("size_t ", buffer_bit_offset, ";");
                 h_w.writeln("void** ", allocation_holder, ";");
@@ -536,7 +588,7 @@ namespace json2c {
             }
             else {
                 auto tmp = "tmp_" + brgen::nums(get_seq());
-                c_w.writeln(io_input_type(fmt->ident->ident), " ", tmp, ";");
+                c_w.writeln(io_input_type(to->ident->ident), " ", tmp, ";");
                 auto ptr = brgen::concat("(&", tmp, ")");
                 copy_io(io_input(), ptr, to);
                 cb(ptr, [&] {
@@ -556,10 +608,52 @@ namespace json2c {
             c_w.writeln(to, "->", buffer_offset, " = ", from, "->", buffer_offset, ";");
             c_w.writeln(to, "->", buffer_bit_offset, " = ", from, "->", buffer_bit_offset, ";");
             if (!encode) {
+                c_w.writeln(to, "->", buffer_size_origin, " = ", from, "->", buffer_size_origin, ";");
                 c_w.writeln(to, "->", allocation_holder, " = ", from, "->", allocation_holder, ";");
                 c_w.writeln(to, "->", allocation_holder_size, " = ", from, "->", allocation_holder_size, ";");
                 c_w.writeln(to, "->", alloc, " = ", from, "->", alloc, ";");
                 c_w.writeln(to, "->", realloc, " = ", from, "->", realloc, ";");
+            }
+        }
+
+        void write_if(ast::If* if_) {
+            c_w.writeln("if (", str.to_string(if_->cond), ") {");
+            write_node(if_->then);
+            c_w.writeln("}");
+            if (if_->els) {
+                c_w.writeln("else {");
+                write_node(if_->els);
+                c_w.writeln("}");
+            }
+        }
+
+        void write_match(ast::Match* m) {
+            std::string cond;
+            if (m->cond) {
+                cond = str.to_string(m->cond);
+            }
+            else {
+                cond = "1";
+            }
+            bool els_ = false;
+            for (auto branch : m->branch) {
+                if (els_) {
+                    c_w.writeln("else ");
+                }
+                else {
+                    els_ = true;
+                }
+                if (ast::is_any_range(branch->cond)) {
+                    c_w.writeln("{");
+                }
+                else {
+                    c_w.writeln("if (", cond, " == ", str.to_string(branch->cond), ") {");
+                }
+                {
+                    auto scope = c_w.indent_scope();
+                    write_node(branch->then);
+                }
+                c_w.writeln("}");
             }
         }
 
@@ -579,6 +673,23 @@ namespace json2c {
                 else {
                     write_field_decode(ast::cast_to<ast::Field>(node), format_need_length_check);
                 }
+            }
+            if (auto b = ast::as<ast::Binary>(node);
+                b &&
+                (b->op == ast::BinaryOp::define_assign || b->op == ast::BinaryOp::const_assign)) {
+                auto ident = ast::as<ast::Ident>(b->left);
+                assert(ident);
+                auto left_typ = get_type(b->left->expr_type);
+                auto value = str.to_string(b->right);
+                // TODO(on-keyday): support non integer type
+                c_w.writeln(left_typ->to_string(ident->ident), " = ", value, ";");
+                str.map_ident(ast::cast_to<ast::Ident>(b->left), ident->ident);
+            }
+            if (auto i = ast::as<ast::If>(node)) {
+                write_if(i);
+            }
+            if (auto m = ast::as<ast::Match>(node)) {
+                write_match(m);
             }
         }
 

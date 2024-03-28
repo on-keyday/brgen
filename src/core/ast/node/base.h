@@ -51,7 +51,7 @@ namespace brgen::ast {
         // bool single_int_type = false;
         // bit alignment of type
         BitAlignment bit_alignment = BitAlignment::not_target;
-        // bit size of type. if dynamic length or not decidable, 0.
+        // bit size of type. if dynamic length or not decidable, nullopt.
         std::optional<size_t> bit_size = std::nullopt;
 
         void dump(auto&& field_) {

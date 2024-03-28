@@ -269,6 +269,9 @@ namespace brgen::ast::tool {
                     return io_op_handler(*this, ast::cast_to<ast::IOOperation>(expr));
                 }
             }
+            if (auto identity = ast::as<ast::Identity>(expr)) {
+                return to_string(identity->expr);
+            }
             return "";
         }
 
