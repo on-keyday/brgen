@@ -85,7 +85,7 @@ jobs:
           path: ./artifacts
   build-windows:
     runs-on: windows-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - name: Timeline
         uses: Kesin11/actions-timeline@v2
