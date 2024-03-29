@@ -230,15 +230,15 @@ namespace json2c {
                 t_w.writeln("#define ", mask_v, " ", "(", brgen::nums(mask), ")");
                 t_w.writeln("#define ", shift_v, " ", "(", brgen::nums(shift), ")");
                 t_w.writeln("#define ", setter, "(this_,val) ",
-                            "((this_)->", name, " = ((this_)->", name, "&~(", mask_v, "<<", shift_v,
+                            "((this_).", name, " = ((this_).", name, "&~(", mask_v, "<<", shift_v,
                             "))|(((val)&", mask_v, ")<<", shift_v, "))");
                 auto type = typeof_(field->field_type);
                 auto getter_impl = [&](auto&&... this_) {
                     return brgen::concat("(", "(", type, ")((", this_..., name, ">>", shift_v, ")&", mask_v, ")", ")");
                 };
                 t_w.writeln("#define ", getter, "(this_) ",
-                            getter_impl("(this_)->"));
-                str.map_ident(field->ident, getter, "(&", prefix, ")");
+                            getter_impl("(this_)."));
+                str.map_ident(field->ident, getter, "(", prefix, ")");
             }
             auto tmp_bit_field = std::make_shared<ast::Field>();
             tmp_bit_field->ident = std::make_shared<ast::Ident>(fields.back()->loc, name);
@@ -367,7 +367,17 @@ namespace json2c {
             c_w.writeln("}");
         }
 
-        void encode_decode_int_field(const std::shared_ptr<ast::Field>& f, ast::IntType* int_ty, std::string_view ident, bool encode, bool need_length_check = true) {
+        void encode_decode_int_field(
+            const std::shared_ptr<ast::Field>& f,
+            ast::IntType* int_ty,
+            std::string_view ident,
+            bool encode, bool need_length_check,
+            std::string_view base_offset = {}) {
+            bool no_offset = base_offset.empty();
+            auto buf_offset = io_(buffer_offset);
+            if (no_offset) {
+                base_offset = buf_offset;
+            }
             if (int_ty->is_common_supported) {
                 auto bit = *int_ty->bit_size;
                 if (need_length_check) {
@@ -375,16 +385,21 @@ namespace json2c {
                 }
                 if (int_ty->bit_size == 8) {
                     if (encode) {
-                        c_w.writeln(io_(buffer), "[", io_(buffer_offset), "] = ", ident, ";");
+                        c_w.writeln(io_(buffer), "[", base_offset, "] = ", ident, ";");
                     }
                     else {
-                        c_w.writeln(ident, " = ", io_(buffer), "[", io_(buffer_offset), "];");
+                        c_w.writeln(ident, " = ", io_(buffer), "[", base_offset, "];");
                     }
-                    add_buffer_offset("1");
+                    if (no_offset) {
+                        add_buffer_offset("1");
+                    }
                     return;
                 }
-                c_w.writeln("for (size_t i = 0; i < sizeof(", ident, "); i++) {");
-                auto i = "i";
+                if (!encode) {
+                    c_w.writeln(ident, " = ", "0", ";");
+                }
+                auto i = "tmp_i_" + brgen::nums(get_seq());
+                c_w.writeln("for (size_t ", i, " = 0; ", i, " < sizeof(", ident, "); ", i, "++) {");
                 std::string shift_offset;
                 if (int_ty->endian == ast::Endian::little) {
                     shift_offset = i;
@@ -401,11 +416,13 @@ namespace json2c {
                 else {
                     c_w.indent_writeln(
                         ident, " |= ((uint", brgen::nums(bit), "_t)",
-                        io_(buffer), "[", io_(buffer_offset), " + ", i, "]) << ",
+                        io_(buffer), "[", base_offset, " + ", i, "]) << ",
                         "(", shift_offset, " * ", bit_per_byte, ");");
                 }
                 c_w.writeln("}");
-                add_buffer_offset("sizeof(", ident, ")");
+                if (no_offset) {
+                    add_buffer_offset("sizeof(", ident, ")");
+                }
             }
         }
 
@@ -417,31 +434,52 @@ namespace json2c {
             bool encode,
             bool need_buffer_length_check,
             bool need_array_length_check) {
+            auto i = "tmp_i_" + brgen::nums(get_seq());
             if (length == "<EOF>") {
-                c_w.writeln("for (size_t i = 0; ", io_(buffer_offset), " < ", io_(buffer_size), "; i++) {");
+                c_w.writeln("for (size_t ", i, " = 0; ", io_(buffer_offset), " < ", io_(buffer_size), "; ", i, "++) {");
             }
             else {
-                c_w.writeln("for (size_t i = 0; i < ", length, "; i++) {");
+                c_w.writeln("for (size_t ", i, " = 0; ", i, " < ", length, "; ", i, "++) {");
             }
+            bool should_add_offset = false;
             {
                 auto scope = c_w.indent_scope();
                 if (encode) {
-                    // on encode, array length is fixed
-                    write_type_encode(field, brgen::concat(ident, "[i]"), elem_typ, need_buffer_length_check);
+                    // optimize for common integer types
+                    if (auto ity = ast::as<ast::IntType>(elem_typ); ity && !need_buffer_length_check) {
+                        auto base_offset = brgen::concat(i, " * sizeof(", ident, "[", i, "])");
+                        encode_decode_int_field(field, ity, brgen::concat(ident, "[", i, "]"), true, need_buffer_length_check, base_offset);
+                        should_add_offset = true;
+                    }
+                    else {
+                        // on encode, array length is fixed
+                        write_type_encode(field, brgen::concat(ident, "[", i, "]"), elem_typ, need_buffer_length_check);
+                    }
                 }
                 else {
                     if (need_array_length_check) {
                         // at here, ident is dynamic array
-                        allocate(field, data_of(ident), brgen::concat("alignof(", typeof_(elem_typ), ")"), brgen::concat("(i + 1) * sizeof(", data_of(ident), "[0])"), brgen::concat("sizeof(", data_of(ident), "[0])"));
-                        c_w.writeln(length_of(ident), " = i + 1;");
-                        write_type_decode(field, brgen::concat(data_of(ident), "[i]"), elem_typ, need_buffer_length_check);
+                        allocate(field, data_of(ident), brgen::concat("alignof(", typeof_(elem_typ), ")"), brgen::concat("(", i, " + 1) * sizeof(", data_of(ident), "[0])"), brgen::concat("sizeof(", data_of(ident), "[0])"));
+                        c_w.writeln(length_of(ident), " = ", i, " + 1;");
+                        write_type_decode(field, brgen::concat(data_of(ident), "[", i, "]"), elem_typ, need_buffer_length_check);
                     }
                     else {
-                        write_type_decode(field, brgen::concat(ident, "[i]"), elem_typ, need_buffer_length_check);
+                        // optimize for common integer types
+                        if (auto ity = ast::as<ast::IntType>(elem_typ); ity && !need_buffer_length_check) {
+                            auto base_offset = brgen::concat(i, " * sizeof(", ident, "[", i, "])");
+                            encode_decode_int_field(field, ity, brgen::concat(ident, "[", i, "]"), false, need_buffer_length_check, base_offset);
+                            should_add_offset = true;
+                        }
+                        else {
+                            write_type_decode(field, brgen::concat(ident, "[", i, "]"), elem_typ, need_buffer_length_check);
+                        }
                     }
                 }
             }
             c_w.writeln("}");
+            if (should_add_offset) {
+                add_buffer_offset(brgen::concat(length, " * sizeof(", ident, "[0])"));
+            }
         }
 
         void write_type_encode(const std::shared_ptr<ast::Field>& f, std::string_view ident, const std::shared_ptr<ast::Type>& typ, bool need_length_check = true) {
@@ -799,11 +837,17 @@ namespace json2c {
 
         void write_if(ast::If* if_) {
             c_w.writeln("if (", str.to_string(if_->cond), ") {");
-            write_node(if_->then);
+            {
+                auto scope = c_w.indent_scope();
+                write_node(if_->then);
+            }
             c_w.writeln("}");
             if (if_->els) {
                 c_w.writeln("else {");
-                write_node(if_->els);
+                {
+                    auto scope = c_w.indent_scope();
+                    write_node(if_->els);
+                }
                 c_w.writeln("}");
             }
         }
