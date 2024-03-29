@@ -91,7 +91,7 @@ namespace json2c {
             return "";
         }
 
-        void write_struct_union_type(std::string_view prefix, brgen::writer::Writer& t_w, ast::StructUnionType* union_) {
+        void write_struct_union_type(const std::shared_ptr<ast::Field>& field, std::string_view prefix, brgen::writer::Writer& t_w, ast::StructUnionType* union_) {
             t_w.writeln("union {");
             for (auto& struct_ : union_->structs) {
                 auto union_ident = "_" + brgen::nums(get_seq());
@@ -104,9 +104,76 @@ namespace json2c {
                 t_w.writeln("} ", union_ident, ";");
             }
             t_w.writeln("};");
+            auto fmt = ast::as<ast::Format>(field->belong.lock());
+            assert(fmt);
+            auto fmt_name = fmt->ident->ident;
+            for (auto& w_field : union_->union_fields) {
+                auto field = w_field.lock();
+                auto union_ty = ast::as<ast::UnionType>(field->field_type);
+                if (union_ty->common_type) {
+                    auto c_typ = get_type(union_ty->common_type);
+                    auto getter = brgen::concat(fmt_name, "_", field->ident->ident, "_get");
+                    auto setter = brgen::concat(fmt_name, "_", field->ident->ident, "_set");
+                    brgen::writer::Writer getter_w;
+                    brgen::writer::Writer setter_w;
+                    auto cast_to = c_typ->to_string("");
+                    std::string cond;
+                    if (auto c = union_ty->cond.lock()) {
+                        cond = str.to_string(c);
+                    }
+                    else {
+                        cond = "1";
+                    }
+                    auto els_ = false;
+                    bool final_els = false;
+                    for (auto& cand : union_ty->candidates) {
+                        auto cond1 = cand->cond.lock();
+                        if (els_) {
+                            getter_w.write(":");
+                            setter_w.write(":");
+                        }
+                        if (ast::is_any_range(cond1)) {
+                            auto f = cand->field.lock();
+                            if (f) {
+                                auto s = str.to_string(cand->field.lock()->ident);
+                                getter_w.write(s);
+                                setter_w.write("(", s, " = val____,1)");
+                            }
+                            else {
+                                getter_w.write("(", cast_to, ")", "{}");
+                                setter_w.write("0");
+                            }
+                            final_els = true;
+                        }
+                        else {
+                            auto f = cand->field.lock();
+                            auto cond1_str = str.to_string(cond1);
+                            getter_w.write("(", cond, "==", cond1_str, ")?");
+                            setter_w.write("(", cond, "==", cond1_str, ")?");
+                            if (f) {
+                                auto s = str.to_string(f->ident);
+                                getter_w.write(s);
+                                setter_w.write("(", s, " = val____,1)");
+                            }
+                            else {
+                                getter_w.write("(", cast_to, ")", "{}");
+                                setter_w.write("0");
+                            }
+                        }
+                        els_ = true;
+                    }
+                    if (!final_els) {
+                        getter_w.write(":(", cast_to, ")", "{}");
+                        setter_w.write("0");
+                    }
+                    t_w.writeln("#define ", getter, "(this_) (", getter_w.out(), ")");
+                    t_w.writeln("#define ", setter, "(this_,val____) (", setter_w.out(), ")");
+                    str.map_ident(field->ident, getter, "(this_)");
+                }
+            }
         }
 
-        void write_field(std::string_view prefix, brgen::writer::Writer& t_w, ast::Field* field) {
+        void write_field(std::string_view prefix, brgen::writer::Writer& t_w, const std::shared_ptr<ast::Field>& field) {
             if (field->bit_alignment == ast::BitAlignment::not_target) {
                 return;
             }
@@ -114,14 +181,14 @@ namespace json2c {
                 return;
             }
             if (auto union_ = ast::as<ast::StructUnionType>(field->field_type)) {
-                write_struct_union_type(prefix, t_w, union_);
+                write_struct_union_type(field, prefix, t_w, union_);
                 return;
             }
             if (auto str_literal = ast::as<ast::StrLiteralType>(field->field_type)) {
                 c_w.writeln("// ", str_literal->base.lock()->value, " (", brgen::nums(str_literal->base.lock()->length), " byte)");
                 return;
             }
-            auto typ = write_c_type_field(field, 0, get_type(field->field_type));
+            auto typ = write_c_type_field(field.get(), 0, get_type(field->field_type));
             t_w.writeln(typ, " ", field->ident->ident, ";");
             str.map_ident(field->ident, prefix, field->ident->ident);
         }
@@ -195,7 +262,7 @@ namespace json2c {
                         fields.clear();
                         continue;
                     }
-                    write_field(prefix, t_w, f);
+                    write_field(prefix, t_w, ast::cast_to<ast::Field>(field));
                 }
             }
         }
@@ -485,6 +552,14 @@ namespace json2c {
                 });
             }
             auto ident = str.to_string(field->ident);
+            if (field->arguments && field->arguments->arguments.size() == 1) {
+                if (auto typ = ast::as<ast::IntType>(field->field_type)) {
+                    auto val = str.to_string(field->arguments->arguments[0]);
+                    c_w.writeln("if(", ident, " != ", val, ") {");
+                    write_return_error(field, "require ", val, " but got ", ident, " is not equal");
+                    c_w.writeln("}");
+                }
+            }
             write_type_encode(field, ident, field->field_type, need_length_check);
         }
 
@@ -630,6 +705,14 @@ namespace json2c {
             }
             auto ident = str.to_string(field->ident);
             write_type_decode(field, ident, field->field_type, need_length_check);
+            if (field->arguments && field->arguments->arguments.size() == 1) {
+                if (auto typ = ast::as<ast::IntType>(field->field_type)) {
+                    auto val = str.to_string(field->arguments->arguments[0]);
+                    c_w.writeln("if(", ident, " != ", val, ") {");
+                    write_return_error(field, "require ", val, " but got ", ident, " is not equal");
+                    c_w.writeln("}");
+                }
+            }
         }
 
         void write_format_input_type(const std::shared_ptr<ast::Format>& typ) {
