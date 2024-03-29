@@ -117,6 +117,10 @@ namespace json2c {
                 write_struct_union_type(prefix, t_w, union_);
                 return;
             }
+            if (auto str_literal = ast::as<ast::StrLiteralType>(field->field_type)) {
+                c_w.writeln("// ", str_literal->base.lock()->value, " (", brgen::nums(str_literal->base.lock()->length), " byte)");
+                return;
+            }
             auto typ = write_c_type_field(field, 0, get_type(field->field_type));
             t_w.writeln(typ, " ", field->ident->ident, ";");
             str.map_ident(field->ident, prefix, field->ident->ident);
@@ -133,6 +137,9 @@ namespace json2c {
                 return p.value() + f->field_type->bit_size.value();
             });
             if (!sum) {
+                auto fmt = ast::as<ast::Format>(fields[0]->belong.lock());
+                assert(fmt);
+                write_return_error(ast::cast_to<ast::Format>(fields[0]->belong.lock()), "non supported operation: dynamic bit field");
                 return;
             }
             auto bit = brgen::ast::aligned_bit(sum.value());
@@ -372,7 +379,7 @@ namespace json2c {
             if (auto int_ty = ast::as<ast::IntType>(typ)) {
                 encode_decode_int_field(f, int_ty, ident, true, need_length_check);
             }
-            if (auto arr_ty = ast::as<ast::ArrayType>(typ)) {
+            else if (auto arr_ty = ast::as<ast::ArrayType>(typ)) {
                 auto for_loop = [&](auto&& ident, auto&& length, bool need_buffer_length_check) {
                     write_array_for_loop(f, ident, length, arr_ty->element_type, true, need_buffer_length_check, false);
                 };
@@ -409,10 +416,10 @@ namespace json2c {
                     }
                 }
             }
-            if (auto ident_ty = ast::as<ast::IdentType>(typ)) {
+            else if (auto ident_ty = ast::as<ast::IdentType>(typ)) {
                 write_type_encode(f, ident, ident_ty->base.lock(), need_length_check);
             }
-            if (auto s = ast::as<ast::StructType>(typ)) {
+            else if (auto s = ast::as<ast::StructType>(typ)) {
                 if (auto fmt = ast::as<ast::Format>(s->base.lock())) {
                     assert(ast::as<ast::Format>(f->belong.lock()));
                     auto from_fmt = ast::cast_to<ast::Format>(f->belong.lock());
@@ -427,7 +434,7 @@ namespace json2c {
                     });
                 }
             }
-            if (auto e = ast::as<ast::EnumType>(typ)) {
+            else if (auto e = ast::as<ast::EnumType>(typ)) {
                 auto b = e->base.lock()->base_type;
                 auto base_ty = ast::as<ast::IntType>(b);
                 if (base_ty) {
@@ -437,6 +444,19 @@ namespace json2c {
                     c_w.writeln(tmp_typ, " ", tmp, " = (", tmp_typ, ")", ident, ";");
                     encode_decode_int_field(f, base_ty, tmp, true, need_length_check);
                 }
+            }
+            else if (auto s = ast::as<ast::StrLiteralType>(typ)) {
+                auto len = brgen::nums(s->base.lock()->length);
+                if (need_length_check) {
+                    check_buffer_length(f, len);
+                }
+                c_w.writeln("for(size_t i = 0; i < ", len, "; i++) {");
+                c_w.indent_writeln(io_(buffer), "[", io_(buffer_offset), " + i] = ", s->base.lock()->value, "[i];");
+                c_w.writeln("}");
+                add_buffer_offset(len);
+            }
+            else {
+                write_return_error(f, "non supported type: ", ast::node_type_to_string(typ->node_type));
             }
         }
 
@@ -472,7 +492,7 @@ namespace json2c {
             if (auto int_ty = ast::as<ast::IntType>(typ)) {
                 encode_decode_int_field(f, int_ty, ident, false, need_length_check);
             }
-            if (auto arr_ty = ast::as<ast::ArrayType>(typ)) {
+            else if (auto arr_ty = ast::as<ast::ArrayType>(typ)) {
                 auto do_alloc = [&](auto&& len) {
                     allocate(f, data_of(ident), brgen::concat("alignof(", typeof_(arr_ty->element_type), ")"),
                              brgen::concat(len, "* sizeof(", data_of(ident), "[0])"), brgen::concat("sizeof(", data_of(ident), "[0])"));
@@ -537,10 +557,10 @@ namespace json2c {
                     }
                 }
             }
-            if (auto ident_ty = ast::as<ast::IdentType>(typ)) {
+            else if (auto ident_ty = ast::as<ast::IdentType>(typ)) {
                 write_type_decode(f, ident, ident_ty->base.lock(), need_length_check);
             }
-            if (auto s = ast::as<ast::StructType>(typ)) {
+            else if (auto s = ast::as<ast::StructType>(typ)) {
                 if (auto fmt = ast::as<ast::Format>(s->base.lock())) {
                     assert(ast::as<ast::Format>(f->belong.lock()));
                     auto from_fmt = ast::cast_to<ast::Format>(f->belong.lock());
@@ -555,7 +575,7 @@ namespace json2c {
                     });
                 }
             }
-            if (auto e = ast::as<ast::EnumType>(typ)) {
+            else if (auto e = ast::as<ast::EnumType>(typ)) {
                 auto b = e->base.lock()->base_type;
                 auto base_ty = ast::as<ast::IntType>(b);
                 if (base_ty) {
@@ -565,6 +585,22 @@ namespace json2c {
                     encode_decode_int_field(f, base_ty, tmp, false, need_length_check);
                     c_w.writeln(ident, " = (", typeof_(typ), ")", tmp, ";");
                 }
+            }
+            else if (auto c = ast::as<ast::StrLiteralType>(typ)) {
+                auto len = brgen::nums(c->base.lock()->length);
+                if (need_length_check) {
+                    check_buffer_length(f, len);
+                }
+                c_w.writeln("for(size_t i = 0; i < ", len, "; i++) {");
+                c_w.indent_writeln("if (", io_(buffer), "[", io_(buffer_offset), " + i] != ", c->base.lock()->value, "[i]) {");
+                {
+                    auto scope = c_w.indent_scope();
+                    write_return_error(f, "require ", c->base.lock()->value, "[i] but got ", io_(buffer), "[", io_(buffer_offset), " + i]");
+                }
+                c_w.writeln("}");
+            }
+            else {
+                write_return_error(f, "non supported type: ", ast::node_type_to_string(typ->node_type));
             }
         }
 
