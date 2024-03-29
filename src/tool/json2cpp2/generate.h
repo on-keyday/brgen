@@ -154,13 +154,13 @@ namespace j2cp2 {
                 if (auto int_ty = ast::as<ast::IntType>(type); int_ty) {
                     map_line(n->loc);
                     w.writeln("bits_flag_alias_method(flags_", brgen::nums(seq), "_,", brgen::nums(i), ",", n->ident->ident, ");");
-                    str.map_ident(n->ident, "${THIS}", n->ident->ident + "()");
+                    str.map_ident(n->ident, prefix, ".", n->ident->ident + "()");
                 }
                 else if (auto enum_ty = ast::as<ast::EnumType>(type); enum_ty) {
                     auto enum_ = enum_ty->base.lock();
                     line_map.push_back({n->loc, w.line_count()});
                     w.writeln("bits_flag_alias_method_with_enum(flags_", brgen::nums(seq), "_,", brgen::nums(i), ",", n->ident->ident, ",", enum_->ident->ident, ");");
-                    str.map_ident(n->ident, "${THIS}", prefix, n->ident->ident + "()");
+                    str.map_ident(n->ident, prefix, ".", n->ident->ident + "()");
                 }
                 i++;
             }
@@ -244,7 +244,7 @@ namespace j2cp2 {
             }
         }
 
-        void write_getter(ast::UnionType* union_ty, const std::shared_ptr<ast::Field>& union_field, const std::string& match_cond) {
+        void write_getter(std::string_view prefix, ast::UnionType* union_ty, const std::shared_ptr<ast::Field>& union_field, const std::string& match_cond) {
             // write getter funca
             map_line(union_field->loc);
             auto make_access = [&](const std::shared_ptr<ast::Field>& f) {
@@ -293,7 +293,7 @@ namespace j2cp2 {
                 if (!end_else) {
                     w.writeln("return std::nullopt;");
                 }
-                str.map_ident(union_field->ident, "(*${THIS}" + union_field->ident->ident + "())");
+                str.map_ident(union_field->ident, "(*", prefix, "." + union_field->ident->ident + "())");
             }
             w.writeln("}");
         }
@@ -326,7 +326,7 @@ namespace j2cp2 {
             }
         }
 
-        void write_common_type_accessor(const std::string& cond_u, const std::shared_ptr<ast::Field>& uf, ast::UnionType* ut) {
+        void write_common_type_accessor(std::string_view prefix, const std::string& cond_u, const std::shared_ptr<ast::Field>& uf, ast::UnionType* ut) {
             // write getter func
             map_line(uf->loc);
             w.writeln("std::optional<", get_type_name(ut->common_type), "> ", uf->ident->ident, "() const {");
@@ -375,7 +375,7 @@ namespace j2cp2 {
                 if (!end_else) {
                     w.writeln("return std::nullopt;");
                 }
-                str.map_ident(uf->ident, "(*${THIS}" + uf->ident->ident + "())");
+                str.map_ident(uf->ident, "(*", prefix, ".", uf->ident->ident + "())");
             }
             w.writeln("}");
 
@@ -439,7 +439,7 @@ namespace j2cp2 {
             }
         }
 
-        void write_struct_union(ast::StructUnionType* union_ty) {
+        void write_struct_union(std::string_view prefix, ast::StructUnionType* union_ty) {
             map_line(union_ty->loc);
             if (use_variant) {
                 auto variant_name = brgen::concat("union_variant_", brgen::nums(get_seq()));
@@ -447,7 +447,7 @@ namespace j2cp2 {
                 std::string variant_types;
                 for (auto& f : union_ty->structs) {
                     auto c = brgen::concat("union_struct_", brgen::nums(get_seq()));
-                    write_struct_type(c, f, brgen::concat("std::get<", brgen::nums(i), ">(${THIS}", variant_name, ")."));
+                    write_struct_type(c, f, brgen::concat("std::get<", brgen::nums(i), ">(", prefix, ".", variant_name, ")"));
                     auto& t = anonymous_struct[f];
                     t.type_name = c;
                     t.variant_name = variant_name;
@@ -465,7 +465,7 @@ namespace j2cp2 {
                     w.writeln("struct {} ", prefix, "dummy", brgen::nums(get_seq()), ";");
                     for (auto& f : union_ty->structs) {
                         auto c = brgen::concat(prefix, brgen::nums(get_seq()));
-                        write_struct_type("", f, brgen::concat("${THIS}", c, "."));
+                        write_struct_type("", f, brgen::concat(prefix, ".", c));
                         w.writeln(" ", c, ";");
                     }
                 }
@@ -488,7 +488,7 @@ namespace j2cp2 {
                     cond_u = "true";
                 }
                 if (ut->common_type) {
-                    write_common_type_accessor(cond_u, uf, ut);
+                    write_common_type_accessor(prefix, cond_u, uf, ut);
                 }
                 else {
                     write_each_type_accessor(cond_u, uf, ut);
@@ -547,7 +547,7 @@ namespace j2cp2 {
                 return;
             }
             if (auto union_ty = ast::as<ast::StructUnionType>(type)) {
-                write_struct_union(union_ty);
+                write_struct_union(prefix, union_ty);
                 return;
             }
             if (hidden) {
@@ -560,19 +560,19 @@ namespace j2cp2 {
                 if (int_ty->is_common_supported) {
                     map_line(f->loc);
                     w.writeln("std::", int_ty->is_signed ? "" : "u", "int", brgen::nums(*int_ty->bit_size), "_t ", f->ident->ident, " = 0", ";");
-                    str.map_ident(f->ident, prefix, f->ident->ident);
+                    str.map_ident(f->ident, prefix, ".", f->ident->ident);
                 }
                 else if (*int_ty->bit_size == 24) {
                     map_line(f->loc);
                     w.writeln("std::uint32_t ", f->ident->ident, " = 0; // 24 bit int");
-                    str.map_ident(f->ident, prefix, f->ident->ident);
+                    str.map_ident(f->ident, prefix, ".", f->ident->ident);
                 }
             }
             if (auto float_ty = ast::as<ast::FloatType>(type); float_ty) {
                 if (float_ty->is_common_supported) {
                     map_line(f->loc);
                     w.writeln("::futils::binary::float", brgen::nums(*float_ty->bit_size), "_t ", f->ident->ident, " = 0", ";");
-                    str.map_ident(f->ident, prefix, f->ident->ident);
+                    str.map_ident(f->ident, prefix, ".", f->ident->ident);
                 }
             }
             if (auto enum_ty = ast::as<ast::EnumType>(type); enum_ty) {
@@ -583,7 +583,7 @@ namespace j2cp2 {
                 map_line(f->loc);
                 w.writeln(enum_->ident->ident, " ", f->ident->ident, "() const { return static_cast<", enum_->ident->ident, ">(this->", f->ident->ident, "_data); }");
                 w.writeln("void ", f->ident->ident, "(", enum_->ident->ident, " v) { this->", f->ident->ident, "_data = static_cast<std::uint", brgen::nums(*bit_size), "_t>(v); }");
-                str.map_ident(f->ident, prefix, f->ident->ident + "()");
+                str.map_ident(f->ident, prefix, ".", f->ident->ident + "()");
             }
             if (auto arr_ty = ast::as<ast::ArrayType>(type); arr_ty) {
                 auto ty = get_type_name(type);
@@ -599,7 +599,7 @@ namespace j2cp2 {
                         assert(later.next_field);
                     }
                 }
-                str.map_ident(f->ident, prefix, f->ident->ident);
+                str.map_ident(f->ident, prefix, ".", f->ident->ident);
                 if (auto ident = has_ident_len(type); ident && ast::tool::is_on_named_struct(f)) {
                     w.writeln("bool set_", f->ident->ident, "(auto&& v) {");
                     {
@@ -615,7 +615,7 @@ namespace j2cp2 {
                 auto type_name = get_type_name(type);
                 map_line(f->loc);
                 w.writeln(type_name, " ", f->ident->ident, ";");
-                str.map_ident(f->ident, prefix, f->ident->ident);
+                str.map_ident(f->ident, prefix, ".", f->ident->ident);
             }
             if (auto str_type = ast::as<ast::StrLiteralType>(type)) {
                 auto len = str_type->strong_ref->length;

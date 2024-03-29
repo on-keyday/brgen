@@ -51,14 +51,14 @@ format A:
     std::vector<std::string_view> expects{
         "uint8_t x",
         "uint8_t y[2]",
-        "uint8_t* z",
-        "uint8_t(* a)[3]",
-        "uint8_t* b[3]",
-        "uint8_t** c",
-        "uint8_t*(* d)[3]",
-        "uint8_t(* e[3])[4]",
+        "struct { uint8_t* data; size_t size; } z",
+        "struct { uint8_t(* data)[3]; size_t size; } a",
+        "struct { uint8_t* data; size_t size; } b[3]",
+        "struct { struct { uint8_t* data; size_t size; }* data; size_t size; } c",
+        "struct { struct { uint8_t* data; size_t size; }(* data)[3]; size_t size; } d",
+        "struct { uint8_t(* data)[4]; size_t size; } e[3]",
         "uint8_t f[3][4][5]",
-        "uint8_t*** g",
+        "struct { struct { struct { uint8_t* data; size_t size; }* data; size_t size; }* data; size_t size; } g",
     };
     for (auto i = 0; i < f->body->elements.size(); i++) {
         auto e = ast::as<ast::Field>(f->body->elements[i]);

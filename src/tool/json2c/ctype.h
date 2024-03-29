@@ -10,6 +10,7 @@ namespace json2c {
         primitive,
         array,
         pointer,
+        dynamic_array,
     };
 
     // type of c language
@@ -54,6 +55,13 @@ namespace json2c {
         }
     };
 
+    std::pair<std::string, std::string> make_pointer(CTypeKind elem_kind, std::string prefix, std::string suffix) {
+        if (elem_kind == CTypeKind::array) {
+            return {prefix + "(*", ")" + suffix};
+        }
+        return {prefix + "*", suffix};
+    }
+
     struct CPointer : CType {
         const std::shared_ptr<CType> element_type;
 
@@ -62,10 +70,23 @@ namespace json2c {
 
         std::pair<std::string, std::string> to_string_prefix_suffix() const override {
             auto [element_prefix, element_suffix] = element_type->to_string_prefix_suffix();
-            if (element_type->kind == CTypeKind::array) {
-                return {element_prefix + "(*", ")" + element_suffix};
-            }
-            return {element_prefix + "*", element_suffix};
+            return make_pointer(element_type->kind, element_prefix, element_suffix);
+        }
+    };
+
+    // dynamic array is actually a struct with a pointer and a size
+    // a tuple of pointer and length
+    struct CDynamicArray : CType {
+        const std::shared_ptr<CType> element_type;
+
+        CDynamicArray(std::shared_ptr<ast::Type> ty, std::shared_ptr<CType> element_type)
+            : CType(CTypeKind::dynamic_array, ty), element_type(element_type) {}
+
+        std::pair<std::string, std::string> to_string_prefix_suffix() const override {
+            auto [element_prefix, element_suffix] = element_type->to_string_prefix_suffix();
+            auto [prefix, suffix] = make_pointer(element_type->kind, element_prefix, element_suffix);
+            auto type = "struct { " + prefix + " data" + suffix + "; size_t size; }";
+            return {type, ""};
         }
     };
 
@@ -90,7 +111,7 @@ namespace json2c {
                 return std::make_shared<CArray>(typ, element_type, brgen::nums(*arr_ty->length_value));
             }
             else {
-                return std::make_shared<CPointer>(typ, element_type);
+                return std::make_shared<CDynamicArray>(typ, element_type);
             }
         }
         if (auto struct_ty = ast::as<ast::StructType>(typ)) {

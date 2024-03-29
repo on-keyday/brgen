@@ -77,7 +77,7 @@ namespace brgen::ast::tool {
         std::function<std::string(Stringer&, const std::shared_ptr<IOOperation>&)> io_op_handler;
         std::function<std::string(Stringer&, const std::shared_ptr<Available>&)> available_handler;
         std::function<std::string(Stringer&, const std::shared_ptr<ast::Cast>&)> cast_handler;
-        std::string this_access = "this->";
+        std::string this_access = "(*this)";
 
         void clear() {
             bin_op_map.clear();
@@ -255,7 +255,7 @@ namespace brgen::ast::tool {
             }
             if (auto access = ast::as<ast::MemberAccess>(expr)) {
                 auto base = to_string(access->target);
-                return ident_to_string(access->member, base + ".");
+                return ident_to_string(access->member, base);
             }
             if (auto io_op = ast::as<ast::IOOperation>(expr)) {
                 if (io_op->method == ast::IOMethod::config_endian_big ||
