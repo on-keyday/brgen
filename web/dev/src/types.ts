@@ -21,4 +21,6 @@ export const enum ConfigKey {
     CPP_COMPILE_VIA_API = "compile_via_api",
     GO_USE_PUT = "use_put",
     TS_JAVASCRIPT = "javascript",
+    C_MULTI_FILE = "multi_file",
+    C_OMIT_ERROR_CALLBACK = "omit_error"
 }

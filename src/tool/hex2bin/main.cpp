@@ -10,10 +10,12 @@ struct Flags : futils::cmdline::templ::HelpOption {
     std::vector<std::string_view> args;
     bool bin2hex = false;
     bool verbose = false;
+    bool c_array = false;
     size_t buffer_size = 1024 * 4;
     void bind(futils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&bin2hex, "b", "binary to hex");
+        ctx.VarBool(&c_array, "c", "output as C array");
         ctx.VarBool(&verbose, "v,verbose", "verbose output");
         ctx.VarInt(&buffer_size, "s,size", "streaming buffer size", "<size>");
     }
@@ -22,9 +24,16 @@ auto& cout = futils::wrap::cout_wrap();
 auto& cerr = futils::wrap::cerr_wrap();
 auto& cin = futils::wrap::cin_wrap();
 
-void append_to_buffer(std::string& buffer, size_t& size, futils::byte c) {
+void append_to_buffer(std::string& buffer, size_t& size, futils::byte c, bool c_array) {
+    if (c_array) {
+        buffer.push_back('0');
+        buffer.push_back('x');
+    }
     buffer.push_back(futils::number::to_num_char(futils::byte(c) >> 4));
     buffer.push_back(futils::number::to_num_char(futils::byte(c) & 0xf));
+    if (c_array) {
+        buffer.push_back(',');
+    }
     if (++size % 16 == 0) {
         buffer.push_back('\n');
         size = 0;
@@ -43,9 +52,9 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
         bulk_buffer.resize(flags.buffer_size);
         auto res = cin.get_file().read_all(
             [&](futils::view::rcvec data) {
-                if (flags.bin2hex) {
+                if (flags.bin2hex || flags.c_array) {
                     for (auto c : data) {
-                        append_to_buffer(buffer, size, c);
+                        append_to_buffer(buffer, size, c, flags.c_array);
                     }
                     cout.write(buffer);
                     if (flags.verbose) {
@@ -82,11 +91,11 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
         cerr << "error: cannot open file " << flags.args[0] << "\n";
         return 1;
     }
-    if (flags.bin2hex) {
+    if (flags.bin2hex || flags.c_array) {
         size_t size = 0;
         std::string buffer;
         for (size_t i = 0; i < view.size(); i++) {
-            append_to_buffer(buffer, size, view[i]);
+            append_to_buffer(buffer, size, view[i], flags.c_array);
         }
         if (flags.verbose) {
             cerr << "hex2bin: read " << view.size() << " bytes\n";

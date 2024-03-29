@@ -79,6 +79,8 @@ const handleCppPrototype = async (ui :UIModel,s :JobResult) => {
 }
 
 
+const SEPARATOR= "############";
+
 const handleCpp = async (ui :UIModel,  s :JobResult) => {
     const useMap = ui.getLanguageConfig(Language.CPP,ConfigKey.CPP_SOURCE_MAP);
     const expandInclude = ui.getLanguageConfig(Language.CPP,ConfigKey.CPP_EXPAND_INCLUDE); 
@@ -97,7 +99,7 @@ const handleCpp = async (ui :UIModel,  s :JobResult) => {
     await handleLanguage(ui,s,async(id: TraceID,src :string,option :any) => {
         result = await caller.getCppCode(id,src,option as CppOption);
         if(result.code === 0&&cppOption.use_line_map){
-           const split = result.stdout!.split("############");
+           const split = result.stdout!.split(SEPARATOR);
            result.stdout = split[0];
            mappingInfo = JSON.parse(split[1]);
         }
@@ -143,8 +145,20 @@ const handleGo = async (ui :UIModel, s :JobResult) => {
 }
 
 const handleC = async (ui :UIModel, s :JobResult) => {
-    const COption : COption = {};
-    return handleLanguage(ui,s,caller.getCCode,Language.C,"c",COption);
+    const multiFile = ui.getLanguageConfig(Language.C,ConfigKey.C_MULTI_FILE);
+    const omitError = ui.getLanguageConfig(Language.C,ConfigKey.C_OMIT_ERROR_CALLBACK);
+    const COption : COption = {
+        multi_file: multiFile === true,
+        omit_error_callback: omitError === true,
+    };
+    return handleLanguage(ui,s,async(id,src,option)=>{
+        const res = await caller.getCCode(id,src,option as COption);
+        if(res.code === 0&&multiFile===true){
+            const split = res.stdout!.split(SEPARATOR).join("\n");
+            res.stdout = split;
+        }
+        return res;
+    },Language.C,"c",COption);
 }
 
 const handleRust = async (ui :UIModel, s :JobResult) => {

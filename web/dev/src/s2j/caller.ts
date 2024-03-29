@@ -142,6 +142,12 @@ const argConverter = Object.freeze({
     },
     [RequestLanguage.C] : (opt :COption) => {
         const args :string[] = [];
+        if(!opt.multi_file) {
+            args.push("--single");
+        }
+        if(opt.omit_error_callback) {
+            args.push("--omit-error-callback");
+        }
         return args;
     },
     [RequestLanguage.RUST] : (opt :RustOption) => {
