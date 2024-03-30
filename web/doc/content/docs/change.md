@@ -1,5 +1,5 @@
 ---
-title: "Change"
+title: "Language Change"
 weight: 1
 # bookFlatSection: false
 # bookToc: true
@@ -9,7 +9,7 @@ weight: 1
 # bookSearchExclude: false
 ---
 
-# 変更記録
+# 言語仕様変更記録
 
 言語仕様とかの変更記録 (24/02/07 ～)
 
@@ -17,3 +17,8 @@ weight: 1
 
 - const_variable を immutable_variable に変更
   - 語の意味の明確化
+
+## 24/3/??
+
+- loop 文を for 文に
+- for 文に for in 構文を追加

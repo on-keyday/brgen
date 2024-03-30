@@ -42,9 +42,9 @@ AST 解析プログラム = tool/src2json は以上を以下のような関係�
 ```mermaid
 flowchart
 ast/stream.h/Streamクラス-->|逐次呼び出し|lexer/lexer.h/parse_one関数
-ast/parse.h/Parserクラス-->|トークナイザとして使用|ast/stream.h/Streamクラス
+ast/parse.cpp/Parserクラス-->|トークナイザとして使用|ast/stream.h/Streamクラス
 tool/src2json-->|パーサー呼び出し|ast/parse.h/Parserクラス
-ast/parse.h/Parserクラス-->|AST|tool/src2json
+ast/parse.cpp/Parserクラス-->|AST|tool/src2json
 
 
 tool/src2json-->|入力ファイルの管理|common/file.h/FileSetクラス
@@ -55,7 +55,7 @@ common/file.h/Fileクラス-->|入力|ast/stream.h/Streamクラス
 
 tool/src2json-->|ASTの意味解析/ASTノードの置換|middle/各関数
 tool/src2json-->|importの解決|middle/resolve_import.h
-tool/src2json-->|ASTの型解析|middle/typing.h/Typingクラス
+tool/src2json-->|ASTの型解析|middle/typing.cpp/Typingクラス
 
 ```
 
@@ -76,6 +76,15 @@ src/tool/gen/gen.go のロジックによって読み込まれ、src/tool/gen �
 brgen(lang)の AST は一旦構文解析フェーズで基本的なノードとしてパースした後、
 意味解析フェーズで必要に応じて別のノードに変換するようになっている。
 src/core/ast/node/translate.h には変換される先のノードが入っているので参考にされたし。
+
+### AST の意味解析フェーズ
+
+AST の意味解析は import を解決した後(middle/resolve_import.h)
+細々とした意味解析によって AST ノードを置換し、(middle 内の)
+その後 Typing クラス(middle::analyze_type 関数経由)で型解析(型解析時にも一部ノードは置換される 例:Cast ノード)した後
+フォーマットサイズ等の計算(middle/type_attribute.h)や
+フォーマット同士の依存関係の解決等(middle/resolve_state_dependency.h)を行う
+といった順番である。
 
 ### 未使用要素について
 
@@ -147,6 +156,15 @@ src/core/ast/node/translate.h には変換される先のノードが入って�
   - EnumType - 列挙体型
     - base - 元となる Enum ノードへの参照
     - Enum.base_type で列挙体の基底型が入手できる
+
+### Identity について
+
+Identity ノードは主に if や match の条件節にくる Expr をラップするために使用される
+このノードが存在している理由は型解析フェーズにおける AST ノードの置き換え時に StructUnionType ノードと If や Match ノードが同じノードを指すことを保証するためである。
+一部の Expr ノードは AST の置換の対象になるため、置換対象とならない Identity ノードを
+使用することで Identity の指す先が置換されても StructUnionType と If や Match が
+同じノードを指すという前提が崩れない。
+なお、Ident ノードとは一切関係はない。
 
 ## 開発者メモ
 
