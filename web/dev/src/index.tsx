@@ -546,6 +546,14 @@ const setCommon = (m :Map<string,InputListElement>) => {
         "type": "checkbox",
         "value": false,
     });
+    c.set(ConfigKey.C_USE_MEMCPY,{
+        "type": "checkbox",
+        "value": false,
+    });
+    c.set(ConfigKey.C_ZERO_COPY,{
+        "type": "checkbox",
+        "value": false,
+    });
     commonUI.config.set(Language.C,languageSpecificConfig(c,ConfigKey.COMMON_FILE_NAME,(change) => {
         updateUI();
     }));
