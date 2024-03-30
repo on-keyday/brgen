@@ -43,7 +43,7 @@ AST 解析プログラム = tool/src2json は以上を以下のような関係�
 flowchart
 ast/stream.h/Streamクラス-->|逐次呼び出し|lexer/lexer.h/parse_one関数
 ast/parse.cpp/Parserクラス-->|トークナイザとして使用|ast/stream.h/Streamクラス
-tool/src2json-->|パーサー呼び出し|ast/parse.h/Parserクラス
+tool/src2json-->|パーサー呼び出し|ast/parse.cpp/Parserクラス
 ast/parse.cpp/Parserクラス-->|AST|tool/src2json
 
 
