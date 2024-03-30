@@ -11,6 +11,18 @@ the generators that generate encoder/decoder code for parse/create network packe
 - easy to write and read - 簡単に書ける/読める
 - write once generate any language code - 一回書けば様々な言語で生成
 
+# Document
+
+https://on-keyday.github.io/brgen/doc
+
+# Playground
+
+https://on-keyday.github.io/brgen
+
+F1 キー(もしくは右クリック->Command Palette)で表示されるコマンドパレットに load example file と入力いただきますと、サンプルファイルがロードできます
+
+You can load the sample file by typing load example file in the command palette displayed by pressing the F1 key (or right-click -> Command Palette).
+
 # Design Doc
 
 ## このプロダクトの目標
@@ -64,18 +76,6 @@ At the current stage, while we are implementing CI/CD, we are only verifying whe
 
 本作品は [SecHack365'23](https://sechack365.nict.go.jp/) の作品として作り始められました。
 成果発表会時点のコードは SecHack365-final タグのコミットになります。
-
-# Document
-
-https://on-keyday.github.io/brgen/doc
-
-# Playground
-
-https://on-keyday.github.io/brgen
-
-F1 キー(もしくは右クリック->Command Palette)で表示されるコマンドパレットに load example file と入力いただきますと、サンプルファイルがロードできます
-
-You can load the sample file by typing load example file in the command palette displayed by pressing the F1 key (or right-click -> Command Palette).
 
 # examples
 
