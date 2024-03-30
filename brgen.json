@@ -61,9 +61,10 @@
       "output_dir": "./ignore/example/c/",
       "args": [
         "--add-line-map",
-        "--use-error",
         "--use-overflow-check",
-        "--single"
+        "--single",
+        "--zero-copy",
+        "--use-memcpy"
       ]
     },
     {

@@ -17,22 +17,20 @@ struct Flags : futils::cmdline::templ::HelpOption {
     bool spec = false;
     bool no_color = false;
     bool add_line_map = false;
-    bool use_error = false;
-    bool use_raw_union = false;
     bool use_overflow_check = false;
     bool single = false;
     bool omit_error_callback = false;
     bool use_memcpy = false;
+    bool zero_copy = false;
     void bind(futils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&spec, "s", "spec mode");
         ctx.VarBool(&no_color, "no-color", "disable color output");
         ctx.VarBool(&add_line_map, "add-line-map", "add line map");
-        ctx.VarBool(&use_error, "use-error", "use futils::error::Error for error reporting");
-        ctx.VarBool(&use_raw_union, "use-raw-union", "use raw union instead of std::variant (maybe unsafe)");
         ctx.VarBool(&use_overflow_check, "use-overflow-check", "add overflow check for integer types");
         ctx.VarBool(&single, "single", "output as single file");
         ctx.VarBool(&omit_error_callback, "omit-error-callback", "omit error callback");
+        ctx.VarBool(&zero_copy, "zero-copy", "use zero copy for decoding byte array");
         ctx.VarBool(&use_memcpy, "use-memcpy", "use memcpy instead of `for` loop for byte array copy");
     }
 };
@@ -96,6 +94,8 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
     }
     json2c::Generator g;
     g.omit_error_callback = flags.omit_error_callback;
+    g.zero_copy_optimization = flags.zero_copy;
+    g.use_memcpy = flags.use_memcpy;
     auto prog = brgen::ast::cast_to<brgen::ast::Program>(*res);
     namespace fs = std::filesystem;
     auto include_path = fs::path(f.files[0]).filename().replace_extension(".h");
