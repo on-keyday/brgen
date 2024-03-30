@@ -61,8 +61,7 @@ format SCTPChunkHeader:
     chunkType :ChunkType
     chunkFlags :u8
     chunkLength :u16
-    chunkLength >= 4
-    chunkValue :[chunkLength - 4]u8
+    chunkLength >= 4    
 
 format OptionalParameter:
     parameterType :u16
@@ -220,3 +219,40 @@ format CookieAckChunk:
 
 format ShutdownComplete:
     ..
+
+format SCTPChunk:
+    hdr :SCTPChunkHeader
+    SIZEOF_SCTPChunk ::= 4    
+    match hdr.chunkType:
+        ChunkType.DATA:
+            data :DataChunk(input = input.subrange(hdr.chunkLength-SIZEOF_SCTPChunk))
+        ChunkType.INIT:
+            init :InitChunk(input = input.subrange(hdr.chunkLength - SIZEOF_SCTPChunk))
+        ChunkType.INIT_ACK:
+            initAck :InitACK(input = input.subrange(hdr.chunkLength - SIZEOF_SCTPChunk))
+        ChunkType.SACK:
+            sack :SackChunk(input = input.subrange(hdr.chunkLength - SIZEOF_SCTPChunk))
+        ChunkType.HEARTBEAT:
+            heartbeat :HeartbeatChunk(input = input.subrange(hdr.chunkLength - SIZEOF_SCTPChunk))
+        ChunkType.HEARTBEAT_ACK:
+            heartbeatAck :HeartbeatAckChunk(input = input.subrange(hdr.chunkLength - SIZEOF_SCTPChunk))
+        ChunkType.ABORT:
+            abort :AbortAssociationChunk(input = input.subrange(hdr.chunkLength - SIZEOF_SCTPChunk))
+        ChunkType.SHUTDOWN:
+            shutdown :ShutdownChunk(input = input.subrange(hdr.chunkLength - SIZEOF_SCTPChunk))
+        ChunkType.SHUTDOWN_ACK:
+            shutdownAck :ShutdownAckChunk(input = input.subrange(hdr.chunkLength - SIZEOF_SCTPChunk))
+        ChunkType.ERROR:
+            error :OperationErrorChunk(input = input.subrange(hdr.chunkLength - SIZEOF_SCTPChunk))
+        ChunkType.COOKIE_ECHO:
+            cookieEcho :CookieEchoChunk(input = input.subrange(hdr.chunkLength - SIZEOF_SCTPChunk))
+        ChunkType.COOKIE_ACK:
+            cookieAck :CookieAckChunk(input = input.subrange(hdr.chunkLength - SIZEOF_SCTPChunk))
+        ChunkType.SHUTDOWN_COMPLETE:
+            shutdownComplete :ShutdownComplete(input = input.subrange(hdr.chunkLength - SIZEOF_SCTPChunk))
+        ..:
+            unknown :[..]u8
+
+format SCTP:
+    hdr :SCTPHeader
+    chunks :[..]SCTPChunk

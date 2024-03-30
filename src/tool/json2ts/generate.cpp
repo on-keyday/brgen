@@ -129,15 +129,15 @@ namespace json2ts {
                 ident->base = field;
                 ident->ident = anonymous_field;
                 field->ident = ident;
-                str.map_ident(ident, prefix, anonymous_field);
+                str.map_ident(ident, prefix, ".", anonymous_field);
                 wt.writeln(anonymous_field, ": ");
                 auto dot = ".";
                 auto p = std::move(prefix);
                 if (typescript) {
-                    prefix = brgen::concat("(", p, anonymous_field, " as any)", dot);
+                    prefix = brgen::concat("(", p, dot, anonymous_field, " as any)");
                 }
                 else {
-                    prefix = brgen::concat(p, anonymous_field, dot);
+                    prefix = brgen::concat(p, dot, anonymous_field);
                 }
                 size_t i = 0;
                 for (auto s : u->structs) {
@@ -179,13 +179,13 @@ namespace json2ts {
                 wt.writeln(";");
                 for (auto& f : u->union_fields) {
                     auto field = f.lock();
-                    str.map_ident(field->ident, p, field->ident->ident);
+                    str.map_ident(field->ident, p, ".", field->ident->ident);
                 }
                 return;
             }
             auto type = get_type(typ);
             wt.writeln(field->ident->ident, ": ", type, ";");
-            str.map_ident(field->ident, prefix, field->ident->ident);
+            str.map_ident(field->ident, prefix, ".", field->ident->ident);
         }
 
         void write_struct_type(brgen::writer::Writer& wt, const std::shared_ptr<ast::StructType>& typ) {
@@ -703,7 +703,7 @@ namespace json2ts {
     std::string generate(const std::shared_ptr<brgen::ast::Program>& p, bool javascript) {
         Generator g;
         g.typescript = !javascript;
-        g.str.this_access = "obj.";
+        g.str.this_access = "obj";
         g.str.cast_handler = [](ast::tool::Stringer& s, const std::shared_ptr<ast::Cast>& c) {
             return s.to_string(c->expr);
         };
