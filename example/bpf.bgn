@@ -1,0 +1,140 @@
+config.url = "https://www.kernel.org/doc/html/latest/bpf/btf.html"
+format BPFHeader:
+    magic :u16
+    config.endian = magic == 0xeb9f  ? config.endian.big : config.endian.little
+    endian.is_big = magic == 0xeb9f
+    flags :u8
+    version :u8
+    header_len :u32
+    type_offset :u32
+    type_len :u32
+    str_offset :u32
+    str_len :u32
+    
+       
+
+    
+enum BTFKind:
+    :u5
+    INT = 1
+    PTR = 2
+    ARRAY = 3
+    STRUCT = 4
+    UNION = 5
+    ENUM = 6
+    FWD = 7
+    TYPEDEF = 8
+    VOLATILE = 9
+    CONST = 10
+    RESTRICT = 11
+    FUNC = 12
+    FUNC_PROTO = 13
+    VAR = 14
+    DATASEC = 15
+    FLOAT = 16
+    DECL_TAG = 17
+    TYPE_TAG = 18
+    ENUM64 = 19
+
+state Endian:
+    is_big :bool
+
+endian :Endian
+
+format BTFType:
+    input.endian = endian.is_big ? config.endian.big : config.endian.little
+    name_off :u32
+    vlen :u16
+    unused1 :u8
+    kind :BTFKind
+    unused2 :u2
+    kind_flag: u1
+    if kind == BTFKind.INT ||
+       kind == BTFKind.ENUM ||
+       kind == BTFKind.STRUCT ||
+       kind == BTFKind.UNION ||
+       kind == BTFKind.ENUM64:
+        size :u32
+    elif kind == BTFKind.PTR ||
+         kind == BTFKind.CONST ||
+         kind == BTFKind.VOLATILE ||
+         kind == BTFKind.RESTRICT ||
+         kind == BTFKind.TYPEDEF||
+         kind == BTFKind.FUNC ||
+         kind == BTFKind.FUNC_PROTO ||
+         kind == BTFKind.TYPE_TAG ||
+         kind == BTFKind.DECL_TAG:
+        type :u32
+ 
+enum BTFIntEncoding:
+    SIGNED = 1 << 0
+    CHAR = 1 << 1
+    BOOL = 1 << 2
+
+fn BTF_INT_ENCODING(val :u32) -> BTFIntEncoding:
+    return BTFIntEncoding(val & 0x0f000000 >> 24)
+
+fn BTF_INT_OFFSET(val :u32) -> u32:
+    return val  & 0x00ff0000 >> 16
+
+fn BTF_INT_BITS(val :u32) -> u32:
+    return val & 0xff
+    
+
+format BTF_Array:
+    input.endian = endian.is_big ? config.endian.big : config.endian.little
+    type :u32
+    index_type :u32
+    nelems :u32
+    
+format BTF_Member:
+    input.endian = endian.is_big ? config.endian.big : config.endian.little
+    name_off :u32
+    type :u32
+    offset :u32
+
+fn BTF_MEMBER_BITFIELD_SIZE(val :u32) -> u32:
+    return val >> 24
+
+fn BTF_MEMBER_BITFIELD_OFFSET(val :u32) -> u32:
+    return val & 0x00ffffff
+
+format BTF_Enum:
+    input.endian = endian.is_big ? config.endian.big : config.endian.little
+    name_off :u32
+    val :u32
+
+format BTF_Param:
+    input.endian = endian.is_big ? config.endian.big : config.endian.little
+    name_off :u32
+    type :u32
+
+enum VarLinkage:
+    :u32
+    static_var = 0
+    global_var = 1
+
+enum FuncLinkage:
+    :u32
+    static_func = 0
+    global_func = 1
+    extern_func = 2
+
+format BTF_Var:
+    linkage :VarLinkage
+
+format BTF_VarSecInfo:
+    input.endian = endian.is_big ? config.endian.big : config.endian.little
+    type :u32
+    offset :u32
+    size :u32
+
+format BTF_DeclTag:
+    input.endian = endian.is_big ? config.endian.big : config.endian.little
+    component_index :u32
+
+format BTF_Enum64:
+    input.endian = endian.is_big ? config.endian.big : config.endian.little
+    name_off :u32
+    val_lo :u32
+    val_hi :u32
