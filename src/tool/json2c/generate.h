@@ -339,9 +339,12 @@ namespace json2c {
             c_w.writeln("}");
         }
 
-        void allocate(const std::shared_ptr<ast::Field>& f, auto&& assign_to, auto&& align, auto&& size, auto&& elem_size) {
+        void allocate(const std::shared_ptr<ast::Field>& f, auto&& assign_to, auto&& align, auto&& size, auto&& elem_size, bool may_realloc) {
             c_w.writeln("if (", io_(alloc), ") {");
-            c_w.indent_writeln(io_(alloc), "((void**)&", assign_to, ",&", io_(allocation_holder), ", &", io_(allocation_holder_size), ", ", size, ",", align, ",", elem_size, ");");
+            c_w.indent_writeln(io_(alloc), "((void**)&", assign_to, ",&", io_(allocation_holder), ", &", io_(allocation_holder_size), ", ",
+                               size, ",", align, ",", elem_size, ",", may_realloc ? "1" : "0", ",",
+                               io_(buffer), ",", io_(buffer_size), ",", io_(buffer_offset),
+                               ");");
             {
                 auto scope = c_w.indent_scope();
                 c_w.writeln("if (!", assign_to, ") {");
@@ -433,7 +436,23 @@ namespace json2c {
             const std::shared_ptr<ast::Type> elem_typ,
             bool encode,
             bool need_buffer_length_check,
-            bool need_array_length_check) {
+            bool need_array_length_check,
+            bool dynamic_array) {
+            // zero-copy optimization
+            // if the element type is 8-bit integer, we can use the buffer directly
+            futils::helper::DynDefer d;
+            if (dynamic_array && !need_buffer_length_check && !need_array_length_check && !encode) {
+                auto int_ty = ast::as<ast::IntType>(elem_typ);
+                if (int_ty && int_ty->bit_size == 8) {
+                    c_w.writeln("// zero-copy optimization");
+                    c_w.writeln("if(", ident, " != ", io_(buffer), " + ", io_(buffer_offset), ") {");
+                    auto ex = c_w.indent_scope_ex();
+                    d = futils::helper::defer_ex([&, ex = std::move(ex)]() mutable {
+                        ex.execute();
+                        c_w.writeln("}");
+                    });
+                }
+            }
             auto i = "tmp_i_" + brgen::nums(get_seq());
             if (length == "<EOF>") {
                 c_w.writeln("for (size_t ", i, " = 0; ", io_(buffer_offset), " < ", io_(buffer_size), "; ", i, "++) {");
@@ -459,7 +478,7 @@ namespace json2c {
                 else {
                     if (need_array_length_check) {
                         // at here, ident is dynamic array
-                        allocate(field, data_of(ident), brgen::concat("alignof(", typeof_(elem_typ), ")"), brgen::concat("(", i, " + 1) * sizeof(", data_of(ident), "[0])"), brgen::concat("sizeof(", data_of(ident), "[0])"));
+                        allocate(field, data_of(ident), brgen::concat("alignof(", typeof_(elem_typ), ")"), brgen::concat("(", i, " + 1) * sizeof(", data_of(ident), "[0])"), brgen::concat("sizeof(", data_of(ident), "[0])"), true);
                         c_w.writeln(length_of(ident), " = ", i, " + 1;");
                         write_type_decode(field, brgen::concat(data_of(ident), "[", i, "]"), elem_typ, need_buffer_length_check);
                     }
@@ -477,6 +496,7 @@ namespace json2c {
                 }
             }
             c_w.writeln("}");
+            d.execute();
             if (should_add_offset) {
                 add_buffer_offset(brgen::concat(length, " * sizeof(", ident, "[0])"));
             }
@@ -487,26 +507,26 @@ namespace json2c {
                 encode_decode_int_field(f, int_ty, ident, true, need_length_check);
             }
             else if (auto arr_ty = ast::as<ast::ArrayType>(typ)) {
-                auto for_loop = [&](auto&& ident, auto&& length, bool need_buffer_length_check) {
-                    write_array_for_loop(f, ident, length, arr_ty->element_type, true, need_buffer_length_check, false);
+                auto for_loop = [&](auto&& ident, auto&& length, bool need_buffer_length_check, bool dynamic_array) {
+                    write_array_for_loop(f, ident, length, arr_ty->element_type, true, need_buffer_length_check, false, dynamic_array);
                 };
                 if (arr_ty->bit_size) {
                     auto len = brgen::nums(arr_ty->bit_size.value() / futils::bit_per_byte);
                     if (need_length_check) {
                         check_buffer_length(f, len);
                     }
-                    for_loop(ident, len, false);
+                    for_loop(ident, len, false, false);
                 }
                 else if (arr_ty->length_value) {
-                    for_loop(ident, brgen::nums(*arr_ty->length_value), true);
+                    for_loop(ident, brgen::nums(*arr_ty->length_value), true, false);
                 }
                 else if (ast::is_any_range(arr_ty->length)) {
                     if (auto ity = ast::as<ast::IntType>(arr_ty->element_type); ity && ity->is_common_supported) {
                         check_buffer_length(f, length_of(ident), " * sizeof(", data_of(ident), "[0])");
-                        for_loop(data_of(ident), length_of(ident), false);
+                        for_loop(data_of(ident), length_of(ident), false, true);
                     }
                     else {
-                        for_loop(data_of(ident), length_of(ident), true);
+                        for_loop(data_of(ident), length_of(ident), true, true);
                     }
                 }
                 else {
@@ -516,10 +536,10 @@ namespace json2c {
                     check_dynamic_array_length(f, ident, len_var);
                     if (arr_ty->element_type->bit_size) {
                         check_buffer_length(f, len_var, " * sizeof(", data_of(ident), "[0])");
-                        for_loop(data_of(ident), len_var, false);
+                        for_loop(data_of(ident), len_var, false, true);
                     }
                     else {
-                        for_loop(data_of(ident), len_var, true);
+                        for_loop(data_of(ident), len_var, true, true);
                     }
                 }
             }
@@ -609,21 +629,21 @@ namespace json2c {
             else if (auto arr_ty = ast::as<ast::ArrayType>(typ)) {
                 auto do_alloc = [&](auto&& len) {
                     allocate(f, data_of(ident), brgen::concat("alignof(", typeof_(arr_ty->element_type), ")"),
-                             brgen::concat(len, "* sizeof(", data_of(ident), "[0])"), brgen::concat("sizeof(", data_of(ident), "[0])"));
+                             brgen::concat(len, "* sizeof(", data_of(ident), "[0])"), brgen::concat("sizeof(", data_of(ident), "[0])"), false);
                     c_w.writeln(length_of(ident), " = ", len, ";");
                 };
-                auto for_loop = [&](auto&& ident, auto&& length, bool need_buffer_length_check, bool need_array_length_check) {
-                    write_array_for_loop(f, ident, length, arr_ty->element_type, false, need_buffer_length_check, need_array_length_check);
+                auto for_loop = [&](auto&& ident, auto&& length, bool need_buffer_length_check, bool need_array_length_check, bool dynamic_array) {
+                    write_array_for_loop(f, ident, length, arr_ty->element_type, false, need_buffer_length_check, need_array_length_check, dynamic_array);
                 };
                 if (arr_ty->bit_size) {
                     auto len = brgen::nums(arr_ty->bit_size.value() / futils::bit_per_byte);
                     if (need_length_check) {
                         check_buffer_length(f, len);
                     }
-                    for_loop(ident, len, false, false);
+                    for_loop(ident, len, false, false, false);
                 }
                 else if (arr_ty->length_value) {
-                    for_loop(ident, brgen::nums(*arr_ty->length_value), true, false);
+                    for_loop(ident, brgen::nums(*arr_ty->length_value), true, false, false);
                 }
                 else if (ast::is_any_range(arr_ty->length)) {
                     auto fmt = ast::as<ast::Format>(f->belong.lock());
@@ -645,14 +665,14 @@ namespace json2c {
                         auto len_var = "tmp_len_" + brgen::nums(get_seq());
                         c_w.writeln("size_t ", len_var, " = ", len, ";");
                         do_alloc(len_var);
-                        for_loop(data_of(ident), len_var, false, false);
+                        for_loop(data_of(ident), len_var, false, false, true);
                     }
                     else {
                         auto len_in_bytes_without_tail = brgen::concat("(", io_(buffer_size), " - ", brgen::nums(tail_size), ")");
                         auto tmp_var = "tmp_save_buffer_size" + brgen::nums(get_seq());
                         c_w.writeln("size_t ", tmp_var, " = ", io_(buffer_size), ";");
                         c_w.writeln(io_(buffer_size), " = ", len_in_bytes_without_tail, ";");
-                        for_loop(ident, "<EOF>", true, true);
+                        for_loop(ident, "<EOF>", true, true, true);
                         c_w.writeln(io_(buffer_size), " = ", tmp_var, ";");
                     }
                 }
@@ -663,11 +683,11 @@ namespace json2c {
                     if (arr_ty->element_type->bit_size) {
                         check_buffer_length(f, len_var, " * sizeof(", data_of(ident), "[0])");
                         do_alloc(len_var);
-                        for_loop(data_of(ident), len_var, false, false);
+                        for_loop(data_of(ident), len_var, false, false, true);
                     }
                     else {
                         do_alloc(len_var);
-                        for_loop(data_of(ident), len_var, true, false);
+                        for_loop(data_of(ident), len_var, true, false, true);
                     }
                 }
             }
@@ -774,7 +794,14 @@ namespace json2c {
                 h_w.writeln("size_t ", buffer_bit_offset, ";");
                 h_w.writeln("void** ", allocation_holder, ";");
                 h_w.writeln("size_t ", allocation_holder_size, ";");
-                h_w.writeln("void (*", alloc, ")(void** p,void*** holder,size_t* holder_size ,size_t size,size_t align,size_t elem_size);");
+                h_w.writeln("void (*", alloc, ")(void** p,",
+                            "void*** holder,",
+                            "size_t* holder_size ,size_t size,size_t align,size_t elem_size,",
+                            "int may_realloc,",
+                            "const uint8_t* input_buffer,",
+                            "size_t input_buffer_size,",
+                            "size_t input_buffer_offset",
+                            ");");
             }
             h_w.writeln("} ", typ->ident->ident, "DecodeInput;");
             h_w.writeln();

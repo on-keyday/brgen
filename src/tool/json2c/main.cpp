@@ -22,6 +22,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
     bool use_overflow_check = false;
     bool single = false;
     bool omit_error_callback = false;
+    bool use_memcpy = false;
     void bind(futils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&spec, "s", "spec mode");
@@ -32,6 +33,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
         ctx.VarBool(&use_overflow_check, "use-overflow-check", "add overflow check for integer types");
         ctx.VarBool(&single, "single", "output as single file");
         ctx.VarBool(&omit_error_callback, "omit-error-callback", "omit error callback");
+        ctx.VarBool(&use_memcpy, "use-memcpy", "use memcpy instead of `for` loop for byte array copy");
     }
 };
 
