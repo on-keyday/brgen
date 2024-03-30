@@ -1,6 +1,8 @@
 config.url = "https://www.kernel.org/doc/html/latest/bpf/btf.html"
 format BPFHeader:
-    magic :u16
+    magic :ub16
+    if magic != 0xeb9f || magic != 0x9feb:
+        error("Invalid magic number ",magic)
     config.endian = magic == 0xeb9f  ? config.endian.big : config.endian.little
     endian.is_big = magic == 0xeb9f
     flags :u8
@@ -10,6 +12,18 @@ format BPFHeader:
     type_len :u32
     str_offset :u32
     str_len :u32
+    
+format Instruction:
+    input.endian = endian.is_big ? config.endian.big : config.endian.little
+    input.bit_order = config.bit_order.lsb
+    config.type = u64
+    opcode :u8
+    dst :u4
+    src :u4
+    offset :u16
+    immediate :s32 
+    
+    
     
        
 
