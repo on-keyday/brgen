@@ -71,6 +71,8 @@ export interface GoOption extends CallOption {
 export interface COption extends CallOption {
     multi_file? :boolean
     omit_error_callback? :boolean
+    use_memcpy? :boolean
+    zero_copy? :boolean
 }
 
 export interface RustOption extends CallOption {}

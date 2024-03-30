@@ -147,9 +147,13 @@ const handleGo = async (ui :UIModel, s :JobResult) => {
 const handleC = async (ui :UIModel, s :JobResult) => {
     const multiFile = ui.getLanguageConfig(Language.C,ConfigKey.C_MULTI_FILE);
     const omitError = ui.getLanguageConfig(Language.C,ConfigKey.C_OMIT_ERROR_CALLBACK);
+    const useMemcpy = ui.getLanguageConfig(Language.C,ConfigKey.C_USE_MEMCPY);
+    const zeroCopy = ui.getLanguageConfig(Language.C,ConfigKey.C_ZERO_COPY);
     const COption : COption = {
         multi_file: multiFile === true,
         omit_error_callback: omitError === true,
+        use_memcpy: useMemcpy === true,
+        zero_copy: zeroCopy === true,
     };
     return handleLanguage(ui,s,async(id,src,option)=>{
         const res = await caller.getCCode(id,src,option as COption);

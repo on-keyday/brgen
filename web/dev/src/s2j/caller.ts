@@ -148,6 +148,12 @@ const argConverter = Object.freeze({
         if(opt.omit_error_callback) {
             args.push("--omit-error-callback");
         }
+        if(opt.use_memcpy) {
+            args.push("--use-memcpy");
+        }
+        if(opt.zero_copy) {
+            args.push("--zero-copy");
+        }
         return args;
     },
     [RequestLanguage.RUST] : (opt :RustOption) => {

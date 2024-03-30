@@ -22,5 +22,7 @@ export const enum ConfigKey {
     GO_USE_PUT = "use_put",
     TS_JAVASCRIPT = "javascript",
     C_MULTI_FILE = "multi_file",
-    C_OMIT_ERROR_CALLBACK = "omit_error"
+    C_OMIT_ERROR_CALLBACK = "omit_error",
+    C_USE_MEMCPY = "use_memcpy",
+    C_ZERO_COPY = "zero_copy",
 }
