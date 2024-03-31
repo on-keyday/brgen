@@ -92,10 +92,31 @@ enum ExtensionType:
     key_share = 51
     quic_transport_parameters = 0x39
 
+#TODO(on-keyday): make vector type generic!
+
 format Extension:
     extension_type :ExtensionType
     length :u16
     extension_data :[length]u8
+
+enum NameType:
+    :u8
+    host_name = 0
+
+format HostName:
+    length :u16
+    length >= 1
+    host_name :[length]u8
+
+format ServerName:
+    name_type: NameType
+    name_type == NameType.host_name
+    name :HostName
+
+format ServerNameList:
+    length :u16
+    length >= 2
+    server_name_list :[..]ServerName(input = input.subrange(length))
 
 format ClientSupportedVersions:
     length :u16
