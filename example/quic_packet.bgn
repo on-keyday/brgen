@@ -9,8 +9,6 @@ config.cpp.file.source.name= "packet.cpp"
 config.cpp.namespace = "quic::packet"
 
 
-config.export(QUICPackets,ConnectionID)
-
 qvarint ::= config.import("quic_varint.bgn")
 
 format QUICFrame:
@@ -40,9 +38,8 @@ format LongPacketHeader:
    packet_number_length :u2
    qstate.packet_number_length = u8(packet_number_length) + 1
    version :u32
-   qstate.enable_length = false
-   dst_conn_id :ConnectionID
-   src_conn_id :ConnectionID
+   dst_conn_id :ConnectionID(qstate.enable_length = false)
+   src_conn_id :ConnectionID(qstate.enable_length = false)
    match version:
       0 => hdr :VersionNegotiationPacket
       # version 1
