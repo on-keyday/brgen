@@ -28,6 +28,12 @@ enum FrameType:
     HANDSHAKE_DONE
     DATAGRAM = 0x30
     DATAGRAM_LEN
+    ACK_MP = 0x15228c00
+    ACK_ECN_MP = 0x15228c01
+    PATH_ABANDON = 0x15228c05
+    PATH_STANDBY = 0x15228c07
+    PATH_AVAILABLE = 0x15228c08
+
 
 format FrameHeader:
     type :qpkt.VarInt
@@ -47,4 +53,176 @@ fn isMinValue(v :qpkt.VarInt,typ: FrameType) -> bool:
 
 format PingFrame:
     hdr :FrameHeader
-    isMinValue(hdr.type,FrameType.PING)
+    isMinValue(hdr.type,FrameType.PING) == true
+
+format AckBlock:
+    gap :qpkt.VarInt
+    length :qpkt.VarInt
+
+format ECNCounts:
+    ect0 :qpkt.VarInt
+    ect1 :qpkt.VarInt
+    ce :qpkt.VarInt
+
+format AckFrame:
+    hdr :FrameHeader
+    isMinValue(hdr.type,FrameType.ACK) == true
+    largestAcked :qpkt.VarInt
+    ackDelay :qpkt.VarInt
+    ackBlockCount :qpkt.VarInt
+    firstAckBlock :qpkt.VarInt
+    ackBlocks :[ackBlockCount]AckBlock
+    if FrameType(hdr.type) == FrameType.ACK_ECN:
+        ecnCounts :ECNCounts
+
+format ResetStreamFrame:
+    hdr :FrameHeader
+    isMinValue(hdr.type,FrameType.RESET_STREAM) == true
+    streamId :qpkt.VarInt
+    error :qpkt.VarInt
+    finalSize :qpkt.VarInt
+
+format StopSendingFrame:
+    hdr :FrameHeader
+    isMinValue(hdr.type,FrameType.STOP_SENDING) == true
+    streamId :qpkt.VarInt
+    error :qpkt.VarInt
+
+format CryptoFrame:
+    hdr :FrameHeader
+    isMinValue(hdr.type,FrameType.CRYPTO) == true
+    offset :qpkt.VarInt
+    length :qpkt.VarInt
+    data :[length]u8
+
+format NewTokenFrame:
+    hdr :FrameHeader
+    isMinValue(hdr.type,FrameType.NEW_TOKEN) == true
+    length :qpkt.VarInt
+    token :[length]u8
+
+format StreamFrame:
+    hdr :FrameHeader
+    isMinValue(hdr.type,FrameType.STREAM) == true
+    flags ::= u8(hdr.type)
+    fin ::= flags & 0x01 == 0x01
+    len ::= flags & 0x02 == 0x02
+    off ::= flags & 0x04 == 0x04
+    streamId :qpkt.VarInt
+    if off:
+        offset :qpkt.VarInt
+    if len:
+        length :qpkt.VarInt
+        data :[length]u8
+    else:
+        data :[..]u8
+
+format MaxDataFrame:
+    hdr :FrameHeader
+    isMinValue(hdr.type,FrameType.MAX_DATA) == true
+    maxData :qpkt.VarInt
+
+format MaxStreamDataFrame:
+    hdr :FrameHeader
+    isMinValue(hdr.type,FrameType.MAX_STREAM_DATA) == true
+    streamId :qpkt.VarInt
+    maxStreamData :qpkt.VarInt
+
+format MaxStreamsFrame:
+    hdr :FrameHeader
+    isMinValue(hdr.type,FrameType.MAX_STREAMS_BIDI) == true
+    maxStreams :qpkt.VarInt
+
+format DataBlockedFrame:
+    hdr :FrameHeader
+    isMinValue(hdr.type,FrameType.DATA_BLOCKED) == true
+    dataLimit :qpkt.VarInt
+
+format StreamDataBlockedFrame:
+    hdr :FrameHeader
+    isMinValue(hdr.type,FrameType.STREAM_DATA_BLOCKED) == true
+    streamId :qpkt.VarInt
+    dataLimit :qpkt.VarInt
+
+format StreamsBlockedFrame:
+    hdr :FrameHeader
+    isMinValue(hdr.type,FrameType.STREAMS_BLOCKED_BIDI) == true
+    streamLimit :qpkt.VarInt
+
+format NewConnectionIdFrame:
+    hdr :FrameHeader
+    isMinValue(hdr.type,FrameType.NEW_CONNECTION_ID) == true
+    sequence :qpkt.VarInt
+    retirePriorTo :qpkt.VarInt
+    connIDLen :u8
+    connID :[connIDLen]u8
+    statelessResetToken :[16]u8
+
+format RetireConnectionIdFrame:
+    hdr :FrameHeader
+    isMinValue(hdr.type,FrameType.RETIRE_CONNECTION_ID) == true
+    sequence :qpkt.VarInt
+
+format PathChallengeFrame:
+    hdr :FrameHeader
+    isMinValue(hdr.type,FrameType.PATH_CHALLENGE) == true
+    data :[8]u8
+
+format PathResponseFrame:
+    hdr :FrameHeader
+    isMinValue(hdr.type,FrameType.PATH_RESPONSE) == true
+    data :[8]u8
+
+format ConnectionCloseFrame:
+    hdr :FrameHeader
+    isMinValue(hdr.type,FrameType.CONNECTION_CLOSE) == true
+    error :qpkt.VarInt
+    if FrameType(hdr.type) != FrameType.CONNECTION_CLOSE_APP:
+        errFrame :qpkt.VarInt
+    reasonPhraseLen :qpkt.VarInt
+    reasonPhrase :[reasonPhraseLen]u8
+
+    
+
+format HandshakeDoneFrame:
+    hdr :FrameHeader
+    isMinValue(hdr.type,FrameType.HANDSHAKE_DONE) == true
+
+format DatagramFrame:
+    hdr :FrameHeader
+    isMinValue(hdr.type,FrameType.DATAGRAM) == true
+    len ::= u8(hdr.type) & 0x01 == 0x01
+    length :qpkt.VarInt
+    data :[length]u8
+
+format AckMPFrame:
+    hdr :FrameHeader
+    isMinValue(hdr.type,FrameType.ACK_MP) == true
+    dst_conn_id_seq :qpkt.VarInt
+    largestAcked :qpkt.VarInt
+    ackDelay :qpkt.VarInt
+    ackBlockCount :qpkt.VarInt
+    firstAckBlock :qpkt.VarInt
+    ackBlocks :[ackBlockCount]AckBlock
+    if FrameType(hdr.type) == FrameType.ACK_ECN_MP:
+        ecnCounts :ECNCounts
+
+format PathAbandon:
+    hdr :FrameHeader
+    isMinValue(hdr.type,FrameType.PATH_ABANDON) == true
+    dst_conn_id_seq :qpkt.VarInt
+    error_code :qpkt.VarInt
+    reason_phrase_len :qpkt.VarInt
+    reason_phrase :[reason_phrase_len]u8
+
+format PathStandby:
+    hdr :FrameHeader
+    isMinValue(hdr.type,FrameType.PATH_STANDBY) == true
+    dst_conn_id_seq :qpkt.VarInt
+    path_status_seq :qpkt.VarInt
+
+format PathAvailable:
+    hdr :FrameHeader
+    isMinValue(hdr.type,FrameType.PATH_AVAILABLE) == true
+    dst_conn_id_seq :qpkt.VarInt
+    path_status_seq :qpkt.VarInt

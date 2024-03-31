@@ -1,0 +1,28 @@
+
+qpkt ::= config.import("quic_varint.bgn")
+
+enum TransportParameterID:
+    original_destination_connection_id = 0x0000
+    max_idle_timeout = 0x0001
+    stateless_reset_token = 0x0002
+    max_packet_size = 0x0003
+    initial_max_data = 0x0004
+    initial_max_stream_data_bidi_local = 0x0005
+    initial_max_stream_data_bidi_remote = 0x0006
+    initial_max_stream_data_uni = 0x0007
+    initial_max_streams_bidi = 0x0008
+    initial_max_streams_uni = 0x0009
+    ack_delay_exponent = 0x000a
+    max_ack_delay = 0x000b
+    disable_active_migration = 0x000c
+    preferred_address = 0x000d
+    active_connection_id_limit = 0x000e
+    initial_source_connection_id = 0x000f
+    retry_source_connection_id = 0x0010
+    max_datagram_frame_size = 0x0011
+
+
+format TransportParameter:
+    parameter_id: qpkt.VarInt
+    length: qpkt.VarInt
+    value: [length]qpkt.VarInt
