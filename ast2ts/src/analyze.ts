@@ -188,7 +188,7 @@ export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
                         const convertIdentType = (ident :ast2ts.IdentType) => {
                             if(ident.import_ref !== null) {
                                 if(ast2ts.isIdent(ident.import_ref.target)){
-                                    return ident.import_ref.target.ident+ "." + ident.ident + " (imported)";
+                                    return ident.import_ref.target.ident+ "." + (ident.ident?.ident||"(null)") + " (imported)";
                                 }
                                 else {
                                     return "(unknown)."+(ident.ident?.ident || "(null)") + " (imported)";
