@@ -63,7 +63,7 @@ jobs:
           name: web
           path: "./web/public"
       - name: Setup Pages
-        uses: actions/configure-pages@v4
+        uses: actions/configure-pages@v5
 
   deploy:
     environment:
