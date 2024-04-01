@@ -184,7 +184,18 @@ export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
                     }
                     return makeHover(ident.ident,"enum member");
                 case ast2ts.IdentUsage.define_format:
-                    if(ast2ts.isFormat(ident.base)){
+                    if(ast2ts.isFormat(ident.base)){          
+                        const convertIdentType = (ident :ast2ts.IdentType) => {
+                            if(ident.import_ref !== null) {
+                                if(ast2ts.isIdent(ident.import_ref.target)){
+                                    return ident.import_ref.target.ident+ "." + ident.ident + " (imported)";
+                                }
+                                else {
+                                    return "(unknown)."+(ident.ident?.ident || "(null)") + " (imported)";
+                                }
+                            }
+                            return ident.ident?.ident||"(null)";
+                        }              
                         return makeHover(ident.ident,
                         `
 + format 
@@ -193,7 +204,7 @@ export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
     + fixed tail size: ${bitSize(ident.base.body?.struct_type?.fixed_tail_size)}
     + algin: ${ident.base.body?.struct_type?.bit_alignment||"unknown"}
     ${ident.base.body?.struct_type?.non_dynamic_allocation?"+ non_dynamic\n    ":""}${ident.base.body?.struct_type?.recursive?"+ recursive\n":""}
-    ${ident.base.depends.length > 0 ?`+ depends: ${ident.base.depends.map((x)=>x.ident?.ident||"(null)").filter((elem, index, self) => self.indexOf(elem) === index).join(", ")}\n`:""}
+    ${ident.base.depends.length > 0 ?`+ depends: ${ident.base.depends.map((x)=>convertIdentType(x)).filter((elem, index, self) => self.indexOf(elem) === index).join(", ")}\n`:""}
     ${ident.base.state_variables.length > 0 ?`+ state variables: ${ident.base.state_variables.map((x)=>x.ident?.ident||"(null)").join(", ")}\n`:""}
     ${ident.base.encode_fn?"+ custom encode\n":""}
     ${ident.base.decode_fn?"+ custom decode\n":""}

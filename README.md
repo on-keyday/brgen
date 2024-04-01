@@ -235,7 +235,7 @@ We currently provide libraries for AST manipulation in C++, Go, TypeScript, Rust
 - Rust: Found in ast2rust.
 - Python: Found in ast2py.
 
-Also, there are directories for C and C#, but they are still being written so they will not work properly.
+Also, there are directories for C, C#, and Dart, but they are still being written so they will not work properly.
 
 If you can create a generator and provide it, please add it to the src/tool directory and submit a Pull Request.
 
