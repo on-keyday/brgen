@@ -62,13 +62,17 @@ fn sort_visit(
         return;
     }
     visited.insert(x.as_ptr());
-    for y in deps.get(&x.as_ptr()).unwrap() {
-        sort_visit(y, sorted, visited, deps);
+    if let Some(deps2) = deps.get(&x.as_ptr()) {
+        for y in deps2.iter() {
+            sort_visit(y, sorted, visited, deps);
+        }
     }
     sorted.push(x.clone());
 }
 
-pub fn topological_sort(prog: &Rc<RefCell<ast::Program>>) -> Option<Vec<Rc<RefCell<ast::Format>>>> {
+pub fn topological_sort_format(
+    prog: &Rc<RefCell<ast::Program>>,
+) -> Option<Vec<Rc<RefCell<ast::Format>>>> {
     let fmts = RefCell::new(Vec::new());
 
     traverse::traverse(&prog.into(), &|node| {
@@ -93,16 +97,23 @@ pub fn topological_sort(prog: &Rc<RefCell<ast::Program>>) -> Option<Vec<Rc<RefCe
                 ast::Node::Format(fmt) => fmt,
                 _ => continue,
             };
-            deps.entry(typ.as_ptr())
+            deps.entry(fmt.as_ptr())
                 .or_insert_with(|| Vec::new())
-                .push(fmt.clone());
+                .push(typ.clone());
         }
     }
     fmts.borrow_mut().sort_by(|a, b| {
-        deps.get(&a.as_ptr())
-            .unwrap()
-            .len()
-            .cmp(&deps.get(&b.as_ptr()).unwrap().len())
+        let a_len = if let Some(deps) = deps.get(&a.as_ptr()) {
+            deps.len()
+        } else {
+            0
+        };
+        let b_len = if let Some(deps) = deps.get(&b.as_ptr()) {
+            deps.len()
+        } else {
+            0
+        };
+        a_len.cmp(&b_len)
     });
     let mut sorted = Vec::new();
     let mut visited = HashSet::new();
@@ -113,8 +124,18 @@ pub fn topological_sort(prog: &Rc<RefCell<ast::Program>>) -> Option<Vec<Rc<RefCe
 }
 
 mod tests {
-    use super::super::test;
+    use super::{super::test, topological_sort_format};
+    use serde::Deserialize;
 
     #[test]
-    fn test_sort() {}
+    fn test_sort() {
+        let ch = test::execAndOutput("./example/feature_test/sort_test.bgn").unwrap();
+        let mut de = serde_json::Deserializer::from_slice(&ch.stdout);
+        let file = super::ast::AstFile::deserialize(&mut de).unwrap();
+        let prog = super::ast::parse_ast(file.ast.unwrap()).unwrap();
+        let sorted = topological_sort_format(&prog).unwrap();
+        for fmt in sorted.iter() {
+            println!("{:?}", fmt.borrow().ident.clone().unwrap().borrow().ident);
+        }
+    }
 }

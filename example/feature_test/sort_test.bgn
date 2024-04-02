@@ -8,11 +8,16 @@ format B:
     y :u8
     z :u8
 
-format C:
-    d :A
+format G:
+    d :D
 
 format D:
     d :B
-    s :C
+    s :G
 
-config.test.sort.expect(B,A,C,D)
+format E:
+    e :D
+
+
+
+config.test.sort.expect(B,A,D,G,E)
