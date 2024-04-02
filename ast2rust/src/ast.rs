@@ -1627,6 +1627,46 @@ impl TryFrom<Node> for ExprWeak {
 	}
 }
 
+impl From<&Expr> for NodeType {
+	fn from(node:&Expr)-> Self{
+		match node {
+			Expr::Binary(_)=>NodeType::Binary,
+			Expr::Unary(_)=>NodeType::Unary,
+			Expr::Cond(_)=>NodeType::Cond,
+			Expr::Ident(_)=>NodeType::Ident,
+			Expr::Call(_)=>NodeType::Call,
+			Expr::If(_)=>NodeType::If,
+			Expr::MemberAccess(_)=>NodeType::MemberAccess,
+			Expr::Paren(_)=>NodeType::Paren,
+			Expr::Index(_)=>NodeType::Index,
+			Expr::Match(_)=>NodeType::Match,
+			Expr::Range(_)=>NodeType::Range,
+			Expr::Identity(_)=>NodeType::Identity,
+			Expr::TmpVar(_)=>NodeType::TmpVar,
+			Expr::Import(_)=>NodeType::Import,
+			Expr::Cast(_)=>NodeType::Cast,
+			Expr::Available(_)=>NodeType::Available,
+			Expr::SpecifyOrder(_)=>NodeType::SpecifyOrder,
+			Expr::ExplicitError(_)=>NodeType::ExplicitError,
+			Expr::IoOperation(_)=>NodeType::IoOperation,
+			Expr::BadExpr(_)=>NodeType::BadExpr,
+			Expr::IntLiteral(_)=>NodeType::IntLiteral,
+			Expr::BoolLiteral(_)=>NodeType::BoolLiteral,
+			Expr::StrLiteral(_)=>NodeType::StrLiteral,
+			Expr::RegexLiteral(_)=>NodeType::RegexLiteral,
+			Expr::CharLiteral(_)=>NodeType::CharLiteral,
+			Expr::TypeLiteral(_)=>NodeType::TypeLiteral,
+			Expr::SpecialLiteral(_)=>NodeType::SpecialLiteral,
+		}
+	}
+}
+
+impl From<Expr> for NodeType {
+	fn from(node:Expr)-> Self{
+		Self::from(&node)
+	}
+}
+
 #[derive(Debug,Clone)]
 pub enum Stmt {
 	Loop(Rc<RefCell<Loop>>),
@@ -1976,6 +2016,39 @@ impl TryFrom<Node> for StmtWeak {
 	type Error = Error;
 	fn try_from(node:Node)->Result<Self,Self::Error>{
 		Self::try_from(&node)
+	}
+}
+
+impl From<&Stmt> for NodeType {
+	fn from(node:&Stmt)-> Self{
+		match node {
+			Stmt::Loop(_)=>NodeType::Loop,
+			Stmt::IndentBlock(_)=>NodeType::IndentBlock,
+			Stmt::ScopedStatement(_)=>NodeType::ScopedStatement,
+			Stmt::MatchBranch(_)=>NodeType::MatchBranch,
+			Stmt::UnionCandidate(_)=>NodeType::UnionCandidate,
+			Stmt::Return(_)=>NodeType::Return,
+			Stmt::Break(_)=>NodeType::Break,
+			Stmt::Continue(_)=>NodeType::Continue,
+			Stmt::Assert(_)=>NodeType::Assert,
+			Stmt::ImplicitYield(_)=>NodeType::ImplicitYield,
+			Stmt::Metadata(_)=>NodeType::Metadata,
+			Stmt::Field(_)=>NodeType::Field,
+			Stmt::Format(_)=>NodeType::Format,
+			Stmt::State(_)=>NodeType::State,
+			Stmt::Enum(_)=>NodeType::Enum,
+			Stmt::EnumMember(_)=>NodeType::EnumMember,
+			Stmt::Function(_)=>NodeType::Function,
+			Stmt::BuiltinFunction(_)=>NodeType::BuiltinFunction,
+			Stmt::BuiltinField(_)=>NodeType::BuiltinField,
+			Stmt::BuiltinObject(_)=>NodeType::BuiltinObject,
+		}
+	}
+}
+
+impl From<Stmt> for NodeType {
+	fn from(node:Stmt)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -2397,6 +2470,37 @@ impl TryFrom<Node> for TypeWeak {
 	}
 }
 
+impl From<&Type> for NodeType {
+	fn from(node:&Type)-> Self{
+		match node {
+			Type::IntType(_)=>NodeType::IntType,
+			Type::FloatType(_)=>NodeType::FloatType,
+			Type::IdentType(_)=>NodeType::IdentType,
+			Type::IntLiteralType(_)=>NodeType::IntLiteralType,
+			Type::StrLiteralType(_)=>NodeType::StrLiteralType,
+			Type::RegexLiteralType(_)=>NodeType::RegexLiteralType,
+			Type::VoidType(_)=>NodeType::VoidType,
+			Type::BoolType(_)=>NodeType::BoolType,
+			Type::ArrayType(_)=>NodeType::ArrayType,
+			Type::FunctionType(_)=>NodeType::FunctionType,
+			Type::StructType(_)=>NodeType::StructType,
+			Type::StructUnionType(_)=>NodeType::StructUnionType,
+			Type::UnionType(_)=>NodeType::UnionType,
+			Type::RangeType(_)=>NodeType::RangeType,
+			Type::EnumType(_)=>NodeType::EnumType,
+			Type::MetaType(_)=>NodeType::MetaType,
+			Type::OptionalType(_)=>NodeType::OptionalType,
+			Type::GenericType(_)=>NodeType::GenericType,
+		}
+	}
+}
+
+impl From<Type> for NodeType {
+	fn from(node:Type)-> Self{
+		Self::from(&node)
+	}
+}
+
 #[derive(Debug,Clone)]
 pub enum Literal {
 	IntLiteral(Rc<RefCell<IntLiteral>>),
@@ -2625,6 +2729,26 @@ impl TryFrom<Node> for LiteralWeak {
 	type Error = Error;
 	fn try_from(node:Node)->Result<Self,Self::Error>{
 		Self::try_from(&node)
+	}
+}
+
+impl From<&Literal> for NodeType {
+	fn from(node:&Literal)-> Self{
+		match node {
+			Literal::IntLiteral(_)=>NodeType::IntLiteral,
+			Literal::BoolLiteral(_)=>NodeType::BoolLiteral,
+			Literal::StrLiteral(_)=>NodeType::StrLiteral,
+			Literal::RegexLiteral(_)=>NodeType::RegexLiteral,
+			Literal::CharLiteral(_)=>NodeType::CharLiteral,
+			Literal::TypeLiteral(_)=>NodeType::TypeLiteral,
+			Literal::SpecialLiteral(_)=>NodeType::SpecialLiteral,
+		}
+	}
+}
+
+impl From<Literal> for NodeType {
+	fn from(node:Literal)-> Self{
+		Self::from(&node)
 	}
 }
 
@@ -2898,6 +3022,28 @@ impl TryFrom<Node> for MemberWeak {
 	}
 }
 
+impl From<&Member> for NodeType {
+	fn from(node:&Member)-> Self{
+		match node {
+			Member::Field(_)=>NodeType::Field,
+			Member::Format(_)=>NodeType::Format,
+			Member::State(_)=>NodeType::State,
+			Member::Enum(_)=>NodeType::Enum,
+			Member::EnumMember(_)=>NodeType::EnumMember,
+			Member::Function(_)=>NodeType::Function,
+			Member::BuiltinFunction(_)=>NodeType::BuiltinFunction,
+			Member::BuiltinField(_)=>NodeType::BuiltinField,
+			Member::BuiltinObject(_)=>NodeType::BuiltinObject,
+		}
+	}
+}
+
+impl From<Member> for NodeType {
+	fn from(node:Member)-> Self{
+		Self::from(&node)
+	}
+}
+
 #[derive(Debug,Clone)]
 pub enum BuiltinMember {
 	BuiltinFunction(Rc<RefCell<BuiltinFunction>>),
@@ -3084,12 +3230,40 @@ impl TryFrom<Node> for BuiltinMemberWeak {
 	}
 }
 
+impl From<&BuiltinMember> for NodeType {
+	fn from(node:&BuiltinMember)-> Self{
+		match node {
+			BuiltinMember::BuiltinFunction(_)=>NodeType::BuiltinFunction,
+			BuiltinMember::BuiltinField(_)=>NodeType::BuiltinField,
+			BuiltinMember::BuiltinObject(_)=>NodeType::BuiltinObject,
+		}
+	}
+}
+
+impl From<BuiltinMember> for NodeType {
+	fn from(node:BuiltinMember)-> Self{
+		Self::from(&node)
+	}
+}
+
 #[derive(Debug,Clone)]
 pub struct Program {
 	pub loc: Loc,
 	pub struct_type: Option<Rc<RefCell<StructType>>>,
 	pub elements: Vec<Node>,
 	pub global_scope: Option<Rc<RefCell<Scope>>>,
+}
+
+impl From<&Rc<RefCell<Program>>> for NodeType {
+	fn from(_:&Rc<RefCell<Program>>)-> Self{
+       NodeType::Program
+	}
+}
+
+impl From<Rc<RefCell<Program>>> for NodeType {
+	fn from(node:Rc<RefCell<Program>>)-> Self{
+		Self::from(&node)
+	}
 }
 
 impl TryFrom<&Node> for Rc<RefCell<Program>> {
@@ -3127,6 +3301,18 @@ pub struct Comment {
 	pub comment: String,
 }
 
+impl From<&Rc<RefCell<Comment>>> for NodeType {
+	fn from(_:&Rc<RefCell<Comment>>)-> Self{
+       NodeType::Comment
+	}
+}
+
+impl From<Rc<RefCell<Comment>>> for NodeType {
+	fn from(node:Rc<RefCell<Comment>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Node> for Rc<RefCell<Comment>> {
 	type Error = Error;
 	fn try_from(node:&Node)->Result<Self,Self::Error>{
@@ -3160,6 +3346,18 @@ impl From<Rc<RefCell<Comment>>> for Node {
 pub struct CommentGroup {
 	pub loc: Loc,
 	pub comments: Vec<Rc<RefCell<Comment>>>,
+}
+
+impl From<&Rc<RefCell<CommentGroup>>> for NodeType {
+	fn from(_:&Rc<RefCell<CommentGroup>>)-> Self{
+       NodeType::CommentGroup
+	}
+}
+
+impl From<Rc<RefCell<CommentGroup>>> for NodeType {
+	fn from(node:Rc<RefCell<CommentGroup>>)-> Self{
+		Self::from(&node)
+	}
 }
 
 impl TryFrom<&Node> for Rc<RefCell<CommentGroup>> {
@@ -3208,6 +3406,18 @@ pub struct FieldArgument {
 	pub metadata: Vec<Rc<RefCell<Metadata>>>,
 }
 
+impl From<&Rc<RefCell<FieldArgument>>> for NodeType {
+	fn from(_:&Rc<RefCell<FieldArgument>>)-> Self{
+       NodeType::FieldArgument
+	}
+}
+
+impl From<Rc<RefCell<FieldArgument>>> for NodeType {
+	fn from(node:Rc<RefCell<FieldArgument>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Node> for Rc<RefCell<FieldArgument>> {
 	type Error = Error;
 	fn try_from(node:&Node)->Result<Self,Self::Error>{
@@ -3245,6 +3455,18 @@ pub struct Binary {
 	pub op: BinaryOp,
 	pub left: Option<Expr>,
 	pub right: Option<Expr>,
+}
+
+impl From<&Rc<RefCell<Binary>>> for NodeType {
+	fn from(_:&Rc<RefCell<Binary>>)-> Self{
+       NodeType::Binary
+	}
+}
+
+impl From<Rc<RefCell<Binary>>> for NodeType {
+	fn from(node:Rc<RefCell<Binary>>)-> Self{
+		Self::from(&node)
+	}
 }
 
 impl TryFrom<&Expr> for Rc<RefCell<Binary>> {
@@ -3312,6 +3534,18 @@ pub struct Unary {
 	pub constant_level: ConstantLevel,
 	pub op: UnaryOp,
 	pub expr: Option<Expr>,
+}
+
+impl From<&Rc<RefCell<Unary>>> for NodeType {
+	fn from(_:&Rc<RefCell<Unary>>)-> Self{
+       NodeType::Unary
+	}
+}
+
+impl From<Rc<RefCell<Unary>>> for NodeType {
+	fn from(node:Rc<RefCell<Unary>>)-> Self{
+		Self::from(&node)
+	}
 }
 
 impl TryFrom<&Expr> for Rc<RefCell<Unary>> {
@@ -3383,6 +3617,18 @@ pub struct Cond {
 	pub els: Option<Expr>,
 }
 
+impl From<&Rc<RefCell<Cond>>> for NodeType {
+	fn from(_:&Rc<RefCell<Cond>>)-> Self{
+       NodeType::Cond
+	}
+}
+
+impl From<Rc<RefCell<Cond>>> for NodeType {
+	fn from(node:Rc<RefCell<Cond>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Expr> for Rc<RefCell<Cond>> {
 	type Error = Error;
 	fn try_from(node:&Expr)->Result<Self,Self::Error>{
@@ -3452,6 +3698,18 @@ pub struct Ident {
 	pub scope: Option<Rc<RefCell<Scope>>>,
 }
 
+impl From<&Rc<RefCell<Ident>>> for NodeType {
+	fn from(_:&Rc<RefCell<Ident>>)-> Self{
+       NodeType::Ident
+	}
+}
+
+impl From<Rc<RefCell<Ident>>> for NodeType {
+	fn from(node:Rc<RefCell<Ident>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Expr> for Rc<RefCell<Ident>> {
 	type Error = Error;
 	fn try_from(node:&Expr)->Result<Self,Self::Error>{
@@ -3519,6 +3777,18 @@ pub struct Call {
 	pub raw_arguments: Option<Expr>,
 	pub arguments: Vec<Expr>,
 	pub end_loc: Loc,
+}
+
+impl From<&Rc<RefCell<Call>>> for NodeType {
+	fn from(_:&Rc<RefCell<Call>>)-> Self{
+       NodeType::Call
+	}
+}
+
+impl From<Rc<RefCell<Call>>> for NodeType {
+	fn from(node:Rc<RefCell<Call>>)-> Self{
+		Self::from(&node)
+	}
 }
 
 impl TryFrom<&Expr> for Rc<RefCell<Call>> {
@@ -3591,6 +3861,18 @@ pub struct If {
 	pub els: Option<Node>,
 }
 
+impl From<&Rc<RefCell<If>>> for NodeType {
+	fn from(_:&Rc<RefCell<If>>)-> Self{
+       NodeType::If
+	}
+}
+
+impl From<Rc<RefCell<If>>> for NodeType {
+	fn from(node:Rc<RefCell<If>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Expr> for Rc<RefCell<If>> {
 	type Error = Error;
 	fn try_from(node:&Expr)->Result<Self,Self::Error>{
@@ -3657,6 +3939,18 @@ pub struct MemberAccess {
 	pub target: Option<Expr>,
 	pub member: Option<Rc<RefCell<Ident>>>,
 	pub base: Option<Weak<RefCell<Ident>>>,
+}
+
+impl From<&Rc<RefCell<MemberAccess>>> for NodeType {
+	fn from(_:&Rc<RefCell<MemberAccess>>)-> Self{
+       NodeType::MemberAccess
+	}
+}
+
+impl From<Rc<RefCell<MemberAccess>>> for NodeType {
+	fn from(node:Rc<RefCell<MemberAccess>>)-> Self{
+		Self::from(&node)
+	}
 }
 
 impl TryFrom<&Expr> for Rc<RefCell<MemberAccess>> {
@@ -3726,6 +4020,18 @@ pub struct Paren {
 	pub end_loc: Loc,
 }
 
+impl From<&Rc<RefCell<Paren>>> for NodeType {
+	fn from(_:&Rc<RefCell<Paren>>)-> Self{
+       NodeType::Paren
+	}
+}
+
+impl From<Rc<RefCell<Paren>>> for NodeType {
+	fn from(node:Rc<RefCell<Paren>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Expr> for Rc<RefCell<Paren>> {
 	type Error = Error;
 	fn try_from(node:&Expr)->Result<Self,Self::Error>{
@@ -3792,6 +4098,18 @@ pub struct Index {
 	pub expr: Option<Expr>,
 	pub index: Option<Expr>,
 	pub end_loc: Loc,
+}
+
+impl From<&Rc<RefCell<Index>>> for NodeType {
+	fn from(_:&Rc<RefCell<Index>>)-> Self{
+       NodeType::Index
+	}
+}
+
+impl From<Rc<RefCell<Index>>> for NodeType {
+	fn from(node:Rc<RefCell<Index>>)-> Self{
+		Self::from(&node)
+	}
 }
 
 impl TryFrom<&Expr> for Rc<RefCell<Index>> {
@@ -3863,6 +4181,18 @@ pub struct Match {
 	pub branch: Vec<Rc<RefCell<MatchBranch>>>,
 }
 
+impl From<&Rc<RefCell<Match>>> for NodeType {
+	fn from(_:&Rc<RefCell<Match>>)-> Self{
+       NodeType::Match
+	}
+}
+
+impl From<Rc<RefCell<Match>>> for NodeType {
+	fn from(node:Rc<RefCell<Match>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Expr> for Rc<RefCell<Match>> {
 	type Error = Error;
 	fn try_from(node:&Expr)->Result<Self,Self::Error>{
@@ -3931,6 +4261,18 @@ pub struct Range {
 	pub end: Option<Expr>,
 }
 
+impl From<&Rc<RefCell<Range>>> for NodeType {
+	fn from(_:&Rc<RefCell<Range>>)-> Self{
+       NodeType::Range
+	}
+}
+
+impl From<Rc<RefCell<Range>>> for NodeType {
+	fn from(node:Rc<RefCell<Range>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Expr> for Rc<RefCell<Range>> {
 	type Error = Error;
 	fn try_from(node:&Expr)->Result<Self,Self::Error>{
@@ -3997,6 +4339,18 @@ pub struct Identity {
 	pub expr: Option<Expr>,
 }
 
+impl From<&Rc<RefCell<Identity>>> for NodeType {
+	fn from(_:&Rc<RefCell<Identity>>)-> Self{
+       NodeType::Identity
+	}
+}
+
+impl From<Rc<RefCell<Identity>>> for NodeType {
+	fn from(node:Rc<RefCell<Identity>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Expr> for Rc<RefCell<Identity>> {
 	type Error = Error;
 	fn try_from(node:&Expr)->Result<Self,Self::Error>{
@@ -4061,6 +4415,18 @@ pub struct TmpVar {
 	pub expr_type: Option<Type>,
 	pub constant_level: ConstantLevel,
 	pub tmp_var: u64,
+}
+
+impl From<&Rc<RefCell<TmpVar>>> for NodeType {
+	fn from(_:&Rc<RefCell<TmpVar>>)-> Self{
+       NodeType::TmpVar
+	}
+}
+
+impl From<Rc<RefCell<TmpVar>>> for NodeType {
+	fn from(node:Rc<RefCell<TmpVar>>)-> Self{
+		Self::from(&node)
+	}
 }
 
 impl TryFrom<&Expr> for Rc<RefCell<TmpVar>> {
@@ -4131,6 +4497,18 @@ pub struct Import {
 	pub import_desc: Option<Rc<RefCell<Program>>>,
 }
 
+impl From<&Rc<RefCell<Import>>> for NodeType {
+	fn from(_:&Rc<RefCell<Import>>)-> Self{
+       NodeType::Import
+	}
+}
+
+impl From<Rc<RefCell<Import>>> for NodeType {
+	fn from(node:Rc<RefCell<Import>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Expr> for Rc<RefCell<Import>> {
 	type Error = Error;
 	fn try_from(node:&Expr)->Result<Self,Self::Error>{
@@ -4198,6 +4576,18 @@ pub struct Cast {
 	pub expr: Option<Expr>,
 }
 
+impl From<&Rc<RefCell<Cast>>> for NodeType {
+	fn from(_:&Rc<RefCell<Cast>>)-> Self{
+       NodeType::Cast
+	}
+}
+
+impl From<Rc<RefCell<Cast>>> for NodeType {
+	fn from(node:Rc<RefCell<Cast>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Expr> for Rc<RefCell<Cast>> {
 	type Error = Error;
 	fn try_from(node:&Expr)->Result<Self,Self::Error>{
@@ -4263,6 +4653,18 @@ pub struct Available {
 	pub constant_level: ConstantLevel,
 	pub base: Option<Rc<RefCell<Call>>>,
 	pub target: Option<Expr>,
+}
+
+impl From<&Rc<RefCell<Available>>> for NodeType {
+	fn from(_:&Rc<RefCell<Available>>)-> Self{
+       NodeType::Available
+	}
+}
+
+impl From<Rc<RefCell<Available>>> for NodeType {
+	fn from(node:Rc<RefCell<Available>>)-> Self{
+		Self::from(&node)
+	}
 }
 
 impl TryFrom<&Expr> for Rc<RefCell<Available>> {
@@ -4334,6 +4736,18 @@ pub struct SpecifyOrder {
 	pub order_value: Option<u64>,
 }
 
+impl From<&Rc<RefCell<SpecifyOrder>>> for NodeType {
+	fn from(_:&Rc<RefCell<SpecifyOrder>>)-> Self{
+       NodeType::SpecifyOrder
+	}
+}
+
+impl From<Rc<RefCell<SpecifyOrder>>> for NodeType {
+	fn from(node:Rc<RefCell<SpecifyOrder>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Expr> for Rc<RefCell<SpecifyOrder>> {
 	type Error = Error;
 	fn try_from(node:&Expr)->Result<Self,Self::Error>{
@@ -4399,6 +4813,18 @@ pub struct ExplicitError {
 	pub constant_level: ConstantLevel,
 	pub base: Option<Rc<RefCell<Call>>>,
 	pub message: Option<Rc<RefCell<StrLiteral>>>,
+}
+
+impl From<&Rc<RefCell<ExplicitError>>> for NodeType {
+	fn from(_:&Rc<RefCell<ExplicitError>>)-> Self{
+       NodeType::ExplicitError
+	}
+}
+
+impl From<Rc<RefCell<ExplicitError>>> for NodeType {
+	fn from(node:Rc<RefCell<ExplicitError>>)-> Self{
+		Self::from(&node)
+	}
 }
 
 impl TryFrom<&Expr> for Rc<RefCell<ExplicitError>> {
@@ -4469,6 +4895,18 @@ pub struct IoOperation {
 	pub arguments: Vec<Expr>,
 }
 
+impl From<&Rc<RefCell<IoOperation>>> for NodeType {
+	fn from(_:&Rc<RefCell<IoOperation>>)-> Self{
+       NodeType::IoOperation
+	}
+}
+
+impl From<Rc<RefCell<IoOperation>>> for NodeType {
+	fn from(node:Rc<RefCell<IoOperation>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Expr> for Rc<RefCell<IoOperation>> {
 	type Error = Error;
 	fn try_from(node:&Expr)->Result<Self,Self::Error>{
@@ -4534,6 +4972,18 @@ pub struct BadExpr {
 	pub constant_level: ConstantLevel,
 	pub content: String,
 	pub bad_expr: Option<Expr>,
+}
+
+impl From<&Rc<RefCell<BadExpr>>> for NodeType {
+	fn from(_:&Rc<RefCell<BadExpr>>)-> Self{
+       NodeType::BadExpr
+	}
+}
+
+impl From<Rc<RefCell<BadExpr>>> for NodeType {
+	fn from(node:Rc<RefCell<BadExpr>>)-> Self{
+		Self::from(&node)
+	}
 }
 
 impl TryFrom<&Expr> for Rc<RefCell<BadExpr>> {
@@ -4604,6 +5054,18 @@ pub struct Loop {
 	pub body: Option<Rc<RefCell<IndentBlock>>>,
 }
 
+impl From<&Rc<RefCell<Loop>>> for NodeType {
+	fn from(_:&Rc<RefCell<Loop>>)-> Self{
+       NodeType::Loop
+	}
+}
+
+impl From<Rc<RefCell<Loop>>> for NodeType {
+	fn from(node:Rc<RefCell<Loop>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Stmt> for Rc<RefCell<Loop>> {
 	type Error = Error;
 	fn try_from(node:&Stmt)->Result<Self,Self::Error>{
@@ -4670,6 +5132,18 @@ pub struct IndentBlock {
 	pub scope: Option<Rc<RefCell<Scope>>>,
 }
 
+impl From<&Rc<RefCell<IndentBlock>>> for NodeType {
+	fn from(_:&Rc<RefCell<IndentBlock>>)-> Self{
+       NodeType::IndentBlock
+	}
+}
+
+impl From<Rc<RefCell<IndentBlock>>> for NodeType {
+	fn from(node:Rc<RefCell<IndentBlock>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Stmt> for Rc<RefCell<IndentBlock>> {
 	type Error = Error;
 	fn try_from(node:&Stmt)->Result<Self,Self::Error>{
@@ -4734,6 +5208,18 @@ pub struct ScopedStatement {
 	pub struct_type: Option<Rc<RefCell<StructType>>>,
 	pub statement: Option<Node>,
 	pub scope: Option<Rc<RefCell<Scope>>>,
+}
+
+impl From<&Rc<RefCell<ScopedStatement>>> for NodeType {
+	fn from(_:&Rc<RefCell<ScopedStatement>>)-> Self{
+       NodeType::ScopedStatement
+	}
+}
+
+impl From<Rc<RefCell<ScopedStatement>>> for NodeType {
+	fn from(node:Rc<RefCell<ScopedStatement>>)-> Self{
+		Self::from(&node)
+	}
 }
 
 impl TryFrom<&Stmt> for Rc<RefCell<ScopedStatement>> {
@@ -4803,6 +5289,18 @@ pub struct MatchBranch {
 	pub then: Option<Node>,
 }
 
+impl From<&Rc<RefCell<MatchBranch>>> for NodeType {
+	fn from(_:&Rc<RefCell<MatchBranch>>)-> Self{
+       NodeType::MatchBranch
+	}
+}
+
+impl From<Rc<RefCell<MatchBranch>>> for NodeType {
+	fn from(node:Rc<RefCell<MatchBranch>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Stmt> for Rc<RefCell<MatchBranch>> {
 	type Error = Error;
 	fn try_from(node:&Stmt)->Result<Self,Self::Error>{
@@ -4866,6 +5364,18 @@ pub struct UnionCandidate {
 	pub loc: Loc,
 	pub cond: Option<ExprWeak>,
 	pub field: Option<Weak<RefCell<Field>>>,
+}
+
+impl From<&Rc<RefCell<UnionCandidate>>> for NodeType {
+	fn from(_:&Rc<RefCell<UnionCandidate>>)-> Self{
+       NodeType::UnionCandidate
+	}
+}
+
+impl From<Rc<RefCell<UnionCandidate>>> for NodeType {
+	fn from(node:Rc<RefCell<UnionCandidate>>)-> Self{
+		Self::from(&node)
+	}
 }
 
 impl TryFrom<&Stmt> for Rc<RefCell<UnionCandidate>> {
@@ -4933,6 +5443,18 @@ pub struct Return {
 	pub related_function: Option<Weak<RefCell<Function>>>,
 }
 
+impl From<&Rc<RefCell<Return>>> for NodeType {
+	fn from(_:&Rc<RefCell<Return>>)-> Self{
+       NodeType::Return
+	}
+}
+
+impl From<Rc<RefCell<Return>>> for NodeType {
+	fn from(node:Rc<RefCell<Return>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Stmt> for Rc<RefCell<Return>> {
 	type Error = Error;
 	fn try_from(node:&Stmt)->Result<Self,Self::Error>{
@@ -4997,6 +5519,18 @@ pub struct Break {
 	pub related_loop: Option<Weak<RefCell<Loop>>>,
 }
 
+impl From<&Rc<RefCell<Break>>> for NodeType {
+	fn from(_:&Rc<RefCell<Break>>)-> Self{
+       NodeType::Break
+	}
+}
+
+impl From<Rc<RefCell<Break>>> for NodeType {
+	fn from(node:Rc<RefCell<Break>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Stmt> for Rc<RefCell<Break>> {
 	type Error = Error;
 	fn try_from(node:&Stmt)->Result<Self,Self::Error>{
@@ -5059,6 +5593,18 @@ impl From<Rc<RefCell<Break>>> for Node {
 pub struct Continue {
 	pub loc: Loc,
 	pub related_loop: Option<Weak<RefCell<Loop>>>,
+}
+
+impl From<&Rc<RefCell<Continue>>> for NodeType {
+	fn from(_:&Rc<RefCell<Continue>>)-> Self{
+       NodeType::Continue
+	}
+}
+
+impl From<Rc<RefCell<Continue>>> for NodeType {
+	fn from(node:Rc<RefCell<Continue>>)-> Self{
+		Self::from(&node)
+	}
 }
 
 impl TryFrom<&Stmt> for Rc<RefCell<Continue>> {
@@ -5126,6 +5672,18 @@ pub struct Assert {
 	pub is_io_related: bool,
 }
 
+impl From<&Rc<RefCell<Assert>>> for NodeType {
+	fn from(_:&Rc<RefCell<Assert>>)-> Self{
+       NodeType::Assert
+	}
+}
+
+impl From<Rc<RefCell<Assert>>> for NodeType {
+	fn from(node:Rc<RefCell<Assert>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Stmt> for Rc<RefCell<Assert>> {
 	type Error = Error;
 	fn try_from(node:&Stmt)->Result<Self,Self::Error>{
@@ -5188,6 +5746,18 @@ impl From<Rc<RefCell<Assert>>> for Node {
 pub struct ImplicitYield {
 	pub loc: Loc,
 	pub expr: Option<Expr>,
+}
+
+impl From<&Rc<RefCell<ImplicitYield>>> for NodeType {
+	fn from(_:&Rc<RefCell<ImplicitYield>>)-> Self{
+       NodeType::ImplicitYield
+	}
+}
+
+impl From<Rc<RefCell<ImplicitYield>>> for NodeType {
+	fn from(node:Rc<RefCell<ImplicitYield>>)-> Self{
+		Self::from(&node)
+	}
 }
 
 impl TryFrom<&Stmt> for Rc<RefCell<ImplicitYield>> {
@@ -5254,6 +5824,18 @@ pub struct Metadata {
 	pub base: Option<Expr>,
 	pub name: String,
 	pub values: Vec<Expr>,
+}
+
+impl From<&Rc<RefCell<Metadata>>> for NodeType {
+	fn from(_:&Rc<RefCell<Metadata>>)-> Self{
+       NodeType::Metadata
+	}
+}
+
+impl From<Rc<RefCell<Metadata>>> for NodeType {
+	fn from(node:Rc<RefCell<Metadata>>)-> Self{
+		Self::from(&node)
+	}
 }
 
 impl TryFrom<&Stmt> for Rc<RefCell<Metadata>> {
@@ -5326,6 +5908,18 @@ pub struct IntType {
 	pub is_common_supported: bool,
 }
 
+impl From<&Rc<RefCell<IntType>>> for NodeType {
+	fn from(_:&Rc<RefCell<IntType>>)-> Self{
+       NodeType::IntType
+	}
+}
+
+impl From<Rc<RefCell<IntType>>> for NodeType {
+	fn from(node:Rc<RefCell<IntType>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Type> for Rc<RefCell<IntType>> {
 	type Error = Error;
 	fn try_from(node:&Type)->Result<Self,Self::Error>{
@@ -5393,6 +5987,18 @@ pub struct FloatType {
 	pub bit_size: Option<u64>,
 	pub endian: Endian,
 	pub is_common_supported: bool,
+}
+
+impl From<&Rc<RefCell<FloatType>>> for NodeType {
+	fn from(_:&Rc<RefCell<FloatType>>)-> Self{
+       NodeType::FloatType
+	}
+}
+
+impl From<Rc<RefCell<FloatType>>> for NodeType {
+	fn from(node:Rc<RefCell<FloatType>>)-> Self{
+		Self::from(&node)
+	}
 }
 
 impl TryFrom<&Type> for Rc<RefCell<FloatType>> {
@@ -5465,6 +6071,18 @@ pub struct IdentType {
 	pub base: Option<TypeWeak>,
 }
 
+impl From<&Rc<RefCell<IdentType>>> for NodeType {
+	fn from(_:&Rc<RefCell<IdentType>>)-> Self{
+       NodeType::IdentType
+	}
+}
+
+impl From<Rc<RefCell<IdentType>>> for NodeType {
+	fn from(node:Rc<RefCell<IdentType>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Type> for Rc<RefCell<IdentType>> {
 	type Error = Error;
 	fn try_from(node:&Type)->Result<Self,Self::Error>{
@@ -5531,6 +6149,18 @@ pub struct IntLiteralType {
 	pub bit_alignment: BitAlignment,
 	pub bit_size: Option<u64>,
 	pub base: Option<Weak<RefCell<IntLiteral>>>,
+}
+
+impl From<&Rc<RefCell<IntLiteralType>>> for NodeType {
+	fn from(_:&Rc<RefCell<IntLiteralType>>)-> Self{
+       NodeType::IntLiteralType
+	}
+}
+
+impl From<Rc<RefCell<IntLiteralType>>> for NodeType {
+	fn from(node:Rc<RefCell<IntLiteralType>>)-> Self{
+		Self::from(&node)
+	}
 }
 
 impl TryFrom<&Type> for Rc<RefCell<IntLiteralType>> {
@@ -5602,6 +6232,18 @@ pub struct StrLiteralType {
 	pub strong_ref: Option<Rc<RefCell<StrLiteral>>>,
 }
 
+impl From<&Rc<RefCell<StrLiteralType>>> for NodeType {
+	fn from(_:&Rc<RefCell<StrLiteralType>>)-> Self{
+       NodeType::StrLiteralType
+	}
+}
+
+impl From<Rc<RefCell<StrLiteralType>>> for NodeType {
+	fn from(node:Rc<RefCell<StrLiteralType>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Type> for Rc<RefCell<StrLiteralType>> {
 	type Error = Error;
 	fn try_from(node:&Type)->Result<Self,Self::Error>{
@@ -5671,6 +6313,18 @@ pub struct RegexLiteralType {
 	pub strong_ref: Option<Rc<RefCell<RegexLiteral>>>,
 }
 
+impl From<&Rc<RefCell<RegexLiteralType>>> for NodeType {
+	fn from(_:&Rc<RefCell<RegexLiteralType>>)-> Self{
+       NodeType::RegexLiteralType
+	}
+}
+
+impl From<Rc<RefCell<RegexLiteralType>>> for NodeType {
+	fn from(node:Rc<RefCell<RegexLiteralType>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Type> for Rc<RefCell<RegexLiteralType>> {
 	type Error = Error;
 	fn try_from(node:&Type)->Result<Self,Self::Error>{
@@ -5738,6 +6392,18 @@ pub struct VoidType {
 	pub bit_size: Option<u64>,
 }
 
+impl From<&Rc<RefCell<VoidType>>> for NodeType {
+	fn from(_:&Rc<RefCell<VoidType>>)-> Self{
+       NodeType::VoidType
+	}
+}
+
+impl From<Rc<RefCell<VoidType>>> for NodeType {
+	fn from(node:Rc<RefCell<VoidType>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Type> for Rc<RefCell<VoidType>> {
 	type Error = Error;
 	fn try_from(node:&Type)->Result<Self,Self::Error>{
@@ -5803,6 +6469,18 @@ pub struct BoolType {
 	pub non_dynamic_allocation: bool,
 	pub bit_alignment: BitAlignment,
 	pub bit_size: Option<u64>,
+}
+
+impl From<&Rc<RefCell<BoolType>>> for NodeType {
+	fn from(_:&Rc<RefCell<BoolType>>)-> Self{
+       NodeType::BoolType
+	}
+}
+
+impl From<Rc<RefCell<BoolType>>> for NodeType {
+	fn from(node:Rc<RefCell<BoolType>>)-> Self{
+		Self::from(&node)
+	}
 }
 
 impl TryFrom<&Type> for Rc<RefCell<BoolType>> {
@@ -5877,6 +6555,18 @@ pub struct ArrayType {
 	pub is_bytes: bool,
 }
 
+impl From<&Rc<RefCell<ArrayType>>> for NodeType {
+	fn from(_:&Rc<RefCell<ArrayType>>)-> Self{
+       NodeType::ArrayType
+	}
+}
+
+impl From<Rc<RefCell<ArrayType>>> for NodeType {
+	fn from(node:Rc<RefCell<ArrayType>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Type> for Rc<RefCell<ArrayType>> {
 	type Error = Error;
 	fn try_from(node:&Type)->Result<Self,Self::Error>{
@@ -5944,6 +6634,18 @@ pub struct FunctionType {
 	pub bit_size: Option<u64>,
 	pub return_type: Option<Type>,
 	pub parameters: Vec<Type>,
+}
+
+impl From<&Rc<RefCell<FunctionType>>> for NodeType {
+	fn from(_:&Rc<RefCell<FunctionType>>)-> Self{
+       NodeType::FunctionType
+	}
+}
+
+impl From<Rc<RefCell<FunctionType>>> for NodeType {
+	fn from(node:Rc<RefCell<FunctionType>>)-> Self{
+		Self::from(&node)
+	}
 }
 
 impl TryFrom<&Type> for Rc<RefCell<FunctionType>> {
@@ -6016,6 +6718,18 @@ pub struct StructType {
 	pub recursive: bool,
 	pub fixed_header_size: u64,
 	pub fixed_tail_size: u64,
+}
+
+impl From<&Rc<RefCell<StructType>>> for NodeType {
+	fn from(_:&Rc<RefCell<StructType>>)-> Self{
+       NodeType::StructType
+	}
+}
+
+impl From<Rc<RefCell<StructType>>> for NodeType {
+	fn from(node:Rc<RefCell<StructType>>)-> Self{
+		Self::from(&node)
+	}
 }
 
 impl TryFrom<&Type> for Rc<RefCell<StructType>> {
@@ -6091,6 +6805,18 @@ pub struct StructUnionType {
 	pub exhaustive: bool,
 }
 
+impl From<&Rc<RefCell<StructUnionType>>> for NodeType {
+	fn from(_:&Rc<RefCell<StructUnionType>>)-> Self{
+       NodeType::StructUnionType
+	}
+}
+
+impl From<Rc<RefCell<StructUnionType>>> for NodeType {
+	fn from(node:Rc<RefCell<StructUnionType>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Type> for Rc<RefCell<StructUnionType>> {
 	type Error = Error;
 	fn try_from(node:&Type)->Result<Self,Self::Error>{
@@ -6163,6 +6889,18 @@ pub struct UnionType {
 	pub member_candidates: Vec<Rc<RefCell<Field>>>,
 }
 
+impl From<&Rc<RefCell<UnionType>>> for NodeType {
+	fn from(_:&Rc<RefCell<UnionType>>)-> Self{
+       NodeType::UnionType
+	}
+}
+
+impl From<Rc<RefCell<UnionType>>> for NodeType {
+	fn from(node:Rc<RefCell<UnionType>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Type> for Rc<RefCell<UnionType>> {
 	type Error = Error;
 	fn try_from(node:&Type)->Result<Self,Self::Error>{
@@ -6230,6 +6968,18 @@ pub struct RangeType {
 	pub bit_size: Option<u64>,
 	pub base_type: Option<Type>,
 	pub range: Option<Weak<RefCell<Range>>>,
+}
+
+impl From<&Rc<RefCell<RangeType>>> for NodeType {
+	fn from(_:&Rc<RefCell<RangeType>>)-> Self{
+       NodeType::RangeType
+	}
+}
+
+impl From<Rc<RefCell<RangeType>>> for NodeType {
+	fn from(node:Rc<RefCell<RangeType>>)-> Self{
+		Self::from(&node)
+	}
 }
 
 impl TryFrom<&Type> for Rc<RefCell<RangeType>> {
@@ -6300,6 +7050,18 @@ pub struct EnumType {
 	pub base: Option<Weak<RefCell<Enum>>>,
 }
 
+impl From<&Rc<RefCell<EnumType>>> for NodeType {
+	fn from(_:&Rc<RefCell<EnumType>>)-> Self{
+       NodeType::EnumType
+	}
+}
+
+impl From<Rc<RefCell<EnumType>>> for NodeType {
+	fn from(node:Rc<RefCell<EnumType>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Type> for Rc<RefCell<EnumType>> {
 	type Error = Error;
 	fn try_from(node:&Type)->Result<Self,Self::Error>{
@@ -6365,6 +7127,18 @@ pub struct MetaType {
 	pub non_dynamic_allocation: bool,
 	pub bit_alignment: BitAlignment,
 	pub bit_size: Option<u64>,
+}
+
+impl From<&Rc<RefCell<MetaType>>> for NodeType {
+	fn from(_:&Rc<RefCell<MetaType>>)-> Self{
+       NodeType::MetaType
+	}
+}
+
+impl From<Rc<RefCell<MetaType>>> for NodeType {
+	fn from(node:Rc<RefCell<MetaType>>)-> Self{
+		Self::from(&node)
+	}
 }
 
 impl TryFrom<&Type> for Rc<RefCell<MetaType>> {
@@ -6435,6 +7209,18 @@ pub struct OptionalType {
 	pub base_type: Option<Type>,
 }
 
+impl From<&Rc<RefCell<OptionalType>>> for NodeType {
+	fn from(_:&Rc<RefCell<OptionalType>>)-> Self{
+       NodeType::OptionalType
+	}
+}
+
+impl From<Rc<RefCell<OptionalType>>> for NodeType {
+	fn from(node:Rc<RefCell<OptionalType>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Type> for Rc<RefCell<OptionalType>> {
 	type Error = Error;
 	fn try_from(node:&Type)->Result<Self,Self::Error>{
@@ -6503,6 +7289,18 @@ pub struct GenericType {
 	pub belong: Option<MemberWeak>,
 }
 
+impl From<&Rc<RefCell<GenericType>>> for NodeType {
+	fn from(_:&Rc<RefCell<GenericType>>)-> Self{
+       NodeType::GenericType
+	}
+}
+
+impl From<Rc<RefCell<GenericType>>> for NodeType {
+	fn from(node:Rc<RefCell<GenericType>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Type> for Rc<RefCell<GenericType>> {
 	type Error = Error;
 	fn try_from(node:&Type)->Result<Self,Self::Error>{
@@ -6567,6 +7365,18 @@ pub struct IntLiteral {
 	pub expr_type: Option<Type>,
 	pub constant_level: ConstantLevel,
 	pub value: String,
+}
+
+impl From<&Rc<RefCell<IntLiteral>>> for NodeType {
+	fn from(_:&Rc<RefCell<IntLiteral>>)-> Self{
+       NodeType::IntLiteral
+	}
+}
+
+impl From<Rc<RefCell<IntLiteral>>> for NodeType {
+	fn from(node:Rc<RefCell<IntLiteral>>)-> Self{
+		Self::from(&node)
+	}
 }
 
 impl TryFrom<&Literal> for Rc<RefCell<IntLiteral>> {
@@ -6662,6 +7472,18 @@ pub struct BoolLiteral {
 	pub expr_type: Option<Type>,
 	pub constant_level: ConstantLevel,
 	pub value: bool,
+}
+
+impl From<&Rc<RefCell<BoolLiteral>>> for NodeType {
+	fn from(_:&Rc<RefCell<BoolLiteral>>)-> Self{
+       NodeType::BoolLiteral
+	}
+}
+
+impl From<Rc<RefCell<BoolLiteral>>> for NodeType {
+	fn from(node:Rc<RefCell<BoolLiteral>>)-> Self{
+		Self::from(&node)
+	}
 }
 
 impl TryFrom<&Literal> for Rc<RefCell<BoolLiteral>> {
@@ -6760,6 +7582,18 @@ pub struct StrLiteral {
 	pub length: u64,
 }
 
+impl From<&Rc<RefCell<StrLiteral>>> for NodeType {
+	fn from(_:&Rc<RefCell<StrLiteral>>)-> Self{
+       NodeType::StrLiteral
+	}
+}
+
+impl From<Rc<RefCell<StrLiteral>>> for NodeType {
+	fn from(node:Rc<RefCell<StrLiteral>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Literal> for Rc<RefCell<StrLiteral>> {
 	type Error = Error;
 	fn try_from(node:&Literal)->Result<Self,Self::Error>{
@@ -6853,6 +7687,18 @@ pub struct RegexLiteral {
 	pub expr_type: Option<Type>,
 	pub constant_level: ConstantLevel,
 	pub value: String,
+}
+
+impl From<&Rc<RefCell<RegexLiteral>>> for NodeType {
+	fn from(_:&Rc<RefCell<RegexLiteral>>)-> Self{
+       NodeType::RegexLiteral
+	}
+}
+
+impl From<Rc<RefCell<RegexLiteral>>> for NodeType {
+	fn from(node:Rc<RefCell<RegexLiteral>>)-> Self{
+		Self::from(&node)
+	}
 }
 
 impl TryFrom<&Literal> for Rc<RefCell<RegexLiteral>> {
@@ -6951,6 +7797,18 @@ pub struct CharLiteral {
 	pub code: u64,
 }
 
+impl From<&Rc<RefCell<CharLiteral>>> for NodeType {
+	fn from(_:&Rc<RefCell<CharLiteral>>)-> Self{
+       NodeType::CharLiteral
+	}
+}
+
+impl From<Rc<RefCell<CharLiteral>>> for NodeType {
+	fn from(node:Rc<RefCell<CharLiteral>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Literal> for Rc<RefCell<CharLiteral>> {
 	type Error = Error;
 	fn try_from(node:&Literal)->Result<Self,Self::Error>{
@@ -7047,6 +7905,18 @@ pub struct TypeLiteral {
 	pub end_loc: Loc,
 }
 
+impl From<&Rc<RefCell<TypeLiteral>>> for NodeType {
+	fn from(_:&Rc<RefCell<TypeLiteral>>)-> Self{
+       NodeType::TypeLiteral
+	}
+}
+
+impl From<Rc<RefCell<TypeLiteral>>> for NodeType {
+	fn from(node:Rc<RefCell<TypeLiteral>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Literal> for Rc<RefCell<TypeLiteral>> {
 	type Error = Error;
 	fn try_from(node:&Literal)->Result<Self,Self::Error>{
@@ -7140,6 +8010,18 @@ pub struct SpecialLiteral {
 	pub expr_type: Option<Type>,
 	pub constant_level: ConstantLevel,
 	pub kind: SpecialLiteralKind,
+}
+
+impl From<&Rc<RefCell<SpecialLiteral>>> for NodeType {
+	fn from(_:&Rc<RefCell<SpecialLiteral>>)-> Self{
+       NodeType::SpecialLiteral
+	}
+}
+
+impl From<Rc<RefCell<SpecialLiteral>>> for NodeType {
+	fn from(node:Rc<RefCell<SpecialLiteral>>)-> Self{
+		Self::from(&node)
+	}
 }
 
 impl TryFrom<&Literal> for Rc<RefCell<SpecialLiteral>> {
@@ -7250,6 +8132,18 @@ pub struct Field {
 	pub next: Option<Weak<RefCell<Field>>>,
 }
 
+impl From<&Rc<RefCell<Field>>> for NodeType {
+	fn from(_:&Rc<RefCell<Field>>)-> Self{
+       NodeType::Field
+	}
+}
+
+impl From<Rc<RefCell<Field>>> for NodeType {
+	fn from(node:Rc<RefCell<Field>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Member> for Rc<RefCell<Field>> {
 	type Error = Error;
 	fn try_from(node:&Member)->Result<Self,Self::Error>{
@@ -7351,6 +8245,18 @@ pub struct Format {
 	pub state_variables: Vec<Weak<RefCell<Field>>>,
 }
 
+impl From<&Rc<RefCell<Format>>> for NodeType {
+	fn from(_:&Rc<RefCell<Format>>)-> Self{
+       NodeType::Format
+	}
+}
+
+impl From<Rc<RefCell<Format>>> for NodeType {
+	fn from(node:Rc<RefCell<Format>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Member> for Rc<RefCell<Format>> {
 	type Error = Error;
 	fn try_from(node:&Member)->Result<Self,Self::Error>{
@@ -7445,6 +8351,18 @@ pub struct State {
 	pub belong_struct: Option<Weak<RefCell<StructType>>>,
 	pub ident: Option<Rc<RefCell<Ident>>>,
 	pub body: Option<Rc<RefCell<IndentBlock>>>,
+}
+
+impl From<&Rc<RefCell<State>>> for NodeType {
+	fn from(_:&Rc<RefCell<State>>)-> Self{
+       NodeType::State
+	}
+}
+
+impl From<Rc<RefCell<State>>> for NodeType {
+	fn from(node:Rc<RefCell<State>>)-> Self{
+		Self::from(&node)
+	}
 }
 
 impl TryFrom<&Member> for Rc<RefCell<State>> {
@@ -7547,6 +8465,18 @@ pub struct Enum {
 	pub enum_type: Option<Rc<RefCell<EnumType>>>,
 }
 
+impl From<&Rc<RefCell<Enum>>> for NodeType {
+	fn from(_:&Rc<RefCell<Enum>>)-> Self{
+       NodeType::Enum
+	}
+}
+
+impl From<Rc<RefCell<Enum>>> for NodeType {
+	fn from(node:Rc<RefCell<Enum>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Member> for Rc<RefCell<Enum>> {
 	type Error = Error;
 	fn try_from(node:&Member)->Result<Self,Self::Error>{
@@ -7643,6 +8573,18 @@ pub struct EnumMember {
 	pub raw_expr: Option<Expr>,
 	pub value: Option<Expr>,
 	pub str_literal: Option<Rc<RefCell<StrLiteral>>>,
+}
+
+impl From<&Rc<RefCell<EnumMember>>> for NodeType {
+	fn from(_:&Rc<RefCell<EnumMember>>)-> Self{
+       NodeType::EnumMember
+	}
+}
+
+impl From<Rc<RefCell<EnumMember>>> for NodeType {
+	fn from(node:Rc<RefCell<EnumMember>>)-> Self{
+		Self::from(&node)
+	}
 }
 
 impl TryFrom<&Member> for Rc<RefCell<EnumMember>> {
@@ -7746,6 +8688,18 @@ pub struct Function {
 	pub cast_loc: Loc,
 }
 
+impl From<&Rc<RefCell<Function>>> for NodeType {
+	fn from(_:&Rc<RefCell<Function>>)-> Self{
+       NodeType::Function
+	}
+}
+
+impl From<Rc<RefCell<Function>>> for NodeType {
+	fn from(node:Rc<RefCell<Function>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Member> for Rc<RefCell<Function>> {
 	type Error = Error;
 	fn try_from(node:&Member)->Result<Self,Self::Error>{
@@ -7840,6 +8794,18 @@ pub struct BuiltinFunction {
 	pub belong_struct: Option<Weak<RefCell<StructType>>>,
 	pub ident: Option<Rc<RefCell<Ident>>>,
 	pub func_type: Option<Rc<RefCell<FunctionType>>>,
+}
+
+impl From<&Rc<RefCell<BuiltinFunction>>> for NodeType {
+	fn from(_:&Rc<RefCell<BuiltinFunction>>)-> Self{
+       NodeType::BuiltinFunction
+	}
+}
+
+impl From<Rc<RefCell<BuiltinFunction>>> for NodeType {
+	fn from(node:Rc<RefCell<BuiltinFunction>>)-> Self{
+		Self::from(&node)
+	}
 }
 
 impl TryFrom<&Member> for Rc<RefCell<BuiltinFunction>> {
@@ -7967,6 +8933,18 @@ pub struct BuiltinField {
 	pub field_type: Option<Type>,
 }
 
+impl From<&Rc<RefCell<BuiltinField>>> for NodeType {
+	fn from(_:&Rc<RefCell<BuiltinField>>)-> Self{
+       NodeType::BuiltinField
+	}
+}
+
+impl From<Rc<RefCell<BuiltinField>>> for NodeType {
+	fn from(node:Rc<RefCell<BuiltinField>>)-> Self{
+		Self::from(&node)
+	}
+}
+
 impl TryFrom<&Member> for Rc<RefCell<BuiltinField>> {
 	type Error = Error;
 	fn try_from(node:&Member)->Result<Self,Self::Error>{
@@ -8090,6 +9068,18 @@ pub struct BuiltinObject {
 	pub belong_struct: Option<Weak<RefCell<StructType>>>,
 	pub ident: Option<Rc<RefCell<Ident>>>,
 	pub members: Vec<BuiltinMember>,
+}
+
+impl From<&Rc<RefCell<BuiltinObject>>> for NodeType {
+	fn from(_:&Rc<RefCell<BuiltinObject>>)-> Self{
+       NodeType::BuiltinObject
+	}
+}
+
+impl From<Rc<RefCell<BuiltinObject>>> for NodeType {
+	fn from(node:Rc<RefCell<BuiltinObject>>)-> Self{
+		Self::from(&node)
+	}
 }
 
 impl TryFrom<&Member> for Rc<RefCell<BuiltinObject>> {

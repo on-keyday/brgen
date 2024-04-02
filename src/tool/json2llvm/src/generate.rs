@@ -1,13 +1,22 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use ast2rust::{
-    ast::{Enum, EnumMember, Format, Node, Program},
-    eval::Evaluator,
+    ast::{Enum, EnumMember, Format, Member, Node, NodeType, Program, Type},
+    eval::{EvalError, Evaluator},
 };
 use inkwell::{context::Context, types::AnyTypeEnum, values::AnyValueEnum};
 
+#[derive(Debug)]
 enum Error {
     UnwrapError,
+    EvalError(EvalError),
+    Unsupported(NodeType),
+}
+
+impl From<EvalError> for Error {
+    fn from(e: EvalError) -> Self {
+        Self::EvalError(e)
+    }
 }
 
 type Result<T> = std::result::Result<T, Error>;
@@ -31,6 +40,12 @@ impl<'ctx> Generator<'ctx> {
         }
     }
 
+    fn type_to_llvm(&self, t: &Type) -> Result<AnyTypeEnum<'ctx>> {
+        match t {
+            _ => Err(Error::Unsupported((t.into()))),
+        }
+    }
+
     fn generate_format(&self, local: &mut LocalContext, fmt: &Rc<RefCell<Format>>) -> Result<()> {
         let struct_typ = fmt
             .borrow()
@@ -40,7 +55,21 @@ impl<'ctx> Generator<'ctx> {
             .borrow()
             .struct_type
             .clone()
-            .unwrap();
+            .ok_or(Error::UnwrapError)?;
+        struct_typ
+            .borrow()
+            .fields
+            .iter()
+            .try_for_each(|f| -> Result<()> {
+                match f {
+                    Member::Field(f) => {
+                        let typ = f.borrow().field_type.clone().ok_or(Error::UnwrapError)?;
+                        let llvm = self.type_to_llvm(&typ)?;
+                    }
+                    _ => {}
+                }
+                Ok(())
+            })?;
         Ok(())
     }
 
@@ -53,8 +82,8 @@ impl<'ctx> Generator<'ctx> {
             match f {
                 Node::Enum(e) => {
                     for c in e.borrow().members.iter() {
-                        let expr = c.borrow().value.clone().unwrap();
-                        let value = self.eval.eval(&expr).unwrap(); // TODO: handle error
+                        let expr = c.borrow().value.clone().ok_or(Error::UnwrapError)?;
+                        let value = self.eval.eval(&expr)?; // TODO: handle error
                         match value {
                             ast2rust::eval::EvalValue::Int(i) => {
                                 let i = self.context.i64_type().const_int(i as u64, false);
