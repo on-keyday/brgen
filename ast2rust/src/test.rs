@@ -1,6 +1,6 @@
 use std::{env, path};
 
-pub fn execAndOutput(file: &str) -> std::io::Result<std::process::Output> {
+pub fn exec_and_output(file: &str) -> std::io::Result<std::process::Output> {
     env::set_current_dir(path::Path::new("..")).unwrap();
     println!("current dir: {:?}", env::current_dir().unwrap());
     let cmd = env::current_dir()

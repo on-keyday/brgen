@@ -1,5 +1,4 @@
 use super::ast;
-use super::test;
 use std::ops::Fn;
 
 pub fn traverse<F>(n: &ast::Node, f: &F)
@@ -18,12 +17,12 @@ mod tests {
     use serde::Deserialize;
 
     use super::super::ast;
-    use super::test;
+    use super::super::test;
     use super::traverse;
 
     #[test]
     fn test_traverse() {
-        let ch = test::execAndOutput("./example/feature_test/tree_test.bgn").unwrap();
+        let ch = test::exec_and_output("./example/feature_test/tree_test.bgn").unwrap();
         let mut de = serde_json::Deserializer::from_slice(&ch.stdout);
         let file = ast::AstFile::deserialize(&mut de).unwrap();
         let prog = ast::parse_ast(file.ast.unwrap()).unwrap();

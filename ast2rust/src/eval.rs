@@ -2,7 +2,6 @@ use std::{
     cell::RefCell,
     collections::{HashMap, HashSet},
     rc::Rc,
-    slice,
 };
 
 use crate::traverse;
@@ -129,7 +128,7 @@ mod tests {
 
     #[test]
     fn test_sort() {
-        let ch = test::execAndOutput("./example/feature_test/sort_test.bgn").unwrap();
+        let ch = test::exec_and_output("./example/feature_test/sort_test.bgn").unwrap();
         let mut de = serde_json::Deserializer::from_slice(&ch.stdout);
         let file = super::ast::AstFile::deserialize(&mut de).unwrap();
         let prog = super::ast::parse_ast(file.ast.unwrap()).unwrap();

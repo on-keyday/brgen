@@ -1,0 +1,8 @@
+# Cap'n Proto format
+# little endian format
+# 0b00 /*magic*/ 0x0001 /*offset*/ 
+# 0x0002 /*sizeof data*/ 0x0003 /*sizeof pointer*/
+0300 0200 0100 0000
+0000 0000 0000 0000 # skip offset
+6865 6c6c 6f20 776f # struct data?
+726c 6420 0000 0000 
