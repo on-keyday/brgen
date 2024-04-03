@@ -5,7 +5,8 @@ format ID:
     id :[16]u8
 
 format OpenRequest:
-    reserved :u7
+    reserved :u6
+    unordered :u1
     is_owner :u1
     share_id :ID
 
@@ -52,7 +53,10 @@ enum ControlType:
     notify_permission_change = 4
     notify_close = 5
     close_client = 6
-    
+    request_cred_material = 7
+    notify_cred_material_request = 8
+    provide_cred_material = 9
+    notify_cred_material_provide = 10
 
 enum Permission:
     :u16
@@ -65,19 +69,32 @@ enum Permission:
     broadcast = 32
     listen_close = 64
     close_others = 128
+    provide_cred_material = 256
     admin = 0xffff
 
 format ControlMessage:
     control_type :ControlType
-    if control_type == ControlType.change_permission || 
-       control_type == ControlType.notify_permission_request ||
+    if control_type == ControlType.request_permission||
+       control_type == ControlType.notify_permission_request||
+       control_type == ControlType.change_permission||
        control_type == ControlType.notify_permission_change:
-        client_id :ID
         permission :Permission
-    elif control_type == ControlType.request_permission:
-        permission :Permission # broadcast to clients that have change_permission permission
-    elif control_type == ControlType.notify_close || 
-         control_type == ControlType.close_client:
+    if control_type == ControlType.change_permission ||
+       control_type == ControlType.notify_permission_change ||
+       control_type == ControlType.notify_permission_request ||
+       control_type == ControlType.close_client||
+       control_type == ControlType.notify_close||
+       control_type == ControlType.notify_cred_material_request||
+       control_type == ControlType.provide_cred_material:
         client_id :ID
+    if control_type == ControlType.request_permission||
+       control_type == ControlType.notify_permission_request||
+       control_type == ControlType.request_cred_material ||
+       control_type == ControlType.notify_cred_material_request||
+       control_type == ControlType.provide_cred_material||
+       control_type == ControlType.notify_cred_material_provide:
+        credential_len :u32
+        credential :[credential_len]u8
+  
 
         
