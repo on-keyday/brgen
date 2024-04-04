@@ -1,5 +1,5 @@
 
-format Split:
+format BitFields:
     a :u1
     b :u2
     c :u3
@@ -16,3 +16,26 @@ format Split:
     n :u14
     o :u15
 
+# flag value is 1, data value is 0x1234, opaque1 value is 0x2678
+
+# msb                                                            lsb
+# |0              |1              |2              |3
+# |0|1|2|3|4|5|6|7|8|9|a|b|c|d|e|f|0|1|2|3|4|5|6|7|8|9|a|b|c|d|e|f|
+#  0 1|0 0 0 1 0 0 1 0 0 0 1 1 0 1 0 0|1 0 0 1 1 0 0 1 1 1 1 0 0 0|
+# |f|data                             |opaque1                    |
+format DefaultLayout:
+    flag :u2
+    data :u16
+    opaque1 :u14
+
+# msb                                                            lsb
+# |0              |1              |2              |3
+# |0|1|2|3|4|5|6|7|8|9|a|b|c|d|e|f|0|1|2|3|4|5|6|7|8|9|a|b|c|d|e|f|
+#  1 0 0 0 0 1|0 1|0 0 0 0 1 1 0 0|        |0 1
+# |
+format LSBProiorLayout:
+    input.bit_order = config.bit_order.lsb
+    flag :u2
+    data :u30
+    opaque1 :u32
+    

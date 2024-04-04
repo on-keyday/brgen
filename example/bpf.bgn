@@ -14,14 +14,29 @@ format BPFHeader:
     str_len :u32
     
 format Instruction:
-    input.endian = endian.is_big ? config.endian.big : config.endian.little
-    input.bit_order = config.bit_order.lsb
+    input.endian = config.endian.native
     config.type = u64
-    opcode :u8
-    dst :u4
-    src :u4
-    offset :u16
     immediate :s32 
+    offset :u16
+    src :u4
+    dst :u4
+    opcode :u8
+
+    
+    
+enum BPF_OP:
+    :u8
+    BPF_LD = 0x00
+    BPF_LDX = 0x01
+    BPF_ST = 0x02
+    BPF_STX = 0x03
+    BPF_ALU = 0x04
+    BPF_JMP = 0x05
+    BPF_RET = 0x06
+    BPF_MISC = 0x07
+    BPF_CALL = 0x80
+    BPF_EXIT = 0x95
+    
     
     
     
