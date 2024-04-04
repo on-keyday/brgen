@@ -53,11 +53,11 @@ format DomainName:
                 i == labels.length - 1
             output.put(labels[i])
     
-format DomainName2:
-    for:
-        label :Label
-        if label.length == 0 || available(label.pointer):
-            break
+#format DomainName2:
+#    for:
+#        label :Label
+#        if label.length == 0 || available(label.pointer):
+#            break
 
 format DNSQuestion:
     name :DomainName
