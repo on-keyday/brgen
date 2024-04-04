@@ -1551,7 +1551,10 @@ namespace brgen::middle {
                 }
                 if (conf->name == "input") {
                     auto conf2 = ast::tool::extract_config(conf->arguments[0], ast::tool::ExtractMode::call);
+                    // input = expr
                     if (!conf2) {
+                        typing_expr(conf->arguments[0]);
+                        args->sub_byte_expr = std::move(conf->arguments[0]);
                         continue;
                     }
                     // input.subrange(length_in_bytes,[offset_in_bytes_of_full_input = input.offset])

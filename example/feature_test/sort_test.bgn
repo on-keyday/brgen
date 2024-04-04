@@ -1,0 +1,23 @@
+
+format A:
+    x :u8
+    y :B
+
+format B:
+    x :u8
+    y :u8
+    z :u8
+
+format G:
+    d :D
+
+format D:
+    d :B
+    s :G
+
+format E:
+    e :D
+
+
+
+config.test.sort.expect(B,A,D,G,E)

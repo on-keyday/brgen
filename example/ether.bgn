@@ -26,12 +26,12 @@ format EthernetFrame:
     srcMac :[6]u8
     ether_type :u16
     if ether_type == u16(EtherType.vlan):
-        vlen_tag :u16
+        vlan_tag :u16
         ether_type2 :u16
     elif ether_type == u16(EtherType.service_vlen):
-        service_vlen_tag :u16
-        dummy_ether_type :u16(0x8100)
-        vlen_tag :u16
+        service_vlan_tag :u16
+        dummy_ether_type :u16(u16(EtherType.vlan))
+        vlan_tag :u16
         ether_type2 :u16
     len ::= available(ether_type2) ? ether_type2 : ether_type
     if len >= 0x600:

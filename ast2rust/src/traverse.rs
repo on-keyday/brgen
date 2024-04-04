@@ -17,33 +17,17 @@ mod tests {
     use serde::Deserialize;
 
     use super::super::ast;
+    use super::super::test;
     use super::traverse;
-    use std::env;
-    use std::path;
-    use std::process::Command;
 
     #[test]
     fn test_traverse() {
-        env::set_current_dir(path::Path::new("..")).unwrap();
-        println!("current dir: {:?}", env::current_dir().unwrap());
-        let cmd = env::current_dir()
-            .unwrap()
-            .join(path::Path::new("tool/src2json"));
-        #[cfg(target_os = "windows")]
-        let cmd = cmd.with_extension("exe");
-        println!("cmd: {:?}", cmd);
-        let mut cmd = Command::new(cmd);
-        let ch = cmd.arg("./example/tree_test.bgn").output();
-        if let Err(e) = ch {
-            println!("spawn error: {:?}", e);
-            return;
-        }
-        let ch = ch.unwrap();
+        let ch = test::exec_and_output("./example/feature_test/tree_test.bgn").unwrap();
         let mut de = serde_json::Deserializer::from_slice(&ch.stdout);
         let file = ast::AstFile::deserialize(&mut de).unwrap();
         let prog = ast::parse_ast(file.ast.unwrap()).unwrap();
         let prog = prog.into();
-        traverse(&prog, &|n: &ast::Node| {
+        traverse(&prog, &mut |n: &ast::Node| {
             let t: ast::NodeType = n.into();
             println!("node: {:?}", t);
         });

@@ -315,6 +315,26 @@ func generate(rw io.Writer, defs *gen.Defs) {
 			w.Printf("	}\n")
 			w.Printf("}\n\n")
 
+			w.Printf("impl From<&%s> for NodeType {\n", d.Name)
+			w.Printf("	fn from(node:&%s)-> Self{\n", d.Name)
+			w.Printf("		match node {\n")
+			for _, field := range d.Derived {
+				_, ok := defs.Structs[field]
+				if !ok {
+					continue
+				}
+				w.Printf("			%s::%s(_)=>NodeType::%s,\n", d.Name, field, field)
+			}
+			w.Printf("		}\n")
+			w.Printf("	}\n")
+			w.Printf("}\n\n")
+
+			w.Printf("impl From<%s> for NodeType {\n", d.Name)
+			w.Printf("	fn from(node:%s)-> Self{\n", d.Name)
+			w.Printf("		Self::from(&node)\n")
+			w.Printf("	}\n")
+			w.Printf("}\n\n")
+
 		case *gen.Struct:
 			if d.Name == "Loc" || d.Name == "Pos" {
 				w.Printf("#[derive(Debug,Clone,Copy,Serialize,Deserialize)]\n")
@@ -328,6 +348,19 @@ func generate(rw io.Writer, defs *gen.Defs) {
 				w.Printf("	pub %s: %s,\n", field.Name, field.Type.RustString())
 			}
 			w.Printf("}\n\n")
+			if len(d.Implements) != 0 {
+				w.Printf("impl From<&Rc<RefCell<%s>>> for NodeType {\n", d.Name)
+				w.Printf("	fn from(_:&Rc<RefCell<%s>>)-> Self{\n", d.Name)
+				w.Printf("       NodeType::%s\n", d.Name)
+				w.Printf("	}\n")
+				w.Printf("}\n\n")
+
+				w.Printf("impl From<Rc<RefCell<%s>>> for NodeType {\n", d.Name)
+				w.Printf("	fn from(node:Rc<RefCell<%s>>)-> Self{\n", d.Name)
+				w.Printf("		Self::from(&node)\n")
+				w.Printf("	}\n")
+				w.Printf("}\n\n")
+			}
 
 			for _, impl := range d.Implements {
 				w.Printf("impl TryFrom<&%s> for Rc<RefCell<%s>> {\n", impl, d.Name)

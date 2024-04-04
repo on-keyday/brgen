@@ -1,0 +1,49 @@
+
+config.url = "https://capnproto.org/encoding.html"
+input.endian = config.endian.little
+input.bit_order = config.bit_order.lsb
+# little endian and begin with lsb
+
+# for example, the following code
+# 
+format StructPointer:
+    config.type = u64
+    magic :u2(0)
+    offset :s30
+    sizeOfDataInWord :u16
+    sizeOfPointerInWord :u16
+
+enum SizeOfListElement:
+    :u3
+    void_ = 0
+    bit = 1
+    byte1 = 2
+    byte2 = 3
+    byte4 = 4
+    byte8 = 5
+    pointer8 = 6
+    composite = 7
+
+format ListPointer:
+    config.type = u64
+    magic :u2(1)
+    offset :u30
+    sizeOfElement :SizeOfListElement
+    # if sizeOfElemet == SizeOfListElement.composite
+    # then sizeOfList is the word count in list
+    # otehrwise element count
+    sizeOfList :u29
+
+
+format InterSegmentPointer:
+    config.type = u64
+    magic :u2(2)
+    padding2byte :u1
+    offset :u29
+    id :u32
+
+format Capabilities:
+    config.type = u64
+    magic :u2(3)
+    reserved :u30(0)
+    capabilityTable :u32
