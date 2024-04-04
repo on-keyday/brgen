@@ -44,7 +44,7 @@ format DomainName:
         for:
            label :Label
            labels[labels.length] = label
-           if label.length == 0 || label.length & 0xc0 == 0xc0:
+           if label.length == 0 || available(label.pointer):
               break
     
     fn encode():
