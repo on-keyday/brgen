@@ -1,0 +1,18 @@
+
+format Split:
+    a :u1
+    b :u2
+    c :u3
+    d :u4
+    e :u5
+    f :u6
+    g :u7
+    h :u8
+    i :u9
+    j :u10
+    k :u11
+    l :u12
+    m :u13
+    n :u14
+    o :u15
+

@@ -128,6 +128,7 @@ namespace brgen::ast {
         std::shared_ptr<Expr> alignment;
         std::optional<size_t> alignment_value;
         // sub byte range of field
+        std::shared_ptr<Expr> sub_byte_expr;
         std::shared_ptr<Expr> sub_byte_length;
         std::shared_ptr<Expr> sub_byte_begin;
         // is_peek is true if field is peeked
