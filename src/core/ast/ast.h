@@ -5,7 +5,6 @@
 #include "node/statement.h"
 #include "node/type.h"
 #include "node/translated.h"
-#include "node/builtin.h"
 #include "node/scope.h"
 
 namespace brgen::ast {
@@ -18,7 +17,7 @@ namespace brgen::ast {
         }
         else if constexpr (std::is_same_v<T, Expr> || std::is_same_v<T, Type> ||
                            std::is_same_v<T, Stmt> || std::is_same_v<T, Literal> ||
-                           std::is_same_v<T, Member> || std::is_same_v<T, BuiltinMember>) {
+                           std::is_same_v<T, Member>) {
             if (v && (int(v->node_type) & int(T::node_type_tag)) == int(T::node_type_tag)) {
                 return static_cast<T*>(v);
             }

@@ -51,7 +51,7 @@ namespace brgen::ast {
         }
     };
 
-    struct RegexLiteral :Literal {
+    struct RegexLiteral : Literal {
         define_node_type(NodeType::regex_literal);
         std::string value;
 
@@ -136,10 +136,8 @@ namespace brgen::ast {
             sdebugf(kind);
         }
 
-        SpecialLiteral(lexer::Loc l, const std::shared_ptr<Type>& typ, SpecialLiteralKind k)
-            : Literal(l, NodeType::special_literal), kind(k) {
-            this->expr_type = typ;
-        }
+        SpecialLiteral(lexer::Loc l, SpecialLiteralKind k)
+            : Literal(l, NodeType::special_literal), kind(k) {        }
 
         // for decode
         constexpr SpecialLiteral()

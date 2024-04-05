@@ -93,13 +93,7 @@ namespace brgen::ast {
             CASE(Enum)
             CASE(EnumMember)
             CASE(Function)
-
-            // builtin
-            CASE(BuiltinMember)
-
-            CASE(BuiltinFunction)
-            CASE(BuiltinField)
-            CASE(BuiltinObject)
+       
 
             // type
             CASE(Type)

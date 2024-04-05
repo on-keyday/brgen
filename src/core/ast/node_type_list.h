@@ -72,9 +72,6 @@ namespace brgen::ast {
             if (is(NodeType::member)) {
                 vec[i++] = "member";
             }
-            if (is(NodeType::builtin_member)) {
-                vec[i++] = "builtin_member";
-            }
             if (is(NodeType::expr)) {
                 vec[i++] = "expr";
             }

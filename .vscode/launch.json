@@ -19,7 +19,7 @@
             "request": "launch",
             "program": "${workspaceRoot}/tool/src2json",
             "args": [
-                "c:/workspace/shbrgen/brgen/example/icmp.bgn",
+                "c:/workspace/shbrgen/brgen/example/ieee802_11.bgn",
                 "--print-json","--print-on-error"
             ],
             "stopAtEntry": false,
