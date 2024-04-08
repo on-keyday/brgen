@@ -389,11 +389,12 @@ namespace json2ts {
                     return;
                 }
                 else {
-                    w.writeln("for (let i = 0; i < ", len, "; i++) {");
+                    auto i = "i_" + brgen::nums(get_seq());
+                    w.writeln("for (let ", i, " = 0; ", i, " < ", len, "; ", i, "++) {");
                     {
                         auto s = w.indent_scope();
                         auto typ = get_type(arr->element_type);
-                        write_type_encode(err_ident, brgen::concat(ident, "[i]"), arr->element_type);
+                        write_type_encode(err_ident, brgen::concat(ident, "[", i, "]"), arr->element_type);
                     }
                     w.writeln("}");
                     return;
@@ -522,11 +523,12 @@ namespace json2ts {
                 }
                 else {
                     w.writeln(ident, " = [];");
-                    w.writeln("for (let i = 0; i < ", len, "; i++) {");
+                    auto i = "i_" + brgen::nums(get_seq());
+                    w.writeln("for (let ", i, " = 0; ", i, " < ", len, "; ", i, "++) {");
                     {
                         auto s = w.indent_scope();
                         auto typ = get_type(arr->element_type);
-                        write_type_decode(err_ident, brgen::concat(ident, "[i]"), arr->element_type);
+                        write_type_decode(err_ident, brgen::concat(ident, "[", i, "]"), arr->element_type);
                     }
                     w.writeln("}");
                     return;
