@@ -388,6 +388,16 @@ namespace json2ts {
                     w.writeln("w.offset += ", len, " * ", brgen::nums(bit / 8), ";");
                     return;
                 }
+                else {
+                    w.writeln("for (let i = 0; i < ", len, "; i++) {");
+                    {
+                        auto s = w.indent_scope();
+                        auto typ = get_type(arr->element_type);
+                        write_type_encode(err_ident, brgen::concat(ident, "[i]"), arr->element_type);
+                    }
+                    w.writeln("}");
+                    return;
+                }
             }
             else if (auto enum_ = ast::as<ast::EnumType>(typ)) {
                 auto base = enum_->base.lock();
