@@ -329,7 +329,10 @@ namespace json2ts {
                 auto endian = ity->endian == ast::Endian::little ? "true" : "false";
                 auto big = bit > 32 ? "Big" : "";
                 auto typ = get_type(ity);
-                w.write("w.view.set", big, sign, brgen::nums(bit), "(w.offset,", ident, " as ", typ);
+                w.write("w.view.set", big, sign, brgen::nums(bit), "(w.offset,", ident);
+                if (typescript) {
+                    w.write(" as ", typ);
+                }
                 if (bit != 8) {
                     w.write(", ", endian);
                 }
@@ -505,6 +508,17 @@ namespace json2ts {
                         w.writeln("}");
                     }
                     w.writeln("r.offset += ", total, ";");
+                    return;
+                }
+                else {
+                    w.writeln(ident, " = [];");
+                    w.writeln("for (let i = 0; i < ", len, "; i++) {");
+                    {
+                        auto s = w.indent_scope();
+                        auto typ = get_type(arr->element_type);
+                        write_type_decode(err_ident, brgen::concat(ident, "[i]"), arr->element_type);
+                    }
+                    w.writeln("}");
                     return;
                 }
             }

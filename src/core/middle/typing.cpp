@@ -1644,7 +1644,7 @@ namespace brgen::middle {
             }
         }
 
-        void typing_object(auto& ty) {
+        void typing_object(NodeReplacer ty) {
             // Define a lambda function for recursive traversal and typing
             auto recursive_typing = [&](auto&& f, NodeReplacer ty) -> void {
                 auto do_traverse = [&] {

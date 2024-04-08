@@ -333,20 +333,6 @@ namespace brgen::ast {
                 }
                 return res & parse_loc(target);
             }
-/*
-#define STR_TO_ENUM(Typ err)\
-else if constexpr(std::is_same_v<T,Typ>)  {                                               \
-    return (res & get_string(loc, key)).and_then([&](std::string&& s) -> result<void> { \
-        if (auto res = from_string<T>(s.c_str()); !res) {                               \
-            return unexpect(error(loc, s, "cannot convert to" err));             \
-        }                                                                        \
-        else {                                                                   \
-            target = res;                                                       \
-        }    \
-        return {};                                                                    \
-    });\
-}
-*/
             else if constexpr(std::is_enum_v<T>&&!std::is_same_v<T,const NodeType>){
                 return (res&get_string(loc,key)).and_then([&](std::string&& s)->result<void>{
                     if(auto res=from_string<T>(s.c_str());!res){
