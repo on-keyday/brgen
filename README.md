@@ -11,6 +11,10 @@ the generators that generate encoder/decoder code for parse/create network packe
 - easy to write and read - 簡単に書ける/読める
 - write once generate any language code - 一回書けば様々な言語で生成
 
+# Note
+本プロダクトは開発途上のものです。使用したことによる効果は保証しかねます。また破壊的変更が予告なしに行われることがあります。
+This product is still under development. We cannot guarantee the effectiveness of using this product. In addition, breaking changes may be made without notice.
+
 # Document
 
 https://on-keyday.github.io/brgen/doc

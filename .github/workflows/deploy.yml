@@ -48,7 +48,7 @@ jobs:
           export WEB_PRODUCTION="production"
           . build.sh wasm-em Release
       - name: Setup Hugo
-        uses: peaceiris/actions-hugo@v2
+        uses: peaceiris/actions-hugo@v3
         with:
           hugo-version: "latest"
           extended: true
