@@ -61,16 +61,16 @@ enum ControlType:
 enum Permission:
     :u16
     none = 0
-    read = 1
-    write = 2
-    dismiss = 4
-    change_permission = 8
-    destroy_hub = 16
-    broadcast = 32
-    listen_close = 64
-    close_others = 128
-    provide_cred_material = 256
-    admin = 0xffff
+    read = 1 # capability to read messages from other clients
+    write = 2  # capability to write messages to other clients
+    dismiss = 4 # reserved for future use
+    change_permission = 8 # capability to change permissions of other clients
+    destroy_hub = 16 # capability to destroy the hub
+    broadcast = 32 # capability to broadcast messages to all clients
+    listen_close = 64 # capability to listen to close events of other clients
+    close_others = 128 # capability to close other clients
+    provide_cred_material = 256 # capability to provide credential material
+    admin = 0xffff # all capabilities
 
 format ControlMessage:
     control_type :ControlType

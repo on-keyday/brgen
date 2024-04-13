@@ -840,37 +840,33 @@ namespace brgen::middle {
         }
 
         std::shared_ptr<ast::StructType> lookup_struct(const std::shared_ptr<ast::Type>& typ) {
-            if (auto ident = ast::as<ast::IdentType>(typ)) {
+            auto t = typ;
+            if (auto ident = ast::as<ast::IdentType>(t)) {
                 auto b = ident->base.lock();
                 if (!b) {
                     typing_ident_type(ident, true);
                     b = ident->base.lock();
                 }
-                if (b) {
-                    if (auto fmt = ast::as<ast::StructType>(b)) {
-                        return ast::cast_to<ast::StructType>(b);
-                    }
-                }
+                t = b;
             }
-            else if (ast::as<ast::StructType>(typ)) {
-                return ast::cast_to<ast::StructType>(typ);
+            if (ast::as<ast::StructType>(t)) {
+                return ast::cast_to<ast::StructType>(t);
             }
             return nullptr;
         }
 
         std::shared_ptr<ast::EnumType> lookup_enum(const std::shared_ptr<ast::Type>& typ) {
-            if (auto ident = ast::as<ast::IdentType>(typ)) {
-                auto fmt = ident->base.lock();
-                if (!fmt) {
+            auto t = typ;
+            if (auto ident = ast::as<ast::IdentType>(t)) {
+                auto b = ident->base.lock();
+                if (!b) {
                     typing_ident_type(ident, true);
-                    fmt = ident->base.lock();
+                    b = ident->base.lock();
                 }
-                if (auto e = ast::as<ast::EnumType>(fmt)) {
-                    return ast::cast_to<ast::EnumType>(fmt);
-                }
+                t = b;
             }
-            else if (ast::as<ast::EnumType>(typ)) {
-                return ast::cast_to<ast::EnumType>(typ);
+            if (ast::as<ast::EnumType>(t)) {
+                return ast::cast_to<ast::EnumType>(t);
             }
             return nullptr;
         }
