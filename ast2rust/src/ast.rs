@@ -8373,7 +8373,6 @@ pub struct Function {
 	pub body: Option<Rc<RefCell<IndentBlock>>>,
 	pub func_type: Option<Rc<RefCell<FunctionType>>>,
 	pub is_cast: bool,
-	pub cast_loc: Loc,
 }
 
 impl From<&Rc<RefCell<Function>>> for NodeType {
@@ -9225,7 +9224,6 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				body: None,
 				func_type: None,
 				is_cast: false,
-				cast_loc: raw_node.loc.clone(),
 				})))
 			},
 			_=>return Err(Error::UnknownNodeType(node_type)),
@@ -14180,14 +14178,6 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				node.borrow_mut().is_cast = match is_cast_body.as_bool() {
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(is_cast_body.into(),JSONType::Bool)),
-				};
-				let cast_loc_body = match raw_node.body.get("cast_loc") {
-					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"cast_loc")),
-				};
-				node.borrow_mut().cast_loc = match serde_json::from_value(cast_loc_body.clone()) {
-					Ok(v)=>v,
-					Err(e)=>return Err(Error::JSONError(e)),
 				};
 			},
 			_=>return Err(Error::UnknownNodeType(node_type)),

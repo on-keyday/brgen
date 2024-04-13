@@ -3493,7 +3493,6 @@ int ast2c_Function_parse(ast2c_Ast* ast,ast2c_Function* s,ast2c_json_handlers* h
 	void* body = h->object_get(h, obj_body, "body");
 	void* func_type = h->object_get(h, obj_body, "func_type");
 	void* is_cast = h->object_get(h, obj_body, "is_cast");
-	void* cast_loc = h->object_get(h, obj_body, "cast_loc");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_Function::loc is null"); } return 0; }
 	if (!belong) { if(h->error) { h->error(h,belong, "ast2c_Function::belong is null"); } return 0; }
 	if (!belong_struct) { if(h->error) { h->error(h,belong_struct, "ast2c_Function::belong_struct is null"); } return 0; }
@@ -3507,13 +3506,8 @@ int ast2c_Function_parse(ast2c_Ast* ast,ast2c_Function* s,ast2c_json_handlers* h
 	if (!body) { if(h->error) { h->error(h,body, "ast2c_Function::body is null"); } return 0; }
 	if (!func_type) { if(h->error) { h->error(h,func_type, "ast2c_Function::func_type is null"); } return 0; }
 	if (!is_cast) { if(h->error) { h->error(h,is_cast, "ast2c_Function::is_cast is null"); } return 0; }
-	if (!cast_loc) { if(h->error) { h->error(h,cast_loc, "ast2c_Function::cast_loc is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_Function::loc"); }
-		goto error;
-	}
-	if(!ast2c_Loc_parse(&s->cast_loc,h,cast_loc)) {
-		if(h->error) { h->error(h,cast_loc, "failed to parse ast2c_Function::cast_loc"); }
 		goto error;
 	}
 	return 1;

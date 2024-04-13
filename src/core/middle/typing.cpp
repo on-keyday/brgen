@@ -339,20 +339,20 @@ namespace brgen::middle {
             if (!check_right_typed()) {
                 return;
             }
-            auto new_type = int_literal_to_int_type(right->expr_type);
+            // auto new_type = int_literal_to_int_type(right->expr_type);
 
             if (b->op == ast::BinaryOp::define_assign) {
                 assert(left_ident);
                 assert(left_ident->usage == ast::IdentUsage::define_variable);
                 assert(left_ident->base.lock() == b);
-                left_ident->expr_type = std::move(new_type);
+                left_ident->expr_type = int_literal_to_int_type(right->expr_type);
                 left_ident->constant_level = ast::ConstantLevel::variable;
             }
             else if (b->op == ast::BinaryOp::const_assign) {
                 assert(left_ident);
                 assert(left_ident->usage == ast::IdentUsage::define_const);
                 assert(left_ident->base.lock() == b);
-                left_ident->expr_type = std::move(new_type);
+                left_ident->expr_type = int_literal_to_int_type(right->expr_type);
                 if (b->right->constant_level == ast::ConstantLevel::constant) {
                     left_ident->constant_level = ast::ConstantLevel::constant;
                 }
@@ -364,6 +364,7 @@ namespace brgen::middle {
                 assert(left_ident);
                 assert(left_ident->usage == ast::IdentUsage::define_variable);
                 assert(left_ident->base.lock() == b);
+                auto new_type = int_literal_to_int_type(right->expr_type);
                 // `for x in 10`, x is int type inferred from 10
                 if (auto p = ast::as<ast::IntType>(new_type)) {
                     left_ident->expr_type = std::move(new_type);
@@ -411,7 +412,8 @@ namespace brgen::middle {
                     }
                     assert(base_ident);
                     if (base_ident->usage == ast::IdentUsage::define_variable) {
-                        if (!equal_type(base_ident->expr_type, new_type)) {
+                        int_type_fitting(base_ident->expr_type, right->expr_type);
+                        if (!equal_type(base_ident->expr_type, right->expr_type)) {
                             report_assign_error();
                         }
                     }
@@ -635,15 +637,17 @@ namespace brgen::middle {
                     }
                 }
                 typing_object(c->then);
-                if (auto exp = ast::as<ast::Expr>(c->then)) {
-                    if (!candidate) {
-                        candidate = exp->expr_type;
-                    }
-                    else {
-                        if (candidate->node_type != ast::NodeType::void_type) {
-                            int_type_fitting(candidate, exp->expr_type);
-                            if (!equal_type(candidate, exp->expr_type)) {
-                                candidate = void_type(m->loc);
+                if (auto sc = ast::as<ast::ScopedStatement>(c->then)) {
+                    if (auto exp = ast::as<ast::Expr>(sc->statement)) {
+                        if (!candidate) {
+                            candidate = exp->expr_type;
+                        }
+                        else {
+                            if (candidate->node_type != ast::NodeType::void_type) {
+                                int_type_fitting(candidate, exp->expr_type);
+                                if (!equal_type(candidate, exp->expr_type)) {
+                                    candidate = void_type(m->loc);
+                                }
                             }
                         }
                     }
@@ -1591,7 +1595,7 @@ namespace brgen::middle {
 
         void typing_array_type(ast::ArrayType* arr_type) {
             // array like [..]u8 is variable length array, so mark it as variable
-            if (arr_type->length && arr_type->length->node_type == ast::NodeType::range) {
+            if (ast::is_any_range(arr_type->length)) {
                 arr_type->length->constant_level = ast::ConstantLevel::variable;
             }
             // if a->length->constant_level == constant,
@@ -1600,7 +1604,6 @@ namespace brgen::middle {
                 ast::tool::Evaluator eval;
                 eval.ident_mode = ast::tool::EvalIdentMode::resolve_ident;
                 if (auto val = eval.eval_as<ast::tool::EResultType::integer>(arr_type->length)) {
-                    // case 1 or 2
                     arr_type->length_value = val->get<ast::tool::EResultType::integer>();
                 }
             }

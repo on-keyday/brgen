@@ -871,7 +871,6 @@ class Func extends Member {
     IndentBlock? body;
     FunctionType? funcType;
     bool isCast = false;
-    Loc castLoc = Loc();
 factory Func.fromJson(Map<String, dynamic> json) => _$FuncFromJson(json);
 }
 @JsonSerializable()

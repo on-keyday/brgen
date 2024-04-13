@@ -1038,7 +1038,6 @@ export interface Function extends Member {
 	body: IndentBlock|null;
 	func_type: FunctionType|null;
 	is_cast: boolean;
-	cast_loc: Loc;
 }
 
 export function isFunction(obj: any): obj is Function {
@@ -2041,7 +2040,6 @@ export function parseAST(obj: JsonAst): Program {
 				body: null,
 				func_type: null,
 				is_cast: false,
-				cast_loc: on.loc,
 			}
 			c.node.push(n);
 			break;
@@ -4535,11 +4533,6 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at Function::is_cast');
 			}
 			n.is_cast = on.body.is_cast;
-			const tmpcast_loc = on.body?.cast_loc;
-			if (!isLoc(tmpcast_loc)) {
-				throw new Error('invalid node list at Function::cast_loc');
-			}
-			n.cast_loc = tmpcast_loc;
 			break;
 		}
 		}

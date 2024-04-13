@@ -3235,7 +3235,6 @@ type Function struct {
 	Body         *IndentBlock
 	FuncType     *FunctionType
 	IsCast       bool
-	CastLoc      Loc
 }
 
 func (n *Function) isMember() {}
@@ -4955,7 +4954,6 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				Body         *uintptr  `json:"body"`
 				FuncType     *uintptr  `json:"func_type"`
 				IsCast       bool      `json:"is_cast"`
-				CastLoc      Loc       `json:"cast_loc"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -4983,7 +4981,6 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				v.FuncType = n.node[*tmp.FuncType].(*FunctionType)
 			}
 			v.IsCast = tmp.IsCast
-			v.CastLoc = tmp.CastLoc
 		default:
 			return nil, fmt.Errorf("unknown node type: %q", raw.NodeType)
 		}

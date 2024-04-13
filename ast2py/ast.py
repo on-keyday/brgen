@@ -643,7 +643,6 @@ class Function(Member):
     body: Optional[IndentBlock]
     func_type: Optional[FunctionType]
     is_cast: bool
-    cast_loc: Loc
 
 
 class Scope:
@@ -2131,7 +2130,6 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].func_type = None
                 x = ast.node[i].body["is_cast"]
                 node[i].is_cast = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at Function::is_cast'))
-                node[i].cast_loc = parse_Loc(ast.node[i].body["cast_loc"])
             case _:
                 raise TypeError('unknown node type')
     for i in range(len(ast.scope)):

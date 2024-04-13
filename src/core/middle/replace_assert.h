@@ -59,6 +59,11 @@ namespace brgen::middle {
             return;
         }
         if (auto s = ast::as<ast::ScopedStatement>(node)) {
+            auto base_match = ast::as<ast::MatchBranch>(s->struct_type->base.lock())->belong.lock();
+            if (!ast::as<ast::VoidType>(base_match->expr_type)) {
+                // at here, match branch is expression that is used as match return value
+                return;
+            }
             one_element(&s->statement);
             return;
         }

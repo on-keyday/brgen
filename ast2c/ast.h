@@ -1370,7 +1370,6 @@ struct ast2c_Function {
 	ast2c_IndentBlock* body;
 	ast2c_FunctionType* func_type;
 	int is_cast;
-	ast2c_Loc cast_loc;
 };
 
 // returns 1 if succeed 0 if failed

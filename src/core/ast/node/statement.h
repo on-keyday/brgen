@@ -255,7 +255,6 @@ namespace brgen::ast {
         std::shared_ptr<IndentBlock> body;
         std::shared_ptr<FunctionType> func_type;
         bool is_cast = false;
-        lexer::Loc cast_loc;
 
         Function(lexer::Loc l)
             : Member(l, NodeType::function) {}
@@ -270,7 +269,6 @@ namespace brgen::ast {
             sdebugf(body);
             sdebugf(func_type);
             sdebugf(is_cast);
-            sdebugf(cast_loc);
         }
     };
 

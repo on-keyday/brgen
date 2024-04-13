@@ -1473,7 +1473,7 @@ namespace brgen::ast {
                 auto m_scope = state.enter_member(state_);
                 state_->body = parse_indent_block(state_);
             }
-            // state_->ident->expr_type = state_->body->struct_type
+            // `state_->ident->expr_type = state_->body->struct_type`
             // makes circular reference, so not use it
             state.add_to_struct(state_);
 

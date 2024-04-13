@@ -764,7 +764,6 @@ public class Function : Member{
 	public IndentBlock? Body{get;set;}
 	public FunctionType? FuncType{get;set;}
 	public bool IsCast{get;set;}
-	public Loc CastLoc{get;set;}
 }
 public class Scope {
 	public Scope? Prev{get;set;}
@@ -1572,7 +1571,6 @@ public static class Ast {
                node.Body = ast.Node[i].Body[body];
                node.FuncType = ast.Node[i].Body[func_type];
                node.IsCast = ast.Node[i].Body[is_cast];
-               node.CastLoc = ast.Node[i].Body[cast_loc];
   }
 }
 }
