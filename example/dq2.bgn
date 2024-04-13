@@ -45,7 +45,7 @@ format PartiesData:
 
 fn checkCrc(code :[]u8) -> u11:
     crc := code.length * 0x0101
-    for i := code.length - 1;;i -= u64(1):
+    for i := code.length - 1;;i -= 1:
         octed := code[i]
         for _ in 8:
             carry := ((crc >> 8) ^ u64(octed) & 0x80) != 0
@@ -65,7 +65,7 @@ fn calc_shift(code :[]u6):
     for i := u64(1); i < code.length; i += 1:
         code[i] = code[i] + code[i-1] + shift_val
 
-fn mapToHiragana(code :u6) -> u32:
+fn mapToHiragana(code :u6) -> u16:
     return match code:
         0x0 => 'あ'
         0x1 => 'い'
