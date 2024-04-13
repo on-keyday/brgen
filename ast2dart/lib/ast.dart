@@ -143,14 +143,6 @@ Enum,
 EnumMember,
 @JsonValue('function')
 Function,
-@JsonValue('builtin_member')
-BuiltinMember,
-@JsonValue('builtin_function')
-BuiltinFunction,
-@JsonValue('builtin_field')
-BuiltinField,
-@JsonValue('builtin_object')
-BuiltinObject,
 }
 enum TokenTag {
 @JsonValue('indent')
@@ -431,8 +423,6 @@ abstract class Member extends Stmt {
     Member? belong;
     StructType? belongStruct;
     Ident? ident;
-}
-abstract class BuiltinMember extends Member {
 }
 @JsonSerializable()
 class Program extends Node {
@@ -883,21 +873,6 @@ class Func extends Member {
     bool isCast = false;
     Loc castLoc = Loc();
 factory Func.fromJson(Map<String, dynamic> json) => _$FuncFromJson(json);
-}
-@JsonSerializable()
-class BuiltinFunction extends Member {
-    FunctionType? funcType;
-factory BuiltinFunction.fromJson(Map<String, dynamic> json) => _$BuiltinFunctionFromJson(json);
-}
-@JsonSerializable()
-class BuiltinField extends Member {
-    Type? fieldType;
-factory BuiltinField.fromJson(Map<String, dynamic> json) => _$BuiltinFieldFromJson(json);
-}
-@JsonSerializable()
-class BuiltinObject extends Member {
-    List<BuiltinMember>? members = [];
-factory BuiltinObject.fromJson(Map<String, dynamic> json) => _$BuiltinObjectFromJson(json);
 }
 @JsonSerializable()
 class Scope {

@@ -81,10 +81,6 @@ const (
 	NodeTypeEnum             NodeType = 68
 	NodeTypeEnumMember       NodeType = 69
 	NodeTypeFunction         NodeType = 70
-	NodeTypeBuiltinMember    NodeType = 71
-	NodeTypeBuiltinFunction  NodeType = 72
-	NodeTypeBuiltinField     NodeType = 73
-	NodeTypeBuiltinObject    NodeType = 74
 )
 
 func (n NodeType) String() string {
@@ -231,14 +227,6 @@ func (n NodeType) String() string {
 		return "enum_member"
 	case NodeTypeFunction:
 		return "function"
-	case NodeTypeBuiltinMember:
-		return "builtin_member"
-	case NodeTypeBuiltinFunction:
-		return "builtin_function"
-	case NodeTypeBuiltinField:
-		return "builtin_field"
-	case NodeTypeBuiltinObject:
-		return "builtin_object"
 	default:
 		return fmt.Sprintf("NodeType(%d)", n)
 	}
@@ -392,14 +380,6 @@ func (n *NodeType) UnmarshalJSON(data []byte) error {
 		*n = NodeTypeEnumMember
 	case "function":
 		*n = NodeTypeFunction
-	case "builtin_member":
-		*n = NodeTypeBuiltinMember
-	case "builtin_function":
-		*n = NodeTypeBuiltinFunction
-	case "builtin_field":
-		*n = NodeTypeBuiltinField
-	case "builtin_object":
-		*n = NodeTypeBuiltinObject
 	default:
 		return fmt.Errorf("unknown NodeType: %q", tmp)
 	}
@@ -668,18 +648,6 @@ func (n *EnumMember) GetNodeType() NodeType {
 
 func (n *Function) GetNodeType() NodeType {
 	return NodeTypeFunction
-}
-
-func (n *BuiltinFunction) GetNodeType() NodeType {
-	return NodeTypeBuiltinFunction
-}
-
-func (n *BuiltinField) GetNodeType() NodeType {
-	return NodeTypeBuiltinField
-}
-
-func (n *BuiltinObject) GetNodeType() NodeType {
-	return NodeTypeBuiltinObject
 }
 
 type TokenTag int
@@ -1574,11 +1542,6 @@ type Member interface {
 	GetBelong() Member
 	GetBelongStruct() *StructType
 	GetIdent() *Ident
-}
-
-type BuiltinMember interface {
-	isBuiltinMember()
-	Member
 }
 
 type Program struct {
@@ -3297,102 +3260,6 @@ func (n *Function) GetLoc() Loc {
 	return n.Loc
 }
 
-type BuiltinFunction struct {
-	Loc          Loc
-	Belong       Member
-	BelongStruct *StructType
-	Ident        *Ident
-	FuncType     *FunctionType
-}
-
-func (n *BuiltinFunction) isMember() {}
-
-func (n *BuiltinFunction) GetBelong() Member {
-	return n.Belong
-}
-
-func (n *BuiltinFunction) GetBelongStruct() *StructType {
-	return n.BelongStruct
-}
-
-func (n *BuiltinFunction) GetIdent() *Ident {
-	return n.Ident
-}
-
-func (n *BuiltinFunction) isBuiltinMember() {}
-
-func (n *BuiltinFunction) isStmt() {}
-
-func (n *BuiltinFunction) isNode() {}
-
-func (n *BuiltinFunction) GetLoc() Loc {
-	return n.Loc
-}
-
-type BuiltinField struct {
-	Loc          Loc
-	Belong       Member
-	BelongStruct *StructType
-	Ident        *Ident
-	FieldType    Type
-}
-
-func (n *BuiltinField) isMember() {}
-
-func (n *BuiltinField) GetBelong() Member {
-	return n.Belong
-}
-
-func (n *BuiltinField) GetBelongStruct() *StructType {
-	return n.BelongStruct
-}
-
-func (n *BuiltinField) GetIdent() *Ident {
-	return n.Ident
-}
-
-func (n *BuiltinField) isBuiltinMember() {}
-
-func (n *BuiltinField) isStmt() {}
-
-func (n *BuiltinField) isNode() {}
-
-func (n *BuiltinField) GetLoc() Loc {
-	return n.Loc
-}
-
-type BuiltinObject struct {
-	Loc          Loc
-	Belong       Member
-	BelongStruct *StructType
-	Ident        *Ident
-	Members      []BuiltinMember
-}
-
-func (n *BuiltinObject) isMember() {}
-
-func (n *BuiltinObject) GetBelong() Member {
-	return n.Belong
-}
-
-func (n *BuiltinObject) GetBelongStruct() *StructType {
-	return n.BelongStruct
-}
-
-func (n *BuiltinObject) GetIdent() *Ident {
-	return n.Ident
-}
-
-func (n *BuiltinObject) isBuiltinMember() {}
-
-func (n *BuiltinObject) isStmt() {}
-
-func (n *BuiltinObject) isNode() {}
-
-func (n *BuiltinObject) GetLoc() Loc {
-	return n.Loc
-}
-
 type Scope struct {
 	Prev       *Scope
 	Next       *Scope
@@ -3613,12 +3480,6 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			n.node[i] = &EnumMember{Loc: raw.Loc}
 		case NodeTypeFunction:
 			n.node[i] = &Function{Loc: raw.Loc}
-		case NodeTypeBuiltinFunction:
-			n.node[i] = &BuiltinFunction{Loc: raw.Loc}
-		case NodeTypeBuiltinField:
-			n.node[i] = &BuiltinField{Loc: raw.Loc}
-		case NodeTypeBuiltinObject:
-			n.node[i] = &BuiltinObject{Loc: raw.Loc}
 		default:
 			return nil, fmt.Errorf("unknown node type: %q", raw.NodeType)
 		}
@@ -5123,76 +4984,6 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			}
 			v.IsCast = tmp.IsCast
 			v.CastLoc = tmp.CastLoc
-		case NodeTypeBuiltinFunction:
-			v := n.node[i].(*BuiltinFunction)
-			var tmp struct {
-				Belong       *uintptr `json:"belong"`
-				BelongStruct *uintptr `json:"belong_struct"`
-				Ident        *uintptr `json:"ident"`
-				FuncType     *uintptr `json:"func_type"`
-			}
-			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
-				return nil, err
-			}
-			if tmp.Belong != nil {
-				v.Belong = n.node[*tmp.Belong].(Member)
-			}
-			if tmp.BelongStruct != nil {
-				v.BelongStruct = n.node[*tmp.BelongStruct].(*StructType)
-			}
-			if tmp.Ident != nil {
-				v.Ident = n.node[*tmp.Ident].(*Ident)
-			}
-			if tmp.FuncType != nil {
-				v.FuncType = n.node[*tmp.FuncType].(*FunctionType)
-			}
-		case NodeTypeBuiltinField:
-			v := n.node[i].(*BuiltinField)
-			var tmp struct {
-				Belong       *uintptr `json:"belong"`
-				BelongStruct *uintptr `json:"belong_struct"`
-				Ident        *uintptr `json:"ident"`
-				FieldType    *uintptr `json:"field_type"`
-			}
-			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
-				return nil, err
-			}
-			if tmp.Belong != nil {
-				v.Belong = n.node[*tmp.Belong].(Member)
-			}
-			if tmp.BelongStruct != nil {
-				v.BelongStruct = n.node[*tmp.BelongStruct].(*StructType)
-			}
-			if tmp.Ident != nil {
-				v.Ident = n.node[*tmp.Ident].(*Ident)
-			}
-			if tmp.FieldType != nil {
-				v.FieldType = n.node[*tmp.FieldType].(Type)
-			}
-		case NodeTypeBuiltinObject:
-			v := n.node[i].(*BuiltinObject)
-			var tmp struct {
-				Belong       *uintptr  `json:"belong"`
-				BelongStruct *uintptr  `json:"belong_struct"`
-				Ident        *uintptr  `json:"ident"`
-				Members      []uintptr `json:"members"`
-			}
-			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
-				return nil, err
-			}
-			if tmp.Belong != nil {
-				v.Belong = n.node[*tmp.Belong].(Member)
-			}
-			if tmp.BelongStruct != nil {
-				v.BelongStruct = n.node[*tmp.BelongStruct].(*StructType)
-			}
-			if tmp.Ident != nil {
-				v.Ident = n.node[*tmp.Ident].(*Ident)
-			}
-			v.Members = make([]BuiltinMember, len(tmp.Members))
-			for j, k := range tmp.Members {
-				v.Members[j] = n.node[k].(BuiltinMember)
-			}
 		default:
 			return nil, fmt.Errorf("unknown node type: %q", raw.NodeType)
 		}
@@ -5934,39 +5725,6 @@ func Walk(n Node, f Visitor) {
 		}
 		if v.FuncType != nil {
 			if !f.Visit(f, v.FuncType) {
-				return
-			}
-		}
-	case *BuiltinFunction:
-		if v.Ident != nil {
-			if !f.Visit(f, v.Ident) {
-				return
-			}
-		}
-		if v.FuncType != nil {
-			if !f.Visit(f, v.FuncType) {
-				return
-			}
-		}
-	case *BuiltinField:
-		if v.Ident != nil {
-			if !f.Visit(f, v.Ident) {
-				return
-			}
-		}
-		if v.FieldType != nil {
-			if !f.Visit(f, v.FieldType) {
-				return
-			}
-		}
-	case *BuiltinObject:
-		if v.Ident != nil {
-			if !f.Visit(f, v.Ident) {
-				return
-			}
-		}
-		for _, w := range v.Members {
-			if !f.Visit(f, w) {
 				return
 			}
 		}

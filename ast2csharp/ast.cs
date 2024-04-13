@@ -75,10 +75,6 @@ State,
 Enum,
 EnumMember,
 Function,
-BuiltinMember,
-BuiltinFunction,
-BuiltinField,
-BuiltinObject,
 }
 public enum TokenTag {
 Indent,
@@ -241,8 +237,6 @@ public interface Member : Stmt {
 	public Member? Belong {get; set;}
 	public StructType? BelongStruct {get; set;}
 	public Ident? Ident {get; set;}
-}
-public interface BuiltinMember : Member {
 }
 public class Program : Node{
 	public Loc Loc{get;set;}
@@ -772,27 +766,6 @@ public class Function : Member{
 	public bool IsCast{get;set;}
 	public Loc CastLoc{get;set;}
 }
-public class BuiltinFunction : Member{
-	public Loc Loc{get;set;}
-	public Member? Belong{get;set;}
-	public StructType? BelongStruct{get;set;}
-	public Ident? Ident{get;set;}
-	public FunctionType? FuncType{get;set;}
-}
-public class BuiltinField : Member{
-	public Loc Loc{get;set;}
-	public Member? Belong{get;set;}
-	public StructType? BelongStruct{get;set;}
-	public Ident? Ident{get;set;}
-	public Type? FieldType{get;set;}
-}
-public class BuiltinObject : Member{
-	public Loc Loc{get;set;}
-	public Member? Belong{get;set;}
-	public StructType? BelongStruct{get;set;}
-	public Ident? Ident{get;set;}
-	public List<BuiltinMember>? Members{get;set;}
-}
 public class Scope {
 	public Scope? Prev{get;set;}
 	public Scope? Next{get;set;}
@@ -1064,15 +1037,6 @@ public static class Ast {
                break;
            case NodeType.Function:
                nodes[i] = new Function() { Loc = ast.Node[i].Loc };
-               break;
-           case NodeType.BuiltinFunction:
-               nodes[i] = new BuiltinFunction() { Loc = ast.Node[i].Loc };
-               break;
-           case NodeType.BuiltinField:
-               nodes[i] = new BuiltinField() { Loc = ast.Node[i].Loc };
-               break;
-           case NodeType.BuiltinObject:
-               nodes[i] = new BuiltinObject() { Loc = ast.Node[i].Loc };
                break;
            }
        }
@@ -1609,27 +1573,6 @@ public static class Ast {
                node.FuncType = ast.Node[i].Body[func_type];
                node.IsCast = ast.Node[i].Body[is_cast];
                node.CastLoc = ast.Node[i].Body[cast_loc];
-           case NodeType.BuiltinFunction:
-               var node = nodes[i] as BuiltinFunction;
-               node.Loc = ast.Node[i].Body[loc];
-               node.Belong = ast.Node[i].Body[belong];
-               node.BelongStruct = ast.Node[i].Body[belong_struct];
-               node.Ident = ast.Node[i].Body[ident];
-               node.FuncType = ast.Node[i].Body[func_type];
-           case NodeType.BuiltinField:
-               var node = nodes[i] as BuiltinField;
-               node.Loc = ast.Node[i].Body[loc];
-               node.Belong = ast.Node[i].Body[belong];
-               node.BelongStruct = ast.Node[i].Body[belong_struct];
-               node.Ident = ast.Node[i].Body[ident];
-               node.FieldType = ast.Node[i].Body[field_type];
-           case NodeType.BuiltinObject:
-               var node = nodes[i] as BuiltinObject;
-               node.Loc = ast.Node[i].Body[loc];
-               node.Belong = ast.Node[i].Body[belong];
-               node.BelongStruct = ast.Node[i].Body[belong_struct];
-               node.Ident = ast.Node[i].Body[ident];
-               node.Members = ast.Node[i].Body[members];
   }
 }
 }
