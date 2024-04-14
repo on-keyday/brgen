@@ -644,6 +644,18 @@ namespace json2ts {
                     w.writeln(ident, " ", ast::to_string(bin->op), " ", right, ";");
                 }
             }
+            else if (auto err = ast::as<ast::ExplicitError>(node)) {
+                w.write("throw new Error(", err->message->value);
+                if (err->base->arguments.size() > 1) {
+                    w.write("+ `");
+                    for (size_t i = 1; i < err->base->arguments.size(); i++) {
+                        auto s = str.to_string(err->base->arguments[i]);
+                        w.write("${", s, "}");
+                    }
+                    w.writeln("`");
+                }
+                w.writeln(");");
+            }
         }
 
         void write_format(const std::shared_ptr<ast::Format>& fmt) {

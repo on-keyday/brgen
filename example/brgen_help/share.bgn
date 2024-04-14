@@ -97,4 +97,3 @@ format ControlMessage:
         credential :[credential_len]u8
   
 
-        

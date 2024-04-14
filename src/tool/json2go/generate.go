@@ -233,7 +233,12 @@ func (g *Generator) writeStructUnion(belong string, prefix string, u *ast2go.Str
 				writeReturn := func() {
 					if c.Field != nil {
 						ident := g.exprStringer.ExprString(c.Field.Ident)
-						g.PrintfFunc("tmp := %s(%s)\n", typStr, ident)
+						arr, ok := c.Field.FieldType.(*ast2go.ArrayType)
+						if ok && arr.LengthValue != nil {
+							g.PrintfFunc("tmp := %s(%s[:])\n", typStr, ident)
+						} else {
+							g.PrintfFunc("tmp := %s(%s)\n", typStr, ident)
+						}
 						g.PrintfFunc("return &tmp\n")
 					} else {
 						g.PrintfFunc("return nil\n")
@@ -719,11 +724,16 @@ func (g *Generator) writeTypeDecode(ident string, typ ast2go.Type, p *ast2go.Fie
 				g.PrintfFunc("r = tmp_old_r_%s\n", p.Ident.Ident)
 			} else {
 				g.PrintfFunc("len_%s := int(%s)\n", p.Ident.Ident, length)
-				g.PrintfFunc("for i := 0; i < len_%s; i++ {\n", p.Ident.Ident)
+				tmpI := fmt.Sprintf("i_%d", g.getSeq())
+				g.PrintfFunc("for %[2]s := 0; %[2]s < len_%[1]s; %[2]s++ {\n", p.Ident.Ident, tmpI)
 				seq := g.getSeq()
 				g.PrintfFunc("var tmp%d_ %s\n", seq, g.getType(arr_type.ElementType))
 				g.writeTypeDecode(fmt.Sprintf("tmp%d_", seq), arr_type.ElementType, p)
-				g.PrintfFunc("%s = append(%s, tmp%d_)\n", ident, ident, seq)
+				if arr_type.LengthValue != nil {
+					g.PrintfFunc("%s[%s] = tmp%d_\n", ident, tmpI, seq)
+				} else {
+					g.PrintfFunc("%s = append(%s, tmp%d_)\n", ident, ident, seq)
+				}
 				g.PrintfFunc("}\n")
 			}
 		}
