@@ -10,6 +10,8 @@
 #include <emscripten/emscripten.h>
 #include "../common/em_main.h"
 #endif
+#include <request/stream.hpp>
+
 struct Flags : futils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
     bool spec = false;

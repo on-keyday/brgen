@@ -678,7 +678,17 @@ func (g *Generator) writeTypeDecode(ident string, typ ast2go.Type, p *ast2go.Fie
 			}
 			// use laterSize (like [..]u8)
 			if size, ok := g.laterSize[p]; ok {
-				length = g.calcLengthInByteOfTailSize(size, p.Ident.Ident)
+				if size != 0 {
+					length = g.calcLengthInByteOfTailSize(size, p.Ident.Ident)
+				} else {
+					g.imports["bytes"] = struct{}{}
+					g.PrintfFunc("bytes_buf_%s := &bytes.Buffer{}\n", p.Ident.Ident)
+					g.PrintfFunc("if _, err := io.Copy(bytes_buf_%s, r); err != nil {\n", p.Ident.Ident)
+					g.PrintfFunc("return err\n")
+					g.PrintfFunc("}\n")
+					g.PrintfFunc("%s = bytes_buf_%s.Bytes()\n", ident, p.Ident.Ident)
+					return
+				}
 			}
 			g.PrintfFunc("len_%s := int(%s)\n", p.Ident.Ident, length)
 			g.PrintfFunc("if len_%s != 0 {\n", p.Ident.Ident)
@@ -703,8 +713,35 @@ func (g *Generator) writeTypeDecode(ident string, typ ast2go.Type, p *ast2go.Fie
 				if p.FieldType == typ && p.Arguments != nil && p.Arguments.SubByteLength != nil {
 					// at this time, r is *io.LimitedReader so we can use N of r
 					lengthInByte = "r.(*io.LimitedReader).N"
-				} else {
+				} else if size != 0 {
 					lengthInByte = g.calcLengthInByteOfTailSize(size, p.Ident.Ident)
+				} else {
+					tmp := fmt.Sprintf("tmp_byte_scanner%d_", g.getSeq())
+					old := fmt.Sprintf("old_r_%s", p.Ident.Ident)
+					g.imports["bufio"] = struct{}{}
+					g.PrintfFunc("%s := bufio.NewReader(r)\n", tmp)
+					g.PrintfFunc("%s := r\n", old)
+					g.PrintfFunc("r = %s\n", tmp)
+					g.PrintfFunc("for {\n")
+					g.PrintfFunc("b, err := %s.ReadByte()\n", tmp)
+					g.PrintfFunc("if err != nil {\n")
+					g.PrintfFunc("if err != io.EOF {\n")
+					g.imports["fmt"] = struct{}{}
+					g.PrintfFunc("return fmt.Errorf(\"read %s: %%w\", err)\n", p.Ident.Ident)
+					g.PrintfFunc("}\n")
+					g.PrintfFunc("break\n")
+					g.PrintfFunc("}\n")
+					g.PrintfFunc("if err := %s.UnreadByte(); err != nil {\n", tmp)
+					g.imports["fmt"] = struct{}{}
+					g.PrintfFunc("return fmt.Errorf(\"read %s: unexpected unread error: %%w\", err)\n", p.Ident.Ident)
+					g.PrintfFunc("}\n")
+					seq := g.getSeq()
+					g.PrintfFunc("var tmp%d_ %s\n", seq, g.getType(arr_type.ElementType))
+					g.writeTypeDecode(fmt.Sprintf("tmp%d_", seq), arr_type.ElementType, p)
+					g.PrintfFunc("%s = append(%s, tmp%d_)\n", ident, ident, seq)
+					g.PrintfFunc("}\n")
+					g.PrintfFunc("r = %s\n", old)
+					return
 				}
 				g.PrintfFunc("len_%s := int(%s)\n", p.Ident.Ident, lengthInByte)
 				g.PrintfFunc("tmp%s := make([]byte, len_%s)\n", p.Ident.Ident, p.Ident.Ident)

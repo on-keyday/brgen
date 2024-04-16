@@ -39,10 +39,11 @@ separator: |
   if element count of suffix is grater than 1, separator must be specified
   generator should use separator that is not a part of generated language to
   prevent mis separation
-types: |
-  type configuration of brgen
-  this is passed to src2json for typing rule
-  (not implemented because of src2json implementation limit)
+stream: |
+  supports stream mode for stdin (bool)
+  if input is not stdin this is ignored
+  stream protocol is described in example/brgen_help/generator.bgn
+  if this flag is true,langs,suffix,separator are ignored
 ```
 
 ## 4. Interface
@@ -81,3 +82,4 @@ brgen must passes `-s` option as `sys.argv[1]`
 2023/09/21: add types for Elements
 2023/12/26: add document of separator and suffix
 2023/12/26: add Example section
+2024/04/16: add stream option

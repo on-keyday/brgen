@@ -18,6 +18,7 @@ namespace brgen::request {
         ERROR = 1,
     };
     struct GenerateSource {
+        std::uint64_t id = 0;
         std::uint64_t len = 0;
         std::string json_text;
         bool set_json_text(auto&& v) {
@@ -31,9 +32,12 @@ namespace brgen::request {
         GenerateSource() {}
         ::futils::error::Error<> encode(::futils::binary::writer& w) const;
         ::futils::error::Error<> decode(::futils::binary::reader& r);
-        static constexpr size_t fixed_header_size = 8;
+        static constexpr size_t fixed_header_size = 16;
     };
     inline ::futils::error::Error<> GenerateSource::encode(::futils::binary::writer& w) const {
+        if (!::futils::binary::write_num(w, static_cast<std::uint64_t>((*this).id), true)) {
+            return ::futils::error::Error<>("encode: GenerateSource::id: write std::uint64_t failed", ::futils::error::Category::lib);
+        }
         if (!::futils::binary::write_num(w, static_cast<std::uint64_t>((*this).len), true)) {
             return ::futils::error::Error<>("encode: GenerateSource::len: write std::uint64_t failed", ::futils::error::Category::lib);
         }
@@ -47,6 +51,9 @@ namespace brgen::request {
         return ::futils::error::Error<>{};
     }
     inline ::futils::error::Error<> GenerateSource::decode(::futils::binary::reader& r) {
+        if (!::futils::binary::read_num(r, (*this).id, true)) {
+            return ::futils::error::Error<>("decode: GenerateSource::id: read int failed", ::futils::error::Category::lib);
+        }
         if (!::futils::binary::read_num(r, (*this).len, true)) {
             return ::futils::error::Error<>("decode: GenerateSource::len: read int failed", ::futils::error::Category::lib);
         }
@@ -58,11 +65,10 @@ namespace brgen::request {
     }
     struct GeneratorRequestHeader {
         std::uint32_t version = 0;
-        std::uint64_t request_len = 0;
         GeneratorRequestHeader() {}
         ::futils::error::Error<> encode(::futils::binary::writer& w) const;
         ::futils::error::Error<> decode(::futils::binary::reader& r);
-        static constexpr size_t fixed_header_size = 12;
+        static constexpr size_t fixed_header_size = 4;
     };
     inline ::futils::error::Error<> GeneratorRequestHeader::encode(::futils::binary::writer& w) const {
         if (!::futils::binary::write_num(w, static_cast<std::uint32_t>((*this).version), true)) {
@@ -70,9 +76,6 @@ namespace brgen::request {
         }
         if (!((*this).version == 1)) {
             return ::futils::error::Error<>("encode: GeneratorRequestHeader: assertion failed; ((*this).version == 1)", ::futils::error::Category::lib);
-        }
-        if (!::futils::binary::write_num(w, static_cast<std::uint64_t>((*this).request_len), true)) {
-            return ::futils::error::Error<>("encode: GeneratorRequestHeader::request_len: write std::uint64_t failed", ::futils::error::Category::lib);
         }
         return ::futils::error::Error<>{};
     }
@@ -83,12 +86,11 @@ namespace brgen::request {
         if (!((*this).version == 1)) {
             return ::futils::error::Error<>("decode: GeneratorRequestHeader: assertion failed; ((*this).version == 1)", ::futils::error::Category::lib);
         }
-        if (!::futils::binary::read_num(r, (*this).request_len, true)) {
-            return ::futils::error::Error<>("decode: GeneratorRequestHeader::request_len: read int failed", ::futils::error::Category::lib);
-        }
         return ::futils::error::Error<>{};
     }
     struct SourceCode {
+        std::uint64_t id = 0;
+        ResponseStatus status{};
         std::uint64_t name_len = 0;
         std::string name;
         bool set_name(auto&& v) {
@@ -97,6 +99,16 @@ namespace brgen::request {
             }
             (*this).name_len = v.size();
             (*this).name = std::forward<decltype(v)>(v);
+            return true;
+        }
+        std::uint64_t error_len = 0;
+        std::string error_message;
+        bool set_error_message(auto&& v) {
+            if (v.size() > ~std::uint64_t(0)) {
+                return false;
+            }
+            (*this).error_len = v.size();
+            (*this).error_message = std::forward<decltype(v)>(v);
             return true;
         }
         std::uint64_t len = 0;
@@ -112,25 +124,42 @@ namespace brgen::request {
         SourceCode() {}
         ::futils::error::Error<> encode(::futils::binary::writer& w) const;
         ::futils::error::Error<> decode(::futils::binary::reader& r);
-        static constexpr size_t fixed_header_size = 8;
+        static constexpr size_t fixed_header_size = 17;
     };
     inline ::futils::error::Error<> SourceCode::encode(::futils::binary::writer& w) const {
+        if (!::futils::binary::write_num(w, static_cast<std::uint64_t>((*this).id), true)) {
+            return ::futils::error::Error<>("encode: SourceCode::id: write std::uint64_t failed", ::futils::error::Category::lib);
+        }
+        auto tmp_2_ = static_cast<std::uint8_t>((*this).status);
+        if (!::futils::binary::write_num(w, static_cast<std::uint8_t>(tmp_2_), true)) {
+            return ::futils::error::Error<>("encode: SourceCode::status: write std::uint8_t failed", ::futils::error::Category::lib);
+        }
         if (!::futils::binary::write_num(w, static_cast<std::uint64_t>((*this).name_len), true)) {
             return ::futils::error::Error<>("encode: SourceCode::name_len: write std::uint64_t failed", ::futils::error::Category::lib);
         }
-        auto tmp_2_ = (*this).name_len;
-        if (tmp_2_ != (*this).name.size()) {
-            return ::futils::error::Error<>("encode: SourceCode::name: dynamic length is not compatible with its length; tmp_2_!=(*this).name.size()", ::futils::error::Category::lib);
+        auto tmp_3_ = (*this).name_len;
+        if (tmp_3_ != (*this).name.size()) {
+            return ::futils::error::Error<>("encode: SourceCode::name: dynamic length is not compatible with its length; tmp_3_!=(*this).name.size()", ::futils::error::Category::lib);
         }
         if (!w.write((*this).name)) {
             return ::futils::error::Error<>("encode: SourceCode::name: write array failed", ::futils::error::Category::lib);
         }
+        if (!::futils::binary::write_num(w, static_cast<std::uint64_t>((*this).error_len), true)) {
+            return ::futils::error::Error<>("encode: SourceCode::error_len: write std::uint64_t failed", ::futils::error::Category::lib);
+        }
+        auto tmp_4_ = (*this).error_len;
+        if (tmp_4_ != (*this).error_message.size()) {
+            return ::futils::error::Error<>("encode: SourceCode::error_message: dynamic length is not compatible with its length; tmp_4_!=(*this).error_message.size()", ::futils::error::Category::lib);
+        }
+        if (!w.write((*this).error_message)) {
+            return ::futils::error::Error<>("encode: SourceCode::error_message: write array failed", ::futils::error::Category::lib);
+        }
         if (!::futils::binary::write_num(w, static_cast<std::uint64_t>((*this).len), true)) {
             return ::futils::error::Error<>("encode: SourceCode::len: write std::uint64_t failed", ::futils::error::Category::lib);
         }
-        auto tmp_3_ = (*this).len;
-        if (tmp_3_ != (*this).code.size()) {
-            return ::futils::error::Error<>("encode: SourceCode::code: dynamic length is not compatible with its length; tmp_3_!=(*this).code.size()", ::futils::error::Category::lib);
+        auto tmp_5_ = (*this).len;
+        if (tmp_5_ != (*this).code.size()) {
+            return ::futils::error::Error<>("encode: SourceCode::code: dynamic length is not compatible with its length; tmp_5_!=(*this).code.size()", ::futils::error::Category::lib);
         }
         if (!w.write((*this).code)) {
             return ::futils::error::Error<>("encode: SourceCode::code: write array failed", ::futils::error::Category::lib);
@@ -138,19 +167,59 @@ namespace brgen::request {
         return ::futils::error::Error<>{};
     }
     inline ::futils::error::Error<> SourceCode::decode(::futils::binary::reader& r) {
+        if (!::futils::binary::read_num(r, (*this).id, true)) {
+            return ::futils::error::Error<>("decode: SourceCode::id: read int failed", ::futils::error::Category::lib);
+        }
+        std::uint8_t tmp_6_ = 0;
+        if (!::futils::binary::read_num(r, tmp_6_, true)) {
+            return ::futils::error::Error<>("decode: SourceCode::status: read int failed", ::futils::error::Category::lib);
+        }
+        (*this).status = static_cast<ResponseStatus>(tmp_6_);
         if (!::futils::binary::read_num(r, (*this).name_len, true)) {
             return ::futils::error::Error<>("decode: SourceCode::name_len: read int failed", ::futils::error::Category::lib);
         }
-        auto tmp_4_ = (*this).name_len;
-        if (!r.read((*this).name, tmp_4_)) {
+        auto tmp_7_ = (*this).name_len;
+        if (!r.read((*this).name, tmp_7_)) {
             return ::futils::error::Error<>("decode: SourceCode::name: read byte array failed", ::futils::error::Category::lib);
+        }
+        if (!::futils::binary::read_num(r, (*this).error_len, true)) {
+            return ::futils::error::Error<>("decode: SourceCode::error_len: read int failed", ::futils::error::Category::lib);
+        }
+        auto tmp_8_ = (*this).error_len;
+        if (!r.read((*this).error_message, tmp_8_)) {
+            return ::futils::error::Error<>("decode: SourceCode::error_message: read byte array failed", ::futils::error::Category::lib);
         }
         if (!::futils::binary::read_num(r, (*this).len, true)) {
             return ::futils::error::Error<>("decode: SourceCode::len: read int failed", ::futils::error::Category::lib);
         }
-        auto tmp_5_ = (*this).len;
-        if (!r.read((*this).code, tmp_5_)) {
+        auto tmp_9_ = (*this).len;
+        if (!r.read((*this).code, tmp_9_)) {
             return ::futils::error::Error<>("decode: SourceCode::code: read byte array failed", ::futils::error::Category::lib);
+        }
+        return ::futils::error::Error<>{};
+    }
+    struct GeneratorResponseHeader {
+        std::uint32_t version = 0;
+        GeneratorResponseHeader() {}
+        ::futils::error::Error<> encode(::futils::binary::writer& w) const;
+        ::futils::error::Error<> decode(::futils::binary::reader& r);
+        static constexpr size_t fixed_header_size = 4;
+    };
+    inline ::futils::error::Error<> GeneratorResponseHeader::encode(::futils::binary::writer& w) const {
+        if (!::futils::binary::write_num(w, static_cast<std::uint32_t>((*this).version), true)) {
+            return ::futils::error::Error<>("encode: GeneratorResponseHeader::version: write std::uint32_t failed", ::futils::error::Category::lib);
+        }
+        if (!((*this).version == 1)) {
+            return ::futils::error::Error<>("encode: GeneratorResponseHeader: assertion failed; ((*this).version == 1)", ::futils::error::Category::lib);
+        }
+        return ::futils::error::Error<>{};
+    }
+    inline ::futils::error::Error<> GeneratorResponseHeader::decode(::futils::binary::reader& r) {
+        if (!::futils::binary::read_num(r, (*this).version, true)) {
+            return ::futils::error::Error<>("decode: GeneratorResponseHeader::version: read int failed", ::futils::error::Category::lib);
+        }
+        if (!((*this).version == 1)) {
+            return ::futils::error::Error<>("decode: GeneratorResponseHeader: assertion failed; ((*this).version == 1)", ::futils::error::Category::lib);
         }
         return ::futils::error::Error<>{};
     }
@@ -160,18 +229,14 @@ namespace brgen::request {
         GeneratorRequest() {}
         ::futils::error::Error<> encode(::futils::binary::writer& w) const;
         ::futils::error::Error<> decode(::futils::binary::reader& r);
-        static constexpr size_t fixed_header_size = 12;
+        static constexpr size_t fixed_header_size = 4;
     };
     inline ::futils::error::Error<> GeneratorRequest::encode(::futils::binary::writer& w) const {
         if (auto err = (*this).header.encode(w)) {
             return err;
         }
-        auto tmp_6_ = (*this).header.request_len;
-        if (tmp_6_ != (*this).source.size()) {
-            return ::futils::error::Error<>("encode: GeneratorRequest::source: dynamic length is not compatible with its length; tmp_6_!=(*this).source.size()", ::futils::error::Category::lib);
-        }
-        for (auto& tmp_7_ : (*this).source) {
-            if (auto err = tmp_7_.encode(w)) {
+        for (auto& tmp_10_ : (*this).source) {
+            if (auto err = tmp_10_.encode(w)) {
                 return err;
             }
         }
@@ -181,14 +246,52 @@ namespace brgen::request {
         if (auto err = (*this).header.decode(r)) {
             return err;
         }
-        auto tmp_8_ = (*this).header.request_len;
         (*this).source.clear();
-        for (size_t tmp_10_ = 0; tmp_10_ < tmp_8_; ++tmp_10_) {
-            GenerateSource tmp_9_;
-            if (auto err = tmp_9_.decode(r)) {
+        for (;;) {
+            if (!r.load_stream(1)) {
+                break;  // reached EOF
+            }
+            GenerateSource tmp_11_;
+            if (auto err = tmp_11_.decode(r)) {
                 return err;
             }
-            (*this).source.push_back(std::move(tmp_9_));
+            (*this).source.push_back(std::move(tmp_11_));
+        }
+        return ::futils::error::Error<>{};
+    }
+    struct GeneratorResponse {
+        GeneratorResponseHeader header;
+        std::vector<SourceCode> source;
+        GeneratorResponse() {}
+        ::futils::error::Error<> encode(::futils::binary::writer& w) const;
+        ::futils::error::Error<> decode(::futils::binary::reader& r);
+        static constexpr size_t fixed_header_size = 4;
+    };
+    inline ::futils::error::Error<> GeneratorResponse::encode(::futils::binary::writer& w) const {
+        if (auto err = (*this).header.encode(w)) {
+            return err;
+        }
+        for (auto& tmp_12_ : (*this).source) {
+            if (auto err = tmp_12_.encode(w)) {
+                return err;
+            }
+        }
+        return ::futils::error::Error<>{};
+    }
+    inline ::futils::error::Error<> GeneratorResponse::decode(::futils::binary::reader& r) {
+        if (auto err = (*this).header.decode(r)) {
+            return err;
+        }
+        (*this).source.clear();
+        for (;;) {
+            if (!r.load_stream(1)) {
+                break;  // reached EOF
+            }
+            SourceCode tmp_13_;
+            if (auto err = tmp_13_.decode(r)) {
+                return err;
+            }
+            (*this).source.push_back(std::move(tmp_13_));
         }
         return ::futils::error::Error<>{};
     }

@@ -12,5 +12,21 @@ namespace brgen::request {
         if (auto err = header.decode(r)) {
             return err;
         }
+        r.discard();
+        for (;;) {
+            if (!r.load_stream(1)) {
+                break;
+            }
+            GenerateSource req;
+            if (auto err = req.decode(r)) {
+                return err;
+            }
+            if (auto err = cb(req)) {
+                return err;
+            }
+            r.discard();
+        }
+        return {};
     }
+
 }  // namespace brgen::request

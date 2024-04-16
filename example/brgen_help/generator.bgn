@@ -4,37 +4,61 @@ config.cpp.bytes_type = "std::string"
 config.cpp.sys_include = "string"
 config.go.package = "gen"
 
+# protocol for generator and generator client
+# 1. generator client sends a GeneratorRequest.
+#    GeneratorRequest.source is sent asynchroniously
+#    and terminated by EOF
+# 2. generator sends a GeneratorResponse
+#    GeneratorResponse.source is sent asynchroniously
+#    and terminated by EOF
+# explain about fields
+# id - unique id for each source code
+#      SourceCode.id is same as GenerateSource.id if the source code is generated from the GenerateSource
+# json_text - json that contains the source code information
+# name - name of output file
+# error_message - error message if the source code generation failed or has warning
+# code - source code
+# status - status of source code generation (OK or ERROR)
+#          if status is ERROR, error_message contains the error message
+#          if status is OK, code contains the source code and error_message may contains warning message
+# version - version of the protocol. currently 1
+
+format GeneratorRequest:
+    header :GeneratorRequestHeader
+    source :[..]GenerateSource
+
+format GeneratorResponse:
+    header :GeneratorResponseHeader
+    source :[..]SourceCode
+
 format GenerateSource:
+    id :u64
     len :u64
     json_text :[len]u8
 
 format GeneratorRequestHeader:
     version :u32
     version == 1
-    request_len :u64
     
-format GeneratorRequest:
-    header :GeneratorRequestHeader
-    source :[header.request_len]GenerateSource
+
 
 enum ResponseStatus:
+    :u8
     OK = 0
     ERROR = 1
 
 format SourceCode:
+    id :u64
+    status :ResponseStatus
     name_len :u64
     name :[name_len]u8
+    error_len :u64
+    error_message :[error_len]u8
     len :u64
     code :[len]u8
 
 format GeneratorResponseHeader:
     version :u32
     version == 1
-    status :ResponseStatus
-    error_len :u64
-    error_message :[error_len]u8
-    source_len :u64
 
-format GeneratorResponse:
-    header :GeneratorResponseHeader
-    source :[header.source_len]SourceCode
+
