@@ -37,7 +37,7 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
                                                                            : ColorMode::no_color;
     if (flags.spec) {
         cout << R"({
-            "input": "file",
+            "input": "stdin",
             "langs": ["cpp","json"],
             "suffix": [".hpp",".json"],
             "separator": "############\n"
