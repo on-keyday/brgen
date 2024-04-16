@@ -88,6 +88,7 @@ namespace j2cp2 {
         ast::Format* current_format = nullptr;
         Context ctx;
         std::vector<std::string> struct_names;
+        std::string bytes_type = "::futils::view::rvec";
 
         auto write_return_error(brgen::writer::Writer& w, ast::Field* field, auto&&... msg) {
             if (use_error) {
@@ -188,7 +189,7 @@ namespace j2cp2 {
                     return brgen::concat("std::array<", typ, ",", len, ">");
                 }
                 if (auto int_ty = ast::as<ast::IntType>(arr_ty->element_type); int_ty && int_ty->bit_size == 8) {
-                    return "::futils::view::rvec";
+                    return bytes_type;
                 }
                 return "std::vector<" + get_type_name(arr_ty->element_type) + ">";
             }
@@ -607,6 +608,7 @@ namespace j2cp2 {
                         maybe_write_auto_length_set("v.size()", type);
                         auto to = str.to_string(f->ident);
                         w.writeln(to, " = std::forward<decltype(v)>(v);");
+                        w.writeln("return true;");
                     }
                     w.writeln("}");
                 }
@@ -654,6 +656,9 @@ namespace j2cp2 {
                     else {
                         w.writeln("bool encode(::futils::binary::writer& w) const ;");
                         w.writeln("bool decode(::futils::binary::reader& r);");
+                    }
+                    if (s->fixed_header_size) {
+                        w.writeln("static constexpr size_t fixed_header_size = ", brgen::nums(s->fixed_header_size / 8), ";");
                     }
                 }
             }
@@ -1211,7 +1216,7 @@ namespace j2cp2 {
                 auto tmp_var = brgen::concat("tmp_", brgen::nums(get_seq()), "_");
                 w.writeln("::futils::view::rvec ", tmp_var, " = {};");
                 map_line(loc);
-                w.writeln("if (!r.read(", tmp_var, ", ", brgen::nums(len), ")) {");
+                w.writeln("if (!r.read_direct(", tmp_var, ", ", brgen::nums(len), ")) {");
                 {
                     auto indent = w.indent_scope();
                     write_return_error(fi, "read string failed");
@@ -1399,6 +1404,40 @@ namespace j2cp2 {
             w.writeln("#include <binary/number.h>");
             if (use_error) {
                 w.writeln("#include <error/error.h>");
+            }
+            futils::helper::DynDefer defer;
+            std::vector<std::string> namespaces;
+            for (auto& elm : prog->elements) {
+                if (auto m = ast::as<ast::Metadata>(elm)) {
+                    auto str_lit = ast::as<ast::StrLiteral>(m->values[0]);
+                    if (!str_lit) {
+                        continue;
+                    }
+                    auto name = brgen::unescape(str_lit->value);
+                    if (!name) {
+                        continue;
+                    }
+                    if (m->name == "config.cpp.namespace") {
+                        namespaces.push_back(*name);
+                    }
+                    else if (m->name == "config.cpp.bytes_type") {
+                        this->bytes_type = std::move(*name);
+                    }
+                    else if (m->name == "config.cpp.sys_include") {
+                        w.writeln("#include <", *name, ">");
+                    }
+                    else if (m->name == "config.cpp.include") {
+                        w.writeln("#include \"", *name, "\"");
+                    }
+                }
+            }
+            for (auto& name : namespaces) {
+                w.writeln("namespace ", name, " {");
+                auto ind = w.indent_scope_ex();
+                defer = futils::helper::defer_ex([&, ind = std::move(ind), d = std::move(defer), name = std::move(name)]() mutable {
+                    ind.execute();
+                    w.writeln("} // namespace ", name);
+                });
             }
             for (auto& fmt : prog->elements) {
                 if (auto b = ast::as<ast::Binary>(fmt); b && b->op == ast::BinaryOp::const_assign && b->right->constant_level == ast::ConstantLevel::constant) {

@@ -1,0 +1,40 @@
+
+config.cpp.namespace = "brgen::request"
+config.cpp.bytes_type = "std::string"
+config.cpp.sys_include = "string"
+config.go.package = "gen"
+
+format GenerateSource:
+    len :u64
+    json_text :[len]u8
+
+format GeneratorRequestHeader:
+    version :u32
+    version == 1
+    request_len :u64
+    
+format GeneratorRequest:
+    header :GeneratorRequestHeader
+    source :[header.request_len]GenerateSource
+
+enum ResponseStatus:
+    OK = 0
+    ERROR = 1
+
+format SourceCode:
+    name_len :u64
+    name :[name_len]u8
+    len :u64
+    code :[len]u8
+
+format GeneratorResponseHeader:
+    version :u32
+    version == 1
+    status :ResponseStatus
+    error_len :u64
+    error_message :[error_len]u8
+    source_len :u64
+
+format GeneratorResponse:
+    header :GeneratorResponseHeader
+    source :[header.source_len]SourceCode

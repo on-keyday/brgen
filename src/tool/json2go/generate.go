@@ -190,7 +190,12 @@ func (g *Generator) maybeWriteLengthSet(toSet string, length ast2go.Expr) {
 		if ok {
 			setTo := g.exprStringer.ExprString(f.Ident)
 			typ := g.getType(f.FieldType)
-			g.InsertOverflowCheck(toSet, "int", typ)
+			cast := "int"
+			if typ == "uint64" {
+				toSet = fmt.Sprintf("uint64(%s)", toSet)
+				cast = "uint64"
+			}
+			g.InsertOverflowCheck(toSet, cast, typ)
 			g.PrintfFunc("%s = %s(%s)\n", setTo, typ, toSet)
 		}
 	}
