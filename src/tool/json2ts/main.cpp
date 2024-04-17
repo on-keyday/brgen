@@ -18,11 +18,13 @@ struct Flags : futils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
     bool spec = false;
     bool javascript = false;
+    bool use_bigint = false;
     bool no_color = false;
     void bind(futils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&spec, "s", "spec mode");
         ctx.VarBool(&javascript, "j,javascript", "javascript mode");
+        ctx.VarBool(&use_bigint, "bigint", "use bigint for u64 type (experimental)");
         ctx.VarBool(&no_color, "no-color", "no color mode");
     }
 };

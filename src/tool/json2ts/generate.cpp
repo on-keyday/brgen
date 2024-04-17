@@ -29,6 +29,8 @@ namespace json2ts {
         std::map<std::shared_ptr<ast::StructType>, AnonymousType> anonymous_types;
         std::map<std::shared_ptr<ast::Field>, BitFields> bit_field_map;
         bool typescript = true;
+        bool use_bigint = false;
+        bool no_resize = false;
 
         size_t get_seq() {
             return seq_++;
@@ -43,7 +45,10 @@ namespace json2ts {
                     return "number";
                 }
                 else {
-                    return "bigint";
+                    if (use_bigint) {
+                        return "bigint";
+                    }
+                    return "number";
                 }
             }
             if (auto arr = ast::as<ast::ArrayType>(type)) {
@@ -83,14 +88,14 @@ namespace json2ts {
                     return memb->ident->ident;
                 }
             }
+            if (auto ident_type = ast::as<ast::IdentType>(type)) {
+                return get_type(ident_type->base.lock());
+            }
             return "any";
         }
 
         void write_field(brgen::writer::Writer& wt, std::vector<std::shared_ptr<ast::Field>>& bit_fields, const std::shared_ptr<ast::Field>& field) {
             auto typ = field->field_type;
-            if (auto ident = ast::as<ast::IdentType>(typ)) {
-                typ = ident->base.lock();
-            }
             if (field->bit_alignment != field->eventual_bit_alignment) {
                 if (bit_fields.size() == 0) {
                     wt.writeln("/* bit fields */");
@@ -305,7 +310,11 @@ namespace json2ts {
                 w.writeln("else {");
                 {
                     auto s = w.indent_scope();
-                    w.writeln("throw new Error(`out of buffer at ", field_name, ". len=${", len, "} > remain=${w.view.byteLength - w.offset}`);");
+                    if (no_resize) {
+                        w.writeln("throw new Error(`out of buffer at ", field_name, ". len=${", len, "} > remain=${w.view.byteLength - w.offset}`);");
+                    }
+                    else {
+                    }
                 }
                 w.writeln("}");
             }
@@ -329,7 +338,18 @@ namespace json2ts {
                 auto endian = ity->endian == ast::Endian::little ? "true" : "false";
                 auto big = bit > 32 ? "Big" : "";
                 auto typ = get_type(ity);
-                w.write("w.view.set", big, sign, brgen::nums(bit), "(w.offset,", ident);
+                auto tmp = brgen::concat(ident);
+                if (bit > 32 && !use_bigint) {
+                    w.writeln("if(!Number.isSafeInteger(", ident, ")) {");
+                    {
+                        auto s = w.indent_scope();
+                        w.writeln("throw new Error('value is not safe integer for ", err_ident, "');");
+                    }
+                    w.writeln("}");
+                    tmp = brgen::concat("BigInt(", ident, ")");
+                    typ = "bigint";
+                }
+                w.write("w.view.set", big, sign, brgen::nums(bit), "(w.offset,", tmp);
                 if (typescript) {
                     w.write(" as ", typ);
                 }
@@ -378,7 +398,8 @@ namespace json2ts {
                     {
                         auto s = w.indent_scope();
                         auto typ = get_type(arr->element_type);
-                        w.write("w.view.set", class_, "(w.offset + i * ", brgen::nums(bit / 8), ", ", ident, "[i]");
+                        auto elem_ident = brgen::concat(ident, "[i]");
+                        w.write("w.view.set", class_, "(w.offset + i * ", brgen::nums(bit / 8), ", ", elem_ident);
                         if (bit != 8) {
                             w.write(", ", endian);
                         }
@@ -421,13 +442,27 @@ namespace json2ts {
                 auto sign = ity->is_signed ? "Int" : "Uint";
                 read_input_size_check(brgen::nums(bit / 8), err_ident);
                 auto endian = ity->endian == ast::Endian::little ? "true" : "false";
-                // auto ident = str.to_string(field->ident);
                 auto big = bit > 32 ? "Big" : "";
-                w.write(ident, " = r.view.get", big, sign, brgen::nums(bit), "(r.offset");
+                auto tmp = brgen::concat(ident);
+                if (bit > 32 && !use_bigint) {
+                    tmp = brgen::concat("tmp_", brgen::nums(get_seq()));
+                    w.writeln("let ", tmp, ";");
+                }
+                w.write(tmp, " = r.view.get", big, sign, brgen::nums(bit), "(r.offset");
                 if (bit != 8) {
                     w.write(", ", endian);
                 }
                 w.writeln(");");
+                if (bit > 32 && !use_bigint) {
+                    // check safe integer
+                    w.writeln("if(!Number.isSafeInteger(Number(", tmp, "))) {");
+                    {
+                        auto s = w.indent_scope();
+                        w.writeln("throw new Error('value is not safe integer for ", err_ident, "');");
+                    }
+                    w.writeln("}");
+                    w.writeln(ident, " = Number(", tmp, ");");
+                }
                 w.writeln("r.offset += ", brgen::nums(bit / 8), ";");
                 return;
             }
@@ -445,6 +480,7 @@ namespace json2ts {
             else if (auto arr = ast::as<ast::ArrayType>(typ)) {
                 auto elm = arr->element_type;
                 std::string len;
+                bool in_bytes = false;
                 if (ast::is_any_range(arr->length)) {
                     if (!err_ident) {
                         w.writeln("throw new Error('unsupported type for ", err_ident->ident, "');");
@@ -455,30 +491,43 @@ namespace json2ts {
                     if (auto f = ast::as<ast::Field>(base->base.lock())) {
                         if (auto fmt = ast::as<ast::Format>(f->belong.lock())) {
                             auto compare = brgen::nums(fmt->body->struct_type->fixed_tail_size);
-                            w.writeln("if (", diff, " < ", compare, ") {");
-                            {
-                                auto s = w.indent_scope();
-                                w.writeln("throw new Error(`insufficient buffer for ", err_ident->ident, " require=${", compare, "} actual=${", diff, "}`);");
-                            }
-                            w.writeln("}");
-                            auto len_in_bytes = brgen::concat("(", diff, "-", compare, ")");
-                            if (!arr->element_type->bit_size) {
-                                w.writeln("throw new Error('unsupported type for ", err_ident->ident, "');");
-                                return;
-                            }
-                            auto bytes = brgen::nums(*arr->element_type->bit_size / 8);
-
-                            if (bytes != "1") {
-                                w.writeln("if (", len_in_bytes, " % ", bytes, " !== 0) {");
+                            if (compare != "0") {
+                                w.writeln("if (", diff, " < ", compare, ") {");
                                 {
                                     auto s = w.indent_scope();
-                                    w.writeln("throw new Error(`invalid buffer size for ", err_ident->ident, " require multiple of ", bytes, " actual=${", len_in_bytes, "}`);");
+                                    w.writeln("throw new Error(`insufficient buffer for ", err_ident->ident, " require=${", compare, "} actual=${", diff, "}`);");
                                 }
                                 w.writeln("}");
-                                len = brgen::concat(len_in_bytes, " / ", bytes);
+                            }
+                            std::string len_in_bytes;
+                            if (compare != "0") {
+                                len_in_bytes = brgen::concat("(", diff, "-", compare, ")");
                             }
                             else {
+                                len_in_bytes = diff;
+                            }
+                            if (arr->element_type->bit_size) {
+                                auto bytes = brgen::nums(*arr->element_type->bit_size / 8);
+
+                                if (bytes != "1") {
+                                    w.writeln("if (", len_in_bytes, " % ", bytes, " !== 0) {");
+                                    {
+                                        auto s = w.indent_scope();
+                                        w.writeln("throw new Error(`invalid buffer size for ", err_ident->ident, " require multiple of ", bytes, " actual=${", len_in_bytes, "}`);");
+                                    }
+                                    w.writeln("}");
+                                    len = brgen::concat(len_in_bytes, " / ", bytes);
+                                }
+                                else {
+                                    len = len_in_bytes;
+                                }
+                            }
+                            else {
+                                // at here
+                                // len_in_bytes = (r.view.byteLength - r.offset - tail_size)
+                                // len may use as len_in_bytes > 0
                                 len = len_in_bytes;
+                                in_bytes = true;
                             }
                         }
                     }
@@ -491,6 +540,7 @@ namespace json2ts {
                     len = str.to_string(arr->length);
                 }
                 if (auto typ = ast::as<ast::IntType>(elm); typ && typ->is_common_supported) {
+                    assert(!in_bytes);
                     auto bit = *typ->bit_size;
                     auto sign = typ->is_signed ? "Int" : "Uint";
                     auto endian = typ->endian == ast::Endian::little ? "true" : "false";
@@ -506,7 +556,8 @@ namespace json2ts {
                         w.writeln("if(", native_endian, " === ", endian, ") {");
                         w.indent_writeln(ident, " = new ", class_, "(r.view.buffer, r.offset, ", len, ")");
                         w.writeln("else {");
-                        w.indent_writeln(ident, " = new ", class_, "(r.view.buffer, r.offset, ", len, ")");
+                        auto new_buffer = "new ArrayBuffer(" + total + ")";
+                        w.indent_writeln(ident, " = new ", class_, "(", new_buffer, ")");
                         w.writeln("for (let i = 0; i < ", len, "; i++) {");
                         {
                             auto s = w.indent_scope();
@@ -524,13 +575,25 @@ namespace json2ts {
                 else {
                     w.writeln(ident, " = [];");
                     auto i = "i_" + brgen::nums(get_seq());
-                    w.writeln("for (let ", i, " = 0; ", i, " < ", len, "; ", i, "++) {");
+                    auto cont = brgen::concat(i, "<", len);
+                    if (in_bytes) {
+                        cont = brgen::concat(len, " > 0");
+                    }
+                    w.writeln("for (let ", i, " = 0; ", cont, "; ", i, "++) {");
                     {
                         auto s = w.indent_scope();
                         auto typ = get_type(arr->element_type);
                         write_type_decode(err_ident, brgen::concat(ident, "[", i, "]"), arr->element_type);
                     }
                     w.writeln("}");
+                    if (in_bytes) {
+                        w.writeln("if(", len, "<", "0", ") {");
+                        {
+                            auto s = w.indent_scope();
+                            w.writeln("throw new Error(`invalid buffer size for ", err_ident->ident, " underflow={", len, "}`);");
+                        }
+                        w.writeln("}");
+                    }
                     return;
                 }
             }

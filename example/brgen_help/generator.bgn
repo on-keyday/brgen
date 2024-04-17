@@ -33,6 +33,8 @@ format GeneratorResponse:
 
 format GenerateSource:
     id :u64
+    name_len :u64
+    name :[name_len]u8
     len :u64
     json_text :[len]u8
 
