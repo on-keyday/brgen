@@ -19,12 +19,14 @@ struct Flags : futils::cmdline::templ::HelpOption {
     bool spec = false;
     bool javascript = false;
     bool use_bigint = false;
+    bool no_resize = false;
     bool no_color = false;
     void bind(futils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&spec, "s", "spec mode");
         ctx.VarBool(&javascript, "j,javascript", "javascript mode");
         ctx.VarBool(&use_bigint, "bigint", "use bigint for u64 type (experimental)");
+        ctx.VarBool(&no_resize, "no-resize", "not resize output buffer");
         ctx.VarBool(&no_color, "no-color", "no color mode");
     }
 };
@@ -71,7 +73,7 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
     }
     brgen::ast::AstFile file;
     if (!futils::json::convert_from_json(js, file)) {
-        print_error("cannot convert json file to ast: ");
+        print_error("cannot convert json file to ast: ", name);
         return 1;
     }
     if (!file.ast) {
@@ -88,8 +90,11 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
         print_error("cannot decode json file: ast is null");
         return 1;
     }
-
-    auto out = json2ts::generate(brgen::ast::cast_to<brgen::ast::Program>(*res), flags.javascript);
+    json2ts::Flags tsflags;
+    tsflags.use_bigint = flags.use_bigint;
+    tsflags.no_resize = flags.no_resize;
+    tsflags.javascript = flags.javascript;
+    auto out = json2ts::generate(brgen::ast::cast_to<brgen::ast::Program>(*res), tsflags);
     cout << out << "\n";
     return 0;
 }

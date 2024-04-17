@@ -314,6 +314,28 @@ namespace json2ts {
                         w.writeln("throw new Error(`out of buffer at ", field_name, ". len=${", len, "} > remain=${w.view.byteLength - w.offset}`);");
                     }
                     else {
+                        w.writeln("// try resize buffer");
+                        w.writeln("// if ", len, " is smaller than twice of buffer size, resize buffer to twice of buffer size");
+                        w.writeln("// otherwise, resize buffer to w.view.byteLength +", len);
+                        w.writeln("const new_size = Math.max(w.view.byteLength * 2, w.view.byteLength + (", len, "));");
+                        w.writeln("// check buffer size is safe integer");
+                        w.writeln("if(!Number.isSafeInteger(new_size)) {");
+                        {
+                            auto s = w.indent_scope();
+                            w.writeln("throw new Error('new buffer size is not safe integer for ", field_name, "');");
+                        }
+                        w.writeln("}");
+                        w.writeln("// check buffer size is less than w.resizeLimit if w.resizeLimit is defined");
+                        w.writeln("if(w.resizeLimit !== undefined && new_size > w.resizeLimit) {");
+                        {
+                            auto s = w.indent_scope();
+                            w.writeln("throw new Error(`new buffer size is greater than w.resizeLimit for ", field_name, " required={new_size} limit={r.resizeLimit}`);");
+                        }
+                        w.writeln("}");
+                        w.writeln("const new_buffer = new ArrayBuffer(w.view.byteLength + (", len, "));");
+                        w.writeln("// copy buffer");
+                        w.writeln("new Uint8Array(new_buffer).set(new Uint8Array(w.view.buffer));");
+                        w.writeln("w.view = new DataView(new_buffer);");
                     }
                 }
                 w.writeln("}");
@@ -721,6 +743,15 @@ namespace json2ts {
             }
         }
 
+        std::string io_type(const std::shared_ptr<ast::Format>& fmt, bool input) {
+            if (input) {
+                return "{view :DataView,offset :number}";
+            }
+            else {
+                return "{view :DataView,offset :number,resizeLimit?:number}";
+            }
+        }
+
         void write_format(const std::shared_ptr<ast::Format>& fmt) {
             brgen::writer::Writer tmpw;
             if (typescript) {
@@ -733,7 +764,7 @@ namespace json2ts {
                 write_struct_type(tmpw, fmt->body->struct_type);
             }
             if (typescript) {
-                w.write("export function ", fmt->ident->ident, "_encode(w :{view :DataView,offset :number}, obj: ", fmt->ident->ident, ") {");
+                w.write("export function ", fmt->ident->ident, "_encode(w :", io_type(fmt, false), ", obj: ", fmt->ident->ident, ") {");
             }
             else {
                 w.write("export function ", fmt->ident->ident, "_encode(w, obj) {");
@@ -747,7 +778,7 @@ namespace json2ts {
             }
             w.writeln("}");
             if (typescript) {
-                w.writeln("export function ", fmt->ident->ident, "_decode(r :{view :DataView,offset :number}): ", fmt->ident->ident, " {");
+                w.writeln("export function ", fmt->ident->ident, "_decode(r :", io_type(fmt, true), "): ", fmt->ident->ident, " {");
             }
             else {
                 w.writeln("export function ", fmt->ident->ident, "_decode(r) {");
@@ -801,9 +832,11 @@ namespace json2ts {
         }
     };
 
-    std::string generate(const std::shared_ptr<brgen::ast::Program>& p, bool javascript) {
+    std::string generate(const std::shared_ptr<brgen::ast::Program>& p, Flags flags) {
         Generator g;
-        g.typescript = !javascript;
+        g.typescript = !flags.javascript;
+        g.use_bigint = flags.use_bigint;
+        g.no_resize = flags.no_resize;
         g.str.this_access = "obj";
         g.str.cast_handler = [](ast::tool::Stringer& s, const std::shared_ptr<ast::Cast>& c) {
             return s.to_string(c->expr);
