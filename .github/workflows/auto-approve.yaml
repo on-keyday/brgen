@@ -14,4 +14,4 @@ jobs:
       pull-requests: write
     steps:
       - name: Auto approve
-        uses: hmarr/auto-approve-action@v4
+        uses: hmarr/auto-approve-action@8f929096a962e83ccdfa8afcf855f39f12d4dac7 # v4

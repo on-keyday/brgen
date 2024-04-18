@@ -12,15 +12,15 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@v2
+        uses: Kesin11/actions-timeline@b03a6aa289adef5534c84ccb6fbef7c975973574 # v2.1.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - name: Set up Ninja
-        uses: seanmiddleditch/gha-setup-ninja@master
+        uses: seanmiddleditch/gha-setup-ninja@8b297075da4cd2a5f1fd21fe011b499edf06e9d2 # master
       - name: Set up Clang
-        uses: egor-tensin/setup-clang@v1.4
+        uses: egor-tensin/setup-clang@ef434b41eb33a70396fb336b1bae39c76d740c3d # v1.4
         with:
           version: latest
           platform: x64
@@ -41,7 +41,7 @@ jobs:
           cp -a ./script/make_cpp_tests.sh ./artifacts
           cp -a ./testkit ./artifacts/testkit
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
         with:
           name: brgen-linux
           path: ./artifacts
@@ -50,13 +50,13 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@v2
+        uses: Kesin11/actions-timeline@b03a6aa289adef5534c84ccb6fbef7c975973574 # v2.1.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - name: Set up Ninja
-        uses: seanmiddleditch/gha-setup-ninja@master
+        uses: seanmiddleditch/gha-setup-ninja@8b297075da4cd2a5f1fd21fe011b499edf06e9d2 # master
       - name: Install Homebrew Clang
         run: |
           brew install llvm
@@ -79,7 +79,7 @@ jobs:
           cp -a ./script/make_cpp_tests.sh ./artifacts
           cp -a ./testkit ./artifacts/testkit
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
         with:
           name: brgen-macos
           path: ./artifacts
@@ -88,15 +88,15 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@v2
+        uses: Kesin11/actions-timeline@b03a6aa289adef5534c84ccb6fbef7c975973574 # v2.1.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - name: Set up Ninja
-        uses: seanmiddleditch/gha-setup-ninja@master
+        uses: seanmiddleditch/gha-setup-ninja@8b297075da4cd2a5f1fd21fe011b499edf06e9d2 # master
       - name: Set up Clang
-        uses: egor-tensin/setup-clang@v1.4
+        uses: egor-tensin/setup-clang@ef434b41eb33a70396fb336b1bae39c76d740c3d # v1.4
         with:
           version: latest
           platform: x64
@@ -118,7 +118,7 @@ jobs:
           copy /Y script\make_cpp_tests.bat artifacts
           xcopy /E /I /Y testkit artifacts\testkit
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
         with:
           name: brgen-windows
           path: ./artifacts
@@ -128,13 +128,13 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@v2
+        uses: Kesin11/actions-timeline@b03a6aa289adef5534c84ccb6fbef7c975973574 # v2.1.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
       - name: Setup ast2ts
         run: |
           cd ast2ts
@@ -154,7 +154,7 @@ jobs:
           cp -a ./lsp/LICENSE ./artifacts
           cp -a ./lsp/brgen-lsp-*.vsix ./artifacts
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
         with:
           name: brgen-vscode-extension
           path: ./artifacts
@@ -164,13 +164,13 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@v2
+        uses: Kesin11/actions-timeline@b03a6aa289adef5534c84ccb6fbef7c975973574 # v2.1.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - name: Set up Ninja
-        uses: seanmiddleditch/gha-setup-ninja@master
+        uses: seanmiddleditch/gha-setup-ninja@8b297075da4cd2a5f1fd21fe011b499edf06e9d2 # master
       - name: Install Cross Compiler
         run: |
           sudo apt-get update && sudo apt-get install -y g++-aarch64-linux-gnu
@@ -193,7 +193,7 @@ jobs:
           cp -a ./script/make_cpp_tests.sh ./artifacts
           cp -a ./testkit ./artifacts/testkit
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
         with:
           name: brgen-linux-arm
           path: ./artifacts
@@ -203,15 +203,15 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@v2
+        uses: Kesin11/actions-timeline@b03a6aa289adef5534c84ccb6fbef7c975973574 # v2.1.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - name: Set up Ninja
-        uses: seanmiddleditch/gha-setup-ninja@master
+        uses: seanmiddleditch/gha-setup-ninja@8b297075da4cd2a5f1fd21fe011b499edf06e9d2 # master
       - name: Install Android NDK
-        uses: nttld/setup-ndk@v1
+        uses: nttld/setup-ndk@6a7e9c5494a25c4842ca1011f710300132eacd94 # v1.4.2
         with:
           ndk-version: r26b
       - name: Build
@@ -237,7 +237,7 @@ jobs:
           cp -a ./script/make_cpp_tests.sh ./artifacts
           cp -a ./testkit ./artifacts/testkit
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
         with:
           name: brgen-android
           path: ./artifacts
@@ -247,11 +247,11 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@v2
+        uses: Kesin11/actions-timeline@b03a6aa289adef5534c84ccb6fbef7c975973574 # v2.1.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - name: fetch dependencies
         run: |
           go mod download
@@ -277,10 +277,10 @@ jobs:
         run: |
           go install github.com/Songmu/gocredits/cmd/gocredits@latest
       - name: Set up ruby
-        uses: ruby/setup-ruby@v1
+        uses: ruby/setup-ruby@6bd3d993c602f6b675728ebaecb2b569ff86e99b # v1.174.0
         with:
           ruby-version: ruby
-      - uses: github/setup-licensed@v1
+      - uses: github/setup-licensed@d6b3a6f7058c2b40c06d205e13e15c2418977566 # v1.1.4
         with:
           version: "4.4" # required: supports matching based on string equivalence or node-semver range
       - name: Collect licenses
@@ -291,7 +291,7 @@ jobs:
         run: |
           ls -alR ./license_cache
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
         with:
           name: brgen-licenses
           path: ./license_cache
@@ -314,41 +314,41 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@v2
+        uses: Kesin11/actions-timeline@b03a6aa289adef5534c84ccb6fbef7c975973574 # v2.1.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Download Linux artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427 # v4.1.4
         with:
           name: brgen-linux
           path: ./artifacts/linux
       - name: Download MacOS artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427 # v4.1.4
         with:
           name: brgen-macos
           path: ./artifacts/macos
       - name: Download Windows artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427 # v4.1.4
         with:
           name: brgen-windows
           path: ./artifacts/windows
       - name: Download VSCode Extension artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427 # v4.1.4
         with:
           name: brgen-vscode-extension
           path: ./artifacts/vscode-extension
       - name: Download Linux ARM artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427 # v4.1.4
         with:
           name: brgen-linux-arm
           path: ./artifacts/linux-arm
       - name: Download Android artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427 # v4.1.4
         with:
           name: brgen-android
           path: ./artifacts/android
       - name: Download Licenses
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427 # v4.1.4
         with:
           name: brgen-licenses
           path: ./license
@@ -401,7 +401,7 @@ jobs:
           sha256sum brgen-vscode-extension.zip >> brgen-checksum.txt
           cd ..
       - name: Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@9d7c94cfd0a1f3ed45544c887983e9fa900f0564 # v2.0.4
         with:
           files: |
             ./artifacts/brgen-checksum.txt

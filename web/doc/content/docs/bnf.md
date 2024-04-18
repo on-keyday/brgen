@@ -13,7 +13,7 @@ weight: 1
 
 構文解析ルール
 
-- 今のところドキュメンテーション用です。完全には [src/core/ast/parse.h](https://github.com/on-keyday/brgen/blob/main/src/core/ast/parse.h) にある実際の構文解析コード通りでない部分もあります。
+- 今のところドキュメンテーション用です。完全には [src/core/ast/parse.cpp](https://github.com/on-keyday/brgen/blob/main/src/core/ast/parse.cpp) にある実際の構文解析コード通りでない部分もあります。
 - 一部の構文は意味解析による AST のノードの変更によって実現されているため、BNF から文法を完全に理解できるわけではありません。これとは別に意味論も理解する必要があります。
 
 ```

@@ -16,11 +16,11 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@v2
+        uses: Kesin11/actions-timeline@b03a6aa289adef5534c84ccb6fbef7c975973574 # v2.1.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Donload Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427 # v4.1.4
         with:
           name: brgen-linux
           path: /tmp/brgen
