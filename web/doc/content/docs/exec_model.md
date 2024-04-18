@@ -300,4 +300,4 @@ offset = 8
 instance = { d: [ 0x0102, 0x0304, 0x0506, 0x0708 ]  }
 ```
 
-そして動的配列は
+TODO(on-keyday): 続きを書く
