@@ -2,7 +2,7 @@
 config.cpp.namespace = "brgen::request"
 config.cpp.bytes_type = "std::string"
 config.cpp.sys_include = "string"
-config.go.package = "gen"
+config.go.package = "request"
 
 # protocol for generator and generator client
 # 1. generator client sends a GeneratorRequest.

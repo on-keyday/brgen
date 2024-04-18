@@ -1,0 +1,56 @@
+config.url = "https://datatracker.ietf.org/doc/html/rfc7252#section-3"
+
+enum COAPType:
+    :u2
+    confirmable = 0
+    non_confirmable = 1
+    acknowledgement = 2
+    reset = 3
+
+enum COAPCodeClass:
+    :u3
+    request = 0
+    success = 2
+    client_error = 4
+    server_error = 5
+
+format COAPHeader:
+    version :u2
+    type :u2
+    token_length :u4
+    token_length <= 8
+    code_class :COAPCodeClass
+    code_detail :u5
+    message_id :u16
+
+format COAPPacket:
+    header :COAPHeader
+    token :[header.token_length]u8
+    options :[..]Option
+    :"\xff"
+    payload :[..]u8
+
+format Option:
+    option_delta :u4
+    option_length :u4
+    match option_delta:
+        13 => extended_option_delta :u8
+        14 => extended_option_delta :u16
+        15 => error("unexpected marker")
+    match option_length:
+        13 => extended_option_length :u8
+        14 => extended_option_length :u16
+        15 => error("reserved for future but not used")
+    fn get_option_delta() -> u32:
+        return available(extended_option_delta,u8) ?
+                u32(extended_option_delta) + 13:
+                available(extended_option_delta,u16) ?
+                u32(extended_option_delta) + 269 :
+                option_delta
+    length ::= available(extended_option_length,u8) ? 
+                u32(extended_option_length) + 13 : 
+                available(extended_option_length,u16)?
+                 u32(extended_option_length) + 269 :
+                 option_length
+    value :[length]u8
+
