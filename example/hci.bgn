@@ -1,0 +1,23 @@
+config.url = "https://www.wdic.org/w/WDIC/HCI%20%28Bluetooth%29"
+config.url = "https://www.bluetooth.org/DocMan/handlers/DownloadDoc.ashx?doc_id=521059"
+input.endian = config.endian.little
+input.bit_order = config.bit_order.msb
+
+format HCIHeader:
+    indicator :u8
+
+format HCICommand:
+    opcode_group_field :u6
+    opcode_command_field :u10
+    length :u8
+    parameters :[length]u8
+
+format ACLData:
+    conn_handle :u12
+    packet_boundary :u2
+    broadcast :u2
+    length :u8
+    data :[length]u8
+
+format HCIEvent:
+    event_code :u16

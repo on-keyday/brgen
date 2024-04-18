@@ -1,0 +1,11 @@
+config.url = "https://www.wdic.org/w/WDIC/L2CAP"
+format L2CAP:
+    length :u16
+    channel_id :ChannelID
+    payload :[length]u8
+
+enum ChannelID:
+    :u16
+    null = 0x0000
+    l2cap_signaling = 0x0001
+    connectionless = 0x0002

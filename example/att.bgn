@@ -1,0 +1,16 @@
+
+config.url = "https://techweb.rohm.co.jp/product/wireless/bluetooth/bluetooth-basic/3367/"
+input.bit_order = config.bit_order.lsb
+
+
+format ATT_PDU:
+    method :u6
+    command :u1
+    authentication_signature :u1
+    if authentication_signature == 0:
+        parameter :[..]u8
+    else:
+        parameter :[..]u8
+        signature :[12]u8
+
+
