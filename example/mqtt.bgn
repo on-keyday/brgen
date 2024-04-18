@@ -30,3 +30,7 @@ format FixedHeader:
         reserved : u4(0x0)
     remaining_length : u8
 
+
+format MQTTPacket:
+    header :FixedHeader
+    input.remain == u64(header.remaining_length)
