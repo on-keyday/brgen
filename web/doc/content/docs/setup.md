@@ -15,10 +15,11 @@ weight: 1
 
 - windows(x64),mac,linux(x64,arm),android(arm,termux)のビルド済みバイナリを配布しています
 - 現在(2024/3/17)の最新バージョンは[v0.0.5](https://github.com/on-keyday/brgen/releases/tag/v0.0.5)です
+  - バージョン update 頻度は今現在は作者の気分次第です。
 - WebPlayground は常に main ブランチの最新版が反映されています
 - VSCode 拡張で LSP サーバーを提供しています。現在は 上記リリースページ での提供です。
   - vscode 拡張とは別に各プラットフォーム向け実行ファイルをダウンロードしてください
-  - .vscode/settings.json の"brgen-lsp.src2json"にダウンロードした中の tool/src2json(.exe)へのパスを指定してください。
+  - .vscode/settings.json の"brgen-lsp.src2json"設定にダウンロードした中の tool/src2json(.exe)へのパスを指定してください。
 
 TODO(on-keyday): apt-get,brew,winget 等への対応
 
