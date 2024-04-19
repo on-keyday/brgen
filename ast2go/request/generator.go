@@ -440,7 +440,7 @@ func (t *GeneratorRequest) Read(r io.Reader) (err error) {
 	old_r_Source := r
 	r = tmp_byte_scanner1_
 	for {
-		b, err := tmp_byte_scanner1_.ReadByte()
+		_, err := tmp_byte_scanner1_.ReadByte()
 		if err != nil {
 			if err != io.EOF {
 				return fmt.Errorf("read Source: %w", err)
@@ -500,7 +500,7 @@ func (t *GeneratorResponse) Read(r io.Reader) (err error) {
 	old_r_Source := r
 	r = tmp_byte_scanner3_
 	for {
-		b, err := tmp_byte_scanner3_.ReadByte()
+		_, err := tmp_byte_scanner3_.ReadByte()
 		if err != nil {
 			if err != io.EOF {
 				return fmt.Errorf("read Source: %w", err)

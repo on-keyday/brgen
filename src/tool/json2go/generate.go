@@ -723,7 +723,7 @@ func (g *Generator) writeTypeDecode(ident string, typ ast2go.Type, p *ast2go.Fie
 					g.PrintfFunc("%s := r\n", old)
 					g.PrintfFunc("r = %s\n", tmp)
 					g.PrintfFunc("for {\n")
-					g.PrintfFunc("b, err := %s.ReadByte()\n", tmp)
+					g.PrintfFunc("_, err := %s.ReadByte()\n", tmp)
 					g.PrintfFunc("if err != nil {\n")
 					g.PrintfFunc("if err != io.EOF {\n")
 					g.imports["fmt"] = struct{}{}
