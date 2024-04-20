@@ -16,17 +16,15 @@ import (
 	"runtime"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"syscall"
 )
 
 type GeneratorHandler struct {
-	w         sync.WaitGroup
-	src2json  string
-	viaHTTP   *exec.Cmd
-	json2code string
-	ctx       context.Context
-	cancel    context.CancelFunc
+	//w        sync.WaitGroup
+	src2json string
+	viaHTTP  *exec.Cmd
+	ctx      context.Context
+	cancel   context.CancelFunc
 
 	resultQueue chan *Result
 	errQueue    chan error
@@ -35,7 +33,8 @@ type GeneratorHandler struct {
 	suffixPattern string
 	stderr        io.Writer
 	generators    []*Generator
-	outputCount   atomic.Int64
+	//outputCount   atomic.Int64
+	works sync.WaitGroup
 
 	dirBaseSuffixChan chan DirBaseSuffix
 	dirBaseSuffix     []DirBaseSuffix
@@ -207,16 +206,18 @@ func (g *GeneratorHandler) loadAstCommand(path string) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (g *GeneratorHandler) generateAST(path string, wg *sync.WaitGroup) {
+func (g *GeneratorHandler) generateAST(path string, reqwg *sync.WaitGroup) {
 	files, err := g.lookupPath(path)
 	if err != nil {
 		g.Printf("lookupPath: %s: %s\n", path, err)
 		return
 	}
 	for _, file := range files {
-		wg.Add(1)
+		g.works.Add(1)
+		reqwg.Add(1)
 		go func(file string) {
-			defer wg.Done()
+			defer g.works.Done()
+			defer reqwg.Done()
 			buf, err := g.loadAst(file)
 			if err != nil {
 				go func() {
@@ -225,7 +226,8 @@ func (g *GeneratorHandler) generateAST(path string, wg *sync.WaitGroup) {
 				return
 			}
 			for _, gen := range g.generators {
-				g.outputCount.Add(1)
+				// this work is Done by the generator
+				g.works.Add(1)
 				gen.Request(&Result{
 					Path: file,
 					Data: buf,
@@ -236,7 +238,7 @@ func (g *GeneratorHandler) generateAST(path string, wg *sync.WaitGroup) {
 }
 
 func (g *GeneratorHandler) dispatchGenerator(out *Output) error {
-	gen := NewGenerator(g.ctx, &g.w, g.stderr, g.resultQueue, &g.outputCount, g.dirBaseSuffixChan)
+	gen := NewGenerator(g.ctx, &g.works, g.stderr, g.resultQueue /*&g.outputCount,*/, g.dirBaseSuffixChan)
 	err := gen.StartGenerator(out)
 	if err != nil {
 		if err == ErrIgnoreMissing {
@@ -265,28 +267,27 @@ func (g *GeneratorHandler) requestStop() {
 
 func (g *GeneratorHandler) StartGenerator(path ...string) {
 	g.queue = make(chan *Result, 1)
-	wg := &sync.WaitGroup{}
+	reqwg := &sync.WaitGroup{}
 	for _, p := range path {
-		wg.Add(1)
+		g.works.Add(1)
 		go func(p string) {
-			defer wg.Done()
-			g.generateAST(p, wg)
+			defer g.works.Done()
+			g.generateAST(p, reqwg)
 		}(p)
 	}
 
 	go func() {
-		wg.Wait()
+		g.works.Wait()
+		g.cancel()
+	}()
+
+	go func() {
+		reqwg.Wait()
 		g.requestStop()
 		for {
-			if g.outputCount.Load() == 0 {
-				g.cancel()
-				close(g.queue)
-				return
-			}
 			select {
 			case r := <-g.resultQueue:
 				g.queue <- r
-				g.outputCount.Add(-1)
 			case err := <-g.errQueue:
 				g.queue <- &Result{Err: err}
 			case <-g.ctx.Done():
