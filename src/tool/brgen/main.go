@@ -50,7 +50,6 @@ var config *Config
 var debug bool
 
 func init() {
-	fillStringPtr(config)
 	outPuts := []*Output{}
 	out := &Output{}
 	flag.Func("output", "output dir (both -output and -generator are required to add output config)", func(s string) error {
@@ -58,7 +57,7 @@ func init() {
 			if out.Generator == "" {
 				return errors.New("generator is required")
 			}
-			outPuts = append(config.Output, out)
+			outPuts = append(outPuts, out)
 			out = &Output{}
 		}
 		out.OutputDir = s
@@ -69,17 +68,17 @@ func init() {
 			if out.OutputDir == "" {
 				return errors.New("output is required")
 			}
-			outPuts = append(config.Output, out)
+			outPuts = append(outPuts, out)
 			out = &Output{}
 		}
 		out.Generator = s
 		return nil
 	})
-	flag.StringVar(config.Source2Json, "src2json", *config.Source2Json, "path to src2json")
-	flag.StringVar(config.Suffix, "suffix", *config.Suffix, "suffix of file to generate from")
-	flag.BoolVar(&config.Warnings.DisableUntypedWarning, "disable-untyped", config.Warnings.DisableUntypedWarning, "disable untyped warning")
-	flag.BoolVar(&config.Warnings.DisableUnusedWarning, "disable-unused", config.Warnings.DisableUnusedWarning, "disable unused warning")
-	flag.StringVar(config.TestInfo, "test-info", *config.TestInfo, "path to test info output file")
+	flag.String("src2json", "src2json", "path to src2json")
+	flag.String("suffix", ".bgn", "suffix of file to generate from")
+	flag.Bool("disable-untyped", false, "disable untyped warning")
+	flag.Bool("disable-unused", false, "disable unused warning")
+	flag.String("test-info", "", "path to test info output file")
 	configLocation := flag.String("config", "brgen.json", "config file location")
 
 	flag.BoolVar(&debug, "debug", false, "debug mode")
@@ -93,6 +92,24 @@ func init() {
 			log.Print(err)
 		}
 		config.Output = append(config.Output, outPuts...)
+		flag.CommandLine.Visit(func(f *flag.Flag) {
+			setString := func(s **string, name string) {
+				if f.Name == name {
+					*s = new(string)
+					**s = f.Value.(flag.Getter).Get().(string)
+				}
+			}
+			setBool := func(b *bool, name string) {
+				if f.Name == name {
+					*b = f.Value.(flag.Getter).Get().(bool)
+				}
+			}
+			setString(&config.Source2Json, "src2json")
+			setString(&config.Suffix, "suffix")
+			setString(&config.TestInfo, "test-info")
+			setBool(&config.Warnings.DisableUntypedWarning, "disable-untyped")
+			setBool(&config.Warnings.DisableUnusedWarning, "disable-unused")
+		})
 	}()
 	if config == nil {
 		return

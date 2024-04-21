@@ -3,6 +3,7 @@
 #include <cmdline/template/parse_and_err.h>
 #include "../common/print.h"
 #include "../common/send.h"
+#include "../common/load_json.h"
 #include <core/ast/json.h>
 #include <json/convert_json.h>
 #include <core/ast/file.h>
@@ -12,9 +13,14 @@
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
 #include "../common/em_main.h"
+#else
+#include <thread>
+#include <thread/channel.h>
+// #define HAS_THREAD
 #endif
 #include <request/stream.hpp>
 #include <filesystem>
+#include "../common/generate.h"
 
 struct Flags : futils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
@@ -33,42 +39,17 @@ struct Flags : futils::cmdline::templ::HelpOption {
         ctx.VarBool(&use_error, "use-error", "use futils::error::Error for error reporting");
         ctx.VarBool(&use_raw_union, "use-raw-union", "use raw union instead of std::variant (maybe unsafe)");
         ctx.VarBool(&use_overflow_check, "use-overflow-check", "add overflow check for integer types");
-        ctx.VarBool(&legacy_file_pass, "legacy-file-pass", "use legacy file pass mode");
+        ctx.VarBool(&legacy_file_pass, "f,file", "use legacy file pass mode");
     }
 };
 
-template <class T>
-int do_generate(Flags& flags, brgen::request::GenerateSource& req, T&& input) {
-    auto js = futils::json::parse<futils::json::JSON>(input);
-    if (js.is_undef()) {
-        send_error_and_end(req.id, "cannot parse json file: ", req.name);
-        return 1;
-    }
-    brgen::ast::AstFile file;
-    if (!futils::json::convert_from_json(js, file)) {
-        send_error_and_end(req.id, "cannot convert json file to ast: ", req.name);
-        return 1;
-    }
-    if (!file.ast) {
-        send_error_and_end(req.id, "cannot convert json file to ast: ast is null: ", req.name);
-        return 1;
-    }
-    brgen::ast::JSONConverter c;
-    auto res = c.decode(*file.ast);
-    if (!res) {
-        send_error_and_end(req.id, "cannot decode json file: ", res.error().locations[0].msg);
-        return 1;
-    }
-    if (!*res) {
-        send_error_and_end(req.id, "cannot decode json file: ast is null: ", req.name);
-        return 1;
-    }
+int cpp_generate(const Flags& flags, brgen::request::GenerateSource& req, std::shared_ptr<brgen::ast::Node> res) {
     j2cp2::Generator g;
     g.enable_line_map = flags.add_line_map;
     g.use_error = flags.use_error;
     g.use_variant = !flags.use_raw_union;
     g.use_overflow_check = flags.use_overflow_check;
-    auto prog = brgen::ast::cast_to<brgen::ast::Program>(*res);
+    auto prog = brgen::ast::cast_to<brgen::ast::Program>(res);
     g.write_program(prog);
     send_source(req.id, std::move(g.w.out()), req.name + ".hpp");
     if (flags.add_line_map) {
@@ -87,30 +68,6 @@ int do_generate(Flags& flags, brgen::request::GenerateSource& req, T&& input) {
     return 0;
 }
 
-int legacy_file_pass(Flags& flags) {
-    if (flags.args.empty()) {
-        print_error("no input file");
-        return 1;
-    }
-    if (flags.args.size() > 1) {
-        print_error("too many input files");
-        return 1;
-    }
-    auto name = flags.args[0];
-    futils::file::View view;
-    if (!view.open(name)) {
-        print_error("cannot open file ", name);
-        return 1;
-    }
-    std::filesystem::path path{name};
-    auto u8name = path.filename().replace_extension().generic_u8string();
-    brgen::request::GenerateSource req;
-    req.id = 0;
-    req.name = std::string(reinterpret_cast<const char*>(u8name.data()), u8name.size());
-    send_as_text = true;
-    return do_generate(flags, req, view);
-}
-
 int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
     prefix_loc() = "json2cpp: ";
     cerr_color_mode = flags.no_color ? ColorMode::no_color : cerr.is_tty() ? ColorMode::force_color
@@ -127,18 +84,53 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
         else {
             cout << R"({
             "input": "stdin_stream",
-            "langs": ["cpp","json"],
+            "langs": ["cpp","json"]
             })";
         }
         return 0;
     }
     if (flags.legacy_file_pass) {
-        return legacy_file_pass(flags);
+        return generate_from_file(flags, cpp_generate);
     }
-    read_stdin_requests([&](brgen::request::GenerateSource& req) {
-        do_generate(flags, req, req.json_text);
+#ifdef HAS_THREAD
+    auto [send, recv] = futils::thread::make_chan<brgen::request::GenerateSource>();
+    auto thread_handler = [](const Flags& flag, futils::thread::RecvChan<brgen::request::GenerateSource> recv) {
+        recv.set_blocking(false);
+        while (true) {
+            brgen::request::GenerateSource req;
+            auto s = recv >> req;
+            if (s == futils::thread::ChanStateValue::closed) {
+                break;
+            }
+            if (s != futils::thread::ChanStateValue::enable) {
+                std::this_thread::yield();
+                continue;
+            }
+            do_generate(flag, req, req.json_text);
+        }
+    };
+    std::vector<std::thread> threads;
+    for (size_t i = 0; i < std::thread::hardware_concurrency() / 2; i++) {
+        threads.emplace_back(thread_handler, std::cref(flags), recv);
+    }
+    auto handler = [&](brgen::request::GenerateSource& req) {
+        send.set_blocking(true);
+        send << std::move(req);
         return futils::error::Error<>{};
-    });
+    };
+    read_stdin_requests(handler);
+    send.close();
+    for (auto& t : threads) {
+        t.join();
+    }
+#else
+    auto handler = [&](brgen::request::GenerateSource& req) {
+        do_generate(flags, req, req.json_text, cpp_generate);
+        return futils::error::Error<>{};
+    };
+    read_stdin_requests(handler);
+#endif
+
     return 0;
 }
 

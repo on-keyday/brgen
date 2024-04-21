@@ -1,4 +1,0 @@
-/*license*/
-#pragma once
-
-

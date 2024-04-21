@@ -24,6 +24,7 @@ type binarySourceClient struct {
 }
 
 type binarySourceClients struct {
+	mapLock     sync.RWMutex
 	streams     map[uint64]*binarySourceClient
 	nextID      uint64
 	w           io.WriteCloser
@@ -47,6 +48,7 @@ func NewRequestManager(r io.Reader, w io.WriteCloser, onError func(error)) Sourc
 		send:        make(chan []byte),
 		closeError:  make(chan struct{}),
 		closeWriter: make(chan struct{}),
+		onError:     onError,
 	}
 	go s.sender()
 	go s.reader()
@@ -54,6 +56,8 @@ func NewRequestManager(r io.Reader, w io.WriteCloser, onError func(error)) Sourc
 }
 
 func (ss *binarySourceClients) CreateStream() SourceClient {
+	ss.mapLock.Lock()
+	defer ss.mapLock.Unlock()
 	id := ss.nextID
 	ss.nextID++
 	s := &binarySourceClient{
@@ -67,7 +71,15 @@ func (ss *binarySourceClients) CreateStream() SourceClient {
 
 // may returns nil
 func (ss *binarySourceClients) getStream(id uint64) *binarySourceClient {
+	ss.mapLock.RLock()
+	defer ss.mapLock.RUnlock()
 	return ss.streams[id]
+}
+
+func (ss *binarySourceClients) deleteStream(id uint64) {
+	ss.mapLock.Lock()
+	defer ss.mapLock.Unlock()
+	delete(ss.streams, id)
 }
 
 func (s *binarySourceClient) SendRequest(name string, sourceJSON []byte) error {
@@ -102,7 +114,9 @@ func (s *binarySourceClients) closeOnce(err error) {
 	s.once.Do(func() {
 		s.err = err
 		close(s.closeError)
-		s.onError(err)
+		if s.onError != nil {
+			s.onError(err)
+		}
 	})
 }
 
@@ -150,7 +164,7 @@ func (s *binarySourceClients) reader() {
 				return
 			}
 			close(got.src)
-			delete(s.streams, code.End().ID)
+			s.deleteStream(code.End().ID)
 			continue
 		}
 		id := code.Source().ID
@@ -159,5 +173,6 @@ func (s *binarySourceClients) reader() {
 			s.closeOnce(fmt.Errorf("stream %d not found", id))
 			return
 		}
+		got.src <- code.Source()
 	}
 }

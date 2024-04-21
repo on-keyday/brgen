@@ -10,7 +10,7 @@
             "request": "launch",
             "mode": "debug",
             "program": "${workspaceRoot}/src/tool/brgen",
-            "args": [],
+            "args": ["-config","test-brgen.json","-debug"],
             "cwd": "${workspaceRoot}",
         },
         {
