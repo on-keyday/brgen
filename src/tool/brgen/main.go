@@ -15,8 +15,8 @@ import (
 	"time"
 )
 
-func loadConfig() (*Config, error) {
-	fp, err := os.Open("brgen.json")
+func loadConfig(conf string) (*Config, error) {
+	fp, err := os.Open(conf)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return &Config{}, nil // ignore error
@@ -50,16 +50,15 @@ var config *Config
 var debug bool
 
 func init() {
-	var err error
-	config, err = loadConfig()
 	fillStringPtr(config)
+	outPuts := []*Output{}
 	out := &Output{}
 	flag.Func("output", "output dir (both -output and -generator are required to add output config)", func(s string) error {
 		if out.OutputDir != "" {
 			if out.Generator == "" {
 				return errors.New("generator is required")
 			}
-			config.Output = append(config.Output, out)
+			outPuts = append(config.Output, out)
 			out = &Output{}
 		}
 		out.OutputDir = s
@@ -70,7 +69,7 @@ func init() {
 			if out.OutputDir == "" {
 				return errors.New("output is required")
 			}
-			config.Output = append(config.Output, out)
+			outPuts = append(config.Output, out)
 			out = &Output{}
 		}
 		out.Generator = s
@@ -81,19 +80,20 @@ func init() {
 	flag.BoolVar(&config.Warnings.DisableUntypedWarning, "disable-untyped", config.Warnings.DisableUntypedWarning, "disable untyped warning")
 	flag.BoolVar(&config.Warnings.DisableUnusedWarning, "disable-unused", config.Warnings.DisableUnusedWarning, "disable unused warning")
 	flag.StringVar(config.TestInfo, "test-info", *config.TestInfo, "path to test info output file")
+	configLocation := flag.String("config", "brgen.json", "config file location")
 
 	flag.BoolVar(&debug, "debug", false, "debug mode")
 
 	defer func() {
 		flag.Parse()
-		if out.OutputDir != "" && out.Generator != "" {
-			config.Output = append(config.Output, out)
+		var err error
+		config, err = loadConfig(*configLocation)
+		fillStringPtr(config)
+		if err != nil {
+			log.Print(err)
 		}
+		config.Output = append(config.Output, outPuts...)
 	}()
-	if err != nil {
-		log.Print(err)
-		return
-	}
 	if config == nil {
 		return
 	}
