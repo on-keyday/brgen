@@ -3,6 +3,7 @@
 #include <core/ast/ast.h>
 #include <core/ast/tool/sort.h>
 #include <core/ast/tool/stringer.h>
+#include <core/ast/tool/tmp_ident.h>
 
 namespace boiler {
     namespace ast = brgen::ast;
@@ -77,10 +78,9 @@ namespace boiler {
 
         void generate_field(const std::shared_ptr<ast::Field>& f) {
             if (!f->ident) {
-                f->ident = std::make_shared<ast::Ident>();
-                f->ident->ident = "hidden_field";
-                f->ident->base = f;
+                ast::tool::set_tmp_field_ident(0, f, "hidden_field");
             }
+
             if (ast::as<ast::StructUnionType>(f->field_type)) {
                 generate_struct_union_type(ast::cast_to<ast::StructUnionType>(f->field_type));
             }

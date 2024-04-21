@@ -79,11 +79,11 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
     if (flags.legacy_file_pass) {
         return generate_from_file(flags, ts_generate);
     }
-    auto handler = [&](brgen::request::GenerateSource& req) {
+    read_stdin_requests([&](brgen::request::GenerateSource& req) {
         do_generate(flags, req, req.json_text, ts_generate);
         return futils::error::Error<>{};
-    };
-    read_stdin_requests(handler);
+    });
+    return 0;
 }
 int json2ts_main(int argc, char** argv) {
     Flags flags;

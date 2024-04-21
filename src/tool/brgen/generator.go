@@ -64,7 +64,6 @@ func NewGenerator(ctx context.Context, work *sync.WaitGroup, stderr io.Writer, r
 		request:           make(chan *Result),
 		result:            res,
 		dirBaseSuffixChan: dirBaseSuffixChan,
-		//outputCount:       outputCount,
 	}
 }
 
@@ -177,8 +176,6 @@ func (g *Generator) handleRequest(req *Result) {
 		g.sendResult(req)
 		return
 	}
-	// add output count before sending result
-	//g.outputCount.Add(int64(len(split_data) - 1))
 	for i, suffix := range g.spec.Suffix {
 		if i >= len(split_data) {
 			break

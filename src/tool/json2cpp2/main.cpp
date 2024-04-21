@@ -113,22 +113,20 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
     for (size_t i = 0; i < std::thread::hardware_concurrency() / 2; i++) {
         threads.emplace_back(thread_handler, std::cref(flags), recv);
     }
-    auto handler = [&](brgen::request::GenerateSource& req) {
+    read_stdin_requests([&](brgen::request::GenerateSource& req) {
         send.set_blocking(true);
         send << std::move(req);
         return futils::error::Error<>{};
-    };
-    read_stdin_requests(handler);
+    });
     send.close();
     for (auto& t : threads) {
         t.join();
     }
 #else
-    auto handler = [&](brgen::request::GenerateSource& req) {
+    read_stdin_requests([&](brgen::request::GenerateSource& req) {
         do_generate(flags, req, req.json_text, cpp_generate);
         return futils::error::Error<>{};
-    };
-    read_stdin_requests(handler);
+    });
 #endif
 
     return 0;

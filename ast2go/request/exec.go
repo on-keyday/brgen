@@ -34,12 +34,12 @@ func NewProcessClient(cmd *exec.Cmd) (*ProcessClient, error) {
 			cmd.Process.Kill()
 		}
 	})
+	go func() {
+		err := cmd.Wait()
+		c.CloseWithError(err)
+	}()
 	return &ProcessClient{
 		cmd:           cmd,
 		SourceManager: c,
 	}, nil
-}
-
-func (pc *ProcessClient) Wait() error {
-	return pc.cmd.Wait()
 }

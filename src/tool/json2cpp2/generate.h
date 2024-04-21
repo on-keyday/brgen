@@ -8,6 +8,7 @@
 #include <core/ast/tool/sort.h>
 #include <core/ast/tool/type.h>
 #include "../common/line_map.h"
+#include <core/ast/tool/tmp_ident.h>
 
 namespace j2cp2 {
     namespace ast = brgen::ast;
@@ -499,10 +500,7 @@ namespace j2cp2 {
 
         bool set_hidden_ident(const std::shared_ptr<ast::Field>& f) {
             if (!f->ident) {
-                auto h = brgen::concat("hidden_field_", brgen::nums(get_seq()));
-                f->ident = std::make_shared<ast::Ident>();
-                f->ident->ident = std::move(h);
-                f->ident->base = f;
+                ast::tool::set_tmp_field_ident(get_seq(), f, "hidden_field_");
                 return true;
             }
             return false;

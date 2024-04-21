@@ -13,6 +13,7 @@ type SourceClient interface {
 
 type SourceManager interface {
 	CreateStream() SourceClient
+	CloseWithError(error)
 }
 
 var _ SourceManager = &binarySourceClients{}
@@ -118,6 +119,10 @@ func (s *binarySourceClients) closeOnce(err error) {
 			s.onError(err)
 		}
 	})
+}
+
+func (s *binarySourceClients) CloseWithError(err error) {
+	s.closeOnce(err)
 }
 
 func (s *binarySourceClient) SendComplete() {

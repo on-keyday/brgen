@@ -2,6 +2,7 @@
 #include <core/ast/tool/stringer.h>
 #include <core/ast/tool/sort.h>
 #include <writer/writer.h>
+#include <core/ast/tool/tmp_ident.h>
 #include "generate.h"
 
 namespace json2ts {
@@ -95,6 +96,9 @@ namespace json2ts {
         }
 
         void write_field(brgen::writer::Writer& wt, std::vector<std::shared_ptr<ast::Field>>& bit_fields, const std::shared_ptr<ast::Field>& field) {
+            if (!field->ident) {
+                ast::tool::set_tmp_field_ident(get_seq(), field, "anonymous_");
+            }
             auto typ = field->field_type;
             if (field->bit_alignment != field->eventual_bit_alignment) {
                 if (bit_fields.size() == 0) {
@@ -129,12 +133,8 @@ namespace json2ts {
             if (auto u = ast::as<ast::StructUnionType>(typ)) {
                 assert(!field->ident);
                 bool first = true;
-                const auto anonymous_field = "union_" + brgen::nums(get_seq());
-                auto ident = std::make_shared<ast::Ident>();
-                ident->base = field;
-                ident->ident = anonymous_field;
-                field->ident = ident;
-                str.map_ident(ident, prefix, ".", anonymous_field);
+                auto anonymous_field = field->ident->ident;
+                str.map_ident(field->ident, prefix, ".", anonymous_field);
                 wt.writeln(anonymous_field, ": ");
                 auto dot = ".";
                 auto p = std::move(prefix);
