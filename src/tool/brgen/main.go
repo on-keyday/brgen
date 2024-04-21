@@ -195,10 +195,10 @@ func main() {
 		}
 		defer fp.Close()
 		var info struct {
-			TotalCount uint32          `json:"total_count"`
-			ErrorCount uint32          `json:"error_count"`
-			Time       string          `json:"time"`
-			DirAndBase []DirBaseSuffix `json:"generated_files"`
+			TotalCount uint32           `json:"total_count"`
+			ErrorCount uint32           `json:"error_count"`
+			Time       string           `json:"time"`
+			DirAndBase []*DirBaseSuffix `json:"generated_files"`
 		}
 		info.TotalCount = totalCount.Load()
 		info.ErrorCount = errCount.Load()

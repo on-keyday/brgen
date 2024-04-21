@@ -42,7 +42,7 @@ type Generator struct {
 	stderr        io.Writer
 	//outputCount       *atomic.Int64
 	works             *sync.WaitGroup
-	dirBaseSuffixChan chan DirBaseSuffix
+	dirBaseSuffixChan chan *DirBaseSuffix
 	stdinStream       *request.ProcessClient
 }
 
@@ -56,7 +56,7 @@ func printf(stderr io.Writer, format string, args ...interface{}) {
 	fmt.Fprintf(stderr, "brgen: %s", fmt.Sprintf(format, args...))
 }
 
-func NewGenerator(ctx context.Context, work *sync.WaitGroup, stderr io.Writer, res chan *Result /*outputCount *atomic.Int64,*/, dirBaseSuffixChan chan DirBaseSuffix) *Generator {
+func NewGenerator(ctx context.Context, work *sync.WaitGroup, stderr io.Writer, res chan *Result /*outputCount *atomic.Int64,*/, dirBaseSuffixChan chan *DirBaseSuffix) *Generator {
 	return &Generator{
 		works:             work,
 		ctx:               ctx,
@@ -121,6 +121,37 @@ func (g *Generator) passAst(filePath string, buffer []byte) ([]byte, error) {
 
 var ErrIgnoreMissing = errors.New("ignore missing")
 
+func (g *Generator) sendResult(req *Result) {
+	g.result <- req
+}
+
+func (g *Generator) sendGenerated(fileBase string, data []byte) {
+	suffix := filepath.Ext(fileBase)
+	var path string
+	if strings.HasPrefix("/dev/stdout", g.outputDir) {
+		baseName := filepath.Base(fileBase)
+		path = "/dev/stdout/" + baseName
+	} else {
+		path = filepath.Join(g.outputDir, fileBase)
+	}
+	g.works.Add(1)
+	go func(path string, data []byte, suffix string) {
+		defer g.works.Done()
+		if runtime.GOOS == "windows" {
+			path = strings.ReplaceAll(path, "\\", "/")
+		}
+		g.dirBaseSuffixChan <- &DirBaseSuffix{
+			Dir:    gpath.Dir(path),
+			Base:   strings.TrimSuffix(gpath.Base(path), suffix),
+			Suffix: suffix,
+		}
+		g.sendResult(&Result{
+			Path: path,
+			Data: data,
+		})
+	}(path, data, suffix)
+}
+
 func (g *Generator) handleRequest(req *Result) {
 	defer g.works.Done() // this Done is for the generator handlers Add
 	if g.stdinStream != nil {
@@ -130,7 +161,7 @@ func (g *Generator) handleRequest(req *Result) {
 	data, err := g.passAst(req.Path, req.Data)
 	if err != nil {
 		req.Err = fmt.Errorf("passAst: %s: %w", g.generatorPath, err)
-		g.result <- req
+		g.sendResult(req)
 		return
 	}
 	ext := filepath.Ext(req.Path)
@@ -143,38 +174,16 @@ func (g *Generator) handleRequest(req *Result) {
 	}
 	if len(split_data) > len(g.spec.Suffix) {
 		req.Err = fmt.Errorf("too many output. expect equal to or less than %d, got %d: %s", len(g.spec.Suffix), len(split_data), req.Path)
-		g.result <- req
+		g.sendResult(req)
 		return
 	}
 	// add output count before sending result
 	//g.outputCount.Add(int64(len(split_data) - 1))
-	g.works.Add(len(split_data))
 	for i, suffix := range g.spec.Suffix {
 		if i >= len(split_data) {
 			break
 		}
-		var path string
-		if strings.HasPrefix("/dev/stdout", g.outputDir) {
-			baseName := filepath.Base(basePath + suffix)
-			path = "/dev/stdout/" + baseName
-		} else {
-			path = filepath.Join(g.outputDir, basePath+suffix)
-		}
-		go func(path string, data []byte, suffix string) {
-			defer g.works.Done()
-			if runtime.GOOS == "windows" {
-				path = strings.ReplaceAll(path, "\\", "/")
-			}
-			g.dirBaseSuffixChan <- DirBaseSuffix{
-				Dir:    gpath.Dir(path),
-				Base:   strings.TrimSuffix(gpath.Base(path), suffix),
-				Suffix: suffix,
-			}
-			g.result <- &Result{
-				Path: path,
-				Data: data,
-			}
-		}(path, split_data[i], suffix)
+		g.sendGenerated(basePath+suffix, split_data[i])
 	}
 }
 

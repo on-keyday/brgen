@@ -27,9 +27,14 @@ format GeneratorRequest:
     header :GeneratorRequestHeader
     source :[..]GenerateSource
 
+enum ResponseType:
+    :u8
+    CODE = 0
+    END_OF_CODE = 1
+
 format GeneratorResponse:
     header :GeneratorResponseHeader
-    source :[..]SourceCode
+    source :[..]Response
 
 format GenerateSource:
     id :u64
@@ -42,6 +47,14 @@ format GeneratorRequestHeader:
     version :u32
     version == 1
     
+format Response:
+    type :ResponseType
+    match type:
+        ResponseType.CODE => source :SourceCode
+        ResponseType.END_OF_CODE => end :EndOfCode
+
+format EndOfCode:
+    id :u64
 
 
 enum ResponseStatus:

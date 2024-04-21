@@ -58,6 +58,7 @@ func (ss *binarySourceClients) CreateStream() SourceClient {
 	ss.nextID++
 	s := &binarySourceClient{
 		ID:   id,
+		src:  make(chan *SourceCode),
 		base: ss,
 	}
 	ss.streams[id] = s
@@ -65,7 +66,7 @@ func (ss *binarySourceClients) CreateStream() SourceClient {
 }
 
 // may returns nil
-func (ss *binarySourceClients) GetStream(id uint64) *binarySourceClient {
+func (ss *binarySourceClients) getStream(id uint64) *binarySourceClient {
 	return ss.streams[id]
 }
 
@@ -90,6 +91,9 @@ func (s *binarySourceClient) ReceiveResponse() (*SourceCode, error) {
 	case <-s.base.closeError:
 		return nil, s.base.err
 	case code := <-s.src:
+		if code == nil {
+			return nil, io.EOF
+		}
 		return code, nil
 	}
 }
@@ -107,6 +111,11 @@ func (s *binarySourceClient) SendComplete() {
 }
 
 func (s *binarySourceClients) sender() {
+	hdr := &GeneratorRequestHeader{Version: 1}
+	if _, err := s.w.Write(hdr.MustEncode()); err != nil {
+		s.closeOnce(err)
+		return
+	}
 	for {
 		select {
 		case <-s.closeError:
@@ -123,15 +132,31 @@ func (s *binarySourceClients) sender() {
 }
 
 func (s *binarySourceClients) reader() {
+	hdr := &GeneratorResponseHeader{}
+	if err := hdr.Read(s.r); err != nil {
+		s.closeOnce(err)
+		return
+	}
 	for {
-		code := &SourceCode{}
+		code := &Response{}
 		if err := code.Read(s.r); err != nil {
 			s.closeOnce(err)
 			return
 		}
-		got := s.GetStream(code.ID)
+		if code.Type == ResponseType_EndOfCode {
+			got := s.getStream(code.End().ID)
+			if got == nil {
+				s.closeOnce(fmt.Errorf("stream %d not found", code.End().ID))
+				return
+			}
+			close(got.src)
+			delete(s.streams, code.End().ID)
+			continue
+		}
+		id := code.Source().ID
+		got := s.getStream(id)
 		if got == nil {
-			s.closeOnce(fmt.Errorf("stream %d not found", code.ID))
+			s.closeOnce(fmt.Errorf("stream %d not found", id))
 			return
 		}
 	}

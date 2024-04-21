@@ -2,6 +2,7 @@
 #include <cmdline/template/help_option.h>
 #include <cmdline/template/parse_and_err.h>
 #include "../common/print.h"
+#include "../common/send.h"
 #include <core/ast/json.h>
 #include <json/convert_json.h>
 #include <core/ast/file.h>
@@ -23,6 +24,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
     bool use_error = false;
     bool use_raw_union = false;
     bool use_overflow_check = false;
+    bool legacy_file_pass = false;
     void bind(futils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&spec, "s", "spec mode");
@@ -31,73 +33,34 @@ struct Flags : futils::cmdline::templ::HelpOption {
         ctx.VarBool(&use_error, "use-error", "use futils::error::Error for error reporting");
         ctx.VarBool(&use_raw_union, "use-raw-union", "use raw union instead of std::variant (maybe unsafe)");
         ctx.VarBool(&use_overflow_check, "use-overflow-check", "add overflow check for integer types");
+        ctx.VarBool(&legacy_file_pass, "legacy-file-pass", "use legacy file pass mode");
     }
 };
-
-void send_response(const brgen::request::SourceCode& code) {
-    futils::file::FileStream<std::string> fs{cout.get_file()};
-    futils::binary::writer w{fs.get_write_handler(), &fs};
-    auto prev = w.offset();
-    if (auto err = code.encode(w)) {
-        assert(false);  // should not happen
-        w.reset(prev);  // reset for consistency
-        return;         // ignore error
-    }
-    // commit by writer handler
-}
-
-thread_local bool text = false;
-
-void send_error(std::uint64_t id, auto&&... msg) {
-    if (text) {
-        print_error(msg...);
-        return;
-    }
-    auto err_msg = brgen::concat(msg...);
-    brgen::request::SourceCode code;
-    code.id = id;
-    code.status = brgen::request::ResponseStatus::ERROR;
-    code.set_error_message(err_msg);
-    send_response(code);
-}
-
-void send_source(std::uint64_t id, std::string&& src, const auto&& name) {
-    if (text) {
-        cout << src << "\n";
-        return;
-    }
-    brgen::request::SourceCode code;
-    code.id = id;
-    code.status = brgen::request::ResponseStatus::OK;
-    code.set_code(std::move(src));
-    code.set_name(name);
-    send_response(code);
-}
 
 template <class T>
 int do_generate(Flags& flags, brgen::request::GenerateSource& req, T&& input) {
     auto js = futils::json::parse<futils::json::JSON>(input);
     if (js.is_undef()) {
-        send_error(req.id, "cannot parse json file: ", req.name);
+        send_error_and_end(req.id, "cannot parse json file: ", req.name);
         return 1;
     }
     brgen::ast::AstFile file;
     if (!futils::json::convert_from_json(js, file)) {
-        send_error(req.id, "cannot convert json file to ast: ", req.name);
+        send_error_and_end(req.id, "cannot convert json file to ast: ", req.name);
         return 1;
     }
     if (!file.ast) {
-        send_error(req.id, "cannot convert json file to ast: ast is null: ", req.name);
+        send_error_and_end(req.id, "cannot convert json file to ast: ast is null: ", req.name);
         return 1;
     }
     brgen::ast::JSONConverter c;
     auto res = c.decode(*file.ast);
     if (!res) {
-        send_error(req.id, "cannot decode json file: ", res.error().locations[0].msg);
+        send_error_and_end(req.id, "cannot decode json file: ", res.error().locations[0].msg);
         return 1;
     }
     if (!*res) {
-        send_error(req.id, "cannot decode json file: ast is null: ", req.name);
+        send_error_and_end(req.id, "cannot decode json file: ast is null: ", req.name);
         return 1;
     }
     j2cp2::Generator g;
@@ -109,7 +72,7 @@ int do_generate(Flags& flags, brgen::request::GenerateSource& req, T&& input) {
     g.write_program(prog);
     send_source(req.id, std::move(g.w.out()), req.name + ".hpp");
     if (flags.add_line_map) {
-        if (text) {
+        if (send_as_text) {
             cout << "############\n";
         }
         futils::json::Stringer s;
@@ -120,22 +83,11 @@ int do_generate(Flags& flags, brgen::request::GenerateSource& req, T&& input) {
         }
         send_source(req.id, std::move(s.out()), req.name + ".hpp.map.json");
     }
+    send_end_response(req.id);
     return 0;
 }
 
-int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
-    prefix_loc() = "json2cpp: ";
-    cerr_color_mode = flags.no_color ? ColorMode::no_color : cerr.is_tty() ? ColorMode::force_color
-                                                                           : ColorMode::no_color;
-    if (flags.spec) {
-        cout << R"({
-            "input": "file",
-            "langs": ["cpp","json"],
-            "suffix": [".hpp",".json"],
-            "separator": "############\n"
-        })";
-        return 0;
-    }
+int legacy_file_pass(Flags& flags) {
     if (flags.args.empty()) {
         print_error("no input file");
         return 1;
@@ -155,8 +107,39 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
     brgen::request::GenerateSource req;
     req.id = 0;
     req.name = std::string(reinterpret_cast<const char*>(u8name.data()), u8name.size());
-    text=true;
+    send_as_text = true;
     return do_generate(flags, req, view);
+}
+
+int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
+    prefix_loc() = "json2cpp: ";
+    cerr_color_mode = flags.no_color ? ColorMode::no_color : cerr.is_tty() ? ColorMode::force_color
+                                                                           : ColorMode::no_color;
+    if (flags.spec) {
+        if (flags.legacy_file_pass) {
+            cout << R"({
+            "input": "file",
+            "langs": ["cpp","json"],
+            "suffix": [".hpp",".json"],
+            "separator": "############\n"
+        })";
+        }
+        else {
+            cout << R"({
+            "input": "stdin_stream",
+            "langs": ["cpp","json"],
+            })";
+        }
+        return 0;
+    }
+    if (flags.legacy_file_pass) {
+        return legacy_file_pass(flags);
+    }
+    read_stdin_requests([&](brgen::request::GenerateSource& req) {
+        do_generate(flags, req, req.json_text);
+        return futils::error::Error<>{};
+    });
+    return 0;
 }
 
 int json2cpp_main(int argc, char** argv) {

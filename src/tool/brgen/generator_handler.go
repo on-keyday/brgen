@@ -36,8 +36,8 @@ type GeneratorHandler struct {
 	//outputCount   atomic.Int64
 	works sync.WaitGroup
 
-	dirBaseSuffixChan chan DirBaseSuffix
-	dirBaseSuffix     []DirBaseSuffix
+	dirBaseSuffixChan chan *DirBaseSuffix
+	dirBaseSuffix     []*DirBaseSuffix
 }
 
 func (g *GeneratorHandler) Printf(format string, args ...interface{}) {
@@ -69,7 +69,7 @@ func (g *GeneratorHandler) Init(src2json string, output []*Output, suffix string
 	g.suffixPattern = suffix
 	g.resultQueue = make(chan *Result, 1)
 	g.errQueue = make(chan error, 1)
-	g.dirBaseSuffixChan = make(chan DirBaseSuffix, 1)
+	g.dirBaseSuffixChan = make(chan *DirBaseSuffix, 1)
 	go func() {
 		for {
 			select {

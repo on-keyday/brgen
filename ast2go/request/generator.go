@@ -9,6 +9,23 @@ import (
 	"io"
 )
 
+type ResponseType uint8
+
+const (
+	ResponseType_Code      ResponseType = 0
+	ResponseType_EndOfCode ResponseType = 1
+)
+
+func (t ResponseType) String() string {
+	switch t {
+	case ResponseType_Code:
+		return "Code"
+	case ResponseType_EndOfCode:
+		return "EndOfCode"
+	}
+	return fmt.Sprintf("ResponseType(%d)", t)
+}
+
 type ResponseStatus uint8
 
 const (
@@ -45,6 +62,9 @@ func (f VisitorTEDIHFunc) Visit(v VisitorTEDIH, name string, field any) {
 type GeneratorRequestHeader struct {
 	Version uint32
 }
+type EndOfCode struct {
+	ID uint64
+}
 type SourceCode struct {
 	ID           uint64
 	Status       ResponseStatus
@@ -62,9 +82,18 @@ type GeneratorRequest struct {
 	Header GeneratorRequestHeader
 	Source []GenerateSource
 }
+type Response struct {
+	Type      ResponseType
+	union_13_ struct {
+		Source SourceCode
+	}
+	union_14_ struct {
+		End EndOfCode
+	}
+}
 type GeneratorResponse struct {
 	Header GeneratorResponseHeader
-	Source []SourceCode
+	Source []Response
 }
 
 func (t *GenerateSource) SetName(v []uint8) bool {
@@ -243,6 +272,49 @@ func (t *GeneratorRequestHeader) Decode(d []byte) (int, error) {
 	err := t.Read(r)
 	return int(int(r.Size()) - r.Len()), err
 }
+func (t *EndOfCode) Visit(v VisitorTEDIH) {
+	v.Visit(v, "ID", t.ID)
+}
+func (t *EndOfCode) Write(w io.Writer) (err error) {
+	tmp5 := [8]byte{}
+	binary.BigEndian.PutUint64(tmp5[:], uint64(t.ID))
+	if n, err := w.Write(tmp5[:]); err != nil || n != 8 {
+		return fmt.Errorf("encode t.ID: %w", err)
+	}
+	return nil
+}
+func (t *EndOfCode) Encode() ([]byte, error) {
+	w := bytes.NewBuffer(make([]byte, 0, 8))
+	if err := t.Write(w); err != nil {
+		return nil, err
+	}
+	return w.Bytes(), nil
+}
+func (t *EndOfCode) MustEncode() []byte {
+	buf, err := t.Encode()
+	if err != nil {
+		panic(err)
+	}
+	return buf
+}
+func (t *EndOfCode) Read(r io.Reader) (err error) {
+	tmpID := [8]byte{}
+	n_ID, err := io.ReadFull(r, tmpID[:])
+	if err != nil {
+		if err == io.ErrUnexpectedEOF || n_ID != 8 /*stdlib bug?*/ {
+			return fmt.Errorf("read ID: %w: expect 8 bytes but read %d bytes", io.ErrUnexpectedEOF, n_ID)
+		}
+		return err
+	}
+	t.ID = uint64(binary.BigEndian.Uint64(tmpID[:]))
+	return nil
+}
+
+func (t *EndOfCode) Decode(d []byte) (int, error) {
+	r := bytes.NewReader(d)
+	err := t.Read(r)
+	return int(int(r.Size()) - r.Len()), err
+}
 func (t *SourceCode) SetName(v []uint8) bool {
 	if uint64(len(v)) > uint64(^uint64(0)) {
 		return false
@@ -278,17 +350,17 @@ func (t *SourceCode) Visit(v VisitorTEDIH) {
 	v.Visit(v, "Code", t.Code)
 }
 func (t *SourceCode) Write(w io.Writer) (err error) {
-	tmp5 := [8]byte{}
-	binary.BigEndian.PutUint64(tmp5[:], uint64(t.ID))
-	if n, err := w.Write(tmp5[:]); err != nil || n != 8 {
+	tmp6 := [8]byte{}
+	binary.BigEndian.PutUint64(tmp6[:], uint64(t.ID))
+	if n, err := w.Write(tmp6[:]); err != nil || n != 8 {
 		return fmt.Errorf("encode t.ID: %w", err)
 	}
 	if n, err := w.Write([]byte{byte(t.Status)}); err != nil || n != 1 {
 		return fmt.Errorf("encode t.Status: %w", err)
 	}
-	tmp6 := [8]byte{}
-	binary.BigEndian.PutUint64(tmp6[:], uint64(t.NameLen))
-	if n, err := w.Write(tmp6[:]); err != nil || n != 8 {
+	tmp7 := [8]byte{}
+	binary.BigEndian.PutUint64(tmp7[:], uint64(t.NameLen))
+	if n, err := w.Write(tmp7[:]); err != nil || n != 8 {
 		return fmt.Errorf("encode t.NameLen: %w", err)
 	}
 	len_Name := int(t.NameLen)
@@ -298,9 +370,9 @@ func (t *SourceCode) Write(w io.Writer) (err error) {
 	if n, err := w.Write(t.Name); err != nil || n != len(t.Name) {
 		return fmt.Errorf("encode Name: %w", err)
 	}
-	tmp7 := [8]byte{}
-	binary.BigEndian.PutUint64(tmp7[:], uint64(t.ErrorLen))
-	if n, err := w.Write(tmp7[:]); err != nil || n != 8 {
+	tmp8 := [8]byte{}
+	binary.BigEndian.PutUint64(tmp8[:], uint64(t.ErrorLen))
+	if n, err := w.Write(tmp8[:]); err != nil || n != 8 {
 		return fmt.Errorf("encode t.ErrorLen: %w", err)
 	}
 	len_ErrorMessage := int(t.ErrorLen)
@@ -310,9 +382,9 @@ func (t *SourceCode) Write(w io.Writer) (err error) {
 	if n, err := w.Write(t.ErrorMessage); err != nil || n != len(t.ErrorMessage) {
 		return fmt.Errorf("encode ErrorMessage: %w", err)
 	}
-	tmp8 := [8]byte{}
-	binary.BigEndian.PutUint64(tmp8[:], uint64(t.Len))
-	if n, err := w.Write(tmp8[:]); err != nil || n != 8 {
+	tmp9 := [8]byte{}
+	binary.BigEndian.PutUint64(tmp9[:], uint64(t.Len))
+	if n, err := w.Write(tmp9[:]); err != nil || n != 8 {
 		return fmt.Errorf("encode t.Len: %w", err)
 	}
 	len_Code := int(t.Len)
@@ -438,9 +510,9 @@ func (t *GeneratorResponseHeader) Visit(v VisitorTEDIH) {
 	v.Visit(v, "Version", t.Version)
 }
 func (t *GeneratorResponseHeader) Write(w io.Writer) (err error) {
-	tmp9 := [4]byte{}
-	binary.BigEndian.PutUint32(tmp9[:], uint32(t.Version))
-	if n, err := w.Write(tmp9[:]); err != nil || n != 4 {
+	tmp10 := [4]byte{}
+	binary.BigEndian.PutUint32(tmp10[:], uint32(t.Version))
+	if n, err := w.Write(tmp10[:]); err != nil || n != 4 {
 		return fmt.Errorf("encode t.Version: %w", err)
 	}
 	return nil
@@ -510,31 +582,126 @@ func (t *GeneratorRequest) Read(r io.Reader) (err error) {
 	if err := t.Header.Read(r); err != nil {
 		return fmt.Errorf("read Header: %w", err)
 	}
-	tmp_byte_scanner10_ := bufio.NewReader(r)
+	tmp_byte_scanner11_ := bufio.NewReader(r)
 	old_r_Source := r
-	r = tmp_byte_scanner10_
+	r = tmp_byte_scanner11_
 	for {
-		_, err := tmp_byte_scanner10_.ReadByte()
+		_, err := tmp_byte_scanner11_.ReadByte()
 		if err != nil {
 			if err != io.EOF {
 				return fmt.Errorf("read Source: %w", err)
 			}
 			break
 		}
-		if err := tmp_byte_scanner10_.UnreadByte(); err != nil {
+		if err := tmp_byte_scanner11_.UnreadByte(); err != nil {
 			return fmt.Errorf("read Source: unexpected unread error: %w", err)
 		}
-		var tmp11_ GenerateSource
-		if err := tmp11_.Read(r); err != nil {
+		var tmp12_ GenerateSource
+		if err := tmp12_.Read(r); err != nil {
 			return fmt.Errorf("read Source: %w", err)
 		}
-		t.Source = append(t.Source, tmp11_)
+		t.Source = append(t.Source, tmp12_)
 	}
 	r = old_r_Source
 	return nil
 }
 
 func (t *GeneratorRequest) Decode(d []byte) (int, error) {
+	r := bytes.NewReader(d)
+	err := t.Read(r)
+	return int(int(r.Size()) - r.Len()), err
+}
+func (t *Response) End() *EndOfCode {
+	if t.Type == ResponseType_Code {
+		return nil
+	} else if t.Type == ResponseType_EndOfCode {
+		tmp := EndOfCode(t.union_14_.End)
+		return &tmp
+	}
+	return nil
+}
+func (t *Response) SetEnd(v EndOfCode) bool {
+	if t.Type == ResponseType_Code {
+		return false
+	} else if t.Type == ResponseType_EndOfCode {
+		t.union_14_.End = EndOfCode(v)
+		return true
+	}
+	return false
+}
+func (t *Response) Source() *SourceCode {
+	if t.Type == ResponseType_Code {
+		tmp := SourceCode(t.union_13_.Source)
+		return &tmp
+	}
+	return nil
+}
+func (t *Response) SetSource(v SourceCode) bool {
+	if t.Type == ResponseType_Code {
+		t.union_13_.Source = SourceCode(v)
+		return true
+	}
+	return false
+}
+func (t *Response) Visit(v VisitorTEDIH) {
+	v.Visit(v, "Type", t.Type)
+	v.Visit(v, "End", (t.End()))
+	v.Visit(v, "Source", (t.Source()))
+}
+func (t *Response) Write(w io.Writer) (err error) {
+	if n, err := w.Write([]byte{byte(t.Type)}); err != nil || n != 1 {
+		return fmt.Errorf("encode t.Type: %w", err)
+	}
+	switch t.Type {
+	case ResponseType_Code:
+		if err := t.union_13_.Source.Write(w); err != nil {
+			return fmt.Errorf("encode Source: %w", err)
+		}
+	case ResponseType_EndOfCode:
+		if err := t.union_14_.End.Write(w); err != nil {
+			return fmt.Errorf("encode End: %w", err)
+		}
+	}
+	return nil
+}
+func (t *Response) Encode() ([]byte, error) {
+	w := bytes.NewBuffer(make([]byte, 0, 1))
+	if err := t.Write(w); err != nil {
+		return nil, err
+	}
+	return w.Bytes(), nil
+}
+func (t *Response) MustEncode() []byte {
+	buf, err := t.Encode()
+	if err != nil {
+		panic(err)
+	}
+	return buf
+}
+func (t *Response) Read(r io.Reader) (err error) {
+	tmpType := [1]byte{}
+	n_Type, err := io.ReadFull(r, tmpType[:])
+	if err != nil {
+		if err == io.ErrUnexpectedEOF || n_Type != 1 /*stdlib bug?*/ {
+			return fmt.Errorf("read Type: %w: expect 1 byte but read %d bytes", io.ErrUnexpectedEOF, n_Type)
+		}
+		return err
+	}
+	t.Type = ResponseType(tmpType[0])
+	switch t.Type {
+	case ResponseType_Code:
+		if err := t.union_13_.Source.Read(r); err != nil {
+			return fmt.Errorf("read Source: %w", err)
+		}
+	case ResponseType_EndOfCode:
+		if err := t.union_14_.End.Read(r); err != nil {
+			return fmt.Errorf("read End: %w", err)
+		}
+	}
+	return nil
+}
+
+func (t *Response) Decode(d []byte) (int, error) {
 	r := bytes.NewReader(d)
 	err := t.Read(r)
 	return int(int(r.Size()) - r.Len()), err
@@ -572,25 +739,25 @@ func (t *GeneratorResponse) Read(r io.Reader) (err error) {
 	if err := t.Header.Read(r); err != nil {
 		return fmt.Errorf("read Header: %w", err)
 	}
-	tmp_byte_scanner12_ := bufio.NewReader(r)
+	tmp_byte_scanner15_ := bufio.NewReader(r)
 	old_r_Source := r
-	r = tmp_byte_scanner12_
+	r = tmp_byte_scanner15_
 	for {
-		_, err := tmp_byte_scanner12_.ReadByte()
+		_, err := tmp_byte_scanner15_.ReadByte()
 		if err != nil {
 			if err != io.EOF {
 				return fmt.Errorf("read Source: %w", err)
 			}
 			break
 		}
-		if err := tmp_byte_scanner12_.UnreadByte(); err != nil {
+		if err := tmp_byte_scanner15_.UnreadByte(); err != nil {
 			return fmt.Errorf("read Source: unexpected unread error: %w", err)
 		}
-		var tmp13_ SourceCode
-		if err := tmp13_.Read(r); err != nil {
+		var tmp16_ Response
+		if err := tmp16_.Read(r); err != nil {
 			return fmt.Errorf("read Source: %w", err)
 		}
-		t.Source = append(t.Source, tmp13_)
+		t.Source = append(t.Source, tmp16_)
 	}
 	r = old_r_Source
 	return nil
