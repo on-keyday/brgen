@@ -10,6 +10,8 @@
 #include <memory>
 #include <core/ast/node/ast_enum.h>
 #include <helper/pushbacker.h>
+#include <binary/writer.h>
+#include <binary/reader.h>
 
 namespace brgen::vm {
     struct Instruction {
@@ -261,8 +263,8 @@ namespace brgen::vm {
         std::vector<Var> global_variables;
         friend struct VMHelper;
 
-        futils::view::rvec input;
-        std::string output;
+        futils::binary::reader input{futils::view::rvec{}};
+        futils::binary::StreamingBuffer<std::string> output;
         std::unordered_map<std::string, std::uint64_t> functions;
         std::unordered_map<std::uint64_t, std::string> inverse_functions;
         ast::Endian endian = ast::Endian::big;
@@ -282,17 +284,14 @@ namespace brgen::vm {
             this->inject = inject;
         }
 
-        constexpr void set_input(futils::view::rvec input) {
-            this->input = input;
+        constexpr void set_input(futils::binary::reader input) {
+            this->input = std::move(input);
         }
 
-        constexpr futils::view::rvec get_input() const {
-            return input;
+        constexpr futils::binary::reader take_input() {
+            return std::move(input);
         }
 
-        constexpr futils::view::rvec get_output() const {
-            return output;
-        }
         void execute(const Code& code) {
             size_t pc = 0;
             execute_internal(code, pc);

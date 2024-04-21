@@ -8,7 +8,8 @@
 #include <core/ast/json.h>
 #include <core/ast/file.h>
 #include <wrap/cin.h>
-#include "../hex2bin/hex.h"
+#include <number/hex/hex2bin.h>
+#include <file/file_stream.h>
 
 struct Flags : futils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
@@ -26,6 +27,53 @@ struct Flags : futils::cmdline::templ::HelpOption {
         ctx.VarString<true>(&binary_input, "b,binary", "binary input", "<file or - (stdin)>");
     }
 };
+
+int run(const Flags& flags, brgen::vm::Code& code) {
+    brgen::vm::VM vm;
+    vm.set_inject([](brgen::vm::VM& vm, const brgen::vm::Instruction& instr, size_t& pc) {
+        cout << pc << ": " << brgen::vm::to_string(instr.op()) << " " << brgen::nums(instr.arg()) << "\n";
+    });
+    futils::file::View input;
+    std::string input_buf;
+    futils::file::FileStream<std::string> fs{futils::file::File::stdin_file()};
+    using HexFilter = futils::number::hex::HexFilter<std::string, futils::byte, futils::binary::reader>;
+    std::unique_ptr<HexFilter> hex_filter;
+    if (!flags.binary_input.empty()) {
+        if (flags.binary_input == "-") {
+            vm.set_input(futils::binary::reader(fs.get_read_handler(), &fs));
+        }
+        else {
+            if (!input.open(flags.binary_input) || !input.data()) {
+                print_error("cannot open file ", flags.binary_input);
+                return 1;
+            }
+            vm.set_input(futils::binary::reader(input));
+        }
+        if (flags.hex) {
+            hex_filter = std::make_unique<HexFilter>(vm.take_input());
+            vm.set_input(futils::binary::reader(hex_filter->get_read_handler(), hex_filter.get()));
+        }
+    }
+    vm.execute(code);
+    if (!vm.error().empty()) {
+        print_error("vm error: ", vm.error());
+        return 1;
+    }
+    if (!flags.call.empty()) {
+        // set this to an empty object
+        vm.execute(brgen::vm::Instruction{brgen::vm::Op::MAKE_OBJECT, brgen::vm::this_register});
+        vm.call(code, flags.call.data());
+        if (!vm.error().empty()) {
+            print_error("vm error: ", vm.error());
+            return 1;
+        }
+        auto val = vm.get_register(brgen::vm::this_register);
+        std::string buf;
+        brgen::vm::print_value(buf, val);
+        cout << buf << "\n";
+    }
+    return 0;
+}
 
 int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
     if (flags.spec) {
@@ -78,62 +126,6 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
     }
     auto code = brgen::vm::compile(brgen::ast::cast_to<brgen::ast::Program>(*res));
     if (flags.run) {
-        brgen::vm::VM vm;
-        vm.set_inject([](brgen::vm::VM& vm, const brgen::vm::Instruction& instr, size_t& pc) {
-            cout << pc << ": " << brgen::vm::to_string(instr.op()) << " " << brgen::nums(instr.arg()) << "\n";
-        });
-        futils::file::View input;
-        std::string input_buf;
-        if (!flags.binary_input.empty()) {
-            if (flags.binary_input == "-") {
-                auto res = futils::file::File::stdin_file().read_all([&](futils::view::wvec buf) {
-                    input_buf.append(buf.as_char(), buf.size());
-                    return true;
-                });
-                if (!res) {
-                    std::string err_msg;
-                    res.error().error(err_msg);
-                    print_error("cannot read stdin: ", err_msg);
-                    return 1;
-                }
-                vm.set_input(input_buf);
-            }
-            else {
-                if (!input.open(flags.binary_input)) {
-                    print_error("cannot open file ", flags.binary_input);
-                    return 1;
-                }
-                vm.set_input(input);
-            }
-            if (flags.hex) {
-                auto h = hex2bin::read_hex(vm.get_input());
-                if (!h) {
-                    print_error("cannot read hex input");
-                    return 1;
-                }
-                input_buf = std::move(*h);
-                vm.set_input(input_buf);
-            }
-        }
-        vm.execute(code);
-        if (!vm.error().empty()) {
-            print_error("vm error: ", vm.error());
-            return 1;
-        }
-        if (!flags.call.empty()) {
-            // set this to an empty object
-            vm.execute(brgen::vm::Instruction{brgen::vm::Op::MAKE_OBJECT, brgen::vm::this_register});
-            vm.call(code, flags.call.data());
-            if (!vm.error().empty()) {
-                print_error("vm error: ", vm.error());
-                return 1;
-            }
-            auto val = vm.get_register(brgen::vm::this_register);
-            std::string buf;
-            brgen::vm::print_value(buf, val);
-            cout << buf << "\n";
-        }
-        return 0;
     }
     std::string buf;
     brgen::vm::print_code(buf, code);
