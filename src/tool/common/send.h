@@ -101,7 +101,11 @@ inline void read_stdin_requests_impl(auto&& cb) {
 
 #ifdef HAS_THREAD
 inline void read_stdin_requests(auto&& cb) {
-    auto [send, recv] = futils::thread::make_chan<brgen::request::GenerateSource>();
+    // TODO(on-keyday): because some compiler not capture structured binding,
+    //                  so we use `auto send_recv` instead of `auto [send,recv]`
+    auto send_recv = futils::thread::make_chan<brgen::request::GenerateSource>();
+    auto& send = send_recv.first;
+    auto& recv = send_recv.second;
     auto thread_handler = [&](futils::thread::RecvChan<brgen::request::GenerateSource> recv) {
         recv.set_blocking(false);
         while (true) {
