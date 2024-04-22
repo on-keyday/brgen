@@ -64,6 +64,12 @@ namespace brgen::request {
             }
             GenerateSource req;
             if (auto err = req.decode(r)) {
+                if (fs.error.method) {
+                    return futils::error::ErrList<>{
+                        err,
+                        fs.error,
+                    };
+                }
                 return err;
             }
             if (auto err = cb(req)) {

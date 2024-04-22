@@ -43,7 +43,7 @@ type binarySourceClients struct {
 func NewRequestManager(r io.Reader, w io.WriteCloser, onError func(error)) SourceManager {
 	s := &binarySourceClients{
 		streams:     make(map[uint64]*binarySourceClient),
-		nextID:      0,
+		nextID:      1,
 		w:           w,
 		r:           r,
 		send:        make(chan []byte),
@@ -178,6 +178,10 @@ func (s *binarySourceClients) reader() {
 		id := code.Source().ID
 		got := s.getStream(id)
 		if got == nil {
+			if id == 0 && code.Source().Status == ResponseStatus_Error {
+				s.closeOnce(fmt.Errorf("client response decoder error: " + string(code.Source().ErrorMessage)))
+				return
+			}
 			s.closeOnce(fmt.Errorf("stream %d not found", id))
 			return
 		}
