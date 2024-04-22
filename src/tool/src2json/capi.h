@@ -72,8 +72,9 @@ constexpr Capability to_capability(CAPABILITY c) {
     return cap;
 }
 #endif
-
-typedef void (*out_callback_t)(const char* str, size_t len, bool is_stderr, void* data);
+// using size_t for abi compatibility
+// is_stderr: 0 for stdout, 1 for stderr 
+typedef void (*out_callback_t)(const char* str, size_t len, size_t is_stderr, void* data);
 S2J_EXPORT int libs2j_call(int argc, char** argv, CAPABILITY cap, out_callback_t out_callback, void* data);
 #ifdef __cplusplus
 }

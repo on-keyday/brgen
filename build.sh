@@ -1,4 +1,5 @@
 #!/bin/bash
+export S2J_LIB=1
 BUILD_MODE=$1
 BUILD_TYPE=$2
 
@@ -62,4 +63,4 @@ fi
 
 unset FUTILS_DIR
 unset BUILD_MODE
-
+unset S2J_LIB

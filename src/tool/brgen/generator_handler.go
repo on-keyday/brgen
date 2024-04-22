@@ -61,6 +61,7 @@ func (g *GeneratorHandler) loadSrc2JSON(src2json, libs2j string) error {
 			if err == nil {
 				g.libs2j, err = s2jgo.Load(path)
 				if err == nil {
+					g.Printf("libs2j: %s loaded\n", path)
 					return nil // success
 				}
 			}
@@ -218,8 +219,10 @@ func (g *GeneratorHandler) loadAstHTTP(path string) ([]byte, error) {
 }
 
 func (g *GeneratorHandler) loadAstLibS2J(path string) ([]byte, error) {
-	args := g.appendConfig([]string{path, "--print-json", "--print-on-error", "--no-color"})
+	args := g.appendConfig([]string{"src2json", path, "--print-json", "--print-on-error", "--no-color"})
+	g.Printf("loadAst: call for %s\n", path)
 	res, err := g.libs2j.Call(args, s2jgo.CAPABILITY_ALL&^s2jgo.CAPABILITY_STDIN&^s2jgo.CAPABILITY_ARGV&^s2jgo.CAPABILITY_NETWORK)
+	g.Printf("loadAst: done for %s\n", path)
 	if err != nil {
 		return nil, err
 	}

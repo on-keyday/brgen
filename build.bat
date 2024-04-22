@@ -1,5 +1,6 @@
 @echo off
 setlocal
+set S2J_LIB=1
 set BUILD_MODE=%1
 set BUILD_TYPE=%2
 set FUTILS_DIR=%3

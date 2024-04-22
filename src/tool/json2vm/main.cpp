@@ -53,7 +53,7 @@ int run(const Flags& flags, brgen::vm::Code& code) {
             vm.set_input(futils::binary::reader(input));
         }
         if (flags.hex) {
-            hex_filter = std::make_unique<HexFilter>(vm.take_input());
+            hex_filter = std::make_unique<HexFilter>(HexFilter{vm.take_input()});
             vm.set_input(futils::binary::reader(hex_filter->get_read_handler(), hex_filter.get()));
         }
     }

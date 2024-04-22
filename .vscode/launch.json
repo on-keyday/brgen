@@ -12,6 +12,7 @@
             "program": "${workspaceRoot}/src/tool/brgen",
             "args": ["-config","test-brgen.json","-debug"],
             "cwd": "${workspaceRoot}",
+            "output": "${workspaceRoot}/tool/br_debuggee"
         },
         {
             "name": "Debug src2json",
@@ -37,6 +38,7 @@
             "program": "${workspaceRoot}/src/tool/json2go",
             "args": ["-f","ignore/sample.json"],
             "cwd": "${workspaceRoot}",
+            "output": "${workspaceRoot}/tool/j2g_debuggee"
         },
         {
             "name": "Debug test",

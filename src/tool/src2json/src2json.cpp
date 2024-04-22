@@ -27,6 +27,7 @@
 #include "hook.h"
 #include "capi_export.h"
 #endif
+#include "../common/generate.h"
 
 #include "version.h"
 
@@ -777,7 +778,7 @@ int src2json_main_noexcept(int argc, char** argv, const Capability& cap) {
 }
 
 // entry point of src2json
-int src2json_main(int argc, char** argv, const Capability& cap) {
+int src2json_main_except(int argc, char** argv, const Capability& cap) {
     try {
         return src2json_main_noexcept(argc, argv, cap);
     } catch (const std::exception& e) {
@@ -787,4 +788,18 @@ int src2json_main(int argc, char** argv, const Capability& cap) {
         print_error("uncaught exception");
         return exit_err;
     }
+}
+
+int src2json_main(int argc, char** argv, const Capability& cap) {
+// SEH for windows
+#ifdef _WIN32
+    __try {
+        return src2json_main_except(argc, argv, cap);
+    } __except (1) {
+        print_error("uncaught SEH exception");
+        return exit_err;
+    }
+#else
+    return src2json_main_except(argc, argv, cap);
+#endif
 }

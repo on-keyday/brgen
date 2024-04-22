@@ -5,8 +5,10 @@ package s2jgo
 import (
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
@@ -21,11 +23,24 @@ type Src2JSON struct {
 	libs2j_call *windows.Proc
 }
 
-func Load(s2j_path string) (*Src2JSON, error) {
+func Load(s2j_path string) (_ *Src2JSON, err error) {
 	if !filepath.IsAbs(s2j_path) {
 		return nil, errors.New("s2j_path must be absolute path")
 	}
 	path := filepath.Clean(s2j_path)
+	// workaround for DLL load
+	// change current directory to DLL directory
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+	err = os.Chdir(filepath.Dir(path))
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		err = os.Chdir(cwd)
+	}()
 	dll, err := windows.LoadDLL(path)
 	if err != nil {
 		return nil, err
@@ -93,11 +108,11 @@ func (s *Src2JSON) CallIOCallback(args []string, cap Capability, cb func(data []
 	runtime.KeepAlive(argh)
 	runtime.KeepAlive(out_callback)
 	runtime.KeepAlive(data)
-	if err != nil && err != windows.ERROR_SUCCESS {
-		return err
-	}
 	if ret != 0 {
-		return fmt.Errorf("libs2j_call returned non-zero: %s", string(data.stderrCapture))
+		return fmt.Errorf("libs2j_call returned non-zero: %s", strings.TrimSuffix(string(data.stderrCapture), "\n"))
+	}
+	if err != windows.ERROR_SUCCESS {
+		_ = err
 	}
 	return nil
 }
