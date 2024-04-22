@@ -122,6 +122,9 @@ func (s *binarySourceClients) closeOnce(err error) {
 }
 
 func (s *binarySourceClients) CloseWithError(err error) {
+	if err == nil {
+		err = io.EOF
+	}
 	s.closeOnce(err)
 }
 

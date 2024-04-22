@@ -232,26 +232,7 @@ auto do_lex(brgen::File* file, size_t limit) {
 }
 
 int check_ast(std::string_view name, futils::view::rvec view) {
-    auto js = futils::json::parse<futils::json::JSON>(view, true);
-    if (js.is_undef()) {
-        print_error("cannot parse json file ", name);
-        return exit_err;
-    }
-    brgen::ast::AstFile file;
-    if (!futils::json::convert_from_json(js, file)) {
-        print_error("cannot convert json file ", name);
-        return exit_err;
-    }
-    if (!file.ast) {
-        print_warning("ast is null");
-        return exit_err;
-    }
-    brgen::ast::JSONConverter c;
-    auto res = c.decode(*file.ast);
-    if (!res) {
-        print_error("cannot decode json file: ", res.error().locations[0].msg);
-        return exit_err;
-    }
+    auto loaded = load_json(0, name, view);
     print_ok();
     return exit_ok;
 }
