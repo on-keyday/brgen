@@ -562,17 +562,10 @@ int load_file(Flags& flags, brgen::FileSet& files, brgen::File*& input, const Ca
         }
         auto& file = cin.get_file();
         std::string file_buf;
-        for (;;) {
-            futils::byte buffer[1024];
-            auto res = file.read_file(buffer);
-            if (!res) {
-                break;
-            }
-            file_buf.append(res->as_char(), res->size());
-            if (res->size() < 1024) {
-                break;
-            }
-        }
+        file.read_all([&](futils::view::wvec data) {
+            file_buf.append(data.as_char(), data.size());
+            return true;
+        });
         auto ok = files.add_special(name, std::move(file_buf));
         if (!ok) {
             print_error("cannot input ", name, " ", brgen::to_error_message(ok.error()));

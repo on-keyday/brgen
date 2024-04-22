@@ -4,6 +4,10 @@ package s2jgo
 
 import "errors"
 
+func Available() bool {
+	return false
+}
+
 type Src2JSON struct{}
 
 func Load(s2j_path string) (*Src2JSON, error) {

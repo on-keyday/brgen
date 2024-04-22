@@ -27,3 +27,8 @@ const (
 
 	CAPABILITY_ALL Capability = 0xffffffffffffffff
 )
+
+type Result struct {
+	Stdout []byte
+	Stderr []byte
+}

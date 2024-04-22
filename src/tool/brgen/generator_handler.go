@@ -284,6 +284,9 @@ func (g *GeneratorHandler) StartGenerator(path ...string) {
 	go func() {
 		reqwg.Wait()
 		g.requestStop()
+	}()
+
+	go func() {
 		for {
 			select {
 			case r := <-g.resultQueue:

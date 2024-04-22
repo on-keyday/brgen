@@ -12,6 +12,10 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+func Available() bool {
+	return true
+}
+
 type Src2JSON struct {
 	dll         *windows.DLL
 	libs2j_call *windows.Proc
@@ -56,10 +60,6 @@ func callback(data unsafe.Pointer, size uintptr, isStdErr uintptr, ctx unsafe.Po
 	return 0
 }
 
-type Result struct {
-	Stdout []byte
-	Stderr []byte
-}
 
 func (s *Src2JSON) Call(args []string, cap Capability) (*Result, error) {
 	var stdout, stderr []byte

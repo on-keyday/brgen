@@ -10,6 +10,7 @@
 #include <wrap/cin.h>
 #include <number/hex/hex2bin.h>
 #include <file/file_stream.h>
+#include "../common/generate.h"
 
 struct Flags : futils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
@@ -18,6 +19,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
     bool hex = false;
     std::string_view call;
     std::string_view binary_input;
+    bool legacy_file_pass = false;
     void bind(futils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&spec, "s", "spec mode");
@@ -25,6 +27,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
         ctx.VarBool(&hex, "x,hex", "hex text input for binary input (ignore spaces and newlines, # is comment)");
         ctx.VarString<true>(&call, "c,call", "call function in run mode", "<function name>");
         ctx.VarString<true>(&binary_input, "b,binary", "binary input", "<file or - (stdin)>");
+        ctx.VarBool(&legacy_file_pass, "f,file", "use legacy file pass mode");
     }
 };
 
@@ -75,61 +78,48 @@ int run(const Flags& flags, brgen::vm::Code& code) {
     return 0;
 }
 
+int vm_generate(const Flags& flags, brgen::request::GenerateSource& req, std::shared_ptr<brgen::ast::Node> res) {
+    auto prog = brgen::ast::cast_to<brgen::ast::Program>(res);
+    auto code = brgen::vm::compile(prog);
+    if (flags.run) {
+        if (!flags.legacy_file_pass) {
+            send_error_and_end(req.id, "run mode is not supported in stdin_stream mode");
+            return 1;
+        }
+        return run(flags, code);
+    }
+    std::string buf;
+    brgen::vm::print_code(buf, code);
+    send_source_and_end(req.id, std::move(buf), req.name + ".bvm");
+    return 0;
+}
+
 int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
     if (flags.spec) {
-        cout << R"({
+        if (flags.legacy_file_pass) {
+            cout << R"({
             "input": "file",
             "langs": ["vm"],
             "suffix": [".bvm"],
             "separator": "############\n"
         })";
+        }
+        else {
+            cout << R"({
+            "input": "stdin_stream",
+            "langs": ["vm"]
+        })";
+        }
         return 0;
     }
     cerr_color_mode = cerr.is_tty() ? ColorMode::force_color : ColorMode::no_color;
-    if (flags.args.empty()) {
-        print_error("no input file");
-        return 1;
+    if (flags.legacy_file_pass) {
+        return generate_from_file(flags, vm_generate);
     }
-    if (flags.args.size() > 1) {
-        print_error("too many input files");
-        return 1;
-    }
-    auto name = flags.args[0];
-    futils::file::View view;
-    if (!view.open(name)) {
-        print_error("cannot open file ", name);
-        return 1;
-    }
-    auto js = futils::json::parse<futils::json::JSON>(view);
-    if (js.is_undef()) {
-        print_error("cannot parse json file ", name);
-        return 1;
-    }
-    brgen::ast::AstFile file;
-    if (!futils::json::convert_from_json(js, file)) {
-        print_error("cannot convert json file to ast: ");
-        return 1;
-    }
-    if (!file.ast) {
-        print_error("cannot convert json file to ast: ast is null");
-        return 1;
-    }
-    brgen::ast::JSONConverter c;
-    auto res = c.decode(*file.ast);
-    if (!res) {
-        print_error("cannot decode json file: ", res.error().locations[0].msg);
-        return 1;
-    }
-    if (!*res) {
-        print_error("cannot decode json file: ast is null");
-        return 1;
-    }
-    auto code = brgen::vm::compile(brgen::ast::cast_to<brgen::ast::Program>(*res));
-    if (flags.run) {
-    }
-    std::string buf;
-    brgen::vm::print_code(buf, code);
-    cout << buf;
+    read_stdin_requests([&](brgen::request::GenerateSource& req) {
+        do_generate(flags, req, req.json_text, vm_generate);
+        return futils::error::Error<>{};
+    });
     return 0;
 }
 

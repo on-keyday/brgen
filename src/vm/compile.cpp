@@ -5,6 +5,7 @@
 #include <core/ast/tool/stringer.h>
 #include "compile.h"
 #include <writer/writer.h>
+#include <core/ast/tool/tmp_ident.h>
 namespace brgen::vm {
 
     struct FieldInfo {
@@ -85,7 +86,7 @@ namespace brgen::vm {
             for (auto& cand : typ->candidates) {
                 auto cond = cand->cond.lock();
                 if (cond) {
-                    compile_expr(cond0);
+                    compile_expr(cond);
                 }
             }
         }
@@ -259,7 +260,15 @@ namespace brgen::vm {
                 }
             }
             else {
-                auto index = add_static(Value{std::string("unknown expression: ") + ast::node_type_to_string(expr->node_type)});
+                std::string err_msg;
+                if (!expr) {
+                    err_msg = "error: expression is null";
+                }
+                else {
+                    err_msg = "error: unknown expression: ";
+                    err_msg += ast::node_type_to_string(expr->node_type);
+                }
+                auto index = add_static(Value{std::move(err_msg)});
                 op(Op::LOAD_STATIC, index);
                 op(Op::ERROR);
             }
@@ -347,9 +356,14 @@ namespace brgen::vm {
                 if (arr_ty->length_value) {
                     op(Op::LOAD_IMMEDIATE, *arr_ty->length_value);
                 }
-                else {
+                else if (arr_ty->length) {
                     compile_expr(arr_ty->length);
                     compile_to_length(arr_ty->length->expr_type);
+                }
+                else{
+                    auto index = add_static(Value{futils::view::rvec("error: array length is not decidable")});
+                    op(Op::LOAD_STATIC, index);
+                    op(Op::ERROR);
                 }
                 op(Op::TRSF, TransferArg(0, 1));                      // register 0 to 1
                 op(Op::PUSH, this_register);                          // save this_register
@@ -450,6 +464,9 @@ namespace brgen::vm {
             if (field_info.find(field) == field_info.end()) {
                 auto& info = format_info[fmt];
                 field_info[field] = FieldInfo{fmt, info.current_offset};
+                if (!field->ident) {
+                    ast::tool::set_tmp_field_ident(info.current_offset, field, "tmp");
+                }
                 info.current_offset += 1;
             }
             if (encode) {
@@ -561,7 +578,9 @@ namespace brgen::vm {
                 }
             }
             if (auto ret = ast::as<ast::Return>(element)) {
-                compile_expr(ret->expr);
+                if (ret->expr) {
+                    compile_expr(ret->expr);
+                }
                 op(Op::RET);
             }
             if (auto c = ast::as<ast::Binary>(element); c) {

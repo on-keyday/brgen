@@ -13,10 +13,6 @@
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
 #include "../common/em_main.h"
-#else
-#include <thread>
-#include <thread/channel.h>
-// #define HAS_THREAD
 #endif
 #include <request/stream.hpp>
 #include <filesystem>
@@ -92,43 +88,10 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
     if (flags.legacy_file_pass) {
         return generate_from_file(flags, cpp_generate);
     }
-#ifdef HAS_THREAD
-    auto [send, recv] = futils::thread::make_chan<brgen::request::GenerateSource>();
-    auto thread_handler = [](const Flags& flag, futils::thread::RecvChan<brgen::request::GenerateSource> recv) {
-        recv.set_blocking(false);
-        while (true) {
-            brgen::request::GenerateSource req;
-            auto s = recv >> req;
-            if (s == futils::thread::ChanStateValue::closed) {
-                break;
-            }
-            if (s != futils::thread::ChanStateValue::enable) {
-                std::this_thread::yield();
-                continue;
-            }
-            do_generate(flag, req, req.json_text);
-        }
-    };
-    std::vector<std::thread> threads;
-    for (size_t i = 0; i < std::thread::hardware_concurrency() / 2; i++) {
-        threads.emplace_back(thread_handler, std::cref(flags), recv);
-    }
-    read_stdin_requests([&](brgen::request::GenerateSource& req) {
-        send.set_blocking(true);
-        send << std::move(req);
-        return futils::error::Error<>{};
-    });
-    send.close();
-    for (auto& t : threads) {
-        t.join();
-    }
-#else
     read_stdin_requests([&](brgen::request::GenerateSource& req) {
         do_generate(flags, req, req.json_text, cpp_generate);
         return futils::error::Error<>{};
     });
-#endif
-
     return 0;
 }
 

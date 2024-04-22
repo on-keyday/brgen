@@ -131,7 +131,6 @@ namespace json2ts {
                 return;
             }
             if (auto u = ast::as<ast::StructUnionType>(typ)) {
-                assert(!field->ident);
                 bool first = true;
                 auto anonymous_field = field->ident->ident;
                 str.map_ident(field->ident, prefix, ".", anonymous_field);
