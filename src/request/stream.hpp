@@ -2,6 +2,7 @@
 #pragma once
 #include <file/file_stream.h>
 #include "generator.hpp"
+#include <core/common/util.h>
 
 namespace brgen::request {
 
@@ -64,6 +65,12 @@ namespace brgen::request {
             }
             GenerateSource req;
             if (auto err = req.decode(r)) {
+                err = futils::error::ErrList<>{
+                    err,
+                    futils::error::StrError<std::string>{
+                        brgen::concat("last_expect=", brgen::nums(fs.last_expected), " last_read=", brgen::nums(fs.last_read)),
+                    },
+                };
                 if (fs.error.method) {
                     return futils::error::ErrList<>{
                         err,
