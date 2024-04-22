@@ -13,10 +13,11 @@ type Warnings struct {
 }
 
 type Config struct {
-	Source2Json *string   `json:"src2json"`
-	Suffix      *string   `json:"suffix"`
-	TargetDirs  []string  `json:"input_dir"`
-	Warnings    Warnings  `json:"warnings"`
-	Output      []*Output `json:"output"`
-	TestInfo    *string   `json:"test_info_output"`
+	Source2Json    *string   `json:"src2json"`
+	LibSource2Json *string   `json:"libs2j`
+	Suffix         *string   `json:"suffix"`
+	TargetDirs     []string  `json:"input_dir"`
+	Warnings       Warnings  `json:"warnings"`
+	Output         []*Output `json:"output"`
+	TestInfo       *string   `json:"test_info_output"`
 }

@@ -36,6 +36,9 @@ func fillStringPtr(c *Config) {
 	if c.Source2Json == nil {
 		c.Source2Json = new(string)
 	}
+	if c.LibSource2Json == nil {
+		c.LibSource2Json = new(string)
+	}
 	if c.Suffix == nil {
 		c.Suffix = new(string)
 		*c.Suffix = ".bgn"
@@ -75,6 +78,7 @@ func init() {
 		return nil
 	})
 	flag.String("src2json", "src2json", "path to src2json")
+	flag.String("libs2j", "", "path to libs2j")
 	flag.String("suffix", ".bgn", "suffix of file to generate from")
 	flag.Bool("disable-untyped", false, "disable untyped warning")
 	flag.Bool("disable-unused", false, "disable unused warning")
@@ -105,6 +109,7 @@ func init() {
 				}
 			}
 			setString(&config.Source2Json, "src2json")
+			setString(&config.LibSource2Json, "libs2j")
 			setString(&config.Suffix, "suffix")
 			setString(&config.TestInfo, "test-info")
 			setBool(&config.Warnings.DisableUntypedWarning, "disable-untyped")
@@ -137,7 +142,7 @@ func main() {
 		g.stderr = io.Discard
 	}
 	start := time.Now()
-	if err := g.Init(*config.Source2Json, config.Output, *config.Suffix); err != nil {
+	if err := g.Init(*config.Source2Json, *config.LibSource2Json, config.Output, *config.Suffix); err != nil {
 		log.Fatal(err)
 	}
 	g.StartGenerator(args...)
