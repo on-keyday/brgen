@@ -1,5 +1,10 @@
 #pragma once
 #include <core/ast/ast.h>
 namespace json2ts {
-    std::string generate(const std::shared_ptr<brgen::ast::Program>& p, bool javascript=false);
-}
+    struct Flags {
+        bool use_bigint = false;
+        bool no_resize = false;
+        bool javascript = false;
+    };
+    std::string generate(const std::shared_ptr<brgen::ast::Program>& p, Flags flags);
+}  // namespace json2ts

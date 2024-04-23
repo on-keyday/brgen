@@ -27,6 +27,7 @@
 #include "hook.h"
 #include "capi_export.h"
 #endif
+#include "../common/generate.h"
 
 #include "version.h"
 
@@ -97,7 +98,10 @@ struct Flags : futils::cmdline::templ::HelpOption {
     bool error_tolerant = false;
 
     void bind(futils::cmdline::option::Context& ctx) {
+        (void)typeid(char8_t);
+        (void)typeid(char8_t*);
         bind_help(ctx);
+
         ctx.VarBool(&version, "version", "print version");
         ctx.VarBool(&spec, "s,spec", "print spec of src2json (for generator mode)");
         ctx.VarBool(&force_ok, "force-ok", "force print ok when succeeded (for generator mode) (for debug)");
@@ -231,26 +235,7 @@ auto do_lex(brgen::File* file, size_t limit) {
 }
 
 int check_ast(std::string_view name, futils::view::rvec view) {
-    auto js = futils::json::parse<futils::json::JSON>(view, true);
-    if (js.is_undef()) {
-        print_error("cannot parse json file ", name);
-        return exit_err;
-    }
-    brgen::ast::AstFile file;
-    if (!futils::json::convert_from_json(js, file)) {
-        print_error("cannot convert json file ", name);
-        return exit_err;
-    }
-    if (!file.ast) {
-        print_warning("ast is null");
-        return exit_err;
-    }
-    brgen::ast::JSONConverter c;
-    auto res = c.decode(*file.ast);
-    if (!res) {
-        print_error("cannot decode json file: ", res.error().locations[0].msg);
-        return exit_err;
-    }
+    auto loaded = load_json(0, name, view);
     print_ok();
     return exit_ok;
 }
@@ -562,17 +547,10 @@ int load_file(Flags& flags, brgen::FileSet& files, brgen::File*& input, const Ca
         }
         auto& file = cin.get_file();
         std::string file_buf;
-        for (;;) {
-            futils::byte buffer[1024];
-            auto res = file.read_file(buffer);
-            if (!res) {
-                break;
-            }
-            file_buf.append(res->as_char(), res->size());
-            if (res->size() < 1024) {
-                break;
-            }
-        }
+        file.read_all([&](futils::view::wvec data) {
+            file_buf.append(data.as_char(), data.size());
+            return true;
+        });
         auto ok = files.add_special(name, std::move(file_buf));
         if (!ok) {
             print_error("cannot input ", name, " ", brgen::to_error_message(ok.error()));
@@ -784,7 +762,7 @@ int src2json_main_noexcept(int argc, char** argv, const Capability& cap) {
 }
 
 // entry point of src2json
-int src2json_main(int argc, char** argv, const Capability& cap) {
+int src2json_main_except(int argc, char** argv, const Capability& cap) {
     try {
         return src2json_main_noexcept(argc, argv, cap);
     } catch (const std::exception& e) {
@@ -794,4 +772,18 @@ int src2json_main(int argc, char** argv, const Capability& cap) {
         print_error("uncaught exception");
         return exit_err;
     }
+}
+
+int src2json_main(int argc, char** argv, const Capability& cap) {
+// SEH for windows
+#ifdef _WIN32
+    __try {
+        return src2json_main_except(argc, argv, cap);
+    } __except (1) {
+        print_error("uncaught SEH exception");
+        return exit_err;
+    }
+#else
+    return src2json_main_except(argc, argv, cap);
+#endif
 }

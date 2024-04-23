@@ -118,7 +118,7 @@ const argConverter = Object.freeze({
         return args;
     },
     [RequestLanguage.CPP] : (opt :CppOption) => {
-        const args = [];
+        const args = ["--file"];
         if(opt.use_line_map){
             args.push("--add-line-map");
         }
@@ -141,7 +141,7 @@ const argConverter = Object.freeze({
         return args;
     },
     [RequestLanguage.C] : (opt :COption) => {
-        const args :string[] = [];
+        const args :string[] = ["--file"];
         if(!opt.multi_file) {
             args.push("--single");
         }
@@ -161,7 +161,7 @@ const argConverter = Object.freeze({
         return args;
     },
     [RequestLanguage.TYPESCRIPT] : (opt :TSOption) => {
-        const args :string[] = [];
+        const args :string[] = ["--file"];
         if(opt.javascript){
             args.push("--javascript");
         }

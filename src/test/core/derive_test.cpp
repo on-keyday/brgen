@@ -6,15 +6,15 @@
 using namespace brgen;
 
 TEST(DeriveTest, Test1) {
-    struct Dummy : ast::BuiltinMember {
+    struct Dummy : ast::Member {
         Dummy()
-            : ast::BuiltinMember({}, ast::NodeType::builtin_member) {}
+            : ast::Member({}, ast::NodeType::member) {}
     };
     Dummy d;
     ASSERT_NE(ast::as<ast::Node>(&d), nullptr);
     ASSERT_NE(ast::as<ast::Stmt>(&d), nullptr);
     ASSERT_NE(ast::as<ast::Member>(&d), nullptr);
-    ASSERT_NE(ast::as<ast::BuiltinMember>(&d), nullptr);
+    
 
     struct Dummy2 : ast::Literal {
         Dummy2()

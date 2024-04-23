@@ -7,6 +7,10 @@
       "type": "string",
       "description": "Path to the src2json(convert definition file to JSON-AST format) executable (on windows, needless to specify .exe extension) (default: src2json in directory that contains brgen executable)"
     },
+    "libs2j": {
+      "type": "string",
+      "description": "Path to libs2j (dynamic library version of src2json) (default: empty)"
+    },
     "suffix": {
       "type": "string",
       "description": "Input file suffix (default: .bgn)"

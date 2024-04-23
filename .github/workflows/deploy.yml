@@ -1,14 +1,15 @@
 # Simple workflow for deploying static content to GitHub Pages
 name: Deploy brgen-web to GitHub Pages
 run-name: deploy brgen-web
-on: push
+on:
+  workflow_dispatch:
+  workflow_call:
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: read
   pages: write
   id-token: write
-
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
 # However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
 concurrency:
@@ -17,77 +18,27 @@ concurrency:
 
 jobs:
   # Single deploy job since we're just deploying
-  build_pages:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Timeline
-        uses: Kesin11/actions-timeline@v2
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Emscripten
-        uses: mymindstorm/setup-emsdk@v14
-      - name: Set up Ninja
-        uses: seanmiddleditch/gha-setup-ninja@master
-      - name: Set up ast2ts
-        run: |
-          cd ast2ts
-          npm install
-          tsc
-          cd ..
-      - name: Set up wasm-pack
-        run: |
-          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-      - name: Build Wasm
-        run: |
-          GOROOT=`go env GOROOT`
-          echo "GOROOT=$GOROOT"
-          export WASMEXEC_FILE="$GOROOT/misc/wasm/wasm_exec.js"
-          export WEB_PRODUCTION="production"
-          . build.sh wasm-em Release
-      - name: Setup Hugo
-        uses: peaceiris/actions-hugo@v3
-        with:
-          hugo-version: "latest"
-          extended: true
-      - name: Build Hugo
-        run: |
-          cd web/doc
-          hugo --minify
-          cd ../..
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: web
-          path: "./web/public"
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
   deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: build_pages
     timeout-minutes: 10
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@v2
+        uses: Kesin11/actions-timeline@b03a6aa289adef5534c84ccb6fbef7c975973574 # v2.1.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Download artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427 # v4.1.4
         with:
-          name: web
+          name: brgen-web
           path: "./web/public"
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
         with:
           # Upload entire repository
           path: "./web/public"
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5

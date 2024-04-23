@@ -14,7 +14,8 @@ import (
 	"runtime"
 	"strings"
 	"sync"
-	"sync/atomic"
+
+	"github.com/on-keyday/brgen/ast2go/request"
 )
 
 type Spec struct {
@@ -31,16 +32,18 @@ type Result struct {
 }
 
 type Generator struct {
-	generatorPath     string
-	outputDir         string
-	args              []string
-	spec              Spec
-	result            chan *Result
-	request           chan *Result
-	ctx               context.Context
-	stderr            io.Writer
-	outputCount       *atomic.Int64
-	dirBaseSuffixChan chan DirBaseSuffix
+	generatorPath string
+	outputDir     string
+	args          []string
+	spec          Spec
+	result        chan *Result
+	request       chan *Result
+	ctx           context.Context
+	stderr        io.Writer
+	//outputCount       *atomic.Int64
+	works             *sync.WaitGroup
+	dirBaseSuffixChan chan *DirBaseSuffix
+	stdinStream       *request.ProcessClient
 }
 
 type DirBaseSuffix struct {
@@ -53,14 +56,14 @@ func printf(stderr io.Writer, format string, args ...interface{}) {
 	fmt.Fprintf(stderr, "brgen: %s", fmt.Sprintf(format, args...))
 }
 
-func NewGenerator(ctx context.Context, work *sync.WaitGroup, stderr io.Writer, res chan *Result, outputCount *atomic.Int64, dirBaseSuffixChan chan DirBaseSuffix) *Generator {
+func NewGenerator(ctx context.Context, work *sync.WaitGroup, stderr io.Writer, res chan *Result /*outputCount *atomic.Int64,*/, dirBaseSuffixChan chan *DirBaseSuffix) *Generator {
 	return &Generator{
+		works:             work,
 		ctx:               ctx,
 		stderr:            stderr,
-		request:           make(chan *Result, 1),
+		request:           make(chan *Result),
 		result:            res,
 		dirBaseSuffixChan: dirBaseSuffixChan,
-		outputCount:       outputCount,
 	}
 }
 
@@ -117,6 +120,81 @@ func (g *Generator) passAst(filePath string, buffer []byte) ([]byte, error) {
 
 var ErrIgnoreMissing = errors.New("ignore missing")
 
+func (g *Generator) sendResult(req *Result) {
+	g.result <- req
+}
+
+func (g *Generator) sendGenerated(fileBase string, data []byte) {
+	suffix := filepath.Ext(fileBase)
+	var path string
+	if strings.HasPrefix("/dev/stdout", g.outputDir) {
+		baseName := filepath.Base(fileBase)
+		path = "/dev/stdout/" + baseName
+	} else {
+		path = filepath.Join(g.outputDir, fileBase)
+	}
+	g.works.Add(1)
+	go func(path string, data []byte, suffix string) {
+		defer g.works.Done()
+		if runtime.GOOS == "windows" {
+			path = strings.ReplaceAll(path, "\\", "/")
+		}
+		g.dirBaseSuffixChan <- &DirBaseSuffix{
+			Dir:    gpath.Dir(path),
+			Base:   strings.TrimSuffix(gpath.Base(path), suffix),
+			Suffix: suffix,
+		}
+		g.sendResult(&Result{
+			Path: path,
+			Data: data,
+		})
+	}(path, data, suffix)
+}
+
+func (g *Generator) handleRequest(req *Result) {
+	defer g.works.Done() // this Done is for the generator handlers Add
+	if g.stdinStream != nil {
+		g.handleStdinStreamRequest(req)
+		return
+	}
+	data, err := g.passAst(req.Path, req.Data)
+	if err != nil {
+		req.Err = fmt.Errorf("passAst: %s: %w", g.generatorPath, err)
+		g.sendResult(req)
+		return
+	}
+	ext := filepath.Ext(req.Path)
+	basePath := strings.TrimSuffix(filepath.Base(req.Path), ext)
+	var split_data [][]byte
+	if len(g.spec.Suffix) == 1 {
+		split_data = [][]byte{data}
+	} else {
+		split_data = bytes.Split(data, []byte(g.spec.Separator))
+	}
+	if len(split_data) > len(g.spec.Suffix) {
+		req.Err = fmt.Errorf("too many output. expect equal to or less than %d, got %d: %s", len(g.spec.Suffix), len(split_data), req.Path)
+		g.sendResult(req)
+		return
+	}
+	for i, suffix := range g.spec.Suffix {
+		if i >= len(split_data) {
+			break
+		}
+		g.sendGenerated(basePath+suffix, split_data[i])
+	}
+}
+
+func (g *Generator) run() {
+	for {
+		select {
+		case <-g.ctx.Done():
+			return
+		case req := <-g.request:
+			go g.handleRequest(req)
+		}
+	}
+}
+
 func (g *Generator) StartGenerator(out *Output) error {
 	g.generatorPath = out.Generator
 	if runtime.GOOS == "windows" {
@@ -133,71 +211,12 @@ func (g *Generator) StartGenerator(out *Output) error {
 		}
 		return fmt.Errorf("askSpec: %s: %w", g.generatorPath, err)
 	}
-	go func() {
-		for {
-			select {
-			case <-g.ctx.Done():
-				return
-			case req := <-g.request:
-				go func() {
-					data, err := g.passAst(req.Path, req.Data)
-					if err != nil {
-						req.Err = fmt.Errorf("passAst: %s: %w", g.generatorPath, err)
-						g.result <- req
-						return
-					}
-					ext := filepath.Ext(req.Path)
-					basePath := strings.TrimSuffix(filepath.Base(req.Path), ext)
-					var split_data [][]byte
-					if len(g.spec.Suffix) == 1 {
-						split_data = [][]byte{data}
-					} else {
-						split_data = bytes.Split(data, []byte(g.spec.Separator))
-					}
-					if len(split_data) > len(g.spec.Suffix) {
-						req.Err = fmt.Errorf("too many output. expect equal to or less than %d, got %d: %s", len(g.spec.Suffix), len(split_data), req.Path)
-						g.result <- req
-						return
-					}
-					// add output count before sending result
-					g.outputCount.Add(int64(len(split_data) - 1))
-					for i, suffix := range g.spec.Suffix {
-						if i >= len(split_data) {
-							break
-						}
-						var path string
-						if strings.HasPrefix("/dev/stdout", g.outputDir) {
-							baseName := filepath.Base(basePath + suffix)
-							path = "/dev/stdout/" + baseName
-						} else {
-							path = filepath.Join(g.outputDir, basePath+suffix)
-						}
-						go func(path string, data []byte, suffix string) {
-							if runtime.GOOS == "windows" {
-								path = strings.ReplaceAll(path, "\\", "/")
-							}
-							g.dirBaseSuffixChan <- DirBaseSuffix{
-								Dir:    gpath.Dir(path),
-								Base:   strings.TrimSuffix(gpath.Base(path), suffix),
-								Suffix: suffix,
-							}
-							g.result <- &Result{
-								Path: path,
-								Data: data,
-							}
-						}(path, split_data[i], suffix)
-					}
-				}()
-			}
-		}
-	}()
+	go g.run()
 	return nil
 }
 
 func (g *Generator) Request(req *Result) {
-	go func() {
-		g.request <- req
-	}()
+	g.request <- req
 }
 
 func (g *Generator) askSpec() error {
@@ -210,7 +229,6 @@ func (g *Generator) askSpec() error {
 	if err != nil {
 		return err
 	}
-
 	err = json.NewDecoder(buf).Decode(&g.spec)
 	if err != nil {
 		return err
@@ -219,16 +237,20 @@ func (g *Generator) askSpec() error {
 		return errors.New("langs is empty")
 	}
 	if g.spec.Input == "" {
-		return errors.New("pass_by is empty")
+		return errors.New("input is empty")
 	}
-	if g.spec.Input != "stdin" && g.spec.Input != "file" {
-		return errors.New("pass_by must be stdin or file")
+	if g.spec.Input != "stdin" && g.spec.Input != "file" && g.spec.Input != "stdin_stream" {
+		return errors.New("input must be stdin or file or stdin_stream")
 	}
-	if len(g.spec.Suffix) == 0 {
-		return errors.New("suffix is empty")
-	}
-	if len(g.spec.Suffix) > 1 && len(g.spec.Separator) == 0 {
-		return errors.New("separator is empty when suffix is more than 1")
+	if g.spec.Input == "stdin_stream" {
+		return g.initStdinStream()
+	} else {
+		if len(g.spec.Suffix) == 0 {
+			return errors.New("suffix is empty")
+		}
+		if len(g.spec.Suffix) > 1 && len(g.spec.Separator) == 0 {
+			return errors.New("separator is empty when suffix is more than 1")
+		}
 	}
 	return nil
 }

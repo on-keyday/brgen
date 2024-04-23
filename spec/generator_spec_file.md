@@ -6,7 +6,7 @@
 
 ##### lang-version: 0.0.0.d3 # draft 3
 
-##### document version: 0.0.5
+##### document version: 0.0.6
 
 ##### author: on-keyday (https://github.com/on-keyday)
 
@@ -25,8 +25,11 @@ generator specification file is a JSON file
 ```yaml
 input: |
   tell brgen how to pass parsed AST to generator.  (string)
-  selection are "stdin","file"
+  selection are "stdin","file","stdin_stream"
   if file, file name is passed by command line
+  if stdin_stream, 
+  using binary based async protocol described in example/brgen_help/generator.bgn. 
+  when using stdin_stream, other configurations are ignored
   default is stdin.
 langs: |
   language is programming language to generate by generator (array of string)
@@ -39,10 +42,6 @@ separator: |
   if element count of suffix is grater than 1, separator must be specified
   generator should use separator that is not a part of generated language to
   prevent mis separation
-types: |
-  type configuration of brgen
-  this is passed to src2json for typing rule
-  (not implemented because of src2json implementation limit)
 ```
 
 ## 4. Interface
@@ -81,3 +80,4 @@ brgen must passes `-s` option as `sys.argv[1]`
 2023/09/21: add types for Elements
 2023/12/26: add document of separator and suffix
 2023/12/26: add Example section
+2024/04/16: add stdin_stream option

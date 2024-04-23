@@ -150,7 +150,7 @@
         ".\\src\\tool\\json2llvm\\Cargo.toml",
     ],
     "brgen-lsp.src2json" :"./tool/src2json.exe",
-    //"go.buildTags": "js,wasm"
+    //"go.buildTags": "linux",
     "yaml.schemas": {
         "https://ultra-supara/homebrew-sisakulint/settings.json": "/.github/workflows/*.{yml,yaml}"
     },

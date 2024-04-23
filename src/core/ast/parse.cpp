@@ -6,9 +6,6 @@
 namespace brgen::ast {
 
     struct ParserState {
-        std::shared_ptr<Type> input_type;
-        std::shared_ptr<Type> output_type;
-        std::shared_ptr<Type> config_type;
         bool collect_comment = false;
         bool error_tolerant = false;
         LocationError& errors;  // for error tolerant mode
@@ -617,13 +614,13 @@ namespace brgen::ast {
                 return parse_char_literal(std::move(*t));
             }
             if (auto i = s.consume_token("input")) {
-                return std::make_shared<SpecialLiteral>(i->loc, state.input_type, SpecialLiteralKind::input_);
+                return std::make_shared<SpecialLiteral>(i->loc, SpecialLiteralKind::input_);
             }
             if (auto o = s.consume_token("output")) {
-                return std::make_shared<SpecialLiteral>(o->loc, state.output_type, SpecialLiteralKind::output_);
+                return std::make_shared<SpecialLiteral>(o->loc, SpecialLiteralKind::output_);
             }
             if (auto c = s.consume_token("config")) {
-                return std::make_shared<SpecialLiteral>(c->loc, state.config_type, SpecialLiteralKind::config_);
+                return std::make_shared<SpecialLiteral>(c->loc, SpecialLiteralKind::config_);
             }
             if (auto paren = s.consume_token("(")) {
                 return parse_paren(std::move(*paren));
@@ -1476,7 +1473,7 @@ namespace brgen::ast {
                 auto m_scope = state.enter_member(state_);
                 state_->body = parse_indent_block(state_);
             }
-            // state_->ident->expr_type = state_->body->struct_type
+            // `state_->ident->expr_type = state_->body->struct_type`
             // makes circular reference, so not use it
             state.add_to_struct(state_);
 

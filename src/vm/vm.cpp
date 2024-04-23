@@ -584,7 +584,7 @@ namespace brgen::vm {
     void VM::execute_internal(const Code& code, size_t& pc) {
         auto& program = code.instructions;
         auto& static_data = code.static_data;
-        futils::binary::reader r{input};
+        futils::binary::reader& r=input;
         size_t read_bit_offset = 0;
         while (pc < program.size()) {
             if (inject) {

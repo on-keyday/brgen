@@ -1,0 +1,211 @@
+
+config.url = "https://gesato.com/fc/DQ4/code.html"
+
+format CharacterProfile:
+    status :CharacterStatus
+    hp :ul16
+    mp :ul16
+    level :u8
+    power :u8
+    speed :u8
+    physical_fitness :u8
+    clevearness :u8
+    luck :u8
+    max_hp :ul16
+    max_mp :ul16
+    experience_point :ul24
+    items :[8]Item
+
+format HerosProfile:
+    gender :u8
+    name :[4]u8
+    profile :CharacterProfile
+    curse :HerosCurse
+
+enum CharacterStatus:
+    :u8
+    dead = 0
+    live = 0x80
+    poisoned = 0xA0
+    paralysis = 0xF0
+
+format Item: 
+    input.bit_order = config.bit_order.msb
+    equipping :u1
+    code :ItemCode
+
+enum ItemCode:
+    :u7
+    hinokino_bou = 0x00
+
+format HerosCurse:
+    input.bit_order = config.bit_order.lsb
+    nihuram  :u1
+    behoimi  :u1
+    mera     :u1
+    rula     :u1
+    rarihoma :u1
+    zameha   :u1
+    gira     :u1
+    behoma   :u1
+    astron   :u1
+    mahosute :u1
+    raidein  :u1
+    mosyasu  :u1
+    iora     :u1
+    behomazun:u1
+    gigadein :u1
+    zaoraru  :u1
+    minadein :u1
+    parupunte:u1
+    rula_move :u1
+    behoimi_move :u1
+    toheros_move :u1
+    riremit_move :u1
+    behoma_move :u1
+    zaoraru_move :u1
+
+format CriftsCurse:
+    input.bit_order = config.bit_order.lsb
+    sucara :u1
+    hoimi :u1
+    manusa :u1
+    behoimi :u1
+    mahotone :u1
+    behoma :u1
+    sucult :u1
+    behomara :u1
+    zaki :u1
+    zaoraru :u1
+    zaraki :u1
+    zaoriku :u1
+    unused1 :u4
+    hoimi_move :u1
+    kiari_move :u1
+    behoimi_move :u1
+    zaoraru_move :u1
+    behoma_move :u1
+    behomara_move :u1
+    zaoriku_move :u1
+    unused2 :u1
+
+format MineasCurse:
+    input.bit_order = config.bit_order.lsb
+    bagi :u1
+    hoimi :u1
+    rariho :u1
+    behoimi :u1
+    kiariku :u1
+    behoma :u1
+    bagima :u1
+    fuhaba :u1
+    rarihoma :u1
+    zaoraru :u1
+    bagicross :u1
+    megazaru :u1
+    unused1 :u4
+    hoimi_move :u1
+    kiariku_move :u1
+    behoimi_move :u1
+    zaoraru_move :u1
+    behoma_move :u1
+    unused :u3
+
+format ManyasCurse:
+    input.bit_order = config.bit_order.lsb
+    mera :u1
+    rukani :u1
+    gira :u1
+    mahotora :u1
+    io :u1
+    dragoram :u1
+    merami :u1
+    merazoma :u1
+    begirama :u1
+    begiragon :u1
+    iora :u1
+    ionazun :u1
+    unused1 :u4
+    rula_move :u1
+    riremit_move :u1
+    toramana_move :u1
+    unused2 :u5
+
+format BuraisCurse:
+    input.bit_order = config.bit_order.lsb
+    hyado :u1
+    rukani :u1
+    hyadaruko :u1
+    mahokanta :u1
+    hyadain :u1
+    rula :u1
+    mahotora :u1
+    rukanan :u1
+    medapani :u1
+    piorimu :u1
+    mahyado :u1
+    baikiruto :u1
+    unused1 :u4
+    rula_move :u1
+    riremit_move :u1
+    ranaruta :u1
+    impass :u1
+    unused :u4
+
+format BattleEnemyState:
+    speed :u8
+    attack :ul16
+    guard :ul16
+    common_state :BattleCommonState
+    enemy_status :BattleEnemyStatus
+    behaviour :BattleBebaviour
+    hp :ul16
+    mp :ul16
+
+format BattleCommonState:
+    input.bit_order = config.bit_order.lsb
+    sleep :u1
+    supprised :u1
+    confusion :u1
+    mahotone :u1
+    manusa :u1
+    baikiruto :u1
+    mahokanta :u1
+    mahosute :u1
+
+
+format BattleEnemyStatus:
+    input.bit_order = config.bit_order.lsb
+    unused1 :u1
+    guarding :u1
+    enpowered :u1
+    paralysis :u1
+    not_defeated :u1
+    not_escaped :u1
+
+enum BattleBebaviour:
+    :u8
+    normal = 0x0
+    tsukon_no_itigeki = 0x1
+    astron = 0x2
+    smiling = 0x10
+    laughing = 0x20
+    slipped = 0x40
+    struggle = 0x80
+
+format BattlePartyStatus:
+    input.bit_order = config.bit_order.lsb
+    dragoram :u1
+    guard :u1
+    unused1: u1
+    enpowered :u1
+    unused2 :u4
+
+
+format BattlePartyMemberState:
+    speed :u8
+    attack :ul16
+    guard :ul16
+    common_state :BattleCommonState
+    member_state :BattlePartyStatus
+    behaviour :BattleBebaviour

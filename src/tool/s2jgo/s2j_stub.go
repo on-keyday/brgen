@@ -1,19 +1,18 @@
-//go:build !windows
-
+//go:build !windows && (!cgo || !linux && !darwin && !freebsd)
 package s2jgo
 
 import "errors"
 
-type Src2JSON struct{}
+func Available() bool {
+	return false
+}
 
-func Load(s2j_path string) (*Src2JSON, error) {
+type src2JSON struct{}
+
+func load(_ string) (*src2JSON, error) {
 	return nil, errors.New("not implemented")
 }
 
-func (s *Src2JSON) CallIOCallback(args []string, cap Capability, cb func(data []byte, isStdErr bool)) error {
+func (s *src2JSON) CallIOCallback(args []string, cap Capability, cb func(data []byte, isStdErr bool)) error {
 	return errors.New("not implemented")
-}
-
-func (s *Src2JSON) Call(args []string, cap Capability) (*Result, error) {
-	return nil, errors.New("not implemented")
 }

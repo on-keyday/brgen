@@ -10,8 +10,9 @@
             "request": "launch",
             "mode": "debug",
             "program": "${workspaceRoot}/src/tool/brgen",
-            "args": [],
+            "args": ["-config","test-brgen.json","-debug"],
             "cwd": "${workspaceRoot}",
+            "output": "${workspaceRoot}/tool/br_debuggee"
         },
         {
             "name": "Debug src2json",
@@ -19,7 +20,7 @@
             "request": "launch",
             "program": "${workspaceRoot}/tool/src2json",
             "args": [
-                "c:/workspace/shbrgen/brgen/example/icmp.bgn",
+                "c:/workspace/shbrgen/brgen/example/ieee802_11.bgn",
                 "--print-json","--print-on-error"
             ],
             "stopAtEntry": false,
@@ -37,6 +38,7 @@
             "program": "${workspaceRoot}/src/tool/json2go",
             "args": ["-f","ignore/sample.json"],
             "cwd": "${workspaceRoot}",
+            "output": "${workspaceRoot}/tool/j2g_debuggee"
         },
         {
             "name": "Debug test",
@@ -55,9 +57,14 @@
             "name": "Debug json2cpp",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceRoot}/tool/json2c",
+            "program": "${workspaceRoot}/tool/json2cpp2",
             "args": [
-                "ignore/sample.json",
+                "<",
+                "ignore/request.bin",
+                ">",
+                "ignore/response.bin",
+                //"ignore/sample.json",
+                //"-f",
                 /*"-r",
                 "--call", "Test2.decode",
                 "--binary","example/vm_test/varint.dat",

@@ -8,6 +8,7 @@
 #include <core/ast/tool/sort.h>
 #include <core/ast/tool/type.h>
 #include "../common/line_map.h"
+#include <core/ast/tool/tmp_ident.h>
 
 namespace j2cp2 {
     namespace ast = brgen::ast;
@@ -88,6 +89,7 @@ namespace j2cp2 {
         ast::Format* current_format = nullptr;
         Context ctx;
         std::vector<std::string> struct_names;
+        std::string bytes_type = "::futils::view::rvec";
 
         auto write_return_error(brgen::writer::Writer& w, ast::Field* field, auto&&... msg) {
             if (use_error) {
@@ -188,7 +190,7 @@ namespace j2cp2 {
                     return brgen::concat("std::array<", typ, ",", len, ">");
                 }
                 if (auto int_ty = ast::as<ast::IntType>(arr_ty->element_type); int_ty && int_ty->bit_size == 8) {
-                    return "::futils::view::rvec";
+                    return bytes_type;
                 }
                 return "std::vector<" + get_type_name(arr_ty->element_type) + ">";
             }
@@ -498,10 +500,7 @@ namespace j2cp2 {
 
         bool set_hidden_ident(const std::shared_ptr<ast::Field>& f) {
             if (!f->ident) {
-                auto h = brgen::concat("hidden_field_", brgen::nums(get_seq()));
-                f->ident = std::make_shared<ast::Ident>();
-                f->ident->ident = std::move(h);
-                f->ident->base = f;
+                ast::tool::set_tmp_field_ident(get_seq(), f, "hidden_field_");
                 return true;
             }
             return false;
@@ -579,11 +578,8 @@ namespace j2cp2 {
                 auto enum_ = enum_ty->base.lock();
                 auto bit_size = enum_->base_type->bit_size;
                 map_line(f->loc);
-                w.writeln("std::uint", brgen::nums(*bit_size), "_t ", f->ident->ident, "_data = 0;");
-                map_line(f->loc);
-                w.writeln(enum_->ident->ident, " ", f->ident->ident, "() const { return static_cast<", enum_->ident->ident, ">(this->", f->ident->ident, "_data); }");
-                w.writeln("void ", f->ident->ident, "(", enum_->ident->ident, " v) { this->", f->ident->ident, "_data = static_cast<std::uint", brgen::nums(*bit_size), "_t>(v); }");
-                str.map_ident(f->ident, prefix, ".", f->ident->ident + "()");
+                w.writeln(enum_->ident->ident, " ", f->ident->ident, "{};");
+                str.map_ident(f->ident, prefix, ".", f->ident->ident);
             }
             if (auto arr_ty = ast::as<ast::ArrayType>(type); arr_ty) {
                 auto ty = get_type_name(type);
@@ -607,6 +603,7 @@ namespace j2cp2 {
                         maybe_write_auto_length_set("v.size()", type);
                         auto to = str.to_string(f->ident);
                         w.writeln(to, " = std::forward<decltype(v)>(v);");
+                        w.writeln("return true;");
                     }
                     w.writeln("}");
                 }
@@ -654,6 +651,9 @@ namespace j2cp2 {
                     else {
                         w.writeln("bool encode(::futils::binary::writer& w) const ;");
                         w.writeln("bool decode(::futils::binary::reader& r);");
+                    }
+                    if (s->fixed_header_size) {
+                        w.writeln("static constexpr size_t fixed_header_size = ", brgen::nums(s->fixed_header_size / 8), ";");
                     }
                 }
             }
@@ -782,9 +782,11 @@ namespace j2cp2 {
             if (auto ident = ast::as<ast::IdentType>(typ); ident) {
                 typ = ident->base.lock();
             }
+            /*
             if (ast::as<ast::EnumType>(typ)) {
                 ident = ident.substr(0, ident.size() - 2) + "_data";
             }
+            */
             futils::helper::DynDefer peek;
             if (f->arguments) {
                 if (f->arguments->arguments.size() == 1) {
@@ -914,13 +916,11 @@ namespace j2cp2 {
             }
             if (auto enum_ty = ast::as<ast::EnumType>(typ)) {
                 auto l = ast::as<ast::IntType>(enum_ty->base.lock()->base_type);
+                auto base_type = get_type_name(enum_ty->base.lock()->base_type);
+                auto tmp = brgen::concat("tmp_", brgen::nums(get_seq()), "_");
                 map_line(loc);
-                w.writeln("if (!::futils::binary::write_num(w,", ident, ",", ctx.endian_text(l->endian), ")) {");
-                {
-                    auto indent = w.indent_scope();
-                    write_return_error(fi, "write enum failed");
-                }
-                w.writeln("}");
+                w.writeln("auto ", tmp, " = static_cast<", base_type, ">(", ident, ");");
+                write_field_encode_impl(loc, tmp, enum_ty->base.lock()->base_type, fi);
             }
         }
 
@@ -991,9 +991,11 @@ namespace j2cp2 {
             if (auto ident = ast::as<ast::IdentType>(typ); ident) {
                 typ = ident->base.lock();
             }
+            /*
             if (ast::as<ast::EnumType>(typ)) {
                 ident = ident.substr(0, ident.size() - 2) + "_data";
             }
+            */
             futils::helper::DynDefer peek;
             if (f->arguments && f->arguments->peek) {
                 if (f->arguments->peek_value && *f->arguments->peek_value) {
@@ -1070,6 +1072,13 @@ namespace j2cp2 {
                     else if (found->second.size != 0) {
                         auto require_remain = brgen::nums(found->second.size / 8);
                         map_line(loc);
+                        w.writeln("if(r.is_stream()) {");
+                        {
+                            auto indent = w.indent_scope();
+                            write_return_error(fi, "read array failed; stream mode is currently not supported for fixed terminator");
+                        }
+                        w.writeln("}");
+                        map_line(loc);
                         w.writeln("if (r.remain().size() < ", require_remain, ") {");
                         {
                             auto indent = w.indent_scope();
@@ -1079,7 +1088,7 @@ namespace j2cp2 {
                         len = brgen::concat("(r.remain().size() - ", require_remain, ")");
                     }
                     else {
-                        len = "r.remain().size()";
+                        len = "$EOF";
                     }
                 }
                 else if (!arr_ty->length_value) {
@@ -1088,7 +1097,12 @@ namespace j2cp2 {
                 map_line(loc);
                 if (auto int_ty = ast::as<ast::IntType>(arr_ty->element_type); int_ty && int_ty->bit_size == 8) {
                     if (len) {
-                        w.writeln("if (!r.read(", ident, ", ", *len, ")) {");
+                        if (len == "$EOF") {
+                            w.writeln("if (!r.read_until_eof(", ident, ")) {");
+                        }
+                        else {
+                            w.writeln("if (!r.read(", ident, ", ", *len, ")) {");
+                        }
                         {
                             auto indent = w.indent_scope();
                             write_return_error(fi, "read byte array failed");
@@ -1148,7 +1162,7 @@ namespace j2cp2 {
                         w.writeln(ident, ".clear();");
                     }
                     std::string tmp_i;
-                    if (len) {
+                    if (len && *len != "$EOF") {
                         tmp_i = brgen::concat("tmp_", brgen::nums(get_seq()), "_");
                         w.writeln("for (size_t  ", tmp_i, "= 0; ", tmp_i, "<", *len, "; ++", tmp_i, " ) {");
                     }
@@ -1158,17 +1172,22 @@ namespace j2cp2 {
                     // avoid reserve() call to prevent memory exhausted
                     {
                         auto indent = w.indent_scope();
-                        if (next) {
+                        if (len == "$EOF") {
+                            w.writeln("if(!r.load_stream(1)) {");
+                            w.indent_writeln("break; // reached EOF");
+                            w.writeln("}");
+                        }
+                        else if (next) {
                             auto next_len = brgen::nums(std::get<2>(*next));
                             auto tmp = brgen::concat("tmp_", brgen::nums(get_seq()), "_");
-                            w.writeln("auto ", tmp, " = r.remain().substr(0,", next_len, ");");
-                            w.writeln("if (", tmp, ".size() < ", next_len, ") {");
+                            w.writeln("if(!r.load_stream(", next_len, ")) {");
                             {
                                 auto indent = w.indent_scope();
                                 auto val = brgen::escape(std::get<0>(*next));
                                 write_return_error(fi, "read array failed; no terminator ", val, " found");
                             }
                             w.writeln("}");
+                            w.writeln("auto ", tmp, " = r.remain().substr(0,", next_len, ");");
                             w.writeln("if (", tmp, " == ::futils::view::rvec(", std::get<0>(*next), ", ", next_len, ")) {");
                             w.indent_writeln("break;");
                             w.writeln("}");
@@ -1211,7 +1230,7 @@ namespace j2cp2 {
                 auto tmp_var = brgen::concat("tmp_", brgen::nums(get_seq()), "_");
                 w.writeln("::futils::view::rvec ", tmp_var, " = {};");
                 map_line(loc);
-                w.writeln("if (!r.read(", tmp_var, ", ", brgen::nums(len), ")) {");
+                w.writeln("if (!r.read_direct(", tmp_var, ", ", brgen::nums(len), ")) {");
                 {
                     auto indent = w.indent_scope();
                     write_return_error(fi, "read string failed");
@@ -1228,13 +1247,13 @@ namespace j2cp2 {
             }
             if (auto enum_ty = ast::as<ast::EnumType>(typ)) {
                 auto s = ast::as<ast::IntType>(enum_ty->base.lock()->base_type);
+                auto tmp = brgen::concat("tmp_", brgen::nums(get_seq()), "_");
+                auto int_ty = get_type_name(enum_ty->base.lock()->base_type, true);
                 map_line(loc);
-                w.writeln("if (!::futils::binary::read_num(r,", ident, ",", ctx.endian_text(s->endian), ")) {");
-                {
-                    auto indent = w.indent_scope();
-                    write_return_error(fi, "read enum failed");
-                }
-                w.writeln("}");
+                w.writeln(int_ty, " ", tmp, " = 0;");
+                write_field_decode_impl(loc, tmp, enum_ty->base.lock()->base_type, fi);
+                map_line(loc);
+                w.writeln(ident, " = static_cast<", enum_ty->base.lock()->ident->ident, ">(", tmp, ");");
             }
         }
 
@@ -1399,6 +1418,40 @@ namespace j2cp2 {
             w.writeln("#include <binary/number.h>");
             if (use_error) {
                 w.writeln("#include <error/error.h>");
+            }
+            futils::helper::DynDefer defer;
+            std::vector<std::string> namespaces;
+            for (auto& elm : prog->elements) {
+                if (auto m = ast::as<ast::Metadata>(elm)) {
+                    auto str_lit = ast::as<ast::StrLiteral>(m->values[0]);
+                    if (!str_lit) {
+                        continue;
+                    }
+                    auto name = brgen::unescape(str_lit->value);
+                    if (!name) {
+                        continue;
+                    }
+                    if (m->name == "config.cpp.namespace") {
+                        namespaces.push_back(*name);
+                    }
+                    else if (m->name == "config.cpp.bytes_type") {
+                        this->bytes_type = std::move(*name);
+                    }
+                    else if (m->name == "config.cpp.sys_include") {
+                        w.writeln("#include <", *name, ">");
+                    }
+                    else if (m->name == "config.cpp.include") {
+                        w.writeln("#include \"", *name, "\"");
+                    }
+                }
+            }
+            for (auto& name : namespaces) {
+                w.writeln("namespace ", name, " {");
+                auto ind = w.indent_scope_ex();
+                defer = futils::helper::defer_ex([&, ind = std::move(ind), d = std::move(defer), name = std::move(name)]() mutable {
+                    ind.execute();
+                    w.writeln("} // namespace ", name);
+                });
             }
             for (auto& fmt : prog->elements) {
                 if (auto b = ast::as<ast::Binary>(fmt); b && b->op == ast::BinaryOp::const_assign && b->right->constant_level == ast::ConstantLevel::constant) {

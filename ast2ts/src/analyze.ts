@@ -246,7 +246,7 @@ export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
         return makeHover("type",`type (type: ${found.node_type || "unknown"}, size: ${bitSize(found.bit_size)}, align: ${found.bit_alignment})`);
     }
     else if(ast2ts.isMatch(found)){
-        return makeHover("match",`match (exhaustive: ${found.struct_union_type?.exhaustive||false}, size: ${bitSize(found.struct_union_type?.bit_size)} align: ${found.struct_union_type?.bit_alignment})`);
+        return makeHover("match",`match (exhaustive: ${found.struct_union_type?.exhaustive||false}, expr_type: ${found.expr_type?.node_type||"unknown"}, size: ${bitSize(found.struct_union_type?.bit_size)} align: ${found.struct_union_type?.bit_alignment})`);
     }
     else if(ast2ts.isIf(found)) {
         if(found.struct_union_type !== null) {
@@ -260,7 +260,7 @@ export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
         return makeHover("regex",`regex literal (pattern: ${found.value})`);
     }
     else if (ast2ts.isCharLiteral(found)) {
-        return makeHover("char",`char literal (code: ${found.code})`);
+        return makeHover("char",`char literal (code: ${found.code} = 0x${found.code.toString(16)})`);
     }
     else if(ast2ts.isMetadata(found)){
         return makeHover("metadata",`metadata (name: ${found.name} value count: ${found.values.length})`);
@@ -269,7 +269,8 @@ export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
         return makeHover("specify_order",`specify_order (order_type: ${found.order_type} order: ${mapOrderToString(found.order_type,found.order_value)})`);
     }
     else if(ast2ts.isIntLiteral(found)){
-        return makeHover("int",`int literal (value: ${found.value} type: ${unwrapType(found.expr_type)} size: ${bitSize(found.expr_type?.bit_size)})`);
+        const bigInt = BigInt(found.value);
+        return makeHover("int",`int literal (value: ${found.value} = ${bigInt.toString()} = 0x${bigInt.toString(16)} type: ${unwrapType(found.expr_type)} size: ${bitSize(found.expr_type?.bit_size)})`);
     }
     return null;
 }

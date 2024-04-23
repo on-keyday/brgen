@@ -2,7 +2,11 @@
 #include <cmdline/template/help_option.h>
 #include <cmdline/template/parse_and_err.h>
 #include "../common/print.h"
+#include "../common/send.h"
+#include "../common/load_json.h"
 #include <core/ast/json.h>
+#include <json/convert_json.h>
+#include <core/ast/file.h>
 #include <file/file_view.h>
 #include "generate.h"
 #include <wrap/argv.h>
@@ -10,6 +14,10 @@
 #include <emscripten/emscripten.h>
 #include "../common/em_main.h"
 #endif
+#include <request/stream.hpp>
+#include <filesystem>
+#include "../common/generate.h"
+
 struct Flags : futils::cmdline::templ::HelpOption {
     std::vector<std::string> args;
     bool spec = false;
@@ -18,6 +26,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
     bool use_error = false;
     bool use_raw_union = false;
     bool use_overflow_check = false;
+    bool legacy_file_pass = false;
     void bind(futils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&spec, "s", "spec mode");
@@ -26,83 +35,63 @@ struct Flags : futils::cmdline::templ::HelpOption {
         ctx.VarBool(&use_error, "use-error", "use futils::error::Error for error reporting");
         ctx.VarBool(&use_raw_union, "use-raw-union", "use raw union instead of std::variant (maybe unsafe)");
         ctx.VarBool(&use_overflow_check, "use-overflow-check", "add overflow check for integer types");
+        ctx.VarBool(&legacy_file_pass, "f,file", "use legacy file pass mode");
     }
 };
 
-int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
-    prefix_loc() = "json2cpp: ";
-    cerr_color_mode = flags.no_color ? ColorMode::no_color : cerr.is_tty() ? ColorMode::force_color
-                                                                           : ColorMode::no_color;
-    if (flags.spec) {
-        cout << R"({
-            "input": "file",
-            "langs": ["cpp","json"],
-            "suffix": [".hpp",".json"],
-            "separator": "############\n"
-        })";
-        return 0;
-    }
-    if (flags.args.empty()) {
-        print_error("no input file");
-        return 1;
-    }
-    if (flags.args.size() > 1) {
-        print_error("too many input files");
-        return 1;
-    }
-    auto name = flags.args[0];
-    futils::file::View view;
-    if (!view.open(name)) {
-        print_error("cannot open file ", name);
-        return 1;
-    }
-    auto js = futils::json::parse<futils::json::JSON>(view);
-    if (js.is_undef()) {
-        print_error("cannot parse json file ", name);
-        return 1;
-    }
-    auto files = js.at("files");
-    if (!files) {
-        print_error("cannot find files field ", name);
-        return 1;
-    }
-    if (!files->is_array()) {
-        print_error("files field is not array ", name);
-        return 1;
-    }
-    auto f = js.at("ast");
-    if (!f) {
-        print_error("cannot find ast field ", name);
-        return 1;
-    }
-    brgen::ast::JSONConverter c;
-    auto res = c.decode(*f);
-    if (!res) {
-        print_error("cannot decode json file: ", res.error().locations[0].msg);
-        return 1;
-    }
-    if (!*res) {
-        print_error("cannot decode json file: ast is null");
-        return 1;
-    }
+int cpp_generate(const Flags& flags, brgen::request::GenerateSource& req, std::shared_ptr<brgen::ast::Node> res) {
     j2cp2::Generator g;
     g.enable_line_map = flags.add_line_map;
     g.use_error = flags.use_error;
     g.use_variant = !flags.use_raw_union;
     g.use_overflow_check = flags.use_overflow_check;
-    auto prog = brgen::ast::cast_to<brgen::ast::Program>(*res);
+    auto prog = brgen::ast::cast_to<brgen::ast::Program>(res);
     g.write_program(prog);
-    cout << g.w.out() << "\n";
+    send_source(req.id, std::move(g.w.out()), req.name + ".hpp");
     if (flags.add_line_map) {
-        cout << "############\n";
+        if (send_as_text) {
+            cout << "############\n";
+        }
         futils::json::Stringer s;
         {
             auto field = s.object();
             field("structs", g.struct_names);
             field("line_map", g.line_map);
         }
-        cout << s.out() << "\n";
+        send_source(req.id, std::move(s.out()), req.name + ".hpp.map.json");
     }
+    send_end_response(req.id);
+    return 0;
+}
+
+int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
+    prefix_loc() = "json2cpp: ";
+    cerr_color_mode = flags.no_color ? ColorMode::no_color : cerr.is_tty() ? ColorMode::force_color
+                                                                           : ColorMode::no_color;
+    if (flags.spec) {
+        if (flags.legacy_file_pass) {
+            cout << R"({
+            "input": "file",
+            "langs": ["cpp","json"],
+            "suffix": [".hpp",".json"],
+            "separator": "############\n"
+        })";
+        }
+        else {
+            cout << R"({
+            "input": "stdin_stream",
+            "langs": ["cpp","json"]
+            })";
+        }
+        return 0;
+    }
+    if (flags.legacy_file_pass) {
+        return generate_from_file(flags, cpp_generate);
+    }
+    read_stdin_requests([&](brgen::request::GenerateSource& req) {
+        do_generate(flags, req, req.json_text, cpp_generate);
+        return futils::error::Error<>{};
+    });
     return 0;
 }
 

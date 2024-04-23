@@ -430,7 +430,7 @@ namespace brgen::ast {
         std::vector<std::weak_ptr<Field>> union_fields;
         // conditions are exhaustive
         // for example,
-        // match u1(a)
+        // match u1(a):
         //    1 => data :u8
         //    0 => data :u16
         // are exhaustive

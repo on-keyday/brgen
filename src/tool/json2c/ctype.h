@@ -11,6 +11,7 @@ namespace json2c {
         array,
         pointer,
         dynamic_array,
+        invalid,
     };
 
     // type of c language
@@ -90,6 +91,15 @@ namespace json2c {
         }
     };
 
+    struct CInvalid : CType {
+        CInvalid(std::shared_ptr<ast::Type> ty)
+            : CType(CTypeKind::invalid, ty) {}
+
+        std::pair<std::string, std::string> to_string_prefix_suffix() const override {
+            return {"//invalid", ""};
+        }
+    };
+
     std::shared_ptr<CType> get_type(const std::shared_ptr<ast::Type>& typ) {
         if (auto int_ty = ast::as<ast::IntType>(typ)) {
             auto bit = *int_ty->bit_size;
@@ -123,7 +133,7 @@ namespace json2c {
         if (auto ident_ty = ast::as<ast::IdentType>(typ)) {
             return get_type(ident_ty->base.lock());
         }
-        return nullptr;
+        return std::make_shared<CInvalid>(typ);
     }
 
 }  // namespace json2c

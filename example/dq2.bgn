@@ -1,0 +1,133 @@
+
+format PartyData:
+    experience_point_low :u16
+    experience_point_high :u4
+    equipment_count :u4
+    equipments :[equipment_count]u7
+
+format DQ2RestoreSpellHeader:
+    check_code_low :u5
+    place_id :u3
+    Lauresia_prince_name3 :u6
+    Lauresia_prince_name2_01_bit :u2
+    gold_high :u8
+    Lauresia_prince_name2_34_bit :u2
+    Lauresia_prince_name1 :u6
+    gold_low :u8
+    Lauresia_prince_name2_5_bit :u1
+    Lauresia_prince_name4 :u6
+    Lauresia_prince_name2_2_bit :u1
+    pattern_2_bit :u1
+    use_piece_of_moon :u1
+    open_the_watergate :u1
+    made_dress_of_water :u1
+    ship_flag :u2
+    Sumaltria_prince_finding_flag :u2
+    reserved1 :u1(0)
+    pattern_01_bit :u2
+    crest_of_life :u1
+    crest_of_water :u1
+    crest_of_moon :u1
+    crest_of_star :u1
+    crest_of_sun :u1
+    replacement :u2 # if total length is over 312 bits then this is used
+    check_code_high :u6
+   
+
+format PartiesData:
+    Lauresia_prince :PartyData
+    Sumaltria_prince_is_in_party :u1
+    if Sumaltria_prince_is_in_party == 1:
+        Sumaltria_prince :PartyData
+        Moonburg_princess_is_in_party :u1
+        if Moonburg_princess_is_in_party == 1:
+            Moonburg_princess :PartyData
+
+fn checkCrc(code :[]u8) -> u11:
+    crc := code.length * 0x0101
+    for i := code.length - 1;;i -= 1:
+        octed := code[i]
+        for _ in 8:
+            carry := ((crc >> 8) ^ u64(octed) & 0x80) != 0
+            crc = (crc << 1) & 0xffff
+            octed = (octed << 1) & 0xff
+            if carry:
+                crc ^= u64(0x1021)
+        if i == 0:
+            break
+    return u11(crc)
+
+fn shift_value(value :u6) -> u6:
+    return u3(value & 0x6 >> 1)
+
+fn calc_shift(code :[]u6):
+    shift_val := shift_value(code[0])
+    for i := u64(1); i < code.length; i += 1:
+        code[i] = code[i] + code[i-1] + shift_val
+
+fn mapToHiragana(code :u6) -> u16:
+    return match code:
+        0x0 => 'あ'
+        0x1 => 'い'
+        0x2 => 'う'
+        0x3 => 'え'
+        0x4 => 'お'
+        0x5 => 'か'
+        0x6 => 'き'
+        0x7 => 'く'
+        0x8 => 'け'
+        0x9 => 'こ'
+        0xa => 'さ'
+        0xb => 'し'
+        0xc => 'す'
+        0xd => 'せ'
+        0xe => 'そ'
+        0xf => 'た'
+        0x10 => 'ち'
+        0x11 => 'つ'
+        0x12 => 'て'
+        0x13 => 'と'
+        0x14 => 'な'
+        0x15 => 'に'
+        0x16 => 'ぬ'
+        0x17 => 'ね'
+        0x18 => 'の'
+        0x19 => 'は'
+        0x1a => 'ひ'
+        0x1b => 'ふ'
+        0x1c => 'へ'
+        0x1d => 'ほ'
+        0x1e => 'ま'
+        0x1f => 'み'
+        0x20 => 'む'
+        0x21 => 'め'
+        0x22 => 'も'
+        0x23 => 'や'
+        0x24 => 'ゆ'
+        0x25 => 'よ'
+        0x26 => 'ら'
+        0x27 => 'り'
+        0x28 => 'る'
+        0x29 => 'れ'
+        0x2a => 'ろ'
+        0x2b => 'わ'
+        0x2c => 'が'
+        0x2d => 'ぎ'
+        0x2e => 'ぐ'
+        0x2f => 'げ'
+        0x30 => 'ご'
+        0x31 => 'ざ'
+        0x32 => 'じ'
+        0x33 => 'ず'
+        0x34 => 'ぜ'
+        0x35 => 'ぞ'
+        0x36 => 'ば'
+        0x37 => 'び'
+        0x38 => 'ぶ'
+        0x39 => 'べ'
+        0x3a => 'ぼ'
+        0x3b => 'ぱ'
+        0x3c => 'ぴ'
+        0x3d => 'ぷ'
+        0x3e => 'ぺ'
+        0x3f => 'ぽ'

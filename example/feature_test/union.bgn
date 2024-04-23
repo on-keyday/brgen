@@ -41,7 +41,7 @@ format LEB128:
     i := 0
     for value < 0x80:
       byte := input.get()
-      value = value | (byte & 0x7f) << (i * 7)
+      value = value | u64(byte & 0x7f) << (i * 7)
       i = i + 1
 
   fn u64():

@@ -76,10 +76,6 @@ class NodeType(PyEnum):
     ENUM = "enum"
     ENUM_MEMBER = "enum_member"
     FUNCTION = "function"
-    BUILTIN_MEMBER = "builtin_member"
-    BUILTIN_FUNCTION = "builtin_function"
-    BUILTIN_FIELD = "builtin_field"
-    BUILTIN_OBJECT = "builtin_object"
 
 
 class TokenTag(PyEnum):
@@ -261,10 +257,6 @@ class Member(Stmt):
     belong: Optional[Member]
     belong_struct: Optional[StructType]
     ident: Optional[Ident]
-
-
-class BuiltinMember(Member):
-    pass
 
 
 class Program(Node):
@@ -651,19 +643,6 @@ class Function(Member):
     body: Optional[IndentBlock]
     func_type: Optional[FunctionType]
     is_cast: bool
-    cast_loc: Loc
-
-
-class BuiltinFunction(Member):
-    func_type: Optional[FunctionType]
-
-
-class BuiltinField(Member):
-    field_type: Optional[Type]
-
-
-class BuiltinObject(Member):
-    members: List[BuiltinMember]
 
 
 class Scope:
@@ -988,12 +967,6 @@ def ast2node(ast :JsonAst) -> Program:
                 node.append(EnumMember())
             case NodeType.FUNCTION:
                 node.append(Function())
-            case NodeType.BUILTIN_FUNCTION:
-                node.append(BuiltinFunction())
-            case NodeType.BUILTIN_FIELD:
-                node.append(BuiltinField())
-            case NodeType.BUILTIN_OBJECT:
-                node.append(BuiltinObject())
             case _:
                 raise TypeError('unknown node type')
     scope = [Scope() for _ in range(len(ast.scope))]
@@ -2157,66 +2130,6 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].func_type = None
                 x = ast.node[i].body["is_cast"]
                 node[i].is_cast = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at Function::is_cast'))
-                node[i].cast_loc = parse_Loc(ast.node[i].body["cast_loc"])
-            case NodeType.BUILTIN_FUNCTION:
-                if ast.node[i].body["belong"] is not None:
-                    x = node[ast.node[i].body["belong"]]
-                    node[i].belong = x if isinstance(x,Member) else raiseError(TypeError('type mismatch at BuiltinFunction::belong'))
-                else:
-                    node[i].belong = None
-                if ast.node[i].body["belong_struct"] is not None:
-                    x = node[ast.node[i].body["belong_struct"]]
-                    node[i].belong_struct = x if isinstance(x,StructType) else raiseError(TypeError('type mismatch at BuiltinFunction::belong_struct'))
-                else:
-                    node[i].belong_struct = None
-                if ast.node[i].body["ident"] is not None:
-                    x = node[ast.node[i].body["ident"]]
-                    node[i].ident = x if isinstance(x,Ident) else raiseError(TypeError('type mismatch at BuiltinFunction::ident'))
-                else:
-                    node[i].ident = None
-                if ast.node[i].body["func_type"] is not None:
-                    x = node[ast.node[i].body["func_type"]]
-                    node[i].func_type = x if isinstance(x,FunctionType) else raiseError(TypeError('type mismatch at BuiltinFunction::func_type'))
-                else:
-                    node[i].func_type = None
-            case NodeType.BUILTIN_FIELD:
-                if ast.node[i].body["belong"] is not None:
-                    x = node[ast.node[i].body["belong"]]
-                    node[i].belong = x if isinstance(x,Member) else raiseError(TypeError('type mismatch at BuiltinField::belong'))
-                else:
-                    node[i].belong = None
-                if ast.node[i].body["belong_struct"] is not None:
-                    x = node[ast.node[i].body["belong_struct"]]
-                    node[i].belong_struct = x if isinstance(x,StructType) else raiseError(TypeError('type mismatch at BuiltinField::belong_struct'))
-                else:
-                    node[i].belong_struct = None
-                if ast.node[i].body["ident"] is not None:
-                    x = node[ast.node[i].body["ident"]]
-                    node[i].ident = x if isinstance(x,Ident) else raiseError(TypeError('type mismatch at BuiltinField::ident'))
-                else:
-                    node[i].ident = None
-                if ast.node[i].body["field_type"] is not None:
-                    x = node[ast.node[i].body["field_type"]]
-                    node[i].field_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at BuiltinField::field_type'))
-                else:
-                    node[i].field_type = None
-            case NodeType.BUILTIN_OBJECT:
-                if ast.node[i].body["belong"] is not None:
-                    x = node[ast.node[i].body["belong"]]
-                    node[i].belong = x if isinstance(x,Member) else raiseError(TypeError('type mismatch at BuiltinObject::belong'))
-                else:
-                    node[i].belong = None
-                if ast.node[i].body["belong_struct"] is not None:
-                    x = node[ast.node[i].body["belong_struct"]]
-                    node[i].belong_struct = x if isinstance(x,StructType) else raiseError(TypeError('type mismatch at BuiltinObject::belong_struct'))
-                else:
-                    node[i].belong_struct = None
-                if ast.node[i].body["ident"] is not None:
-                    x = node[ast.node[i].body["ident"]]
-                    node[i].ident = x if isinstance(x,Ident) else raiseError(TypeError('type mismatch at BuiltinObject::ident'))
-                else:
-                    node[i].ident = None
-                node[i].members = [(node[x] if isinstance(node[x],BuiltinMember) else raiseError(TypeError('type mismatch at BuiltinObject::members'))) for x in ast.node[i].body["members"]]
             case _:
                 raise TypeError('unknown node type')
     for i in range(len(ast.scope)):
@@ -2695,25 +2608,4 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
                   return
           if x.func_type is not None:
               if f(f,x.func_type) == False:
-                  return
-        case x if isinstance(x,BuiltinFunction):
-          if x.ident is not None:
-              if f(f,x.ident) == False:
-                  return
-          if x.func_type is not None:
-              if f(f,x.func_type) == False:
-                  return
-        case x if isinstance(x,BuiltinField):
-          if x.ident is not None:
-              if f(f,x.ident) == False:
-                  return
-          if x.field_type is not None:
-              if f(f,x.field_type) == False:
-                  return
-        case x if isinstance(x,BuiltinObject):
-          if x.ident is not None:
-              if f(f,x.ident) == False:
-                  return
-          for i in range(len(x.members)):
-              if f(f,x.members[i]) == False:
                   return

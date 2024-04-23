@@ -1,0 +1,28 @@
+format KeyExchangeInfo:
+    sign :[16]u8
+    client_id :[16]u8
+    salt :[3][32]u8
+    public_key :ECDHMaterial
+
+enum ECDHParam:
+    :u8
+    curve25519 = 0
+    curve448 = 1
+    p256 = 2
+    p384 = 3
+    p521 = 4
+
+format ECDHMaterial:
+    param :ECDHParam
+    match param:
+        ECDHParam.curve25519:
+            material :[32]u8
+        ECDHParam.curve448:
+            material :[56]u8
+        ECDHParam.p256:
+            material :[64]u8
+        ECDHParam.p384:
+            material :[96]u8
+        ECDHParam.p521:
+            material :[132]u8
+        .. => error("invalid ECDHParam")

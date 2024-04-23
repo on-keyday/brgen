@@ -1,5 +1,6 @@
 {
   "src2json": "./tool/src2json",
+  "libs2j": "./tool/libs2j",
   "input_dir": [
     "./example/",
     "./example/gen_step/",

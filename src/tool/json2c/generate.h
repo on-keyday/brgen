@@ -7,6 +7,7 @@
 #include "../common/line_map.h"
 #include "ctype.h"
 #include <numeric>
+#include <core/ast/tool/tmp_ident.h>
 
 namespace json2c {
     namespace ast = brgen::ast;
@@ -176,6 +177,9 @@ namespace json2c {
         }
 
         void write_field(std::string_view prefix, brgen::writer::Writer& t_w, const std::shared_ptr<ast::Field>& field) {
+            if (!field->ident) {
+                ast::tool::set_tmp_field_ident(get_seq(), field, "anonymous_");
+            }
             if (field->bit_alignment == ast::BitAlignment::not_target) {
                 return;
             }
@@ -225,10 +229,14 @@ namespace json2c {
                 auto mask = (std::uint64_t(1) << width) - 1;
                 cur_sum += width;
                 auto shift = bit - cur_sum;
-                auto mask_v = brgen::concat(fmt_name, "_", field->ident->ident, "_mask");
-                auto shift_v = brgen::concat(fmt_name, "_", field->ident->ident, "_shift");
-                auto setter = brgen::concat(fmt_name, "_", field->ident->ident, "_set");
-                auto getter = brgen::concat(fmt_name, "_", field->ident->ident, "_get");
+                if (!field->ident) {
+                    ast::tool::set_tmp_field_ident(get_seq(), field, "anonymous_");
+                }
+                auto ident = field->ident->ident;
+                auto mask_v = brgen::concat(fmt_name, "_", ident, "_mask");
+                auto shift_v = brgen::concat(fmt_name, "_", ident, "_shift");
+                auto setter = brgen::concat(fmt_name, "_", ident, "_set");
+                auto getter = brgen::concat(fmt_name, "_", ident, "_get");
                 t_w.writeln("#define ", mask_v, " ", "(", brgen::nums(mask), ")");
                 t_w.writeln("#define ", shift_v, " ", "(", brgen::nums(shift), ")");
                 t_w.writeln("#define ", setter, "(this_,val) ",
@@ -315,7 +323,7 @@ namespace json2c {
             auto fmt = ast::as<ast::Format>(f->belong.lock());
             assert(fmt);
             auto fmt_name = fmt->ident->ident;
-            auto field_name = f->ident->ident;
+            auto field_name = f->ident ? f->ident->ident : "(anonymous field)";
             write_return_error_impl(brgen::concat(fmt_name, "::", field_name, ": ", msg0, msg...));
         }
 
@@ -598,7 +606,12 @@ namespace json2c {
                 add_buffer_offset(len);
             }
             else {
-                write_return_error(f, "non supported type: ", ast::node_type_to_string(typ->node_type));
+                if (!typ) {
+                    write_return_error(f, "null type");
+                }
+                else {
+                    write_return_error(f, "non supported type: ", ast::node_type_to_string(typ->node_type));
+                }
             }
         }
 
@@ -750,7 +763,12 @@ namespace json2c {
                 c_w.writeln("}");
             }
             else {
-                write_return_error(f, "non supported type: ", ast::node_type_to_string(typ->node_type));
+                if (!typ) {
+                    write_return_error(f, "null type");
+                }
+                else {
+                    write_return_error(f, "non supported type: ", ast::node_type_to_string(typ->node_type));
+                }
             }
         }
 

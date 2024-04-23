@@ -17,7 +17,8 @@ import (
 
 var f = flag.Bool("s", false, "tell spec of json2go")
 var filename = flag.String("f", "", "file to parse")
-var usePut = flag.Bool("use-put", false, "use PutUintXXX instead of AppendUintXXX")
+
+// var usePut = flag.Bool("use-put", false, "use PutUintXXX instead of AppendUintXXX")
 var decodeReturnsLen = flag.Bool("decode-returns-len", true, "func Decode returns length of read bytes")
 var useMustEncode = flag.Bool("must-encode", true, "add MustEncode func")
 var mappingWords = map[string]string{}
@@ -36,7 +37,7 @@ func init() {
 func ResetFlag() {
 	*f = false
 	*filename = ""
-	*usePut = false
+	//*usePut = false
 	*decodeReturnsLen = true
 	*useMustEncode = true
 	mappingWords = map[string]string{}
@@ -190,7 +191,12 @@ func (g *Generator) maybeWriteLengthSet(toSet string, length ast2go.Expr) {
 		if ok {
 			setTo := g.exprStringer.ExprString(f.Ident)
 			typ := g.getType(f.FieldType)
-			g.InsertOverflowCheck(toSet, "int", typ)
+			cast := "int"
+			if typ == "uint64" {
+				toSet = fmt.Sprintf("uint64(%s)", toSet)
+				cast = "uint64"
+			}
+			g.InsertOverflowCheck(toSet, cast, typ)
 			g.PrintfFunc("%s = %s(%s)\n", setTo, typ, toSet)
 		}
 	}
@@ -233,7 +239,12 @@ func (g *Generator) writeStructUnion(belong string, prefix string, u *ast2go.Str
 				writeReturn := func() {
 					if c.Field != nil {
 						ident := g.exprStringer.ExprString(c.Field.Ident)
-						g.PrintfFunc("tmp := %s(%s)\n", typStr, ident)
+						arr, ok := c.Field.FieldType.(*ast2go.ArrayType)
+						if ok && arr.LengthValue != nil {
+							g.PrintfFunc("tmp := %s(%s[:])\n", typStr, ident)
+						} else {
+							g.PrintfFunc("tmp := %s(%s)\n", typStr, ident)
+						}
 						g.PrintfFunc("return &tmp\n")
 					} else {
 						g.PrintfFunc("return nil\n")
@@ -469,22 +480,29 @@ func (g *Generator) writeFormat(p *ast2go.Format) {
 
 func (g *Generator) writeAppendUint(size uint64, field string) {
 	if size == 8 {
-		g.PrintfFunc("buf = append(buf, byte(%s))\n", field)
+		g.PrintfFunc("if n, err := w.Write([]byte{byte(%s)}); err != nil || n != 1 {\n", field)
+		g.imports["fmt"] = struct{}{}
+		g.PrintfFunc("return fmt.Errorf(\"encode %s: %%w\", err)\n", field)
+		g.PrintfFunc("}\n")
+		//g.PrintfFunc("buf = append(buf, byte(%s))\n", field)
 		return
 	}
 	if size == 24 {
-		g.PrintfFunc("buf = append(buf, byte(%s>>16),byte(%s>>8),byte(%s))\n", field, field, field)
+		g.PrintfFunc("if n, err := w.Write([]byte{byte(%s>>16),byte(%s>>8),byte(%s)}); err != nil || n != 3 {\n", field, field, field)
+		g.imports["fmt"] = struct{}{}
+		g.PrintfFunc("return fmt.Errorf(\"encode %s: %%w\", err)\n", field)
+		g.PrintfFunc("}\n")
+		//g.PrintfFunc("buf = append(buf, byte(%s>>16),byte(%s>>8),byte(%s))\n", field, field, field)
 		return
 	}
 	g.imports["encoding/binary"] = struct{}{}
-	if *usePut {
-		tmp := fmt.Sprintf("tmp%d", g.getSeq())
-		g.PrintfFunc("%s := [%d]byte{}\n", tmp, size/8)
-		g.PrintfFunc("binary.BigEndian.PutUint%d(%s[:], uint%d(%s))\n", size, tmp, size, field)
-		g.PrintfFunc("buf = append(buf, %s[:]...)\n", tmp)
-	} else {
-		g.PrintfFunc("buf = binary.BigEndian.AppendUint%d(buf, uint%d(%s))\n", size, size, field)
-	}
+	tmp := fmt.Sprintf("tmp%d", g.getSeq())
+	g.PrintfFunc("%s := [%d]byte{}\n", tmp, size/8)
+	g.PrintfFunc("binary.BigEndian.PutUint%d(%s[:], uint%d(%s))\n", size, tmp, size, field)
+	g.PrintfFunc("if n, err := w.Write(%s[:]); err != nil || n != %d {\n", tmp, size/8)
+	g.imports["fmt"] = struct{}{}
+	g.PrintfFunc("return fmt.Errorf(\"encode %s: %%w\", err)\n", field)
+	g.PrintfFunc("}\n")
 }
 
 func (g *Generator) writeTypeEncode(ident string, typ ast2go.Type, p *ast2go.Field) {
@@ -502,18 +520,27 @@ func (g *Generator) writeTypeEncode(ident string, typ ast2go.Type, p *ast2go.Fie
 	if arr_type, ok := typ.(*ast2go.ArrayType); ok {
 		if i_typ, ok := arr_type.ElementType.(*ast2go.IntType); ok && *i_typ.BitSize == 8 {
 			if arr_type.Length.GetConstantLevel() == ast2go.ConstantLevelConstant {
-				g.PrintfFunc("buf = append(buf, %s[:]...)\n", ident)
+				g.PrintfFunc("if n,err := w.Write(%s);err != nil || n != len(%s) {\n", ident, ident)
+				g.imports["fmt"] = struct{}{}
+				g.PrintfFunc("return fmt.Errorf(\"encode %s: %%w\", err)\n", p.Ident.Ident)
+				g.PrintfFunc("}\n")
 				return
+				//g.PrintfFunc("buf = append(buf, %s[:]...)\n", ident)
+				//return
 			}
 			if _, ok := g.laterSize[p]; !ok {
 				length := g.exprStringer.ExprString(arr_type.Length)
 				g.PrintfFunc("len_%s := int(%s)\n", p.Ident.Ident, length)
 				g.PrintfFunc("if len(%s) != len_%s {\n", ident, p.Ident.Ident)
 				g.imports["fmt"] = struct{}{}
-				g.PrintfFunc("return nil, fmt.Errorf(\"encode %s: expect %%d bytes but got %%d bytes\", len_%s, len(%s))\n", p.Ident.Ident, p.Ident.Ident, ident)
+				g.PrintfFunc("return fmt.Errorf(\"encode %s: expect %%d bytes but got %%d bytes\", len_%s, len(%s))\n", p.Ident.Ident, p.Ident.Ident, ident)
 				g.PrintfFunc("}\n")
 			}
-			g.PrintfFunc("buf = append(buf, %s...)\n", ident)
+			g.PrintfFunc("if n,err := w.Write(%s);err != nil || n != len(%s) {\n", ident, ident)
+			g.imports["fmt"] = struct{}{}
+			g.PrintfFunc("return fmt.Errorf(\"encode %s: %%w\", err)\n", p.Ident.Ident)
+			g.PrintfFunc("}\n")
+			//g.PrintfFunc("buf = append(buf, %s...)\n", ident)
 			return
 		} else {
 			if _, ok := g.laterSize[p]; !ok {
@@ -521,7 +548,7 @@ func (g *Generator) writeTypeEncode(ident string, typ ast2go.Type, p *ast2go.Fie
 				g.PrintfFunc("len_%s := int(%s)\n", p.Ident.Ident, length)
 				g.PrintfFunc("if len(%s) != len_%s {\n", ident, p.Ident.Ident)
 				g.imports["fmt"] = struct{}{}
-				g.PrintfFunc("return nil, fmt.Errorf(\"encode %s: expect %%d bytes but got %%d bytes\", len_%s, len(%s))\n", p.Ident.Ident, p.Ident.Ident, ident)
+				g.PrintfFunc("return fmt.Errorf(\"encode %s: expect %%d bytes but got %%d bytes\", len_%s, len(%s))\n", p.Ident.Ident, p.Ident.Ident, ident)
 				g.PrintfFunc("}\n")
 			}
 			g.PrintfFunc("for _, v := range %s {\n", ident)
@@ -532,16 +559,21 @@ func (g *Generator) writeTypeEncode(ident string, typ ast2go.Type, p *ast2go.Fie
 		}
 	}
 	if _, ok := typ.(*ast2go.StructType); ok {
-		g.PrintfFunc("tmp_%s, err := %s.Encode()\n", p.Ident.Ident, ident)
-		g.PrintfFunc("if err != nil {\n")
+		//g.PrintfFunc("tmp_%s, err := %s.Encode()\n", p.Ident.Ident, ident)
+		//g.PrintfFunc("if err != nil {\n")
+		g.PrintfFunc("if err := %s.Write(w);err != nil {\n", ident)
 		g.imports["fmt"] = struct{}{}
-		g.PrintfFunc("return nil, fmt.Errorf(\"encode %s: %%w\", err)\n", p.Ident.Ident)
+		g.PrintfFunc("return fmt.Errorf(\"encode %s: %%w\", err)\n", p.Ident.Ident)
 		g.PrintfFunc("}\n")
-		g.PrintfFunc("buf = append(buf, tmp_%s...)\n", p.Ident.Ident)
+		//g.PrintfFunc("buf = append(buf, tmp_%s...)\n", p.Ident.Ident)
 		return
 	}
 	if _, ok := typ.(*ast2go.StrLiteralType); ok {
-		g.PrintfFunc("buf = append(buf,[]byte(%s)...)\n", ident)
+		g.PrintfFunc("if n,err := w.Write([]byte(%s));err != nil || n != len(%s) {\n", ident, ident)
+		g.imports["fmt"] = struct{}{}
+		g.PrintfFunc("return fmt.Errorf(\"encode %s: %%w\", err)\n", p.Ident.Ident)
+		g.PrintfFunc("}\n")
+		//g.PrintfFunc("buf = append(buf, []byte(%s)...)\n", ident)
 	}
 }
 
@@ -565,12 +597,20 @@ func (g *Generator) writeFieldEncode(p *ast2go.Field) {
 		if p.Arguments.SubByteLength != nil {
 			len := g.exprStringer.ExprString(p.Arguments.SubByteLength)
 			seq := g.getSeq()
-			g.PrintfFunc("cur_len_%d := len(buf)\n", seq)
+			g.imports["bytes"] = struct{}{}
+			g.PrintfFunc("new_buf_%d := bytes.NewBuffer(nil)\n", seq)
+			g.PrintfFunc("old_buf_%d_w := w\n", seq)
+			g.PrintfFunc("w = new_buf_%d\n", seq)
 			restore = append(restore, func() {
-				g.PrintfFunc("if len(buf) != cur_len_%d + int(%s) {\n", seq, len)
+				g.PrintfFunc("if new_buf_%d.Len() != int(%s) {\n", seq, len)
 				g.imports["fmt"] = struct{}{}
-				g.PrintfFunc("return nil, fmt.Errorf(\"encode %s: expect %%d bytes but got %%d bytes\", cur_len_%d + int(%s), len(buf))\n", p.Ident.Ident, seq, len)
+				g.PrintfFunc("return fmt.Errorf(\"encode %s: expect %%d bytes but got %%d bytes\",new_buf_%d.Len(), int(%s))\n", p.Ident.Ident, seq, len)
 				g.PrintfFunc("}\n")
+				g.PrintfFunc("_, err = new_buf_%d.WriteTo(old_buf_%d_w)\n", seq, seq)
+				g.PrintfFunc("if err != nil {\n")
+				g.PrintfFunc("return err\n")
+				g.PrintfFunc("}\n")
+				g.PrintfFunc("w = old_buf_%d_w\n", seq)
 			})
 		}
 	}
@@ -668,7 +708,17 @@ func (g *Generator) writeTypeDecode(ident string, typ ast2go.Type, p *ast2go.Fie
 			}
 			// use laterSize (like [..]u8)
 			if size, ok := g.laterSize[p]; ok {
-				length = g.calcLengthInByteOfTailSize(size, p.Ident.Ident)
+				if size != 0 {
+					length = g.calcLengthInByteOfTailSize(size, p.Ident.Ident)
+				} else {
+					g.imports["bytes"] = struct{}{}
+					g.PrintfFunc("bytes_buf_%s := &bytes.Buffer{}\n", p.Ident.Ident)
+					g.PrintfFunc("if _, err := io.Copy(bytes_buf_%s, r); err != nil {\n", p.Ident.Ident)
+					g.PrintfFunc("return err\n")
+					g.PrintfFunc("}\n")
+					g.PrintfFunc("%s = bytes_buf_%s.Bytes()\n", ident, p.Ident.Ident)
+					return
+				}
 			}
 			g.PrintfFunc("len_%s := int(%s)\n", p.Ident.Ident, length)
 			g.PrintfFunc("if len_%s != 0 {\n", p.Ident.Ident)
@@ -693,8 +743,35 @@ func (g *Generator) writeTypeDecode(ident string, typ ast2go.Type, p *ast2go.Fie
 				if p.FieldType == typ && p.Arguments != nil && p.Arguments.SubByteLength != nil {
 					// at this time, r is *io.LimitedReader so we can use N of r
 					lengthInByte = "r.(*io.LimitedReader).N"
-				} else {
+				} else if size != 0 {
 					lengthInByte = g.calcLengthInByteOfTailSize(size, p.Ident.Ident)
+				} else {
+					tmp := fmt.Sprintf("tmp_byte_scanner%d_", g.getSeq())
+					old := fmt.Sprintf("old_r_%s", p.Ident.Ident)
+					g.imports["bufio"] = struct{}{}
+					g.PrintfFunc("%s := bufio.NewReader(r)\n", tmp)
+					g.PrintfFunc("%s := r\n", old)
+					g.PrintfFunc("r = %s\n", tmp)
+					g.PrintfFunc("for {\n")
+					g.PrintfFunc("_, err := %s.ReadByte()\n", tmp)
+					g.PrintfFunc("if err != nil {\n")
+					g.PrintfFunc("if err != io.EOF {\n")
+					g.imports["fmt"] = struct{}{}
+					g.PrintfFunc("return fmt.Errorf(\"read %s: %%w\", err)\n", p.Ident.Ident)
+					g.PrintfFunc("}\n")
+					g.PrintfFunc("break\n")
+					g.PrintfFunc("}\n")
+					g.PrintfFunc("if err := %s.UnreadByte(); err != nil {\n", tmp)
+					g.imports["fmt"] = struct{}{}
+					g.PrintfFunc("return fmt.Errorf(\"read %s: unexpected unread error: %%w\", err)\n", p.Ident.Ident)
+					g.PrintfFunc("}\n")
+					seq := g.getSeq()
+					g.PrintfFunc("var tmp%d_ %s\n", seq, g.getType(arr_type.ElementType))
+					g.writeTypeDecode(fmt.Sprintf("tmp%d_", seq), arr_type.ElementType, p)
+					g.PrintfFunc("%s = append(%s, tmp%d_)\n", ident, ident, seq)
+					g.PrintfFunc("}\n")
+					g.PrintfFunc("r = %s\n", old)
+					return
 				}
 				g.PrintfFunc("len_%s := int(%s)\n", p.Ident.Ident, lengthInByte)
 				g.PrintfFunc("tmp%s := make([]byte, len_%s)\n", p.Ident.Ident, p.Ident.Ident)
@@ -719,11 +796,16 @@ func (g *Generator) writeTypeDecode(ident string, typ ast2go.Type, p *ast2go.Fie
 				g.PrintfFunc("r = tmp_old_r_%s\n", p.Ident.Ident)
 			} else {
 				g.PrintfFunc("len_%s := int(%s)\n", p.Ident.Ident, length)
-				g.PrintfFunc("for i := 0; i < len_%s; i++ {\n", p.Ident.Ident)
+				tmpI := fmt.Sprintf("i_%d", g.getSeq())
+				g.PrintfFunc("for %[2]s := 0; %[2]s < len_%[1]s; %[2]s++ {\n", p.Ident.Ident, tmpI)
 				seq := g.getSeq()
 				g.PrintfFunc("var tmp%d_ %s\n", seq, g.getType(arr_type.ElementType))
 				g.writeTypeDecode(fmt.Sprintf("tmp%d_", seq), arr_type.ElementType, p)
-				g.PrintfFunc("%s = append(%s, tmp%d_)\n", ident, ident, seq)
+				if arr_type.LengthValue != nil {
+					g.PrintfFunc("%s[%s] = tmp%d_\n", ident, tmpI, seq)
+				} else {
+					g.PrintfFunc("%s = append(%s, tmp%d_)\n", ident, ident, seq)
+				}
 				g.PrintfFunc("}\n")
 			}
 		}
@@ -868,7 +950,7 @@ func (g *Generator) writeSingleNode(node ast2go.Node, enc bool) {
 			unc += "+ \"" + args + "\"" + argv
 		}
 		if enc {
-			g.PrintfFunc("return nil, fmt.Errorf(%s)\n", unc)
+			g.PrintfFunc("return fmt.Errorf(%s)\n", unc)
 		} else {
 			g.PrintfFunc("return fmt.Errorf(%s)\n", unc)
 		}
@@ -876,12 +958,19 @@ func (g *Generator) writeSingleNode(node ast2go.Node, enc bool) {
 }
 
 func (g *Generator) writeEncode(p *ast2go.Format) {
-	g.PrintfFunc("func (t *%s) Encode() ([]byte,error) {\n", p.Ident.Ident)
-	g.PrintfFunc("buf := make([]byte, 0, %d)\n", p.Body.StructType.FixedHeaderSize/8)
+	g.PrintfFunc("func (t *%s) Write(w io.Writer) (err error) {\n", p.Ident.Ident)
 	for _, elem := range p.Body.Elements {
 		g.writeSingleNode(elem, true)
 	}
-	g.PrintfFunc("return buf,nil\n")
+	g.PrintfFunc("return nil\n")
+	g.PrintfFunc("}\n")
+
+	g.PrintfFunc("func (t *%s) Encode() ([]byte,error) {\n", p.Ident.Ident)
+	g.PrintfFunc("w := bytes.NewBuffer(make([]byte, 0, %d))\n", p.Body.StructType.FixedHeaderSize/8)
+	g.PrintfFunc("if err := t.Write(w); err != nil {\n")
+	g.PrintfFunc("return nil, err\n")
+	g.PrintfFunc("}\n")
+	g.PrintfFunc("return w.Bytes(), nil\n")
 	g.PrintfFunc("}\n")
 
 	if *useMustEncode {
