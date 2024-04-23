@@ -175,7 +175,12 @@ func (s *binarySourceClients) reader() {
 			s.deleteStream(code.End().ID)
 			continue
 		}
-		id := code.Source().ID
+		src := code.Source()
+		if src == nil {
+			s.closeOnce(fmt.Errorf("invalid response type %d", code.Type))
+			return
+		}
+		id := src.ID
 		got := s.getStream(id)
 		if got == nil {
 			if id == 0 && code.Source().Status == ResponseStatus_Error {
