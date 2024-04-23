@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  release:
+  prepare_release:
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -117,6 +117,34 @@ jobs:
           sha256sum brgen-web.tar.gz >> brgen-checksum.txt
           sha256sum brgen-web.zip >> brgen-checksum.txt
           cd ..
+      - name: Bundle Artifacts
+        run: |
+          tar -czf artifacts.tar.gz -C artifacts .
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427 # v4.1.4
+        with:
+          name: brgen-artifacts
+          path: ./artifacts.tar.gz
+
+  release:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: prepare_release
+    steps:
+      - name: Timeline
+        uses: Kesin11/actions-timeline@b03a6aa289adef5534c84ccb6fbef7c975973574 # v2.1.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Download Artifacts
+        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427 # v4.1.4
+        with:
+          name: brgen-artifacts
+          path: ./artifacts
+      - name: Extract Artifacts
+        run: |
+          tar -xzf artifacts/artifacts.tar.gz -C .
       - name: Release
         uses: softprops/action-gh-release@9d7c94cfd0a1f3ed45544c887983e9fa900f0564 # v2.0.4
         with:
