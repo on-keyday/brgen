@@ -1,4 +1,4 @@
-//go:build linux || darwin || freebsd || openbsd || netbsd || dragonfly || solaris || android
+//go:build linux || darwin || freebsd || openbsd || netbsd || dragonfly || solaris || android || arm64
 
 package s2jgo
 
