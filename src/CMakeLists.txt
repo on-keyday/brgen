@@ -217,6 +217,9 @@ set_target_properties(ctobgn PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/tool"
 set_target_properties(rfc2bgn PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/tool")
 set_target_properties(hex2bin PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/tool")
 set_target_properties(brgen PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/tool")
+if(S2J_LIB)
+set_target_properties(s2j PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/tool")
+endif()
 endif()
 install(TARGETS src2json json2cpp json2cpp2 json2c json2vm json2ts ctobgn rfc2bgn hex2bin DESTINATION tool OPTIONAL)
 
