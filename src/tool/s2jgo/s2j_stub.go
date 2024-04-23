@@ -1,4 +1,4 @@
-//go:build !windows
+//go:build !windows && !linux && !darwin && !freebsd && !openbsd && !netbsd && !dragonfly && !solaris
 
 package s2jgo
 
