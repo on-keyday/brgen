@@ -11,9 +11,9 @@ package s2jgo
 extern void s2jgo_callback(char* str, size_t len, size_t is_stderr, void* data);
 typedef int(*s2jgo_call_t)(int, void*, uint64_t,void(*)(char*,size_t,size_t,void*), void*);
 
-inline int call_s2j_pointer(void* proc_ptr,int argc,void* argv,uint64_t cap,void* data){
+inline int call_s2j_pointer(void* proc_ptr,int argc,uintptr_t argv,uint64_t cap,uintptr_t data){
     s2jgo_call_t proc=(s2jgo_call_t)proc_ptr;
-	return proc(argc,argv,cap,s2jgo_callback,data);
+	return proc(argc,(void*)argv,cap,s2jgo_callback,(void*)data);
 }
 */
 import "C"
@@ -73,11 +73,13 @@ func (s *Src2JSON) CallIOCallback(args []string, cap Capability, cb func(data []
 	argh.Pin(data)
 	defer argh.Unpin()
 
+	ptr := uintptr(unsafe.Pointer(data))
+
 	ret := C.call_s2j_pointer(s.proc,
 		(C.int)(argc),
-		unsafe.Pointer(uintptr(unsafe.Pointer(argv))),
+		argv,
 		(C.uint64_t)(cap),
-		unsafe.Pointer(uintptr(unsafe.Pointer(data))),
+		ptr,
 	)
 	runtime.KeepAlive(s)
 	runtime.KeepAlive(argh)
