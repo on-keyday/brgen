@@ -1,319 +1,21 @@
+# costom boilerplate file from sisakulint
 name: brgen-release
-run-name: Release
-on: push
+run-name: release brgen
+
+on:
+  # Allows you to run this workflow manually from the Actions tab on GitHub.
+  workflow_dispatch:
+  workflow_call:
 
 concurrency:
-  group: release-${{ github.ref_name }}
+  group: release-${{github.ref_name}}
   cancel-in-progress: true
 
 jobs:
-  build-linux:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Timeline
-        uses: Kesin11/actions-timeline@b03a6aa289adef5534c84ccb6fbef7c975973574 # v2.1.0
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Checkout repository
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-      - name: Set up Ninja
-        uses: seanmiddleditch/gha-setup-ninja@8b297075da4cd2a5f1fd21fe011b499edf06e9d2 # master
-      - name: Set up Clang
-        uses: egor-tensin/setup-clang@ef434b41eb33a70396fb336b1bae39c76d740c3d # v1.4
-        with:
-          version: latest
-          platform: x64
-      - name: Build
-        run: |
-          . build.sh native Release
-          ./tool/src2json --version
-      - name: Pack artifacts
-        run: |
-          mkdir -p artifacts
-          cp -a ./tool ./artifacts/tool
-          cp -a ./script/link_path.sh ./artifacts
-          cp -a ./example ./artifacts/example
-          cp -a ./LICENSE ./artifacts
-          cp -a ./README.md ./artifacts
-          cp -a ./brgen.json ./artifacts
-          cp -a ./script/make_cpp_test.sh ./artifacts
-          cp -a ./script/make_cpp_tests.sh ./artifacts
-          cp -a ./testkit ./artifacts/testkit
-      - name: Upload artifacts
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
-        with:
-          name: brgen-linux
-          path: ./artifacts
-  build-macos:
-    runs-on: macos-latest
-    timeout-minutes: 20
-    steps:
-      - name: Timeline
-        uses: Kesin11/actions-timeline@b03a6aa289adef5534c84ccb6fbef7c975973574 # v2.1.0
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Checkout repository
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-      - name: Set up Ninja
-        uses: seanmiddleditch/gha-setup-ninja@8b297075da4cd2a5f1fd21fe011b499edf06e9d2 # master
-      - name: Install Homebrew Clang
-        run: |
-          brew install llvm
-      - name: Build
-        run: |
-          export FUTILS_CXX_COMPILER=/usr/local/opt/llvm/bin/clang++
-          export FUTILS_C_COMPILER=/usr/local/opt/llvm/bin/clang
-          . build.sh native Release
-          ./tool/src2json --version
-      - name: Pack artifacts
-        run: |
-          mkdir -p artifacts
-          cp -a ./tool ./artifacts/tool
-          cp -a ./script/link_path.sh ./artifacts
-          cp -a ./example ./artifacts/example
-          cp -a ./LICENSE ./artifacts
-          cp -a ./README.md ./artifacts
-          cp -a ./brgen.json ./artifacts
-          cp -a ./script/make_cpp_test.sh ./artifacts
-          cp -a ./script/make_cpp_tests.sh ./artifacts
-          cp -a ./testkit ./artifacts/testkit
-      - name: Upload artifacts
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
-        with:
-          name: brgen-macos
-          path: ./artifacts
-  build-windows:
-    runs-on: windows-latest
-    timeout-minutes: 20
-    steps:
-      - name: Timeline
-        uses: Kesin11/actions-timeline@b03a6aa289adef5534c84ccb6fbef7c975973574 # v2.1.0
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Checkout repository
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-      - name: Set up Ninja
-        uses: seanmiddleditch/gha-setup-ninja@8b297075da4cd2a5f1fd21fe011b499edf06e9d2 # master
-      - name: Set up Clang
-        uses: egor-tensin/setup-clang@ef434b41eb33a70396fb336b1bae39c76d740c3d # v1.4
-        with:
-          version: latest
-          platform: x64
-      - name: Build
-        shell: cmd
-        run: |
-          call .\build.bat native Release %CD%\utils
-          .\tool\src2json.exe --version
-      - name: Pack artifacts
-        shell: cmd
-        run: |
-          mkdir artifacts
-          xcopy /E /I /Y tool artifacts\tool
-          xcopy /E /I /Y example artifacts\example
-          copy /Y LICENSE artifacts
-          copy /Y README.md artifacts
-          copy /Y brgen.json artifacts
-          copy /Y script\make_cpp_test.bat artifacts
-          copy /Y script\make_cpp_tests.bat artifacts
-          xcopy /E /I /Y testkit artifacts\testkit
-      - name: Upload artifacts
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
-        with:
-          name: brgen-windows
-          path: ./artifacts
-
-  build-vscode-extension:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Timeline
-        uses: Kesin11/actions-timeline@b03a6aa289adef5534c84ccb6fbef7c975973574 # v2.1.0
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Checkout repository
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-      - name: Set up Node.js
-        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
-      - name: Setup ast2ts
-        run: |
-          cd ast2ts
-          npm install
-          tsc
-          cd ..
-      - name: Install VSCE
-        run: npm install -g vsce
-      - name: Build
-        run: |
-          cd lsp
-          npm install
-          vsce package
-      - name: Pack artifacts
-        run: |
-          mkdir -p artifacts
-          cp -a ./lsp/LICENSE ./artifacts
-          cp -a ./lsp/brgen-lsp-*.vsix ./artifacts
-      - name: Upload artifacts
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
-        with:
-          name: brgen-vscode-extension
-          path: ./artifacts
-
-  build-arm-linux:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Timeline
-        uses: Kesin11/actions-timeline@b03a6aa289adef5534c84ccb6fbef7c975973574 # v2.1.0
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Checkout repository
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-      - name: Set up Ninja
-        uses: seanmiddleditch/gha-setup-ninja@8b297075da4cd2a5f1fd21fe011b499edf06e9d2 # master
-      - name: Install Cross Compiler
-        run: |
-          sudo apt-get update && sudo apt-get install -y g++-aarch64-linux-gnu
-      - name: Build
-        run: |
-          go version
-          export GOARCH=arm64
-          export FUTILS_CXX_COMPILER=aarch64-linux-gnu-g++
-          export FUTILS_C_COMPILER=aarch64-linux-gnu-gcc
-          export CC=$FUTILS_C_COMPILER
-          . build.sh native Release
-      - name: Pack artifacts
-        run: |
-          mkdir -p artifacts
-          cp -a ./tool ./artifacts/tool
-          cp -a ./script/link_path.sh ./artifacts
-          cp -a ./example ./artifacts/example
-          cp -a ./LICENSE ./artifacts
-          cp -a ./README.md ./artifacts
-          cp -a ./brgen.json ./artifacts
-          cp -a ./script/make_cpp_test.sh ./artifacts
-          cp -a ./script/make_cpp_tests.sh ./artifacts
-          cp -a ./testkit ./artifacts/testkit
-      - name: Upload artifacts
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
-        with:
-          name: brgen-linux-arm
-          path: ./artifacts
-
-  build-android:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Timeline
-        uses: Kesin11/actions-timeline@b03a6aa289adef5534c84ccb6fbef7c975973574 # v2.1.0
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Checkout repository
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-      - name: Set up Ninja
-        uses: seanmiddleditch/gha-setup-ninja@8b297075da4cd2a5f1fd21fe011b499edf06e9d2 # master
-      - name: Install Android NDK
-        uses: nttld/setup-ndk@6a7e9c5494a25c4842ca1011f710300132eacd94 # v1.4.2
-        with:
-          ndk-version: r26b
-      - name: Build
-        run: |
-          BASE_PATH=/opt/hostedtoolcache/ndk/r26b/x64/toolchains/llvm/prebuilt/linux-x86_64
-          #ls -Ral $BASE_PATH
-          export GOARCH=arm64
-          export FUTILS_CXX_COMPILER=$BASE_PATH/bin/aarch64-linux-android21-clang++
-          export FUTILS_C_COMPILER=$BASE_PATH/bin/aarch64-linux-android21-clang
-          export CC=$FUTILS_C_COMPILER
-          . build.sh native Release
-          LIBCPP_SHARED=$BASE_PATH/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so 
-          cp $LIBCPP_SHARED ./tool
-      - name: Pack artifacts
-        run: |
-          mkdir -p artifacts
-          cp -a ./tool ./artifacts/tool
-          cp -a ./script/link_path.sh ./artifacts
-          cp -a ./example ./artifacts/example
-          cp -a ./LICENSE ./artifacts
-          cp -a ./README.md ./artifacts
-          cp -a ./brgen.json ./artifacts
-          cp -a ./script/make_cpp_test.sh ./artifacts
-          cp -a ./script/make_cpp_tests.sh ./artifacts
-          cp -a ./testkit ./artifacts/testkit
-      - name: Upload artifacts
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
-        with:
-          name: brgen-android
-          path: ./artifacts
-
-  collect-licenses:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Timeline
-        uses: Kesin11/actions-timeline@b03a6aa289adef5534c84ccb6fbef7c975973574 # v2.1.0
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Checkout repository
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-      - name: fetch dependencies
-        run: |
-          go mod download
-          cd ast2ts
-          npm install
-          tsc
-          cp ../LICENSE ./out
-          cd ../lsp
-          npm install
-          cd server
-          npm install
-          cd ../client
-          npm install
-          cd ../../src/tool/json2rust
-          mkdir -p ./pkg
-          cp ../../../LICENSE ./pkg
-          cd ../../../web/doc
-          go mod download
-          cd ../dev
-          npm install
-          cd ../..
-      - name: Install gocredits
-        run: |
-          go install github.com/Songmu/gocredits/cmd/gocredits@latest
-      - name: Set up ruby
-        uses: ruby/setup-ruby@6bd3d993c602f6b675728ebaecb2b569ff86e99b # v1.174.0
-        with:
-          ruby-version: ruby
-      - uses: github/setup-licensed@d6b3a6f7058c2b40c06d205e13e15c2418977566 # v1.1.4
-        with:
-          version: "4.4" # required: supports matching based on string equivalence or node-semver range
-      - name: Collect licenses
-        run: |
-          go mod edit -json
-          . ./script/collect_licenses.sh
-      - name: List licenses
-        run: |
-          ls -alR ./license_cache
-      - name: Upload artifacts
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
-        with:
-          name: brgen-licenses
-          path: ./license_cache
-
-  relase:
+  prepare_release:
     permissions:
       contents: write
-    needs:
-      [
-        build-linux,
-        build-macos,
-        build-windows,
-        build-vscode-extension,
-        build-arm-linux,
-        build-android,
-        collect-licenses,
-      ]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
     timeout-minutes: 10
     steps:
       - name: Timeline
@@ -350,6 +52,11 @@ jobs:
         with:
           name: brgen-android
           path: ./artifacts/android
+      - name: Download Web artifacts
+        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427 # v4.1.4
+        with:
+          name: brgen-web
+          path: ./artifacts/web
       - name: Download Licenses
         uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427 # v4.1.4
         with:
@@ -379,6 +86,7 @@ jobs:
           cp artifacts/brgen-licenses.zip artifacts/vscode-extension
           cp artifacts/brgen-licenses.zip artifacts/linux-arm
           cp artifacts/brgen-licenses.zip artifacts/android
+          cp artifacts/brgen-licenses.tar.gz artifacts/web
       - name: Make Archive
         run: |
           tar -czf artifacts/brgen-linux.tar.gz -C artifacts/linux .
@@ -386,12 +94,16 @@ jobs:
           tar -czf artifacts/brgen-macos.tar.gz -C artifacts/macos .
           tar -czf artifacts/brgen-android.tar.gz -C artifacts/android .
           tar -czf artifacts/brgen-vscode-extension.tar.gz -C artifacts/vscode-extension .
+          tar -czf artifacts/brgen-web.tar.gz -C artifacts/web .
           cd artifacts/windows
           zip -r brgen-windows.zip ./**
           mv brgen-windows.zip ../
           cd ../vscode-extension
           zip -r brgen-vscode-extension.zip ./**
           mv brgen-vscode-extension.zip ../
+          cd ../web
+          zip -r brgen-web.zip ./**
+          mv brgen-web.zip ../
       - name: Calculate SHA256
         run: |
           cd artifacts
@@ -402,7 +114,37 @@ jobs:
           sha256sum brgen-windows.zip >> brgen-checksum.txt
           sha256sum brgen-vscode-extension.tar.gz >> brgen-checksum.txt
           sha256sum brgen-vscode-extension.zip >> brgen-checksum.txt
+          sha256sum brgen-web.tar.gz >> brgen-checksum.txt
+          sha256sum brgen-web.zip >> brgen-checksum.txt
           cd ..
+      - name: Bundle Artifacts
+        run: |
+          tar -czf artifacts.tar.gz -C artifacts .
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        with:
+          name: brgen-artifacts
+          path: ./artifacts.tar.gz
+
+  release:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: prepare_release
+    steps:
+      - name: Timeline
+        uses: Kesin11/actions-timeline@b03a6aa289adef5534c84ccb6fbef7c975973574 # v2.1.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Download Artifacts
+        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427 # v4.1.4
+        with:
+          name: brgen-artifacts
+          path: ./artifacts
+      - name: Extract Artifacts
+        run: |
+          tar -xzf artifacts/artifacts.tar.gz -C .
       - name: Release
         uses: softprops/action-gh-release@9d7c94cfd0a1f3ed45544c887983e9fa900f0564 # v2.0.4
         with:
@@ -415,8 +157,6 @@ jobs:
             ./artifacts/brgen-windows.zip
             ./artifacts/brgen-vscode-extension.tar.gz
             ./artifacts/brgen-vscode-extension.zip
+            ./artifacts/brgen-web.tar.gz
+            ./artifacts/brgen-web.zip
           fail_on_unmatched_files: true
-
-  run-test:
-    needs: build-linux
-    uses: ./.github/workflows/brgen-test.yaml
