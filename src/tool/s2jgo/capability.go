@@ -1,9 +1,5 @@
 package s2jgo
 
-import (
-	"unsafe"
-)
-
 /*
 #define S2J_CAPABILITY_STDIN (1 << 0)
 #define S2J_CAPABILITY_NETWORK (1 << 1)
@@ -31,28 +27,3 @@ const (
 
 	CAPABILITY_ALL Capability = 0xffffffffffffffff
 )
-
-type Result struct {
-	Stdout []byte
-	Stderr []byte
-}
-
-type argHolder struct {
-	argvVec []uintptr
-	cStrs   [][]byte
-}
-
-func (a *argHolder) makeArg(args []string) (argc uintptr, argv uintptr) {
-	a.argvVec = make([]uintptr, len(args)+1)
-	a.cStrs = make([][]byte, len(args))
-	for i, arg := range args {
-		a.cStrs[i] = append([]byte(arg), 0)
-	}
-	for i := range a.cStrs {
-		a.argvVec[i] = uintptr(unsafe.Pointer(unsafe.SliceData(a.cStrs[i])))
-	}
-	a.argvVec[len(args)] = 0
-	argc = uintptr(len(args))
-	argv = uintptr(unsafe.Pointer(unsafe.SliceData(a.argvVec)))
-	return
-}

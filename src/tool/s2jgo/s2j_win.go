@@ -59,40 +59,6 @@ func Load(s2j_path string) (_ *Src2JSON, err error) {
 	}, nil
 }
 
-type outData struct {
-	cb            func(data []byte, isStdErr bool)
-	stderrCapture []byte
-}
-
-func callback(data unsafe.Pointer, size uintptr, isStdErr uintptr, ctx unsafe.Pointer) uintptr {
-	out := (*outData)(ctx)
-	if out.cb != nil {
-		out.cb(unsafe.Slice((*byte)(data), size), isStdErr != 0)
-	}
-	if isStdErr != 0 {
-		out.stderrCapture = append(out.stderrCapture, unsafe.Slice((*byte)(data), size)...)
-	}
-	return 0
-}
-
-func (s *Src2JSON) Call(args []string, cap Capability) (*Result, error) {
-	var stdout, stderr []byte
-	err := s.CallIOCallback(args, cap, func(data []byte, isStdErr bool) {
-		if isStdErr {
-			stderr = append(stderr, data...)
-		} else {
-			stdout = append(stdout, data...)
-		}
-	})
-	if err != nil {
-		return nil, err
-	}
-	return &Result{
-		Stdout: stdout,
-		Stderr: stderr,
-	}, nil
-}
-
 func (s *Src2JSON) CallIOCallback(args []string, cap Capability, cb func(data []byte, isStdErr bool)) error {
 	if len(args) == 0 {
 		return errors.New("args must not be empty")
