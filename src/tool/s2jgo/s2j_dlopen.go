@@ -53,13 +53,14 @@ func Load(path string) (*Src2JSON, error) {
 		C.dlclose(dll)
 		return nil, fmt.Errorf("failed to find Src2JSON in %s", path)
 	}
-	runtime.SetFinalizer(dll, func(dll unsafe.Pointer) {
-		C.dlclose(dll)
-	})
-	return &Src2JSON{
+	s2j := &Src2JSON{
 		dll:  unsafe.Pointer(dll),
 		proc: unsafe.Pointer(proc),
-	}, nil
+	}
+	runtime.SetFinalizer(s2j, func(dll *Src2JSON) {
+		C.dlclose(dll.dll)
+	})
+	return s2j, nil
 }
 
 func (s *Src2JSON) CallIOCallback(args []string, cap Capability, cb func(data []byte, isStdErr bool)) error {
