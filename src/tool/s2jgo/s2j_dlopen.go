@@ -36,8 +36,8 @@ func Available() bool {
 }
 
 type Src2JSON struct {
-	dll  *C.void
-	proc *C.void
+	dll  unsafe.Pointer
+	proc unsafe.Pointer
 }
 
 func Load(path string) (*Src2JSON, error) {
@@ -56,7 +56,10 @@ func Load(path string) (*Src2JSON, error) {
 	runtime.SetFinalizer(dll, func(dll *C.void) {
 		C.dlclose(dll)
 	})
-	return &Src2JSON{dll, proc}, nil
+	return &Src2JSON{
+		dll:  unsafe.Pointer(dll),
+		proc: unsafe.Pointer(proc),
+	}, nil
 }
 
 func (s *Src2JSON) CallIOCallback(args []string, cap Capability, cb func(data []byte, isStdErr bool)) error {
@@ -66,12 +69,12 @@ func (s *Src2JSON) CallIOCallback(args []string, cap Capability, cb func(data []
 	argh := &argHolder{}
 	argc, argv := argh.makeArg(args)
 	out := &outData{cb: cb}
-	ret := C.call_s2j_pointer(s.proc, C.int(argc), unsafe.Pointer(argv), C.uint64_t(cap), unsafe.Pointer(out))
+	ret := C.call_s2j_pointer(s.proc, C.int(argc), (*C.void)unsafe.Pointer(argv), C.uint64_t(cap),(*C.void) unsafe.Pointer(out))
 	runtime.KeepAlive(s)
 	runtime.KeepAlive(argh)
 	runtime.KeepAlive(out)
 	if ret != 0 {
-		return fmt.Errorf("libs2j_call returned non-zero: %s", strings.TrimSuffix(string(data.stderrCapture), "\n"))
+		return fmt.Errorf("libs2j_call returned non-zero: %s", strings.TrimSuffix(string(out.stderrCapture), "\n"))
 	}
 	return nil
 }
