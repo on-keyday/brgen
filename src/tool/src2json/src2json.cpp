@@ -98,7 +98,11 @@ struct Flags : futils::cmdline::templ::HelpOption {
     bool error_tolerant = false;
 
     void bind(futils::cmdline::option::Context& ctx) {
+        // HACK(on-keyday): because MAC OS build makes an strange error
+        // so this is a workaround
+        (void)typeid(char8_t);
         bind_help(ctx);
+
         ctx.VarBool(&version, "version", "print version");
         ctx.VarBool(&spec, "s,spec", "print spec of src2json (for generator mode)");
         ctx.VarBool(&force_ok, "force-ok", "force print ok when succeeded (for generator mode) (for debug)");
