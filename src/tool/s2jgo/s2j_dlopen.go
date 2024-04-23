@@ -77,9 +77,9 @@ func (s *Src2JSON) CallIOCallback(args []string, cap Capability, cb func(data []
 
 	ret := C.call_s2j_pointer(s.proc,
 		(C.int)(argc),
-		argv,
+		(C.uintptr_t)(argv),
 		(C.uint64_t)(cap),
-		ptr,
+		(C.uintptr_t)(ptr),
 	)
 	runtime.KeepAlive(s)
 	runtime.KeepAlive(argh)
