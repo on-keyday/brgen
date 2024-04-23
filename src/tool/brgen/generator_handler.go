@@ -52,6 +52,10 @@ func (g *GeneratorHandler) loadSrc2JSON(src2json, libs2j string) error {
 				if !strings.HasSuffix(libs2j, ".dll") {
 					libs2j += ".dll"
 				}
+			} else if runtime.GOOS == "darwin" {
+				if !strings.HasSuffix(libs2j, ".dylib") {
+					libs2j += ".dylib"
+				}
 			} else {
 				if !strings.HasSuffix(libs2j, ".so") {
 					libs2j += ".so"
