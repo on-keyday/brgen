@@ -98,6 +98,8 @@ struct Flags : futils::cmdline::templ::HelpOption {
     bool error_tolerant = false;
 
     void bind(futils::cmdline::option::Context& ctx) {
+        (void)typeid(char8_t);
+        (void)typeid(char8_t*);
         bind_help(ctx);
 
         ctx.VarBool(&version, "version", "print version");
