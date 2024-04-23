@@ -70,11 +70,11 @@ func (s *Src2JSON) CallIOCallback(args []string, cap Capability, cb func(data []
 	argc, argv := argh.makeArg(args)
 	out := &outData{cb: cb}
 
-	ret := C.call_s2j_pointer((*C.void)(s.proc),
+	ret := C.call_s2j_pointer(s.proc,
 		(C.int)(argc),
-		(*C.void)(unsafe.Pointer(argv)),
+		unsafe.Pointer(argv),
 		(C.uint64_t)(cap),
-		(*C.void)(unsafe.Pointer(out)),
+		unsafe.Pointer(out),
 	)
 	runtime.KeepAlive(s)
 	runtime.KeepAlive(argh)
