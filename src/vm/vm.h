@@ -264,7 +264,7 @@ namespace brgen::vm {
         friend struct VMHelper;
 
         futils::binary::reader input{futils::view::rvec{}};
-        futils::binary::StreamingBuffer<std::string> output;
+        futils::binary::WriteStreamingBuffer<std::string> output;
         std::unordered_map<std::string, std::uint64_t> functions;
         std::unordered_map<std::uint64_t, std::string> inverse_functions;
         ast::Endian endian = ast::Endian::big;
