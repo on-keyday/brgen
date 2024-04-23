@@ -218,7 +218,7 @@ jobs:
       - name: Build
         run: |
           BASE_PATH=/opt/hostedtoolcache/ndk/r26b/x64/toolchains/llvm/prebuilt/linux-x86_64
-          ls -Ral $BASE_PATH
+          #ls -Ral $BASE_PATH
           export GOARCH=arm64
           export FUTILS_CXX_COMPILER=$BASE_PATH/bin/aarch64-linux-android21-clang++
           export FUTILS_C_COMPILER=$BASE_PATH/bin/aarch64-linux-android21-clang
