@@ -1,4 +1,4 @@
-//go:build linux || darwin || freebsd
+//go:build cgo && (linux || darwin || freebsd)
 
 package s2jgo
 

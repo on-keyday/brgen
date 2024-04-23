@@ -180,6 +180,7 @@ jobs:
           export GOARCH=arm64
           export FUTILS_CXX_COMPILER=aarch64-linux-gnu-g++
           export FUTILS_C_COMPILER=aarch64-linux-gnu-gcc
+          export CC=$FUTILS_C_COMPILER
           . build.sh native Release
       - name: Pack artifacts
         run: |
@@ -222,6 +223,7 @@ jobs:
           export GOARCH=arm64
           export FUTILS_CXX_COMPILER=$BASE_PATH/bin/aarch64-linux-android21-clang++
           export FUTILS_C_COMPILER=$BASE_PATH/bin/aarch64-linux-android21-clang
+          export CC=$FUTILS_C_COMPILER
           . build.sh native Release
           LIBCPP_SHARED=$BASE_PATH/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so 
           cp $LIBCPP_SHARED ./tool

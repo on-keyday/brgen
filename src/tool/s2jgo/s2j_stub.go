@@ -1,4 +1,4 @@
-//go:build !windows && !linux && !darwin && !freebsd
+//go:build !windows && (!cgo || !linux && !darwin && !freebsd)
 package s2jgo
 
 import "errors"
