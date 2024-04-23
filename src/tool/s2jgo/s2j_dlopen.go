@@ -83,7 +83,7 @@ func (s *Src2JSON) CallIOCallback(args []string, cap Capability, cb func(data []
 	runtime.KeepAlive(argh)
 	runtime.KeepAlive(data)
 	if ret != 0 {
-		return fmt.Errorf("libs2j_call returned non-zero: %s", strings.TrimSuffix(string(out.stderrCapture), "\n"))
+		return fmt.Errorf("libs2j_call returned non-zero: %s", strings.TrimSuffix(string(data.stderrCapture), "\n"))
 	}
 	return nil
 }
