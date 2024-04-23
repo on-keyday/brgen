@@ -1,5 +1,9 @@
 #!/bin/bash
-export S2J_LIB=1
+# on macos, S2J_LIB=1 is not work well, so not set S2J_LIB
+if [ "$(uname)" != "Darwin" ]; then
+   export S2J_LIB=1
+fi
+
 BUILD_MODE=$1
 BUILD_TYPE=$2
 
