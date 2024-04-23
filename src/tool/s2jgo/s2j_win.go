@@ -69,6 +69,8 @@ func (s *Src2JSON) CallIOCallback(args []string, cap Capability, cb func(data []
 	data := &outData{
 		cb: cb,
 	}
+	argh.Pin(data)
+	defer argh.Unpin()
 	ret, _, err := s.libs2j_call.Call(argc, argv, uintptr(cap), out_callback, uintptr(unsafe.Pointer(data)))
 	runtime.KeepAlive(s)
 	runtime.KeepAlive(argh)

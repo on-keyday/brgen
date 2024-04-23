@@ -1,6 +1,9 @@
 package s2jgo
 
-import "unsafe"
+import (
+	"runtime"
+	"unsafe"
+)
 
 type Result struct {
 	Stdout []byte
@@ -10,6 +13,7 @@ type Result struct {
 type argHolder struct {
 	argvVec []uintptr
 	cStrs   [][]byte
+	runtime.Pinner
 }
 
 type outData struct {
@@ -35,11 +39,15 @@ func (a *argHolder) makeArg(args []string) (argc uintptr, argv uintptr) {
 		a.cStrs[i] = append([]byte(arg), 0)
 	}
 	for i := range a.cStrs {
-		a.argvVec[i] = uintptr(unsafe.Pointer(unsafe.SliceData(a.cStrs[i])))
+		data := unsafe.SliceData(a.cStrs[i])
+		a.Pin(data)
+		a.argvVec[i] = uintptr(unsafe.Pointer(data))
 	}
 	a.argvVec[len(args)] = 0
 	argc = uintptr(len(args))
-	argv = uintptr(unsafe.Pointer(unsafe.SliceData(a.argvVec)))
+	data := unsafe.SliceData(a.argvVec)
+	a.Pin(data)
+	argv = uintptr(unsafe.Pointer(data))
 	return
 }
 

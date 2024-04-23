@@ -69,17 +69,19 @@ func (s *Src2JSON) CallIOCallback(args []string, cap Capability, cb func(data []
 	}
 	argh := &argHolder{}
 	argc, argv := argh.makeArg(args)
-	out := &outData{cb: cb}
+	data := &outData{cb: cb}
+	argh.Pin(data)
+	defer argh.Unpin()
 
 	ret := C.call_s2j_pointer(s.proc,
 		(C.int)(argc),
-		unsafe.Pointer(argv),
+		unsafe.Pointer(uintptr(unsafe.Pointer(argv))),
 		(C.uint64_t)(cap),
-		unsafe.Pointer(out),
+		unsafe.Pointer(uintptr(unsafe.Pointer(data))),
 	)
 	runtime.KeepAlive(s)
 	runtime.KeepAlive(argh)
-	runtime.KeepAlive(out)
+	runtime.KeepAlive(data)
 	if ret != 0 {
 		return fmt.Errorf("libs2j_call returned non-zero: %s", strings.TrimSuffix(string(out.stderrCapture), "\n"))
 	}
