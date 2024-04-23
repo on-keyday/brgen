@@ -53,7 +53,7 @@ func Load(path string) (*Src2JSON, error) {
 		C.dlclose(dll)
 		return nil, fmt.Errorf("failed to find Src2JSON in %s", path)
 	}
-	runtime.SetFinalizer(dll, func(dll *C.void) {
+	runtime.SetFinalizer(dll, func(dll unsafe.Pointer) {
 		C.dlclose(dll)
 	})
 	return &Src2JSON{
