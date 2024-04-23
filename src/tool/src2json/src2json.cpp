@@ -98,9 +98,6 @@ struct Flags : futils::cmdline::templ::HelpOption {
     bool error_tolerant = false;
 
     void bind(futils::cmdline::option::Context& ctx) {
-        // HACK(on-keyday): because MAC OS build makes an strange error
-        // so this is a workaround
-        (void)typeid(char8_t);
         bind_help(ctx);
 
         ctx.VarBool(&version, "version", "print version");

@@ -1,5 +1,4 @@
-//go:build !windows && !linux && !darwin && !freebsd && !openbsd && !netbsd && !dragonfly && !solaris && !android
-
+//go:build !windows && !linux && !darwin && !freebsd
 package s2jgo
 
 import "errors"
