@@ -1,4 +1,4 @@
-//go:build (linux || darwin || freebsd || openbsd || netbsd || dragonfly || solaris || android)
+//go:build linux || darwin || freebsd || openbsd || netbsd || dragonfly || solaris || android
 
 package s2jgo
 
@@ -35,12 +35,12 @@ func Available() bool {
 	return true
 }
 
-type Src2JSON struct {
+type src2JSON struct {
 	dll  unsafe.Pointer
 	proc unsafe.Pointer
 }
 
-func Load(path string) (*Src2JSON, error) {
+func load(path string) (*src2JSON, error) {
 	if !filepath.IsAbs(path) {
 		return nil, errors.New("s2j_path must be absolute path")
 	}
@@ -51,19 +51,19 @@ func Load(path string) (*Src2JSON, error) {
 	proc := C.dlsym(dll, C.CString("libs2j_call"))
 	if proc == nil {
 		C.dlclose(dll)
-		return nil, fmt.Errorf("failed to find Src2JSON in %s", path)
+		return nil, fmt.Errorf("failed to find libs2j_call in %s", path)
 	}
-	s2j := &Src2JSON{
+	s2j := &src2JSON{
 		dll:  unsafe.Pointer(dll),
 		proc: unsafe.Pointer(proc),
 	}
-	runtime.SetFinalizer(s2j, func(dll *Src2JSON) {
+	runtime.SetFinalizer(s2j, func(dll *src2JSON) {
 		C.dlclose(dll.dll)
 	})
 	return s2j, nil
 }
 
-func (s *Src2JSON) CallIOCallback(args []string, cap Capability, cb func(data []byte, isStdErr bool)) error {
+func (s *src2JSON) CallIOCallback(args []string, cap Capability, cb func(data []byte, isStdErr bool)) error {
 	if len(args) == 0 {
 		return errors.New("args must not be empty")
 	}

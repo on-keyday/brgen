@@ -51,9 +51,22 @@ func (a *argHolder) makeArg(args []string) (argc uintptr, argv uintptr) {
 	return
 }
 
+func Load(path string) (*Src2JSON, error) {
+	s, err := load(path)
+	if err != nil {
+		return nil, err
+	}
+	return &Src2JSON{s}, nil
+
+}
+
+type Src2JSON struct {
+	*src2JSON
+}
+
 func (s *Src2JSON) Call(args []string, cap Capability) (*Result, error) {
 	var stdout, stderr []byte
-	err := s.CallIOCallback(args, cap, func(data []byte, isStdErr bool) {
+	err := s.src2JSON.CallIOCallback(args, cap, func(data []byte, isStdErr bool) {
 		if isStdErr {
 			stderr = append(stderr, data...)
 		} else {

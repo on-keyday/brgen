@@ -18,12 +18,12 @@ func Available() bool {
 	return true
 }
 
-type Src2JSON struct {
+type src2JSON struct {
 	dll         *windows.DLL
 	libs2j_call *windows.Proc
 }
 
-func Load(s2j_path string) (_ *Src2JSON, err error) {
+func load(s2j_path string) (_ *src2JSON, err error) {
 	if !filepath.IsAbs(s2j_path) {
 		return nil, errors.New("s2j_path must be absolute path")
 	}
@@ -53,13 +53,13 @@ func Load(s2j_path string) (_ *Src2JSON, err error) {
 	runtime.SetFinalizer(dll, func(dll *windows.DLL) {
 		dll.Release()
 	})
-	return &Src2JSON{
+	return &src2JSON{
 		dll:         dll,
 		libs2j_call: proc,
 	}, nil
 }
 
-func (s *Src2JSON) CallIOCallback(args []string, cap Capability, cb func(data []byte, isStdErr bool)) error {
+func (s *src2JSON) CallIOCallback(args []string, cap Capability, cb func(data []byte, isStdErr bool)) error {
 	if len(args) == 0 {
 		return errors.New("args must not be empty")
 	}
