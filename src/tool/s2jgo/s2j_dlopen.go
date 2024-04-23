@@ -8,7 +8,7 @@ package s2jgo
 #include <stddef.h>
 #include <stdint.h>
 
-extern void s2jgo_callback(const char* str, size_t len, size_t is_stderr, void* data);
+extern void s2jgo_callback(char* str, size_t len, size_t is_stderr, void* data);
 typedef int(*s2jgo_call_t)(int, void*, uint64_t,void(*)(const char*,size_t,size_t,void*), void*);
 
 int call_s2j_pointer(void* proc_ptr,int argc,void* argv,uint64_t cap,void* data){
