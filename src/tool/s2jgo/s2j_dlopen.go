@@ -70,6 +70,7 @@ func (s *Src2JSON) CallIOCallback(args []string, cap Capability, cb func(data []
 	argh := &argHolder{}
 	argc, argv := argh.makeArg(args)
 	data := &outData{cb: cb}
+	argh.Pin(data.cb)
 	argh.Pin(data)
 	defer argh.Unpin()
 
