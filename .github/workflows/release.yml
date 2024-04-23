@@ -176,6 +176,7 @@ jobs:
           sudo apt-get update && sudo apt-get install -y g++-aarch64-linux-gnu
       - name: Build
         run: |
+          go version
           export GOARCH=arm64
           export FUTILS_CXX_COMPILER=aarch64-linux-gnu-g++
           export FUTILS_C_COMPILER=aarch64-linux-gnu-gcc
