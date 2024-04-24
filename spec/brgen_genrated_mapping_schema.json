@@ -1,0 +1,62 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "description": "brgen(BinaRy encoder/decoder GENerator driver) generated file information",
+  "properties": {
+    "structs": {
+      "type": "array",
+      "description": "List of structs",
+      "item": {
+        "type": "string",
+        "description": "Struct name"
+      }
+    },
+    "line_map": {
+      "type": "array",
+      "description": "Line number mappings",
+      "item": {
+        "type": "object",
+        "description": "Line number mapping",
+        "item": {
+          "line": {
+            "type": "integer",
+            "description": "Line number of generated file"
+          },
+          "loc": {
+            "type": "object",
+            "description": "Location of source file",
+            "item": {
+              "file": {
+                "type": "integer",
+                "description": "File index"
+              },
+              "line": {
+                "type": "integer",
+                "description": "Line number of source file"
+              },
+              "col": {
+                "type": "integer",
+                "description": "Column number of source file"
+              },
+              "pos": {
+                "type": "object",
+                "description": "Position of source file",
+                "item": {
+                  "begin": {
+                    "type": "integer",
+                    "description": "Begin position of source file"
+                  },
+                  "end": {
+                    "type": "integer",
+                    "description": "End position of source file"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}
