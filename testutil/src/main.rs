@@ -4,6 +4,7 @@ use std::{
     ffi::OsStr,
     fs, os,
     path::{Path, PathBuf},
+    process,
 };
 
 use clap::{arg, Parser};
@@ -68,7 +69,7 @@ impl TestScheduler {
         &mut self,
         sched: &TestSchedule<'a>,
         instance: String,
-    ) -> Result<(PathBuf, PathBuf), Error> {
+    ) -> Result<(PathBuf, PathBuf, PathBuf), Error> {
         let tmp_dir = self.get_tmp_dir();
         let tmp_dir = tmp_dir.join(&sched.file.base);
         let tmp_dir = tmp_dir.join(&sched.input.format_name);
@@ -76,14 +77,28 @@ impl TestScheduler {
         fs::create_dir_all(&tmp_dir)?;
         let input_file = tmp_dir.join(&sched.runner.build_input_name);
         let output_file = tmp_dir.join(&sched.runner.build_output_name);
-        fs::write(input_file, instance)?;
-        Ok((tmp_dir,  output_file))
+        fs::write(&input_file, instance)?;
+        Ok((tmp_dir, input_file, output_file))
+    }
+
+    fn exec_build<'a>(&mut self, sched: &TestSchedule<'a>, input: &PathBuf, output: &PathBuf) {
+        let mut cmd = sched.runner.build_command.clone();
+        for c in &mut cmd {
+            if c == "$INPUT" {
+                *c = input.to_str().unwrap().to_string();
+            }
+            if c == "$OUTPUT" {
+                *c = output.to_str().unwrap().to_string();
+            }
+        }
+        let mut r = process::Command::new(&cmd[0]);
+        r.args(&cmd[1..]);
     }
 
     pub fn run_test_schedule<'a>(&mut self, sched: &TestSchedule<'a>) -> Result<(), Error> {
         let instance = self.prepare_content(sched)?;
 
-        let (tmp_dir, output) = self.create_input_file(sched, instance)?;
+        let (tmp_dir, input, output) = self.create_input_file(sched, instance)?;
 
         Ok(())
     }
