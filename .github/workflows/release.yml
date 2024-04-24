@@ -117,9 +117,20 @@ jobs:
           sha256sum brgen-web.tar.gz >> brgen-checksum.txt
           sha256sum brgen-web.zip >> brgen-checksum.txt
           cd ..
-      - name: Bundle Artifacts
+      - name: Bundle Artifacts .zip and .tar.gz
         run: |
-          tar -czf artifacts.tar.gz -C artifacts .
+          mkdir bundle
+          mv artifacts/brgen-checksum.txt bundle
+          mv artifacts/brgen-linux.tar.gz bundle
+          mv artifacts/brgen-linux-arm.tar.gz bundle
+          mv artifacts/brgen-macos.tar.gz bundle
+          mv artifacts/brgen-android.tar.gz bundle
+          mv artifacts/brgen-windows.zip bundle
+          mv artifacts/brgen-vscode-extension.tar.gz bundle
+          mv artifacts/brgen-vscode-extension.zip bundle
+          mv artifacts/brgen-web.tar.gz bundle
+          mv artifacts/brgen-web.zip bundle
+          tar -czf artifacts.tar.gz -C bundle .
       - name: Upload Artifacts
         uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
         with:
