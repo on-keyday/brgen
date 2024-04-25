@@ -76,7 +76,7 @@ install(CODE "file(APPEND \"${CMAKE_INSTALL_PREFIX}/lib/go_wasm_exec.js\" \"expo
 if("$ENV{BRGEN_RUST_ENABLED}" STREQUAL "1")
     add_custom_target(
         json2rust ALL
-        COMMAND "wasm-bindgen" "build" "--target" "web"
+        COMMAND "wasm-pack" "build" "--target" "web"
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/tool/json2rust
     )
     add_custom_command(
