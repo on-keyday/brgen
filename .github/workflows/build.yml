@@ -62,8 +62,8 @@ jobs:
           brew install llvm
       - name: Build
         run: |
-          export FUTILS_CXX_COMPILER=/usr/local/opt/llvm/bin/clang++
-          export FUTILS_C_COMPILER=/usr/local/opt/llvm/bin/clang
+          export FUTILS_CXX_COMPILER=/opt/homebrew//opt/llvm/bin/clang++
+          export FUTILS_C_COMPILER=/opt/homebrew/opt/llvm/bin/clang
           . build.sh native Release
           ./tool/src2json --version
       - name: Pack artifacts
