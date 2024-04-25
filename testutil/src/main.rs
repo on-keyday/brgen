@@ -54,7 +54,7 @@ impl TestScheduler {
         if let Some(x) = self.input_binaries.get(path) {
             return Ok(x.clone());
         } else {
-            let t = fs::read_to_string(path)?;
+            let t = fs::read(path)?;
             self.input_binaries.insert(path.to_string(), t);
             Ok(self.input_binaries.get(path).unwrap().clone())
         }

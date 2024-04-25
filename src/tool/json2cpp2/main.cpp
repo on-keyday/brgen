@@ -58,7 +58,7 @@ int cpp_generate(const Flags& flags, brgen::request::GenerateSource& req, std::s
             field("structs", g.struct_names);
             field("line_map", g.line_map);
         }
-        send_source(req.id, std::move(s.out()), req.name + ".hpp.map.json");
+        send_source(req.id, std::move(s.out()), req.name + ".hpp.json");
     }
     send_end_response(req.id);
     return 0;
