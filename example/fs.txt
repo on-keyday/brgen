@@ -427,3 +427,23 @@ enum Type  {
         experimental_1 = 253,
         experimental_2 = 255,
     };
+
+ enum  OS  {
+        fat = 0,
+        amiga = 1,
+        vms = 2,
+        unix_ = 3,
+        vm_cms = 4,
+        atari = 5,
+        hpfs = 6,
+        machintosh = 7,
+        z_system = 8,
+        cp_m = 9,
+        tops_20 = 10,
+        ntfs = 11,
+        qdos = 12,
+        acorn_risc_os = 13,
+        vfat = 14,
+        mvs = 15,
+        beos = 16,
+    };

@@ -105,6 +105,12 @@ if("$ENV{BRGEN_RUST_ENABLED}" STREQUAL "1")
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/tool/json2rust
     )
 
+    add_custom_target(
+        cmptest ALL
+        COMMAND "cargo" "build" "--bins" "${RUST_RELEASE_OPTION}" "--target-dir" "${CMAKE_BINARY_DIR}/tool/cmptest/target"
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/tool/cmptest
+    )
+
 endif()
 
 # Libraries
@@ -298,4 +304,5 @@ if("$ENV{BRGEN_RUST_ENABLED}" STREQUAL "1")
         set(RUST_TARGET_DIR "release")
     endif()
     install(PROGRAMS "${CMAKE_SOURCE_DIR}/src/tool/json2rust/target/${RUST_TARGET_DIR}/json2rust${SUFFIX}" DESTINATION tool OPTIONAL)
+    install(PROGRAMS "${CMAKE_SOURCE_DIR}/src/tool/cmptest/target/${RUST_TARGET_DIR}/cmptest${SUFFIX}" DESTINATION tool OPTIONAL)
 endif()

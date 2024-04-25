@@ -115,6 +115,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "98cc8fbded0c607b7ba9dd60cd98df59af97e84d24e49c8557331cfc26d301ce"
 
 [[package]]
+name = "cmptest"
+version = "0.1.0"
+dependencies = [
+ "ast2rust",
+ "clap",
+ "rand",
+ "regex",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "colorchoice"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -290,18 +302,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
-]
-
-[[package]]
-name = "testutil"
-version = "0.1.0"
-dependencies = [
- "ast2rust",
- "clap",
- "rand",
- "regex",
- "serde",
- "serde_json",
 ]
 
 [[package]]

@@ -148,7 +148,7 @@
         ".\\ast2rust\\Cargo.toml",
         ".\\src\\tool\\json2rust\\Cargo.toml",
         ".\\src\\tool\\json2llvm\\Cargo.toml",
-        ".\\testutil\\Cargo.toml",
+        ".\\src\\tool\\cmptest\\Cargo.toml",
     ],
     "brgen-lsp.src2json" :"./tool/src2json.exe",
     //"go.buildTags": "linux",
