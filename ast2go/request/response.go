@@ -1,6 +1,10 @@
 package request
 
-import "io"
+import (
+	"fmt"
+	"io"
+	"runtime/debug"
+)
 
 type RequestStream struct {
 	r io.Reader
@@ -67,4 +71,44 @@ func (rs *RequestStream) RespondEnd(id uint64) error {
 	enc := resp.MustEncode()
 	_, err := rs.w.Write(enc)
 	return err
+}
+
+type IDStream struct {
+	rs *RequestStream
+	id uint64
+}
+
+func (rs *IDStream) RespondSource(name string, code []byte, warn string) error {
+	return rs.rs.RespondSource(rs.id, name, code, warn)
+}
+
+func (rs *IDStream) RespondError(err string) error {
+	return rs.rs.RespondError(rs.id, err)
+}
+
+func Run(r io.Reader, w io.Writer, cb func(s *IDStream, req *GenerateSource)) error {
+	stream, err := NewRequestStream(r, w)
+	if err != nil {
+		return err
+	}
+	for {
+		req, err := stream.Receive()
+		if err != nil {
+			break
+		}
+		go func() {
+			defer stream.RespondEnd(req.ID)
+			defer func() {
+				if r := recover(); r != nil {
+					trace := debug.Stack()
+					stream.RespondError(req.ID, fmt.Sprintf("%v\n%s", r, trace))
+				}
+			}()
+			cb(&IDStream{
+				stream,
+				req.ID,
+			}, req)
+		}()
+	}
+	return nil
 }

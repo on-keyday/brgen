@@ -16,6 +16,26 @@
   "test_info_output": "./ignore/example/test_info.json",
   "output": [
     {
+      "generator": "./tool/json2go",
+      "output_dir": "./ignore/example/go/",
+      "args": [
+        "-map-word",
+        "Id=ID",
+        "-map-word",
+        "IDentifier=Identifier",
+        "-map-word",
+        "Tcpsegment=TCPSegment",
+        "-map-word",
+        "Udpdatagram=UDPDatagram",
+        "-map-word",
+        "Udpheader=UDPHeader",
+        "-map-word",
+        "icmp=ICMP"
+      ]
+    }
+  ],
+  "garbage": [
+    {
       "generator": "./tool/json2cpp2",
       "output_dir": "./ignore/example/cpp2/",
       "args": ["--add-line-map", "--use-error", "--use-overflow-check"]

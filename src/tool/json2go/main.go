@@ -33,24 +33,23 @@ func generate(r io.Reader, out func(data []byte, warn error), errOut func(err er
 }
 
 func streamingMode() {
-	stream, err := request.NewRequestStream(os.Stdin, os.Stdout)
+	handler := func(stream *request.IDStream, req *request.GenerateSource) {
+		r := bytes.NewReader(req.JsonText)
+		generate(r, func(data []byte, warn error) {
+			err := ""
+			if warn != nil {
+				err = warn.Error()
+			}
+			stream.RespondSource(string(req.Name)+".go", data, err)
+		}, func(err error) {
+			stream.RespondError(err.Error())
+		})
+	}
+	err := request.Run(os.Stdin, os.Stdout, handler)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
-	}
-	for {
-		req, err := stream.Receive()
-		if err != nil {
-			break
-		}
-		r := bytes.NewReader(req.JsonText)
-		go func() {
-			generate(r, func(data []byte, warn error) {
-				stream.RespondSource(req.ID, string(req.Name)+".go", data, err.Error())
-			}, func(err error) {
-				stream.RespondError(req.ID, err.Error())
-			})
-		}()
+		return
 	}
 }
 

@@ -121,7 +121,7 @@ inline void read_stdin_requests(auto&& cb) {
                 break;
             }
             if (s != futils::thread::ChanStateValue::enable) {
-                std::this_thread::yield();
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
                 continue;
             }
             cb(req);
