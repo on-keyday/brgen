@@ -4,6 +4,8 @@ if [ "$(uname)" != "Darwin" ]; then
    export S2J_LIB=1
 fi
 
+export BRGEN_RUST_ENABLED=1
+
 BUILD_MODE=$1
 BUILD_TYPE=$2
 
@@ -48,16 +50,16 @@ if [ $BUILD_MODE = "wasm-em" ];then
 else
    cmake  -D CMAKE_CXX_COMPILER=$CXX_COMPILER -D CMAKE_C_COMPILER=$C_COMPILER -G Ninja -D CMAKE_INSTALL_PREFIX=$INSTALL_PREFIX -D CMAKE_BUILD_TYPE=$BUILD_TYPE -S . -B ./built/$BUILD_MODE/$BUILD_TYPE
 fi
-ninja -C ./built/$BUILD_MODE/$BUILD_TYPE
+#ninja -C ./built/$BUILD_MODE/$BUILD_TYPE
 ninja -C ./built/$BUILD_MODE/$BUILD_TYPE install
 
 if [ $BUILD_MODE = "wasm-em" ]; then
 unset GOOS
 unset GOARCH
-cd ./src/tool/json2rust
-wasm-pack build --target web
-cp ../../../LICENSE ./pkg
-cd ../../..
+#cd ./src/tool/json2rust
+#wasm-pack build --target web
+#cp ../../../LICENSE ./pkg
+#cd ../../..
 cd ./web/dev
 tsc
 webpack
@@ -68,3 +70,4 @@ fi
 unset FUTILS_DIR
 unset BUILD_MODE
 unset S2J_LIB
+unset BRGEN_RUST_ENABLED

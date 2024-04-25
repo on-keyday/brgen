@@ -15,8 +15,9 @@ import (
 	"github.com/on-keyday/brgen/ast2go/gen"
 )
 
-var f = flag.Bool("s", false, "tell spec of json2go")
-var filename = flag.String("f", "", "file to parse")
+var spec = flag.Bool("s", false, "tell spec of json2go")
+var filename = flag.Bool("f", false, "arg is filename")
+var legacyStdin = flag.Bool("legacy-stdin", false, "use legacy stdin")
 
 // var usePut = flag.Bool("use-put", false, "use PutUintXXX instead of AppendUintXXX")
 var decodeReturnsLen = flag.Bool("decode-returns-len", true, "func Decode returns length of read bytes")
@@ -35,8 +36,8 @@ func init() {
 }
 
 func ResetFlag() {
-	*f = false
-	*filename = ""
+	*spec = false
+	*filename = false
 	//*usePut = false
 	*decodeReturnsLen = true
 	*useMustEncode = true

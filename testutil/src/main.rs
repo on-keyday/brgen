@@ -229,15 +229,11 @@ impl TestScheduler {
         }
 
         if !diff.is_empty() {
-            eprintln!("test failed: input and output is different");
+            let mut debug = format!("test failed: input and output is different\n");
             for (i, a, b) in diff {
-                eprintln!("{}: {:02x?} != {:02x?}", i, a, b);
+                debug += &format!("{}: {:02x?} != {:02x?}\n", i, a, b);
             }
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "test failed: input and output is different",
-            )
-            .into());
+            return Err(std::io::Error::new(std::io::ErrorKind::Other, debug).into());
         }
 
         Ok(())
@@ -272,7 +268,6 @@ fn main() -> Result<(), Error> {
         }
         has_input = false;
         has_output = false;
-        has_exec = false;
         for cmd in &runner.run_command {
             if cmd == "$INPUT" {
                 has_input = true;
@@ -307,7 +302,12 @@ fn main() -> Result<(), Error> {
         if file.suffix != ".json" {
             continue;
         }
-        let ext = file.base.split('.').last().unwrap();
+        let split = file.base.split('.').collect::<Vec<&str>>();
+        if split.len() != 2 {
+            continue;
+        }
+        let base = split[0];
+        let ext = split[1];
         let runner = match ext_set.get(ext) {
             Some(x) => x,
             None => continue,
@@ -323,7 +323,7 @@ fn main() -> Result<(), Error> {
             }
         };
         for s in &data.structs {
-            if let Some(input) = file_format_list.get(&(file.base.clone(), s.clone())) {
+            if let Some(input) = file_format_list.get(&(base.to_string(), s.clone())) {
                 sched.push(TestSchedule {
                     runner: runner,
                     input: input,
@@ -334,7 +334,10 @@ fn main() -> Result<(), Error> {
     }
     let mut scheduler = TestScheduler::new();
     for s in sched {
-        scheduler.run_test_schedule(&s)?;
+        match scheduler.run_test_schedule(&s) {
+            Ok(()) => println!("test passed: {:?}", s.file.into_path() + &s.input.format_name),
+            Err(x) => println!("test failed: {:?} {:?}", s.file.into_path() + &s.input.format_name, x),
+        }
     }
     Ok(())
 }

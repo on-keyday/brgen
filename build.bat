@@ -1,6 +1,7 @@
 @echo off
 setlocal
 set S2J_LIB=1
+set BRGEN_RUST_ENABLED=1
 set BUILD_MODE=%1
 set BUILD_TYPE=%2
 set FUTILS_DIR=%3
@@ -41,10 +42,10 @@ rem ninja -C ./built/%BUILD_MODE%/%BUILD_TYPE%
 ninja -C ./built/%BUILD_MODE%/%BUILD_TYPE% install
 
 if "%BUILD_MODE%" == "wasm-em" (
-    cd ./src/tool/json2rust
-    wasm-pack build --target web
-    copy ..\..\..\LICENSE .\pkg\LICENSE
-    cd ../../../
+rem    cd ./src/tool/json2rust
+rem    wasm-pack build --target web
+rem    copy ..\..\..\LICENSE .\pkg\LICENSE
+rem    cd ../../../
     cd ./web/dev
     call tsc
     call webpack
