@@ -28,9 +28,18 @@ type Error = Box<dyn std::error::Error>;
 struct TestScheduler {
     template_files: HashMap<String, String>,
     tmpdir: Option<PathBuf>,
+    input_binaries: HashMap<String, Vec<u8>>,
 }
 
 impl TestScheduler {
+    fn new() -> Self {
+        Self {
+            template_files: HashMap::new(),
+            tmpdir: None,
+            input_binaries: HashMap::new(),
+        }
+    }
+
     fn read_template(&mut self, path: &str) -> Result<String, Error> {
         if let Some(x) = self.template_files.get(path) {
             return Ok(x.clone());
@@ -38,6 +47,16 @@ impl TestScheduler {
             let t = fs::read_to_string(path)?;
             self.template_files.insert(path.to_string(), t);
             Ok(self.template_files.get(path).unwrap().clone())
+        }
+    }
+
+    fn read_input_binary(&mut self, path: &str) -> Result<Vec<u8>, Error> {
+        if let Some(x) = self.input_binaries.get(path) {
+            return Ok(x.clone());
+        } else {
+            let t = fs::read_to_string(path)?;
+            self.input_binaries.insert(path.to_string(), t);
+            Ok(self.input_binaries.get(path).unwrap().clone())
         }
     }
 
@@ -81,24 +100,145 @@ impl TestScheduler {
         Ok((tmp_dir, input_file, output_file))
     }
 
-    fn exec_build<'a>(&mut self, sched: &TestSchedule<'a>, input: &PathBuf, output: &PathBuf) {
-        let mut cmd = sched.runner.build_command.clone();
-        for c in &mut cmd {
+    fn replace_cmd(
+        cmd: &mut Vec<String>,
+        tmp_dir: &PathBuf,
+        input: &PathBuf,
+        output: &PathBuf,
+        exec: Option<&PathBuf>,
+    ) {
+        for c in cmd {
             if c == "$INPUT" {
                 *c = input.to_str().unwrap().to_string();
             }
             if c == "$OUTPUT" {
                 *c = output.to_str().unwrap().to_string();
             }
+            if c == "$EXEC" {
+                if let Some(e) = exec {
+                    *c = e.to_str().unwrap().to_string();
+                }
+            }
+            if c == "$TMPDIR" {
+                *c = tmp_dir.to_str().unwrap().to_string();
+            }
         }
+    }
+
+    fn exec_cmd<'a>(
+        &mut self,
+        base: &Vec<String>,
+        tmp_dir: &PathBuf,
+        input: &PathBuf,
+        output: &PathBuf,
+        exec: Option<&PathBuf>,
+        expect_ok: bool,
+    ) -> Result<bool, Error> {
+        let mut cmd = base.clone();
+        Self::replace_cmd(&mut cmd, tmp_dir, input, output, exec);
         let mut r = process::Command::new(&cmd[0]);
         r.args(&cmd[1..]);
+        let done = r.output()?;
+        let code = done.status.code();
+        match code {
+            Some(0) => return Ok(true),
+            status => {
+                if let Some(x) = status {
+                    if x == 1 && !expect_ok {
+                        return Ok(false);
+                    }
+                }
+                let stderr_str = String::from_utf8_lossy(&done.stderr);
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    format!("process exit with {:?}\n{}", status, stderr_str),
+                )
+                .into());
+            }
+        };
     }
 
     pub fn run_test_schedule<'a>(&mut self, sched: &TestSchedule<'a>) -> Result<(), Error> {
         let instance = self.prepare_content(sched)?;
 
         let (tmp_dir, input, output) = self.create_input_file(sched, instance)?;
+
+        // build test
+        self.exec_cmd(
+            &sched.runner.build_command,
+            &tmp_dir,
+            &input,
+            &output,
+            None,
+            true,
+        )?;
+
+        let exec = output;
+
+        let output = tmp_dir.join("output.bin");
+
+        let input_binary = sched.input.binary.clone().into();
+
+        // run test
+        let status = self.exec_cmd(
+            &sched.runner.run_command,
+            &tmp_dir,
+            &input_binary,
+            &output,
+            Some(&exec),
+            false,
+        )?;
+
+        let expect = !sched.input.failure_case;
+
+        if status != expect {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!("test failed: expect {} but got {}", expect, status),
+            )
+            .into());
+        }
+
+        let input_binary = self.read_input_binary(&input_binary.to_string_lossy())?; // check input is valid
+        let output = fs::read(&output)?; // check output is valid
+
+        let min_size = if input_binary.len() < output.len() {
+            input_binary.len()
+        } else {
+            output.len()
+        };
+
+        let mut diff = Vec::new();
+
+        for i in 0..min_size {
+            if input_binary[i] != output[i] {
+                diff.push((i, Some(input_binary[i]), Some(output[i])));
+            }
+        }
+
+        if input_binary.len() != output.len() {
+            if input_binary.len() > output.len() {
+                diff.push((output.len(), None, Some(output[output.len()])));
+            } else {
+                diff.push((
+                    input_binary.len(),
+                    Some(input_binary[input_binary.len()]),
+                    None,
+                ));
+            }
+        }
+
+        if !diff.is_empty() {
+            eprintln!("test failed: input and output is different");
+            for (i, a, b) in diff {
+                eprintln!("{}: {:02x?} != {:02x?}", i, a, b);
+            }
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "test failed: input and output is different",
+            )
+            .into());
+        }
 
         Ok(())
     }
@@ -191,6 +331,10 @@ fn main() -> Result<(), Error> {
                 })
             }
         }
+    }
+    let mut scheduler = TestScheduler::new();
+    for s in sched {
+        scheduler.run_test_schedule(&s)?;
     }
     Ok(())
 }
