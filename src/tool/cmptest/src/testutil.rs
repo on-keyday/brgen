@@ -200,7 +200,7 @@ impl TestScheduler {
                 Ok(x) => x,
                 Err(x)=> {
                     return Err(std::io::Error::new(std::io::ErrorKind::Other,
-                    format!("read file error: {}: {}",path,x)).into());
+                    format!("read file error: {:?}: {}",path,x)).into());
                 }
             };
             let t = if is_hex { Self::compile_hex(t)? } else { t };
