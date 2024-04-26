@@ -71,7 +71,9 @@ jobs:
           # from https://github.com/llvm/llvm-project/issues/77786
           LIBCPP=$PREFIX/lib/c++
           ls $LIBCPP
+          echo "libc++"
           nm $LIBCPP/libc++.1.dylib | c++filt
+          echo "libc++abi"
           nm $LIBCPP/libc++abi.1.dylib | c++filt
       - name: Build
         run: |
