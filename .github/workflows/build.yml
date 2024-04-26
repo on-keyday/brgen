@@ -69,21 +69,8 @@ jobs:
         run: |
           PREFIX=$(brew --prefix llvm)
           # from https://github.com/llvm/llvm-project/issues/77786
-          cat << EOF | $PREFIX/bin/clang++ -xc++ - -c -o typeinfos.o && nm -omg typeinfos.o | c++filt | grep typeinfo
-          namespace __cxxabiv1 {
-              struct __fundamental_type_info {
-                  virtual ~__fundamental_type_info();
-              };
-
-              // This miraculously (compiler magic) emits the type_info's for:
-              //   1. all of the fundamental types
-              //   2. pointers to all of the fundamental types
-              //   3. pointers to all of the const fundamental types
-              __fundamental_type_info::~__fundamental_type_info()
-              {
-              }
-          }
-          EOF
+          LIBCPP=$PREFIX/lib/c++
+          nm $LIBCPP | grep typeinfo
       - name: Build
         run: |
           PREFIX=$(brew --prefix llvm)
