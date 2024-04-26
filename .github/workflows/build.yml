@@ -72,6 +72,7 @@ jobs:
           LIBCPP=$PREFIX/lib/c++
           ls $LIBCPP
           nm $LIBCPP/libc++.1.dylib | c++filt
+          nm $LIBCPP/libc++abi.1.dylib | c++filt
       - name: Build
         run: |
           PREFIX=$(brew --prefix llvm)
