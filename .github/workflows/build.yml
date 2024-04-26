@@ -61,15 +61,34 @@ jobs:
         uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
           go-version: ">=1.20"
-
       - name: Install Homebrew Clang
         run: |
           brew install llvm
+
+      - name: Check Code
+        run: |
+          # from https://github.com/llvm/llvm-project/issues/77786
+          cat << EOF | clang++ -xc++ - -c -o typeinfos.o && nm -omg typeinfos.o | c++filt | grep typeinfo
+          namespace __cxxabiv1 {
+              struct __fundamental_type_info {
+                  virtual ~__fundamental_type_info();
+              };
+
+              // This miraculously (compiler magic) emits the type_info's for:
+              //   1. all of the fundamental types
+              //   2. pointers to all of the fundamental types
+              //   3. pointers to all of the const fundamental types
+              __fundamental_type_info::~__fundamental_type_info()
+              {
+              }
+          }
+          EOF
       - name: Build
         run: |
-          export FUTILS_CXX_COMPILER=/opt/homebrew//opt/llvm/bin/clang++
-          export FUTILS_C_COMPILER=/opt/homebrew/opt/llvm/bin/clang
-          export LDFLAGS="-L/opt/homebrew/opt/llvm/lib/c++ -Wl,-rpath,/opt/homebrew/opt/llvm/lib/c++"
+          PREFIX=$(brew --prefix llvm)
+          export FUTILS_CXX_COMPILER=$PREFIX/bin/clang++
+          export FUTILS_C_COMPILER=$PREFIX/bin/clang
+          export LDFLAGS="-L$PREFIX/lib/c++ -Wl,-rpath,$PREFIX/lib/c++"
           . build.sh native Release
           ./tool/src2json --version
       - name: Pack artifacts
