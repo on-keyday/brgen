@@ -67,8 +67,9 @@ jobs:
 
       - name: Check Code
         run: |
+          PREFIX=$(brew --prefix llvm)
           # from https://github.com/llvm/llvm-project/issues/77786
-          cat << EOF | clang++ -xc++ - -c -o typeinfos.o && nm -omg typeinfos.o | c++filt | grep typeinfo
+          cat << EOF | $PREFIX/bin/clang++ -xc++ - -c -o typeinfos.o && nm -omg typeinfos.o | c++filt | grep typeinfo
           namespace __cxxabiv1 {
               struct __fundamental_type_info {
                   virtual ~__fundamental_type_info();
