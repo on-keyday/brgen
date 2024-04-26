@@ -1,12 +1,4 @@
-
-use std::{
-    collections::HashMap,
-    env,
-    ffi::OsStr,
-    fs, os,
-    path::{Path, PathBuf},
-    process,
-};
+use std::{collections::HashMap, env, fs, path::PathBuf, process};
 
 use rand::{
     self,
@@ -107,7 +99,6 @@ pub struct TestSchedule<'a> {
     pub runner: &'a TestRunner,
     pub file: &'a GeneratedFileInfo,
 }
-
 
 pub type Error = Box<dyn std::error::Error>;
 
