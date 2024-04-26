@@ -98,7 +98,13 @@ fn main() -> Result<(), Error> {
             }
         };
         let path = file.into_path();
-        let content = fs::read_to_string(&path)?;
+        let content = match fs::read_to_string(&path) {
+            Ok(x) => x,
+            Err(x) => {
+                eprintln!("file load error: {}: {}", path, x);
+                continue
+            }
+        };
         let mut d = serde_json::Deserializer::from_str(&content);
         let data = match testutil::GeneratedData::deserialize(&mut d) {
             Ok(file) => file,

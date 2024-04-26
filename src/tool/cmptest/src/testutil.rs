@@ -8,7 +8,7 @@ use rand::{
 use ast2rust::ast;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize,Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 
 pub struct LineMap {
     pub line: u64,
@@ -16,7 +16,7 @@ pub struct LineMap {
     pub loc: ast::Loc,
 }
 
-#[derive(Serialize, Deserialize,Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 
 pub struct GeneratedData {
     pub structs: Vec<String>,
@@ -24,7 +24,7 @@ pub struct GeneratedData {
     pub line_map: Vec<LineMap>,
 }
 
-#[derive(Serialize, Deserialize,Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 
 pub struct GeneratedFileInfo {
     pub dir: String,
@@ -34,7 +34,7 @@ pub struct GeneratedFileInfo {
     pub suffix: String,
 }
 
-#[derive(Serialize, Deserialize ,Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct TestInfo {
     pub total_count: u64,
 
@@ -47,11 +47,11 @@ pub struct TestInfo {
 
 impl GeneratedFileInfo {
     pub fn into_path(&self) -> String {
-        format!("{}/{}.{}", self.dir, self.base, self.suffix)
+        format!("{}/{}{}", self.dir, self.base, self.suffix)
     }
 }
 
-#[derive(Serialize, Deserialize, Clone,Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TestRunner {
     // file suffix of generated files
     pub suffix: String,
@@ -75,7 +75,7 @@ pub struct TestRunner {
     pub run_command: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone,Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TestInput {
     // input binary file
     pub binary: String,

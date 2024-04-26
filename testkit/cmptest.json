@@ -10,7 +10,7 @@
   ],
   "runners": [
     {
-      "suffix": ".hpp",
+      "suffix": "hpp",
       "test_template": "./testkit/cpp/test_template.cpp",
       "replace_file_name": "stub.hpp",
       "replace_struct_name": "TEST_CLASS",
