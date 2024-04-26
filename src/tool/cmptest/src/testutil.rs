@@ -123,7 +123,13 @@ impl TestScheduler {
         if let Some(x) = self.template_files.get(path) {
             return Ok(x.clone());
         } else {
-            let t = fs::read_to_string(path)?;
+            let t = match fs::read_to_string(path) {
+                Ok(x) => x,
+                Err(x)=> {
+                    return Err(std::io::Error::new(std::io::ErrorKind::Other,
+                    format!("read file error: {}: {}",path,x)).into());
+                }
+            };
             self.template_files.insert(path.to_string(), t);
             Ok(self.template_files.get(path).unwrap().clone())
         }
@@ -190,7 +196,13 @@ impl TestScheduler {
         if let Some(x) = self.input_binaries.get(path) {
             return Ok(x.clone());
         } else {
-            let t = fs::read(path)?;
+            let t = match fs::read(path) {
+                Ok(x) => x,
+                Err(x)=> {
+                    return Err(std::io::Error::new(std::io::ErrorKind::Other,
+                    format!("read file error: {}: {}",path,x)).into());
+                }
+            };
             let t = if is_hex { Self::compile_hex(t)? } else { t };
             self.input_binaries.insert(path.clone(), t);
             Ok(self.input_binaries.get(path).unwrap().clone())
