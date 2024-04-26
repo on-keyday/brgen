@@ -71,7 +71,7 @@ jobs:
           # from https://github.com/llvm/llvm-project/issues/77786
           LIBCPP=$PREFIX/lib/c++
           ls $LIBCPP
-          nm $LIBCPP/libc++.1.dylib
+          nm $LIBCPP/libc++.1.dylib | c++filt
       - name: Build
         run: |
           PREFIX=$(brew --prefix llvm)
