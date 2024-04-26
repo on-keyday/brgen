@@ -117,7 +117,7 @@ impl TestScheduler {
         }
     }
 
-    fn read_template(&mut self, path: &str) -> Result<String, Error> {
+    fn read_text_file(&mut self, path: &str) -> Result<String, Error> {
         if let Some(x) = self.template_files.get(path) {
             return Ok(x.clone());
         } else {
@@ -152,7 +152,7 @@ impl TestScheduler {
 
     fn prepare_content<'a>(&mut self, sched: &TestSchedule<'a>) -> Result<String, Error> {
         // get template and replace with target
-        let template = self.read_template(&sched.runner.test_template)?;
+        let template = self.read_text_file(&sched.runner.test_template)?;
         let replace_with = &sched.runner.replace_struct_name;
         let template = template.replace(replace_with, &sched.input.format_name);
         let replace_with = &sched.runner.replace_file_name;
@@ -161,24 +161,33 @@ impl TestScheduler {
         Ok(instance)
     }
 
-    fn create_input_file<'a>(
+    fn create_test_dir<'a>(
         &mut self,
-        sched: &TestSchedule<'a>,
-        instance: String,
-    ) -> Result<(PathBuf, PathBuf, PathBuf), Error> {
+        sched: &TestSchedule<'a>
+    ) -> Result<PathBuf, Error> {
         let tmp_dir = self.get_tmp_dir();
         let tmp_dir = tmp_dir.join(&sched.file.base);
         let tmp_dir = tmp_dir.join(&sched.input.format_name);
         let tmp_dir = tmp_dir.join(&sched.file.suffix);
         fs::create_dir_all(&tmp_dir)?;
+        Ok(tmp_dir)
+    }
+
+    fn create_input_file<'a>(
+        &mut self,
+        sched: &TestSchedule<'a>,
+        tmp_dir: &PathBuf,
+        instance: String,
+    ) -> Result<( PathBuf, PathBuf), Error> {
         let input_file = tmp_dir.join(&sched.runner.build_input_name);
         let output_file = tmp_dir.join(&sched.runner.build_output_name);
         fs::write(&input_file, instance)?;
-        Ok((tmp_dir, input_file, output_file))
+        Ok((input_file, output_file))
     }
 
-    fn replace_cmd(
+    fn replace_cmd<'a>(
         cmd: &mut Vec<String>,
+        sched : &TestSchedule<'a>,
         tmp_dir: &PathBuf,
         input: &PathBuf,
         output: &PathBuf,
@@ -199,11 +208,15 @@ impl TestScheduler {
             if c == "$TMPDIR" {
                 *c = tmp_dir.to_str().unwrap().to_string();
             }
+            if c == "$ORIGIN" {
+                *c = format!("{}/{}", sched.file.dir, sched.file.base);
+            }
         }
     }
 
     fn exec_cmd<'a>(
         &mut self,
+        sched :&TestSchedule<'a>,
         base: &Vec<String>,
         tmp_dir: &PathBuf,
         input: &PathBuf,
@@ -212,7 +225,7 @@ impl TestScheduler {
         expect_ok: bool,
     ) -> Result<bool, Error> {
         let mut cmd = base.clone();
-        Self::replace_cmd(&mut cmd, tmp_dir, input, output, exec);
+        Self::replace_cmd(&mut cmd,sched, tmp_dir, input, output, exec);
         let mut r = process::Command::new(&cmd[0]);
         r.args(&cmd[1..]);
         let done = r.output()?;
@@ -236,12 +249,14 @@ impl TestScheduler {
     }
 
     pub fn run_test_schedule<'a>(&mut self, sched: &TestSchedule<'a>) -> Result<(), Error> {
+        let tmp_dir = self.create_test_dir(sched)?;
         let instance = self.prepare_content(sched)?;
 
-        let (tmp_dir, input, output) = self.create_input_file(sched, instance)?;
+        let ( input, output) = self.create_input_file(sched, &tmp_dir,instance)?;
 
         // build test
         self.exec_cmd(
+            &sched,
             &sched.runner.build_command,
             &tmp_dir,
             &input,
@@ -258,6 +273,7 @@ impl TestScheduler {
 
         // run test
         let status = self.exec_cmd(
+            &sched,
             &sched.runner.run_command,
             &tmp_dir,
             &input_binary,
