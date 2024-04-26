@@ -11,10 +11,12 @@ struct Args {
     test_info_file: String,
     #[arg(long, short('c'))]
     test_config_file: String,
+    #[arg(long, short('d'))]
+    debug: bool,
 }
 fn main() -> Result<(), Error> {
     let parsed = Args::parse();
-    let test_config =fs::read_to_string(Path::new (&parsed.test_config_file))?;
+    let test_config = fs::read_to_string(Path::new(&parsed.test_config_file))?;
     let mut d1 = serde_json::Deserializer::from_str(&test_config);
     let test_config = testutil::TestConfig::deserialize(&mut d1)?;
     let mut ext_set = std::collections::HashMap::new();
@@ -58,6 +60,9 @@ fn main() -> Result<(), Error> {
             );
             continue;
         }
+        if parsed.debug {
+            eprint!("runner: {:?}", runner)
+        }
         ext_set.insert(runner.suffix.clone(), runner.clone());
     }
     for input in &test_config.inputs {
@@ -71,6 +76,9 @@ fn main() -> Result<(), Error> {
     let mut d2 = serde_json::Deserializer::from_str(&test_info);
     let test_info = testutil::TestInfo::deserialize(&mut d2)?;
     for file in &test_info.generated_files {
+        if parsed.debug {
+            eprintln!("file: {:?}", file);
+        }
         if file.suffix != ".json" {
             continue;
         }
@@ -82,7 +90,12 @@ fn main() -> Result<(), Error> {
         let ext = split[1];
         let runner = match ext_set.get(ext) {
             Some(x) => x,
-            None => continue,
+            None => {
+                if parsed.debug {
+                    eprintln!("runner not found for ext: {}", ext);
+                }
+                continue;
+            }
         };
         let path = file.into_path();
         let content = fs::read_to_string(&path)?;
@@ -95,7 +108,14 @@ fn main() -> Result<(), Error> {
             }
         };
         for s in &data.structs {
-            if let Some(input) = file_format_list.get(&(base.to_string(), s.clone())) {
+            let key = (base.to_string(), s.clone());
+            if parsed.debug {
+                eprintln!("key: {:?}", key);
+            }
+            if let Some(input) = file_format_list.get(&key) {
+                if parsed.debug {
+                    eprintln!("input matched: {:?}", input);
+                }
                 sched.push(TestSchedule {
                     runner: runner,
                     input: input,
@@ -105,18 +125,28 @@ fn main() -> Result<(), Error> {
         }
     }
     let mut scheduler = testutil::TestScheduler::new();
-    for s in sched {
+    let mut failed = 0;
+    for s in &sched {
         match scheduler.run_test_schedule(&s) {
             Ok(()) => println!(
                 "test passed: {:?}",
-                s.file.into_path() + &s.input.format_name
+                s.file.into_path() + "/" + &s.input.format_name
             ),
-            Err(x) => println!(
-                "test failed: {:?} {:?}",
-                s.file.into_path() + &s.input.format_name,
-                x
-            ),
+            Err(x) => {
+                println!(
+                    "test failed: {:?} {:?}",
+                    s.file.into_path() + "/" + &s.input.format_name,
+                    x
+                );
+                failed += 1;
+            }
         }
     }
+    println!(
+        "test finished: total/pass/failed = {}/{}/{}",
+        sched.len(),
+        sched.len() - failed,
+        failed
+    );
     Ok(())
 }

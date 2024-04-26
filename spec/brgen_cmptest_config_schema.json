@@ -24,6 +24,10 @@
           "failure_case": {
             "type": "boolean",
             "description": "flag to indicate that the test input binary of this file is failure case"
+          },
+          "hex_input": {
+            "type": "boolean",
+            "description": "flag to indicate that the test input is hex string"
           }
         }
       }

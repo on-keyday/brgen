@@ -4,10 +4,11 @@
       "binary": "./example/wire_data/websocket.dat",
       "format_name": "Frame",
       "file_base": "websocket",
-      "failure_case": false
+      "failure_case": false,
+      "hex": true
     }
   ],
-  "runner": [
+  "runners": [
     {
       "suffix": ".hpp",
       "test_template": "./testkit/cpp/test_template.cpp",

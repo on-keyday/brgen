@@ -8,7 +8,7 @@ use rand::{
 use ast2rust::ast;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize,Debug)]
 
 pub struct LineMap {
     pub line: u64,
@@ -16,7 +16,7 @@ pub struct LineMap {
     pub loc: ast::Loc,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize,Debug)]
 
 pub struct GeneratedData {
     pub structs: Vec<String>,
@@ -24,7 +24,7 @@ pub struct GeneratedData {
     pub line_map: Vec<LineMap>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize,Debug)]
 
 pub struct GeneratedFileInfo {
     pub dir: String,
@@ -34,11 +34,11 @@ pub struct GeneratedFileInfo {
     pub suffix: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize ,Debug)]
 pub struct TestInfo {
     pub total_count: u64,
 
-    pub err_count: u64,
+    pub error_count: u64,
 
     pub time: String,
 
@@ -51,7 +51,7 @@ impl GeneratedFileInfo {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone,Debug)]
 pub struct TestRunner {
     // file suffix of generated files
     pub suffix: String,
@@ -75,7 +75,7 @@ pub struct TestRunner {
     pub run_command: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone,Debug)]
 pub struct TestInput {
     // input binary file
     pub binary: String,
@@ -85,6 +85,8 @@ pub struct TestInput {
     pub file_base: String,
     // this input is failure case
     pub failure_case: bool,
+    // binary is actually hex string file
+    pub hex: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -105,7 +107,7 @@ pub type Error = Box<dyn std::error::Error>;
 pub struct TestScheduler {
     template_files: HashMap<String, String>,
     tmpdir: Option<PathBuf>,
-    input_binaries: HashMap<String, Vec<u8>>,
+    input_binaries: HashMap<PathBuf, Vec<u8>>,
 }
 
 impl TestScheduler {
@@ -127,12 +129,62 @@ impl TestScheduler {
         }
     }
 
-    fn read_input_binary(&mut self, path: &str) -> Result<Vec<u8>, Error> {
+    fn compile_hex(input: Vec<u8>) -> Result<Vec<u8>, Error> {
+        // skip space,tab,line and # line comment
+        let mut hex = Vec::new();
+        let mut i = 0;
+        let mut pair: Option<u8> = None;
+        while i < input.len() {
+            let c = input[i];
+            if c == b' ' || c == b'\t' || c == b'\n' {
+                i += 1;
+                continue;
+            }
+            if c == b'#' {
+                while i < input.len() && input[i] != b'\n' {
+                    i += 1;
+                }
+                continue;
+            }
+            let lsb = if b'0' <= c && c <= b'9' {
+                c - b'0'
+            } else if b'a' <= c && c <= b'f' {
+                c - b'a' + 10
+            } else if b'A' <= c && c <= b'F' {
+                c - b'A' + 10
+            } else {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    format!("invalid hex string at {}:{}", i, c),
+                )
+                .into());
+            };
+            if let Some(msb) = pair {
+                hex.push(msb << 4 | lsb);
+                pair = None
+            } else {
+                pair = Some(lsb)
+            }
+            i += 1;
+        }
+        if let Some(_) = pair {
+            Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "invalid hex string; missing pair",
+            )
+            .into())
+        } else {
+            Ok(hex)
+        }
+    }
+
+    fn read_input_binary(&mut self, path: &PathBuf, is_hex: bool) -> Result<Vec<u8>, Error> {
         if let Some(x) = self.input_binaries.get(path) {
             return Ok(x.clone());
         } else {
             let t = fs::read(path)?;
-            self.input_binaries.insert(path.to_string(), t);
+            let t = if is_hex { Self::compile_hex(t)? } else { t };
+            self.input_binaries.insert(path.clone(), t);
             Ok(self.input_binaries.get(path).unwrap().clone())
         }
     }
@@ -161,10 +213,7 @@ impl TestScheduler {
         Ok(instance)
     }
 
-    fn create_test_dir<'a>(
-        &mut self,
-        sched: &TestSchedule<'a>
-    ) -> Result<PathBuf, Error> {
+    fn create_test_dir<'a>(&mut self, sched: &TestSchedule<'a>) -> Result<PathBuf, Error> {
         let tmp_dir = self.get_tmp_dir();
         let tmp_dir = tmp_dir.join(&sched.file.base);
         let tmp_dir = tmp_dir.join(&sched.input.format_name);
@@ -178,7 +227,7 @@ impl TestScheduler {
         sched: &TestSchedule<'a>,
         tmp_dir: &PathBuf,
         instance: String,
-    ) -> Result<( PathBuf, PathBuf), Error> {
+    ) -> Result<(PathBuf, PathBuf), Error> {
         let input_file = tmp_dir.join(&sched.runner.build_input_name);
         let output_file = tmp_dir.join(&sched.runner.build_output_name);
         fs::write(&input_file, instance)?;
@@ -187,7 +236,7 @@ impl TestScheduler {
 
     fn replace_cmd<'a>(
         cmd: &mut Vec<String>,
-        sched : &TestSchedule<'a>,
+        sched: &TestSchedule<'a>,
         tmp_dir: &PathBuf,
         input: &PathBuf,
         output: &PathBuf,
@@ -216,7 +265,7 @@ impl TestScheduler {
 
     fn exec_cmd<'a>(
         &mut self,
-        sched :&TestSchedule<'a>,
+        sched: &TestSchedule<'a>,
         base: &Vec<String>,
         tmp_dir: &PathBuf,
         input: &PathBuf,
@@ -225,7 +274,7 @@ impl TestScheduler {
         expect_ok: bool,
     ) -> Result<bool, Error> {
         let mut cmd = base.clone();
-        Self::replace_cmd(&mut cmd,sched, tmp_dir, input, output, exec);
+        Self::replace_cmd(&mut cmd, sched, tmp_dir, input, output, exec);
         let mut r = process::Command::new(&cmd[0]);
         r.args(&cmd[1..]);
         let done = r.output()?;
@@ -252,7 +301,7 @@ impl TestScheduler {
         let tmp_dir = self.create_test_dir(sched)?;
         let instance = self.prepare_content(sched)?;
 
-        let ( input, output) = self.create_input_file(sched, &tmp_dir,instance)?;
+        let (input, output) = self.create_input_file(sched, &tmp_dir, instance)?;
 
         // build test
         self.exec_cmd(
@@ -269,14 +318,16 @@ impl TestScheduler {
 
         let output = tmp_dir.join("output.bin");
 
-        let input_binary = sched.input.binary.clone().into();
+        let input_binary_name: PathBuf = sched.input.binary.clone().into();
+
+        let input_binary = self.read_input_binary(&input_binary_name, sched.input.hex)?; // check input is valid
 
         // run test
         let status = self.exec_cmd(
             &sched,
             &sched.runner.run_command,
             &tmp_dir,
-            &input_binary,
+            &input_binary_name,
             &output,
             Some(&exec),
             false,
@@ -292,7 +343,6 @@ impl TestScheduler {
             .into());
         }
 
-        let input_binary = self.read_input_binary(&input_binary.to_string_lossy())?; // check input is valid
         let output = fs::read(&output)?; // check output is valid
 
         let min_size = if input_binary.len() < output.len() {
@@ -322,7 +372,7 @@ impl TestScheduler {
         }
 
         if !diff.is_empty() {
-            let mut debug = format!("test failed: input and output is different\n");
+            let mut debug = format!("input and output is different\n");
             for (i, a, b) in diff {
                 debug += &format!("{}: {:02x?} != {:02x?}\n", i, a, b);
             }
