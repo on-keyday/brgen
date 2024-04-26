@@ -69,6 +69,7 @@ jobs:
         run: |
           export FUTILS_CXX_COMPILER=/opt/homebrew//opt/llvm/bin/clang++
           export FUTILS_C_COMPILER=/opt/homebrew/opt/llvm/bin/clang
+          export LDFLAGS="-L/opt/homebrew/opt/llvm/lib/c++ -Wl,-rpath,/opt/homebrew/opt/llvm/lib/c++"
           . build.sh native Release
           ./tool/src2json --version
       - name: Pack artifacts
