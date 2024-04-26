@@ -134,9 +134,16 @@ impl TestScheduler {
         let mut hex = Vec::new();
         let mut i = 0;
         let mut pair: Option<u8> = None;
+        let mut line = 1;
+        let mut col = 1;
         while i < input.len() {
             let c = input[i];
-            if c == b' ' || c == b'\t' || c == b'\n' {
+            if c == b' ' || c == b'\t' || c == b'\n'||c==b'\r' {
+                if c==b'\n' {
+                    line+=1;
+                    col=0;
+                }
+                col+=1;
                 i += 1;
                 continue;
             }
@@ -155,7 +162,7 @@ impl TestScheduler {
             } else {
                 return Err(std::io::Error::new(
                     std::io::ErrorKind::Other,
-                    format!("invalid hex string at {}:{}", i, c),
+                    format!("invalid hex string at {}:{}:{}", line,col, c as char),
                 )
                 .into());
             };
@@ -166,6 +173,7 @@ impl TestScheduler {
                 pair = Some(lsb)
             }
             i += 1;
+            col+=1;
         }
         if let Some(_) = pair {
             Err(std::io::Error::new(
