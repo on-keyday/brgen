@@ -38,6 +38,7 @@ CMDLINE = [
     INPUT,
     "-o",
     OUTPUT,
+    "-g",
 ]
 print(f"Compiling {INPUT} to {OUTPUT} with {CMDLINE} ")
 code = sp.call(

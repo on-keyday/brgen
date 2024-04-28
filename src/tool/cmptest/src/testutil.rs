@@ -331,7 +331,6 @@ impl TestScheduler {
         let tmp_dir = self.get_tmp_dir();
         let tmp_dir = tmp_dir.join(&sched.file.base);
         let tmp_dir = tmp_dir.join(&sched.input.format_name);
-        let tmp_dir = tmp_dir.join(&sched.file.suffix);
         let tmp_dir = tmp_dir.join(Self::gen_random());
         fs::create_dir_all(&tmp_dir)?;
         Ok(tmp_dir)

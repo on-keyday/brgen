@@ -57,19 +57,10 @@
             "name": "Debug json2cpp",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceRoot}/tool/json2cpp2",
+            "program": "C:/Users/ukfco/AppData/Local/Temp/gfovKCSlcGBvX5zCejAJQziajuBYOwqd/websocket.hpp/Frame/.json/e8NZ2jxzQxr6Woq75m1fNJDoBg70rUEh/test.exe",
             "args": [
-                "<",
-                "ignore/request.bin",
-                ">",
-                "ignore/response.bin",
-                //"ignore/sample.json",
-                //"-f",
-                /*"-r",
-                "--call", "Test2.decode",
-                "--binary","example/vm_test/varint.dat",
-                "--hex",
-                */
+                "./example/wire_data/websocket.dat",
+                "./ignore/output.bin"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",
