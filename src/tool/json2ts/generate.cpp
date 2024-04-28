@@ -459,7 +459,7 @@ namespace json2ts {
                         w.writeln("if(w.resizeLimit !== undefined && new_size > w.resizeLimit) {");
                         {
                             auto s = w.indent_scope();
-                            w.writeln("throw new Error(`new buffer size is greater than w.resizeLimit for ", field_name, " required={new_size} limit={r.resizeLimit}`);");
+                            w.writeln("throw new Error(`new buffer size is greater than w.resizeLimit for ", field_name, " required=${new_size} limit=${w.resizeLimit}`);");
                         }
                         w.writeln("}");
                         w.writeln("const new_buffer = new ArrayBuffer(w.view.byteLength + (", len, "));");
@@ -742,7 +742,7 @@ namespace json2ts {
                         w.writeln("if(", len, "<", "0", ") {");
                         {
                             auto s = w.indent_scope();
-                            w.writeln("throw new Error(`invalid buffer size for ", err_ident->ident, " underflow={", len, "}`);");
+                            w.writeln("throw new Error(`invalid buffer size for ", err_ident->ident, " underflow=${", len, "}`);");
                         }
                         w.writeln("}");
                     }
