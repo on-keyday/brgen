@@ -43,4 +43,4 @@ jobs:
       - name: Test
         run: |
           cd /tmp/brgen
-          tool/cmptest -f ignore/example/test_info.json -c testkit/cmptest.json
+          FUTILS_DIR=./utils tool/cmptest -f ignore/example/test_info.json -c testkit/cmptest.json
