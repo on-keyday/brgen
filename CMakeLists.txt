@@ -7,7 +7,6 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
   if(NOT "$ENV{FUTILS_TARGET_TRIPLE}" STREQUAL "")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -target=$ENV{FUTILS_TARGET_TRIPLE}")
   endif()
-  set(CMAKE_CXX_FLAGS "-fuse-ld=lld")
 endif()
 
 if(UNIX)
