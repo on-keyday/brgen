@@ -57,10 +57,10 @@
             "name": "Debug json2cpp",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "C:/Users/ukfco/AppData/Local/Temp/gfovKCSlcGBvX5zCejAJQziajuBYOwqd/websocket.hpp/Frame/.json/e8NZ2jxzQxr6Woq75m1fNJDoBg70rUEh/test.exe",
+            "program": "./tool/json2cpp",
             "args": [
-                "./example/wire_data/websocket.dat",
-                "./ignore/output.bin"
+                "-f",
+                "./example/websocket.bgn",
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",

@@ -1,7 +1,10 @@
 #!/bin/bash
 # TODO(on-keyday): on macos, S2J_LIB=1 is not work well, so not set S2J_LIB
-
-export S2J_LIB=1
+if [ "$(uname)" == "Darwin" ]; then
+  export S2J_LIB=0
+else
+  export S2J_LIB=1
+fi
 
 
 export BRGEN_RUST_ENABLED=1

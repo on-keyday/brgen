@@ -187,17 +187,20 @@ async fn main() -> Result<(), Error> {
         }
     }
     println!(
-        "Result: total/{}/{} = {}/{}/{}",
-        "PASS".green(),
-        "FAIL".red(),
+        "Result: Total:{} {}:{} {}:{}",
         total,
+        "PASS".green(),
         total - failed,
+        "FAIL".red(),       
         failed
     );
     if parsed.save_tmp_dir {
         scheduler.print_tmp_dir();
     } else {
         scheduler.remove_tmp_dir();
+    }
+    if failed > 0 {
+        return Err(testutil::Error::TestFail("some tests failed".to_string()).into());
     }
     Ok(())
 }

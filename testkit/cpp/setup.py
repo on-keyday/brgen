@@ -40,6 +40,12 @@ CMDLINE = [
     OUTPUT,
     "-g",
 ]
+
+# use dynamic linking crt on windows
+if plt.system() == "Windows":
+    CMDLINE.append("-nostdlib")
+    CMDLINE.append("-fms-runtime-lib=dll_dbg")
+
 print(f"Compiling {INPUT} to {OUTPUT} with {CMDLINE} ")
 code = sp.call(
     CMDLINE,

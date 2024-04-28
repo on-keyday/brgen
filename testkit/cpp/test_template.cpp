@@ -5,7 +5,14 @@
 #include <binary/reader.h>
 #include <binary/writer.h>
 #include <fstream>
-auto& cout = futils::wrap::cerr_wrap();
+#define _DEBUG 1
+#include <testutil/alloc_hook.h>
+#include <wrap/exepath.h>
+#include <filesystem>
+auto& cout = []() -> decltype(auto) {
+    futils::test::set_alloc_hook(true);
+    return futils::wrap::cerr_wrap();
+}();
 
 int do_encode(char** argv, auto& t, auto& w) {
     if constexpr (std::is_same_v<decltype(t.encode(w)), bool>) {
