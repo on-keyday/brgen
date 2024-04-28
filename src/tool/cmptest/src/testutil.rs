@@ -1,4 +1,10 @@
-use std::{collections::HashMap, env, fs, path::PathBuf, process};
+use std::{
+    collections::HashMap,
+    env, fs,
+    path::{Path, PathBuf},
+    process,
+    sync::Arc,
+};
 
 use rand::{
     self,
@@ -7,6 +13,7 @@ use rand::{
 
 use ast2rust::ast;
 use serde::{Deserialize, Serialize};
+use tokio::sync::mpsc;
 
 #[derive(Serialize, Deserialize, Debug)]
 
@@ -89,26 +96,91 @@ pub struct TestInput {
     pub hex: bool,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct TestRunnerFile {
+    pub file: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(untagged)]
+pub enum RunnerConfig {
+    TestRunner(TestRunner),
+    File(TestRunnerFile),
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 pub struct TestConfig {
-    pub runners: Vec<TestRunner>,
+    pub runners: Vec<RunnerConfig>,
     // test input binary file
     pub inputs: Vec<TestInput>,
 }
 
-pub struct TestSchedule<'a> {
-    pub input: &'a TestInput,
-    pub runner: &'a TestRunner,
-    pub file: &'a GeneratedFileInfo,
+#[derive(Clone)]
+pub struct TestSchedule {
+    pub input: Arc<TestInput>,
+    pub runner: Arc<TestRunner>,
+    pub file: Arc<GeneratedFileInfo>,
 }
 
-pub type Error = Box<dyn std::error::Error>;
+impl TestSchedule {
+    pub fn test_name(&self) -> String {
+        let res = self.file.into_path() + "/" + &self.input.format_name;
+        let res = res + " input:" + &self.input.binary;
+        let res = if self.input.hex {
+            res + "(hex file)"
+        } else {
+            res
+        };
+        let res = if self.input.failure_case {
+            res + "(require:failure)"
+        } else {
+            res + "(require:success)"
+        };
+        res
+    }
+}
+
+#[derive(Debug)]
+pub enum Error {
+    IO(std::io::Error),
+    Join(tokio::task::JoinError),
+    JSON(serde_json::Error),
+    Exec(String),
+    TestFail(String),
+}
+
+impl From<std::io::Error> for Error {
+    fn from(s: std::io::Error) -> Error {
+        Error::IO(s)
+    }
+}
+
+impl From<tokio::task::JoinError> for Error {
+    fn from(s: tokio::task::JoinError) -> Error {
+        Error::Join(s)
+    }
+}
+
+impl From<serde_json::Error> for Error {
+    fn from(s: serde_json::Error) -> Error {
+        Error::JSON(s)
+    }
+}
 
 pub struct TestScheduler {
     template_files: HashMap<String, String>,
     tmpdir: Option<PathBuf>,
-    input_binaries: HashMap<PathBuf, Vec<u8>>,
+    input_binaries: HashMap<(PathBuf, bool), (PathBuf, Vec<u8>)>,
 }
+
+fn path_str(path: &PathBuf) -> String {
+    match path.to_str() {
+        Some(x) => x.to_string(),
+        None => path.to_string_lossy().to_string(),
+    }
+}
+
+type SendChan = mpsc::Sender<Result<TestSchedule, (TestSchedule, Error)>>;
 
 impl TestScheduler {
     pub fn new() -> Self {
@@ -125,9 +197,12 @@ impl TestScheduler {
         } else {
             let t = match fs::read_to_string(path) {
                 Ok(x) => x,
-                Err(x)=> {
-                    return Err(std::io::Error::new(std::io::ErrorKind::Other,
-                    format!("read file error: {}: {}",path,x)).into());
+                Err(x) => {
+                    return Err(std::io::Error::new(
+                        std::io::ErrorKind::Other,
+                        format!("read file error: {}: {}", path, x),
+                    )
+                    .into());
                 }
             };
             self.template_files.insert(path.to_string(), t);
@@ -144,12 +219,12 @@ impl TestScheduler {
         let mut col = 1;
         while i < input.len() {
             let c = input[i];
-            if c == b' ' || c == b'\t' || c == b'\n'||c==b'\r' {
-                if c==b'\n' {
-                    line+=1;
-                    col=0;
+            if c == b' ' || c == b'\t' || c == b'\n' || c == b'\r' {
+                if c == b'\n' {
+                    line += 1;
+                    col = 0;
                 }
-                col+=1;
+                col += 1;
                 i += 1;
                 continue;
             }
@@ -168,7 +243,7 @@ impl TestScheduler {
             } else {
                 return Err(std::io::Error::new(
                     std::io::ErrorKind::Other,
-                    format!("invalid hex string at {}:{}:{}", line,col, c as char),
+                    format!("invalid hex string at {}:{}:{}", line, col, c as char),
                 )
                 .into());
             };
@@ -179,7 +254,7 @@ impl TestScheduler {
                 pair = Some(lsb)
             }
             i += 1;
-            col+=1;
+            col += 1;
         }
         if let Some(_) = pair {
             Err(std::io::Error::new(
@@ -192,21 +267,42 @@ impl TestScheduler {
         }
     }
 
-    fn read_input_binary(&mut self, path: &PathBuf, is_hex: bool) -> Result<Vec<u8>, Error> {
-        if let Some(x) = self.input_binaries.get(path) {
+    fn read_input_binary(
+        &mut self,
+        path: &PathBuf,
+        is_hex: bool,
+    ) -> Result<(PathBuf, Vec<u8>), Error> {
+        let key = (path.clone(), is_hex);
+        if let Some(x) = self.input_binaries.get(&key) {
             return Ok(x.clone());
         } else {
             let t = match fs::read(path) {
                 Ok(x) => x,
-                Err(x)=> {
-                    return Err(std::io::Error::new(std::io::ErrorKind::Other,
-                    format!("read file error: {:?}: {}",path,x)).into());
+                Err(x) => {
+                    return Err(std::io::Error::new(
+                        std::io::ErrorKind::Other,
+                        format!("read file error: {:?}: {}", path, x),
+                    )
+                    .into());
                 }
             };
-            let t = if is_hex { Self::compile_hex(t)? } else { t };
-            self.input_binaries.insert(path.clone(), t);
-            Ok(self.input_binaries.get(path).unwrap().clone())
+            let t = if is_hex {
+                let c = Self::compile_hex(t)?;
+                let tmp_path = self.get_tmp_dir();
+                let tmp_path = tmp_path.join(path.file_name().unwrap());
+                fs::write(tmp_path.clone(), &c)?;
+                (tmp_path, c)
+            } else {
+                (path.clone(), t)
+            };
+            self.input_binaries.insert(key.clone(), t);
+            Ok(self.input_binaries.get(&key).unwrap().clone())
         }
+    }
+
+    fn gen_random() -> String {
+        let mut rng = rand::thread_rng();
+        Alphanumeric.sample_string(&mut rng, 32)
     }
 
     fn get_tmp_dir<'a>(&'a mut self) -> PathBuf {
@@ -214,15 +310,13 @@ impl TestScheduler {
             x.clone()
         } else {
             let dir = env::temp_dir();
-            let mut rng = rand::thread_rng();
-            let random_str = Alphanumeric.sample_string(&mut rng, 32);
-            let dir = dir.join(random_str);
+            let dir = dir.join(Self::gen_random());
             self.tmpdir = Some(dir);
             self.tmpdir.as_ref().unwrap().clone()
         }
     }
 
-    fn prepare_content<'a>(&mut self, sched: &TestSchedule<'a>) -> Result<String, Error> {
+    fn prepare_content(&mut self, sched: &TestSchedule) -> Result<String, Error> {
         // get template and replace with target
         let template = self.read_text_file(&sched.runner.test_template)?;
         let replace_with = &sched.runner.replace_struct_name;
@@ -233,18 +327,19 @@ impl TestScheduler {
         Ok(instance)
     }
 
-    fn create_test_dir<'a>(&mut self, sched: &TestSchedule<'a>) -> Result<PathBuf, Error> {
+    fn create_test_dir(&mut self, sched: &TestSchedule) -> Result<PathBuf, Error> {
         let tmp_dir = self.get_tmp_dir();
         let tmp_dir = tmp_dir.join(&sched.file.base);
         let tmp_dir = tmp_dir.join(&sched.input.format_name);
         let tmp_dir = tmp_dir.join(&sched.file.suffix);
+        let tmp_dir = tmp_dir.join(Self::gen_random());
         fs::create_dir_all(&tmp_dir)?;
         Ok(tmp_dir)
     }
 
-    fn create_input_file<'a>(
+    fn create_input_file(
         &mut self,
-        sched: &TestSchedule<'a>,
+        sched: &TestSchedule,
         tmp_dir: &PathBuf,
         instance: String,
     ) -> Result<(PathBuf, PathBuf), Error> {
@@ -254,9 +349,9 @@ impl TestScheduler {
         Ok((input_file, output_file))
     }
 
-    fn replace_cmd<'a>(
+    fn replace_cmd(
         cmd: &mut Vec<String>,
-        sched: &TestSchedule<'a>,
+        sched: &TestSchedule,
         tmp_dir: &PathBuf,
         input: &PathBuf,
         output: &PathBuf,
@@ -283,9 +378,8 @@ impl TestScheduler {
         }
     }
 
-    fn exec_cmd<'a>(
-        &mut self,
-        sched: &TestSchedule<'a>,
+    async fn exec_cmd(
+        sched: &TestSchedule,
         base: &Vec<String>,
         tmp_dir: &PathBuf,
         input: &PathBuf,
@@ -295,10 +389,15 @@ impl TestScheduler {
     ) -> Result<bool, Error> {
         let mut cmd = base.clone();
         Self::replace_cmd(&mut cmd, sched, tmp_dir, input, output, exec);
-        let mut r = process::Command::new(&cmd[0]);
+        let mut r = tokio::process::Command::new(&cmd[0]);
         r.args(&cmd[1..]);
-        let done = r.output()?;
-        let code = done.status.code();
+        let done = match r.status().await {
+            Ok(x) => x,
+            Err(x) => {
+                return Err(Error::Exec(format!("exec error: {:?}: {}", cmd, x)));
+            }
+        };
+        let code = done.code();
         match code {
             Some(0) => return Ok(true),
             status => {
@@ -307,98 +406,155 @@ impl TestScheduler {
                         return Ok(false);
                     }
                 }
-                let stderr_str = String::from_utf8_lossy(&done.stderr);
-                return Err(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    format!("process exit with {:?}\n{}", status, stderr_str),
-                )
-                .into());
+                return Err(Error::Exec(format!("process exit with {:?}", status)));
             }
         };
     }
 
-    pub fn run_test_schedule<'a>(&mut self, sched: &TestSchedule<'a>) -> Result<(), Error> {
+    pub fn run_test_schedule_impl(
+        sched: TestSchedule,
+        send: SendChan,
+        tmp_dir: PathBuf,
+        input: PathBuf,
+        input_path: PathBuf,
+        output: PathBuf,
+        input_binary: Vec<u8>,
+    ) -> Result<tokio::task::JoinHandle<()>, Error> {
+        let proc = async move {
+            // build test
+            match Self::exec_cmd(
+                &sched,
+                &sched.runner.build_command,
+                &tmp_dir,
+                &input,
+                &output,
+                None,
+                true,
+            )
+            .await
+            {
+                Ok(_) => {}
+                Err(x) => return Err((sched, x)),
+            };
+
+            let exec = output;
+
+            let output = tmp_dir.join("output.bin");
+
+            // run test
+            let status = match Self::exec_cmd(
+                &sched,
+                &sched.runner.run_command,
+                &tmp_dir,
+                &input_path,
+                &output,
+                Some(&exec),
+                false,
+            )
+            .await
+            {
+                Ok(x) => x,
+                Err(x) => return Err((sched, x)),
+            };
+
+            let expect = !sched.input.failure_case;
+
+            if status != expect {
+                return Err((
+                    sched,
+                    Error::TestFail(format!("test failed: expect {} but got {}", expect, status)),
+                ));
+            }
+
+            if sched.input.failure_case {
+                return Ok(sched); // skip output check
+            }
+
+            let output = match tokio::fs::read(&output).await {
+                Ok(x) => x,
+                Err(x) => {
+                    return Err((
+                        sched,
+                        Error::TestFail(format!("test output cannot load: {}", x)),
+                    ))
+                }
+            };
+
+            let min_size = if input_binary.len() < output.len() {
+                input_binary.len()
+            } else {
+                output.len()
+            };
+
+            let mut diff = Vec::new();
+
+            for i in 0..min_size {
+                if input_binary[i] != output[i] {
+                    diff.push((i, Some(input_binary[i]), Some(output[i])));
+                }
+            }
+
+            if input_binary.len() != output.len() {
+                if input_binary.len() > output.len() {
+                    diff.push((output.len(), None, Some(output[output.len()])));
+                } else {
+                    diff.push((
+                        input_binary.len(),
+                        Some(input_binary[input_binary.len()]),
+                        None,
+                    ));
+                }
+            }
+
+            if !diff.is_empty() {
+                let mut debug = format!("input and output is different\n");
+                for (i, a, b) in diff {
+                    debug += &format!("{}: {:02x?} != {:02x?}\n", i, a, b);
+                }
+                return Err((sched, Error::TestFail(debug)));
+            }
+
+            Ok(sched)
+        };
+        let proc = async move {
+            let r = proc.await;
+            send.send(r).await.unwrap();
+        };
+        Ok(tokio::spawn(proc))
+    }
+
+    pub fn run_test_schedule(
+        &mut self,
+        sched: &TestSchedule,
+        send: SendChan,
+    ) -> Result<tokio::task::JoinHandle<()>, Error> {
         let tmp_dir = self.create_test_dir(sched)?;
         let instance = self.prepare_content(sched)?;
 
         let (input, output) = self.create_input_file(sched, &tmp_dir, instance)?;
+        let input_path: PathBuf = sched.input.binary.clone().into();
+        let (input_path, input_binary) = self.read_input_binary(&input_path, sched.input.hex)?;
 
-        // build test
-        self.exec_cmd(
-            &sched,
-            &sched.runner.build_command,
-            &tmp_dir,
-            &input,
-            &output,
-            None,
-            true,
-        )?;
+        Self::run_test_schedule_impl(
+            sched.clone(),
+            send,
+            tmp_dir,
+            input,
+            input_path,
+            output,
+            input_binary,
+        )
+    }
 
-        let exec = output;
-
-        let output = tmp_dir.join("output.bin");
-
-        let input_binary_name: PathBuf = sched.input.binary.clone().into();
-
-        let input_binary = self.read_input_binary(&input_binary_name, sched.input.hex)?; // check input is valid
-
-        // run test
-        let status = self.exec_cmd(
-            &sched,
-            &sched.runner.run_command,
-            &tmp_dir,
-            &input_binary_name,
-            &output,
-            Some(&exec),
-            false,
-        )?;
-
-        let expect = !sched.input.failure_case;
-
-        if status != expect {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                format!("test failed: expect {} but got {}", expect, status),
-            )
-            .into());
+    pub fn remove_tmp_dir(self) {
+        if let Some(dir) = self.tmpdir {
+            fs::remove_dir_all(dir).unwrap();
         }
+    }
 
-        let output = fs::read(&output)?; // check output is valid
-
-        let min_size = if input_binary.len() < output.len() {
-            input_binary.len()
-        } else {
-            output.len()
-        };
-
-        let mut diff = Vec::new();
-
-        for i in 0..min_size {
-            if input_binary[i] != output[i] {
-                diff.push((i, Some(input_binary[i]), Some(output[i])));
-            }
+    pub fn print_tmp_dir(self) {
+        if let Some(dir) = self.tmpdir {
+            println!("tmp directory is {}", path_str(&dir));
         }
-
-        if input_binary.len() != output.len() {
-            if input_binary.len() > output.len() {
-                diff.push((output.len(), None, Some(output[output.len()])));
-            } else {
-                diff.push((
-                    input_binary.len(),
-                    Some(input_binary[input_binary.len()]),
-                    None,
-                ));
-            }
-        }
-
-        if !diff.is_empty() {
-            let mut debug = format!("input and output is different\n");
-            for (i, a, b) in diff {
-                debug += &format!("{}: {:02x?} != {:02x?}\n", i, a, b);
-            }
-            return Err(std::io::Error::new(std::io::ErrorKind::Other, debug).into());
-        }
-
-        Ok(())
     }
 }

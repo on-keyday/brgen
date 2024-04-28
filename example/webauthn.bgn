@@ -1,0 +1,43 @@
+
+format PublicKeyCredential:
+    raw_id_len :u8
+    raw_id :[raw_id_len]u8
+    auth_attestation_response :AuthenticatorAttestationResponse
+   
+format AuthenticatorResponse:
+    client_data_json_len :u16
+    client_data_json :[client_data_json_len]u8
+    type :AuthenticatorResponseType
+    if type == AuthenticatorResponseType.attestation:
+        attestation :AuthenticatorAttestationResponse
+    else:
+        assertion :AuthenticatorAssertionResponse
+   
+enum AuthenticatorResponseType:
+    :u8
+    attestation = 0
+    assertion = 1
+
+format AuthenticatorAttestationResponse:
+    attestation_len :u16
+    attestation_response :[attestation_len]u8
+
+
+format AuthenticatorAssertionResponse:
+    authenticatorData_len :u16
+    authenticatorData :[authenticatorData_len]u8
+    signature_len :u16
+    signature :[signature_len]u8
+    user_handle_len :u16
+    user_handle :[user_handle_len]u8
+
+enum Algorithm:
+    :s8
+    Ed25519 = -8
+    ES256 = -7
+    RS256 = -257
+
+format CreateInfo:
+    challenge_len :u8
+    challenge :[challenge_len]u8
+    

@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
         return e;
     }
     if (!r.empty()) {
-        cout << "Failed to decode file " << argv[1] << ";" << r.remain().size() << " bytes left\n";
+        cout << "Failed to decode file " << argv[1] << "; " << r.remain().size() << " bytes left\n";
         return 1;
     }
     std::string s;

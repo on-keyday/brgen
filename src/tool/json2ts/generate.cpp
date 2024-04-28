@@ -95,6 +95,190 @@ namespace json2ts {
             return "any";
         }
 
+        void write_union_field(ast::StructUnionType* u, const std::shared_ptr<ast::Field>& field, brgen::writer::Writer& wt) {
+            bool first = true;
+            auto anonymous_field = field->ident->ident;
+            str.map_ident(field->ident, prefix, ".", anonymous_field);
+            wt.writeln(anonymous_field, ": ");
+            auto dot = ".";
+            auto p = std::move(prefix);
+            if (typescript) {
+                prefix = brgen::concat("(", p, dot, anonymous_field, " as any)");
+            }
+            else {
+                prefix = brgen::concat(p, dot, anonymous_field);
+            }
+            size_t i = 0;
+            for (auto s : u->structs) {
+                if (!first) {
+                    wt.writeln("|");
+                }
+
+                brgen::writer::Writer tmpw;
+
+                write_struct_type(tmpw, s);
+
+                first = false;
+                wt.write_unformatted(tmpw.out());
+                char prev_char = 0;
+                std::erase_if(tmpw.out(), [&](char c) {
+                    if (prev_char == ' ' && c == ' ') {
+                        return true;
+                    }
+                    prev_char = c;
+                    return c == '\n';
+                });
+                anonymous_types[s] = {anonymous_field, tmpw.out(), field};
+
+                if (typescript) {
+                    auto& name = field->belong.lock()->ident->ident;
+                    w.writeln("export interface ", name, "_", anonymous_field, "_", brgen::nums(i), " ", tmpw.out(), ";");
+                    i++;
+                }
+
+                wt.writeln();
+            }
+            std::swap(prefix, p);
+            if (!u->exhaustive) {
+                if (!first) {
+                    wt.writeln("|");
+                }
+                wt.write("undefined");
+            }
+            wt.writeln(";");
+            for (auto& f : u->union_fields) {
+                auto union_field = f.lock();
+                auto union_ty = ast::as<ast::UnionType>(union_field->field_type);
+                str.map_ident(union_field->ident, p, ".", union_field->ident->ident);
+                auto fmt = ast::as<ast::Format>(union_field->belong.lock());
+                if (union_ty->common_type) {
+                    // getter
+                    w.write("function ", fmt->ident->ident, "_get_", union_field->ident->ident, "(obj");
+                    if (typescript) {
+                        w.write(" :", fmt->ident->ident);
+                    }
+                    w.writeln(") {");
+                    {
+                        auto indent = w.indent_scope();
+                        std::string cond;
+                        if (auto c = union_ty->cond.lock()) {
+                            cond = str.to_string(c);
+                        }
+                        else {
+                            cond = "true";
+                        }
+                        bool first = false;
+                        bool els = false;
+                        for (auto& cand : union_ty->candidates) {
+                            auto cond1 = cand->cond.lock();
+                            if (ast::is_any_range(cond1)) {
+                                els = true;
+                                if (!first) {
+                                    w.write("else ");
+                                }
+                                w.writeln("{");
+                                if (auto f = cand->field.lock()) {
+                                    w.writeln("return ", str.to_string(f->ident), ";");
+                                }
+                                else {
+                                    w.writeln("return null;");
+                                }
+                                w.writeln("}");
+                            }
+                            else {
+                                if (!first) {
+                                    w.write("else ");
+                                }
+                                auto conds = str.to_string(cond1);
+                                w.writeln("if (", cond, "==", conds, ") {");
+                                if (auto f = cand->field.lock()) {
+                                    w.writeln("return ", str.to_string(f->ident), ";");
+                                }
+                                else {
+                                    w.writeln("return null;");
+                                }
+                                w.writeln("}");
+                            }
+                        }
+                        if (!els) {
+                            w.writeln("return null;");
+                        }
+                    }
+                    w.writeln("}");
+
+                    // setter
+                    w.write("function ", fmt->ident->ident, "_set_", union_field->ident->ident, "(");
+                    if (typescript) {
+                        auto ty = get_type(union_ty->common_type);
+                        w.write("obj :Partial<", fmt->ident->ident, ">,value :", ty);
+                    }
+                    else {
+                        w.write("obj,value");
+                    }
+                    w.writeln(") {");
+                    {
+                        auto indent = w.indent_scope();
+                        std::string cond;
+                        if (auto c = union_ty->cond.lock()) {
+                            cond = str.to_string(c);
+                        }
+                        else {
+                            cond = "true";
+                        }
+                        bool first = false;
+                        bool els = false;
+                        auto write_set = [&](auto& cand) {
+                            if (auto f = cand->field.lock()) {
+                                auto& typ = anonymous_types[f->belong_struct.lock()].type;
+                                auto base_field = str.to_string(field->ident);
+                                w.writeln("if(!", base_field, ") {");
+                                {
+                                    auto indent = w.indent_scope();
+                                    w.write(base_field, " = {}");
+                                    if (typescript) {
+                                        w.write(" as ", typ);
+                                    }
+                                    w.writeln(";");
+                                }
+                                w.writeln("}");
+                                w.writeln(str.to_string(f->ident), "= value;");
+                                w.writeln("return true;");
+                            }
+                            else {
+                                w.writeln("return false;");
+                            }
+                        };
+                        for (auto& cand : union_ty->candidates) {
+                            auto cond1 = cand->cond.lock();
+                            if (ast::is_any_range(cond1)) {
+                                els = true;
+                                if (!first) {
+                                    w.write("else ");
+                                }
+                                w.writeln("{");
+                                write_set(cand);
+                                w.writeln("}");
+                            }
+                            else {
+                                if (!first) {
+                                    w.write("else ");
+                                }
+                                auto conds = str.to_string(cond1);
+                                w.writeln("if (", cond, "==", conds, ") {");
+                                write_set(cand);
+                                w.writeln("}");
+                            }
+                            if (!els) {
+                                w.writeln("return false;");
+                            }
+                        }
+                    }
+                    w.writeln("}");
+                }
+            }
+            return;
+        }
+
         void write_field(brgen::writer::Writer& wt, std::vector<std::shared_ptr<ast::Field>>& bit_fields, const std::shared_ptr<ast::Field>& field) {
             if (!field->ident) {
                 ast::tool::set_tmp_field_ident(get_seq(), field, "anonymous_");
@@ -131,60 +315,7 @@ namespace json2ts {
                 return;
             }
             if (auto u = ast::as<ast::StructUnionType>(typ)) {
-                bool first = true;
-                auto anonymous_field = field->ident->ident;
-                str.map_ident(field->ident, prefix, ".", anonymous_field);
-                wt.writeln(anonymous_field, ": ");
-                auto dot = ".";
-                auto p = std::move(prefix);
-                if (typescript) {
-                    prefix = brgen::concat("(", p, dot, anonymous_field, " as any)");
-                }
-                else {
-                    prefix = brgen::concat(p, dot, anonymous_field);
-                }
-                size_t i = 0;
-                for (auto s : u->structs) {
-                    if (!first) {
-                        wt.writeln("|");
-                    }
-
-                    brgen::writer::Writer tmpw;
-
-                    write_struct_type(tmpw, s);
-
-                    first = false;
-                    wt.write_unformatted(tmpw.out());
-                    char prev_char = 0;
-                    std::erase_if(tmpw.out(), [&](char c) {
-                        if (prev_char == ' ' && c == ' ') {
-                            return true;
-                        }
-                        prev_char = c;
-                        return c == '\n';
-                    });
-                    anonymous_types[s] = {anonymous_field, tmpw.out(), field};
-
-                    if (typescript) {
-                        auto& name = field->belong.lock()->ident->ident;
-                        w.writeln("export interface ", name, "_", anonymous_field, "_", brgen::nums(i), " ", tmpw.out(), ";");
-                        i++;
-                    }
-
-                    wt.writeln();
-                }
-                std::swap(prefix, p);
-                if (!u->exhaustive) {
-                    if (!first) {
-                        wt.writeln("|");
-                    }
-                    wt.write("undefined");
-                }
-                wt.writeln(";");
-                for (auto& f : u->union_fields) {
-                    auto field = f.lock();
-                    str.map_ident(field->ident, p, ".", field->ident->ident);
-                }
+                write_union_field(u, field, wt);
                 return;
             }
             auto type = get_type(typ);

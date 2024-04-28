@@ -6,23 +6,18 @@
       "file_base": "websocket",
       "failure_case": false,
       "hex": true
+    },
+    {
+      "binary": "./example/wire_data/websocket.dat",
+      "format_name": "Frame",
+      "file_base": "websocket",
+      "failure_case": true,
+      "hex": false
     }
   ],
   "runners": [
     {
-      "suffix": "hpp",
-      "test_template": "./testkit/cpp/test_template.cpp",
-      "replace_file_name": "stub.hpp",
-      "replace_struct_name": "TEST_CLASS",
-      "build_input_name": "test.cpp",
-      "build_output_name": "test.exe",
-      "build_command": [
-        "python",
-        "./testkit/cpp/setup.py",
-        "$INPUT",
-        "$OUTPUT"
-      ],
-      "run_command": ["$EXEC", "$INPUT", "$OUTPUT"]
+      "file": "./testkit/cpp/config.json"
     }
   ]
 }

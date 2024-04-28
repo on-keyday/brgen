@@ -38,6 +38,10 @@
       "items": {
         "type": "object",
         "properties": {
+          "file": {
+            "type": "string",
+            "description": "file name of runner configuration that contains an JSON object with below properties"
+          },
           "suffix": {
             "type": "string",
             "description": "suffix of target generated file"
