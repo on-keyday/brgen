@@ -34,7 +34,7 @@ enum H2Type:
 
 format FrameHeader:
     len :u24
-    type:u8
+    type:H2Type
     reserved_flag :u4(0)
     padding :u1
     end_headers :u1
