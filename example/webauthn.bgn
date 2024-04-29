@@ -37,7 +37,91 @@ enum Algorithm:
     ES256 = -7
     RS256 = -257
 
+enum AttestationConveyancePreference:
+    :u8
+    none = 0
+    indirect = 1
+    direct = 2
+    enterprise = 3
+
+format AttestationFormat:
+    fmt_len :u8
+    fmt :[fmt_len]u8
+
+enum AuthenticatorAttachment:
+    :u8
+    platform = 0
+    cross_platform = 1
+
+enum UserVerificationRequirement:
+    :u8
+    required = 0
+    preferred = 1
+    discouraged = 2
+
+format AuthenticatorSelection:
+    authenticator_attachment :AuthenticatorAttachment
+    user_verification :UserVerificationRequirement
+
+format Challenge:
+    len :u8
+    challenge :[len]u8
+
+enum PublicKeyCredentialType:
+    :u8
+    public_key = 0x55
+
+enum Trasport:
+    :u8
+    usb = 0x01
+    nfc = 0x02
+    ble = 0x04
+    internal = 0x08
+    hybrid = 0x10
+
+format PublicKeyCredentialDescriptor:
+    id_len :u8
+    id :[id_len]u8
+    type :PublicKeyCredentialType
+    transports :Trasport # bitfield
+
+format ExcludeCredentials:
+    len :u8
+    credentials :[len]PublicKeyCredentialDescriptor
+
+format Extension:
+    id_len :u8
+    id :[id_len]u8
+    data_len :u16
+    data :[data_len]u8
+
+format PublicKeyCredentialParam:
+    alg :Algorithm
+    type :PublicKeyCredentialType
+
+format RelayingParty:
+    id_len :u8
+    id :[id_len]u8
+    name_len :u8
+    name :[name_len]u8
+
+format User:
+    id_len :u8
+    id :[id_len]u8
+    name_len :u8
+    name :[name_len]u8
+    display_name_len :u8
+    display_name :[display_name_len]u8
+
 format CreateInfo:
-    challenge_len :u8
-    challenge :[challenge_len]u8
-    
+    challenge :Challenge
+    attestation_format_len :u8
+    attestation_format :[attestation_format_len]AttestationConveyancePreference
+    authenticator_selection :AuthenticatorSelection
+    exclude_credentials :ExcludeCredentials
+    extensions_len :u8
+    extensions :[extensions_len]Extension
+    pubkey_credential_params_len :u8
+    pubkey_credential_params :[pubkey_credential_params_len]PublicKeyCredentialParam
+    relying_party :RelayingParty
+    user :User
