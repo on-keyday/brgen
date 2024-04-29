@@ -45,6 +45,8 @@ CMDLINE = [
 if plt.system() == "Windows":
     CMDLINE.append("-nostdlib")
     CMDLINE.append("-fms-runtime-lib=dll_dbg")
+else:
+    CMDLINE.append("-stdlib=libc++")
 
 print(f"Compiling {INPUT} to {OUTPUT} with {CMDLINE} ")
 code = sp.call(

@@ -37,10 +37,12 @@ jobs:
           /tmp/brgen/tool/brgen -debug
       - name: Clone Utils
         run: |
+          cd /tmp/brgen
           git clone https://github.com/on-keyday/utils.git
           mkdir utils/lib
-          cp /tmp/brgen/tool/libfutils.so utils/lib
+          cp tool/libfutils.so utils/lib
       - name: Test
         run: |
           cd /tmp/brgen
+          . ./link_path.sh
           FUTILS_DIR=/tmp/brgen/utils tool/cmptest -f ignore/example/test_info.json -c testkit/cmptest.json
