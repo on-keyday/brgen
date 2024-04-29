@@ -954,8 +954,9 @@ namespace json2ts {
                     }
                 }
             }
+            d.execute();
             if (enum_to_string) {
-                w.write("export ", enum_->ident->ident, "_to_string(x");
+                w.write("export function ", enum_->ident->ident, "_to_string(x");
                 if (typescript) {
                     w.write(":", enum_->ident->ident);
                 }
@@ -978,9 +979,9 @@ namespace json2ts {
                     w.writeln("return null;");
                 }
                 w.writeln("}");
-                w.write("export ", enum_->ident->ident, "_from_string(x");
+                w.write("export function ", enum_->ident->ident, "_from_string(x");
                 if (typescript) {
-                    w.write(":", enum_->ident->ident);
+                    w.write(":string");
                 }
                 w.writeln(") {");
                 {
