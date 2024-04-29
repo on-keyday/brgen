@@ -521,7 +521,7 @@ func (g *Generator) writeTypeEncode(ident string, typ ast2go.Type, p *ast2go.Fie
 	if arr_type, ok := typ.(*ast2go.ArrayType); ok {
 		if i_typ, ok := arr_type.ElementType.(*ast2go.IntType); ok && *i_typ.BitSize == 8 {
 			if arr_type.Length.GetConstantLevel() == ast2go.ConstantLevelConstant {
-				g.PrintfFunc("if n,err := w.Write(%s);err != nil || n != len(%s) {\n", ident, ident)
+				g.PrintfFunc("if n,err := w.Write(%s[:]);err != nil || n != len(%s) {\n", ident, ident)
 				g.imports["fmt"] = struct{}{}
 				g.PrintfFunc("return fmt.Errorf(\"encode %s: %%w\", err)\n", p.Ident.Ident)
 				g.PrintfFunc("}\n")
