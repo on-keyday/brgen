@@ -57,10 +57,10 @@
             "name": "Debug json2cpp",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "./tool/json2cpp",
+            "program": "${workspaceRoot}/tool/json2ts",
             "args": [
                 "-f",
-                "./example/websocket.bgn",
+                "./ignore/sample.json",
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",
