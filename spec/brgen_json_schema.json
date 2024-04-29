@@ -24,7 +24,7 @@
     },
     "test_info_output": {
       "type": "string",
-      "description": "Path to the test info output file (default: no output)"
+      "description": "Path to the test info output file (default: no output). schema is defined in brgen_test_info_schema.json"
     },
     "warnings": {
       "type": "object",

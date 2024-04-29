@@ -1,0 +1,60 @@
+config.url = "https://www.rfc-editor.org/rfc/rfc1952"
+input.endian = config.endian.little
+input.bit_order = config.bit_order.lsb
+
+format GZipHeader:
+    magic :"\x1f\x8b"
+    method :CompressionMethod
+    flags :GZipFlag
+    mtime :u32
+    xfl :u8
+    os :OS
+    if flags.extra ==1:
+        extra :GZipExtra
+    if flags.fname ==1:
+        fname :CString
+    if flags.fcomment ==1:
+        fcomment :CString
+    if flags.crc ==1:
+        crc16 :u16
+
+format GZipExtra:
+    xlen :u16
+    data :[xlen]u8
+
+format CString:
+    data :[..]u8
+    :"\x00"
+
+format GZipFlag:
+    text :u1
+    crc :u1
+    extra :u1
+    fname :u1
+    fcomment :u1
+    reserved :u3
+    reserved == 0
+
+enum CompressionMethod:
+    :u8
+    deflate = 8
+
+enum OS:
+    :u8
+    fat = 0
+    amiga = 1
+    vms = 2
+    unix_ = 3
+    vm_cms = 4
+    atari = 5
+    hpfs = 6
+    machintosh = 7
+    z_system = 8
+    cp_m = 9
+    tops_20 = 10
+    ntfs = 11
+    qdos = 12
+    acorn_risc_os = 13
+    vfat = 14
+    mvs = 15
+    beos = 16

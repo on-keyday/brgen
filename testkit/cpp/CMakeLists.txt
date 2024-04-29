@@ -5,6 +5,6 @@ project(GeneratedCodeTest CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 
-include_directories("$ENV{FUTILS_DIR}/src/include")
-link_directories("$ENV{FUTILS_DIR}/lib")
+include_directories("${FUTILS_DIR}/src/include")
+link_directories("${FUTILS_DIR}/lib")
 

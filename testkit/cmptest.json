@@ -1,0 +1,23 @@
+{
+  "inputs": [
+    {
+      "binary": "./example/wire_data/websocket.dat",
+      "format_name": "Frame",
+      "file_base": "websocket",
+      "failure_case": false,
+      "hex": true
+    },
+    {
+      "binary": "./example/wire_data/websocket.dat",
+      "format_name": "Frame",
+      "file_base": "websocket",
+      "failure_case": true,
+      "hex": false
+    }
+  ],
+  "runners": [
+    {
+      "file": "./testkit/cpp/config.json"
+    }
+  ]
+}

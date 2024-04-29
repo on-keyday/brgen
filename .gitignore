@@ -31,3 +31,5 @@ go_dump_env.bat
 license_cache
 pkg/
 stats.json
+zig-cache/
+zig-out/

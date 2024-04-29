@@ -67,7 +67,7 @@ int generate_c(const Flags& flags, brgen::request::GenerateSource& req, std::sha
             field("structs", g.struct_names);
             field("line_map", g.line_map);
         }
-        send_source(req.id, std::move(s.out()), req.name + ".c.map.json");
+        send_source(req.id, std::move(s.out()), req.name + ".c.json");
     }
     send_end_response(req.id);
     return 0;

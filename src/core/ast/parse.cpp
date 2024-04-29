@@ -310,6 +310,7 @@ namespace brgen::ast {
                 field->ident = ident;
                 ident->base = field;
                 field->field_type = union_type;
+                field->belong = state.current_member();
                 union_type->base_type = type;
                 size_t cand_i = 0;
                 for (auto& c : v) {

@@ -1,0 +1,16 @@
+[package]
+name = "cmptest"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = { version = "4.5.4", features = ["derive"] }
+serde = { version="1.0.196" ,features = ["derive"]}
+serde_json = "1.0.116"
+ast2rust = {path ="../../../ast2rust" }
+regex = "1.10.4"
+rand = "0.8.5"
+tokio = { version = "1.37.0", features = ["full"] }
+colored = "2.1.0"

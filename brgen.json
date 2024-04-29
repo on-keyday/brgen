@@ -53,7 +53,7 @@
       "args": ["-as-code-block", "-format"]
     },
     {
-      "generator": "./src/tool/json2rust/target/debug/json2rust",
+      "generator": "./tool/json2rust",
       "output_dir": "./ignore/example/rust/",
       "ignore_missing": true
     },

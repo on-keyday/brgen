@@ -123,6 +123,13 @@ func init() {
 
 var exitCode int
 
+type TestInfo struct {
+	TotalCount uint32           `json:"total_count"`
+	ErrorCount uint32           `json:"error_count"`
+	Time       string           `json:"time"`
+	DirAndBase []*DirBaseSuffix `json:"generated_files"`
+}
+
 func main() {
 	defer os.Exit(exitCode)
 	log.SetPrefix("brgen: ")
@@ -216,12 +223,7 @@ func main() {
 			log.Fatal(err)
 		}
 		defer fp.Close()
-		var info struct {
-			TotalCount uint32           `json:"total_count"`
-			ErrorCount uint32           `json:"error_count"`
-			Time       string           `json:"time"`
-			DirAndBase []*DirBaseSuffix `json:"generated_files"`
-		}
+		var info TestInfo
 		info.TotalCount = totalCount.Load()
 		info.ErrorCount = errCount.Load()
 		info.Time = elapsed.String()

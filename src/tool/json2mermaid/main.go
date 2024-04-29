@@ -12,10 +12,12 @@ import (
 
 	ast "github.com/on-keyday/brgen/ast2go/ast"
 	"github.com/on-keyday/brgen/ast2go/gen"
+	"github.com/on-keyday/brgen/ast2go/request"
 )
 
 var spec = flag.Bool("s", false, "spec of this generator")
-var fileName = flag.String("f", "", "file to generate")
+var fileName = flag.Bool("f", false, "file to generate")
+var legacyStdin = flag.Bool("stdin", false, "use stdin")
 var asCodeBlock = flag.Bool("as-code-block", false, "output as code block")
 var format = flag.Bool("format", false, "output only format and enum")
 
@@ -185,47 +187,90 @@ func traceFormat(out io.Writer, prog *ast.Program) {
 	}))
 }
 
-func main() {
-	flag.Parse()
-	if *spec {
-		fmt.Fprintf(os.Stdout, `
-			{
-				"input": "stdin",
-				"langs": ["mermaid"],
-				"suffix": [".md"]
-			}
-		`)
-		return
-	}
+func generate(out io.Writer, in io.Reader) error {
 	file := &ast.AstFile{}
-	if *fileName == "" {
-		err := json.NewDecoder(os.Stdin).Decode(file)
-		if err != nil {
-			log.Fatal(err)
-		}
-	} else {
-		f, err := os.Open(*fileName)
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer f.Close()
-		err = json.NewDecoder(f).Decode(file)
-		if err != nil {
-			log.Fatal(err)
-		}
+	err := json.NewDecoder(in).Decode(file)
+	if err != nil {
+		return err
 	}
 	prog, err := ast.ParseAST(file.Ast)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-	out := os.Stdout
 	if *asCodeBlock {
 		fmt.Fprintf(out, "```mermaid\n")
 		defer fmt.Fprintf(out, "```\n")
 	}
 	if *format {
 		traceFormat(out, prog)
-		return
+		return nil
 	}
 	diagram(out, prog)
+	return nil
+}
+
+func streamMode() {
+	err := request.Run(os.Stdin, os.Stdout, func(stream *request.IDStream, req *request.GenerateSource) {
+		r := bytes.NewReader(req.JsonText)
+		w := bytes.NewBuffer(nil)
+		err := generate(w, r)
+		if err != nil {
+			stream.RespondError(err.Error())
+		} else {
+			stream.RespondSource(string(req.Name)+".md", w.Bytes(), "")
+		}
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func main() {
+	flag.Parse()
+	if *spec {
+		if *legacyStdin {
+			fmt.Fprintf(os.Stdout, `
+			{
+				"input": "stdin",
+				"langs": ["mermaid"],
+				"suffix": [".md"]
+			}
+		`)
+		} else if *fileName {
+			fmt.Fprintf(os.Stdout, `
+			{
+				"input": "file",
+				"langs": ["mermaid"],
+				"suffix": [".md"]
+			}
+		`)
+		} else {
+			fmt.Fprintf(os.Stdout, `
+			{
+				"input": "stdin_stream",
+				"langs": ["mermaid"]
+			}
+		`)
+		}
+		return
+	}
+	if !*legacyStdin && !*fileName {
+		streamMode()
+		return
+	}
+
+	var f *os.File
+	if !*fileName {
+		f = os.Stdin
+	} else {
+		if flag.NArg() != 1 {
+			log.Fatal("no filename")
+		}
+		f, err := os.Open(flag.Arg(0))
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer f.Close()
+	}
+	generate(os.Stdout, f)
 }

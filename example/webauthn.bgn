@@ -1,0 +1,128 @@
+config.url = "https://developer.mozilla.org/ja/docs/Web/API/CredentialsContainer/create#%E3%82%A6%E3%82%A7%E3%83%96%E8%AA%8D%E8%A8%BC_api"
+format PublicKeyCredential:
+    raw_id_len :u8
+    raw_id :[raw_id_len]u8
+    auth_attestation_response :AuthenticatorAttestationResponse
+   
+format AuthenticatorResponse:
+    client_data_json_len :u16
+    client_data_json :[client_data_json_len]u8
+    type :AuthenticatorResponseType
+    if type == AuthenticatorResponseType.attestation:
+        attestation :AuthenticatorAttestationResponse
+    else:
+        assertion :AuthenticatorAssertionResponse
+   
+enum AuthenticatorResponseType:
+    :u8
+    attestation = 0
+    assertion = 1
+
+format AuthenticatorAttestationResponse:
+    attestation_len :u16
+    attestation_response :[attestation_len]u8
+
+
+format AuthenticatorAssertionResponse:
+    authenticatorData_len :u16
+    authenticatorData :[authenticatorData_len]u8
+    signature_len :u16
+    signature :[signature_len]u8
+    user_handle_len :u16
+    user_handle :[user_handle_len]u8
+
+enum Algorithm:
+    :s8
+    Ed25519 = -8
+    ES256 = -7
+    RS256 = -257
+
+enum AttestationConveyancePreference:
+    :u8
+    none = 0
+    indirect = 1
+    direct = 2
+    enterprise = 3
+
+format AttestationFormat:
+    fmt_len :u8
+    fmt :[fmt_len]u8
+
+enum AuthenticatorAttachment:
+    :u8
+    platform = 0
+    cross_platform = 1,"cross-platform"
+
+enum UserVerificationRequirement:
+    :u8
+    required = 0
+    preferred = 1
+    discouraged = 2
+
+format AuthenticatorSelection:
+    authenticator_attachment :AuthenticatorAttachment
+    user_verification :UserVerificationRequirement
+
+format Challenge:
+    len :u8
+    challenge :[len]u8
+
+enum PublicKeyCredentialType:
+    :u8
+    public_key = 0x55
+
+enum Trasport:
+    :u8
+    usb = 0x01
+    nfc = 0x02
+    ble = 0x04
+    internal = 0x08
+    hybrid = 0x10
+
+format PublicKeyCredentialDescriptor:
+    id_len :u8
+    id :[id_len]u8
+    type :PublicKeyCredentialType
+    transports :Trasport # bitfield
+
+format ExcludeCredentials:
+    len :u8
+    credentials :[len]PublicKeyCredentialDescriptor
+
+format Extension:
+    id_len :u8
+    id :[id_len]u8
+    data_len :u16
+    data :[data_len]u8
+
+format PublicKeyCredentialParam:
+    alg :Algorithm
+    type :PublicKeyCredentialType
+
+format RelayingParty:
+    id_len :u8
+    id :[id_len]u8
+    name_len :u8
+    name :[name_len]u8
+
+format User:
+    id_len :u8
+    id :[id_len]u8
+    name_len :u8
+    name :[name_len]u8
+    display_name_len :u8
+    display_name :[display_name_len]u8
+
+format CreateInfo:
+    challenge :Challenge
+    attestation :AttestationConveyancePreference
+    attestation_format_len :u8
+    attestation_formats :[attestation_format_len]AttestationFormat
+    authenticator_selection :AuthenticatorSelection
+    exclude_credentials :ExcludeCredentials
+    extensions_len :u8
+    extensions :[extensions_len]Extension
+    pubkey_credential_params_len :u8
+    pubkey_credential_params :[pubkey_credential_params_len]PublicKeyCredentialParam
+    relying_party :RelayingParty
+    user :User

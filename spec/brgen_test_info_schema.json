@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "description": "brgen(BinaRy encoder/decoder GENerator driver) output information file schema",
+  "properties": {
+    "total_count": {
+      "type": "integer",
+      "description": "Total count of output files"
+    },
+    "error_count": {
+      "type": "integer",
+      "description": "Count of output files with errors"
+    },
+    "time": {
+      "type": "string",
+      "description": "Time taken to generate output files"
+    },
+    "generated_files": {
+      "type": "array",
+      "description": "List of generated output files",
+      "items": {
+        "type": "object",
+        "properties": {
+          "dir": {
+            "type": "string",
+            "description": "Directory containing the output file"
+          },
+          "base": {
+            "type": "string",
+            "description": "Output file name without extension"
+          },
+          "suffix": {
+            "type": "string",
+            "description": "Output file extension"
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}
