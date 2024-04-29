@@ -1,4 +1,4 @@
-
+config.url = "https://developer.mozilla.org/ja/docs/Web/API/CredentialsContainer/create#%E3%82%A6%E3%82%A7%E3%83%96%E8%AA%8D%E8%A8%BC_api"
 format PublicKeyCredential:
     raw_id_len :u8
     raw_id :[raw_id_len]u8

@@ -24,6 +24,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
     bool no_resize = false;
     bool no_color = false;
     bool legacy_file_pass = false;
+    bool no_enum_to_string = false;
     void bind(futils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&spec, "s", "spec mode");
@@ -32,6 +33,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
         ctx.VarBool(&no_resize, "no-resize", "not resize output buffer");
         ctx.VarBool(&no_color, "no-color", "no color mode");
         ctx.VarBool(&legacy_file_pass, "f,file", "use legacy file pass mode");
+        ctx.VarBool(&no_enum_to_string, "no-enum-to-string", "disable enum to string conversion function generation");
     }
 };
 
@@ -41,6 +43,7 @@ int ts_generate(const Flags& flags, brgen::request::GenerateSource& req, std::sh
     tsflags.use_bigint = flags.use_bigint;
     tsflags.no_resize = flags.no_resize;
     tsflags.javascript = flags.javascript;
+    tsflags.enum_to_string = !flags.no_enum_to_string;
     auto out = json2ts::generate(prog, tsflags);
     send_source(req.id, std::move(out), req.name + (flags.javascript ? ".js" : ".ts"));
     send_end_response(req.id);

@@ -32,6 +32,7 @@ namespace json2ts {
         bool typescript = true;
         bool use_bigint = false;
         bool no_resize = false;
+        bool enum_to_string = true;
 
         size_t get_seq() {
             return seq_++;
@@ -932,29 +933,81 @@ namespace json2ts {
             w.writeln("}");
         }
 
+        void write_enum(const std::shared_ptr<ast::Enum>& enum_) {
+            futils::helper::DynDefer d;
+            if (typescript) {
+                w.writeln("export const enum ", enum_->ident->ident, " {");
+                d = futils::helper::defer_ex([&] {
+                    w.writeln("}");
+                });
+            }
+            {
+                auto s = w.indent_scope();
+                for (auto& elem : enum_->members) {
+                    auto v = str.to_string(elem->value);
+                    if (typescript) {
+                        w.writeln(elem->ident->ident, " = ", v, ",");
+                        str.map_ident(elem->ident, enum_->ident->ident, ".", elem->ident->ident);
+                    }
+                    else {
+                        str.map_ident(elem->ident, v, "/*", enum_->ident->ident, ".", elem->ident->ident, "*/");
+                    }
+                }
+            }
+            if (enum_to_string) {
+                w.write("export ", enum_->ident->ident, "_to_string(x");
+                if (typescript) {
+                    w.write(":", enum_->ident->ident);
+                }
+                w.writeln(") {");
+                {
+                    auto s = w.indent_scope();
+                    for (auto& elem : enum_->members) {
+                        auto value = "\"" + brgen::escape(elem->ident->ident) + "\"";
+                        if (elem->str_literal) {
+                            value = elem->str_literal->value;
+                        }
+                        auto key = str.to_string(elem->ident);
+                        w.writeln("if(x === ", key, ") {");
+                        {
+                            auto s = w.indent_scope();
+                            w.writeln("return ", value, ";");
+                        }
+                        w.writeln("}");
+                    }
+                    w.writeln("return null;");
+                }
+                w.writeln("}");
+                w.write("export ", enum_->ident->ident, "_from_string(x");
+                if (typescript) {
+                    w.write(":", enum_->ident->ident);
+                }
+                w.writeln(") {");
+                {
+                    auto s = w.indent_scope();
+                    for (auto& elem : enum_->members) {
+                        auto value = "\"" + brgen::escape(elem->ident->ident) + "\"";
+                        if (elem->str_literal) {
+                            value = elem->str_literal->value;
+                        }
+                        auto key = str.to_string(elem->ident);
+                        w.writeln("if(x === ", value, ") {");
+                        {
+                            auto s = w.indent_scope();
+                            w.writeln("return ", key, ";");
+                        }
+                        w.writeln("}");
+                    }
+                    w.writeln("return null;");
+                }
+                w.writeln("}");
+            }
+        }
+
         void generate(const std::shared_ptr<ast::Program>& p) {
             for (auto& elem : p->elements) {
                 if (auto enum_ = ast::as<ast::Enum>(elem)) {
-                    futils::helper::DynDefer d;
-                    if (typescript) {
-                        w.writeln("export const enum ", enum_->ident->ident, " {");
-                        d = futils::helper::defer_ex([&] {
-                            w.writeln("}");
-                        });
-                    }
-                    {
-                        auto s = w.indent_scope();
-                        for (auto& elem : enum_->members) {
-                            auto v = str.to_string(elem->value);
-                            if (typescript) {
-                                w.writeln(elem->ident->ident, " = ", v, ",");
-                                str.map_ident(elem->ident, enum_->ident->ident, ".", elem->ident->ident);
-                            }
-                            else {
-                                str.map_ident(elem->ident, v, "/*", enum_->ident->ident, ".", elem->ident->ident, "*/");
-                            }
-                        }
-                    }
+                    write_enum(ast::cast_to<ast::Enum>(elem));
                 }
             }
             auto s = ast::tool::FormatSorter{};
@@ -970,6 +1023,7 @@ namespace json2ts {
         g.typescript = !flags.javascript;
         g.use_bigint = flags.use_bigint;
         g.no_resize = flags.no_resize;
+        g.enum_to_string = flags.enum_to_string;
         g.str.this_access = "obj";
         g.str.cast_handler = [](ast::tool::Stringer& s, const std::shared_ptr<ast::Cast>& c) {
             return s.to_string(c->expr);
