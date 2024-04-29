@@ -152,23 +152,39 @@ namespace json2ts {
                 str.map_ident(union_field->ident, p, ".", union_field->ident->ident);
                 auto fmt = ast::as<ast::Format>(union_field->belong.lock());
                 if (union_ty->common_type) {
+                    std::string cond;
+                    if (auto c = union_ty->cond.lock()) {
+                        cond = str.to_string(c);
+                    }
+                    else {
+                        cond = "true";
+                    }
                     // getter
-                    w.write("function ", fmt->ident->ident, "_get_", union_field->ident->ident, "(obj");
+                    w.write("export function ", fmt->ident->ident, "_get_", union_field->ident->ident, "(obj");
                     if (typescript) {
                         w.write(" :", fmt->ident->ident);
                     }
                     w.writeln(") {");
                     {
                         auto indent = w.indent_scope();
-                        std::string cond;
-                        if (auto c = union_ty->cond.lock()) {
-                            cond = str.to_string(c);
-                        }
-                        else {
-                            cond = "true";
-                        }
-                        bool first = false;
+
+                        bool first = true;
                         bool els = false;
+                        auto write_get = [&](auto& cand) {
+                            auto indent = w.indent_scope();
+                            if (auto f = cand->field.lock()) {
+                                w.writeln("if(", str.to_string(f->ident), " !== undefined) {");
+                                {
+                                    auto indent = w.indent_scope();
+                                    w.write("return ", str.to_string(f->ident));
+                                    if (typescript) {
+                                        w.write(" as ", get_type(f->field_type));
+                                    }
+                                    w.writeln(";");
+                                }
+                                w.writeln("}");
+                            }
+                        };
                         for (auto& cand : union_ty->candidates) {
                             auto cond1 = cand->cond.lock();
                             if (ast::is_any_range(cond1)) {
@@ -177,12 +193,7 @@ namespace json2ts {
                                     w.write("else ");
                                 }
                                 w.writeln("{");
-                                if (auto f = cand->field.lock()) {
-                                    w.writeln("return ", str.to_string(f->ident), ";");
-                                }
-                                else {
-                                    w.writeln("return null;");
-                                }
+                                write_get(cand);
                                 w.writeln("}");
                             }
                             else {
@@ -190,13 +201,8 @@ namespace json2ts {
                                     w.write("else ");
                                 }
                                 auto conds = str.to_string(cond1);
-                                w.writeln("if (", cond, "==", conds, ") {");
-                                if (auto f = cand->field.lock()) {
-                                    w.writeln("return ", str.to_string(f->ident), ";");
-                                }
-                                else {
-                                    w.writeln("return null;");
-                                }
+                                w.writeln("if (", cond, "=== (", conds, ")) {");
+                                write_get(cand);
                                 w.writeln("}");
                             }
                         }
@@ -207,7 +213,7 @@ namespace json2ts {
                     w.writeln("}");
 
                     // setter
-                    w.write("function ", fmt->ident->ident, "_set_", union_field->ident->ident, "(");
+                    w.write("export function ", fmt->ident->ident, "_set_", union_field->ident->ident, "(");
                     if (typescript) {
                         auto ty = get_type(union_ty->common_type);
                         w.write("obj :Partial<", fmt->ident->ident, ">,value :", ty);
@@ -218,16 +224,10 @@ namespace json2ts {
                     w.writeln(") {");
                     {
                         auto indent = w.indent_scope();
-                        std::string cond;
-                        if (auto c = union_ty->cond.lock()) {
-                            cond = str.to_string(c);
-                        }
-                        else {
-                            cond = "true";
-                        }
-                        bool first = false;
+                        bool first = true;
                         bool els = false;
                         auto write_set = [&](auto& cand) {
+                            auto indent = w.indent_scope();
                             if (auto f = cand->field.lock()) {
                                 auto& typ = anonymous_types[f->belong_struct.lock()].type;
                                 auto base_field = str.to_string(field->ident);
@@ -253,24 +253,27 @@ namespace json2ts {
                             if (ast::is_any_range(cond1)) {
                                 els = true;
                                 if (!first) {
-                                    w.write("else ");
+                                    w.writeln("else {");
+                                    write_set(cand);
+                                    w.writeln("}");
                                 }
-                                w.writeln("{");
-                                write_set(cand);
-                                w.writeln("}");
+                                else {
+                                    write_set(cand);
+                                }
                             }
                             else {
                                 if (!first) {
                                     w.write("else ");
                                 }
                                 auto conds = str.to_string(cond1);
-                                w.writeln("if (", cond, "==", conds, ") {");
+                                w.writeln("if (", cond, "=== (", conds, ")) {");
                                 write_set(cand);
                                 w.writeln("}");
                             }
-                            if (!els) {
-                                w.writeln("return false;");
-                            }
+                            first = false;
+                        }
+                        if (!els) {
+                            w.writeln("return false;");
                         }
                     }
                     w.writeln("}");
