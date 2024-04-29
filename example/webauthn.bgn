@@ -117,7 +117,7 @@ format CreateInfo:
     challenge :Challenge
     attestation :AttestationConveyancePreference
     attestation_format_len :u8
-    attestation_format :[attestation_format_len]AttestationConveyancePreference
+    attestation_formats :[attestation_format_len]AttestationFormat
     authenticator_selection :AuthenticatorSelection
     exclude_credentials :ExcludeCredentials
     extensions_len :u8
