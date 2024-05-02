@@ -1,5 +1,6 @@
 
 config.cpp.namespace = "futils::fnet::http2"
+config.url = "https://www.rfc-editor.org/rfc/rfc9113.html"
 
 enum H2Error:
     none = 0x0
@@ -45,7 +46,13 @@ format FrameHeader:
 
 format DataFrame:
     header :FrameHeader
-    data :[header.len]u8
+    if header.padding == 1:
+        padding_len :u8
+        u32(header.len) > u32(padding_len + 1)
+    len ::= header.padding == 1 ? header.len - 1 - u32(padding_len) : header.len
+    data :[len]u8
+    if header.padding == 1:
+        padding :[padding_len]u8
 
 format StreamWeight:
     exclusive :u1
