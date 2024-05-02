@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "4.5.4", features = ["derive"] }
-serde = { version="1.0.196" ,features = ["derive"]}
+serde = { version="1.0.200" ,features = ["derive"]}
 serde_json = "1.0.116"
 ast2rust = {path ="../../../ast2rust" }
 regex = "1.10.4"
