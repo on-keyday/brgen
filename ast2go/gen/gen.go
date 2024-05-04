@@ -206,6 +206,15 @@ func (s *ExprStringer) ExprString(e ast2go.Expr) string {
 		return fmt.Sprintf("%s(%s)", typ, s.ExprString(e.Expr))
 	case *ast2go.Identity:
 		return s.ExprString(e.Expr)
+	case *ast2go.Unary:
+		if e.Op == ast2go.UnaryOpNot {
+			if e.Expr.GetExprType().GetNodeType() == ast2go.NodeTypeBoolType {
+				return fmt.Sprintf("!(%s)", s.ExprString(e.Expr))
+			} else {
+				return fmt.Sprintf("^(%s)", s.ExprString(e.Expr))
+			}
+		}
+		return fmt.Sprintf("%s%s", e.Op.String(), s.ExprString(e.Expr))
 	case *ast2go.Available:
 		ident, ok := e.Target.(*ast2go.Ident)
 		if !ok {

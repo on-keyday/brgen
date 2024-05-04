@@ -19,6 +19,24 @@
       "generator": "./tool/json2ts",
       "output_dir": "./ignore/example/ts/",
       "args": []
+    },
+    {
+      "generator": "./tool/json2go",
+      "output_dir": "./ignore/example/go/",
+      "args": [
+        "-map-word",
+        "Id=ID",
+        "-map-word",
+        "IDentifier=Identifier",
+        "-map-word",
+        "Tcpsegment=TCPSegment",
+        "-map-word",
+        "Udpdatagram=UDPDatagram",
+        "-map-word",
+        "Udpheader=UDPHeader",
+        "-map-word",
+        "icmp=ICMP"
+      ]
     }
   ],
   "garbage": [
