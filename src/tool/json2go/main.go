@@ -14,11 +14,13 @@ import (
 	"github.com/on-keyday/brgen/ast2go/request"
 )
 
+type LineMap struct {
+	Line uint64     `json:"line"`
+	Loc  ast2go.Loc `json:"loc"`
+}
+
 type TestInfo struct {
-	LineMap []struct {
-		Line uint64     `json:"line"`
-		Loc  ast2go.Loc `json:"loc"`
-	} `json:"line_map"`
+	LineMap []LineMap `json:"line_map"`
 	Structs []string `json:"structs"`
 }
 
@@ -40,6 +42,7 @@ func generate(r io.Reader, out func(suffix string, data []byte, warn error), err
 		if *testInfo {
 			var info TestInfo
 			info.Structs = g.StructNames
+			info.LineMap = []LineMap{}
 			data, err := json.Marshal(info)
 			out(".go.json", data, err)
 		}
