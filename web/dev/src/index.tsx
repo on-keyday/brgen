@@ -528,7 +528,11 @@ const setCommon = (m :Map<string,InputListElement>) => {
         updateUI();
     }));
     const go = new Map<string,InputListElement>();
-    go.set(ConfigKey.GO_USE_PUT,{
+    go.set(ConfigKey.GO_OMIT_MUST_ENCODE,{
+        "type": "checkbox",
+        "value": false,
+    });
+    go.set(ConfigKey.GO_OMIT_DECODE_EXACT,{
         "type": "checkbox",
         "value": false,
     });

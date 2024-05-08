@@ -137,9 +137,11 @@ const handleCpp = async (ui :UIModel,  s :JobResult) => {
 }
 
 const handleGo = async (ui :UIModel, s :JobResult) => {
-    const usePut = ui.getLanguageConfig(Language.GO,ConfigKey.GO_USE_PUT);
+    const omitMustEncode = ui.getLanguageConfig(Language.GO,ConfigKey.GO_OMIT_MUST_ENCODE);
+    const omitDecodeExact = ui.getLanguageConfig(Language.GO,ConfigKey.GO_OMIT_DECODE_EXACT);
     const goOption : GoOption ={
-        use_put: usePut === true,
+        omit_decode_exact: omitDecodeExact === true,
+        omit_must_encode: omitMustEncode === true,
     }
     return handleLanguage(ui,s,caller.getGoCode,Language.GO,"go",goOption);
 }
