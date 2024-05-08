@@ -1012,7 +1012,7 @@ func (g *Generator) writeDecode(p *ast2go.Format) {
 func (g *Generator) writeEnum(v *ast2go.Enum) {
 	i_type, ok := v.BaseType.(*ast2go.IntType)
 	if ok && i_type.IsCommonSupported {
-		g.Printf("type %s uint%d\n", v.Ident.Ident, *i_type.BitSize)
+		g.Printf("type %s %s\n", v.Ident.Ident, g.getType(v.BaseType))
 	} else {
 		g.Printf("type %s int\n", v.Ident.Ident)
 	}

@@ -9,14 +9,14 @@ concurrency:
 jobs:
   build-linux:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@b03a6aa289adef5534c84ccb6fbef7c975973574 # v2.1.0
+        uses: Kesin11/actions-timeline@1c2ab3f28225878ae4dd1f76d31279f16ea29e29 # v2.1.1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
-        uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4.1.3
+        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
       - name: Set up Ninja
         uses: seanmiddleditch/gha-setup-ninja@8b297075da4cd2a5f1fd21fe011b499edf06e9d2 # master
       - name: Set up Clang
@@ -50,15 +50,15 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@b03a6aa289adef5534c84ccb6fbef7c975973574 # v2.1.0
+        uses: Kesin11/actions-timeline@1c2ab3f28225878ae4dd1f76d31279f16ea29e29 # v2.1.1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
-        uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4.1.3
+        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
       - name: Set up Ninja
         uses: seanmiddleditch/gha-setup-ninja@8b297075da4cd2a5f1fd21fe011b499edf06e9d2 # master
       - name: Set up Go
-        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
         with:
           go-version: ">=1.20"
       - name: Install Homebrew Clang
@@ -105,11 +105,11 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@b03a6aa289adef5534c84ccb6fbef7c975973574 # v2.1.0
+        uses: Kesin11/actions-timeline@1c2ab3f28225878ae4dd1f76d31279f16ea29e29 # v2.1.1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
-        uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4.1.3
+        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
       - name: Set up Ninja
         uses: seanmiddleditch/gha-setup-ninja@8b297075da4cd2a5f1fd21fe011b499edf06e9d2 # master
       - name: Set up Clang
@@ -145,11 +145,11 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@b03a6aa289adef5534c84ccb6fbef7c975973574 # v2.1.0
+        uses: Kesin11/actions-timeline@1c2ab3f28225878ae4dd1f76d31279f16ea29e29 # v2.1.1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
-        uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4.1.3
+        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
       - name: Set up Node.js
         uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
       - name: Setup ast2ts
@@ -181,11 +181,11 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@b03a6aa289adef5534c84ccb6fbef7c975973574 # v2.1.0
+        uses: Kesin11/actions-timeline@1c2ab3f28225878ae4dd1f76d31279f16ea29e29 # v2.1.1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
-        uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4.1.3
+        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
       - name: Set up Ninja
         uses: seanmiddleditch/gha-setup-ninja@8b297075da4cd2a5f1fd21fe011b499edf06e9d2 # master
       - name: Install Cross Compiler
@@ -222,15 +222,15 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@b03a6aa289adef5534c84ccb6fbef7c975973574 # v2.1.0
+        uses: Kesin11/actions-timeline@1c2ab3f28225878ae4dd1f76d31279f16ea29e29 # v2.1.1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
-        uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4.1.3
+        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
       - name: Set up Ninja
         uses: seanmiddleditch/gha-setup-ninja@8b297075da4cd2a5f1fd21fe011b499edf06e9d2 # master
       - name: Install Android NDK
-        uses: nttld/setup-ndk@6a7e9c5494a25c4842ca1011f710300132eacd94 # v1.4.2
+        uses: nttld/setup-ndk@afb4c9964b521afb97c864b7d40b11e6911bd410 # v1.5.0
         with:
           ndk-version: r26b
       - name: Build
@@ -267,11 +267,11 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@b03a6aa289adef5534c84ccb6fbef7c975973574 # v2.1.0
+        uses: Kesin11/actions-timeline@1c2ab3f28225878ae4dd1f76d31279f16ea29e29 # v2.1.1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
-        uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4.1.3
+        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
       - name: fetch dependencies
         run: |
           go mod download
@@ -297,7 +297,7 @@ jobs:
         run: |
           go install github.com/Songmu/gocredits/cmd/gocredits@latest
       - name: Set up ruby
-        uses: ruby/setup-ruby@70da3bbf44ac06db1b0547ce2acc9380a5270d1e # v1.175.0
+        uses: ruby/setup-ruby@cacc9f1c0b3f4eb8a16a6bb0ed10897b43b9de49 # v1.176.0
         with:
           ruby-version: ruby
       - uses: github/setup-licensed@d6b3a6f7058c2b40c06d205e13e15c2418977566 # v1.1.4
@@ -321,11 +321,11 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@b03a6aa289adef5534c84ccb6fbef7c975973574 # v2.1.0
+        uses: Kesin11/actions-timeline@1c2ab3f28225878ae4dd1f76d31279f16ea29e29 # v2.1.1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout
-        uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4.1.3
+        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
       - name: Setup Emscripten
         uses: mymindstorm/setup-emsdk@6ab9eb1bda2574c4ddb79809fc9247783eaf9021 # v14
       - name: Set up Ninja
