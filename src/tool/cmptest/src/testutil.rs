@@ -390,13 +390,14 @@ impl TestScheduler {
         Self::replace_cmd(&mut cmd, sched, tmp_dir, input, output, exec);
         let mut r = tokio::process::Command::new(&cmd[0]);
         r.args(&cmd[1..]);
-        let done = match r.status().await {
+        let done = match r.output().await {
             Ok(x) => x,
             Err(x) => {
                 return Err(Error::Exec(format!("exec error: {:?}: {}", cmd, x)));
             }
         };
-        let code = done.code();
+        let code = done.status.code();
+        println!("{}",String::from_utf8_lossy(&done.stdout));
         match code {
             Some(0) => return Ok(true),
             status => {
@@ -405,9 +406,9 @@ impl TestScheduler {
                         return Ok(false);
                     }
                 }
-                return Err(Error::Exec(format!("process exit with {:?}", status)));
+                return Err(Error::Exec(format!("process exit with {:?}:\n{}", status,String::from_utf8_lossy(&done.stderr))));
             }
-        };
+        }
     }
 
     pub fn run_test_schedule_impl(
