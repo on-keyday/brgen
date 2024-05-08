@@ -22,6 +22,7 @@ var legacyStdin = flag.Bool("legacy-stdin", false, "use legacy stdin")
 // var usePut = flag.Bool("use-put", false, "use PutUintXXX instead of AppendUintXXX")
 var decodeExact = flag.Bool("decode-exact", true, "add func DecodeExact")
 var useMustEncode = flag.Bool("must-encode", true, "add func MustEncode")
+var testInfo = flag.Bool("test-info", false, "output test info")
 var mappingWords = map[string]string{}
 
 func init() {
@@ -66,6 +67,8 @@ type Generator struct {
 	imports      map[string]struct{}
 	exprStringer *gen.ExprStringer
 	visitorName  string
+
+	StructNames []string
 }
 
 func NewGenerator() *Generator {
@@ -471,6 +474,7 @@ func (g *Generator) writeStructVisitor(name string, p *ast2go.StructType) {
 }
 
 func (g *Generator) writeFormat(p *ast2go.Format) {
+	g.StructNames = append(g.StructNames, p.Ident.Ident)
 	g.Printf("type %s struct {\n", p.Ident.Ident)
 	g.writeStructType(p.Ident.Ident, "", p.Body.StructType)
 	g.Printf("}\n")
