@@ -16,6 +16,8 @@ struct Args {
     debug: bool,
     #[arg(long)]
     save_tmp_dir: bool,
+    #[arg(long)]
+    expected_test_total: Option<usize>,
 }
 
 #[tokio::main]
@@ -25,7 +27,10 @@ async fn main() -> Result<(), Error> {
     let mut d1 = serde_json::Deserializer::from_str(&test_config);
     let mut test_config = testutil::TestConfig::deserialize(&mut d1)?;
     let mut ext_set = std::collections::HashMap::new();
-    let mut file_format_list:std::collections::HashMap<(String,String),Vec<Arc<testutil::TestInput>>> = std::collections::HashMap::new();
+    let mut file_format_list: std::collections::HashMap<
+        (String, String),
+        Vec<Arc<testutil::TestInput>>,
+    > = std::collections::HashMap::new();
     for runner_config in &mut test_config.runners {
         let runner = match runner_config {
             testutil::RunnerConfig::TestRunner(x) => x,
@@ -87,19 +92,18 @@ async fn main() -> Result<(), Error> {
     for input in &test_config.inputs {
         let key = (input.file_base.clone(), input.format_name.clone());
         match file_format_list.get_mut(&key) {
-            Some(x) => {x.push(Arc::new(input.clone()));},
+            Some(x) => {
+                x.push(Arc::new(input.clone()));
+            }
             None => {
-                file_format_list.insert(
-                    key,
-                    vec!{Arc::new(input.clone())},
-                );
-            },
+                file_format_list.insert(key, vec![Arc::new(input.clone())]);
+            }
         }
     }
     let mut sched = Vec::new();
     let test_info = fs::read_to_string(Path::new(&parsed.test_info_file))?;
     let mut d2 = serde_json::Deserializer::from_str(&test_info);
-    let mut test_info = testutil::TestInfo::deserialize(&mut d2)?;
+    let test_info = testutil::TestInfo::deserialize(&mut d2)?;
     for file in test_info.generated_files {
         if parsed.debug {
             eprintln!("file: {:?}", file);
@@ -163,13 +167,23 @@ async fn main() -> Result<(), Error> {
     let mut failed = 0;
     let (send, mut recv) = tokio::sync::mpsc::channel(1);
     let total = sched.len();
+
+    if let Some(x) = parsed.expected_test_total {
+        if total != x {
+            return Err(testutil::Error::TestFail(format!(
+                "expect {} test load but loaded test are {}",
+                x, total
+            ))
+            .into());
+        }
+    }
     for s in sched {
         match scheduler.run_test_schedule(&s, send.clone()) {
             Ok(_) => {
-                println!("test {} scheduled...",s.test_name());
+                println!("test {} scheduled...", s.test_name());
             }
             Err(x) => {
-                println!("{}: {} {:?}","FAIL".red(), s.test_name(), x);
+                println!("{}: {} {:?}", "FAIL".red(), s.test_name(), x);
                 failed += 1;
             }
         }
@@ -178,10 +192,10 @@ async fn main() -> Result<(), Error> {
     while let Some(x) = recv.recv().await {
         match x {
             Ok(x) => {
-                println!("{}: {}","PASS".green(), x.test_name())
+                println!("{}: {}", "PASS".green(), x.test_name())
             }
             Err((sched, err)) => {
-                eprintln!("{}: {}: {:?}","FAIL".red(), sched.test_name(), err);
+                eprintln!("{}: {}: {:?}", "FAIL".red(), sched.test_name(), err);
                 failed += 1;
             }
         }
@@ -191,7 +205,7 @@ async fn main() -> Result<(), Error> {
         total,
         "PASS".green(),
         total - failed,
-        "FAIL".red(),       
+        "FAIL".red(),
         failed
     );
     if parsed.save_tmp_dir {
