@@ -21,6 +21,7 @@ with open(INPUT, "r", encoding="utf-8") as f:
     TEXT = f.read()
     if DEBUG:
         print(INPUT, " before replace")
+        print(TEXT)
     REPLACED_INPUT = TEXT.replace(ORIGIN, ABS_ORIGIN)
 
 with open(INPUT, "w", encoding="utf-8") as f:
