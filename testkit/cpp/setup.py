@@ -18,12 +18,15 @@ if DEBUG:
 
 with open(INPUT, "r", encoding="utf-8") as f:
     ABS_ORIGIN = pl.Path(ORIGIN).absolute().as_posix()
-    REPLACED_INPUT = f.read().replace(ORIGIN, ABS_ORIGIN)
+    TEXT = f.read()
+    if DEBUG:
+        print(INPUT, " before replace")
+    REPLACED_INPUT = TEXT.replace(ORIGIN, ABS_ORIGIN)
 
 with open(INPUT, "w", encoding="utf-8") as f:
     f.write(REPLACED_INPUT)
     if DEBUG:
-        print(INPUT)
+        print(INPUT, " after replace")
         print(REPLACED_INPUT)
 
 FUTILS_DIR = os.environ.get("FUTILS_DIR")
