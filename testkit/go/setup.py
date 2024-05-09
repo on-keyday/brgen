@@ -13,7 +13,8 @@ COMPILED = re.compile("package (.*)\n")
 
 with open(INPUT, "r") as fp:
     TEXT = fp.read()
-    TEXT = COMPILED.sub("main", TEXT, 1)
+    TEXT = COMPILED.sub("main", TEXT)
+
 
 with open(INPUT, "w") as fp:
     fp.write(TEXT)
