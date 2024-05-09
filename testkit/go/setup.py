@@ -22,6 +22,15 @@ with open(INPUT, "w") as fp:
 # copy test target
 shutil.copyfile(ORIGIN, TMPDIR + "/target.go")
 CMDLINE = ["go", "build", "-o", OUTPUT, "."]
+print(f"Run go mod")
+code = sp.call(
+    ["go", "mod", "init", "test"],
+    stdout=sys.stdout,
+    stderr=sys.stderr,
+    cwd=TMPDIR,
+)
+if code != 0:
+    exit(code)
 print(f"Compiling {INPUT} to {OUTPUT} with {CMDLINE} ")
 code = sp.call(
     CMDLINE,
