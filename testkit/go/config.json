@@ -11,7 +11,8 @@
     "$INPUT",
     "$OUTPUT",
     "$ORIGIN",
-    "$TMPDIR"
+    "$TMPDIR",
+    "$DEBUG"
   ],
   "run_command": ["$EXEC", "$INPUT", "$OUTPUT"]
 }
