@@ -35,7 +35,7 @@ func main() {
 		os.Exit(2)
 	}
 
-	err = os.WriteFile(outputFile, enc, 700)
+	err = os.WriteFile(outputFile, enc, 0o777)
 	if err != nil {
 		log.Println(err)
 		os.Exit(2)
