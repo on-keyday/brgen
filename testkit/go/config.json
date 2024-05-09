@@ -1,7 +1,7 @@
 {
   "suffix": "go",
   "test_template": "./testkit/go/test_template.go",
-  "replace_file_name": "",
+  "replace_file_name": "stub.go",
   "replace_struct_name": "TEST_CLASS",
   "build_input_name": "test.go",
   "build_output_name": "test.exe",

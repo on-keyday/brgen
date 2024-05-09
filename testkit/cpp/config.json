@@ -1,7 +1,7 @@
 {
   "suffix": "hpp",
   "test_template": "./testkit/cpp/test_template.cpp",
-  "replace_file_name": "",
+  "replace_file_name": "stub.hpp",
   "replace_struct_name": "TEST_CLASS",
   "build_input_name": "test.cpp",
   "build_output_name": "test.exe",
