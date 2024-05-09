@@ -171,6 +171,7 @@ pub struct TestScheduler {
     template_files: HashMap<String, String>,
     tmpdir: Option<PathBuf>,
     input_binaries: HashMap<(PathBuf, bool), (PathBuf, Vec<u8>)>,
+    debug :bool,
 }
 
 fn path_str(path: &PathBuf) -> String {
@@ -183,11 +184,12 @@ fn path_str(path: &PathBuf) -> String {
 type SendChan = mpsc::Sender<Result<TestSchedule, (TestSchedule, Error)>>;
 
 impl TestScheduler {
-    pub fn new() -> Self {
+    pub fn new(debug :bool) -> Self {
         Self {
             template_files: HashMap::new(),
             tmpdir: None,
             input_binaries: HashMap::new(),
+            debug: debug,
         }
     }
 
@@ -355,6 +357,7 @@ impl TestScheduler {
         input: &PathBuf,
         output: &PathBuf,
         exec: Option<&PathBuf>,
+        debug :bool,
     ) {
         for c in cmd {
             if c == "$INPUT" {
@@ -374,6 +377,9 @@ impl TestScheduler {
             if c == "$ORIGIN" {
                 *c = format!("{}/{}", sched.file.dir, sched.file.base);
             }
+            if c == "$DEBUG" {
+                *c = if debug { String::from("true") } else { String::from("false") };
+            }
         }
     }
 
@@ -385,9 +391,10 @@ impl TestScheduler {
         output: &PathBuf,
         exec: Option<&PathBuf>,
         expect_ok: bool,
+        debug :bool,
     ) -> Result<bool, Error> {
         let mut cmd = base.clone();
-        Self::replace_cmd(&mut cmd, sched, tmp_dir, input, output, exec);
+        Self::replace_cmd(&mut cmd, sched, tmp_dir, input, output, exec,debug);
         let mut r = tokio::process::Command::new(&cmd[0]);
         r.args(&cmd[1..]);
         let done = match r.output().await {
@@ -419,6 +426,7 @@ impl TestScheduler {
         input_path: PathBuf,
         output: PathBuf,
         input_binary: Vec<u8>,
+        debug :bool,
     ) -> Result<tokio::task::JoinHandle<()>, Error> {
         let proc = async move {
             // build test
@@ -430,6 +438,7 @@ impl TestScheduler {
                 &output,
                 None,
                 true,
+                debug,
             )
             .await
             {
@@ -450,6 +459,7 @@ impl TestScheduler {
                 &output,
                 Some(&exec),
                 false,
+                debug,
             )
             .await
             {
@@ -543,6 +553,7 @@ impl TestScheduler {
             input_path,
             output,
             input_binary,
+            self.debug,
         )
     }
 

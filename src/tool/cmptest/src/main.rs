@@ -163,7 +163,7 @@ async fn main() -> Result<(), Error> {
             }
         }
     }
-    let mut scheduler = testutil::TestScheduler::new();
+    let mut scheduler = testutil::TestScheduler::new(parsed.debug);
     let mut failed = 0;
     let (send, mut recv) = tokio::sync::mpsc::channel(1);
     let total = sched.len();
