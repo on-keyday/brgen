@@ -14,7 +14,7 @@ weight: 1
 ## バイナリをダウンロードする場合
 
 - windows(x64),mac,linux(x64,arm),android(arm,termux)のビルド済みバイナリを配布しています
-- 現在(2024/3/17)の最新バージョンは[v0.0.5](https://github.com/on-keyday/brgen/releases/tag/v0.0.5)です
+- 現在(2024/5/10)の最新バージョンは[v0.0.6](https://github.com/on-keyday/brgen/releases/tag/v0.0.6)です
   - バージョン update 頻度は今現在は作者の気分次第です。
 - WebPlayground は常に main ブランチの最新版が反映されています
 - VSCode 拡張で LSP サーバーを提供しています。現在は 上記リリースページ での提供です。
@@ -50,6 +50,9 @@ C++の依存ライブラリとして https://github.com/on-keyday/utils.git を�
 
 `build.sh`呼び出し前に`GO_COMPILER`環境変数に Go コンパイラのパスを設定するとビルドの際にそのコンパイラを Go コンパイラとして使用するようになります
 
+現在デフォルトで cmptest や json2rust で Rust を使ったビルドが行われます。
+無効にしたい場合は`build.sh`の`BRGEN_RUST_ENABLED`が`1`に設定されている箇所を`0`にしてください
+
 ### experimental
 
 `S2J_USE_NETWORK`環境変数を`1`に設定してビルドすることで src2json を http 経由で利用できるようになるモードが使用できるようになります。
@@ -57,6 +60,7 @@ C++の依存ライブラリとして https://github.com/on-keyday/utils.git を�
 現在、windows 環境では動く可能性が高いですが、他環境での動作は保証されません。
 
 `S2J_LIB`環境変数を`1`に設定してビルドすることで src2json を共有ライブラリの形でビルドできます。
+現在 MacOS(Darwin) 以外の環境ではデフォルトで有効化されています。
 公開する関数は`libs2j_call`関数で引数に argc,argv,capability(利用機能の制限),io_callback,io_callback_data を取ります。詳しくはソースコードを御覧ください。
 argc,argv は C 言語の main 関数に渡されるものと同じ要件に従ったものを渡してください(つまり argv[argc]==nullptr であることを要求します)
 現在、windows 環境では動く可能性が高いですが、他環境での動作は保証されません。
