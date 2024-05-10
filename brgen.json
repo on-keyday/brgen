@@ -35,7 +35,8 @@
         "-map-word",
         "Udpheader=UDPHeader",
         "-map-word",
-        "icmp=ICMP"
+        "icmp=ICMP",
+        "-test-info"
       ]
     },
     {

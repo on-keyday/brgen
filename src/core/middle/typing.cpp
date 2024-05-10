@@ -1701,7 +1701,7 @@ namespace brgen::middle {
         }
 
        public:
-        inline result<void> typing(auto& ty) {
+        inline result<void> typing(NodeReplacer ty) {
             try {
                 typing_object(ty);
             } catch (LocationError& e) {

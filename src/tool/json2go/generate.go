@@ -20,8 +20,9 @@ var filename = flag.Bool("f", false, "arg is filename")
 var legacyStdin = flag.Bool("legacy-stdin", false, "use legacy stdin")
 
 // var usePut = flag.Bool("use-put", false, "use PutUintXXX instead of AppendUintXXX")
-var decodeReturnsLen = flag.Bool("decode-returns-len", true, "func Decode returns length of read bytes")
-var useMustEncode = flag.Bool("must-encode", true, "add MustEncode func")
+var decodeExact = flag.Bool("decode-exact", true, "add func DecodeExact")
+var useMustEncode = flag.Bool("must-encode", true, "add func MustEncode")
+var testInfo = flag.Bool("test-info", false, "output test info")
 var mappingWords = map[string]string{}
 
 func init() {
@@ -39,7 +40,7 @@ func ResetFlag() {
 	*spec = false
 	*filename = false
 	//*usePut = false
-	*decodeReturnsLen = true
+	*decodeExact = true
 	*useMustEncode = true
 	mappingWords = map[string]string{}
 }
@@ -66,6 +67,8 @@ type Generator struct {
 	imports      map[string]struct{}
 	exprStringer *gen.ExprStringer
 	visitorName  string
+
+	StructNames []string
 }
 
 func NewGenerator() *Generator {
@@ -471,6 +474,7 @@ func (g *Generator) writeStructVisitor(name string, p *ast2go.StructType) {
 }
 
 func (g *Generator) writeFormat(p *ast2go.Format) {
+	g.StructNames = append(g.StructNames, p.Ident.Ident)
 	g.Printf("type %s struct {\n", p.Ident.Ident)
 	g.writeStructType(p.Ident.Ident, "", p.Body.StructType)
 	g.Printf("}\n")
@@ -996,17 +1000,22 @@ func (g *Generator) writeDecode(p *ast2go.Format) {
 	g.PrintfFunc("\n")
 	g.imports["bytes"] = struct{}{}
 
-	if *decodeReturnsLen {
-		g.PrintfFunc("func (t *%s) Decode(d []byte) (int,error) {\n", p.Ident.Ident)
-		g.PrintfFunc("r := bytes.NewReader(d)\n")
-		g.PrintfFunc("err := t.Read(r)\n")
-		g.PrintfFunc("return int(int(r.Size()) - r.Len()),err\n")
-	} else {
-		g.PrintfFunc("func (t *%s) Decode(d []byte) error {\n", p.Ident.Ident)
-		g.PrintfFunc("r := bytes.NewReader(d)\n")
-		g.PrintfFunc("return t.Read(r)\n")
-	}
+	g.PrintfFunc("func (t *%s) Decode(d []byte) (int,error) {\n", p.Ident.Ident)
+	g.PrintfFunc("r := bytes.NewReader(d)\n")
+	g.PrintfFunc("err := t.Read(r)\n")
+	g.PrintfFunc("return int(int(r.Size()) - r.Len()),err\n")
 	g.PrintfFunc("}\n")
+	if *decodeExact {
+		g.PrintfFunc("func (t *%s) DecodeExact(d []byte) error {\n", p.Ident.Ident)
+		g.PrintfFunc("if n,err := t.Decode(d);err != nil {\n")
+		g.PrintfFunc("return err\n")
+		g.PrintfFunc("} else if n != len(d) {\n")
+		g.imports["fmt"] = struct{}{}
+		g.PrintfFunc("return fmt.Errorf(\"decode %s: expect %%d bytes but got %%d bytes\", len(d), n)\n", p.Ident.Ident)
+		g.PrintfFunc("}\n")
+		g.PrintfFunc("return nil\n")
+		g.PrintfFunc("}\n")
+	}
 }
 
 func (g *Generator) writeEnum(v *ast2go.Enum) {

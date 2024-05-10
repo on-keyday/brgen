@@ -126,3 +126,4 @@ format CreateInfo:
     pubkey_credential_params :[pubkey_credential_params_len]PublicKeyCredentialParam
     relying_party :RelayingParty
     user :User
+    timeout :u32

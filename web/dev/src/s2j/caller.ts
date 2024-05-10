@@ -135,8 +135,11 @@ const argConverter = Object.freeze({
     },
     [RequestLanguage.GO] : (opt :GoOption) => {
         const args = [];
-        if(opt.use_put){
-            args.push("-use-put");
+        if(opt.omit_must_encode){
+            args.push("-must-encode=false");
+        }
+        if(opt.omit_decode_exact) {
+            args.push("-decode-exact=false");
         }
         return args;
     },

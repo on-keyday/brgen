@@ -9,13 +9,26 @@ INPUT = sys.argv[1]
 OUTPUT = sys.argv[2]
 ORIGIN = sys.argv[3]
 TMPDIR = sys.argv[4]
+DEBUG = True if sys.argv[5] == "true" else False
 
-with open(INPUT, "r") as f:
+if DEBUG:
+    with open(ORIGIN, "r", encoding="utf-8") as fp:
+        print(ORIGIN)
+        print(fp.read())
+
+with open(INPUT, "r", encoding="utf-8") as f:
     ABS_ORIGIN = pl.Path(ORIGIN).absolute().as_posix()
-    REPLACED_INPUT = f.read().replace(ORIGIN, ABS_ORIGIN)
+    TEXT = f.read()
+    if DEBUG:
+        print(INPUT, " before replace")
+        print(TEXT)
+    REPLACED_INPUT = TEXT.replace(ORIGIN, ABS_ORIGIN)
 
-with open(INPUT, "w") as f:
+with open(INPUT, "w", encoding="utf-8") as f:
     f.write(REPLACED_INPUT)
+    if DEBUG:
+        print(INPUT, " after replace")
+        print(REPLACED_INPUT)
 
 FUTILS_DIR = os.environ.get("FUTILS_DIR")
 if FUTILS_DIR is None:

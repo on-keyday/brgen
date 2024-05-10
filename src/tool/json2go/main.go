@@ -14,7 +14,17 @@ import (
 	"github.com/on-keyday/brgen/ast2go/request"
 )
 
-func generate(r io.Reader, out func(data []byte, warn error), errOut func(err error)) {
+type LineMap struct {
+	Line uint64     `json:"line"`
+	Loc  ast2go.Loc `json:"loc"`
+}
+
+type TestInfo struct {
+	LineMap []LineMap `json:"line_map"`
+	Structs []string `json:"structs"`
+}
+
+func generate(r io.Reader, out func(suffix string, data []byte, warn error), errOut func(err error)) {
 	file := ast2go.AstFile{}
 	err := json.NewDecoder(r).Decode(&file)
 	if err != nil {
@@ -28,19 +38,26 @@ func generate(r io.Reader, out func(data []byte, warn error), errOut func(err er
 		errOut(err)
 	}
 	if src != nil {
-		out(src, err)
+		out(".go", src, err)
+		if *testInfo {
+			var info TestInfo
+			info.Structs = g.StructNames
+			info.LineMap = []LineMap{}
+			data, err := json.Marshal(info)
+			out(".go.json", data, err)
+		}
 	}
 }
 
 func streamingMode() {
 	handler := func(stream *request.IDStream, req *request.GenerateSource) {
 		r := bytes.NewReader(req.JsonText)
-		generate(r, func(data []byte, warn error) {
+		generate(r, func(suffix string, data []byte, warn error) {
 			err := ""
 			if warn != nil {
 				err = warn.Error()
 			}
-			stream.RespondSource(string(req.Name)+".go", data, err)
+			stream.RespondSource(string(req.Name)+suffix, data, err)
 		}, func(err error) {
 			stream.RespondError(err.Error())
 		})
@@ -104,7 +121,7 @@ func main() {
 		f = os.Stdin
 	}
 
-	generate(f, func(src []byte, warn error) {
+	generate(f, func(suffix string, src []byte, warn error) {
 		if warn != nil {
 			fmt.Fprintln(os.Stderr, warn)
 		}

@@ -18,6 +18,9 @@
   "runners": [
     {
       "file": "./testkit/cpp/config.json"
+    },
+    {
+      "file": "./testkit/go/config.json"
     }
   ]
 }
