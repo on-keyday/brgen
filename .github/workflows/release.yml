@@ -155,7 +155,7 @@ jobs:
           path: ./artifacts
       - name: Extract Artifacts
         run: |
-          tar -xzf artifacts/artifacts.tar.gz -C .
+          tar -xzf artifacts/artifacts.tar.gz -C ./artifacts
           ls -Ral .
       - name: Release
         uses: softprops/action-gh-release@69320dbe05506a9a39fc8ae11030b214ec2d1f87 # v2.0.5
