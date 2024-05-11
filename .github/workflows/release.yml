@@ -130,7 +130,6 @@ jobs:
           mv artifacts/brgen-vscode-extension.zip bundle
           mv artifacts/brgen-web.tar.gz bundle
           mv artifacts/brgen-web.zip bundle
-          mv artifacts/brgen-checksum.txt bundle
           tar -czf artifacts.tar.gz -C bundle .
       - name: Upload Artifacts
         uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
