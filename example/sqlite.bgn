@@ -1,0 +1,74 @@
+
+config.url = "https://www.sqlite.org/fileformat.html"
+
+MAX_PAGE_SIZE ::= 65536
+
+enum DatabaseTextEncoding:
+    :u32
+    UTF8 = 1
+    UTF16LE = 2
+    UTF16BE = 3
+
+# 100 byte header
+format DatabaseHeader:
+    magic: "SQLite format 3\0"
+    page_size :u16(1,512..=MAX_PAGE_SIZE)
+    write_version :u8
+    read_version :u8
+    reserved :u8
+    max_payload_fraction :u8(64)
+    min_payload_fraction :u8(32)
+    leaf_payload_fraction :u8(32)
+    file_change_counter :u32
+    database_size :u32
+    first_free_list_trunk_page :u32
+    total_free_list_pages :u32
+    schema_cookie :u32
+    schema_format_number :u32
+    default_page_cache_size :u32
+    largest_root_b_tree_page_number :u32
+    text_encoding :DatabaseTextEncoding
+    user_version :u32
+    incremental_vacuum_mode :u32
+    application_id :u32
+    reserved_for_expansion :[20]u8(0)
+    version_valid_for :u32
+    sqlite_version_number :u32
+
+enum BTreePageType:
+    :u8
+    INTERIOR_INDEX = 2
+    INTERIOR_TABLE = 5
+    LEAF_INDEX = 10
+    LEAF_TABLE = 13
+
+format BTreePageHeader:
+    page_type :BTreePageType
+    first_free_block_offset :u16
+    number_of_cells :u16
+    cell_content_area_offset :u16
+    right_most_pointer :u32
+
+format Varint:
+    value :u64
+
+    fn encode():
+        v := value
+        if v < 0x80:
+            output.put(u8(v))
+        else:
+            for v >= 0x80:
+                output.put(u8(v | 0x80))
+                v >>= 7
+            output.put(u8(v))
+
+    fn decode():
+        v := 0
+        shift := 0
+        for:
+            b := input.get(u8)
+            v |= (b & 0x7F) << shift
+            if b < 0x80:
+                break
+            shift += 7
+        value = v
