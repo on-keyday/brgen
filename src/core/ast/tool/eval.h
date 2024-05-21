@@ -3,6 +3,7 @@
 #include <variant>
 #include "../ast.h"
 #include "../../common/error.h"
+#include "ident.h"
 
 namespace brgen::ast::tool {
 
@@ -99,7 +100,7 @@ namespace brgen::ast::tool {
 
        private:
         EResult eval_binary(ast::Binary* bin) {
-            auto left = eval_expr(bin->left.get());
+            auto left = eval_expr(bin->left);
             if (!left) {
                 return left;
             }
@@ -107,7 +108,7 @@ namespace brgen::ast::tool {
                 if (left->type() == EResultType::boolean && !left->get<EResultType::boolean>()) {
                     return left;
                 }
-                auto right = eval_expr(bin->right.get());
+                auto right = eval_expr(bin->right);
                 if (!right) {
                     return right;
                 }
@@ -120,7 +121,7 @@ namespace brgen::ast::tool {
                 if (left->type() == EResultType::boolean && left->get<EResultType::boolean>()) {
                     return left;
                 }
-                auto right = eval_expr(bin->right.get());
+                auto right = eval_expr(bin->right);
                 if (!right) {
                     return right;
                 }
@@ -129,7 +130,7 @@ namespace brgen::ast::tool {
                 }
                 return make_result<EResultType::boolean>(false);
             }
-            auto right = eval_expr(bin->right.get());
+            auto right = eval_expr(bin->right);
             if (!right) {
                 return right;
             }
@@ -295,32 +296,32 @@ namespace brgen::ast::tool {
             }
         }
 
-        EResult resolve_ident(ast::Ident* ident) {
+        EResult resolve_ident(const std::shared_ptr<ast::Ident>& ident) {
             auto it = ident_map.find(ident->ident);
             if (it != ident_map.end()) {
                 return it->second;
             }
             if (ident->constant_level == ast::ConstantLevel::constant) {
-                auto base = ident->base.lock();
-                auto ident = ast::as<ast::Ident>(base);
-                if (ident) {
-                    if (auto b = ast::as<ast::Binary>(ident->base.lock()); b && b->op == ast::BinaryOp::const_assign) {
-                        return eval(b->right);
-                    }
+                auto [base, via_member] = *lookup_base(ident);
+                if (auto b = ast::as<ast::Binary>(base->base.lock()); b && b->op == ast::BinaryOp::const_assign) {
+                    return eval(b->right);
+                }
+                if (auto d = ast::as<ast::EnumMember>(base->base.lock()); d) {
+                    return eval(d->value);
                 }
             }
             return unexpect(LocError{ident->loc, "cannot resolve ident"});
         }
 
-        EResult eval_expr(ast::Expr* expr) {
+        EResult eval_expr(const std::shared_ptr<ast::Expr>& expr) {
             if (auto identity = ast::as<ast::Identity>(expr)) {
-                return eval_expr(identity->expr.get());
+                return eval_expr(identity->expr);
             }
             if (auto b = ast::as<ast::Binary>(expr)) {
                 return eval_binary(b);
             }
             if (auto c = ast::as<ast::Unary>(expr)) {
-                auto res = eval_expr(c->expr.get());
+                auto res = eval_expr(c->expr);
                 if (!res) {
                     return res;
                 }
@@ -346,11 +347,11 @@ namespace brgen::ast::tool {
                 }
             }
             if (auto p = ast::as<ast::Paren>(expr)) {
-                return eval_expr(p->expr.get());
+                return eval_expr(p->expr);
             }
             if (auto i = ast::as<ast::Ident>(expr)) {
                 if (ident_mode == EvalIdentMode::resolve_ident) {
-                    return resolve_ident(i);
+                    return resolve_ident(ast::cast_to<ast::Ident>(expr));
                 }
                 if (ident_mode == EvalIdentMode::no_ident) {
                     return unexpect(LocError{i->loc, "cannot use ident"});
@@ -371,7 +372,7 @@ namespace brgen::ast::tool {
                 return make_result<EResultType::boolean>(i->value);
             }
             if (auto cond = ast::as<ast::Cond>(expr)) {
-                auto c = eval_expr(cond->cond.get());
+                auto c = eval_expr(cond->cond);
                 if (!c) {
                     return c;
                 }
@@ -379,14 +380,14 @@ namespace brgen::ast::tool {
                     return unexpect(LocError{cond->loc, "cond must be boolean"});
                 }
                 if (c->get<EResultType::boolean>()) {
-                    return eval_expr(cond->then.get());
+                    return eval_expr(cond->then);
                 }
                 else {
-                    return eval_expr(cond->els.get());
+                    return eval_expr(cond->els);
                 }
             }
             if (auto cast_ = ast::as<ast::Cast>(expr)) {
-                return eval_expr(cast_->expr.get());
+                return eval_expr(cast_->expr);
             }
             if (auto ch = ast::as<ast::CharLiteral>(expr)) {
                 return make_result<EResultType::integer>(ch->code);
@@ -407,7 +408,7 @@ namespace brgen::ast::tool {
        public:
         EResult eval(const std::shared_ptr<Node>& n) {
             if (auto expr = ast::as<Expr>(n)) {
-                return eval_expr(expr);
+                return eval_expr(ast::cast_to<Expr>(n));
             }
             return unexpect(LocError{n ? n->loc : lexer::Loc{}, "not an expression"});
         }

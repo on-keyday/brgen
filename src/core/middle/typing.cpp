@@ -190,6 +190,27 @@ namespace brgen::middle {
             return nullptr;
         }
 
+        // compare_common_type is used for OrCond type inference
+        // this function uses common_type first
+        // and also infer common type between range and other types based on RangeType.base_type
+        std::shared_ptr<ast::Type> compare_common_type(std::shared_ptr<ast::Type>& a, std::shared_ptr<ast::Type>& b) {
+            auto t = common_type(a, b);
+            if (t) {
+                return t;
+            }
+            if (auto r = ast::as<ast::RangeType>(a)) {
+                if (r->base_type) {
+                    return common_type(r->base_type, b);
+                }
+            }
+            if (auto r = ast::as<ast::RangeType>(b)) {
+                if (r->base_type) {
+                    return common_type(a, r->base_type);
+                }
+            }
+            return nullptr;
+        }
+
        private:
         auto void_type(lexer::Loc loc) {
             return std::make_shared<ast::VoidType>(loc);
@@ -495,48 +516,9 @@ namespace brgen::middle {
             unfilled.push_back({min_value, max_value});
             ast::tool::Evaluator eval;
             bool filled = false;
-            for (auto& b : m->branch) {
-                if (filled) {
-                    warnings.warning(b->loc, "maybe unreachable code");
-                    continue;
-                }
-                T l_val = 0;
-                T r_val = 0;
-                bool inclusive = false;
-                if (auto range = ast::as<ast::Range>(b->cond->expr)) {
-                    auto l = eval.template eval_as<ast::tool::EResultType::integer>(range->start);
-                    if (range->start && !l) {
-                        return;  // not constant, cannot check exhaustiveness
-                    }
-                    auto r = eval.template eval_as<ast::tool::EResultType::integer>(range->end);
-                    if (range->end && !r) {
-                        return;  // not constant, cannot check exhaustiveness
-                    }
-                    if (!l) {
-                        l->emplace<ast::tool::EResultType::integer>(min_value);
-                    }
-                    if (!r) {
-                        r->emplace<ast::tool::EResultType::integer>(max_value);
-                    }
-                    l_val = T(l->get<ast::tool::EResultType::integer>());
-                    r_val = T(r->get<ast::tool::EResultType::integer>());
-                    if (range->op == ast::BinaryOp::range_inclusive
-                            ? l_val > r_val
-                            : l_val >= r_val) {
-                        error(range->loc, "range start is greater than end").report();
-                        return;
-                    }
-                    inclusive = range->op == ast::BinaryOp::range_inclusive;
-                }
-                else {
-                    auto l = eval.template eval_as<ast::tool::EResultType::integer>(b->cond->expr);
-                    if (!l) {
-                        return;  // not constant, cannot check exhaustiveness
-                    }
-                    l_val = T(l->get<ast::tool::EResultType::integer>());
-                    r_val = l_val;
-                    inclusive = true;
-                }
+            T l_val = 0;
+            T r_val = 0;
+            auto update_fill = [&](auto l_val, auto r_val, bool inclusive) {
                 for (auto it = unfilled.begin(); it != unfilled.end(); it++) {
                     auto& u = *it;
                     bool cond = false;
@@ -555,6 +537,72 @@ namespace brgen::middle {
                         }
                         unfilled.erase(it, unfilled.end());
                         break;
+                    }
+                }
+            };
+            auto range_eval = [&](ast::Range* range) {
+                auto l = eval.template eval_as<ast::tool::EResultType::integer>(range->start);
+                if (range->start && !l) {
+                    return false;  // not constant, cannot check exhaustiveness
+                }
+                auto r = eval.template eval_as<ast::tool::EResultType::integer>(range->end);
+                if (range->end && !r) {
+                    return false;  // not constant, cannot check exhaustiveness
+                }
+                if (!l) {
+                    l->emplace<ast::tool::EResultType::integer>(min_value);
+                }
+                if (!r) {
+                    r->emplace<ast::tool::EResultType::integer>(max_value);
+                }
+                l_val = T(l->get<ast::tool::EResultType::integer>());
+                r_val = T(r->get<ast::tool::EResultType::integer>());
+                if (range->op == ast::BinaryOp::range_inclusive
+                        ? l_val > r_val
+                        : l_val >= r_val) {
+                    error(range->loc, "range start is greater than end").report();
+                    return false;
+                }
+                update_fill(l_val, r_val, range->op == ast::BinaryOp::range_inclusive);
+                return true;
+            };
+            auto single_expr_eval = [&](auto&& expr) {
+                auto l = eval.template eval_as<ast::tool::EResultType::integer>(expr);
+                if (!l) {
+                    return false;  // not constant, cannot check exhaustiveness
+                }
+                l_val = T(l->template get<ast::tool::EResultType::integer>());
+                r_val = l_val;
+                update_fill(l_val, r_val, true);
+                return true;
+            };
+            for (auto& b : m->branch) {
+                if (filled) {
+                    warnings.warning(b->loc, "maybe unreachable code");
+                    continue;
+                }
+                if (auto or_cond = ast::as<ast::OrCond>(b->cond->expr)) {
+                    for (auto& cond : or_cond->conds) {
+                        if (auto range = ast::as<ast::Range>(cond)) {
+                            if (!range_eval(range)) {
+                                return;
+                            }
+                        }
+                        else {
+                            if (!single_expr_eval(cond)) {
+                                return;
+                            }
+                        }
+                    }
+                }
+                else if (auto range = ast::as<ast::Range>(b->cond->expr)) {
+                    if (!range_eval(range)) {
+                        return;
+                    }
+                }
+                else {
+                    if (!single_expr_eval(b->cond->expr)) {
+                        return;
                     }
                 }
                 if (unfilled.empty()) {
@@ -1432,6 +1480,27 @@ namespace brgen::middle {
                 typing_expr(identity->expr);
                 identity->expr_type = identity->expr->expr_type;
                 identity->constant_level = identity->expr->constant_level;
+            }
+            else if (auto or_cond = ast::as<ast::OrCond>(expr)) {
+                std::shared_ptr<ast::Type> ty;
+                ast::ConstantLevel level = ast::ConstantLevel::constant;
+                for (auto& expr : or_cond->conds) {
+                    typing_expr(expr);
+                    if (!ty) {
+                        ty = expr->expr_type;
+                        level = expr->constant_level;
+                    }
+                    else {
+                        auto tmp = compare_common_type(ty, expr->expr_type);
+                        if (!tmp) {
+                            report_not_have_common_type(ty, expr->expr_type);
+                        }
+                        ty = std::move(tmp);
+                        level = decide_constant_level(level, expr->constant_level);
+                    }
+                }
+                or_cond->expr_type = std::move(ty);
+                or_cond->constant_level = level;
             }
             else {
                 unsupported(expr);

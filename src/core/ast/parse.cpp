@@ -380,6 +380,11 @@ namespace brgen::ast {
                 br->belong = match;
                 br->cond = parse_expr_identity();
                 collect_comments(br);
+                if (auto b = ast::as<ast::Binary>(br->cond->expr); b && b->op == ast::BinaryOp::comma) {
+                    auto c = std::make_shared<ast::OrCond>(b->loc, ast::cast_to<ast::Binary>(br->cond->expr));
+                    collect_args(c->base, c->conds);
+                    br->cond->expr = std::move(c);
+                }
                 cond.push_back(br->cond);
                 br->loc = br->cond->loc;
                 s.skip_white();
