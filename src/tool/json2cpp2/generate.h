@@ -263,7 +263,7 @@ namespace j2cp2 {
                 for (auto& c : union_ty->candidates) {
                     auto cond = c->cond.lock();
                     if (cond) {
-                        auto defs = str.collect_defined_ident(cond);
+                        auto defs = ast::tool::collect_defined_ident(cond);
                         for (auto& d : defs) {
                             code_one_node(d);
                         }
@@ -345,7 +345,7 @@ namespace j2cp2 {
                 for (auto& c : ut->candidates) {
                     auto cond = c->cond.lock();
                     if (!ast::is_any_range(cond)) {
-                        auto defs = str.collect_defined_ident(cond);
+                        auto defs = ast::tool::collect_defined_ident(cond);
                         for (auto& d : defs) {
                             code_one_node(d);
                         }
@@ -399,7 +399,7 @@ namespace j2cp2 {
                 for (auto& c : ut->candidates) {
                     auto cond = c->cond.lock();
                     if (!ast::is_any_range(cond)) {
-                        auto defs = str.collect_defined_ident(cond);
+                        auto defs = ast::tool::collect_defined_ident(cond);
                         for (auto& d : defs) {
                             code_one_node(d);
                         }
@@ -480,7 +480,7 @@ namespace j2cp2 {
                 auto c = ut->cond.lock();
                 std::string cond_u;
                 if (c) {
-                    auto defs = str.collect_defined_ident(c);
+                    auto defs = ast::tool::collect_defined_ident(c);
                     for (auto& d : defs) {
                         code_one_node(d);
                     }

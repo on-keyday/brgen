@@ -75,6 +75,7 @@ typedef struct ast2c_Available ast2c_Available;
 typedef struct ast2c_SpecifyOrder ast2c_SpecifyOrder;
 typedef struct ast2c_ExplicitError ast2c_ExplicitError;
 typedef struct ast2c_IoOperation ast2c_IoOperation;
+typedef struct ast2c_OrCond ast2c_OrCond;
 typedef struct ast2c_BadExpr ast2c_BadExpr;
 typedef struct ast2c_Loop ast2c_Loop;
 typedef struct ast2c_IndentBlock ast2c_IndentBlock;
@@ -154,6 +155,7 @@ enum ast2c_NodeType {
 	AST2C_NODETYPE_SPECIFY_ORDER,
 	AST2C_NODETYPE_EXPLICIT_ERROR,
 	AST2C_NODETYPE_IO_OPERATION,
+	AST2C_NODETYPE_OR_COND,
 	AST2C_NODETYPE_BAD_EXPR,
 	AST2C_NODETYPE_STMT,
 	AST2C_NODETYPE_LOOP,
@@ -797,6 +799,19 @@ struct ast2c_IoOperation {
 
 // returns 1 if succeed 0 if failed
 int ast2c_IoOperation_parse(ast2c_Ast* ,ast2c_IoOperation*,ast2c_json_handlers*,void*);
+
+struct ast2c_OrCond {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Type* expr_type;
+	ast2c_ConstantLevel constant_level;
+	ast2c_Binary* base;
+	ast2c_Expr** conds;
+	size_t conds_size;
+};
+
+// returns 1 if succeed 0 if failed
+int ast2c_OrCond_parse(ast2c_Ast* ,ast2c_OrCond*,ast2c_json_handlers*,void*);
 
 struct ast2c_BadExpr {
 	const ast2c_NodeType node_type;

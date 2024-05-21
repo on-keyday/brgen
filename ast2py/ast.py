@@ -29,6 +29,7 @@ class NodeType(PyEnum):
     SPECIFY_ORDER = "specify_order"
     EXPLICIT_ERROR = "explicit_error"
     IO_OPERATION = "io_operation"
+    OR_COND = "or_cond"
     BAD_EXPR = "bad_expr"
     STMT = "stmt"
     LOOP = "loop"
@@ -398,6 +399,11 @@ class IoOperation(Expr):
     base: Optional[Expr]
     method: IoMethod
     arguments: List[Expr]
+
+
+class OrCond(Expr):
+    base: Optional[Binary]
+    conds: List[Expr]
 
 
 class BadExpr(Expr):
@@ -881,6 +887,8 @@ def ast2node(ast :JsonAst) -> Program:
                 node.append(ExplicitError())
             case NodeType.IO_OPERATION:
                 node.append(IoOperation())
+            case NodeType.OR_COND:
+                node.append(OrCond())
             case NodeType.BAD_EXPR:
                 node.append(BadExpr())
             case NodeType.LOOP:
@@ -1378,6 +1386,19 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].base = None
                 node[i].method = IoMethod(ast.node[i].body["method"])
                 node[i].arguments = [(node[x] if isinstance(node[x],Expr) else raiseError(TypeError('type mismatch at IoOperation::arguments'))) for x in ast.node[i].body["arguments"]]
+            case NodeType.OR_COND:
+                if ast.node[i].body["expr_type"] is not None:
+                    x = node[ast.node[i].body["expr_type"]]
+                    node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at OrCond::expr_type'))
+                else:
+                    node[i].expr_type = None
+                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
+                if ast.node[i].body["base"] is not None:
+                    x = node[ast.node[i].body["base"]]
+                    node[i].base = x if isinstance(x,Binary) else raiseError(TypeError('type mismatch at OrCond::base'))
+                else:
+                    node[i].base = None
+                node[i].conds = [(node[x] if isinstance(node[x],Expr) else raiseError(TypeError('type mismatch at OrCond::conds'))) for x in ast.node[i].body["conds"]]
             case NodeType.BAD_EXPR:
                 if ast.node[i].body["expr_type"] is not None:
                     x = node[ast.node[i].body["expr_type"]]
@@ -2368,6 +2389,16 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
                   return
           for i in range(len(x.arguments)):
               if f(f,x.arguments[i]) == False:
+                  return
+        case x if isinstance(x,OrCond):
+          if x.expr_type is not None:
+              if f(f,x.expr_type) == False:
+                  return
+          if x.base is not None:
+              if f(f,x.base) == False:
+                  return
+          for i in range(len(x.conds)):
+              if f(f,x.conds[i]) == False:
                   return
         case x if isinstance(x,BadExpr):
           if x.expr_type is not None:

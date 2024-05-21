@@ -4,7 +4,7 @@
 #include "../traverse.h"
 
 namespace brgen::ast::tool {
-    std::optional<std::pair<std::shared_ptr<ast::Ident>, bool>> lookup_base(const std::shared_ptr<ast::Ident>& i) {
+    inline std::optional<std::pair<std::shared_ptr<ast::Ident>, bool>> lookup_base(const std::shared_ptr<ast::Ident>& i) {
         if (!i) {
             return std::nullopt;
         }
@@ -33,7 +33,7 @@ namespace brgen::ast::tool {
         }
     }
 
-    void extract_ident(const std::shared_ptr<Expr>& expr, auto&& add_ident) {
+    inline void extract_ident(const std::shared_ptr<Expr>& expr, auto&& add_ident) {
         if (auto ident = ast::as<ast::Ident>(expr)) {
             add_ident(ast::cast_to<ast::Ident>(expr));
             return;
@@ -55,7 +55,7 @@ namespace brgen::ast::tool {
         });
     }
 
-    std::vector<std::shared_ptr<ast::Binary>> collect_defined_ident(const std::shared_ptr<ast::Expr>& expr) {
+    inline std::vector<std::shared_ptr<ast::Binary>> collect_defined_ident(const std::shared_ptr<ast::Expr>& expr) {
         std::vector<std::shared_ptr<ast::Binary>> defs;
         auto f = [&](auto&& f, auto&& v) -> void {
             ast::traverse(v, [&](auto&& v) -> void {
