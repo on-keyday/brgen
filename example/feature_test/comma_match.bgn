@@ -2,3 +2,9 @@
 x := u1()
 match x:
     0,1 => ..
+
+fn isHexDigit(c :u8) -> bool:
+    return match c:
+        '0'..='9','a'..='f','A'..='F' => true
+        _ => false
+

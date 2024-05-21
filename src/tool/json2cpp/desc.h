@@ -2,6 +2,7 @@
 #pragma once
 #include <core/ast/tool/tool.h>
 #include "config.h"
+#include "obsolete_type.h"
 
 namespace json2cpp {
 

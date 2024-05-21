@@ -894,6 +894,7 @@ namespace brgen::ast {
                 s.expect_token(lexer::Tag::bool_literal) ||
                 s.expect_token(lexer::Tag::int_literal) ||
                 s.expect_token(lexer::Tag::str_literal) ||
+                s.expect_token(lexer::Tag::char_literal) ||
                 s.expect_token("input") || s.expect_token("output") ||
                 s.expect_token("if") || s.expect_token("match")) {
                 return true;
