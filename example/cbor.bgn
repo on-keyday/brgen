@@ -96,3 +96,4 @@ format Value:
             data :f32
         0xfb:
             data :f64
+        .. => error("invalid type")

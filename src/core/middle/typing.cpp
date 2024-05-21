@@ -190,10 +190,20 @@ namespace brgen::middle {
             return nullptr;
         }
 
-        // compare_common_type is used for OrCond type inference
+        // OrCond_common_type is used for OrCond type inference
         // this function uses common_type first
         // and also infer common type between range and other types based on RangeType.base_type
-        std::shared_ptr<ast::Type> compare_common_type(std::shared_ptr<ast::Type>& a, std::shared_ptr<ast::Type>& b) {
+        std::shared_ptr<ast::Type> OrCond_common_type(std::shared_ptr<ast::Type>& a, std::shared_ptr<ast::Type>& b) {
+            // special edge case for int literal type
+            if (auto t1 = ast::as<ast::IntLiteralType>(a), t2 = ast::as<ast::IntLiteralType>(b); t1 && t2) {
+                if (t1->bit_size == t2->bit_size) {
+                    return a;
+                }
+                if (t1->bit_size > t2->bit_size) {
+                    return a;
+                }
+                return b;
+            }
             auto t = common_type(a, b);
             if (t) {
                 return t;
@@ -1491,7 +1501,7 @@ namespace brgen::middle {
                         level = expr->constant_level;
                     }
                     else {
-                        auto tmp = compare_common_type(ty, expr->expr_type);
+                        auto tmp = OrCond_common_type(ty, expr->expr_type);
                         if (!tmp) {
                             report_not_have_common_type(ty, expr->expr_type);
                         }
