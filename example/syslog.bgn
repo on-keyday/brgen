@@ -1,14 +1,28 @@
 log :Syslog
 
-config.cpp.include("string",true)
+config.cpp.sys_include = "string"
 
 format Syslog:
     header :Header
 
+fn read_prival() -> u8:
+    count := 0  
+    digits := <[]u8>()
+    for:
+        count < 3
+        if input.peek() == '>':
+            return true
+        count += 1
+        digits[count] = input.get()
+    result ::= to_int(digits)
+    1 <= result && result <= 191
+    return u8(result)    
+
+
 format Prival:
     val :u8
     fn decode():
-        val = input.until(">",3).u8().in_range(1,191)
+        val = read_prival()
     
     fn encode():
         config.in_range(version,1,191)
@@ -23,22 +37,37 @@ fn digit(n :u8) -> bool:
     return n == 32
 
 
-fn nonzerodigit(n :char) -> bool:
+fn nonzerodigit(n :u8) -> bool:
    return '1'<=n && n<='9' 
 
-fn nilvalue(n :char) -> bool:
+fn nilvalue(n :u8) -> bool:
    return n == '-'
+
+fn to_int(n :[]u8) -> u16:
+    val := 0
+    for i in n:
+        nonzerodigit(i) == true
+        val = val*10 + (i - '0')
+    return val
+
+fn to_string(n :u16) -> []u8:
+    val := n
+    digits := <[]u8>()
+    for val > 0:
+        digits[digits.length] = u8((val % 10) + '0')
+        val = val / 10
+    return digits
 
 format Version:
     version :u16
     fn decode():
-        nonzerodigit(char(input.peek())) == true
-        version = input.cond(digit,3).u16()
+        nonzerodigit(input.peek()) == true
+        data ::= input.get(<[]u8>,3)
+        version = to_int(data)
     
     fn encode():
         version == (1..999)
-        config.in_range(version,1,999)
-        output.as_string(version)
+        output.put(to_string(version))
 
 format Timestamp:
     ..

@@ -26,7 +26,7 @@ format ArbilityBitInt:
 
 format AbbrevID:
  
-    value :[abbrev.current_abbrev_id_width]u1(input.type = u32)
+    value :[abbrev.current_abbrev_id_width]u1(config.type = u32)
 
     fn u32() -> u32:
         return value
@@ -40,7 +40,7 @@ vbr :VBRState
 # variable bit rate field
 config.url = "https://llvm.org/docs/BitCodeFormat.html#variable-width-value"
 format VBRField: # TODO(on-keyday): make this to generic VBRField
-    value :[vbr.len - 1]u1(input.type = u8)
+    value :[vbr.len - 1]u1(config.type = u8)
     cont :u1
 
 # variable bit rate

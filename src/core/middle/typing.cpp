@@ -1291,7 +1291,7 @@ namespace brgen::middle {
                                 .error(c->arguments[0]->loc, "type is ", ast::node_type_to_string(c->arguments[0]->node_type))
                                 .report();
                         }
-                        c->expr_type = typ->type_literal;
+                        io->expr_type = typ->type_literal;
                     }
                     if (c->arguments.size() >= 2) {
                         io->arguments.push_back(c->arguments[1]);
@@ -1629,7 +1629,7 @@ namespace brgen::middle {
                 if (conf->name == "input.align") {
                     typing_expr(conf->arguments[0]);
                     args->alignment = std::move(conf->arguments[0]);
-                    ast::as<ast::MemberAccess>(ast::as<ast::Binary>(arg)->left)->member->usage = ast::IdentUsage::reference_builtin_fn;
+                    ast::tool::marking_builtin(ast::as<ast::Binary>(arg)->left);
                     continue;
                 }
                 if (conf->name == "input.peek") {
@@ -1648,16 +1648,16 @@ namespace brgen::middle {
                             error(conf->arguments[0]->loc, "expect integer or boolean but got ", ast::tool::eval_result_type_str[int(val->type())]).report();
                         }
                     }
-                    ast::as<ast::MemberAccess>(ast::as<ast::Binary>(arg)->left)->member->usage = ast::IdentUsage::reference_builtin_fn;
+                    ast::tool::marking_builtin(ast::as<ast::Binary>(arg)->left);
                     continue;
                 }
-                if (conf->name == "input.type") {
+                if (conf->name == "config.type") {
                     typing_expr(conf->arguments[0]);
                     if (!ast::as<ast::TypeLiteral>(conf->arguments[0])) {
                         error(conf->arguments[0]->loc, "expect type literal but not").error(conf->arguments[0]->loc, "type is ", ast::node_type_to_string(conf->arguments[0]->node_type)).report();
                     }
                     args->type_map = ast::cast_to<ast::TypeLiteral>(conf->arguments[0]);
-                    ast::as<ast::MemberAccess>(ast::as<ast::Binary>(arg)->left)->member->usage = ast::IdentUsage::reference_builtin_fn;
+                    ast::tool::marking_builtin(ast::as<ast::Binary>(arg)->left);
                     continue;
                 }
                 if (conf->name == "input") {
