@@ -11,9 +11,9 @@ fn read_prival() -> u8:
     for:
         count < 3
         if input.peek() == '>':
-            return true
+            break
         count += 1
-        digits[count] = input.get()
+        digits[digits.length] = input.get()
     result ::= to_int(digits)
     1 <= result && result <= 191
     return u8(result)    
@@ -22,16 +22,15 @@ fn read_prival() -> u8:
 format Prival:
     val :u8
     fn decode():
+        :"<"
         val = read_prival()
+        :">"
     
     fn encode():
-        config.in_range(version,1,191)
-        output.as_string(val)
-    
-    fn common():
         :"<"
-        config.operation(input,output)
+        output.put(to_string(u16(val)))
         :">"
+    
 
 fn digit(n :u8) -> bool:
     return n == 32
