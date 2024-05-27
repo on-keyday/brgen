@@ -315,32 +315,28 @@ namespace brgen::middle {
                 }
                 return true;
             };
-            if (auto m = ast::as<ast::MemberAccess>(b->left)) {
-                if (!m->expr_type) {
-                    warn_not_typed(m);
-                    return;  // not typed yet
+
+            auto handle_member_or_index_access = [&](const auto& access_node) {
+                if (!access_node->expr_type) {
+                    warn_not_typed(access_node);
+                    return false;
                 }
                 if (!check_right_typed()) {
-                    return;
+                    return false;
                 }
-                int_type_fitting(m->expr_type, right->expr_type);
-                if (!equal_type(m->expr_type, right->expr_type)) {
-                    report_not_equal_type(m->loc, m->expr_type, right->expr_type);
+                int_type_fitting(access_node->expr_type, right->expr_type);
+                if (!equal_type(access_node->expr_type, right->expr_type)) {
+                    report_not_equal_type(access_node->loc, access_node->expr_type, right->expr_type);
                 }
+                return true;
+            };
+
+            if (auto m = ast::as<ast::MemberAccess>(b->left)) {
+                handle_member_or_index_access(m);
                 return;
             }
             if (auto idx = ast::as<ast::Index>(b->left)) {
-                if (!idx->expr_type) {
-                    warn_not_typed(idx);
-                    return;  // not typed yet
-                }
-                if (!check_right_typed()) {
-                    return;
-                }
-                int_type_fitting(idx->expr_type, right->expr_type);
-                if (!equal_type(idx->expr_type, right->expr_type)) {
-                    report_not_equal_type(idx->loc, idx->expr_type, right->expr_type);
-                }
+                handle_member_or_index_access(idx);
                 return;
             }
             b->expr_type = void_type(b->loc);
