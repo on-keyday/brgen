@@ -1376,6 +1376,98 @@ namespace brgen::middle {
             base_node.replace(std::move(typ_lit));
         }
 
+        bool try_typing_literal(const std::shared_ptr<ast::Expr>& expr) {
+            if (auto lit = ast::as<ast::IntLiteral>(expr)) {
+                lit->expr_type = std::make_shared<ast::IntLiteralType>(ast::cast_to<ast::IntLiteral>(expr));
+                lit->constant_level = ast::ConstantLevel::constant;
+                return true;
+            }
+
+            if (auto lit = ast::as<ast::BoolLiteral>(expr)) {
+                lit->expr_type = std::make_shared<ast::BoolType>(lit->loc);
+                lit->constant_level = ast::ConstantLevel::constant;
+                return true;
+            }
+            if (auto lit = ast::as<ast::StrLiteral>(expr)) {
+                lit->expr_type = std::make_shared<ast::StrLiteralType>(ast::cast_to<ast::StrLiteral>(expr));
+                lit->constant_level = ast::ConstantLevel::constant;
+                return true;
+            }
+
+            if (ast::as<ast::SpecialLiteral>(expr)) {
+                // typing already done
+                return true;
+            }
+
+            if (auto typ = ast::as<ast::TypeLiteral>(expr)) {
+                typing_object(typ->type_literal);
+                expr->expr_type = std::make_shared<ast::MetaType>(typ->loc);
+                expr->constant_level = ast::ConstantLevel::constant;
+                return true;
+            }
+
+            if (auto ch = ast::as<ast::CharLiteral>(expr)) {
+                auto bit = ast::aligned_bit(futils::binary::log2i(ch->code));
+                expr->expr_type = std::make_shared<ast::IntType>(ch->loc, bit, ast::Endian::unspec, false);
+                expr->constant_level = ast::ConstantLevel::constant;
+                return true;
+            }
+
+            if (auto regex = ast::as<ast::RegexLiteral>(expr)) {
+                expr->expr_type = std::make_shared<ast::RegexLiteralType>(ast::cast_to<ast::RegexLiteral>(expr));
+                expr->constant_level = ast::ConstantLevel::constant;
+                return true;
+            }
+
+            return false;
+        }
+
+        bool try_typing_and_maybe_replace_ident(NodeReplacer base_node, std::shared_ptr<ast::Expr>& expr, bool on_define) {
+            if (auto ident = ast::as<ast::Ident>(expr)) {
+                typing_ident(ast::cast_to<ast::Ident>(expr), on_define);
+                if (base_node.place() == ast::NodeType::ident) {
+                    return true;  // skip
+                }
+                if (ident->usage == ast::IdentUsage::reference_type) {
+                    ident_to_type_literal(base_node, ident);
+                }
+                return true;
+            }
+            return false;
+        }
+
+        void typing_or_cond(ast::OrCond* or_cond) {
+            std::shared_ptr<ast::Type> ty;
+            ast::ConstantLevel level = ast::ConstantLevel::constant;
+            for (auto& expr : or_cond->conds) {
+                typing_expr(expr);
+                if (!ty) {
+                    ty = expr->expr_type;
+                    level = expr->constant_level;
+                }
+                else {
+                    auto tmp = OrCond_common_type(ty, expr->expr_type);
+                    if (!tmp) {
+                        report_not_have_common_type(ty, expr->expr_type);
+                    }
+                    ty = std::move(tmp);
+                    level = decide_constant_level(level, expr->constant_level);
+                }
+            }
+            or_cond->expr_type = std::move(ty);
+            or_cond->constant_level = level;
+        }
+
+        void typing_and_maybe_replace_member_access(ast::MemberAccess* selector, NodeReplacer base_node) {
+            typing_member_access(selector);
+            if (base_node.place() == ast::NodeType::member_access) {
+                return;  // skip
+            }
+            if (selector->member->usage == ast::IdentUsage::reference_member_type) {
+                member_access_to_type_literal(base_node, selector);
+            }
+        }
+
         void typing_expr(NodeReplacer base_node, bool on_define = false) {
             auto expr = ast::cast_to<ast::Expr>(base_node.to_node());
             // treat cast as a special case
@@ -1404,29 +1496,14 @@ namespace brgen::middle {
                 typing_object(expr->expr_type);
                 return;  // already typed
             }
-            if (auto s = ast::as<ast::IOOperation>(expr)) {
+            if (try_typing_literal(expr)) {
+                return;
+            }
+            else if (auto s = ast::as<ast::IOOperation>(expr)) {
                 typing_io_operation(s);
             }
-            else if (auto lit = ast::as<ast::IntLiteral>(expr)) {
-                lit->expr_type = std::make_shared<ast::IntLiteralType>(ast::cast_to<ast::IntLiteral>(expr));
-                lit->constant_level = ast::ConstantLevel::constant;
-            }
-            else if (auto lit = ast::as<ast::BoolLiteral>(expr)) {
-                lit->expr_type = std::make_shared<ast::BoolType>(lit->loc);
-                lit->constant_level = ast::ConstantLevel::constant;
-            }
-            else if (auto lit = ast::as<ast::StrLiteral>(expr)) {
-                lit->expr_type = std::make_shared<ast::StrLiteralType>(ast::cast_to<ast::StrLiteral>(expr));
-                lit->constant_level = ast::ConstantLevel::constant;
-            }
-            else if (auto ident = ast::as<ast::Ident>(expr)) {
-                typing_ident(ast::cast_to<ast::Ident>(expr), on_define);
-                if (base_node.place() == ast::NodeType::ident) {
-                    return;  // skip
-                }
-                if (ident->usage == ast::IdentUsage::reference_type) {
-                    ident_to_type_literal(base_node, ident);
-                }
+            else if (try_typing_and_maybe_replace_ident(base_node, expr, on_define)) {
+                return;
             }
             else if (auto bin = ast::as<ast::Binary>(expr)) {
                 typing_binary_expr(ast::cast_to<ast::Binary>(expr));
@@ -1450,19 +1527,10 @@ namespace brgen::middle {
                 typing_call(call, base_node);
             }
             else if (auto selector = ast::as<ast::MemberAccess>(expr)) {
-                typing_member_access(selector);
-                if (base_node.place() == ast::NodeType::member_access) {
-                    return;  // skip
-                }
-                if (selector->member->usage == ast::IdentUsage::reference_member_type) {
-                    member_access_to_type_literal(base_node, selector);
-                }
+                typing_and_maybe_replace_member_access(selector, base_node);
             }
             else if (auto idx = ast::as<ast::Index>(expr)) {
                 typing_index(idx);
-            }
-            else if (ast::as<ast::SpecialLiteral>(expr)) {
-                // typing already done
             }
             else if (ast::as<ast::Range>(expr)) {
                 typing_range(ast::cast_to<ast::Range>(expr));
@@ -1472,45 +1540,13 @@ namespace brgen::middle {
                 typing_object(i->import_desc);
                 expr->constant_level = ast::ConstantLevel::immutable_variable;
             }
-            else if (auto typ = ast::as<ast::TypeLiteral>(expr)) {
-                typing_object(typ->type_literal);
-                expr->expr_type = std::make_shared<ast::MetaType>(typ->loc);
-                expr->constant_level = ast::ConstantLevel::constant;
-            }
-            else if (auto ch = ast::as<ast::CharLiteral>(expr)) {
-                auto bit = ast::aligned_bit(futils::binary::log2i(ch->code));
-                expr->expr_type = std::make_shared<ast::IntType>(ch->loc, bit, ast::Endian::unspec, false);
-                expr->constant_level = ast::ConstantLevel::constant;
-            }
-            else if (auto regex = ast::as<ast::RegexLiteral>(expr)) {
-                expr->expr_type = std::make_shared<ast::RegexLiteralType>(ast::cast_to<ast::RegexLiteral>(expr));
-                expr->constant_level = ast::ConstantLevel::constant;
-            }
             else if (auto identity = ast::as<ast::Identity>(expr)) {
                 typing_expr(identity->expr);
                 identity->expr_type = identity->expr->expr_type;
                 identity->constant_level = identity->expr->constant_level;
             }
             else if (auto or_cond = ast::as<ast::OrCond>(expr)) {
-                std::shared_ptr<ast::Type> ty;
-                ast::ConstantLevel level = ast::ConstantLevel::constant;
-                for (auto& expr : or_cond->conds) {
-                    typing_expr(expr);
-                    if (!ty) {
-                        ty = expr->expr_type;
-                        level = expr->constant_level;
-                    }
-                    else {
-                        auto tmp = OrCond_common_type(ty, expr->expr_type);
-                        if (!tmp) {
-                            report_not_have_common_type(ty, expr->expr_type);
-                        }
-                        ty = std::move(tmp);
-                        level = decide_constant_level(level, expr->constant_level);
-                    }
-                }
-                or_cond->expr_type = std::move(ty);
-                or_cond->constant_level = level;
+                typing_or_cond(or_cond);
             }
             else {
                 unsupported(expr);
