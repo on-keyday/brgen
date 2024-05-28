@@ -47,18 +47,21 @@ namespace brgen::middle {
                 *it = std::move(m);
             }
         };
-        auto each_element = [&](ast::node_list& list) {
+        auto each_element = [&](ast::node_list& list, std::vector<std::weak_ptr<ast::Metadata>>& metadata) {
             for (auto it = list.begin(); it != list.end(); it++) {
                 one_element(it);
+                if (auto m = ast::as<ast::Metadata>(*it)) {
+                    metadata.push_back(ast::cast_to<ast::Metadata>(*it));
+                }
             }
         };
         auto node = rep.to_node();
         if (auto a = ast::as<ast::Program>(node)) {
-            each_element(a->elements);
+            each_element(a->elements, a->metadata);
             return;
         }
         if (auto b = ast::as<ast::IndentBlock>(node)) {
-            each_element(b->elements);
+            each_element(b->elements, b->metadata);
             return;
         }
         if (auto s = ast::as<ast::ScopedStatement>(node)) {

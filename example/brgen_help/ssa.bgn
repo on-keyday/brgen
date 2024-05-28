@@ -1,0 +1,77 @@
+
+config.cpp.namespace = "brgen::ssa"
+config.go.package = "ssa"
+config.word.map("Ssa","SSA")
+
+enum SsaOp:
+    :u8
+
+    # arithmetic operations
+    ADD = 0
+    SUB = 1
+    MUL = 2
+    DIV = 3
+    MOD = 4
+
+    # bitwise operations
+    AND = 5
+    OR = 6
+    XOR = 7
+    SHL = 8
+    SHR = 9
+
+    # comparison operations
+    EQ = 10
+    NE = 11
+    LT = 12
+    LE = 13
+    GT = 14
+    GE = 15
+
+    # logical operations
+    LAND = 16
+    LOR = 17
+
+    # unary operations
+    NEG = 18
+    NOT = 19
+
+    # phi function
+    PHI = 20
+
+    # memory operations
+    LOAD = 21
+    STORE = 22
+
+    # call/ret operations
+    CALL = 23
+    RET = 24
+
+    # branch operations
+    BR = 25  # unconditional branch
+    BRC = 26 # conditional branch
+
+    # meta operations
+    BEGIN_BLOCK = 27
+
+    # special operations
+    NOP = 28
+    ASSIGN = 29 
+
+format VarInt:
+    config.type = u64
+    prefix :u2
+    match prefix:
+        0 => value :u6
+        1 => value :u14
+        2 => value :u30
+        3 => value :u62
+
+format SSA:
+    op :SsaOp
+    arg_len :u64
+    args :[arg_len]u8
+
+format SsaBlock:
+    id :u32
+    ssas :[..]SSA
