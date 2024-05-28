@@ -69,6 +69,13 @@ namespace brgen::middle {
             if (auto s = ast::as<ast::StructType>(left)) {
                 return left == right;  // struct type has same pointer if it is same struct
             }
+            if (auto r = ast::as<ast::RangeType>(right)) {
+                auto l = ast::as<ast::RangeType>(left);
+                if (r->base_type && l->base_type) {
+                    return equal_type(l->base_type, r->base_type);
+                }
+                return !r->base_type && !l->base_type;
+            }
             return false;
         }
 
