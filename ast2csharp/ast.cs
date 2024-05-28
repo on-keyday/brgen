@@ -244,6 +244,7 @@ public class Program : Node{
 	public StructType? StructType{get;set;}
 	public List<Node>? Elements{get;set;}
 	public Scope? GlobalScope{get;set;}
+	public List<Metadata>? Metadata{get;set;}
 }
 public class Comment : Node{
 	public Loc Loc{get;set;}
@@ -445,6 +446,7 @@ public class IndentBlock : Stmt{
 	public StructType? StructType{get;set;}
 	public List<Node>? Elements{get;set;}
 	public Scope? Scope{get;set;}
+	public List<Metadata>? Metadata{get;set;}
 }
 public class ScopedStatement : Stmt{
 	public Loc Loc{get;set;}
@@ -1061,6 +1063,7 @@ public static class Ast {
                node.StructType = ast.Node[i].Body[struct_type];
                node.Elements = ast.Node[i].Body[elements];
                node.GlobalScope = ast.Node[i].Body[global_scope];
+               node.Metadata = ast.Node[i].Body[metadata];
            case NodeType.Comment:
                var node = nodes[i] as Comment;
                node.Loc = ast.Node[i].Body[loc];
@@ -1262,6 +1265,7 @@ public static class Ast {
                node.StructType = ast.Node[i].Body[struct_type];
                node.Elements = ast.Node[i].Body[elements];
                node.Scope = ast.Node[i].Body[scope];
+               node.Metadata = ast.Node[i].Body[metadata];
            case NodeType.ScopedStatement:
                var node = nodes[i] as ScopedStatement;
                node.Loc = ast.Node[i].Body[loc];

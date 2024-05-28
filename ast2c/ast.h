@@ -505,6 +505,8 @@ struct ast2c_Program {
 	ast2c_Node** elements;
 	size_t elements_size;
 	ast2c_Scope* global_scope;
+	ast2c_Metadata** metadata;
+	size_t metadata_size;
 };
 
 // returns 1 if succeed 0 if failed
@@ -845,6 +847,8 @@ struct ast2c_IndentBlock {
 	ast2c_Node** elements;
 	size_t elements_size;
 	ast2c_Scope* scope;
+	ast2c_Metadata** metadata;
+	size_t metadata_size;
 };
 
 // returns 1 if succeed 0 if failed

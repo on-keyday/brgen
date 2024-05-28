@@ -1558,6 +1558,7 @@ type Program struct {
 	StructType  *StructType
 	Elements    []Node
 	GlobalScope *Scope
+	Metadata    []*Metadata
 }
 
 func (n *Program) isNode() {}
@@ -2153,6 +2154,7 @@ type IndentBlock struct {
 	StructType *StructType
 	Elements   []Node
 	Scope      *Scope
+	Metadata   []*Metadata
 }
 
 func (n *IndentBlock) isStmt() {}
@@ -3530,6 +3532,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				StructType  *uintptr  `json:"struct_type"`
 				Elements    []uintptr `json:"elements"`
 				GlobalScope *uintptr  `json:"global_scope"`
+				Metadata    []uintptr `json:"metadata"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -3543,6 +3546,10 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			}
 			if tmp.GlobalScope != nil {
 				v.GlobalScope = n.scope[*tmp.GlobalScope]
+			}
+			v.Metadata = make([]*Metadata, len(tmp.Metadata))
+			for j, k := range tmp.Metadata {
+				v.Metadata[j] = n.node[k].(*Metadata)
 			}
 		case NodeTypeComment:
 			v := n.node[i].(*Comment)
@@ -4133,6 +4140,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				StructType *uintptr  `json:"struct_type"`
 				Elements   []uintptr `json:"elements"`
 				Scope      *uintptr  `json:"scope"`
+				Metadata   []uintptr `json:"metadata"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -4146,6 +4154,10 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			}
 			if tmp.Scope != nil {
 				v.Scope = n.scope[*tmp.Scope]
+			}
+			v.Metadata = make([]*Metadata, len(tmp.Metadata))
+			for j, k := range tmp.Metadata {
+				v.Metadata[j] = n.node[k].(*Metadata)
 			}
 		case NodeTypeScopedStatement:
 			v := n.node[i].(*ScopedStatement)

@@ -431,6 +431,7 @@ class Program extends Node {
     StructType? structType;
     List<Node>? elements = [];
     Scope? globalScope;
+    List<Metadata>? metadata = [];
 factory Program.fromJson(Map<String, dynamic> json) => _$ProgramFromJson(json);
 }
 @JsonSerializable()
@@ -616,6 +617,7 @@ class IndentBlock extends Stmt {
     StructType? structType;
     List<Node>? elements = [];
     Scope? scope;
+    List<Metadata>? metadata = [];
 factory IndentBlock.fromJson(Map<String, dynamic> json) => _$IndentBlockFromJson(json);
 }
 @JsonSerializable()

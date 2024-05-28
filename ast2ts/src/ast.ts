@@ -403,6 +403,7 @@ export interface Program extends Node {
 	struct_type: StructType|null;
 	elements: Node[];
 	global_scope: Scope|null;
+	metadata: Metadata[];
 }
 
 export function isProgram(obj: any): obj is Program {
@@ -666,6 +667,7 @@ export interface IndentBlock extends Stmt {
 	struct_type: StructType|null;
 	elements: Node[];
 	scope: Scope|null;
+	metadata: Metadata[];
 }
 
 export function isIndentBlock(obj: any): obj is IndentBlock {
@@ -1205,6 +1207,7 @@ export function parseAST(obj: JsonAst): Program {
 				struct_type: null,
 				elements: [],
 				global_scope: null,
+				metadata: [],
 			}
 			c.node.push(n);
 			break;
@@ -1536,6 +1539,7 @@ export function parseAST(obj: JsonAst): Program {
 				struct_type: null,
 				elements: [],
 				scope: null,
+				metadata: [],
 			}
 			c.node.push(n);
 			break;
@@ -2111,6 +2115,16 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at Program::global_scope');
 			}
 			n.global_scope = tmpglobal_scope;
+			for (const o of on.body.metadata) {
+				if (typeof o !== 'number') {
+					throw new Error('invalid node list at Program::metadata');
+				}
+				const tmpmetadata = c.node[o];
+				if (!isMetadata(tmpmetadata)) {
+					throw new Error('invalid node list at Program::metadata');
+				}
+				n.metadata.push(tmpmetadata);
+			}
 			break;
 		}
 		case "comment": {
@@ -3094,6 +3108,16 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at IndentBlock::scope');
 			}
 			n.scope = tmpscope;
+			for (const o of on.body.metadata) {
+				if (typeof o !== 'number') {
+					throw new Error('invalid node list at IndentBlock::metadata');
+				}
+				const tmpmetadata = c.node[o];
+				if (!isMetadata(tmpmetadata)) {
+					throw new Error('invalid node list at IndentBlock::metadata');
+				}
+				n.metadata.push(tmpmetadata);
+			}
 			break;
 		}
 		case "scoped_statement": {

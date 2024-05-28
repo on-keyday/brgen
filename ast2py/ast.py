@@ -264,6 +264,7 @@ class Program(Node):
     struct_type: Optional[StructType]
     elements: List[Node]
     global_scope: Optional[Scope]
+    metadata: List[Metadata]
 
 
 class Comment(Node):
@@ -423,6 +424,7 @@ class IndentBlock(Stmt):
     struct_type: Optional[StructType]
     elements: List[Node]
     scope: Optional[Scope]
+    metadata: List[Metadata]
 
 
 class ScopedStatement(Stmt):
@@ -992,6 +994,7 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].global_scope = scope[ast.node[i].body["global_scope"]]
                 else:
                     node[i].global_scope = None
+                node[i].metadata = [(node[x] if isinstance(node[x],Metadata) else raiseError(TypeError('type mismatch at Program::metadata'))) for x in ast.node[i].body["metadata"]]
             case NodeType.COMMENT:
                 x = ast.node[i].body["comment"]
                 node[i].comment = x if isinstance(x,str)  else raiseError(TypeError('type mismatch at Comment::comment'))
@@ -1449,6 +1452,7 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].scope = scope[ast.node[i].body["scope"]]
                 else:
                     node[i].scope = None
+                node[i].metadata = [(node[x] if isinstance(node[x],Metadata) else raiseError(TypeError('type mismatch at IndentBlock::metadata'))) for x in ast.node[i].body["metadata"]]
             case NodeType.SCOPED_STATEMENT:
                 if ast.node[i].body["struct_type"] is not None:
                     x = node[ast.node[i].body["struct_type"]]

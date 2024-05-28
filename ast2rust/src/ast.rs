@@ -2963,6 +2963,7 @@ pub struct Program {
 	pub struct_type: Option<Rc<RefCell<StructType>>>,
 	pub elements: Vec<Node>,
 	pub global_scope: Option<Rc<RefCell<Scope>>>,
+	pub metadata: Vec<Weak<RefCell<Metadata>>>,
 }
 
 impl From<&Rc<RefCell<Program>>> for NodeType {
@@ -4920,6 +4921,7 @@ pub struct IndentBlock {
 	pub struct_type: Option<Rc<RefCell<StructType>>>,
 	pub elements: Vec<Node>,
 	pub scope: Option<Rc<RefCell<Scope>>>,
+	pub metadata: Vec<Weak<RefCell<Metadata>>>,
 }
 
 impl From<&Rc<RefCell<IndentBlock>>> for NodeType {
@@ -8675,6 +8677,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				struct_type: None,
 				elements: Vec::new(),
 				global_scope: None,
+				metadata: Vec::new(),
 				})))
 			},
 			NodeType::Comment => {
@@ -8928,6 +8931,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				struct_type: None,
 				elements: Vec::new(),
 				scope: None,
+				metadata: Vec::new(),
 				})))
 			},
 			NodeType::ScopedStatement => {
@@ -9416,6 +9420,29 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						None => return Err(Error::IndexOutOfBounds(global_scope_body as usize)),
 					};
 					node.borrow_mut().global_scope = Some(global_scope_body.clone());
+				}
+				let metadata_body = match raw_node.body.get("metadata") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"metadata")),
+				};
+				let metadata_body = match metadata_body.as_array(){
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(metadata_body.into(),JSONType::Array)),
+				};
+				for link in metadata_body {
+					let link = match link.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
+					};
+					let metadata_body = match nodes.get(link as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(link as usize)),
+					};
+					let metadata_body = match metadata_body {
+						Node::Metadata(body)=>body,
+						x =>return Err(Error::MismatchNodeType(x.into(),metadata_body.into())),
+					};
+					node.borrow_mut().metadata.push(Rc::downgrade(&metadata_body));
 				}
 			},
 			NodeType::Comment => {
@@ -11373,6 +11400,29 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						None => return Err(Error::IndexOutOfBounds(scope_body as usize)),
 					};
 					node.borrow_mut().scope = Some(scope_body.clone());
+				}
+				let metadata_body = match raw_node.body.get("metadata") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"metadata")),
+				};
+				let metadata_body = match metadata_body.as_array(){
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(metadata_body.into(),JSONType::Array)),
+				};
+				for link in metadata_body {
+					let link = match link.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
+					};
+					let metadata_body = match nodes.get(link as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(link as usize)),
+					};
+					let metadata_body = match metadata_body {
+						Node::Metadata(body)=>body,
+						x =>return Err(Error::MismatchNodeType(x.into(),metadata_body.into())),
+					};
+					node.borrow_mut().metadata.push(Rc::downgrade(&metadata_body));
 				}
 			},
 			NodeType::ScopedStatement => {

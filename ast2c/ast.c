@@ -1115,9 +1115,11 @@ int ast2c_Program_parse(ast2c_Ast* ast,ast2c_Program* s,ast2c_json_handlers* h, 
 	s->struct_type = NULL;
 	s->elements = NULL;
 	s->global_scope = NULL;
+	s->metadata = NULL;
 	void* struct_type = h->object_get(h, obj_body, "struct_type");
 	void* elements = h->object_get(h, obj_body, "elements");
 	void* global_scope = h->object_get(h, obj_body, "global_scope");
+	void* metadata = h->object_get(h, obj_body, "metadata");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_Program::loc is null"); } return 0; }
 	if (!struct_type) { if(h->error) { h->error(h,struct_type, "ast2c_Program::struct_type is null"); } return 0; }
 	if (!elements) { if(h->error) { h->error(h,elements, "ast2c_Program::elements is null"); } return 0; }
@@ -1126,6 +1128,11 @@ int ast2c_Program_parse(ast2c_Ast* ast,ast2c_Program* s,ast2c_json_handlers* h, 
 		return NULL;
 	}
 	if (!global_scope) { if(h->error) { h->error(h,global_scope, "ast2c_Program::global_scope is null"); } return 0; }
+	if (!metadata) { if(h->error) { h->error(h,metadata, "ast2c_Program::metadata is null"); } return 0; }
+	if(!h->array_size(h, metadata,&s->metadata_size)) {
+		if(h->error) { h->error(h,metadata, "failed to get array size of ast2c_Program::metadata"); }
+		return NULL;
+	}
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_Program::loc"); }
 		goto error;
@@ -2037,9 +2044,11 @@ int ast2c_IndentBlock_parse(ast2c_Ast* ast,ast2c_IndentBlock* s,ast2c_json_handl
 	s->struct_type = NULL;
 	s->elements = NULL;
 	s->scope = NULL;
+	s->metadata = NULL;
 	void* struct_type = h->object_get(h, obj_body, "struct_type");
 	void* elements = h->object_get(h, obj_body, "elements");
 	void* scope = h->object_get(h, obj_body, "scope");
+	void* metadata = h->object_get(h, obj_body, "metadata");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_IndentBlock::loc is null"); } return 0; }
 	if (!struct_type) { if(h->error) { h->error(h,struct_type, "ast2c_IndentBlock::struct_type is null"); } return 0; }
 	if (!elements) { if(h->error) { h->error(h,elements, "ast2c_IndentBlock::elements is null"); } return 0; }
@@ -2048,6 +2057,11 @@ int ast2c_IndentBlock_parse(ast2c_Ast* ast,ast2c_IndentBlock* s,ast2c_json_handl
 		return NULL;
 	}
 	if (!scope) { if(h->error) { h->error(h,scope, "ast2c_IndentBlock::scope is null"); } return 0; }
+	if (!metadata) { if(h->error) { h->error(h,metadata, "ast2c_IndentBlock::metadata is null"); } return 0; }
+	if(!h->array_size(h, metadata,&s->metadata_size)) {
+		if(h->error) { h->error(h,metadata, "failed to get array size of ast2c_IndentBlock::metadata"); }
+		return NULL;
+	}
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_IndentBlock::loc"); }
 		goto error;
