@@ -10,7 +10,6 @@
 
 namespace brgen::ast::tool {
 
-    
     struct Stringer {
         using BinaryFunc = std::function<std::string(Stringer& s, const std::shared_ptr<Binary>& v)>;
         BinaryFunc bin_op_func;
@@ -225,6 +224,80 @@ namespace brgen::ast::tool {
             }
             return "";
         }
-        
     };
+
+    inline std::string type_to_string(const std::shared_ptr<ast::Type>& typ) {
+        if (auto t = ast::as<ast::IntType>(typ)) {
+            return std::string(t->is_signed ? "s" : "u") +
+                   (t->endian == Endian::big      ? "b"
+                    : t->endian == Endian::little ? "l"
+                                                  : "") +
+                   nums(*t->bit_size);
+        }
+        if (auto a = ast::as<ast::ArrayType>(typ)) {
+            if (a->length_value) {
+                return concat("[", nums(*a->length_value), "]", type_to_string(a->element_type), "");
+            }
+            return concat("[]", type_to_string(a->element_type), "");
+        }
+        if (auto fn = ast::as<ast::FunctionType>(typ)) {
+            std::string args;
+            for (auto& arg : fn->parameters) {
+                if (!args.empty()) {
+                    args += ", ";
+                }
+                args += type_to_string(arg);
+            }
+            return concat("fn (", args, ") -> ", type_to_string(fn->return_type));
+        }
+        if (auto s = ast::as<ast::IdentType>(typ)) {
+            return s->ident->ident;
+        }
+        if (auto enum_type = ast::as<ast::EnumType>(typ)) {
+            auto enum_ = enum_type->base.lock();
+            if (enum_->base_type) {
+                return enum_->ident->ident + "(" + type_to_string(enum_->base_type) + ")";
+            }
+            return enum_->ident->ident;
+        }
+        if (auto struct_type = ast::as<ast::StructType>(typ)) {
+            if (auto member = ast::as<ast::Member>(struct_type->base.lock())) {
+                if (auto fmt = ast::as<ast::Format>(member)) {
+                    std::string cast_to;
+                    for (auto& c : fmt->cast_fns) {
+                        if (auto fn = c.lock()) {
+                            if (!cast_to.empty()) {
+                                cast_to += ",";
+                            }
+                            cast_to += type_to_string(fn->return_type);
+                        }
+                    }
+                    if (cast_to.size()) {
+                        return fmt->ident->ident + " cast(" + cast_to + ")";
+                    }
+                }
+                return member->ident->ident;
+            }
+            return "(anonymous struct at " + nums(struct_type->loc.line) + ":" + nums(struct_type->loc.col) + ")";
+        }
+        if (auto struct_union_type = ast::as<ast::StructUnionType>(typ)) {
+            return "(anonymous union of structs at " + nums(struct_union_type->loc.line) + ":" + nums(struct_union_type->loc.col) + ")";
+        }
+        if (auto union_type = ast::as<ast::UnionType>(typ)) {
+            auto s = "(anonymous union at " + nums(union_type->loc.line) + ":" + nums(union_type->loc.col);
+            if (union_type->common_type) {
+                s += " with common type " + type_to_string(union_type->common_type);
+            }
+            s += ")";
+            return s;
+        }
+        if (auto range = ast::as<ast::RangeType>(typ)) {
+            if (!range->base_type) {
+                return "range<any>";
+            }
+            return concat("range_", range->range.lock()->op == ast::BinaryOp::range_inclusive ? "inclusive" : "exclusive",
+                          "<", type_to_string(range->base_type), ">");
+        }
+        return "(unknown type)";
+    }
 }  // namespace brgen::ast::tool
