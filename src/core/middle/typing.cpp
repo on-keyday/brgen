@@ -227,15 +227,21 @@ namespace brgen::middle {
         }
 
         [[noreturn]] void report_not_equal_type(lexer::Loc loc, const std::shared_ptr<ast::Type>& lty, const std::shared_ptr<ast::Type>& rty) {
-            error(loc, "type mismatch").error(lty->loc, "type not equal here").error(rty->loc, "and here").report();
+            auto l = ast::tool::type_to_string(lty);
+            auto r = ast::tool::type_to_string(rty);
+            error(loc, "type mismatch").error(lty->loc, "type not equal here ", l).error(rty->loc, "and here ", r).report();
         }
 
         [[noreturn]] void report_not_comparable_type(lexer::Loc loc, const std::shared_ptr<ast::Type>& lty, const std::shared_ptr<ast::Type>& rty) {
-            error(loc, "type mismatch").error(lty->loc, "type not comparable here").error(rty->loc, "and here").report();
+            auto l = ast::tool::type_to_string(lty);
+            auto r = ast::tool::type_to_string(rty);
+            error(loc, "type mismatch").error(lty->loc, "type not comparable here ", l).error(rty->loc, "and here ", r).report();
         }
 
         [[noreturn]] void report_not_have_common_type(const std::shared_ptr<ast::Type>& lty, const std::shared_ptr<ast::Type>& rty) {
-            error(lty->loc, "type not have common type here").error(rty->loc, "and here").report();
+            auto l = ast::tool::type_to_string(lty);
+            auto r = ast::tool::type_to_string(rty);
+            error(lty->loc, "type not have common type here ", l).error(rty->loc, "and here ", r).report();
         }
 
         [[noreturn]] void unsupported(auto&& expr) {
