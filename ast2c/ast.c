@@ -35,6 +35,7 @@ const char* ast2c_NodeType_to_string(ast2c_NodeType val) {
 	case AST2C_NODETYPE_SPECIFY_ORDER: return "specify_order";
 	case AST2C_NODETYPE_EXPLICIT_ERROR: return "explicit_error";
 	case AST2C_NODETYPE_IO_OPERATION: return "io_operation";
+	case AST2C_NODETYPE_OR_COND: return "or_cond";
 	case AST2C_NODETYPE_BAD_EXPR: return "bad_expr";
 	case AST2C_NODETYPE_STMT: return "stmt";
 	case AST2C_NODETYPE_LOOP: return "loop";
@@ -183,6 +184,10 @@ int ast2c_NodeType_from_string(const char* str, ast2c_NodeType* out) {
 	}
 	if (strcmp(str, "io_operation") == 0) {
 		*out = AST2C_NODETYPE_IO_OPERATION;
+		return 1;
+	}
+	if (strcmp(str, "or_cond") == 0) {
+		*out = AST2C_NODETYPE_OR_COND;
 		return 1;
 	}
 	if (strcmp(str, "bad_expr") == 0) {
@@ -1910,6 +1915,40 @@ int ast2c_IoOperation_parse(ast2c_Ast* ast,ast2c_IoOperation* s,ast2c_json_handl
 	}
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_IoOperation::loc"); }
+		goto error;
+	}
+	return 1;
+error:
+	return 0;
+}
+
+// returns 1 if succeed 0 if failed
+int ast2c_OrCond_parse(ast2c_Ast* ast,ast2c_OrCond* s,ast2c_json_handlers* h, void* obj) {
+	if (!ast||!s||!h||!obj) {
+		if(h->error) { h->error(h,NULL, "invalid argument"); }
+		return 0;
+	}
+	void* loc = h->object_get(h, obj, "loc");
+	void* obj_body = h->object_get(h, obj, "body");
+	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
+	s->expr_type = NULL;
+	s->base = NULL;
+	s->conds = NULL;
+	void* expr_type = h->object_get(h, obj_body, "expr_type");
+	void* constant_level = h->object_get(h, obj_body, "constant_level");
+	void* base = h->object_get(h, obj_body, "base");
+	void* conds = h->object_get(h, obj_body, "conds");
+	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_OrCond::loc is null"); } return 0; }
+	if (!expr_type) { if(h->error) { h->error(h,expr_type, "ast2c_OrCond::expr_type is null"); } return 0; }
+	if (!constant_level) { if(h->error) { h->error(h,constant_level, "ast2c_OrCond::constant_level is null"); } return 0; }
+	if (!base) { if(h->error) { h->error(h,base, "ast2c_OrCond::base is null"); } return 0; }
+	if (!conds) { if(h->error) { h->error(h,conds, "ast2c_OrCond::conds is null"); } return 0; }
+	if(!h->array_size(h, conds,&s->conds_size)) {
+		if(h->error) { h->error(h,conds, "failed to get array size of ast2c_OrCond::conds"); }
+		return NULL;
+	}
+	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
+		if(h->error) { h->error(h,loc, "failed to parse ast2c_OrCond::loc"); }
 		goto error;
 	}
 	return 1;

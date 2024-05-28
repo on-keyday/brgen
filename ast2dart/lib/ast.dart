@@ -49,6 +49,8 @@ SpecifyOrder,
 ExplicitError,
 @JsonValue('io_operation')
 IoOperation,
+@JsonValue('or_cond')
+OrCond,
 @JsonValue('bad_expr')
 BadExpr,
 @JsonValue('stmt')
@@ -587,6 +589,12 @@ class IoOperation extends Expr {
     IoMethod method = IoMethod.Unspec;
     List<Expr>? arguments = [];
 factory IoOperation.fromJson(Map<String, dynamic> json) => _$IoOperationFromJson(json);
+}
+@JsonSerializable()
+class OrCond extends Expr {
+    Binary? base;
+    List<Expr>? conds = [];
+factory OrCond.fromJson(Map<String, dynamic> json) => _$OrCondFromJson(json);
 }
 @JsonSerializable()
 class BadExpr extends Expr {

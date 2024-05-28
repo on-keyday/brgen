@@ -28,6 +28,7 @@ Available,
 SpecifyOrder,
 ExplicitError,
 IoOperation,
+OrCond,
 BadExpr,
 Stmt,
 Loop,
@@ -416,6 +417,13 @@ public class IoOperation : Expr{
 	public Expr? Base{get;set;}
 	public IoMethod Method{get;set;}
 	public List<Expr>? Arguments{get;set;}
+}
+public class OrCond : Expr{
+	public Loc Loc{get;set;}
+	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
+	public Binary? Base{get;set;}
+	public List<Expr>? Conds{get;set;}
 }
 public class BadExpr : Expr{
 	public Loc Loc{get;set;}
@@ -908,6 +916,9 @@ public static class Ast {
            case NodeType.IoOperation:
                nodes[i] = new IoOperation() { Loc = ast.Node[i].Loc };
                break;
+           case NodeType.OrCond:
+               nodes[i] = new OrCond() { Loc = ast.Node[i].Loc };
+               break;
            case NodeType.BadExpr:
                nodes[i] = new BadExpr() { Loc = ast.Node[i].Loc };
                break;
@@ -1223,6 +1234,13 @@ public static class Ast {
                node.Base = ast.Node[i].Body[base];
                node.Method = ast.Node[i].Body[method];
                node.Arguments = ast.Node[i].Body[arguments];
+           case NodeType.OrCond:
+               var node = nodes[i] as OrCond;
+               node.Loc = ast.Node[i].Body[loc];
+               node.ExprType = ast.Node[i].Body[expr_type];
+               node.ConstantLevel = ast.Node[i].Body[constant_level];
+               node.Base = ast.Node[i].Body[base];
+               node.Conds = ast.Node[i].Body[conds];
            case NodeType.BadExpr:
                var node = nodes[i] as BadExpr;
                node.Loc = ast.Node[i].Body[loc];

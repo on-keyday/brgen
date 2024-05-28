@@ -289,6 +289,25 @@ namespace brgen::ast {
         }
     };
 
+    struct OrCond : Expr {
+        define_node_type(NodeType::or_cond);
+        std::shared_ptr<Binary> base;
+        std::vector<std::shared_ptr<Expr>> conds;
+
+        OrCond(lexer::Loc l, std::shared_ptr<Binary>&& b)
+            : Expr(l, NodeType::or_cond), base(std::move(b)) {}
+
+        // for decode
+        OrCond()
+            : Expr({}, NodeType::or_cond) {}
+
+        void dump(auto&& field_) {
+            Expr::dump(field_);
+            sdebugf(base);
+            sdebugf(conds);
+        }
+    };
+
     struct Match : Expr {
         define_node_type(NodeType::match);
         std::shared_ptr<StructUnionType> struct_union_type;

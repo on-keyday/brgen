@@ -34,53 +34,54 @@ const (
 	NodeTypeSpecifyOrder     NodeType = 21
 	NodeTypeExplicitError    NodeType = 22
 	NodeTypeIoOperation      NodeType = 23
-	NodeTypeBadExpr          NodeType = 24
-	NodeTypeStmt             NodeType = 25
-	NodeTypeLoop             NodeType = 26
-	NodeTypeIndentBlock      NodeType = 27
-	NodeTypeScopedStatement  NodeType = 28
-	NodeTypeMatchBranch      NodeType = 29
-	NodeTypeUnionCandidate   NodeType = 30
-	NodeTypeReturn           NodeType = 31
-	NodeTypeBreak            NodeType = 32
-	NodeTypeContinue         NodeType = 33
-	NodeTypeAssert           NodeType = 34
-	NodeTypeImplicitYield    NodeType = 35
-	NodeTypeMetadata         NodeType = 36
-	NodeTypeType             NodeType = 37
-	NodeTypeIntType          NodeType = 38
-	NodeTypeFloatType        NodeType = 39
-	NodeTypeIdentType        NodeType = 40
-	NodeTypeIntLiteralType   NodeType = 41
-	NodeTypeStrLiteralType   NodeType = 42
-	NodeTypeRegexLiteralType NodeType = 43
-	NodeTypeVoidType         NodeType = 44
-	NodeTypeBoolType         NodeType = 45
-	NodeTypeArrayType        NodeType = 46
-	NodeTypeFunctionType     NodeType = 47
-	NodeTypeStructType       NodeType = 48
-	NodeTypeStructUnionType  NodeType = 49
-	NodeTypeUnionType        NodeType = 50
-	NodeTypeRangeType        NodeType = 51
-	NodeTypeEnumType         NodeType = 52
-	NodeTypeMetaType         NodeType = 53
-	NodeTypeOptionalType     NodeType = 54
-	NodeTypeGenericType      NodeType = 55
-	NodeTypeLiteral          NodeType = 56
-	NodeTypeIntLiteral       NodeType = 57
-	NodeTypeBoolLiteral      NodeType = 58
-	NodeTypeStrLiteral       NodeType = 59
-	NodeTypeRegexLiteral     NodeType = 60
-	NodeTypeCharLiteral      NodeType = 61
-	NodeTypeTypeLiteral      NodeType = 62
-	NodeTypeSpecialLiteral   NodeType = 63
-	NodeTypeMember           NodeType = 64
-	NodeTypeField            NodeType = 65
-	NodeTypeFormat           NodeType = 66
-	NodeTypeState            NodeType = 67
-	NodeTypeEnum             NodeType = 68
-	NodeTypeEnumMember       NodeType = 69
-	NodeTypeFunction         NodeType = 70
+	NodeTypeOrCond           NodeType = 24
+	NodeTypeBadExpr          NodeType = 25
+	NodeTypeStmt             NodeType = 26
+	NodeTypeLoop             NodeType = 27
+	NodeTypeIndentBlock      NodeType = 28
+	NodeTypeScopedStatement  NodeType = 29
+	NodeTypeMatchBranch      NodeType = 30
+	NodeTypeUnionCandidate   NodeType = 31
+	NodeTypeReturn           NodeType = 32
+	NodeTypeBreak            NodeType = 33
+	NodeTypeContinue         NodeType = 34
+	NodeTypeAssert           NodeType = 35
+	NodeTypeImplicitYield    NodeType = 36
+	NodeTypeMetadata         NodeType = 37
+	NodeTypeType             NodeType = 38
+	NodeTypeIntType          NodeType = 39
+	NodeTypeFloatType        NodeType = 40
+	NodeTypeIdentType        NodeType = 41
+	NodeTypeIntLiteralType   NodeType = 42
+	NodeTypeStrLiteralType   NodeType = 43
+	NodeTypeRegexLiteralType NodeType = 44
+	NodeTypeVoidType         NodeType = 45
+	NodeTypeBoolType         NodeType = 46
+	NodeTypeArrayType        NodeType = 47
+	NodeTypeFunctionType     NodeType = 48
+	NodeTypeStructType       NodeType = 49
+	NodeTypeStructUnionType  NodeType = 50
+	NodeTypeUnionType        NodeType = 51
+	NodeTypeRangeType        NodeType = 52
+	NodeTypeEnumType         NodeType = 53
+	NodeTypeMetaType         NodeType = 54
+	NodeTypeOptionalType     NodeType = 55
+	NodeTypeGenericType      NodeType = 56
+	NodeTypeLiteral          NodeType = 57
+	NodeTypeIntLiteral       NodeType = 58
+	NodeTypeBoolLiteral      NodeType = 59
+	NodeTypeStrLiteral       NodeType = 60
+	NodeTypeRegexLiteral     NodeType = 61
+	NodeTypeCharLiteral      NodeType = 62
+	NodeTypeTypeLiteral      NodeType = 63
+	NodeTypeSpecialLiteral   NodeType = 64
+	NodeTypeMember           NodeType = 65
+	NodeTypeField            NodeType = 66
+	NodeTypeFormat           NodeType = 67
+	NodeTypeState            NodeType = 68
+	NodeTypeEnum             NodeType = 69
+	NodeTypeEnumMember       NodeType = 70
+	NodeTypeFunction         NodeType = 71
 )
 
 func (n NodeType) String() string {
@@ -133,6 +134,8 @@ func (n NodeType) String() string {
 		return "explicit_error"
 	case NodeTypeIoOperation:
 		return "io_operation"
+	case NodeTypeOrCond:
+		return "or_cond"
 	case NodeTypeBadExpr:
 		return "bad_expr"
 	case NodeTypeStmt:
@@ -286,6 +289,8 @@ func (n *NodeType) UnmarshalJSON(data []byte) error {
 		*n = NodeTypeExplicitError
 	case "io_operation":
 		*n = NodeTypeIoOperation
+	case "or_cond":
+		*n = NodeTypeOrCond
 	case "bad_expr":
 		*n = NodeTypeBadExpr
 	case "stmt":
@@ -476,6 +481,10 @@ func (n *ExplicitError) GetNodeType() NodeType {
 
 func (n *IoOperation) GetNodeType() NodeType {
 	return NodeTypeIoOperation
+}
+
+func (n *OrCond) GetNodeType() NodeType {
+	return NodeTypeOrCond
 }
 
 func (n *BadExpr) GetNodeType() NodeType {
@@ -2074,6 +2083,30 @@ func (n *IoOperation) GetLoc() Loc {
 	return n.Loc
 }
 
+type OrCond struct {
+	Loc           Loc
+	ExprType      Type
+	ConstantLevel ConstantLevel
+	Base          *Binary
+	Conds         []Expr
+}
+
+func (n *OrCond) isExpr() {}
+
+func (n *OrCond) GetExprType() Type {
+	return n.ExprType
+}
+
+func (n *OrCond) GetConstantLevel() ConstantLevel {
+	return n.ConstantLevel
+}
+
+func (n *OrCond) isNode() {}
+
+func (n *OrCond) GetLoc() Loc {
+	return n.Loc
+}
+
 type BadExpr struct {
 	Loc           Loc
 	ExprType      Type
@@ -3393,6 +3426,8 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			n.node[i] = &ExplicitError{Loc: raw.Loc}
 		case NodeTypeIoOperation:
 			n.node[i] = &IoOperation{Loc: raw.Loc}
+		case NodeTypeOrCond:
+			n.node[i] = &OrCond{Loc: raw.Loc}
 		case NodeTypeBadExpr:
 			n.node[i] = &BadExpr{Loc: raw.Loc}
 		case NodeTypeLoop:
@@ -4023,6 +4058,28 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.Arguments = make([]Expr, len(tmp.Arguments))
 			for j, k := range tmp.Arguments {
 				v.Arguments[j] = n.node[k].(Expr)
+			}
+		case NodeTypeOrCond:
+			v := n.node[i].(*OrCond)
+			var tmp struct {
+				ExprType      *uintptr      `json:"expr_type"`
+				ConstantLevel ConstantLevel `json:"constant_level"`
+				Base          *uintptr      `json:"base"`
+				Conds         []uintptr     `json:"conds"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			if tmp.ExprType != nil {
+				v.ExprType = n.node[*tmp.ExprType].(Type)
+			}
+			v.ConstantLevel = tmp.ConstantLevel
+			if tmp.Base != nil {
+				v.Base = n.node[*tmp.Base].(*Binary)
+			}
+			v.Conds = make([]Expr, len(tmp.Conds))
+			for j, k := range tmp.Conds {
+				v.Conds[j] = n.node[k].(Expr)
 			}
 		case NodeTypeBadExpr:
 			v := n.node[i].(*BadExpr)
@@ -5368,6 +5425,22 @@ func Walk(n Node, f Visitor) {
 			}
 		}
 		for _, w := range v.Arguments {
+			if !f.Visit(f, w) {
+				return
+			}
+		}
+	case *OrCond:
+		if v.ExprType != nil {
+			if !f.Visit(f, v.ExprType) {
+				return
+			}
+		}
+		if v.Base != nil {
+			if !f.Visit(f, v.Base) {
+				return
+			}
+		}
+		for _, w := range v.Conds {
 			if !f.Visit(f, w) {
 				return
 			}

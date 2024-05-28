@@ -1,0 +1,29 @@
+
+config.url = "https://datatracker.ietf.org/doc/html/rfc8044"
+
+enum RadiusDataType:
+    integer = 1
+    enum_ = 2,"enum"
+    time = 3
+    text = 4
+    string = 5
+    concat = 6
+    ifid = 7
+    ipv4addr = 8
+    ipv6addr = 9
+    ipv6prefix = 10
+    ipv4prefix = 11
+    integer64 = 12
+    tlv = 13
+    vsa = 14
+    extended = 15
+    long_extended = 16
+    evs = 17
+
+
+
+format Integer:
+    value :u32
+
+format Enum:
+    value :u32

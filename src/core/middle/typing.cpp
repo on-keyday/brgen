@@ -69,6 +69,13 @@ namespace brgen::middle {
             if (auto s = ast::as<ast::StructType>(left)) {
                 return left == right;  // struct type has same pointer if it is same struct
             }
+            if (auto r = ast::as<ast::RangeType>(right)) {
+                auto l = ast::as<ast::RangeType>(left);
+                if (r->base_type && l->base_type) {
+                    return equal_type(l->base_type, r->base_type);
+                }
+                return !r->base_type && !l->base_type;
+            }
             return false;
         }
 
@@ -190,21 +197,58 @@ namespace brgen::middle {
             return nullptr;
         }
 
+        // OrCond_common_type is used for OrCond type inference
+        // this function uses common_type first
+        // and also infer common type between range and other types based on RangeType.base_type
+        std::shared_ptr<ast::Type> OrCond_common_type(std::shared_ptr<ast::Type>& a, std::shared_ptr<ast::Type>& b) {
+            // special edge case for int literal type
+            if (auto t1 = ast::as<ast::IntLiteralType>(a), t2 = ast::as<ast::IntLiteralType>(b); t1 && t2) {
+                if (t1->bit_size == t2->bit_size) {
+                    return a;
+                }
+                if (t1->bit_size > t2->bit_size) {
+                    return a;
+                }
+                return b;
+            }
+            auto t = common_type(a, b);
+            if (t) {
+                return t;
+            }
+            if (auto r = ast::as<ast::RangeType>(a)) {
+                if (r->base_type) {
+                    return common_type(r->base_type, b);
+                }
+            }
+            if (auto r = ast::as<ast::RangeType>(b)) {
+                if (r->base_type) {
+                    return common_type(a, r->base_type);
+                }
+            }
+            return nullptr;
+        }
+
        private:
         auto void_type(lexer::Loc loc) {
             return std::make_shared<ast::VoidType>(loc);
         }
 
         [[noreturn]] void report_not_equal_type(lexer::Loc loc, const std::shared_ptr<ast::Type>& lty, const std::shared_ptr<ast::Type>& rty) {
-            error(loc, "type mismatch").error(lty->loc, "type not equal here").error(rty->loc, "and here").report();
+            auto l = ast::tool::type_to_string(lty);
+            auto r = ast::tool::type_to_string(rty);
+            error(loc, "type mismatch").error(lty->loc, "type not equal here ", l).error(rty->loc, "and here ", r).report();
         }
 
         [[noreturn]] void report_not_comparable_type(lexer::Loc loc, const std::shared_ptr<ast::Type>& lty, const std::shared_ptr<ast::Type>& rty) {
-            error(loc, "type mismatch").error(lty->loc, "type not comparable here").error(rty->loc, "and here").report();
+            auto l = ast::tool::type_to_string(lty);
+            auto r = ast::tool::type_to_string(rty);
+            error(loc, "type mismatch").error(lty->loc, "type not comparable here ", l).error(rty->loc, "and here ", r).report();
         }
 
         [[noreturn]] void report_not_have_common_type(const std::shared_ptr<ast::Type>& lty, const std::shared_ptr<ast::Type>& rty) {
-            error(lty->loc, "type not have common type here").error(rty->loc, "and here").report();
+            auto l = ast::tool::type_to_string(lty);
+            auto r = ast::tool::type_to_string(rty);
+            error(lty->loc, "type not have common type here ", l).error(rty->loc, "and here ", r).report();
         }
 
         [[noreturn]] void unsupported(auto&& expr) {
@@ -284,32 +328,28 @@ namespace brgen::middle {
                 }
                 return true;
             };
-            if (auto m = ast::as<ast::MemberAccess>(b->left)) {
-                if (!m->expr_type) {
-                    warn_not_typed(m);
-                    return;  // not typed yet
+
+            auto handle_member_or_index_access = [&](const auto& access_node) {
+                if (!access_node->expr_type) {
+                    warn_not_typed(access_node);
+                    return false;
                 }
                 if (!check_right_typed()) {
-                    return;
+                    return false;
                 }
-                int_type_fitting(m->expr_type, right->expr_type);
-                if (!equal_type(m->expr_type, right->expr_type)) {
-                    report_not_equal_type(m->loc, m->expr_type, right->expr_type);
+                int_type_fitting(access_node->expr_type, right->expr_type);
+                if (!equal_type(access_node->expr_type, right->expr_type)) {
+                    report_not_equal_type(access_node->loc, access_node->expr_type, right->expr_type);
                 }
+                return true;
+            };
+
+            if (auto m = ast::as<ast::MemberAccess>(b->left)) {
+                handle_member_or_index_access(m);
                 return;
             }
             if (auto idx = ast::as<ast::Index>(b->left)) {
-                if (!idx->expr_type) {
-                    warn_not_typed(idx);
-                    return;  // not typed yet
-                }
-                if (!check_right_typed()) {
-                    return;
-                }
-                int_type_fitting(idx->expr_type, right->expr_type);
-                if (!equal_type(idx->expr_type, right->expr_type)) {
-                    report_not_equal_type(idx->loc, idx->expr_type, right->expr_type);
-                }
+                handle_member_or_index_access(idx);
                 return;
             }
             b->expr_type = void_type(b->loc);
@@ -495,48 +535,9 @@ namespace brgen::middle {
             unfilled.push_back({min_value, max_value});
             ast::tool::Evaluator eval;
             bool filled = false;
-            for (auto& b : m->branch) {
-                if (filled) {
-                    warnings.warning(b->loc, "maybe unreachable code");
-                    continue;
-                }
-                T l_val = 0;
-                T r_val = 0;
-                bool inclusive = false;
-                if (auto range = ast::as<ast::Range>(b->cond->expr)) {
-                    auto l = eval.template eval_as<ast::tool::EResultType::integer>(range->start);
-                    if (range->start && !l) {
-                        return;  // not constant, cannot check exhaustiveness
-                    }
-                    auto r = eval.template eval_as<ast::tool::EResultType::integer>(range->end);
-                    if (range->end && !r) {
-                        return;  // not constant, cannot check exhaustiveness
-                    }
-                    if (!l) {
-                        l->emplace<ast::tool::EResultType::integer>(min_value);
-                    }
-                    if (!r) {
-                        r->emplace<ast::tool::EResultType::integer>(max_value);
-                    }
-                    l_val = T(l->get<ast::tool::EResultType::integer>());
-                    r_val = T(r->get<ast::tool::EResultType::integer>());
-                    if (range->op == ast::BinaryOp::range_inclusive
-                            ? l_val > r_val
-                            : l_val >= r_val) {
-                        error(range->loc, "range start is greater than end").report();
-                        return;
-                    }
-                    inclusive = range->op == ast::BinaryOp::range_inclusive;
-                }
-                else {
-                    auto l = eval.template eval_as<ast::tool::EResultType::integer>(b->cond->expr);
-                    if (!l) {
-                        return;  // not constant, cannot check exhaustiveness
-                    }
-                    l_val = T(l->get<ast::tool::EResultType::integer>());
-                    r_val = l_val;
-                    inclusive = true;
-                }
+            T l_val = 0;
+            T r_val = 0;
+            auto update_fill = [&](auto l_val, auto r_val, bool inclusive) {
                 for (auto it = unfilled.begin(); it != unfilled.end(); it++) {
                     auto& u = *it;
                     bool cond = false;
@@ -555,6 +556,72 @@ namespace brgen::middle {
                         }
                         unfilled.erase(it, unfilled.end());
                         break;
+                    }
+                }
+            };
+            auto range_eval = [&](ast::Range* range) {
+                auto l = eval.template eval_as<ast::tool::EResultType::integer>(range->start);
+                if (range->start && !l) {
+                    return false;  // not constant, cannot check exhaustiveness
+                }
+                auto r = eval.template eval_as<ast::tool::EResultType::integer>(range->end);
+                if (range->end && !r) {
+                    return false;  // not constant, cannot check exhaustiveness
+                }
+                if (!l) {
+                    l->emplace<ast::tool::EResultType::integer>(min_value);
+                }
+                if (!r) {
+                    r->emplace<ast::tool::EResultType::integer>(max_value);
+                }
+                l_val = T(l->get<ast::tool::EResultType::integer>());
+                r_val = T(r->get<ast::tool::EResultType::integer>());
+                if (range->op == ast::BinaryOp::range_inclusive
+                        ? l_val > r_val
+                        : l_val >= r_val) {
+                    error(range->loc, "range start is greater than end").report();
+                    return false;
+                }
+                update_fill(l_val, r_val, range->op == ast::BinaryOp::range_inclusive);
+                return true;
+            };
+            auto single_expr_eval = [&](auto&& expr) {
+                auto l = eval.template eval_as<ast::tool::EResultType::integer>(expr);
+                if (!l) {
+                    return false;  // not constant, cannot check exhaustiveness
+                }
+                l_val = T(l->template get<ast::tool::EResultType::integer>());
+                r_val = l_val;
+                update_fill(l_val, r_val, true);
+                return true;
+            };
+            for (auto& b : m->branch) {
+                if (filled) {
+                    warnings.warning(b->loc, "maybe unreachable code");
+                    continue;
+                }
+                if (auto or_cond = ast::as<ast::OrCond>(b->cond->expr)) {
+                    for (auto& cond : or_cond->conds) {
+                        if (auto range = ast::as<ast::Range>(cond)) {
+                            if (!range_eval(range)) {
+                                return;
+                            }
+                        }
+                        else {
+                            if (!single_expr_eval(cond)) {
+                                return;
+                            }
+                        }
+                    }
+                }
+                else if (auto range = ast::as<ast::Range>(b->cond->expr)) {
+                    if (!range_eval(range)) {
+                        return;
+                    }
+                }
+                else {
+                    if (!single_expr_eval(b->cond->expr)) {
+                        return;
                     }
                 }
                 if (unfilled.empty()) {
@@ -1237,7 +1304,7 @@ namespace brgen::middle {
                                 .error(c->arguments[0]->loc, "type is ", ast::node_type_to_string(c->arguments[0]->node_type))
                                 .report();
                         }
-                        c->expr_type = typ->type_literal;
+                        io->expr_type = typ->type_literal;
                     }
                     if (c->arguments.size() >= 2) {
                         io->arguments.push_back(c->arguments[1]);
@@ -1318,6 +1385,98 @@ namespace brgen::middle {
             base_node.replace(std::move(typ_lit));
         }
 
+        bool try_typing_literal(const std::shared_ptr<ast::Expr>& expr) {
+            if (auto lit = ast::as<ast::IntLiteral>(expr)) {
+                lit->expr_type = std::make_shared<ast::IntLiteralType>(ast::cast_to<ast::IntLiteral>(expr));
+                lit->constant_level = ast::ConstantLevel::constant;
+                return true;
+            }
+
+            if (auto lit = ast::as<ast::BoolLiteral>(expr)) {
+                lit->expr_type = std::make_shared<ast::BoolType>(lit->loc);
+                lit->constant_level = ast::ConstantLevel::constant;
+                return true;
+            }
+            if (auto lit = ast::as<ast::StrLiteral>(expr)) {
+                lit->expr_type = std::make_shared<ast::StrLiteralType>(ast::cast_to<ast::StrLiteral>(expr));
+                lit->constant_level = ast::ConstantLevel::constant;
+                return true;
+            }
+
+            if (ast::as<ast::SpecialLiteral>(expr)) {
+                // typing already done
+                return true;
+            }
+
+            if (auto typ = ast::as<ast::TypeLiteral>(expr)) {
+                typing_object(typ->type_literal);
+                expr->expr_type = std::make_shared<ast::MetaType>(typ->loc);
+                expr->constant_level = ast::ConstantLevel::constant;
+                return true;
+            }
+
+            if (auto ch = ast::as<ast::CharLiteral>(expr)) {
+                auto bit = ast::aligned_bit(futils::binary::log2i(ch->code));
+                expr->expr_type = std::make_shared<ast::IntType>(ch->loc, bit, ast::Endian::unspec, false);
+                expr->constant_level = ast::ConstantLevel::constant;
+                return true;
+            }
+
+            if (auto regex = ast::as<ast::RegexLiteral>(expr)) {
+                expr->expr_type = std::make_shared<ast::RegexLiteralType>(ast::cast_to<ast::RegexLiteral>(expr));
+                expr->constant_level = ast::ConstantLevel::constant;
+                return true;
+            }
+
+            return false;
+        }
+
+        bool try_typing_and_maybe_replace_ident(NodeReplacer base_node, std::shared_ptr<ast::Expr>& expr, bool on_define) {
+            if (auto ident = ast::as<ast::Ident>(expr)) {
+                typing_ident(ast::cast_to<ast::Ident>(expr), on_define);
+                if (base_node.place() == ast::NodeType::ident) {
+                    return true;  // skip
+                }
+                if (ident->usage == ast::IdentUsage::reference_type) {
+                    ident_to_type_literal(base_node, ident);
+                }
+                return true;
+            }
+            return false;
+        }
+
+        void typing_or_cond(ast::OrCond* or_cond) {
+            std::shared_ptr<ast::Type> ty;
+            ast::ConstantLevel level = ast::ConstantLevel::constant;
+            for (auto& expr : or_cond->conds) {
+                typing_expr(expr);
+                if (!ty) {
+                    ty = expr->expr_type;
+                    level = expr->constant_level;
+                }
+                else {
+                    auto tmp = OrCond_common_type(ty, expr->expr_type);
+                    if (!tmp) {
+                        report_not_have_common_type(ty, expr->expr_type);
+                    }
+                    ty = std::move(tmp);
+                    level = decide_constant_level(level, expr->constant_level);
+                }
+            }
+            or_cond->expr_type = std::move(ty);
+            or_cond->constant_level = level;
+        }
+
+        void typing_and_maybe_replace_member_access(ast::MemberAccess* selector, NodeReplacer base_node) {
+            typing_member_access(selector);
+            if (base_node.place() == ast::NodeType::member_access) {
+                return;  // skip
+            }
+            if (selector->member->usage == ast::IdentUsage::reference_member_type) {
+                member_access_to_type_literal(base_node, selector);
+            }
+        }
+
         void typing_expr(NodeReplacer base_node, bool on_define = false) {
             auto expr = ast::cast_to<ast::Expr>(base_node.to_node());
             // treat cast as a special case
@@ -1346,29 +1505,14 @@ namespace brgen::middle {
                 typing_object(expr->expr_type);
                 return;  // already typed
             }
-            if (auto s = ast::as<ast::IOOperation>(expr)) {
+            if (try_typing_literal(expr)) {
+                return;
+            }
+            else if (auto s = ast::as<ast::IOOperation>(expr)) {
                 typing_io_operation(s);
             }
-            else if (auto lit = ast::as<ast::IntLiteral>(expr)) {
-                lit->expr_type = std::make_shared<ast::IntLiteralType>(ast::cast_to<ast::IntLiteral>(expr));
-                lit->constant_level = ast::ConstantLevel::constant;
-            }
-            else if (auto lit = ast::as<ast::BoolLiteral>(expr)) {
-                lit->expr_type = std::make_shared<ast::BoolType>(lit->loc);
-                lit->constant_level = ast::ConstantLevel::constant;
-            }
-            else if (auto lit = ast::as<ast::StrLiteral>(expr)) {
-                lit->expr_type = std::make_shared<ast::StrLiteralType>(ast::cast_to<ast::StrLiteral>(expr));
-                lit->constant_level = ast::ConstantLevel::constant;
-            }
-            else if (auto ident = ast::as<ast::Ident>(expr)) {
-                typing_ident(ast::cast_to<ast::Ident>(expr), on_define);
-                if (base_node.place() == ast::NodeType::ident) {
-                    return;  // skip
-                }
-                if (ident->usage == ast::IdentUsage::reference_type) {
-                    ident_to_type_literal(base_node, ident);
-                }
+            else if (try_typing_and_maybe_replace_ident(base_node, expr, on_define)) {
+                return;
             }
             else if (auto bin = ast::as<ast::Binary>(expr)) {
                 typing_binary_expr(ast::cast_to<ast::Binary>(expr));
@@ -1392,19 +1536,10 @@ namespace brgen::middle {
                 typing_call(call, base_node);
             }
             else if (auto selector = ast::as<ast::MemberAccess>(expr)) {
-                typing_member_access(selector);
-                if (base_node.place() == ast::NodeType::member_access) {
-                    return;  // skip
-                }
-                if (selector->member->usage == ast::IdentUsage::reference_member_type) {
-                    member_access_to_type_literal(base_node, selector);
-                }
+                typing_and_maybe_replace_member_access(selector, base_node);
             }
             else if (auto idx = ast::as<ast::Index>(expr)) {
                 typing_index(idx);
-            }
-            else if (ast::as<ast::SpecialLiteral>(expr)) {
-                // typing already done
             }
             else if (ast::as<ast::Range>(expr)) {
                 typing_range(ast::cast_to<ast::Range>(expr));
@@ -1414,24 +1549,13 @@ namespace brgen::middle {
                 typing_object(i->import_desc);
                 expr->constant_level = ast::ConstantLevel::immutable_variable;
             }
-            else if (auto typ = ast::as<ast::TypeLiteral>(expr)) {
-                typing_object(typ->type_literal);
-                expr->expr_type = std::make_shared<ast::MetaType>(typ->loc);
-                expr->constant_level = ast::ConstantLevel::constant;
-            }
-            else if (auto ch = ast::as<ast::CharLiteral>(expr)) {
-                auto bit = ast::aligned_bit(futils::binary::log2i(ch->code));
-                expr->expr_type = std::make_shared<ast::IntType>(ch->loc, bit, ast::Endian::unspec, false);
-                expr->constant_level = ast::ConstantLevel::constant;
-            }
-            else if (auto regex = ast::as<ast::RegexLiteral>(expr)) {
-                expr->expr_type = std::make_shared<ast::RegexLiteralType>(ast::cast_to<ast::RegexLiteral>(expr));
-                expr->constant_level = ast::ConstantLevel::constant;
-            }
             else if (auto identity = ast::as<ast::Identity>(expr)) {
                 typing_expr(identity->expr);
                 identity->expr_type = identity->expr->expr_type;
                 identity->constant_level = identity->expr->constant_level;
+            }
+            else if (auto or_cond = ast::as<ast::OrCond>(expr)) {
+                typing_or_cond(or_cond);
             }
             else {
                 unsupported(expr);
@@ -1518,7 +1642,7 @@ namespace brgen::middle {
                 if (conf->name == "input.align") {
                     typing_expr(conf->arguments[0]);
                     args->alignment = std::move(conf->arguments[0]);
-                    ast::as<ast::MemberAccess>(ast::as<ast::Binary>(arg)->left)->member->usage = ast::IdentUsage::reference_builtin_fn;
+                    ast::tool::marking_builtin(ast::as<ast::Binary>(arg)->left);
                     continue;
                 }
                 if (conf->name == "input.peek") {
@@ -1537,16 +1661,16 @@ namespace brgen::middle {
                             error(conf->arguments[0]->loc, "expect integer or boolean but got ", ast::tool::eval_result_type_str[int(val->type())]).report();
                         }
                     }
-                    ast::as<ast::MemberAccess>(ast::as<ast::Binary>(arg)->left)->member->usage = ast::IdentUsage::reference_builtin_fn;
+                    ast::tool::marking_builtin(ast::as<ast::Binary>(arg)->left);
                     continue;
                 }
-                if (conf->name == "input.type") {
+                if (conf->name == "config.type") {
                     typing_expr(conf->arguments[0]);
                     if (!ast::as<ast::TypeLiteral>(conf->arguments[0])) {
                         error(conf->arguments[0]->loc, "expect type literal but not").error(conf->arguments[0]->loc, "type is ", ast::node_type_to_string(conf->arguments[0]->node_type)).report();
                     }
                     args->type_map = ast::cast_to<ast::TypeLiteral>(conf->arguments[0]);
-                    ast::as<ast::MemberAccess>(ast::as<ast::Binary>(arg)->left)->member->usage = ast::IdentUsage::reference_builtin_fn;
+                    ast::tool::marking_builtin(ast::as<ast::Binary>(arg)->left);
                     continue;
                 }
                 if (conf->name == "input") {

@@ -65,6 +65,7 @@ namespace brgen::ast {
             CASE(SpecifyOrder)
             CASE(ExplicitError)
             CASE(IOOperation)
+            CASE(OrCond)
 
             CASE(BadExpr)
 
@@ -93,7 +94,6 @@ namespace brgen::ast {
             CASE(Enum)
             CASE(EnumMember)
             CASE(Function)
-       
 
             // type
             CASE(Type)
