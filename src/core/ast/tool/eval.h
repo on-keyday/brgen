@@ -519,6 +519,13 @@ namespace brgen::ast::tool {
         if (auto str_literal = ast::as<ast::StrLiteralType>(typ)) {
             return "(string literal at " + nums(str_literal->loc.line) + ":" + nums(str_literal->loc.col) + ")";
         }
+        if (auto float_type = ast::as<ast::FloatType>(typ)) {
+            return "f" +
+                   std::string(float_type->endian == Endian::big      ? "b"
+                               : float_type->endian == Endian::little ? "l"
+                                                                      : "") +
+                   nums(*float_type->bit_size);
+        }
         return "(unknown type)";
     }
 

@@ -66,10 +66,13 @@ format VarInt:
         1 => value :u14
         2 => value :u30
         3 => value :u62
+    
+    fn u64() -> u64:
+        return value
 
 format SSA:
     op :SsaOp
-    arg_len :u64
+    arg_len :VarInt
     args :[arg_len]u8
 
 format SsaBlock:
