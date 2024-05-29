@@ -20,20 +20,20 @@ constexpr auto enum_array = make_enum_array<T>();
 template<typename T>
 constexpr auto enum_name_array = make_enum_name_array<T>();
 enum class Tag {
-    indent,
-    space,
-    line,
-    punct,
-    int_literal,
-    bool_literal,
-    str_literal,
-    regex_literal,
-    char_literal,
-    keyword,
-    ident,
-    comment,
-    error,
-    unknown,
+    indent = 0,
+    space = 1,
+    line = 2,
+    punct = 3,
+    int_literal = 4,
+    bool_literal = 5,
+    str_literal = 6,
+    regex_literal = 7,
+    char_literal = 8,
+    keyword = 9,
+    ident = 10,
+    comment = 11,
+    error = 12,
+    unknown = 13,
 };
 constexpr const char* to_string(Tag e) {
     switch(e) {
