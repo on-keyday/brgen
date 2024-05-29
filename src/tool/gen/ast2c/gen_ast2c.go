@@ -97,7 +97,7 @@ struct %[1]s {
 			w.Printf("enum %s {\n", d.Name)
 			for _, field := range d.Values {
 				field.Name = strings.ToUpper(d.Name) + "_" + strings.ToUpper(field.Name)
-				w.Printf("\t%s,\n", field.Name)
+				w.Printf("\t%s = %s,\n", field.Name, field.NumericValue)
 			}
 			w.Printf("};\n")
 			w.Printf("const char* %s_to_string(%s);\n", d.Name, d.Name)
