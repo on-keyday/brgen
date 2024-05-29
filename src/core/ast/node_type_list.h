@@ -311,7 +311,7 @@ namespace brgen::ast {
         }
         field("token_tag", [&](auto&& d) {
             auto field = d.object();
-            field("is_bit_flag", is_bit_flag<lexer::Tag>());
+            field("is_bit_flag", lexer::is_bit_flag<lexer::Tag>());
             field("values", [&](auto&& d) {
                 auto field = d.array();
                 for (size_t i = 0; i < lexer::enum_elem_count<lexer::Tag>(); i++) {
@@ -334,6 +334,7 @@ namespace brgen::ast {
         enum_type<IOMethod>("io_method", field);
         enum_type<SpecialLiteralKind>("special_literal_kind", field);
         enum_type<OrderType>("order_type", field);
+        enum_type<FormatType>("format_type", field);
     }
 
     void struct_types(auto&& field) {

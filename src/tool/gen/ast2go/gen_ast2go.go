@@ -94,7 +94,7 @@ func generate(w io.Writer, list *gen.Defs) {
 			writer.Printf("}\n\n")
 			writer.Printf("func (n *%s) UnmarshalJSON(data []byte) error {\n", d.Name)
 			if d.IsBitField {
-				writer.Printf("var tmp int")
+				writer.Printf("	var tmp int\n")
 			} else {
 				writer.Printf("	var tmp string\n")
 			}
@@ -102,7 +102,7 @@ func generate(w io.Writer, list *gen.Defs) {
 			writer.Printf("		return err\n")
 			writer.Printf("	}\n")
 			if d.IsBitField {
-				writer.Printf("*n = %s(tmp)\n", d.Name)
+				writer.Printf("	*n = %s(tmp)\n", d.Name)
 			} else {
 				writer.Printf("	switch tmp {\n")
 				for _, value := range d.Values {

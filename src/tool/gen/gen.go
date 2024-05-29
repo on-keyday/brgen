@@ -71,7 +71,7 @@ type EnumValue struct {
 }
 
 type EnumValues struct {
-	IsBitField bool         `json:"is_bit_field"`
+	IsBitField bool         `json:"is_bit_flag"`
 	Values     []*EnumValue `json:"values"`
 }
 
