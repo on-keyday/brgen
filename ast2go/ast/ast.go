@@ -10,78 +10,78 @@ import (
 type NodeType int
 
 const (
-	NodeTypeProgram          NodeType = 0
-	NodeTypeComment          NodeType = 1
-	NodeTypeCommentGroup     NodeType = 2
-	NodeTypeFieldArgument    NodeType = 3
-	NodeTypeExpr             NodeType = 4
-	NodeTypeBinary           NodeType = 5
-	NodeTypeUnary            NodeType = 6
-	NodeTypeCond             NodeType = 7
-	NodeTypeIdent            NodeType = 8
-	NodeTypeCall             NodeType = 9
-	NodeTypeIf               NodeType = 10
-	NodeTypeMemberAccess     NodeType = 11
-	NodeTypeParen            NodeType = 12
-	NodeTypeIndex            NodeType = 13
-	NodeTypeMatch            NodeType = 14
-	NodeTypeRange            NodeType = 15
-	NodeTypeIdentity         NodeType = 16
-	NodeTypeTmpVar           NodeType = 17
-	NodeTypeImport           NodeType = 18
-	NodeTypeCast             NodeType = 19
-	NodeTypeAvailable        NodeType = 20
-	NodeTypeSpecifyOrder     NodeType = 21
-	NodeTypeExplicitError    NodeType = 22
-	NodeTypeIoOperation      NodeType = 23
-	NodeTypeOrCond           NodeType = 24
-	NodeTypeBadExpr          NodeType = 25
-	NodeTypeStmt             NodeType = 26
-	NodeTypeLoop             NodeType = 27
-	NodeTypeIndentBlock      NodeType = 28
-	NodeTypeScopedStatement  NodeType = 29
-	NodeTypeMatchBranch      NodeType = 30
-	NodeTypeUnionCandidate   NodeType = 31
-	NodeTypeReturn           NodeType = 32
-	NodeTypeBreak            NodeType = 33
-	NodeTypeContinue         NodeType = 34
-	NodeTypeAssert           NodeType = 35
-	NodeTypeImplicitYield    NodeType = 36
-	NodeTypeMetadata         NodeType = 37
-	NodeTypeType             NodeType = 38
-	NodeTypeIntType          NodeType = 39
-	NodeTypeFloatType        NodeType = 40
-	NodeTypeIdentType        NodeType = 41
-	NodeTypeIntLiteralType   NodeType = 42
-	NodeTypeStrLiteralType   NodeType = 43
-	NodeTypeRegexLiteralType NodeType = 44
-	NodeTypeVoidType         NodeType = 45
-	NodeTypeBoolType         NodeType = 46
-	NodeTypeArrayType        NodeType = 47
-	NodeTypeFunctionType     NodeType = 48
-	NodeTypeStructType       NodeType = 49
-	NodeTypeStructUnionType  NodeType = 50
-	NodeTypeUnionType        NodeType = 51
-	NodeTypeRangeType        NodeType = 52
-	NodeTypeEnumType         NodeType = 53
-	NodeTypeMetaType         NodeType = 54
-	NodeTypeOptionalType     NodeType = 55
-	NodeTypeGenericType      NodeType = 56
-	NodeTypeLiteral          NodeType = 57
-	NodeTypeIntLiteral       NodeType = 58
-	NodeTypeBoolLiteral      NodeType = 59
-	NodeTypeStrLiteral       NodeType = 60
-	NodeTypeRegexLiteral     NodeType = 61
-	NodeTypeCharLiteral      NodeType = 62
-	NodeTypeTypeLiteral      NodeType = 63
-	NodeTypeSpecialLiteral   NodeType = 64
-	NodeTypeMember           NodeType = 65
-	NodeTypeField            NodeType = 66
-	NodeTypeFormat           NodeType = 67
-	NodeTypeState            NodeType = 68
-	NodeTypeEnum             NodeType = 69
-	NodeTypeEnumMember       NodeType = 70
-	NodeTypeFunction         NodeType = 71
+	NodeTypeProgram          NodeType = 1
+	NodeTypeComment          NodeType = 2
+	NodeTypeCommentGroup     NodeType = 3
+	NodeTypeFieldArgument    NodeType = 4
+	NodeTypeExpr             NodeType = 65536
+	NodeTypeBinary           NodeType = 65537
+	NodeTypeUnary            NodeType = 65538
+	NodeTypeCond             NodeType = 65539
+	NodeTypeIdent            NodeType = 65540
+	NodeTypeCall             NodeType = 65541
+	NodeTypeIf               NodeType = 65542
+	NodeTypeMemberAccess     NodeType = 65543
+	NodeTypeParen            NodeType = 65544
+	NodeTypeIndex            NodeType = 65545
+	NodeTypeMatch            NodeType = 65546
+	NodeTypeRange            NodeType = 65547
+	NodeTypeIdentity         NodeType = 65548
+	NodeTypeTmpVar           NodeType = 65549
+	NodeTypeImport           NodeType = 65550
+	NodeTypeCast             NodeType = 65551
+	NodeTypeAvailable        NodeType = 65552
+	NodeTypeSpecifyOrder     NodeType = 65553
+	NodeTypeExplicitError    NodeType = 65554
+	NodeTypeIoOperation      NodeType = 65555
+	NodeTypeOrCond           NodeType = 65556
+	NodeTypeBadExpr          NodeType = 65557
+	NodeTypeStmt             NodeType = 131072
+	NodeTypeLoop             NodeType = 131073
+	NodeTypeIndentBlock      NodeType = 131074
+	NodeTypeScopedStatement  NodeType = 131075
+	NodeTypeMatchBranch      NodeType = 131076
+	NodeTypeUnionCandidate   NodeType = 131077
+	NodeTypeReturn           NodeType = 131078
+	NodeTypeBreak            NodeType = 131079
+	NodeTypeContinue         NodeType = 131080
+	NodeTypeAssert           NodeType = 131081
+	NodeTypeImplicitYield    NodeType = 131082
+	NodeTypeMetadata         NodeType = 131083
+	NodeTypeType             NodeType = 262144
+	NodeTypeIntType          NodeType = 262145
+	NodeTypeFloatType        NodeType = 262146
+	NodeTypeIdentType        NodeType = 262147
+	NodeTypeIntLiteralType   NodeType = 262148
+	NodeTypeStrLiteralType   NodeType = 262149
+	NodeTypeRegexLiteralType NodeType = 262150
+	NodeTypeVoidType         NodeType = 262151
+	NodeTypeBoolType         NodeType = 262152
+	NodeTypeArrayType        NodeType = 262153
+	NodeTypeFunctionType     NodeType = 262154
+	NodeTypeStructType       NodeType = 262155
+	NodeTypeStructUnionType  NodeType = 262156
+	NodeTypeUnionType        NodeType = 262157
+	NodeTypeRangeType        NodeType = 262158
+	NodeTypeEnumType         NodeType = 262159
+	NodeTypeMetaType         NodeType = 262160
+	NodeTypeOptionalType     NodeType = 262161
+	NodeTypeGenericType      NodeType = 262162
+	NodeTypeLiteral          NodeType = 2162688
+	NodeTypeIntLiteral       NodeType = 2162689
+	NodeTypeBoolLiteral      NodeType = 2162690
+	NodeTypeStrLiteral       NodeType = 2162691
+	NodeTypeRegexLiteral     NodeType = 2162692
+	NodeTypeCharLiteral      NodeType = 2162693
+	NodeTypeTypeLiteral      NodeType = 2162694
+	NodeTypeSpecialLiteral   NodeType = 2162695
+	NodeTypeMember           NodeType = 2228224
+	NodeTypeField            NodeType = 2228225
+	NodeTypeFormat           NodeType = 2228226
+	NodeTypeState            NodeType = 2228227
+	NodeTypeEnum             NodeType = 2228228
+	NodeTypeEnumMember       NodeType = 2228229
+	NodeTypeFunction         NodeType = 2228230
 )
 
 func (n NodeType) String() string {
@@ -1513,6 +1513,239 @@ func (n *OrderType) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+type FormatTrait int
+
+const (
+	FormatTraitNone                   FormatTrait = 0
+	FormatTraitFixedPrimitive         FormatTrait = 1
+	FormatTraitFixedFloat             FormatTrait = 2
+	FormatTraitFixedPrimitiveArray    FormatTrait = 4
+	FormatTraitFixedFloatArray        FormatTrait = 8
+	FormatTraitVariablePrimitiveArray FormatTrait = 16
+	FormatTraitVariableFloatArray     FormatTrait = 32
+	FormatTraitVariableStructArray    FormatTrait = 64
+	FormatTraitFixedStructArray       FormatTrait = 128
+	FormatTraitStruct                 FormatTrait = 256
+	FormatTraitConditional            FormatTrait = 512
+	FormatTraitStaticPeek             FormatTrait = 1024
+	FormatTraitBitField               FormatTrait = 2048
+	FormatTraitReadState              FormatTrait = 4096
+	FormatTraitWriteState             FormatTrait = 8192
+	FormatTraitTerminalString         FormatTrait = 16384
+	FormatTraitTerminalEnd            FormatTrait = 32768
+	FormatTraitTerminalRegex          FormatTrait = 65536
+	FormatTraitTerminalFn             FormatTrait = 131072
+	FormatTraitBitStream              FormatTrait = 262144
+	FormatTraitDynamicEndian          FormatTrait = 524288
+	FormatTraitDynamicBitOrder        FormatTrait = 1048576
+	FormatTraitFullInput              FormatTrait = 2097152
+	FormatTraitBackwardInput          FormatTrait = 4194304
+	FormatTraitMagicString            FormatTrait = 8388608
+	FormatTraitMagicNumber            FormatTrait = 16777216
+	FormatTraitAssertion              FormatTrait = 33554432
+	FormatTraitExplicitError          FormatTrait = 67108864
+	FormatTraitProcedural             FormatTrait = 134217728
+	FormatTraitForLoop                FormatTrait = 268435456
+	FormatTraitLocalVariable          FormatTrait = 536870912
+)
+
+func (n FormatTrait) String() string {
+	var s string
+	if n&FormatTraitFixedPrimitive != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "fixed_primitive"
+	}
+	if n&FormatTraitFixedFloat != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "fixed_float"
+	}
+	if n&FormatTraitFixedPrimitiveArray != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "fixed_primitive_array"
+	}
+	if n&FormatTraitFixedFloatArray != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "fixed_float_array"
+	}
+	if n&FormatTraitVariablePrimitiveArray != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "variable_primitive_array"
+	}
+	if n&FormatTraitVariableFloatArray != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "variable_float_array"
+	}
+	if n&FormatTraitVariableStructArray != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "variable_struct_array"
+	}
+	if n&FormatTraitFixedStructArray != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "fixed_struct_array"
+	}
+	if n&FormatTraitStruct != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "struct"
+	}
+	if n&FormatTraitConditional != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "conditional"
+	}
+	if n&FormatTraitStaticPeek != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "static_peek"
+	}
+	if n&FormatTraitBitField != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "bit_field"
+	}
+	if n&FormatTraitReadState != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "read_state"
+	}
+	if n&FormatTraitWriteState != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "write_state"
+	}
+	if n&FormatTraitTerminalString != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "terminal_string"
+	}
+	if n&FormatTraitTerminalEnd != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "terminal_end"
+	}
+	if n&FormatTraitTerminalRegex != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "terminal_regex"
+	}
+	if n&FormatTraitTerminalFn != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "terminal_fn"
+	}
+	if n&FormatTraitBitStream != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "bit_stream"
+	}
+	if n&FormatTraitDynamicEndian != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "dynamic_endian"
+	}
+	if n&FormatTraitDynamicBitOrder != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "dynamic_bit_order"
+	}
+	if n&FormatTraitFullInput != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "full_input"
+	}
+	if n&FormatTraitBackwardInput != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "backward_input"
+	}
+	if n&FormatTraitMagicString != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "magic_string"
+	}
+	if n&FormatTraitMagicNumber != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "magic_number"
+	}
+	if n&FormatTraitAssertion != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "assertion"
+	}
+	if n&FormatTraitExplicitError != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "explicit_error"
+	}
+	if n&FormatTraitProcedural != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "procedural"
+	}
+	if n&FormatTraitForLoop != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "for_loop"
+	}
+	if n&FormatTraitLocalVariable != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "local_variable"
+	}
+	if s == "" {
+		return "none"
+	}
+	return s
+}
+
+func (n *FormatTrait) UnmarshalJSON(data []byte) error {
+	var tmp int
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+	*n = FormatTrait(tmp)
+	return nil
+}
+
 type Node interface {
 	isNode()
 	GetLoc() Loc
@@ -1558,6 +1791,7 @@ type Program struct {
 	StructType  *StructType
 	Elements    []Node
 	GlobalScope *Scope
+	Metadata    []*Metadata
 }
 
 func (n *Program) isNode() {}
@@ -2153,6 +2387,7 @@ type IndentBlock struct {
 	StructType *StructType
 	Elements   []Node
 	Scope      *Scope
+	Metadata   []*Metadata
 }
 
 func (n *IndentBlock) isStmt() {}
@@ -3138,6 +3373,7 @@ type Format struct {
 	CastFns        []*Function
 	Depends        []*IdentType
 	StateVariables []*Field
+	FormatTrait    FormatTrait
 }
 
 func (n *Format) isMember() {}
@@ -3530,6 +3766,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				StructType  *uintptr  `json:"struct_type"`
 				Elements    []uintptr `json:"elements"`
 				GlobalScope *uintptr  `json:"global_scope"`
+				Metadata    []uintptr `json:"metadata"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -3543,6 +3780,10 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			}
 			if tmp.GlobalScope != nil {
 				v.GlobalScope = n.scope[*tmp.GlobalScope]
+			}
+			v.Metadata = make([]*Metadata, len(tmp.Metadata))
+			for j, k := range tmp.Metadata {
+				v.Metadata[j] = n.node[k].(*Metadata)
 			}
 		case NodeTypeComment:
 			v := n.node[i].(*Comment)
@@ -4133,6 +4374,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				StructType *uintptr  `json:"struct_type"`
 				Elements   []uintptr `json:"elements"`
 				Scope      *uintptr  `json:"scope"`
+				Metadata   []uintptr `json:"metadata"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -4146,6 +4388,10 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			}
 			if tmp.Scope != nil {
 				v.Scope = n.scope[*tmp.Scope]
+			}
+			v.Metadata = make([]*Metadata, len(tmp.Metadata))
+			for j, k := range tmp.Metadata {
+				v.Metadata[j] = n.node[k].(*Metadata)
 			}
 		case NodeTypeScopedStatement:
 			v := n.node[i].(*ScopedStatement)
@@ -4865,15 +5111,16 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeFormat:
 			v := n.node[i].(*Format)
 			var tmp struct {
-				Belong         *uintptr  `json:"belong"`
-				BelongStruct   *uintptr  `json:"belong_struct"`
-				Ident          *uintptr  `json:"ident"`
-				Body           *uintptr  `json:"body"`
-				EncodeFn       *uintptr  `json:"encode_fn"`
-				DecodeFn       *uintptr  `json:"decode_fn"`
-				CastFns        []uintptr `json:"cast_fns"`
-				Depends        []uintptr `json:"depends"`
-				StateVariables []uintptr `json:"state_variables"`
+				Belong         *uintptr    `json:"belong"`
+				BelongStruct   *uintptr    `json:"belong_struct"`
+				Ident          *uintptr    `json:"ident"`
+				Body           *uintptr    `json:"body"`
+				EncodeFn       *uintptr    `json:"encode_fn"`
+				DecodeFn       *uintptr    `json:"decode_fn"`
+				CastFns        []uintptr   `json:"cast_fns"`
+				Depends        []uintptr   `json:"depends"`
+				StateVariables []uintptr   `json:"state_variables"`
+				FormatTrait    FormatTrait `json:"format_trait"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -4908,6 +5155,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			for j, k := range tmp.StateVariables {
 				v.StateVariables[j] = n.node[k].(*Field)
 			}
+			v.FormatTrait = tmp.FormatTrait
 		case NodeTypeState:
 			v := n.node[i].(*State)
 			var tmp struct {

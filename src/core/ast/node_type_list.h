@@ -182,6 +182,9 @@ namespace brgen::ast {
                     else if constexpr (std::is_same_v<P, OrderType>) {
                         field(key, "order_type");
                     }
+                    else if constexpr (std::is_same_v<P, FormatTrait>) {
+                        field(key, "format_trait");
+                    }
                     else if constexpr (futils::helper::is_template<P>) {
                         using P1 = typename futils::helper::template_of_t<P>::template param_at<0>;
                         if constexpr (futils::helper::is_template_instance_of<P, std::shared_ptr>) {
@@ -275,39 +278,54 @@ namespace brgen::ast {
     template <class T>
     void enum_type(const char* key, auto&& field) {
         field(key, [&](auto&& d) {
-            auto field = d.array();
-            for (size_t i = 0; i < enum_elem_count<T>(); i++) {
-                field([&](auto&& d) {
-                    auto field = d.object();
-                    field("name", enum_name_array<T>[i].second);
-                    field("value", enum_array<T>[i].second);
-                });
-            }
+            auto field = d.object();
+            field("is_bit_flag", is_bit_flag<T>());
+            field("values", [&](auto&& d) {
+                auto field = d.array();
+                for (size_t i = 0; i < enum_elem_count<T>(); i++) {
+                    field([&](auto&& d) {
+                        auto field = d.object();
+                        field("name", enum_name_array<T>[i].second);
+                        field("value", enum_array<T>[i].second);
+                        field("numeric_value", nums(size_t(enum_array<T>[i].first)));
+                    });
+                }
+            });
         });
     }
 
     void enum_types(auto&& field) {
         {
             field("node_type", [&](auto&& d) {
-                auto field = d.array();
-                for (size_t i = 0; i < node_type_count; i++) {
-                    field([&](auto&& d) {
-                        auto field = d.object();
-                        field("name", sorted_node_type_str_array[i].second);
-                        field("value", sorted_node_type_str_array[i].second);
-                    });
-                }
+                auto field = d.object();
+                field("is_bit_flag", false);
+                field("values", [&](auto&& d) {
+                    auto field = d.array();
+                    for (size_t i = 0; i < node_type_count; i++) {
+                        field([&](auto&& d) {
+                            auto field = d.object();
+                            field("name", sorted_node_type_str_array[i].second);
+                            field("value", sorted_node_type_str_array[i].second);
+                            field("numeric_value", nums(size_t(sorted_node_type_str_array[i].first)));
+                        });
+                    }
+                });
             });
         }
         field("token_tag", [&](auto&& d) {
-            auto field = d.array();
-            for (size_t i = 0; i < lexer::enum_elem_count<lexer::Tag>(); i++) {
-                field([&](auto&& d) {
-                    auto field = d.object();
-                    field("name", lexer::enum_name_array<lexer::Tag>[i].second);
-                    field("value", lexer::enum_array<lexer::Tag>[i].second);
-                });
-            }
+            auto field = d.object();
+            field("is_bit_flag", lexer::is_bit_flag<lexer::Tag>());
+            field("values", [&](auto&& d) {
+                auto field = d.array();
+                for (size_t i = 0; i < lexer::enum_elem_count<lexer::Tag>(); i++) {
+                    field([&](auto&& d) {
+                        auto field = d.object();
+                        field("name", lexer::enum_name_array<lexer::Tag>[i].second);
+                        field("value", lexer::enum_array<lexer::Tag>[i].second);
+                        field("numeric_value", nums(size_t(lexer::enum_array<lexer::Tag>[i].first)));
+                    });
+                }
+            });
         });
         enum_type<UnaryOp>("unary_op", field);
         enum_type<BinaryOp>("binary_op", field);
@@ -319,6 +337,7 @@ namespace brgen::ast {
         enum_type<IOMethod>("io_method", field);
         enum_type<SpecialLiteralKind>("special_literal_kind", field);
         enum_type<OrderType>("order_type", field);
+        enum_type<FormatTrait>("format_trait", field);
     }
 
     void struct_types(auto&& field) {

@@ -105,21 +105,45 @@ func generate(rw io.Writer, defs *gen.Defs) {
 			} else {
 				w.Printf("export const enum %s {\n", d.Name)
 				for _, val := range d.Values {
-					w.Printf("	%s = %q,\n", val.Name, val.Value)
+					if d.IsBitField {
+						w.Printf("	%s = %s,\n", val.Name, val.NumericValue)
+					} else {
+						w.Printf("	%s = %q,\n", val.Name, val.Value)
+					}
 				}
 				w.Printf("};\n\n")
 			}
 			w.Printf("export function is%s(obj: any): obj is %s {\n", d.Name, d.Name)
-			w.Printf("	return obj && typeof obj === 'string' && (")
-			for i, val := range d.Values {
-				if i != 0 {
-					w.Printf(" || ")
+			if d.IsBitField {
+				w.Printf("	return typeof obj === 'number' && Number.isInteger(obj) // easy check\n")
+			} else {
+				w.Printf("	return obj && typeof obj === 'string' && (")
+				for i, val := range d.Values {
+					if i != 0 {
+						w.Printf(" || ")
+					}
+					w.Printf("obj === %q", val.Value)
 				}
-				w.Printf("obj === %q", val.Value)
+				w.Printf(")\n")
 			}
-			w.Printf(")\n")
 			w.Printf("}\n\n")
-
+			if d.IsBitField {
+				w.Printf("export function %sToString(v: %s): string {\n", d.Name, d.Name)
+				w.Printf("  const result = [];\n")
+				zeroCase := ""
+				for _, val := range d.Values {
+					if val.NumericValue == "0" {
+						zeroCase = val.Value
+						continue
+					}
+					w.Printf("  if ((v & %s) === %s) result.push(%q);\n", val.NumericValue, val.NumericValue, val.Value)
+				}
+				w.Printf("  if (result.length === 0) {\n")
+				w.Printf("    return %q;\n", zeroCase)
+				w.Printf("  }\n")
+				w.Printf("  return result.join(' | ');\n")
+				w.Printf("}\n\n")
+			}
 		}
 	}
 

@@ -21,6 +21,8 @@ namespace brgen::ast {
         std::vector<std::weak_ptr<IdentType>> depends;
         std::vector<std::weak_ptr<Field>> state_variables;
 
+        FormatTrait format_trait = FormatTrait::none;
+
         Format(lexer::Loc l)
             : Member(l, NodeType::format) {}
 
@@ -36,6 +38,7 @@ namespace brgen::ast {
             sdebugf(cast_fns);
             sdebugf(depends);
             sdebugf(state_variables);
+            sdebugf(format_trait);
         }
     };
 

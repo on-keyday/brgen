@@ -177,11 +177,29 @@ namespace brgen::ast {
         }
     };
 
+    struct Metadata;
+
     struct IndentBlock : Stmt {
         define_node_type(NodeType::indent_block);
         node_list elements;
         scope_ptr scope;
         std::shared_ptr<StructType> struct_type;
+        /*
+        mapped type by config.type
+        for example
+            ```
+            format A:
+                config.type = u64
+                prefix :u2
+                match prefix:
+                    0 => value :u8
+                    1 => value :u16
+                    2 => value :u32
+                    3 => value :u64
+            ```
+            this metadata's mapped_type->values[0] must be TypeLiteral
+        */
+        std::vector<std::weak_ptr<Metadata>> metadata;
 
         IndentBlock(lexer::Loc l)
             : Stmt(l, NodeType::indent_block) {}
@@ -195,6 +213,7 @@ namespace brgen::ast {
             sdebugf(struct_type);
             sdebugf(elements);
             sdebugf(scope);
+            sdebugf_omit(metadata);
         }
     };
 
@@ -203,12 +222,14 @@ namespace brgen::ast {
         std::shared_ptr<StructType> struct_type;
         node_list elements;
         scope_ptr global_scope;
+        std::vector<std::weak_ptr<Metadata>> metadata;
 
         void dump(auto&& field_) {
             Node::dump(field_);
             sdebugf(struct_type);
             sdebugf(elements);
             sdebugf(global_scope);
+            sdebugf_omit(metadata);
         }
 
         Program()

@@ -404,6 +404,70 @@ BitMapping,
 @JsonValue('bit_both')
 BitBoth,
 }
+enum FormatTrait {
+@JsonValue('none')
+None,
+@JsonValue('fixed_primitive')
+FixedPrimitive,
+@JsonValue('fixed_float')
+FixedFloat,
+@JsonValue('fixed_primitive_array')
+FixedPrimitiveArray,
+@JsonValue('fixed_float_array')
+FixedFloatArray,
+@JsonValue('variable_primitive_array')
+VariablePrimitiveArray,
+@JsonValue('variable_float_array')
+VariableFloatArray,
+@JsonValue('variable_struct_array')
+VariableStructArray,
+@JsonValue('fixed_struct_array')
+FixedStructArray,
+@JsonValue('struct')
+Struct,
+@JsonValue('conditional')
+Conditional,
+@JsonValue('static_peek')
+StaticPeek,
+@JsonValue('bit_field')
+BitField,
+@JsonValue('read_state')
+ReadState,
+@JsonValue('write_state')
+WriteState,
+@JsonValue('terminal_string')
+TerminalString,
+@JsonValue('terminal_end')
+TerminalEnd,
+@JsonValue('terminal_regex')
+TerminalRegex,
+@JsonValue('terminal_fn')
+TerminalFn,
+@JsonValue('bit_stream')
+BitStream,
+@JsonValue('dynamic_endian')
+DynamicEndian,
+@JsonValue('dynamic_bit_order')
+DynamicBitOrder,
+@JsonValue('full_input')
+FullInput,
+@JsonValue('backward_input')
+BackwardInput,
+@JsonValue('magic_string')
+MagicString,
+@JsonValue('magic_number')
+MagicNumber,
+@JsonValue('assertion')
+Assertion,
+@JsonValue('explicit_error')
+ExplicitError,
+@JsonValue('procedural')
+Procedural,
+@JsonValue('for_loop')
+ForLoop,
+@JsonValue('local_variable')
+LocalVariable,
+}
 abstract class Node {
     Loc loc = Loc();
 }
@@ -431,6 +495,7 @@ class Program extends Node {
     StructType? structType;
     List<Node>? elements = [];
     Scope? globalScope;
+    List<Metadata>? metadata = [];
 factory Program.fromJson(Map<String, dynamic> json) => _$ProgramFromJson(json);
 }
 @JsonSerializable()
@@ -616,6 +681,7 @@ class IndentBlock extends Stmt {
     StructType? structType;
     List<Node>? elements = [];
     Scope? scope;
+    List<Metadata>? metadata = [];
 factory IndentBlock.fromJson(Map<String, dynamic> json) => _$IndentBlockFromJson(json);
 }
 @JsonSerializable()
@@ -849,6 +915,7 @@ class Format extends Member {
     List<Func>? castFns = [];
     List<IdentType>? depends = [];
     List<Field>? stateVariables = [];
+    FormatTrait formatTrait = FormatTrait.None;
 factory Format.fromJson(Map<String, dynamic> json) => _$FormatFromJson(json);
 }
 @JsonSerializable()

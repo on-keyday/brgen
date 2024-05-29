@@ -1,6 +1,7 @@
 import {ast2ts} from "./ast";
 
 namespace analyze {
+/*
 export const unwrapType = (type :ast2ts.Type|null|undefined) :string => {
     if(!type){
         return "unknown";
@@ -10,6 +11,7 @@ export const unwrapType = (type :ast2ts.Type|null|undefined) :string => {
     }
     return type.node_type;
 }
+*/
 
 export const bitSize = (bit :number|null|undefined) => {
     if(bit===undefined){
@@ -46,6 +48,76 @@ const mapOrderToString = (typ :ast2ts.OrderType,val  :number|null|undefined) => 
         default: // bit order
             return `${val === 0? "msb" : val === 1 ? "lsb" : "platform depended"} first(${val})`;
     }
+}
+
+export const typeToString = (type :ast2ts.Type|null|undefined) :string => {
+    if(!type){
+        return "(unknown)";
+    }
+    const typ = type.node_type;
+   
+    if(ast2ts.isIdentType(type)) {
+        const name = type.ident?.ident||"(null)";
+        if(!type.base){
+            return name + " (unknown)";
+        }
+        return name + " ("+typeToString(type.base)+")";
+    }
+    if(ast2ts.isStructUnionType(type)) {
+        return "struct union (size: "+bitSize(type.bit_size)+")";
+    }
+    if(ast2ts.isStructType(type)) {
+        return "struct (size: "+bitSize(type.bit_size)+")";
+    }
+    if(ast2ts.isUnionType(type)) {
+        return "union (size: "+bitSize(type.bit_size)+")";
+    }
+    if(ast2ts.isEnumType(type)) {
+        let b = "enum (size: "+bitSize(type.bit_size);
+        if(type.base?.base_type) {
+            b += " base: "+typeToString(type.base.base_type);
+        }
+        b += ")";
+        return b;
+    }
+    if(ast2ts.isIntType(type)) {
+        const sign = type.is_signed?"s":"u";
+        const endian = type.endian == ast2ts.Endian.big?"b":
+                       type.endian == ast2ts.Endian.little?"l":"";
+        return sign+endian+type.bit_size?.toString()||"unknown";
+    }
+    if(ast2ts.isArrayType(type)) {
+        if(type.length_value) {
+            return "["+type.length_value.toString()+"] "+typeToString(type.element_type);
+        }
+        return "[] "+typeToString(type.element_type);
+    }
+    if(ast2ts.isRangeType(type)) {
+        const op = type.range?.op === ast2ts.BinaryOp.range_inclusive ? "range_inclusive" : "range_exclusive";
+        if(type.base_type) {
+            return op+" "+typeToString(type.base_type);
+        }
+        return op+" (any)";
+    }
+    if(ast2ts.isFloatType(type)) {
+        return "f"+type.bit_size?.toString()||"unknown";
+    }
+    if(ast2ts.isFunctionType(type)) {
+        let b = "fn (";
+        if(type.parameters.length > 0) {
+            b += type.parameters.map((x)=>typeToString(x)).join(", ");
+        }
+        b += ") -> "+typeToString(type.return_type);
+        return b;
+    }
+    if(ast2ts.isVoidType(type)) {
+        return "void";
+    }
+    if(ast2ts.isBoolType(type)) {
+        return "bool";
+    }
+   
+    return typ;
 }
 
 export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
@@ -156,15 +228,15 @@ export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
                     }
                     return makeHover(ident.ident,`unspecified member ${ident.usage == ast2ts.IdentUsage.reference_member_type ? "type": ""}reference`);
                 case ast2ts.IdentUsage.define_variable:
-                    return makeHover(ident.ident,`variable (type: ${unwrapType(ident.expr_type)}, size: ${bitSize(ident.expr_type?.bit_size)} constant level: ${ident.constant_level})`);
+                    return makeHover(ident.ident,`variable (type: ${typeToString(ident.expr_type)}, size: ${bitSize(ident.expr_type?.bit_size)} constant level: ${ident.constant_level})`);
                 case ast2ts.IdentUsage.define_const:
-                    return makeHover(ident.ident,`constant (type: ${unwrapType(ident.expr_type)}, size: ${bitSize(ident.expr_type?.bit_size)} constant level: ${ident.constant_level})`);
+                    return makeHover(ident.ident,`constant (type: ${typeToString(ident.expr_type)}, size: ${bitSize(ident.expr_type?.bit_size)} constant level: ${ident.constant_level})`);
                 case ast2ts.IdentUsage.define_field:
                     if(ast2ts.isField(ident.base)){
                         return makeHover(ident.ident, 
                             `
 + field 
-    + type: ${unwrapType(ident.base.field_type)}
+    + type: ${typeToString(ident.base.field_type)}
     + size: ${bitSize(ident.base.field_type?.bit_size)}
     + offset(from begin): ${bitSize(ident.base.offset_bit)}
     + offset(from recent fixed): ${bitSize(ident.base.offset_recent)}
@@ -205,9 +277,11 @@ export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
     + algin: ${ident.base.body?.struct_type?.bit_alignment||"unknown"}
     ${ident.base.body?.struct_type?.non_dynamic_allocation?"+ non_dynamic\n    ":""}${ident.base.body?.struct_type?.recursive?"+ recursive\n":""}
     ${ident.base.depends.length > 0 ?`+ depends: ${ident.base.depends.map((x)=>convertIdentType(x)).filter((elem, index, self) => self.indexOf(elem) === index).join(", ")}\n`:""}
-    ${ident.base.state_variables.length > 0 ?`+ state variables: ${ident.base.state_variables.map((x)=>x.ident?.ident||"(null)").join(", ")}\n`:""}
+    ${ident.base.state_variables.length > 0 ?`+ state variables: ${ident.base.state_variables.map((x)=>x.ident?.ident||"(null)").filter((elem, index, self) => self.indexOf(elem) === index).join(", ")}\n`:""}
     ${ident.base.encode_fn?"+ custom encode\n":""}
     ${ident.base.decode_fn?"+ custom decode\n":""}
+    ${(ident.base.body?.metadata.length??0) > 0 ?`+ metadata: ${ident.base.body?.metadata.map((x)=>x.name).join(", ")}\n`:""}
+    ${(ident.base.cast_fns.length || 0) > 0 ?`+ cast functions: ${ident.base.cast_fns.map((x)=> typeToString(x.return_type) ).join(", ")}\n`:""}
 `);
                     }
                     return makeHover(ident.ident,"format"); 
@@ -270,7 +344,7 @@ export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
     }
     else if(ast2ts.isIntLiteral(found)){
         const bigInt = BigInt(found.value);
-        return makeHover("int",`int literal (value: ${found.value} = ${bigInt.toString()} = 0x${bigInt.toString(16)} type: ${unwrapType(found.expr_type)} size: ${bitSize(found.expr_type?.bit_size)})`);
+        return makeHover("int",`int literal (value: ${found.value} = ${bigInt.toString()} = 0x${bigInt.toString(16)} type: ${typeToString(found.expr_type)} size: ${bitSize(found.expr_type?.bit_size)})`);
     }
     return null;
 }

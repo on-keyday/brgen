@@ -65,11 +65,15 @@ type Node struct {
 }
 
 type EnumValue struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
+	Name         string `json:"name"`
+	Value        string `json:"value"`
+	NumericValue string `json:"numeric_value"`
 }
 
-type EnumValues []*EnumValue
+type EnumValues struct {
+	IsBitField bool         `json:"is_bit_flag"`
+	Values     []*EnumValue `json:"values"`
+}
 
 type List struct {
 	Node   []Node                                 `json:"node"`
@@ -129,8 +133,9 @@ type Struct struct {
 }
 
 type Enum struct {
-	Name   string
-	Values []*EnumValue
+	Name       string
+	IsBitField bool
+	Values     []*EnumValue
 }
 
 func (d *Struct) def() {}
@@ -216,15 +221,17 @@ func (c *collector) mapToStructFields(m OrderedKeyList[string], field ...*Field)
 }
 
 func (c *collector) mapOpsToEnumValues(ops EnumValues) (values []*EnumValue) {
-	for _, op := range ops {
+	for _, op := range ops.Values {
 		value := EnumValue{}
 		value.Name = c.fieldCaseFn(op.Name)
 		value.Value = op.Value
+		value.NumericValue = op.NumericValue
 		values = append(values, &value)
 	}
 	return
 }
 
+/*
 func (c *collector) mapStringsToEnumValues(strings []string) (values []*EnumValue) {
 	for _, str := range strings {
 		value := EnumValue{}
@@ -234,6 +241,7 @@ func (c *collector) mapStringsToEnumValues(strings []string) (values []*EnumValu
 	}
 	return
 }
+*/
 
 type Defs struct {
 	NodeTypes  []string
@@ -279,8 +287,9 @@ func CollectDefinition(list *List, fieldCaseFn func(string) string, typeCaseFn f
 	for _, enum := range list.Enum {
 		name := c.typeCaseFn(enum.Key)
 		defs.push(&Enum{
-			Name:   name,
-			Values: c.mapOpsToEnumValues(enum.Value),
+			Name:       name,
+			IsBitField: enum.Value.IsBitField,
+			Values:     c.mapOpsToEnumValues(enum.Value),
 		})
 	}
 

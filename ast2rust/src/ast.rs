@@ -6,6 +6,8 @@ use serde_derive::{Serialize,Deserialize};
 
 use std::collections::HashMap;
 
+use bitflags::bitflags;
+
 #[derive(Debug)]
 pub enum JSONType {
 	Null,
@@ -203,7 +205,8 @@ impl From<NodeWeak> for NodeType {
 }
 
 #[derive(Debug,Clone,Copy,Serialize,Deserialize)]
-#[serde(rename_all = "snake_case")]pub enum NodeType {
+#[serde(rename_all = "snake_case")]
+pub enum NodeType {
 	Program,
 	Comment,
 	CommentGroup,
@@ -277,7 +280,6 @@ impl From<NodeWeak> for NodeType {
 	EnumMember,
 	Function,
 }
-
 impl TryFrom<&str> for NodeType {
 	type Error = ();
 	fn try_from(s:&str)->Result<Self,()>{
@@ -360,7 +362,8 @@ impl TryFrom<&str> for NodeType {
 }
 
 #[derive(Debug,Clone,Copy,Serialize,Deserialize)]
-#[serde(rename_all = "snake_case")]pub enum TokenTag {
+#[serde(rename_all = "snake_case")]
+pub enum TokenTag {
 	Indent,
 	Space,
 	Line,
@@ -376,7 +379,6 @@ impl TryFrom<&str> for NodeType {
 	Error,
 	Unknown,
 }
-
 impl TryFrom<&str> for TokenTag {
 	type Error = ();
 	fn try_from(s:&str)->Result<Self,()>{
@@ -401,11 +403,11 @@ impl TryFrom<&str> for TokenTag {
 }
 
 #[derive(Debug,Clone,Copy,Serialize,Deserialize)]
-#[serde(rename_all = "snake_case")]pub enum UnaryOp {
+#[serde(rename_all = "snake_case")]
+pub enum UnaryOp {
 	Not,
 	MinusSign,
 }
-
 impl TryFrom<&str> for UnaryOp {
 	type Error = ();
 	fn try_from(s:&str)->Result<Self,()>{
@@ -418,7 +420,8 @@ impl TryFrom<&str> for UnaryOp {
 }
 
 #[derive(Debug,Clone,Copy,Serialize,Deserialize)]
-#[serde(rename_all = "snake_case")]pub enum BinaryOp {
+#[serde(rename_all = "snake_case")]
+pub enum BinaryOp {
 	Mul,
 	Div,
 	Mod,
@@ -461,7 +464,6 @@ impl TryFrom<&str> for UnaryOp {
 	Comma,
 	InAssign,
 }
-
 impl TryFrom<&str> for BinaryOp {
 	type Error = ();
 	fn try_from(s:&str)->Result<Self,()>{
@@ -513,7 +515,8 @@ impl TryFrom<&str> for BinaryOp {
 }
 
 #[derive(Debug,Clone,Copy,Serialize,Deserialize)]
-#[serde(rename_all = "snake_case")]pub enum IdentUsage {
+#[serde(rename_all = "snake_case")]
+pub enum IdentUsage {
 	Unknown,
 	BadIdent,
 	Reference,
@@ -533,7 +536,6 @@ impl TryFrom<&str> for BinaryOp {
 	MaybeType,
 	ReferenceBuiltinFn,
 }
-
 impl TryFrom<&str> for IdentUsage {
 	type Error = ();
 	fn try_from(s:&str)->Result<Self,()>{
@@ -562,12 +564,12 @@ impl TryFrom<&str> for IdentUsage {
 }
 
 #[derive(Debug,Clone,Copy,Serialize,Deserialize)]
-#[serde(rename_all = "snake_case")]pub enum Endian {
+#[serde(rename_all = "snake_case")]
+pub enum Endian {
 	Unspec,
 	Big,
 	Little,
 }
-
 impl TryFrom<&str> for Endian {
 	type Error = ();
 	fn try_from(s:&str)->Result<Self,()>{
@@ -581,13 +583,13 @@ impl TryFrom<&str> for Endian {
 }
 
 #[derive(Debug,Clone,Copy,Serialize,Deserialize)]
-#[serde(rename_all = "snake_case")]pub enum ConstantLevel {
+#[serde(rename_all = "snake_case")]
+pub enum ConstantLevel {
 	Unknown,
 	Constant,
 	ImmutableVariable,
 	Variable,
 }
-
 impl TryFrom<&str> for ConstantLevel {
 	type Error = ();
 	fn try_from(s:&str)->Result<Self,()>{
@@ -602,7 +604,8 @@ impl TryFrom<&str> for ConstantLevel {
 }
 
 #[derive(Debug,Clone,Copy,Serialize,Deserialize)]
-#[serde(rename_all = "snake_case")]pub enum BitAlignment {
+#[serde(rename_all = "snake_case")]
+pub enum BitAlignment {
 	ByteAligned,
 	Bit1,
 	Bit2,
@@ -614,7 +617,6 @@ impl TryFrom<&str> for ConstantLevel {
 	NotTarget,
 	NotDecidable,
 }
-
 impl TryFrom<&str> for BitAlignment {
 	type Error = ();
 	fn try_from(s:&str)->Result<Self,()>{
@@ -635,14 +637,14 @@ impl TryFrom<&str> for BitAlignment {
 }
 
 #[derive(Debug,Clone,Copy,Serialize,Deserialize)]
-#[serde(rename_all = "snake_case")]pub enum Follow {
+#[serde(rename_all = "snake_case")]
+pub enum Follow {
 	Unknown,
 	End,
 	Fixed,
 	Constant,
 	Normal,
 }
-
 impl TryFrom<&str> for Follow {
 	type Error = ();
 	fn try_from(s:&str)->Result<Self,()>{
@@ -658,7 +660,8 @@ impl TryFrom<&str> for Follow {
 }
 
 #[derive(Debug,Clone,Copy,Serialize,Deserialize)]
-#[serde(rename_all = "snake_case")]pub enum IoMethod {
+#[serde(rename_all = "snake_case")]
+pub enum IoMethod {
 	Unspec,
 	OutputPut,
 	InputPeek,
@@ -674,7 +677,6 @@ impl TryFrom<&str> for Follow {
 	ConfigBitOrderLsb,
 	ConfigBitOrderMsb,
 }
-
 impl TryFrom<&str> for IoMethod {
 	type Error = ();
 	fn try_from(s:&str)->Result<Self,()>{
@@ -699,12 +701,12 @@ impl TryFrom<&str> for IoMethod {
 }
 
 #[derive(Debug,Clone,Copy,Serialize,Deserialize)]
-#[serde(rename_all = "snake_case")]pub enum SpecialLiteralKind {
+#[serde(rename_all = "snake_case")]
+pub enum SpecialLiteralKind {
 	Input,
 	Output,
 	Config,
 }
-
 impl TryFrom<&str> for SpecialLiteralKind {
 	type Error = ();
 	fn try_from(s:&str)->Result<Self,()>{
@@ -718,13 +720,13 @@ impl TryFrom<&str> for SpecialLiteralKind {
 }
 
 #[derive(Debug,Clone,Copy,Serialize,Deserialize)]
-#[serde(rename_all = "snake_case")]pub enum OrderType {
+#[serde(rename_all = "snake_case")]
+pub enum OrderType {
 	Byte,
 	BitStream,
 	BitMapping,
 	BitBoth,
 }
-
 impl TryFrom<&str> for OrderType {
 	type Error = ();
 	fn try_from(s:&str)->Result<Self,()>{
@@ -738,6 +740,48 @@ impl TryFrom<&str> for OrderType {
 	}
 }
 
+bitflags!{
+	#[derive(Debug,Clone,Copy)]
+	pub struct FormatTrait: u64{
+		const None = 0;
+		const FixedPrimitive = 1;
+		const FixedFloat = 2;
+		const FixedPrimitiveArray = 4;
+		const FixedFloatArray = 8;
+		const VariablePrimitiveArray = 16;
+		const VariableFloatArray = 32;
+		const VariableStructArray = 64;
+		const FixedStructArray = 128;
+		const Struct = 256;
+		const Conditional = 512;
+		const StaticPeek = 1024;
+		const BitField = 2048;
+		const ReadState = 4096;
+		const WriteState = 8192;
+		const TerminalString = 16384;
+		const TerminalEnd = 32768;
+		const TerminalRegex = 65536;
+		const TerminalFn = 131072;
+		const BitStream = 262144;
+		const DynamicEndian = 524288;
+		const DynamicBitOrder = 1048576;
+		const FullInput = 2097152;
+		const BackwardInput = 4194304;
+		const MagicString = 8388608;
+		const MagicNumber = 16777216;
+		const Assertion = 33554432;
+		const ExplicitError = 67108864;
+		const Procedural = 134217728;
+		const ForLoop = 268435456;
+		const LocalVariable = 536870912;
+	}
+}
+impl TryFrom<u64> for FormatTrait {
+	type Error = ();
+	fn try_from(v:u64)->Result<Self,()>{
+		Self::from_bits(v).ok_or(())
+	}
+}
 #[derive(Debug,Clone)]
 pub enum Node {
 	Program(Rc<RefCell<Program>>),
@@ -2963,6 +3007,7 @@ pub struct Program {
 	pub struct_type: Option<Rc<RefCell<StructType>>>,
 	pub elements: Vec<Node>,
 	pub global_scope: Option<Rc<RefCell<Scope>>>,
+	pub metadata: Vec<Weak<RefCell<Metadata>>>,
 }
 
 impl From<&Rc<RefCell<Program>>> for NodeType {
@@ -4920,6 +4965,7 @@ pub struct IndentBlock {
 	pub struct_type: Option<Rc<RefCell<StructType>>>,
 	pub elements: Vec<Node>,
 	pub scope: Option<Rc<RefCell<Scope>>>,
+	pub metadata: Vec<Weak<RefCell<Metadata>>>,
 }
 
 impl From<&Rc<RefCell<IndentBlock>>> for NodeType {
@@ -8033,6 +8079,7 @@ pub struct Format {
 	pub cast_fns: Vec<Weak<RefCell<Function>>>,
 	pub depends: Vec<Weak<RefCell<IdentType>>>,
 	pub state_variables: Vec<Weak<RefCell<Field>>>,
+	pub format_trait: FormatTrait,
 }
 
 impl From<&Rc<RefCell<Format>>> for NodeType {
@@ -8675,6 +8722,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				struct_type: None,
 				elements: Vec::new(),
 				global_scope: None,
+				metadata: Vec::new(),
 				})))
 			},
 			NodeType::Comment => {
@@ -8928,6 +8976,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				struct_type: None,
 				elements: Vec::new(),
 				scope: None,
+				metadata: Vec::new(),
 				})))
 			},
 			NodeType::ScopedStatement => {
@@ -9289,6 +9338,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				cast_fns: Vec::new(),
 				depends: Vec::new(),
 				state_variables: Vec::new(),
+				format_trait: FormatTrait::None,
 				})))
 			},
 			NodeType::State => {
@@ -9416,6 +9466,29 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						None => return Err(Error::IndexOutOfBounds(global_scope_body as usize)),
 					};
 					node.borrow_mut().global_scope = Some(global_scope_body.clone());
+				}
+				let metadata_body = match raw_node.body.get("metadata") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"metadata")),
+				};
+				let metadata_body = match metadata_body.as_array(){
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(metadata_body.into(),JSONType::Array)),
+				};
+				for link in metadata_body {
+					let link = match link.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
+					};
+					let metadata_body = match nodes.get(link as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(link as usize)),
+					};
+					let metadata_body = match metadata_body {
+						Node::Metadata(body)=>body,
+						x =>return Err(Error::MismatchNodeType(x.into(),metadata_body.into())),
+					};
+					node.borrow_mut().metadata.push(Rc::downgrade(&metadata_body));
 				}
 			},
 			NodeType::Comment => {
@@ -11373,6 +11446,29 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						None => return Err(Error::IndexOutOfBounds(scope_body as usize)),
 					};
 					node.borrow_mut().scope = Some(scope_body.clone());
+				}
+				let metadata_body = match raw_node.body.get("metadata") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"metadata")),
+				};
+				let metadata_body = match metadata_body.as_array(){
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(metadata_body.into(),JSONType::Array)),
+				};
+				for link in metadata_body {
+					let link = match link.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
+					};
+					let metadata_body = match nodes.get(link as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(link as usize)),
+					};
+					let metadata_body = match metadata_body {
+						Node::Metadata(body)=>body,
+						x =>return Err(Error::MismatchNodeType(x.into(),metadata_body.into())),
+					};
+					node.borrow_mut().metadata.push(Rc::downgrade(&metadata_body));
 				}
 			},
 			NodeType::ScopedStatement => {
@@ -13889,6 +13985,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().state_variables.push(Rc::downgrade(&state_variables_body));
 				}
+				let format_trait_body = match raw_node.body.get("format_trait") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"format_trait")),
+				};
+				node.borrow_mut().format_trait = match format_trait_body.as_u64() {
+					Some(v)=>match FormatTrait::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(format_trait_body.into(),JSONType::Number)),
+				};
 			},
 			NodeType::State => {
 				let node = nodes[i].clone();

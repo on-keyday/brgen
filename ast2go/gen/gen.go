@@ -24,15 +24,10 @@ type GenConfig struct {
 }
 
 func ConfigFromProgram(p *ast2go.Program, f func(configName string, asCall bool, args ...ast2go.Expr) error) error {
-	for _, element := range p.Elements {
-		if meta, ok := element.(*ast2go.Metadata); ok {
-			_, as_call := meta.Base.(*ast2go.Call)
-			if err := f(meta.Name, as_call, meta.Values...); err != nil {
-				return err
-			}
-		}
-		if i, ok := element.(*ast2go.Import); ok {
-			ConfigFromProgram(i.ImportDesc, f)
+	for _, meta := range p.Metadata {
+		_, as_call := meta.Base.(*ast2go.Call)
+		if err := f(meta.Name, as_call, meta.Values...); err != nil {
+			return err
 		}
 	}
 	return nil

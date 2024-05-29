@@ -78,33 +78,66 @@ func generate(w io.Writer, list *gen.Defs) {
 		case *gen.Enum:
 			writer.Printf("type %s int\n", d.Name)
 			writer.Printf("const (\n")
-			for i, value := range d.Values {
-				writer.Printf("	%s%s %s = %d\n", d.Name, value.Name, d.Name, i)
+			for _, value := range d.Values {
+				writer.Printf("	%s%s %s = %s\n", d.Name, value.Name, d.Name, value.NumericValue)
 			}
 			writer.Printf(")\n\n")
 			writer.Printf("func (n %s) String() string {\n", d.Name)
-			writer.Printf("	switch n {\n")
-			for _, value := range d.Values {
-				writer.Printf("	case %s%s:\n", d.Name, value.Name)
-				writer.Printf("		return \"%s\"\n", value.Value)
+			if d.IsBitField {
+				writer.Printf("	var s string\n")
+				zeroCase := ""
+				for _, value := range d.Values {
+					if value.NumericValue == "0" {
+						zeroCase = value.Value
+						continue
+					}
+					writer.Printf("	if n&%s%s!=0 {\n", d.Name, value.Name)
+					writer.Printf("		if s!=\"\" {\n")
+					writer.Printf("			s+=\" | \"\n")
+					writer.Printf("		}\n")
+					writer.Printf("		s+=\"%s\"\n", value.Value)
+					writer.Printf("	}\n")
+				}
+				writer.Printf("	if s==\"\" {\n")
+				if zeroCase != "" {
+					writer.Printf("		return \"%s\"\n", zeroCase)
+				} else {
+					writer.Printf("		return fmt.Sprintf(\"%s(%%d)\", n)\n", d.Name)
+				}
+				writer.Printf("	}\n")
+				writer.Printf("	return s\n")
+			} else {
+				writer.Printf("	switch n {\n")
+				for _, value := range d.Values {
+					writer.Printf("	case %s%s:\n", d.Name, value.Name)
+					writer.Printf("		return \"%s\"\n", value.Value)
+				}
+				writer.Printf("	default:\n")
+				writer.Printf("		return fmt.Sprintf(\"%s(%%d)\", n)\n", d.Name)
+				writer.Printf("	}\n")
 			}
-			writer.Printf("	default:\n")
-			writer.Printf("		return fmt.Sprintf(\"%s(%%d)\", n)\n", d.Name)
-			writer.Printf("	}\n")
 			writer.Printf("}\n\n")
 			writer.Printf("func (n *%s) UnmarshalJSON(data []byte) error {\n", d.Name)
-			writer.Printf("	var tmp string\n")
+			if d.IsBitField {
+				writer.Printf("	var tmp int\n")
+			} else {
+				writer.Printf("	var tmp string\n")
+			}
 			writer.Printf("	if err := json.Unmarshal(data, &tmp); err != nil {\n")
 			writer.Printf("		return err\n")
 			writer.Printf("	}\n")
-			writer.Printf("	switch tmp {\n")
-			for _, value := range d.Values {
-				writer.Printf("	case %q:\n", value.Value)
-				writer.Printf("		*n = %s%s\n", d.Name, value.Name)
+			if d.IsBitField {
+				writer.Printf("	*n = %s(tmp)\n", d.Name)
+			} else {
+				writer.Printf("	switch tmp {\n")
+				for _, value := range d.Values {
+					writer.Printf("	case %q:\n", value.Value)
+					writer.Printf("		*n = %s%s\n", d.Name, value.Name)
+				}
+				writer.Printf("	default:\n")
+				writer.Printf("		return fmt.Errorf(\"unknown %s: %%q\", tmp)\n", d.Name)
+				writer.Printf("	}\n")
 			}
-			writer.Printf("	default:\n")
-			writer.Printf("		return fmt.Errorf(\"unknown %s: %%q\", tmp)\n", d.Name)
-			writer.Printf("	}\n")
 			writer.Printf("	return nil\n")
 			writer.Printf("}\n\n")
 			if d.Name == "NodeType" {

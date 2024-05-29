@@ -217,6 +217,39 @@ BitStream,
 BitMapping,
 BitBoth,
 }
+public enum FormatTrait {
+None,
+FixedPrimitive,
+FixedFloat,
+FixedPrimitiveArray,
+FixedFloatArray,
+VariablePrimitiveArray,
+VariableFloatArray,
+VariableStructArray,
+FixedStructArray,
+Struct,
+Conditional,
+StaticPeek,
+BitField,
+ReadState,
+WriteState,
+TerminalString,
+TerminalEnd,
+TerminalRegex,
+TerminalFn,
+BitStream,
+DynamicEndian,
+DynamicBitOrder,
+FullInput,
+BackwardInput,
+MagicString,
+MagicNumber,
+Assertion,
+ExplicitError,
+Procedural,
+ForLoop,
+LocalVariable,
+}
 public interface Node {
 	public Loc Loc {get; set;}
 }
@@ -244,6 +277,7 @@ public class Program : Node{
 	public StructType? StructType{get;set;}
 	public List<Node>? Elements{get;set;}
 	public Scope? GlobalScope{get;set;}
+	public List<Metadata>? Metadata{get;set;}
 }
 public class Comment : Node{
 	public Loc Loc{get;set;}
@@ -445,6 +479,7 @@ public class IndentBlock : Stmt{
 	public StructType? StructType{get;set;}
 	public List<Node>? Elements{get;set;}
 	public Scope? Scope{get;set;}
+	public List<Metadata>? Metadata{get;set;}
 }
 public class ScopedStatement : Stmt{
 	public Loc Loc{get;set;}
@@ -734,6 +769,7 @@ public class Format : Member{
 	public List<Function>? CastFns{get;set;}
 	public List<IdentType>? Depends{get;set;}
 	public List<Field>? StateVariables{get;set;}
+	public FormatTrait FormatTrait{get;set;}
 }
 public class State : Member{
 	public Loc Loc{get;set;}
@@ -1061,6 +1097,7 @@ public static class Ast {
                node.StructType = ast.Node[i].Body[struct_type];
                node.Elements = ast.Node[i].Body[elements];
                node.GlobalScope = ast.Node[i].Body[global_scope];
+               node.Metadata = ast.Node[i].Body[metadata];
            case NodeType.Comment:
                var node = nodes[i] as Comment;
                node.Loc = ast.Node[i].Body[loc];
@@ -1262,6 +1299,7 @@ public static class Ast {
                node.StructType = ast.Node[i].Body[struct_type];
                node.Elements = ast.Node[i].Body[elements];
                node.Scope = ast.Node[i].Body[scope];
+               node.Metadata = ast.Node[i].Body[metadata];
            case NodeType.ScopedStatement:
                var node = nodes[i] as ScopedStatement;
                node.Loc = ast.Node[i].Body[loc];
@@ -1551,6 +1589,7 @@ public static class Ast {
                node.CastFns = ast.Node[i].Body[cast_fns];
                node.Depends = ast.Node[i].Body[depends];
                node.StateVariables = ast.Node[i].Body[state_variables];
+               node.FormatTrait = ast.Node[i].Body[format_trait];
            case NodeType.State:
                var node = nodes[i] as State;
                node.Loc = ast.Node[i].Body[loc];

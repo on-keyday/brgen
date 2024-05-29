@@ -7,6 +7,8 @@
 namespace brgen::lexer {
 template<typename T>
 constexpr std::optional<T> from_string(std::string_view str);
+template<typename T,class K>
+constexpr std::optional<T> from_json(K k);
 template<typename T>
 constexpr size_t enum_elem_count();
 template<typename T>
@@ -16,24 +18,26 @@ constexpr std::array<std::pair<T,std::string_view>,enum_elem_count<T>()> make_en
 template<typename T>
 constexpr const char* enum_type_name();
 template<typename T>
+constexpr bool is_bit_flag();
+template<typename T>
 constexpr auto enum_array = make_enum_array<T>();
 template<typename T>
 constexpr auto enum_name_array = make_enum_name_array<T>();
 enum class Tag {
-    indent,
-    space,
-    line,
-    punct,
-    int_literal,
-    bool_literal,
-    str_literal,
-    regex_literal,
-    char_literal,
-    keyword,
-    ident,
-    comment,
-    error,
-    unknown,
+    indent = 0,
+    space = 1,
+    line = 2,
+    punct = 3,
+    int_literal = 4,
+    bool_literal = 5,
+    str_literal = 6,
+    regex_literal = 7,
+    char_literal = 8,
+    keyword = 9,
+    ident = 10,
+    comment = 11,
+    error = 12,
+    unknown = 13,
 };
 constexpr const char* to_string(Tag e) {
     switch(e) {
@@ -112,7 +116,14 @@ template<>constexpr std::array<std::pair<Tag,std::string_view>,14> make_enum_nam
     };
 }
 constexpr void as_json(Tag e,auto&& d) {
-    d.value(enum_array<Tag>[int(e)].second);
+    d.value(to_string(e));
+}
+template<>
+constexpr std::optional<Tag> from_json<Tag,std::string_view>(std::string_view k){
+    return from_string<Tag>(k);
+}
+template<>constexpr bool is_bit_flag<Tag>() {
+    return false;
 }
 template<>
 constexpr const char* enum_type_name<Tag>() {

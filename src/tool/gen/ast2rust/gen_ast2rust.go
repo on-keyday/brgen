@@ -18,6 +18,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("use std::convert::TryFrom;\n")
 	w.Printf("use serde_derive::{Serialize,Deserialize};\n\n")
 	w.Printf("use std::collections::HashMap;\n\n")
+	w.Printf("use bitflags::bitflags;\n\n")
 
 	w.Printf("#[derive(Debug)]\n")
 	w.Printf("pub enum JSONType {\n")
@@ -398,25 +399,44 @@ func generate(rw io.Writer, defs *gen.Defs) {
 			}
 
 		case *gen.Enum:
-			w.Printf("#[derive(Debug,Clone,Copy,Serialize,Deserialize)]\n")
-			w.Printf("#[serde(rename_all = \"snake_case\")]")
-			w.Printf("pub enum %s {\n", d.Name)
-			for _, field := range d.Values {
-				field.Name = strcase.ToCamel(field.Name)
-				w.Printf("	%s,\n", field.Name)
+
+			if d.IsBitField {
+				w.Printf("bitflags!{\n")
+				w.Printf("	#[derive(Debug,Clone,Copy)]\n")
+				w.Printf("	pub struct %s: u64{\n", d.Name)
+				for _, field := range d.Values {
+					field.Name = strcase.ToCamel(field.Name)
+					w.Printf("		const %s = %s;\n", field.Name, field.NumericValue)
+				}
+				w.Printf("	}\n")
+				w.Printf("}\n")
+				w.Printf("impl TryFrom<u64> for %s {\n", d.Name)
+				w.Printf("	type Error = ();\n")
+				w.Printf("	fn try_from(v:u64)->Result<Self,()>{\n")
+				w.Printf("		Self::from_bits(v).ok_or(())\n")
+				w.Printf("	}\n")
+				w.Printf("}\n")
+			} else {
+				w.Printf("#[derive(Debug,Clone,Copy,Serialize,Deserialize)]\n")
+				w.Printf("#[serde(rename_all = \"snake_case\")]\n")
+				w.Printf("pub enum %s {\n", d.Name)
+				for _, field := range d.Values {
+					field.Name = strcase.ToCamel(field.Name)
+					w.Printf("	%s,\n", field.Name)
+				}
+				w.Printf("}\n")
+				w.Printf("impl TryFrom<&str> for %s {\n", d.Name)
+				w.Printf("	type Error = ();\n")
+				w.Printf("	fn try_from(s:&str)->Result<Self,()>{\n")
+				w.Printf("		match s{\n")
+				for _, field := range d.Values {
+					w.Printf("			%q =>Ok(Self::%s),\n", field.Value, field.Name)
+				}
+				w.Printf("			_=> Err(()),\n")
+				w.Printf("		}\n")
+				w.Printf("	}\n")
+				w.Printf("}\n\n")
 			}
-			w.Printf("}\n\n")
-			w.Printf("impl TryFrom<&str> for %s {\n", d.Name)
-			w.Printf("	type Error = ();\n")
-			w.Printf("	fn try_from(s:&str)->Result<Self,()>{\n")
-			w.Printf("		match s{\n")
-			for _, field := range d.Values {
-				w.Printf("			%q =>Ok(Self::%s),\n", field.Value, field.Name)
-			}
-			w.Printf("			_=> Err(()),\n")
-			w.Printf("		}\n")
-			w.Printf("	}\n")
-			w.Printf("}\n\n")
 		}
 	}
 
@@ -618,17 +638,27 @@ func generate(rw io.Writer, defs *gen.Defs) {
 					w.Printf("					Err(e)=>return Err(Error::JSONError(e)),\n")
 					w.Printf("				};\n")
 				} else {
-					_, ok := defs.Enums[field.Type.Name]
+					d, ok := defs.Enums[field.Type.Name]
 					if !ok {
 						continue
 					}
-					w.Printf("				node.borrow_mut().%s = match %s_body.as_str() {\n", field.Name, field.Name)
-					w.Printf("					Some(v)=>match %s::try_from(v) {\n", field.Type.Name)
-					w.Printf("						Ok(v)=>v,\n")
-					w.Printf("						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),\n")
-					w.Printf("					},\n")
-					w.Printf("					None=>return Err(Error::MismatchJSONType(%s_body.into(),JSONType::String)),\n", field.Name)
-					w.Printf("				};\n")
+					if d.IsBitField {
+						w.Printf("				node.borrow_mut().%s = match %s_body.as_u64() {\n", field.Name, field.Name)
+						w.Printf("					Some(v)=>match %s::try_from(v) {\n", field.Type.Name)
+						w.Printf("						Ok(v)=>v,\n")
+						w.Printf("						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),\n")
+						w.Printf("					},\n")
+						w.Printf("					None=>return Err(Error::MismatchJSONType(%s_body.into(),JSONType::Number)),\n", field.Name)
+						w.Printf("				};\n")
+					} else {
+						w.Printf("				node.borrow_mut().%s = match %s_body.as_str() {\n", field.Name, field.Name)
+						w.Printf("					Some(v)=>match %s::try_from(v) {\n", field.Type.Name)
+						w.Printf("						Ok(v)=>v,\n")
+						w.Printf("						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),\n")
+						w.Printf("					},\n")
+						w.Printf("					None=>return Err(Error::MismatchJSONType(%s_body.into(),JSONType::String)),\n", field.Name)
+						w.Printf("				};\n")
+					}
 				}
 			}
 			w.Printf("			},\n")

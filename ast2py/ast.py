@@ -230,6 +230,40 @@ class OrderType(PyEnum):
     BIT_BOTH = "bit_both"
 
 
+class FormatTrait(PyEnum):
+    NONE = 0
+    FIXED_PRIMITIVE = 1
+    FIXED_FLOAT = 2
+    FIXED_PRIMITIVE_ARRAY = 4
+    FIXED_FLOAT_ARRAY = 8
+    VARIABLE_PRIMITIVE_ARRAY = 16
+    VARIABLE_FLOAT_ARRAY = 32
+    VARIABLE_STRUCT_ARRAY = 64
+    FIXED_STRUCT_ARRAY = 128
+    STRUCT = 256
+    CONDITIONAL = 512
+    STATIC_PEEK = 1024
+    BIT_FIELD = 2048
+    READ_STATE = 4096
+    WRITE_STATE = 8192
+    TERMINAL_STRING = 16384
+    TERMINAL_END = 32768
+    TERMINAL_REGEX = 65536
+    TERMINAL_FN = 131072
+    BIT_STREAM = 262144
+    DYNAMIC_ENDIAN = 524288
+    DYNAMIC_BIT_ORDER = 1048576
+    FULL_INPUT = 2097152
+    BACKWARD_INPUT = 4194304
+    MAGIC_STRING = 8388608
+    MAGIC_NUMBER = 16777216
+    ASSERTION = 33554432
+    EXPLICIT_ERROR = 67108864
+    PROCEDURAL = 134217728
+    FOR_LOOP = 268435456
+    LOCAL_VARIABLE = 536870912
+
+
 class Node:
     loc: Loc
 
@@ -264,6 +298,7 @@ class Program(Node):
     struct_type: Optional[StructType]
     elements: List[Node]
     global_scope: Optional[Scope]
+    metadata: List[Metadata]
 
 
 class Comment(Node):
@@ -423,6 +458,7 @@ class IndentBlock(Stmt):
     struct_type: Optional[StructType]
     elements: List[Node]
     scope: Optional[Scope]
+    metadata: List[Metadata]
 
 
 class ScopedStatement(Stmt):
@@ -623,6 +659,7 @@ class Format(Member):
     cast_fns: List[Function]
     depends: List[IdentType]
     state_variables: List[Field]
+    format_trait: FormatTrait
 
 
 class State(Member):
@@ -992,6 +1029,7 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].global_scope = scope[ast.node[i].body["global_scope"]]
                 else:
                     node[i].global_scope = None
+                node[i].metadata = [(node[x] if isinstance(node[x],Metadata) else raiseError(TypeError('type mismatch at Program::metadata'))) for x in ast.node[i].body["metadata"]]
             case NodeType.COMMENT:
                 x = ast.node[i].body["comment"]
                 node[i].comment = x if isinstance(x,str)  else raiseError(TypeError('type mismatch at Comment::comment'))
@@ -1449,6 +1487,7 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].scope = scope[ast.node[i].body["scope"]]
                 else:
                     node[i].scope = None
+                node[i].metadata = [(node[x] if isinstance(node[x],Metadata) else raiseError(TypeError('type mismatch at IndentBlock::metadata'))) for x in ast.node[i].body["metadata"]]
             case NodeType.SCOPED_STATEMENT:
                 if ast.node[i].body["struct_type"] is not None:
                     x = node[ast.node[i].body["struct_type"]]
@@ -2033,6 +2072,7 @@ def ast2node(ast :JsonAst) -> Program:
                 node[i].cast_fns = [(node[x] if isinstance(node[x],Function) else raiseError(TypeError('type mismatch at Format::cast_fns'))) for x in ast.node[i].body["cast_fns"]]
                 node[i].depends = [(node[x] if isinstance(node[x],IdentType) else raiseError(TypeError('type mismatch at Format::depends'))) for x in ast.node[i].body["depends"]]
                 node[i].state_variables = [(node[x] if isinstance(node[x],Field) else raiseError(TypeError('type mismatch at Format::state_variables'))) for x in ast.node[i].body["state_variables"]]
+                node[i].format_trait = FormatTrait(ast.node[i].body["format_trait"])
             case NodeType.STATE:
                 if ast.node[i].body["belong"] is not None:
                     x = node[ast.node[i].body["belong"]]

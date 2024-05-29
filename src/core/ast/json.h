@@ -334,15 +334,28 @@ namespace brgen::ast {
                 return res & parse_loc(target);
             }
             else if constexpr(std::is_enum_v<T>&&!std::is_same_v<T,const NodeType>){
-                return (res&get_string(loc,key)).and_then([&](std::string&& s)->result<void>{
-                    if(auto res=from_string<T>(s.c_str());!res){
-                        return unexpect(error(loc,s,"cannot convert to enum ",enum_type_name<T>()));
-                    }
-                    else{
-                        target=*res;
-                    }
-                    return {};
-                });
+                if constexpr(is_bit_flag<T>()) {
+                    return (res & get_number(loc,key)).and_then([&](size_t v)->result<void>{
+                        if(auto res=from_json<T>(v);!res){
+                            return unexpect(error(loc,nums(v)," cannot convert to bit flag ",enum_type_name<T>()));
+                        }
+                        else{
+                            target=*res;
+                        }
+                        return {};
+                    });
+                }
+                else {
+                    return (res&get_string(loc,key)).and_then([&](std::string&& s)->result<void>{
+                        if(auto res=from_string<T>(s.c_str());!res){
+                            return unexpect(error(loc,s,"cannot convert to enum ",enum_type_name<T>()));
+                        }
+                        else{
+                            target=*res;
+                        }
+                        return {};
+                    });
+                }
             }
             else if constexpr (futils::helper::is_template_instance_of<T, std::shared_ptr> ||
                                futils::helper::is_template_instance_of<T, std::weak_ptr> ||

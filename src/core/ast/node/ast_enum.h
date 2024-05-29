@@ -7,6 +7,8 @@
 namespace brgen::ast {
 template<typename T>
 constexpr std::optional<T> from_string(std::string_view str);
+template<typename T,class K>
+constexpr std::optional<T> from_json(K k);
 template<typename T>
 constexpr size_t enum_elem_count();
 template<typename T>
@@ -16,15 +18,17 @@ constexpr std::array<std::pair<T,std::string_view>,enum_elem_count<T>()> make_en
 template<typename T>
 constexpr const char* enum_type_name();
 template<typename T>
+constexpr bool is_bit_flag();
+template<typename T>
 constexpr auto enum_array = make_enum_array<T>();
 template<typename T>
 constexpr auto enum_name_array = make_enum_name_array<T>();
 enum class Follow {
-    unknown,
-    end,
-    fixed,
-    constant,
-    normal,
+    unknown = 0,
+    end = 1,
+    fixed = 2,
+    constant = 3,
+    normal = 4,
 };
 constexpr const char* to_string(Follow e) {
     switch(e) {
@@ -67,54 +71,61 @@ template<>constexpr std::array<std::pair<Follow,std::string_view>,5> make_enum_n
     };
 }
 constexpr void as_json(Follow e,auto&& d) {
-    d.value(enum_array<Follow>[int(e)].second);
+    d.value(to_string(e));
+}
+template<>
+constexpr std::optional<Follow> from_json<Follow,std::string_view>(std::string_view k){
+    return from_string<Follow>(k);
+}
+template<>constexpr bool is_bit_flag<Follow>() {
+    return false;
 }
 template<>
 constexpr const char* enum_type_name<Follow>() {
     return "Follow";
 }
 enum class BinaryOp {
-    mul,
-    div,
-    mod,
-    left_arithmetic_shift,
-    right_arithmetic_shift,
-    left_logical_shift,
-    right_logical_shift,
-    bit_and,
-    add,
-    sub,
-    bit_or,
-    bit_xor,
-    equal,
-    not_equal,
-    less,
-    less_or_eq,
-    grater,
-    grater_or_eq,
-    logical_and,
-    logical_or,
-    cond_op1,
-    cond_op2,
-    range_exclusive,
-    range_inclusive,
-    assign,
-    define_assign,
-    const_assign,
-    add_assign,
-    sub_assign,
-    mul_assign,
-    div_assign,
-    mod_assign,
-    left_logical_shift_assign,
-    right_logical_shift_assign,
-    left_arithmetic_shift_assign,
-    right_arithmetic_shift_assign,
-    bit_and_assign,
-    bit_or_assign,
-    bit_xor_assign,
-    comma,
-    in_assign,
+    mul = 0,
+    div = 1,
+    mod = 2,
+    left_arithmetic_shift = 3,
+    right_arithmetic_shift = 4,
+    left_logical_shift = 5,
+    right_logical_shift = 6,
+    bit_and = 7,
+    add = 8,
+    sub = 9,
+    bit_or = 10,
+    bit_xor = 11,
+    equal = 12,
+    not_equal = 13,
+    less = 14,
+    less_or_eq = 15,
+    grater = 16,
+    grater_or_eq = 17,
+    logical_and = 18,
+    logical_or = 19,
+    cond_op1 = 20,
+    cond_op2 = 21,
+    range_exclusive = 22,
+    range_inclusive = 23,
+    assign = 24,
+    define_assign = 25,
+    const_assign = 26,
+    add_assign = 27,
+    sub_assign = 28,
+    mul_assign = 29,
+    div_assign = 30,
+    mod_assign = 31,
+    left_logical_shift_assign = 32,
+    right_logical_shift_assign = 33,
+    left_arithmetic_shift_assign = 34,
+    right_arithmetic_shift_assign = 35,
+    bit_and_assign = 36,
+    bit_or_assign = 37,
+    bit_xor_assign = 38,
+    comma = 39,
+    in_assign = 40,
 };
 constexpr const char* to_string(BinaryOp e) {
     switch(e) {
@@ -301,15 +312,22 @@ template<>constexpr std::array<std::pair<BinaryOp,std::string_view>,41> make_enu
     };
 }
 constexpr void as_json(BinaryOp e,auto&& d) {
-    d.value(enum_array<BinaryOp>[int(e)].second);
+    d.value(to_string(e));
+}
+template<>
+constexpr std::optional<BinaryOp> from_json<BinaryOp,std::string_view>(std::string_view k){
+    return from_string<BinaryOp>(k);
+}
+template<>constexpr bool is_bit_flag<BinaryOp>() {
+    return false;
 }
 template<>
 constexpr const char* enum_type_name<BinaryOp>() {
     return "BinaryOp";
 }
 enum class UnaryOp {
-    not_,
-    minus_sign,
+    not_ = 0,
+    minus_sign = 1,
 };
 constexpr const char* to_string(UnaryOp e) {
     switch(e) {
@@ -340,23 +358,30 @@ template<>constexpr std::array<std::pair<UnaryOp,std::string_view>,2> make_enum_
     };
 }
 constexpr void as_json(UnaryOp e,auto&& d) {
-    d.value(enum_array<UnaryOp>[int(e)].second);
+    d.value(to_string(e));
+}
+template<>
+constexpr std::optional<UnaryOp> from_json<UnaryOp,std::string_view>(std::string_view k){
+    return from_string<UnaryOp>(k);
+}
+template<>constexpr bool is_bit_flag<UnaryOp>() {
+    return false;
 }
 template<>
 constexpr const char* enum_type_name<UnaryOp>() {
     return "UnaryOp";
 }
 enum class BitAlignment {
-    byte_aligned,
-    bit_1,
-    bit_2,
-    bit_3,
-    bit_4,
-    bit_5,
-    bit_6,
-    bit_7,
-    not_target,
-    not_decidable,
+    byte_aligned = 0,
+    bit_1 = 1,
+    bit_2 = 2,
+    bit_3 = 3,
+    bit_4 = 4,
+    bit_5 = 5,
+    bit_6 = 6,
+    bit_7 = 7,
+    not_target = 8,
+    not_decidable = 9,
 };
 constexpr const char* to_string(BitAlignment e) {
     switch(e) {
@@ -419,17 +444,24 @@ template<>constexpr std::array<std::pair<BitAlignment,std::string_view>,10> make
     };
 }
 constexpr void as_json(BitAlignment e,auto&& d) {
-    d.value(enum_array<BitAlignment>[int(e)].second);
+    d.value(to_string(e));
+}
+template<>
+constexpr std::optional<BitAlignment> from_json<BitAlignment,std::string_view>(std::string_view k){
+    return from_string<BitAlignment>(k);
+}
+template<>constexpr bool is_bit_flag<BitAlignment>() {
+    return false;
 }
 template<>
 constexpr const char* enum_type_name<BitAlignment>() {
     return "BitAlignment";
 }
 enum class ConstantLevel {
-    unknown,
-    constant,
-    immutable_variable,
-    variable,
+    unknown = 0,
+    constant = 1,
+    immutable_variable = 2,
+    variable = 3,
 };
 constexpr const char* to_string(ConstantLevel e) {
     switch(e) {
@@ -468,31 +500,38 @@ template<>constexpr std::array<std::pair<ConstantLevel,std::string_view>,4> make
     };
 }
 constexpr void as_json(ConstantLevel e,auto&& d) {
-    d.value(enum_array<ConstantLevel>[int(e)].second);
+    d.value(to_string(e));
+}
+template<>
+constexpr std::optional<ConstantLevel> from_json<ConstantLevel,std::string_view>(std::string_view k){
+    return from_string<ConstantLevel>(k);
+}
+template<>constexpr bool is_bit_flag<ConstantLevel>() {
+    return false;
 }
 template<>
 constexpr const char* enum_type_name<ConstantLevel>() {
     return "ConstantLevel";
 }
 enum class IdentUsage {
-    unknown,
-    bad_ident,
-    reference,
-    define_variable,
-    define_const,
-    define_field,
-    define_format,
-    define_state,
-    define_enum,
-    define_enum_member,
-    define_fn,
-    define_cast_fn,
-    define_arg,
-    reference_type,
-    reference_member,
-    reference_member_type,
-    maybe_type,
-    reference_builtin_fn,
+    unknown = 0,
+    bad_ident = 1,
+    reference = 2,
+    define_variable = 3,
+    define_const = 4,
+    define_field = 5,
+    define_format = 6,
+    define_state = 7,
+    define_enum = 8,
+    define_enum_member = 9,
+    define_fn = 10,
+    define_cast_fn = 11,
+    define_arg = 12,
+    reference_type = 13,
+    reference_member = 14,
+    reference_member_type = 15,
+    maybe_type = 16,
+    reference_builtin_fn = 17,
 };
 constexpr const char* to_string(IdentUsage e) {
     switch(e) {
@@ -587,16 +626,23 @@ template<>constexpr std::array<std::pair<IdentUsage,std::string_view>,18> make_e
     };
 }
 constexpr void as_json(IdentUsage e,auto&& d) {
-    d.value(enum_array<IdentUsage>[int(e)].second);
+    d.value(to_string(e));
+}
+template<>
+constexpr std::optional<IdentUsage> from_json<IdentUsage,std::string_view>(std::string_view k){
+    return from_string<IdentUsage>(k);
+}
+template<>constexpr bool is_bit_flag<IdentUsage>() {
+    return false;
 }
 template<>
 constexpr const char* enum_type_name<IdentUsage>() {
     return "IdentUsage";
 }
 enum class Endian {
-    unspec,
-    big,
-    little,
+    unspec = 0,
+    big = 1,
+    little = 2,
 };
 constexpr const char* to_string(Endian e) {
     switch(e) {
@@ -631,27 +677,34 @@ template<>constexpr std::array<std::pair<Endian,std::string_view>,3> make_enum_n
     };
 }
 constexpr void as_json(Endian e,auto&& d) {
-    d.value(enum_array<Endian>[int(e)].second);
+    d.value(to_string(e));
+}
+template<>
+constexpr std::optional<Endian> from_json<Endian,std::string_view>(std::string_view k){
+    return from_string<Endian>(k);
+}
+template<>constexpr bool is_bit_flag<Endian>() {
+    return false;
 }
 template<>
 constexpr const char* enum_type_name<Endian>() {
     return "Endian";
 }
 enum class IOMethod {
-    unspec,
-    output_put,
-    input_peek,
-    input_get,
-    input_backward,
-    input_offset,
-    input_bit_offset,
-    input_remain,
-    input_subrange,
-    config_endian_little,
-    config_endian_big,
-    config_endian_native,
-    config_bit_order_lsb,
-    config_bit_order_msb,
+    unspec = 0,
+    output_put = 1,
+    input_peek = 2,
+    input_get = 3,
+    input_backward = 4,
+    input_offset = 5,
+    input_bit_offset = 6,
+    input_remain = 7,
+    input_subrange = 8,
+    config_endian_little = 9,
+    config_endian_big = 10,
+    config_endian_native = 11,
+    config_bit_order_lsb = 12,
+    config_bit_order_msb = 13,
 };
 constexpr const char* to_string(IOMethod e) {
     switch(e) {
@@ -730,17 +783,24 @@ template<>constexpr std::array<std::pair<IOMethod,std::string_view>,14> make_enu
     };
 }
 constexpr void as_json(IOMethod e,auto&& d) {
-    d.value(enum_array<IOMethod>[int(e)].second);
+    d.value(to_string(e));
+}
+template<>
+constexpr std::optional<IOMethod> from_json<IOMethod,std::string_view>(std::string_view k){
+    return from_string<IOMethod>(k);
+}
+template<>constexpr bool is_bit_flag<IOMethod>() {
+    return false;
 }
 template<>
 constexpr const char* enum_type_name<IOMethod>() {
     return "IOMethod";
 }
 enum class OrderType {
-    byte,
-    bit_stream,
-    bit_mapping,
-    bit_both,
+    byte = 0,
+    bit_stream = 1,
+    bit_mapping = 2,
+    bit_both = 3,
 };
 constexpr const char* to_string(OrderType e) {
     switch(e) {
@@ -779,16 +839,23 @@ template<>constexpr std::array<std::pair<OrderType,std::string_view>,4> make_enu
     };
 }
 constexpr void as_json(OrderType e,auto&& d) {
-    d.value(enum_array<OrderType>[int(e)].second);
+    d.value(to_string(e));
+}
+template<>
+constexpr std::optional<OrderType> from_json<OrderType,std::string_view>(std::string_view k){
+    return from_string<OrderType>(k);
+}
+template<>constexpr bool is_bit_flag<OrderType>() {
+    return false;
 }
 template<>
 constexpr const char* enum_type_name<OrderType>() {
     return "OrderType";
 }
 enum class SpecialLiteralKind {
-    input_,
-    output_,
-    config_,
+    input_ = 0,
+    output_ = 1,
+    config_ = 2,
 };
 constexpr const char* to_string(SpecialLiteralKind e) {
     switch(e) {
@@ -823,10 +890,208 @@ template<>constexpr std::array<std::pair<SpecialLiteralKind,std::string_view>,3>
     };
 }
 constexpr void as_json(SpecialLiteralKind e,auto&& d) {
-    d.value(enum_array<SpecialLiteralKind>[int(e)].second);
+    d.value(to_string(e));
+}
+template<>
+constexpr std::optional<SpecialLiteralKind> from_json<SpecialLiteralKind,std::string_view>(std::string_view k){
+    return from_string<SpecialLiteralKind>(k);
+}
+template<>constexpr bool is_bit_flag<SpecialLiteralKind>() {
+    return false;
 }
 template<>
 constexpr const char* enum_type_name<SpecialLiteralKind>() {
     return "SpecialLiteralKind";
+}
+enum class FormatTrait {
+    none = 0,
+    fixed_primitive = (1 << 0),
+    fixed_float = (1 << 1),
+    fixed_primitive_array = (1 << 2),
+    fixed_float_array = (1 << 3),
+    variable_primitive_array = (1 << 4),
+    variable_float_array = (1 << 5),
+    variable_struct_array = (1 << 6),
+    fixed_struct_array = (1 << 7),
+    struct_ = (1 << 8),
+    conditional = (1 << 9),
+    static_peek = (1 << 10),
+    bit_field = (1 << 11),
+    read_state = (1 << 12),
+    write_state = (1 << 13),
+    terminal_string = (1 << 14),
+    terminal_end = (1 << 15),
+    terminal_regex = (1 << 16),
+    terminal_fn = (1 << 17),
+    bit_stream = (1 << 18),
+    dynamic_endian = (1 << 19),
+    dynamic_bit_order = (1 << 20),
+    full_input = (1 << 21),
+    backward_input = (1 << 22),
+    magic_string = (1 << 23),
+    magic_number = (1 << 24),
+    assertion = (1 << 25),
+    explicit_error = (1 << 26),
+    procedural = (1 << 27),
+    for_loop = (1 << 28),
+    local_variable = (1 << 29),
+};
+constexpr const char* to_string(FormatTrait e) {
+    switch(e) {
+    case FormatTrait::none: return "none";
+    case FormatTrait::fixed_primitive: return "fixed_primitive";
+    case FormatTrait::fixed_float: return "fixed_float";
+    case FormatTrait::fixed_primitive_array: return "fixed_primitive_array";
+    case FormatTrait::fixed_float_array: return "fixed_float_array";
+    case FormatTrait::variable_primitive_array: return "variable_primitive_array";
+    case FormatTrait::variable_float_array: return "variable_float_array";
+    case FormatTrait::variable_struct_array: return "variable_struct_array";
+    case FormatTrait::fixed_struct_array: return "fixed_struct_array";
+    case FormatTrait::struct_: return "struct";
+    case FormatTrait::conditional: return "conditional";
+    case FormatTrait::static_peek: return "static_peek";
+    case FormatTrait::bit_field: return "bit_field";
+    case FormatTrait::read_state: return "read_state";
+    case FormatTrait::write_state: return "write_state";
+    case FormatTrait::terminal_string: return "terminal_string";
+    case FormatTrait::terminal_end: return "terminal_end";
+    case FormatTrait::terminal_regex: return "terminal_regex";
+    case FormatTrait::terminal_fn: return "terminal_fn";
+    case FormatTrait::bit_stream: return "bit_stream";
+    case FormatTrait::dynamic_endian: return "dynamic_endian";
+    case FormatTrait::dynamic_bit_order: return "dynamic_bit_order";
+    case FormatTrait::full_input: return "full_input";
+    case FormatTrait::backward_input: return "backward_input";
+    case FormatTrait::magic_string: return "magic_string";
+    case FormatTrait::magic_number: return "magic_number";
+    case FormatTrait::assertion: return "assertion";
+    case FormatTrait::explicit_error: return "explicit_error";
+    case FormatTrait::procedural: return "procedural";
+    case FormatTrait::for_loop: return "for_loop";
+    case FormatTrait::local_variable: return "local_variable";
+    default: return nullptr;
+    }
+}
+template<>constexpr std::optional<FormatTrait> from_string<FormatTrait>(std::string_view str) {
+    if(str.empty()) return std::nullopt;
+    if(str == "none") return FormatTrait::none;
+    if(str == "fixed_primitive") return FormatTrait::fixed_primitive;
+    if(str == "fixed_float") return FormatTrait::fixed_float;
+    if(str == "fixed_primitive_array") return FormatTrait::fixed_primitive_array;
+    if(str == "fixed_float_array") return FormatTrait::fixed_float_array;
+    if(str == "variable_primitive_array") return FormatTrait::variable_primitive_array;
+    if(str == "variable_float_array") return FormatTrait::variable_float_array;
+    if(str == "variable_struct_array") return FormatTrait::variable_struct_array;
+    if(str == "fixed_struct_array") return FormatTrait::fixed_struct_array;
+    if(str == "struct") return FormatTrait::struct_;
+    if(str == "conditional") return FormatTrait::conditional;
+    if(str == "static_peek") return FormatTrait::static_peek;
+    if(str == "bit_field") return FormatTrait::bit_field;
+    if(str == "read_state") return FormatTrait::read_state;
+    if(str == "write_state") return FormatTrait::write_state;
+    if(str == "terminal_string") return FormatTrait::terminal_string;
+    if(str == "terminal_end") return FormatTrait::terminal_end;
+    if(str == "terminal_regex") return FormatTrait::terminal_regex;
+    if(str == "terminal_fn") return FormatTrait::terminal_fn;
+    if(str == "bit_stream") return FormatTrait::bit_stream;
+    if(str == "dynamic_endian") return FormatTrait::dynamic_endian;
+    if(str == "dynamic_bit_order") return FormatTrait::dynamic_bit_order;
+    if(str == "full_input") return FormatTrait::full_input;
+    if(str == "backward_input") return FormatTrait::backward_input;
+    if(str == "magic_string") return FormatTrait::magic_string;
+    if(str == "magic_number") return FormatTrait::magic_number;
+    if(str == "assertion") return FormatTrait::assertion;
+    if(str == "explicit_error") return FormatTrait::explicit_error;
+    if(str == "procedural") return FormatTrait::procedural;
+    if(str == "for_loop") return FormatTrait::for_loop;
+    if(str == "local_variable") return FormatTrait::local_variable;
+    return std::nullopt;
+}
+template<>constexpr size_t enum_elem_count<FormatTrait>() {
+    return 31;
+}
+template<>constexpr std::array<std::pair<FormatTrait,std::string_view>,31> make_enum_array<FormatTrait>() {
+    return {
+        std::pair{FormatTrait::none,"none"},
+        std::pair{FormatTrait::fixed_primitive,"fixed_primitive"},
+        std::pair{FormatTrait::fixed_float,"fixed_float"},
+        std::pair{FormatTrait::fixed_primitive_array,"fixed_primitive_array"},
+        std::pair{FormatTrait::fixed_float_array,"fixed_float_array"},
+        std::pair{FormatTrait::variable_primitive_array,"variable_primitive_array"},
+        std::pair{FormatTrait::variable_float_array,"variable_float_array"},
+        std::pair{FormatTrait::variable_struct_array,"variable_struct_array"},
+        std::pair{FormatTrait::fixed_struct_array,"fixed_struct_array"},
+        std::pair{FormatTrait::struct_,"struct"},
+        std::pair{FormatTrait::conditional,"conditional"},
+        std::pair{FormatTrait::static_peek,"static_peek"},
+        std::pair{FormatTrait::bit_field,"bit_field"},
+        std::pair{FormatTrait::read_state,"read_state"},
+        std::pair{FormatTrait::write_state,"write_state"},
+        std::pair{FormatTrait::terminal_string,"terminal_string"},
+        std::pair{FormatTrait::terminal_end,"terminal_end"},
+        std::pair{FormatTrait::terminal_regex,"terminal_regex"},
+        std::pair{FormatTrait::terminal_fn,"terminal_fn"},
+        std::pair{FormatTrait::bit_stream,"bit_stream"},
+        std::pair{FormatTrait::dynamic_endian,"dynamic_endian"},
+        std::pair{FormatTrait::dynamic_bit_order,"dynamic_bit_order"},
+        std::pair{FormatTrait::full_input,"full_input"},
+        std::pair{FormatTrait::backward_input,"backward_input"},
+        std::pair{FormatTrait::magic_string,"magic_string"},
+        std::pair{FormatTrait::magic_number,"magic_number"},
+        std::pair{FormatTrait::assertion,"assertion"},
+        std::pair{FormatTrait::explicit_error,"explicit_error"},
+        std::pair{FormatTrait::procedural,"procedural"},
+        std::pair{FormatTrait::for_loop,"for_loop"},
+        std::pair{FormatTrait::local_variable,"local_variable"},
+    };
+}
+template<>constexpr std::array<std::pair<FormatTrait,std::string_view>,31> make_enum_name_array<FormatTrait>() {
+    return {
+        std::pair{FormatTrait::none,"none"},
+        std::pair{FormatTrait::fixed_primitive,"fixed_primitive"},
+        std::pair{FormatTrait::fixed_float,"fixed_float"},
+        std::pair{FormatTrait::fixed_primitive_array,"fixed_primitive_array"},
+        std::pair{FormatTrait::fixed_float_array,"fixed_float_array"},
+        std::pair{FormatTrait::variable_primitive_array,"variable_primitive_array"},
+        std::pair{FormatTrait::variable_float_array,"variable_float_array"},
+        std::pair{FormatTrait::variable_struct_array,"variable_struct_array"},
+        std::pair{FormatTrait::fixed_struct_array,"fixed_struct_array"},
+        std::pair{FormatTrait::struct_,"struct"},
+        std::pair{FormatTrait::conditional,"conditional"},
+        std::pair{FormatTrait::static_peek,"static_peek"},
+        std::pair{FormatTrait::bit_field,"bit_field"},
+        std::pair{FormatTrait::read_state,"read_state"},
+        std::pair{FormatTrait::write_state,"write_state"},
+        std::pair{FormatTrait::terminal_string,"terminal_string"},
+        std::pair{FormatTrait::terminal_end,"terminal_end"},
+        std::pair{FormatTrait::terminal_regex,"terminal_regex"},
+        std::pair{FormatTrait::terminal_fn,"terminal_fn"},
+        std::pair{FormatTrait::bit_stream,"bit_stream"},
+        std::pair{FormatTrait::dynamic_endian,"dynamic_endian"},
+        std::pair{FormatTrait::dynamic_bit_order,"dynamic_bit_order"},
+        std::pair{FormatTrait::full_input,"full_input"},
+        std::pair{FormatTrait::backward_input,"backward_input"},
+        std::pair{FormatTrait::magic_string,"magic_string"},
+        std::pair{FormatTrait::magic_number,"magic_number"},
+        std::pair{FormatTrait::assertion,"assertion"},
+        std::pair{FormatTrait::explicit_error,"explicit_error"},
+        std::pair{FormatTrait::procedural,"procedural"},
+        std::pair{FormatTrait::for_loop,"for_loop"},
+        std::pair{FormatTrait::local_variable,"local_variable"},
+    };
+}
+constexpr void as_json(FormatTrait e,auto&& d) {
+    d.value(static_cast<size_t>(e));
+}
+template<>
+constexpr std::optional<FormatTrait> from_json<FormatTrait,size_t>(size_t k){
+    return static_cast<FormatTrait>(k);
+}
+template<>constexpr bool is_bit_flag<FormatTrait>() {
+    return true;
+}
+template<>
+constexpr const char* enum_type_name<FormatTrait>() {
+    return "FormatTrait";
 }
 }
