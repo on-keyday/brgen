@@ -78,8 +78,8 @@ func generate(w io.Writer, list *gen.Defs) {
 		case *gen.Enum:
 			writer.Printf("type %s int\n", d.Name)
 			writer.Printf("const (\n")
-			for i, value := range d.Values {
-				writer.Printf("	%s%s %s = %d\n", d.Name, value.Name, d.Name, i)
+			for _, value := range d.Values {
+				writer.Printf("	%s%s %s = %s\n", d.Name, value.Name, d.Name, value.NumericValue)
 			}
 			writer.Printf(")\n\n")
 			writer.Printf("func (n %s) String() string {\n", d.Name)
