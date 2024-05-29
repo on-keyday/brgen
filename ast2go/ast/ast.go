@@ -1550,72 +1550,191 @@ const (
 )
 
 func (n FormatTrait) String() string {
-	switch n {
-	case FormatTraitNone:
-		return "none"
-	case FormatTraitFixedPrimitive:
-		return "fixed_primitive"
-	case FormatTraitFixedFloat:
-		return "fixed_float"
-	case FormatTraitFixedPrimitiveArray:
-		return "fixed_primitive_array"
-	case FormatTraitFixedFloatArray:
-		return "fixed_float_array"
-	case FormatTraitVariablePrimitiveArray:
-		return "variable_primitive_array"
-	case FormatTraitVariableFloatArray:
-		return "variable_float_array"
-	case FormatTraitVariableStructArray:
-		return "variable_struct_array"
-	case FormatTraitFixedStructArray:
-		return "fixed_struct_array"
-	case FormatTraitStruct:
-		return "struct"
-	case FormatTraitConditional:
-		return "conditional"
-	case FormatTraitStaticPeek:
-		return "static_peek"
-	case FormatTraitBitField:
-		return "bit_field"
-	case FormatTraitReadState:
-		return "read_state"
-	case FormatTraitWriteState:
-		return "write_state"
-	case FormatTraitTerminalString:
-		return "terminal_string"
-	case FormatTraitTerminalEnd:
-		return "terminal_end"
-	case FormatTraitTerminalRegex:
-		return "terminal_regex"
-	case FormatTraitTerminalFn:
-		return "terminal_fn"
-	case FormatTraitBitStream:
-		return "bit_stream"
-	case FormatTraitDynamicEndian:
-		return "dynamic_endian"
-	case FormatTraitDynamicBitOrder:
-		return "dynamic_bit_order"
-	case FormatTraitFullInput:
-		return "full_input"
-	case FormatTraitBackwardInput:
-		return "backward_input"
-	case FormatTraitMagicString:
-		return "magic_string"
-	case FormatTraitMagicNumber:
-		return "magic_number"
-	case FormatTraitAssertion:
-		return "assertion"
-	case FormatTraitExplicitError:
-		return "explicit_error"
-	case FormatTraitProcedural:
-		return "procedural"
-	case FormatTraitForLoop:
-		return "for_loop"
-	case FormatTraitLocalVariable:
-		return "local_variable"
-	default:
-		return fmt.Sprintf("FormatTrait(%d)", n)
+	var s string
+	if n&FormatTraitFixedPrimitive != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "fixed_primitive"
 	}
+	if n&FormatTraitFixedFloat != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "fixed_float"
+	}
+	if n&FormatTraitFixedPrimitiveArray != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "fixed_primitive_array"
+	}
+	if n&FormatTraitFixedFloatArray != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "fixed_float_array"
+	}
+	if n&FormatTraitVariablePrimitiveArray != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "variable_primitive_array"
+	}
+	if n&FormatTraitVariableFloatArray != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "variable_float_array"
+	}
+	if n&FormatTraitVariableStructArray != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "variable_struct_array"
+	}
+	if n&FormatTraitFixedStructArray != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "fixed_struct_array"
+	}
+	if n&FormatTraitStruct != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "struct"
+	}
+	if n&FormatTraitConditional != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "conditional"
+	}
+	if n&FormatTraitStaticPeek != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "static_peek"
+	}
+	if n&FormatTraitBitField != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "bit_field"
+	}
+	if n&FormatTraitReadState != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "read_state"
+	}
+	if n&FormatTraitWriteState != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "write_state"
+	}
+	if n&FormatTraitTerminalString != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "terminal_string"
+	}
+	if n&FormatTraitTerminalEnd != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "terminal_end"
+	}
+	if n&FormatTraitTerminalRegex != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "terminal_regex"
+	}
+	if n&FormatTraitTerminalFn != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "terminal_fn"
+	}
+	if n&FormatTraitBitStream != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "bit_stream"
+	}
+	if n&FormatTraitDynamicEndian != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "dynamic_endian"
+	}
+	if n&FormatTraitDynamicBitOrder != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "dynamic_bit_order"
+	}
+	if n&FormatTraitFullInput != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "full_input"
+	}
+	if n&FormatTraitBackwardInput != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "backward_input"
+	}
+	if n&FormatTraitMagicString != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "magic_string"
+	}
+	if n&FormatTraitMagicNumber != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "magic_number"
+	}
+	if n&FormatTraitAssertion != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "assertion"
+	}
+	if n&FormatTraitExplicitError != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "explicit_error"
+	}
+	if n&FormatTraitProcedural != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "procedural"
+	}
+	if n&FormatTraitForLoop != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "for_loop"
+	}
+	if n&FormatTraitLocalVariable != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "local_variable"
+	}
+	if s == "" {
+		return "none"
+	}
+	return s
 }
 
 func (n *FormatTrait) UnmarshalJSON(data []byte) error {

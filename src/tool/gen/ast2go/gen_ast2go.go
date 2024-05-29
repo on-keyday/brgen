@@ -83,14 +83,39 @@ func generate(w io.Writer, list *gen.Defs) {
 			}
 			writer.Printf(")\n\n")
 			writer.Printf("func (n %s) String() string {\n", d.Name)
-			writer.Printf("	switch n {\n")
-			for _, value := range d.Values {
-				writer.Printf("	case %s%s:\n", d.Name, value.Name)
-				writer.Printf("		return \"%s\"\n", value.Value)
+			if d.IsBitField {
+				writer.Printf("	var s string\n")
+				zeroCase := ""
+				for _, value := range d.Values {
+					if value.NumericValue == "0" {
+						zeroCase = value.Value
+						continue
+					}
+					writer.Printf("	if n&%s%s!=0 {\n", d.Name, value.Name)
+					writer.Printf("		if s!=\"\" {\n")
+					writer.Printf("			s+=\" | \"\n")
+					writer.Printf("		}\n")
+					writer.Printf("		s+=\"%s\"\n", value.Value)
+					writer.Printf("	}\n")
+				}
+				writer.Printf("	if s==\"\" {\n")
+				if zeroCase != "" {
+					writer.Printf("		return \"%s\"\n", zeroCase)
+				} else {
+					writer.Printf("		return fmt.Sprintf(\"%s(%%d)\", n)\n", d.Name)
+				}
+				writer.Printf("	}\n")
+				writer.Printf("	return s\n")
+			} else {
+				writer.Printf("	switch n {\n")
+				for _, value := range d.Values {
+					writer.Printf("	case %s%s:\n", d.Name, value.Name)
+					writer.Printf("		return \"%s\"\n", value.Value)
+				}
+				writer.Printf("	default:\n")
+				writer.Printf("		return fmt.Sprintf(\"%s(%%d)\", n)\n", d.Name)
+				writer.Printf("	}\n")
 			}
-			writer.Printf("	default:\n")
-			writer.Printf("		return fmt.Sprintf(\"%s(%%d)\", n)\n", d.Name)
-			writer.Printf("	}\n")
 			writer.Printf("}\n\n")
 			writer.Printf("func (n *%s) UnmarshalJSON(data []byte) error {\n", d.Name)
 			if d.IsBitField {
