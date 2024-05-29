@@ -7,6 +7,8 @@
 namespace brgen::vm {
 template<typename T>
 constexpr std::optional<T> from_string(std::string_view str);
+template<typename T,class K>
+constexpr std::optional<T> from_json(K k);
 template<typename T>
 constexpr size_t enum_elem_count();
 template<typename T>
@@ -15,6 +17,8 @@ template<typename T>
 constexpr std::array<std::pair<T,std::string_view>,enum_elem_count<T>()> make_enum_name_array();
 template<typename T>
 constexpr const char* enum_type_name();
+template<typename T>
+constexpr bool is_bit_flag();
 template<typename T>
 constexpr auto enum_array = make_enum_array<T>();
 template<typename T>
@@ -332,7 +336,14 @@ template<>constexpr std::array<std::pair<Op,std::string_view>,58> make_enum_name
     };
 }
 constexpr void as_json(Op e,auto&& d) {
-    d.value(enum_array<Op>[int(e)].second);
+    d.value(static_cast<size_t>(e));
+}
+template<>
+constexpr std::optional<Op> from_json<Op,size_t>(size_t k){
+    return static_cast<Op>(k);
+}
+template<>constexpr bool is_bit_flag<Op>() {
+    return true;
 }
 template<>
 constexpr const char* enum_type_name<Op>() {

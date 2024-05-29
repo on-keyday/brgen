@@ -7,6 +7,8 @@
 namespace brgen::ast {
 template<typename T>
 constexpr std::optional<T> from_string(std::string_view str);
+template<typename T,class K>
+constexpr std::optional<T> from_json(K k);
 template<typename T>
 constexpr size_t enum_elem_count();
 template<typename T>
@@ -15,6 +17,8 @@ template<typename T>
 constexpr std::array<std::pair<T,std::string_view>,enum_elem_count<T>()> make_enum_name_array();
 template<typename T>
 constexpr const char* enum_type_name();
+template<typename T>
+constexpr bool is_bit_flag();
 template<typename T>
 constexpr auto enum_array = make_enum_array<T>();
 template<typename T>
@@ -67,7 +71,14 @@ template<>constexpr std::array<std::pair<Follow,std::string_view>,5> make_enum_n
     };
 }
 constexpr void as_json(Follow e,auto&& d) {
-    d.value(enum_array<Follow>[int(e)].second);
+    d.value(to_string(e));
+}
+template<>
+constexpr std::optional<Follow> from_json<Follow,std::string_view>(std::string_view k){
+    return from_string<Follow>(k);
+}
+template<>constexpr bool is_bit_flag<Follow>() {
+    return false;
 }
 template<>
 constexpr const char* enum_type_name<Follow>() {
@@ -301,7 +312,14 @@ template<>constexpr std::array<std::pair<BinaryOp,std::string_view>,41> make_enu
     };
 }
 constexpr void as_json(BinaryOp e,auto&& d) {
-    d.value(enum_array<BinaryOp>[int(e)].second);
+    d.value(to_string(e));
+}
+template<>
+constexpr std::optional<BinaryOp> from_json<BinaryOp,std::string_view>(std::string_view k){
+    return from_string<BinaryOp>(k);
+}
+template<>constexpr bool is_bit_flag<BinaryOp>() {
+    return false;
 }
 template<>
 constexpr const char* enum_type_name<BinaryOp>() {
@@ -340,7 +358,14 @@ template<>constexpr std::array<std::pair<UnaryOp,std::string_view>,2> make_enum_
     };
 }
 constexpr void as_json(UnaryOp e,auto&& d) {
-    d.value(enum_array<UnaryOp>[int(e)].second);
+    d.value(to_string(e));
+}
+template<>
+constexpr std::optional<UnaryOp> from_json<UnaryOp,std::string_view>(std::string_view k){
+    return from_string<UnaryOp>(k);
+}
+template<>constexpr bool is_bit_flag<UnaryOp>() {
+    return false;
 }
 template<>
 constexpr const char* enum_type_name<UnaryOp>() {
@@ -419,7 +444,14 @@ template<>constexpr std::array<std::pair<BitAlignment,std::string_view>,10> make
     };
 }
 constexpr void as_json(BitAlignment e,auto&& d) {
-    d.value(enum_array<BitAlignment>[int(e)].second);
+    d.value(to_string(e));
+}
+template<>
+constexpr std::optional<BitAlignment> from_json<BitAlignment,std::string_view>(std::string_view k){
+    return from_string<BitAlignment>(k);
+}
+template<>constexpr bool is_bit_flag<BitAlignment>() {
+    return false;
 }
 template<>
 constexpr const char* enum_type_name<BitAlignment>() {
@@ -468,7 +500,14 @@ template<>constexpr std::array<std::pair<ConstantLevel,std::string_view>,4> make
     };
 }
 constexpr void as_json(ConstantLevel e,auto&& d) {
-    d.value(enum_array<ConstantLevel>[int(e)].second);
+    d.value(to_string(e));
+}
+template<>
+constexpr std::optional<ConstantLevel> from_json<ConstantLevel,std::string_view>(std::string_view k){
+    return from_string<ConstantLevel>(k);
+}
+template<>constexpr bool is_bit_flag<ConstantLevel>() {
+    return false;
 }
 template<>
 constexpr const char* enum_type_name<ConstantLevel>() {
@@ -587,7 +626,14 @@ template<>constexpr std::array<std::pair<IdentUsage,std::string_view>,18> make_e
     };
 }
 constexpr void as_json(IdentUsage e,auto&& d) {
-    d.value(enum_array<IdentUsage>[int(e)].second);
+    d.value(to_string(e));
+}
+template<>
+constexpr std::optional<IdentUsage> from_json<IdentUsage,std::string_view>(std::string_view k){
+    return from_string<IdentUsage>(k);
+}
+template<>constexpr bool is_bit_flag<IdentUsage>() {
+    return false;
 }
 template<>
 constexpr const char* enum_type_name<IdentUsage>() {
@@ -631,7 +677,14 @@ template<>constexpr std::array<std::pair<Endian,std::string_view>,3> make_enum_n
     };
 }
 constexpr void as_json(Endian e,auto&& d) {
-    d.value(enum_array<Endian>[int(e)].second);
+    d.value(to_string(e));
+}
+template<>
+constexpr std::optional<Endian> from_json<Endian,std::string_view>(std::string_view k){
+    return from_string<Endian>(k);
+}
+template<>constexpr bool is_bit_flag<Endian>() {
+    return false;
 }
 template<>
 constexpr const char* enum_type_name<Endian>() {
@@ -730,7 +783,14 @@ template<>constexpr std::array<std::pair<IOMethod,std::string_view>,14> make_enu
     };
 }
 constexpr void as_json(IOMethod e,auto&& d) {
-    d.value(enum_array<IOMethod>[int(e)].second);
+    d.value(to_string(e));
+}
+template<>
+constexpr std::optional<IOMethod> from_json<IOMethod,std::string_view>(std::string_view k){
+    return from_string<IOMethod>(k);
+}
+template<>constexpr bool is_bit_flag<IOMethod>() {
+    return false;
 }
 template<>
 constexpr const char* enum_type_name<IOMethod>() {
@@ -779,7 +839,14 @@ template<>constexpr std::array<std::pair<OrderType,std::string_view>,4> make_enu
     };
 }
 constexpr void as_json(OrderType e,auto&& d) {
-    d.value(enum_array<OrderType>[int(e)].second);
+    d.value(to_string(e));
+}
+template<>
+constexpr std::optional<OrderType> from_json<OrderType,std::string_view>(std::string_view k){
+    return from_string<OrderType>(k);
+}
+template<>constexpr bool is_bit_flag<OrderType>() {
+    return false;
 }
 template<>
 constexpr const char* enum_type_name<OrderType>() {
@@ -823,7 +890,14 @@ template<>constexpr std::array<std::pair<SpecialLiteralKind,std::string_view>,3>
     };
 }
 constexpr void as_json(SpecialLiteralKind e,auto&& d) {
-    d.value(enum_array<SpecialLiteralKind>[int(e)].second);
+    d.value(to_string(e));
+}
+template<>
+constexpr std::optional<SpecialLiteralKind> from_json<SpecialLiteralKind,std::string_view>(std::string_view k){
+    return from_string<SpecialLiteralKind>(k);
+}
+template<>constexpr bool is_bit_flag<SpecialLiteralKind>() {
+    return false;
 }
 template<>
 constexpr const char* enum_type_name<SpecialLiteralKind>() {
@@ -1007,7 +1081,14 @@ template<>constexpr std::array<std::pair<FormatType,std::string_view>,31> make_e
     };
 }
 constexpr void as_json(FormatType e,auto&& d) {
-    d.value(enum_array<FormatType>[int(e)].second);
+    d.value(static_cast<size_t>(e));
+}
+template<>
+constexpr std::optional<FormatType> from_json<FormatType,size_t>(size_t k){
+    return static_cast<FormatType>(k);
+}
+template<>constexpr bool is_bit_flag<FormatType>() {
+    return true;
 }
 template<>
 constexpr const char* enum_type_name<FormatType>() {
