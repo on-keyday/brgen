@@ -779,7 +779,7 @@ bitflags!{
 impl TryFrom<u64> for FormatType {
 	type Error = ();
 	fn try_from(v:u64)->Result<Self,()>{
-		Self::from_bits(*v).ok_or(())
+		Self::from_bits(v).ok_or(())
 	}
 }
 #[derive(Debug,Clone)]

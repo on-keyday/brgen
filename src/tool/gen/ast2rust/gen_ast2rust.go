@@ -413,7 +413,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 				w.Printf("impl TryFrom<u64> for %s {\n", d.Name)
 				w.Printf("	type Error = ();\n")
 				w.Printf("	fn try_from(v:u64)->Result<Self,()>{\n")
-				w.Printf("		Self::from_bits(*v).ok_or(())\n")
+				w.Printf("		Self::from_bits(v).ok_or(())\n")
 				w.Printf("	}\n")
 				w.Printf("}\n")
 			} else {

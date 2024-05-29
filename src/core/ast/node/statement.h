@@ -38,6 +38,7 @@ namespace brgen::ast {
             sdebugf(cast_fns);
             sdebugf(depends);
             sdebugf(state_variables);
+            sdebugf(format_trait);
         }
     };
 

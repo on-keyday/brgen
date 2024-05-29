@@ -182,6 +182,9 @@ namespace brgen::ast {
                     else if constexpr (std::is_same_v<P, OrderType>) {
                         field(key, "order_type");
                     }
+                    else if constexpr (std::is_same_v<P, FormatTrait>) {
+                        field(key, "format_trait");
+                    }
                     else if constexpr (futils::helper::is_template<P>) {
                         using P1 = typename futils::helper::template_of_t<P>::template param_at<0>;
                         if constexpr (futils::helper::is_template_instance_of<P, std::shared_ptr>) {

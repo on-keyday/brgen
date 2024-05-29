@@ -337,7 +337,7 @@ namespace brgen::ast {
                 if constexpr(is_bit_flag<T>()) {
                     return (res & get_number(loc,key)).and_then([&](size_t v)->result<void>{
                         if(auto res=from_json<T>(v);!res){
-                            return unexpect(error(loc,v,"cannot convert to bit flag ",enum_type_name<T>()));
+                            return unexpect(error(loc,nums(v)," cannot convert to bit flag ",enum_type_name<T>()));
                         }
                         else{
                             target=*res;
