@@ -203,6 +203,44 @@ export function isOrderType(obj: any): obj is OrderType {
 	return obj && typeof obj === 'string' && (obj === "byte" || obj === "bit_stream" || obj === "bit_mapping" || obj === "bit_both")
 }
 
+export const enum FormatType {
+	none = 0	none = "none",
+	fixed_primitive = 1	fixed_primitive = "fixed_primitive",
+	fixed_float = 2	fixed_float = "fixed_float",
+	fixed_primitive_array = 4	fixed_primitive_array = "fixed_primitive_array",
+	fixed_float_array = 8	fixed_float_array = "fixed_float_array",
+	variable_primitive_array = 16	variable_primitive_array = "variable_primitive_array",
+	variable_float_array = 32	variable_float_array = "variable_float_array",
+	variable_struct_array = 64	variable_struct_array = "variable_struct_array",
+	fixed_struct_array = 128	fixed_struct_array = "fixed_struct_array",
+	struct = 256	struct = "struct",
+	conditional = 512	conditional = "conditional",
+	static_peek = 1024	static_peek = "static_peek",
+	bit_field = 2048	bit_field = "bit_field",
+	read_state = 4096	read_state = "read_state",
+	write_state = 8192	write_state = "write_state",
+	terminal_string = 16384	terminal_string = "terminal_string",
+	terminal_end = 32768	terminal_end = "terminal_end",
+	terminal_regex = 65536	terminal_regex = "terminal_regex",
+	terminal_fn = 131072	terminal_fn = "terminal_fn",
+	bit_stream = 262144	bit_stream = "bit_stream",
+	dynamic_endian = 524288	dynamic_endian = "dynamic_endian",
+	dynamic_bit_order = 1048576	dynamic_bit_order = "dynamic_bit_order",
+	full_input = 2097152	full_input = "full_input",
+	backward_input = 4194304	backward_input = "backward_input",
+	magic_string = 8388608	magic_string = "magic_string",
+	magic_number = 16777216	magic_number = "magic_number",
+	assertion = 33554432	assertion = "assertion",
+	explicit_error = 67108864	explicit_error = "explicit_error",
+	procedural = 134217728	procedural = "procedural",
+	for_loop = 268435456	for_loop = "for_loop",
+	local_variable = 536870912	local_variable = "local_variable",
+};
+
+export function isFormatType(obj: any): obj is FormatType {
+	return obj && typeof obj === 'number' && Number.isInteger(obj) // easy check
+}
+
 export interface Node {
 	readonly node_type: NodeType;
 	loc: Loc;

@@ -126,7 +126,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 			w.Printf("class %s(PyEnum):\n", v.Name)
 			for _, field := range v.Values {
 				if v.IsBitField {
-					w.Printf("    %s = %s\n", field.Name, field.NumericValue)
+					w.Printf("    %s = %s\n", strings.ToUpper(field.Name), field.NumericValue)
 				} else {
 					w.Printf("    %s = %q\n", strings.ToUpper(field.Name), field.Value)
 				}

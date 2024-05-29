@@ -107,8 +107,9 @@ func generate(rw io.Writer, defs *gen.Defs) {
 				for _, val := range d.Values {
 					if d.IsBitField {
 						w.Printf("	%s = %s", val.Name, val.NumericValue)
+					} else {
+						w.Printf("	%s = %q,\n", val.Name, val.Value)
 					}
-					w.Printf("	%s = %q,\n", val.Name, val.Value)
 				}
 				w.Printf("};\n\n")
 			}

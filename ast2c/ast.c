@@ -1103,6 +1103,173 @@ int ast2c_OrderType_from_string(const char* str, ast2c_OrderType* out) {
 	return 0;
 }
 
+const char* ast2c_FormatType_to_string(ast2c_FormatType val) {
+	switch(val) {
+	case AST2C_FORMATTYPE_NONE: return "none";
+	case AST2C_FORMATTYPE_FIXED_PRIMITIVE: return "fixed_primitive";
+	case AST2C_FORMATTYPE_FIXED_FLOAT: return "fixed_float";
+	case AST2C_FORMATTYPE_FIXED_PRIMITIVE_ARRAY: return "fixed_primitive_array";
+	case AST2C_FORMATTYPE_FIXED_FLOAT_ARRAY: return "fixed_float_array";
+	case AST2C_FORMATTYPE_VARIABLE_PRIMITIVE_ARRAY: return "variable_primitive_array";
+	case AST2C_FORMATTYPE_VARIABLE_FLOAT_ARRAY: return "variable_float_array";
+	case AST2C_FORMATTYPE_VARIABLE_STRUCT_ARRAY: return "variable_struct_array";
+	case AST2C_FORMATTYPE_FIXED_STRUCT_ARRAY: return "fixed_struct_array";
+	case AST2C_FORMATTYPE_STRUCT: return "struct";
+	case AST2C_FORMATTYPE_CONDITIONAL: return "conditional";
+	case AST2C_FORMATTYPE_STATIC_PEEK: return "static_peek";
+	case AST2C_FORMATTYPE_BIT_FIELD: return "bit_field";
+	case AST2C_FORMATTYPE_READ_STATE: return "read_state";
+	case AST2C_FORMATTYPE_WRITE_STATE: return "write_state";
+	case AST2C_FORMATTYPE_TERMINAL_STRING: return "terminal_string";
+	case AST2C_FORMATTYPE_TERMINAL_END: return "terminal_end";
+	case AST2C_FORMATTYPE_TERMINAL_REGEX: return "terminal_regex";
+	case AST2C_FORMATTYPE_TERMINAL_FN: return "terminal_fn";
+	case AST2C_FORMATTYPE_BIT_STREAM: return "bit_stream";
+	case AST2C_FORMATTYPE_DYNAMIC_ENDIAN: return "dynamic_endian";
+	case AST2C_FORMATTYPE_DYNAMIC_BIT_ORDER: return "dynamic_bit_order";
+	case AST2C_FORMATTYPE_FULL_INPUT: return "full_input";
+	case AST2C_FORMATTYPE_BACKWARD_INPUT: return "backward_input";
+	case AST2C_FORMATTYPE_MAGIC_STRING: return "magic_string";
+	case AST2C_FORMATTYPE_MAGIC_NUMBER: return "magic_number";
+	case AST2C_FORMATTYPE_ASSERTION: return "assertion";
+	case AST2C_FORMATTYPE_EXPLICIT_ERROR: return "explicit_error";
+	case AST2C_FORMATTYPE_PROCEDURAL: return "procedural";
+	case AST2C_FORMATTYPE_FOR_LOOP: return "for_loop";
+	case AST2C_FORMATTYPE_LOCAL_VARIABLE: return "local_variable";
+	default: return NULL;
+	}
+}
+
+// returns 1 if succeed 0 if failed
+int ast2c_FormatType_from_string(const char* str, ast2c_FormatType* out) {
+	if (!str||!out) return 0;
+	if (strcmp(str, "none") == 0) {
+		*out = AST2C_FORMATTYPE_NONE;
+		return 1;
+	}
+	if (strcmp(str, "fixed_primitive") == 0) {
+		*out = AST2C_FORMATTYPE_FIXED_PRIMITIVE;
+		return 1;
+	}
+	if (strcmp(str, "fixed_float") == 0) {
+		*out = AST2C_FORMATTYPE_FIXED_FLOAT;
+		return 1;
+	}
+	if (strcmp(str, "fixed_primitive_array") == 0) {
+		*out = AST2C_FORMATTYPE_FIXED_PRIMITIVE_ARRAY;
+		return 1;
+	}
+	if (strcmp(str, "fixed_float_array") == 0) {
+		*out = AST2C_FORMATTYPE_FIXED_FLOAT_ARRAY;
+		return 1;
+	}
+	if (strcmp(str, "variable_primitive_array") == 0) {
+		*out = AST2C_FORMATTYPE_VARIABLE_PRIMITIVE_ARRAY;
+		return 1;
+	}
+	if (strcmp(str, "variable_float_array") == 0) {
+		*out = AST2C_FORMATTYPE_VARIABLE_FLOAT_ARRAY;
+		return 1;
+	}
+	if (strcmp(str, "variable_struct_array") == 0) {
+		*out = AST2C_FORMATTYPE_VARIABLE_STRUCT_ARRAY;
+		return 1;
+	}
+	if (strcmp(str, "fixed_struct_array") == 0) {
+		*out = AST2C_FORMATTYPE_FIXED_STRUCT_ARRAY;
+		return 1;
+	}
+	if (strcmp(str, "struct") == 0) {
+		*out = AST2C_FORMATTYPE_STRUCT;
+		return 1;
+	}
+	if (strcmp(str, "conditional") == 0) {
+		*out = AST2C_FORMATTYPE_CONDITIONAL;
+		return 1;
+	}
+	if (strcmp(str, "static_peek") == 0) {
+		*out = AST2C_FORMATTYPE_STATIC_PEEK;
+		return 1;
+	}
+	if (strcmp(str, "bit_field") == 0) {
+		*out = AST2C_FORMATTYPE_BIT_FIELD;
+		return 1;
+	}
+	if (strcmp(str, "read_state") == 0) {
+		*out = AST2C_FORMATTYPE_READ_STATE;
+		return 1;
+	}
+	if (strcmp(str, "write_state") == 0) {
+		*out = AST2C_FORMATTYPE_WRITE_STATE;
+		return 1;
+	}
+	if (strcmp(str, "terminal_string") == 0) {
+		*out = AST2C_FORMATTYPE_TERMINAL_STRING;
+		return 1;
+	}
+	if (strcmp(str, "terminal_end") == 0) {
+		*out = AST2C_FORMATTYPE_TERMINAL_END;
+		return 1;
+	}
+	if (strcmp(str, "terminal_regex") == 0) {
+		*out = AST2C_FORMATTYPE_TERMINAL_REGEX;
+		return 1;
+	}
+	if (strcmp(str, "terminal_fn") == 0) {
+		*out = AST2C_FORMATTYPE_TERMINAL_FN;
+		return 1;
+	}
+	if (strcmp(str, "bit_stream") == 0) {
+		*out = AST2C_FORMATTYPE_BIT_STREAM;
+		return 1;
+	}
+	if (strcmp(str, "dynamic_endian") == 0) {
+		*out = AST2C_FORMATTYPE_DYNAMIC_ENDIAN;
+		return 1;
+	}
+	if (strcmp(str, "dynamic_bit_order") == 0) {
+		*out = AST2C_FORMATTYPE_DYNAMIC_BIT_ORDER;
+		return 1;
+	}
+	if (strcmp(str, "full_input") == 0) {
+		*out = AST2C_FORMATTYPE_FULL_INPUT;
+		return 1;
+	}
+	if (strcmp(str, "backward_input") == 0) {
+		*out = AST2C_FORMATTYPE_BACKWARD_INPUT;
+		return 1;
+	}
+	if (strcmp(str, "magic_string") == 0) {
+		*out = AST2C_FORMATTYPE_MAGIC_STRING;
+		return 1;
+	}
+	if (strcmp(str, "magic_number") == 0) {
+		*out = AST2C_FORMATTYPE_MAGIC_NUMBER;
+		return 1;
+	}
+	if (strcmp(str, "assertion") == 0) {
+		*out = AST2C_FORMATTYPE_ASSERTION;
+		return 1;
+	}
+	if (strcmp(str, "explicit_error") == 0) {
+		*out = AST2C_FORMATTYPE_EXPLICIT_ERROR;
+		return 1;
+	}
+	if (strcmp(str, "procedural") == 0) {
+		*out = AST2C_FORMATTYPE_PROCEDURAL;
+		return 1;
+	}
+	if (strcmp(str, "for_loop") == 0) {
+		*out = AST2C_FORMATTYPE_FOR_LOOP;
+		return 1;
+	}
+	if (strcmp(str, "local_variable") == 0) {
+		*out = AST2C_FORMATTYPE_LOCAL_VARIABLE;
+		return 1;
+	}
+	return 0;
+}
+
 // returns 1 if succeed 0 if failed
 int ast2c_Program_parse(ast2c_Ast* ast,ast2c_Program* s,ast2c_json_handlers* h, void* obj) {
 	if (!ast||!s||!h||!obj) {

@@ -10,78 +10,78 @@ import (
 type NodeType int
 
 const (
-	NodeTypeProgram          NodeType = 0
-	NodeTypeComment          NodeType = 1
-	NodeTypeCommentGroup     NodeType = 2
-	NodeTypeFieldArgument    NodeType = 3
-	NodeTypeExpr             NodeType = 4
-	NodeTypeBinary           NodeType = 5
-	NodeTypeUnary            NodeType = 6
-	NodeTypeCond             NodeType = 7
-	NodeTypeIdent            NodeType = 8
-	NodeTypeCall             NodeType = 9
-	NodeTypeIf               NodeType = 10
-	NodeTypeMemberAccess     NodeType = 11
-	NodeTypeParen            NodeType = 12
-	NodeTypeIndex            NodeType = 13
-	NodeTypeMatch            NodeType = 14
-	NodeTypeRange            NodeType = 15
-	NodeTypeIdentity         NodeType = 16
-	NodeTypeTmpVar           NodeType = 17
-	NodeTypeImport           NodeType = 18
-	NodeTypeCast             NodeType = 19
-	NodeTypeAvailable        NodeType = 20
-	NodeTypeSpecifyOrder     NodeType = 21
-	NodeTypeExplicitError    NodeType = 22
-	NodeTypeIoOperation      NodeType = 23
-	NodeTypeOrCond           NodeType = 24
-	NodeTypeBadExpr          NodeType = 25
-	NodeTypeStmt             NodeType = 26
-	NodeTypeLoop             NodeType = 27
-	NodeTypeIndentBlock      NodeType = 28
-	NodeTypeScopedStatement  NodeType = 29
-	NodeTypeMatchBranch      NodeType = 30
-	NodeTypeUnionCandidate   NodeType = 31
-	NodeTypeReturn           NodeType = 32
-	NodeTypeBreak            NodeType = 33
-	NodeTypeContinue         NodeType = 34
-	NodeTypeAssert           NodeType = 35
-	NodeTypeImplicitYield    NodeType = 36
-	NodeTypeMetadata         NodeType = 37
-	NodeTypeType             NodeType = 38
-	NodeTypeIntType          NodeType = 39
-	NodeTypeFloatType        NodeType = 40
-	NodeTypeIdentType        NodeType = 41
-	NodeTypeIntLiteralType   NodeType = 42
-	NodeTypeStrLiteralType   NodeType = 43
-	NodeTypeRegexLiteralType NodeType = 44
-	NodeTypeVoidType         NodeType = 45
-	NodeTypeBoolType         NodeType = 46
-	NodeTypeArrayType        NodeType = 47
-	NodeTypeFunctionType     NodeType = 48
-	NodeTypeStructType       NodeType = 49
-	NodeTypeStructUnionType  NodeType = 50
-	NodeTypeUnionType        NodeType = 51
-	NodeTypeRangeType        NodeType = 52
-	NodeTypeEnumType         NodeType = 53
-	NodeTypeMetaType         NodeType = 54
-	NodeTypeOptionalType     NodeType = 55
-	NodeTypeGenericType      NodeType = 56
-	NodeTypeLiteral          NodeType = 57
-	NodeTypeIntLiteral       NodeType = 58
-	NodeTypeBoolLiteral      NodeType = 59
-	NodeTypeStrLiteral       NodeType = 60
-	NodeTypeRegexLiteral     NodeType = 61
-	NodeTypeCharLiteral      NodeType = 62
-	NodeTypeTypeLiteral      NodeType = 63
-	NodeTypeSpecialLiteral   NodeType = 64
-	NodeTypeMember           NodeType = 65
-	NodeTypeField            NodeType = 66
-	NodeTypeFormat           NodeType = 67
-	NodeTypeState            NodeType = 68
-	NodeTypeEnum             NodeType = 69
-	NodeTypeEnumMember       NodeType = 70
-	NodeTypeFunction         NodeType = 71
+	NodeTypeProgram          NodeType = 1
+	NodeTypeComment          NodeType = 2
+	NodeTypeCommentGroup     NodeType = 3
+	NodeTypeFieldArgument    NodeType = 4
+	NodeTypeExpr             NodeType = 65536
+	NodeTypeBinary           NodeType = 65537
+	NodeTypeUnary            NodeType = 65538
+	NodeTypeCond             NodeType = 65539
+	NodeTypeIdent            NodeType = 65540
+	NodeTypeCall             NodeType = 65541
+	NodeTypeIf               NodeType = 65542
+	NodeTypeMemberAccess     NodeType = 65543
+	NodeTypeParen            NodeType = 65544
+	NodeTypeIndex            NodeType = 65545
+	NodeTypeMatch            NodeType = 65546
+	NodeTypeRange            NodeType = 65547
+	NodeTypeIdentity         NodeType = 65548
+	NodeTypeTmpVar           NodeType = 65549
+	NodeTypeImport           NodeType = 65550
+	NodeTypeCast             NodeType = 65551
+	NodeTypeAvailable        NodeType = 65552
+	NodeTypeSpecifyOrder     NodeType = 65553
+	NodeTypeExplicitError    NodeType = 65554
+	NodeTypeIoOperation      NodeType = 65555
+	NodeTypeOrCond           NodeType = 65556
+	NodeTypeBadExpr          NodeType = 65557
+	NodeTypeStmt             NodeType = 131072
+	NodeTypeLoop             NodeType = 131073
+	NodeTypeIndentBlock      NodeType = 131074
+	NodeTypeScopedStatement  NodeType = 131075
+	NodeTypeMatchBranch      NodeType = 131076
+	NodeTypeUnionCandidate   NodeType = 131077
+	NodeTypeReturn           NodeType = 131078
+	NodeTypeBreak            NodeType = 131079
+	NodeTypeContinue         NodeType = 131080
+	NodeTypeAssert           NodeType = 131081
+	NodeTypeImplicitYield    NodeType = 131082
+	NodeTypeMetadata         NodeType = 131083
+	NodeTypeType             NodeType = 262144
+	NodeTypeIntType          NodeType = 262145
+	NodeTypeFloatType        NodeType = 262146
+	NodeTypeIdentType        NodeType = 262147
+	NodeTypeIntLiteralType   NodeType = 262148
+	NodeTypeStrLiteralType   NodeType = 262149
+	NodeTypeRegexLiteralType NodeType = 262150
+	NodeTypeVoidType         NodeType = 262151
+	NodeTypeBoolType         NodeType = 262152
+	NodeTypeArrayType        NodeType = 262153
+	NodeTypeFunctionType     NodeType = 262154
+	NodeTypeStructType       NodeType = 262155
+	NodeTypeStructUnionType  NodeType = 262156
+	NodeTypeUnionType        NodeType = 262157
+	NodeTypeRangeType        NodeType = 262158
+	NodeTypeEnumType         NodeType = 262159
+	NodeTypeMetaType         NodeType = 262160
+	NodeTypeOptionalType     NodeType = 262161
+	NodeTypeGenericType      NodeType = 262162
+	NodeTypeLiteral          NodeType = 2162688
+	NodeTypeIntLiteral       NodeType = 2162689
+	NodeTypeBoolLiteral      NodeType = 2162690
+	NodeTypeStrLiteral       NodeType = 2162691
+	NodeTypeRegexLiteral     NodeType = 2162692
+	NodeTypeCharLiteral      NodeType = 2162693
+	NodeTypeTypeLiteral      NodeType = 2162694
+	NodeTypeSpecialLiteral   NodeType = 2162695
+	NodeTypeMember           NodeType = 2228224
+	NodeTypeField            NodeType = 2228225
+	NodeTypeFormat           NodeType = 2228226
+	NodeTypeState            NodeType = 2228227
+	NodeTypeEnum             NodeType = 2228228
+	NodeTypeEnumMember       NodeType = 2228229
+	NodeTypeFunction         NodeType = 2228230
 )
 
 func (n NodeType) String() string {
@@ -1510,6 +1510,120 @@ func (n *OrderType) UnmarshalJSON(data []byte) error {
 	default:
 		return fmt.Errorf("unknown OrderType: %q", tmp)
 	}
+	return nil
+}
+
+type FormatType int
+
+const (
+	FormatTypeNone                   FormatType = 0
+	FormatTypeFixedPrimitive         FormatType = 1
+	FormatTypeFixedFloat             FormatType = 2
+	FormatTypeFixedPrimitiveArray    FormatType = 4
+	FormatTypeFixedFloatArray        FormatType = 8
+	FormatTypeVariablePrimitiveArray FormatType = 16
+	FormatTypeVariableFloatArray     FormatType = 32
+	FormatTypeVariableStructArray    FormatType = 64
+	FormatTypeFixedStructArray       FormatType = 128
+	FormatTypeStruct                 FormatType = 256
+	FormatTypeConditional            FormatType = 512
+	FormatTypeStaticPeek             FormatType = 1024
+	FormatTypeBitField               FormatType = 2048
+	FormatTypeReadState              FormatType = 4096
+	FormatTypeWriteState             FormatType = 8192
+	FormatTypeTerminalString         FormatType = 16384
+	FormatTypeTerminalEnd            FormatType = 32768
+	FormatTypeTerminalRegex          FormatType = 65536
+	FormatTypeTerminalFn             FormatType = 131072
+	FormatTypeBitStream              FormatType = 262144
+	FormatTypeDynamicEndian          FormatType = 524288
+	FormatTypeDynamicBitOrder        FormatType = 1048576
+	FormatTypeFullInput              FormatType = 2097152
+	FormatTypeBackwardInput          FormatType = 4194304
+	FormatTypeMagicString            FormatType = 8388608
+	FormatTypeMagicNumber            FormatType = 16777216
+	FormatTypeAssertion              FormatType = 33554432
+	FormatTypeExplicitError          FormatType = 67108864
+	FormatTypeProcedural             FormatType = 134217728
+	FormatTypeForLoop                FormatType = 268435456
+	FormatTypeLocalVariable          FormatType = 536870912
+)
+
+func (n FormatType) String() string {
+	switch n {
+	case FormatTypeNone:
+		return "none"
+	case FormatTypeFixedPrimitive:
+		return "fixed_primitive"
+	case FormatTypeFixedFloat:
+		return "fixed_float"
+	case FormatTypeFixedPrimitiveArray:
+		return "fixed_primitive_array"
+	case FormatTypeFixedFloatArray:
+		return "fixed_float_array"
+	case FormatTypeVariablePrimitiveArray:
+		return "variable_primitive_array"
+	case FormatTypeVariableFloatArray:
+		return "variable_float_array"
+	case FormatTypeVariableStructArray:
+		return "variable_struct_array"
+	case FormatTypeFixedStructArray:
+		return "fixed_struct_array"
+	case FormatTypeStruct:
+		return "struct"
+	case FormatTypeConditional:
+		return "conditional"
+	case FormatTypeStaticPeek:
+		return "static_peek"
+	case FormatTypeBitField:
+		return "bit_field"
+	case FormatTypeReadState:
+		return "read_state"
+	case FormatTypeWriteState:
+		return "write_state"
+	case FormatTypeTerminalString:
+		return "terminal_string"
+	case FormatTypeTerminalEnd:
+		return "terminal_end"
+	case FormatTypeTerminalRegex:
+		return "terminal_regex"
+	case FormatTypeTerminalFn:
+		return "terminal_fn"
+	case FormatTypeBitStream:
+		return "bit_stream"
+	case FormatTypeDynamicEndian:
+		return "dynamic_endian"
+	case FormatTypeDynamicBitOrder:
+		return "dynamic_bit_order"
+	case FormatTypeFullInput:
+		return "full_input"
+	case FormatTypeBackwardInput:
+		return "backward_input"
+	case FormatTypeMagicString:
+		return "magic_string"
+	case FormatTypeMagicNumber:
+		return "magic_number"
+	case FormatTypeAssertion:
+		return "assertion"
+	case FormatTypeExplicitError:
+		return "explicit_error"
+	case FormatTypeProcedural:
+		return "procedural"
+	case FormatTypeForLoop:
+		return "for_loop"
+	case FormatTypeLocalVariable:
+		return "local_variable"
+	default:
+		return fmt.Sprintf("FormatType(%d)", n)
+	}
+}
+
+func (n *FormatType) UnmarshalJSON(data []byte) error {
+	var tmp int
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+	*n = FormatType(tmp)
 	return nil
 }
 
