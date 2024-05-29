@@ -275,42 +275,54 @@ namespace brgen::ast {
     template <class T>
     void enum_type(const char* key, auto&& field) {
         field(key, [&](auto&& d) {
-            auto field = d.array();
-            for (size_t i = 0; i < enum_elem_count<T>(); i++) {
-                field([&](auto&& d) {
-                    auto field = d.object();
-                    field("name", enum_name_array<T>[i].second);
-                    field("value", enum_array<T>[i].second);
-                    field("numeric_value", nums(size_t(enum_array<T>[i].first)));
-                });
-            }
+            auto field = d.object();
+            field("is_bit_flag", is_bit_flag<T>());
+            field("values", [&](auto&& d) {
+                auto field = d.array();
+                for (size_t i = 0; i < enum_elem_count<T>(); i++) {
+                    field([&](auto&& d) {
+                        auto field = d.object();
+                        field("name", enum_name_array<T>[i].second);
+                        field("value", enum_array<T>[i].second);
+                        field("numeric_value", nums(size_t(enum_array<T>[i].first)));
+                    });
+                }
+            });
         });
     }
 
     void enum_types(auto&& field) {
         {
             field("node_type", [&](auto&& d) {
-                auto field = d.array();
-                for (size_t i = 0; i < node_type_count; i++) {
-                    field([&](auto&& d) {
-                        auto field = d.object();
-                        field("name", sorted_node_type_str_array[i].second);
-                        field("value", sorted_node_type_str_array[i].second);
-                        field("numeric_value", nums(size_t(sorted_node_type_str_array[i].first)));
-                    });
-                }
+                auto field = d.object();
+                field("is_bit_flag", false);
+                field("values", [&](auto&& d) {
+                    auto field = d.array();
+                    for (size_t i = 0; i < node_type_count; i++) {
+                        field([&](auto&& d) {
+                            auto field = d.object();
+                            field("name", sorted_node_type_str_array[i].second);
+                            field("value", sorted_node_type_str_array[i].second);
+                            field("numeric_value", nums(size_t(sorted_node_type_str_array[i].first)));
+                        });
+                    }
+                });
             });
         }
         field("token_tag", [&](auto&& d) {
-            auto field = d.array();
-            for (size_t i = 0; i < lexer::enum_elem_count<lexer::Tag>(); i++) {
-                field([&](auto&& d) {
-                    auto field = d.object();
-                    field("name", lexer::enum_name_array<lexer::Tag>[i].second);
-                    field("value", lexer::enum_array<lexer::Tag>[i].second);
-                    field("numeric_value", nums(size_t(lexer::enum_array<lexer::Tag>[i].first)));
-                });
-            }
+            auto field = d.object();
+            field("is_bit_flag", is_bit_flag<lexer::Tag>());
+            field("values", [&](auto&& d) {
+                auto field = d.array();
+                for (size_t i = 0; i < lexer::enum_elem_count<lexer::Tag>(); i++) {
+                    field([&](auto&& d) {
+                        auto field = d.object();
+                        field("name", lexer::enum_name_array<lexer::Tag>[i].second);
+                        field("value", lexer::enum_array<lexer::Tag>[i].second);
+                        field("numeric_value", nums(size_t(lexer::enum_array<lexer::Tag>[i].first)));
+                    });
+                }
+            });
         });
         enum_type<UnaryOp>("unary_op", field);
         enum_type<BinaryOp>("binary_op", field);

@@ -102,7 +102,6 @@ type Type struct {
 	IsArray     bool
 	IsWeak      bool
 	IsOptional  bool
-	IsBitField  bool
 }
 
 func (d *Type) GoString() string {
@@ -147,7 +146,6 @@ var (
 	weakPtr   = regexp.MustCompile("weak_ptr<(.*)>")
 	array     = regexp.MustCompile("array<(.*)>")
 	optional  = regexp.MustCompile("optional<(.*)>")
-	bitField  = regexp.MustCompile("bit_field<(.*)>")
 )
 
 type collector struct {
@@ -164,12 +162,6 @@ func (c *collector) convertType(typ string) *Type {
 	isInterface := false
 	isWeak := false
 	isOptional := false
-	isBitField := false
-	bitFieldMatch := bitField.FindStringSubmatch(typ)
-	if len(bitFieldMatch) > 0 {
-		typ = bitFieldMatch[1]
-		isBitField = true
-	}
 	optionalMatch := optional.FindStringSubmatch(typ)
 	if len(optionalMatch) > 0 {
 		typ = optionalMatch[1]
@@ -211,7 +203,6 @@ func (c *collector) convertType(typ string) *Type {
 		IsArray:     isArray,
 		IsWeak:      isWeak,
 		IsOptional:  isOptional,
-		IsBitField:  isBitField,
 	}
 }
 
