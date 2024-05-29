@@ -57,6 +57,8 @@ func main() {
 
 	fmt.Printf("template<typename T>\n")
 	fmt.Printf("constexpr std::optional<T> from_string(std::string_view str);\n")
+	fmt.Printf("template<typename T,class K>\n")
+	fmt.Printf("constexpr std::optional<T> from_json(K k);\n")
 	fmt.Printf("template<typename T>\n")
 	fmt.Printf("constexpr size_t enum_elem_count();\n")
 	fmt.Printf("template<typename T>\n")
@@ -65,6 +67,8 @@ func main() {
 	fmt.Printf("constexpr std::array<std::pair<T,std::string_view>,enum_elem_count<T>()> make_enum_name_array();\n")
 	fmt.Printf("template<typename T>\n")
 	fmt.Printf("constexpr const char* enum_type_name();\n")
+	fmt.Printf("template<typename T>\n")
+	fmt.Printf("constexpr bool is_bit_flag();\n")
 
 	fmt.Printf("template<typename T>\n")
 	fmt.Printf("constexpr auto enum_array = make_enum_array<T>();\n")
@@ -75,6 +79,7 @@ func main() {
 	for _, v := range p.Elements {
 		if e, ok := v.(*ast.Enum); ok {
 			enumName := e.Ident.Ident
+			isBitFlag := e.BaseType != nil
 			fmt.Printf("enum class %s {\n", enumName)
 			for _, v := range e.Members {
 				fmt.Printf("    %s = %s,\n", v.Ident.Ident, s.ExprString(v.Value))
@@ -135,7 +140,26 @@ func main() {
 			fmt.Printf("}\n")
 
 			fmt.Printf("constexpr void as_json(%s e,auto&& d) {\n", enumName)
-			fmt.Printf("    d.value(enum_array<%s>[int(e)].second);\n", enumName)
+			if !isBitFlag {
+				fmt.Printf("    d.value(to_string(e));\n")
+			} else {
+				fmt.Printf("    d.value(static_cast<size_t>(e));\n")
+			}
+			fmt.Printf("}\n")
+
+			fmt.Printf("template<>\n")
+			if isBitFlag {
+				fmt.Printf("constexpr std::optional<%s> from_json<%s,size_t>(size_t k){\n", enumName, enumName)
+				fmt.Printf("    return static_cast<%s>(k);\n", enumName)
+			} else {
+				fmt.Printf("constexpr std::optional<%s> from_json<%s,std::string_view>(std::string_view k){\n", enumName, enumName)
+				fmt.Printf("    return from_string<%s>(k);\n", enumName)
+			}
+			fmt.Printf("}\n")
+
+			fmt.Printf("template<>")
+			fmt.Printf("constexpr bool is_bit_flag<%s>() {\n", enumName)
+			fmt.Printf("    return %v;\n", isBitFlag)
 			fmt.Printf("}\n")
 
 			fmt.Printf("template<>\n")
