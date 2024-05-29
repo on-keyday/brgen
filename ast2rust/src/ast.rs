@@ -741,8 +741,7 @@ impl TryFrom<&str> for OrderType {
 }
 
 bitflags!{
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
-#[serde(rename_all = "snake_case")]
+	#[derive(Debug,Clone,Copy)]
 	pub struct FormatType: u64{
 		const None = 0;
 		const FixedPrimitive = 1;
@@ -777,9 +776,9 @@ bitflags!{
 		const LocalVariable = 536870912;
 	}
 }
-impl TryFrom<&u64> for FormatType {
+impl TryFrom<u64> for FormatType {
 	type Error = ();
-	fn try_from(v:&u64)->Result<Self,()>{
+	fn try_from(v:u64)->Result<Self,()>{
 		Self::from_bits(*v).ok_or(())
 	}
 }
