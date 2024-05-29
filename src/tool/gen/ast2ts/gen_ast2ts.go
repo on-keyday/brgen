@@ -127,7 +127,23 @@ func generate(rw io.Writer, defs *gen.Defs) {
 				w.Printf(")\n")
 			}
 			w.Printf("}\n\n")
-
+			if d.IsBitField {
+				w.Printf("export function %stoString(v: %s): string {\n", d.Name, d.Name)
+				w.Printf("  const result = [];\n")
+				zeroCase := ""
+				for _, val := range d.Values {
+					if val.NumericValue == "0" {
+						zeroCase = val.Value
+						continue
+					}
+					w.Printf("  if ((v & %s) === %s) result.push(%q);\n", val.NumericValue, val.NumericValue, val.Value)
+				}
+				w.Printf("  if (result.length === 0) {\n")
+				w.Printf("    return %q;\n", zeroCase)
+				w.Printf("  }\n")
+				w.Printf("  return result.join(' | ');\n")
+				w.Printf("}\n\n")
+			}
 		}
 	}
 
