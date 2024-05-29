@@ -12,9 +12,19 @@ checksum = "0952808a6c2afd1aa8947271f3a60f1a6763c7b912d210184c5149b5cf147247"
 name = "ast2rust"
 version = "0.1.0"
 dependencies = [
+ "bitflags",
  "serde",
  "serde_derive",
  "serde_json",
+]
+
+[[package]]
+name = "bitflags"
+version = "2.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cf4b9d6a944f767f8e5e0db018570623c85f3d925ac718db4e06d0187adb21c1"
+dependencies = [
+ "serde",
 ]
 
 [[package]]

@@ -399,22 +399,27 @@ func generate(rw io.Writer, defs *gen.Defs) {
 			}
 
 		case *gen.Enum:
-			w.Printf("#[derive(Debug,Clone,Copy,Serialize,Deserialize)]\n")
-			w.Printf("#[serde(rename_all = \"snake_case\")]")
+
 			if d.IsBitField {
 				w.Printf("bitflags!{\n")
+				w.Printf("#[derive(Debug,Clone,Copy,Serialize,Deserialize)]\n")
+				w.Printf("#[serde(rename_all = \"snake_case\")]\n")
 				w.Printf("	pub struct %s: u64{\n", d.Name)
 				for _, field := range d.Values {
 					field.Name = strcase.ToCamel(field.Name)
-					w.Printf("	const %s = %s;\n", field.Name, field.NumericValue)
+					w.Printf("		const %s = %s;\n", field.Name, field.NumericValue)
 				}
+				w.Printf("	}\n")
 				w.Printf("}\n")
 				w.Printf("impl TryFrom<&u64> for %s {\n", d.Name)
 				w.Printf("	type Error = ();\n")
 				w.Printf("	fn try_from(v:&u64)->Result<Self,()>{\n")
 				w.Printf("		Self::from_bits(*v).ok_or(())\n")
 				w.Printf("	}\n")
+				w.Printf("}\n")
 			} else {
+				w.Printf("#[derive(Debug,Clone,Copy,Serialize,Deserialize)]\n")
+				w.Printf("#[serde(rename_all = \"snake_case\")]\n")
 				w.Printf("pub enum %s {\n", d.Name)
 				for _, field := range d.Values {
 					field.Name = strcase.ToCamel(field.Name)

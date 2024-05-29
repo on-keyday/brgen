@@ -6,9 +6,19 @@ version = 3
 name = "ast2rust"
 version = "0.1.0"
 dependencies = [
+ "bitflags",
  "serde",
  "serde_derive",
  "serde_json",
+]
+
+[[package]]
+name = "bitflags"
+version = "2.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cf4b9d6a944f767f8e5e0db018570623c85f3d925ac718db4e06d0187adb21c1"
+dependencies = [
+ "serde",
 ]
 
 [[package]]
