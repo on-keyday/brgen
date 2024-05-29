@@ -241,6 +241,44 @@ export function isFormatTrait(obj: any): obj is FormatTrait {
 	return typeof obj === 'number' && Number.isInteger(obj) // easy check
 }
 
+export function FormatTraitToString(v: FormatTrait): string {
+  const result = [];
+  if ((v & 1) === 1) result.push("fixed_primitive");
+  if ((v & 2) === 2) result.push("fixed_float");
+  if ((v & 4) === 4) result.push("fixed_primitive_array");
+  if ((v & 8) === 8) result.push("fixed_float_array");
+  if ((v & 16) === 16) result.push("variable_primitive_array");
+  if ((v & 32) === 32) result.push("variable_float_array");
+  if ((v & 64) === 64) result.push("variable_struct_array");
+  if ((v & 128) === 128) result.push("fixed_struct_array");
+  if ((v & 256) === 256) result.push("struct");
+  if ((v & 512) === 512) result.push("conditional");
+  if ((v & 1024) === 1024) result.push("static_peek");
+  if ((v & 2048) === 2048) result.push("bit_field");
+  if ((v & 4096) === 4096) result.push("read_state");
+  if ((v & 8192) === 8192) result.push("write_state");
+  if ((v & 16384) === 16384) result.push("terminal_string");
+  if ((v & 32768) === 32768) result.push("terminal_end");
+  if ((v & 65536) === 65536) result.push("terminal_regex");
+  if ((v & 131072) === 131072) result.push("terminal_fn");
+  if ((v & 262144) === 262144) result.push("bit_stream");
+  if ((v & 524288) === 524288) result.push("dynamic_endian");
+  if ((v & 1048576) === 1048576) result.push("dynamic_bit_order");
+  if ((v & 2097152) === 2097152) result.push("full_input");
+  if ((v & 4194304) === 4194304) result.push("backward_input");
+  if ((v & 8388608) === 8388608) result.push("magic_string");
+  if ((v & 16777216) === 16777216) result.push("magic_number");
+  if ((v & 33554432) === 33554432) result.push("assertion");
+  if ((v & 67108864) === 67108864) result.push("explicit_error");
+  if ((v & 134217728) === 134217728) result.push("procedural");
+  if ((v & 268435456) === 268435456) result.push("for_loop");
+  if ((v & 536870912) === 536870912) result.push("local_variable");
+  if (result.length === 0) {
+    return "none";
+  }
+  return result.join(' | ');
+}
+
 export interface Node {
 	readonly node_type: NodeType;
 	loc: Loc;
