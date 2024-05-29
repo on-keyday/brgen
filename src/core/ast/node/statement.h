@@ -21,6 +21,10 @@ namespace brgen::ast {
         std::vector<std::weak_ptr<IdentType>> depends;
         std::vector<std::weak_ptr<Field>> state_variables;
 
+        // unfortunately,bit field is not supported for now
+        // so, format attribute is passed by string
+        std::string format_type;
+
         Format(lexer::Loc l)
             : Member(l, NodeType::format) {}
 

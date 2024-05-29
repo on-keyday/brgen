@@ -27,7 +27,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	err = gen.ConfigFromProgram(p, func(configName string, asCall bool, args ...ast.Expr) error {
 		if configName == "config.cpp.namespace" && !asCall {
 			v, ok := args[0].(*ast.StrLiteral)
@@ -72,13 +71,13 @@ func main() {
 
 	fmt.Printf("template<typename T>\n")
 	fmt.Printf("constexpr auto enum_name_array = make_enum_name_array<T>();\n")
-
+	s := gen.NewExprStringer()
 	for _, v := range p.Elements {
 		if e, ok := v.(*ast.Enum); ok {
 			enumName := e.Ident.Ident
 			fmt.Printf("enum class %s {\n", enumName)
 			for _, v := range e.Members {
-				fmt.Printf("    %s,\n", v.Ident.Ident)
+				fmt.Printf("    %s = %s,\n", v.Ident.Ident, s.ExprString(v.Value))
 			}
 			fmt.Printf("};\n")
 			fmt.Printf("constexpr const char* to_string(%s e) {\n", enumName)
