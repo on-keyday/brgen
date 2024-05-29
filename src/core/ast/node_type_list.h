@@ -334,7 +334,7 @@ namespace brgen::ast {
         enum_type<IOMethod>("io_method", field);
         enum_type<SpecialLiteralKind>("special_literal_kind", field);
         enum_type<OrderType>("order_type", field);
-        enum_type<FormatType>("format_type", field);
+        enum_type<FormatTrait>("format_trait", field);
     }
 
     void struct_types(auto&& field) {

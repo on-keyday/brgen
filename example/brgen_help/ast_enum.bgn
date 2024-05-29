@@ -155,8 +155,8 @@ enum SpecialLiteralKind:
     config_  = "config"
  
 
-# FormatType is used to determine the `format`'s layout
-enum FormatType:
+# FormatTrait is used to determine the `format`'s layout
+enum FormatTrait:
     :u32
     # none, empty format
     none = 0

@@ -903,7 +903,7 @@ template<>
 constexpr const char* enum_type_name<SpecialLiteralKind>() {
     return "SpecialLiteralKind";
 }
-enum class FormatType {
+enum class FormatTrait {
     none = 0,
     fixed_primitive = (1 << 0),
     fixed_float = (1 << 1),
@@ -936,162 +936,162 @@ enum class FormatType {
     for_loop = (1 << 28),
     local_variable = (1 << 29),
 };
-constexpr const char* to_string(FormatType e) {
+constexpr const char* to_string(FormatTrait e) {
     switch(e) {
-    case FormatType::none: return "none";
-    case FormatType::fixed_primitive: return "fixed_primitive";
-    case FormatType::fixed_float: return "fixed_float";
-    case FormatType::fixed_primitive_array: return "fixed_primitive_array";
-    case FormatType::fixed_float_array: return "fixed_float_array";
-    case FormatType::variable_primitive_array: return "variable_primitive_array";
-    case FormatType::variable_float_array: return "variable_float_array";
-    case FormatType::variable_struct_array: return "variable_struct_array";
-    case FormatType::fixed_struct_array: return "fixed_struct_array";
-    case FormatType::struct_: return "struct";
-    case FormatType::conditional: return "conditional";
-    case FormatType::static_peek: return "static_peek";
-    case FormatType::bit_field: return "bit_field";
-    case FormatType::read_state: return "read_state";
-    case FormatType::write_state: return "write_state";
-    case FormatType::terminal_string: return "terminal_string";
-    case FormatType::terminal_end: return "terminal_end";
-    case FormatType::terminal_regex: return "terminal_regex";
-    case FormatType::terminal_fn: return "terminal_fn";
-    case FormatType::bit_stream: return "bit_stream";
-    case FormatType::dynamic_endian: return "dynamic_endian";
-    case FormatType::dynamic_bit_order: return "dynamic_bit_order";
-    case FormatType::full_input: return "full_input";
-    case FormatType::backward_input: return "backward_input";
-    case FormatType::magic_string: return "magic_string";
-    case FormatType::magic_number: return "magic_number";
-    case FormatType::assertion: return "assertion";
-    case FormatType::explicit_error: return "explicit_error";
-    case FormatType::procedural: return "procedural";
-    case FormatType::for_loop: return "for_loop";
-    case FormatType::local_variable: return "local_variable";
+    case FormatTrait::none: return "none";
+    case FormatTrait::fixed_primitive: return "fixed_primitive";
+    case FormatTrait::fixed_float: return "fixed_float";
+    case FormatTrait::fixed_primitive_array: return "fixed_primitive_array";
+    case FormatTrait::fixed_float_array: return "fixed_float_array";
+    case FormatTrait::variable_primitive_array: return "variable_primitive_array";
+    case FormatTrait::variable_float_array: return "variable_float_array";
+    case FormatTrait::variable_struct_array: return "variable_struct_array";
+    case FormatTrait::fixed_struct_array: return "fixed_struct_array";
+    case FormatTrait::struct_: return "struct";
+    case FormatTrait::conditional: return "conditional";
+    case FormatTrait::static_peek: return "static_peek";
+    case FormatTrait::bit_field: return "bit_field";
+    case FormatTrait::read_state: return "read_state";
+    case FormatTrait::write_state: return "write_state";
+    case FormatTrait::terminal_string: return "terminal_string";
+    case FormatTrait::terminal_end: return "terminal_end";
+    case FormatTrait::terminal_regex: return "terminal_regex";
+    case FormatTrait::terminal_fn: return "terminal_fn";
+    case FormatTrait::bit_stream: return "bit_stream";
+    case FormatTrait::dynamic_endian: return "dynamic_endian";
+    case FormatTrait::dynamic_bit_order: return "dynamic_bit_order";
+    case FormatTrait::full_input: return "full_input";
+    case FormatTrait::backward_input: return "backward_input";
+    case FormatTrait::magic_string: return "magic_string";
+    case FormatTrait::magic_number: return "magic_number";
+    case FormatTrait::assertion: return "assertion";
+    case FormatTrait::explicit_error: return "explicit_error";
+    case FormatTrait::procedural: return "procedural";
+    case FormatTrait::for_loop: return "for_loop";
+    case FormatTrait::local_variable: return "local_variable";
     default: return nullptr;
     }
 }
-template<>constexpr std::optional<FormatType> from_string<FormatType>(std::string_view str) {
+template<>constexpr std::optional<FormatTrait> from_string<FormatTrait>(std::string_view str) {
     if(str.empty()) return std::nullopt;
-    if(str == "none") return FormatType::none;
-    if(str == "fixed_primitive") return FormatType::fixed_primitive;
-    if(str == "fixed_float") return FormatType::fixed_float;
-    if(str == "fixed_primitive_array") return FormatType::fixed_primitive_array;
-    if(str == "fixed_float_array") return FormatType::fixed_float_array;
-    if(str == "variable_primitive_array") return FormatType::variable_primitive_array;
-    if(str == "variable_float_array") return FormatType::variable_float_array;
-    if(str == "variable_struct_array") return FormatType::variable_struct_array;
-    if(str == "fixed_struct_array") return FormatType::fixed_struct_array;
-    if(str == "struct") return FormatType::struct_;
-    if(str == "conditional") return FormatType::conditional;
-    if(str == "static_peek") return FormatType::static_peek;
-    if(str == "bit_field") return FormatType::bit_field;
-    if(str == "read_state") return FormatType::read_state;
-    if(str == "write_state") return FormatType::write_state;
-    if(str == "terminal_string") return FormatType::terminal_string;
-    if(str == "terminal_end") return FormatType::terminal_end;
-    if(str == "terminal_regex") return FormatType::terminal_regex;
-    if(str == "terminal_fn") return FormatType::terminal_fn;
-    if(str == "bit_stream") return FormatType::bit_stream;
-    if(str == "dynamic_endian") return FormatType::dynamic_endian;
-    if(str == "dynamic_bit_order") return FormatType::dynamic_bit_order;
-    if(str == "full_input") return FormatType::full_input;
-    if(str == "backward_input") return FormatType::backward_input;
-    if(str == "magic_string") return FormatType::magic_string;
-    if(str == "magic_number") return FormatType::magic_number;
-    if(str == "assertion") return FormatType::assertion;
-    if(str == "explicit_error") return FormatType::explicit_error;
-    if(str == "procedural") return FormatType::procedural;
-    if(str == "for_loop") return FormatType::for_loop;
-    if(str == "local_variable") return FormatType::local_variable;
+    if(str == "none") return FormatTrait::none;
+    if(str == "fixed_primitive") return FormatTrait::fixed_primitive;
+    if(str == "fixed_float") return FormatTrait::fixed_float;
+    if(str == "fixed_primitive_array") return FormatTrait::fixed_primitive_array;
+    if(str == "fixed_float_array") return FormatTrait::fixed_float_array;
+    if(str == "variable_primitive_array") return FormatTrait::variable_primitive_array;
+    if(str == "variable_float_array") return FormatTrait::variable_float_array;
+    if(str == "variable_struct_array") return FormatTrait::variable_struct_array;
+    if(str == "fixed_struct_array") return FormatTrait::fixed_struct_array;
+    if(str == "struct") return FormatTrait::struct_;
+    if(str == "conditional") return FormatTrait::conditional;
+    if(str == "static_peek") return FormatTrait::static_peek;
+    if(str == "bit_field") return FormatTrait::bit_field;
+    if(str == "read_state") return FormatTrait::read_state;
+    if(str == "write_state") return FormatTrait::write_state;
+    if(str == "terminal_string") return FormatTrait::terminal_string;
+    if(str == "terminal_end") return FormatTrait::terminal_end;
+    if(str == "terminal_regex") return FormatTrait::terminal_regex;
+    if(str == "terminal_fn") return FormatTrait::terminal_fn;
+    if(str == "bit_stream") return FormatTrait::bit_stream;
+    if(str == "dynamic_endian") return FormatTrait::dynamic_endian;
+    if(str == "dynamic_bit_order") return FormatTrait::dynamic_bit_order;
+    if(str == "full_input") return FormatTrait::full_input;
+    if(str == "backward_input") return FormatTrait::backward_input;
+    if(str == "magic_string") return FormatTrait::magic_string;
+    if(str == "magic_number") return FormatTrait::magic_number;
+    if(str == "assertion") return FormatTrait::assertion;
+    if(str == "explicit_error") return FormatTrait::explicit_error;
+    if(str == "procedural") return FormatTrait::procedural;
+    if(str == "for_loop") return FormatTrait::for_loop;
+    if(str == "local_variable") return FormatTrait::local_variable;
     return std::nullopt;
 }
-template<>constexpr size_t enum_elem_count<FormatType>() {
+template<>constexpr size_t enum_elem_count<FormatTrait>() {
     return 31;
 }
-template<>constexpr std::array<std::pair<FormatType,std::string_view>,31> make_enum_array<FormatType>() {
+template<>constexpr std::array<std::pair<FormatTrait,std::string_view>,31> make_enum_array<FormatTrait>() {
     return {
-        std::pair{FormatType::none,"none"},
-        std::pair{FormatType::fixed_primitive,"fixed_primitive"},
-        std::pair{FormatType::fixed_float,"fixed_float"},
-        std::pair{FormatType::fixed_primitive_array,"fixed_primitive_array"},
-        std::pair{FormatType::fixed_float_array,"fixed_float_array"},
-        std::pair{FormatType::variable_primitive_array,"variable_primitive_array"},
-        std::pair{FormatType::variable_float_array,"variable_float_array"},
-        std::pair{FormatType::variable_struct_array,"variable_struct_array"},
-        std::pair{FormatType::fixed_struct_array,"fixed_struct_array"},
-        std::pair{FormatType::struct_,"struct"},
-        std::pair{FormatType::conditional,"conditional"},
-        std::pair{FormatType::static_peek,"static_peek"},
-        std::pair{FormatType::bit_field,"bit_field"},
-        std::pair{FormatType::read_state,"read_state"},
-        std::pair{FormatType::write_state,"write_state"},
-        std::pair{FormatType::terminal_string,"terminal_string"},
-        std::pair{FormatType::terminal_end,"terminal_end"},
-        std::pair{FormatType::terminal_regex,"terminal_regex"},
-        std::pair{FormatType::terminal_fn,"terminal_fn"},
-        std::pair{FormatType::bit_stream,"bit_stream"},
-        std::pair{FormatType::dynamic_endian,"dynamic_endian"},
-        std::pair{FormatType::dynamic_bit_order,"dynamic_bit_order"},
-        std::pair{FormatType::full_input,"full_input"},
-        std::pair{FormatType::backward_input,"backward_input"},
-        std::pair{FormatType::magic_string,"magic_string"},
-        std::pair{FormatType::magic_number,"magic_number"},
-        std::pair{FormatType::assertion,"assertion"},
-        std::pair{FormatType::explicit_error,"explicit_error"},
-        std::pair{FormatType::procedural,"procedural"},
-        std::pair{FormatType::for_loop,"for_loop"},
-        std::pair{FormatType::local_variable,"local_variable"},
+        std::pair{FormatTrait::none,"none"},
+        std::pair{FormatTrait::fixed_primitive,"fixed_primitive"},
+        std::pair{FormatTrait::fixed_float,"fixed_float"},
+        std::pair{FormatTrait::fixed_primitive_array,"fixed_primitive_array"},
+        std::pair{FormatTrait::fixed_float_array,"fixed_float_array"},
+        std::pair{FormatTrait::variable_primitive_array,"variable_primitive_array"},
+        std::pair{FormatTrait::variable_float_array,"variable_float_array"},
+        std::pair{FormatTrait::variable_struct_array,"variable_struct_array"},
+        std::pair{FormatTrait::fixed_struct_array,"fixed_struct_array"},
+        std::pair{FormatTrait::struct_,"struct"},
+        std::pair{FormatTrait::conditional,"conditional"},
+        std::pair{FormatTrait::static_peek,"static_peek"},
+        std::pair{FormatTrait::bit_field,"bit_field"},
+        std::pair{FormatTrait::read_state,"read_state"},
+        std::pair{FormatTrait::write_state,"write_state"},
+        std::pair{FormatTrait::terminal_string,"terminal_string"},
+        std::pair{FormatTrait::terminal_end,"terminal_end"},
+        std::pair{FormatTrait::terminal_regex,"terminal_regex"},
+        std::pair{FormatTrait::terminal_fn,"terminal_fn"},
+        std::pair{FormatTrait::bit_stream,"bit_stream"},
+        std::pair{FormatTrait::dynamic_endian,"dynamic_endian"},
+        std::pair{FormatTrait::dynamic_bit_order,"dynamic_bit_order"},
+        std::pair{FormatTrait::full_input,"full_input"},
+        std::pair{FormatTrait::backward_input,"backward_input"},
+        std::pair{FormatTrait::magic_string,"magic_string"},
+        std::pair{FormatTrait::magic_number,"magic_number"},
+        std::pair{FormatTrait::assertion,"assertion"},
+        std::pair{FormatTrait::explicit_error,"explicit_error"},
+        std::pair{FormatTrait::procedural,"procedural"},
+        std::pair{FormatTrait::for_loop,"for_loop"},
+        std::pair{FormatTrait::local_variable,"local_variable"},
     };
 }
-template<>constexpr std::array<std::pair<FormatType,std::string_view>,31> make_enum_name_array<FormatType>() {
+template<>constexpr std::array<std::pair<FormatTrait,std::string_view>,31> make_enum_name_array<FormatTrait>() {
     return {
-        std::pair{FormatType::none,"none"},
-        std::pair{FormatType::fixed_primitive,"fixed_primitive"},
-        std::pair{FormatType::fixed_float,"fixed_float"},
-        std::pair{FormatType::fixed_primitive_array,"fixed_primitive_array"},
-        std::pair{FormatType::fixed_float_array,"fixed_float_array"},
-        std::pair{FormatType::variable_primitive_array,"variable_primitive_array"},
-        std::pair{FormatType::variable_float_array,"variable_float_array"},
-        std::pair{FormatType::variable_struct_array,"variable_struct_array"},
-        std::pair{FormatType::fixed_struct_array,"fixed_struct_array"},
-        std::pair{FormatType::struct_,"struct"},
-        std::pair{FormatType::conditional,"conditional"},
-        std::pair{FormatType::static_peek,"static_peek"},
-        std::pair{FormatType::bit_field,"bit_field"},
-        std::pair{FormatType::read_state,"read_state"},
-        std::pair{FormatType::write_state,"write_state"},
-        std::pair{FormatType::terminal_string,"terminal_string"},
-        std::pair{FormatType::terminal_end,"terminal_end"},
-        std::pair{FormatType::terminal_regex,"terminal_regex"},
-        std::pair{FormatType::terminal_fn,"terminal_fn"},
-        std::pair{FormatType::bit_stream,"bit_stream"},
-        std::pair{FormatType::dynamic_endian,"dynamic_endian"},
-        std::pair{FormatType::dynamic_bit_order,"dynamic_bit_order"},
-        std::pair{FormatType::full_input,"full_input"},
-        std::pair{FormatType::backward_input,"backward_input"},
-        std::pair{FormatType::magic_string,"magic_string"},
-        std::pair{FormatType::magic_number,"magic_number"},
-        std::pair{FormatType::assertion,"assertion"},
-        std::pair{FormatType::explicit_error,"explicit_error"},
-        std::pair{FormatType::procedural,"procedural"},
-        std::pair{FormatType::for_loop,"for_loop"},
-        std::pair{FormatType::local_variable,"local_variable"},
+        std::pair{FormatTrait::none,"none"},
+        std::pair{FormatTrait::fixed_primitive,"fixed_primitive"},
+        std::pair{FormatTrait::fixed_float,"fixed_float"},
+        std::pair{FormatTrait::fixed_primitive_array,"fixed_primitive_array"},
+        std::pair{FormatTrait::fixed_float_array,"fixed_float_array"},
+        std::pair{FormatTrait::variable_primitive_array,"variable_primitive_array"},
+        std::pair{FormatTrait::variable_float_array,"variable_float_array"},
+        std::pair{FormatTrait::variable_struct_array,"variable_struct_array"},
+        std::pair{FormatTrait::fixed_struct_array,"fixed_struct_array"},
+        std::pair{FormatTrait::struct_,"struct"},
+        std::pair{FormatTrait::conditional,"conditional"},
+        std::pair{FormatTrait::static_peek,"static_peek"},
+        std::pair{FormatTrait::bit_field,"bit_field"},
+        std::pair{FormatTrait::read_state,"read_state"},
+        std::pair{FormatTrait::write_state,"write_state"},
+        std::pair{FormatTrait::terminal_string,"terminal_string"},
+        std::pair{FormatTrait::terminal_end,"terminal_end"},
+        std::pair{FormatTrait::terminal_regex,"terminal_regex"},
+        std::pair{FormatTrait::terminal_fn,"terminal_fn"},
+        std::pair{FormatTrait::bit_stream,"bit_stream"},
+        std::pair{FormatTrait::dynamic_endian,"dynamic_endian"},
+        std::pair{FormatTrait::dynamic_bit_order,"dynamic_bit_order"},
+        std::pair{FormatTrait::full_input,"full_input"},
+        std::pair{FormatTrait::backward_input,"backward_input"},
+        std::pair{FormatTrait::magic_string,"magic_string"},
+        std::pair{FormatTrait::magic_number,"magic_number"},
+        std::pair{FormatTrait::assertion,"assertion"},
+        std::pair{FormatTrait::explicit_error,"explicit_error"},
+        std::pair{FormatTrait::procedural,"procedural"},
+        std::pair{FormatTrait::for_loop,"for_loop"},
+        std::pair{FormatTrait::local_variable,"local_variable"},
     };
 }
-constexpr void as_json(FormatType e,auto&& d) {
+constexpr void as_json(FormatTrait e,auto&& d) {
     d.value(static_cast<size_t>(e));
 }
 template<>
-constexpr std::optional<FormatType> from_json<FormatType,size_t>(size_t k){
-    return static_cast<FormatType>(k);
+constexpr std::optional<FormatTrait> from_json<FormatTrait,size_t>(size_t k){
+    return static_cast<FormatTrait>(k);
 }
-template<>constexpr bool is_bit_flag<FormatType>() {
+template<>constexpr bool is_bit_flag<FormatTrait>() {
     return true;
 }
 template<>
-constexpr const char* enum_type_name<FormatType>() {
-    return "FormatType";
+constexpr const char* enum_type_name<FormatTrait>() {
+    return "FormatTrait";
 }
 }
