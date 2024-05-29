@@ -404,7 +404,7 @@ BitMapping,
 @JsonValue('bit_both')
 BitBoth,
 }
-enum FormatType {
+enum FormatTrait {
 @JsonValue('none')
 None,
 @JsonValue('fixed_primitive')
@@ -915,6 +915,7 @@ class Format extends Member {
     List<Func>? castFns = [];
     List<IdentType>? depends = [];
     List<Field>? stateVariables = [];
+    FormatTrait formatTrait = FormatTrait.None;
 factory Format.fromJson(Map<String, dynamic> json) => _$FormatFromJson(json);
 }
 @JsonSerializable()

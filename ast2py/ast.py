@@ -230,7 +230,7 @@ class OrderType(PyEnum):
     BIT_BOTH = "bit_both"
 
 
-class FormatType(PyEnum):
+class FormatTrait(PyEnum):
     NONE = 0
     FIXED_PRIMITIVE = 1
     FIXED_FLOAT = 2
@@ -659,6 +659,7 @@ class Format(Member):
     cast_fns: List[Function]
     depends: List[IdentType]
     state_variables: List[Field]
+    format_trait: FormatTrait
 
 
 class State(Member):
@@ -2071,6 +2072,7 @@ def ast2node(ast :JsonAst) -> Program:
                 node[i].cast_fns = [(node[x] if isinstance(node[x],Function) else raiseError(TypeError('type mismatch at Format::cast_fns'))) for x in ast.node[i].body["cast_fns"]]
                 node[i].depends = [(node[x] if isinstance(node[x],IdentType) else raiseError(TypeError('type mismatch at Format::depends'))) for x in ast.node[i].body["depends"]]
                 node[i].state_variables = [(node[x] if isinstance(node[x],Field) else raiseError(TypeError('type mismatch at Format::state_variables'))) for x in ast.node[i].body["state_variables"]]
+                node[i].format_trait = FormatTrait(ast.node[i].body["format_trait"])
             case NodeType.STATE:
                 if ast.node[i].body["belong"] is not None:
                     x = node[ast.node[i].body["belong"]]

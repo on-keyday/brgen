@@ -1513,117 +1513,117 @@ func (n *OrderType) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type FormatType int
+type FormatTrait int
 
 const (
-	FormatTypeNone                   FormatType = 0
-	FormatTypeFixedPrimitive         FormatType = 1
-	FormatTypeFixedFloat             FormatType = 2
-	FormatTypeFixedPrimitiveArray    FormatType = 4
-	FormatTypeFixedFloatArray        FormatType = 8
-	FormatTypeVariablePrimitiveArray FormatType = 16
-	FormatTypeVariableFloatArray     FormatType = 32
-	FormatTypeVariableStructArray    FormatType = 64
-	FormatTypeFixedStructArray       FormatType = 128
-	FormatTypeStruct                 FormatType = 256
-	FormatTypeConditional            FormatType = 512
-	FormatTypeStaticPeek             FormatType = 1024
-	FormatTypeBitField               FormatType = 2048
-	FormatTypeReadState              FormatType = 4096
-	FormatTypeWriteState             FormatType = 8192
-	FormatTypeTerminalString         FormatType = 16384
-	FormatTypeTerminalEnd            FormatType = 32768
-	FormatTypeTerminalRegex          FormatType = 65536
-	FormatTypeTerminalFn             FormatType = 131072
-	FormatTypeBitStream              FormatType = 262144
-	FormatTypeDynamicEndian          FormatType = 524288
-	FormatTypeDynamicBitOrder        FormatType = 1048576
-	FormatTypeFullInput              FormatType = 2097152
-	FormatTypeBackwardInput          FormatType = 4194304
-	FormatTypeMagicString            FormatType = 8388608
-	FormatTypeMagicNumber            FormatType = 16777216
-	FormatTypeAssertion              FormatType = 33554432
-	FormatTypeExplicitError          FormatType = 67108864
-	FormatTypeProcedural             FormatType = 134217728
-	FormatTypeForLoop                FormatType = 268435456
-	FormatTypeLocalVariable          FormatType = 536870912
+	FormatTraitNone                   FormatTrait = 0
+	FormatTraitFixedPrimitive         FormatTrait = 1
+	FormatTraitFixedFloat             FormatTrait = 2
+	FormatTraitFixedPrimitiveArray    FormatTrait = 4
+	FormatTraitFixedFloatArray        FormatTrait = 8
+	FormatTraitVariablePrimitiveArray FormatTrait = 16
+	FormatTraitVariableFloatArray     FormatTrait = 32
+	FormatTraitVariableStructArray    FormatTrait = 64
+	FormatTraitFixedStructArray       FormatTrait = 128
+	FormatTraitStruct                 FormatTrait = 256
+	FormatTraitConditional            FormatTrait = 512
+	FormatTraitStaticPeek             FormatTrait = 1024
+	FormatTraitBitField               FormatTrait = 2048
+	FormatTraitReadState              FormatTrait = 4096
+	FormatTraitWriteState             FormatTrait = 8192
+	FormatTraitTerminalString         FormatTrait = 16384
+	FormatTraitTerminalEnd            FormatTrait = 32768
+	FormatTraitTerminalRegex          FormatTrait = 65536
+	FormatTraitTerminalFn             FormatTrait = 131072
+	FormatTraitBitStream              FormatTrait = 262144
+	FormatTraitDynamicEndian          FormatTrait = 524288
+	FormatTraitDynamicBitOrder        FormatTrait = 1048576
+	FormatTraitFullInput              FormatTrait = 2097152
+	FormatTraitBackwardInput          FormatTrait = 4194304
+	FormatTraitMagicString            FormatTrait = 8388608
+	FormatTraitMagicNumber            FormatTrait = 16777216
+	FormatTraitAssertion              FormatTrait = 33554432
+	FormatTraitExplicitError          FormatTrait = 67108864
+	FormatTraitProcedural             FormatTrait = 134217728
+	FormatTraitForLoop                FormatTrait = 268435456
+	FormatTraitLocalVariable          FormatTrait = 536870912
 )
 
-func (n FormatType) String() string {
+func (n FormatTrait) String() string {
 	switch n {
-	case FormatTypeNone:
+	case FormatTraitNone:
 		return "none"
-	case FormatTypeFixedPrimitive:
+	case FormatTraitFixedPrimitive:
 		return "fixed_primitive"
-	case FormatTypeFixedFloat:
+	case FormatTraitFixedFloat:
 		return "fixed_float"
-	case FormatTypeFixedPrimitiveArray:
+	case FormatTraitFixedPrimitiveArray:
 		return "fixed_primitive_array"
-	case FormatTypeFixedFloatArray:
+	case FormatTraitFixedFloatArray:
 		return "fixed_float_array"
-	case FormatTypeVariablePrimitiveArray:
+	case FormatTraitVariablePrimitiveArray:
 		return "variable_primitive_array"
-	case FormatTypeVariableFloatArray:
+	case FormatTraitVariableFloatArray:
 		return "variable_float_array"
-	case FormatTypeVariableStructArray:
+	case FormatTraitVariableStructArray:
 		return "variable_struct_array"
-	case FormatTypeFixedStructArray:
+	case FormatTraitFixedStructArray:
 		return "fixed_struct_array"
-	case FormatTypeStruct:
+	case FormatTraitStruct:
 		return "struct"
-	case FormatTypeConditional:
+	case FormatTraitConditional:
 		return "conditional"
-	case FormatTypeStaticPeek:
+	case FormatTraitStaticPeek:
 		return "static_peek"
-	case FormatTypeBitField:
+	case FormatTraitBitField:
 		return "bit_field"
-	case FormatTypeReadState:
+	case FormatTraitReadState:
 		return "read_state"
-	case FormatTypeWriteState:
+	case FormatTraitWriteState:
 		return "write_state"
-	case FormatTypeTerminalString:
+	case FormatTraitTerminalString:
 		return "terminal_string"
-	case FormatTypeTerminalEnd:
+	case FormatTraitTerminalEnd:
 		return "terminal_end"
-	case FormatTypeTerminalRegex:
+	case FormatTraitTerminalRegex:
 		return "terminal_regex"
-	case FormatTypeTerminalFn:
+	case FormatTraitTerminalFn:
 		return "terminal_fn"
-	case FormatTypeBitStream:
+	case FormatTraitBitStream:
 		return "bit_stream"
-	case FormatTypeDynamicEndian:
+	case FormatTraitDynamicEndian:
 		return "dynamic_endian"
-	case FormatTypeDynamicBitOrder:
+	case FormatTraitDynamicBitOrder:
 		return "dynamic_bit_order"
-	case FormatTypeFullInput:
+	case FormatTraitFullInput:
 		return "full_input"
-	case FormatTypeBackwardInput:
+	case FormatTraitBackwardInput:
 		return "backward_input"
-	case FormatTypeMagicString:
+	case FormatTraitMagicString:
 		return "magic_string"
-	case FormatTypeMagicNumber:
+	case FormatTraitMagicNumber:
 		return "magic_number"
-	case FormatTypeAssertion:
+	case FormatTraitAssertion:
 		return "assertion"
-	case FormatTypeExplicitError:
+	case FormatTraitExplicitError:
 		return "explicit_error"
-	case FormatTypeProcedural:
+	case FormatTraitProcedural:
 		return "procedural"
-	case FormatTypeForLoop:
+	case FormatTraitForLoop:
 		return "for_loop"
-	case FormatTypeLocalVariable:
+	case FormatTraitLocalVariable:
 		return "local_variable"
 	default:
-		return fmt.Sprintf("FormatType(%d)", n)
+		return fmt.Sprintf("FormatTrait(%d)", n)
 	}
 }
 
-func (n *FormatType) UnmarshalJSON(data []byte) error {
+func (n *FormatTrait) UnmarshalJSON(data []byte) error {
 	var tmp int
 	if err := json.Unmarshal(data, &tmp); err != nil {
 		return err
 	}
-	*n = FormatType(tmp)
+	*n = FormatTrait(tmp)
 	return nil
 }
 
@@ -3254,6 +3254,7 @@ type Format struct {
 	CastFns        []*Function
 	Depends        []*IdentType
 	StateVariables []*Field
+	FormatTrait    FormatTrait
 }
 
 func (n *Format) isMember() {}
@@ -4991,15 +4992,16 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeFormat:
 			v := n.node[i].(*Format)
 			var tmp struct {
-				Belong         *uintptr  `json:"belong"`
-				BelongStruct   *uintptr  `json:"belong_struct"`
-				Ident          *uintptr  `json:"ident"`
-				Body           *uintptr  `json:"body"`
-				EncodeFn       *uintptr  `json:"encode_fn"`
-				DecodeFn       *uintptr  `json:"decode_fn"`
-				CastFns        []uintptr `json:"cast_fns"`
-				Depends        []uintptr `json:"depends"`
-				StateVariables []uintptr `json:"state_variables"`
+				Belong         *uintptr    `json:"belong"`
+				BelongStruct   *uintptr    `json:"belong_struct"`
+				Ident          *uintptr    `json:"ident"`
+				Body           *uintptr    `json:"body"`
+				EncodeFn       *uintptr    `json:"encode_fn"`
+				DecodeFn       *uintptr    `json:"decode_fn"`
+				CastFns        []uintptr   `json:"cast_fns"`
+				Depends        []uintptr   `json:"depends"`
+				StateVariables []uintptr   `json:"state_variables"`
+				FormatTrait    FormatTrait `json:"format_trait"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -5034,6 +5036,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			for j, k := range tmp.StateVariables {
 				v.StateVariables[j] = n.node[k].(*Field)
 			}
+			v.FormatTrait = tmp.FormatTrait
 		case NodeTypeState:
 			v := n.node[i].(*State)
 			var tmp struct {

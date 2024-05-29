@@ -742,7 +742,7 @@ impl TryFrom<&str> for OrderType {
 
 bitflags!{
 	#[derive(Debug,Clone,Copy)]
-	pub struct FormatType: u64{
+	pub struct FormatTrait: u64{
 		const None = 0;
 		const FixedPrimitive = 1;
 		const FixedFloat = 2;
@@ -776,7 +776,7 @@ bitflags!{
 		const LocalVariable = 536870912;
 	}
 }
-impl TryFrom<u64> for FormatType {
+impl TryFrom<u64> for FormatTrait {
 	type Error = ();
 	fn try_from(v:u64)->Result<Self,()>{
 		Self::from_bits(v).ok_or(())
@@ -8079,6 +8079,7 @@ pub struct Format {
 	pub cast_fns: Vec<Weak<RefCell<Function>>>,
 	pub depends: Vec<Weak<RefCell<IdentType>>>,
 	pub state_variables: Vec<Weak<RefCell<Field>>>,
+	pub format_trait: FormatTrait,
 }
 
 impl From<&Rc<RefCell<Format>>> for NodeType {
@@ -9337,6 +9338,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				cast_fns: Vec::new(),
 				depends: Vec::new(),
 				state_variables: Vec::new(),
+				format_trait: FormatTrait::None,
 				})))
 			},
 			NodeType::State => {
@@ -13983,6 +13985,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().state_variables.push(Rc::downgrade(&state_variables_body));
 				}
+				let format_trait_body = match raw_node.body.get("format_trait") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"format_trait")),
+				};
+				node.borrow_mut().format_trait = match format_trait_body.as_u64() {
+					Some(v)=>match FormatTrait::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(format_trait_body.into(),JSONType::Number)),
+				};
 			},
 			NodeType::State => {
 				let node = nodes[i].clone();

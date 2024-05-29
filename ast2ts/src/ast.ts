@@ -203,7 +203,7 @@ export function isOrderType(obj: any): obj is OrderType {
 	return obj && typeof obj === 'string' && (obj === "byte" || obj === "bit_stream" || obj === "bit_mapping" || obj === "bit_both")
 }
 
-export const enum FormatType {
+export const enum FormatTrait {
 	none = 0,
 	fixed_primitive = 1,
 	fixed_float = 2,
@@ -237,7 +237,7 @@ export const enum FormatType {
 	local_variable = 536870912,
 };
 
-export function isFormatType(obj: any): obj is FormatType {
+export function isFormatTrait(obj: any): obj is FormatTrait {
 	return typeof obj === 'number' && Number.isInteger(obj) // easy check
 }
 
@@ -1047,6 +1047,7 @@ export interface Format extends Member {
 	cast_fns: Function[];
 	depends: IdentType[];
 	state_variables: Field[];
+	format_trait: FormatTrait;
 }
 
 export function isFormat(obj: any): obj is Format {
@@ -2047,6 +2048,7 @@ export function parseAST(obj: JsonAst): Program {
 				cast_fns: [],
 				depends: [],
 				state_variables: [],
+				format_trait: FormatTrait.none,
 			}
 			c.node.push(n);
 			break;
@@ -4431,6 +4433,11 @@ export function parseAST(obj: JsonAst): Program {
 				}
 				n.state_variables.push(tmpstate_variables);
 			}
+			const tmpformat_trait = on.body?.format_trait;
+			if (!isFormatTrait(tmpformat_trait)) {
+				throw new Error('invalid node list at Format::format_trait');
+			}
+			n.format_trait = tmpformat_trait;
 			break;
 		}
 		case "state": {

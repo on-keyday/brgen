@@ -217,7 +217,7 @@ BitStream,
 BitMapping,
 BitBoth,
 }
-public enum FormatType {
+public enum FormatTrait {
 None,
 FixedPrimitive,
 FixedFloat,
@@ -769,6 +769,7 @@ public class Format : Member{
 	public List<Function>? CastFns{get;set;}
 	public List<IdentType>? Depends{get;set;}
 	public List<Field>? StateVariables{get;set;}
+	public FormatTrait FormatTrait{get;set;}
 }
 public class State : Member{
 	public Loc Loc{get;set;}
@@ -1588,6 +1589,7 @@ public static class Ast {
                node.CastFns = ast.Node[i].Body[cast_fns];
                node.Depends = ast.Node[i].Body[depends];
                node.StateVariables = ast.Node[i].Body[state_variables];
+               node.FormatTrait = ast.Node[i].Body[format_trait];
            case NodeType.State:
                var node = nodes[i] as State;
                node.Loc = ast.Node[i].Body[loc];
