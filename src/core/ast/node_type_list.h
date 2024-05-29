@@ -281,6 +281,7 @@ namespace brgen::ast {
                     auto field = d.object();
                     field("name", enum_name_array<T>[i].second);
                     field("value", enum_array<T>[i].second);
+                    field("numeric_value", size_t(enum_array<T>[i].first));
                 });
             }
         });
@@ -295,6 +296,7 @@ namespace brgen::ast {
                         auto field = d.object();
                         field("name", sorted_node_type_str_array[i].second);
                         field("value", sorted_node_type_str_array[i].second);
+                        field("numeric_value", size_t(sorted_node_type_str_array[i].first));
                     });
                 }
             });
@@ -306,6 +308,7 @@ namespace brgen::ast {
                     auto field = d.object();
                     field("name", lexer::enum_name_array<lexer::Tag>[i].second);
                     field("value", lexer::enum_array<lexer::Tag>[i].second);
+                    field("numeric_value", size_t(lexer::enum_array<lexer::Tag>[i].first));
                 });
             }
         });

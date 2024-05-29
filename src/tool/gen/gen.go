@@ -65,8 +65,9 @@ type Node struct {
 }
 
 type EnumValue struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
+	Name         string `json:"name"`
+	Value        string `json:"value"`
+	NumericValue string `json:"numeric_value"`
 }
 
 type EnumValues []*EnumValue
