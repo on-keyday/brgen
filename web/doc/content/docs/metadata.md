@@ -29,6 +29,15 @@ config.rfc = "https://example.com/url/to/rfc"
 
 `config.url`を推奨する
 
+### 文字列マッピングを指定する
+
+生成先コードで特別扱いしたい文字列のマッピング情報を追加する。
+識別子の名前で使われる。
+
+```
+config.word.map("Id","ID")
+```
+
 ## 言語固有
 
 ### C++
