@@ -8,6 +8,7 @@ import (
 	"go/format"
 	"io"
 	"math/rand"
+	"strconv"
 	"strings"
 
 	"github.com/iancoleman/strcase"
@@ -1092,6 +1093,30 @@ func (g *Generator) Generate(file *ast2go.AstFile) error {
 	p, err := ast2go.ParseAST(file.Ast)
 	if err != nil {
 		return err
+	}
+	for _, m := range p.Metadata {
+		if m.Name == "config.word.map" {
+			if len(m.Values) != 2 {
+				continue
+			}
+			fromLit, ok := m.Values[0].(*ast2go.StrLiteral)
+			if !ok {
+				continue
+			}
+			toLit, ok := m.Values[1].(*ast2go.StrLiteral)
+			if !ok {
+				continue
+			}
+			from, err := strconv.Unquote(fromLit.Value)
+			if err != nil {
+				continue
+			}
+			to, err := strconv.Unquote(toLit.Value)
+			if err != nil {
+				continue
+			}
+			mappingWords[from] = to
+		}
 	}
 	ast2go.Walk(p, ast2go.VisitFn(func(v ast2go.Visitor, n ast2go.Node) bool {
 		ast2go.Walk(n, v)

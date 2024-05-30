@@ -1,11 +1,13 @@
 
 config.go.package = "service"
+config.word.map("Id", "ID")
 
 format ID:
     id :[16]u8
 
 format OpenRequest:
-    reserved :u6
+    reserved :u5
+    open_with_id :u1
     unordered :u1
     is_owner :u1
     share_id :ID
