@@ -1,6 +1,7 @@
 /*license*/
 #include <core/ast/tool/stringer.h>
 #include <core/ast/tool/sort.h>
+#include <core/ast/tool/type.h>
 #include <writer/writer.h>
 #include <core/ast/tool/tmp_ident.h>
 #include "generate.h"
@@ -21,10 +22,16 @@ namespace json2ts {
         std::shared_ptr<ast::IntType> type;
     };
 
+    enum class Mode {
+        encode,
+        decode,
+        validate,
+    };
+
     struct Generator {
         ast::tool::Stringer str;
         brgen::writer::Writer w;
-        bool encode = false;
+        Mode mode = Mode::encode;
         std::string prefix = "${THIS}";
         size_t seq_ = 0;
         std::map<std::shared_ptr<ast::StructType>, AnonymousType> anonymous_types;
@@ -94,6 +101,19 @@ namespace json2ts {
                 return get_type(ident_type->base.lock());
             }
             return "any";
+        }
+
+        void maybe_write_length_set(const std::shared_ptr<ast::Field>& base_field, ast::ArrayType* typ) {
+            if (auto ident = ast::as<ast::Ident>(typ->length)) {
+                auto to = str.to_string(typ->length);
+                auto from = str.to_string(base_field->ident);
+                w.writeln(to, " = ", from, ".length;");
+            }
+            else if (auto m = ast::as<ast::MemberAccess>(typ->length)) {
+                auto to = str.to_string(typ->length);
+                auto from = str.to_string(base_field->ident);
+                w.writeln(to, " = ", from, ".length;");
+            }
         }
 
         void write_union_field(ast::StructUnionType* u, const std::shared_ptr<ast::Field>& field, brgen::writer::Writer& wt) {
@@ -206,6 +226,7 @@ namespace json2ts {
                                 write_get(cand);
                                 w.writeln("}");
                             }
+                            first = false;
                         }
                         if (!els) {
                             w.writeln("return null;");
@@ -243,6 +264,9 @@ namespace json2ts {
                                 }
                                 w.writeln("}");
                                 w.writeln(str.to_string(f->ident), "= value;");
+                                if (auto arr = ast::as<ast::ArrayType>(f->field_type)) {
+                                    maybe_write_length_set(f, arr);
+                                }
                                 w.writeln("return true;");
                             }
                             else {
@@ -325,6 +349,29 @@ namespace json2ts {
             auto type = get_type(typ);
             wt.writeln(field->ident->ident, ": ", type, ";");
             str.map_ident(field->ident, prefix, ".", field->ident->ident);
+
+            // setter for array type
+            if (auto arr = ast::as<ast::ArrayType>(typ)) {
+                auto setter = ast::as<ast::Ident>(arr->length) || ast::as<ast::MemberAccess>(arr->length);
+                setter = setter && ast::tool::is_on_named_struct(field);
+                if (setter) {
+                    auto name = ast::as<ast::Member>(field->belong.lock())->ident->ident;
+                    w.write("export function ", name, "_set_", field->ident->ident);
+                    if (typescript) {
+                        w.write("(obj :Partial<", name, ">,value :", type, ")");
+                    }
+                    else {
+                        w.write("(obj,value)");
+                    }
+                    w.writeln(" {");
+                    {
+                        auto s = w.indent_scope();
+                        w.writeln(str.to_string(field->ident), " = value;");
+                        maybe_write_length_set(field, arr);
+                    }
+                    w.writeln("}");
+                }
+            }
         }
 
         void write_struct_type(brgen::writer::Writer& wt, const std::shared_ptr<ast::StructType>& typ) {
@@ -342,7 +389,7 @@ namespace json2ts {
         }
 
         void assert_obj(AnonymousType& typ, const std::shared_ptr<ast::StructType>& st) {
-            if (encode) {
+            if (mode == Mode::encode) {
                 w.writeln("if(obj.", typ.field_name, " === undefined) {");
                 {
                     auto s = w.indent_scope();
@@ -361,7 +408,7 @@ namespace json2ts {
                     }
                 }
             }
-            else {
+            else if (mode == Mode::decode) {
                 w.write("obj.", typ.field_name, " = {} ");
                 if (typescript) {
                     w.write("as ", typ.type);
@@ -773,7 +820,7 @@ namespace json2ts {
                 w.writeln("throw new Error('unsupported bit field type');");
                 return;
             }
-            if (encode) {
+            if (mode == Mode::encode) {
                 w.writeln("let ", bit_field.field_name, " = 0;");
                 auto bit_size = *bit_field.bit_size;
                 size_t sum = 0;
@@ -788,7 +835,7 @@ namespace json2ts {
                 }
                 write_int_encode(bit_field.field_name, bit_field.type, bit_field.field_name);
             }
-            else {
+            else if (mode == Mode::decode) {
                 auto bit_size = *bit_field.bit_size;
                 w.writeln("let ", bit_field.field_name, " = 0;");
                 write_int_decode(bit_field.field_name, bit_field.type, bit_field.field_name);
@@ -814,11 +861,11 @@ namespace json2ts {
                 write_bit_field_code(bit->second);
                 return;
             }
-            if (encode) {
+            if (mode == Mode::encode) {
                 auto ident = str.to_string(field->ident);
                 write_type_encode(field->ident, ident, field->field_type);
             }
-            else {
+            else if (mode == Mode::decode) {
                 auto ident = str.to_string(field->ident);
                 write_type_decode(field->ident, ident, field->field_type);
             }
@@ -864,6 +911,10 @@ namespace json2ts {
                 }
             }
             else if (auto err = ast::as<ast::ExplicitError>(node)) {
+                if (mode == Mode::validate) {
+                    w.writeln("return false;");
+                    return;
+                }
                 w.write("throw new Error(", err->message->value);
                 if (err->base->arguments.size() > 1) {
                     w.write("+ `");
@@ -904,7 +955,7 @@ namespace json2ts {
                 w.write("export function ", fmt->ident->ident, "_encode(w, obj) {");
             }
             {
-                encode = true;
+                mode = Mode::encode;
                 auto s = w.indent_scope();
                 w.writeln("// ensure offset is unsigned integer");
                 w.writeln("w.offset >>>= 0;");
@@ -918,7 +969,7 @@ namespace json2ts {
                 w.writeln("export function ", fmt->ident->ident, "_decode(r) {");
             }
             {
-                encode = false;
+                mode = Mode::decode;
                 auto s = w.indent_scope();
                 w.writeln("// ensure offset is unsigned integer");
                 w.writeln("r.offset >>>= 0;");
