@@ -6,11 +6,14 @@ format ID:
     id :[16]u8
 
 format OpenRequest:
-    reserved :u5
-    open_with_id :u1
+    reserved :u4
+    open_with_client_id :u1
+    open_with_share_id :u1 
     unordered :u1
     is_owner :u1
     share_id :ID
+    if open_with_client_id == 1:
+        client_id :ID
 
 format OpenReply:
     reserved :u7
