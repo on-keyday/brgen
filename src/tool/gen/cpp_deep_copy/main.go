@@ -17,24 +17,40 @@ func generateSingleDeepEqual(w *gen.Writer, def *gen.Struct) {
 	w.Printf("if(!a || !b) return false;\n")
 	for _, field := range def.Fields {
 		if field.Type.IsArray {
-			w.Printf("if(a->%s.size()!=b->%s.size()) return false;\n", field.Tag, field.Tag)
-			w.Printf("for(size_t i=0;i<a->%s.size();i++){\n", field.Tag)
-			w.Printf("if(!deep_equal(a->%s[i],b->%s[i],std::forward<NodeM>(node_map),std::forward<ScopeM>(scope_map))) return false;\n", field.Tag, field.Tag)
+			tag := field.Tag
+			if def.Name == "Scope" && field.Tag == "ident" { // special edge case
+				tag = "objects"
+			}
+			nodeAccessA := "a->" + tag + "[i]"
+			nodeAccessB := "b->" + tag + "[i]"
+			if field.Type.IsWeak {
+				nodeAccessA = nodeAccessA + ".lock()"
+				nodeAccessB = nodeAccessB + ".lock()"
+			}
+			w.Printf("if(a->%s.size()!=b->%s.size()) return false;\n", tag, tag)
+			w.Printf("for(size_t i=0;i<a->%s.size();i++){\n", tag)
+			w.Printf("if(!deep_equal(%s,%s,std::forward<NodeM>(node_map),std::forward<ScopeM>(scope_map))) return false;\n", nodeAccessA, nodeAccessB)
 			w.Printf("}\n")
 		} else if field.Type.IsPtr || field.Type.IsInterface {
 			mapName := "node_map"
 			if field.Type.Name == "Scope" {
 				mapName = "scope_map"
 			}
-			w.Printf("if(auto it = %[1]s.find(a->%[2]s);it !=%[1]s.end()){\n", mapName, field.Tag)
+			nodeAccessA := "a->" + field.Tag
+			nodeAccessB := "b->" + field.Tag
+			if field.Type.IsWeak {
+				nodeAccessA = nodeAccessA + ".lock()"
+				nodeAccessB = nodeAccessB + ".lock()"
+			}
+			w.Printf("if(auto it = %[1]s.find(%[2]s);it !=%[1]s.end()){\n", mapName, nodeAccessA)
 			if mapName == "scope_map" {
-				w.Printf("if(it->second!=b->%s) return false;\n", field.Tag)
+				w.Printf("if(it->second!=%s) return false;\n", nodeAccessB)
 				w.Printf("}else{\n")
-				w.Printf("if(!deep_equal(a->%s,b->%s,std::forward<NodeM>(node_map),std::forward<ScopeM>(scope_map))) return false;\n", field.Tag, field.Tag)
+				w.Printf("if(!deep_equal(%s,%s,std::forward<NodeM>(node_map),std::forward<ScopeM>(scope_map))) return false;\n", nodeAccessA, nodeAccessB)
 			} else {
-				w.Printf("if(ast::cast_to<%s>(it->second)!=b->%s) return false;\n", field.Type.Name, field.Tag)
+				w.Printf("if(ast::cast_to<%s>(it->second)!=%s) return false;\n", field.Type.Name, nodeAccessB)
 				w.Printf("}else{\n")
-				w.Printf("if(!deep_equal(a->%s,b->%s,std::forward<NodeM>(node_map),std::forward<ScopeM>(scope_map))) return false;\n", field.Tag, field.Tag)
+				w.Printf("if(!deep_equal(%s,%s,std::forward<NodeM>(node_map),std::forward<ScopeM>(scope_map))) return false;\n", nodeAccessA, nodeAccessB)
 			}
 			w.Printf("}\n")
 		} else {
@@ -49,30 +65,32 @@ func generateDeepEqual(w *gen.Writer, defs *gen.Defs) {
 	w.Printf("template<class T,class NodeM,class ScopeM>\n")
 	w.Printf("constexpr bool deep_equal(const std::shared_ptr<T>& a,const std::shared_ptr<T>& b,NodeM&& node_map,ScopeM&& scope_map);\n")
 	w.Printf("\n")
-	for _, def := range defs.Interfaces {
-		w.Printf("template<class NodeM,class ScopeM>\n")
-		w.Printf("constexpr bool deep_equal(const std::shared_ptr<%s>& a,const std::shared_ptr<%s>& b,NodeM&& node_map,ScopeM&& scope_map){\n", def.Name, def.Name)
-		for _, derived := range def.Derived {
-			found, ok := defs.Structs[derived]
-			if !ok {
+	for _, v := range defs.Defs {
+		switch def := v.(type) {
+		case *gen.Interface:
+			w.Printf("template<class NodeM,class ScopeM>\n")
+			w.Printf("constexpr bool deep_equal(const std::shared_ptr<%s>& a,const std::shared_ptr<%s>& b,NodeM&& node_map,ScopeM&& scope_map){\n", def.Name, def.Name)
+			for _, derived := range def.Derived {
+				found, ok := defs.Structs[derived]
+				if !ok {
+					continue
+				}
+				w.Printf("if(ast::as<%s>(a)) {\n", found.Name)
+				w.Printf("if(!ast::as<%s>(b)) return false;\n", found.Name)
+				w.Printf("return deep_equal(ast::cast_to<%s>(a),ast::cast_to<%s>(b),std::forward<NodeM>(node_map),std::forward<ScopeM>(scope_map));\n", found.Name, found.Name)
+				w.Printf("}\n")
+			}
+			w.Printf("return false;\n")
+			w.Printf("}\n")
+		case *gen.Struct:
+			if len(def.Implements) == 0 {
+				if def.Name == "Scope" {
+					generateSingleDeepEqual(w, def)
+				}
 				continue
 			}
-			w.Printf("if(ast::as<%s>(a)) {\n", found.Name)
-			w.Printf("if(!ast::as<%s>(b)) return false;\n", found.Name)
-			w.Printf("return deep_equal(ast::cast_to<%s>(a),ast::cast_to<%s>(b),std::forward<NodeM>(node_map),std::forward<ScopeM>(scope_map));\n", found.Name, found.Name)
-			w.Printf("}\n")
+			generateSingleDeepEqual(w, def)
 		}
-		w.Printf("return false;\n")
-		w.Printf("}\n")
-	}
-	for _, def := range defs.Structs {
-		if len(def.Implements) == 0 {
-			if def.Name == "Scope" {
-				generateSingleDeepEqual(w, def)
-			}
-			continue
-		}
-		generateSingleDeepEqual(w, def)
 	}
 }
 
@@ -133,29 +151,32 @@ func generateDeepCopy(w *gen.Writer, defs *gen.Defs) {
 	w.Printf("template<class T,class NodeM,class ScopeM>\n")
 	w.Printf("std::shared_ptr<T> deep_copy(const std::shared_ptr<T>& node,NodeM&& node_map,ScopeM&& scope_map);\n")
 	w.Printf("\n")
-	for _, def := range defs.Interfaces {
-		w.Printf("template<class NodeM,class ScopeM>\n")
-		w.Printf("std::shared_ptr<%s> deep_copy(const std::shared_ptr<%s>& node,NodeM&& node_map,ScopeM&& scope_map){\n", def.Name, def.Name)
-		for _, derived := range def.Derived {
-			found, ok := defs.Structs[derived]
-			if !ok {
+	for _, v := range defs.Defs {
+		switch def := v.(type) {
+		case *gen.Interface:
+			w.Printf("template<class NodeM,class ScopeM>\n")
+			w.Printf("std::shared_ptr<%s> deep_copy(const std::shared_ptr<%s>& node,NodeM&& node_map,ScopeM&& scope_map){\n", def.Name, def.Name)
+			for _, derived := range def.Derived {
+				found, ok := defs.Structs[derived]
+				if !ok {
+					continue
+				}
+				w.Printf("if(ast::as<%s>(node)) {\n", found.Name)
+				w.Printf("return deep_copy(ast::cast_to<%s>(node),std::forward<NodeM>(node_map),std::forward<ScopeM>(scope_map));\n", found.Name)
+				w.Printf("}\n")
+			}
+			w.Printf("return nullptr;\n")
+			w.Printf("}\n")
+		case *gen.Struct:
+			if len(def.Implements) == 0 {
+				if def.Name == "Scope" {
+					generateSingleDeepCopy(w, def)
+				}
 				continue
 			}
-			w.Printf("if(ast::as<%s>(node)) {\n", found.Name)
-			w.Printf("return deep_copy(ast::cast_to<%s>(node),std::forward<NodeM>(node_map),std::forward<ScopeM>(scope_map));\n", found.Name)
-			w.Printf("}\n")
+			generateSingleDeepCopy(w, def)
+		default:
 		}
-		w.Printf("return nullptr;\n")
-		w.Printf("}\n")
-	}
-	for _, def := range defs.Structs {
-		if len(def.Implements) == 0 {
-			if def.Name == "Scope" {
-				generateSingleDeepCopy(w, def)
-			}
-			continue
-		}
-		generateSingleDeepCopy(w, def)
 	}
 	w.Printf("\n")
 
@@ -173,7 +194,7 @@ func generateTest(w *gen.Writer) {
 
 func generate(rw io.Writer, defs *gen.Defs) {
 	w := gen.NewWriter(rw)
-	w.Printf("// Code generated by gen_ast2cpp; DO NOT EDIT.\n\n")
+	w.Printf("// Code generated by gen_cpp_deep_copy; DO NOT EDIT.\n\n")
 	w.Printf("#pragma once\n\n")
 	w.Printf("#include <core/ast/ast.h>\n\n")
 	w.Printf("namespace brgen::ast {\n\n")
