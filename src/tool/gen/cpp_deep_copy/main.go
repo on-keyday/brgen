@@ -19,7 +19,7 @@ func generateSingleDeepEqual(w *gen.Writer, def *gen.Struct) {
 		if field.Type.IsArray {
 			w.Printf("if(a->%s.size()!=b->%s.size()) return false;\n", field.Tag, field.Tag)
 			w.Printf("for(size_t i=0;i<a->%s.size();i++){\n", field.Tag)
-			w.Printf("if(!deep_equal(a->%s[i],b->%s[i],node_map,scope_map)) return false;\n", field.Tag, field.Tag)
+			w.Printf("if(!deep_equal(a->%s[i],b->%s[i],std::forward<NodeM>(node_map),std::forward<ScopeM>(scope_map))) return false;\n", field.Tag, field.Tag)
 			w.Printf("}\n")
 		} else if field.Type.IsPtr || field.Type.IsInterface {
 			mapName := "node_map"
@@ -30,11 +30,11 @@ func generateSingleDeepEqual(w *gen.Writer, def *gen.Struct) {
 			if mapName == "scope_map" {
 				w.Printf("if(it->second!=b->%s) return false;\n", field.Tag)
 				w.Printf("}else{\n")
-				w.Printf("if(!deep_equal(a->%s,b->%s,node_map,scope_map)) return false;\n", field.Tag, field.Tag)
+				w.Printf("if(!deep_equal(a->%s,b->%s,std::forward<NodeM>(node_map),std::forward<ScopeM>(scope_map))) return false;\n", field.Tag, field.Tag)
 			} else {
 				w.Printf("if(ast::cast_to<%s>(it->second)!=b->%s) return false;\n", field.Type.Name, field.Tag)
 				w.Printf("}else{\n")
-				w.Printf("if(!deep_equal(a->%s,b->%s,node_map,scope_map)) return false;\n", field.Tag, field.Tag)
+				w.Printf("if(!deep_equal(a->%s,b->%s,std::forward<NodeM>(node_map),std::forward<ScopeM>(scope_map))) return false;\n", field.Tag, field.Tag)
 			}
 			w.Printf("}\n")
 		} else {
@@ -92,9 +92,9 @@ func generateSingleDeepCopy(w *gen.Writer, def *gen.Struct) {
 		if field.Type.IsArray {
 			w.Printf("for(auto& i:node->%s){\n", field.Tag)
 			if field.Type.IsWeak {
-				w.Printf("new_node->%s.push_back(deep_copy(i.lock(),map));\n", field.Tag)
+				w.Printf("new_node->%s.push_back(deep_copy(i.lock(),std::forward<NodeM>(node_map),std::forward<ScopeM>(scope_map)));\n", field.Tag)
 			} else {
-				w.Printf("new_node->%s.push_back(deep_copy(i,map));\n", field.Tag)
+				w.Printf("new_node->%s.push_back(deep_copy(i,std::forward<NodeM>(node_map),std::forward<ScopeM>(scope_map)));\n", field.Tag)
 			}
 			w.Printf("}\n")
 		} else if field.Type.IsPtr || field.Type.IsInterface {
@@ -110,11 +110,11 @@ func generateSingleDeepCopy(w *gen.Writer, def *gen.Struct) {
 			if mapName == "scope_map" {
 				w.Printf("new_node->%s= it->second;\n", field.Tag)
 				w.Printf("}else{\n")
-				w.Printf("new_node->%s=deep_copy(%s,map);\n", field.Tag, nodeAccess)
+				w.Printf("new_node->%s=deep_copy(%s,std::forward<NodeM>(node_map),std::forward<ScopeM>(scope_map));\n", field.Tag, nodeAccess)
 			} else {
 				w.Printf("new_node->%s= ast::cast_to<%s>(it->second);\n", field.Tag, field.Type.Name)
 				w.Printf("}else{\n")
-				w.Printf("new_node->%s= ast::cast_to<%s>(deep_copy(%s,map));\n", field.Tag, field.Type.Name, nodeAccess)
+				w.Printf("new_node->%s= ast::cast_to<%s>(deep_copy(%s,std::forward<NodeM>(node_map),std::forward<ScopeM>(scope_map)));\n", field.Tag, field.Type.Name, nodeAccess)
 			}
 			w.Printf("}\n")
 		} else {
