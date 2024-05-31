@@ -402,7 +402,11 @@ int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& f
     }
 
     if (!flags.not_resolve_available) {
-        brgen::middle::resolve_available(*p);
+        auto res2 = brgen::middle::resolve_available(*p);
+        if (!res2) {
+            report(std::move(res2.error()));
+            return exit_err;
+        }
     }
 
     if (!flags.not_resolve_endian_spec) {

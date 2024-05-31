@@ -14,6 +14,7 @@ add_library(parse_core STATIC
 "../core/ast/parse.cpp"
 "../core/middle/typing.cpp"
 "../core/middle/type_attribute.cpp"
+"../tool/src2json/test.cpp"
 )
 
 add_library(ast_test_component STATIC
@@ -68,6 +69,8 @@ target_link_libraries(derive_test gtest_main)
 add_executable(ctype_test "tool/json2c/ctype_test.cpp")
 target_link_libraries(ctype_test gtest_main parse_core)
 
+add_executable(deep_copy_test "core/deep_copy_test.cpp")
+target_link_libraries(deep_copy_test gtest_main parse_core)
 
 add_test(NAME "lexer_test" COMMAND lexer_test)
 add_test(NAME "ast_test" COMMAND ast_test)
