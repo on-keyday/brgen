@@ -774,6 +774,7 @@ func (g *Generator) writeTypeDecode(ident string, typ ast2go.Type, p *ast2go.Fie
 				g.PrintfFunc("tmp%s := make([]byte, len_%s)\n", p.Ident.Ident, p.Ident.Ident)
 				g.PrintfFunc("n_%s, err := io.ReadFull(r,tmp%s[:])\n", p.Ident.Ident, p.Ident.Ident)
 				g.PrintfFunc("if err != nil {\n")
+				g.imports["fmt"] = struct{}{}
 				g.PrintfFunc("return fmt.Errorf(\"read %s: expect %%d bytes but read %%d bytes: %%w\", len_%s, n_%s, err)\n", p.Ident.Ident, p.Ident.Ident, p.Ident.Ident)
 				g.PrintfFunc("}\n")
 				g.imports["bytes"] = struct{}{}
