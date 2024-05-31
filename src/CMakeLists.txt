@@ -169,6 +169,7 @@ add_custom_target(gen_ast2c ALL COMMAND "${GO_COMPILER}" "build" "${CMAKE_GO_FLA
 add_custom_target(gen_ast2csharp ALL COMMAND "${GO_COMPILER}" "build" "${CMAKE_GO_FLAGS}" "-o" "${CMAKE_BINARY_DIR}/tool/gen_ast2csharp${SUFFIX}" "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2csharp" DEPENDS "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2csharp" )
 add_custom_target(gen_ast2mermaid ALL COMMAND "${GO_COMPILER}" "build" "${CMAKE_GO_FLAGS}" "-o" "${CMAKE_BINARY_DIR}/tool/gen_ast2mermaid${SUFFIX}" "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2mermaid" DEPENDS "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2mermaid" )
 add_custom_target(gen_ast2dart ALL COMMAND "${GO_COMPILER}" "build" "${CMAKE_GO_FLAGS}" "-o" "${CMAKE_BINARY_DIR}/tool/gen_ast2dart${SUFFIX}" "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2dart" DEPENDS "${CMAKE_SOURCE_DIR}/src/tool/gen/ast2dart" )
+add_custom_target(gen_cpp_deep_copy ALL COMMAND "${GO_COMPILER}" "build" "${CMAKE_GO_FLAGS}" "-o" "${CMAKE_BINARY_DIR}/tool/gen_cpp_deep_copy${SUFFIX}" "${CMAKE_SOURCE_DIR}/src/tool/gen/cpp_deep_copy" DEPENDS "${CMAKE_SOURCE_DIR}/src/tool/gen/cpp_deep_copy" )
 
 # Copy dependency libraries (futils,fnet,fnetserv)
 
@@ -295,6 +296,7 @@ install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/gen_ast2c${SUFFIX}" DESTINATION tool 
 install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/gen_ast2csharp${SUFFIX}" DESTINATION tool OPTIONAL)
 install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/gen_ast2mermaid${SUFFIX}" DESTINATION tool OPTIONAL)
 install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/gen_ast2dart${SUFFIX}" DESTINATION tool OPTIONAL)
+install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/gen_cpp_deep_copy${SUFFIX}" DESTINATION tool OPTIONAL)
 
 # Set Install path for Rust targets
 if("$ENV{BRGEN_RUST_ENABLED}" STREQUAL "1")
