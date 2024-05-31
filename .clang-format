@@ -19,4 +19,4 @@ BraceWrapping:
     BeforeCatch: false
     BeforeLambdaBody: false
     BeforeWhile: false
-RequiresExpressionIndentationKind: OuterScope
+RequiresExpressionIndentation: OuterScope
