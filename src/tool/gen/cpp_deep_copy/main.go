@@ -90,11 +90,15 @@ func generateSingleDeepCopy(w *gen.Writer, def *gen.Struct) {
 	}
 	for _, field := range def.Fields {
 		if field.Type.IsArray {
-			w.Printf("for(auto& i:node->%s){\n", field.Tag)
+			tag := field.Tag
+			if def.Name == "Scope" && field.Tag == "ident" { // special edge case
+				tag = "objects"
+			}
+			w.Printf("for(auto& i:node->%s){\n", tag)
 			if field.Type.IsWeak {
-				w.Printf("new_node->%s.push_back(deep_copy(i.lock(),std::forward<NodeM>(node_map),std::forward<ScopeM>(scope_map)));\n", field.Tag)
+				w.Printf("new_node->%s.push_back(deep_copy(i.lock(),std::forward<NodeM>(node_map),std::forward<ScopeM>(scope_map)));\n", tag)
 			} else {
-				w.Printf("new_node->%s.push_back(deep_copy(i,std::forward<NodeM>(node_map),std::forward<ScopeM>(scope_map)));\n", field.Tag)
+				w.Printf("new_node->%s.push_back(deep_copy(i,std::forward<NodeM>(node_map),std::forward<ScopeM>(scope_map)));\n", tag)
 			}
 			w.Printf("}\n")
 		} else if field.Type.IsPtr || field.Type.IsInterface {
