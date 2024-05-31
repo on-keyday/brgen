@@ -627,15 +627,12 @@ func (g *Generator) writeReadUint(size uint64, tmpName, field string, sign bool,
 	g.PrintfFunc("tmp%s := [%d]byte{}\n", tmpName, size/8)
 	g.PrintfFunc("n_%s, err := io.ReadFull(r,tmp%s[:])\n", tmpName, tmpName)
 	g.PrintfFunc("if err != nil {\n")
-	g.PrintfFunc("if err == io.ErrUnexpectedEOF || n_%s != %d /*stdlib bug?*/ {\n", tmpName, size/8)
 	g.imports["fmt"] = struct{}{}
 	if size == 8 {
-		g.PrintfFunc("return fmt.Errorf(\"read %s: %%w: expect 1 byte but read %%d bytes\",io.ErrUnexpectedEOF, n_%s)\n", tmpName, tmpName)
+		g.PrintfFunc("return fmt.Errorf(\"read %s: expect 1 byte but read %%d bytes: %%w\", n_%s, err)\n", tmpName, tmpName)
 	} else {
-		g.PrintfFunc("return fmt.Errorf(\"read %s: %%w: expect %d bytes but read %%d bytes\",io.ErrUnexpectedEOF, n_%s)\n", tmpName, size/8, tmpName)
+		g.PrintfFunc("return fmt.Errorf(\"read %s: expect %d bytes but read %%d bytes: %%w\", n_%s,err)\n", tmpName, size/8, tmpName)
 	}
-	g.PrintfFunc("}\n")
-	g.PrintfFunc("return err\n")
 	g.PrintfFunc("}\n")
 	signStr := ""
 	if !sign {
@@ -704,11 +701,8 @@ func (g *Generator) writeTypeDecode(ident string, typ ast2go.Type, p *ast2go.Fie
 			if arr_type.Length.GetConstantLevel() == ast2go.ConstantLevelConstant {
 				g.PrintfFunc("n_%s, err := io.ReadFull(r,%s[:])\n", p.Ident.Ident, ident)
 				g.PrintfFunc("if err != nil {\n")
-				g.PrintfFunc("if err == io.ErrUnexpectedEOF || n_%s != %s /*stdlib bug?*/ {\n", p.Ident.Ident, length)
 				g.imports["fmt"] = struct{}{}
-				g.PrintfFunc("return fmt.Errorf(\"read %s: %%w: expect %%d bytes but read %%d bytes\",io.ErrUnexpectedEOF, %s, n_%s)\n", p.Ident.Ident, length, p.Ident.Ident)
-				g.PrintfFunc("}\n")
-				g.PrintfFunc("return err\n")
+				g.PrintfFunc("return fmt.Errorf(\"read %s: expect %%d bytes but read %%d bytes: %%w\", %s, n_%s,err)\n", p.Ident.Ident, length, p.Ident.Ident)
 				g.PrintfFunc("}\n")
 				return
 			}
@@ -731,11 +725,8 @@ func (g *Generator) writeTypeDecode(ident string, typ ast2go.Type, p *ast2go.Fie
 			g.PrintfFunc("tmp%s := make([]byte, len_%s)\n", p.Ident.Ident, p.Ident.Ident)
 			g.PrintfFunc("n_%s, err := io.ReadFull(r,tmp%s[:])\n", p.Ident.Ident, p.Ident.Ident)
 			g.PrintfFunc("if err != nil {\n")
-			g.PrintfFunc("if err == io.ErrUnexpectedEOF || n_%s != len_%s /*stdlib bug?*/ {\n", p.Ident.Ident, p.Ident.Ident)
 			g.imports["fmt"] = struct{}{}
-			g.PrintfFunc("return fmt.Errorf(\"read %s: %%w: expect %%d bytes but read %%d bytes\",io.ErrUnexpectedEOF, len_%s, n_%s)\n", p.Ident.Ident, p.Ident.Ident, p.Ident.Ident)
-			g.PrintfFunc("}\n")
-			g.PrintfFunc("return err\n")
+			g.PrintfFunc("return fmt.Errorf(\"read %s: expect %%d bytes but read %%d bytes: %%w\", len_%s, n_%s, err)\n", p.Ident.Ident, p.Ident.Ident, p.Ident.Ident)
 			g.PrintfFunc("}\n")
 			g.PrintfFunc("%s = tmp%s[:]\n", ident, p.Ident.Ident)
 			g.PrintfFunc("} else {\n")
@@ -783,11 +774,7 @@ func (g *Generator) writeTypeDecode(ident string, typ ast2go.Type, p *ast2go.Fie
 				g.PrintfFunc("tmp%s := make([]byte, len_%s)\n", p.Ident.Ident, p.Ident.Ident)
 				g.PrintfFunc("n_%s, err := io.ReadFull(r,tmp%s[:])\n", p.Ident.Ident, p.Ident.Ident)
 				g.PrintfFunc("if err != nil {\n")
-				g.PrintfFunc("if err == io.ErrUnexpectedEOF || n_%s != len_%s /*stdlib bug?*/ {\n", p.Ident.Ident, p.Ident.Ident)
-				g.imports["fmt"] = struct{}{}
-				g.PrintfFunc("return fmt.Errorf(\"read %s: %%w: expect %%d bytes but read %%d bytes\",io.ErrUnexpectedEOF, len_%s, n_%s)\n", p.Ident.Ident, p.Ident.Ident, p.Ident.Ident)
-				g.PrintfFunc("}\n")
-				g.PrintfFunc("return err\n")
+				g.PrintfFunc("return fmt.Errorf(\"read %s: expect %%d bytes but read %%d bytes: %%w\", len_%s, n_%s, err)\n", p.Ident.Ident, p.Ident.Ident, p.Ident.Ident)
 				g.PrintfFunc("}\n")
 				g.imports["bytes"] = struct{}{}
 				g.PrintfFunc("range_tmp_%s := bytes.NewReader(tmp%s[:])\n", p.Ident.Ident, p.Ident.Ident)
@@ -828,11 +815,8 @@ func (g *Generator) writeTypeDecode(ident string, typ ast2go.Type, p *ast2go.Fie
 		g.PrintfFunc("%s := [%d]byte{}\n", tmp, *t.GetBitSize()/8)
 		g.PrintfFunc("n_%s, err := io.ReadFull(r,%s[:])\n", tmp, tmp)
 		g.PrintfFunc("if err != nil {\n")
-		g.PrintfFunc("if err == io.ErrUnexpectedEOF || n_%s != %d /*stdlib bug?*/ {\n", tmp, *t.GetBitSize()/8)
 		g.imports["fmt"] = struct{}{}
-		g.PrintfFunc("return fmt.Errorf(\"read %s: %%w: expect %d bytes but read %%d bytes\",io.ErrUnexpectedEOF, n_%s)\n", p.Ident.Ident, *t.GetBitSize()/8, tmp)
-		g.PrintfFunc("}\n")
-		g.PrintfFunc("return err\n")
+		g.PrintfFunc("return fmt.Errorf(\"read %s: expect %d bytes but read %%d bytes: %%w\", n_%s, err)\n", p.Ident.Ident, *t.GetBitSize()/8, tmp)
 		g.PrintfFunc("}\n")
 		g.PrintfFunc("if string(%s[:]) != %s {\n", tmp, t.Base.Value)
 		g.imports["fmt"] = struct{}{}
