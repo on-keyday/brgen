@@ -4,6 +4,8 @@
 #include <tool/src2json/test.h>
 #include <core/ast/node/deep_copy.h>
 #include <unordered_map>
+#include <env/env.h>
+#include <env/env_sys.h>
 namespace fs = std::filesystem;
 
 std::shared_ptr<brgen::ast::Program> load(const fs::path& path) {
@@ -22,7 +24,10 @@ std::shared_ptr<brgen::ast::Program> load(const fs::path& path) {
 
 auto load_paths() {
     std::vector<fs::path> paths;
-    const auto root_path = "./example";
+    std::map<std::string, std::string> p;
+    p["BASE_PATH"] = futils::env::sys::env_getter().get_or<std::string>("BASE_PATH", ".");
+    std::string base_path;
+    futils::env::expand(base_path, "${BASE_PATH}/example/", futils::env::expand_map<std::string>(p));
     auto recursive = [&](auto&& recursive, const fs::path& path) -> void {
         fs::directory_iterator it, end;
         ASSERT_NO_THROW(it = fs::directory_iterator(path));
@@ -38,7 +43,7 @@ auto load_paths() {
             }
         }
     };
-    recursive(recursive, root_path);
+    recursive(recursive, base_path);
     return paths;
 }
 
