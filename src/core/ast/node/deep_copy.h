@@ -470,24 +470,17 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<Program>(it->second);
+        }
         auto new_node = std::make_shared<Program>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->struct_type); it != node_map.end()) {
-            new_node->struct_type = ast::cast_to<StructType>(it->second);
-        }
-        else {
-            new_node->struct_type = deep_copy(node->struct_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->struct_type = deep_copy(node->struct_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         for (auto& i : node->elements) {
             new_node->elements.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
         }
-        if (auto it = scope_map.find(node->global_scope); it != scope_map.end()) {
-            new_node->global_scope = it->second;
-        }
-        else {
-            new_node->global_scope = deep_copy(node->global_scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->global_scope = deep_copy(node->global_scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         for (auto& i : node->metadata) {
             new_node->metadata.push_back(deep_copy(i.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
         }
@@ -497,6 +490,9 @@ namespace brgen::ast {
     std::shared_ptr<Comment> deep_copy(const std::shared_ptr<Comment>& node, NodeM&& node_map, ScopeM&& scope_map) {
         if (!node) {
             return nullptr;
+        }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<Comment>(it->second);
         }
         auto new_node = std::make_shared<Comment>();
         node_map[node] = new_node;
@@ -508,6 +504,9 @@ namespace brgen::ast {
     std::shared_ptr<CommentGroup> deep_copy(const std::shared_ptr<CommentGroup>& node, NodeM&& node_map, ScopeM&& scope_map) {
         if (!node) {
             return nullptr;
+        }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<CommentGroup>(it->second);
         }
         auto new_node = std::make_shared<CommentGroup>();
         node_map[node] = new_node;
@@ -522,15 +521,13 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<FieldArgument>(it->second);
+        }
         auto new_node = std::make_shared<FieldArgument>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->raw_arguments); it != node_map.end()) {
-            new_node->raw_arguments = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->raw_arguments = deep_copy(node->raw_arguments, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->raw_arguments = deep_copy(node->raw_arguments, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->end_loc = node->end_loc;
         for (auto& i : node->collected_arguments) {
             new_node->collected_arguments.push_back(deep_copy(i.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
@@ -538,38 +535,13 @@ namespace brgen::ast {
         for (auto& i : node->arguments) {
             new_node->arguments.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
         }
-        if (auto it = node_map.find(node->alignment); it != node_map.end()) {
-            new_node->alignment = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->alignment = deep_copy(node->alignment, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->alignment = deep_copy(node->alignment, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->alignment_value = node->alignment_value;
-        if (auto it = node_map.find(node->sub_byte_length); it != node_map.end()) {
-            new_node->sub_byte_length = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->sub_byte_length = deep_copy(node->sub_byte_length, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->sub_byte_begin); it != node_map.end()) {
-            new_node->sub_byte_begin = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->sub_byte_begin = deep_copy(node->sub_byte_begin, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->peek); it != node_map.end()) {
-            new_node->peek = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->peek = deep_copy(node->peek, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->sub_byte_length = deep_copy(node->sub_byte_length, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->sub_byte_begin = deep_copy(node->sub_byte_begin, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->peek = deep_copy(node->peek, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->peek_value = node->peek_value;
-        if (auto it = node_map.find(node->type_map); it != node_map.end()) {
-            new_node->type_map = ast::cast_to<TypeLiteral>(it->second);
-        }
-        else {
-            new_node->type_map = deep_copy(node->type_map, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->type_map = deep_copy(node->type_map, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         for (auto& i : node->metadata) {
             new_node->metadata.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
         }
@@ -580,29 +552,17 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<Binary>(it->second);
+        }
         auto new_node = std::make_shared<Binary>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->expr_type); it != node_map.end()) {
-            new_node->expr_type = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->constant_level = node->constant_level;
         new_node->op = node->op;
-        if (auto it = node_map.find(node->left); it != node_map.end()) {
-            new_node->left = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->left = deep_copy(node->left, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->right); it != node_map.end()) {
-            new_node->right = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->right = deep_copy(node->right, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->left = deep_copy(node->left, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->right = deep_copy(node->right, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -610,23 +570,16 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<Unary>(it->second);
+        }
         auto new_node = std::make_shared<Unary>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->expr_type); it != node_map.end()) {
-            new_node->expr_type = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->constant_level = node->constant_level;
         new_node->op = node->op;
-        if (auto it = node_map.find(node->expr); it != node_map.end()) {
-            new_node->expr = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->expr = deep_copy(node->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->expr = deep_copy(node->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -634,35 +587,18 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<Cond>(it->second);
+        }
         auto new_node = std::make_shared<Cond>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->expr_type); it != node_map.end()) {
-            new_node->expr_type = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->constant_level = node->constant_level;
-        if (auto it = node_map.find(node->cond); it != node_map.end()) {
-            new_node->cond = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->cond = deep_copy(node->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->then); it != node_map.end()) {
-            new_node->then = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->then = deep_copy(node->then, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->cond = deep_copy(node->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->then = deep_copy(node->then, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->els_loc = node->els_loc;
-        if (auto it = node_map.find(node->els); it != node_map.end()) {
-            new_node->els = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->els = deep_copy(node->els, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->els = deep_copy(node->els, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -670,30 +606,18 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<Ident>(it->second);
+        }
         auto new_node = std::make_shared<Ident>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->expr_type); it != node_map.end()) {
-            new_node->expr_type = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->constant_level = node->constant_level;
         new_node->ident = node->ident;
         new_node->usage = node->usage;
-        if (auto it = node_map.find(node->base.lock()); it != node_map.end()) {
-            new_node->base = ast::cast_to<Node>(it->second);
-        }
-        else {
-            new_node->base = deep_copy(node->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = scope_map.find(node->scope); it != scope_map.end()) {
-            new_node->scope = it->second;
-        }
-        else {
-            new_node->scope = deep_copy(node->scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->base = deep_copy(node->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->scope = deep_copy(node->scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -701,28 +625,16 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<Call>(it->second);
+        }
         auto new_node = std::make_shared<Call>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->expr_type); it != node_map.end()) {
-            new_node->expr_type = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->constant_level = node->constant_level;
-        if (auto it = node_map.find(node->callee); it != node_map.end()) {
-            new_node->callee = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->callee = deep_copy(node->callee, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->raw_arguments); it != node_map.end()) {
-            new_node->raw_arguments = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->raw_arguments = deep_copy(node->raw_arguments, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->callee = deep_copy(node->callee, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->raw_arguments = deep_copy(node->raw_arguments, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         for (auto& i : node->arguments) {
             new_node->arguments.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
         }
@@ -734,46 +646,19 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<If>(it->second);
+        }
         auto new_node = std::make_shared<If>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->expr_type); it != node_map.end()) {
-            new_node->expr_type = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->constant_level = node->constant_level;
-        if (auto it = node_map.find(node->struct_union_type); it != node_map.end()) {
-            new_node->struct_union_type = ast::cast_to<StructUnionType>(it->second);
-        }
-        else {
-            new_node->struct_union_type = deep_copy(node->struct_union_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = scope_map.find(node->cond_scope); it != scope_map.end()) {
-            new_node->cond_scope = it->second;
-        }
-        else {
-            new_node->cond_scope = deep_copy(node->cond_scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->cond); it != node_map.end()) {
-            new_node->cond = ast::cast_to<Identity>(it->second);
-        }
-        else {
-            new_node->cond = deep_copy(node->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->then); it != node_map.end()) {
-            new_node->then = ast::cast_to<IndentBlock>(it->second);
-        }
-        else {
-            new_node->then = deep_copy(node->then, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->els); it != node_map.end()) {
-            new_node->els = ast::cast_to<Node>(it->second);
-        }
-        else {
-            new_node->els = deep_copy(node->els, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->struct_union_type = deep_copy(node->struct_union_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->cond_scope = deep_copy(node->cond_scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->cond = deep_copy(node->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->then = deep_copy(node->then, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->els = deep_copy(node->els, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -781,34 +666,17 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<MemberAccess>(it->second);
+        }
         auto new_node = std::make_shared<MemberAccess>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->expr_type); it != node_map.end()) {
-            new_node->expr_type = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->constant_level = node->constant_level;
-        if (auto it = node_map.find(node->target); it != node_map.end()) {
-            new_node->target = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->target = deep_copy(node->target, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->member); it != node_map.end()) {
-            new_node->member = ast::cast_to<Ident>(it->second);
-        }
-        else {
-            new_node->member = deep_copy(node->member, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->base.lock()); it != node_map.end()) {
-            new_node->base = ast::cast_to<Ident>(it->second);
-        }
-        else {
-            new_node->base = deep_copy(node->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->target = deep_copy(node->target, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->member = deep_copy(node->member, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->base = deep_copy(node->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -816,22 +684,15 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<Paren>(it->second);
+        }
         auto new_node = std::make_shared<Paren>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->expr_type); it != node_map.end()) {
-            new_node->expr_type = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->constant_level = node->constant_level;
-        if (auto it = node_map.find(node->expr); it != node_map.end()) {
-            new_node->expr = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->expr = deep_copy(node->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->expr = deep_copy(node->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->end_loc = node->end_loc;
         return new_node;
     }
@@ -840,28 +701,16 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<Index>(it->second);
+        }
         auto new_node = std::make_shared<Index>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->expr_type); it != node_map.end()) {
-            new_node->expr_type = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->constant_level = node->constant_level;
-        if (auto it = node_map.find(node->expr); it != node_map.end()) {
-            new_node->expr = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->expr = deep_copy(node->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->index); it != node_map.end()) {
-            new_node->index = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->index = deep_copy(node->index, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->expr = deep_copy(node->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->index = deep_copy(node->index, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->end_loc = node->end_loc;
         return new_node;
     }
@@ -870,34 +719,17 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<Match>(it->second);
+        }
         auto new_node = std::make_shared<Match>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->expr_type); it != node_map.end()) {
-            new_node->expr_type = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->constant_level = node->constant_level;
-        if (auto it = node_map.find(node->struct_union_type); it != node_map.end()) {
-            new_node->struct_union_type = ast::cast_to<StructUnionType>(it->second);
-        }
-        else {
-            new_node->struct_union_type = deep_copy(node->struct_union_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = scope_map.find(node->cond_scope); it != scope_map.end()) {
-            new_node->cond_scope = it->second;
-        }
-        else {
-            new_node->cond_scope = deep_copy(node->cond_scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->cond); it != node_map.end()) {
-            new_node->cond = ast::cast_to<Identity>(it->second);
-        }
-        else {
-            new_node->cond = deep_copy(node->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->struct_union_type = deep_copy(node->struct_union_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->cond_scope = deep_copy(node->cond_scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->cond = deep_copy(node->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         for (auto& i : node->branch) {
             new_node->branch.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
         }
@@ -908,29 +740,17 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<Range>(it->second);
+        }
         auto new_node = std::make_shared<Range>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->expr_type); it != node_map.end()) {
-            new_node->expr_type = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->constant_level = node->constant_level;
         new_node->op = node->op;
-        if (auto it = node_map.find(node->start); it != node_map.end()) {
-            new_node->start = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->start = deep_copy(node->start, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->end); it != node_map.end()) {
-            new_node->end = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->end = deep_copy(node->end, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->start = deep_copy(node->start, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->end = deep_copy(node->end, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -938,22 +758,15 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<Identity>(it->second);
+        }
         auto new_node = std::make_shared<Identity>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->expr_type); it != node_map.end()) {
-            new_node->expr_type = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->constant_level = node->constant_level;
-        if (auto it = node_map.find(node->expr); it != node_map.end()) {
-            new_node->expr = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->expr = deep_copy(node->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->expr = deep_copy(node->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -961,15 +774,13 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<TmpVar>(it->second);
+        }
         auto new_node = std::make_shared<TmpVar>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->expr_type); it != node_map.end()) {
-            new_node->expr_type = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->constant_level = node->constant_level;
         new_node->tmp_var = node->tmp_var;
         return new_node;
@@ -979,29 +790,17 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<Import>(it->second);
+        }
         auto new_node = std::make_shared<Import>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->expr_type); it != node_map.end()) {
-            new_node->expr_type = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->constant_level = node->constant_level;
         new_node->path = node->path;
-        if (auto it = node_map.find(node->base); it != node_map.end()) {
-            new_node->base = ast::cast_to<Call>(it->second);
-        }
-        else {
-            new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->import_desc); it != node_map.end()) {
-            new_node->import_desc = ast::cast_to<Program>(it->second);
-        }
-        else {
-            new_node->import_desc = deep_copy(node->import_desc, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->import_desc = deep_copy(node->import_desc, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -1009,28 +808,16 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<Cast>(it->second);
+        }
         auto new_node = std::make_shared<Cast>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->expr_type); it != node_map.end()) {
-            new_node->expr_type = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->constant_level = node->constant_level;
-        if (auto it = node_map.find(node->base); it != node_map.end()) {
-            new_node->base = ast::cast_to<Call>(it->second);
-        }
-        else {
-            new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->expr); it != node_map.end()) {
-            new_node->expr = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->expr = deep_copy(node->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->expr = deep_copy(node->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -1038,28 +825,16 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<Available>(it->second);
+        }
         auto new_node = std::make_shared<Available>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->expr_type); it != node_map.end()) {
-            new_node->expr_type = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->constant_level = node->constant_level;
-        if (auto it = node_map.find(node->base); it != node_map.end()) {
-            new_node->base = ast::cast_to<Call>(it->second);
-        }
-        else {
-            new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->target); it != node_map.end()) {
-            new_node->target = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->target = deep_copy(node->target, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->target = deep_copy(node->target, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -1067,29 +842,17 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<SpecifyOrder>(it->second);
+        }
         auto new_node = std::make_shared<SpecifyOrder>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->expr_type); it != node_map.end()) {
-            new_node->expr_type = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->constant_level = node->constant_level;
-        if (auto it = node_map.find(node->base); it != node_map.end()) {
-            new_node->base = ast::cast_to<Binary>(it->second);
-        }
-        else {
-            new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->order_type = node->order_type;
-        if (auto it = node_map.find(node->order); it != node_map.end()) {
-            new_node->order = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->order = deep_copy(node->order, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->order = deep_copy(node->order, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->order_value = node->order_value;
         return new_node;
     }
@@ -1098,28 +861,16 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<ExplicitError>(it->second);
+        }
         auto new_node = std::make_shared<ExplicitError>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->expr_type); it != node_map.end()) {
-            new_node->expr_type = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->constant_level = node->constant_level;
-        if (auto it = node_map.find(node->base); it != node_map.end()) {
-            new_node->base = ast::cast_to<Call>(it->second);
-        }
-        else {
-            new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->message); it != node_map.end()) {
-            new_node->message = ast::cast_to<StrLiteral>(it->second);
-        }
-        else {
-            new_node->message = deep_copy(node->message, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->message = deep_copy(node->message, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -1127,22 +878,15 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<IOOperation>(it->second);
+        }
         auto new_node = std::make_shared<IOOperation>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->expr_type); it != node_map.end()) {
-            new_node->expr_type = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->constant_level = node->constant_level;
-        if (auto it = node_map.find(node->base); it != node_map.end()) {
-            new_node->base = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->method = node->method;
         for (auto& i : node->arguments) {
             new_node->arguments.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
@@ -1154,22 +898,15 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<OrCond>(it->second);
+        }
         auto new_node = std::make_shared<OrCond>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->expr_type); it != node_map.end()) {
-            new_node->expr_type = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->constant_level = node->constant_level;
-        if (auto it = node_map.find(node->base); it != node_map.end()) {
-            new_node->base = ast::cast_to<Binary>(it->second);
-        }
-        else {
-            new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         for (auto& i : node->conds) {
             new_node->conds.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
         }
@@ -1180,23 +917,16 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<BadExpr>(it->second);
+        }
         auto new_node = std::make_shared<BadExpr>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->expr_type); it != node_map.end()) {
-            new_node->expr_type = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->constant_level = node->constant_level;
         new_node->content = node->content;
-        if (auto it = node_map.find(node->bad_expr); it != node_map.end()) {
-            new_node->bad_expr = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->bad_expr = deep_copy(node->bad_expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->bad_expr = deep_copy(node->bad_expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -1204,39 +934,17 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<Loop>(it->second);
+        }
         auto new_node = std::make_shared<Loop>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = scope_map.find(node->cond_scope); it != scope_map.end()) {
-            new_node->cond_scope = it->second;
-        }
-        else {
-            new_node->cond_scope = deep_copy(node->cond_scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->init); it != node_map.end()) {
-            new_node->init = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->init = deep_copy(node->init, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->cond); it != node_map.end()) {
-            new_node->cond = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->cond = deep_copy(node->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->step); it != node_map.end()) {
-            new_node->step = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->step = deep_copy(node->step, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->body); it != node_map.end()) {
-            new_node->body = ast::cast_to<IndentBlock>(it->second);
-        }
-        else {
-            new_node->body = deep_copy(node->body, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->cond_scope = deep_copy(node->cond_scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->init = deep_copy(node->init, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->cond = deep_copy(node->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->step = deep_copy(node->step, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->body = deep_copy(node->body, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -1244,24 +952,17 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<IndentBlock>(it->second);
+        }
         auto new_node = std::make_shared<IndentBlock>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->struct_type); it != node_map.end()) {
-            new_node->struct_type = ast::cast_to<StructType>(it->second);
-        }
-        else {
-            new_node->struct_type = deep_copy(node->struct_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->struct_type = deep_copy(node->struct_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         for (auto& i : node->elements) {
             new_node->elements.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
         }
-        if (auto it = scope_map.find(node->scope); it != scope_map.end()) {
-            new_node->scope = it->second;
-        }
-        else {
-            new_node->scope = deep_copy(node->scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->scope = deep_copy(node->scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         for (auto& i : node->metadata) {
             new_node->metadata.push_back(deep_copy(i.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
         }
@@ -1272,27 +973,15 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<ScopedStatement>(it->second);
+        }
         auto new_node = std::make_shared<ScopedStatement>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->struct_type); it != node_map.end()) {
-            new_node->struct_type = ast::cast_to<StructType>(it->second);
-        }
-        else {
-            new_node->struct_type = deep_copy(node->struct_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->statement); it != node_map.end()) {
-            new_node->statement = ast::cast_to<Node>(it->second);
-        }
-        else {
-            new_node->statement = deep_copy(node->statement, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = scope_map.find(node->scope); it != scope_map.end()) {
-            new_node->scope = it->second;
-        }
-        else {
-            new_node->scope = deep_copy(node->scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->struct_type = deep_copy(node->struct_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->statement = deep_copy(node->statement, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->scope = deep_copy(node->scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -1300,28 +989,16 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<MatchBranch>(it->second);
+        }
         auto new_node = std::make_shared<MatchBranch>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->belong.lock()); it != node_map.end()) {
-            new_node->belong = ast::cast_to<Match>(it->second);
-        }
-        else {
-            new_node->belong = deep_copy(node->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->cond); it != node_map.end()) {
-            new_node->cond = ast::cast_to<Identity>(it->second);
-        }
-        else {
-            new_node->cond = deep_copy(node->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->belong = deep_copy(node->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->cond = deep_copy(node->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->sym_loc = node->sym_loc;
-        if (auto it = node_map.find(node->then); it != node_map.end()) {
-            new_node->then = ast::cast_to<Node>(it->second);
-        }
-        else {
-            new_node->then = deep_copy(node->then, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->then = deep_copy(node->then, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -1329,21 +1006,14 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<UnionCandidate>(it->second);
+        }
         auto new_node = std::make_shared<UnionCandidate>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->cond.lock()); it != node_map.end()) {
-            new_node->cond = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->cond = deep_copy(node->cond.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->field.lock()); it != node_map.end()) {
-            new_node->field = ast::cast_to<Field>(it->second);
-        }
-        else {
-            new_node->field = deep_copy(node->field.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->cond = deep_copy(node->cond.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->field = deep_copy(node->field.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -1351,21 +1021,14 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<Return>(it->second);
+        }
         auto new_node = std::make_shared<Return>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->expr); it != node_map.end()) {
-            new_node->expr = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->expr = deep_copy(node->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->related_function.lock()); it != node_map.end()) {
-            new_node->related_function = ast::cast_to<Function>(it->second);
-        }
-        else {
-            new_node->related_function = deep_copy(node->related_function.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->expr = deep_copy(node->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->related_function = deep_copy(node->related_function.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -1373,15 +1036,13 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<Break>(it->second);
+        }
         auto new_node = std::make_shared<Break>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->related_loop.lock()); it != node_map.end()) {
-            new_node->related_loop = ast::cast_to<Loop>(it->second);
-        }
-        else {
-            new_node->related_loop = deep_copy(node->related_loop.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->related_loop = deep_copy(node->related_loop.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -1389,15 +1050,13 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<Continue>(it->second);
+        }
         auto new_node = std::make_shared<Continue>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->related_loop.lock()); it != node_map.end()) {
-            new_node->related_loop = ast::cast_to<Loop>(it->second);
-        }
-        else {
-            new_node->related_loop = deep_copy(node->related_loop.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->related_loop = deep_copy(node->related_loop.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -1405,15 +1064,13 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<Assert>(it->second);
+        }
         auto new_node = std::make_shared<Assert>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->cond); it != node_map.end()) {
-            new_node->cond = ast::cast_to<Binary>(it->second);
-        }
-        else {
-            new_node->cond = deep_copy(node->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->cond = deep_copy(node->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->is_io_related = node->is_io_related;
         return new_node;
     }
@@ -1422,15 +1079,13 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<ImplicitYield>(it->second);
+        }
         auto new_node = std::make_shared<ImplicitYield>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->expr); it != node_map.end()) {
-            new_node->expr = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->expr = deep_copy(node->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->expr = deep_copy(node->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -1438,15 +1093,13 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<Metadata>(it->second);
+        }
         auto new_node = std::make_shared<Metadata>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->base); it != node_map.end()) {
-            new_node->base = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->name = node->name;
         for (auto& i : node->values) {
             new_node->values.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
@@ -1457,6 +1110,9 @@ namespace brgen::ast {
     std::shared_ptr<IntType> deep_copy(const std::shared_ptr<IntType>& node, NodeM&& node_map, ScopeM&& scope_map) {
         if (!node) {
             return nullptr;
+        }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<IntType>(it->second);
         }
         auto new_node = std::make_shared<IntType>();
         node_map[node] = new_node;
@@ -1475,6 +1131,9 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<FloatType>(it->second);
+        }
         auto new_node = std::make_shared<FloatType>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
@@ -1491,6 +1150,9 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<IdentType>(it->second);
+        }
         auto new_node = std::make_shared<IdentType>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
@@ -1498,30 +1160,18 @@ namespace brgen::ast {
         new_node->non_dynamic_allocation = node->non_dynamic_allocation;
         new_node->bit_alignment = node->bit_alignment;
         new_node->bit_size = node->bit_size;
-        if (auto it = node_map.find(node->import_ref); it != node_map.end()) {
-            new_node->import_ref = ast::cast_to<MemberAccess>(it->second);
-        }
-        else {
-            new_node->import_ref = deep_copy(node->import_ref, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->ident); it != node_map.end()) {
-            new_node->ident = ast::cast_to<Ident>(it->second);
-        }
-        else {
-            new_node->ident = deep_copy(node->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->base.lock()); it != node_map.end()) {
-            new_node->base = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->base = deep_copy(node->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->import_ref = deep_copy(node->import_ref, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->ident = deep_copy(node->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->base = deep_copy(node->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
     std::shared_ptr<IntLiteralType> deep_copy(const std::shared_ptr<IntLiteralType>& node, NodeM&& node_map, ScopeM&& scope_map) {
         if (!node) {
             return nullptr;
+        }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<IntLiteralType>(it->second);
         }
         auto new_node = std::make_shared<IntLiteralType>();
         node_map[node] = new_node;
@@ -1530,18 +1180,16 @@ namespace brgen::ast {
         new_node->non_dynamic_allocation = node->non_dynamic_allocation;
         new_node->bit_alignment = node->bit_alignment;
         new_node->bit_size = node->bit_size;
-        if (auto it = node_map.find(node->base.lock()); it != node_map.end()) {
-            new_node->base = ast::cast_to<IntLiteral>(it->second);
-        }
-        else {
-            new_node->base = deep_copy(node->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->base = deep_copy(node->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
     std::shared_ptr<StrLiteralType> deep_copy(const std::shared_ptr<StrLiteralType>& node, NodeM&& node_map, ScopeM&& scope_map) {
         if (!node) {
             return nullptr;
+        }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<StrLiteralType>(it->second);
         }
         auto new_node = std::make_shared<StrLiteralType>();
         node_map[node] = new_node;
@@ -1550,24 +1198,17 @@ namespace brgen::ast {
         new_node->non_dynamic_allocation = node->non_dynamic_allocation;
         new_node->bit_alignment = node->bit_alignment;
         new_node->bit_size = node->bit_size;
-        if (auto it = node_map.find(node->base.lock()); it != node_map.end()) {
-            new_node->base = ast::cast_to<StrLiteral>(it->second);
-        }
-        else {
-            new_node->base = deep_copy(node->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->strong_ref); it != node_map.end()) {
-            new_node->strong_ref = ast::cast_to<StrLiteral>(it->second);
-        }
-        else {
-            new_node->strong_ref = deep_copy(node->strong_ref, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->base = deep_copy(node->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->strong_ref = deep_copy(node->strong_ref, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
     std::shared_ptr<RegexLiteralType> deep_copy(const std::shared_ptr<RegexLiteralType>& node, NodeM&& node_map, ScopeM&& scope_map) {
         if (!node) {
             return nullptr;
+        }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<RegexLiteralType>(it->second);
         }
         auto new_node = std::make_shared<RegexLiteralType>();
         node_map[node] = new_node;
@@ -1576,24 +1217,17 @@ namespace brgen::ast {
         new_node->non_dynamic_allocation = node->non_dynamic_allocation;
         new_node->bit_alignment = node->bit_alignment;
         new_node->bit_size = node->bit_size;
-        if (auto it = node_map.find(node->base.lock()); it != node_map.end()) {
-            new_node->base = ast::cast_to<RegexLiteral>(it->second);
-        }
-        else {
-            new_node->base = deep_copy(node->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->strong_ref); it != node_map.end()) {
-            new_node->strong_ref = ast::cast_to<RegexLiteral>(it->second);
-        }
-        else {
-            new_node->strong_ref = deep_copy(node->strong_ref, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->base = deep_copy(node->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->strong_ref = deep_copy(node->strong_ref, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
     std::shared_ptr<VoidType> deep_copy(const std::shared_ptr<VoidType>& node, NodeM&& node_map, ScopeM&& scope_map) {
         if (!node) {
             return nullptr;
+        }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<VoidType>(it->second);
         }
         auto new_node = std::make_shared<VoidType>();
         node_map[node] = new_node;
@@ -1609,6 +1243,9 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<BoolType>(it->second);
+        }
         auto new_node = std::make_shared<BoolType>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
@@ -1623,6 +1260,9 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<ArrayType>(it->second);
+        }
         auto new_node = std::make_shared<ArrayType>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
@@ -1631,18 +1271,8 @@ namespace brgen::ast {
         new_node->bit_alignment = node->bit_alignment;
         new_node->bit_size = node->bit_size;
         new_node->end_loc = node->end_loc;
-        if (auto it = node_map.find(node->element_type); it != node_map.end()) {
-            new_node->element_type = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->element_type = deep_copy(node->element_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->length); it != node_map.end()) {
-            new_node->length = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->length = deep_copy(node->length, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->element_type = deep_copy(node->element_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->length = deep_copy(node->length, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->length_value = node->length_value;
         new_node->is_bytes = node->is_bytes;
         return new_node;
@@ -1652,6 +1282,9 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<FunctionType>(it->second);
+        }
         auto new_node = std::make_shared<FunctionType>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
@@ -1659,12 +1292,7 @@ namespace brgen::ast {
         new_node->non_dynamic_allocation = node->non_dynamic_allocation;
         new_node->bit_alignment = node->bit_alignment;
         new_node->bit_size = node->bit_size;
-        if (auto it = node_map.find(node->return_type); it != node_map.end()) {
-            new_node->return_type = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->return_type = deep_copy(node->return_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->return_type = deep_copy(node->return_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         for (auto& i : node->parameters) {
             new_node->parameters.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
         }
@@ -1674,6 +1302,9 @@ namespace brgen::ast {
     std::shared_ptr<StructType> deep_copy(const std::shared_ptr<StructType>& node, NodeM&& node_map, ScopeM&& scope_map) {
         if (!node) {
             return nullptr;
+        }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<StructType>(it->second);
         }
         auto new_node = std::make_shared<StructType>();
         node_map[node] = new_node;
@@ -1685,12 +1316,7 @@ namespace brgen::ast {
         for (auto& i : node->fields) {
             new_node->fields.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
         }
-        if (auto it = node_map.find(node->base.lock()); it != node_map.end()) {
-            new_node->base = ast::cast_to<Node>(it->second);
-        }
-        else {
-            new_node->base = deep_copy(node->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->base = deep_copy(node->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->recursive = node->recursive;
         new_node->fixed_header_size = node->fixed_header_size;
         new_node->fixed_tail_size = node->fixed_tail_size;
@@ -1701,6 +1327,9 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<StructUnionType>(it->second);
+        }
         auto new_node = std::make_shared<StructUnionType>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
@@ -1708,24 +1337,14 @@ namespace brgen::ast {
         new_node->non_dynamic_allocation = node->non_dynamic_allocation;
         new_node->bit_alignment = node->bit_alignment;
         new_node->bit_size = node->bit_size;
-        if (auto it = node_map.find(node->cond); it != node_map.end()) {
-            new_node->cond = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->cond = deep_copy(node->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->cond = deep_copy(node->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         for (auto& i : node->conds) {
             new_node->conds.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
         }
         for (auto& i : node->structs) {
             new_node->structs.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
         }
-        if (auto it = node_map.find(node->base.lock()); it != node_map.end()) {
-            new_node->base = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->base = deep_copy(node->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->base = deep_copy(node->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         for (auto& i : node->union_fields) {
             new_node->union_fields.push_back(deep_copy(i.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
         }
@@ -1737,6 +1356,9 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<UnionType>(it->second);
+        }
         auto new_node = std::make_shared<UnionType>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
@@ -1744,27 +1366,12 @@ namespace brgen::ast {
         new_node->non_dynamic_allocation = node->non_dynamic_allocation;
         new_node->bit_alignment = node->bit_alignment;
         new_node->bit_size = node->bit_size;
-        if (auto it = node_map.find(node->cond.lock()); it != node_map.end()) {
-            new_node->cond = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->cond = deep_copy(node->cond.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->cond = deep_copy(node->cond.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         for (auto& i : node->candidates) {
             new_node->candidates.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
         }
-        if (auto it = node_map.find(node->base_type.lock()); it != node_map.end()) {
-            new_node->base_type = ast::cast_to<StructUnionType>(it->second);
-        }
-        else {
-            new_node->base_type = deep_copy(node->base_type.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->common_type); it != node_map.end()) {
-            new_node->common_type = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->common_type = deep_copy(node->common_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->base_type = deep_copy(node->base_type.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->common_type = deep_copy(node->common_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         for (auto& i : node->member_candidates) {
             new_node->member_candidates.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
         }
@@ -1775,6 +1382,9 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<RangeType>(it->second);
+        }
         auto new_node = std::make_shared<RangeType>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
@@ -1782,24 +1392,17 @@ namespace brgen::ast {
         new_node->non_dynamic_allocation = node->non_dynamic_allocation;
         new_node->bit_alignment = node->bit_alignment;
         new_node->bit_size = node->bit_size;
-        if (auto it = node_map.find(node->base_type); it != node_map.end()) {
-            new_node->base_type = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->base_type = deep_copy(node->base_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->range.lock()); it != node_map.end()) {
-            new_node->range = ast::cast_to<Range>(it->second);
-        }
-        else {
-            new_node->range = deep_copy(node->range.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->base_type = deep_copy(node->base_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->range = deep_copy(node->range.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
     std::shared_ptr<EnumType> deep_copy(const std::shared_ptr<EnumType>& node, NodeM&& node_map, ScopeM&& scope_map) {
         if (!node) {
             return nullptr;
+        }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<EnumType>(it->second);
         }
         auto new_node = std::make_shared<EnumType>();
         node_map[node] = new_node;
@@ -1808,18 +1411,16 @@ namespace brgen::ast {
         new_node->non_dynamic_allocation = node->non_dynamic_allocation;
         new_node->bit_alignment = node->bit_alignment;
         new_node->bit_size = node->bit_size;
-        if (auto it = node_map.find(node->base.lock()); it != node_map.end()) {
-            new_node->base = ast::cast_to<Enum>(it->second);
-        }
-        else {
-            new_node->base = deep_copy(node->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->base = deep_copy(node->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
     std::shared_ptr<MetaType> deep_copy(const std::shared_ptr<MetaType>& node, NodeM&& node_map, ScopeM&& scope_map) {
         if (!node) {
             return nullptr;
+        }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<MetaType>(it->second);
         }
         auto new_node = std::make_shared<MetaType>();
         node_map[node] = new_node;
@@ -1835,6 +1436,9 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<OptionalType>(it->second);
+        }
         auto new_node = std::make_shared<OptionalType>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
@@ -1842,18 +1446,16 @@ namespace brgen::ast {
         new_node->non_dynamic_allocation = node->non_dynamic_allocation;
         new_node->bit_alignment = node->bit_alignment;
         new_node->bit_size = node->bit_size;
-        if (auto it = node_map.find(node->base_type); it != node_map.end()) {
-            new_node->base_type = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->base_type = deep_copy(node->base_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->base_type = deep_copy(node->base_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
     std::shared_ptr<GenericType> deep_copy(const std::shared_ptr<GenericType>& node, NodeM&& node_map, ScopeM&& scope_map) {
         if (!node) {
             return nullptr;
+        }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<GenericType>(it->second);
         }
         auto new_node = std::make_shared<GenericType>();
         node_map[node] = new_node;
@@ -1862,12 +1464,7 @@ namespace brgen::ast {
         new_node->non_dynamic_allocation = node->non_dynamic_allocation;
         new_node->bit_alignment = node->bit_alignment;
         new_node->bit_size = node->bit_size;
-        if (auto it = node_map.find(node->belong.lock()); it != node_map.end()) {
-            new_node->belong = ast::cast_to<Member>(it->second);
-        }
-        else {
-            new_node->belong = deep_copy(node->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->belong = deep_copy(node->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -1875,15 +1472,13 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<IntLiteral>(it->second);
+        }
         auto new_node = std::make_shared<IntLiteral>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->expr_type); it != node_map.end()) {
-            new_node->expr_type = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->constant_level = node->constant_level;
         new_node->value = node->value;
         return new_node;
@@ -1893,15 +1488,13 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<BoolLiteral>(it->second);
+        }
         auto new_node = std::make_shared<BoolLiteral>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->expr_type); it != node_map.end()) {
-            new_node->expr_type = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->constant_level = node->constant_level;
         new_node->value = node->value;
         return new_node;
@@ -1911,15 +1504,13 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<StrLiteral>(it->second);
+        }
         auto new_node = std::make_shared<StrLiteral>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->expr_type); it != node_map.end()) {
-            new_node->expr_type = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->constant_level = node->constant_level;
         new_node->value = node->value;
         new_node->length = node->length;
@@ -1930,15 +1521,13 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<RegexLiteral>(it->second);
+        }
         auto new_node = std::make_shared<RegexLiteral>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->expr_type); it != node_map.end()) {
-            new_node->expr_type = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->constant_level = node->constant_level;
         new_node->value = node->value;
         return new_node;
@@ -1948,15 +1537,13 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<CharLiteral>(it->second);
+        }
         auto new_node = std::make_shared<CharLiteral>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->expr_type); it != node_map.end()) {
-            new_node->expr_type = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->constant_level = node->constant_level;
         new_node->value = node->value;
         new_node->code = node->code;
@@ -1967,22 +1554,15 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<TypeLiteral>(it->second);
+        }
         auto new_node = std::make_shared<TypeLiteral>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->expr_type); it != node_map.end()) {
-            new_node->expr_type = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->constant_level = node->constant_level;
-        if (auto it = node_map.find(node->type_literal); it != node_map.end()) {
-            new_node->type_literal = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->type_literal = deep_copy(node->type_literal, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->type_literal = deep_copy(node->type_literal, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->end_loc = node->end_loc;
         return new_node;
     }
@@ -1991,15 +1571,13 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<SpecialLiteral>(it->second);
+        }
         auto new_node = std::make_shared<SpecialLiteral>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->expr_type); it != node_map.end()) {
-            new_node->expr_type = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->constant_level = node->constant_level;
         new_node->kind = node->kind;
         return new_node;
@@ -2009,41 +1587,19 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<Field>(it->second);
+        }
         auto new_node = std::make_shared<Field>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->belong.lock()); it != node_map.end()) {
-            new_node->belong = ast::cast_to<Member>(it->second);
-        }
-        else {
-            new_node->belong = deep_copy(node->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->belong_struct.lock()); it != node_map.end()) {
-            new_node->belong_struct = ast::cast_to<StructType>(it->second);
-        }
-        else {
-            new_node->belong_struct = deep_copy(node->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->ident); it != node_map.end()) {
-            new_node->ident = ast::cast_to<Ident>(it->second);
-        }
-        else {
-            new_node->ident = deep_copy(node->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->belong = deep_copy(node->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->belong_struct = deep_copy(node->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->ident = deep_copy(node->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->colon_loc = node->colon_loc;
         new_node->is_state_variable = node->is_state_variable;
-        if (auto it = node_map.find(node->field_type); it != node_map.end()) {
-            new_node->field_type = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->field_type = deep_copy(node->field_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->arguments); it != node_map.end()) {
-            new_node->arguments = ast::cast_to<FieldArgument>(it->second);
-        }
-        else {
-            new_node->arguments = deep_copy(node->arguments, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->field_type = deep_copy(node->field_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->arguments = deep_copy(node->arguments, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->offset_bit = node->offset_bit;
         new_node->offset_recent = node->offset_recent;
         new_node->tail_offset_bit = node->tail_offset_bit;
@@ -2052,12 +1608,7 @@ namespace brgen::ast {
         new_node->eventual_bit_alignment = node->eventual_bit_alignment;
         new_node->follow = node->follow;
         new_node->eventual_follow = node->eventual_follow;
-        if (auto it = node_map.find(node->next.lock()); it != node_map.end()) {
-            new_node->next = ast::cast_to<Field>(it->second);
-        }
-        else {
-            new_node->next = deep_copy(node->next.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->next = deep_copy(node->next.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -2065,45 +1616,18 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<Format>(it->second);
+        }
         auto new_node = std::make_shared<Format>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->belong.lock()); it != node_map.end()) {
-            new_node->belong = ast::cast_to<Member>(it->second);
-        }
-        else {
-            new_node->belong = deep_copy(node->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->belong_struct.lock()); it != node_map.end()) {
-            new_node->belong_struct = ast::cast_to<StructType>(it->second);
-        }
-        else {
-            new_node->belong_struct = deep_copy(node->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->ident); it != node_map.end()) {
-            new_node->ident = ast::cast_to<Ident>(it->second);
-        }
-        else {
-            new_node->ident = deep_copy(node->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->body); it != node_map.end()) {
-            new_node->body = ast::cast_to<IndentBlock>(it->second);
-        }
-        else {
-            new_node->body = deep_copy(node->body, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->encode_fn.lock()); it != node_map.end()) {
-            new_node->encode_fn = ast::cast_to<Function>(it->second);
-        }
-        else {
-            new_node->encode_fn = deep_copy(node->encode_fn.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->decode_fn.lock()); it != node_map.end()) {
-            new_node->decode_fn = ast::cast_to<Function>(it->second);
-        }
-        else {
-            new_node->decode_fn = deep_copy(node->decode_fn.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->belong = deep_copy(node->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->belong_struct = deep_copy(node->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->ident = deep_copy(node->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->body = deep_copy(node->body, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->encode_fn = deep_copy(node->encode_fn.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->decode_fn = deep_copy(node->decode_fn.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         for (auto& i : node->cast_fns) {
             new_node->cast_fns.push_back(deep_copy(i.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
         }
@@ -2121,33 +1645,16 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<State>(it->second);
+        }
         auto new_node = std::make_shared<State>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->belong.lock()); it != node_map.end()) {
-            new_node->belong = ast::cast_to<Member>(it->second);
-        }
-        else {
-            new_node->belong = deep_copy(node->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->belong_struct.lock()); it != node_map.end()) {
-            new_node->belong_struct = ast::cast_to<StructType>(it->second);
-        }
-        else {
-            new_node->belong_struct = deep_copy(node->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->ident); it != node_map.end()) {
-            new_node->ident = ast::cast_to<Ident>(it->second);
-        }
-        else {
-            new_node->ident = deep_copy(node->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->body); it != node_map.end()) {
-            new_node->body = ast::cast_to<IndentBlock>(it->second);
-        }
-        else {
-            new_node->body = deep_copy(node->body, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->belong = deep_copy(node->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->belong_struct = deep_copy(node->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->ident = deep_copy(node->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->body = deep_copy(node->body, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -2155,49 +1662,22 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<Enum>(it->second);
+        }
         auto new_node = std::make_shared<Enum>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->belong.lock()); it != node_map.end()) {
-            new_node->belong = ast::cast_to<Member>(it->second);
-        }
-        else {
-            new_node->belong = deep_copy(node->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->belong_struct.lock()); it != node_map.end()) {
-            new_node->belong_struct = ast::cast_to<StructType>(it->second);
-        }
-        else {
-            new_node->belong_struct = deep_copy(node->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->ident); it != node_map.end()) {
-            new_node->ident = ast::cast_to<Ident>(it->second);
-        }
-        else {
-            new_node->ident = deep_copy(node->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = scope_map.find(node->scope); it != scope_map.end()) {
-            new_node->scope = it->second;
-        }
-        else {
-            new_node->scope = deep_copy(node->scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->belong = deep_copy(node->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->belong_struct = deep_copy(node->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->ident = deep_copy(node->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->scope = deep_copy(node->scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->colon_loc = node->colon_loc;
-        if (auto it = node_map.find(node->base_type); it != node_map.end()) {
-            new_node->base_type = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->base_type = deep_copy(node->base_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->base_type = deep_copy(node->base_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         for (auto& i : node->members) {
             new_node->members.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
         }
-        if (auto it = node_map.find(node->enum_type); it != node_map.end()) {
-            new_node->enum_type = ast::cast_to<EnumType>(it->second);
-        }
-        else {
-            new_node->enum_type = deep_copy(node->enum_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->enum_type = deep_copy(node->enum_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -2205,45 +1685,18 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<EnumMember>(it->second);
+        }
         auto new_node = std::make_shared<EnumMember>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->belong.lock()); it != node_map.end()) {
-            new_node->belong = ast::cast_to<Member>(it->second);
-        }
-        else {
-            new_node->belong = deep_copy(node->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->belong_struct.lock()); it != node_map.end()) {
-            new_node->belong_struct = ast::cast_to<StructType>(it->second);
-        }
-        else {
-            new_node->belong_struct = deep_copy(node->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->ident); it != node_map.end()) {
-            new_node->ident = ast::cast_to<Ident>(it->second);
-        }
-        else {
-            new_node->ident = deep_copy(node->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->raw_expr); it != node_map.end()) {
-            new_node->raw_expr = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->raw_expr = deep_copy(node->raw_expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->value); it != node_map.end()) {
-            new_node->value = ast::cast_to<Expr>(it->second);
-        }
-        else {
-            new_node->value = deep_copy(node->value, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->str_literal); it != node_map.end()) {
-            new_node->str_literal = ast::cast_to<StrLiteral>(it->second);
-        }
-        else {
-            new_node->str_literal = deep_copy(node->str_literal, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->belong = deep_copy(node->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->belong_struct = deep_copy(node->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->ident = deep_copy(node->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->raw_expr = deep_copy(node->raw_expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->value = deep_copy(node->value, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->str_literal = deep_copy(node->str_literal, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -2251,48 +1704,21 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<Function>(it->second);
+        }
         auto new_node = std::make_shared<Function>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        if (auto it = node_map.find(node->belong.lock()); it != node_map.end()) {
-            new_node->belong = ast::cast_to<Member>(it->second);
-        }
-        else {
-            new_node->belong = deep_copy(node->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->belong_struct.lock()); it != node_map.end()) {
-            new_node->belong_struct = ast::cast_to<StructType>(it->second);
-        }
-        else {
-            new_node->belong_struct = deep_copy(node->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->ident); it != node_map.end()) {
-            new_node->ident = ast::cast_to<Ident>(it->second);
-        }
-        else {
-            new_node->ident = deep_copy(node->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->belong = deep_copy(node->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->belong_struct = deep_copy(node->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->ident = deep_copy(node->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         for (auto& i : node->parameters) {
             new_node->parameters.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
         }
-        if (auto it = node_map.find(node->return_type); it != node_map.end()) {
-            new_node->return_type = ast::cast_to<Type>(it->second);
-        }
-        else {
-            new_node->return_type = deep_copy(node->return_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->body); it != node_map.end()) {
-            new_node->body = ast::cast_to<IndentBlock>(it->second);
-        }
-        else {
-            new_node->body = deep_copy(node->body, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = node_map.find(node->func_type); it != node_map.end()) {
-            new_node->func_type = ast::cast_to<FunctionType>(it->second);
-        }
-        else {
-            new_node->func_type = deep_copy(node->func_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->return_type = deep_copy(node->return_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->body = deep_copy(node->body, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->func_type = deep_copy(node->func_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->is_cast = node->is_cast;
         return new_node;
     }
@@ -2301,35 +1727,18 @@ namespace brgen::ast {
         if (!node) {
             return nullptr;
         }
+        if (auto it = scope_map.find(node); it != scope_map.end()) {
+            return it->second;
+        }
         auto new_node = std::make_shared<Scope>();
         scope_map[node] = new_node;
-        if (auto it = scope_map.find(node->prev.lock()); it != scope_map.end()) {
-            new_node->prev = it->second;
-        }
-        else {
-            new_node->prev = deep_copy(node->prev.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = scope_map.find(node->next); it != scope_map.end()) {
-            new_node->next = it->second;
-        }
-        else {
-            new_node->next = deep_copy(node->next, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
-        if (auto it = scope_map.find(node->branch); it != scope_map.end()) {
-            new_node->branch = it->second;
-        }
-        else {
-            new_node->branch = deep_copy(node->branch, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->prev = deep_copy(node->prev.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->next = deep_copy(node->next, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->branch = deep_copy(node->branch, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         for (auto& i : node->objects) {
             new_node->objects.push_back(deep_copy(i.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
         }
-        if (auto it = node_map.find(node->owner.lock()); it != node_map.end()) {
-            new_node->owner = ast::cast_to<Node>(it->second);
-        }
-        else {
-            new_node->owner = deep_copy(node->owner.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        }
+        new_node->owner = deep_copy(node->owner.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->branch_root = node->branch_root;
         return new_node;
     }
@@ -3399,22 +2808,21 @@ namespace brgen::ast {
             trace(a, b, "Program", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "Program", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "Program::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->struct_type); it != node_map.end()) {
-            if (ast::cast_to<StructType>(it->second) != b->struct_type) {
-                trace(a->struct_type, b->struct_type, "Program::struct_type", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->struct_type, b->struct_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->struct_type, b->struct_type, "Program::struct_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->struct_type, b->struct_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->struct_type, b->struct_type, "Program::struct_type", -1);
+            return false;
         }
         if (a->elements.size() != b->elements.size()) return false;
         for (size_t i = 0; i < a->elements.size(); i++) {
@@ -3423,17 +2831,9 @@ namespace brgen::ast {
                 return false;
             }
         }
-        if (auto it = scope_map.find(a->global_scope); it != scope_map.end()) {
-            if (it->second != b->global_scope) {
-                trace(a->global_scope, b->global_scope, "Program::global_scope", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->global_scope, b->global_scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->global_scope, b->global_scope, "Program::global_scope", -1);
-                return false;
-            }
+        if (!deep_equal(a->global_scope, b->global_scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->global_scope, b->global_scope, "Program::global_scope", -1);
+            return false;
         }
         if (a->metadata.size() != b->metadata.size()) return false;
         for (size_t i = 0; i < a->metadata.size(); i++) {
@@ -3450,6 +2850,13 @@ namespace brgen::ast {
         if (!a || !b) {
             trace(a, b, "Comment", -1);
             return false;
+        }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "Comment", -1);
+                return false;
+            }
+            return true;
         }
         node_map[a] = b;
         if (a->loc != b->loc) {
@@ -3468,6 +2875,13 @@ namespace brgen::ast {
         if (!a || !b) {
             trace(a, b, "CommentGroup", -1);
             return false;
+        }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "CommentGroup", -1);
+                return false;
+            }
+            return true;
         }
         node_map[a] = b;
         if (a->loc != b->loc) {
@@ -3490,22 +2904,21 @@ namespace brgen::ast {
             trace(a, b, "FieldArgument", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "FieldArgument", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "FieldArgument::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->raw_arguments); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->raw_arguments) {
-                trace(a->raw_arguments, b->raw_arguments, "FieldArgument::raw_arguments", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->raw_arguments, b->raw_arguments, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->raw_arguments, b->raw_arguments, "FieldArgument::raw_arguments", -1);
-                return false;
-            }
+        if (!deep_equal(a->raw_arguments, b->raw_arguments, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->raw_arguments, b->raw_arguments, "FieldArgument::raw_arguments", -1);
+            return false;
         }
         if (a->end_loc != b->end_loc) {
             trace(a->end_loc, b->end_loc, "FieldArgument::end_loc", -1);
@@ -3525,73 +2938,33 @@ namespace brgen::ast {
                 return false;
             }
         }
-        if (auto it = node_map.find(a->alignment); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->alignment) {
-                trace(a->alignment, b->alignment, "FieldArgument::alignment", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->alignment, b->alignment, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->alignment, b->alignment, "FieldArgument::alignment", -1);
-                return false;
-            }
+        if (!deep_equal(a->alignment, b->alignment, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->alignment, b->alignment, "FieldArgument::alignment", -1);
+            return false;
         }
         if (a->alignment_value != b->alignment_value) {
             trace(a->alignment_value, b->alignment_value, "FieldArgument::alignment_value", -1);
             return false;
         }
-        if (auto it = node_map.find(a->sub_byte_length); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->sub_byte_length) {
-                trace(a->sub_byte_length, b->sub_byte_length, "FieldArgument::sub_byte_length", -1);
-                return false;
-            }
+        if (!deep_equal(a->sub_byte_length, b->sub_byte_length, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->sub_byte_length, b->sub_byte_length, "FieldArgument::sub_byte_length", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->sub_byte_length, b->sub_byte_length, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->sub_byte_length, b->sub_byte_length, "FieldArgument::sub_byte_length", -1);
-                return false;
-            }
+        if (!deep_equal(a->sub_byte_begin, b->sub_byte_begin, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->sub_byte_begin, b->sub_byte_begin, "FieldArgument::sub_byte_begin", -1);
+            return false;
         }
-        if (auto it = node_map.find(a->sub_byte_begin); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->sub_byte_begin) {
-                trace(a->sub_byte_begin, b->sub_byte_begin, "FieldArgument::sub_byte_begin", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->sub_byte_begin, b->sub_byte_begin, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->sub_byte_begin, b->sub_byte_begin, "FieldArgument::sub_byte_begin", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->peek); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->peek) {
-                trace(a->peek, b->peek, "FieldArgument::peek", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->peek, b->peek, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->peek, b->peek, "FieldArgument::peek", -1);
-                return false;
-            }
+        if (!deep_equal(a->peek, b->peek, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->peek, b->peek, "FieldArgument::peek", -1);
+            return false;
         }
         if (a->peek_value != b->peek_value) {
             trace(a->peek_value, b->peek_value, "FieldArgument::peek_value", -1);
             return false;
         }
-        if (auto it = node_map.find(a->type_map); it != node_map.end()) {
-            if (ast::cast_to<TypeLiteral>(it->second) != b->type_map) {
-                trace(a->type_map, b->type_map, "FieldArgument::type_map", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->type_map, b->type_map, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->type_map, b->type_map, "FieldArgument::type_map", -1);
-                return false;
-            }
+        if (!deep_equal(a->type_map, b->type_map, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->type_map, b->type_map, "FieldArgument::type_map", -1);
+            return false;
         }
         if (a->metadata.size() != b->metadata.size()) return false;
         for (size_t i = 0; i < a->metadata.size(); i++) {
@@ -3609,22 +2982,21 @@ namespace brgen::ast {
             trace(a, b, "Binary", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "Binary", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "Binary::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->expr_type); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->expr_type) {
-                trace(a->expr_type, b->expr_type, "Binary::expr_type", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->expr_type, b->expr_type, "Binary::expr_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->expr_type, b->expr_type, "Binary::expr_type", -1);
+            return false;
         }
         if (a->constant_level != b->constant_level) {
             trace(a->constant_level, b->constant_level, "Binary::constant_level", -1);
@@ -3634,29 +3006,13 @@ namespace brgen::ast {
             trace(a->op, b->op, "Binary::op", -1);
             return false;
         }
-        if (auto it = node_map.find(a->left); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->left) {
-                trace(a->left, b->left, "Binary::left", -1);
-                return false;
-            }
+        if (!deep_equal(a->left, b->left, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->left, b->left, "Binary::left", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->left, b->left, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->left, b->left, "Binary::left", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->right); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->right) {
-                trace(a->right, b->right, "Binary::right", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->right, b->right, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->right, b->right, "Binary::right", -1);
-                return false;
-            }
+        if (!deep_equal(a->right, b->right, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->right, b->right, "Binary::right", -1);
+            return false;
         }
         return true;
     }
@@ -3667,22 +3023,21 @@ namespace brgen::ast {
             trace(a, b, "Unary", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "Unary", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "Unary::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->expr_type); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->expr_type) {
-                trace(a->expr_type, b->expr_type, "Unary::expr_type", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->expr_type, b->expr_type, "Unary::expr_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->expr_type, b->expr_type, "Unary::expr_type", -1);
+            return false;
         }
         if (a->constant_level != b->constant_level) {
             trace(a->constant_level, b->constant_level, "Unary::constant_level", -1);
@@ -3692,17 +3047,9 @@ namespace brgen::ast {
             trace(a->op, b->op, "Unary::op", -1);
             return false;
         }
-        if (auto it = node_map.find(a->expr); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->expr) {
-                trace(a->expr, b->expr, "Unary::expr", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->expr, b->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->expr, b->expr, "Unary::expr", -1);
-                return false;
-            }
+        if (!deep_equal(a->expr, b->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->expr, b->expr, "Unary::expr", -1);
+            return false;
         }
         return true;
     }
@@ -3713,66 +3060,41 @@ namespace brgen::ast {
             trace(a, b, "Cond", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "Cond", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "Cond::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->expr_type); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->expr_type) {
-                trace(a->expr_type, b->expr_type, "Cond::expr_type", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->expr_type, b->expr_type, "Cond::expr_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->expr_type, b->expr_type, "Cond::expr_type", -1);
+            return false;
         }
         if (a->constant_level != b->constant_level) {
             trace(a->constant_level, b->constant_level, "Cond::constant_level", -1);
             return false;
         }
-        if (auto it = node_map.find(a->cond); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->cond) {
-                trace(a->cond, b->cond, "Cond::cond", -1);
-                return false;
-            }
+        if (!deep_equal(a->cond, b->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->cond, b->cond, "Cond::cond", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->cond, b->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->cond, b->cond, "Cond::cond", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->then); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->then) {
-                trace(a->then, b->then, "Cond::then", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->then, b->then, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->then, b->then, "Cond::then", -1);
-                return false;
-            }
+        if (!deep_equal(a->then, b->then, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->then, b->then, "Cond::then", -1);
+            return false;
         }
         if (a->els_loc != b->els_loc) {
             trace(a->els_loc, b->els_loc, "Cond::els_loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->els); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->els) {
-                trace(a->els, b->els, "Cond::els", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->els, b->els, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->els, b->els, "Cond::els", -1);
-                return false;
-            }
+        if (!deep_equal(a->els, b->els, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->els, b->els, "Cond::els", -1);
+            return false;
         }
         return true;
     }
@@ -3783,22 +3105,21 @@ namespace brgen::ast {
             trace(a, b, "Ident", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "Ident", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "Ident::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->expr_type); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->expr_type) {
-                trace(a->expr_type, b->expr_type, "Ident::expr_type", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->expr_type, b->expr_type, "Ident::expr_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->expr_type, b->expr_type, "Ident::expr_type", -1);
+            return false;
         }
         if (a->constant_level != b->constant_level) {
             trace(a->constant_level, b->constant_level, "Ident::constant_level", -1);
@@ -3812,29 +3133,13 @@ namespace brgen::ast {
             trace(a->usage, b->usage, "Ident::usage", -1);
             return false;
         }
-        if (auto it = node_map.find(a->base.lock()); it != node_map.end()) {
-            if (ast::cast_to<Node>(it->second) != b->base.lock()) {
-                trace(a->base.lock(), b->base.lock(), "Ident::base", -1);
-                return false;
-            }
+        if (!deep_equal(a->base.lock(), b->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->base.lock(), b->base.lock(), "Ident::base", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->base.lock(), b->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->base.lock(), b->base.lock(), "Ident::base", -1);
-                return false;
-            }
-        }
-        if (auto it = scope_map.find(a->scope); it != scope_map.end()) {
-            if (it->second != b->scope) {
-                trace(a->scope, b->scope, "Ident::scope", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->scope, b->scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->scope, b->scope, "Ident::scope", -1);
-                return false;
-            }
+        if (!deep_equal(a->scope, b->scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->scope, b->scope, "Ident::scope", -1);
+            return false;
         }
         return true;
     }
@@ -3845,50 +3150,33 @@ namespace brgen::ast {
             trace(a, b, "Call", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "Call", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "Call::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->expr_type); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->expr_type) {
-                trace(a->expr_type, b->expr_type, "Call::expr_type", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->expr_type, b->expr_type, "Call::expr_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->expr_type, b->expr_type, "Call::expr_type", -1);
+            return false;
         }
         if (a->constant_level != b->constant_level) {
             trace(a->constant_level, b->constant_level, "Call::constant_level", -1);
             return false;
         }
-        if (auto it = node_map.find(a->callee); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->callee) {
-                trace(a->callee, b->callee, "Call::callee", -1);
-                return false;
-            }
+        if (!deep_equal(a->callee, b->callee, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->callee, b->callee, "Call::callee", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->callee, b->callee, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->callee, b->callee, "Call::callee", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->raw_arguments); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->raw_arguments) {
-                trace(a->raw_arguments, b->raw_arguments, "Call::raw_arguments", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->raw_arguments, b->raw_arguments, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->raw_arguments, b->raw_arguments, "Call::raw_arguments", -1);
-                return false;
-            }
+        if (!deep_equal(a->raw_arguments, b->raw_arguments, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->raw_arguments, b->raw_arguments, "Call::raw_arguments", -1);
+            return false;
         }
         if (a->arguments.size() != b->arguments.size()) return false;
         for (size_t i = 0; i < a->arguments.size(); i++) {
@@ -3910,86 +3198,45 @@ namespace brgen::ast {
             trace(a, b, "If", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "If", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "If::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->expr_type); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->expr_type) {
-                trace(a->expr_type, b->expr_type, "If::expr_type", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->expr_type, b->expr_type, "If::expr_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->expr_type, b->expr_type, "If::expr_type", -1);
+            return false;
         }
         if (a->constant_level != b->constant_level) {
             trace(a->constant_level, b->constant_level, "If::constant_level", -1);
             return false;
         }
-        if (auto it = node_map.find(a->struct_union_type); it != node_map.end()) {
-            if (ast::cast_to<StructUnionType>(it->second) != b->struct_union_type) {
-                trace(a->struct_union_type, b->struct_union_type, "If::struct_union_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->struct_union_type, b->struct_union_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->struct_union_type, b->struct_union_type, "If::struct_union_type", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->struct_union_type, b->struct_union_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->struct_union_type, b->struct_union_type, "If::struct_union_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->cond_scope, b->cond_scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->cond_scope, b->cond_scope, "If::cond_scope", -1);
+            return false;
         }
-        if (auto it = scope_map.find(a->cond_scope); it != scope_map.end()) {
-            if (it->second != b->cond_scope) {
-                trace(a->cond_scope, b->cond_scope, "If::cond_scope", -1);
-                return false;
-            }
+        if (!deep_equal(a->cond, b->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->cond, b->cond, "If::cond", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->cond_scope, b->cond_scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->cond_scope, b->cond_scope, "If::cond_scope", -1);
-                return false;
-            }
+        if (!deep_equal(a->then, b->then, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->then, b->then, "If::then", -1);
+            return false;
         }
-        if (auto it = node_map.find(a->cond); it != node_map.end()) {
-            if (ast::cast_to<Identity>(it->second) != b->cond) {
-                trace(a->cond, b->cond, "If::cond", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->cond, b->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->cond, b->cond, "If::cond", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->then); it != node_map.end()) {
-            if (ast::cast_to<IndentBlock>(it->second) != b->then) {
-                trace(a->then, b->then, "If::then", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->then, b->then, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->then, b->then, "If::then", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->els); it != node_map.end()) {
-            if (ast::cast_to<Node>(it->second) != b->els) {
-                trace(a->els, b->els, "If::els", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->els, b->els, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->els, b->els, "If::els", -1);
-                return false;
-            }
+        if (!deep_equal(a->els, b->els, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->els, b->els, "If::els", -1);
+            return false;
         }
         return true;
     }
@@ -4000,62 +3247,37 @@ namespace brgen::ast {
             trace(a, b, "MemberAccess", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "MemberAccess", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "MemberAccess::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->expr_type); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->expr_type) {
-                trace(a->expr_type, b->expr_type, "MemberAccess::expr_type", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->expr_type, b->expr_type, "MemberAccess::expr_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->expr_type, b->expr_type, "MemberAccess::expr_type", -1);
+            return false;
         }
         if (a->constant_level != b->constant_level) {
             trace(a->constant_level, b->constant_level, "MemberAccess::constant_level", -1);
             return false;
         }
-        if (auto it = node_map.find(a->target); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->target) {
-                trace(a->target, b->target, "MemberAccess::target", -1);
-                return false;
-            }
+        if (!deep_equal(a->target, b->target, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->target, b->target, "MemberAccess::target", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->target, b->target, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->target, b->target, "MemberAccess::target", -1);
-                return false;
-            }
+        if (!deep_equal(a->member, b->member, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->member, b->member, "MemberAccess::member", -1);
+            return false;
         }
-        if (auto it = node_map.find(a->member); it != node_map.end()) {
-            if (ast::cast_to<Ident>(it->second) != b->member) {
-                trace(a->member, b->member, "MemberAccess::member", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->member, b->member, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->member, b->member, "MemberAccess::member", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->base.lock()); it != node_map.end()) {
-            if (ast::cast_to<Ident>(it->second) != b->base.lock()) {
-                trace(a->base.lock(), b->base.lock(), "MemberAccess::base", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->base.lock(), b->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->base.lock(), b->base.lock(), "MemberAccess::base", -1);
-                return false;
-            }
+        if (!deep_equal(a->base.lock(), b->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->base.lock(), b->base.lock(), "MemberAccess::base", -1);
+            return false;
         }
         return true;
     }
@@ -4066,38 +3288,29 @@ namespace brgen::ast {
             trace(a, b, "Paren", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "Paren", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "Paren::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->expr_type); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->expr_type) {
-                trace(a->expr_type, b->expr_type, "Paren::expr_type", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->expr_type, b->expr_type, "Paren::expr_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->expr_type, b->expr_type, "Paren::expr_type", -1);
+            return false;
         }
         if (a->constant_level != b->constant_level) {
             trace(a->constant_level, b->constant_level, "Paren::constant_level", -1);
             return false;
         }
-        if (auto it = node_map.find(a->expr); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->expr) {
-                trace(a->expr, b->expr, "Paren::expr", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->expr, b->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->expr, b->expr, "Paren::expr", -1);
-                return false;
-            }
+        if (!deep_equal(a->expr, b->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->expr, b->expr, "Paren::expr", -1);
+            return false;
         }
         if (a->end_loc != b->end_loc) {
             trace(a->end_loc, b->end_loc, "Paren::end_loc", -1);
@@ -4112,50 +3325,33 @@ namespace brgen::ast {
             trace(a, b, "Index", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "Index", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "Index::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->expr_type); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->expr_type) {
-                trace(a->expr_type, b->expr_type, "Index::expr_type", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->expr_type, b->expr_type, "Index::expr_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->expr_type, b->expr_type, "Index::expr_type", -1);
+            return false;
         }
         if (a->constant_level != b->constant_level) {
             trace(a->constant_level, b->constant_level, "Index::constant_level", -1);
             return false;
         }
-        if (auto it = node_map.find(a->expr); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->expr) {
-                trace(a->expr, b->expr, "Index::expr", -1);
-                return false;
-            }
+        if (!deep_equal(a->expr, b->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->expr, b->expr, "Index::expr", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->expr, b->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->expr, b->expr, "Index::expr", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->index); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->index) {
-                trace(a->index, b->index, "Index::index", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->index, b->index, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->index, b->index, "Index::index", -1);
-                return false;
-            }
+        if (!deep_equal(a->index, b->index, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->index, b->index, "Index::index", -1);
+            return false;
         }
         if (a->end_loc != b->end_loc) {
             trace(a->end_loc, b->end_loc, "Index::end_loc", -1);
@@ -4170,62 +3366,37 @@ namespace brgen::ast {
             trace(a, b, "Match", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "Match", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "Match::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->expr_type); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->expr_type) {
-                trace(a->expr_type, b->expr_type, "Match::expr_type", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->expr_type, b->expr_type, "Match::expr_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->expr_type, b->expr_type, "Match::expr_type", -1);
+            return false;
         }
         if (a->constant_level != b->constant_level) {
             trace(a->constant_level, b->constant_level, "Match::constant_level", -1);
             return false;
         }
-        if (auto it = node_map.find(a->struct_union_type); it != node_map.end()) {
-            if (ast::cast_to<StructUnionType>(it->second) != b->struct_union_type) {
-                trace(a->struct_union_type, b->struct_union_type, "Match::struct_union_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->struct_union_type, b->struct_union_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->struct_union_type, b->struct_union_type, "Match::struct_union_type", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->struct_union_type, b->struct_union_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->struct_union_type, b->struct_union_type, "Match::struct_union_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->cond_scope, b->cond_scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->cond_scope, b->cond_scope, "Match::cond_scope", -1);
+            return false;
         }
-        if (auto it = scope_map.find(a->cond_scope); it != scope_map.end()) {
-            if (it->second != b->cond_scope) {
-                trace(a->cond_scope, b->cond_scope, "Match::cond_scope", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->cond_scope, b->cond_scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->cond_scope, b->cond_scope, "Match::cond_scope", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->cond); it != node_map.end()) {
-            if (ast::cast_to<Identity>(it->second) != b->cond) {
-                trace(a->cond, b->cond, "Match::cond", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->cond, b->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->cond, b->cond, "Match::cond", -1);
-                return false;
-            }
+        if (!deep_equal(a->cond, b->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->cond, b->cond, "Match::cond", -1);
+            return false;
         }
         if (a->branch.size() != b->branch.size()) return false;
         for (size_t i = 0; i < a->branch.size(); i++) {
@@ -4243,22 +3414,21 @@ namespace brgen::ast {
             trace(a, b, "Range", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "Range", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "Range::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->expr_type); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->expr_type) {
-                trace(a->expr_type, b->expr_type, "Range::expr_type", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->expr_type, b->expr_type, "Range::expr_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->expr_type, b->expr_type, "Range::expr_type", -1);
+            return false;
         }
         if (a->constant_level != b->constant_level) {
             trace(a->constant_level, b->constant_level, "Range::constant_level", -1);
@@ -4268,29 +3438,13 @@ namespace brgen::ast {
             trace(a->op, b->op, "Range::op", -1);
             return false;
         }
-        if (auto it = node_map.find(a->start); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->start) {
-                trace(a->start, b->start, "Range::start", -1);
-                return false;
-            }
+        if (!deep_equal(a->start, b->start, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->start, b->start, "Range::start", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->start, b->start, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->start, b->start, "Range::start", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->end); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->end) {
-                trace(a->end, b->end, "Range::end", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->end, b->end, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->end, b->end, "Range::end", -1);
-                return false;
-            }
+        if (!deep_equal(a->end, b->end, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->end, b->end, "Range::end", -1);
+            return false;
         }
         return true;
     }
@@ -4301,38 +3455,29 @@ namespace brgen::ast {
             trace(a, b, "Identity", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "Identity", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "Identity::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->expr_type); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->expr_type) {
-                trace(a->expr_type, b->expr_type, "Identity::expr_type", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->expr_type, b->expr_type, "Identity::expr_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->expr_type, b->expr_type, "Identity::expr_type", -1);
+            return false;
         }
         if (a->constant_level != b->constant_level) {
             trace(a->constant_level, b->constant_level, "Identity::constant_level", -1);
             return false;
         }
-        if (auto it = node_map.find(a->expr); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->expr) {
-                trace(a->expr, b->expr, "Identity::expr", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->expr, b->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->expr, b->expr, "Identity::expr", -1);
-                return false;
-            }
+        if (!deep_equal(a->expr, b->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->expr, b->expr, "Identity::expr", -1);
+            return false;
         }
         return true;
     }
@@ -4343,22 +3488,21 @@ namespace brgen::ast {
             trace(a, b, "TmpVar", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "TmpVar", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "TmpVar::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->expr_type); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->expr_type) {
-                trace(a->expr_type, b->expr_type, "TmpVar::expr_type", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->expr_type, b->expr_type, "TmpVar::expr_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->expr_type, b->expr_type, "TmpVar::expr_type", -1);
+            return false;
         }
         if (a->constant_level != b->constant_level) {
             trace(a->constant_level, b->constant_level, "TmpVar::constant_level", -1);
@@ -4377,22 +3521,21 @@ namespace brgen::ast {
             trace(a, b, "Import", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "Import", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "Import::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->expr_type); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->expr_type) {
-                trace(a->expr_type, b->expr_type, "Import::expr_type", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->expr_type, b->expr_type, "Import::expr_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->expr_type, b->expr_type, "Import::expr_type", -1);
+            return false;
         }
         if (a->constant_level != b->constant_level) {
             trace(a->constant_level, b->constant_level, "Import::constant_level", -1);
@@ -4402,29 +3545,13 @@ namespace brgen::ast {
             trace(a->path, b->path, "Import::path", -1);
             return false;
         }
-        if (auto it = node_map.find(a->base); it != node_map.end()) {
-            if (ast::cast_to<Call>(it->second) != b->base) {
-                trace(a->base, b->base, "Import::base", -1);
-                return false;
-            }
+        if (!deep_equal(a->base, b->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->base, b->base, "Import::base", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->base, b->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->base, b->base, "Import::base", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->import_desc); it != node_map.end()) {
-            if (ast::cast_to<Program>(it->second) != b->import_desc) {
-                trace(a->import_desc, b->import_desc, "Import::import_desc", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->import_desc, b->import_desc, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->import_desc, b->import_desc, "Import::import_desc", -1);
-                return false;
-            }
+        if (!deep_equal(a->import_desc, b->import_desc, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->import_desc, b->import_desc, "Import::import_desc", -1);
+            return false;
         }
         return true;
     }
@@ -4435,50 +3562,33 @@ namespace brgen::ast {
             trace(a, b, "Cast", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "Cast", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "Cast::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->expr_type); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->expr_type) {
-                trace(a->expr_type, b->expr_type, "Cast::expr_type", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->expr_type, b->expr_type, "Cast::expr_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->expr_type, b->expr_type, "Cast::expr_type", -1);
+            return false;
         }
         if (a->constant_level != b->constant_level) {
             trace(a->constant_level, b->constant_level, "Cast::constant_level", -1);
             return false;
         }
-        if (auto it = node_map.find(a->base); it != node_map.end()) {
-            if (ast::cast_to<Call>(it->second) != b->base) {
-                trace(a->base, b->base, "Cast::base", -1);
-                return false;
-            }
+        if (!deep_equal(a->base, b->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->base, b->base, "Cast::base", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->base, b->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->base, b->base, "Cast::base", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->expr); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->expr) {
-                trace(a->expr, b->expr, "Cast::expr", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->expr, b->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->expr, b->expr, "Cast::expr", -1);
-                return false;
-            }
+        if (!deep_equal(a->expr, b->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->expr, b->expr, "Cast::expr", -1);
+            return false;
         }
         return true;
     }
@@ -4489,50 +3599,33 @@ namespace brgen::ast {
             trace(a, b, "Available", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "Available", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "Available::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->expr_type); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->expr_type) {
-                trace(a->expr_type, b->expr_type, "Available::expr_type", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->expr_type, b->expr_type, "Available::expr_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->expr_type, b->expr_type, "Available::expr_type", -1);
+            return false;
         }
         if (a->constant_level != b->constant_level) {
             trace(a->constant_level, b->constant_level, "Available::constant_level", -1);
             return false;
         }
-        if (auto it = node_map.find(a->base); it != node_map.end()) {
-            if (ast::cast_to<Call>(it->second) != b->base) {
-                trace(a->base, b->base, "Available::base", -1);
-                return false;
-            }
+        if (!deep_equal(a->base, b->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->base, b->base, "Available::base", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->base, b->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->base, b->base, "Available::base", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->target); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->target) {
-                trace(a->target, b->target, "Available::target", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->target, b->target, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->target, b->target, "Available::target", -1);
-                return false;
-            }
+        if (!deep_equal(a->target, b->target, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->target, b->target, "Available::target", -1);
+            return false;
         }
         return true;
     }
@@ -4543,54 +3636,37 @@ namespace brgen::ast {
             trace(a, b, "SpecifyOrder", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "SpecifyOrder", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "SpecifyOrder::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->expr_type); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->expr_type) {
-                trace(a->expr_type, b->expr_type, "SpecifyOrder::expr_type", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->expr_type, b->expr_type, "SpecifyOrder::expr_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->expr_type, b->expr_type, "SpecifyOrder::expr_type", -1);
+            return false;
         }
         if (a->constant_level != b->constant_level) {
             trace(a->constant_level, b->constant_level, "SpecifyOrder::constant_level", -1);
             return false;
         }
-        if (auto it = node_map.find(a->base); it != node_map.end()) {
-            if (ast::cast_to<Binary>(it->second) != b->base) {
-                trace(a->base, b->base, "SpecifyOrder::base", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->base, b->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->base, b->base, "SpecifyOrder::base", -1);
-                return false;
-            }
+        if (!deep_equal(a->base, b->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->base, b->base, "SpecifyOrder::base", -1);
+            return false;
         }
         if (a->order_type != b->order_type) {
             trace(a->order_type, b->order_type, "SpecifyOrder::order_type", -1);
             return false;
         }
-        if (auto it = node_map.find(a->order); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->order) {
-                trace(a->order, b->order, "SpecifyOrder::order", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->order, b->order, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->order, b->order, "SpecifyOrder::order", -1);
-                return false;
-            }
+        if (!deep_equal(a->order, b->order, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->order, b->order, "SpecifyOrder::order", -1);
+            return false;
         }
         if (a->order_value != b->order_value) {
             trace(a->order_value, b->order_value, "SpecifyOrder::order_value", -1);
@@ -4605,50 +3681,33 @@ namespace brgen::ast {
             trace(a, b, "ExplicitError", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "ExplicitError", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "ExplicitError::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->expr_type); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->expr_type) {
-                trace(a->expr_type, b->expr_type, "ExplicitError::expr_type", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->expr_type, b->expr_type, "ExplicitError::expr_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->expr_type, b->expr_type, "ExplicitError::expr_type", -1);
+            return false;
         }
         if (a->constant_level != b->constant_level) {
             trace(a->constant_level, b->constant_level, "ExplicitError::constant_level", -1);
             return false;
         }
-        if (auto it = node_map.find(a->base); it != node_map.end()) {
-            if (ast::cast_to<Call>(it->second) != b->base) {
-                trace(a->base, b->base, "ExplicitError::base", -1);
-                return false;
-            }
+        if (!deep_equal(a->base, b->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->base, b->base, "ExplicitError::base", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->base, b->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->base, b->base, "ExplicitError::base", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->message); it != node_map.end()) {
-            if (ast::cast_to<StrLiteral>(it->second) != b->message) {
-                trace(a->message, b->message, "ExplicitError::message", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->message, b->message, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->message, b->message, "ExplicitError::message", -1);
-                return false;
-            }
+        if (!deep_equal(a->message, b->message, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->message, b->message, "ExplicitError::message", -1);
+            return false;
         }
         return true;
     }
@@ -4659,38 +3718,29 @@ namespace brgen::ast {
             trace(a, b, "IOOperation", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "IOOperation", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "IOOperation::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->expr_type); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->expr_type) {
-                trace(a->expr_type, b->expr_type, "IOOperation::expr_type", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->expr_type, b->expr_type, "IOOperation::expr_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->expr_type, b->expr_type, "IOOperation::expr_type", -1);
+            return false;
         }
         if (a->constant_level != b->constant_level) {
             trace(a->constant_level, b->constant_level, "IOOperation::constant_level", -1);
             return false;
         }
-        if (auto it = node_map.find(a->base); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->base) {
-                trace(a->base, b->base, "IOOperation::base", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->base, b->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->base, b->base, "IOOperation::base", -1);
-                return false;
-            }
+        if (!deep_equal(a->base, b->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->base, b->base, "IOOperation::base", -1);
+            return false;
         }
         if (a->method != b->method) {
             trace(a->method, b->method, "IOOperation::method", -1);
@@ -4712,38 +3762,29 @@ namespace brgen::ast {
             trace(a, b, "OrCond", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "OrCond", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "OrCond::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->expr_type); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->expr_type) {
-                trace(a->expr_type, b->expr_type, "OrCond::expr_type", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->expr_type, b->expr_type, "OrCond::expr_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->expr_type, b->expr_type, "OrCond::expr_type", -1);
+            return false;
         }
         if (a->constant_level != b->constant_level) {
             trace(a->constant_level, b->constant_level, "OrCond::constant_level", -1);
             return false;
         }
-        if (auto it = node_map.find(a->base); it != node_map.end()) {
-            if (ast::cast_to<Binary>(it->second) != b->base) {
-                trace(a->base, b->base, "OrCond::base", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->base, b->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->base, b->base, "OrCond::base", -1);
-                return false;
-            }
+        if (!deep_equal(a->base, b->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->base, b->base, "OrCond::base", -1);
+            return false;
         }
         if (a->conds.size() != b->conds.size()) return false;
         for (size_t i = 0; i < a->conds.size(); i++) {
@@ -4761,22 +3802,21 @@ namespace brgen::ast {
             trace(a, b, "BadExpr", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "BadExpr", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "BadExpr::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->expr_type); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->expr_type) {
-                trace(a->expr_type, b->expr_type, "BadExpr::expr_type", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->expr_type, b->expr_type, "BadExpr::expr_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->expr_type, b->expr_type, "BadExpr::expr_type", -1);
+            return false;
         }
         if (a->constant_level != b->constant_level) {
             trace(a->constant_level, b->constant_level, "BadExpr::constant_level", -1);
@@ -4786,17 +3826,9 @@ namespace brgen::ast {
             trace(a->content, b->content, "BadExpr::content", -1);
             return false;
         }
-        if (auto it = node_map.find(a->bad_expr); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->bad_expr) {
-                trace(a->bad_expr, b->bad_expr, "BadExpr::bad_expr", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->bad_expr, b->bad_expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->bad_expr, b->bad_expr, "BadExpr::bad_expr", -1);
-                return false;
-            }
+        if (!deep_equal(a->bad_expr, b->bad_expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->bad_expr, b->bad_expr, "BadExpr::bad_expr", -1);
+            return false;
         }
         return true;
     }
@@ -4807,70 +3839,37 @@ namespace brgen::ast {
             trace(a, b, "Loop", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "Loop", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "Loop::loc", -1);
             return false;
         }
-        if (auto it = scope_map.find(a->cond_scope); it != scope_map.end()) {
-            if (it->second != b->cond_scope) {
-                trace(a->cond_scope, b->cond_scope, "Loop::cond_scope", -1);
-                return false;
-            }
+        if (!deep_equal(a->cond_scope, b->cond_scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->cond_scope, b->cond_scope, "Loop::cond_scope", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->cond_scope, b->cond_scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->cond_scope, b->cond_scope, "Loop::cond_scope", -1);
-                return false;
-            }
+        if (!deep_equal(a->init, b->init, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->init, b->init, "Loop::init", -1);
+            return false;
         }
-        if (auto it = node_map.find(a->init); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->init) {
-                trace(a->init, b->init, "Loop::init", -1);
-                return false;
-            }
+        if (!deep_equal(a->cond, b->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->cond, b->cond, "Loop::cond", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->init, b->init, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->init, b->init, "Loop::init", -1);
-                return false;
-            }
+        if (!deep_equal(a->step, b->step, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->step, b->step, "Loop::step", -1);
+            return false;
         }
-        if (auto it = node_map.find(a->cond); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->cond) {
-                trace(a->cond, b->cond, "Loop::cond", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->cond, b->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->cond, b->cond, "Loop::cond", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->step); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->step) {
-                trace(a->step, b->step, "Loop::step", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->step, b->step, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->step, b->step, "Loop::step", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->body); it != node_map.end()) {
-            if (ast::cast_to<IndentBlock>(it->second) != b->body) {
-                trace(a->body, b->body, "Loop::body", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->body, b->body, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->body, b->body, "Loop::body", -1);
-                return false;
-            }
+        if (!deep_equal(a->body, b->body, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->body, b->body, "Loop::body", -1);
+            return false;
         }
         return true;
     }
@@ -4881,22 +3880,21 @@ namespace brgen::ast {
             trace(a, b, "IndentBlock", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "IndentBlock", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "IndentBlock::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->struct_type); it != node_map.end()) {
-            if (ast::cast_to<StructType>(it->second) != b->struct_type) {
-                trace(a->struct_type, b->struct_type, "IndentBlock::struct_type", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->struct_type, b->struct_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->struct_type, b->struct_type, "IndentBlock::struct_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->struct_type, b->struct_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->struct_type, b->struct_type, "IndentBlock::struct_type", -1);
+            return false;
         }
         if (a->elements.size() != b->elements.size()) return false;
         for (size_t i = 0; i < a->elements.size(); i++) {
@@ -4905,17 +3903,9 @@ namespace brgen::ast {
                 return false;
             }
         }
-        if (auto it = scope_map.find(a->scope); it != scope_map.end()) {
-            if (it->second != b->scope) {
-                trace(a->scope, b->scope, "IndentBlock::scope", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->scope, b->scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->scope, b->scope, "IndentBlock::scope", -1);
-                return false;
-            }
+        if (!deep_equal(a->scope, b->scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->scope, b->scope, "IndentBlock::scope", -1);
+            return false;
         }
         if (a->metadata.size() != b->metadata.size()) return false;
         for (size_t i = 0; i < a->metadata.size(); i++) {
@@ -4933,46 +3923,29 @@ namespace brgen::ast {
             trace(a, b, "ScopedStatement", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "ScopedStatement", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "ScopedStatement::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->struct_type); it != node_map.end()) {
-            if (ast::cast_to<StructType>(it->second) != b->struct_type) {
-                trace(a->struct_type, b->struct_type, "ScopedStatement::struct_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->struct_type, b->struct_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->struct_type, b->struct_type, "ScopedStatement::struct_type", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->struct_type, b->struct_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->struct_type, b->struct_type, "ScopedStatement::struct_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->statement, b->statement, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->statement, b->statement, "ScopedStatement::statement", -1);
+            return false;
         }
-        if (auto it = node_map.find(a->statement); it != node_map.end()) {
-            if (ast::cast_to<Node>(it->second) != b->statement) {
-                trace(a->statement, b->statement, "ScopedStatement::statement", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->statement, b->statement, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->statement, b->statement, "ScopedStatement::statement", -1);
-                return false;
-            }
-        }
-        if (auto it = scope_map.find(a->scope); it != scope_map.end()) {
-            if (it->second != b->scope) {
-                trace(a->scope, b->scope, "ScopedStatement::scope", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->scope, b->scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->scope, b->scope, "ScopedStatement::scope", -1);
-                return false;
-            }
+        if (!deep_equal(a->scope, b->scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->scope, b->scope, "ScopedStatement::scope", -1);
+            return false;
         }
         return true;
     }
@@ -4983,50 +3956,33 @@ namespace brgen::ast {
             trace(a, b, "MatchBranch", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "MatchBranch", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "MatchBranch::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->belong.lock()); it != node_map.end()) {
-            if (ast::cast_to<Match>(it->second) != b->belong.lock()) {
-                trace(a->belong.lock(), b->belong.lock(), "MatchBranch::belong", -1);
-                return false;
-            }
+        if (!deep_equal(a->belong.lock(), b->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->belong.lock(), b->belong.lock(), "MatchBranch::belong", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->belong.lock(), b->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->belong.lock(), b->belong.lock(), "MatchBranch::belong", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->cond); it != node_map.end()) {
-            if (ast::cast_to<Identity>(it->second) != b->cond) {
-                trace(a->cond, b->cond, "MatchBranch::cond", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->cond, b->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->cond, b->cond, "MatchBranch::cond", -1);
-                return false;
-            }
+        if (!deep_equal(a->cond, b->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->cond, b->cond, "MatchBranch::cond", -1);
+            return false;
         }
         if (a->sym_loc != b->sym_loc) {
             trace(a->sym_loc, b->sym_loc, "MatchBranch::sym_loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->then); it != node_map.end()) {
-            if (ast::cast_to<Node>(it->second) != b->then) {
-                trace(a->then, b->then, "MatchBranch::then", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->then, b->then, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->then, b->then, "MatchBranch::then", -1);
-                return false;
-            }
+        if (!deep_equal(a->then, b->then, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->then, b->then, "MatchBranch::then", -1);
+            return false;
         }
         return true;
     }
@@ -5037,34 +3993,25 @@ namespace brgen::ast {
             trace(a, b, "UnionCandidate", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "UnionCandidate", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "UnionCandidate::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->cond.lock()); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->cond.lock()) {
-                trace(a->cond.lock(), b->cond.lock(), "UnionCandidate::cond", -1);
-                return false;
-            }
+        if (!deep_equal(a->cond.lock(), b->cond.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->cond.lock(), b->cond.lock(), "UnionCandidate::cond", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->cond.lock(), b->cond.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->cond.lock(), b->cond.lock(), "UnionCandidate::cond", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->field.lock()); it != node_map.end()) {
-            if (ast::cast_to<Field>(it->second) != b->field.lock()) {
-                trace(a->field.lock(), b->field.lock(), "UnionCandidate::field", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->field.lock(), b->field.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->field.lock(), b->field.lock(), "UnionCandidate::field", -1);
-                return false;
-            }
+        if (!deep_equal(a->field.lock(), b->field.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->field.lock(), b->field.lock(), "UnionCandidate::field", -1);
+            return false;
         }
         return true;
     }
@@ -5075,34 +4022,25 @@ namespace brgen::ast {
             trace(a, b, "Return", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "Return", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "Return::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->expr); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->expr) {
-                trace(a->expr, b->expr, "Return::expr", -1);
-                return false;
-            }
+        if (!deep_equal(a->expr, b->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->expr, b->expr, "Return::expr", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->expr, b->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->expr, b->expr, "Return::expr", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->related_function.lock()); it != node_map.end()) {
-            if (ast::cast_to<Function>(it->second) != b->related_function.lock()) {
-                trace(a->related_function.lock(), b->related_function.lock(), "Return::related_function", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->related_function.lock(), b->related_function.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->related_function.lock(), b->related_function.lock(), "Return::related_function", -1);
-                return false;
-            }
+        if (!deep_equal(a->related_function.lock(), b->related_function.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->related_function.lock(), b->related_function.lock(), "Return::related_function", -1);
+            return false;
         }
         return true;
     }
@@ -5113,22 +4051,21 @@ namespace brgen::ast {
             trace(a, b, "Break", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "Break", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "Break::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->related_loop.lock()); it != node_map.end()) {
-            if (ast::cast_to<Loop>(it->second) != b->related_loop.lock()) {
-                trace(a->related_loop.lock(), b->related_loop.lock(), "Break::related_loop", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->related_loop.lock(), b->related_loop.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->related_loop.lock(), b->related_loop.lock(), "Break::related_loop", -1);
-                return false;
-            }
+        if (!deep_equal(a->related_loop.lock(), b->related_loop.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->related_loop.lock(), b->related_loop.lock(), "Break::related_loop", -1);
+            return false;
         }
         return true;
     }
@@ -5139,22 +4076,21 @@ namespace brgen::ast {
             trace(a, b, "Continue", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "Continue", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "Continue::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->related_loop.lock()); it != node_map.end()) {
-            if (ast::cast_to<Loop>(it->second) != b->related_loop.lock()) {
-                trace(a->related_loop.lock(), b->related_loop.lock(), "Continue::related_loop", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->related_loop.lock(), b->related_loop.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->related_loop.lock(), b->related_loop.lock(), "Continue::related_loop", -1);
-                return false;
-            }
+        if (!deep_equal(a->related_loop.lock(), b->related_loop.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->related_loop.lock(), b->related_loop.lock(), "Continue::related_loop", -1);
+            return false;
         }
         return true;
     }
@@ -5165,22 +4101,21 @@ namespace brgen::ast {
             trace(a, b, "Assert", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "Assert", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "Assert::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->cond); it != node_map.end()) {
-            if (ast::cast_to<Binary>(it->second) != b->cond) {
-                trace(a->cond, b->cond, "Assert::cond", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->cond, b->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->cond, b->cond, "Assert::cond", -1);
-                return false;
-            }
+        if (!deep_equal(a->cond, b->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->cond, b->cond, "Assert::cond", -1);
+            return false;
         }
         if (a->is_io_related != b->is_io_related) {
             trace(a->is_io_related, b->is_io_related, "Assert::is_io_related", -1);
@@ -5195,22 +4130,21 @@ namespace brgen::ast {
             trace(a, b, "ImplicitYield", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "ImplicitYield", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "ImplicitYield::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->expr); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->expr) {
-                trace(a->expr, b->expr, "ImplicitYield::expr", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->expr, b->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->expr, b->expr, "ImplicitYield::expr", -1);
-                return false;
-            }
+        if (!deep_equal(a->expr, b->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->expr, b->expr, "ImplicitYield::expr", -1);
+            return false;
         }
         return true;
     }
@@ -5221,22 +4155,21 @@ namespace brgen::ast {
             trace(a, b, "Metadata", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "Metadata", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "Metadata::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->base); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->base) {
-                trace(a->base, b->base, "Metadata::base", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->base, b->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->base, b->base, "Metadata::base", -1);
-                return false;
-            }
+        if (!deep_equal(a->base, b->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->base, b->base, "Metadata::base", -1);
+            return false;
         }
         if (a->name != b->name) {
             trace(a->name, b->name, "Metadata::name", -1);
@@ -5257,6 +4190,13 @@ namespace brgen::ast {
         if (!a || !b) {
             trace(a, b, "IntType", -1);
             return false;
+        }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "IntType", -1);
+                return false;
+            }
+            return true;
         }
         node_map[a] = b;
         if (a->loc != b->loc) {
@@ -5300,6 +4240,13 @@ namespace brgen::ast {
             trace(a, b, "FloatType", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "FloatType", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "FloatType::loc", -1);
@@ -5338,6 +4285,13 @@ namespace brgen::ast {
             trace(a, b, "IdentType", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "IdentType", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "IdentType::loc", -1);
@@ -5359,41 +4313,17 @@ namespace brgen::ast {
             trace(a->bit_size, b->bit_size, "IdentType::bit_size", -1);
             return false;
         }
-        if (auto it = node_map.find(a->import_ref); it != node_map.end()) {
-            if (ast::cast_to<MemberAccess>(it->second) != b->import_ref) {
-                trace(a->import_ref, b->import_ref, "IdentType::import_ref", -1);
-                return false;
-            }
+        if (!deep_equal(a->import_ref, b->import_ref, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->import_ref, b->import_ref, "IdentType::import_ref", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->import_ref, b->import_ref, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->import_ref, b->import_ref, "IdentType::import_ref", -1);
-                return false;
-            }
+        if (!deep_equal(a->ident, b->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->ident, b->ident, "IdentType::ident", -1);
+            return false;
         }
-        if (auto it = node_map.find(a->ident); it != node_map.end()) {
-            if (ast::cast_to<Ident>(it->second) != b->ident) {
-                trace(a->ident, b->ident, "IdentType::ident", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->ident, b->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->ident, b->ident, "IdentType::ident", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->base.lock()); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->base.lock()) {
-                trace(a->base.lock(), b->base.lock(), "IdentType::base", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->base.lock(), b->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->base.lock(), b->base.lock(), "IdentType::base", -1);
-                return false;
-            }
+        if (!deep_equal(a->base.lock(), b->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->base.lock(), b->base.lock(), "IdentType::base", -1);
+            return false;
         }
         return true;
     }
@@ -5403,6 +4333,13 @@ namespace brgen::ast {
         if (!a || !b) {
             trace(a, b, "IntLiteralType", -1);
             return false;
+        }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "IntLiteralType", -1);
+                return false;
+            }
+            return true;
         }
         node_map[a] = b;
         if (a->loc != b->loc) {
@@ -5425,17 +4362,9 @@ namespace brgen::ast {
             trace(a->bit_size, b->bit_size, "IntLiteralType::bit_size", -1);
             return false;
         }
-        if (auto it = node_map.find(a->base.lock()); it != node_map.end()) {
-            if (ast::cast_to<IntLiteral>(it->second) != b->base.lock()) {
-                trace(a->base.lock(), b->base.lock(), "IntLiteralType::base", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->base.lock(), b->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->base.lock(), b->base.lock(), "IntLiteralType::base", -1);
-                return false;
-            }
+        if (!deep_equal(a->base.lock(), b->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->base.lock(), b->base.lock(), "IntLiteralType::base", -1);
+            return false;
         }
         return true;
     }
@@ -5445,6 +4374,13 @@ namespace brgen::ast {
         if (!a || !b) {
             trace(a, b, "StrLiteralType", -1);
             return false;
+        }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "StrLiteralType", -1);
+                return false;
+            }
+            return true;
         }
         node_map[a] = b;
         if (a->loc != b->loc) {
@@ -5467,29 +4403,13 @@ namespace brgen::ast {
             trace(a->bit_size, b->bit_size, "StrLiteralType::bit_size", -1);
             return false;
         }
-        if (auto it = node_map.find(a->base.lock()); it != node_map.end()) {
-            if (ast::cast_to<StrLiteral>(it->second) != b->base.lock()) {
-                trace(a->base.lock(), b->base.lock(), "StrLiteralType::base", -1);
-                return false;
-            }
+        if (!deep_equal(a->base.lock(), b->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->base.lock(), b->base.lock(), "StrLiteralType::base", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->base.lock(), b->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->base.lock(), b->base.lock(), "StrLiteralType::base", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->strong_ref); it != node_map.end()) {
-            if (ast::cast_to<StrLiteral>(it->second) != b->strong_ref) {
-                trace(a->strong_ref, b->strong_ref, "StrLiteralType::strong_ref", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->strong_ref, b->strong_ref, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->strong_ref, b->strong_ref, "StrLiteralType::strong_ref", -1);
-                return false;
-            }
+        if (!deep_equal(a->strong_ref, b->strong_ref, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->strong_ref, b->strong_ref, "StrLiteralType::strong_ref", -1);
+            return false;
         }
         return true;
     }
@@ -5499,6 +4419,13 @@ namespace brgen::ast {
         if (!a || !b) {
             trace(a, b, "RegexLiteralType", -1);
             return false;
+        }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "RegexLiteralType", -1);
+                return false;
+            }
+            return true;
         }
         node_map[a] = b;
         if (a->loc != b->loc) {
@@ -5521,29 +4448,13 @@ namespace brgen::ast {
             trace(a->bit_size, b->bit_size, "RegexLiteralType::bit_size", -1);
             return false;
         }
-        if (auto it = node_map.find(a->base.lock()); it != node_map.end()) {
-            if (ast::cast_to<RegexLiteral>(it->second) != b->base.lock()) {
-                trace(a->base.lock(), b->base.lock(), "RegexLiteralType::base", -1);
-                return false;
-            }
+        if (!deep_equal(a->base.lock(), b->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->base.lock(), b->base.lock(), "RegexLiteralType::base", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->base.lock(), b->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->base.lock(), b->base.lock(), "RegexLiteralType::base", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->strong_ref); it != node_map.end()) {
-            if (ast::cast_to<RegexLiteral>(it->second) != b->strong_ref) {
-                trace(a->strong_ref, b->strong_ref, "RegexLiteralType::strong_ref", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->strong_ref, b->strong_ref, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->strong_ref, b->strong_ref, "RegexLiteralType::strong_ref", -1);
-                return false;
-            }
+        if (!deep_equal(a->strong_ref, b->strong_ref, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->strong_ref, b->strong_ref, "RegexLiteralType::strong_ref", -1);
+            return false;
         }
         return true;
     }
@@ -5553,6 +4464,13 @@ namespace brgen::ast {
         if (!a || !b) {
             trace(a, b, "VoidType", -1);
             return false;
+        }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "VoidType", -1);
+                return false;
+            }
+            return true;
         }
         node_map[a] = b;
         if (a->loc != b->loc) {
@@ -5584,6 +4502,13 @@ namespace brgen::ast {
             trace(a, b, "BoolType", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "BoolType", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "BoolType::loc", -1);
@@ -5614,6 +4539,13 @@ namespace brgen::ast {
             trace(a, b, "ArrayType", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "ArrayType", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "ArrayType::loc", -1);
@@ -5639,29 +4571,13 @@ namespace brgen::ast {
             trace(a->end_loc, b->end_loc, "ArrayType::end_loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->element_type); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->element_type) {
-                trace(a->element_type, b->element_type, "ArrayType::element_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->element_type, b->element_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->element_type, b->element_type, "ArrayType::element_type", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->element_type, b->element_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->element_type, b->element_type, "ArrayType::element_type", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->length); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->length) {
-                trace(a->length, b->length, "ArrayType::length", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->length, b->length, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->length, b->length, "ArrayType::length", -1);
-                return false;
-            }
+        if (!deep_equal(a->length, b->length, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->length, b->length, "ArrayType::length", -1);
+            return false;
         }
         if (a->length_value != b->length_value) {
             trace(a->length_value, b->length_value, "ArrayType::length_value", -1);
@@ -5679,6 +4595,13 @@ namespace brgen::ast {
         if (!a || !b) {
             trace(a, b, "FunctionType", -1);
             return false;
+        }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "FunctionType", -1);
+                return false;
+            }
+            return true;
         }
         node_map[a] = b;
         if (a->loc != b->loc) {
@@ -5701,17 +4624,9 @@ namespace brgen::ast {
             trace(a->bit_size, b->bit_size, "FunctionType::bit_size", -1);
             return false;
         }
-        if (auto it = node_map.find(a->return_type); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->return_type) {
-                trace(a->return_type, b->return_type, "FunctionType::return_type", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->return_type, b->return_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->return_type, b->return_type, "FunctionType::return_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->return_type, b->return_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->return_type, b->return_type, "FunctionType::return_type", -1);
+            return false;
         }
         if (a->parameters.size() != b->parameters.size()) return false;
         for (size_t i = 0; i < a->parameters.size(); i++) {
@@ -5728,6 +4643,13 @@ namespace brgen::ast {
         if (!a || !b) {
             trace(a, b, "StructType", -1);
             return false;
+        }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "StructType", -1);
+                return false;
+            }
+            return true;
         }
         node_map[a] = b;
         if (a->loc != b->loc) {
@@ -5757,17 +4679,9 @@ namespace brgen::ast {
                 return false;
             }
         }
-        if (auto it = node_map.find(a->base.lock()); it != node_map.end()) {
-            if (ast::cast_to<Node>(it->second) != b->base.lock()) {
-                trace(a->base.lock(), b->base.lock(), "StructType::base", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->base.lock(), b->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->base.lock(), b->base.lock(), "StructType::base", -1);
-                return false;
-            }
+        if (!deep_equal(a->base.lock(), b->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->base.lock(), b->base.lock(), "StructType::base", -1);
+            return false;
         }
         if (a->recursive != b->recursive) {
             trace(a->recursive, b->recursive, "StructType::recursive", -1);
@@ -5790,6 +4704,13 @@ namespace brgen::ast {
             trace(a, b, "StructUnionType", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "StructUnionType", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "StructUnionType::loc", -1);
@@ -5811,17 +4732,9 @@ namespace brgen::ast {
             trace(a->bit_size, b->bit_size, "StructUnionType::bit_size", -1);
             return false;
         }
-        if (auto it = node_map.find(a->cond); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->cond) {
-                trace(a->cond, b->cond, "StructUnionType::cond", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->cond, b->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->cond, b->cond, "StructUnionType::cond", -1);
-                return false;
-            }
+        if (!deep_equal(a->cond, b->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->cond, b->cond, "StructUnionType::cond", -1);
+            return false;
         }
         if (a->conds.size() != b->conds.size()) return false;
         for (size_t i = 0; i < a->conds.size(); i++) {
@@ -5837,17 +4750,9 @@ namespace brgen::ast {
                 return false;
             }
         }
-        if (auto it = node_map.find(a->base.lock()); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->base.lock()) {
-                trace(a->base.lock(), b->base.lock(), "StructUnionType::base", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->base.lock(), b->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->base.lock(), b->base.lock(), "StructUnionType::base", -1);
-                return false;
-            }
+        if (!deep_equal(a->base.lock(), b->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->base.lock(), b->base.lock(), "StructUnionType::base", -1);
+            return false;
         }
         if (a->union_fields.size() != b->union_fields.size()) return false;
         for (size_t i = 0; i < a->union_fields.size(); i++) {
@@ -5868,6 +4773,13 @@ namespace brgen::ast {
         if (!a || !b) {
             trace(a, b, "UnionType", -1);
             return false;
+        }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "UnionType", -1);
+                return false;
+            }
+            return true;
         }
         node_map[a] = b;
         if (a->loc != b->loc) {
@@ -5890,17 +4802,9 @@ namespace brgen::ast {
             trace(a->bit_size, b->bit_size, "UnionType::bit_size", -1);
             return false;
         }
-        if (auto it = node_map.find(a->cond.lock()); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->cond.lock()) {
-                trace(a->cond.lock(), b->cond.lock(), "UnionType::cond", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->cond.lock(), b->cond.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->cond.lock(), b->cond.lock(), "UnionType::cond", -1);
-                return false;
-            }
+        if (!deep_equal(a->cond.lock(), b->cond.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->cond.lock(), b->cond.lock(), "UnionType::cond", -1);
+            return false;
         }
         if (a->candidates.size() != b->candidates.size()) return false;
         for (size_t i = 0; i < a->candidates.size(); i++) {
@@ -5909,29 +4813,13 @@ namespace brgen::ast {
                 return false;
             }
         }
-        if (auto it = node_map.find(a->base_type.lock()); it != node_map.end()) {
-            if (ast::cast_to<StructUnionType>(it->second) != b->base_type.lock()) {
-                trace(a->base_type.lock(), b->base_type.lock(), "UnionType::base_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->base_type.lock(), b->base_type.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->base_type.lock(), b->base_type.lock(), "UnionType::base_type", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->base_type.lock(), b->base_type.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->base_type.lock(), b->base_type.lock(), "UnionType::base_type", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->common_type); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->common_type) {
-                trace(a->common_type, b->common_type, "UnionType::common_type", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->common_type, b->common_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->common_type, b->common_type, "UnionType::common_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->common_type, b->common_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->common_type, b->common_type, "UnionType::common_type", -1);
+            return false;
         }
         if (a->member_candidates.size() != b->member_candidates.size()) return false;
         for (size_t i = 0; i < a->member_candidates.size(); i++) {
@@ -5948,6 +4836,13 @@ namespace brgen::ast {
         if (!a || !b) {
             trace(a, b, "RangeType", -1);
             return false;
+        }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "RangeType", -1);
+                return false;
+            }
+            return true;
         }
         node_map[a] = b;
         if (a->loc != b->loc) {
@@ -5970,29 +4865,13 @@ namespace brgen::ast {
             trace(a->bit_size, b->bit_size, "RangeType::bit_size", -1);
             return false;
         }
-        if (auto it = node_map.find(a->base_type); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->base_type) {
-                trace(a->base_type, b->base_type, "RangeType::base_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->base_type, b->base_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->base_type, b->base_type, "RangeType::base_type", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->base_type, b->base_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->base_type, b->base_type, "RangeType::base_type", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->range.lock()); it != node_map.end()) {
-            if (ast::cast_to<Range>(it->second) != b->range.lock()) {
-                trace(a->range.lock(), b->range.lock(), "RangeType::range", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->range.lock(), b->range.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->range.lock(), b->range.lock(), "RangeType::range", -1);
-                return false;
-            }
+        if (!deep_equal(a->range.lock(), b->range.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->range.lock(), b->range.lock(), "RangeType::range", -1);
+            return false;
         }
         return true;
     }
@@ -6002,6 +4881,13 @@ namespace brgen::ast {
         if (!a || !b) {
             trace(a, b, "EnumType", -1);
             return false;
+        }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "EnumType", -1);
+                return false;
+            }
+            return true;
         }
         node_map[a] = b;
         if (a->loc != b->loc) {
@@ -6024,17 +4910,9 @@ namespace brgen::ast {
             trace(a->bit_size, b->bit_size, "EnumType::bit_size", -1);
             return false;
         }
-        if (auto it = node_map.find(a->base.lock()); it != node_map.end()) {
-            if (ast::cast_to<Enum>(it->second) != b->base.lock()) {
-                trace(a->base.lock(), b->base.lock(), "EnumType::base", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->base.lock(), b->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->base.lock(), b->base.lock(), "EnumType::base", -1);
-                return false;
-            }
+        if (!deep_equal(a->base.lock(), b->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->base.lock(), b->base.lock(), "EnumType::base", -1);
+            return false;
         }
         return true;
     }
@@ -6044,6 +4922,13 @@ namespace brgen::ast {
         if (!a || !b) {
             trace(a, b, "MetaType", -1);
             return false;
+        }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "MetaType", -1);
+                return false;
+            }
+            return true;
         }
         node_map[a] = b;
         if (a->loc != b->loc) {
@@ -6075,6 +4960,13 @@ namespace brgen::ast {
             trace(a, b, "OptionalType", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "OptionalType", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "OptionalType::loc", -1);
@@ -6096,17 +4988,9 @@ namespace brgen::ast {
             trace(a->bit_size, b->bit_size, "OptionalType::bit_size", -1);
             return false;
         }
-        if (auto it = node_map.find(a->base_type); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->base_type) {
-                trace(a->base_type, b->base_type, "OptionalType::base_type", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->base_type, b->base_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->base_type, b->base_type, "OptionalType::base_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->base_type, b->base_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->base_type, b->base_type, "OptionalType::base_type", -1);
+            return false;
         }
         return true;
     }
@@ -6116,6 +5000,13 @@ namespace brgen::ast {
         if (!a || !b) {
             trace(a, b, "GenericType", -1);
             return false;
+        }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "GenericType", -1);
+                return false;
+            }
+            return true;
         }
         node_map[a] = b;
         if (a->loc != b->loc) {
@@ -6138,17 +5029,9 @@ namespace brgen::ast {
             trace(a->bit_size, b->bit_size, "GenericType::bit_size", -1);
             return false;
         }
-        if (auto it = node_map.find(a->belong.lock()); it != node_map.end()) {
-            if (ast::cast_to<Member>(it->second) != b->belong.lock()) {
-                trace(a->belong.lock(), b->belong.lock(), "GenericType::belong", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->belong.lock(), b->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->belong.lock(), b->belong.lock(), "GenericType::belong", -1);
-                return false;
-            }
+        if (!deep_equal(a->belong.lock(), b->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->belong.lock(), b->belong.lock(), "GenericType::belong", -1);
+            return false;
         }
         return true;
     }
@@ -6159,22 +5042,21 @@ namespace brgen::ast {
             trace(a, b, "IntLiteral", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "IntLiteral", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "IntLiteral::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->expr_type); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->expr_type) {
-                trace(a->expr_type, b->expr_type, "IntLiteral::expr_type", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->expr_type, b->expr_type, "IntLiteral::expr_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->expr_type, b->expr_type, "IntLiteral::expr_type", -1);
+            return false;
         }
         if (a->constant_level != b->constant_level) {
             trace(a->constant_level, b->constant_level, "IntLiteral::constant_level", -1);
@@ -6193,22 +5075,21 @@ namespace brgen::ast {
             trace(a, b, "BoolLiteral", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "BoolLiteral", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "BoolLiteral::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->expr_type); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->expr_type) {
-                trace(a->expr_type, b->expr_type, "BoolLiteral::expr_type", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->expr_type, b->expr_type, "BoolLiteral::expr_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->expr_type, b->expr_type, "BoolLiteral::expr_type", -1);
+            return false;
         }
         if (a->constant_level != b->constant_level) {
             trace(a->constant_level, b->constant_level, "BoolLiteral::constant_level", -1);
@@ -6227,22 +5108,21 @@ namespace brgen::ast {
             trace(a, b, "StrLiteral", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "StrLiteral", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "StrLiteral::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->expr_type); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->expr_type) {
-                trace(a->expr_type, b->expr_type, "StrLiteral::expr_type", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->expr_type, b->expr_type, "StrLiteral::expr_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->expr_type, b->expr_type, "StrLiteral::expr_type", -1);
+            return false;
         }
         if (a->constant_level != b->constant_level) {
             trace(a->constant_level, b->constant_level, "StrLiteral::constant_level", -1);
@@ -6265,22 +5145,21 @@ namespace brgen::ast {
             trace(a, b, "RegexLiteral", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "RegexLiteral", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "RegexLiteral::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->expr_type); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->expr_type) {
-                trace(a->expr_type, b->expr_type, "RegexLiteral::expr_type", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->expr_type, b->expr_type, "RegexLiteral::expr_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->expr_type, b->expr_type, "RegexLiteral::expr_type", -1);
+            return false;
         }
         if (a->constant_level != b->constant_level) {
             trace(a->constant_level, b->constant_level, "RegexLiteral::constant_level", -1);
@@ -6299,22 +5178,21 @@ namespace brgen::ast {
             trace(a, b, "CharLiteral", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "CharLiteral", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "CharLiteral::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->expr_type); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->expr_type) {
-                trace(a->expr_type, b->expr_type, "CharLiteral::expr_type", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->expr_type, b->expr_type, "CharLiteral::expr_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->expr_type, b->expr_type, "CharLiteral::expr_type", -1);
+            return false;
         }
         if (a->constant_level != b->constant_level) {
             trace(a->constant_level, b->constant_level, "CharLiteral::constant_level", -1);
@@ -6337,38 +5215,29 @@ namespace brgen::ast {
             trace(a, b, "TypeLiteral", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "TypeLiteral", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "TypeLiteral::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->expr_type); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->expr_type) {
-                trace(a->expr_type, b->expr_type, "TypeLiteral::expr_type", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->expr_type, b->expr_type, "TypeLiteral::expr_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->expr_type, b->expr_type, "TypeLiteral::expr_type", -1);
+            return false;
         }
         if (a->constant_level != b->constant_level) {
             trace(a->constant_level, b->constant_level, "TypeLiteral::constant_level", -1);
             return false;
         }
-        if (auto it = node_map.find(a->type_literal); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->type_literal) {
-                trace(a->type_literal, b->type_literal, "TypeLiteral::type_literal", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->type_literal, b->type_literal, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->type_literal, b->type_literal, "TypeLiteral::type_literal", -1);
-                return false;
-            }
+        if (!deep_equal(a->type_literal, b->type_literal, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->type_literal, b->type_literal, "TypeLiteral::type_literal", -1);
+            return false;
         }
         if (a->end_loc != b->end_loc) {
             trace(a->end_loc, b->end_loc, "TypeLiteral::end_loc", -1);
@@ -6383,22 +5252,21 @@ namespace brgen::ast {
             trace(a, b, "SpecialLiteral", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "SpecialLiteral", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "SpecialLiteral::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->expr_type); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->expr_type) {
-                trace(a->expr_type, b->expr_type, "SpecialLiteral::expr_type", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->expr_type, b->expr_type, "SpecialLiteral::expr_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->expr_type, b->expr_type, "SpecialLiteral::expr_type", -1);
+            return false;
         }
         if (a->constant_level != b->constant_level) {
             trace(a->constant_level, b->constant_level, "SpecialLiteral::constant_level", -1);
@@ -6417,46 +5285,29 @@ namespace brgen::ast {
             trace(a, b, "Field", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "Field", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "Field::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->belong.lock()); it != node_map.end()) {
-            if (ast::cast_to<Member>(it->second) != b->belong.lock()) {
-                trace(a->belong.lock(), b->belong.lock(), "Field::belong", -1);
-                return false;
-            }
+        if (!deep_equal(a->belong.lock(), b->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->belong.lock(), b->belong.lock(), "Field::belong", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->belong.lock(), b->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->belong.lock(), b->belong.lock(), "Field::belong", -1);
-                return false;
-            }
+        if (!deep_equal(a->belong_struct.lock(), b->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->belong_struct.lock(), b->belong_struct.lock(), "Field::belong_struct", -1);
+            return false;
         }
-        if (auto it = node_map.find(a->belong_struct.lock()); it != node_map.end()) {
-            if (ast::cast_to<StructType>(it->second) != b->belong_struct.lock()) {
-                trace(a->belong_struct.lock(), b->belong_struct.lock(), "Field::belong_struct", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->belong_struct.lock(), b->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->belong_struct.lock(), b->belong_struct.lock(), "Field::belong_struct", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->ident); it != node_map.end()) {
-            if (ast::cast_to<Ident>(it->second) != b->ident) {
-                trace(a->ident, b->ident, "Field::ident", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->ident, b->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->ident, b->ident, "Field::ident", -1);
-                return false;
-            }
+        if (!deep_equal(a->ident, b->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->ident, b->ident, "Field::ident", -1);
+            return false;
         }
         if (a->colon_loc != b->colon_loc) {
             trace(a->colon_loc, b->colon_loc, "Field::colon_loc", -1);
@@ -6466,29 +5317,13 @@ namespace brgen::ast {
             trace(a->is_state_variable, b->is_state_variable, "Field::is_state_variable", -1);
             return false;
         }
-        if (auto it = node_map.find(a->field_type); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->field_type) {
-                trace(a->field_type, b->field_type, "Field::field_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->field_type, b->field_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->field_type, b->field_type, "Field::field_type", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->field_type, b->field_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->field_type, b->field_type, "Field::field_type", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->arguments); it != node_map.end()) {
-            if (ast::cast_to<FieldArgument>(it->second) != b->arguments) {
-                trace(a->arguments, b->arguments, "Field::arguments", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->arguments, b->arguments, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->arguments, b->arguments, "Field::arguments", -1);
-                return false;
-            }
+        if (!deep_equal(a->arguments, b->arguments, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->arguments, b->arguments, "Field::arguments", -1);
+            return false;
         }
         if (a->offset_bit != b->offset_bit) {
             trace(a->offset_bit, b->offset_bit, "Field::offset_bit", -1);
@@ -6522,17 +5357,9 @@ namespace brgen::ast {
             trace(a->eventual_follow, b->eventual_follow, "Field::eventual_follow", -1);
             return false;
         }
-        if (auto it = node_map.find(a->next.lock()); it != node_map.end()) {
-            if (ast::cast_to<Field>(it->second) != b->next.lock()) {
-                trace(a->next.lock(), b->next.lock(), "Field::next", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->next.lock(), b->next.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->next.lock(), b->next.lock(), "Field::next", -1);
-                return false;
-            }
+        if (!deep_equal(a->next.lock(), b->next.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->next.lock(), b->next.lock(), "Field::next", -1);
+            return false;
         }
         return true;
     }
@@ -6543,82 +5370,41 @@ namespace brgen::ast {
             trace(a, b, "Format", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "Format", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "Format::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->belong.lock()); it != node_map.end()) {
-            if (ast::cast_to<Member>(it->second) != b->belong.lock()) {
-                trace(a->belong.lock(), b->belong.lock(), "Format::belong", -1);
-                return false;
-            }
+        if (!deep_equal(a->belong.lock(), b->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->belong.lock(), b->belong.lock(), "Format::belong", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->belong.lock(), b->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->belong.lock(), b->belong.lock(), "Format::belong", -1);
-                return false;
-            }
+        if (!deep_equal(a->belong_struct.lock(), b->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->belong_struct.lock(), b->belong_struct.lock(), "Format::belong_struct", -1);
+            return false;
         }
-        if (auto it = node_map.find(a->belong_struct.lock()); it != node_map.end()) {
-            if (ast::cast_to<StructType>(it->second) != b->belong_struct.lock()) {
-                trace(a->belong_struct.lock(), b->belong_struct.lock(), "Format::belong_struct", -1);
-                return false;
-            }
+        if (!deep_equal(a->ident, b->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->ident, b->ident, "Format::ident", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->belong_struct.lock(), b->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->belong_struct.lock(), b->belong_struct.lock(), "Format::belong_struct", -1);
-                return false;
-            }
+        if (!deep_equal(a->body, b->body, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->body, b->body, "Format::body", -1);
+            return false;
         }
-        if (auto it = node_map.find(a->ident); it != node_map.end()) {
-            if (ast::cast_to<Ident>(it->second) != b->ident) {
-                trace(a->ident, b->ident, "Format::ident", -1);
-                return false;
-            }
+        if (!deep_equal(a->encode_fn.lock(), b->encode_fn.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->encode_fn.lock(), b->encode_fn.lock(), "Format::encode_fn", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->ident, b->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->ident, b->ident, "Format::ident", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->body); it != node_map.end()) {
-            if (ast::cast_to<IndentBlock>(it->second) != b->body) {
-                trace(a->body, b->body, "Format::body", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->body, b->body, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->body, b->body, "Format::body", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->encode_fn.lock()); it != node_map.end()) {
-            if (ast::cast_to<Function>(it->second) != b->encode_fn.lock()) {
-                trace(a->encode_fn.lock(), b->encode_fn.lock(), "Format::encode_fn", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->encode_fn.lock(), b->encode_fn.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->encode_fn.lock(), b->encode_fn.lock(), "Format::encode_fn", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->decode_fn.lock()); it != node_map.end()) {
-            if (ast::cast_to<Function>(it->second) != b->decode_fn.lock()) {
-                trace(a->decode_fn.lock(), b->decode_fn.lock(), "Format::decode_fn", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->decode_fn.lock(), b->decode_fn.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->decode_fn.lock(), b->decode_fn.lock(), "Format::decode_fn", -1);
-                return false;
-            }
+        if (!deep_equal(a->decode_fn.lock(), b->decode_fn.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->decode_fn.lock(), b->decode_fn.lock(), "Format::decode_fn", -1);
+            return false;
         }
         if (a->cast_fns.size() != b->cast_fns.size()) return false;
         for (size_t i = 0; i < a->cast_fns.size(); i++) {
@@ -6654,58 +5440,33 @@ namespace brgen::ast {
             trace(a, b, "State", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "State", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "State::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->belong.lock()); it != node_map.end()) {
-            if (ast::cast_to<Member>(it->second) != b->belong.lock()) {
-                trace(a->belong.lock(), b->belong.lock(), "State::belong", -1);
-                return false;
-            }
+        if (!deep_equal(a->belong.lock(), b->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->belong.lock(), b->belong.lock(), "State::belong", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->belong.lock(), b->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->belong.lock(), b->belong.lock(), "State::belong", -1);
-                return false;
-            }
+        if (!deep_equal(a->belong_struct.lock(), b->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->belong_struct.lock(), b->belong_struct.lock(), "State::belong_struct", -1);
+            return false;
         }
-        if (auto it = node_map.find(a->belong_struct.lock()); it != node_map.end()) {
-            if (ast::cast_to<StructType>(it->second) != b->belong_struct.lock()) {
-                trace(a->belong_struct.lock(), b->belong_struct.lock(), "State::belong_struct", -1);
-                return false;
-            }
+        if (!deep_equal(a->ident, b->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->ident, b->ident, "State::ident", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->belong_struct.lock(), b->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->belong_struct.lock(), b->belong_struct.lock(), "State::belong_struct", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->ident); it != node_map.end()) {
-            if (ast::cast_to<Ident>(it->second) != b->ident) {
-                trace(a->ident, b->ident, "State::ident", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->ident, b->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->ident, b->ident, "State::ident", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->body); it != node_map.end()) {
-            if (ast::cast_to<IndentBlock>(it->second) != b->body) {
-                trace(a->body, b->body, "State::body", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->body, b->body, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->body, b->body, "State::body", -1);
-                return false;
-            }
+        if (!deep_equal(a->body, b->body, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->body, b->body, "State::body", -1);
+            return false;
         }
         return true;
     }
@@ -6716,74 +5477,41 @@ namespace brgen::ast {
             trace(a, b, "Enum", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "Enum", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "Enum::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->belong.lock()); it != node_map.end()) {
-            if (ast::cast_to<Member>(it->second) != b->belong.lock()) {
-                trace(a->belong.lock(), b->belong.lock(), "Enum::belong", -1);
-                return false;
-            }
+        if (!deep_equal(a->belong.lock(), b->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->belong.lock(), b->belong.lock(), "Enum::belong", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->belong.lock(), b->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->belong.lock(), b->belong.lock(), "Enum::belong", -1);
-                return false;
-            }
+        if (!deep_equal(a->belong_struct.lock(), b->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->belong_struct.lock(), b->belong_struct.lock(), "Enum::belong_struct", -1);
+            return false;
         }
-        if (auto it = node_map.find(a->belong_struct.lock()); it != node_map.end()) {
-            if (ast::cast_to<StructType>(it->second) != b->belong_struct.lock()) {
-                trace(a->belong_struct.lock(), b->belong_struct.lock(), "Enum::belong_struct", -1);
-                return false;
-            }
+        if (!deep_equal(a->ident, b->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->ident, b->ident, "Enum::ident", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->belong_struct.lock(), b->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->belong_struct.lock(), b->belong_struct.lock(), "Enum::belong_struct", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->ident); it != node_map.end()) {
-            if (ast::cast_to<Ident>(it->second) != b->ident) {
-                trace(a->ident, b->ident, "Enum::ident", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->ident, b->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->ident, b->ident, "Enum::ident", -1);
-                return false;
-            }
-        }
-        if (auto it = scope_map.find(a->scope); it != scope_map.end()) {
-            if (it->second != b->scope) {
-                trace(a->scope, b->scope, "Enum::scope", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->scope, b->scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->scope, b->scope, "Enum::scope", -1);
-                return false;
-            }
+        if (!deep_equal(a->scope, b->scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->scope, b->scope, "Enum::scope", -1);
+            return false;
         }
         if (a->colon_loc != b->colon_loc) {
             trace(a->colon_loc, b->colon_loc, "Enum::colon_loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->base_type); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->base_type) {
-                trace(a->base_type, b->base_type, "Enum::base_type", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->base_type, b->base_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->base_type, b->base_type, "Enum::base_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->base_type, b->base_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->base_type, b->base_type, "Enum::base_type", -1);
+            return false;
         }
         if (a->members.size() != b->members.size()) return false;
         for (size_t i = 0; i < a->members.size(); i++) {
@@ -6792,17 +5520,9 @@ namespace brgen::ast {
                 return false;
             }
         }
-        if (auto it = node_map.find(a->enum_type); it != node_map.end()) {
-            if (ast::cast_to<EnumType>(it->second) != b->enum_type) {
-                trace(a->enum_type, b->enum_type, "Enum::enum_type", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->enum_type, b->enum_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->enum_type, b->enum_type, "Enum::enum_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->enum_type, b->enum_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->enum_type, b->enum_type, "Enum::enum_type", -1);
+            return false;
         }
         return true;
     }
@@ -6813,82 +5533,41 @@ namespace brgen::ast {
             trace(a, b, "EnumMember", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "EnumMember", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "EnumMember::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->belong.lock()); it != node_map.end()) {
-            if (ast::cast_to<Member>(it->second) != b->belong.lock()) {
-                trace(a->belong.lock(), b->belong.lock(), "EnumMember::belong", -1);
-                return false;
-            }
+        if (!deep_equal(a->belong.lock(), b->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->belong.lock(), b->belong.lock(), "EnumMember::belong", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->belong.lock(), b->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->belong.lock(), b->belong.lock(), "EnumMember::belong", -1);
-                return false;
-            }
+        if (!deep_equal(a->belong_struct.lock(), b->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->belong_struct.lock(), b->belong_struct.lock(), "EnumMember::belong_struct", -1);
+            return false;
         }
-        if (auto it = node_map.find(a->belong_struct.lock()); it != node_map.end()) {
-            if (ast::cast_to<StructType>(it->second) != b->belong_struct.lock()) {
-                trace(a->belong_struct.lock(), b->belong_struct.lock(), "EnumMember::belong_struct", -1);
-                return false;
-            }
+        if (!deep_equal(a->ident, b->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->ident, b->ident, "EnumMember::ident", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->belong_struct.lock(), b->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->belong_struct.lock(), b->belong_struct.lock(), "EnumMember::belong_struct", -1);
-                return false;
-            }
+        if (!deep_equal(a->raw_expr, b->raw_expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->raw_expr, b->raw_expr, "EnumMember::raw_expr", -1);
+            return false;
         }
-        if (auto it = node_map.find(a->ident); it != node_map.end()) {
-            if (ast::cast_to<Ident>(it->second) != b->ident) {
-                trace(a->ident, b->ident, "EnumMember::ident", -1);
-                return false;
-            }
+        if (!deep_equal(a->value, b->value, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->value, b->value, "EnumMember::value", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->ident, b->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->ident, b->ident, "EnumMember::ident", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->raw_expr); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->raw_expr) {
-                trace(a->raw_expr, b->raw_expr, "EnumMember::raw_expr", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->raw_expr, b->raw_expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->raw_expr, b->raw_expr, "EnumMember::raw_expr", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->value); it != node_map.end()) {
-            if (ast::cast_to<Expr>(it->second) != b->value) {
-                trace(a->value, b->value, "EnumMember::value", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->value, b->value, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->value, b->value, "EnumMember::value", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->str_literal); it != node_map.end()) {
-            if (ast::cast_to<StrLiteral>(it->second) != b->str_literal) {
-                trace(a->str_literal, b->str_literal, "EnumMember::str_literal", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->str_literal, b->str_literal, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->str_literal, b->str_literal, "EnumMember::str_literal", -1);
-                return false;
-            }
+        if (!deep_equal(a->str_literal, b->str_literal, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->str_literal, b->str_literal, "EnumMember::str_literal", -1);
+            return false;
         }
         return true;
     }
@@ -6899,46 +5578,29 @@ namespace brgen::ast {
             trace(a, b, "Function", -1);
             return false;
         }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "Function", -1);
+                return false;
+            }
+            return true;
+        }
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "Function::loc", -1);
             return false;
         }
-        if (auto it = node_map.find(a->belong.lock()); it != node_map.end()) {
-            if (ast::cast_to<Member>(it->second) != b->belong.lock()) {
-                trace(a->belong.lock(), b->belong.lock(), "Function::belong", -1);
-                return false;
-            }
+        if (!deep_equal(a->belong.lock(), b->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->belong.lock(), b->belong.lock(), "Function::belong", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->belong.lock(), b->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->belong.lock(), b->belong.lock(), "Function::belong", -1);
-                return false;
-            }
+        if (!deep_equal(a->belong_struct.lock(), b->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->belong_struct.lock(), b->belong_struct.lock(), "Function::belong_struct", -1);
+            return false;
         }
-        if (auto it = node_map.find(a->belong_struct.lock()); it != node_map.end()) {
-            if (ast::cast_to<StructType>(it->second) != b->belong_struct.lock()) {
-                trace(a->belong_struct.lock(), b->belong_struct.lock(), "Function::belong_struct", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->belong_struct.lock(), b->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->belong_struct.lock(), b->belong_struct.lock(), "Function::belong_struct", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->ident); it != node_map.end()) {
-            if (ast::cast_to<Ident>(it->second) != b->ident) {
-                trace(a->ident, b->ident, "Function::ident", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->ident, b->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->ident, b->ident, "Function::ident", -1);
-                return false;
-            }
+        if (!deep_equal(a->ident, b->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->ident, b->ident, "Function::ident", -1);
+            return false;
         }
         if (a->parameters.size() != b->parameters.size()) return false;
         for (size_t i = 0; i < a->parameters.size(); i++) {
@@ -6947,41 +5609,17 @@ namespace brgen::ast {
                 return false;
             }
         }
-        if (auto it = node_map.find(a->return_type); it != node_map.end()) {
-            if (ast::cast_to<Type>(it->second) != b->return_type) {
-                trace(a->return_type, b->return_type, "Function::return_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->return_type, b->return_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->return_type, b->return_type, "Function::return_type", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->return_type, b->return_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->return_type, b->return_type, "Function::return_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->body, b->body, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->body, b->body, "Function::body", -1);
+            return false;
         }
-        if (auto it = node_map.find(a->body); it != node_map.end()) {
-            if (ast::cast_to<IndentBlock>(it->second) != b->body) {
-                trace(a->body, b->body, "Function::body", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->body, b->body, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->body, b->body, "Function::body", -1);
-                return false;
-            }
-        }
-        if (auto it = node_map.find(a->func_type); it != node_map.end()) {
-            if (ast::cast_to<FunctionType>(it->second) != b->func_type) {
-                trace(a->func_type, b->func_type, "Function::func_type", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->func_type, b->func_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->func_type, b->func_type, "Function::func_type", -1);
-                return false;
-            }
+        if (!deep_equal(a->func_type, b->func_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->func_type, b->func_type, "Function::func_type", -1);
+            return false;
         }
         if (a->is_cast != b->is_cast) {
             trace(a->is_cast, b->is_cast, "Function::is_cast", -1);
@@ -6996,42 +5634,25 @@ namespace brgen::ast {
             trace(a, b, "Scope", -1);
             return false;
         }
+        if (auto it = scope_map.find(a); it != scope_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "Scope", -1);
+                return false;
+            }
+            return true;
+        }
         scope_map[a] = b;
-        if (auto it = scope_map.find(a->prev.lock()); it != scope_map.end()) {
-            if (it->second != b->prev.lock()) {
-                trace(a->prev.lock(), b->prev.lock(), "Scope::prev", -1);
-                return false;
-            }
+        if (!deep_equal(a->prev.lock(), b->prev.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->prev.lock(), b->prev.lock(), "Scope::prev", -1);
+            return false;
         }
-        else {
-            if (!deep_equal(a->prev.lock(), b->prev.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->prev.lock(), b->prev.lock(), "Scope::prev", -1);
-                return false;
-            }
+        if (!deep_equal(a->next, b->next, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->next, b->next, "Scope::next", -1);
+            return false;
         }
-        if (auto it = scope_map.find(a->next); it != scope_map.end()) {
-            if (it->second != b->next) {
-                trace(a->next, b->next, "Scope::next", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->next, b->next, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->next, b->next, "Scope::next", -1);
-                return false;
-            }
-        }
-        if (auto it = scope_map.find(a->branch); it != scope_map.end()) {
-            if (it->second != b->branch) {
-                trace(a->branch, b->branch, "Scope::branch", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->branch, b->branch, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->branch, b->branch, "Scope::branch", -1);
-                return false;
-            }
+        if (!deep_equal(a->branch, b->branch, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->branch, b->branch, "Scope::branch", -1);
+            return false;
         }
         if (a->objects.size() != b->objects.size()) return false;
         for (size_t i = 0; i < a->objects.size(); i++) {
@@ -7040,17 +5661,9 @@ namespace brgen::ast {
                 return false;
             }
         }
-        if (auto it = node_map.find(a->owner.lock()); it != node_map.end()) {
-            if (ast::cast_to<Node>(it->second) != b->owner.lock()) {
-                trace(a->owner.lock(), b->owner.lock(), "Scope::owner", -1);
-                return false;
-            }
-        }
-        else {
-            if (!deep_equal(a->owner.lock(), b->owner.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-                trace(a->owner.lock(), b->owner.lock(), "Scope::owner", -1);
-                return false;
-            }
+        if (!deep_equal(a->owner.lock(), b->owner.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->owner.lock(), b->owner.lock(), "Scope::owner", -1);
+            return false;
         }
         if (a->branch_root != b->branch_root) {
             trace(a->branch_root, b->branch_root, "Scope::branch_root", -1);
