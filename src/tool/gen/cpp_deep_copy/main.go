@@ -11,10 +11,15 @@ import (
 )
 
 func generateSingleDeepEqual(w *gen.Writer, def *gen.Struct) {
-	w.Printf("template<class NodeM,class ScopeM>\n")
-	w.Printf("constexpr bool deep_equal(const std::shared_ptr<%s>& a,const std::shared_ptr<%s>& b,NodeM&& node_map,ScopeM&& scope_map){\n", def.Name, def.Name)
+	w.Printf("template<class NodeM,class ScopeM,class BackTracer=NullBackTracer>\n")
+	w.Printf("constexpr bool deep_equal(const std::shared_ptr<%s>& a,const std::shared_ptr<%s>& b,NodeM&& node_map,ScopeM&& scope_map,BackTracer&& trace = BackTracer{}){\n", def.Name, def.Name)
 	w.Printf("if(!a && !b) return true;\n")
 	w.Printf("if(!a || !b) return false;\n")
+	if def.Name == "Scope" {
+		w.Printf("scope_map[a]=b;\n")
+	} else {
+		w.Printf("node_map[a]=b;\n")
+	}
 	for _, field := range def.Fields {
 		if field.Type.IsArray {
 			tag := field.Tag
@@ -29,7 +34,10 @@ func generateSingleDeepEqual(w *gen.Writer, def *gen.Struct) {
 			}
 			w.Printf("if(a->%s.size()!=b->%s.size()) return false;\n", tag, tag)
 			w.Printf("for(size_t i=0;i<a->%s.size();i++){\n", tag)
-			w.Printf("if(!deep_equal(%s,%s,std::forward<NodeM>(node_map),std::forward<ScopeM>(scope_map))) return false;\n", nodeAccessA, nodeAccessB)
+			w.Printf("if(!deep_equal(%s,%s,std::forward<NodeM>(node_map),std::forward<ScopeM>(scope_map),std::forward<BackTracer>(trace))) {\n", nodeAccessA, nodeAccessB)
+			w.Printf("trace(%s,%s,\"%s::%s\",i);\n", nodeAccessA, nodeAccessB, field.Type.Name, tag)
+			w.Printf("return false;\n")
+			w.Printf("}\n")
 			w.Printf("}\n")
 		} else if field.Type.IsPtr || field.Type.IsInterface {
 			mapName := "node_map"
@@ -44,17 +52,32 @@ func generateSingleDeepEqual(w *gen.Writer, def *gen.Struct) {
 			}
 			w.Printf("if(auto it = %[1]s.find(%[2]s);it !=%[1]s.end()){\n", mapName, nodeAccessA)
 			if mapName == "scope_map" {
-				w.Printf("if(it->second!=%s) return false;\n", nodeAccessB)
+				w.Printf("if(it->second!=%s) {\n", nodeAccessB)
+				w.Printf("trace(%s,%s,\"%s::%s\",-1);\n", nodeAccessA, nodeAccessB, field.Type.Name, field.Tag)
+				w.Printf("return false;\n")
+				w.Printf("}\n")
 				w.Printf("}else{\n")
-				w.Printf("if(!deep_equal(%s,%s,std::forward<NodeM>(node_map),std::forward<ScopeM>(scope_map))) return false;\n", nodeAccessA, nodeAccessB)
+				w.Printf("if(!deep_equal(%s,%s,std::forward<NodeM>(node_map),std::forward<ScopeM>(scope_map),std::forward<BackTracer>(trace))) {\n", nodeAccessA, nodeAccessB)
+				w.Printf("trace(%s,%s,\"%s::%s\",-1);\n", nodeAccessA, nodeAccessB, field.Type.Name, field.Tag)
+				w.Printf("return false;\n")
+				w.Printf("}\n")
 			} else {
-				w.Printf("if(ast::cast_to<%s>(it->second)!=%s) return false;\n", field.Type.Name, nodeAccessB)
+				w.Printf("if(ast::cast_to<%s>(it->second)!=%s) {\n", field.Type.Name, nodeAccessB)
+				w.Printf("trace(%s,%s,\"%s::%s\",-1);\n", nodeAccessA, nodeAccessB, field.Type.Name, field.Tag)
+				w.Printf("return false;\n")
+				w.Printf("}\n")
 				w.Printf("}else{\n")
-				w.Printf("if(!deep_equal(%s,%s,std::forward<NodeM>(node_map),std::forward<ScopeM>(scope_map))) return false;\n", nodeAccessA, nodeAccessB)
+				w.Printf("if(!deep_equal(%s,%s,std::forward<NodeM>(node_map),std::forward<ScopeM>(scope_map),std::forward<BackTracer>(trace))) {\n", nodeAccessA, nodeAccessB)
+				w.Printf("trace(%s,%s,\"%s::%s\",-1);\n", nodeAccessA, nodeAccessB, field.Type.Name, field.Tag)
+				w.Printf("return false;\n")
+				w.Printf("}\n")
 			}
 			w.Printf("}\n")
 		} else {
-			w.Printf("if(a->%s!=b->%s) return false;\n", field.Tag, field.Tag)
+			w.Printf("if(a->%s!=b->%s) {\n", field.Tag, field.Tag)
+			w.Printf("trace(a->%s,b->%s,\"%s::%s\",-1);\n", field.Tag, field.Tag, def.Name, field.Tag)
+			w.Printf("return false;\n")
+			w.Printf("}\n")
 		}
 	}
 	w.Printf("return true;\n")
@@ -62,14 +85,14 @@ func generateSingleDeepEqual(w *gen.Writer, def *gen.Struct) {
 }
 
 func generateDeepEqual(w *gen.Writer, defs *gen.Defs) {
-	w.Printf("template<class T,class NodeM,class ScopeM>\n")
-	w.Printf("constexpr bool deep_equal(const std::shared_ptr<T>& a,const std::shared_ptr<T>& b,NodeM&& node_map,ScopeM&& scope_map);\n")
+	w.Printf("template<class T,class NodeM,class ScopeM,class BackTracer=NullBackTracer>\n")
+	w.Printf("constexpr bool deep_equal(const std::shared_ptr<T>& a,const std::shared_ptr<T>& b,NodeM&& node_map,ScopeM&& scope_map,BackTracer&& trace=BackTracer{});\n")
 	w.Printf("\n")
 	for _, v := range defs.Defs {
 		switch def := v.(type) {
 		case *gen.Interface:
-			w.Printf("template<class NodeM,class ScopeM>\n")
-			w.Printf("constexpr bool deep_equal(const std::shared_ptr<%s>& a,const std::shared_ptr<%s>& b,NodeM&& node_map,ScopeM&& scope_map){\n", def.Name, def.Name)
+			w.Printf("template<class NodeM,class ScopeM,class BackTracer=NullBackTracer>\n")
+			w.Printf("constexpr bool deep_equal(const std::shared_ptr<%s>& a,const std::shared_ptr<%s>& b,NodeM&& node_map,ScopeM&& scope_map,BackTracer&& trace=BackTracer{}){\n", def.Name, def.Name)
 			for _, derived := range def.Derived {
 				found, ok := defs.Structs[derived]
 				if !ok {
@@ -77,7 +100,7 @@ func generateDeepEqual(w *gen.Writer, defs *gen.Defs) {
 				}
 				w.Printf("if(ast::as<%s>(a)) {\n", found.Name)
 				w.Printf("if(!ast::as<%s>(b)) return false;\n", found.Name)
-				w.Printf("return deep_equal(ast::cast_to<%s>(a),ast::cast_to<%s>(b),std::forward<NodeM>(node_map),std::forward<ScopeM>(scope_map));\n", found.Name, found.Name)
+				w.Printf("return deep_equal(ast::cast_to<%s>(a),ast::cast_to<%s>(b),std::forward<NodeM>(node_map),std::forward<ScopeM>(scope_map),std::forward<BackTracer>(trace));\n", found.Name, found.Name)
 				w.Printf("}\n")
 			}
 			w.Printf("return false;\n")
@@ -129,7 +152,11 @@ func generateSingleDeepCopy(w *gen.Writer, def *gen.Struct) {
 				nodeAccess = nodeAccess + ".lock()"
 			}
 			w.Printf("if(auto it = %[1]s.find(%[2]s);it !=%[1]s.end()){\n", mapName, nodeAccess)
-			w.Printf("new_node->%s= it->second;\n", field.Tag)
+			if mapName == "scope_map" {
+				w.Printf("new_node->%s=it->second;\n", field.Tag)
+			} else {
+				w.Printf("new_node->%s= ast::cast_to<%s>(it->second);\n", field.Tag, field.Type.Name)
+			}
 			w.Printf("}else{\n")
 			w.Printf("new_node->%s=deep_copy(%s,std::forward<NodeM>(node_map),std::forward<ScopeM>(scope_map));\n", field.Tag, nodeAccess)
 			w.Printf("}\n")
@@ -186,12 +213,19 @@ func generateTest(w *gen.Writer) {
 	w.Printf("}\n")
 }
 
+func generateBackTracer(w *gen.Writer) {
+	w.Printf("struct NullBackTracer{\n")
+	w.Printf("constexpr void operator()(auto&&a,auto&& b,const char* which,size_t index){}\n")
+	w.Printf("};\n")
+}
+
 func generate(rw io.Writer, defs *gen.Defs) {
 	w := gen.NewWriter(rw)
 	w.Printf("// Code generated by gen_cpp_deep_copy; DO NOT EDIT.\n\n")
 	w.Printf("#pragma once\n\n")
 	w.Printf("#include <core/ast/ast.h>\n\n")
 	w.Printf("namespace brgen::ast {\n\n")
+	generateBackTracer(w)
 	generateDeepCopy(w, defs)
 	generateDeepEqual(w, defs)
 	generateTest(w)
