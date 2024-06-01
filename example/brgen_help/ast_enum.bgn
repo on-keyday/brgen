@@ -220,3 +220,5 @@ enum FormatTrait:
     for_loop = 1 << 28
     # local variable
     local_variable = 1 << 29
+    # description only (cannot be used for code generating because of incomplete information)
+    description_only = 1 << 30

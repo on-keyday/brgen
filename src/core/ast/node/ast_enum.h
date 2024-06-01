@@ -935,6 +935,7 @@ enum class FormatTrait {
     procedural = (1 << 27),
     for_loop = (1 << 28),
     local_variable = (1 << 29),
+    description_only = (1 << 30),
 };
 constexpr const char* to_string(FormatTrait e) {
     switch(e) {
@@ -969,6 +970,7 @@ constexpr const char* to_string(FormatTrait e) {
     case FormatTrait::procedural: return "procedural";
     case FormatTrait::for_loop: return "for_loop";
     case FormatTrait::local_variable: return "local_variable";
+    case FormatTrait::description_only: return "description_only";
     default: return nullptr;
     }
 }
@@ -1005,12 +1007,13 @@ template<>constexpr std::optional<FormatTrait> from_string<FormatTrait>(std::str
     if(str == "procedural") return FormatTrait::procedural;
     if(str == "for_loop") return FormatTrait::for_loop;
     if(str == "local_variable") return FormatTrait::local_variable;
+    if(str == "description_only") return FormatTrait::description_only;
     return std::nullopt;
 }
 template<>constexpr size_t enum_elem_count<FormatTrait>() {
-    return 31;
+    return 32;
 }
-template<>constexpr std::array<std::pair<FormatTrait,std::string_view>,31> make_enum_array<FormatTrait>() {
+template<>constexpr std::array<std::pair<FormatTrait,std::string_view>,32> make_enum_array<FormatTrait>() {
     return {
         std::pair{FormatTrait::none,"none"},
         std::pair{FormatTrait::fixed_primitive,"fixed_primitive"},
@@ -1043,9 +1046,10 @@ template<>constexpr std::array<std::pair<FormatTrait,std::string_view>,31> make_
         std::pair{FormatTrait::procedural,"procedural"},
         std::pair{FormatTrait::for_loop,"for_loop"},
         std::pair{FormatTrait::local_variable,"local_variable"},
+        std::pair{FormatTrait::description_only,"description_only"},
     };
 }
-template<>constexpr std::array<std::pair<FormatTrait,std::string_view>,31> make_enum_name_array<FormatTrait>() {
+template<>constexpr std::array<std::pair<FormatTrait,std::string_view>,32> make_enum_name_array<FormatTrait>() {
     return {
         std::pair{FormatTrait::none,"none"},
         std::pair{FormatTrait::fixed_primitive,"fixed_primitive"},
@@ -1078,6 +1082,7 @@ template<>constexpr std::array<std::pair<FormatTrait,std::string_view>,31> make_
         std::pair{FormatTrait::procedural,"procedural"},
         std::pair{FormatTrait::for_loop,"for_loop"},
         std::pair{FormatTrait::local_variable,"local_variable"},
+        std::pair{FormatTrait::description_only,"description_only"},
     };
 }
 constexpr void as_json(FormatTrait e,auto&& d) {
