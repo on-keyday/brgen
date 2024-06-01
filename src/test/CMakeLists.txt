@@ -82,6 +82,7 @@ add_test(NAME "liner_eq_test" COMMAND liner_eq_test)
 add_test(NAME "type_attribute" COMMAND type_attribute)
 add_test(NAME "derive_test" COMMAND derive_test)
 add_test(NAME "ctype_test" COMMAND ctype_test)
+add_test(NAME "deep_copy_test" COMMAND deep_copy_test)
 
 if(WIN32)
 
@@ -121,6 +122,7 @@ target_compile_options(liner_eq_test PRIVATE "-fprofile-instr-generate=liner_eq_
 target_compile_options(type_attribute PRIVATE "-fprofile-instr-generate=type_attribute.profraw")
 target_compile_options(derive_test PRIVATE "-fprofile-instr-generate=derive_test.profraw")
 target_compile_options(ctype_test PRIVATE "-fprofile-instr-generate=ctype_test.profraw")
+target_compile_options(deep_copy_test PRIVATE "-fprofile-instr-generate=deep_copy_test.profraw")
 endif()
 
 
@@ -136,5 +138,6 @@ set_target_properties(liner_eq_test PROPERTIES LINK_FLAGS "-fprofile-instr-gener
 set_target_properties(type_attribute PROPERTIES LINK_FLAGS "-fprofile-instr-generate=type_attribute.profraw")
 set_target_properties(derive_test PROPERTIES LINK_FLAGS "-fprofile-instr-generate=derive_test.profraw")
 set_target_properties(ctype_test PROPERTIES LINK_FLAGS "-fprofile-instr-generate=ctype_test.profraw")
+set_target_properties(deep_copy_test PROPERTIES LINK_FLAGS "-fprofile-instr-generate=deep_copy_test.profraw")
 endif()
 
