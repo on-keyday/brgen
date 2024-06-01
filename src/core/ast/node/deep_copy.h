@@ -2339,6 +2339,8 @@ namespace brgen::ast {
 
     template <class NodeM, class ScopeM, class BackTracer = NullBackTracer>
     constexpr bool deep_equal(const std::shared_ptr<Node>& a, const std::shared_ptr<Node>& b, NodeM&& node_map, ScopeM&& scope_map, BackTracer&& trace = BackTracer{}) {
+        if (!a && !b) return true;
+        if (!a || !b) return false;
         if (ast::as<Program>(a)) {
             if (!ast::as<Program>(b)) return false;
             return deep_equal(ast::cast_to<Program>(a), ast::cast_to<Program>(b), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace));
@@ -2611,6 +2613,8 @@ namespace brgen::ast {
     }
     template <class NodeM, class ScopeM, class BackTracer = NullBackTracer>
     constexpr bool deep_equal(const std::shared_ptr<Expr>& a, const std::shared_ptr<Expr>& b, NodeM&& node_map, ScopeM&& scope_map, BackTracer&& trace = BackTracer{}) {
+        if (!a && !b) return true;
+        if (!a || !b) return false;
         if (ast::as<Binary>(a)) {
             if (!ast::as<Binary>(b)) return false;
             return deep_equal(ast::cast_to<Binary>(a), ast::cast_to<Binary>(b), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace));
@@ -2727,6 +2731,8 @@ namespace brgen::ast {
     }
     template <class NodeM, class ScopeM, class BackTracer = NullBackTracer>
     constexpr bool deep_equal(const std::shared_ptr<Stmt>& a, const std::shared_ptr<Stmt>& b, NodeM&& node_map, ScopeM&& scope_map, BackTracer&& trace = BackTracer{}) {
+        if (!a && !b) return true;
+        if (!a || !b) return false;
         if (ast::as<Loop>(a)) {
             if (!ast::as<Loop>(b)) return false;
             return deep_equal(ast::cast_to<Loop>(a), ast::cast_to<Loop>(b), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace));
@@ -2799,6 +2805,8 @@ namespace brgen::ast {
     }
     template <class NodeM, class ScopeM, class BackTracer = NullBackTracer>
     constexpr bool deep_equal(const std::shared_ptr<Type>& a, const std::shared_ptr<Type>& b, NodeM&& node_map, ScopeM&& scope_map, BackTracer&& trace = BackTracer{}) {
+        if (!a && !b) return true;
+        if (!a || !b) return false;
         if (ast::as<IntType>(a)) {
             if (!ast::as<IntType>(b)) return false;
             return deep_equal(ast::cast_to<IntType>(a), ast::cast_to<IntType>(b), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace));
@@ -2875,6 +2883,8 @@ namespace brgen::ast {
     }
     template <class NodeM, class ScopeM, class BackTracer = NullBackTracer>
     constexpr bool deep_equal(const std::shared_ptr<Literal>& a, const std::shared_ptr<Literal>& b, NodeM&& node_map, ScopeM&& scope_map, BackTracer&& trace = BackTracer{}) {
+        if (!a && !b) return true;
+        if (!a || !b) return false;
         if (ast::as<IntLiteral>(a)) {
             if (!ast::as<IntLiteral>(b)) return false;
             return deep_equal(ast::cast_to<IntLiteral>(a), ast::cast_to<IntLiteral>(b), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace));
@@ -2907,6 +2917,8 @@ namespace brgen::ast {
     }
     template <class NodeM, class ScopeM, class BackTracer = NullBackTracer>
     constexpr bool deep_equal(const std::shared_ptr<Member>& a, const std::shared_ptr<Member>& b, NodeM&& node_map, ScopeM&& scope_map, BackTracer&& trace = BackTracer{}) {
+        if (!a && !b) return true;
+        if (!a || !b) return false;
         if (ast::as<Field>(a)) {
             if (!ast::as<Field>(b)) return false;
             return deep_equal(ast::cast_to<Field>(a), ast::cast_to<Field>(b), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace));
@@ -6396,10 +6408,10 @@ namespace brgen::ast {
         return true;
     }
     namespace test {
-        template <class NodeM, class ScopeM, class BackTracer = NullBackTracer>
-        inline bool test_single_deep_copy(const std::shared_ptr<Node>& n,BackTracer&& trace=BackTracer{}) {
+        template <class NodeM, class ScopeM>
+        inline bool test_single_deep_copy(const std::shared_ptr<Node>& n) {
             const auto copy = deep_copy(n, NodeM{}, ScopeM{});
-            return deep_equal(n, copy, NodeM{}, ScopeM{},trace);
+            return deep_equal(n, copy, NodeM{}, ScopeM{});
         }
     }  // namespace test
 }  // namespace brgen::ast
