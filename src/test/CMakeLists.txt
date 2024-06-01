@@ -70,7 +70,7 @@ add_executable(ctype_test "tool/json2c/ctype_test.cpp")
 target_link_libraries(ctype_test gtest_main parse_core)
 
 add_executable(deep_copy_test "core/deep_copy_test.cpp")
-target_link_libraries(deep_copy_test gtest_main parse_core)
+target_link_libraries(deep_copy_test gtest_main parse_core futils)
 
 add_test(NAME "lexer_test" COMMAND lexer_test)
 add_test(NAME "ast_test" COMMAND ast_test)
