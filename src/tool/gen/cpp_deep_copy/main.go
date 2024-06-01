@@ -93,6 +93,8 @@ func generateDeepEqual(w *gen.Writer, defs *gen.Defs) {
 		case *gen.Interface:
 			w.Printf("template<class NodeM,class ScopeM,class BackTracer=NullBackTracer>\n")
 			w.Printf("constexpr bool deep_equal(const std::shared_ptr<%s>& a,const std::shared_ptr<%s>& b,NodeM&& node_map,ScopeM&& scope_map,BackTracer&& trace=BackTracer{}){\n", def.Name, def.Name)
+			w.Printf("if(!a && !b) return true;\n")
+			w.Printf("if(!a || !b) return false;\n")
 			for _, derived := range def.Derived {
 				found, ok := defs.Structs[derived]
 				if !ok {

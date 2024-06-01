@@ -6396,10 +6396,10 @@ namespace brgen::ast {
         return true;
     }
     namespace test {
-        template <class NodeM, class ScopeM>
-        inline bool test_single_deep_copy(const std::shared_ptr<Node>& n) {
+        template <class NodeM, class ScopeM, class BackTracer = NullBackTracer>
+        inline bool test_single_deep_copy(const std::shared_ptr<Node>& n,BackTracer&& trace=BackTracer{}) {
             const auto copy = deep_copy(n, NodeM{}, ScopeM{});
-            return deep_equal(n, copy, NodeM{}, ScopeM{});
+            return deep_equal(n, copy, NodeM{}, ScopeM{},trace);
         }
     }  // namespace test
 }  // namespace brgen::ast
