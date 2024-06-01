@@ -44,7 +44,7 @@
             "name": "Debug test",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceRoot}/built/native/Debug/test/type_attribute",
+            "program": "${workspaceRoot}/built/native/Debug/test/deep_copy_test.exe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",

@@ -129,15 +129,9 @@ func generateSingleDeepCopy(w *gen.Writer, def *gen.Struct) {
 				nodeAccess = nodeAccess + ".lock()"
 			}
 			w.Printf("if(auto it = %[1]s.find(%[2]s);it !=%[1]s.end()){\n", mapName, nodeAccess)
-			if mapName == "scope_map" {
-				w.Printf("new_node->%s= it->second;\n", field.Tag)
-				w.Printf("}else{\n")
-				w.Printf("new_node->%s=deep_copy(%s,std::forward<NodeM>(node_map),std::forward<ScopeM>(scope_map));\n", field.Tag, nodeAccess)
-			} else {
-				w.Printf("new_node->%s= ast::cast_to<%s>(it->second);\n", field.Tag, field.Type.Name)
-				w.Printf("}else{\n")
-				w.Printf("new_node->%s= ast::cast_to<%s>(deep_copy(%s,std::forward<NodeM>(node_map),std::forward<ScopeM>(scope_map)));\n", field.Tag, field.Type.Name, nodeAccess)
-			}
+			w.Printf("new_node->%s= it->second;\n", field.Tag)
+			w.Printf("}else{\n")
+			w.Printf("new_node->%s=deep_copy(%s,std::forward<NodeM>(node_map),std::forward<ScopeM>(scope_map));\n", field.Tag, nodeAccess)
 			w.Printf("}\n")
 		} else {
 			w.Printf("new_node->%s=node->%s;\n", field.Tag, field.Tag)
