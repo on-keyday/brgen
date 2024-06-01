@@ -61,5 +61,12 @@ TEST_P(DeepCopyTest, DeepCopy) {
     ASSERT_NE(prog, nullptr);
     using NodeMap = std::unordered_map<std::shared_ptr<brgen::ast::Node>, std::shared_ptr<brgen::ast::Node>>;
     using ScopeMap = std::unordered_map<std::shared_ptr<brgen::ast::Scope>, std::shared_ptr<brgen::ast::Scope>>;
-    ASSERT_TRUE((brgen::ast::test::test_single_deep_copy<NodeMap, ScopeMap>(prog)));
+    ASSERT_TRUE((brgen::ast::test::test_single_deep_copy<NodeMap, ScopeMap>(prog, [](auto&& a, auto&& b, const char* which, size_t index) {
+        if (index == -1) {
+            fprintf(stderr, "Error at %s\n", which);
+        }
+        else {
+            fprintf(stderr, "Error at %s[%zu]\n", which, index);
+        }
+    })));
 }

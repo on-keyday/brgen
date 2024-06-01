@@ -83,6 +83,7 @@ type List struct {
 
 type Def interface {
 	def()
+	GetName() string
 }
 
 type Interface struct {
@@ -94,6 +95,9 @@ type Interface struct {
 }
 
 func (d *Interface) def() {}
+func (d *Interface) GetName() string {
+	return d.Name
+}
 
 type Type struct {
 	Name        string
@@ -132,10 +136,18 @@ type Struct struct {
 	UnCommonFields []*Field // all fields except common with base interface
 }
 
+func (d *Struct) GetName() string {
+	return d.Name
+}
+
 type Enum struct {
 	Name       string
 	IsBitField bool
 	Values     []*EnumValue
+}
+
+func (d *Enum) GetName() string {
+	return d.Name
 }
 
 func (d *Struct) def() {}
