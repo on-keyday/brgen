@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <tool/src2json/test.h>
 #include <core/ast/node/deep_copy.h>
+#include <unordered_map>
 namespace fs = std::filesystem;
 
 std::shared_ptr<brgen::ast::Program> load(const fs::path& path) {
