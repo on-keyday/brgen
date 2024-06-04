@@ -85,6 +85,11 @@ namespace brgen::ast {
         return begin <= int(op) && int(op) <= end;
     }
 
+    constexpr bool is_define_op(BinaryOp op) {
+        return op == BinaryOp::define_assign || op == BinaryOp::const_assign ||
+               op == BinaryOp::in_assign;
+    }
+
     constexpr std::array<futils::view::rspan<const char* const>, 10> bin_layers = {
         bin_layer0,
         bin_layer1,
