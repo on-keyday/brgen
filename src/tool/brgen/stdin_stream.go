@@ -7,7 +7,7 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/on-keyday/brgen/ast2go/request"
+	"github.com/on-keyday/brgen/astlib/ast2go/request"
 )
 
 func (g *Generator) initStdinStream() error {

@@ -10,9 +10,9 @@ import (
 	"os"
 	"reflect"
 
-	ast "github.com/on-keyday/brgen/ast2go/ast"
-	"github.com/on-keyday/brgen/ast2go/gen"
-	"github.com/on-keyday/brgen/ast2go/request"
+	ast "github.com/on-keyday/brgen/astlib/ast2go/ast"
+	"github.com/on-keyday/brgen/astlib/ast2go/gen"
+	"github.com/on-keyday/brgen/astlib/ast2go/request"
 )
 
 var spec = flag.Bool("s", false, "spec of this generator")

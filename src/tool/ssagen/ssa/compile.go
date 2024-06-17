@@ -1,7 +1,7 @@
 package ssa
 
 import (
-	"github.com/on-keyday/brgen/ast2go/ast"
+	"github.com/on-keyday/brgen/astlib/ast2go/ast"
 )
 
 type Compiler struct {

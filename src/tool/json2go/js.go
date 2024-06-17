@@ -3,7 +3,7 @@
 package main
 
 import (
-	js "github.com/on-keyday/brgen/ast2go/js"
+	js "github.com/on-keyday/brgen/astlib/ast2go/js"
 )
 
 type makeGenerator struct{}

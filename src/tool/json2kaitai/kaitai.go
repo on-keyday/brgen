@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 
 	"github.com/iancoleman/strcase"
-	"github.com/on-keyday/brgen/ast2go/ast"
-	"github.com/on-keyday/brgen/ast2go/gen"
+	"github.com/on-keyday/brgen/astlib/ast2go/ast"
+	"github.com/on-keyday/brgen/astlib/ast2go/gen"
 	convert "sigs.k8s.io/yaml"
 )
 

@@ -12,8 +12,8 @@ import (
 	"strings"
 
 	"github.com/iancoleman/strcase"
-	ast2go "github.com/on-keyday/brgen/ast2go/ast"
-	"github.com/on-keyday/brgen/ast2go/gen"
+	ast2go "github.com/on-keyday/brgen/astlib/ast2go/ast"
+	"github.com/on-keyday/brgen/astlib/ast2go/gen"
 )
 
 var spec = flag.Bool("s", false, "tell spec of json2go")

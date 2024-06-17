@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	ast2go "github.com/on-keyday/brgen/ast2go/ast"
+	ast2go "github.com/on-keyday/brgen/astlib/ast2go/ast"
 )
 
 type Generator struct {
