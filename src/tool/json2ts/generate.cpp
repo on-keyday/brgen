@@ -390,14 +390,18 @@ namespace json2ts {
 
         void assert_obj(AnonymousType& typ, const std::shared_ptr<ast::StructType>& st) {
             if (mode == Mode::encode) {
-                w.writeln("if(obj.", typ.field_name, " === undefined) {");
-                {
-                    auto s = w.indent_scope();
-                    w.writeln("throw new Error('field ", typ.field_name, " is undefined');");
-                }
-                w.writeln("}");
+                bool has_field = false;
                 for (auto& field : st->fields) {
                     if (auto f = ast::as<ast::Field>(field)) {
+                        if (!has_field) {  // check holder object
+                            w.writeln("if(obj.", typ.field_name, " === undefined) {");
+                            {
+                                auto s = w.indent_scope();
+                                w.writeln("throw new Error('field ", typ.field_name, " is undefined');");
+                            }
+                            w.writeln("}");
+                            has_field = true;
+                        }
                         auto ident = str.to_string(f->ident);
                         w.writeln("if(", ident, " === undefined) {");
                         {

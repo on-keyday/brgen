@@ -95,10 +95,10 @@ jobs:
       - name: Build Wasm
         if: matrix.language == 'javascript-typescript'
         run: |
-          cd ast2ts
+          cd astlib/ast2ts
           npm install
           tsc
-          cd ..
+          cd ../..
           GOROOT=`go env GOROOT`
           echo "GOROOT=$GOROOT"
           export WASMEXEC_FILE="$GOROOT/misc/wasm/wasm_exec.js"

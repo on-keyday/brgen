@@ -4,7 +4,7 @@
     "@types/emscripten": "^1.39.8",
     "@types/node": "^20.8.6",
     "assert": "^2.1.0",
-    "ast2ts": "file:../../ast2ts/out",
+    "ast2ts": "file:../../astlib/ast2ts/out",
     "destyle.css": "^4.0.0",
     "highlight.js": "^11.9.0",
     "json2rust": "file:../../src/tool/json2rust/pkg",

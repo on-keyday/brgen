@@ -10,8 +10,8 @@ import (
 	"io"
 	"os"
 
-	ast2go "github.com/on-keyday/brgen/ast2go/ast"
-	"github.com/on-keyday/brgen/ast2go/request"
+	ast2go "github.com/on-keyday/brgen/astlib/ast2go/ast"
+	"github.com/on-keyday/brgen/astlib/ast2go/request"
 )
 
 type LineMap struct {
@@ -21,7 +21,7 @@ type LineMap struct {
 
 type TestInfo struct {
 	LineMap []LineMap `json:"line_map"`
-	Structs []string `json:"structs"`
+	Structs []string  `json:"structs"`
 }
 
 func generate(r io.Reader, out func(suffix string, data []byte, warn error), errOut func(err error)) {

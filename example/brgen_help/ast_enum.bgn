@@ -164,59 +164,45 @@ enum FormatTrait:
     fixed_primitive = 1 << 0
     # floating point is used
     fixed_float = 1 << 1
-    # fixed length array of int or enum
-    fixed_primitive_array = 1 << 2
-    # fixed length array of floating point 
-    fixed_float_array = 1 << 3
-    # variable length array of int or enum
-    variable_primitive_array = 1 << 4
-    # variable length array of floating point
-    variable_float_array = 1 << 5
-    # variable length array of struct
-    variable_struct_array = 1 << 6
-    # fixed length array of struct
-    fixed_struct_array = 1 << 7
+    # fixed length array
+    fixed_array = 1 << 2
+    # variable length array
+    variable_array = 1 << 3
     # struct
-    struct_ = 1 << 8
+    struct_ = 1 << 4
     # conditional union
-    conditional = 1 << 9
+    conditional = 1 << 5
     # peek operation (input.peek() or field :Type(input.peek = true))
-    static_peek = 1 << 10
+    static_peek = 1 << 6
     # bit field
-    bit_field = 1 << 11
+    bit_field = 1 << 7
     # reading state variable
-    read_state = 1 << 12
+    read_state = 1 << 8
     # writing state variable
-    write_state = 1 << 13
-    # terminal string pattern array
-    terminal_string = 1 << 14
-    # terminal end pattern array
-    terminal_end = 1 << 15
-    # terminal regex pattern array
-    terminal_regex = 1 << 16
-    # terminal conditional function pattern array
-    terminal_fn = 1 << 17
+    write_state = 1 << 9
+    # terminal pattern
+    terminal_pattern = 1 << 10
     # bit stream required 
-    bit_stream = 1 << 18
-    # dynamic endian required
-    dynamic_endian = 1 << 19
-    # dynamic bit order required
-    dynamic_bit_order = 1 << 20
+    bit_stream = 1 << 11
+    # dynamic configuration required
+    dynamic_order = 1 << 12
     # full input required (required subrange with offset syntax)
-    full_input = 1 << 21
+    full_input = 1 << 13
     # backward input required
-    backward_input = 1 << 22
-    # magic string
-    magic_string = 1 << 23
-    # magic number
-    magic_number = 1 << 24
+    backward_input = 1 << 14
+    # magic value
+    magic_value = 1 << 15
     # assertion exists
-    assertion = 1 << 25
+    assertion = 1 << 16
     # explicit error
-    explicit_error = 1 << 26
-    # procedual method invocation
-    procedural = 1 << 27
+    explicit_error = 1 << 17
+    # procedural method invocation
+    procedural = 1 << 18
     # for loop
-    for_loop = 1 << 28
+    for_loop = 1 << 19
     # local variable
-    local_variable = 1 << 29
+    local_variable = 1 << 20
+    # description only (cannot be used for code generating because of incomplete information)
+    description_only = 1 << 21
+    # uncommon size (like 3 bytes integer) field exists
+    uncommon_size = 1 << 22

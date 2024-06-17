@@ -15,7 +15,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/on-keyday/brgen/ast2go/request"
+	"github.com/on-keyday/brgen/astlib/ast2go/request"
 )
 
 type Spec struct {

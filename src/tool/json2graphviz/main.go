@@ -157,7 +157,7 @@ func structTypeTrace(out io.Writer, name string, traceTarget *ast.StructType) {
 			}
 			baseTypeLink(w, name, v.FieldType)
 		case *ast.Function:
-			fmt.Fprintf(out, "%s fn\n", v.Ident.Ident)
+			fmt.Fprintf(out, "fn %s\n", v.Ident.Ident)
 		}
 	}
 	fmt.Fprintf(out, "}\n")
@@ -165,7 +165,7 @@ func structTypeTrace(out io.Writer, name string, traceTarget *ast.StructType) {
 }
 
 func traceFormat(out io.Writer, prog *ast.Program) {
-	fmt.Fprintf(out, "erDiagram\n")
+	fmt.Fprintf(out, "graph Program {\n")
 	visited := map[ast.Node]struct{}{}
 	ast.Walk(prog, ast.VisitFn(func(v ast.Visitor, n ast.Node) bool {
 		if _, ok := visited[n]; ok {
@@ -217,7 +217,7 @@ func streamMode() {
 		if err != nil {
 			stream.RespondError(err.Error())
 		} else {
-			stream.RespondSource(string(req.Name)+".md", w.Bytes(), "")
+			stream.RespondSource(string(req.Name)+".dot", w.Bytes(), "")
 		}
 	})
 	if err != nil {
@@ -232,23 +232,23 @@ func main() {
 			fmt.Fprintf(os.Stdout, `
 			{
 				"input": "stdin",
-				"langs": ["mermaid"],
-				"suffix": [".md"]
+				"langs": ["graphviz"],
+				"suffix": [".dot"]
 			}
 		`)
 		} else if *fileName {
 			fmt.Fprintf(os.Stdout, `
 			{
 				"input": "file",
-				"langs": ["mermaid"],
-				"suffix": [".md"]
+				"langs": ["graphviz"],
+				"suffix": [".dot"]
 			}
 		`)
 		} else {
 			fmt.Fprintf(os.Stdout, `
 			{
 				"input": "stdin_stream",
-				"langs": ["mermaid"]
+				"langs": ["graphviz"]
 			}
 		`)
 		}

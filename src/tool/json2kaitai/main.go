@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/on-keyday/brgen/ast2go/ast"
+	"github.com/on-keyday/brgen/astlib/ast2go/ast"
 )
 
 func main() {

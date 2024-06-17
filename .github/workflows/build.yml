@@ -154,10 +154,10 @@ jobs:
         uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
       - name: Setup ast2ts
         run: |
-          cd ast2ts
+          cd astlib/ast2ts
           npm install
           tsc
-          cd ..
+          cd ../..
       - name: Install VSCE
         run: npm install -g vsce
       - name: Build
@@ -275,11 +275,11 @@ jobs:
       - name: fetch dependencies
         run: |
           go mod download
-          cd ast2ts
+          cd astlib/ast2ts
           npm install
           tsc
-          cp ../LICENSE ./out
-          cd ../lsp
+          cp ../../LICENSE ./out
+          cd ../../lsp
           npm install
           cd server
           npm install
@@ -332,10 +332,10 @@ jobs:
         uses: seanmiddleditch/gha-setup-ninja@96bed6edff20d1dd61ecff9b75cc519d516e6401 # master
       - name: Set up ast2ts
         run: |
-          cd ast2ts
+          cd astlib/ast2ts
           npm install
           tsc
-          cd ..
+          cd ../..
       - name: Set up wasm-pack
         run: |
           curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh

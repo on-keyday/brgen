@@ -1,9 +1,9 @@
 import subprocess as sp
 
-ret = sp.call(["go", "generate", "./ast2go"])
+ret = sp.call(["go", "generate", "./astlib/ast2go"])
 print(ret)
 ret = sp.call(
-    ["./tool/gen_ast2ts", "./ast2ts/src/ast.ts"],
+    ["./tool/gen_ast2ts", "./astlib/ast2ts/src/ast.ts"],
     executable="./tool/gen_ast2ts.exe",
 )
 print(ret)

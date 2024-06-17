@@ -33,6 +33,7 @@ enum MessageType:
     interact_reply = 3
     broadcast_reply = 4
     error = 5
+    ping = 6
 
 format PlainMessage:
     len :u32
@@ -44,7 +45,9 @@ format Message:
        msg_type == MessageType.broadcast_reply||
        msg_type == MessageType.interact_reply:
         client_id :ID
-    if msg_type == MessageType.control:
+    if msg_type == MessageType.ping:
+        ..
+    elif msg_type == MessageType.control:
         control :ControlMessage
     else:
         message :PlainMessage

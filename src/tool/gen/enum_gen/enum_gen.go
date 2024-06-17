@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/on-keyday/brgen/ast2go/ast"
-	"github.com/on-keyday/brgen/ast2go/gen"
+	"github.com/on-keyday/brgen/astlib/ast2go/ast"
+	"github.com/on-keyday/brgen/astlib/ast2go/gen"
 )
 
 var nameSpace = flag.String("namespace", "", "namespace of the enum")

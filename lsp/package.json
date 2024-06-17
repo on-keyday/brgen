@@ -63,7 +63,7 @@
   "dependencies": {
     "@types/node": "^20.6.3",
     "@types/vscode": "^1.83.0",
-    "ast2ts": "file:../ast2ts/out",
+    "ast2ts": "file:../astlib/ast2ts/out",
     "typescript": "^5.2.2"
   }
 }
