@@ -145,7 +145,7 @@
     ],
     "rust-analyzer.cargo.sysroot": "discover",
     "rust-analyzer.linkedProjects": [
-        ".\\ast2rust\\Cargo.toml",
+        ".\\astlib\\ast2rust\\Cargo.toml",
         ".\\src\\tool\\json2rust\\Cargo.toml",
         ".\\src\\tool\\json2llvm\\Cargo.toml",
         ".\\src\\tool\\cmptest\\Cargo.toml",
