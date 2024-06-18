@@ -1516,37 +1516,30 @@ func (n *OrderType) UnmarshalJSON(data []byte) error {
 type FormatTrait int
 
 const (
-	FormatTraitNone                   FormatTrait = 0
-	FormatTraitFixedPrimitive         FormatTrait = 1
-	FormatTraitFixedFloat             FormatTrait = 2
-	FormatTraitFixedPrimitiveArray    FormatTrait = 4
-	FormatTraitFixedFloatArray        FormatTrait = 8
-	FormatTraitVariablePrimitiveArray FormatTrait = 16
-	FormatTraitVariableFloatArray     FormatTrait = 32
-	FormatTraitVariableStructArray    FormatTrait = 64
-	FormatTraitFixedStructArray       FormatTrait = 128
-	FormatTraitStruct                 FormatTrait = 256
-	FormatTraitConditional            FormatTrait = 512
-	FormatTraitStaticPeek             FormatTrait = 1024
-	FormatTraitBitField               FormatTrait = 2048
-	FormatTraitReadState              FormatTrait = 4096
-	FormatTraitWriteState             FormatTrait = 8192
-	FormatTraitTerminalString         FormatTrait = 16384
-	FormatTraitTerminalEnd            FormatTrait = 32768
-	FormatTraitTerminalRegex          FormatTrait = 65536
-	FormatTraitTerminalFn             FormatTrait = 131072
-	FormatTraitBitStream              FormatTrait = 262144
-	FormatTraitDynamicEndian          FormatTrait = 524288
-	FormatTraitDynamicBitOrder        FormatTrait = 1048576
-	FormatTraitFullInput              FormatTrait = 2097152
-	FormatTraitBackwardInput          FormatTrait = 4194304
-	FormatTraitMagicString            FormatTrait = 8388608
-	FormatTraitMagicNumber            FormatTrait = 16777216
-	FormatTraitAssertion              FormatTrait = 33554432
-	FormatTraitExplicitError          FormatTrait = 67108864
-	FormatTraitProcedural             FormatTrait = 134217728
-	FormatTraitForLoop                FormatTrait = 268435456
-	FormatTraitLocalVariable          FormatTrait = 536870912
+	FormatTraitNone            FormatTrait = 0
+	FormatTraitFixedPrimitive  FormatTrait = 1
+	FormatTraitFixedFloat      FormatTrait = 2
+	FormatTraitFixedArray      FormatTrait = 4
+	FormatTraitVariableArray   FormatTrait = 8
+	FormatTraitStruct          FormatTrait = 16
+	FormatTraitConditional     FormatTrait = 32
+	FormatTraitStaticPeek      FormatTrait = 64
+	FormatTraitBitField        FormatTrait = 128
+	FormatTraitReadState       FormatTrait = 256
+	FormatTraitWriteState      FormatTrait = 512
+	FormatTraitTerminalPattern FormatTrait = 1024
+	FormatTraitBitStream       FormatTrait = 2048
+	FormatTraitDynamicOrder    FormatTrait = 4096
+	FormatTraitFullInput       FormatTrait = 8192
+	FormatTraitBackwardInput   FormatTrait = 16384
+	FormatTraitMagicValue      FormatTrait = 32768
+	FormatTraitAssertion       FormatTrait = 65536
+	FormatTraitExplicitError   FormatTrait = 131072
+	FormatTraitProcedural      FormatTrait = 262144
+	FormatTraitForLoop         FormatTrait = 524288
+	FormatTraitLocalVariable   FormatTrait = 1048576
+	FormatTraitDescriptionOnly FormatTrait = 2097152
+	FormatTraitUncommonSize    FormatTrait = 4194304
 )
 
 func (n FormatTrait) String() string {
@@ -1563,41 +1556,17 @@ func (n FormatTrait) String() string {
 		}
 		s += "fixed_float"
 	}
-	if n&FormatTraitFixedPrimitiveArray != 0 {
+	if n&FormatTraitFixedArray != 0 {
 		if s != "" {
 			s += " | "
 		}
-		s += "fixed_primitive_array"
+		s += "fixed_array"
 	}
-	if n&FormatTraitFixedFloatArray != 0 {
+	if n&FormatTraitVariableArray != 0 {
 		if s != "" {
 			s += " | "
 		}
-		s += "fixed_float_array"
-	}
-	if n&FormatTraitVariablePrimitiveArray != 0 {
-		if s != "" {
-			s += " | "
-		}
-		s += "variable_primitive_array"
-	}
-	if n&FormatTraitVariableFloatArray != 0 {
-		if s != "" {
-			s += " | "
-		}
-		s += "variable_float_array"
-	}
-	if n&FormatTraitVariableStructArray != 0 {
-		if s != "" {
-			s += " | "
-		}
-		s += "variable_struct_array"
-	}
-	if n&FormatTraitFixedStructArray != 0 {
-		if s != "" {
-			s += " | "
-		}
-		s += "fixed_struct_array"
+		s += "variable_array"
 	}
 	if n&FormatTraitStruct != 0 {
 		if s != "" {
@@ -1635,29 +1604,11 @@ func (n FormatTrait) String() string {
 		}
 		s += "write_state"
 	}
-	if n&FormatTraitTerminalString != 0 {
+	if n&FormatTraitTerminalPattern != 0 {
 		if s != "" {
 			s += " | "
 		}
-		s += "terminal_string"
-	}
-	if n&FormatTraitTerminalEnd != 0 {
-		if s != "" {
-			s += " | "
-		}
-		s += "terminal_end"
-	}
-	if n&FormatTraitTerminalRegex != 0 {
-		if s != "" {
-			s += " | "
-		}
-		s += "terminal_regex"
-	}
-	if n&FormatTraitTerminalFn != 0 {
-		if s != "" {
-			s += " | "
-		}
-		s += "terminal_fn"
+		s += "terminal_pattern"
 	}
 	if n&FormatTraitBitStream != 0 {
 		if s != "" {
@@ -1665,17 +1616,11 @@ func (n FormatTrait) String() string {
 		}
 		s += "bit_stream"
 	}
-	if n&FormatTraitDynamicEndian != 0 {
+	if n&FormatTraitDynamicOrder != 0 {
 		if s != "" {
 			s += " | "
 		}
-		s += "dynamic_endian"
-	}
-	if n&FormatTraitDynamicBitOrder != 0 {
-		if s != "" {
-			s += " | "
-		}
-		s += "dynamic_bit_order"
+		s += "dynamic_order"
 	}
 	if n&FormatTraitFullInput != 0 {
 		if s != "" {
@@ -1689,17 +1634,11 @@ func (n FormatTrait) String() string {
 		}
 		s += "backward_input"
 	}
-	if n&FormatTraitMagicString != 0 {
+	if n&FormatTraitMagicValue != 0 {
 		if s != "" {
 			s += " | "
 		}
-		s += "magic_string"
-	}
-	if n&FormatTraitMagicNumber != 0 {
-		if s != "" {
-			s += " | "
-		}
-		s += "magic_number"
+		s += "magic_value"
 	}
 	if n&FormatTraitAssertion != 0 {
 		if s != "" {
@@ -1730,6 +1669,18 @@ func (n FormatTrait) String() string {
 			s += " | "
 		}
 		s += "local_variable"
+	}
+	if n&FormatTraitDescriptionOnly != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "description_only"
+	}
+	if n&FormatTraitUncommonSize != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "uncommon_size"
 	}
 	if s == "" {
 		return "none"

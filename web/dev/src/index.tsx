@@ -516,12 +516,7 @@ const setCommon = (m :Map<string,InputListElement>) => {
     commonUI.config.set(Language.JSON_DEBUG_AST,languageSpecificConfig(debugAST,ConfigKey.COMMON_FILE_NAME,(change) => {
         updateUI();
     }));
-    const cppProto = new Map<string,InputListElement>();
-    setCommon(cppProto);
-    commonUI.config.set(Language.CPP_PROTOTYPE,languageSpecificConfig(cppProto,ConfigKey.COMMON_FILE_NAME,(change) => {
-        updateUI();
-    }));
-    
+ 
     const ast = new Map<string,InputListElement>();
     setCommon(ast);
     commonUI.config.set(Language.JSON_AST,languageSpecificConfig(ast,ConfigKey.COMMON_FILE_NAME,(change) => {

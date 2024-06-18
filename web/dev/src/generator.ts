@@ -73,10 +73,7 @@ const handleLanguage = async (ui :UIModel,s :JobResult,generate:(id :TraceID,src
     return;
 }
 
-const handleCppPrototype = async (ui :UIModel,s :JobResult) => {
-    const option :CallOption= {};
-    return handleLanguage(ui,s,caller.getCppPrototypeCode,Language.CPP_PROTOTYPE,"cpp",option);
-}
+
 
 
 const SEPARATOR= "############";
@@ -248,8 +245,6 @@ export const updateGenerated = async (ui :UIModel) => {
         case Language.JSON_AST:
             ui.setGenerated(JSON.stringify(js,null,4),"json");
             return;
-        case Language.CPP_PROTOTYPE: 
-            return handleCppPrototype(ui,s);
         case Language.CPP:
             return handleCpp(ui,s);
         case Language.GO:
