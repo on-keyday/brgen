@@ -1,7 +1,8 @@
-name: brgen-test
-run-name: brgen test
+name: brgen-puppeteer-test
 on:
-  - push
+  # Allows you to run this workflow manually from the Actions tab on GitHub.
+  workflow_call: null
+  workflow_dispatch: null
 
 permissions:
   contents: read
