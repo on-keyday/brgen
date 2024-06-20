@@ -35,13 +35,14 @@ jobs:
             ./built
             ./utils
           key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('build.sh') }}
+      - name: Pull Utils
+        if: ${{ steps.cache.outputs.cache-hit }} == 'true'
+        run: |
+          cd utils
+          git pull
+          cd ..
       - name: Build
         run: |
-          if [ -e ./utils ]; then
-            cd utils
-            git pull
-            cd ..
-          fi
           . build.sh native Release
           ./tool/src2json --version
       - name: Pack artifacts
@@ -133,6 +134,23 @@ jobs:
         with:
           version: latest
           platform: x64
+      - name: Cache
+        uses: actions/cache@v2.1.6
+        # prevent renovate from updating this
+        if: (!startsWith(github.ref , 'refs/heads/renovate/')) && (!startsWith(github.ref , 'refs/heads/dependabot/'))
+        env:
+          cache-name: cache-windows-built
+        with:
+          path: |
+            ./built
+            ./utils
+          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('build.bat') }}
+      - name: Pull Utils
+        if: ${{ steps.cache.outputs.cache-hit }} == 'true'
+        run: |
+          cd utils
+          git pull
+          cd ..
       - name: Build
         shell: cmd
         run: |
@@ -359,6 +377,12 @@ jobs:
             ./astlib/ast2ts/node_modules
             ./web/dev/node_modules
           key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('build.sh') }}
+      - name: Pull Utils
+        if: ${{ steps.cache.outputs.cache-hit }} == 'true'
+        run: |
+          cd utils
+          git pull
+          cd ..
       - name: Set up ast2ts
         run: |
           cd astlib/ast2ts
@@ -370,11 +394,6 @@ jobs:
           curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
       - name: Build Wasm
         run: |
-          if [ -e ./utils ]; then
-            cd utils
-            git pull
-            cd ..
-          fi
           GOROOT=`go env GOROOT`
           echo "GOROOT=$GOROOT"
           export WASMEXEC_FILE="$GOROOT/misc/wasm/wasm_exec.js"
