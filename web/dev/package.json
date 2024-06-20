@@ -8,7 +8,7 @@
     "destyle.css": "^4.0.0",
     "highlight.js": "^11.9.0",
     "json2rust": "file:../../src/tool/json2rust/pkg",
-    "monaco-editor": "^0.49.0",
+    "monaco-editor": "^0.50.0",
     "puppeteer": "^22.11.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
