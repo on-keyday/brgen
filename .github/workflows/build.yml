@@ -33,9 +33,15 @@ jobs:
         with:
           path: |
             ./built
+            ./utils
           key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('build.sh') }}
       - name: Build
         run: |
+          if [ -e ./utils ]; then
+            cd utils
+            git pull
+            cd ..
+          fi
           . build.sh native Release
           ./tool/src2json --version
       - name: Pack artifacts
@@ -349,6 +355,7 @@ jobs:
         with:
           path: |
             ./built
+            ./utils
             ./astlib/ast2ts/node_modules
             ./web/dev/node_modules
           key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('build.sh') }}
@@ -363,6 +370,11 @@ jobs:
           curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
       - name: Build Wasm
         run: |
+          if [ -e ./utils ]; then
+            cd utils
+            git pull
+            cd ..
+          fi
           GOROOT=`go env GOROOT`
           echo "GOROOT=$GOROOT"
           export WASMEXEC_FILE="$GOROOT/misc/wasm/wasm_exec.js"
