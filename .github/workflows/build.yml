@@ -41,7 +41,7 @@ jobs:
         run: |
           cd utils
           git pull
-          . build shared Release utils
+          . build shared Release futils
           cd ..
       - name: Build
         run: |
@@ -155,7 +155,7 @@ jobs:
         run: |
           cd utils
           git pull
-          build shared Release utils
+          build shared Release futils
           cd ..
       - name: Build
         shell: cmd
@@ -392,7 +392,7 @@ jobs:
         run: |
           cd utils
           git pull
-          . build wasm-em Release utils
+          . build wasm-em Release futils
           cd ..
       - name: Set up ast2ts
         run: |
