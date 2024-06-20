@@ -26,10 +26,10 @@ jobs:
       - name: Install Puppeteer
         run: |
           sudo apt-get install -yq gconf-service libasound2 libatk1.0-0 libcups2 libdbus-1-3 libgconf-2-4 libgtk-3-0 libnspr4 libnss3 libx11-xcb1 libxcomposite1 libxdamage1 libxrandr2 xdg-utils
-          npm install puppeteer
       - name: Test
         run: |
           cd ./web/public
           npx http-server -p 8080 &
           cd ../dev
+          npm install
           TEST_ENV=github node test/puppet.js
