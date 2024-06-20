@@ -1,3 +1,4 @@
+export {}
 import * as puppet from "puppeteer";
 
 import { env } from "process";
