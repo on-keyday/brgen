@@ -41,6 +41,7 @@ jobs:
         run: |
           cd utils
           git pull
+          . build shared Release utils
           cd ..
       - name: Build
         run: |
@@ -150,9 +151,11 @@ jobs:
           key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('build.bat') }}
       - name: Pull Utils
         if: ${{ steps.cache_windows.outputs.cache-hit }}
+        shell: cmd
         run: |
           cd utils
           git pull
+          build shared Release utils
           cd ..
       - name: Build
         shell: cmd
@@ -389,6 +392,7 @@ jobs:
         run: |
           cd utils
           git pull
+          . build wasm-em Release utils
           cd ..
       - name: Set up ast2ts
         run: |
