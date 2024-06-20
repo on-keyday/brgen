@@ -122,3 +122,4 @@ for(let example of examples) {
 await browser.close();
 
 console.log("done");
+
