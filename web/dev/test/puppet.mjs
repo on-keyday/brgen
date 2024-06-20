@@ -90,8 +90,11 @@ const selectLanguages = async () => {
 
 await selectLanguages();
 
-const PWD = cwd();
+let PWD = cwd();
 console.log("PWD:", PWD);
+if(!PWD.endsWith("/")) {
+    PWD += "/";
+}
 const examples = await readdir(PWD + "../../../example",{recursive:true}).then(x => x.map((e) => e.replace("\\","/")));
 console.log("examples:", examples);
 

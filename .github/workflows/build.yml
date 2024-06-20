@@ -24,6 +24,16 @@ jobs:
         with:
           version: latest
           platform: x64
+      - name: Cache
+        uses: actions/cache@v2.1.6
+        # prevent renovate from updating this
+        if: (!startsWith(github.ref , 'refs/heads/renovate/')) && (!startsWith(github.ref , 'refs/heads/dependabot/'))
+        env:
+          cache-name: cache-linux-built
+        with:
+          path: |
+            ./built
+          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('build.sh') }}
       - name: Build
         run: |
           . build.sh native Release
