@@ -17,3 +17,5 @@ allowed: # 以下のライセンスならOKとします
   - cc-by-4.0
   - other
   - gpl-2.0
+  - bsd-2-clause
+  - 0bsd
