@@ -364,6 +364,13 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
 
+  run-test:
+    needs: build-linux
+    uses: ./.github/workflows/brgen-test.yaml
+
+  puppeteer-test:
+    needs: build-pages
+    uses: ./.github/workflows/puppeteer-test.yml
   release:
     needs:
       [
@@ -375,18 +382,12 @@ jobs:
         build-android,
         build-pages,
         collect-licenses,
+        run-test,
+        puppeteer-test,
       ]
     uses: ./.github/workflows/release.yml
     permissions:
       contents: write
-
-  run-test:
-    needs: build-linux
-    uses: ./.github/workflows/brgen-test.yaml
-
-  puppeteer-test:
-    needs: build-pages
-    uses: ./.github/workflows/puppeteer-test.yml
 
   deploy:
     needs: puppeteer-test
