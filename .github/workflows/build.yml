@@ -28,6 +28,7 @@ jobs:
         uses: actions/cache@v2.1.6
         # prevent renovate from updating this
         if: (!startsWith(github.ref , 'refs/heads/renovate/')) && (!startsWith(github.ref , 'refs/heads/dependabot/'))
+        id: cache_linux
         env:
           cache-name: cache-linux-built
         with:
@@ -36,7 +37,7 @@ jobs:
             ./utils
           key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('build.sh') }}
       - name: Pull Utils
-        if: ${{ steps.cache.outputs.cache-hit }} == 'true'
+        if: ${{ steps.cache_linux.outputs.cache-hit }} == 'true'
         run: |
           cd utils
           git pull
@@ -136,6 +137,7 @@ jobs:
           platform: x64
       - name: Cache
         uses: actions/cache@v2.1.6
+        id: cache_windows
         # prevent renovate from updating this
         if: (!startsWith(github.ref , 'refs/heads/renovate/')) && (!startsWith(github.ref , 'refs/heads/dependabot/'))
         env:
@@ -146,7 +148,7 @@ jobs:
             ./utils
           key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('build.bat') }}
       - name: Pull Utils
-        if: ${{ steps.cache.outputs.cache-hit }} == 'true'
+        if: ${{ steps.cache_windows.outputs.cache-hit }} == 'true'
         run: |
           cd utils
           git pull
@@ -368,6 +370,7 @@ jobs:
         uses: actions/cache@v2.1.6
         # prevent renovate from updating this
         if: (!startsWith(github.ref , 'refs/heads/renovate/')) && (!startsWith(github.ref , 'refs/heads/dependabot/'))
+        id: cache_web
         env:
           cache-name: cache-web-built
         with:
@@ -378,7 +381,7 @@ jobs:
             ./web/dev/node_modules
           key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('build.sh') }}
       - name: Pull Utils
-        if: ${{ steps.cache.outputs.cache-hit }} == 'true'
+        if: ${{ steps.cache_web.outputs.cache-hit }} == 'true'
         run: |
           cd utils
           git pull
