@@ -95,7 +95,7 @@ console.log("PWD:", PWD);
 if(!PWD.endsWith("/")) {
     PWD += "/";
 }
-const examples = await readdir(PWD + "../../example",{recursive:true}).then(x => x.map((e) => e.replace("\\","/")));
+const examples = await readdir(PWD + "../../example",{recursive:true}).then(x => x.map((e) => e.replace(/\\/g,"/")));
 console.log("examples:", examples);
 
 const writeCommandPalette = async (fileName) => {
