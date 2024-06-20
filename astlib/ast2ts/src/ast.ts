@@ -207,34 +207,27 @@ export const enum FormatTrait {
 	none = 0,
 	fixed_primitive = 1,
 	fixed_float = 2,
-	fixed_primitive_array = 4,
-	fixed_float_array = 8,
-	variable_primitive_array = 16,
-	variable_float_array = 32,
-	variable_struct_array = 64,
-	fixed_struct_array = 128,
-	struct = 256,
-	conditional = 512,
-	static_peek = 1024,
-	bit_field = 2048,
-	read_state = 4096,
-	write_state = 8192,
-	terminal_string = 16384,
-	terminal_end = 32768,
-	terminal_regex = 65536,
-	terminal_fn = 131072,
-	bit_stream = 262144,
-	dynamic_endian = 524288,
-	dynamic_bit_order = 1048576,
-	full_input = 2097152,
-	backward_input = 4194304,
-	magic_string = 8388608,
-	magic_number = 16777216,
-	assertion = 33554432,
-	explicit_error = 67108864,
-	procedural = 134217728,
-	for_loop = 268435456,
-	local_variable = 536870912,
+	fixed_array = 4,
+	variable_array = 8,
+	struct = 16,
+	conditional = 32,
+	static_peek = 64,
+	bit_field = 128,
+	read_state = 256,
+	write_state = 512,
+	terminal_pattern = 1024,
+	bit_stream = 2048,
+	dynamic_order = 4096,
+	full_input = 8192,
+	backward_input = 16384,
+	magic_value = 32768,
+	assertion = 65536,
+	explicit_error = 131072,
+	procedural = 262144,
+	for_loop = 524288,
+	local_variable = 1048576,
+	description_only = 2097152,
+	uncommon_size = 4194304,
 };
 
 export function isFormatTrait(obj: any): obj is FormatTrait {
@@ -245,34 +238,27 @@ export function FormatTraitToString(v: FormatTrait): string {
   const result = [];
   if ((v & 1) === 1) result.push("fixed_primitive");
   if ((v & 2) === 2) result.push("fixed_float");
-  if ((v & 4) === 4) result.push("fixed_primitive_array");
-  if ((v & 8) === 8) result.push("fixed_float_array");
-  if ((v & 16) === 16) result.push("variable_primitive_array");
-  if ((v & 32) === 32) result.push("variable_float_array");
-  if ((v & 64) === 64) result.push("variable_struct_array");
-  if ((v & 128) === 128) result.push("fixed_struct_array");
-  if ((v & 256) === 256) result.push("struct");
-  if ((v & 512) === 512) result.push("conditional");
-  if ((v & 1024) === 1024) result.push("static_peek");
-  if ((v & 2048) === 2048) result.push("bit_field");
-  if ((v & 4096) === 4096) result.push("read_state");
-  if ((v & 8192) === 8192) result.push("write_state");
-  if ((v & 16384) === 16384) result.push("terminal_string");
-  if ((v & 32768) === 32768) result.push("terminal_end");
-  if ((v & 65536) === 65536) result.push("terminal_regex");
-  if ((v & 131072) === 131072) result.push("terminal_fn");
-  if ((v & 262144) === 262144) result.push("bit_stream");
-  if ((v & 524288) === 524288) result.push("dynamic_endian");
-  if ((v & 1048576) === 1048576) result.push("dynamic_bit_order");
-  if ((v & 2097152) === 2097152) result.push("full_input");
-  if ((v & 4194304) === 4194304) result.push("backward_input");
-  if ((v & 8388608) === 8388608) result.push("magic_string");
-  if ((v & 16777216) === 16777216) result.push("magic_number");
-  if ((v & 33554432) === 33554432) result.push("assertion");
-  if ((v & 67108864) === 67108864) result.push("explicit_error");
-  if ((v & 134217728) === 134217728) result.push("procedural");
-  if ((v & 268435456) === 268435456) result.push("for_loop");
-  if ((v & 536870912) === 536870912) result.push("local_variable");
+  if ((v & 4) === 4) result.push("fixed_array");
+  if ((v & 8) === 8) result.push("variable_array");
+  if ((v & 16) === 16) result.push("struct");
+  if ((v & 32) === 32) result.push("conditional");
+  if ((v & 64) === 64) result.push("static_peek");
+  if ((v & 128) === 128) result.push("bit_field");
+  if ((v & 256) === 256) result.push("read_state");
+  if ((v & 512) === 512) result.push("write_state");
+  if ((v & 1024) === 1024) result.push("terminal_pattern");
+  if ((v & 2048) === 2048) result.push("bit_stream");
+  if ((v & 4096) === 4096) result.push("dynamic_order");
+  if ((v & 8192) === 8192) result.push("full_input");
+  if ((v & 16384) === 16384) result.push("backward_input");
+  if ((v & 32768) === 32768) result.push("magic_value");
+  if ((v & 65536) === 65536) result.push("assertion");
+  if ((v & 131072) === 131072) result.push("explicit_error");
+  if ((v & 262144) === 262144) result.push("procedural");
+  if ((v & 524288) === 524288) result.push("for_loop");
+  if ((v & 1048576) === 1048576) result.push("local_variable");
+  if ((v & 2097152) === 2097152) result.push("description_only");
+  if ((v & 4194304) === 4194304) result.push("uncommon_size");
   if (result.length === 0) {
     return "none";
   }

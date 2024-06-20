@@ -13,6 +13,10 @@ weight: 1
 
 言語仕様の変更記録 (24/02/07 ～)
 
+# 24/01/23 (転記)
+
+- resolve_primitive_cast を parser の機能に移動、それに伴い --not-resolve-cast オプションを 削除
+
 ## 24/02/07
 
 - const_variable を immutable_variable に変更

@@ -3,7 +3,6 @@ import {JobManager,TraceID} from "./job_mgr.js";
 
 const workerMap = Object.freeze({
     [WorkerType.SRC2JSON]:()=> new Worker(new URL("./worker/src2json_worker.js",import.meta.url),{type:"module"}),
-    [WorkerType.JSON2CPP]:()=> new Worker(new URL("./worker/json2cpp_worker.js",import.meta.url),{type:"module"}),
     [WorkerType.JSON2CPP2]:()=> new Worker(new URL("./worker/json2cpp2_worker.js",import.meta.url),{type:"module"}),
     [WorkerType.JSON2GO]:()=> new Worker(new URL("./worker/json2go_worker.js",import.meta.url),{type:"module"}),
     [WorkerType.JSON2C]:()=> new Worker(new URL("./worker/json2c_worker.js",import.meta.url),{type:"module"}),
@@ -110,13 +109,6 @@ const argConverter = Object.freeze({
         }
         return args;
     },
-    [RequestLanguage.CPP_PROTOTYPE] : (opt :CallOption) => {
-        const args = [];
-        if(opt.filename){
-            args.push("--stdin-name",opt.filename);
-        }
-        return args;
-    },
     [RequestLanguage.CPP] : (opt :CppOption) => {
         const args = ["--file"];
         if(opt.use_line_map){
@@ -202,10 +194,6 @@ export const getDebugAST = (id :TraceID,sourceCode :string,options :CallOption) 
 
 export const getTokens = (id :TraceID,sourceCode :string,options :CallOption) => {
     return getLanguage(id,sourceCode,RequestLanguage.TOKENIZE,options)
-}
-
-export const getCppPrototypeCode = (id :TraceID,sourceCode :string,options :CallOption) => {
-    return getLanguage(id,sourceCode,RequestLanguage.CPP_PROTOTYPE,options)
 }
 
 export const getCppCode = (id :TraceID,sourceCode :string,options :CppOption) => {

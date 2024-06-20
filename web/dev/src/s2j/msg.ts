@@ -4,7 +4,6 @@ export const enum RequestLanguage {
     TOKENIZE = "tokens",
     JSON_AST = "json ast",
     JSON_DEBUG_AST = "json ast (debug)",
-    CPP_PROTOTYPE = "cpp (prototype)",
     CPP = "cpp",
     GO = "go",
     C = "c",
@@ -17,7 +16,6 @@ export const LanguageList = [
     RequestLanguage.TOKENIZE,
     RequestLanguage.JSON_AST,
     RequestLanguage.JSON_DEBUG_AST,
-    RequestLanguage.CPP_PROTOTYPE,
     RequestLanguage.CPP,
     RequestLanguage.GO,
     RequestLanguage.C,
@@ -28,7 +26,6 @@ export const LanguageList = [
 
 export const enum WorkerType {
     SRC2JSON,
-    JSON2CPP,
     JSON2CPP2,
     JSON2GO,
     JSON2C,
@@ -39,7 +36,6 @@ export const enum WorkerType {
 
 export const WorkerList = Object.freeze([
     WorkerType.SRC2JSON,
-    WorkerType.JSON2CPP,
     WorkerType.JSON2CPP2,
     WorkerType.JSON2GO,
     WorkerType.JSON2C,
@@ -87,7 +83,6 @@ export type LanguageToOptionType = {
     [RequestLanguage.TOKENIZE]:CallOption
     [RequestLanguage.JSON_AST]:AstOption
     [RequestLanguage.JSON_DEBUG_AST]:CallOption
-    [RequestLanguage.CPP_PROTOTYPE]:CallOption
     [RequestLanguage.CPP]:CppOption
     [RequestLanguage.GO]:GoOption
     [RequestLanguage.C]:COption
@@ -100,7 +95,6 @@ export const LanguageToWorkerType = Object.freeze({
     [RequestLanguage.TOKENIZE]: WorkerType.SRC2JSON,
     [RequestLanguage.JSON_AST]: WorkerType.SRC2JSON,
     [RequestLanguage.JSON_DEBUG_AST]: WorkerType.SRC2JSON,
-    [RequestLanguage.CPP_PROTOTYPE]: WorkerType.JSON2CPP,
     [RequestLanguage.CPP]: WorkerType.JSON2CPP2,
     [RequestLanguage.GO]: WorkerType.JSON2GO,
     [RequestLanguage.C]: WorkerType.JSON2C,

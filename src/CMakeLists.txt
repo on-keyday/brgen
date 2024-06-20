@@ -15,8 +15,6 @@ add_executable(src2json
 target_link_libraries(src2json futils)
 add_compile_definitions(BRGEN_VERSION="${PROJECT_VERSION}")
 
-add_executable(json2cpp "tool/json2cpp/main.cpp")
-target_link_libraries(json2cpp futils)
 
 add_executable(json2cpp2 "tool/json2cpp2/main.cpp")
 target_link_libraries(json2cpp2 futils)
@@ -52,8 +50,6 @@ if("$ENV{BUILD_MODE}" STREQUAL "wasm-em")
 # Setting C++ to Wasm targets
 install(TARGETS src2json DESTINATION "lib" OPTIONAL)
 install(FILES "${CMAKE_BINARY_DIR}/tool/src2json.wasm" DESTINATION "lib" OPTIONAL)
-install(TARGETS json2cpp DESTINATION "lib" OPTIONAL)
-install(FILES "${CMAKE_BINARY_DIR}/tool/json2cpp.wasm" DESTINATION "lib" OPTIONAL)
 install(TARGETS json2cpp2 DESTINATION "lib" OPTIONAL)
 install(FILES "${CMAKE_BINARY_DIR}/tool/json2cpp2.wasm" DESTINATION "lib" OPTIONAL)
 install(TARGETS json2c DESTINATION "lib" OPTIONAL)
@@ -263,7 +259,6 @@ add_subdirectory(test)
 # Set RPATH for Unix-like systems
 if(UNIX)
 set_target_properties(src2json PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/tool")
-set_target_properties(json2cpp PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/tool")
 set_target_properties(json2cpp2 PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/tool")
 set_target_properties(json2c PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/tool")
 set_target_properties(json2vm PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/tool")
@@ -279,7 +274,7 @@ endif()
 
 # Set Install path for C++ targets
 
-install(TARGETS src2json json2cpp json2cpp2 json2c json2vm json2ts ctobgn rfc2bgn hex2bin DESTINATION tool OPTIONAL)
+install(TARGETS src2json json2cpp2 json2c json2vm json2ts ctobgn rfc2bgn hex2bin DESTINATION tool OPTIONAL)
 
 
 # Set Install path for Go targets
