@@ -384,8 +384,12 @@ jobs:
     needs: build-linux
     uses: ./.github/workflows/brgen-test.yaml
 
-  deploy:
+  puppeteer-test:
     needs: build-pages
+    uses: ./.github/workflows/puppeteer-test.yml
+
+  deploy:
+    needs: puppeteer-test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     uses: ./.github/workflows/deploy.yml
     permissions:

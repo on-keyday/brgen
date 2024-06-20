@@ -2,7 +2,7 @@
 import * as monaco from  "../../node_modules/monaco-editor/esm/vs/editor/editor.api.js";
 import '../../node_modules/monaco-editor/esm/vs/editor/contrib/semanticTokens/browser/documentSemanticTokens.js';
 import '../../node_modules/monaco-editor/esm/vs/editor/contrib/semanticTokens/browser/viewportSemanticTokens.js';
-import '../../node_modules/monaco-editor/esm/vs/editor/contrib/hover/browser/hover.js';
+import '../../node_modules/monaco-editor/esm/vs/editor/contrib/hover/browser/hoverContribution.js';
 import * as caller from "./caller.js";
 import {ast2ts,analyze} from "../../node_modules/ast2ts/index.js";
 import { UpdateTracer } from "./update.js";
