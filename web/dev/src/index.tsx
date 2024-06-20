@@ -19,6 +19,13 @@ import { save } from "./save-data/save";
 
 1 / 2 / 3 / 4;
 
+interface PuppeteerDebug {
+    onPuppeteerCodeGenerated? : (lang :string,code :string) => void;
+    onPuppeteerSampleLoaded? : (file :string,code :string) => void;
+    onPuppeteerCandidatesLoaded? : (candidates :FileCandidates) => void;
+}
+
+const puppeteerDebug = (globalThis as any) as PuppeteerDebug;
 
 if(window.MonacoEnvironment === undefined) {
     window.MonacoEnvironment = {
@@ -95,6 +102,9 @@ registerFileSelectionCallback(async() => {
             placeHolder: "Select example file",
             candidates: text.split("\n").filter((e)=>e!==""),
         }
+        if(typeof puppeteerDebug.onPuppeteerCandidatesLoaded === 'function') {
+            puppeteerDebug.onPuppeteerCandidatesLoaded(c);
+        }
         return c;
     })
 },(s)=>{
@@ -111,6 +121,9 @@ registerFileSelectionCallback(async() => {
                 range: editorUI.editorModel.getFullModelRange(),
                 text: text,
             }]);
+            if(typeof puppeteerDebug.onPuppeteerSampleLoaded === 'function') {
+                puppeteerDebug.onPuppeteerSampleLoaded(s,text);
+            }
         }).catch((e)=>{
             console.log(e);
         })
@@ -182,6 +195,7 @@ setWindowSize();
 
 window.addEventListener("resize",setWindowSize);
 
+
 const setGenerated =async (code :string,lang: string) => {
     const top = editorUI.generated.getScrollTop();
     const model = monaco.editor.createModel(code,lang);
@@ -191,6 +205,13 @@ const setGenerated =async (code :string,lang: string) => {
     }
     editorUI.generated.setModel(model);
     editorUI.generated.setScrollTop(top);
+
+    // callback for puppeteer debugging
+    // TODO(on-keyday): is this safe? 
+    //                  may cause XSS attack if unsafe code that injects onPuppeteerCodeGenerated is executed
+    if(typeof puppeteerDebug.onPuppeteerCodeGenerated === 'function') {
+        puppeteerDebug.onPuppeteerCodeGenerated(lang,code);
+    }
 }
 
 const updateUI = async ()=>{

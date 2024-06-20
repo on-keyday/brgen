@@ -24,6 +24,25 @@ jobs:
         with:
           version: latest
           platform: x64
+      - name: Cache
+        uses: actions/cache@v4
+        # prevent renovate from updating this
+        if: (!startsWith(github.ref , 'refs/heads/renovate/')) && (!startsWith(github.ref , 'refs/heads/dependabot/'))
+        id: cache_linux
+        env:
+          cache-name: cache-linux-built
+        with:
+          path: |
+            ./built
+            ./utils
+          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('build.sh') }}
+      - name: Pull Utils
+        if: ${{ steps.cache_linux.outputs.cache-hit }}
+        run: |
+          cd utils
+          git pull
+          . build shared Release futils
+          cd ..
       - name: Build
         run: |
           . build.sh native Release
@@ -100,6 +119,7 @@ jobs:
         with:
           name: brgen-macos
           path: ./artifacts
+
   build-windows:
     runs-on: windows-latest
     timeout-minutes: 20
@@ -117,6 +137,26 @@ jobs:
         with:
           version: latest
           platform: x64
+      - name: Cache
+        uses: actions/cache@v4
+        id: cache_windows
+        # prevent renovate from updating this
+        if: (!startsWith(github.ref , 'refs/heads/renovate/')) && (!startsWith(github.ref , 'refs/heads/dependabot/'))
+        env:
+          cache-name: cache-windows-built
+        with:
+          path: |
+            ./built
+            ./utils
+          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('build.bat') }}
+      - name: Pull Utils
+        if: ${{ steps.cache_windows.outputs.cache-hit }}
+        shell: cmd
+        run: |
+          cd utils
+          git pull
+          build shared Release futils
+          cd ..
       - name: Build
         shell: cmd
         run: |
@@ -328,8 +368,32 @@ jobs:
         uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
       - name: Setup Emscripten
         uses: mymindstorm/setup-emsdk@6ab9eb1bda2574c4ddb79809fc9247783eaf9021 # v14
+        with:
+          actions-cache-folder: emsdk
       - name: Set up Ninja
         uses: seanmiddleditch/gha-setup-ninja@96bed6edff20d1dd61ecff9b75cc519d516e6401 # master
+      - name: Cache
+        uses: actions/cache@v4
+        # prevent renovate from updating this
+        if: (!startsWith(github.ref , 'refs/heads/renovate/')) && (!startsWith(github.ref , 'refs/heads/dependabot/'))
+        id: cache_web
+        env:
+          cache-name: cache-web-built
+        with:
+          path: |
+            ./built
+            ./utils
+            ./astlib/ast2ts/node_modules
+            ./web/dev/node_modules
+            ./emsdk
+          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('build.sh') }}
+      - name: Pull Utils
+        if: ${{ steps.cache_web.outputs.cache-hit }}
+        run: |
+          cd utils
+          git pull
+          . build wasm-em Release futils
+          cd ..
       - name: Set up ast2ts
         run: |
           cd astlib/ast2ts
@@ -364,6 +428,13 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
 
+  run-test:
+    needs: build-linux
+    uses: ./.github/workflows/brgen-test.yaml
+
+  puppeteer-test:
+    needs: build-pages
+    uses: ./.github/workflows/puppeteer-test.yml
   release:
     needs:
       [
@@ -375,17 +446,15 @@ jobs:
         build-android,
         build-pages,
         collect-licenses,
+        run-test,
+        puppeteer-test,
       ]
     uses: ./.github/workflows/release.yml
     permissions:
       contents: write
 
-  run-test:
-    needs: build-linux
-    uses: ./.github/workflows/brgen-test.yaml
-
   deploy:
-    needs: build-pages
+    needs: puppeteer-test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     uses: ./.github/workflows/deploy.yml
     permissions:
