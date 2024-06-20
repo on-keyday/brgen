@@ -37,7 +37,7 @@ jobs:
             ./utils
           key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('build.sh') }}
       - name: Pull Utils
-        if: ${{ steps.cache_linux.outputs.cache-hit }} == 'true'
+        if: ${{ steps.cache_linux.outputs.cache-hit }} != 'true'
         run: |
           cd utils
           git pull
@@ -118,6 +118,7 @@ jobs:
         with:
           name: brgen-macos
           path: ./artifacts
+
   build-windows:
     runs-on: windows-latest
     timeout-minutes: 20
@@ -148,7 +149,7 @@ jobs:
             ./utils
           key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('build.bat') }}
       - name: Pull Utils
-        if: ${{ steps.cache_windows.outputs.cache-hit }} == 'true'
+        if: ${{ steps.cache_windows.outputs.cache-hit }} != 'true'
         run: |
           cd utils
           git pull
@@ -384,7 +385,7 @@ jobs:
             ./emsdk
           key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('build.sh') }}
       - name: Pull Utils
-        if: ${{ steps.cache_web.outputs.cache-hit }} == 'true'
+        if: ${{ steps.cache_web.outputs.cache-hit }} != 'true'
         run: |
           cd utils
           git pull
