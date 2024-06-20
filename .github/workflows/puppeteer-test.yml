@@ -31,5 +31,5 @@ jobs:
         run: |
           cd ./web/public
           npx http-server -p 8080 &
-          cd ../dev/test
-          TEST_ENV=github node puppet.js
+          cd ../dev
+          TEST_ENV=github node test/puppet.js
