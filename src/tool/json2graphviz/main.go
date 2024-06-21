@@ -42,7 +42,7 @@ func resolveTypeName(a reflect.Type) string {
 
 func diagram(out io.Writer, prog *ast.Program) {
 
-	fmt.Fprintf(out, "erDiagram\n")
+	fmt.Fprintf(out, "graph Program {\n")
 	var nodeMap = map[ast.Node]struct{}{}
 	visit := ast.VisitFn(func(v ast.Visitor, n ast.Node) bool {
 		if _, ok := nodeMap[n]; ok {
@@ -54,7 +54,7 @@ func diagram(out io.Writer, prog *ast.Program) {
 		nodePtr := node.Pointer()
 		nodeRep := fmt.Sprintf("%s_0x%x", typ.Name(), nodePtr)
 		w := bytes.NewBuffer(nil)
-		fmt.Fprintf(out, "%s {\n", nodeRep)
+		fmt.Fprintf(out, "%s [label=\"\n", nodeRep)
 		node = node.Elem()
 		writeSingleField := func(name string, field reflect.Value) {
 			// type
@@ -75,28 +75,28 @@ func diagram(out io.Writer, prog *ast.Program) {
 				ptr := field.Pointer()
 				elem := fieldInfo.Elem()
 				if field.Elem().CanUint() {
-					fmt.Fprintf(out, "\"%d\"", field.Elem().Uint())
+					fmt.Fprintf(out, "%d", field.Elem().Uint())
 				} else {
 					if ptr == 0 {
-						fmt.Fprintf(out, "\"nil\"\n")
+						fmt.Fprintf(out, "nil\n")
 						return
 					}
 					ptrRep := fmt.Sprintf("%s_0x%x", elem.Name(), ptr)
-					fmt.Fprintf(out, "%q", ptrRep)
-					fmt.Fprintf(w, "%s ||--|o %s :has\n", nodeRep, ptrRep)
+					fmt.Fprintf(out, "%s", ptrRep)
+					fmt.Fprintf(w, "%s -> %s\n", nodeRep, ptrRep)
 				}
 			case reflect.Bool:
-				fmt.Fprintf(out, "\"%t\"", field.Bool())
+				fmt.Fprintf(out, "%t", field.Bool())
 			default:
 				if s, ok := field.Interface().(fmt.Stringer); ok {
 					fmt.Fprintf(out, "%q", s.String())
 				} else if field.CanUint() {
-					fmt.Fprintf(out, "\"%d\"", field.Uint())
+					fmt.Fprintf(out, "%d", field.Uint())
 				} else if field.Kind() == reflect.String {
 					fmt.Fprintf(out, "%q", field.String())
 				} else if field.Type().Name() == "Loc" {
 					loc := field.Interface().(ast.Loc)
-					fmt.Fprintf(out, "\"%d:%d:%d\"", loc.File, loc.Line, loc.Col)
+					fmt.Fprintf(out, "%d:%d:%d", loc.File, loc.Line, loc.Col)
 				}
 			}
 			fmt.Fprintf(out, "\n")
@@ -112,7 +112,7 @@ func diagram(out io.Writer, prog *ast.Program) {
 				writeSingleField(fieldType.Name, field)
 			}
 		}
-		fmt.Fprintf(out, "}\n")
+		fmt.Fprintf(out, "\"]\n")
 		io.Copy(out, w)
 		ast.Walk(n, v)
 		return true
@@ -127,7 +127,7 @@ func baseTypeLink(out io.Writer, from string, t ast.Type) {
 	}
 
 	if i, ok := t.(*ast.IdentType); ok {
-		fmt.Fprintf(out, "%s ||--|{ %s :has\n", from, i.Ident.Ident)
+		fmt.Fprintf(out, "%s -> %s\n", from, i.Ident.Ident)
 	}
 }
 
@@ -143,7 +143,7 @@ func structTypeTrace(out io.Writer, name string, traceTarget *ast.StructType) {
 		return s.GetType(t)
 	}
 	w := bytes.NewBuffer(nil)
-	fmt.Fprintf(out, "%s {\n", name)
+	fmt.Fprintf(out, "%s [label=\"\n", name)
 	for i := range traceTarget.Fields {
 		field := traceTarget.Fields[i]
 		switch v := field.(type) {
@@ -160,7 +160,7 @@ func structTypeTrace(out io.Writer, name string, traceTarget *ast.StructType) {
 			fmt.Fprintf(out, "fn %s\n", v.Ident.Ident)
 		}
 	}
-	fmt.Fprintf(out, "}\n")
+	fmt.Fprintf(out, "\"]\n")
 	io.Copy(out, w)
 }
 
@@ -176,11 +176,11 @@ func traceFormat(out io.Writer, prog *ast.Program) {
 		case *ast.Format:
 			structTypeTrace(out, v.Ident.Ident, v.Body.StructType)
 		case *ast.Enum:
-			fmt.Fprintf(out, "%s {\n", v.Ident.Ident)
+			fmt.Fprintf(out, "%s [label=\"\n", v.Ident.Ident)
 			for i := range v.Members {
 				fmt.Fprintf(out, "%s %s\n", v.Members[i].Ident.Ident, v.Ident.Ident)
 			}
-			fmt.Fprintf(out, "}\n")
+			fmt.Fprintf(out, "\"]\n")
 		}
 
 		return true
@@ -198,7 +198,7 @@ func generate(out io.Writer, in io.Reader) error {
 		return err
 	}
 	if *asCodeBlock {
-		fmt.Fprintf(out, "```mermaid\n")
+		fmt.Fprintf(out, "```dot\n")
 		defer fmt.Fprintf(out, "```\n")
 	}
 	if *format {

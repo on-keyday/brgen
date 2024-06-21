@@ -1,10 +1,28 @@
 package main
 
+import "encoding/json"
+
+type ArrayOrString []string
+
+func (a *ArrayOrString) UnmarshalJSON(b []byte) error {
+	var arr []string
+	if err := json.Unmarshal(b, &arr); err == nil {
+		*a = arr
+		return nil
+	}
+	var str string
+	if err := json.Unmarshal(b, &str); err != nil {
+		return err
+	}
+	*a = []string{str}
+	return nil
+}
+
 type Output struct {
-	Generator     string   `json:"generator"`
-	OutputDir     string   `json:"output_dir"`
-	Args          []string `json:"args"`
-	IgnoreMissing bool     `json:"ignore_missing"`
+	Generator     ArrayOrString `json:"generator"`
+	OutputDir     string        `json:"output_dir"`
+	Args          []string      `json:"args"`
+	IgnoreMissing bool          `json:"ignore_missing"`
 }
 
 type Warnings struct {
