@@ -83,7 +83,6 @@ jobs:
       - name: Install Homebrew Clang
         run: |
           brew install llvm
-
       - name: Check Code
         run: |
           PREFIX=$(brew --prefix llvm)
@@ -94,6 +93,29 @@ jobs:
           nm $LIBCPP/libc++.1.dylib | c++filt
           echo "libc++abi"
           nm $LIBCPP/libc++abi.1.dylib | c++filt
+      - name: Cache
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+        # prevent renovate from updating this
+        if: (!startsWith(github.ref , 'refs/heads/renovate/')) && (!startsWith(github.ref , 'refs/heads/dependabot/'))
+        id: cache_macos
+        env:
+          cache-name: cache-macos-built
+        with:
+          path: |
+            ./built
+            ./utils
+          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('build.sh') }}
+      - name: Pull Utils
+        if: ${{ steps.cache_macos.outputs.cache-hit }}
+        run: |
+          cd utils
+          git pull
+          PREFIX=$(brew --prefix llvm)
+          export FUTILS_CXX_COMPILER=$PREFIX/bin/clang++
+          export FUTILS_C_COMPILER=$PREFIX/bin/clang
+          export LDFLAGS="-L$PREFIX/lib/c++ -Wl,-rpath,$PREFIX/lib/c++"
+          . build shared Release futils
+          cd ..
       - name: Build
         run: |
           PREFIX=$(brew --prefix llvm)
