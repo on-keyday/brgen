@@ -1,6 +1,6 @@
 /*license*/
 #pragma once
-#include "type.h"
+#include "ident.h"
 #include <set>
 
 namespace brgen::ast::tool {

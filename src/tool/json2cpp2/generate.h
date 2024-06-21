@@ -6,7 +6,6 @@
 #include <writer/writer.h>
 #include <core/ast/tool/stringer.h>
 #include <core/ast/tool/sort.h>
-#include <core/ast/tool/type.h>
 #include "../common/line_map.h"
 #include <core/ast/tool/tmp_ident.h>
 

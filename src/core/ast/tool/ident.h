@@ -96,7 +96,7 @@ namespace brgen::ast::tool {
         return nullptr;
     }
 
-    bool is_on_named_struct(const std::shared_ptr<ast::Field>& field) {
+    inline bool is_on_named_struct(const std::shared_ptr<ast::Field>& field) {
         if (!field) {
             return false;
         }
