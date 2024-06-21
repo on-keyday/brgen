@@ -1,11 +1,11 @@
 /*license*/
 #pragma once
-#include "type.h"
+#include "ident.h"
 #include <set>
 
 namespace brgen::ast::tool {
 
-    /// @brief resolve liner equation (limited)
+    /// @brief resolve linear equation (limited)
     /// @details
     ///     y = 2 * x - 4 + 1
     ///     x = (y - 1 + 4) / 2
@@ -48,7 +48,7 @@ namespace brgen::ast::tool {
     /// @param resolved is the resolved expr
     /// @param x is the ident to be resolved (auto detected)
     /// @param y is the tmp var to be replaced that is used to represent the resolved ident
-    struct LinerResolver {
+    struct LinearResolver {
         std::shared_ptr<Expr> resolved;
         std::shared_ptr<Ident> x;
         std::shared_ptr<TmpVar> y;
@@ -60,8 +60,7 @@ namespace brgen::ast::tool {
             }
             else if (auto e = as<Ident>(expr)) {
                 if (ident) {
-                    return e->ident == (*ident)->ident &&
-                           belong_format(e) == belong_format(*ident);
+                    return lookup_base(cast_to<Ident>(expr)) == lookup_base(*ident);
                 }
                 else {
                     ident = cast_to<Ident>(expr);

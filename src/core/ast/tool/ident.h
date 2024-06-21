@@ -80,4 +80,32 @@ namespace brgen::ast::tool {
         });
         return defs;
     }
+
+    inline std::shared_ptr<Format> belong_format(const std::shared_ptr<ast::Ident>& typ) {
+        auto base = lookup_base(typ);
+        if (!base) {
+            return nullptr;
+        }
+        if (Field* f = ast::as<Field>(base->first->base.lock())) {
+            auto fmt = f->belong.lock();
+            if (!ast::as<Format>(fmt)) {
+                return nullptr;
+            }
+            return ast::cast_to<Format>(fmt);
+        }
+        return nullptr;
+    }
+
+    inline bool is_on_named_struct(const std::shared_ptr<ast::Field>& field) {
+        if (!field) {
+            return false;
+        }
+        if (auto fmt = ast::as<ast::Format>(field->belong.lock())) {
+            return field->belong_struct.lock() == fmt->body->struct_type;
+        }
+        if (auto state = ast::as<ast::State>(field->belong.lock())) {
+            return field->belong_struct.lock() == state->body->struct_type;
+        }
+        return false;
+    }
 }  // namespace brgen::ast::tool

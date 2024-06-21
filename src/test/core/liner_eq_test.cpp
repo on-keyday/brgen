@@ -6,7 +6,7 @@
 
 TEST(Tool, LinerEquation) {
     using namespace brgen;
-    ast::tool::LinerResolver r;
+    ast::tool::LinearResolver r;
     auto parse_expr = [&](auto&& text) -> std::shared_ptr<ast::Program> {
         File f;
         make_file_from_text<std::string>(f, text);
