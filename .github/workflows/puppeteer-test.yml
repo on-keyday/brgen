@@ -32,4 +32,5 @@ jobs:
           npx http-server -p 8080 &
           cd ../dev
           npm install
+          sleep 5
           TEST_ENV=github node test/puppet.mjs
