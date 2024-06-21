@@ -84,12 +84,21 @@ func mapToken(op ast2go.BinaryOp) token.Token {
 	return token.ILLEGAL
 }
 
+type NumericKind int
+
+const (
+	NumericKindInt NumericKind = iota
+	NumericKindUint
+	NumericKindFloat
+)
+
 type ExprStringer struct {
 	Receiver     string
 	BinaryMapper map[ast2go.BinaryOp]func(s *ExprStringer, x, y ast2go.Expr) string
 	IdentMapper  map[*ast2go.Ident]string
 	CallMapper   map[string]func(s *ExprStringer, args ...ast2go.Expr) string
 	TypeProvider func(ast2go.Type) string
+	NumericAlign func(size uint64, kind NumericKind) string
 }
 
 func LookupBase(ident *ast2go.Ident) (*ast2go.Ident, bool) {
@@ -375,6 +384,49 @@ func (config *GenConfig) LookupGoConfig(prog *ast2go.Program) error {
 	})
 }
 
+func DefaultAlignedNumeric(size uint64, kind NumericKind) string {
+	size = AlignInt(size)
+	switch kind {
+	case NumericKindInt:
+		switch size {
+		case 8:
+			return "int8"
+		case 16:
+			return "int16"
+		case 32:
+			return "int32"
+		case 64:
+			return "int64"
+		default:
+			return "int"
+		}
+	case NumericKindUint:
+		switch size {
+		case 8:
+			return "uint8"
+		case 16:
+			return "uint16"
+		case 32:
+			return "uint32"
+		case 64:
+			return "uint64"
+		default:
+			return "uint"
+		}
+	case NumericKindFloat:
+		switch size {
+		case 32:
+			return "float32"
+		case 64:
+			return "float64"
+		default:
+			return "float64"
+		}
+	default:
+		return "int"
+	}
+}
+
 func (g *ExprStringer) GetType(typ ast2go.Type) string {
 	if g.TypeProvider == nil {
 		g.TypeProvider = g.GetType
@@ -383,14 +435,20 @@ func (g *ExprStringer) GetType(typ ast2go.Type) string {
 		return ident_typ.Ident.Ident
 	}
 	if i_type, ok := typ.(*ast2go.IntType); ok {
+		if g.NumericAlign == nil {
+			g.NumericAlign = DefaultAlignedNumeric
+		}
 		if i_type.IsSigned {
-			return fmt.Sprintf("int%d", AlignInt(*i_type.BitSize))
+			return g.NumericAlign(*i_type.BitSize, NumericKindInt)
 		} else {
-			return fmt.Sprintf("uint%d", AlignInt(*i_type.BitSize))
+			return g.NumericAlign(*i_type.BitSize, NumericKindUint)
 		}
 	}
 	if f_typ, ok := typ.(*ast2go.FloatType); ok {
-		return fmt.Sprintf("float%d", *f_typ.BitSize)
+		if g.NumericAlign == nil {
+			g.NumericAlign = DefaultAlignedNumeric
+		}
+		return g.NumericAlign(*f_typ.BitSize, NumericKindFloat)
 	}
 	if e_type, ok := typ.(*ast2go.EnumType); ok {
 		return e_type.Base.Ident.Ident
@@ -404,6 +462,9 @@ func (g *ExprStringer) GetType(typ ast2go.Type) string {
 	}
 	if struct_type, ok := typ.(*ast2go.StructType); ok {
 		return struct_type.Base.(*ast2go.Format).Ident.Ident
+	}
+	if _, ok := typ.(*ast2go.BoolType); ok {
+		return "bool"
 	}
 	return ""
 }

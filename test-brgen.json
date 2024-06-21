@@ -39,9 +39,9 @@
       ]
     },
     {
-      "generator": "go",
+      "generator": ["go", "run", "./src/tool/json2graphviz"],
       "output_dir": "./ignore/example/graphviz/",
-      "args": ["run", "./src/tool/json2graphviz"]
+      "args": ["-format"]
     }
   ],
   "garbage": [

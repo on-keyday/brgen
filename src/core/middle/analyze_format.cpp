@@ -4,18 +4,54 @@
 #include <core/ast/traverse.h>
 
 namespace brgen::middle {
+
+    void analyze_expr(const std::shared_ptr<ast::Expr>& expr, auto&& add_trait) {
+        ast::traverse(expr, [&](const std::shared_ptr<ast::Node>& node) {
+            if (ast::as<ast::Type>(node)) {
+                return;
+            }
+            if (auto call = ast::as<ast::Call>(node)) {
+                if (auto io_op = ast::as<ast::IOOperation>(call->callee)) {
+                    if (io_op->method == ast::IOMethod::input_backward) {
+                        add_trait(ast::FormatTrait::backward_input);
+                    }
+                    else if (io_op->method == ast::IOMethod::input_peek) {
+                        add_trait(ast::FormatTrait::static_peek);
+                    }
+                }
+            }
+        });
+    }
+
+    void analyze_field_argument(const std::shared_ptr<ast::FieldArgument>& args, auto&& add_trait) {
+        if (args->peek_value && *args->peek_value) {
+            add_trait(ast::FormatTrait::static_peek);
+        }
+        if (args->collected_arguments.size()) {
+        }
+    }
+
     void analyze_format(const std::shared_ptr<ast::Format>& fmt) {
         auto add_trait = [&](ast::FormatTrait t) {
             fmt->format_trait = ast::FormatTrait(size_t(fmt->format_trait) | size_t(t));
         };
+        auto is = [&](ast::FormatTrait t) {
+            return (size_t(fmt->format_trait) & size_t(t)) != 0;
+        };
+        if (fmt->encode_fn.lock()) {
+            add_trait(ast::FormatTrait::procedural);
+        }
+        if (fmt->decode_fn.lock()) {
+            add_trait(ast::FormatTrait::procedural);
+        }
         if (fmt->body->struct_type->bit_alignment != ast::BitAlignment::byte_aligned) {
             // pattern: struct is not byte-aligned
             add_trait(ast::FormatTrait::bit_stream);
         }
 
-        auto type_recursively = [&](auto&& f, const std::shared_ptr<ast::Type>& type) -> void {
+        auto type_recursively = [&](auto&& f, const std::shared_ptr<ast::Type>& type, bool indirect) -> void {
             if (auto ident = ast::as<ast::IdentType>(type)) {
-                f(f, ident->base.lock());
+                f(f, ident->base.lock(), indirect);
             }
             else if (auto enum_ = ast::as<ast::EnumType>(type)) {
                 auto base_ty = enum_->base.lock()->base_type;
@@ -24,12 +60,13 @@ namespace brgen::middle {
                     add_trait(ast::FormatTrait::description_only);
                     return;
                 }
-                f(f, base_ty);
+                f(f, base_ty, indirect);
             }
             else if (auto struct_ = ast::as<ast::StructType>(type)) {
+                add_trait(ast::FormatTrait::struct_);
                 if (struct_->bit_alignment != ast::BitAlignment::byte_aligned) {
-                    // pattern: struct is not byte-aligned
-                    add_trait(ast::FormatTrait::bit_stream);
+                    if (!is(ast::FormatTrait::bit_stream) && !indirect) {
+                    }
                 }
             }
             else if (auto arr_ = ast::as<ast::ArrayType>(type)) {
@@ -41,6 +78,7 @@ namespace brgen::middle {
                     // pattern: variable-size array
                     add_trait(ast::FormatTrait::variable_array);
                 }
+                f(f, arr_->element_type, true);
             }
             else if (auto int_ = ast::as<ast::IntType>(type)) {
                 add_trait(ast::FormatTrait::fixed_primitive);
@@ -70,7 +108,7 @@ namespace brgen::middle {
             }
             if (auto field = ast::as<ast::Field>(elm)) {
                 auto type = field->field_type;
-                type_recursively(type_recursively, type);
+                type_recursively(type_recursively, type, false);
             }
             if (auto for_ = ast::as<ast::Loop>(elm)) {
                 add_trait(ast::FormatTrait::for_loop);
@@ -87,6 +125,25 @@ namespace brgen::middle {
                     f(f, elm);
                 }
             }
+            if (auto if_ = ast::as<ast::If>(elm)) {
+                add_trait(ast::FormatTrait::conditional);
+                if (if_->cond) {
+                    f(f, if_->cond);
+                }
+                for (auto& elm : if_->then->elements) {
+                    f(f, elm);
+                }
+                if (if_->els) {
+                    if (auto els_ = ast::as<ast::If>(if_->els)) {
+                        f(f, if_->els);
+                    }
+                    else if (auto body = ast::as<ast::IndentBlock>(if_->els)) {
+                        for (auto& elm : body->elements) {
+                            f(f, elm);
+                        }
+                    }
+                }
+            }
             if (auto assert_ = ast::as<ast::Assert>(elm)) {
                 add_trait(ast::FormatTrait::assertion);
             }
@@ -95,6 +152,12 @@ namespace brgen::middle {
             }
             if (auto bin = ast::as<ast::Binary>(elm); bin && ast::is_assign_op(bin->op)) {
                 add_trait(ast::FormatTrait::local_variable);
+            }
+            if (auto specify_order = ast::as<ast::SpecifyOrder>(elm)) {
+                if (!specify_order->order_value) {
+                    // pattern: order is not constant
+                    add_trait(ast::FormatTrait::dynamic_order);
+                }
             }
         };
 

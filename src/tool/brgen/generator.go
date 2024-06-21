@@ -47,7 +47,7 @@ type Generator struct {
 }
 
 func (g *Generator) cmdline() []string {
-	copy := make([]string, len(g.args))
+	copy := make([]string, len(g.generatorPath))
 	for i, v := range g.generatorPath {
 		copy[i] = v
 	}
