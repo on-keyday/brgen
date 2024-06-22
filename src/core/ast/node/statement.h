@@ -143,6 +143,8 @@ namespace brgen::ast {
         // other metadata
         std::vector<std::shared_ptr<Metadata>> metadata;
 
+        FieldArgumentMapping argument_mapping = FieldArgumentMapping::none;
+
         FieldArgument(lexer::Loc l)
             : Node(l, NodeType::field_argument) {}
 

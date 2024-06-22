@@ -206,3 +206,16 @@ enum FormatTrait:
     description_only = 1 << 21
     # uncommon size (like 3 bytes integer) field exists
     uncommon_size = 1 << 22
+
+
+enum FieldArgumentMapping:
+    :u32
+    none = 0
+    # same type (i.e :u8(0), :[]u8(<[]u8>(0,1)) )
+    direct = 1 << 0
+    # element repeat (i.e :[]u8(0))
+    repeat = 1 << 1
+    # some candidate (i.e :u8(0,1,2), :[]u8(<[]u8>(0,1,2),<[]u8>(3,4,5)) )
+    some_candidate = 1 << 2 
+    # if repeat and some candidate is used together
+    

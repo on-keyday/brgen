@@ -1059,4 +1059,60 @@ template<>
 constexpr const char* enum_type_name<FormatTrait>() {
     return "FormatTrait";
 }
+enum class FieldArgumentMapping {
+    none = 0,
+    direct = (1 << 0),
+    repeat = (1 << 1),
+    some_candidate = (1 << 2),
+};
+constexpr const char* to_string(FieldArgumentMapping e) {
+    switch(e) {
+    case FieldArgumentMapping::none: return "none";
+    case FieldArgumentMapping::direct: return "direct";
+    case FieldArgumentMapping::repeat: return "repeat";
+    case FieldArgumentMapping::some_candidate: return "some_candidate";
+    default: return nullptr;
+    }
+}
+template<>constexpr std::optional<FieldArgumentMapping> from_string<FieldArgumentMapping>(std::string_view str) {
+    if(str.empty()) return std::nullopt;
+    if(str == "none") return FieldArgumentMapping::none;
+    if(str == "direct") return FieldArgumentMapping::direct;
+    if(str == "repeat") return FieldArgumentMapping::repeat;
+    if(str == "some_candidate") return FieldArgumentMapping::some_candidate;
+    return std::nullopt;
+}
+template<>constexpr size_t enum_elem_count<FieldArgumentMapping>() {
+    return 4;
+}
+template<>constexpr std::array<std::pair<FieldArgumentMapping,std::string_view>,4> make_enum_array<FieldArgumentMapping>() {
+    return {
+        std::pair{FieldArgumentMapping::none,"none"},
+        std::pair{FieldArgumentMapping::direct,"direct"},
+        std::pair{FieldArgumentMapping::repeat,"repeat"},
+        std::pair{FieldArgumentMapping::some_candidate,"some_candidate"},
+    };
+}
+template<>constexpr std::array<std::pair<FieldArgumentMapping,std::string_view>,4> make_enum_name_array<FieldArgumentMapping>() {
+    return {
+        std::pair{FieldArgumentMapping::none,"none"},
+        std::pair{FieldArgumentMapping::direct,"direct"},
+        std::pair{FieldArgumentMapping::repeat,"repeat"},
+        std::pair{FieldArgumentMapping::some_candidate,"some_candidate"},
+    };
+}
+constexpr void as_json(FieldArgumentMapping e,auto&& d) {
+    d.value(static_cast<size_t>(e));
+}
+template<>
+constexpr std::optional<FieldArgumentMapping> from_json<FieldArgumentMapping,size_t>(size_t k){
+    return static_cast<FieldArgumentMapping>(k);
+}
+template<>constexpr bool is_bit_flag<FieldArgumentMapping>() {
+    return true;
+}
+template<>
+constexpr const char* enum_type_name<FieldArgumentMapping>() {
+    return "FieldArgumentMapping";
+}
 }

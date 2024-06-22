@@ -20,7 +20,7 @@
             "request": "launch",
             "program": "${workspaceRoot}/tool/src2json",
             "args": [
-                "c:/workspace/shbrgen/brgen/example/feature_test/comma_match.bgn",
+                "c:/workspace/shbrgen/brgen/example/zip.bgn",
                 "--print-json","--print-on-error"
             ],
             "stopAtEntry": false,

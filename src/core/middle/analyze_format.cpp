@@ -31,7 +31,7 @@ namespace brgen::middle {
         if (args->peek_value && *args->peek_value) {
             add_trait(ast::FormatTrait::static_peek);
         }
-        if (args->collected_arguments.size()) {
+        if (args->arguments.size() > 0) {
         }
     }
 

@@ -114,7 +114,7 @@ namespace brgen::ast::tool {
         }
         auto check_range_compare = [&](ast::RangeType* rty, std::shared_ptr<ast::Type>& other_hand) -> brgen::result<bool> {
             if (!rty->base_type) {
-                return {};  // range .. or ..= is always comparable to any type
+                return true;  // range .. or ..= is always comparable to any type
             }
             if (auto ok = int_type_fitting(rty->base_type, other_hand); !ok) {
                 return ok.transform([](auto&&...) { return false; });

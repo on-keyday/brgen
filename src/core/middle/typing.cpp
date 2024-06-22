@@ -205,8 +205,6 @@ namespace brgen::middle {
             if (!check_right_typed()) {
                 return;
             }
-            // auto new_type = int_literal_to_int_type(right->expr_type);
-
             if (b->op == ast::BinaryOp::define_assign) {
                 assert(left_ident);
                 assert(left_ident->usage == ast::IdentUsage::define_variable);
@@ -1536,6 +1534,34 @@ namespace brgen::middle {
                     typing_expr(v);
                 }
                 args->metadata.push_back(std::move(m));
+            }
+
+            // analyze fixed mapping type
+            if (args->arguments.size() != 0) {
+                if (args->arguments.size() != 1) {
+                    args->argument_mapping = ast::FieldArgumentMapping::some_candidate;
+                }
+                auto array_ty = ast::as<ast::ArrayType>(field->field_type);
+                for (auto& arg : args->arguments) {
+                    auto typ = arg->expr_type;
+                    if (comparable_type(field->field_type, typ)) {
+                        args->argument_mapping = ast::FieldArgumentMapping(size_t(args->argument_mapping) | size_t(ast::FieldArgumentMapping::direct));
+                    }
+                    else if (array_ty && comparable_type(array_ty->element_type, typ)) {
+                        args->argument_mapping = ast::FieldArgumentMapping(size_t(args->argument_mapping) | size_t(ast::FieldArgumentMapping::repeat));
+                    }
+                    else {
+                        auto field_ty = ast::tool::type_to_string(field->field_type);
+                        auto arg_ty = ast::tool::type_to_string(typ);
+                        if (array_ty) {
+                            auto element_ty = ast::tool::type_to_string(array_ty->element_type);
+                            error(arg->loc, "cannot decide fixed value argument; expect ", field_ty, " or ", element_ty, " but got ", arg_ty).report();
+                        }
+                        else {
+                            error(arg->loc, "cannot decide fixed value argument; expect ", field_ty, " but got ", arg_ty).report();
+                        }
+                    }
+                }
             }
         }
 
