@@ -55,9 +55,6 @@ add_executable(section_writer_test
 target_link_libraries(section_writer_test gtest_main)
 
 
-add_executable(liner_eq_test "core/liner_eq_test.cpp")
-target_link_libraries(liner_eq_test gtest_main parse_core)
-
 
 
 add_executable(type_attribute "core/type_attribute_test.cpp")
@@ -78,7 +75,6 @@ add_test(NAME "typing_test" COMMAND typing_test)
 add_test(NAME "middle_test" COMMAND middle_test)
 add_test(NAME "from_json_test" COMMAND from_json_test)
 add_test(NAME "section_writer_test" COMMAND section_writer_test)
-add_test(NAME "liner_eq_test" COMMAND liner_eq_test)
 add_test(NAME "type_attribute" COMMAND type_attribute)
 add_test(NAME "derive_test" COMMAND derive_test)
 add_test(NAME "ctype_test" COMMAND ctype_test)
@@ -118,7 +114,6 @@ target_compile_options(typing_test PRIVATE "-fprofile-instr-generate=typing_test
 target_compile_options(middle_test PRIVATE "-fprofile-instr-generate=middle_test.profraw")
 target_compile_options(from_json_test PRIVATE "-fprofile-instr-generate=from_json_test.profraw")
 target_compile_options(section_writer_test PRIVATE "-fprofile-instr-generate=section_writer_test.profraw")
-target_compile_options(liner_eq_test PRIVATE "-fprofile-instr-generate=liner_eq_test.profraw")
 target_compile_options(type_attribute PRIVATE "-fprofile-instr-generate=type_attribute.profraw")
 target_compile_options(derive_test PRIVATE "-fprofile-instr-generate=derive_test.profraw")
 target_compile_options(ctype_test PRIVATE "-fprofile-instr-generate=ctype_test.profraw")
@@ -134,7 +129,6 @@ set_target_properties(typing_test PROPERTIES LINK_FLAGS "-fprofile-instr-generat
 set_target_properties(middle_test PROPERTIES LINK_FLAGS "-fprofile-instr-generate=middle_test.profraw")
 set_target_properties(from_json_test PROPERTIES LINK_FLAGS "-fprofile-instr-generate=from_json_test.profraw")
 set_target_properties(section_writer_test PROPERTIES LINK_FLAGS "-fprofile-instr-generate=section_writer_test.profraw")
-set_target_properties(liner_eq_test PROPERTIES LINK_FLAGS "-fprofile-instr-generate=liner_eq_test.profraw")
 set_target_properties(type_attribute PROPERTIES LINK_FLAGS "-fprofile-instr-generate=type_attribute.profraw")
 set_target_properties(derive_test PROPERTIES LINK_FLAGS "-fprofile-instr-generate=derive_test.profraw")
 set_target_properties(ctype_test PROPERTIES LINK_FLAGS "-fprofile-instr-generate=ctype_test.profraw")

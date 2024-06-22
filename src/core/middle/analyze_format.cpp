@@ -18,12 +18,16 @@ namespace brgen::middle {
                     else if (io_op->method == ast::IOMethod::input_peek) {
                         add_trait(ast::FormatTrait::static_peek);
                     }
+                    else if (io_op->method == ast::IOMethod::input_get ||
+                             io_op->method == ast::IOMethod::output_put) {
+                        add_trait(ast::FormatTrait::procedural);
+                    }
                 }
             }
         });
     }
 
-    void analyze_field_argument(const std::shared_ptr<ast::FieldArgument>& args, auto&& add_trait) {
+    void analyze_field_argument(const std::shared_ptr<ast::Type>& typ, const std::shared_ptr<ast::FieldArgument>& args, auto&& add_trait) {
         if (args->peek_value && *args->peek_value) {
             add_trait(ast::FormatTrait::static_peek);
         }
@@ -38,12 +42,6 @@ namespace brgen::middle {
         auto is = [&](ast::FormatTrait t) {
             return (size_t(fmt->format_trait) & size_t(t)) != 0;
         };
-        if (fmt->encode_fn.lock()) {
-            add_trait(ast::FormatTrait::procedural);
-        }
-        if (fmt->decode_fn.lock()) {
-            add_trait(ast::FormatTrait::procedural);
-        }
         if (fmt->body->struct_type->bit_alignment != ast::BitAlignment::byte_aligned) {
             // pattern: struct is not byte-aligned
             add_trait(ast::FormatTrait::bit_stream);

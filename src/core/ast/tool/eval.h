@@ -59,8 +59,8 @@ namespace brgen::ast::tool {
         std::string msg;
     };
 
-    template <class T>
-    using result = expected<T, LocError>;
+    //template <class T>
+    //using result = expected<T, LocError>;
 
     using EResult = expected<EvalResult, LocError>;
 
