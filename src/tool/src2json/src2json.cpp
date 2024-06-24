@@ -16,6 +16,7 @@
 #include <core/middle/resolve_state_dependency.h>
 #include <core/middle/typing.h>
 #include <core/middle/type_attribute.h>
+#include <core/middle/analyze_block_trait.h>
 #include "../common/print.h"
 #include <core/ast/node_type_list.h>
 #include <core/ast/kill_node.h>
@@ -48,6 +49,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
     bool not_analyze_size_alignment = false;
     bool not_resolve_state_dependency = false;
     bool not_resolve_metadata = false;
+    bool not_analyze_block_trait = false;
 
     bool unresolved_type_as_error = false;
 
@@ -120,6 +122,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
         ctx.VarBool(&not_resolve_explicit_error, "not-resolve-explicit-error", "not resolve explicit error");
         ctx.VarBool(&not_resolve_io_operation, "not-resolve-io-operation", "not resolve io operation");
         ctx.VarBool(&not_resolve_state_dependency, "not-resolve-state-dependency", "not resolve state dependency");
+        ctx.VarBool(&not_analyze_block_trait, "not-analyze-block-trait", "not analyze block trait");
 
         ctx.VarBool(&unresolved_type_as_error, "unresolved-type-as-error", "unresolved type as error");
 
@@ -483,6 +486,10 @@ int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& f
 
     if (!flags.not_resolve_state_dependency) {
         brgen::middle::resolve_state_dependency(*p);
+    }
+
+    if (!flags.not_analyze_block_trait) {
+        brgen::middle::analyze_block_trait(*p);
     }
 
     return exit_ok;

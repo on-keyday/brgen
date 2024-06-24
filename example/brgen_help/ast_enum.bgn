@@ -155,10 +155,10 @@ enum SpecialLiteralKind:
     config_  = "config"
  
 
-# FormatTrait is used to determine the `format`'s layout
-enum FormatTrait:
+# BlockTrait is used to determine the block's layout
+enum BlockTrait:
     :u32
-    # none, empty format
+    # none, empty block
     none = 0
     # int and enum is used
     fixed_primitive = 1 << 0

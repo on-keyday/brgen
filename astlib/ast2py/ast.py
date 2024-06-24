@@ -452,6 +452,7 @@ class IndentBlock(Stmt):
     elements: List[Node]
     scope: Optional[Scope]
     metadata: List[Metadata]
+    block_traits: FormatTrait
 
 
 class ScopedStatement(Stmt):
@@ -652,7 +653,6 @@ class Format(Member):
     cast_fns: List[Function]
     depends: List[IdentType]
     state_variables: List[Field]
-    format_trait: FormatTrait
 
 
 class State(Member):
@@ -1481,6 +1481,7 @@ def ast2node(ast :JsonAst) -> Program:
                 else:
                     node[i].scope = None
                 node[i].metadata = [(node[x] if isinstance(node[x],Metadata) else raiseError(TypeError('type mismatch at IndentBlock::metadata'))) for x in ast.node[i].body["metadata"]]
+                node[i].block_traits = FormatTrait(ast.node[i].body["block_traits"])
             case NodeType.SCOPED_STATEMENT:
                 if ast.node[i].body["struct_type"] is not None:
                     x = node[ast.node[i].body["struct_type"]]
@@ -2065,7 +2066,6 @@ def ast2node(ast :JsonAst) -> Program:
                 node[i].cast_fns = [(node[x] if isinstance(node[x],Function) else raiseError(TypeError('type mismatch at Format::cast_fns'))) for x in ast.node[i].body["cast_fns"]]
                 node[i].depends = [(node[x] if isinstance(node[x],IdentType) else raiseError(TypeError('type mismatch at Format::depends'))) for x in ast.node[i].body["depends"]]
                 node[i].state_variables = [(node[x] if isinstance(node[x],Field) else raiseError(TypeError('type mismatch at Format::state_variables'))) for x in ast.node[i].body["state_variables"]]
-                node[i].format_trait = FormatTrait(ast.node[i].body["format_trait"])
             case NodeType.STATE:
                 if ast.node[i].body["belong"] is not None:
                     x = node[ast.node[i].body["belong"]]

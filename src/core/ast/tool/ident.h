@@ -108,4 +108,17 @@ namespace brgen::ast::tool {
         }
         return false;
     }
+
+    inline bool is_state_variable_ref(const std::shared_ptr<ast::Node>& f) {
+        if (auto access = ast::as<ast::MemberAccess>(f)) {
+            return is_state_variable_ref(access->target);
+        }
+        if (auto ident = ast::as<ast::Ident>(f)) {
+            auto [base, _] = *ast::tool::lookup_base(ast::cast_to<ast::Ident>(f));
+            if (auto field = ast::as<ast::Field>(base); field && field->is_state_variable) {
+                return true;
+            }
+        }
+        return false;
+    }
 }  // namespace brgen::ast::tool

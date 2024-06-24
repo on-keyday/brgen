@@ -730,6 +730,7 @@ export interface IndentBlock extends Stmt {
 	elements: Node[];
 	scope: Scope|null;
 	metadata: Metadata[];
+	block_traits: FormatTrait;
 }
 
 export function isIndentBlock(obj: any): obj is IndentBlock {
@@ -1071,7 +1072,6 @@ export interface Format extends Member {
 	cast_fns: Function[];
 	depends: IdentType[];
 	state_variables: Field[];
-	format_trait: FormatTrait;
 }
 
 export function isFormat(obj: any): obj is Format {
@@ -1603,6 +1603,7 @@ export function parseAST(obj: JsonAst): Program {
 				elements: [],
 				scope: null,
 				metadata: [],
+				block_traits: FormatTrait.none,
 			}
 			c.node.push(n);
 			break;
@@ -2072,7 +2073,6 @@ export function parseAST(obj: JsonAst): Program {
 				cast_fns: [],
 				depends: [],
 				state_variables: [],
-				format_trait: FormatTrait.none,
 			}
 			c.node.push(n);
 			break;
@@ -3182,6 +3182,11 @@ export function parseAST(obj: JsonAst): Program {
 				}
 				n.metadata.push(tmpmetadata);
 			}
+			const tmpblock_traits = on.body?.block_traits;
+			if (!isFormatTrait(tmpblock_traits)) {
+				throw new Error('invalid node list at IndentBlock::block_traits');
+			}
+			n.block_traits = tmpblock_traits;
 			break;
 		}
 		case "scoped_statement": {
@@ -4457,11 +4462,6 @@ export function parseAST(obj: JsonAst): Program {
 				}
 				n.state_variables.push(tmpstate_variables);
 			}
-			const tmpformat_trait = on.body?.format_trait;
-			if (!isFormatTrait(tmpformat_trait)) {
-				throw new Error('invalid node list at Format::format_trait');
-			}
-			n.format_trait = tmpformat_trait;
 			break;
 		}
 		case "state": {

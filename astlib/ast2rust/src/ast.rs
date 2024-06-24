@@ -4959,6 +4959,7 @@ pub struct IndentBlock {
 	pub elements: Vec<Node>,
 	pub scope: Option<Rc<RefCell<Scope>>>,
 	pub metadata: Vec<Weak<RefCell<Metadata>>>,
+	pub block_traits: FormatTrait,
 }
 
 impl From<&Rc<RefCell<IndentBlock>>> for NodeType {
@@ -8072,7 +8073,6 @@ pub struct Format {
 	pub cast_fns: Vec<Weak<RefCell<Function>>>,
 	pub depends: Vec<Weak<RefCell<IdentType>>>,
 	pub state_variables: Vec<Weak<RefCell<Field>>>,
-	pub format_trait: FormatTrait,
 }
 
 impl From<&Rc<RefCell<Format>>> for NodeType {
@@ -8970,6 +8970,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				elements: Vec::new(),
 				scope: None,
 				metadata: Vec::new(),
+				block_traits: FormatTrait::None,
 				})))
 			},
 			NodeType::ScopedStatement => {
@@ -9331,7 +9332,6 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				cast_fns: Vec::new(),
 				depends: Vec::new(),
 				state_variables: Vec::new(),
-				format_trait: FormatTrait::None,
 				})))
 			},
 			NodeType::State => {
@@ -11463,6 +11463,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().metadata.push(Rc::downgrade(&metadata_body));
 				}
+				let block_traits_body = match raw_node.body.get("block_traits") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"block_traits")),
+				};
+				node.borrow_mut().block_traits = match block_traits_body.as_u64() {
+					Some(v)=>match FormatTrait::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(block_traits_body.into(),JSONType::Number)),
+				};
 			},
 			NodeType::ScopedStatement => {
 				let node = nodes[i].clone();
@@ -13978,17 +13989,6 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().state_variables.push(Rc::downgrade(&state_variables_body));
 				}
-				let format_trait_body = match raw_node.body.get("format_trait") {
-					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"format_trait")),
-				};
-				node.borrow_mut().format_trait = match format_trait_body.as_u64() {
-					Some(v)=>match FormatTrait::try_from(v) {
-						Ok(v)=>v,
-						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
-					},
-					None=>return Err(Error::MismatchJSONType(format_trait_body.into(),JSONType::Number)),
-				};
 			},
 			NodeType::State => {
 				let node = nodes[i].clone();

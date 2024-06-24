@@ -966,6 +966,7 @@ namespace brgen::ast {
         for (auto& i : node->metadata) {
             new_node->metadata.push_back(deep_copy(i.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
         }
+        new_node->block_traits = node->block_traits;
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -1637,7 +1638,6 @@ namespace brgen::ast {
         for (auto& i : node->state_variables) {
             new_node->state_variables.push_back(deep_copy(i.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
         }
-        new_node->format_trait = node->format_trait;
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -3914,6 +3914,10 @@ namespace brgen::ast {
                 return false;
             }
         }
+        if (a->block_traits != b->block_traits) {
+            trace(a->block_traits, b->block_traits, "IndentBlock::block_traits", -1);
+            return false;
+        }
         return true;
     }
     template <class NodeM, class ScopeM, class BackTracer = NullBackTracer>
@@ -5426,10 +5430,6 @@ namespace brgen::ast {
                 trace(a->state_variables[i].lock(), b->state_variables[i].lock(), "Format::state_variables", i);
                 return false;
             }
-        }
-        if (a->format_trait != b->format_trait) {
-            trace(a->format_trait, b->format_trait, "Format::format_trait", -1);
-            return false;
         }
         return true;
     }

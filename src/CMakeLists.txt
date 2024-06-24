@@ -11,6 +11,7 @@ add_executable(src2json
     "core/ast/parse.cpp"
     "core/middle/typing.cpp"
     "core/middle/type_attribute.cpp"
+    "core/middle/analyze_block_trait.cpp"
 )
 target_link_libraries(src2json futils)
 add_compile_definitions(BRGEN_VERSION="${PROJECT_VERSION}")
@@ -124,6 +125,7 @@ add_library(s2j SHARED
     "core/ast/parse.cpp"
     "core/middle/typing.cpp"
     "core/middle/type_attribute.cpp"
+    "core/middle/analyze_block_trait.cpp"
 )
 target_compile_definitions(s2j PRIVATE SRC2JSON_DLL)
 target_link_libraries(s2j futils)

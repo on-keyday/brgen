@@ -879,6 +879,7 @@ struct ast2c_IndentBlock {
 	ast2c_Scope* scope;
 	ast2c_Metadata** metadata;
 	size_t metadata_size;
+	ast2c_FormatTrait block_traits;
 };
 
 // returns 1 if succeed 0 if failed
@@ -1359,7 +1360,6 @@ struct ast2c_Format {
 	size_t depends_size;
 	ast2c_Field** state_variables;
 	size_t state_variables_size;
-	ast2c_FormatTrait format_trait;
 };
 
 // returns 1 if succeed 0 if failed

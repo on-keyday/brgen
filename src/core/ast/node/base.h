@@ -201,6 +201,8 @@ namespace brgen::ast {
         */
         std::vector<std::weak_ptr<Metadata>> metadata;
 
+        BlockTrait block_traits = BlockTrait::none;
+
         IndentBlock(lexer::Loc l)
             : Stmt(l, NodeType::indent_block) {}
 
@@ -214,6 +216,7 @@ namespace brgen::ast {
             sdebugf(elements);
             sdebugf(scope);
             sdebugf_omit(metadata);
+            sdebugf(block_traits);
         }
     };
 

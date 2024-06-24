@@ -2334,11 +2334,12 @@ func (n *Loop) GetLoc() Loc {
 }
 
 type IndentBlock struct {
-	Loc        Loc
-	StructType *StructType
-	Elements   []Node
-	Scope      *Scope
-	Metadata   []*Metadata
+	Loc         Loc
+	StructType  *StructType
+	Elements    []Node
+	Scope       *Scope
+	Metadata    []*Metadata
+	BlockTraits FormatTrait
 }
 
 func (n *IndentBlock) isStmt() {}
@@ -3324,7 +3325,6 @@ type Format struct {
 	CastFns        []*Function
 	Depends        []*IdentType
 	StateVariables []*Field
-	FormatTrait    FormatTrait
 }
 
 func (n *Format) isMember() {}
@@ -4322,10 +4322,11 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeIndentBlock:
 			v := n.node[i].(*IndentBlock)
 			var tmp struct {
-				StructType *uintptr  `json:"struct_type"`
-				Elements   []uintptr `json:"elements"`
-				Scope      *uintptr  `json:"scope"`
-				Metadata   []uintptr `json:"metadata"`
+				StructType  *uintptr    `json:"struct_type"`
+				Elements    []uintptr   `json:"elements"`
+				Scope       *uintptr    `json:"scope"`
+				Metadata    []uintptr   `json:"metadata"`
+				BlockTraits FormatTrait `json:"block_traits"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -4344,6 +4345,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			for j, k := range tmp.Metadata {
 				v.Metadata[j] = n.node[k].(*Metadata)
 			}
+			v.BlockTraits = tmp.BlockTraits
 		case NodeTypeScopedStatement:
 			v := n.node[i].(*ScopedStatement)
 			var tmp struct {
@@ -5062,16 +5064,15 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeFormat:
 			v := n.node[i].(*Format)
 			var tmp struct {
-				Belong         *uintptr    `json:"belong"`
-				BelongStruct   *uintptr    `json:"belong_struct"`
-				Ident          *uintptr    `json:"ident"`
-				Body           *uintptr    `json:"body"`
-				EncodeFn       *uintptr    `json:"encode_fn"`
-				DecodeFn       *uintptr    `json:"decode_fn"`
-				CastFns        []uintptr   `json:"cast_fns"`
-				Depends        []uintptr   `json:"depends"`
-				StateVariables []uintptr   `json:"state_variables"`
-				FormatTrait    FormatTrait `json:"format_trait"`
+				Belong         *uintptr  `json:"belong"`
+				BelongStruct   *uintptr  `json:"belong_struct"`
+				Ident          *uintptr  `json:"ident"`
+				Body           *uintptr  `json:"body"`
+				EncodeFn       *uintptr  `json:"encode_fn"`
+				DecodeFn       *uintptr  `json:"decode_fn"`
+				CastFns        []uintptr `json:"cast_fns"`
+				Depends        []uintptr `json:"depends"`
+				StateVariables []uintptr `json:"state_variables"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -5106,7 +5107,6 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			for j, k := range tmp.StateVariables {
 				v.StateVariables[j] = n.node[k].(*Field)
 			}
-			v.FormatTrait = tmp.FormatTrait
 		case NodeTypeState:
 			v := n.node[i].(*State)
 			var tmp struct {

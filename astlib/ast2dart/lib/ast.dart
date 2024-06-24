@@ -668,6 +668,7 @@ class IndentBlock extends Stmt {
     List<Node>? elements = [];
     Scope? scope;
     List<Metadata>? metadata = [];
+    FormatTrait blockTraits = FormatTrait.None;
 factory IndentBlock.fromJson(Map<String, dynamic> json) => _$IndentBlockFromJson(json);
 }
 @JsonSerializable()
@@ -901,7 +902,6 @@ class Format extends Member {
     List<Func>? castFns = [];
     List<IdentType>? depends = [];
     List<Field>? stateVariables = [];
-    FormatTrait formatTrait = FormatTrait.None;
 factory Format.fromJson(Map<String, dynamic> json) => _$FormatFromJson(json);
 }
 @JsonSerializable()

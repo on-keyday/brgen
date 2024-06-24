@@ -2181,6 +2181,7 @@ int ast2c_IndentBlock_parse(ast2c_Ast* ast,ast2c_IndentBlock* s,ast2c_json_handl
 	void* elements = h->object_get(h, obj_body, "elements");
 	void* scope = h->object_get(h, obj_body, "scope");
 	void* metadata = h->object_get(h, obj_body, "metadata");
+	void* block_traits = h->object_get(h, obj_body, "block_traits");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_IndentBlock::loc is null"); } return 0; }
 	if (!struct_type) { if(h->error) { h->error(h,struct_type, "ast2c_IndentBlock::struct_type is null"); } return 0; }
 	if (!elements) { if(h->error) { h->error(h,elements, "ast2c_IndentBlock::elements is null"); } return 0; }
@@ -2194,6 +2195,7 @@ int ast2c_IndentBlock_parse(ast2c_Ast* ast,ast2c_IndentBlock* s,ast2c_json_handl
 		if(h->error) { h->error(h,metadata, "failed to get array size of ast2c_IndentBlock::metadata"); }
 		return NULL;
 	}
+	if (!block_traits) { if(h->error) { h->error(h,block_traits, "ast2c_IndentBlock::block_traits is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_IndentBlock::loc"); }
 		goto error;
@@ -3505,7 +3507,6 @@ int ast2c_Format_parse(ast2c_Ast* ast,ast2c_Format* s,ast2c_json_handlers* h, vo
 	void* cast_fns = h->object_get(h, obj_body, "cast_fns");
 	void* depends = h->object_get(h, obj_body, "depends");
 	void* state_variables = h->object_get(h, obj_body, "state_variables");
-	void* format_trait = h->object_get(h, obj_body, "format_trait");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_Format::loc is null"); } return 0; }
 	if (!belong) { if(h->error) { h->error(h,belong, "ast2c_Format::belong is null"); } return 0; }
 	if (!belong_struct) { if(h->error) { h->error(h,belong_struct, "ast2c_Format::belong_struct is null"); } return 0; }
@@ -3528,7 +3529,6 @@ int ast2c_Format_parse(ast2c_Ast* ast,ast2c_Format* s,ast2c_json_handlers* h, vo
 		if(h->error) { h->error(h,state_variables, "failed to get array size of ast2c_Format::state_variables"); }
 		return NULL;
 	}
-	if (!format_trait) { if(h->error) { h->error(h,format_trait, "ast2c_Format::format_trait is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_Format::loc"); }
 		goto error;
