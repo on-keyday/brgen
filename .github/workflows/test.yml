@@ -8,7 +8,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@1c2ab3f28225878ae4dd1f76d31279f16ea29e29 # v2.1.1
+        uses: Kesin11/actions-timeline@518da3e0348d81936d2582859c88984728434d78 # v2.1.2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
