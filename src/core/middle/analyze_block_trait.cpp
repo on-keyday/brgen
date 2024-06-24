@@ -33,6 +33,7 @@ namespace brgen::middle {
     }
 
     void analyze_field_argument(const std::shared_ptr<ast::Type>& typ, const std::shared_ptr<ast::FieldArgument>& args, auto&& add_trait) {
+        if (!args) return;
         if (args->peek_value && *args->peek_value) {
             add_trait(ast::BlockTrait::static_peek);
         }
