@@ -114,7 +114,7 @@ namespace brgen::middle {
             auto fitting = [&](auto& a, auto& b) {
                 auto ity = ast::as<ast::IntType>(a);
                 auto lty = ast::as<ast::IntLiteralType>(b);
-                auto bit_size = lty->get_bit_size();
+                auto bit_size = lty->bit_size;
                 if (ity->bit_size < *bit_size) {
                     error(lty->loc, "bit size ", nums(*bit_size), " is too large")
                         .error(ity->loc, "for this")
@@ -1543,7 +1543,8 @@ namespace brgen::middle {
                 }
                 auto array_ty = ast::as<ast::ArrayType>(field->field_type);
                 for (auto& arg : args->arguments) {
-                    auto typ = arg->expr_type;
+                    auto& typ = arg->expr_type;
+                    int_type_fitting(field->field_type, typ);
                     if (comparable_type(field->field_type, typ)) {
                         args->argument_mapping = ast::FieldArgumentMapping(size_t(args->argument_mapping) | size_t(ast::FieldArgumentMapping::direct));
                     }

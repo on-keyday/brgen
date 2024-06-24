@@ -20,7 +20,7 @@
             "request": "launch",
             "program": "${workspaceRoot}/tool/src2json",
             "args": [
-                "c:/workspace/shbrgen/brgen/example/zip.bgn",
+                "c:/workspace/shbrgen/brgen/example/ipv6addr.bgn",
                 "--print-json","--print-on-error"
             ],
             "stopAtEntry": false,

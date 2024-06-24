@@ -74,12 +74,11 @@ namespace brgen::ast::tool {
         auto fitting = [&](auto& a, auto& b) -> brgen::result<void> {
             auto ity = ast::as<ast::IntType>(a);
             auto lty = ast::as<ast::IntLiteralType>(b);
-            auto bit_size = lty->get_bit_size();
+            auto bit_size = lty->bit_size;
             if (ity->bit_size < *bit_size) {
-                // error(lty->loc, "bit size ", nums(*bit_size), " is too large")
-                //     .error(ity->loc, "for this")
-                //     .report();
-                return unexpect(error(lty->loc, "bit size ", nums(*bit_size), " is too large").error(ity->loc, "for this"));
+                return unexpect(
+                    error(lty->loc, "bit size ", nums(*bit_size), " is too large")
+                        .error(ity->loc, "for this"));
             }
             b = a;  // fitting
             return {};
