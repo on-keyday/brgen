@@ -404,7 +404,7 @@ BitMapping,
 @JsonValue('bit_both')
 BitBoth,
 }
-enum FormatTrait {
+enum BlockTrait {
 @JsonValue('none')
 None,
 @JsonValue('fixed_primitive')
@@ -668,7 +668,7 @@ class IndentBlock extends Stmt {
     List<Node>? elements = [];
     Scope? scope;
     List<Metadata>? metadata = [];
-    FormatTrait blockTraits = FormatTrait.None;
+    BlockTrait blockTraits = BlockTrait.None;
 factory IndentBlock.fromJson(Map<String, dynamic> json) => _$IndentBlockFromJson(json);
 }
 @JsonSerializable()

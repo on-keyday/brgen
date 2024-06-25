@@ -1513,170 +1513,170 @@ func (n *OrderType) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type FormatTrait int
+type BlockTrait int
 
 const (
-	FormatTraitNone            FormatTrait = 0
-	FormatTraitFixedPrimitive  FormatTrait = 1
-	FormatTraitFixedFloat      FormatTrait = 2
-	FormatTraitFixedArray      FormatTrait = 4
-	FormatTraitVariableArray   FormatTrait = 8
-	FormatTraitStruct          FormatTrait = 16
-	FormatTraitConditional     FormatTrait = 32
-	FormatTraitStaticPeek      FormatTrait = 64
-	FormatTraitBitField        FormatTrait = 128
-	FormatTraitReadState       FormatTrait = 256
-	FormatTraitWriteState      FormatTrait = 512
-	FormatTraitTerminalPattern FormatTrait = 1024
-	FormatTraitBitStream       FormatTrait = 2048
-	FormatTraitDynamicOrder    FormatTrait = 4096
-	FormatTraitFullInput       FormatTrait = 8192
-	FormatTraitBackwardInput   FormatTrait = 16384
-	FormatTraitMagicValue      FormatTrait = 32768
-	FormatTraitAssertion       FormatTrait = 65536
-	FormatTraitExplicitError   FormatTrait = 131072
-	FormatTraitProcedural      FormatTrait = 262144
-	FormatTraitForLoop         FormatTrait = 524288
-	FormatTraitLocalVariable   FormatTrait = 1048576
-	FormatTraitDescriptionOnly FormatTrait = 2097152
-	FormatTraitUncommonSize    FormatTrait = 4194304
+	BlockTraitNone            BlockTrait = 0
+	BlockTraitFixedPrimitive  BlockTrait = 1
+	BlockTraitFixedFloat      BlockTrait = 2
+	BlockTraitFixedArray      BlockTrait = 4
+	BlockTraitVariableArray   BlockTrait = 8
+	BlockTraitStruct          BlockTrait = 16
+	BlockTraitConditional     BlockTrait = 32
+	BlockTraitStaticPeek      BlockTrait = 64
+	BlockTraitBitField        BlockTrait = 128
+	BlockTraitReadState       BlockTrait = 256
+	BlockTraitWriteState      BlockTrait = 512
+	BlockTraitTerminalPattern BlockTrait = 1024
+	BlockTraitBitStream       BlockTrait = 2048
+	BlockTraitDynamicOrder    BlockTrait = 4096
+	BlockTraitFullInput       BlockTrait = 8192
+	BlockTraitBackwardInput   BlockTrait = 16384
+	BlockTraitMagicValue      BlockTrait = 32768
+	BlockTraitAssertion       BlockTrait = 65536
+	BlockTraitExplicitError   BlockTrait = 131072
+	BlockTraitProcedural      BlockTrait = 262144
+	BlockTraitForLoop         BlockTrait = 524288
+	BlockTraitLocalVariable   BlockTrait = 1048576
+	BlockTraitDescriptionOnly BlockTrait = 2097152
+	BlockTraitUncommonSize    BlockTrait = 4194304
 )
 
-func (n FormatTrait) String() string {
+func (n BlockTrait) String() string {
 	var s string
-	if n&FormatTraitFixedPrimitive != 0 {
+	if n&BlockTraitFixedPrimitive != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "fixed_primitive"
 	}
-	if n&FormatTraitFixedFloat != 0 {
+	if n&BlockTraitFixedFloat != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "fixed_float"
 	}
-	if n&FormatTraitFixedArray != 0 {
+	if n&BlockTraitFixedArray != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "fixed_array"
 	}
-	if n&FormatTraitVariableArray != 0 {
+	if n&BlockTraitVariableArray != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "variable_array"
 	}
-	if n&FormatTraitStruct != 0 {
+	if n&BlockTraitStruct != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "struct"
 	}
-	if n&FormatTraitConditional != 0 {
+	if n&BlockTraitConditional != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "conditional"
 	}
-	if n&FormatTraitStaticPeek != 0 {
+	if n&BlockTraitStaticPeek != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "static_peek"
 	}
-	if n&FormatTraitBitField != 0 {
+	if n&BlockTraitBitField != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "bit_field"
 	}
-	if n&FormatTraitReadState != 0 {
+	if n&BlockTraitReadState != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "read_state"
 	}
-	if n&FormatTraitWriteState != 0 {
+	if n&BlockTraitWriteState != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "write_state"
 	}
-	if n&FormatTraitTerminalPattern != 0 {
+	if n&BlockTraitTerminalPattern != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "terminal_pattern"
 	}
-	if n&FormatTraitBitStream != 0 {
+	if n&BlockTraitBitStream != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "bit_stream"
 	}
-	if n&FormatTraitDynamicOrder != 0 {
+	if n&BlockTraitDynamicOrder != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "dynamic_order"
 	}
-	if n&FormatTraitFullInput != 0 {
+	if n&BlockTraitFullInput != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "full_input"
 	}
-	if n&FormatTraitBackwardInput != 0 {
+	if n&BlockTraitBackwardInput != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "backward_input"
 	}
-	if n&FormatTraitMagicValue != 0 {
+	if n&BlockTraitMagicValue != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "magic_value"
 	}
-	if n&FormatTraitAssertion != 0 {
+	if n&BlockTraitAssertion != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "assertion"
 	}
-	if n&FormatTraitExplicitError != 0 {
+	if n&BlockTraitExplicitError != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "explicit_error"
 	}
-	if n&FormatTraitProcedural != 0 {
+	if n&BlockTraitProcedural != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "procedural"
 	}
-	if n&FormatTraitForLoop != 0 {
+	if n&BlockTraitForLoop != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "for_loop"
 	}
-	if n&FormatTraitLocalVariable != 0 {
+	if n&BlockTraitLocalVariable != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "local_variable"
 	}
-	if n&FormatTraitDescriptionOnly != 0 {
+	if n&BlockTraitDescriptionOnly != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "description_only"
 	}
-	if n&FormatTraitUncommonSize != 0 {
+	if n&BlockTraitUncommonSize != 0 {
 		if s != "" {
 			s += " | "
 		}
@@ -1688,12 +1688,12 @@ func (n FormatTrait) String() string {
 	return s
 }
 
-func (n *FormatTrait) UnmarshalJSON(data []byte) error {
+func (n *BlockTrait) UnmarshalJSON(data []byte) error {
 	var tmp int
 	if err := json.Unmarshal(data, &tmp); err != nil {
 		return err
 	}
-	*n = FormatTrait(tmp)
+	*n = BlockTrait(tmp)
 	return nil
 }
 
@@ -2339,7 +2339,7 @@ type IndentBlock struct {
 	Elements    []Node
 	Scope       *Scope
 	Metadata    []*Metadata
-	BlockTraits FormatTrait
+	BlockTraits BlockTrait
 }
 
 func (n *IndentBlock) isStmt() {}
@@ -4322,11 +4322,11 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeIndentBlock:
 			v := n.node[i].(*IndentBlock)
 			var tmp struct {
-				StructType  *uintptr    `json:"struct_type"`
-				Elements    []uintptr   `json:"elements"`
-				Scope       *uintptr    `json:"scope"`
-				Metadata    []uintptr   `json:"metadata"`
-				BlockTraits FormatTrait `json:"block_traits"`
+				StructType  *uintptr   `json:"struct_type"`
+				Elements    []uintptr  `json:"elements"`
+				Scope       *uintptr   `json:"scope"`
+				Metadata    []uintptr  `json:"metadata"`
+				BlockTraits BlockTrait `json:"block_traits"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err

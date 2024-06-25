@@ -217,7 +217,7 @@ BitStream,
 BitMapping,
 BitBoth,
 }
-public enum FormatTrait {
+public enum BlockTrait {
 None,
 FixedPrimitive,
 FixedFloat,
@@ -473,7 +473,7 @@ public class IndentBlock : Stmt{
 	public List<Node>? Elements{get;set;}
 	public Scope? Scope{get;set;}
 	public List<Metadata>? Metadata{get;set;}
-	public FormatTrait BlockTraits{get;set;}
+	public BlockTrait BlockTraits{get;set;}
 }
 public class ScopedStatement : Stmt{
 	public Loc Loc{get;set;}

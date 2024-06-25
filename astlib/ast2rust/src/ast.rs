@@ -742,7 +742,7 @@ impl TryFrom<&str> for OrderType {
 
 bitflags!{
 	#[derive(Debug,Clone,Copy)]
-	pub struct FormatTrait: u64{
+	pub struct BlockTrait: u64{
 		const None = 0;
 		const FixedPrimitive = 1;
 		const FixedFloat = 2;
@@ -769,7 +769,7 @@ bitflags!{
 		const UncommonSize = 4194304;
 	}
 }
-impl TryFrom<u64> for FormatTrait {
+impl TryFrom<u64> for BlockTrait {
 	type Error = ();
 	fn try_from(v:u64)->Result<Self,()>{
 		Self::from_bits(v).ok_or(())
@@ -4959,7 +4959,7 @@ pub struct IndentBlock {
 	pub elements: Vec<Node>,
 	pub scope: Option<Rc<RefCell<Scope>>>,
 	pub metadata: Vec<Weak<RefCell<Metadata>>>,
-	pub block_traits: FormatTrait,
+	pub block_traits: BlockTrait,
 }
 
 impl From<&Rc<RefCell<IndentBlock>>> for NodeType {
@@ -8970,7 +8970,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				elements: Vec::new(),
 				scope: None,
 				metadata: Vec::new(),
-				block_traits: FormatTrait::None,
+				block_traits: BlockTrait::None,
 				})))
 			},
 			NodeType::ScopedStatement => {
@@ -11468,7 +11468,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					None=>return Err(Error::MissingField(node_type,"block_traits")),
 				};
 				node.borrow_mut().block_traits = match block_traits_body.as_u64() {
-					Some(v)=>match FormatTrait::try_from(v) {
+					Some(v)=>match BlockTrait::try_from(v) {
 						Ok(v)=>v,
 						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
 					},

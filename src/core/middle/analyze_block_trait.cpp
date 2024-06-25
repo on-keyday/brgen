@@ -42,9 +42,16 @@ namespace brgen::middle {
         }
     }
 
-    void analyze_field_type(const std::shared_ptr<ast::Type>& type, auto&& add_trait, bool indirect = false) {
+    void derive_from_struct_type(ast::StructType* typ, auto&& derive_trait) {
+        auto base = typ->base.lock();
+        if (auto fmt = ast::as<ast::Format>(base)) {
+            derive_trait(fmt->body->block_traits);
+        }
+    }
+
+    void analyze_field_type(const std::shared_ptr<ast::Type>& type, auto&& add_trait, auto&& derive_trait, bool indirect) {
         if (auto ident = ast::as<ast::IdentType>(type)) {
-            analyze_field_type(ident->base.lock(), add_trait, indirect);
+            analyze_field_type(ident->base.lock(), add_trait, derive_trait, indirect);
         }
         else if (auto enum_ = ast::as<ast::EnumType>(type)) {
             auto base_ty = enum_->base.lock()->base_type;
@@ -53,7 +60,7 @@ namespace brgen::middle {
                 add_trait(ast::BlockTrait::description_only);
                 return;
             }
-            analyze_field_type(base_ty, add_trait, indirect);
+            analyze_field_type(base_ty, add_trait, derive_trait, indirect);
         }
         else if (auto struct_ = ast::as<ast::StructType>(type)) {
             add_trait(ast::BlockTrait::struct_);
@@ -67,7 +74,7 @@ namespace brgen::middle {
                 // pattern: variable-size array
                 add_trait(ast::BlockTrait::variable_array);
             }
-            analyze_field_type(arr_->element_type, add_trait, true);
+            analyze_field_type(arr_->element_type, add_trait, derive_trait, true);
         }
         else if (auto int_ = ast::as<ast::IntType>(type)) {
             add_trait(ast::BlockTrait::fixed_primitive);
@@ -106,7 +113,7 @@ namespace brgen::middle {
         }
         if (auto field = ast::as<ast::Field>(elm)) {
             auto type = field->field_type;
-            analyze_field_type(type, add_trait, false);
+            analyze_field_type(type, add_trait, derive_trait, false);
             analyze_field_argument(type, field->arguments, add_trait);
         }
         if (auto fn = ast::as<ast::Function>(elm)) {

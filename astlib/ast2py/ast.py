@@ -230,7 +230,7 @@ class OrderType(PyEnum):
     BIT_BOTH = "bit_both"
 
 
-class FormatTrait(PyEnum):
+class BlockTrait(PyEnum):
     NONE = 0
     FIXED_PRIMITIVE = 1
     FIXED_FLOAT = 2
@@ -452,7 +452,7 @@ class IndentBlock(Stmt):
     elements: List[Node]
     scope: Optional[Scope]
     metadata: List[Metadata]
-    block_traits: FormatTrait
+    block_traits: BlockTrait
 
 
 class ScopedStatement(Stmt):
@@ -1481,7 +1481,7 @@ def ast2node(ast :JsonAst) -> Program:
                 else:
                     node[i].scope = None
                 node[i].metadata = [(node[x] if isinstance(node[x],Metadata) else raiseError(TypeError('type mismatch at IndentBlock::metadata'))) for x in ast.node[i].body["metadata"]]
-                node[i].block_traits = FormatTrait(ast.node[i].body["block_traits"])
+                node[i].block_traits = BlockTrait(ast.node[i].body["block_traits"])
             case NodeType.SCOPED_STATEMENT:
                 if ast.node[i].body["struct_type"] is not None:
                     x = node[ast.node[i].body["struct_type"]]

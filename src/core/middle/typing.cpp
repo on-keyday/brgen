@@ -1551,6 +1551,12 @@ namespace brgen::middle {
                     else if (array_ty && comparable_type(array_ty->element_type, typ)) {
                         args->argument_mapping = ast::FieldArgumentMapping(size_t(args->argument_mapping) | size_t(ast::FieldArgumentMapping::repeat));
                     }
+                    else if (auto meta = ast::as<ast::TypeLiteral>(arg); meta) {
+                        if (args->type_map) {
+                            error(meta->loc, "cannot specify type mapping twice").error(args->type_map->loc, "type mapping is specified here").report();
+                        }
+                        args->type_map = ast::cast_to<ast::TypeLiteral>(arg);
+                    }
                     else {
                         auto field_ty = ast::tool::type_to_string(field->field_type);
                         auto arg_ty = ast::tool::type_to_string(typ);

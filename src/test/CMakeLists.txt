@@ -14,6 +14,7 @@ add_library(parse_core STATIC
 "../core/ast/parse.cpp"
 "../core/middle/typing.cpp"
 "../core/middle/type_attribute.cpp"
+"../core/middle/analyze_block_trait.cpp"
 "../tool/src2json/test.cpp"
 )
 

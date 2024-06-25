@@ -1103,133 +1103,133 @@ int ast2c_OrderType_from_string(const char* str, ast2c_OrderType* out) {
 	return 0;
 }
 
-const char* ast2c_FormatTrait_to_string(ast2c_FormatTrait val) {
+const char* ast2c_BlockTrait_to_string(ast2c_BlockTrait val) {
 	switch(val) {
-	case AST2C_FORMATTRAIT_NONE: return "none";
-	case AST2C_FORMATTRAIT_FIXED_PRIMITIVE: return "fixed_primitive";
-	case AST2C_FORMATTRAIT_FIXED_FLOAT: return "fixed_float";
-	case AST2C_FORMATTRAIT_FIXED_ARRAY: return "fixed_array";
-	case AST2C_FORMATTRAIT_VARIABLE_ARRAY: return "variable_array";
-	case AST2C_FORMATTRAIT_STRUCT: return "struct";
-	case AST2C_FORMATTRAIT_CONDITIONAL: return "conditional";
-	case AST2C_FORMATTRAIT_STATIC_PEEK: return "static_peek";
-	case AST2C_FORMATTRAIT_BIT_FIELD: return "bit_field";
-	case AST2C_FORMATTRAIT_READ_STATE: return "read_state";
-	case AST2C_FORMATTRAIT_WRITE_STATE: return "write_state";
-	case AST2C_FORMATTRAIT_TERMINAL_PATTERN: return "terminal_pattern";
-	case AST2C_FORMATTRAIT_BIT_STREAM: return "bit_stream";
-	case AST2C_FORMATTRAIT_DYNAMIC_ORDER: return "dynamic_order";
-	case AST2C_FORMATTRAIT_FULL_INPUT: return "full_input";
-	case AST2C_FORMATTRAIT_BACKWARD_INPUT: return "backward_input";
-	case AST2C_FORMATTRAIT_MAGIC_VALUE: return "magic_value";
-	case AST2C_FORMATTRAIT_ASSERTION: return "assertion";
-	case AST2C_FORMATTRAIT_EXPLICIT_ERROR: return "explicit_error";
-	case AST2C_FORMATTRAIT_PROCEDURAL: return "procedural";
-	case AST2C_FORMATTRAIT_FOR_LOOP: return "for_loop";
-	case AST2C_FORMATTRAIT_LOCAL_VARIABLE: return "local_variable";
-	case AST2C_FORMATTRAIT_DESCRIPTION_ONLY: return "description_only";
-	case AST2C_FORMATTRAIT_UNCOMMON_SIZE: return "uncommon_size";
+	case AST2C_BLOCKTRAIT_NONE: return "none";
+	case AST2C_BLOCKTRAIT_FIXED_PRIMITIVE: return "fixed_primitive";
+	case AST2C_BLOCKTRAIT_FIXED_FLOAT: return "fixed_float";
+	case AST2C_BLOCKTRAIT_FIXED_ARRAY: return "fixed_array";
+	case AST2C_BLOCKTRAIT_VARIABLE_ARRAY: return "variable_array";
+	case AST2C_BLOCKTRAIT_STRUCT: return "struct";
+	case AST2C_BLOCKTRAIT_CONDITIONAL: return "conditional";
+	case AST2C_BLOCKTRAIT_STATIC_PEEK: return "static_peek";
+	case AST2C_BLOCKTRAIT_BIT_FIELD: return "bit_field";
+	case AST2C_BLOCKTRAIT_READ_STATE: return "read_state";
+	case AST2C_BLOCKTRAIT_WRITE_STATE: return "write_state";
+	case AST2C_BLOCKTRAIT_TERMINAL_PATTERN: return "terminal_pattern";
+	case AST2C_BLOCKTRAIT_BIT_STREAM: return "bit_stream";
+	case AST2C_BLOCKTRAIT_DYNAMIC_ORDER: return "dynamic_order";
+	case AST2C_BLOCKTRAIT_FULL_INPUT: return "full_input";
+	case AST2C_BLOCKTRAIT_BACKWARD_INPUT: return "backward_input";
+	case AST2C_BLOCKTRAIT_MAGIC_VALUE: return "magic_value";
+	case AST2C_BLOCKTRAIT_ASSERTION: return "assertion";
+	case AST2C_BLOCKTRAIT_EXPLICIT_ERROR: return "explicit_error";
+	case AST2C_BLOCKTRAIT_PROCEDURAL: return "procedural";
+	case AST2C_BLOCKTRAIT_FOR_LOOP: return "for_loop";
+	case AST2C_BLOCKTRAIT_LOCAL_VARIABLE: return "local_variable";
+	case AST2C_BLOCKTRAIT_DESCRIPTION_ONLY: return "description_only";
+	case AST2C_BLOCKTRAIT_UNCOMMON_SIZE: return "uncommon_size";
 	default: return NULL;
 	}
 }
 
 // returns 1 if succeed 0 if failed
-int ast2c_FormatTrait_from_string(const char* str, ast2c_FormatTrait* out) {
+int ast2c_BlockTrait_from_string(const char* str, ast2c_BlockTrait* out) {
 	if (!str||!out) return 0;
 	if (strcmp(str, "none") == 0) {
-		*out = AST2C_FORMATTRAIT_NONE;
+		*out = AST2C_BLOCKTRAIT_NONE;
 		return 1;
 	}
 	if (strcmp(str, "fixed_primitive") == 0) {
-		*out = AST2C_FORMATTRAIT_FIXED_PRIMITIVE;
+		*out = AST2C_BLOCKTRAIT_FIXED_PRIMITIVE;
 		return 1;
 	}
 	if (strcmp(str, "fixed_float") == 0) {
-		*out = AST2C_FORMATTRAIT_FIXED_FLOAT;
+		*out = AST2C_BLOCKTRAIT_FIXED_FLOAT;
 		return 1;
 	}
 	if (strcmp(str, "fixed_array") == 0) {
-		*out = AST2C_FORMATTRAIT_FIXED_ARRAY;
+		*out = AST2C_BLOCKTRAIT_FIXED_ARRAY;
 		return 1;
 	}
 	if (strcmp(str, "variable_array") == 0) {
-		*out = AST2C_FORMATTRAIT_VARIABLE_ARRAY;
+		*out = AST2C_BLOCKTRAIT_VARIABLE_ARRAY;
 		return 1;
 	}
 	if (strcmp(str, "struct") == 0) {
-		*out = AST2C_FORMATTRAIT_STRUCT;
+		*out = AST2C_BLOCKTRAIT_STRUCT;
 		return 1;
 	}
 	if (strcmp(str, "conditional") == 0) {
-		*out = AST2C_FORMATTRAIT_CONDITIONAL;
+		*out = AST2C_BLOCKTRAIT_CONDITIONAL;
 		return 1;
 	}
 	if (strcmp(str, "static_peek") == 0) {
-		*out = AST2C_FORMATTRAIT_STATIC_PEEK;
+		*out = AST2C_BLOCKTRAIT_STATIC_PEEK;
 		return 1;
 	}
 	if (strcmp(str, "bit_field") == 0) {
-		*out = AST2C_FORMATTRAIT_BIT_FIELD;
+		*out = AST2C_BLOCKTRAIT_BIT_FIELD;
 		return 1;
 	}
 	if (strcmp(str, "read_state") == 0) {
-		*out = AST2C_FORMATTRAIT_READ_STATE;
+		*out = AST2C_BLOCKTRAIT_READ_STATE;
 		return 1;
 	}
 	if (strcmp(str, "write_state") == 0) {
-		*out = AST2C_FORMATTRAIT_WRITE_STATE;
+		*out = AST2C_BLOCKTRAIT_WRITE_STATE;
 		return 1;
 	}
 	if (strcmp(str, "terminal_pattern") == 0) {
-		*out = AST2C_FORMATTRAIT_TERMINAL_PATTERN;
+		*out = AST2C_BLOCKTRAIT_TERMINAL_PATTERN;
 		return 1;
 	}
 	if (strcmp(str, "bit_stream") == 0) {
-		*out = AST2C_FORMATTRAIT_BIT_STREAM;
+		*out = AST2C_BLOCKTRAIT_BIT_STREAM;
 		return 1;
 	}
 	if (strcmp(str, "dynamic_order") == 0) {
-		*out = AST2C_FORMATTRAIT_DYNAMIC_ORDER;
+		*out = AST2C_BLOCKTRAIT_DYNAMIC_ORDER;
 		return 1;
 	}
 	if (strcmp(str, "full_input") == 0) {
-		*out = AST2C_FORMATTRAIT_FULL_INPUT;
+		*out = AST2C_BLOCKTRAIT_FULL_INPUT;
 		return 1;
 	}
 	if (strcmp(str, "backward_input") == 0) {
-		*out = AST2C_FORMATTRAIT_BACKWARD_INPUT;
+		*out = AST2C_BLOCKTRAIT_BACKWARD_INPUT;
 		return 1;
 	}
 	if (strcmp(str, "magic_value") == 0) {
-		*out = AST2C_FORMATTRAIT_MAGIC_VALUE;
+		*out = AST2C_BLOCKTRAIT_MAGIC_VALUE;
 		return 1;
 	}
 	if (strcmp(str, "assertion") == 0) {
-		*out = AST2C_FORMATTRAIT_ASSERTION;
+		*out = AST2C_BLOCKTRAIT_ASSERTION;
 		return 1;
 	}
 	if (strcmp(str, "explicit_error") == 0) {
-		*out = AST2C_FORMATTRAIT_EXPLICIT_ERROR;
+		*out = AST2C_BLOCKTRAIT_EXPLICIT_ERROR;
 		return 1;
 	}
 	if (strcmp(str, "procedural") == 0) {
-		*out = AST2C_FORMATTRAIT_PROCEDURAL;
+		*out = AST2C_BLOCKTRAIT_PROCEDURAL;
 		return 1;
 	}
 	if (strcmp(str, "for_loop") == 0) {
-		*out = AST2C_FORMATTRAIT_FOR_LOOP;
+		*out = AST2C_BLOCKTRAIT_FOR_LOOP;
 		return 1;
 	}
 	if (strcmp(str, "local_variable") == 0) {
-		*out = AST2C_FORMATTRAIT_LOCAL_VARIABLE;
+		*out = AST2C_BLOCKTRAIT_LOCAL_VARIABLE;
 		return 1;
 	}
 	if (strcmp(str, "description_only") == 0) {
-		*out = AST2C_FORMATTRAIT_DESCRIPTION_ONLY;
+		*out = AST2C_BLOCKTRAIT_DESCRIPTION_ONLY;
 		return 1;
 	}
 	if (strcmp(str, "uncommon_size") == 0) {
-		*out = AST2C_FORMATTRAIT_UNCOMMON_SIZE;
+		*out = AST2C_BLOCKTRAIT_UNCOMMON_SIZE;
 		return 1;
 	}
 	return 0;

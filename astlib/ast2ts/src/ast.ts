@@ -203,7 +203,7 @@ export function isOrderType(obj: any): obj is OrderType {
 	return obj && typeof obj === 'string' && (obj === "byte" || obj === "bit_stream" || obj === "bit_mapping" || obj === "bit_both")
 }
 
-export const enum FormatTrait {
+export const enum BlockTrait {
 	none = 0,
 	fixed_primitive = 1,
 	fixed_float = 2,
@@ -230,11 +230,11 @@ export const enum FormatTrait {
 	uncommon_size = 4194304,
 };
 
-export function isFormatTrait(obj: any): obj is FormatTrait {
+export function isBlockTrait(obj: any): obj is BlockTrait {
 	return typeof obj === 'number' && Number.isInteger(obj) // easy check
 }
 
-export function FormatTraitToString(v: FormatTrait): string {
+export function BlockTraitToString(v: BlockTrait): string {
   const result = [];
   if ((v & 1) === 1) result.push("fixed_primitive");
   if ((v & 2) === 2) result.push("fixed_float");
@@ -730,7 +730,7 @@ export interface IndentBlock extends Stmt {
 	elements: Node[];
 	scope: Scope|null;
 	metadata: Metadata[];
-	block_traits: FormatTrait;
+	block_traits: BlockTrait;
 }
 
 export function isIndentBlock(obj: any): obj is IndentBlock {
@@ -1603,7 +1603,7 @@ export function parseAST(obj: JsonAst): Program {
 				elements: [],
 				scope: null,
 				metadata: [],
-				block_traits: FormatTrait.none,
+				block_traits: BlockTrait.none,
 			}
 			c.node.push(n);
 			break;
@@ -3183,7 +3183,7 @@ export function parseAST(obj: JsonAst): Program {
 				n.metadata.push(tmpmetadata);
 			}
 			const tmpblock_traits = on.body?.block_traits;
-			if (!isFormatTrait(tmpblock_traits)) {
+			if (!isBlockTrait(tmpblock_traits)) {
 				throw new Error('invalid node list at IndentBlock::block_traits');
 			}
 			n.block_traits = tmpblock_traits;

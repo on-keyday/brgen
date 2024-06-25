@@ -282,6 +282,7 @@ export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
     ${ident.base.decode_fn?"+ custom decode\n":""}
     ${(ident.base.body?.metadata.length??0) > 0 ?`+ metadata: ${ident.base.body?.metadata.map((x)=>x.name).join(", ")}\n`:""}
     ${(ident.base.cast_fns.length || 0) > 0 ?`+ cast functions: ${ident.base.cast_fns.map((x)=> typeToString(x.return_type) ).join(", ")}\n`:""}
+    + block trait: ${ident.base.body?.block_traits && ast2ts.BlockTraitToString(ident.base.body?.block_traits) || "none"}
 `);
                     }
                     return makeHover(ident.ident,"format"); 
