@@ -817,7 +817,6 @@ namespace brgen::ast {
         new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->constant_level = node->constant_level;
         new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->expr = deep_copy(node->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -3584,10 +3583,6 @@ namespace brgen::ast {
         }
         if (!deep_equal(a->base, b->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
             trace(a->base, b->base, "Cast::base", -1);
-            return false;
-        }
-        if (!deep_equal(a->expr, b->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-            trace(a->expr, b->expr, "Cast::expr", -1);
             return false;
         }
         return true;

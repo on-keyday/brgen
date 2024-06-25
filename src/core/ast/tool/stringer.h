@@ -110,18 +110,23 @@ namespace brgen::ast::tool {
                 return found->second(*this, callee, c->arguments);
             }
             else {
-                std::string args;
-                for (auto&& arg : c->arguments) {
-                    if (!args.empty()) {
-                        args += ", ";
-                    }
-                    args += to_string(arg);
-                }
+                auto args = args_to_string(c->arguments);
                 return concat(callee, "(", args, ")");
             }
         }
 
        public:
+        std::string args_to_string(const std::vector<std::shared_ptr<Expr>>& args) {
+            std::string result;
+            for (auto&& arg : args) {
+                if (!result.empty()) {
+                    result += ", ";
+                }
+                result += to_string(arg);
+            }
+            return result;
+        }
+
         std::string to_string(const std::shared_ptr<Expr>& expr) {
             if (!expr) {
                 return "";
@@ -201,7 +206,8 @@ namespace brgen::ast::tool {
                 if (cast_handler) {
                     return cast_handler(*this, ast::cast_to<ast::Cast>(expr));
                 }
-                return concat(type_resolver(*this, cast_->expr_type), "(", to_string(cast_->expr), ")");
+                auto args = args_to_string(cast_->arguments);
+                return concat(type_resolver(*this, cast_->expr_type), "(", args, ")");
             }
             if (auto access = ast::as<ast::MemberAccess>(expr)) {
                 auto base = to_string(access->target);

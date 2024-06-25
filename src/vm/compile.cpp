@@ -56,7 +56,7 @@ namespace brgen::vm {
         }
 
         size_t add_static(const Value& value) {
-            auto index = code.static_data.size();
+            auto index = pc();
             code.static_data.push_back(value);
             return index;
         }
@@ -173,7 +173,7 @@ namespace brgen::vm {
                 }
             }
             else if (auto c = ast::as<ast::Cast>(expr)) {
-                compile_expr(c->expr);
+                compile_expr(c->arguments[0]);
             }
             else if (auto b = ast::as<ast::Binary>(expr)) {
                 switch (b->op) {
@@ -360,7 +360,7 @@ namespace brgen::vm {
                     compile_expr(arr_ty->length);
                     compile_to_length(arr_ty->length->expr_type);
                 }
-                else{
+                else {
                     auto index = add_static(Value{futils::view::rvec("error: array length is not decidable")});
                     op(Op::LOAD_STATIC, index);
                     op(Op::ERROR);

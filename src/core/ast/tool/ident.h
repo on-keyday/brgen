@@ -114,8 +114,12 @@ namespace brgen::ast::tool {
             return is_state_variable_ref(access->target);
         }
         if (auto ident = ast::as<ast::Ident>(f)) {
-            auto [base, _] = *ast::tool::lookup_base(ast::cast_to<ast::Ident>(f));
-            if (auto field = ast::as<ast::Field>(base); field && field->is_state_variable) {
+            auto b = ast::tool::lookup_base(ast::cast_to<ast::Ident>(f));
+            if (!b) {
+                return false;
+            }
+            auto [base, _] = *b;
+            if (auto field = ast::as<ast::Field>(base->base.lock()); field && field->is_state_variable) {
                 return true;
             }
         }

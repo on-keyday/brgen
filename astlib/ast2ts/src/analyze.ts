@@ -300,11 +300,15 @@ export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
                     }
                     return makeHover(ident.ident,"type");
                 case ast2ts.IdentUsage.define_cast_fn:
-                    return makeHover(ident.ident,"cast function");
+                case ast2ts.IdentUsage.define_fn:
+                    if(ast2ts.isFunction(ident.base)){
+                    return makeHover(ident.ident,`
++ ${ident.base.is_cast?"cast function":"function"}
+    + block trait: ${ident.base.body?.block_traits && ast2ts.BlockTraitToString(ident.base.body?.block_traits) || "none"}`);
+                    }
+                    return makeHover(ident.ident,ident.usage == ast2ts.IdentUsage.define_cast_fn?"cast function":"function");
                 case ast2ts.IdentUsage.maybe_type:
                     return makeHover(ident.ident,"maybe type");
-                case ast2ts.IdentUsage.define_fn:
-                    return makeHover(ident.ident,"function");
                 case ast2ts.IdentUsage.define_arg:
                     return makeHover(ident.ident,"argument");
                 case ast2ts.IdentUsage.reference_builtin_fn:

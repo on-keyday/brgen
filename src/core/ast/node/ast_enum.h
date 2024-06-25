@@ -928,6 +928,7 @@ enum class BlockTrait {
     local_variable = (1 << 20),
     description_only = (1 << 21),
     uncommon_size = (1 << 22),
+    control_flow_change = (1 << 23),
 };
 constexpr const char* to_string(BlockTrait e) {
     switch(e) {
@@ -955,6 +956,7 @@ constexpr const char* to_string(BlockTrait e) {
     case BlockTrait::local_variable: return "local_variable";
     case BlockTrait::description_only: return "description_only";
     case BlockTrait::uncommon_size: return "uncommon_size";
+    case BlockTrait::control_flow_change: return "control_flow_change";
     default: return nullptr;
     }
 }
@@ -984,12 +986,13 @@ template<>constexpr std::optional<BlockTrait> from_string<BlockTrait>(std::strin
     if(str == "local_variable") return BlockTrait::local_variable;
     if(str == "description_only") return BlockTrait::description_only;
     if(str == "uncommon_size") return BlockTrait::uncommon_size;
+    if(str == "control_flow_change") return BlockTrait::control_flow_change;
     return std::nullopt;
 }
 template<>constexpr size_t enum_elem_count<BlockTrait>() {
-    return 24;
+    return 25;
 }
-template<>constexpr std::array<std::pair<BlockTrait,std::string_view>,24> make_enum_array<BlockTrait>() {
+template<>constexpr std::array<std::pair<BlockTrait,std::string_view>,25> make_enum_array<BlockTrait>() {
     return {
         std::pair{BlockTrait::none,"none"},
         std::pair{BlockTrait::fixed_primitive,"fixed_primitive"},
@@ -1015,9 +1018,10 @@ template<>constexpr std::array<std::pair<BlockTrait,std::string_view>,24> make_e
         std::pair{BlockTrait::local_variable,"local_variable"},
         std::pair{BlockTrait::description_only,"description_only"},
         std::pair{BlockTrait::uncommon_size,"uncommon_size"},
+        std::pair{BlockTrait::control_flow_change,"control_flow_change"},
     };
 }
-template<>constexpr std::array<std::pair<BlockTrait,std::string_view>,24> make_enum_name_array<BlockTrait>() {
+template<>constexpr std::array<std::pair<BlockTrait,std::string_view>,25> make_enum_name_array<BlockTrait>() {
     return {
         std::pair{BlockTrait::none,"none"},
         std::pair{BlockTrait::fixed_primitive,"fixed_primitive"},
@@ -1043,6 +1047,7 @@ template<>constexpr std::array<std::pair<BlockTrait,std::string_view>,24> make_e
         std::pair{BlockTrait::local_variable,"local_variable"},
         std::pair{BlockTrait::description_only,"description_only"},
         std::pair{BlockTrait::uncommon_size,"uncommon_size"},
+        std::pair{BlockTrait::control_flow_change,"control_flow_change"},
     };
 }
 constexpr void as_json(BlockTrait e,auto&& d) {

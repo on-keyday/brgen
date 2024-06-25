@@ -1516,30 +1516,31 @@ func (n *OrderType) UnmarshalJSON(data []byte) error {
 type BlockTrait int
 
 const (
-	BlockTraitNone            BlockTrait = 0
-	BlockTraitFixedPrimitive  BlockTrait = 1
-	BlockTraitFixedFloat      BlockTrait = 2
-	BlockTraitFixedArray      BlockTrait = 4
-	BlockTraitVariableArray   BlockTrait = 8
-	BlockTraitStruct          BlockTrait = 16
-	BlockTraitConditional     BlockTrait = 32
-	BlockTraitStaticPeek      BlockTrait = 64
-	BlockTraitBitField        BlockTrait = 128
-	BlockTraitReadState       BlockTrait = 256
-	BlockTraitWriteState      BlockTrait = 512
-	BlockTraitTerminalPattern BlockTrait = 1024
-	BlockTraitBitStream       BlockTrait = 2048
-	BlockTraitDynamicOrder    BlockTrait = 4096
-	BlockTraitFullInput       BlockTrait = 8192
-	BlockTraitBackwardInput   BlockTrait = 16384
-	BlockTraitMagicValue      BlockTrait = 32768
-	BlockTraitAssertion       BlockTrait = 65536
-	BlockTraitExplicitError   BlockTrait = 131072
-	BlockTraitProcedural      BlockTrait = 262144
-	BlockTraitForLoop         BlockTrait = 524288
-	BlockTraitLocalVariable   BlockTrait = 1048576
-	BlockTraitDescriptionOnly BlockTrait = 2097152
-	BlockTraitUncommonSize    BlockTrait = 4194304
+	BlockTraitNone              BlockTrait = 0
+	BlockTraitFixedPrimitive    BlockTrait = 1
+	BlockTraitFixedFloat        BlockTrait = 2
+	BlockTraitFixedArray        BlockTrait = 4
+	BlockTraitVariableArray     BlockTrait = 8
+	BlockTraitStruct            BlockTrait = 16
+	BlockTraitConditional       BlockTrait = 32
+	BlockTraitStaticPeek        BlockTrait = 64
+	BlockTraitBitField          BlockTrait = 128
+	BlockTraitReadState         BlockTrait = 256
+	BlockTraitWriteState        BlockTrait = 512
+	BlockTraitTerminalPattern   BlockTrait = 1024
+	BlockTraitBitStream         BlockTrait = 2048
+	BlockTraitDynamicOrder      BlockTrait = 4096
+	BlockTraitFullInput         BlockTrait = 8192
+	BlockTraitBackwardInput     BlockTrait = 16384
+	BlockTraitMagicValue        BlockTrait = 32768
+	BlockTraitAssertion         BlockTrait = 65536
+	BlockTraitExplicitError     BlockTrait = 131072
+	BlockTraitProcedural        BlockTrait = 262144
+	BlockTraitForLoop           BlockTrait = 524288
+	BlockTraitLocalVariable     BlockTrait = 1048576
+	BlockTraitDescriptionOnly   BlockTrait = 2097152
+	BlockTraitUncommonSize      BlockTrait = 4194304
+	BlockTraitControlFlowChange BlockTrait = 8388608
 )
 
 func (n BlockTrait) String() string {
@@ -1682,6 +1683,12 @@ func (n BlockTrait) String() string {
 		}
 		s += "uncommon_size"
 	}
+	if n&BlockTraitControlFlowChange != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "control_flow_change"
+	}
 	if s == "" {
 		return "none"
 	}
@@ -1779,6 +1786,7 @@ type FieldArgument struct {
 	EndLoc             Loc
 	CollectedArguments []Expr
 	Arguments          []Expr
+	Assigns            []*Binary
 	Alignment          Expr
 	AlignmentValue     *uint64
 	SubByteLength      Expr
@@ -2150,7 +2158,7 @@ type Cast struct {
 	ExprType      Type
 	ConstantLevel ConstantLevel
 	Base          *Call
-	Expr          Expr
+	Arguments     []Expr
 }
 
 func (n *Cast) isExpr() {}
@@ -3764,6 +3772,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				EndLoc             Loc       `json:"end_loc"`
 				CollectedArguments []uintptr `json:"collected_arguments"`
 				Arguments          []uintptr `json:"arguments"`
+				Assigns            []uintptr `json:"assigns"`
 				Alignment          *uintptr  `json:"alignment"`
 				AlignmentValue     *uint64   `json:"alignment_value"`
 				SubByteLength      *uintptr  `json:"sub_byte_length"`
@@ -3787,6 +3796,10 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.Arguments = make([]Expr, len(tmp.Arguments))
 			for j, k := range tmp.Arguments {
 				v.Arguments[j] = n.node[k].(Expr)
+			}
+			v.Assigns = make([]*Binary, len(tmp.Assigns))
+			for j, k := range tmp.Assigns {
+				v.Assigns[j] = n.node[k].(*Binary)
 			}
 			if tmp.Alignment != nil {
 				v.Alignment = n.node[*tmp.Alignment].(Expr)
@@ -4145,7 +4158,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				ExprType      *uintptr      `json:"expr_type"`
 				ConstantLevel ConstantLevel `json:"constant_level"`
 				Base          *uintptr      `json:"base"`
-				Expr          *uintptr      `json:"expr"`
+				Arguments     []uintptr     `json:"arguments"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -4157,8 +4170,9 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.Base != nil {
 				v.Base = n.node[*tmp.Base].(*Call)
 			}
-			if tmp.Expr != nil {
-				v.Expr = n.node[*tmp.Expr].(Expr)
+			v.Arguments = make([]Expr, len(tmp.Arguments))
+			for j, k := range tmp.Arguments {
+				v.Arguments[j] = n.node[k].(Expr)
 			}
 		case NodeTypeAvailable:
 			v := n.node[i].(*Available)
@@ -5304,6 +5318,11 @@ func Walk(n Node, f Visitor) {
 				return
 			}
 		}
+		for _, w := range v.Assigns {
+			if !f.Visit(f, w) {
+				return
+			}
+		}
 		if v.Alignment != nil {
 			if !f.Visit(f, v.Alignment) {
 				return
@@ -5559,8 +5578,8 @@ func Walk(n Node, f Visitor) {
 				return
 			}
 		}
-		if v.Expr != nil {
-			if !f.Visit(f, v.Expr) {
+		for _, w := range v.Arguments {
+			if !f.Visit(f, w) {
 				return
 			}
 		}

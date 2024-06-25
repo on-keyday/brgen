@@ -228,6 +228,7 @@ export const enum BlockTrait {
 	local_variable = 1048576,
 	description_only = 2097152,
 	uncommon_size = 4194304,
+	control_flow_change = 8388608,
 };
 
 export function isBlockTrait(obj: any): obj is BlockTrait {
@@ -259,6 +260,7 @@ export function BlockTraitToString(v: BlockTrait): string {
   if ((v & 1048576) === 1048576) result.push("local_variable");
   if ((v & 2097152) === 2097152) result.push("description_only");
   if ((v & 4194304) === 4194304) result.push("uncommon_size");
+  if ((v & 8388608) === 8388608) result.push("control_flow_change");
   if (result.length === 0) {
     return "none";
   }
@@ -493,6 +495,7 @@ export interface FieldArgument extends Node {
 	end_loc: Loc;
 	collected_arguments: Expr[];
 	arguments: Expr[];
+	assigns: Binary[];
 	alignment: Expr|null;
 	alignment_value: number|null;
 	sub_byte_length: Expr|null;
@@ -649,7 +652,7 @@ export function isImport(obj: any): obj is Import {
 
 export interface Cast extends Expr {
 	base: Call|null;
-	expr: Expr|null;
+	arguments: Expr[];
 }
 
 export function isCast(obj: any): obj is Cast {
@@ -1301,6 +1304,7 @@ export function parseAST(obj: JsonAst): Program {
 				end_loc: on.loc,
 				collected_arguments: [],
 				arguments: [],
+				assigns: [],
 				alignment: null,
 				alignment_value: null,
 				sub_byte_length: null,
@@ -1502,7 +1506,7 @@ export function parseAST(obj: JsonAst): Program {
 				expr_type: null,
 				constant_level: ConstantLevel.unknown,
 				base: null,
-				expr: null,
+				arguments: [],
 			}
 			c.node.push(n);
 			break;
@@ -2249,6 +2253,16 @@ export function parseAST(obj: JsonAst): Program {
 				}
 				n.arguments.push(tmparguments);
 			}
+			for (const o of on.body.assigns) {
+				if (typeof o !== 'number') {
+					throw new Error('invalid node list at FieldArgument::assigns');
+				}
+				const tmpassigns = c.node[o];
+				if (!isBinary(tmpassigns)) {
+					throw new Error('invalid node list at FieldArgument::assigns');
+				}
+				n.assigns.push(tmpassigns);
+			}
 			if (on.body?.alignment !== null && typeof on.body?.alignment !== 'number') {
 				throw new Error('invalid node list at FieldArgument::alignment');
 			}
@@ -2879,14 +2893,16 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at Cast::base');
 			}
 			n.base = tmpbase;
-			if (on.body?.expr !== null && typeof on.body?.expr !== 'number') {
-				throw new Error('invalid node list at Cast::expr');
+			for (const o of on.body.arguments) {
+				if (typeof o !== 'number') {
+					throw new Error('invalid node list at Cast::arguments');
+				}
+				const tmparguments = c.node[o];
+				if (!isExpr(tmparguments)) {
+					throw new Error('invalid node list at Cast::arguments');
+				}
+				n.arguments.push(tmparguments);
 			}
-			const tmpexpr = on.body.expr === null ? null : c.node[on.body.expr];
-			if (!(tmpexpr === null || isExpr(tmpexpr))) {
-				throw new Error('invalid node list at Cast::expr');
-			}
-			n.expr = tmpexpr;
 			break;
 		}
 		case "available": {
@@ -4794,6 +4810,12 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 					return;
 				}
 			}
+			for (const e of n.assigns) {
+				const result = fn(fn,e);
+				if (result === false) {
+					return;
+				}
+			}
 			if (n.alignment !== null) {
 				const result = fn(fn,n.alignment);
 				if (result === false) {
@@ -5187,8 +5209,8 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 					return;
 				}
 			}
-			if (n.expr !== null) {
-				const result = fn(fn,n.expr);
+			for (const e of n.arguments) {
+				const result = fn(fn,e);
 				if (result === false) {
 					return;
 				}

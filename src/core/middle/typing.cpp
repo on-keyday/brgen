@@ -813,14 +813,10 @@ namespace brgen::middle {
             if (call->arguments.size() > 1) {
                 error(call->loc, "expect 0 or 1 argument but got ", nums(call->arguments.size())).report();
             }
-            std::shared_ptr<ast::Expr> copy2;
-            if (call->arguments.size() == 1) {
-                typing_expr(call->arguments[0]);
-                copy2 = call->arguments[0];
-            }
             auto copy = call->expr_type;
             assert(copy);
-            auto cast = std::make_shared<ast::Cast>(ast::cast_to<ast::Call>(base_node.to_node()), std::move(copy), std::move(copy2));
+            auto cast = std::make_shared<ast::Cast>(ast::cast_to<ast::Call>(base_node.to_node()), std::move(copy),
+                                                    call->arguments);
             base_node.replace(std::move(cast));
         }
 
@@ -1308,10 +1304,12 @@ namespace brgen::middle {
             // but inner expression may not be typed
             if (auto c = ast::as<ast::Cast>(expr)) {
                 assert(c->expr_type);
-                if (c->expr) {
-                    typing_expr(c->expr);
-                    c->constant_level = c->expr->constant_level;
+                auto level = ast::ConstantLevel::constant;
+                for (auto& args : c->arguments) {
+                    typing_expr(args);
+                    level = decide_constant_level(level, args->constant_level);
                 }
+                c->constant_level = level;
             }
             if (auto a = ast::as<ast::Available>(expr)) {
                 typing_expr(a->target, false);
@@ -1460,7 +1458,12 @@ namespace brgen::middle {
                 auto conf = ast::tool::extract_config(arg, ast::tool::ExtractMode::assign);
                 if (!conf) {
                     typing_expr(arg);
-                    args->arguments.push_back(std::move(arg));
+                    if (auto b = ast::as<ast::Binary>(arg); b && ast::is_assign_op(b->op)) {
+                        args->assigns.push_back(ast::cast_to<ast::Binary>(std::move(arg)));
+                    }
+                    else {
+                        args->arguments.push_back(std::move(arg));
+                    }
                     continue;
                 }
                 if (conf->name == "input.align") {

@@ -704,15 +704,8 @@ namespace brgen::ast {
         std::shared_ptr<Expr> parse_call_or_cast(lexer::Token&& token, std::shared_ptr<Expr>& p) {
             auto call = parse_call(std::move(token), p);
             if (auto typ = ast::as<ast::TypeLiteral>(call->callee)) {
-                if (call->arguments.size() != 0 && call->arguments.size() != 1) {
-                    s.report_error(call->loc, "expect 0 or 1 arguments for cast but got ", nums(call->arguments.size()));
-                }
-                std::shared_ptr<Expr> arg;
-                if (call->arguments.size() == 1) {
-                    arg = call->arguments[0];
-                }
                 auto copy = typ->type_literal;
-                return std::make_shared<Cast>(std::move(call), std::move(copy), std::move(arg));
+                return std::make_shared<Cast>(std::move(call), std::move(copy), call->arguments);
             }
             return call;
         }

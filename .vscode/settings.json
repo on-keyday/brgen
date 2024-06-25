@@ -128,6 +128,7 @@
         "stdarg.h": "c",
         "expected": "cpp",
         "stacktrace": "cpp",
+        "stdfloat": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabledIfIncludesResolve",
     "C_Cpp.clang_format_style": "file",

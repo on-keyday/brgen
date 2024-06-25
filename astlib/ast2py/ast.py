@@ -255,6 +255,7 @@ class BlockTrait(PyEnum):
     LOCAL_VARIABLE = 1048576
     DESCRIPTION_ONLY = 2097152
     UNCOMMON_SIZE = 4194304
+    CONTROL_FLOW_CHANGE = 8388608
 
 
 class Node:
@@ -307,6 +308,7 @@ class FieldArgument(Node):
     end_loc: Loc
     collected_arguments: List[Expr]
     arguments: List[Expr]
+    assigns: List[Binary]
     alignment: Optional[Expr]
     alignment_value: Optional[int]
     sub_byte_length: Optional[Expr]
@@ -403,7 +405,7 @@ class Import(Expr):
 
 class Cast(Expr):
     base: Optional[Call]
-    expr: Optional[Expr]
+    arguments: List[Expr]
 
 
 class Available(Expr):
@@ -1037,6 +1039,7 @@ def ast2node(ast :JsonAst) -> Program:
                 node[i].end_loc = parse_Loc(ast.node[i].body["end_loc"])
                 node[i].collected_arguments = [(node[x] if isinstance(node[x],Expr) else raiseError(TypeError('type mismatch at FieldArgument::collected_arguments'))) for x in ast.node[i].body["collected_arguments"]]
                 node[i].arguments = [(node[x] if isinstance(node[x],Expr) else raiseError(TypeError('type mismatch at FieldArgument::arguments'))) for x in ast.node[i].body["arguments"]]
+                node[i].assigns = [(node[x] if isinstance(node[x],Binary) else raiseError(TypeError('type mismatch at FieldArgument::assigns'))) for x in ast.node[i].body["assigns"]]
                 if ast.node[i].body["alignment"] is not None:
                     x = node[ast.node[i].body["alignment"]]
                     node[i].alignment = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at FieldArgument::alignment'))
@@ -1341,11 +1344,7 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].base = x if isinstance(x,Call) else raiseError(TypeError('type mismatch at Cast::base'))
                 else:
                     node[i].base = None
-                if ast.node[i].body["expr"] is not None:
-                    x = node[ast.node[i].body["expr"]]
-                    node[i].expr = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at Cast::expr'))
-                else:
-                    node[i].expr = None
+                node[i].arguments = [(node[x] if isinstance(node[x],Expr) else raiseError(TypeError('type mismatch at Cast::arguments'))) for x in ast.node[i].body["arguments"]]
             case NodeType.AVAILABLE:
                 if ast.node[i].body["expr_type"] is not None:
                     x = node[ast.node[i].body["expr_type"]]
@@ -2221,6 +2220,9 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
           for i in range(len(x.arguments)):
               if f(f,x.arguments[i]) == False:
                   return
+          for i in range(len(x.assigns)):
+              if f(f,x.assigns[i]) == False:
+                  return
           if x.alignment is not None:
               if f(f,x.alignment) == False:
                   return
@@ -2380,8 +2382,8 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
           if x.base is not None:
               if f(f,x.base) == False:
                   return
-          if x.expr is not None:
-              if f(f,x.expr) == False:
+          for i in range(len(x.arguments)):
+              if f(f,x.arguments[i]) == False:
                   return
         case x if isinstance(x,Available):
           if x.expr_type is not None:

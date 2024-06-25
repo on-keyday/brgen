@@ -767,6 +767,7 @@ bitflags!{
 		const LocalVariable = 1048576;
 		const DescriptionOnly = 2097152;
 		const UncommonSize = 4194304;
+		const ControlFlowChange = 8388608;
 	}
 }
 impl TryFrom<u64> for BlockTrait {
@@ -3145,6 +3146,7 @@ pub struct FieldArgument {
 	pub end_loc: Loc,
 	pub collected_arguments: Vec<Expr>,
 	pub arguments: Vec<Expr>,
+	pub assigns: Vec<Rc<RefCell<Binary>>>,
 	pub alignment: Option<Expr>,
 	pub alignment_value: Option<u64>,
 	pub sub_byte_length: Option<Expr>,
@@ -4322,7 +4324,7 @@ pub struct Cast {
 	pub expr_type: Option<Type>,
 	pub constant_level: ConstantLevel,
 	pub base: Option<Rc<RefCell<Call>>>,
-	pub expr: Option<Expr>,
+	pub arguments: Vec<Expr>,
 }
 
 impl From<&Rc<RefCell<Cast>>> for NodeType {
@@ -8737,6 +8739,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				end_loc: raw_node.loc.clone(),
 				collected_arguments: Vec::new(),
 				arguments: Vec::new(),
+				assigns: Vec::new(),
 				alignment: None,
 				alignment_value: None,
 				sub_byte_length: None,
@@ -8893,7 +8896,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				expr_type: None,
 				constant_level: ConstantLevel::Unknown,
 				base: None,
-				expr: None,
+				arguments: Vec::new(),
 				})))
 			},
 			NodeType::Available => {
@@ -9595,6 +9598,29 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						None => return Err(Error::IndexOutOfBounds(link as usize)),
 					};
 					node.borrow_mut().arguments.push(arguments_body.try_into()?);
+				}
+				let assigns_body = match raw_node.body.get("assigns") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"assigns")),
+				};
+				let assigns_body = match assigns_body.as_array(){
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(assigns_body.into(),JSONType::Array)),
+				};
+				for link in assigns_body {
+					let link = match link.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
+					};
+					let assigns_body = match nodes.get(link as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(link as usize)),
+					};
+					let assigns_body = match assigns_body {
+						Node::Binary(body)=>body,
+						x =>return Err(Error::MismatchNodeType(x.into(),assigns_body.into())),
+					};
+					node.borrow_mut().assigns.push(assigns_body.clone());
 				}
 				let alignment_body = match raw_node.body.get("alignment") {
 					Some(v)=>v,
@@ -10847,20 +10873,24 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().base = Some(base_body.clone());
 				}
-				let expr_body = match raw_node.body.get("expr") {
+				let arguments_body = match raw_node.body.get("arguments") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"expr")),
+					None=>return Err(Error::MissingField(node_type,"arguments")),
 				};
- 				if !expr_body.is_null() {
-					let expr_body = match expr_body.as_u64() {
+				let arguments_body = match arguments_body.as_array(){
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(arguments_body.into(),JSONType::Array)),
+				};
+				for link in arguments_body {
+					let link = match link.as_u64() {
 						Some(v)=>v,
-						None=>return Err(Error::MismatchJSONType(expr_body.into(),JSONType::Number)),
+						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
 					};
-					let expr_body = match nodes.get(expr_body as usize) {
+					let arguments_body = match nodes.get(link as usize) {
 						Some(v)=>v,
-						None => return Err(Error::IndexOutOfBounds(expr_body as usize)),
+						None => return Err(Error::IndexOutOfBounds(link as usize)),
 					};
-					node.borrow_mut().expr = Some(expr_body.try_into()?);
+					node.borrow_mut().arguments.push(arguments_body.try_into()?);
 				}
 			},
 			NodeType::Available => {
@@ -14563,6 +14593,11 @@ where
 					return;
 				}
 			}
+			for node in &node.borrow().assigns{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
 			if let Some(node) = &node.borrow().alignment{
 				if !f.visit(&node.into()){
 					return;
@@ -14833,7 +14868,7 @@ where
 					return;
 				}
 			}
-			if let Some(node) = &node.borrow().expr{
+			for node in &node.borrow().arguments{
 				if !f.visit(&node.into()){
 					return;
 				}

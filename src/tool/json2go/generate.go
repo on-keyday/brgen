@@ -342,6 +342,92 @@ func (g *Generator) writeStructUnion(belong string, prefix string, u *ast2go.Str
 
 }
 
+/*
+func (g *Generator) writeField(field *ast2go.Field) {
+	if field.BitAlignment == ast2go.BitAlignmentNotTarget {
+		return
+	}
+	typ := field.FieldType
+	if i_typ, ok := typ.(*ast2go.IdentType); ok {
+		typ = i_typ.Base
+	}
+	if field.BitAlignment != ast2go.BitAlignmentByteAligned {
+		non_aligned = append(non_aligned, field)
+		is_int_set = is_int_set && typ.GetNonDynamicAllocation()
+		is_simple = is_simple &&
+			(typ.GetNodeType() == ast2go.NodeTypeIntType ||
+				typ.GetNodeType() == ast2go.NodeTypeEnumType)
+		size += *typ.GetBitSize()
+		continue
+	}
+	if len(non_aligned) > 0 {
+		non_aligned = append(non_aligned, field)
+		is_int_set = is_int_set && typ.GetNonDynamicAllocation()
+		is_simple = is_simple &&
+			(typ.GetNodeType() == ast2go.NodeTypeIntType ||
+				typ.GetNodeType() == ast2go.NodeTypeEnumType)
+		s := typ.GetBitSize()
+		if s != nil {
+			size += *s
+		}
+		g.writeBitField(belong, prefix, non_aligned, size, is_int_set, is_simple)
+		non_aligned = nil
+		is_int_set = true
+		is_simple = true
+		size = 0
+		continue
+	}
+	if u, ok := typ.(*ast2go.StructUnionType); ok {
+		g.writeStructUnion(belong, prefix, u)
+		continue
+	}
+	if field.Ident == nil {
+		field.Ident = &ast2go.Ident{
+			Ident: fmt.Sprintf("hiddenField%d", g.getSeq()),
+			Base:  field,
+		}
+	}
+	if arr_type, ok := typ.(*ast2go.ArrayType); ok {
+		typ := g.getType(arr_type)
+		g.Printf("%s %s\n", field.Ident.Ident, typ)
+		g.exprStringer.SetIdentMap(field.Ident, "%s"+field.Ident.Ident)
+		if gen.IsAnyRange(arr_type.Length) {
+			if field.EventualFollow == ast2go.FollowEnd {
+				g.laterSize[field] = field.BelongStruct.FixedTailSize
+			}
+		}
+		if gen.IsOnNamedStruct(field) && arr_type.LengthValue == nil && !gen.IsAnyRange(arr_type.Length) {
+			s := g.exprStringer.ExprString(field.Ident)
+			g.PrintfFunc("func (t *%s) Set%s(v %s) bool {\n", belong, field.Ident.Ident, typ)
+			g.maybeWriteLengthSet("len(v)", arr_type.Length)
+			g.PrintfFunc("%s = v\n", s)
+			g.PrintfFunc("return true\n")
+			g.PrintfFunc("}\n")
+		}
+	}
+	if i_type, ok := typ.(*ast2go.IntType); ok {
+		typ := g.getType(i_type)
+		g.Printf("%s %s\n", field.Ident.Ident, typ)
+	}
+	if e_type, ok := typ.(*ast2go.EnumType); ok {
+		typ := g.getType(e_type)
+		g.Printf("%s %s\n", field.Ident.Ident, typ)
+	}
+	if s_type, ok := typ.(*ast2go.StrLiteralType); ok {
+		magic := s_type.Base.Value
+		g.Printf("// %s (%d byte)\n", magic, *typ.GetBitSize()/8)
+		g.exprStringer.SetIdentMap(field.Ident, magic)
+		continue
+	}
+	if u, ok := typ.(*ast2go.StructType); ok {
+		typ := g.getType(u)
+		g.Printf("%s %s\n", field.Ident.Ident, typ)
+	}
+	g.exprStringer.SetIdentMap(field.Ident, "%s"+prefix+field.Ident.Ident)
+
+}
+*/
+
 func (g *Generator) writeStructType(belong string, prefix string, s *ast2go.StructType) {
 	var non_aligned []*ast2go.Field
 	var (
@@ -914,6 +1000,9 @@ func (g *Generator) writeSingleNode(node ast2go.Node, enc bool) {
 	case *ast2go.Match:
 		g.writeMatch(n, enc)
 	case *ast2go.Field:
+		if _, ok := n.Belong.(*ast2go.Function); ok {
+			// TODO
+		}
 		if enc {
 			g.writeFieldEncode(n)
 		} else {

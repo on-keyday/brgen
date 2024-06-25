@@ -453,6 +453,8 @@ LocalVariable,
 DescriptionOnly,
 @JsonValue('uncommon_size')
 UncommonSize,
+@JsonValue('control_flow_change')
+ControlFlowChange,
 }
 abstract class Node {
     Loc loc = Loc();
@@ -500,6 +502,7 @@ class FieldArgument extends Node {
     Loc endLoc = Loc();
     List<Expr>? collectedArguments = [];
     List<Expr>? arguments = [];
+    List<Binary>? assigns = [];
     Expr? alignment;
     int? alignmentValue;
     Expr? subByteLength;
@@ -611,7 +614,7 @@ factory Import.fromJson(Map<String, dynamic> json) => _$ImportFromJson(json);
 @JsonSerializable()
 class Cast extends Expr {
     Call? base;
-    Expr? expr;
+    List<Expr>? arguments = [];
 factory Cast.fromJson(Map<String, dynamic> json) => _$CastFromJson(json);
 }
 @JsonSerializable()

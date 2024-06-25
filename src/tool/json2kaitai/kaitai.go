@@ -30,7 +30,7 @@ func (g *Generator) KaitaiExpr(e ast.Expr) string {
 	case *ast.IntLiteral:
 		return v.Value
 	case *ast.Cast:
-		return g.KaitaiExpr(v.Expr)
+		return g.KaitaiExpr(v.Arguments[0])
 	}
 	return ""
 }

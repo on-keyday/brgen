@@ -184,7 +184,7 @@ enum BlockTrait:
     terminal_pattern = 1 << 10
     # bit stream required 
     bit_stream = 1 << 11
-    # dynamic configuration required
+    # dynamic endian/bit_order change
     dynamic_order = 1 << 12
     # full input required (required subrange with offset syntax)
     full_input = 1 << 13
@@ -206,6 +206,8 @@ enum BlockTrait:
     description_only = 1 << 21
     # uncommon size (like 3 bytes integer) field exists
     uncommon_size = 1 << 22
+    # control flow change (i.e. return, break, continue) exists
+    control_flow_change = 1 << 23
 
 
 enum FieldArgumentMapping:

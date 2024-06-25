@@ -82,10 +82,10 @@ namespace brgen::ast {
     struct Cast : Expr {
         define_node_type(NodeType::cast);
         std::shared_ptr<Call> base;
-        std::shared_ptr<Expr> expr;
+        std::vector<std::shared_ptr<Expr>> arguments;
 
-        Cast(std::shared_ptr<Call>&& c, std::shared_ptr<Type>&& type, std::shared_ptr<Expr>&& a)
-            : Expr(c->loc, NodeType::cast), base(std::move(c)), expr(std::move(a)) {
+        Cast(std::shared_ptr<Call>&& c, std::shared_ptr<Type>&& type,const std::vector<std::shared_ptr<Expr>>& a)
+            : Expr(c->loc, NodeType::cast), base(std::move(c)), arguments(a) {
             expr_type = std::move(type);
         }
 
@@ -95,7 +95,7 @@ namespace brgen::ast {
         void dump(auto&& field_) {
             Expr::dump(field_);
             sdebugf_omit(base);
-            sdebugf(expr);
+            sdebugf(arguments);
         }
     };
 

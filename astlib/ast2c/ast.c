@@ -1129,6 +1129,7 @@ const char* ast2c_BlockTrait_to_string(ast2c_BlockTrait val) {
 	case AST2C_BLOCKTRAIT_LOCAL_VARIABLE: return "local_variable";
 	case AST2C_BLOCKTRAIT_DESCRIPTION_ONLY: return "description_only";
 	case AST2C_BLOCKTRAIT_UNCOMMON_SIZE: return "uncommon_size";
+	case AST2C_BLOCKTRAIT_CONTROL_FLOW_CHANGE: return "control_flow_change";
 	default: return NULL;
 	}
 }
@@ -1230,6 +1231,10 @@ int ast2c_BlockTrait_from_string(const char* str, ast2c_BlockTrait* out) {
 	}
 	if (strcmp(str, "uncommon_size") == 0) {
 		*out = AST2C_BLOCKTRAIT_UNCOMMON_SIZE;
+		return 1;
+	}
+	if (strcmp(str, "control_flow_change") == 0) {
+		*out = AST2C_BLOCKTRAIT_CONTROL_FLOW_CHANGE;
 		return 1;
 	}
 	return 0;
@@ -1339,6 +1344,7 @@ int ast2c_FieldArgument_parse(ast2c_Ast* ast,ast2c_FieldArgument* s,ast2c_json_h
 	s->raw_arguments = NULL;
 	s->collected_arguments = NULL;
 	s->arguments = NULL;
+	s->assigns = NULL;
 	s->alignment = NULL;
 	s->alignment_value = NULL;
 	s->sub_byte_length = NULL;
@@ -1351,6 +1357,7 @@ int ast2c_FieldArgument_parse(ast2c_Ast* ast,ast2c_FieldArgument* s,ast2c_json_h
 	void* end_loc = h->object_get(h, obj_body, "end_loc");
 	void* collected_arguments = h->object_get(h, obj_body, "collected_arguments");
 	void* arguments = h->object_get(h, obj_body, "arguments");
+	void* assigns = h->object_get(h, obj_body, "assigns");
 	void* alignment = h->object_get(h, obj_body, "alignment");
 	void* alignment_value = h->object_get(h, obj_body, "alignment_value");
 	void* sub_byte_length = h->object_get(h, obj_body, "sub_byte_length");
@@ -1370,6 +1377,11 @@ int ast2c_FieldArgument_parse(ast2c_Ast* ast,ast2c_FieldArgument* s,ast2c_json_h
 	if (!arguments) { if(h->error) { h->error(h,arguments, "ast2c_FieldArgument::arguments is null"); } return 0; }
 	if(!h->array_size(h, arguments,&s->arguments_size)) {
 		if(h->error) { h->error(h,arguments, "failed to get array size of ast2c_FieldArgument::arguments"); }
+		return NULL;
+	}
+	if (!assigns) { if(h->error) { h->error(h,assigns, "ast2c_FieldArgument::assigns is null"); } return 0; }
+	if(!h->array_size(h, assigns,&s->assigns_size)) {
+		if(h->error) { h->error(h,assigns, "failed to get array size of ast2c_FieldArgument::assigns"); }
 		return NULL;
 	}
 	if (!alignment) { if(h->error) { h->error(h,alignment, "ast2c_FieldArgument::alignment is null"); } return 0; }
@@ -1907,16 +1919,20 @@ int ast2c_Cast_parse(ast2c_Ast* ast,ast2c_Cast* s,ast2c_json_handlers* h, void* 
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
 	s->expr_type = NULL;
 	s->base = NULL;
-	s->expr = NULL;
+	s->arguments = NULL;
 	void* expr_type = h->object_get(h, obj_body, "expr_type");
 	void* constant_level = h->object_get(h, obj_body, "constant_level");
 	void* base = h->object_get(h, obj_body, "base");
-	void* expr = h->object_get(h, obj_body, "expr");
+	void* arguments = h->object_get(h, obj_body, "arguments");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_Cast::loc is null"); } return 0; }
 	if (!expr_type) { if(h->error) { h->error(h,expr_type, "ast2c_Cast::expr_type is null"); } return 0; }
 	if (!constant_level) { if(h->error) { h->error(h,constant_level, "ast2c_Cast::constant_level is null"); } return 0; }
 	if (!base) { if(h->error) { h->error(h,base, "ast2c_Cast::base is null"); } return 0; }
-	if (!expr) { if(h->error) { h->error(h,expr, "ast2c_Cast::expr is null"); } return 0; }
+	if (!arguments) { if(h->error) { h->error(h,arguments, "ast2c_Cast::arguments is null"); } return 0; }
+	if(!h->array_size(h, arguments,&s->arguments_size)) {
+		if(h->error) { h->error(h,arguments, "failed to get array size of ast2c_Cast::arguments"); }
+		return NULL;
+	}
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_Cast::loc"); }
 		goto error;

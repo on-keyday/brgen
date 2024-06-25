@@ -406,6 +406,7 @@ enum ast2c_BlockTrait {
 	AST2C_BLOCKTRAIT_LOCAL_VARIABLE = 1048576,
 	AST2C_BLOCKTRAIT_DESCRIPTION_ONLY = 2097152,
 	AST2C_BLOCKTRAIT_UNCOMMON_SIZE = 4194304,
+	AST2C_BLOCKTRAIT_CONTROL_FLOW_CHANGE = 8388608,
 };
 const char* ast2c_BlockTrait_to_string(ast2c_BlockTrait);
 int ast2c_BlockTrait_from_string(const char*,ast2c_BlockTrait*);
@@ -570,6 +571,8 @@ struct ast2c_FieldArgument {
 	size_t collected_arguments_size;
 	ast2c_Expr** arguments;
 	size_t arguments_size;
+	ast2c_Binary** assigns;
+	size_t assigns_size;
 	ast2c_Expr* alignment;
 	uint64_t* alignment_value;
 	ast2c_Expr* sub_byte_length;
@@ -774,7 +777,8 @@ struct ast2c_Cast {
 	ast2c_Type* expr_type;
 	ast2c_ConstantLevel constant_level;
 	ast2c_Call* base;
-	ast2c_Expr* expr;
+	ast2c_Expr** arguments;
+	size_t arguments_size;
 };
 
 // returns 1 if succeed 0 if failed

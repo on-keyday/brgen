@@ -7,38 +7,57 @@
 namespace brgen::middle {
 
     void analyze_expr(const std::shared_ptr<ast::Expr>& expr, auto&& add_trait) {
-        ast::traverse(expr, [&](const std::shared_ptr<ast::Node>& node) {
-            if (!ast::as<ast::Expr>(node)) {
-                return;
+        if (auto bin = ast::as<ast::Binary>(expr)) {
+            if (ast::is_define_op(bin->op)) {
+                add_trait(ast::BlockTrait::local_variable);
+                analyze_expr(bin->right, add_trait);
             }
-            analyze_expr(ast::cast_to<ast::Expr>(node), add_trait);
-            if (auto call = ast::as<ast::Call>(node)) {
-                if (auto io_op = ast::as<ast::IOOperation>(call->callee)) {
-                    if (io_op->method == ast::IOMethod::input_backward) {
-                        add_trait(ast::BlockTrait::backward_input);
-                    }
-                    else if (io_op->method == ast::IOMethod::input_peek) {
-                        add_trait(ast::BlockTrait::static_peek);
-                    }
-                    else if (io_op->method == ast::IOMethod::input_get ||
-                             io_op->method == ast::IOMethod::output_put) {
-                        add_trait(ast::BlockTrait::procedural);
-                    }
+            else if (ast::is_assign_op(bin->op) && ast::tool::is_state_variable_ref(bin->left)) {
+                add_trait(ast::BlockTrait::write_state);
+                analyze_expr(bin->right, add_trait);
+            }
+            else {
+                analyze_expr(bin->left, add_trait);
+                analyze_expr(bin->right, add_trait);
+            }
+        }
+        else if (auto io_op = ast::as<ast::IOOperation>(expr)) {
+            if (io_op->method == ast::IOMethod::input_backward) {
+                add_trait(ast::BlockTrait::backward_input);
+            }
+            else if (io_op->method == ast::IOMethod::input_peek) {
+                add_trait(ast::BlockTrait::static_peek);
+            }
+            else if (io_op->method == ast::IOMethod::input_get ||
+                     io_op->method == ast::IOMethod::output_put) {
+                add_trait(ast::BlockTrait::procedural);
+            }
+        }
+        else if (ast::tool::is_state_variable_ref(expr)) {
+            add_trait(ast::BlockTrait::read_state);
+        }
+        else {
+            ast::traverse(expr, [&](const std::shared_ptr<ast::Node>& node) {
+                if (!ast::as<ast::Expr>(node)) {
+                    return;
                 }
-            }
-            if (ast::tool::is_state_variable_ref(node)) {
-                add_trait(ast::BlockTrait::read_state);
-            }
-        });
+                analyze_expr(ast::cast_to<ast::Expr>(node), add_trait);
+            });
+        }
     }
 
-    void analyze_field_argument(const std::shared_ptr<ast::Type>& typ, const std::shared_ptr<ast::FieldArgument>& args, auto&& add_trait) {
+    void analyze_field_argument(const std::shared_ptr<ast::Type>& typ, const std::shared_ptr<ast::FieldArgument>& args, auto&& add_trait, auto&& derive_trait) {
         if (!args) return;
         if (args->peek_value && *args->peek_value) {
             add_trait(ast::BlockTrait::static_peek);
         }
         if (args->arguments.size() > 0) {
             add_trait(ast::BlockTrait::magic_value);
+        }
+        if (args->assigns.size()) {
+            for (auto& assign : args->assigns) {
+                analyze_element(assign, add_trait, derive_trait);
+            }
         }
     }
 
@@ -107,20 +126,20 @@ namespace brgen::middle {
             analyze_block(fmt->body);
             // not derived
         }
-        if (auto state = ast::as<ast::State>(elm)) {
+        else if (auto state = ast::as<ast::State>(elm)) {
             analyze_block(state->body);
             // not derived
         }
-        if (auto field = ast::as<ast::Field>(elm)) {
+        else if (auto field = ast::as<ast::Field>(elm)) {
             auto type = field->field_type;
             analyze_field_type(type, add_trait, derive_trait, false);
-            analyze_field_argument(type, field->arguments, add_trait);
+            analyze_field_argument(type, field->arguments, add_trait, derive_trait);
         }
-        if (auto fn = ast::as<ast::Function>(elm)) {
+        else if (auto fn = ast::as<ast::Function>(elm)) {
             analyze_block(fn->body);
             // not derived
         }
-        if (auto for_ = ast::as<ast::Loop>(elm)) {
+        else if (auto for_ = ast::as<ast::Loop>(elm)) {
             add_trait(ast::BlockTrait::for_loop);
             if (for_->init) {
                 analyze_element(for_->init, add_trait, derive_trait);
@@ -134,10 +153,13 @@ namespace brgen::middle {
             analyze_block(for_->body);
             derive_trait(for_->body->block_traits);
         }
-        if (auto if_ = ast::as<ast::If>(elm)) {
+        else if (ast::as<ast::Break>(elm) || ast::as<ast::Continue>(elm) || ast::as<ast::Return>(elm)) {
+            add_trait(ast::BlockTrait::control_flow_change);
+        }
+        else if (auto if_ = ast::as<ast::If>(elm)) {
             add_trait(ast::BlockTrait::conditional);
             if (if_->cond) {
-                analyze_element(if_->cond, add_trait, derive_trait);
+                analyze_expr(if_->cond->expr, add_trait);
             }
             analyze_block(if_->then);
             derive_trait(if_->then->block_traits);
@@ -151,26 +173,36 @@ namespace brgen::middle {
                 }
             }
         }
-        if (auto assert_ = ast::as<ast::Assert>(elm)) {
+        else if (auto match_ = ast::as<ast::Match>(elm)) {
+            add_trait(ast::BlockTrait::conditional);
+            if (match_->cond) {
+                analyze_expr(match_->cond, add_trait);
+            }
+            for (auto& case_ : match_->branch) {
+                if (case_->cond) {
+                    analyze_element(case_->cond->expr, add_trait, derive_trait);
+                }
+                if (auto block = ast::as<ast::IndentBlock>(case_->then)) {
+                    analyze_block(ast::cast_to<ast::IndentBlock>(case_->then));
+                    derive_trait(block->block_traits);
+                }
+                else if (auto scoped = ast::as<ast::ScopedStatement>(case_->then)) {
+                    analyze_element(scoped->statement, add_trait, derive_trait);
+                }
+            }
+        }
+        else if (auto assert_ = ast::as<ast::Assert>(elm)) {
             add_trait(ast::BlockTrait::assertion);
         }
-        if (auto explicit_error = ast::as<ast::ExplicitError>(elm)) {
+        else if (auto explicit_error = ast::as<ast::ExplicitError>(elm)) {
             add_trait(ast::BlockTrait::explicit_error);
         }
-        if (auto bin = ast::as<ast::Binary>(elm); bin && ast::is_define_op(bin->op)) {
-            add_trait(ast::BlockTrait::local_variable);
-        }
-        else if (bin && ast::is_assign_op(bin->op) && ast::tool::is_state_variable_ref(bin->left)) {
-            add_trait(ast::BlockTrait::write_state);
+        else if (auto specify_order = ast::as<ast::SpecifyOrder>(elm)) {
+            // pattern: order is dynamically specified
+            add_trait(ast::BlockTrait::dynamic_order);
         }
         else if (auto expr = ast::as<ast::Expr>(elm)) {
             analyze_expr(ast::cast_to<ast::Expr>(elm), add_trait);
-        }
-        if (auto specify_order = ast::as<ast::SpecifyOrder>(elm)) {
-            if (!specify_order->order_value) {
-                // pattern: order is not constant
-                add_trait(ast::BlockTrait::dynamic_order);
-            }
         }
     }
 
@@ -182,9 +214,6 @@ namespace brgen::middle {
             // some type of trait are not derived
             auto to_derive = size_t(t) & ~size_t(ast::BlockTrait::bit_stream);
             add_trait(ast::BlockTrait(to_derive));
-        };
-        auto is = [&](ast::BlockTrait t) {
-            return (size_t(block->block_traits) & size_t(t)) != 0;
         };
         if (block->struct_type->bit_alignment != ast::BitAlignment::byte_aligned) {
             // pattern: struct is not byte-aligned

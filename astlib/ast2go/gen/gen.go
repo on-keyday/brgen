@@ -165,6 +165,14 @@ func AlignInt(size uint64) uint64 {
 	return 64
 }
 
+func (s *ExprStringer) ArgsToString(args ...ast2go.Expr) string {
+	strs := []string{}
+	for _, arg := range args {
+		strs = append(strs, s.ExprString(arg))
+	}
+	return strings.Join(strs, ",")
+}
+
 func (s *ExprStringer) ExprString(e ast2go.Expr) string {
 
 	switch e := e.(type) {
@@ -207,7 +215,7 @@ func (s *ExprStringer) ExprString(e ast2go.Expr) string {
 			s.TypeProvider = s.GetType
 		}
 		typ := s.TypeProvider(e.ExprType)
-		return fmt.Sprintf("%s(%s)", typ, s.ExprString(e.Expr))
+		return fmt.Sprintf("%s(%s)", typ, s.ArgsToString(e.Arguments...))
 	case *ast2go.Identity:
 		return s.ExprString(e.Expr)
 	case *ast2go.Unary:

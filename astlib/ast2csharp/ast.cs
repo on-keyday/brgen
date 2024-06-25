@@ -242,6 +242,7 @@ ForLoop,
 LocalVariable,
 DescriptionOnly,
 UncommonSize,
+ControlFlowChange,
 }
 public interface Node {
 	public Loc Loc {get; set;}
@@ -286,6 +287,7 @@ public class FieldArgument : Node{
 	public Loc EndLoc{get;set;}
 	public List<Expr>? CollectedArguments{get;set;}
 	public List<Expr>? Arguments{get;set;}
+	public List<Binary>? Assigns{get;set;}
 	public Expr? Alignment{get;set;}
 	public ulong? AlignmentValue{get;set;}
 	public Expr? SubByteLength{get;set;}
@@ -412,7 +414,7 @@ public class Cast : Expr{
 	public Type? ExprType{get;set;}
 	public ConstantLevel ConstantLevel{get;set;}
 	public Call? Base{get;set;}
-	public Expr? Expr{get;set;}
+	public List<Expr>? Arguments{get;set;}
 }
 public class Available : Expr{
 	public Loc Loc{get;set;}
@@ -1106,6 +1108,7 @@ public static class Ast {
                node.EndLoc = ast.Node[i].Body[end_loc];
                node.CollectedArguments = ast.Node[i].Body[collected_arguments];
                node.Arguments = ast.Node[i].Body[arguments];
+               node.Assigns = ast.Node[i].Body[assigns];
                node.Alignment = ast.Node[i].Body[alignment];
                node.AlignmentValue = ast.Node[i].Body[alignment_value];
                node.SubByteLength = ast.Node[i].Body[sub_byte_length];
@@ -1232,7 +1235,7 @@ public static class Ast {
                node.ExprType = ast.Node[i].Body[expr_type];
                node.ConstantLevel = ast.Node[i].Body[constant_level];
                node.Base = ast.Node[i].Body[base];
-               node.Expr = ast.Node[i].Body[expr];
+               node.Arguments = ast.Node[i].Body[arguments];
            case NodeType.Available:
                var node = nodes[i] as Available;
                node.Loc = ast.Node[i].Body[loc];

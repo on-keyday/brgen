@@ -59,8 +59,8 @@ namespace brgen::ast::tool {
         std::string msg;
     };
 
-    //template <class T>
-    //using result = expected<T, LocError>;
+    // template <class T>
+    // using result = expected<T, LocError>;
 
     using EResult = expected<EvalResult, LocError>;
 
@@ -387,7 +387,13 @@ namespace brgen::ast::tool {
                 }
             }
             if (auto cast_ = ast::as<ast::Cast>(expr)) {
-                return eval_expr(cast_->expr);
+                if (cast_->arguments.size() != 1) {
+                    if (ast::as<ast::IntType>(cast_->expr_type)) {
+                        return make_result<EResultType::integer>(0);
+                    }
+                    return unexpect(LocError{cast_->loc, "cast must have 1 argument"});
+                }
+                return eval_expr(cast_->arguments[0]);
             }
             if (auto ch = ast::as<ast::CharLiteral>(expr)) {
                 return make_result<EResultType::integer>(ch->code);
