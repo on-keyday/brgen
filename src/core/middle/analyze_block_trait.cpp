@@ -196,9 +196,14 @@ namespace brgen::middle {
         }
     }
 
-    void analyze_block_trait(const std::shared_ptr<ast::Program>& trait) {
+    void analyze_block_trait_impl(const std::shared_ptr<ast::Program>& trait) {
         for (auto& elm : trait->elements) {
             analyze_element(elm, [&](ast::BlockTrait t) {}, [&](ast::BlockTrait t) {});
         }
+    }
+
+    void analyze_block_trait(const std::shared_ptr<ast::Program>& trait) {
+        analyze_block_trait_impl(trait);
+        analyze_block_trait_impl(trait);
     }
 }  // namespace brgen::middle
