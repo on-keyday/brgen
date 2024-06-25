@@ -11,6 +11,13 @@ namespace brgen::vm {
         Register from;
         Register to;
     };
+
+    struct TwoRegistersAndSize {
+        Register from;
+        Register to;
+        std::uint64_t size;
+    };
+
     struct RegisterAndValue {
         Register reg;
         std::uint64_t value;
@@ -38,8 +45,8 @@ namespace brgen::vm {
     };
 
     using Transfer = TwoRegisters;
-    using LoadMemory = TwoRegisters;
-    using StoreMemory = TwoRegisters;
+    using LoadMemory = TwoRegistersAndSize;
+    using StoreMemory = TwoRegistersAndSize;
     using LoadImmediate = RegisterAndValue;
 
     struct Inst {
@@ -60,6 +67,19 @@ namespace brgen::vm {
             return op_;
         }
 
+        constexpr auto rewrite_arg(size_t n, std::uint64_t value) {
+            switch (n) {
+                case 1:
+                    return Inst(op_, value, arg2_, arg3_);
+                case 2:
+                    return Inst(op_, arg1_, value, arg3_);
+                case 3:
+                    return Inst(op_, arg1_, arg2_, value);
+                default:
+                    return *this;
+            }
+        }
+
         constexpr std::optional<Transfer> transfer() const {
             if (op_ == Op2::TRSF) {
                 return Transfer{static_cast<Register>(arg1_), static_cast<Register>(arg2_)};
@@ -69,14 +89,14 @@ namespace brgen::vm {
 
         constexpr std::optional<LoadMemory> load_memory() const {
             if (op_ == Op2::LOAD_MEMORY) {
-                return LoadMemory{static_cast<Register>(arg1_), static_cast<Register>(arg2_)};
+                return LoadMemory{static_cast<Register>(arg1_), static_cast<Register>(arg2_), arg3_};
             }
             return std::nullopt;
         }
 
         constexpr std::optional<StoreMemory> store_memory() const {
             if (op_ == Op2::STORE_MEMORY) {
-                return StoreMemory{static_cast<Register>(arg1_), static_cast<Register>(arg2_)};
+                return StoreMemory{static_cast<Register>(arg1_), static_cast<Register>(arg2_), arg3_};
             }
             return std::nullopt;
         }
@@ -149,6 +169,13 @@ namespace brgen::vm {
             }
             return std::nullopt;
         }
+
+        constexpr std::optional<SyscallNumber> syscall() const {
+            if (op_ == Op2::SYSCALL_IMMEDIATE) {
+                return static_cast<SyscallNumber>(arg1_);
+            }
+            return std::nullopt;
+        }
     };
 
     namespace inst {
@@ -160,12 +187,12 @@ namespace brgen::vm {
             return Inst(Op2::TRSF, static_cast<std::uint64_t>(from), static_cast<std::uint64_t>(to));
         }
 
-        constexpr auto load_memory(Register from, Register to) {
-            return Inst(Op2::LOAD_MEMORY, static_cast<std::uint64_t>(from), static_cast<std::uint64_t>(to));
+        constexpr auto load_memory(Register from, Register to, std::uint64_t size) {
+            return Inst(Op2::LOAD_MEMORY, static_cast<std::uint64_t>(from), static_cast<std::uint64_t>(to), size);
         }
 
-        constexpr auto store_memory(Register from, Register to) {
-            return Inst(Op2::STORE_MEMORY, static_cast<std::uint64_t>(from), static_cast<std::uint64_t>(to));
+        constexpr auto store_memory(Register from, Register to, std::uint64_t size) {
+            return Inst(Op2::STORE_MEMORY, static_cast<std::uint64_t>(from), static_cast<std::uint64_t>(to), size);
         }
 
         constexpr auto load_immediate(Register to, std::uint64_t value) {
@@ -292,6 +319,10 @@ namespace brgen::vm {
             return Inst(Op2::PUSH_IMMEDIATE, value);
         }
 
+        constexpr auto syscall(SyscallNumber syscall) {
+            return Inst(Op2::SYSCALL_IMMEDIATE, static_cast<std::uint64_t>(syscall));
+        }
+
     }  // namespace inst
 
     namespace enc {
@@ -305,10 +336,12 @@ namespace brgen::vm {
             else if (auto lm = inst.load_memory()) {
                 op2_inst.to(lm->to);
                 op2_inst.from(lm->from);
+                op2_inst.size(lm->size);
             }
             else if (auto sm = inst.store_memory()) {
                 op2_inst.to(sm->to);
                 op2_inst.from(sm->from);
+                op2_inst.size(sm->size);
             }
             else if (auto li = inst.load_immediate()) {
                 op2_inst.to(li->reg);
@@ -344,6 +377,9 @@ namespace brgen::vm {
             else if (auto pi = inst.push_immediate()) {
                 op2_inst.immediate(pi.value());
             }
+            else if (auto sc = inst.syscall()) {
+                op2_inst.syscall_number(sc.value());
+            }
             return op2_inst.encode(w);
         }
 
@@ -359,9 +395,9 @@ namespace brgen::vm {
                 case Op2::TRSF:
                     return inst::transfer(*op2_inst.from(), *op2_inst.to());
                 case Op2::LOAD_MEMORY:
-                    return inst::load_memory(*op2_inst.from(), *op2_inst.to());
+                    return inst::load_memory(*op2_inst.from(), *op2_inst.to(), *op2_inst.size());
                 case Op2::STORE_MEMORY:
-                    return inst::store_memory(*op2_inst.from(), *op2_inst.to());
+                    return inst::store_memory(*op2_inst.from(), *op2_inst.to(), *op2_inst.size());
                 case Op2::LOAD_IMMEDIATE:
                     return inst::load_immediate(*op2_inst.to(), *op2_inst.immediate());
                 case Op2::ADD:
@@ -398,17 +434,13 @@ namespace brgen::vm {
                     return inst::pop(*op2_inst.to());
                 case Op2::PUSH_IMMEDIATE:
                     return inst::push_immediate(*op2_inst.immediate());
+                case Op2::SYSCALL_IMMEDIATE:
+                    return inst::syscall(*op2_inst.syscall_number());
                 default:
                     return std::nullopt;
             }
         }
     }  // namespace enc
-
-    struct MemoryLayout {
-        std::uint64_t stack_size;
-        std::uint64_t instruction_size;
-        std::uint64_t instruction_start;
-    };
 
     struct VM2 {
        private:

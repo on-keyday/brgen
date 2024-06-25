@@ -4,8 +4,8 @@ enum Op2:
     :u8
     NOP # NOP
     TRSF # TRSF <from> <to>
-    LOAD_MEMORY # LOAD_MEMORY <from> <to>
-    STORE_MEMORY # STORE_MEMORY <from> <to>
+    LOAD_MEMORY # LOAD_MEMORY <from> <to> <size>
+    STORE_MEMORY # STORE_MEMORY <from> <to> <size>
     LOAD_IMMEDIATE  # LOAD_IMMEDIATE <immediate value> <to>
 
     # artihmetic
@@ -43,7 +43,7 @@ enum Op2:
     CALL # CALL <to>
     RET # RET
     # syscall
-    SYSCALL # SYSCALL <syscall number>
+    SYSCALL_IMMEDIATE # SYSCALL <syscall number>
 
     # stack
     PUSH # PUSH <register number>
@@ -70,8 +70,12 @@ enum Register:
     R12
     R13
     R14
-    R15
+    OBJECT_POINTER
     PC
+    SP
+    BP
+    NUL # NUL register is used to indicate that the register is not used
+
 
 format MemoryLayout:
     stack_size :u64
@@ -79,14 +83,23 @@ format MemoryLayout:
     code_size :u64
     entry_point :u64
 
+enum SyscallNumber:
+    :u64
+    READ_IN # READ_IN <buffer ptr:r1> <buffer size:r2> -> <bytes read:r0>
+    PEEK_IN # PEEK_IN <buffer ptr:r1> <buffer size:r2> -> <bytes read:r0>
+    WRITE_OUT # WRITE_OUT <buffer ptr:r1> <buffer size:r2> -> <bytes written:r0>
+    ALLOCATE # ALLOCATE <buffer size:r1> -> <buffer ptr:r0>
+    BTOI # BTOI <buffer ptr:r1> <buffer size:r2> -> <integer:r0>
+    ITOB # ITOB <buffer ptr:r1> <buffer size:r2> <integer:r3> -> <bytes written:r0>
+
 format Op2Inst:
     op :Op2
     if op == Op2.RET || op == Op2.NOP:
         ..
     if op == Op2.JMP || op == Op2.CALL || op == Op2.POP:
         to :Register
-    elif op == Op2.SYSCALL:
-        syscall_number :Register
+    elif op == Op2.SYSCALL_IMMEDIATE:
+        syscall_number :SyscallNumber
     elif op == Op2.JMPIF:
         condition :Register
         to :Register
@@ -94,9 +107,13 @@ format Op2Inst:
         from :Register
     elif op == Op2.PUSH_IMMEDIATE:
         immediate :u64
-    elif op == Op2.TRSF || op == Op2.LOAD_MEMORY || op == Op2.STORE_MEMORY:
+    elif op == Op2.TRSF:
         from :Register
         to :Register
+    elif op == Op2.LOAD_MEMORY || op == Op2.STORE_MEMORY:
+        from :Register
+        to :Register
+        size :u64
     elif op == Op2.LOAD_IMMEDIATE:
         immediate :u64
         to :Register
