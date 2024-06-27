@@ -637,6 +637,7 @@ func (g *Generator) writeTypeEncode(ident string, typ ast2go.Type, p *ast2go.Fie
 	if f_typ, ok := typ.(*ast2go.FloatType); ok {
 		tmpIdent := fmt.Sprintf("tmp%d", g.getSeq())
 		if f_typ.IsCommonSupported {
+			g.imports["math"] = struct{}{}
 			g.PrintfFunc("%s := math.Float%dbits(%s)\n", tmpIdent, *f_typ.BitSize, ident)
 		} else if *f_typ.BitSize == 16 {
 			// TODO(on-keyday): fix this
@@ -834,6 +835,7 @@ func (g *Generator) writeTypeDecode(ident string, typ ast2go.Type, p *ast2go.Fie
 		return
 	}
 	if f_type, ok := typ.(*ast2go.FloatType); ok {
+		g.imports["math"] = struct{}{}
 		tmpIdent := fmt.Sprintf("tmp_%s", p.Ident.Ident)
 		g.writeReadUint(*f_type.BitSize, p.Ident.Ident, tmpIdent, false, nil, f_type.Endian)
 		if f_type.IsCommonSupported {
