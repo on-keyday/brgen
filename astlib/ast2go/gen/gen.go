@@ -173,12 +173,74 @@ func (s *ExprStringer) ArgsToString(args ...ast2go.Expr) string {
 	return strings.Join(strs, ",")
 }
 
+func (s *ExprStringer) maybeRangeCompare(e *ast2go.Binary) string {
+	if e.Op == ast2go.BinaryOpEqual || e.Op == ast2go.BinaryOpNotEqual {
+		if IsAnyRange(e.Left) {
+			if e.Op == ast2go.BinaryOpEqual {
+				return "true"
+			} else {
+				return "false"
+			}
+		}
+		if IsAnyRange(e.Right) {
+			if e.Op == ast2go.BinaryOpEqual {
+				return "true"
+			} else {
+				return "false"
+			}
+		}
+		cmp := func(leftExpr ast2go.Expr, r *ast2go.RangeType) string {
+			left := s.ExprString(leftExpr)
+			if r.Range.Start != nil && r.Range.End != nil {
+				begin := s.ExprString(r.Range.Start)
+				end := s.ExprString(r.Range.End)
+				if r.Range.Op == ast2go.BinaryOpRangeExclusive {
+					return fmt.Sprintf("(func()bool{tmp := %s; return (%s <= tmp && tmp < %s)})()", left, begin, end)
+				} else {
+					return fmt.Sprintf("(func()bool{tmp := %s; return (%s <= tmp && tmp <= %s)})()", left, begin, end)
+				}
+			} else if r.Range.Start != nil {
+				begin := s.ExprString(r.Range.Start)
+				return fmt.Sprintf("(%s <= %s)", begin, left)
+			} else if r.Range.End != nil {
+				end := s.ExprString(r.Range.End)
+				if r.Range.Op == ast2go.BinaryOpRangeExclusive {
+					return fmt.Sprintf("(%s < %s)", left, end)
+				} else {
+					return fmt.Sprintf("(%s <= %s)", left, end)
+				}
+			}
+			return ""
+		}
+		cmpApply := func(leftExpr ast2go.Expr, r *ast2go.RangeType) string {
+			str := cmp(leftExpr, r)
+			if str == "" {
+				return ""
+			}
+			if e.Op == ast2go.BinaryOpNotEqual {
+				return fmt.Sprintf("!(%s)", str)
+			}
+			return str
+		}
+		if r, ok := e.Right.GetExprType().(*ast2go.RangeType); ok {
+			return cmpApply(e.Left, r)
+		} else if r, ok := e.Left.GetExprType().(*ast2go.RangeType); ok {
+			return cmpApply(e.Right, r)
+		}
+	}
+	return ""
+}
+
 func (s *ExprStringer) ExprString(e ast2go.Expr) string {
 
 	switch e := e.(type) {
 	case *ast2go.Binary:
 		if f, ok := s.BinaryMapper[e.Op]; ok {
 			return f(s, e.Left, e.Right)
+		}
+		rangeCompare := s.maybeRangeCompare(e)
+		if rangeCompare != "" {
+			return rangeCompare
 		}
 		return fmt.Sprintf("(%s %s %s)", s.ExprString(e.Left), e.Op.String(), s.ExprString(e.Right))
 	case *ast2go.Ident:

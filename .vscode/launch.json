@@ -35,7 +35,7 @@
             "type": "go",
             "request": "launch",
             "mode": "debug",
-            "program": "${workspaceRoot}/src/tool/json2graphviz",
+            "program": "${workspaceRoot}/src/tool/json2go",
             "args": ["-f","ignore/sample.json"],
             "cwd": "${workspaceRoot}",
             "output": "${workspaceRoot}/tool/j2g_debuggee"

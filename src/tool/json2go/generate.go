@@ -58,27 +58,29 @@ type UnionStruct struct {
 }
 
 type Generator struct {
-	output       bytes.Buffer
-	type_area    bytes.Buffer
-	func_area    bytes.Buffer
-	seq          int
-	bitFields    map[*ast2go.Field]*BitFields
-	unionStructs map[*ast2go.StructType]*UnionStruct
-	laterSize    map[*ast2go.Field]uint64
-	imports      map[string]struct{}
-	exprStringer *gen.ExprStringer
-	visitorName  string
+	output          bytes.Buffer
+	type_area       bytes.Buffer
+	func_area       bytes.Buffer
+	seq             int
+	bitFields       map[*ast2go.Field]*BitFields
+	unionStructs    map[*ast2go.StructType]*UnionStruct
+	laterSize       map[*ast2go.Field]uint64
+	terminalPattern map[*ast2go.Field]struct{}
+	imports         map[string]struct{}
+	exprStringer    *gen.ExprStringer
+	visitorName     string
 
 	StructNames []string
 }
 
 func NewGenerator() *Generator {
 	return &Generator{
-		bitFields:    make(map[*ast2go.Field]*BitFields),
-		unionStructs: make(map[*ast2go.StructType]*UnionStruct),
-		imports:      make(map[string]struct{}),
-		exprStringer: gen.NewExprStringer(),
-		laterSize:    make(map[*ast2go.Field]uint64),
+		bitFields:       make(map[*ast2go.Field]*BitFields),
+		unionStructs:    make(map[*ast2go.StructType]*UnionStruct),
+		imports:         make(map[string]struct{}),
+		exprStringer:    gen.NewExprStringer(),
+		laterSize:       make(map[*ast2go.Field]uint64),
+		terminalPattern: make(map[*ast2go.Field]struct{}),
 	}
 }
 
@@ -221,123 +223,144 @@ func (g *Generator) writeStructUnion(belong string, prefix string, u *ast2go.Str
 	}
 	for _, field := range u.UnionFields {
 		typ := field.FieldType.(*ast2go.UnionType)
+		typStr := "any"
+		pointer := ""
 		if typ.CommonType != nil {
-			// write getter func
-			typStr := g.getType(typ.CommonType)
-			g.PrintfFunc("func (t *%s) %s() *%s {\n", belong, field.Ident.Ident, typStr)
-			var cond0 ast2go.Expr
-			if typ.Cond != nil {
-				collect := g.exprStringer.CollectDefine(typ.Cond)
-				for _, v := range collect {
-					g.writeSingleNode(v, false)
-				}
-				cond0 = typ.Cond
-			} else {
-				cond0 = &ast2go.BoolLiteral{
-					ExprType: &ast2go.BoolType{},
-					Value:    true,
-				}
+			typStr = g.getType(typ.CommonType)
+			pointer = "*"
+		}
+		// write getter func
+		g.PrintfFunc("func (t *%s) %s() %s%s {\n", belong, field.Ident.Ident, pointer, typStr)
+		var cond0 ast2go.Expr
+		if typ.Cond != nil {
+			collect := g.exprStringer.CollectDefine(typ.Cond)
+			for _, v := range collect {
+				g.writeSingleNode(v, false)
 			}
-			hasElse := false
-			endElse := false
-			for _, c := range typ.Candidates {
-				writeReturn := func() {
-					if c.Field != nil {
-						ident := g.exprStringer.ExprString(c.Field.Ident)
-						arr, ok := c.Field.FieldType.(*ast2go.ArrayType)
+			cond0 = typ.Cond
+		} else {
+			cond0 = &ast2go.BoolLiteral{
+				ExprType: &ast2go.BoolType{},
+				Value:    true,
+			}
+		}
+		hasElse := false
+		endElse := false
+		for _, c := range typ.Candidates {
+			writeReturn := func() {
+				if c.Field != nil {
+					ident := g.exprStringer.ExprString(c.Field.Ident)
+					arr, ok := c.Field.FieldType.(*ast2go.ArrayType)
+					if typStr == "any" {
+						g.PrintfFunc("return %s\n", ident)
+					} else {
 						if ok && arr.LengthValue != nil {
 							g.PrintfFunc("tmp := %s(%s[:])\n", typStr, ident)
 						} else {
 							g.PrintfFunc("tmp := %s(%s)\n", typStr, ident)
 						}
 						g.PrintfFunc("return &tmp\n")
-					} else {
-						g.PrintfFunc("return nil\n")
 					}
-				}
-				if c.Cond != nil {
-					collect := g.exprStringer.CollectDefine(c.Cond)
-					for _, v := range collect {
-						g.writeSingleNode(v, false)
-					}
-					b := &ast2go.Binary{
-						Op:    ast2go.BinaryOpEqual,
-						Left:  cond0,
-						Right: c.Cond,
-					}
-					if hasElse {
-						g.PrintfFunc("else ")
-					}
-					cond := g.exprStringer.ExprString(b)
-					g.PrintfFunc("if %s {\n", cond)
-					writeReturn()
-					g.PrintfFunc("}")
-					hasElse = true
 				} else {
-					g.PrintfFunc("else {\n")
-					writeReturn()
-					g.PrintfFunc("}")
-					endElse = true
+					g.PrintfFunc("return nil\n")
 				}
 			}
-			g.PrintfFunc("\n")
-			if !endElse {
-				g.PrintfFunc("return nil\n")
+			if c.Cond != nil {
+				collect := g.exprStringer.CollectDefine(c.Cond)
+				for _, v := range collect {
+					g.writeSingleNode(v, false)
+				}
+				b := &ast2go.Binary{
+					Op:    ast2go.BinaryOpEqual,
+					Left:  cond0,
+					Right: c.Cond,
+				}
+				if hasElse {
+					g.PrintfFunc("else ")
+				}
+				cond := g.exprStringer.ExprString(b)
+				g.PrintfFunc("if %s {\n", cond)
+				writeReturn()
+				g.PrintfFunc("}")
+				hasElse = true
+			} else {
+				g.PrintfFunc("else {\n")
+				writeReturn()
+				g.PrintfFunc("}")
+				endElse = true
 			}
-			g.PrintfFunc("}\n")
-			g.exprStringer.SetIdentMap(field.Ident, fmt.Sprintf("(*%%s%s())", field.Ident.Ident))
+		}
+		g.PrintfFunc("\n")
+		if !endElse {
+			g.PrintfFunc("return nil\n")
+		}
+		g.PrintfFunc("}\n")
+		g.exprStringer.SetIdentMap(field.Ident, fmt.Sprintf("(*%%s%s())", field.Ident.Ident))
 
-			// write setter func
-			hasElse = false
-			endElse = false
-			g.PrintfFunc("func (t *%s) Set%s(v %s) bool {\n", belong, field.Ident.Ident, typStr)
-			for _, c := range typ.Candidates {
-				writeSet := func() {
-					if c.Field != nil {
-						s := g.exprStringer.ExprString(c.Field.Ident)
-						fieldType := g.getType(c.Field.FieldType)
+		// write setter func
+		hasElse = false
+		endElse = false
+		g.PrintfFunc("func (t *%s) Set%s(v %s) bool {\n", belong, field.Ident.Ident, typStr)
+		for _, c := range typ.Candidates {
+			writeSet := func() {
+				if c.Field != nil {
+					s := g.exprStringer.ExprString(c.Field.Ident)
+					fieldType := g.getType(c.Field.FieldType)
+
+					if typStr == "any" {
+						tmps := fmt.Sprintf("tmp%d", g.getSeq())
+						g.PrintfFunc("%s, ok := v.(%s)\n", tmps, fieldType)
+						g.PrintfFunc("if !ok {\n")
+						g.PrintfFunc("return false\n")
+						g.PrintfFunc("}\n")
+						if arr, ok := c.Field.FieldType.(*ast2go.ArrayType); ok {
+							g.maybeWriteLengthSet("len("+tmps+")", arr.Length)
+						}
+						g.PrintfFunc("%s = %s\n", s, tmps)
+					} else {
 						if fieldType != typStr && c.Field.FieldType.GetNodeType() == ast2go.NodeTypeIntType {
 							g.InsertOverflowCheck("v", typStr, fieldType)
 						} else if arr, ok := c.Field.FieldType.(*ast2go.ArrayType); ok {
 							g.maybeWriteLengthSet("len(v)", arr.Length)
 						}
 						g.PrintfFunc("%s = %s(v)\n", s, fieldType)
-						g.PrintfFunc("return true\n")
-					} else {
-						g.PrintfFunc("return false\n")
 					}
-				}
-				if c.Cond != nil {
-					collect := g.exprStringer.CollectDefine(c.Cond)
-					for _, v := range collect {
-						g.writeSingleNode(v, false)
-					}
-					b := &ast2go.Binary{
-						Op:    ast2go.BinaryOpEqual,
-						Left:  cond0,
-						Right: c.Cond,
-					}
-					if hasElse {
-						g.PrintfFunc("else ")
-					}
-					cond := g.exprStringer.ExprString(b)
-					g.PrintfFunc("if %s {\n", cond)
-					writeSet()
-					g.PrintfFunc("}")
-					hasElse = true
+					g.PrintfFunc("return true\n")
 				} else {
-					g.PrintfFunc("else {\n")
-					writeSet()
-					g.PrintfFunc("}")
-					endElse = true
+					g.PrintfFunc("return false\n")
 				}
 			}
-			g.PrintfFunc("\n")
-			if !endElse {
-				g.PrintfFunc("return false\n")
+			if c.Cond != nil {
+				collect := g.exprStringer.CollectDefine(c.Cond)
+				for _, v := range collect {
+					g.writeSingleNode(v, false)
+				}
+				b := &ast2go.Binary{
+					Op:    ast2go.BinaryOpEqual,
+					Left:  cond0,
+					Right: c.Cond,
+				}
+				if hasElse {
+					g.PrintfFunc("else ")
+				}
+				cond := g.exprStringer.ExprString(b)
+				g.PrintfFunc("if %s {\n", cond)
+				writeSet()
+				g.PrintfFunc("}")
+				hasElse = true
+			} else {
+				g.PrintfFunc("else {\n")
+				writeSet()
+				g.PrintfFunc("}")
+				endElse = true
 			}
-			g.PrintfFunc("}\n")
 		}
+		g.PrintfFunc("\n")
+		if !endElse {
+			g.PrintfFunc("return false\n")
+		}
+		g.PrintfFunc("}\n")
+
 	}
 
 }
@@ -487,6 +510,8 @@ func (g *Generator) writeStructType(belong string, prefix string, s *ast2go.Stru
 				if gen.IsAnyRange(arr_type.Length) {
 					if field.EventualFollow == ast2go.FollowEnd {
 						g.laterSize[field] = field.BelongStruct.FixedTailSize
+					} else if field.Next != nil && field.Next.FieldType.GetNodeType() == ast2go.NodeTypeStrLiteralType {
+						g.terminalPattern[field] = struct{}{}
 					}
 				}
 				if gen.IsOnNamedStruct(field) && arr_type.LengthValue == nil && !gen.IsAnyRange(arr_type.Length) {
@@ -500,6 +525,10 @@ func (g *Generator) writeStructType(belong string, prefix string, s *ast2go.Stru
 			}
 			if i_type, ok := typ.(*ast2go.IntType); ok {
 				typ := g.getType(i_type)
+				g.Printf("%s %s\n", field.Ident.Ident, typ)
+			}
+			if f_typ, ok := typ.(*ast2go.FloatType); ok {
+				typ := g.getType(f_typ)
 				g.Printf("%s %s\n", field.Ident.Ident, typ)
 			}
 			if e_type, ok := typ.(*ast2go.EnumType); ok {
@@ -620,7 +649,14 @@ func (g *Generator) writeTypeEncode(ident string, typ ast2go.Type, p *ast2go.Fie
 				//g.PrintfFunc("buf = append(buf, %s[:]...)\n", ident)
 				//return
 			}
-			if _, ok := g.laterSize[p]; !ok {
+			if _, ok := g.terminalPattern[p]; ok {
+				lit, _ := p.Next.FieldType.(*ast2go.StrLiteralType)
+				g.imports["bytes"] = struct{}{}
+				g.PrintfFunc("if bytes.Contains(%s,[]byte(%s)) {\n", ident, lit.Base.Value)
+				g.imports["fmt"] = struct{}{}
+				g.PrintfFunc("return fmt.Errorf(\"encode %s: contains terminal pattern %%q\", %s)\n", p.Ident.Ident, lit.Base.Value)
+				g.PrintfFunc("}\n")
+			} else if _, ok := g.laterSize[p]; !ok {
 				length := g.exprStringer.ExprString(arr_type.Length)
 				g.PrintfFunc("len_%s := int(%s)\n", p.Ident.Ident, length)
 				g.PrintfFunc("if len(%s) != len_%s {\n", ident, p.Ident.Ident)
@@ -632,10 +668,11 @@ func (g *Generator) writeTypeEncode(ident string, typ ast2go.Type, p *ast2go.Fie
 			g.imports["fmt"] = struct{}{}
 			g.PrintfFunc("return fmt.Errorf(\"encode %s: %%w\", err)\n", p.Ident.Ident)
 			g.PrintfFunc("}\n")
-			//g.PrintfFunc("buf = append(buf, %s...)\n", ident)
 			return
 		} else {
-			if _, ok := g.laterSize[p]; !ok {
+			if _, ok := g.terminalPattern[p]; ok {
+				// nothing to do
+			} else if _, ok := g.laterSize[p]; !ok {
 				length := g.exprStringer.ExprString(arr_type.Length)
 				g.PrintfFunc("len_%s := int(%s)\n", p.Ident.Ident, length)
 				g.PrintfFunc("if len(%s) != len_%s {\n", ident, p.Ident.Ident)
@@ -805,6 +842,30 @@ func (g *Generator) writeTypeDecode(ident string, typ ast2go.Type, p *ast2go.Fie
 					g.PrintfFunc("%s = bytes_buf_%s.Bytes()\n", ident, p.Ident.Ident)
 					return
 				}
+			} else if _, ok := g.terminalPattern[p]; ok { // use terminal pattern
+				next, _ := p.Next.FieldType.(*ast2go.StrLiteralType)
+				g.imports["bufio"] = struct{}{}
+				g.PrintfFunc("peek_reader_%s := bufio.NewReader(r)\n", p.Ident.Ident)
+				g.PrintfFunc("r = peek_reader_%s\n", p.Ident.Ident)
+				g.PrintfFunc("len_next_%s := len(%s)\n", p.Ident.Ident, next.Base.Value)
+				g.PrintfFunc("buffer_%s := make([]byte,0)\n", p.Ident.Ident)
+				g.PrintfFunc("for {\n")
+				g.PrintfFunc("b, err := peek_reader_%s.Peek(len_next_%s)\n", p.Ident.Ident, p.Ident.Ident)
+				g.PrintfFunc("if err != nil {\n")
+				g.imports["fmt"] = struct{}{}
+				g.PrintfFunc("return fmt.Errorf(\"read %s:peek next failed: %%w\", err)\n", p.Ident.Ident)
+				g.PrintfFunc("}\n")
+				g.PrintfFunc("if bytes.Equal(b, []byte(%s)) {\n", next.Base.Value)
+				g.PrintfFunc("break\n")
+				g.PrintfFunc("}\n")
+				g.PrintfFunc("b_%s, err := peek_reader_%s.ReadByte()\n", p.Ident.Ident, p.Ident.Ident)
+				g.PrintfFunc("if err != nil {\n")
+				g.imports["fmt"] = struct{}{}
+				g.PrintfFunc("return fmt.Errorf(\"read %s:read byte failed %%w\", err)\n", p.Ident.Ident)
+				g.PrintfFunc("}\n")
+				g.PrintfFunc("buffer_%s = append(buffer_%s, b_%s)\n", p.Ident.Ident, p.Ident.Ident, p.Ident.Ident)
+				g.PrintfFunc("}\n")
+				return // not restore r so that caller can read next
 			}
 			g.PrintfFunc("len_%s := int(%s)\n", p.Ident.Ident, length)
 			g.PrintfFunc("if len_%s != 0 {\n", p.Ident.Ident)
@@ -874,6 +935,25 @@ func (g *Generator) writeTypeDecode(ident string, typ ast2go.Type, p *ast2go.Fie
 				g.PrintfFunc("%s = append(%s, tmp%d_)\n", ident, ident, seq)
 				g.PrintfFunc("}\n")
 				g.PrintfFunc("r = tmp_old_r_%s\n", p.Ident.Ident)
+			} else if _, ok := g.terminalPattern[p]; ok { // use terminal pattern
+				next, _ := p.Next.FieldType.(*ast2go.StrLiteralType)
+				g.imports["bufio"] = struct{}{}
+				g.PrintfFunc("peek_reader_%s := bufio.NewReader(r)\n", p.Ident.Ident)
+				g.PrintfFunc("r = peek_reader_%s\n", p.Ident.Ident)
+				g.PrintfFunc("len_next_%s := len(%s)\n", p.Ident.Ident, next.Base.Value)
+				g.PrintfFunc("for {\n")
+				g.PrintfFunc("b, err := peek_reader_%s.Peek(len_next_%s)\n", p.Ident.Ident, p.Ident.Ident)
+				g.PrintfFunc("if err != nil {\n")
+				g.imports["fmt"] = struct{}{}
+				g.PrintfFunc("return fmt.Errorf(\"read %s:peek next failed: %%w\", err)\n", p.Ident.Ident)
+				g.PrintfFunc("}\n")
+				g.PrintfFunc("if bytes.Equal(b, []byte(%s)) {\n", next.Base.Value)
+				g.PrintfFunc("break\n")
+				g.PrintfFunc("}\n")
+				g.PrintfFunc("var tmp%s_ %s\n", p.Ident.Ident, g.getType(arr_type.ElementType))
+				g.writeTypeDecode(fmt.Sprintf("tmp%s_", p.Ident.Ident), arr_type.ElementType, p)
+				g.PrintfFunc("%s = append(%s, tmp%s_)\n", ident, ident, p.Ident.Ident)
+				g.PrintfFunc("}\n")
 			} else {
 				g.PrintfFunc("len_%s := int(%s)\n", p.Ident.Ident, length)
 				tmpI := fmt.Sprintf("i_%d", g.getSeq())
@@ -977,12 +1057,17 @@ func (g *Generator) writeIf(if_ *ast2go.If, enc bool) {
 }
 
 func (g *Generator) writeMatch(m *ast2go.Match, enc bool) {
-	g.PrintfFunc("switch %s {\n", g.exprStringer.ExprString(m.Cond))
+	g.PrintfFunc("switch {\n")
+	cmp := &ast2go.Binary{
+		Op:   ast2go.BinaryOpEqual,
+		Left: m.Cond,
+	}
 	for _, mb := range m.Branch {
 		if gen.IsAnyRange(mb.Cond) {
 			g.PrintfFunc("default:\n")
 		} else {
-			g.PrintfFunc("case %s:\n", g.exprStringer.ExprString(mb.Cond))
+			cmp.Right = mb.Cond
+			g.PrintfFunc("case %s:\n", g.exprStringer.ExprString(cmp))
 		}
 		g.writeSingleNode(mb.Then, enc)
 	}
@@ -1204,36 +1289,6 @@ func (g *Generator) Generate(file *ast2go.AstFile) error {
 	}))
 	g.exprStringer.TypeProvider = g.getType
 	g.exprStringer.Receiver = "t."
-	g.exprStringer.BinaryMapper[ast2go.BinaryOpEqual] = func(s *gen.ExprStringer, x, y ast2go.Expr) string {
-		if gen.IsAnyRange(y) {
-			return "true" // compare with .. or ..= is always true
-		}
-		if r, ok := y.(*ast2go.Range); ok {
-			rty := r.ExprType.(*ast2go.RangeType)
-			baseTyp := rty.BaseType
-			if identTy, ok := baseTyp.(*ast2go.IdentType); ok {
-				baseTyp = identTy.Base
-			}
-			if baseTyp.GetNodeType() == ast2go.NodeTypeIntType ||
-				baseTyp.GetNodeType() == ast2go.NodeTypeEnumType {
-				if r.Start != nil && r.End != nil {
-					x := s.ExprString(x)
-					seq := g.getSeq()
-					return fmt.Sprintf("(func() bool { tmp%d_ := %s ; return %s <= tmp_%d_ && tmp%d_ <= %s }())", seq, x, s.ExprString(r.Start), seq, seq, s.ExprString(r.End))
-				}
-				if r.Start != nil {
-					return fmt.Sprintf("%s <= %s", s.ExprString(r.Start), s.ExprString(x))
-				}
-				if r.End != nil {
-					return fmt.Sprintf("%s <= %s", s.ExprString(x), s.ExprString(r.End))
-				}
-			}
-		}
-		return "(" + s.ExprString(x) + " == " + s.ExprString(y) + ")"
-	}
-	g.exprStringer.BinaryMapper[ast2go.BinaryOpNotEqual] = func(s *gen.ExprStringer, x, y ast2go.Expr) string {
-		return "!" + s.BinaryMapper[ast2go.BinaryOpEqual](s, x, y)
-	}
 	g.func_area.Reset()
 	g.type_area.Reset()
 	g.output.Reset()

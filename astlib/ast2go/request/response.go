@@ -3,6 +3,7 @@ package request
 import (
 	"fmt"
 	"io"
+	"log"
 	"runtime/debug"
 )
 
@@ -102,6 +103,7 @@ func Run(r io.Reader, w io.Writer, cb func(s *IDStream, req *GenerateSource)) er
 				if r := recover(); r != nil {
 					trace := debug.Stack()
 					stream.RespondError(req.ID, fmt.Sprintf("%v\n%s", r, trace))
+					log.Printf("%v\n%s", r, trace)
 				}
 			}()
 			cb(&IDStream{

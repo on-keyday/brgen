@@ -31,55 +31,13 @@ struct Flags : futils::cmdline::templ::HelpOption {
     }
 };
 
-int run(const Flags& flags, brgen::vm::Code& code) {
-    brgen::vm::VM vm;
-    vm.set_inject([](brgen::vm::VM& vm, const brgen::vm::Instruction& instr, size_t& pc) {
-        cout << pc << ": " << brgen::vm::to_string(instr.op()) << " " << brgen::nums(instr.arg()) << "\n";
-    });
-    futils::file::View input;
-    std::string input_buf;
-    futils::file::FileStream<std::string> fs{futils::file::File::stdin_file()};
-    using HexFilter = futils::number::hex::HexFilter<std::string, futils::byte, futils::binary::reader>;
-    std::unique_ptr<HexFilter> hex_filter;
-    if (!flags.binary_input.empty()) {
-        if (flags.binary_input == "-") {
-            vm.set_input(futils::binary::reader(fs.get_read_handler(), &fs));
-        }
-        else {
-            if (!input.open(flags.binary_input) || !input.data()) {
-                print_error("cannot open file ", flags.binary_input);
-                return 1;
-            }
-            vm.set_input(futils::binary::reader(input));
-        }
-        if (flags.hex) {
-            hex_filter = std::make_unique<HexFilter>(HexFilter{vm.take_input()});
-            vm.set_input(futils::binary::reader(hex_filter->get_read_handler(), hex_filter.get()));
-        }
-    }
-    vm.execute(code);
-    if (!vm.error().empty()) {
-        print_error("vm error: ", vm.error());
-        return 1;
-    }
-    if (!flags.call.empty()) {
-        // set this to an empty object
-        vm.execute(brgen::vm::Instruction{brgen::vm::Op::MAKE_OBJECT, brgen::vm::this_register});
-        vm.call(code, flags.call.data());
-        if (!vm.error().empty()) {
-            print_error("vm error: ", vm.error());
-            return 1;
-        }
-        auto val = vm.get_register(brgen::vm::this_register);
-        std::string buf;
-        brgen::vm::print_value(buf, val);
-        cout << buf << "\n";
-    }
+int run(const Flags& flags) {
     return 0;
 }
 
 int vm_generate(const Flags& flags, brgen::request::GenerateSource& req, std::shared_ptr<brgen::ast::Node> res) {
     auto prog = brgen::ast::cast_to<brgen::ast::Program>(res);
+    /*
     auto code = brgen::vm::compile(prog);
     if (flags.run) {
         if (!flags.legacy_file_pass) {
@@ -90,7 +48,8 @@ int vm_generate(const Flags& flags, brgen::request::GenerateSource& req, std::sh
     }
     std::string buf;
     brgen::vm::print_code(buf, code);
-    send_source_and_end(req.id, std::move(buf), req.name + ".bvm");
+    */
+    send_source_and_end(req.id, std::move(std::string()), req.name + ".bvm");
     return 0;
 }
 
