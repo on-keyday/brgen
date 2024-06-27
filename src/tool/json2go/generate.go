@@ -634,6 +634,16 @@ func (g *Generator) writeTypeEncode(ident string, typ ast2go.Type, p *ast2go.Fie
 		g.writeAppendUint(*i_type.BitSize, ident)
 		return
 	}
+	if f_typ, ok := typ.(*ast2go.FloatType); ok {
+		tmpIdent := fmt.Sprintf("tmp%d", g.getSeq())
+		if f_typ.IsCommonSupported {
+			g.PrintfFunc("%s := math.Float%dbits(%s)\n", tmpIdent, *f_typ.BitSize, ident)
+		} else if *f_typ.BitSize == 16 {
+			// TODO(on-keyday): fix this
+			g.PrintfFunc("%s := uint16(math.Float32bits(float32(%s)))\n", tmpIdent, ident)
+		}
+		g.writeAppendUint(*f_typ.BitSize, tmpIdent)
+	}
 	if enum_type, ok := typ.(*ast2go.EnumType); ok {
 		g.writeAppendUint(*enum_type.BitSize, ident)
 		return
@@ -746,7 +756,7 @@ func (g *Generator) writeFieldEncode(p *ast2go.Field) {
 	g.writeTypeEncode(ident, p.FieldType, p)
 }
 
-func (g *Generator) writeReadUint(size uint64, tmpName, field string, sign bool, enumTy *string) {
+func (g *Generator) writeReadUint(size uint64, tmpName, field string, sign bool, enumTy *string, endian ast2go.Endian) {
 	g.PrintfFunc("tmp%s := [%d]byte{}\n", tmpName, size/8)
 	g.PrintfFunc("n_%s, err := io.ReadFull(r,tmp%s[:])\n", tmpName, tmpName)
 	g.PrintfFunc("if err != nil {\n")
@@ -770,10 +780,19 @@ func (g *Generator) writeReadUint(size uint64, tmpName, field string, sign bool,
 	}
 	if size == 8 {
 		g.PrintfFunc("%s = %s(tmp%s[0])\n", field, castTo, tmpName)
-	} else if size == 24 {
-		g.PrintfFunc("%s = %s(uint32(tmp%s[0])<<16 | uint32(tmp%s[1])<<8 | uint32(tmp%s[2]))\n", field, castTo, tmpName, tmpName, tmpName)
+
+	} else if endian == ast2go.EndianUnspec || endian == ast2go.EndianBig {
+		if size == 24 {
+			g.PrintfFunc("%s = %s(uint32(tmp%s[0])<<16 | uint32(tmp%s[1])<<8 | uint32(tmp%s[2]))\n", field, castTo, tmpName, tmpName, tmpName)
+		} else {
+			g.PrintfFunc("%s = %s(binary.BigEndian.Uint%d(tmp%s[:]))\n", field, castTo, size, tmpName)
+		}
 	} else {
-		g.PrintfFunc("%s = %s(binary.BigEndian.Uint%d(tmp%s[:]))\n", field, castTo, size, tmpName)
+		if size == 24 {
+			g.PrintfFunc("%s = %s(uint32(tmp%s[2])<<16 | uint32(tmp%s[1])<<8 | uint32(tmp%s[0]))\n", field, castTo, tmpName, tmpName, tmpName)
+		} else {
+			g.PrintfFunc("%s = %s(binary.LittleEndian.Uint%d(tmp%s[:]))\n", field, castTo, size, tmpName)
+		}
 	}
 }
 
@@ -811,11 +830,21 @@ func (g *Generator) writeTypeDecode(ident string, typ ast2go.Type, p *ast2go.Fie
 		typ = i_typ.Base
 	}
 	if i_type, ok := typ.(*ast2go.IntType); ok {
-		g.writeReadUint(*i_type.BitSize, p.Ident.Ident, ident, i_type.IsSigned, nil)
+		g.writeReadUint(*i_type.BitSize, p.Ident.Ident, ident, i_type.IsSigned, nil, i_type.Endian)
 		return
 	}
+	if f_type, ok := typ.(*ast2go.FloatType); ok {
+		tmpIdent := fmt.Sprintf("tmp_%s", p.Ident.Ident)
+		g.writeReadUint(*f_type.BitSize, p.Ident.Ident, tmpIdent, false, nil, f_type.Endian)
+		if f_type.IsCommonSupported {
+			g.PrintfFunc("%s = math.Float%dfrombits(uint%d(%s))\n", ident, *f_type.BitSize, *f_type.BitSize, tmpIdent)
+		} else if *f_type.BitSize == 16 {
+			// TODO(on-keyday): Fix this
+			g.PrintfFunc("%s = float64(%s)\n", ident, tmpIdent)
+		}
+	}
 	if enum_type, ok := typ.(*ast2go.EnumType); ok {
-		g.writeReadUint(*enum_type.BitSize, p.Ident.Ident, ident, false, &enum_type.Base.Ident.Ident)
+		g.writeReadUint(*enum_type.BitSize, p.Ident.Ident, ident, false, &enum_type.Base.Ident.Ident, enum_type.Base.BaseType.(*ast2go.IntType).Endian)
 		return
 	}
 	if arr_type, ok := typ.(*ast2go.ArrayType); ok {
@@ -1001,7 +1030,7 @@ func (g *Generator) writeFieldDecode(p *ast2go.Field) {
 		return
 	}
 	if b, ok := g.bitFields[p]; ok {
-		g.writeReadUint(b.Size, b.Ident.Ident, "t."+b.Ident.Ident, false, nil)
+		g.writeReadUint(b.Size, b.Ident.Ident, "t."+b.Ident.Ident, false, nil, ast2go.EndianUnspec)
 		return
 	}
 	typ := p.FieldType
