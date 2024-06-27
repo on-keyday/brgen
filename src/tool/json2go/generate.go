@@ -837,7 +837,7 @@ func (g *Generator) writeTypeDecode(ident string, typ ast2go.Type, p *ast2go.Fie
 	if f_type, ok := typ.(*ast2go.FloatType); ok {
 		g.imports["math"] = struct{}{}
 		tmpIdent := fmt.Sprintf("tmp_%s", p.Ident.Ident)
-		g.Printf("var %s %s\n", tmpIdent, "uint"+strconv.FormatUint(*f_type.BitSize, 10))
+		g.PrintfFunc("var %s %s\n", tmpIdent, "uint"+strconv.FormatUint(*f_type.BitSize, 10))
 		g.writeReadUint(*f_type.BitSize, p.Ident.Ident, tmpIdent, false, nil, f_type.Endian)
 		if f_type.IsCommonSupported {
 			g.PrintfFunc("%s = math.Float%dfrombits(uint%d(%s))\n", ident, *f_type.BitSize, *f_type.BitSize, tmpIdent)
