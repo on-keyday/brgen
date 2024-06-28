@@ -818,6 +818,9 @@ namespace brgen::middle {
             auto cast = std::make_shared<ast::Cast>(ast::cast_to<ast::Call>(base_node.to_node()), std::move(copy),
                                                     call->arguments);
             base_node.replace(std::move(cast));
+            for (auto& arg : call->arguments) {
+                typing_expr(arg);
+            }
         }
 
         void typing_call(ast::Call* call, NodeReplacer base_node) {
