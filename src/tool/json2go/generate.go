@@ -209,6 +209,8 @@ func (g *Generator) maybeWriteLengthSet(toSet string, length ast2go.Expr, setUni
 			g.InsertOverflowCheck(toSet, cast, typ)
 			setUnion()
 			g.PrintfFunc("%s = %s(%s)\n", setTo, typ, toSet)
+		} else {
+			setUnion()
 		}
 	} else {
 		setUnion()
