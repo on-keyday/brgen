@@ -634,7 +634,7 @@ func (g *Generator) writeStructVisitor(name string, p *ast2go.StructType) {
 		g.Printf("func (f %sFunc) Visit(v %s,name string,field any) {\n", g.visitorName, g.visitorName)
 		g.Printf("f(v,name,field)\n")
 		g.Printf("}\n")
-		g.Printf("type %sVisitable interface {\n", name)
+		g.Printf("type %sVisitable interface {\n", g.visitorName)
 		g.Printf("Visit(v %s)\n", g.visitorName)
 		g.Printf("}\n")
 		g.Printf("func %sToMap(v any) interface{} {", g.visitorName)
