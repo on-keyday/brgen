@@ -8,6 +8,7 @@ import (
 	"go/format"
 	"io"
 	"math/rand"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -23,6 +24,7 @@ var legacyStdin = flag.Bool("legacy-stdin", false, "use legacy stdin")
 // var usePut = flag.Bool("use-put", false, "use PutUintXXX instead of AppendUintXXX")
 var decodeExact = flag.Bool("decode-exact", true, "add func DecodeExact")
 var useMustEncode = flag.Bool("must-encode", true, "add func MustEncode")
+var useVisitor = flag.Bool("visitor", true, "add visitor pattern and ToMap")
 var testInfo = flag.Bool("test-info", false, "output test info")
 var mappingWords = map[string]string{}
 
@@ -619,6 +621,9 @@ func gen5RandomASCIIBasedOnNameHash(name string) string {
 }
 
 func (g *Generator) writeStructVisitor(name string, p *ast2go.StructType) {
+	if !*useVisitor {
+		return
+	}
 	if g.visitorName == "" {
 		// use 3 char random string
 		g.visitorName = "Visitor" + gen5RandomASCIIBasedOnNameHash(name)
@@ -629,16 +634,35 @@ func (g *Generator) writeStructVisitor(name string, p *ast2go.StructType) {
 		g.Printf("func (f %sFunc) Visit(v %s,name string,field any) {\n", g.visitorName, g.visitorName)
 		g.Printf("f(v,name,field)\n")
 		g.Printf("}\n")
-		g.Printf("func %sToMap(v interface{ Visit(%s) }) map[string]interface{} {", g.visitorName, g.visitorName)
-		g.Printf("m := map[string]interface{}{}\n")
-		g.Printf("v.Visit(%sFunc(func(v %s,name string,field any){", g.visitorName, g.visitorName)
-		g.Printf("if inter,ok := field.(interface{ Visit(%s) });ok{", g.visitorName)
-		g.Printf("m[name] = %sToMap(inter)\n", g.visitorName)
-		g.Printf("}else{")
-		g.Printf("m[name] = field\n")
-		g.Printf("}")
-		g.Printf("}))\n")
-		g.Printf("return m\n")
+		g.Printf("type %sVisitable interface {\n", name)
+		g.Printf("Visit(v %s)\n", g.visitorName)
+		g.Printf("}\n")
+		g.Printf("func %sToMap(v any) interface{} {", g.visitorName)
+		{
+			g.Printf("if v == nil {\n")
+			g.Printf("return nil\n")
+			g.Printf("}\n")
+			g.Printf("if inter,ok := v.(%sVisitable);ok{\n", g.visitorName)
+			g.Printf("m := map[string]interface{}{}\n")
+			g.Printf("v.Visit(%sFunc(func(v %s,name string,field any){\n", g.visitorName, g.visitorName)
+			g.Printf("m[name] = %sToMap(field)\n", g.visitorName)
+			g.Printf("}))\n")
+			g.Printf("return m\n")
+			g.Printf("}\n")
+			g.imports["reflect"] = struct{}{}
+			reflect.ValueOf(1)
+			// if array of non-primitive type, then call ToMap for each element
+			g.Printf("if tf := reflect.TypeOf(v); (tf.Kind() == reflect.Slice || tf.Kind() == reflect.Array)&& ")
+			g.Printf("!(tf.Elem().CanInt()||tf.Elem().CanUint()) {\n")
+			g.Printf("m := []interface{}{}\n")
+			g.Printf("for i:=0;i<tf.Len();i++{\n")
+			g.Printf("m = append(m,%sToMap(tf.Index(i).Interface()))\n", g.visitorName)
+			g.Printf("}\n")
+			g.Printf("return m\n")
+			g.Printf("}\n")
+			// otherwise, return the value itself
+			g.Printf("return v\n")
+		}
 		g.Printf("}\n")
 	}
 	g.PrintfFunc("func (t *%s) Visit(v %s) {\n", name, g.visitorName)

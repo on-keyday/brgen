@@ -133,6 +133,9 @@ const argConverter = Object.freeze({
         if(opt.omit_decode_exact) {
             args.push("-decode-exact=false");
         }
+        if(opt.omit_visitors) {
+            args.push("-visitor=false");
+        }
         return args;
     },
     [RequestLanguage.C] : (opt :COption) => {

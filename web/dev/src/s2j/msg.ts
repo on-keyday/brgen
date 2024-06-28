@@ -63,6 +63,7 @@ export interface CppOption extends CallOption {
 export interface GoOption extends CallOption {
     omit_must_encode? :boolean,
     omit_decode_exact? :boolean,
+    omit_visitors? :boolean,
 }
 
 export interface COption extends CallOption {
