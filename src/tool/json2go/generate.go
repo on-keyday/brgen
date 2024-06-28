@@ -53,14 +53,15 @@ type BitFields struct {
 }
 
 type UnionStruct struct {
-	Struct *ast2go.StructType
-	Name   string
+	Struct    *ast2go.StructType
+	TypeName  string
+	FieldName *ast2go.Ident
 }
 
 type Generator struct {
 	output          bytes.Buffer
-	type_area       bytes.Buffer
-	func_area       bytes.Buffer
+	type_area       *bytes.Buffer
+	func_area       *bytes.Buffer
 	seq             int
 	bitFields       map[*ast2go.Field]*BitFields
 	unionStructs    map[*ast2go.StructType]*UnionStruct
@@ -75,6 +76,8 @@ type Generator struct {
 
 func NewGenerator() *Generator {
 	return &Generator{
+		type_area:       &bytes.Buffer{},
+		func_area:       &bytes.Buffer{},
 		bitFields:       make(map[*ast2go.Field]*BitFields),
 		unionStructs:    make(map[*ast2go.StructType]*UnionStruct),
 		imports:         make(map[string]struct{}),
@@ -85,11 +88,11 @@ func NewGenerator() *Generator {
 }
 
 func (g *Generator) Printf(format string, args ...interface{}) {
-	fmt.Fprintf(&g.type_area, format, args...)
+	fmt.Fprintf(g.type_area, format, args...)
 }
 
 func (g *Generator) PrintfFunc(format string, args ...interface{}) {
-	fmt.Fprintf(&g.func_area, format, args...)
+	fmt.Fprintf(g.func_area, format, args...)
 }
 
 func (g *Generator) getSeq() int {
@@ -111,10 +114,10 @@ func MaxHexDigit(bitSize uint64) uint64 {
 	return digit
 }
 
-func (g *Generator) writeBitField(belong string, prefix string, fields []*ast2go.Field, size uint64, intSet, simple bool) {
+func (g *Generator) writeBitField(w printer, belong string, prefix string, fields []*ast2go.Field, size uint64, intSet, simple bool) {
 	if intSet && simple {
 		seq := g.getSeq()
-		g.Printf("flags%d uint%d\n", seq, size)
+		w.Printf("flags%d uint%d\n", seq, size)
 
 		offset := uint64(0)
 		format := fmt.Sprintf("((t.%sflags%d & 0x%%0%dx) >> %%d)", prefix, seq, MaxHexDigit(size))
@@ -209,18 +212,43 @@ func (g *Generator) maybeWriteLengthSet(toSet string, length ast2go.Expr) {
 	}
 }
 
-func (g *Generator) writeStructUnion(belong string, prefix string, u *ast2go.StructUnionType) {
+type printer interface {
+	Printf(format string, args ...interface{})
+}
+
+type printerImpl struct {
+	w io.Writer
+}
+
+func (p *printerImpl) Printf(format string, args ...interface{}) {
+	fmt.Fprintf(p.w, format, args...)
+}
+
+func (g *Generator) writeStructUnion(w printer, belong string, prefix string, u *ast2go.StructUnionType, field *ast2go.Field) {
+	union_field_ := fmt.Sprintf("union%d_", g.getSeq())
+	union_type_ := fmt.Sprintf("union%d_%s", g.getSeq(), belong)
+	g.Printf("type %s interface {\n", union_type_)
+	g.Printf("is%s()\n", union_field_)
+	g.Printf("}\n")
 	for _, v := range u.Structs {
 		seq := g.getSeq()
-		s := fmt.Sprintf("union_%d_", seq)
-		g.Printf("union_%d_ struct {", seq)
-		g.writeStructType(belong, prefix+s+".", v)
+		s := fmt.Sprintf("union_%d_t", seq)
+		nextIdent := fmt.Sprintf("%s%s.(*%s).", prefix, union_field_, s)
+		nestw := &printerImpl{w: &bytes.Buffer{}}
+		g.writeStructType(nestw, belong, nextIdent, v)
+		g.Printf("type %s struct {", s)
+		g.Printf("%s", nestw.w.(*bytes.Buffer).String())
 		g.Printf("}\n")
+		g.PrintfFunc("func (t *%s) is%s() {}\n", s, union_field_)
+		mapIdent := &ast2go.Ident{Ident: prefix + union_field_, Base: field}
 		g.unionStructs[v] = &UnionStruct{
-			Struct: v,
-			Name:   s,
+			Struct:    v,
+			TypeName:  s,
+			FieldName: mapIdent,
 		}
+		g.exprStringer.SetIdentMap(mapIdent, "%s"+prefix+union_field_)
 	}
+	w.Printf("%s %s\n", union_field_, union_type_)
 	for _, field := range u.UnionFields {
 		typ := field.FieldType.(*ast2go.UnionType)
 		typStr := "any"
@@ -249,11 +277,21 @@ func (g *Generator) writeStructUnion(belong string, prefix string, u *ast2go.Str
 		for _, c := range typ.Candidates {
 			writeReturn := func() {
 				if c.Field != nil {
+					checkUnion := func() {
+						if s, ok := g.unionStructs[c.Field.BelongStruct]; ok {
+							fieldName := g.exprStringer.ExprString(s.FieldName)
+							g.PrintfFunc("if _,ok := %s.(*%s);!ok{\n", fieldName, s.TypeName)
+							g.PrintfFunc("return nil // not set\n")
+							g.PrintfFunc("}\n")
+						}
+					}
 					ident := g.exprStringer.ExprString(c.Field.Ident)
 					arr, ok := c.Field.FieldType.(*ast2go.ArrayType)
 					if typStr == "any" {
+						checkUnion()
 						g.PrintfFunc("return %s\n", ident)
 					} else {
+						checkUnion()
 						if ok && arr.LengthValue != nil {
 							g.PrintfFunc("tmp := %s(%s[:])\n", typStr, ident)
 						} else {
@@ -306,7 +344,14 @@ func (g *Generator) writeStructUnion(belong string, prefix string, u *ast2go.Str
 				if c.Field != nil {
 					s := g.exprStringer.ExprString(c.Field.Ident)
 					fieldType := g.getType(c.Field.FieldType)
-
+					setUnion := func() {
+						if s, ok := g.unionStructs[c.Field.BelongStruct]; ok {
+							fieldName := g.exprStringer.ExprString(s.FieldName)
+							g.PrintfFunc("if _,ok := %s.(*%s);!ok{\n", fieldName, s.TypeName)
+							g.PrintfFunc("%s = &%s{}\n", fieldName, s.TypeName)
+							g.PrintfFunc("}\n")
+						}
+					}
 					if typStr == "any" {
 						tmps := fmt.Sprintf("tmp%d", g.getSeq())
 						g.PrintfFunc("%s, ok := v.(%s)\n", tmps, fieldType)
@@ -316,6 +361,7 @@ func (g *Generator) writeStructUnion(belong string, prefix string, u *ast2go.Str
 						if arr, ok := c.Field.FieldType.(*ast2go.ArrayType); ok {
 							g.maybeWriteLengthSet("len("+tmps+")", arr.Length)
 						}
+						setUnion()
 						g.PrintfFunc("%s = %s\n", s, tmps)
 					} else {
 						if fieldType != typStr && c.Field.FieldType.GetNodeType() == ast2go.NodeTypeIntType {
@@ -323,6 +369,7 @@ func (g *Generator) writeStructUnion(belong string, prefix string, u *ast2go.Str
 						} else if arr, ok := c.Field.FieldType.(*ast2go.ArrayType); ok {
 							g.maybeWriteLengthSet("len(v)", arr.Length)
 						}
+						setUnion()
 						g.PrintfFunc("%s = %s(v)\n", s, fieldType)
 					}
 					g.PrintfFunc("return true\n")
@@ -451,7 +498,7 @@ func (g *Generator) writeField(field *ast2go.Field) {
 }
 */
 
-func (g *Generator) writeStructType(belong string, prefix string, s *ast2go.StructType) {
+func (g *Generator) writeStructType(w printer, belong string, prefix string, s *ast2go.StructType) {
 	var non_aligned []*ast2go.Field
 	var (
 		is_int_set        = true
@@ -486,7 +533,7 @@ func (g *Generator) writeStructType(belong string, prefix string, s *ast2go.Stru
 				if s != nil {
 					size += *s
 				}
-				g.writeBitField(belong, prefix, non_aligned, size, is_int_set, is_simple)
+				g.writeBitField(w, belong, prefix, non_aligned, size, is_int_set, is_simple)
 				non_aligned = nil
 				is_int_set = true
 				is_simple = true
@@ -494,7 +541,7 @@ func (g *Generator) writeStructType(belong string, prefix string, s *ast2go.Stru
 				continue
 			}
 			if u, ok := typ.(*ast2go.StructUnionType); ok {
-				g.writeStructUnion(belong, prefix, u)
+				g.writeStructUnion(w, belong, prefix, u, field)
 				continue
 			}
 			if field.Ident == nil {
@@ -505,7 +552,7 @@ func (g *Generator) writeStructType(belong string, prefix string, s *ast2go.Stru
 			}
 			if arr_type, ok := typ.(*ast2go.ArrayType); ok {
 				typ := g.getType(arr_type)
-				g.Printf("%s %s\n", field.Ident.Ident, typ)
+				w.Printf("%s %s\n", field.Ident.Ident, typ)
 				g.exprStringer.SetIdentMap(field.Ident, "%s"+field.Ident.Ident)
 				if gen.IsAnyRange(arr_type.Length) {
 					if field.EventualFollow == ast2go.FollowEnd {
@@ -525,25 +572,25 @@ func (g *Generator) writeStructType(belong string, prefix string, s *ast2go.Stru
 			}
 			if i_type, ok := typ.(*ast2go.IntType); ok {
 				typ := g.getType(i_type)
-				g.Printf("%s %s\n", field.Ident.Ident, typ)
+				w.Printf("%s %s\n", field.Ident.Ident, typ)
 			}
 			if f_typ, ok := typ.(*ast2go.FloatType); ok {
 				typ := g.getType(f_typ)
-				g.Printf("%s %s\n", field.Ident.Ident, typ)
+				w.Printf("%s %s\n", field.Ident.Ident, typ)
 			}
 			if e_type, ok := typ.(*ast2go.EnumType); ok {
 				typ := g.getType(e_type)
-				g.Printf("%s %s\n", field.Ident.Ident, typ)
+				w.Printf("%s %s\n", field.Ident.Ident, typ)
 			}
 			if s_type, ok := typ.(*ast2go.StrLiteralType); ok {
 				magic := s_type.Base.Value
-				g.Printf("// %s (%d byte)\n", magic, *typ.GetBitSize()/8)
+				w.Printf("// %s (%d byte)\n", magic, *typ.GetBitSize()/8)
 				g.exprStringer.SetIdentMap(field.Ident, magic)
 				continue
 			}
 			if u, ok := typ.(*ast2go.StructType); ok {
 				typ := g.getType(u)
-				g.Printf("%s %s\n", field.Ident.Ident, typ)
+				w.Printf("%s %s\n", field.Ident.Ident, typ)
 			}
 			g.exprStringer.SetIdentMap(field.Ident, "%s"+prefix+field.Ident.Ident)
 		}
@@ -591,8 +638,10 @@ func (g *Generator) writeStructVisitor(name string, p *ast2go.StructType) {
 
 func (g *Generator) writeFormat(p *ast2go.Format) {
 	g.StructNames = append(g.StructNames, p.Ident.Ident)
+	w := &printerImpl{w: &bytes.Buffer{}}
+	g.writeStructType(w, p.Ident.Ident, "", p.Body.StructType)
 	g.Printf("type %s struct {\n", p.Ident.Ident)
-	g.writeStructType(p.Ident.Ident, "", p.Body.StructType)
+	g.Printf("%s", w.w.(*bytes.Buffer).String())
 	g.Printf("}\n")
 	g.writeStructVisitor(p.Ident.Ident, p.Body.StructType)
 	g.writeEncode(p)
@@ -1101,14 +1150,32 @@ func (g *Generator) writeMatch(m *ast2go.Match, enc bool) {
 			cmp.Right = mb.Cond
 			g.PrintfFunc("case %s:\n", g.exprStringer.ExprString(cmp))
 		}
+
 		g.writeSingleNode(mb.Then, enc)
 	}
 	g.PrintfFunc("}\n")
 }
 
+func (g *Generator) unionCheck(typ *ast2go.StructType, enc bool) {
+	union_, ok := g.unionStructs[typ]
+	if !ok {
+		return // nothing to do
+	}
+	fieldName := g.exprStringer.ExprString(union_.FieldName)
+	if enc {
+		g.PrintfFunc("if _,ok := %s.(*%s);!ok {\n", fieldName, union_.TypeName)
+		g.imports["fmt"] = struct{}{}
+		g.PrintfFunc("return fmt.Errorf(\"encode %s: union is not set to %s\")\n", fieldName, union_.TypeName)
+		g.PrintfFunc("}\n")
+	} else {
+		g.PrintfFunc("%s = &%s{}\n", fieldName, union_.TypeName)
+	}
+}
+
 func (g *Generator) writeSingleNode(node ast2go.Node, enc bool) {
 	switch n := node.(type) {
 	case *ast2go.IndentBlock:
+		g.unionCheck(n.StructType, enc)
 		for _, elem := range n.Elements {
 			g.writeSingleNode(elem, enc)
 		}
@@ -1126,6 +1193,7 @@ func (g *Generator) writeSingleNode(node ast2go.Node, enc bool) {
 			g.writeFieldDecode(n)
 		}
 	case *ast2go.ScopedStatement:
+		g.unionCheck(n.StructType, enc)
 		g.writeSingleNode(n.Statement, enc)
 	case *ast2go.Binary:
 		binary := n
