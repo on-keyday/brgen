@@ -1554,7 +1554,7 @@ namespace brgen::middle {
                     if (comparable_type(field->field_type, typ)) {
                         args->argument_mapping = ast::FieldArgumentMapping(size_t(args->argument_mapping) | size_t(ast::FieldArgumentMapping::direct));
                     }
-                    else if (array_ty && comparable_type(array_ty->element_type, typ)) {
+                    else if (array_ty && (int_type_fitting(array_ty->element_type, typ), comparable_type(array_ty->element_type, typ))) {
                         args->argument_mapping = ast::FieldArgumentMapping(size_t(args->argument_mapping) | size_t(ast::FieldArgumentMapping::repeat));
                     }
                     else if (auto meta = ast::as<ast::TypeLiteral>(arg); meta) {
