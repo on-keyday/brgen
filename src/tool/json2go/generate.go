@@ -1162,6 +1162,16 @@ func (g *Generator) unionCheck(typ *ast2go.StructType, enc bool) {
 	if !ok {
 		return // nothing to do
 	}
+	hasField := false
+	for _, elem := range union_.Struct.Fields {
+		if _, ok := elem.(*ast2go.Field); ok {
+			hasField = true
+			break
+		}
+	}
+	if !hasField {
+		return
+	}
 	fieldName := g.exprStringer.ExprString(union_.FieldName)
 	if enc {
 		g.PrintfFunc("if _,ok := %s.(*%s);!ok {\n", fieldName, union_.TypeName)
