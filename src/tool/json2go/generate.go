@@ -193,7 +193,7 @@ func (g *Generator) InsertOverflowCheck(target string, compareType string, limit
 	g.PrintfFunc("}\n")
 }
 
-func (g *Generator) maybeWriteLengthSet(toSet string, length ast2go.Expr) {
+func (g *Generator) maybeWriteLengthSet(toSet string, length ast2go.Expr, setUnion func()) {
 	ident, ok := length.(*ast2go.Ident)
 	if ok {
 		ident, _ := gen.LookupBase(ident)
@@ -207,8 +207,11 @@ func (g *Generator) maybeWriteLengthSet(toSet string, length ast2go.Expr) {
 				cast = "uint64"
 			}
 			g.InsertOverflowCheck(toSet, cast, typ)
+			setUnion()
 			g.PrintfFunc("%s = %s(%s)\n", setTo, typ, toSet)
 		}
+	} else {
+		setUnion()
 	}
 }
 
@@ -359,17 +362,20 @@ func (g *Generator) writeStructUnion(w printer, belong string, prefix string, u 
 						g.PrintfFunc("return false\n")
 						g.PrintfFunc("}\n")
 						if arr, ok := c.Field.FieldType.(*ast2go.ArrayType); ok {
-							g.maybeWriteLengthSet("len("+tmps+")", arr.Length)
+							g.maybeWriteLengthSet("len("+tmps+")", arr.Length, setUnion)
+						} else {
+							setUnion()
 						}
-						setUnion()
 						g.PrintfFunc("%s = %s\n", s, tmps)
 					} else {
 						if fieldType != typStr && c.Field.FieldType.GetNodeType() == ast2go.NodeTypeIntType {
 							g.InsertOverflowCheck("v", typStr, fieldType)
+							setUnion()
 						} else if arr, ok := c.Field.FieldType.(*ast2go.ArrayType); ok {
-							g.maybeWriteLengthSet("len(v)", arr.Length)
+							g.maybeWriteLengthSet("len(v)", arr.Length, setUnion)
+						} else {
+							setUnion()
 						}
-						setUnion()
 						g.PrintfFunc("%s = %s(v)\n", s, fieldType)
 					}
 					g.PrintfFunc("return true\n")
@@ -564,7 +570,7 @@ func (g *Generator) writeStructType(w printer, belong string, prefix string, s *
 				if gen.IsOnNamedStruct(field) && arr_type.LengthValue == nil && !gen.IsAnyRange(arr_type.Length) {
 					s := g.exprStringer.ExprString(field.Ident)
 					g.PrintfFunc("func (t *%s) Set%s(v %s) bool {\n", belong, field.Ident.Ident, typ)
-					g.maybeWriteLengthSet("len(v)", arr_type.Length)
+					g.maybeWriteLengthSet("len(v)", arr_type.Length, func() {})
 					g.PrintfFunc("%s = v\n", s)
 					g.PrintfFunc("return true\n")
 					g.PrintfFunc("}\n")
