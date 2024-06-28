@@ -1115,22 +1115,15 @@ func (g *Generator) writeFieldDecode(p *ast2go.Field) {
 
 func (g *Generator) writeIf(if_ *ast2go.If, enc bool) {
 	g.PrintfFunc("if %s {\n", g.exprStringer.ExprString(if_.Cond))
-	for _, elem := range if_.Then.Elements {
-		g.writeSingleNode(elem, enc)
-	}
+	g.writeSingleNode(if_.Then, enc)
 	for if_.Els != nil {
 		if if_2, ok := if_.Els.(*ast2go.If); ok {
 			g.PrintfFunc("} else if %s {\n", g.exprStringer.ExprString(if_2.Cond))
-			for _, elem := range if_2.Then.Elements {
-				g.writeSingleNode(elem, enc)
-			}
+			g.writeSingleNode(if_2.Then, enc)
 			if_ = if_2
 		} else {
 			g.PrintfFunc("} else {\n")
-			indentBlock := if_.Els.(*ast2go.IndentBlock)
-			for _, elem := range indentBlock.Elements {
-				g.writeSingleNode(elem, enc)
-			}
+			g.writeSingleNode(if_.Els, enc)
 			break
 		}
 	}
