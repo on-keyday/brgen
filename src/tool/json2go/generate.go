@@ -295,7 +295,7 @@ func (g *Generator) writeStructUnion(w printer, belong string, prefix string, u 
 					arr, ok := c.Field.FieldType.(*ast2go.ArrayType)
 					if typStr == "any" {
 						checkUnion()
-						g.PrintfFunc("return %s\n", ident)
+						g.PrintfFunc("return &%s\n", ident)
 					} else {
 						checkUnion()
 						if ok && arr.LengthValue != nil {
@@ -651,13 +651,24 @@ func (g *Generator) writeStructVisitor(name string, p *ast2go.StructType) {
 			g.imports["reflect"] = struct{}{}
 			// if array of non-primitive type, then call ToMap for each element
 			g.Printf("if tf := reflect.TypeOf(v); (tf.Kind() == reflect.Slice || tf.Kind() == reflect.Array)&& ")
-			g.Printf("!(tf.Elem().CanInt()||tf.Elem().CanUint()||tf.Elem().CanFloat()) {\n")
+			g.Printf("!(func() bool { k := tf.Elem().Kind().String(); return k[:3] == \"int\" || k[:3] == \"uin\" || k[:3] == \"flo\" })() {\n")
 			g.Printf("m := []interface{}{}\n")
 			g.Printf("vf := reflect.ValueOf(v)\n")
 			g.Printf("for i:=0;i<vf.Len();i++{\n")
-			g.Printf("m = append(m,%sToMap(vf.Index(i).Interface()))\n", g.visitorName)
+			g.Printf("index := vf.Index(i)\n")
+			g.Printf("if index.Kind() == reflect.Struct && index.CanAddr() {\n")
+			g.Printf("index = index.Addr()\n")
+			g.Printf("}\n")
+			g.Printf("m = append(m,%sToMap(index.Interface()))\n", g.visitorName)
 			g.Printf("}\n")
 			g.Printf("return m\n")
+			g.Printf("}\n")
+			g.Printf("if tf := reflect.TypeOf(v); tf.Kind() == reflect.Pointer {\n")
+			g.Printf("val := reflect.ValueOf(v)\n")
+			g.Printf("if val.IsNil() {\n")
+			g.Printf("return nil\n")
+			g.Printf("}\n")
+			g.Printf("return %sToMap(val.Elem().Interface())\n", g.visitorName)
 			g.Printf("}\n")
 			// otherwise, return the value itself
 			g.Printf("return v\n")
@@ -672,6 +683,9 @@ func (g *Generator) writeStructVisitor(name string, p *ast2go.StructType) {
 			}
 			expr := g.exprStringer.ExprString(field.Ident)
 			expr = strings.Replace(expr, "(*", "(", 1)
+			if !strings.HasSuffix(expr, ")") {
+				expr = "&" + expr
+			}
 			g.PrintfFunc("v.Visit(v,%q,%s)\n", field.Ident.Ident, expr)
 		}
 	}

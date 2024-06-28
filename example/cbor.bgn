@@ -1,4 +1,4 @@
-
+config.go.package = "format"
 enum MajorType:
     unsigned_int_n = 0
     negative_int_1_n = 1
