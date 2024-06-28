@@ -6,6 +6,7 @@
 #include <vector>
 #include <map>
 #include "statement.h"
+#include <number/bit_size.h>
 
 namespace brgen::ast {
     // types
@@ -143,13 +144,9 @@ namespace brgen::ast {
         define_node_type(NodeType::int_literal_type);
         std::weak_ptr<IntLiteral> base;
 
-        std::optional<std::uint8_t> get_bit_size() const {
-            return bit_size;
-        }
-
         std::uint8_t get_aligned_bit() const {
-            if (auto s = get_bit_size()) {
-                return aligned_bit(*s);
+            if (bit_size) {
+                return aligned_bit(*bit_size);
             }
             return 0;
         }
@@ -168,6 +165,20 @@ namespace brgen::ast {
                 if (this->bit_size == 0) {
                     this->bit_size = 1;  // least 1 bit
                 }
+            }
+            else {  // try arbitrary size
+                std::vector<std::uint64_t> buffer;
+                auto seq = futils::make_ref_seq(ty->value);
+                auto radix = futils::number::has_prefix(seq);
+                if (radix == 0) {
+                    radix = 10;
+                }
+                else {
+                    seq.consume(2);
+                }
+                size_t bit_size = 0;
+                futils::number::bit_size(bit_size, buffer, seq, radix);
+                this->bit_size = bit_size;
             }
         }
 

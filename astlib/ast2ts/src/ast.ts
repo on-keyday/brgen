@@ -203,7 +203,7 @@ export function isOrderType(obj: any): obj is OrderType {
 	return obj && typeof obj === 'string' && (obj === "byte" || obj === "bit_stream" || obj === "bit_mapping" || obj === "bit_both")
 }
 
-export const enum FormatTrait {
+export const enum BlockTrait {
 	none = 0,
 	fixed_primitive = 1,
 	fixed_float = 2,
@@ -228,13 +228,14 @@ export const enum FormatTrait {
 	local_variable = 1048576,
 	description_only = 2097152,
 	uncommon_size = 4194304,
+	control_flow_change = 8388608,
 };
 
-export function isFormatTrait(obj: any): obj is FormatTrait {
+export function isBlockTrait(obj: any): obj is BlockTrait {
 	return typeof obj === 'number' && Number.isInteger(obj) // easy check
 }
 
-export function FormatTraitToString(v: FormatTrait): string {
+export function BlockTraitToString(v: BlockTrait): string {
   const result = [];
   if ((v & 1) === 1) result.push("fixed_primitive");
   if ((v & 2) === 2) result.push("fixed_float");
@@ -259,6 +260,7 @@ export function FormatTraitToString(v: FormatTrait): string {
   if ((v & 1048576) === 1048576) result.push("local_variable");
   if ((v & 2097152) === 2097152) result.push("description_only");
   if ((v & 4194304) === 4194304) result.push("uncommon_size");
+  if ((v & 8388608) === 8388608) result.push("control_flow_change");
   if (result.length === 0) {
     return "none";
   }
@@ -493,6 +495,7 @@ export interface FieldArgument extends Node {
 	end_loc: Loc;
 	collected_arguments: Expr[];
 	arguments: Expr[];
+	assigns: Binary[];
 	alignment: Expr|null;
 	alignment_value: number|null;
 	sub_byte_length: Expr|null;
@@ -649,7 +652,7 @@ export function isImport(obj: any): obj is Import {
 
 export interface Cast extends Expr {
 	base: Call|null;
-	expr: Expr|null;
+	arguments: Expr[];
 }
 
 export function isCast(obj: any): obj is Cast {
@@ -730,6 +733,7 @@ export interface IndentBlock extends Stmt {
 	elements: Node[];
 	scope: Scope|null;
 	metadata: Metadata[];
+	block_traits: BlockTrait;
 }
 
 export function isIndentBlock(obj: any): obj is IndentBlock {
@@ -1071,7 +1075,6 @@ export interface Format extends Member {
 	cast_fns: Function[];
 	depends: IdentType[];
 	state_variables: Field[];
-	format_trait: FormatTrait;
 }
 
 export function isFormat(obj: any): obj is Format {
@@ -1301,6 +1304,7 @@ export function parseAST(obj: JsonAst): Program {
 				end_loc: on.loc,
 				collected_arguments: [],
 				arguments: [],
+				assigns: [],
 				alignment: null,
 				alignment_value: null,
 				sub_byte_length: null,
@@ -1502,7 +1506,7 @@ export function parseAST(obj: JsonAst): Program {
 				expr_type: null,
 				constant_level: ConstantLevel.unknown,
 				base: null,
-				expr: null,
+				arguments: [],
 			}
 			c.node.push(n);
 			break;
@@ -1603,6 +1607,7 @@ export function parseAST(obj: JsonAst): Program {
 				elements: [],
 				scope: null,
 				metadata: [],
+				block_traits: BlockTrait.none,
 			}
 			c.node.push(n);
 			break;
@@ -2072,7 +2077,6 @@ export function parseAST(obj: JsonAst): Program {
 				cast_fns: [],
 				depends: [],
 				state_variables: [],
-				format_trait: FormatTrait.none,
 			}
 			c.node.push(n);
 			break;
@@ -2248,6 +2252,16 @@ export function parseAST(obj: JsonAst): Program {
 					throw new Error('invalid node list at FieldArgument::arguments');
 				}
 				n.arguments.push(tmparguments);
+			}
+			for (const o of on.body.assigns) {
+				if (typeof o !== 'number') {
+					throw new Error('invalid node list at FieldArgument::assigns');
+				}
+				const tmpassigns = c.node[o];
+				if (!isBinary(tmpassigns)) {
+					throw new Error('invalid node list at FieldArgument::assigns');
+				}
+				n.assigns.push(tmpassigns);
 			}
 			if (on.body?.alignment !== null && typeof on.body?.alignment !== 'number') {
 				throw new Error('invalid node list at FieldArgument::alignment');
@@ -2879,14 +2893,16 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at Cast::base');
 			}
 			n.base = tmpbase;
-			if (on.body?.expr !== null && typeof on.body?.expr !== 'number') {
-				throw new Error('invalid node list at Cast::expr');
+			for (const o of on.body.arguments) {
+				if (typeof o !== 'number') {
+					throw new Error('invalid node list at Cast::arguments');
+				}
+				const tmparguments = c.node[o];
+				if (!isExpr(tmparguments)) {
+					throw new Error('invalid node list at Cast::arguments');
+				}
+				n.arguments.push(tmparguments);
 			}
-			const tmpexpr = on.body.expr === null ? null : c.node[on.body.expr];
-			if (!(tmpexpr === null || isExpr(tmpexpr))) {
-				throw new Error('invalid node list at Cast::expr');
-			}
-			n.expr = tmpexpr;
 			break;
 		}
 		case "available": {
@@ -3182,6 +3198,11 @@ export function parseAST(obj: JsonAst): Program {
 				}
 				n.metadata.push(tmpmetadata);
 			}
+			const tmpblock_traits = on.body?.block_traits;
+			if (!isBlockTrait(tmpblock_traits)) {
+				throw new Error('invalid node list at IndentBlock::block_traits');
+			}
+			n.block_traits = tmpblock_traits;
 			break;
 		}
 		case "scoped_statement": {
@@ -4457,11 +4478,6 @@ export function parseAST(obj: JsonAst): Program {
 				}
 				n.state_variables.push(tmpstate_variables);
 			}
-			const tmpformat_trait = on.body?.format_trait;
-			if (!isFormatTrait(tmpformat_trait)) {
-				throw new Error('invalid node list at Format::format_trait');
-			}
-			n.format_trait = tmpformat_trait;
 			break;
 		}
 		case "state": {
@@ -4789,6 +4805,12 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 				}
 			}
 			for (const e of n.arguments) {
+				const result = fn(fn,e);
+				if (result === false) {
+					return;
+				}
+			}
+			for (const e of n.assigns) {
 				const result = fn(fn,e);
 				if (result === false) {
 					return;
@@ -5187,8 +5209,8 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 					return;
 				}
 			}
-			if (n.expr !== null) {
-				const result = fn(fn,n.expr);
+			for (const e of n.arguments) {
+				const result = fn(fn,e);
 				if (result === false) {
 					return;
 				}

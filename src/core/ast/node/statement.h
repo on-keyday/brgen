@@ -21,8 +21,6 @@ namespace brgen::ast {
         std::vector<std::weak_ptr<IdentType>> depends;
         std::vector<std::weak_ptr<Field>> state_variables;
 
-        FormatTrait format_trait = FormatTrait::none;
-
         Format(lexer::Loc l)
             : Member(l, NodeType::format) {}
 
@@ -38,7 +36,6 @@ namespace brgen::ast {
             sdebugf(cast_fns);
             sdebugf(depends);
             sdebugf(state_variables);
-            sdebugf(format_trait);
         }
     };
 
@@ -127,6 +124,8 @@ namespace brgen::ast {
         std::vector<std::weak_ptr<Expr>> collected_arguments;
         // arguments that is passed to encode/decode function (on format type) or fixed value (on integer or floating point type)
         std::vector<std::shared_ptr<Expr>> arguments;
+        // assignment
+        std::vector<std::shared_ptr<Binary>> assigns;
         // alignment of field
         std::shared_ptr<Expr> alignment;
         std::optional<size_t> alignment_value;
@@ -143,6 +142,8 @@ namespace brgen::ast {
         // other metadata
         std::vector<std::shared_ptr<Metadata>> metadata;
 
+        FieldArgumentMapping argument_mapping = FieldArgumentMapping::none;
+
         FieldArgument(lexer::Loc l)
             : Node(l, NodeType::field_argument) {}
 
@@ -155,6 +156,7 @@ namespace brgen::ast {
             sdebugf(end_loc);
             sdebugf(collected_arguments);
             sdebugf(arguments);
+            sdebugf(assigns);
             sdebugf(alignment);
             sdebugf(alignment_value);
             sdebugf(sub_byte_length);

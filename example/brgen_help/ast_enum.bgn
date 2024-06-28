@@ -155,10 +155,10 @@ enum SpecialLiteralKind:
     config_  = "config"
  
 
-# FormatTrait is used to determine the `format`'s layout
-enum FormatTrait:
+# BlockTrait is used to determine the block's layout
+enum BlockTrait:
     :u32
-    # none, empty format
+    # none, empty block
     none = 0
     # int and enum is used
     fixed_primitive = 1 << 0
@@ -184,7 +184,7 @@ enum FormatTrait:
     terminal_pattern = 1 << 10
     # bit stream required 
     bit_stream = 1 << 11
-    # dynamic configuration required
+    # dynamic endian/bit_order change
     dynamic_order = 1 << 12
     # full input required (required subrange with offset syntax)
     full_input = 1 << 13
@@ -206,3 +206,18 @@ enum FormatTrait:
     description_only = 1 << 21
     # uncommon size (like 3 bytes integer) field exists
     uncommon_size = 1 << 22
+    # control flow change (i.e. return, break, continue) exists
+    control_flow_change = 1 << 23
+
+
+enum FieldArgumentMapping:
+    :u32
+    none = 0
+    # same type (i.e :u8(0), :[]u8(<[]u8>(0,1)) )
+    direct = 1 << 0
+    # element repeat (i.e :[]u8(0))
+    repeat = 1 << 1
+    # some candidate (i.e :u8(0,1,2), :[]u8(<[]u8>(0,1,2),<[]u8>(3,4,5)) )
+    some_candidate = 1 << 2 
+    # if repeat and some candidate is used together
+    

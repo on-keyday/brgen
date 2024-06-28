@@ -1420,28 +1420,27 @@ namespace j2cp2 {
             }
             futils::helper::DynDefer defer;
             std::vector<std::string> namespaces;
-            for (auto& elm : prog->elements) {
-                if (auto m = ast::as<ast::Metadata>(elm)) {
-                    auto str_lit = ast::as<ast::StrLiteral>(m->values[0]);
-                    if (!str_lit) {
-                        continue;
-                    }
-                    auto name = brgen::unescape(str_lit->value);
-                    if (!name) {
-                        continue;
-                    }
-                    if (m->name == "config.cpp.namespace") {
-                        namespaces.push_back(*name);
-                    }
-                    else if (m->name == "config.cpp.bytes_type") {
-                        this->bytes_type = std::move(*name);
-                    }
-                    else if (m->name == "config.cpp.sys_include") {
-                        w.writeln("#include <", *name, ">");
-                    }
-                    else if (m->name == "config.cpp.include") {
-                        w.writeln("#include \"", *name, "\"");
-                    }
+            for (auto& wm : prog->metadata) {
+                auto m = wm.lock();
+                auto str_lit = ast::as<ast::StrLiteral>(m->values[0]);
+                if (!str_lit) {
+                    continue;
+                }
+                auto name = brgen::unescape(str_lit->value);
+                if (!name) {
+                    continue;
+                }
+                if (m->name == "config.cpp.namespace") {
+                    namespaces.push_back(*name);
+                }
+                else if (m->name == "config.cpp.bytes_type") {
+                    this->bytes_type = std::move(*name);
+                }
+                else if (m->name == "config.cpp.sys_include") {
+                    w.writeln("#include <", *name, ">");
+                }
+                else if (m->name == "config.cpp.include") {
+                    w.writeln("#include \"", *name, "\"");
                 }
             }
             for (auto& name : namespaces) {

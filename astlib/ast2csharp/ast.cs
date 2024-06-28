@@ -217,7 +217,7 @@ BitStream,
 BitMapping,
 BitBoth,
 }
-public enum FormatTrait {
+public enum BlockTrait {
 None,
 FixedPrimitive,
 FixedFloat,
@@ -242,6 +242,7 @@ ForLoop,
 LocalVariable,
 DescriptionOnly,
 UncommonSize,
+ControlFlowChange,
 }
 public interface Node {
 	public Loc Loc {get; set;}
@@ -286,6 +287,7 @@ public class FieldArgument : Node{
 	public Loc EndLoc{get;set;}
 	public List<Expr>? CollectedArguments{get;set;}
 	public List<Expr>? Arguments{get;set;}
+	public List<Binary>? Assigns{get;set;}
 	public Expr? Alignment{get;set;}
 	public ulong? AlignmentValue{get;set;}
 	public Expr? SubByteLength{get;set;}
@@ -412,7 +414,7 @@ public class Cast : Expr{
 	public Type? ExprType{get;set;}
 	public ConstantLevel ConstantLevel{get;set;}
 	public Call? Base{get;set;}
-	public Expr? Expr{get;set;}
+	public List<Expr>? Arguments{get;set;}
 }
 public class Available : Expr{
 	public Loc Loc{get;set;}
@@ -473,6 +475,7 @@ public class IndentBlock : Stmt{
 	public List<Node>? Elements{get;set;}
 	public Scope? Scope{get;set;}
 	public List<Metadata>? Metadata{get;set;}
+	public BlockTrait BlockTraits{get;set;}
 }
 public class ScopedStatement : Stmt{
 	public Loc Loc{get;set;}
@@ -762,7 +765,6 @@ public class Format : Member{
 	public List<Function>? CastFns{get;set;}
 	public List<IdentType>? Depends{get;set;}
 	public List<Field>? StateVariables{get;set;}
-	public FormatTrait FormatTrait{get;set;}
 }
 public class State : Member{
 	public Loc Loc{get;set;}
@@ -1106,6 +1108,7 @@ public static class Ast {
                node.EndLoc = ast.Node[i].Body[end_loc];
                node.CollectedArguments = ast.Node[i].Body[collected_arguments];
                node.Arguments = ast.Node[i].Body[arguments];
+               node.Assigns = ast.Node[i].Body[assigns];
                node.Alignment = ast.Node[i].Body[alignment];
                node.AlignmentValue = ast.Node[i].Body[alignment_value];
                node.SubByteLength = ast.Node[i].Body[sub_byte_length];
@@ -1232,7 +1235,7 @@ public static class Ast {
                node.ExprType = ast.Node[i].Body[expr_type];
                node.ConstantLevel = ast.Node[i].Body[constant_level];
                node.Base = ast.Node[i].Body[base];
-               node.Expr = ast.Node[i].Body[expr];
+               node.Arguments = ast.Node[i].Body[arguments];
            case NodeType.Available:
                var node = nodes[i] as Available;
                node.Loc = ast.Node[i].Body[loc];
@@ -1293,6 +1296,7 @@ public static class Ast {
                node.Elements = ast.Node[i].Body[elements];
                node.Scope = ast.Node[i].Body[scope];
                node.Metadata = ast.Node[i].Body[metadata];
+               node.BlockTraits = ast.Node[i].Body[block_traits];
            case NodeType.ScopedStatement:
                var node = nodes[i] as ScopedStatement;
                node.Loc = ast.Node[i].Body[loc];
@@ -1582,7 +1586,6 @@ public static class Ast {
                node.CastFns = ast.Node[i].Body[cast_fns];
                node.Depends = ast.Node[i].Body[depends];
                node.StateVariables = ast.Node[i].Body[state_variables];
-               node.FormatTrait = ast.Node[i].Body[format_trait];
            case NodeType.State:
                var node = nodes[i] as State;
                node.Loc = ast.Node[i].Body[loc];

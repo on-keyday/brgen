@@ -57,7 +57,7 @@ func init() {
 	out := &Output{}
 	flag.Func("output", "output dir (both -output and -generator are required to add output config)", func(s string) error {
 		if out.OutputDir != "" {
-			if out.Generator == "" {
+			if out.Generator == nil {
 				return errors.New("generator is required")
 			}
 			outPuts = append(outPuts, out)
@@ -67,14 +67,14 @@ func init() {
 		return nil
 	})
 	flag.Func("generator", "generator path (both -output and -generator are required to add output config)", func(s string) error {
-		if out.Generator != "" {
+		if out.Generator != nil {
 			if out.OutputDir == "" {
 				return errors.New("output is required")
 			}
 			outPuts = append(outPuts, out)
 			out = &Output{}
 		}
-		out.Generator = s
+		out.Generator = []string{s}
 		return nil
 	})
 	flag.String("src2json", "src2json", "path to src2json")

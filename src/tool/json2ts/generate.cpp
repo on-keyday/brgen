@@ -1081,7 +1081,7 @@ namespace json2ts {
         g.enum_to_string = flags.enum_to_string;
         g.str.this_access = "obj";
         g.str.cast_handler = [](ast::tool::Stringer& s, const std::shared_ptr<ast::Cast>& c) {
-            return s.to_string(c->expr);
+            return s.args_to_string(c->arguments);
         };
         g.str.bin_op_map[ast::BinaryOp::equal] = [](ast::tool::Stringer& s, const std::shared_ptr<ast::Binary>& v) {
             if (auto ity = ast::as<ast::IntType>(v->left->expr_type)) {

@@ -40,7 +40,7 @@ enum Op:
 
     # memory and register
     TRSF # TRSF <from register number> << 4 | <register number>
-    LOAD_IMMEDIATE # LOAD_IMMEDIATE <immediate value>
+    LOAD_IMMEDIATE # LOAD_IMMEDIATE <immediate value> (load immediate value to register 0)
 
     LOAD_STATIC
 
@@ -101,3 +101,4 @@ format Code:
     instructions :[instruction_len]Instruction
     static_data_len :u64
     static_data :[static_data_len]StaticData
+

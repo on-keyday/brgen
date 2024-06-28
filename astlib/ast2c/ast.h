@@ -46,7 +46,7 @@ typedef enum ast2c_Follow ast2c_Follow;
 typedef enum ast2c_IoMethod ast2c_IoMethod;
 typedef enum ast2c_SpecialLiteralKind ast2c_SpecialLiteralKind;
 typedef enum ast2c_OrderType ast2c_OrderType;
-typedef enum ast2c_FormatTrait ast2c_FormatTrait;
+typedef enum ast2c_BlockTrait ast2c_BlockTrait;
 typedef struct ast2c_Node ast2c_Node;
 typedef struct ast2c_Expr ast2c_Expr;
 typedef struct ast2c_Stmt ast2c_Stmt;
@@ -381,34 +381,35 @@ enum ast2c_OrderType {
 const char* ast2c_OrderType_to_string(ast2c_OrderType);
 int ast2c_OrderType_from_string(const char*,ast2c_OrderType*);
 
-enum ast2c_FormatTrait {
-	AST2C_FORMATTRAIT_NONE = 0,
-	AST2C_FORMATTRAIT_FIXED_PRIMITIVE = 1,
-	AST2C_FORMATTRAIT_FIXED_FLOAT = 2,
-	AST2C_FORMATTRAIT_FIXED_ARRAY = 4,
-	AST2C_FORMATTRAIT_VARIABLE_ARRAY = 8,
-	AST2C_FORMATTRAIT_STRUCT = 16,
-	AST2C_FORMATTRAIT_CONDITIONAL = 32,
-	AST2C_FORMATTRAIT_STATIC_PEEK = 64,
-	AST2C_FORMATTRAIT_BIT_FIELD = 128,
-	AST2C_FORMATTRAIT_READ_STATE = 256,
-	AST2C_FORMATTRAIT_WRITE_STATE = 512,
-	AST2C_FORMATTRAIT_TERMINAL_PATTERN = 1024,
-	AST2C_FORMATTRAIT_BIT_STREAM = 2048,
-	AST2C_FORMATTRAIT_DYNAMIC_ORDER = 4096,
-	AST2C_FORMATTRAIT_FULL_INPUT = 8192,
-	AST2C_FORMATTRAIT_BACKWARD_INPUT = 16384,
-	AST2C_FORMATTRAIT_MAGIC_VALUE = 32768,
-	AST2C_FORMATTRAIT_ASSERTION = 65536,
-	AST2C_FORMATTRAIT_EXPLICIT_ERROR = 131072,
-	AST2C_FORMATTRAIT_PROCEDURAL = 262144,
-	AST2C_FORMATTRAIT_FOR_LOOP = 524288,
-	AST2C_FORMATTRAIT_LOCAL_VARIABLE = 1048576,
-	AST2C_FORMATTRAIT_DESCRIPTION_ONLY = 2097152,
-	AST2C_FORMATTRAIT_UNCOMMON_SIZE = 4194304,
+enum ast2c_BlockTrait {
+	AST2C_BLOCKTRAIT_NONE = 0,
+	AST2C_BLOCKTRAIT_FIXED_PRIMITIVE = 1,
+	AST2C_BLOCKTRAIT_FIXED_FLOAT = 2,
+	AST2C_BLOCKTRAIT_FIXED_ARRAY = 4,
+	AST2C_BLOCKTRAIT_VARIABLE_ARRAY = 8,
+	AST2C_BLOCKTRAIT_STRUCT = 16,
+	AST2C_BLOCKTRAIT_CONDITIONAL = 32,
+	AST2C_BLOCKTRAIT_STATIC_PEEK = 64,
+	AST2C_BLOCKTRAIT_BIT_FIELD = 128,
+	AST2C_BLOCKTRAIT_READ_STATE = 256,
+	AST2C_BLOCKTRAIT_WRITE_STATE = 512,
+	AST2C_BLOCKTRAIT_TERMINAL_PATTERN = 1024,
+	AST2C_BLOCKTRAIT_BIT_STREAM = 2048,
+	AST2C_BLOCKTRAIT_DYNAMIC_ORDER = 4096,
+	AST2C_BLOCKTRAIT_FULL_INPUT = 8192,
+	AST2C_BLOCKTRAIT_BACKWARD_INPUT = 16384,
+	AST2C_BLOCKTRAIT_MAGIC_VALUE = 32768,
+	AST2C_BLOCKTRAIT_ASSERTION = 65536,
+	AST2C_BLOCKTRAIT_EXPLICIT_ERROR = 131072,
+	AST2C_BLOCKTRAIT_PROCEDURAL = 262144,
+	AST2C_BLOCKTRAIT_FOR_LOOP = 524288,
+	AST2C_BLOCKTRAIT_LOCAL_VARIABLE = 1048576,
+	AST2C_BLOCKTRAIT_DESCRIPTION_ONLY = 2097152,
+	AST2C_BLOCKTRAIT_UNCOMMON_SIZE = 4194304,
+	AST2C_BLOCKTRAIT_CONTROL_FLOW_CHANGE = 8388608,
 };
-const char* ast2c_FormatTrait_to_string(ast2c_FormatTrait);
-int ast2c_FormatTrait_from_string(const char*,ast2c_FormatTrait*);
+const char* ast2c_BlockTrait_to_string(ast2c_BlockTrait);
+int ast2c_BlockTrait_from_string(const char*,ast2c_BlockTrait*);
 
 struct ast2c_Pos {
 	uint64_t begin;
@@ -570,6 +571,8 @@ struct ast2c_FieldArgument {
 	size_t collected_arguments_size;
 	ast2c_Expr** arguments;
 	size_t arguments_size;
+	ast2c_Binary** assigns;
+	size_t assigns_size;
 	ast2c_Expr* alignment;
 	uint64_t* alignment_value;
 	ast2c_Expr* sub_byte_length;
@@ -774,7 +777,8 @@ struct ast2c_Cast {
 	ast2c_Type* expr_type;
 	ast2c_ConstantLevel constant_level;
 	ast2c_Call* base;
-	ast2c_Expr* expr;
+	ast2c_Expr** arguments;
+	size_t arguments_size;
 };
 
 // returns 1 if succeed 0 if failed
@@ -879,6 +883,7 @@ struct ast2c_IndentBlock {
 	ast2c_Scope* scope;
 	ast2c_Metadata** metadata;
 	size_t metadata_size;
+	ast2c_BlockTrait block_traits;
 };
 
 // returns 1 if succeed 0 if failed
@@ -1359,7 +1364,6 @@ struct ast2c_Format {
 	size_t depends_size;
 	ast2c_Field** state_variables;
 	size_t state_variables_size;
-	ast2c_FormatTrait format_trait;
 };
 
 // returns 1 if succeed 0 if failed

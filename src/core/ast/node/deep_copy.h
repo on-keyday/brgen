@@ -817,7 +817,6 @@ namespace brgen::ast {
         new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->constant_level = node->constant_level;
         new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->expr = deep_copy(node->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -966,6 +965,7 @@ namespace brgen::ast {
         for (auto& i : node->metadata) {
             new_node->metadata.push_back(deep_copy(i.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
         }
+        new_node->block_traits = node->block_traits;
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -1637,7 +1637,6 @@ namespace brgen::ast {
         for (auto& i : node->state_variables) {
             new_node->state_variables.push_back(deep_copy(i.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
         }
-        new_node->format_trait = node->format_trait;
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -3586,10 +3585,6 @@ namespace brgen::ast {
             trace(a->base, b->base, "Cast::base", -1);
             return false;
         }
-        if (!deep_equal(a->expr, b->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-            trace(a->expr, b->expr, "Cast::expr", -1);
-            return false;
-        }
         return true;
     }
     template <class NodeM, class ScopeM, class BackTracer = NullBackTracer>
@@ -3913,6 +3908,10 @@ namespace brgen::ast {
                 trace(a->metadata[i].lock(), b->metadata[i].lock(), "IndentBlock::metadata", i);
                 return false;
             }
+        }
+        if (a->block_traits != b->block_traits) {
+            trace(a->block_traits, b->block_traits, "IndentBlock::block_traits", -1);
+            return false;
         }
         return true;
     }
@@ -5426,10 +5425,6 @@ namespace brgen::ast {
                 trace(a->state_variables[i].lock(), b->state_variables[i].lock(), "Format::state_variables", i);
                 return false;
             }
-        }
-        if (a->format_trait != b->format_trait) {
-            trace(a->format_trait, b->format_trait, "Format::format_trait", -1);
-            return false;
         }
         return true;
     }

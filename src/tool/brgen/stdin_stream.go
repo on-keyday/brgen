@@ -11,7 +11,8 @@ import (
 )
 
 func (g *Generator) initStdinStream() error {
-	cmd := exec.CommandContext(g.ctx, g.generatorPath, g.args...)
+	cmdline := g.cmdline()
+	cmd := exec.CommandContext(g.ctx, cmdline[0], cmdline[1:]...)
 	cl, err := request.NewProcessClient(cmd)
 	if err != nil {
 		return err

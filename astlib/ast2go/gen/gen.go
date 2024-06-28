@@ -84,12 +84,21 @@ func mapToken(op ast2go.BinaryOp) token.Token {
 	return token.ILLEGAL
 }
 
+type NumericKind int
+
+const (
+	NumericKindInt NumericKind = iota
+	NumericKindUint
+	NumericKindFloat
+)
+
 type ExprStringer struct {
 	Receiver     string
 	BinaryMapper map[ast2go.BinaryOp]func(s *ExprStringer, x, y ast2go.Expr) string
 	IdentMapper  map[*ast2go.Ident]string
 	CallMapper   map[string]func(s *ExprStringer, args ...ast2go.Expr) string
 	TypeProvider func(ast2go.Type) string
+	NumericAlign func(size uint64, kind NumericKind) string
 }
 
 func LookupBase(ident *ast2go.Ident) (*ast2go.Ident, bool) {
@@ -156,12 +165,82 @@ func AlignInt(size uint64) uint64 {
 	return 64
 }
 
+func (s *ExprStringer) ArgsToString(args ...ast2go.Expr) string {
+	strs := []string{}
+	for _, arg := range args {
+		strs = append(strs, s.ExprString(arg))
+	}
+	return strings.Join(strs, ",")
+}
+
+func (s *ExprStringer) maybeRangeCompare(e *ast2go.Binary) string {
+	if e.Op == ast2go.BinaryOpEqual || e.Op == ast2go.BinaryOpNotEqual {
+		if IsAnyRange(e.Left) {
+			if e.Op == ast2go.BinaryOpEqual {
+				return "true"
+			} else {
+				return "false"
+			}
+		}
+		if IsAnyRange(e.Right) {
+			if e.Op == ast2go.BinaryOpEqual {
+				return "true"
+			} else {
+				return "false"
+			}
+		}
+		cmp := func(leftExpr ast2go.Expr, r *ast2go.RangeType) string {
+			left := s.ExprString(leftExpr)
+			if r.Range.Start != nil && r.Range.End != nil {
+				begin := s.ExprString(r.Range.Start)
+				end := s.ExprString(r.Range.End)
+				if r.Range.Op == ast2go.BinaryOpRangeExclusive {
+					return fmt.Sprintf("(func()bool{tmp := %s; return (%s <= tmp && tmp < %s)})()", left, begin, end)
+				} else {
+					return fmt.Sprintf("(func()bool{tmp := %s; return (%s <= tmp && tmp <= %s)})()", left, begin, end)
+				}
+			} else if r.Range.Start != nil {
+				begin := s.ExprString(r.Range.Start)
+				return fmt.Sprintf("(%s <= %s)", begin, left)
+			} else if r.Range.End != nil {
+				end := s.ExprString(r.Range.End)
+				if r.Range.Op == ast2go.BinaryOpRangeExclusive {
+					return fmt.Sprintf("(%s < %s)", left, end)
+				} else {
+					return fmt.Sprintf("(%s <= %s)", left, end)
+				}
+			}
+			return ""
+		}
+		cmpApply := func(leftExpr ast2go.Expr, r *ast2go.RangeType) string {
+			str := cmp(leftExpr, r)
+			if str == "" {
+				return ""
+			}
+			if e.Op == ast2go.BinaryOpNotEqual {
+				return fmt.Sprintf("!(%s)", str)
+			}
+			return str
+		}
+		if r, ok := e.Right.GetExprType().(*ast2go.RangeType); ok {
+			return cmpApply(e.Left, r)
+		} else if r, ok := e.Left.GetExprType().(*ast2go.RangeType); ok {
+			return cmpApply(e.Right, r)
+		}
+	}
+	return ""
+}
+
 func (s *ExprStringer) ExprString(e ast2go.Expr) string {
 
 	switch e := e.(type) {
 	case *ast2go.Binary:
 		if f, ok := s.BinaryMapper[e.Op]; ok {
 			return f(s, e.Left, e.Right)
+		}
+		rangeCompare := s.maybeRangeCompare(e)
+		if rangeCompare != "" {
+			return rangeCompare
 		}
 		return fmt.Sprintf("(%s %s %s)", s.ExprString(e.Left), e.Op.String(), s.ExprString(e.Right))
 	case *ast2go.Ident:
@@ -198,7 +277,7 @@ func (s *ExprStringer) ExprString(e ast2go.Expr) string {
 			s.TypeProvider = s.GetType
 		}
 		typ := s.TypeProvider(e.ExprType)
-		return fmt.Sprintf("%s(%s)", typ, s.ExprString(e.Expr))
+		return fmt.Sprintf("%s(%s)", typ, s.ArgsToString(e.Arguments...))
 	case *ast2go.Identity:
 		return s.ExprString(e.Expr)
 	case *ast2go.Unary:
@@ -375,6 +454,49 @@ func (config *GenConfig) LookupGoConfig(prog *ast2go.Program) error {
 	})
 }
 
+func DefaultAlignedNumeric(size uint64, kind NumericKind) string {
+	size = AlignInt(size)
+	switch kind {
+	case NumericKindInt:
+		switch size {
+		case 8:
+			return "int8"
+		case 16:
+			return "int16"
+		case 32:
+			return "int32"
+		case 64:
+			return "int64"
+		default:
+			return "int"
+		}
+	case NumericKindUint:
+		switch size {
+		case 8:
+			return "uint8"
+		case 16:
+			return "uint16"
+		case 32:
+			return "uint32"
+		case 64:
+			return "uint64"
+		default:
+			return "uint"
+		}
+	case NumericKindFloat:
+		switch size {
+		case 32:
+			return "float32"
+		case 64:
+			return "float64"
+		default:
+			return "float64"
+		}
+	default:
+		return "int"
+	}
+}
+
 func (g *ExprStringer) GetType(typ ast2go.Type) string {
 	if g.TypeProvider == nil {
 		g.TypeProvider = g.GetType
@@ -383,14 +505,20 @@ func (g *ExprStringer) GetType(typ ast2go.Type) string {
 		return ident_typ.Ident.Ident
 	}
 	if i_type, ok := typ.(*ast2go.IntType); ok {
+		if g.NumericAlign == nil {
+			g.NumericAlign = DefaultAlignedNumeric
+		}
 		if i_type.IsSigned {
-			return fmt.Sprintf("int%d", AlignInt(*i_type.BitSize))
+			return g.NumericAlign(*i_type.BitSize, NumericKindInt)
 		} else {
-			return fmt.Sprintf("uint%d", AlignInt(*i_type.BitSize))
+			return g.NumericAlign(*i_type.BitSize, NumericKindUint)
 		}
 	}
 	if f_typ, ok := typ.(*ast2go.FloatType); ok {
-		return fmt.Sprintf("float%d", *f_typ.BitSize)
+		if g.NumericAlign == nil {
+			g.NumericAlign = DefaultAlignedNumeric
+		}
+		return g.NumericAlign(*f_typ.BitSize, NumericKindFloat)
 	}
 	if e_type, ok := typ.(*ast2go.EnumType); ok {
 		return e_type.Base.Ident.Ident
@@ -404,6 +532,9 @@ func (g *ExprStringer) GetType(typ ast2go.Type) string {
 	}
 	if struct_type, ok := typ.(*ast2go.StructType); ok {
 		return struct_type.Base.(*ast2go.Format).Ident.Ident
+	}
+	if _, ok := typ.(*ast2go.BoolType); ok {
+		return "bool"
 	}
 	return ""
 }

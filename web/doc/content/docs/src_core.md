@@ -184,7 +184,6 @@ Identity ノードは主に if や match の条件節にくる Expr をラップ
 - format のノード base: Format
 - state のノード base: State
 - fn のノード base: Function
-- builtin のノード base: BuiltinObject
 
 ### Scope の切り替わり箇所とそのときの owner の型
 

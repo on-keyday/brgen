@@ -10,6 +10,7 @@
 #include <core/middle/resolve_state_dependency.h>
 #include <core/middle/typing.h>
 #include <core/middle/type_attribute.h>
+#include <core/middle/analyze_block_trait.h>
 #include <core/common/file.h>
 
 namespace brgen::test {
@@ -57,6 +58,7 @@ namespace brgen::test {
         brgen::middle::detect_non_dynamic_type(p);
         brgen::middle::analyze_bit_size_and_alignment(p);
         brgen::middle::resolve_state_dependency(p);
+        brgen::middle::analyze_block_trait(p);
         return p;
     }
 }  // namespace brgen::test

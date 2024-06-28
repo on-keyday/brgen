@@ -1,7 +1,7 @@
 
 config.url = "https://www.sqlite.org/fileformat.html"
 
-MAX_PAGE_SIZE ::= 65536
+MAX_PAGE_SIZE ::= 65535
 
 enum DatabaseTextEncoding:
     :u32

@@ -742,7 +742,7 @@ impl TryFrom<&str> for OrderType {
 
 bitflags!{
 	#[derive(Debug,Clone,Copy)]
-	pub struct FormatTrait: u64{
+	pub struct BlockTrait: u64{
 		const None = 0;
 		const FixedPrimitive = 1;
 		const FixedFloat = 2;
@@ -767,9 +767,10 @@ bitflags!{
 		const LocalVariable = 1048576;
 		const DescriptionOnly = 2097152;
 		const UncommonSize = 4194304;
+		const ControlFlowChange = 8388608;
 	}
 }
-impl TryFrom<u64> for FormatTrait {
+impl TryFrom<u64> for BlockTrait {
 	type Error = ();
 	fn try_from(v:u64)->Result<Self,()>{
 		Self::from_bits(v).ok_or(())
@@ -3145,6 +3146,7 @@ pub struct FieldArgument {
 	pub end_loc: Loc,
 	pub collected_arguments: Vec<Expr>,
 	pub arguments: Vec<Expr>,
+	pub assigns: Vec<Rc<RefCell<Binary>>>,
 	pub alignment: Option<Expr>,
 	pub alignment_value: Option<u64>,
 	pub sub_byte_length: Option<Expr>,
@@ -4322,7 +4324,7 @@ pub struct Cast {
 	pub expr_type: Option<Type>,
 	pub constant_level: ConstantLevel,
 	pub base: Option<Rc<RefCell<Call>>>,
-	pub expr: Option<Expr>,
+	pub arguments: Vec<Expr>,
 }
 
 impl From<&Rc<RefCell<Cast>>> for NodeType {
@@ -4959,6 +4961,7 @@ pub struct IndentBlock {
 	pub elements: Vec<Node>,
 	pub scope: Option<Rc<RefCell<Scope>>>,
 	pub metadata: Vec<Weak<RefCell<Metadata>>>,
+	pub block_traits: BlockTrait,
 }
 
 impl From<&Rc<RefCell<IndentBlock>>> for NodeType {
@@ -8072,7 +8075,6 @@ pub struct Format {
 	pub cast_fns: Vec<Weak<RefCell<Function>>>,
 	pub depends: Vec<Weak<RefCell<IdentType>>>,
 	pub state_variables: Vec<Weak<RefCell<Field>>>,
-	pub format_trait: FormatTrait,
 }
 
 impl From<&Rc<RefCell<Format>>> for NodeType {
@@ -8737,6 +8739,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				end_loc: raw_node.loc.clone(),
 				collected_arguments: Vec::new(),
 				arguments: Vec::new(),
+				assigns: Vec::new(),
 				alignment: None,
 				alignment_value: None,
 				sub_byte_length: None,
@@ -8893,7 +8896,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				expr_type: None,
 				constant_level: ConstantLevel::Unknown,
 				base: None,
-				expr: None,
+				arguments: Vec::new(),
 				})))
 			},
 			NodeType::Available => {
@@ -8970,6 +8973,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				elements: Vec::new(),
 				scope: None,
 				metadata: Vec::new(),
+				block_traits: BlockTrait::None,
 				})))
 			},
 			NodeType::ScopedStatement => {
@@ -9331,7 +9335,6 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				cast_fns: Vec::new(),
 				depends: Vec::new(),
 				state_variables: Vec::new(),
-				format_trait: FormatTrait::None,
 				})))
 			},
 			NodeType::State => {
@@ -9595,6 +9598,29 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						None => return Err(Error::IndexOutOfBounds(link as usize)),
 					};
 					node.borrow_mut().arguments.push(arguments_body.try_into()?);
+				}
+				let assigns_body = match raw_node.body.get("assigns") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"assigns")),
+				};
+				let assigns_body = match assigns_body.as_array(){
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(assigns_body.into(),JSONType::Array)),
+				};
+				for link in assigns_body {
+					let link = match link.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
+					};
+					let assigns_body = match nodes.get(link as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(link as usize)),
+					};
+					let assigns_body = match assigns_body {
+						Node::Binary(body)=>body,
+						x =>return Err(Error::MismatchNodeType(x.into(),assigns_body.into())),
+					};
+					node.borrow_mut().assigns.push(assigns_body.clone());
 				}
 				let alignment_body = match raw_node.body.get("alignment") {
 					Some(v)=>v,
@@ -10847,20 +10873,24 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().base = Some(base_body.clone());
 				}
-				let expr_body = match raw_node.body.get("expr") {
+				let arguments_body = match raw_node.body.get("arguments") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"expr")),
+					None=>return Err(Error::MissingField(node_type,"arguments")),
 				};
- 				if !expr_body.is_null() {
-					let expr_body = match expr_body.as_u64() {
+				let arguments_body = match arguments_body.as_array(){
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(arguments_body.into(),JSONType::Array)),
+				};
+				for link in arguments_body {
+					let link = match link.as_u64() {
 						Some(v)=>v,
-						None=>return Err(Error::MismatchJSONType(expr_body.into(),JSONType::Number)),
+						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
 					};
-					let expr_body = match nodes.get(expr_body as usize) {
+					let arguments_body = match nodes.get(link as usize) {
 						Some(v)=>v,
-						None => return Err(Error::IndexOutOfBounds(expr_body as usize)),
+						None => return Err(Error::IndexOutOfBounds(link as usize)),
 					};
-					node.borrow_mut().expr = Some(expr_body.try_into()?);
+					node.borrow_mut().arguments.push(arguments_body.try_into()?);
 				}
 			},
 			NodeType::Available => {
@@ -11463,6 +11493,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().metadata.push(Rc::downgrade(&metadata_body));
 				}
+				let block_traits_body = match raw_node.body.get("block_traits") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"block_traits")),
+				};
+				node.borrow_mut().block_traits = match block_traits_body.as_u64() {
+					Some(v)=>match BlockTrait::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(block_traits_body.into(),JSONType::Number)),
+				};
 			},
 			NodeType::ScopedStatement => {
 				let node = nodes[i].clone();
@@ -13978,17 +14019,6 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().state_variables.push(Rc::downgrade(&state_variables_body));
 				}
-				let format_trait_body = match raw_node.body.get("format_trait") {
-					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"format_trait")),
-				};
-				node.borrow_mut().format_trait = match format_trait_body.as_u64() {
-					Some(v)=>match FormatTrait::try_from(v) {
-						Ok(v)=>v,
-						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
-					},
-					None=>return Err(Error::MismatchJSONType(format_trait_body.into(),JSONType::Number)),
-				};
 			},
 			NodeType::State => {
 				let node = nodes[i].clone();
@@ -14563,6 +14593,11 @@ where
 					return;
 				}
 			}
+			for node in &node.borrow().assigns{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
 			if let Some(node) = &node.borrow().alignment{
 				if !f.visit(&node.into()){
 					return;
@@ -14833,7 +14868,7 @@ where
 					return;
 				}
 			}
-			if let Some(node) = &node.borrow().expr{
+			for node in &node.borrow().arguments{
 				if !f.visit(&node.into()){
 					return;
 				}

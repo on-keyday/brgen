@@ -32,7 +32,7 @@ type Result struct {
 }
 
 type Generator struct {
-	generatorPath string
+	generatorPath []string
 	outputDir     string
 	args          []string
 	spec          Spec
@@ -44,6 +44,14 @@ type Generator struct {
 	works             *sync.WaitGroup
 	dirBaseSuffixChan chan *DirBaseSuffix
 	stdinStream       *request.ProcessClient
+}
+
+func (g *Generator) cmdline() []string {
+	copy := make([]string, len(g.generatorPath))
+	for i, v := range g.generatorPath {
+		copy[i] = v
+	}
+	return append(copy, g.args...)
 }
 
 type DirBaseSuffix struct {
@@ -103,8 +111,9 @@ func makeTmpFile(basePath string, data []byte) (path string, err error) {
 }
 
 func (g *Generator) passAst(filePath string, buffer []byte) ([]byte, error) {
+	cmdline := g.cmdline()
 	if g.spec.Input == "stdin" {
-		cmd := exec.CommandContext(g.ctx, g.generatorPath, g.args...)
+		cmd := exec.CommandContext(g.ctx, cmdline[0], cmdline[1:]...)
 		cmd.Stdin = bytes.NewReader(buffer)
 		return g.execGenerator(cmd, filePath)
 	}
@@ -113,7 +122,7 @@ func (g *Generator) passAst(filePath string, buffer []byte) ([]byte, error) {
 		return nil, err
 	}
 	defer os.Remove(path)
-	cmd := exec.CommandContext(g.ctx, g.generatorPath, g.args...)
+	cmd := exec.CommandContext(g.ctx, cmdline[0], cmdline[1:]...)
 	cmd.Args = append(cmd.Args, path)
 	return g.execGenerator(cmd, filePath)
 }
@@ -198,8 +207,8 @@ func (g *Generator) run() {
 func (g *Generator) StartGenerator(out *Output) error {
 	g.generatorPath = out.Generator
 	if runtime.GOOS == "windows" {
-		if !strings.HasSuffix(g.generatorPath, ".exe") {
-			g.generatorPath += ".exe"
+		if !strings.HasSuffix(g.generatorPath[0], ".exe") {
+			g.generatorPath[0] += ".exe"
 		}
 	}
 	g.outputDir = out.OutputDir
@@ -220,7 +229,8 @@ func (g *Generator) Request(req *Result) {
 }
 
 func (g *Generator) askSpec() error {
-	cmd := exec.CommandContext(g.ctx, g.generatorPath, "-s")
+	cmd := exec.CommandContext(g.ctx, g.generatorPath[0], g.generatorPath[1:]...)
+	cmd.Args = append(cmd.Args, "-s")
 	cmd.Args = append(cmd.Args, g.args...)
 	cmd.Stderr = g.stderr
 	buf := bytes.NewBuffer(nil)

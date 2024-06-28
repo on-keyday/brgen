@@ -1513,174 +1513,181 @@ func (n *OrderType) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type FormatTrait int
+type BlockTrait int
 
 const (
-	FormatTraitNone            FormatTrait = 0
-	FormatTraitFixedPrimitive  FormatTrait = 1
-	FormatTraitFixedFloat      FormatTrait = 2
-	FormatTraitFixedArray      FormatTrait = 4
-	FormatTraitVariableArray   FormatTrait = 8
-	FormatTraitStruct          FormatTrait = 16
-	FormatTraitConditional     FormatTrait = 32
-	FormatTraitStaticPeek      FormatTrait = 64
-	FormatTraitBitField        FormatTrait = 128
-	FormatTraitReadState       FormatTrait = 256
-	FormatTraitWriteState      FormatTrait = 512
-	FormatTraitTerminalPattern FormatTrait = 1024
-	FormatTraitBitStream       FormatTrait = 2048
-	FormatTraitDynamicOrder    FormatTrait = 4096
-	FormatTraitFullInput       FormatTrait = 8192
-	FormatTraitBackwardInput   FormatTrait = 16384
-	FormatTraitMagicValue      FormatTrait = 32768
-	FormatTraitAssertion       FormatTrait = 65536
-	FormatTraitExplicitError   FormatTrait = 131072
-	FormatTraitProcedural      FormatTrait = 262144
-	FormatTraitForLoop         FormatTrait = 524288
-	FormatTraitLocalVariable   FormatTrait = 1048576
-	FormatTraitDescriptionOnly FormatTrait = 2097152
-	FormatTraitUncommonSize    FormatTrait = 4194304
+	BlockTraitNone              BlockTrait = 0
+	BlockTraitFixedPrimitive    BlockTrait = 1
+	BlockTraitFixedFloat        BlockTrait = 2
+	BlockTraitFixedArray        BlockTrait = 4
+	BlockTraitVariableArray     BlockTrait = 8
+	BlockTraitStruct            BlockTrait = 16
+	BlockTraitConditional       BlockTrait = 32
+	BlockTraitStaticPeek        BlockTrait = 64
+	BlockTraitBitField          BlockTrait = 128
+	BlockTraitReadState         BlockTrait = 256
+	BlockTraitWriteState        BlockTrait = 512
+	BlockTraitTerminalPattern   BlockTrait = 1024
+	BlockTraitBitStream         BlockTrait = 2048
+	BlockTraitDynamicOrder      BlockTrait = 4096
+	BlockTraitFullInput         BlockTrait = 8192
+	BlockTraitBackwardInput     BlockTrait = 16384
+	BlockTraitMagicValue        BlockTrait = 32768
+	BlockTraitAssertion         BlockTrait = 65536
+	BlockTraitExplicitError     BlockTrait = 131072
+	BlockTraitProcedural        BlockTrait = 262144
+	BlockTraitForLoop           BlockTrait = 524288
+	BlockTraitLocalVariable     BlockTrait = 1048576
+	BlockTraitDescriptionOnly   BlockTrait = 2097152
+	BlockTraitUncommonSize      BlockTrait = 4194304
+	BlockTraitControlFlowChange BlockTrait = 8388608
 )
 
-func (n FormatTrait) String() string {
+func (n BlockTrait) String() string {
 	var s string
-	if n&FormatTraitFixedPrimitive != 0 {
+	if n&BlockTraitFixedPrimitive != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "fixed_primitive"
 	}
-	if n&FormatTraitFixedFloat != 0 {
+	if n&BlockTraitFixedFloat != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "fixed_float"
 	}
-	if n&FormatTraitFixedArray != 0 {
+	if n&BlockTraitFixedArray != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "fixed_array"
 	}
-	if n&FormatTraitVariableArray != 0 {
+	if n&BlockTraitVariableArray != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "variable_array"
 	}
-	if n&FormatTraitStruct != 0 {
+	if n&BlockTraitStruct != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "struct"
 	}
-	if n&FormatTraitConditional != 0 {
+	if n&BlockTraitConditional != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "conditional"
 	}
-	if n&FormatTraitStaticPeek != 0 {
+	if n&BlockTraitStaticPeek != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "static_peek"
 	}
-	if n&FormatTraitBitField != 0 {
+	if n&BlockTraitBitField != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "bit_field"
 	}
-	if n&FormatTraitReadState != 0 {
+	if n&BlockTraitReadState != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "read_state"
 	}
-	if n&FormatTraitWriteState != 0 {
+	if n&BlockTraitWriteState != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "write_state"
 	}
-	if n&FormatTraitTerminalPattern != 0 {
+	if n&BlockTraitTerminalPattern != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "terminal_pattern"
 	}
-	if n&FormatTraitBitStream != 0 {
+	if n&BlockTraitBitStream != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "bit_stream"
 	}
-	if n&FormatTraitDynamicOrder != 0 {
+	if n&BlockTraitDynamicOrder != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "dynamic_order"
 	}
-	if n&FormatTraitFullInput != 0 {
+	if n&BlockTraitFullInput != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "full_input"
 	}
-	if n&FormatTraitBackwardInput != 0 {
+	if n&BlockTraitBackwardInput != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "backward_input"
 	}
-	if n&FormatTraitMagicValue != 0 {
+	if n&BlockTraitMagicValue != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "magic_value"
 	}
-	if n&FormatTraitAssertion != 0 {
+	if n&BlockTraitAssertion != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "assertion"
 	}
-	if n&FormatTraitExplicitError != 0 {
+	if n&BlockTraitExplicitError != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "explicit_error"
 	}
-	if n&FormatTraitProcedural != 0 {
+	if n&BlockTraitProcedural != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "procedural"
 	}
-	if n&FormatTraitForLoop != 0 {
+	if n&BlockTraitForLoop != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "for_loop"
 	}
-	if n&FormatTraitLocalVariable != 0 {
+	if n&BlockTraitLocalVariable != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "local_variable"
 	}
-	if n&FormatTraitDescriptionOnly != 0 {
+	if n&BlockTraitDescriptionOnly != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "description_only"
 	}
-	if n&FormatTraitUncommonSize != 0 {
+	if n&BlockTraitUncommonSize != 0 {
 		if s != "" {
 			s += " | "
 		}
 		s += "uncommon_size"
+	}
+	if n&BlockTraitControlFlowChange != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "control_flow_change"
 	}
 	if s == "" {
 		return "none"
@@ -1688,12 +1695,12 @@ func (n FormatTrait) String() string {
 	return s
 }
 
-func (n *FormatTrait) UnmarshalJSON(data []byte) error {
+func (n *BlockTrait) UnmarshalJSON(data []byte) error {
 	var tmp int
 	if err := json.Unmarshal(data, &tmp); err != nil {
 		return err
 	}
-	*n = FormatTrait(tmp)
+	*n = BlockTrait(tmp)
 	return nil
 }
 
@@ -1779,6 +1786,7 @@ type FieldArgument struct {
 	EndLoc             Loc
 	CollectedArguments []Expr
 	Arguments          []Expr
+	Assigns            []*Binary
 	Alignment          Expr
 	AlignmentValue     *uint64
 	SubByteLength      Expr
@@ -2150,7 +2158,7 @@ type Cast struct {
 	ExprType      Type
 	ConstantLevel ConstantLevel
 	Base          *Call
-	Expr          Expr
+	Arguments     []Expr
 }
 
 func (n *Cast) isExpr() {}
@@ -2334,11 +2342,12 @@ func (n *Loop) GetLoc() Loc {
 }
 
 type IndentBlock struct {
-	Loc        Loc
-	StructType *StructType
-	Elements   []Node
-	Scope      *Scope
-	Metadata   []*Metadata
+	Loc         Loc
+	StructType  *StructType
+	Elements    []Node
+	Scope       *Scope
+	Metadata    []*Metadata
+	BlockTraits BlockTrait
 }
 
 func (n *IndentBlock) isStmt() {}
@@ -3324,7 +3333,6 @@ type Format struct {
 	CastFns        []*Function
 	Depends        []*IdentType
 	StateVariables []*Field
-	FormatTrait    FormatTrait
 }
 
 func (n *Format) isMember() {}
@@ -3764,6 +3772,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				EndLoc             Loc       `json:"end_loc"`
 				CollectedArguments []uintptr `json:"collected_arguments"`
 				Arguments          []uintptr `json:"arguments"`
+				Assigns            []uintptr `json:"assigns"`
 				Alignment          *uintptr  `json:"alignment"`
 				AlignmentValue     *uint64   `json:"alignment_value"`
 				SubByteLength      *uintptr  `json:"sub_byte_length"`
@@ -3787,6 +3796,10 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.Arguments = make([]Expr, len(tmp.Arguments))
 			for j, k := range tmp.Arguments {
 				v.Arguments[j] = n.node[k].(Expr)
+			}
+			v.Assigns = make([]*Binary, len(tmp.Assigns))
+			for j, k := range tmp.Assigns {
+				v.Assigns[j] = n.node[k].(*Binary)
 			}
 			if tmp.Alignment != nil {
 				v.Alignment = n.node[*tmp.Alignment].(Expr)
@@ -4145,7 +4158,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				ExprType      *uintptr      `json:"expr_type"`
 				ConstantLevel ConstantLevel `json:"constant_level"`
 				Base          *uintptr      `json:"base"`
-				Expr          *uintptr      `json:"expr"`
+				Arguments     []uintptr     `json:"arguments"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -4157,8 +4170,9 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.Base != nil {
 				v.Base = n.node[*tmp.Base].(*Call)
 			}
-			if tmp.Expr != nil {
-				v.Expr = n.node[*tmp.Expr].(Expr)
+			v.Arguments = make([]Expr, len(tmp.Arguments))
+			for j, k := range tmp.Arguments {
+				v.Arguments[j] = n.node[k].(Expr)
 			}
 		case NodeTypeAvailable:
 			v := n.node[i].(*Available)
@@ -4322,10 +4336,11 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeIndentBlock:
 			v := n.node[i].(*IndentBlock)
 			var tmp struct {
-				StructType *uintptr  `json:"struct_type"`
-				Elements   []uintptr `json:"elements"`
-				Scope      *uintptr  `json:"scope"`
-				Metadata   []uintptr `json:"metadata"`
+				StructType  *uintptr   `json:"struct_type"`
+				Elements    []uintptr  `json:"elements"`
+				Scope       *uintptr   `json:"scope"`
+				Metadata    []uintptr  `json:"metadata"`
+				BlockTraits BlockTrait `json:"block_traits"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -4344,6 +4359,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			for j, k := range tmp.Metadata {
 				v.Metadata[j] = n.node[k].(*Metadata)
 			}
+			v.BlockTraits = tmp.BlockTraits
 		case NodeTypeScopedStatement:
 			v := n.node[i].(*ScopedStatement)
 			var tmp struct {
@@ -5062,16 +5078,15 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeFormat:
 			v := n.node[i].(*Format)
 			var tmp struct {
-				Belong         *uintptr    `json:"belong"`
-				BelongStruct   *uintptr    `json:"belong_struct"`
-				Ident          *uintptr    `json:"ident"`
-				Body           *uintptr    `json:"body"`
-				EncodeFn       *uintptr    `json:"encode_fn"`
-				DecodeFn       *uintptr    `json:"decode_fn"`
-				CastFns        []uintptr   `json:"cast_fns"`
-				Depends        []uintptr   `json:"depends"`
-				StateVariables []uintptr   `json:"state_variables"`
-				FormatTrait    FormatTrait `json:"format_trait"`
+				Belong         *uintptr  `json:"belong"`
+				BelongStruct   *uintptr  `json:"belong_struct"`
+				Ident          *uintptr  `json:"ident"`
+				Body           *uintptr  `json:"body"`
+				EncodeFn       *uintptr  `json:"encode_fn"`
+				DecodeFn       *uintptr  `json:"decode_fn"`
+				CastFns        []uintptr `json:"cast_fns"`
+				Depends        []uintptr `json:"depends"`
+				StateVariables []uintptr `json:"state_variables"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -5106,7 +5121,6 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			for j, k := range tmp.StateVariables {
 				v.StateVariables[j] = n.node[k].(*Field)
 			}
-			v.FormatTrait = tmp.FormatTrait
 		case NodeTypeState:
 			v := n.node[i].(*State)
 			var tmp struct {
@@ -5300,6 +5314,11 @@ func Walk(n Node, f Visitor) {
 			}
 		}
 		for _, w := range v.Arguments {
+			if !f.Visit(f, w) {
+				return
+			}
+		}
+		for _, w := range v.Assigns {
 			if !f.Visit(f, w) {
 				return
 			}
@@ -5559,8 +5578,8 @@ func Walk(n Node, f Visitor) {
 				return
 			}
 		}
-		if v.Expr != nil {
-			if !f.Visit(f, v.Expr) {
+		for _, w := range v.Arguments {
+			if !f.Visit(f, w) {
 				return
 			}
 		}

@@ -903,7 +903,7 @@ template<>
 constexpr const char* enum_type_name<SpecialLiteralKind>() {
     return "SpecialLiteralKind";
 }
-enum class FormatTrait {
+enum class BlockTrait {
     none = 0,
     fixed_primitive = (1 << 0),
     fixed_float = (1 << 1),
@@ -928,135 +928,196 @@ enum class FormatTrait {
     local_variable = (1 << 20),
     description_only = (1 << 21),
     uncommon_size = (1 << 22),
+    control_flow_change = (1 << 23),
 };
-constexpr const char* to_string(FormatTrait e) {
+constexpr const char* to_string(BlockTrait e) {
     switch(e) {
-    case FormatTrait::none: return "none";
-    case FormatTrait::fixed_primitive: return "fixed_primitive";
-    case FormatTrait::fixed_float: return "fixed_float";
-    case FormatTrait::fixed_array: return "fixed_array";
-    case FormatTrait::variable_array: return "variable_array";
-    case FormatTrait::struct_: return "struct";
-    case FormatTrait::conditional: return "conditional";
-    case FormatTrait::static_peek: return "static_peek";
-    case FormatTrait::bit_field: return "bit_field";
-    case FormatTrait::read_state: return "read_state";
-    case FormatTrait::write_state: return "write_state";
-    case FormatTrait::terminal_pattern: return "terminal_pattern";
-    case FormatTrait::bit_stream: return "bit_stream";
-    case FormatTrait::dynamic_order: return "dynamic_order";
-    case FormatTrait::full_input: return "full_input";
-    case FormatTrait::backward_input: return "backward_input";
-    case FormatTrait::magic_value: return "magic_value";
-    case FormatTrait::assertion: return "assertion";
-    case FormatTrait::explicit_error: return "explicit_error";
-    case FormatTrait::procedural: return "procedural";
-    case FormatTrait::for_loop: return "for_loop";
-    case FormatTrait::local_variable: return "local_variable";
-    case FormatTrait::description_only: return "description_only";
-    case FormatTrait::uncommon_size: return "uncommon_size";
+    case BlockTrait::none: return "none";
+    case BlockTrait::fixed_primitive: return "fixed_primitive";
+    case BlockTrait::fixed_float: return "fixed_float";
+    case BlockTrait::fixed_array: return "fixed_array";
+    case BlockTrait::variable_array: return "variable_array";
+    case BlockTrait::struct_: return "struct";
+    case BlockTrait::conditional: return "conditional";
+    case BlockTrait::static_peek: return "static_peek";
+    case BlockTrait::bit_field: return "bit_field";
+    case BlockTrait::read_state: return "read_state";
+    case BlockTrait::write_state: return "write_state";
+    case BlockTrait::terminal_pattern: return "terminal_pattern";
+    case BlockTrait::bit_stream: return "bit_stream";
+    case BlockTrait::dynamic_order: return "dynamic_order";
+    case BlockTrait::full_input: return "full_input";
+    case BlockTrait::backward_input: return "backward_input";
+    case BlockTrait::magic_value: return "magic_value";
+    case BlockTrait::assertion: return "assertion";
+    case BlockTrait::explicit_error: return "explicit_error";
+    case BlockTrait::procedural: return "procedural";
+    case BlockTrait::for_loop: return "for_loop";
+    case BlockTrait::local_variable: return "local_variable";
+    case BlockTrait::description_only: return "description_only";
+    case BlockTrait::uncommon_size: return "uncommon_size";
+    case BlockTrait::control_flow_change: return "control_flow_change";
     default: return nullptr;
     }
 }
-template<>constexpr std::optional<FormatTrait> from_string<FormatTrait>(std::string_view str) {
+template<>constexpr std::optional<BlockTrait> from_string<BlockTrait>(std::string_view str) {
     if(str.empty()) return std::nullopt;
-    if(str == "none") return FormatTrait::none;
-    if(str == "fixed_primitive") return FormatTrait::fixed_primitive;
-    if(str == "fixed_float") return FormatTrait::fixed_float;
-    if(str == "fixed_array") return FormatTrait::fixed_array;
-    if(str == "variable_array") return FormatTrait::variable_array;
-    if(str == "struct") return FormatTrait::struct_;
-    if(str == "conditional") return FormatTrait::conditional;
-    if(str == "static_peek") return FormatTrait::static_peek;
-    if(str == "bit_field") return FormatTrait::bit_field;
-    if(str == "read_state") return FormatTrait::read_state;
-    if(str == "write_state") return FormatTrait::write_state;
-    if(str == "terminal_pattern") return FormatTrait::terminal_pattern;
-    if(str == "bit_stream") return FormatTrait::bit_stream;
-    if(str == "dynamic_order") return FormatTrait::dynamic_order;
-    if(str == "full_input") return FormatTrait::full_input;
-    if(str == "backward_input") return FormatTrait::backward_input;
-    if(str == "magic_value") return FormatTrait::magic_value;
-    if(str == "assertion") return FormatTrait::assertion;
-    if(str == "explicit_error") return FormatTrait::explicit_error;
-    if(str == "procedural") return FormatTrait::procedural;
-    if(str == "for_loop") return FormatTrait::for_loop;
-    if(str == "local_variable") return FormatTrait::local_variable;
-    if(str == "description_only") return FormatTrait::description_only;
-    if(str == "uncommon_size") return FormatTrait::uncommon_size;
+    if(str == "none") return BlockTrait::none;
+    if(str == "fixed_primitive") return BlockTrait::fixed_primitive;
+    if(str == "fixed_float") return BlockTrait::fixed_float;
+    if(str == "fixed_array") return BlockTrait::fixed_array;
+    if(str == "variable_array") return BlockTrait::variable_array;
+    if(str == "struct") return BlockTrait::struct_;
+    if(str == "conditional") return BlockTrait::conditional;
+    if(str == "static_peek") return BlockTrait::static_peek;
+    if(str == "bit_field") return BlockTrait::bit_field;
+    if(str == "read_state") return BlockTrait::read_state;
+    if(str == "write_state") return BlockTrait::write_state;
+    if(str == "terminal_pattern") return BlockTrait::terminal_pattern;
+    if(str == "bit_stream") return BlockTrait::bit_stream;
+    if(str == "dynamic_order") return BlockTrait::dynamic_order;
+    if(str == "full_input") return BlockTrait::full_input;
+    if(str == "backward_input") return BlockTrait::backward_input;
+    if(str == "magic_value") return BlockTrait::magic_value;
+    if(str == "assertion") return BlockTrait::assertion;
+    if(str == "explicit_error") return BlockTrait::explicit_error;
+    if(str == "procedural") return BlockTrait::procedural;
+    if(str == "for_loop") return BlockTrait::for_loop;
+    if(str == "local_variable") return BlockTrait::local_variable;
+    if(str == "description_only") return BlockTrait::description_only;
+    if(str == "uncommon_size") return BlockTrait::uncommon_size;
+    if(str == "control_flow_change") return BlockTrait::control_flow_change;
     return std::nullopt;
 }
-template<>constexpr size_t enum_elem_count<FormatTrait>() {
-    return 24;
+template<>constexpr size_t enum_elem_count<BlockTrait>() {
+    return 25;
 }
-template<>constexpr std::array<std::pair<FormatTrait,std::string_view>,24> make_enum_array<FormatTrait>() {
+template<>constexpr std::array<std::pair<BlockTrait,std::string_view>,25> make_enum_array<BlockTrait>() {
     return {
-        std::pair{FormatTrait::none,"none"},
-        std::pair{FormatTrait::fixed_primitive,"fixed_primitive"},
-        std::pair{FormatTrait::fixed_float,"fixed_float"},
-        std::pair{FormatTrait::fixed_array,"fixed_array"},
-        std::pair{FormatTrait::variable_array,"variable_array"},
-        std::pair{FormatTrait::struct_,"struct"},
-        std::pair{FormatTrait::conditional,"conditional"},
-        std::pair{FormatTrait::static_peek,"static_peek"},
-        std::pair{FormatTrait::bit_field,"bit_field"},
-        std::pair{FormatTrait::read_state,"read_state"},
-        std::pair{FormatTrait::write_state,"write_state"},
-        std::pair{FormatTrait::terminal_pattern,"terminal_pattern"},
-        std::pair{FormatTrait::bit_stream,"bit_stream"},
-        std::pair{FormatTrait::dynamic_order,"dynamic_order"},
-        std::pair{FormatTrait::full_input,"full_input"},
-        std::pair{FormatTrait::backward_input,"backward_input"},
-        std::pair{FormatTrait::magic_value,"magic_value"},
-        std::pair{FormatTrait::assertion,"assertion"},
-        std::pair{FormatTrait::explicit_error,"explicit_error"},
-        std::pair{FormatTrait::procedural,"procedural"},
-        std::pair{FormatTrait::for_loop,"for_loop"},
-        std::pair{FormatTrait::local_variable,"local_variable"},
-        std::pair{FormatTrait::description_only,"description_only"},
-        std::pair{FormatTrait::uncommon_size,"uncommon_size"},
+        std::pair{BlockTrait::none,"none"},
+        std::pair{BlockTrait::fixed_primitive,"fixed_primitive"},
+        std::pair{BlockTrait::fixed_float,"fixed_float"},
+        std::pair{BlockTrait::fixed_array,"fixed_array"},
+        std::pair{BlockTrait::variable_array,"variable_array"},
+        std::pair{BlockTrait::struct_,"struct"},
+        std::pair{BlockTrait::conditional,"conditional"},
+        std::pair{BlockTrait::static_peek,"static_peek"},
+        std::pair{BlockTrait::bit_field,"bit_field"},
+        std::pair{BlockTrait::read_state,"read_state"},
+        std::pair{BlockTrait::write_state,"write_state"},
+        std::pair{BlockTrait::terminal_pattern,"terminal_pattern"},
+        std::pair{BlockTrait::bit_stream,"bit_stream"},
+        std::pair{BlockTrait::dynamic_order,"dynamic_order"},
+        std::pair{BlockTrait::full_input,"full_input"},
+        std::pair{BlockTrait::backward_input,"backward_input"},
+        std::pair{BlockTrait::magic_value,"magic_value"},
+        std::pair{BlockTrait::assertion,"assertion"},
+        std::pair{BlockTrait::explicit_error,"explicit_error"},
+        std::pair{BlockTrait::procedural,"procedural"},
+        std::pair{BlockTrait::for_loop,"for_loop"},
+        std::pair{BlockTrait::local_variable,"local_variable"},
+        std::pair{BlockTrait::description_only,"description_only"},
+        std::pair{BlockTrait::uncommon_size,"uncommon_size"},
+        std::pair{BlockTrait::control_flow_change,"control_flow_change"},
     };
 }
-template<>constexpr std::array<std::pair<FormatTrait,std::string_view>,24> make_enum_name_array<FormatTrait>() {
+template<>constexpr std::array<std::pair<BlockTrait,std::string_view>,25> make_enum_name_array<BlockTrait>() {
     return {
-        std::pair{FormatTrait::none,"none"},
-        std::pair{FormatTrait::fixed_primitive,"fixed_primitive"},
-        std::pair{FormatTrait::fixed_float,"fixed_float"},
-        std::pair{FormatTrait::fixed_array,"fixed_array"},
-        std::pair{FormatTrait::variable_array,"variable_array"},
-        std::pair{FormatTrait::struct_,"struct"},
-        std::pair{FormatTrait::conditional,"conditional"},
-        std::pair{FormatTrait::static_peek,"static_peek"},
-        std::pair{FormatTrait::bit_field,"bit_field"},
-        std::pair{FormatTrait::read_state,"read_state"},
-        std::pair{FormatTrait::write_state,"write_state"},
-        std::pair{FormatTrait::terminal_pattern,"terminal_pattern"},
-        std::pair{FormatTrait::bit_stream,"bit_stream"},
-        std::pair{FormatTrait::dynamic_order,"dynamic_order"},
-        std::pair{FormatTrait::full_input,"full_input"},
-        std::pair{FormatTrait::backward_input,"backward_input"},
-        std::pair{FormatTrait::magic_value,"magic_value"},
-        std::pair{FormatTrait::assertion,"assertion"},
-        std::pair{FormatTrait::explicit_error,"explicit_error"},
-        std::pair{FormatTrait::procedural,"procedural"},
-        std::pair{FormatTrait::for_loop,"for_loop"},
-        std::pair{FormatTrait::local_variable,"local_variable"},
-        std::pair{FormatTrait::description_only,"description_only"},
-        std::pair{FormatTrait::uncommon_size,"uncommon_size"},
+        std::pair{BlockTrait::none,"none"},
+        std::pair{BlockTrait::fixed_primitive,"fixed_primitive"},
+        std::pair{BlockTrait::fixed_float,"fixed_float"},
+        std::pair{BlockTrait::fixed_array,"fixed_array"},
+        std::pair{BlockTrait::variable_array,"variable_array"},
+        std::pair{BlockTrait::struct_,"struct"},
+        std::pair{BlockTrait::conditional,"conditional"},
+        std::pair{BlockTrait::static_peek,"static_peek"},
+        std::pair{BlockTrait::bit_field,"bit_field"},
+        std::pair{BlockTrait::read_state,"read_state"},
+        std::pair{BlockTrait::write_state,"write_state"},
+        std::pair{BlockTrait::terminal_pattern,"terminal_pattern"},
+        std::pair{BlockTrait::bit_stream,"bit_stream"},
+        std::pair{BlockTrait::dynamic_order,"dynamic_order"},
+        std::pair{BlockTrait::full_input,"full_input"},
+        std::pair{BlockTrait::backward_input,"backward_input"},
+        std::pair{BlockTrait::magic_value,"magic_value"},
+        std::pair{BlockTrait::assertion,"assertion"},
+        std::pair{BlockTrait::explicit_error,"explicit_error"},
+        std::pair{BlockTrait::procedural,"procedural"},
+        std::pair{BlockTrait::for_loop,"for_loop"},
+        std::pair{BlockTrait::local_variable,"local_variable"},
+        std::pair{BlockTrait::description_only,"description_only"},
+        std::pair{BlockTrait::uncommon_size,"uncommon_size"},
+        std::pair{BlockTrait::control_flow_change,"control_flow_change"},
     };
 }
-constexpr void as_json(FormatTrait e,auto&& d) {
+constexpr void as_json(BlockTrait e,auto&& d) {
     d.value(static_cast<size_t>(e));
 }
 template<>
-constexpr std::optional<FormatTrait> from_json<FormatTrait,size_t>(size_t k){
-    return static_cast<FormatTrait>(k);
+constexpr std::optional<BlockTrait> from_json<BlockTrait,size_t>(size_t k){
+    return static_cast<BlockTrait>(k);
 }
-template<>constexpr bool is_bit_flag<FormatTrait>() {
+template<>constexpr bool is_bit_flag<BlockTrait>() {
     return true;
 }
 template<>
-constexpr const char* enum_type_name<FormatTrait>() {
-    return "FormatTrait";
+constexpr const char* enum_type_name<BlockTrait>() {
+    return "BlockTrait";
+}
+enum class FieldArgumentMapping {
+    none = 0,
+    direct = (1 << 0),
+    repeat = (1 << 1),
+    some_candidate = (1 << 2),
+};
+constexpr const char* to_string(FieldArgumentMapping e) {
+    switch(e) {
+    case FieldArgumentMapping::none: return "none";
+    case FieldArgumentMapping::direct: return "direct";
+    case FieldArgumentMapping::repeat: return "repeat";
+    case FieldArgumentMapping::some_candidate: return "some_candidate";
+    default: return nullptr;
+    }
+}
+template<>constexpr std::optional<FieldArgumentMapping> from_string<FieldArgumentMapping>(std::string_view str) {
+    if(str.empty()) return std::nullopt;
+    if(str == "none") return FieldArgumentMapping::none;
+    if(str == "direct") return FieldArgumentMapping::direct;
+    if(str == "repeat") return FieldArgumentMapping::repeat;
+    if(str == "some_candidate") return FieldArgumentMapping::some_candidate;
+    return std::nullopt;
+}
+template<>constexpr size_t enum_elem_count<FieldArgumentMapping>() {
+    return 4;
+}
+template<>constexpr std::array<std::pair<FieldArgumentMapping,std::string_view>,4> make_enum_array<FieldArgumentMapping>() {
+    return {
+        std::pair{FieldArgumentMapping::none,"none"},
+        std::pair{FieldArgumentMapping::direct,"direct"},
+        std::pair{FieldArgumentMapping::repeat,"repeat"},
+        std::pair{FieldArgumentMapping::some_candidate,"some_candidate"},
+    };
+}
+template<>constexpr std::array<std::pair<FieldArgumentMapping,std::string_view>,4> make_enum_name_array<FieldArgumentMapping>() {
+    return {
+        std::pair{FieldArgumentMapping::none,"none"},
+        std::pair{FieldArgumentMapping::direct,"direct"},
+        std::pair{FieldArgumentMapping::repeat,"repeat"},
+        std::pair{FieldArgumentMapping::some_candidate,"some_candidate"},
+    };
+}
+constexpr void as_json(FieldArgumentMapping e,auto&& d) {
+    d.value(static_cast<size_t>(e));
+}
+template<>
+constexpr std::optional<FieldArgumentMapping> from_json<FieldArgumentMapping,size_t>(size_t k){
+    return static_cast<FieldArgumentMapping>(k);
+}
+template<>constexpr bool is_bit_flag<FieldArgumentMapping>() {
+    return true;
+}
+template<>
+constexpr const char* enum_type_name<FieldArgumentMapping>() {
+    return "FieldArgumentMapping";
 }
 }

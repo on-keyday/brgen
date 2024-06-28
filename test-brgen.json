@@ -37,6 +37,11 @@
         "-map-word",
         "icmp=ICMP"
       ]
+    },
+    {
+      "generator": ["go", "run", "./src/tool/json2graphviz"],
+      "output_dir": "./ignore/example/graphviz/",
+      "args": ["-format"]
     }
   ],
   "garbage": [

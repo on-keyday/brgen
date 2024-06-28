@@ -4,6 +4,6 @@ format LongPacket:
     reserved :u2
     packet_number_length :u2
     version :u32
-    dst_conn_id :ConnectionID(null)
-    src_conn_id :ConnectionID(null)
+    dst_conn_id :ConnectionID()
+    src_conn_id :ConnectionID()
 

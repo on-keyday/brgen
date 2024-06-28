@@ -1103,133 +1103,138 @@ int ast2c_OrderType_from_string(const char* str, ast2c_OrderType* out) {
 	return 0;
 }
 
-const char* ast2c_FormatTrait_to_string(ast2c_FormatTrait val) {
+const char* ast2c_BlockTrait_to_string(ast2c_BlockTrait val) {
 	switch(val) {
-	case AST2C_FORMATTRAIT_NONE: return "none";
-	case AST2C_FORMATTRAIT_FIXED_PRIMITIVE: return "fixed_primitive";
-	case AST2C_FORMATTRAIT_FIXED_FLOAT: return "fixed_float";
-	case AST2C_FORMATTRAIT_FIXED_ARRAY: return "fixed_array";
-	case AST2C_FORMATTRAIT_VARIABLE_ARRAY: return "variable_array";
-	case AST2C_FORMATTRAIT_STRUCT: return "struct";
-	case AST2C_FORMATTRAIT_CONDITIONAL: return "conditional";
-	case AST2C_FORMATTRAIT_STATIC_PEEK: return "static_peek";
-	case AST2C_FORMATTRAIT_BIT_FIELD: return "bit_field";
-	case AST2C_FORMATTRAIT_READ_STATE: return "read_state";
-	case AST2C_FORMATTRAIT_WRITE_STATE: return "write_state";
-	case AST2C_FORMATTRAIT_TERMINAL_PATTERN: return "terminal_pattern";
-	case AST2C_FORMATTRAIT_BIT_STREAM: return "bit_stream";
-	case AST2C_FORMATTRAIT_DYNAMIC_ORDER: return "dynamic_order";
-	case AST2C_FORMATTRAIT_FULL_INPUT: return "full_input";
-	case AST2C_FORMATTRAIT_BACKWARD_INPUT: return "backward_input";
-	case AST2C_FORMATTRAIT_MAGIC_VALUE: return "magic_value";
-	case AST2C_FORMATTRAIT_ASSERTION: return "assertion";
-	case AST2C_FORMATTRAIT_EXPLICIT_ERROR: return "explicit_error";
-	case AST2C_FORMATTRAIT_PROCEDURAL: return "procedural";
-	case AST2C_FORMATTRAIT_FOR_LOOP: return "for_loop";
-	case AST2C_FORMATTRAIT_LOCAL_VARIABLE: return "local_variable";
-	case AST2C_FORMATTRAIT_DESCRIPTION_ONLY: return "description_only";
-	case AST2C_FORMATTRAIT_UNCOMMON_SIZE: return "uncommon_size";
+	case AST2C_BLOCKTRAIT_NONE: return "none";
+	case AST2C_BLOCKTRAIT_FIXED_PRIMITIVE: return "fixed_primitive";
+	case AST2C_BLOCKTRAIT_FIXED_FLOAT: return "fixed_float";
+	case AST2C_BLOCKTRAIT_FIXED_ARRAY: return "fixed_array";
+	case AST2C_BLOCKTRAIT_VARIABLE_ARRAY: return "variable_array";
+	case AST2C_BLOCKTRAIT_STRUCT: return "struct";
+	case AST2C_BLOCKTRAIT_CONDITIONAL: return "conditional";
+	case AST2C_BLOCKTRAIT_STATIC_PEEK: return "static_peek";
+	case AST2C_BLOCKTRAIT_BIT_FIELD: return "bit_field";
+	case AST2C_BLOCKTRAIT_READ_STATE: return "read_state";
+	case AST2C_BLOCKTRAIT_WRITE_STATE: return "write_state";
+	case AST2C_BLOCKTRAIT_TERMINAL_PATTERN: return "terminal_pattern";
+	case AST2C_BLOCKTRAIT_BIT_STREAM: return "bit_stream";
+	case AST2C_BLOCKTRAIT_DYNAMIC_ORDER: return "dynamic_order";
+	case AST2C_BLOCKTRAIT_FULL_INPUT: return "full_input";
+	case AST2C_BLOCKTRAIT_BACKWARD_INPUT: return "backward_input";
+	case AST2C_BLOCKTRAIT_MAGIC_VALUE: return "magic_value";
+	case AST2C_BLOCKTRAIT_ASSERTION: return "assertion";
+	case AST2C_BLOCKTRAIT_EXPLICIT_ERROR: return "explicit_error";
+	case AST2C_BLOCKTRAIT_PROCEDURAL: return "procedural";
+	case AST2C_BLOCKTRAIT_FOR_LOOP: return "for_loop";
+	case AST2C_BLOCKTRAIT_LOCAL_VARIABLE: return "local_variable";
+	case AST2C_BLOCKTRAIT_DESCRIPTION_ONLY: return "description_only";
+	case AST2C_BLOCKTRAIT_UNCOMMON_SIZE: return "uncommon_size";
+	case AST2C_BLOCKTRAIT_CONTROL_FLOW_CHANGE: return "control_flow_change";
 	default: return NULL;
 	}
 }
 
 // returns 1 if succeed 0 if failed
-int ast2c_FormatTrait_from_string(const char* str, ast2c_FormatTrait* out) {
+int ast2c_BlockTrait_from_string(const char* str, ast2c_BlockTrait* out) {
 	if (!str||!out) return 0;
 	if (strcmp(str, "none") == 0) {
-		*out = AST2C_FORMATTRAIT_NONE;
+		*out = AST2C_BLOCKTRAIT_NONE;
 		return 1;
 	}
 	if (strcmp(str, "fixed_primitive") == 0) {
-		*out = AST2C_FORMATTRAIT_FIXED_PRIMITIVE;
+		*out = AST2C_BLOCKTRAIT_FIXED_PRIMITIVE;
 		return 1;
 	}
 	if (strcmp(str, "fixed_float") == 0) {
-		*out = AST2C_FORMATTRAIT_FIXED_FLOAT;
+		*out = AST2C_BLOCKTRAIT_FIXED_FLOAT;
 		return 1;
 	}
 	if (strcmp(str, "fixed_array") == 0) {
-		*out = AST2C_FORMATTRAIT_FIXED_ARRAY;
+		*out = AST2C_BLOCKTRAIT_FIXED_ARRAY;
 		return 1;
 	}
 	if (strcmp(str, "variable_array") == 0) {
-		*out = AST2C_FORMATTRAIT_VARIABLE_ARRAY;
+		*out = AST2C_BLOCKTRAIT_VARIABLE_ARRAY;
 		return 1;
 	}
 	if (strcmp(str, "struct") == 0) {
-		*out = AST2C_FORMATTRAIT_STRUCT;
+		*out = AST2C_BLOCKTRAIT_STRUCT;
 		return 1;
 	}
 	if (strcmp(str, "conditional") == 0) {
-		*out = AST2C_FORMATTRAIT_CONDITIONAL;
+		*out = AST2C_BLOCKTRAIT_CONDITIONAL;
 		return 1;
 	}
 	if (strcmp(str, "static_peek") == 0) {
-		*out = AST2C_FORMATTRAIT_STATIC_PEEK;
+		*out = AST2C_BLOCKTRAIT_STATIC_PEEK;
 		return 1;
 	}
 	if (strcmp(str, "bit_field") == 0) {
-		*out = AST2C_FORMATTRAIT_BIT_FIELD;
+		*out = AST2C_BLOCKTRAIT_BIT_FIELD;
 		return 1;
 	}
 	if (strcmp(str, "read_state") == 0) {
-		*out = AST2C_FORMATTRAIT_READ_STATE;
+		*out = AST2C_BLOCKTRAIT_READ_STATE;
 		return 1;
 	}
 	if (strcmp(str, "write_state") == 0) {
-		*out = AST2C_FORMATTRAIT_WRITE_STATE;
+		*out = AST2C_BLOCKTRAIT_WRITE_STATE;
 		return 1;
 	}
 	if (strcmp(str, "terminal_pattern") == 0) {
-		*out = AST2C_FORMATTRAIT_TERMINAL_PATTERN;
+		*out = AST2C_BLOCKTRAIT_TERMINAL_PATTERN;
 		return 1;
 	}
 	if (strcmp(str, "bit_stream") == 0) {
-		*out = AST2C_FORMATTRAIT_BIT_STREAM;
+		*out = AST2C_BLOCKTRAIT_BIT_STREAM;
 		return 1;
 	}
 	if (strcmp(str, "dynamic_order") == 0) {
-		*out = AST2C_FORMATTRAIT_DYNAMIC_ORDER;
+		*out = AST2C_BLOCKTRAIT_DYNAMIC_ORDER;
 		return 1;
 	}
 	if (strcmp(str, "full_input") == 0) {
-		*out = AST2C_FORMATTRAIT_FULL_INPUT;
+		*out = AST2C_BLOCKTRAIT_FULL_INPUT;
 		return 1;
 	}
 	if (strcmp(str, "backward_input") == 0) {
-		*out = AST2C_FORMATTRAIT_BACKWARD_INPUT;
+		*out = AST2C_BLOCKTRAIT_BACKWARD_INPUT;
 		return 1;
 	}
 	if (strcmp(str, "magic_value") == 0) {
-		*out = AST2C_FORMATTRAIT_MAGIC_VALUE;
+		*out = AST2C_BLOCKTRAIT_MAGIC_VALUE;
 		return 1;
 	}
 	if (strcmp(str, "assertion") == 0) {
-		*out = AST2C_FORMATTRAIT_ASSERTION;
+		*out = AST2C_BLOCKTRAIT_ASSERTION;
 		return 1;
 	}
 	if (strcmp(str, "explicit_error") == 0) {
-		*out = AST2C_FORMATTRAIT_EXPLICIT_ERROR;
+		*out = AST2C_BLOCKTRAIT_EXPLICIT_ERROR;
 		return 1;
 	}
 	if (strcmp(str, "procedural") == 0) {
-		*out = AST2C_FORMATTRAIT_PROCEDURAL;
+		*out = AST2C_BLOCKTRAIT_PROCEDURAL;
 		return 1;
 	}
 	if (strcmp(str, "for_loop") == 0) {
-		*out = AST2C_FORMATTRAIT_FOR_LOOP;
+		*out = AST2C_BLOCKTRAIT_FOR_LOOP;
 		return 1;
 	}
 	if (strcmp(str, "local_variable") == 0) {
-		*out = AST2C_FORMATTRAIT_LOCAL_VARIABLE;
+		*out = AST2C_BLOCKTRAIT_LOCAL_VARIABLE;
 		return 1;
 	}
 	if (strcmp(str, "description_only") == 0) {
-		*out = AST2C_FORMATTRAIT_DESCRIPTION_ONLY;
+		*out = AST2C_BLOCKTRAIT_DESCRIPTION_ONLY;
 		return 1;
 	}
 	if (strcmp(str, "uncommon_size") == 0) {
-		*out = AST2C_FORMATTRAIT_UNCOMMON_SIZE;
+		*out = AST2C_BLOCKTRAIT_UNCOMMON_SIZE;
+		return 1;
+	}
+	if (strcmp(str, "control_flow_change") == 0) {
+		*out = AST2C_BLOCKTRAIT_CONTROL_FLOW_CHANGE;
 		return 1;
 	}
 	return 0;
@@ -1339,6 +1344,7 @@ int ast2c_FieldArgument_parse(ast2c_Ast* ast,ast2c_FieldArgument* s,ast2c_json_h
 	s->raw_arguments = NULL;
 	s->collected_arguments = NULL;
 	s->arguments = NULL;
+	s->assigns = NULL;
 	s->alignment = NULL;
 	s->alignment_value = NULL;
 	s->sub_byte_length = NULL;
@@ -1351,6 +1357,7 @@ int ast2c_FieldArgument_parse(ast2c_Ast* ast,ast2c_FieldArgument* s,ast2c_json_h
 	void* end_loc = h->object_get(h, obj_body, "end_loc");
 	void* collected_arguments = h->object_get(h, obj_body, "collected_arguments");
 	void* arguments = h->object_get(h, obj_body, "arguments");
+	void* assigns = h->object_get(h, obj_body, "assigns");
 	void* alignment = h->object_get(h, obj_body, "alignment");
 	void* alignment_value = h->object_get(h, obj_body, "alignment_value");
 	void* sub_byte_length = h->object_get(h, obj_body, "sub_byte_length");
@@ -1370,6 +1377,11 @@ int ast2c_FieldArgument_parse(ast2c_Ast* ast,ast2c_FieldArgument* s,ast2c_json_h
 	if (!arguments) { if(h->error) { h->error(h,arguments, "ast2c_FieldArgument::arguments is null"); } return 0; }
 	if(!h->array_size(h, arguments,&s->arguments_size)) {
 		if(h->error) { h->error(h,arguments, "failed to get array size of ast2c_FieldArgument::arguments"); }
+		return NULL;
+	}
+	if (!assigns) { if(h->error) { h->error(h,assigns, "ast2c_FieldArgument::assigns is null"); } return 0; }
+	if(!h->array_size(h, assigns,&s->assigns_size)) {
+		if(h->error) { h->error(h,assigns, "failed to get array size of ast2c_FieldArgument::assigns"); }
 		return NULL;
 	}
 	if (!alignment) { if(h->error) { h->error(h,alignment, "ast2c_FieldArgument::alignment is null"); } return 0; }
@@ -1907,16 +1919,20 @@ int ast2c_Cast_parse(ast2c_Ast* ast,ast2c_Cast* s,ast2c_json_handlers* h, void* 
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
 	s->expr_type = NULL;
 	s->base = NULL;
-	s->expr = NULL;
+	s->arguments = NULL;
 	void* expr_type = h->object_get(h, obj_body, "expr_type");
 	void* constant_level = h->object_get(h, obj_body, "constant_level");
 	void* base = h->object_get(h, obj_body, "base");
-	void* expr = h->object_get(h, obj_body, "expr");
+	void* arguments = h->object_get(h, obj_body, "arguments");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_Cast::loc is null"); } return 0; }
 	if (!expr_type) { if(h->error) { h->error(h,expr_type, "ast2c_Cast::expr_type is null"); } return 0; }
 	if (!constant_level) { if(h->error) { h->error(h,constant_level, "ast2c_Cast::constant_level is null"); } return 0; }
 	if (!base) { if(h->error) { h->error(h,base, "ast2c_Cast::base is null"); } return 0; }
-	if (!expr) { if(h->error) { h->error(h,expr, "ast2c_Cast::expr is null"); } return 0; }
+	if (!arguments) { if(h->error) { h->error(h,arguments, "ast2c_Cast::arguments is null"); } return 0; }
+	if(!h->array_size(h, arguments,&s->arguments_size)) {
+		if(h->error) { h->error(h,arguments, "failed to get array size of ast2c_Cast::arguments"); }
+		return NULL;
+	}
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_Cast::loc"); }
 		goto error;
@@ -2181,6 +2197,7 @@ int ast2c_IndentBlock_parse(ast2c_Ast* ast,ast2c_IndentBlock* s,ast2c_json_handl
 	void* elements = h->object_get(h, obj_body, "elements");
 	void* scope = h->object_get(h, obj_body, "scope");
 	void* metadata = h->object_get(h, obj_body, "metadata");
+	void* block_traits = h->object_get(h, obj_body, "block_traits");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_IndentBlock::loc is null"); } return 0; }
 	if (!struct_type) { if(h->error) { h->error(h,struct_type, "ast2c_IndentBlock::struct_type is null"); } return 0; }
 	if (!elements) { if(h->error) { h->error(h,elements, "ast2c_IndentBlock::elements is null"); } return 0; }
@@ -2194,6 +2211,7 @@ int ast2c_IndentBlock_parse(ast2c_Ast* ast,ast2c_IndentBlock* s,ast2c_json_handl
 		if(h->error) { h->error(h,metadata, "failed to get array size of ast2c_IndentBlock::metadata"); }
 		return NULL;
 	}
+	if (!block_traits) { if(h->error) { h->error(h,block_traits, "ast2c_IndentBlock::block_traits is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_IndentBlock::loc"); }
 		goto error;
@@ -3505,7 +3523,6 @@ int ast2c_Format_parse(ast2c_Ast* ast,ast2c_Format* s,ast2c_json_handlers* h, vo
 	void* cast_fns = h->object_get(h, obj_body, "cast_fns");
 	void* depends = h->object_get(h, obj_body, "depends");
 	void* state_variables = h->object_get(h, obj_body, "state_variables");
-	void* format_trait = h->object_get(h, obj_body, "format_trait");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_Format::loc is null"); } return 0; }
 	if (!belong) { if(h->error) { h->error(h,belong, "ast2c_Format::belong is null"); } return 0; }
 	if (!belong_struct) { if(h->error) { h->error(h,belong_struct, "ast2c_Format::belong_struct is null"); } return 0; }
@@ -3528,7 +3545,6 @@ int ast2c_Format_parse(ast2c_Ast* ast,ast2c_Format* s,ast2c_json_handlers* h, vo
 		if(h->error) { h->error(h,state_variables, "failed to get array size of ast2c_Format::state_variables"); }
 		return NULL;
 	}
-	if (!format_trait) { if(h->error) { h->error(h,format_trait, "ast2c_Format::format_trait is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_Format::loc"); }
 		goto error;

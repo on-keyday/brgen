@@ -99,25 +99,25 @@ fn align32() -> u32:
     return align == 32 ? 0 : align
 
 format EnterSubBlock:
-    id :AbbrevID(DefinedAbbrevID.ENTER_SUBBLOCK)
+    id :AbbrevID(AbbrevID(DefinedAbbrevID.ENTER_SUBBLOCK))
     block_id :VBR(vbr.len = 8)
     new_abbrev_id_width :VBR(vbr.len = 4)
     :[align32()]u1(input.align = 32) # align to 32-bit boundary
     block_size :u32
 
 format UuabbrevRecord:
-    id :AbbrevID(DefinedAbbrevID.UNABBREV_RECORD)
+    id :AbbrevID(AbbrevID(DefinedAbbrevID.UNABBREV_RECORD))
     code :VBR(vbr.len = 6)
     num_ops :VBR(vbr.len = 6)
     ops :[num_ops]VBR(vbr.len = 6)
 
 format EndBlock:
-    id :AbbrevID(DefinedAbbrevID.END_BLOCK)
+    id :AbbrevID(AbbrevID(DefinedAbbrevID.END_BLOCK))
     :[align32()]u1(input.align = 32) # align to 32-bit boundary
 
 config.url = "https://llvm.org/docs/BitCodeFormat.html#abbreviations"
 format DefineAbbrev:
-    id :AbbrevID(DefinedAbbrevID.DEFINE_ABBREV)
+    id :AbbrevID(AbbrevID(DefinedAbbrevID.DEFINE_ABBREV))
     num_ops :VBR(vbr.len = 5)
     ops :[num_ops]AbbrevOp
 

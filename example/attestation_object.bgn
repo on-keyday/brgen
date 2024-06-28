@@ -1,6 +1,6 @@
 
-format AuthEnticatorData:
-    rp_id_hash :ul32
+format AuthenticatorData:
+    rp_id_hash :[32]u8
     ed :u1
     at :u1
     reserved1:u1(0)
@@ -11,11 +11,10 @@ format AuthEnticatorData:
     up :u1
     counter :ub32
     attested_credential_data :AuthenticatorDataAttestation
-    extensions :AuthenticatorExtensions
 
 
 format AuthenticatorDataAttestation:
-    aaguid :u16
+    aaguid :[16]u8
     credential_id_length :u16
     credential_id :[credential_id_length]u8
-    credential_public_key :CredentialPublicKey
+    credential_public_key :[..]u8

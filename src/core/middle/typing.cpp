@@ -6,6 +6,7 @@
 #include "replacer.h"
 #include "../ast/tool/extract_config.h"
 #include "../ast/tool/eval.h"
+#include <core/ast/tool/compare.h>
 #include <list>
 
 namespace brgen::middle {
@@ -23,209 +24,34 @@ namespace brgen::middle {
         }
 
         bool equal_type(const std::shared_ptr<ast::Type>& left, const std::shared_ptr<ast::Type>& right) {
-            // unwrap ident type
-            if (auto l = ast::as<ast::IdentType>(left), r = ast::as<ast::IdentType>(right); l || r) {
-                if (l && r) {
-                    return equal_type(l->base.lock(), r->base.lock());
-                }
-                if (l) {
-                    return equal_type(l->base.lock(), right);
-                }
-                return equal_type(left, r->base.lock());
-            }
-            if (!left || !right || left->node_type != right->node_type) {
-                return false;
-            }
-            if (auto lty = ast::as<ast::IntType>(left)) {
-                auto rty = ast::as<ast::IntType>(right);
-                return lty->bit_size == rty->bit_size;
-            }
-
-            if (auto lty = ast::as<ast::FloatType>(left)) {
-                auto rty = ast::as<ast::FloatType>(right);
-                return lty->bit_size == rty->bit_size;
-            }
-
-            if (auto lty = ast::as<ast::EnumType>(left)) {
-                auto rty = ast::as<ast::EnumType>(right);
-                return lty->base.lock() == rty->base.lock();
-            }
-            if (ast::as<ast::BoolType>(left)) {
-                return true;
-            }
-            if (auto lty = ast::as<ast::ArrayType>(left)) {
-                auto rty = ast::as<ast::ArrayType>(right);
-                if (!equal_type(lty->element_type, rty->element_type)) {
-                    return false;
-                }
-                if (lty->length_value && rty->length_value) {
-                    return *lty->length_value == *rty->length_value;  // static array
-                }
-                if (lty->length_value || rty->length_value) {
-                    return false;  // dynamic and static array is not equal
-                }
-                return true;  // dynamic array is always equal
-            }
-            if (auto s = ast::as<ast::StructType>(left)) {
-                return left == right;  // struct type has same pointer if it is same struct
-            }
-            if (auto r = ast::as<ast::RangeType>(right)) {
-                auto l = ast::as<ast::RangeType>(left);
-                if (r->base_type && l->base_type) {
-                    return equal_type(l->base_type, r->base_type);
-                }
-                return !r->base_type && !l->base_type;
-            }
-            return false;
+            return ast::tool::equal_type(left, right);
         }
 
         bool comparable_type(std::shared_ptr<ast::Type>& left, std::shared_ptr<ast::Type>& right) {
-            if (equal_type(left, right)) {
-                return true;
+            auto res = ast::tool::comparable_type(left, right);
+            if (!res) {
+                res.error().report();
             }
-            auto check_range_compare = [&](ast::RangeType* rty, std::shared_ptr<ast::Type>& other_hand) {
-                if (!rty->base_type) {
-                    return true;  // range .. or ..= is always comparable to any type
-                }
-                int_type_fitting(rty->base_type, other_hand);
-                return equal_type(rty->base_type, other_hand);
-            };
-            if (auto rty = ast::as<ast::RangeType>(left)) {
-                return check_range_compare(rty, right);
-            }
-            if (auto rty = ast::as<ast::RangeType>(right)) {
-                return check_range_compare(rty, left);
-            }
-            auto check_array_str_compare = [&](ast::ArrayType* arr, const std::shared_ptr<ast::Type>& other_hand) {
-                auto ty = ast::as<ast::IntType>(arr->element_type);
-                if (!ty || ty->bit_size != 8) {
-                    return false;  // only byte array is comparable with string
-                }
-                if (auto str = ast::as<ast::StrLiteralType>(other_hand)) {
-                    if (arr->length && arr->length_value) {
-                        if (*arr->length_value != str->base.lock()->length) {
-                            return false;
-                        }
-                    }
-                    return true;
-                }
-                if (auto regex = ast::as<ast::RegexLiteralType>(other_hand)) {
-                    return true;
-                }
-                return false;
-            };
-            if (auto arr = ast::as<ast::ArrayType>(right)) {
-                return check_array_str_compare(arr, left);
-            }
-            if (auto arr = ast::as<ast::ArrayType>(left)) {
-                return check_array_str_compare(arr, right);
-            }
-            if (auto regex = ast::as<ast::RegexLiteralType>(left)) {
-                return ast::as<ast::StrLiteralType>(right) || ast::as<ast::ArrayType>(right);
-            }
-            if (auto regex = ast::as<ast::RegexLiteralType>(right)) {
-                return ast::as<ast::StrLiteralType>(left) || ast::as<ast::ArrayType>(left);
-            }
-            return false;
+            return *res;
         }
 
         std::shared_ptr<ast::Type> common_type(std::shared_ptr<ast::Type>& a, std::shared_ptr<ast::Type>& b) {
-            int_type_fitting(a, b);
-            if (equal_type(a, b)) {
-                return a;
+            auto res = ast::tool::common_type(a, b);
+            if (!res) {
+                res.error().report();
             }
-            if (a->node_type == ast::NodeType::int_type && b->node_type == ast::NodeType::int_type) {
-                auto a_i = ast::as<ast::IntType>(a);
-                auto b_i = ast::as<ast::IntType>(b);
-                if (a_i->bit_size == b_i->bit_size) {
-                    if (a_i->is_signed == b_i->is_signed) {
-                        return a;
-                    }
-                    return a_i->is_signed ? b : a;
-                }
-                if (a_i->bit_size > b_i->bit_size) {
-                    return a;
-                }
-                return b;
-            }
-            if (auto a_u = ast::as<ast::UnionType>(a)) {
-                if (!a_u->common_type) {
-                    return nullptr;
-                }
-                return common_type(a_u->common_type, b);
-            }
-            if (auto b_u = ast::as<ast::UnionType>(b)) {
-                if (!b_u->common_type) {
-                    return nullptr;
-                }
-                return common_type(a, b_u->common_type);
-            }
-            if (auto a_c = ast::as<ast::StructType>(a)) {
-                auto fmt = ast::as<ast::Format>(a_c->base.lock());
-                if (fmt) {
-                    for (auto& fn : fmt->cast_fns) {
-                        auto c = fn.lock();
-                        // return type cannot be int literal type
-                        auto typ = common_type(c->return_type, b);
-                        if (typ) {
-                            return typ;
-                        }
-                    }
-                }
-            }
-            if (auto b_c = ast::as<ast::StructType>(b)) {
-                auto fmt = ast::as<ast::Format>(b_c->base.lock());
-                if (fmt) {
-                    for (auto& fn : fmt->cast_fns) {
-                        auto c = fn.lock();
-                        // return type cannot be int literal type
-                        auto typ = common_type(c->return_type, a);
-                        if (typ) {
-                            return typ;
-                        }
-                    }
-                }
-            }
-            if (auto a_a = ast::as<ast::ArrayType>(a)) {
-                if (auto b_a = ast::as<ast::ArrayType>(b)) {
-                    if (equal_type(a_a->element_type, b_a->element_type)) {
-                        auto base_typ = a_a->element_type;
-                        return std::make_shared<ast::ArrayType>(a_a->loc, nullptr, a_a->end_loc, std::move(base_typ));
-                    }
-                }
-            }
-            return nullptr;
+            return *res;
         }
 
         // OrCond_common_type is used for OrCond type inference
         // this function uses common_type first
         // and also infer common type between range and other types based on RangeType.base_type
         std::shared_ptr<ast::Type> OrCond_common_type(std::shared_ptr<ast::Type>& a, std::shared_ptr<ast::Type>& b) {
-            // special edge case for int literal type
-            if (auto t1 = ast::as<ast::IntLiteralType>(a), t2 = ast::as<ast::IntLiteralType>(b); t1 && t2) {
-                if (t1->bit_size == t2->bit_size) {
-                    return a;
-                }
-                if (t1->bit_size > t2->bit_size) {
-                    return a;
-                }
-                return b;
+            auto res = ast::tool::OrCond_common_type(a, b);
+            if (!res) {
+                res.error().report();
             }
-            auto t = common_type(a, b);
-            if (t) {
-                return t;
-            }
-            if (auto r = ast::as<ast::RangeType>(a)) {
-                if (r->base_type) {
-                    return common_type(r->base_type, b);
-                }
-            }
-            if (auto r = ast::as<ast::RangeType>(b)) {
-                if (r->base_type) {
-                    return common_type(a, r->base_type);
-                }
-            }
-            return nullptr;
+            return *res;
         }
 
        private:
@@ -288,7 +114,7 @@ namespace brgen::middle {
             auto fitting = [&](auto& a, auto& b) {
                 auto ity = ast::as<ast::IntType>(a);
                 auto lty = ast::as<ast::IntLiteralType>(b);
-                auto bit_size = lty->get_bit_size();
+                auto bit_size = lty->bit_size;
                 if (ity->bit_size < *bit_size) {
                     error(lty->loc, "bit size ", nums(*bit_size), " is too large")
                         .error(ity->loc, "for this")
@@ -379,8 +205,6 @@ namespace brgen::middle {
             if (!check_right_typed()) {
                 return;
             }
-            // auto new_type = int_literal_to_int_type(right->expr_type);
-
             if (b->op == ast::BinaryOp::define_assign) {
                 assert(left_ident);
                 assert(left_ident->usage == ast::IdentUsage::define_variable);
@@ -989,15 +813,14 @@ namespace brgen::middle {
             if (call->arguments.size() > 1) {
                 error(call->loc, "expect 0 or 1 argument but got ", nums(call->arguments.size())).report();
             }
-            std::shared_ptr<ast::Expr> copy2;
-            if (call->arguments.size() == 1) {
-                typing_expr(call->arguments[0]);
-                copy2 = call->arguments[0];
-            }
             auto copy = call->expr_type;
             assert(copy);
-            auto cast = std::make_shared<ast::Cast>(ast::cast_to<ast::Call>(base_node.to_node()), std::move(copy), std::move(copy2));
+            auto cast = std::make_shared<ast::Cast>(ast::cast_to<ast::Call>(base_node.to_node()), std::move(copy),
+                                                    call->arguments);
             base_node.replace(std::move(cast));
+            for (auto& arg : call->arguments) {
+                typing_expr(arg);
+            }
         }
 
         void typing_call(ast::Call* call, NodeReplacer base_node) {
@@ -1484,10 +1307,12 @@ namespace brgen::middle {
             // but inner expression may not be typed
             if (auto c = ast::as<ast::Cast>(expr)) {
                 assert(c->expr_type);
-                if (c->expr) {
-                    typing_expr(c->expr);
-                    c->constant_level = c->expr->constant_level;
+                auto level = ast::ConstantLevel::constant;
+                for (auto& args : c->arguments) {
+                    typing_expr(args);
+                    level = decide_constant_level(level, args->constant_level);
                 }
+                c->constant_level = level;
             }
             if (auto a = ast::as<ast::Available>(expr)) {
                 typing_expr(a->target, false);
@@ -1636,7 +1461,12 @@ namespace brgen::middle {
                 auto conf = ast::tool::extract_config(arg, ast::tool::ExtractMode::assign);
                 if (!conf) {
                     typing_expr(arg);
-                    args->arguments.push_back(std::move(arg));
+                    if (auto b = ast::as<ast::Binary>(arg); b && ast::is_assign_op(b->op)) {
+                        args->assigns.push_back(ast::cast_to<ast::Binary>(std::move(arg)));
+                    }
+                    else {
+                        args->arguments.push_back(std::move(arg));
+                    }
                     continue;
                 }
                 if (conf->name == "input.align") {
@@ -1710,6 +1540,41 @@ namespace brgen::middle {
                     typing_expr(v);
                 }
                 args->metadata.push_back(std::move(m));
+            }
+
+            // analyze fixed mapping type
+            if (args->arguments.size() != 0) {
+                if (args->arguments.size() != 1) {
+                    args->argument_mapping = ast::FieldArgumentMapping::some_candidate;
+                }
+                auto array_ty = ast::as<ast::ArrayType>(field->field_type);
+                for (auto& arg : args->arguments) {
+                    auto& typ = arg->expr_type;
+                    int_type_fitting(field->field_type, typ);
+                    if (comparable_type(field->field_type, typ)) {
+                        args->argument_mapping = ast::FieldArgumentMapping(size_t(args->argument_mapping) | size_t(ast::FieldArgumentMapping::direct));
+                    }
+                    else if (array_ty && (int_type_fitting(array_ty->element_type, typ), comparable_type(array_ty->element_type, typ))) {
+                        args->argument_mapping = ast::FieldArgumentMapping(size_t(args->argument_mapping) | size_t(ast::FieldArgumentMapping::repeat));
+                    }
+                    else if (auto meta = ast::as<ast::TypeLiteral>(arg); meta) {
+                        if (args->type_map) {
+                            error(meta->loc, "cannot specify type mapping twice").error(args->type_map->loc, "type mapping is specified here").report();
+                        }
+                        args->type_map = ast::cast_to<ast::TypeLiteral>(arg);
+                    }
+                    else {
+                        auto field_ty = ast::tool::type_to_string(field->field_type);
+                        auto arg_ty = ast::tool::type_to_string(typ);
+                        if (array_ty) {
+                            auto element_ty = ast::tool::type_to_string(array_ty->element_type);
+                            error(arg->loc, "cannot decide fixed value argument; expect ", field_ty, " or ", element_ty, " but got ", arg_ty).report();
+                        }
+                        else {
+                            error(arg->loc, "cannot decide fixed value argument; expect ", field_ty, " but got ", arg_ty).report();
+                        }
+                    }
+                }
             }
         }
 

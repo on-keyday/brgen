@@ -182,8 +182,8 @@ namespace brgen::ast {
                     else if constexpr (std::is_same_v<P, OrderType>) {
                         field(key, "order_type");
                     }
-                    else if constexpr (std::is_same_v<P, FormatTrait>) {
-                        field(key, "format_trait");
+                    else if constexpr (std::is_same_v<P, BlockTrait>) {
+                        field(key, "block_trait");
                     }
                     else if constexpr (futils::helper::is_template<P>) {
                         using P1 = typename futils::helper::template_of_t<P>::template param_at<0>;
@@ -337,7 +337,7 @@ namespace brgen::ast {
         enum_type<IOMethod>("io_method", field);
         enum_type<SpecialLiteralKind>("special_literal_kind", field);
         enum_type<OrderType>("order_type", field);
-        enum_type<FormatTrait>("format_trait", field);
+        enum_type<BlockTrait>("block_trait", field);
     }
 
     void struct_types(auto&& field) {

@@ -1,0 +1,33 @@
+
+state S:
+    is_ok :bool
+    ok_bit :u1
+s :S
+
+format Nest:
+    a :u32
+
+format None:
+    ..
+
+format A:
+    a :u1
+    d :[a]u8
+    if a == 1:
+        q :[a]u8
+        n :[22]u8
+    if d.length > 0:
+        if s.ok_bit != a:
+            error("not output")
+        s.ok_bit == 1
+    v := input.get(u8)
+    input.bit_order = v == 0 ? config.bit_order.lsb : config.bit_order.msb
+    nest :Nest
+
+    fn encode():
+        input.bit_order = config.bit_order.msb
+        val := input.get(<[32]u1>)
+        result := <[]A>()
+        result[result.length] = A()
+        for v in val:
+            ..

@@ -46,8 +46,8 @@
         "type": "object",
         "properties": {
           "generator": {
-            "type": "string",
-            "description": "Generator executable path (on windows, needless to specify .exe extension)"
+            "type": ["string", "array"],
+            "description": "Generator executable path (on windows, needless to specify .exe extension) or array of generator executable path and arguments (i.e. [\"go\", \"run\", \"generator.go\"])"
           },
           "output_dir": {
             "type": "string",
