@@ -652,8 +652,8 @@ func (g *Generator) writeStructVisitor(name string, p *ast2go.StructType) {
 			g.imports["reflect"] = struct{}{}
 			reflect.ValueOf(1)
 			// if array of non-primitive type, then call ToMap for each element
-			g.Printf("if tf := reflect.TypeOf(v); (tf.Kind() == reflect.Slice || tf.Kind() == reflect.Array)&& ")
-			g.Printf("!(tf.Elem().CanInt()||tf.Elem().CanUint()) {\n")
+			g.Printf("if tf := reflect.ValueOf(v); (tf.Kind() == reflect.Slice || tf.Kind() == reflect.Array)&& ")
+			g.Printf("!(tf.Elem().CanInt()||tf.Elem().CanUint()||tf.Elem().CanFloat()) {\n")
 			g.Printf("m := []interface{}{}\n")
 			g.Printf("for i:=0;i<tf.Len();i++{\n")
 			g.Printf("m = append(m,%sToMap(tf.Index(i).Interface()))\n", g.visitorName)
