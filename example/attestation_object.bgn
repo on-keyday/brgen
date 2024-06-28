@@ -1,3 +1,4 @@
+cbor := config.import("cbor.bgn")
 
 format AuthenticatorData:
     rp_id_hash :[32]u8
@@ -10,11 +11,13 @@ format AuthenticatorData:
     reserved2 :u1(0)
     up :u1
     counter :ub32
-    attested_credential_data :AuthenticatorDataAttestation
-
+    if at == 1:
+        attested_credential_data :AuthenticatorDataAttestation
+    if ed == 1:
+        extensions :[..]u8
 
 format AuthenticatorDataAttestation:
     aaguid :[16]u8
     credential_id_length :u16
     credential_id :[credential_id_length]u8
-    credential_public_key :[..]u8
+    credential_public_key :cbor.Value
