@@ -177,3 +177,26 @@ format GetNonLoggedInInfo:
     relying_party :RelayingPartyID
     user_verification :UserVerificationRequirement
     timeout :u32
+
+format CredentialFlags:
+    user_present :u1
+    user_verified :u1
+    backup_eligible :u1
+    backup_state :u1
+    reserved :u4
+
+format Authenticator:
+    aaguid :[16]u8
+    flags :CredentialFlags
+    sign_count :u32
+    attachment :AuthenticatorAttachment
+    clone_warning :u1
+    reserved :u7
+
+format Credential:
+    id_len :u8
+    id :[id_len]u8
+    public_key_len :u16
+    public_key :[public_key_len]u8
+    transports :Transport
+    authenticator :Authenticator
