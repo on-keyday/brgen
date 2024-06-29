@@ -1,7 +1,6 @@
 cbor := config.import("cbor.bgn")
 
-format AuthenticatorData:
-    rp_id_hash :[32]u8
+format AuthFlags:
     ed :u1
     at :u1
     reserved1:u1(0)
@@ -10,10 +9,14 @@ format AuthenticatorData:
     uv :u1
     reserved2 :u1(0)
     up :u1
+
+format AuthenticatorData:
+    rp_id_hash :[32]u8
+    flags :AuthFlags
     counter :ub32
-    if at == 1:
+    if flags.at == 1:
         attested_credential_data :AuthenticatorDataAttestation
-    if ed == 1:
+    if flags.ed == 1:
         extensions :[..]u8
 
 format AuthenticatorDataAttestation:

@@ -1,4 +1,5 @@
 config.go.package = "format"
+config.url = "https://www.rfc-editor.org/rfc/rfc8949.html"
 enum MajorType:
     unsigned_int_n = 0
     negative_int_1_n = 1

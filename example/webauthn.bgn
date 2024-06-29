@@ -24,6 +24,7 @@ enum AuthenticatorResponseType:
 format AuthenticatorAttestationResponse:
     attestation_len :u16
     attestation_response :[attestation_len]u8
+    transports :Transport
 
 
 format AuthenticatorAssertionResponse:
@@ -55,6 +56,7 @@ enum AuthenticatorAttachment:
     :u8
     platform = 0
     cross_platform = 1,"cross-platform"
+    unspecified = 2
 
 enum UserVerificationRequirement:
     :u8
@@ -74,8 +76,9 @@ enum PublicKeyCredentialType:
     :u8
     public_key = 0x55
 
-enum Trasport:
+enum Transport:
     :u8
+    none = 0x00
     usb = 0x01
     nfc = 0x02
     ble = 0x04
@@ -86,7 +89,7 @@ format PublicKeyCredentialDescriptor:
     id_len :u8
     id :[id_len]u8
     type :PublicKeyCredentialType
-    transports :Trasport # bitfield
+    transports :Transport # bitfield
 
 format ExcludeCredentials:
     len :u8
