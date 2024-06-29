@@ -4,6 +4,7 @@ config.word.map("Id","ID")
 format PublicKeyCredential:
     raw_id_len :u8
     raw_id :[raw_id_len]u8
+    cred_type :PublicKeyCredentialType
     attachment :AuthenticatorAttachment
     response :AuthenticatorResponse
    
@@ -74,7 +75,7 @@ format Challenge:
 
 enum PublicKeyCredentialType:
     :u8
-    public_key = 0x55
+    public_key = 0x55,"public-key"
 
 enum Transport:
     :u8
