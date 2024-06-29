@@ -54,7 +54,7 @@ format AttestationFormat:
 
 enum AuthenticatorAttachment:
     :u8
-    platform = 0
+    platform = 0,"platform"
     cross_platform = 1,"cross-platform"
     unspecified = 2
 

@@ -14,20 +14,24 @@ format Pair:
     key :Value
     value :Value
 
+NEGATIVE_INT_BEGIN ::= 0x20
+NEGATIVE_INT_END ::= 0x3b
+
+
 format Value:
     type :u8
     match type:
-        0x00..0x17 => ..
+        0x00..=0x17 => ..
         0x18 => data :u8
         0x19 => data :u16
         0x1a => data :u32
         0x1b => data :u64
-        0x20..0x37 => ..
-        0x38 => data :u8
-        0x39 => data :u16
-        0x3a => data :u32
-        0x3b => data :u64
-        0x40..0x57 => data :[type - 0x40]u8
+        0x20..=0x37 => .. # negative int (-1-0x0~0x17)
+        0x38 => data :u8 # negative int (-1-0x00 ~ -1-0xFF)
+        0x39 => data :u16 # negative int (-1-0x0100 ~ -1-0xFFFF)
+        0x3a => data :u32 # negative int (-1-0x010000 ~ -1-0xFFFFFFFF)
+        0x3b => data :u64 # negative int (-1-0x0100000000 ~ -1-0xFFFFFFFFFFFFFFFF)
+        0x40..=0x57 => data :[type - 0x40]u8
         0x58: 
             length :u8
             data :[length]u8
@@ -59,7 +63,7 @@ format Value:
         0x7f:
             data :[..]u8
             :"\xff"
-        0x80..0x97 => data :[type - 0x80]Value
+        0x80..=0x97 => data :[type - 0x80]Value
         0x98:
             length :u8
             data :[length]Value
@@ -75,7 +79,7 @@ format Value:
         0x9f:
             data :[..]Value
             :"\xff"
-        0xa0..0xb7 => data :[type - 0xa0]Pair
+        0xa0..=0xb7 => data :[type - 0xa0]Pair
         0xb8:
             length :u8
             data :[length]Pair

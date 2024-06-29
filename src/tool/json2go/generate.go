@@ -643,6 +643,9 @@ func (g *Generator) writeStructVisitor(name string, p *ast2go.StructType) {
 			g.Printf("return nil\n")
 			g.Printf("}\n")
 			g.Printf("if inter,ok := v.(%sVisitable);ok{\n", g.visitorName)
+			g.Printf("if p := reflect.ValueOf(inter); p.Kind() == reflect.Pointer && p.IsNil() {\n")
+			g.Printf("return nil\n")
+			g.Printf("}\n")
 			g.Printf("m := map[string]interface{}{}\n")
 			g.Printf("inter.Visit(%sFunc(func(v %s,name string,field any){\n", g.visitorName, g.visitorName)
 			g.Printf("m[name] = %sToMap(field)\n", g.visitorName)
@@ -1375,25 +1378,32 @@ func (g *Generator) writeEnum(v *ast2go.Enum) {
 	g.Printf("}\n")
 }
 
+func (g *Generator) writeProgramElement(p *ast2go.Program) {
+	for _, v := range p.Elements {
+
+		if v, ok := v.(*ast2go.Enum); ok {
+			g.writeEnum(v)
+		}
+		if v, ok := v.(*ast2go.Binary); ok {
+			if v.Op == ast2go.BinaryOpConstAssign &&
+				v.Right.GetConstantLevel() == ast2go.ConstantLevelConstant {
+				ident := v.Left.(*ast2go.Ident)
+				g.Printf("const %s = %s\n", ident.Ident, g.exprStringer.ExprString(v.Right))
+				g.exprStringer.SetIdentMap(ident, "%s"+ident.Ident)
+			} else if imports, ok := v.Right.(*ast2go.Import); ok {
+				g.writeProgramElement(imports.ImportDesc)
+			}
+		}
+	}
+}
+
 func (g *Generator) writeProgram(p *ast2go.Program) {
 	conf := &gen.GenConfig{}
 	conf.LookupGoConfig(p)
 	if conf.PackageName == "" {
 		conf.PackageName = "main"
 	}
-
-	for _, v := range p.Elements {
-
-		if v, ok := v.(*ast2go.Enum); ok {
-			g.writeEnum(v)
-		}
-		if v, ok := v.(*ast2go.Binary); ok && v.Op == ast2go.BinaryOpConstAssign &&
-			v.Right.GetConstantLevel() == ast2go.ConstantLevelConstant {
-			ident := v.Left.(*ast2go.Ident)
-			g.Printf("const %s = %s\n", ident.Ident, g.exprStringer.ExprString(v.Right))
-			g.exprStringer.SetIdentMap(ident, "%s"+ident.Ident)
-		}
-	}
+	g.writeProgramElement(p)
 	formats := gen.TopologicalSortFormat(p)
 	for _, v := range formats {
 		if v.Body.StructType.BitAlignment != ast2go.BitAlignmentByteAligned {
