@@ -198,5 +198,7 @@ format Credential:
     id :[id_len]u8
     public_key_len :u16
     public_key :[public_key_len]u8
+    attestation_type_len :u8
+    attestation_type :[attestation_type_len]u8
     transports :Transport
     authenticator :Authenticator
