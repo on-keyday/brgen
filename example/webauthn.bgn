@@ -41,6 +41,16 @@ enum Algorithm:
     Ed25519 = -8
     ES256 = -7
     RS256 = -257
+    RS384 = -258
+    RS512 = -259
+    RS1 = -65535
+    ES384 = -35
+    ES512 = -36
+    PS256 = -37
+    PS384 = -38
+    PS512 = -39
+    ES256K = -47
+
 
 enum AttestationConveyancePreference:
     :u8
