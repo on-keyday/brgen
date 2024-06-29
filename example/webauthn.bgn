@@ -59,6 +59,13 @@ enum AttestationConveyancePreference:
     direct = 2
     enterprise = 3
 
+enum PublicKeyCredentialHint:
+    :u8
+    none = 0
+    security_key = 1,"security-key"
+    client_device = 2,"client-device"
+    hybrid = 3
+
 format AttestationFormat:
     fmt_len :u8
     fmt :[fmt_len]u8
@@ -102,7 +109,7 @@ format PublicKeyCredentialDescriptor:
     type :PublicKeyCredentialType
     transports :Transport # bitfield
 
-format ExcludeCredentials:
+format Credentials:
     len :u8
     credentials :[len]PublicKeyCredentialDescriptor
 
@@ -130,13 +137,16 @@ format User:
     display_name_len :u8
     display_name :[display_name_len]u8
 
+format AttestationFormats:
+    len :u8
+    formats :[len]AttestationFormat
+
 format CreateInfo:
     challenge :Challenge
     attestation :AttestationConveyancePreference
-    attestation_format_len :u8
-    attestation_formats :[attestation_format_len]AttestationFormat
+    attestation_formats :AttestationFormats
     authenticator_selection :AuthenticatorSelection
-    exclude_credentials :ExcludeCredentials
+    exclude_credentials :Credentials
     extensions_len :u8
     extensions :[extensions_len]Extension
     pubkey_credential_params_len :u8
@@ -144,3 +154,16 @@ format CreateInfo:
     relying_party :RelayingParty
     user :User
     timeout :u32
+    hints :[3]PublicKeyCredentialHint # if not used, set to PublicKeyCredentialHint.none
+
+format GetInfo:
+    challenge :Challenge
+    attestation :AttestationConveyancePreference
+    attestation_formats :AttestationFormats
+    allow_credentials :Credentials
+    extensions_len :u8
+    extensions :[extensions_len]Extension
+    relying_party :RelayingParty
+    user_verification :UserVerificationRequirement
+    timeout :u32
+    hints :[3]PublicKeyCredentialHint # if not used, set to PublicKeyCredentialHint.none
