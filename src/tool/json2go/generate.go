@@ -24,6 +24,7 @@ var legacyStdin = flag.Bool("legacy-stdin", false, "use legacy stdin")
 var decodeExact = flag.Bool("decode-exact", true, "add func DecodeExact")
 var useMustEncode = flag.Bool("must-encode", true, "add func MustEncode")
 var useVisitor = flag.Bool("visitor", true, "add visitor pattern and ToMap")
+var jsonMarshal = flag.Bool("marshal-json", true, "add func MarshalJSON (require:-visitor=true)")
 var testInfo = flag.Bool("test-info", false, "output test info")
 var mappingWords = map[string]string{}
 
@@ -690,6 +691,12 @@ func (g *Generator) writeStructVisitor(name string, p *ast2go.StructType) {
 		}
 	}
 	g.PrintfFunc("}\n")
+	if *jsonMarshal {
+		g.imports["encoding/json"] = struct{}{}
+		g.PrintfFunc("func (t *%s) MarshalJSON() ([]byte, error) {\n", name)
+		g.PrintfFunc("return json.Marshal(%sToMap(t))\n", g.visitorName)
+		g.PrintfFunc("}\n")
+	}
 }
 
 func (g *Generator) writeFormat(p *ast2go.Format) {

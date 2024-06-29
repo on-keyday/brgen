@@ -136,6 +136,9 @@ const argConverter = Object.freeze({
         if(opt.omit_visitors) {
             args.push("-visitor=false");
         }
+        if(opt.omit_marshal_json) {
+            args.push("-marshal-json=false");
+        }
         return args;
     },
     [RequestLanguage.C] : (opt :COption) => {

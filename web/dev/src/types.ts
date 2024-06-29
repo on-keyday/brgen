@@ -22,6 +22,7 @@ export const enum ConfigKey {
     GO_OMIT_MUST_ENCODE = "omit_must_encode",
     GO_OMIT_DECODE_EXACT = "omit_decode_exact",
     GO_OMIT_VISITOR= "omit_visitors",
+    GO_OMIT_MARSHAL_JSON = "omit_marshal_json",
     TS_JAVASCRIPT = "javascript",
     C_MULTI_FILE = "multi_file",
     C_OMIT_ERROR_CALLBACK = "omit_error",

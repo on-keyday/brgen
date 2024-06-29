@@ -556,6 +556,10 @@ const setCommon = (m :Map<string,InputListElement>) => {
         "type": "checkbox",
         "value": false,
     })
+    go.set(ConfigKey.GO_OMIT_MARSHAL_JSON,{
+        "type": "checkbox",
+        "value": false,
+    });
     setCommon(go);
     commonUI.config.set(Language.GO,languageSpecificConfig(go,ConfigKey.COMMON_FILE_NAME,(change) => {
         updateUI();

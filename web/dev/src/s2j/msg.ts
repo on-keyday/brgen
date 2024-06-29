@@ -64,6 +64,7 @@ export interface GoOption extends CallOption {
     omit_must_encode? :boolean,
     omit_decode_exact? :boolean,
     omit_visitors? :boolean,
+    omit_marshal_json? :boolean,
 }
 
 export interface COption extends CallOption {
