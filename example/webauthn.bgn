@@ -129,6 +129,10 @@ format RelayingParty:
     name_len :u8
     name :[name_len]u8
 
+format RelayingPartyID:
+    len :u8
+    id :[len]u8
+
 format User:
     id_len :u8
     id :[id_len]u8
@@ -156,14 +160,20 @@ format CreateInfo:
     timeout :u32
     hints :[3]PublicKeyCredentialHint # if not used, set to PublicKeyCredentialHint.none
 
-format GetInfo:
+format GetLoggedInInfo:
     challenge :Challenge
     attestation :AttestationConveyancePreference
     attestation_formats :AttestationFormats
     allow_credentials :Credentials
     extensions_len :u8
     extensions :[extensions_len]Extension
-    relying_party :RelayingParty
+    relying_party :RelayingPartyID
     user_verification :UserVerificationRequirement
     timeout :u32
     hints :[3]PublicKeyCredentialHint # if not used, set to PublicKeyCredentialHint.none
+
+format GetNonLoggedInInfo:
+    challenge :Challenge
+    relying_party :RelayingPartyID
+    user_verification :UserVerificationRequirement
+    timeout :u32
