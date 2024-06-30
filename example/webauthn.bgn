@@ -141,6 +141,10 @@ format User:
     display_name_len :u8
     display_name :[display_name_len]u8
 
+format UserHandle:
+    len :u8
+    id :[len]u8
+
 format AttestationFormats:
     len :u8
     formats :[len]AttestationFormat
@@ -193,7 +197,7 @@ format Authenticator:
     clone_warning :u1
     reserved :u7
 
-format Credential:
+format Credentialv1:
     id_len :u8
     id :[id_len]u8
     public_key_len :u16
@@ -202,3 +206,20 @@ format Credential:
     attestation_type :[attestation_type_len]u8
     transports :Transport
     authenticator :Authenticator
+
+format Credential:
+    version :u8
+    if version == 1:
+        v1 :Credentialv1
+    else:
+        error("Unsupported version")
+
+format Session:
+    challenge :Challenge
+    user_handle :UserHandle
+    user_verification :UserVerificationRequirement
+
+format EncryptedSession:
+    nonce :[12]u8
+    encrypted_session :[..]u8
+
