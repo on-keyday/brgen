@@ -12,7 +12,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@1c2ab3f28225878ae4dd1f76d31279f16ea29e29 # v2.1.1
+        uses: Kesin11/actions-timeline@518da3e0348d81936d2582859c88984728434d78 # v2.1.2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
@@ -69,7 +69,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@1c2ab3f28225878ae4dd1f76d31279f16ea29e29 # v2.1.1
+        uses: Kesin11/actions-timeline@518da3e0348d81936d2582859c88984728434d78 # v2.1.2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
@@ -147,7 +147,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@1c2ab3f28225878ae4dd1f76d31279f16ea29e29 # v2.1.1
+        uses: Kesin11/actions-timeline@518da3e0348d81936d2582859c88984728434d78 # v2.1.2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
@@ -207,7 +207,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@1c2ab3f28225878ae4dd1f76d31279f16ea29e29 # v2.1.1
+        uses: Kesin11/actions-timeline@518da3e0348d81936d2582859c88984728434d78 # v2.1.2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
@@ -243,7 +243,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@1c2ab3f28225878ae4dd1f76d31279f16ea29e29 # v2.1.1
+        uses: Kesin11/actions-timeline@518da3e0348d81936d2582859c88984728434d78 # v2.1.2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
@@ -284,7 +284,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@1c2ab3f28225878ae4dd1f76d31279f16ea29e29 # v2.1.1
+        uses: Kesin11/actions-timeline@518da3e0348d81936d2582859c88984728434d78 # v2.1.2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
@@ -329,7 +329,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@1c2ab3f28225878ae4dd1f76d31279f16ea29e29 # v2.1.1
+        uses: Kesin11/actions-timeline@518da3e0348d81936d2582859c88984728434d78 # v2.1.2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
@@ -359,7 +359,7 @@ jobs:
         run: |
           go install github.com/Songmu/gocredits/cmd/gocredits@latest
       - name: Set up ruby
-        uses: ruby/setup-ruby@3783f195e29b74ae398d7caca108814bbafde90e # v1.180.1
+        uses: ruby/setup-ruby@1d0e911f615a112e322369596f10ee0b95b010ae # v1.183.0
         with:
           ruby-version: ruby
       - uses: github/setup-licensed@d6b3a6f7058c2b40c06d205e13e15c2418977566 # v1.1.4
@@ -383,7 +383,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@1c2ab3f28225878ae4dd1f76d31279f16ea29e29 # v2.1.1
+        uses: Kesin11/actions-timeline@518da3e0348d81936d2582859c88984728434d78 # v2.1.2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout
