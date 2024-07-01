@@ -36,13 +36,6 @@ enum Type:
     timestamp64 = 0xd7
     timestamp96 = 0xd8
 
-# TODO(on-keyday): implement float as builtin type
-format f32:
-     value :u32
-
-format f64:
-    value :u64
-
 format MapPair:
     key :MsgPack
     value :MsgPack
