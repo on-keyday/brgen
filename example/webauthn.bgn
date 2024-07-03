@@ -219,7 +219,4 @@ format Session:
     user_handle :UserHandle
     user_verification :UserVerificationRequirement
 
-format EncryptedSession:
-    nonce :[12]u8
-    encrypted_session :[..]u8
 

@@ -1,0 +1,24 @@
+
+config.url = "https://fidoalliance.org/specs/fido-u2f-v1.2-ps-20170411/fido-u2f-raw-message-formats-v1.2-ps-20170411.html"
+
+enum U2FCommand:
+    :u8
+    Register = 0x01
+    Authenticate = 0x02
+
+format U2FMessage:
+    type :U2FCommand
+    if type == U2FCommand.Register:
+        register :RegisterRequest
+    else:
+        authenticate :AuthenticateRequest
+    
+format RegisterRequest:
+    challenge :[32]u8
+    application :[32]u8
+
+format AuthenticateRequest:
+    challenge :[32]u8
+    application :[32]u8
+    key_handle_len :u8
+    key_handle :[key_handle_len]u8

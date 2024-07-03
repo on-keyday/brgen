@@ -1,6 +1,6 @@
 cbor := config.import("cbor.bgn")
 
-format AuthFlags:
+format AuthFlags: # from msb
     ed :u1
     at :u1
     reserved1:u1(0)
