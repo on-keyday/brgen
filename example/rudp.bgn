@@ -1,0 +1,83 @@
+
+config.url = "https://datatracker.ietf.org/doc/html/draft-ietf-sigtran-reliable-udp-00"
+
+format RUDPFlags:
+    syn :u1
+    ack :u1
+    eak :u1
+    rst :u1
+    nul :u1
+    chk :u1
+    tcs :u1
+    reserved :u1(0)
+
+format RUDPHeader:
+    flags :RUDPFlags
+    header_length :u8
+    seq_num :u8
+    ack_num :u8
+    checksum :u16
+
+format RUDPPacket:
+    header :RUDPHeader
+    if header.flags.syn == 1:
+        syn :SYNSegment
+    elif header.flags.eak == 1:
+        eak :EAKSegment
+    elif header.flags.rst == 1:
+        rst :RSTSegment
+    elif header.flags.nul == 1:
+        nul :NULSegment
+    elif header.flags.tcs == 1:
+        tcs :TCSSegment
+    elif header.flags.ack == 1:
+        ack :ACKSegment
+    else:
+        data :[..]u8
+
+format SYNSegment:
+    version :u4
+    reserved1 :u4
+    max_number_of_out_standing_segments :u8
+    option_flags :u8
+    reserved2 :u8
+    max_segment_size :u16
+    retransmission_timeout :u16
+    cumulative_ack_timeout :u16
+    null_segment_timeout :u16
+    transfer_state_timeout :u16
+    max_rerans :u8
+    max_cumulative_acks :u8
+    max_out_of_sequence :u8
+    max_auto_reset :u8
+    connection_id :[32]u8
+    checksum :u16
+
+format ACKSegment:
+    seq_num :u8
+    ack_num :u8
+    checksum :u16
+
+format EAKSegment:
+    seq_num :u8
+    ack_num :u8
+    out_of_ack_nums :[..]u8
+    checksum :u16
+
+format RSTSegment:
+    seq_num :u8
+    ack_num :u8
+    header_checksum :u16
+
+format NULSegment:
+    seq_num :u8
+    ack_num :u8
+    checksum :u16
+
+format TCSSegment:
+    seq_num :u8
+    ack_num :u8
+    seq_adj_factor :u8
+    reserved :u8
+    connection_id :[32]u8
+    checksum :u16
