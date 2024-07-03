@@ -1,0 +1,19 @@
+
+config.url = "https://en.wikipedia.org/wiki/Datagram_Congestion_Control_Protocol"
+
+format GenericHeader:
+    srcPort :u16
+    dstPort :u16
+    dataOffset :u8
+    ccVal :u4
+    csCov :u4
+    checksum :u16
+    res :u3
+    type :u4
+    x :u1
+    if x == 1:
+        reserved :u8
+        seqNum :u48
+    else:
+        seqNum :u24
+    

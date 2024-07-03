@@ -104,8 +104,7 @@ enum Transport:
     hybrid = 0x10
 
 format PublicKeyCredentialDescriptor:
-    id_len :u8
-    id :[id_len]u8
+    id :CredentialID
     type :PublicKeyCredentialType
     transports :Transport # bitfield
 
@@ -202,8 +201,7 @@ format Authenticator:
     reserved :u7
 
 format Credentialv1:
-    id_len :u8
-    id :[id_len]u8
+    id :CredentialID
     public_key_len :u16
     public_key :[public_key_len]u8
     attestation_type_len :u8
@@ -218,11 +216,19 @@ format Credential:
     else:
         error("Unsupported version")
 
+format CredentialID:
+    len :u8
+    id :[len]u8
+
+format CredentialIDs:
+    len :u8
+    ids :[len]CredentialID
+
 format Session:
     challenge :Challenge
     user_handle :UserHandle
     user_verification :UserVerificationRequirement
-    allowed_credentials :Credentials
+    allowed_credentials :CredentialIDs
     extensions :Extensions
     expires :s64
 
