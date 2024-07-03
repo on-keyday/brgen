@@ -149,14 +149,17 @@ format AttestationFormats:
     len :u8
     formats :[len]AttestationFormat
 
+format Extensions:
+    len :u8
+    extensions :[len]Extension
+
 format CreateInfo:
     challenge :Challenge
     attestation :AttestationConveyancePreference
     attestation_formats :AttestationFormats
     authenticator_selection :AuthenticatorSelection
     exclude_credentials :Credentials
-    extensions_len :u8
-    extensions :[extensions_len]Extension
+    extensions :Extensions
     pubkey_credential_params_len :u8
     pubkey_credential_params :[pubkey_credential_params_len]PublicKeyCredentialParam
     relying_party :RelayingParty
@@ -164,13 +167,14 @@ format CreateInfo:
     timeout :u32
     hints :[3]PublicKeyCredentialHint # if not used, set to PublicKeyCredentialHint.none
 
+
+
 format GetLoggedInInfo:
     challenge :Challenge
     attestation :AttestationConveyancePreference
     attestation_formats :AttestationFormats
     allow_credentials :Credentials
-    extensions_len :u8
-    extensions :[extensions_len]Extension
+    extensions :Extensions
     relying_party :RelayingPartyID
     user_verification :UserVerificationRequirement
     timeout :u32
@@ -218,5 +222,7 @@ format Session:
     challenge :Challenge
     user_handle :UserHandle
     user_verification :UserVerificationRequirement
-
+    allowed_credentials :Credentials
+    extensions :Extensions
+    expires :s64
 
