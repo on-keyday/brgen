@@ -34,7 +34,7 @@ namespace brgen::ast {
                 if (got->branch.get() == this) {
                     return std::nullopt;
                 }
-                return got->template lookup_local(fn);
+                return got->lookup_local(fn);
             }
             return std::nullopt;
         }
@@ -58,7 +58,7 @@ namespace brgen::ast {
                 }
             }
             if (auto got = prev.lock()) {
-                return got->template lookup_local(fn);
+                return got->lookup_local(fn);
             }
             return std::nullopt;
         }
