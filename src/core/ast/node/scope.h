@@ -71,7 +71,7 @@ namespace brgen::ast {
                 }
             }
             if (next) {
-                return next->template lookup_global(fn);
+                return next->lookup_global(fn);
             }
             return std::nullopt;
         }
