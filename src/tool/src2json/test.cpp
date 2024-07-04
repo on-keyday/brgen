@@ -1,5 +1,4 @@
 /*license*/
-#pragma once
 #include <core/middle/resolve_import.h>
 #include <core/middle/resolve_available.h>
 #include <core/middle/replace_assert.h>

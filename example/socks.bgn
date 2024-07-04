@@ -1,0 +1,96 @@
+config.url = "https://gitlab.torproject.org/tpo/core/trunnel/-/blob/main/examples/socks5.trunnel?ref_type=heads"
+
+
+
+format DomainName:
+    len :u8
+    name: [len]u8
+
+enum AddressType:
+    :u8
+    IPv4 = 1
+    DomainName = 3
+    IPv6 = 4
+
+format Socks5Request:
+    version: u8
+    command: Command
+    reserved: u8
+    addressType: AddressType
+    match addressType:
+        AddressType.IPv4:
+            address: [4]u8
+        AddressType.DomainName:
+            domainName: DomainName
+        AddressType.IPv6:
+            address: [16]u8
+        .. => error("unknown address type")
+    dst_port: u16
+
+enum Command:
+    :u8
+    Connect = 1
+    Bind = 2
+    UDPAssociate = 3
+    ResolvePointer = 0xF1 # tor specific
+
+format Socks5Reply:
+    version: u8
+    reply: u8
+    reserved: u8(0)
+    addressType: AddressType
+    match addressType:
+        AddressType.IPv4:
+            address: [4]u8
+        AddressType.DomainName:
+            domainName: DomainName
+        AddressType.IPv6:
+            address: [16]u8
+        .. => error("unknown address type")
+    bind_port: u16
+
+format Socks5ClientUserPassAuth:
+    version: u8(1)
+    username_len: u8
+    username: [username_len]u8
+    password_len: u8
+    password: [password_len]u8
+
+format Socks5ServerUserPassAuth:
+    version: u8(1)
+    status: u8
+
+
+format Socks4Request:
+    version: u8
+    command: Command
+    dst_port: u16
+    dst_ip: u32
+    user_name: [..]u8
+    :"\0"
+    match dst_ip:
+        1..u32(255):
+            hostname :[..]u8
+            :"\0"
+   
+format Socks4Reply:
+    version: u8
+    reply: u8
+    dst_port: u16
+    dst_ip: u32
+
+format TorSocksAuthKeyval:
+    key_len: u8
+    key: [key_len]u8
+    value_len: u8
+    value: [value_len]u8
+
+format TorExtendedSocksAuthRequest:
+    version: u8(1)
+    n_pairs: u16
+    pairs: [n_pairs]TorSocksAuthKeyval
+
+format TorExtendedSocksAuthResponse:
+    version: u8(1)
+    n_pairs: u16
+    pairs: [n_pairs]TorSocksAuthKeyval

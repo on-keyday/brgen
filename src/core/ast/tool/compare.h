@@ -118,7 +118,7 @@ namespace brgen::ast::tool {
             if (auto ok = int_type_fitting(rty->base_type, other_hand); !ok) {
                 return ok.transform([](auto&&...) { return false; });
             }
-            return equal_type(rty->base_type, other_hand);
+            return comparable_type(rty->base_type, other_hand);
         };
         if (auto rty = ast::as<ast::RangeType>(left)) {
             return check_range_compare(rty, right);

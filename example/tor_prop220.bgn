@@ -1,0 +1,58 @@
+config.url = "https://gitlab.torproject.org/tpo/core/trunnel/-/blob/main/examples/prop220.trunnel?ref_type=heads"
+format TorEdCert:
+    version :u8(1)
+    cert_type  :u8
+    exp_field :u32
+    cert_key_type :u8
+    certified_key :[32]u8
+    n_extensions :u8
+    extensions :[n_extensions]TorEdCertExt
+    signature :[64]u8
+
+CERTEXT_SIGNED_WITH_KEY ::= 4
+
+format TorEdCertExt:
+    ext_len :u16
+    ext_type :u8
+    ext_flags :u8
+    if ext_type == CERTEXT_SIGNED_WITH_KEY:
+        signing_key :[32]u8
+    else:
+        ext_data :[ext_len]u8
+
+format CertRevocation:
+    prefix :[8]u8
+    version :u8(1)
+    key_type :u8
+    identity_key :[32]u8
+    revoked_key :[32]u8
+    published_time :u64
+    n_extensions :u8
+    extensions :[n_extensions]TorEdCertExt
+    signature :[64]u8
+
+format CrossCertEdRSA:
+    ed_key :[32]u8
+    expiring_date :u32
+    signature :[64]u8
+
+enum LinkSpecifierType:
+    :u8
+    IPv4 = 0x00
+    IPv6 = 0x01
+    LEGACY_ID = 0x02
+    ED25519_ID = 0x03
+
+format LinkSpecifier:
+    type :LinkSpecifierType
+    len :u8
+    if type == LinkSpecifierType.IPv4:
+        ipv4 :[4]u8
+        port :u16
+    elif type == LinkSpecifierType.IPv6:
+        ipv6 :[16]u8
+        port :u16
+    elif type == LinkSpecifierType.LEGACY_ID:
+        legacy_id :[20]u8
+    elif type == LinkSpecifierType.ED25519_ID:
+        ed25519_id :[32]u8

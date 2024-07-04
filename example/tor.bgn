@@ -1,0 +1,160 @@
+config.url = "https://gitlab.torproject.org/tpo/core/trunnel/-/blob/main/examples/prop224.trunnel?ref_type=heads"
+
+PAYLOAD_LEN ::= 509
+RELAY_PAYLOAD_LEN ::= 498
+
+state ConnState:
+    wide_circids :u8
+
+conn_state :ConnState
+
+format Cell:
+    if conn_state.wide_circids == 0:
+        circid :u16
+    else:
+        circid :u32
+    command :u8
+    payload :[PAYLOAD_LEN]u8
+
+format VarCell:
+    if conn_state.wide_circids == 0:
+        circid :u16
+    else:
+        circid :u32
+    command :u8(7,128..255)
+    payload :[..]u8 
+
+format VersionsCellBody:
+    versions :[..]u16
+
+format CertsCellCert:
+    cert_type :u8
+    cert_len :u16
+    cert :[cert_len]u8
+
+format CertsCellBody:
+    n_certs :u8
+    certs :[n_certs]CertsCellCert
+
+format AuthChallengeCell:
+    challenge :[32]u8
+    n_methods :u8
+    methods :[n_methods]u8
+
+format AuthenticateCell:
+    type :u16
+    len :u16
+    if type == 1:
+        rsa_auth :RSASha256TLSSecretAuth(input = input.subrange(len))
+    else:
+        error("unknown authenticate type")
+
+format RSASha256TLSSecretAuth:
+    type :[8]u8
+    cid  :[32]u8
+    sid  :[32]u8
+    slog :[32]u8
+    clog :[32]u8
+    scert :[32]u8
+    tls_secrets :[32]u8
+    rand :[24]u8
+    signature :[..]u8
+
+format EncodedAddress:
+    type :u8
+    len :u8
+    match type:
+        0 => hostname :[len]u8
+        4:
+            len == 4
+            ipv4 :u32
+        6:
+            len == 16
+            ipv6 :[16]u8
+        .. => opaque :[len]u8
+
+format NetInfoCell:
+    timestamp :u32
+    your_addr :EncodedAddress
+    n_addrs :u8
+    my_addrs :[n_addrs]EncodedAddress
+
+format Create2Cell:
+    htype :u8
+    hlen :u8
+    match htype:
+        1 => tap :TapClientHandshake(input = input.subrange(hlen))
+        2 => ntor :NtorClientHandshake(input = input.subrange(hlen))
+        .. => error("unknown handshake type")
+    
+format Created2Cell:
+    hlen :u8
+    data :[hlen]u8
+    
+prop220 ::= config.import("tor_prop220.bgn")
+
+format Extend2Cell:
+    n_specs :u8
+    specs :[n_specs]prop220.LinkSpecifier
+    crete2_cell :[..]u8
+
+TAP_C_HANDSHAKE_LEN ::= 298
+TAP_S_HANDSHAKE_LEN ::= 148
+LEGACY_ID_LEN ::= 20
+
+format ExtendCell:
+    addr :u32
+    port :u16
+    onion_skin :[TAP_C_HANDSHAKE_LEN]u8
+    node_id :[LEGACY_ID_LEN]u8
+
+format TapClientHandshake:
+    pk_part :[128]u8
+    symmetric_part :[100]u8
+
+format TapServerHandshake:
+    dh_data :[128]u8
+    kh :[20]u8
+
+format NtorClientHandshake:
+    node_ids :[20]u8
+    key_id :[32]u32
+    client_pk :[32]u32
+
+format NtorServerHandshake:
+    server_pk :[32]u32
+    auth :[32]u8
+
+format CreateFastCell:
+    key :[20]u8
+
+format CreatedFastCell:
+    key :[20]u8
+    derivative_key_data :[20]u8
+
+format RelayCellBody:
+    relay_command :u8
+    recognized :u16
+    stream_id :u16
+    digest :[4]u8
+    len :u16(0..=RELAY_PAYLOAD_LEN)
+    data :[len]u8
+
+format BeginCellBody:
+    addrport :[..]u8
+    :"\0"
+    flags :u8
+
+format ConnectedCell:
+    ipv4_addr :u32
+    if ipv4_addr != 0:
+        addr_type :u8(6)
+        ipv6_addr :[16]u8
+    ttl :u32
+
+format ResolvedCellItem:
+    answer :EncodedAddress
+    ttl :u32
+
+format ResolvedCell:
+    answers :[..]ResolvedCellItem

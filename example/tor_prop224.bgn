@@ -1,0 +1,95 @@
+
+
+format EstablishIntroCellExtension:
+    type :u8
+    len :u8
+    data :[len]u8
+
+format EstablishIntroCell:
+    auth_key_type :u8(2..254)
+    auth_key_len :u8
+    auth_key :[auth_key_len]u8
+    n_exts :u8
+    exts :[n_exts]EstablishIntroCellExtension
+    handshake_auth :[32]u8
+    siglen :u8
+    signature :[siglen]u8
+
+format OldEstablishIntroCell:
+    key_length :u16(0..511)
+    key :[key_length]u8
+    handshake_auth :[20]u8
+    signature :[..]u8
+
+format MaintEstablishIntroCell:
+    prefix :u8(0xFF)
+    maint_cell_commands :[..]MaintCellCommand
+
+enum MaintCellCommandType:
+    :u16
+    UpdateKeys = 0x0001
+
+format MaintCellCommand:
+    type :MaintCellCommandType
+    len :u16
+    if type == MaintCellCommandType.UpdateKeys:
+        update_keys :UpdateKeysCommand(input = input.subrange(len))
+    else:
+        data :[len]u8
+
+format UpdateKeysCommand:
+    n_keys :u16
+    keys :[n_keys]KeyUpdate
+
+format KeyUpdate:
+    key_type :u8
+    key_len :u8
+    if key_type == 1:
+        key_len == 32
+        key :[32]u8
+    else:
+        key :[key_len]u8
+    
+format IntroducelCell:
+    auth_key_id :[32]u8
+    enc_key_id :[32]u8
+    n_exts :u8
+    exts :[n_exts]IntroducelCellExtension
+    encrypted_data :[..]u8
+
+format IntroducelCellExtension:
+    type :u8
+    len :u8
+    data :[len]u8
+
+format IntroduceAckCell:
+    status :u8
+    n_exts :u8
+    exts :[n_exts]IntroduceAckCellExtension
+
+format IntroduceAckCellExtension:
+    type :u8
+    len :u8
+    data :[len]u8
+
+enum OnionKeyType:
+    :u8
+    tap_key = 0x01
+    ntor_key = 0x02
+
+prop220 ::= config.import("tor_prop220.bgn")
+
+format EncryptedIntroCell:
+    rend_cookie :[20]u8
+    n_exts :u8
+    exts :[n_exts]IntroducelCellExtension
+    onion_key_type :OnionKeyType
+    match onion_key_type:
+        OnionKeyType.tap_key:
+            tap_onion_key :[128]u8
+        OnionKeyType.ntor_key:
+            ntor_onion_key :[32]u8
+        .. => error("unknown onion key type")
+    nspec :u8
+    spec :[nspec]prop220.LinkSpecifier
+    pad :[..]u8
