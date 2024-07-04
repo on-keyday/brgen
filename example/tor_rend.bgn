@@ -1,0 +1,63 @@
+config.url = "https://gitlab.torproject.org/tpo/core/trunnel/-/blob/main/examples/tor-rend.trunnel?ref_type=heads"
+
+
+format EstablishIntroBody:
+    key_len :u16
+    key :[key_len]u8
+    session_hash :[20]u8
+    signature :[..]u8
+
+format IntroducelCell:
+    pk_id :u8
+    encrypted_part :[..]u8
+
+format IntroducelCellPlainText:
+    version :u8
+    match version:
+        1 => v1 :IntroducelCellBodyV1
+        2 => v2 :IntroducelCellBodyV2
+        3 => v3 :IntroducelCellBodyV3
+        4..=32 => error("invalid version")
+        .. => v0 :IntroducelCellBodyV0
+    
+format IntroducelCellBodyV0:
+    rest_of_nickname :[19]u8
+    rc :[20]u8
+    dh_data :[128]u8
+
+format IntroducelCellBodyV1:
+    rp_id :[42]u8
+    rc :[20]u8
+    dh_data :[128]u8
+
+format IntroducelCellBodyV2:
+    rp_ip :u32
+    rp_port :u16
+    rp_id :[20]u8
+    klen :u16
+    onion_key :[klen]u8
+    rc :[20]u8
+    dh_data :[128]u8
+
+format IntroducelCellBodyV3:
+    auth_type :u8
+    if auth_type != 0:
+        auth_len :u16
+        auth_data :[auth_len]u8
+    timestamp :u32
+    rp_ip :u32
+    rp_port :u16
+    rp_id :[20]u8
+    klen :u16
+    onion_key :[klen]u8
+    rc :[20]u8
+    dh_data :[128]u8
+
+format Rendezvous1CellBody:
+    rc :[20]u8
+    dh :[128]u8
+    kh :[20]u8
+
+format Rendezvous2CellBody:
+    dh :[128]u8
+    kh :[20]u8
