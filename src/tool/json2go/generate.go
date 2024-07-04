@@ -70,6 +70,7 @@ type Generator struct {
 	laterSize       map[*ast2go.Field]uint64
 	terminalPattern map[*ast2go.Field]struct{}
 	imports         map[string]struct{}
+	globalAssigned  map[*ast2go.Binary]struct{}
 	exprStringer    *gen.ExprStringer
 	visitorName     string
 
@@ -86,6 +87,7 @@ func NewGenerator() *Generator {
 		exprStringer:    gen.NewExprStringer(),
 		laterSize:       make(map[*ast2go.Field]uint64),
 		terminalPattern: make(map[*ast2go.Field]struct{}),
+		globalAssigned:  make(map[*ast2go.Binary]struct{}),
 	}
 }
 
@@ -1265,6 +1267,9 @@ func (g *Generator) writeSingleNode(node ast2go.Node, enc bool) {
 		g.unionCheck(n.StructType, enc)
 		g.writeSingleNode(n.Statement, enc)
 	case *ast2go.Binary:
+		if _, ok := g.globalAssigned[n]; ok {
+			return // skip
+		}
 		binary := n
 		if binary.Op == ast2go.BinaryOpDefineAssign ||
 			binary.Op == ast2go.BinaryOpConstAssign {
@@ -1390,6 +1395,7 @@ func (g *Generator) writeProgramElement(p *ast2go.Program) {
 				ident := v.Left.(*ast2go.Ident)
 				g.Printf("const %s = %s\n", ident.Ident, g.exprStringer.ExprString(v.Right))
 				g.exprStringer.SetIdentMap(ident, "%s"+ident.Ident)
+				g.globalAssigned[v] = struct{}{}
 			} else if imports, ok := v.Right.(*ast2go.Import); ok {
 				g.writeProgramElement(imports.ImportDesc)
 			}
