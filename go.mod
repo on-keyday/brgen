@@ -5,12 +5,12 @@ go 1.20
 require github.com/iancoleman/strcase v0.3.0
 
 require (
-	golang.org/x/net v0.26.0
+	golang.org/x/net v0.27.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
-	golang.org/x/sys v0.21.0
+	golang.org/x/sys v0.22.0
 	sigs.k8s.io/yaml v1.4.0
 )
 
