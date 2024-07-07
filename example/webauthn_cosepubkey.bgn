@@ -1,0 +1,24 @@
+
+config.go.package="webauthn" 
+config.word.map("Cose","COSE")
+
+enum COSEKeyType:
+    Reserved = 0
+    OctetKey = 1
+    EllipticKey = 2
+    RSAKey = 3
+    Symmetric = 4
+    HSSLMS = 5
+
+
+COSE_KEY_KEY_TYPE ::= 1
+COSE_KEY_ALGORITHM_IDENTIFIER ::= 3
+
+COSE_OKP_KEY_X_COORDINATE ::= -2
+
+COSE_EC_KEY_CRV ::= -1
+COSE_EC_KEY_X_COORDINATE ::= -2
+COSE_EC_KEY_Y_COORDINATE ::= -3
+
+COSE_RSA_KEY_N ::= -1
+COSE_RSA_KEY_E ::= -2
