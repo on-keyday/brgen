@@ -1,0 +1,220 @@
+config.url = "https://datatracker.ietf.org/doc/html/rfc4254"
+
+state SSHState:
+    mac_len :u8
+
+ssh_state :SSHState
+
+format BinaryPacketProtocol:
+    packet_len :u32
+    padding_length :u8
+    packet_len >= u32(padding_length)+1
+    payload :[packet_len-padding_length-1]u8
+    padding :[padding_length]u8
+    mac :[ssh_state.mac_len]u8
+
+format String:
+    len :u32
+    data :[len]u8
+
+enum SSHMessageType:
+    :u8
+    SSH_MSG_KEXINIT = 20
+
+format MPInt:
+    len :u32
+    data :[len]u8
+
+format Bool:
+    val :u8
+
+
+format KeyExchangeInit:
+    cookie :[16]u8
+    kex_algorithms :String
+    server_host_key_algorithms :String
+    encryption_algorithms_client_to_server :String
+    encryption_algorithms_server_to_client :String
+    mac_algorithms_client_to_server :String
+    mac_algorithms_server_to_client :String
+    compression_algorithms_client_to_server :String
+    compression_algorithms_server_to_client :String
+    languages_client_to_server :String
+    languages_server_to_client :String
+    first_kex_packet_follows :Bool
+    reserved :u32(0)
+
+format SharedHash:
+    V_C :String
+    V_S :String
+    I_C :String
+    I_S :String
+    K_S :String
+    e :MPInt
+    f :MPInt
+    K :MPInt
+
+format UserAuthRequest:
+    user_name :String
+    service_name :String
+    method_name :String
+    method_name.data == "publickey"
+    public_key_algorithm :String
+    public_key_blob :String
+    signature :String
+
+format UserAuthSuccess:
+    public_key_algorithm :String
+    public_key_blob :String
+
+format UserAuthFailure:
+    auth_methods :String
+    partial_success :Bool
+
+format ChannelOpen:
+    channel_type :String
+    sender_channel :u32
+    initial_window_size :u32
+    maximum_packet_size :u32
+    channel_specific_data :[..]u8
+
+format ChannelOpenConfirmation:
+    recipient_channel :u32
+    sender_channel :u32
+    initial_window_size :u32
+    maximum_packet_size :u32
+    channel_specific_data :[..]u8
+    
+enum ChannnelOpenFailureReason:
+    :u32
+    SSH_OPEN_ADMINISTRATIVELY_PROHIBITED = 1
+    SSH_OPEN_CONNECT_FAILED = 2
+    SSH_OPEN_UNKNOWN_CHANNEL_TYPE = 3
+    SSH_OPEN_RESOURCE_SHORTAGE = 4
+
+format ChannnelOpenFailure:
+    recipient_channel :u32
+    reason_code :ChannnelOpenFailureReason
+    description :String
+    language_tag :String
+
+format ChannelData:
+    recipient_channel :u32
+    data :[..]u8
+
+format ChennelWindowAdjust:
+    recipient_channel :u32
+    bytes_to_add :u32
+
+format ChannelEOF:
+    recipient_channel :u32
+
+format ChannelClose:
+    recipient_channel :u32
+
+format ChannelRequest:
+    recipient_channel :u32
+    request_type :String
+    want_reply :Bool
+    request_specific_data :[..]u8
+
+format ChannelRequestPtyReq:
+    term_environ :String
+    col_width :u32
+    row_height :u32
+    pix_width :u32
+    pix_height :u32
+    terminal_modes :String
+
+format X11Forwarding:
+    single_connection :Bool
+    x11_authentication_protocol :String
+    x11_authentication_cookie :String
+    x11_screen_number :u32
+
+format ChannelOpenX11:
+    originator_address :String
+    originator_port :u32
+
+format ChannelRequestEnv:
+    name :String
+    value :String
+
+format ChannelRequestExec:
+    command :String
+
+format ChannelRequestSubsystem:
+    subsystem :String
+
+format ChannelRequestWindowChange:
+    # want_reply = false
+    col_width :u32
+    row_height :u32
+    pix_width :u32
+    pix_height :u32
+
+format ChangeRequestXonXoff:
+    client_can_do :Bool
+
+format ChangeRequestSignal:
+    signal :String # without the "SIG" prefix
+
+format ChangeRequestExitStatus:
+    exit_status :u32
+
+format ChangeRequestExitSignal:
+    signal :String
+    core_dumped :Bool
+    error_message :String
+    language_tag :String
+
+format GlobalRequest:
+    request_type :u8
+    want_reply :Bool
+    request_specific_data :[..]u8
+
+format GlobalRequestTcpipForward:
+    bind_address :String
+    bind_port :u32
+
+format GlobalRequestCancelTcpipForward:
+    bind_address :String
+    bind_port :u32
+
+format ChannelOpenForwardedTcpip:
+    connected_address :String
+    connected_port :u32
+    originator_address :String
+    originator_port :u32
+
+format ChannelOpenDirectTcpip:
+    host_to_connect :String
+    port_to_connect :u32
+    originator_address :String
+    originator_port :u32
+
+
+enum TerminalMode:
+    :u8
+    TTY_OP_END = 0
+    VINTR = 1
+    VQUIT = 2
+    TTY_OP_ISPEED = 128
+    TTY_OP_OSPEED = 129
+
+enum MessageNumber:
+    :u8
+    GLOBAL_REQUEST = 80
+    REQUEST_SUCCESS = 81
+    REQUEST_FAILURE = 82
+    CHANNEL_OPEN = 90
+    CHANNEL_OPEN_CONFIRMATION = 91
+    CHANNEL_OPEN_FAILURE = 92
+    CHANNEL_WINDOW_ADJUST = 93
+    CHANNEL_DATA = 94
+    CHANNEL_EXTENDED_DATA = 95
+    CHANNEL_EOF = 96
+    CHANNEL_CLOSE = 97
+    CHANNEL_REQUEST = 98
+    CHANNEL_SUCCESS = 99
+    CHANNEL_FAILURE = 100
