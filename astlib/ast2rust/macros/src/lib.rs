@@ -4,7 +4,7 @@ use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use syn::{
     parse::{Parse, ParseStream},
-    parse_macro_input, token,
+    parse_macro_input, Token,
 };
 
 enum PtrTo {
@@ -52,10 +52,10 @@ impl Parse for PtrTo {
         let ident = input.parse::<proc_macro2::Ident>()?;
         let mut ret = Self::Ident(ident);
         loop {
-            if let Ok(_) = input.parse::<token::Dot>() {
+            if let Ok(_) = input.parse::<Token![.]>() {
                 let target = input.parse::<proc_macro2::Ident>()?;
                 ret = Self::PtrTo(Box::new(ret), target);
-            } else if let Ok(_) = input.parse::<token::RArrow>() {
+            } else if let Ok(_) = input.parse::<Token![->]>() {
                 let target = input.parse::<proc_macro2::Ident>()?;
                 ret = Self::WeakPtrTo(Box::new(ret), target);
             } else {

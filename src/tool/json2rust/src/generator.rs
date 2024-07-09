@@ -247,15 +247,16 @@ impl<W: std::io::Write> Generator<W> {
         Ok(())
     }
 
-    pub fn write_node(&mut self, node: ast::Node) -> Result<()> {
+    pub fn write_node<W1: std::io::Write>(
+        &mut self,
+        w: &mut Writer<W1>,
+        node: ast::Node,
+    ) -> Result<()> {
         match node {
             ast::Node::IndentBlock(block) => {
                 for elem in ptr_null!(block.elements).iter() {
-                    self.write_node(elem.clone())?;
+                    self.write_node(w, elem.clone())?;
                 }
-            }
-            ast::Node::Format(fmt) => {
-                self.write_format(fmt)?;
             }
             ast::Node::Field(field) => {
                 let w = self.self_w();
@@ -265,11 +266,68 @@ impl<W: std::io::Write> Generator<W> {
                     self.write_decode_field(w, &field)?;
                 }
             }
-            _ => {
-                eprintln!("{:?}", ast::NodeType::try_from(node));
-                todo!("unsupported")
-            }
+            _ => {} // TODO: Implement,skip for now
         }
+        Ok(())
+    }
+
+    pub fn write_encode_fn<W1: std::io::Write>(
+        &mut self,
+        w: &mut Writer<W1>,
+        ty: SharedPtr<ast::Format>,
+    ) -> Result<()> {
+        let ident = ptr_null!(ty.ident.ident);
+        w.writeln(&format!("impl serde::ser::Serialize for {} {{", ident))?;
+        w.enter_indent_scope();
+        w.writeln("fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: serde::ser::Serializer {")?;
+        w.enter_indent_scope();
+        self.write_node(w, ast::Node::IndentBlock(ptr!(ty.body)))?;
+        w.writeln("serializer.end()")?;
+        w.exit_indent_scope();
+        w.writeln("}")?;
+        w.exit_indent_scope();
+        w.writeln("}")?;
+        Ok(())
+    }
+
+    pub fn write_decode_fn<W1: std::io::Write>(
+        &mut self,
+        w: &mut Writer<W1>,
+        ty: SharedPtr<ast::Format>,
+    ) -> Result<()> {
+        let ident = ptr_null!(ty.ident.ident);
+        w.writeln(&format!(
+            "impl<'de> serde::de::Deserialize<'de> for {} {{",
+            ident
+        ))?;
+        w.enter_indent_scope();
+        w.writeln(&format!("fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: serde::de::Deserializer<'de> {{"))?;
+        w.enter_indent_scope();
+        w.writeln("struct Visitor;")?;
+        w.writeln("impl<'de> serde::de::Visitor<'de> for Visitor {")?;
+        w.enter_indent_scope();
+        w.writeln("type Value = Self;")?;
+        w.writeln(
+            "fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {",
+        )?;
+        w.enter_indent_scope();
+        w.writeln("formatter.write_str(\"struct\")")?;
+        w.exit_indent_scope();
+        w.writeln("}")?;
+        w.writeln("fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error> where A: serde::de::MapAccess<'de> {")?;
+        w.enter_indent_scope();
+        w.writeln(&format!("let {} {{", ident))?;
+        w.enter_indent_scope();
+        self.write_node(w, ast::Node::IndentBlock(ptr!(ty.body)))?;
+        w.exit_indent_scope();
+        w.writeln("}")?;
+        w.exit_indent_scope();
+        w.writeln("}")?;
+        w.writeln("deserializer.deserialize_map(Visitor)")?;
+        w.exit_indent_scope();
+        w.writeln("}")?;
+        w.exit_indent_scope();
+        w.writeln("}")?;
         Ok(())
     }
 
@@ -279,7 +337,9 @@ impl<W: std::io::Write> Generator<W> {
         let w = self.self_w();
         self.write_struct_type(w, struct_type)?;
         self.encode = true;
-        self.write_node(ast::Node::IndentBlock(ptr!(fmt.body)))?;
+        self.write_encode_fn(w, fmt.clone())?;
+        self.encode = false;
+        self.write_decode_fn(w, fmt.clone())?;
         Ok(())
     }
 
