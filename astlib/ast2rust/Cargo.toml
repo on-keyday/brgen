@@ -3,4 +3,4 @@
 members = [
     "core",
     "macros"
-, "macros/ast2rust_macro"]
+]

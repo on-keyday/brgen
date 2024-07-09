@@ -7,11 +7,18 @@ name = "ast2rust"
 version = "0.1.0"
 dependencies = [
  "bitflags",
- "proc-macro2",
- "quote",
  "serde",
  "serde_derive",
  "serde_json",
+]
+
+[[package]]
+name = "ast2rust_macro"
+version = "0.1.0"
+dependencies = [
+ "ast2rust",
+ "proc-macro2",
+ "quote",
  "syn 1.0.109",
 ]
 
