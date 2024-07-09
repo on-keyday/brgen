@@ -9,6 +9,7 @@ type SharedPtr<T> = Rc<RefCell<T>>;
 pub struct Generator<W: std::io::Write> {
     w: Writer<W>,
     seq: usize,
+    encode: bool,
 }
 
 pub struct Writer<W: std::io::Write> {
@@ -78,6 +79,14 @@ impl<W: std::io::Write> Generator<W> {
         Self {
             w: Writer::new(w),
             seq: 0,
+            encode: false,
+        }
+    }
+
+    fn self_w<'a>(&mut self) -> &'a mut Writer<W> {
+        unsafe {
+            let p = &mut self.w as *const Writer<W>;
+            &mut *(p as *mut Writer<W>)
         }
     }
 
@@ -190,6 +199,33 @@ impl<W: std::io::Write> Generator<W> {
         Ok(())
     }
 
+    pub fn write_encode_field<W1: std::io::Write>(
+        &mut self,
+        w: &mut Writer<W1>,
+        field: &SharedPtr<ast::Field>,
+    ) -> Result<()> {
+        let ident = ptr_null!(field.ident.ident);
+        w.writeln(&format!(
+            "serde::ser::SerializeStruct::serialize_field(&mut serializer, \"{}\", &self.{})?;",
+            ident, ident
+        ))?;
+        Ok(())
+    }
+
+    pub fn write_decode_field<W1: std::io::Write>(
+        &mut self,
+        w: &mut Writer<W1>,
+        field: &SharedPtr<ast::Field>,
+    ) -> Result<()> {
+        let ident = ptr_null!(field.ident.ident);
+        let ty = Self::get_type(&ptr!(field.field_type))?;
+        w.writeln(&format!(
+            "let {} = map.next_value::<{}>(\"{}\");",
+            ident, ty, ident
+        ))?;
+        Ok(())
+    }
+
     pub fn write_struct_type<W1: std::io::Write>(
         &mut self,
         w: &mut Writer<W1>,
@@ -211,11 +247,39 @@ impl<W: std::io::Write> Generator<W> {
         Ok(())
     }
 
+    pub fn write_node(&mut self, node: ast::Node) -> Result<()> {
+        match node {
+            ast::Node::IndentBlock(block) => {
+                for elem in ptr_null!(block.elements).iter() {
+                    self.write_node(elem.clone())?;
+                }
+            }
+            ast::Node::Format(fmt) => {
+                self.write_format(fmt)?;
+            }
+            ast::Node::Field(field) => {
+                let w = self.self_w();
+                if self.encode {
+                    self.write_encode_field(w, &field)?;
+                } else {
+                    self.write_decode_field(w, &field)?;
+                }
+            }
+            _ => {
+                eprintln!("{:?}", ast::NodeType::try_from(node));
+                todo!("unsupported")
+            }
+        }
+        Ok(())
+    }
+
     pub fn write_format(&mut self, fmt: SharedPtr<ast::Format>) -> Result<()> {
         let struct_type = ptr!(fmt.body.struct_type);
         //SAFETY: We are casting a mutable reference to a mutable reference, which is safe.
-        let w = unsafe { &mut *(&mut self.w as *const Writer<W> as *mut Writer<W>) };
+        let w = self.self_w();
         self.write_struct_type(w, struct_type)?;
+        self.encode = true;
+        self.write_node(ast::Node::IndentBlock(ptr!(fmt.body)))?;
         Ok(())
     }
 
