@@ -14,7 +14,6 @@ where
 
 #[cfg(test)]
 mod tests {
-    use serde::Deserialize;
 
     use super::super::ast;
     use super::super::test;
@@ -22,11 +21,7 @@ mod tests {
 
     #[test]
     fn test_traverse() {
-        let ch = test::exec_and_output("./example/feature_test/tree_test.bgn").unwrap();
-        let mut de = serde_json::Deserializer::from_slice(&ch.stdout);
-        let file = ast::AstFile::deserialize(&mut de).unwrap();
-        let prog = ast::parse_ast(file.ast.unwrap()).unwrap();
-        let prog = prog.into();
+        let prog = test::load_test_file();
         traverse(&prog, &mut |n: &ast::Node| {
             let t: ast::NodeType = n.into();
             println!("node: {:?}", t);

@@ -1,0 +1,16 @@
+[package]
+name = "ast2rust"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde_json = "1.0.116"
+serde = "1.0.200"
+serde_derive = "1.0.200"
+bitflags = {version ="2.5.0",features=["serde"]}
+syn = "1.0"
+quote = "1.0"
+proc-macro2 = "1.0.86"
+
