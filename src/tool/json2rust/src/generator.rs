@@ -2,7 +2,6 @@ use anyhow::{anyhow, Result};
 use ast2rust::ast;
 use ast2rust_macro::{ptr, ptr_null};
 use std::cell::RefCell;
-use std::io::Write;
 use std::rc::Rc;
 
 type SharedPtr<T> = Rc<RefCell<T>>;
@@ -170,10 +169,10 @@ impl<W: std::io::Write> Generator<W> {
             })));
             field.borrow_mut().ident = some;
         }
-        w.write("pub ");
-        w.write(&format!("{}: ", ptr_null!(field.ident.ident)));
+        w.write("pub ")?;
+        w.write(&format!("{}: ", ptr_null!(field.ident.ident)))?;
         let typ = Self::get_type(&ptr!(field.field_type))?;
-        w.writeln(&format!("{},", typ));
+        w.writeln(&format!("{},", typ))?;
         Ok(())
     }
 
@@ -196,14 +195,14 @@ impl<W: std::io::Write> Generator<W> {
         w: &mut Writer<W1>,
         ty: SharedPtr<ast::StructType>,
     ) -> Result<()> {
-        match ty.borrow().base.clone().unwrap().try_into() {
+        match ptr!(ty.base).try_into() {
             Ok(ast::Node::Format(node)) => {
                 let ident = ptr_null!(node.ident.ident);
                 w.writeln(&format!("pub struct {} {{", ident))?;
                 w.enter_indent_scope();
                 self.write_struct_type_impl(w, ty.clone())?;
                 w.exit_indent_scope();
-                w.writeln("}");
+                w.writeln("}")?;
             }
             _ => {
                 self.write_struct_type_impl(w, ty.clone())?;
