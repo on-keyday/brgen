@@ -2,35 +2,39 @@ use anyhow::{anyhow, Result};
 use ast2rust::ast;
 use ast2rust_macro::{ptr, ptr_null};
 use std::cell::RefCell;
-use std::io::{self, Write};
-use std::rc::{Rc, Weak};
+use std::io::Write;
+use std::rc::Rc;
 
 type SharedPtr<T> = Rc<RefCell<T>>;
-type WeakPtr<T> = Weak<RefCell<T>>;
 
 pub struct Generator<W: std::io::Write> {
-    writer: std::io::BufWriter<W>,
-    indent: usize,
+    w: Writer<W>,
     seq: usize,
+}
+
+pub struct Writer<W: std::io::Write> {
+    writer: W,
+    indent: usize,
+
     should_indent: bool,
 }
 
-impl<W: std::io::Write> Generator<W> {
+impl<W: std::io::Write> Writer<W> {
     pub fn new(w: W) -> Self {
         Self {
-            writer: std::io::BufWriter::new(w),
+            writer: w,
             indent: 0,
-            seq: 0,
             should_indent: false,
         }
     }
 
-    pub fn flush(&mut self) {
-        self.writer.flush().unwrap();
+    pub fn flush(&mut self) -> Result<()> {
+        self.writer.flush()?;
+        Ok(())
     }
 
     pub fn get_mut_writer(&mut self) -> &mut W {
-        self.writer.get_mut()
+        &mut self.writer
     }
 
     fn enter_indent_scope(&mut self) {
@@ -41,9 +45,40 @@ impl<W: std::io::Write> Generator<W> {
         self.indent -= 1;
     }
 
-    fn write_indent(&mut self) {
+    fn write_indent(&mut self) -> Result<()> {
         for _ in 0..self.indent {
-            self.writer.write(b"    ").unwrap();
+            self.writer.write(b"    ")?;
+        }
+        Ok(())
+    }
+
+    fn write(&mut self, s: &str) -> Result<()> {
+        self.write_if_should_indent()?;
+        self.writer.write(s.as_bytes())?;
+        Ok(())
+    }
+
+    fn write_if_should_indent(&mut self) -> Result<()> {
+        if self.should_indent {
+            self.write_indent()?;
+            self.should_indent = false;
+        }
+        Ok(())
+    }
+
+    fn writeln(&mut self, s: &str) -> Result<()> {
+        self.write(s)?;
+        self.write("\n")?;
+        self.should_indent = true;
+        Ok(())
+    }
+}
+
+impl<W: std::io::Write> Generator<W> {
+    pub fn new(w: W) -> Self {
+        Self {
+            w: Writer::new(w),
+            seq: 0,
         }
     }
 
@@ -53,22 +88,8 @@ impl<W: std::io::Write> Generator<W> {
         seq
     }
 
-    fn write(&mut self, s: &str) {
-        self.write_if_should_indent();
-        self.writer.write(s.as_bytes()).unwrap();
-    }
-
-    fn write_if_should_indent(&mut self) {
-        if self.should_indent {
-            self.write_indent();
-            self.should_indent = false;
-        }
-    }
-
-    fn writeln(&mut self, s: &str) {
-        self.write(s);
-        self.write("\n");
-        self.should_indent = true;
+    pub fn get_mut_writer(&mut self) -> &mut W {
+        self.w.get_mut_writer()
     }
 
     pub fn get_type(typ: &ast::Type) -> Result<String> {
@@ -132,7 +153,11 @@ impl<W: std::io::Write> Generator<W> {
         }
     }
 
-    pub fn write_field(&mut self, field: &SharedPtr<ast::Field>) -> Result<()> {
+    pub fn write_field<W1: std::io::Write>(
+        &mut self,
+        w: &mut Writer<W1>,
+        field: &SharedPtr<ast::Field>,
+    ) -> Result<()> {
         if field.borrow().ident.is_none() {
             let some = Some(Rc::new(RefCell::new(ast::Ident {
                 loc: field.borrow().loc.clone(),
@@ -145,35 +170,43 @@ impl<W: std::io::Write> Generator<W> {
             })));
             field.borrow_mut().ident = some;
         }
-        self.write("pub ");
-        self.write(&format!("{}: ", ptr_null!(field.ident.ident)));
+        w.write("pub ");
+        w.write(&format!("{}: ", ptr_null!(field.ident.ident)));
         let typ = Self::get_type(&ptr!(field.field_type))?;
-        self.writeln(&format!("{},", typ));
+        w.writeln(&format!("{},", typ));
         Ok(())
     }
 
-    pub fn write_struct_type_impl(&mut self, ty: SharedPtr<ast::StructType>) -> Result<()> {
+    pub fn write_struct_type_impl<W1: std::io::Write>(
+        &mut self,
+        w: &mut Writer<W1>,
+        ty: SharedPtr<ast::StructType>,
+    ) -> Result<()> {
         let ty = ty.borrow();
         for field in ty.fields.iter() {
             if let ast::Member::Field(field) = field {
-                self.write_field(field)?;
+                self.write_field(w, field)?;
             }
         }
         Ok(())
     }
 
-    pub fn write_struct_type(&mut self, ty: SharedPtr<ast::StructType>) -> Result<()> {
+    pub fn write_struct_type<W1: std::io::Write>(
+        &mut self,
+        w: &mut Writer<W1>,
+        ty: SharedPtr<ast::StructType>,
+    ) -> Result<()> {
         match ty.borrow().base.clone().unwrap().try_into() {
             Ok(ast::Node::Format(node)) => {
                 let ident = ptr_null!(node.ident.ident);
-                self.writeln(&format!("pub struct {} {{", ident));
-                self.enter_indent_scope();
-                self.write_struct_type_impl(ty.clone())?;
-                self.exit_indent_scope();
-                self.writeln("}");
+                w.writeln(&format!("pub struct {} {{", ident))?;
+                w.enter_indent_scope();
+                self.write_struct_type_impl(w, ty.clone())?;
+                w.exit_indent_scope();
+                w.writeln("}");
             }
             _ => {
-                self.write_struct_type_impl(ty.clone())?;
+                self.write_struct_type_impl(w, ty.clone())?;
             }
         }
         Ok(())
@@ -181,7 +214,9 @@ impl<W: std::io::Write> Generator<W> {
 
     pub fn write_format(&mut self, fmt: SharedPtr<ast::Format>) -> Result<()> {
         let struct_type = ptr!(fmt.body.struct_type);
-        self.write_struct_type(struct_type)?;
+        //SAFETY: We are casting a mutable reference to a mutable reference, which is safe.
+        let w = unsafe { &mut *(&mut self.w as *const Writer<W> as *mut Writer<W>) };
+        self.write_struct_type(w, struct_type)?;
         Ok(())
     }
 
@@ -192,7 +227,7 @@ impl<W: std::io::Write> Generator<W> {
                 self.write_format(fmt)?;
             }
         }
-        self.writer.flush()?;
+        self.w.flush()?;
         Ok(())
     }
 }
