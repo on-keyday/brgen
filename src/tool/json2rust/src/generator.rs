@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Result};
 use ast2rust::ast;
+use ast2rust_macro::{ptr, ptr_null};
 use std::cell::RefCell;
 use std::io::{self, Write};
 use std::rc::{Rc, Weak};
@@ -75,18 +76,12 @@ impl<W: std::io::Write> Generator<W> {
             ast::Type::IntType(t) => {
                 if t.borrow().is_common_supported {
                     if t.borrow().is_signed {
-                        Ok(format!(
-                            "i{}",
-                            t.borrow().bit_size.ok_or(anyhow!("bit_size"))?
-                        ))
+                        Ok(format!("i{}", ptr!(t.bit_size)))
                     } else {
-                        Ok(format!(
-                            "u{}",
-                            t.borrow().bit_size.ok_or(anyhow!("bit_size"))?
-                        ))
+                        Ok(format!("u{}", ptr!(t.bit_size)))
                     }
                 } else {
-                    let v = t.borrow().bit_size.ok_or(anyhow!("bit_size"))?;
+                    let v = ptr!(t.bit_size);
                     if v < 64 {
                         let aligned = (v + 7) / 8;
                         if t.borrow().is_signed {
@@ -101,31 +96,14 @@ impl<W: std::io::Write> Generator<W> {
             }
             ast::Type::BoolType(_) => Ok("bool".to_string()),
             ast::Type::EnumType(t) => {
-                let enum_ = t.borrow().base.clone().unwrap();
-                let enum_ = enum_.upgrade().unwrap();
-                let x = enum_
-                    .borrow()
-                    .ident
-                    .clone()
-                    .ok_or(anyhow!("ident"))?
-                    .borrow()
-                    .ident
-                    .clone();
+                let x = ptr_null!(t.base->ident.ident);
                 Ok(x)
             }
             ast::Type::StructType(t) => {
                 let struct_ = t.borrow().base.clone().unwrap();
                 match struct_ {
                     ast::NodeWeak::Format(struct_) => {
-                        let struct_ = struct_.upgrade().unwrap();
-                        let x = struct_
-                            .borrow()
-                            .ident
-                            .clone()
-                            .ok_or(anyhow!("ident"))?
-                            .borrow()
-                            .ident
-                            .clone();
+                        let x = ptr_null!(struct_->ident.ident);
                         Ok(x)
                     }
                     x => {
@@ -135,19 +113,14 @@ impl<W: std::io::Write> Generator<W> {
                 }
             }
             ast::Type::IdentType(t) => {
-                let ident = t.borrow().ident.clone().ok_or(anyhow!("ident"))?;
-                let ident = ident.borrow().ident.clone();
+                let ident = ptr_null!(t.ident.ident);
                 Ok(ident)
             }
             ast::Type::ArrayType(t) => {
-                let ty = t.borrow().element_type.clone().unwrap();
+                let ty = ptr!(t.element_type);
                 let ty = Self::get_type(&ty)?;
                 if t.borrow().length_value.is_some() {
-                    Ok(format!(
-                        "[{}; {}]",
-                        ty,
-                        t.borrow().length_value.clone().ok_or(anyhow!("how"))?
-                    ))
+                    Ok(format!("[{}; {}]", ty, ptr!(t.length_value)))
                 } else {
                     Ok(format!("Vec<{}>", ty))
                 }
@@ -163,7 +136,7 @@ impl<W: std::io::Write> Generator<W> {
         if field.borrow().ident.is_none() {
             let some = Some(Rc::new(RefCell::new(ast::Ident {
                 loc: field.borrow().loc.clone(),
-                expr_type: field.borrow().field_type.clone(),
+                expr_type: ptr_null!(field.field_type),
                 ident: format!("hidden_field_{}", self.get_seq()),
                 base: Some(ast::NodeWeak::Field(Rc::downgrade(&field))),
                 constant_level: ast::ConstantLevel::Variable,
@@ -172,16 +145,9 @@ impl<W: std::io::Write> Generator<W> {
             })));
             field.borrow_mut().ident = some;
         }
-        let ident = field.borrow().ident.clone().ok_or(anyhow!("ident"))?;
         self.write("pub ");
-        self.write(&format!("{}: ", ident.borrow().ident));
-        let typ = Self::get_type(
-            &field
-                .borrow()
-                .field_type
-                .clone()
-                .ok_or(anyhow!("field_type"))?,
-        )?;
+        self.write(&format!("{}: ", ptr_null!(field.ident.ident)));
+        let typ = Self::get_type(&ptr!(field.field_type))?;
         self.writeln(&format!("{},", typ));
         Ok(())
     }
@@ -199,8 +165,7 @@ impl<W: std::io::Write> Generator<W> {
     pub fn write_struct_type(&mut self, ty: SharedPtr<ast::StructType>) -> Result<()> {
         match ty.borrow().base.clone().unwrap().try_into() {
             Ok(ast::Node::Format(node)) => {
-                let ident: SharedPtr<ast::Ident> = node.borrow().ident.clone().unwrap();
-                let ident = ident.borrow().ident.clone();
+                let ident = ptr_null!(node.ident.ident);
                 self.writeln(&format!("pub struct {} {{", ident));
                 self.enter_indent_scope();
                 self.write_struct_type_impl(ty.clone())?;
@@ -215,10 +180,7 @@ impl<W: std::io::Write> Generator<W> {
     }
 
     pub fn write_format(&mut self, fmt: SharedPtr<ast::Format>) -> Result<()> {
-        let fmt = fmt.borrow();
-        let block = fmt.body.clone().ok_or(anyhow!("body"))?;
-        let block = block.borrow();
-        let struct_type = block.struct_type.clone().ok_or(anyhow!("struct_type"))?;
+        let struct_type = ptr!(fmt.body.struct_type);
         self.write_struct_type(struct_type)?;
         Ok(())
     }
