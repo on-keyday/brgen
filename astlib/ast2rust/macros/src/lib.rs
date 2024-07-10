@@ -66,6 +66,7 @@ impl Parse for PtrTo {
     }
 }
 
+/// Convert a chain of field access to a chain of `borrow().clone().ok_or(anyhow!("error"))?`
 #[proc_macro]
 pub fn ptr(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as PtrTo);
@@ -73,6 +74,7 @@ pub fn ptr(input: TokenStream) -> TokenStream {
     TokenStream::from(tokens)
 }
 
+/// Convert a chain of field access to a chain of `borrow().clone()`
 #[proc_macro]
 pub fn ptr_null(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as PtrTo);

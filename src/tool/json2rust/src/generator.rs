@@ -1,29 +1,48 @@
 use anyhow::{anyhow, Result};
-use ast2rust::ast;
+use ast2rust::ast::{StructType, StructUnionType};
+use ast2rust::{ast, PtrKey};
 use ast2rust_macro::{ptr, ptr_null};
-use std::cell::RefCell;
+use std::cell::{RefCell, UnsafeCell};
+use std::collections::HashMap;
 use std::rc::Rc;
 
 type SharedPtr<T> = Rc<RefCell<T>>;
+
+struct AnonymousStruct {
+    name: String,
+}
 
 pub struct Generator<W: std::io::Write> {
     w: Writer<W>,
     seq: usize,
     encode: bool,
+
+    structs: HashMap<PtrKey<StructType>, AnonymousStruct>,
+    struct_unions: HashMap<PtrKey<StructUnionType>, AnonymousStruct>,
 }
 
 pub struct Writer<W: std::io::Write> {
-    writer: W,
-    indent: usize,
+    pub writer: W,
+    indent: RefCell<usize>,
 
     should_indent: bool,
 }
 
-impl<W: std::io::Write> Writer<W> {
+struct IndentScope<'a> {
+    indent: &'a RefCell<usize>,
+}
+
+impl Drop for IndentScope<'_> {
+    fn drop(&mut self) {
+        *self.indent.borrow_mut() -= 1;
+    }
+}
+
+impl<'a, W: std::io::Write> Writer<W> {
     pub fn new(w: W) -> Self {
         Self {
             writer: w,
-            indent: 0,
+            indent: RefCell::new(0),
             should_indent: false,
         }
     }
@@ -37,16 +56,19 @@ impl<W: std::io::Write> Writer<W> {
         &mut self.writer
     }
 
-    fn enter_indent_scope(&mut self) {
-        self.indent += 1;
-    }
-
-    fn exit_indent_scope(&mut self) {
-        self.indent -= 1;
+    fn enter_indent_scope(&self) -> IndentScope<'a> {
+        *self.indent.borrow_mut() += 1;
+        IndentScope {
+            // to escape from the lifetime checker,
+            // we need to cast the reference to a raw pointer
+            // and then back to a reference.
+            // so we can create a reference with a new lifetime.
+            indent: unsafe { &*(&self.indent as *const _) },
+        }
     }
 
     fn write_indent(&mut self) -> Result<()> {
-        for _ in 0..self.indent {
+        for _ in 0..*self.indent.borrow() {
             self.writer.write(b"    ")?;
         }
         Ok(())
@@ -80,13 +102,8 @@ impl<W: std::io::Write> Generator<W> {
             w: Writer::new(w),
             seq: 0,
             encode: false,
-        }
-    }
-
-    fn self_w<'a>(&mut self) -> &'a mut Writer<W> {
-        unsafe {
-            let p = &mut self.w as *const Writer<W>;
-            &mut *(p as *mut Writer<W>)
+            structs: HashMap::new(),
+            struct_unions: HashMap::new(),
         }
     }
 
@@ -100,11 +117,11 @@ impl<W: std::io::Write> Generator<W> {
         self.w.get_mut_writer()
     }
 
-    pub fn get_type(typ: &ast::Type) -> Result<String> {
+    pub fn get_type(&mut self, typ: &ast::Type) -> Result<String> {
         match typ {
             ast::Type::IntType(t) => {
-                if t.borrow().is_common_supported {
-                    if t.borrow().is_signed {
+                if ptr_null!(t.is_common_supported) {
+                    if ptr_null!(t.is_signed) {
                         Ok(format!("i{}", ptr!(t.bit_size)))
                     } else {
                         Ok(format!("u{}", ptr!(t.bit_size)))
@@ -147,11 +164,44 @@ impl<W: std::io::Write> Generator<W> {
             }
             ast::Type::ArrayType(t) => {
                 let ty = ptr!(t.element_type);
-                let ty = Self::get_type(&ty)?;
+                let ty = self.get_type(&ty)?;
                 if t.borrow().length_value.is_some() {
                     Ok(format!("[{}; {}]", ty, ptr!(t.length_value)))
                 } else {
                     Ok(format!("Vec<{}>", ty))
+                }
+            }
+            ast::Type::StructUnionType(x) => {
+                if let Some(x) = self.struct_unions.get(&PtrKey::new(x)) {
+                    Ok(x.name.clone())
+                } else {
+                    let name = format!("AnonymousStructUnion{}", self.get_seq());
+                    let mut v = Vec::new();
+                    for structs in ptr_null!(x.structs).iter() {
+                        let name = format!("AnonymousStruct{}", self.get_seq());
+                        let mut tmp_w = Writer::new(Vec::new());
+                        tmp_w.write("pub struct ")?;
+                        tmp_w.write(&name)?;
+                        tmp_w.writeln(" {")?;
+                        self.write_struct_type(&mut tmp_w, structs.clone())?;
+                        tmp_w.writeln("}")?;
+                        self.w.write(&String::from_utf8(tmp_w.writer)?)?;
+                        self.structs
+                            .insert(PtrKey::new(structs), AnonymousStruct { name: name.clone() });
+                        v.push(name);
+                    }
+                    let mut tmp_w = Writer::new(Vec::new());
+                    tmp_w.write("pub enum ")?;
+                    tmp_w.write(&name)?;
+                    tmp_w.writeln(" {")?;
+                    for name in v.iter() {
+                        tmp_w.write(&name)?;
+                        tmp_w.write("(")?;
+                        tmp_w.write(&name)?;
+                        tmp_w.writeln("),")?;
+                    }
+                    tmp_w.writeln("}")?;
+                    Ok(name)
                 }
             }
             x => {
@@ -166,6 +216,9 @@ impl<W: std::io::Write> Generator<W> {
         w: &mut Writer<W1>,
         field: &SharedPtr<ast::Field>,
     ) -> Result<()> {
+        if let ast::Type::UnionType(_) = ptr!(field.field_type) {
+            return Ok(());
+        }
         if field.borrow().ident.is_none() {
             let some = Some(Rc::new(RefCell::new(ast::Ident {
                 loc: field.borrow().loc.clone(),
@@ -180,7 +233,7 @@ impl<W: std::io::Write> Generator<W> {
         }
         w.write("pub ")?;
         w.write(&format!("{}: ", ptr_null!(field.ident.ident)))?;
-        let typ = Self::get_type(&ptr!(field.field_type))?;
+        let typ = self.get_type(&ptr!(field.field_type))?;
         w.writeln(&format!("{},", typ))?;
         Ok(())
     }
@@ -218,7 +271,7 @@ impl<W: std::io::Write> Generator<W> {
         field: &SharedPtr<ast::Field>,
     ) -> Result<()> {
         let ident = ptr_null!(field.ident.ident);
-        let ty = Self::get_type(&ptr!(field.field_type))?;
+        let ty = self.get_type(&ptr!(field.field_type))?;
         w.writeln(&format!(
             "let {} = map.next_value::<{}>(\"{}\");",
             ident, ty, ident
@@ -235,9 +288,10 @@ impl<W: std::io::Write> Generator<W> {
             Ok(ast::Node::Format(node)) => {
                 let ident = ptr_null!(node.ident.ident);
                 w.writeln(&format!("pub struct {} {{", ident))?;
-                w.enter_indent_scope();
-                self.write_struct_type_impl(w, ty.clone())?;
-                w.exit_indent_scope();
+                {
+                    let _scope = w.enter_indent_scope();
+                    self.write_struct_type_impl(w, ty.clone())?;
+                }
                 w.writeln("}")?;
             }
             _ => {
@@ -259,7 +313,6 @@ impl<W: std::io::Write> Generator<W> {
                 }
             }
             ast::Node::Field(field) => {
-                let w = self.self_w();
                 if self.encode {
                     self.write_encode_field(w, &field)?;
                 } else {
@@ -278,14 +331,17 @@ impl<W: std::io::Write> Generator<W> {
     ) -> Result<()> {
         let ident = ptr_null!(ty.ident.ident);
         w.writeln(&format!("impl serde::ser::Serialize for {} {{", ident))?;
-        w.enter_indent_scope();
-        w.writeln("fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: serde::ser::Serializer {")?;
-        w.enter_indent_scope();
-        self.write_node(w, ast::Node::IndentBlock(ptr!(ty.body)))?;
-        w.writeln("serializer.end()")?;
-        w.exit_indent_scope();
-        w.writeln("}")?;
-        w.exit_indent_scope();
+        {
+            let _scope = w.enter_indent_scope();
+            w.writeln("fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: serde::ser::Serializer {")?;
+            {
+                let _scope = w.enter_indent_scope();
+                self.write_node(w, ast::Node::IndentBlock(ptr!(ty.body)))?;
+                w.writeln("serializer.end()")?;
+                w.writeln("}")?;
+            }
+            _ = _scope;
+        }
         w.writeln("}")?;
         Ok(())
     }
@@ -300,33 +356,39 @@ impl<W: std::io::Write> Generator<W> {
             "impl<'de> serde::de::Deserialize<'de> for {} {{",
             ident
         ))?;
-        w.enter_indent_scope();
-        w.writeln(&format!("fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: serde::de::Deserializer<'de> {{"))?;
-        w.enter_indent_scope();
-        w.writeln("struct Visitor;")?;
-        w.writeln("impl<'de> serde::de::Visitor<'de> for Visitor {")?;
-        w.enter_indent_scope();
-        w.writeln("type Value = Self;")?;
-        w.writeln(
-            "fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {",
-        )?;
-        w.enter_indent_scope();
-        w.writeln("formatter.write_str(\"struct\")")?;
-        w.exit_indent_scope();
-        w.writeln("}")?;
-        w.writeln("fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error> where A: serde::de::MapAccess<'de> {")?;
-        w.enter_indent_scope();
-        w.writeln(&format!("let {} {{", ident))?;
-        w.enter_indent_scope();
-        self.write_node(w, ast::Node::IndentBlock(ptr!(ty.body)))?;
-        w.exit_indent_scope();
-        w.writeln("}")?;
-        w.exit_indent_scope();
-        w.writeln("}")?;
-        w.writeln("deserializer.deserialize_map(Visitor)")?;
-        w.exit_indent_scope();
-        w.writeln("}")?;
-        w.exit_indent_scope();
+        {
+            let _scope = w.enter_indent_scope();
+            w.writeln(&format!("fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: serde::de::Deserializer<'de> {{"))?;
+            {
+                let _scope = w.enter_indent_scope();
+                w.writeln("struct Visitor;")?;
+                w.writeln("impl<'de> serde::de::Visitor<'de> for Visitor {")?;
+                {
+                    let _scope = w.enter_indent_scope();
+                    w.writeln("type Value = Self;")?;
+                    w.writeln("fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {")?;
+                    {
+                        let _scope = w.enter_indent_scope();
+                        w.writeln("formatter.write_str(\"struct\")")?;
+                    }
+                    w.writeln("}")?;
+                    w.writeln("fn visit_map<wqA>(self, mut map: A) -> Result<Self::Value, A::Error> where A: serde::de::MapAccess<'de> {")?;
+                    {
+                        let _scope = w.enter_indent_scope();
+                        w.writeln(&format!("let {} {{", ident))?;
+                        {
+                            let _scope = w.enter_indent_scope();
+                            self.write_node(w, ast::Node::IndentBlock(ptr!(ty.body)))?;
+                        }
+                        w.writeln("}")?;
+                    }
+                    w.writeln("}")?;
+                    w.writeln("deserializer.deserialize_map(Visitor)")?;
+                }
+                w.writeln("}")?;
+            }
+            w.writeln("}")?;
+        }
         w.writeln("}")?;
         Ok(())
     }
@@ -334,12 +396,13 @@ impl<W: std::io::Write> Generator<W> {
     pub fn write_format(&mut self, fmt: SharedPtr<ast::Format>) -> Result<()> {
         let struct_type = ptr!(fmt.body.struct_type);
         //SAFETY: We are casting a mutable reference to a mutable reference, which is safe.
-        let w = self.self_w();
-        self.write_struct_type(w, struct_type)?;
+        let mut w = Writer::new(Vec::new());
+        self.write_struct_type(&mut w, struct_type)?;
         self.encode = true;
-        self.write_encode_fn(w, fmt.clone())?;
+        self.write_encode_fn(&mut w, fmt.clone())?;
         self.encode = false;
-        self.write_decode_fn(w, fmt.clone())?;
+        self.write_decode_fn(&mut w, fmt.clone())?;
+        self.w.write(std::str::from_utf8(&w.writer)?)?;
         Ok(())
     }
 
