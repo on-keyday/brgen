@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use ast2rust::ast::{StructType, StructUnionType};
 use ast2rust::{ast, PtrKey};
 use ast2rust_macro::{ptr, ptr_null};
-use std::cell::{RefCell, UnsafeCell};
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
@@ -372,20 +372,15 @@ impl<W: std::io::Write> Generator<W> {
                         w.writeln("formatter.write_str(\"struct\")")?;
                     }
                     w.writeln("}")?;
-                    w.writeln("fn visit_map<wqA>(self, mut map: A) -> Result<Self::Value, A::Error> where A: serde::de::MapAccess<'de> {")?;
+                    w.writeln("fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error> where A: serde::de::MapAccess<'de> {")?;
                     {
                         let _scope = w.enter_indent_scope();
-                        w.writeln(&format!("let {} {{", ident))?;
-                        {
-                            let _scope = w.enter_indent_scope();
-                            self.write_node(w, ast::Node::IndentBlock(ptr!(ty.body)))?;
-                        }
-                        w.writeln("}")?;
+                        self.write_node(w, ast::Node::IndentBlock(ptr!(ty.body)))?;
                     }
                     w.writeln("}")?;
-                    w.writeln("deserializer.deserialize_map(Visitor)")?;
                 }
                 w.writeln("}")?;
+                w.writeln("deserializer.deserialize_map(Visitor)")?;
             }
             w.writeln("}")?;
         }
@@ -406,8 +401,28 @@ impl<W: std::io::Write> Generator<W> {
         Ok(())
     }
 
+    pub fn write_enum(&mut self, enum_: SharedPtr<ast::Enum>) -> Result<()> {
+        let ident = ptr_null!(enum_.ident.ident);
+        self.w.writeln(&format!("pub enum {} {{", ident))?;
+        {
+            let _scope = self.w.enter_indent_scope();
+            for elem in ptr_null!(enum_.members).iter() {
+                self.w
+                    .writeln(&format!("{},", ptr_null!(elem.ident.ident)))?;
+            }
+        }
+        self.w.writeln("}")?;
+        Ok(())
+    }
+
     pub fn write_program(&mut self, prog: SharedPtr<ast::Program>) -> Result<()> {
         let prog = prog.borrow();
+        self.w.writeln("use serde;")?;
+        for elem in prog.elements.iter() {
+            if let Ok(enum_) = elem.try_into() {
+                self.write_enum(enum_)?;
+            }
+        }
         for elem in prog.elements.iter() {
             if let Ok(fmt) = elem.try_into() {
                 self.write_format(fmt)?;

@@ -171,7 +171,7 @@ pub struct TestScheduler {
     template_files: HashMap<String, String>,
     tmpdir: Option<PathBuf>,
     input_binaries: HashMap<(PathBuf, bool), (PathBuf, Vec<u8>)>,
-    debug :bool,
+    debug: bool,
 }
 
 fn path_str(path: &PathBuf) -> String {
@@ -184,7 +184,7 @@ fn path_str(path: &PathBuf) -> String {
 type SendChan = mpsc::Sender<Result<TestSchedule, (TestSchedule, Error)>>;
 
 impl TestScheduler {
-    pub fn new(debug :bool) -> Self {
+    pub fn new(debug: bool) -> Self {
         Self {
             template_files: HashMap::new(),
             tmpdir: None,
@@ -202,7 +202,7 @@ impl TestScheduler {
                 Err(x) => {
                     return Err(std::io::Error::new(
                         std::io::ErrorKind::Other,
-                        format!("read file error: {}: {}", path, x),
+                        format!("read file error: {path}: {x}"),
                     )
                     .into());
                 }
@@ -357,7 +357,7 @@ impl TestScheduler {
         input: &PathBuf,
         output: &PathBuf,
         exec: Option<&PathBuf>,
-        debug :bool,
+        debug: bool,
     ) {
         for c in cmd {
             if c == "$INPUT" {
@@ -378,7 +378,11 @@ impl TestScheduler {
                 *c = format!("{}/{}", sched.file.dir, sched.file.base);
             }
             if c == "$DEBUG" {
-                *c = if debug { String::from("true") } else { String::from("false") };
+                *c = if debug {
+                    String::from("true")
+                } else {
+                    String::from("false")
+                };
             }
         }
     }
@@ -391,10 +395,10 @@ impl TestScheduler {
         output: &PathBuf,
         exec: Option<&PathBuf>,
         expect_ok: bool,
-        debug :bool,
+        debug: bool,
     ) -> Result<bool, Error> {
         let mut cmd = base.clone();
-        Self::replace_cmd(&mut cmd, sched, tmp_dir, input, output, exec,debug);
+        Self::replace_cmd(&mut cmd, sched, tmp_dir, input, output, exec, debug);
         let mut r = tokio::process::Command::new(&cmd[0]);
         r.args(&cmd[1..]);
         let done = match r.output().await {
@@ -404,7 +408,7 @@ impl TestScheduler {
             }
         };
         let code = done.status.code();
-        println!("{}",String::from_utf8_lossy(&done.stdout));
+        println!("{}", String::from_utf8_lossy(&done.stdout));
         match code {
             Some(0) => return Ok(true),
             status => {
@@ -413,7 +417,11 @@ impl TestScheduler {
                         return Ok(false);
                     }
                 }
-                return Err(Error::Exec(format!("process exit with {:?}:\n{}", status,String::from_utf8_lossy(&done.stderr))));
+                return Err(Error::Exec(format!(
+                    "process exit with {:?}:\n{}",
+                    status,
+                    String::from_utf8_lossy(&done.stderr)
+                )));
             }
         }
     }
@@ -426,7 +434,7 @@ impl TestScheduler {
         input_path: PathBuf,
         output: PathBuf,
         input_binary: Vec<u8>,
-        debug :bool,
+        debug: bool,
     ) -> Result<tokio::task::JoinHandle<()>, Error> {
         let proc = async move {
             // build test
