@@ -15,6 +15,8 @@ TMPDIR = sys.argv[4]
 DEBUG = True if sys.argv[5] == "true" else False
 CONFIG = sys.argv[6]
 
+CONFIG_DIR = pl.Path(CONFIG).parent
+
 if DEBUG:
     with open(ORIGIN, "r", encoding="utf-8") as fp:
         print(ORIGIN)

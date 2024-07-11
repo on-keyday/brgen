@@ -1021,3 +1021,15 @@ class TokenFile {
     SrcError? error;
 factory TokenFile.fromJson(Map<String, dynamic> json) => _$TokenFileFromJson(json);
 }
+@JsonSerializable()
+class GenerateMapFile {
+    List<String> structs = [];
+    List<LineMap> lineMap = [];
+factory GenerateMapFile.fromJson(Map<String, dynamic> json) => _$GenerateMapFileFromJson(json);
+}
+@JsonSerializable()
+class LineMap {
+    int line = 0;
+    Loc loc = Loc();
+factory LineMap.fromJson(Map<String, dynamic> json) => _$LineMapFromJson(json);
+}

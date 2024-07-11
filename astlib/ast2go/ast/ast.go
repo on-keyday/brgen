@@ -3560,6 +3560,16 @@ type TokenFile struct {
 	Error   *SrcError `json:"error"`
 }
 
+type GenerateMapFile struct {
+	Structs []string  `json:"structs"`
+	LineMap []LineMap `json:"line_map"`
+}
+
+type LineMap struct {
+	Line uint64 `json:"line"`
+	Loc  Loc    `json:"loc"`
+}
+
 type astConstructor struct {
 	node  []Node
 	scope []*Scope

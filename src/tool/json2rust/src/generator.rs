@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Result};
 use ast2rust::ast::{StructType, StructUnionType};
+use ast2rust::eval::topological_sort_format;
 use ast2rust::{ast, PtrKey};
 use ast2rust_macro::{ptr, ptr_null};
 use std::cell::RefCell;
@@ -381,15 +382,16 @@ impl<W: std::io::Write> Generator<W> {
         Ok(())
     }
 
-    pub fn write_format(&mut self, fmt: SharedPtr<ast::Format>) -> Result<()> {
+    pub fn write_format_fns<W1: std::io::Write>(
+        &mut self,
+        w: &mut Writer<W1>,
+        fmt: SharedPtr<ast::Format>,
+    ) -> Result<()> {
         //SAFETY: We are casting a mutable reference to a mutable reference, which is safe.
-        let mut w = Writer::new(Vec::new());
-        self.write_format_type(&mut w, fmt.clone())?;
         self.encode = true;
-        self.write_encode_fn(&mut w, fmt.clone())?;
+        self.write_encode_fn(w, fmt.clone())?;
         self.encode = false;
-        self.write_decode_fn(&mut w, fmt.clone())?;
-        self.w.write(std::str::from_utf8(&w.writer)?)?;
+        self.write_decode_fn(w, fmt.clone())?;
         Ok(())
     }
 
@@ -407,19 +409,23 @@ impl<W: std::io::Write> Generator<W> {
         Ok(())
     }
 
-    pub fn write_program(&mut self, prog: SharedPtr<ast::Program>) -> Result<()> {
-        let prog = prog.borrow();
+    pub fn write_program(&mut self, in_prog: SharedPtr<ast::Program>) -> Result<()> {
+        let prog = in_prog.borrow();
         self.w.writeln("use serde;")?;
         for elem in prog.elements.iter() {
             if let Ok(enum_) = elem.try_into() {
                 self.write_enum(enum_)?;
             }
         }
-        for elem in prog.elements.iter() {
-            if let Ok(fmt) = elem.try_into() {
-                self.write_format(fmt)?;
-            }
+        let sorted = topological_sort_format(&in_prog).ok_or(anyhow!("error"))?;
+        let mut w = Writer::new(Vec::new());
+        for elem in sorted.iter() {
+            self.write_format_type(&mut w, elem.clone())?;
         }
+        for elem in sorted {
+            self.write_format_fns(&mut w, elem)?;
+        }
+        self.w.write(&String::from_utf8(w.writer)?)?;
         self.w.flush()?;
         Ok(())
     }

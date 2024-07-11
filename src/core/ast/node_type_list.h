@@ -248,6 +248,8 @@ namespace brgen::ast {
     constexpr auto json_ast = R"({"node": "array<raw_node>","scope": "array<raw_scope>"})";
     constexpr auto ast_file = R"({"success":"bool","files": "array<string>","ast": "optional<json_ast>","error": "optional<src_error>"})";
     constexpr auto token_file = R"({"success":"bool","files": "array<string>","tokens": "optional<array<token>>","error": "optional<src_error>"})";
+    constexpr auto generate_map_file = R"({"structs": "array<string>", "line_map": "array<line_map>"})";
+    constexpr auto line_map = R"({"line": "uint","loc": "loc"})";
 
     template <bool ast_mode = false>
     void node_types(auto&& objdump) {
@@ -352,5 +354,7 @@ namespace brgen::ast {
         field("json_ast", futils::json::RawJSON<const char*>{brgen::ast::json_ast});
         field("ast_file", futils::json::RawJSON<const char*>{brgen::ast::ast_file});
         field("token_file", futils::json::RawJSON<const char*>{brgen::ast::token_file});
+        field("generate_map_file", futils::json::RawJSON<const char*>{brgen::ast::generate_map_file});
+        field("line_map", futils::json::RawJSON<const char*>{brgen::ast::line_map});
     }
 }  // namespace brgen::ast

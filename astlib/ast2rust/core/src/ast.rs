@@ -8702,6 +8702,18 @@ pub struct TokenFile {
 	pub error: Option<SrcError>,
 }
 
+#[derive(Debug,Clone,Serialize,Deserialize)]
+pub struct GenerateMapFile {
+	pub structs: Vec<String>,
+	pub line_map: Vec<LineMap>,
+}
+
+#[derive(Debug,Clone,Serialize,Deserialize)]
+pub struct LineMap {
+	pub line: u64,
+	pub loc: Loc,
+}
+
 pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 	let mut nodes = Vec::new();
 	let mut scopes = Vec::new();
