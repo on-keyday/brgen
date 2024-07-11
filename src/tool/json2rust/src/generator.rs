@@ -238,7 +238,7 @@ impl<W: std::io::Write> Generator<W> {
         Ok(())
     }
 
-    pub fn write_struct_type_impl<W1: std::io::Write>(
+    pub fn write_struct_type<W1: std::io::Write>(
         &mut self,
         w: &mut Writer<W1>,
         ty: SharedPtr<ast::StructType>,
@@ -279,25 +279,18 @@ impl<W: std::io::Write> Generator<W> {
         Ok(())
     }
 
-    pub fn write_struct_type<W1: std::io::Write>(
+    pub fn write_format_type<W1: std::io::Write>(
         &mut self,
         w: &mut Writer<W1>,
-        ty: SharedPtr<ast::StructType>,
+        fmt: SharedPtr<ast::Format>,
     ) -> Result<()> {
-        match ptr!(ty.base).try_into() {
-            Ok(ast::Node::Format(node)) => {
-                let ident = ptr_null!(node.ident.ident);
-                w.writeln(&format!("pub struct {} {{", ident))?;
-                {
-                    let _scope = w.enter_indent_scope();
-                    self.write_struct_type_impl(w, ty.clone())?;
-                }
-                w.writeln("}")?;
-            }
-            _ => {
-                self.write_struct_type_impl(w, ty.clone())?;
-            }
+        let ident = ptr_null!(fmt.ident.ident);
+        w.writeln(&format!("pub struct {} {{", ident))?;
+        {
+            let _scope = w.enter_indent_scope();
+            self.write_struct_type(w, ptr!(fmt.body.struct_type))?;
         }
+        w.writeln("}")?;
         Ok(())
     }
 
@@ -389,10 +382,9 @@ impl<W: std::io::Write> Generator<W> {
     }
 
     pub fn write_format(&mut self, fmt: SharedPtr<ast::Format>) -> Result<()> {
-        let struct_type = ptr!(fmt.body.struct_type);
         //SAFETY: We are casting a mutable reference to a mutable reference, which is safe.
         let mut w = Writer::new(Vec::new());
-        self.write_struct_type(&mut w, struct_type)?;
+        self.write_format_type(&mut w, fmt.clone())?;
         self.encode = true;
         self.write_encode_fn(&mut w, fmt.clone())?;
         self.encode = false;

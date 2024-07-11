@@ -80,6 +80,9 @@ pub struct TestRunner {
     // $EXEC is replaced with test exec file path that is built by build_command
     // $OUTPUT is replaced with test output file path
     pub run_command: Vec<String>,
+
+    #[serde(skip_deserializing)]
+    pub file: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -376,6 +379,11 @@ impl TestScheduler {
             }
             if c == "$ORIGIN" {
                 *c = format!("{}/{}", sched.file.dir, sched.file.base);
+            }
+            if c == "$CONFIG" {
+                if let Some(x) = sched.runner.file.as_ref() {
+                    *c = x.clone();
+                }
             }
             if c == "$DEBUG" {
                 *c = if debug {

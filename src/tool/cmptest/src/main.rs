@@ -1,4 +1,4 @@
-use std::{fs, path::Path, sync::Arc};
+use std::{borrow::BorrowMut, fs, path::Path, sync::Arc};
 
 use clap::{arg, Parser};
 use serde::Deserialize;
@@ -35,11 +35,13 @@ async fn main() -> Result<(), Error> {
         let runner = match runner_config {
             testutil::RunnerConfig::TestRunner(x) => x,
             testutil::RunnerConfig::File(x) => {
-                let r = fs::read(&x.file)?;
+                let filename = x.file.clone();
+                let r = fs::read(&filename)?;
                 let mut de = serde_json::Deserializer::from_slice(&r);
                 let r = testutil::TestRunner::deserialize(&mut de)?;
                 *runner_config = testutil::RunnerConfig::TestRunner(r);
                 if let testutil::RunnerConfig::TestRunner(x) = runner_config {
+                    x.file = Some(filename);
                     x
                 } else {
                     unreachable!()
