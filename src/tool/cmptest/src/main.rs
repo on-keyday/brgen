@@ -1,5 +1,6 @@
 use std::{borrow::BorrowMut, fs, path::Path, sync::Arc};
 
+use ast2rust::ast::GenerateMapFile;
 use clap::{arg, Parser};
 use serde::Deserialize;
 use testutil::{Error, TestSchedule};
@@ -138,7 +139,7 @@ async fn main() -> Result<(), Error> {
             }
         };
         let mut d = serde_json::Deserializer::from_str(&content);
-        let data = match testutil::GeneratedData::deserialize(&mut d) {
+        let data = match GenerateMapFile::deserialize(&mut d) {
             Ok(file) => file,
             Err(e) => {
                 eprintln!("failed to deserialize {}: {}", path, e);

@@ -17,22 +17,6 @@ use tokio::sync::mpsc;
 
 #[derive(Serialize, Deserialize, Debug)]
 
-pub struct LineMap {
-    pub line: u64,
-
-    pub loc: ast::Loc,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-
-pub struct GeneratedData {
-    pub structs: Vec<String>,
-
-    pub line_map: Vec<LineMap>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-
 pub struct GeneratedFileInfo {
     pub dir: String,
 
