@@ -299,7 +299,7 @@ impl TestScheduler {
             x.clone()
         } else {
             let dir = env::temp_dir();
-            let dir = dir.join(Self::gen_random());
+            let dir = dir.join(String::from("cmptest-") + &Self::gen_random());
             self.tmpdir = Some(dir);
             self.tmpdir.as_ref().unwrap().clone()
         }
@@ -470,6 +470,8 @@ impl TestScheduler {
             let expect = !sched.input.failure_case;
 
             if status != expect {
+                let status = if status { "success" } else { "failure" };
+                let expect = if expect { "success" } else { "failure" };
                 return Err((
                     sched,
                     Error::TestFail(format!("test failed: expect {} but got {}", expect, status)),
@@ -485,7 +487,7 @@ impl TestScheduler {
                 Err(x) => {
                     return Err((
                         sched,
-                        Error::TestFail(format!("test output cannot load: {}", x)),
+                        Error::TestFail(format!("test output file cannot load: {}", x)),
                     ))
                 }
             };

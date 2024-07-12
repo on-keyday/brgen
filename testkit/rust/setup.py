@@ -6,7 +6,7 @@ import shutil
 import platform as plt
 
 if len(sys.argv) != 7:
-    exit(0)
+    exit(1)
 
 INPUT = sys.argv[1]
 OUTPUT = sys.argv[2]
@@ -17,28 +17,30 @@ CONFIG = sys.argv[6]
 
 CONFIG_DIR = pl.Path(CONFIG).parent
 
-if DEBUG:
-    with open(ORIGIN, "r", encoding="utf-8") as fp:
-        print(ORIGIN)
-        print(fp.read())
-
-with open(INPUT, "r", encoding="utf-8") as f:
-    ABS_ORIGIN = pl.Path(ORIGIN).absolute().as_posix()
-    TEXT = f.read()
-    if DEBUG:
-        print(INPUT, " before replace")
-        print(TEXT)
-    REPLACED_INPUT = TEXT.replace(ORIGIN, ABS_ORIGIN)
-
-with open(INPUT, "w", encoding="utf-8") as f:
-    f.write(REPLACED_INPUT)
-    if DEBUG:
-        print(INPUT, " after replace")
-        print(REPLACED_INPUT)
-
 
 # run compiler for the test
 # add link directory $FUTILS_DIR/lib and -lfutils
 # compiler output will be redirected to stdout and stderr
-shutil.copyfile(ORIGIN, TMPDIR + "/target.rs")
-shutil.copyfile()
+os.mkdir(TMPDIR + "/src")
+shutil.copyfile(ORIGIN, TMPDIR + "/src/target.rs")
+shutil.copyfile(INPUT, TMPDIR + "/src/main.rs")
+shutil.copyfile(
+    CONFIG_DIR.joinpath("Cargo.toml").absolute().as_posix(), TMPDIR + "/Cargo.toml"
+)
+
+# run cargo build
+
+ret = sp.call(
+    ["cargo", "build", "--manifest-path", TMPDIR + "/Cargo.toml"],
+    stdout=sys.stdout,
+    stderr=sys.stderr,
+)
+
+if ret != 0:
+    exit(ret)
+print("Build successful")
+suffix = ".exe" if plt.system() == "Windows" else ""
+build_mode = "Debug" if plt.system() == "Windows" else "debug"
+
+print("Copying", TMPDIR + f"/target/{build_mode}/test" + suffix, OUTPUT)
+shutil.copyfile(TMPDIR + f"/target/{build_mode}/test" + suffix, OUTPUT)

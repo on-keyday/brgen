@@ -7,3 +7,5 @@ edition = "2021"
 
 [dependencies]
 serde = "1.0.200"
+serde-binary = "0.5.0"
+

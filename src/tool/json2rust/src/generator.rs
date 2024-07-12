@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use ast2rust::ast::{StructType, StructUnionType};
+use ast2rust::ast::{GenerateMapFile, StructType, StructUnionType};
 use ast2rust::eval::topological_sort_format;
 use ast2rust::{ast, PtrKey};
 use ast2rust_macro::{ptr, ptr_null};
@@ -17,6 +17,8 @@ pub struct Generator<W: std::io::Write> {
     w: Writer<W>,
     seq: usize,
     encode: bool,
+
+    pub map_file: GenerateMapFile,
 
     structs: HashMap<PtrKey<StructType>, AnonymousStruct>,
     struct_unions: HashMap<PtrKey<StructUnionType>, AnonymousStruct>,
@@ -105,6 +107,10 @@ impl<W: std::io::Write> Generator<W> {
             encode: false,
             structs: HashMap::new(),
             struct_unions: HashMap::new(),
+            map_file: GenerateMapFile {
+                structs: Vec::new(),
+                line_map: Vec::new(),
+            },
         }
     }
 
@@ -202,6 +208,7 @@ impl<W: std::io::Write> Generator<W> {
                         tmp_w.writeln("),")?;
                     }
                     tmp_w.writeln("}")?;
+                    self.w.write(std::str::from_utf8(&tmp_w.writer)?)?;
                     Ok(name)
                 }
             }
@@ -273,10 +280,7 @@ impl<W: std::io::Write> Generator<W> {
     ) -> Result<()> {
         let ident = ptr_null!(field.ident.ident);
         let ty = self.get_type(&ptr!(field.field_type))?;
-        w.writeln(&format!(
-            "let {} = map.next_value::<{}>(\"{}\");",
-            ident, ty, ident
-        ))?;
+        w.writeln(&format!("let {} = map.next_value::<{}>();", ident, ty))?;
         Ok(())
     }
 
@@ -286,6 +290,7 @@ impl<W: std::io::Write> Generator<W> {
         fmt: SharedPtr<ast::Format>,
     ) -> Result<()> {
         let ident = ptr_null!(fmt.ident.ident);
+        self.map_file.structs.push(ident.clone());
         w.writeln(&format!("pub struct {} {{", ident))?;
         {
             let _scope = w.enter_indent_scope();
@@ -370,6 +375,7 @@ impl<W: std::io::Write> Generator<W> {
                     {
                         let _scope = w.enter_indent_scope();
                         self.write_node(w, ast::Node::IndentBlock(ptr!(ty.body)))?;
+                        w.writeln("Ok(self)")?;
                     }
                     w.writeln("}")?;
                 }
