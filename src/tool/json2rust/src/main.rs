@@ -50,10 +50,11 @@ fn main() -> ExitCode {
         eprintln!("error: {:?}", e);
         ExitCode::FAILURE
     });
-    if let Err(e) = file {
-        return e;
-    }
-    let mut deserializer = serde_json::Deserializer::from_reader(std::io::stdin());
+    let file = match file {
+        Ok(file) => file,
+        Err(e) => return e,
+    };
+    let mut deserializer = serde_json::Deserializer::from_slice(&file);
     let file = ast::AstFile::deserialize(&mut deserializer);
     if let Err(e) = file {
         eprintln!("error: {:?}", e);

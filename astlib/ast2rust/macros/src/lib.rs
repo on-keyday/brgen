@@ -20,13 +20,13 @@ impl PtrTo {
             Self::Ident(ident) => quote!(#ident),
             Self::PtrTo(base, target) => {
                 let base = base.to_tokens();
-                let s = format!("\"{}\"", target.to_string());
-                quote!(#base.borrow().#target.clone().ok_or(anyhow!(#s))?)
+                let error_message = format!("\"{}\"", target.to_string());
+                quote!(#base.borrow().#target.clone().ok_or_else(||PtrUnwrapError::Nullptr(#error_message))?)
             }
             Self::WeakPtrTo(base, target) => {
                 let base = base.to_tokens();
                 let error_message = format!("\"{}\"", target.to_string());
-                quote!(#base.upgrade().ok_or(anyhow!(#error_message))?.borrow().#target.clone().ok_or(anyhow!(#error_message))?)
+                quote!(#base.upgrade().ok_or_else(|| PtrUnwrapError::ExpiredWeakPtr(#error_message))?.borrow().#target.clone().ok_or_else(||::ast2rust::PtrUnwrapError::Nullptr(#error_message))?)
             }
         }
     }
@@ -41,7 +41,7 @@ impl PtrTo {
             Self::WeakPtrTo(base, target) => {
                 let base = base.to_tokens();
                 let error_message = format!("\"{}\"", target.to_string());
-                quote!(#base.upgrade().ok_or(anyhow!(#error_message))?.borrow().#target)
+                quote!(#base.upgrade().ok_or_else(||PtrUnwrapError::ExpiredWeakPtr(#error_message))?.borrow().#target)
             }
         }
     }

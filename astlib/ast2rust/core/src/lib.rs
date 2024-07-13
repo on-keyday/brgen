@@ -9,6 +9,23 @@ pub mod eval;
 mod test;
 pub mod traverse;
 
+#[derive(Debug)]
+pub enum PtrUnwrapError {
+    ExpiredWeakPtr(&'static str),
+    Nullptr(&'static str),
+}
+
+impl std::fmt::Display for PtrUnwrapError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            PtrUnwrapError::ExpiredWeakPtr(s) => write!(f, "expired weak ptr: {}", s),
+            PtrUnwrapError::Nullptr(s) => write!(f, "nullptr: {}", s),
+        }
+    }
+}
+
+impl std::error::Error for PtrUnwrapError {}
+
 pub struct PtrKey<T: ?Sized> {
     ptr: *const T,
     _phantom: std::marker::PhantomData<T>,

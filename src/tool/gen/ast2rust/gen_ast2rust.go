@@ -436,6 +436,15 @@ func generate(rw io.Writer, defs *gen.Defs) {
 				w.Printf("		}\n")
 				w.Printf("	}\n")
 				w.Printf("}\n\n")
+				w.Printf("impl From<%s> for &str {\n", d.Name)
+				w.Printf("	fn from(v:%s)->&str{\n", d.Name)
+				w.Printf("		match self{\n")
+				for _, field := range d.Values {
+					w.Printf("			Self::%s => %q,\n", field.Name, field.Value)
+				}
+				w.Printf("		}\n")
+				w.Printf("	}\n")
+				w.Printf("}\n\n")
 			}
 		}
 	}

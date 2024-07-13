@@ -13,6 +13,10 @@ struct AnonymousStruct {
     name: String,
 }
 
+struct BitFields {
+    fields: Vec<SharedPtr<ast::Field>>,
+}
+
 pub struct Generator<W: std::io::Write> {
     w: Writer<W>,
     seq: usize,
@@ -260,16 +264,91 @@ impl<W: std::io::Write> Generator<W> {
         Ok(())
     }
 
+    pub fn write_encode_type<W1: std::io::Write>(
+        &mut self,
+        w: &mut Writer<W1>,
+        field: &ast::Field,
+        typ: ast::Type,
+        ident: &str,
+    ) -> Result<()> {
+        match typ {
+            ast::Type::IntType(ity) => {
+                if ptr_null!(ity.is_common_supported) {
+                    match ptr_null!(ity.endian) {
+                        ast::Endian::Big | ast::Endian::Unspec => {
+                            w.writeln(&format!("w.write({}.to_be_bytes())?;", ident))?;
+                        }
+                        ast::Endian::Little => {
+                            w.writeln(&format!("w.write({}.to_le_bytes())?;", ident))?;
+                        }
+                    }
+                }
+            }
+            ast::Type::IdentType(t) => {
+                let base = ptr!(t.base)
+                    .try_into()
+                    .map_err(|x: ast::Error| anyhow!("{:?}", x))?;
+                self.write_encode_type(w, field, base, ident)?
+            }
+            _ => {}
+        }
+        Err(anyhow!("unsupported"))
+    }
+
+    pub fn write_decode_type<W1: std::io::Write>(
+        &mut self,
+        w: &mut Writer<W1>,
+        field: &ast::Field,
+        typ: ast::Type,
+        ident: &str,
+    ) -> Result<()> {
+        match typ {
+            ast::Type::IntType(ity) => {
+                if ptr_null!(ity.is_common_supported) {
+                    w.writeln(&format!(
+                        "let tmp{} = r.read({})?;",
+                        ident,
+                        ptr!(ity.bit_size)
+                    ))?;
+                    match ptr_null!(ity.endian) {
+                        ast::Endian::Big | ast::Endian::Unspec => {
+                            w.writeln(&format!(
+                                "self.{} = u{}::from_be_bytes(tmp{});",
+                                ident,
+                                ptr!(ity.bit_size),
+                                ident,
+                            ))?;
+                        }
+                        ast::Endian::Little => {
+                            w.writeln(&format!(
+                                "self.{} = u{}::from_le_bytes(tmp{});",
+                                ident,
+                                ptr!(ity.bit_size),
+                                ident,
+                            ))?;
+                        }
+                    }
+                }
+            }
+            ast::Type::IdentType(t) => {
+                let base = ptr!(t.base)
+                    .try_into()
+                    .map_err(|x: ast::Error| anyhow!("{:?}", x))?;
+                self.write_decode_type(w, field, base, ident)?
+            }
+            ast::Type::ArrayType(t) => {}
+            _ => {}
+        }
+        Err(anyhow!("unsupported"))
+    }
+
     pub fn write_encode_field<W1: std::io::Write>(
         &mut self,
         w: &mut Writer<W1>,
         field: &SharedPtr<ast::Field>,
     ) -> Result<()> {
         let ident = ptr_null!(field.ident.ident);
-        w.writeln(&format!(
-            "serde::ser::SerializeStruct::serialize_field(&mut serializer, \"{}\", &self.{})?;",
-            ident, ident
-        ))?;
+        self.write_encode_type(w, &field.borrow(), ptr!(field.field_type), &ident)?;
         Ok(())
     }
 
@@ -279,8 +358,7 @@ impl<W: std::io::Write> Generator<W> {
         field: &SharedPtr<ast::Field>,
     ) -> Result<()> {
         let ident = ptr_null!(field.ident.ident);
-        let ty = self.get_type(&ptr!(field.field_type))?;
-        w.writeln(&format!("let {} = map.next_value::<{}>();", ident, ty))?;
+        self.write_decode_type(w, &field.borrow(), ptr!(field.field_type), &ident)?;
         Ok(())
     }
 
@@ -291,6 +369,7 @@ impl<W: std::io::Write> Generator<W> {
     ) -> Result<()> {
         let ident = ptr_null!(fmt.ident.ident);
         self.map_file.structs.push(ident.clone());
+        w.writeln("#[derive(Default,Debug,Clone,PartialEq)]")?;
         w.writeln(&format!("pub struct {} {{", ident))?;
         {
             let _scope = w.enter_indent_scope();
@@ -328,18 +407,10 @@ impl<W: std::io::Write> Generator<W> {
         w: &mut Writer<W1>,
         ty: SharedPtr<ast::Format>,
     ) -> Result<()> {
-        let ident = ptr_null!(ty.ident.ident);
-        w.writeln(&format!("impl serde::ser::Serialize for {} {{", ident))?;
+        w.writeln("fn encode<W:std::io::Write>(&self,w :W) {")?;
         {
             let _scope = w.enter_indent_scope();
-            w.writeln("fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: serde::ser::Serializer {")?;
-            {
-                let _scope = w.enter_indent_scope();
-                self.write_node(w, ast::Node::IndentBlock(ptr!(ty.body)))?;
-                w.writeln("serializer.end()")?;
-                w.writeln("}")?;
-            }
-            _ = _scope;
+            self.write_node(w, ast::Node::IndentBlock(ptr!(ty.body)))?;
         }
         w.writeln("}")?;
         Ok(())
@@ -351,38 +422,20 @@ impl<W: std::io::Write> Generator<W> {
         ty: SharedPtr<ast::Format>,
     ) -> Result<()> {
         let ident = ptr_null!(ty.ident.ident);
+        w.writeln(&format!("fn decode<R:std::io::Read>(r :R) -> {ident} {{"))?;
+        {
+            let _scope = w.enter_indent_scope();
+            w.writeln("let mut d = Self::default();")?;
+            w.writeln("d.decode_impl(r)")?;
+        }
+        w.writeln("}")?;
         w.writeln(&format!(
-            "impl<'de> serde::de::Deserialize<'de> for {} {{",
+            "fn decode_impl<R :std::io::Read>(&mut self,r:R) -> {} {{",
             ident
         ))?;
         {
             let _scope = w.enter_indent_scope();
-            w.writeln(&format!("fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: serde::de::Deserializer<'de> {{"))?;
-            {
-                let _scope = w.enter_indent_scope();
-                w.writeln("struct Visitor;")?;
-                w.writeln("impl<'de> serde::de::Visitor<'de> for Visitor {")?;
-                {
-                    let _scope = w.enter_indent_scope();
-                    w.writeln("type Value = Self;")?;
-                    w.writeln("fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {")?;
-                    {
-                        let _scope = w.enter_indent_scope();
-                        w.writeln("formatter.write_str(\"struct\")")?;
-                    }
-                    w.writeln("}")?;
-                    w.writeln("fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error> where A: serde::de::MapAccess<'de> {")?;
-                    {
-                        let _scope = w.enter_indent_scope();
-                        self.write_node(w, ast::Node::IndentBlock(ptr!(ty.body)))?;
-                        w.writeln("Ok(self)")?;
-                    }
-                    w.writeln("}")?;
-                }
-                w.writeln("}")?;
-                w.writeln("deserializer.deserialize_map(Visitor)")?;
-            }
-            w.writeln("}")?;
+            self.write_node(w, ast::Node::IndentBlock(ptr!(ty.body)))?;
         }
         w.writeln("}")?;
         Ok(())
@@ -394,10 +447,15 @@ impl<W: std::io::Write> Generator<W> {
         fmt: SharedPtr<ast::Format>,
     ) -> Result<()> {
         //SAFETY: We are casting a mutable reference to a mutable reference, which is safe.
-        self.encode = true;
-        self.write_encode_fn(w, fmt.clone())?;
-        self.encode = false;
-        self.write_decode_fn(w, fmt.clone())?;
+        w.writeln(&format!("impl {} {{", ptr_null!(fmt.ident.ident)))?;
+        {
+            let _scope = w.enter_indent_scope();
+            self.encode = true;
+            self.write_encode_fn(w, fmt.clone())?;
+            self.encode = false;
+            self.write_decode_fn(w, fmt.clone())?;
+        }
+        w.writeln("}")?;
         Ok(())
     }
 
