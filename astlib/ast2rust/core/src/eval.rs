@@ -1,10 +1,10 @@
 use std::{
-    cell::RefCell,
+    cell::{Ref, RefCell},
     collections::{HashMap, HashSet},
     rc::Rc,
 };
 
-use crate::{traverse, PtrKey, PtrUnwrapError};
+use crate::{ast::MemberWeak, traverse, PtrKey, PtrUnwrapError};
 
 use super::ast;
 use ast2rust_macro::{ptr, ptr_null};
@@ -121,14 +121,15 @@ pub fn topological_sort_format(
     Some(sorted)
 }
 
-struct Stringer {
+pub struct Stringer {
     self_: String,
     ident_map: HashMap<PtrKey<ast::Ident>, String>,
 }
 
 #[derive(Debug)]
-enum StringerError {
+pub enum StringerError {
     Unwrap(PtrUnwrapError),
+    IdentLookup(String),
     Unsupported,
 }
 
@@ -142,35 +143,106 @@ impl std::fmt::Display for StringerError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             Self::Unwrap(e) => write!(f, "{}", e),
+            Self::IdentLookup(s) => write!(f, "ident lookup: {}", s),
             Self::Unsupported => write!(f, "unsupported"),
         }
     }
 }
 
-impl Stringer {
-    fn to_map_ident(&self, ident: &Rc<RefCell<ast::Ident>>) -> String {
-        let key = PtrKey::new(ident);
-        if let Some(s) = self.ident_map.get(&key) {
-            if let Some(_) = s.find("$SELF") {
-                s.replace("$SELF", &self.self_)
-            } else {
-                s.clone()
+pub fn lookup_base(ident: &Rc<RefCell<ast::Ident>>) -> Option<(Rc<RefCell<ast::Ident>>, bool)> {
+    let mut ident = ident.clone();
+    let mut via_member_access = false;
+    loop {
+        let base = ptr_null!(ident.base);
+        if let Some(base) = base {
+            match base {
+                ast::NodeWeak::Ident(i) => {
+                    let i = i.upgrade()?;
+                    ident = i;
+                }
+                ast::NodeWeak::MemberAccess(m) => {
+                    let m = m.upgrade()?;
+                    ident = ptr_null!(m.base)?.upgrade()?;
+                    via_member_access = true;
+                }
+                _ => {
+                    let _: ast::Node = base.try_into().ok()?; // check not expired
+                    return Some((ident, via_member_access));
+                }
             }
         } else {
-            ptr_null!(ident.ident)
+            return Some((ident, via_member_access));
+        }
+    }
+}
+
+impl Stringer {
+    pub fn new(self_: String) -> Self {
+        Self {
+            self_,
+            ident_map: HashMap::new(),
         }
     }
 
-    fn to_string(&self, n: ast::Expr) -> Result<String, StringerError> {
+    pub fn to_map_ident(
+        &self,
+        ident: &Rc<RefCell<ast::Ident>>,
+        default_: &str,
+    ) -> Result<String, StringerError> {
+        let ident_str = &ident.borrow().ident;
+        let (ident, via_member_access) =
+            lookup_base(ident).ok_or_else(|| StringerError::IdentLookup(ident_str.clone()))?;
+        let ident_str = &ident.borrow().ident;
+        let key = PtrKey::new(&ident);
+        let replace_with_this = |this: &str, s: &str| {
+            if let Some(_) = s.find("$SELF") {
+                Ok(s.replace("$SELF", this))
+            } else {
+                Ok(s.to_string())
+            }
+        };
+        if !via_member_access {
+            if let Some(w) = &ident.borrow().base {
+                if let Some(w) = w.try_into().ok() {
+                    let _: &ast::Node = &w;
+                    if let Some(w) = w.try_into().ok() {
+                        let _: &ast::Member = &w;
+                        return replace_with_this(&self.self_, ident_str);
+                    }
+                }
+            }
+        }
+        if let Some(s) = self.ident_map.get(&key) {
+            replace_with_this(&self.self_, s)
+        } else {
+            replace_with_this(&self.self_, &default_)
+        }
+    }
+
+    pub fn to_string(&self, n: &ast::Expr) -> Result<String, StringerError> {
         match n {
             ast::Expr::IntLiteral(i) => Ok(ptr_null!(i.value)),
             ast::Expr::BoolLiteral(b) => Ok(ptr_null!(b.value).to_string()),
             ast::Expr::StrLiteral(s) => Ok(ptr_null!(s.value)),
-            ast::Expr::Ident(i) => Ok(self.to_map_ident(&i)),
+            ast::Expr::Ident(i) => self.to_map_ident(&i, ""),
             ast::Expr::Binary(b) => {
-                let left = self.to_string(ptr!(b.left))?;
-                let right = self.to_string(ptr!(b.right))?;
-                Ok(format!("({} {} {})", left, ptr_null!(b.op), right))
+                let left = self.to_string(&ptr!(b.left))?;
+                let right = self.to_string(&ptr!(b.right))?;
+                Ok(format!("({} {} {})", left, ptr_null!(b.op).to_str(), right))
+            }
+            ast::Expr::Unary(u) => {
+                let right = self.to_string(&ptr!(u.expr))?;
+                Ok(format!("({} {})", ptr_null!(u.op).to_str(), right))
+            }
+            ast::Expr::Cond(c) => {
+                let cond = self.to_string(&ptr!(c.cond))?;
+                let then = self.to_string(&ptr!(c.then))?;
+                let else_ = self.to_string(&ptr!(c.els))?;
+                Ok(format!("(if {cond} {{ {then} }} else {{ {else_} }} )"))
+            }
+            ast::Expr::MemberAccess(c) => {
+                let base = self.to_string(&ptr!(c.target))?;
+                self.to_map_ident(&ptr!(c.member), &base)
             }
             _ => Err(StringerError::Unsupported),
         }

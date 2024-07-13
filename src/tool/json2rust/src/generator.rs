@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use ast2rust::ast::{GenerateMapFile, StructType, StructUnionType};
-use ast2rust::eval::topological_sort_format;
-use ast2rust::{ast, PtrKey};
+use ast2rust::eval::{topological_sort_format, Stringer};
+use ast2rust::{ast, PtrKey, PtrUnwrapError};
 use ast2rust_macro::{ptr, ptr_null};
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -33,6 +33,7 @@ pub struct Writer<W: std::io::Write> {
     indent: RefCell<usize>,
 
     should_indent: bool,
+    s: Stringer,
 }
 
 struct IndentScope<'a> {
@@ -51,6 +52,7 @@ impl<'a, W: std::io::Write> Writer<W> {
             writer: w,
             indent: RefCell::new(0),
             should_indent: false,
+            s: Stringer::new("self".into()),
         }
     }
 
@@ -390,6 +392,7 @@ impl<W: std::io::Write> Generator<W> {
                     self.write_node(w, elem.clone())?;
                 }
             }
+            ast::Node::If(if_) => {}
             ast::Node::Field(field) => {
                 if self.encode {
                     self.write_encode_field(w, &field)?;
