@@ -1560,6 +1560,12 @@ impl TryFrom<NodeWeak> for Node {
 	}
 }
 
+impl NodeWeak {
+  pub fn upgrade(&self) -> Option<Node>{
+      self.try_into().ok()
+  }
+}
+
 #[derive(Debug,Clone)]
 pub enum Expr {
 	Binary(Rc<RefCell<Binary>>),
@@ -1805,6 +1811,12 @@ impl TryFrom<ExprWeak> for Expr {
 	fn try_from(node:ExprWeak)->Result<Self,Self::Error>{
 		Self::try_from(&node)
 	}
+}
+
+impl ExprWeak {
+  pub fn upgrade(&self) -> Option<Expr>{
+      self.try_into().ok()
+  }
 }
 
 impl TryFrom<&Node> for Expr {
@@ -2127,6 +2139,7 @@ impl ExprWeak {
   pub fn into_node(&self)->NodeWeak{
        self.into()
 	}
+
 }
 
 #[derive(Debug,Clone)]
@@ -2255,6 +2268,12 @@ impl TryFrom<StmtWeak> for Stmt {
 	fn try_from(node:StmtWeak)->Result<Self,Self::Error>{
 		Self::try_from(&node)
 	}
+}
+
+impl StmtWeak {
+  pub fn upgrade(&self) -> Option<Stmt>{
+      self.try_into().ok()
+  }
 }
 
 impl TryFrom<&Node> for Stmt {
@@ -2500,6 +2519,7 @@ impl StmtWeak {
   pub fn into_node(&self)->NodeWeak{
        self.into()
 	}
+
 }
 
 #[derive(Debug,Clone)]
@@ -2721,6 +2741,12 @@ impl TryFrom<TypeWeak> for Type {
 	fn try_from(node:TypeWeak)->Result<Self,Self::Error>{
 		Self::try_from(&node)
 	}
+}
+
+impl TypeWeak {
+  pub fn upgrade(&self) -> Option<Type>{
+      self.try_into().ok()
+  }
 }
 
 impl TryFrom<&Node> for Type {
@@ -2973,6 +2999,7 @@ impl TypeWeak {
   pub fn into_node(&self)->NodeWeak{
        self.into()
 	}
+
 }
 
 #[derive(Debug,Clone)]
@@ -3073,6 +3100,12 @@ impl TryFrom<LiteralWeak> for Literal {
 	fn try_from(node:LiteralWeak)->Result<Self,Self::Error>{
 		Self::try_from(&node)
 	}
+}
+
+impl LiteralWeak {
+  pub fn upgrade(&self) -> Option<Literal>{
+      self.try_into().ok()
+  }
 }
 
 impl TryFrom<&Node> for Literal {
@@ -3248,6 +3281,7 @@ impl LiteralWeak {
   pub fn into_node(&self)->NodeWeak{
        self.into()
 	}
+
 }
 
 #[derive(Debug,Clone)]
@@ -3351,6 +3385,12 @@ impl TryFrom<MemberWeak> for Member {
 	fn try_from(node:MemberWeak)->Result<Self,Self::Error>{
 		Self::try_from(&node)
 	}
+}
+
+impl MemberWeak {
+  pub fn upgrade(&self) -> Option<Member>{
+      self.try_into().ok()
+  }
 }
 
 impl TryFrom<&Node> for Member {
@@ -3519,6 +3559,7 @@ impl MemberWeak {
   pub fn into_node(&self)->NodeWeak{
        self.into()
 	}
+
 }
 
 #[derive(Debug,Clone)]

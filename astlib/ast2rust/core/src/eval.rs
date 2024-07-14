@@ -202,14 +202,14 @@ impl Stringer {
             }
         };
         if !via_member_access {
-            if let Some(w) = &ident.borrow().base {
-                if let Some(w) = w.try_into().ok() {
-                    let _: &ast::Node = &w;
-                    if let Some(w) = w.try_into().ok() {
-                        let _: &ast::Member = &w;
-                        return replace_with_this(&self.self_, ident_str);
-                    }
-                }
+            if let Some(w) = ident
+                .borrow()
+                .base
+                .as_ref()
+                .and_then(|s| s.upgrade())
+                .and_then(|s| s.try_into_member().ok())
+            {
+                return replace_with_this(&self.self_, ident_str);
             }
         }
         if let Some(s) = self.ident_map.get(&key) {

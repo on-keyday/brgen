@@ -181,6 +181,12 @@ func generate(rw io.Writer, defs *gen.Defs) {
 			w.Printf("	}\n")
 			w.Printf("}\n\n")
 
+			w.Printf("impl %sWeak {\n", d.Name)
+			w.Printf("  pub fn upgrade(&self) -> Option<%s>{\n", d.Name)
+			w.Printf("      self.try_into().ok()\n")
+			w.Printf("  }\n")
+			w.Printf("}\n\n")
+
 			if d.Name == "Node" {
 				continue
 			}
@@ -358,7 +364,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 			w.Printf("impl %sWeak {\n", d.Name)
 			w.Printf("  pub fn into_node(&self)->NodeWeak{\n")
 			w.Printf("       self.into()\n")
-			w.Printf("	}\n")
+			w.Printf("	}\n\n")
 			w.Printf("}\n\n")
 
 		case *gen.Struct:
