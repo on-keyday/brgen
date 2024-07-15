@@ -57,10 +57,9 @@
             "name": "Debug json2cpp",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceRoot}/tool/json2ts",
+            "program": "${workspaceRoot}/tool/json2rust",
             "args": [
-                "-f",
-                "./ignore/sample.json",
+                "-f", "./ignore/sample.json"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",
@@ -111,10 +110,13 @@
         {
             "type": "cppvsdbg",
             "request": "launch",
-            "name": "Debug ctobgn",
-            "program": "${workspaceRoot}/tool/ctobgn",
+            "name": "Debug cmptest",
+            "program": "${workspaceRoot}/tool/cmptest",
             "cwd": "${workspaceRoot}",
             "args": [
+                "--test-info-file" ,
+                "./ignore/example/test_info.json",
+                "--test-config-file" ,"./testkit/cmptest.json" ,"-d"
             ],
         }
     ]

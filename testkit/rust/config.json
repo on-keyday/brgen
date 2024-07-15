@@ -1,0 +1,19 @@
+{
+  "suffix": "rs",
+  "test_template": "./testkit/rust/test_template.rs",
+  "replace_file_name": "stub.hpp",
+  "replace_struct_name": "TEST_CLASS",
+  "build_input_name": "main.rs",
+  "build_output_name": "test.exe",
+  "build_command": [
+    "python",
+    "./testkit/rust/setup.py",
+    "$INPUT",
+    "$OUTPUT",
+    "$ORIGIN",
+    "$TMPDIR",
+    "$DEBUG",
+    "$CONFIG"
+  ],
+  "run_command": ["$EXEC", "$INPUT", "$OUTPUT"]
+}

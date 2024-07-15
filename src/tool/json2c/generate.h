@@ -4,7 +4,7 @@
 #include <core/ast/tool/sort.h>
 #include <writer/writer.h>
 #include <core/ast/tool/stringer.h>
-#include "../common/line_map.h"
+#include <core/ast/line_map.h>
 #include "ctype.h"
 #include <numeric>
 #include <core/ast/tool/tmp_ident.h>
@@ -45,7 +45,7 @@ namespace json2c {
         brgen::writer::Writer c_w;
         ast::tool::Stringer str;
         std::vector<std::string> struct_names;
-        std::vector<LineMap> line_map;
+        std::vector<ast::LineMap> line_map;
         bool encode = false;
         size_t seq = 0;
         std::map<std::shared_ptr<ast::Type>, std::string> typedef_map;

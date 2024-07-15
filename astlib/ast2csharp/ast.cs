@@ -866,6 +866,14 @@ public class TokenFile {
 	public List<Token>? Tokens{get;set;}
 	public SrcError? Error{get;set;}
 }
+public class GenerateMapFile {
+	public List<string>? Structs{get;set;}
+	public List<LineMap>? LineMap{get;set;}
+}
+public class LineMap {
+	public ulong Line{get;set;}
+	public Loc Loc{get;set;}
+}
 public static class Ast {
   public static Program ParseAST(JsonAst ast) {
        if(ast.Node == null) {

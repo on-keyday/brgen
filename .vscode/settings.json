@@ -156,8 +156,5 @@
     "yaml.schemas": {
         "https://ultra-supara/homebrew-sisakulint/settings.json": "/.github/workflows/*.{yml,yaml}"
     },
-    "liveServer.settings.port": 5501,
-    "accessibility.signalOptions": {
-        "volume": 0
-    }
+    "liveServer.settings.port": 5501
 }

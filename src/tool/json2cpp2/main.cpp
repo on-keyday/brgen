@@ -73,7 +73,7 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
             cout << R"({
             "input": "file",
             "langs": ["cpp","json"],
-            "suffix": [".hpp",".json"],
+            "suffix": [".hpp",".hpp.json"],
             "separator": "############\n"
         })";
         }

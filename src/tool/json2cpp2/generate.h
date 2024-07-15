@@ -6,7 +6,7 @@
 #include <writer/writer.h>
 #include <core/ast/tool/stringer.h>
 #include <core/ast/tool/sort.h>
-#include "../common/line_map.h"
+#include <core/ast/line_map.h>
 #include <core/ast/tool/tmp_ident.h>
 
 namespace j2cp2 {
@@ -80,7 +80,7 @@ namespace j2cp2 {
         std::map<ast::Field*, LaterInfo> later_size;
         std::map<std::shared_ptr<ast::StructType>, AnonymousStruct> anonymous_struct;
         std::map<ast::EnumMember*, std::string> enum_member_map;
-        std::vector<LineMap> line_map;
+        std::vector<ast::LineMap> line_map;
         bool enable_line_map = false;
         bool use_error = false;
         bool use_variant = false;

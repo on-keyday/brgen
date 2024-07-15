@@ -10,7 +10,9 @@ license = "MIT"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-ast2rust = {path ="../../../astlib/ast2rust" }
+anyhow = "1.0.86"
+ast2rust = {path ="../../../astlib/ast2rust/core" }
+ast2rust_macro = {path="../../../astlib/ast2rust/macros"}
 clap = { version = "4.5.4", features = ["derive"] }
 serde = "1.0.200"
 serde_json = "1.0.116"

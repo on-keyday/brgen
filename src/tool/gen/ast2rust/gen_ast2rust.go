@@ -181,6 +181,12 @@ func generate(rw io.Writer, defs *gen.Defs) {
 			w.Printf("	}\n")
 			w.Printf("}\n\n")
 
+			w.Printf("impl %sWeak {\n", d.Name)
+			w.Printf("  pub fn upgrade(&self) -> Option<%s>{\n", d.Name)
+			w.Printf("      self.try_into().ok()\n")
+			w.Printf("  }\n")
+			w.Printf("}\n\n")
+
 			if d.Name == "Node" {
 				continue
 			}
@@ -336,6 +342,31 @@ func generate(rw io.Writer, defs *gen.Defs) {
 			w.Printf("	}\n")
 			w.Printf("}\n\n")
 
+			methodName := strcase.ToSnake(d.Name)
+			w.Printf("impl Node {\n")
+			w.Printf("	pub fn try_into_%s(&self)->Result<%s,Error>{\n", methodName, d.Name)
+			w.Printf("       self.try_into()\n")
+			w.Printf("	}\n")
+			w.Printf("}\n\n")
+
+			w.Printf("impl NodeWeak {\n")
+			w.Printf("	pub fn try_into_%s(&self)->Result<%sWeak,Error>{\n", methodName, d.Name)
+			w.Printf("       self.try_into()\n")
+			w.Printf("	}\n")
+			w.Printf("}\n\n")
+
+			w.Printf("impl %s {\n", d.Name)
+			w.Printf("  pub fn into_node(&self)->Node{\n")
+			w.Printf("       self.into()\n")
+			w.Printf("	}\n")
+			w.Printf("}\n\n")
+
+			w.Printf("impl %sWeak {\n", d.Name)
+			w.Printf("  pub fn into_node(&self)->NodeWeak{\n")
+			w.Printf("       self.into()\n")
+			w.Printf("	}\n\n")
+			w.Printf("}\n\n")
+
 		case *gen.Struct:
 			if d.Name == "Loc" || d.Name == "Pos" {
 				w.Printf("#[derive(Debug,Clone,Copy,Serialize,Deserialize)]\n")
@@ -402,7 +433,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 
 			if d.IsBitField {
 				w.Printf("bitflags!{\n")
-				w.Printf("	#[derive(Debug,Clone,Copy)]\n")
+				w.Printf("	#[derive(Debug,Clone,Copy,PartialEq,Eq)]\n")
 				w.Printf("	pub struct %s: u64{\n", d.Name)
 				for _, field := range d.Values {
 					field.Name = strcase.ToCamel(field.Name)
@@ -417,7 +448,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 				w.Printf("	}\n")
 				w.Printf("}\n")
 			} else {
-				w.Printf("#[derive(Debug,Clone,Copy,Serialize,Deserialize)]\n")
+				w.Printf("#[derive(Debug,Clone,Copy,Serialize,Deserialize,PartialEq,Eq)]\n")
 				w.Printf("#[serde(rename_all = \"snake_case\")]\n")
 				w.Printf("pub enum %s {\n", d.Name)
 				for _, field := range d.Values {
@@ -434,6 +465,25 @@ func generate(rw io.Writer, defs *gen.Defs) {
 				}
 				w.Printf("			_=> Err(()),\n")
 				w.Printf("		}\n")
+				w.Printf("	}\n")
+				w.Printf("}\n\n")
+				w.Printf("impl %s {\n", d.Name)
+				w.Printf("	pub fn to_str(&self)->&'static str{\n")
+				w.Printf("		match self {\n")
+				for _, field := range d.Values {
+					w.Printf("			Self::%s => %q,\n", field.Name, field.Value)
+				}
+				w.Printf("		}\n")
+				w.Printf("	}\n")
+				w.Printf("}\n")
+				w.Printf("impl From<&%s> for &'static str {\n", d.Name)
+				w.Printf("	fn from(v:&%s)->&'static str{\n", d.Name)
+				w.Printf("		v.to_str()\n")
+				w.Printf("	}\n")
+				w.Printf("}\n\n")
+				w.Printf("impl From<%s> for &'static str {\n", d.Name)
+				w.Printf("	fn from(v:%s)->&'static str{\n", d.Name)
+				w.Printf("		v.to_str()\n")
 				w.Printf("	}\n")
 				w.Printf("}\n\n")
 			}

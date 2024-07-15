@@ -47,7 +47,7 @@ namespace brgen::ast::tool {
             def_base_map[l->first] = brgen::concat(text...);
         }
 
-        std::string ident_to_string(const std::shared_ptr<ast::Ident>& ident, const std::string& default_text = "") {
+        std::string ident_to_string(const std::shared_ptr<ast::Ident>& ident, const std::string& member_base = "") {
             if (!ident) {
                 return "";
             }
@@ -78,7 +78,7 @@ namespace brgen::ast::tool {
             if (ast::as<ast::EnumMember>(d->first->base.lock())) {
                 return text;
             }
-            return get_text_with_replace(default_text);
+            return get_text_with_replace(member_base);
         }
 
         std::string default_bin_op(const std::shared_ptr<Binary>& bin) {

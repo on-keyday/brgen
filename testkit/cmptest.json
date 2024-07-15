@@ -21,6 +21,9 @@
     },
     {
       "file": "./testkit/go/config.json"
+    },
+    {
+      "file": "./testkit/rust/config.json"
     }
   ]
 }

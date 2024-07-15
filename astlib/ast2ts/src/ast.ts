@@ -1240,6 +1240,24 @@ export function isTokenFile(obj: any): obj is TokenFile {
 	return obj && typeof obj === 'object' && typeof obj?.success === "boolean" && Array.isArray(obj?.files) && (obj?.tokens === null || Array.isArray(obj?.tokens)) && (obj?.error === null || isSrcError(obj?.error))
 }
 
+export interface GenerateMapFile {
+	structs: string[];
+	line_map: LineMap[];
+}
+
+export function isGenerateMapFile(obj: any): obj is GenerateMapFile {
+	return obj && typeof obj === 'object' && Array.isArray(obj?.structs) && Array.isArray(obj?.line_map)
+}
+
+export interface LineMap {
+	line: number;
+	loc: Loc;
+}
+
+export function isLineMap(obj: any): obj is LineMap {
+	return obj && typeof obj === 'object' && typeof obj?.line === "number" && isLoc(obj?.loc)
+}
+
 interface astConstructor {
 	node : Node[];
 	scope : Scope[];

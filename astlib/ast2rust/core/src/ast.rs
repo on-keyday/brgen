@@ -204,7 +204,7 @@ impl From<NodeWeak> for NodeType {
 	}
 }
 
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+#[derive(Debug,Clone,Copy,Serialize,Deserialize,PartialEq,Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum NodeType {
 	Program,
@@ -361,7 +361,97 @@ impl TryFrom<&str> for NodeType {
 	}
 }
 
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+impl NodeType {
+	pub fn to_str(&self)->&'static str{
+		match self {
+			Self::Program => "program",
+			Self::Comment => "comment",
+			Self::CommentGroup => "comment_group",
+			Self::FieldArgument => "field_argument",
+			Self::Expr => "expr",
+			Self::Binary => "binary",
+			Self::Unary => "unary",
+			Self::Cond => "cond",
+			Self::Ident => "ident",
+			Self::Call => "call",
+			Self::If => "if",
+			Self::MemberAccess => "member_access",
+			Self::Paren => "paren",
+			Self::Index => "index",
+			Self::Match => "match",
+			Self::Range => "range",
+			Self::Identity => "identity",
+			Self::TmpVar => "tmp_var",
+			Self::Import => "import",
+			Self::Cast => "cast",
+			Self::Available => "available",
+			Self::SpecifyOrder => "specify_order",
+			Self::ExplicitError => "explicit_error",
+			Self::IoOperation => "io_operation",
+			Self::OrCond => "or_cond",
+			Self::BadExpr => "bad_expr",
+			Self::Stmt => "stmt",
+			Self::Loop => "loop",
+			Self::IndentBlock => "indent_block",
+			Self::ScopedStatement => "scoped_statement",
+			Self::MatchBranch => "match_branch",
+			Self::UnionCandidate => "union_candidate",
+			Self::Return => "return",
+			Self::Break => "break",
+			Self::Continue => "continue",
+			Self::Assert => "assert",
+			Self::ImplicitYield => "implicit_yield",
+			Self::Metadata => "metadata",
+			Self::Type => "type",
+			Self::IntType => "int_type",
+			Self::FloatType => "float_type",
+			Self::IdentType => "ident_type",
+			Self::IntLiteralType => "int_literal_type",
+			Self::StrLiteralType => "str_literal_type",
+			Self::RegexLiteralType => "regex_literal_type",
+			Self::VoidType => "void_type",
+			Self::BoolType => "bool_type",
+			Self::ArrayType => "array_type",
+			Self::FunctionType => "function_type",
+			Self::StructType => "struct_type",
+			Self::StructUnionType => "struct_union_type",
+			Self::UnionType => "union_type",
+			Self::RangeType => "range_type",
+			Self::EnumType => "enum_type",
+			Self::MetaType => "meta_type",
+			Self::OptionalType => "optional_type",
+			Self::GenericType => "generic_type",
+			Self::Literal => "literal",
+			Self::IntLiteral => "int_literal",
+			Self::BoolLiteral => "bool_literal",
+			Self::StrLiteral => "str_literal",
+			Self::RegexLiteral => "regex_literal",
+			Self::CharLiteral => "char_literal",
+			Self::TypeLiteral => "type_literal",
+			Self::SpecialLiteral => "special_literal",
+			Self::Member => "member",
+			Self::Field => "field",
+			Self::Format => "format",
+			Self::State => "state",
+			Self::Enum => "enum",
+			Self::EnumMember => "enum_member",
+			Self::Function => "function",
+		}
+	}
+}
+impl From<&NodeType> for &'static str {
+	fn from(v:&NodeType)->&'static str{
+		v.to_str()
+	}
+}
+
+impl From<NodeType> for &'static str {
+	fn from(v:NodeType)->&'static str{
+		v.to_str()
+	}
+}
+
+#[derive(Debug,Clone,Copy,Serialize,Deserialize,PartialEq,Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum TokenTag {
 	Indent,
@@ -402,7 +492,39 @@ impl TryFrom<&str> for TokenTag {
 	}
 }
 
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+impl TokenTag {
+	pub fn to_str(&self)->&'static str{
+		match self {
+			Self::Indent => "indent",
+			Self::Space => "space",
+			Self::Line => "line",
+			Self::Punct => "punct",
+			Self::IntLiteral => "int_literal",
+			Self::BoolLiteral => "bool_literal",
+			Self::StrLiteral => "str_literal",
+			Self::RegexLiteral => "regex_literal",
+			Self::CharLiteral => "char_literal",
+			Self::Keyword => "keyword",
+			Self::Ident => "ident",
+			Self::Comment => "comment",
+			Self::Error => "error",
+			Self::Unknown => "unknown",
+		}
+	}
+}
+impl From<&TokenTag> for &'static str {
+	fn from(v:&TokenTag)->&'static str{
+		v.to_str()
+	}
+}
+
+impl From<TokenTag> for &'static str {
+	fn from(v:TokenTag)->&'static str{
+		v.to_str()
+	}
+}
+
+#[derive(Debug,Clone,Copy,Serialize,Deserialize,PartialEq,Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum UnaryOp {
 	Not,
@@ -419,7 +541,27 @@ impl TryFrom<&str> for UnaryOp {
 	}
 }
 
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+impl UnaryOp {
+	pub fn to_str(&self)->&'static str{
+		match self {
+			Self::Not => "!",
+			Self::MinusSign => "-",
+		}
+	}
+}
+impl From<&UnaryOp> for &'static str {
+	fn from(v:&UnaryOp)->&'static str{
+		v.to_str()
+	}
+}
+
+impl From<UnaryOp> for &'static str {
+	fn from(v:UnaryOp)->&'static str{
+		v.to_str()
+	}
+}
+
+#[derive(Debug,Clone,Copy,Serialize,Deserialize,PartialEq,Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum BinaryOp {
 	Mul,
@@ -514,7 +656,66 @@ impl TryFrom<&str> for BinaryOp {
 	}
 }
 
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+impl BinaryOp {
+	pub fn to_str(&self)->&'static str{
+		match self {
+			Self::Mul => "*",
+			Self::Div => "/",
+			Self::Mod => "%",
+			Self::LeftArithmeticShift => "<<<",
+			Self::RightArithmeticShift => ">>>",
+			Self::LeftLogicalShift => "<<",
+			Self::RightLogicalShift => ">>",
+			Self::BitAnd => "&",
+			Self::Add => "+",
+			Self::Sub => "-",
+			Self::BitOr => "|",
+			Self::BitXor => "^",
+			Self::Equal => "==",
+			Self::NotEqual => "!=",
+			Self::Less => "<",
+			Self::LessOrEq => "<=",
+			Self::Grater => ">",
+			Self::GraterOrEq => ">=",
+			Self::LogicalAnd => "&&",
+			Self::LogicalOr => "||",
+			Self::CondOp1 => "?",
+			Self::CondOp2 => ":",
+			Self::RangeExclusive => "..",
+			Self::RangeInclusive => "..=",
+			Self::Assign => "=",
+			Self::DefineAssign => ":=",
+			Self::ConstAssign => "::=",
+			Self::AddAssign => "+=",
+			Self::SubAssign => "-=",
+			Self::MulAssign => "*=",
+			Self::DivAssign => "/=",
+			Self::ModAssign => "%=",
+			Self::LeftLogicalShiftAssign => "<<=",
+			Self::RightLogicalShiftAssign => ">>=",
+			Self::LeftArithmeticShiftAssign => "<<<=",
+			Self::RightArithmeticShiftAssign => ">>>=",
+			Self::BitAndAssign => "&=",
+			Self::BitOrAssign => "|=",
+			Self::BitXorAssign => "^=",
+			Self::Comma => ",",
+			Self::InAssign => "in",
+		}
+	}
+}
+impl From<&BinaryOp> for &'static str {
+	fn from(v:&BinaryOp)->&'static str{
+		v.to_str()
+	}
+}
+
+impl From<BinaryOp> for &'static str {
+	fn from(v:BinaryOp)->&'static str{
+		v.to_str()
+	}
+}
+
+#[derive(Debug,Clone,Copy,Serialize,Deserialize,PartialEq,Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum IdentUsage {
 	Unknown,
@@ -563,7 +764,43 @@ impl TryFrom<&str> for IdentUsage {
 	}
 }
 
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+impl IdentUsage {
+	pub fn to_str(&self)->&'static str{
+		match self {
+			Self::Unknown => "unknown",
+			Self::BadIdent => "bad_ident",
+			Self::Reference => "reference",
+			Self::DefineVariable => "define_variable",
+			Self::DefineConst => "define_const",
+			Self::DefineField => "define_field",
+			Self::DefineFormat => "define_format",
+			Self::DefineState => "define_state",
+			Self::DefineEnum => "define_enum",
+			Self::DefineEnumMember => "define_enum_member",
+			Self::DefineFn => "define_fn",
+			Self::DefineCastFn => "define_cast_fn",
+			Self::DefineArg => "define_arg",
+			Self::ReferenceType => "reference_type",
+			Self::ReferenceMember => "reference_member",
+			Self::ReferenceMemberType => "reference_member_type",
+			Self::MaybeType => "maybe_type",
+			Self::ReferenceBuiltinFn => "reference_builtin_fn",
+		}
+	}
+}
+impl From<&IdentUsage> for &'static str {
+	fn from(v:&IdentUsage)->&'static str{
+		v.to_str()
+	}
+}
+
+impl From<IdentUsage> for &'static str {
+	fn from(v:IdentUsage)->&'static str{
+		v.to_str()
+	}
+}
+
+#[derive(Debug,Clone,Copy,Serialize,Deserialize,PartialEq,Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum Endian {
 	Unspec,
@@ -582,7 +819,28 @@ impl TryFrom<&str> for Endian {
 	}
 }
 
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+impl Endian {
+	pub fn to_str(&self)->&'static str{
+		match self {
+			Self::Unspec => "unspec",
+			Self::Big => "big",
+			Self::Little => "little",
+		}
+	}
+}
+impl From<&Endian> for &'static str {
+	fn from(v:&Endian)->&'static str{
+		v.to_str()
+	}
+}
+
+impl From<Endian> for &'static str {
+	fn from(v:Endian)->&'static str{
+		v.to_str()
+	}
+}
+
+#[derive(Debug,Clone,Copy,Serialize,Deserialize,PartialEq,Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum ConstantLevel {
 	Unknown,
@@ -603,7 +861,29 @@ impl TryFrom<&str> for ConstantLevel {
 	}
 }
 
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+impl ConstantLevel {
+	pub fn to_str(&self)->&'static str{
+		match self {
+			Self::Unknown => "unknown",
+			Self::Constant => "constant",
+			Self::ImmutableVariable => "immutable_variable",
+			Self::Variable => "variable",
+		}
+	}
+}
+impl From<&ConstantLevel> for &'static str {
+	fn from(v:&ConstantLevel)->&'static str{
+		v.to_str()
+	}
+}
+
+impl From<ConstantLevel> for &'static str {
+	fn from(v:ConstantLevel)->&'static str{
+		v.to_str()
+	}
+}
+
+#[derive(Debug,Clone,Copy,Serialize,Deserialize,PartialEq,Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum BitAlignment {
 	ByteAligned,
@@ -636,7 +916,35 @@ impl TryFrom<&str> for BitAlignment {
 	}
 }
 
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+impl BitAlignment {
+	pub fn to_str(&self)->&'static str{
+		match self {
+			Self::ByteAligned => "byte_aligned",
+			Self::Bit1 => "bit_1",
+			Self::Bit2 => "bit_2",
+			Self::Bit3 => "bit_3",
+			Self::Bit4 => "bit_4",
+			Self::Bit5 => "bit_5",
+			Self::Bit6 => "bit_6",
+			Self::Bit7 => "bit_7",
+			Self::NotTarget => "not_target",
+			Self::NotDecidable => "not_decidable",
+		}
+	}
+}
+impl From<&BitAlignment> for &'static str {
+	fn from(v:&BitAlignment)->&'static str{
+		v.to_str()
+	}
+}
+
+impl From<BitAlignment> for &'static str {
+	fn from(v:BitAlignment)->&'static str{
+		v.to_str()
+	}
+}
+
+#[derive(Debug,Clone,Copy,Serialize,Deserialize,PartialEq,Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum Follow {
 	Unknown,
@@ -659,7 +967,30 @@ impl TryFrom<&str> for Follow {
 	}
 }
 
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+impl Follow {
+	pub fn to_str(&self)->&'static str{
+		match self {
+			Self::Unknown => "unknown",
+			Self::End => "end",
+			Self::Fixed => "fixed",
+			Self::Constant => "constant",
+			Self::Normal => "normal",
+		}
+	}
+}
+impl From<&Follow> for &'static str {
+	fn from(v:&Follow)->&'static str{
+		v.to_str()
+	}
+}
+
+impl From<Follow> for &'static str {
+	fn from(v:Follow)->&'static str{
+		v.to_str()
+	}
+}
+
+#[derive(Debug,Clone,Copy,Serialize,Deserialize,PartialEq,Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum IoMethod {
 	Unspec,
@@ -700,7 +1031,39 @@ impl TryFrom<&str> for IoMethod {
 	}
 }
 
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+impl IoMethod {
+	pub fn to_str(&self)->&'static str{
+		match self {
+			Self::Unspec => "unspec",
+			Self::OutputPut => "output_put",
+			Self::InputPeek => "input_peek",
+			Self::InputGet => "input_get",
+			Self::InputBackward => "input_backward",
+			Self::InputOffset => "input_offset",
+			Self::InputBitOffset => "input_bit_offset",
+			Self::InputRemain => "input_remain",
+			Self::InputSubrange => "input_subrange",
+			Self::ConfigEndianLittle => "config_endian_little",
+			Self::ConfigEndianBig => "config_endian_big",
+			Self::ConfigEndianNative => "config_endian_native",
+			Self::ConfigBitOrderLsb => "config_bit_order_lsb",
+			Self::ConfigBitOrderMsb => "config_bit_order_msb",
+		}
+	}
+}
+impl From<&IoMethod> for &'static str {
+	fn from(v:&IoMethod)->&'static str{
+		v.to_str()
+	}
+}
+
+impl From<IoMethod> for &'static str {
+	fn from(v:IoMethod)->&'static str{
+		v.to_str()
+	}
+}
+
+#[derive(Debug,Clone,Copy,Serialize,Deserialize,PartialEq,Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum SpecialLiteralKind {
 	Input,
@@ -719,7 +1082,28 @@ impl TryFrom<&str> for SpecialLiteralKind {
 	}
 }
 
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+impl SpecialLiteralKind {
+	pub fn to_str(&self)->&'static str{
+		match self {
+			Self::Input => "input",
+			Self::Output => "output",
+			Self::Config => "config",
+		}
+	}
+}
+impl From<&SpecialLiteralKind> for &'static str {
+	fn from(v:&SpecialLiteralKind)->&'static str{
+		v.to_str()
+	}
+}
+
+impl From<SpecialLiteralKind> for &'static str {
+	fn from(v:SpecialLiteralKind)->&'static str{
+		v.to_str()
+	}
+}
+
+#[derive(Debug,Clone,Copy,Serialize,Deserialize,PartialEq,Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum OrderType {
 	Byte,
@@ -740,8 +1124,30 @@ impl TryFrom<&str> for OrderType {
 	}
 }
 
+impl OrderType {
+	pub fn to_str(&self)->&'static str{
+		match self {
+			Self::Byte => "byte",
+			Self::BitStream => "bit_stream",
+			Self::BitMapping => "bit_mapping",
+			Self::BitBoth => "bit_both",
+		}
+	}
+}
+impl From<&OrderType> for &'static str {
+	fn from(v:&OrderType)->&'static str{
+		v.to_str()
+	}
+}
+
+impl From<OrderType> for &'static str {
+	fn from(v:OrderType)->&'static str{
+		v.to_str()
+	}
+}
+
 bitflags!{
-	#[derive(Debug,Clone,Copy)]
+	#[derive(Debug,Clone,Copy,PartialEq,Eq)]
 	pub struct BlockTrait: u64{
 		const None = 0;
 		const FixedPrimitive = 1;
@@ -1154,6 +1560,12 @@ impl TryFrom<NodeWeak> for Node {
 	}
 }
 
+impl NodeWeak {
+  pub fn upgrade(&self) -> Option<Node>{
+      self.try_into().ok()
+  }
+}
+
 #[derive(Debug,Clone)]
 pub enum Expr {
 	Binary(Rc<RefCell<Binary>>),
@@ -1399,6 +1811,12 @@ impl TryFrom<ExprWeak> for Expr {
 	fn try_from(node:ExprWeak)->Result<Self,Self::Error>{
 		Self::try_from(&node)
 	}
+}
+
+impl ExprWeak {
+  pub fn upgrade(&self) -> Option<Expr>{
+      self.try_into().ok()
+  }
 }
 
 impl TryFrom<&Node> for Expr {
@@ -1699,6 +2117,31 @@ impl From<Expr> for NodeType {
 	}
 }
 
+impl Node {
+	pub fn try_into_expr(&self)->Result<Expr,Error>{
+       self.try_into()
+	}
+}
+
+impl NodeWeak {
+	pub fn try_into_expr(&self)->Result<ExprWeak,Error>{
+       self.try_into()
+	}
+}
+
+impl Expr {
+  pub fn into_node(&self)->Node{
+       self.into()
+	}
+}
+
+impl ExprWeak {
+  pub fn into_node(&self)->NodeWeak{
+       self.into()
+	}
+
+}
+
 #[derive(Debug,Clone)]
 pub enum Stmt {
 	Loop(Rc<RefCell<Loop>>),
@@ -1825,6 +2268,12 @@ impl TryFrom<StmtWeak> for Stmt {
 	fn try_from(node:StmtWeak)->Result<Self,Self::Error>{
 		Self::try_from(&node)
 	}
+}
+
+impl StmtWeak {
+  pub fn upgrade(&self) -> Option<Stmt>{
+      self.try_into().ok()
+  }
 }
 
 impl TryFrom<&Node> for Stmt {
@@ -2048,6 +2497,31 @@ impl From<Stmt> for NodeType {
 	}
 }
 
+impl Node {
+	pub fn try_into_stmt(&self)->Result<Stmt,Error>{
+       self.try_into()
+	}
+}
+
+impl NodeWeak {
+	pub fn try_into_stmt(&self)->Result<StmtWeak,Error>{
+       self.try_into()
+	}
+}
+
+impl Stmt {
+  pub fn into_node(&self)->Node{
+       self.into()
+	}
+}
+
+impl StmtWeak {
+  pub fn into_node(&self)->NodeWeak{
+       self.into()
+	}
+
+}
+
 #[derive(Debug,Clone)]
 pub enum Type {
 	IntType(Rc<RefCell<IntType>>),
@@ -2267,6 +2741,12 @@ impl TryFrom<TypeWeak> for Type {
 	fn try_from(node:TypeWeak)->Result<Self,Self::Error>{
 		Self::try_from(&node)
 	}
+}
+
+impl TypeWeak {
+  pub fn upgrade(&self) -> Option<Type>{
+      self.try_into().ok()
+  }
 }
 
 impl TryFrom<&Node> for Type {
@@ -2497,6 +2977,31 @@ impl From<Type> for NodeType {
 	}
 }
 
+impl Node {
+	pub fn try_into_type(&self)->Result<Type,Error>{
+       self.try_into()
+	}
+}
+
+impl NodeWeak {
+	pub fn try_into_type(&self)->Result<TypeWeak,Error>{
+       self.try_into()
+	}
+}
+
+impl Type {
+  pub fn into_node(&self)->Node{
+       self.into()
+	}
+}
+
+impl TypeWeak {
+  pub fn into_node(&self)->NodeWeak{
+       self.into()
+	}
+
+}
+
 #[derive(Debug,Clone)]
 pub enum Literal {
 	IntLiteral(Rc<RefCell<IntLiteral>>),
@@ -2595,6 +3100,12 @@ impl TryFrom<LiteralWeak> for Literal {
 	fn try_from(node:LiteralWeak)->Result<Self,Self::Error>{
 		Self::try_from(&node)
 	}
+}
+
+impl LiteralWeak {
+  pub fn upgrade(&self) -> Option<Literal>{
+      self.try_into().ok()
+  }
 }
 
 impl TryFrom<&Node> for Literal {
@@ -2748,6 +3259,31 @@ impl From<Literal> for NodeType {
 	}
 }
 
+impl Node {
+	pub fn try_into_literal(&self)->Result<Literal,Error>{
+       self.try_into()
+	}
+}
+
+impl NodeWeak {
+	pub fn try_into_literal(&self)->Result<LiteralWeak,Error>{
+       self.try_into()
+	}
+}
+
+impl Literal {
+  pub fn into_node(&self)->Node{
+       self.into()
+	}
+}
+
+impl LiteralWeak {
+  pub fn into_node(&self)->NodeWeak{
+       self.into()
+	}
+
+}
+
 #[derive(Debug,Clone)]
 pub enum Member {
 	Field(Rc<RefCell<Field>>),
@@ -2849,6 +3385,12 @@ impl TryFrom<MemberWeak> for Member {
 	fn try_from(node:MemberWeak)->Result<Self,Self::Error>{
 		Self::try_from(&node)
 	}
+}
+
+impl MemberWeak {
+  pub fn upgrade(&self) -> Option<Member>{
+      self.try_into().ok()
+  }
 }
 
 impl TryFrom<&Node> for Member {
@@ -2993,6 +3535,31 @@ impl From<Member> for NodeType {
 	fn from(node:Member)-> Self{
 		Self::from(&node)
 	}
+}
+
+impl Node {
+	pub fn try_into_member(&self)->Result<Member,Error>{
+       self.try_into()
+	}
+}
+
+impl NodeWeak {
+	pub fn try_into_member(&self)->Result<MemberWeak,Error>{
+       self.try_into()
+	}
+}
+
+impl Member {
+  pub fn into_node(&self)->Node{
+       self.into()
+	}
+}
+
+impl MemberWeak {
+  pub fn into_node(&self)->NodeWeak{
+       self.into()
+	}
+
 }
 
 #[derive(Debug,Clone)]
@@ -8700,6 +9267,18 @@ pub struct TokenFile {
 	pub files: Vec<String>,
 	pub tokens: Option<Vec<Token>>,
 	pub error: Option<SrcError>,
+}
+
+#[derive(Debug,Clone,Serialize,Deserialize)]
+pub struct GenerateMapFile {
+	pub structs: Vec<String>,
+	pub line_map: Vec<LineMap>,
+}
+
+#[derive(Debug,Clone,Serialize,Deserialize)]
+pub struct LineMap {
+	pub line: u64,
+	pub loc: Loc,
 }
 
 pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{

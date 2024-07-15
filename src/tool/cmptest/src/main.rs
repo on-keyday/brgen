@@ -1,5 +1,6 @@
-use std::{fs, path::Path, sync::Arc};
+use std::{borrow::BorrowMut, fs, path::Path, sync::Arc};
 
+use ast2rust::ast::GenerateMapFile;
 use clap::{arg, Parser};
 use serde::Deserialize;
 use testutil::{Error, TestSchedule};
@@ -35,11 +36,13 @@ async fn main() -> Result<(), Error> {
         let runner = match runner_config {
             testutil::RunnerConfig::TestRunner(x) => x,
             testutil::RunnerConfig::File(x) => {
-                let r = fs::read(&x.file)?;
+                let filename = x.file.clone();
+                let r = fs::read(&filename)?;
                 let mut de = serde_json::Deserializer::from_slice(&r);
                 let r = testutil::TestRunner::deserialize(&mut de)?;
                 *runner_config = testutil::RunnerConfig::TestRunner(r);
                 if let testutil::RunnerConfig::TestRunner(x) = runner_config {
+                    x.file = Some(filename);
                     x
                 } else {
                     unreachable!()
@@ -136,7 +139,7 @@ async fn main() -> Result<(), Error> {
             }
         };
         let mut d = serde_json::Deserializer::from_str(&content);
-        let data = match testutil::GeneratedData::deserialize(&mut d) {
+        let data = match GenerateMapFile::deserialize(&mut d) {
             Ok(file) => file,
             Err(e) => {
                 eprintln!("failed to deserialize {}: {}", path, e);

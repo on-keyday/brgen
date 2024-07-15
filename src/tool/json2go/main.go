@@ -14,16 +14,6 @@ import (
 	"github.com/on-keyday/brgen/astlib/ast2go/request"
 )
 
-type LineMap struct {
-	Line uint64     `json:"line"`
-	Loc  ast2go.Loc `json:"loc"`
-}
-
-type TestInfo struct {
-	LineMap []LineMap `json:"line_map"`
-	Structs []string  `json:"structs"`
-}
-
 func generate(r io.Reader, out func(suffix string, data []byte, warn error), errOut func(err error)) {
 	file := ast2go.AstFile{}
 	err := json.NewDecoder(r).Decode(&file)
@@ -40,9 +30,9 @@ func generate(r io.Reader, out func(suffix string, data []byte, warn error), err
 	if src != nil {
 		out(".go", src, err)
 		if *testInfo {
-			var info TestInfo
+			var info ast2go.GenerateMapFile
 			info.Structs = g.StructNames
-			info.LineMap = []LineMap{}
+			info.LineMap = []ast2go.LineMap{}
 			data, err := json.Marshal(info)
 			out(".go.json", data, err)
 		}

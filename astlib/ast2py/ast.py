@@ -864,6 +864,30 @@ def parse_TokenFile(json: dict) -> TokenFile:
 
 
 
+class GenerateMapFile:
+    structs: List[str]
+    line_map: List[LineMap]
+
+def parse_GenerateMapFile(json: dict) -> GenerateMapFile:
+    ret = GenerateMapFile()
+    ret.structs = [str(x) for x in json["structs"]]
+    ret.line_map = [parse_LineMap(x) for x in json["line_map"]]
+    return ret
+
+
+
+class LineMap:
+    line: int
+    loc: Loc
+
+def parse_LineMap(json: dict) -> LineMap:
+    ret = LineMap()
+    ret.line = int(json["line"])
+    ret.loc = parse_Loc(json["loc"])
+    return ret
+
+
+
 def raiseError(err):
     raise err
 

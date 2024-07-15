@@ -131,6 +131,8 @@ typedef struct ast2c_SrcError ast2c_SrcError;
 typedef struct ast2c_JsonAst ast2c_JsonAst;
 typedef struct ast2c_AstFile ast2c_AstFile;
 typedef struct ast2c_TokenFile ast2c_TokenFile;
+typedef struct ast2c_GenerateMapFile ast2c_GenerateMapFile;
+typedef struct ast2c_LineMap ast2c_LineMap;
 enum ast2c_NodeType {
 	AST2C_NODETYPE_PROGRAM = 1,
 	AST2C_NODETYPE_COMMENT = 2,
@@ -486,6 +488,18 @@ struct ast2c_TokenFile {
 	ast2c_Token* tokens;
 	size_t tokens_size;
 	ast2c_SrcError* error;
+};
+
+struct ast2c_GenerateMapFile {
+	char** structs;
+	size_t structs_size;
+	ast2c_LineMap* line_map;
+	size_t line_map_size;
+};
+
+struct ast2c_LineMap {
+	uint64_t line;
+	ast2c_Loc loc;
 };
 
 struct ast2c_Node {
