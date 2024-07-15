@@ -247,12 +247,13 @@ impl<W: std::io::Write> Generator<W> {
         let sum: u64 = bit_fields
             .iter()
             .try_fold(0 as u64, |acc, x| {
-                Some(acc + x.borrow().field_type?.get_bit_size()?)
+                Some(acc + x.borrow().field_type.as_ref()?.get_bit_size()?)
             })
             .ok_or_else(|| anyhow!("error"))?;
         if sum % 8 != 0 {
             return Err(anyhow!("error"));
         }
+        Ok(())
     }
 
     pub fn write_field<W1: std::io::Write>(
