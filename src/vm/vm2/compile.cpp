@@ -3,19 +3,12 @@
 #include <core/ast/ast.h>
 #include <unordered_map>
 
-namespace brgen::vm {
+namespace brgen::vm2 {
 
     enum class LayoutType {
         PTR,
         ARRAY_PTR,
-        INT8,
-        INT16,
-        INT32,
-        INT64,
-        UINT8,
-        UINT16,
-        UINT32,
-        UINT64,
+        INT,
     };
 
     struct Primitive {
@@ -176,8 +169,9 @@ namespace brgen::vm {
 
         void compile_type(Struct& layout, const std::shared_ptr<ast::Type>& typ, const std::shared_ptr<ast::Field>& field, const std::string& name) {
             if (auto ty = ast::as<ast::IntType>(typ)) {
-                layout.elements.push_back(element_ptr(Element{Primitive{LayoutType::INT64, field, typ, name, layout.size, 8}}));
-                layout.size += 8;
+                auto size = *ty->bit_size / 8 + (*ty->bit_size % 8 != 0);
+                layout.elements.push_back(element_ptr(Element{Primitive{LayoutType::INT, field, typ, name, layout.size, size}}));
+                layout.size += size;
             }
             else if (auto arr = ast::as<ast::ArrayType>(typ)) {
                 if (arr->length_value) {
@@ -318,8 +312,6 @@ namespace brgen::vm {
                         if (auto prim = std::get_if<Primitive>(&*el)) {
                             compile_decode_type(prim->offset, prim->size, prim->type_ast);
                         }
-                        else if (auto u = std::get_if<Union>(&*el)) {
-                        }
                     }
                 }
             }
@@ -358,4 +350,10 @@ namespace brgen::vm {
         }
     };
 
-}  // namespace brgen::vm
+    void compile(const std::shared_ptr<ast::Program>& node, futils::binary::writer& dst) {
+        Compiler2 c;
+        c.compile(node);
+        c.encode(dst);
+    }
+
+}  // namespace brgen::vm2

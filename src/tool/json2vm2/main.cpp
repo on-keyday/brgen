@@ -2,7 +2,8 @@
 #include <cmdline/template/help_option.h>
 #include <cmdline/template/parse_and_err.h>
 #include <wrap/cout.h>
-#include <vm/vm2/vm_enum.h>
+#include <vm/vm2/compile.h>
+#include <vm/vm2/interpret.h>
 #include "../common/print.h"
 #include <file/file_view.h>
 #include <core/ast/json.h>
@@ -37,6 +38,19 @@ int run(const Flags& flags) {
 
 int vm_generate(const Flags& flags, brgen::request::GenerateSource& req, std::shared_ptr<brgen::ast::Node> res) {
     auto prog = brgen::ast::cast_to<brgen::ast::Program>(res);
+    std::string buffer;
+    futils::binary::writer w{futils::binary::resizable_buffer_writer<std::string>(), &buffer};
+    brgen::vm2::compile(prog, w);
+    if (flags.run) {
+        std::string memory;
+        memory.resize(1024 * 1024);  // 1MB
+        brgen::vm2::VM2 vm;
+        vm.reset(w.written(), memory, 1024);
+        vm.resume();
+        while (vm.handle_syscall()) {
+            vm.resume();
+        }
+    }
     /*
     auto code = brgen::vm::compile(prog);
     if (flags.run) {
@@ -49,7 +63,7 @@ int vm_generate(const Flags& flags, brgen::request::GenerateSource& req, std::sh
     std::string buf;
     brgen::vm::print_code(buf, code);
     */
-    send_source_and_end(req.id, std::move(std::string()), req.name + ".bvm");
+    send_source_and_end(req.id, std::move(buffer), req.name + ".bvm");
     return 0;
 }
 

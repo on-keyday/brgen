@@ -5,7 +5,7 @@
 #include <view/iovec.h>
 #include <binary/number.h>
 
-namespace brgen::vm {
+namespace brgen::vm2 {
 
     struct TwoRegisters {
         Register from;
@@ -25,8 +25,8 @@ namespace brgen::vm {
 
     struct ThreeRegisters {
         Op2 op;
-        Register operand1;
-        Register operand2;
+        Register left;
+        Register right;
         Register result;
     };
 
@@ -327,7 +327,7 @@ namespace brgen::vm {
 
     namespace enc {
         inline auto encode(futils::binary::writer& w, const Inst& inst) {
-            brgen::vm::Op2Inst op2_inst;
+            brgen::vm2::Op2Inst op2_inst;
             op2_inst.op = inst.op();
             if (auto tf = inst.transfer()) {
                 op2_inst.to(tf->to);
@@ -348,8 +348,8 @@ namespace brgen::vm {
                 op2_inst.immediate(li->value);
             }
             else if (auto bo = inst.binary_operator()) {
-                op2_inst.operand1(bo->operand1);
-                op2_inst.operand2(bo->operand2);
+                op2_inst.left(bo->left);
+                op2_inst.right(bo->right);
                 op2_inst.result(bo->result);
             }
             else if (auto uo = inst.unary_operator()) {
@@ -384,7 +384,7 @@ namespace brgen::vm {
         }
 
         inline std::optional<Inst> decode(futils::binary::reader& r) {
-            brgen::vm::Op2Inst op2_inst;
+            brgen::vm2::Op2Inst op2_inst;
             if (!op2_inst.decode(r)) {
                 return std::nullopt;
             }
@@ -414,7 +414,7 @@ namespace brgen::vm {
                 case Op2::NE:
                 case Op2::LT:
                 case Op2::LE:
-                    return inst::binary_operator(op, *op2_inst.operand1(), *op2_inst.operand2(), *op2_inst.result());
+                    return inst::binary_operator(op, *op2_inst.left(), *op2_inst.right(), *op2_inst.result());
                 case Op2::NOT:
                 case Op2::NEG:
                 case Op2::INC:
@@ -442,12 +442,4 @@ namespace brgen::vm {
         }
     }  // namespace enc
 
-    struct VM2 {
-       private:
-        futils::view::wvec full_memory;
-        futils::view::wvec stack;
-        futils::binary::reader instructions{futils::view::rvec{}};
-
-       public:
-    };
-}  // namespace brgen::vm
+}  // namespace brgen::vm2

@@ -1,4 +1,4 @@
-config.cpp.namespace = "brgen::vm"
+config.cpp.namespace = "brgen::vm2"
 
 enum Op2:
     :u8
@@ -40,8 +40,8 @@ enum Op2:
     JMPIF # JMPIF <condition> <to>
 
     # call
-    CALL # CALL <to>
-    RET # RET
+    CALL # CALL <to> ; this instruction will push the return address, change the SP and BP and jump to the address 
+    RET # RET ; this instruction will change the SP and BP, pop the return address and jump to the address
     # syscall
     SYSCALL_IMMEDIATE # SYSCALL <syscall number>
 
@@ -75,7 +75,26 @@ enum Register:
     SP
     BP
     NUL # NUL register is used to indicate that the register is not used
+    TRAP # TRAP register is used to indicate that the register is used to store the trap number
+    TRAP_REASON # TRAP_REASON register is used to store the reason of the trap (specific to the trap)
+    REGISTER_COUNT
 
+
+enum TrapNumber:
+    :u8
+    NO_TRAP
+    DIVISION_BY_ZERO 
+    INVALID_SYSCALL # TRAP_REASON will contain the syscall number
+    INVALID_MEMORY_ACCESS # TRAP_REASON will contain the address that was attempted to be accessed
+    LARGE_SIZE # TRAP_REASON will contain the size of the load/store operation
+    SYSCALL # TRAP_REASON will contain the syscall number
+    INVALID_INSTRUCTION # TRAP_REASON will contain the instruction offset
+    INVALID_JUMP # TRAP_REASON will contain the jump offset
+    STACK_OVERFLOW # TRAP_REASON will contain the stack top address
+    STACK_UNDERFLOW # TRAP_REASON will contain the stack top address
+    INVALID_REGISTER_ACCESS # TRAP_REASON will contain the register number
+    OUT_OF_MEMORY # TRAP_REASON will contain the size of the allocation
+    END_OF_PROGRAM
 
 format MemoryLayout:
     stack_size :u64
@@ -96,7 +115,7 @@ format Op2Inst:
     op :Op2
     if op == Op2.RET || op == Op2.NOP:
         ..
-    if op == Op2.JMP || op == Op2.CALL || op == Op2.POP:
+    elif op == Op2.JMP || op == Op2.CALL || op == Op2.POP:
         to :Register
     elif op == Op2.SYSCALL_IMMEDIATE:
         syscall_number :SyscallNumber
@@ -121,6 +140,6 @@ format Op2Inst:
         operand :Register
         result :Register
     else: # binary
-        operand1 :Register
-        operand2 :Register
+        left :Register
+        right :Register
         result :Register
