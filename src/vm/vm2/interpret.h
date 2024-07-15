@@ -5,6 +5,7 @@
 #include "vm2.h"
 #include <unordered_map>
 #include <binary/bit.h>
+#include <list>
 
 namespace brgen::vm2 {
     struct AllocationEntry {
