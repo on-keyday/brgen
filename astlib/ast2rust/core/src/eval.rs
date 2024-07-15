@@ -190,8 +190,11 @@ impl Stringer {
         default_: &str,
     ) -> Result<String, StringerError> {
         let ident_str = &ident.borrow().ident;
-        let (ident, via_member_access) =
-            lookup_base(ident).ok_or_else(|| StringerError::IdentLookup(ident_str.clone()))?;
+        let (ident, via_member_access) = if let Some(x) = lookup_base(ident) {
+            x
+        } else {
+            return Ok(ident_str.clone());
+        };
         let ident_str = &ident.borrow().ident;
         let key = PtrKey::new(&ident);
         let replace_with_this = |this: &str, s: &str| {
@@ -202,7 +205,7 @@ impl Stringer {
             }
         };
         if !via_member_access {
-            if let Some(w) = ident
+            if let Some(_) = ident
                 .borrow()
                 .base
                 .as_ref()
@@ -215,7 +218,7 @@ impl Stringer {
         if let Some(s) = self.ident_map.get(&key) {
             replace_with_this(&self.self_, s)
         } else {
-            replace_with_this(&self.self_, &default_)
+            replace_with_this(&default_, ident_str)
         }
     }
 

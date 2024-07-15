@@ -204,7 +204,7 @@ impl From<NodeWeak> for NodeType {
 	}
 }
 
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+#[derive(Debug,Clone,Copy,Serialize,Deserialize,PartialEq,Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum NodeType {
 	Program,
@@ -451,7 +451,7 @@ impl From<NodeType> for &'static str {
 	}
 }
 
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+#[derive(Debug,Clone,Copy,Serialize,Deserialize,PartialEq,Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum TokenTag {
 	Indent,
@@ -524,7 +524,7 @@ impl From<TokenTag> for &'static str {
 	}
 }
 
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+#[derive(Debug,Clone,Copy,Serialize,Deserialize,PartialEq,Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum UnaryOp {
 	Not,
@@ -561,7 +561,7 @@ impl From<UnaryOp> for &'static str {
 	}
 }
 
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+#[derive(Debug,Clone,Copy,Serialize,Deserialize,PartialEq,Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum BinaryOp {
 	Mul,
@@ -715,7 +715,7 @@ impl From<BinaryOp> for &'static str {
 	}
 }
 
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+#[derive(Debug,Clone,Copy,Serialize,Deserialize,PartialEq,Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum IdentUsage {
 	Unknown,
@@ -800,7 +800,7 @@ impl From<IdentUsage> for &'static str {
 	}
 }
 
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+#[derive(Debug,Clone,Copy,Serialize,Deserialize,PartialEq,Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum Endian {
 	Unspec,
@@ -840,7 +840,7 @@ impl From<Endian> for &'static str {
 	}
 }
 
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+#[derive(Debug,Clone,Copy,Serialize,Deserialize,PartialEq,Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum ConstantLevel {
 	Unknown,
@@ -883,7 +883,7 @@ impl From<ConstantLevel> for &'static str {
 	}
 }
 
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+#[derive(Debug,Clone,Copy,Serialize,Deserialize,PartialEq,Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum BitAlignment {
 	ByteAligned,
@@ -944,7 +944,7 @@ impl From<BitAlignment> for &'static str {
 	}
 }
 
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+#[derive(Debug,Clone,Copy,Serialize,Deserialize,PartialEq,Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum Follow {
 	Unknown,
@@ -990,7 +990,7 @@ impl From<Follow> for &'static str {
 	}
 }
 
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+#[derive(Debug,Clone,Copy,Serialize,Deserialize,PartialEq,Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum IoMethod {
 	Unspec,
@@ -1063,7 +1063,7 @@ impl From<IoMethod> for &'static str {
 	}
 }
 
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+#[derive(Debug,Clone,Copy,Serialize,Deserialize,PartialEq,Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum SpecialLiteralKind {
 	Input,
@@ -1103,7 +1103,7 @@ impl From<SpecialLiteralKind> for &'static str {
 	}
 }
 
-#[derive(Debug,Clone,Copy,Serialize,Deserialize)]
+#[derive(Debug,Clone,Copy,Serialize,Deserialize,PartialEq,Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum OrderType {
 	Byte,
@@ -1147,7 +1147,7 @@ impl From<OrderType> for &'static str {
 }
 
 bitflags!{
-	#[derive(Debug,Clone,Copy)]
+	#[derive(Debug,Clone,Copy,PartialEq,Eq)]
 	pub struct BlockTrait: u64{
 		const None = 0;
 		const FixedPrimitive = 1;

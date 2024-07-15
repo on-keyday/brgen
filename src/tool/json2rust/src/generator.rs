@@ -130,28 +130,42 @@ impl<W: std::io::Write> Generator<W> {
         self.w.get_mut_writer()
     }
 
+    pub fn get_int_type(
+        &mut self,
+        bit_size: u64,
+        is_signed: bool,
+        is_common_supported: bool,
+    ) -> Result<String> {
+        if is_common_supported {
+            if is_signed {
+                Ok(format!("i{}", bit_size))
+            } else {
+                Ok(format!("u{}", bit_size))
+            }
+        } else {
+            let v = bit_size;
+            if v < 64 {
+                let aligned = (v + 7) / 8;
+                if is_signed {
+                    Ok(format!("i{}", aligned * 8))
+                } else {
+                    Ok(format!("u{}", aligned * 8))
+                }
+            } else {
+                Ok(format!("i{}", v))
+            }
+        }
+    }
+
     pub fn get_type(&mut self, typ: &ast::Type) -> Result<String> {
         match typ {
             ast::Type::IntType(t) => {
-                if ptr_null!(t.is_common_supported) {
-                    if ptr_null!(t.is_signed) {
-                        Ok(format!("i{}", ptr!(t.bit_size)))
-                    } else {
-                        Ok(format!("u{}", ptr!(t.bit_size)))
-                    }
-                } else {
-                    let v = ptr!(t.bit_size);
-                    if v < 64 {
-                        let aligned = (v + 7) / 8;
-                        if t.borrow().is_signed {
-                            Ok(format!("i{}", aligned * 8))
-                        } else {
-                            Ok(format!("u{}", aligned * 8))
-                        }
-                    } else {
-                        Ok(format!("i{}", v))
-                    }
-                }
+                let x = self.get_int_type(
+                    ptr!(t.bit_size),
+                    ptr_null!(t.is_signed),
+                    ptr_null!(t.is_common_supported),
+                )?;
+                Ok(x)
             }
             ast::Type::BoolType(_) => Ok("bool".to_string()),
             ast::Type::EnumType(t) => {
@@ -225,11 +239,35 @@ impl<W: std::io::Write> Generator<W> {
         }
     }
 
+    pub fn write_bit_field<W1: std::io::Write>(
+        &mut self,
+        w: &mut Writer<W1>,
+        bit_fields: &Vec<SharedPtr<ast::Field>>,
+    ) -> Result<()> {
+        let sum: u64 = bit_fields
+            .iter()
+            .try_fold(0 as u64, |acc, x| {
+                Some(acc + x.borrow().field_type?.get_bit_size()?)
+            })
+            .ok_or_else(|| anyhow!("error"))?;
+        if sum % 8 != 0 {
+            return Err(anyhow!("error"));
+        }
+    }
+
     pub fn write_field<W1: std::io::Write>(
         &mut self,
         w: &mut Writer<W1>,
         field: &SharedPtr<ast::Field>,
+        bit_fields: &mut Vec<SharedPtr<ast::Field>>,
     ) -> Result<()> {
+        if ptr_null!(field.bit_alignment) != ptr_null!(field.eventual_bit_alignment) {
+            bit_fields.push(field.clone());
+            return Ok(());
+        }
+        if bit_fields.len() > 0 {
+            return self.write_bit_field(w, bit_fields);
+        }
         if let ast::Type::UnionType(_) = ptr!(field.field_type) {
             return Ok(());
         }
@@ -258,9 +296,10 @@ impl<W: std::io::Write> Generator<W> {
         ty: SharedPtr<ast::StructType>,
     ) -> Result<()> {
         let ty = ty.borrow();
+        let mut bit_fields = Vec::new();
         for field in ty.fields.iter() {
             if let ast::Member::Field(field) = field {
-                self.write_field(w, field)?;
+                self.write_field(w, field, &mut bit_fields)?;
             }
         }
         Ok(())
