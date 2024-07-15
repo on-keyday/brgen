@@ -27,6 +27,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
     bool use_raw_union = false;
     bool use_overflow_check = false;
     bool legacy_file_pass = false;
+    bool enum_stringer = false;
     void bind(futils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&spec, "s", "spec mode");
@@ -35,6 +36,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
         ctx.VarBool(&use_error, "use-error", "use futils::error::Error for error reporting");
         ctx.VarBool(&use_raw_union, "use-raw-union", "use raw union instead of std::variant (maybe unsafe)");
         ctx.VarBool(&use_overflow_check, "use-overflow-check", "add overflow check for integer types");
+        ctx.VarBool(&enum_stringer, "enum-stringer", "use to_string for enum");
         ctx.VarBool(&legacy_file_pass, "f,file", "use legacy file pass mode");
     }
 };

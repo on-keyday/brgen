@@ -4,6 +4,7 @@
 #include "vm_enum.h"
 #include "vm2.h"
 #include <unordered_map>
+#include <binary/bit.h>
 
 namespace brgen::vm2 {
     struct AllocationEntry {
@@ -19,6 +20,7 @@ namespace brgen::vm2 {
         futils::binary::reader instructions{futils::view::rvec{}};
         std::uint64_t registers[size_t(Register::REGISTER_COUNT)] = {0};
         std::list<AllocationEntry> allocation_map;
+        bool safe_call = false;
 
         std::uint64_t& get_register(Register reg) {
             return registers[size_t(reg)];
@@ -40,9 +42,13 @@ namespace brgen::vm2 {
 
         std::pair<std::optional<Inst>, size_t> decode_inst();
 
+        void set_safe_call_mode(bool safe) {
+            safe_call = safe;
+        }
+
         void step_inst(const Inst& inst, size_t offset = 0);
 
-        bool handle_syscall(futils::binary::reader* input = nullptr, futils::binary::writer* output = nullptr);
+        bool handle_syscall(futils::binary::bit_reader* input = nullptr, futils::binary::bit_writer* output = nullptr);
 
         TrapNumber get_trap() const {
             return TrapNumber(registers[size_t(Register::TRAP)]);

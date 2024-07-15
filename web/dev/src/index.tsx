@@ -620,6 +620,10 @@ const setCommon = (m :Map<string,InputListElement>) => {
         "type": "checkbox",
         "value": false,
     })
+    cpp.set(ConfigKey.CPP_ENUM_STRINGER,{
+        "type": "checkbox",
+        "value": false,
+    })
     /*
     cpp.set(ConfigKey.CPP_COMPILE_VIA_API, {
         "type": "checkbox",

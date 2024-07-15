@@ -183,6 +183,10 @@ namespace brgen::vm2 {
             return Inst(Op2::NOP);
         }
 
+        constexpr auto func_entry() {
+            return Inst(Op2::FUNC_ENTRY);
+        }
+
         constexpr auto transfer(Register from, Register to) {
             return Inst(Op2::TRSF, static_cast<std::uint64_t>(from), static_cast<std::uint64_t>(to));
         }
@@ -329,7 +333,10 @@ namespace brgen::vm2 {
         inline auto encode(futils::binary::writer& w, const Inst& inst) {
             brgen::vm2::Op2Inst op2_inst;
             op2_inst.op = inst.op();
-            if (auto tf = inst.transfer()) {
+            if (inst.op() == Op2::FUNC_ENTRY) {
+                op2_inst.magic(FUNC_ENTRY_MAGIC);
+            }
+           else if (auto tf = inst.transfer()) {
                 op2_inst.to(tf->to);
                 op2_inst.from(tf->from);
             }
@@ -392,6 +399,8 @@ namespace brgen::vm2 {
             switch (op) {
                 case Op2::NOP:
                     return inst::nop();
+                case Op2::FUNC_ENTRY:
+                    return inst::func_entry();
                 case Op2::TRSF:
                     return inst::transfer(*op2_inst.from(), *op2_inst.to());
                 case Op2::LOAD_MEMORY:

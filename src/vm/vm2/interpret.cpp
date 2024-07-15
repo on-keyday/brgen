@@ -137,10 +137,11 @@ namespace brgen::vm2 {
         auto inst = &inst_;
         switch (inst->op()) {
             case Op2::NOP:
+            case Op2::FUNC_ENTRY:
                 break;
             case Op2::TRSF: {
                 auto t = *inst->transfer();
-                if (t.to == Register::PC) {
+                if (t.to == Register::PC || t.to == Register::BP) {
                     set_trap(TrapNumber::INVALID_REGISTER_ACCESS, std::uint64_t(t.to));
                     return;
                 }
@@ -218,6 +219,14 @@ namespace brgen::vm2 {
                 get_register(Register::BP) = get_register(Register::SP);  // set new BP
                 if (!VM2Helper::jump(*this, call.target)) {               // jump to target
                     return;
+                }
+                if (safe_call) {
+                    // validate that the jumped instruction is a FUNC_ENTRY
+                    auto inst = decode_inst();
+                    if (!inst.first || inst.first->op() != Op2::FUNC_ENTRY) {
+                        set_trap(TrapNumber::INVALID_INSTRUCTION, fail_offset);
+                        return;
+                    }
                 }
                 break;
             }
@@ -319,11 +328,12 @@ namespace brgen::vm2 {
         }
     }
 
-    bool VM2::handle_syscall(futils::binary::reader* input, futils::binary::writer* output) {
+    bool VM2::handle_syscall(futils::binary::bit_reader* input, futils::binary::bit_writer* output) {
         if (get_trap() != TrapNumber::SYSCALL) {
             return false;
         }
-        switch (SyscallNumber(get_trap_reason())) {
+        auto sys_number = SyscallNumber(get_trap_reason());
+        switch (sys_number) {
             case SyscallNumber::ALLOCATE: {
                 auto size = get_register(Register::R1);
                 if (allocation_map.size() == 0) {  // initialize entry
@@ -351,16 +361,75 @@ namespace brgen::vm2 {
                     return false;
                 }
                 auto read_ptr = get_register(Register::R1);
-                auto read_size = get_register(Register::R2);
-                if (full_memory.size() < read_ptr + read_size) {
-                    set_trap(TrapNumber::INVALID_MEMORY_ACCESS, read_ptr + read_size);
+                auto buffer_size = get_register(Register::R2);
+                auto read_bit_size = get_register(Register::R3);
+                if (full_memory.size() < read_ptr + buffer_size) {
+                    set_trap(TrapNumber::INVALID_MEMORY_ACCESS, read_ptr + buffer_size);
                     return false;
                 }
-                auto buffer = full_memory.substr(read_ptr, read_size);
-                if (!input->read(buffer)) {
-                    set_trap(TrapNumber::INVALID_SYSCALL, get_trap_reason());
+                if (buffer_size * 8 < read_bit_size) {
+                    set_trap(TrapNumber::LARGE_SIZE, read_bit_size);
                     return false;
                 }
+                auto base_offset = input->get_base().offset();
+                auto base_index = input->get_index();
+                auto buffer = full_memory.substr(read_ptr, buffer_size);
+                auto shift_buffer = [&](size_t frac_bit, size_t frac_byte) {
+                    auto shift_right = futils::bit_per_byte - frac_bit;
+                    auto mask_low = std::uint8_t((1 << shift_right) - 1);
+                    auto shift_left = futils::bit_per_byte - shift_right;  // == frac_bit
+                    for (auto i = frac_byte; i > 0; i--) {
+                        buffer[i] = (buffer[i] >> shift_right) | ((buffer[i] & mask_low) << shift_left);
+                    }
+                    buffer[0] >>= shift_right;
+                };
+                if (input->is_aligned() && read_bit_size % 8 == 0) {
+                    if (!input->get_base().read(buffer.substr(0, read_bit_size / 8))) {
+                        set_trap(TrapNumber::INVALID_SYSCALL, get_trap_reason());
+                        return false;
+                    }
+                }
+                else if (input->is_aligned()) {
+                    auto frac_bit = read_bit_size % 8;
+                    auto frac_byte = frac_bit / 8;
+                    if (!input->get_base().read(buffer.substr(0, frac_byte))) {
+                        set_trap(TrapNumber::INVALID_SYSCALL, get_trap_reason());
+                        return false;
+                    }
+                    std::uint8_t rem;
+                    if (!input->read(rem, frac_bit)) {
+                        set_trap(TrapNumber::INVALID_SYSCALL, get_trap_reason());
+                        return false;
+                    }
+                    buffer[frac_byte] = rem << (futils::bit_per_byte - frac_bit);
+                    shift_buffer(frac_bit, frac_byte);
+                }
+                else {
+                    auto frac_bit = read_bit_size % 8;
+                    auto frac_byte = read_bit_size / 8;
+                    for (auto i = 0; i < frac_byte; i++) {
+                        std::uint8_t byte;
+                        if (!input->read(byte, 8)) {
+                            set_trap(TrapNumber::INVALID_SYSCALL, get_trap_reason());
+                            return false;
+                        }
+                        buffer[i] = byte;
+                    }
+                    if (frac_bit > 0) {
+                        std::uint8_t byte;
+                        if (!input->read(byte, frac_bit)) {
+                            set_trap(TrapNumber::INVALID_SYSCALL, get_trap_reason());
+                            return false;
+                        }
+                        buffer[frac_byte] = byte << (futils::bit_per_byte - frac_bit);
+                    }
+                    shift_buffer(frac_bit, frac_byte);
+                }
+                if (sys_number == SyscallNumber::PEEK_IN) {
+                    input->get_base().offset(base_offset);
+                    input->reset_index(base_index);
+                }
+                set_syscall_return(read_bit_size);
                 return true;
             }
             default: {

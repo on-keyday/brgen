@@ -3,6 +3,7 @@ config.cpp.namespace = "brgen::vm2"
 enum Op2:
     :u8
     NOP # NOP
+    FUNC_ENTRY # FUNC_ENTRY ; same as NOP but used to indicate the entry point of a function
     TRSF # TRSF <from> <to>
     LOAD_MEMORY # LOAD_MEMORY <from> <to> <size>
     STORE_MEMORY # STORE_MEMORY <from> <to> <size>
@@ -104,17 +105,21 @@ format MemoryLayout:
 
 enum SyscallNumber:
     :u64
-    READ_IN # READ_IN <buffer ptr:r1> <buffer size:r2> -> <bytes read:r0>
-    PEEK_IN # PEEK_IN <buffer ptr:r1> <buffer size:r2> -> <bytes read:r0>
-    WRITE_OUT # WRITE_OUT <buffer ptr:r1> <buffer size:r2> -> <bytes written:r0>
+    READ_IN # READ_IN <buffer ptr:r1> <buffer size:r2> <bit size:r3> -> <bytes read:r0>
+    PEEK_IN # PEEK_IN <buffer ptr:r1> <buffer size:r2> <bit size:r3> -> <bytes read:r0>
+    WRITE_OUT # WRITE_OUT <buffer ptr:r1> <buffer size:r2> <bit size:r3> -> <bytes written:r0>
     ALLOCATE # ALLOCATE <buffer size:r1> -> <buffer ptr:r0>
     BTOI # BTOI <buffer ptr:r1> <buffer size:r2> -> <integer:r0>
     ITOB # ITOB <buffer ptr:r1> <buffer size:r2> <integer:r3> -> <bytes written:r0>
+
+FUNC_ENTRY_MAGIC ::= 0xdeadbeefaabbccdd
 
 format Op2Inst:
     op :Op2
     if op == Op2.RET || op == Op2.NOP:
         ..
+    elif op == Op2.FUNC_ENTRY:
+        magic :u64(FUNC_ENTRY_MAGIC)
     elif op == Op2.JMP || op == Op2.CALL || op == Op2.POP:
         to :Register
     elif op == Op2.SYSCALL_IMMEDIATE:

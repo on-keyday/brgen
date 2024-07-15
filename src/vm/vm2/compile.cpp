@@ -47,9 +47,17 @@ namespace brgen::vm2 {
         size_t rewrite_arg = 0;
     };
 
+    struct FunctionRelocation {
+        std::string name;
+        size_t instruction_offset;
+        size_t rewrite_to_offset;
+    };
+
     struct Compiler2 {
         std::vector<InstCodeMap> insts;
         std::vector<Relocation> relocations;
+        std::vector<FunctionRelocation> function_relocations;
+        std::unordered_map<std::string, std::uint64_t> function_addresses;
 
         std::unordered_map<std::shared_ptr<ast::StructType>, Struct> struct_layouts;
         std::unordered_map<std::shared_ptr<ast::Field>, std::vector<std::shared_ptr<Element>>> field_elements;
@@ -61,6 +69,10 @@ namespace brgen::vm2 {
 
         void relocate(size_t instruction_offset, size_t rewrite_to_offset, size_t rewrite_arg) {
             relocations.push_back({instruction_offset, rewrite_to_offset, rewrite_arg});
+        }
+
+        void relocate_function(const std::string& name, size_t instruction_offset, size_t rewrite_to_offset) {
+            function_relocations.push_back({name, instruction_offset, rewrite_to_offset});
         }
 
         // when allocation fails, program will be terminated
@@ -85,15 +97,17 @@ namespace brgen::vm2 {
             op(inst::pop(Register::OBJECT_POINTER));
         }
 
-        void read_n_bit(Register buffer_ptr, size_t n) {
+        void read_n_bit(Register buffer_ptr, size_t buffer_size, size_t n) {
             op(inst::transfer(buffer_ptr, Register::R1));
-            op(inst::load_immediate(Register::R2, n));
+            op(inst::load_immediate(Register::R2, buffer_size));
+            op(inst::load_immediate(Register::R3, n));
             op(inst::syscall(SyscallNumber::READ_IN));
         }
 
-        void write_n_bit(Register buffer_ptr, size_t n) {
+        void write_n_bit(Register buffer_ptr, size_t buffer_size, size_t n) {
             op(inst::transfer(buffer_ptr, Register::R1));
-            op(inst::load_immediate(Register::R2, n));
+            op(inst::load_immediate(Register::R2, buffer_size));
+            op(inst::load_immediate(Register::R3, n));
             op(inst::syscall(SyscallNumber::WRITE_OUT));
         }
 
@@ -113,7 +127,7 @@ namespace brgen::vm2 {
             for (size_t i = 0; i < len; i++) {
                 op(inst::push_immediate(0));
             }
-            read_n_bit(Register::SP, n);
+            read_n_bit(Register::SP, len * 8, n);
             op(inst::syscall(SyscallNumber::BTOI));
             for (size_t i = 0; i < len; i++) {
                 op(inst::pop(Register::NUL));
@@ -129,7 +143,7 @@ namespace brgen::vm2 {
             op(inst::load_immediate(Register::R2, n));
             op(inst::transfer(integer, Register::R3));
             op(inst::syscall(SyscallNumber::ITOB));
-            write_n_bit(Register::SP, n);
+            write_n_bit(Register::SP, len * 8, n);
             for (size_t i = 0; i < len; i++) {
                 op(inst::pop(Register::NUL));
             }
@@ -280,16 +294,15 @@ namespace brgen::vm2 {
                 });                                                                              // end for
                 op(inst::pop(Register::OBJECT_POINTER));                                         // OBJECT_POINTER = pop()
             }
+            else if (auto s = ast::as<ast::IdentType>(typ)) {
+                compile_decode_type(offset, size, s->base.lock());
+            }
             else if (auto s = ast::as<ast::StructType>(typ)) {
-                auto& layout = struct_layouts[ast::cast_to<ast::StructType>(typ)];
-                new_object(layout.size);
-                for (auto& elm : layout.elements) {
-                    if (auto prim = std::get_if<Primitive>(&*elm)) {
-                        compile_decode_type(prim->offset, prim->size, prim->type_ast);
-                    }
-                    else if (auto u = std::get_if<Union>(&*elm)) {
-                    }
-                }
+                auto p = ast::as<ast::Member>(s->base.lock());
+                auto addr = op(inst::load_immediate(Register::R1, 0));
+                relocate_function(p->ident->ident + ".decode", addr, 1);
+                op(inst::call(Register::R1));
+                object_store(Register::R0, Register::R1, size, offset);
             }
         }
 
@@ -300,21 +313,28 @@ namespace brgen::vm2 {
             }
         }
 
-        void compile_decode(Struct& s, const std::shared_ptr<ast::Format>& fmt) {
-            auto decode_fn_entry = op(inst::nop());
-            new_object(s.size);
-            auto d = futils::helper::defer([&] { return_object(); });
-            size_t i = 0;
-            for (auto& elm : fmt->body->elements) {
-                if (auto s = ast::as<ast::Field>(elm)) {
-                    auto& e = field_elements[ast::cast_to<ast::Field>(elm)];
-                    for (auto& el : e) {
-                        if (auto prim = std::get_if<Primitive>(&*el)) {
-                            compile_decode_type(prim->offset, prim->size, prim->type_ast);
-                        }
+        void compile_node(const std::shared_ptr<ast::Node>& node) {
+            if (auto expr = ast::as<ast::IndentBlock>(node)) {
+                for (auto& stmt : expr->elements) {
+                    compile_node(stmt);
+                }
+            }
+            else if (auto s = ast::as<ast::Field>(node)) {
+                auto& e = field_elements[ast::cast_to<ast::Field>(node)];
+                for (auto& el : e) {
+                    if (auto prim = std::get_if<Primitive>(&*el)) {
+                        compile_decode_type(prim->offset, prim->size, prim->type_ast);
                     }
                 }
             }
+        }
+
+        void compile_decode(Struct& s, const std::shared_ptr<ast::Format>& fmt) {
+            auto decode_fn_entry = op(inst::func_entry());
+            function_addresses[fmt->ident->ident + ".decode"] = decode_fn_entry;
+            new_object(s.size);
+            auto d = futils::helper::defer([&] { return_object(); });
+            compile_node(fmt->body);
         }
 
         void compile(const std::shared_ptr<ast::Program>& prog) {
@@ -333,6 +353,11 @@ namespace brgen::vm2 {
         }
 
         void encode(futils::binary::writer& w) {
+            for (auto& reloc : function_relocations) {
+                auto addr = function_addresses[reloc.name];
+                relocate(reloc.instruction_offset, addr, reloc.rewrite_to_offset);
+            }
+            function_relocations.clear();
             for (auto& inst : insts) {
                 inst.code_offset = w.offset();
                 enc::encode(w, inst.inst);

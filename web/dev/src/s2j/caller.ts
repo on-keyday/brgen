@@ -123,6 +123,9 @@ const argConverter = Object.freeze({
         if(opt.use_overflow_check) {
             args.push("--use-overflow-check");
         }
+        if(opt.enum_stringer){
+            args.push("--enum-stringer");
+        }
         return args;
     },
     [RequestLanguage.GO] : (opt :GoOption) => {

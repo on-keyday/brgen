@@ -13,36 +13,37 @@
 namespace brgen::vm2 {
     enum class Op2 {
         NOP = 0,
-        TRSF = 1,
-        LOAD_MEMORY = 2,
-        STORE_MEMORY = 3,
-        LOAD_IMMEDIATE = 4,
-        ADD = 5,
-        SUB = 6,
-        MUL = 7,
-        DIV = 8,
-        MOD = 9,
-        AND = 10,
-        OR = 11,
-        XOR = 12,
-        NOT = 13,
-        SHL = 14,
-        SHR = 15,
-        EQ = 16,
-        NE = 17,
-        LT = 18,
-        LE = 19,
-        INC = 20,
-        DEC = 21,
-        NEG = 22,
-        JMP = 23,
-        JMPIF = 24,
-        CALL = 25,
-        RET = 26,
-        SYSCALL_IMMEDIATE = 27,
-        PUSH = 28,
-        POP = 29,
-        PUSH_IMMEDIATE = 30,
+        FUNC_ENTRY = 1,
+        TRSF = 2,
+        LOAD_MEMORY = 3,
+        STORE_MEMORY = 4,
+        LOAD_IMMEDIATE = 5,
+        ADD = 6,
+        SUB = 7,
+        MUL = 8,
+        DIV = 9,
+        MOD = 10,
+        AND = 11,
+        OR = 12,
+        XOR = 13,
+        NOT = 14,
+        SHL = 15,
+        SHR = 16,
+        EQ = 17,
+        NE = 18,
+        LT = 19,
+        LE = 20,
+        INC = 21,
+        DEC = 22,
+        NEG = 23,
+        JMP = 24,
+        JMPIF = 25,
+        CALL = 26,
+        RET = 27,
+        SYSCALL_IMMEDIATE = 28,
+        PUSH = 29,
+        POP = 30,
+        PUSH_IMMEDIATE = 31,
     };
     enum class Register {
         R0 = 0,
@@ -92,6 +93,7 @@ namespace brgen::vm2 {
         BTOI = 4,
         ITOB = 5,
     };
+    constexpr auto FUNC_ENTRY_MAGIC = 0xdeadbeefaabbccdd;
     struct MemoryLayout {
         std::uint64_t stack_size = 0;
         std::uint64_t data_size = 0;
@@ -137,46 +139,52 @@ namespace brgen::vm2 {
         struct union_struct_2 {
         };
         struct union_struct_3 {
-            Register to{};
+            std::uint64_t magic = 0;
         };
         struct union_struct_4 {
-            SyscallNumber syscall_number{};
+            Register to{};
         };
         struct union_struct_5 {
+            SyscallNumber syscall_number{};
+        };
+        struct union_struct_6 {
             Register condition{};
             Register to{};
         };
-        struct union_struct_6 {
-            Register from{};
-        };
         struct union_struct_7 {
-            std::uint64_t immediate = 0;
+            Register from{};
         };
         struct union_struct_8 {
-            Register from{};
-            Register to{};
+            std::uint64_t immediate = 0;
         };
         struct union_struct_9 {
             Register from{};
             Register to{};
-            std::uint64_t size = 0;
         };
         struct union_struct_10 {
+            Register from{};
+            Register to{};
+            std::uint64_t size = 0;
+        };
+        struct union_struct_11 {
             std::uint64_t immediate = 0;
             Register to{};
         };
-        struct union_struct_11 {
+        struct union_struct_12 {
             Register operand{};
             Register result{};
         };
-        struct union_struct_12 {
+        struct union_struct_13 {
             Register left{};
             Register right{};
             Register result{};
         };
-        std::variant<std::monostate, union_struct_2, union_struct_3, union_struct_4, union_struct_5, union_struct_6, union_struct_7, union_struct_8, union_struct_9, union_struct_10, union_struct_11, union_struct_12> union_variant_1;
+        std::variant<std::monostate, union_struct_2, union_struct_3, union_struct_4, union_struct_5, union_struct_6, union_struct_7, union_struct_8, union_struct_9, union_struct_10, union_struct_11, union_struct_12, union_struct_13> union_variant_1;
         std::optional<Register> condition() const {
             if ((((*this).op == Op2::RET) || ((*this).op == Op2::NOP)) == true) {
+                return std::nullopt;
+            }
+            if (((*this).op == Op2::FUNC_ENTRY) == true) {
                 return std::nullopt;
             }
             if (((((*this).op == Op2::JMP) || ((*this).op == Op2::CALL)) || ((*this).op == Op2::POP)) == true) {
@@ -186,10 +194,10 @@ namespace brgen::vm2 {
                 return std::nullopt;
             }
             if (((*this).op == Op2::JMPIF) == true) {
-                if (!std::holds_alternative<union_struct_5>(union_variant_1)) {
+                if (!std::holds_alternative<union_struct_6>(union_variant_1)) {
                     return std::nullopt;
                 }
-                return std::get<4>((*this).union_variant_1).condition;
+                return std::get<5>((*this).union_variant_1).condition;
             }
             return std::nullopt;
         }
@@ -197,6 +205,9 @@ namespace brgen::vm2 {
             if ((((*this).op == Op2::RET) || ((*this).op == Op2::NOP)) == true) {
                 return false;
             }
+            if (((*this).op == Op2::FUNC_ENTRY) == true) {
+                return false;
+            }
             if (((((*this).op == Op2::JMP) || ((*this).op == Op2::CALL)) || ((*this).op == Op2::POP)) == true) {
                 return false;
             }
@@ -204,10 +215,10 @@ namespace brgen::vm2 {
                 return false;
             }
             if (((*this).op == Op2::JMPIF) == true) {
-                if (!std::holds_alternative<union_struct_5>(union_variant_1)) {
-                    union_variant_1 = union_struct_5();
+                if (!std::holds_alternative<union_struct_6>(union_variant_1)) {
+                    union_variant_1 = union_struct_6();
                 }
-                std::get<4>((*this).union_variant_1).condition = v;
+                std::get<5>((*this).union_variant_1).condition = v;
                 return true;
             }
             return false;
@@ -216,6 +227,9 @@ namespace brgen::vm2 {
             if ((((*this).op == Op2::RET) || ((*this).op == Op2::NOP)) == true) {
                 return std::nullopt;
             }
+            if (((*this).op == Op2::FUNC_ENTRY) == true) {
+                return std::nullopt;
+            }
             if (((((*this).op == Op2::JMP) || ((*this).op == Op2::CALL)) || ((*this).op == Op2::POP)) == true) {
                 return std::nullopt;
             }
@@ -226,25 +240,25 @@ namespace brgen::vm2 {
                 return std::nullopt;
             }
             if (((*this).op == Op2::PUSH) == true) {
-                if (!std::holds_alternative<union_struct_6>(union_variant_1)) {
+                if (!std::holds_alternative<union_struct_7>(union_variant_1)) {
                     return std::nullopt;
                 }
-                return std::get<5>((*this).union_variant_1).from;
+                return std::get<6>((*this).union_variant_1).from;
             }
             if (((*this).op == Op2::PUSH_IMMEDIATE) == true) {
                 return std::nullopt;
             }
             if (((*this).op == Op2::TRSF) == true) {
-                if (!std::holds_alternative<union_struct_8>(union_variant_1)) {
-                    return std::nullopt;
-                }
-                return std::get<7>((*this).union_variant_1).from;
-            }
-            if ((((*this).op == Op2::LOAD_MEMORY) || ((*this).op == Op2::STORE_MEMORY)) == true) {
                 if (!std::holds_alternative<union_struct_9>(union_variant_1)) {
                     return std::nullopt;
                 }
                 return std::get<8>((*this).union_variant_1).from;
+            }
+            if ((((*this).op == Op2::LOAD_MEMORY) || ((*this).op == Op2::STORE_MEMORY)) == true) {
+                if (!std::holds_alternative<union_struct_10>(union_variant_1)) {
+                    return std::nullopt;
+                }
+                return std::get<9>((*this).union_variant_1).from;
             }
             return std::nullopt;
         }
@@ -252,6 +266,9 @@ namespace brgen::vm2 {
             if ((((*this).op == Op2::RET) || ((*this).op == Op2::NOP)) == true) {
                 return false;
             }
+            if (((*this).op == Op2::FUNC_ENTRY) == true) {
+                return false;
+            }
             if (((((*this).op == Op2::JMP) || ((*this).op == Op2::CALL)) || ((*this).op == Op2::POP)) == true) {
                 return false;
             }
@@ -262,27 +279,27 @@ namespace brgen::vm2 {
                 return false;
             }
             if (((*this).op == Op2::PUSH) == true) {
-                if (!std::holds_alternative<union_struct_6>(union_variant_1)) {
-                    union_variant_1 = union_struct_6();
+                if (!std::holds_alternative<union_struct_7>(union_variant_1)) {
+                    union_variant_1 = union_struct_7();
                 }
-                std::get<5>((*this).union_variant_1).from = v;
+                std::get<6>((*this).union_variant_1).from = v;
                 return true;
             }
             if (((*this).op == Op2::PUSH_IMMEDIATE) == true) {
                 return false;
             }
             if (((*this).op == Op2::TRSF) == true) {
-                if (!std::holds_alternative<union_struct_8>(union_variant_1)) {
-                    union_variant_1 = union_struct_8();
-                }
-                std::get<7>((*this).union_variant_1).from = v;
-                return true;
-            }
-            if ((((*this).op == Op2::LOAD_MEMORY) || ((*this).op == Op2::STORE_MEMORY)) == true) {
                 if (!std::holds_alternative<union_struct_9>(union_variant_1)) {
                     union_variant_1 = union_struct_9();
                 }
                 std::get<8>((*this).union_variant_1).from = v;
+                return true;
+            }
+            if ((((*this).op == Op2::LOAD_MEMORY) || ((*this).op == Op2::STORE_MEMORY)) == true) {
+                if (!std::holds_alternative<union_struct_10>(union_variant_1)) {
+                    union_variant_1 = union_struct_10();
+                }
+                std::get<9>((*this).union_variant_1).from = v;
                 return true;
             }
             return false;
@@ -291,6 +308,9 @@ namespace brgen::vm2 {
             if ((((*this).op == Op2::RET) || ((*this).op == Op2::NOP)) == true) {
                 return std::nullopt;
             }
+            if (((*this).op == Op2::FUNC_ENTRY) == true) {
+                return std::nullopt;
+            }
             if (((((*this).op == Op2::JMP) || ((*this).op == Op2::CALL)) || ((*this).op == Op2::POP)) == true) {
                 return std::nullopt;
             }
@@ -304,10 +324,10 @@ namespace brgen::vm2 {
                 return std::nullopt;
             }
             if (((*this).op == Op2::PUSH_IMMEDIATE) == true) {
-                if (!std::holds_alternative<union_struct_7>(union_variant_1)) {
+                if (!std::holds_alternative<union_struct_8>(union_variant_1)) {
                     return std::nullopt;
                 }
-                return std::get<6>((*this).union_variant_1).immediate;
+                return std::get<7>((*this).union_variant_1).immediate;
             }
             if (((*this).op == Op2::TRSF) == true) {
                 return std::nullopt;
@@ -316,15 +336,18 @@ namespace brgen::vm2 {
                 return std::nullopt;
             }
             if (((*this).op == Op2::LOAD_IMMEDIATE) == true) {
-                if (!std::holds_alternative<union_struct_10>(union_variant_1)) {
+                if (!std::holds_alternative<union_struct_11>(union_variant_1)) {
                     return std::nullopt;
                 }
-                return std::get<9>((*this).union_variant_1).immediate;
+                return std::get<10>((*this).union_variant_1).immediate;
             }
             return std::nullopt;
         }
         bool immediate(const std::uint64_t& v) {
             if ((((*this).op == Op2::RET) || ((*this).op == Op2::NOP)) == true) {
+                return false;
+            }
+            if (((*this).op == Op2::FUNC_ENTRY) == true) {
                 return false;
             }
             if (((((*this).op == Op2::JMP) || ((*this).op == Op2::CALL)) || ((*this).op == Op2::POP)) == true) {
@@ -340,10 +363,10 @@ namespace brgen::vm2 {
                 return false;
             }
             if (((*this).op == Op2::PUSH_IMMEDIATE) == true) {
-                if (!std::holds_alternative<union_struct_7>(union_variant_1)) {
-                    union_variant_1 = union_struct_7();
+                if (!std::holds_alternative<union_struct_8>(union_variant_1)) {
+                    union_variant_1 = union_struct_8();
                 }
-                std::get<6>((*this).union_variant_1).immediate = v;
+                std::get<7>((*this).union_variant_1).immediate = v;
                 return true;
             }
             if (((*this).op == Op2::TRSF) == true) {
@@ -353,10 +376,10 @@ namespace brgen::vm2 {
                 return false;
             }
             if (((*this).op == Op2::LOAD_IMMEDIATE) == true) {
-                if (!std::holds_alternative<union_struct_10>(union_variant_1)) {
-                    union_variant_1 = union_struct_10();
+                if (!std::holds_alternative<union_struct_11>(union_variant_1)) {
+                    union_variant_1 = union_struct_11();
                 }
-                std::get<9>((*this).union_variant_1).immediate = v;
+                std::get<10>((*this).union_variant_1).immediate = v;
                 return true;
             }
             return false;
@@ -365,6 +388,9 @@ namespace brgen::vm2 {
             if ((((*this).op == Op2::RET) || ((*this).op == Op2::NOP)) == true) {
                 return std::nullopt;
             }
+            if (((*this).op == Op2::FUNC_ENTRY) == true) {
+                return std::nullopt;
+            }
             if (((((*this).op == Op2::JMP) || ((*this).op == Op2::CALL)) || ((*this).op == Op2::POP)) == true) {
                 return std::nullopt;
             }
@@ -392,15 +418,18 @@ namespace brgen::vm2 {
             if ((((((*this).op == Op2::NOT) || ((*this).op == Op2::INC)) || ((*this).op == Op2::DEC)) || ((*this).op == Op2::NEG)) == true) {
                 return std::nullopt;
             }
-            if (!std::holds_alternative<union_struct_12>(union_variant_1)) {
+            if (!std::holds_alternative<union_struct_13>(union_variant_1)) {
                 return std::nullopt;
             }
-            return std::get<11>((*this).union_variant_1).left;
+            return std::get<12>((*this).union_variant_1).left;
         }
         bool left(const Register& v) {
             if ((((*this).op == Op2::RET) || ((*this).op == Op2::NOP)) == true) {
                 return false;
             }
+            if (((*this).op == Op2::FUNC_ENTRY) == true) {
+                return false;
+            }
             if (((((*this).op == Op2::JMP) || ((*this).op == Op2::CALL)) || ((*this).op == Op2::POP)) == true) {
                 return false;
             }
@@ -428,16 +457,44 @@ namespace brgen::vm2 {
             if ((((((*this).op == Op2::NOT) || ((*this).op == Op2::INC)) || ((*this).op == Op2::DEC)) || ((*this).op == Op2::NEG)) == true) {
                 return false;
             }
-            if (!std::holds_alternative<union_struct_12>(union_variant_1)) {
-                union_variant_1 = union_struct_12();
+            if (!std::holds_alternative<union_struct_13>(union_variant_1)) {
+                union_variant_1 = union_struct_13();
             }
-            std::get<11>((*this).union_variant_1).left = v;
+            std::get<12>((*this).union_variant_1).left = v;
             return true;
+        }
+        std::optional<std::uint64_t> magic() const {
+            if ((((*this).op == Op2::RET) || ((*this).op == Op2::NOP)) == true) {
+                return std::nullopt;
+            }
+            if (((*this).op == Op2::FUNC_ENTRY) == true) {
+                if (!std::holds_alternative<union_struct_3>(union_variant_1)) {
+                    return std::nullopt;
+                }
+                return std::get<2>((*this).union_variant_1).magic;
+            }
+            return std::nullopt;
+        }
+        bool magic(const std::uint64_t& v) {
+            if ((((*this).op == Op2::RET) || ((*this).op == Op2::NOP)) == true) {
+                return false;
+            }
+            if (((*this).op == Op2::FUNC_ENTRY) == true) {
+                if (!std::holds_alternative<union_struct_3>(union_variant_1)) {
+                    union_variant_1 = union_struct_3();
+                }
+                std::get<2>((*this).union_variant_1).magic = v;
+                return true;
+            }
+            return false;
         }
         std::optional<Register> operand() const {
             if ((((*this).op == Op2::RET) || ((*this).op == Op2::NOP)) == true) {
                 return std::nullopt;
             }
+            if (((*this).op == Op2::FUNC_ENTRY) == true) {
+                return std::nullopt;
+            }
             if (((((*this).op == Op2::JMP) || ((*this).op == Op2::CALL)) || ((*this).op == Op2::POP)) == true) {
                 return std::nullopt;
             }
@@ -463,10 +520,10 @@ namespace brgen::vm2 {
                 return std::nullopt;
             }
             if ((((((*this).op == Op2::NOT) || ((*this).op == Op2::INC)) || ((*this).op == Op2::DEC)) || ((*this).op == Op2::NEG)) == true) {
-                if (!std::holds_alternative<union_struct_11>(union_variant_1)) {
+                if (!std::holds_alternative<union_struct_12>(union_variant_1)) {
                     return std::nullopt;
                 }
-                return std::get<10>((*this).union_variant_1).operand;
+                return std::get<11>((*this).union_variant_1).operand;
             }
             return std::nullopt;
         }
@@ -474,6 +531,9 @@ namespace brgen::vm2 {
             if ((((*this).op == Op2::RET) || ((*this).op == Op2::NOP)) == true) {
                 return false;
             }
+            if (((*this).op == Op2::FUNC_ENTRY) == true) {
+                return false;
+            }
             if (((((*this).op == Op2::JMP) || ((*this).op == Op2::CALL)) || ((*this).op == Op2::POP)) == true) {
                 return false;
             }
@@ -499,10 +559,10 @@ namespace brgen::vm2 {
                 return false;
             }
             if ((((((*this).op == Op2::NOT) || ((*this).op == Op2::INC)) || ((*this).op == Op2::DEC)) || ((*this).op == Op2::NEG)) == true) {
-                if (!std::holds_alternative<union_struct_11>(union_variant_1)) {
-                    union_variant_1 = union_struct_11();
+                if (!std::holds_alternative<union_struct_12>(union_variant_1)) {
+                    union_variant_1 = union_struct_12();
                 }
-                std::get<10>((*this).union_variant_1).operand = v;
+                std::get<11>((*this).union_variant_1).operand = v;
                 return true;
             }
             return false;
@@ -511,6 +571,9 @@ namespace brgen::vm2 {
             if ((((*this).op == Op2::RET) || ((*this).op == Op2::NOP)) == true) {
                 return std::nullopt;
             }
+            if (((*this).op == Op2::FUNC_ENTRY) == true) {
+                return std::nullopt;
+            }
             if (((((*this).op == Op2::JMP) || ((*this).op == Op2::CALL)) || ((*this).op == Op2::POP)) == true) {
                 return std::nullopt;
             }
@@ -536,20 +599,23 @@ namespace brgen::vm2 {
                 return std::nullopt;
             }
             if ((((((*this).op == Op2::NOT) || ((*this).op == Op2::INC)) || ((*this).op == Op2::DEC)) || ((*this).op == Op2::NEG)) == true) {
-                if (!std::holds_alternative<union_struct_11>(union_variant_1)) {
+                if (!std::holds_alternative<union_struct_12>(union_variant_1)) {
                     return std::nullopt;
                 }
-                return std::get<10>((*this).union_variant_1).result;
+                return std::get<11>((*this).union_variant_1).result;
             }
-            if (!std::holds_alternative<union_struct_12>(union_variant_1)) {
+            if (!std::holds_alternative<union_struct_13>(union_variant_1)) {
                 return std::nullopt;
             }
-            return std::get<11>((*this).union_variant_1).result;
+            return std::get<12>((*this).union_variant_1).result;
         }
         bool result(const Register& v) {
             if ((((*this).op == Op2::RET) || ((*this).op == Op2::NOP)) == true) {
                 return false;
             }
+            if (((*this).op == Op2::FUNC_ENTRY) == true) {
+                return false;
+            }
             if (((((*this).op == Op2::JMP) || ((*this).op == Op2::CALL)) || ((*this).op == Op2::POP)) == true) {
                 return false;
             }
@@ -575,22 +641,25 @@ namespace brgen::vm2 {
                 return false;
             }
             if ((((((*this).op == Op2::NOT) || ((*this).op == Op2::INC)) || ((*this).op == Op2::DEC)) || ((*this).op == Op2::NEG)) == true) {
-                if (!std::holds_alternative<union_struct_11>(union_variant_1)) {
-                    union_variant_1 = union_struct_11();
+                if (!std::holds_alternative<union_struct_12>(union_variant_1)) {
+                    union_variant_1 = union_struct_12();
                 }
-                std::get<10>((*this).union_variant_1).result = v;
+                std::get<11>((*this).union_variant_1).result = v;
                 return true;
             }
-            if (!std::holds_alternative<union_struct_12>(union_variant_1)) {
-                union_variant_1 = union_struct_12();
+            if (!std::holds_alternative<union_struct_13>(union_variant_1)) {
+                union_variant_1 = union_struct_13();
             }
-            std::get<11>((*this).union_variant_1).result = v;
+            std::get<12>((*this).union_variant_1).result = v;
             return true;
         }
         std::optional<Register> right() const {
             if ((((*this).op == Op2::RET) || ((*this).op == Op2::NOP)) == true) {
                 return std::nullopt;
             }
+            if (((*this).op == Op2::FUNC_ENTRY) == true) {
+                return std::nullopt;
+            }
             if (((((*this).op == Op2::JMP) || ((*this).op == Op2::CALL)) || ((*this).op == Op2::POP)) == true) {
                 return std::nullopt;
             }
@@ -618,15 +687,18 @@ namespace brgen::vm2 {
             if ((((((*this).op == Op2::NOT) || ((*this).op == Op2::INC)) || ((*this).op == Op2::DEC)) || ((*this).op == Op2::NEG)) == true) {
                 return std::nullopt;
             }
-            if (!std::holds_alternative<union_struct_12>(union_variant_1)) {
+            if (!std::holds_alternative<union_struct_13>(union_variant_1)) {
                 return std::nullopt;
             }
-            return std::get<11>((*this).union_variant_1).right;
+            return std::get<12>((*this).union_variant_1).right;
         }
         bool right(const Register& v) {
             if ((((*this).op == Op2::RET) || ((*this).op == Op2::NOP)) == true) {
                 return false;
             }
+            if (((*this).op == Op2::FUNC_ENTRY) == true) {
+                return false;
+            }
             if (((((*this).op == Op2::JMP) || ((*this).op == Op2::CALL)) || ((*this).op == Op2::POP)) == true) {
                 return false;
             }
@@ -654,16 +726,19 @@ namespace brgen::vm2 {
             if ((((((*this).op == Op2::NOT) || ((*this).op == Op2::INC)) || ((*this).op == Op2::DEC)) || ((*this).op == Op2::NEG)) == true) {
                 return false;
             }
-            if (!std::holds_alternative<union_struct_12>(union_variant_1)) {
-                union_variant_1 = union_struct_12();
+            if (!std::holds_alternative<union_struct_13>(union_variant_1)) {
+                union_variant_1 = union_struct_13();
             }
-            std::get<11>((*this).union_variant_1).right = v;
+            std::get<12>((*this).union_variant_1).right = v;
             return true;
         }
         std::optional<std::uint64_t> size() const {
             if ((((*this).op == Op2::RET) || ((*this).op == Op2::NOP)) == true) {
                 return std::nullopt;
             }
+            if (((*this).op == Op2::FUNC_ENTRY) == true) {
+                return std::nullopt;
+            }
             if (((((*this).op == Op2::JMP) || ((*this).op == Op2::CALL)) || ((*this).op == Op2::POP)) == true) {
                 return std::nullopt;
             }
@@ -683,10 +758,10 @@ namespace brgen::vm2 {
                 return std::nullopt;
             }
             if ((((*this).op == Op2::LOAD_MEMORY) || ((*this).op == Op2::STORE_MEMORY)) == true) {
-                if (!std::holds_alternative<union_struct_9>(union_variant_1)) {
+                if (!std::holds_alternative<union_struct_10>(union_variant_1)) {
                     return std::nullopt;
                 }
-                return std::get<8>((*this).union_variant_1).size;
+                return std::get<9>((*this).union_variant_1).size;
             }
             return std::nullopt;
         }
@@ -694,6 +769,9 @@ namespace brgen::vm2 {
             if ((((*this).op == Op2::RET) || ((*this).op == Op2::NOP)) == true) {
                 return false;
             }
+            if (((*this).op == Op2::FUNC_ENTRY) == true) {
+                return false;
+            }
             if (((((*this).op == Op2::JMP) || ((*this).op == Op2::CALL)) || ((*this).op == Op2::POP)) == true) {
                 return false;
             }
@@ -713,10 +791,10 @@ namespace brgen::vm2 {
                 return false;
             }
             if ((((*this).op == Op2::LOAD_MEMORY) || ((*this).op == Op2::STORE_MEMORY)) == true) {
-                if (!std::holds_alternative<union_struct_9>(union_variant_1)) {
-                    union_variant_1 = union_struct_9();
+                if (!std::holds_alternative<union_struct_10>(union_variant_1)) {
+                    union_variant_1 = union_struct_10();
                 }
-                std::get<8>((*this).union_variant_1).size = v;
+                std::get<9>((*this).union_variant_1).size = v;
                 return true;
             }
             return false;
@@ -725,14 +803,17 @@ namespace brgen::vm2 {
             if ((((*this).op == Op2::RET) || ((*this).op == Op2::NOP)) == true) {
                 return std::nullopt;
             }
+            if (((*this).op == Op2::FUNC_ENTRY) == true) {
+                return std::nullopt;
+            }
             if (((((*this).op == Op2::JMP) || ((*this).op == Op2::CALL)) || ((*this).op == Op2::POP)) == true) {
                 return std::nullopt;
             }
             if (((*this).op == Op2::SYSCALL_IMMEDIATE) == true) {
-                if (!std::holds_alternative<union_struct_4>(union_variant_1)) {
+                if (!std::holds_alternative<union_struct_5>(union_variant_1)) {
                     return std::nullopt;
                 }
-                return std::get<3>((*this).union_variant_1).syscall_number;
+                return std::get<4>((*this).union_variant_1).syscall_number;
             }
             return std::nullopt;
         }
@@ -740,14 +821,17 @@ namespace brgen::vm2 {
             if ((((*this).op == Op2::RET) || ((*this).op == Op2::NOP)) == true) {
                 return false;
             }
+            if (((*this).op == Op2::FUNC_ENTRY) == true) {
+                return false;
+            }
             if (((((*this).op == Op2::JMP) || ((*this).op == Op2::CALL)) || ((*this).op == Op2::POP)) == true) {
                 return false;
             }
             if (((*this).op == Op2::SYSCALL_IMMEDIATE) == true) {
-                if (!std::holds_alternative<union_struct_4>(union_variant_1)) {
-                    union_variant_1 = union_struct_4();
+                if (!std::holds_alternative<union_struct_5>(union_variant_1)) {
+                    union_variant_1 = union_struct_5();
                 }
-                std::get<3>((*this).union_variant_1).syscall_number = v;
+                std::get<4>((*this).union_variant_1).syscall_number = v;
                 return true;
             }
             return false;
@@ -756,20 +840,23 @@ namespace brgen::vm2 {
             if ((((*this).op == Op2::RET) || ((*this).op == Op2::NOP)) == true) {
                 return std::nullopt;
             }
+            if (((*this).op == Op2::FUNC_ENTRY) == true) {
+                return std::nullopt;
+            }
             if (((((*this).op == Op2::JMP) || ((*this).op == Op2::CALL)) || ((*this).op == Op2::POP)) == true) {
-                if (!std::holds_alternative<union_struct_3>(union_variant_1)) {
+                if (!std::holds_alternative<union_struct_4>(union_variant_1)) {
                     return std::nullopt;
                 }
-                return std::get<2>((*this).union_variant_1).to;
+                return std::get<3>((*this).union_variant_1).to;
             }
             if (((*this).op == Op2::SYSCALL_IMMEDIATE) == true) {
                 return std::nullopt;
             }
             if (((*this).op == Op2::JMPIF) == true) {
-                if (!std::holds_alternative<union_struct_5>(union_variant_1)) {
+                if (!std::holds_alternative<union_struct_6>(union_variant_1)) {
                     return std::nullopt;
                 }
-                return std::get<4>((*this).union_variant_1).to;
+                return std::get<5>((*this).union_variant_1).to;
             }
             if (((*this).op == Op2::PUSH) == true) {
                 return std::nullopt;
@@ -778,22 +865,22 @@ namespace brgen::vm2 {
                 return std::nullopt;
             }
             if (((*this).op == Op2::TRSF) == true) {
-                if (!std::holds_alternative<union_struct_8>(union_variant_1)) {
-                    return std::nullopt;
-                }
-                return std::get<7>((*this).union_variant_1).to;
-            }
-            if ((((*this).op == Op2::LOAD_MEMORY) || ((*this).op == Op2::STORE_MEMORY)) == true) {
                 if (!std::holds_alternative<union_struct_9>(union_variant_1)) {
                     return std::nullopt;
                 }
                 return std::get<8>((*this).union_variant_1).to;
             }
-            if (((*this).op == Op2::LOAD_IMMEDIATE) == true) {
+            if ((((*this).op == Op2::LOAD_MEMORY) || ((*this).op == Op2::STORE_MEMORY)) == true) {
                 if (!std::holds_alternative<union_struct_10>(union_variant_1)) {
                     return std::nullopt;
                 }
                 return std::get<9>((*this).union_variant_1).to;
+            }
+            if (((*this).op == Op2::LOAD_IMMEDIATE) == true) {
+                if (!std::holds_alternative<union_struct_11>(union_variant_1)) {
+                    return std::nullopt;
+                }
+                return std::get<10>((*this).union_variant_1).to;
             }
             return std::nullopt;
         }
@@ -801,21 +888,24 @@ namespace brgen::vm2 {
             if ((((*this).op == Op2::RET) || ((*this).op == Op2::NOP)) == true) {
                 return false;
             }
+            if (((*this).op == Op2::FUNC_ENTRY) == true) {
+                return false;
+            }
             if (((((*this).op == Op2::JMP) || ((*this).op == Op2::CALL)) || ((*this).op == Op2::POP)) == true) {
-                if (!std::holds_alternative<union_struct_3>(union_variant_1)) {
-                    union_variant_1 = union_struct_3();
+                if (!std::holds_alternative<union_struct_4>(union_variant_1)) {
+                    union_variant_1 = union_struct_4();
                 }
-                std::get<2>((*this).union_variant_1).to = v;
+                std::get<3>((*this).union_variant_1).to = v;
                 return true;
             }
             if (((*this).op == Op2::SYSCALL_IMMEDIATE) == true) {
                 return false;
             }
             if (((*this).op == Op2::JMPIF) == true) {
-                if (!std::holds_alternative<union_struct_5>(union_variant_1)) {
-                    union_variant_1 = union_struct_5();
+                if (!std::holds_alternative<union_struct_6>(union_variant_1)) {
+                    union_variant_1 = union_struct_6();
                 }
-                std::get<4>((*this).union_variant_1).to = v;
+                std::get<5>((*this).union_variant_1).to = v;
                 return true;
             }
             if (((*this).op == Op2::PUSH) == true) {
@@ -825,24 +915,24 @@ namespace brgen::vm2 {
                 return false;
             }
             if (((*this).op == Op2::TRSF) == true) {
-                if (!std::holds_alternative<union_struct_8>(union_variant_1)) {
-                    union_variant_1 = union_struct_8();
-                }
-                std::get<7>((*this).union_variant_1).to = v;
-                return true;
-            }
-            if ((((*this).op == Op2::LOAD_MEMORY) || ((*this).op == Op2::STORE_MEMORY)) == true) {
                 if (!std::holds_alternative<union_struct_9>(union_variant_1)) {
                     union_variant_1 = union_struct_9();
                 }
                 std::get<8>((*this).union_variant_1).to = v;
                 return true;
             }
-            if (((*this).op == Op2::LOAD_IMMEDIATE) == true) {
+            if ((((*this).op == Op2::LOAD_MEMORY) || ((*this).op == Op2::STORE_MEMORY)) == true) {
                 if (!std::holds_alternative<union_struct_10>(union_variant_1)) {
                     union_variant_1 = union_struct_10();
                 }
                 std::get<9>((*this).union_variant_1).to = v;
+                return true;
+            }
+            if (((*this).op == Op2::LOAD_IMMEDIATE) == true) {
+                if (!std::holds_alternative<union_struct_11>(union_variant_1)) {
+                    union_variant_1 = union_struct_11();
+                }
+                std::get<10>((*this).union_variant_1).to = v;
                 return true;
             }
             return false;
@@ -853,8 +943,8 @@ namespace brgen::vm2 {
         static constexpr size_t fixed_header_size = 1;
     };
     inline bool Op2Inst::encode(::futils::binary::writer& w) const {
-        auto tmp_13_ = static_cast<std::uint8_t>((*this).op);
-        if (!::futils::binary::write_num(w, static_cast<std::uint8_t>(tmp_13_), true)) {
+        auto tmp_14_ = static_cast<std::uint8_t>((*this).op);
+        if (!::futils::binary::write_num(w, static_cast<std::uint8_t>(tmp_14_), true)) {
             return false;
         }
         if ((((*this).op == Op2::RET) || ((*this).op == Op2::NOP))) {
@@ -862,271 +952,293 @@ namespace brgen::vm2 {
                 return false;
             }
         }
-        else if (((((*this).op == Op2::JMP) || ((*this).op == Op2::CALL)) || ((*this).op == Op2::POP))) {
+        else if (((*this).op == Op2::FUNC_ENTRY)) {
             if (!std::holds_alternative<union_struct_3>(union_variant_1)) {
                 return false;
             }
-            auto tmp_14_ = static_cast<std::uint8_t>(std::get<2>((*this).union_variant_1).to);
-            if (!::futils::binary::write_num(w, static_cast<std::uint8_t>(tmp_14_), true)) {
+            if (FUNC_ENTRY_MAGIC != std::get<2>((*this).union_variant_1).magic) {
+                return false;
+            }
+            if (!::futils::binary::write_num(w, static_cast<std::uint64_t>(std::get<2>((*this).union_variant_1).magic), true)) {
+                return false;
+            }
+        }
+        else if (((((*this).op == Op2::JMP) || ((*this).op == Op2::CALL)) || ((*this).op == Op2::POP))) {
+            if (!std::holds_alternative<union_struct_4>(union_variant_1)) {
+                return false;
+            }
+            auto tmp_15_ = static_cast<std::uint8_t>(std::get<3>((*this).union_variant_1).to);
+            if (!::futils::binary::write_num(w, static_cast<std::uint8_t>(tmp_15_), true)) {
                 return false;
             }
         }
         else if (((*this).op == Op2::SYSCALL_IMMEDIATE)) {
-            if (!std::holds_alternative<union_struct_4>(union_variant_1)) {
+            if (!std::holds_alternative<union_struct_5>(union_variant_1)) {
                 return false;
             }
-            auto tmp_15_ = static_cast<std::uint64_t>(std::get<3>((*this).union_variant_1).syscall_number);
-            if (!::futils::binary::write_num(w, static_cast<std::uint64_t>(tmp_15_), true)) {
+            auto tmp_16_ = static_cast<std::uint64_t>(std::get<4>((*this).union_variant_1).syscall_number);
+            if (!::futils::binary::write_num(w, static_cast<std::uint64_t>(tmp_16_), true)) {
                 return false;
             }
         }
         else if (((*this).op == Op2::JMPIF)) {
-            if (!std::holds_alternative<union_struct_5>(union_variant_1)) {
-                return false;
-            }
-            auto tmp_16_ = static_cast<std::uint8_t>(std::get<4>((*this).union_variant_1).condition);
-            if (!::futils::binary::write_num(w, static_cast<std::uint8_t>(tmp_16_), true)) {
-                return false;
-            }
-            auto tmp_17_ = static_cast<std::uint8_t>(std::get<4>((*this).union_variant_1).to);
-            if (!::futils::binary::write_num(w, static_cast<std::uint8_t>(tmp_17_), true)) {
-                return false;
-            }
-        }
-        else if (((*this).op == Op2::PUSH)) {
             if (!std::holds_alternative<union_struct_6>(union_variant_1)) {
                 return false;
             }
-            auto tmp_18_ = static_cast<std::uint8_t>(std::get<5>((*this).union_variant_1).from);
+            auto tmp_17_ = static_cast<std::uint8_t>(std::get<5>((*this).union_variant_1).condition);
+            if (!::futils::binary::write_num(w, static_cast<std::uint8_t>(tmp_17_), true)) {
+                return false;
+            }
+            auto tmp_18_ = static_cast<std::uint8_t>(std::get<5>((*this).union_variant_1).to);
             if (!::futils::binary::write_num(w, static_cast<std::uint8_t>(tmp_18_), true)) {
                 return false;
             }
         }
-        else if (((*this).op == Op2::PUSH_IMMEDIATE)) {
+        else if (((*this).op == Op2::PUSH)) {
             if (!std::holds_alternative<union_struct_7>(union_variant_1)) {
                 return false;
             }
-            if (!::futils::binary::write_num(w, static_cast<std::uint64_t>(std::get<6>((*this).union_variant_1).immediate), true)) {
+            auto tmp_19_ = static_cast<std::uint8_t>(std::get<6>((*this).union_variant_1).from);
+            if (!::futils::binary::write_num(w, static_cast<std::uint8_t>(tmp_19_), true)) {
+                return false;
+            }
+        }
+        else if (((*this).op == Op2::PUSH_IMMEDIATE)) {
+            if (!std::holds_alternative<union_struct_8>(union_variant_1)) {
+                return false;
+            }
+            if (!::futils::binary::write_num(w, static_cast<std::uint64_t>(std::get<7>((*this).union_variant_1).immediate), true)) {
                 return false;
             }
         }
         else if (((*this).op == Op2::TRSF)) {
-            if (!std::holds_alternative<union_struct_8>(union_variant_1)) {
+            if (!std::holds_alternative<union_struct_9>(union_variant_1)) {
                 return false;
             }
-            auto tmp_19_ = static_cast<std::uint8_t>(std::get<7>((*this).union_variant_1).from);
-            if (!::futils::binary::write_num(w, static_cast<std::uint8_t>(tmp_19_), true)) {
-                return false;
-            }
-            auto tmp_20_ = static_cast<std::uint8_t>(std::get<7>((*this).union_variant_1).to);
+            auto tmp_20_ = static_cast<std::uint8_t>(std::get<8>((*this).union_variant_1).from);
             if (!::futils::binary::write_num(w, static_cast<std::uint8_t>(tmp_20_), true)) {
+                return false;
+            }
+            auto tmp_21_ = static_cast<std::uint8_t>(std::get<8>((*this).union_variant_1).to);
+            if (!::futils::binary::write_num(w, static_cast<std::uint8_t>(tmp_21_), true)) {
                 return false;
             }
         }
         else if ((((*this).op == Op2::LOAD_MEMORY) || ((*this).op == Op2::STORE_MEMORY))) {
-            if (!std::holds_alternative<union_struct_9>(union_variant_1)) {
-                return false;
-            }
-            auto tmp_21_ = static_cast<std::uint8_t>(std::get<8>((*this).union_variant_1).from);
-            if (!::futils::binary::write_num(w, static_cast<std::uint8_t>(tmp_21_), true)) {
-                return false;
-            }
-            auto tmp_22_ = static_cast<std::uint8_t>(std::get<8>((*this).union_variant_1).to);
-            if (!::futils::binary::write_num(w, static_cast<std::uint8_t>(tmp_22_), true)) {
-                return false;
-            }
-            if (!::futils::binary::write_num(w, static_cast<std::uint64_t>(std::get<8>((*this).union_variant_1).size), true)) {
-                return false;
-            }
-        }
-        else if (((*this).op == Op2::LOAD_IMMEDIATE)) {
             if (!std::holds_alternative<union_struct_10>(union_variant_1)) {
                 return false;
             }
-            if (!::futils::binary::write_num(w, static_cast<std::uint64_t>(std::get<9>((*this).union_variant_1).immediate), true)) {
+            auto tmp_22_ = static_cast<std::uint8_t>(std::get<9>((*this).union_variant_1).from);
+            if (!::futils::binary::write_num(w, static_cast<std::uint8_t>(tmp_22_), true)) {
                 return false;
             }
             auto tmp_23_ = static_cast<std::uint8_t>(std::get<9>((*this).union_variant_1).to);
             if (!::futils::binary::write_num(w, static_cast<std::uint8_t>(tmp_23_), true)) {
                 return false;
             }
+            if (!::futils::binary::write_num(w, static_cast<std::uint64_t>(std::get<9>((*this).union_variant_1).size), true)) {
+                return false;
+            }
         }
-        else if ((((((*this).op == Op2::NOT) || ((*this).op == Op2::INC)) || ((*this).op == Op2::DEC)) || ((*this).op == Op2::NEG))) {
+        else if (((*this).op == Op2::LOAD_IMMEDIATE)) {
             if (!std::holds_alternative<union_struct_11>(union_variant_1)) {
                 return false;
             }
-            auto tmp_24_ = static_cast<std::uint8_t>(std::get<10>((*this).union_variant_1).operand);
+            if (!::futils::binary::write_num(w, static_cast<std::uint64_t>(std::get<10>((*this).union_variant_1).immediate), true)) {
+                return false;
+            }
+            auto tmp_24_ = static_cast<std::uint8_t>(std::get<10>((*this).union_variant_1).to);
             if (!::futils::binary::write_num(w, static_cast<std::uint8_t>(tmp_24_), true)) {
                 return false;
             }
-            auto tmp_25_ = static_cast<std::uint8_t>(std::get<10>((*this).union_variant_1).result);
+        }
+        else if ((((((*this).op == Op2::NOT) || ((*this).op == Op2::INC)) || ((*this).op == Op2::DEC)) || ((*this).op == Op2::NEG))) {
+            if (!std::holds_alternative<union_struct_12>(union_variant_1)) {
+                return false;
+            }
+            auto tmp_25_ = static_cast<std::uint8_t>(std::get<11>((*this).union_variant_1).operand);
             if (!::futils::binary::write_num(w, static_cast<std::uint8_t>(tmp_25_), true)) {
+                return false;
+            }
+            auto tmp_26_ = static_cast<std::uint8_t>(std::get<11>((*this).union_variant_1).result);
+            if (!::futils::binary::write_num(w, static_cast<std::uint8_t>(tmp_26_), true)) {
                 return false;
             }
         }
         else {
-            if (!std::holds_alternative<union_struct_12>(union_variant_1)) {
+            if (!std::holds_alternative<union_struct_13>(union_variant_1)) {
                 return false;
             }
-            auto tmp_26_ = static_cast<std::uint8_t>(std::get<11>((*this).union_variant_1).left);
-            if (!::futils::binary::write_num(w, static_cast<std::uint8_t>(tmp_26_), true)) {
-                return false;
-            }
-            auto tmp_27_ = static_cast<std::uint8_t>(std::get<11>((*this).union_variant_1).right);
+            auto tmp_27_ = static_cast<std::uint8_t>(std::get<12>((*this).union_variant_1).left);
             if (!::futils::binary::write_num(w, static_cast<std::uint8_t>(tmp_27_), true)) {
                 return false;
             }
-            auto tmp_28_ = static_cast<std::uint8_t>(std::get<11>((*this).union_variant_1).result);
+            auto tmp_28_ = static_cast<std::uint8_t>(std::get<12>((*this).union_variant_1).right);
             if (!::futils::binary::write_num(w, static_cast<std::uint8_t>(tmp_28_), true)) {
+                return false;
+            }
+            auto tmp_29_ = static_cast<std::uint8_t>(std::get<12>((*this).union_variant_1).result);
+            if (!::futils::binary::write_num(w, static_cast<std::uint8_t>(tmp_29_), true)) {
                 return false;
             }
         }
         return true;
     }
     inline bool Op2Inst::decode(::futils::binary::reader& r) {
-        std::uint8_t tmp_29_ = 0;
-        if (!::futils::binary::read_num(r, tmp_29_, true)) {
+        std::uint8_t tmp_30_ = 0;
+        if (!::futils::binary::read_num(r, tmp_30_, true)) {
             return false;
         }
-        (*this).op = static_cast<Op2>(tmp_29_);
+        (*this).op = static_cast<Op2>(tmp_30_);
         if ((((*this).op == Op2::RET) || ((*this).op == Op2::NOP))) {
             if (!std::holds_alternative<union_struct_2>(union_variant_1)) {
                 union_variant_1 = union_struct_2();
             }
         }
-        else if (((((*this).op == Op2::JMP) || ((*this).op == Op2::CALL)) || ((*this).op == Op2::POP))) {
+        else if (((*this).op == Op2::FUNC_ENTRY)) {
             if (!std::holds_alternative<union_struct_3>(union_variant_1)) {
                 union_variant_1 = union_struct_3();
             }
-            std::uint8_t tmp_30_ = 0;
-            if (!::futils::binary::read_num(r, tmp_30_, true)) {
+            if (!::futils::binary::read_num(r, std::get<2>((*this).union_variant_1).magic, true)) {
                 return false;
             }
-            std::get<2>((*this).union_variant_1).to = static_cast<Register>(tmp_30_);
+            if (std::get<2>((*this).union_variant_1).magic != FUNC_ENTRY_MAGIC) {
+                return false;
+            }
         }
-        else if (((*this).op == Op2::SYSCALL_IMMEDIATE)) {
+        else if (((((*this).op == Op2::JMP) || ((*this).op == Op2::CALL)) || ((*this).op == Op2::POP))) {
             if (!std::holds_alternative<union_struct_4>(union_variant_1)) {
                 union_variant_1 = union_struct_4();
             }
-            std::uint64_t tmp_31_ = 0;
+            std::uint8_t tmp_31_ = 0;
             if (!::futils::binary::read_num(r, tmp_31_, true)) {
                 return false;
             }
-            std::get<3>((*this).union_variant_1).syscall_number = static_cast<SyscallNumber>(tmp_31_);
+            std::get<3>((*this).union_variant_1).to = static_cast<Register>(tmp_31_);
         }
-        else if (((*this).op == Op2::JMPIF)) {
+        else if (((*this).op == Op2::SYSCALL_IMMEDIATE)) {
             if (!std::holds_alternative<union_struct_5>(union_variant_1)) {
                 union_variant_1 = union_struct_5();
             }
-            std::uint8_t tmp_32_ = 0;
+            std::uint64_t tmp_32_ = 0;
             if (!::futils::binary::read_num(r, tmp_32_, true)) {
                 return false;
             }
-            std::get<4>((*this).union_variant_1).condition = static_cast<Register>(tmp_32_);
+            std::get<4>((*this).union_variant_1).syscall_number = static_cast<SyscallNumber>(tmp_32_);
+        }
+        else if (((*this).op == Op2::JMPIF)) {
+            if (!std::holds_alternative<union_struct_6>(union_variant_1)) {
+                union_variant_1 = union_struct_6();
+            }
             std::uint8_t tmp_33_ = 0;
             if (!::futils::binary::read_num(r, tmp_33_, true)) {
                 return false;
             }
-            std::get<4>((*this).union_variant_1).to = static_cast<Register>(tmp_33_);
-        }
-        else if (((*this).op == Op2::PUSH)) {
-            if (!std::holds_alternative<union_struct_6>(union_variant_1)) {
-                union_variant_1 = union_struct_6();
-            }
+            std::get<5>((*this).union_variant_1).condition = static_cast<Register>(tmp_33_);
             std::uint8_t tmp_34_ = 0;
             if (!::futils::binary::read_num(r, tmp_34_, true)) {
                 return false;
             }
-            std::get<5>((*this).union_variant_1).from = static_cast<Register>(tmp_34_);
+            std::get<5>((*this).union_variant_1).to = static_cast<Register>(tmp_34_);
         }
-        else if (((*this).op == Op2::PUSH_IMMEDIATE)) {
+        else if (((*this).op == Op2::PUSH)) {
             if (!std::holds_alternative<union_struct_7>(union_variant_1)) {
                 union_variant_1 = union_struct_7();
-            }
-            if (!::futils::binary::read_num(r, std::get<6>((*this).union_variant_1).immediate, true)) {
-                return false;
-            }
-        }
-        else if (((*this).op == Op2::TRSF)) {
-            if (!std::holds_alternative<union_struct_8>(union_variant_1)) {
-                union_variant_1 = union_struct_8();
             }
             std::uint8_t tmp_35_ = 0;
             if (!::futils::binary::read_num(r, tmp_35_, true)) {
                 return false;
             }
-            std::get<7>((*this).union_variant_1).from = static_cast<Register>(tmp_35_);
+            std::get<6>((*this).union_variant_1).from = static_cast<Register>(tmp_35_);
+        }
+        else if (((*this).op == Op2::PUSH_IMMEDIATE)) {
+            if (!std::holds_alternative<union_struct_8>(union_variant_1)) {
+                union_variant_1 = union_struct_8();
+            }
+            if (!::futils::binary::read_num(r, std::get<7>((*this).union_variant_1).immediate, true)) {
+                return false;
+            }
+        }
+        else if (((*this).op == Op2::TRSF)) {
+            if (!std::holds_alternative<union_struct_9>(union_variant_1)) {
+                union_variant_1 = union_struct_9();
+            }
             std::uint8_t tmp_36_ = 0;
             if (!::futils::binary::read_num(r, tmp_36_, true)) {
                 return false;
             }
-            std::get<7>((*this).union_variant_1).to = static_cast<Register>(tmp_36_);
-        }
-        else if ((((*this).op == Op2::LOAD_MEMORY) || ((*this).op == Op2::STORE_MEMORY))) {
-            if (!std::holds_alternative<union_struct_9>(union_variant_1)) {
-                union_variant_1 = union_struct_9();
-            }
+            std::get<8>((*this).union_variant_1).from = static_cast<Register>(tmp_36_);
             std::uint8_t tmp_37_ = 0;
             if (!::futils::binary::read_num(r, tmp_37_, true)) {
                 return false;
             }
-            std::get<8>((*this).union_variant_1).from = static_cast<Register>(tmp_37_);
+            std::get<8>((*this).union_variant_1).to = static_cast<Register>(tmp_37_);
+        }
+        else if ((((*this).op == Op2::LOAD_MEMORY) || ((*this).op == Op2::STORE_MEMORY))) {
+            if (!std::holds_alternative<union_struct_10>(union_variant_1)) {
+                union_variant_1 = union_struct_10();
+            }
             std::uint8_t tmp_38_ = 0;
             if (!::futils::binary::read_num(r, tmp_38_, true)) {
                 return false;
             }
-            std::get<8>((*this).union_variant_1).to = static_cast<Register>(tmp_38_);
-            if (!::futils::binary::read_num(r, std::get<8>((*this).union_variant_1).size, true)) {
-                return false;
-            }
-        }
-        else if (((*this).op == Op2::LOAD_IMMEDIATE)) {
-            if (!std::holds_alternative<union_struct_10>(union_variant_1)) {
-                union_variant_1 = union_struct_10();
-            }
-            if (!::futils::binary::read_num(r, std::get<9>((*this).union_variant_1).immediate, true)) {
-                return false;
-            }
+            std::get<9>((*this).union_variant_1).from = static_cast<Register>(tmp_38_);
             std::uint8_t tmp_39_ = 0;
             if (!::futils::binary::read_num(r, tmp_39_, true)) {
                 return false;
             }
             std::get<9>((*this).union_variant_1).to = static_cast<Register>(tmp_39_);
+            if (!::futils::binary::read_num(r, std::get<9>((*this).union_variant_1).size, true)) {
+                return false;
+            }
         }
-        else if ((((((*this).op == Op2::NOT) || ((*this).op == Op2::INC)) || ((*this).op == Op2::DEC)) || ((*this).op == Op2::NEG))) {
+        else if (((*this).op == Op2::LOAD_IMMEDIATE)) {
             if (!std::holds_alternative<union_struct_11>(union_variant_1)) {
                 union_variant_1 = union_struct_11();
+            }
+            if (!::futils::binary::read_num(r, std::get<10>((*this).union_variant_1).immediate, true)) {
+                return false;
             }
             std::uint8_t tmp_40_ = 0;
             if (!::futils::binary::read_num(r, tmp_40_, true)) {
                 return false;
             }
-            std::get<10>((*this).union_variant_1).operand = static_cast<Register>(tmp_40_);
+            std::get<10>((*this).union_variant_1).to = static_cast<Register>(tmp_40_);
+        }
+        else if ((((((*this).op == Op2::NOT) || ((*this).op == Op2::INC)) || ((*this).op == Op2::DEC)) || ((*this).op == Op2::NEG))) {
+            if (!std::holds_alternative<union_struct_12>(union_variant_1)) {
+                union_variant_1 = union_struct_12();
+            }
             std::uint8_t tmp_41_ = 0;
             if (!::futils::binary::read_num(r, tmp_41_, true)) {
                 return false;
             }
-            std::get<10>((*this).union_variant_1).result = static_cast<Register>(tmp_41_);
-        }
-        else {
-            if (!std::holds_alternative<union_struct_12>(union_variant_1)) {
-                union_variant_1 = union_struct_12();
-            }
+            std::get<11>((*this).union_variant_1).operand = static_cast<Register>(tmp_41_);
             std::uint8_t tmp_42_ = 0;
             if (!::futils::binary::read_num(r, tmp_42_, true)) {
                 return false;
             }
-            std::get<11>((*this).union_variant_1).left = static_cast<Register>(tmp_42_);
+            std::get<11>((*this).union_variant_1).result = static_cast<Register>(tmp_42_);
+        }
+        else {
+            if (!std::holds_alternative<union_struct_13>(union_variant_1)) {
+                union_variant_1 = union_struct_13();
+            }
             std::uint8_t tmp_43_ = 0;
             if (!::futils::binary::read_num(r, tmp_43_, true)) {
                 return false;
             }
-            std::get<11>((*this).union_variant_1).right = static_cast<Register>(tmp_43_);
+            std::get<12>((*this).union_variant_1).left = static_cast<Register>(tmp_43_);
             std::uint8_t tmp_44_ = 0;
             if (!::futils::binary::read_num(r, tmp_44_, true)) {
                 return false;
             }
-            std::get<11>((*this).union_variant_1).result = static_cast<Register>(tmp_44_);
+            std::get<12>((*this).union_variant_1).right = static_cast<Register>(tmp_44_);
+            std::uint8_t tmp_45_ = 0;
+            if (!::futils::binary::read_num(r, tmp_45_, true)) {
+                return false;
+            }
+            std::get<12>((*this).union_variant_1).result = static_cast<Register>(tmp_45_);
         }
         return true;
     }

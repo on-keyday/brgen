@@ -85,6 +85,7 @@ namespace j2cp2 {
         bool use_error = false;
         bool use_variant = false;
         bool use_overflow_check = false;
+        bool enum_stringer = false;
         ast::Format* current_format = nullptr;
         Context ctx;
         std::vector<std::string> struct_names;
@@ -685,6 +686,27 @@ namespace j2cp2 {
                 }
             }
             w.writeln("};");
+            if (enum_stringer) {
+                w.writeln("inline const char* to_string(", enum_->ident->ident, " e) {");
+                {
+                    auto indent = w.indent_scope();
+                    w.writeln("switch(e) {");
+                    {
+                        auto indent = w.indent_scope();
+                        for (auto& c : enum_->members) {
+                            map_line(c->loc);
+                            auto str = "\"" + c->ident->ident + "\"";
+                            if (c->str_literal) {
+                                str = c->str_literal->value;
+                            }
+                            w.writeln("case ", enum_->ident->ident, "::", c->ident->ident, ": return ", str, ";");
+                        }
+                    }
+                    w.writeln("}");
+                    w.writeln("return \"\";");
+                }
+                w.writeln("}");
+            }
         }
 
         void code_if(ast::If* if_) {
