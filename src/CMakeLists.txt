@@ -26,7 +26,7 @@ target_link_libraries(json2c futils)
 add_executable(json2vm "tool/json2vm/main.cpp" "vm/compile.cpp" "vm/vm.cpp")
 target_link_libraries(json2vm futils)
 
-add_executable(json2vm2 "tool/json2vm2/main.cpp" "vm/vm2/compile.cpp" "vm/vm2/interpret.cpp")
+add_executable(json2vm2 "tool/json2vm2/main.cpp" "vm/vm2/compile.cpp" "vm/vm2/interpret.cpp" "vm/vm2/jit_x64.cpp")
 target_link_libraries(json2vm2 futils)
 
 add_executable(json2ts "tool/json2ts/main.cpp" "tool/json2ts/generate.cpp")

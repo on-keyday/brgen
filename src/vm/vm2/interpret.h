@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <binary/bit.h>
 #include <list>
+#include <jit/jit_memory.h>
 
 namespace brgen::vm2 {
     struct AllocationEntry {
@@ -61,6 +62,12 @@ namespace brgen::vm2 {
 
         void set_syscall_return(std::uint64_t value) {
             get_register(Register::R0) = value;
+        }
+
+        futils::jit::ExecutableMemory jit_compile();
+
+        void instruction_top() {
+            instructions.reset(0);
         }
     };
 }  // namespace brgen::vm2
