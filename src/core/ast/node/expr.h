@@ -315,6 +315,14 @@ namespace brgen::ast {
         std::shared_ptr<Identity> cond;
         // MatchBranch
         std::vector<std::shared_ptr<MatchBranch>> branch;
+        // trial_match means this match is used for trial match
+        // trial match is like this:
+        // ```
+        // match:
+        //   .. => x :u8(0)
+        //   .. => y :u8(1)
+        // ```
+        bool trial_match = false;
 
         Match(lexer::Loc l)
             : Expr(l, NodeType::match) {}
@@ -328,6 +336,7 @@ namespace brgen::ast {
             sdebugf(cond_scope);
             sdebugf(cond);
             sdebugf(branch);
+            sdebugf(trial_match);
         }
     };
 

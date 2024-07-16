@@ -380,6 +380,7 @@ public class Match : Expr{
 	public Scope? CondScope{get;set;}
 	public Identity? Cond{get;set;}
 	public List<MatchBranch>? Branch{get;set;}
+	public bool TrialMatch{get;set;}
 }
 public class Range : Expr{
 	public Loc Loc{get;set;}
@@ -1209,6 +1210,7 @@ public static class Ast {
                node.CondScope = ast.Node[i].Body[cond_scope];
                node.Cond = ast.Node[i].Body[cond];
                node.Branch = ast.Node[i].Body[branch];
+               node.TrialMatch = ast.Node[i].Body[trial_match];
            case NodeType.Range:
                var node = nodes[i] as Range;
                node.Loc = ast.Node[i].Body[loc];

@@ -32,7 +32,36 @@ struct Flags : futils::cmdline::templ::HelpOption {
     }
 };
 
-int run(const Flags& flags) {
+int run(const Flags& flags, futils::view::rvec code) {
+    futils::file::FileStream<std::string> fs{futils::file::File::stdin_file()};
+    using HexFilter = futils::number::hex::HexFilter<std::string, futils::byte, futils::binary::reader>;
+    futils::file::View input;
+    std::unique_ptr<HexFilter> hex_filter;
+    futils::binary::bit_reader input_reader{futils::view::rvec{}};
+    if (!flags.binary_input.empty()) {
+        if (flags.binary_input == "-") {
+            input_reader = futils::binary::reader(fs.get_read_handler(), &fs);
+        }
+        else {
+            if (!input.open(flags.binary_input) || !input.data()) {
+                print_error("cannot open file ", flags.binary_input);
+                return 1;
+            }
+            input_reader = futils::binary::reader(input);
+        }
+        if (flags.hex) {
+            hex_filter = std::make_unique<HexFilter>(HexFilter{std::move(input_reader.get_base())});
+            input_reader = futils::binary::reader(hex_filter->get_read_handler(), hex_filter.get());
+        }
+    }
+    std::string memory;
+    memory.resize(1024 * 1024);  // 1MB
+    brgen::vm2::VM2 vm;
+    vm.reset(code, memory, 1024);
+    vm.resume();
+    while (vm.handle_syscall(&input_reader)) {
+        vm.resume();
+    }
     return 0;
 }
 
@@ -42,14 +71,11 @@ int vm_generate(const Flags& flags, brgen::request::GenerateSource& req, std::sh
     futils::binary::writer w{futils::binary::resizable_buffer_writer<std::string>(), &buffer};
     brgen::vm2::compile(prog, w);
     if (flags.run) {
-        std::string memory;
-        memory.resize(1024 * 1024);  // 1MB
-        brgen::vm2::VM2 vm;
-        vm.reset(w.written(), memory, 1024);
-        vm.resume();
-        while (vm.handle_syscall()) {
-            vm.resume();
+        if (!flags.legacy_file_pass) {
+            send_error_and_end(req.id, "run mode is not supported in stdin_stream mode");
+            return 1;
         }
+        return run(flags, w.written());
     }
     /*
     auto code = brgen::vm::compile(prog);

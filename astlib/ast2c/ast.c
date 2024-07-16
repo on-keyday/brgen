@@ -1761,6 +1761,7 @@ int ast2c_Match_parse(ast2c_Ast* ast,ast2c_Match* s,ast2c_json_handlers* h, void
 	void* cond_scope = h->object_get(h, obj_body, "cond_scope");
 	void* cond = h->object_get(h, obj_body, "cond");
 	void* branch = h->object_get(h, obj_body, "branch");
+	void* trial_match = h->object_get(h, obj_body, "trial_match");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_Match::loc is null"); } return 0; }
 	if (!expr_type) { if(h->error) { h->error(h,expr_type, "ast2c_Match::expr_type is null"); } return 0; }
 	if (!constant_level) { if(h->error) { h->error(h,constant_level, "ast2c_Match::constant_level is null"); } return 0; }
@@ -1772,6 +1773,7 @@ int ast2c_Match_parse(ast2c_Ast* ast,ast2c_Match* s,ast2c_json_handlers* h, void
 		if(h->error) { h->error(h,branch, "failed to get array size of ast2c_Match::branch"); }
 		return NULL;
 	}
+	if (!trial_match) { if(h->error) { h->error(h,trial_match, "ast2c_Match::trial_match is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_Match::loc"); }
 		goto error;

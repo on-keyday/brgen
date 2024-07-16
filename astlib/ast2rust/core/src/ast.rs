@@ -4497,6 +4497,7 @@ pub struct Match {
 	pub cond_scope: Option<Rc<RefCell<Scope>>>,
 	pub cond: Option<Rc<RefCell<Identity>>>,
 	pub branch: Vec<Rc<RefCell<MatchBranch>>>,
+	pub trial_match: bool,
 }
 
 impl From<&Rc<RefCell<Match>>> for NodeType {
@@ -9431,6 +9432,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				cond_scope: None,
 				cond: None,
 				branch: Vec::new(),
+				trial_match: false,
 				})))
 			},
 			NodeType::Range => {
@@ -11158,6 +11160,14 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().branch.push(branch_body.clone());
 				}
+				let trial_match_body = match raw_node.body.get("trial_match") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"trial_match")),
+				};
+				node.borrow_mut().trial_match = match trial_match_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(trial_match_body.into(),JSONType::Bool)),
+				};
 			},
 			NodeType::Range => {
 				let node = nodes[i].clone();

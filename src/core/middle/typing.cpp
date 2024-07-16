@@ -504,12 +504,19 @@ namespace brgen::middle {
             }
             std::shared_ptr<ast::Type> candidate;
             std::shared_ptr<ast::Expr> any_match;
+            bool trial_match = false;
+            auto report_any_match = [&](auto& c) {
+                error(c->loc, "any match (`..`) must be unique and be end of in match branch")
+                    .error(any_match->loc, "any match (`..`) is already defined here")
+                    .report();
+            };
             for (auto& c : m->branch) {
                 // TODO(on-keyday): check exhaustiveness for range, mainly for enum and int
-                if (any_match) {
-                    error(c->loc, "any match (`..`) must be unique and be end of in match branch")
-                        .error(any_match->loc, "any match (`..`) is already defined here")
-                        .report();
+                if (any_match && !trial_match) {
+                    if (m->cond) {
+                        report_any_match(c);
+                    }
+                    trial_match = true;
                 }
                 typing_expr(c->cond);
 
@@ -524,7 +531,9 @@ namespace brgen::middle {
                         }
                     }
                     else {
-                        check_bool(c->cond.get());
+                        if (!ast::is_any_range(c->cond)) {
+                            check_bool(c->cond.get());
+                        }
                     }
                 }
                 typing_object(c->then);
@@ -546,7 +555,11 @@ namespace brgen::middle {
                 if (ast::is_any_range(c->cond)) {
                     any_match = c->cond;
                 }
+                else if (trial_match) {
+                    report_any_match(c);
+                }
             }
+            m->trial_match = trial_match;
             m->struct_union_type->exhaustive = any_match != nullptr;
             // if no any match, but maybe exhaustive, then we need to check exhaustiveness
             if (m->cond && !m->struct_union_type->exhaustive) {

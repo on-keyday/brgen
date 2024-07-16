@@ -732,6 +732,7 @@ struct ast2c_Match {
 	ast2c_Identity* cond;
 	ast2c_MatchBranch** branch;
 	size_t branch_size;
+	int trial_match;
 };
 
 // returns 1 if succeed 0 if failed

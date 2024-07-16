@@ -381,6 +381,7 @@ class Match(Expr):
     cond_scope: Optional[Scope]
     cond: Optional[Identity]
     branch: List[MatchBranch]
+    trial_match: bool
 
 
 class Range(Expr):
@@ -1298,6 +1299,8 @@ def ast2node(ast :JsonAst) -> Program:
                 else:
                     node[i].cond = None
                 node[i].branch = [(node[x] if isinstance(node[x],MatchBranch) else raiseError(TypeError('type mismatch at Match::branch'))) for x in ast.node[i].body["branch"]]
+                x = ast.node[i].body["trial_match"]
+                node[i].trial_match = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at Match::trial_match'))
             case NodeType.RANGE:
                 if ast.node[i].body["expr_type"] is not None:
                     x = node[ast.node[i].body["expr_type"]]

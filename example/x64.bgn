@@ -1,0 +1,37 @@
+config.url = "https://www.felixcloutier.com/x86/"
+
+config.cpp.namespace = "brgen::x64"
+
+enum X64OpCode:
+    :u8
+    NOP = 0x90
+
+format RexPrefix:
+    prefix :u4(0b0100)
+    extend_operand_size :u1 # w
+    extend_mod_r_m_reg :u1 # r
+    sib_index_field_bit4 :u1 # x
+    mod_r_m_or_base :u1 # b
+
+format ModRM:
+    mod :u2
+    reg :u3
+    rm :u3
+
+format AVX3bytePrefix:
+    prefix :u8(0b1100100)
+    r :u1
+    x :u1
+    b :u1
+    mmmmm :u5
+    w :u1
+    vvvv :u4
+    l :u1
+    pp :u2
+
+format AVX2bytePrefix:
+    prefix :u8(0b11011001)
+    r :u1
+    vvvv :u4
+    l :u1
+    pp :u2

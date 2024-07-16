@@ -608,6 +608,7 @@ export interface Match extends Expr {
 	cond_scope: Scope|null;
 	cond: Identity|null;
 	branch: MatchBranch[];
+	trial_match: boolean;
 }
 
 export function isMatch(obj: any): obj is Match {
@@ -1465,6 +1466,7 @@ export function parseAST(obj: JsonAst): Program {
 				cond_scope: null,
 				cond: null,
 				branch: [],
+				trial_match: false,
 			}
 			c.node.push(n);
 			break;
@@ -2763,6 +2765,11 @@ export function parseAST(obj: JsonAst): Program {
 				}
 				n.branch.push(tmpbranch);
 			}
+			const tmptrial_match = on.body?.trial_match;
+			if (typeof tmptrial_match !== "boolean") {
+				throw new Error('invalid node list at Match::trial_match');
+			}
+			n.trial_match = on.body.trial_match;
 			break;
 		}
 		case "range": {
