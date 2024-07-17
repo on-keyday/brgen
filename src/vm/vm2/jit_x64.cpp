@@ -1,9 +1,11 @@
 /*license*/
 #pragma once
 #include <jit/x64.h>
+#include <jit/x64_coroutine.h>
 #include <jit/jit_memory.h>
 #include "interpret.h"
 #include <string>
+#include <platform/detect.h>
 
 namespace brgen::vm2 {
 
@@ -47,108 +49,7 @@ namespace brgen::vm2 {
         return futils::jit::x64::Register::RAX;
     }
 
-    enum RelocationType {
-        INITIAL_RIP,
-        SAVE_RIP_RBP_RSP,
-    };
-
-    struct RelocationEntry {
-        RelocationType type;
-        std::uint64_t rewrite_offset = 0;
-        std::uint64_t end_offset = 0;
-        std::uint64_t address_offset = 0;
-    };
-
-    constexpr auto rbp_saved = futils::jit::x64::Register::R9;
-    constexpr auto rsp_saved = futils::jit::x64::Register::R10;
-
-    constexpr auto next_instruction_pointer_offset = 8 * 1;
-    constexpr auto next_stack_rbp_offset = 8 * 2;
-    constexpr auto next_stack_rsp_offset = 8 * 3;
-    constexpr auto initial_stack_bottom_offset = 8 * 3;
-    constexpr auto initial_stack_top_offset = 8 * 5;
-
-    void write_coroutine_prologue(futils::binary::writer& w, futils::view::wvec full_memory) {
-        // function argument registers are RDI, RSI, RDX, RCX, R8, R9
-        // this function is int (*)()
-        // stack bottom layout (from bottom):
-        // 0. next instruction pointer like coroutine
-        // 1. next stack rbp like coroutine
-        // 2. next stack rsp like coroutine
-        // 3. original (system) rbp // at entry, this is the stack bottom
-        // 4. original (system) rsp
-
-        // save rbp and rsp
-        futils::jit::x64::emit_mov_reg_reg(w, futils::jit::x64::Register::RSP, rsp_saved);  // SAVE RSP
-        futils::jit::x64::emit_mov_reg_reg(w, futils::jit::x64::Register::RBP, rbp_saved);  // SAVE RBP
-        // change stack pointer to point to the bottom of the stack
-        auto stack_bottom = std::uint64_t(full_memory.data() + full_memory.size());
-        auto next_instruction_pointer = stack_bottom - next_instruction_pointer_offset;
-        auto next_stack_rbp = stack_bottom - next_stack_rbp_offset;
-        auto next_stack_rsp = stack_bottom - next_stack_rsp_offset;
-        auto rbp_bottom = stack_bottom - initial_stack_bottom_offset;                        // for coroutine instruction pointer, rbp, rsp
-        futils::jit::x64::emit_mov_reg_imm(w, futils::jit::x64::Register::RSP, rbp_bottom);  // PUSH RSP
-        futils::jit::x64::emit_mov_reg_imm(w, futils::jit::x64::Register::RBP, rbp_bottom);  // PUSH RBP
-        futils::jit::x64::emit_push_reg(w, rsp_saved);
-        futils::jit::x64::emit_push_reg(w, rbp_saved);
-        auto initial_stack_pointer = stack_bottom - initial_stack_top_offset;
-        futils::binary::writer mem{full_memory};
-        mem.reset(full_memory.size() - next_stack_rsp_offset);
-        futils::binary::write_num(mem, initial_stack_pointer, false);  // writing next rsp for first resume
-        futils::binary::write_num(mem, rbp_bottom, false);             // writing next rbp for first resume
-        // now we are going to jump to the suspended point
-        futils::jit::x64::emit_mov_reg_imm(w, futils::jit::x64::Register::RSP, next_stack_rsp);
-        futils::jit::x64::emit_mov_reg_mem(w, futils::jit::x64::Register::RSP, futils::jit::x64::Register::RSP);
-        futils::jit::x64::emit_mov_reg_imm(w, futils::jit::x64::Register::RBP, next_stack_rbp);
-        futils::jit::x64::emit_mov_reg_mem(w, futils::jit::x64::Register::RBP, futils::jit::x64::Register::RBP);
-        futils::jit::x64::emit_mov_reg_imm(w, futils::jit::x64::Register::RAX, next_instruction_pointer);
-        futils::jit::x64::emit_mov_reg_mem(w, futils::jit::x64::Register::RAX, futils::jit::x64::Register::RAX);
-        futils::jit::x64::emit_push_reg(w, futils::jit::x64::Register::RAX);
-        futils::jit::x64::emit_ret(w);  // jump to the suspended point
-    }
-
-    void write_coroutine_epilogue(futils::binary::writer& w, futils::view::wvec full_memory) {
-        auto initial_stack_pointer = std::uint64_t(full_memory.data() + full_memory.size() - 8 * 5);
-        auto rbp_bottom = std::uint64_t(full_memory.data() + full_memory.size()) - 8 * 3;
-        futils::jit::x64::emit_mov_reg_imm(w, futils::jit::x64::Register::RSP, initial_stack_pointer);
-        futils::jit::x64::emit_mov_reg_imm(w, futils::jit::x64::Register::RBP, rbp_bottom);
-        futils::jit::x64::emit_pop_reg(w, rbp_saved);  // POP RBP
-        futils::jit::x64::emit_pop_reg(w, rsp_saved);  // POP RSP
-        futils::jit::x64::emit_mov_reg_reg(w, rbp_saved, futils::jit::x64::Register::RBP);
-        futils::jit::x64::emit_mov_reg_reg(w, rsp_saved, futils::jit::x64::Register::RSP);
-        futils::jit::x64::emit_ret(w);
-    }
-
-    void write_save_instruction_pointer_rbp_rsp(futils::binary::writer& w, futils::view::wvec full_memory, std::uint64_t instruction_pointer) {
-        futils::jit::x64::emit_mov_reg_imm(w, futils::jit::x64::Register::R9, instruction_pointer);
-        auto next_instruction_pointer_saved = std::uint64_t(full_memory.data() + full_memory.size() - next_instruction_pointer_offset);
-        futils::jit::x64::emit_mov_reg_imm(w, futils::jit::x64::Register::R8, next_instruction_pointer_saved);
-        futils::jit::x64::emit_mov_mem_reg(w, futils::jit::x64::Register::R9, futils::jit::x64::Register::R8);
-        auto next_stack_rbp_saved = std::uint64_t(full_memory.data() + full_memory.size() - next_stack_rbp_offset);
-        futils::jit::x64::emit_mov_reg_imm(w, futils::jit::x64::Register::R8, next_stack_rbp_saved);
-        futils::jit::x64::emit_mov_mem_reg(w, futils::jit::x64::Register::RBP, futils::jit::x64::Register::R8);
-        auto next_stack_rsp_saved = std::uint64_t(full_memory.data() + full_memory.size() - next_stack_rsp_offset);
-        futils::jit::x64::emit_mov_reg_imm(w, futils::jit::x64::Register::R8, next_stack_rsp_saved);
-        futils::jit::x64::emit_mov_mem_reg(w, futils::jit::x64::Register::RSP, futils::jit::x64::Register::R8);
-    }
-
-    void write_initial_next_instruction_pointer(futils::view::wvec full_memory, std::uint64_t next_instruction_pointer) {
-        futils::binary::writer mem{full_memory};
-        mem.reset(full_memory.size() - 8 * 1);
-        futils::binary::write_num(mem, next_instruction_pointer, false);
-    }
-
-    futils::jit::ExecutableMemory VM2::jit_compile() {
-        std::string buffer;
-        futils::binary::writer w{futils::binary::resizable_buffer_writer<std::string>(), &buffer};
-        write_coroutine_prologue(w, full_memory);
-        std::vector<RelocationEntry> relocations;
-        relocations.push_back({
-            INITIAL_RIP,
-            0,
-            0,
-            w.offset(),
-        });
+    void VM2::jit_compile_inst(futils::binary::writer& w, std::vector<futils::jit::RelocationEntry>& relocations) {
         for (;;) {
             auto [inst, offset] = decode_inst();
             if (!inst) {
@@ -183,46 +84,69 @@ namespace brgen::vm2 {
                     auto from = map_register(mem.from);
                     auto to = map_register(mem.to);
                     futils::jit::x64::emit_mov_mem_reg(w, from, to);
+                    break;
                 }
                 case Op2::SYSCALL_IMMEDIATE: {
                     futils::jit::x64::emit_mov_reg_imm(w, futils::jit::x64::Register::RAX, std::uint64_t(TrapNumber::SYSCALL));
                     auto rewrite_offset = w.offset();
-                    write_save_instruction_pointer_rbp_rsp(w, full_memory, 0);
+                    futils::jit::x64::coro::write_save_instruction_pointer_rbp_rsp(w, full_memory, 0);
                     auto end_offset = w.offset();
-                    write_coroutine_epilogue(w, full_memory);
+                    futils::jit::x64::coro::write_coroutine_epilogue(w, full_memory);
                     auto address_offset = w.offset();
-                    relocations.push_back({SAVE_RIP_RBP_RSP, rewrite_offset, end_offset, address_offset});
+                    relocations.push_back({futils::jit::SAVE_RIP_RBP_RSP, rewrite_offset, end_offset, address_offset});
+                    break;
+                }
+                case Op2::PUSH: {
+                    auto push = *inst->push();
+                    auto reg = map_register(push.operand);
+                    futils::jit::x64::emit_push_reg(w, reg);
+                    break;
+                }
+                case Op2::POP: {
+                    auto pop = *inst->pop();
+                    auto reg = map_register(pop.operand);
+                    futils::jit::x64::emit_pop_reg(w, reg);
+                    break;
                 }
                 default: {
                     break;
                 }
             }
         }
+    }
+
+    futils::jit::ExecutableMemory VM2::jit_compile() {
+        std::string buffer;
+        futils::binary::writer w{futils::binary::resizable_buffer_writer<std::string>(), &buffer};
+        futils::jit::x64::coro::write_coroutine_prologue(w, full_memory);
+        std::vector<futils::jit::RelocationEntry> relocations;
+        auto initial_rip_offset = w.offset();
+        relocations.push_back({
+            futils::jit::INITIAL_RIP,
+            0,
+            0,
+            initial_rip_offset,
+        });
+        jit_compile_inst(w, relocations);
         futils::jit::x64::emit_mov_reg_imm(w, futils::jit::x64::Register::RAX, std::uint64_t(TrapNumber::END_OF_PROGRAM));
-        write_coroutine_epilogue(w, full_memory);
+        auto rewrite_offset = w.offset();
+        futils::jit::x64::coro::write_save_instruction_pointer(w, full_memory, 0);
+        auto end_offset = w.offset();
+        relocations.push_back({
+            futils::jit::RESET_RIP,
+            rewrite_offset,
+            end_offset,
+            initial_rip_offset,
+        });
+        futils::jit::x64::coro::write_reset_next_rbp_rsp(w, full_memory);
+        futils::jit::x64::coro::write_coroutine_epilogue(w, full_memory);
         auto editable = futils::jit::EditableMemory::allocate(w.written().size());
         if (!editable.valid()) {
             return {};
         }
         memcpy(editable.get_memory().data(), w.written().data(), w.written().size());
         for (auto& relocation : relocations) {
-            switch (relocation.type) {
-                case SAVE_RIP_RBP_RSP: {
-                    auto address = std::uint64_t(editable.get_memory().data() + relocation.address_offset);
-                    futils::binary::writer mem{editable.get_memory()};
-                    mem.reset(relocation.rewrite_offset);
-                    write_save_instruction_pointer_rbp_rsp(mem, full_memory, address);
-                    assert(mem.offset() == relocation.end_offset);
-                    break;
-                }
-                case INITIAL_RIP: {
-                    write_initial_next_instruction_pointer(full_memory, std::uint64_t(editable.get_memory().data() + relocation.address_offset));
-                    break;
-                }
-                default: {
-                    break;
-                }
-            }
+            futils::jit::x64::coro::relocate(editable.get_memory(), relocation, full_memory);
         }
         return editable.make_executable();
     }

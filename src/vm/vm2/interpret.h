@@ -35,6 +35,8 @@ namespace brgen::vm2 {
 
         friend struct VM2Helper;
 
+        void jit_compile_inst(futils::binary::writer& w, std::vector<futils::jit::RelocationEntry>& relocation);
+
        public:
         void reset(futils::view::rvec instructions, futils::view::wvec memory, size_t stack_size);
 

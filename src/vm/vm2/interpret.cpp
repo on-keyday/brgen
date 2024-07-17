@@ -1,5 +1,4 @@
 /*license*/
-#pragma once
 
 #include "interpret.h"
 #include "vm2.h"

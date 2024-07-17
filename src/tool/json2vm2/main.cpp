@@ -66,8 +66,9 @@ int run(const Flags& flags, futils::view::rvec code) {
             print_error("cannot compile code");
             return 1;
         }
-        auto f = compiled.as_function<void>();
-        f();
+        auto f = compiled.as_function<std::uintptr_t, std::uintptr_t>();
+        f(0);
+        f(0);
         return 0;
     }
     vm.resume();

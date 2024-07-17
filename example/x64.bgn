@@ -67,6 +67,7 @@ enum X64OpCode:
     CALL = 0xE8
     JMP_REL6 = 0xE9
     INVALID_1 = 0xEA
+    CALL_REG = 0xFF
     
  
 
@@ -220,6 +221,15 @@ format JeRel8:
 format JneRel8:
     opcode :X64OpCode(X64OpCode.JNE_REL8)
     imm :s8
+
+format CallReg32:
+    opcode :X64OpCode(X64OpCode.CALL_REG)
+    mod_rm :ModRM
+
+format CallReg64:
+    rex_prefix :RexPrefix
+    opcode :X64OpCode(X64OpCode.CALL_REG)
+    mod_rm :ModRM
 
 format Instruction:
     match:

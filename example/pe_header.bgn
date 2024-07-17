@@ -32,6 +32,40 @@ format IMAGE_DATA_DIRECTORY:
     VirtualAddress :u32
     Size :u32
 
+
+format IMAGE_OPTIONAL_HEADER:
+    Magic :u16
+    MajorLinkerVersion :u8
+    MinorLinkerVersion :u8
+    SizeOfCode :u32
+    SizeOfInitializedData :u32
+    SizeOfUninitializedData :u32
+    AddressOfEntryPoint :u32
+    BaseOfCode :u32
+    BaseOfData :u32
+    ImageBase :u64
+    SectionAlignment :u32
+    FileAlignment :u32
+    MajorOperatingSystemVersion :u16
+    MinorOperatingSystemVersion :u16
+    MajorImageVersion :u16
+    MinorImageVersion :u16
+    MajorSubsystemVersion :u16
+    MinorSubsystemVersion :u16
+    Win32VersionValue :u32
+    SizeOfImage :u32
+    SizeOfHeaders :u32
+    CheckSum :u32
+    Subsystem :u16
+    DllCharacteristics :u16
+    SizeOfStackReserve :u64
+    SizeOfStackCommit :u64
+    SizeOfHeapReserve :u64
+    SizeOfHeapCommit :u64
+    LoaderFlags :u32
+    NumberOfRvaAndSizes :u32
+    DataDirectory :[16]IMAGE_DATA_DIRECTORY
+
 format EFI_DEBUG_SUPPORT_PROTOCOL:
     Isa :EFI_INSTRUCTION_SET_ARCHITECTURE
     GetMaximumProcessorIndex :EFI_GET_MAXIMUM_PROCESSOR_INDEX
