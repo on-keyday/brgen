@@ -139,7 +139,8 @@ format MovRegImm32:
 format MovRegMem32:
     opcode :X64OpCode(X64OpCode.MOV_REG_MEM)
     mod_rm :ModRM
-    if mod_rm.mod == ModRMMode.MEM:
+    if mod_rm.mod == ModRMMode.MEM_DISP8 || mod_rm.mod == ModRMMode.MEM_DISP32 || 
+       mod_rm.rm == u3(Register.RSP) || mod_rm.rm == u3(Register.RBP):
         sib :SIB
 
 # mov reg, [reg]
@@ -147,6 +148,9 @@ format MovRegMem64:
     rex_prefix :RexPrefix
     opcode :X64OpCode(X64OpCode.MOV_REG_MEM)
     mod_rm :ModRM
+    if mod_rm.mod == ModRMMode.MEM_DISP8 || mod_rm.mod == ModRMMode.MEM_DISP32 || 
+       mod_rm.rm == u3(Register.RSP) || mod_rm.rm == u3(Register.RBP):
+        sib :SIB
 
 # mov [reg], imm
 format MovMemImm32:
