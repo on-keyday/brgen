@@ -552,6 +552,7 @@ struct ast2c_Program {
 	ast2c_Scope* global_scope;
 	ast2c_Metadata** metadata;
 	size_t metadata_size;
+	ast2c_SpecifyOrder* endian;
 };
 
 // returns 1 if succeed 0 if failed

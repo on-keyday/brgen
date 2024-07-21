@@ -3569,6 +3569,7 @@ pub struct Program {
 	pub elements: Vec<Node>,
 	pub global_scope: Option<Rc<RefCell<Scope>>>,
 	pub metadata: Vec<Weak<RefCell<Metadata>>>,
+	pub endian: Option<Weak<RefCell<SpecifyOrder>>>,
 }
 
 impl From<&Rc<RefCell<Program>>> for NodeType {
@@ -9298,6 +9299,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				elements: Vec::new(),
 				global_scope: None,
 				metadata: Vec::new(),
+				endian: None,
 				})))
 			},
 			NodeType::Comment => {
@@ -10066,6 +10068,25 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						x =>return Err(Error::MismatchNodeType(x.into(),metadata_body.into())),
 					};
 					node.borrow_mut().metadata.push(Rc::downgrade(&metadata_body));
+				}
+				let endian_body = match raw_node.body.get("endian") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"endian")),
+				};
+ 				if !endian_body.is_null() {
+					let endian_body = match endian_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(endian_body.into(),JSONType::Number)),
+					};
+					let endian_body = match nodes.get(endian_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(endian_body as usize)),
+					};
+					let endian_body = match endian_body {
+						Node::SpecifyOrder(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),endian_body.into())),
+					};
+					node.borrow_mut().endian = Some(Rc::downgrade(&endian_body));
 				}
 			},
 			NodeType::Comment => {

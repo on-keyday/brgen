@@ -1253,10 +1253,12 @@ int ast2c_Program_parse(ast2c_Ast* ast,ast2c_Program* s,ast2c_json_handlers* h, 
 	s->elements = NULL;
 	s->global_scope = NULL;
 	s->metadata = NULL;
+	s->endian = NULL;
 	void* struct_type = h->object_get(h, obj_body, "struct_type");
 	void* elements = h->object_get(h, obj_body, "elements");
 	void* global_scope = h->object_get(h, obj_body, "global_scope");
 	void* metadata = h->object_get(h, obj_body, "metadata");
+	void* endian = h->object_get(h, obj_body, "endian");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_Program::loc is null"); } return 0; }
 	if (!struct_type) { if(h->error) { h->error(h,struct_type, "ast2c_Program::struct_type is null"); } return 0; }
 	if (!elements) { if(h->error) { h->error(h,elements, "ast2c_Program::elements is null"); } return 0; }
@@ -1270,6 +1272,7 @@ int ast2c_Program_parse(ast2c_Ast* ast,ast2c_Program* s,ast2c_json_handlers* h, 
 		if(h->error) { h->error(h,metadata, "failed to get array size of ast2c_Program::metadata"); }
 		return NULL;
 	}
+	if (!endian) { if(h->error) { h->error(h,endian, "ast2c_Program::endian is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_Program::loc"); }
 		goto error;

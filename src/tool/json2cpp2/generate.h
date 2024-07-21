@@ -1466,6 +1466,11 @@ namespace j2cp2 {
                     w.writeln("#include \"", *name, "\"");
                 }
             }
+            if (auto specify_order = prog->endian.lock()) {
+                if (specify_order->order_value) {
+                    ctx.global_endian = *specify_order->order_value ? ast::Endian::little : ast::Endian::big;
+                }
+            }
             for (auto& name : namespaces) {
                 w.writeln("namespace ", name, " {");
                 auto ind = w.indent_scope_ex();
@@ -1484,11 +1489,6 @@ namespace j2cp2 {
                 }
                 if (auto e = ast::as<ast::Enum>(fmt); e) {
                     write_enum(ast::cast_to<ast::Enum>(fmt));
-                }
-                if (auto specify_order = ast::as<ast::SpecifyOrder>(fmt); specify_order && specify_order->order_type == ast::OrderType::byte) {
-                    if (specify_order->order_value) {
-                        ctx.global_endian = *specify_order->order_value ? ast::Endian::little : ast::Endian::big;
-                    }
                 }
             }
             ast::tool::FormatSorter s;

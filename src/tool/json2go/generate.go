@@ -1460,13 +1460,11 @@ func (g *Generator) Generate(file *ast2go.AstFile) error {
 			mappingWords[from] = to
 		}
 	}
-	for _, m := range p.Elements {
-		if m, ok := m.(*ast2go.SpecifyOrder); ok && m.OrderType == ast2go.OrderTypeByte && m.OrderValue != nil {
-			if *m.OrderValue == 0 {
-				g.defaultEndian = ast2go.EndianBig
-			} else if *m.OrderValue == 1 {
-				g.defaultEndian = ast2go.EndianLittle
-			}
+	if p.Endian != nil && p.Endian.OrderValue != nil {
+		if *p.Endian.OrderValue == 0 {
+			g.defaultEndian = ast2go.EndianBig
+		} else {
+			g.defaultEndian = ast2go.EndianLittle
 		}
 	}
 	ast2go.Walk(p, ast2go.VisitFn(func(v ast2go.Visitor, n ast2go.Node) bool {

@@ -1750,6 +1750,7 @@ type Program struct {
 	Elements    []Node
 	GlobalScope *Scope
 	Metadata    []*Metadata
+	Endian      *SpecifyOrder
 }
 
 func (n *Program) isNode() {}
@@ -3737,6 +3738,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				Elements    []uintptr `json:"elements"`
 				GlobalScope *uintptr  `json:"global_scope"`
 				Metadata    []uintptr `json:"metadata"`
+				Endian      *uintptr  `json:"endian"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -3754,6 +3756,9 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.Metadata = make([]*Metadata, len(tmp.Metadata))
 			for j, k := range tmp.Metadata {
 				v.Metadata[j] = n.node[k].(*Metadata)
+			}
+			if tmp.Endian != nil {
+				v.Endian = n.node[*tmp.Endian].(*SpecifyOrder)
 			}
 		case NodeTypeComment:
 			v := n.node[i].(*Comment)

@@ -468,6 +468,7 @@ export interface Program extends Node {
 	elements: Node[];
 	global_scope: Scope|null;
 	metadata: Metadata[];
+	endian: SpecifyOrder|null;
 }
 
 export function isProgram(obj: any): obj is Program {
@@ -1293,6 +1294,7 @@ export function parseAST(obj: JsonAst): Program {
 				elements: [],
 				global_scope: null,
 				metadata: [],
+				endian: null,
 			}
 			c.node.push(n);
 			break;
@@ -2213,6 +2215,14 @@ export function parseAST(obj: JsonAst): Program {
 				}
 				n.metadata.push(tmpmetadata);
 			}
+			if (on.body?.endian !== null && typeof on.body?.endian !== 'number') {
+				throw new Error('invalid node list at Program::endian');
+			}
+			const tmpendian = on.body.endian === null ? null : c.node[on.body.endian];
+			if (!(tmpendian === null || isSpecifyOrder(tmpendian))) {
+				throw new Error('invalid node list at Program::endian');
+			}
+			n.endian = tmpendian;
 			break;
 		}
 		case "comment": {

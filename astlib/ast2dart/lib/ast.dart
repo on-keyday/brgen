@@ -484,6 +484,7 @@ class Program extends Node {
     List<Node>? elements = [];
     Scope? globalScope;
     List<Metadata>? metadata = [];
+    SpecifyOrder? endian;
 factory Program.fromJson(Map<String, dynamic> json) => _$ProgramFromJson(json);
 }
 @JsonSerializable()

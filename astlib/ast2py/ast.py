@@ -293,6 +293,7 @@ class Program(Node):
     elements: List[Node]
     global_scope: Optional[Scope]
     metadata: List[Metadata]
+    endian: Optional[SpecifyOrder]
 
 
 class Comment(Node):
@@ -1050,6 +1051,11 @@ def ast2node(ast :JsonAst) -> Program:
                 else:
                     node[i].global_scope = None
                 node[i].metadata = [(node[x] if isinstance(node[x],Metadata) else raiseError(TypeError('type mismatch at Program::metadata'))) for x in ast.node[i].body["metadata"]]
+                if ast.node[i].body["endian"] is not None:
+                    x = node[ast.node[i].body["endian"]]
+                    node[i].endian = x if isinstance(x,SpecifyOrder) else raiseError(TypeError('type mismatch at Program::endian'))
+                else:
+                    node[i].endian = None
             case NodeType.COMMENT:
                 x = ast.node[i].body["comment"]
                 node[i].comment = x if isinstance(x,str)  else raiseError(TypeError('type mismatch at Comment::comment'))
