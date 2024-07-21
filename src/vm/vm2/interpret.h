@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <binary/bit.h>
 #include <list>
+#include <jit/relocation.h>
 #include <jit/jit_memory.h>
 
 namespace brgen::vm2 {

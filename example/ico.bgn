@@ -19,3 +19,7 @@ format ICONDirEntry:
     bitcount :u16
     size     :u32
     offset   :u32
+
+format ICOHeader:
+    dir :ICONDir
+    entries : [dir.count]ICONDirEntry

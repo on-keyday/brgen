@@ -1662,6 +1662,16 @@ namespace brgen::middle {
                         current_global = std::move(tmp);
                     });
                     do_traverse();
+                    for (auto& elem : p->elements) {
+                        if (auto s = ast::as<ast::SpecifyOrder>(elem); s && s->order_type == ast::OrderType::byte) {
+                            if (auto l = p->endian.lock()) {
+                                warnings
+                                    .warning(s->loc, "byte order is specified but endian is already specified. overwritten by after one")
+                                    .warning(l->loc, "previous endian is specified here");
+                            }
+                            p->endian = ast::cast_to<ast::SpecifyOrder>(elem);
+                        }
+                    }
                     return;
                 }
                 if (auto s = ast::as<ast::StructType>(node)) {
