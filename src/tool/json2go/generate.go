@@ -73,8 +73,8 @@ type Generator struct {
 	globalAssigned  map[*ast2go.Binary]struct{}
 	exprStringer    *gen.ExprStringer
 	visitorName     string
-
-	StructNames []string
+	defaultEndian   ast2go.Endian
+	StructNames     []string
 }
 
 func NewGenerator() *Generator {
@@ -88,6 +88,7 @@ func NewGenerator() *Generator {
 		laterSize:       make(map[*ast2go.Field]uint64),
 		terminalPattern: make(map[*ast2go.Field]struct{}),
 		globalAssigned:  make(map[*ast2go.Binary]struct{}),
+		defaultEndian:   ast2go.EndianBig,
 	}
 }
 
@@ -899,7 +900,7 @@ func (g *Generator) writeReadUint(size uint64, tmpName, field string, sign bool,
 	if size == 8 {
 		g.PrintfFunc("%s = %s(tmp%s[0])\n", field, castTo, tmpName)
 
-	} else if endian == ast2go.EndianUnspec || endian == ast2go.EndianBig {
+	} else if (endian == ast2go.EndianUnspec && g.defaultEndian == ast2go.EndianBig) || endian == ast2go.EndianBig {
 		if size == 24 {
 			g.PrintfFunc("%s = %s(uint32(tmp%s[0])<<16 | uint32(tmp%s[1])<<8 | uint32(tmp%s[2]))\n", field, castTo, tmpName, tmpName, tmpName)
 		} else {
@@ -1457,6 +1458,15 @@ func (g *Generator) Generate(file *ast2go.AstFile) error {
 				continue
 			}
 			mappingWords[from] = to
+		}
+	}
+	for _, m := range p.Elements {
+		if m, ok := m.(*ast2go.SpecifyOrder); ok && m.OrderType == ast2go.OrderTypeByte && m.OrderValue != nil {
+			if *m.OrderValue == 0 {
+				g.defaultEndian = ast2go.EndianBig
+			} else if *m.OrderValue == 1 {
+				g.defaultEndian = ast2go.EndianLittle
+			}
 		}
 	}
 	ast2go.Walk(p, ast2go.VisitFn(func(v ast2go.Visitor, n ast2go.Node) bool {

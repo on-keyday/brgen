@@ -24,6 +24,7 @@ namespace j2cp2 {
     struct Context {
         bool encode = false;
         ast::Endian endian = ast::Endian::unspec;
+        ast::Endian global_endian = ast::Endian::big;
         bool dynamic_endian = false;
 
        private:
@@ -58,7 +59,7 @@ namespace j2cp2 {
             if (endian == ast::Endian::big) {
                 return "true";
             }
-            return "true";  // default to big
+            return global_endian == ast::Endian::big ? "true" : "false";
         }
     };
 
@@ -1483,6 +1484,11 @@ namespace j2cp2 {
                 }
                 if (auto e = ast::as<ast::Enum>(fmt); e) {
                     write_enum(ast::cast_to<ast::Enum>(fmt));
+                }
+                if (auto specify_order = ast::as<ast::SpecifyOrder>(fmt); specify_order && specify_order->order_type == ast::OrderType::byte) {
+                    if (specify_order->order_value) {
+                        ctx.global_endian = *specify_order->order_value ? ast::Endian::little : ast::Endian::big;
+                    }
                 }
             }
             ast::tool::FormatSorter s;
