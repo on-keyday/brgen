@@ -6,6 +6,8 @@
 #include "interpret.h"
 #include <string>
 #include <platform/detect.h>
+#include <bit>
+#include <cstring>
 
 namespace brgen::vm2 {
 
