@@ -1375,7 +1375,7 @@ namespace j2cp2 {
             }
             current_format = fmt.get();
             ctx.encode = encode;
-            ctx.endian = ast::Endian::big;  // default to big endian
+            ctx.endian = ast::Endian::unspec;
             ctx.dynamic_endian = false;
             for (auto& elem : fmt->body->elements) {
                 if (auto f = ast::as<ast::SpecifyOrder>(elem); f && f->order_type == ast::OrderType::byte) {
