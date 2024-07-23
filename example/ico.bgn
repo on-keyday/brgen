@@ -2,6 +2,7 @@ config.url ="https://en.wikipedia.org/wiki/ICO_(file_format)"
 input.endian = config.endian.little
 
 enum Type:
+    :u16
     ICON = 1
     CURSOR = 2
 
