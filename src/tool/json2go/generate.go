@@ -1031,6 +1031,7 @@ func (g *Generator) writeTypeDecode(ident string, typ ast2go.Type, p *ast2go.Fie
 				g.PrintfFunc("}\n")
 				g.PrintfFunc("buffer_%s = append(buffer_%s, b_%s)\n", p.Ident.Ident, p.Ident.Ident, p.Ident.Ident)
 				g.PrintfFunc("}\n")
+				g.PrintfFunc("%s = buffer_%s\n", ident, p.Ident.Ident)
 				return // not restore r so that caller can read next
 			}
 			g.PrintfFunc("len_%s := int(%s)\n", p.Ident.Ident, length)
