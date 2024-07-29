@@ -84,12 +84,14 @@ const handleCpp = async (ui :UIModel,  s :JobResult) => {
     const useError = ui.getLanguageConfig(Language.CPP,ConfigKey.CPP_USE_ERROR);
     const useRawUnion = ui.getLanguageConfig(Language.CPP,ConfigKey.CPP_USE_RAW_UNION);
     const checkOverflow = ui.getLanguageConfig(Language.CPP,ConfigKey.CPP_CHECK_OVERFLOW);
+    const enumStringer = ui.getLanguageConfig(Language.CPP,ConfigKey.CPP_ENUM_STRINGER);
     const compileViaAPI = ui.getLanguageConfig(Language.CPP,ConfigKey.CPP_COMPILE_VIA_API);
     const cppOption : CppOption = {      
         use_line_map: useMap === true,
         use_error: useError === true,
         use_raw_union: useRawUnion === true,
         use_overflow_check: checkOverflow === true,
+        enum_stringer: enumStringer === true,
     };
     let result : JobResult | undefined = undefined;
     let mappingInfo :any;
@@ -136,9 +138,13 @@ const handleCpp = async (ui :UIModel,  s :JobResult) => {
 const handleGo = async (ui :UIModel, s :JobResult) => {
     const omitMustEncode = ui.getLanguageConfig(Language.GO,ConfigKey.GO_OMIT_MUST_ENCODE);
     const omitDecodeExact = ui.getLanguageConfig(Language.GO,ConfigKey.GO_OMIT_DECODE_EXACT);
+    const omitVisitor = ui.getLanguageConfig(Language.GO,ConfigKey.GO_OMIT_VISITOR);
+    const omitMarshalJSON = ui.getLanguageConfig(Language.GO,ConfigKey.GO_OMIT_MARSHAL_JSON);
     const goOption : GoOption ={
         omit_decode_exact: omitDecodeExact === true,
         omit_must_encode: omitMustEncode === true,
+        omit_visitors: omitVisitor === true,
+        omit_marshal_json: omitMarshalJSON === true,
     }
     return handleLanguage(ui,s,caller.getGoCode,Language.GO,"go",goOption);
 }

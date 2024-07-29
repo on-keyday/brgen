@@ -12,6 +12,7 @@ the generators that generate encoder/decoder code for parse/create network packe
 - write once generate any language code - 一回書けば様々な言語で生成
 
 # Note
+
 本プロダクトは開発途上のものです。使用したことによる効果は保証しかねます。また破壊的変更が予告なしに行われることがあります。
 This product is still under development. We cannot guarantee the effectiveness of using this product. In addition, breaking changes may be made without notice.
 
@@ -149,7 +150,7 @@ if you want to contribute this product, you must agree with publishing your code
 
 You can decide license of code that is generated from code generator (and not contained in this repository) freely.
 
-For built binary released at GitHub Release,
+For built binary released on GitHub,
 license of dependency are collected by [licensed](https://github.com/github/licensed) and [gocredits](https://github.com/Songmu/gocredits) and bundled with released binaries.
 
 If you find license problem, please tell us via GitHub Issue.

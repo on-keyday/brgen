@@ -468,6 +468,7 @@ export interface Program extends Node {
 	elements: Node[];
 	global_scope: Scope|null;
 	metadata: Metadata[];
+	endian: SpecifyOrder|null;
 }
 
 export function isProgram(obj: any): obj is Program {
@@ -608,6 +609,7 @@ export interface Match extends Expr {
 	cond_scope: Scope|null;
 	cond: Identity|null;
 	branch: MatchBranch[];
+	trial_match: boolean;
 }
 
 export function isMatch(obj: any): obj is Match {
@@ -1292,6 +1294,7 @@ export function parseAST(obj: JsonAst): Program {
 				elements: [],
 				global_scope: null,
 				metadata: [],
+				endian: null,
 			}
 			c.node.push(n);
 			break;
@@ -1465,6 +1468,7 @@ export function parseAST(obj: JsonAst): Program {
 				cond_scope: null,
 				cond: null,
 				branch: [],
+				trial_match: false,
 			}
 			c.node.push(n);
 			break;
@@ -2211,6 +2215,14 @@ export function parseAST(obj: JsonAst): Program {
 				}
 				n.metadata.push(tmpmetadata);
 			}
+			if (on.body?.endian !== null && typeof on.body?.endian !== 'number') {
+				throw new Error('invalid node list at Program::endian');
+			}
+			const tmpendian = on.body.endian === null ? null : c.node[on.body.endian];
+			if (!(tmpendian === null || isSpecifyOrder(tmpendian))) {
+				throw new Error('invalid node list at Program::endian');
+			}
+			n.endian = tmpendian;
 			break;
 		}
 		case "comment": {
@@ -2763,6 +2775,11 @@ export function parseAST(obj: JsonAst): Program {
 				}
 				n.branch.push(tmpbranch);
 			}
+			const tmptrial_match = on.body?.trial_match;
+			if (typeof tmptrial_match !== "boolean") {
+				throw new Error('invalid node list at Match::trial_match');
+			}
+			n.trial_match = on.body.trial_match;
 			break;
 		}
 		case "range": {

@@ -220,12 +220,15 @@ namespace brgen::ast {
         }
     };
 
+    struct SpecifyOrder;
+
     struct Program : Node {
         define_node_type(NodeType::program);
         std::shared_ptr<StructType> struct_type;
         node_list elements;
         scope_ptr global_scope;
         std::vector<std::weak_ptr<Metadata>> metadata;
+        std::weak_ptr<SpecifyOrder> endian;
 
         void dump(auto&& field_) {
             Node::dump(field_);
@@ -233,6 +236,7 @@ namespace brgen::ast {
             sdebugf(elements);
             sdebugf(global_scope);
             sdebugf_omit(metadata);
+            sdebugf_omit(endian);
         }
 
         Program()

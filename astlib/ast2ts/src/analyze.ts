@@ -1,17 +1,7 @@
 import {ast2ts} from "./ast";
 
 namespace analyze {
-/*
-export const unwrapType = (type :ast2ts.Type|null|undefined) :string => {
-    if(!type){
-        return "unknown";
-    }
-    if(ast2ts.isIdentType(type)){
-       return unwrapType(type.base); 
-    }
-    return type.node_type;
-}
-*/
+
 
 export const bitSize = (bit :number|null|undefined) => {
     if(bit===undefined){
@@ -325,7 +315,7 @@ export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
         return makeHover("type",`type (type: ${found.node_type || "unknown"}, size: ${bitSize(found.bit_size)}, align: ${found.bit_alignment})`);
     }
     else if(ast2ts.isMatch(found)){
-        return makeHover("match",`match (exhaustive: ${found.struct_union_type?.exhaustive||false}, expr_type: ${found.expr_type?.node_type||"unknown"}, size: ${bitSize(found.struct_union_type?.bit_size)} align: ${found.struct_union_type?.bit_alignment})`);
+        return makeHover("match",`match (exhaustive: ${found.struct_union_type?.exhaustive||false},${found.trial_match?" trial_match,":""} expr_type: ${found.expr_type?.node_type||"unknown"}, size: ${bitSize(found.struct_union_type?.bit_size)} align: ${found.struct_union_type?.bit_alignment})`);
     }
     else if(ast2ts.isIf(found)) {
         if(found.struct_union_type !== null) {

@@ -1,0 +1,26 @@
+config.url ="https://en.wikipedia.org/wiki/ICO_(file_format)"
+input.endian = config.endian.little
+
+enum Type:
+    :u16
+    ICON = 1
+    CURSOR = 2
+
+format ICONDir:
+    reserved :u16(0)
+    type     :Type
+    count    :u16
+
+format ICONDirEntry:
+    width    :u8
+    height   :u8
+    colors   :u8
+    reserved :u8
+    planes   :u16
+    bitcount :u16
+    size     :u32
+    offset   :u32
+
+format ICOHeader:
+    dir :ICONDir
+    entries : [dir.count]ICONDirEntry

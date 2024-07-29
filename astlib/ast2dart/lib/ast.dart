@@ -484,6 +484,7 @@ class Program extends Node {
     List<Node>? elements = [];
     Scope? globalScope;
     List<Metadata>? metadata = [];
+    SpecifyOrder? endian;
 factory Program.fromJson(Map<String, dynamic> json) => _$ProgramFromJson(json);
 }
 @JsonSerializable()
@@ -585,6 +586,7 @@ class Match extends Expr {
     Scope? condScope;
     Identity? cond;
     List<MatchBranch>? branch = [];
+    bool trialMatch = false;
 factory Match.fromJson(Map<String, dynamic> json) => _$MatchFromJson(json);
 }
 @JsonSerializable()

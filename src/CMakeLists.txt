@@ -26,6 +26,9 @@ target_link_libraries(json2c futils)
 add_executable(json2vm "tool/json2vm/main.cpp" "vm/compile.cpp" "vm/vm.cpp")
 target_link_libraries(json2vm futils)
 
+add_executable(json2vm2 "tool/json2vm2/main.cpp" "vm/vm2/compile.cpp" "vm/vm2/interpret.cpp" "vm/vm2/jit_x64.cpp")
+target_link_libraries(json2vm2 futils)
+
 add_executable(json2ts "tool/json2ts/main.cpp" "tool/json2ts/generate.cpp")
 target_link_libraries(json2ts futils)
 
@@ -264,6 +267,7 @@ set_target_properties(src2json PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/too
 set_target_properties(json2cpp2 PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/tool")
 set_target_properties(json2c PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/tool")
 set_target_properties(json2vm PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/tool")
+set_target_properties(json2vm2 PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/tool")
 set_target_properties(json2ts PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/tool")
 set_target_properties(ctobgn PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/tool")
 set_target_properties(rfc2bgn PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/tool")
@@ -276,7 +280,7 @@ endif()
 
 # Set Install path for C++ targets
 
-install(TARGETS src2json json2cpp2 json2c json2vm json2ts ctobgn rfc2bgn hex2bin DESTINATION tool OPTIONAL)
+install(TARGETS src2json json2cpp2 json2c json2vm json2vm2 json2ts ctobgn rfc2bgn hex2bin DESTINATION tool OPTIONAL)
 
 
 # Set Install path for Go targets

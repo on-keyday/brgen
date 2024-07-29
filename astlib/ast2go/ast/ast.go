@@ -1750,6 +1750,7 @@ type Program struct {
 	Elements    []Node
 	GlobalScope *Scope
 	Metadata    []*Metadata
+	Endian      *SpecifyOrder
 }
 
 func (n *Program) isNode() {}
@@ -2039,6 +2040,7 @@ type Match struct {
 	CondScope       *Scope
 	Cond            *Identity
 	Branch          []*MatchBranch
+	TrialMatch      bool
 }
 
 func (n *Match) isExpr() {}
@@ -3736,6 +3738,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				Elements    []uintptr `json:"elements"`
 				GlobalScope *uintptr  `json:"global_scope"`
 				Metadata    []uintptr `json:"metadata"`
+				Endian      *uintptr  `json:"endian"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -3753,6 +3756,9 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.Metadata = make([]*Metadata, len(tmp.Metadata))
 			for j, k := range tmp.Metadata {
 				v.Metadata[j] = n.node[k].(*Metadata)
+			}
+			if tmp.Endian != nil {
+				v.Endian = n.node[*tmp.Endian].(*SpecifyOrder)
 			}
 		case NodeTypeComment:
 			v := n.node[i].(*Comment)
@@ -4063,6 +4069,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				CondScope       *uintptr      `json:"cond_scope"`
 				Cond            *uintptr      `json:"cond"`
 				Branch          []uintptr     `json:"branch"`
+				TrialMatch      bool          `json:"trial_match"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -4084,6 +4091,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			for j, k := range tmp.Branch {
 				v.Branch[j] = n.node[k].(*MatchBranch)
 			}
+			v.TrialMatch = tmp.TrialMatch
 		case NodeTypeRange:
 			v := n.node[i].(*Range)
 			var tmp struct {

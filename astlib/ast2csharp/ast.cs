@@ -272,6 +272,7 @@ public class Program : Node{
 	public List<Node>? Elements{get;set;}
 	public Scope? GlobalScope{get;set;}
 	public List<Metadata>? Metadata{get;set;}
+	public SpecifyOrder? Endian{get;set;}
 }
 public class Comment : Node{
 	public Loc Loc{get;set;}
@@ -380,6 +381,7 @@ public class Match : Expr{
 	public Scope? CondScope{get;set;}
 	public Identity? Cond{get;set;}
 	public List<MatchBranch>? Branch{get;set;}
+	public bool TrialMatch{get;set;}
 }
 public class Range : Expr{
 	public Loc Loc{get;set;}
@@ -1101,6 +1103,7 @@ public static class Ast {
                node.Elements = ast.Node[i].Body[elements];
                node.GlobalScope = ast.Node[i].Body[global_scope];
                node.Metadata = ast.Node[i].Body[metadata];
+               node.Endian = ast.Node[i].Body[endian];
            case NodeType.Comment:
                var node = nodes[i] as Comment;
                node.Loc = ast.Node[i].Body[loc];
@@ -1209,6 +1212,7 @@ public static class Ast {
                node.CondScope = ast.Node[i].Body[cond_scope];
                node.Cond = ast.Node[i].Body[cond];
                node.Branch = ast.Node[i].Body[branch];
+               node.TrialMatch = ast.Node[i].Body[trial_match];
            case NodeType.Range:
                var node = nodes[i] as Range;
                node.Loc = ast.Node[i].Body[loc];

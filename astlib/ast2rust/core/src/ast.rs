@@ -3569,6 +3569,7 @@ pub struct Program {
 	pub elements: Vec<Node>,
 	pub global_scope: Option<Rc<RefCell<Scope>>>,
 	pub metadata: Vec<Weak<RefCell<Metadata>>>,
+	pub endian: Option<Weak<RefCell<SpecifyOrder>>>,
 }
 
 impl From<&Rc<RefCell<Program>>> for NodeType {
@@ -4497,6 +4498,7 @@ pub struct Match {
 	pub cond_scope: Option<Rc<RefCell<Scope>>>,
 	pub cond: Option<Rc<RefCell<Identity>>>,
 	pub branch: Vec<Rc<RefCell<MatchBranch>>>,
+	pub trial_match: bool,
 }
 
 impl From<&Rc<RefCell<Match>>> for NodeType {
@@ -9297,6 +9299,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				elements: Vec::new(),
 				global_scope: None,
 				metadata: Vec::new(),
+				endian: None,
 				})))
 			},
 			NodeType::Comment => {
@@ -9431,6 +9434,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				cond_scope: None,
 				cond: None,
 				branch: Vec::new(),
+				trial_match: false,
 				})))
 			},
 			NodeType::Range => {
@@ -10064,6 +10068,25 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						x =>return Err(Error::MismatchNodeType(x.into(),metadata_body.into())),
 					};
 					node.borrow_mut().metadata.push(Rc::downgrade(&metadata_body));
+				}
+				let endian_body = match raw_node.body.get("endian") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"endian")),
+				};
+ 				if !endian_body.is_null() {
+					let endian_body = match endian_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(endian_body.into(),JSONType::Number)),
+					};
+					let endian_body = match nodes.get(endian_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(endian_body as usize)),
+					};
+					let endian_body = match endian_body {
+						Node::SpecifyOrder(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),endian_body.into())),
+					};
+					node.borrow_mut().endian = Some(Rc::downgrade(&endian_body));
 				}
 			},
 			NodeType::Comment => {
@@ -11158,6 +11181,14 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().branch.push(branch_body.clone());
 				}
+				let trial_match_body = match raw_node.body.get("trial_match") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"trial_match")),
+				};
+				node.borrow_mut().trial_match = match trial_match_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(trial_match_body.into(),JSONType::Bool)),
+				};
 			},
 			NodeType::Range => {
 				let node = nodes[i].clone();

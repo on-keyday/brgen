@@ -17,26 +17,61 @@ format Pair:
 
 POSITIVE_INT_BEGIN ::= 0x00
 POSITIVE_INT_AS_TYPE_END ::= 0x17
+POSITIVE_INT8 ::= 0x18
+POSITIVE_INT16 ::= 0x19
+POSITIVE_INT32 ::= 0x1a
+POSITIVE_INT64 ::= 0x1b
 POSITIVE_INT_END ::= 0x1b
 
 NEGATIVE_INT_BEGIN ::= 0x20
 NEGATIVE_INT_AS_TYPE_END ::= 0x37
+NEGATIVE_INT8 ::= 0x38
+NEGATIVE_INT16 ::= 0x39
+NEGATIVE_INT32 ::= 0x3a
+NEGATIVE_INT64 ::= 0x3b
 NEGATIVE_INT_END ::= 0x3b
 
 BYTE_STRING_BEGIN ::= 0x40
+BYTE_STRING_LENGTH_AS_TYPE_END ::= 0x57
+BYTE_STRING_LENGTH8 ::= 0x58
+BYTE_STRING_LENGTH16 ::= 0x59
+BYTE_STRING_LENGTH32 ::= 0x5a
+BYTE_STRING_LENGTH64 ::= 0x5b
+BYTE_STRING_TERMINATED ::= 0x5f
 BYTE_STRING_END ::= 0x5f
 
 UTF8_STRING_BEGIN ::= 0x60
+UTF8_STRING_LENGTH_AS_TYPE_END ::= 0x77
+UTF8_STRING_LENGTH8 ::= 0x78
+UTF8_STRING_LENGTH16 ::= 0x79
+UTF8_STRING_LENGTH32 ::= 0x7a
+UTF8_STRING_LENGTH64 ::= 0x7b
+UTF8_STRING_TERMINATED ::= 0x7f
 UTF8_STRING_END ::= 0x7f
 
 
 ARRAY_BEGIN ::= 0x80
+ARRAY_LENGTH_AS_TYPE_END ::= 0x97
+ARRAY_LENGTH8 ::= 0x98
+ARRAY_LENGTH16 ::= 0x99
+ARRAY_LENGTH32 ::= 0x9a
+ARRAY_LENGTH64 ::= 0x9b
+ARRAY_TERMINATED ::= 0x9f
 ARRAY_END ::= 0x9f
 
 MAP_BEGIN ::= 0xa0
+MAP_LENGTH_AS_TYPE_END ::= 0xb7
+MAP_LENGTH8 ::= 0xb8
+MAP_LENGTH16 ::= 0xb9
+MAP_LENGTH32 ::= 0xba
+MAP_LENGTH64 ::= 0xbb
+MAP_TERMINATED ::= 0xbf
 MAP_END ::= 0xbf
 
 FLOAT_BEGIN ::= 0xf9
+FLOAT_16 ::= 0xf9
+FLOAT_32 ::= 0xfa
+FLOAT_64 ::= 0xfb
 FLOAT_END ::= 0xfb
 
 
@@ -44,74 +79,74 @@ format Value:
     type :u8
     match type:
         POSITIVE_INT_BEGIN..=POSITIVE_INT_AS_TYPE_END => ..
-        0x18 => data :u8
-        0x19 => data :u16
-        0x1a => data :u32
+        POSITIVE_INT8 => data :u8
+        POSITIVE_INT16 => data :u16
+        POSITIVE_INT32 => data :u32
         POSITIVE_INT_END => data :u64
         NEGATIVE_INT_BEGIN..=NEGATIVE_INT_AS_TYPE_END => .. # negative int (-1-0x0~0x17)
-        0x38 => data :u8 # negative int (-1-0x00 ~ -1-0xFF)
-        0x39 => data :u16 # negative int (-1-0x0100 ~ -1-0xFFFF)
-        0x3a => data :u32 # negative int (-1-0x010000 ~ -1-0xFFFFFFFF)
+        NEGATIVE_INT8 => data :u8 # negative int (-1-0x00 ~ -1-0xFF)
+        NEGATIVE_INT16 => data :u16 # negative int (-1-0x0100 ~ -1-0xFFFF)
+        NEGATIVE_INT32 => data :u32 # negative int (-1-0x010000 ~ -1-0xFFFFFFFF)
         NEGATIVE_INT_END => data :u64 # negative int (-1-0x0100000000 ~ -1-0xFFFFFFFFFFFFFFFF)
-        BYTE_STRING_BEGIN..=0x57 => data :[type - 0x40]u8
-        0x58: 
+        BYTE_STRING_BEGIN..=BYTE_STRING_LENGTH_AS_TYPE_END => data :[type - 0x40]u8
+        BYTE_STRING_LENGTH8: 
             length :u8
             data :[length]u8
-        0x59:
+        BYTE_STRING_LENGTH16:
             length :u16
             data :[length]u8
-        0x5a:
+        BYTE_STRING_LENGTH32:
             length :u32
             data :[length]u8
-        0x5b:
+        BYTE_STRING_LENGTH64:
             length :u64
             data :[length]u8
         BYTE_STRING_END:
             data :[..]u8
             :"\xff"
-        UTF8_STRING_BEGIN..0x77 => data :[type - 0x60]u8
-        0x78:
+        UTF8_STRING_BEGIN..=UTF8_STRING_LENGTH_AS_TYPE_END => data :[type - 0x60]u8
+        UTF8_STRING_LENGTH8:
             length :u8
             data :[length]u8
-        0x79:
+        UTF8_STRING_LENGTH16:
             length :u16
             data :[length]u8
-        0x7a:
+        UTF8_STRING_LENGTH32:
             length :u32
             data :[length]u8
-        0x7b:
+        UTF8_STRING_LENGTH64:
             length :u64
             data :[length]u8
         UTF8_STRING_END:
             data :[..]u8
             :"\xff"
-        ARRAY_BEGIN..=0x97 => data :[type - 0x80]Value
-        0x98:
+        ARRAY_BEGIN..=ARRAY_LENGTH_AS_TYPE_END => data :[type - 0x80]Value
+        ARRAY_LENGTH8:
             length :u8
             data :[length]Value
-        0x99:
+        ARRAY_LENGTH16:
             length :u16
             data :[length]Value
-        0x9a:
+        ARRAY_LENGTH32:
             length :u32
             data :[length]Value
-        0x9b:
+        ARRAY_LENGTH64:
             length :u64
             data :[length]Value
         ARRAY_END:
             data :[..]Value
             :"\xff"
-        MAP_BEGIN..=0xb7 => data :[type - 0xa0]Pair
-        0xb8:
+        MAP_BEGIN..=MAP_LENGTH_AS_TYPE_END => data :[type - 0xa0]Pair
+        MAP_LENGTH8:
             length :u8
             data :[length]Pair
-        0xb9:
+        MAP_LENGTH16:
             length :u16
             data :[length]Pair
-        0xba:
+        MAP_LENGTH32:
             length :u32
             data :[length]Pair
-        0xbb:
+        MAP_LENGTH64:
             length :u64
             data :[length]Pair
         MAP_END:
@@ -119,7 +154,7 @@ format Value:
             :"\xff"
         FLOAT_BEGIN:
             data :f16
-        0xfa:
+        FLOAT_32:
             data :f32
         FLOAT_END:
             data :f64

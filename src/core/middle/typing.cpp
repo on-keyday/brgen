@@ -504,12 +504,19 @@ namespace brgen::middle {
             }
             std::shared_ptr<ast::Type> candidate;
             std::shared_ptr<ast::Expr> any_match;
+            bool trial_match = false;
+            auto report_any_match = [&](auto& c) {
+                error(c->loc, "any match (`..`) must be unique and be end of in match branch")
+                    .error(any_match->loc, "any match (`..`) is already defined here")
+                    .report();
+            };
             for (auto& c : m->branch) {
                 // TODO(on-keyday): check exhaustiveness for range, mainly for enum and int
-                if (any_match) {
-                    error(c->loc, "any match (`..`) must be unique and be end of in match branch")
-                        .error(any_match->loc, "any match (`..`) is already defined here")
-                        .report();
+                if (any_match && !trial_match) {
+                    if (m->cond) {
+                        report_any_match(c);
+                    }
+                    trial_match = true;
                 }
                 typing_expr(c->cond);
 
@@ -524,7 +531,9 @@ namespace brgen::middle {
                         }
                     }
                     else {
-                        check_bool(c->cond.get());
+                        if (!ast::is_any_range(c->cond)) {
+                            check_bool(c->cond.get());
+                        }
                     }
                 }
                 typing_object(c->then);
@@ -546,7 +555,11 @@ namespace brgen::middle {
                 if (ast::is_any_range(c->cond)) {
                     any_match = c->cond;
                 }
+                else if (trial_match) {
+                    report_any_match(c);
+                }
             }
+            m->trial_match = trial_match;
             m->struct_union_type->exhaustive = any_match != nullptr;
             // if no any match, but maybe exhaustive, then we need to check exhaustiveness
             if (m->cond && !m->struct_union_type->exhaustive) {
@@ -1513,7 +1526,7 @@ namespace brgen::middle {
                     }
                     // input.subrange(length_in_bytes,[offset_in_bytes_of_full_input = input.offset])
                     if (conf2->name == "input.subrange") {
-                        ast::as<ast::MemberAccess>(ast::as<ast::Call>(conf->arguments[0])->callee)->member->usage = ast::IdentUsage::reference_builtin_fn;
+                        ast::tool::marking_builtin(ast::as<ast::Call>(conf->arguments[0])->callee);
                         auto loc = conf->arguments[0]->loc;
                         if (conf2->arguments.size() == 1) {
                             // subrange(length) become subrange(length,input.offset)
@@ -1649,6 +1662,16 @@ namespace brgen::middle {
                         current_global = std::move(tmp);
                     });
                     do_traverse();
+                    for (auto& elem : p->elements) {
+                        if (auto s = ast::as<ast::SpecifyOrder>(elem); s && s->order_type == ast::OrderType::byte) {
+                            if (auto l = p->endian.lock()) {
+                                warnings
+                                    .warning(s->loc, "byte order is specified but endian is already specified. overwritten by after one")
+                                    .warning(l->loc, "previous endian is specified here");
+                            }
+                            p->endian = ast::cast_to<ast::SpecifyOrder>(elem);
+                        }
+                    }
                     return;
                 }
                 if (auto s = ast::as<ast::StructType>(node)) {

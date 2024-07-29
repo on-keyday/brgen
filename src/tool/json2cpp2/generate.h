@@ -24,6 +24,7 @@ namespace j2cp2 {
     struct Context {
         bool encode = false;
         ast::Endian endian = ast::Endian::unspec;
+        ast::Endian global_endian = ast::Endian::big;
         bool dynamic_endian = false;
 
        private:
@@ -58,7 +59,7 @@ namespace j2cp2 {
             if (endian == ast::Endian::big) {
                 return "true";
             }
-            return "true";  // default to big
+            return global_endian == ast::Endian::big ? "true" : "false";
         }
     };
 
@@ -85,6 +86,7 @@ namespace j2cp2 {
         bool use_error = false;
         bool use_variant = false;
         bool use_overflow_check = false;
+        bool enum_stringer = false;
         ast::Format* current_format = nullptr;
         Context ctx;
         std::vector<std::string> struct_names;
@@ -685,6 +687,27 @@ namespace j2cp2 {
                 }
             }
             w.writeln("};");
+            if (enum_stringer) {
+                w.writeln("inline const char* to_string(", enum_->ident->ident, " e) {");
+                {
+                    auto indent = w.indent_scope();
+                    w.writeln("switch(e) {");
+                    {
+                        auto indent = w.indent_scope();
+                        for (auto& c : enum_->members) {
+                            map_line(c->loc);
+                            auto str = "\"" + c->ident->ident + "\"";
+                            if (c->str_literal) {
+                                str = c->str_literal->value;
+                            }
+                            w.writeln("case ", enum_->ident->ident, "::", c->ident->ident, ": return ", str, ";");
+                        }
+                    }
+                    w.writeln("}");
+                    w.writeln("return \"\";");
+                }
+                w.writeln("}");
+            }
         }
 
         void code_if(ast::If* if_) {
@@ -1352,7 +1375,7 @@ namespace j2cp2 {
             }
             current_format = fmt.get();
             ctx.encode = encode;
-            ctx.endian = ast::Endian::big;  // default to big endian
+            ctx.endian = ast::Endian::unspec;
             ctx.dynamic_endian = false;
             for (auto& elem : fmt->body->elements) {
                 if (auto f = ast::as<ast::SpecifyOrder>(elem); f && f->order_type == ast::OrderType::byte) {
@@ -1441,6 +1464,11 @@ namespace j2cp2 {
                 }
                 else if (m->name == "config.cpp.include") {
                     w.writeln("#include \"", *name, "\"");
+                }
+            }
+            if (auto specify_order = prog->endian.lock()) {
+                if (specify_order->order_value) {
+                    ctx.global_endian = *specify_order->order_value ? ast::Endian::little : ast::Endian::big;
                 }
             }
             for (auto& name : namespaces) {

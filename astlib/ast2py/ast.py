@@ -293,6 +293,7 @@ class Program(Node):
     elements: List[Node]
     global_scope: Optional[Scope]
     metadata: List[Metadata]
+    endian: Optional[SpecifyOrder]
 
 
 class Comment(Node):
@@ -381,6 +382,7 @@ class Match(Expr):
     cond_scope: Optional[Scope]
     cond: Optional[Identity]
     branch: List[MatchBranch]
+    trial_match: bool
 
 
 class Range(Expr):
@@ -1049,6 +1051,11 @@ def ast2node(ast :JsonAst) -> Program:
                 else:
                     node[i].global_scope = None
                 node[i].metadata = [(node[x] if isinstance(node[x],Metadata) else raiseError(TypeError('type mismatch at Program::metadata'))) for x in ast.node[i].body["metadata"]]
+                if ast.node[i].body["endian"] is not None:
+                    x = node[ast.node[i].body["endian"]]
+                    node[i].endian = x if isinstance(x,SpecifyOrder) else raiseError(TypeError('type mismatch at Program::endian'))
+                else:
+                    node[i].endian = None
             case NodeType.COMMENT:
                 x = ast.node[i].body["comment"]
                 node[i].comment = x if isinstance(x,str)  else raiseError(TypeError('type mismatch at Comment::comment'))
@@ -1298,6 +1305,8 @@ def ast2node(ast :JsonAst) -> Program:
                 else:
                     node[i].cond = None
                 node[i].branch = [(node[x] if isinstance(node[x],MatchBranch) else raiseError(TypeError('type mismatch at Match::branch'))) for x in ast.node[i].body["branch"]]
+                x = ast.node[i].body["trial_match"]
+                node[i].trial_match = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at Match::trial_match'))
             case NodeType.RANGE:
                 if ast.node[i].body["expr_type"] is not None:
                     x = node[ast.node[i].body["expr_type"]]

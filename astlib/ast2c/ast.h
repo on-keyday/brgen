@@ -552,6 +552,7 @@ struct ast2c_Program {
 	ast2c_Scope* global_scope;
 	ast2c_Metadata** metadata;
 	size_t metadata_size;
+	ast2c_SpecifyOrder* endian;
 };
 
 // returns 1 if succeed 0 if failed
@@ -732,6 +733,7 @@ struct ast2c_Match {
 	ast2c_Identity* cond;
 	ast2c_MatchBranch** branch;
 	size_t branch_size;
+	int trial_match;
 };
 
 // returns 1 if succeed 0 if failed
