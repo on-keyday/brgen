@@ -1,0 +1,80 @@
+
+config.url = "https://datasheets.raspberrypi.com/rp1/rp1-peripherals.pdf"
+
+
+format StatusRegister:
+    config.type = ul32
+    reserved1 :u2 # 31:30 reserved
+    irq_to_proc :u1 # 29 IRQ to processor
+    irq_combined :u1 # 28 IRQ Combined
+    event_db_level_high :u1 # 27 Event detect status
+    event_db_level_low :u1 # 26 Event detect status
+    event_f_edge_high :u1 # 25 Event detect status
+    event_f_edge_low :u1 # 24 Event detect status
+    event_level_high :u1 # 23 Event detect status
+    event_level_low :u1 # 22 Event detect status
+    event_edge_high :u1 # 21 Event detect status
+    event_edge_low :u1 # 20 Event detect status
+    into_peripheral :u1 # 19 Interrupt to peripheral
+    input_filtered :u1 # 18 Input value
+    input_from_pad :u1 # 17 Input value
+    inis_direct :u1 # 16 Input value
+    reserved2 :u2 # 15:14 reserved
+    output_enable_to_pad :u1 # 13 Output enable
+    output_enable_from_peripheral :u1 # 12 Output enable
+    reserved3 :u2 # 11:10 reserved
+    output_to_pad :u1 # 9 Output value
+    output_from_peripheral :u1 # 8 Output value
+    reserved4 :u8 # 7:1 reserved
+
+format ControlRegister:
+    config.type = ul32
+    irq_over :u2 # 31:30 IRQ over
+    reserveed1 :u1 # 29 reserved
+    irq_reset :u1 # 28 IRQ reset
+    irq_masK_db_level_high :u1 # 27 IRQ mask
+    irq_masK_db_level_low :u1 # 26 IRQ mask
+    irq_masK_f_edge_high :u1 # 25 IRQ mask
+    irq_masK_f_edge_low :u1 # 24 IRQ mask
+    irq_masK_level_high :u1 # 23 IRQ mask
+    irq_masK_level_low :u1 # 22 IRQ mask
+    irq_masK_edge_high :u1 # 21 IRQ mask
+    irq_masK_edge_low :u1 # 20 IRQ mask
+    reserved2 :u2 # 19:18 reserved
+    in_over :u2 # 17:16 Input over
+    out_enable_over :u2 # 15:14 Output enable over
+    out_over :u2 # 13:12 Output over
+    f_m :u8 # 11:5 Function select
+    func_sel :u4 # 4:0 Function select
+
+format GPIOs:
+    config.type = ul32
+    reserved :u4 # 31:28 reserved
+    gpio27 :u1 # 27 GPIO27
+    gpio26 :u1 # 26 GPIO26
+    gpio25 :u1 # 25 GPIO25
+    gpio24 :u1 # 24 GPIO24
+    gpio23 :u1 # 23 GPIO23
+    gpio22 :u1 # 22 GPIO22
+    gpio21 :u1 # 21 GPIO21
+    gpio20 :u1 # 20 GPIO20
+    gpio19 :u1 # 19 GPIO19
+    gpio18 :u1 # 18 GPIO18
+    gpio17 :u1 # 17 GPIO17
+    gpio16 :u1 # 16 GPIO16
+    gpio15 :u1 # 15 GPIO15
+    gpio14 :u1 # 14 GPIO14
+    gpio13 :u1 # 13 GPIO13
+    gpio12 :u1 # 12 GPIO12
+    gpio11 :u1 # 11 GPIO11
+    gpio10 :u1 # 10 GPIO10
+    gpio9 :u1 # 9 GPIO9
+    gpio8 :u1 # 8 GPIO8
+    gpio7 :u1 # 7 GPIO7
+    gpio6 :u1 # 6 GPIO6
+    gpio5 :u1 # 5 GPIO5
+    gpio4 :u1 # 4 GPIO4
+    gpio3 :u1 # 3 GPIO3
+    gpio2 :u1 # 2 GPIO2
+    gpio1 :u1 # 1 GPIO1
+    gpio0 :u1 # 0 GPIO0
