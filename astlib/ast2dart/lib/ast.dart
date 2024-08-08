@@ -673,7 +673,6 @@ class IndentBlock extends Stmt {
     List<Node>? elements = [];
     Scope? scope;
     List<Metadata>? metadata = [];
-    TypeLiteral? typeMap;
     BlockTrait blockTraits = BlockTrait.None;
 factory IndentBlock.fromJson(Map<String, dynamic> json) => _$IndentBlockFromJson(json);
 }
@@ -799,6 +798,7 @@ class StructType extends Type {
     bool recursive = false;
     int fixedHeaderSize = 0;
     int fixedTailSize = 0;
+    TypeLiteral? typeMap;
 factory StructType.fromJson(Map<String, dynamic> json) => _$StructTypeFromJson(json);
 }
 @JsonSerializable()

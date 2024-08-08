@@ -456,7 +456,6 @@ class IndentBlock(Stmt):
     elements: List[Node]
     scope: Optional[Scope]
     metadata: List[Metadata]
-    type_map: Optional[TypeLiteral]
     block_traits: BlockTrait
 
 
@@ -564,6 +563,7 @@ class StructType(Type):
     recursive: bool
     fixed_header_size: int
     fixed_tail_size: int
+    type_map: Optional[TypeLiteral]
 
 
 class StructUnionType(Type):
@@ -1514,11 +1514,6 @@ def ast2node(ast :JsonAst) -> Program:
                 else:
                     node[i].scope = None
                 node[i].metadata = [(node[x] if isinstance(node[x],Metadata) else raiseError(TypeError('type mismatch at IndentBlock::metadata'))) for x in ast.node[i].body["metadata"]]
-                if ast.node[i].body["type_map"] is not None:
-                    x = node[ast.node[i].body["type_map"]]
-                    node[i].type_map = x if isinstance(x,TypeLiteral) else raiseError(TypeError('type mismatch at IndentBlock::type_map'))
-                else:
-                    node[i].type_map = None
                 node[i].block_traits = BlockTrait(ast.node[i].body["block_traits"])
             case NodeType.SCOPED_STATEMENT:
                 if ast.node[i].body["struct_type"] is not None:
@@ -1814,6 +1809,11 @@ def ast2node(ast :JsonAst) -> Program:
                 node[i].fixed_header_size = x if isinstance(x,int)  else raiseError(TypeError('type mismatch at StructType::fixed_header_size'))
                 x = ast.node[i].body["fixed_tail_size"]
                 node[i].fixed_tail_size = x if isinstance(x,int)  else raiseError(TypeError('type mismatch at StructType::fixed_tail_size'))
+                if ast.node[i].body["type_map"] is not None:
+                    x = node[ast.node[i].body["type_map"]]
+                    node[i].type_map = x if isinstance(x,TypeLiteral) else raiseError(TypeError('type mismatch at StructType::type_map'))
+                else:
+                    node[i].type_map = None
             case NodeType.STRUCT_UNION_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at StructUnionType::is_explicit'))
@@ -2501,9 +2501,6 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
           for i in range(len(x.elements)):
               if f(f,x.elements[i]) == False:
                   return
-          if x.type_map is not None:
-              if f(f,x.type_map) == False:
-                  return
         case x if isinstance(x,ScopedStatement):
           if x.struct_type is not None:
               if f(f,x.struct_type) == False:
@@ -2585,6 +2582,9 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
         case x if isinstance(x,StructType):
           for i in range(len(x.fields)):
               if f(f,x.fields[i]) == False:
+                  return
+          if x.type_map is not None:
+              if f(f,x.type_map) == False:
                   return
         case x if isinstance(x,StructUnionType):
           if x.cond is not None:

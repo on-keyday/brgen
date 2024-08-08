@@ -632,6 +632,10 @@ namespace j2cp2 {
             }
             w.writeln("struct ", struct_name, "{");
             {
+                bool is_type_mapped = false;
+                if (s->type_map && s->bit_size && s->type_map->type_literal->bit_size == s->bit_size) {
+                    is_type_mapped = true;
+                }
                 auto indent = w.indent_scope();
                 bool is_int_set = true;
                 bool include_non_simple = false;
@@ -640,8 +644,15 @@ namespace j2cp2 {
                 for (auto i = 0; i < s->fields.size(); i++) {
                     auto& field = s->fields[i];
                     if (auto f = ast::as<ast::Field>(field); f) {
+                        if (is_type_mapped) {
+                            non_aligned.push_back(ast::cast_to<ast::Field>(field));
+                            continue;
+                        }
                         write_field(non_aligned, bit_size, i, ast::cast_to<ast::Field>(field), prefix);
                     }
+                }
+                if (is_type_mapped) {
+                    write_bit_fields(prefix, non_aligned, *s->bit_size);
                 }
                 if (has_ident) {
                     w.writeln(member->ident->ident, "() {}");
@@ -937,7 +948,6 @@ namespace j2cp2 {
                 w.writeln("}");
             }
             if (auto enum_ty = ast::as<ast::EnumType>(typ)) {
-                auto l = ast::as<ast::IntType>(enum_ty->base.lock()->base_type);
                 auto base_type = get_type_name(enum_ty->base.lock()->base_type);
                 auto tmp = brgen::concat("tmp_", brgen::nums(get_seq()), "_");
                 map_line(loc);
@@ -1013,11 +1023,6 @@ namespace j2cp2 {
             if (auto ident = ast::as<ast::IdentType>(typ); ident) {
                 typ = ident->base.lock();
             }
-            /*
-            if (ast::as<ast::EnumType>(typ)) {
-                ident = ident.substr(0, ident.size() - 2) + "_data";
-            }
-            */
             futils::helper::DynDefer peek;
             if (f->arguments && f->arguments->peek) {
                 if (f->arguments->peek_value && *f->arguments->peek_value) {

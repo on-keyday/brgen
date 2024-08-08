@@ -735,7 +735,6 @@ export interface IndentBlock extends Stmt {
 	elements: Node[];
 	scope: Scope|null;
 	metadata: Metadata[];
-	type_map: TypeLiteral|null;
 	block_traits: BlockTrait;
 }
 
@@ -921,6 +920,7 @@ export interface StructType extends Type {
 	recursive: boolean;
 	fixed_header_size: number;
 	fixed_tail_size: number;
+	type_map: TypeLiteral|null;
 }
 
 export function isStructType(obj: any): obj is StructType {
@@ -1630,7 +1630,6 @@ export function parseAST(obj: JsonAst): Program {
 				elements: [],
 				scope: null,
 				metadata: [],
-				type_map: null,
 				block_traits: BlockTrait.none,
 			}
 			c.node.push(n);
@@ -1880,6 +1879,7 @@ export function parseAST(obj: JsonAst): Program {
 				recursive: false,
 				fixed_header_size: 0,
 				fixed_tail_size: 0,
+				type_map: null,
 			}
 			c.node.push(n);
 			break;
@@ -3235,14 +3235,6 @@ export function parseAST(obj: JsonAst): Program {
 				}
 				n.metadata.push(tmpmetadata);
 			}
-			if (on.body?.type_map !== null && typeof on.body?.type_map !== 'number') {
-				throw new Error('invalid node list at IndentBlock::type_map');
-			}
-			const tmptype_map = on.body.type_map === null ? null : c.node[on.body.type_map];
-			if (!(tmptype_map === null || isTypeLiteral(tmptype_map))) {
-				throw new Error('invalid node list at IndentBlock::type_map');
-			}
-			n.type_map = tmptype_map;
 			const tmpblock_traits = on.body?.block_traits;
 			if (!isBlockTrait(tmpblock_traits)) {
 				throw new Error('invalid node list at IndentBlock::block_traits');
@@ -3864,6 +3856,14 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at StructType::fixed_tail_size');
 			}
 			n.fixed_tail_size = on.body.fixed_tail_size;
+			if (on.body?.type_map !== null && typeof on.body?.type_map !== 'number') {
+				throw new Error('invalid node list at StructType::type_map');
+			}
+			const tmptype_map = on.body.type_map === null ? null : c.node[on.body.type_map];
+			if (!(tmptype_map === null || isTypeLiteral(tmptype_map))) {
+				throw new Error('invalid node list at StructType::type_map');
+			}
+			n.type_map = tmptype_map;
 			break;
 		}
 		case "struct_union_type": {
@@ -5454,12 +5454,6 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 					return;
 				}
 			}
-			if (n.type_map !== null) {
-				const result = fn(fn,n.type_map);
-				if (result === false) {
-					return;
-				}
-			}
 			break;
 		}
 		case "scoped_statement": {
@@ -5704,6 +5698,12 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			const n :StructType = node as StructType;
 			for (const e of n.fields) {
 				const result = fn(fn,e);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.type_map !== null) {
+				const result = fn(fn,n.type_map);
 				if (result === false) {
 					return;
 				}

@@ -477,7 +477,6 @@ public class IndentBlock : Stmt{
 	public List<Node>? Elements{get;set;}
 	public Scope? Scope{get;set;}
 	public List<Metadata>? Metadata{get;set;}
-	public TypeLiteral? TypeMap{get;set;}
 	public BlockTrait BlockTraits{get;set;}
 }
 public class ScopedStatement : Stmt{
@@ -627,6 +626,7 @@ public class StructType : Type{
 	public bool Recursive{get;set;}
 	public ulong FixedHeaderSize{get;set;}
 	public ulong FixedTailSize{get;set;}
+	public TypeLiteral? TypeMap{get;set;}
 }
 public class StructUnionType : Type{
 	public Loc Loc{get;set;}
@@ -1309,7 +1309,6 @@ public static class Ast {
                node.Elements = ast.Node[i].Body[elements];
                node.Scope = ast.Node[i].Body[scope];
                node.Metadata = ast.Node[i].Body[metadata];
-               node.TypeMap = ast.Node[i].Body[type_map];
                node.BlockTraits = ast.Node[i].Body[block_traits];
            case NodeType.ScopedStatement:
                var node = nodes[i] as ScopedStatement;
@@ -1459,6 +1458,7 @@ public static class Ast {
                node.Recursive = ast.Node[i].Body[recursive];
                node.FixedHeaderSize = ast.Node[i].Body[fixed_header_size];
                node.FixedTailSize = ast.Node[i].Body[fixed_tail_size];
+               node.TypeMap = ast.Node[i].Body[type_map];
            case NodeType.StructUnionType:
                var node = nodes[i] as StructUnionType;
                node.Loc = ast.Node[i].Body[loc];

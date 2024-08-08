@@ -1712,7 +1712,7 @@ namespace brgen::middle {
                     for (auto& meta : indent_block->metadata) {
                         if (auto m = meta.lock(); m && m->name == "config.type") {
                             if (m->values.size() && ast::as<ast::TypeLiteral>(m->values[0])) {
-                                indent_block->type_map = ast::cast_to<ast::TypeLiteral>(m->values[0]);
+                                indent_block->struct_type->type_map = ast::cast_to<ast::TypeLiteral>(m->values[0]);
                             }
                         }
                     }
