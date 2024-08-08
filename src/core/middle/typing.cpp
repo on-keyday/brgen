@@ -1708,6 +1708,15 @@ namespace brgen::middle {
                 if (auto arr_type = ast::as<ast::ArrayType>(node)) {
                     typing_array_type(arr_type);
                 }
+                if (auto indent_block = ast::as<ast::IndentBlock>(node)) {
+                    for (auto& meta : indent_block->metadata) {
+                        if (auto m = meta.lock(); m && m->name == "config.type") {
+                            if (m->values.size() && ast::as<ast::TypeLiteral>(m->values[0])) {
+                                indent_block->type_map = ast::cast_to<ast::TypeLiteral>(m->values[0]);
+                            }
+                        }
+                    }
+                }
             };
             recursive_typing(recursive_typing, ty);
         }

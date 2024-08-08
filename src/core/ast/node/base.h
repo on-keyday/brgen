@@ -197,8 +197,8 @@ namespace brgen::ast {
                     2 => value :u32
                     3 => value :u64
             ```
-            this metadata's mapped_type->values[0] must be TypeLiteral
         */
+        std::shared_ptr<TypeLiteral> type_map;
         std::vector<std::weak_ptr<Metadata>> metadata;
 
         BlockTrait block_traits = BlockTrait::none;
@@ -216,6 +216,7 @@ namespace brgen::ast {
             sdebugf(elements);
             sdebugf(scope);
             sdebugf_omit(metadata);
+            sdebugf(type_map);
             sdebugf(block_traits);
         }
     };
