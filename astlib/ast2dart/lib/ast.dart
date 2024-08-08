@@ -673,6 +673,7 @@ class IndentBlock extends Stmt {
     List<Node>? elements = [];
     Scope? scope;
     List<Metadata>? metadata = [];
+    TypeLiteral? typeMap;
     BlockTrait blockTraits = BlockTrait.None;
 factory IndentBlock.fromJson(Map<String, dynamic> json) => _$IndentBlockFromJson(json);
 }

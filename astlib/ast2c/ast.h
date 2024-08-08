@@ -899,6 +899,7 @@ struct ast2c_IndentBlock {
 	ast2c_Scope* scope;
 	ast2c_Metadata** metadata;
 	size_t metadata_size;
+	ast2c_TypeLiteral* type_map;
 	ast2c_BlockTrait block_traits;
 };
 

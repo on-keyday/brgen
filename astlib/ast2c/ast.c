@@ -2198,10 +2198,12 @@ int ast2c_IndentBlock_parse(ast2c_Ast* ast,ast2c_IndentBlock* s,ast2c_json_handl
 	s->elements = NULL;
 	s->scope = NULL;
 	s->metadata = NULL;
+	s->type_map = NULL;
 	void* struct_type = h->object_get(h, obj_body, "struct_type");
 	void* elements = h->object_get(h, obj_body, "elements");
 	void* scope = h->object_get(h, obj_body, "scope");
 	void* metadata = h->object_get(h, obj_body, "metadata");
+	void* type_map = h->object_get(h, obj_body, "type_map");
 	void* block_traits = h->object_get(h, obj_body, "block_traits");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_IndentBlock::loc is null"); } return 0; }
 	if (!struct_type) { if(h->error) { h->error(h,struct_type, "ast2c_IndentBlock::struct_type is null"); } return 0; }
@@ -2216,6 +2218,7 @@ int ast2c_IndentBlock_parse(ast2c_Ast* ast,ast2c_IndentBlock* s,ast2c_json_handl
 		if(h->error) { h->error(h,metadata, "failed to get array size of ast2c_IndentBlock::metadata"); }
 		return NULL;
 	}
+	if (!type_map) { if(h->error) { h->error(h,type_map, "ast2c_IndentBlock::type_map is null"); } return 0; }
 	if (!block_traits) { if(h->error) { h->error(h,block_traits, "ast2c_IndentBlock::block_traits is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_IndentBlock::loc"); }

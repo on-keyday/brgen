@@ -2349,6 +2349,7 @@ type IndentBlock struct {
 	Elements    []Node
 	Scope       *Scope
 	Metadata    []*Metadata
+	TypeMap     *TypeLiteral
 	BlockTraits BlockTrait
 }
 
@@ -4358,6 +4359,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				Elements    []uintptr  `json:"elements"`
 				Scope       *uintptr   `json:"scope"`
 				Metadata    []uintptr  `json:"metadata"`
+				TypeMap     *uintptr   `json:"type_map"`
 				BlockTraits BlockTrait `json:"block_traits"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
@@ -4376,6 +4378,9 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.Metadata = make([]*Metadata, len(tmp.Metadata))
 			for j, k := range tmp.Metadata {
 				v.Metadata[j] = n.node[k].(*Metadata)
+			}
+			if tmp.TypeMap != nil {
+				v.TypeMap = n.node[*tmp.TypeMap].(*TypeLiteral)
 			}
 			v.BlockTraits = tmp.BlockTraits
 		case NodeTypeScopedStatement:
@@ -5721,6 +5726,11 @@ func Walk(n Node, f Visitor) {
 		}
 		for _, w := range v.Elements {
 			if !f.Visit(f, w) {
+				return
+			}
+		}
+		if v.TypeMap != nil {
+			if !f.Visit(f, v.TypeMap) {
 				return
 			}
 		}

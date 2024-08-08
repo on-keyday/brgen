@@ -178,6 +178,7 @@ namespace brgen::ast {
     };
 
     struct Metadata;
+    struct TypeLiteral;
 
     struct IndentBlock : Stmt {
         define_node_type(NodeType::indent_block);

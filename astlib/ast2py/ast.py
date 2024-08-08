@@ -456,6 +456,7 @@ class IndentBlock(Stmt):
     elements: List[Node]
     scope: Optional[Scope]
     metadata: List[Metadata]
+    type_map: Optional[TypeLiteral]
     block_traits: BlockTrait
 
 
@@ -1513,6 +1514,11 @@ def ast2node(ast :JsonAst) -> Program:
                 else:
                     node[i].scope = None
                 node[i].metadata = [(node[x] if isinstance(node[x],Metadata) else raiseError(TypeError('type mismatch at IndentBlock::metadata'))) for x in ast.node[i].body["metadata"]]
+                if ast.node[i].body["type_map"] is not None:
+                    x = node[ast.node[i].body["type_map"]]
+                    node[i].type_map = x if isinstance(x,TypeLiteral) else raiseError(TypeError('type mismatch at IndentBlock::type_map'))
+                else:
+                    node[i].type_map = None
                 node[i].block_traits = BlockTrait(ast.node[i].body["block_traits"])
             case NodeType.SCOPED_STATEMENT:
                 if ast.node[i].body["struct_type"] is not None:
@@ -2494,6 +2500,9 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
                   return
           for i in range(len(x.elements)):
               if f(f,x.elements[i]) == False:
+                  return
+          if x.type_map is not None:
+              if f(f,x.type_map) == False:
                   return
         case x if isinstance(x,ScopedStatement):
           if x.struct_type is not None:
