@@ -126,6 +126,9 @@ const argConverter = Object.freeze({
         if(opt.enum_stringer){
             args.push("--enum-stringer");
         }
+        if(opt.add_visit){
+            args.push("--add-visit");
+        }
         return args;
     },
     [RequestLanguage.GO] : (opt :GoOption) => {

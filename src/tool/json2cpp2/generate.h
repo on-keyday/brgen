@@ -89,6 +89,7 @@ namespace j2cp2 {
         bool use_variant = false;
         bool use_overflow_check = false;
         bool enum_stringer = false;
+        bool add_visit = false;
         ast::Format* current_format = nullptr;
         Context ctx;
         std::vector<std::string> struct_names;
@@ -624,6 +625,27 @@ namespace j2cp2 {
                 w.writeln("//", str_type->strong_ref->value, " (", brgen::nums(len), " bytes)");
                 str.map_ident(f->ident, str_type->strong_ref->value);
             }
+        }
+
+        void write_visit_struct(const std::shared_ptr<ast::StructType>& s) {
+            if (!add_visit) {
+                return;
+            }
+            w.writeln("template<typename Visitor>");
+            w.writeln("void visit(Visitor&& v) {");
+            {
+                auto indent = w.indent_scope();
+                for (auto& f : s->fields) {
+                    if (auto field = ast::as<ast::Field>(f); field) {
+                        if (!ast::as<ast::StructUnionType>(field->field_type)) {
+                            continue;
+                        }
+                        auto ident = str.to_string(field->ident);
+                        w.writeln("v(v, \"", field->ident->ident, "\",", ident, ");");
+                    }
+                }
+            }
+            w.writeln("}");
         }
 
         void write_struct_type(std::string_view struct_name, const std::shared_ptr<ast::StructType>& s, const std::string& prefix = "") {

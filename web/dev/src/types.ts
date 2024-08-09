@@ -20,6 +20,7 @@ export const enum ConfigKey {
     CPP_CHECK_OVERFLOW = "check_overflow",
     CPP_COMPILE_VIA_API = "compile_via_api",
     CPP_ENUM_STRINGER = "enum_stringer",
+    CPP_ADD_VISIT = "add_visit",
     GO_OMIT_MUST_ENCODE = "omit_must_encode",
     GO_OMIT_DECODE_EXACT = "omit_decode_exact",
     GO_OMIT_VISITOR= "omit_visitors",
