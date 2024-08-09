@@ -1,6 +1,6 @@
 
 config.url = "https://datasheets.raspberrypi.com/rp1/rp1-peripherals.pdf"
-
+config.cpp.namespace = "futils::low::rpi::rp1"
 
 format StatusRegister:
     config.type = ul32
