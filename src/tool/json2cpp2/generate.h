@@ -637,7 +637,7 @@ namespace j2cp2 {
                 auto indent = w.indent_scope();
                 for (auto& f : s->fields) {
                     if (auto field = ast::as<ast::Field>(f); field) {
-                        if (!ast::as<ast::StructUnionType>(field->field_type)) {
+                        if (ast::as<ast::StructUnionType>(field->field_type)) {
                             continue;
                         }
                         auto ident = str.to_string(field->ident);
@@ -698,6 +698,7 @@ namespace j2cp2 {
                     if (s->fixed_header_size) {
                         w.writeln("static constexpr size_t fixed_header_size = ", brgen::nums(s->fixed_header_size / 8), ";");
                     }
+                    write_visit_struct(s);
                 }
             }
             w.write("}");
