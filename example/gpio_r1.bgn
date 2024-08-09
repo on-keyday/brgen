@@ -44,8 +44,8 @@ format ControlRegister:
     in_over :u2 # 17:16 Input over
     out_enable_over :u2 # 15:14 Output enable over
     out_over :u2 # 13:12 Output over
-    f_m :u8 # 11:5 Function select
-    func_sel :u4 # 4:0 Function select
+    f_m :u7 # 11:5 Function select
+    func_sel :u5 # 4:0 Function select
 
 format GPIOs:
     config.type = ul32
