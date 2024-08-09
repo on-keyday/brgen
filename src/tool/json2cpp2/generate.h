@@ -662,7 +662,9 @@ namespace j2cp2 {
                     write_bit_fields(prefix, non_aligned, *s->bit_size, endian);
                 }
                 if (has_ident) {
-                    w.writeln(member->ident->ident, "() {}");
+                    if (!use_variant) {  // for raw union
+                        w.writeln(member->ident->ident, "() {}");
+                    }
                     if (use_error) {
                         w.writeln("::futils::error::Error<> encode(::futils::binary::writer& w) const ;");
                         w.writeln("::futils::error::Error<> decode(::futils::binary::reader& r);");
