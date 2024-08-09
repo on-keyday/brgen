@@ -209,12 +209,29 @@ format Credentialv1:
     transports :Transport
     authenticator :Authenticator
 
+format CredentialAttestation:
+    clientDataJSON_len :u16
+    clientDataJSON :[clientDataJSON_len]u8
+    clientDataHash_len :u16
+    clientDataHash :[clientDataHash_len]u8
+    publicKeyAlgorithm :Algorithm
+    authenticatorData_len :u16
+    authenticatorData :[authenticatorData_len]u8
+    attestationObject_len :u16
+    attestationObject :[attestationObject_len]u8
+
+format Credentialv2:
+    v1 :Credentialv1
+    attestation :CredentialAttestation
+
 format Credential:
     version :u8
     if version == 1:
         v1 :Credentialv1
+    elif version == 2:
+        v2 :Credentialv2
     else:
-        error("Unsupported version")
+        error("unsupported version")
 
 format CredentialID:
     len :u8

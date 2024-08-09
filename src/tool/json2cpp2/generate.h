@@ -14,6 +14,7 @@ namespace j2cp2 {
     struct BitFieldMeta {
         std::string field_name;
         std::vector<std::shared_ptr<ast::Field>> fields;
+        ast::Endian endian;
     };
 
     struct AnonymousStruct {
@@ -78,6 +79,7 @@ namespace j2cp2 {
         }
         ast::tool::Stringer str;
         std::map<ast::Field*, BitFieldMeta> bit_fields;
+        std::set<ast::Field*> bit_fields_part;
         std::map<ast::Field*, LaterInfo> later_size;
         std::map<std::shared_ptr<ast::StructType>, AnonymousStruct> anonymous_struct;
         std::map<ast::EnumMember*, std::string> enum_member_map;
@@ -131,7 +133,7 @@ namespace j2cp2 {
             }
         }
 
-        void write_bit_fields(std::string_view prefix, std::vector<std::shared_ptr<ast::Field>>& non_align, size_t bit_size) {
+        void write_bit_fields(std::string_view prefix, std::vector<std::shared_ptr<ast::Field>>& non_align, size_t bit_size, ast::Endian endian) {
             w.write("::futils::binary::flags_t<std::uint", brgen::nums(bit_size), "_t");
             for (auto& n : non_align) {
                 auto type = n->field_type;
@@ -165,9 +167,10 @@ namespace j2cp2 {
                     w.writeln("bits_flag_alias_method_with_enum(flags_", brgen::nums(seq), "_,", brgen::nums(i), ",", n->ident->ident, ",", enum_->ident->ident, ");");
                     str.map_ident(n->ident, prefix, ".", n->ident->ident + "()");
                 }
+                bit_fields_part.insert(n.get());
                 i++;
             }
-            bit_fields[non_align.back().get()] = {brgen::concat("flags_", brgen::nums(seq), "_"), non_align};
+            bit_fields[non_align.back().get()] = {brgen::concat("flags_", brgen::nums(seq), "_"), non_align, endian};
         }
 
         std::string get_type_name(const std::shared_ptr<ast::Type>& type, bool align = false) {
@@ -541,7 +544,7 @@ namespace j2cp2 {
                 }
                 bit_size += *type->bit_size;
                 non_aligned.push_back(ast::cast_to<ast::Field>(f));
-                write_bit_fields(prefix, non_aligned, bit_size);
+                write_bit_fields(prefix, non_aligned, bit_size, ast::Endian::unspec);
                 non_aligned.clear();
                 bit_size = 0;
                 return;
@@ -652,7 +655,11 @@ namespace j2cp2 {
                     }
                 }
                 if (is_type_mapped) {
-                    write_bit_fields(prefix, non_aligned, *s->bit_size);
+                    ast::Endian endian = ast::Endian::unspec;
+                    if (auto ity = ast::as<ast::IntType>(s->type_map->type_literal); ity) {
+                        endian = ity->endian;
+                    }
+                    write_bit_fields(prefix, non_aligned, *s->bit_size, endian);
                 }
                 if (has_ident) {
                     w.writeln(member->ident->ident, "() {}");
@@ -802,7 +809,7 @@ namespace j2cp2 {
                 auto& fields = meta.fields;
                 auto& field_name = meta.field_name;
                 map_line(f->loc);
-                w.writeln("if (!::futils::binary::write_num(w,", field_name, ".as_value() ,true)) {");
+                w.writeln("if (!::futils::binary::write_num(w,", field_name, ".as_value() ,", ctx.endian_text(meta.endian), ")) {");
                 {
                     auto indent = w.indent_scope();
                     write_return_error(f, "write bit field failed");
@@ -810,16 +817,14 @@ namespace j2cp2 {
                 w.writeln("}");
                 return;
             }
+            else if (bit_fields_part.find(f) != bit_fields_part.end()) {
+                return;
+            }
             auto ident = str.to_string(f->ident);
             auto typ = f->field_type;
             if (auto ident = ast::as<ast::IdentType>(typ); ident) {
                 typ = ident->base.lock();
             }
-            /*
-            if (ast::as<ast::EnumType>(typ)) {
-                ident = ident.substr(0, ident.size() - 2) + "_data";
-            }
-            */
             futils::helper::DynDefer peek;
             if (f->arguments) {
                 if (f->arguments->arguments.size() == 1) {
@@ -1010,12 +1015,15 @@ namespace j2cp2 {
                 auto& fields = meta.fields;
                 auto& field_name = meta.field_name;
                 map_line(f->loc);
-                w.writeln("if (!::futils::binary::read_num(r,", field_name, ".as_value() ,true)) {");
+                w.writeln("if (!::futils::binary::read_num(r,", field_name, ".as_value() ,", ctx.endian_text(meta.endian), ")) {");
                 {
                     auto indent = w.indent_scope();
                     write_return_error(f, "read bit field failed");
                 }
                 w.writeln("}");
+                return;
+            }
+            else if (bit_fields_part.find(f) != bit_fields_part.end()) {
                 return;
             }
             auto ident = str.to_string(f->ident);
@@ -1273,7 +1281,6 @@ namespace j2cp2 {
                 w.writeln("}");
             }
             if (auto enum_ty = ast::as<ast::EnumType>(typ)) {
-                auto s = ast::as<ast::IntType>(enum_ty->base.lock()->base_type);
                 auto tmp = brgen::concat("tmp_", brgen::nums(get_seq()), "_");
                 auto int_ty = get_type_name(enum_ty->base.lock()->base_type, true);
                 map_line(loc);
