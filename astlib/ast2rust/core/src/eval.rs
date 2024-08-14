@@ -4,7 +4,10 @@ use std::{
     rc::Rc,
 };
 
-use crate::{ast::MemberWeak, traverse, PtrKey, PtrUnwrapError};
+use crate::{
+    ast::{Binary, MemberWeak},
+    traverse, PtrKey, PtrUnwrapError,
+};
 
 use super::ast;
 use ast2rust_macro::{ptr, ptr_null};
@@ -124,6 +127,7 @@ pub fn topological_sort_format(
 pub struct Stringer {
     self_: String,
     ident_map: HashMap<PtrKey<ast::Ident>, String>,
+    pub errorString: String,
 }
 
 #[derive(Debug)]
@@ -181,7 +185,13 @@ impl Stringer {
         Self {
             self_,
             ident_map: HashMap::new(),
+            errorString: "".to_string(),
         }
+    }
+
+    pub fn add_map(&mut self, ident: &Rc<RefCell<ast::Ident>>, s: &str) {
+        let key = PtrKey::new(&ident);
+        self.ident_map.insert(key, s.to_string());
     }
 
     pub fn to_map_ident(
@@ -199,11 +209,13 @@ impl Stringer {
         let key = PtrKey::new(&ident);
         let replace_with_this = |this: &str, s: &str| {
             if let Some(_) = s.find("$SELF") {
-                Ok(s.replace("$SELF", this))
+                Ok(s.replace("$SELF", this)
+                    .replace("$ERROR", &self.errorString))
             } else {
-                Ok(s.to_string())
+                Ok(s.to_string().replace("$ERROR", &self.errorString))
             }
         };
+        let ident_str = self.ident_map.get(&key).or(Some(&ident_str)).unwrap();
         if !via_member_access {
             if let Some(_) = ident
                 .borrow()
@@ -215,11 +227,36 @@ impl Stringer {
                 return replace_with_this(&self.self_, ident_str);
             }
         }
-        if let Some(s) = self.ident_map.get(&key) {
-            replace_with_this(&self.self_, s)
-        } else {
-            replace_with_this(&default_, ident_str)
-        }
+        replace_with_this(&default_, ident_str)
+    }
+
+    pub fn eval_binary_op(&self, b: &Rc<RefCell<Binary>>) -> Result<String, StringerError> {
+        let left = self.to_string(&ptr!(b.left))?;
+        let right = self.to_string(&ptr!(b.right))?;
+        Ok(format!("({} {} {})", left, ptr_null!(b.op).to_str(), right))
+    }
+
+    pub fn eval_ephemeral_binary_op(
+        &self,
+        op: ast::BinaryOp,
+        left: &ast::Expr,
+        right: &ast::Expr,
+    ) -> Result<String, StringerError> {
+        let tmp = ast::Binary {
+            loc: ast::Loc {
+                pos: ast::Pos { begin: 0, end: 0 },
+                line: 0,
+                col: 0,
+                file: 0,
+            },
+            expr_type: None,
+            left: Some(left.clone()),
+            right: Some(right.clone()),
+            op,
+            constant_level: ast::ConstantLevel::Variable,
+        };
+        let b = Rc::new(RefCell::new(tmp));
+        self.eval_binary_op(&b)
     }
 
     pub fn to_string(&self, n: &ast::Expr) -> Result<String, StringerError> {
@@ -229,9 +266,7 @@ impl Stringer {
             ast::Expr::StrLiteral(s) => Ok(ptr_null!(s.value)),
             ast::Expr::Ident(i) => self.to_map_ident(&i, ""),
             ast::Expr::Binary(b) => {
-                let left = self.to_string(&ptr!(b.left))?;
-                let right = self.to_string(&ptr!(b.right))?;
-                Ok(format!("({} {} {})", left, ptr_null!(b.op).to_str(), right))
+                return self.eval_binary_op(b);
             }
             ast::Expr::Unary(u) => {
                 let right = self.to_string(&ptr!(u.expr))?;

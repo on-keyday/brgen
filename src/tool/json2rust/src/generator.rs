@@ -1,10 +1,12 @@
 use anyhow::{anyhow, Result};
-use ast2rust::ast::{GenerateMapFile, StructType, StructUnionType};
+use ast2rust::ast::{GenerateMapFile, StructType, StructUnionType, UnionType};
 use ast2rust::eval::{topological_sort_format, Stringer};
 use ast2rust::{ast, PtrKey, PtrUnwrapError};
 use ast2rust_macro::{ptr, ptr_null};
+use std::ascii::escape_default;
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::f32::consts::E;
 use std::rc::Rc;
 
 type SharedPtr<T> = Rc<RefCell<T>>;
@@ -34,6 +36,8 @@ pub struct Writer<W: std::io::Write> {
     indent: RefCell<usize>,
 
     should_indent: bool,
+
+    pub prefix: String,
 }
 
 struct IndentScope<'a> {
@@ -52,6 +56,7 @@ impl<'a, W: std::io::Write> Writer<W> {
             writer: w,
             indent: RefCell::new(0),
             should_indent: false,
+            prefix: String::new(),
         }
     }
 
@@ -168,6 +173,130 @@ impl<W: std::io::Write> Generator<W> {
         }
     }
 
+    pub fn gen_anonymous_union<W1: std::io::Write>(
+        &mut self,
+        w: &mut Writer<W1>,
+        x: &SharedPtr<StructUnionType>,
+    ) -> Result<String> {
+        let name = format!("AnonymousStructUnion{}", self.get_seq());
+        let mut v = Vec::new();
+        for structs in ptr_null!(x.structs).iter() {
+            let name_s = format!("AnonymousStruct{}", self.get_seq());
+            let mut tmp_w = Writer::new(Vec::new());
+            let prefix = &w.prefix;
+            tmp_w.prefix =
+                format!("(match {prefix} {{ {name}::{name_s}(x) => x, _ => return $ERROR }})?");
+            tmp_w.writeln("#[derive(Default,Debug,Clone,PartialEq)]")?;
+            tmp_w.write("pub struct ")?;
+            tmp_w.write(&name_s)?;
+            tmp_w.writeln(" {")?;
+            self.write_struct_type(&mut tmp_w, structs.clone())?;
+            tmp_w.writeln("}")?;
+            self.w.write(&String::from_utf8(tmp_w.writer)?)?;
+            self.structs.insert(
+                PtrKey::new(structs),
+                AnonymousStruct {
+                    name: name_s.clone(),
+                },
+            );
+            v.push(name_s);
+        }
+        let mut tmp_w = Writer::new(Vec::new());
+        tmp_w.writeln("#[derive(Default,Debug,Clone,PartialEq)]")?;
+        tmp_w.write("pub enum ")?;
+        tmp_w.write(&name)?;
+        tmp_w.writeln(" {")?;
+        tmp_w.writeln("#[default]")?;
+        tmp_w.writeln("None,")?;
+        for name in v.iter() {
+            tmp_w.write(&name)?;
+            tmp_w.write("(")?;
+            tmp_w.write(&name)?;
+            tmp_w.writeln("),")?;
+        }
+        tmp_w.writeln("}")?;
+
+        let union_fields = ptr_null!(x.union_fields);
+        for field in union_fields.iter() {
+            let typ: SharedPtr<UnionType> = ptr!(field->field_type)
+                .try_into()
+                .map_err(|x| anyhow!("{:?}", x))?;
+            let cond0 = ptr_null!(typ.cond);
+            let cond0 = if let Some(x) = cond0 {
+                x.upgrade()
+            } else {
+                None
+            };
+            let c = ptr_null!(typ.common_type);
+            if let Some(c) = c {
+                let c = self.get_type(&c)?;
+                tmp_w.writeln(&format!("impl {name} {{"))?;
+                {
+                    let _scope = tmp_w.enter_indent_scope();
+                    tmp_w.writeln(&format!(
+                        "pub fn {}(&self) -> Option<{}> {{",
+                        ptr_null!(field->ident.ident),
+                        c
+                    ))?;
+                    {
+                        let _scope = tmp_w.enter_indent_scope();
+
+                        for cand in ptr_null!(typ.candidates) {
+                            let cond = ptr!(cand.cond).upgrade().ok_or_else(|| anyhow!("error"))?;
+                            let cond = if let Some(cond0) = &cond0 {
+                                self.s
+                                    .eval_ephemeral_binary_op(ast::BinaryOp::Equal, &cond, cond0)
+                                    .map_err(|x| anyhow!("{:?}", x))?
+                            } else {
+                                self.expr_to_string(&cond)?
+                            };
+
+                            tmp_w.writeln(&format!("if {cond} {{ "))?;
+                            {
+                                let _scope = tmp_w.enter_indent_scope();
+                                if let Some(field) = field.upgrade() {
+                                    let ident = self.expr_to_string(&ptr!(field.ident).into())?;
+                                    tmp_w.writeln(&format!("return Some({}),", ident))?;
+                                } else {
+                                    tmp_w.writeln("return None")?;
+                                }
+                            }
+                            tmp_w.writeln("}")?;
+                        }
+
+                        tmp_w.writeln("None")?;
+                    }
+                    tmp_w.writeln("}")?;
+
+                    tmp_w.writeln(&format!(
+                        "pub fn set_{}(&mut self, x: {}) -> bool {{",
+                        ptr_null!(field->ident.ident),
+                        c
+                    ))?;
+                    {
+                        let _scope = tmp_w.enter_indent_scope();
+                        tmp_w.writeln("match self {")?;
+                        {
+                            let _scope = tmp_w.enter_indent_scope();
+                            for name in v.iter() {
+                                tmp_w.writeln(&format!(
+                                    "{}::{}(y) => *y.{} = x,",
+                                    name,
+                                    name,
+                                    ptr_null!(field->ident.ident)
+                                ))?;
+                            }
+                        }
+                        tmp_w.writeln("}")?;
+                    }
+                }
+            }
+        }
+
+        self.w.write(std::str::from_utf8(&tmp_w.writer)?)?;
+        Ok(name)
+    }
+
     pub fn get_type(&mut self, typ: &ast::Type) -> Result<String> {
         match typ {
             ast::Type::IntType(t) => {
@@ -211,36 +340,9 @@ impl<W: std::io::Write> Generator<W> {
             }
             ast::Type::StructUnionType(x) => {
                 if let Some(x) = self.struct_unions.get(&PtrKey::new(x)) {
-                    Ok(x.name.clone())
+                    return Ok(x.name.clone());
                 } else {
-                    let name = format!("AnonymousStructUnion{}", self.get_seq());
-                    let mut v = Vec::new();
-                    for structs in ptr_null!(x.structs).iter() {
-                        let name = format!("AnonymousStruct{}", self.get_seq());
-                        let mut tmp_w = Writer::new(Vec::new());
-                        tmp_w.write("pub struct ")?;
-                        tmp_w.write(&name)?;
-                        tmp_w.writeln(" {")?;
-                        self.write_struct_type(&mut tmp_w, structs.clone())?;
-                        tmp_w.writeln("}")?;
-                        self.w.write(&String::from_utf8(tmp_w.writer)?)?;
-                        self.structs
-                            .insert(PtrKey::new(structs), AnonymousStruct { name: name.clone() });
-                        v.push(name);
-                    }
-                    let mut tmp_w = Writer::new(Vec::new());
-                    tmp_w.write("pub enum ")?;
-                    tmp_w.write(&name)?;
-                    tmp_w.writeln(" {")?;
-                    for name in v.iter() {
-                        tmp_w.write(&name)?;
-                        tmp_w.write("(")?;
-                        tmp_w.write(&name)?;
-                        tmp_w.writeln("),")?;
-                    }
-                    tmp_w.writeln("}")?;
-                    self.w.write(std::str::from_utf8(&tmp_w.writer)?)?;
-                    Ok(name)
+                    return Err(anyhow!("unsupported type"));
                 }
             }
             x => {
@@ -266,6 +368,13 @@ impl<W: std::io::Write> Generator<W> {
         }
 
         Ok(())
+    }
+
+    pub fn escape_keyword(s: String) -> String {
+        match s.as_str() {
+            "type" => "type_".to_string(),
+            _ => s,
+        }
     }
 
     pub fn write_field<W1: std::io::Write>(
@@ -296,10 +405,18 @@ impl<W: std::io::Write> Generator<W> {
             })));
             field.borrow_mut().ident = some;
         }
+        if let ast::Type::StructUnionType(x) = ptr!(field.field_type) {
+            self.gen_anonymous_union(w, &x)?;
+        }
         w.write("pub ")?;
-        w.write(&format!("{}: ", ptr_null!(field.ident.ident)))?;
+        let ident = ptr_null!(field.ident.ident);
+        let ident = Self::escape_keyword(ident);
+        w.write(&format!("{}: ", ident))?;
         let typ = self.get_type(&ptr!(field.field_type))?;
         w.writeln(&format!("{},", typ))?;
+        let prefix = &w.prefix;
+        self.s
+            .add_map(&ptr!(field.ident), &format!("{prefix}.{ident}"));
         Ok(())
     }
 
@@ -330,10 +447,10 @@ impl<W: std::io::Write> Generator<W> {
                 if ptr_null!(ity.is_common_supported) {
                     match ptr_null!(ity.endian) {
                         ast::Endian::Big | ast::Endian::Unspec => {
-                            w.writeln(&format!("w.write({}.to_be_bytes())?;", ident))?;
+                            w.writeln(&format!("w.write(&{}.to_be_bytes())?;", ident))?;
                         }
                         ast::Endian::Little => {
-                            w.writeln(&format!("w.write({}.to_le_bytes())?;", ident))?;
+                            w.writeln(&format!("w.write(&{}.to_le_bytes())?;", ident))?;
                         }
                     }
                 }
@@ -403,26 +520,25 @@ impl<W: std::io::Write> Generator<W> {
         match typ {
             ast::Type::IntType(ity) => {
                 if ptr_null!(ity.is_common_supported) {
-                    w.writeln(&format!(
-                        "let tmp{} = r.read({})?;",
-                        ident,
-                        ptr!(ity.bit_size)
-                    ))?;
+                    let tmp = format!("tmp{}", self.get_seq());
+                    let len = ptr!(ity.bit_size) / 8;
+                    w.writeln(&format!("let mut {} = [0; {}];", tmp, len))?;
+                    w.writeln(&format!("r.read(&mut {})?;", tmp))?;
                     match ptr_null!(ity.endian) {
                         ast::Endian::Big | ast::Endian::Unspec => {
                             w.writeln(&format!(
-                                "{} = u{}::from_be_bytes(tmp{});",
+                                "{} = u{}::from_be_bytes({});",
                                 ident,
                                 ptr!(ity.bit_size),
-                                ident,
+                                tmp,
                             ))?;
                         }
                         ast::Endian::Little => {
                             w.writeln(&format!(
-                                "{} = u{}::from_le_bytes(tmp{});",
+                                "{} = u{}::from_le_bytes({});",
                                 ident,
                                 ptr!(ity.bit_size),
-                                ident,
+                                tmp,
                             ))?;
                         }
                     }
@@ -438,7 +554,10 @@ impl<W: std::io::Write> Generator<W> {
             }
             ast::Type::EnumType(t) => {
                 let base = ptr!(t.base->base_type);
-                self.write_decode_type(w, field, base, ident)?;
+                let tmp = format!("tmp{}", self.get_seq());
+                w.writeln(&format!("let mut {} = Default::default();", tmp))?;
+                self.write_decode_type(w, field, base, &tmp)?;
+                w.writeln(&format!("{} = {}.into();", ident, tmp))?;
                 return Ok(());
             }
             ast::Type::ArrayType(t) => {
@@ -579,10 +698,11 @@ impl<W: std::io::Write> Generator<W> {
         w: &mut Writer<W1>,
         ty: SharedPtr<ast::Format>,
     ) -> Result<()> {
-        w.writeln("fn encode<W:std::io::Write>(&self,w :W) {")?;
+        w.writeln("fn encode<W:std::io::Write>(&self,w :&mut W) -> Result<(),std::io::Error> {")?;
         {
             let _scope = w.enter_indent_scope();
             self.write_node(w, ast::Node::IndentBlock(ptr!(ty.body)))?;
+            w.writeln("Ok(())")?;
         }
         w.writeln("}")?;
         Ok(())
@@ -594,20 +714,23 @@ impl<W: std::io::Write> Generator<W> {
         ty: SharedPtr<ast::Format>,
     ) -> Result<()> {
         let ident = ptr_null!(ty.ident.ident);
-        w.writeln(&format!("fn decode<R:std::io::Read>(r :R) -> {ident} {{"))?;
+        w.writeln(&format!(
+            "fn decode<R:std::io::Read>(r :&mut R) -> Result<{ident},std::io::Error> {{"
+        ))?;
         {
             let _scope = w.enter_indent_scope();
             w.writeln("let mut d = Self::default();")?;
-            w.writeln("d.decode_impl(r)")?;
+            w.writeln("d.decode_impl(r)?;")?;
+            w.writeln("Ok(d)")?;
         }
         w.writeln("}")?;
         w.writeln(&format!(
-            "fn decode_impl<R :std::io::Read>(&mut self,r:R) -> {} {{",
-            ident
+            "fn decode_impl<R :std::io::Read>(&mut self,r :&mut R) -> Result<(),std::io::Error> {{"
         ))?;
         {
             let _scope = w.enter_indent_scope();
             self.write_node(w, ast::Node::IndentBlock(ptr!(ty.body)))?;
+            w.writeln("Ok(())")?;
         }
         w.writeln("}")?;
         Ok(())
@@ -633,21 +756,110 @@ impl<W: std::io::Write> Generator<W> {
 
     pub fn write_enum(&mut self, enum_: SharedPtr<ast::Enum>) -> Result<()> {
         let ident = ptr_null!(enum_.ident.ident);
+        self.w.writeln("#[derive(Default,Debug,Clone,PartialEq)]")?;
         self.w.writeln(&format!("pub enum {} {{", ident))?;
+        let mut first = true;
         {
             let _scope = self.w.enter_indent_scope();
             for elem in ptr_null!(enum_.members).iter() {
+                if first {
+                    self.w.writeln("#[default]")?;
+                }
                 self.w
                     .writeln(&format!("{},", ptr_null!(elem.ident.ident)))?;
+
+                self.s.add_map(
+                    &ptr!(elem.ident),
+                    &format!("{}::{}", ident, ptr_null!(elem.ident.ident)),
+                );
+                first = false;
+            }
+            if let Some(base) = ptr_null!(enum_.base_type) {
+                let base = self.get_type(&base)?;
+                if first {
+                    self.w.writeln("#[default]")?;
+                }
+                self.w.writeln(&format!("{}Other({}),", ident, base))?;
             }
         }
         self.w.writeln("}")?;
+        if let Some(ast::Type::IntType(x)) = ptr_null!(enum_.base_type) {
+            let bit_size = ptr!(x.bit_size);
+            let base = self.get_int_type(
+                bit_size,
+                ptr_null!(x.is_signed),
+                ptr_null!(x.is_common_supported),
+            )?;
+            self.w.writeln(&format!("impl {} {{", ident))?;
+            {
+                let _scope = self.w.enter_indent_scope();
+                let mut write_bytes = |le_or_be: &str| -> Result<()> {
+                    self.w.writeln(&format!(
+                        "pub fn to_{le_or_be}_bytes(&self) -> [u8;{}] {{",
+                        bit_size / 8
+                    ))?;
+                    {
+                        let _scope = self.w.enter_indent_scope();
+                        let tmp = format!("tmp{}", self.get_seq());
+                        self.w
+                            .writeln(&format!("let {tmp} :{base} = match self {{"))?;
+                        {
+                            let _scope = self.w.enter_indent_scope();
+                            for elem in ptr_null!(enum_.members).iter() {
+                                self.w.writeln(&format!(
+                                    "{}::{} => {},",
+                                    ident,
+                                    ptr_null!(elem.ident.ident),
+                                    self.expr_to_string(&ptr!(elem.value))?
+                                ))?;
+                            }
+                        }
+                        self.w
+                            .writeln(&format!("{}::{}Other(x) => *x,", ident, ident))?;
+                        self.w.writeln("};")?;
+                        self.w.writeln(&format!("{tmp}.to_{le_or_be}_bytes()"))?;
+                    }
+                    self.w.writeln("}")?;
+
+                    Ok(())
+                };
+                write_bytes("le")?;
+                write_bytes("be")?;
+            }
+            self.w.writeln("}")?;
+
+            self.w
+                .writeln(&format!("impl From<{base}> for {ident} {{"))?;
+            {
+                let _scope = self.w.enter_indent_scope();
+                self.w.writeln(&format!("fn from(x :{base}) -> Self {{"))?;
+                {
+                    let _scope = self.w.enter_indent_scope();
+                    self.w.writeln("match x {")?;
+                    {
+                        let _scope = self.w.enter_indent_scope();
+                        for elem in ptr_null!(enum_.members).iter() {
+                            self.w.writeln(&format!(
+                                "{} => {}::{},",
+                                self.expr_to_string(&ptr!(elem.value))?,
+                                ident,
+                                ptr_null!(elem.ident.ident)
+                            ))?;
+                        }
+                    }
+                    self.w
+                        .writeln(&format!("_ => {}::{}Other(x),", ident, ident))?;
+                    self.w.writeln("}")?;
+                }
+                self.w.writeln("}")?;
+            }
+            self.w.writeln("}")?;
+        }
         Ok(())
     }
 
     pub fn write_program(&mut self, in_prog: SharedPtr<ast::Program>) -> Result<()> {
         let prog = in_prog.borrow();
-        self.w.writeln("use serde;")?;
         for elem in prog.elements.iter() {
             if let Ok(enum_) = elem.try_into() {
                 self.write_enum(enum_)?;
@@ -655,6 +867,7 @@ impl<W: std::io::Write> Generator<W> {
         }
         let sorted = topological_sort_format(&in_prog).ok_or(anyhow!("error"))?;
         let mut w = Writer::new(Vec::new());
+        w.prefix = "$SELF".to_string();
         for elem in sorted.iter() {
             self.write_format_type(&mut w, elem.clone())?;
         }
