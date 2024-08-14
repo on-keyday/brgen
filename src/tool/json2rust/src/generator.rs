@@ -26,6 +26,7 @@ pub struct Generator<W: std::io::Write> {
 
     structs: HashMap<PtrKey<StructType>, AnonymousStruct>,
     struct_unions: HashMap<PtrKey<StructUnionType>, AnonymousStruct>,
+    s: Stringer,
 }
 
 pub struct Writer<W: std::io::Write> {
@@ -33,7 +34,6 @@ pub struct Writer<W: std::io::Write> {
     indent: RefCell<usize>,
 
     should_indent: bool,
-    s: Stringer,
 }
 
 struct IndentScope<'a> {
@@ -52,7 +52,6 @@ impl<'a, W: std::io::Write> Writer<W> {
             writer: w,
             indent: RefCell::new(0),
             should_indent: false,
-            s: Stringer::new("self".into()),
         }
     }
 
@@ -117,6 +116,7 @@ impl<W: std::io::Write> Generator<W> {
                 structs: Vec::new(),
                 line_map: Vec::new(),
             },
+            s: Stringer::new("self".into()),
         }
     }
 
@@ -128,6 +128,10 @@ impl<W: std::io::Write> Generator<W> {
 
     pub fn get_mut_writer(&mut self) -> &mut W {
         self.w.get_mut_writer()
+    }
+
+    pub fn expr_to_string(&self, x: &ast::Expr) -> Result<String> {
+        return self.s.to_string(x).map_err(|x| anyhow!("{:?}", x));
     }
 
     pub fn get_int_type(
@@ -157,6 +161,13 @@ impl<W: std::io::Write> Generator<W> {
         }
     }
 
+    pub fn is_primitive_array(t: &SharedPtr<ast::ArrayType>) -> bool {
+        match t.borrow().element_type.as_ref() {
+            Some(ast::Type::IntType(_)) => ptr_null!(t.length_value).is_some(),
+            _ => false,
+        }
+    }
+
     pub fn get_type(&mut self, typ: &ast::Type) -> Result<String> {
         match typ {
             ast::Type::IntType(t) => {
@@ -181,7 +192,7 @@ impl<W: std::io::Write> Generator<W> {
                     }
                     x => {
                         eprintln!("{:?}", ast::NodeType::try_from(x));
-                        todo!("unsupported")
+                        todo!("unsupported struct type")
                     }
                 }
             }
@@ -192,7 +203,7 @@ impl<W: std::io::Write> Generator<W> {
             ast::Type::ArrayType(t) => {
                 let ty = ptr!(t.element_type);
                 let ty = self.get_type(&ty)?;
-                if t.borrow().length_value.is_some() {
+                if Self::is_primitive_array(t) {
                     Ok(format!("[{}; {}]", ty, ptr!(t.length_value)))
                 } else {
                     Ok(format!("Vec<{}>", ty))
@@ -234,7 +245,7 @@ impl<W: std::io::Write> Generator<W> {
             }
             x => {
                 eprintln!("{:?}", ast::NodeType::from(ast::Node::from(x)));
-                Err(anyhow!("unsupported"))
+                Err(anyhow!("unsupported type"))
             }
         }
     }
@@ -253,6 +264,7 @@ impl<W: std::io::Write> Generator<W> {
         if sum % 8 != 0 {
             return Err(anyhow!("error"));
         }
+
         Ok(())
     }
 
@@ -325,16 +337,60 @@ impl<W: std::io::Write> Generator<W> {
                         }
                     }
                 }
+                return Ok(());
             }
             ast::Type::IdentType(t) => {
                 let base = ptr!(t.base)
                     .try_into()
                     .map_err(|x: ast::Error| anyhow!("{:?}", x))?;
-                self.write_encode_type(w, field, base, ident)?
+                self.write_encode_type(w, field, base, ident)?;
+                return Ok(());
+            }
+            ast::Type::EnumType(t) => {
+                let base = ptr!(t.base->base_type);
+                self.write_encode_type(w, field, base, ident)?;
+                return Ok(());
+            }
+            ast::Type::ArrayType(t) => {
+                if Self::is_primitive_array(&t) {
+                    w.writeln(&format!("for i in 0..{} {{", ptr!(t.length_value)))?;
+                    {
+                        let _scope = w.enter_indent_scope();
+                        self.write_encode_type(
+                            w,
+                            field,
+                            ptr!(t.element_type),
+                            &format!("{}[i]", ident),
+                        )?;
+                    }
+                    w.writeln("}")?;
+                } else {
+                    let len = match ptr_null!(t.length_value) {
+                        None => self.expr_to_string(&ptr!(t.length))?,
+                        Some(x) => x.to_string(),
+                    };
+                    w.writeln(&format!("if {} != {}.len() {{", len, ident))?;
+                    {
+                        let _scope = w.enter_indent_scope();
+                        w.writeln(&format!("return Err(anyhow!(\"error\"));"))?;
+                    }
+                    w.writeln(&format!("for i in 0..{}.len() {{", ident))?;
+                    {
+                        let _scope = w.enter_indent_scope();
+                        self.write_encode_type(
+                            w,
+                            field,
+                            ptr!(t.element_type),
+                            &format!("{}[i]", ident),
+                        )?;
+                    }
+                    w.writeln("}")?;
+                }
+                return Ok(());
             }
             _ => {}
         }
-        Err(anyhow!("unsupported"))
+        Err(anyhow!("unsupported encode type"))
     }
 
     pub fn write_decode_type<W1: std::io::Write>(
@@ -355,7 +411,7 @@ impl<W: std::io::Write> Generator<W> {
                     match ptr_null!(ity.endian) {
                         ast::Endian::Big | ast::Endian::Unspec => {
                             w.writeln(&format!(
-                                "self.{} = u{}::from_be_bytes(tmp{});",
+                                "{} = u{}::from_be_bytes(tmp{});",
                                 ident,
                                 ptr!(ity.bit_size),
                                 ident,
@@ -363,7 +419,7 @@ impl<W: std::io::Write> Generator<W> {
                         }
                         ast::Endian::Little => {
                             w.writeln(&format!(
-                                "self.{} = u{}::from_le_bytes(tmp{});",
+                                "{} = u{}::from_le_bytes(tmp{});",
                                 ident,
                                 ptr!(ity.bit_size),
                                 ident,
@@ -371,17 +427,55 @@ impl<W: std::io::Write> Generator<W> {
                         }
                     }
                 }
+                return Ok(());
             }
             ast::Type::IdentType(t) => {
                 let base = ptr!(t.base)
                     .try_into()
                     .map_err(|x: ast::Error| anyhow!("{:?}", x))?;
-                self.write_decode_type(w, field, base, ident)?
+                self.write_decode_type(w, field, base, ident)?;
+                return Ok(());
             }
-            ast::Type::ArrayType(t) => {}
+            ast::Type::EnumType(t) => {
+                let base = ptr!(t.base->base_type);
+                self.write_decode_type(w, field, base, ident)?;
+                return Ok(());
+            }
+            ast::Type::ArrayType(t) => {
+                if Self::is_primitive_array(&t) {
+                    let len = ptr!(t.length_value);
+                    w.writeln(&format!("{} = [0; {}];", ident, len))?;
+                    w.writeln(&format!("for i in 0..{} {{", len))?;
+                    {
+                        let _scope = w.enter_indent_scope();
+                        self.write_decode_type(
+                            w,
+                            field,
+                            ptr!(t.element_type),
+                            &format!("{}[i]", ident),
+                        )?;
+                    }
+                    w.writeln("}")?;
+                } else {
+                    let len = match ptr_null!(t.length_value) {
+                        None => self.expr_to_string(&ptr!(t.length))?,
+                        Some(x) => x.to_string(),
+                    };
+                    w.writeln(&format!("{} = Vec::new();", ident))?;
+                    w.writeln(&format!("for _ in 0..{} {{", len))?;
+                    {
+                        let _scope = w.enter_indent_scope();
+                        let temp = format!("tmp{}", self.get_seq());
+                        w.writeln(&format!("let mut {} = Default::default();", temp))?;
+                        self.write_decode_type(w, field, ptr!(t.element_type), &temp)?;
+                        w.writeln(&format!("{}.push({});", ident, temp))?;
+                    }
+                }
+                return Ok(());
+            }
             _ => {}
         }
-        Err(anyhow!("unsupported"))
+        Err(anyhow!("unsupported decode type"))
     }
 
     pub fn write_encode_field<W1: std::io::Write>(
@@ -389,7 +483,7 @@ impl<W: std::io::Write> Generator<W> {
         w: &mut Writer<W1>,
         field: &SharedPtr<ast::Field>,
     ) -> Result<()> {
-        let ident = ptr_null!(field.ident.ident);
+        let ident = self.expr_to_string(&ptr!(field.ident).into())?;
         self.write_encode_type(w, &field.borrow(), ptr!(field.field_type), &ident)?;
         Ok(())
     }
@@ -399,7 +493,7 @@ impl<W: std::io::Write> Generator<W> {
         w: &mut Writer<W1>,
         field: &SharedPtr<ast::Field>,
     ) -> Result<()> {
-        let ident = ptr_null!(field.ident.ident);
+        let ident = self.expr_to_string(&ptr!(field.ident).into())?;
         self.write_decode_type(w, &field.borrow(), ptr!(field.field_type), &ident)?;
         Ok(())
     }
@@ -421,6 +515,36 @@ impl<W: std::io::Write> Generator<W> {
         Ok(())
     }
 
+    pub fn write_if<W1: std::io::Write>(
+        &mut self,
+        w: &mut Writer<W1>,
+        node: SharedPtr<ast::If>,
+    ) -> Result<()> {
+        let cond = ptr!(node.cond);
+        let cond = self
+            .s
+            .to_string(&cond.into())
+            .map_err(|x| anyhow!("{:?}", x))?;
+        w.writeln(&format!("if {cond} {{"))?;
+        {
+            let _scope = w.enter_indent_scope();
+            self.write_node(w, ptr!(node.then).into())?;
+        }
+        w.writeln("}")?;
+        if let Some(else_) = ptr_null!(node.els) {
+            w.writeln("else ")?;
+            if let ast::Node::If(els) = else_.clone().into() {
+                self.write_if(w, els)?;
+            } else {
+                w.writeln("{")?;
+                let _scope = w.enter_indent_scope();
+                self.write_node(w, else_)?;
+                w.writeln("}")?;
+            }
+        }
+        Ok(())
+    }
+
     pub fn write_node<W1: std::io::Write>(
         &mut self,
         w: &mut Writer<W1>,
@@ -432,7 +556,12 @@ impl<W: std::io::Write> Generator<W> {
                     self.write_node(w, elem.clone())?;
                 }
             }
-            ast::Node::If(if_) => {}
+            ast::Node::ScopedStatement(stmt) => {
+                self.write_node(w, ptr!(stmt.statement).into())?;
+            }
+            ast::Node::If(if_) => {
+                self.write_if(w, if_)?;
+            }
             ast::Node::Field(field) => {
                 if self.encode {
                     self.write_encode_field(w, &field)?;

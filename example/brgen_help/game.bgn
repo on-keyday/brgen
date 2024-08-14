@@ -1,0 +1,13 @@
+
+
+enum GameType:
+    :u8
+    ID
+
+format GameFrame:
+    type :GameType
+    match type:
+        GameType.ID => id :IDFrame
+
+format IDFrame:
+    id :[16]u8
