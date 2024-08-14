@@ -227,6 +227,18 @@ impl Stringer {
                 return replace_with_this(&self.self_, ident_str);
             }
         }
+        if let Some(x) = ident
+            .borrow()
+            .base
+            .as_ref()
+            .and_then(|f| f.upgrade())
+            .and_then(|s| s.try_into_member().ok())
+            .and_then(|s| Some(matches!(s, ast::Member::EnumMember(_))))
+        {
+            if x {
+                return Ok(ident_str.clone());
+            }
+        }
         replace_with_this(&default_, ident_str)
     }
 
@@ -282,7 +294,8 @@ impl Stringer {
                 let base = self.to_string(&ptr!(c.target))?;
                 self.to_map_ident(&ptr!(c.member), &base)
             }
-            _ => Err(StringerError::Unsupported),
+            ast::Expr::Identity(i) => self.to_string(&ptr!(i.expr)),
+            _ => Ok("".to_string()),
         }
     }
 }

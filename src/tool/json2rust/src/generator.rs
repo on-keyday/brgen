@@ -1,17 +1,22 @@
 use anyhow::{anyhow, Result};
 use ast2rust::ast::{GenerateMapFile, StructType, StructUnionType, UnionType};
-use ast2rust::eval::{topological_sort_format, Stringer};
+use ast2rust::eval::{lookup_base, topological_sort_format, Stringer};
 use ast2rust::{ast, PtrKey, PtrUnwrapError};
 use ast2rust_macro::{ptr, ptr_null};
-use std::ascii::escape_default;
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::f32::consts::E;
 use std::rc::Rc;
 
 type SharedPtr<T> = Rc<RefCell<T>>;
 
 struct AnonymousStruct {
+    field: SharedPtr<ast::Field>,
+    base: String,
+    name: String,
+}
+
+struct AnonymousStructUnion {
+    field: SharedPtr<ast::Field>,
     name: String,
 }
 
@@ -27,7 +32,7 @@ pub struct Generator<W: std::io::Write> {
     pub map_file: GenerateMapFile,
 
     structs: HashMap<PtrKey<StructType>, AnonymousStruct>,
-    struct_unions: HashMap<PtrKey<StructUnionType>, AnonymousStruct>,
+    struct_unions: HashMap<PtrKey<StructUnionType>, AnonymousStructUnion>,
     s: Stringer,
 }
 
@@ -177,8 +182,16 @@ impl<W: std::io::Write> Generator<W> {
         &mut self,
         w: &mut Writer<W1>,
         x: &SharedPtr<StructUnionType>,
+        field: &SharedPtr<ast::Field>,
     ) -> Result<String> {
         let name = format!("AnonymousStructUnion{}", self.get_seq());
+        self.struct_unions.insert(
+            PtrKey::new(x),
+            AnonymousStructUnion {
+                field: field.clone(),
+                name: name.clone(),
+            },
+        );
         let mut v = Vec::new();
         for structs in ptr_null!(x.structs).iter() {
             let name_s = format!("AnonymousStruct{}", self.get_seq());
@@ -196,6 +209,8 @@ impl<W: std::io::Write> Generator<W> {
             self.structs.insert(
                 PtrKey::new(structs),
                 AnonymousStruct {
+                    field: field.clone(),
+                    base: name.clone(),
                     name: name_s.clone(),
                 },
             );
@@ -217,6 +232,9 @@ impl<W: std::io::Write> Generator<W> {
         tmp_w.writeln("}")?;
 
         let union_fields = ptr_null!(x.union_fields);
+        let memb = ptr!(field.belong)
+            .upgrade()
+            .ok_or_else(|| anyhow!("error"))?;
         for field in union_fields.iter() {
             let typ: SharedPtr<UnionType> = ptr!(field->field_type)
                 .try_into()
@@ -230,9 +248,12 @@ impl<W: std::io::Write> Generator<W> {
             let c = ptr_null!(typ.common_type);
             if let Some(c) = c {
                 let c = self.get_type(&c)?;
-                tmp_w.writeln(&format!("impl {name} {{"))?;
+                let impl_target = memb.get_ident().ok_or_else(|| anyhow!("error"))?;
+                let impl_target = ptr_null!(impl_target.ident);
+                tmp_w.writeln(&format!("impl {impl_target} {{"))?;
                 {
                     let _scope = tmp_w.enter_indent_scope();
+                    self.s.errorString = "None".to_string();
                     tmp_w.writeln(&format!(
                         "pub fn {}(&self) -> Option<{}> {{",
                         ptr_null!(field->ident.ident),
@@ -256,7 +277,7 @@ impl<W: std::io::Write> Generator<W> {
                                 let _scope = tmp_w.enter_indent_scope();
                                 if let Some(field) = field.upgrade() {
                                     let ident = self.expr_to_string(&ptr!(field.ident).into())?;
-                                    tmp_w.writeln(&format!("return Some({}),", ident))?;
+                                    tmp_w.writeln(&format!("return Some({});", ident))?;
                                 } else {
                                     tmp_w.writeln("return None")?;
                                 }
@@ -268,28 +289,43 @@ impl<W: std::io::Write> Generator<W> {
                     }
                     tmp_w.writeln("}")?;
 
+                    self.s.errorString =
+                        format!("std::io::Error::new(std::io::ErrorKind::Other, \"error\")");
                     tmp_w.writeln(&format!(
-                        "pub fn set_{}(&mut self, x: {}) -> bool {{",
+                        "pub fn set_{}(&mut self, x: {}) -> Result<(),std::io::Error> {{",
                         ptr_null!(field->ident.ident),
                         c
                     ))?;
                     {
                         let _scope = tmp_w.enter_indent_scope();
-                        tmp_w.writeln("match self {")?;
-                        {
-                            let _scope = tmp_w.enter_indent_scope();
-                            for name in v.iter() {
-                                tmp_w.writeln(&format!(
-                                    "{}::{}(y) => *y.{} = x,",
-                                    name,
-                                    name,
-                                    ptr_null!(field->ident.ident)
-                                ))?;
+
+                        for cand in ptr_null!(typ.candidates) {
+                            let cond = ptr!(cand.cond).upgrade().ok_or_else(|| anyhow!("error"))?;
+                            let cond = if let Some(cond0) = &cond0 {
+                                self.s
+                                    .eval_ephemeral_binary_op(ast::BinaryOp::Equal, &cond, cond0)
+                                    .map_err(|x| anyhow!("{:?}", x))?
+                            } else {
+                                self.expr_to_string(&cond)?
+                            };
+
+                            tmp_w.writeln(&format!("if {cond} {{ "))?;
+                            {
+                                let _scope = tmp_w.enter_indent_scope();
+                                if let Some(field) = field.upgrade() {
+                                    let ident = self.expr_to_string(&ptr!(field.ident).into())?;
+                                    tmp_w.writeln(&format!("{} = x;", ident))?;
+                                    tmp_w.writeln("Ok(())")?;
+                                } else {
+                                    tmp_w.writeln("Err(std::io::Error::new(std::io::ErrorKind::Other, \"cannot set value\"))")?;
+                                }
                             }
+                            tmp_w.writeln("}")?;
                         }
-                        tmp_w.writeln("}")?;
                     }
+                    tmp_w.writeln("}")?;
                 }
+                tmp_w.writeln("}")?;
             }
         }
 
@@ -405,18 +441,19 @@ impl<W: std::io::Write> Generator<W> {
             })));
             field.borrow_mut().ident = some;
         }
-        if let ast::Type::StructUnionType(x) = ptr!(field.field_type) {
-            self.gen_anonymous_union(w, &x)?;
-        }
-        w.write("pub ")?;
+        let prefix = &w.prefix;
         let ident = ptr_null!(field.ident.ident);
         let ident = Self::escape_keyword(ident);
+        self.s
+            .add_map(&ptr!(field.ident), &format!("{prefix}.{ident}"));
+        if let ast::Type::StructUnionType(x) = ptr!(field.field_type) {
+            self.gen_anonymous_union(w, &x, field)?;
+        }
+        w.write("pub ")?;
         w.write(&format!("{}: ", ident))?;
         let typ = self.get_type(&ptr!(field.field_type))?;
         w.writeln(&format!("{},", typ))?;
-        let prefix = &w.prefix;
-        self.s
-            .add_map(&ptr!(field.ident), &format!("{prefix}.{ident}"));
+
         Ok(())
     }
 
@@ -671,6 +708,17 @@ impl<W: std::io::Write> Generator<W> {
     ) -> Result<()> {
         match node {
             ast::Node::IndentBlock(block) => {
+                if !self.encode {
+                    if let Some(anonymous) =
+                        self.structs.get(&PtrKey::new(&ptr!(block.struct_type)))
+                    {
+                        let field = &anonymous.field;
+                        let ident = self.expr_to_string(&ptr!(field.ident).into())?;
+                        let name = &anonymous.name;
+                        let base = &anonymous.base;
+                        w.writeln(&format!("{ident} = {base}::{name}(Default::default());"))?;
+                    }
+                }
                 for elem in ptr_null!(block.elements).iter() {
                     self.write_node(w, elem.clone())?;
                 }
@@ -745,6 +793,8 @@ impl<W: std::io::Write> Generator<W> {
         w.writeln(&format!("impl {} {{", ptr_null!(fmt.ident.ident)))?;
         {
             let _scope = w.enter_indent_scope();
+            self.s.errorString =
+                "std::io::Error::new(std::io::ErrorKind::Other, \"error\")".to_string();
             self.encode = true;
             self.write_encode_fn(w, fmt.clone())?;
             self.encode = false;
