@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 use ast2rust::ast::{GenerateMapFile, StructType, StructUnionType, UnionType};
-use ast2rust::eval::{lookup_base, topological_sort_format, Stringer};
+use ast2rust::eval::{is_any_range, lookup_base, topological_sort_format, Stringer};
 use ast2rust::{ast, PtrKey, PtrUnwrapError};
 use ast2rust_macro::{ptr, ptr_null};
 use std::cell::RefCell;
@@ -197,8 +197,10 @@ impl<W: std::io::Write> Generator<W> {
             let name_s = format!("AnonymousStruct{}", self.get_seq());
             let mut tmp_w = Writer::new(Vec::new());
             let prefix = &w.prefix;
-            tmp_w.prefix =
-                format!("(match {prefix} {{ {name}::{name_s}(x) => x, _ => return $ERROR }})?");
+            let field_name = ptr_null!(field.ident.ident);
+            tmp_w.prefix = format!(
+                "(match {prefix}.{field_name} {{ {name}::{name_s}(x) => x, _ => return $ERROR }})"
+            );
             tmp_w.writeln("#[derive(Default,Debug,Clone,PartialEq)]")?;
             tmp_w.write("pub struct ")?;
             tmp_w.write(&name_s)?;
@@ -253,12 +255,9 @@ impl<W: std::io::Write> Generator<W> {
                 tmp_w.writeln(&format!("impl {impl_target} {{"))?;
                 {
                     let _scope = tmp_w.enter_indent_scope();
-                    self.s.errorString = "None".to_string();
-                    tmp_w.writeln(&format!(
-                        "pub fn {}(&self) -> Option<{}> {{",
-                        ptr_null!(field->ident.ident),
-                        c
-                    ))?;
+                    let escaped = Self::escape_keyword(ptr_null!(field->ident.ident));
+                    self.s.error_string = "None".to_string();
+                    tmp_w.writeln(&format!("pub fn {}(&self) -> Option<{}> {{", escaped, c))?;
                     {
                         let _scope = tmp_w.enter_indent_scope();
 
@@ -275,9 +274,14 @@ impl<W: std::io::Write> Generator<W> {
                             tmp_w.writeln(&format!("if {cond} {{ "))?;
                             {
                                 let _scope = tmp_w.enter_indent_scope();
-                                if let Some(field) = field.upgrade() {
-                                    let ident = self.expr_to_string(&ptr!(field.ident).into())?;
-                                    tmp_w.writeln(&format!("return Some({});", ident))?;
+                                if let Some(field) = ptr_null!(cand.field) {
+                                    if let Some(field) = field.upgrade() {
+                                        let ident =
+                                            self.expr_to_string(&ptr!(field.ident).into())?;
+                                        tmp_w.writeln(&format!("return Some({});", ident))?;
+                                    } else {
+                                        tmp_w.writeln("return None")?;
+                                    }
                                 } else {
                                     tmp_w.writeln("return None")?;
                                 }
@@ -289,8 +293,8 @@ impl<W: std::io::Write> Generator<W> {
                     }
                     tmp_w.writeln("}")?;
 
-                    self.s.errorString =
-                        format!("std::io::Error::new(std::io::ErrorKind::Other, \"error\")");
+                    self.s.error_string =
+                        format!("Err(std::io::Error::new(std::io::ErrorKind::Other, \"error\"))");
                     tmp_w.writeln(&format!(
                         "pub fn set_{}(&mut self, x: {}) -> Result<(),std::io::Error> {{",
                         ptr_null!(field->ident.ident),
@@ -312,16 +316,24 @@ impl<W: std::io::Write> Generator<W> {
                             tmp_w.writeln(&format!("if {cond} {{ "))?;
                             {
                                 let _scope = tmp_w.enter_indent_scope();
-                                if let Some(field) = field.upgrade() {
-                                    let ident = self.expr_to_string(&ptr!(field.ident).into())?;
-                                    tmp_w.writeln(&format!("{} = x;", ident))?;
-                                    tmp_w.writeln("Ok(())")?;
+                                if let Some(field) = ptr_null!(cand.field) {
+                                    if let Some(field) = field.upgrade() {
+                                        let ident =
+                                            self.expr_to_string(&ptr!(field.ident).into())?;
+                                        tmp_w.writeln(&format!("{} = x;", ident))?;
+                                        tmp_w.writeln("return Ok(())")?;
+                                    } else {
+                                        tmp_w.writeln("return Err(std::io::Error::new(std::io::ErrorKind::Other, \"cannot set value\"))")?;
+                                    }
                                 } else {
-                                    tmp_w.writeln("Err(std::io::Error::new(std::io::ErrorKind::Other, \"cannot set value\"))")?;
+                                    tmp_w.writeln("return Err(std::io::Error::new(std::io::ErrorKind::Other, \"cannot set value\"))")?;
                                 }
                             }
                             tmp_w.writeln("}")?;
                         }
+                        tmp_w.write(
+                            "Err(std::io::Error::new(std::io::ErrorKind::Other, \"error\"))",
+                        )?;
                     }
                     tmp_w.writeln("}")?;
                 }
@@ -342,6 +354,10 @@ impl<W: std::io::Write> Generator<W> {
                     ptr_null!(t.is_common_supported),
                 )?;
                 Ok(x)
+            }
+            ast::Type::FloatType(t) => {
+                let x = ptr!(t.bit_size);
+                Ok(format!("f{}", x))
             }
             ast::Type::BoolType(_) => Ok("bool".to_string()),
             ast::Type::EnumType(t) => {
@@ -408,7 +424,8 @@ impl<W: std::io::Write> Generator<W> {
 
     pub fn escape_keyword(s: String) -> String {
         match s.as_str() {
-            "type" => "type_".to_string(),
+            "type" => "r#type".to_string(),
+            "move" => "r#move".to_string(),
             _ => s,
         }
     }
@@ -493,11 +510,43 @@ impl<W: std::io::Write> Generator<W> {
                 }
                 return Ok(());
             }
+            ast::Type::FloatType(fty) => {
+                let bit_size = ptr!(fty.bit_size);
+                let le_or_be = match ptr_null!(fty.endian) {
+                    ast::Endian::Big | ast::Endian::Unspec => "be",
+                    ast::Endian::Little => "le",
+                };
+                match bit_size {
+                    16 => {
+                        w.writeln(&format!(
+                            "w.write(&{ident}.to_bits().to_{le_or_be}_bytes())?;"
+                        ))?;
+                    }
+                    32 => {
+                        w.writeln(&format!(
+                            "w.write(&{ident}.to_bits().to_{le_or_be}_bytes())?;"
+                        ))?;
+                    }
+                    64 => {
+                        w.writeln(&format!(
+                            "w.write(&{ident}.to_bits().to_{le_or_be}_bytes())?;"
+                        ))?;
+                    }
+                    _ => {
+                        return Err(anyhow!("unsupported float size"));
+                    }
+                }
+                return Ok(());
+            }
             ast::Type::IdentType(t) => {
                 let base = ptr!(t.base)
                     .try_into()
                     .map_err(|x: ast::Error| anyhow!("{:?}", x))?;
                 self.write_encode_type(w, field, base, ident)?;
+                return Ok(());
+            }
+            ast::Type::StructType(_) => {
+                w.writeln(&format!("{}.encode(w)?;", ident))?;
                 return Ok(());
             }
             ast::Type::EnumType(t) => {
@@ -582,6 +631,44 @@ impl<W: std::io::Write> Generator<W> {
                 }
                 return Ok(());
             }
+            ast::Type::FloatType(t) => {
+                let bit_size = ptr!(t.bit_size);
+                let le_or_be = match ptr_null!(t.endian) {
+                    ast::Endian::Big | ast::Endian::Unspec => "be",
+                    ast::Endian::Little => "le",
+                };
+                let tmp = format!("tmp{}", self.get_seq());
+                match bit_size {
+                    16 => {
+                        let tmp = format!("tmp{}", self.get_seq());
+                        w.writeln(&format!("let mut {} = [0; 2];", tmp))?;
+                        w.writeln(&format!("r.read(&mut {})?;", tmp))?;
+                        w.writeln(&format!(
+                            "{ident} = f16::from_bits(u16::from_{le_or_be}_bytes({tmp}));"
+                        ))?;
+                    }
+                    32 => {
+                        let tmp = format!("tmp{}", self.get_seq());
+                        w.writeln(&format!("let mut {} = [0; 4];", tmp))?;
+                        w.writeln(&format!("r.read(&mut {})?;", tmp))?;
+                        w.writeln(&format!(
+                            "{ident} = f32::from_bits(u32::from_{le_or_be}_bytes({tmp}));"
+                        ))?;
+                    }
+                    64 => {
+                        let tmp = format!("tmp{}", self.get_seq());
+                        w.writeln(&format!("let mut {} = [0; 8];", tmp))?;
+                        w.writeln(&format!("r.read(&mut {})?;", tmp))?;
+                        w.writeln(&format!(
+                            "{ident} = f64::from_bits(u64::from_{le_or_be}_bytes({tmp}));"
+                        ))?;
+                    }
+                    _ => {
+                        return Err(anyhow!("unsupported float size"));
+                    }
+                }
+                return Ok(());
+            }
             ast::Type::IdentType(t) => {
                 let base = ptr!(t.base)
                     .try_into()
@@ -595,6 +682,10 @@ impl<W: std::io::Write> Generator<W> {
                 w.writeln(&format!("let mut {} = Default::default();", tmp))?;
                 self.write_decode_type(w, field, base, &tmp)?;
                 w.writeln(&format!("{} = {}.into();", ident, tmp))?;
+                return Ok(());
+            }
+            ast::Type::StructType(_) => {
+                w.writeln(&format!("{}.decode_impl(r)?;", ident))?;
                 return Ok(());
             }
             ast::Type::ArrayType(t) => {
@@ -639,6 +730,9 @@ impl<W: std::io::Write> Generator<W> {
         w: &mut Writer<W1>,
         field: &SharedPtr<ast::Field>,
     ) -> Result<()> {
+        if let ast::Type::UnionType(_) = ptr!(field.field_type) {
+            return Ok(());
+        }
         let ident = self.expr_to_string(&ptr!(field.ident).into())?;
         self.write_encode_type(w, &field.borrow(), ptr!(field.field_type), &ident)?;
         Ok(())
@@ -649,6 +743,9 @@ impl<W: std::io::Write> Generator<W> {
         w: &mut Writer<W1>,
         field: &SharedPtr<ast::Field>,
     ) -> Result<()> {
+        if let ast::Type::UnionType(_) = ptr!(field.field_type) {
+            return Ok(());
+        }
         let ident = self.expr_to_string(&ptr!(field.ident).into())?;
         self.write_decode_type(w, &field.borrow(), ptr!(field.field_type), &ident)?;
         Ok(())
@@ -701,6 +798,37 @@ impl<W: std::io::Write> Generator<W> {
         Ok(())
     }
 
+    pub fn write_match<W1: std::io::Write>(
+        &mut self,
+        w: &mut Writer<W1>,
+        m: &SharedPtr<ast::Match>,
+    ) -> Result<()> {
+        if let Some(cond) = ptr_null!(m.cond) {
+            w.writeln(&format!("match {} {{", self.expr_to_string(&cond.into())?))?;
+        } else {
+            w.writeln("match {")?;
+        }
+        for b in ptr_null!(m.branch) {
+            let cond = &ptr!(b.cond).into();
+            let cond = if is_any_range(cond) {
+                "_".to_string()
+            } else {
+                self.expr_to_string(cond)?
+            };
+            w.writeln(&format!("{cond} => {{"))?;
+            {
+                let _scope = w.enter_indent_scope();
+                self.write_node(w, ptr!(b.then).into())?;
+            }
+            w.writeln("},")?;
+        }
+        if !ptr_null!(m.struct_union_type.exhaustive) {
+            w.writeln("_ => {}")?;
+        }
+        w.writeln("}")?;
+        Ok(())
+    }
+
     pub fn write_node<W1: std::io::Write>(
         &mut self,
         w: &mut Writer<W1>,
@@ -728,6 +856,9 @@ impl<W: std::io::Write> Generator<W> {
             }
             ast::Node::If(if_) => {
                 self.write_if(w, if_)?;
+            }
+            ast::Node::Match(m) => {
+                self.write_match(w, &m)?;
             }
             ast::Node::Field(field) => {
                 if self.encode {
@@ -793,8 +924,8 @@ impl<W: std::io::Write> Generator<W> {
         w.writeln(&format!("impl {} {{", ptr_null!(fmt.ident.ident)))?;
         {
             let _scope = w.enter_indent_scope();
-            self.s.errorString =
-                "std::io::Error::new(std::io::ErrorKind::Other, \"error\")".to_string();
+            self.s.error_string =
+                "Err(std::io::Error::new(std::io::ErrorKind::Other, \"error\"))".to_string();
             self.encode = true;
             self.write_encode_fn(w, fmt.clone())?;
             self.encode = false;

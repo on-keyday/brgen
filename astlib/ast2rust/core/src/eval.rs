@@ -127,7 +127,7 @@ pub fn topological_sort_format(
 pub struct Stringer {
     self_: String,
     ident_map: HashMap<PtrKey<ast::Ident>, String>,
-    pub errorString: String,
+    pub error_string: String,
 }
 
 #[derive(Debug)]
@@ -180,12 +180,34 @@ pub fn lookup_base(ident: &Rc<RefCell<ast::Ident>>) -> Option<(Rc<RefCell<ast::I
     }
 }
 
+pub fn is_any_range(r: &ast::Expr) -> bool {
+    match r {
+        ast::Expr::Range(b) => {
+            if let ast::BinaryOp::RangeExclusive | ast::BinaryOp::RangeInclusive = ptr_null!(b.op) {
+                return ptr_null!(b.start).is_none() && ptr_null!(b.end).is_none();
+            }
+        }
+        ast::Expr::Identity(i) => {
+            if let Some(e) = &ptr_null!(i.expr) {
+                return is_any_range(e);
+            }
+        }
+        ast::Expr::Paren(p) => {
+            if let Some(e) = &ptr_null!(p.expr) {
+                return is_any_range(e);
+            }
+        }
+        _ => {}
+    }
+    false
+}
+
 impl Stringer {
     pub fn new(self_: String) -> Self {
         Self {
             self_,
             ident_map: HashMap::new(),
-            errorString: "".to_string(),
+            error_string: "".to_string(),
         }
     }
 
@@ -210,9 +232,9 @@ impl Stringer {
         let replace_with_this = |this: &str, s: &str| {
             if let Some(_) = s.find("$SELF") {
                 Ok(s.replace("$SELF", this)
-                    .replace("$ERROR", &self.errorString))
+                    .replace("$ERROR", &self.error_string))
             } else {
-                Ok(s.to_string().replace("$ERROR", &self.errorString))
+                Ok(s.to_string().replace("$ERROR", &self.error_string))
             }
         };
         let ident_str = self.ident_map.get(&key).or(Some(&ident_str)).unwrap();
@@ -242,7 +264,11 @@ impl Stringer {
         replace_with_this(&default_, ident_str)
     }
 
-    pub fn eval_binary_op(&self, b: &Rc<RefCell<Binary>>) -> Result<String, StringerError> {
+    pub fn eval_binary_op(
+        &self,
+        b: &Rc<RefCell<Binary>>,
+        root: bool,
+    ) -> Result<String, StringerError> {
         let left = self.to_string(&ptr!(b.left))?;
         let right = self.to_string(&ptr!(b.right))?;
         Ok(format!("({} {} {})", left, ptr_null!(b.op).to_str(), right))
@@ -268,33 +294,37 @@ impl Stringer {
             constant_level: ast::ConstantLevel::Variable,
         };
         let b = Rc::new(RefCell::new(tmp));
-        self.eval_binary_op(&b)
+        self.eval_binary_op(&b, true)
     }
 
     pub fn to_string(&self, n: &ast::Expr) -> Result<String, StringerError> {
+        self.to_string_impl(n, true)
+    }
+
+    pub fn to_string_impl(&self, n: &ast::Expr, root: bool) -> Result<String, StringerError> {
         match n {
             ast::Expr::IntLiteral(i) => Ok(ptr_null!(i.value)),
             ast::Expr::BoolLiteral(b) => Ok(ptr_null!(b.value).to_string()),
             ast::Expr::StrLiteral(s) => Ok(ptr_null!(s.value)),
             ast::Expr::Ident(i) => self.to_map_ident(&i, ""),
             ast::Expr::Binary(b) => {
-                return self.eval_binary_op(b);
+                return self.eval_binary_op(b, root);
             }
             ast::Expr::Unary(u) => {
-                let right = self.to_string(&ptr!(u.expr))?;
+                let right = self.to_string_impl(&ptr!(u.expr), false)?;
                 Ok(format!("({} {})", ptr_null!(u.op).to_str(), right))
             }
             ast::Expr::Cond(c) => {
-                let cond = self.to_string(&ptr!(c.cond))?;
-                let then = self.to_string(&ptr!(c.then))?;
-                let else_ = self.to_string(&ptr!(c.els))?;
+                let cond = self.to_string_impl(&ptr!(c.cond), false)?;
+                let then = self.to_string_impl(&ptr!(c.then), false)?;
+                let else_ = self.to_string_impl(&ptr!(c.els), false)?;
                 Ok(format!("(if {cond} {{ {then} }} else {{ {else_} }} )"))
             }
             ast::Expr::MemberAccess(c) => {
-                let base = self.to_string(&ptr!(c.target))?;
+                let base = self.to_string_impl(&ptr!(c.target), false)?;
                 self.to_map_ident(&ptr!(c.member), &base)
             }
-            ast::Expr::Identity(i) => self.to_string(&ptr!(i.expr)),
+            ast::Expr::Identity(i) => self.to_string_impl(&ptr!(i.expr), root),
             _ => Ok("".to_string()),
         }
     }

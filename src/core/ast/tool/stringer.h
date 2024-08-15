@@ -11,7 +11,7 @@
 namespace brgen::ast::tool {
 
     struct Stringer {
-        using BinaryFunc = std::function<std::string(Stringer& s, const std::shared_ptr<Binary>& v)>;
+        using BinaryFunc = std::function<std::string(Stringer& s, const std::shared_ptr<Binary>& v, bool root)>;
         BinaryFunc bin_op_func;
         std::unordered_map<BinaryOp, BinaryFunc> bin_op_map;
         std::unordered_map<UnaryOp, std::function<std::string(Stringer& s, const std::shared_ptr<Expr>&)>> unary_op_map;
@@ -81,31 +81,34 @@ namespace brgen::ast::tool {
             return get_text_with_replace(member_base);
         }
 
-        std::string default_bin_op(const std::shared_ptr<Binary>& bin) {
-            auto left = to_string(bin->left);
-            auto right = to_string(bin->right);
+        std::string default_bin_op(const std::shared_ptr<Binary>& bin, bool root) {
+            auto left = to_string_impl(bin->left, false);
+            auto right = to_string_impl(bin->right, false);
+            if (root) {
+                return concat(left, " ", ast::to_string(bin->op), " ", right);
+            }
             return concat("(", left, " ", ast::to_string(bin->op), " ", right, ")");
         }
 
-        std::string bin_op_with_lookup(const std::shared_ptr<Binary>& bin) {
+        std::string bin_op_with_lookup(const std::shared_ptr<Binary>& bin, bool root) {
             if (auto it = bin_op_map.find(bin->op); it != bin_op_map.end()) {
-                return it->second(*this, bin);
+                return it->second(*this, bin, root);
             }
             else {
-                return default_bin_op(bin);
+                return default_bin_op(bin, root);
             }
         }
 
        private:
-        std::string handle_bin_op(const std::shared_ptr<Binary>& bin) {
+        std::string handle_bin_op(const std::shared_ptr<Binary>& bin, bool root) {
             if (bin_op_func) {
-                return bin_op_func(*this, bin);
+                return bin_op_func(*this, bin, root);
             }
-            return bin_op_with_lookup(bin);
+            return bin_op_with_lookup(bin, root);
         }
 
         std::string handle_call_op(const std::shared_ptr<Call>& c) {
-            auto callee = to_string(c->callee);
+            auto callee = to_string_impl(c->callee, false);
             if (auto found = call_handler.find(callee); found != call_handler.end()) {
                 return found->second(*this, callee, c->arguments);
             }
@@ -122,17 +125,21 @@ namespace brgen::ast::tool {
                 if (!result.empty()) {
                     result += ", ";
                 }
-                result += to_string(arg);
+                result += to_string_impl(arg, true);
             }
             return result;
         }
 
         std::string to_string(const std::shared_ptr<Expr>& expr) {
+            return to_string_impl(expr, true);
+        }
+
+        std::string to_string_impl(const std::shared_ptr<Expr>& expr, bool root) {
             if (!expr) {
                 return "";
             }
             if (auto e = ast::as<ast::Binary>(expr)) {
-                return handle_bin_op(ast::cast_to<ast::Binary>(expr));
+                return handle_bin_op(ast::cast_to<ast::Binary>(expr), root);
             }
             if (auto lit = ast::as<ast::IntLiteral>(expr)) {
                 return lit->value;
@@ -150,17 +157,17 @@ namespace brgen::ast::tool {
             }
             if (auto c = ast::as<ast::Cond>(expr)) {
                 if (cond_op) {
-                    return cond_op(to_string(c->cond), to_string(c->then), to_string(c->els));
+                    return cond_op(to_string_impl(c->cond, false), to_string_impl(c->then, false), to_string_impl(c->els, false));
                 }
                 else {
-                    return concat("(", to_string(c->cond), " ? ", to_string(c->then), " : ", to_string(c->els), ")");
+                    return concat("(", to_string_impl(c->cond, false), " ? ", to_string_impl(c->then, false), " : ", to_string_impl(c->els, false), ")");
                 }
             }
             if (auto c = ast::as<ast::Call>(expr)) {
                 return handle_call_op(ast::cast_to<ast::Call>(expr));
             }
             if (auto d = ast::as<ast::Unary>(expr)) {
-                return concat(ast::to_string(d->op), to_string(d->expr));
+                return concat(ast::to_string(d->op), to_string_impl(d->expr, false));
             }
             if (auto a = ast::as<ast::Available>(expr)) {
                 if (available_handler) {
@@ -178,7 +185,7 @@ namespace brgen::ast::tool {
                     if (auto typ = ast::as<ast::UnionType>(field->field_type)) {
                         std::string cond_s = "";
                         if (auto c = typ->cond.lock()) {
-                            cond_s = to_string(c);
+                            cond_s = to_string_impl(c, false);
                         }
                         else {
                             cond_s = "true";
@@ -186,7 +193,7 @@ namespace brgen::ast::tool {
                         std::string result;
                         for (auto& c : typ->candidates) {
                             auto expr = c->cond.lock();
-                            auto s = to_string(expr);
+                            auto s = to_string_impl(expr, false);
                             result += brgen::concat("(", s, "==", cond_s, ") ? ");
                             if (c->field.lock()) {
                                 result += "true";
@@ -210,7 +217,7 @@ namespace brgen::ast::tool {
                 return concat(type_resolver(*this, cast_->expr_type), "(", args, ")");
             }
             if (auto access = ast::as<ast::MemberAccess>(expr)) {
-                auto base = to_string(access->target);
+                auto base = to_string_impl(access->target, false);
                 return ident_to_string(access->member, base);
             }
             if (auto io_op = ast::as<ast::IOOperation>(expr)) {
@@ -226,7 +233,7 @@ namespace brgen::ast::tool {
                 }
             }
             if (auto identity = ast::as<ast::Identity>(expr)) {
-                return to_string(identity->expr);
+                return to_string_impl(identity->expr, root);
             }
             return "";
         }

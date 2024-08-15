@@ -989,7 +989,7 @@ namespace j2cp2 {
         std::string get_length(ast::Field* field, const std::shared_ptr<ast::Expr>& expr) {
             if (use_overflow_check) {
                 std::vector<std::string> buffer;
-                str.bin_op_func = [&](ast::tool::Stringer& s, const std::shared_ptr<ast::Binary>& r) {
+                str.bin_op_func = [&](ast::tool::Stringer& s, const std::shared_ptr<ast::Binary>& r, bool root) {
                     brgen::writer::Writer w;
                     auto op = r->op;
                     if (op == ast::BinaryOp::add ||
@@ -1014,7 +1014,7 @@ namespace j2cp2 {
                         buffer.push_back(std::move(w.out()));
                         return tmp_buf;
                     }
-                    return str.bin_op_with_lookup(r);
+                    return str.bin_op_with_lookup(r, root);
                 };
                 auto result = str.to_string(expr);
                 str.bin_op_func = nullptr;
