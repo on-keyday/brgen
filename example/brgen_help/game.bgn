@@ -11,16 +11,17 @@ enum GameType:
 format GameFrame:
     type :GameType
     match type:
-        GameType.ID => id :IDFrame
+        GameType.ID => id :ID
         GameType.Move => move :MoveFrame
         .. => ..
 
-format IDFrame:
+format ID:
     id :[16]u8
 
 format Vector:
     x :f32
     y :f32
+    z :f32
 
 format MoveFrame:
     position :Vector
