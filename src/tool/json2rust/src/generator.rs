@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 use ast2rust::ast::{GenerateMapFile, StructType, StructUnionType, UnionType};
-use ast2rust::eval::{is_any_range, lookup_base, topological_sort_format, Stringer};
+use ast2rust::eval::{is_any_range, is_struct_type, lookup_base, topological_sort_format, Stringer};
 use ast2rust::{ast, PtrKey, PtrUnwrapError};
 use ast2rust_macro::{ptr, ptr_null};
 use std::cell::RefCell;
@@ -258,6 +258,7 @@ impl<W: std::io::Write> Generator<W> {
             };
             let c = ptr_null!(typ.common_type);
             if let Some(c) = c {
+                let is_struct_ty = is_struct_type(&c);
                 let c = self.get_type(&c)?;
                 let impl_target = memb.get_ident().ok_or_else(|| anyhow!("error"))?;
                 let impl_target = ptr_null!(impl_target.ident);
@@ -267,7 +268,8 @@ impl<W: std::io::Write> Generator<W> {
                     let escaped = Self::escape_keyword(ptr_null!(field->ident.ident));
                     self.s.error_string = "{_ = x; return None}".to_string();
                     self.s.mutator = "&".to_string();
-                    tmp_w.writeln(&format!("pub fn {}(&self) -> Option<{}> {{", escaped, c))?;
+                    let as_ref = if is_struct_ty  { "&" } else { "" };
+                    tmp_w.writeln(&format!("pub fn {}(&self) -> Option<{}{}> {{", escaped,as_ref, c))?;
                     {
                         let _scope = tmp_w.enter_indent_scope();
 
@@ -288,7 +290,7 @@ impl<W: std::io::Write> Generator<W> {
                                     if let Some(field) = field.upgrade() {
                                         let ident =
                                             self.expr_to_string(&ptr!(field.ident).into())?;
-                                        tmp_w.writeln(&format!("return Some({});", ident))?;
+                                        tmp_w.writeln(&format!("return Some({}{});",as_ref, ident))?;
                                     } else {
                                         tmp_w.writeln("return None")?;
                                     }
@@ -658,18 +660,22 @@ impl<W: std::io::Write> Generator<W> {
             }
             ast::Type::ArrayType(t) => {
                 if Self::is_primitive_array(&t) {
-                    w.writeln(&format!("for i in 0..{} {{", ptr!(t.length_value)))?;
-                    {
-                        let _scope = w.enter_indent_scope();
-                        self.write_encode_type(
-                            w,
-                            field,
-                            ptr!(t.element_type),
-                            &format!("{}[i]", ident),
-                            &format!("{}[i]", err_ident),
-                        )?;
+                    if ptr_null!(t.is_bytes) {
+                        w.writeln(&format!("w.write_all(&{}).map_err(|e| Error::Io(\"{err_ident}\",e))?;", ident))?;
+                    } else {
+                        w.writeln(&format!("for i in 0..{} {{", ptr!(t.length_value)))?;
+                        {
+                            let _scope = w.enter_indent_scope();
+                            self.write_encode_type(
+                                w,
+                                field,
+                                ptr!(t.element_type),
+                                &format!("{}[i]", ident),
+                                &format!("{}[i]", err_ident),
+                            )?;
+                        }
+                        w.writeln("}")?;
                     }
-                    w.writeln("}")?;
                 } else {
                     let len = match ptr_null!(t.length_value) {
                         None => self.expr_to_string(&ptr!(t.length))?,
@@ -683,18 +689,22 @@ impl<W: std::io::Write> Generator<W> {
                         ))?;
                     }
                     w.writeln("}")?;
-                    w.writeln(&format!("for i in 0..{}.len() {{", ident))?;
-                    {
-                        let _scope = w.enter_indent_scope();
-                        self.write_encode_type(
-                            w,
-                            field,
-                            ptr!(t.element_type),
-                            &format!("{}[i]", ident),
-                            &format!("{}[i]", err_ident),
-                        )?;
+                    if ptr_null!(t.is_bytes) {
+                        w.writeln(&format!("w.write_all(&{}).map_err(|e| Error::Io(\"{err_ident}\",e))?;", ident))?;
+                    } else {
+                        w.writeln(&format!("for i in 0..{}.len() {{", ident))?;
+                        {
+                            let _scope = w.enter_indent_scope();
+                            self.write_encode_type(
+                                w,
+                                field,
+                                ptr!(t.element_type),
+                                &format!("{}[i]", ident),
+                                &format!("{}[i]", err_ident),
+                            )?;
+                        }
+                        w.writeln("}")?;
                     }
-                    w.writeln("}")?;
                 }
                 return Ok(());
             }
@@ -795,20 +805,24 @@ impl<W: std::io::Write> Generator<W> {
             }
             ast::Type::ArrayType(t) => {
                 if Self::is_primitive_array(&t) {
-                    let len = ptr!(t.length_value);
-                    w.writeln(&format!("{} = [0; {}];", ident, len))?;
-                    w.writeln(&format!("for i in 0..{} {{", len))?;
-                    {
-                        let _scope = w.enter_indent_scope();
-                        self.write_decode_type(
-                            w,
-                            field,
-                            ptr!(t.element_type),
-                            &format!("{}[i]", ident),
-                            &format!("{}[i]", err_ident),
-                        )?;
+                    if ptr_null!(t.is_bytes) {
+                        w.writeln(&format!("r.read_exact(&mut {}).map_err(|e| Error::Io(\"{err_ident}\",e))?;", ident))?;
+                    } else {
+                        let len = ptr!(t.length_value);
+                        w.writeln(&format!("{} = [0; {}];", ident, len))?;
+                        w.writeln(&format!("for i in 0..{} {{", len))?;
+                        {
+                            let _scope = w.enter_indent_scope();
+                            self.write_decode_type(
+                                w,
+                                field,
+                                ptr!(t.element_type),
+                                &format!("{}[i]", ident),
+                                &format!("{}[i]", err_ident),
+                            )?;
+                        }
+                        w.writeln("}")?;
                     }
-                    w.writeln("}")?;
                 } else {
                     let len = match ptr_null!(t.length_value) {
                         None => self.expr_to_string(&ptr!(t.length))?,
@@ -822,16 +836,21 @@ impl<W: std::io::Write> Generator<W> {
                         ))?;
                     }
                     w.writeln("}")?;
-                    w.writeln(&format!("{} = Vec::new();", ident))?;
-                    w.writeln(&format!("for _ in 0..{} {{", len))?;
-                    {
-                        let _scope = w.enter_indent_scope();
-                        let temp = format!("tmp{}", self.get_seq());
-                        w.writeln(&format!("let mut {} = Default::default();", temp))?;
-                        self.write_decode_type(w, field, ptr!(t.element_type), &temp,&format!("{err_ident}[i]"))?;
-                        w.writeln(&format!("{}.push({});", ident, temp))?;
+                    if ptr_null!(t.is_bytes) {
+                        w.writeln(&format!("{ident}.resize({len} as usize,0);"))?;
+                        w.writeln(&format!("r.read_exact(&mut {}).map_err(|e| Error::Io(\"{err_ident}\",e))?;", ident))?;
+                    } else {
+                        w.writeln(&format!("{} = Vec::new();", ident))?;
+                        w.writeln(&format!("for _ in 0..{} {{", len))?;
+                        {
+                            let _scope = w.enter_indent_scope();
+                            let temp = format!("tmp{}", self.get_seq());
+                            w.writeln(&format!("let mut {} = Default::default();", temp))?;
+                            self.write_decode_type(w, field, ptr!(t.element_type), &temp,&format!("{err_ident}[i]"))?;
+                            w.writeln(&format!("{}.push({});", ident, temp))?;
+                        }
+                        w.writeln("}")?;
                     }
-                    w.writeln("}")?;
                 }
                 return Ok(());
             }
@@ -1183,6 +1202,8 @@ impl<W: std::io::Write> Generator<W> {
     }
 
     pub fn write_error_type(&mut self) -> Result<()> {
+
+        self.w.writeln("#[derive(Debug)]")?;
         self.w.writeln("pub enum Error {")?;
         {
             let _scope = self.w.enter_indent_scope();
@@ -1193,6 +1214,44 @@ impl<W: std::io::Write> Generator<W> {
             self.w.writeln("Nested(&'static str,Box<Error>),")?;
         }
         self.w.writeln("}")?;
+
+        self.w.writeln("impl Error {")?;
+        self.w.writeln("pub fn io_error(&self) -> Option<&std::io::Error> {")?;
+        {
+            let _scope = self.w.enter_indent_scope();
+            self.w.writeln("match self {")?;
+            {
+                let _scope = self.w.enter_indent_scope();
+                self.w.writeln("Error::Io(_,e) => Some(e),")?;
+                self.w.writeln("Error::Nested(_,e) => e.io_error(),")?;
+                self.w.writeln("_ => None,")?;
+            }
+            self.w.writeln("}")?;
+        }
+        self.w.writeln("}")?;
+        self.w.writeln("}")?;
+
+        self.w.writeln("impl std::fmt::Display for Error {")?;
+        {
+            let _scope = self.w.enter_indent_scope();
+            self.w.writeln("fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {")?;
+            {
+                let _scope = self.w.enter_indent_scope();
+                self.w.writeln("match self {")?;
+                {
+                    let _scope = self.w.enter_indent_scope();
+                    self.w.writeln("Error::Io(s,e) => write!(f,\"{}: {}\",s,e),")?;
+                    self.w.writeln("Error::UnwrapError(s) => write!(f,\"{}\",s),")?;
+                    self.w.writeln("Error::LengthError(s) => write!(f,\"{}\",s),")?;
+                    self.w.writeln("Error::SetError(s) => write!(f,\"{}\",s),")?;
+                    self.w.writeln("Error::Nested(s,e) => write!(f,\"{}: {}\",s,e),")?;
+                }
+                self.w.writeln("}")?;
+            }
+            self.w.writeln("}")?;
+        }
+        self.w.writeln("}")?;
+
         Ok(())
     }
 

@@ -203,6 +203,21 @@ pub fn is_any_range(r: &ast::Expr) -> bool {
     false
 }
 
+pub fn is_struct_type(r: &ast::Type) -> bool {
+    match r {
+        ast::Type::StructType(_) => true,
+        ast::Type::IdentType(i) => {
+            if let Some(b) = i.borrow().base.as_ref() {
+                if let Some(i) = b.upgrade() {
+                    return is_struct_type(&i);
+                }
+            }
+            false
+        }
+        _ => false,
+    }
+}
+
 impl Stringer {
     pub fn new(self_: String) -> Self {
         Self {
