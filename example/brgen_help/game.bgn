@@ -1,4 +1,7 @@
 
+format FrameContainer:
+    len :u32
+    data :[len]u8
 
 enum GameType:
     :u8
@@ -23,3 +26,9 @@ format MoveFrame:
     position :Vector
     velocity :Vector
     acceleration :Vector
+
+format EventFlag:
+    is_active :u1
+    is_triggered :u1
+    is_managed :u1
+    reserved :u5(0)

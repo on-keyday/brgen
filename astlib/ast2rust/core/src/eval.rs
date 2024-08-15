@@ -125,9 +125,10 @@ pub fn topological_sort_format(
 }
 
 pub struct Stringer {
-    self_: String,
+    pub self_: String,
     ident_map: HashMap<PtrKey<ast::Ident>, String>,
     pub error_string: String,
+    pub mutator: String,
 }
 
 #[derive(Debug)]
@@ -208,12 +209,25 @@ impl Stringer {
             self_,
             ident_map: HashMap::new(),
             error_string: "".to_string(),
+            mutator: "".to_string(),
         }
     }
 
     pub fn add_map(&mut self, ident: &Rc<RefCell<ast::Ident>>, s: &str) {
         let key = PtrKey::new(&ident);
         self.ident_map.insert(key, s.to_string());
+    }
+
+    pub fn replace_with_this(&self, this: &str, s: &str) -> Result<String, StringerError> {
+        if let Some(_) = s.find("$SELF") {
+            Ok(s.replace("$SELF", this)
+                .replace("$ERROR", &self.error_string)
+                .replace("$MUT", &self.mutator))
+        } else {
+            Ok(s.to_string()
+                .replace("$ERROR", &self.error_string)
+                .replace("$MUT", &self.mutator))
+        }
     }
 
     pub fn to_map_ident(
@@ -229,14 +243,6 @@ impl Stringer {
         };
         let ident_str = &ident.borrow().ident;
         let key = PtrKey::new(&ident);
-        let replace_with_this = |this: &str, s: &str| {
-            if let Some(_) = s.find("$SELF") {
-                Ok(s.replace("$SELF", this)
-                    .replace("$ERROR", &self.error_string))
-            } else {
-                Ok(s.to_string().replace("$ERROR", &self.error_string))
-            }
-        };
         let ident_str = self.ident_map.get(&key).or(Some(&ident_str)).unwrap();
         if !via_member_access {
             if let Some(_) = ident
@@ -246,7 +252,7 @@ impl Stringer {
                 .and_then(|s| s.upgrade())
                 .and_then(|s| s.try_into_member().ok())
             {
-                return replace_with_this(&self.self_, ident_str);
+                return self.replace_with_this(&self.self_, ident_str);
             }
         }
         if let Some(x) = ident
@@ -261,7 +267,7 @@ impl Stringer {
                 return Ok(ident_str.clone());
             }
         }
-        replace_with_this(&default_, ident_str)
+        self.replace_with_this(&default_, ident_str)
     }
 
     pub fn eval_binary_op(
@@ -271,7 +277,11 @@ impl Stringer {
     ) -> Result<String, StringerError> {
         let left = self.to_string(&ptr!(b.left))?;
         let right = self.to_string(&ptr!(b.right))?;
-        Ok(format!("({} {} {})", left, ptr_null!(b.op).to_str(), right))
+        if root {
+            Ok(format!("{} {} {}", left, ptr_null!(b.op).to_str(), right))
+        } else {
+            Ok(format!("({} {} {})", left, ptr_null!(b.op).to_str(), right))
+        }
     }
 
     pub fn eval_ephemeral_binary_op(
