@@ -18,6 +18,13 @@ format GameFrame:
 format ID:
     id :[16]u8
 
+format LocationPath:
+    world :ID
+    region :ID
+    area :ID
+    field :ID
+    position :Vector
+
 format Vector:
     x :f32
     y :f32
