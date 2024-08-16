@@ -1252,6 +1252,8 @@ impl<W: std::io::Write> Generator<W> {
         }
         self.w.writeln("}")?;
 
+        self.w.writeln("impl std::error::Error for Error {}")?;
+
         Ok(())
     }
 
