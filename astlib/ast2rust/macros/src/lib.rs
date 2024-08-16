@@ -26,7 +26,7 @@ impl PtrTo {
             Self::WeakPtrTo(base, target) => {
                 let base = base.to_tokens();
                 let error_message = format!("\"{}\"", target.to_string());
-                quote!(#base.upgrade().ok_or_else(|| PtrUnwrapError::ExpiredWeakPtr(#error_message))?.borrow().#target.clone().ok_or_else(||::ast2rust::PtrUnwrapError::Nullptr(#error_message))?)
+                quote!(#base.upgrade().ok_or_else(|| PtrUnwrapError::ExpiredWeakPtr(#error_message))?.borrow().#target.clone().ok_or_else(||PtrUnwrapError::Nullptr(#error_message))?)
             }
         }
     }

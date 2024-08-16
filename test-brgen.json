@@ -18,7 +18,7 @@
     {
       "generator": "./tool/json2rust",
       "output_dir": "./ignore/example/rust/",
-      "args": []
+      "args": ["--add-map"]
     }
   ],
   "garbage": [

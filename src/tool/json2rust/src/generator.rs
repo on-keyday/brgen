@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 use ast2rust::ast::{GenerateMapFile, StructType, StructUnionType, UnionType};
-use ast2rust::eval::{is_any_range, is_struct_type, lookup_base, topological_sort_format, Stringer};
+use ast2rust::eval::{get_int_type, get_type_prim, is_any_range, is_primitive_array, is_struct_type, lookup_base, topological_sort_format, Stringer};
 use ast2rust::{ast, PtrKey, PtrUnwrapError};
 use ast2rust_macro::{ptr, ptr_null};
 use std::cell::RefCell;
@@ -151,39 +151,9 @@ impl<W: std::io::Write> Generator<W> {
         return self.s.to_string(x).map_err(|x| anyhow!("{:?}", x));
     }
 
-    pub fn get_int_type(
-        &mut self,
-        bit_size: u64,
-        is_signed: bool,
-        is_common_supported: bool,
-    ) -> Result<String> {
-        if is_common_supported {
-            if is_signed {
-                Ok(format!("i{}", bit_size))
-            } else {
-                Ok(format!("u{}", bit_size))
-            }
-        } else {
-            let v = bit_size;
-            if v < 64 {
-                let aligned = (v + 7) / 8;
-                if is_signed {
-                    Ok(format!("i{}", aligned * 8))
-                } else {
-                    Ok(format!("u{}", aligned * 8))
-                }
-            } else {
-                Ok(format!("i{}", v))
-            }
-        }
-    }
+   
 
-    pub fn is_primitive_array(t: &SharedPtr<ast::ArrayType>) -> bool {
-        match t.borrow().element_type.as_ref() {
-            Some(ast::Type::IntType(_)) => ptr_null!(t.length_value).is_some(),
-            _ => false,
-        }
-    }
+ 
 
     pub fn gen_anonymous_union<W1: std::io::Write>(
         &mut self,
@@ -245,7 +215,7 @@ impl<W: std::io::Write> Generator<W> {
         let union_fields = ptr_null!(x.union_fields);
         let memb = ptr!(field.belong)
             .upgrade()
-            .ok_or_else(|| anyhow!("error"))?;
+            .ok_or_else(|| anyhow!("member unwrap error"))?;
         for field in union_fields.iter() {
             let typ: SharedPtr<UnionType> = ptr!(field->field_type)
                 .try_into()
@@ -260,12 +230,13 @@ impl<W: std::io::Write> Generator<W> {
             if let Some(c) = c {
                 let is_struct_ty = is_struct_type(&c);
                 let c = self.get_type(&c)?;
-                let impl_target = memb.get_ident().ok_or_else(|| anyhow!("error"))?;
+                let impl_target = memb.get_ident().ok_or_else(|| anyhow!("ident unwrap error"))?;
                 let impl_target = ptr_null!(impl_target.ident);
                 tmp_w.writeln(&format!("impl {impl_target} {{"))?;
                 {
                     let _scope = tmp_w.enter_indent_scope();
                     let escaped = Self::escape_keyword(ptr_null!(field->ident.ident));
+                    self.s.add_map(&ptr!(field->ident), &format!("{prefix}.{escaped}().unwrap()"));
                     self.s.error_string = "{_ = x; return None}".to_string();
                     self.s.mutator = "&".to_string();
                     let as_ref = if is_struct_ty  { "&" } else { "" };
@@ -274,7 +245,7 @@ impl<W: std::io::Write> Generator<W> {
                         let _scope = tmp_w.enter_indent_scope();
 
                         for cand in ptr_null!(typ.candidates) {
-                            let cond = ptr!(cand.cond).upgrade().ok_or_else(|| anyhow!("error"))?;
+                            let cond = ptr!(cand.cond).upgrade().ok_or_else(|| anyhow!("cond unwrap error"))?;
                             let cond = if let Some(cond0) = &cond0 {
                                 self.s
                                     .eval_ephemeral_binary_op(ast::BinaryOp::Equal, &cond, cond0)
@@ -288,9 +259,12 @@ impl<W: std::io::Write> Generator<W> {
                                 let _scope = tmp_w.enter_indent_scope();
                                 if let Some(field) = ptr_null!(cand.field) {
                                     if let Some(field) = field.upgrade() {
+                                        
                                         let ident =
                                             self.expr_to_string(&ptr!(field.ident).into())?;
-                                        tmp_w.writeln(&format!("return Some({}{});",as_ref, ident))?;
+                                        tmp_w.writeln(&format!("return Some({}{}{});",as_ref, ident,if !is_struct_ty{
+                                            " as _"
+                                        } else {""}))?;
                                     } else {
                                         tmp_w.writeln("return None")?;
                                     }
@@ -318,7 +292,7 @@ impl<W: std::io::Write> Generator<W> {
                         let _scope = tmp_w.enter_indent_scope();
 
                         for cand in ptr_null!(typ.candidates) {
-                            let cond = ptr!(cand.cond).upgrade().ok_or_else(|| anyhow!("error"))?;
+                            let cond = ptr!(cand.cond).upgrade().ok_or_else(|| anyhow!("cond unwrap error"))?;
                             let cond = if let Some(cond0) = &cond0 {
                                 self.s
                                     .eval_ephemeral_binary_op(ast::BinaryOp::Equal, &cond, cond0)
@@ -332,10 +306,13 @@ impl<W: std::io::Write> Generator<W> {
                                 let _scope = tmp_w.enter_indent_scope();
                                 if let Some(field) = ptr_null!(cand.field) {
                                     if let Some(field) = field.upgrade() {
-                                        let belong_struct =  ptr!(field.belong_struct).upgrade().ok_or_else(|| anyhow!("error"))?;
-                                        let anonymous_field = self.structs.get(&PtrKey::new(&belong_struct)).ok_or_else(|| anyhow!("error"))?;                                        
+                                        let belong_struct =  ptr!(field.belong_struct).upgrade().ok_or_else(|| anyhow!("belong unwrap error"))?;
+                                        let anonymous_field = self.structs.get(&PtrKey::new(&belong_struct)).ok_or_else(|| anyhow!("belong_struct unwrap error"))?;                                        
                                         let union_field_access = self.s.replace_with_this(&self.s.self_, &union_field_access).map_err(|x| anyhow!("{:?}", x))?;
                                         self.s.error_string =format!("{{ _ = x;{union_field_access} = {name}::{name_s}(Default::default()); match &mut {union_field_access} {{ {name}::{name_s}(x) => x, _ => unreachable!() }}}}", union_field_access = union_field_access, name = name, name_s = anonymous_field.name);
+                                        if !is_struct_ty {
+                                            tmp_w.writeln(&format!("let x = x.try_into().map_err(|_| Error::SetError(\"cannot set value\"))?;"))?;
+                                        }
                                         let ident =
                                             self.expr_to_string(&ptr!(field.ident).into())?;
                                         tmp_w.writeln(&format!("{} = x;", ident))?;
@@ -365,49 +342,6 @@ impl<W: std::io::Write> Generator<W> {
 
     pub fn get_type(&mut self, typ: &ast::Type) -> Result<String> {
         match typ {
-            ast::Type::IntType(t) => {
-                let x = self.get_int_type(
-                    ptr!(t.bit_size),
-                    ptr_null!(t.is_signed),
-                    ptr_null!(t.is_common_supported),
-                )?;
-                Ok(x)
-            }
-            ast::Type::FloatType(t) => {
-                let x = ptr!(t.bit_size);
-                Ok(format!("f{}", x))
-            }
-            ast::Type::BoolType(_) => Ok("bool".to_string()),
-            ast::Type::EnumType(t) => {
-                let x = ptr_null!(t.base->ident.ident);
-                Ok(x)
-            }
-            ast::Type::StructType(t) => {
-                let struct_ = t.borrow().base.clone().unwrap();
-                match struct_ {
-                    ast::NodeWeak::Format(struct_) => {
-                        let x = ptr_null!(struct_->ident.ident);
-                        Ok(x)
-                    }
-                    x => {
-                        eprintln!("{:?}", ast::NodeType::try_from(x));
-                        todo!("unsupported struct type")
-                    }
-                }
-            }
-            ast::Type::IdentType(t) => {
-                let ident = ptr_null!(t.ident.ident);
-                Ok(ident)
-            }
-            ast::Type::ArrayType(t) => {
-                let ty = ptr!(t.element_type);
-                let ty = self.get_type(&ty)?;
-                if Self::is_primitive_array(t) {
-                    Ok(format!("[{}; {}]", ty, ptr!(t.length_value)))
-                } else {
-                    Ok(format!("Vec<{}>", ty))
-                }
-            }
             ast::Type::StructUnionType(x) => {
                 if let Some(x) = self.struct_unions.get(&PtrKey::new(x)) {
                     return Ok(x.name.clone());
@@ -415,9 +349,8 @@ impl<W: std::io::Write> Generator<W> {
                     return Err(anyhow!("unsupported type"));
                 }
             }
-            x => {
-                eprintln!("{:?}", ast::NodeType::from(ast::Node::from(x)));
-                Err(anyhow!("unsupported type"))
+            _ => {
+               get_type_prim(typ).map_err(|x| anyhow!("{:?}", x))
             }
         }
     }
@@ -432,13 +365,13 @@ impl<W: std::io::Write> Generator<W> {
             .try_fold(0 as u64, |acc, x| {
                 Some(acc + x.borrow().field_type.as_ref()?.get_bit_size()?)
             })
-            .ok_or_else(|| anyhow!("error"))?;
+            .ok_or_else(|| anyhow!("sum error"))?;
         if sum % 8 != 0 {
-            return Err(anyhow!("error"));
+            return Err(anyhow!("not aligned error"));
         }
         let sum = sum;
         let ident = format!("bit_field{}", self.get_seq());
-        w.writeln(&format!("{ident}: u{sum}"))?;
+        w.writeln(&format!("{ident}: u{sum},"))?;
         let mut tmp_w = Writer::new(Vec::new());
         let prefix = &w.prefix;
         let bit_field_access = self
@@ -448,37 +381,46 @@ impl<W: std::io::Write> Generator<W> {
         let field = &bit_fields[0];
         let belong_ident = ptr!(field.belong)
             .upgrade()
-            .ok_or_else(|| anyhow!("error"))?
+            .ok_or_else(|| anyhow!("weak unwrap error"))?
             .get_ident()
-            .ok_or_else(|| anyhow!("error"))?;
+            .ok_or_else(|| anyhow!("belong ident error"))?;
         let belong_ident = ptr_null!(belong_ident.ident);
         tmp_w.writeln(&format!("impl {belong_ident} {{"))?;
         let mut shift_sum =0;
         bit_fields.iter().enumerate().try_for_each(|(i,field)| -> Result<()> {
             let bit_size = ptr!(field.field_type)
                 .get_bit_size()
-                .ok_or_else(|| anyhow!("error"))?;
+                .ok_or_else(|| anyhow!("bit fields error"))?;
             let ident = ptr_null!(field.ident.ident);
             let escaped = Self::escape_keyword(ident.clone());
             tmp_w.writeln("#[inline]")?;
-            let int_type = if bit_size == 1 {
+            let mut is_ident_type = false;
+            let pure_int_type =get_int_type(bit_size, false, false).map_err(|x| anyhow!("{:?}", x))?;
+            let int_type = if let ast::Type::IdentType(t) = ptr!(field.field_type) {
+                is_ident_type = true;
+                ptr_null!(t.ident.ident)
+            }else if bit_size == 1 {
                 "bool".to_string()
             } else { 
-                self.get_int_type(bit_size, false, false)?
+                pure_int_type.clone()
             };
             tmp_w.writeln(&format!("fn {escaped}(&self) -> {int_type} {{"))?;
             shift_sum += bit_size;
             let shift = sum - shift_sum;
             let mask = (1 << bit_size) - 1;
-            if int_type == "bool" {
-                tmp_w.writeln(&format!(
-                    "(({bit_field_access} >> {shift}) & {mask}) != 0"
-                ))?;
+            let suffix =
+            if is_ident_type {
+                ".into()".to_string()
+            }else            if int_type == "bool" {
+                "!= 0".to_string()
             } else {
-                tmp_w.writeln(&format!(
-                    "(({bit_field_access} >> {shift}) & {mask}) as {int_type}"
-                ))?;
-            }
+                format!(
+                    "as {int_type}"
+                )
+            };
+            tmp_w.writeln(&format!(
+                "(({bit_field_access} >> {shift}) & {mask}) {suffix}"
+            ))?;
             tmp_w.writeln("}")?;
             if int_type == "bool" {
                 self.s.add_map(&ptr!(field.ident), &format!("if {prefix}.{escaped}() {{ 1 }} else {{ 0 }}"));
@@ -487,7 +429,15 @@ impl<W: std::io::Write> Generator<W> {
             }
             tmp_w.writeln("#[inline]")?;
             tmp_w.writeln(&format!("fn set_{ident}(&mut self, x: {int_type}) {{"))?;
-            let x = if int_type == "bool" {
+            if is_ident_type {
+                tmp_w.writeln(&format!(
+                    "let x :{pure_int_type} = x.into();",
+                ))?;
+                if int_type == "bool" {
+                      tmp_w.writeln("let x = x != 0")?;
+                } 
+            }
+            let x =  if int_type == "bool" {
                 "if x { 1 } else { 0 }"
             } else {
                 "x"
@@ -544,7 +494,9 @@ impl<W: std::io::Write> Generator<W> {
         }
         if bit_fields.len() > 0 {
             bit_fields.push(field.clone());
-            return self.write_bit_field(w, bit_fields);
+            self.write_bit_field(w, bit_fields)?;
+            bit_fields.clear();
+            return Ok(());
         }
         if let ast::Type::UnionType(_) = ptr!(field.field_type) {
             return Ok(());
@@ -659,7 +611,7 @@ impl<W: std::io::Write> Generator<W> {
                 return Ok(());
             }
             ast::Type::ArrayType(t) => {
-                if Self::is_primitive_array(&t) {
+                if is_primitive_array(&t) {
                     if ptr_null!(t.is_bytes) {
                         w.writeln(&format!("w.write_all(&{}).map_err(|e| Error::Io(\"{err_ident}\",e))?;", ident))?;
                     } else {
@@ -804,7 +756,7 @@ impl<W: std::io::Write> Generator<W> {
                 return Ok(());
             }
             ast::Type::ArrayType(t) => {
-                if Self::is_primitive_array(&t) {
+                if is_primitive_array(&t) {
                     if ptr_null!(t.is_bytes) {
                         w.writeln(&format!("r.read_exact(&mut {}).map_err(|e| Error::Io(\"{err_ident}\",e))?;", ident))?;
                     } else {
@@ -827,15 +779,7 @@ impl<W: std::io::Write> Generator<W> {
                     let len = match ptr_null!(t.length_value) {
                         None => self.expr_to_string(&ptr!(t.length))?,
                         Some(x) => x.to_string(),
-                    };
-                    w.writeln(&format!("if ({}) as usize != {}.len() {{", len, ident))?;
-                    {
-                        let _scope = w.enter_indent_scope();
-                        w.writeln(&format!(
-                            "return Err(Error::LengthError(\"length {len} and {ident}.len() not equal\"))"
-                        ))?;
-                    }
-                    w.writeln("}")?;
+                    };                 
                     if ptr_null!(t.is_bytes) {
                         w.writeln(&format!("{ident}.resize({len} as usize,0);"))?;
                         w.writeln(&format!("r.read_exact(&mut {}).map_err(|e| Error::Io(\"{err_ident}\",e))?;", ident))?;
@@ -1029,6 +973,20 @@ impl<W: std::io::Write> Generator<W> {
                 let msg = ptr_null!(err.message.value);
                 w.writeln(&format!("return Err(Error::ExplicitError({}));",msg))?;
             }
+            ast::Node::Binary(x) =>{
+                if let ast::BinaryOp::DefineAssign | ast::BinaryOp::ConstAssign = ptr_null!(x.op) {
+                    let ident :SharedPtr<ast::Ident> = ptr!(x.left).try_into().map_err(|x| anyhow!("{:?}",x))?;
+                    let expr = self.expr_to_string(&ptr!(x.right).into())?;
+                    let let_or_mut = if ptr_null!(x.op) == ast::BinaryOp::DefineAssign {
+                        "let"
+                    } else {
+                        "let mut"
+                    };
+                    let escaped = Self::escape_keyword(ptr_null!(ident.ident));
+                    w.writeln(&format!("{} {} = {};",let_or_mut,escaped,expr))?;
+                    self.s.add_map(&ident, &escaped);
+                }
+            }
             _ => {} // TODO: Implement,skip for now
         }
         Ok(())
@@ -1065,6 +1023,20 @@ impl<W: std::io::Write> Generator<W> {
             w.writeln("let mut d = Self::default();")?;
             w.writeln("d.decode_impl(r)?;")?;
             w.writeln("Ok(d)")?;
+        }
+        w.writeln("}")?;
+        w.writeln(&format!("pub fn decode_exact(r :&[u8]) -> Result<{ident},Error> {{",ident = ident))?;
+        {
+            let _scope = w.enter_indent_scope();
+            w.writeln("let mut r = std::io::Cursor::new(r);")?;
+            w.writeln("let result = Self::decode(&mut r)?;")?;
+            w.writeln("if r.position() != r.get_ref().len() as u64 {")?;
+            {
+                let _scope = w.enter_indent_scope();
+                w.writeln(&format!("return Err(Error::LengthError(\"not all bytes consumed\"))"))?;
+            }
+            w.writeln("}")?;
+            w.writeln("Ok(result)")?;
         }
         w.writeln("}")?;
         w.writeln(&format!(
@@ -1132,48 +1104,50 @@ impl<W: std::io::Write> Generator<W> {
         self.w.writeln("}")?;
         if let Some(ast::Type::IntType(x)) = ptr_null!(enum_.base_type) {
             let bit_size = ptr!(x.bit_size);
-            let base = self.get_int_type(
+            let base = get_int_type(
                 bit_size,
                 ptr_null!(x.is_signed),
                 ptr_null!(x.is_common_supported),
-            )?;
-            self.w.writeln(&format!("impl {} {{", ident))?;
-            {
-                let _scope = self.w.enter_indent_scope();
-                let mut write_bytes = |le_or_be: &str| -> Result<()> {
-                    self.w.writeln(&format!(
-                        "pub fn to_{le_or_be}_bytes(&self) -> [u8;{}] {{",
-                        bit_size / 8
-                    ))?;
-                    {
-                        let _scope = self.w.enter_indent_scope();
-                        let tmp = format!("tmp{}", self.get_seq());
-                        self.w
-                            .writeln(&format!("let {tmp} :{base} = match self {{"))?;
+            ).map_err(|x| anyhow!("{:?}", x))?;
+            if bit_size >= 8 {
+                self.w.writeln(&format!("impl {} {{", ident))?;
+                {
+                    let _scope = self.w.enter_indent_scope();
+                    let mut write_bytes = |le_or_be: &str| -> Result<()> {
+                        self.w.writeln(&format!(
+                            "pub fn to_{le_or_be}_bytes(&self) -> [u8;{}] {{",
+                            bit_size / 8
+                        ))?;
                         {
                             let _scope = self.w.enter_indent_scope();
-                            for elem in ptr_null!(enum_.members).iter() {
-                                self.w.writeln(&format!(
-                                    "{}::{} => {},",
-                                    ident,
-                                    ptr_null!(elem.ident.ident),
-                                    self.expr_to_string(&ptr!(elem.value))?
-                                ))?;
+                            let tmp = format!("tmp{}", self.get_seq());
+                            self.w
+                                .writeln(&format!("let {tmp} :{base} = match self {{"))?;
+                            {
+                                let _scope = self.w.enter_indent_scope();
+                                for elem in ptr_null!(enum_.members).iter() {
+                                    self.w.writeln(&format!(
+                                        "{}::{} => {},",
+                                        ident,
+                                        ptr_null!(elem.ident.ident),
+                                        self.expr_to_string(&ptr!(elem.value))?
+                                    ))?;
+                                }
                             }
+                            self.w
+                                .writeln(&format!("{}::{}Other(x) => *x,", ident, ident))?;
+                            self.w.writeln("};")?;
+                            self.w.writeln(&format!("{tmp}.to_{le_or_be}_bytes()"))?;
                         }
-                        self.w
-                            .writeln(&format!("{}::{}Other(x) => *x,", ident, ident))?;
-                        self.w.writeln("};")?;
-                        self.w.writeln(&format!("{tmp}.to_{le_or_be}_bytes()"))?;
-                    }
-                    self.w.writeln("}")?;
+                        self.w.writeln("}")?;
 
-                    Ok(())
-                };
-                write_bytes("le")?;
-                write_bytes("be")?;
+                        Ok(())
+                    };
+                    write_bytes("le")?;
+                    write_bytes("be")?;
+                }
+                self.w.writeln("}")?;
             }
-            self.w.writeln("}")?;
 
             self.w
                 .writeln(&format!("impl From<{base}> for {ident} {{"))?;
@@ -1196,6 +1170,34 @@ impl<W: std::io::Write> Generator<W> {
                     }
                     self.w
                         .writeln(&format!("_ => {}::{}Other(x),", ident, ident))?;
+                    self.w.writeln("}")?;
+                }
+                self.w.writeln("}")?;
+            }
+            self.w.writeln("}")?;
+
+            self.w.writeln(&format!("impl From<{}> for {} {{", ident, base))?;
+            {
+                let _scope = self.w.enter_indent_scope();
+                self.w.writeln(&format!("fn from(x :{ident}) -> {base} {{"))?;
+                {
+                    let _scope = self.w.enter_indent_scope();
+                    self.w.writeln("match x {")?;
+                    {
+                        let _scope = self.w.enter_indent_scope();
+                        for elem in ptr_null!(enum_.members).iter() {
+                            self.w.writeln(&format!(
+                                "{}::{} => {},",
+                                ident,
+                                ptr_null!(elem.ident.ident),
+                                self.expr_to_string(&ptr!(elem.value))?
+                            ))?;
+                        }
+                    }
+                    self.w.writeln(&format!(
+                        "{}::{}Other(x) => x,",
+                        ident, ident
+                    ))?;
                     self.w.writeln("}")?;
                 }
                 self.w.writeln("}")?;
@@ -1273,7 +1275,7 @@ impl<W: std::io::Write> Generator<W> {
                 self.write_enum(enum_)?;
             }
         }
-        let sorted = topological_sort_format(&in_prog).ok_or(anyhow!("error"))?;
+        let sorted = topological_sort_format(&in_prog).ok_or(anyhow!("sort error"))?;
         let mut w = Writer::new(Vec::new());
         w.prefix = "$SELF".to_string();
         for elem in sorted.iter() {

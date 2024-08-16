@@ -1,6 +1,7 @@
 use std::{
     cell::{Ref, RefCell},
     collections::{HashMap, HashSet},
+    fmt::Write,
     rc::Rc,
 };
 
@@ -218,6 +219,88 @@ pub fn is_struct_type(r: &ast::Type) -> bool {
     }
 }
 
+pub fn is_primitive_array(t: &Rc<RefCell<ast::ArrayType>>) -> bool {
+    match t.borrow().element_type.as_ref() {
+        Some(ast::Type::IntType(_)) => ptr_null!(t.length_value).is_some(),
+        _ => false,
+    }
+}
+
+pub fn get_int_type(
+    bit_size: u64,
+    is_signed: bool,
+    is_common_supported: bool,
+) -> Result<String, StringerError> {
+    if is_common_supported {
+        if is_signed {
+            Ok(format!("i{}", bit_size))
+        } else {
+            Ok(format!("u{}", bit_size))
+        }
+    } else {
+        let v = bit_size;
+        if v < 64 {
+            let aligned = (v + 7) / 8;
+            if is_signed {
+                Ok(format!("i{}", aligned * 8))
+            } else {
+                Ok(format!("u{}", aligned * 8))
+            }
+        } else {
+            Ok(format!("i{}", v))
+        }
+    }
+}
+
+pub fn get_type_prim(typ: &ast::Type) -> Result<String, StringerError> {
+    match typ {
+        ast::Type::IntType(t) => {
+            let x = get_int_type(
+                ptr!(t.bit_size),
+                ptr_null!(t.is_signed),
+                ptr_null!(t.is_common_supported),
+            )?;
+            Ok(x)
+        }
+        ast::Type::FloatType(t) => {
+            let x = ptr!(t.bit_size);
+            Ok(format!("f{}", x))
+        }
+        ast::Type::BoolType(_) => Ok("bool".to_string()),
+        ast::Type::EnumType(t) => {
+            let x = ptr_null!(t.base->ident.ident);
+            Ok(x)
+        }
+        ast::Type::StructType(t) => {
+            let struct_ = t.borrow().base.clone().unwrap();
+            match struct_ {
+                ast::NodeWeak::Format(struct_) => {
+                    let x = ptr_null!(struct_->ident.ident);
+                    Ok(x)
+                }
+                x => {
+                    eprintln!("{:?}", ast::NodeType::try_from(x));
+                    todo!("unsupported struct type")
+                }
+            }
+        }
+        ast::Type::IdentType(t) => {
+            let ident = ptr_null!(t.ident.ident);
+            Ok(ident)
+        }
+        ast::Type::ArrayType(t) => {
+            let ty = ptr!(t.element_type);
+            let ty = get_type_prim(&ty)?;
+            if is_primitive_array(t) {
+                Ok(format!("[{}; {}]", ty, ptr!(t.length_value)))
+            } else {
+                Ok(format!("Vec<{}>", ty))
+            }
+        }
+        _ => Err(StringerError::Unsupported),
+    }
+}
+
 impl Stringer {
     pub fn new(self_: String) -> Self {
         Self {
@@ -343,13 +426,66 @@ impl Stringer {
                 let cond = self.to_string_impl(&ptr!(c.cond), false)?;
                 let then = self.to_string_impl(&ptr!(c.then), false)?;
                 let else_ = self.to_string_impl(&ptr!(c.els), false)?;
-                Ok(format!("(if {cond} {{ {then} }} else {{ {else_} }} )"))
+                let common_type_str = ptr!(c.expr_type);
+                let common_type_str = get_type_prim(&common_type_str)?;
+                Ok(format!(
+                    "(if {cond} {{ {then} as {common_type_str} }} else {{ {else_} as {common_type_str} }} )"
+                ))
             }
             ast::Expr::MemberAccess(c) => {
                 let base = self.to_string_impl(&ptr!(c.target), false)?;
                 self.to_map_ident(&ptr!(c.member), &base)
             }
             ast::Expr::Identity(i) => self.to_string_impl(&ptr!(i.expr), root),
+            ast::Expr::Available(a) => {
+                let target = ptr!(a.target);
+                let ty = if let ast::Type::UnionType(t) = match target.get_expr_type() {
+                    Some(t) => t,
+                    None => return Ok("false".to_string()),
+                } {
+                    t
+                } else {
+                    return Ok("false".to_string());
+                };
+                let cond0 = ptr_null!(ty.base_type->cond).clone();
+                let mut w = String::new();
+                let mut need_else = false;
+                for c in ptr_null!(ty.candidates) {
+                    let cond = ptr!(c.cond).upgrade().ok_or_else(|| {
+                        StringerError::Unwrap(PtrUnwrapError::ExpiredWeakPtr("cond"))
+                    })?;
+                    if need_else {
+                        w += "else ";
+                    }
+                    let cond = if is_any_range(&cond) {
+                        " {{".to_string()
+                    } else if let Some(cond0) = &cond0 {
+                        format!(
+                            "if {} {{",
+                            self.eval_ephemeral_binary_op(
+                                ast::BinaryOp::Equal,
+                                cond0,
+                                &cond.into()
+                            )?
+                        )
+                    } else {
+                        format!("if {} {{", self.to_string(&cond.into())?)
+                    };
+                    if let Some(_) = ptr_null!(c.field) {
+                        write!(&mut w, "{} true }}", cond).unwrap();
+                    } else {
+                        write!(&mut w, "{} false }}", cond).unwrap();
+                    }
+                    need_else = true;
+                }
+                if !ptr_null!(ty.base_type->exhaustive) {
+                    if need_else {
+                        w += "else ";
+                    }
+                    w += " { false }";
+                }
+                Ok(w)
+            }
             _ => Ok("".to_string()),
         }
     }

@@ -23,9 +23,9 @@ format Frame:
     if Mask == 1:
         MaskingKey :[4]u8
 
-    len ::= available(ExtendedPayloadLength) ? 
-            ExtendedPayloadLength : 
-            PayloadLength
+    len ::= available(ExtendedPayloadLength) ?  # if ExtendedPayloadLength (u16 or u64) is available
+            ExtendedPayloadLength :  # use ExtendedPayloadLength
+            PayloadLength  # otherwise use PayloadLength
     Payload :[len]u8(input.xor = MaskingKey)
     
 

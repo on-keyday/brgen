@@ -18,8 +18,7 @@ CONFIG = sys.argv[6]
 CONFIG_DIR = pl.Path(CONFIG).parent
 
 
-# run compiler for the test
-# add link directory $FUTILS_DIR/lib and -lfutils
+# run compiler for the test target
 # compiler output will be redirected to stdout and stderr
 os.mkdir(TMPDIR + "/src")
 shutil.copyfile(ORIGIN, TMPDIR + "/src/target.rs")
@@ -29,7 +28,8 @@ shutil.copyfile(
 )
 
 # run cargo build
-
+suffix = ".exe" if plt.system() == "Windows" else ""
+build_mode = "Debug" if plt.system() == "Windows" else "debug"
 ret = sp.call(
     ["cargo", "build", "--manifest-path", TMPDIR + "/Cargo.toml"],
     stdout=sys.stdout,
@@ -39,8 +39,9 @@ ret = sp.call(
 if ret != 0:
     exit(ret)
 print("Build successful")
-suffix = ".exe" if plt.system() == "Windows" else ""
-build_mode = "Debug" if plt.system() == "Windows" else "debug"
+
 
 print("Copying", TMPDIR + f"/target/{build_mode}/test" + suffix, OUTPUT)
 shutil.copyfile(TMPDIR + f"/target/{build_mode}/test" + suffix, OUTPUT)
+
+exit(0)

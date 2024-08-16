@@ -1,6 +1,6 @@
 {
   "suffix": "rs",
-  "test_template": "./testkit/rust/test_template.rs",
+  "test_template": "./testkit/rust/src/main.rs",
   "replace_file_name": "stub.hpp",
   "replace_struct_name": "TEST_CLASS",
   "build_input_name": "main.rs",
