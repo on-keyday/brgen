@@ -56,6 +56,7 @@
     {
       "generator": "./tool/json2rust",
       "output_dir": "./ignore/example/rust/",
+      "args": ["--add-map"],
       "ignore_missing": true
     },
     {

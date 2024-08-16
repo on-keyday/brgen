@@ -7119,6 +7119,7 @@ pub struct StructType {
 	pub recursive: bool,
 	pub fixed_header_size: u64,
 	pub fixed_tail_size: u64,
+	pub type_map: Option<Rc<RefCell<TypeLiteral>>>,
 }
 
 impl From<&Rc<RefCell<StructType>>> for NodeType {
@@ -9745,6 +9746,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				recursive: false,
 				fixed_header_size: 0,
 				fixed_tail_size: 0,
+				type_map: None,
 				})))
 			},
 			NodeType::StructUnionType => {
@@ -13315,6 +13317,25 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Some(v)=>v,
 					None=>return Err(Error::MismatchJSONType(fixed_tail_size_body.into(),JSONType::Number)),
 				};
+				let type_map_body = match raw_node.body.get("type_map") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"type_map")),
+				};
+ 				if !type_map_body.is_null() {
+					let type_map_body = match type_map_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(type_map_body.into(),JSONType::Number)),
+					};
+					let type_map_body = match nodes.get(type_map_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(type_map_body as usize)),
+					};
+					let type_map_body = match type_map_body {
+						Node::TypeLiteral(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),type_map_body.into())),
+					};
+					node.borrow_mut().type_map = Some(type_map_body.clone());
+				}
 			},
 			NodeType::StructUnionType => {
 				let node = nodes[i].clone();
@@ -15732,6 +15753,11 @@ where
 		},
 		Node::StructType(node)=>{
 			for node in &node.borrow().fields{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
+			if let Some(node) = &node.borrow().type_map{
 				if !f.visit(&node.into()){
 					return;
 				}

@@ -1151,6 +1151,7 @@ struct ast2c_StructType {
 	int recursive;
 	uint64_t fixed_header_size;
 	uint64_t fixed_tail_size;
+	ast2c_TypeLiteral* type_map;
 };
 
 // returns 1 if succeed 0 if failed

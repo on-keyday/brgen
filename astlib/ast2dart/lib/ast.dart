@@ -798,6 +798,7 @@ class StructType extends Type {
     bool recursive = false;
     int fixedHeaderSize = 0;
     int fixedTailSize = 0;
+    TypeLiteral? typeMap;
 factory StructType.fromJson(Map<String, dynamic> json) => _$StructTypeFromJson(json);
 }
 @JsonSerializable()

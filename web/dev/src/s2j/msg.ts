@@ -59,6 +59,7 @@ export interface CppOption extends CallOption {
     use_raw_union? :boolean
     use_overflow_check? :boolean
     enum_stringer? :boolean
+    add_visit? :boolean
 }
 
 export interface GoOption extends CallOption {

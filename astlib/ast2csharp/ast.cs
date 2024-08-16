@@ -626,6 +626,7 @@ public class StructType : Type{
 	public bool Recursive{get;set;}
 	public ulong FixedHeaderSize{get;set;}
 	public ulong FixedTailSize{get;set;}
+	public TypeLiteral? TypeMap{get;set;}
 }
 public class StructUnionType : Type{
 	public Loc Loc{get;set;}
@@ -1457,6 +1458,7 @@ public static class Ast {
                node.Recursive = ast.Node[i].Body[recursive];
                node.FixedHeaderSize = ast.Node[i].Body[fixed_header_size];
                node.FixedTailSize = ast.Node[i].Body[fixed_tail_size];
+               node.TypeMap = ast.Node[i].Body[type_map];
            case NodeType.StructUnionType:
                var node = nodes[i] as StructUnionType;
                node.Loc = ast.Node[i].Body[loc];

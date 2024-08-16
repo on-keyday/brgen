@@ -2862,6 +2862,7 @@ int ast2c_StructType_parse(ast2c_Ast* ast,ast2c_StructType* s,ast2c_json_handler
 	s->bit_size = NULL;
 	s->fields = NULL;
 	s->base = NULL;
+	s->type_map = NULL;
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
 	void* non_dynamic_allocation = h->object_get(h, obj_body, "non_dynamic_allocation");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
@@ -2871,6 +2872,7 @@ int ast2c_StructType_parse(ast2c_Ast* ast,ast2c_StructType* s,ast2c_json_handler
 	void* recursive = h->object_get(h, obj_body, "recursive");
 	void* fixed_header_size = h->object_get(h, obj_body, "fixed_header_size");
 	void* fixed_tail_size = h->object_get(h, obj_body, "fixed_tail_size");
+	void* type_map = h->object_get(h, obj_body, "type_map");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_StructType::loc is null"); } return 0; }
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_StructType::is_explicit is null"); } return 0; }
 	if (!non_dynamic_allocation) { if(h->error) { h->error(h,non_dynamic_allocation, "ast2c_StructType::non_dynamic_allocation is null"); } return 0; }
@@ -2885,6 +2887,7 @@ int ast2c_StructType_parse(ast2c_Ast* ast,ast2c_StructType* s,ast2c_json_handler
 	if (!recursive) { if(h->error) { h->error(h,recursive, "ast2c_StructType::recursive is null"); } return 0; }
 	if (!fixed_header_size) { if(h->error) { h->error(h,fixed_header_size, "ast2c_StructType::fixed_header_size is null"); } return 0; }
 	if (!fixed_tail_size) { if(h->error) { h->error(h,fixed_tail_size, "ast2c_StructType::fixed_tail_size is null"); } return 0; }
+	if (!type_map) { if(h->error) { h->error(h,type_map, "ast2c_StructType::type_map is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_StructType::loc"); }
 		goto error;

@@ -28,6 +28,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
     bool use_overflow_check = false;
     bool legacy_file_pass = false;
     bool enum_stringer = false;
+    bool add_visit = false;
     void bind(futils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&spec, "s", "spec mode");
@@ -37,6 +38,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
         ctx.VarBool(&use_raw_union, "use-raw-union", "use raw union instead of std::variant (maybe unsafe)");
         ctx.VarBool(&use_overflow_check, "use-overflow-check", "add overflow check for integer types");
         ctx.VarBool(&enum_stringer, "enum-stringer", "use to_string for enum");
+        ctx.VarBool(&add_visit, "add-visit", "add visit method for struct");
         ctx.VarBool(&legacy_file_pass, "f,file", "use legacy file pass mode");
     }
 };
@@ -48,6 +50,7 @@ int cpp_generate(const Flags& flags, brgen::request::GenerateSource& req, std::s
     g.use_variant = !flags.use_raw_union;
     g.use_overflow_check = flags.use_overflow_check;
     g.enum_stringer = flags.enum_stringer;
+    g.add_visit = flags.add_visit;
     auto prog = brgen::ast::cast_to<brgen::ast::Program>(res);
     g.write_program(prog);
     send_source(req.id, std::move(g.w.out()), req.name + ".hpp");

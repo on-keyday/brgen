@@ -398,6 +398,21 @@ namespace brgen::ast {
         bool recursive = false;
         size_t fixed_header_size = 0;
         size_t fixed_tail_size = 0;
+        /*
+        mapped type by config.type
+        for example
+            ```
+            format A:
+                config.type = u64
+                prefix :u2
+                match prefix:
+                    0 => value :u8
+                    1 => value :u16
+                    2 => value :u32
+                    3 => value :u64
+            ```
+        */
+        std::shared_ptr<TypeLiteral> type_map;
 
         StructType(lexer::Loc l)
             : Type(l, NodeType::struct_type) {}
@@ -412,6 +427,7 @@ namespace brgen::ast {
             sdebugf(recursive);
             sdebugf(fixed_header_size);
             sdebugf(fixed_tail_size);
+            sdebugf(type_map);
         }
 
         std::shared_ptr<Member> lookup(std::string_view key) {

@@ -1,0 +1,42 @@
+
+format FrameContainer:
+    len :u32
+    data :[len]u8
+
+enum GameType:
+    :u8
+    ID
+    Move
+
+format GameFrame:
+    type :GameType
+    match type:
+        GameType.ID => id :ID
+        GameType.Move => move :MoveFrame
+        .. => error("invalid GameType")
+
+format ID:
+    id :[16]u8
+
+format LocationPath:
+    world :ID
+    region :ID
+    area :ID
+    field :ID
+    position :Vector
+
+format Vector:
+    x :f32
+    y :f32
+    z :f32
+
+format MoveFrame:
+    position :Vector
+    velocity :Vector
+    acceleration :Vector
+
+format EventFlag:
+    is_active :u1
+    is_triggered :u1
+    is_managed :u1
+    reserved :u5(0)

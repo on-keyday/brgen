@@ -563,6 +563,7 @@ class StructType(Type):
     recursive: bool
     fixed_header_size: int
     fixed_tail_size: int
+    type_map: Optional[TypeLiteral]
 
 
 class StructUnionType(Type):
@@ -1808,6 +1809,11 @@ def ast2node(ast :JsonAst) -> Program:
                 node[i].fixed_header_size = x if isinstance(x,int)  else raiseError(TypeError('type mismatch at StructType::fixed_header_size'))
                 x = ast.node[i].body["fixed_tail_size"]
                 node[i].fixed_tail_size = x if isinstance(x,int)  else raiseError(TypeError('type mismatch at StructType::fixed_tail_size'))
+                if ast.node[i].body["type_map"] is not None:
+                    x = node[ast.node[i].body["type_map"]]
+                    node[i].type_map = x if isinstance(x,TypeLiteral) else raiseError(TypeError('type mismatch at StructType::type_map'))
+                else:
+                    node[i].type_map = None
             case NodeType.STRUCT_UNION_TYPE:
                 x = ast.node[i].body["is_explicit"]
                 node[i].is_explicit = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at StructUnionType::is_explicit'))
@@ -2576,6 +2582,9 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
         case x if isinstance(x,StructType):
           for i in range(len(x.fields)):
               if f(f,x.fields[i]) == False:
+                  return
+          if x.type_map is not None:
+              if f(f,x.type_map) == False:
                   return
         case x if isinstance(x,StructUnionType):
           if x.cond is not None:

@@ -2838,6 +2838,7 @@ type StructType struct {
 	Recursive            bool
 	FixedHeaderSize      uint64
 	FixedTailSize        uint64
+	TypeMap              *TypeLiteral
 }
 
 func (n *StructType) isType() {}
@@ -4739,6 +4740,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				Recursive            bool         `json:"recursive"`
 				FixedHeaderSize      uint64       `json:"fixed_header_size"`
 				FixedTailSize        uint64       `json:"fixed_tail_size"`
+				TypeMap              *uintptr     `json:"type_map"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -4757,6 +4759,9 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.Recursive = tmp.Recursive
 			v.FixedHeaderSize = tmp.FixedHeaderSize
 			v.FixedTailSize = tmp.FixedTailSize
+			if tmp.TypeMap != nil {
+				v.TypeMap = n.node[*tmp.TypeMap].(*TypeLiteral)
+			}
 		case NodeTypeStructUnionType:
 			v := n.node[i].(*StructUnionType)
 			var tmp struct {
@@ -5831,6 +5836,11 @@ func Walk(n Node, f Visitor) {
 	case *StructType:
 		for _, w := range v.Fields {
 			if !f.Visit(f, w) {
+				return
+			}
+		}
+		if v.TypeMap != nil {
+			if !f.Visit(f, v.TypeMap) {
 				return
 			}
 		}

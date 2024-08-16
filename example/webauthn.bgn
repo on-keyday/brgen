@@ -1,4 +1,5 @@
 config.url = "https://developer.mozilla.org/ja/docs/Web/API/CredentialsContainer/create#%E3%82%A6%E3%82%A7%E3%83%96%E8%AA%8D%E8%A8%BC_api"
+config.url = "https://www.w3.org/TR/webauthn-3/#dom-publickeycredentialdescriptor-transports"
 config.go.package = "webauthn"
 config.word.map("Id","ID")
 format PublicKeyCredential:
@@ -102,6 +103,7 @@ enum Transport:
     ble = 0x04
     internal = 0x08
     hybrid = 0x10
+    smart_card = 0x20
 
 format PublicKeyCredentialDescriptor:
     id :CredentialID
@@ -209,12 +211,29 @@ format Credentialv1:
     transports :Transport
     authenticator :Authenticator
 
+format CredentialAttestation:
+    clientDataJSON_len :u16
+    clientDataJSON :[clientDataJSON_len]u8
+    clientDataHash_len :u16
+    clientDataHash :[clientDataHash_len]u8
+    publicKeyAlgorithm :Algorithm
+    authenticatorData_len :u16
+    authenticatorData :[authenticatorData_len]u8
+    attestationObject_len :u16
+    attestationObject :[attestationObject_len]u8
+
+format Credentialv2:
+    v1 :Credentialv1
+    attestation :CredentialAttestation
+
 format Credential:
     version :u8
     if version == 1:
         v1 :Credentialv1
+    elif version == 2:
+        v2 :Credentialv2
     else:
-        error("Unsupported version")
+        error("unsupported version")
 
 format CredentialID:
     len :u8

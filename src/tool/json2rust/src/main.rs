@@ -15,6 +15,8 @@ struct Args {
     #[arg(long, short)]
     spec: bool,
     #[arg(long, short)]
+    add_map: bool,
+    #[arg(long, short)]
     file: Option<String>,
 }
 
@@ -73,11 +75,13 @@ fn main() -> ExitCode {
         eprintln!("error: {:?}", e);
         return ExitCode::FAILURE;
     }
-    println!("{}", "#############\n");
-    let js = serde_json::to_writer(stdout(), &gen.map_file);
-    if let Err(e) = js {
-        eprintln!("error: {:?}", e);
-        return ExitCode::FAILURE;
+    if matches.add_map {
+        println!("{}", "#############\n");
+        let js = serde_json::to_writer(stdout(), &gen.map_file);
+        if let Err(e) = js {
+            eprintln!("error: {:?}", e);
+            return ExitCode::FAILURE;
+        }
     }
     ExitCode::SUCCESS
 }

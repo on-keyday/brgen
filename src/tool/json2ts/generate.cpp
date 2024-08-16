@@ -1083,7 +1083,7 @@ namespace json2ts {
         g.str.cast_handler = [](ast::tool::Stringer& s, const std::shared_ptr<ast::Cast>& c) {
             return s.args_to_string(c->arguments);
         };
-        g.str.bin_op_map[ast::BinaryOp::equal] = [](ast::tool::Stringer& s, const std::shared_ptr<ast::Binary>& v) {
+        g.str.bin_op_map[ast::BinaryOp::equal] = [](ast::tool::Stringer& s, const std::shared_ptr<ast::Binary>& v, bool root) {
             if (auto ity = ast::as<ast::IntType>(v->left->expr_type)) {
                 if (ity->bit_size == 1) {
                     return "(" + s.to_string(v->left) + "?1:0)" + " === " + s.to_string(v->right);

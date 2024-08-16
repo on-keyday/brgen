@@ -45,4 +45,4 @@ jobs:
         run: |
           cd /tmp/brgen
           . ./link_path.sh
-          FUTILS_DIR=/tmp/brgen/utils tool/cmptest -f ignore/example/test_info.json -c testkit/cmptest.json --expected-test-total 4 --debug
+          FUTILS_DIR=/tmp/brgen/utils tool/cmptest -f ignore/example/test_info.json -c testkit/cmptest.json --expected-test-total 6 --debug
