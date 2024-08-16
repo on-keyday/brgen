@@ -43,5 +43,5 @@ print("Build successful")
 
 print("Copying", TMPDIR + f"/target/{build_mode}/test" + suffix, OUTPUT)
 shutil.copyfile(TMPDIR + f"/target/{build_mode}/test" + suffix, OUTPUT)
-
+os.chmod(OUTPUT, 0o755)
 exit(0)
