@@ -13,7 +13,7 @@ format GameFrame:
     match type:
         GameType.ID => id :ID
         GameType.Move => move :MoveFrame
-        .. => ..
+        .. => error("invalid GameType")
 
 format ID:
     id :[16]u8

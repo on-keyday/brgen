@@ -1025,6 +1025,10 @@ impl<W: std::io::Write> Generator<W> {
                     self.write_decode_field(w, &field)?;
                 }
             }
+            ast::Node::ExplicitError(err) => {
+                let msg = ptr_null!(err.message.value);
+                w.writeln(&format!("return Err(Error::ExplicitError({}));",msg))?;
+            }
             _ => {} // TODO: Implement,skip for now
         }
         Ok(())
@@ -1212,6 +1216,7 @@ impl<W: std::io::Write> Generator<W> {
             self.w.writeln("LengthError(&'static str),")?;
             self.w.writeln("SetError(&'static str),")?;    
             self.w.writeln("Nested(&'static str,Box<Error>),")?;
+            self.w.writeln("ExplicitError(&'static str),")?;
         }
         self.w.writeln("}")?;
 
@@ -1245,6 +1250,7 @@ impl<W: std::io::Write> Generator<W> {
                     self.w.writeln("Error::LengthError(s) => write!(f,\"{}\",s),")?;
                     self.w.writeln("Error::SetError(s) => write!(f,\"{}\",s),")?;
                     self.w.writeln("Error::Nested(s,e) => write!(f,\"{}: {}\",s,e),")?;
+                    self.w.writeln("Error::ExplicitError(s) => write!(f,\"{}\",s),")?;
                 }
                 self.w.writeln("}")?;
             }
