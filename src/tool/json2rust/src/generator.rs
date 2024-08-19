@@ -404,7 +404,7 @@ impl<W: std::io::Write> Generator<W> {
             } else { 
                 pure_int_type.clone()
             };
-            tmp_w.writeln(&format!("fn {escaped}(&self) -> {int_type} {{"))?;
+            tmp_w.writeln(&format!("pub fn {escaped}(&self) -> {int_type} {{"))?;
             shift_sum += bit_size;
             let shift = sum - shift_sum;
             let mask = (1 << bit_size) - 1;
@@ -428,7 +428,7 @@ impl<W: std::io::Write> Generator<W> {
                 self.s.add_map(&ptr!(field.ident), &format!("{prefix}.{escaped}()"));
             }
             tmp_w.writeln("#[inline]")?;
-            tmp_w.writeln(&format!("fn set_{ident}(&mut self, x: {int_type}) {{"))?;
+            tmp_w.writeln(&format!("pub fn set_{ident}(&mut self, x: {int_type}) {{"))?;
             if is_ident_type {
                 tmp_w.writeln(&format!(
                     "let x :{pure_int_type} = x.into();",
