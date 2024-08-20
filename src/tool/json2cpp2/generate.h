@@ -128,13 +128,26 @@ namespace j2cp2 {
             line_map.push_back({l, w.line_count()});
         }
 
-        void clean_ident(std::string& s) {
+        void escape_keyword(std::string& s) {
             if (s == "class") {
                 s = "class_";
             }
         }
 
-        void write_bit_fields(std::string_view prefix, std::vector<std::shared_ptr<ast::Field>>& non_align, size_t bit_size, ast::Endian endian) {
+        std::pair<std::optional<size_t>, size_t> sum_fields(std::vector<std::shared_ptr<ast::Field>>& non_align) {
+            size_t sum = 0;
+            for (auto& field : non_align) {
+                if (field->field_type->bit_size) {
+                    sum += *field->field_type->bit_size;
+                }
+                else {
+                    return {std::nullopt, sum};
+                }
+            }
+            return {sum, sum};
+        }
+
+        void write_bit_fields_full_sum(std::string_view prefix, std::vector<std::shared_ptr<ast::Field>>& non_align, size_t bit_size, ast::Endian endian) {
             w.write("::futils::binary::flags_t<std::uint", brgen::nums(bit_size), "_t");
             for (auto& n : non_align) {
                 auto type = n->field_type;
@@ -145,7 +158,7 @@ namespace j2cp2 {
                     w.write(", ", brgen::nums(*int_ty->bit_size));
                 }
                 else if (auto enum_ty = ast::as<ast::EnumType>(type); enum_ty) {
-                    auto bit_size = enum_ty->base.lock()->base_type->bit_size;
+                    auto bit_size = enum_ty->bit_size;
                     w.write(", ", brgen::nums(*bit_size));
                 }
             }
@@ -172,6 +185,13 @@ namespace j2cp2 {
                 i++;
             }
             bit_fields[non_align.back().get()] = {brgen::concat("flags_", brgen::nums(seq), "_"), non_align, endian};
+        }
+
+        void write_bit_fields(std::string_view prefix, std::vector<std::shared_ptr<ast::Field>>& non_align, /* size_t bit_size,*/ ast::Endian endian) {
+            auto [sum, prefix_sum] = sum_fields(non_align);
+            if (sum) {
+                write_bit_fields_full_sum(prefix, non_align, *sum, endian);
+            }
         }
 
         std::string get_type_name(const std::shared_ptr<ast::Type>& type, bool align = false) {
@@ -520,7 +540,7 @@ namespace j2cp2 {
 
         void write_field(
             std::vector<std::shared_ptr<ast::Field>>& non_aligned,
-            size_t& bit_size,
+            // size_t& bit_size,
             size_t i,
             // const std::shared_ptr<ast::StructType>& s,
             const std::shared_ptr<ast::Field>& f, std::string_view prefix) {
@@ -529,25 +549,27 @@ namespace j2cp2 {
                 return ast::as<ast::IntType>(type) != nullptr || ast::as<ast::EnumType>(type) != nullptr;
             };
             bool hidden = set_hidden_ident(f);
-            clean_ident(f->ident->ident);
+            escape_keyword(f->ident->ident);
             auto type = unwrap_ident_type(f->field_type);
             if (f->bit_alignment == ast::BitAlignment::not_target) {
                 return;
             }
             if (f->bit_alignment != f->eventual_bit_alignment) {
-                bit_size += *type->bit_size;
+                // bit_size += *type->bit_size;
                 non_aligned.push_back(ast::cast_to<ast::Field>(f));
                 return;
             }
             if (non_aligned.size() > 0) {
+                /**
                 if (!type->bit_size) {
                     return;
                 }
-                bit_size += *type->bit_size;
+                */
+                // bit_size += *type->bit_size;
                 non_aligned.push_back(ast::cast_to<ast::Field>(f));
-                write_bit_fields(prefix, non_aligned, bit_size, ast::Endian::unspec);
+                write_bit_fields(prefix, non_aligned, /*bit_size,*/ ast::Endian::unspec);
                 non_aligned.clear();
-                bit_size = 0;
+                // bit_size = 0;
                 return;
             }
             if (auto union_ty = ast::as<ast::StructUnionType>(type)) {
@@ -664,7 +686,7 @@ namespace j2cp2 {
                 auto indent = w.indent_scope();
                 bool is_int_set = true;
                 bool include_non_simple = false;
-                size_t bit_size = 0;
+                // size_t bit_size = 0;
                 std::vector<std::shared_ptr<ast::Field>> non_aligned;
                 for (auto i = 0; i < s->fields.size(); i++) {
                     auto& field = s->fields[i];
@@ -673,7 +695,7 @@ namespace j2cp2 {
                             non_aligned.push_back(ast::cast_to<ast::Field>(field));
                             continue;
                         }
-                        write_field(non_aligned, bit_size, i, ast::cast_to<ast::Field>(field), prefix);
+                        write_field(non_aligned, /*bit_size,*/ i, ast::cast_to<ast::Field>(field), prefix);
                     }
                 }
                 if (is_type_mapped) {
@@ -681,7 +703,7 @@ namespace j2cp2 {
                     if (auto ity = ast::as<ast::IntType>(s->type_map->type_literal); ity) {
                         endian = ity->endian;
                     }
-                    write_bit_fields(prefix, non_aligned, *s->bit_size, endian);
+                    write_bit_fields(prefix, non_aligned, /**s->bit_size,*/ endian);
                 }
                 if (has_ident) {
                     if (!use_variant) {  // for raw union
