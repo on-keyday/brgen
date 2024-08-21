@@ -15,6 +15,8 @@ namespace j2cp2 {
         std::string field_name;
         std::vector<std::shared_ptr<ast::Field>> fields;
         ast::Endian endian;
+        std::optional<size_t> sum;
+        size_t prefix_sum = 0;
     };
 
     struct AnonymousStruct {
@@ -184,13 +186,59 @@ namespace j2cp2 {
                 bit_fields_part.insert(n.get());
                 i++;
             }
-            bit_fields[non_align.back().get()] = {brgen::concat("flags_", brgen::nums(seq), "_"), non_align, endian};
+            bit_fields[non_align.back().get()] = {brgen::concat("flags_", brgen::nums(seq), "_"), non_align, endian, bit_size, bit_size};
+        }
+
+        void write_bit_fields_prefiexed(std::string_view prefix, std::vector<std::shared_ptr<ast::Field>>& non_align, size_t prefix_sum) {
+            if (auto t = ast::as<ast::StructUnionType>(non_align[1]->field_type); t && t->union_fields.size() == 1) {
+                std::vector<std::shared_ptr<ast::IntType>> int_types;
+                size_t max_field_size = 0;
+                for (auto& s : t->structs) {
+                    if (s->fields.size() != 1) {
+                        return;
+                    }
+                    auto f = ast::as<ast::Field>(s->fields[0]);
+                    if (!f) {
+                        return;
+                    }
+                    if (auto ty = ast::as<ast::IntType>(f->field_type); ty) {
+                        if ((*ty->bit_size + prefix_sum) % 8 != 0) {
+                            return;
+                        }
+                        max_field_size = std::max(max_field_size, *ty->bit_size + prefix_sum);
+                        int_types.push_back(ast::cast_to<ast::IntType>(f->field_type));
+                    }
+                    else {
+                        return;
+                    }
+                }
+                if (max_field_size > 64) {
+                    return;
+                }
+                auto seq = get_seq();
+                auto bit_field = brgen::concat("flags_", brgen::nums(seq), "_");
+                w.writeln("::futils::binary::flags_t<std::uint", brgen::nums(max_field_size), "_t,", brgen::nums(prefix_sum), ",", brgen::nums(max_field_size - prefix_sum), "> ", bit_field, ";");
+                w.writeln("bits_flag_alias_method(flags_", brgen::nums(seq), "_,0,", non_align[0]->ident->ident, ");");
+                w.writeln("bits_flag_alias_method(flags_", brgen::nums(seq), "_,1,", non_align[1]->ident->ident, ");");
+                bit_fields_part.insert(non_align[0].get());
+                bit_fields[non_align[1].get()] = {bit_field, std::move(non_align), ast::Endian::unspec, std::nullopt, prefix_sum};
+            }
         }
 
         void write_bit_fields(std::string_view prefix, std::vector<std::shared_ptr<ast::Field>>& non_align, /* size_t bit_size,*/ ast::Endian endian) {
             auto [sum, prefix_sum] = sum_fields(non_align);
             if (sum) {
                 write_bit_fields_full_sum(prefix, non_align, *sum, endian);
+            }
+            // special case
+            // like this
+            // format A:
+            //  prefix: u1
+            //  match prefix:
+            //     0 => len :u7
+            //     1 => len :u31
+            else if (non_align.size() == 2 && prefix_sum == non_align[0]->field_type->bit_size && prefix_sum < 8) {
+                write_bit_fields_prefiexed(prefix, non_align, prefix_sum);
             }
         }
 
@@ -538,6 +586,17 @@ namespace j2cp2 {
             return type;
         }
 
+        void write_int_type_field(std::string_view prefix, brgen::lexer::Loc loc, std::string_view ident, size_t bit_size, bool is_common_supported, bool is_signed) {
+            if (is_common_supported) {
+                map_line(loc);
+                w.writeln("std::", is_signed ? "" : "u", "int", brgen::nums(bit_size), "_t ", ident, " = 0", ";");
+            }
+            else if (bit_size == 24) {
+                map_line(loc);
+                w.writeln("std::uint32_t ", ident, " = 0; // 24 bit int");
+            }
+        }
+
         void write_field(
             std::vector<std::shared_ptr<ast::Field>>& non_aligned,
             // size_t& bit_size,
@@ -583,16 +642,8 @@ namespace j2cp2 {
                 });
             }
             if (auto int_ty = ast::as<ast::IntType>(type); int_ty) {
-                if (int_ty->is_common_supported) {
-                    map_line(f->loc);
-                    w.writeln("std::", int_ty->is_signed ? "" : "u", "int", brgen::nums(*int_ty->bit_size), "_t ", f->ident->ident, " = 0", ";");
-                    str.map_ident(f->ident, prefix, ".", f->ident->ident);
-                }
-                else if (*int_ty->bit_size == 24) {
-                    map_line(f->loc);
-                    w.writeln("std::uint32_t ", f->ident->ident, " = 0; // 24 bit int");
-                    str.map_ident(f->ident, prefix, ".", f->ident->ident);
-                }
+                write_int_type_field(prefix, f->loc, f->ident->ident, *int_ty->bit_size, int_ty->is_common_supported, int_ty->is_signed);
+                str.map_ident(f->ident, prefix, ".", f->ident->ident);
             }
             if (auto float_ty = ast::as<ast::FloatType>(type); float_ty) {
                 if (float_ty->is_common_supported) {
